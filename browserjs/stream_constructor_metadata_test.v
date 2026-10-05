@@ -9,7 +9,7 @@ fn test_stream_interface_constructor_source_metadata_and_illegal_construct_order
 	$if !darwin { return }
 	mut runtime := Runtime.create()
 	defer { runtime.close() }
-	url := dom.URL{'https://native-stream-constructor-metadata.example.test/'}
+	url := dom.URL{value: 'https://native-stream-constructor-metadata.example.test/'}
 	document := &dom.Document{url: url, origin_: url.origin()}
 	mut readable := ReadableStreamHost.create(document)!
 	readable.install(mut runtime)!

@@ -20,7 +20,7 @@ fn wait_for_actual_abort_timeout(condition fn () bool) {
 }
 
 fn abort_timeout_window() &WindowModel {
-	url := dom.URL{'https://abort-timeout.example.test/'}
+	url := dom.URL{value: 'https://abort-timeout.example.test/'}
 	document := &dom.Document{
 		url:              url
 		origin_:          url.origin()
@@ -79,7 +79,7 @@ fn test_worker_abort_timeout_uses_worker_loop_and_global_relative_clock() {
 	if !platform.native_timer_scheduling_available() { return }
 	window := abort_timeout_window()
 	mut realm := &ScriptingRealm{}
-	worker := WorkerGlobalScope.create(dom.URL{'https://abort-timeout.example.test/worker.js'}, .classic, '', realm)
+	worker := WorkerGlobalScope.create(dom.URL{value: 'https://abort-timeout.example.test/worker.js'}, .classic, '', realm)
 	settings := WorkerEnvironmentSettingsObject.setup(worker, mut realm, window.environment_settings_.settings.serialize(), highresolutiontime.unsafe_shared_current_time()).settings
 	mut owner := worker.event_loop
 	assert voidptr(owner) != voidptr(main_thread_event_loop())

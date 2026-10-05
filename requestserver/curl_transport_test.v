@@ -34,7 +34,7 @@ fn serve_redirect_response(mut listener net.TcpListener) {
 }
 
 fn native_transport_settings(address string) (&html.EnvironmentSettingsObject, &html.EventLoop) {
-	mut document := dom.Document.create(dom.URL{address})
+	mut document := dom.Document.create(dom.URL{value: address})
 	document.set_origin(document.url.origin())
 	window := html.WindowModel.create_top_level(document, none, 'native-xhr-owner') or { panic(err) }
 	mut realm := &html.ScriptingRealm{}
@@ -78,7 +78,7 @@ fn test_source_stop_fetch_removes_the_real_curl_request_from_multi() {
 	mut connection := CurlConnection.create()!
 	defer { connection.close() }
 	mut request := fetch.Request.create()
-	request.url_list = [dom.URL{'http://127.0.0.1:54321/pending'}]
+	request.url_list = [dom.URL{value: 'http://127.0.0.1:54321/pending'}]
 	request.client = settings
 	mut controller := fetch.fetch(request, fetch.FetchAlgorithms.create(fetch.FetchAlgorithmsInput{}), connection.fetch_host(), .no)
 	assert connection.active_request_count() == 1

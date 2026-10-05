@@ -7,7 +7,7 @@ import page
 
 fn native_document_window_event_fixture(markup string) !(&page.Page, &dom.Document, &browserjs.Runtime) {
 	owner := page.Page.create(1)!
-	document := parse_browser_navigation_document_for_page_with_response_time(markup, dom.URL{'https://document-window-events.example/'}, none, none, unsafe { &dom.Page(owner) }, 123456700000)
+	document := parse_browser_navigation_document_for_page_with_response_time(markup, dom.URL{value: 'https://document-window-events.example/'}, none, none, unsafe { &dom.Page(owner) }, 123456700000)
 	return owner, document, browserjs.Runtime.create()
 }
 

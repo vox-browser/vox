@@ -8,7 +8,7 @@ fn test_native_document_blob_bindings_retain_pending_owner_reads_and_replay_real
 	$if !darwin {
 		return
 	}
-	mut document := parse_browser_navigation_document('<div id="result">pending</div>', dom.URL{'https://native-document-blob.example.test/'}, none)
+	mut document := parse_browser_navigation_document('<div id="result">pending</div>', dom.URL{value: 'https://native-document-blob.example.test/'}, none)
 	mut runtime := browserjs.Runtime.create()
 	defer { runtime.close(); document.finalize() }
 	mut messages := []string{}

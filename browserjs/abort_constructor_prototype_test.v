@@ -6,7 +6,7 @@ fn test_abort_controller_source_construct_trap_reads_actual_prototype_once_befor
 	$if !darwin { return }
 	mut runtime := Runtime.create()
 	defer { runtime.close() }
-	url := dom.URL{'https://native-abort-prototype.example.test/'}
+	url := dom.URL{value: 'https://native-abort-prototype.example.test/'}
 	document := &dom.Document{url: url, origin_: url.origin()}
 	mut host := AbortSignalHost.create(document)!
 	host.install(mut runtime)!
@@ -22,7 +22,7 @@ fn test_native_abort_tags_use_source_prototypes_original_getters_and_unforgeable
 	$if !darwin { return }
 	mut runtime := Runtime.create()
 	defer { runtime.close() }
-	url := dom.URL{'https://native-abort-tags.example.test/'}
+	url := dom.URL{value: 'https://native-abort-tags.example.test/'}
 	document := &dom.Document{url: url, origin_: url.origin()}
 	mut host := AbortSignalHost.create(document)!
 	host.install(mut runtime)!

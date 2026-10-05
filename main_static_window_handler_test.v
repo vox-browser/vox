@@ -7,7 +7,7 @@ import time
 
 fn test_static_native_parser_body_handler_is_retained_before_runtime_startup() {
 	mut owner := page.Page.create(1)!
-	document := parse_browser_navigation_document_for_page_with_response_time('<!doctype html><body onload="original parser body"><div id="result">initial</div>', dom.URL{'https://static-handlers.example/'}, none, none, unsafe { &dom.Page(owner) }, 123456700000)
+	document := parse_browser_navigation_document_for_page_with_response_time('<!doctype html><body onload="original parser body"><div id="result">initial</div>', dom.URL{value: 'https://static-handlers.example/'}, none, none, unsafe { &dom.Page(owner) }, 123456700000)
 	defer {
 		mut mutable_document := unsafe { &dom.Document(document) }
 		mutable_document.finalize()

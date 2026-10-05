@@ -15,7 +15,7 @@ mut:
 
 fn unload_prompt_completion_document(address string) !(&dom.Document, &WindowModel, &TraversableNavigable) {
 	owner := page.Page.create(1)!
-	url := dom.URL{address}
+	url := dom.URL{value: address}
 	document := create_navigation_document_for_page(url, url.origin(), none, unsafe { &dom.Page(owner) })!
 	window := unsafe { &WindowModel(document.get_window() or { return error('missing actual Window') }) }
 	mut traversable := TraversableNavigable.new()
@@ -61,7 +61,7 @@ fn test_unload_check_full_history_completion_carries_actual_phase_one_prompt_res
 	observation := &UnloadPromptCompletionObservation{}
 	unload_prompt_completion_listener(window, observation)
 	target := &SessionHistoryEntry{
-		url:            dom.URL{'https://unload-prompt-completion.example/target'}
+		url:            dom.URL{value: 'https://unload-prompt-completion.example/target'}
 		document_state: &DocumentState{
 			document:     document
 			document_id_: document.unique_id()

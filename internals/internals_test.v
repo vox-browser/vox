@@ -129,7 +129,7 @@ fn test_metadata_settings_and_platform_facade() {
 	api.expire_cookies_with_time_offset(60)
 	assert platform.cookie_expiry_offset == 60
 	platform.cookies << PlatformCookie{
-		url: dom.URL{'https://example.test/account'}
+		url: dom.URL{value: 'https://example.test/account'}
 		name: 'session'
 		value: 'abc'
 		path: '/account'
@@ -207,7 +207,7 @@ fn test_runtime_gc_paint_wrapper_and_activity_diagnostics() {
 	assert api.has_activity_root(activity_request)
 	activity_request.activity_root_ = false
 	assert !api.has_activity_root(activity_request)
-	mut document := dom.Document.create(dom.URL{'https://xhr-document.test/path'})
+	mut document := dom.Document.create(dom.URL{value: 'https://xhr-document.test/path'})
 	document_request := api.create_xml_http_request_for_document(document)
 	assert document_request.global_kind == .window
 	assert document_request.base_url == 'https://xhr-document.test/path'
@@ -251,7 +251,7 @@ fn test_media_element_state_controls_use_live_media_model() {
 	mut platform := &PlatformState{}
 	navigator := gamepad.NavigatorGamepadPartial.new()
 	mut api := Internals.create(platform, navigator)
-	media := html.HTMLMediaElement.create(none, dom.URL{'https://media.test/'})
+	media := html.HTMLMediaElement.create(none, dom.URL{value: 'https://media.test/'})
 	platform.page_media_elements << media
 	mut mutable_media := unsafe { &html.HTMLMediaElement(media) }
 	mutable_media.process_media_data(.ongoing)
@@ -562,7 +562,7 @@ fn test_content_and_site_compatibility_controls_update_runtime_services() {
 	compatibility := '[{"matches":["https://example.test/*"],"user_agent":["hide_Ladybird"],"expose_experimental_interfaces":["PressureObserver"]}]'
 	api.set_site_compatibility_data(compatibility)!
 	resource_loader := loader.ResourceLoader.the()
-	url := dom.URL{'https://example.test/page'}
+	url := dom.URL{value: 'https://example.test/page'}
 	assert !resource_loader.user_agent_for_url(url).contains('Ladybird/')
 	assert resource_loader.site_compatibility_exposes_experimental_interface(url, 'PressureObserver')
 	assert platform.site_compatibility_source == compatibility

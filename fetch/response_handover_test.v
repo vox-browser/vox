@@ -14,7 +14,7 @@ mut:
 
 fn handover_test_params(state &ResponseHandoverObservation) &FetchParams {
 	mut request := Request.create()
-	request.url_list = [dom.URL{'https://example.test/streamed'}]
+	request.url_list = [dom.URL{value: 'https://example.test/streamed'}]
 	request.origin = RequestOrigin{ is_client: false, origin: request.current_url().origin() }
 	mut params := FetchParams.create(request, FetchTimingInfo.create())
 	params.algorithms = FetchAlgorithms.create(FetchAlgorithmsInput{

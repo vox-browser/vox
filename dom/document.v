@@ -131,10 +131,21 @@ pub fn (c Color) alpha() u8 {
 pub struct URL {
 pub mut:
 	value string
+mut:
+	record_ ?liburl.URL
+}
+
+pub type URLFinishParsingHook = fn (liburl.URL) liburl.URL
+
+__global dom_url_finish_parsing_hook URLFinishParsingHook
+
+// HTML installs LibWeb DOMURL's actual finish step across the import cycle.
+pub fn set_url_finish_parsing_hook(hook URLFinishParsingHook) {
+	dom_url_finish_parsing_hook = hook
 }
 
 pub fn url_about_blank() URL {
-	return URL{'about:blank'}
+	return URL{value: 'about:blank'}
 }
 
 pub fn (u URL) to_string() string {
@@ -152,10 +163,11 @@ pub fn dom_url_parse(url string, base_url URL, encoding string) ?URL {
 	// callers currently pass UTF-8 for browser navigation.
 	_ = encoding
 	base := base_url.parsed() or { return none }
-	parsed := liburl.parse_with_base(url, base) or { return none }
-	serialized := parsed.serialize(false)
-	dom_url_record_cache[serialized] = parsed
-	return URL{ value: serialized }
+	mut parsed := liburl.parse_with_base(url, base) or { return none }
+	if parsed.scheme == 'blob' && dom_url_finish_parsing_hook != unsafe { nil } {
+		parsed = dom_url_finish_parsing_hook(parsed)
+	}
+	return url_from_record(parsed)
 }
 
 pub fn (a URL) ==(b URL) bool {
@@ -172,15 +184,18 @@ pub fn (mut u URL) set_fragment(fragment ?string) {
 	u = url_from_record(parsed.with_fragment(fragment))
 }
 
-fn url_from_record(record liburl.URL) URL {
+pub fn url_from_record(record liburl.URL) URL {
 	serialized := record.serialize(false)
-	dom_url_record_cache[serialized] = record
-	return URL{ value: serialized }
+	return URL{ value: serialized, record_: record.copy() }
 }
 
-// DOM keeps the serialized URL at its module boundary; the cache retains the
-// typed LibURL record so repeated component access does not re-run the parser.
+// Parsed DOM URLs own their actual value record. The serialized compatibility
+// constructor still uses the basic-parser cache; it never receives another
+// instance's Blob entry. Direct public value edits cannot reuse a stale record.
 pub fn (u URL) parsed() ?liburl.URL {
+	if record := u.record_ {
+		if record.serialize(false) == u.value { return record.copy() }
+	}
 	if cached := dom_url_record_cache[u.value] {
 		return cached
 	}

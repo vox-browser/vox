@@ -4,7 +4,7 @@ import dom
 import fetch
 
 fn environment_test_document(url string) &dom.Document {
-	parsed := dom.URL{url}
+	parsed := dom.URL{value: url}
 	return &dom.Document{
 		url: parsed
 		origin_: parsed.origin()
@@ -18,7 +18,7 @@ fn test_window_environment_settings_setup_urls_security_and_serialization() {
 	mut document := environment_test_document('https://example.test/app/index.html')
 	window := WindowModel.create_top_level(document, none, 'main')!
 	mut realm := &ScriptingRealm{}
-	settings_object := WindowEnvironmentSettingsObject.setup(window, dom.URL{'https://example.test/app/index.html'}, mut realm, none, dom.URL{'https://example.test/'}, dom.Origin{ value: 'https://example.test' })
+	settings_object := WindowEnvironmentSettingsObject.setup(window, dom.URL{value: 'https://example.test/app/index.html'}, mut realm, none, dom.URL{value: 'https://example.test/'}, dom.Origin{ value: 'https://example.test' })
 	settings := settings_object.settings
 	assert settings.realm_execution_context() == realm
 	assert settings.realm() == realm
@@ -95,7 +95,7 @@ fn test_worker_environment_uses_outside_origin_except_for_data_urls() {
 	outside := WindowEnvironmentSettingsObject.setup(window, document.url, mut outside_realm, none, document.url, document.origin()).settings.serialize()
 
 	mut worker_realm := &ScriptingRealm{}
-	scope := WorkerGlobalScope.create(dom.URL{'https://example.test/worker.js'}, .classic, '', worker_realm)
+	scope := WorkerGlobalScope.create(dom.URL{value: 'https://example.test/worker.js'}, .classic, '', worker_realm)
 	worker := WorkerEnvironmentSettingsObject.setup(scope, mut worker_realm, outside, 44.456)
 	assert scope.window_or_worker_global_scope().responsible_event_loop() == scope.event_loop
 	assert scope.event_loop != main_thread_event_loop()
@@ -105,7 +105,7 @@ fn test_worker_environment_uses_outside_origin_except_for_data_urls() {
 	assert worker.settings.is_secure_context()
 
 	mut data_realm := &ScriptingRealm{}
-	data_scope := WorkerGlobalScope.create(dom.URL{'data:text/javascript,close()'}, .classic, '', data_realm)
+	data_scope := WorkerGlobalScope.create(dom.URL{value: 'data:text/javascript,close()'}, .classic, '', data_realm)
 	data_worker := WorkerEnvironmentSettingsObject.setup(data_scope, mut data_realm, outside, 1.0)
 	assert data_worker.origin().is_opaque()
 	assert data_worker.origin().serialize() == 'null'
@@ -131,7 +131,7 @@ fn test_environment_module_set_discard_and_service_worker_identity() {
 	}
 	registration := &ServiceWorkerRegistrationRecordModel{
 		storage_key: 'partition'
-		scope_url: dom.URL{'https://example.test/app/'}
+		scope_url: dom.URL{value: 'https://example.test/app/'}
 		active: record
 	}
 	first := settings.get_service_worker_registration_object(registration)
@@ -184,7 +184,7 @@ fn test_realm_selection_environment_and_global_algorithms() {
 	assert incumbent_realm() == realm
 	clean_up_after_running_script(mut realm)
 
-	insecure := Environment.create('insecure', dom.URL{'http://example.test/'}, dom.URL{'http://example.test/'}, none, none)
+	insecure := Environment.create('insecure', dom.URL{value: 'http://example.test/'}, dom.URL{value: 'http://example.test/'}, none, none)
 	assert is_non_secure_context(insecure)
 }
 

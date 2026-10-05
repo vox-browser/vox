@@ -5,13 +5,13 @@ import page
 
 fn test_navigation_replacement_and_repeated_actual_window_creation_retain_one_native_context_and_proxy() {
 	owner := page.Page.create(1)!
-	url := dom.URL{'https://native-context-retention.example/first'}
+	url := dom.URL{value: 'https://native-context-retention.example/first'}
 	mut first := create_navigation_document_for_page(url, url.origin(), none, unsafe { &dom.Page(owner) })!
 	first_window := unsafe { &WindowModel(first.get_window()?) }
 	context := first_window.browsing_context()
 	native := first.get_browsing_context()?
 	proxy := native.window_proxy()
-	url2 := dom.URL{'https://native-context-retention.example/second'}
+	url2 := dom.URL{value: 'https://native-context-retention.example/second'}
 	mut second := create_navigation_document_for_page(url2, url2.origin(), first, unsafe { &dom.Page(owner) })!
 	defer {
 		first.finalize()
@@ -46,7 +46,7 @@ fn test_missing_document_context_slot_reuses_actual_owner_after_document_destruc
 	group.append_model(context)
 	assert group.browsing_context_set().len == 1 && group.model_browsing_context_set().len == 1
 	assert group.legacy_pending_model_members_.len == 0
-	url := dom.URL{'https://native-context-retention.example/missing-slot'}
+	url := dom.URL{value: 'https://native-context-retention.example/missing-slot'}
 	mut replacement := dom.Document.create(url)
 	replacement.set_origin(url.origin())
 	defer {
@@ -68,7 +68,7 @@ fn test_missing_document_context_slot_reuses_actual_owner_after_document_destruc
 
 fn test_actual_navigation_population_reuses_context_for_new_and_preexisting_history_documents() {
 	owner := page.Page.create(1)!
-	url := dom.URL{'https://native-context-retention.example/active'}
+	url := dom.URL{value: 'https://native-context-retention.example/active'}
 	mut original := create_navigation_document_for_page(url, url.origin(), none, unsafe { &dom.Page(owner) })!
 	window := unsafe { &WindowModel(original.get_window()?) }
 	context := window.browsing_context()
@@ -76,7 +76,7 @@ fn test_actual_navigation_population_reuses_context_for_new_and_preexisting_hist
 	proxy := native.window_proxy()
 	mut model := navigable_model_for_host(original.navigable()?)?
 	entry := &SessionHistoryEntry{
-		url:            dom.URL{'https://native-context-retention.example/populated'}
+		url:            dom.URL{value: 'https://native-context-retention.example/populated'}
 		document_state: &DocumentState{
 			origin:   original.origin()
 			resource: '<!doctype html><html><body>populated</body></html>'
@@ -88,7 +88,7 @@ fn test_actual_navigation_population_reuses_context_for_new_and_preexisting_hist
 	assert voidptr(populated.get_browsing_context()?) == voidptr(native)
 	assert voidptr(native.window_proxy()) == voidptr(proxy)
 	assert voidptr(browsing_context_model_for_native(native)) == voidptr(context)
-	mut preexisting := dom.Document.create(dom.URL{'https://native-context-retention.example/preexisting'})
+	mut preexisting := dom.Document.create(dom.URL{value: 'https://native-context-retention.example/preexisting'})
 	preexisting.set_origin(preexisting.url.origin())
 	preexisting.populate_with_html_head_and_body()!
 	defer {

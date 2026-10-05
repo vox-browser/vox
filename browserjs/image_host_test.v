@@ -5,7 +5,7 @@ import html
 import webidl
 
 fn image_host_fixture() (&Runtime, &ImageHost, &html.EventLoop, &html.HTMLImageElementModel) {
-	document := html.parse_navigation_document('<!doctype html><img id="source">', dom.URL{'https://image-host.test/'}, dom.URL{'https://image-host.test/'}.origin(), none) or { panic(err) }
+	document := html.parse_navigation_document('<!doctype html><img id="source">', dom.URL{value: 'https://image-host.test/'}, dom.URL{value: 'https://image-host.test/'}.origin(), none) or { panic(err) }
 	mut runtime := Runtime.create()
 	mut host := ImageHost.create(document, none, none) or { panic(err) }
 	host.install(mut runtime) or { panic(err) }
@@ -76,7 +76,7 @@ fn test_native_image_decode_preserves_original_engine_replay_abrupt_completion_v
 	$if !darwin {
 		return
 	}
-	document := html.parse_navigation_document('<!doctype html><img id="source">', dom.URL{'https://image-replay.test/'}, dom.URL{'https://image-replay.test/'}.origin(), none)!
+	document := html.parse_navigation_document('<!doctype html><img id="source">', dom.URL{value: 'https://image-replay.test/'}, dom.URL{value: 'https://image-replay.test/'}.origin(), none)!
 	mut runtime := Runtime.create()
 	defer { runtime.close() }
 	mut host := ImageHost.create(document, none, fn (runtime &Runtime) ! {

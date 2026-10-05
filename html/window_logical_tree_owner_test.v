@@ -5,7 +5,7 @@ import page
 
 fn window_logical_tree_document(address string) !(&dom.Document, &WindowModel) {
 	owner := page.Page.create(1)!
-	url := dom.URL{address}
+	url := dom.URL{value: address}
 	document := create_navigation_document_for_page(url, url.origin(), none, unsafe { &dom.Page(owner) })!
 	native := document.get_window() or { return error('missing actual Window') }
 	return document, unsafe { &WindowModel(native) }
@@ -43,7 +43,7 @@ fn test_window_top_and_parent_use_actual_logical_chain_across_independent_contex
 	assert parent_window.top()? == top_window.window()
 	assert top_window.top()? == top_window.window()
 	assert top_window.parent()? == top_window.window()
-	foreign := dom.URL{'https://outside-logical-window.example/'}.origin()
+	foreign := dom.URL{value: 'https://outside-logical-window.example/'}.origin()
 	assert child_window.window().get_own_property(foreign, 'top')!.descriptor.value.object_data == voidptr(top_window.window())
 	assert child_window.window().get_own_property(foreign, 'parent')!.descriptor.value.object_data == voidptr(parent_window.window())
 }

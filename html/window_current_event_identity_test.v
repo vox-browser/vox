@@ -11,7 +11,7 @@ mut:
 }
 
 fn current_event_window_fixture() !(&dom.Document, &WindowModel) {
-	document := parse_document_with_url('<!doctype html><body><div id="host"></div></body>', dom.URL{'https://window-event.example/'})
+	document := parse_document_with_url('<!doctype html><body><div id="host"></div></body>', dom.URL{value: 'https://window-event.example/'})
 	window := WindowModel.create_top_level(document, none, 'current-event')!
 	return document, window
 }

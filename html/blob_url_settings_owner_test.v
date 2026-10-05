@@ -9,13 +9,13 @@ import url as liburl
 
 fn source_blob_url_owner_document(address string, origin dom.Origin) !(&dom.Document, &WindowModel) {
 	owner := page.Page.create(1)!
-	mut document := create_navigation_document_for_page(dom.URL{address}, origin, none, unsafe { &dom.Page(owner) })!
+	mut document := create_navigation_document_for_page(dom.URL{value: address}, origin, none, unsafe { &dom.Page(owner) })!
 	native := document.get_window() or { return error('missing actual Blob URL Window') }
 	return document, unsafe { &WindowModel(native) }
 }
 
 fn test_source_blob_url_parser_copies_the_live_store_entry() {
-	address := dom.URL{'https://blob-url-owner.test/page'}
+	address := dom.URL{value: 'https://blob-url-owner.test/page'}
 	mut document, window := source_blob_url_owner_document(address.serialize(), address.origin())!
 	defer { document.finalize() }
 	settings := window.environment_settings_.settings
@@ -65,7 +65,7 @@ fn test_source_blob_url_parser_copies_the_live_store_entry() {
 fn test_source_blob_url_store_retains_settings_through_document_reassociation() {
 	opaque := dom.origin_create_opaque()
 	mut original, mut window := source_blob_url_owner_document('https://blob-owner-opaque.test/page', opaque)!
-	address := dom.URL{'https://blob-owner-replacement.test:8443/page'}
+	address := dom.URL{value: 'https://blob-owner-replacement.test:8443/page'}
 	mut replacement, _ := source_blob_url_owner_document(address.serialize(), address.origin())!
 	defer {
 		window.set_associated_document(original)
@@ -96,7 +96,7 @@ fn test_source_blob_url_store_retains_settings_through_document_reassociation() 
 }
 
 fn test_source_blob_url_unload_uses_settings_identity_and_current_context() {
-	address := dom.URL{'https://blob-url-cleanup-owner.test/page'}
+	address := dom.URL{value: 'https://blob-url-cleanup-owner.test/page'}
 	mut first, first_window := source_blob_url_owner_document(address.serialize(), address.origin())!
 	mut second, second_window := source_blob_url_owner_document(address.serialize(), address.origin())!
 	defer { first.finalize(); second.finalize() }

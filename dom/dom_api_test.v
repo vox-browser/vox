@@ -310,7 +310,7 @@ fn test_node_name_variants() {
 }
 
 fn test_url_resolution_and_fragment_mutation() {
-	base := URL{'https://example.com/a/b/index.html?old=1#before'}
+	base := URL{value: 'https://example.com/a/b/index.html?old=1#before'}
 	resolved := dom_url_parse('../image.png?size=2#preview', base, 'UTF-8') or {
 		panic('relative URL did not parse')
 	}
@@ -574,7 +574,7 @@ fn test_hidden_state_uses_layout_visibility_and_aria_ancestors() {
 }
 
 fn test_element_state_pseudo_classes() {
-	doc := Document.create(URL{'https://example.com/path#current'})
+	doc := Document.create(URL{value: 'https://example.com/path#current'})
 	mut checkbox := doc.create_element_ns(html_ns, 'input') or { panic('${err}') }
 	checkbox.set_attribute_value('type', 'checkbox')
 	assert checkbox.matches_unchecked_pseudo_class()
@@ -708,7 +708,7 @@ fn test_document_environment_variables_match_upstream_host_defaults() {
 // *applies* to some input types, so an input of another type is neither
 // required nor optional.
 fn test_form_state_pseudo_classes() {
-	doc := Document.create(URL{'https://example.com/'})
+	doc := Document.create(URL{value: 'https://example.com/'})
 
 	mut text_input := doc.create_element_ns(html_ns, 'input') or { panic('${err}') }
 	text_input.set_attribute_value('type', 'text')
@@ -764,7 +764,7 @@ fn test_form_state_pseudo_classes() {
 // https://svgwg.org/svg2-draft/types.html#__svg__SVGElement__ownerSVGElement
 // and #__svg__SVGElement__viewportElement.
 fn test_svg_owner_and_viewport_element() {
-	doc := Document.create(URL{'https://example.com/'})
+	doc := Document.create(URL{value: 'https://example.com/'})
 	mut outer := doc.create_element_ns(svg_ns, 'svg') or { panic('${err}') }
 	mut symbol := doc.create_element_ns(svg_ns, 'symbol') or { panic('${err}') }
 	mut inner := doc.create_element_ns(svg_ns, 'svg') or { panic('${err}') }
@@ -805,7 +805,7 @@ fn test_svg_owner_and_viewport_element() {
 
 // https://svgwg.org/svg2-draft/struct.html#__svg__SVGSVGElement__deselectAll
 fn test_svg_deselect_all_removes_the_document_selection() {
-	mut doc := Document.create(URL{'https://example.com/'})
+	mut doc := Document.create(URL{value: 'https://example.com/'})
 	doc.set_browsing_context(&BrowsingContext{})
 	mut svg := doc.create_element_ns(svg_ns, 'svg') or { panic('${err}') }
 	mut rect := doc.create_element_ns(svg_ns, 'rect') or { panic('${err}') }

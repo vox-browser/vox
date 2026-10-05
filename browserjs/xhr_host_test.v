@@ -17,7 +17,7 @@ fn xhr_host_serve(mut listener net.TcpListener, body string, delay_ms int) {
 }
 
 fn xhr_host_runtime(address string) (&Runtime, &XMLHttpRequestHost) {
-	mut document := dom.Document.create(dom.URL{address})
+	mut document := dom.Document.create(dom.URL{value: address})
 	document.set_origin(document.url.origin())
 	mut host := XMLHttpRequestHost.create_native(document) or { panic(err) }
 	mut runtime := Runtime.create_with_engine(.javascriptcore)

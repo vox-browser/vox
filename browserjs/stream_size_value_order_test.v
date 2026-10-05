@@ -4,7 +4,7 @@ import html
 import dom
 
 fn native_size_document() &dom.Document {
-	url := dom.URL{'https://size-order.example.test/'}
+	url := dom.URL{value: 'https://size-order.example.test/'}
 	return &dom.Document{url: url, origin_: url.origin()}
 }
 

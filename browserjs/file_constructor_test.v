@@ -5,7 +5,7 @@ import time
 
 fn source_file_constructor_runtime() (&Runtime, &dom.Document) {
 	mut runtime := Runtime.create()
-	url := dom.URL{'https://source-file-constructor.example.test/'}
+	url := dom.URL{value: 'https://source-file-constructor.example.test/'}
 	document := dom.Document.create(url)
 	mut readable := ReadableStreamHost.create(document) or { panic(err) }
 	readable.install(mut runtime) or { panic(err) }
@@ -93,7 +93,7 @@ fn test_source_file_constructor_installs_on_actual_global_and_inherits_retained_
 		return
 	}
 	mut runtime := Runtime.create()
-	mut document := dom.Document.create(dom.URL{'https://source-file-global.example.test/'})
+	mut document := dom.Document.create(dom.URL{value: 'https://source-file-global.example.test/'})
 	defer {
 		runtime.close()
 		document.finalize()

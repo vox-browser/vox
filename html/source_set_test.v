@@ -45,7 +45,7 @@ fn test_create_and_select_source_set() {
 }
 
 fn test_normalize_source_densities_uses_the_image_document_viewport() {
-	mut child_document := dom.Document.create(dom.URL{'about:srcdoc'})
+	mut child_document := dom.Document.create(dom.URL{value: 'about:srcdoc'})
 	child_document.set_viewport_rect(dom.Rect{0, 0, 400, 600})
 	element := child_document.create_element('img')!
 	mut source_set := parse_a_srcset_attribute('small.png 100w, large.png 200w')

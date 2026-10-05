@@ -6,7 +6,7 @@ import page
 
 fn navigable_active_context_fixture(address string) !(&dom.Document, &WindowModel, &NavigableModel, &dom.Navigable) {
 	owner := page.Page.create(1)!
-	url := dom.URL{address}
+	url := dom.URL{value: address}
 	document := create_navigation_document_for_page(url, url.origin(), none, unsafe { &dom.Page(owner) })!
 	window := unsafe { &WindowModel(document.get_window() or { return error('missing actual Window') }) }
 	native := document.navigable() or { return error('missing actual native Navigable') }
@@ -23,7 +23,7 @@ fn test_active_context_owner_is_actual_native_constructor_identity_and_survives_
 	assert voidptr(model.active_browsing_context()?) == voidptr(context)
 	assert voidptr(model.active_window_proxy()?) == voidptr(proxy)
 	assert voidptr(model.active_window()?) == voidptr(window)
-	url := dom.URL{'https://active-context-owner.example/replacement'}
+	url := dom.URL{value: 'https://active-context-owner.example/replacement'}
 	mut replacement := create_navigation_document_for_page(url, url.origin(), original, original.page())!
 	defer {
 		original.finalize()

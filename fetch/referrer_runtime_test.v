@@ -22,13 +22,13 @@ fn referrer_runtime_host(request &Request) !&Response {
 
 fn make_referrer_runtime_request(target string, policy string) &Request {
 	mut request := Request.create()
-	request.url_list = [dom.URL{target}]
+	request.url_list = [dom.URL{value: target}]
 	request.origin = RequestOrigin{
 		is_client: false
-		origin:    dom.URL{target}.origin()
+		origin:    dom.URL{value: target}.origin()
 	}
 	request.referrer = Referrer{
-		url: dom.URL{'https://user:secret@source.test/path?private=1#fragment'}
+		url: dom.URL{value: 'https://user:secret@source.test/path?private=1#fragment'}
 	}
 	request.referrer_policy = policy
 	request.cache_mode = .no_store
@@ -62,7 +62,7 @@ fn test_main_fetch_uses_policy_container_default_and_client_referrer() {
 	mut request := make_referrer_runtime_request('https://target.test/', '')
 	request.referrer = Referrer{}
 	request.client_is_window = true
-	request.client_document_url = dom.URL{'https://source.test/document#secret'}
+	request.client_document_url = dom.URL{value: 'https://source.test/document#secret'}
 	request.resolved_policy_container = RequestPolicyContainer{
 		referrer_policy: 'origin'
 	}

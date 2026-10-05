@@ -10,7 +10,7 @@ mut:
 }
 
 fn test_classic_script_reports_original_value_before_cleaning_owning_script_context() {
-	url := dom.URL{'https://timer-script.example.test/document.html'}
+	url := dom.URL{value: 'https://timer-script.example.test/document.html'}
 	document := &dom.Document{url: url, origin_: url.origin()}
 	window := WindowModel.create_top_level(document, none, '')!
 	mut scope := window.window_or_worker_global_scope()

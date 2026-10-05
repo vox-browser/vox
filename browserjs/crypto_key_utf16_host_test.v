@@ -5,7 +5,7 @@ import libjs
 import webcrypto
 
 fn raw_crypto_key_host_fixture(address string) (&Runtime, &CryptoHost) {
-	url := dom.URL{address}
+	url := dom.URL{value: address}
 	mut runtime := Runtime.create()
 	mut host := CryptoHost.create(&dom.Document{url: url, origin_: url.origin()}) or { panic(err) }
 	host.install(mut runtime) or { panic(err) }

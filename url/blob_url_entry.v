@@ -53,3 +53,9 @@ pub fn (mut record URL) set_blob_url_entry(entry ?BlobURLEntry) {
 		record.blob_url_entry_ = none
 	}
 }
+
+// The DOM adapter's owned value and const-style getter use the same existing
+// Source record copy as the parser's component setters.
+pub fn (record &URL) copy() URL {
+	return parser_copy_url(record)
+}

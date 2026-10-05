@@ -6,7 +6,7 @@ fn parsed_xhr_response(type_ ResponseType, content_type string, bytes []u8, null
 	global := &XMLHttpRequestGlobal{
 		kind:     .window
 		base_url: 'https://source.test/page'
-		origin:   dom.URL{'https://source.test/'}.origin()
+		origin:   dom.URL{value: 'https://source.test/'}.origin()
 	}
 	mut request := XMLHttpRequest.create(global)
 	request.open('GET', 'https://response.test/data', true, none, none) or { panic(err) }

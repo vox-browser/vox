@@ -13,7 +13,7 @@ mut:
 
 fn page_navigation_owner(url string) (&page.Page, &NavigableModel) {
 	mut owner := page.Page.create(1) or { panic(err) }
-	mut document := dom.Document.create(dom.URL{url})
+	mut document := dom.Document.create(dom.URL{value: url})
 	document.set_origin(document.url.origin())
 	document.set_page(unsafe { &dom.Page(owner) })
 	document.populate_with_html_head_and_body() or { panic(err) }
@@ -39,7 +39,7 @@ fn test_page_load_invokes_its_actual_local_root_and_keeps_history_and_navigation
 	mut original := model.active_document() or { panic('missing source') }
 	mut source := unsafe { &dom.Document(original) }
 	source.set_active_sandboxing_flag_bits(u32(SandboxingFlag.sandboxed_navigation) | u32(SandboxingFlag.sandboxed_downloads))
-	owner.load_with_history_and_navigation_id(dom.URL{'https://example.test/replace'}, .replace, 'ui-navigation-replace')
+	owner.load_with_history_and_navigation_id(dom.URL{value: 'https://example.test/replace'}, .replace, 'ui-navigation-replace')
 	assert state.requests.len == 1
 	assert state.requests[0].user_activation
 	assert state.requests[0].current_url().serialize() == 'https://example.test/replace'
@@ -48,7 +48,7 @@ fn test_page_load_invokes_its_actual_local_root_and_keeps_history_and_navigation
 	assert voidptr(first) != voidptr(original)
 	assert first.navigation_id() or { '' } == 'ui-navigation-replace'
 	assert first.get_element_by_id('fetched') != none
-	owner.load_with_history_and_navigation_id(dom.URL{'https://example.test/push'}, .push, 'ui-navigation-push')
+	owner.load_with_history_and_navigation_id(dom.URL{value: 'https://example.test/push'}, .push, 'ui-navigation-push')
 	assert state.requests.len == 2
 	assert model.get_session_history_entries().len == 2
 	assert model.active_document()?.navigation_id()? == 'ui-navigation-push'
@@ -87,7 +87,7 @@ fn test_page_fragment_load_keeps_the_supplied_navigation_id_on_the_real_entry() 
 			observation.navigation_ids << model.ongoing_navigation().id
 		}
 	})
-	owner.load_with_history_and_navigation_id(dom.URL{'https://example.test/start#fragment'}, .push, 'ui-fragment')
+	owner.load_with_history_and_navigation_id(dom.URL{value: 'https://example.test/start#fragment'}, .push, 'ui-fragment')
 	assert model.get_session_history_entries().len == 2
 	assert voidptr(model.active_document()?) == voidptr(original)
 	assert original.url.fragment()? == 'fragment'

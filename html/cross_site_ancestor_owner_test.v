@@ -5,7 +5,7 @@ import page
 
 fn cross_site_ancestor_document(address string) !(&dom.Document, &WindowModel) {
 	owner := page.Page.create(1)!
-	url := dom.URL{address}
+	url := dom.URL{value: address}
 	document := create_navigation_document_for_page(url, url.origin(), none, unsafe { &dom.Page(owner) })!
 	native := document.get_window() or { return error('missing actual Window') }
 	return document, unsafe { &WindowModel(native) }
@@ -67,7 +67,7 @@ fn test_cross_site_ancestor_recurses_through_parent_active_settings_and_worker_s
 	outside := leaf_window.environment_settings_.settings.serialize()
 	assert outside.has_cross_site_ancestor
 	mut realm := &ScriptingRealm{}
-	scope := WorkerGlobalScope.create(dom.URL{'https://repeated-cross-site.example/worker.js'}, .classic, '', realm)
+	scope := WorkerGlobalScope.create(dom.URL{value: 'https://repeated-cross-site.example/worker.js'}, .classic, '', realm)
 	worker := WorkerEnvironmentSettingsObject.setup(scope, mut realm, outside, 1)
 	assert worker.has_cross_site_ancestor()
 

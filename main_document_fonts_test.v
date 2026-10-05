@@ -8,7 +8,7 @@ import webidl
 
 fn test_document_fonts_retains_the_actual_css_record_ready_promise_and_event_target() {
 	mut document :=
-		html.parse_document_with_url('<!doctype html><body>fonts</body>', dom.URL{'https://document-fonts.example/'})
+		html.parse_document_with_url('<!doctype html><body>fonts</body>', dom.URL{value: 'https://document-fonts.example/'})
 	_ = html.WindowModel.create_top_level(document, none, 'document-fonts') or { panic(err) }
 	fonts := document.fonts()
 	style := css.css_style_computer_for(document)
@@ -29,7 +29,7 @@ fn test_document_fonts_retains_the_actual_css_record_ready_promise_and_event_tar
 }
 
 fn test_existing_css_state_and_style_reinitialization_keep_one_document_font_set() {
-	mut document := dom.Document.create(dom.URL{'https://document-fonts.example/'})
+	mut document := dom.Document.create(dom.URL{value: 'https://document-fonts.example/'})
 	first := css.StyleComputer.new(document)
 	fonts := document.fonts()
 	second := css.StyleComputer.new(document)
@@ -42,7 +42,7 @@ fn test_existing_css_state_and_style_reinitialization_keep_one_document_font_set
 fn test_compact_font_set_wrapper_binds_the_actual_document_fonts_platform_object() {
 	$if !darwin { return }
 	mut document :=
-		html.parse_document_with_url('<!doctype html><body>fonts</body>', dom.URL{'https://document-fonts.example/'})
+		html.parse_document_with_url('<!doctype html><body>fonts</body>', dom.URL{value: 'https://document-fonts.example/'})
 	_ = html.WindowModel.create_top_level(document, none, 'document-fonts') or { panic(err) }
 	mut runtime := browserjs.Runtime.create()
 	defer { runtime.close() }

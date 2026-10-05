@@ -7,7 +7,7 @@ import page
 
 fn source_meta_document(address string, header string) !(&dom.Document, &EnvironmentSettingsObject, &EventLoop) {
 	owner := page.Page.create(1)!
-	url := dom.URL{address}
+	url := dom.URL{value: address}
 	mut document := create_navigation_document_for_page(url, url.origin(), none, unsafe { &dom.Page(owner) })!
 	document.set_document_type(.html)
 	document.populate_with_html_head_and_body()!
@@ -62,7 +62,7 @@ fn test_source_meta_insertion_appends_filtered_policy_once_to_actual_header_cont
 	assert document.should_block_inline_content(style, 'style', 'body { color: red }')
 	mut request := fetch.Request.create()
 	request.set_client(settings)
-	request.set_url(dom.URL{'https://meta-owner.test/image.png'})
+	request.set_url(dom.URL{value: 'https://meta-owner.test/image.png'})
 	request.destination = .image
 	fetch.populate_request_from_client(mut request)
 	assert settings.fetch_request_client_policy_container().csp_list.policies.len == 2

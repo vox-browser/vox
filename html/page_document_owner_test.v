@@ -24,7 +24,7 @@ fn test_source_navigation_preserves_previous_context_page_when_group_and_request
 	created := BrowsingContextModel.create_a_new_browsing_context_and_document(unsafe { &dom.Page(nested_owner) }, none, none)!
 	group.append(created.document.get_browsing_context()?)
 	nested_owner.set_is_scripting_enabled(false)
-	url := dom.URL{'https://nested.example/next'}
+	url := dom.URL{value: 'https://nested.example/next'}
 	replacement := create_navigation_document_for_page(url, url.origin(), created.document, unsafe { &dom.Page(top_owner) })!
 	assert voidptr(replacement.page()) == voidptr(nested_owner)
 	assert voidptr(created.browsing_context.page()?) == voidptr(nested_owner)
@@ -34,9 +34,9 @@ fn test_source_navigation_preserves_previous_context_page_when_group_and_request
 
 fn test_source_navigation_inherits_actual_previous_page_through_existing_entry_point() {
 	owner := page.Page.create(1)!
-	url := dom.URL{'https://owner.example/first'}
+	url := dom.URL{value: 'https://owner.example/first'}
 	first := create_navigation_document_for_page(url, url.origin(), none, unsafe { &dom.Page(owner) })!
-	second_url := dom.URL{'https://owner.example/second'}
+	second_url := dom.URL{value: 'https://owner.example/second'}
 	second := create_navigation_document(second_url, second_url.origin(), first)!
 	assert voidptr(first.page()) == voidptr(owner)
 	assert voidptr(second.page()) == voidptr(owner)

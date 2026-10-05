@@ -12,7 +12,7 @@ mut:
 
 fn traversable_ui_close_task_fixture(address string) !(&dom.Document, &WindowModel, &TraversableNavigable, &dom.Navigable) {
 	owner := page.Page.create(1)!
-	url := dom.URL{address}
+	url := dom.URL{value: address}
 	document := create_navigation_document_for_page(url, url.origin(), none, unsafe { &dom.Page(owner) })!
 	window := unsafe { &WindowModel(document.get_window() or { return error('missing actual Window') }) }
 	native := document.navigable() or { return error('missing actual native Navigable') }
@@ -72,7 +72,7 @@ fn test_ui_close_task_selects_actual_replacement_at_execution_while_old_document
 	blocked := event_loop.task_queue().last_added_task()?
 	traversable.run_ui_traversable_close_unload_task()
 	task := event_loop.task_queue().last_added_task()?
-	url := dom.URL{'https://ui-close-task.example/replacement'}
+	url := dom.URL{value: 'https://ui-close-task.example/replacement'}
 	mut replacement := create_navigation_document_for_page(url, url.origin(), original, original.page())!
 	replacement_window := unsafe { &WindowModel(replacement.get_window()?) }
 	defer {

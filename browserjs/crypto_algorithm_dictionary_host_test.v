@@ -8,7 +8,7 @@ fn test_native_string_algorithm_dictionary_preserves_source_ordinary_prototype_r
 	$if !darwin {
 		return
 	}
-	url := dom.URL{'https://algorithm-dictionary.example/'}
+	url := dom.URL{value: 'https://algorithm-dictionary.example/'}
 	mut runtime := Runtime.create()
 	defer { runtime.close() }
 	mut host := CryptoHost.create(&dom.Document{ url: url, origin_: url.origin() })!

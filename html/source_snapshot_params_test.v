@@ -59,7 +59,7 @@ fn retained_source_policy_snapshot(document &dom.Document) &SourceSnapshotParams
 
 fn test_actual_source_policy_snapshot_pointer_retains_records_after_constructor_scope() {
 	owner := page.Page.create(1)!
-	url := dom.URL{'https://snapshot-policy-owner.test/page'}
+	url := dom.URL{value: 'https://snapshot-policy-owner.test/page'}
 	mut document := create_navigation_document_for_page(url, url.origin(), none, unsafe { &dom.Page(owner) })!
 	defer { document.finalize() }
 	window := document.get_window()?
@@ -84,7 +84,7 @@ fn test_actual_source_policy_snapshot_pointer_retains_records_after_constructor_
 
 fn source_snapshot_owned_document(address string, header string) !(&dom.Document, &WindowModel) {
 	owner := page.Page.create(1)!
-	url := dom.URL{address}
+	url := dom.URL{value: address}
 	mut document := create_navigation_document_for_page(url, url.origin(), none, unsafe { &dom.Page(owner) })!
 	document.set_document_type(.html)
 	document.populate_with_html_head_and_body()!

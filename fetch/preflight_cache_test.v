@@ -62,11 +62,11 @@ fn (_ &PreflightCacheTestClient) fetch_request_client_cross_origin_isolated_capa
 fn preflight_test_request() &Request {
 	client := &PreflightCacheTestClient{
 		origin: dom.Origin{ value: 'https://client.test' }
-		url: dom.URL{'https://client.test/page'}
+		url: dom.URL{value: 'https://client.test/page'}
 	}
 	mut request := Request.create()
 	request.set_client(client)
-	request.set_url(dom.URL{'https://api.test/resource'})
+	request.set_url(dom.URL{value: 'https://api.test/resource'})
 	request.origin = RequestOrigin{
 		is_client: false
 		origin: client.origin
@@ -175,7 +175,7 @@ fn test_preflight_cache_matches_method_header_partition_origin_url_and_credentia
 	assert cache.is_a_header_name_cache_entry_match(request, 'x-custom')
 
 	mut different_url := request.clone()
-	different_url.set_url(dom.URL{'https://api.test/other'})
+	different_url.set_url(dom.URL{value: 'https://api.test/other'})
 	assert !cache.is_a_method_cache_entry_match(different_url, 'PATCH')
 
 	cache.cache_method(request, '*', 60 * time.second)

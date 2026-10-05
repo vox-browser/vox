@@ -6,7 +6,7 @@ fn test_native_transform_gets_actual_new_target_prototype_once_before_dictionari
 	$if !darwin { return }
 	mut runtime := Runtime.create()
 	defer { runtime.close() }
-	url := dom.URL{'https://transform-prototype.example.test/'}
+	url := dom.URL{value: 'https://transform-prototype.example.test/'}
 	mut host := TransformStreamHost.create(&dom.Document{url: url, origin_: url.origin()})!
 	host.install(mut runtime)!
 	assert runtime.evaluate_host(r'{

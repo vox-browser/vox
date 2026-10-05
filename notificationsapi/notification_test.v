@@ -4,8 +4,8 @@ import dom
 
 fn notification_settings() NotificationSettings {
 	return NotificationSettings{
-		origin: dom.URL{'https://example.test/'}.origin()
-		api_base_url: dom.URL{'https://example.test/base/page'}
+		origin: dom.URL{value: 'https://example.test/'}.origin()
+		api_base_url: dom.URL{value: 'https://example.test/base/page'}
 		current_wall_time: 1234.6
 	}
 }
@@ -93,7 +93,7 @@ fn test_binding_options_are_serialized_before_global_scope_creation() {
 }
 
 fn test_renotify_requires_nonempty_tag_and_enum_conversions() {
-	create_a_notification('x', NotificationOptions{ renotify: true }, dom.Origin{}, dom.URL{'https://e.test/'}, 0) or { assert err.msg().starts_with('TypeError:') }
+	create_a_notification('x', NotificationOptions{ renotify: true }, dom.Origin{}, dom.URL{value: 'https://e.test/'}, 0) or { assert err.msg().starts_with('TypeError:') }
 	assert notification_permission_from_string('granted')! == .granted
 	assert NotificationPermission.default_.str() == 'default'
 	assert notification_direction_from_string('ltr')! == .ltr

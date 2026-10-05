@@ -6,7 +6,7 @@ import html
 import webcrypto
 
 fn derivation_host_fixture() (&Runtime, &CryptoHost) {
-	url := dom.URL{'https://derivation-binding.example/'}
+	url := dom.URL{value: 'https://derivation-binding.example/'}
 	mut runtime := Runtime.create()
 	mut host := CryptoHost.create(&dom.Document{ url: url, origin_: url.origin() }) or { panic(err) }
 	host.install(mut runtime) or { panic(err) }

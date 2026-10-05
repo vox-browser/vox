@@ -13,7 +13,7 @@ mut:
 }
 
 fn source_base_csp_document(owner &page.Page, address string) !(&dom.Document, &EnvironmentSettingsObject, &EventLoop) {
-	url := dom.URL{address}
+	url := dom.URL{value: address}
 	mut document := create_navigation_document_for_page(url, url.origin(), none, unsafe { &dom.Page(owner) })!
 	document.set_document_type(.html)
 	document.populate_with_html_head_and_body()!

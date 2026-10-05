@@ -6,7 +6,7 @@ import platform
 import time
 
 fn timer_host_document() &dom.Document {
-	url := dom.URL{'https://timer-host.example.test/page.html'}
+	url := dom.URL{value: 'https://timer-host.example.test/page.html'}
 	return &dom.Document{url: url, origin_: url.origin()}
 }
 

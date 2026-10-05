@@ -20,7 +20,7 @@ fn test_source_auxiliary_owner_uses_logical_top_level_active_context_instead_of_
 	assert top_context.opener_origin_at_creation() == none
 	top_native.virtual_browsing_context_group_id_ = u64(0xfedcba9876543210)
 	stale_native.virtual_browsing_context_group_id_ = u64(0x1122334455667788)
-	url := dom.URL{'https://auxiliary-owner.example/child'}
+	url := dom.URL{value: 'https://auxiliary-owner.example/child'}
 	mut opener_document := create_navigation_document_for_page(url, url.origin(), none, unsafe { &dom.Page(owner) })!
 	window := unsafe { &WindowModel(opener_document.get_window()?) }
 	mut opener := window.browsing_context()
@@ -55,7 +55,7 @@ fn test_source_auxiliary_owner_uses_logical_top_level_active_context_instead_of_
 	assert native.opener_origin_at_creation_?.is_same_origin(original_origin)
 	assert auxiliary_document.origin().is_same_origin(original_origin)
 	assert auxiliary_document.is_completely_loaded() && auxiliary_document.document_ready_for_post_load_tasks()
-	opener_document.set_origin(dom.URL{'https://changed-opener.example/after'}.origin())
+	opener_document.set_origin(dom.URL{value: 'https://changed-opener.example/after'}.origin())
 	assert auxiliary.browsing_context.opener_origin_at_creation()?.is_same_origin(original_origin)
 	assert !auxiliary.browsing_context.opener_origin_at_creation()?.is_same_origin(opener_document.origin())
 	// Context-owned metadata stays on the retained actual native identity when
@@ -78,7 +78,7 @@ fn test_source_auxiliary_owner_rereads_actual_top_level_active_document_and_reje
 	mut second_native := second_document.get_browsing_context()?
 	first_context := browsing_context_model_for_native(first_native)
 	second_native.virtual_browsing_context_group_id_ = u64(0x100000001)
-	url := dom.URL{'https://auxiliary-owner.example/replaced-top'}
+	url := dom.URL{value: 'https://auxiliary-owner.example/replaced-top'}
 	mut opener_document := create_navigation_document_for_page(url, url.origin(), none, unsafe { &dom.Page(owner) })!
 	window := unsafe { &WindowModel(opener_document.get_window()?) }
 	mut opener := window.browsing_context()

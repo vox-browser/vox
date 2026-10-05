@@ -9,7 +9,7 @@ import url as liburl
 
 fn test_source_blob_url_parser_snapshots_a_live_media_source_as_an_empty_tag() {
 	owner := page.Page.create(1)!
-	address := dom.URL{'https://media-source-blob-owner.test/page'}
+	address := dom.URL{value: 'https://media-source-blob-owner.test/page'}
 	mut document := html.create_navigation_document_for_page(address, address.origin(), none, unsafe { &dom.Page(owner) })!
 	defer { document.finalize() }
 	settings := unsafe { &html.EnvironmentSettingsObject(document.relevant_settings_object()) }

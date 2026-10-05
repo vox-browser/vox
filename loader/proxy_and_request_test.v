@@ -19,7 +19,7 @@ fn test_load_request_defaults_mutators_timer_and_file_request_surface() {
 	assert !request.is_navigation_request()
 	assert request.priority() == .auto
 	assert request.source_url() == none
-	request.set_url(dom.URL{'https://example.test/'})
+	request.set_url(dom.URL{value: 'https://example.test/'})
 	request.set_method('POST')
 	request.set_body([u8(1), 2, 3])
 	request.set_cache_mode(fetch.CacheMode.no_store)
@@ -30,7 +30,7 @@ fn test_load_request_defaults_mutators_timer_and_file_request_surface() {
 	request.set_referrer_policy(.no_referrer)
 	request.set_is_navigation_request(true)
 	request.set_priority(.high)
-	request.set_source_url(dom.URL{'https://source.example/path'})
+	request.set_source_url(dom.URL{value: 'https://source.example/path'})
 	request.set_page(42)
 	assert (request.url() or { panic('missing URL') }).serialize() == 'https://example.test/'
 	assert request.method() == 'POST'

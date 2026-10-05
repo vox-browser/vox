@@ -6,7 +6,7 @@ import page
 fn test_source_initial_about_blank_copies_actual_creator_base_before_population_and_keeps_snapshot() {
 	creator_owner := page.Page.create(1)!
 	child_owner := page.Page.create(1)!
-	url := dom.URL{'https://creator-base.example/root/actual.html'}
+	url := dom.URL{value: 'https://creator-base.example/root/actual.html'}
 	mut creator := create_navigation_document_for_page(url, url.origin(), none, unsafe { &dom.Page(creator_owner) })!
 	parse_html_from_a_string(creator, '<!doctype html><html><head><base href="assets/"></head><body><iframe id="embedder"></iframe></body></html>')
 	assert creator.base_url().serialize() == 'https://creator-base.example/root/assets/'

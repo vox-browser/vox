@@ -5,7 +5,7 @@ import page
 
 fn window_child_tree_document(address string) !(&dom.Document, &WindowModel) {
 	owner := page.Page.create(1)!
-	url := dom.URL{address}
+	url := dom.URL{value: address}
 	mut document := create_navigation_document_for_page(url, url.origin(), none, unsafe { &dom.Page(owner) })!
 	document.populate_with_html_head_and_body()!
 	native := document.get_window() or { return error('missing actual Window') }
@@ -52,7 +52,7 @@ fn test_window_child_length_and_indexed_proxy_follow_live_document_tree_order_an
 	assert window.browsing_context().children().len == 0
 	assert window.length() == 2 && window.Window.length() == 2
 	proxy := window.window()
-	foreign := dom.URL{'https://outside-window-child.example/'}.origin()
+	foreign := dom.URL{value: 'https://outside-window-child.example/'}.origin()
 	assert window_child_tree_proxy_value(proxy, top.origin(), '0')! == voidptr(first_window.window())
 	assert window_child_tree_proxy_value(proxy, foreign, '1')! == voidptr(second_window.window())
 	keys := proxy.own_property_keys(top.origin())

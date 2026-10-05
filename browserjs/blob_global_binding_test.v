@@ -8,7 +8,7 @@ fn test_source_blob_constructor_installs_on_actual_global_independent_of_global_
 	}
 	mut runtime := Runtime.create()
 	defer { runtime.close() }
-	url := dom.URL{'https://source-blob-global.example.test/'}
+	url := dom.URL{value: 'https://source-blob-global.example.test/'}
 	document := &dom.Document{ url: url, origin_: url.origin() }
 	mut readable := ReadableStreamHost.create(document)!
 	readable.install(mut runtime)!

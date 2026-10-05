@@ -3,7 +3,7 @@ module browserjs
 import dom
 
 fn native_pipe_document() &dom.Document {
-	url := dom.URL{'https://pipe-native.example.test/'}
+	url := dom.URL{value: 'https://pipe-native.example.test/'}
 	return &dom.Document{url: url, origin_: url.origin()}
 }
 

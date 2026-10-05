@@ -7,7 +7,7 @@ import libjs
 
 fn source_data_transfer_fileapi_runtime() (&Runtime, &dom.Document) {
 	mut runtime := Runtime.create()
-	document := dom.Document.create(dom.URL{'https://source-drag-files.example.test/'})
+	document := dom.Document.create(dom.URL{value: 'https://source-drag-files.example.test/'})
 	mut readable := ReadableStreamHost.create(document) or { panic(err) }
 	readable.install(mut runtime) or { panic(err) }
 	mut blobs := BlobHost.create(document) or { panic(err) }

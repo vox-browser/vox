@@ -5,7 +5,7 @@ import dom
 fn ignore_parse_result_warning(_ string) {}
 
 fn test_import_map_parse_result_catches_parse_errors() {
-	result := ImportMapParseResult.create('[]', dom.URL{'https://example.test/app/'})
+	result := ImportMapParseResult.create('[]', dom.URL{value: 'https://example.test/app/'})
 	assert result.import_map() == none
 	assert result.error_to_rethrow() != none
 	mut existing := ImportMap{}
@@ -16,7 +16,7 @@ fn test_import_map_parse_result_catches_parse_errors() {
 
 fn test_import_map_parse_result_registers_parsed_map() {
 	result :=
-		ImportMapParseResult.create('{"imports":{"pkg":"./pkg.js"}}', dom.URL{'https://example.test/app/'})
+		ImportMapParseResult.create('{"imports":{"pkg":"./pkg.js"}}', dom.URL{value: 'https://example.test/app/'})
 	assert result.error_to_rethrow() == none
 	assert result.import_map() != none
 	mut existing := ImportMap{}

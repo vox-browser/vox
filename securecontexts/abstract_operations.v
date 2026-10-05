@@ -19,7 +19,7 @@ pub fn is_origin_potentially_trustworthy(origin dom.Origin) Trustworthiness {
 	if origin.is_opaque() {
 		return .not_trustworthy
 	}
-	url := dom.URL{origin.serialize()}
+	url := dom.URL{value: origin.serialize()}
 	scheme := url.scheme()
 	if scheme == 'https' || scheme == 'wss' {
 		return .potentially_trustworthy

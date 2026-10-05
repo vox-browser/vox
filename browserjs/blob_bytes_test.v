@@ -19,7 +19,7 @@ fn test_source_blob_bytes_fulfillment_returns_actual_view_sharing_the_read_all_b
 	}
 	mut runtime := Runtime.create()
 	defer { runtime.close() }
-	url := dom.URL{'https://source-blob-bytes.example.test/'}
+	url := dom.URL{value: 'https://source-blob-bytes.example.test/'}
 	document := &dom.Document{ url: url, origin_: url.origin() }
 	mut host := ReadableStreamHost.create(document)!
 	host.install(mut runtime)!

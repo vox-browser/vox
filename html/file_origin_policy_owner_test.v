@@ -10,7 +10,7 @@ import url as liburl
 
 fn test_source_file_policy_reaches_cached_dom_and_actual_csp_container_owners() {
 	assert !liburl.file_scheme_urls_have_tuple_origins()
-	cached := dom.dom_url_parse('page.html', dom.URL{'file://cached-owner/tmp/'}, 'UTF-8')?
+	cached := dom.dom_url_parse('page.html', dom.URL{value: 'file://cached-owner/tmp/'}, 'UTF-8')?
 	retained_record := cached.parsed()?
 	before_enable := cached.origin()
 	assert before_enable.is_opaque_file_origin()
@@ -26,8 +26,8 @@ fn test_source_file_policy_reaches_cached_dom_and_actual_csp_container_owners() 
 	assert before_enable.is_opaque_file_origin()
 	if enabled {
 		assert actual.serialize() == 'file://'
-		assert actual.is_same_origin(dom.URL{'file://different-owner/tmp/other.html'}.origin())
-		assert actual.is_same_origin(dom.URL{'blob:file:///tmp/actual-file-blob'}.origin())
+		assert actual.is_same_origin(dom.URL{value: 'file://different-owner/tmp/other.html'}.origin())
+		assert actual.is_same_origin(dom.URL{value: 'blob:file:///tmp/actual-file-blob'}.origin())
 	} else {
 		assert !actual.is_same_origin(cached.origin())
 	}
@@ -56,11 +56,11 @@ fn test_source_file_policy_reaches_cached_dom_and_actual_csp_container_owners() 
 	assert origin.is_opaque_file_origin() == !enabled
 	assert origin.is_same_origin(container.csp_list[0].self_origin.liburl_origin()?)
 	assert document.origin().is_same_origin(actual)
-	result := csp.does_url_match_expression_in_origin_with_redirect_count(dom.URL{'file://other-owner/tmp/target'}.parsed()?,
+	result := csp.does_url_match_expression_in_origin_with_redirect_count(dom.URL{value: 'file://other-owner/tmp/target'}.parsed()?,
 		"'self'", origin, 0)
 	assert result == if enabled { csp.MatchResult.matches } else { csp.MatchResult.does_not_match }
-	assert !dom.URL{'data:text/plain,file-owner-control'}.origin().is_opaque_file_origin()
-	assert dom.URL{'https://file-owner.test:8443/page'}.origin().serialize() == 'https://file-owner.test:8443'
+	assert !dom.URL{value: 'data:text/plain,file-owner-control'}.origin().is_opaque_file_origin()
+	assert dom.URL{value: 'https://file-owner.test:8443/page'}.origin().serialize() == 'https://file-owner.test:8443'
 	if enabled {
 		return
 	}

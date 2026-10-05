@@ -29,7 +29,7 @@ fn compact_test_rendering_frame(document &dom.Document) {
 
 fn test_native_animation_frames_replay_each_real_frame_before_source_layout_and_retain_nested_order() {
 	$if !darwin { return }
-	mut document := parse_browser_navigation_document_with_response_time('<!doctype html><div id="target">initial</div>', dom.URL{'https://frame.test/'},
+	mut document := parse_browser_navigation_document_with_response_time('<!doctype html><div id="target">initial</div>', dom.URL{value: 'https://frame.test/'},
 		none, none, time.sys_mono_now())
 	mut runtime := browserjs.Runtime.create()
 	defer {

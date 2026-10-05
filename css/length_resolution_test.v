@@ -93,7 +93,7 @@ fn test_iframe_root_font_size_uses_its_document_viewport() {
 	// An iframe's style computer can exist before layout assigns the child
 	// document its viewport. Root font properties must therefore obtain the
 	// current viewport from that document, rather than a cached/top-level one.
-	mut child_document := dom.Document.create(dom.URL{'about:srcdoc'})
+	mut child_document := dom.Document.create(dom.URL{value: 'about:srcdoc'})
 	computer := StyleComputer.new(child_document)
 	child_document.set_viewport_rect(dom.Rect{0, 0, 400, 600})
 	mut root := child_document.create_element_ns('http://www.w3.org/1999/xhtml', 'html') or {

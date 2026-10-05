@@ -8,7 +8,7 @@ fn test_native_document_file_list_interface_exposure_actual_input_producer_clone
 	$if !darwin {
 		return
 	}
-	mut document := parse_browser_navigation_document('<input id="upload" type="file" multiple><div id="result">pending</div>', dom.URL{'https://native-document-file-list.example.test/'}, none)
+	mut document := parse_browser_navigation_document('<input id="upload" type="file" multiple><div id="result">pending</div>', dom.URL{value: 'https://native-document-file-list.example.test/'}, none)
 	mut runtime := browserjs.Runtime.create()
 	defer {
 		runtime.close()

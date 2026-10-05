@@ -29,7 +29,7 @@ fn test_source_initial_top_level_context_finishes_about_blank_and_marks_actual_s
 
 fn test_source_embedded_initial_context_finishes_without_top_level_supported_color_scheme_defaults() {
 	owner := page.Page.create(1)!
-	url := dom.URL{'https://initial-context-completion.example/parent'}
+	url := dom.URL{value: 'https://initial-context-completion.example/parent'}
 	mut parent := create_navigation_document_for_page(url, url.origin(), none, unsafe { &dom.Page(owner) })!
 	parent.populate_with_html_head_and_body()!
 	iframe := parent.create_element_ns(namespace_html, 'iframe')!

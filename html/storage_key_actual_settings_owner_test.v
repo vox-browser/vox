@@ -6,7 +6,7 @@ import storageapi
 
 fn source_storage_key_document(address string, origin dom.Origin) !(&dom.Document, &WindowModel) {
 	owner := page.Page.create(1)!
-	mut document := create_navigation_document_for_page(dom.URL{address}, origin, none, unsafe { &dom.Page(owner) })!
+	mut document := create_navigation_document_for_page(dom.URL{value: address}, origin, none, unsafe { &dom.Page(owner) })!
 	native := document.get_window() or { return error('missing actual storage-key Window') }
 	window := unsafe { &WindowModel(native) }
 	return document, window
@@ -15,7 +15,7 @@ fn source_storage_key_document(address string, origin dom.Origin) !(&dom.Documen
 fn test_source_storage_key_reads_actual_settings_origin_after_window_reassociation() {
 	opaque := dom.origin_create_opaque()
 	mut original, mut window := source_storage_key_document('https://opaque-storage-key-owner.test/page', opaque)!
-	address := dom.URL{'https://replacement-storage-key-owner.test:8443/page'}
+	address := dom.URL{value: 'https://replacement-storage-key-owner.test:8443/page'}
 	mut replacement, _ := source_storage_key_document(address.serialize(), address.origin())!
 	defer {
 		window.set_associated_document(original)

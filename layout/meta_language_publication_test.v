@@ -6,7 +6,7 @@ import page
 
 fn source_meta_language_document() !&dom.Document {
 	owner := page.Page.create(1)!
-	url := dom.URL{'https://meta-language.test/page'}
+	url := dom.URL{value: 'https://meta-language.test/page'}
 	mut document := html.create_navigation_document_for_page(url, url.origin(), none, unsafe { &dom.Page(owner) })!
 	document.set_document_type(.html)
 	html.parse_html_from_a_string(document, '<!doctype html><html><head><meta http-equiv="content-language" content="en"></head><body><div id="host" style="text-transform: uppercase">istanbul<span id="light">light</span></div></body></html>')

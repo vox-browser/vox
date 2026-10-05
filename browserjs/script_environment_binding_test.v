@@ -11,7 +11,7 @@ mut:
 }
 
 fn script_environment_document() &dom.Document {
-	url := dom.URL{'https://script-environment.example.test/'}
+	url := dom.URL{value: 'https://script-environment.example.test/'}
 	return &dom.Document{url: url, origin_: url.origin()}
 }
 

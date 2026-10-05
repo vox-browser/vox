@@ -6,7 +6,7 @@ import html
 import webcrypto
 
 fn cipher_host_fixture() (&Runtime, &CryptoHost) {
-	url := dom.URL{'https://cipher-binding.example/'}
+	url := dom.URL{value: 'https://cipher-binding.example/'}
 	mut runtime := Runtime.create()
 	mut host := CryptoHost.create(&dom.Document{ url: url, origin_: url.origin() }) or { panic(err) }
 	host.install(mut runtime) or { panic(err) }

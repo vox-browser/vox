@@ -32,7 +32,7 @@ pub fn XMLHttpRequest.construct_in_settings(settings &html.EnvironmentSettingsOb
 fn (request &XMLHttpRequest) create_fetch_request() &fetch.Request {
 	mut result := fetch.Request.create()
 	result.method = request.request_method
-	result.url_list = [dom.URL{request.request_url}]
+	result.url_list = [dom.URL{value: request.request_url}]
 	for header in request.author_request_headers {
 		result.header_list.append(http.Header{ name: header.name, value: header.value })
 	}

@@ -5,7 +5,7 @@ import page
 
 fn traversable_history_document(address string) !(&dom.Document, &NavigableModel) {
 	owner := page.Page.create(1)!
-	url := dom.URL{address}
+	url := dom.URL{value: address}
 	document := create_navigation_document_for_page(url, url.origin(), none, unsafe { &dom.Page(owner) })!
 	native := document.navigable() or { return error('missing actual native Navigable') }
 	model := navigable_model_for_host(native) or { return error('missing actual local Navigable') }
@@ -15,7 +15,7 @@ fn traversable_history_document(address string) !(&dom.Document, &NavigableModel
 fn traversable_history_entry(document &dom.Document, address string, step int) &SessionHistoryEntry {
 	return &SessionHistoryEntry{
 		step:           step
-		url:            dom.URL{address}
+		url:            dom.URL{value: address}
 		document_state: &DocumentState{
 			document:     document
 			document_id_: document.unique_id()
@@ -97,7 +97,7 @@ fn test_traversable_history_getters_follow_actual_native_host_reassociation() {
 }
 
 fn test_bare_host_history_adapter_initializes_current_and_active_then_keeps_them_independent() {
-	mut traversable := TraversableNavigable.create_a_fresh_top_level_traversable(dom.URL{'https://traversable-history-owner.example/bare'}, EmptyDocumentResource{})!
+	mut traversable := TraversableNavigable.create_a_fresh_top_level_traversable(dom.URL{value: 'https://traversable-history-owner.example/bare'}, EmptyDocumentResource{})!
 	initial := traversable.current_session_history_entry()?
 	assert voidptr(initial) == voidptr(traversable.active_session_history_entry()?)
 	assert navigable_model_for_host(traversable.host_navigable_?) == none

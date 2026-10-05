@@ -13,7 +13,7 @@ mut:
 
 fn prompted_close_owner_document(address string) !(&dom.Document, &WindowModel) {
 	owner := page.Page.create(1)!
-	url := dom.URL{address}
+	url := dom.URL{value: address}
 	mut document := create_navigation_document_for_page(url, url.origin(), none, unsafe { &dom.Page(owner) })!
 	document.populate_with_html_head_and_body()!
 	return document, unsafe { &WindowModel(document.get_window() or { return error('missing actual Window') }) }
@@ -56,7 +56,7 @@ fn test_prompted_close_collects_actual_replacement_document_and_ignores_old_loca
 	mut original, original_window := prompted_close_owner_document('https://prompted-close-owner.example/original')!
 	mut traversable := prompted_close_owner_traversable(original)
 	traversable.set_before_unload_hook(prompted_close_unsupported_document_hook)
-	url := dom.URL{'https://prompted-close-owner.example/replacement'}
+	url := dom.URL{value: 'https://prompted-close-owner.example/replacement'}
 	mut replacement := create_navigation_document_for_page(url, url.origin(), original, original.page())!
 	replacement_window := unsafe { &WindowModel(replacement.get_window()?) }
 	snapshot := webdriver.user_prompt_handler()
@@ -88,7 +88,7 @@ fn test_prompted_close_collects_actual_replacement_document_and_ignores_old_loca
 fn test_prompted_close_native_collection_includes_real_current_document_tree_child_and_retains_cancellation() {
 	mut original, original_window := prompted_close_owner_document('https://prompted-close-owner.example/tree-original')!
 	mut traversable := prompted_close_owner_traversable(original)
-	url := dom.URL{'https://prompted-close-owner.example/tree-current'}
+	url := dom.URL{value: 'https://prompted-close-owner.example/tree-current'}
 	mut current := create_navigation_document_for_page(url, url.origin(), original, original.page())!
 	current.populate_with_html_head_and_body()!
 	current_window := unsafe { &WindowModel(current.get_window()?) }

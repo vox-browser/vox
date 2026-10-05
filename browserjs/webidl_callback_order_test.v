@@ -9,7 +9,7 @@ fn test_native_generic_callback_invokes_when_callable_without_adding_caller_scri
 	$if !darwin { return }
 	mut runtime := Runtime.create()
 	defer { runtime.close() }
-	url := dom.URL{'https://callback-order.example.test/'}
+	url := dom.URL{value: 'https://callback-order.example.test/'}
 	document := &dom.Document{url: url, origin_: url.origin()}
 	mut host := WritableStreamHost.create(document)!
 	host.install(mut runtime)!

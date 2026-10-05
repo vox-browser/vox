@@ -48,7 +48,7 @@ pub fn (mut allowlist AutoplayAllowlist) enable_for_origins(origins []string) {
 		// URL::Parser::basic_parse first accepts any absolute URL, including
 		// non-hierarchical schemes that do not contain "://". Only retry with
 		// https:// when the input has no scheme at all.
-		scheme := dom.URL{value}.scheme()
+		scheme := dom.URL{value: value}.scheme()
 		if scheme == '' {
 			value = 'https://${value}'
 		} else if scheme in ['http', 'https', 'ws', 'wss'] && !value.contains('://') {

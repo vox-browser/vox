@@ -5,7 +5,7 @@ import dom
 import http
 
 fn test_source_resource_response_policies_use_the_actual_shared_url_origin() {
-	cached := dom.dom_url_parse('worker.js', dom.URL{'resource://first-owner:8123/pages/start.html'},
+	cached := dom.dom_url_parse('worker.js', dom.URL{value: 'resource://first-owner:8123/pages/start.html'},
 		'UTF-8')?
 	mut response := Response.create()
 	response.url_list = [cached]
@@ -22,6 +22,6 @@ fn test_source_resource_response_policies_use_the_actual_shared_url_origin() {
 	assert !first.is_opaque()
 	assert first.is_same_origin(second)
 	assert first.is_same_origin(cached.origin().liburl_origin()?)
-	assert first.is_same_origin(dom.URL{'resource://second-owner:9443/other.js'}.origin().liburl_origin()?)
+	assert first.is_same_origin(dom.URL{value: 'resource://second-owner:9443/other.js'}.origin().liburl_origin()?)
 	assert policies[0].clone().serialize()!.self_origin.is_same_origin(first)
 }

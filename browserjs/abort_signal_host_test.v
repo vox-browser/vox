@@ -7,7 +7,7 @@ import time
 import webidl
 
 fn abort_binding_document() &dom.Document {
-	url := dom.URL{'https://abort-binding.example.test/'}
+	url := dom.URL{value: 'https://abort-binding.example.test/'}
 	return &dom.Document{url: url, origin_: url.origin()}
 }
 

@@ -11,6 +11,7 @@
 module html
 
 import dom
+import domurl
 import contentsecuritypolicy as csp
 import mixedcontentcore
 import securecontexts
@@ -132,6 +133,7 @@ mut:
 }
 
 fn create_environment_settings(realm &ScriptingRealm, environment &Environment, kind EnvironmentGlobalKind, event_loop &EventLoop) &EnvironmentSettingsObject {
+	dom.set_url_finish_parsing_hook(domurl.finish_parsing_record)
 	settings := &EnvironmentSettingsObject{
 		realm_: realm
 		environment_: environment

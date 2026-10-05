@@ -13,7 +13,7 @@ mut:
 }
 
 fn blob_task_owner() (&WindowModel, &EnvironmentSettingsObject, &EventLoop) {
-	url := dom.URL{'https://blob-tasks.example.test/'}
+	url := dom.URL{value: 'https://blob-tasks.example.test/'}
 	document := &dom.Document{ url: url, origin_: url.origin() }
 	window := WindowModel.create_top_level(document, none, 'blob-task-owner') or { panic(err) }
 	mut settings := window.environment_settings_.settings
@@ -82,7 +82,7 @@ fn test_empty_blob_task_enqueues_its_empty_chunk_before_closing_and_settles_the_
 fn test_worker_blob_reading_tasks_and_promises_use_the_actual_worker_owner_loop() {
 	window, window_settings, mut window_loop := blob_task_owner()
 	mut realm := &ScriptingRealm{}
-	scope := WorkerGlobalScope.create(dom.URL{'https://blob-tasks.example.test/worker.js'}, .classic, 'blob-worker', realm)
+	scope := WorkerGlobalScope.create(dom.URL{value: 'https://blob-tasks.example.test/worker.js'}, .classic, 'blob-worker', realm)
 	settings := WorkerEnvironmentSettingsObject.setup(scope, mut realm, window.environment_settings_.settings.serialize(), 12).settings
 	mut worker_loop := unsafe { &EventLoop(settings.responsible_event_loop()) }
 	assert voidptr(worker_loop) != voidptr(window_loop)

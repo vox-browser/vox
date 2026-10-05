@@ -42,7 +42,7 @@ fn test_main_fetch_keeps_a_genuine_pending_network_response_until_transport_comp
 	state := &DeferredFetchTransport{}
 	host := deferred_fetch_host(state)
 	mut request := Request.create()
-	request.url_list = [dom.URL{'https://example.test/deferred'}]
+	request.url_list = [dom.URL{value: 'https://example.test/deferred'}]
 	request.origin = RequestOrigin{ is_client: false, origin: request.current_url().origin() }
 	request.mode = .same_origin
 	request.cache_mode = .no_store
@@ -65,7 +65,7 @@ fn test_async_redirects_preserve_pending_state_across_both_network_requests() {
 	state := &DeferredFetchTransport{}
 	host := deferred_fetch_host(state)
 	mut request := Request.create()
-	request.url_list = [dom.URL{'https://example.test/start'}]
+	request.url_list = [dom.URL{value: 'https://example.test/start'}]
 	request.origin = RequestOrigin{ is_client: false, origin: request.current_url().origin() }
 	request.mode = .same_origin
 	request.method = 'POST'
@@ -91,8 +91,8 @@ fn test_async_cors_preflight_waits_before_starting_the_actual_request_and_valida
 	state := &DeferredFetchTransport{}
 	host := deferred_fetch_host(state)
 	mut request := Request.create()
-	request.url_list = [dom.URL{'https://cross-origin.test/put'}]
-	request.origin = RequestOrigin{ is_client: false, origin: dom.URL{'https://origin.test/'}.origin() }
+	request.url_list = [dom.URL{value: 'https://cross-origin.test/put'}]
+	request.origin = RequestOrigin{ is_client: false, origin: dom.URL{value: 'https://origin.test/'}.origin() }
 	request.mode = .cors
 	request.method = 'PUT'
 	request.use_cors_preflight = true
@@ -119,7 +119,7 @@ fn test_async_fetch_handover_runs_when_the_response_arrives_and_termination_disc
 	state := &DeferredFetchTransport{}
 	host := deferred_fetch_host(state)
 	mut request := Request.create()
-	request.url_list = [dom.URL{'https://example.test/controller'}]
+	request.url_list = [dom.URL{value: 'https://example.test/controller'}]
 	request.origin = RequestOrigin{ is_client: false, origin: request.current_url().origin() }
 	request.mode = .same_origin
 	request.cache_mode = .no_store

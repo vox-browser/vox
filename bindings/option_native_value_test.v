@@ -10,7 +10,7 @@ fn test_source_option_actual_string_boolean_conversion_order_and_original_except
 		return
 	}
 	mut runtime := browserjs.Runtime.create()
-	mut document := dom.Document.create(dom.URL{'https://source-native-option.example.test/'})
+	mut document := dom.Document.create(dom.URL{value: 'https://source-native-option.example.test/'})
 	defer {
 		runtime.close()
 		document.finalize()

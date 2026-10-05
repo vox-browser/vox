@@ -5,7 +5,7 @@ import fileapi
 
 fn source_file_list_constructor_runtime() (&Runtime, &FileListHost, &dom.Document) {
 	mut runtime := Runtime.create()
-	document := dom.Document.create(dom.URL{'https://source-file-list-constructor.example.test/'})
+	document := dom.Document.create(dom.URL{value: 'https://source-file-list-constructor.example.test/'})
 	mut readable := ReadableStreamHost.create(document) or { panic(err) }
 	readable.install(mut runtime) or { panic(err) }
 	mut blobs := BlobHost.create(document) or { panic(err) }

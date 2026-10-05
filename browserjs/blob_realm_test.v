@@ -6,7 +6,7 @@ import html
 import webidl
 
 fn source_blob_realm_host(mut runtime Runtime) !&ReadableStreamHost {
-	url := dom.URL{'https://source-blob-realm.example.test/'}
+	url := dom.URL{value: 'https://source-blob-realm.example.test/'}
 	document := &dom.Document{ url: url, origin_: url.origin() }
 	mut host := ReadableStreamHost.create(document)!
 	host.install(mut runtime)!

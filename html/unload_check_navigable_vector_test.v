@@ -15,7 +15,7 @@ mut:
 
 fn unload_navigable_vector_document(address string) !(&dom.Document, &WindowModel) {
 	owner := page.Page.create(1)!
-	url := dom.URL{address}
+	url := dom.URL{value: address}
 	document := create_navigation_document_for_page(url, url.origin(), none, unsafe { &dom.Page(owner) })!
 	return document, unsafe { &WindowModel(document.get_window() or { return error('missing actual Window') }) }
 }
@@ -29,7 +29,7 @@ fn unload_navigable_vector_traversable(document &dom.Document) &TraversableNavig
 
 fn unload_navigable_vector_entry(document &dom.Document) &SessionHistoryEntry {
 	return &SessionHistoryEntry{
-		url:            dom.URL{'https://unload-navigable-vector.example/target'}
+		url:            dom.URL{value: 'https://unload-navigable-vector.example/target'}
 		document_state: &DocumentState{
 			document:     document
 			document_id_: document.unique_id()
@@ -83,7 +83,7 @@ fn test_unload_native_vector_uses_current_document_of_retained_actual_host_when_
 	native := original.navigable()?
 	observation := &UnloadNavigableVectorObservation{}
 	unload_navigable_vector_observe(original_window, 'old', observation, false)
-	url := dom.URL{'https://unload-navigable-vector.example/new'}
+	url := dom.URL{value: 'https://unload-navigable-vector.example/new'}
 	mut replacement := create_navigation_document_for_page(url, url.origin(), original, original.page())!
 	defer { replacement.finalize() }
 	replacement_window := unsafe { &WindowModel(replacement.get_window()?) }
@@ -103,7 +103,7 @@ fn test_unload_native_vector_retains_selected_document_after_queue_and_skips_rep
 	observation := &UnloadNavigableVectorObservation{}
 	unload_navigable_vector_observe(original_window, 'old', observation, false)
 	check_if_unloading_is_canceled([original.navigable()?], none, none, none, .no, unload_navigable_vector_completion(observation))
-	url := dom.URL{'https://unload-navigable-vector.example/later-replacement'}
+	url := dom.URL{value: 'https://unload-navigable-vector.example/later-replacement'}
 	mut replacement := create_navigation_document_for_page(url, url.origin(), original, original.page())!
 	defer { replacement.finalize() }
 	unload_navigable_vector_observe(unsafe { &WindowModel(replacement.get_window()?) }, 'new', observation, false)

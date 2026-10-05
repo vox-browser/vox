@@ -91,7 +91,7 @@ fn navigable_test_fetch_and_destroy(request &fetch.Request) !&fetch.Response {
 }
 
 fn navigable_test_top_level(url string, target_name string) !(&dom.Document, &WindowModel, &NavigableModel) {
-	mut document := dom.Document.create(dom.URL{url})
+	mut document := dom.Document.create(dom.URL{value: url})
 	document.set_origin(document.url.origin())
 	document.populate_with_html_head_and_body()!
 	window := WindowModel.create_top_level(document, none, target_name)!
@@ -112,7 +112,7 @@ fn test_navigable_initialization_hierarchy_and_target_choice() {
 	focused_parent_model.set_focused(true)
 	assert parent_model.host_navigable().is_focused()
 
-	mut child_document := dom.Document.create(dom.URL{'https://example.test/frame'})
+	mut child_document := dom.Document.create(dom.URL{value: 'https://example.test/frame'})
 	child_document.set_origin(child_document.url.origin())
 	child_context := BrowsingContextModel.create(child_document, parent_window.browsing_context(), 'frame')
 	mut container := parent_document.create_element_ns('http://www.w3.org/1999/xhtml', 'iframe')!
@@ -164,7 +164,7 @@ fn test_line_box_border_debug_setting_is_inherited_and_propagated() {
 	mut mutable_parent := unsafe { &NavigableModel(parent_model) }
 	mutable_parent.set_should_show_line_box_borders(true)
 
-	mut child_document := dom.Document.create(dom.URL{'https://example.test/frame'})
+	mut child_document := dom.Document.create(dom.URL{value: 'https://example.test/frame'})
 	child_document.set_origin(child_document.url.origin())
 	child_context := BrowsingContextModel.create(child_document, parent_window.browsing_context(),
 		'frame')
@@ -174,7 +174,7 @@ fn test_line_box_border_debug_setting_is_inherited_and_propagated() {
 	mut mutable_child := unsafe { &NavigableModel(child_model) }
 	mutable_child.set_has_session_history_entry_and_ready_for_navigation()
 
-	mut grandchild_document := dom.Document.create(dom.URL{'https://example.test/nested-frame'})
+	mut grandchild_document := dom.Document.create(dom.URL{value: 'https://example.test/nested-frame'})
 	grandchild_document.set_origin(grandchild_document.url.origin())
 	grandchild_context := BrowsingContextModel.create(grandchild_document,
 		child_window.browsing_context(), 'nested-frame')
@@ -232,7 +232,7 @@ fn test_force_dark_settings_inherit_propagate_and_honor_document_opt_outs() {
 	})
 	assert parent_model.active_document_opts_out_of_force_dark()
 
-	mut child_document := dom.Document.create(dom.URL{'https://example.test/frame'})
+	mut child_document := dom.Document.create(dom.URL{value: 'https://example.test/frame'})
 	child_document.set_origin(child_document.url.origin())
 	child_context := BrowsingContextModel.create(child_document, parent_window.browsing_context(),
 		'frame')
@@ -352,7 +352,7 @@ fn test_navigable_history_cross_document_fragment_reload_and_javascript_url() {
 	assert model.rendering_thread() != unsafe { nil }
 	assert !model.is_svg_page()
 	model.navigate(NavigableNavigateParams{
-		url: dom.URL{'https://example.test/next'}
+		url: dom.URL{value: 'https://example.test/next'}
 		source_document: original_document
 		document_resource: '<!doctype html><html><body>next</body></html>'
 	})!
@@ -365,7 +365,7 @@ fn test_navigable_history_cross_document_fragment_reload_and_javascript_url() {
 	assert model.get_the_target_history_entry(1)? == model.current_session_history_entry()?
 
 	model.navigate(NavigableNavigateParams{
-		url: dom.URL{'https://example.test/next#section'}
+		url: dom.URL{value: 'https://example.test/next#section'}
 		source_document: next_document
 	})!
 	assert model.get_session_history_entries().len == 3
@@ -378,7 +378,7 @@ fn test_navigable_history_cross_document_fragment_reload_and_javascript_url() {
 	model.set_javascript_url_hook(navigable_test_javascript_url)
 	current_document := model.active_document() or { panic('missing current document') }
 	model.navigate(NavigableNavigateParams{
-		url: dom.URL{"javascript:'generated'"}
+		url: dom.URL{value: "javascript:'generated'"}
 		source_document: current_document
 		history_handling: .replace
 	})!
@@ -395,7 +395,7 @@ fn test_reload_rebuilds_child_session_history_from_the_replacement_document() {
 		id: 'old-editor-frame'
 		entries: [&SessionHistoryEntry{
 			step: 0
-			url: dom.URL{'https://example.test/stale-frame'}
+			url: dom.URL{value: 'https://example.test/stale-frame'}
 			document_state: &DocumentState{
 				document: document
 			}
@@ -576,7 +576,7 @@ fn test_navigable_cut_returns_and_deletes_focused_text_control_selection() {
 }
 
 fn test_navigable_viewport_resize_grows_then_shrinks_device_backing_stores() {
-	mut document := dom.Document.create(dom.URL{'https://example.test/'})
+	mut document := dom.Document.create(dom.URL{value: 'https://example.test/'})
 	document.set_origin(document.url.origin())
 	document.populate_with_html_head_and_body()!
 	page_model := page.Page.create(2.0)!
@@ -734,7 +734,7 @@ fn test_navigation_does_not_install_response_after_navigable_destruction() {
 }
 
 fn test_non_fetch_scheme_navigation_hands_off_to_external_software_unless_sandboxed() {
-	mut document := dom.Document.create(dom.URL{'https://example.test/'})
+	mut document := dom.Document.create(dom.URL{value: 'https://example.test/'})
 	document.set_origin(document.url.origin())
 	page_model := page.Page.create(1.0)!
 	document.set_page(unsafe { &dom.Page(page_model) })
@@ -745,7 +745,7 @@ fn test_non_fetch_scheme_navigation_hands_off_to_external_software_unless_sandbo
 	parent_model := NavigableModel.create(parent_host, none)!
 	assert attempt_to_create_a_non_fetch_scheme_document(&NonFetchSchemeNavigationParams{
 		navigable: parent_model
-		url: dom.URL{'mailto:test@example.test'}
+		url: dom.URL{value: 'mailto:test@example.test'}
 		initiator_origin: document.origin()
 		source_has_transient_activation: true
 	}) == none
@@ -757,7 +757,7 @@ fn test_non_fetch_scheme_navigation_hands_off_to_external_software_unless_sandbo
 		},
 	]
 
-	mut child_document := dom.Document.create(dom.URL{'https://example.test/frame'})
+	mut child_document := dom.Document.create(dom.URL{value: 'https://example.test/frame'})
 	child_document.set_page(unsafe { &dom.Page(page_model) })
 	mut child_host := &dom.Navigable{
 		parent_: parent_host
@@ -767,7 +767,7 @@ fn test_non_fetch_scheme_navigation_hands_off_to_external_software_unless_sandbo
 	child_model := NavigableModel.create(child_host, none)!
 	_ := attempt_to_create_a_non_fetch_scheme_document(&NonFetchSchemeNavigationParams{
 		navigable: child_model
-		url: dom.URL{'mailto:frame@example.test'}
+		url: dom.URL{value: 'mailto:frame@example.test'}
 		target_snapshot_sandboxing_flags: SandboxingFlagSet{
 			bits: u32(SandboxingFlag.sandboxed_custom_protocols)
 		}

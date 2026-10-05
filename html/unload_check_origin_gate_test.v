@@ -13,7 +13,7 @@ mut:
 
 fn unload_origin_gate_fixture(address string) !(&TraversableNavigable, &dom.Document, &WindowModel, &NavigableModel) {
 	owner := page.Page.create(1)!
-	url := dom.URL{address}
+	url := dom.URL{value: address}
 	document := create_navigation_document_for_page(url, url.origin(), none, unsafe { &dom.Page(owner) })!
 	window := unsafe { &WindowModel(document.get_window() or { return error('missing actual Window') }) }
 	native := document.navigable() or { return error('missing actual Navigable') }
@@ -29,7 +29,7 @@ fn unload_origin_gate_fixture(address string) !(&TraversableNavigable, &dom.Docu
 
 fn unload_origin_gate_entry(document &dom.Document, address string) &SessionHistoryEntry {
 	return &SessionHistoryEntry{
-		url:            dom.URL{address}
+		url:            dom.URL{value: address}
 		document_state: &DocumentState{
 			document:     document
 			document_id_: document.unique_id()

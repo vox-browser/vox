@@ -54,7 +54,7 @@ fn test_request_is_mutable_record() {
 fn test_request_classification_clone_range_and_strings() {
 	mut request := Request.create()
 	request.destination = .script
-	request.url_list = [dom.URL{'https://example.test/a'}, dom.URL{'https://example.test/b'}]
+	request.url_list = [dom.URL{value: 'https://example.test/a'}, dom.URL{value: 'https://example.test/b'}]
 	request.origin = RequestOrigin{
 		is_client: false
 		origin: dom.Origin{ value: 'https://example.test' }
@@ -85,14 +85,14 @@ fn test_request_origin_header_and_redirect_taint() {
 		is_client: false
 		origin: dom.Origin{ value: 'https://example.test' }
 	}
-	request.url_list = [dom.URL{'https://example.test/a'}]
+	request.url_list = [dom.URL{value: 'https://example.test/a'}]
 	request.referrer_policy = 'strict-origin-when-cross-origin'
 	request.add_origin_header()
 	assert request.header_list.get('Origin')? == 'https://example.test'
 	assert request.redirect_taint() == .same_origin
-	request.url_list << dom.URL{'https://other.test/b'}
+	request.url_list << dom.URL{value: 'https://other.test/b'}
 	assert request.redirect_taint() == .same_origin
-	request.url_list << dom.URL{'https://third.test/c'}
+	request.url_list << dom.URL{value: 'https://third.test/c'}
 	assert request.redirect_taint() == .cross_site
 	assert request.serialize_origin() == 'null'
 }
@@ -103,8 +103,8 @@ fn test_redirect_taint_uses_request_origin_same_site_before_cross_site() {
 		is_client: false
 		origin: dom.Origin{ value: 'https://a.example.test' }
 	}
-	request.url_list = [dom.URL{'https://b.example.test/start'},
-		dom.URL{'https://elsewhere.test/end'}]
+	request.url_list = [dom.URL{value: 'https://b.example.test/start'},
+		dom.URL{value: 'https://elsewhere.test/end'}]
 	assert request.redirect_taint() == .same_site
 }
 

@@ -13,7 +13,7 @@ mut:
 }
 
 fn source_csp_owner_window(owner &page.Page, address string) !(&dom.Document, &WindowModel) {
-	url := dom.URL{address}
+	url := dom.URL{value: address}
 	document := create_navigation_document_for_page(url, url.origin(), none, unsafe { &dom.Page(owner) })!
 	window := document.get_window() or { return error('missing actual Window') }
 	return document, unsafe { &WindowModel(window) }
@@ -76,7 +76,7 @@ fn test_source_queued_csp_violation_reads_actual_window_document_when_task_execu
 
 fn test_source_csp_global_created_before_document_targets_later_actual_window_document() {
 	owner := page.Page.create(1)!
-	url := dom.URL{'https://csp-owner.test/before-document'}
+	url := dom.URL{value: 'https://csp-owner.test/before-document'}
 	context := BrowsingContextModel.create_for_page(unsafe { &dom.Page(owner) }, none, '')
 	window := create_window_global_before_document(context, url, url.origin(), url, url.origin())
 	mut settings := window.environment_settings_.settings
@@ -102,7 +102,7 @@ fn test_source_queued_csp_violation_keeps_actual_worker_global_target_and_null_d
 	mut document, window := source_csp_owner_window(owner, 'https://csp-owner.test/outside')!
 	defer { document.finalize() }
 	mut realm := &ScriptingRealm{}
-	mut worker := WorkerGlobalScope.create(dom.URL{'https://csp-owner.test/worker.js'}, .classic, 'worker', realm)
+	mut worker := WorkerGlobalScope.create(dom.URL{value: 'https://csp-owner.test/worker.js'}, .classic, 'worker', realm)
 	defer { worker.close_a_worker() }
 	worker_settings := WorkerEnvironmentSettingsObject.setup(worker, mut realm, window.environment_settings_.settings.serialize(), highresolutiontime.unsafe_shared_current_time())
 	mut settings := worker_settings.settings

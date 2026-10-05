@@ -6,7 +6,7 @@ import streams
 import webidl
 
 fn file_reader_read_owner() (&WindowModel, &EnvironmentSettingsObject, &EventLoop) {
-	url := dom.URL{'https://file-reader-read.example.test/'}
+	url := dom.URL{value: 'https://file-reader-read.example.test/'}
 	document := &dom.Document{ url: url, origin_: url.origin() }
 	window := WindowModel.create_top_level(document, none, '') or { panic(err) }
 	mut settings := window.environment_settings_.settings
@@ -197,7 +197,7 @@ fn test_source_worker_read_operation_uses_actual_worker_realm_loop_and_null_docu
 	mut document := window.associated_document()
 	defer { document.finalize() }
 	mut realm := &ScriptingRealm{}
-	worker := WorkerGlobalScope.create(dom.URL{'https://file-reader-read.example.test/worker.js'},
+	worker := WorkerGlobalScope.create(dom.URL{value: 'https://file-reader-read.example.test/worker.js'},
 		.classic, '', realm)
 	settings := WorkerEnvironmentSettingsObject.setup(worker, mut realm,
 		window.environment_settings_.settings.serialize(), 12).settings

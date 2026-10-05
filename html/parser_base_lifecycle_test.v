@@ -13,7 +13,7 @@ mut:
 }
 
 fn source_parser_base_document(owner &page.Page, address string) !(&dom.Document, &WindowModel) {
-	url := dom.URL{address}
+	url := dom.URL{value: address}
 	document := create_navigation_document_for_page(url, url.origin(), none, unsafe { &dom.Page(owner) })!
 	window := document.get_window() or { return error('missing actual Window') }
 	return document, unsafe { &WindowModel(window) }
@@ -58,7 +58,7 @@ fn test_source_full_parser_retains_frozen_base_when_actual_readiness_handler_cha
 	mut document, window := source_parser_base_document(owner, 'https://parser-base.test/root/page.html')!
 	defer { document.finalize() }
 	observation := &SourceParserBaseObservation{}
-	changed_url := dom.URL{'https://parser-base.test/changed/document.html'}
+	changed_url := dom.URL{value: 'https://parser-base.test/changed/document.html'}
 	target := unsafe { &dom.EventTarget(document) }
 	target.add_event_listener_without_options('readystatechange', dom.IDLEventListener.create(&dom.CallbackType{
 		associated_window: document.get_window()?

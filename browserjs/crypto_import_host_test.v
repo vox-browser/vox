@@ -5,7 +5,7 @@ import dom
 import html
 
 fn import_host_fixture() (&Runtime, &CryptoHost) {
-	url := dom.URL{'https://import-binding.example/'}
+	url := dom.URL{value: 'https://import-binding.example/'}
 	mut runtime := Runtime.create()
 	mut host := CryptoHost.create(&dom.Document{ url: url, origin_: url.origin() }) or { panic(err) }
 	host.install(mut runtime) or { panic(err) }

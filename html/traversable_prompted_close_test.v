@@ -13,7 +13,7 @@ mut:
 
 fn prompted_close_fixture(address string) !(&TraversableNavigable, &dom.Document, &WindowModel) {
 	owner := page.Page.create(1)!
-	url := dom.URL{address}
+	url := dom.URL{value: address}
 	mut document := create_navigation_document_for_page(url, url.origin(), none, unsafe { &dom.Page(owner) })!
 	native_window := document.get_window() or { return error('missing actual Window') }
 	window := unsafe { &WindowModel(native_window) }

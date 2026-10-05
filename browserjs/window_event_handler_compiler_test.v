@@ -4,7 +4,7 @@ import dom
 import html
 
 fn raw_window_handler_fixture() (&Runtime, &html.EnvironmentSettingsObject, &dom.Document, &dom.EventTarget) {
-	document := html.parse_document_with_url('<!doctype html><body>raw handlers</body>', dom.URL{'https://raw-handlers.example/'})
+	document := html.parse_document_with_url('<!doctype html><body>raw handlers</body>', dom.URL{value: 'https://raw-handlers.example/'})
 	window := html.WindowModel.create_top_level(document, none, 'raw-handler-owner') or { panic(err) }
 	settings := unsafe { &html.EnvironmentSettingsObject(document.relevant_settings_object()) }
 	mut runtime := Runtime.create()

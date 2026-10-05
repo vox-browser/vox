@@ -15,7 +15,7 @@ fn test_document_policy_container_lazily_retains_one_actual_owner() {
 }
 
 fn test_document_policy_container_setter_and_navigation_keep_actual_owner_identity() {
-	mut document := Document.create(URL{'https://policy-owner.test/page'})
+	mut document := Document.create(URL{value: 'https://policy-owner.test/page'})
 	defer { document.finalize() }
 	first := &PolicyContainer{}
 	second := &PolicyContainer{}
@@ -24,7 +24,7 @@ fn test_document_policy_container_setter_and_navigation_keep_actual_owner_identi
 	document.set_policy_container(second)
 	assert voidptr(document.policy_container()) == voidptr(second)
 	mut navigation := Document.create_and_initialize(.html, 'text/html', &NavigationParams{
-		response_url:     URL{'https://policy-owner.test/navigation'}
+		response_url:     URL{value: 'https://policy-owner.test/navigation'}
 		policy_container: first
 	})!
 	defer { navigation.finalize() }
@@ -32,7 +32,7 @@ fn test_document_policy_container_setter_and_navigation_keep_actual_owner_identi
 }
 
 fn test_document_retains_complete_actual_policy_record_and_origin_identity() {
-	mut document := Document.create(URL{'https://policy-owner.test/page'})
+	mut document := Document.create(URL{value: 'https://policy-owner.test/page'})
 	defer { document.finalize() }
 	opaque := origin_create_opaque()
 	mut policy := &PolicyContainer{
@@ -71,7 +71,7 @@ fn test_document_retains_complete_actual_policy_record_and_origin_identity() {
 	assert retained.embedder_policy.report_only_reporting_endpoint == 'reported'
 	assert retained.integrity_policy.endpoints == ['enforced']
 	assert retained.report_only_integrity_policy.endpoints == ['reported']
-	policy.csp_list << SerializedCSPPolicy{ self_origin: URL{'https://policy-owner.test:444/next'}.origin() }
+	policy.csp_list << SerializedCSPPolicy{ self_origin: URL{value: 'https://policy-owner.test:444/next'}.origin() }
 	assert document.policy_container().csp_list.len == 2
 	assert document.policy_container().csp_list[1].self_origin.serialize() == 'https://policy-owner.test:444'
 }

@@ -7,7 +7,7 @@ import webgl
 import webidl
 
 fn xr_owner_fixture() (&EnvironmentSettingsObject, &EventLoop) {
-	url := dom.URL{'https://xr-binding.example/'}
+	url := dom.URL{value: 'https://xr-binding.example/'}
 	document := &dom.Document{ url: url, origin_: url.origin() }
 	_ := WindowModel.create_top_level(document, none, '') or { panic(err) }
 	settings := unsafe { &EnvironmentSettingsObject(document.relevant_settings_object()) }

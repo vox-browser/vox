@@ -82,19 +82,19 @@ fn test_parse_header_and_redirect_update() {
 fn referrer_request(policy string, destination string) &fetch.Request {
 	mut request := fetch.Request.create()
 	request.referrer_policy = policy
-	request.referrer.url = dom.URL{'https://user:secret@example.test/path?q=1#fragment'}
-	request.url_list = [dom.URL{destination}]
+	request.referrer.url = dom.URL{value: 'https://user:secret@example.test/path?q=1#fragment'}
+	request.url_list = [dom.URL{value: destination}]
 	return request
 }
 
 fn test_strip_url_removes_credentials_fragment_and_origin_data() {
 	full :=
-		strip_url_for_use_as_referrer(dom.URL{'https://user:secret@example.test/path?q=1#x'}, .no)?
+		strip_url_for_use_as_referrer(dom.URL{value: 'https://user:secret@example.test/path?q=1#x'}, .no)?
 	assert full.serialize() == 'https://example.test/path?q=1'
 	origin :=
-		strip_url_for_use_as_referrer(dom.URL{'https://user:secret@example.test/path?q=1#x'}, .yes)?
+		strip_url_for_use_as_referrer(dom.URL{value: 'https://user:secret@example.test/path?q=1#x'}, .yes)?
 	assert origin.serialize() == 'https://example.test/'
-	assert strip_url_for_use_as_referrer(dom.URL{'data:text/plain,x'}, .no) == none
+	assert strip_url_for_use_as_referrer(dom.URL{value: 'data:text/plain,x'}, .no) == none
 }
 
 fn test_determine_referrer_policy_matrix() {
@@ -113,12 +113,12 @@ fn test_client_referrer_uses_window_document_or_worker_creation_url() {
 	mut window_request := fetch.Request.create()
 	window_request.referrer_policy = 'unsafe-url'
 	window_request.client_is_window = true
-	window_request.client_document_url = dom.URL{'https://example.test/document#x'}
-	window_request.url_list = [dom.URL{'https://example.test/next'}]
+	window_request.client_document_url = dom.URL{value: 'https://example.test/document#x'}
+	window_request.url_list = [dom.URL{value: 'https://example.test/next'}]
 	assert determine_requests_referrer(window_request)?.serialize() == 'https://example.test/document'
 	mut opaque := fetch.Request.create()
 	opaque.referrer_policy = 'unsafe-url'
 	opaque.client_origin_opaque = true
-	opaque.url_list = [dom.URL{'https://example.test/'}]
+	opaque.url_list = [dom.URL{value: 'https://example.test/'}]
 	assert determine_requests_referrer(opaque) == none
 }

@@ -8,7 +8,7 @@ import webidl
 
 fn source_clone_file_list_runtime(list_constructor bool, file_constructor bool) (&Runtime, &dom.Document) {
 	mut runtime := Runtime.create()
-	document := dom.Document.create(dom.URL{'http://source-file-list-clone.example.test/'})
+	document := dom.Document.create(dom.URL{value: 'http://source-file-list-clone.example.test/'})
 	mut readable := ReadableStreamHost.create(document) or { panic(err) }
 	readable.install(mut runtime) or { panic(err) }
 	mut blobs := BlobHost.create(document) or { panic(err) }

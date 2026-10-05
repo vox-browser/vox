@@ -7,7 +7,7 @@ import url
 
 fn source_csp_header_response(target string, headers []http.Header) &Response {
 	mut response := Response.create()
-	response.url_list = [dom.URL{target}]
+	response.url_list = [dom.URL{value: target}]
 	for header in headers {
 		response.header_list.append(header)
 	}

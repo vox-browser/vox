@@ -9,7 +9,7 @@ fn test_source_blob_prototype_native_function_metadata_and_property_descriptors(
 	}
 	mut runtime := Runtime.create()
 	defer { runtime.close() }
-	url := dom.URL{'https://source-blob-metadata.example.test/'}
+	url := dom.URL{value: 'https://source-blob-metadata.example.test/'}
 	document := &dom.Document{ url: url, origin_: url.origin() }
 	mut readable := ReadableStreamHost.create(document)!
 	readable.install(mut runtime)!

@@ -6,7 +6,7 @@ import streams
 import webidl
 
 fn actual_pipe_document() &dom.Document {
-	url := dom.URL{'https://actual-pipe.example.test/'}
+	url := dom.URL{value: 'https://actual-pipe.example.test/'}
 	return &dom.Document{url: url, origin_: url.origin()}
 }
 

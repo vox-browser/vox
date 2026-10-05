@@ -44,7 +44,7 @@ fn test_native_document_fonts_are_constructed_with_the_real_owner_before_dom_ini
 		})
 	}
 	mut document :=
-		parse_browser_navigation_document('<!doctype html><style>@font-face{font-family:Example;src:url(example.ttf)}</style><p>parsed</p>', dom.URL{'https://creation.example/'}, none)
+		parse_browser_navigation_document('<!doctype html><style>@font-face{font-family:Example;src:url(example.ttf)}</style><p>parsed</p>', dom.URL{value: 'https://creation.example/'}, none)
 	assert observation.called
 	assert document.document_element() != none
 	assert observation.set == document.fonts().font_face_set_record()
@@ -59,7 +59,7 @@ fn test_navigation_reuses_only_the_initial_same_origin_window_without_changing_p
 	page := &dom.Page{}
 	group := html.BrowsingContextGroup.create(page)
 	creator :=
-		parse_browser_navigation_document('<p>creator</p>', dom.URL{'https://creation.example/creator'}, none)
+		parse_browser_navigation_document('<p>creator</p>', dom.URL{value: 'https://creation.example/creator'}, none)
 	initial := html.BrowsingContextModel.create_a_new_browsing_context_and_document(page, creator,
 		none, group)!
 	mut initial_document := unsafe { &dom.Document(initial.document) }
@@ -69,7 +69,7 @@ fn test_navigation_reuses_only_the_initial_same_origin_window_without_changing_p
 	initial_window := initial.document.get_window()?
 	initial_proxy := initial.browsing_context.window_proxy()?
 	assert webidl.promise_realm(initial_ready) != 0
-	first := html.parse_navigation_document('<style>p{color:red}</style><p>first</p>', dom.URL{'https://creation.example/first'},
+	first := html.parse_navigation_document('<style>p{color:red}</style><p>first</p>', dom.URL{value: 'https://creation.example/first'},
 		creator.origin(), initial.document)!
 	mut first_document := unsafe { &dom.Document(first) }
 	first_ready := first_document.fonts().ready()
@@ -79,7 +79,7 @@ fn test_navigation_reuses_only_the_initial_same_origin_window_without_changing_p
 	assert first_document.fonts().font_face_set_record() != initial_set
 	assert webidl.promise_realm(first_ready) == webidl.promise_realm(initial_ready)
 	assert voidptr(initial_document.fonts().ready()) == voidptr(initial_ready)
-	second := html.parse_navigation_document('<p>second</p>', dom.URL{'https://creation.example/second'},
+	second := html.parse_navigation_document('<p>second</p>', dom.URL{value: 'https://creation.example/second'},
 		creator.origin(), first)!
 	mut second_document := unsafe { &dom.Document(second) }
 	assert voidptr(second.get_window()?) != voidptr(initial_window)
@@ -95,11 +95,11 @@ fn test_navigation_reuses_only_the_initial_same_origin_window_without_changing_p
 fn test_initial_cross_origin_navigation_gets_a_new_font_owner_and_native_wrapper_keeps_ready_identity() {
 	$if !darwin { return }
 	first :=
-		parse_browser_navigation_document('<p>first</p>', dom.URL{'https://creation.example/'}, none)
+		parse_browser_navigation_document('<p>first</p>', dom.URL{value: 'https://creation.example/'}, none)
 	mut first_document := unsafe { &dom.Document(first) }
 	first_document.set_is_initial_about_blank(true)
-	second := html.parse_navigation_document('<style>p{color:blue}</style><p>second</p>', dom.URL{'https://elsewhere.example/'},
-		dom.URL{'https://elsewhere.example/'}.origin(), first)!
+	second := html.parse_navigation_document('<style>p{color:blue}</style><p>second</p>', dom.URL{value: 'https://elsewhere.example/'},
+		dom.URL{value: 'https://elsewhere.example/'}.origin(), first)!
 	mut second_document := unsafe { &dom.Document(second) }
 	assert first.relevant_settings_object() != second.relevant_settings_object()
 	ready := second_document.fonts().ready()
@@ -114,7 +114,7 @@ fn test_initial_cross_origin_navigation_gets_a_new_font_owner_and_native_wrapper
 }
 
 fn test_standalone_late_window_attachment_preserves_an_already_exposed_ready_capability() {
-	mut document := dom.Document.create(dom.URL{'https://creation.example/standalone'})
+	mut document := dom.Document.create(dom.URL{value: 'https://creation.example/standalone'})
 	ready := document.fonts().ready()
 	set := document.fonts().font_face_set_record()
 	assert webidl.promise_realm(ready) == 0

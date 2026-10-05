@@ -11,7 +11,7 @@ mut:
 
 fn raw_handler_scripting_document(address string, markup string) !(&page.Page, &dom.Document) {
 	owner := page.Page.create(1)!
-	url := dom.URL{address}
+	url := dom.URL{value: address}
 	mut document := create_navigation_document_for_page(url, url.origin(), none, unsafe { &dom.Page(owner) })!
 	document.set_document_type(.html)
 	parse_html_from_a_string(document, markup)

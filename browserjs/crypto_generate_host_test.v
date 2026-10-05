@@ -5,7 +5,7 @@ import dom
 import html
 
 fn generation_host_fixture() (&Runtime, &html.EventLoop) {
-	url := dom.URL{'https://generation-binding.example/'}
+	url := dom.URL{value: 'https://generation-binding.example/'}
 	mut runtime := Runtime.create()
 	mut host := CryptoHost.create(&dom.Document{ url: url, origin_: url.origin() }) or { panic(err) }
 	host.install(mut runtime) or { panic(err) }

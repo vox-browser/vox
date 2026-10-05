@@ -6,7 +6,7 @@ import streams
 import webidl
 
 fn tee_actual_document() &dom.Document {
-	url := dom.URL{'https://tee-values.example.test/'}
+	url := dom.URL{value: 'https://tee-values.example.test/'}
 	return &dom.Document{url: url, origin_: url.origin()}
 }
 

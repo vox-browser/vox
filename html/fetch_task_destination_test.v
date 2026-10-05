@@ -29,7 +29,7 @@ fn html_pending_fetch_host(state &HTMLFetchTaskObservation) fetch.FetchHost {
 }
 
 fn html_fetch_settings() (&EnvironmentSettingsObject, &EventLoop) {
-	mut document := dom.Document.create(dom.URL{'https://example.test/fetch-owner'})
+	mut document := dom.Document.create(dom.URL{value: 'https://example.test/fetch-owner'})
 	document.set_origin(document.url.origin())
 	window := WindowModel.create_top_level(document, none, 'fetch-owner') or { panic(err) }
 	mut realm := &ScriptingRealm{}
@@ -43,7 +43,7 @@ fn html_fetch_settings() (&EnvironmentSettingsObject, &EventLoop) {
 fn start_html_pending_fetch(settings &EnvironmentSettingsObject, state &HTMLFetchTaskObservation) &fetch.FetchController {
 	mut request := fetch.Request.create()
 	request.client = settings
-	request.url_list = [dom.URL{'https://example.test/pending'}]
+	request.url_list = [dom.URL{value: 'https://example.test/pending'}]
 	request.mode = .same_origin
 	request.cache_mode = .no_store
 	host := html_pending_fetch_host(state)
@@ -112,7 +112,7 @@ fn test_stopping_fetch_removes_the_actual_queued_networking_callback() {
 fn test_worker_fetch_callbacks_stay_on_the_worker_event_loop() {
 	outside, window_loop := html_fetch_settings()
 	mut realm := &ScriptingRealm{}
-	scope := WorkerGlobalScope.create(dom.URL{'https://example.test/worker.js'}, .classic, '', realm)
+	scope := WorkerGlobalScope.create(dom.URL{value: 'https://example.test/worker.js'}, .classic, '', realm)
 	worker := WorkerEnvironmentSettingsObject.setup(scope, mut realm, outside.serialize(), 0)
 	settings := worker.settings
 	assert voidptr(settings.responsible_event_loop()) != voidptr(window_loop)

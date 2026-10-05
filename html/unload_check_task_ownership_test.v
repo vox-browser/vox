@@ -14,7 +14,7 @@ mut:
 
 fn unload_check_owner_document(address string) !(&dom.Document, &WindowModel) {
 	owner := page.Page.create(1)!
-	url := dom.URL{address}
+	url := dom.URL{value: address}
 	document := create_navigation_document_for_page(url, url.origin(), none, unsafe { &dom.Page(owner) })!
 	native := document.get_window() or { return error('missing actual Window') }
 	return document, unsafe { &WindowModel(native) }
@@ -60,7 +60,7 @@ fn test_unload_check_task_retains_document_but_stays_runnable_after_actual_navig
 	task := queue.last_added_task()?
 	assert task.source() == .navigation_and_traversal
 	assert task.document() == none && task.is_runnable()
-	url := dom.URL{'https://unload-check-owner.example/replacement'}
+	url := dom.URL{value: 'https://unload-check-owner.example/replacement'}
 	mut replacement := create_navigation_document(url, url.origin(), original)!
 	defer {
 		original.finalize()

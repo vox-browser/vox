@@ -6,7 +6,7 @@ import webcrypto
 import webidl
 
 fn source_platform_clone_fixture() (&Runtime, &html.EnvironmentSettingsObject) {
-	document := html.parse_document_with_url('<!doctype html><body>clone</body>', dom.URL{'https://clone-platform.example/'})
+	document := html.parse_document_with_url('<!doctype html><body>clone</body>', dom.URL{value: 'https://clone-platform.example/'})
 	_ := html.WindowModel.create_top_level(document, none, 'clone-platform') or { panic(err) }
 	settings := unsafe { &html.EnvironmentSettingsObject(document.relevant_settings_object()) }
 	mut runtime := Runtime.create()

@@ -48,7 +48,7 @@ fn removal_test_frame(timestamp f64, keyframe bool) DemuxedCodedFrame {
 
 fn test_source_buffer_remove_discards_the_range_and_decoding_dependants() {
 	mut source := MediaSource.create()
-	mut media := html.HTMLMediaElement.create(none, dom.URL{'https://example.test/'})
+	mut media := html.HTMLMediaElement.create(none, dom.URL{value: 'https://example.test/'})
 	media.set_src_object(source.as_media_provider())!
 	run_media_source_tasks()
 	source.set_duration(20)!
@@ -95,7 +95,7 @@ fn test_source_buffer_remove_discards_the_range_and_decoding_dependants() {
 
 fn test_source_buffer_remove_validates_the_requested_range_and_state() {
 	mut source := MediaSource.create()
-	mut media := html.HTMLMediaElement.create(none, dom.URL{'https://example.test/'})
+	mut media := html.HTMLMediaElement.create(none, dom.URL{value: 'https://example.test/'})
 	media.set_src_object(source.as_media_provider())!
 	run_media_source_tasks()
 	mut buffer := source.add_source_buffer('video/webm; codecs="vp9"')!

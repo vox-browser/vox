@@ -9,7 +9,7 @@ fn test_source_image_actual_number_conversion_order_modulo_and_original_exceptio
 		return
 	}
 	mut runtime := browserjs.Runtime.create()
-	mut document := dom.Document.create(dom.URL{'https://source-native-image.example.test/'})
+	mut document := dom.Document.create(dom.URL{value: 'https://source-native-image.example.test/'})
 	defer {
 		runtime.close()
 		document.finalize()

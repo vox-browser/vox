@@ -10,7 +10,7 @@ mut:
 }
 
 fn window_document_identity_fixture(address string, owner &page.Page) !(&dom.Document, &WindowModel) {
-	url := dom.URL{address}
+	url := dom.URL{value: address}
 	document := create_navigation_document_for_page(url, url.origin(), none, unsafe { &dom.Page(owner) })!
 	native := document.get_window() or { return error('missing actual Window') }
 	window := unsafe { &WindowModel(native) }
@@ -83,7 +83,7 @@ fn test_window_document_native_temporary_svg_document_swap_restores_owner_and_ac
 	mut original, mut window := window_document_identity_fixture('https://window-document.example/original', owner)!
 	mut native := original.get_window()?
 	settings := window.environment_settings_.settings
-	mut svg_document := dom.Document.create_with_page_and_relevant_global(original.page(), dom.URL{'https://window-document.example/image.svg'}, native, document_lifecycle_hook(window), dom.DocumentTemporaryExecutionContextHook{
+	mut svg_document := dom.Document.create_with_page_and_relevant_global(original.page(), dom.URL{value: 'https://window-document.example/image.svg'}, native, document_lifecycle_hook(window), dom.DocumentTemporaryExecutionContextHook{
 		target: voidptr(window)
 		begin:  document_begin_temporary_execution_context
 		end:    document_end_temporary_execution_context
@@ -121,7 +121,7 @@ fn test_window_document_native_temporary_svg_document_swap_restores_owner_and_ac
 
 fn test_window_document_settings_support_source_global_creation_before_document_association() {
 	owner := page.Page.create(1)!
-	url := dom.URL{'https://window-document.example/creation'}
+	url := dom.URL{value: 'https://window-document.example/creation'}
 	context := BrowsingContextModel.create_for_page(unsafe { &dom.Page(owner) }, none, 'pre-document')
 	window := create_window_global_before_document(context, url, url.origin(), url, url.origin())
 	settings := window.environment_settings_.settings

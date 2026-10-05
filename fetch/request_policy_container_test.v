@@ -7,7 +7,7 @@ struct PolicyContainerTestClient {
 }
 
 fn (_ &PolicyContainerTestClient) fetch_request_client_api_base_url() dom.URL {
-	return dom.URL{'https://client.test/page'}
+	return dom.URL{value: 'https://client.test/page'}
 }
 
 fn (client &PolicyContainerTestClient) fetch_request_client_policy_container() RequestPolicyContainer {
@@ -31,11 +31,11 @@ fn (_ &PolicyContainerTestClient) fetch_request_client_origin() dom.Origin {
 }
 
 fn (_ &PolicyContainerTestClient) fetch_request_client_document_url() ?dom.URL {
-	return dom.URL{'https://client.test/page'}
+	return dom.URL{value: 'https://client.test/page'}
 }
 
 fn (_ &PolicyContainerTestClient) fetch_request_client_creation_url() dom.URL {
-	return dom.URL{'https://client.test/page'}
+	return dom.URL{value: 'https://client.test/page'}
 }
 
 fn (_ &PolicyContainerTestClient) fetch_request_client_embedder_policy_credentialless() bool {
@@ -65,7 +65,7 @@ fn test_an_empty_request_referrer_policy_takes_the_client_policy_container_polic
 	request.set_client(&PolicyContainerTestClient{
 		referrer_policy: 'no-referrer'
 	})
-	request.set_url(dom.URL{'https://client.test/resource'})
+	request.set_url(dom.URL{value: 'https://client.test/resource'})
 	populate_request_from_client(mut request)
 	resolved := request.resolved_policy_container or { panic('policy container was not resolved') }
 	assert resolved.referrer_policy == 'no-referrer'
@@ -78,7 +78,7 @@ fn test_an_empty_request_referrer_policy_takes_the_client_policy_container_polic
 
 fn test_a_request_without_a_client_gets_a_new_policy_container() {
 	mut request := Request.create()
-	request.set_url(dom.URL{'https://client.test/resource'})
+	request.set_url(dom.URL{value: 'https://client.test/resource'})
 	request.origin = RequestOrigin{
 		is_client: false
 		origin: dom.Origin{

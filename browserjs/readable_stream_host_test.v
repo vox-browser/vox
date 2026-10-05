@@ -29,7 +29,7 @@ fn test_native_component_stream_wrapper_reuses_exact_model_and_engine_identity()
 }
 
 fn native_readable_document() &dom.Document {
-	url := dom.URL{'https://native-readable.example.test/'}
+	url := dom.URL{value: 'https://native-readable.example.test/'}
 	return &dom.Document{url: url, origin_: url.origin()}
 }
 

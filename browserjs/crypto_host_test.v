@@ -4,7 +4,7 @@ module browserjs
 import dom
 
 fn native_crypto_binding_document(address string) &dom.Document {
-	url := dom.URL{address}
+	url := dom.URL{value: address}
 	return &dom.Document{ url: url, origin_: url.origin() }
 }
 
@@ -89,7 +89,7 @@ fn test_native_random_binding_does_not_iterate_arguments_or_consult_author_view_
 	}
 	mut runtime := Runtime.create()
 	defer { runtime.close() }
-	url := dom.URL{'https://random-intrinsics.example/'}
+	url := dom.URL{value: 'https://random-intrinsics.example/'}
 	mut host := CryptoHost.create(&dom.Document{ url: url, origin_: url.origin() })!
 	host.install(mut runtime)!
 	assert runtime.evaluate_host(r'(function(){

@@ -5,7 +5,7 @@ import html
 import streams
 
 fn native_transform_document() &dom.Document {
-	url := dom.URL{'https://native-transform.example.test/document.html'}
+	url := dom.URL{value: 'https://native-transform.example.test/document.html'}
 	return &dom.Document{url: url, origin_: url.origin()}
 }
 

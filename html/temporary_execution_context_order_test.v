@@ -10,7 +10,7 @@ mut:
 }
 
 fn temporary_context_order_fixture() !(&EnvironmentSettingsObject, &ScriptingRealm, &EventLoop) {
-	url := dom.URL{'https://temporary-context.example/'}
+	url := dom.URL{value: 'https://temporary-context.example/'}
 	document := create_navigation_document(url, url.origin(), none)!
 	settings := unsafe { &EnvironmentSettingsObject(document.relevant_settings_object()) }
 	return settings, settings.realm(), unsafe { &EventLoop(settings.responsible_event_loop()) }

@@ -7,7 +7,7 @@ import page
 
 fn script_gate_owner_document(value string) !(&page.Page, &dom.Document) {
 	owner := page.Page.create(1)!
-	document := parse_browser_navigation_document_for_page_with_response_time('<!doctype html><div id="result">initial</div>', dom.URL{value}, none, none, unsafe { &dom.Page(owner) }, 123456700000)
+	document := parse_browser_navigation_document_for_page_with_response_time('<!doctype html><div id="result">initial</div>', dom.URL{value: value}, none, none, unsafe { &dom.Page(owner) }, 123456700000)
 	return owner, document
 }
 
@@ -100,7 +100,7 @@ fn test_compact_script_gate_preserves_exact_source_webui_preference_exemption() 
 	mut messages := []string{}
 	run_document_javascript(document, document.url.serialize(), ['result.textContent="internal script";'], runtime, mut messages)
 	assert document.get_element_by_id('result')?.as_node().text_content()? == 'internal script' && messages == []
-	document.set_url(dom.URL{'about:settings#'})
+	document.set_url(dom.URL{value: 'about:settings#'})
 	run_document_javascript(document, document.url.serialize(), ['globalThis.fragmentExecuted=1;'], runtime, mut messages)
 	assert runtime.evaluate_host('typeof fragmentExecuted')! == 'undefined'
 }

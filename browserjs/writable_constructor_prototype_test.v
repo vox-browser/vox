@@ -6,7 +6,7 @@ fn test_native_writable_factories_get_actual_new_target_prototype_once_before_co
 	$if !darwin { return }
 	mut runtime := Runtime.create()
 	defer { runtime.close() }
-	url := dom.URL{'https://writable-prototype.example.test/'}
+	url := dom.URL{value: 'https://writable-prototype.example.test/'}
 	mut host := WritableStreamHost.create(&dom.Document{url: url, origin_: url.origin()})!
 	host.install(mut runtime)!
 	assert runtime.evaluate_host(r'{

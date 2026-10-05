@@ -4,7 +4,7 @@ import dom
 import html
 
 fn native_writable_document() &dom.Document {
-	url := dom.URL{'https://native-writable.example.test/document.html'}
+	url := dom.URL{value: 'https://native-writable.example.test/document.html'}
 	return &dom.Document{url: url, origin_: url.origin()}
 }
 

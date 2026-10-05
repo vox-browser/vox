@@ -17,7 +17,7 @@ fn source_initialization_response(url dom.URL, enforce string, report string) &f
 
 fn source_initialization_document(address string, enforce string, report string) !(&dom.Document, &WindowModel) {
 	owner := page.Page.create(1)!
-	url := dom.URL{address}
+	url := dom.URL{value: address}
 	mut document := create_navigation_document_for_page(url, url.origin(), none, unsafe { &dom.Page(owner) })!
 	document.set_document_type(.html)
 	document.populate_with_html_head_and_body()!
@@ -84,7 +84,7 @@ fn test_source_document_initialization_uses_own_ordered_policies_during_window_r
 }
 
 fn test_source_document_initialization_reads_actual_container_without_window_settings() {
-	mut document := dom.Document.create(dom.URL{'https://standalone-initialization-policy.test/page'})
+	mut document := dom.Document.create(dom.URL{value: 'https://standalone-initialization-policy.test/page'})
 	defer { document.finalize() }
 	assert document.relevant_settings_object() == unsafe { nil }
 	install_document_csp_hook(document)

@@ -29,7 +29,7 @@ fn test_native_navigation_page_exists_during_font_and_dom_construction_before_pa
 			return css.css_style_computer_for(document).font_face_set_
 		})
 	}
-	document := parse_browser_navigation_document_for_page_with_response_time('<!doctype html><base href="../assets/"><p>created</p>', dom.URL{'https://final.example/path/page'}, none, none, unsafe { &dom.Page(owner) }, 123456700000)
+	document := parse_browser_navigation_document_for_page_with_response_time('<!doctype html><base href="../assets/"><p>created</p>', dom.URL{value: 'https://final.example/path/page'}, none, none, unsafe { &dom.Page(owner) }, 123456700000)
 	assert calls.calls == 1
 	assert document.base_url().serialize() == 'https://final.example/assets/'
 	assert document.url.serialize() == 'https://final.example/path/page'

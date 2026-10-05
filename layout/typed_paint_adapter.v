@@ -1457,7 +1457,7 @@ fn computed_background_image_layers(element &dom.Element, computed &css.Computed
 		if image := effective_item.as_image() {
 			source := image.url_.url()
 			resolved_url = if base := base_url {
-				if parsed := dom.dom_url_parse(source, dom.URL{base}, '') {
+				if parsed := dom.dom_url_parse(source, dom.URL{value: base}, '') {
 					parsed.to_string()
 				} else {
 					source
@@ -1537,7 +1537,7 @@ fn css_mask_image_for_box(element &dom.Element, computed &css.ComputedProperties
 		}
 		source := image.url_.url()
 		resolved_url := if base := base_url {
-			if parsed := dom.dom_url_parse(source, dom.URL{base}, '') {
+			if parsed := dom.dom_url_parse(source, dom.URL{value: base}, '') {
 				parsed.to_string()
 			} else {
 				source

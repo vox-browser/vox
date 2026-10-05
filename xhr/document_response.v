@@ -18,7 +18,7 @@ fn (mut request XMLHttpRequest) populate_document_response() {
 	mime := request.get_final_mime_type()
 	if !mime.is_html() && !mime.is_xml() { return }
 	if request.response_type_ == .empty && mime.is_html() { return }
-	response_url := dom.URL{request.response_.url}
+	response_url := dom.URL{value: request.response_.url}
 	mut charset := request.get_final_encoding()
 	mut document := if mime.is_html() {
 		dom.Document.create(response_url)
@@ -57,7 +57,7 @@ fn (mut request XMLHttpRequest) populate_document_response() {
 	document.set_encoding(?string(resolved_charset))
 	document.set_content_type(mime.serialized())
 	document.set_url(response_url)
-	document.set_origin(request.global_object_.origin or { dom.URL{request.base_url}.origin() })
+	document.set_origin(request.global_object_.origin or { dom.URL{value: request.base_url}.origin() })
 	request.response_cache = XHRResponse{
 		type_:         .document
 		document:      document

@@ -7,7 +7,7 @@ import os
 
 fn native_font_event_fixture() (&Runtime, &FontFaceHost, &html.EventLoop) {
 	document :=
-		html.parse_document_with_url('<!doctype html><body>font events</body>', dom.URL{'https://font-events.example/'})
+		html.parse_document_with_url('<!doctype html><body>font events</body>', dom.URL{value: 'https://font-events.example/'})
 	_ = html.WindowModel.create_top_level(document, none, 'font-events') or { panic(err) }
 	mut runtime := Runtime.create()
 	runtime.evaluate_host('globalThis.document={}') or { panic(err) }

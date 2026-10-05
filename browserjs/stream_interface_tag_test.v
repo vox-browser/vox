@@ -6,7 +6,7 @@ fn test_native_stream_interface_tags_inherit_source_prototypes_and_original_gett
 	$if !darwin { return }
 	mut runtime := Runtime.create()
 	defer { runtime.close() }
-	url := dom.URL{'https://native-stream-tag.example.test/'}
+	url := dom.URL{value: 'https://native-stream-tag.example.test/'}
 	document := &dom.Document{url: url, origin_: url.origin()}
 	mut readable := ReadableStreamHost.create(document)!
 	readable.install(mut runtime)!

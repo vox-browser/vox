@@ -9,7 +9,7 @@ import url as liburl
 
 fn source_blob_partition_document(address string, origin dom.Origin) !(&dom.Document, &WindowModel) {
 	owner := page.Page.create(1)!
-	mut document := create_navigation_document_for_page(dom.URL{address}, origin, none, unsafe { &dom.Page(owner) })!
+	mut document := create_navigation_document_for_page(dom.URL{value: address}, origin, none, unsafe { &dom.Page(owner) })!
 	native := document.get_window() or { return error('missing actual Blob partition Window') }
 	return document, unsafe { &WindowModel(native) }
 }
@@ -65,9 +65,9 @@ fn test_source_blob_partition_uses_non_storage_file_origins() {
 }
 
 fn test_source_blob_partition_selects_actual_settings_or_live_creation_url() {
-	address := dom.URL{'https://blob-partition-tuple.test:8443/creator'}
+	address := dom.URL{value: 'https://blob-partition-tuple.test:8443/creator'}
 	mut document, mut window := source_blob_partition_document(address.serialize(), address.origin())!
-	replacement_address := dom.URL{'https://blob-partition-replacement.test:9443/page'}
+	replacement_address := dom.URL{value: 'https://blob-partition-replacement.test:9443/page'}
 	mut replacement, _ := source_blob_partition_document(replacement_address.serialize(), replacement_address.origin())!
 	defer {
 		window.set_associated_document(document)
@@ -81,9 +81,9 @@ fn test_source_blob_partition_selects_actual_settings_or_live_creation_url() {
 	entry := domurl.parse(value, none, none)?.blob_url_entry()?
 	mut environment := Environment.create('actual-base-environment', address, none, none, none)
 	assert fileapi.check_for_same_partition_blob_url_usage(entry, environment)
-	environment.creation_url = dom.URL{'https://blob-partition-tuple.test:9443/creator'}
+	environment.creation_url = dom.URL{value: 'https://blob-partition-tuple.test:9443/creator'}
 	assert !fileapi.check_for_same_partition_blob_url_usage(entry, environment)
-	environment.creation_url = dom.URL{'https://different-blob-partition.test:8443/creator'}
+	environment.creation_url = dom.URL{value: 'https://different-blob-partition.test:8443/creator'}
 	assert !fileapi.check_for_same_partition_blob_url_usage(entry, environment)
 	mut settings_environment := settings.environment()
 	settings_environment.creation_url = environment.creation_url
@@ -99,9 +99,9 @@ fn test_source_blob_partition_selects_actual_settings_or_live_creation_url() {
 }
 
 fn test_source_blob_url_revoke_uses_current_settings_and_source_fragment_serialization() {
-	address := dom.URL{'https://blob-revoke-owner.test:8443/page'}
+	address := dom.URL{value: 'https://blob-revoke-owner.test:8443/page'}
 	mut document, window := source_blob_partition_document(address.serialize(), address.origin())!
-	mut other, other_window := source_blob_partition_document('https://blob-revoke-owner.test:9443/page', dom.URL{'https://blob-revoke-owner.test:9443/page'}.origin())!
+	mut other, other_window := source_blob_partition_document('https://blob-revoke-owner.test:9443/page', dom.URL{value: 'https://blob-revoke-owner.test:9443/page'}.origin())!
 	defer { document.finalize(); other.finalize() }
 	settings := window.environment_settings_.settings
 	mut realm := unsafe { &ScriptingRealm(settings.realm()) }

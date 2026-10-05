@@ -6,7 +6,7 @@ import highresolutiontime
 
 fn native_event_binding_fixture() (&Runtime, &html.EnvironmentSettingsObject) {
 	document :=
-		html.parse_document_with_url('<!doctype html><body>events</body>', dom.URL{'https://native-events.example/'})
+		html.parse_document_with_url('<!doctype html><body>events</body>', dom.URL{value: 'https://native-events.example/'})
 	mut owner_document := unsafe { &dom.Document(document) }
 	owner_document.load_timing_info.navigation_start_time = highresolutiontime.unsafe_shared_current_time()
 	_ = html.WindowModel.create_top_level(document, none, 'native-events') or { panic(err) }

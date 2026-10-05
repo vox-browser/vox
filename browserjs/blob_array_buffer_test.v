@@ -18,7 +18,7 @@ fn test_source_blob_array_buffer_fulfillment_copies_into_a_distinct_actual_engin
 	}
 	mut runtime := Runtime.create()
 	defer { runtime.close() }
-	url := dom.URL{'https://source-blob-array-buffer.example.test/'}
+	url := dom.URL{value: 'https://source-blob-array-buffer.example.test/'}
 	document := &dom.Document{ url: url, origin_: url.origin() }
 	mut host := ReadableStreamHost.create(document)!
 	host.install(mut runtime)!

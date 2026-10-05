@@ -30,7 +30,7 @@ fn xhr_deferred_host(state &XHRTransportObservation) &fetch.FetchHost {
 }
 
 fn xhr_settings() (&html.EnvironmentSettingsObject, &html.EventLoop) {
-	mut document := dom.Document.create(dom.URL{'https://example.test/xhr-owner'})
+	mut document := dom.Document.create(dom.URL{value: 'https://example.test/xhr-owner'})
 	document.set_origin(document.url.origin())
 	window := html.WindowModel.create_top_level(document, none, 'xhr-owner') or { panic(err) }
 	mut realm := &html.ScriptingRealm{}

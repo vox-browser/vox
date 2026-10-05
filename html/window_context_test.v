@@ -13,7 +13,7 @@ fn unloading_cleanup_websocket_disappears() bool {
 }
 
 fn window_test_document(url string) &dom.Document {
-	parsed := dom.URL{url}
+	parsed := dom.URL{value: url}
 	return &dom.Document{
 		url:     parsed
 		origin_: parsed.origin()
@@ -207,10 +207,10 @@ fn test_new_browsing_context_propagates_embedder_sandbox_flags() {
 }
 
 fn test_window_proxy_indexed_and_cross_origin_access() {
-	mut top_document := dom.Document.create(dom.URL{'https://top.test/'})
+	mut top_document := dom.Document.create(dom.URL{value: 'https://top.test/'})
 	top_document.set_origin(top_document.url.origin())
 	mut top := WindowModel.create_top_level(top_document, none, 'top')!
-	mut child_document := dom.Document.create(dom.URL{'https://child.test/'})
+	mut child_document := dom.Document.create(dom.URL{value: 'https://child.test/'})
 	child_document.set_origin(child_document.url.origin())
 	child_context := BrowsingContextModel.create(child_document, top.browsing_context(),
 		'childFrame')

@@ -14,7 +14,7 @@ mut:
 
 fn select_picker_owner_document(address string, markup string) !(&dom.Document, &WindowModel) {
 	owner := page.Page.create(1)!
-	url := dom.URL{address}
+	url := dom.URL{value: address}
 	mut document := create_navigation_document_for_page(url, url.origin(), none, unsafe { &dom.Page(owner) })!
 	document.set_document_type(.html)
 	parse_html_from_a_string(document, markup)
@@ -76,7 +76,7 @@ fn test_select_picker_source_error_order_origin_gate_and_non_rendered_fixme() {
 	mut model := select_picker_owner_model(document)!
 	mut element := document.get_element_by_id('select')?
 	mut settings := window.environment_settings_.settings
-	settings.environment_.top_level_origin = dom.URL{'https://foreign-select-top.example/'}.origin()
+	settings.environment_.top_level_origin = dom.URL{value: 'https://foreign-select-top.example/'}.origin()
 	element.set_attribute_value('disabled', '')
 	mut rejection := ''
 	model.show_picker() or { rejection = err.msg() }
@@ -106,7 +106,7 @@ fn test_select_picker_adoption_and_trusted_activation_behavior_use_actual_curren
 	}
 	mut model := select_picker_owner_model(original)!
 	mut original_settings := original_window.environment_settings_.settings
-	original_settings.environment_.top_level_origin = dom.URL{'https://foreign-original-select-top.example/'}.origin()
+	original_settings.environment_.top_level_origin = dom.URL{value: 'https://foreign-original-select-top.example/'}.origin()
 	select_picker_owner_activate(original)
 	mut rejection := ''
 	model.show_picker() or { rejection = err.msg() }

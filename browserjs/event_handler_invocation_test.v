@@ -5,7 +5,7 @@ import html
 
 fn native_handler_fixture() (&Runtime, &html.EnvironmentSettingsObject, &dom.EventTarget) {
 	document := html.parse_document_with_url('<!doctype html><body>handlers</body>',
-		dom.URL{'https://native-handlers.example/'})
+		dom.URL{value: 'https://native-handlers.example/'})
 	window := html.WindowModel.create_top_level(document, none, 'native-handlers') or { panic(err) }
 	settings := unsafe { &html.EnvironmentSettingsObject(document.relevant_settings_object()) }
 	mut runtime := Runtime.create()

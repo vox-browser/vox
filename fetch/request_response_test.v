@@ -53,7 +53,7 @@ fn (_ &ConstructionTestClient) fetch_request_client_cross_origin_isolated_capabi
 }
 
 fn test_request_object_constructor_guards_and_getters() {
-	object := RequestObject.construct(RequestInput{ url: dom.URL{'https://example.test/data'} }, RequestInit{
+	object := RequestObject.construct(RequestInput{ url: dom.URL{value: 'https://example.test/data'} }, RequestInit{
 		method: 'post'
 		body: BodyInit{
 			kind: .string_
@@ -73,15 +73,15 @@ fn test_request_object_constructor_guards_and_getters() {
 
 fn test_request_wrappable_constructor_entry_points_use_relevant_settings() {
 	client := &ConstructionTestClient{
-		base_url: dom.URL{'https://settings.test/base/'}
+		base_url: dom.URL{value: 'https://settings.test/base/'}
 		origin_: dom.Origin{ value: 'https://settings.test' }
 	}
 	constructed := Request.create_for_constructor(RequestInput{
-		url: dom.URL{'https://example.test/data'}
+		url: dom.URL{value: 'https://example.test/data'}
 	}, RequestInit{})!
 	assert constructed.url() == 'https://example.test/data'
 	with_settings := Request.create_with_settings(client, RequestInput{
-		url: dom.URL{'https://example.test/data'}
+		url: dom.URL{value: 'https://example.test/data'}
 	}, RequestInit{
 		referrer: '../source'
 	})!
@@ -90,12 +90,12 @@ fn test_request_wrappable_constructor_entry_points_use_relevant_settings() {
 }
 
 fn test_request_object_rejects_invalid_combinations() {
-	if _ := RequestObject.construct(RequestInput{ url: dom.URL{'https://example.test/'} }, RequestInit{
+	if _ := RequestObject.construct(RequestInput{ url: dom.URL{value: 'https://example.test/'} }, RequestInit{
 		method: 'TRACE'
 	}) {
 		assert false
 	}
-	if _ := RequestObject.construct(RequestInput{ url: dom.URL{'https://example.test/'} }, RequestInit{
+	if _ := RequestObject.construct(RequestInput{ url: dom.URL{value: 'https://example.test/'} }, RequestInit{
 		method: 'GET'
 		body: BodyInit{
 			kind: .string_
@@ -104,18 +104,18 @@ fn test_request_object_rejects_invalid_combinations() {
 	}) {
 		assert false
 	}
-	if _ := RequestObject.construct(RequestInput{ url: dom.URL{'https://example.test/'} }, RequestInit{
+	if _ := RequestObject.construct(RequestInput{ url: dom.URL{value: 'https://example.test/'} }, RequestInit{
 		cache: .only_if_cached
 		mode: .cors
 	}) {
 		assert false
 	}
-	if _ := RequestObject.construct(RequestInput{ url: dom.URL{'https://example.test/'} }, RequestInit{
+	if _ := RequestObject.construct(RequestInput{ url: dom.URL{value: 'https://example.test/'} }, RequestInit{
 		method: 'G\tET'
 	}) {
 		assert false
 	}
-	if _ := RequestObject.construct(RequestInput{ url: dom.URL{'https://example.test/'} }, RequestInit{
+	if _ := RequestObject.construct(RequestInput{ url: dom.URL{value: 'https://example.test/'} }, RequestInit{
 		mode: .no_cors
 		body: BodyInit{
 			kind: .readable_stream
@@ -128,13 +128,13 @@ fn test_request_object_rejects_invalid_combinations() {
 
 fn test_request_constructor_fallbacks_filtering_and_clone_body_independence() {
 	object := RequestObject.construct(RequestInput{
-		url: dom.URL{'https://example.test/data'}
+		url: dom.URL{value: 'https://example.test/data'}
 	}, RequestInit{})!
 	assert object.mode() == .cors
 	assert object.internal_request().unsafe_request
 	assert object.internal_request().initiator_type? == .fetch
 	with_headers := RequestObject.construct(RequestInput{
-		url: dom.URL{'https://example.test/data'}
+		url: dom.URL{value: 'https://example.test/data'}
 	}, RequestInit{
 		headers: [HeaderPair{ name: 'Cookie', value: 'secret' },
 			HeaderPair{ name: 'X-Visible', value: 'yes' }]
@@ -142,13 +142,13 @@ fn test_request_constructor_fallbacks_filtering_and_clone_body_independence() {
 	assert !with_headers.headers().has('Cookie')!
 	assert with_headers.headers().get('X-Visible')? == 'yes'
 	cross_origin_referrer := RequestObject.construct(RequestInput{
-		url: dom.URL{'https://example.test/data'}
+		url: dom.URL{value: 'https://example.test/data'}
 	}, RequestInit{
 		referrer: 'https://other.test/source'
 	})!
 	assert cross_origin_referrer.referrer() == 'about:client'
 	with_body := RequestObject.construct(RequestInput{
-		url: dom.URL{'https://example.test/data'}
+		url: dom.URL{value: 'https://example.test/data'}
 	}, RequestInit{
 		method: 'POST'
 		body: BodyInit{
@@ -166,7 +166,7 @@ fn test_request_constructor_fallbacks_filtering_and_clone_body_independence() {
 
 fn test_request_constructor_copies_only_upstream_fields_and_uses_relevant_settings() {
 	source := RequestObject.construct(RequestInput{
-		url: dom.URL{'https://input.test/data'}
+		url: dom.URL{value: 'https://input.test/data'}
 	}, RequestInit{
 		method: 'POST'
 		body: BodyInit{ kind: .string_, text: 'payload' }
@@ -178,7 +178,7 @@ fn test_request_constructor_copies_only_upstream_fields_and_uses_relevant_settin
 	source_request.redirect_count = 7
 	source_request.done = true
 	client := &ConstructionTestClient{
-		base_url: dom.URL{'https://realm.test/base/'}
+		base_url: dom.URL{value: 'https://realm.test/base/'}
 		origin_: dom.Origin{ value: 'https://realm.test' }
 	}
 	copy := RequestObject.construct(RequestInput{
@@ -212,7 +212,7 @@ fn test_response_object_constructor_factories_and_clone() {
 	assert object.clone()!.status() == 201
 	error_object := ResponseObject.error()
 	assert error_object.type_() == .error
-	redirect := ResponseObject.redirect('/next', 302, dom.URL{'https://example.test/base'})!
+	redirect := ResponseObject.redirect('/next', 302, dom.URL{value: 'https://example.test/base'})!
 	assert redirect.status() == 302
 	assert redirect.headers().get('Location')? == 'https://example.test/next'
 	json_value := infra.parse_json_string_to_javascript_value('{"ok":true}')!
@@ -240,7 +240,7 @@ fn test_response_wrappable_constructor_entry_points() {
 
 fn test_response_url_excludes_fragment() {
 	mut response := Response.create()
-	response.url_list = [dom.URL{'https://example.test/path?q=1#fragment'}]
+	response.url_list = [dom.URL{value: 'https://example.test/path?q=1#fragment'}]
 	object := &ResponseObject{
 		response_: response
 		headers_: Headers.from_header_list(response.header_list, .immutable)
@@ -264,14 +264,14 @@ fn test_response_status_text_accepts_obs_text_and_filtered_getters_delegate() {
 	assert object.status_text() == 'café'
 	mut internal := Response.create()
 	internal.status = 201
-	internal.url_list = [dom.URL{'https://example.test/one'}]
+	internal.url_list = [dom.URL{value: 'https://example.test/one'}]
 	filtered := filtered_response(internal, .basic)
 	filtered_object := &ResponseObject{
 		response_: filtered
 		headers_: Headers.from_header_list(filtered.header_list, .immutable)
 	}
 	internal.status = 202
-	internal.url_list << dom.URL{'https://example.test/two'}
+	internal.url_list << dom.URL{value: 'https://example.test/two'}
 	assert filtered_object.status() == 202
 	assert filtered_object.redirected()
 }

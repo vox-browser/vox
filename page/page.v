@@ -800,7 +800,7 @@ pub fn (mut p Page) load_html(html string) {
 
 pub fn (mut p Page) load_html_with_navigation_id(html string, navigation_id ?string) {
 	p.local_root_navigable().navigate_from_page(dom.PageNavigationParams{
-		url: dom.URL{'about:srcdoc'}
+		url: dom.URL{value: 'about:srcdoc'}
 		document_resource: html
 		navigation_id: navigation_id
 	}) or {}

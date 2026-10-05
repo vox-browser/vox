@@ -11,7 +11,7 @@ fn tree_test_ptr_push[T](pointer &[]T, item T) {
 }
 
 fn test_tree_node_mutation_and_tree_order() {
-	document := dom.Document.create(dom.URL{'about:blank'})
+	document := dom.Document.create(dom.URL{value: 'about:blank'})
 	mut root := Node.new(document, none)
 	first := Node.new(document, none)
 	second := Node.new(document, none)
@@ -47,7 +47,7 @@ fn test_tree_node_mutation_and_tree_order() {
 }
 
 fn test_tree_node_order_uses_ancestor_chains() {
-	document := dom.Document.create(dom.URL{'about:blank'})
+	document := dom.Document.create(dom.URL{value: 'about:blank'})
 	mut root := Node.new(document, none)
 	first := Node.new(document, none)
 	second := Node.new(document, none)
@@ -77,7 +77,7 @@ fn test_tree_node_order_uses_ancestor_chains() {
 }
 
 fn test_tree_node_skip_children_traversal() {
-	document := dom.Document.create(dom.URL{'about:blank'})
+	document := dom.Document.create(dom.URL{value: 'about:blank'})
 	mut root := Node.new(document, none)
 	first := Node.new(document, none)
 	second := Node.new(document, none)
@@ -103,7 +103,7 @@ fn test_tree_node_skip_children_traversal() {
 }
 
 fn test_tree_node_predicate_helpers_replace_cpp_type_templates() {
-	document := dom.Document.create(dom.URL{'about:blank'})
+	document := dom.Document.create(dom.URL{value: 'about:blank'})
 	mut root := Node.new(document, none)
 	first := Node.new(document, none)
 	second := Node.new(document, none)

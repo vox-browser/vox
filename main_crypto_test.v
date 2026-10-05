@@ -9,7 +9,7 @@ fn test_native_document_crypto_uses_the_owning_service_and_replays_random_operat
 		return
 	}
 	document := parse_browser_navigation_document('<div id="result">pending</div>',
-		dom.URL{'https://crypto.example/'}, none)
+		dom.URL{value: 'https://crypto.example/'}, none)
 	mut runtime := browserjs.Runtime.create()
 	defer { runtime.close() }
 	mut messages := []string{}

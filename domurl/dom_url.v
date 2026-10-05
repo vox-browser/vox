@@ -266,7 +266,14 @@ pub fn DOMURL.revoke_legacy_object_url_from_store(value string, environment file
 }
 
 fn finish_parsing(parsed_url ?liburl.URL) ?liburl.URL {
-	mut record := parsed_url or { return none }
+	record := parsed_url or { return none }
+	return finish_parsing_record(record)
+}
+
+// The DOM adapter receives this same finish step through HTML's setup hook,
+// avoiding a DOM/FileAPI import cycle and retaining an owned record per URL.
+pub fn finish_parsing_record(parsed_url liburl.URL) liburl.URL {
+	mut record := parsed_url.copy()
 	if record.scheme != 'blob' { return record }
 	if entry := fileapi.resolve_a_blob_url(record) {
 		record.set_blob_url_entry(entry.snapshot())

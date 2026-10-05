@@ -5,7 +5,7 @@ import fileapi
 
 fn native_blob_constructor_runtime() &Runtime {
 	mut runtime := Runtime.create()
-	url := dom.URL{'https://native-blob-constructor.example.test/'}
+	url := dom.URL{value: 'https://native-blob-constructor.example.test/'}
 	document := &dom.Document{ url: url, origin_: url.origin() }
 	mut readable := ReadableStreamHost.create(document) or { panic(err) }
 	readable.install(mut runtime) or { panic(err) }

@@ -6,7 +6,7 @@ import page
 
 fn native_window_current_event_fixture() !(&Runtime, &dom.Document, &html.EnvironmentSettingsObject) {
 	owner := page.Page.create(1)!
-	url := dom.URL{'https://native-window-event.example/'}
+	url := dom.URL{value: 'https://native-window-event.example/'}
 	document := html.create_navigation_document_for_page(url, url.origin(), none, unsafe { &dom.Page(owner) })!
 	settings := unsafe { &html.EnvironmentSettingsObject(document.relevant_settings_object()) }
 	mut runtime := Runtime.create()
@@ -109,7 +109,7 @@ fn test_native_window_event_registration_uses_actual_global_after_author_replace
 		return
 	}
 	owner := page.Page.create(1)!
-	url := dom.URL{'https://native-window-event.example/'}
+	url := dom.URL{value: 'https://native-window-event.example/'}
 	mut document := html.create_navigation_document_for_page(url, url.origin(), none, unsafe { &dom.Page(owner) })!
 	settings := unsafe { &html.EnvironmentSettingsObject(document.relevant_settings_object()) }
 	mut runtime := Runtime.create()

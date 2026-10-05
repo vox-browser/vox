@@ -7,7 +7,7 @@ import page
 
 fn source_settings_policy_document(address string) !(&dom.Document, &WindowModel, &EnvironmentSettingsObject) {
 	owner := page.Page.create(1)!
-	url := dom.URL{address}
+	url := dom.URL{value: address}
 	mut document := create_navigation_document_for_page(url, url.origin(), none, unsafe { &dom.Page(owner) })!
 	document.set_document_type(.html)
 	document.populate_with_html_head_and_body()!
@@ -59,7 +59,7 @@ fn test_window_settings_return_actual_document_owner_for_header_meta_and_consume
 	assert document.should_block_inline_content(style, 'style', 'body { color: red }')
 	mut request := fetch.Request.create()
 	request.set_client(settings)
-	request.set_url(dom.URL{'https://other-settings-policy.test/image.png'})
+	request.set_url(dom.URL{value: 'https://other-settings-policy.test/image.png'})
 	request.destination = .image
 	request.cache_mode = .no_store
 	fetch.populate_request_from_client(mut request)
@@ -120,7 +120,7 @@ fn test_worker_settings_return_live_global_scope_container_instead_of_outside_sn
 	document.set_policy_container(create_a_policy_container_from_fetch_response(source_settings_policy_response(document.url,
 		"script-src 'none'", 'origin')))
 	mut realm := &ScriptingRealm{}
-	worker_url := dom.URL{'https://worker-settings-policy.test/worker.js'}
+	worker_url := dom.URL{value: 'https://worker-settings-policy.test/worker.js'}
 	mut scope := WorkerGlobalScope.create(worker_url, .classic, '', realm)
 	object := WorkerEnvironmentSettingsObject.setup(scope, mut realm, outside_settings.serialize(), 0)
 	mut settings := object.settings
@@ -147,7 +147,7 @@ fn test_worker_settings_return_live_global_scope_container_instead_of_outside_sn
 
 fn test_standalone_settings_without_window_or_worker_keep_explicit_value_adapter() {
 	mut realm := &ScriptingRealm{}
-	url := dom.URL{'https://standalone-settings-policy.test/'}
+	url := dom.URL{value: 'https://standalone-settings-policy.test/'}
 	environment := Environment.create('standalone-policy', url, url, url.origin(), none)
 	mut settings := create_environment_settings(realm, environment, .window, main_thread_event_loop())
 	assert settings.window_ == none && settings.worker_ == none

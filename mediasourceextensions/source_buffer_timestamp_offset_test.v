@@ -20,7 +20,7 @@ fn test_source_buffer_timestamp_offset_validates_state_and_updates_sequence_grou
 	}
 
 	mut source := MediaSource.create()
-	mut media := html.HTMLMediaElement.create(none, dom.URL{'https://example.test/'})
+	mut media := html.HTMLMediaElement.create(none, dom.URL{value: 'https://example.test/'})
 	media.set_src_object(source.as_media_provider())!
 	mut buffer := source.add_source_buffer('video/webm; codecs="vp9"')!
 	assert buffer.timestamp_offset() == 0

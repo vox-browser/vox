@@ -16,7 +16,7 @@ mut:
 }
 
 fn file_reader_stream_context_owner() (&WindowModel, &EnvironmentSettingsObject, &EventLoop) {
-	url := dom.URL{'https://file-reader-stream.example.test/'}
+	url := dom.URL{value: 'https://file-reader-stream.example.test/'}
 	document := &dom.Document{ url: url, origin_: url.origin() }
 	window := WindowModel.create_top_level(document, none, '') or { panic(err) }
 	mut settings := window.environment_settings_.settings

@@ -14,7 +14,7 @@ fn test_svg_image_source_switch_retains_green_paint_through_actual_source_frames
 		return
 	}
 	input := os.read_file('/Users/alex/code/3rd/ladybird/Tests/LibWeb/Ref/input/svg-image-source-switch-same-size.html')!
-	mut document := parse_browser_navigation_document_with_response_time(input, dom.URL{'about:blank'}, none, none, time.sys_mono_now())
+	mut document := parse_browser_navigation_document_with_response_time(input, dom.URL{value: 'about:blank'}, none, none, time.sys_mono_now())
 	mut runtime := browserjs.Runtime.create()
 	defer {
 		runtime.close()

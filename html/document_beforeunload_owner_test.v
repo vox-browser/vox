@@ -15,7 +15,7 @@ mut:
 
 fn before_unload_owner_document(address string) !(&dom.Document, &WindowModel) {
 	owner := page.Page.create(1)!
-	url := dom.URL{address}
+	url := dom.URL{value: address}
 	document := create_navigation_document_for_page(url, url.origin(), none, unsafe { &dom.Page(owner) })!
 	native := document.get_window() or { return error('missing actual Window') }
 	return document, unsafe { &WindowModel(native) }

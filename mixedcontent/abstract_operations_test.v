@@ -5,7 +5,7 @@ import fetch
 
 fn request_for(url string, destination fetch.Destination) &fetch.Request {
 	mut request := fetch.Request.create()
-	request.url_list = [dom.URL{url}]
+	request.url_list = [dom.URL{value: url}]
 	request.destination = destination
 	return request
 }
@@ -92,11 +92,11 @@ fn test_response_blocking_uses_response_url_and_top_level_exception() {
 	restrictive := restrictive_settings()
 	request := request_for('http://example.test/a.js', .script)
 	mut secure_response := fetch.Response.create()
-	secure_response.url_list = [dom.URL{'https://cdn.example.test/a.js'}]
+	secure_response.url_list = [dom.URL{value: 'https://cdn.example.test/a.js'}]
 	assert should_response_to_request_be_blocked_as_mixed_content(request, secure_response,
 		&restrictive) == .allowed
 	mut insecure_response := fetch.Response.create()
-	insecure_response.url_list = [dom.URL{'http://cdn.example.test/a.js'}]
+	insecure_response.url_list = [dom.URL{value: 'http://cdn.example.test/a.js'}]
 	assert should_response_to_request_be_blocked_as_mixed_content(request, insecure_response,
 		&restrictive) == .blocked
 	no_url_response := fetch.Response.create()

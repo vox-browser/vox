@@ -5,7 +5,7 @@ import page
 
 fn scripting_owner_fixture(value string) !(&page.Page, &dom.Document, &EnvironmentSettingsObject) {
 	mut owner := page.Page.create(1)!
-	url := dom.URL{value}
+	url := dom.URL{value: value}
 	mut document := create_navigation_document(url, url.origin(), none)!
 	document.set_page(unsafe { &dom.Page(owner) })
 	settings := unsafe { &EnvironmentSettingsObject(document.relevant_settings_object()) }
@@ -36,7 +36,7 @@ fn test_source_webui_exempts_user_preference_but_never_sandbox_or_nonexact_urls(
 	assert is_scripting_disabled_for_settings(settings)
 	document.set_active_sandboxing_flag_bits(0)
 	for value in ['about:settings#', 'about:settings?', 'about:blank', 'about:Settings'] {
-		document.set_url(dom.URL{value})
+		document.set_url(dom.URL{value: value})
 		assert is_scripting_disabled_for_settings(settings)
 	}
 }
@@ -101,7 +101,7 @@ fn test_source_document_constructor_exposes_actual_settings_before_node_scriptin
 
 fn test_source_node_created_before_window_reads_the_current_installed_settings() {
 	mut owner := page.Page.create(1)!
-	mut document := dom.Document.create(dom.URL{'https://late-scripting-owner.example/'})
+	mut document := dom.Document.create(dom.URL{value: 'https://late-scripting-owner.example/'})
 	document.set_page(unsafe { &dom.Page(owner) })
 	node := document.create_element('button')!.as_node()
 	assert node.is_scripting_disabled()
@@ -128,7 +128,7 @@ fn test_source_worker_scripting_enabled_keeps_pinned_nonwindow_behavior() {
 	_, document, settings := scripting_owner_fixture('https://scripting.example/')!
 	outside := settings.serialize()
 	mut realm := &ScriptingRealm{ scripting_enabled: false, can_run: false }
-	scope := WorkerGlobalScope.create(dom.URL{'https://scripting.example/worker.js'}, .classic, '', realm)
+	scope := WorkerGlobalScope.create(dom.URL{value: 'https://scripting.example/worker.js'}, .classic, '', realm)
 	worker := WorkerEnvironmentSettingsObject.setup(scope, mut realm, outside, 1)
 	assert is_scripting_enabled_for_settings(worker.settings)
 	assert !is_scripting_disabled_for_settings(worker.settings)

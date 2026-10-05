@@ -296,7 +296,10 @@ pub fn (mut window WindowModel) window_open_steps_internal(url string, target_ s
 				window_type: window_type
 			}
 		}
-		navigation_url := url_record or { dom.url_about_blank() }
+		// Declare the captured URL before optional selection. The old V C
+		// generator otherwise assigns its heap local before declaring it.
+		mut navigation_url := dom.url_about_blank()
+		if value := url_record { navigation_url = value }
 		target_document.set_url(navigation_url)
 		if no_opener == .yes {
 			chosen.set_opener(none)

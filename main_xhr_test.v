@@ -20,7 +20,7 @@ fn test_native_browser_async_xhr_callback_replays_into_the_actual_document_befor
 	defer { listener.close() or {} }
 	server := spawn serve_native_browser_xhr(mut listener)
 	address := 'http://${listener.addr()!}/owner'
-	mut document := html.parse_document_with_url('<div id="result">pending</div>', dom.URL{address})
+	mut document := html.parse_document_with_url('<div id="result">pending</div>', dom.URL{value: address})
 	document.set_origin(document.url.origin())
 	mut runtime := browserjs.Runtime.create()
 	defer { runtime.close() }

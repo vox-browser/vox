@@ -85,7 +85,7 @@ fn test_fetch_controller_params_tasks_and_timing() {
 
 fn test_fetch_controller_parks_and_resolves_pending_preloaded_response() {
 	mut request := Request.create()
-	request.url_list = [dom.URL{'https://example.test/preloaded'}]
+	request.url_list = [dom.URL{value: 'https://example.test/preloaded'}]
 	mut params := FetchParams.create(request, FetchTimingInfo.create())
 	params.set_preloaded_response_candidate(PreloadedResponseCandidate{ kind: .pending })
 	preload_host_calls = 0
@@ -108,7 +108,7 @@ fn test_fetch_controller_parks_and_resolves_pending_preloaded_response() {
 
 fn test_fetch_controller_tracks_started_font_network_request() {
 	mut request := Request.create()
-	request.url_list = [dom.URL{'https://example.test/font.woff2'}]
+	request.url_list = [dom.URL{value: 'https://example.test/font.woff2'}]
 	request.destination = .font
 	request.cache_mode = .no_store
 	params := FetchParams.create(request, FetchTimingInfo.create())
@@ -125,7 +125,7 @@ fn test_fetch_controller_tracks_started_font_network_request() {
 
 fn test_fetch_params_and_fetch_propagate_response_body_transfer_lease() {
 	mut request := Request.create()
-	request.url_list = [dom.URL{'https://example.test/leased'}]
+	request.url_list = [dom.URL{value: 'https://example.test/leased'}]
 	request.cache_mode = .no_store
 	mut params := FetchParams.create(request, FetchTimingInfo.create())
 	assert !params.has_response_body_transfer_lease()
@@ -139,7 +139,7 @@ fn test_fetch_params_and_fetch_propagate_response_body_transfer_lease() {
 	assert transfer_pause_notifications == 1
 
 	mut blank_request := Request.create()
-	blank_request.url_list = [dom.URL{'about:blank'}]
+	blank_request.url_list = [dom.URL{value: 'about:blank'}]
 	blank_request.origin = RequestOrigin{
 		is_client: false
 		origin: dom.Origin{ value: 'opaque' }
@@ -152,7 +152,7 @@ fn test_fetch_params_and_fetch_propagate_response_body_transfer_lease() {
 
 fn test_image_fetch_accept_header_advertises_avif_and_webp() {
 	mut request := Request.create()
-	request.url_list = [dom.URL{'about:blank'}]
+	request.url_list = [dom.URL{value: 'about:blank'}]
 	request.origin = RequestOrigin{
 		is_client: false
 		origin: dom.Origin{ value: 'opaque' }
@@ -269,7 +269,7 @@ fn test_abort_fetch_cancels_the_infrastructure_request_body_stream() {
 
 fn test_cors_tao_and_fetch_metadata_headers() {
 	mut request := Request.create()
-	request.url_list = [dom.URL{'https://example.test/a'}]
+	request.url_list = [dom.URL{value: 'https://example.test/a'}]
 	request.origin = RequestOrigin{
 		is_client: false
 		origin: dom.Origin{ value: 'https://example.test' }
@@ -378,7 +378,7 @@ fn test_blob_scheme_fetch_authorizes_navigation_partition_and_top_level_self_fet
 	host := FetchHost{ perform: host_fetch }
 
 	mut navigation_request := Request.create()
-	navigation_request.url_list = [dom.URL{blob_url}]
+	navigation_request.url_list = [dom.URL{value: blob_url}]
 	navigation_request.destination = .document
 	navigation_response := scheme_fetch(FetchParams.create(navigation_request, FetchTimingInfo.create()), host).response()?
 	assert !navigation_response.is_network_error()
@@ -387,19 +387,19 @@ fn test_blob_scheme_fetch_authorizes_navigation_partition_and_top_level_self_fet
 	assert navigation_response.header_list.get('Content-Type')? == 'text/plain'
 
 	mut reserved_environment_request := Request.create()
-	reserved_environment_request.url_list = [dom.URL{blob_url}]
+	reserved_environment_request.url_list = [dom.URL{value: blob_url}]
 	reserved_environment_request.set_reserved_client(&BlobFetchTestEnvironment{
-		creation_url: dom.URL{'https://owner.test/environment'}
+		creation_url: dom.URL{value: 'https://owner.test/environment'}
 	})
 	reserved_environment_response := scheme_fetch(FetchParams.create(reserved_environment_request, FetchTimingInfo.create()), host).response()?
 	assert !reserved_environment_response.is_network_error()
 	assert reserved_environment_response.body?.bytes() == 'blob payload'.bytes()
 
 	mut partitioned_client_request := Request.create()
-	partitioned_client_request.url_list = [dom.URL{blob_url}]
+	partitioned_client_request.url_list = [dom.URL{value: blob_url}]
 	partitioned_client_request.destination = .image
 	partitioned_client_request.set_client(&BlobFetchTestClient{
-		creation_url: dom.URL{'https://owner.test/frame'}
+		creation_url: dom.URL{value: 'https://owner.test/frame'}
 		origin: owner_origin
 		top_level_origin: dom.Origin{ value: 'https://top-level.test' }
 	})
@@ -407,7 +407,7 @@ fn test_blob_scheme_fetch_authorizes_navigation_partition_and_top_level_self_fet
 	assert !partitioned_client_response.is_network_error()
 
 	mut range_request := Request.create()
-	range_request.url_list = [dom.URL{blob_url}]
+	range_request.url_list = [dom.URL{value: blob_url}]
 	range_request.destination = .document
 	range_request.header_list.append(http.Header{ name: 'Range', value: 'bytes=5-' })
 	range_response := scheme_fetch(FetchParams.create(range_request, FetchTimingInfo.create()), host).response()?
@@ -418,20 +418,20 @@ fn test_blob_scheme_fetch_authorizes_navigation_partition_and_top_level_self_fet
 
 	foreign_origin := dom.Origin{ value: 'https://foreign.test' }
 	mut nested_request := Request.create()
-	nested_request.url_list = [dom.URL{blob_url}]
+	nested_request.url_list = [dom.URL{value: blob_url}]
 	nested_request.destination = .image
 	nested_request.set_client(&BlobFetchTestClient{
-		creation_url: dom.URL{'https://foreign.test/frame'}
+		creation_url: dom.URL{value: 'https://foreign.test/frame'}
 		origin: foreign_origin
 		top_level_origin: foreign_origin
 	})
 	assert scheme_fetch(FetchParams.create(nested_request, FetchTimingInfo.create()), host).response()?.is_network_error()
 
 	mut self_fetch_request := Request.create()
-	self_fetch_request.url_list = [dom.URL{blob_url}]
+	self_fetch_request.url_list = [dom.URL{value: blob_url}]
 	self_fetch_request.destination = .image
 	self_fetch_request.set_client(&BlobFetchTestClient{
-		creation_url: dom.URL{blob_url}
+		creation_url: dom.URL{value: blob_url}
 		origin: foreign_origin
 		top_level_origin: foreign_origin
 		is_top_level: true
@@ -466,7 +466,7 @@ fn no_cors_headers_host_fetch(request &Request) !&Response {
 
 fn test_scheme_and_main_fetch_host_boundary_and_data_url() {
 	mut request := Request.create()
-	request.url_list = [dom.URL{'https://example.test/data'}]
+	request.url_list = [dom.URL{value: 'https://example.test/data'}]
 	request.origin = RequestOrigin{
 		is_client: false
 		origin: dom.Origin{ value: 'https://example.test' }
@@ -477,7 +477,7 @@ fn test_scheme_and_main_fetch_host_boundary_and_data_url() {
 	params := FetchParams.create(request, FetchTimingInfo.create())
 	assert main_fetch(params, host).response()?.fetch_response_body()?.bytes() == 'ok'.bytes()
 	mut data_request := Request.create()
-	data_request.url_list = [dom.URL{'data:text/plain,hello'}]
+	data_request.url_list = [dom.URL{value: 'data:text/plain,hello'}]
 	data_params := FetchParams.create(data_request, FetchTimingInfo.create())
 	assert scheme_fetch(data_params, host).response()?.body?.bytes() == 'hello'.bytes()
 	set_http_memory_cache_enabled(false)
@@ -488,7 +488,7 @@ fn test_scheme_and_main_fetch_host_boundary_and_data_url() {
 fn test_main_fetch_applies_upstream_tainting_cors_and_integrity_steps() {
 	host := FetchHost{ perform: cors_host_fetch }
 	mut cors_request := Request.create()
-	cors_request.url_list = [dom.URL{'https://cross-origin.test/data'}]
+	cors_request.url_list = [dom.URL{value: 'https://cross-origin.test/data'}]
 	cors_request.origin = RequestOrigin{
 		is_client: false
 		origin: dom.Origin{ value: 'https://origin.test' }
@@ -500,7 +500,7 @@ fn test_main_fetch_applies_upstream_tainting_cors_and_integrity_steps() {
 	assert cors_response.header_list.get('X-Visible')? == 'yes'
 
 	mut opaque_request := Request.create()
-	opaque_request.url_list = [dom.URL{'https://cross-origin.test/data'}]
+	opaque_request.url_list = [dom.URL{value: 'https://cross-origin.test/data'}]
 	opaque_request.origin = RequestOrigin{
 		is_client: false
 		origin: dom.Origin{ value: 'https://origin.test' }
@@ -511,12 +511,12 @@ fn test_main_fetch_applies_upstream_tainting_cors_and_integrity_steps() {
 	assert opaque_response.unsafe_response().body?.bytes() == 'hidden'.bytes()
 
 	mut bad_cors_request := cors_request.clone()
-	bad_cors_request.url_list = [dom.URL{'https://cross-origin.test/bad'}]
+	bad_cors_request.url_list = [dom.URL{value: 'https://cross-origin.test/bad'}]
 	bad_cors_response := main_fetch(FetchParams.create(bad_cors_request, FetchTimingInfo.create()), FetchHost{ perform: no_cors_headers_host_fetch }).response()?
 	assert bad_cors_response.is_network_error()
 
 	mut integrity_request := Request.create()
-	integrity_request.url_list = [dom.URL{'https://origin.test/data'}]
+	integrity_request.url_list = [dom.URL{value: 'https://origin.test/data'}]
 	integrity_request.origin = RequestOrigin{
 		is_client: false
 		origin: dom.Origin{ value: 'https://origin.test' }
@@ -567,7 +567,7 @@ fn test_navigation_tao_check_and_redirect_chain_propagation() {
 	assert !navigation_tao_check(response, destination_origin)
 
 	mut request := Request.create()
-	request.url_list = [dom.URL{'https://origin.test/start'}]
+	request.url_list = [dom.URL{value: 'https://origin.test/start'}]
 	request.destination = .document
 	request.mode = .navigate
 	request.origin = RequestOrigin{
@@ -589,7 +589,7 @@ fn test_navigation_tao_check_and_redirect_chain_propagation() {
 fn test_http_redirect_and_cors_preflight_boundaries() {
 	mut request := Request.create()
 	request.method = 'POST'
-	request.url_list = [dom.URL{'https://example.test/start'}]
+	request.url_list = [dom.URL{value: 'https://example.test/start'}]
 	request.origin = RequestOrigin{
 		is_client: false
 		origin: dom.Origin{ value: 'https://example.test' }

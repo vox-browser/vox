@@ -153,7 +153,7 @@ fn test_isobmff_initialization_and_media_segments_create_tracks_and_frames() {
 	assert parser.text_tracks().len == 0
 
 	mut source := MediaSource.create()
-	mut media := html.HTMLMediaElement.create(none, dom.URL{'https://example.test/'})
+	mut media := html.HTMLMediaElement.create(none, dom.URL{value: 'https://example.test/'})
 	media.set_src_object(source.as_media_provider())!
 	run_media_source_tasks()
 	mut buffer := source.add_source_buffer('video/mp4; codecs="av01.0.00M.08"')!
@@ -208,7 +208,7 @@ fn test_isobmff_rejects_an_unknown_initialization_segment_codec() {
 	initialization := minimal_isobmff_initialization_segment_with_sample_entry(iso_test_box('zzzz',
 		[]u8{}), 1)
 	mut source := MediaSource.create()
-	mut media := html.HTMLMediaElement.create(none, dom.URL{'https://example.test/'})
+	mut media := html.HTMLMediaElement.create(none, dom.URL{value: 'https://example.test/'})
 	media.set_src_object(source.as_media_provider())!
 	run_media_source_tasks()
 	mut buffer := source.add_source_buffer('video/mp4; codecs="av01.0.00M.08"')!
@@ -226,7 +226,7 @@ fn test_isobmff_rejects_a_configuration_box_for_another_codec() {
 	initialization := minimal_isobmff_initialization_segment_with_sample_entry(iso_test_box('av01',
 		sample_entry_payload), 1)
 	mut source := MediaSource.create()
-	mut media := html.HTMLMediaElement.create(none, dom.URL{'https://example.test/'})
+	mut media := html.HTMLMediaElement.create(none, dom.URL{value: 'https://example.test/'})
 	media.set_src_object(source.as_media_provider())!
 	run_media_source_tasks()
 	mut buffer := source.add_source_buffer('video/mp4; codecs="av01.0.00M.08"')!
@@ -239,7 +239,7 @@ fn test_isobmff_rejects_a_configuration_box_for_another_codec() {
 
 fn test_isobmff_rejects_a_repeated_initialization_segment_with_different_tracks() {
 	mut source := MediaSource.create()
-	mut media := html.HTMLMediaElement.create(none, dom.URL{'https://example.test/'})
+	mut media := html.HTMLMediaElement.create(none, dom.URL{value: 'https://example.test/'})
 	media.set_src_object(source.as_media_provider())!
 	run_media_source_tasks()
 	mut buffer := source.add_source_buffer('video/mp4; codecs="av01.0.00M.08"')!

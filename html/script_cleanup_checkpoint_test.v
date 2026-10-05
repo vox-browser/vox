@@ -10,7 +10,7 @@ mut:
 }
 
 fn script_cleanup_window() &WindowModel {
-	url := dom.URL{'https://cleanup.example.test/'}
+	url := dom.URL{value: 'https://cleanup.example.test/'}
 	return WindowModel.create_top_level(&dom.Document{url: url, origin_: url.origin()}, none, 'cleanup') or { panic(err) }
 }
 

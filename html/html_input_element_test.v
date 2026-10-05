@@ -342,7 +342,7 @@ fn test_input_validation_picker_and_legacy_activation() {
 	window := WindowModel.create_top_level(file_document, none, 'picker-validation')!
 	file.show_picker() or { assert err.msg().starts_with('NotAllowedError:') }
 	mut settings := window.environment_settings_.settings
-	settings.environment_.top_level_origin = dom.URL{'https://cross-origin-picker.example/'}.origin()
+	settings.environment_.top_level_origin = dom.URL{value: 'https://cross-origin-picker.example/'}.origin()
 	mut native := file_document.get_window()?
 	native.set_last_activation_timestamp(highresolutiontime.current_high_resolution_time(highresolutiontime.TimeOriginContext{
 		time_origin: file_document.load_timing_info.navigation_start_time

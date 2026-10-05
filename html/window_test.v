@@ -7,7 +7,7 @@ import requestidlecallback
 const window_test_html_namespace = 'http://www.w3.org/1999/xhtml'
 
 fn create_active_window(url string) !(&dom.Document, &WindowModel) {
-	mut document := dom.Document.create(dom.URL{url})
+	mut document := dom.Document.create(dom.URL{value: url})
 	document.set_origin(document.url.origin())
 	window := WindowModel.create_top_level(document, none, 'top')!
 	return document, window
@@ -130,12 +130,12 @@ fn test_window_named_objects_follow_upstream_ordering() {
 	second_div.set_attribute_value('id', 'duplicate')
 	root_node.append_child(second_div.as_node())!
 
-	child_document := dom.Document.create(dom.URL{'https://example.test/frame'})
+	child_document := dom.Document.create(dom.URL{value: 'https://example.test/frame'})
 	mut mutable_child_document := unsafe { &dom.Document(child_document) }
 	mutable_child_document.set_origin(child_document.url.origin())
 	child_context := BrowsingContextModel.create(child_document, window.browsing_context(), 'frame')
 	_ = WindowModel.create(child_document, child_context)!
-	cross_origin_document := dom.Document.create(dom.URL{'https://elsewhere.test/frame'})
+	cross_origin_document := dom.Document.create(dom.URL{value: 'https://elsewhere.test/frame'})
 	mut mutable_cross_origin_document := unsafe { &dom.Document(cross_origin_document) }
 	mutable_cross_origin_document.set_origin(cross_origin_document.url.origin())
 	cross_origin_context := BrowsingContextModel.create(cross_origin_document, window.browsing_context(), 'foreign')

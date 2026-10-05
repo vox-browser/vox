@@ -11,7 +11,7 @@ fn test_source_referrer_enum_is_the_actual_document_policy_record_type() {
 	response.header_list.append(http.Header{'Referrer-Policy', 'ORIGIN'})
 	parsed := parse_a_referrer_policy_from_a_referrer_policy_header(response)
 	container := &dom.PolicyContainer{ referrer_policy: parsed }
-	mut document := dom.Document.create(dom.URL{'https://shared-referrer-record.test/page'})
+	mut document := dom.Document.create(dom.URL{value: 'https://shared-referrer-record.test/page'})
 	defer { document.finalize() }
 	document.set_policy_container(container)
 	assert voidptr(document.policy_container()) == voidptr(container)

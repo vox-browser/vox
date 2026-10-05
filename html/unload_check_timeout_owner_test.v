@@ -16,7 +16,7 @@ mut:
 
 fn unload_timeout_document(address string) !(&dom.Document, &WindowModel) {
 	page_owner := page.Page.create(1)!
-	url := dom.URL{address}
+	url := dom.URL{value: address}
 	document := create_navigation_document_for_page(url, url.origin(), none, unsafe { &dom.Page(page_owner) })!
 	return document, unsafe { &WindowModel(document.get_window() or { return error('missing actual Window') }) }
 }
@@ -92,7 +92,7 @@ fn test_unload_check_deadline_completes_a_real_phase_one_task_blocked_by_navigat
 	observation := &UnloadTimeoutObservation{}
 	unload_timeout_observe(original_window, observation, false)
 	target := &SessionHistoryEntry{
-		url:            dom.URL{'https://unload-timeout.example/target'}
+		url:            dom.URL{value: 'https://unload-timeout.example/target'}
 		document_state: &DocumentState{
 			document:     original
 			document_id_: original.unique_id()
@@ -106,7 +106,7 @@ fn test_unload_check_deadline_completes_a_real_phase_one_task_blocked_by_navigat
 	task := event_loop.task_queue().last_added_task()?
 	assert voidptr(task.document()?) == voidptr(original) && task.is_runnable()
 	mut native := original.navigable()?
-	url := dom.URL{'https://unload-timeout.example/replacement'}
+	url := dom.URL{value: 'https://unload-timeout.example/replacement'}
 	mut replacement := create_navigation_document_for_page(url, url.origin(), original, original.page())!
 	defer { replacement.finalize() }
 	assert !original.is_fully_active() && replacement.is_fully_active()

@@ -10,7 +10,7 @@ mut:
 }
 
 fn timer_source_task_window() &WindowModel {
-	url := dom.URL{'https://source-timer.example.test/document.html'}
+	url := dom.URL{value: 'https://source-timer.example.test/document.html'}
 	document := &dom.Document{url: url, origin_: url.origin()}
 	return WindowModel.create_top_level(document, none, '') or { panic(err) }
 }
@@ -50,7 +50,7 @@ fn test_string_timer_creates_source_classic_script_with_initiating_script_base_u
 		recorded.bases << (script.base_url() or { panic('missing source base URL') }).serialize()
 		return dom.js_undefined()
 	})
-	url := dom.URL{'https://source-timer.example.test/initiating/script.js'}
+	url := dom.URL{value: 'https://source-timer.example.test/initiating/script.js'}
 	mut initiating := ClassicScript.create('script.js', 'schedule timer', realm, url, 1, .no)
 	owner_handle := voidptr(scope)
 	initiating.set_evaluator(fn [owner_handle] (_ string, _ &ScriptingRealm) !dom.JSValue {

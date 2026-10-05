@@ -5,7 +5,7 @@ import dom
 import html
 
 fn digest_host_fixture() (&Runtime, &CryptoHost, &html.EventLoop) {
-	url := dom.URL{'https://digest-binding.example/'}
+	url := dom.URL{value: 'https://digest-binding.example/'}
 	document := &dom.Document{ url: url, origin_: url.origin() }
 	mut runtime := Runtime.create()
 	mut host := CryptoHost.create(document) or { panic(err) }
@@ -136,7 +136,7 @@ fn test_native_digest_worker_global_owns_independent_tasks_and_close_skips_relea
 	mut runtime, host, mut owner := digest_host_fixture()
 	defer { runtime.close() }
 	mut realm := &html.ScriptingRealm{}
-	scope := html.WorkerGlobalScope.create(dom.URL{'https://digest-binding.example/worker.js'}, .classic, 'digest worker', realm)
+	scope := html.WorkerGlobalScope.create(dom.URL{value: 'https://digest-binding.example/worker.js'}, .classic, 'digest worker', realm)
 	settings := html.WorkerEnvironmentSettingsObject.setup(scope, mut realm, host.settings.serialize(), 12).settings
 	mut worker_runtime := Runtime.create()
 	mut worker_host := CryptoHost.create_for_settings(settings)!

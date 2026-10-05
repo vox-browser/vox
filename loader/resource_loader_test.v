@@ -16,7 +16,7 @@ fn header_value(headers []http.Header, name string) ?string {
 
 fn load_request_for(value string) &LoadRequest {
 	mut request := LoadRequest.create(http.HeaderList.create())
-	request.set_url(dom.URL{value})
+	request.set_url(dom.URL{value: value})
 	return request
 }
 
@@ -38,11 +38,11 @@ fn test_resource_loader_initialization_and_configuration() {
 	resource_loader.set_navigator_compatibility_mode(.gecko)
 	resource_loader.set_enable_global_privacy_control(true)
 	assert resource_loader.user_agent() == 'Test Agent'
-	assert resource_loader.user_agent_for_url(dom.URL{'https://compat.example/page'}) == 'Test Agent'
+	assert resource_loader.user_agent_for_url(dom.URL{value: 'https://compat.example/page'}) == 'Test Agent'
 	resource_loader.set_user_agent('Mozilla/5.0 Ladybird/1.0 Safari/537.36')
-	assert resource_loader.user_agent_for_url(dom.URL{'https://compat.example/page'}) == 'Mozilla/5.0 Safari/537.36'
-	assert resource_loader.user_agent_for_websocket_url(dom.URL{'wss://compat.example/socket'}) == 'Mozilla/5.0 Safari/537.36'
-	assert resource_loader.site_compatibility_exposes_experimental_interface(dom.URL{'https://compat.example/page'},
+	assert resource_loader.user_agent_for_url(dom.URL{value: 'https://compat.example/page'}) == 'Mozilla/5.0 Safari/537.36'
+	assert resource_loader.user_agent_for_websocket_url(dom.URL{value: 'wss://compat.example/socket'}) == 'Mozilla/5.0 Safari/537.36'
+	assert resource_loader.site_compatibility_exposes_experimental_interface(dom.URL{value: 'https://compat.example/page'},
 		'PressureObserver')
 	assert resource_loader.platform() == 'Test Platform'
 	assert resource_loader.navigator_compatibility_mode() == .gecko
@@ -61,23 +61,23 @@ fn test_connection_preparation_and_request_blocking() {
 	mut resource_loader := ResourceLoader.create()
 	mut blocker := ContentBlocker.the()
 	blocker.set_patterns([])!
-	source_url := dom.URL{'https://source.test/'}
-	assert resource_loader.prepare_connection(dom.URL{'file:///tmp/a'}, source_url, true) == .none
-	assert resource_loader.prepare_connection(dom.URL{'data:text/plain,a'}, source_url, false) == .none
-	assert resource_loader.prepare_connection(dom.URL{'https://example.test/'}, source_url,
+	source_url := dom.URL{value: 'https://source.test/'}
+	assert resource_loader.prepare_connection(dom.URL{value: 'file:///tmp/a'}, source_url, true) == .none
+	assert resource_loader.prepare_connection(dom.URL{value: 'data:text/plain,a'}, source_url, false) == .none
+	assert resource_loader.prepare_connection(dom.URL{value: 'https://example.test/'}, source_url,
 		false) == .resolve_only
-	assert resource_loader.prepare_connection(dom.URL{'https://example.test/'}, source_url,
+	assert resource_loader.prepare_connection(dom.URL{value: 'https://example.test/'}, source_url,
 		true) == .create_connection
-	assert resource_loader.prefetch_dns(dom.URL{'https://example.test/'}, source_url) == .resolve_only
-	assert resource_loader.preconnect(dom.URL{'https://example.test/'}, source_url) == .create_connection
+	assert resource_loader.prefetch_dns(dom.URL{value: 'https://example.test/'}, source_url) == .resolve_only
+	assert resource_loader.preconnect(dom.URL{value: 'https://example.test/'}, source_url) == .create_connection
 	blocker.set_patterns(['||blocked.test^$third-party']) or { panic(err) }
-	assert resource_loader.prepare_connection(dom.URL{'https://blocked.test/'}, source_url,
+	assert resource_loader.prepare_connection(dom.URL{value: 'https://blocked.test/'}, source_url,
 		true) == .none
 	assert resource_loader.should_block_request(load_request_for('http://example.test:22/'))
 	mut blocked_request := load_request_for('https://blocked.test/a')
 	blocked_request.set_source_url(source_url)
 	assert resource_loader.should_block_request(blocked_request)
-	blocked_request.set_source_url(dom.URL{'https://www.blocked.test/'})
+	blocked_request.set_source_url(dom.URL{value: 'https://www.blocked.test/'})
 	assert !resource_loader.should_block_request(blocked_request)
 	assert !resource_loader.should_block_request(load_request_for('https://example.test/a'))
 }
@@ -140,7 +140,7 @@ fn test_load_blocks_filtered_and_bad_port_requests_before_dispatch() {
 
 fn test_resource_loader_stores_and_queries_hsts_policies() {
 	mut resource_loader := ResourceLoader.create()
-	resource_loader.try_store_hsts_policy_for_url(dom.URL{'https://example.test/'},
+	resource_loader.try_store_hsts_policy_for_url(dom.URL{value: 'https://example.test/'},
 		'max-age=31536000; includeSubDomains')
 	policy := resource_loader.hsts_policy_for_host('example.test') or { panic('missing policy') }
 	assert policy.max_age_seconds == u64(31536000)
@@ -148,12 +148,12 @@ fn test_resource_loader_stores_and_queries_hsts_policies() {
 	assert resource_loader.is_known_hsts_host('EXAMPLE.TEST')
 	assert resource_loader.is_known_hsts_host('assets.example.test')
 
-	resource_loader.try_store_hsts_policy_for_url(dom.URL{'https://invalid.test/'},
+	resource_loader.try_store_hsts_policy_for_url(dom.URL{value: 'https://invalid.test/'},
 		'max-age=10; max-age=20')
 	assert !resource_loader.is_known_hsts_host('invalid.test')
-	resource_loader.try_store_hsts_policy_for_url(dom.URL{'https://127.0.0.1/'}, 'max-age=10')
+	resource_loader.try_store_hsts_policy_for_url(dom.URL{value: 'https://127.0.0.1/'}, 'max-age=10')
 	assert !resource_loader.is_known_hsts_host('127.0.0.1')
-	resource_loader.try_store_hsts_policy_for_url(dom.URL{'https://example.test/'}, 'max-age=0')
+	resource_loader.try_store_hsts_policy_for_url(dom.URL{value: 'https://example.test/'}, 'max-age=0')
 	assert !resource_loader.is_known_hsts_host('example.test')
 
 	resource_loader.add_preloaded_hsts_host('preloaded.test', true)
@@ -246,6 +246,6 @@ fn test_network_response_headers_store_credentialed_cookies_for_page() {
 }
 
 fn test_sanitized_url_for_logging_hides_data_payloads() {
-	assert sanitized_url_for_logging(dom.URL{'data:text/plain,secret'}) == '[data URL]'
-	assert sanitized_url_for_logging(dom.URL{'https://example.test/a'}) == 'https://example.test/a'
+	assert sanitized_url_for_logging(dom.URL{value: 'data:text/plain,secret'}) == '[data URL]'
+	assert sanitized_url_for_logging(dom.URL{value: 'https://example.test/a'}) == 'https://example.test/a'
 }

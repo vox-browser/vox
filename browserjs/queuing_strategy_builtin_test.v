@@ -6,7 +6,7 @@ fn test_queuing_strategy_size_is_actual_source_native_builtin_with_original_get_
 	$if !darwin { return }
 	mut runtime := Runtime.create()
 	defer { runtime.close() }
-	url := dom.URL{'https://native-strategy-builtins.example.test/'}
+	url := dom.URL{value: 'https://native-strategy-builtins.example.test/'}
 	document := &dom.Document{url: url, origin_: url.origin()}
 	mut host := QueuingStrategyHost.create(document)!
 	host.install(mut runtime)!

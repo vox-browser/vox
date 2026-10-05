@@ -12,7 +12,7 @@ mut:
 
 fn start_parallel_fetch(state &ParallelFetchObservation) &fetch.FetchController {
 	mut request := fetch.Request.create()
-	request.url_list = [dom.URL{'https://example.test/parallel'}]
+	request.url_list = [dom.URL{value: 'https://example.test/parallel'}]
 	request.origin = fetch.RequestOrigin{ is_client: false, origin: request.current_url().origin() }
 	request.mode = .same_origin
 	request.cache_mode = .no_store

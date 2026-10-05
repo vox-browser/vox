@@ -22,7 +22,7 @@ fn security_policy_host(request &fetch.Request) !&fetch.Response {
 }
 
 fn security_policy_settings(policy string, disposition CSPPolicyDisposition) &EnvironmentSettingsObject {
-	mut document := dom.Document.create(dom.URL{'https://source.test/page'})
+	mut document := dom.Document.create(dom.URL{value: 'https://source.test/page'})
 	document.set_origin(document.url.origin())
 	document.populate_with_html_head_and_body() or { panic(err) }
 	window := WindowModel.create_top_level(document, none, 'security-policy') or { panic(err) }
@@ -40,7 +40,7 @@ fn security_policy_settings(policy string, disposition CSPPolicyDisposition) &En
 fn security_policy_request(settings &EnvironmentSettingsObject, target string, destination fetch.Destination) &fetch.Request {
 	mut request := fetch.Request.create()
 	request.set_client(settings)
-	request.set_url(dom.URL{target})
+	request.set_url(dom.URL{value: target})
 	request.destination = destination
 	request.cache_mode = .no_store
 	fetch.populate_request_from_client(mut request)
@@ -140,7 +140,7 @@ fn test_main_fetch_checks_the_internal_response_security_before_exposing_it() {
 	for target in ['https://other.test/image.png', 'http://source.test/image.png'] {
 		request := security_policy_request(settings, 'https://source.test/image.png', .image)
 		mut preloaded := fetch.Response.create()
-		preloaded.url_list = [dom.URL{target}]
+		preloaded.url_list = [dom.URL{value: target}]
 		mut params := fetch.FetchParams.create(request, fetch.FetchTimingInfo.create())
 		params.set_preloaded_response_candidate(fetch.PreloadedResponseCandidate{
 			kind:     .response

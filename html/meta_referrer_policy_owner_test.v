@@ -7,7 +7,7 @@ import page
 
 fn source_referrer_document(address string, header_policy string, referrer string) !(&dom.Document, &WindowModel, &EnvironmentSettingsObject) {
 	owner := page.Page.create(1)!
-	url := dom.URL{address}
+	url := dom.URL{value: address}
 	mut document := create_navigation_document_for_page(url, url.origin(), none, unsafe { &dom.Page(owner) })!
 	document.set_document_type(.html)
 	document.populate_with_html_head_and_body()!
@@ -49,7 +49,7 @@ fn test_source_parser_meta_referrer_writes_retained_document_owner_and_fetch_pro
 	assert container.csp_list[0].pre_parsed_policy_string == "img-src 'self'"
 	mut request := fetch.Request.create()
 	request.set_client(settings)
-	request.set_url(dom.URL{'https://request-referrer-owner.test/image.png'})
+	request.set_url(dom.URL{value: 'https://request-referrer-owner.test/image.png'})
 	request.destination = .image
 	fetch.populate_request_from_client(mut request)
 	assert request.resolved_policy_container?.referrer_policy == 'no-referrer'

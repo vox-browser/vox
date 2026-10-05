@@ -1975,7 +1975,7 @@ fn source_origin_url(origin dom.Origin) dom.URL {
 	if origin.is_opaque() {
 		return dom.url_about_blank()
 	}
-	return dom.URL{origin.serialize() + '/'}
+	return dom.URL{value: origin.serialize() + '/'}
 }
 
 pub fn (window &WindowModel) posted_messages() []PostedWindowMessage {

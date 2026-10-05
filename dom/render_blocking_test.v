@@ -1,7 +1,7 @@
 module dom
 
 fn test_removed_body_only_blocks_rendering_while_the_parser_is_active() {
-	mut document := Document.create(URL{'https://example.test/'})
+	mut document := Document.create(URL{value: 'https://example.test/'})
 	document.set_content_type('text/html')
 	document.set_parser(&HTMLParser{})
 	document.update_readiness(.loading)

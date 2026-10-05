@@ -286,7 +286,7 @@ pub fn fetch_an_external_image_for_a_stylesheet(url_value StyleResourceURL, decl
 	// SharedResourceRequest owns deduplication, fetch/decode state, and decoded
 	// image data. The host starts the request through its fetch callback when one
 	// is installed at the platform boundary.
-	return dom.SharedResourceRequest.get_or_create(mut document, dom.URL{request.url})
+	return dom.SharedResourceRequest.get_or_create(mut document, dom.URL{value: request.url})
 }
 
 // https://drafts.csswg.org/css-values-5/#apply-request-modifiers-from-url-value

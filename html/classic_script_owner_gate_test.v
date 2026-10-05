@@ -5,7 +5,7 @@ import page
 
 fn classic_script_owner_fixture(value string) !(&page.Page, &dom.Document, &ScriptingRealm) {
 	owner := page.Page.create(1)!
-	url := dom.URL{value}
+	url := dom.URL{value: value}
 	document := create_navigation_document_for_page(url, url.origin(), none, unsafe { &dom.Page(owner) })!
 	settings := unsafe { &EnvironmentSettingsObject(document.relevant_settings_object()) }
 	return owner, document, settings.realm()
@@ -43,7 +43,7 @@ fn test_source_classic_create_uses_exact_webui_exemption_and_sandbox() {
 	disabled := ClassicScript.create('sandbox.js', 'kept', realm, document.url, 1, .no)
 	assert disabled.source == ''
 	document.set_active_sandboxing_flag_bits(0)
-	document.set_url(dom.URL{'about:settings#'})
+	document.set_url(dom.URL{value: 'about:settings#'})
 	assert ClassicScript.create('fragment.js', 'kept', realm, document.url, 1, .no).source == ''
 }
 
@@ -54,7 +54,7 @@ fn test_source_classic_preparsed_and_compiled_constructors_retain_original_sourc
 	assert preparsed.source == 'invalid' && preparsed.error_to_rethrow? == 'original parse failure'
 	parsed := ClassicScript.create_from_parsed_program('program.js', 'original', realm, dom.url_about_blank(), ParsedProgram{}, .no)
 	assert parsed.source == 'original'
-	mut compiled := ClassicScript.create_from_pre_compiled('compiled.js', 'original compiled source', realm, dom.URL{'https://other.example/script'}, CompiledProgram{ program_type: .script }, .yes)
+	mut compiled := ClassicScript.create_from_pre_compiled('compiled.js', 'original compiled source', realm, dom.URL{value: 'https://other.example/script'}, CompiledProgram{ program_type: .script }, .yes)
 	assert compiled.source == 'original compiled source'
 	assert compiled.base_url? == dom.url_about_blank()
 	compiled.set_evaluator(classic_owner_evaluate)

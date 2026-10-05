@@ -3,7 +3,7 @@ module browserjs
 import dom
 
 fn native_readable_conversion_document() &dom.Document {
-	url := dom.URL{'https://readable-conversion.example.test/'}
+	url := dom.URL{value: 'https://readable-conversion.example.test/'}
 	return &dom.Document{url: url, origin_: url.origin()}
 }
 

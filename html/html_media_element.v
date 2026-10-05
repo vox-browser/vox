@@ -982,7 +982,7 @@ fn (mut element HTMLMediaElement) load_media_source_from_blob_url(url dom.URL) !
 	mut access := fileapi.LegacyBlobURLObtainEnvironment(fileapi.LegacyBlobURLEnvironment{})
 	if html_element := element.associated_element_ {
 		document := unsafe { &dom.Element(html_element) }.document()
-		document_url := dom.URL{document.url_string()}
+		document_url := dom.URL{value: document.url_string()}
 		is_top_level_self_fetch := if navigable := document.navigable() {
 			navigable.parent() == none && document_url == url
 		} else {

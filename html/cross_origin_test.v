@@ -3,7 +3,7 @@ module html
 import dom
 
 fn cross_origin_test_document(url string) &dom.Document {
-	parsed := dom.URL{url}
+	parsed := dom.URL{value: url}
 	return &dom.Document{
 		url:     parsed
 		origin_: parsed.origin()

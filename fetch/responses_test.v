@@ -69,7 +69,7 @@ fn test_response_url() {
 fn test_response_location_url_clone_and_cors_classification() {
 	mut response := Response.create()
 	response.status = 302
-	response.url_list = [dom.URL{'https://example.test/base'}]
+	response.url_list = [dom.URL{value: 'https://example.test/base'}]
 	response.header_list.append(http.Header{ name: 'Location', value: '/next' })
 	response.redirect_taint = .cross_site
 	response.set_javascript_bytecode_cache([u8(1), 2, 3])

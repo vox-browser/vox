@@ -4,7 +4,7 @@ import dom
 import webidl
 
 fn native_read_loop_document() &dom.Document {
-	url := dom.URL{'https://native-read-loop.example.test/'}
+	url := dom.URL{value: 'https://native-read-loop.example.test/'}
 	return &dom.Document{ url: url, origin_: url.origin() }
 }
 

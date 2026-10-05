@@ -8,7 +8,7 @@ fn test_native_document_file_bindings_preserve_actual_blob_base_pending_reads_cl
 	$if !darwin {
 		return
 	}
-	mut document := parse_browser_navigation_document('<div id="result">pending</div>', dom.URL{'https://native-document-file.example.test/'}, none)
+	mut document := parse_browser_navigation_document('<div id="result">pending</div>', dom.URL{value: 'https://native-document-file.example.test/'}, none)
 	mut runtime := browserjs.Runtime.create()
 	defer {
 		runtime.close()

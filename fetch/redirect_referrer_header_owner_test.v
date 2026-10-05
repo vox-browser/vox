@@ -26,13 +26,13 @@ fn redirect_referrer_source_request(headers []http.Header) !&Request {
 	redirect_referrer_source_headers = headers.clone()
 	redirect_referrer_sent_headers = []string{}
 	mut request := Request.create()
-	request.url_list = [dom.URL{'https://source.test/start'}]
+	request.url_list = [dom.URL{value: 'https://source.test/start'}]
 	request.origin = RequestOrigin{
 		is_client: false
-		origin:    dom.URL{'https://source.test/start'}.origin()
+		origin:    dom.URL{value: 'https://source.test/start'}.origin()
 	}
 	request.referrer = Referrer{
-		url: dom.URL{'https://user:secret@source.test/path?private=1#fragment'}
+		url: dom.URL{value: 'https://user:secret@source.test/path?private=1#fragment'}
 	}
 	request.referrer_policy = 'unsafe-url'
 	request.cache_mode = .no_store

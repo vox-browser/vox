@@ -6,8 +6,8 @@ import highresolutiontime
 import page
 
 fn frame_host_document() (&dom.Document, &page.Page) {
-	mut document := html.parse_navigation_document('<!doctype html><body></body>', dom.URL{'https://frame-host.test/'},
-		dom.URL{'https://frame-host.test/'}.origin(), none) or { panic(err) }
+	mut document := html.parse_navigation_document('<!doctype html><body></body>', dom.URL{value: 'https://frame-host.test/'},
+		dom.URL{value: 'https://frame-host.test/'}.origin(), none) or { panic(err) }
 	mut page_ := page.Page.create(1) or { panic(err) }
 	document.set_page(unsafe { &dom.Page(page_) })
 	page_.set_local_root_navigable(document.navigable() or { panic('missing navigable') }) or {

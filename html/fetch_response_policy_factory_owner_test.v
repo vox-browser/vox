@@ -7,7 +7,7 @@ import page
 
 fn source_factory_actual_document(address string) !(&dom.Document, &EnvironmentSettingsObject) {
 	owner := page.Page.create(1)!
-	url := dom.URL{address}
+	url := dom.URL{value: address}
 	mut document := create_navigation_document_for_page(url, url.origin(), none, unsafe { &dom.Page(owner) })!
 	document.set_document_type(.html)
 	document.populate_with_html_head_and_body()!
@@ -18,7 +18,7 @@ fn source_factory_actual_document(address string) !(&dom.Document, &EnvironmentS
 
 fn source_factory_response(address string, headers []http.Header) &fetch.Response {
 	mut response := fetch.Response.create()
-	response.url_list = [dom.URL{address}]
+	response.url_list = [dom.URL{value: address}]
 	for header in headers {
 		response.header_list.append(header)
 	}
@@ -144,7 +144,7 @@ fn test_source_response_factory_populates_the_actual_document_settings_policy_ow
 	assert settings.serialize().policy_container.csp_list.len == 3
 	mut request := fetch.Request.create()
 	request.set_client(settings)
-	request.set_url(dom.URL{'https://other-factory-owner.test/image.png'})
+	request.set_url(dom.URL{value: 'https://other-factory-owner.test/image.png'})
 	request.destination = .image
 	fetch.populate_request_from_client(mut request)
 	actual := fetch.main_fetch(fetch.FetchParams.create(request, fetch.FetchTimingInfo.create()), fetch.FetchHost{

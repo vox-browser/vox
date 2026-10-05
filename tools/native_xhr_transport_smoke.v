@@ -29,7 +29,7 @@ fn main() {
 	defer { listener.close() or {} }
 	server := spawn serve(mut listener)
 	address := listener.addr() or { panic(err) }
-	mut document := dom.Document.create(dom.URL{'http://${address}/owner'})
+	mut document := dom.Document.create(dom.URL{value: 'http://${address}/owner'})
 	document.set_origin(document.url.origin())
 	_ := html.WindowModel.create_top_level(document, none, '') or { panic(err) }
 	settings := unsafe { &html.EnvironmentSettingsObject(document.relevant_settings_object()) }

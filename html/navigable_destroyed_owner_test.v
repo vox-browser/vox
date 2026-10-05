@@ -14,7 +14,7 @@ mut:
 
 fn navigable_destroyed_owner_fixture(address string) !(&dom.Document, &NavigableModel, &TraversableNavigable, &dom.Navigable) {
 	owner := page.Page.create(1)!
-	url := dom.URL{address}
+	url := dom.URL{value: address}
 	document := create_navigation_document_for_page(url, url.origin(), none, unsafe { &dom.Page(owner) })!
 	native := document.navigable() or { return error('missing actual native Navigable') }
 	model := navigable_model_for_host(native) or { return error('missing actual local model') }
@@ -63,7 +63,7 @@ fn test_retained_destroyed_local_model_cannot_fetch_or_queue_navigation_and_hist
 	assert !model.has_pending_navigations()
 	entries_before := model.get_session_history_entries().len
 	model.navigate(NavigableNavigateParams{
-		url:             dom.URL{'https://navigable-destroyed-owner.example/unreachable'}
+		url:             dom.URL{value: 'https://navigable-destroyed-owner.example/unreachable'}
 		source_document: document
 	})!
 	assert state.fetches == 0 && !model.has_pending_navigations()

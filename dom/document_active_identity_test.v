@@ -8,7 +8,7 @@ fn test_source_document_activity_requires_an_actual_navigable() {
 
 fn test_source_document_activity_uses_navigable_identity_without_browsing_context_presence() {
 	mut document := Document.create(url_about_blank())
-	other := Document.create(URL{'https://other.example/'})
+	other := Document.create(URL{value: 'https://other.example/'})
 	mut navigable := &Navigable{ active_document_: document }
 	document.set_navigable(navigable)
 	assert document.is_active()
@@ -20,7 +20,7 @@ fn test_source_document_activity_uses_navigable_identity_without_browsing_contex
 
 fn test_source_inactive_body_cannot_read_replace_or_remove_retained_window_handlers() {
 	mut old_document := Document.create(url_about_blank())
-	mut new_document := Document.create(URL{'https://replacement.example/'})
+	mut new_document := Document.create(URL{value: 'https://replacement.example/'})
 	context := &BrowsingContext{ active_document_: old_document }
 	old_document.set_browsing_context(context)
 	new_document.set_browsing_context(context)
@@ -62,7 +62,7 @@ fn test_source_inactive_document_scroll_apis_do_not_read_or_modify_its_previous_
 	mut root := document.document_element() or { panic('root') }
 	assert root.scroll_left() == 12 && root.scroll_top() == 34
 	// Retain a stale back-pointer to test the active-document identity boundary.
-	navigable.active_document_ = Document.create(URL{'https://next.example/'})
+	navigable.active_document_ = Document.create(URL{value: 'https://next.example/'})
 	assert root.scroll_left() == 0 && root.scroll_top() == 0
 	assert root.el_scroll(56, 78).state() == .fulfilled
 	assert window.scroll_x() == 12 && window.scroll_y() == 34

@@ -33,7 +33,7 @@ fn test_source_xhr_blob_response_wraps_cached_native_record_and_uses_owning_read
 	mut listener := net.listen_tcp(.ip, '127.0.0.1:0')!
 	defer { listener.close() or {} }
 	server := spawn source_xhr_blob_serve(mut listener)
-	mut document := dom.Document.create(dom.URL{'http://${listener.addr()!}/source-blob-owner'})
+	mut document := dom.Document.create(dom.URL{value: 'http://${listener.addr()!}/source-blob-owner'})
 	document.set_origin(document.url.origin())
 	mut host := XMLHttpRequestHost.create_native(document)!
 	mut runtime := source_xhr_blob_runtime(document, mut host)
@@ -89,7 +89,7 @@ fn test_source_xhr_blob_body_uses_actual_record_and_rejects_visible_blob_keys() 
 	$if !darwin {
 		return
 	}
-	mut document := dom.Document.create(dom.URL{'https://source-xhr-blob-send.example.test/'})
+	mut document := dom.Document.create(dom.URL{value: 'https://source-xhr-blob-send.example.test/'})
 	document.set_origin(document.url.origin())
 	transport := &fetch.FetchHost{
 		perform:       fn (_ &fetch.Request) !&fetch.Response {

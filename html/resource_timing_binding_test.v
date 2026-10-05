@@ -14,7 +14,7 @@ mut:
 }
 
 fn resource_timing_fixture() (&EnvironmentSettingsObject, &WindowOrWorkerGlobalScopeMixin, &EventLoop) {
-	mut document := dom.Document.create(dom.URL{'https://timing.example/page'})
+	mut document := dom.Document.create(dom.URL{value: 'https://timing.example/page'})
 	document.set_origin(document.url.origin())
 	window := WindowModel.create_top_level(document, none, 'resource-timing') or { panic(err) }
 	mut settings := window.environment_settings_.settings
@@ -29,7 +29,7 @@ fn resource_timing_fixture() (&EnvironmentSettingsObject, &WindowOrWorkerGlobalS
 fn resource_timing_params(settings &EnvironmentSettingsObject, url string) &fetch.FetchParams {
 	mut request := fetch.Request.create()
 	request.client = settings
-	request.url_list = [dom.URL{url}]
+	request.url_list = [dom.URL{value: url}]
 	request.initiator_type = .fetch
 	mut timing := fetch.FetchTimingInfo.create()
 	timing.start_time = settings.time_origin() + 10
@@ -102,7 +102,7 @@ fn test_parallel_fetch_requires_explicit_reporting_to_its_current_global() {
 	settings, mut scope, owner := resource_timing_fixture()
 	mut request := fetch.Request.create()
 	request.client = settings
-	request.url_list = [dom.URL{'https://timing.example/synchronous'}]
+	request.url_list = [dom.URL{value: 'https://timing.example/synchronous'}]
 	request.mode = .same_origin
 	request.initiator_type = .xml_http_request
 	controller := fetch.fetch_with_parallel_queue(request, fetch.FetchAlgorithms.create(fetch.FetchAlgorithmsInput{}), &fetch.FetchHost{
@@ -147,7 +147,7 @@ fn test_resource_reporting_applies_opaque_timing_and_navigation_redirect_visibil
 fn test_resource_reporting_uses_worker_ownership_and_skips_non_http_urls() {
 	outside, mut window_scope, window_owner := resource_timing_fixture()
 	mut realm := &ScriptingRealm{}
-	worker := WorkerGlobalScope.create(dom.URL{'https://timing.example/worker.js'}, .classic, '', realm)
+	worker := WorkerGlobalScope.create(dom.URL{value: 'https://timing.example/worker.js'}, .classic, '', realm)
 	settings := WorkerEnvironmentSettingsObject.setup(worker, mut realm, outside.serialize(), 0).settings
 	mut scope := worker.window_or_worker_global_scope()
 	params := resource_timing_params(settings, 'https://timing.example/worker-resource')

@@ -8,7 +8,7 @@ import webidl
 
 fn source_clone_blob_runtime(address string, constructor bool) &Runtime {
 	mut runtime := Runtime.create()
-	url := dom.URL{address}
+	url := dom.URL{value: address}
 	document := &dom.Document{ url: url, origin_: url.origin() }
 	mut readable := ReadableStreamHost.create(document) or { panic(err) }
 	readable.install(mut runtime) or { panic(err) }

@@ -7,7 +7,7 @@ import page
 
 fn public_window_handler_fixture() !(&Runtime, &page.Page, &dom.EventTarget, &html.EnvironmentSettingsObject) {
 	owner := page.Page.create(1)!
-	url := dom.URL{'https://window-handlers.example/'}
+	url := dom.URL{value: 'https://window-handlers.example/'}
 	document := html.create_navigation_document_for_page(url, url.origin(), none, unsafe { &dom.Page(owner) })!
 	settings := unsafe { &html.EnvironmentSettingsObject(document.relevant_settings_object()) }
 	mut runtime := Runtime.create()
@@ -134,7 +134,7 @@ fn test_public_window_handler_registration_uses_engine_global_when_author_global
 		return
 	}
 	owner := page.Page.create(1)!
-	url := dom.URL{'https://window-handlers.example/'}
+	url := dom.URL{value: 'https://window-handlers.example/'}
 	document := html.create_navigation_document_for_page(url, url.origin(), none, unsafe { &dom.Page(owner) })!
 	settings := unsafe { &html.EnvironmentSettingsObject(document.relevant_settings_object()) }
 	mut runtime := Runtime.create()

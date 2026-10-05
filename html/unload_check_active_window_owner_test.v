@@ -13,7 +13,7 @@ mut:
 
 fn unload_active_window_document(address string) !(&dom.Document, &WindowModel) {
 	owner := page.Page.create(1)!
-	url := dom.URL{address}
+	url := dom.URL{value: address}
 	document := create_navigation_document_for_page(url, url.origin(), none, unsafe { &dom.Page(owner) })!
 	return document, unsafe { &WindowModel(document.get_window() or { return error('missing actual Window') }) }
 }
@@ -28,7 +28,7 @@ fn unload_active_window_traversable(document &dom.Document) &TraversableNavigabl
 
 fn unload_active_window_entry(document &dom.Document) &SessionHistoryEntry {
 	return &SessionHistoryEntry{
-		url:            dom.URL{'https://unload-active-window.example/target'}
+		url:            dom.URL{value: 'https://unload-active-window.example/target'}
 		document_state: &DocumentState{
 			document:     document
 			document_id_: document.unique_id()
@@ -178,7 +178,7 @@ fn test_unload_phase_one_reads_native_active_document_after_real_navigation_repl
 	task := event_loop.task_queue().last_added_task()?
 	assert voidptr(task.document()?) == voidptr(queue_owner)
 	original_window.set_associated_document(original)
-	url := dom.URL{'https://unload-active-window.example/navigation-replacement'}
+	url := dom.URL{value: 'https://unload-active-window.example/navigation-replacement'}
 	mut replacement := create_navigation_document_for_page(url, url.origin(), original, original.page())!
 	defer { replacement.finalize() }
 	replacement_window := unsafe { &WindowModel(replacement.get_window()?) }

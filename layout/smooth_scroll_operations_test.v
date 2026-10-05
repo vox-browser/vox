@@ -72,7 +72,7 @@ fn test_element_smooth_snap_keeps_intermediate_samples_and_adoption_resolves_pen
 		behavior: .smooth
 	})
 	assert removed_promise.state() == .pending
-	mut replacement_document := dom.Document.create(dom.URL{'https://other.test/'})
+	mut replacement_document := dom.Document.create(dom.URL{value: 'https://other.test/'})
 	replacement_document.adopt_node(element.as_node())
 	model.process_main_thread_smooth_scrolls()
 	assert document.pending_scroll_events.filter(it.type_ == 'scrollend').len == 0

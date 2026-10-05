@@ -5,7 +5,7 @@ import fileapi
 import webidl
 
 fn blob_text_settings() &EnvironmentSettingsObject {
-	url := dom.URL{'https://blob-text.example.test/'}
+	url := dom.URL{value: 'https://blob-text.example.test/'}
 	document := &dom.Document{ url: url, origin_: url.origin() }
 	window := WindowModel.create_top_level(document, none, 'blob-text') or { panic(err) }
 	mut settings := window.environment_settings_.settings
@@ -65,7 +65,7 @@ fn test_worker_blob_text_fulfillment_stays_on_its_actual_relevant_realm() {
 	window_settings := blob_text_settings()
 	mut window_owner := unsafe { &EventLoop(window_settings.responsible_event_loop()) }
 	mut realm := &ScriptingRealm{}
-	scope := WorkerGlobalScope.create(dom.URL{'https://blob-text.example.test/worker.js'}, .classic, 'blob-text-worker', realm)
+	scope := WorkerGlobalScope.create(dom.URL{value: 'https://blob-text.example.test/worker.js'}, .classic, 'blob-text-worker', realm)
 	settings := WorkerEnvironmentSettingsObject.setup(scope, mut realm, window_settings.serialize(), 1).settings
 	blob := fileapi.Blob.create([u8(0xFF), 0xFE, 0x61, 0], '')
 	promise := settings.blob_text(blob)

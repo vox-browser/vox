@@ -5,7 +5,7 @@ import streams
 import webidl
 
 fn strategy_host_document() &dom.Document {
-	url := dom.URL{'https://native-strategy.example.test/'}
+	url := dom.URL{value: 'https://native-strategy.example.test/'}
 	return &dom.Document{url: url, origin_: url.origin()}
 }
 

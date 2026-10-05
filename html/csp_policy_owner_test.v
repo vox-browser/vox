@@ -7,7 +7,7 @@ import page
 
 fn source_csp_policy_owner_document(address string) !(&dom.Document, &EnvironmentSettingsObject) {
 	owner := page.Page.create(1)!
-	url := dom.URL{address}
+	url := dom.URL{value: address}
 	mut document := create_navigation_document_for_page(url, url.origin(), none, unsafe { &dom.Page(owner) })!
 	document.set_document_type(.html)
 	document.populate_with_html_head_and_body()!

@@ -1,7 +1,7 @@
 module dom
 
 fn test_source_window_virtual_dispatch_keeps_current_target_but_overrides_target_with_document() {
-	document := Document.create(URL{'https://window-dispatch.example/'})
+	document := Document.create(URL{value: 'https://window-dispatch.example/'})
 	mut window := &Window{}
 	window.set_associated_document(document)
 	target := unsafe { &EventTarget(window) }

@@ -15,7 +15,7 @@ mut:
 }
 
 fn synchronous_xhr_settings() &html.EnvironmentSettingsObject {
-	mut document := dom.Document.create(dom.URL{'https://example.test/sync-owner'})
+	mut document := dom.Document.create(dom.URL{value: 'https://example.test/sync-owner'})
 	document.set_origin(document.url.origin())
 	window := html.WindowModel.create_top_level(document, none, 'sync-owner') or { panic(err) }
 	mut realm := &html.ScriptingRealm{}

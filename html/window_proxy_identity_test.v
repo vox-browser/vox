@@ -5,7 +5,7 @@ import page
 
 fn window_proxy_identity_document(address string) !(&dom.Document, &WindowModel) {
 	owner := page.Page.create(1)!
-	url := dom.URL{address}
+	url := dom.URL{value: address}
 	document := create_navigation_document_for_page(url, url.origin(), none, unsafe { &dom.Page(owner) })!
 	native := document.get_window() or { return error('missing actual Window') }
 	return document, unsafe { &WindowModel(native) }
@@ -67,7 +67,7 @@ fn test_actual_navigation_retains_native_context_proxy_and_updates_current_windo
 	native_context := original.get_browsing_context()?
 	native_proxy := native_context.window_proxy()
 	navigable := original.navigable()?
-	url := dom.URL{'https://next-proxy.example/after'}
+	url := dom.URL{value: 'https://next-proxy.example/after'}
 	mut replacement := create_navigation_document_for_page(url, url.origin(), original, original.page())!
 	defer { replacement.finalize() }
 	replacement_native := replacement.get_window()?

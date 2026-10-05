@@ -7,7 +7,7 @@ import page
 
 fn activation_identity_window() !(&dom.Document, &WindowModel) {
 	owner := page.Page.create(1)!
-	url := dom.URL{'https://activation-identity.example/'}
+	url := dom.URL{value: 'https://activation-identity.example/'}
 	document := create_navigation_document_for_page(url, url.origin(), none, unsafe { &dom.Page(owner) })!
 	native := document.get_window() or { return error('missing actual Window') }
 	return document, unsafe { &WindowModel(native) }

@@ -7,7 +7,7 @@ import page
 
 fn input_picker_owner_document(address string, markup string) !(&dom.Document, &WindowModel, &page.Page) {
 	owner := page.Page.create(1)!
-	url := dom.URL{address}
+	url := dom.URL{value: address}
 	mut document := create_navigation_document_for_page(url, url.origin(), none, unsafe { &dom.Page(owner) })!
 	document.set_document_type(.html)
 	parse_html_from_a_string(document, markup)
@@ -72,7 +72,7 @@ fn test_input_picker_preserves_source_error_order_origin_exemptions_and_unsuppor
 	mut file := input_picker_owner_model(document, 'file')!
 	mut color := input_picker_owner_model(document, 'color')!
 	mut settings := window.environment_settings_.settings
-	settings.environment_.top_level_origin = dom.URL{'https://foreign-picker-top.example/'}.origin()
+	settings.environment_.top_level_origin = dom.URL{value: 'https://foreign-picker-top.example/'}.origin()
 	mut element := document.get_element_by_id('text')?
 	element.set_attribute_value('disabled', '')
 	mut rejection := ''
@@ -113,7 +113,7 @@ fn test_input_picker_adoption_reads_new_native_global_and_actual_page() {
 	mut file := input_picker_owner_model(original, 'file')!
 	mut text := input_picker_owner_model(original, 'text')!
 	mut original_settings := original_window.environment_settings_.settings
-	original_settings.environment_.top_level_origin = dom.URL{'https://foreign-original-picker-top.example/'}.origin()
+	original_settings.environment_.top_level_origin = dom.URL{value: 'https://foreign-original-picker-top.example/'}.origin()
 	input_picker_owner_activate(original)
 	mut rejection := ''
 	text.show_picker() or { rejection = err.msg() }

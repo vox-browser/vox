@@ -7,7 +7,7 @@ import libjs
 
 fn source_file_owner_runtime() (&Runtime, &FileHost, &dom.Document) {
 	mut runtime := Runtime.create()
-	url := dom.URL{'https://source-file-owner.example.test/'}
+	url := dom.URL{value: 'https://source-file-owner.example.test/'}
 	document := dom.Document.create(url)
 	mut readable := ReadableStreamHost.create(document) or { panic(err) }
 	readable.install(mut runtime) or { panic(err) }

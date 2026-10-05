@@ -61,7 +61,7 @@ fn test_universal_global_scope_microtasks_and_rejected_promises() {
 fn test_universal_global_scope_import_map_and_experimental_flag() {
 	mut scope := UniversalGlobalScopeMixin.create(&dom.EventTarget{}, &ScriptingRealm{})
 	import_map :=
-		parse_import_map_string('{"imports":{"x":"/x.js"}}', dom.URL{'https://example.test/'})!
+		parse_import_map_string('{"imports":{"x":"/x.js"}}', dom.URL{value: 'https://example.test/'})!
 	scope.set_import_map(import_map)
 	assert scope.import_map().imports.entries.len == 1
 	set_experimental_interfaces_exposed(true)

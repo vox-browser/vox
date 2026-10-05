@@ -11,14 +11,14 @@ mut:
 }
 
 fn stream_owner_window() &WindowModel {
-	url := dom.URL{'https://streams.example.test/'}
+	url := dom.URL{value: 'https://streams.example.test/'}
 	document := &dom.Document{ url: url, origin_: url.origin() }
 	return WindowModel.create_top_level(document, none, 'stream-owner') or { panic(err) }
 }
 
 fn stream_owner_worker(window &WindowModel) &EnvironmentSettingsObject {
 	mut realm := &ScriptingRealm{}
-	scope := WorkerGlobalScope.create(dom.URL{'https://streams.example.test/worker.js'}, .classic, 'stream-owner', realm)
+	scope := WorkerGlobalScope.create(dom.URL{value: 'https://streams.example.test/worker.js'}, .classic, 'stream-owner', realm)
 	return WorkerEnvironmentSettingsObject.setup(scope, mut realm, window.environment_settings_.settings.serialize(), 12).settings
 }
 

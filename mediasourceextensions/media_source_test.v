@@ -144,7 +144,7 @@ fn test_media_source_can_be_assigned_to_media_element_src_object() {
 	mut source := MediaSource.create()
 	observation := &EventObservation{}
 	source.set_onsourceopen(observer_callback(observation))
-	mut media := html.HTMLMediaElement.create(none, dom.URL{'https://example.test/'})
+	mut media := html.HTMLMediaElement.create(none, dom.URL{value: 'https://example.test/'})
 	media.set_source('/remote.webm')
 	media.set_src_object(source.as_media_provider())!
 	run_media_source_tasks()
@@ -159,7 +159,7 @@ fn test_media_source_can_be_assigned_to_media_element_src_object() {
 	assert source.media_element_assigned_to()? == media
 	assert observation.count == 1
 
-	mut second_media := html.HTMLMediaElement.create(none, dom.URL{'https://example.test/'})
+	mut second_media := html.HTMLMediaElement.create(none, dom.URL{value: 'https://example.test/'})
 	second_media.set_src_object(source.as_media_provider())!
 	run_media_source_tasks()
 	assert second_media.network_state() == .no_source
@@ -168,7 +168,7 @@ fn test_media_source_can_be_assigned_to_media_element_src_object() {
 
 fn test_media_source_detaches_and_removes_source_buffers_when_media_is_reset() {
 	mut source := MediaSource.create()
-	mut media := html.HTMLMediaElement.create(none, dom.URL{'https://example.test/'})
+	mut media := html.HTMLMediaElement.create(none, dom.URL{value: 'https://example.test/'})
 	media.set_src_object(source.as_media_provider())!
 	run_media_source_tasks()
 	mut buffer := source.add_source_buffer('video/webm; codecs="vp9"')!
@@ -212,7 +212,7 @@ fn test_media_source_detaches_and_removes_source_buffers_when_media_is_reset() {
 }
 
 fn test_media_source_blob_url_loads_as_a_local_resource() {
-	mut document := dom.Document.create(dom.URL{'https://example.test/page'})
+	mut document := dom.Document.create(dom.URL{value: 'https://example.test/page'})
 	mut navigable := &dom.Navigable{
 		active_document_: document
 		is_top_level_traversable_: true
@@ -258,7 +258,7 @@ fn test_media_source_add_source_buffer_and_indexed_source_buffer_list() {
 		assert err.msg() == 'InvalidStateError: MediaSource is not open'
 	}
 
-	mut media := html.HTMLMediaElement.create(none, dom.URL{'https://example.test/'})
+	mut media := html.HTMLMediaElement.create(none, dom.URL{value: 'https://example.test/'})
 	media.set_src_object(source.as_media_provider())!
 	run_media_source_tasks()
 	observation := &EventObservation{}
@@ -275,7 +275,7 @@ fn test_media_source_add_source_buffer_and_indexed_source_buffer_list() {
 fn test_media_source_duration_mode_and_change_type() {
 	mut source := MediaSource.create()
 	assert math.is_nan(source.duration())
-	mut media := html.HTMLMediaElement.create(none, dom.URL{'https://example.test/'})
+	mut media := html.HTMLMediaElement.create(none, dom.URL{value: 'https://example.test/'})
 	media.set_src_object(source.as_media_provider())!
 	run_media_source_tasks()
 	source.set_duration(-1) or {
@@ -305,7 +305,7 @@ fn test_source_buffer_append_error_and_end_of_stream_algorithms() {
 	run_media_source_tasks()
 
 	mut source := MediaSource.create()
-	mut media := html.HTMLMediaElement.create(none, dom.URL{'https://example.test/'})
+	mut media := html.HTMLMediaElement.create(none, dom.URL{value: 'https://example.test/'})
 	media.set_src_object(source.as_media_provider())!
 	run_media_source_tasks()
 	mut buffer := source.add_source_buffer('video/webm; codecs="vp9"')!
@@ -393,7 +393,7 @@ fn minimal_webm_media_segment() []u8 {
 
 fn test_webm_initialization_and_media_segments_create_tracks_and_coded_frames() {
 	mut source := MediaSource.create()
-	mut media := html.HTMLMediaElement.create(none, dom.URL{'https://example.test/'})
+	mut media := html.HTMLMediaElement.create(none, dom.URL{value: 'https://example.test/'})
 	media.set_src_object(source.as_media_provider())!
 	run_media_source_tasks()
 	mut buffer := source.add_source_buffer('video/webm; codecs="vp9"')!
@@ -476,7 +476,7 @@ fn test_webm_track_metadata_preserves_bcp47_language_and_kind() {
 
 fn test_webm_rejects_an_unsupported_initialization_segment_codec() {
 	mut source := MediaSource.create()
-	mut media := html.HTMLMediaElement.create(none, dom.URL{'https://example.test/'})
+	mut media := html.HTMLMediaElement.create(none, dom.URL{value: 'https://example.test/'})
 	media.set_src_object(source.as_media_provider())!
 	run_media_source_tasks()
 	mut buffer := source.add_source_buffer('video/webm; codecs="vp9"')!
@@ -499,7 +499,7 @@ fn test_webm_rejects_an_unsupported_initialization_segment_codec() {
 
 fn test_source_buffer_abort_resets_parser_and_queues_abort_events_when_updating() {
 	mut source := MediaSource.create()
-	mut media := html.HTMLMediaElement.create(none, dom.URL{'https://example.test/'})
+	mut media := html.HTMLMediaElement.create(none, dom.URL{value: 'https://example.test/'})
 	media.set_src_object(source.as_media_provider())!
 	run_media_source_tasks()
 	mut buffer := source.add_source_buffer('video/webm; codecs="vp9"')!
@@ -530,7 +530,7 @@ fn test_source_buffer_abort_resets_parser_and_queues_abort_events_when_updating(
 
 fn test_source_buffer_abort_discards_a_partial_media_segment_before_the_next_append() {
 	mut source := MediaSource.create()
-	mut media := html.HTMLMediaElement.create(none, dom.URL{'https://example.test/'})
+	mut media := html.HTMLMediaElement.create(none, dom.URL{value: 'https://example.test/'})
 	media.set_src_object(source.as_media_provider())!
 	run_media_source_tasks()
 	mut buffer := source.add_source_buffer('video/webm; codecs="vp9"')!
@@ -553,7 +553,7 @@ fn test_source_buffer_abort_discards_a_partial_media_segment_before_the_next_app
 
 fn test_source_buffer_keeps_a_split_ignored_webm_element_until_it_is_complete() {
 	mut source := MediaSource.create()
-	mut media := html.HTMLMediaElement.create(none, dom.URL{'https://example.test/'})
+	mut media := html.HTMLMediaElement.create(none, dom.URL{value: 'https://example.test/'})
 	media.set_src_object(source.as_media_provider())!
 	run_media_source_tasks()
 	mut buffer := source.add_source_buffer('video/webm; codecs="vp9"')!
@@ -577,7 +577,7 @@ fn test_source_buffer_keeps_a_split_ignored_webm_element_until_it_is_complete() 
 
 fn test_source_buffer_ignores_webm_elements_after_a_repeated_initialization_segment() {
 	mut source := MediaSource.create()
-	mut media := html.HTMLMediaElement.create(none, dom.URL{'https://example.test/'})
+	mut media := html.HTMLMediaElement.create(none, dom.URL{value: 'https://example.test/'})
 	media.set_src_object(source.as_media_provider())!
 	run_media_source_tasks()
 	mut buffer := source.add_source_buffer('video/webm; codecs="vp9"')!
@@ -674,7 +674,7 @@ fn test_managed_media_source_initializes_its_base_source_buffer_lists() {
 	assert source.source_buffers().length() == 0
 	assert source.active_source_buffers().length() == 0
 
-	mut media := html.HTMLMediaElement.create(none, dom.URL{'https://example.test/'})
+	mut media := html.HTMLMediaElement.create(none, dom.URL{value: 'https://example.test/'})
 	media.set_src_object(source.as_media_provider())!
 	run_media_source_tasks()
 	buffer := source.add_source_buffer('video/webm; codecs="vp9"')!
@@ -689,7 +689,7 @@ fn test_media_source_handle_is_opaque_and_transferable() {
 
 fn test_media_source_attachment_state_and_associated_events() {
 	mut source := MediaSource.create()
-	mut media := html.HTMLMediaElement.create(none, dom.URL{'https://example.test/'})
+	mut media := html.HTMLMediaElement.create(none, dom.URL{value: 'https://example.test/'})
 	assert !source.has_ever_been_attached()
 	source.set_has_ever_been_attached()
 	source.set_assigned_to_media_element(media)
@@ -719,7 +719,7 @@ fn test_media_source_relevant_global_is_shared_by_owned_objects() {
 
 fn test_source_buffer_append_runs_its_steps_and_events_as_queued_tasks() {
 	mut source := MediaSource.create()
-	mut media := html.HTMLMediaElement.create(none, dom.URL{'https://example.test/'})
+	mut media := html.HTMLMediaElement.create(none, dom.URL{value: 'https://example.test/'})
 	media.set_src_object(source.as_media_provider())!
 	run_media_source_tasks()
 	mut buffer := source.add_source_buffer('video/webm; codecs="vp9"')!

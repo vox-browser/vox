@@ -12,7 +12,7 @@ mut:
 }
 
 fn universal_scope_owner_window(address string, owner &page.Page) !(&dom.Document, &WindowModel) {
-	url := dom.URL{address}
+	url := dom.URL{value: address}
 	document := create_navigation_document_for_page(url, url.origin(), none, unsafe { &dom.Page(owner) })!
 	native := document.get_window() or { return error('missing actual Window') }
 	return document, unsafe { &WindowModel(native) }
@@ -55,7 +55,7 @@ fn test_universal_scope_microtasks_capture_current_native_window_document_at_que
 
 fn test_universal_scope_created_before_document_uses_later_actual_window_association() {
 	owner := page.Page.create(1)!
-	url := dom.URL{'https://universal-owner.example/creation'}
+	url := dom.URL{value: 'https://universal-owner.example/creation'}
 	context := BrowsingContextModel.create_for_page(unsafe { &dom.Page(owner) }, none, 'before-document')
 	window := create_window_global_before_document(context, url, url.origin(), url, url.origin())
 	settings := window.environment_settings_.settings
@@ -138,7 +138,7 @@ fn test_universal_scope_actual_worker_microtask_and_rejection_tasks_have_no_docu
 	mut document, window := universal_scope_owner_window('https://universal-owner.example/outside', owner)!
 	defer { document.finalize() }
 	mut realm := &ScriptingRealm{}
-	mut worker := WorkerGlobalScope.create(dom.URL{'https://universal-owner.example/worker.js'}, .classic, 'worker', realm)
+	mut worker := WorkerGlobalScope.create(dom.URL{value: 'https://universal-owner.example/worker.js'}, .classic, 'worker', realm)
 	defer { worker.close_a_worker() }
 	worker_settings := WorkerEnvironmentSettingsObject.setup(worker, mut realm, window.environment_settings_.settings.serialize(), highresolutiontime.unsafe_shared_current_time())
 	mut scope := worker_settings.settings.universal_global_scope()

@@ -7,7 +7,7 @@ import webcrypto
 import webidl
 
 fn clone_crypto_key_runtime(address string) &Runtime {
-	url := dom.URL{address}
+	url := dom.URL{value: address}
 	mut runtime := Runtime.create()
 	mut host := CryptoHost.create(&dom.Document{ url: url, origin_: url.origin() }) or { panic(err) }
 	host.install(mut runtime) or { panic(err) }

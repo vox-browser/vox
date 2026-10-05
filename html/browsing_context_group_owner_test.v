@@ -65,7 +65,7 @@ fn test_source_context_constructor_leaves_group_append_to_caller_and_member_remo
 fn test_legacy_pre_native_member_is_promoted_into_the_same_actual_native_set_at_window_construction() {
 	owner := page.Page.create(1)!
 	mut group := BrowsingContextGroup.create(unsafe { &dom.Page(owner) })
-	mut document := dom.Document.create(dom.URL{'https://group-owner.example/pre-native'})
+	mut document := dom.Document.create(dom.URL{value: 'https://group-owner.example/pre-native'})
 	document.set_origin(document.url.origin())
 	defer {
 		document.finalize()

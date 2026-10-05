@@ -13,7 +13,7 @@ mut:
 }
 
 fn file_reader_owner_window() &WindowModel {
-	url := dom.URL{'https://file-reader-owner.example.test/creation.html'}
+	url := dom.URL{value: 'https://file-reader-owner.example.test/creation.html'}
 	document := &dom.Document{
 		url:              url
 		origin_:          url.origin()
@@ -59,7 +59,7 @@ fn test_source_file_reader_tasks_use_creation_global_loop_and_queue_time_documen
 	})
 	first_task := loop.task_queue().last_added_task() or { panic('missing first task') }
 	assert first_task.source() == .file_reading
-	url := dom.URL{'https://file-reader-owner.example.test/later.html'}
+	url := dom.URL{value: 'https://file-reader-owner.example.test/later.html'}
 	mut later_document := &dom.Document{ url: url, origin_: url.origin() }
 	defer { later_document.finalize() }
 	// The actual creation Window/Realm stays fixed. Its current associated
@@ -133,7 +133,7 @@ fn test_source_worker_file_reader_uses_actual_worker_loop_null_document_and_glob
 	mut document := window.associated_document()
 	defer { document.finalize() }
 	mut realm := &ScriptingRealm{}
-	worker := WorkerGlobalScope.create(dom.URL{'https://file-reader-owner.example.test/worker.js'},
+	worker := WorkerGlobalScope.create(dom.URL{value: 'https://file-reader-owner.example.test/worker.js'},
 		.classic, '', realm)
 	settings := WorkerEnvironmentSettingsObject.setup(worker, mut realm,
 		window.environment_settings_.settings.serialize(), highresolutiontime.unsafe_shared_current_time()).settings

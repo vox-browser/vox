@@ -9,7 +9,7 @@ struct CacheTestClient {
 }
 
 fn (client &CacheTestClient) fetch_request_client_api_base_url() dom.URL {
-	return dom.URL{client.top_level_origin.serialize() + '/'}
+	return dom.URL{value: client.top_level_origin.serialize() + '/'}
 }
 
 fn (_ &CacheTestClient) fetch_request_client_policy_container() RequestPolicyContainer {
@@ -33,7 +33,7 @@ fn (_ &CacheTestClient) fetch_request_client_document_url() ?dom.URL {
 }
 
 fn (client &CacheTestClient) fetch_request_client_creation_url() dom.URL {
-	return dom.URL{client.top_level_origin.value + '/'}
+	return dom.URL{value: client.top_level_origin.value + '/'}
 }
 
 fn (_ &CacheTestClient) fetch_request_client_embedder_policy_credentialless() bool {
@@ -61,7 +61,7 @@ fn test_upstream_request_accessors_and_pending_responses() {
 	request.set_method('POST')
 	request.set_keepalive(true)
 	request.set_credentials_mode(.include)
-	request.set_url_list([dom.URL{'https://example.test/upload'}])
+	request.set_url_list([dom.URL{value: 'https://example.test/upload'}])
 	assert request.fetch_request_method() == 'POST'
 	assert request.fetch_request_keepalive()
 	assert request.fetch_request_credentials_mode() == .include
@@ -130,7 +130,7 @@ fn test_http_cache_partition_select_store_and_clear() {
 	request.set_client(&CacheTestClient{
 		top_level_origin: dom.Origin{ value: 'https://top-level.test' }
 	})
-	request.url_list = [dom.URL{'https://resource.test/data'}]
+	request.url_list = [dom.URL{value: 'https://resource.test/data'}]
 	request.header_list.append(http.Header{ name: 'Accept-Language', value: 'en' })
 	mut response := Response.create()
 	response.status = 203
@@ -184,7 +184,7 @@ fn test_javascript_bytecode_cache_update_respects_vary_request_headers() {
 	}
 	mut english_request := Request.create()
 	english_request.set_client(client)
-	english_request.url_list = [dom.URL{'https://resource.test/script.js'}]
+	english_request.url_list = [dom.URL{value: 'https://resource.test/script.js'}]
 	english_request.header_list.append(http.Header{ name: 'Accept-Language', value: 'en' })
 	mut french_request := Request.create()
 	french_request.set_client(client)
@@ -226,7 +226,7 @@ fn test_fetched_data_receiver_prefers_cached_response_body_for_cache_finalizatio
 	request.set_client(&CacheTestClient{
 		top_level_origin: dom.Origin{ value: 'https://top-level.test' }
 	})
-	request.url_list = [dom.URL{'https://resource.test/cached-body'}]
+	request.url_list = [dom.URL{value: 'https://resource.test/cached-body'}]
 	mut response := Response.create()
 	response.header_list.append(http.Header{ name: 'Cache-Control', value: 'max-age=60' })
 	mut body := Body.streaming()
