@@ -6,7 +6,7 @@ Translation workspace: `~/code/vox2/domurl`. Reviewed: 2026-10-05.
 
 | Upstream source | V mapping |
 | --- | --- |
-| `DOMURL.cpp` | `dom_url.v`; actual current settings supplied by `../html/blob_url_operations.v` |
+| `DOMURL.cpp` | `dom_url.v`; native core wrappers in `../browserjs/url_host{,_darwin.c}.v`; actual current settings supplied by `../html/blob_url_operations.v` |
 | `Origin.cpp` | `dom_url.v`, typed Origin behavior from `../url/origin.v` |
 | `URLSearchParams.cpp` | `url_search_params.v`; actual engine wrappers in `../browserjs/url_search_params_host{,_darwin.c}.v` |
 | `URLSearchParamsIterator.cpp` | `url_search_params.v`; actual engine iterator prototypes in `../browserjs/url_search_params_host_darwin.c.v` |
@@ -75,8 +75,18 @@ replacement yields the same actual list and owner.
 [Literal query evidence](../docs/translation-audit/DOMURL_LITERAL_QUERY_OWNER.md)
 records the original executed panic and **5/5 default plus 6/6 GC-none** files.
 
-Native public URL WebIDL conversion and exposure, foreign realm/world
-identity, source UTF16 parser/encoding boundaries, OOM/allocation handling,
+Native page scripts now construct URL and use parse/canParse, all component
+attributes, stringification and toJSON through actual DOMURL records
+(`a893f4ec`). The actual query wrapper retains SameObject identity and writes
+back into that URL. Conversion and exception ordering, receiver validation,
+same-realm prototypes, metadata and actual page replay pass **3/3 default and
+6/6 GC-none files**, including the 66-case main regression. Both unmodified
+Source URL fixtures reproduce their complete expected outputs in each mode.
+[Native URL core evidence](../docs/translation-audit/NATIVE_URL_CORE_OWNER.md)
+retains the original absent-global failure and separate compiler diagnostics.
+
+Public object-URL static methods and native MediaSource exposure, foreign
+realm/world identity, source UTF16 parser/encoding boundaries, OOM/allocation handling,
 Worker startup exposure, generated diagnostic text and complete GC/IPC ownership
 remain separate. The existing structural inventory must not be read as full
 DOMURL parity.
