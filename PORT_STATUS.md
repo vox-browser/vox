@@ -841,7 +841,7 @@ from the current-module totals.
 | `WebAssembly` | 7 | 3,441 | 11,143 | 10,277 | Complete |
 | `WebAudio` | 47 | 8,256 | 8,682 | 3,247 | Complete |
 | `WebDriver` | 16 | 5,321 | 3,934 | 862 | Complete |
-| `WebGL` | 42 | 7,846 | 6,612 | 11,651 | Complete |
+| `WebGL` | 42 | 7,846 | 6,627 | 11,753 | Complete |
 | `WebIDL` | 10 | 2,466 | 2,551 | 1,299 | Complete |
 | `WebLocks` | 5 | 647 | 701 | 169 | Complete |
 | `WebSockets` | 1 | 476 | 409 | 156 | Complete |
@@ -852,7 +852,7 @@ from the current-module totals.
 | `XLink` | 1 | 16 | 13 | 10 | Complete |
 | `XML` | 2 | 556 | 477 | 164 | Complete |
 | `XPath` | 5 | 435 | 672 | 210 | Complete |
-| **Total** | **1,193** | **329,970** | **431,819** | **152,385** | **74 complete, 4 present, 0 untranslated** |
+| **Total** | **1,193** | **329,970** | **431,834** | **152,487** | **74 complete, 4 present, 0 untranslated** |
 
 ### Live editability refresh
 
