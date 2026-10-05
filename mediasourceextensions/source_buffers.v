@@ -431,6 +431,14 @@ fn (mut buffer SourceBuffer) on_first_initialization_segment_processed(duration 
 	if has_active_track {
 		mut active_buffers := media_source.active_source_buffers()
 		active_buffers.append(buffer)
+		// The pinned Source queues this notification in addition to append's task.
+		source_handle := voidptr(media_source)
+		list_handle := voidptr(active_buffers)
+		media_source.queue_a_media_source_task(fn [source_handle, list_handle] () {
+			source := unsafe { &MediaSource(source_handle) }
+			list := unsafe { &SourceBufferList(list_handle) }
+			list.dispatch_event(source.create_associated_event('addsourcebuffer'))
+		})
 	}
 	media_element.media_source_initialization_segment_received(media_source.duration())
 }
@@ -546,7 +554,17 @@ pub fn (list &SourceBufferList) relevant_global_impl() ?&dom.EventTarget {
 
 pub fn (mut list SourceBufferList) append(buffer &SourceBuffer) {
 	list.buffers_ << buffer
-	list.dispatch_event(dom.Event.create('addsourcebuffer', dom.EventInit{}))
+	list_handle := voidptr(&list)
+	// SourceBufferList.cpp explicitly uses an unspecified task with no Document.
+	html.queue_a_task(.unspecified, html.main_thread_event_loop(), none, fn [list_handle] () {
+		actual := unsafe { &SourceBufferList(list_handle) }
+		if source := actual.media_source_ {
+			actual.dispatch_event(source.create_associated_event('addsourcebuffer'))
+			return
+		}
+		// Preserve the existing internal standalone-list adapter.
+		actual.dispatch_event(dom.Event.create('addsourcebuffer', dom.EventInit{}))
+	})
 }
 
 pub fn (mut list SourceBufferList) remove_all_buffers() {

@@ -268,6 +268,8 @@ fn test_media_source_add_source_buffer_and_indexed_source_buffer_list() {
 	assert source.source_buffers().length() == 1
 	assert source.source_buffers().item(0)? == buffer
 	assert source.source_buffers().item(1) == none
+	assert observation.count == 0
+	run_media_source_tasks()
 	assert observation.count == 1
 	assert observation.interface_ == .event
 }
