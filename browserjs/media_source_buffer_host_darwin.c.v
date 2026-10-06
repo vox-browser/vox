@@ -11,6 +11,7 @@ import mediasourceextensions
 fn (mut host MediaSourceHost) install_buffer_bindings() ! {
 	mut runtime := unsafe { &Runtime(host.runtime) }
 	runtime.install_quota_exceeded_error_binding()!
+	runtime.install_time_ranges_binding()!
 	intrinsics := runtime.evaluate_host_value(crypto_buffer_source_intrinsics)!
 	defer { runtime.release_javascript_value(intrinsics) }
 	host.buffer_validation = runtime.retain_javascript_value(runtime.binding_property(intrinsics,
@@ -37,8 +38,8 @@ fn (mut host MediaSourceHost) install_buffer_bindings() ! {
 	})!
 	for kind in [MediaBufferHostKind.buffer, .list] {
 		names := if kind == .buffer {
-			['mode', 'updating', 'timestampOffset', 'onupdatestart', 'onupdate', 'onupdateend',
-				'onerror', 'onabort']
+			['mode', 'updating', 'buffered', 'timestampOffset', 'onupdatestart', 'onupdate',
+				'onupdateend', 'onerror', 'onabort']
 		} else {
 			['length', 'onaddsourcebuffer', 'onremovesourcebuffer']
 		}
@@ -47,7 +48,7 @@ fn (mut host MediaSourceHost) install_buffer_bindings() ! {
 				mut host := unsafe { &MediaSourceHost(handle) }
 				return host.get_buffer_owner(kind, name, receiver) or { return host.exception(err) }
 			})!
-			if name in ['updating', 'length'] {
+			if name in ['updating', 'buffered', 'length'] {
 				functions << C.JSValueMakeUndefined(runtime.context)
 			} else {
 				functions << runtime.make_native_value_host_function('set ${name}', 1, fn [handle, name, kind] (receiver voidptr, args []voidptr) !voidptr {
@@ -151,6 +152,9 @@ fn (mut host MediaSourceHost) get_buffer_owner(kind MediaBufferHostKind, name st
 		return C.JSValueMakeNumber(host.runtime.context, f64(list.length()))
 	}
 	buffer := unsafe { &mediasourceextensions.SourceBuffer(record.native) }
+	if name == 'buffered' {
+		return host.runtime.javascript_time_ranges(buffer.buffered()!)
+	}
 	return match name {
 		'mode' { host.runtime.binding_string(buffer.mode().webidl_name()) }
 		'updating' { C.JSValueMakeBoolean(host.runtime.context, buffer.updating()) }
@@ -268,7 +272,7 @@ const media_buffer_native_factory = r'(function(functions,indexed,sourcePrototyp
  define(sourcePrototype,"addSourceBuffer",{value:functions[2],writable:true,enumerable:true,configurable:true});
  const buffer=create(global.EventTarget.prototype),list=create(global.EventTarget.prototype);
  let offset=3;
- for(const [prototype,names] of [[buffer,["mode","updating","timestampOffset","onupdatestart","onupdate","onupdateend","onerror","onabort"]],[list,["length","onaddsourcebuffer","onremovesourcebuffer"]]]){
+ for(const [prototype,names] of [[buffer,["mode","updating","buffered","timestampOffset","onupdatestart","onupdate","onupdateend","onerror","onabort"]],[list,["length","onaddsourcebuffer","onremovesourcebuffer"]]]){
   for(const name of names){define(prototype,name,{get:functions[offset++],set:functions[offset++],enumerable:true,configurable:true})}
  }
  for(const name of ["appendBuffer","abort","changeType","remove"])define(buffer,name,{value:functions[offset++],writable:true,enumerable:true,configurable:true});
