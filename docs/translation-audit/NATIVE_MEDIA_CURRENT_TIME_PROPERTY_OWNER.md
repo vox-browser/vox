@@ -127,8 +127,11 @@ first build remains under native-media-current-time-production/.
 
 ## Remaining scope and inventory
 
+The subsequent [fastSeek caller and binding slice](NATIVE_MEDIA_FAST_SEEK_OWNER.md)
+adds the native method, poster entry and live-clock direction selection.
+
 Physical manager/clock/decoder/pipeline delivery, complete seek/play/pause/load,
-fastSeek/defaultMuted and other native operations, muted policy/style behavior,
+defaultMuted and other native operations, muted policy/style behavior,
 native play promises, ordinary compact listeners, complete media/MSE, unique
 task sources, full prototypes, foreign realms, WrapperWorlds, IPC and physical
 GC remain open. The browser uses JavaScriptCore. These selected accessor and

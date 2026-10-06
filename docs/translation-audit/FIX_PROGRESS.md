@@ -657,3 +657,19 @@ Agent checks run with `v -old-compiler -enable-globals`. Isolated worktrees use 
   new browser/root support is excluded. Physical manager/clock/decoder/pipeline,
   remaining media operations, complete media/MSE, realms and physical GC remain
   open. The ledger stays **32 fixed / 25 partial / 9 open**.
+
+- Fast seek model/native (`a870b6b8` / `335564fd`) now clear the poster
+  before HAVE_NOTHING, use each live clock comparison before queuing seeking,
+  and expose fastSeek through its actual audio/video DOM owner. Receiver, arity
+  and restricted-double conversion precede replay; original exceptions survive.
+  [Fast seek evidence](NATIVE_MEDIA_FAST_SEEK_OWNER.md) retains nine runtime
+  baseline failures, **3/3 model**, **4/4 native focused** and **20/20 affected
+  files in each GC mode**, including the **66-case** main regression. Signed
+  production startup, the ordinary-branch DOM model probe, two exact public
+  viewports, **13 exact SVG pairs** and all **11 smoke cases** pass. Consolidated
+  `Build/audit-fixes/native-media-fast-seek-evidence.json` has SHA256 `24eedb495add4c8f149d9fcc9af6c2db5e40810cae91c205b940fdea1d8720f3`.
+  The refreshed 78-owner inventory has **432,347
+  implementation / 155,053 test V LOC** across **2,189 owned
+  files**; browser/root support stays excluded. Remaining seek algorithms,
+  physical manager/clock/decoder, complete media/MSE, defaultMuted, realms and
+  physical GC stay open. The ledger remains **32 fixed / 25 partial / 9 open**.

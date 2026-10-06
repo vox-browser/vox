@@ -13,6 +13,23 @@ inventory, not current logic, generated-binding or browser parity. The current
 audit and fix evidence is in `docs/translation-audit/`; mapping a source name or
 a runtime hook does not establish that its complete logic was translated.
 
+## Native fastSeek owner and caller
+
+Native fastSeek checks receiver, required arity and restricted-double conversion
+before replay, then calls the actual DOM media model. The model clears the
+poster before its HAVE_NOTHING return and selects approximate direction from
+each live Source clock comparison before queuing seeking. Original exceptions,
+default starts and adjusted clock commits survive. Model/native commits:
+`a870b6b8` / `335564fd`.
+
+[Fast seek evidence](../docs/translation-audit/NATIVE_MEDIA_FAST_SEEK_OWNER.md)
+retains nine runtime baseline failures, 3/3 model and 4/4 native focused files,
+20/20 affected files in each GC mode and the 66-case main regression. The signed
+production bundle/startup, assertion-independent model probe, two exact public
+viewports, 13 exact SVG pairs and all 11 smoke cases pass. Physical manager/clock/
+decoder delivery, remaining seek/media/MSE algorithms, defaultMuted, complete
+prototypes, realms and physical GC remain open.
+
 ## Native currentTime property owner
 
 Native currentTime accessors use the actual HTML audio/video model, validate
