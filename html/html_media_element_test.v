@@ -198,9 +198,17 @@ fn test_media_element_play_pause_seek_end_and_loop() {
 	_ = media.play()
 	media.advance_playback(2)
 	assert !media.ended()
+	assert !media.paused()
 	loop.process()
 	assert media.ended()
+	for _ in 0 .. 100 {
+		if media.event_count('ended') == 1 {
+			break
+		}
+		loop.process()
+	}
 	assert media.event_count('ended') == 1
+	assert media.paused()
 
 	media.set_loop(true)
 	media.set_current_time(9)

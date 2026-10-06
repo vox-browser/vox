@@ -1678,14 +1678,18 @@ pub fn (mut element HTMLMediaElement) reached_end_of_media_playback() {
 		}
 		return
 	}
-	element.dispatch_time_update_event()
-	if element.has_ended_playback() && element.direction_of_playback() == .forwards && !element.paused_ {
-		element.set_paused(true)
-		element.fire_event('pause')
-		promises := element.take_pending_play_promises()
-		element.reject_pending_play_promises_with(promises, dom.js_string('AbortError: Media playback has ended'))
-	}
-	element.fire_event('ended')
+	element_pointer := voidptr(&element)
+	element.queue_a_media_element_task(fn [element_pointer] () {
+		mut media := unsafe { &HTMLMediaElement(element_pointer) }
+		media.dispatch_time_update_event()
+		if media.has_ended_playback() && media.direction_of_playback() == .forwards && !media.paused_ {
+			media.set_paused(true)
+			media.fire_event('pause')
+			promises := media.take_pending_play_promises()
+			media.reject_pending_play_promises_with(promises, dom.js_string('AbortError: Media playback has ended'))
+		}
+		media.fire_event('ended')
+	})
 }
 
 pub fn (mut element HTMLMediaElement) dispatch_time_update_event() {
