@@ -48,8 +48,8 @@ fn test_rendering_runs_each_stage_for_all_documents_before_the_next_stage() {
 	rendering_order_listen(unsafe { &dom.EventTarget(child_window) }, 'resize', 'resize-child', log)
 	rendering_order_listen(unsafe { &dom.EventTarget(parent) }, 'scroll', 'scroll-parent', log)
 	rendering_order_listen(unsafe { &dom.EventTarget(child) }, 'scroll', 'scroll-child', log)
-	parent.last_viewport_size = [0.0, 0.0]!
-	child.last_viewport_size = [0.0, 0.0]!
+	parent.last_viewport_size = [0, 0]!
+	child.last_viewport_size = [0, 0]!
 	parent.set_viewport_rect(dom.Rect{0, 0, 100, 100})
 	child.set_viewport_rect(dom.Rect{0, 0, 50, 50})
 	parent.pending_scroll_events << dom.PendingScrollEvent{target: parent.as_node(), type_: 'scroll'}
