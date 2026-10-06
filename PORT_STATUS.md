@@ -763,9 +763,9 @@ V's standard `crypto.*` modules without shadowing that namespace.
 The IDL-only `Fullscreen` package delegates its state machine to the shared
 translated DOM implementation.
 
-The verified `214de36b` physical inventory is retained in
-`Build/audit-fixes/source-current-module-loc-214de36b.json` (SHA256
-`6b38251f021da5876635e5026973a83ae665fc7b081eb8535d3f324913adf91c`). The duration/volume task slices add two HTML test files to the same
+The verified `9dbdb6f5` physical inventory is retained in
+`Build/audit-fixes/source-current-module-loc-9dbdb6f5.json` (SHA256
+`30d77ec196b9b4b3736be2e10f14e9502b3e406a925cc9f25f74eeac3f44a733`). The rate setter/load slices add two HTML test files to the same
 78-owner assignment; browser/root support remains excluded.
 
 The table below refreshes tracked package V LOC on 2026-10-06; upstream counts
@@ -804,7 +804,7 @@ from the current-module totals.
 | `Gamepad` | 6 | 1,351 | 860 | 323 | Complete |
 | `Geolocation` | 4 | 643 | 535 | 224 | Complete |
 | `Geometry` | 8 | 2,078 | 2,121 | 1,041 | Complete |
-| `HTML` | 286 | 83,853 | 69,325 | 36,085 | Complete |
+| `HTML` | 286 | 83,853 | 69,334 | 36,305 | Complete |
 | `HighResolutionTime` | 2 | 516 | 500 | 213 | Complete |
 | `IndexedDB` | 19 | 6,991 | 5,455 | 1,388 | Complete |
 | `Infra` | 3 | 385 | 548 | 102 | Complete |
@@ -857,7 +857,7 @@ from the current-module totals.
 | `XLink` | 1 | 16 | 13 | 10 | Complete |
 | `XML` | 2 | 556 | 477 | 164 | Complete |
 | `XPath` | 5 | 435 | 672 | 210 | Complete |
-| **Total** | **1,193** | **329,970** | **432,322** | **154,501** | **74 complete, 4 present, 0 untranslated** |
+| **Total** | **1,193** | **329,970** | **432,331** | **154,721** | **74 complete, 4 present, 0 untranslated** |
 
 ### Live editability refresh
 
