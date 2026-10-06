@@ -96,12 +96,18 @@ All five changed/new V files pass `v -old-compiler fmt -verify`, and
 These wrappers use the actual calling Runtime but do not establish foreign
 realm borrowing, WrapperWorld support, DedicatedWorker startup, IPC or
 physical weak/strong collector equivalence. Native records and JavaScript
-wrappers remain retained for the Runtime lifetime. HTMLMediaElement's public
-buffered/seekable/played exposure, upstream FIXME track/window members and
-complete demuxer/decoder/playback behavior remain separate.
+wrappers remain retained for the Runtime lifetime. HTMLMediaElement's [native buffered exposure](NATIVE_MEDIA_ELEMENT_BUFFERED_OWNER.md)
+is now recorded separately. Public seekable/played exposure, upstream FIXME
+track/window members and complete demuxer/decoder/playback remain open.
 
 The last [frozen native buffer production proof](NATIVE_MEDIA_SOURCE_BUFFER_OWNER.md)
 predates this getter. No rebuilt production, screenshot sweep or current
 Wasm/LibJS sweep is claimed for this feature. The audit remains **32 fixed /
 25 partial / 9 open**. Module physical counts stay **432,276 implementation /
 153,754 test V LOC** across 78 owners; this slice adds browser/root support.
+
+The subsequent signed `5f567830` production snapshot exercises this TimeRanges
+implementation through the actual media buffered caller. Its startup, exact
+public viewport, SVG checks and smoke comparisons are recorded in the
+[native media evidence](NATIVE_MEDIA_ELEMENT_BUFFERED_OWNER.md). The earlier
+run counts and snapshots above remain historical evidence.

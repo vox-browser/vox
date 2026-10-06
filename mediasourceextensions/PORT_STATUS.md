@@ -76,6 +76,15 @@ Source FIXME. [TimeRanges evidence](../docs/translation-audit/NATIVE_TIME_RANGES
 records **22/22 files** in each GC mode. Foreign caller realms,
 DedicatedWorker startup, WrapperWorlds, physical GC edges and IPC remain open.
 
+The actual HTML media buffered getter now consumes those native range records
+through each DOM audio/video owner. Range removal also refreshes the owning
+media cache before ready-state evaluation and queued updateend; prior
+snapshots retain their values. [Removal cache evidence](../docs/translation-audit/MEDIA_REMOVAL_RANGES_OWNER.md)
+and [native media evidence](../docs/translation-audit/NATIVE_MEDIA_ELEMENT_BUFFERED_OWNER.md)
+record the separate commits, passing dual-GC checks and the subsequent signed
+production snapshot. Multiple-buffer playback aggregation and the complete
+manager remain separate from this existing per-buffer adapter.
+
 The worker capability flag is false, as in the pinned Source; exposing it does
 not establish a worker runtime. Source event clocks and complete decoder/
 playback behavior remain separate.

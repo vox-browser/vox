@@ -464,3 +464,33 @@ Agent checks run with `v -old-compiler -enable-globals`. Isolated worktrees use 
   remain open, and this feature postdates the last production bundle.
   Module inventory is unchanged at **432,276 implementation / 153,754 test
   V LOC** across 78 owners. The ledger stays **32 fixed / 25 partial / 9 open**.
+
+- Media buffered cache removal (`cc9b1e78`) now refreshes the actual owner before
+  ready-state evaluation and queued updateend callbacks, preserving earlier
+  snapshots and the append-only progress path. [Removal evidence](MEDIA_REMOVAL_RANGES_OWNER.md)
+  retains a separate compatibility-compiler failure and corrected runtime
+  baseline. Both affected files pass in both GC modes before and after
+  unrelated formatting restoration. This corrects the existing per-buffer
+  fallback; complete manager/aggregation and physical GC ownership stay open.
+
+- Native HTML media buffered (`5f567830`) now returns the actual DOM owner's
+  TimeRanges snapshots with native metadata and branding before replay.
+  Created media reuse one native node; SVG namesakes remain unbranded.
+  [Native evidence](NATIVE_MEDIA_ELEMENT_BUFFERED_OWNER.md) records four host
+  cases, two page callers and **8/8 files in each GC mode**, including the
+  **66-case** main regression. The final scoped two-file checks also pass in
+  both modes after formatting restoration. The frozen signed production
+  bundle passes startup and the public media page's **480,000 pixels exactly**;
+  all **13 selected SVG pairs** are exact and **11 smoke cases** pass their
+  existing bounds. The initial SVG comparator compile failure is retained
+  separately; corrected comparisons reuse its captures and unchanged binary.
+  Production snapshots retain **4,865 files**, 25 selected Source references
+  and two compiler hashes. No new Wasm/LibJS sweep or full element hierarchy,
+  foreign-realm, playback or physical-GC parity is claimed.
+
+- Refreshed `5f567830` inventory: **432,292 implementation V LOC / 153,795
+  test V LOC** across **78 owners**, with browser/root support excluded.
+  Artifact `Build/audit-fixes/source-current-module-loc-5f567830.json` has
+  SHA256 `a62f66f303cfab776748d45daac377beef970469e097adc2af7dec27de4b63ee`.
+  Physical counts do not measure parity; the ledger stays **32 fixed /
+  25 partial / 9 open**.

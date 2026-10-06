@@ -13,6 +13,24 @@ inventory, not current logic, generated-binding or browser parity. The current
 audit and fix evidence is in `docs/translation-audit/`; mapping a source name or
 a runtime hook does not establish that its complete logic was translated.
 
+## Native media buffered owner
+
+The native Window bridge exposes HTMLMediaElement.buffered through the actual
+DOM audio/video media model, with readonly getter metadata, native receiver
+checks before document replay, and fresh TimeRanges snapshots. Created media
+retain one DOM owner through insertion replay. The removal cache prerequisite
+refreshes ranges before ready-state evaluation and updateend without entering
+the append progress path. Implementation/tests are committed separately as
+`cc9b1e78` and `5f567830`.
+
+[Removal evidence](../docs/translation-audit/MEDIA_REMOVAL_RANGES_OWNER.md) and
+[native buffered evidence](../docs/translation-audit/NATIVE_MEDIA_ELEMENT_BUFFERED_OWNER.md)
+record both GC modes, the 66-case main regression, frozen signed production
+startup, exact media/SVG viewports and all 11 smoke cases within their existing
+bounds. The compact element prototype hierarchy, native played/seekable,
+complete playback aggregation/codec execution, foreign realms and physical
+GC ownership remain open. These slices do not establish full HTML parity.
+
 ## Historical unmapped-file inventory
 
 | Remaining upstream module | Upstream `.cpp` LOC | Translated implementation `.v` LOC | Test `.v` LOC |
