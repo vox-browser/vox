@@ -117,16 +117,19 @@ Existing [buffered owner evidence](NATIVE_MEDIA_ELEMENT_BUFFERED_OWNER.md)
 records the preceding range and DOM-identity prerequisites.
 
 
-The getters expose the existing V model's state. They do not fix its broader
-lifecycle differences: Source recomputes cached ended at event-loop step 1,
-while V currently recomputes it synchronously. The Source automatic unbounded
-resource FIXME, complete decoder/manager aggregation, native media operations
-and event delivery, played/seekable differences, full HTMLElement/audio/video
+The getters expose the existing V model's state. At this verification snapshot,
+V recomputed cached ended synchronously. The subsequent
+[step-1 owner slice](MEDIA_ENDED_STEP_ONE_OWNER.md) repairs that timing and the
+ready-state trigger, while retaining the existing V duration/position predicate.
+The Source automatic unbounded resource FIXME, complete decoder/manager
+aggregation, native media operations and event delivery, played/seekable
+differences, full HTMLElement/audio/video
 prototype hierarchy, foreign realms, WrapperWorlds, IPC and physical collector
 ownership remain separate. The browser still uses JavaScriptCore. No new
 LibJS or Wasm sweep is claimed.
 
-All 2,179 files in the preceding 78-owner module inventory retain their hashes:
+At that snapshot, all 2,179 files in the preceding 78-owner module inventory
+retained their hashes:
 432,292 implementation / 153,795 test V LOC. Browser/root code is excluded.
 Physical counts do not measure parity; the ledger remains 32 fixed / 25 partial
 / 9 open.

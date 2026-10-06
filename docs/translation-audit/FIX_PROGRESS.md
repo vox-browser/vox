@@ -509,3 +509,24 @@ Agent checks run with `v -old-compiler -enable-globals`. Isolated worktrees use 
   Source ended scheduling, complete native media operations/events, playback,
   element hierarchy, foreign realms and physical GC remain open; the ledger
   stays **32 fixed / 25 partial / 9 open**.
+- Media cached ended now recomputes at actual main-loop step 1 (`1e6de269`), including
+  ready-state transitions and live owner state after seek, loop and reload.
+  The independent event-loop prerequisite (`82f30d6f`) preserves paused callbacks,
+  tasks and generation, and schedules native resume on unpause.
+  [Boundary evidence](MEDIA_ENDED_STEP_ONE_OWNER.md) retains three executed
+  baseline file failures, the stopped preliminary runs and nine final cases.
+  Both frozen GC modes pass **15/16 files**, including the **66-case** main
+  regression and real timer/AbortSignal pause callers, on the same unchanged
+  **4,873-file** snapshot. The remaining file fails on existing
+  float literals assigned to Document's integer viewport cache; the separate
+  test-only correction (`558d92a7`) passes **1/1 file
+  in each GC mode**. All 16 files have passing evidence across these runs,
+  rather than one clean 16-file run. The same production snapshot builds,
+  signs, passes startup, matches the existing media-state page's **480,000 pixels
+  exactly** and passes all **11 configured smoke cases** within their existing
+  bounds. The consolidated `Build/audit-fixes/media-step-one-evidence.json`
+  has SHA256 `544b8a4e52fcea5d5b119ee083778d6564926d30e73a3709c7e66d1297e6dce6`.
+  The actual Source manager/decoder Ended predicate,
+  queued native media events/operations, full playback and prototype ownership,
+  nested pause/spin behavior, realms and physical GC remain open. This is a
+  selected lifecycle fix; the ledger stays **32 fixed / 25 partial / 9 open**.

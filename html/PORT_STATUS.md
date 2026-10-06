@@ -13,6 +13,26 @@ inventory, not current logic, generated-binding or browser parity. The current
 audit and fix evidence is in `docs/translation-audit/`; mapping a source name or
 a runtime hook does not establish that its complete logic was translated.
 
+## Media ended cache boundary
+
+Media ended recomputation now uses the actual main-loop step-1 callback queue.
+Position/duration changes preserve the old cache through microtasks; the next
+boundary reads the live owner, including ready-state transitions, reload and
+recorded loop state. Paused processing preserves pending callbacks and task
+generation, while unpause schedules their automatic native resume.
+The event-loop prerequisite and media implementation/tests are separate commits
+`82f30d6f` and `1e6de269`.
+
+[Step-1 evidence](../docs/translation-audit/MEDIA_ENDED_STEP_ONE_OWNER.md)
+records the executed model/native/paused baseline failures, nine final cases,
+all 16 affected files in each GC mode across frozen batches and a focused
+rendering-fixture correction, the 66-case main regression, signed
+production startup, an exact media-state viewport and all 11 smoke cases within
+existing bounds. Source's PlaybackManager Ended predicate after consumed media
+remains unimplemented: V retains its existing duration/position predicate.
+Full event delivery, native operations, playback, nested pause/spin behavior,
+prototype hierarchy, realms and physical GC remain separate.
+
 ## Native media state owner
 
 Native readonly currentSrc, networkState, readyState, seeking, duration, paused
@@ -25,10 +45,11 @@ Implementation and five focused cases are committed as `a699f872`.
 [State-owner evidence](../docs/translation-audit/NATIVE_MEDIA_ELEMENT_STATE_OWNER.md)
 records 9/9 affected files in each GC mode, the 66-case main regression, signed
 production startup, an exact media-state viewport, 13 exact SVG pairs and all
-11 smoke cases within existing bounds. The getters expose the existing V model;
-Source event-loop-step-1 ended recomputation, native media operations/events,
-complete playback, full prototype hierarchy, foreign realms and physical GC
-remain separate. This slice does not establish full HTML parity.
+11 smoke cases within existing bounds. The getters expose the existing V model.
+The subsequent [step-1 owner slice](../docs/translation-audit/MEDIA_ENDED_STEP_ONE_OWNER.md)
+repairs cached ended timing. Native media operations/events, complete playback,
+full prototype hierarchy, foreign realms and physical GC remain separate.
+These slices do not establish full HTML parity.
 
 ## Native media buffered owner
 
