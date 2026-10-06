@@ -179,6 +179,7 @@ fn test_media_element_publishes_the_current_queued_video_frame() {
 }
 
 fn test_media_element_play_pause_seek_end_and_loop() {
+	mut loop := main_thread_event_loop()
 	mut media := HTMLMediaElement.create(none, dom.URL{ value: 'https://example.test/' })
 	media.set_fetch_hook(media_test_fetch)
 	media.set_source('/movie.mp4')
@@ -196,13 +197,17 @@ fn test_media_element_play_pause_seek_end_and_loop() {
 	assert media.current_time() == 9
 	_ = media.play()
 	media.advance_playback(2)
+	assert !media.ended()
+	loop.process()
 	assert media.ended()
 	assert media.event_count('ended') == 1
 
 	media.set_loop(true)
 	media.set_current_time(9)
+	loop.process()
 	_ = media.play()
 	media.advance_playback(2)
+	loop.process()
 	assert !media.ended()
 	assert media.current_time() == 0
 }
@@ -275,6 +280,7 @@ fn test_media_element_volume_rate_text_track_and_failures() {
 }
 
 fn test_media_element_literal_state_machine_boundaries() {
+	mut loop := main_thread_event_loop()
 	mut media := HTMLMediaElement.create(none, dom.URL{ value: 'https://example.test/' })
 	media.set_fetch_hook(media_test_fetch)
 	media.set_source('/movie.mp4')
@@ -285,6 +291,8 @@ fn test_media_element_literal_state_machine_boundaries() {
 	assert !media.has_ended_playback()
 	media.set_current_playback_position(10)
 	assert media.has_ended_playback()
+	assert !media.ended()
+	loop.process()
 	assert media.ended()
 	media.process_media_data(.interrupted)
 	assert media.error()?.code == .network

@@ -1171,6 +1171,7 @@ pub fn (mut element HTMLMediaElement) set_ready_state(state MediaReadyState) {
 		return
 	}
 	element.ready_state_ = state
+	defer { element.upon_has_ended_playback_possibly_changed() }
 	if mut video := element.video_element_model_ {
 		video.update_natural_dimensions()
 	}
@@ -1656,7 +1657,12 @@ pub fn (element &HTMLMediaElement) has_ended_playback() bool {
 }
 
 pub fn (mut element HTMLMediaElement) upon_has_ended_playback_possibly_changed() {
-	element.set_ended(element.has_ended_playback() && element.direction_of_playback() == .forwards)
+	element_pointer := voidptr(&element)
+	run_when_event_loop_reaches_step_1(fn [element_pointer] () {
+		mut media := unsafe { &HTMLMediaElement(element_pointer) }
+		// The cached attribute reflects the live owner at the last step-1 boundary.
+		media.set_ended(media.has_ended_playback() && media.direction_of_playback() == .forwards)
+	})
 }
 
 pub fn (mut element HTMLMediaElement) reached_end_of_media_playback() {
