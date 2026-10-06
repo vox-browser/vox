@@ -1252,7 +1252,11 @@ pub fn (mut element HTMLMediaElement) set_seeking(seeking bool) {
 
 pub fn (mut element HTMLMediaElement) set_duration(duration f64) {
 	if !math.is_nan(duration) {
-		element.fire_event('durationchange')
+		element_pointer := voidptr(&element)
+		element.queue_a_media_element_task(fn [element_pointer] () {
+			mut media := unsafe { &HTMLMediaElement(element_pointer) }
+			media.fire_event('durationchange')
+		})
 		if element.current_playback_position_ > duration {
 			element.seek_element(duration, .accurate)
 		}

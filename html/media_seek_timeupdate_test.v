@@ -10,10 +10,20 @@ fn media_timing_take_task(media &HTMLMediaElement) &Task {
 	}) or { panic('expected runnable media task') }
 }
 
+fn media_timing_drain_setup_tasks(media &HTMLMediaElement) {
+	mut loop := main_thread_event_loop()
+	for _ in 0 .. 100 {
+		if media.queued_media_task_ids_.len == 0 { return }
+		loop.process()
+	}
+	assert media.queued_media_task_ids_.len == 0
+}
+
 fn test_seek_without_seekable_ranges_does_not_change_position_or_queue_events() {
 	mut media := HTMLMediaElement.create(none, dom.url_about_blank())
 	media.set_ready_state(.have_metadata)
 	media.set_duration(10)
+	media_timing_drain_setup_tasks(media)
 	media.set_current_playback_position(2)
 	media.set_playback_manager_hooks(MediaPlaybackManagerHooks{
 		seek: fn (_ f64, _ MediaPlaybackSeekMode) {
@@ -35,6 +45,7 @@ fn test_seek_completion_runs_after_seeking_and_queues_timeupdate_before_seeked()
 	mut media := HTMLMediaElement.create(none, dom.url_about_blank())
 	media.set_ready_state(.have_metadata)
 	media.set_duration(10)
+	media_timing_drain_setup_tasks(media)
 	media.seekable_.add_range(0, 10)
 	media.seek_element(7, .accurate)
 	assert media.seeking()
@@ -102,6 +113,7 @@ fn test_playback_position_changes_queue_buffer_monitoring_between_timeupdates() 
 	media.set_up_playback_manager()
 	media.set_ready_state(.have_metadata)
 	media.set_duration(20)
+	media_timing_drain_setup_tasks(media)
 	media.buffered_.add_range(0, 1)
 	media.playback_has_future_data_ = true
 	media.set_current_playback_position(0)

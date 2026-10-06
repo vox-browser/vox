@@ -13,6 +13,7 @@ fn media_end_test_model() &HTMLMediaElement {
 	mut media := HTMLMediaElement.create(none, dom.url_about_blank())
 	media.set_ready_state(.have_metadata)
 	media.set_duration(10)
+	media_end_drain_owner(media)
 	media.set_current_playback_position(10)
 	media.set_paused(false)
 	return media
@@ -120,6 +121,7 @@ fn test_dom_completion_task_uses_the_owning_document_and_discards_inactive_deliv
 	mut media := html_media_element_for_dom_element(element)?
 	media.set_ready_state(.have_metadata)
 	media.set_duration(1)
+	media_end_drain_owner(media)
 	media.set_current_playback_position(1)
 	media.set_paused(false)
 	media.reached_end_of_media_playback()

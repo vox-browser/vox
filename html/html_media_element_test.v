@@ -10,6 +10,15 @@ __global media_test_seek_modes = []MediaPlaybackSeekMode{}
 __global media_test_audio_track_enabled = false
 __global media_test_video_track_selected = false
 
+fn media_test_drain_setup_tasks(media &HTMLMediaElement) {
+	mut loop := main_thread_event_loop()
+	for _ in 0 .. 100 {
+		if media.queued_media_task_ids_.len == 0 { return }
+		loop.process()
+	}
+	assert media.queued_media_task_ids_.len == 0
+}
+
 fn media_test_seek(_ f64, mode MediaPlaybackSeekMode) {
 	media_test_seek_modes << mode
 }
@@ -337,6 +346,7 @@ fn test_media_element_ready_state_monitoring_is_independent_of_time_updates() {
 	media.set_up_playback_manager()
 	media.set_duration(20)
 	media.set_ready_state(.have_metadata)
+	media_test_drain_setup_tasks(media)
 	media.buffered_.add_range(0, 1)
 	media.playback_has_future_data_ = true
 	media.time_marches_on(.normal_playback)
