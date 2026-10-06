@@ -1342,9 +1342,7 @@ pub fn (mut element HTMLMediaElement) set_current_time(value f64) {
 }
 
 pub fn (mut element HTMLMediaElement) fast_seek(value f64) {
-	if element.ready_state_ != .have_nothing {
-		element.seek_element(value, .approximate_for_speed)
-	}
+	element.seek_element(value, .approximate_for_speed)
 }
 
 pub fn (mut element HTMLMediaElement) seek_element(value f64, mode MediaSeekMode) {
@@ -1377,20 +1375,21 @@ pub fn (mut element HTMLMediaElement) seek_element(value f64, mode MediaSeekMode
 		}
 		target = nearest
 	}
+	mut playback_seek_mode := MediaPlaybackSeekMode.accurate
+	if mode == .approximate_for_speed {
+		// Source samples the live clock at each comparison before queuing seeking.
+		if target < element.current_playback_position() {
+			playback_seek_mode = .fast_before
+		} else if target > element.current_playback_position() {
+			playback_seek_mode = .fast_after
+		}
+	}
 	element_pointer := voidptr(&element)
 	element.queue_a_media_element_task(fn [element_pointer] () {
 		mut media := unsafe { &HTMLMediaElement(element_pointer) }
 		media.fire_event('seeking')
 	})
 	if hook := element.playback_hooks_.seek {
-		mut playback_seek_mode := MediaPlaybackSeekMode.accurate
-		if mode == .approximate_for_speed {
-			if target < element.current_playback_position_ {
-				playback_seek_mode = .fast_before
-			} else if target > element.current_playback_position_ {
-				playback_seek_mode = .fast_after
-			}
-		}
 		hook(target, playback_seek_mode)
 	} else {
 		element.current_playback_position_ = target
