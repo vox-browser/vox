@@ -1,4 +1,4 @@
-// HTMLMediaElement.buffered transport; the actual HTML model owns its ranges.
+// HTMLMediaElement transport; the actual HTML model owns media state and ranges.
 module browserjs
 
 import css

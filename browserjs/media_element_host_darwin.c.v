@@ -10,12 +10,20 @@ pub fn (mut host MediaElementHost) install(mut runtime Runtime) ! {
 	runtime.install_time_ranges_binding()!
 	host.runtime = &runtime
 	handle := voidptr(&host)
-	getter := runtime.make_native_value_host_function('get buffered', 0, fn [handle] (receiver voidptr, _ []voidptr) !voidptr {
-		mut host := unsafe { &MediaElementHost(handle) }
-		return host.buffered(receiver) or {
-			return host.runtime.actual_javascript_exception(host.runtime.binding_exception_value(err))
-		}
-	})!
+	mut getters := []voidptr{}
+	for name in ['buffered', 'currentSrc', 'networkState', 'readyState', 'seeking', 'duration', 'paused', 'ended'] {
+		getters << runtime.make_native_value_host_function('get ${name}', 0, fn [handle, name] (receiver voidptr, _ []voidptr) !voidptr {
+			mut host := unsafe { &MediaElementHost(handle) }
+			return host.get(name, receiver) or {
+				return host.runtime.actual_javascript_exception(host.runtime.binding_exception_value(err))
+			}
+		})!
+	}
+	mut exception := unsafe { nil }
+	array := C.JSObjectMakeArray(runtime.context, usize(getters.len), getters.data, &exception)
+	if exception != unsafe { nil } { return runtime.actual_javascript_exception(exception) }
+	runtime.retain_javascript_value(array)!
+	defer { runtime.release_javascript_value(array) }
 	bind := runtime.make_value_host_function(fn [handle] (_ voidptr, args []voidptr) !voidptr {
 		mut host := unsafe { &MediaElementHost(handle) }
 		return host.bind(args) or {
@@ -25,7 +33,7 @@ pub fn (mut host MediaElementHost) install(mut runtime Runtime) ! {
 	factory := runtime.evaluate_host_value(media_element_native_factory)!
 	defer { runtime.release_javascript_value(factory) }
 	host.prototype = runtime.retain_javascript_value(runtime.call_javascript_function(factory,
-		C.JSValueMakeUndefined(runtime.context), [getter, bind])!)!
+		C.JSValueMakeUndefined(runtime.context), [array, bind])!)!
 	runtime.add_canvas_element_provider(fn [handle] () map[string]&dom.Element {
 		host := unsafe { &MediaElementHost(handle) }
 		return host.elements_for_binding()
@@ -57,21 +65,32 @@ fn (mut host MediaElementHost) bind(args []voidptr) !voidptr {
 	return C.JSValueMakeUndefined(host.runtime.context)
 }
 
-fn (mut host MediaElementHost) buffered(receiver voidptr) !voidptr {
+fn (mut host MediaElementHost) get(name string, receiver voidptr) !voidptr {
 	// Native receiver checks precede replay, including author Proxy traps.
 	media := host.media_element_for_binding(receiver)!
 	if replay := host.replay { replay(host.runtime)! }
-	return host.runtime.javascript_time_ranges(media.buffered())
+	return match name {
+		'buffered' { host.runtime.javascript_time_ranges(media.buffered())! }
+		'currentSrc' { host.runtime.binding_string(media.current_src()) }
+		'networkState' { C.JSValueMakeNumber(host.runtime.context, f64(media.network_state())) }
+		'readyState' { C.JSValueMakeNumber(host.runtime.context, f64(media.ready_state())) }
+		'seeking' { C.JSValueMakeBoolean(host.runtime.context, media.seeking()) }
+		'duration' { C.JSValueMakeNumber(host.runtime.context, media.duration()) }
+		'paused' { C.JSValueMakeBoolean(host.runtime.context, media.paused()) }
+		'ended' { C.JSValueMakeBoolean(host.runtime.context, media.ended()) }
+		else { return error('Unknown media element getter') }
+	}
 }
 
 // The compact DOM hierarchy remains partial. This base prototype exposes only
-// the completed buffered getter and the pinned constants, preserving its other
+// the completed state/range getters and the pinned constants, preserving its other
 // existing element operations. Full HTMLElement/audio/video interfaces are open.
-const media_element_native_factory = r'(function(getter,bind){
+const media_element_native_factory = r'(function(getters,bind){
  "use strict";
  const define=Object.defineProperty,create=Object.create,P=Proxy,T=TypeError;
  const prototype=create(EventTarget.prototype);
- define(prototype,"buffered",{get:getter,enumerable:true,configurable:true});
+ const names=["buffered","currentSrc","networkState","readyState","seeking","duration","paused","ended"];
+ for(let i=0;i<names.length;i++)define(prototype,names[i],{get:getters[i],enumerable:true,configurable:true});
  define(prototype,Symbol.toStringTag,{value:"HTMLMediaElement",configurable:true});
  const constructor=new P(function HTMLMediaElement(){},{apply(){throw new T("Illegal HTMLMediaElement constructor")},construct(){throw new T("Illegal HTMLMediaElement constructor")}});
  define(constructor,"prototype",{value:prototype,writable:false});
