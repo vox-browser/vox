@@ -137,8 +137,11 @@ Focused tests: [step-1 queue](../../html/event_loop_step_one_test.v),
 [Native state-owner evidence](NATIVE_MEDIA_ELEMENT_STATE_OWNER.md) records
 its separate generated-getter/DOM-owner prerequisite.
 
-Complete manager/decoder aggregation, native media operations and queued event
-delivery, played/seekable differences, the full HTMLElement/audio/video
+The subsequent [completion-task owner slice](MEDIA_END_TASK_DOM_OWNER.md)
+queues the selected end-of-playback caller and reuses the actual DOM EventTarget.
+Other event scheduling and ordinary compact listener routing remain separate.
+Complete manager/decoder aggregation, native media operations, played/seekable
+differences, the full HTMLElement/audio/video
 prototype hierarchy, foreign realms, WrapperWorlds, IPC and physical GC
 ownership remain open. The browser still uses JavaScriptCore. No new full
 HTML, LibJS or Wasm sweep is claimed.

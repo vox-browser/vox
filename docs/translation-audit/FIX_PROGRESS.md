@@ -530,3 +530,21 @@ Agent checks run with `v -old-compiler -enable-globals`. Isolated worktrees use 
   queued native media events/operations, full playback and prototype ownership,
   nested pause/spin behavior, realms and physical GC remain open. This is a
   selected lifecycle fix; the ledger stays **32 fixed / 25 partial / 9 open**.
+
+- Media event target ownership (`2e994235`) now reuses the actual
+  audio/video DOM target; completion timing (`33ffe100`) queues
+  timeupdate, live pause/promise handling and ended as one media-element task
+  after the step-1 cache refresh. [Completion evidence](MEDIA_END_TASK_DOM_OWNER.md)
+  retains both genuine baseline failures and the separate test setup/identity/
+  inactive-fixture diagnostics. All eight final cases and **14/14 files in each
+  GC mode** pass, including the **66-case** main regression, on the same
+  unchanged **4,878-file** snapshot. Its signed production build
+  passes startup, the public media state/native event-owner viewport matches
+  **480,000 pixels exactly**, and all **11 configured smoke cases** pass within
+  existing bounds. The consolidated `Build/audit-fixes/media-end-task-evidence.json`
+  has SHA256 `0978ed9fc35fc21beecae11e23dab3c2c30cc01db9ed62936be57621deb733df`. The refreshed 78-owner inventory contains
+  **432,314 implementation / 154,244 test V LOC**
+  across **2,183 owned files**, excluding browser/root support.
+  Actual manager/decoder Ended state, native play promises, ordinary compact
+  listener routing, other event scheduling and complete runtime/GC ownership
+  remain open; the ledger stays **32 fixed / 25 partial / 9 open**.

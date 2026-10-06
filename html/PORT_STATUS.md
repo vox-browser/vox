@@ -13,6 +13,25 @@ inventory, not current logic, generated-binding or browser parity. The current
 audit and fix evidence is in `docs/translation-audit/`; mapping a source name or
 a runtime hook does not establish that its complete logic was translated.
 
+## Media completion task and DOM event owner
+
+Associated media now use the actual audio/video DOM EventTarget. Native
+wrappers, model handlers and ancestor capture listeners share one target,
+including after adoption. End-of-playback completion queues one media task;
+timeupdate sees the step-1 cache refresh, and the live pause/promise decision
+runs after its listeners before ended. Loading cancels only that owner's task,
+and inactive-document delivery follows the existing task guard.
+Implementation/tests are separate commits `2e994235` and `33ffe100`.
+
+[Completion evidence](../docs/translation-audit/MEDIA_END_TASK_DOM_OWNER.md)
+retains all baseline/fixture diagnostics, eight final cases and 14/14 files in
+each GC mode, including the 66-case main regression. The same frozen production
+snapshot builds, signs, passes startup, matches the public state/event-owner
+viewport exactly and passes all 11 smoke cases within their existing bounds.
+Source manager Ended state, native play promises, ordinary compact listener
+routing, other event scheduling, full operations, realms and physical GC remain
+separate. These selected fixes do not establish full HTML parity.
+
 ## Media ended cache boundary
 
 Media ended recomputation now uses the actual main-loop step-1 callback queue.
