@@ -87,8 +87,9 @@ probe uses ordinary failure branches independent of removable V assertions.
 It verifies Source's initial zero tag, real turn/microtask sampling, default
 precedence, metadata/load reset stamps, explicit pause and separate active DOM
 owners. The configured hook remaining after model load is an existing model
-boundary; physical manager reset is not proven. Native currentTime is not yet
-exposed or tested through JavaScript.
+boundary; physical manager reset is not proven. Native currentTime was not yet
+exposed at this snapshot; the later [native accessor slice](NATIVE_MEDIA_CURRENT_TIME_PROPERTY_OWNER.md)
+adds public JavaScript owner/conversion checks.
 
 Two existing public volume/mute pages retain exact 800×600 output (480,000
 pixels each, zero tolerances), protecting adjacent browser integration. All
@@ -110,7 +111,8 @@ under Build/audit-fixes/media-position-generation-production/.
 
 ## Remaining scope and inventory
 
-Native currentTime/defaultMuted and other operations, complete seek/play/pause/
+Native currentTime is added by the subsequent binding slice. DefaultMuted
+and other operations, complete seek/play/pause/
 load algorithms, physical manager/clock/pipeline delivery, muted policy/style
 behavior, native play promises, ordinary compact listener routing, complete
 media/MSE, task-source identity, prototypes, foreign realms, WrapperWorlds, IPC

@@ -640,3 +640,20 @@ Agent checks run with `v -old-compiler -enable-globals`. Isolated worktrees use 
   Native currentTime, physical manager clock/reset, remaining seek/play/pause/load,
   complete media/MSE, realms and physical GC stay open. The ledger remains
   **32 fixed / 25 partial / 9 open**.
+
+- Native currentTime (`16f4c31c`) now reads/writes its actual audio/video
+  model through native accessors. Receiver checking precedes restricted-double
+  conversion/replay; original exceptions and assignment results survive. The
+  compact page's independent currentTime shadow is removed. [Native time evidence](NATIVE_MEDIA_CURRENT_TIME_PROPERTY_OWNER.md)
+  retains fixture/stop diagnostics and seven final runtime baseline failures,
+  **4/4 focused** and **16/16 affected files across each GC mode**, including the
+  **66-case** main regression. The initial no-GC disk and production linker I/O
+  failures remain recorded; both failed test files and the build pass on sequential
+  retries without changing frozen inputs. The signed production bundle/startup, two exact
+  public time viewports, **13 exact SVG pairs** and all **11 smoke cases** pass.
+  Consolidated `Build/audit-fixes/native-media-current-time-evidence.json` has
+  SHA256 `733407c09f48dad861e951fc0becea8e510c2bf8a00fcb14a3f742569cd2c459`. The 78-owner inventory remains **432,348 implementation /
+  154,939 test V LOC** across **2,188 owned files**; all owned hashes match and
+  new browser/root support is excluded. Physical manager/clock/decoder/pipeline,
+  remaining media operations, complete media/MSE, realms and physical GC remain
+  open. The ledger stays **32 fixed / 25 partial / 9 open**.

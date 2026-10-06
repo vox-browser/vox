@@ -102,7 +102,7 @@ Build/audit-fixes/native-media-volume-production/.
 ## Remaining scope and inventory
 
 Autoplay-policy pause, muted-style invalidation, real playback-manager/pipeline
-delivery, native currentTime/defaultMuted and other incomplete operations,
+delivery, native defaultMuted and other incomplete operations,
 complete media/MSE algorithms, native play promises, ordinary compact listener
 routing, unique task sources, complete prototypes, foreign realms,
 WrapperWorlds, IPC and physical GC remain open. The browser uses JavaScriptCore.
@@ -110,7 +110,8 @@ WrapperWorlds, IPC and physical GC remain open. The browser uses JavaScriptCore.
 At this snapshot the currentTime model still selected by readiness and lacked
 Source's generation cache. The subsequent [generation/commit slice](MEDIA_CURRENT_TIME_GENERATION_OWNER.md)
 adds nonzero default precedence and actual-loop sampling with explicit commit
-stamps. Native currentTime exposure and the physical manager clock remain open.
+stamps. The subsequent [native time accessor](NATIVE_MEDIA_CURRENT_TIME_PROPERTY_OWNER.md)
+exposes the property; the physical manager clock remains open.
 
 Implementation: [native media host](../../browserjs/media_element_host_darwin.c.v),
 [volume model](../../html/html_media_element.v).

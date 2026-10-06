@@ -13,6 +13,23 @@ inventory, not current logic, generated-binding or browser parity. The current
 audit and fix evidence is in `docs/translation-audit/`; mapping a source name or
 a runtime hook does not establish that its complete logic was translated.
 
+## Native currentTime property owner
+
+Native currentTime accessors use the actual HTML audio/video model, validate
+the receiver before restricted-double conversion/replay and preserve original
+exceptions. Reads use the real-loop generation cache; writes enter default
+start or existing seek steps. The page's synthetic shadow is removed.
+Implementation and seven focused cases: `16f4c31c`.
+
+[Native time evidence](../docs/translation-audit/NATIVE_MEDIA_CURRENT_TIME_PROPERTY_OWNER.md)
+retains fixture/stop diagnostics and the final runtime baseline, four focused
+files, all 16 affected files across each GC mode and the 66-case main regression.
+The initial no-GC compilation/disk failure and production linker I/O failure
+remain recorded alongside the sequential retries.
+Signed production startup, two exact public time viewports, 13 exact SVG pairs
+and all 11 smoke cases pass. Physical manager/clock/decoder/pipeline delivery,
+complete operations/media/MSE, realms and physical GC remain open.
+
 ## Media currentTime generation cache
 
 The model getter prioritizes a nonzero default start and samples its existing
@@ -25,8 +42,9 @@ retains fixture diagnostics and the final eight-case runtime baseline,
 six focused files, all 21 affected files in each GC mode and the 66-case main
 regression. The signed production build, assertion-independent real-loop/DOM
 probe, two exact adjacent volume viewports and all 11 smoke cases pass.
-Native currentTime, physical manager clock/reset, other media algorithms,
-complete media/MSE, realms and physical GC remain open.
+The later native time slice above exposes the property. Physical manager
+clock/reset, other media algorithms, complete media/MSE, realms and physical GC
+remain open.
 
 ## Native volume and mute property owner
 
