@@ -14,7 +14,7 @@ pub fn (mut host MediaElementHost) install(mut runtime Runtime) ! {
 	host.runtime = &runtime
 	handle := voidptr(&host)
 	mut getters := []voidptr{}
-	for name in ['buffered', 'currentSrc', 'networkState', 'readyState', 'seeking', 'duration', 'paused', 'ended', 'defaultPlaybackRate', 'playbackRate', 'volume', 'muted'] {
+	for name in ['buffered', 'currentSrc', 'networkState', 'readyState', 'seeking', 'duration', 'paused', 'ended', 'defaultPlaybackRate', 'playbackRate', 'volume', 'muted', 'currentTime'] {
 		getters << runtime.make_native_value_host_function('get ${name}', 0, fn [handle, name] (receiver voidptr, _ []voidptr) !voidptr {
 			mut host := unsafe { &MediaElementHost(handle) }
 			return host.get(name, receiver) or {
@@ -28,7 +28,7 @@ pub fn (mut host MediaElementHost) install(mut runtime Runtime) ! {
 	runtime.retain_javascript_value(array)!
 	defer { runtime.release_javascript_value(array) }
 	mut setters := []voidptr{}
-	for name in ['defaultPlaybackRate', 'playbackRate', 'volume', 'muted'] {
+	for name in ['defaultPlaybackRate', 'playbackRate', 'volume', 'muted', 'currentTime'] {
 		setters << runtime.make_native_value_host_function('set ${name}', 1, fn [handle, name] (receiver voidptr, args []voidptr) !voidptr {
 			mut host := unsafe { &MediaElementHost(handle) }
 			mut argument := C.JSValueMakeUndefined(host.runtime.context)
@@ -100,6 +100,7 @@ fn (mut host MediaElementHost) get(name string, receiver voidptr) !voidptr {
 		'playbackRate' { C.JSValueMakeNumber(host.runtime.context, media.playback_rate()) }
 		'volume' { C.JSValueMakeNumber(host.runtime.context, media.volume()) }
 		'muted' { C.JSValueMakeBoolean(host.runtime.context, media.muted()) }
+		'currentTime' { C.JSValueMakeNumber(host.runtime.context, media.current_time()) }
 		else { return error('Unknown media element getter') }
 	}
 }
@@ -123,6 +124,8 @@ fn (mut host MediaElementHost) set_property(name string, receiver voidptr, value
 	if replay := host.replay { replay(host.runtime)! }
 	if name == 'defaultPlaybackRate' {
 		media.set_default_playback_rate(number)
+	} else if name == 'currentTime' {
+		media.set_current_time(number)
 	} else if name == 'volume' {
 		media.set_volume(number) or {
 			message := err.msg()
@@ -144,15 +147,15 @@ fn (mut host MediaElementHost) set_property(name string, receiver voidptr, value
 }
 
 // The compact DOM hierarchy remains partial. This base prototype exposes only
-// the completed state/range getters, rate/volume accessors and pinned constants, preserving its other
-// existing element operations. Full HTMLElement/audio/video interfaces are open.
+// the completed state/range getters, rate/volume/time accessors and constants.
+// Full HTMLElement/audio/video interfaces remain open.
 const media_element_native_factory = r'(function(getters,setters,bind){
  "use strict";
  const define=Object.defineProperty,create=Object.create,P=Proxy,T=TypeError;
  const prototype=create(EventTarget.prototype);
  const names=["buffered","currentSrc","networkState","readyState","seeking","duration","paused","ended"];
  for(let i=0;i<names.length;i++)define(prototype,names[i],{get:getters[i],enumerable:true,configurable:true});
- const properties=["defaultPlaybackRate","playbackRate","volume","muted"];
+ const properties=["defaultPlaybackRate","playbackRate","volume","muted","currentTime"];
  for(let i=0;i<properties.length;i++)define(prototype,properties[i],{get:getters[names.length+i],set:setters[i],enumerable:true,configurable:true});
  define(prototype,Symbol.toStringTag,{value:"HTMLMediaElement",configurable:true});
  const constructor=new P(function HTMLMediaElement(){},{apply(){throw new T("Illegal HTMLMediaElement constructor")},construct(){throw new T("Illegal HTMLMediaElement constructor")}});
