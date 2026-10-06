@@ -693,7 +693,7 @@
 
 All 78 translated LibWeb packages and all 1,193 current module-owned C++
 implementation units have audited V mappings. As of 2026-10-06, the tracked module
-packages contain 432,331 implementation V LOC and 154,721 test V LOC.
+packages contain 432,331 implementation V LOC and 154,733 test V LOC.
 Physical LOC includes comments and blank lines. Root support code and browser
 integration code are excluded. Package counts include generated V assets and
 supporting translations; WebAssembly includes the separately audited LibWasm
