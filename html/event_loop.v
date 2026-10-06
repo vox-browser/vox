@@ -519,6 +519,7 @@ pub fn (mut event_loop EventLoop) spin_until(goal_condition fn() bool) {
 
 // https://html.spec.whatwg.org/multipage/webappapis.html#event-loop-processing-model
 pub fn (mut event_loop EventLoop) process() {
+	if event_loop.execution_paused { return }
 	if mut timer := event_loop.system_event_loop_timer_ { timer.stop() }
 	event_loop.task_generation_++
 	event_loop.scheduled = false
@@ -1035,11 +1036,17 @@ pub fn (mut event_loop EventLoop) pause() &PauseHandle {
 pub fn (mut event_loop EventLoop) unpause(handle &PauseHandle) {
 	assert handle.event_loop == event_loop
 	event_loop.execution_paused = false
+	event_loop.schedule()
 	_ = unsafe_shared_current_time_ms() - handle.time_before_pause
 }
 
 pub fn main_thread_event_loop() &EventLoop {
 	return html_main_thread_event_loop
+}
+
+pub fn run_when_event_loop_reaches_step_1(steps fn()) {
+	mut event_loop := main_thread_event_loop()
+	event_loop.run_upon_reaching_step_1(steps)
 }
 
 // https://html.spec.whatwg.org/multipage/webappapis.html#queue-a-task
