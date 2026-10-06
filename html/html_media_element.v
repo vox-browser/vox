@@ -258,9 +258,14 @@ mut:
 }
 
 pub fn HTMLMediaElement.create(element ?&dom.HTMLElement, base_url dom.URL) &HTMLMediaElement {
+	event_target := if html_element := element {
+		unsafe { &dom.EventTarget(html_element) }
+	} else {
+		dom.EventTarget.new()
+	}
 	mut media := &HTMLMediaElement{
 		EventTarget: dom.EventTarget{}
-		event_target_: dom.EventTarget.new()
+		event_target_: event_target
 		associated_element_: element
 		base_url_: base_url
 		audio_tracks_: &AudioTrackList{}
