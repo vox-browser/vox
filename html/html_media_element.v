@@ -440,13 +440,25 @@ pub fn (mut element HTMLMediaElement) media_source_initialization_segment_receiv
 }
 
 pub fn (mut element HTMLMediaElement) media_source_update_buffered_ranges(ranges []MediaBufferedRange) {
+	element.set_media_source_buffered_ranges(ranges)
+	element.process_media_data(.ongoing)
+	element.update_ready_state()
+}
+
+// Source's playback manager observes the updated demuxer before the removal
+// completion's update_ready_state(). Refresh the V cached-range adapter at
+// that same boundary without entering the append-only progress event path.
+pub fn (mut element HTMLMediaElement) media_source_update_buffered_ranges_after_removal(ranges []MediaBufferedRange) {
+	element.set_media_source_buffered_ranges(ranges)
+	element.update_ready_state()
+}
+
+fn (mut element HTMLMediaElement) set_media_source_buffered_ranges(ranges []MediaBufferedRange) {
 	element.buffered_.clear()
 	for range_ in ranges {
 		element.buffered_.add_range(range_.start, range_.end)
 	}
 	element.playback_has_future_data_ = ranges.any(it.end > element.current_playback_position_)
-	element.process_media_data(.ongoing)
-	element.update_ready_state()
 }
 
 pub fn (mut element HTMLMediaElement) toggle_fullscreen() {

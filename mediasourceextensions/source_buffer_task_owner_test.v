@@ -173,6 +173,47 @@ fn test_range_removal_completes_on_the_original_buffer_and_track() {
 	buffer.abort()!
 }
 
+fn test_range_removal_refreshes_actual_media_ranges_before_updateend() {
+	owner := create_buffer_task_owner()!
+	defer { close_buffer_task_owner(owner) }
+	mut source := owner.source
+	source.set_duration(10)!
+	mut buffer := source.add_source_buffer('video/webm; codecs="vp9"')!
+	mut track := TrackBuffer.create(WebMTrackInfo{ number: 1, type_: .video })
+	buffer.processor_.track_buffers_[1] = track
+	mut demuxer := track.demuxer
+	for timestamp in [f64(0), 5] {
+		demuxer.add_coded_frame(DemuxedCodedFrame{
+			track_number: 1
+			is_keyframe:  true
+			data:         [u8(1)]
+			timestamp:    timestamp
+			duration:     1
+		})
+	}
+	buffer.update_ready_state_and_duration_after_coded_frame_processing()
+	saved := owner.media.buffered()
+	assert saved.length() == 2
+	mut seen := &BufferTaskEvents{}
+	buffer.set_event_handler_attribute('updateend', &dom.CallbackType{
+		handle_event: fn [seen, owner] (_ &dom.Event, _ ?&dom.EventTarget) dom.JSValue {
+			mut observation := unsafe { &BufferTaskEvents(seen) }
+			ranges := owner.media.buffered()
+			start := ranges.start(0) or { -1 }
+			end := ranges.end(0) or { -1 }
+			observation.identities << (ranges.length() == 1 && start == 0 && end == 1)
+			return dom.js_undefined()
+		}
+	})
+	buffer.remove(1, 6)!
+	assert owner.media.buffered().length() == 2
+	drain_buffer_owner_tasks()
+	assert seen.identities == [true]
+	assert owner.media.buffered().length() == 1
+	assert saved.length() == 2
+	assert saved.end(1)! == 6
+}
+
 fn test_append_error_events_keep_the_original_buffer() {
 	owner := create_buffer_task_owner()!
 	defer { close_buffer_task_owner(owner) }

@@ -348,7 +348,11 @@ fn (mut buffer SourceBuffer) run_range_removal(start f64, end f64) {
 		}
 		buffer.processor_.run_coded_frame_removal(start, end)
 		if mut media_element := media_source.media_element_assigned_to() {
-			media_element.update_ready_state()
+			mut ranges := []html.MediaBufferedRange{}
+			for range_ in buffer.processor_.buffered_time_ranges() {
+				ranges << html.MediaBufferedRange{ start: range_.start, end: range_.end }
+			}
+			media_element.media_source_update_buffered_ranges_after_removal(ranges)
 		}
 		buffer.range_removal_running_ = false
 		buffer.processor_.set_updating(false)
