@@ -13,6 +13,22 @@ inventory, not current logic, generated-binding or browser parity. The current
 audit and fix evidence is in `docs/translation-audit/`; mapping a source name or
 a runtime hook does not establish that its complete logic was translated.
 
+## Native playback-rate property owner
+
+Native defaultPlaybackRate/playbackRate accessors now use the actual audio/video
+DOM model, check the receiver before restricted-double conversion and document
+replay, preserve original thrown values and throw genuine NotSupportedError
+DOMExceptions. Successful writes enter the existing queued rate setters;
+signed zero and live task values survive the native boundary.
+Implementation and six focused cases: `1ac087a6`.
+
+[Native rate evidence](../docs/translation-audit/NATIVE_MEDIA_RATE_PROPERTY_OWNER.md)
+retains the corrected runtime baseline and intermediate compile diagnostics,
+all 11 affected files in each GC mode, the 66-case main regression, signed
+production startup, two exact public rate viewports, 13 exact SVG pairs and all
+11 smoke cases within unchanged bounds. Actual manager/clock/pipeline delivery,
+other media operations, complete media/MSE, realms and physical GC remain open.
+
 ## Media rate setters and load caller
 
 Rate changes queue ratechange through the owning media task. Current-rate
@@ -26,8 +42,9 @@ defaults before resource selection. Separate implementation/test commits are
 retains both runtime baselines, ten new cases, all 23 selected files in each GC
 mode and the 66-case main regression. The frozen signed production build,
 assertion-independent DOM/model probe, existing duration-task viewport and all
-11 smoke cases pass. Actual manager/clock/pipeline delivery, native rate
-properties, full load/media/MSE, realms and physical GC remain open.
+11 smoke cases pass. Native rate properties are added by the subsequent slice
+above. Actual manager/clock/pipeline delivery, full load/media/MSE, realms and
+physical GC remain open.
 
 ## Duration and volume event tasks
 

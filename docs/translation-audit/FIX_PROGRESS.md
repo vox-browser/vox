@@ -588,3 +588,20 @@ Agent checks run with `v -old-compiler -enable-globals`. Isolated worktrees use 
   Actual PlaybackManager rate/clock/pipeline delivery, native rate operations,
   complete media/MSE runtime and GC ownership remain open. The ledger stays
   **32 fixed / 25 partial / 9 open**.
+
+- Native playback-rate properties (`1ac087a6`) now read/write the actual
+  DOM media owner, validate the receiver before restricted-double conversion
+  and replay, preserve original thrown values and expose genuine
+  NotSupportedError DOMExceptions. Successful writes retain queued live events
+  and signed zero. [Native rate evidence](NATIVE_MEDIA_RATE_PROPERTY_OWNER.md)
+  records six new cases, the corrected runtime baseline and intermediate
+  compilation diagnostics. The same frozen committed snapshot passes **11/11
+  affected files in each GC mode**, including the **66-case** main regression.
+  Its signed production bundle passes startup, two public rate and created-audio
+  viewports match **480,000 pixels each exactly**, all **13 SVG pairs** are
+  exact, and all **11 smoke cases** pass within unchanged bounds and residuals.
+  Evidence `Build/audit-fixes/native-media-rate-evidence.json` has SHA256
+  `289ff1a0e8853591ed0b5f2cf2946ccbc458c80c1a48b44ece26e20b1cab24ba`. Module-owned file hashes and physical counts remain unchanged;
+  browser/root support is excluded from that inventory. Actual PlaybackManager
+  rate/clock/pipeline delivery, complete media/MSE, other native operations and
+  GC ownership remain open. The ledger stays **32 fixed / 25 partial / 9 open**.

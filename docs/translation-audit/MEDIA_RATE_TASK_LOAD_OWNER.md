@@ -139,3 +139,8 @@ The 78-owner physical inventory contains
 154,721 test V LOC across 2,187
 owned files. Browser/root support is excluded. Counts do not measure parity;
 the ledger remains 32 fixed / 25 partial / 9 open.
+
+The subsequent [native rate property slice](NATIVE_MEDIA_RATE_PROPERTY_OWNER.md)
+exposes the two rate getters/setters through actual DOM ownership and conversion
+to restricted doubles. Its evidence is separate; manager/clock/pipeline execution
+remains open. The scope and physical counts above describe this earlier snapshot.
