@@ -568,3 +568,23 @@ Agent checks run with `v -old-compiler -enable-globals`. Isolated worktrees use 
   Autoplay-policy pause, muted-style invalidation, native volume operations,
   complete media/MSE runtime and GC ownership remain open. The ledger stays
   **32 fixed / 25 partial / 9 open**.
+
+- Media rate setters (`96a8c005`) now queue ratechange and preserve signed-zero
+  field assignment. The current-rate setter validates Source's finite 0–64 range.
+  The separate load caller (`9dbdb6f5`) resets through that setter,
+  canceling old owner tasks and propagating unsupported defaults before
+  resource selection. [Rate/load evidence](MEDIA_RATE_TASK_LOAD_OWNER.md)
+  retains both genuine runtime baselines and ten new cases. The same clean
+  committed snapshot passes **23/23 selected files in each GC mode**, including
+  the **66-case** main regression. Its signed production build and ordinary
+  failure-branch rate probe pass with assertions stripped. The existing public
+  duration-task viewport matches **480,000 pixels exactly**, and all **11 smoke
+  cases** pass with identical residuals and no tolerance changes. Consolidated
+  evidence `Build/audit-fixes/media-rate-tasks-evidence.json` has SHA256
+  `d92b1af6e20570600088ed2dd8e5f0c4f7ec74bf984494cc8438abcda4802992`. The 78-owner inventory contains
+  **432,331 implementation /
+  154,721 test V LOC** across
+  **2,187 owned files**, excluding browser/root support.
+  Actual PlaybackManager rate/clock/pipeline delivery, native rate operations,
+  complete media/MSE runtime and GC ownership remain open. The ledger stays
+  **32 fixed / 25 partial / 9 open**.

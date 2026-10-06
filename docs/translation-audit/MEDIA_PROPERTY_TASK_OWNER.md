@@ -123,9 +123,10 @@ artifacts are under Build/audit-fixes/media-property-tasks-production/.
 Source's volume/mute autoplay-policy pause and muted-style invalidation are
 still missing. No synthetic is-allowed-to-play flag or policy was introduced.
 Native volume/muted property operations, WebIDL conversion/exception fidelity,
-other media event scheduling and playback-rate support (V accepts only 1 while
-Source supports finite rates from 0 to 64), the MSE duration-clamping Source
-FIXME/Worker mirror, actual PlaybackManager/decoder Ended state, native play
+other media event scheduling and playback-rate support (at this snapshot V
+accepts only 1 while Source supports finite rates from 0 to 64), the MSE
+duration-clamping Source FIXME/Worker mirror, actual PlaybackManager/decoder
+Ended state, native play
 promises, ordinary compact listeners, unique task sources, full prototypes, foreign realms,
 WrapperWorlds, IPC and physical GC remain open. The browser uses JavaScriptCore.
 
@@ -136,6 +137,10 @@ Focused tests: [duration](../../html/media_duration_task_owner_test.v),
 [Completion and DOM target evidence](MEDIA_END_TASK_DOM_OWNER.md) records the
 prerequisite slice and its historical snapshot.
 
-The refreshed 78-owner physical inventory contains 432,322 implementation /
+At this snapshot, the 78-owner physical inventory contains 432,322 implementation /
 154,501 test V LOC across 2,185 owned files. Browser/root support is excluded.
 Counts do not measure parity; the ledger remains 32 fixed / 25 partial / 9 open.
+
+The subsequent [rate/load slice](MEDIA_RATE_TASK_LOAD_OWNER.md) queues
+ratechange, translates the setter range and fixes the load reset caller. Its
+evidence is separate; actual manager/clock/pipeline propagation remains open.

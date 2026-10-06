@@ -13,6 +13,22 @@ inventory, not current logic, generated-binding or browser parity. The current
 audit and fix evidence is in `docs/translation-audit/`; mapping a source name or
 a runtime hook does not establish that its complete logic was translated.
 
+## Media rate setters and load caller
+
+Rate changes queue ratechange through the owning media task. Current-rate
+validation accepts finite values from 0 to 64; immediate assignment preserves
+signed zero even when equality suppresses an event. Explicit/automatic load
+resets through that setter, canceling old owner tasks and propagating invalid
+defaults before resource selection. Separate implementation/test commits are
+`96a8c005` and `9dbdb6f5`.
+
+[Rate/load evidence](../docs/translation-audit/MEDIA_RATE_TASK_LOAD_OWNER.md)
+retains both runtime baselines, ten new cases, all 23 selected files in each GC
+mode and the 66-case main regression. The frozen signed production build,
+assertion-independent DOM/model probe, existing duration-task viewport and all
+11 smoke cases pass. Actual manager/clock/pipeline delivery, native rate
+properties, full load/media/MSE, realms and physical GC remain open.
+
 ## Duration and volume event tasks
 
 Known-duration changes queue durationchange while duration/end-seek updates
