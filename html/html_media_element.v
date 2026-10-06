@@ -830,7 +830,7 @@ fn (mut element HTMLMediaElement) load_element_for_current_load() ! {
 	element.set_duration(math.nan())
 	element.set_ended(false)
 	element.set_show_poster(true)
-	element.playback_rate_ = element.default_playback_rate_
+	element.set_playback_rate(element.default_playback_rate_)!
 	element.can_autoplay_ = true
 	element.buffered_.clear()
 	element.played_.clear()
