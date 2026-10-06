@@ -1566,7 +1566,7 @@ pub fn (mut element HTMLMediaElement) toggle_playback() &dom.Promise {
 
 pub fn (mut element HTMLMediaElement) set_volume(volume f64) ! {
 	if math.is_nan(volume) || volume < 0 || volume > 1 {
-		return error('IndexSizeError: volume must be in the range 0 to 1')
+		return error('IndexSizeError: Volume must be in the range 0.0 to 1.0, inclusive')
 	}
 	if element.volume_ != volume {
 		element.volume_ = volume

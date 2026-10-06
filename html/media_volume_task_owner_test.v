@@ -75,6 +75,18 @@ fn test_unchanged_or_invalid_volume_and_muted_values_do_not_queue_events() {
 	assert media.event_count('volumechange') == 2
 }
 
+fn test_volume_range_error_preserves_source_message_without_mutation_or_tasks() {
+	mut media := HTMLMediaElement.create(none, dom.url_about_blank())
+	for value in [-1.0, 1.01] {
+		mut rejected := false
+		media.set_volume(value) or {
+			rejected = true
+			assert err.msg() == 'IndexSizeError: Volume must be in the range 0.0 to 1.0, inclusive'
+		}
+		assert rejected && media.volume() == 1 && media.queued_media_task_ids_.len == 0
+	}
+}
+
 fn test_volume_cancellation_is_owner_specific_and_callback_changes_wait_for_another_task() {
 	mut first := HTMLMediaElement.create(none, dom.url_about_blank())
 	mut second := HTMLMediaElement.create(none, dom.url_about_blank())
