@@ -763,10 +763,10 @@ V's standard `crypto.*` modules without shadowing that namespace.
 The IDL-only `Fullscreen` package delegates its state machine to the shared
 translated DOM implementation.
 
-The verified `a160812b` physical inventory is retained in
-`Build/audit-fixes/source-current-module-loc-a160812b.json` (SHA256
-`89a753fd66fc95526e492563b9ee9cea133de847aea49b652bfb34c76871ab6c`). The currentTime generation slice adds one HTML test file and updates the media
-model and existing HTML/Layout tests in the same 78-owner assignment; browser/root support remains excluded.
+The verified `335564fd` physical inventory is retained in
+`Build/audit-fixes/source-current-module-loc-335564fd.json` (SHA256
+`c75a784722328706f901dbb5d244b0e21a8f5fb046c7f6ea6ff2ec21086d0a46`). The fastSeek caller slice adds one HTML test file and updates its
+model in the same 78-owner assignment; browser/root support remains excluded.
 
 The table below refreshes tracked package V LOC on 2026-10-06; upstream counts
 and structural mapping labels retain the pinned inventory. It covers 76 current
@@ -804,7 +804,7 @@ from the current-module totals.
 | `Gamepad` | 6 | 1,351 | 860 | 323 | Complete |
 | `Geolocation` | 4 | 643 | 535 | 224 | Complete |
 | `Geometry` | 8 | 2,078 | 2,121 | 1,041 | Complete |
-| `HTML` | 286 | 83,853 | 69,351 | 36,521 | Complete |
+| `HTML` | 286 | 83,853 | 69,350 | 36,635 | Complete |
 | `HighResolutionTime` | 2 | 516 | 500 | 213 | Complete |
 | `IndexedDB` | 19 | 6,991 | 5,455 | 1,388 | Complete |
 | `Infra` | 3 | 385 | 548 | 102 | Complete |
@@ -857,7 +857,7 @@ from the current-module totals.
 | `XLink` | 1 | 16 | 13 | 10 | Complete |
 | `XML` | 2 | 556 | 477 | 164 | Complete |
 | `XPath` | 5 | 435 | 672 | 210 | Complete |
-| **Total** | **1,193** | **329,970** | **432,348** | **154,939** | **74 complete, 4 present, 0 untranslated** |
+| **Total** | **1,193** | **329,970** | **432,347** | **155,053** | **74 complete, 4 present, 0 untranslated** |
 
 ### Live editability refresh
 
