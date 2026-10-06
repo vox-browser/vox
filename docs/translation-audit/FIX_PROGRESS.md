@@ -548,3 +548,23 @@ Agent checks run with `v -old-compiler -enable-globals`. Isolated worktrees use 
   Actual manager/decoder Ended state, native play promises, ordinary compact
   listener routing, other event scheduling and complete runtime/GC ownership
   remain open; the ledger stays **32 fixed / 25 partial / 9 open**.
+
+- Duration event scheduling (`3c654b6b`) and volume/mute
+  event scheduling (`214de36b`) now use their owning media task,
+  preserving immediate duration/seek and effective-volume updates. The actual
+  MediaSource caller suppresses unchanged duration values before the internal
+  setter; listener mutations queue another task without reentrant delivery.
+  [Property-task evidence](MEDIA_PROPERTY_TASK_OWNER.md) retains baseline,
+  fixture and full-disk diagnostics. The final committed snapshot passes
+  **20/20 selected files in each GC mode**, including eight new cases and the
+  **66-case** main regression. Its signed production build passes startup,
+  the public task-timing viewport matches **480,000 pixels exactly**, and all
+  **11 configured smoke cases** pass within existing bounds. Consolidated
+  evidence `Build/audit-fixes/media-property-tasks-evidence.json`
+  is retained with SHA256 `bc5d3bcc93d3b48f195b6b3cc8fa3d4e0853abcac43e229b42ae603ebd003e0b`. The 78-owner inventory contains
+  **432,322 implementation /
+  154,501 test V LOC** across
+  **2,185 owned files**, excluding browser/root support.
+  Autoplay-policy pause, muted-style invalidation, native volume operations,
+  complete media/MSE runtime and GC ownership remain open. The ledger stays
+  **32 fixed / 25 partial / 9 open**.

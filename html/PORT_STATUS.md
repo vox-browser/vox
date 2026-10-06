@@ -13,6 +13,23 @@ inventory, not current logic, generated-binding or browser parity. The current
 audit and fix evidence is in `docs/translation-audit/`; mapping a source name or
 a runtime hook does not establish that its complete logic was translated.
 
+## Duration and volume event tasks
+
+Known-duration changes queue durationchange while duration/end-seek updates
+and cache scheduling remain immediate. Changed volume or muted values queue volumechange
+while effective-volume hooks update immediately. Both use the actual media
+task/document owner, load cancellation and active-document delivery guard.
+Separate implementation/test commits are `3c654b6b` and
+`214de36b`.
+
+[Property-task evidence](../docs/translation-audit/MEDIA_PROPERTY_TASK_OWNER.md)
+retains baseline and full-disk diagnostics, eight new cases, all 20 selected
+files in each GC mode, the 66-case main regression and the unchanged snapshot.
+The signed production build passes startup; its public MediaSource task-timing
+viewport is pixel-exact and all 11 smoke cases pass within existing bounds.
+Autoplay-policy pause, muted-style invalidation, native volume operations,
+other events, complete playback/MSE, realms and physical GC remain open.
+
 ## Media completion task and DOM event owner
 
 Associated media now use the actual audio/video DOM EventTarget. Native

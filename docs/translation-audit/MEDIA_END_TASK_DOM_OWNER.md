@@ -124,9 +124,8 @@ The forward has-ended predicate still uses V's duration/position check; Source
 requires PlaybackManager's Ended state after actual pipeline consumption.
 Pending play promises remain the existing dom.Promise compatibility records
 with a string rejection reason. Native JS promises and AbortError DOMExceptions,
-ordinary compact listener routing, other media event scheduling
-(including durationchange and volumechange), full native operations, unique
-task sources, manager/decoder ownership, played/seekable behavior, full element
+ordinary compact listener routing, other media event scheduling, full native
+operations, unique task sources, manager/decoder ownership, played/seekable behavior, full element
 prototype hierarchy, foreign realms, WrapperWorlds, IPC and physical GC remain
 open. The browser uses JavaScriptCore; no full HTML, LibJS or Wasm sweep is claimed.
 
@@ -135,3 +134,7 @@ The refreshed 78-owner physical inventory contains
 across 2,183 owned files. Browser/root support is excluded.
 Physical counts do not measure parity; the ledger stays 32 fixed / 25 partial /
 9 open.
+
+The subsequent [property-task slice](MEDIA_PROPERTY_TASK_OWNER.md) queues
+durationchange and volumechange with separate evidence. The production page
+and counts above retain this document's earlier snapshot and scope.
