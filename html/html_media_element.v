@@ -1612,19 +1612,28 @@ pub fn (element &HTMLMediaElement) effective_media_volume() f64 {
 
 pub fn (mut element HTMLMediaElement) set_default_playback_rate(rate f64) {
 	if element.default_playback_rate_ != rate {
-		element.default_playback_rate_ = rate
-		element.fire_event('ratechange')
+		element_pointer := voidptr(&element)
+		element.queue_a_media_element_task(fn [element_pointer] () {
+			mut media := unsafe { &HTMLMediaElement(element_pointer) }
+			media.fire_event('ratechange')
+		})
 	}
+	element.default_playback_rate_ = rate
 }
 
 pub fn (mut element HTMLMediaElement) set_playback_rate(rate f64) ! {
-	if rate != 1.0 {
-		return error('NotSupportedError: Playback rates other than 1 are not supported')
+	if !math.is_finite(rate) || rate < 0 || rate > 64 {
+		return error('NotSupportedError: Playback rate is outside of the supported range.')
 	}
 	if element.playback_rate_ != rate {
-		element.playback_rate_ = rate
-		element.fire_event('ratechange')
+		element_pointer := voidptr(&element)
+		element.queue_a_media_element_task(fn [element_pointer] () {
+			mut media := unsafe { &HTMLMediaElement(element_pointer) }
+			media.fire_event('ratechange')
+		})
 	}
+	element.playback_rate_ = rate
+	// PlaybackManager rate/clock/pipeline propagation remains a backend boundary.
 }
 
 pub fn (mut element HTMLMediaElement) advance_playback(elapsed_seconds f64) {
