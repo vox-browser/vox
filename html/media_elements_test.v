@@ -159,6 +159,8 @@ fn test_media_controls_timeline_uses_the_last_seekable_range() {
 	media.seekable_.add_range(10, 50)
 	media.set_current_playback_position(20)
 	media.set_duration(math.inf(1))
+	mut loop := main_thread_event_loop()
+	loop.process()
 
 	mut controls := MediaControls.create(media)
 	controls.update_timeline()

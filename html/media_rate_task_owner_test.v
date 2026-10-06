@@ -83,6 +83,7 @@ fn test_equal_signed_zero_rates_update_the_field_without_an_extra_event() {
 }
 
 fn test_accepted_rates_drive_the_existing_playback_clock_compatibility_path() {
+	mut loop := main_thread_event_loop()
 	mut media := HTMLMediaElement.create(none, dom.url_about_blank())
 	media.set_duration(100)
 	media.set_ready_state(.have_enough_data)
@@ -90,12 +91,15 @@ fn test_accepted_rates_drive_the_existing_playback_clock_compatibility_path() {
 	media.set_paused(false)
 	media.set_playback_rate(0.5)!
 	media.advance_playback(2)
+	loop.process()
 	assert media.current_time() == 1
 	media.set_playback_rate(2)!
 	media.advance_playback(2)
+	loop.process()
 	assert media.current_time() == 5
 	media.set_playback_rate(0)!
 	media.advance_playback(20)
+	loop.process()
 	assert media.current_time() == 5 && !media.paused()
 	media_rate_drain_owner(media)
 }

@@ -201,6 +201,7 @@ mut:
 	seeking_                    bool
 	current_playback_position_  f64
 	official_playback_position_ f64
+	official_playback_position_task_generation_ u64
 	default_playback_start_     f64
 	show_poster_                bool = true
 	duration_                   f64 = math.nan()
@@ -821,10 +822,9 @@ fn (mut element HTMLMediaElement) load_element_for_current_load() ! {
 	element.set_seeking(false)
 	element.current_playback_position_ = 0
 	if element.official_playback_position_ != 0 {
-		element.official_playback_position_ = 0
+		element.set_official_playback_position(0)
 		element.dispatch_time_update_event()
 	}
-	element.official_playback_position_ = 0
 	element.playback_start_time_realtime_microseconds_ = none
 	element.timeline_offset_microseconds_ = none
 	element.set_duration(math.nan())
@@ -1306,10 +1306,31 @@ pub fn (mut element HTMLMediaElement) set_ended(ended bool) {
 }
 
 pub fn (element &HTMLMediaElement) current_time() f64 {
-	if element.ready_state_ == .have_nothing {
+	if element.default_playback_start_ != 0 {
 		return element.default_playback_start_
 	}
+	generation := main_thread_event_loop().task_generation()
+	if element.official_playback_position_task_generation_ != generation {
+		// Source declares these cache fields mutable in its const getter.
+		mut media := unsafe { &HTMLMediaElement(element) }
+		media.official_playback_position_task_generation_ = generation
+		media.official_playback_position_ = element.current_playback_position()
+	}
 	return element.official_playback_position_
+}
+
+pub fn (element &HTMLMediaElement) current_playback_position() f64 {
+	if current_time := element.playback_hooks_.current_time {
+		return current_time()
+	}
+	// Preserve the existing model clock when no platform hook is installed.
+	// Source returns zero without a manager; this remains a compatibility path.
+	return element.current_playback_position_
+}
+
+pub fn (mut element HTMLMediaElement) set_official_playback_position(position f64) {
+	element.official_playback_position_ = position
+	element.official_playback_position_task_generation_ = main_thread_event_loop().task_generation()
 }
 
 pub fn (mut element HTMLMediaElement) set_current_time(value f64) {
@@ -1361,7 +1382,6 @@ pub fn (mut element HTMLMediaElement) seek_element(value f64, mode MediaSeekMode
 		mut media := unsafe { &HTMLMediaElement(element_pointer) }
 		media.fire_event('seeking')
 	})
-	element.official_playback_position_ = target
 	if hook := element.playback_hooks_.seek {
 		mut playback_seek_mode := MediaPlaybackSeekMode.accurate
 		if mode == .approximate_for_speed {
@@ -1380,6 +1400,8 @@ pub fn (mut element HTMLMediaElement) seek_element(value f64, mode MediaSeekMode
 			media.finish_seeking_element()
 		})
 	}
+	// Source's ad-hoc seek commit samples the clock after requesting the seek.
+	element.set_official_playback_position(element.current_playback_position())
 }
 
 pub fn (mut element HTMLMediaElement) finish_seeking_element() {
@@ -1400,7 +1422,6 @@ pub fn (mut element HTMLMediaElement) finish_seeking_element() {
 
 pub fn (mut element HTMLMediaElement) set_current_playback_position(value f64) {
 	element.current_playback_position_ = value
-	element.official_playback_position_ = value
 	element.upon_has_ended_playback_possibly_changed()
 	if mut video := element.video_element_model_ {
 		video.update_natural_dimensions()
@@ -1551,9 +1572,7 @@ pub fn (mut element HTMLMediaElement) pause_element() {
 	element.dispatch_time_update_event()
 	element.fire_event('pause')
 	element.reject_pending_play_promises_with(promises, dom.js_string('AbortError: Media playback was paused'))
-	if !element.seeking_ {
-		element.official_playback_position_ = element.current_playback_position_
-	}
+	element.set_official_playback_position(element.current_playback_position())
 }
 
 pub fn (mut element HTMLMediaElement) toggle_playback() &dom.Promise {
@@ -1643,13 +1662,11 @@ pub fn (mut element HTMLMediaElement) advance_playback(elapsed_seconds f64) {
 	new_position := element.current_playback_position_ + elapsed_seconds * element.playback_rate_
 	if element.playback_rate_ >= 0 && !math.is_nan(element.duration_) && new_position >= element.duration_ {
 		element.current_playback_position_ = element.duration_
-		element.official_playback_position_ = element.duration_
 		element.upon_has_ended_playback_possibly_changed()
 		element.reached_end_of_media_playback()
 		return
 	}
 	element.current_playback_position_ = if new_position < 0 { 0 } else { new_position }
-	element.official_playback_position_ = element.current_playback_position_
 	element.upon_current_playback_position_possibly_changed()
 }
 
@@ -1853,7 +1870,7 @@ pub fn (mut element HTMLMediaElement) on_metadata_parsed(duration f64) {
 		element.timeline_offset_microseconds_ = element.playback_start_time_realtime_microseconds_
 	}
 	element.current_playback_position_ = 0
-	element.official_playback_position_ = 0
+	element.set_official_playback_position(0)
 	element.set_duration(duration)
 	element.set_ready_state(.have_metadata)
 	if element.default_playback_start_ > 0 {

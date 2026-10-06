@@ -198,6 +198,7 @@ fn test_media_element_play_pause_seek_end_and_loop() {
 	assert !media.paused()
 	assert media.potentially_playing()
 	media.advance_playback(3)
+	loop.process()
 	assert media.current_time() == 3
 	media.pause()
 	assert media.paused()

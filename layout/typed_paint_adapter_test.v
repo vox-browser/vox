@@ -3031,6 +3031,8 @@ fn test_video_uses_the_paintable_representation_switch() {
 	assert frame_media.ready_state() != .have_nothing
 	assert frame_media.video_tracks().length() == 1
 	frame_media.set_current_playback_position(1)
+	mut media_loop := html.main_thread_event_loop()
+	media_loop.process()
 	frame_model.set_current_frame(&dom.Bitmap_{
 		width: 20
 		height: 10
