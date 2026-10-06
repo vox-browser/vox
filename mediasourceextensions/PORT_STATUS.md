@@ -66,11 +66,19 @@ The broad 23-file checks pass in both modes before a supporting
 [captured error-brand correction](../docs/translation-audit/BUFFER_SOURCE_ERROR_BRAND_OWNER.md);
 the four affected files pass afterward in both modes. These are separate snapshots.
 
-Caller-realm buffered TimeRanges, DedicatedWorker startup, foreign realm/world
-wrappers, physical GC edges and IPC remain separate. The worker capability
-flag is false, as in the pinned Source; exposing that flag does not establish
-a worker runtime. Source event
-clock integration and complete decoder/playback behavior remain separate.
+Native TimeRanges now wraps actual SourceBuffer.buffered snapshots in the
+Window Runtime, with readonly length, start/end, IDL metadata, unsigned-long
+index conversion and native IndexSizeError exceptions. Five host cases and
+an actual page append/remove caller verify fresh snapshots, retained old
+ranges, receiver branding and independent Runtime ownership. The existing
+removed-buffer guard is preserved as a documented deviation from the pinned
+Source FIXME. [TimeRanges evidence](../docs/translation-audit/NATIVE_TIME_RANGES_OWNER.md)
+records **22/22 files** in each GC mode. Foreign caller realms,
+DedicatedWorker startup, WrapperWorlds, physical GC edges and IPC remain open.
+
+The worker capability flag is false, as in the pinned Source; exposing it does
+not establish a worker runtime. Source event clocks and complete decoder/
+playback behavior remain separate.
 Upstream IDL FIXMEs for handle, removeSourceBuffer, seekable-range mutation and
 ManagedMediaSource streaming are distinct from these translation boundaries.
 BufferedChangeEvent range getters likewise remain upstream FIXMEs.

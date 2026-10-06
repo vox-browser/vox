@@ -125,3 +125,11 @@ prove upstream collector behavior. The audit stays **32 fixed / 25 partial /
 The preceding [buffer event task correction](SOURCE_BUFFER_EVENT_TASK_OWNER.md)
 and [list task ordering correction](SOURCE_BUFFER_LIST_TASK_OWNER.md) provide
 the queued-owner prerequisites. This feature adds public native callers.
+
+The subsequent [native TimeRanges feature](NATIVE_TIME_RANGES_OWNER.md)
+(`35a7fa38`) exposes fresh buffered snapshots through the actual Window
+Runtime. Its 22-file checks pass in both GC modes, including a real page
+append/remove callback. Foreign caller realms and physical collector
+ownership remain open; the existing removed-buffer guard is documented as a
+deviation from pinned Source. This getter postdates the frozen production
+bundle recorded above.

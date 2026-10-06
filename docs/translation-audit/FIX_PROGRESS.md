@@ -447,3 +447,20 @@ Agent checks run with `v -old-compiler -enable-globals`. Isolated worktrees use 
   the ledger stays **32 fixed / 25 partial / 9 open**. The refreshed module
   inventory remains **432,276 implementation / 153,754 test V LOC** across 78
   owners because these additions belong to browser/root support.
+
+- Native TimeRanges and SourceBuffer.buffered (`35a7fa38`) now expose actual
+  V range snapshots through the Window Runtime, with native metadata,
+  unsigned-long index conversion and IndexSizeError DOMExceptions. Five host
+  cases and an actual page append/remove callback preserve empty and populated
+  snapshots after later mutation and detachment. [TimeRanges evidence](NATIVE_TIME_RANGES_OWNER.md)
+  retains the executed absent-interface baseline separately from the
+  compiler-only closure failure and corrected private fixture details.
+  Final checks pass **22/22 files in each GC mode**, including all **15 MSE
+  files**, the **66-case** main regression and binding/HTML neighbors. Both
+  modes retain the same **4,859-file snapshot**, 12 selected Source references
+  and two compiler hashes; a supplemental caller-realm policy hash is recorded
+  separately. The existing removed-buffer guard remains a documented pinned
+  Source deviation. Foreign realms, WrapperWorlds and physical GC ownership
+  remain open, and this feature postdates the last production bundle.
+  Module inventory is unchanged at **432,276 implementation / 153,754 test
+  V LOC** across 78 owners. The ledger stays **32 fixed / 25 partial / 9 open**.
