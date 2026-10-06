@@ -600,8 +600,8 @@ Agent checks run with `v -old-compiler -enable-globals`. Isolated worktrees use 
   Its signed production bundle passes startup, two public rate and created-audio
   viewports match **480,000 pixels each exactly**, all **13 SVG pairs** are
   exact, and all **11 smoke cases** pass within unchanged bounds and residuals.
-  Evidence `Build/audit-fixes/native-media-rate-evidence.json` has SHA256
-  `289ff1a0e8853591ed0b5f2cf2946ccbc458c80c1a48b44ece26e20b1cab24ba`. Module-owned file hashes and physical counts remain unchanged;
+  Evidence `Build/audit-fixes/native-media-rate-evidence-final.json` has SHA256
+  `31686443d9e4233c73d9812620a867daf0953bd5fe8b878a0f903fb093974c6e`. Module-owned file hashes and physical counts remain unchanged;
   browser/root support is excluded from that inventory. Actual PlaybackManager
   rate/clock/pipeline delivery, complete media/MSE, other native operations and
   GC ownership remain open. The ledger stays **32 fixed / 25 partial / 9 open**.

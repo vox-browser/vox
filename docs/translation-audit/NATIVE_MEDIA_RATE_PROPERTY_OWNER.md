@@ -62,6 +62,10 @@ are retained; they are not counted as passing tests. The final binding uses
 the imperative argument-selection form from neighboring native adapters.
 A page-extractor preflight also rejected an ambiguous raw-string pattern before
 the build began; the anchored correction and failed helper bytes are retained.
+The final evidence file separates the diagnostic JSON digest from the failed
+helper digest. The initial metadata artifact and byte-identical consolidator
+are retained as native-media-rate-evidence.json and
+consolidate_native_media_rate_evidence_initial.py under Build/audit-fixes/.
 
 ## Executed verification
 
@@ -106,8 +110,8 @@ Binary SHA256: `8dd543d585aa941da13b99f7e2650314b38690f88eacfb112c5b947983e1dec7
 Production manifest SHA256: `746e71e92543c94f848224731049b10e61222e9da65bd8275d7f49637b0e7db2`.
 Default manifest SHA256: `c8ac7a42eda4360d384331a5fff0c85aaf07d16768bb915244ad94188a001fda`.
 GC-none manifest SHA256: `3b90c8b5fae062f63d798d45a00d73827dc58b590f4ef38b77a30d8fbedfbaca`.
-Consolidated evidence: `Build/audit-fixes/native-media-rate-evidence.json`.
-SHA256: `289ff1a0e8853591ed0b5f2cf2946ccbc458c80c1a48b44ece26e20b1cab24ba`.
+Consolidated evidence: `Build/audit-fixes/native-media-rate-evidence-final.json`.
+SHA256: `31686443d9e4233c73d9812620a867daf0953bd5fe8b878a0f903fb093974c6e`.
 Private manifests/logs use native-media-rate and native-media-rate-frozen;
 production artifacts are under Build/audit-fixes/native-media-rate-production/.
 
