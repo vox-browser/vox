@@ -5,13 +5,30 @@ Upstream reference: `~/code/3rd/ladybird/Libraries/LibWeb/HTML`
 Translation workspace: `~/code/vox2/html`
 Source pin: `963d46a829f3e1b79f44dba9d02afb70654300fa`
 Historical mapping inventory: 2026-09-08
-Selected Source owner slices reviewed: 2026-10-04
+Selected Source owner slices reviewed: 2026-10-06
 
 The historical inventory below found candidate V mappings for 261 HTML source
 files. Its file/symbol/LOC counts and 107-file test result describe that earlier
 inventory, not current logic, generated-binding or browser parity. The current
 audit and fix evidence is in `docs/translation-audit/`; mapping a source name or
 a runtime hook does not establish that its complete logic was translated.
+
+## Native media state owner
+
+Native readonly currentSrc, networkState, readyState, seeking, duration, paused
+and ended getters now read the actual DOM audio/video media owner. HTML media
+wrappers inherit readyState instead of shadowing it with the compact snapshot.
+Brand checks precede replay; primitive values preserve NaN, Infinity and negative
+zero. Existing decoded frames and created audio retain their actual DOM owners.
+Implementation and five focused cases are committed as `a699f872`.
+
+[State-owner evidence](../docs/translation-audit/NATIVE_MEDIA_ELEMENT_STATE_OWNER.md)
+records 9/9 affected files in each GC mode, the 66-case main regression, signed
+production startup, an exact media-state viewport, 13 exact SVG pairs and all
+11 smoke cases within existing bounds. The getters expose the existing V model;
+Source event-loop-step-1 ended recomputation, native media operations/events,
+complete playback, full prototype hierarchy, foreign realms and physical GC
+remain separate. This slice does not establish full HTML parity.
 
 ## Native media buffered owner
 

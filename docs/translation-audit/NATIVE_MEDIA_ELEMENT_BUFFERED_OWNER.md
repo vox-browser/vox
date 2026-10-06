@@ -103,6 +103,10 @@ representations, compiler/reference checks, feature file hashes, formatting
 restoration and the subsequent frozen production runs. Manifests and logs
 use the `Build/audit-fixes/native-media-buffered-<mode>` prefix.
 
+The subsequent [native media state slice](NATIVE_MEDIA_ELEMENT_STATE_OWNER.md)
+adds readonly scalar getters and replaces the compact HTML-media readyState
+shadow. It preserves this buffered transport and verifies its own snapshot.
+
 ## Remaining scope
 
 Played and seekable stay separate: existing V histories/ranges differ from

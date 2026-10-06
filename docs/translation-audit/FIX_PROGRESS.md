@@ -494,3 +494,18 @@ Agent checks run with `v -old-compiler -enable-globals`. Isolated worktrees use 
   SHA256 `a62f66f303cfab776748d45daac377beef970469e097adc2af7dec27de4b63ee`.
   Physical counts do not measure parity; the ledger stays **32 fixed /
   25 partial / 9 open**.
+
+- Native HTML media state (`a699f872`) now exposes actual DOM-owner currentSrc,
+  networkState, readyState, seeking, duration, paused and ended, with native
+  readonly metadata and branding before replay. The compact readyState shadow
+  is removed only for HTML media. [State evidence](NATIVE_MEDIA_ELEMENT_STATE_OWNER.md)
+  records the executed missing-getter baseline, five final cases and **9/9
+  files in each GC mode**, including the **66-case** main regression. The same
+  unchanged **4,869-file** snapshot builds and signs successfully, passes
+  startup, matches the public media-state page's **480,000 pixels exactly**,
+  preserves **13 exact SVG pairs** and passes all **11 configured smoke cases**.
+  Production retains 26 selected Source references and two compiler hashes;
+  feature bytes match the subsequent commit. Module inventory is unchanged.
+  Source ended scheduling, complete native media operations/events, playback,
+  element hierarchy, foreign realms and physical GC remain open; the ledger
+  stays **32 fixed / 25 partial / 9 open**.
