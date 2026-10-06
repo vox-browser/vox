@@ -11,6 +11,8 @@ mut:
 fn test_media_events_use_the_actual_dom_target_and_ancestor_capture_path() {
 	mut document :=
 		parse_document('<!doctype html><body><video id="player"></video><audio id="other"></audio></body>')
+	window := WindowModel.create_top_level(document, none, 'volume-event-target')!
+	assert voidptr(window.associated_document()) == voidptr(document)
 	element := document.get_element_by_id('player')?
 	other := document.get_element_by_id('other')?
 	mut media := html_media_element_for_dom_element(element)?
@@ -46,6 +48,14 @@ fn test_media_events_use_the_actual_dom_target_and_ancestor_capture_path() {
 		}
 	})
 	media.set_volume(0.5)!
+	assert state.events == [] && media.event_count('volumechange') == 0
+	mut loop := main_thread_event_loop()
+	loop.perform_a_microtask_checkpoint()
+	assert state.events == []
+	for _ in 0 .. 100 {
+		if media.event_count('volumechange') == 1 { break }
+		loop.process()
+	}
 	assert state.events == ['capture', 'target']
 	assert media.event_count('volumechange') == 1
 	assert other_media.event_count('volumechange') == 0

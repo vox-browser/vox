@@ -1587,7 +1587,11 @@ pub fn (mut element HTMLMediaElement) set_page_muted(muted bool) {
 }
 
 pub fn (mut element HTMLMediaElement) volume_or_muted_attribute_changed() {
-	element.fire_event('volumechange')
+	element_pointer := voidptr(&element)
+	element.queue_a_media_element_task(fn [element_pointer] () {
+		mut media := unsafe { &HTMLMediaElement(element_pointer) }
+		media.fire_event('volumechange')
+	})
 	element.update_volume()
 }
 
