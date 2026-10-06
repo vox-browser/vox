@@ -13,6 +13,21 @@ inventory, not current logic, generated-binding or browser parity. The current
 audit and fix evidence is in `docs/translation-audit/`; mapping a source name or
 a runtime hook does not establish that its complete logic was translated.
 
+## Native volume and mute property owner
+
+Native volume/muted accessors use the actual audio/video DOM model, validate
+the receiver before restricted-double or boolean conversion and replay, preserve
+original exceptions and expose genuine IndexSizeError with Source's exact
+message. Successful writes keep the existing effective-volume and queued
+volumechange owner behavior. Implementation and seven focused cases: `c2e279e5`.
+
+[Native volume/mute evidence](../docs/translation-audit/NATIVE_MEDIA_VOLUME_PROPERTY_OWNER.md)
+retains the unchanged runtime baseline, all 14 affected files in each GC mode,
+the 66-case main regression, signed production startup, two exact public
+viewports, 13 exact SVG pairs and all 11 smoke cases within unchanged bounds.
+Autoplay-policy pause, muted-style invalidation, actual playback-manager/pipeline
+delivery, other operations, complete media/MSE, realms and physical GC remain open.
+
 ## Native playback-rate property owner
 
 Native defaultPlaybackRate/playbackRate accessors now use the actual audio/video
@@ -60,7 +75,8 @@ retains baseline and full-disk diagnostics, eight new cases, all 20 selected
 files in each GC mode, the 66-case main regression and the unchanged snapshot.
 The signed production build passes startup; its public MediaSource task-timing
 viewport is pixel-exact and all 11 smoke cases pass within existing bounds.
-Autoplay-policy pause, muted-style invalidation, native volume operations,
+The subsequent native volume/mute slice above exposes the properties.
+Autoplay-policy pause, muted-style invalidation, other native operations,
 other events, complete playback/MSE, realms and physical GC remain open.
 
 ## Media completion task and DOM event owner

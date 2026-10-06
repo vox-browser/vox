@@ -605,3 +605,22 @@ Agent checks run with `v -old-compiler -enable-globals`. Isolated worktrees use 
   browser/root support is excluded from that inventory. Actual PlaybackManager
   rate/clock/pipeline delivery, complete media/MSE, other native operations and
   GC ownership remain open. The ledger stays **32 fixed / 25 partial / 9 open**.
+
+- Native volume/muted properties (`c2e279e5`) now reach the actual DOM media
+  owner, check the receiver before required number/boolean conversion and
+  replay, and preserve original thrown values. Range errors expose a genuine
+  IndexSizeError with Source's exact message; writes retain immediate effective
+  volume and queued live owner events. [Volume/mute evidence](NATIVE_MEDIA_VOLUME_PROPERTY_OWNER.md)
+  records seven focused cases and the unchanged runtime baseline. The same
+  frozen committed snapshot passes **14/14 affected files in each GC mode**,
+  including the **66-case** main regression. Its signed production bundle
+  passes startup, two public viewports match **480,000 pixels each exactly**,
+  all **13 SVG pairs** are exact, and all **11 smoke cases** pass with unchanged
+  bounds and residuals. Consolidated evidence
+  `Build/audit-fixes/native-media-volume-evidence.json` has SHA256
+  `029b4d0e1e55ef8532e6a5aaeb22cb2ae87f099f42b0e03fccee416dbab59a47`. The 78-owner inventory contains
+  **432,331 implementation / 154,733 test V LOC** across **2,187 owned files**;
+  browser/root support is excluded. Autoplay-policy pause, muted-style
+  invalidation, actual manager/pipeline delivery, other media operations,
+  complete media/MSE and physical GC remain open. The ledger stays
+  **32 fixed / 25 partial / 9 open**.

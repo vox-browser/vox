@@ -117,8 +117,11 @@ production artifacts are under Build/audit-fixes/native-media-rate-production/.
 
 ## Remaining scope
 
+The subsequent [volume/mute slice](NATIVE_MEDIA_VOLUME_PROPERTY_OWNER.md) adds
+those two native properties with separate verification.
+
 Actual PlaybackManager rate/clock/pipeline delivery, decoder Ended state,
-native currentTime/volume/muted and other incomplete property operations,
+native currentTime and other incomplete property operations,
 complete load/media/MSE algorithms, autoplay policy, native play promises,
 ordinary compact listeners, unique task sources, complete prototypes, foreign
 realms, WrapperWorlds, IPC and physical GC remain open. The browser continues
