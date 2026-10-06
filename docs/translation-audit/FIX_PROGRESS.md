@@ -624,3 +624,19 @@ Agent checks run with `v -old-compiler -enable-globals`. Isolated worktrees use 
   invalidation, actual manager/pipeline delivery, other media operations,
   complete media/MSE and physical GC remain open. The ledger stays
   **32 fixed / 25 partial / 9 open**.
+
+- Media currentTime generation caching (`a160812b`) now uses nonzero default
+  precedence and one existing-clock sample per actual main-loop generation.
+  Explicit seek/pause/metadata/load commits stamp the same counter, and clock
+  notifications retain a stable same-turn value. [Generation evidence](MEDIA_CURRENT_TIME_GENERATION_OWNER.md)
+  retains compile/setup diagnostics, all eight final runtime baseline failures,
+  **6/6 focused** and **21/21 affected files in each GC mode**, including the
+  **66-case** main regression. The signed production bundle, ordinary-branch
+  real-loop/DOM probe, two exact adjacent volume viewports and all **11 smoke
+  cases** pass. Consolidated evidence `Build/audit-fixes/media-position-generation-evidence.json`
+  has SHA256 `e25b963b6cc92bc6b85383c8daa8e137b8649c0801e05436e38fbb8a38db0304`. The 78-owner inventory contains
+  **432,348 implementation /
+  154,939 test V LOC** across **2,188 owned files**.
+  Native currentTime, physical manager clock/reset, remaining seek/play/pause/load,
+  complete media/MSE, realms and physical GC stay open. The ledger remains
+  **32 fixed / 25 partial / 9 open**.

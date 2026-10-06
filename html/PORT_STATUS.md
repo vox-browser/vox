@@ -13,6 +13,21 @@ inventory, not current logic, generated-binding or browser parity. The current
 audit and fix evidence is in `docs/translation-audit/`; mapping a source name or
 a runtime hook does not establish that its complete logic was translated.
 
+## Media currentTime generation cache
+
+The model getter prioritizes a nonzero default start and samples its existing
+clock once per real main-thread generation. Seek, pause, metadata and load
+commits stamp that generation; clock notifications preserve a same-turn sample.
+Implementation and eight focused cases: `a160812b`.
+
+[Generation/commit evidence](../docs/translation-audit/MEDIA_CURRENT_TIME_GENERATION_OWNER.md)
+retains fixture diagnostics and the final eight-case runtime baseline,
+six focused files, all 21 affected files in each GC mode and the 66-case main
+regression. The signed production build, assertion-independent real-loop/DOM
+probe, two exact adjacent volume viewports and all 11 smoke cases pass.
+Native currentTime, physical manager clock/reset, other media algorithms,
+complete media/MSE, realms and physical GC remain open.
+
 ## Native volume and mute property owner
 
 Native volume/muted accessors use the actual audio/video DOM model, validate

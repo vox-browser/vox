@@ -107,11 +107,10 @@ complete media/MSE algorithms, native play promises, ordinary compact listener
 routing, unique task sources, complete prototypes, foreign realms,
 WrapperWorlds, IPC and physical GC remain open. The browser uses JavaScriptCore.
 
-The next currentTime prerequisite is separate: Source's
-HTMLMediaElement.cpp:500–518 gives a nonzero default start position precedence
-and refreshes the official position once per event-loop task generation. The
-current model getter still selects by readiness and lacks that generation cache,
-although EventLoop already exposes the counter.
+At this snapshot the currentTime model still selected by readiness and lacked
+Source's generation cache. The subsequent [generation/commit slice](MEDIA_CURRENT_TIME_GENERATION_OWNER.md)
+adds nonzero default precedence and actual-loop sampling with explicit commit
+stamps. Native currentTime exposure and the physical manager clock remain open.
 
 Implementation: [native media host](../../browserjs/media_element_host_darwin.c.v),
 [volume model](../../html/html_media_element.v).
