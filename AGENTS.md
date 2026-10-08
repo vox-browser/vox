@@ -733,7 +733,7 @@
 
 All 78 translated LibWeb packages and all 1,193 current module-owned C++
 implementation units have audited V mappings. As of 2026-10-08, the tracked module
-packages contain 432,419 implementation V LOC and 155,923 test V LOC.
+packages contain 432,494 implementation V LOC and 156,144 test V LOC.
 Physical LOC includes comments and blank lines. Root support code and browser
 integration code are excluded. Package counts include generated V assets and
 supporting translations; WebAssembly includes the separately audited LibWasm
@@ -748,14 +748,14 @@ their shared DOM test files are counted under the corresponding owner once.
 | Clipboard | 1,123 | Compositor | 2,403 |
 | Compression | 471 | ContentSecurityPolicy | 2,816 |
 | CookieStore | 1,059 | CredentialManagement | 420 |
-| Crypto (`webcrypto/`) | 7,957 | DOM | 43,383 |
+| Crypto (`webcrypto/`) | 7,957 | DOM | 43,394 |
 | DOMURL | 854 | Editing | 13,938 |
 | Encoding | 5,356 | EncryptedMediaExtensions | 572 |
 | EntriesAPI | 44 | EventTiming | 153 |
 | Fetch | 6,678 | FileAPI | 1,493 |
 | Fullscreen | 93 | GPC | 16 |
 | Gamepad | 860 | Geolocation | 535 |
-| Geometry | 2,121 | HTML | 69,409 |
+| Geometry | 2,121 | HTML | 69,460 |
 | HighResolutionTime | 500 | IndexedDB | 5,455 |
 | Infra | 548 | Internals | 2,337 |
 | IntersectionObserver | 668 | Layout | 44,740 |
@@ -763,7 +763,7 @@ their shared DOM test files are counted under the corresponding owner once.
 | MediaCapabilitiesAPI | 657 | MediaCapture | 1,240 |
 | MediaSourceExtensions | 4,079 | MimeSniff | 1,108 |
 | MixedContent | 93 | NavigationTiming | 645 |
-| NotificationsAPI | 370 | Page | 6,778 |
+| NotificationsAPI | 370 | Page | 6,791 |
 | Painting | 7,979 | PerformanceTimeline | 502 |
 | PermissionsAPI | 239 | Platform | 2,824 |
 | ReferrerPolicy | 105 | RequestIdleCallback | 59 |
@@ -782,7 +782,7 @@ their shared DOM test files are counted under the corresponding owner once.
 | WebXR | 411 | Worker | 142 |
 | XHR | 1,695 | XLink | 13 |
 | XML | 477 | XPath | 672 |
-| **Total** | **432,419** |  |  |
+| **Total** | **432,494** |  |  |
 
 `PORT_STATUS.md` is the canonical detailed inventory. It also records upstream
 C++ file/LOC counts, per-module test LOC, status, and the counting conventions;
