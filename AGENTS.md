@@ -738,6 +738,15 @@
   unregisters retained callbacks. Physical weak-node lookup, automatic collector
   finalization and general cross-Page registry integration remain separate work.
 
+- Media CSS states query the concrete HTML audio/video owner in the current
+  Document. Paused/playing, element mute, seeking and blocked readiness refresh
+  self, sibling, ancestor `:has()` and pseudo-element styles, including after
+  adoption and inside the owning shadow scope. Playing follows the paused flag
+  even without a playable resource; Page mute and zero volume do not set
+  `:muted`. The style pass applies descendant plans queued by the `:has()` ancestor
+  walk before computing styles. Native play promises, complete resource/readiness
+  algorithms and physical playback remain separate work.
+
 ## Translated module inventory
 
 All 78 translated LibWeb packages and all 1,193 current module-owned C++

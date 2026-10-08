@@ -197,3 +197,14 @@ Implementation: [media](../../html/html_media_element.v),
 Tests: [model](../../html/media_page_mute_owner_test.v),
 [native page](../../main_media_page_mute_owner_test.v).
 [Prior wake-lock evidence](MEDIA_SCREEN_WAKE_LOCK_OWNER.md) retains its snapshot.
+
+## Subsequent media CSS slice
+
+The later [actual media CSS state slice](MEDIA_CSS_STATE_OWNER.md), implemented
+in 32139bfc and corrected in 728faa99, addresses the selected CSS matching and
+invalidation boundary left open by this Page-mute snapshot. Element `:muted`
+remains independent of Page mute. Its unchanged 9101b5b7 verification snapshot
+passes native production startup/probe, two media-state viewports and all 11
+smoke cases. These later results do not replace this document's retained failed
+launch attempts or claim their graphics initialization cause was fixed. The
+weak-owner, native play, full media and physical transport boundaries remain open.

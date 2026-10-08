@@ -797,3 +797,24 @@ Agent checks run with `v -old-compiler -enable-globals`. Isolated worktrees use 
   integration, native play promises, permission/error gates, complete media
   algorithms, physical playback and native power transport remain open. The
   ledger stays **32 fixed / 25 partial / 9 open**.
+
+- Actual media CSS states (`32139bfc`) now query the concrete HTML audio/video
+  owner for paused/playing, element mute, seeking and blocked readiness. State
+  changes refresh sibling, `:has()` ancestor and pseudo-element styles through
+  typed invalidation plans, including adoption and shadow scopes. Production
+  verification exposed stale tag-qualified `:has()` descendants; `728faa99`
+  applies the ancestor walk's queued plans before computing styles, with an
+  audio/video regression. The expanded checks also reproduced an older inactive
+  document-timeline fixture on unchanged implementation; `9101b5b7` attaches the
+  actual active Navigable and verifies inactivity after detachment. [Evidence](MEDIA_CSS_STATE_OWNER.md)
+  retains eight original baseline runtime failures, the failed production probe,
+  the tag-qualified regression and both initial **29/30** neighbor runs. Final
+  frozen **30/30 affected files pass in each GC mode**, including the **66-case**
+  main regression. Signed production startup/probe, both exact media-state
+  viewports and all **11 native smoke cases** pass. Consolidated evidence SHA256:
+  `3bdd41d899120c909a7da9ae8569ca08abbd1f579b59613b4818a0464c7a5e24`.
+  The 78-owner physical inventory is **432,731 implementation /
+  156,527 test V LOC** across **2,198 owned files**; root/native support is excluded.
+  Native play promises, full resource/readiness/seek algorithms, defaultMuted
+  initialization, Source Rust style-engine journal, physical playback and automatic
+  GC ownership remain open. The ledger stays **32 fixed / 25 partial / 9 open**.
