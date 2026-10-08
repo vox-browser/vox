@@ -52,11 +52,12 @@ fn test_first_decoded_data_queues_once_per_load_and_observes_live_state_at_deliv
 		})
 		media.set_ready_state(state)
 		assert media.ready_state() == state && media.event_count('loadeddata') == 0
-		assert observation.states == [] && media.queued_media_task_ids_.len == 1
+		pending := if int(state) >= int(MediaReadyState.have_future_data) { 2 } else { 1 }
+		assert observation.states == [] && media.queued_media_task_ids_.len == pending
 		media.set_ready_state(.have_metadata)
 		media.set_ready_state(.have_current_data)
 		media.set_ready_state(.have_current_data)
-		assert media.queued_media_task_ids_.len == 1
+		assert media.queued_media_task_ids_.len == pending
 		mut loop := main_thread_event_loop()
 		loop.perform_a_microtask_checkpoint()
 		assert observation.states == []
@@ -65,10 +66,12 @@ fn test_first_decoded_data_queues_once_per_load_and_observes_live_state_at_deliv
 		assert task.source() == media.media_element_event_task_source()
 		task.execute()
 		assert observation.states == [MediaReadyState.have_current_data]
-		assert media.event_count('loadeddata') == 1 && media.queued_media_task_ids_.len == 0
+		assert media.event_count('loadeddata') == 1 && media.queued_media_task_ids_.len == pending - 1
+		loaded_data_drain(media)
 		media.set_ready_state(.have_metadata)
 		media.set_ready_state(.have_enough_data)
-		assert media.event_count('loadeddata') == 1 && media.queued_media_task_ids_.len == 0
+		assert media.event_count('loadeddata') == 1 && media.queued_media_task_ids_.len == 1
+		loaded_data_drain(media)
 	}
 }
 

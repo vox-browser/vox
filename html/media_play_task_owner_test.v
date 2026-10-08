@@ -158,6 +158,14 @@ fn test_ready_state_notification_captures_the_pending_batch_before_queuing_playi
 			return dom.js_undefined()
 		}
 	})
+	media.set_on_event('canplay', &dom.CallbackType{
+		handle_event: fn [state, first, second] (_ &dom.Event, _ ?&dom.EventTarget) dom.JSValue {
+			assert first.state() == .pending && second.state() == .pending
+			mut observation := unsafe { &PlayTaskOwnerObservation(state) }
+			observation.events << 'canplay'
+			return dom.js_undefined()
+		}
+	})
 	media.set_on_event('playing', &dom.CallbackType{
 		handle_event: fn [state, media, first, second] (_ &dom.Event, _ ?&dom.EventTarget) dom.JSValue {
 			assert first.state() == .pending && second.state() == .pending
@@ -169,7 +177,7 @@ fn test_ready_state_notification_captures_the_pending_batch_before_queuing_playi
 	})
 	media.set_ready_state(.have_future_data)
 	assert first.state() == .pending && second.state() == .pending && state.events == []
-	assert media.pending_play_promises_.len == 0 && media.queued_media_task_ids_.len == 2
+	assert media.pending_play_promises_.len == 0 && media.queued_media_task_ids_.len == 3
 	mut clock := unsafe { &PlayTaskOwnerObservation(state) }
 	clock.position = 9
 	play_task_take_owner(media).execute()
@@ -177,7 +185,10 @@ fn test_ready_state_notification_captures_the_pending_batch_before_queuing_playi
 	new_promise := state.new_promise or { panic('missing loadeddata listener promise') }
 	assert new_promise.state() == .pending
 	play_task_take_owner(media).execute()
-	assert state.events == ['loadeddata', 'playing'] && state.positions == [3.0]
+	assert state.events == ['loadeddata', 'canplay']
+	assert first.state() == .pending && second.state() == .pending && new_promise.state() == .pending
+	play_task_take_owner(media).execute()
+	assert state.events == ['loadeddata', 'canplay', 'playing'] && state.positions == [3.0]
 	assert first.state() == .fulfilled && second.state() == .fulfilled
 	assert new_promise.state() == .pending
 	play_task_take_owner(media).execute()

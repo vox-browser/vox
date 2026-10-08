@@ -1334,8 +1334,16 @@ pub fn (mut element HTMLMediaElement) set_ready_state(state MediaReadyState) {
 		// independently of whether this crossing queued the first-data event.
 		element.finish_delaying_load_event()
 	}
-	if int(old_state) < int(MediaReadyState.have_future_data) && int(state) >= int(MediaReadyState.have_future_data) {
-		element.fire_event('canplay')
+	// Both Source branches queue canplay before notifying about playing. Take
+	// the pending promise batch now, before any queued listener can call play().
+	if element.network_state_ != .empty
+		&& int(old_state) <= int(MediaReadyState.have_current_data)
+		&& state in [.have_future_data, .have_enough_data] {
+		element_pointer := voidptr(&element)
+		element.queue_a_media_element_task(fn [element_pointer] () {
+			mut media := unsafe { &HTMLMediaElement(element_pointer) }
+			media.fire_event('canplay')
+		})
 		if !element.paused_ {
 			element.notify_about_playing()
 		}
