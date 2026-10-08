@@ -223,6 +223,13 @@ actual AbortError under its Document execution context. State and validated
 default-rate reset commit before delivery. Stable-state selection, full load
 resets, native play promises and physical playback remain unfinished. See
 [load task and native caller evidence](docs/translation-audit/MEDIA_LOAD_TASK_OWNER.md).
+First decoded-data notification now queues `loadeddata` once per load on the
+actual media owner. Explicit and automatic load entry rearm its flag; the exact
+nonempty-network metadata-to-data branch consumes it and synchronously releases
+the owner's current Document load delay. Buffering oscillations do not repeat
+the event, and adoption preserves token ownership. Other readiness events,
+full resource timing and physical decoding remain unfinished. See
+[first-data task and delay evidence](docs/translation-audit/MEDIA_LOADED_DATA_OWNER.md).
 The `:indeterminate`, `:open`, and `:closed` selectors now read live checkbox,
 input-picker, and select-picker state. Control transitions mirror that state at
 the DOM boundary and schedule style invalidation; `switch` checkboxes retain

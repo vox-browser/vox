@@ -755,6 +755,13 @@
   resource selection, native play promises, complete load/reset behavior and
   physical playback remain separate work.
 
+- First decoded-data notification queues `loadeddata` once per load on the
+  actual media owner's task queue. Explicit and automatic load entry rearm the
+  flag; only a nonempty-network metadata-to-data transition consumes it. That
+  branch synchronously releases the current Document's owned load delay, even
+  after first data was reported. Other readiness events, complete resource
+  timing, native play promises and physical decoding remain separate work.
+
 ## Translated module inventory
 
 All 78 translated LibWeb packages and all 1,193 current module-owned C++

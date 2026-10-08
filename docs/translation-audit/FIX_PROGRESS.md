@@ -836,3 +836,22 @@ Agent checks run with `v -old-compiler -enable-globals`. Isolated worktrees use 
   Stable-state selection, complete load/readiness/seek algorithms, native play
   promises, physical playback and automatic ownership remain open. The ledger
   stays **32 fixed / 25 partial / 9 open**.
+
+- First decoded-data notification (`5ea723a0`) now queues loadeddata once per
+  load on the actual media owner and releases its current Document load-delay
+  token synchronously. Explicit and automatic load entry rearm the flag;
+  repeated buffering transitions do not repeat the event. Six new model/native
+  cases expose the old behavior on unchanged implementation and pass afterward.
+  The initial 32-file runs each pass 31 files and expose one stale playing-task
+  expectation. `d5122e2b` verifies loadeddata-before-playing delivery and keeps a
+  listener-created promise outside the original captured batch; the corrected
+  file passes in each GC mode. All 32 affected files therefore have passing
+  evidence across the initial runs and focused reruns, including the 66-case
+  main regression. Signed production startup, an ordinary audio/video probe,
+  both earlier native-load regression viewports and all 11 smoke cases pass on
+  unchanged implementation. [Evidence](MEDIA_LOADED_DATA_OWNER.md) preserves
+  the failed runs and composite coverage distinction; SHA256:
+  `0db0c15ff02fa6cfaafeff913b0c0f727d4fec9465ff1ffa519e69af8095b18f`.
+  Other readiness events, full resource timing, native play promises, physical
+  decoding and automatic ownership remain open. The ledger stays
+  **32 fixed / 25 partial / 9 open**.
