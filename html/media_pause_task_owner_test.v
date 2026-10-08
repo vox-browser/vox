@@ -156,6 +156,7 @@ fn test_pause_task_cancellation_and_inactive_delivery_keep_the_actual_owner_boun
 	pause_task_exception(second_promise)
 	mut inactive := pause_task_owner()!
 	promise := inactive.play()
+	pause_task_drain_setup(inactive)
 	inactive.pause()
 	task := pause_task_take(inactive)
 	document := inactive.document()?
