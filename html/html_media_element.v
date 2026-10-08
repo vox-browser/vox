@@ -1348,8 +1348,14 @@ pub fn (mut element HTMLMediaElement) set_ready_state(state MediaReadyState) {
 			element.notify_about_playing()
 		}
 	}
-	if int(old_state) < int(MediaReadyState.have_enough_data) && int(state) >= int(MediaReadyState.have_enough_data) {
-		element.fire_event('canplaythrough')
+	// Source queues this enough-data notification after canplay and any
+	// readiness-driven playing task, before entering its autoplay substeps.
+	if element.network_state_ != .empty && state == .have_enough_data {
+		element_pointer := voidptr(&element)
+		element.queue_a_media_element_task(fn [element_pointer] () {
+			mut media := unsafe { &HTMLMediaElement(element_pointer) }
+			media.fire_event('canplaythrough')
+		})
 	}
 	if int(state) < int(MediaReadyState.have_future_data) && int(old_state) >= int(MediaReadyState.have_future_data) && !element.paused_ {
 		element.fire_event('waiting')

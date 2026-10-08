@@ -61,7 +61,8 @@ fn test_canplay_requires_nonempty_network_and_a_crossing_into_future_or_enough_d
 				} else {
 					0
 				}
-				assert media.queued_media_task_ids_.len == expected
+				through := if network != .empty && old != next && next == .have_enough_data { 1 } else { 0 }
+				assert media.queued_media_task_ids_.len == expected + through
 				canplay_task_drain(media)
 				assert media.event_count('canplay') == expected
 			}
@@ -97,7 +98,8 @@ fn test_first_data_precedes_canplay_and_both_tasks_read_live_readiness() {
 			})
 		}
 		media.set_ready_state(next)
-		assert observation.events == [] && media.queued_media_task_ids_.len == 2
+		pending := if next == .have_enough_data { 3 } else { 2 }
+		assert observation.events == [] && media.queued_media_task_ids_.len == pending
 		media.set_ready_state(.have_metadata)
 		media.set_ready_state(.have_current_data)
 		mut loop := main_thread_event_loop()
@@ -112,8 +114,9 @@ fn test_first_data_precedes_canplay_and_both_tasks_read_live_readiness() {
 		}
 		assert observation.events == ['loadeddata', 'canplay']
 		assert observation.states == [MediaReadyState.have_current_data, .have_current_data]
+		canplay_task_drain(media)
 		media.set_ready_state(next)
-		assert media.event_count('canplay') == 1 && media.queued_media_task_ids_.len == 1
+		assert media.event_count('canplay') == 1 && media.queued_media_task_ids_.len == pending - 1
 		canplay_task_drain(media)
 		assert media.event_count('canplay') == 2 && media.event_count('loadeddata') == 1
 	}
@@ -159,7 +162,8 @@ fn test_canplay_listener_cannot_join_the_already_captured_playing_promise_batch(
 		})
 		media.set_ready_state(next)
 		assert observation.events == [] && observation.starts == 1
-		assert media.pending_play_promises_.len == 0 && media.queued_media_task_ids_.len == 2
+		pending := if next == .have_enough_data { 3 } else { 2 }
+		assert media.pending_play_promises_.len == 0 && media.queued_media_task_ids_.len == pending
 		mut clock := unsafe { &CanPlayTaskObservation(observation) }
 		clock.position = 9
 		canplay_task_take(media).execute()
@@ -170,6 +174,10 @@ fn test_canplay_listener_cannot_join_the_already_captured_playing_promise_batch(
 		assert observation.events == ['canplay', 'playing']
 		assert first.state() == .fulfilled && second.state() == .fulfilled
 			&& third.state() == .pending
+		if next == .have_enough_data {
+			canplay_task_take(media).execute()
+			assert media.event_count('canplaythrough') == 1 && third.state() == .pending
+		}
 		canplay_task_take(media).execute()
 		assert third.state() == .fulfilled && observation.starts == 1
 			&& media.queued_media_task_ids_.len == 0

@@ -801,3 +801,38 @@ fn test_source_buffer_first_data_task_precedes_canplay_on_the_actual_media_owner
  run_media_source_tasks()
  assert seen.events == ['loadeddata', 'canplay'] && media.event_count('canplay') == 1
 }
+
+fn test_source_buffer_enough_data_queues_canplaythrough_after_first_data_and_canplay() {
+ url := dom.URL{ value: 'https://source-buffer-canplaythrough.example.test/' }
+ document := html.parse_navigation_document('<video id="player"></video>', url, url.origin(), none)!
+ mut media := html.html_media_element_for_dom_element(document.get_element_by_id('player')?)?
+ mut source := MediaSource.create()
+ media.set_src_object(source.as_media_provider())!
+ run_media_source_tasks()
+ mut buffer := source.add_source_buffer('video/webm; codecs="vp9"')!
+ buffer.append_buffer(minimal_webm_initialization_segment())!
+ run_media_source_tasks()
+ source.set_duration(0.01)!
+ run_media_source_tasks()
+ seen := &CanPlayAppendObservation{}
+ for name in ['loadeddata', 'canplay', 'canplaythrough'] {
+  media.set_on_event(name, &dom.CallbackType{
+   handle_event: fn [name, media, seen] (event &dom.Event, current ?&dom.EventTarget) dom.JSValue {
+    mut observation := unsafe { &CanPlayAppendObservation(seen) }
+    observation.events << name
+    assert media.ready_state() == .have_enough_data && media.video_tracks().length() == 1
+    assert voidptr(event.target() or { panic('missing target') }) == voidptr(media.event_target())
+    assert voidptr(current or { panic('missing current target') }) == voidptr(media.event_target())
+    assert event.is_trusted()
+    return dom.js_undefined()
+   }
+  })
+ }
+ buffer.append_buffer(minimal_webm_media_segment())!
+ assert seen.events == []
+ run_media_source_tasks()
+ assert seen.events == ['loadeddata', 'canplay', 'canplaythrough']
+ buffer.append_buffer(minimal_webm_media_segment())!
+ run_media_source_tasks()
+ assert media.event_count('canplaythrough') == 1 && seen.events.len == 3
+}
