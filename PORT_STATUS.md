@@ -234,9 +234,18 @@ Metadata notification now queues `loadedmetadata` from the exact nonempty-networ
 nothing-to-metadata readiness transition. Fetched responses and MediaSource
 initialization share the actual owner's branch. Fetch listeners receive metadata
 after durationchange and before loadeddata, and read live state at delivery.
-Reload cancels only that owner's old notification. Canplay/canplaythrough, full resource timing,
-native play promises and physical decoding remain unfinished. See
+Reload cancels only that owner's old notification. Canplaythrough, full resource
+timing, native play promises and physical decoding remain unfinished. See
 [metadata task and caller evidence](docs/translation-audit/MEDIA_METADATA_TASK_OWNER.md).
+Canplay notification now queues on the actual media owner at the exact
+nonempty-network current-or-less to future/enough readiness crossing. First-data
+notification precedes canplay, and its readiness-driven playing task follows.
+The original pending play batch and start position are captured before listeners
+can call play(); manager start remains immediate. Reload cancels only the
+owner's old event, and later tasks use its adopted Document and active delivery
+check. Canplaythrough, full readiness/autoplay, native play promises and physical
+decoding remain unfinished. See
+[canplay task, promise and caller evidence](docs/translation-audit/MEDIA_CANPLAY_TASK_OWNER.md).
 The `:indeterminate`, `:open`, and `:closed` selectors now read live checkbox,
 input-picker, and select-picker state. Control transitions mirror that state at
 the DOM boundary and schedule style invalidation; `switch` checkboxes retain

@@ -767,8 +767,17 @@
   fetch adapter and MediaSource initialization share that branch, so listeners
   observe live state after task delivery instead of receiving a synchronous
   fetch-only event. Reload cancels only the owner's pending notification.
-  Canplay/canplaythrough, complete resource/readiness behavior, native play
-  promises and physical decoding remain separate work.
+  Canplaythrough, complete resource/readiness behavior, native play promises
+  and physical decoding remain separate work.
+
+- Canplay notification queues on the actual media owner when a nonempty-network
+  readiness state crosses from current-data-or-less to future or enough data.
+  First-data delivery precedes canplay, and readiness-driven playing follows it.
+  The pending play batch and start position are captured before listeners run;
+  a listener-created promise stays outside that batch. Manager start remains
+  immediate. Reload cancels only the owner's old task, and later tasks follow
+  adoption and active-document delivery. Canplaythrough, full readiness/autoplay,
+  native play promises and physical decoding remain separate work.
 
 ## Translated module inventory
 
