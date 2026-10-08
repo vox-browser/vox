@@ -855,3 +855,23 @@ Agent checks run with `v -old-compiler -enable-globals`. Isolated worktrees use 
   Other readiness events, full resource timing, native play promises, physical
   decoding and automatic ownership remain open. The ledger stays
   **32 fixed / 25 partial / 9 open**.
+
+- Metadata notification (`8691a3b4`) now queues loadedmetadata from the actual
+  owner's exact nonempty-network nothing-to-metadata readiness transition.
+  Fetched metadata and actual MediaSource initialization share that branch;
+  native audio/video listeners observe live state before the later first-data
+  event. Six new cases expose the original behavior in a validated runtime
+  baseline and pass afterward. The initial default-GC neighbor run passes 24
+  files before disk exhaustion prevents ten compilation results; all ten pass
+  in a single-job recovery on identical bytes. Thus all 34 affected files have
+  passing default-GC evidence across both runs. The first GC-disabled batch is
+  interrupted for disk pressure; a complete later batch passes 34/34 files.
+  Signed production startup, the ordinary native probe and both prior load
+  regression viewports pass. Ten of eleven smoke cases pass initially; the
+  final no-image capture passes pixel-exact separately on the same binary.
+  [Evidence](MEDIA_METADATA_TASK_OWNER.md) retains all failed/interrupted runs
+  and the composite coverage distinctions; SHA256:
+  `302344eecb235f25281fb313f854de83f5f5fc33461457568bc02aa4681a70f9`.
+  Canplay/canplaythrough, complete resource/readiness/seek behavior, native play
+  promises, physical decoding and automatic ownership remain open. The ledger
+  stays **32 fixed / 25 partial / 9 open**.

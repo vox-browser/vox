@@ -230,6 +230,13 @@ the owner's current Document load delay. Buffering oscillations do not repeat
 the event, and adoption preserves token ownership. Other readiness events,
 full resource timing and physical decoding remain unfinished. See
 [first-data task and delay evidence](docs/translation-audit/MEDIA_LOADED_DATA_OWNER.md).
+Metadata notification now queues `loadedmetadata` from the exact nonempty-network
+nothing-to-metadata readiness transition. Fetched responses and MediaSource
+initialization share the actual owner's branch. Fetch listeners receive metadata
+after durationchange and before loadeddata, and read live state at delivery.
+Reload cancels only that owner's old notification. Canplay/canplaythrough, full resource timing,
+native play promises and physical decoding remain unfinished. See
+[metadata task and caller evidence](docs/translation-audit/MEDIA_METADATA_TASK_OWNER.md).
 The `:indeterminate`, `:open`, and `:closed` selectors now read live checkbox,
 input-picker, and select-picker state. Control transitions mirror that state at
 the DOM boundary and schedule style invalidation; `switch` checkboxes retain

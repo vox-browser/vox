@@ -762,6 +762,14 @@
   after first data was reported. Other readiness events, complete resource
   timing, native play promises and physical decoding remain separate work.
 
+- Metadata notification queues `loadedmetadata` from the actual media owner's
+  nonempty-network `HAVE_NOTHING` to `HAVE_METADATA` readiness transition. The
+  fetch adapter and MediaSource initialization share that branch, so listeners
+  observe live state after task delivery instead of receiving a synchronous
+  fetch-only event. Reload cancels only the owner's pending notification.
+  Canplay/canplaythrough, complete resource/readiness behavior, native play
+  promises and physical decoding remain separate work.
+
 ## Translated module inventory
 
 All 78 translated LibWeb packages and all 1,193 current module-owned C++
