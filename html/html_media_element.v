@@ -1556,6 +1556,9 @@ pub fn (_ &HTMLMediaElement) reject_pending_play_promises_with(promises []&dom.P
 }
 
 pub fn (mut element HTMLMediaElement) pause() {
+	if element.network_state_ == .empty {
+		element.select_resource() or {}
+	}
 	element.pause_element()
 }
 
