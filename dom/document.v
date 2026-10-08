@@ -3145,6 +3145,7 @@ pub:
 	find_from_window_callback            fn (voidptr, string) bool = unsafe { nil }
 	has_media_element_playing_audio_callback fn (voidptr, &Document) bool = unsafe { nil }
 	media_element_audio_state_changed_callback fn (voidptr, &Document, UniqueNodeID, bool) = unsafe { nil }
+	did_change_audio_play_state_callback fn (voidptr, bool) = unsafe { nil }
 	did_request_color_picker_callback    fn (voidptr, string, string) = unsafe { nil }
 	did_request_file_picker_callback     fn (voidptr, string, string, bool) = unsafe { nil }
 	did_request_external_url_callback    fn (voidptr, string, string, bool) = unsafe { nil }
@@ -13541,6 +13542,12 @@ pub fn (p &Page) has_media_element_playing_audio(document &Document) bool {
 pub fn (p &Page) media_element_audio_state_changed(document &Document, media_id UniqueNodeID, playing bool) {
 	if p.target != unsafe { nil } && p.media_element_audio_state_changed_callback != unsafe { nil } {
 		p.media_element_audio_state_changed_callback(p.target, document, media_id, playing)
+	}
+}
+
+pub fn (p &Page) client_page_did_change_audio_play_state(playing bool) {
+	if p.target != unsafe { nil } && p.did_change_audio_play_state_callback != unsafe { nil } {
+		p.did_change_audio_play_state_callback(p.target, playing)
 	}
 }
 

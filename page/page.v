@@ -266,6 +266,11 @@ fn page_media_element_audio_state_changed_callback(target voidptr, document &dom
 	model.media_elements[id] = state
 }
 
+fn page_did_change_audio_play_state_callback(target voidptr, playing bool) {
+	mut model := unsafe { &Page(target) }
+	model.client_.page_did_change_audio_play_state(if playing { 'playing' } else { 'paused' })
+}
+
 fn page_did_request_color_picker_callback(target voidptr, input_target string, current_color string) {
 	mut model := unsafe { &Page(target) }
 	model.did_request_color_picker(input_target, current_color)
@@ -525,6 +530,7 @@ pub fn Page.create(device_scale f64) !&Page {
 		find_from_window_callback: page_find_from_window_callback
 		has_media_element_playing_audio_callback: page_has_media_element_playing_audio_callback
 		media_element_audio_state_changed_callback: page_media_element_audio_state_changed_callback
+		did_change_audio_play_state_callback: page_did_change_audio_play_state_callback
 		did_request_color_picker_callback: page_did_request_color_picker_callback
 		did_request_file_picker_callback: page_did_request_file_picker_callback
 		did_request_external_url_callback: page_did_request_external_url_callback

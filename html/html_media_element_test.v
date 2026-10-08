@@ -242,6 +242,9 @@ fn test_media_element_publishes_audible_state_to_its_document() {
 
 	assert !document.is_playing_audio()
 	media.set_paused(false)
+	assert !media.is_playing_audio()
+	assert !document.is_playing_audio()
+	media.notify_about_playing()
 	assert media.is_playing_audio()
 	assert document.is_playing_audio()
 	media.set_muted(true)

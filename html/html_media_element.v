@@ -216,6 +216,7 @@ mut:
 	volume_                     f64 = 1.0
 	muted_                      bool
 	page_muted_                 bool
+	has_started_playback_       bool
 	is_playing_audio_           bool
 	audio_tracks_               &AudioTrackList = unsafe { nil }
 	video_tracks_               &VideoTrackList = unsafe { nil }
@@ -551,7 +552,7 @@ pub fn (element &HTMLMediaElement) is_playing_audio() bool {
 }
 
 fn (element &HTMLMediaElement) should_be_playing_audio() bool {
-	return !element.paused_ && element.audio_tracks_.has_enabled_track()
+	return element.has_started_playback_ && element.audio_tracks_.has_enabled_track()
 		&& element.effective_media_volume() > 0
 }
 
@@ -563,6 +564,9 @@ fn (mut element HTMLMediaElement) update_audio_play_state() {
 	element.is_playing_audio_ = is_playing_audio
 	html_element := element.associated_element_ or { return }
 	mut document := unsafe { &dom.Element(html_element) }.document()
+	if document.has_page() {
+		document.page().client_page_did_change_audio_play_state(is_playing_audio)
+	}
 	document.media_element_audio_play_state_changed(html_element.as_node().unique_id(), is_playing_audio)
 }
 
@@ -1294,16 +1298,17 @@ pub fn (mut element HTMLMediaElement) set_paused(paused bool) {
 		return
 	}
 	element.paused_ = paused
-	element.update_audio_play_state()
+	if paused {
+		element.has_started_playback_ = false
+		if hook := element.playback_hooks_.pause {
+			hook()
+		}
+		element.update_audio_play_state()
+	}
 	if mut video := element.video_element_model_ {
 		video.update_natural_dimensions()
 	}
 	element.request_paint_command_rebuild()
-	if paused {
-		if hook := element.playback_hooks_.pause {
-			hook()
-		}
-	}
 }
 
 pub fn (mut element HTMLMediaElement) set_ended(ended bool) {
@@ -1546,6 +1551,8 @@ pub fn (mut element HTMLMediaElement) notify_about_playing() {
 	if hook := element.playback_hooks_.play {
 		hook()
 	}
+	element.has_started_playback_ = true
+	element.update_audio_play_state()
 }
 
 fn (mut element HTMLMediaElement) reject_pending_play_promises(reason dom.JSValue) {
@@ -2004,6 +2011,7 @@ pub fn (mut element HTMLMediaElement) handle_media_source_failure(promises []&do
 pub fn (mut element HTMLMediaElement) forget_media_resource_specific_tracks() {
 	element.audio_tracks_.remove_all_tracks()
 	element.video_tracks_.remove_all_tracks()
+	element.update_audio_play_state()
 	element.selected_video_track_ = none
 	if mut video := element.video_element_model_ {
 		video.set_intrinsic_video_dimensions(none)
