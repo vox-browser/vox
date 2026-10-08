@@ -753,3 +753,23 @@ Agent checks run with `v -old-compiler -enable-globals`. Isolated worktrees use 
   Page-wide mute propagation, wake locks, native play promises, permission/error
   gates, full media algorithms and physical manager/decoder delivery remain open.
   The ledger stays **32 fixed / 25 partial / 9 open**.
+
+- Media screen wake locks (`ca0036d2`) now retain the actual owning Page handle
+  for potentially-playing video with selected video and enabled audio tracks,
+  independent of volume/mute. Readiness, ended state and track callbacks update
+  eligibility; pause, resource reset, adoption and explicit finalization release
+  the correct owner without dropping another owner's lock. [Evidence](MEDIA_SCREEN_WAKE_LOCK_OWNER.md)
+  retains six old-implementation runtime failures, the corrected acquisition-
+  order fixture and a clean three-file focused batch. Frozen **31/31 affected
+  files pass in each GC mode**, including the **66-case** main regression.
+  Signed production startup/probe and two exact prior pause viewports pass.
+  The initial smoke run's two Metal initialization traps remain recorded;
+  a separate run on the unchanged snapshot/binary passes all **11 smoke cases**.
+  Consolidated evidence SHA256:
+  `3c1f42f55ea82829adde174f240c8f5f1be847c74663b4d0b783e69dd7e37ac1`.
+  The 78-owner inventory is **432,494 implementation / 156,144 test V LOC**
+  across **2,195 owned files**; root/native support is excluded. Actual Page-wide
+  mute propagation, native play promises, permission/error gates, full media
+  algorithms, physical manager/decoder delivery, native power-management
+  transport and automatic GC finalization remain open. The ledger stays
+  **32 fixed / 25 partial / 9 open**.

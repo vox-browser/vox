@@ -705,7 +705,7 @@
   the current document's execution context. An already-playing call queues its
   own resolution without another playing event or manager start. A pause before
   delivery leaves the earlier playing task unconditional. Public native play
-  promises, permission/error gates, wake-lock state and other media algorithms
+  promises, permission/error gates and other media algorithms
   remain separate work.
 
 - Media audible state follows Source's started-playback flag, enabled audio
@@ -716,8 +716,18 @@
   timer/lifecycle notification; queued playing events do not restart audio.
   Resource-specific track removal re-evaluates audio without clearing started
   state, and adoption routes subsequent notifications through the current Page.
-  Actual Page-wide mute propagation, wake locks, native play promises and
+  Actual Page-wide mute propagation, native play promises and
   physical playback remain separate work.
+
+- Eligible playing video retains a screen wake lock from its actual Document's
+  Page when a video track is selected and an audio track is enabled. Volume and
+  mute do not affect that predicate. Readiness, ended state and track changes
+  re-evaluate the handle; pause, resource reset and explicit finalization release
+  only that media owner's handle. Adoption releases and recreates a held handle
+  against the new Page, including same-Page adoption. Multiple owners share the
+  existing Page counter and notify its client only on first acquisition and last
+  release. Automatic GC finalization and native power-management transport remain
+  separate work.
 
 ## Translated module inventory
 
