@@ -137,7 +137,7 @@ fn test_media_element_resource_selection_metadata_and_tracks() {
 	assert media.duration() == 10
 	first_start_date := media.get_start_date()
 	second_start_date := media.get_start_date()
-	assert first_start_date.get_time() == 1_704_067_200_123
+	assert first_start_date.get_time() == 1_704_067_200_124
 	assert voidptr(first_start_date) != voidptr(second_start_date)
 	assert media.buffered().start(0)! == 0
 	assert media.buffered().end(0)! == 10
@@ -157,7 +157,7 @@ fn test_media_element_start_date_uses_playback_metadata_and_load_clears_it() {
 		start_time_realtime: media_test_start_time_realtime
 	})
 	media.on_metadata_parsed(10)
-	assert media.get_start_date().get_time() == 1_725_084_800_987
+	assert media.get_start_date().get_time() == 1_725_084_800_988
 	media.set_source(none)
 	media.set_source_candidates([])
 	media.load()!

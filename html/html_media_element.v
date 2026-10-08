@@ -580,7 +580,11 @@ pub fn (element &HTMLMediaElement) duration() f64 {
 // https://html.spec.whatwg.org/multipage/media.html#dom-media-getstartdate
 pub fn (element &HTMLMediaElement) get_start_date() &MediaStartDate {
 	date_value := if timeline_offset := element.timeline_offset_microseconds_ {
-		f64(timeline_offset / 1000)
+		// UnixDateTime::milliseconds_since_epoch() rounds away from zero.
+		// Divide before rounding so even the i64 clock limits cannot overflow.
+		milliseconds := timeline_offset / 1000
+		remainder := timeline_offset % 1000
+		f64(milliseconds + if remainder > 0 { i64(1) } else if remainder < 0 { i64(-1) } else { i64(0) })
 	} else {
 		math.nan()
 	}
