@@ -818,3 +818,21 @@ Agent checks run with `v -old-compiler -enable-globals`. Isolated worktrees use 
   Native play promises, full resource/readiness/seek algorithms, defaultMuted
   initialization, Source Rust style-engine journal, physical playback and automatic
   GC ownership remain open. The ledger stays **32 fixed / 25 partial / 9 open**.
+
+- Media load reset events (`5fd0c862`) now queue abort, emptied and reset
+  timeupdate on the actual owner, while its current unpaused pending play batch
+  rejects synchronously with one AbortError under the Document context. Native
+  `load()` (`3961abe6`) validates the actual DOM receiver before mutation replay,
+  ignores extra arguments and propagates real exceptions. The initial frozen
+  33-file runs each pass 32 files and expose one shared-loop drain assumption in
+  the pause cancellation fixture. `e9133c7e` takes only the intended owner's
+  tasks and checks the untouched second queue in pause/play fixtures; both pass
+  in each GC mode. Thus all 33 affected files have passing evidence across the
+  initial runs and focused reruns, including the 66-case main regression.
+  Signed production startup, an ordinary production probe, both exact load
+  viewports and all 11 smoke cases pass on unchanged implementation. [Evidence](MEDIA_LOAD_TASK_OWNER.md)
+  preserves every failed run and the composite coverage distinction; SHA256:
+  `6717783d05de0012592ec0e403a4f9b4cd90c359ad6e7ed63d41dd56bed6dc8d`.
+  Stable-state selection, complete load/readiness/seek algorithms, native play
+  promises, physical playback and automatic ownership remain open. The ledger
+  stays **32 fixed / 25 partial / 9 open**.

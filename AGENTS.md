@@ -747,6 +747,14 @@
   walk before computing styles. Native play promises, complete resource/readiness
   algorithms and physical playback remain separate work.
 
+- Native `load()` validates the actual DOM media receiver before replay, ignores
+  extra arguments and calls the owning model. Load cancels only that owner's old
+  tasks, queues abort/emptied/reset timeupdate, and rejects its current unpaused
+  pending play batch with one actual AbortError under the Document context.
+  State and default-rate reset commit before event delivery. Stable-state
+  resource selection, native play promises, complete load/reset behavior and
+  physical playback remain separate work.
+
 ## Translated module inventory
 
 All 78 translated LibWeb packages and all 1,193 current module-owned C++

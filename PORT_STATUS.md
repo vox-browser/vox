@@ -215,6 +215,14 @@ Media resource selection now distinguishes automatic selection from an explicit
 preload/autoplay or calling `play()` resumes a deferred fetch. The explicit
 selection marker survives resumption after document adoption and is cleared
 before the next automatic selection.
+The native `load()` operation now validates the actual DOM receiver before
+mutation replay and calls that same model, preserving unused-argument and
+exception behavior. Reset abort, emptied and timeupdate events wait for the
+owner's task queue; the current unpaused pending play batch rejects with one
+actual AbortError under its Document execution context. State and validated
+default-rate reset commit before delivery. Stable-state selection, full load
+resets, native play promises and physical playback remain unfinished. See
+[load task and native caller evidence](docs/translation-audit/MEDIA_LOAD_TASK_OWNER.md).
 The `:indeterminate`, `:open`, and `:closed` selectors now read live checkbox,
 input-picker, and select-picker state. Control transitions mirror that state at
 the DOM boundary and schedule style invalidation; `switch` checkboxes retain
