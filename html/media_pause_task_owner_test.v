@@ -150,7 +150,8 @@ fn test_pause_task_cancellation_and_inactive_delivery_keep_the_actual_owner_boun
 	// The old pause task is canceled; abort and emptied belong to the new load.
 	assert first.queued_media_task_ids_.len == 2 && second.queued_media_task_ids_.len == 1
 	assert first.event_count('abort') == 0 && first.event_count('emptied') == 0
-	pause_task_drain_setup(first)
+	for first.queued_media_task_ids_.len > 0 { pause_task_take(first).execute() }
+	assert second.queued_media_task_ids_.len == 1
 	assert first.event_count('abort') == 1 && first.event_count('emptied') == 1
 	pause_task_take(second).execute()
 	assert first.event_count('pause') == 0 && second.event_count('pause') == 1
