@@ -689,6 +689,12 @@
   resets selection and focuses the document element once; repeated `on`
   assignments preserve selection.
 
+- Native `pause()` validates the actual DOM audio/video receiver, ignores extra
+  arguments, replays pending mutations and runs the same model caller. Empty
+  network state enters automatic resource selection before the internal pause
+  steps; paused `preload="none"` media remains deferred. Existing internal pause
+  event/promise scheduling and synchronous selection remain separate work.
+
 ## Translated module inventory
 
 All 78 translated LibWeb packages and all 1,193 current module-owned C++

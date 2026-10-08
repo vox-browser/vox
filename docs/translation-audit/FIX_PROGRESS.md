@@ -691,3 +691,17 @@ Agent checks run with `v -old-compiler -enable-globals`. Isolated worktrees use 
   reject; that engine deviation, finer/physical metadata, realms, full media/MSE,
   defaultMuted and physical GC remain open. The ledger stays **32 fixed /
   25 partial / 9 open**.
+
+- Pause caller/native (`f8691ab9` / `cb4a414e`) now
+  select an empty resource before pausing and expose the zero-argument operation
+  through the actual DOM audio/video owner. [Pause evidence](NATIVE_MEDIA_PAUSE_OWNER.md)
+  retains nine runtime baseline failures, both **2/2 focused** batches and
+  **18/18 affected files in each GC mode**, including the **66-case** main
+  regression. Signed production startup, the ordinary-branch native probe,
+  two exact public viewports and all **11 smoke cases** pass. Consolidated
+  evidence SHA256: `6924901b16c1ebd14390132e9c6ac9273f191eadc3313953b8938bc8f26a1ab3`. The refreshed 78-owner inventory has
+  **432,354 implementation / 155,221
+  test V LOC** across **2,191 owned files**; browser/root support is
+  excluded. Internal pause task/promise semantics, synchronous selection,
+  remaining native methods, physical playback delivery, realms and complete
+  media/MSE remain open. The ledger stays **32 fixed / 25 partial / 9 open**.
