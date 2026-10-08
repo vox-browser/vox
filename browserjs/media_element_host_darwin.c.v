@@ -5,6 +5,8 @@ import html
 import math
 import webidl
 
+fn C.JSObjectMakeDate(context voidptr, count usize, arguments &voidptr, exception &voidptr) voidptr
+
 pub fn (mut host MediaElementHost) install(mut runtime Runtime) ! {
 	runtime.require_javascript_value_context()!
 	runtime.bind_scripting_environment(host.settings)!
@@ -48,6 +50,12 @@ pub fn (mut host MediaElementHost) install(mut runtime Runtime) ! {
 			return host.runtime.actual_javascript_exception(host.runtime.binding_exception_value(err))
 		}
 	})!
+	start_date := runtime.make_native_value_host_function('getStartDate', 0, fn [handle] (receiver voidptr, _ []voidptr) !voidptr {
+		mut host := unsafe { &MediaElementHost(handle) }
+		return host.start_date(receiver) or {
+			return host.runtime.actual_javascript_exception(host.runtime.binding_exception_value(err))
+		}
+	})!
 	bind := runtime.make_value_host_function(fn [handle] (_ voidptr, args []voidptr) !voidptr {
 		mut host := unsafe { &MediaElementHost(handle) }
 		return host.bind(args) or {
@@ -57,7 +65,7 @@ pub fn (mut host MediaElementHost) install(mut runtime Runtime) ! {
 	factory := runtime.evaluate_host_value(media_element_native_factory)!
 	defer { runtime.release_javascript_value(factory) }
 	host.prototype = runtime.retain_javascript_value(runtime.call_javascript_function(factory,
-		C.JSValueMakeUndefined(runtime.context), [array, setter_array, bind, fast_seek])!)!
+		C.JSValueMakeUndefined(runtime.context), [array, setter_array, bind, fast_seek, start_date])!)!
 	runtime.add_canvas_element_provider(fn [handle] () map[string]&dom.Element {
 		host := unsafe { &MediaElementHost(handle) }
 		return host.elements_for_binding()
@@ -131,6 +139,22 @@ fn (mut host MediaElementHost) fast_seek(receiver voidptr, args []voidptr) !void
 	return C.JSValueMakeUndefined(host.runtime.context)
 }
 
+fn (mut host MediaElementHost) start_date(receiver voidptr) !voidptr {
+	media := host.media_element_for_binding(receiver)!
+	if replay := host.replay { replay(host.runtime)! }
+	value := media.get_start_date().get_time()
+	// Source Date::create installs the raw value; JSC's constructor TimeClips it.
+	// Keep that existing engine boundary explicit instead of silently losing it.
+	if !math.is_nan(value) && math.abs(value) > 8_640_000_000_000_000.0 {
+		return error('Source media Date value cannot be installed exactly by JavaScriptCore')
+	}
+	arguments := [C.JSValueMakeNumber(host.runtime.context, value)]
+	mut exception := unsafe { nil }
+	date := C.JSObjectMakeDate(host.runtime.context, 1, arguments.data, &exception)
+	if exception != unsafe { nil } { return host.runtime.actual_javascript_exception(exception) }
+	return date
+}
+
 fn (mut host MediaElementHost) set_property(name string, receiver voidptr, value voidptr) !voidptr {
 	mut media := host.media_element_for_binding(receiver)!
 	// Source's generated setters check the brand before converting the value.
@@ -168,9 +192,10 @@ fn (mut host MediaElementHost) set_property(name string, receiver voidptr, value
 }
 
 // The compact DOM hierarchy remains partial. This base prototype exposes only
-// the completed state/range getters, rate/volume/time accessors, fastSeek and constants.
+// the completed state/range getters, rate/volume/time accessors, fastSeek,
+// getStartDate and constants.
 // Full HTMLElement/audio/video interfaces remain open.
-const media_element_native_factory = r'(function(getters,setters,bind,fastSeek){
+const media_element_native_factory = r'(function(getters,setters,bind,fastSeek,getStartDate){
  "use strict";
  const define=Object.defineProperty,create=Object.create,P=Proxy,T=TypeError;
  const prototype=create(EventTarget.prototype);
@@ -179,6 +204,7 @@ const media_element_native_factory = r'(function(getters,setters,bind,fastSeek){
  const properties=["defaultPlaybackRate","playbackRate","volume","muted","currentTime"];
  for(let i=0;i<properties.length;i++)define(prototype,properties[i],{get:getters[names.length+i],set:setters[i],enumerable:true,configurable:true});
  define(prototype,"fastSeek",{value:fastSeek,writable:true,enumerable:true,configurable:true});
+ define(prototype,"getStartDate",{value:getStartDate,writable:true,enumerable:true,configurable:true});
  define(prototype,Symbol.toStringTag,{value:"HTMLMediaElement",configurable:true});
  const constructor=new P(function HTMLMediaElement(){},{apply(){throw new T("Illegal HTMLMediaElement constructor")},construct(){throw new T("Illegal HTMLMediaElement constructor")}});
  define(constructor,"prototype",{value:prototype,writable:false});
