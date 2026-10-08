@@ -1273,7 +1273,6 @@ fn (mut element HTMLMediaElement) process_media_response(response MediaResourceR
 		element.on_video_track_added(metadata)
 	}
 	element.on_metadata_parsed(response.duration)
-	element.fire_event('loadedmetadata')
 	if response.buffered_end > 0 {
 		element.buffered_.add_range(0, response.buffered_end)
 		element.seekable_.add_range(0, if math.is_nan(response.duration) {
@@ -1306,6 +1305,17 @@ pub fn (mut element HTMLMediaElement) set_ready_state(state MediaReadyState) {
 	}
 	if mut video := element.video_element_model_ {
 		video.update_natural_dimensions()
+	}
+	// Metadata notification belongs to the readiness transition, including
+	// MediaSource initialization, rather than to the synchronous fetch adapter.
+	if element.network_state_ != .empty && old_state == .have_nothing
+		&& state == .have_metadata {
+		element_pointer := voidptr(&element)
+		element.queue_a_media_element_task(fn [element_pointer] () {
+			mut media := unsafe { &HTMLMediaElement(element_pointer) }
+			media.fire_event('loadedmetadata')
+		})
+		return
 	}
 	// Source's first-data branch requires a nonempty network state and the
 	// exact metadata-to-data transition. Consume the flag when queuing, so

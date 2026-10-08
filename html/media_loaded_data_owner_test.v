@@ -76,6 +76,9 @@ fn test_first_data_requires_a_load_nonempty_network_and_the_exact_metadata_trans
 	mut fresh := loaded_data_owner(false)!
 	fresh.network_state_ = .idle
 	fresh.set_ready_state(.have_metadata)
+	assert fresh.event_count('loadedmetadata') == 0 && fresh.queued_media_task_ids_.len == 1
+	loaded_data_drain(fresh)
+	assert fresh.event_count('loadedmetadata') == 1
 	fresh.set_ready_state(.have_current_data)
 	assert fresh.event_count('loadeddata') == 0 && fresh.queued_media_task_ids_.len == 0
 	mut media := loaded_data_owner(false)!

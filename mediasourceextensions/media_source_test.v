@@ -740,3 +740,25 @@ fn test_source_buffer_append_runs_its_steps_and_events_as_queued_tasks() {
 	assert update_start.count == 1
 	assert update_end.count == 1
 }
+
+fn test_source_buffer_metadata_notifies_the_actual_media_owner_once_per_readiness_transition() {
+ url := dom.URL{ value: 'https://source-buffer-metadata.example.test/' }
+ document := html.parse_navigation_document('<video id="player"></video>', url, url.origin(), none)!
+ mut media := html.html_media_element_for_dom_element(document.get_element_by_id('player')?)?
+ mut source := MediaSource.create()
+ media.set_src_object(source.as_media_provider())!
+ run_media_source_tasks()
+ assert source.media_element_assigned_to()? == media
+ assert media.ready_state() == .have_nothing && media.network_state() != .empty
+ seen := &EventObservation{}
+ media.set_on_event('loadedmetadata', observer_callback(seen))
+ mut buffer := source.add_source_buffer('video/webm; codecs="vp9"')!
+ buffer.append_buffer(minimal_webm_initialization_segment())!
+ assert seen.count == 0 && media.ready_state() == .have_nothing
+ run_media_source_tasks()
+ assert media.ready_state() == .have_metadata && seen.count == 1
+ assert media.event_count('loadedmetadata') == 1 && media.video_tracks().length() == 1
+ buffer.append_buffer(minimal_webm_initialization_segment())!
+ run_media_source_tasks()
+ assert seen.count == 1 && media.event_count('loadedmetadata') == 1
+}

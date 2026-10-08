@@ -144,6 +144,8 @@ fn test_media_element_resource_selection_metadata_and_tracks() {
 	assert media.seekable().end(0)! == 10
 	assert media.audio_tracks().length() == 1
 	assert media.video_tracks().length() == 1
+	assert media.event_count('loadedmetadata') == 0
+	media_test_drain_setup_tasks(media)
 	assert media.event_count('loadedmetadata') == 1
 	assert media.can_play_type('video/mp4') == .maybe
 	assert media.can_play_type('video/mp4; codecs="avc1"') == .probably
