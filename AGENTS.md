@@ -692,8 +692,12 @@
 - Native `pause()` validates the actual DOM audio/video receiver, ignores extra
   arguments, replays pending mutations and runs the same model caller. Empty
   network state enters automatic resource selection before the internal pause
-  steps; paused `preload="none"` media remains deferred. Existing internal pause
-  event/promise scheduling and synchronous selection remain separate work.
+  steps; paused `preload="none"` media remains deferred. Explicit pause commits
+  state and the live clock immediately, then queues timeupdate, pause and
+  captured-batch rejection with a shared AbortError under the owning document's
+  execution context. A listener that resumes playback does not add its new
+  promises to the earlier batch. Other media promise paths, native play promises
+  and synchronous selection remain separate work.
 
 ## Translated module inventory
 

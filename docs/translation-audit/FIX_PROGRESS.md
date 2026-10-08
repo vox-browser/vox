@@ -705,3 +705,18 @@ Agent checks run with `v -old-compiler -enable-globals`. Isolated worktrees use 
   excluded. Internal pause task/promise semantics, synchronous selection,
   remaining native methods, physical playback delivery, realms and complete
   media/MSE remain open. The ledger stays **32 fixed / 25 partial / 9 open**.
+
+- Explicit pause task/reason (`477996a3`) now changes state/clock
+  immediately and queues timeupdate, pause and captured-batch rejection with one
+  shared actual AbortError under the owning document context. [Pause-task evidence](MEDIA_PAUSE_TASK_OWNER.md)
+  retains the initial depth-array fixture diagnostics, five corrected runtime
+  baseline failures, **2/2 model** and **1/1 native page** focused files and
+  **20/20 affected files in each GC mode**, including the **66-case** main
+  regression. Signed production startup, the ordinary-branch native task/promise
+  probe, two exact prior public pause viewports and all **11 smoke cases** pass.
+  Consolidated evidence SHA256: `3165c0a20c125070eac1e100a211282274945e724158012b0cc523e0abcde500`. The 78-owner inventory is
+  **432,371 implementation / 155,425 test V LOC**
+  across **2,192 owned files**; browser/root support is excluded.
+  Current Source's canceled-task settlement FIXME is preserved. Other promise
+  paths, native play promises, synchronous selection, physical playback and
+  complete media/MSE remain open. The ledger stays **32 fixed / 25 partial / 9 open**.
