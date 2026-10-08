@@ -1619,6 +1619,14 @@ fn update_style_for_document_from_upstream(document &dom.Document) RequiredInval
 			}
 			return .@continue
 		})
+		// The :has() ancestor walk can enqueue descendant plans after
+		// Document.update_style() has drained the original mutation plans.
+		// Apply that fanout before recomputing style in this same pass.
+		mut invalidator := mutable_document.style_invalidator()
+		if invalidator.has_pending_invalidations() {
+			mut document_node := unsafe { &dom.Node(document) }
+			invalidator.invalidate(mut document_node)
+		}
 	}
 
 	mut style_computer := css_style_computer_for(document)
