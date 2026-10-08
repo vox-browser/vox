@@ -720,3 +720,19 @@ Agent checks run with `v -old-compiler -enable-globals`. Isolated worktrees use 
   Current Source's canceled-task settlement FIXME is preserved. Other promise
   paths, native play promises, synchronous selection, physical playback and
   complete media/MSE remain open. The ledger stays **32 fixed / 25 partial / 9 open**.
+
+- Internal play task/resolution (`fd83fa0a`) now queues play,
+  waiting, playing and already-playing fulfillment. Playing commits the captured
+  start position and fires before its batch resolves under the actual Document
+  context. [Evidence](MEDIA_PLAY_TASK_OWNER.md) retains seven runtime baseline
+  failures, final **2/2 model** and **1/1 native page** focused files, initial fixture
+  diagnostics, the corrected inactive-task retrieval and the subsequent inactive
+  pause-fixture drain (`5a2ec71a`). Frozen **22/22 affected
+  files in each GC mode**, including the **66-case** main regression, signed
+  production startup/probe, two exact prior pause viewports and all **11 smoke
+  cases** pass. Consolidated evidence SHA256: `626b0b04ae5138cb4e8d69babdb0fedf4e457b40009275f0e222b804ecea9f39`.
+  The 78-owner physical inventory is **432,398 implementation /
+  155,688 test V LOC** across **2,193 owned files**;
+  root/native support is excluded. Native play promises, public permission/error
+  gates, started-playback/audio/wake-lock state, other media algorithms and actual
+  manager/decoder delivery remain open. The ledger stays **32 fixed / 25 partial / 9 open**.

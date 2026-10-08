@@ -163,3 +163,9 @@ Tests: [model task](../../html/media_pause_task_owner_test.v),
 [native page](../../main_media_pause_task_owner_test.v).
 [Prior native pause caller](NATIVE_MEDIA_PAUSE_OWNER.md) retains its earlier
 snapshot, baseline, production diagnostics and inventory.
+
+The subsequent [internal-play task slice](MEDIA_PLAY_TASK_OWNER.md) queues play,
+waiting, playing and already-playing resolution, captures the starting position
+before manager play and enters the current document context for fulfillment.
+This document retains its earlier 477996a3 evidence. Native play promises and the
+other media algorithm, state and backend boundaries remain separate work.

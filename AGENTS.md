@@ -699,6 +699,15 @@
   promises to the earlier batch. Other media promise paths, native play promises
   and synchronous selection remain separate work.
 
+- Internal play queues separate play and waiting tasks. Playing notification
+  captures its pending promises and starting clock before the manager hook starts,
+  then commits that position, fires playing and resolves only that batch under
+  the current document's execution context. An already-playing call queues its
+  own resolution without another playing event or manager start. A pause before
+  delivery leaves the earlier playing task unconditional. Public native play
+  promises, permission/error gates, started-playback/audio/wake-lock state and
+  other media algorithms remain separate work.
+
 ## Translated module inventory
 
 All 78 translated LibWeb packages and all 1,193 current module-owned C++
