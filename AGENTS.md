@@ -705,8 +705,19 @@
   the current document's execution context. An already-playing call queues its
   own resolution without another playing event or manager start. A pause before
   delivery leaves the earlier playing task unconditional. Public native play
-  promises, permission/error gates, started-playback/audio/wake-lock state and
-  other media algorithms remain separate work.
+  promises, permission/error gates, wake-lock state and other media algorithms
+  remain separate work.
+
+- Media audible state follows Source's started-playback flag, enabled audio
+  tracks and effective volume. Waiting playback stays silent after becoming
+  unpaused. Playing notification invokes manager play before setting started
+  state; pause clears started state before manager pause and reports audio
+  afterward. Actual transitions notify the owning PageClient before Document
+  timer/lifecycle notification; queued playing events do not restart audio.
+  Resource-specific track removal re-evaluates audio without clearing started
+  state, and adoption routes subsequent notifications through the current Page.
+  Actual Page-wide mute propagation, wake locks, native play promises and
+  physical playback remain separate work.
 
 ## Translated module inventory
 

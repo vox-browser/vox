@@ -736,3 +736,20 @@ Agent checks run with `v -old-compiler -enable-globals`. Isolated worktrees use 
   root/native support is excluded. Native play promises, public permission/error
   gates, started-playback/audio/wake-lock state, other media algorithms and actual
   manager/decoder delivery remain open. The ledger stays **32 fixed / 25 partial / 9 open**.
+
+- Started media audio state (`ee1714cc`) now follows Source's started-playback
+  flag, enabled audio tracks and effective volume. Waiting/unpaused media stays
+  silent; manager play/pause hooks precede owning PageClient and Document
+  notifications, and queued playing events do not restart audio after pause.
+  [Evidence](MEDIA_STARTED_AUDIO_OWNER.md) retains seven runtime baseline failures,
+  initial fixture diagnostics, a clean three-file focused batch and frozen
+  **27/27 affected files in each GC mode**, including the **66-case** main
+  regression, real hidden-document timers and Page/PageClient neighbors. Signed
+  production startup/probe, two exact prior public pause viewports and all
+  **11 smoke cases** pass. Consolidated evidence SHA256:
+  `393176a04cc6898b9ac90eb4764ff141ce9f327577832c1a4e2cbe03e7e17dc6`.
+  The 78-owner inventory is **432,419 implementation / 155,923 test V LOC**
+  across **2,194 owned files**; root/native support remains excluded. Actual
+  Page-wide mute propagation, wake locks, native play promises, permission/error
+  gates, full media algorithms and physical manager/decoder delivery remain open.
+  The ledger stays **32 fixed / 25 partial / 9 open**.
