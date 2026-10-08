@@ -196,6 +196,7 @@ mut:
 	source_candidates_          []string
 	network_state_              MediaNetworkState
 	ready_state_                MediaReadyState
+	first_data_load_event_since_load_start_ bool
 	seeking_                    bool
 	current_playback_position_  f64
 	official_playback_position_ f64
@@ -902,6 +903,9 @@ pub fn (mut element HTMLMediaElement) load_element() ! {
 }
 
 fn (mut element HTMLMediaElement) load_element_for_current_load() ! {
+	// HTMLMediaElement::load_element() rearms the first-data notification even
+	// when this load later has no resource or fails playback-rate validation.
+	element.first_data_load_event_since_load_start_ = true
 	// Upstream load step 5 cancels only this element's outstanding media tasks.
 	element.remove_queued_media_element_tasks()
 	element_pointer := voidptr(&element)
@@ -1303,8 +1307,22 @@ pub fn (mut element HTMLMediaElement) set_ready_state(state MediaReadyState) {
 	if mut video := element.video_element_model_ {
 		video.update_natural_dimensions()
 	}
-	if int(old_state) < int(MediaReadyState.have_current_data) && int(state) >= int(MediaReadyState.have_current_data) {
-		element.fire_event('loadeddata')
+	// Source's first-data branch requires a nonempty network state and the
+	// exact metadata-to-data transition. Consume the flag when queuing, so
+	// buffering oscillations cannot queue another event during this load.
+	if element.network_state_ != .empty && old_state == .have_metadata
+		&& int(state) >= int(MediaReadyState.have_current_data) {
+		if element.first_data_load_event_since_load_start_ {
+			element.first_data_load_event_since_load_start_ = false
+			element_pointer := voidptr(&element)
+			element.queue_a_media_element_task(fn [element_pointer] () {
+				mut media := unsafe { &HTMLMediaElement(element_pointer) }
+				media.fire_event('loadeddata')
+			})
+		}
+		// The pinned caller clears its DocumentLoadEventDelayer synchronously,
+		// independently of whether this crossing queued the first-data event.
+		element.finish_delaying_load_event()
 	}
 	if int(old_state) < int(MediaReadyState.have_future_data) && int(state) >= int(MediaReadyState.have_future_data) {
 		element.fire_event('canplay')
