@@ -62,6 +62,12 @@ pub fn (mut host MediaElementHost) install(mut runtime Runtime) ! {
 			return host.runtime.actual_javascript_exception(host.runtime.binding_exception_value(err))
 		}
 	})!
+	load := runtime.make_native_value_host_function('load', 0, fn [handle] (receiver voidptr, _ []voidptr) !voidptr {
+		mut host := unsafe { &MediaElementHost(handle) }
+		return host.load(receiver) or {
+			return host.runtime.actual_javascript_exception(host.runtime.binding_exception_value(err))
+		}
+	})!
 	bind := runtime.make_value_host_function(fn [handle] (_ voidptr, args []voidptr) !voidptr {
 		mut host := unsafe { &MediaElementHost(handle) }
 		return host.bind(args) or {
@@ -71,7 +77,7 @@ pub fn (mut host MediaElementHost) install(mut runtime Runtime) ! {
 	factory := runtime.evaluate_host_value(media_element_native_factory)!
 	defer { runtime.release_javascript_value(factory) }
 	host.prototype = runtime.retain_javascript_value(runtime.call_javascript_function(factory,
-		C.JSValueMakeUndefined(runtime.context), [array, setter_array, bind, fast_seek, start_date, pause])!)!
+		C.JSValueMakeUndefined(runtime.context), [array, setter_array, bind, fast_seek, start_date, pause, load])!)!
 	runtime.add_canvas_element_provider(fn [handle] () map[string]&dom.Element {
 		host := unsafe { &MediaElementHost(handle) }
 		return host.elements_for_binding()
@@ -168,6 +174,19 @@ fn (mut host MediaElementHost) pause(receiver voidptr) !voidptr {
 	return C.JSValueMakeUndefined(host.runtime.context)
 }
 
+fn (mut host MediaElementHost) load(receiver voidptr) !voidptr {
+	mut media := host.media_element_for_binding(receiver)!
+	if replay := host.replay { replay(host.runtime)! }
+	media.load() or {
+		message := err.msg()
+		if !message.starts_with('NotSupportedError:') { return err }
+		native_exception := webidl.dom_exception_value(webidl.DOMException.create('NotSupportedError',
+			message['NotSupportedError:'.len..].trim_left(' ')))
+		return host.runtime.actual_javascript_exception(host.runtime.javascript_dom_exception(native_exception)!)
+	}
+	return C.JSValueMakeUndefined(host.runtime.context)
+}
+
 fn (mut host MediaElementHost) set_property(name string, receiver voidptr, value voidptr) !voidptr {
 	mut media := host.media_element_for_binding(receiver)!
 	// Source's generated setters check the brand before converting the value.
@@ -206,9 +225,9 @@ fn (mut host MediaElementHost) set_property(name string, receiver voidptr, value
 
 // The compact DOM hierarchy remains partial. This base prototype exposes only
 // the completed state/range getters, rate/volume/time accessors, fastSeek,
-// getStartDate, pause and constants.
+// getStartDate, pause, load and constants.
 // Full HTMLElement/audio/video interfaces remain open.
-const media_element_native_factory = r'(function(getters,setters,bind,fastSeek,getStartDate,pause){
+const media_element_native_factory = r'(function(getters,setters,bind,fastSeek,getStartDate,pause,load){
  "use strict";
  const define=Object.defineProperty,create=Object.create,P=Proxy,T=TypeError;
  const prototype=create(EventTarget.prototype);
@@ -219,6 +238,7 @@ const media_element_native_factory = r'(function(getters,setters,bind,fastSeek,g
  define(prototype,"fastSeek",{value:fastSeek,writable:true,enumerable:true,configurable:true});
  define(prototype,"getStartDate",{value:getStartDate,writable:true,enumerable:true,configurable:true});
  define(prototype,"pause",{value:pause,writable:true,enumerable:true,configurable:true});
+ define(prototype,"load",{value:load,writable:true,enumerable:true,configurable:true});
  define(prototype,Symbol.toStringTag,{value:"HTMLMediaElement",configurable:true});
  const constructor=new P(function HTMLMediaElement(){},{apply(){throw new T("Illegal HTMLMediaElement constructor")},construct(){throw new T("Illegal HTMLMediaElement constructor")}});
  define(constructor,"prototype",{value:prototype,writable:false});
