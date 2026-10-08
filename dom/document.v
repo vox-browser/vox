@@ -3146,6 +3146,7 @@ pub:
 	has_media_element_playing_audio_callback fn (voidptr, &Document) bool = unsafe { nil }
 	media_element_audio_state_changed_callback fn (voidptr, &Document, UniqueNodeID, bool) = unsafe { nil }
 	did_change_audio_play_state_callback fn (voidptr, bool) = unsafe { nil }
+	create_screen_wake_lock_handle_callback fn (voidptr) voidptr = unsafe { nil }
 	did_request_color_picker_callback    fn (voidptr, string, string) = unsafe { nil }
 	did_request_file_picker_callback     fn (voidptr, string, string, bool) = unsafe { nil }
 	did_request_external_url_callback    fn (voidptr, string, string, bool) = unsafe { nil }
@@ -13549,6 +13550,16 @@ pub fn (p &Page) client_page_did_change_audio_play_state(playing bool) {
 	if p.target != unsafe { nil } && p.did_change_audio_play_state_callback != unsafe { nil } {
 		p.did_change_audio_play_state_callback(p.target, playing)
 	}
+}
+
+// The concrete Page callback returns its actual Page::ScreenWakeLockHandle.
+pub fn (p &Page) create_screen_wake_lock_handle() ?voidptr {
+	if p.target == unsafe { nil } || p.create_screen_wake_lock_handle_callback == unsafe { nil } {
+		return none
+	}
+	handle := p.create_screen_wake_lock_handle_callback(p.target)
+	if handle == unsafe { nil } { return none }
+	return handle
 }
 
 pub fn (p &Page) did_request_color_picker(input_target string, current_color string) {

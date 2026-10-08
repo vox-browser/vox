@@ -258,6 +258,38 @@ fn test_media_element_publishes_audible_state_to_its_document() {
 	assert !document.is_playing_audio()
 }
 
+fn test_media_screen_wake_lock_finalization_releases_only_the_actual_owner_handle() {
+	mut document := dom.Document.create(dom.URL{ value: 'https://media-finalize.example.test/' })
+	mut owner := page.Page.create(1)!
+	document.set_page(unsafe { &dom.Page(owner) })
+	video := document.create_element_ns(dom.namespace_html_uri, 'video')!
+	mut media := html_media_element_for_dom_element(video)?
+	media.on_audio_track_added(MediaTrackMetadata{ identifier: 1 })
+	media.on_video_track_added(MediaTrackMetadata{ identifier: 2 })
+	media.set_ready_state(.have_future_data)
+	media.set_paused(false)
+	assert owner.is_screen_wake_lock_active()
+	mut other := page.ScreenWakeLockHandle.create(mut owner)
+	media.finalize()
+	media.finalize()
+	assert owner.is_screen_wake_lock_active() && other.is_active()
+	assert owner.client().events.filter(it.name == 'change-screen-wake-lock-state').map(it.text) == ['acquired']
+	other.release()
+	assert !owner.is_screen_wake_lock_active()
+	assert owner.client().events.filter(it.name == 'change-screen-wake-lock-state').map(it.text) == ['acquired', 'released']
+	// Standalone/no-callback Page adapters cannot fabricate a lock owner.
+	mut detached := dom.Document.create(dom.url_about_blank())
+	detached.set_page(&dom.Page{})
+	element := detached.create_element_ns(dom.namespace_html_uri, 'video')!
+	mut standalone := html_media_element_for_dom_element(element)?
+	standalone.on_audio_track_added(MediaTrackMetadata{ identifier: 1 })
+	standalone.on_video_track_added(MediaTrackMetadata{ identifier: 2 })
+	standalone.set_ready_state(.have_future_data)
+	standalone.set_paused(false)
+	standalone.finalize()
+	assert !owner.is_screen_wake_lock_active()
+}
+
 fn test_media_element_fast_seek_at_current_position_is_accurate() {
 	media_test_seek_modes.clear()
 	mut media := HTMLMediaElement.create(none, dom.URL{ value: 'https://example.test/' })

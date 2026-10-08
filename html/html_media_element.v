@@ -11,6 +11,7 @@ import dom
 import fileapi
 import url as liburl
 import math
+import page
 import painting
 import time
 import webidl
@@ -181,10 +182,6 @@ fn media_element_noop_audio_enabled(track &AudioTrack, enabled bool) {
 	_ = enabled
 }
 
-fn media_element_noop_video_selected(track ?&VideoTrack) {
-	_ = track
-}
-
 @[heap]
 pub struct HTMLMediaElement {
 	dom.EventTarget
@@ -258,6 +255,7 @@ mut:
 	attached_media_source_      voidptr
 	media_source_detach_        ?MediaSourceDetachHook
 	video_sink_is_ticking_      bool = true
+	screen_wake_lock_          ?&page.ScreenWakeLockHandle
 }
 
 pub fn HTMLMediaElement.create(element ?&dom.HTMLElement, base_url dom.URL) &HTMLMediaElement {
@@ -402,6 +400,10 @@ pub fn (mut element HTMLMediaElement) adopted_from(old_document &dom.Document) {
 		&& element.resource_selection_pending_ {
 		element.remove_queued_media_element_tasks()
 		element.select_resource_for_current_load() or {}
+	}
+	if element.screen_wake_lock_ != none {
+		element.release_screen_wake_lock()
+		element.update_screen_wake_lock()
 	}
 }
 
@@ -568,6 +570,43 @@ fn (mut element HTMLMediaElement) update_audio_play_state() {
 		document.page().client_page_did_change_audio_play_state(is_playing_audio)
 	}
 	document.media_element_audio_play_state_changed(html_element.as_node().unique_id(), is_playing_audio)
+}
+
+pub fn (element &HTMLMediaElement) should_hold_screen_wake_lock() bool {
+	html_element := element.associated_element_ or { return false }
+	dom_element := unsafe { &dom.Element(html_element) }
+	if !dom_element.is_html_element() || dom_element.local_name() != 'video' {
+		return false
+	}
+	if element.video_tracks_.selected_index() < 0 || !element.audio_tracks_.has_enabled_track() {
+		return false
+	}
+	return element.potentially_playing()
+}
+
+pub fn (mut element HTMLMediaElement) update_screen_wake_lock() {
+	if element.should_hold_screen_wake_lock() {
+		if element.screen_wake_lock_ == none {
+			document := element.document() or { return }
+			if !document.has_page() { return }
+			element.screen_wake_lock_ = page.ScreenWakeLockHandle.create_for_dom_page(document.page())
+		}
+		return
+	}
+	element.release_screen_wake_lock()
+}
+
+fn (mut element HTMLMediaElement) release_screen_wake_lock() {
+	if mut handle := element.screen_wake_lock_ {
+		handle.release()
+		element.screen_wake_lock_ = none
+	}
+}
+
+// Selected Source finalize responsibility. Physical GC and the remaining
+// manager/timer/control finalization are separate integration boundaries.
+pub fn (mut element HTMLMediaElement) finalize() {
+	element.release_screen_wake_lock()
 }
 
 pub fn (element &HTMLMediaElement) video_sink_is_ticking() bool {
@@ -1185,7 +1224,10 @@ pub fn (mut element HTMLMediaElement) set_ready_state(state MediaReadyState) {
 		return
 	}
 	element.ready_state_ = state
-	defer { element.upon_has_ended_playback_possibly_changed() }
+	defer {
+		element.upon_has_ended_playback_possibly_changed()
+		element.update_screen_wake_lock()
+	}
 	if mut video := element.video_element_model_ {
 		video.update_natural_dimensions()
 	}
@@ -1305,6 +1347,7 @@ pub fn (mut element HTMLMediaElement) set_paused(paused bool) {
 		}
 		element.update_audio_play_state()
 	}
+	element.update_screen_wake_lock()
 	if mut video := element.video_element_model_ {
 		video.update_natural_dimensions()
 	}
@@ -1312,7 +1355,9 @@ pub fn (mut element HTMLMediaElement) set_paused(paused bool) {
 }
 
 pub fn (mut element HTMLMediaElement) set_ended(ended bool) {
+	if element.ended_ == ended { return }
 	element.ended_ = ended
+	element.update_screen_wake_lock()
 }
 
 pub fn (element &HTMLMediaElement) current_time() f64 {
@@ -1553,6 +1598,7 @@ pub fn (mut element HTMLMediaElement) notify_about_playing() {
 	}
 	element.has_started_playback_ = true
 	element.update_audio_play_state()
+	element.update_screen_wake_lock()
 }
 
 fn (mut element HTMLMediaElement) reject_pending_play_promises(reason dom.JSValue) {
@@ -1818,6 +1864,7 @@ pub fn (mut element HTMLMediaElement) set_audio_track_enabled(track &AudioTrack,
 		hook(track, enabled)
 	}
 	element.update_audio_play_state()
+	element.update_screen_wake_lock()
 }
 
 pub fn (mut element HTMLMediaElement) set_selected_video_track(track ?&VideoTrack) {
@@ -1841,6 +1888,7 @@ pub fn (mut element HTMLMediaElement) set_selected_video_track(track ?&VideoTrac
 	if hook := element.playback_hooks_.set_video_track {
 		hook(track)
 	}
+	element.update_screen_wake_lock()
 }
 
 pub fn (mut element HTMLMediaElement) ensure_video_frame_source() &painting.VideoFrameSource {
@@ -1904,13 +1952,16 @@ pub fn (mut element HTMLMediaElement) on_audio_track_added(metadata MediaTrackMe
 }
 
 pub fn (mut element HTMLMediaElement) on_video_track_added(metadata MediaTrackMetadata) &VideoTrack {
-	track := VideoTrack.create(metadata, media_element_noop_change_task, media_element_noop_video_selected)
+	element_pointer := voidptr(&element)
+	track := VideoTrack.create(metadata, media_element_noop_change_task, fn [element_pointer] (track ?&VideoTrack) {
+		mut media := unsafe { &HTMLMediaElement(element_pointer) }
+		media.set_selected_video_track(track)
+	})
 	element.video_tracks_.add_track(track)
 	mut mutable_track := unsafe { &VideoTrack(track) }
 	should_select := element.video_tracks_.selected_index() == -1
 	if should_select {
 		mutable_track.set_selected(true)
-		element.set_selected_video_track(track)
 	}
 	if metadata.kind == none {
 		mutable_track.base.kind = if should_select { 'main' } else { 'translation' }
@@ -1944,7 +1995,6 @@ pub fn (mut element HTMLMediaElement) on_metadata_parsed(duration f64) {
 		if track := element.video_tracks_.item(0) {
 			mut mutable_track := unsafe { &VideoTrack(track) }
 			mutable_track.set_selected(true)
-			element.set_selected_video_track(track)
 		}
 	}
 	element.update_ready_state()
@@ -2019,6 +2069,7 @@ pub fn (mut element HTMLMediaElement) forget_media_resource_specific_tracks() {
 	element.playback_manager_ready_ = false
 	element.last_known_current_playback_position_ = none
 	element.playback_has_future_data_ = false
+	element.update_screen_wake_lock()
 }
 
 pub fn (mut element HTMLMediaElement) on_playback_manager_state_change(buffering bool) {

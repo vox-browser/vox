@@ -6,6 +6,8 @@
 // corresponding Optional is cleared.
 module page
 
+import dom
+
 @[heap]
 pub struct ScreenWakeLockHandle {
 mut:
@@ -19,6 +21,11 @@ pub fn ScreenWakeLockHandle.create(mut model Page) &ScreenWakeLockHandle {
 		page_: model
 		active_: true
 	}
+}
+
+pub fn ScreenWakeLockHandle.create_for_dom_page(model &dom.Page) ?&ScreenWakeLockHandle {
+	handle := model.create_screen_wake_lock_handle()?
+	return unsafe { &ScreenWakeLockHandle(handle) }
 }
 
 pub fn (mut handle ScreenWakeLockHandle) release() {
