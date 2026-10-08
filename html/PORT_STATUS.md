@@ -5,13 +5,31 @@ Upstream reference: `~/code/3rd/ladybird/Libraries/LibWeb/HTML`
 Translation workspace: `~/code/vox2/html`
 Source pin: `963d46a829f3e1b79f44dba9d02afb70654300fa`
 Historical mapping inventory: 2026-09-08
-Selected Source owner slices reviewed: 2026-10-06
+Selected Source owner slices reviewed: 2026-10-08
 
 The historical inventory below found candidate V mappings for 261 HTML source
 files. Its file/symbol/LOC counts and 107-file test result describe that earlier
 inventory, not current logic, generated-binding or browser parity. The current
 audit and fix evidence is in `docs/translation-audit/`; mapping a source name or
 a runtime hook does not establish that its complete logic was translated.
+
+## Native getStartDate owner and timeline rounding
+
+Native getStartDate returns fresh built-in Dates from the live audio/video DOM
+model after replay. The copied video timestamp and generic compact method are
+removed. The model rounds fractional milliseconds away from zero at the Source
+UnixDateTime boundary, avoiding i64 overflow. Model/native commits: `7ea057ff` /
+`5b86ed38`.
+
+[Start date evidence](../docs/translation-audit/NATIVE_MEDIA_START_DATE_OWNER.md)
+retains the initial fixture/compiler diagnostic, ten final runtime baseline
+failures, both 2/2 focused batches and 23/23 affected files in each GC mode,
+including the 66-case main regression. Signed production startup, an ordinary-
+branch native DOM probe, two exact viewports, 13 exact SVG pairs and all 11 smoke
+cases pass, with the final SVG launch-trap failure and bounded retry retained.
+Source timestamps beyond the native Date range explicitly reject;
+that engine boundary, foreign realms, physical manager/decoder, defaultMuted,
+complete media/MSE and physical GC remain open.
 
 ## Native fastSeek owner and caller
 

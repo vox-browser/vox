@@ -673,3 +673,21 @@ Agent checks run with `v -old-compiler -enable-globals`. Isolated worktrees use 
   files**; browser/root support stays excluded. Remaining seek algorithms,
   physical manager/clock/decoder, complete media/MSE, defaultMuted, realms and
   physical GC stay open. The ledger remains **32 fixed / 25 partial / 9 open**.
+
+- Start-date model/native (`7ea057ff` / `5b86ed38`) now round Source timeline
+  milliseconds away from zero and return fresh built-in Dates from the actual
+  DOM audio/video owner after replay, with the compact timestamp copy removed.
+  [Start-date evidence](NATIVE_MEDIA_START_DATE_OWNER.md) retains the initial
+  fixture/compiler diagnostic and ten final runtime baseline failures, both
+  **2/2 focused** batches and **23/23 affected files in each GC mode**, including
+  the **66-case** main regression. Signed production startup, an ordinary-branch
+  native DOM probe, two exact public viewports, **13 exact SVG pairs** and all
+  **11 smoke cases** pass; the final SVG capture launch traps and its bounded
+  retry on the unchanged binary remain recorded. Consolidated evidence SHA256:
+  `44dcd0c5f43fe66a3f29e88172fa30cdea6535c95eecff2ad24f48bf996e1389`.
+  The 78-owner inventory is **432,351 implementation /
+  155,129 test V LOC** across **2,190 owned files**;
+  browser/root support is excluded. Unrepresentable native Date values explicitly
+  reject; that engine deviation, finer/physical metadata, realms, full media/MSE,
+  defaultMuted and physical GC remain open. The ledger stays **32 fixed /
+  25 partial / 9 open**.
