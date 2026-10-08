@@ -794,13 +794,13 @@ V's standard `crypto.*` modules without shadowing that namespace.
 The IDL-only `Fullscreen` package delegates its state machine to the shared
 translated DOM implementation.
 
-The verified `8691a3b4` physical inventory is retained in
-`Build/audit-fixes/source-current-module-loc-8691a3b4.json` (SHA256
-`7879c3133f34be0941fe81a37d4f9e684dc20db92e47ce2891c8cc57fa171d98`).
-The metadata readiness slice adds one HTML test and updates the media model,
-resource/first-data fixtures and actual MediaSource initialization caller test.
+The verified `f3fde94f` physical inventory is retained in
+`Build/audit-fixes/source-current-module-loc-f3fde94f.json` (SHA256
+`203006055cae9788e94ada2629301dba08249212699fefdeed2e240121fff0c2`).
+The canplay readiness slice adds one HTML test and updates the media model,
+first-data/play fixtures and actual MediaSource coded-frame caller test.
 The root native caller test remains excluded from the package counts.
-The 78 owners contain 2,201 assigned files. Source-unit mappings and physical
+The 78 owners contain 2,202 assigned files. Source-unit mappings and physical
 LOC do not establish runtime parity.
 
 The table below refreshes tracked package V LOC on 2026-10-09; upstream counts
@@ -839,7 +839,7 @@ from the current-module totals.
 | `Gamepad` | 6 | 1,351 | 860 | 323 | Complete |
 | `Geolocation` | 4 | 643 | 535 | 224 | Complete |
 | `Geometry` | 8 | 2,078 | 2,121 | 1,041 | Complete |
-| `HTML` | 286 | 83,853 | 69,574 | 38,627 | Complete |
+| `HTML` | 286 | 83,853 | 69,582 | 38,864 | Complete |
 | `HighResolutionTime` | 2 | 516 | 500 | 213 | Complete |
 | `IndexedDB` | 19 | 6,991 | 5,455 | 1,388 | Complete |
 | `Infra` | 3 | 385 | 548 | 102 | Complete |
@@ -850,7 +850,7 @@ from the current-module totals.
 | `MathML` | 6 | 369 | 653 | 162 | Complete |
 | `MediaCapabilitiesAPI` | 1 | 345 | 657 | 129 | Complete |
 | `MediaCapture` | 5 | 1,475 | 1,240 | 247 | Complete |
-| `MediaSourceExtensions` | 13 | 4,094 | 4,079 | 2,269 | Complete |
+| `MediaSourceExtensions` | 13 | 4,094 | 4,079 | 2,308 | Complete |
 | `MimeSniff` | 2 | 1,607 | 1,108 | 308 | Complete |
 | `MixedContent` | 1 | 127 | 93 | 105 | Complete |
 | `NavigationTiming` | 4 | 497 | 645 | 130 | Complete |
@@ -892,7 +892,7 @@ from the current-module totals.
 | `XLink` | 1 | 16 | 13 | 10 | Complete |
 | `XML` | 2 | 556 | 477 | 164 | Complete |
 | `XPath` | 5 | 435 | 672 | 210 | Complete |
-| **Total** | **1,193** | **329,970** | **432,769** | **157,070** | **74 complete, 4 present, 0 untranslated** |
+| **Total** | **1,193** | **329,970** | **432,777** | **157,346** | **74 complete, 4 present, 0 untranslated** |
 
 ### Live editability refresh
 
