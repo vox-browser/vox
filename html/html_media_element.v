@@ -904,11 +904,18 @@ pub fn (mut element HTMLMediaElement) load_element() ! {
 fn (mut element HTMLMediaElement) load_element_for_current_load() ! {
 	// Upstream load step 5 cancels only this element's outstanding media tasks.
 	element.remove_queued_media_element_tasks()
+	element_pointer := voidptr(&element)
 	if element.network_state_ in [.loading, .idle] {
-		element.fire_event('abort')
+		element.queue_a_media_element_task(fn [element_pointer] () {
+			mut media := unsafe { &HTMLMediaElement(element_pointer) }
+			media.fire_event('abort')
+		})
 	}
 	if element.network_state_ != .empty {
-		element.fire_event('emptied')
+		element.queue_a_media_element_task(fn [element_pointer] () {
+			mut media := unsafe { &HTMLMediaElement(element_pointer) }
+			media.fire_event('emptied')
+		})
 		// A MediaSource can be attached through srcObject or a blob URL. Track
 		// the actual attachment so either form is detached before media state
 		// and playback-manager state are reset.
@@ -916,7 +923,7 @@ fn (mut element HTMLMediaElement) load_element_for_current_load() ! {
 		if !element.paused_ {
 			element.set_paused(true)
 			promises := element.take_pending_play_promises()
-			element.reject_pending_play_promises_with(promises, dom.js_string('AbortError: Media playback was aborted'))
+			element.reject_pending_play_promises_with_abort_error(promises, 'Media playback was aborted')
 		}
 	}
 	element.cancel_the_fetching_process()
@@ -929,7 +936,10 @@ fn (mut element HTMLMediaElement) load_element_for_current_load() ! {
 	element.current_playback_position_ = 0
 	if element.official_playback_position_ != 0 {
 		element.set_official_playback_position(0)
-		element.dispatch_time_update_event()
+		element.queue_a_media_element_task(fn [element_pointer] () {
+			mut media := unsafe { &HTMLMediaElement(element_pointer) }
+			media.dispatch_time_update_event()
+		})
 	}
 	element.playback_start_time_realtime_microseconds_ = none
 	element.timeline_offset_microseconds_ = none

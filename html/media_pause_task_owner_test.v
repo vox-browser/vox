@@ -147,7 +147,11 @@ fn test_pause_task_cancellation_and_inactive_delivery_keep_the_actual_owner_boun
 	assert first.queued_media_task_ids_.len == 1 && second.queued_media_task_ids_.len == 1
 	first.set_source('')
 	first.load()!
-	assert first.queued_media_task_ids_.len == 0 && second.queued_media_task_ids_.len == 1
+	// The old pause task is canceled; abort and emptied belong to the new load.
+	assert first.queued_media_task_ids_.len == 2 && second.queued_media_task_ids_.len == 1
+	assert first.event_count('abort') == 0 && first.event_count('emptied') == 0
+	pause_task_drain_setup(first)
+	assert first.event_count('abort') == 1 && first.event_count('emptied') == 1
 	pause_task_take(second).execute()
 	assert first.event_count('pause') == 0 && second.event_count('pause') == 1
 	// Pinned load_element step 4 is itself FIXME: captured promises belonging

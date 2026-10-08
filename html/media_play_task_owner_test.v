@@ -200,7 +200,11 @@ fn test_loading_and_inactive_delivery_cancel_only_the_actual_play_task_owner() {
 	assert first.queued_media_task_ids_.len == 2 && second.queued_media_task_ids_.len == 2
 	first.set_source('')
 	first.load()!
-	assert first.queued_media_task_ids_.len == 0 && second.queued_media_task_ids_.len == 2
+	// Loading cancels the old play tasks, then queues abort and emptied.
+	assert first.queued_media_task_ids_.len == 2 && second.queued_media_task_ids_.len == 2
+	assert first.event_count('abort') == 0 && first.event_count('emptied') == 0
+	play_task_drain_owner(first)
+	assert first.event_count('abort') == 1 && first.event_count('emptied') == 1
 	play_task_drain_owner(second)
 	assert first.event_count('play') == 0 && first.event_count('playing') == 0
 	assert second.event_count('play') == 1 && second.event_count('playing') == 1
