@@ -763,10 +763,10 @@ V's standard `crypto.*` modules without shadowing that namespace.
 The IDL-only `Fullscreen` package delegates its state machine to the shared
 translated DOM implementation.
 
-The verified `5a2ec71a` physical inventory is retained in
-`Build/audit-fixes/source-current-module-loc-5a2ec71a.json` (SHA256
-`44718328cde1ee60f690db10c9ac8b7883ac35e0021a3a890ff0b42be8c852f4`). The internal-play task slice adds one HTML test and updates its model and two earlier fixtures;
-browser/root support remains excluded.
+The verified `ee1714cc` physical inventory is retained in
+`Build/audit-fixes/source-current-module-loc-ee1714cc.json` (SHA256
+`e891036b36164e94f22610d142695a3e1f4f77a31bf91e610423848c2548be83`). The started-audio slice adds one HTML test and updates the media model/fixture,
+DOM Page bridge and Page owner; browser/root support remains excluded.
 
 The table below refreshes tracked package V LOC on 2026-10-08; upstream counts
 and structural mapping labels retain the pinned inventory. It covers 76 current
@@ -790,7 +790,7 @@ from the current-module totals.
 | `CookieStore` | 2 | 850 | 1,059 | 482 | Complete |
 | `CredentialManagement` | 6 | 382 | 420 | 301 | Complete |
 | `Crypto` | 6 | 13,412 | 7,957 | 7,989 | Complete |
-| `DOM` | 59 | 34,859 | 43,376 | 4,694 | Complete |
+| `DOM` | 59 | 34,859 | 43,383 | 4,694 | Complete |
 | `DOMURL` | 4 | 1,039 | 854 | 464 | Complete |
 | `Editing` | 26 | 12,720 | 13,938 | 226 | Complete |
 | `Encoding` | 6 | 769 | 5,356 | 4,495 | Complete |
@@ -804,7 +804,7 @@ from the current-module totals.
 | `Gamepad` | 6 | 1,351 | 860 | 323 | Complete |
 | `Geolocation` | 4 | 643 | 535 | 224 | Complete |
 | `Geometry` | 8 | 2,078 | 2,121 | 1,041 | Complete |
-| `HTML` | 286 | 83,853 | 69,401 | 37,270 | Complete |
+| `HTML` | 286 | 83,853 | 69,409 | 37,505 | Complete |
 | `HighResolutionTime` | 2 | 516 | 500 | 213 | Complete |
 | `IndexedDB` | 19 | 6,991 | 5,455 | 1,388 | Complete |
 | `Infra` | 3 | 385 | 548 | 102 | Complete |
@@ -820,7 +820,7 @@ from the current-module totals.
 | `MixedContent` | 1 | 127 | 93 | 105 | Complete |
 | `NavigationTiming` | 4 | 497 | 645 | 130 | Complete |
 | `NotificationsAPI` | 1 | 301 | 370 | 101 | Complete |
-| `Page` | 8 | 6,450 | 6,772 | 2,687 | Complete |
+| `Page` | 8 | 6,450 | 6,778 | 2,687 | Complete |
 | `Painting` | 22 | 8,227 | 7,979 | 2,585 | Present |
 | `PerformanceTimeline` | 5 | 476 | 502 | 154 | Complete |
 | `PermissionsAPI` | 3 | 388 | 239 | 74 | Complete |
@@ -857,7 +857,7 @@ from the current-module totals.
 | `XLink` | 1 | 16 | 13 | 10 | Complete |
 | `XML` | 2 | 556 | 477 | 164 | Complete |
 | `XPath` | 5 | 435 | 672 | 210 | Complete |
-| **Total** | **1,193** | **329,970** | **432,398** | **155,688** | **74 complete, 4 present, 0 untranslated** |
+| **Total** | **1,193** | **329,970** | **432,419** | **155,923** | **74 complete, 4 present, 0 untranslated** |
 
 ### Live editability refresh
 
