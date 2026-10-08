@@ -2156,11 +2156,17 @@ fn test_dir_pseudo_class_ua_direction_and_inheritance() {
 	assert child_computed.direction() == .rtl
 }
 
-fn test_document_rendering_update_advances_the_css_default_document_timeline() {
+fn css_animation_test_active_document() &dom.Document {
 	mut document := dom.Document.create(dom.url_about_blank())
 	document.set_browsing_context(&dom.BrowsingContext{
 		active_document_: document
 	})
+	document.set_navigable(&dom.Navigable{ active_document_: document })
+	return document
+}
+
+fn test_document_rendering_update_advances_the_css_default_document_timeline() {
+	mut document := css_animation_test_active_document()
 	mut computer := css_style_computer_for(document)
 
 	document.update_animations_and_send_events(125.0)
@@ -2171,13 +2177,16 @@ fn test_document_rendering_update_advances_the_css_default_document_timeline() {
 	document.update_animations_and_send_events(100.0)
 	assert computer.animation_time_ms_ == 125.0
 	assert computer.document_timeline_.current_time_ms() or { -1.0 } == 125.0
+
+	// Detaching the actual navigable makes the timeline inactive even though
+	// the compatibility BrowsingContext still points to this document.
+	document.set_navigable(none)
+	document.update_animations_and_send_events(150.0)
+	assert computer.document_timeline_.current_time_ms() == none
 }
 
 fn test_document_rendering_update_dispatches_css_animation_phase_events() {
-	mut document := dom.Document.create(dom.url_about_blank())
-	document.set_browsing_context(&dom.BrowsingContext{
-		active_document_: document
-	})
+	mut document := css_animation_test_active_document()
 	mut target := document.create_element_ns('http://www.w3.org/1999/xhtml', 'div') or {
 		panic(err)
 	}
@@ -2261,10 +2270,7 @@ fn test_display_change_cancels_and_restarts_css_defined_animations() {
 }
 
 fn test_animation_refresh_can_override_base_display_none() {
-	mut document := dom.Document.create(dom.url_about_blank())
-	document.set_browsing_context(&dom.BrowsingContext{
-		active_document_: document
-	})
+	mut document := css_animation_test_active_document()
 	mut target := document.create_element_ns('http://www.w3.org/1999/xhtml', 'div') or {
 		panic(err)
 	}
@@ -2319,10 +2325,7 @@ fn test_animation_refresh_can_override_base_display_none() {
 }
 
 fn test_document_rendering_update_dispatches_css_transition_phase_events() {
-	mut document := dom.Document.create(dom.url_about_blank())
-	document.set_browsing_context(&dom.BrowsingContext{
-		active_document_: document
-	})
+	mut document := css_animation_test_active_document()
 	mut target := document.create_element_ns('http://www.w3.org/1999/xhtml', 'div') or {
 		panic(err)
 	}
