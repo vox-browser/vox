@@ -187,6 +187,7 @@ pub mut:
 	selected_match ?FindMatch
 mut:
 	client_                                      &PageClient = &PageClient{}
+	media_element_callbacks_                     map[u64]dom.MediaElementPageCallbacks
 	device_scale                                 f64 = 1
 	top_level_traversable_                       string
 	focused_navigable_                           string
@@ -269,6 +270,30 @@ fn page_media_element_audio_state_changed_callback(target voidptr, document &dom
 fn page_did_change_audio_play_state_callback(target voidptr, playing bool) {
 	mut model := unsafe { &Page(target) }
 	model.client_.page_did_change_audio_play_state(if playing { 'playing' } else { 'paused' })
+}
+
+fn page_is_audio_muted_callback(target voidptr) bool {
+	return unsafe { &Page(target) }.page_mute_state() == .muted
+}
+
+fn page_set_audio_muted_callback(target voidptr, muted bool) {
+	mut model := unsafe { &Page(target) }
+	model.set_page_mute_state(if muted { .muted } else { .unmuted })
+}
+
+fn page_register_actual_media_element_callback(target voidptr, document &dom.Document, media_id dom.UniqueNodeID, callbacks dom.MediaElementPageCallbacks) {
+	if callbacks.target == unsafe { nil } { return }
+	mut model := unsafe { &Page(target) }
+	id := u64(media_id.value())
+	mut state := model.media_elements[id] or { MediaElementState{} }
+	state.document_id = document.unique_id()
+	model.register_media_element(id, state)
+	model.media_element_callbacks_[id] = callbacks
+}
+
+fn page_unregister_actual_media_element_callback(target voidptr, media_id dom.UniqueNodeID) {
+	mut model := unsafe { &Page(target) }
+	model.unregister_media_element(u64(media_id.value()))
 }
 
 fn page_create_screen_wake_lock_handle_callback(target voidptr) voidptr {
@@ -536,6 +561,10 @@ pub fn Page.create(device_scale f64) !&Page {
 		has_media_element_playing_audio_callback: page_has_media_element_playing_audio_callback
 		media_element_audio_state_changed_callback: page_media_element_audio_state_changed_callback
 		did_change_audio_play_state_callback: page_did_change_audio_play_state_callback
+		is_audio_muted_callback: page_is_audio_muted_callback
+		set_audio_muted_callback: page_set_audio_muted_callback
+		register_actual_media_element_callback: page_register_actual_media_element_callback
+		unregister_actual_media_element_callback: page_unregister_actual_media_element_callback
 		create_screen_wake_lock_handle_callback: page_create_screen_wake_lock_handle_callback
 		did_request_color_picker_callback: page_did_request_color_picker_callback
 		did_request_file_picker_callback: page_did_request_file_picker_callback
@@ -993,6 +1022,7 @@ pub fn (mut p Page) register_media_element(id u64, state MediaElementState) {
 
 pub fn (mut p Page) unregister_media_element(id u64) {
 	p.media_elements.delete(id)
+	p.media_element_callbacks_.delete(id)
 	if current := p.media_context_element_ {
 		if current == id {
 			p.media_context_element_ = none
@@ -1066,13 +1096,15 @@ pub fn (mut p Page) set_page_mute_state(mute_state MuteState) {
 		return
 	}
 	p.mute_state_ = mute_state
-	for id, mut state in p.media_elements {
+	for id in p.media_elements.keys() {
+		mut state := p.media_elements[id] or { continue }
 		state.page_mute_change_count++
 		p.media_elements[id] = state
-	}
-	for document in p.attached_documents_ {
-		mut mutable_document := unsafe { &dom.Document(document) }
-		mutable_document.audio_play_state_changed()
+		if callbacks := p.media_element_callbacks_[id] {
+			if callbacks.mute_state_changed != unsafe { nil } {
+				callbacks.mute_state_changed(callbacks.target)
+			}
+		}
 	}
 }
 

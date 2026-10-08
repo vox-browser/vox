@@ -3125,6 +3125,15 @@ mut:
 	transition_pseudo_nodes_ []&PseudoElementTreeNode_
 }
 
+// Concrete HTML dispatch across the DOM/Page package boundary. Physical weak
+// node lookup and automatic GC finalization remain separate integrations.
+pub struct MediaElementPageCallbacks {
+pub:
+	target voidptr = unsafe { nil }
+	mute_state_changed fn (voidptr) = unsafe { nil }
+	is_playing_audio fn (voidptr, &Document) bool = unsafe { nil }
+}
+
 @[heap]
 pub struct Page {
 pub:
@@ -3146,6 +3155,10 @@ pub:
 	has_media_element_playing_audio_callback fn (voidptr, &Document) bool = unsafe { nil }
 	media_element_audio_state_changed_callback fn (voidptr, &Document, UniqueNodeID, bool) = unsafe { nil }
 	did_change_audio_play_state_callback fn (voidptr, bool) = unsafe { nil }
+	is_audio_muted_callback fn (voidptr) bool = unsafe { nil }
+	set_audio_muted_callback fn (voidptr, bool) = unsafe { nil }
+	register_actual_media_element_callback fn (voidptr, &Document, UniqueNodeID, MediaElementPageCallbacks) = unsafe { nil }
+	unregister_actual_media_element_callback fn (voidptr, UniqueNodeID) = unsafe { nil }
 	create_screen_wake_lock_handle_callback fn (voidptr) voidptr = unsafe { nil }
 	did_request_color_picker_callback    fn (voidptr, string, string) = unsafe { nil }
 	did_request_file_picker_callback     fn (voidptr, string, string, bool) = unsafe { nil }
@@ -13549,6 +13562,29 @@ pub fn (p &Page) media_element_audio_state_changed(document &Document, media_id 
 pub fn (p &Page) client_page_did_change_audio_play_state(playing bool) {
 	if p.target != unsafe { nil } && p.did_change_audio_play_state_callback != unsafe { nil } {
 		p.did_change_audio_play_state_callback(p.target, playing)
+	}
+}
+
+pub fn (p &Page) is_audio_muted() ?bool {
+	if p.target == unsafe { nil } || p.is_audio_muted_callback == unsafe { nil } { return none }
+	return p.is_audio_muted_callback(p.target)
+}
+
+pub fn (p &Page) set_audio_muted(muted bool) bool {
+	if p.target == unsafe { nil } || p.set_audio_muted_callback == unsafe { nil } { return false }
+	p.set_audio_muted_callback(p.target, muted)
+	return true
+}
+
+pub fn (p &Page) register_actual_media_element(document &Document, id UniqueNodeID, callbacks MediaElementPageCallbacks) {
+	if p.target != unsafe { nil } && p.register_actual_media_element_callback != unsafe { nil } {
+		p.register_actual_media_element_callback(p.target, document, id, callbacks)
+	}
+}
+
+pub fn (p &Page) unregister_actual_media_element(id UniqueNodeID) {
+	if p.target != unsafe { nil } && p.unregister_actual_media_element_callback != unsafe { nil } {
+		p.unregister_actual_media_element_callback(p.target, id)
 	}
 }
 

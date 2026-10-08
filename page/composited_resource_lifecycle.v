@@ -9,11 +9,17 @@ module page
 import dom
 
 pub fn (p &Page) has_media_element_playing_audio(document &dom.Document) bool {
-	if p.page_mute_state() == .muted {
-		return false
-	}
-	for _, state in p.media_elements {
-		if state.document_id == document.unique_id() && state.playing_audio && !state.muted {
+	for id, state in p.media_elements {
+		if callbacks := p.media_element_callbacks_[id] {
+			if callbacks.is_playing_audio != unsafe { nil } && callbacks.is_playing_audio(callbacks.target, document) {
+				return true
+			}
+			continue
+		}
+		// Preserve the explicit state-record adapter for owners without a concrete
+		// HTML callback; actual media above queries its current Document and state.
+		if p.page_mute_state() != .muted && state.document_id == document.unique_id()
+			&& state.playing_audio && !state.muted {
 			return true
 		}
 	}

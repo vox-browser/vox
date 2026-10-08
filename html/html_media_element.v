@@ -290,6 +290,13 @@ pub fn HTMLMediaElement.create(element ?&dom.HTMLElement, base_url dom.URL) &HTM
 			target: voidptr(media)
 			callback: html_media_element_adopted_from_callback
 		})
+		if document.has_page() {
+			document.page().register_actual_media_element(document, node.unique_id(), dom.MediaElementPageCallbacks{
+				target: voidptr(media)
+				mute_state_changed: html_media_element_page_mute_state_changed_callback
+				is_playing_audio: html_media_element_is_playing_audio_callback
+			})
+		}
 	}
 	return media
 }
@@ -297,6 +304,17 @@ pub fn HTMLMediaElement.create(element ?&dom.HTMLElement, base_url dom.URL) &HTM
 fn html_media_element_adopted_from_callback(target voidptr, old_document &dom.Document) {
 	mut media := unsafe { &HTMLMediaElement(target) }
 	media.adopted_from(old_document)
+}
+
+fn html_media_element_page_mute_state_changed_callback(target voidptr) {
+	mut media := unsafe { &HTMLMediaElement(target) }
+	media.page_mute_state_changed()
+}
+
+fn html_media_element_is_playing_audio_callback(target voidptr, document &dom.Document) bool {
+	media := unsafe { &HTMLMediaElement(target) }
+	current_document := media.document() or { return false }
+	return current_document.unique_id() == document.unique_id() && media.is_playing_audio()
 }
 
 // DOM::Node::document() of the media element.
@@ -603,10 +621,17 @@ fn (mut element HTMLMediaElement) release_screen_wake_lock() {
 	}
 }
 
-// Selected Source finalize responsibility. Physical GC and the remaining
+// Selected Source finalize responsibilities. Physical GC and the remaining
 // manager/timer/control finalization are separate integration boundaries.
 pub fn (mut element HTMLMediaElement) finalize() {
 	element.release_screen_wake_lock()
+	if html_element := element.associated_element_ {
+		dom_element := unsafe { &dom.Element(html_element) }
+		document := dom_element.document()
+		if document.has_page() {
+			document.page().unregister_actual_media_element(dom_element.as_node().unique_id())
+		}
+	}
 }
 
 pub fn (element &HTMLMediaElement) video_sink_is_ticking() bool {
@@ -1704,6 +1729,10 @@ pub fn (mut element HTMLMediaElement) set_muted(muted bool) {
 }
 
 pub fn (mut element HTMLMediaElement) set_page_muted(muted bool) {
+	if document := element.document() {
+		if document.has_page() && document.page().set_audio_muted(muted) { return }
+	}
+	// Standalone/unconfigured Page adapter; concrete media uses its actual Page.
 	element.page_muted_ = muted
 	element.page_mute_state_changed()
 }
@@ -1729,7 +1758,13 @@ pub fn (mut element HTMLMediaElement) update_volume() {
 }
 
 pub fn (element &HTMLMediaElement) effective_media_volume() f64 {
-	return if element.muted_ || element.page_muted_ { 0 } else { element.volume_ }
+	mut page_muted := element.page_muted_
+	if document := element.document() {
+		if document.has_page() {
+			if muted := document.page().is_audio_muted() { page_muted = muted }
+		}
+	}
+	return if element.muted_ || page_muted { 0 } else { math.clamp(element.volume_, 0, 1) }
 }
 
 pub fn (mut element HTMLMediaElement) set_default_playback_rate(rate f64) {
