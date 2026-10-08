@@ -13,6 +13,7 @@ import url as liburl
 import math
 import painting
 import time
+import webidl
 
 pub enum MediaSeekMode {
 	accurate
@@ -1555,6 +1556,18 @@ pub fn (_ &HTMLMediaElement) reject_pending_play_promises_with(promises []&dom.P
 	}
 }
 
+fn (element &HTMLMediaElement) reject_pending_play_promises_with_abort_error(promises []&dom.Promise, message string) {
+	reason := dom.js_webidl_value(webidl.dom_exception_value_for_record(
+		webidl.DOMException.create_record('AbortError', message)))
+	if document := element.document() {
+		context := document.begin_temporary_execution_context()
+		defer { document.end_temporary_execution_context(context) }
+		element.reject_pending_play_promises_with(promises, reason)
+		return
+	}
+	element.reject_pending_play_promises_with(promises, reason)
+}
+
 pub fn (mut element HTMLMediaElement) pause() {
 	if element.network_state_ == .empty {
 		element.select_resource() or {}
@@ -1575,9 +1588,13 @@ pub fn (mut element HTMLMediaElement) pause_element() {
 	element.play_range_start_ = none
 	element.set_paused(true)
 	promises := element.take_pending_play_promises()
-	element.dispatch_time_update_event()
-	element.fire_event('pause')
-	element.reject_pending_play_promises_with(promises, dom.js_string('AbortError: Media playback was paused'))
+	element_pointer := voidptr(&element)
+	element.queue_a_media_element_task(fn [element_pointer, promises] () {
+		mut media := unsafe { &HTMLMediaElement(element_pointer) }
+		media.dispatch_time_update_event()
+		media.fire_event('pause')
+		media.reject_pending_play_promises_with_abort_error(promises, 'Media playback was paused')
+	})
 	element.set_official_playback_position(element.current_playback_position())
 }
 
