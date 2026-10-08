@@ -279,6 +279,7 @@ pub fn HTMLMediaElement.create(element ?&dom.HTMLElement, base_url dom.URL) &HTM
 	if html_element := element {
 		dom_element := unsafe { &dom.Element(html_element) }
 		mut document := dom_element.document()
+		document.set_media_element_state_query(media_element_matches_pseudo_class)
 		mut observer := dom.DocumentObserver.create(mut document)
 		observer.set_document_became_inactive(fn [media] () {
 			mut mutable_media := unsafe { &HTMLMediaElement(media) }
@@ -345,6 +346,7 @@ pub fn (media &HTMLMediaElement) media_element_event_task_source() TaskSource {
 // Return the HTMLMediaElement state associated with a concrete <audio> or
 // <video> DOM element, materializing the translated base-class state on first use.
 pub fn html_media_element_for_dom_element(element &dom.Element) ?&HTMLMediaElement {
+	if !element.is_html_element() { return none }
 	if element.local_name() == 'audio' {
 		mut audio := unsafe { &dom.HTMLAudioElement(element) }
 		if audio.media_element_model_ == unsafe { nil } {
@@ -372,6 +374,37 @@ pub fn html_media_element_for_dom_element(element &dom.Element) ?&HTMLMediaEleme
 		return unsafe { &HTMLMediaElement(video.media_element_model_) }
 	}
 	return none
+}
+
+fn media_element_matches_pseudo_class(element &dom.Element, pseudo_class dom.MediaElementPseudoClass) bool {
+	media := html_media_element_for_dom_element(element) or { return false }
+	return match pseudo_class {
+		.paused { media.paused() }
+		// Current Source's style-engine facts and isolated queries track paused
+		// alone, including resource-less play; buffering is an independent fact.
+		.playing { !media.paused() }
+		.muted { media.muted() }
+		.seeking { media.seeking() }
+		.buffering { media.blocked() }
+		.stalled { media.stalled() }
+	}
+}
+
+// CSS/Invalidation/ElementStateInvalidator.cpp records typed state changes.
+// The translated style engine consumes those changes through property plans.
+fn (element &HTMLMediaElement) invalidate_media_state_style(names []string) {
+	html_element := element.associated_element_ or { return }
+	mut node := unsafe { &dom.Element(html_element) }.as_node()
+	if !node.is_connected() { return }
+	if node.document().style_computer().invalidation_plan_callback == unsafe { nil } {
+		node.invalidate_style(.other)
+		return
+	}
+	mut properties := []dom.InvalidationProperty{cap: names.len}
+	for name in names {
+		properties << dom.InvalidationProperty{ type_: .pseudo_class, pseudo_class_name: name }
+	}
+	node.invalidate_style_with_properties(.other, properties, dom.StyleInvalidationOptions{ invalidate_self: true })
 }
 
 pub fn (mut element HTMLMediaElement) removed_from(old_parent ?&dom.Node, old_root &dom.Node) {
@@ -1248,7 +1281,11 @@ pub fn (mut element HTMLMediaElement) set_ready_state(state MediaReadyState) {
 	if old_state == state {
 		return
 	}
+	was_buffering := element.blocked()
 	element.ready_state_ = state
+	if was_buffering != element.blocked() {
+		element.invalidate_media_state_style(['buffering'])
+	}
 	defer {
 		element.upon_has_ended_playback_possibly_changed()
 		element.update_screen_wake_lock()
@@ -1324,6 +1361,7 @@ pub fn (mut element HTMLMediaElement) set_seeking(seeking bool) {
 		return
 	}
 	element.seeking_ = seeking
+	element.invalidate_media_state_style(['seeking'])
 }
 
 pub fn (mut element HTMLMediaElement) set_duration(duration f64) {
@@ -1377,6 +1415,7 @@ pub fn (mut element HTMLMediaElement) set_paused(paused bool) {
 		video.update_natural_dimensions()
 	}
 	element.request_paint_command_rebuild()
+	element.invalidate_media_state_style(['paused', 'playing'])
 }
 
 pub fn (mut element HTMLMediaElement) set_ended(ended bool) {
@@ -1725,6 +1764,7 @@ pub fn (mut element HTMLMediaElement) set_muted(muted bool) {
 	if element.muted_ != muted {
 		element.muted_ = muted
 		element.volume_or_muted_attribute_changed()
+		element.invalidate_media_state_style(['muted'])
 	}
 }
 

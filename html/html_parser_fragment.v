@@ -152,6 +152,7 @@ pub fn install_document_fragment_parsing_hook(document &dom.Document) {
 	install_document_fullscreen_hook(document)
 	editing.install_dom_editing_bridge(document)
 	mut mutable_document := unsafe { &dom.Document(document) }
+	mutable_document.set_media_element_state_query(media_element_matches_pseudo_class)
 	mutable_document.set_html_fragment_parsing_hook(dom.DocumentHTMLFragmentParsingHook{
 		parse_fragment: dom_html_fragment_parse_callback
 		parse_xml_fragment: dom_xml_fragment_parse_callback

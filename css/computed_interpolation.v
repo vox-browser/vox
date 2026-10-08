@@ -9496,6 +9496,12 @@ pub enum CSSPseudoClass {
 	first_child
 	last_child
 	only_child
+	paused
+	playing
+	muted
+	seeking
+	buffering
+	stalled
 	other
 }
 
@@ -9536,6 +9542,12 @@ pub fn pseudo_class_name(pseudo_class CSSPseudoClass) string {
 		.first_child { 'first-child' }
 		.last_child { 'last-child' }
 		.only_child { 'only-child' }
+		.paused { 'paused' }
+		.playing { 'playing' }
+		.muted { 'muted' }
+		.seeking { 'seeking' }
+		.buffering { 'buffering' }
+		.stalled { 'stalled' }
 		.other { 'other' }
 	}
 }
@@ -9577,6 +9589,12 @@ fn pseudo_class_from_name(name string) CSSPseudoClass {
 		'first-child' { .first_child }
 		'last-child' { .last_child }
 		'only-child' { .only_child }
+		'paused' { .paused }
+		'playing' { .playing }
+		'muted' { .muted }
+		'seeking' { .seeking }
+		'buffering' { .buffering }
+		'stalled' { .stalled }
 		else { .other }
 	}
 }
@@ -9991,6 +10009,12 @@ fn css_pseudo_class_from_selector_pseudo_class(pseudo_class PseudoClass) CSSPseu
 		.first_child { .first_child }
 		.last_child { .last_child }
 		.only_child { .only_child }
+		.paused { .paused }
+		.playing { .playing }
+		.muted { .muted }
+		.seeking { .seeking }
+		.buffering { .buffering }
+		.stalled { .stalled }
 		// Boundary: the local invalidation property enum only contains pseudo
 		// classes that StyleInvalidationData.cpp uses for invalidation tracking.
 		else { .other }
@@ -10121,7 +10145,8 @@ fn collect_properties_used_in_has(selector InvalidationSimpleSelector, mut style
 		}
 		.pseudo_class {
 			if in_has && selector.pseudo_class in [.enabled, .disabled, .defined, .placeholder_shown,
-				.checked, .required, .optional, .read_only, .read_write, .link, .any_link, .local_link] {
+				.checked, .required, .optional, .read_only, .read_write, .link, .any_link, .local_link,
+				.paused, .playing, .muted, .seeking, .buffering, .stalled] {
 				style_invalidation_data.pseudo_classes_used_in_has_selectors[selector.pseudo_class] = true
 			} else if in_has && selector.pseudo_class !in [.has, .is_, .where] {
 				// The structural subtree filter can only compare concrete features and the pseudo-classes above.
@@ -10263,7 +10288,8 @@ fn build_invalidation_sets_for_simple_selector_impl(selector InvalidationSimpleS
 					invalidation_set.set_needs_invalidate_pseudo_class(pseudo_class)
 				}
 				.link, .any_link, .local_link, .required, .optional, .read_only, .read_write, .hover, .focus,
-				.focus_visible, .focus_within, .active, .target, .host, .root {
+				.focus_visible, .focus_within, .active, .target, .host, .root,
+				.paused, .playing, .muted, .seeking, .buffering, .stalled {
 					invalidation_set.set_needs_invalidate_pseudo_class(pseudo_class)
 				}
 				else {}

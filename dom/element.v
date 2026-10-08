@@ -5071,6 +5071,12 @@ fn (e &Element) matches_invalidation_pseudo_class(name string) bool {
 		'defined' { e.is_defined() }
 		'placeholder-shown' { e.matches_placeholder_shown_pseudo_class() }
 		'checked' { e.matches_checked_pseudo_class() }
+		'paused' { e.matches_media_pseudo_class(.paused) }
+		'playing' { e.matches_media_pseudo_class(.playing) }
+		'muted' { e.matches_media_pseudo_class(.muted) }
+		'seeking' { e.matches_media_pseudo_class(.seeking) }
+		'buffering' { e.matches_media_pseudo_class(.buffering) }
+		'stalled' { e.matches_media_pseudo_class(.stalled) }
 		'has' {
 			e.affected_by_has_pseudo_class_in_subject_position
 				|| e.affected_by_has_pseudo_class_in_non_subject_position

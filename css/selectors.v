@@ -2031,8 +2031,14 @@ fn matches_pseudo_class(pseudo_class PseudoClassSelector, element &dom.Element, 
 
 			return pseudo_class.an_plus_b_pattern.matches(index)
 		}
-		.playing, .paused, .seeking, .muted, .volume_locked, .buffering, .stalled {
-			// FIXME: Requires HTMLMediaElement state hooks.
+		.playing { return element.matches_media_pseudo_class(.playing) }
+		.paused { return element.matches_media_pseudo_class(.paused) }
+		.seeking { return element.matches_media_pseudo_class(.seeking) }
+		.muted { return element.matches_media_pseudo_class(.muted) }
+		.buffering { return element.matches_media_pseudo_class(.buffering) }
+		.stalled { return element.matches_media_pseudo_class(.stalled) }
+		.volume_locked {
+			// Source's volume is never locked.
 			return false
 		}
 		.target {

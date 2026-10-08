@@ -5239,6 +5239,7 @@ pub mut:
 	trusted_types_hook_                            ?DocumentTrustedTypesHook
 	html_navigation_hook_                          ?DocumentHTMLNavigationHook
 	fullscreen_hook_                               ?DocumentFullscreenHook
+	media_element_state_query_                     ?MediaElementStateQuery
 	layout_engine_handle_                          voidptr = unsafe { nil }
 
 	// Layout
