@@ -194,6 +194,8 @@ fn test_media_element_play_pause_seek_end_and_loop() {
 	media.set_source('/movie.mp4')
 	media.load()!
 	promise := media.play()
+	assert promise.state() == .pending
+	media_test_drain_setup_tasks(media)
 	assert promise.state() == .fulfilled
 	assert !media.paused()
 	assert media.potentially_playing()

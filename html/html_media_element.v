@@ -1506,9 +1506,16 @@ pub fn (mut element HTMLMediaElement) play_element() {
 			element.set_show_poster(false)
 			element.time_marches_on(.normal_playback)
 		}
-		element.fire_event('play')
+		element_pointer := voidptr(&element)
+		element.queue_a_media_element_task(fn [element_pointer] () {
+			mut media := unsafe { &HTMLMediaElement(element_pointer) }
+			media.fire_event('play')
+		})
 		if int(element.ready_state_) <= int(MediaReadyState.have_current_data) {
-			element.fire_event('waiting')
+			element.queue_a_media_element_task(fn [element_pointer] () {
+				mut media := unsafe { &HTMLMediaElement(element_pointer) }
+				media.fire_event('waiting')
+			})
 		} else {
 			element.notify_about_playing()
 			if element.official_playback_position_ == element.duration_ {
@@ -1517,15 +1524,25 @@ pub fn (mut element HTMLMediaElement) play_element() {
 		}
 	} else if int(element.ready_state_) >= int(MediaReadyState.have_future_data) {
 		promises := element.take_pending_play_promises()
-		element.resolve_pending_play_promises(promises)
+		element_pointer := voidptr(&element)
+		element.queue_a_media_element_task(fn [element_pointer, promises] () {
+			media := unsafe { &HTMLMediaElement(element_pointer) }
+			media.resolve_pending_play_promises(promises)
+		})
 	}
 	element.can_autoplay_ = false
 }
 
 pub fn (mut element HTMLMediaElement) notify_about_playing() {
 	promises := element.take_pending_play_promises()
-	element.fire_event('playing')
-	element.resolve_pending_play_promises(promises)
+	starting_position := element.current_playback_position()
+	element_pointer := voidptr(&element)
+	element.queue_a_media_element_task(fn [element_pointer, promises, starting_position] () {
+		mut media := unsafe { &HTMLMediaElement(element_pointer) }
+		media.set_official_playback_position(starting_position)
+		media.fire_event('playing')
+		media.resolve_pending_play_promises(promises)
+	})
 	if hook := element.playback_hooks_.play {
 		hook()
 	}
@@ -1542,7 +1559,17 @@ pub fn (mut element HTMLMediaElement) take_pending_play_promises() []&dom.Promis
 	return promises
 }
 
-pub fn (_ &HTMLMediaElement) resolve_pending_play_promises(promises []&dom.Promise) {
+pub fn (element &HTMLMediaElement) resolve_pending_play_promises(promises []&dom.Promise) {
+	if document := element.document() {
+		context := document.begin_temporary_execution_context()
+		defer { document.end_temporary_execution_context(context) }
+		resolve_media_play_promise_batch(promises)
+		return
+	}
+	resolve_media_play_promise_batch(promises)
+}
+
+fn resolve_media_play_promise_batch(promises []&dom.Promise) {
 	for promise in promises {
 		mut mutable_promise := unsafe { &dom.Promise(promise) }
 		mutable_promise.resolve(dom.js_undefined())

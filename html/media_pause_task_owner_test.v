@@ -63,6 +63,7 @@ fn test_pause_task_defers_ordered_events_and_shared_rejection_but_commits_state_
 	})
 	first := media.play()
 	second := media.play()
+	pause_task_drain_setup(media)
 	target := media.event_target()
 	for name in ['timeupdate', 'pause'] {
 		media.set_on_event(name, &dom.CallbackType{
@@ -102,6 +103,7 @@ fn test_pause_task_defers_ordered_events_and_shared_rejection_but_commits_state_
 fn test_pause_task_keeps_its_captured_batch_when_a_listener_resumes_playback() {
 	mut media := pause_task_owner()!
 	original := media.play()
+	pause_task_drain_setup(media)
 	state := &PauseTaskObservation{}
 	media.set_on_event('timeupdate', &dom.CallbackType{
 		handle_event: fn [media, original, state] (_ &dom.Event, _ ?&dom.EventTarget) dom.JSValue {
@@ -138,6 +140,8 @@ fn test_pause_task_cancellation_and_inactive_delivery_keep_the_actual_owner_boun
 	mut second := pause_task_owner()!
 	first_promise := first.play()
 	second_promise := second.play()
+	pause_task_drain_setup(first)
+	pause_task_drain_setup(second)
 	first.pause()
 	second.pause()
 	assert first.queued_media_task_ids_.len == 1 && second.queued_media_task_ids_.len == 1
