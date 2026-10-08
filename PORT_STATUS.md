@@ -763,12 +763,15 @@ V's standard `crypto.*` modules without shadowing that namespace.
 The IDL-only `Fullscreen` package delegates its state machine to the shared
 translated DOM implementation.
 
-The verified `b80844bb` physical inventory is retained in
-`Build/audit-fixes/source-current-module-loc-b80844bb.json` (SHA256
-`7fdbc96e795dcc72cbd4374e964d7ba4551bd855aa6f56f7047379844ae4c612`).
-The Page-mute slice adds one HTML test and strengthens the older Window timer
-fixture. It updates the media model, DOM Page bridge, Page owner, actual-media
-audibility query and legacy timer adapter; browser/root support remains excluded.
+The verified `9101b5b7` physical inventory is retained in
+`Build/audit-fixes/source-current-module-loc-9101b5b7.json` (SHA256
+`2ed3f2549a4cbc9d6a8b3e13fc68565b187152cc60db0156ab2318bce774c617`).
+The media CSS state slice adds one DOM query bridge and one HTML test. It updates
+actual media state queries, selector matching and typed dependency invalidation,
+applies queued `:has()` ancestor fanout before computing descendant styles, and
+attaches CSS animation test fixtures to their active Navigable. The two root
+page tests and browser/native support remain excluded. Source-unit mappings and
+physical LOC do not establish runtime parity.
 
 The table below refreshes tracked package V LOC on 2026-10-08; upstream counts
 and structural mapping labels retain the pinned inventory. It covers 76 current
@@ -784,7 +787,7 @@ from the current-module totals.
 | `ARIA` | 6 | 1,955 | 2,574 | 410 | Complete |
 | `Animations` | 10 | 5,187 | 4,254 | 1,420 | Complete |
 | `Bindings` | 11 | 2,501 | 2,718 | 1,116 | Complete |
-| `CSS` | 215 | 47,722 | 114,903 | 17,633 | Present |
+| `CSS` | 215 | 47,722 | 114,944 | 17,636 | Present |
 | `Clipboard` | 4 | 1,009 | 1,123 | 409 | Complete |
 | `Compositor` | 6 | 1,687 | 2,403 | 361 | Complete |
 | `Compression` | 2 | 348 | 471 | 143 | Complete |
@@ -792,7 +795,7 @@ from the current-module totals.
 | `CookieStore` | 2 | 850 | 1,059 | 482 | Complete |
 | `CredentialManagement` | 6 | 382 | 420 | 301 | Complete |
 | `Crypto` | 6 | 13,412 | 7,957 | 7,989 | Complete |
-| `DOM` | 59 | 34,859 | 43,430 | 4,694 | Complete |
+| `DOM` | 59 | 34,859 | 43,465 | 4,694 | Complete |
 | `DOMURL` | 4 | 1,039 | 854 | 464 | Complete |
 | `Editing` | 26 | 12,720 | 13,938 | 226 | Complete |
 | `Encoding` | 6 | 769 | 5,356 | 4,495 | Complete |
@@ -806,7 +809,7 @@ from the current-module totals.
 | `Gamepad` | 6 | 1,351 | 860 | 323 | Complete |
 | `Geolocation` | 4 | 643 | 535 | 224 | Complete |
 | `Geometry` | 8 | 2,078 | 2,121 | 1,041 | Complete |
-| `HTML` | 286 | 83,853 | 69,495 | 37,957 | Complete |
+| `HTML` | 286 | 83,853 | 69,536 | 38,106 | Complete |
 | `HighResolutionTime` | 2 | 516 | 500 | 213 | Complete |
 | `IndexedDB` | 19 | 6,991 | 5,455 | 1,388 | Complete |
 | `Infra` | 3 | 385 | 548 | 102 | Complete |
@@ -859,7 +862,7 @@ from the current-module totals.
 | `XLink` | 1 | 16 | 13 | 10 | Complete |
 | `XML` | 2 | 556 | 477 | 164 | Complete |
 | `XPath` | 5 | 435 | 672 | 210 | Complete |
-| **Total** | **1,193** | **329,970** | **432,614** | **156,375** | **74 complete, 4 present, 0 untranslated** |
+| **Total** | **1,193** | **329,970** | **432,731** | **156,527** | **74 complete, 4 present, 0 untranslated** |
 
 ### Live editability refresh
 
