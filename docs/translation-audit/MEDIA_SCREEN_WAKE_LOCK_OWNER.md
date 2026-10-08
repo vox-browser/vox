@@ -176,3 +176,11 @@ Tests: [model](../../html/media_screen_wake_lock_owner_test.v),
 [finalization](../../html/html_media_element_test.v),
 [native page](../../main_media_screen_wake_lock_owner_test.v).
 [Prior started-audio evidence](MEDIA_STARTED_AUDIO_OWNER.md) retains its snapshot.
+
+Follow-up: [Page mute and actual media ownership](MEDIA_PAGE_MUTE_OWNER.md)
+translates the selected Page mute propagation that was open at this snapshot.
+Its final 36-file batches pass in both GC modes, production startup/probe and
+two exact public pause viewports pass, but its native smoke run and unchanged-
+binary recovery remain incomplete after five graphics initialization traps.
+This earlier document's successful 11-case recovery remains historical evidence
+for its own snapshot.

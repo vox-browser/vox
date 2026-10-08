@@ -773,3 +773,27 @@ Agent checks run with `v -old-compiler -enable-globals`. Isolated worktrees use 
   algorithms, physical manager/decoder delivery, native power-management
   transport and automatic GC finalization remain open. The ledger stays
   **32 fixed / 25 partial / 9 open**.
+
+- Page mute (`72210f57`) now dispatches through registered concrete media owners,
+  queries each owner's current Document Page for effective volume and updates
+  actual manager-volume, audible-state, PageClient and Document timer paths.
+  Unchanged assignments suppress callbacks; public properties, playback state,
+  volumechange and video wake locks stay intact. A separate correction
+  (`b80844bb`) preserves the legacy media-record timer adapter and excludes
+  unrelated attached documents. [Evidence](MEDIA_PAGE_MUTE_OWNER.md) retains
+  six final old-implementation runtime failures, the initial heap annotation
+  diagnostic, corrected focused checks and the initial 35/36 timer failures.
+  Final frozen **36/36 affected files pass in each GC mode**, including the
+  **66-case** main regression. Signed production startup/probe and two exact
+  prior pause viewports pass. **Native smoke verification remains incomplete**:
+  the initial run completes three comparisons before graphics startup traps;
+  an unchanged-binary recovery completes zero. Five matching semaphore-disposal
+  crash reports are retained, with the startup trigger unresolved. Consolidated
+  evidence SHA256:
+  `ac4faffd6f10c5baf9a7e36ab9d71d1dedb04326153630d4dbb7eb205adfe1d9`.
+  The 78-owner inventory is **432,614 implementation / 156,375 test V LOC**
+  across **2,196 owned files**; root/native support is excluded. Physical
+  weak-node lookup, automatic GC finalization, general cross-Page registry
+  integration, native play promises, permission/error gates, complete media
+  algorithms, physical playback and native power transport remain open. The
+  ledger stays **32 fixed / 25 partial / 9 open**.

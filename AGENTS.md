@@ -716,8 +716,7 @@
   timer/lifecycle notification; queued playing events do not restart audio.
   Resource-specific track removal re-evaluates audio without clearing started
   state, and adoption routes subsequent notifications through the current Page.
-  Actual Page-wide mute propagation, native play promises and
-  physical playback remain separate work.
+  Native play promises and physical playback remain separate work.
 
 - Eligible playing video retains a screen wake lock from its actual Document's
   Page when a video track is selected and an audio track is enabled. Volume and
@@ -728,6 +727,16 @@
   existing Page counter and notify its client only on first acquisition and last
   release. Automatic GC finalization and native power-management transport remain
   separate work.
+
+- Page mute changes reach registered concrete media owners, update their manager
+  volume hooks and then their audible state. Effective volume queries the current
+  Document's actual Page before element mute and clamped volume. Unchanged Page
+  mute assignments produce no callbacks; public volume/muted values, playback
+  state, volumechange events and screen wake locks are unaffected. Concrete owner
+  transitions notify the owning PageClient and Document; legacy media records
+  update timers only for their matching attached document. Explicit finalization
+  unregisters retained callbacks. Physical weak-node lookup, automatic collector
+  finalization and general cross-Page registry integration remain separate work.
 
 ## Translated module inventory
 
