@@ -1096,6 +1096,7 @@ pub fn (mut p Page) set_page_mute_state(mute_state MuteState) {
 		return
 	}
 	p.mute_state_ = mute_state
+	mut adapter_document_ids := map[i64]bool{}
 	for id in p.media_elements.keys() {
 		mut state := p.media_elements[id] or { continue }
 		state.page_mute_change_count++
@@ -1104,6 +1105,16 @@ pub fn (mut p Page) set_page_mute_state(mute_state MuteState) {
 			if callbacks.mute_state_changed != unsafe { nil } {
 				callbacks.mute_state_changed(callbacks.target)
 			}
+		} else if state.playing_audio && !state.muted {
+			adapter_document_ids[state.document_id.value()] = true
+		}
+	}
+	// State-only media adapters have no concrete owner to deliver the transition.
+	// Reschedule their documents without broadcasting to unrelated documents.
+	for document in p.attached_documents_ {
+		if document.unique_id().value() in adapter_document_ids {
+			mut mutable_document := unsafe { &dom.Document(document) }
+			mutable_document.audio_play_state_changed()
 		}
 	}
 }

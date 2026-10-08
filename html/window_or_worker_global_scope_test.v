@@ -253,11 +253,27 @@ fn test_repeating_timer_becomes_chained_after_deep_nesting() {
 	scope.clear_interval(id)
 }
 
-fn test_hidden_audible_document_keeps_timers_on_their_deadlines() {
+@[heap]
+struct LegacyMuteTimerObservation {
+mut:
+	calls int
+}
+
+fn test_legacy_media_state_adapter_keeps_hidden_timer_mute_transitions() {
 	mut document := dom.Document.create(dom.URL{ value: 'https://example.test/' })
 	document.set_origin(document.url.origin())
 	mut page_model := page.Page.create(1) or { panic(err) }
 	document.set_page(unsafe { &dom.Page(page_model) })
+	mut unrelated_document := dom.Document.create(dom.URL{ value: 'https://unrelated.example.test/' })
+	unrelated_document.set_page(unsafe { &dom.Page(page_model) })
+	observation := &LegacyMuteTimerObservation{}
+	unrelated_document.set_lifecycle_hook(dom.DocumentLifecycleHook{
+		target: voidptr(observation)
+		timer_audio_play_state_changed: fn (target voidptr, _ &dom.Document) {
+			mut state := unsafe { &LegacyMuteTimerObservation(target) }
+			state.calls++
+		}
+	})
 	window := WindowModel.create_top_level(document, none, 'audible-timer-test') or {
 		panic(err)
 	}
@@ -272,6 +288,7 @@ fn test_hidden_audible_document_keeps_timers_on_their_deadlines() {
 	assert hidden_timer.due_time_ms >= hidden_timer.deadline_ms
 	assert math.fmod(hidden_timer.due_time_ms - scope.hidden_timer_grid_origin_ms(), 1_000) == 0
 
+	// Explicit state-record adapter; this ID has no concrete DOM media owner.
 	media_id := dom.UniqueNodeID(987)
 	document.media_element_audio_play_state_changed(media_id, true)
 	assert document.is_playing_audio()
@@ -286,6 +303,7 @@ fn test_hidden_audible_document_keeps_timers_on_their_deadlines() {
 	assert document.is_playing_audio()
 	page_unmuted_timer := scope.active_timers_[timer_id] or { panic('missing page-unmuted timer') }
 	assert page_unmuted_timer.due_time_ms == page_unmuted_timer.deadline_ms
+	assert observation.calls == 0
 
 	document.media_element_audio_play_state_changed(media_id, false)
 	assert !document.is_playing_audio()
