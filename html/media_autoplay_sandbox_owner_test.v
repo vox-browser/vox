@@ -118,6 +118,9 @@ fn test_sandboxed_autoplay_keeps_automatic_preload_none_deferred_but_explicit_lo
 		// A later resumption consults this document's current flag set.
 		document.set_active_sandboxing_flag_bits(0)
 		media.set_autoplay(true)
+		assert fetches.count == 1 && media.paused()
+		media.set_muted(true)
+		media.set_autoplay(true)
 		assert fetches.count == 2
 			&& !media.waiting_for_an_implementation_defined_event_to_fetch_the_resource_
 		autoplay_sandbox_drain(media)

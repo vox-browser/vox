@@ -1065,7 +1065,7 @@ fn (element &HTMLMediaElement) should_wait_for_an_implementation_defined_event_b
 	if !element.preload_attribute_is_in_none_state() || !element.paused_ {
 		return false
 	}
-	if element.is_eligible_for_autoplay() {
+	if element.is_eligible_for_autoplay() && element.is_allowed_to_play() {
 		return false
 	}
 	return true
@@ -1284,7 +1284,7 @@ fn (mut element HTMLMediaElement) process_media_response(response MediaResourceR
 		element.update_ready_state()
 	}
 	element.process_media_data(.complete)
-	if element.is_eligible_for_autoplay() {
+	if element.is_eligible_for_autoplay() && element.is_allowed_to_play() {
 		_ = element.play()
 	}
 }
@@ -1912,6 +1912,22 @@ pub fn (element &HTMLMediaElement) is_eligible_for_autoplay() bool {
 			&& document.is_allowed_to_use_feature(.autoplay)
 	}
 	return true
+}
+
+// HTMLMediaElement.cpp:3081. Playback permission follows the live document,
+// its sticky Window activation and the user agent's per-origin settings.
+pub fn (element &HTMLMediaElement) is_allowed_to_play() bool {
+	document := element.document() or { return true }
+	if window := document.get_window() {
+		if window.has_sticky_activation() {
+			return true
+		}
+	}
+	return match AutoplaySettings.the().decision_for_origin(document, document.origin()) {
+		.allowed { true }
+		.allowed_if_inaudible { element.effective_media_volume() == 0 }
+		.blocked { false }
+	}
 }
 
 pub fn (element &HTMLMediaElement) direction_of_playback() MediaPlaybackDirection {
