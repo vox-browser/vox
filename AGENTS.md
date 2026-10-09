@@ -820,6 +820,13 @@
   Page-wide mute changes retain their separate update-only behavior. Native
   JavaScript play promise bindings remain separate work.
 
+- Permitted V play requests with an unsupported-source MediaError reject with
+  a fresh typed NotSupportedError carrying its current message before appending
+  a promise or entering internal play. Permission denial still wins. Native
+  exception conversion retains Unicode/NUL messages and wrapper identity;
+  native JavaScript play promises and remaining source-failure promise adapters
+  remain separate work.
+
 ## Translated module inventory
 
 All 78 translated LibWeb packages and all 1,193 current module-owned C++

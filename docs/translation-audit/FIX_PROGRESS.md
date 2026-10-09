@@ -980,3 +980,17 @@ Agent checks run with `v -old-compiler -enable-globals`. Isolated worktrees use 
   Permissions Policy, enough-data autoplay timing, complete resource/readiness/
   seek, physical decoding/manager and automatic ownership remain open. The
   historical ledger stays **32 fixed / 25 partial / 9 open**.
+- Unsupported V play rejection (`aa9a5e27`) now uses a fresh typed NotSupportedError
+  with the current MediaError message after permission succeeds. It preserves
+  older requests and owner state without fetching or entering internal play.
+  Two model and one native typed-value assertions fail on unchanged parent;
+  all four new cases and existing permission precedence pass afterward.
+  The focused batch passes **3/3 files**; both frozen selected runs pass
+  **15/15 files**, including the **66-case** main regression. The ordinary
+  production probe, signed startup, both exact prior load viewports and all
+  **11 smoke cases** pass. [Evidence](MEDIA_PLAY_SOURCE_ERROR_OWNER.md), SHA256:
+  `2380b97f5370aaec4238c8cb356fa3e0174c0937247a96a6f342017ca309ba4f`.
+  Native JavaScript play promises, remaining source-failure/ended adapters,
+  raw UTF16 MediaError slots, full resource/readiness/seek, physical decoding
+  and automatic ownership remain open. The ledger stays
+  **32 fixed / 25 partial / 9 open**.

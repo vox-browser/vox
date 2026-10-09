@@ -13,6 +13,22 @@ inventory, not current logic, generated-binding or browser parity. The current
 audit and fix evidence is in `docs/translation-audit/`; mapping a source name or
 a runtime hook does not establish that its complete logic was translated.
 
+## Unsupported media play rejection
+
+Permitted V play rejects code SrcNotSupported with a fresh typed NotSupportedError
+and its current MediaError message. Permission denial remains first; rejection
+preserves prior pending requests and enters no fetch or internal play. Other
+error codes retain the existing permitted path. Implementation and four new
+cases: `aa9a5e27`. The focused three-file batch and all 15 selected files in each
+GC mode pass, including main. Signed production startup, the ordinary probe,
+two exact viewports and all 11 smoke cases pass.
+
+[Unsupported play evidence](../docs/translation-audit/MEDIA_PLAY_SOURCE_ERROR_OWNER.md)
+records the unchanged runtime baseline and exact message/identity checks.
+Native JavaScript play promises, remaining source-failure/ended adapters, full
+resource/readiness/seek, physical manager/decoding and automatic ownership remain
+open. MediaError's V string slot does not establish raw UTF16 parity.
+
 ## Volume-change playback policy owner
 
 Volume/muted changes now queue volumechange, consult the actual owner's current
@@ -27,9 +43,9 @@ production probe, two exact viewports and all 11 smoke cases pass.
 
 [Volume-change policy evidence](../docs/translation-audit/MEDIA_VOLUME_POLICY_OWNER.md)
 retains the corrected runtime baselines, fixture/compiler diagnostics and the
-interrupted focused run. Native JavaScript play promises, typed unsupported
-rejection, enough-data autoplay, Permissions Policy, complete resource/readiness/
-seek, physical decoding/manager and automatic ownership remain open.
+interrupted focused run. Native JavaScript play promises, remaining source-failure
+promise adapters, enough-data autoplay, Permissions Policy, complete resource/
+readiness/seek, physical decoding/manager and automatic ownership remain open.
 
 ## Native getStartDate owner and timeline rounding
 

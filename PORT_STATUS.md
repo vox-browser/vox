@@ -276,8 +276,8 @@ NotAllowedError before checking unsupported media or entering internal play.
 Denial preserves owner state and older pending promises, performs no fetch and
 queues no play tasks. The current Document supplies permission after adoption.
 Native exception conversion preserves record/wrapper identity; native JavaScript
-play promise creation/rejection and the existing unsupported-source string
-adapter remain unported. See
+play promise creation/rejection remains unported. Other source-failure promise
+paths retain separate adapters. See
 [model play permission evidence](docs/translation-audit/MEDIA_PLAY_PERMISSION_OWNER.md).
 Volume and muted changes now queue volumechange before checking current
 Document playback permission. Denial enters internal pause immediately, then
@@ -285,8 +285,18 @@ updates effective volume; timeupdate/pause and captured model-promise rejection
 remain deferred in order. Already-paused blocked owners disable autoplay without
 fetching. Page-wide mute retains its separate update-only path. Native volume/
 muted setters reach this actual owner helper. Native JavaScript play promises,
-typed unsupported-source rejection and complete media algorithms remain open.
-See [volume-change policy evidence](docs/translation-audit/MEDIA_VOLUME_POLICY_OWNER.md).
+remaining source-failure promise adapters and complete media algorithms remain
+open. See
+[volume-change policy evidence](docs/translation-audit/MEDIA_VOLUME_POLICY_OWNER.md).
+
+Permitted V play now rejects MEDIA_ERR_SRC_NOT_SUPPORTED with a fresh typed
+NotSupportedError carrying the actual MediaError message. Permission denial
+still precedes that check; rejection leaves earlier requests and owner state
+intact. Native conversion preserves exception identity and Unicode/NUL messages.
+Native JavaScript play promises and other source-failure promise paths remain
+separate work. See
+[unsupported play evidence](docs/translation-audit/MEDIA_PLAY_SOURCE_ERROR_OWNER.md).
+
 The `:indeterminate`, `:open`, and `:closed` selectors now read live checkbox,
 input-picker, and select-picker state. Control transitions mirror that state at
 the DOM boundary and schedule style invalidation; `switch` checkboxes retain
