@@ -960,3 +960,23 @@ Agent checks run with `v -old-compiler -enable-globals`. Isolated worktrees use 
   unsupported-source string adapter, full Permissions Policy, enough-data
   autoplay timing, full resource/readiness/seek, physical decoding and automatic
   ownership remain open. The ledger stays **32 fixed / 25 partial / 9 open**.
+- Volume/muted playback policy (`46701a87`) now checks the live owner after
+  queuing volumechange, then enters internal pause before effective-volume
+  update when permission is denied. Already-paused blocked owners disable
+  autoplay without fetching; Page-wide mute remains update-only. Four model
+  assertions and the corrected native paused-getter assertion fail against
+  unchanged parent code. All six corrected cases pass. A test-only follow-up
+  (`1221f3da`) grants the allowed-policy prerequisite for the older audibility
+  fixture and keeps its assertions intact. The initial batch passes 20/21.
+  Both complete frozen selected runs pass **21/21 files**, including the
+  **66-case** main regression. Two existing native volume-property files also
+  pass in both GC modes on the same snapshot. The
+  signed production build/probe, startup, both exact prior load viewports and
+  all **11 smoke cases** pass. Initial fixture/compiler failures and an
+  interrupted focused run are retained separately.
+  [Evidence](MEDIA_VOLUME_POLICY_OWNER.md), SHA256:
+  `8b80b01f7c52dbb98984adc54736e27aa281f63431fdd34afd76ba76299e1c39`.
+  Native JavaScript play promises, typed unsupported-source rejection, full
+  Permissions Policy, enough-data autoplay timing, complete resource/readiness/
+  seek, physical decoding/manager and automatic ownership remain open. The
+  historical ledger stays **32 fixed / 25 partial / 9 open**.

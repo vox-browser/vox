@@ -260,7 +260,7 @@ Autoplay eligibility now checks the automatic-features sandbox flag of the
 actual audio/video owner's current Document. Sandboxed autoplay plus
 `preload="none"` remains deferred, while explicit `load()` fetches without
 starting playback. Adoption and later sandbox changes consult live ownership.
-Native play promises, volume-change policy pause, Permissions Policy and
+Native play promises, Permissions Policy and
 enough-data autoplay boundaries remain. See
 [autoplay sandbox and caller evidence](docs/translation-audit/MEDIA_AUTOPLAY_SANDBOX_OWNER.md).
 Resource autoplay now uses is_allowed_to_play through the current Document's
@@ -268,7 +268,7 @@ sticky Window activation, origin settings and effective volume, including actual
 Page mute. Consumed transient activation retains sticky permission. Allowlisting
 and the file exception follow the existing settings translation; adoption reads
 the new Document and Window. Explicit load fetches blocked media without
-autoplaying. Native play promises, volume-triggered policy pause and the complete
+autoplaying. Native play promises and the complete
 enough-data autoplay branch remain unported. See
 [playback permission and resource caller evidence](docs/translation-audit/MEDIA_PLAYBACK_POLICY_OWNER.md).
 The public V model play caller now rejects a denied request with a typed
@@ -276,9 +276,17 @@ NotAllowedError before checking unsupported media or entering internal play.
 Denial preserves owner state and older pending promises, performs no fetch and
 queues no play tasks. The current Document supplies permission after adoption.
 Native exception conversion preserves record/wrapper identity; native JavaScript
-play promise creation/rejection remains unported, as do volume-change policy
-pause and the existing unsupported-source string adapter. See
+play promise creation/rejection and the existing unsupported-source string
+adapter remain unported. See
 [model play permission evidence](docs/translation-audit/MEDIA_PLAY_PERMISSION_OWNER.md).
+Volume and muted changes now queue volumechange before checking current
+Document playback permission. Denial enters internal pause immediately, then
+updates effective volume; timeupdate/pause and captured model-promise rejection
+remain deferred in order. Already-paused blocked owners disable autoplay without
+fetching. Page-wide mute retains its separate update-only path. Native volume/
+muted setters reach this actual owner helper. Native JavaScript play promises,
+typed unsupported-source rejection and complete media algorithms remain open.
+See [volume-change policy evidence](docs/translation-audit/MEDIA_VOLUME_POLICY_OWNER.md).
 The `:indeterminate`, `:open`, and `:closed` selectors now read live checkbox,
 input-picker, and select-picker state. Control transitions mirror that state at
 the DOM boundary and schedule style invalidation; `switch` checkboxes retain

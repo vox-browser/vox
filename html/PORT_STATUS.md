@@ -5,13 +5,31 @@ Upstream reference: `~/code/3rd/ladybird/Libraries/LibWeb/HTML`
 Translation workspace: `~/code/vox2/html`
 Source pin: `963d46a829f3e1b79f44dba9d02afb70654300fa`
 Historical mapping inventory: 2026-09-08
-Selected Source owner slices reviewed: 2026-10-08
+Selected Source owner slices reviewed: 2026-10-09
 
 The historical inventory below found candidate V mappings for 261 HTML source
 files. Its file/symbol/LOC counts and 107-file test result describe that earlier
 inventory, not current logic, generated-binding or browser parity. The current
 audit and fix evidence is in `docs/translation-audit/`; mapping a source name or
 a runtime hook does not establish that its complete logic was translated.
+
+## Volume-change playback policy owner
+
+Volume/muted changes now queue volumechange, consult the actual owner's current
+Document permission and run internal pause when denied before effective-volume
+updates. Native setters reach this shared caller. Internal pause disables
+can-autoplay without selecting an empty resource, commits state/manager pause
+immediately and defers timeupdate/pause plus captured model promise rejection.
+Page-wide mute changes retain their separate update-only path. Implementation
+and six focused cases: `46701a87`; 21 selected files pass in each GC mode,
+including the 66-case main regression. Signed production startup, an ordinary
+production probe, two exact viewports and all 11 smoke cases pass.
+
+[Volume-change policy evidence](../docs/translation-audit/MEDIA_VOLUME_POLICY_OWNER.md)
+retains the corrected runtime baselines, fixture/compiler diagnostics and the
+interrupted focused run. Native JavaScript play promises, typed unsupported
+rejection, enough-data autoplay, Permissions Policy, complete resource/readiness/
+seek, physical decoding/manager and automatic ownership remain open.
 
 ## Native getStartDate owner and timeline rounding
 
@@ -93,7 +111,7 @@ volumechange owner behavior. Implementation and seven focused cases: `c2e279e5`.
 retains the unchanged runtime baseline, all 14 affected files in each GC mode,
 the 66-case main regression, signed production startup, two exact public
 viewports, 13 exact SVG pairs and all 11 smoke cases within unchanged bounds.
-Autoplay-policy pause, muted-style invalidation, actual playback-manager/pipeline
+Muted-style invalidation, actual playback-manager/pipeline
 delivery, other operations, complete media/MSE, realms and physical GC remain open.
 
 ## Native playback-rate property owner
