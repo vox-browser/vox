@@ -819,12 +819,13 @@ V's standard `crypto.*` modules without shadowing that namespace.
 The IDL-only `Fullscreen` package delegates its state machine to the shared
 translated DOM implementation.
 
-The verified `6099af96` physical inventory is retained in
-`Build/audit-fixes/source-current-module-loc-6099af96.json` (SHA256
-`59b6a6caaab87df398efc810cc9d6b9f9c3f5a2460e2d2000f5e49346db3eb16`).
-The autoplay sandbox slice adds one HTML owner test and updates the shared
-eligibility predicate. The root native caller test remains excluded from the
-package counts. The 78 owners contain 2,204 assigned files. Source-unit mappings
+The verified `066d31b8` physical inventory is retained in
+`Build/audit-fixes/source-current-module-loc-066d31b8.json` (SHA256
+`51d4a77b96dd068384ec6c403af69b5ac2706675215e427df96b44dff0d67fe1`).
+The resource playback-policy slice adds one HTML owner test, updates the prior
+sandbox caller fixture and completes the shared permission predicate and
+resource autoplay gates. The root native caller test remains excluded from the
+package counts. The 78 owners contain 2,205 assigned files. Source-unit mappings
 and physical LOC do not establish runtime parity.
 
 The table below refreshes tracked package V LOC on 2026-10-09; upstream counts
@@ -863,7 +864,7 @@ from the current-module totals.
 | `Gamepad` | 6 | 1,351 | 860 | 323 | Complete |
 | `Geolocation` | 4 | 643 | 535 | 224 | Complete |
 | `Geometry` | 8 | 2,078 | 2,121 | 1,041 | Complete |
-| `HTML` | 286 | 83,853 | 69,591 | 39,180 | Complete |
+| `HTML` | 286 | 83,853 | 69,607 | 39,348 | Complete |
 | `HighResolutionTime` | 2 | 516 | 500 | 213 | Complete |
 | `IndexedDB` | 19 | 6,991 | 5,455 | 1,388 | Complete |
 | `Infra` | 3 | 385 | 548 | 102 | Complete |
@@ -916,7 +917,7 @@ from the current-module totals.
 | `XLink` | 1 | 16 | 13 | 10 | Complete |
 | `XML` | 2 | 556 | 477 | 164 | Complete |
 | `XPath` | 5 | 435 | 672 | 210 | Complete |
-| **Total** | **1,193** | **329,970** | **432,786** | **157,697** | **74 complete, 4 present, 0 untranslated** |
+| **Total** | **1,193** | **329,970** | **432,802** | **157,865** | **74 complete, 4 present, 0 untranslated** |
 
 ### Live editability refresh
 
