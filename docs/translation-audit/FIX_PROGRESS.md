@@ -925,3 +925,20 @@ Agent checks run with `v -old-compiler -enable-globals`. Isolated worktrees use 
   Full Permissions Policy, playback-policy integration, enough-data autoplay,
   complete resource/readiness/seek, native play promises, physical decoding and
   automatic ownership remain open. The ledger stays **32 fixed / 25 partial / 9 open**.
+
+- Resource autoplay playback permission (`066d31b8`) now follows the actual
+  owner's live Document origin, sticky Window activation and effective volume.
+  Consumed transient activation remains sticky; adoption discards the old
+  Window/origin permission. Blocked preload-none selection stays deferred;
+  explicit load fetches without autoplaying. Four new model/native cases fail
+  in a compiled runtime baseline and pass afterward; the focused batch passes
+  **3/3 files**. Both final frozen selected runs pass **14/14 files**, including
+  the **66-case** main regression. The ordinary production probe, signed startup
+  and both exact prior load viewports pass. The initial smoke capture stops
+  after inline-node; a complete same-binary recovery passes **11/11 smoke cases**.
+  [Evidence](MEDIA_PLAYBACK_POLICY_OWNER.md) retains every run; SHA256:
+  `8080d5159a9ab2e67eaa4d46d3e41014ec22d6c147dff6550e4e8c03434aa87f`.
+  Public play permission rejection, volume-change policy pause, full Permissions
+  Policy, enough-data autoplay timing, complete resource/readiness/seek, native
+  play promises, physical decoding and automatic ownership remain open. The
+  ledger stays **32 fixed / 25 partial / 9 open**.

@@ -260,9 +260,17 @@ Autoplay eligibility now checks the automatic-features sandbox flag of the
 actual audio/video owner's current Document. Sandboxed autoplay plus
 `preload="none"` remains deferred, while explicit `load()` fetches without
 starting playback. Adoption and later sandbox changes consult live ownership.
-The existing playback-policy, Permissions Policy and enough-data autoplay
-boundaries remain. See
+Public play permission rejection, volume-change policy pause, Permissions
+Policy and enough-data autoplay boundaries remain. See
 [autoplay sandbox and caller evidence](docs/translation-audit/MEDIA_AUTOPLAY_SANDBOX_OWNER.md).
+Resource autoplay now uses is_allowed_to_play through the current Document's
+sticky Window activation, origin settings and effective volume, including actual
+Page mute. Consumed transient activation retains sticky permission. Allowlisting
+and the file exception follow the existing settings translation; adoption reads
+the new Document and Window. Explicit load fetches blocked media without
+autoplaying. Public play permission rejection, volume-triggered policy pause and
+the complete enough-data autoplay branch remain unported. See
+[playback permission and resource caller evidence](docs/translation-audit/MEDIA_PLAYBACK_POLICY_OWNER.md).
 The `:indeterminate`, `:open`, and `:closed` selectors now read live checkbox,
 input-picker, and select-picker state. Control transitions mirror that state at
 the DOM boundary and schedule style invalidation; `switch` checkboxes retain

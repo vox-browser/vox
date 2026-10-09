@@ -793,8 +793,17 @@
   actual audio/video owner's current document. Sandboxed autoplay with
   `preload="none"` stays deferred; explicit `load()` fetches while leaving the
   owner paused. Adoption and later flag changes use the live document.
-  Playback-policy integration, enough-data autoplay substeps and full
-  Permissions Policy remain separate work.
+  Public play permission rejection, volume-change policy pause, enough-data
+  autoplay substeps and full Permissions Policy remain separate work.
+
+- Resource autoplay consults the actual owner's current document origin,
+  sticky Window activation and effective volume through the playback permission
+  predicate. Consumed transient activation preserves sticky permission. Default
+  policy allows inaudible media; origin allowlisting, the file exception and
+  sticky activation can override blocking. Page mute follows its document,
+  including after adoption. Explicit load fetches blocked media without
+  starting autoplay.
+  Public play rejection and volume-change policy pause remain separate work.
 
 ## Translated module inventory
 
