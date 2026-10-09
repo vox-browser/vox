@@ -256,6 +256,13 @@ also enters this branch. Enough-data autoplay substeps, buffering-drop waiting,
 complete resource/readiness/seek, native play promises and physical decoding
 remain unfinished. See
 [canplaythrough task and caller evidence](docs/translation-audit/MEDIA_CANPLAYTHROUGH_TASK_OWNER.md).
+Autoplay eligibility now checks the automatic-features sandbox flag of the
+actual audio/video owner's current Document. Sandboxed autoplay plus
+`preload="none"` remains deferred, while explicit `load()` fetches without
+starting playback. Adoption and later sandbox changes consult live ownership.
+The existing playback-policy, Permissions Policy and enough-data autoplay
+boundaries remain. See
+[autoplay sandbox and caller evidence](docs/translation-audit/MEDIA_AUTOPLAY_SANDBOX_OWNER.md).
 The `:indeterminate`, `:open`, and `:closed` selectors now read live checkbox,
 input-picker, and select-picker state. Control transitions mirror that state at
 the DOM boundary and schedule style invalidation; `switch` checkboxes retain

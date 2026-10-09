@@ -789,6 +789,13 @@
   resource/readiness/seek, native play promises and physical decoding remain
   separate work.
 
+- Autoplay eligibility reads the automatic-features sandbox flag from the
+  actual audio/video owner's current document. Sandboxed autoplay with
+  `preload="none"` stays deferred; explicit `load()` fetches while leaving the
+  owner paused. Adoption and later flag changes use the live document.
+  Playback-policy integration, enough-data autoplay substeps and full
+  Permissions Policy remain separate work.
+
 ## Translated module inventory
 
 All 78 translated LibWeb packages and all 1,193 current module-owned C++

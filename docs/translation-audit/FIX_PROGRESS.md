@@ -908,3 +908,20 @@ Agent checks run with `v -old-compiler -enable-globals`. Isolated worktrees use 
   Enough-data autoplay substeps, buffering-drop waiting, complete
   resource/readiness/seek, native play promises, physical decoding and automatic
   ownership remain open. The ledger stays **32 fixed / 25 partial / 9 open**.
+
+- Autoplay sandbox eligibility (`6099af96`) now checks the automatic-features
+  flag on the actual media owner's live Document. Both audio/video automatic
+  preload-none selections remain deferred; explicit load fetches without
+  automatically playing. Adoption and flag changes use current ownership.
+  Four new model/native cases fail in a compiled baseline and pass afterward.
+  The first default-GC run stops after three observed passes without a final
+  manifest. A complete recovery and the GC-disabled run each pass **11/11
+  selected files**, including the **66-case** main regression. The corrected
+  ordinary production probe, signed startup,
+  both exact prior load viewports and all **11 smoke cases** pass. The initial
+  standalone probe's compiler error is retained separately before any build.
+  [Evidence](MEDIA_AUTOPLAY_SANDBOX_OWNER.md) preserves every run; SHA256:
+  `63a3600780fae90ae45098431582088a4e7cf0d249b7bacae1f278b940c88208`.
+  Full Permissions Policy, playback-policy integration, enough-data autoplay,
+  complete resource/readiness/seek, native play promises, physical decoding and
+  automatic ownership remain open. The ledger stays **32 fixed / 25 partial / 9 open**.
