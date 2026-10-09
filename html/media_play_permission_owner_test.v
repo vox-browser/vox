@@ -72,7 +72,7 @@ fn test_denied_play_rejects_before_resource_selection_and_preserves_owner_state(
 	}
 }
 
-fn test_play_permission_rejection_precedes_the_existing_unsupported_source_check() {
+fn test_play_permission_rejection_precedes_the_unsupported_source_exception() {
 	mut settings := AutoplaySettings.the()
 	old_policy := settings.policy_
 	old_allowlist := settings.allowlist_.clone()
@@ -88,8 +88,9 @@ fn test_play_permission_rejection_precedes_the_existing_unsupported_source_check
 	settings.set_policy(.allow_audio_and_video, [])
 	unsupported := media.play()
 	assert unsupported.state() == .rejected
-	// Preserve the existing unsupported-source representation as its own boundary.
-	assert unsupported.result().to_string_value() == 'NotSupportedError: media source is unsupported'
+	exception := unsupported.result().as_webidl_value()!.dom_exception_?
+	assert exception.name() == 'NotSupportedError' && exception.code() == 9
+	assert exception.message() == 'unsupported source'
 	assert calls.fetches == 0 && calls.starts == 0 && media.pending_play_promises_.len == 0
 }
 

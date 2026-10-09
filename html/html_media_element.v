@@ -1652,7 +1652,8 @@ pub fn (mut element HTMLMediaElement) play() &dom.Promise {
 	}
 	if media_error := element.error_ {
 		if media_error.code == .src_not_supported {
-			promise.reject(dom.js_string('NotSupportedError: media source is unsupported'))
+			promise.reject(dom.js_webidl_value(webidl.dom_exception_value_for_record(
+				webidl.DOMException.create_record('NotSupportedError', media_error.message))))
 			return promise
 		}
 	}
