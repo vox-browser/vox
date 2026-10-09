@@ -7,6 +7,12 @@ import page
 import time
 
 fn test_native_media_properties_and_events_preserve_page_mute_ownership() {
+	// This task/state regression exercises a permitted explicit play request.
+	mut playback_policy := html.AutoplaySettings.the()
+	previous_policy := playback_policy.policy()
+	previous_allowlist := playback_policy.allowlist().map(it.serialize())
+	defer { playback_policy.set_policy(previous_policy, previous_allowlist) }
+	playback_policy.set_policy(.allow_audio_and_video, [])
 	$if !darwin { return }
 	mut owner := page.Page.create(1)!
 	document := parse_browser_navigation_document_for_page_with_response_time('<video id="player"></video><audio id="other"></audio>', dom.URL{

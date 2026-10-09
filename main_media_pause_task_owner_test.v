@@ -7,6 +7,12 @@ import page
 import time
 
 fn test_native_pause_task_orders_actual_dom_events_before_typed_promise_rejection() {
+	// This task/state regression exercises a permitted explicit play request.
+	mut playback_policy := html.AutoplaySettings.the()
+	previous_policy := playback_policy.policy()
+	previous_allowlist := playback_policy.allowlist().map(it.serialize())
+	defer { playback_policy.set_policy(previous_policy, previous_allowlist) }
+	playback_policy.set_policy(.allow_audio_and_video, [])
 	$if !darwin { return }
 	owner := page.Page.create(1)!
 	document := parse_browser_navigation_document_for_page_with_response_time('<video id="player"></video><audio id="other"></audio>', dom.URL{

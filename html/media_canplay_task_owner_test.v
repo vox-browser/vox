@@ -123,6 +123,12 @@ fn test_first_data_precedes_canplay_and_both_tasks_read_live_readiness() {
 }
 
 fn test_canplay_listener_cannot_join_the_already_captured_playing_promise_batch() {
+	// This task/state regression exercises a permitted explicit play request.
+	mut playback_policy := AutoplaySettings.the()
+	previous_policy := playback_policy.policy()
+	previous_allowlist := playback_policy.allowlist().map(it.serialize())
+	defer { playback_policy.set_policy(previous_policy, previous_allowlist) }
+	playback_policy.set_policy(.allow_audio_and_video, [])
 	for next in [MediaReadyState.have_future_data, .have_enough_data] {
 		mut media := canplay_task_owner(true)!
 		media.set_ready_state(.have_current_data)

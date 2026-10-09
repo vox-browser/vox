@@ -50,6 +50,12 @@ fn play_task_take_owner(media &HTMLMediaElement) &Task {
 }
 
 fn test_internal_play_queues_separate_play_and_waiting_tasks_without_resolving_low_ready_promises() {
+	// This task/state regression exercises a permitted explicit play request.
+	mut playback_policy := AutoplaySettings.the()
+	previous_policy := playback_policy.policy()
+	previous_allowlist := playback_policy.allowlist().map(it.serialize())
+	defer { playback_policy.set_policy(previous_policy, previous_allowlist) }
+	playback_policy.set_policy(.allow_audio_and_video, [])
 	mut media := play_task_owner(.have_metadata)!
 	state := &PlayTaskOwnerObservation{}
 	target := media.event_target()
@@ -87,6 +93,12 @@ fn test_internal_play_queues_separate_play_and_waiting_tasks_without_resolving_l
 }
 
 fn test_playing_task_captures_start_position_before_the_manager_starts_and_keeps_batches_separate() {
+	// This task/state regression exercises a permitted explicit play request.
+	mut playback_policy := AutoplaySettings.the()
+	previous_policy := playback_policy.policy()
+	previous_allowlist := playback_policy.allowlist().map(it.serialize())
+	defer { playback_policy.set_policy(previous_policy, previous_allowlist) }
+	playback_policy.set_policy(.allow_audio_and_video, [])
 	mut media := play_task_owner(.have_future_data)!
 	state := &PlayTaskOwnerObservation{ position: 2 }
 	media.set_playback_manager_hooks(MediaPlaybackManagerHooks{
@@ -139,6 +151,12 @@ fn test_playing_task_captures_start_position_before_the_manager_starts_and_keeps
 }
 
 fn test_ready_state_notification_captures_the_pending_batch_before_queuing_playing() {
+	// This task/state regression exercises a permitted explicit play request.
+	mut playback_policy := AutoplaySettings.the()
+	previous_policy := playback_policy.policy()
+	previous_allowlist := playback_policy.allowlist().map(it.serialize())
+	defer { playback_policy.set_policy(previous_policy, previous_allowlist) }
+	playback_policy.set_policy(.allow_audio_and_video, [])
 	mut media := play_task_owner(.have_metadata)!
 	first := media.play()
 	second := media.play()
@@ -196,6 +214,12 @@ fn test_ready_state_notification_captures_the_pending_batch_before_queuing_playi
 }
 
 fn test_queued_playing_is_unconditional_after_pause_and_resolves_its_earlier_captured_batch() {
+	// This task/state regression exercises a permitted explicit play request.
+	mut playback_policy := AutoplaySettings.the()
+	previous_policy := playback_policy.policy()
+	previous_allowlist := playback_policy.allowlist().map(it.serialize())
+	defer { playback_policy.set_policy(previous_policy, previous_allowlist) }
+	playback_policy.set_policy(.allow_audio_and_video, [])
 	mut media := play_task_owner(.have_future_data)!
 	state := &PlayTaskOwnerObservation{}
 	for name in ['play', 'playing', 'timeupdate', 'pause'] {
@@ -221,6 +245,12 @@ fn test_queued_playing_is_unconditional_after_pause_and_resolves_its_earlier_cap
 }
 
 fn test_loading_and_inactive_delivery_cancel_only_the_actual_play_task_owner() {
+	// This task/state regression exercises a permitted explicit play request.
+	mut playback_policy := AutoplaySettings.the()
+	previous_policy := playback_policy.policy()
+	previous_allowlist := playback_policy.allowlist().map(it.serialize())
+	defer { playback_policy.set_policy(previous_policy, previous_allowlist) }
+	playback_policy.set_policy(.allow_audio_and_video, [])
 	mut first := play_task_owner(.have_future_data)!
 	mut second := play_task_owner(.have_future_data)!
 	first_promise := first.play()

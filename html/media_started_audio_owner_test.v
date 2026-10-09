@@ -50,6 +50,12 @@ fn started_audio_client_states(owner &page.Page) []string {
 }
 
 fn test_waiting_playback_stays_silent_and_manager_hooks_precede_audible_notifications() {
+	// This task/state regression exercises a permitted explicit play request.
+	mut playback_policy := AutoplaySettings.the()
+	previous_policy := playback_policy.policy()
+	previous_allowlist := playback_policy.allowlist().map(it.serialize())
+	defer { playback_policy.set_policy(previous_policy, previous_allowlist) }
+	playback_policy.set_policy(.allow_audio_and_video, [])
 	mut media, owner := started_audio_owner(.have_metadata)!
 	document := media.document()?
 	state := &StartedAudioObservation{}
@@ -98,6 +104,12 @@ fn test_waiting_playback_stays_silent_and_manager_hooks_precede_audible_notifica
 }
 
 fn test_started_audio_balances_volume_mute_and_track_changes_without_duplicate_client_calls() {
+	// This task/state regression exercises a permitted explicit play request.
+	mut playback_policy := AutoplaySettings.the()
+	previous_policy := playback_policy.policy()
+	previous_allowlist := playback_policy.allowlist().map(it.serialize())
+	defer { playback_policy.set_policy(previous_policy, previous_allowlist) }
+	playback_policy.set_policy(.allow_audio_and_video, [])
 	mut media, owner := started_audio_owner(.have_future_data)!
 	document := media.document()?
 	media.play()
@@ -132,6 +144,12 @@ fn test_started_audio_balances_volume_mute_and_track_changes_without_duplicate_c
 }
 
 fn test_pause_hook_reentrant_volume_update_reports_the_stop_only_once() {
+	// This task/state regression exercises a permitted explicit play request.
+	mut playback_policy := AutoplaySettings.the()
+	previous_policy := playback_policy.policy()
+	previous_allowlist := playback_policy.allowlist().map(it.serialize())
+	defer { playback_policy.set_policy(previous_policy, previous_allowlist) }
+	playback_policy.set_policy(.allow_audio_and_video, [])
 	mut media, owner := started_audio_owner(.have_future_data)!
 	document := media.document()?
 	media.play()
@@ -156,6 +174,12 @@ fn test_pause_hook_reentrant_volume_update_reports_the_stop_only_once() {
 }
 
 fn test_resource_failure_removes_audibility_without_synthesizing_pause() {
+	// This task/state regression exercises a permitted explicit play request.
+	mut playback_policy := AutoplaySettings.the()
+	previous_policy := playback_policy.policy()
+	previous_allowlist := playback_policy.allowlist().map(it.serialize())
+	defer { playback_policy.set_policy(previous_policy, previous_allowlist) }
+	playback_policy.set_policy(.allow_audio_and_video, [])
 	mut media, owner := started_audio_owner(.have_future_data)!
 	document := media.document()?
 	media.play()
@@ -174,6 +198,12 @@ fn test_resource_failure_removes_audibility_without_synthesizing_pause() {
 }
 
 fn test_actual_media_start_and_pause_realign_hidden_document_timers() {
+	// This task/state regression exercises a permitted explicit play request.
+	mut playback_policy := AutoplaySettings.the()
+	previous_policy := playback_policy.policy()
+	previous_allowlist := playback_policy.allowlist().map(it.serialize())
+	defer { playback_policy.set_policy(previous_policy, previous_allowlist) }
+	playback_policy.set_policy(.allow_audio_and_video, [])
 	mut media, owner := started_audio_owner(.have_metadata)!
 	mut document := media.document()?
 	window := unsafe { &WindowModel(document.get_window()?) }
@@ -201,6 +231,12 @@ fn test_actual_media_start_and_pause_realign_hidden_document_timers() {
 }
 
 fn test_waiting_media_notifies_the_adopting_page_and_audible_adoption_transfers_document_state() {
+	// This task/state regression exercises a permitted explicit play request.
+	mut playback_policy := AutoplaySettings.the()
+	previous_policy := playback_policy.policy()
+	previous_allowlist := playback_policy.allowlist().map(it.serialize())
+	defer { playback_policy.set_policy(previous_policy, previous_allowlist) }
+	playback_policy.set_policy(.allow_audio_and_video, [])
 	mut media, first_owner := started_audio_owner(.have_metadata)!
 	mut first := media.document()?
 	// Keep the element disconnected so adoption does not invoke removed_from's

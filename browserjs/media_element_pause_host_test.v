@@ -56,6 +56,12 @@ fn test_native_pause_descriptor_brand_precedes_replay_and_ignores_extra_argument
 }
 
 fn test_native_pause_loaded_owner_commits_the_live_clock_and_does_not_refetch() {
+	// This task/state regression exercises a permitted explicit play request.
+	mut playback_policy := html.AutoplaySettings.the()
+	previous_policy := playback_policy.policy()
+	previous_allowlist := playback_policy.allowlist().map(it.serialize())
+	defer { playback_policy.set_policy(previous_policy, previous_allowlist) }
+	playback_policy.set_policy(.allow_audio_and_video, [])
 	$if !darwin { return }
 	mut runtime, mut media := native_pause_fixture(none)!
 	defer { runtime.close() }

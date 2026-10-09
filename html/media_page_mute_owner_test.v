@@ -69,6 +69,12 @@ fn page_mute_observe(mut media HTMLMediaElement) &PageMuteObservation {
 }
 
 fn test_page_mute_updates_each_actual_owner_without_volume_events_or_wake_lock_changes() {
+	// This task/state regression exercises a permitted explicit play request.
+	mut playback_policy := AutoplaySettings.the()
+	previous_policy := playback_policy.policy()
+	previous_allowlist := playback_policy.allowlist().map(it.serialize())
+	defer { playback_policy.set_policy(previous_policy, previous_allowlist) }
+	playback_policy.set_policy(.allow_audio_and_video, [])
 	mut owner := page.Page.create(1)!
 	first_document := page_mute_document(owner, 'video')!
 	second_document := page_mute_document(owner, 'audio')!
@@ -109,6 +115,12 @@ fn test_page_mute_updates_each_actual_owner_without_volume_events_or_wake_lock_c
 }
 
 fn test_muted_page_precedes_model_creation_and_stays_isolated_from_other_pages() {
+	// This task/state regression exercises a permitted explicit play request.
+	mut playback_policy := AutoplaySettings.the()
+	previous_policy := playback_policy.policy()
+	previous_allowlist := playback_policy.allowlist().map(it.serialize())
+	defer { playback_policy.set_policy(previous_policy, previous_allowlist) }
+	playback_policy.set_policy(.allow_audio_and_video, [])
 	mut owner := page.Page.create(1)!
 	owner.set_page_mute_state(.muted)
 	document := page_mute_document(owner, 'audio')!
@@ -138,6 +150,12 @@ fn test_muted_page_precedes_model_creation_and_stays_isolated_from_other_pages()
 }
 
 fn test_page_mute_realigns_actual_hidden_timers_only_when_audibility_changes() {
+	// This task/state regression exercises a permitted explicit play request.
+	mut playback_policy := AutoplaySettings.the()
+	previous_policy := playback_policy.policy()
+	previous_allowlist := playback_policy.allowlist().map(it.serialize())
+	defer { playback_policy.set_policy(previous_policy, previous_allowlist) }
+	playback_policy.set_policy(.allow_audio_and_video, [])
 	mut owner := page.Page.create(1)!
 	mut document := page_mute_document(owner, 'audio')!
 	mut media := page_mute_load(document, .have_future_data)!

@@ -59,6 +59,12 @@ fn test_canplaythrough_requires_nonempty_network_and_a_changed_enough_data_desti
 }
 
 fn test_canplaythrough_follows_first_data_canplay_and_the_captured_playing_batch() {
+	// This task/state regression exercises a permitted explicit play request.
+	mut playback_policy := AutoplaySettings.the()
+	previous_policy := playback_policy.policy()
+	previous_allowlist := playback_policy.allowlist().map(it.serialize())
+	defer { playback_policy.set_policy(previous_policy, previous_allowlist) }
+	playback_policy.set_policy(.allow_audio_and_video, [])
 	mut media := canplaythrough_owner(true)!
 	first := media.play()
 	second := media.play()

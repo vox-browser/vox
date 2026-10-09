@@ -53,6 +53,12 @@ fn media_wake_client_states(owner &page.Page) []string {
 }
 
 fn test_video_play_eligibility_and_pause_release_follow_the_actual_caller_order() {
+	// This task/state regression exercises a permitted explicit play request.
+	mut playback_policy := AutoplaySettings.the()
+	previous_policy := playback_policy.policy()
+	previous_allowlist := playback_policy.allowlist().map(it.serialize())
+	defer { playback_policy.set_policy(previous_policy, previous_allowlist) }
+	playback_policy.set_policy(.allow_audio_and_video, [])
 	mut media, owner := media_wake_owner('video', true, true, .have_future_data)!
 	state := &MediaWakeLockObservation{}
 	media.set_playback_manager_hooks(MediaPlaybackManagerHooks{
@@ -81,6 +87,12 @@ fn test_video_play_eligibility_and_pause_release_follow_the_actual_caller_order(
 }
 
 fn test_wake_lock_requires_video_and_both_track_roles_but_does_not_depend_on_muted_volume() {
+	// This task/state regression exercises a permitted explicit play request.
+	mut playback_policy := AutoplaySettings.the()
+	previous_policy := playback_policy.policy()
+	previous_allowlist := playback_policy.allowlist().map(it.serialize())
+	defer { playback_policy.set_policy(previous_policy, previous_allowlist) }
+	playback_policy.set_policy(.allow_audio_and_video, [])
 	for item in [['audio', 'both'], ['video', 'no-audio'], ['video', 'no-video']] {
 		mut media, owner := media_wake_owner(item[0], item[1] != 'no-audio', item[1] != 'no-video', .have_future_data)!
 		media.play()
@@ -115,6 +127,12 @@ fn test_wake_lock_requires_video_and_both_track_roles_but_does_not_depend_on_mut
 }
 
 fn test_ready_state_and_ended_transitions_release_and_reacquire_without_duplicate_locks() {
+	// This task/state regression exercises a permitted explicit play request.
+	mut playback_policy := AutoplaySettings.the()
+	previous_policy := playback_policy.policy()
+	previous_allowlist := playback_policy.allowlist().map(it.serialize())
+	defer { playback_policy.set_policy(previous_policy, previous_allowlist) }
+	playback_policy.set_policy(.allow_audio_and_video, [])
 	mut media, owner := media_wake_owner('video', true, true, .have_metadata)!
 	media.play()
 	assert !owner.is_screen_wake_lock_active()
@@ -138,6 +156,12 @@ fn test_ready_state_and_ended_transitions_release_and_reacquire_without_duplicat
 }
 
 fn test_two_media_owners_share_the_page_lock_and_resource_failure_releases_the_last_owner() {
+	// This task/state regression exercises a permitted explicit play request.
+	mut playback_policy := AutoplaySettings.the()
+	previous_policy := playback_policy.policy()
+	previous_allowlist := playback_policy.allowlist().map(it.serialize())
+	defer { playback_policy.set_policy(previous_policy, previous_allowlist) }
+	playback_policy.set_policy(.allow_audio_and_video, [])
 	url := dom.URL{ value: 'https://shared-media-wake.example.test/' }
 	mut document := parse_navigation_document('<video id="first"></video><video id="second"></video>', url, url.origin(), none)!
 	owner := page.Page.create(1)!
@@ -161,6 +185,12 @@ fn test_two_media_owners_share_the_page_lock_and_resource_failure_releases_the_l
 }
 
 fn test_held_wake_lock_releases_the_original_page_and_reacquires_the_adopting_page() {
+	// This task/state regression exercises a permitted explicit play request.
+	mut playback_policy := AutoplaySettings.the()
+	previous_policy := playback_policy.policy()
+	previous_allowlist := playback_policy.allowlist().map(it.serialize())
+	defer { playback_policy.set_policy(previous_policy, previous_allowlist) }
+	playback_policy.set_policy(.allow_audio_and_video, [])
 	mut media, first_owner := media_wake_owner('video', true, true, .have_future_data)!
 	mut first := media.document()?
 	element := first.get_element_by_id('player')?

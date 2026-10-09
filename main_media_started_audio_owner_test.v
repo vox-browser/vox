@@ -7,6 +7,12 @@ import page
 import time
 
 fn test_native_volume_and_pause_bindings_observe_actual_started_audio_and_owner_notifications() {
+	// This task/state regression exercises a permitted explicit play request.
+	mut playback_policy := html.AutoplaySettings.the()
+	previous_policy := playback_policy.policy()
+	previous_allowlist := playback_policy.allowlist().map(it.serialize())
+	defer { playback_policy.set_policy(previous_policy, previous_allowlist) }
+	playback_policy.set_policy(.allow_audio_and_video, [])
 	$if !darwin { return }
 	owner := page.Page.create(1)!
 	document := parse_browser_navigation_document_for_page_with_response_time('<audio id="player"></audio><audio id="other"></audio>', dom.URL{

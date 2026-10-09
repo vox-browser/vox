@@ -56,6 +56,12 @@ fn pause_task_exception(promise &dom.Promise) &webidl.DOMException {
 }
 
 fn test_pause_task_defers_ordered_events_and_shared_rejection_but_commits_state_immediately() {
+	// This task/state regression exercises a permitted explicit play request.
+	mut playback_policy := AutoplaySettings.the()
+	previous_policy := playback_policy.policy()
+	previous_allowlist := playback_policy.allowlist().map(it.serialize())
+	defer { playback_policy.set_policy(previous_policy, previous_allowlist) }
+	playback_policy.set_policy(.allow_audio_and_video, [])
 	mut media := pause_task_owner()!
 	state := &PauseTaskObservation{ position: 2 }
 	media.set_playback_manager_hooks(MediaPlaybackManagerHooks{
@@ -101,6 +107,12 @@ fn test_pause_task_defers_ordered_events_and_shared_rejection_but_commits_state_
 }
 
 fn test_pause_task_keeps_its_captured_batch_when_a_listener_resumes_playback() {
+	// This task/state regression exercises a permitted explicit play request.
+	mut playback_policy := AutoplaySettings.the()
+	previous_policy := playback_policy.policy()
+	previous_allowlist := playback_policy.allowlist().map(it.serialize())
+	defer { playback_policy.set_policy(previous_policy, previous_allowlist) }
+	playback_policy.set_policy(.allow_audio_and_video, [])
 	mut media := pause_task_owner()!
 	original := media.play()
 	pause_task_drain_setup(media)
@@ -136,6 +148,12 @@ fn test_pause_task_keeps_its_captured_batch_when_a_listener_resumes_playback() {
 }
 
 fn test_pause_task_cancellation_and_inactive_delivery_keep_the_actual_owner_boundary() {
+	// This task/state regression exercises a permitted explicit play request.
+	mut playback_policy := AutoplaySettings.the()
+	previous_policy := playback_policy.policy()
+	previous_allowlist := playback_policy.allowlist().map(it.serialize())
+	defer { playback_policy.set_policy(previous_policy, previous_allowlist) }
+	playback_policy.set_policy(.allow_audio_and_video, [])
 	mut first := pause_task_owner()!
 	mut second := pause_task_owner()!
 	first_promise := first.play()

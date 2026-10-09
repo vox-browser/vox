@@ -43,6 +43,12 @@ fn test_media_selectors_query_initial_lazy_and_created_owners_and_respect_namesp
 }
 
 fn test_resource_less_play_and_pause_synchronously_change_playing_and_paused_selectors() {
+	// This task/state regression exercises a permitted explicit play request.
+	mut playback_policy := AutoplaySettings.the()
+	previous_policy := playback_policy.policy()
+	previous_allowlist := playback_policy.allowlist().map(it.serialize())
+	defer { playback_policy.set_policy(previous_policy, previous_allowlist) }
+	playback_policy.set_policy(.allow_audio_and_video, [])
 	document := media_css_document('<video id="player"></video>')!
 	element := document.get_element_by_id('player')?
 	mut media := html_media_element_for_dom_element(element)?
