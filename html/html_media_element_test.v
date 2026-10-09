@@ -476,6 +476,12 @@ fn test_media_element_no_source_and_unsupported_source() {
 }
 
 fn test_media_element_concrete_removal_fullscreen_children_and_fetch_overloads() {
+	// Removal follows a permitted explicit play request on this DOM owner.
+	mut playback_policy := AutoplaySettings.the()
+	previous_policy := playback_policy.policy()
+	previous_allowlist := playback_policy.allowlist().map(it.serialize())
+	defer { playback_policy.set_policy(previous_policy, previous_allowlist) }
+	playback_policy.set_policy(.allow_audio_and_video, [])
 	mut document := dom.Document.create(dom.URL{ value: 'https://example.test/' })
 	mut navigable := &dom.Navigable{
 		active_document_:          document
