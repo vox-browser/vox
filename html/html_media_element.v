@@ -1841,6 +1841,9 @@ pub fn (mut element HTMLMediaElement) volume_or_muted_attribute_changed() {
 		mut media := unsafe { &HTMLMediaElement(element_pointer) }
 		media.fire_event('volumechange')
 	})
+	if !element.is_allowed_to_play() {
+		element.pause_element()
+	}
 	element.update_volume()
 }
 
