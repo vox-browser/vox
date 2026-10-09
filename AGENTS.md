@@ -793,7 +793,7 @@
   actual audio/video owner's current document. Sandboxed autoplay with
   `preload="none"` stays deferred; explicit `load()` fetches while leaving the
   owner paused. Adoption and later flag changes use the live document.
-  Public play permission rejection, volume-change policy pause, enough-data
+  Native JavaScript play promises, volume-change policy pause, enough-data
   autoplay substeps and full Permissions Policy remain separate work.
 
 - Resource autoplay consults the actual owner's current document origin,
@@ -803,7 +803,14 @@
   sticky activation can override blocking. Page mute follows its document,
   including after adoption. Explicit load fetches blocked media without
   starting autoplay.
-  Public play rejection and volume-change policy pause remain separate work.
+  Native play promises and volume-change policy pause remain separate work.
+
+- Public V model play rejects denied requests with a typed `NotAllowedError`
+  before the existing unsupported-source check or internal play steps. It
+  preserves earlier pending promises and queues no play tasks or fetch. The
+  current document supplies permission after adoption; sticky activation still
+  permits explicit play when sandboxing blocks autoplay. Native JavaScript
+  play promise bindings and volume-change policy pause remain separate work.
 
 ## Translated module inventory
 

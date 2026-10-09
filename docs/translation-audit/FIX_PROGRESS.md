@@ -942,3 +942,21 @@ Agent checks run with `v -old-compiler -enable-globals`. Isolated worktrees use 
   Policy, enough-data autoplay timing, complete resource/readiness/seek, native
   play promises, physical decoding and automatic ownership remain open. The
   ledger stays **32 fixed / 25 partial / 9 open**.
+
+- Public V model play permission (`6520f81a`) now rejects with typed
+  NotAllowedError before unsupported media, pending-promise insertion or
+  internal play. Denial preserves earlier requests and performs no fetch or
+  play-task scheduling. The corrected new tests compile against the parent and
+  fail at runtime; all **five model/native cases** pass afterward. Thirty-five
+  existing cases explicitly allow playback while preserving their assertions;
+  the missed removal prerequisite is added in `d624b8d3`. Both complete frozen
+  recovery runs pass **25/25 files**, including the **66-case** main regression.
+  Earlier fixture/compiler failures and partial runs are retained separately.
+  The signed production bundle, corrected ordinary probe, startup, both exact
+  prior load viewports and all **11 smoke cases** pass with unchanged
+  implementation bytes. [Evidence](MEDIA_PLAY_PERMISSION_OWNER.md), SHA256:
+  `dc6997bc35a5b114304b5f0c8fa3f285505f1b58c919bbaf67d8c3a936bc2f46`.
+  Native JavaScript play promises, volume-change policy pause, the existing
+  unsupported-source string adapter, full Permissions Policy, enough-data
+  autoplay timing, full resource/readiness/seek, physical decoding and automatic
+  ownership remain open. The ledger stays **32 fixed / 25 partial / 9 open**.
