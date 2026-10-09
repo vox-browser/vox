@@ -235,6 +235,12 @@ fn test_media_element_play_pause_seek_end_and_loop() {
 }
 
 fn test_media_element_publishes_audible_state_to_its_document() {
+	// Exercise audibility transitions with playback permitted.
+	mut playback_policy := AutoplaySettings.the()
+	previous_policy := playback_policy.policy()
+	previous_allowlist := playback_policy.allowlist().map(it.serialize())
+	defer { playback_policy.set_policy(previous_policy, previous_allowlist) }
+	playback_policy.set_policy(.allow_audio_and_video, [])
 	mut document := dom.Document.create(dom.URL{ value: 'https://example.test/' })
 	page_model := page.Page.create(1) or { panic(err) }
 	document.set_page(unsafe { &dom.Page(page_model) })
