@@ -891,3 +891,20 @@ Agent checks run with `v -old-compiler -enable-globals`. Isolated worktrees use 
   Canplaythrough, full resource/readiness/seek and autoplay behavior, native play
   promises, physical decoding and automatic ownership remain open. The ledger
   stays **32 fixed / 25 partial / 9 open**.
+
+- Canplaythrough notification (`f3c941ee`) now queues on the actual owner's
+  changed nonempty-network transition into enough data, after any first-data,
+  canplay and captured-batch playing task. The original play promises resolve
+  before canplaythrough; future-to-enough queues only this notification.
+  Seven new model/native/MediaSource cases expose the previous synchronous
+  behavior in a compiled runtime baseline and pass afterward. The initial
+  fixture compiler error is retained separately. Both final frozen selected
+  neighbor runs pass **19/19 files**, including the **66-case** main regression;
+  each is one complete single-job run. Signed production startup, the ordinary
+  native audio/video probe, both exact prior load regression viewports and all
+  **11 smoke cases** pass on the unchanged binary. [Evidence](MEDIA_CANPLAYTHROUGH_TASK_OWNER.md)
+  retains all baseline failures, frozen inputs, commands and artifacts; SHA256:
+  `0305149edce6527dbaa4f2f97b9229d82418aba8cae7c10cc2818b3afbc8daa6`.
+  Enough-data autoplay substeps, buffering-drop waiting, complete
+  resource/readiness/seek, native play promises, physical decoding and automatic
+  ownership remain open. The ledger stays **32 fixed / 25 partial / 9 open**.
