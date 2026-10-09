@@ -811,14 +811,13 @@ V's standard `crypto.*` modules without shadowing that namespace.
 The IDL-only `Fullscreen` package delegates its state machine to the shared
 translated DOM implementation.
 
-The verified `f3c941ee` physical inventory is retained in
-`Build/audit-fixes/source-current-module-loc-f3c941ee.json` (SHA256
-`ae5722fa6d391ca279af81c88e055a1371129ff11fd5f5ef4fcb067a6299364a`).
-The canplaythrough readiness slice adds one HTML test and updates the media model,
-canplay/first-data fixtures and actual MediaSource coded-frame caller test.
-The root native caller test remains excluded from the package counts.
-The 78 owners contain 2,203 assigned files. Source-unit mappings and physical
-LOC do not establish runtime parity.
+The verified `6099af96` physical inventory is retained in
+`Build/audit-fixes/source-current-module-loc-6099af96.json` (SHA256
+`59b6a6caaab87df398efc810cc9d6b9f9c3f5a2460e2d2000f5e49346db3eb16`).
+The autoplay sandbox slice adds one HTML owner test and updates the shared
+eligibility predicate. The root native caller test remains excluded from the
+package counts. The 78 owners contain 2,204 assigned files. Source-unit mappings
+and physical LOC do not establish runtime parity.
 
 The table below refreshes tracked package V LOC on 2026-10-09; upstream counts
 and structural mapping labels retain the pinned inventory. It covers 76 current
@@ -856,7 +855,7 @@ from the current-module totals.
 | `Gamepad` | 6 | 1,351 | 860 | 323 | Complete |
 | `Geolocation` | 4 | 643 | 535 | 224 | Complete |
 | `Geometry` | 8 | 2,078 | 2,121 | 1,041 | Complete |
-| `HTML` | 286 | 83,853 | 69,588 | 39,055 | Complete |
+| `HTML` | 286 | 83,853 | 69,591 | 39,180 | Complete |
 | `HighResolutionTime` | 2 | 516 | 500 | 213 | Complete |
 | `IndexedDB` | 19 | 6,991 | 5,455 | 1,388 | Complete |
 | `Infra` | 3 | 385 | 548 | 102 | Complete |
@@ -909,7 +908,7 @@ from the current-module totals.
 | `XLink` | 1 | 16 | 13 | 10 | Complete |
 | `XML` | 2 | 556 | 477 | 164 | Complete |
 | `XPath` | 5 | 435 | 672 | 210 | Complete |
-| **Total** | **1,193** | **329,970** | **432,783** | **157,572** | **74 complete, 4 present, 0 untranslated** |
+| **Total** | **1,193** | **329,970** | **432,786** | **157,697** | **74 complete, 4 present, 0 untranslated** |
 
 ### Live editability refresh
 
