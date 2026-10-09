@@ -845,14 +845,14 @@ V's standard `crypto.*` modules without shadowing that namespace.
 The IDL-only `Fullscreen` package delegates its state machine to the shared
 translated DOM implementation.
 
-The verified `1221f3da` physical inventory is retained in
-`Build/audit-fixes/source-current-module-loc-1221f3da.json` (SHA256
-`3209338a68e497f7321754606365396bdf538e65578d857d68834223c454703b`).
-The volume-change playback-policy slice adds one HTML owner test, completes the
-shared caller pause check and grants an allowed-policy prerequisite to the older
-audibility fixture. Root and browser integration tests remain excluded from
-package counts. The 78 owners contain 2,207 assigned files. Source-unit mappings
-and physical LOC do not establish runtime parity.
+The verified `aa9a5e27` physical inventory is retained in
+`Build/audit-fixes/source-current-module-loc-aa9a5e27.json` (SHA256
+`166070c623211b8600db5300c89ed5219375d0e4045728c12117361ad8cca27c`).
+The unsupported play slice adds one HTML owner test, replaces the public caller's
+diagnostic string with a typed exception and updates the permission-precedence
+case. Root and browser integration tests remain excluded from package counts.
+The 78 owners contain 2,208 assigned files. Source-unit mappings and physical
+LOC do not establish runtime parity.
 
 The table below refreshes tracked package V LOC on 2026-10-09; upstream counts
 and structural mapping labels retain the pinned inventory. It covers 76 current
@@ -890,7 +890,7 @@ from the current-module totals.
 | `Gamepad` | 6 | 1,351 | 860 | 323 | Complete |
 | `Geolocation` | 4 | 643 | 535 | 224 | Complete |
 | `Geometry` | 8 | 2,078 | 2,121 | 1,041 | Complete |
-| `HTML` | 286 | 83,853 | 69,616 | 39,892 | Complete |
+| `HTML` | 286 | 83,853 | 69,617 | 40,013 | Complete |
 | `HighResolutionTime` | 2 | 516 | 500 | 213 | Complete |
 | `IndexedDB` | 19 | 6,991 | 5,455 | 1,388 | Complete |
 | `Infra` | 3 | 385 | 548 | 102 | Complete |
@@ -943,7 +943,7 @@ from the current-module totals.
 | `XLink` | 1 | 16 | 13 | 10 | Complete |
 | `XML` | 2 | 556 | 477 | 164 | Complete |
 | `XPath` | 5 | 435 | 672 | 210 | Complete |
-| **Total** | **1,193** | **329,970** | **432,811** | **158,409** | **74 complete, 4 present, 0 untranslated** |
+| **Total** | **1,193** | **329,970** | **432,812** | **158,530** | **74 complete, 4 present, 0 untranslated** |
 
 ### Live editability refresh
 
