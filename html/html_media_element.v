@@ -1906,7 +1906,10 @@ pub fn (element &HTMLMediaElement) is_eligible_for_autoplay() bool {
 	}
 	if html_element := element.associated_element_ {
 		dom_element := unsafe { &dom.Element(html_element) }
-		return dom_element.document().is_allowed_to_use_feature(.autoplay)
+		document := dom_element.document()
+		sandboxing := SandboxingFlagSet{ bits: document.active_sandboxing_flag_bits() }
+		return !sandboxing.contains(.sandboxed_automatic_features)
+			&& document.is_allowed_to_use_feature(.autoplay)
 	}
 	return true
 }
