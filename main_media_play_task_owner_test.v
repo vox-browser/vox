@@ -54,8 +54,8 @@ fn test_actual_media_play_tasks_reach_native_event_listeners_with_the_captured_s
 			state.position = 8
 		}
 	})
-	// The compact JavaScript play stub is a separate boundary. Enter through the
-	// actual translated V caller, then observe its native DOM event delivery.
+	// Enter through the V convenience caller and observe its native DOM events;
+	// the native play promise binding has its own focused caller regressions.
 	first := media.play()
 	second := media.play()
 	assert clock.starts == 1 && first.state() == .pending && second.state() == .pending

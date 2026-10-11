@@ -27,7 +27,7 @@ fn test_model_unsupported_play_reaches_native_typed_exception_identity_with_its_
 	for kind in ['video', 'audio'] {
 		mut media := html.html_media_element_for_dom_element(document.get_element_by_id(kind)?)?
 		media.handle_media_source_failure([], 'Decoder \x00 🎬 failed')
-		// The actual V caller owns these promises; native JS play bindings remain separate.
+		// Exercise the V convenience caller and native exception wrapper identity.
 		first := media.play()
 		second := media.play()
 		assert first.state() == .rejected && second.state() == .rejected

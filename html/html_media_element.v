@@ -1045,7 +1045,8 @@ fn (mut element HTMLMediaElement) select_resource_for_current_load() ! {
 		code: .src_not_supported
 		message: last_error
 	}
-	element.reject_pending_play_promises(dom.js_string('NotSupportedError: ${last_error}'))
+	element.reject_pending_play_promises(dom.js_webidl_value(webidl.dom_exception_value_for_record(
+		webidl.DOMException.create_record('NotSupportedError', last_error))))
 	element.fire_event('error')
 	return error('NotSupportedError: ${last_error}')
 }
@@ -1643,7 +1644,14 @@ pub fn (element &HTMLMediaElement) potentially_playing() bool {
 }
 
 pub fn (mut element HTMLMediaElement) play() &dom.Promise {
-	mut promise := dom.Promise.create()
+	mut context := webidl.PromiseContext{}
+	if document := element.document() {
+		settings := document.relevant_settings_object()
+		if settings != unsafe { nil } {
+			context = unsafe { &EnvironmentSettingsObject(settings) }.stream_promise_context()
+		}
+	}
+	mut promise := dom.Promise.from_webidl(webidl.create_promise_for(context))
 	if !element.is_allowed_to_play() {
 		promise.reject(dom.js_webidl_value(webidl.dom_exception_value_for_record(
 			webidl.DOMException.create_record('NotAllowedError',
@@ -1752,7 +1760,17 @@ fn resolve_media_play_promise_batch(promises []&dom.Promise) {
 	}
 }
 
-pub fn (_ &HTMLMediaElement) reject_pending_play_promises_with(promises []&dom.Promise, reason dom.JSValue) {
+pub fn (element &HTMLMediaElement) reject_pending_play_promises_with(promises []&dom.Promise, reason dom.JSValue) {
+	if document := element.document() {
+		context := document.begin_temporary_execution_context()
+		defer { document.end_temporary_execution_context(context) }
+		reject_media_play_promise_batch(promises, reason)
+		return
+	}
+	reject_media_play_promise_batch(promises, reason)
+}
+
+fn reject_media_play_promise_batch(promises []&dom.Promise, reason dom.JSValue) {
 	for promise in promises {
 		mut mutable_promise := unsafe { &dom.Promise(promise) }
 		mutable_promise.reject(reason)
@@ -1762,12 +1780,6 @@ pub fn (_ &HTMLMediaElement) reject_pending_play_promises_with(promises []&dom.P
 fn (element &HTMLMediaElement) reject_pending_play_promises_with_abort_error(promises []&dom.Promise, message string) {
 	reason := dom.js_webidl_value(webidl.dom_exception_value_for_record(
 		webidl.DOMException.create_record('AbortError', message)))
-	if document := element.document() {
-		context := document.begin_temporary_execution_context()
-		defer { document.end_temporary_execution_context(context) }
-		element.reject_pending_play_promises_with(promises, reason)
-		return
-	}
 	element.reject_pending_play_promises_with(promises, reason)
 }
 
@@ -1979,7 +1991,7 @@ pub fn (mut element HTMLMediaElement) reached_end_of_media_playback() {
 			media.set_paused(true)
 			media.fire_event('pause')
 			promises := media.take_pending_play_promises()
-			media.reject_pending_play_promises_with(promises, dom.js_string('AbortError: Media playback has ended'))
+			media.reject_pending_play_promises_with_abort_error(promises, 'Media playback has ended')
 		}
 		media.fire_event('ended')
 	})
@@ -2210,7 +2222,8 @@ pub fn (mut element HTMLMediaElement) handle_media_source_failure(promises []&do
 	element.set_show_poster(true)
 	element.fire_event('error')
 	if element.error_ != none {
-		element.reject_pending_play_promises_with(promises, dom.js_string('NotSupportedError: Media is not supported'))
+		element.reject_pending_play_promises_with(promises, dom.js_webidl_value(webidl.dom_exception_value_for_record(
+			webidl.DOMException.create_record('NotSupportedError', 'Media is not supported'))))
 	}
 }
 

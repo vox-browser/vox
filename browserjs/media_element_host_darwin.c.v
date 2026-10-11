@@ -68,6 +68,11 @@ pub fn (mut host MediaElementHost) install(mut runtime Runtime) ! {
 			return host.runtime.actual_javascript_exception(host.runtime.binding_exception_value(err))
 		}
 	})!
+	play := runtime.make_native_value_host_function('play', 0, fn [handle] (receiver voidptr, _ []voidptr) !voidptr {
+		mut host := unsafe { &MediaElementHost(handle) }
+		// Promise-returning WebIDL operations reject binding abrupt completions.
+		return host.play(receiver) or { host.reject_play_binding_exception(err) }
+	})!
 	bind := runtime.make_value_host_function(fn [handle] (_ voidptr, args []voidptr) !voidptr {
 		mut host := unsafe { &MediaElementHost(handle) }
 		return host.bind(args) or {
@@ -77,7 +82,7 @@ pub fn (mut host MediaElementHost) install(mut runtime Runtime) ! {
 	factory := runtime.evaluate_host_value(media_element_native_factory)!
 	defer { runtime.release_javascript_value(factory) }
 	host.prototype = runtime.retain_javascript_value(runtime.call_javascript_function(factory,
-		C.JSValueMakeUndefined(runtime.context), [array, setter_array, bind, fast_seek, start_date, pause, load])!)!
+		C.JSValueMakeUndefined(runtime.context), [array, setter_array, bind, fast_seek, start_date, pause, load, play])!)!
 	runtime.add_canvas_element_provider(fn [handle] () map[string]&dom.Element {
 		host := unsafe { &MediaElementHost(handle) }
 		return host.elements_for_binding()
@@ -174,6 +179,29 @@ fn (mut host MediaElementHost) pause(receiver voidptr) !voidptr {
 	return C.JSValueMakeUndefined(host.runtime.context)
 }
 
+fn (mut host MediaElementHost) wrap_play_promise(promise &webidl.Promise) !voidptr {
+	handle := voidptr(&host)
+	return host.runtime.javascript_webidl_promise(promise, fn [handle] (value webidl.Value) !voidptr {
+		mut host := unsafe { &MediaElementHost(handle) }
+		if value.dom_exception_ != none { return host.runtime.javascript_dom_exception(value) }
+		if value.kind == .undefined { return C.JSValueMakeUndefined(host.runtime.context) }
+		return host.runtime.actual_webidl_value(value)
+	})
+}
+
+fn (mut host MediaElementHost) reject_play_binding_exception(exception IError) !voidptr {
+	actual := host.runtime.binding_exception_value(exception)
+	return host.wrap_play_promise(webidl.create_rejected_promise_for(host.settings.stream_promise_context(),
+		host.runtime.webidl_value(actual)!))
+}
+
+fn (mut host MediaElementHost) play(receiver voidptr) !voidptr {
+	mut media := host.media_element_for_binding(receiver)!
+	if replay := host.replay { replay(host.runtime)! }
+	promise := media.play().webidl_promise() or { return error('Media play requires its actual WebIDL capability') }
+	return host.wrap_play_promise(promise)
+}
+
 fn (mut host MediaElementHost) load(receiver voidptr) !voidptr {
 	mut media := host.media_element_for_binding(receiver)!
 	if replay := host.replay { replay(host.runtime)! }
@@ -225,9 +253,9 @@ fn (mut host MediaElementHost) set_property(name string, receiver voidptr, value
 
 // The compact DOM hierarchy remains partial. This base prototype exposes only
 // the completed state/range getters, rate/volume/time accessors, fastSeek,
-// getStartDate, pause, load and constants.
+// getStartDate, pause, load, play and constants.
 // Full HTMLElement/audio/video interfaces remain open.
-const media_element_native_factory = r'(function(getters,setters,bind,fastSeek,getStartDate,pause,load){
+const media_element_native_factory = r'(function(getters,setters,bind,fastSeek,getStartDate,pause,load,play){
  "use strict";
  const define=Object.defineProperty,create=Object.create,P=Proxy,T=TypeError;
  const prototype=create(EventTarget.prototype);
@@ -239,6 +267,7 @@ const media_element_native_factory = r'(function(getters,setters,bind,fastSeek,g
  define(prototype,"getStartDate",{value:getStartDate,writable:true,enumerable:true,configurable:true});
  define(prototype,"pause",{value:pause,writable:true,enumerable:true,configurable:true});
  define(prototype,"load",{value:load,writable:true,enumerable:true,configurable:true});
+ define(prototype,"play",{value:play,writable:true,enumerable:true,configurable:true});
  define(prototype,Symbol.toStringTag,{value:"HTMLMediaElement",configurable:true});
  const constructor=new P(function HTMLMediaElement(){},{apply(){throw new T("Illegal HTMLMediaElement constructor")},construct(){throw new T("Illegal HTMLMediaElement constructor")}});
  define(constructor,"prototype",{value:prototype,writable:false});
