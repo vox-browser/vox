@@ -851,16 +851,19 @@ V's standard `crypto.*` modules without shadowing that namespace.
 The IDL-only `Fullscreen` package delegates its state machine to the shared
 translated DOM implementation.
 
-The verified `aa9a5e27` physical inventory is retained in
+The verified `58fde80e` physical inventory is retained in
+`Build/audit-fixes/source-current-module-loc-58fde80e.json` (SHA256
+`87f5275d06b35029406cead2eca001cb606389db9aa58958d6fbb3ff1b1c6f01`).
+The native play slice adds one HTML owner test and connects the public caller
+and typed rejection batches to their Document-owned WebIDL capability and
+execution context. Root and browser implementation and integration tests remain
+excluded from package counts. The 78 owners contain 2,209 assigned files.
+The previous unsupported-play inventory remains preserved in
 `Build/audit-fixes/source-current-module-loc-aa9a5e27.json` (SHA256
 `166070c623211b8600db5300c89ed5219375d0e4045728c12117361ad8cca27c`).
-The unsupported play slice adds one HTML owner test, replaces the public caller's
-diagnostic string with a typed exception and updates the permission-precedence
-case. Root and browser integration tests remain excluded from package counts.
-The 78 owners contain 2,208 assigned files. Source-unit mappings and physical
-LOC do not establish runtime parity.
+Source-unit mappings and physical LOC do not establish runtime parity.
 
-The table below refreshes tracked package V LOC on 2026-10-09; upstream counts
+The table below refreshes tracked package V LOC on 2026-10-11; upstream counts
 and structural mapping labels retain the pinned inventory. It covers 76 current
 implementation-bearing upstream modules plus the translated IDL/IPC-only
 `Fullscreen` and `Worker` packages, and all 1,193 module-owned `.cpp`
@@ -896,7 +899,7 @@ from the current-module totals.
 | `Gamepad` | 6 | 1,351 | 860 | 323 | Complete |
 | `Geolocation` | 4 | 643 | 535 | 224 | Complete |
 | `Geometry` | 8 | 2,078 | 2,121 | 1,041 | Complete |
-| `HTML` | 286 | 83,853 | 69,617 | 40,013 | Complete |
+| `HTML` | 286 | 83,853 | 69,630 | 40,284 | Complete |
 | `HighResolutionTime` | 2 | 516 | 500 | 213 | Complete |
 | `IndexedDB` | 19 | 6,991 | 5,455 | 1,388 | Complete |
 | `Infra` | 3 | 385 | 548 | 102 | Complete |
@@ -949,7 +952,7 @@ from the current-module totals.
 | `XLink` | 1 | 16 | 13 | 10 | Complete |
 | `XML` | 2 | 556 | 477 | 164 | Complete |
 | `XPath` | 5 | 435 | 672 | 210 | Complete |
-| **Total** | **1,193** | **329,970** | **432,812** | **158,530** | **74 complete, 4 present, 0 untranslated** |
+| **Total** | **1,193** | **329,970** | **432,825** | **158,801** | **74 complete, 4 present, 0 untranslated** |
 
 ### Live editability refresh
 
