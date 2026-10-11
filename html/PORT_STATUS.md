@@ -5,13 +5,37 @@ Upstream reference: `~/code/3rd/ladybird/Libraries/LibWeb/HTML`
 Translation workspace: `~/code/vox2/html`
 Source pin: `963d46a829f3e1b79f44dba9d02afb70654300fa`
 Historical mapping inventory: 2026-09-08
-Selected Source owner slices reviewed: 2026-10-09
+Selected Source owner slices reviewed: 2026-10-11
 
 The historical inventory below found candidate V mappings for 261 HTML source
 files. Its file/symbol/LOC counts and 107-file test result describe that earlier
 inventory, not current logic, generated-binding or browser parity. The current
 audit and fix evidence is in `docs/translation-audit/`; mapping a source name or
 a runtime hook does not establish that its complete logic was translated.
+
+## Native media play promise owner
+
+Native JavaScript play returns a real Promise backed by the actual audio/video
+DOM model's pending WebIDL capability. Parsed and created media inherit the
+native operation; ordinary compact elements lose the fulfilled stub. Receiver
+checks precede mutation replay, extra arguments are ignored, and binding errors
+reject with the original reason. Waiting calls settle through the existing
+captured playing/pause/load/ended batches. Resource selection and MediaSource
+failure now reject with typed NotSupportedError, and ended uses AbortError;
+batch rejection enters the current Document execution context.
+Implementation and 17 new cases: `58fde80e`. All 24 selected files pass in both
+GC modes, including the 66-case main regression. Signed production startup,
+the ordinary native probe, two exact play viewports, 14 exact SVG pairs and all
+11 configured screenshot smoke cases pass.
+
+[Native play evidence](../docs/translation-audit/NATIVE_MEDIA_PLAY_PROMISE_OWNER.md)
+retains the final three-file runtime baseline and unchanged verification
+snapshots. Load's pinned FIXME for already-captured canceled-task batches remains
+pending. Full resource/readiness/seek/MSE, enough-data autoplay, Permissions
+Policy, ordinary compact listener routing, physical decoding/manager, foreign
+engine realms and automatic ownership remain open. Raw UTF16 MediaError storage
+remains a wider representation boundary. Earlier sections retain their original
+slice evidence; native play and the typed rejection sinks above are now connected.
 
 ## Unsupported media play rejection
 
@@ -25,9 +49,8 @@ two exact viewports and all 11 smoke cases pass.
 
 [Unsupported play evidence](../docs/translation-audit/MEDIA_PLAY_SOURCE_ERROR_OWNER.md)
 records the unchanged runtime baseline and exact message/identity checks.
-Native JavaScript play promises, remaining source-failure/ended adapters, full
-resource/readiness/seek, physical manager/decoding and automatic ownership remain
-open. MediaError's V string slot does not establish raw UTF16 parity.
+Full resource/readiness/seek, physical manager/decoding and automatic ownership
+remain open. MediaError's V string slot does not establish raw UTF16 parity.
 
 ## Volume-change playback policy owner
 
@@ -43,9 +66,9 @@ production probe, two exact viewports and all 11 smoke cases pass.
 
 [Volume-change policy evidence](../docs/translation-audit/MEDIA_VOLUME_POLICY_OWNER.md)
 retains the corrected runtime baselines, fixture/compiler diagnostics and the
-interrupted focused run. Native JavaScript play promises, remaining source-failure
-promise adapters, enough-data autoplay, Permissions Policy, complete resource/
-readiness/seek, physical decoding/manager and automatic ownership remain open.
+interrupted focused run. Enough-data autoplay, Permissions Policy, complete
+resource/readiness/seek, physical decoding/manager and automatic ownership remain
+open.
 
 ## Native getStartDate owner and timeline rounding
 
@@ -196,9 +219,8 @@ retains all baseline/fixture diagnostics, eight final cases and 14/14 files in
 each GC mode, including the 66-case main regression. The same frozen production
 snapshot builds, signs, passes startup, matches the public state/event-owner
 viewport exactly and passes all 11 smoke cases within their existing bounds.
-Source manager Ended state, native play promises, ordinary compact listener
-routing, other event scheduling, full operations, realms and physical GC remain
-separate. These selected fixes do not establish full HTML parity.
+Source manager Ended state, ordinary compact listener routing, other event
+scheduling, full operations, realms and physical GC remain separate. These selected fixes do not establish full HTML parity.
 
 ## Media ended cache boundary
 

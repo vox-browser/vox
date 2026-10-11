@@ -221,7 +221,7 @@ exception behavior. Reset abort, emptied and timeupdate events wait for the
 owner's task queue; the current unpaused pending play batch rejects with one
 actual AbortError under its Document execution context. State and validated
 default-rate reset commit before delivery. Stable-state selection, full load
-resets, native play promises and physical playback remain unfinished. See
+resets and physical playback remain unfinished. See
 [load task and native caller evidence](docs/translation-audit/MEDIA_LOAD_TASK_OWNER.md).
 First decoded-data notification now queues `loadeddata` once per load on the
 actual media owner. Explicit and automatic load entry rearm its flag; the exact
@@ -234,8 +234,8 @@ Metadata notification now queues `loadedmetadata` from the exact nonempty-networ
 nothing-to-metadata readiness transition. Fetched responses and MediaSource
 initialization share the actual owner's branch. Fetch listeners receive metadata
 after durationchange and before loadeddata, and read live state at delivery.
-Reload cancels only that owner's old notification. Full resource timing, native
-play promises and physical decoding remain unfinished. See
+Reload cancels only that owner's old notification. Full resource timing and
+physical decoding remain unfinished. See
 [metadata task and caller evidence](docs/translation-audit/MEDIA_METADATA_TASK_OWNER.md).
 Canplay notification now queues on the actual media owner at the exact
 nonempty-network current-or-less to future/enough readiness crossing. First-data
@@ -243,8 +243,7 @@ notification precedes canplay, and its readiness-driven playing task follows.
 The original pending play batch and start position are captured before listeners
 can call play(); manager start remains immediate. Reload cancels only the
 owner's old event, and later tasks use its adopted Document and active delivery
-check. Full readiness/autoplay, native play promises and physical decoding remain
-unfinished. See
+check. Full readiness/autoplay and physical decoding remain unfinished. See
 [canplay task, promise and caller evidence](docs/translation-audit/MEDIA_CANPLAY_TASK_OWNER.md).
 Canplaythrough notification now queues on each changed nonempty-network
 transition into enough data, after any first-data, canplay and readiness-driven
@@ -253,39 +252,33 @@ future-to-enough queues only canplaythrough. Listeners observe live readiness,
 reload cancels only the owner's old tasks, and later tasks use its adopted
 Document and active delivery check. The actual SourceBuffer coded-frame caller
 also enters this branch. Enough-data autoplay substeps, buffering-drop waiting,
-complete resource/readiness/seek, native play promises and physical decoding
-remain unfinished. See
+complete resource/readiness/seek and physical decoding remain unfinished. See
 [canplaythrough task and caller evidence](docs/translation-audit/MEDIA_CANPLAYTHROUGH_TASK_OWNER.md).
 Autoplay eligibility now checks the automatic-features sandbox flag of the
 actual audio/video owner's current Document. Sandboxed autoplay plus
 `preload="none"` remains deferred, while explicit `load()` fetches without
 starting playback. Adoption and later sandbox changes consult live ownership.
-Native play promises, Permissions Policy and
-enough-data autoplay boundaries remain. See
+Permissions Policy and enough-data autoplay boundaries remain. See
 [autoplay sandbox and caller evidence](docs/translation-audit/MEDIA_AUTOPLAY_SANDBOX_OWNER.md).
 Resource autoplay now uses is_allowed_to_play through the current Document's
 sticky Window activation, origin settings and effective volume, including actual
 Page mute. Consumed transient activation retains sticky permission. Allowlisting
 and the file exception follow the existing settings translation; adoption reads
 the new Document and Window. Explicit load fetches blocked media without
-autoplaying. Native play promises and the complete
-enough-data autoplay branch remain unported. See
+autoplaying. The complete enough-data autoplay branch remains unported. See
 [playback permission and resource caller evidence](docs/translation-audit/MEDIA_PLAYBACK_POLICY_OWNER.md).
 The public V model play caller now rejects a denied request with a typed
 NotAllowedError before checking unsupported media or entering internal play.
 Denial preserves owner state and older pending promises, performs no fetch and
 queues no play tasks. The current Document supplies permission after adoption.
-Native exception conversion preserves record/wrapper identity; native JavaScript
-play promise creation/rejection remains unported. Other source-failure promise
-paths retain separate adapters. See
+Native exception conversion preserves record/wrapper identity. See
 [model play permission evidence](docs/translation-audit/MEDIA_PLAY_PERMISSION_OWNER.md).
 Volume and muted changes now queue volumechange before checking current
 Document playback permission. Denial enters internal pause immediately, then
 updates effective volume; timeupdate/pause and captured model-promise rejection
 remain deferred in order. Already-paused blocked owners disable autoplay without
 fetching. Page-wide mute retains its separate update-only path. Native volume/
-muted setters reach this actual owner helper. Native JavaScript play promises,
-remaining source-failure promise adapters and complete media algorithms remain
+muted setters reach this actual owner helper. Complete media algorithms remain
 open. See
 [volume-change policy evidence](docs/translation-audit/MEDIA_VOLUME_POLICY_OWNER.md).
 
@@ -293,9 +286,22 @@ Permitted V play now rejects MEDIA_ERR_SRC_NOT_SUPPORTED with a fresh typed
 NotSupportedError carrying the actual MediaError message. Permission denial
 still precedes that check; rejection leaves earlier requests and owner state
 intact. Native conversion preserves exception identity and Unicode/NUL messages.
-Native JavaScript play promises and other source-failure promise paths remain
-separate work. See
-[unsupported play evidence](docs/translation-audit/MEDIA_PLAY_SOURCE_ERROR_OWNER.md).
+See [unsupported play evidence](docs/translation-audit/MEDIA_PLAY_SOURCE_ERROR_OWNER.md).
+
+Native JavaScript `play()` now returns a real Promise backed by the actual
+DOM media owner's WebIDL capability. Parsed and created media inherit that
+native method, with the generic fulfilled stub removed. Binding failures reject
+with their original reason; waiting requests settle through the owner's existing
+playing, pause, load and ended batches. Selection and MediaSource failures now
+carry typed NotSupportedError records, and ended rejection uses AbortError,
+under the current Document execution context. All 17 new cases pass within
+24/24 selected files in both GC modes. Signed production startup, an ordinary
+native probe, two exact play viewports, 14 exact SVG preservation pairs and all
+11 configured smoke cases pass. The pinned load FIXME for already-captured
+canceled-task batches remains pending; complete resource/readiness/seek/MSE,
+Permissions Policy, enough-data autoplay, ordinary compact listener routing,
+physical decoding and automatic ownership remain open. See
+[native play promise evidence](docs/translation-audit/NATIVE_MEDIA_PLAY_PROMISE_OWNER.md).
 
 The `:indeterminate`, `:open`, and `:closed` selectors now read live checkbox,
 input-picker, and select-picker state. Control transitions mirror that state at

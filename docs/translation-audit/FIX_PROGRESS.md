@@ -994,3 +994,27 @@ Agent checks run with `v -old-compiler -enable-globals`. Isolated worktrees use 
   raw UTF16 MediaError slots, full resource/readiness/seek, physical decoding
   and automatic ownership remain open. The ledger stays
   **32 fixed / 25 partial / 9 open**.
+
+- Native media play promise ownership (`58fde80e`, 2026-10-11) now connects
+  parsed/created DOM media to real JavaScriptCore Promises backed by the same
+  model WebIDL capability. The generic fulfilled stub is removed. Brand checks
+  precede replay, binding errors preserve their original reason, and waiting,
+  playing, pause, load and ended paths retain captured-batch ordering. Selection,
+  MediaSource and ended string sinks now use typed DOMExceptions under the
+  current Document execution context. The final parent baseline compiles all
+  three new files and fails all three at runtime; its model panic prevents the
+  final two model cases from running on the parent. All **17 new cases** pass
+  within both unchanged **24/24-file** selected runs, including the **66-case**
+  main regression. Signed production build/startup, the ordinary native probe,
+  **two exact play viewports**, **14 exact SVG pairs** and all **11 configured
+  smoke cases** pass (eight smoke cases exact). All 104 production artifact
+  hashes verify; all 81 earlier source-error artifacts are unchanged. Initial
+  compiler/integration diagnostics and the interrupted production attempt remain
+  separate. [Evidence](NATIVE_MEDIA_PLAY_PROMISE_OWNER.md), consolidated SHA256:
+  `4b58d16d0aed341fb1d416bd029fa481254b8010c3c822b23d02d73bb339ce1b`.
+  Load's pinned canceled-task/captured-batch FIXME remains pending. Full
+  resource/readiness/seek/MSE, enough-data autoplay, Permissions Policy, ordinary
+  compact listener routing, physical decoding, foreign engine realms, raw UTF16
+  MediaError storage and automatic ownership remain open. Earlier entries retain
+  their contemporaneous verification scope; the historical ledger stays
+  **32 fixed / 25 partial / 9 open**.

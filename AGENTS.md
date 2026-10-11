@@ -696,17 +696,16 @@
   state and the live clock immediately, then queues timeupdate, pause and
   captured-batch rejection with a shared AbortError under the owning document's
   execution context. A listener that resumes playback does not add its new
-  promises to the earlier batch. Other media promise paths, native play promises
-  and synchronous selection remain separate work.
+  promises to the earlier batch. Complete media promise algorithms and
+  synchronous selection remain separate work.
 
 - Internal play queues separate play and waiting tasks. Playing notification
   captures its pending promises and starting clock before the manager hook starts,
   then commits that position, fires playing and resolves only that batch under
   the current document's execution context. An already-playing call queues its
   own resolution without another playing event or manager start. A pause before
-  delivery leaves the earlier playing task unconditional. Public native play
-  promises, permission/error gates and other media algorithms
-  remain separate work.
+  delivery leaves the earlier playing task unconditional. Complete resource,
+  readiness and seek algorithms remain separate work.
 
 - Media audible state follows Source's started-playback flag, enabled audio
   tracks and effective volume. Waiting playback stays silent after becoming
@@ -716,7 +715,7 @@
   timer/lifecycle notification; queued playing events do not restart audio.
   Resource-specific track removal re-evaluates audio without clearing started
   state, and adoption routes subsequent notifications through the current Page.
-  Native play promises and physical playback remain separate work.
+  Physical playback remains separate work.
 
 - Eligible playing video retains a screen wake lock from its actual Document's
   Page when a video track is selected and an audio track is enabled. Volume and
@@ -744,31 +743,31 @@
   adoption and inside the owning shadow scope. Playing follows the paused flag
   even without a playable resource; Page mute and zero volume do not set
   `:muted`. The style pass applies descendant plans queued by the `:has()` ancestor
-  walk before computing styles. Native play promises, complete resource/readiness
-  algorithms and physical playback remain separate work.
+  walk before computing styles. Complete resource/readiness algorithms and
+  physical playback remain separate work.
 
 - Native `load()` validates the actual DOM media receiver before replay, ignores
   extra arguments and calls the owning model. Load cancels only that owner's old
   tasks, queues abort/emptied/reset timeupdate, and rejects its current unpaused
   pending play batch with one actual AbortError under the Document context.
   State and default-rate reset commit before event delivery. Stable-state
-  resource selection, native play promises, complete load/reset behavior and
-  physical playback remain separate work.
+  resource selection, complete load/reset behavior and physical playback remain
+  separate work.
 
 - First decoded-data notification queues `loadeddata` once per load on the
   actual media owner's task queue. Explicit and automatic load entry rearm the
   flag; only a nonempty-network metadata-to-data transition consumes it. That
   branch synchronously releases the current Document's owned load delay, even
   after first data was reported. Other readiness events, complete resource
-  timing, native play promises and physical decoding remain separate work.
+  timing and physical decoding remain separate work.
 
 - Metadata notification queues `loadedmetadata` from the actual media owner's
   nonempty-network `HAVE_NOTHING` to `HAVE_METADATA` readiness transition. The
   fetch adapter and MediaSource initialization share that branch, so listeners
   observe live state after task delivery instead of receiving a synchronous
   fetch-only event. Reload cancels only the owner's pending notification.
-  Complete resource/readiness behavior, native play promises and physical
-  decoding remain separate work.
+  Complete resource/readiness behavior and physical decoding remain separate
+  work.
 
 - Canplay notification queues on the actual media owner when a nonempty-network
   readiness state crosses from current-data-or-less to future or enough data.
@@ -776,8 +775,8 @@
   The pending play batch and start position are captured before listeners run;
   a listener-created promise stays outside that batch. Manager start remains
   immediate. Reload cancels only the owner's old task, and later tasks follow
-  adoption and active-document delivery. Full readiness/autoplay, native play
-  promises and physical decoding remain separate work.
+  adoption and active-document delivery. Full readiness/autoplay and physical
+  decoding remain separate work.
 
 - Canplaythrough notification queues on the actual media owner whenever a
   nonempty-network readiness state changes to enough data. It follows any
@@ -786,15 +785,14 @@
   only this notification; unchanged readiness does not repeat it. Reload cancels
   only the owner's old task, and later tasks follow adoption and active-document
   delivery. Enough-data autoplay substeps, buffering-drop waiting, complete
-  resource/readiness/seek, native play promises and physical decoding remain
-  separate work.
+  resource/readiness/seek and physical decoding remain separate work.
 
 - Autoplay eligibility reads the automatic-features sandbox flag from the
   actual audio/video owner's current document. Sandboxed autoplay with
   `preload="none"` stays deferred; explicit `load()` fetches while leaving the
   owner paused. Adoption and later flag changes use the live document.
-  Native JavaScript play promises, enough-data
-  autoplay substeps and full Permissions Policy remain separate work.
+  Enough-data autoplay substeps and full Permissions Policy remain separate
+  work.
 
 - Resource autoplay consults the actual owner's current document origin,
   sticky Window activation and effective volume through the playback permission
@@ -802,30 +800,40 @@
   policy allows inaudible media; origin allowlisting, the file exception and
   sticky activation can override blocking. Page mute follows its document,
   including after adoption. Explicit load fetches blocked media without
-  starting autoplay.
-  Native play promise bindings remain separate work.
+  starting autoplay. Full Permissions Policy and enough-data autoplay timing
+  remain separate work.
 
 - Public V model play rejects denied requests with a typed `NotAllowedError`
   before the existing unsupported-source check or internal play steps. It
   preserves earlier pending promises and queues no play tasks or fetch. The
   current document supplies permission after adoption; sticky activation still
-  permits explicit play when sandboxing blocks autoplay. Native JavaScript
-  play promise bindings remain separate work.
+  permits explicit play when sandboxing blocks autoplay.
 
 - Volume/muted changes queue volumechange, then run internal pause when the
   current Document denies playback, before updating effective volume. The
   paused state and manager stop commit immediately; the existing timeupdate/
   pause task follows volumechange and rejects its captured model promise batch
   afterward. Already-paused blocked owners lose can-autoplay without fetching.
-  Page-wide mute changes retain their separate update-only behavior. Native
-  JavaScript play promise bindings remain separate work.
+  Page-wide mute changes retain their separate update-only behavior.
 
 - Permitted V play requests with an unsupported-source MediaError reject with
   a fresh typed NotSupportedError carrying its current message before appending
   a promise or entering internal play. Permission denial still wins. Native
-  exception conversion retains Unicode/NUL messages and wrapper identity;
-  native JavaScript play promises and remaining source-failure promise adapters
-  remain separate work.
+  exception conversion retains Unicode/NUL messages and wrapper identity.
+
+- Native JavaScript `play()` now returns a real Promise backed by the same
+  WebIDL capability retained in the actual audio/video owner's pending list.
+  Parsed and script-created media inherit the native method; ordinary compact
+  elements no longer expose the fulfilled stub. Brand checks precede replay,
+  binding failures reject with the original reason, and permitted requests stay
+  pending until the owner's captured task batch settles. Permission, source,
+  pause, load and ended failures expose typed DOMExceptions; resource selection,
+  MediaSource failure and ended rejection share the current Document execution
+  context. Load's pinned FIXME for already-captured canceled-task batches remains
+  pending. Full resource/readiness/seek/MSE, enough-data autoplay, Permissions
+  Policy, ordinary compact listener routing, physical decoding and automatic
+  ownership remain separate work. See
+  [native play evidence](docs/translation-audit/NATIVE_MEDIA_PLAY_PROMISE_OWNER.md).
 
 ## Translated module inventory
 
