@@ -869,6 +869,17 @@
   separate work, along with realms, weak ownership and the load/media boundaries.
   See [press/release handler evidence](docs/translation-audit/NATIVE_MEDIA_POINTER_HANDLER_OWNER.md).
 
+- Native media onclick now shares the actual audio/video DOM handler slot,
+  preserving callback identity, listener order, trusted Page delivery and
+  cancellation. Private Event/Page receipts prevent stale compact raw replay
+  after native self-mutation; replay reads the current DOM raw slot by stable
+  bridge key after committing pending mutations. Untouched raw media fallback
+  and generic image/object/SVG compact clicks remain. Raw fallback is still
+  Function/plain-Event approximation; real inline compilation, full prototypes,
+  other handlers, Cocoa/hit testing, input interfaces, realms, weak ownership,
+  full/physical media and the pinned load FIXME remain separate work. See
+  [native click evidence](docs/translation-audit/NATIVE_MEDIA_CLICK_HANDLER_OWNER.md).
+
 ## Translated module inventory
 
 All 78 translated LibWeb packages and all 1,193 current module-owned C++

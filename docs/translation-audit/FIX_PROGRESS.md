@@ -1079,3 +1079,21 @@ Agent checks run with `v -old-compiler -enable-globals`. Isolated worktrees use 
   stays 32 fixed / 25 partial / 9 open.
   [Evidence](NATIVE_MEDIA_POINTER_HANDLER_OWNER.md), consolidated SHA256:
   `731e05084351bfaf02fb971d45af92d992890d2b989420bcbb7dfbbcb267e2d7`.
+
+- Native media onclick (`8c567b08`, 2026-10-13) reaches actual audio/video
+  handler slots with existing descriptor, legacy conversion, listener ordering
+  and cancellation rules. Private Event/Page replay receipts preserve outer
+  clicks through nested dispatch and prevent stale raw replay after callback
+  mutation. Current raw DOM text is passed by stable bridge key; the retained
+  Function/plain-Event fallback remains approximate. The native/main parent
+  baseline compiles two files and fails six functions; Page's two new-API tests
+  are unexecuted on that baseline. All eight focused cases pass with identical
+  bytes, then 22/22 selected files pass in both GC modes. Signed startup,
+  the active optimized probe, two exact pages, 14 exact SVG pairs and all 11
+  smoke cases pass (eight exact). All 104 current and 851 previous artifact
+  hashes verify. Real inline compilation, full prototypes, other handlers,
+  Cocoa/hit testing, full input interfaces, realms, weak ownership, full/physical
+  media and the pinned load FIXME remain open. Historical evidence retains its
+  original scope; ledger stays 32 fixed / 25 partial / 9 open.
+  [Evidence](NATIVE_MEDIA_CLICK_HANDLER_OWNER.md), consolidated SHA256:
+  `b6cfaa3945616335650fee936b7c09ae1fb09ae7677e1d41bf54702ea8de5bf8`.

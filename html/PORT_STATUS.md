@@ -14,6 +14,30 @@ audit and fix evidence is in `docs/translation-audit/`; mapping a source name or
 a runtime hook does not establish that its complete logic was translated.
 
 
+## Native media onclick and compact replay
+
+Script-assigned media onclick now reaches the actual HTML audio/video
+owner's native handler map. Callback identity, listener slot order, trusted
+Page delivery and false cancellation use existing source algorithms. Private
+Event/Page receipts are compact adapter bookkeeping: an already-processed
+native handler cannot trigger stale raw replay after self-mutation. Replay
+reads current DOM raw text after flushing compact mutations and uses a stable
+bridge key; generic image/object/SVG paths remain intact. Raw fallback still
+uses a plain compact Event and Function, leaving real inline compilation open.
+Implementation and eight focused cases: `8c567b08`. The unchanged parent
+baseline compiles the native/main files and fails six functions; the two Page
+tests require new APIs and are unexecuted on that baseline. All eight cases
+then pass, and 22/22 selected files pass in both GC modes. Signed startup,
+the active optimized probe, two exact pages, 14 exact SVG pairs and all 11
+configured smoke cases pass (eight exact).
+
+[Click handler evidence](../docs/translation-audit/NATIVE_MEDIA_CLICK_HANDLER_OWNER.md).
+
+Explicit-target Page fixtures do not establish Cocoa transport, hit testing
+or complete input interfaces. Full prototype placement, other handler
+attributes, foreign realms, weak ownership, full/physical media and the pinned
+load captured-task FIXME remain separate work.
+
 ## Native media press/release handler attributes
 
 Ordinary onpointerdown, onpointerup, onmousedown and onmouseup now use the
