@@ -444,10 +444,21 @@ fn populate_intrinsic_containing_block_chain(mut throwaway LayoutState, mut sour
 // block is not on the subtree root's own chain. Seed every such external
 // containing block before intrinsic traversal begins.
 fn populate_intrinsic_external_containing_blocks(mut throwaway LayoutState, mut source LayoutState, subtree_root &Node, node &Node) {
+	mut visited := map[u32]bool{}
+	populate_intrinsic_external_containing_blocks_once(mut throwaway, mut source, subtree_root, node, mut visited)
+}
+
+fn populate_intrinsic_external_containing_blocks_once(mut throwaway LayoutState, mut source LayoutState, subtree_root &Node, node &Node, mut visited map[u32]bool) {
 	mut containing_block := node.containing_block()
 	for containing_block != none {
 		candidate_box := containing_block or { break }
 		candidate := unsafe { &Node(candidate_box) }
+		// Each containing block has one fixed ancestor chain during this probe.
+		// Shared chains were fully seeded on their first visit; walking them for
+		// every descendant otherwise repeats ancestry tests at every depth.
+		index := candidate_box.layout_index()
+		if visited[index] { break }
+		visited[index] = true
 		if !subtree_root.is_inclusive_ancestor_of(candidate) {
 			if styled := candidate.as_node_with_style() {
 				if throwaway.try_get(styled) == none {
@@ -462,7 +473,7 @@ fn populate_intrinsic_external_containing_blocks(mut throwaway LayoutState, mut 
 		containing_block = candidate.containing_block()
 	}
 	for child in node.children() {
-		populate_intrinsic_external_containing_blocks(mut throwaway, mut source, subtree_root, child)
+		populate_intrinsic_external_containing_blocks_once(mut throwaway, mut source, subtree_root, child, mut visited)
 	}
 }
 
