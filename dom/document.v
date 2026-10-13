@@ -2785,6 +2785,9 @@ pub mut:
 	path_                       []EventPathEntry
 	touch_target_list_          TouchTargetList
 	time_stamp_                 DOMHighResTimeStamp
+mut:
+	// Compact engine replay receipt; not a script-visible Event attribute.
+	processed_click_handler_targets_ []&EventTarget
 }
 
 @[heap]

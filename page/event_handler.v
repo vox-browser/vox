@@ -116,6 +116,7 @@ mut:
 	platform_mouse_modifiers_            u32
 	platform_mouse_coordinates_          ?MouseEventCoordinates
 	last_click_allowed_                  bool
+	last_click_event_                    ?&dom.Event
 	mousedown_visual_viewport_position_  ?PixelPoint
 	mousedown_click_count                int
 	mousedown_target_is_drag_candidate_  bool
@@ -358,6 +359,7 @@ pub fn (mut handler EventHandler) handle_mouseup(target ?InputTarget) EventResul
 pub fn (mut handler EventHandler) handle_mouseup_with_button(target ?InputTarget, button u32) EventResult {
 	handler.platform_mouse_button_ = button
 	handler.last_click_allowed_ = false
+	handler.last_click_event_ = none
 	middle_button_autoscrolled := if middle := handler.middle_button_scroll_handler_ {
 		middle.mouse_has_moved_beyond_dead_zone()
 	} else {

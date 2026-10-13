@@ -285,6 +285,30 @@ pub fn (mut e Event) visit_edges(mut visitor CellVisitor) {
 	for touch_target in e.touch_target_list_ {
 		visitor.visit(touch_target)
 	}
+	for owner in e.processed_click_handler_targets_ {
+		visitor.visit(owner)
+	}
+}
+
+// The compact engine replays uncompiled raw handlers after native Page input.
+// Remember actual processed click owners even if a callback replaces its slot.
+pub fn (event &Event) did_process_click_handler(target &EventTarget) bool {
+	for owner in event.processed_click_handler_targets_ {
+		if voidptr(owner) == voidptr(target) {
+			return true
+		}
+	}
+	return false
+}
+
+fn (mut event Event) note_processed_click_handler(target &EventTarget) {
+	if !event.did_process_click_handler(target) {
+		event.processed_click_handler_targets_ << target
+	}
+}
+
+fn (mut event Event) reset_click_handler_replay_receipt() {
+	event.processed_click_handler_targets_ = []&EventTarget{}
 }
 
 // C++: FlyString const& Event::type() const
@@ -1352,6 +1376,12 @@ pub fn (et &EventTarget) deactivate_event_handler(name string) {
 pub fn (et &EventTarget) process_event_handler_for_event(name string, event &Event) ! {
 	// 1. Let callback be the result of getting the current value of the event handler given eventTarget and name.
 	callback := et.get_current_value_of_event_handler(name) or { return }
+	// Adapter bookkeeping precedes invocation, including abrupt completions and
+	// self-mutation. Raw handlers without a supported compiler are not processed.
+	if name == 'click' && event.type_ == 'click' {
+		mut mutable_event := unsafe { &Event(event) }
+		mutable_event.note_processed_click_handler(et)
+	}
 
 	// 2. If callback is null, then return.
 
@@ -1863,6 +1893,7 @@ pub fn EventDispatcher.dispatch(target &EventTarget, event &Event, legacy_target
 pub fn EventDispatcher.dispatch_with_legacy_output(target &EventTarget, event &Event, legacy_target_override bool, mut legacy_output LegacyListenerExceptionFlag) bool {
 	// 1. Set event's dispatch flag.
 	mut mutable_event := unsafe { &Event(event) }
+	mutable_event.reset_click_handler_replay_receipt()
 	mutable_event.set_dispatched(true)
 	// 2. Let targetOverride be target, if legacy target override flag is not given, and target's associated Document otherwise. [HTML]
 	mut target_override := ?&EventTarget(none)

@@ -301,7 +301,7 @@ fn (mut host MediaElementHost) set_property(name string, receiver voidptr, value
 
 // The compact DOM hierarchy remains partial. This base prototype exposes only
 // the completed state/range getters, rate/volume/time accessors, fastSeek,
-// getStartDate, pause, load, play, media and press/release handler attributes,
+// getStartDate, pause, load, play, selected media and input handler attributes,
 // and constants.
 // Full HTMLElement/audio/video interfaces remain open.
 const media_element_native_factory = r'(function(getters,setters,bind,fastSeek,getStartDate,pause,load,play,handlerGetters,handlerSetters){

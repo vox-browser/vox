@@ -49,6 +49,13 @@ pub fn (mut handler EventHandler) handle_platform_pointer_event(name string, tar
 
 pub fn (handler &EventHandler) last_click_allowed() bool { return handler.last_click_allowed_ }
 
+// One native release supplies one receipt to the compact engine replay adapter.
+pub fn (mut handler EventHandler) take_last_click_event() ?&dom.Event {
+	event := handler.last_click_event_
+	handler.last_click_event_ = none
+	return event
+}
+
 // parent_element_for_event_dispatch() rejects a disabled form-associated
 // element anywhere above the hit target before dispatching platform input.
 fn input_target_is_enabled(target InputTarget) bool {
@@ -175,6 +182,7 @@ fn (mut handler EventHandler) dispatch_hover_pointer_event(name string, target ?
 }
 
 fn (mut handler EventHandler) dispatch_click_events(target InputTarget) EventResult {
+	handler.last_click_event_ = none
 	name := if handler.platform_mouse_button_ == 0 { 'click' } else { 'auxclick' }
 	handler.log(name, target)
 	node := target.node or { return .handled }
@@ -185,6 +193,11 @@ fn (mut handler EventHandler) dispatch_click_events(target InputTarget) EventRes
 		handler.log('dblclick', target)
 		double := handler.create_mouse_event('dblclick', node, coordinates, none)
 		dom.event_target_dispatch_event(unsafe { &dom.EventTarget(node) }, unsafe { &dom.Event(double) })
+	}
+	// Publish the outer event after dispatch: a nested click must not replace
+	// the receipt used for this release's later compact replay.
+	if name == 'click' {
+		handler.last_click_event_ = unsafe { &dom.Event(click) }
 	}
 	return if allowed { .handled } else { .cancelled }
 }

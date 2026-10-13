@@ -1536,7 +1536,7 @@ fn javascript_bootstrap(state map[string]json2.Any) string {
 		'window.__ladybirdSnapshot = function () { return JSON.stringify(__state); };',
 		'window.__ladybirdFinalize = function () { for (const key of Object.keys(__canvases)) { const c=__canvases[key],s=c.state;if(!c.context||c.kind!=="2d")continue;const snapshot=__canvasCall(s,"snapshot");s.canvasPixels=snapshot.pixels;s.canvasWidth=__canvasDimension(s,"width");s.canvasHeight=__canvasDimension(s,"height");s.canvasPixelsPremultiplied=snapshot.premultiplied;s.canvasPixelsTopDown=snapshot.topDown;s.canvasNative=true; } const snapshot=window.__ladybirdSnapshot(); __state.operations=[]; return snapshot; };',
 		'window.__ladybirdClearLogs = function () { __state.logs = []; __state.operations=[]; __state.bodyHTMLDirty = false; __state.bodyTextDirty = false; for(const s of __elementStates()){s.innerHTMLDirty=false;s.textContentDirty=false;} };',
-		'window.__ladybirdDispatch = function (name, id) { const s = String(id)===""?null:(__elementStates().find(function(item){return item.id===String(id);}) || null); const target = s ? __element(s) : document; const event = { type: name, target: target, defaultPrevented: false, preventDefault: function () { this.defaultPrevented = true; } }; for (const listener of (__listeners[__listenerKey(s, name)] || [])) { try { listener.call(target, event); } catch (e) { console.error(e); } } if (!s && typeof window["on" + name] === "function") { try { window["on" + name].call(window, event); } catch (e) { console.error(e); } } if (s && name === "click" && s.onclick) { try { Function("event", s.onclick).call(target, event); } catch (e) { console.error(e); } } __state.defaultPrevented = event.defaultPrevented; return window.__ladybirdSnapshot(); };',
+		'window.__ladybirdDispatch = function (name, id, mediaReplay) { const s = mediaReplay?(__state.elements[mediaReplay.key]||null):(String(id)===""?null:(__elementStates().find(function(item){return item.id===String(id);}) || null)); if(mediaReplay&&!s)return window.__ladybirdSnapshot(); const target = s ? __element(s) : document; const event = { type: name, target: target, defaultPrevented: false, preventDefault: function () { this.defaultPrevented = true; } }; for (const listener of (__listeners[__listenerKey(s, name)] || [])) { try { listener.call(target, event); } catch (e) { console.error(e); } } if (!s && typeof window["on" + name] === "function") { try { window["on" + name].call(window, event); } catch (e) { console.error(e); } } const nativeMedia=s&&s.namespaceURI==="http://www.w3.org/1999/xhtml"&&(s.tagName==="audio"||s.tagName==="video"),rawClick=mediaReplay?mediaReplay.raw:(nativeMedia?"":(s?s.onclick:"")); if (s && name === "click" && rawClick) { try { Function("event", rawClick).call(target, event); } catch (e) { console.error(e); } } __state.defaultPrevented = event.defaultPrevented; return window.__ladybirdSnapshot(); };',
 		'return window.__ladybirdSnapshot();',
 		'})()',
 	].join('\n')
@@ -2535,16 +2535,62 @@ fn javascript_default_prevented(encoded string) bool {
 	return if prevented is bool { prevented } else { false }
 }
 
+// Preserve the existing raw-handler approximation only for a live raw slot
+// that the actual native click did not process. Bridge keys keep owner identity
+// stable if the callback renames, moves or removes its element.
+fn (mut app BrowserApp) media_click_replay_state(element &dom.Element) !map[string]json2.Any {
+	target := unsafe { &dom.EventTarget(element) }
+	mut processed := false
+	if app.page_model != unsafe { nil } {
+		if event := app.page_model.event_handler.take_last_click_event() {
+			processed = event.did_process_click_handler(target)
+		}
+	}
+	// Apply callback mutations before reading the raw slot. Finalize drains the
+	// operation queue; the later snapshot still carries pending navigation.
+	state := app.js_runtime.evaluate_host('__ladybirdFinalize()')!
+	apply_javascript_state(app.document, state, app.js_runtime.canvas_elements_for_binding(),
+		mut app.js_messages)
+	app.js_runtime.evaluate_host('__ladybirdClearLogs()')!
+	mut key := ''
+	for candidate_key, candidate in app.js_runtime.canvas_elements_for_binding() {
+		if voidptr(candidate) == voidptr(element) {
+			key = candidate_key
+			break
+		}
+	}
+	mut raw := ''
+	if !processed && compact_document_can_run_script(element.document()) {
+		if handler := target.data.event_handler_map['click'] {
+			if handler.value.kind == .string {
+				raw = handler.value.string_data
+			}
+		}
+	}
+	return {
+		'key': json2.Any(key)
+		'raw': json2.Any(raw)
+	}
+}
+
 fn (mut app BrowserApp) dispatch_javascript_event(name string, element &dom.Element) bool {
 	if app.js_runtime == unsafe { nil } {
 		return false
 	}
 	if app.js_runtime.engine == .libjs { return false }
+	mut media_replay := ''
+	if name == 'click' && element.is_html_element() && element.local_name() in ['audio', 'video'] {
+		state := app.media_click_replay_state(element) or {
+			app.js_messages << 'JavaScript media click replay: ${err.msg()}'
+			return false
+		}
+		media_replay = ', ' + json2.encode(state)
+	}
 	id := element.get_attribute_value('id')
-	if id == '' {
+	if id == '' && media_replay == '' {
 		return false
 	}
-	result := app.js_runtime.evaluate_host('__ladybirdDispatch(${json2.encode(name)}, ${json2.encode(id)})') or {
+	result := app.js_runtime.evaluate_host('__ladybirdDispatch(${json2.encode(name)}, ${json2.encode(id)}${media_replay})') or {
 		app.js_messages << 'JavaScript event: ${err.msg()}'
 		return false
 	}
