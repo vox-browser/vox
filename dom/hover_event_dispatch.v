@@ -41,16 +41,14 @@ fn hover_dispatch(name string, target HoverEventTarget, related ?&Node, data ?Ho
 		?&EventTarget(none)
 	}
 	mut event := if name.starts_with('pointer') {
-		mut pointer := PointerEvent.create_from_platform_event(view, name, geometry.screen_position,
+		pointer := PointerEvent.create_from_platform_event(view, name, geometry.screen_position,
 			geometry.page_offset, geometry.viewport_position, target.offset, geometry.movement,
 			geometry.button, geometry.buttons, geometry.modifiers)
-		pointer.related_target__ = related_target
 		unsafe { &Event(pointer) }
 	} else {
-		mut mouse := MouseEvent.create_from_platform_event(view, name, geometry.screen_position,
+		mouse := MouseEvent.create_from_platform_event(view, name, geometry.screen_position,
 			geometry.page_offset, geometry.viewport_position, target.offset, geometry.movement,
 			geometry.button, geometry.buttons, geometry.modifiers, 0)
-		mouse.related_target__ = related_target
 		unsafe { &Event(mouse) }
 	}
 	event.related_target_ = related_target

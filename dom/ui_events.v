@@ -206,7 +206,6 @@ pub mut:
 	meta_key_             bool
 	button_               i16
 	buttons_              u16
-	related_target__      ?&EventTarget
 	modifier_alt_graph_   bool
 	modifier_caps_lock_   bool
 	modifier_fn_          bool
@@ -231,6 +230,7 @@ pub fn MouseEvent.create(event_name string, init MouseEventInit) &MouseEvent {
 				initialized_: true
 				is_trusted_:  true
 				time_stamp_:  current_event_timestamp()
+				related_target_: init.related_target
 			}
 			detail_: init.detail
 			view_:   init.view
@@ -251,7 +251,6 @@ pub fn MouseEvent.create(event_name string, init MouseEventInit) &MouseEvent {
 		meta_key_:             init.meta_key
 		button_:               init.button
 		buttons_:              init.buttons
-		related_target__:      init.related_target
 		modifier_alt_graph_:   init.modifier_alt_graph
 		modifier_caps_lock_:   init.modifier_caps_lock
 		modifier_fn_:          init.modifier_fn
@@ -316,7 +315,7 @@ pub fn MouseEvent.create_from_mouse_event(mouse_event &MouseEvent, time_stamp DO
 		movement_y:        mouse_event.movement_y_
 		button:            mouse_event.button_
 		buttons:           mouse_event.buttons_
-		related_target:    mouse_event.related_target__
+		related_target:    mouse_event.related_target()
 	})
 	event.is_trusted_ = false
 	event.set_time_stamp(time_stamp)
@@ -392,7 +391,7 @@ pub fn (e &MouseEvent) clone() &MouseEvent {
 		movement_y:        e.movement_y_
 		button:            e.button_
 		buttons:           e.buttons_
-		related_target:    e.related_target__
+		related_target:    e.related_target()
 	})
 	// Cloning does not create a user-agent-dispatched event.
 	clone.is_trusted_ = false
@@ -481,7 +480,7 @@ pub fn (e &MouseEvent) platform_ctrl_key() bool {
 }
 
 pub fn (e &MouseEvent) related_target() ?&EventTarget {
-	return e.related_target__
+	return e.related_target_
 }
 
 pub fn (e &MouseEvent) related_target_mouse() ?&EventTarget {
@@ -540,7 +539,7 @@ pub fn (mut e MouseEvent) init_mouse_event(type_ string, bubbles bool, cancelabl
 	e.shift_key_ = shift_key
 	e.meta_key_ = meta_key
 	e.button_ = button
-	e.related_target__ = related_target
+	e.set_related_target(related_target)
 }
 
 // --- KeyboardEvent (UIEvents/KeyboardEvent.h) ---
@@ -794,6 +793,7 @@ pub fn PointerEvent.create(event_name string, init PointerEventInit) &PointerEve
 					initialized_: true
 					is_trusted_:  true
 					time_stamp_:  current_event_timestamp()
+					related_target_: init.related_target
 				}
 				detail_: init.detail
 				view_:   init.view
@@ -814,7 +814,6 @@ pub fn PointerEvent.create(event_name string, init PointerEventInit) &PointerEve
 			meta_key_:             init.meta_key
 			button_:               init.button
 			buttons_:              init.buttons
-			related_target__:      init.related_target
 			modifier_alt_graph_:   init.modifier_alt_graph
 			modifier_caps_lock_:   init.modifier_caps_lock
 			modifier_fn_:          init.modifier_fn
@@ -920,7 +919,7 @@ pub fn (e &PointerEvent) clone() &PointerEvent {
 			movement_y:        e.movement_y_
 			button:            e.button_
 			buttons:           e.buttons_
-			related_target:    e.related_target__
+			related_target:    e.related_target()
 		}
 		pointer_id:           e.pointer_id_
 		width:                e.width_
@@ -1341,6 +1340,7 @@ fn new_wheel_event(event_name string, init WheelEventInit, trusted bool) &WheelE
 					initialized_: true
 					is_trusted_:  trusted
 					time_stamp_:  current_event_timestamp()
+					related_target_: init.related_target
 				}
 				detail_: init.detail
 				view_:   init.view
@@ -1361,7 +1361,6 @@ fn new_wheel_event(event_name string, init WheelEventInit, trusted bool) &WheelE
 			meta_key_:             init.meta_key
 			button_:               init.button
 			buttons_:              init.buttons
-			related_target__:      init.related_target
 			modifier_alt_graph_:   init.modifier_alt_graph
 			modifier_caps_lock_:   init.modifier_caps_lock
 			modifier_fn_:          init.modifier_fn
