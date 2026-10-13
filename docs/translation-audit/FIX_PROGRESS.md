@@ -1351,3 +1351,24 @@ Agent checks run with `v -old-compiler -enable-globals`. Isolated worktrees use 
   test file; the independent physical recount is pinned separately to the code.
   Historical ledger remains 32 fixed / 25 partial / 9 open.
   Consolidated evidence SHA256: `96744137979d0e5726bc5816628aac05a14790a39a667b2e0d8cfe93f8b6cfbe`.
+
+- Native Window DataTransferItemList.add (`bbe330a8`, 2026-10-13).
+  Generated count selection, native File branding, raw DOMString addition,
+  fresh typed duplicate failures and live indexed item identity are implemented.
+  9 new / 16 focused cases, 15 selected files /
+  52 cases in each GC mode, 9 optimized cases, signed startup,
+  two exact genuine mixed-item pages and eleven screenshot smoke cases pass.
+  The parent compiles two fixture files and fails seven initial availability
+  guards; later assertions earn no baseline credit. Initial browser literal
+  compilation and focused fixture failures remain preserved with no batch pass
+  credit. Only test fixtures change after the initial implementation freeze.
+  Public File names undergo USVString conversion; raw text/type and typed native
+  File names retain code units. File byte promises execute owning-document tasks
+  in native V fixtures; the production pages verify File metadata.
+  See [DataTransfer item-add evidence](NATIVE_DATA_TRANSFER_ITEM_ADD_OWNER.md).
+  Assigned HTML delta is +15 implementation / +55 test lines and one test file;
+  six browser/root feature paths remain excluded from the package inventory.
+  Physical recount: 78 owners / 2,224 files, 433,231
+  implementation / 160,272 test V LOC, pinned separately to the code.
+  Historical ledger remains 32 fixed / 25 partial / 9 open.
+  Consolidated evidence SHA256: `dab3d2b8c3e5dc1e7a21f047c86d530a39ba48195398c45b1bb6d211ed7afad3`.

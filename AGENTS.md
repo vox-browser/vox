@@ -1038,6 +1038,20 @@
   weak/foreign wrapper ownership remain pending. See [DataTransfer items
   evidence](docs/translation-audit/NATIVE_DATA_TRANSFER_ITEMS_OWNER.md).
 
+- Window-owned DataTransferItemList.add now selects the native File overload for
+  one argument and converts data then type as raw UTF-16 DOMStrings for two or more.
+  Zero arguments fail overload resolution before receiver branding; selected calls
+  convert before the store's mode gate. Added items share the live indexed wrappers,
+  and duplicate string types throw fresh typed NotSupportedError objects. At
+  `bbe330a8`, 9 new / 16 focused cases pass;
+  15 selected files / 52 cases pass in each GC mode,
+  and 9 optimized cases pass. Signed startup, two pixel-exact
+  genuine mixed string/File pages and eleven screenshot smoke cases pass. Public
+  File names use USVString conversion; copied bytes and access modes have native
+  owner-task coverage. getAsString/webkitGetAsEntry/setDragImage, physical delivery
+  and default actions, media ondrag handlers and weak/foreign ownership remain open.
+  See [DataTransfer item-add evidence](docs/translation-audit/NATIVE_DATA_TRANSFER_ITEM_ADD_OWNER.md).
+
 ## Translated module inventory
 
 All 78 translated LibWeb packages and all 1,193 current module-owned C++
