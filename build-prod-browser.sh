@@ -6,6 +6,8 @@ set -eu
 # Environment overrides:
 #   V_BIN                     V compiler executable
 #   LADYBIRD_V_GC            boehm (default) or none for ownership diagnostics
+#   LADYBIRD_V_PROFILE       V profiling report path (unset for normal builds)
+#   LADYBIRD_V_PROFILE_FNS   comma-separated C function names to profile
 #   LADYBIRD_SOURCE_DIR       upstream Ladybird checkout used for Skia
 #   LADYBIRD_VCPKG_TRIPLET    upstream vcpkg triplet directory
 
@@ -132,6 +134,14 @@ if [ "$gc_mode" = boehm ]; then
     extra_cflags="$extra_cflags -O2"
 else
     set -- "$@" -prod -gc none
+fi
+if [ -n "${LADYBIRD_V_PROFILE:-}" ]; then
+    set -- "$@" -profile "$LADYBIRD_V_PROFILE" -profile-no-inline \
+        -profile-fns "${LADYBIRD_V_PROFILE_FNS:-main__BrowserApp_install_loaded_page,layout__run_document_layout_with_renderer_mode}"
+    # V emits profiling stdio calls ahead of the macOS stdio declarations.
+    # Include those declarations first, without fortified function-like macros
+    # that would rewrite the compatibility compiler's own C prototypes.
+    extra_cflags="$extra_cflags -D_FORTIFY_SOURCE=0 -include stdio.h"
 fi
 echo "Building Ladybird V with: $* -cflags $extra_cflags"
 # Root browser features are split across main.v and companion module files.
