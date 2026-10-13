@@ -2481,7 +2481,10 @@ pub fn (mut e Element) set_computed_properties(pseudo_element ?int, style ?&CSSC
 }
 
 pub fn (e &Element) get_pseudo_element(typ int) ?&PseudoElement_ {
-	return e.pseudo_element_data[typ] or { return none }
+	// Optional map lookup creates an error object on every miss in the
+	// compatibility compiler. Most elements have no requested pseudo-element.
+	if typ !in e.pseudo_element_data { return none }
+	return unsafe { e.pseudo_element_data[typ] }
 }
 
 fn (mut e Element) ensure_pseudo_element(typ int) &PseudoElement_ {
