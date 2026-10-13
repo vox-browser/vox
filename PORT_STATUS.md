@@ -1116,22 +1116,19 @@ V's standard `crypto.*` modules without shadowing that namespace.
 The IDL-only `Fullscreen` package delegates its state machine to the shared
 translated DOM implementation.
 
-Verified at `682a7827`, the physical inventory is retained in
-`Build/audit-fixes/source-current-module-loc-682a7827.json` (SHA256
-`1e30f605ac80b9e550e7749cc1c62330556e8491793952db1de86a8b2b54a9a3`).
-All 78 owners and 2,216 assigned files match their committed byte hashes and
-physical newline counts: 432,960 implementation V LOC and 159,684 test V LOC.
-CSS selectors.v changes bytes with zero physical LOC change; DOM contributes
-+2 implementation / +71 test lines and 1 new assigned file; Painting
-contributes +14 implementation / +43 test lines and 1 new assigned file;
-DragEvent HTML contributes +2 implementation / +101 test lines and one new
-assigned constructor-test file.
-The separately committed DataTransfer identity prerequisite and intervening
-README/build-script changes add no assigned V delta. The DragEvent slice
-changes only the assigned HTML constructor and its focused test; its seven
-root/browser paths remain excluded. Every Git hash and newline is retained for
-all five source snapshots. Later canonical concurrent work is outside this
-pinned inventory. Counts and mappings do not establish runtime parity.
+Verified at `b335958e`, the physical inventory is retained in
+`Build/audit-fixes/source-current-module-loc-b335958e.json` (SHA256 `d1312ce3780a77a3ebcab3a487d3052ebbdedb51cfdd0e60a4992134892dea81`).
+All 78 owners and 2,217 assigned files match their committed byte hashes and
+physical newline counts: 433,002 implementation V LOC and 159,798 test V LOC.
+Only HTML changes from parent `87e3e2a5`: +42 implementation / +114 test lines
+and one new assigned test file. The preceding docs since `682a7827` change no
+assigned input bytes, newlines or ownership. Six root/browser support/test
+feature paths remain excluded. Exact input maps are retained for all three
+pinned source snapshots. Later concurrent canonical work is outside this
+inventory; counts do not establish runtime parity.
+The prior DragEvent inventory remains preserved in
+`Build/audit-fixes/source-current-module-loc-682a7827.json` (SHA256 `1e30f605ac80b9e550e7749cc1c62330556e8491793952db1de86a8b2b54a9a3`),
+with 2,216 files / 432,960 implementation / 159,684 test V LOC.
 The prior WheelEvent inventory remains preserved in
 `Build/audit-fixes/source-current-module-loc-813dd838.json` (SHA256
 `7d2154cc1ce69f1ea0dda25e8eda6f2df52c76abc7df473c463da13e8ca1cce5`),
@@ -1178,7 +1175,7 @@ The previous unsupported-play inventory remains preserved in
 `166070c623211b8600db5300c89ed5219375d0e4045728c12117361ad8cca27c`).
 Source-unit mappings and physical LOC do not establish runtime parity.
 
-The table below records package V LOC verified at `682a7827` on 2026-10-13; upstream counts
+The table below records package V LOC verified at `b335958e` on 2026-10-13; upstream counts
 and structural mapping labels retain the pinned inventory. It covers 76 current
 implementation-bearing upstream modules plus the translated IDL/IPC-only
 `Fullscreen` and `Worker` packages, and all 1,193 module-owned `.cpp`
@@ -1214,7 +1211,7 @@ from the current-module totals.
 | `Gamepad` | 6 | 1,351 | 860 | 323 | Complete |
 | `Geolocation` | 4 | 643 | 535 | 224 | Complete |
 | `Geometry` | 8 | 2,078 | 2,121 | 1,041 | Complete |
-| `HTML` | 286 | 83,853 | 69,632 | 40,385 | Complete |
+| `HTML` | 286 | 83,853 | 69,674 | 40,499 | Complete |
 | `HighResolutionTime` | 2 | 516 | 500 | 213 | Complete |
 | `IndexedDB` | 19 | 6,991 | 5,455 | 1,388 | Complete |
 | `Infra` | 3 | 385 | 548 | 102 | Complete |
@@ -1267,7 +1264,7 @@ from the current-module totals.
 | `XLink` | 1 | 16 | 13 | 10 | Complete |
 | `XML` | 2 | 556 | 477 | 164 | Complete |
 | `XPath` | 5 | 435 | 672 | 210 | Complete |
-| **Total** | **1,193** | **329,970** | **432,960** | **159,684** | **74 complete, 4 present, 0 untranslated** |
+| **Total** | **1,193** | **329,970** | **433,002** | **159,798** | **74 complete, 4 present, 0 untranslated** |
 
 ### Live editability refresh
 

@@ -91,26 +91,20 @@ physical drag delivery, store transitions/default actions, foreign realms and
 weak ownership remain open. See [DataTransfer string-store
 evidence](../docs/translation-audit/NATIVE_DATA_TRANSFER_STRING_OWNER.md).
 
-Verified at `682a7827`, the disjoint DOM inventory contains 43,499
+Verified at `b335958e`, the disjoint DOM inventory contains 43,499
 implementation V LOC and 5,050 test V LOC across 101 assigned files.
-`Build/audit-fixes/source-current-module-loc-682a7827.json` (SHA256
-`1e30f605ac80b9e550e7749cc1c62330556e8491793952db1de86a8b2b54a9a3`)
-verifies every assigned committed byte hash and physical newline. The
-independent 03c62e96 DOM node change contributes +2 implementation / +71 test
-lines and one new assigned file; its CSS selector byte change has zero LOC
-delta. UIEvents remains 1,489 implementation / 474 test V LOC. Integrated
-totals across 78 owners / 2,216 files are 432,960 implementation / 159,684
-test V LOC.
-CSS selectors.v changes bytes with zero physical LOC change; DOM contributes
-+2 implementation / +71 test lines and 1 new assigned file; Painting
-contributes +14 implementation / +43 test lines and 1 new assigned file;
-DragEvent HTML contributes +2 implementation / +101 test lines and one new
-assigned constructor-test file.
-The DragEvent feature changes only its assigned HTML constructor and focused
-HTML test; it changes no assigned DOM/UIEvents bytes. Root/browser bindings
-and the identity prerequisite remain excluded. Intervening README/build-script
-work adds no assigned delta. Later canonical concurrent work is outside this
-pinned inventory. Counts and mappings do not establish runtime parity.
+`Build/audit-fixes/source-current-module-loc-b335958e.json` (SHA256 `d1312ce3780a77a3ebcab3a487d3052ebbdedb51cfdd0e60a4992134892dea81`).
+Every assigned committed byte hash and physical newline is verified.
+DOM/UIEvents assigned bytes remain unchanged by this slice; UIEvents remains
+1,489 implementation / 474 test V LOC. Integrated totals across 78 owners /
+2,217 files are 433,002 implementation / 159,798 test V LOC.
+Only the assigned HTML string model and new HTML test change: +42
+implementation / +114 test lines and one file. Intervening docs change no
+assigned bytes, newlines or ownership. Six root/browser support/test paths
+remain excluded. Later concurrent work is outside this pin; counts do not
+establish runtime parity.
+The previous DragEvent record remains preserved at
+`Build/audit-fixes/source-current-module-loc-682a7827.json` (SHA256 `1e30f605ac80b9e550e7749cc1c62330556e8491793952db1de86a8b2b54a9a3`).
 The previous WheelEvent record remains preserved at
 `Build/audit-fixes/source-current-module-loc-813dd838.json` (SHA256
 `7d2154cc1ce69f1ea0dda25e8eda6f2df52c76abc7df473c463da13e8ca1cce5`).
