@@ -1128,10 +1128,22 @@ V's standard `crypto.*` modules without shadowing that namespace.
 The IDL-only `Fullscreen` package delegates its state machine to the shared
 translated DOM implementation.
 
-Verified at `0cd374b6`, the physical inventory is retained in
-`Build/audit-fixes/native-media-wheel-handler-inventory-current.json` (SHA256 `393db2d4bee0aeabeae05a4d6caf1c0785526ad70ea2065cdf7cc33ed26b3495`).
-All 78 owners / 2,237 assigned files contain 433,369 implementation / 160,729
+Verified at `33ba13ac`, the physical inventory is retained in
+`Build/audit-fixes/native-wheel-input-routing-inventory-current.json` (SHA256 `590ac39c939ef72b92c769b0c66f7fdaf09c2825e64ce6a64141dbaa39764557`).
+All 78 owners / 2,238 assigned files contain 433,415 implementation / 161,056
 test V LOC at this code pin.
+The native wheel-input routing feature assigns three Page paths: +46
+implementation / +327 test physical lines and one assigned file from actual
+parent `31355243`. Four root browser/support paths remain excluded. The
+separate previous `0cd374b6` to parent range contains the CSS compatibility
+byte correction with zero physical-line delta and documentation commits; these
+receive no wheel test or implementation credit. Exact per-path hashes/newlines
+and owner deltas remain in the counter. Later work outside `33ba13ac` requires
+its own pin.
+The previous native media wheel-handler inventory at `0cd374b6` (2026-10-14) remains preserved in
+`Build/audit-fixes/native-media-wheel-handler-inventory-current.json` (SHA256 `393db2d4bee0aeabeae05a4d6caf1c0785526ad70ea2065cdf7cc33ed26b3495`).
+At that pin, 78 owners / 2,237 assigned files contain 433,369 implementation /
+160,729 test V LOC.
 The onwheel feature changes three excluded browser/root paths and adds no
 assigned implementation, test or file count. Independent intervening assigned
 commits are reconciled separately from `a503c977` to actual parent `777c3cf9`:
@@ -1239,7 +1251,7 @@ The previous unsupported-play inventory remains preserved in
 `166070c623211b8600db5300c89ed5219375d0e4045728c12117361ad8cca27c`).
 Source-unit mappings and physical LOC do not establish runtime parity.
 
-The table below records package V LOC verified at `0cd374b6` on 2026-10-14; upstream counts
+The table below records package V LOC verified at `33ba13ac` on 2026-10-13 UTC; upstream counts
 and structural mapping labels retain the pinned inventory. It covers 76 current
 implementation-bearing upstream modules plus the translated IDL/IPC-only
 `Fullscreen` and `Worker` packages, and all 1,193 module-owned `.cpp`
@@ -1291,7 +1303,7 @@ from the current-module totals.
 | `MixedContent` | 1 | 127 | 93 | 105 | Complete |
 | `NavigationTiming` | 4 | 497 | 645 | 130 | Complete |
 | `NotificationsAPI` | 1 | 301 | 370 | 101 | Complete |
-| `Page` | 8 | 6,450 | 6,855 | 2,843 | Complete |
+| `Page` | 8 | 6,450 | 6,901 | 3,170 | Complete |
 | `Painting` | 22 | 8,227 | 7,993 | 2,628 | Present |
 | `PerformanceTimeline` | 5 | 476 | 502 | 154 | Complete |
 | `PermissionsAPI` | 3 | 388 | 239 | 74 | Complete |
@@ -1328,7 +1340,7 @@ from the current-module totals.
 | `XLink` | 1 | 16 | 13 | 10 | Complete |
 | `XML` | 2 | 556 | 477 | 164 | Complete |
 | `XPath` | 5 | 435 | 672 | 210 | Complete |
-| **Total** | **1,193** | **329,970** | **433,369** | **160,729** | **74 complete, 4 present, 0 untranslated** |
+| **Total** | **1,193** | **329,970** | **433,415** | **161,056** | **74 complete, 4 present, 0 untranslated** |
 
 ### Live editability refresh
 

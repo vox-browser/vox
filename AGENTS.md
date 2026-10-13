@@ -1112,8 +1112,20 @@
 ## Translated module inventory
 
 All 78 translated LibWeb packages and all 1,193 current module-owned C++
-implementation units have audited V mappings. Verified at `0cd374b6` on
-2026-10-14, 2,237 assigned files contain 433,369 implementation V LOC and
+implementation units have audited V mappings. Verified at `33ba13ac` on
+2026-10-13 UTC, 2,238 assigned files contain 433,415 implementation V LOC and
+161,056 test V LOC.
+The native wheel-input routing feature assigns three Page paths: +46
+implementation / +327 test physical lines and one assigned file from actual
+parent `31355243`. Four root browser/support paths remain excluded. The
+separate previous `0cd374b6` to parent range contains the CSS compatibility
+byte correction with zero physical-line delta and documentation commits; these
+receive no wheel test or implementation credit. Exact per-path hashes/newlines
+and owner deltas remain in the counter. Later work outside `33ba13ac` requires
+its own pin.
+The previous native media wheel-handler inventory at `0cd374b6` (2026-10-14) remains preserved in
+`Build/audit-fixes/native-media-wheel-handler-inventory-current.json` (SHA256 `393db2d4bee0aeabeae05a4d6caf1c0785526ad70ea2065cdf7cc33ed26b3495`).
+At that pin, 78 owners / 2,237 assigned files contain 433,369 implementation /
 160,729 test V LOC.
 The onwheel feature changes three excluded browser/root paths and adds no
 assigned implementation, test or file count. Independent intervening assigned
@@ -1191,7 +1203,7 @@ their shared DOM test files are counted under the corresponding owner once.
 | MediaCapabilitiesAPI | 657 | MediaCapture | 1,240 |
 | MediaSourceExtensions | 4,079 | MimeSniff | 1,108 |
 | MixedContent | 93 | NavigationTiming | 645 |
-| NotificationsAPI | 370 | Page | 6,855 |
+| NotificationsAPI | 370 | Page | 6,901 |
 | Painting | 7,993 | PerformanceTimeline | 502 |
 | PermissionsAPI | 239 | Platform | 2,851 |
 | ReferrerPolicy | 105 | RequestIdleCallback | 59 |
@@ -1210,7 +1222,7 @@ their shared DOM test files are counted under the corresponding owner once.
 | WebXR | 411 | Worker | 142 |
 | XHR | 1,695 | XLink | 13 |
 | XML | 477 | XPath | 672 |
-| **Total** | **433,369** |  |  |
+| **Total** | **433,415** |  |  |
 
 `PORT_STATUS.md` is the canonical detailed inventory. It also records upstream
 C++ file/LOC counts, per-module test LOC, status, and the counting conventions;

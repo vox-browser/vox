@@ -103,12 +103,24 @@ drag images, hardware file delivery and weak/foreign ownership remain open.
 See [DataTransfer files
 evidence](../docs/translation-audit/NATIVE_DATA_TRANSFER_FILES_OWNER.md).
 
-Verified at `0cd374b6`, the disjoint DOM inventory contains 43,502
+Verified at `33ba13ac`, the disjoint DOM inventory contains 43,502
 implementation V LOC and 5,066 test V LOC across 102 assigned files.
-`Build/audit-fixes/native-media-wheel-handler-inventory-current.json` (SHA256 `393db2d4bee0aeabeae05a4d6caf1c0785526ad70ea2065cdf7cc33ed26b3495`).
+`Build/audit-fixes/native-wheel-input-routing-inventory-current.json` (SHA256 `590ac39c939ef72b92c769b0c66f7fdaf09c2825e64ce6a64141dbaa39764557`).
 UIEvents contains 1,489 implementation / 474 test V LOC. Integrated totals
-across 78 owners / 2,237 files are 433,369 implementation / 160,729 test V
+across 78 owners / 2,238 files are 433,415 implementation / 161,056 test V
 LOC.
+The native wheel-input routing feature assigns three Page paths: +46
+implementation / +327 test physical lines and one assigned file from actual
+parent `31355243`. Four root browser/support paths remain excluded. The
+separate previous `0cd374b6` to parent range contains the CSS compatibility
+byte correction with zero physical-line delta and documentation commits; these
+receive no wheel test or implementation credit. Exact per-path hashes/newlines
+and owner deltas remain in the counter. Later work outside `33ba13ac` requires
+its own pin.
+The previous native media wheel-handler inventory at `0cd374b6` (2026-10-14) remains preserved in
+`Build/audit-fixes/native-media-wheel-handler-inventory-current.json` (SHA256 `393db2d4bee0aeabeae05a4d6caf1c0785526ad70ea2065cdf7cc33ed26b3495`).
+At that pin, 78 owners / 2,237 assigned files contain 433,369 implementation /
+160,729 test V LOC.
 The onwheel feature changes three excluded browser/root paths and adds no
 assigned implementation, test or file count. Independent intervening assigned
 commits are reconciled separately from `a503c977` to actual parent `777c3cf9`:
