@@ -79,21 +79,29 @@ work are outside that validation pin.
 
 [DragEvent evidence](../docs/translation-audit/NATIVE_DRAG_EVENT_OWNER.md).
 
-Verified at `813dd838`, the disjoint DOM inventory contains 43,497
-implementation V LOC and 4,979 test V LOC across 100 assigned files.
+Verified at `682a7827`, the disjoint DOM inventory contains 43,499
+implementation V LOC and 5,050 test V LOC across 101 assigned files.
+`Build/audit-fixes/source-current-module-loc-682a7827.json` (SHA256
+`1e30f605ac80b9e550e7749cc1c62330556e8491793952db1de86a8b2b54a9a3`)
+verifies every assigned committed byte hash and physical newline. The
+independent 03c62e96 DOM node change contributes +2 implementation / +71 test
+lines and one new assigned file; its CSS selector byte change has zero LOC
+delta. UIEvents remains 1,489 implementation / 474 test V LOC. Integrated
+totals across 78 owners / 2,216 files are 432,960 implementation / 159,684
+test V LOC.
+CSS selectors.v changes bytes with zero physical LOC change; DOM contributes
++2 implementation / +71 test lines and 1 new assigned file; Painting
+contributes +14 implementation / +43 test lines and 1 new assigned file;
+DragEvent HTML contributes +2 implementation / +101 test lines and one new
+assigned constructor-test file.
+The DragEvent feature changes only its assigned HTML constructor and focused
+HTML test; it changes no assigned DOM/UIEvents bytes. Root/browser bindings
+and the identity prerequisite remain excluded. Intervening README/build-script
+work adds no assigned delta. Later canonical concurrent work is outside this
+pinned inventory. Counts and mappings do not establish runtime parity.
+The previous WheelEvent record remains preserved at
 `Build/audit-fixes/source-current-module-loc-813dd838.json` (SHA256
-`7d2154cc1ce69f1ea0dda25e8eda6f2df52c76abc7df473c463da13e8ca1cce5`)
-verifies every assigned committed byte hash and physical newline. DOM and
-the separate UIEvents owner (1,489 implementation / 474 test
-V LOC) remain unchanged. Integrated totals across 78 owners / 2,213
-files are 432,942 implementation / 159,469 test V LOC.
-The preceding independent package commits a031fa8f and 8221067c contribute
-the entire increase of 73 implementation and 121 test V lines.
-All assigned bytes and newline counts also match the WheelEvent parent
-`368ef4c7`. The seven WheelEvent feature paths remain excluded
-root/browser support; this binding changes no assigned package counts.
-Concurrent canonical work after 813dd838 remains outside this pinned
-inventory. Counts and mappings do not establish runtime parity.
+`7d2154cc1ce69f1ea0dda25e8eda6f2df52c76abc7df473c463da13e8ca1cce5`).
 The previous PointerEvent record remains preserved at
 `Build/audit-fixes/source-current-module-loc-c9dc0da2.json` (SHA256
 `3c5062172b28d38dda0a7e9d3d842470e270a78fd45aee5f07ba0a68633c54b5`).

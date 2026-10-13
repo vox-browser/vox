@@ -1005,11 +1005,11 @@
 ## Translated module inventory
 
 All 78 translated LibWeb packages and all 1,193 current module-owned C++
-implementation units have audited V mappings. Verified at `813dd838` on
-2026-10-13, 2,213 assigned files contain 432,942 implementation V LOC and
-159,469 test V LOC. This pinned inventory includes preceding
-independently committed Layout/CSS work; the WheelEvent binding changes
-only excluded root/browser support.
+implementation units have audited V mappings. Verified at `682a7827` on
+2026-10-13, 2,216 assigned files contain 432,960 implementation V LOC and
+159,684 test V LOC. This pinned inventory separates preceding independent
+DOM/CSS/Painting changes from the DragEvent HTML constructor/test delta. The
+identity prerequisite and root/browser binding support remain excluded.
 Physical LOC includes comments and blank lines. Root support code and browser
 integration code are excluded. Package counts include generated V assets and
 supporting translations; WebAssembly includes the separately audited LibWasm
@@ -1024,14 +1024,14 @@ their shared DOM test files are counted under the corresponding owner once.
 | Clipboard | 1,123 | Compositor | 2,403 |
 | Compression | 471 | ContentSecurityPolicy | 2,816 |
 | CookieStore | 1,059 | CredentialManagement | 420 |
-| Crypto (`webcrypto/`) | 7,957 | DOM | 43,497 |
+| Crypto (`webcrypto/`) | 7,957 | DOM | 43,499 |
 | DOMURL | 854 | Editing | 13,938 |
 | Encoding | 5,356 | EncryptedMediaExtensions | 572 |
 | EntriesAPI | 44 | EventTiming | 153 |
 | Fetch | 6,678 | FileAPI | 1,493 |
 | Fullscreen | 93 | GPC | 16 |
 | Gamepad | 860 | Geolocation | 535 |
-| Geometry | 2,121 | HTML | 69,630 |
+| Geometry | 2,121 | HTML | 69,632 |
 | HighResolutionTime | 500 | IndexedDB | 5,455 |
 | Infra | 548 | Internals | 2,337 |
 | IntersectionObserver | 668 | Layout | 44,796 |
@@ -1040,7 +1040,7 @@ their shared DOM test files are counted under the corresponding owner once.
 | MediaSourceExtensions | 4,079 | MimeSniff | 1,108 |
 | MixedContent | 93 | NavigationTiming | 645 |
 | NotificationsAPI | 370 | Page | 6,855 |
-| Painting | 7,979 | PerformanceTimeline | 502 |
+| Painting | 7,993 | PerformanceTimeline | 502 |
 | PermissionsAPI | 239 | Platform | 2,824 |
 | ReferrerPolicy | 105 | RequestIdleCallback | 59 |
 | ResizeObserver | 605 | ResourceTiming | 342 |
@@ -1058,7 +1058,7 @@ their shared DOM test files are counted under the corresponding owner once.
 | WebXR | 411 | Worker | 142 |
 | XHR | 1,695 | XLink | 13 |
 | XML | 477 | XPath | 672 |
-| **Total** | **432,942** |  |  |
+| **Total** | **432,960** |  |  |
 
 `PORT_STATUS.md` is the canonical detailed inventory. It also records upstream
 C++ file/LOC counts, per-module test LOC, status, and the counting conventions;

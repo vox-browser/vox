@@ -1104,23 +1104,26 @@ V's standard `crypto.*` modules without shadowing that namespace.
 The IDL-only `Fullscreen` package delegates its state machine to the shared
 translated DOM implementation.
 
-Verified at `813dd838`, the physical inventory is retained in
+Verified at `682a7827`, the physical inventory is retained in
+`Build/audit-fixes/source-current-module-loc-682a7827.json` (SHA256
+`1e30f605ac80b9e550e7749cc1c62330556e8491793952db1de86a8b2b54a9a3`).
+All 78 owners and 2,216 assigned files match their committed byte hashes and
+physical newline counts: 432,960 implementation V LOC and 159,684 test V LOC.
+CSS selectors.v changes bytes with zero physical LOC change; DOM contributes
++2 implementation / +71 test lines and 1 new assigned file; Painting
+contributes +14 implementation / +43 test lines and 1 new assigned file;
+DragEvent HTML contributes +2 implementation / +101 test lines and one new
+assigned constructor-test file.
+The separately committed DataTransfer identity prerequisite and intervening
+README/build-script changes add no assigned V delta. The DragEvent slice
+changes only the assigned HTML constructor and its focused test; its seven
+root/browser paths remain excluded. Every Git hash and newline is retained for
+all five source snapshots. Later canonical concurrent work is outside this
+pinned inventory. Counts and mappings do not establish runtime parity.
+The prior WheelEvent inventory remains preserved in
 `Build/audit-fixes/source-current-module-loc-813dd838.json` (SHA256
-`7d2154cc1ce69f1ea0dda25e8eda6f2df52c76abc7df473c463da13e8ca1cce5`).
-All 78 owners and 2,213 assigned files match their committed byte
-hashes and physical newline counts: 432,942 implementation V LOC
-and 159,469 test V LOC.
-CSS contains 189 files / 114,959 implementation / 17,805 test V LOC
-(+17 implementation / +63 test lines since c9dc0da2). Layout contains
-91 files / 44,796 implementation / 18,217 test V LOC
-(+56 implementation / +58 test lines and one new file).
-The preceding independent package commits a031fa8f and 8221067c contribute
-the entire increase of 73 implementation and 121 test V lines.
-All assigned bytes and newline counts also match the WheelEvent parent
-`368ef4c7`. The seven WheelEvent feature paths remain excluded
-root/browser support; this binding changes no assigned package counts.
-Concurrent canonical work after 813dd838 remains outside this pinned
-inventory. Counts and mappings do not establish runtime parity.
+`7d2154cc1ce69f1ea0dda25e8eda6f2df52c76abc7df473c463da13e8ca1cce5`),
+with 2,213 files / 432,942 implementation / 159,469 test V LOC.
 The prior PointerEvent inventory remains preserved in
 `Build/audit-fixes/source-current-module-loc-c9dc0da2.json` (SHA256
 `3c5062172b28d38dda0a7e9d3d842470e270a78fd45aee5f07ba0a68633c54b5`),
@@ -1163,7 +1166,7 @@ The previous unsupported-play inventory remains preserved in
 `166070c623211b8600db5300c89ed5219375d0e4045728c12117361ad8cca27c`).
 Source-unit mappings and physical LOC do not establish runtime parity.
 
-The table below records package V LOC verified at `813dd838` on 2026-10-13; upstream counts
+The table below records package V LOC verified at `682a7827` on 2026-10-13; upstream counts
 and structural mapping labels retain the pinned inventory. It covers 76 current
 implementation-bearing upstream modules plus the translated IDL/IPC-only
 `Fullscreen` and `Worker` packages, and all 1,193 module-owned `.cpp`
@@ -1185,7 +1188,7 @@ from the current-module totals.
 | `CookieStore` | 2 | 850 | 1,059 | 482 | Complete |
 | `CredentialManagement` | 6 | 382 | 420 | 301 | Complete |
 | `Crypto` | 6 | 13,412 | 7,957 | 7,989 | Complete |
-| `DOM` | 59 | 34,859 | 43,497 | 4,979 | Complete |
+| `DOM` | 59 | 34,859 | 43,499 | 5,050 | Complete |
 | `DOMURL` | 4 | 1,039 | 854 | 464 | Complete |
 | `Editing` | 26 | 12,720 | 13,938 | 226 | Complete |
 | `Encoding` | 6 | 769 | 5,356 | 4,495 | Complete |
@@ -1199,7 +1202,7 @@ from the current-module totals.
 | `Gamepad` | 6 | 1,351 | 860 | 323 | Complete |
 | `Geolocation` | 4 | 643 | 535 | 224 | Complete |
 | `Geometry` | 8 | 2,078 | 2,121 | 1,041 | Complete |
-| `HTML` | 286 | 83,853 | 69,630 | 40,284 | Complete |
+| `HTML` | 286 | 83,853 | 69,632 | 40,385 | Complete |
 | `HighResolutionTime` | 2 | 516 | 500 | 213 | Complete |
 | `IndexedDB` | 19 | 6,991 | 5,455 | 1,388 | Complete |
 | `Infra` | 3 | 385 | 548 | 102 | Complete |
@@ -1216,7 +1219,7 @@ from the current-module totals.
 | `NavigationTiming` | 4 | 497 | 645 | 130 | Complete |
 | `NotificationsAPI` | 1 | 301 | 370 | 101 | Complete |
 | `Page` | 8 | 6,450 | 6,855 | 2,843 | Complete |
-| `Painting` | 22 | 8,227 | 7,979 | 2,585 | Present |
+| `Painting` | 22 | 8,227 | 7,993 | 2,628 | Present |
 | `PerformanceTimeline` | 5 | 476 | 502 | 154 | Complete |
 | `PermissionsAPI` | 3 | 388 | 239 | 74 | Complete |
 | `Platform` | 4 | 431 | 2,824 | 649 | Complete |
@@ -1252,7 +1255,7 @@ from the current-module totals.
 | `XLink` | 1 | 16 | 13 | 10 | Complete |
 | `XML` | 2 | 556 | 477 | 164 | Complete |
 | `XPath` | 5 | 435 | 672 | 210 | Complete |
-| **Total** | **1,193** | **329,970** | **432,942** | **159,469** | **74 complete, 4 present, 0 untranslated** |
+| **Total** | **1,193** | **329,970** | **432,960** | **159,684** | **74 complete, 4 present, 0 untranslated** |
 
 ### Live editability refresh
 
