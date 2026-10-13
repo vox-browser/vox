@@ -19,6 +19,15 @@ mut:
 	install_function  voidptr
 	item_constructor  voidptr
 	list_constructor  voidptr
+	not_callable_message voidptr
+	string_callbacks map[u64]&DataTransferStringCallbackRecord
+}
+
+@[heap]
+struct DataTransferStringCallbackRecord {
+	function voidptr
+mut:
+	task_id u64
 }
 
 fn (mut runtime Runtime) install_data_transfer_items_identity() ! {
@@ -51,6 +60,7 @@ fn (mut runtime Runtime) install_data_transfer_items_identity() ! {
 		wrap_item: runtime.retain_javascript_value(runtime.binding_property(identity, 'wrapItem')!)!
 		wrap_list: runtime.retain_javascript_value(runtime.binding_property(identity, 'wrapList')!)!
 		install_function: runtime.retain_javascript_value(runtime.binding_property(identity, 'install')!)!
+		not_callable_message: runtime.retain_javascript_value(runtime.binding_property(identity, 'notCallableMessage')!)!
 	}
 }
 
@@ -60,9 +70,9 @@ fn (mut runtime Runtime) install_data_transfer_items_binding() ! {
 	if binding.item_constructor != unsafe { nil } { return }
 	owner := voidptr(&runtime)
 	mut functions := []voidptr{}
-	for operation in ['kind', 'type', 'getAsFile', 'length', 'add', 'remove', 'clear'] {
+	for operation in ['kind', 'type', 'getAsFile', 'getAsString', 'length', 'add', 'remove', 'clear'] {
 		name := if operation in ['kind', 'type', 'length'] { 'get ' + operation } else { operation }
-		length := if operation in ['add', 'remove'] { 1 } else { 0 }
+		length := if operation in ['getAsString', 'add', 'remove'] { 1 } else { 0 }
 		functions << runtime.make_native_value_host_function(name, length, fn [owner, operation] (receiver voidptr, args []voidptr) !voidptr {
 			mut runtime := unsafe { &Runtime(owner) }
 			return runtime.data_transfer_items_binding_call(operation, receiver, args)
@@ -78,8 +88,27 @@ fn (mut runtime Runtime) install_data_transfer_items_binding() ! {
 }
 
 fn (mut runtime Runtime) data_transfer_items_binding_call(operation string, receiver voidptr, args []voidptr) !voidptr {
-	if operation in ['kind', 'type', 'getAsFile'] {
+	if operation in ['kind', 'type', 'getAsFile', 'getAsString'] {
 		item := runtime.native_data_transfer_item(receiver)!
+		if operation == 'getAsString' {
+			if args.len == 0 { return runtime.event_binding_type_error('getAsString() needs one argument') }
+			function := args[0]
+			if C.JSValueIsNull(runtime.context, function) || C.JSValueIsUndefined(runtime.context, function) {
+				return C.JSValueMakeUndefined(runtime.context)
+			}
+			if !C.JSValueIsObject(runtime.context, function) || !C.JSObjectIsFunction(runtime.context, function) {
+				binding := runtime.event_binding()!.data_transfer_item_binding
+				// JSC's public ABI has no side-effect-free native class-name query.
+				// Primitive diagnostics retain their raw units; objects use Object.
+				message := runtime.call_javascript_function(binding.not_callable_message,
+					C.JSValueMakeUndefined(runtime.context), [function])!
+				actual := runtime.call_engine_function(runtime.value_error_intrinsic_, [runtime.binding_string('TypeError'), message])!
+				return runtime.actual_javascript_exception(actual)
+			}
+			data := item.string_data_utf16() or { return C.JSValueMakeUndefined(runtime.context) }
+			runtime.queue_data_transfer_string_callback(function, data)!
+			return C.JSValueMakeUndefined(runtime.context)
+		}
 		return match operation {
 			'kind' { runtime.binding_string(item.kind()) }
 			'type' { runtime.binding_utf16_string(item.type_utf16())! }
@@ -134,6 +163,37 @@ fn (mut runtime Runtime) data_transfer_items_binding_call(operation string, rece
 		else { return runtime.event_binding_type_error('Unknown DataTransferItemList operation') }
 	}
 	return C.JSValueMakeUndefined(runtime.context)
+}
+
+fn (mut runtime Runtime) queue_data_transfer_string_callback(function voidptr, data libjs.Utf16String) ! {
+	owner := voidptr(&runtime)
+	mut binding := runtime.event_binding()!.data_transfer_item_binding
+	callback := runtime.webidl_callback(function, fn [owner] (value webidl.Value) !voidptr {
+		mut runtime := unsafe { &Runtime(owner) }
+		return match value.kind {
+			.undefined { C.JSValueMakeUndefined(runtime.context) }
+			.string_ { runtime.binding_utf16_string(value.string_utf16())! }
+			else { return error('Unexpected FunctionStringCallback argument') }
+		}
+	})!
+	mut record := &DataTransferStringCallbackRecord{ function: function }
+	record.task_id = html.queue_a_task(.unspecified, none, none, fn [owner, binding, record, callback, data] () {
+		mut runtime := unsafe { &Runtime(owner) }
+		if runtime.closed { return }
+		defer {
+			mut retained := unsafe { &DataTransferItemsBinding(binding) }
+			retained.string_callbacks.delete(record.task_id)
+			runtime.release_javascript_value(record.function)
+		}
+		// Source discards both the callback's return and abrupt completion.
+		result := webidl.invoke_callback(callback, none, [webidl.string_utf16_value(data)]) or {
+			value := webidl.exception_value(err)
+			if actual := value.runtime_value_ { runtime.release_javascript_value(actual.value) }
+			return
+		}
+		if actual := result.runtime_value_ { runtime.release_javascript_value(actual.value) }
+	})
+	binding.string_callbacks[record.task_id] = record
 }
 
 pub fn (mut runtime Runtime) javascript_data_transfer_item_list(list &html.DataTransferItemList) !voidptr {

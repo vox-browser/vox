@@ -23,7 +23,12 @@ pub fn (mut runtime Runtime) webidl_callback(function voidptr, convert JavaScrip
 			mut actual_arguments := []voidptr{cap: arguments.len}
 			for argument in arguments { actual_arguments << convert(argument)! }
 			result := owner.call_javascript_function(function, actual_this, actual_arguments) or {
-				if err is JavaScriptValueException { return webidl.throw_value(owner.webidl_value(err.value)!) }
+				if err is JavaScriptValueException {
+					value := owner.webidl_value(err.value)!
+					// Transfer the engine's abrupt-completion root to this value.
+					owner.release_javascript_value(err.value)
+					return webidl.throw_value(value)
+				}
 				return err
 			}
 			return owner.webidl_value(result)

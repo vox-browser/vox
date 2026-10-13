@@ -4,7 +4,7 @@ module browserjs
 fn data_transfer_items_identity_factory() string {
 	return r'(function(operate){
  "use strict";
- const create=Object.create,define=Object.defineProperty,P=Proxy,T=TypeError;
+ const create=Object.create,define=Object.defineProperty,P=Proxy,T=TypeError,S=String;
  const get=Reflect.get,set=Reflect.set,has=Reflect.has,getOwn=Reflect.getOwnPropertyDescriptor,defineOwn=Reflect.defineProperty,remove=Reflect.deleteProperty,ownKeys=Reflect.ownKeys;
  const itemPrototype=create(Object.prototype),listPrototype=create(Object.prototype);
  define(itemPrototype,Symbol.toStringTag,{value:"DataTransferItem",configurable:true});
@@ -26,7 +26,8 @@ fn data_transfer_items_identity_factory() string {
    ownKeys(target){const keys=[];function append(key){define(keys,keys.length,{value:key,writable:true,enumerable:true,configurable:true})}for(let index=0;index<4294967295;++index){if(operate("indexed",wrapper,index)===undefined)break;append(`${index}`)}const ordinary=ownKeys(target);for(let index=0;index<ordinary.length;++index){const key=ordinary[index];if(typeof key==="string")append(key)}for(let index=0;index<ordinary.length;++index){const key=ordinary[index];if(typeof key==="symbol")append(key)}return keys}
   });return wrapper;
  }
- function install(global,getKind,getType,getAsFile,getLength,add,remove,clear){
+ function notCallableMessage(value){const kind=typeof value;return (kind==="object"?"[object Object]":S(value)+(kind==="bigint"?"n":""))+" is not a function"}
+ function install(global,getKind,getType,getAsFile,getAsString,getLength,add,remove,clear){
  const DataTransferItem=new P(function DataTransferItem(){throw new T("DataTransferItem constructor must be called with \u0027new\u0027")},{construct(){throw new T("DataTransferItem is not a constructor")}});
  const DataTransferItemList=new P(function DataTransferItemList(){throw new T("DataTransferItemList constructor must be called with \u0027new\u0027")},{construct(){throw new T("DataTransferItemList is not a constructor")}});
  const interfaces=[[DataTransferItem,itemPrototype,"DataTransferItem"],[DataTransferItemList,listPrototype,"DataTransferItemList"]];
@@ -38,12 +39,13 @@ fn data_transfer_items_identity_factory() string {
  define(itemPrototype,"kind",{get:getKind,enumerable:true,configurable:true});
  define(itemPrototype,"type",{get:getType,enumerable:true,configurable:true});
  define(itemPrototype,"getAsFile",{value:getAsFile,writable:true,enumerable:true,configurable:true});
+ define(itemPrototype,"getAsString",{value:getAsString,writable:true,enumerable:true,configurable:true});
  define(listPrototype,"length",{get:getLength,enumerable:true,configurable:true});
  define(listPrototype,"add",{value:add,writable:true,enumerable:true,configurable:true});
  define(listPrototype,"remove",{value:remove,writable:true,enumerable:true,configurable:true});
  define(listPrototype,"clear",{value:clear,writable:true,enumerable:true,configurable:true});
  return {DataTransferItem,DataTransferItemList};
  }
- return {itemPrototype,listPrototype,wrapItem,wrapList,install};
+ return {itemPrototype,listPrototype,wrapItem,wrapList,install,notCallableMessage};
 })'
 }

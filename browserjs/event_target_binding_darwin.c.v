@@ -127,6 +127,9 @@ pub fn (mut runtime Runtime) install_event_target_binding() ! {
 			items.item_wrappers.clear()
 			items.lists.clear()
 			items.list_wrappers.clear()
+			// Runtime.close unprotects the pending callback values before it
+			// releases the engine context; already queued tasks observe closed.
+			items.string_callbacks.clear()
 		}
 		event_target_bindings_.delete(owner)
 	})

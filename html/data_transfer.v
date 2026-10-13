@@ -362,6 +362,17 @@ pub fn data_transfer_item_type(item &DataTransferItem) string {
 	return item.type_()
 }
 
+// DataTransferItem.cpp::string_data snapshots readable text as raw DOMString
+// units. A queued callback keeps this value after removal or store changes.
+pub fn (item &DataTransferItem) string_data_utf16() ?libjs.Utf16String {
+	mode := item.mode() or { return none }
+	if mode !in [.read_write, .read_only] { return none }
+	index := item.item_index or { return none }
+	data := item.data_transfer.drag_data(index)
+	if data.kind != .text { return none }
+	return data.text_data_utf16()
+}
+
 pub fn (item &DataTransferItem) get_as_string(callback ?DataTransferStringCallback) {
 	callback_function := callback or { return }
 	mode := item.mode() or { return }
