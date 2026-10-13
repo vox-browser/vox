@@ -103,14 +103,24 @@ drag images, hardware file delivery and weak/foreign ownership remain open.
 See [DataTransfer files
 evidence](../docs/translation-audit/NATIVE_DATA_TRANSFER_FILES_OWNER.md).
 
-Verified at `fdc13cca`, the disjoint DOM inventory contains 43,499
+Verified at `a503c977`, the disjoint DOM inventory contains 43,499
 implementation V LOC and 5,050 test V LOC across 101 assigned files.
-`Build/audit-fixes/native-data-transfer-entry-inventory-current.json` (SHA256 `f3062da8a0c0354822688a690594c6497ce8771933ef566068f0229a61e35a26`).
+`Build/audit-fixes/native-media-drag-handlers-inventory-current.json` (SHA256 `9dc686e6ab4186f3d7a1bd4e137bf657ccad63e8b1d89f7d424a66b29b9da2bc`).
 Every assigned committed byte hash and physical newline is verified.
-DOM/UIEvents assigned bytes remain unchanged from the preserved `e3ff95fd`,
-`bbe330a8`, `e775be45` and `b335958e` inventories; UIEvents contains 1,489
-implementation / 474 test V LOC. Integrated totals across 78 owners / 2,227
-files are 433,263 implementation / 160,393 test V LOC.
+DOM/UIEvents assigned bytes remain unchanged from the preserved `fdc13cca`,
+`e3ff95fd`, `bbe330a8`, `e775be45` and `b335958e` inventories; UIEvents
+contains 1,489 implementation / 474 test V LOC. Integrated totals across 78
+owners / 2,227 files are 433,263 implementation / 160,393 test V LOC.
+The seven native media drag/drop handler attributes change only three excluded
+browser/root support paths. Assigned implementation and test LOC, all 78 owner
+rows and every assigned byte hash/newline count remain unchanged from the
+prior `fdc13cca` entry inventory and actual feature parent `dc5aa34d`. No
+intervening assigned slice is counted. These are physical counts and do not
+establish behavioral equivalence or additional test credit.
+The previous DataTransfer entry inventory at `fdc13cca` (2026-10-13) remains preserved in
+`Build/audit-fixes/native-data-transfer-entry-inventory-current.json` (SHA256 `f3062da8a0c0354822688a690594c6497ce8771933ef566068f0229a61e35a26`),
+with 2,227 files / 433,263 implementation / 160,393 test V LOC. Its original
+EntriesAPI/HTML feature accounting below remains dated history at that pin.
 The public native DataTransferItem.webkitGetAsEntry and FileSystemEntry
 metadata feature changes only four assigned EntriesAPI/HTML paths: +21
 implementation / +80 test lines and +2 assigned files from actual parent

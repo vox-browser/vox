@@ -1112,9 +1112,19 @@
 ## Translated module inventory
 
 All 78 translated LibWeb packages and all 1,193 current module-owned C++
-implementation units have audited V mappings. Verified at `fdc13cca` on
-2026-10-13, 2,227 assigned files contain 433,263 implementation V LOC and
+implementation units have audited V mappings. Verified at `a503c977` on
+2026-10-14, 2,227 assigned files contain 433,263 implementation V LOC and
 160,393 test V LOC.
+The seven native media drag/drop handler attributes change only three excluded
+browser/root support paths. Assigned implementation and test LOC, all 78 owner
+rows and every assigned byte hash/newline count remain unchanged from the
+prior `fdc13cca` entry inventory and actual feature parent `dc5aa34d`. No
+intervening assigned slice is counted. These are physical counts and do not
+establish behavioral equivalence or additional test credit.
+The previous DataTransfer entry inventory at `fdc13cca` (2026-10-13) remains preserved in
+`Build/audit-fixes/native-data-transfer-entry-inventory-current.json` (SHA256 `f3062da8a0c0354822688a690594c6497ce8771933ef566068f0229a61e35a26`),
+with 2,227 files / 433,263 implementation / 160,393 test V LOC. Its original
+EntriesAPI/HTML feature accounting below remains dated history at that pin.
 The public native DataTransferItem.webkitGetAsEntry and FileSystemEntry
 metadata feature changes only four assigned EntriesAPI/HTML paths: +21
 implementation / +80 test lines and +2 assigned files from actual parent

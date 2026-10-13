@@ -1128,10 +1128,24 @@ V's standard `crypto.*` modules without shadowing that namespace.
 The IDL-only `Fullscreen` package delegates its state machine to the shared
 translated DOM implementation.
 
-Verified at `fdc13cca`, the physical inventory is retained in
-`Build/audit-fixes/native-data-transfer-entry-inventory-current.json` (SHA256 `f3062da8a0c0354822688a690594c6497ce8771933ef566068f0229a61e35a26`).
+Verified at `a503c977`, the physical inventory is retained in
+`Build/audit-fixes/native-media-drag-handlers-inventory-current.json` (SHA256 `9dc686e6ab4186f3d7a1bd4e137bf657ccad63e8b1d89f7d424a66b29b9da2bc`).
 All 78 owners and 2,227 assigned files match their committed byte hashes and
 physical newline counts: 433,263 implementation V LOC and 160,393 test V LOC.
+The seven native media drag/drop handler attributes change only three excluded
+browser/root support paths. Assigned implementation and test LOC, all 78 owner
+rows and every assigned byte hash/newline count remain unchanged from the
+prior `fdc13cca` entry inventory and actual feature parent `dc5aa34d`. No
+intervening assigned slice is counted. These are physical counts and do not
+establish behavioral equivalence or additional test credit.
+Exact full Git and assigned input maps are retained for the prior entry
+inventory, actual feature parent and committed feature. Later concurrent
+canonical work stays outside this pin. Upstream source-unit counts, mapping
+labels and the historical finding ledger remain unchanged.
+The previous DataTransfer entry inventory at `fdc13cca` (2026-10-13) remains preserved in
+`Build/audit-fixes/native-data-transfer-entry-inventory-current.json` (SHA256 `f3062da8a0c0354822688a690594c6497ce8771933ef566068f0229a61e35a26`),
+with 2,227 files / 433,263 implementation / 160,393 test V LOC. Its original
+EntriesAPI/HTML feature accounting below remains dated history at that pin.
 The public native DataTransferItem.webkitGetAsEntry and FileSystemEntry
 metadata feature changes only four assigned EntriesAPI/HTML paths: +21
 implementation / +80 test lines and +2 assigned files from actual parent
@@ -1215,7 +1229,7 @@ The previous unsupported-play inventory remains preserved in
 `166070c623211b8600db5300c89ed5219375d0e4045728c12117361ad8cca27c`).
 Source-unit mappings and physical LOC do not establish runtime parity.
 
-The table below records package V LOC verified at `fdc13cca` on 2026-10-13; upstream counts
+The table below records package V LOC verified at `a503c977` on 2026-10-14; upstream counts
 and structural mapping labels retain the pinned inventory. It covers 76 current
 implementation-bearing upstream modules plus the translated IDL/IPC-only
 `Fullscreen` and `Worker` packages, and all 1,193 module-owned `.cpp`
