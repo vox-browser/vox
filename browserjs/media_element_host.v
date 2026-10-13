@@ -9,7 +9,7 @@ import html
 const media_element_event_handler_names = ['abort', 'canplay', 'canplaythrough', 'durationchange',
 	'emptied', 'ended', 'error', 'loadeddata', 'loadedmetadata', 'loadstart', 'pause', 'play',
 	'playing', 'progress', 'ratechange', 'resize', 'seeked', 'seeking', 'stalled', 'suspend',
-	'timeupdate', 'volumechange', 'waiting']
+	'timeupdate', 'volumechange', 'waiting', 'pointerdown', 'pointerup', 'mousedown', 'mouseup']
 
 pub type MediaElementReplayHook = fn (&Runtime) !
 
