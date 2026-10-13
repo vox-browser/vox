@@ -5,8 +5,9 @@ module browserjs
 
 import html
 
-// Public DataTransfer receiver/prototype wrappers are a separate dependency.
-// The caller supplies the actual implementation, not an author-visible ID.
+// Shared by the public native DataTransfer.files getter and implementation
+// producers. Preserve DataTransfer.cpp's fresh FileList/Files on every call;
+// the caller supplies the actual implementation, not an author-visible ID.
 pub fn (mut runtime Runtime) javascript_data_transfer_files(transfer &html.DataTransfer) !voidptr {
 	runtime.require_javascript_value_context()!
 	return runtime.javascript_file_list(transfer.file_list())

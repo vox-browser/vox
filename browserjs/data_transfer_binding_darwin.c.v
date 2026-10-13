@@ -1,4 +1,4 @@
-// HTML/DataTransfer.{idl,h,cpp}: owner-local native string and effect operations.
+// HTML/DataTransfer.{idl,h,cpp}: native strings, effects and file snapshots.
 module browserjs
 
 import html
@@ -15,7 +15,7 @@ fn (mut runtime Runtime) install_data_transfer_binding() ! {
 	runtime.install_data_transfer_identity()!
 	owner := voidptr(&runtime)
 	mut functions := []voidptr{}
-	for operation in ['construct', 'getDrop', 'setDrop', 'getEffect', 'setEffect', 'getTypes',
+	for operation in ['construct', 'getDrop', 'setDrop', 'getEffect', 'setEffect', 'getTypes', 'getFiles',
 		'getData', 'setData', 'clearData'] {
 		name := match operation {
 			'construct' { 'DataTransfer' }
@@ -24,6 +24,7 @@ fn (mut runtime Runtime) install_data_transfer_binding() ! {
 			'getEffect' { 'get effectAllowed' }
 			'setEffect' { 'set effectAllowed' }
 			'getTypes' { 'get types' }
+			'getFiles' { 'get files' }
 			else { operation }
 		}
 
@@ -101,6 +102,11 @@ fn (mut runtime Runtime) data_transfer_binding_call(operation string, receiver v
 		}
 		'getTypes' {
 			return runtime.data_transfer_types_array(transfer)
+		}
+		'getFiles' {
+			// The pinned implementation constructs fresh FileList/File records,
+			// and its binding generator does not cache the IDL's SameObject tag.
+			return runtime.javascript_data_transfer_files(transfer)
 		}
 		'setDrop', 'setEffect' {
 			value := runtime.binding_dom_utf16(runtime.ui_event_argument(args, 0))!
