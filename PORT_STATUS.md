@@ -446,7 +446,8 @@ compile and fail actual assertions on the parent, then pass with final bytes;
 Signed startup and all 11 existing smoke cases pass (eight exact). The actual
 Window-owner fixture in that core slice uses a private native observer. The
 later owner-local MouseEvent binding supplies its public constructor/getters;
-concrete PointerEvent, WheelEvent and DragEvent interfaces remain open.
+the later PointerEvent binding completes that concrete owner-local
+surface; WheelEvent and DragEvent interfaces remain open.
 [Related-target evidence](docs/translation-audit/MOUSE_EVENT_RELATED_TARGET.md).
 
 Window-owned runtimes now expose MouseEvent's constructor, nineteen native
@@ -465,10 +466,43 @@ an existing test's capture from the local Runtime pointer variable's address
 to the actual Runtime. All binding/new-case bytes remain identical. The first
 default failure and seven isolated diagnostics remain recorded separately;
 labels prove the wrong capture but do not establish a host-GC or nil-context
-causal mechanism. Concrete Pointer/Wheel/Drag constructors/prototypes/additional
-fields, foreign views/realms, weak ownership, complete Page input construction
+causal mechanism. The later PointerEvent binding supplies that concrete
+owner-local interface. Wheel/Drag constructors/prototypes/additional fields,
+foreign views/realms, weak ownership, complete Page input construction
 and physical Cocoa input/hit testing/default actions remain open.
 [MouseEvent evidence](docs/translation-audit/NATIVE_MOUSE_EVENT_OWNER.md).
+
+Window-owned runtimes now expose PointerEvent's constructor, thirteen native
+getters, getPredictedEvents() and secure-owner getCoalescedEvents(). Native
+Pointer records use their retained prototype above MouseEvent/UIEvent/Event;
+all inherited coordinate overrides and canonical relatedTarget remain live.
+Forty-three dictionary members convert in inherited lexical order, including
+restricted doubles/floats, signed integers, optional independent angle/tilt
+defaults and genuine iterable PointerEvent sequences. Sequence operations
+return fresh Arrays preserving native child identity. The pinned generator's
+abrupt sequence path does not perform IteratorClose; this is an explicit
+source boundary. Secure exposure follows existing owning settings.
+
+Implementation c9dc0da2 contains only nine root/browser feature paths and
+retains the independent preceding CSS commit 7c3576ec. Ancestral baseline and
+focused records use feb97f38: both new files compile there and all seven initial
+availability guards fail; seven focused cases pass with the same final test
+bytes. Later parent assertions are unexecuted. All 17 files pass both GC modes,
+and seven ordinary optimized cases pass at c9dc0da2. Final private production
+verification passes ten stages at c9dc0da2, with two pixel-exact untrusted
+Pointer pages and all 11 smoke cases (eight exact). The retained private image
+and dylib belong to the final artifact closure. The records freeze 5,003 source
+hashes, 47 selected / 154 production references, 66
+current artifacts and 1,859 prior artifacts. Earlier Rust-PATH and post-run
+shared-binary overwrite observations receive diagnostic credit separately.
+
+The validated source is an isolated checkout inside this canonical repository,
+pinned to c9dc0da2. Later canonical Layout edits and their new regression are
+preserved separately and are outside this proof. Element pointer capture,
+touch/pen and hardware sampling/prediction, concrete Wheel/Drag interfaces,
+foreign views/realms, weak ownership and complete Page/physical input remain
+open. The browser continues to use JavaScriptCore.
+[PointerEvent evidence](docs/translation-audit/NATIVE_POINTER_EVENT_OWNER.md).
 
 The `:indeterminate`, `:open`, and `:closed` selectors now read live checkbox,
 input-picker, and select-picker state. Control transitions mirror that state at

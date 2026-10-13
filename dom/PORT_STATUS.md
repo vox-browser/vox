@@ -14,10 +14,20 @@ HTML DragEvent. That historical core slice used a private native owner
 observer. The later owner-local MouseEvent binding now exposes the public
 constructor, nineteen getters and two operations over these same records,
 including canonical relatedTarget and virtual PointerEvent coordinates; it
-changes no DOM/Page/dispatch algorithm. Concrete PointerEvent, WheelEvent and
-DragEvent public interfaces remain open. See
+changes no DOM/Page/dispatch algorithm. The later owner-local PointerEvent
+binding supplies its constructor, thirteen native getters and two sequence
+operations, with secure-owner coalesced exposure and retained native child
+identity. It preserves the Mouse/UI/Event chain and these same dispatch
+records. Seven focused and optimized cases pass; all 17 selected files
+pass in both GC modes. Final private production verification:
+ten stages pass at c9dc0da2, with two pixel-exact untrusted Pointer pages and
+all 11 smoke cases (eight exact). The pinned validation source includes
+the preceding CSS fix and excludes later canonical Layout work. WheelEvent
+and DragEvent interfaces, Element pointer capture and hardware generation
+remain open. See
 [related-target evidence](../docs/translation-audit/MOUSE_EVENT_RELATED_TARGET.md)
-and [MouseEvent evidence](../docs/translation-audit/NATIVE_MOUSE_EVENT_OWNER.md).
+[MouseEvent evidence](../docs/translation-audit/NATIVE_MOUSE_EVENT_OWNER.md)
+and [PointerEvent evidence](../docs/translation-audit/NATIVE_POINTER_EVENT_OWNER.md).
 
 The current disjoint DOM inventory at `db342c95` contains 43,497
 implementation V LOC and 4,979 test V LOC across 100 assigned files.

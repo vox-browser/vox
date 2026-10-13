@@ -1201,3 +1201,34 @@ Agent checks run with `v -old-compiler -enable-globals`. Isolated worktrees use 
   ledger remains 32 fixed / 25 partial / 9 open.
   [Evidence](NATIVE_MOUSE_EVENT_OWNER.md), consolidated SHA256:
   `7500513853bce4ff63746bf055c3123cf2c3eb00c56755ab23907d34d0409c88`.
+
+- Owner-local Window PointerEvent (`c9dc0da2`, 2026-10-13) exposes the public
+  constructor, thirteen native getters and predicted sequences; coalesced
+  sequences are exposed only by secure owning settings. Its retained native
+  prototype inherits MouseEvent/UIEvent/Event, preserving native child identity,
+  fresh output Arrays, exact forty-three-member conversion order, restricted
+  floats/doubles and independent angle/tilt defaults. Abrupt sequence conversion
+  preserves the pinned generator's missing IteratorClose path. Five native and
+  two actual Page-owner cases use identical bytes across ancestral focused and
+  integrated optimized proof. Both parent files compile and seven initial
+  availability guards fail at feb97f38; later assertions are unexecuted there.
+  All 17 selected files pass in both GC modes. The feature commit changes
+  only nine root/browser paths and preserves preceding CSS commit 7c3576ec;
+  its 106-line CSS regression is included in both 17-file batches. Final private
+  production passes ten stages at c9dc0da2, with two pixel-exact untrusted
+  Pointer pages and all 11 smoke cases (eight exact), retaining
+  66 current / 1,859 prior artifacts, including its
+  private signed image and Skia dylib. Earlier Rust-PATH and post-run shared
+  image overwrite observations are preserved as separate diagnostics.
+  Historical diagnostic symlinks were materialized as the same
+  bytes before this slice, preserving all 412 old sealed entries. Cleanup and
+  independent final proof: owned RAM disk5 detached; the proof repeated after
+  cleanup matches the canonical report byte for byte. The verified inventory
+  isolates preceding CSS deltas and leaves root/browser support excluded;
+  aggregate reference changes belong to a separate commit. Later canonical
+  Layout work is preserved outside the pinned validation source. Element
+  pointer capture, hardware/coalescing/prediction generation, Wheel/Drag public
+  interfaces, foreign realms/views, weak ownership and full Page/physical input
+  remain open. Historical ledger remains 32 fixed / 25 partial / 9 open.
+  [Evidence](NATIVE_POINTER_EVENT_OWNER.md), consolidated SHA256:
+  `4a8392c1a326542d3d395ad6da9dfc8b3d87935a0d74776dd754d33d32a191a4`.
