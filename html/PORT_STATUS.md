@@ -14,6 +14,33 @@ audit and fix evidence is in `docs/translation-audit/`; mapping a source name or
 a runtime hook does not establish that its complete logic was translated.
 
 
+## Native inherited UIEvent binding
+
+Window-owned runtimes now expose the inherited UIEvent binding over
+actual native records: constructor, view/detail/dynamic which and legacy
+initUIEvent. Native accessors and initializer preserve IDL metadata, brands,
+conversion order and dispatch-time no-op after argument conversion. Actual
+Page media callbacks retain native identity, owning view, current-event state,
+cancellation and DOM polling. Late Window attachment preserves the original
+Event parent and actual global; known UI-family wrappers use a retained
+prototype. Implementation and six cases: `d1b86d81`. Both parent files compile
+and all six initial UIEvent guards fail there; later assertions remain
+unexecuted. Final bytes pass focused and ordinary optimized tests, and 12/12
+selected files pass in both GC modes. Signed startup, two exact synthetic
+UIEvent pages and all 11 smoke cases pass (eight exact).
+
+View mapping is explicitly owner-local; foreign WindowProxy wrappers are
+unsupported. Trusted Page fixtures use explicit targets and platform values,
+and expose existing record data rather than full input construction parity:
+pressed compatibility moves retain the V mousedown detail and supplied button;
+upstream normal mousemove supplies zero detail and primary. Concrete UI
+subclass constructors/prototypes/fields, Page mousemove argument/coordinate
+mapping, physical Cocoa input/hit testing/default actions, raw inline element
+compilation, foreign realms and weak ownership remain open, along with full
+media/physical playback and the pinned load captured-task FIXME.
+
+[UIEvent evidence](../docs/translation-audit/NATIVE_UI_EVENT_OWNER.md).
+
 ## Native media movement handlers
 
 Media onpointermove and onmousemove now share actual audio/video native

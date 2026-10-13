@@ -901,6 +901,16 @@
   compilation, realms, weak ownership and full/physical media/load boundaries
   open. See [movement handler evidence](docs/translation-audit/NATIVE_MEDIA_MOVEMENT_HANDLER_OWNER.md).
 
+- Window-owned runtimes now expose UIEvent constructor, view/detail/virtual
+  which and the native legacy initializer over actual records. Receiver checks,
+  WebIDL conversion order, dispatch guard, late attachment and captured parent/
+  global identity use the existing owner. All ten UI families share the
+  retained inherited prototype; actual Page media callbacks keep current-event,
+  cancellation and DOM polling. Owner-local views, existing Page move-data
+  construction and concrete subclass interfaces remain explicit boundaries,
+  alongside physical input, raw inline element compilation, realms, weak
+  ownership and full media/load work. See [UIEvent evidence](docs/translation-audit/NATIVE_UI_EVENT_OWNER.md).
+
 ## Translated module inventory
 
 All 78 translated LibWeb packages and all 1,193 current module-owned C++

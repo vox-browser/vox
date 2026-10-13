@@ -1138,3 +1138,21 @@ Agent checks run with `v -old-compiler -enable-globals`. Isolated worktrees use 
   remains 32 fixed / 25 partial / 9 open.
   [Evidence](NATIVE_MEDIA_MOVEMENT_HANDLER_OWNER.md), consolidated SHA256:
   `a128c77fe22cb36ba39c5a1f06112a32802fd015c8d052f4ec1896f8a3e2c122`.
+
+- Native inherited UIEvent binding (`d1b86d81`, 2026-10-13) exposes the actual
+  owner-local constructor/view/detail/which/initializer with native getter and
+  method metadata. All ten UI families retain actual records; late attachment
+  preserves original parent/global identity. Both parent files compile and
+  six initial availability guards fail; final bytes pass focused and ordinary
+  optimized cases plus 12/12 files in both GC modes. Signed startup, two exact
+  synthetic UIEvent pages and all 11 smoke cases pass (eight exact), preserving
+  51 current and 1,117 prior artifact hashes.
+  Checker/syntax and ENOSPC compiler diagnostics remain separate; the owned
+  RAM scratch is detached after validation with persistent evidence retained.
+  Main/Page dispatch and assigned-package counts remain unchanged. This proves
+  native-record exposure, leaving foreign-view support, concrete subclass,
+  move-field construction, physical input/default actions, raw inline element
+  compilation, realms, weak ownership and full media/load limitations explicit. Ledger
+  remains 32 fixed / 25 partial / 9 open.
+  [Evidence](NATIVE_UI_EVENT_OWNER.md), consolidated SHA256:
+  `edc1a8b4e7c47dd09e1fa1580566b69098585e40f67df3eef2660848eebdb228`.

@@ -412,6 +412,30 @@ hit testing, full prototypes, raw inline compilation, foreign realms, weak owner
 full media/physical playback/load captured-task boundaries remain open.
 [Movement handler evidence](docs/translation-audit/NATIVE_MEDIA_MOVEMENT_HANDLER_OWNER.md).
 
+Window-owned runtimes now expose the inherited UIEvent binding over
+actual native records: constructor, view/detail/dynamic which and legacy
+initUIEvent. Native accessors and initializer preserve IDL metadata, brands,
+conversion order and dispatch-time no-op after argument conversion. Actual
+Page media callbacks retain native identity, owning view, current-event state,
+cancellation and DOM polling. Late Window attachment preserves the original
+Event parent and actual global; known UI-family wrappers use a retained
+prototype. Implementation and six cases: `d1b86d81`. Both parent files compile
+and all six initial UIEvent guards fail there; later assertions remain
+unexecuted. Final bytes pass focused and ordinary optimized tests, and 12/12
+selected files pass in both GC modes. Signed startup, two exact synthetic
+UIEvent pages and all 11 smoke cases pass (eight exact).
+
+View mapping is explicitly owner-local; foreign WindowProxy wrappers are
+unsupported. Trusted Page fixtures use explicit targets and platform values,
+and expose existing record data rather than full input construction parity:
+pressed compatibility moves retain the V mousedown detail and supplied button;
+upstream normal mousemove supplies zero detail and primary. Concrete UI
+subclass constructors/prototypes/fields, Page mousemove argument/coordinate
+mapping, physical Cocoa input/hit testing/default actions, raw inline element
+compilation, foreign realms and weak ownership remain open, along with full
+media/physical playback and the pinned load captured-task FIXME.
+[UIEvent evidence](docs/translation-audit/NATIVE_UI_EVENT_OWNER.md).
+
 The `:indeterminate`, `:open`, and `:closed` selectors now read live checkbox,
 input-picker, and select-picker state. Control transitions mirror that state at
 the DOM boundary and schedule style invalidation; `switch` checkboxes retain
