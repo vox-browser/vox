@@ -74,6 +74,13 @@ fn dom_selector_query_matches(target voidptr, selector_text string, element &dom
 }
 
 pub fn install_document_selector_query_hook(document &dom.Document) {
+	if hook := document.selector_query_hook() {
+		if hook.validate == dom_selector_query_validate
+			&& hook.matches == dom_selector_query_matches
+			&& hook.contains_named_namespace == dom_selector_query_contains_named_namespace {
+			return
+		}
+	}
 	state := &DocumentSelectorQueryState{
 		parsed:  map[string]SelectorList{}
 		invalid: map[string]bool{}
