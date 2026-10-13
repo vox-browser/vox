@@ -346,6 +346,16 @@ pub fn (item &DataTransferItem) type_() string {
 	return item.data_transfer.drag_data(index).type_string
 }
 
+// DataTransferItem.cpp::type returns the stored raw UTF-16 type, including
+// in protected mode. Only removed items and disassociated stores disable it.
+pub fn (item &DataTransferItem) type_utf16() libjs.Utf16String {
+	index := item.item_index or { return libjs.Utf16String{} }
+	if item.mode() == none {
+		return libjs.Utf16String{}
+	}
+	return item.data_transfer.drag_data(index).type_utf16()
+}
+
 // V reserves `type`, so the translated WebIDL getter keeps the class name in
 // the free-function entry point.
 pub fn data_transfer_item_type(item &DataTransferItem) string {

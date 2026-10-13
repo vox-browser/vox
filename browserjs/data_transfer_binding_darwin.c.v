@@ -13,10 +13,11 @@ fn (mut runtime Runtime) install_data_transfer_binding() ! {
 	mut binding := runtime.event_binding()!
 	if binding.data_transfer_constructor != unsafe { nil } { return }
 	runtime.install_data_transfer_identity()!
+	runtime.install_data_transfer_items_binding()!
 	owner := voidptr(&runtime)
 	mut functions := []voidptr{}
 	for operation in ['construct', 'getDrop', 'setDrop', 'getEffect', 'setEffect', 'getTypes', 'getFiles',
-		'getData', 'setData', 'clearData'] {
+		'getItems', 'getData', 'setData', 'clearData'] {
 		name := match operation {
 			'construct' { 'DataTransfer' }
 			'getDrop' { 'get dropEffect' }
@@ -25,6 +26,7 @@ fn (mut runtime Runtime) install_data_transfer_binding() ! {
 			'setEffect' { 'set effectAllowed' }
 			'getTypes' { 'get types' }
 			'getFiles' { 'get files' }
+			'getItems' { 'get items' }
 			else { operation }
 		}
 
@@ -107,6 +109,9 @@ fn (mut runtime Runtime) data_transfer_binding_call(operation string, receiver v
 			// The pinned implementation constructs fresh FileList/File records,
 			// and its binding generator does not cache the IDL's SameObject tag.
 			return runtime.javascript_data_transfer_files(transfer)
+		}
+		'getItems' {
+			return runtime.javascript_data_transfer_item_list(transfer.items())
 		}
 		'setDrop', 'setEffect' {
 			value := runtime.binding_dom_utf16(runtime.ui_event_argument(args, 0))!

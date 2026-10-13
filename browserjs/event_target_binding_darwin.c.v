@@ -44,6 +44,7 @@ mut:
 	data_transfer_types_arrays map[voidptr]DataTransferTypesArray
 	data_transfers map[voidptr]&html.DataTransfer
 	data_transfer_wrappers map[voidptr]voidptr
+	data_transfer_item_binding &DataTransferItemsBinding = unsafe { nil }
 	closed             bool
 }
 
@@ -120,6 +121,13 @@ pub fn (mut runtime Runtime) install_event_target_binding() ! {
 		binding.data_transfers.clear()
 		binding.data_transfer_wrappers.clear()
 		binding.data_transfer_types_arrays.clear()
+		if binding.data_transfer_item_binding != unsafe { nil } {
+			mut items := binding.data_transfer_item_binding
+			items.items.clear()
+			items.item_wrappers.clear()
+			items.lists.clear()
+			items.list_wrappers.clear()
+		}
 		event_target_bindings_.delete(owner)
 	})
 	if settings := runtime.scripting_settings_ {

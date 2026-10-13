@@ -2,7 +2,7 @@
 module browserjs
 
 fn data_transfer_bootstrap() string {
-	return r'(function(prototype,global,construct,getDrop,setDrop,getEffect,setEffect,getTypes,getFiles,getData,setData,clearData){
+	return r'(function(prototype,global,construct,getDrop,setDrop,getEffect,setEffect,getTypes,getFiles,getItems,getData,setData,clearData){
  const apply=Reflect.apply,create=Object.create,define=Object.defineProperty,T=TypeError;
  const DataTransfer=new Proxy(function DataTransfer(){throw new T("DataTransfer constructor requires new")},{construct(target,args,newTarget){
   const requested=newTarget.prototype,receiver=create(requested!==null&&(typeof requested==="object"||typeof requested==="function")?requested:prototype);
@@ -14,6 +14,7 @@ fn data_transfer_bootstrap() string {
  define(prototype,"effectAllowed",{get:getEffect,set:setEffect,enumerable:true,configurable:true});
  define(prototype,"types",{get:getTypes,enumerable:true,configurable:true});
  define(prototype,"files",{get:getFiles,enumerable:true,configurable:true});
+ define(prototype,"items",{get:getItems,enumerable:true,configurable:true});
  for(const [name,value] of [["getData",getData],["setData",setData],["clearData",clearData]])define(prototype,name,{value,writable:true,enumerable:true,configurable:true});
  define(global,"DataTransfer",{value:DataTransfer,writable:true,configurable:true});return DataTransfer;
 })'
