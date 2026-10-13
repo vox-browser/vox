@@ -153,7 +153,7 @@ residuals. Public script dispatch remains untrusted; trusted embedding delivery 
 verified by the focused V fixtures separately.
 
 Tests use the pinned old compiler with enable-globals in the clean committed
-private source. All 5,061 exact Git input bytes and
+private source. All 5,061 exact Git input files and
 3,817 preceding artifact hashes remain verified.
 Five earlier private sources remain authenticated: `fdc13cca` (5058 Git inputs), `e3ff95fd` (5050 Git inputs), `bbe330a8` (5046 Git inputs), `e775be45` (5042 Git inputs), `b59e211c` (5032 Git inputs).
 Test compiler identity contains two inputs; production adds its V_BIN wrapper.
