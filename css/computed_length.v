@@ -1,5 +1,55 @@
 module css
 
+import dom
+
+// Cache the style's font inputs, keeping container-query lookup state local
+// to each resolution context so layout changes remain visible to cq units.
+@[heap]
+struct ComputedLengthMetrics {
+	font_size_value &dom.StyleValue
+	line_height_value &dom.StyleValue
+	line_height ?CSSPixels
+	font &PlatformFont
+	root_font_size f64
+	root_line_height f64
+	font_metrics LengthFontMetrics
+	root_font_metrics LengthFontMetrics
+}
+
+fn (c &ComputedProperties) length_font_metrics() &ComputedLengthMetrics {
+	font_size_value := c.property(.font_size, .yes) or { unsafe { &dom.StyleValue(nil) } }
+	line_height_value := c.property(.line_height, .yes) or { unsafe { &dom.StyleValue(nil) } }
+	cached := c.cached_length_metrics_
+	if cached != unsafe { nil } {
+		if voidptr(cached.font_size_value) == voidptr(font_size_value)
+		&& voidptr(cached.line_height_value) == voidptr(line_height_value)
+		&& cached.line_height == c.line_height_
+		&& voidptr(cached.font) == voidptr(c.cached_first_available_computed_font_)
+		&& cached.root_font_size == c.root_font_size_px_
+		&& cached.root_line_height == c.root_line_height_px_ {
+			return cached
+		}
+	}
+	font_px := CSSPixels.nearest_value_for(c.resolved_font_size_px())
+	mut font_metrics := computed_interpolation_font_metrics_for_size(font_px)
+	font_metrics.line_height = c.line_height()
+	mut root_font_metrics := computed_interpolation_font_metrics_for_size(CSSPixels.nearest_value_for(c.root_font_size_px_))
+	root_font_metrics.line_height = CSSPixels.nearest_value_for(c.root_line_height_px_)
+	metrics := &ComputedLengthMetrics{
+		font_size_value: font_size_value
+		line_height_value: line_height_value
+		line_height: c.line_height_
+		font: c.cached_first_available_computed_font_
+		root_font_size: c.root_font_size_px_
+		root_line_height: c.root_line_height_px_
+		font_metrics: font_metrics
+		root_font_metrics: root_font_metrics
+	}
+	mut mutable := unsafe { &ComputedProperties(c) }
+	mutable.cached_length_metrics_ = metrics
+	return metrics
+}
+
 // Resolve a box-model length/percentage property (margin/padding/border-width/width/height/inset...) from
 // THIS computed style to px, for the real layout engine (which holds a css.ComputedProperties, not a DOM
 // element). `percentage_basis_px` is the reference for `%` (the containing block's inline size for
@@ -52,16 +102,14 @@ pub fn (c &ComputedProperties) resolve_length_percentage_value_px(value StyleVal
 // Length::ResolutionContext::for_layout_node(), using the metrics retained by
 // ComputedProperties during StyleComputer::compute_property_values().
 pub fn (c &ComputedProperties) length_resolution_context() LengthResolutionContext {
-	font_px := CSSPixels.nearest_value_for(c.resolved_font_size_px())
-	root_font_px := CSSPixels.nearest_value_for(c.root_font_size_px_)
-	mut context := LengthResolutionContext.default()
-	context.viewport_rect = c.viewport_rect_
-	context.font_metrics = computed_interpolation_font_metrics_for_size(font_px)
-	context.font_metrics.line_height = c.line_height()
-	context.font_metrics_depend_on_viewport_metrics = c.font_metrics_depend_on_viewport_metrics()
-	context.root_font_metrics = computed_interpolation_font_metrics_for_size(root_font_px)
-	context.root_font_metrics.line_height = CSSPixels.nearest_value_for(c.root_line_height_px_)
-	context.root_font_metrics_depend_on_viewport_metrics = c.root_font_metrics_depend_on_viewport_metrics_
+	metrics := c.length_font_metrics()
+	mut context := LengthResolutionContext{
+		viewport_rect: c.viewport_rect_
+		font_metrics: metrics.font_metrics
+		root_font_metrics: metrics.root_font_metrics
+		font_metrics_depend_on_viewport_metrics: c.font_metrics_depend_on_viewport_metrics()
+		root_font_metrics_depend_on_viewport_metrics: c.root_font_metrics_depend_on_viewport_metrics_
+	}
 	if subject := c.subject_element_ {
 		context.subject_element = subject
 		context.subject_inline_axis_is_horizontal = c.writing_mode() == .horizontal_tb

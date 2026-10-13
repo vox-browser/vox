@@ -147,24 +147,7 @@ pub fn InitialValues.ry() LengthPercentageOrAuto {
 // boundary as the upstream MutableComputedValues/ImmutableComputedValues pair.
 
 pub fn LengthResolutionContext.for_computed_properties(values &ComputedProperties) LengthResolutionContext {
-	mut font_metrics := computed_interpolation_font_metrics_for_size(values.font_size())
-	font_metrics.line_height = values.line_height()
-	mut root_font_metrics := computed_interpolation_font_metrics_for_size(CSSPixels.nearest_value_for(values.root_font_size_px_))
-	root_font_metrics.line_height = CSSPixels.nearest_value_for(values.root_line_height_px_)
-	return LengthResolutionContext{
-		viewport_rect: values.viewport_rect_
-		font_metrics: font_metrics
-		root_font_metrics: root_font_metrics
-		font_metrics_depend_on_viewport_metrics: values.font_metrics_depend_on_viewport_metrics()
-		root_font_metrics_depend_on_viewport_metrics: values.root_font_metrics_depend_on_viewport_metrics_
-		subject_inline_axis_is_horizontal: values.writing_mode() == .horizontal_tb
-		subject_element: values.subject_element_
-		query_container_cache: if _ := values.subject_element_ {
-			?&LengthQueryContainerCache(&LengthQueryContainerCache{})
-		} else {
-			?&LengthQueryContainerCache(none)
-		}
-	}
+	return values.length_resolution_context()
 }
 
 fn computed_values_length_percentage(style &ComputedProperties, property_id PropertyID, fallback LengthPercentage) LengthPercentage {
@@ -826,7 +809,7 @@ pub fn (values &ComputedValues) size_value(property_id PropertyID) Size {
 		.max_height { values.computed_values_max_height_ }
 		.column_width { values.computed_values_column_width_ }
 		.column_height { values.computed_values_column_height_ }
-		else { ComputedProperties(*values).size_value(property_id) }
+		else { unsafe { &ComputedProperties(values) }.size_value(property_id) }
 	}
 }
 
@@ -934,7 +917,7 @@ pub fn (values &ComputedValues) length_percentage_to_px(property_id PropertyID, 
 		}
 	}
 	resolved := length_percentage or { return none }
-	context := ComputedProperties(*values).length_resolution_context()
+	context := unsafe { &ComputedProperties(values) }.length_resolution_context()
 	return resolved.to_px(context, CSSPixels.nearest_value_for(percentage_basis_px)).to_double()
 }
 
@@ -954,7 +937,7 @@ pub fn (values &ComputedValues) length_box(left_id PropertyID, top_id PropertyID
 		&& right_id == .overflow_clip_margin_right && bottom_id == .overflow_clip_margin_bottom {
 		return values.computed_values_overflow_clip_margin_
 	}
-	return ComputedProperties(*values).length_box(left_id, top_id, right_id, bottom_id, default_value)
+	return unsafe { &ComputedProperties(values) }.length_box(left_id, top_id, right_id, bottom_id, default_value)
 }
 
 pub fn (values &ComputedValues) flex_direction() FlexDirection {
@@ -1082,7 +1065,7 @@ pub fn (values &ComputedValues) gap_value(property_id PropertyID) GapValue {
 	return match property_id {
 		.column_gap { values.computed_values_column_gap_ }
 		.row_gap { values.computed_values_row_gap_ }
-		else { ComputedProperties(*values).gap_value(property_id) }
+		else { unsafe { &ComputedProperties(values) }.gap_value(property_id) }
 	}
 }
 
