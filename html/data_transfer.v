@@ -417,7 +417,7 @@ pub fn (item &DataTransferItem) webkit_get_as_entry() ?&entriesapi.FileSystemEnt
 	if drag_data.kind != .file {
 		return none
 	}
-	return entriesapi.FileSystemEntry.create(.file, drag_data.file_name)
+	return entriesapi.FileSystemEntry.create_utf16(.file, drag_data.file_name_utf16())
 }
 
 @[heap]

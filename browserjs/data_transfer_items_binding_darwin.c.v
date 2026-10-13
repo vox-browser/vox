@@ -66,11 +66,12 @@ fn (mut runtime Runtime) install_data_transfer_items_identity() ! {
 
 fn (mut runtime Runtime) install_data_transfer_items_binding() ! {
 	runtime.install_data_transfer_items_identity()!
+	runtime.install_file_system_entry_binding()!
 	mut binding := runtime.event_binding()!.data_transfer_item_binding
 	if binding.item_constructor != unsafe { nil } { return }
 	owner := voidptr(&runtime)
 	mut functions := []voidptr{}
-	for operation in ['kind', 'type', 'getAsFile', 'getAsString', 'length', 'add', 'remove', 'clear'] {
+	for operation in ['kind', 'type', 'getAsFile', 'getAsString', 'webkitGetAsEntry', 'length', 'add', 'remove', 'clear'] {
 		name := if operation in ['kind', 'type', 'length'] { 'get ' + operation } else { operation }
 		length := if operation in ['getAsString', 'add', 'remove'] { 1 } else { 0 }
 		functions << runtime.make_native_value_host_function(name, length, fn [owner, operation] (receiver voidptr, args []voidptr) !voidptr {
@@ -88,7 +89,7 @@ fn (mut runtime Runtime) install_data_transfer_items_binding() ! {
 }
 
 fn (mut runtime Runtime) data_transfer_items_binding_call(operation string, receiver voidptr, args []voidptr) !voidptr {
-	if operation in ['kind', 'type', 'getAsFile', 'getAsString'] {
+	if operation in ['kind', 'type', 'getAsFile', 'getAsString', 'webkitGetAsEntry'] {
 		item := runtime.native_data_transfer_item(receiver)!
 		if operation == 'getAsString' {
 			if args.len == 0 { return runtime.event_binding_type_error('getAsString() needs one argument') }
@@ -112,6 +113,10 @@ fn (mut runtime Runtime) data_transfer_items_binding_call(operation string, rece
 		return match operation {
 			'kind' { runtime.binding_string(item.kind()) }
 			'type' { runtime.binding_utf16_string(item.type_utf16())! }
+			'webkitGetAsEntry' {
+				entry := item.webkit_get_as_entry() or { return C.JSValueMakeNull(runtime.context) }
+				runtime.javascript_file_system_entry(entry)!
+			}
 			else { runtime.javascript_data_transfer_item_file(item)! }
 		}
 	}

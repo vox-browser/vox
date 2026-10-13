@@ -45,6 +45,7 @@ mut:
 	data_transfers map[voidptr]&html.DataTransfer
 	data_transfer_wrappers map[voidptr]voidptr
 	data_transfer_item_binding &DataTransferItemsBinding = unsafe { nil }
+	file_system_entry_binding &FileSystemEntryBinding = unsafe { nil }
 	closed             bool
 }
 
@@ -121,6 +122,11 @@ pub fn (mut runtime Runtime) install_event_target_binding() ! {
 		binding.data_transfers.clear()
 		binding.data_transfer_wrappers.clear()
 		binding.data_transfer_types_arrays.clear()
+		if binding.file_system_entry_binding != unsafe { nil } {
+			mut entries := binding.file_system_entry_binding
+			entries.entries.clear()
+			entries.wrappers.clear()
+		}
 		if binding.data_transfer_item_binding != unsafe { nil } {
 			mut items := binding.data_transfer_item_binding
 			items.items.clear()

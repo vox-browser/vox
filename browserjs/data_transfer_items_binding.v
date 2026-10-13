@@ -27,7 +27,7 @@ fn data_transfer_items_identity_factory() string {
   });return wrapper;
  }
  function notCallableMessage(value){const kind=typeof value;return (kind==="object"?"[object Object]":S(value)+(kind==="bigint"?"n":""))+" is not a function"}
- function install(global,getKind,getType,getAsFile,getAsString,getLength,add,remove,clear){
+ function install(global,getKind,getType,getAsFile,getAsString,getAsEntry,getLength,add,remove,clear){
  const DataTransferItem=new P(function DataTransferItem(){throw new T("DataTransferItem constructor must be called with \u0027new\u0027")},{construct(){throw new T("DataTransferItem is not a constructor")}});
  const DataTransferItemList=new P(function DataTransferItemList(){throw new T("DataTransferItemList constructor must be called with \u0027new\u0027")},{construct(){throw new T("DataTransferItemList is not a constructor")}});
  const interfaces=[[DataTransferItem,itemPrototype,"DataTransferItem"],[DataTransferItemList,listPrototype,"DataTransferItemList"]];
@@ -40,6 +40,7 @@ fn data_transfer_items_identity_factory() string {
  define(itemPrototype,"type",{get:getType,enumerable:true,configurable:true});
  define(itemPrototype,"getAsFile",{value:getAsFile,writable:true,enumerable:true,configurable:true});
  define(itemPrototype,"getAsString",{value:getAsString,writable:true,enumerable:true,configurable:true});
+ define(itemPrototype,"webkitGetAsEntry",{value:getAsEntry,writable:true,enumerable:true,configurable:true});
  define(listPrototype,"length",{get:getLength,enumerable:true,configurable:true});
  define(listPrototype,"add",{value:add,writable:true,enumerable:true,configurable:true});
  define(listPrototype,"remove",{value:remove,writable:true,enumerable:true,configurable:true});
