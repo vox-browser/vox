@@ -1262,3 +1262,40 @@ Agent checks run with `v -old-compiler -enable-globals`. Isolated worktrees use 
   remains 32 fixed / 25 partial / 9 open.
   [Evidence](NATIVE_WHEEL_EVENT_OWNER.md), consolidated SHA256:
   `62acadfa4802e481055569c6beb3cb11c001c4543453c909740d60378ff990a4`.
+
+- Owner-local Window DragEvent (`682a7827`, 2026-10-13).
+  Window-owned runtimes now expose DragEvent's constructor and sole native
+  dataTransfer getter over actual HTML records, inheriting
+  MouseEvent/UIEvent/Event. Twenty-nine dictionary members convert in inherited
+  lexical order. Null defaults and genuine owner-local DataTransfer brands
+  preserve native identity without inspecting author properties or Proxies. The
+  separately committed bounded identity prerequisite is 6296e27c; it adds no
+  public DataTransfer constructor or operations. The HTML constructor now
+  creates an untrusted record; internal create behavior, dispatch and inherited
+  initializer preservation remain intact.
+
+  9 focused and optimized DragEvent cases pass; 3 identity cases pass in both GC
+  modes. All 21 selected files pass in both GC modes at 682a7827. Private
+  production completes 10 stages: signed startup, two pixel-exact null-transfer
+  pages and all 11 screenshot smoke cases. Genuine nonnull transfer identity is
+  established by the focused native/actual-owner tests. Interrupted initial test
+  and production attempts remain preserved without pass credit; detached
+  supervisors record the completed terminal exits. A separately archived
+  verification-only dispatcher-path correction changes no implementation or test
+  result. The verified closure retains 70 current / 2,087 prior artifacts.
+
+  This completes the pinned owner-local DragEvent interface. Public DataTransfer
+  operations, DataTransferItem/List/file exposure, media ondrag handlers,
+  physical Page/Cocoa drag generation, store-mode transitions and default
+  actions remain open, alongside foreign views/realms and weak ownership.
+  JavaScriptCore remains the browser engine. The frozen production source uses
+  its historical Ladybird bundle name; current Vox branding and later concurrent
+  work are outside that validation pin.
+
+  [DragEvent evidence](NATIVE_DRAG_EVENT_OWNER.md).
+  Separate identity prerequisite: `6296e27c`.
+  Baseline: three files compile; seven availability guards and one constructor
+  trust assertion fail; the preservation case passes. Later failing-case
+  assertions are unexecuted on the parent. Inventory updates belong to a
+  separate commit. Historical ledger remains 32 fixed / 25 partial / 9 open.
+  Consolidated evidence SHA256: `4d25a5a50607546dc653b9c4faabd55a5b87b444524f9e6d58f9b158cad6d2c8`.

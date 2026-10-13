@@ -972,6 +972,36 @@
   canonical work remains outside the isolated source pin.
   See [WheelEvent evidence](docs/translation-audit/NATIVE_WHEEL_EVENT_OWNER.md).
 
+- Window-owned runtimes now expose DragEvent's constructor and sole native
+  dataTransfer getter over actual HTML records, inheriting
+  MouseEvent/UIEvent/Event. Twenty-nine dictionary members convert in inherited
+  lexical order. Null defaults and genuine owner-local DataTransfer brands
+  preserve native identity without inspecting author properties or Proxies. The
+  separately committed bounded identity prerequisite is 6296e27c; it adds no
+  public DataTransfer constructor or operations. The HTML constructor now
+  creates an untrusted record; internal create behavior, dispatch and inherited
+  initializer preservation remain intact.
+
+  9 focused and optimized DragEvent cases pass; 3 identity cases pass in both GC
+  modes. All 21 selected files pass in both GC modes at 682a7827. Private
+  production completes 10 stages: signed startup, two pixel-exact null-transfer
+  pages and all 11 screenshot smoke cases. Genuine nonnull transfer identity is
+  established by the focused native/actual-owner tests. Interrupted initial test
+  and production attempts remain preserved without pass credit; detached
+  supervisors record the completed terminal exits. A separately archived
+  verification-only dispatcher-path correction changes no implementation or test
+  result. The verified closure retains 70 current / 2,087 prior artifacts.
+
+  This completes the pinned owner-local DragEvent interface. Public DataTransfer
+  operations, DataTransferItem/List/file exposure, media ondrag handlers,
+  physical Page/Cocoa drag generation, store-mode transitions and default
+  actions remain open, alongside foreign views/realms and weak ownership.
+  JavaScriptCore remains the browser engine. The frozen production source uses
+  its historical Ladybird bundle name; current Vox branding and later concurrent
+  work are outside that validation pin.
+
+  [DragEvent evidence](docs/translation-audit/NATIVE_DRAG_EVENT_OWNER.md).
+
 ## Translated module inventory
 
 All 78 translated LibWeb packages and all 1,193 current module-owned C++

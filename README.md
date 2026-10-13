@@ -230,6 +230,14 @@ are bridged back into the translated DOM before reflow. Each classic script is
 a separate global program with a promise checkpoint before the next script;
 syntax and runtime errors are logged without stopping later document scripts.
 
+The Window-owned JavaScriptCore DOM host now exposes native DragEvent
+construction and its read-only dataTransfer getter, preserving inherited
+MouseEvent/UIEvent fields and actual DOM listener dispatch. A nullable native
+DataTransfer wrapper retains its owning implementation identity; its public
+constructor, data/item/file operations and physical drag delivery remain
+separate work. See [DragEvent
+evidence](docs/translation-audit/NATIVE_DRAG_EVENT_OWNER.md).
+
 On macOS, production layout uses Arial/Helvetica-compatible metrics to match
 the native Cocoa painter. Set `LADYBIRD_BROWSER_FONT` to another TrueType font
 path to override it; `LADYBIRD_LAYOUT_TEST_FONT` continues to take precedence
