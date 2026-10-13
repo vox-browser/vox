@@ -2206,11 +2206,11 @@ pub fn (mut c ComputedProperties) remove_animated_property(property_id PropertyI
 pub fn (c &ComputedProperties) property(property_id PropertyID, return_animated_value WithAnimationsApplied) ?&dom.StyleValue {
 	computed_interpolation_verify_longhand_property(property_id)
 	// Important properties override animated but not transitioned properties.
-	if return_animated_value == .yes
+	if return_animated_value == .yes && c.animated_property_values_.len > 0
 		&& (!c.is_property_important(property_id)
 			|| c.is_animated_property_result_of_transition(property_id)) {
-		if animated_value := c.animated_property_values_[property_id] {
-			return animated_value
+		if property_id in c.animated_property_values_ {
+			return unsafe { c.animated_property_values_[property_id] }
 		}
 	}
 
