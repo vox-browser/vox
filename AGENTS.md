@@ -1026,6 +1026,18 @@
   See [DataTransfer files
   evidence](docs/translation-audit/NATIVE_DATA_TRANSFER_FILES_OWNER.md).
 
+- Window-owned DataTransfer now exposes a stable native live items list and
+  cached indexed item wrappers. Native length/remove/clear and kind/type/getAsFile
+  preserve the store's access modes, raw UTF-16 metadata and surviving item identity.
+  Successful file reads return fresh copied Files; the pinned clear implementation
+  removes text only and preserves files. At `e775be45`, nine new cases and fourteen
+  focused cases pass, seventeen selected files pass in both GC modes, and nine
+  optimized cases pass. Signed startup, two pixel-exact genuine text-item pages and
+  eleven smoke cases pass. Nonempty files and mode gates use native owner tests.
+  Public add/getAsString/webkitGetAsEntry/setDragImage, hardware delivery and
+  weak/foreign wrapper ownership remain pending. See [DataTransfer items
+  evidence](docs/translation-audit/NATIVE_DATA_TRANSFER_ITEMS_OWNER.md).
+
 ## Translated module inventory
 
 All 78 translated LibWeb packages and all 1,193 current module-owned C++

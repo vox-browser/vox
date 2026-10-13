@@ -1336,3 +1336,18 @@ Agent checks run with `v -old-compiler -enable-globals`. Isolated worktrees use 
   Core HTML/FileAPI algorithms and physical inventory remain unchanged.
   Historical ledger remains 32 fixed / 25 partial / 9 open.
   Consolidated evidence SHA256: `63a99a822705b4b2eda68dbac9c2e6518e1c18255c6adb036272051e8b3ca492`.
+
+- Native Window DataTransfer items (`e775be45`, 2026-10-13).
+  Stable native live list/item identities, indexed reflection, removal/clearing,
+  raw UTF-16 metadata and fresh File conversion are implemented over actual owners.
+  Nine new / fourteen focused cases, seventeen selected files in both GC modes,
+  nine optimized cases, signed startup, two exact text-item pages and eleven
+  screenshot smoke cases pass. Source clear remains text-only; file payload/mode
+  coverage belongs to native V owner fixtures. The parent baseline fails only
+  two initial MAIN guards. Initial File value-comparison and Node-model failures
+  remain preserved with no successful batch/native-model credit.
+  See [DataTransfer items evidence](NATIVE_DATA_TRANSFER_ITEMS_OWNER.md).
+  Assigned HTML feature delta is +10 implementation / +74 test lines and one
+  test file; the independent physical recount is pinned separately to the code.
+  Historical ledger remains 32 fixed / 25 partial / 9 open.
+  Consolidated evidence SHA256: `96744137979d0e5726bc5816628aac05a14790a39a667b2e0d8cfe93f8b6cfbe`.
