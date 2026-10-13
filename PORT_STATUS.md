@@ -866,19 +866,22 @@ V's standard `crypto.*` modules without shadowing that namespace.
 The IDL-only `Fullscreen` package delegates its state machine to the shared
 translated DOM implementation.
 
-The verified `58fde80e` physical inventory is retained in
+The verified `4ef8e6e5` physical inventory is retained in
+`Build/audit-fixes/source-current-module-loc-4ef8e6e5.json` (SHA256
+`64cd5fb2cfa150fe9505b5e07dc6f6251a8e2211fd7d0d9ce93481eaee33fcff`).
+The ordinary media listener slice changes root browser support and adds two
+root integration test files. All 2,209 assigned package files retain their
+previous hashes and line counts; the 78-owner totals are unchanged. Root and
+browser implementation and integration tests remain excluded from these counts.
+The previous native-play inventory remains preserved in
 `Build/audit-fixes/source-current-module-loc-58fde80e.json` (SHA256
 `87f5275d06b35029406cead2eca001cb606389db9aa58958d6fbb3ff1b1c6f01`).
-The native play slice adds one HTML owner test and connects the public caller
-and typed rejection batches to their Document-owned WebIDL capability and
-execution context. Root and browser implementation and integration tests remain
-excluded from package counts. The 78 owners contain 2,209 assigned files.
 The previous unsupported-play inventory remains preserved in
 `Build/audit-fixes/source-current-module-loc-aa9a5e27.json` (SHA256
 `166070c623211b8600db5300c89ed5219375d0e4045728c12117361ad8cca27c`).
 Source-unit mappings and physical LOC do not establish runtime parity.
 
-The table below refreshes tracked package V LOC on 2026-10-11; upstream counts
+The table below refreshes tracked package V LOC on 2026-10-13; upstream counts
 and structural mapping labels retain the pinned inventory. It covers 76 current
 implementation-bearing upstream modules plus the translated IDL/IPC-only
 `Fullscreen` and `Worker` packages, and all 1,193 module-owned `.cpp`
