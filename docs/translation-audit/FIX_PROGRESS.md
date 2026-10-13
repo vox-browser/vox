@@ -1425,3 +1425,36 @@ Agent checks run with `v -old-compiler -enable-globals`. Isolated worktrees use 
   78 owners / 2,227 files, 433,263 implementation /
   160,393 test V LOC. Historical ledger stays 32 fixed / 25 partial / 9 open.
   Consolidated evidence SHA256: `d2fb80d3298f1714ab42ecdee1feccaee2ab06bf8979c28cef7a0a35cb8cb99f`.
+
+- Native media drag/drop event-handler attributes (`a503c977`, 2026-10-14).
+  The seven ondrag/ondragend/ondragenter/ondragleave/ondragover/ondragstart/ondrop
+  attributes extend the existing native owner registry and generic callback route.
+  Exact receiver branding precedes replay; LegacyTreatNonObjectAsNull preserves
+  object identity and maps primitive assignments to null without conversion.
+  Replacement retains listener order, null removes the listener, and reactivation
+  appends it. Noncallable objects do not trigger handleEvent reads; callable proxy
+  handlers use their actual call behavior. Only actual boolean false cancels.
+  Relevant/incumbent callback contexts, currentTarget and actual payload identity,
+  live Page scripting gates, raw uncompiled content attributes and post-close
+  dispatch are covered without a physical drag/default-action claim.
+  6 new / 20 focused cases, 15 selected files /
+  52 cases in each GC mode and 6 optimized cases pass.
+  Signed startup, two exact public handler pages and eleven smoke cases pass
+  (8 exact, 3 retaining established tolerance residuals).
+  Parent baseline: 2 files compile and 6 availability guards fail;
+  later assertions earn no baseline credit. Retained failed test batches: `focused-v1`; no failed batch or later assertion earns passing credit.
+  The original completed production attempt fails at drag-handlers-defaults-pixel; its partial stage and child exit receipts remain preserved without full-run or later-stage pass credit. A separate immutable retry completes all ten stages.
+  Final implementation hashes match the earliest captured implementation freeze. Changed owned paths across the initial/final freezes: `browserjs/media_element_drag_handler_host_test.v`.
+  Public page dispatch is untrusted; V owner fixtures include trusted embedding DOM
+  dispatch. Upstream FIXME setDragImage remains absent with no invented stub.
+  Physical Cocoa/Page producers, automatic store transitions/default actions, weak
+  and foreign ownership, and the complete HTMLElement handler hierarchy remain open.
+  See [media drag-handler evidence](NATIVE_MEDIA_DRAG_HANDLERS_OWNER.md).
+  All three feature paths are excluded root/browser support: +1 registry
+  implementation line and 595 new test lines confer no assigned LOC delta.
+  Independent physical recount preserves 78 owners / 2,227 files,
+  433,263 implementation / 160,393 test V LOC and
+  every assigned hash/newline count at the prior entry pin. Historical ledger stays
+  32 fixed / 25 partial / 9 open. Existing native play() promises stay complete.
+  Verification and the physical inventory remain pinned to `a503c977`. 3 later independently authored commits are preserved at documentation base `a79d432b`; their CSS/Layout sources and counts are outside this slice's verified source and inventory counter. A later inventory refresh must account for those separate changes under its own pin.
+  Consolidated evidence SHA256: `9af390887fee838c6b470e7194e122cfc9aeedcab5ab17f6bc9b2f7cfbe5a2f7`.

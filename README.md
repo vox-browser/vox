@@ -335,6 +335,29 @@ physical/default drag delivery, foreign WindowProxy handling and weak ownership
 remain open. The browser still uses JavaScriptCore.
 See [DataTransfer entry evidence](docs/translation-audit/NATIVE_DATA_TRANSFER_ITEM_ENTRY_OWNER.md).
 
+Native media ondrag, ondragend, ondragenter, ondragleave, ondragover,
+ondragstart and ondrop now use the existing owner-backed event-handler pipeline.
+Native receiver checks precede replay; legacy primitive assignments become null,
+object callbacks retain identity, replacement keeps the listener position, and
+null removal followed by reactivation appends the slot. Only actual boolean false
+cancels dispatch. Parsed video and script-created audio handlers receive the real
+DragEvent and native DataTransfer/item payload, with fresh File/Entry snapshots,
+balanced settings/VM contexts and the actual Page scripting gate. Raw content
+handler source stays uncompiled and remains in the attribute after IDL replacement.
+At `a503c977`, 6 new / 20 focused cases pass;
+15 selected files / 52 cases pass
+in each GC mode, and 6 optimized cases pass. Signed startup, two
+pixel-exact public drag-handler pages and eleven screenshot smoke cases pass
+(8 exact, 3 at established tolerances). Public page dispatch is
+untrusted; focused V fixtures also exercise trusted embedding DOM dispatch.
+The compact HTMLMediaElement prototype remains a partial flattened surface.
+Physical Cocoa/Page drag production, automatic store transitions/default actions,
+weak/foreign ownership and the complete HTMLElement handler hierarchy remain open.
+Upstream FIXME setDragImage stays absent without an invented public stub.
+The browser still uses JavaScriptCore; existing native play() promises remain complete.
+Verification and the physical inventory remain pinned to `a503c977`. 3 later independently authored commits are preserved at documentation base `a79d432b`; their CSS/Layout sources and counts are outside this slice's verified source and inventory counter. A later inventory refresh must account for those separate changes under its own pin.
+See [media drag-handler evidence](docs/translation-audit/NATIVE_MEDIA_DRAG_HANDLERS_OWNER.md).
+
 On macOS, production layout uses Arial/Helvetica-compatible metrics to match
 the native Cocoa painter. Set `LADYBIRD_BROWSER_FONT` to another TrueType font
 path to override it; `LADYBIRD_LAYOUT_TEST_FONT` continues to take precedence
