@@ -1240,3 +1240,6 @@ Physical Cocoa/Page delivery, default scrolling, blocking-wheel subtree/composit
 invalidation, complete HTMLElement handler coverage and weak/foreign ownership remain
 open. The browser still uses JavaScriptCore. Existing native play() promises remain complete.
 See [media wheel-handler evidence](docs/translation-audit/NATIVE_MEDIA_WHEEL_HANDLER_OWNER.md).
+
+Native wheel input routing (`33ba13ac`, 2026-10-13 UTC):
+Native wheel input reaches the owning Page's actual trusted DOM WheelEvent before scrolling. Cancellation blocks inner and viewport defaults; accepted DOM/style mutations force a fresh hit. Native media/VDOM listeners retain fractional fields and UA-shadow retargeting. Verification on 2026-10-13 UTC covers 23 selected cases in each GC mode (18 unchanged cases plus five corrected Page-fixture cases), signed production startup with three software GG injections, and the 11-case screenshot smoke set (8 exact / 3 retained tolerance). Original failed Page-fixture batches remain without full-batch/test-body pass credit. Generic compact HTMLElement listeners/raw handlers, zoom, nested routing, snap/compositor orchestration and physical OS-device injection remain outside this scope. See [wheel-input evidence](docs/translation-audit/NATIVE_WHEEL_INPUT_ROUTING.md).
