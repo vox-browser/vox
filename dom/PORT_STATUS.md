@@ -91,6 +91,18 @@ physical drag delivery, store transitions/default actions, foreign realms and
 weak ownership remain open. See [DataTransfer string-store
 evidence](../docs/translation-audit/NATIVE_DATA_TRANSFER_STRING_OWNER.md).
 
+Window-owned DataTransfer now exposes its native read-only files getter over
+existing FileAPI owners. The pinned implementation and generator return fresh
+FileList/File snapshots despite the IDL SameObject annotation; old snapshots
+retain their bytes after store/mode changes. Native receiver branding precedes
+FileAPI dependency lookup. At `b59e211c`, seven new and twelve focused cases
+pass, fourteen selected files pass in both GC modes, and seven optimized cases
+pass. Signed startup, two pixel-exact genuine empty-list pages and eleven
+smoke cases pass. Nonempty files use focused native owner tests. Public items,
+drag images, hardware file delivery and weak/foreign ownership remain open.
+See [DataTransfer files
+evidence](../docs/translation-audit/NATIVE_DATA_TRANSFER_FILES_OWNER.md).
+
 Verified at `b335958e`, the disjoint DOM inventory contains 43,499
 implementation V LOC and 5,050 test V LOC across 101 assigned files.
 `Build/audit-fixes/source-current-module-loc-b335958e.json` (SHA256 `d1312ce3780a77a3ebcab3a487d3052ebbdedb51cfdd0e60a4992134892dea81`).

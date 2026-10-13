@@ -568,6 +568,18 @@ physical drag delivery, store transitions/default actions, foreign realms and
 weak ownership remain open. See [DataTransfer string-store
 evidence](docs/translation-audit/NATIVE_DATA_TRANSFER_STRING_OWNER.md).
 
+Window-owned DataTransfer now exposes its native read-only files getter over
+existing FileAPI owners. The pinned implementation and generator return fresh
+FileList/File snapshots despite the IDL SameObject annotation; old snapshots
+retain their bytes after store/mode changes. Native receiver branding precedes
+FileAPI dependency lookup. At `b59e211c`, seven new and twelve focused cases
+pass, fourteen selected files pass in both GC modes, and seven optimized cases
+pass. Signed startup, two pixel-exact genuine empty-list pages and eleven
+smoke cases pass. Nonempty files use focused native owner tests. Public items,
+drag images, hardware file delivery and weak/foreign ownership remain open.
+See [DataTransfer files
+evidence](docs/translation-audit/NATIVE_DATA_TRANSFER_FILES_OWNER.md).
+
 The `:indeterminate`, `:open`, and `:closed` selectors now read live checkbox,
 input-picker, and select-picker state. Control transitions mirror that state at
 the DOM boundary and schedule style invalidation; `switch` checkboxes retain

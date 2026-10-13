@@ -1318,3 +1318,21 @@ Agent checks run with `v -old-compiler -enable-globals`. Isolated worktrees use 
   API cases are first exercised after implementation. Inventory changes
   belong to a separate commit. Ledger remains 32 fixed / 25 partial / 9 open.
   Consolidated evidence SHA256: `1f0e60d7a96ed1734a5d2d5c8b2765e9b914bf6d364b73a583d46104b128ef22`.
+
+- Native Window DataTransfer.files (`b59e211c`, 2026-10-13).
+  Window-owned DataTransfer now exposes its native read-only files getter over
+  existing FileAPI owners. The pinned implementation and generator return fresh
+  FileList/File snapshots despite the IDL SameObject annotation; old snapshots
+  retain their bytes after store/mode changes. Native receiver branding precedes
+  FileAPI dependency lookup. At `b59e211c`, seven new and twelve focused cases
+  pass, fourteen selected files pass in both GC modes, and seven optimized cases
+  pass. Signed startup, two pixel-exact genuine empty-list pages and eleven
+  smoke cases pass. Nonempty files use focused native owner tests. Public items,
+  drag images, hardware file delivery and weak/foreign ownership remain open.
+  See [DataTransfer files evidence](NATIVE_DATA_TRANSFER_FILES_OWNER.md).
+  Follows pinned fresh snapshot implementation despite IDL SameObject.
+  Initial JS compile failure earns no pass credit; exactly three fixture
+  expressions change before the corrected seven-guard parent baseline.
+  Core HTML/FileAPI algorithms and physical inventory remain unchanged.
+  Historical ledger remains 32 fixed / 25 partial / 9 open.
+  Consolidated evidence SHA256: `63a99a822705b4b2eda68dbac9c2e6518e1c18255c6adb036272051e8b3ca492`.
