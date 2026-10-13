@@ -103,6 +103,51 @@ pub fn (mut handler EventHandler) dispatch_wheel_event(target InputTarget, visua
 		cancelable: is_cancelable
 	}
 	handler.log('wheel', target)
+	if hit_node := target.node {
+		if !input_target_is_enabled(target) || !target.layout_is_up_to_date
+			|| !target.has_document_paintable {
+			return .dropped
+		}
+		hit_layout := target.layout_node() or { return .dropped }
+		current_layout := hit_node.layout_node() or { return .dropped }
+		if voidptr(hit_layout) != voidptr(current_layout) {
+			return .dropped
+		}
+		mut node := hit_node
+		for !node.is_element() {
+			node = node.parent() or { return .dropped }
+		}
+		document := node.document()
+		if !document.is_fully_active() || !document.layout_is_up_to_date()
+			|| !handler.has_committed_root_box(document) {
+			return .dropped
+		}
+		handler.pointed_document_ = document
+		handler.platform_mouse_position_ = visual_viewport_position
+		handler.platform_mouse_screen_ = screen_position
+		mut coordinates := handler.coordinates_for_node(node)
+		// Unboxed inline parents have no padding box. Retain the hit node as
+		// the offset origin, as upstream does for a parent without a box.
+		if paintable := node.unsafe_paintable() {
+			if !paintable.is_paintable_box() {
+				coordinates = handler.coordinates_for_node(hit_node)
+			}
+		} else {
+			coordinates = handler.coordinates_for_node(hit_node)
+		}
+		wheel := dom.WheelEvent.create_from_platform_event(node_view(node), 'wheel',
+			pixel_point(screen_position), pixel_point(coordinates.page),
+			pixel_point(coordinates.client), pixel_point(coordinates.offset),
+			wheel_delta_x, wheel_delta_y, i16(button), u16(buttons), modifiers)
+		mut event := unsafe { &dom.Event(wheel) }
+		event.set_cancelable(is_cancelable)
+		return if dom.event_target_dispatch_event(unsafe { &dom.EventTarget(node) }, event) {
+			.accepted
+		} else {
+			.cancelled
+		}
+	}
+	// InputTarget without a DOM node is the standalone routing fixture.
 	if is_cancelable && target.cancel_mouse {
 		return .cancelled
 	}

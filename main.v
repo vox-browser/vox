@@ -3147,30 +3147,6 @@ fn layout_node_is_document_viewport_scroller(document &dom.Document, layout_node
 	return node.is_document() || node.unique_id() == document_element.as_node().unique_id()
 }
 
-fn (mut app BrowserApp) scroll_element_at_window_point(mouse_x f32, mouse_y f32, delta_x f64, delta_y f64) bool {
-	target := app.element_at_window_point(mouse_x, mouse_y) or { return false }
-	mut current := target.as_node().layout_node()
-	for current != none {
-		layout_node := current or { break }
-		if app.document != unsafe { nil }
-			&& layout_node_is_document_viewport_scroller(app.document, layout_node) {
-			current = layout_node.containing_block()
-			continue
-		}
-		for paintable in layout_node.paintables() {
-			if !paintable.is_paintable_box() {
-				continue
-			}
-			mut paintable_box := unsafe { &dom.PaintableBox(paintable) }
-			if paintable_box.handle_mousewheel(delta_x, delta_y) {
-				return true
-			}
-		}
-		current = layout_node.containing_block()
-	}
-	return false
-}
-
 fn paint_color(serialized string, opacity f64) gg.Color {
 	parsed := css.parse_color_string(serialized) or { return gg.rgba(15, 23, 42, 255) }
 	alpha := clamp(f64(parsed.a) * opacity, 0.0, 255.0)
@@ -5871,9 +5847,13 @@ fn (mut app BrowserApp) handle_event(event &gg.Event) {
 		.mouse_scroll {
 			delta_x := -f64(event.scroll_x) * 42.0
 			delta_y := -f64(event.scroll_y) * 42.0
-			if !app.scroll_element_at_window_point(event.mouse_x, event.mouse_y, delta_x, delta_y) {
-				app.scroll_by(delta_y, event.window_height)
-			}
+			mut screen_x := f64(event.mouse_x)
+			mut screen_y := f64(event.mouse_y)
+			$if macos { C.native_pointer_screen_position(screen_x, screen_y, &screen_x, &screen_y) }
+			app.handle_wheel_at_viewport_point(page.PixelPoint{f64(event.mouse_x),
+				f64(event.mouse_y - app.page_top())}, page.PixelPoint{screen_x, screen_y},
+				0, app.platform_pointer_buttons, app.platform_pointer_modifiers,
+				delta_x, delta_y, false)
 		}
 		.resized {
 			app.relayout(event.window_width, event.window_height)
@@ -6096,6 +6076,10 @@ fn main() {
 				panic('headless smoke: JavaScript click handler did not mutate the translated DOM')
 			}
 			println('javascript click event: passed')
+		}
+		if options.js_engine != .libjs {
+			app.run_wheel_input_smoke() or { panic('headless wheel smoke: ${err.msg()}') }
+			println('native wheel routing and scrolling: passed')
 		}
 		println('Ladybird V smoke check passed')
 		println('source: ${app.source_label}')

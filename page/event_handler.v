@@ -541,9 +541,10 @@ pub fn (mut handler EventHandler) handle_mousewheel(target ?InputTarget) EventRe
 	handler.last_known_mouse_target_ = value
 	dispatch_result := handler.dispatch_wheel_event(value, PixelPoint{}, PixelPoint{}, 0, 0,
 		0, 0, 0, true)
-	return if dispatch_result == .cancelled {
-		.cancelled
-	} else if value.has_scrollable_box {
+	if dispatch_result != .accepted {
+		return dispatch_result
+	}
+	return if value.has_scrollable_box {
 		.handled
 	} else {
 		.accepted
