@@ -644,15 +644,16 @@ fn (mut bfc BlockFormattingContext) layout_block_level_box(mut state LayoutState
 			box_state.set_has_definite_height(true)
 		}
 	}
-	// BlockFormattingContext::layout_block_level_box(): flex containers whose
-	// used height is auto have a max-content automatic block size. Resolve that
-	// size before creating the independent flex formatting context, just as the
-	// upstream parent BFC does. Nested flex containers participate in this pass:
-	// their cached max-content heights make the containing flex box's measured
-	// height exact and are reused by the normal layout. The value remains
-	// indefinite for percentage resolution; set_content_height() deliberately
-	// does not change that flag.
-	if definite_content_height == none && box_as_node.display().is_flex_inside() {
+	// Flex resolves its own automatic block size from its items/line cross
+	// sizes. An extra max-content layout here repeats the entire subtree before
+	// its actual independent run (upstream's flex_root_resolves_own_auto_block_size).
+	// Retain the provisional used height for percentage block-axis gaps, whose
+	// translated resolution still precedes line sizing, and for native buttons
+	// and writing modes which use the existing compatibility sizing path.
+	if definite_content_height == none && box_as_node.display().is_flex_inside()
+		&& (node_uses_button_layout(box_as_node)
+			|| computed.gap_value(.row_gap).length_percentage.contains_percentage()
+			|| computed.writing_mode() != .horizontal_tb) {
 		if flex_box := box_as_node.as_box() {
 			box_state.set_content_height(calculate_max_content_height(mut state, flex_box, css_px(content_width)))
 		}

@@ -56,3 +56,17 @@ fn test_flex_relayout_still_lays_out_items_when_stretch_changes_their_height() {
 	assert flex_relayout_used(result, 'item').content_height().to_double() == 80
 	assert flex_relayout_used(result, 'leaf').offset.y().to_double() == 30
 }
+
+fn test_block_flex_resolves_its_automatic_height_in_its_own_layout() {
+	for direction in ['row', 'column'] {
+		document := html.parse_document('<!doctype html><style>
+			body { margin:0 } .flex { display:flex; flex-direction:${direction}; width:100px }
+			.block { display:block } #leaf { height:12px; width:100px }
+			#outer { min-height:20px; align-items:center; justify-content:center }
+		</style><div class="flex" id="outer"><div class="block"><div class="flex"><div class="block"><div class="flex" id="inner"><div id="leaf"></div></div></div></div></div></div>')
+		result := run_document_layout(document, 800, 600) or { panic('layout failed') }
+		assert flex_relayout_used(result, 'outer').content_height().to_double() == 20
+		assert flex_relayout_used(result, 'inner').content_height().to_double() == 12
+		assert flex_relayout_used(result, 'leaf').content_height().to_double() == 12
+	}
+}
