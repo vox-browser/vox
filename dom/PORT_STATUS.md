@@ -13,6 +13,14 @@ by four core cases and two actual Window-owner cases, including inherited
 HTML DragEvent. Public JavaScript MouseEvent fields remain open. See
 [related-target evidence](../docs/translation-audit/MOUSE_EVENT_RELATED_TARGET.md).
 
+The current disjoint DOM inventory at `dd0cc2d5` contains 43,497
+implementation V LOC and 4,979 test V LOC across 100 assigned files.
+`Build/audit-fixes/source-current-module-loc-dd0cc2d5.json` (SHA256
+`568534bda24ca5538af3196bacd984810907a7fd79a60c064135af6cb4478b51`) recounts every assigned
+byte hash and physical newline. The shared UIEvents owner contains 1,489
+implementation / 474 test V LOC; its assignment stays separate. The source
+mapping audit and historical physical counts below retain their earlier scope.
+
 | Upstream `.cpp` | LOC | Primary V mapping |
 |---|---:|---|
 | `AbortController.cpp` | 50 | `events.v` |

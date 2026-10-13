@@ -995,14 +995,19 @@ V's standard `crypto.*` modules without shadowing that namespace.
 The IDL-only `Fullscreen` package delegates its state machine to the shared
 translated DOM implementation.
 
-The verified `d1b86d81` physical inventory is retained in
+The verified `dd0cc2d5` physical inventory is retained in
+`Build/audit-fixes/source-current-module-loc-dd0cc2d5.json` (SHA256
+`568534bda24ca5538af3196bacd984810907a7fd79a60c064135af6cb4478b51`).
+All 78 owners and 2,211 assigned files are recounted from committed bytes:
+432,871 implementation V LOC and 159,242 test V LOC. Only DOM and UIEvents
+change: implementation shrinks by two lines in DOM and one in UIEvents,
+and the new 285-line core test belongs to DOM. The browser owner
+test remains excluded support. Other owner mappings, hashes and physical
+newline counts remain unchanged. Counts and structural mappings do not
+establish browser parity.
+The previous UIEvent inventory remains preserved in
 `Build/audit-fixes/source-current-module-loc-d1b86d81.json` (SHA256
 `1d396d2178a0173ebe3f267c44e8a13bb7eac2ce5ce68cfdade2ad6ce2dfa265`).
-The shared native UIEvent binding changes browser support and adds two
-root/browser test files, excluded from the assigned package inventory.
-All 78 owners and 2,210 assigned files retain the earlier byte hashes and
-physical newline counts: 432,874 implementation V LOC and 158,957 test V LOC.
-The unchanged counts and structural mappings do not establish browser parity.
 The previous media movement inventory remains preserved in
 `Build/audit-fixes/source-current-module-loc-e5ae9afb.json` (SHA256
 `16e41f1d3ac526bd0ed255fae0aeebb752d66421da4b1d587f69cde20f9a5c9c`).
@@ -1051,7 +1056,7 @@ from the current-module totals.
 | `CookieStore` | 2 | 850 | 1,059 | 482 | Complete |
 | `CredentialManagement` | 6 | 382 | 420 | 301 | Complete |
 | `Crypto` | 6 | 13,412 | 7,957 | 7,989 | Complete |
-| `DOM` | 59 | 34,859 | 43,499 | 4,694 | Complete |
+| `DOM` | 59 | 34,859 | 43,497 | 4,979 | Complete |
 | `DOMURL` | 4 | 1,039 | 854 | 464 | Complete |
 | `Editing` | 26 | 12,720 | 13,938 | 226 | Complete |
 | `Encoding` | 6 | 769 | 5,356 | 4,495 | Complete |
@@ -1100,7 +1105,7 @@ from the current-module totals.
 | `StorageAPI` | 6 | 433 | 584 | 449 | Complete |
 | `Streams` | 22 | 8,789 | 7,421 | 4,888 | Complete |
 | `TrustedTypes` | 7 | 1,175 | 863 | 222 | Complete |
-| `UIEvents` | 12 | 1,871 | 1,490 | 474 | Complete |
+| `UIEvents` | 12 | 1,871 | 1,489 | 474 | Complete |
 | `URLPattern` | 1 | 223 | 1,703 | 257 | Complete |
 | `UserTiming` | 2 | 160 | 119 | 35 | Complete |
 | `ViewTransition` | 1 | 1,054 | 743 | 349 | Complete |
@@ -1118,7 +1123,7 @@ from the current-module totals.
 | `XLink` | 1 | 16 | 13 | 10 | Complete |
 | `XML` | 2 | 556 | 477 | 164 | Complete |
 | `XPath` | 5 | 435 | 672 | 210 | Complete |
-| **Total** | **1,193** | **329,970** | **432,874** | **158,957** | **74 complete, 4 present, 0 untranslated** |
+| **Total** | **1,193** | **329,970** | **432,871** | **159,242** | **74 complete, 4 present, 0 untranslated** |
 
 ### Live editability refresh
 

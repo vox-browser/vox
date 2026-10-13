@@ -924,7 +924,7 @@
 
 All 78 translated LibWeb packages and all 1,193 current module-owned C++
 implementation units have audited V mappings. As of 2026-10-13, the tracked module
-packages contain 432,874 implementation V LOC and 158,957 test V LOC.
+packages contain 432,871 implementation V LOC and 159,242 test V LOC.
 Physical LOC includes comments and blank lines. Root support code and browser
 integration code are excluded. Package counts include generated V assets and
 supporting translations; WebAssembly includes the separately audited LibWasm
@@ -939,7 +939,7 @@ their shared DOM test files are counted under the corresponding owner once.
 | Clipboard | 1,123 | Compositor | 2,403 |
 | Compression | 471 | ContentSecurityPolicy | 2,816 |
 | CookieStore | 1,059 | CredentialManagement | 420 |
-| Crypto (`webcrypto/`) | 7,957 | DOM | 43,499 |
+| Crypto (`webcrypto/`) | 7,957 | DOM | 43,497 |
 | DOMURL | 854 | Editing | 13,938 |
 | Encoding | 5,356 | EncryptedMediaExtensions | 572 |
 | EntriesAPI | 44 | EventTiming | 153 |
@@ -964,7 +964,7 @@ their shared DOM test files are counted under the corresponding owner once.
 | Serial | 243 | ServiceWorker | 1,573 |
 | Speech | 668 | StorageAPI | 584 |
 | Streams | 7,421 | TrustedTypes | 863 |
-| UIEvents | 1,490 | URLPattern | 1,703 |
+| UIEvents | 1,489 | URLPattern | 1,703 |
 | UserTiming | 119 | ViewTransition | 743 |
 | WebAssembly | 11,143 | WebAudio | 8,682 |
 | WebDriver | 3,934 | WebGL | 6,627 |
@@ -973,7 +973,7 @@ their shared DOM test files are counted under the corresponding owner once.
 | WebXR | 411 | Worker | 142 |
 | XHR | 1,695 | XLink | 13 |
 | XML | 477 | XPath | 672 |
-| **Total** | **432,874** |  |  |
+| **Total** | **432,871** |  |  |
 
 `PORT_STATUS.md` is the canonical detailed inventory. It also records upstream
 C++ file/LOC counts, per-module test LOC, status, and the counting conventions;
