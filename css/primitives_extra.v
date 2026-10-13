@@ -210,10 +210,10 @@ pub fn Time.resolve_calculated_with_context(calculated CalculatedStyleValue, con
 }
 
 pub fn LengthPercentage.from_style_value_logic(style_value StyleValue) LengthPercentage {
-	return match style_value {
-		LengthStyleValue { LengthPercentage.from_length(style_value.length()) }
-		PercentageStyleValue { LengthPercentage.from_percentage(style_value.percentage()) }
-		CalculatedStyleValue { LengthPercentage.from_calculated(style_value) }
+	match style_value {
+		LengthStyleValue { return LengthPercentage.from_length(style_value.length()) }
+		PercentageStyleValue { return LengthPercentage.from_percentage(style_value.percentage()) }
+		CalculatedStyleValue { return LengthPercentage.from_calculated(style_value) }
 		else { panic('VERIFY_NOT_REACHED') }
 	}
 }

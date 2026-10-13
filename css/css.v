@@ -3225,7 +3225,9 @@ pub type LengthPercentageValue = CalculatedStyleValue | Length | Percentage
 
 pub struct LengthPercentage {
 pub mut:
-	value_ LengthPercentageValue
+	// V sorts sum-type variants by name. An implicit default therefore builds
+	// a CalculatedStyleValue with its map and array, even when overwritten.
+	value_ LengthPercentageValue = Length.make_px(0)
 }
 
 pub fn LengthPercentage.from_length(length Length) LengthPercentage {
@@ -3341,7 +3343,7 @@ pub fn (lp LengthPercentage) to_string_with_mode(mode SerializationMode) string 
 
 pub struct LengthPercentageOrAuto {
 pub mut:
-	length_percentage_ ?LengthPercentage
+	length_percentage_ ?LengthPercentage = none
 }
 
 pub fn LengthPercentageOrAuto.from_length_percentage(length_percentage LengthPercentage) LengthPercentageOrAuto {
@@ -3769,7 +3771,7 @@ pub enum SizeType {
 pub struct Size {
 pub mut:
 	type_              SizeType
-	length_percentage_ ?LengthPercentage
+	length_percentage_ ?LengthPercentage = none
 }
 
 pub fn Size.new(type_ SizeType, length_percentage ?LengthPercentage) Size {
