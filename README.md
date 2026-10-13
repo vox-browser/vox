@@ -211,12 +211,25 @@ bundle with:
 open Build/v/Ladybird.app
 ```
 
-The production builder uses `-enable-globals -prod -gc boehm`, integrates the
+The production builder uses `-enable-globals -gc boehm_full -cflags -O2`, integrates the
 upstream Skia text bridge when its release dependencies are available, writes
 `Build/v/Ladybird.app`, and ad-hoc signs the bundle. `build_ladybird.sh` remains
 as a compatibility alias for existing tooling. Garbage collection reclaims
 temporary parsing and layout data during interactive page updates. Set
 `LADYBIRD_V_GC=none` to build without it for heap-ownership diagnostics.
+
+The default build uses a fully scanned Boehm heap (`-gc boehm_full`) and
+optimizes generated C with `-O2`. The compatibility compiler's `-prod` mode
+repeatedly walks live aggregates to keep nested pointers alive, making large
+CSS token streams quadratic. The scanned heap retains those pointers without
+the walks. Set `LADYBIRD_DEBUG_TIMING=1` when launching Vox to report parsing,
+stylesheet, JavaScript, layout, and first-paint timings.
+
+Temporary intrinsic-sizing and minimum-height probes pool their geometry in
+arenas and release the owned blocks after computing their dimensions. The live
+document, committed geometry, and shared resources retain their existing heap
+ownership. Disabling GC remains a diagnostic option while other temporary V
+arrays and object graphs still require collection.
 
 The application provides a native single-tab browser chrome with back/forward,
 reload, home, an editable address/search field, link navigation, loading and
