@@ -5,6 +5,7 @@ set -eu
 #
 # Environment overrides:
 #   V_BIN                     V compiler executable
+#   LADYBIRD_V_GC            boehm (default) or none for ownership diagnostics
 #   LADYBIRD_SOURCE_DIR       upstream Ladybird checkout used for Skia
 #   LADYBIRD_VCPKG_TRIPLET    upstream vcpkg triplet directory
 
@@ -37,6 +38,18 @@ if [ ! -x "$v_compiler" ]; then
     exit 1
 fi
 
+# Page parsing, intrinsic measurement, animation and input updates allocate
+# temporary V data. Reclaim that data in the interactive browser; the no-GC
+# mode remains available for explicit heap-ownership diagnostics.
+gc_mode=${LADYBIRD_V_GC:-boehm}
+case "$gc_mode" in
+    boehm|none) ;;
+    *)
+        echo "LADYBIRD_V_GC must be boehm or none" >&2
+        exit 2
+        ;;
+esac
+
 # LibRegex's translated C++ wrappers reuse the same pinned Rust backend as
 # upstream. Build the repository-owned archive before compiling the browser.
 python3 "$repo_dir/tools/build_regex_backend.py"
@@ -54,6 +67,12 @@ mkdir -p "$binary_dir"
 cp "$repo_dir/packaging/Info.plist" "$bundle_dir/Contents/Info.plist"
 
 extra_cflags=""
+if [ "$gc_mode" = boehm ]; then
+    # The compatibility compiler's source-built collector has only 2048
+    # static-root ranges. AppKit/Metal's dyld images exceed that limit; match
+    # the large configuration used by current V and its macOS GC archives.
+    extra_cflags="-DLARGE_CONFIG=1"
+fi
 extra_ldflags=""
 upstream_dir=${LADYBIRD_SOURCE_DIR:-"$repo_dir/../3rd/ladybird"}
 vcpkg_triplet=${LADYBIRD_VCPKG_TRIPLET:-$default_vcpkg_triplet}
@@ -102,15 +121,16 @@ zoneinfo_exclude='@vlib/time/zoneinfo.native.v'
 # The translated tree is validated with V's stable compatibility compiler.
 # Select the same frontend explicitly so a newer default compiler on PATH does
 # not turn a browser build into an unrelated source-migration attempt.
-echo "Building Ladybird V with: -old-compiler -enable-globals -prod -gc none"
+echo "Building Ladybird V with: -old-compiler -enable-globals -prod -gc $gc_mode"
 # Root browser features are split across main.v and companion module files.
 cd "$repo_dir"
 if [ -n "$extra_ldflags" ]; then
-    "$v_compiler" -old-compiler -exclude "$zoneinfo_exclude" -enable-globals -prod -gc none \
+    "$v_compiler" -old-compiler -exclude "$zoneinfo_exclude" -enable-globals -prod -gc "$gc_mode" \
         -cflags "$extra_cflags" -ldflags "$extra_ldflags" \
         -o "$binary_dir/Ladybird" .
 else
-    "$v_compiler" -old-compiler -exclude "$zoneinfo_exclude" -enable-globals -prod -gc none \
+    "$v_compiler" -old-compiler -exclude "$zoneinfo_exclude" -enable-globals -prod -gc "$gc_mode" \
+        -cflags "$extra_cflags" \
         -o "$binary_dir/Ladybird" .
 fi
 
