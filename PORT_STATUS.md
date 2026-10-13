@@ -893,14 +893,17 @@ V's standard `crypto.*` modules without shadowing that namespace.
 The IDL-only `Fullscreen` package delegates its state machine to the shared
 translated DOM implementation.
 
-The verified `60ef4bb2` physical inventory is retained in
-`Build/audit-fixes/source-current-module-loc-60ef4bb2.json` (SHA256
-`087ef5bb19a9b329c861227032f77769c3f552171b6a30ab496b2e37d4522a7b`).
-The media-handler slice changes native browser support, adds two browser tests
-and one root integration test, and corrects the existing Window assertion.
+The verified `9ee0685b` physical inventory is retained in
+`Build/audit-fixes/source-current-module-loc-9ee0685b.json` (SHA256
+`e8b19228fb5b400542347570c7198c7314e675bdee14a05ac890e947a31e38da`).
+The media press/release-handler slice changes native browser support and adds
+one browser test file and one root integration test file.
 All 2,209 assigned package files retain their previous hashes and physical line
 counts; the 78-owner totals are unchanged. Root and browser implementation and
 tests remain excluded from these counts.
+The previous media-handler inventory remains preserved in
+`Build/audit-fixes/source-current-module-loc-60ef4bb2.json` (SHA256
+`087ef5bb19a9b329c861227032f77769c3f552171b6a30ab496b2e37d4522a7b`).
 The previous ordinary-listener inventory remains preserved in
 `Build/audit-fixes/source-current-module-loc-4ef8e6e5.json` (SHA256
 `64cd5fb2cfa150fe9505b5e07dc6f6251a8e2211fd7d0d9ce93481eaee33fcff`).
