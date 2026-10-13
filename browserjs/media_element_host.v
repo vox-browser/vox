@@ -10,7 +10,7 @@ const media_element_event_handler_names = ['abort', 'canplay', 'canplaythrough',
 	'emptied', 'ended', 'error', 'loadeddata', 'loadedmetadata', 'loadstart', 'pause', 'play',
 	'playing', 'progress', 'ratechange', 'resize', 'seeked', 'seeking', 'stalled', 'suspend',
 	'timeupdate', 'volumechange', 'waiting', 'pointerdown', 'pointerup', 'mousedown', 'mouseup',
-	'click']
+	'click', 'auxclick', 'dblclick']
 
 pub type MediaElementReplayHook = fn (&Runtime) !
 
