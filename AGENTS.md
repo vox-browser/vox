@@ -911,6 +911,15 @@
   alongside physical input, raw inline element compilation, realms, weak
   ownership and full media/load work. See [UIEvent evidence](docs/translation-audit/NATIVE_UI_EVENT_OWNER.md).
 
+- Mouse, pointer and wheel events now share the base Event related-target
+  state used by DOM dispatch; DragEvent inherits the corrected MouseEvent path.
+  Construction, typed getters, legacy initialization, clones and trusted hover
+  delivery follow per-listener shadow retargeting, suppression and clear-target
+  cleanup. Six core/actual-owner cases pass, with 12 selected files in both GC
+  modes and ordinary optimized validation. Public JavaScript MouseEvent fields
+  and concrete subclass bindings remain open. See
+  [related-target evidence](docs/translation-audit/MOUSE_EVENT_RELATED_TARGET.md).
+
 ## Translated module inventory
 
 All 78 translated LibWeb packages and all 1,193 current module-owned C++

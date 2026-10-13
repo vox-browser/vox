@@ -1156,3 +1156,24 @@ Agent checks run with `v -old-compiler -enable-globals`. Isolated worktrees use 
   remains 32 fixed / 25 partial / 9 open.
   [Evidence](NATIVE_UI_EVENT_OWNER.md), consolidated SHA256:
   `edc1a8b4e7c47dd09e1fa1580566b69098585e40f67df3eef2660848eebdb228`.
+
+- Canonical mouse-family related targets (`dd0cc2d5`, 2026-10-13) remove
+  the duplicate MouseEvent slot and use the dispatch-owned base Event state.
+  Constructors, typed getters, legacy initialization, clones and trusted hover
+  agree on per-listener shadow retargeting, suppression and clear-target cleanup;
+  DragEvent inherits the corrected path. Both final parent files compile and
+  all six cases fail actual assertions; identical bytes pass focused and
+  ordinary optimized runs plus 12/12 files in both GC modes. Signed startup
+  and all 11 configured smoke cases pass (eight exact), preserving
+  38 current and 1,225 prior artifact hashes.
+  Earlier checker and reused-export fixture diagnostics remain separate.
+  Guarded cleanup detaches only the owned RAM disk6; persistent evidence stays.
+  The 78-owner recount assigns 2,211 files and changes only DOM/UIEvents:
+  432,871 implementation / 159,242 test V LOC. Main, dispatcher and native
+  browser binding implementation remain unchanged. The private owner observer
+  establishes native-state fidelity; public JavaScript MouseEvent interfaces,
+  concrete prototypes, full input construction, physical input/default actions,
+  realms, weak ownership and broader media/load work remain open. Ledger stays
+  32 fixed / 25 partial / 9 open.
+  [Evidence](MOUSE_EVENT_RELATED_TARGET.md), consolidated SHA256:
+  `7ba7b929b6c7b0ef1ab33ad1f828db8b5ee23f250cbde7ad35d175d7b4605e1d`.

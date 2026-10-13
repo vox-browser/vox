@@ -5,6 +5,14 @@ against every adjacent `.h` and `.idl`. Selection and UIEvents implementations
 that physically share the `dom` package are counted only in their own status
 files.
 
+Mouse-family related targets now share the canonical base Event slot used by
+DOM dispatch. Constructors, typed accessors, legacy initialization and clones
+retain its current state; trusted hover no longer maintains a second copy.
+Real shadow-slot retargeting, suppression and clear-target cleanup are covered
+by four core cases and two actual Window-owner cases, including inherited
+HTML DragEvent. Public JavaScript MouseEvent fields remain open. See
+[related-target evidence](../docs/translation-audit/MOUSE_EVENT_RELATED_TARGET.md).
+
 | Upstream `.cpp` | LOC | Primary V mapping |
 |---|---:|---|
 | `AbortController.cpp` | 50 | `events.v` |

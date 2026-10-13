@@ -436,6 +436,17 @@ compilation, foreign realms and weak ownership remain open, along with full
 media/physical playback and the pinned load captured-task FIXME.
 [UIEvent evidence](docs/translation-audit/NATIVE_UI_EVENT_OWNER.md).
 
+MouseEvent-family related targets now use the base Event state that dispatch
+retargets for each listener and clears at shadow boundaries. Construction,
+legacy initialization, current-state clones and trusted hover agree with that
+canonical slot, including inherited DragEvent records. Six focused cases
+compile and fail actual assertions on the parent, then pass with final bytes;
+12 selected files pass in both GC modes and the new cases pass optimized.
+Signed startup and all 11 existing smoke cases pass (eight exact). The actual
+Window-owner fixture uses a private native observer; public JavaScript
+MouseEvent getters/constructors and concrete subclass prototypes remain open.
+[Related-target evidence](docs/translation-audit/MOUSE_EVENT_RELATED_TARGET.md).
+
 The `:indeterminate`, `:open`, and `:closed` selectors now read live checkbox,
 input-picker, and select-picker state. Control transitions mirror that state at
 the DOM boundary and schedule style invalidation; `switch` checkboxes retain
