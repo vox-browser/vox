@@ -5,7 +5,7 @@ set -eu
 #
 # Environment overrides:
 #   V_BIN                     V compiler executable
-#   LADYBIRD_V_GC            boehm (default) or none for ownership diagnostics
+#   LADYBIRD_V_GC            boehm (default), boehm_full, or none
 #   LADYBIRD_V_PROFILE       V profiling report path (unset for normal builds)
 #   LADYBIRD_V_PROFILE_FNS   comma-separated C function names to profile
 #   LADYBIRD_SOURCE_DIR       upstream Ladybird checkout used for Skia
@@ -45,9 +45,9 @@ fi
 # mode remains available for explicit heap-ownership diagnostics.
 gc_mode=${LADYBIRD_V_GC:-boehm}
 case "$gc_mode" in
-    boehm|none) ;;
+    boehm|boehm_full|none) ;;
     *)
-        echo "LADYBIRD_V_GC must be boehm or none" >&2
+        echo "LADYBIRD_V_GC must be boehm, boehm_full, or none" >&2
         exit 2
         ;;
 esac
@@ -69,7 +69,7 @@ mkdir -p "$binary_dir"
 cp "$repo_dir/packaging/Info.plist" "$bundle_dir/Contents/Info.plist"
 
 extra_cflags=""
-if [ "$gc_mode" = boehm ]; then
+if [ "$gc_mode" != none ]; then
     # The compatibility compiler's source-built collector has only 2048
     # static-root ranges. AppKit/Metal's dyld images exceed that limit; match
     # the large configuration used by current V and its macOS GC archives.
@@ -125,12 +125,14 @@ zoneinfo_exclude='@vlib/time/zoneinfo.native.v'
 # not turn a browser build into an unrelated source-migration attempt.
 # This compatibility compiler's -prod mode snapshots every pointer in live
 # aggregates around calls. Growing CSS token arrays are traversed on every
-# token, turning linear parsing into quadratic work. Use a fully scanned heap
-# and optimize the generated C directly instead. Full scanning keeps nested
-# strings/arrays reachable without those expensive snapshots.
+# token, turning linear parsing into quadratic work. Optimize the generated C
+# directly instead. Pointer-aware Boehm traces the live object graph while
+# leaving pointer-free buffers atomic. Optimized forced-GC tests cover nested
+# token strings, CSSOM values and arena records. boehm_full remains available
+# as an ownership diagnostic.
 set -- -old-compiler -exclude "$zoneinfo_exclude" -enable-globals
-if [ "$gc_mode" = boehm ]; then
-    set -- "$@" -gc boehm_full
+if [ "$gc_mode" != none ]; then
+    set -- "$@" -gc "$gc_mode"
     extra_cflags="$extra_cflags -O2"
 else
     set -- "$@" -prod -gc none
