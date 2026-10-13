@@ -5,6 +5,12 @@ import css
 import dom
 import html
 
+// The compact prototype exposes this media-event subset of GlobalEventHandlers.
+const media_element_event_handler_names = ['abort', 'canplay', 'canplaythrough', 'durationchange',
+	'emptied', 'ended', 'error', 'loadeddata', 'loadedmetadata', 'loadstart', 'pause', 'play',
+	'playing', 'progress', 'ratechange', 'resize', 'seeked', 'seeking', 'stalled', 'suspend',
+	'timeupdate', 'volumechange', 'waiting']
+
 pub type MediaElementReplayHook = fn (&Runtime) !
 
 @[heap]

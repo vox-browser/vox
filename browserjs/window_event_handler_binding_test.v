@@ -58,7 +58,12 @@ fn test_public_window_handler_setter_preserves_callback_identity_and_native_disp
 	assert runtime.evaluate_host('window.onload===null')! == 'true'
 	assert target.event_listener_list().len == 0
 	runtime.evaluate_host('window.onload=loadHandler;')!
-	assert runtime.evaluate_host('(()=>{let threw=false;try{window.onload={}}catch(e){threw=e instanceof TypeError}return threw&&window.onload===loadHandler})()')! == 'true'
+	runtime.evaluate_host('globalThis.noncallableLoadHandler={handleEvent(){windowCalls.push(false)}};window.onload=noncallableLoadHandler;0')!
+	assert runtime.evaluate_host('window.onload===noncallableLoadHandler')! == 'true'
+	assert runtime.javascript_event_handler(target, 'load')! == runtime.evaluate_host_value('noncallableLoadHandler')!
+	assert target.dispatch_event(dom.Event.create('load', dom.EventInit{ cancelable: true }))
+	assert runtime.evaluate_host('windowCalls.length===1&&windowCalls[0]')! == 'true'
+	assert target.event_listener_list().len == 1
 }
 
 fn test_public_window_raw_getter_compiles_lazily_in_actual_global_and_preserves_source_gate() {

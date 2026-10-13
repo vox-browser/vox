@@ -2,6 +2,7 @@ module browserjs
 
 import dom
 import html
+import json2
 import math
 import webidl
 
@@ -44,6 +45,32 @@ pub fn (mut host MediaElementHost) install(mut runtime Runtime) ! {
 	if exception != unsafe { nil } { return runtime.actual_javascript_exception(exception) }
 	runtime.retain_javascript_value(setter_array)!
 	defer { runtime.release_javascript_value(setter_array) }
+	mut handler_getters := []voidptr{}
+	mut handler_setters := []voidptr{}
+	for name in media_element_event_handler_names {
+		handler_getters << runtime.make_native_value_host_function('get on${name}', 0, fn [handle, name] (receiver voidptr, _ []voidptr) !voidptr {
+			mut host := unsafe { &MediaElementHost(handle) }
+			return host.get_event_handler(name, receiver) or {
+				return host.runtime.actual_javascript_exception(host.runtime.binding_exception_value(err))
+			}
+		})!
+		handler_setters << runtime.make_native_value_host_function('set on${name}', 1, fn [handle, name] (receiver voidptr, args []voidptr) !voidptr {
+			mut host := unsafe { &MediaElementHost(handle) }
+			mut argument := C.JSValueMakeUndefined(host.runtime.context)
+			if args.len > 0 { argument = args[0] }
+			return host.set_event_handler(name, receiver, argument) or {
+				return host.runtime.actual_javascript_exception(host.runtime.binding_exception_value(err))
+			}
+		})!
+	}
+	handler_getter_array := C.JSObjectMakeArray(runtime.context, usize(handler_getters.len), handler_getters.data, &exception)
+	if exception != unsafe { nil } { return runtime.actual_javascript_exception(exception) }
+	runtime.retain_javascript_value(handler_getter_array)!
+	defer { runtime.release_javascript_value(handler_getter_array) }
+	handler_setter_array := C.JSObjectMakeArray(runtime.context, usize(handler_setters.len), handler_setters.data, &exception)
+	if exception != unsafe { nil } { return runtime.actual_javascript_exception(exception) }
+	runtime.retain_javascript_value(handler_setter_array)!
+	defer { runtime.release_javascript_value(handler_setter_array) }
 	fast_seek := runtime.make_native_value_host_function('fastSeek', 1, fn [handle] (receiver voidptr, args []voidptr) !voidptr {
 		mut host := unsafe { &MediaElementHost(handle) }
 		return host.fast_seek(receiver, args) or {
@@ -79,10 +106,12 @@ pub fn (mut host MediaElementHost) install(mut runtime Runtime) ! {
 			return host.runtime.actual_javascript_exception(host.runtime.binding_exception_value(err))
 		}
 	})!
-	factory := runtime.evaluate_host_value(media_element_native_factory)!
+	factory := runtime.evaluate_host_value(media_element_native_factory.replace('__MEDIA_HANDLER_NAMES__',
+		json2.encode(media_element_event_handler_names)))!
 	defer { runtime.release_javascript_value(factory) }
 	host.prototype = runtime.retain_javascript_value(runtime.call_javascript_function(factory,
-		C.JSValueMakeUndefined(runtime.context), [array, setter_array, bind, fast_seek, start_date, pause, load, play])!)!
+		C.JSValueMakeUndefined(runtime.context), [array, setter_array, bind, fast_seek, start_date,
+			pause, load, play, handler_getter_array, handler_setter_array])!)!
 	runtime.add_canvas_element_provider(fn [handle] () map[string]&dom.Element {
 		host := unsafe { &MediaElementHost(handle) }
 		return host.elements_for_binding()
@@ -134,6 +163,25 @@ fn (mut host MediaElementHost) get(name string, receiver voidptr) !voidptr {
 		'currentTime' { C.JSValueMakeNumber(host.runtime.context, media.current_time()) }
 		else { return error('Unknown media element getter') }
 	}
+}
+
+fn (mut host MediaElementHost) get_event_handler(name string, receiver voidptr) !voidptr {
+	media := host.media_element_for_binding(receiver)!
+	if replay := host.replay { replay(host.runtime)! }
+	return host.runtime.javascript_event_handler(media.event_target(), name)
+}
+
+fn (mut host MediaElementHost) set_event_handler(name string, receiver voidptr, value voidptr) !voidptr {
+	media := host.media_element_for_binding(receiver)!
+	// Convert and capture the incumbent settings before replaying DOM mutations.
+	callback := host.runtime.event_callback(value, true)!
+	if replay := host.replay { replay(host.runtime)! }
+	media.event_target().set_event_handler_attribute(name, if callback != unsafe { nil } {
+		?&dom.CallbackType(callback)
+	} else {
+		none
+	})
+	return C.JSValueMakeUndefined(host.runtime.context)
 }
 
 fn (mut host MediaElementHost) restricted_double(name string, value voidptr) !f64 {
@@ -253,9 +301,9 @@ fn (mut host MediaElementHost) set_property(name string, receiver voidptr, value
 
 // The compact DOM hierarchy remains partial. This base prototype exposes only
 // the completed state/range getters, rate/volume/time accessors, fastSeek,
-// getStartDate, pause, load, play and constants.
+// getStartDate, pause, load, play, 23 media-event handler attributes and constants.
 // Full HTMLElement/audio/video interfaces remain open.
-const media_element_native_factory = r'(function(getters,setters,bind,fastSeek,getStartDate,pause,load,play){
+const media_element_native_factory = r'(function(getters,setters,bind,fastSeek,getStartDate,pause,load,play,handlerGetters,handlerSetters){
  "use strict";
  const define=Object.defineProperty,create=Object.create,P=Proxy,T=TypeError;
  const prototype=create(EventTarget.prototype);
@@ -263,6 +311,8 @@ const media_element_native_factory = r'(function(getters,setters,bind,fastSeek,g
  for(let i=0;i<names.length;i++)define(prototype,names[i],{get:getters[i],enumerable:true,configurable:true});
  const properties=["defaultPlaybackRate","playbackRate","volume","muted","currentTime"];
  for(let i=0;i<properties.length;i++)define(prototype,properties[i],{get:getters[names.length+i],set:setters[i],enumerable:true,configurable:true});
+ const handlerNames=__MEDIA_HANDLER_NAMES__;
+ for(let i=0;i<handlerNames.length;i++)define(prototype,"on"+handlerNames[i],{get:handlerGetters[i],set:handlerSetters[i],enumerable:true,configurable:true});
  define(prototype,"fastSeek",{value:fastSeek,writable:true,enumerable:true,configurable:true});
  define(prototype,"getStartDate",{value:getStartDate,writable:true,enumerable:true,configurable:true});
  define(prototype,"pause",{value:pause,writable:true,enumerable:true,configurable:true});

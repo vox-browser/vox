@@ -245,9 +245,7 @@ fn (mut runtime Runtime) event_callback_with_settings(value voidptr, handler boo
 		if handler { return unsafe { nil } }
 		return runtime.event_binding_type_error('EventListener must be an object')
 	}
-	if handler && !C.JSObjectIsFunction(runtime.context, value) {
-		return runtime.event_binding_type_error('Event handler is not callable')
-	}
+	// LegacyTreatNonObjectAsNull retains any object without an IsCallable check.
 	runtime.retain_javascript_value(value)!
 	owner := voidptr(&runtime)
 	binding := runtime.event_binding()!
@@ -266,6 +264,11 @@ fn (mut runtime Runtime) event_callback_with_settings(value voidptr, handler boo
 		handle_event_with_exception: fn [owner, value, handler, stored_settings, binding] (event &dom.Event, current_target ?&dom.EventTarget) !dom.JSValue {
 			if binding.closed { return dom.js_undefined() }
 			mut runtime := unsafe { &Runtime(owner) }
+			// WebIDL callback invocation returns undefined for non-callable legacy
+			// handlers before entering script/callback contexts or reading handleEvent.
+			if handler && !C.JSObjectIsFunction(runtime.context, value) {
+				return dom.js_undefined()
+			}
 			if settings := runtime.scripting_settings_ {
 				if html.can_run_script_for_settings(settings) == .do_not_run {
 					return dom.js_undefined()
