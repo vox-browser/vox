@@ -804,6 +804,61 @@ const layout_state_page_bits = u32(4)
 const layout_state_page_size = u32(1) << layout_state_page_bits
 const layout_state_page_mask = layout_state_page_size - 1
 
+// Intrinsic probes return scalar dimensions, not their geometry records. Pool
+// those records in stable chunks and release the chunks at the probe boundary.
+// The chunks remain scanned while live: line boxes and rare data still belong
+// to the ordinary V heap and can also be shared with the source layout state.
+const measurement_arena_chunk_size = 16
+
+$if gcboehm ? {
+	fn C.GC_free(voidptr)
+}
+
+fn free_measurement_allocation(pointer voidptr) {
+	if pointer == unsafe { nil } { return }
+	$if gcboehm ? {
+		C.GC_free(pointer)
+	} $else {
+		unsafe { free(pointer) }
+	}
+}
+
+@[heap]
+struct MeasurementUsedValuesChunk {
+mut:
+	values [measurement_arena_chunk_size]UsedValues
+	used   int
+}
+
+@[heap]
+struct MeasurementUsedValuesArena {
+mut:
+	chunks []&MeasurementUsedValuesChunk
+}
+
+fn (mut arena MeasurementUsedValuesArena) allocate() &UsedValues {
+	mut chunk := if arena.chunks.len == 0
+		|| arena.chunks.last().used == measurement_arena_chunk_size {
+		new_chunk := &MeasurementUsedValuesChunk{}
+		arena.chunks << new_chunk
+		new_chunk
+	} else {
+		arena.chunks.last()
+	}
+	index := chunk.used
+	chunk.used++
+	chunk.values[index] = UsedValues{}
+	return unsafe { &chunk.values[index] }
+}
+
+fn (mut arena MeasurementUsedValuesArena) release() {
+	for chunk in arena.chunks {
+		free_measurement_allocation(chunk)
+	}
+	unsafe { arena.chunks.free() }
+	arena.chunks = []&MeasurementUsedValuesChunk{}
+}
+
 @[heap]
 struct UsedValuesPage {
 mut:
@@ -820,6 +875,7 @@ fn UsedValuesPage.new() &UsedValuesPage {
 struct UsedValuesPagedStore {
 mut:
 	pages []?&UsedValuesPage
+	measurement_arena ?&MeasurementUsedValuesArena
 }
 
 fn (mut store UsedValuesPagedStore) ensure_capacity(count u32) {
@@ -848,7 +904,11 @@ fn (mut store UsedValuesPagedStore) allocate(index u32) &UsedValues {
 		store.pages[page_index] = new_page
 		new_page
 	}
-	entry := &UsedValues{}
+	entry := if mut arena := store.measurement_arena {
+		arena.allocate()
+	} else {
+		&UsedValues{}
+	}
 	page.entries[int(index & layout_state_page_mask)] = entry
 	return entry
 }
@@ -880,7 +940,25 @@ pub fn LayoutState.new() &LayoutState {
 pub fn LayoutState.new_for_subtree(subtree_root &NodeWithStyle) &LayoutState {
 	return &LayoutState{
 		subtree_root: subtree_root
+		used_values_store: UsedValuesPagedStore{
+			measurement_arena: &MeasurementUsedValuesArena{}
+		}
 	}
+}
+
+// Only call this when the probe's scalar result has been computed and none of
+// its UsedValues pointers escape. Committed layout keeps its ordinary heap.
+fn (mut state LayoutState) release_measurement() {
+	mut arena := state.used_values_store.measurement_arena or { return }
+	for maybe_page in state.used_values_store.pages {
+		if page := maybe_page {
+			unsafe { page.entries.free() }
+			free_measurement_allocation(page)
+		}
+	}
+	unsafe { state.used_values_store.pages.free() }
+	state.used_values_store.pages = []?&UsedValuesPage{}
+	arena.release()
 }
 
 pub fn (mut state LayoutState) ensure_capacity(node_count u32) {

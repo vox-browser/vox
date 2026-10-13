@@ -230,6 +230,7 @@ fn layout_independent_child_using_automatic_height(mut state LayoutState, child 
 fn measure_automatic_button_content_height(mut source_state LayoutState, button &Node, button_state &UsedValues) CSSPixels {
 	styled := button.as_node_with_style() or { return CSSPixels.new(0) }
 	mut throwaway := LayoutState.new_for_subtree(styled)
+	defer { throwaway.release_measurement() }
 	populate_intrinsic_containing_block_chain(mut throwaway, mut source_state, button)
 	populate_intrinsic_external_containing_blocks(mut throwaway, mut source_state, button,
 		button)
