@@ -32,6 +32,22 @@ upstream parity benchmark.
 - Native navigation constructs an active document without session-history
   traversal. It now grants script readiness before parsing, allowing GitHub's
   import map to run without the script-readiness assertion.
+- Column flex layout now retains its first inside-layout when flexing leaves
+  both dimensions unchanged and no descendant consumes the new definite-height
+  basis. Grids with only implicit automatic rows can use the same optimization;
+  explicit, percentage, flexible, and subgrid rows retain the relayout guard.
+- Immutable platform font handles retain their resolved file and decoded face.
+  Glyph coverage and bounds no longer repeat file checks and global cache-key
+  construction for every character. An unavailable explicit source continues
+  to be retried instead of permanently selecting its temporary fallback.
+- CSS component text serialization now uses linear builders. Unescaped
+  identifier tokens borrow their contiguous filtered-input span; escaped names
+  still use the decoder and builder. Optimized forced-GC tests cover a late
+  identifier retained after the tokenizer and other tokens have gone away.
+- The compact script bridge reads `innerHTML` and `textContent` lazily from
+  captured native element identities. Initial state and unchanged snapshots
+  no longer serialize every ancestor's complete subtree. Pending script writes
+  and CSSOM rule mutations preserve their existing replay behavior.
 
 ## Observed timings
 
@@ -57,6 +73,29 @@ unnecessary parsing does not add module support or full LibJS parity. Equal
 rendering speed and functionality with upstream Ladybird have not been
 established.
 
+### Chrome comparison and continued optimization
+
+A subsequent native run at a 1024×768 document viewport reduced cached-document
+installation from 16.2 seconds to 5.1 seconds after the column-flex, font-handle,
+linear serialization, and lazy-content changes. Its script startup took 138 ms
+instead of 2209 ms, and its two geometry passes took 1047 ms and 790 ms instead
+of 4509 ms and 4083 ms. The process used a peak RSS of about 1.5 GiB.
+
+The final build also includes the grid dependency refinement and identifier
+source spans. Its two subsequent document-install measurements were 7.9 and
+8.8 seconds. At that point the host load average was about 100 with many
+unrelated compiler processes running. The differing phase timings do not
+establish a regression or an additional speedup; repeat them on an idle host
+before drawing either conclusion.
+
+An isolated, clean-profile Chrome 155.0.8059.40 process loading the live URL
+reported first contentful paint at 1516 ms, DOMContentLoaded at 1827 ms, and load
+at 2722 ms through the Chrome DevTools Protocol. Its screenshot showed populated
+file rows and 72 file/directory links. The Chrome measurement includes a cold
+network navigation; the Vox measurements use cached HTML/resources and native
+window capture. They are different workloads, and Vox has not reached Chrome
+load-speed or functionality parity.
+
 ## Allocation policy
 
 Upstream Ladybird uses its tracing `LibGC` collector for DOM and JavaScript
@@ -71,6 +110,13 @@ Focused tests cover forced-GC token retention, arena pointer stability and
 release with both `boehm_full` and `none`, flex sizing, pending-font cache
 invalidation, import-map navigation, and module rejection followed by classic
 script execution. The signed native bundle passes `--headless-smoke`.
+The continued optimization tests also cover column/grid percentage bases,
+changed flex heights, font-file retention and late availability, large CSS
+component serialization, and lazy DOM reads with pending writes and inserted
+nodes. Final native comparisons pass for `inline-node`, `ordered-list`,
+`text-decorations`, and `svg-image-source-switch-same-size`; the ordered list
+and SVG source-switch comparisons are pixel-exact. The earlier lazy-content
+build also passes `selection-focus-between-text-controls` exactly.
 
 ```sh
 sh build-prod-browser.sh
