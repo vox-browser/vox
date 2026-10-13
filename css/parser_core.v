@@ -1184,6 +1184,12 @@ fn (tokenizer Tokenizer) convert_a_string_to_a_number(string_value string) f64 {
 }
 
 // https://www.w3.org/TR/css-syntax-3/#consume-name
+@[heap]
+struct TokenizerNameBuilder {
+mut:
+	text strings.Builder
+}
+
 fn (mut tokenizer Tokenizer) consume_an_ident_sequence() string {
 	// This section describes how to consume an ident sequence from a stream of code points.
 	// It returns a string containing the largest name that can be formed from adjacent
@@ -1194,8 +1200,10 @@ fn (mut tokenizer Tokenizer) consume_an_ident_sequence() string {
 	// If that is the intended use, ensure that the stream starts with an ident sequence before
 	// calling this algorithm.
 
-	// Let result initially be an empty string.
-	mut result := strings.new_builder(16)
+	// Unescaped names already occupy one contiguous span of the filtered
+	// input. Allocate a builder only when escape decoding changes that span.
+	start_byte_offset := tokenizer.current_byte_offset()
+	mut result := unsafe { &TokenizerNameBuilder(nil) }
 
 	// Repeatedly consume the next input code point from the stream:
 	for {
@@ -1208,14 +1216,20 @@ fn (mut tokenizer Tokenizer) consume_an_ident_sequence() string {
 		// name code point
 		if is_ident_code_point(input) {
 			// Append the code point to result.
-			append_code_point(mut result, input)
+			if result != unsafe { nil } {
+				append_code_point(mut result.text, input)
+			}
 			continue
 		}
 
 		// the stream starts with a valid escape
 		if Tokenizer.is_valid_escape_sequence(tokenizer.start_of_input_stream_twin()) {
 			// Consume an escaped code point. Append the returned code point to result.
-			append_code_point(mut result, tokenizer.consume_escaped_code_point())
+			if result == unsafe { nil } {
+				result = &TokenizerNameBuilder{ text: strings.new_builder(16) }
+				result.text.write_string(tokenizer.decoded_input[start_byte_offset..tokenizer.byte_offsets[tokenizer.prev_index]])
+			}
+			append_code_point(mut result.text, tokenizer.consume_escaped_code_point())
 			continue
 		}
 
@@ -1225,7 +1239,10 @@ fn (mut tokenizer Tokenizer) consume_an_ident_sequence() string {
 		break
 	}
 
-	return result.str()
+	if result != unsafe { nil } {
+		return result.text.str()
+	}
+	return tokenizer.decoded_input[start_byte_offset..tokenizer.current_byte_offset()]
 }
 
 // https://www.w3.org/TR/css-syntax-3/#consume-url-token
