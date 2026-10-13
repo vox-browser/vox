@@ -890,6 +890,17 @@
   compilation, realms, weak ownership and full/physical media/load boundaries
   open. See [auxiliary handler evidence](docs/translation-audit/NATIVE_MEDIA_AUXILIARY_HANDLER_OWNER.md).
 
+- Native media onpointermove/onmousemove now reuse actual DOM handler slots
+  and existing Page move delivery. Pointermove cancellation preserves the
+  compatibility mousemove; mousemove false controls the move result. Canceled
+  pointerdown suppresses compatibility moves until release while preserving
+  click. Parsed/created owners retain handler order, self-mutation, exception
+  identity and DOM polling; compact replay adds no native callback. Main/Page/
+  dispatcher/bootstrap remain unchanged. Explicit targets and a base Event
+  surface leave Cocoa/hit testing, full input fields/prototypes, raw inline
+  compilation, realms, weak ownership and full/physical media/load boundaries
+  open. See [movement handler evidence](docs/translation-audit/NATIVE_MEDIA_MOVEMENT_HANDLER_OWNER.md).
+
 ## Translated module inventory
 
 All 78 translated LibWeb packages and all 1,193 current module-owned C++

@@ -14,6 +14,34 @@ audit and fix evidence is in `docs/translation-audit/`; mapping a source name or
 a runtime hook does not establish that its complete logic was translated.
 
 
+## Native media movement handlers
+
+Media onpointermove and onmousemove now share actual audio/video native
+handler slots. Existing Page dispatch delivers pointermove then compatibility
+mousemove. Pointermove false alone still permits mousemove; mousemove false
+controls the canceled result, while zero permits it. Canceled pointerdown
+suppresses compatibility moves until release, preserves click and restores
+the next pair. Parsed/created owners keep identity/order, self-replacement,
+null/reactivation, original thrown-object reporting and live DOM polling.
+Implementation adds only two names; main/Page/dispatcher/bootstrap and click
+receipts remain unchanged. Implementation and five cases: `e5ae9afb`. Both
+parent files compile and all five functions stop at their initial descriptor
+guards; later Page assertions run only after installation. Identical final
+bytes pass focused/ordinary optimized tests, and 27/27 selected files pass
+in both GC modes. Signed startup, two exact synthetic-Event pages and all
+11 configured smoke cases pass (eight exact).
+
+[Movement handler evidence](../docs/translation-audit/NATIVE_MEDIA_MOVEMENT_HANDLER_OWNER.md).
+
+Trusted Page fixtures supply explicit native DOM targets; synthetic Event
+pages provide separate browser binding coverage. The shared base Event
+surface does not provide full MouseEvent/PointerEvent fields. Node-less
+InputTarget logging remains a separate fallback. `Page.handle_mousemove()`
+ignores button-mask/modifier arguments and does not install complete client
+coordinates; these tests establish no field parity. Physical Cocoa transport/
+hit testing, full prototypes, raw inline compilation, foreign realms, weak ownership and
+full media/physical playback/load captured-task boundaries remain open.
+
 ## Native media auxiliary and double-click handlers
 
 Media onauxclick and ondblclick now share actual audio/video native

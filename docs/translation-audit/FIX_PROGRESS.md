@@ -1116,3 +1116,25 @@ Agent checks run with `v -old-compiler -enable-globals`. Isolated worktrees use 
   32 fixed / 25 partial / 9 open.
   [Evidence](NATIVE_MEDIA_AUXILIARY_HANDLER_OWNER.md), consolidated SHA256:
   `55b95fa856b311d5bad0e32d8b14089bf3289afa54ecf79e89ea1af01c50b63d`.
+
+- Native media movement handlers (`e5ae9afb`, 2026-10-13) add two native
+  attributes through existing owner/handler algorithms. Trusted Page cases
+  prove pointermove/mousemove cancellation independence, compatibility
+  suppression through release, parsed/created identity, self-mutation,
+  thrown-object reporting, DOM polling and no duplicate compact click. Both
+  parent files compile and fail five initial descriptor guards; identical
+  final bytes pass focused and ordinary optimized tests, then 27/27 files in
+  both GC modes. Preparation-only ENOSPC interrupted writes before tests;
+  no partial main fixture remained. VJOBS=1 and a dedicated RAM volume hold
+  compiler scratch while persistent source/logs/snapshots stay in this repo.
+  The guarded cleanup detaches only that owned RAM image after validation;
+  persistent source and evidence remain intact.
+  Signed startup, two exact synthetic-Event pages and all 11 smoke cases pass
+  (eight exact). All 51 current and 1,038 prior artifact hashes verify.
+  Main/Page/dispatcher/bootstrap and all 2,210 assigned package bytes/counts
+  remain unchanged. Base Event/explicit-target coverage leaves full input
+  fields/default actions, Cocoa/hit testing, prototypes, raw compilation,
+  realms, weak ownership, full/physical media and the load FIXME open. Ledger
+  remains 32 fixed / 25 partial / 9 open.
+  [Evidence](NATIVE_MEDIA_MOVEMENT_HANDLER_OWNER.md), consolidated SHA256:
+  `a128c77fe22cb36ba39c5a1f06112a32802fd015c8d052f4ec1896f8a3e2c122`.
