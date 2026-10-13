@@ -1234,6 +1234,51 @@ fn cache_intrinsic_inline_flex_baselines(mut state LayoutState, container &Node,
 	mutable_container_state.set_derived_baselines(first, last)
 }
 
+// Promoting an unchanged used height to a definite percentage basis only
+// requires inside-layout again when some descendant consumes that basis.
+// Cache this tree property within the layout state, whose styles stay fixed.
+fn flex_subtree_depends_on_definite_height(mut state LayoutState, node &Node) bool {
+	styled := node.as_node_with_style() or { return false }
+	key := styled.layout_index()
+	if cached := state.definite_height_dependency_cache[key] {
+		return cached
+	}
+	computed := node.computed_values()
+	mut depends := node.is_absolutely_positioned() || node.display().is_grid_inside()
+		|| computed.writing_mode() != .horizontal_tb
+	for property_id in [css.PropertyID.height, .min_height, .max_height, .top, .bottom] {
+		if computed.size_value(property_id).contains_percentage() {
+			depends = true
+		}
+	}
+	if computed.flex_basis().size.contains_percentage()
+		|| computed.gap_value(.row_gap).length_percentage.contains_percentage() {
+		depends = true
+	}
+	if node.is_flex_item() && property_is_auto(computed, .height) {
+		if box := node.as_box() {
+			if box.has_preferred_aspect_ratio() {
+				depends = true
+			}
+		}
+	}
+	// A descendant with its own definite length height already supplies the
+	// percentage basis below it. Its children cannot depend on a higher item's
+	// transition from an automatic to a definite used height.
+	height := computed.size_value(.height)
+	has_independent_height := height.is_length_percentage() && !height.contains_percentage()
+	if !depends && !has_independent_height {
+		for child in node.children() {
+			if flex_subtree_depends_on_definite_height(mut state, child) {
+				depends = true
+				break
+			}
+		}
+	}
+	state.definite_height_dependency_cache[key] = depends
+	return depends
+}
+
 fn run_flex_formatting_context_with_mode(mut state LayoutState, container &Node, mut container_state UsedValues, layout_mode LayoutMode, available_space AvailableSpace) FormattingContextResult {
 	direction := container.computed_values().effective_flex_direction()
 	if direction in [.column, .column_reverse] {
@@ -1384,8 +1429,12 @@ fn run_flex_formatting_context_with_mode(mut state LayoutState, container &Node,
 		for current_line in lines {
 			for item_index, item in current_line.items {
 				styled := item.as_node_with_style() or { continue }
-				item_state := state.get(styled)
+				mut item_state := state.get_mutable(styled)
 				if item_state.has_definite_height() {
+					continue
+				}
+				if !flex_subtree_depends_on_definite_height(mut state, item) {
+					item_state.set_has_definite_height(true)
 					continue
 				}
 				layout_independent_child(mut state, item, mut container_state, container_width,
@@ -1482,11 +1531,17 @@ fn run_flex_formatting_context_with_mode(mut state LayoutState, container &Node,
 			if alignment in [.stretch, .normal] && property_is_auto(item.computed_values(), .height)
 				&& !top_margin_auto && !bottom_margin_auto {
 				stretched := cross_size.minus(flex_or_grid_item_outer_block_edges(item_state))
-				item_state = layout_independent_child(mut state, item, mut container_state, container_width, if container_state.has_definite_height() {
-					container_state.content_height()
+				if stretched == item_state.content_height()
+					&& (item_state.has_definite_height()
+						|| !flex_subtree_depends_on_definite_height(mut state, item)) {
+					item_state.set_has_definite_height(true)
 				} else {
-					none
-				}, current_line.targets[item_index], stretched)
+					item_state = layout_independent_child(mut state, item, mut container_state, container_width, if container_state.has_definite_height() {
+						container_state.content_height()
+					} else {
+						none
+					}, current_line.targets[item_index], stretched)
+				}
 			}
 			cross_free_space := cross_size.minus(item_state.margin_box_height())
 			mut cross_delta := CSSPixels.new(0)

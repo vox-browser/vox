@@ -870,6 +870,7 @@ pub mut:
 	subtree_root      ?&NodeWithStyle
 mut:
 	subgrid_data map[u32]GridSubgridNodeData
+	definite_height_dependency_cache map[u32]bool
 }
 
 pub fn LayoutState.new() &LayoutState {
