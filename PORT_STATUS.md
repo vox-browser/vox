@@ -984,14 +984,17 @@ V's standard `crypto.*` modules without shadowing that namespace.
 The IDL-only `Fullscreen` package delegates its state machine to the shared
 translated DOM implementation.
 
-The verified `e5ae9afb` physical inventory is retained in
-`Build/audit-fixes/source-current-module-loc-e5ae9afb.json` (SHA256
-`16e41f1d3ac526bd0ed255fae0aeebb752d66421da4b1d587f69cde20f9a5c9c`).
-The native media pointermove/mousemove slice changes browser support and adds
-two root/browser test files, excluded from the assigned package inventory.
+The verified `d1b86d81` physical inventory is retained in
+`Build/audit-fixes/source-current-module-loc-d1b86d81.json` (SHA256
+`1d396d2178a0173ebe3f267c44e8a13bb7eac2ce5ce68cfdade2ad6ce2dfa265`).
+The shared native UIEvent binding changes browser support and adds two
+root/browser test files, excluded from the assigned package inventory.
 All 78 owners and 2,210 assigned files retain the earlier byte hashes and
 physical newline counts: 432,874 implementation V LOC and 158,957 test V LOC.
 The unchanged counts and structural mappings do not establish browser parity.
+The previous media movement inventory remains preserved in
+`Build/audit-fixes/source-current-module-loc-e5ae9afb.json` (SHA256
+`16e41f1d3ac526bd0ed255fae0aeebb752d66421da4b1d587f69cde20f9a5c9c`).
 The previous media auxclick/dblclick inventory remains preserved in
 `Build/audit-fixes/source-current-module-loc-5ba4d87c.json` (SHA256
 `90982b16fe88bc53a2ad6f1a6f89d53950ef88a4e7250cc86ec5619997e7dadc`).
