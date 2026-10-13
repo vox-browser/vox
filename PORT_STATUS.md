@@ -2196,3 +2196,22 @@ disabled, and asynchronous DOM mutations. Foreign function
 realms, weak ownership, entries, drag images, physical delivery/default actions
 and media ondrag handlers remain open. The browser still uses JavaScriptCore.
 See [DataTransfer string-callback evidence](docs/translation-audit/NATIVE_DATA_TRANSFER_ITEM_STRING_CALLBACK_OWNER.md).
+
+## Native DataTransferItem.webkitGetAsEntry
+
+Window-owned DataTransferItem.webkitGetAsEntry now brands its native receiver,
+ignores extra arguments, and returns a fresh FileSystemEntry snapshot for readable
+file items. Protected, removed, disassociated and text items return null. Entries
+expose native readonly isFile/isDirectory/name getters through their owner registry;
+raw stored names retain lone surrogates and NUL units through the pinned upstream
+round trip. Later public constructor/property changes cannot replace native records.
+At `fdc13cca`, 12 new / 21 focused cases pass;
+15 selected files / 49 cases pass in each
+GC mode, and 12 optimized cases pass. Signed startup, two pixel-exact
+entry pages and eleven screenshot smoke cases pass (8 exact, 3 at
+established tolerances). Real Page fixtures retain drag identity and cancellation
+from parsed video to script-created audio listeners. Upstream FIXME path, filesystem
+and parent operations remain absent; generic entry callbacks, directory traversal,
+physical/default drag delivery, foreign WindowProxy handling and weak ownership
+remain open. The browser still uses JavaScriptCore.
+See [DataTransfer entry evidence](docs/translation-audit/NATIVE_DATA_TRANSFER_ITEM_ENTRY_OWNER.md).

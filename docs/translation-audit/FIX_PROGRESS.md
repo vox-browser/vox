@@ -1398,3 +1398,30 @@ Agent checks run with `v -old-compiler -enable-globals`. Isolated worktrees use 
   78 owners / 2,225 files, 433,242 implementation /
   160,313 test V LOC. Historical ledger stays 32 fixed / 25 partial / 9 open.
   Consolidated evidence SHA256: `e4f63178cdce85059971b77f5cd8b591dcf18356b72f93f05ddeb35910fdcd81`.
+
+- Native Window DataTransferItem.webkitGetAsEntry / FileSystemEntry (`fdc13cca`, 2026-10-13).
+  Native receiver branding, ignored extra arguments, readable file-kind gating,
+  fresh entry snapshots and owner-local readonly metadata are implemented.
+  Raw names retain lone surrogates/NUL units through the pinned source round trip;
+  existing public File construction still converts its input filename separately.
+  Typed file/directory entries keep stable wrappers per actual record; successive
+  DataTransfer reads create distinct file records. Spoof/proxy/foreign wrappers
+  reject without author property access, and close clears native maps and JS roots.
+  12 new / 21 focused cases, 15 selected files /
+  49 cases in each GC mode and 12 optimized cases pass.
+  Signed startup, two exact actual entry pages and eleven smoke cases pass
+  (8 exact, 3 retaining established tolerance residuals).
+  Parent baseline: 2 files compile and 6 availability guards fail;
+  later assertions earn no baseline credit. Retained failed test batches: `focused-v1`; no failed batch or later assertion earns passing credit.
+  Final implementation hashes match the earliest captured implementation freeze. Changed owned paths across the initial/final freezes: `browserjs/file_system_entry_binding_test.v`.
+  Upstream FIXME fullPath/filesystem/getParent stay absent from public JS;
+  generic entry callbacks, directory/path traversal, physical/default drag delivery,
+  media ondrag, foreign WindowProxy/function-realm handling and weak ownership remain open.
+  See [DataTransfer entry evidence](NATIVE_DATA_TRANSFER_ITEM_ENTRY_OWNER.md).
+  Assigned feature delta: EntriesAPI +21 implementation /
+  +27 test lines and one new test file; HTML
+  +0 implementation / +53 test lines and one new test file.
+  The 9 root/browser feature paths remain excluded. Physical recount records
+  78 owners / 2,227 files, 433,263 implementation /
+  160,393 test V LOC. Historical ledger stays 32 fixed / 25 partial / 9 open.
+  Consolidated evidence SHA256: `d2fb80d3298f1714ab42ecdee1feccaee2ab06bf8979c28cef7a0a35cb8cb99f`.
