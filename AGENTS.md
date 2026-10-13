@@ -858,6 +858,17 @@
   and full media/physical decoding boundaries remain. See
   [native media handler evidence](docs/translation-audit/NATIVE_MEDIA_EVENT_HANDLER_OWNER.md).
 
+- Script-assigned media onpointerdown/onpointerup/onmousedown/onmouseup now
+  use the actual DOM owner's native handler records. Parsed and created media
+  keep callback identity, handler-slot order and trusted Page press/release
+  delivery. Pointerdown false suppresses compatibility mouse delivery through
+  release while preserving click; mouseup false does not block click. Compact
+  replay adds no duplicate delivery. Page fixtures use explicit DOM targets;
+  Cocoa transport, hit testing, full input interfaces, raw inline compilation,
+  onclick/remaining handler attributes and complete prototype placement remain
+  separate work, along with realms, weak ownership and the load/media boundaries.
+  See [press/release handler evidence](docs/translation-audit/NATIVE_MEDIA_POINTER_HANDLER_OWNER.md).
+
 ## Translated module inventory
 
 All 78 translated LibWeb packages and all 1,193 current module-owned C++

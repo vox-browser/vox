@@ -14,6 +14,28 @@ audit and fix evidence is in `docs/translation-audit/`; mapping a source name or
 a runtime hook does not establish that its complete logic was translated.
 
 
+## Native media press/release handler attributes
+
+Ordinary onpointerdown, onpointerup, onmousedown and onmouseup now use the
+actual HTML audio/video owner's native handler map. Parsed and created media
+preserve callback identity, replacement order and trusted Page press/release
+delivery. False pointerdown suppresses compatibility mouse events until release
+while click remains; clearing/replacing the handler restores the next press.
+False mouseup does not block click. The existing compact replay adds no duplicate
+delivery. Implementation and five new cases: `9ee0685b`. The final unchanged
+parent baseline compiles both files and fails all five functions; identical
+final tests then pass within 18/18 selected files in both GC modes. Signed
+startup, the active ordinary production probe, two exact pages, 14 exact SVG
+pairs and all 11 configured smoke cases pass (eight exact).
+
+[Press/release evidence](../docs/translation-audit/NATIVE_MEDIA_POINTER_HANDLER_OWNER.md)
+retains both native fixture corrections, initial/intermediate diagnostics and
+final frozen snapshots. Page tests use explicit DOM targets; Cocoa transport,
+hit testing, full PointerEvent/MouseEvent interfaces, raw inline compilation,
+onclick, other input handler attributes and full prototype placement remain
+open. The pinned load captured-task FIXME, full media/physical decoding,
+foreign realms and weak ownership remain separate work.
+
 ## Native media event-handler attributes
 
 Ordinary onplay, onpause, onloadeddata and 20 other media handler attributes

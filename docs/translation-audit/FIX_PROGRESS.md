@@ -1059,3 +1059,23 @@ Agent checks run with `v -old-compiler -enable-globals`. Isolated worktrees use 
   Ledger stays 32 fixed / 25 partial / 9 open.
   [Evidence](NATIVE_MEDIA_EVENT_HANDLER_OWNER.md), consolidated SHA256:
   `4903a7137ef0c2364ebbd35e82e588097f3de62aa575e7746337d4548a0f030e`.
+
+- Native media press/release handlers (`9ee0685b`, 2026-10-13) add four native
+  onpointerdown/onpointerup/onmousedown/onmouseup accessors backed by actual
+  HTML audio/video owners. Existing descriptor, legacy conversion and handler
+  slot algorithms are reused. Actual Page tests preserve trusted press/release
+  order, pointerdown compatibility suppression, mouseup/click independence and
+  compact replay without duplicate delivery. The final parent baseline compiles
+  both files and fails all five functions; identical final bytes pass afterward
+  within 18/18 selected files in both GC modes, including the 66-case main
+  regression. Two native fixture faults and initial/intermediate runs remain
+  diagnostic provenance. Signed build/startup, the active ordinary probe, two
+  exact pages, 14 exact SVG pairs and all 11 smoke cases pass (eight exact).
+  All 102 current and 592 previous artifact hashes verify.
+  Explicit-target Page fixtures do not establish Cocoa transport, hit testing,
+  full input interfaces or raw inline/onclick parity. Other handlers, full
+  prototypes, realms, weak ownership, the pinned load FIXME and full/physical
+  media remain open. Earlier evidence retains its original scope. The ledger
+  stays 32 fixed / 25 partial / 9 open.
+  [Evidence](NATIVE_MEDIA_POINTER_HANDLER_OWNER.md), consolidated SHA256:
+  `731e05084351bfaf02fb971d45af92d992890d2b989420bcbb7dfbbcb267e2d7`.

@@ -332,6 +332,19 @@ open, along with the pinned load captured-task FIXME and full media/physical
 decoding. See
 [native media handler evidence](docs/translation-audit/NATIVE_MEDIA_EVENT_HANDLER_OWNER.md).
 
+Script-assigned media onpointerdown/onpointerup/onmousedown/onmouseup now
+reach actual DOM handler records. Parsed and created owners preserve identity,
+slot replacement and trusted Page press/release order. Pointerdown false
+suppresses compatibility mouse events until release while preserving click;
+mouseup false does not block click, and compact replay adds nothing. All five
+new cases pass within 18/18 selected files in both GC modes. Signed startup,
+an active ordinary probe, two exact pages, 14 exact SVG pairs and all 11 smoke
+cases pass (eight exact). Explicit-target Page fixtures do not establish Cocoa
+transport, hit testing or full input-interface parity. Raw inline compilation,
+onclick/other handlers, full prototype placement, realms, weak ownership and
+the pinned load/full media/physical decoding boundaries remain open. See
+[press/release evidence](docs/translation-audit/NATIVE_MEDIA_POINTER_HANDLER_OWNER.md).
+
 The `:indeterminate`, `:open`, and `:closed` selectors now read live checkbox,
 input-picker, and select-picker state. Control transitions mirror that state at
 the DOM boundary and schedule style invalidation; `switch` checkboxes retain
