@@ -1093,7 +1093,7 @@ pub fn (mut n Node) replace_with(nodes []NodeOrString) ! {
 pub fn (n &Node) is_descendant_of(other &Node) bool {
 	for ancestor := n.parent(); ancestor != none;  {
 		current := ancestor or { break }
-		if current == other {
+		if current.is_same_node(other) {
 			return true
 		}
 		ancestor = current.parent()
@@ -1102,7 +1102,7 @@ pub fn (n &Node) is_descendant_of(other &Node) bool {
 }
 
 pub fn (n &Node) is_inclusive_descendant_of(other &Node) bool {
-	return n == other || n.is_descendant_of(other)
+	return n.is_same_node(other) || n.is_descendant_of(other)
 }
 
 pub fn (n &Node) is_ancestor_of(other &Node) bool {
@@ -1110,7 +1110,7 @@ pub fn (n &Node) is_ancestor_of(other &Node) bool {
 }
 
 pub fn (n &Node) is_inclusive_ancestor_of(other &Node) bool {
-	return n == other || n.is_ancestor_of(other)
+	return n.is_same_node(other) || n.is_ancestor_of(other)
 }
 
 // https://dom.spec.whatwg.org/#dom-node-contains
@@ -3744,7 +3744,7 @@ pub fn (n &Node) is_shadow_including_descendant_of(other &Node) bool {
 // https://dom.spec.whatwg.org/#concept-shadow-including-inclusive-descendant
 pub fn (n &Node) is_shadow_including_inclusive_descendant_of(other &Node) bool {
 	// A shadow-including inclusive descendant is an object or one of its shadow-including descendants.
-	return other == n || n.is_shadow_including_descendant_of(other)
+	return n.is_same_node(other) || n.is_shadow_including_descendant_of(other)
 }
 
 // https://dom.spec.whatwg.org/#concept-shadow-including-ancestor
@@ -3843,7 +3843,9 @@ pub fn (mut n Node) unsafely_set_html(context_element &Element, html string) ! {
 // https://dom.spec.whatwg.org/#dom-node-issamenode
 pub fn (n &Node) is_same_node(other_node ?&Node) bool {
 	// The isSameNode(otherNode) method steps are to return true if otherNode is this; otherwise false.
-	return if other := other_node { n == other } else { false }
+	// The compatibility compiler's value-based equality operator copies heap
+	// Node records. Identity/ancestry walks need only these pointer addresses.
+	return if other := other_node { voidptr(n) == voidptr(other) } else { false }
 }
 
 // https://dom.spec.whatwg.org/#dom-node-isequalnode

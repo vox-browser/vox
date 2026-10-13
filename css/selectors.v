@@ -3558,7 +3558,7 @@ fn matches_has_pseudo_class(selector Selector, anchor &dom.Element, shadow_host 
 
 fn matches_hover_pseudo_class(element &dom.Element) bool {
 	hovered_node := element.document().get_hovered_node() or { return false }
-	if element.as_node() == hovered_node {
+	if element.as_node().is_same_node(hovered_node) {
 		return true
 	}
 	return element.as_node().is_shadow_including_ancestor_of(hovered_node)
