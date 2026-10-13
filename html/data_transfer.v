@@ -6,6 +6,7 @@
 module html
 
 import entriesapi
+import libjs
 
 const data_transfer_drop_effects = ['none', 'copy', 'link', 'move']
 const data_transfer_allowed_effects = ['none', 'copy', 'copyLink', 'copyMove', 'link', 'linkMove',
@@ -19,6 +20,8 @@ mut:
 	items_           ?&DataTransferItemList
 	item_list        []&DataTransferItem
 	types_           []string
+	types_utf16_     []libjs.Utf16String
+	types_revision_  u64
 	associated_store ?&DragDataStore
 }
 
@@ -86,48 +89,68 @@ pub fn (transfer &DataTransfer) types() []string {
 	return transfer.types_.clone()
 }
 
-fn normalize_data_transfer_format(format_argument string) string {
-	format := ascii_lowercase_string(format_argument)
-	return match format {
-		'text' { 'text/plain' }
-		'url' { 'text/uri-list' }
-		else { format }
+pub fn (transfer &DataTransfer) types_utf16() []libjs.Utf16String {
+	return transfer.types_utf16_.clone()
+}
+
+pub fn (transfer &DataTransfer) types_revision() u64 {
+	return transfer.types_revision_
+}
+
+// DataTransfer.cpp normalizes its legacy aliases without lowercasing the
+// stored spelling of other formats. Lookup and clearing ignore ASCII case.
+fn normalize_data_transfer_format_utf16(format_argument libjs.Utf16String) libjs.Utf16String {
+	return match format_argument.to_ascii_lowercase().str() {
+		'text' { libjs.utf16_string('text/plain') }
+		'url' { libjs.utf16_string('text/uri-list') }
+		else { format_argument }
 	}
+}
+
+fn data_transfer_format_equals_ignoring_ascii_case(left libjs.Utf16String, right libjs.Utf16String) bool {
+	return left.to_ascii_lowercase().code_units() == right.to_ascii_lowercase().code_units()
 }
 
 // https://html.spec.whatwg.org/multipage/dnd.html#dom-datatransfer-getdata
 pub fn (transfer &DataTransfer) get_data(format_argument string) string {
-	store := transfer.associated_store or { return '' }
+	return transfer.get_data_utf16(libjs.utf16_string_from_utf8_without_validation(format_argument)).str()
+}
+
+pub fn (transfer &DataTransfer) get_data_utf16(format_argument libjs.Utf16String) libjs.Utf16String {
+	store := transfer.associated_store or { return libjs.Utf16String{} }
 	if store.mode == .protected {
-		return ''
+		return libjs.Utf16String{}
 	}
-	format := normalize_data_transfer_format(format_argument)
+	format := normalize_data_transfer_format_utf16(format_argument)
 	for item in store.item_list {
-		if item.kind == .text && item.type_string == format {
-			return item.data.bytestr()
+		if item.kind == .text
+			&& data_transfer_format_equals_ignoring_ascii_case(item.type_utf16(), format) {
+			// The source still leaves URL-list parsing as a FIXME.
+			return item.text_data_utf16()
 		}
 	}
-	return ''
+	return libjs.Utf16String{}
 }
 
 // https://html.spec.whatwg.org/multipage/dnd.html#dom-datatransfer-setdata
 pub fn (mut transfer DataTransfer) set_data(format_argument string, value string) {
+	transfer.set_data_utf16(libjs.utf16_string_from_utf8_without_validation(format_argument),
+		libjs.utf16_string_from_utf8_without_validation(value))
+}
+
+pub fn (mut transfer DataTransfer) set_data_utf16(format_argument libjs.Utf16String, value libjs.Utf16String) {
 	mut store := transfer.associated_store or { return }
 	if store.mode != .read_write {
 		return
 	}
-	format := normalize_data_transfer_format(format_argument)
+	format := normalize_data_transfer_format_utf16(format_argument)
 	for index, item in store.item_list {
-		if item.kind == .text && item.type_string == format {
+		if item.kind == .text && item.type_utf16().code_units() == format.code_units() {
 			transfer.remove_item(usize(index))
 			break
 		}
 	}
-	transfer.add_item(DragDataStoreItem{
-		kind:        .text
-		type_string: format
-		data:        value.bytes()
-	})
+	transfer.add_item(DragDataStoreItem.text_utf16(format, value))
 	transfer.update_data_transfer_types_list()
 }
 
@@ -224,19 +247,33 @@ pub fn (transfer &DataTransfer) length() usize {
 
 // https://html.spec.whatwg.org/multipage/dnd.html#dom-datatransfer-cleardata
 pub fn (mut transfer DataTransfer) clear_data(maybe_format ?string) {
+	format := if value := maybe_format {
+		?libjs.Utf16String(libjs.utf16_string_from_utf8_without_validation(value))
+	} else {
+		none
+	}
+	transfer.clear_data_utf16(format)
+}
+
+pub fn (mut transfer DataTransfer) clear_data_utf16(maybe_format ?libjs.Utf16String) {
 	mut store := transfer.associated_store or { return }
 	if store.mode != .read_write {
 		return
 	}
 	format := if value := maybe_format {
-		?string(normalize_data_transfer_format(value))
+		?libjs.Utf16String(normalize_data_transfer_format_utf16(value))
 	} else {
 		none
 	}
 	mut index := store.item_list.len - 1
 	for index >= 0 && store.item_list.len > 0 {
 		item := store.item_list[index]
-		if item.kind == .text && (format == none || item.type_string == format or { '' }) {
+		matches := if value := format {
+			data_transfer_format_equals_ignoring_ascii_case(item.type_utf16(), value)
+		} else {
+			true
+		}
+		if item.kind == .text && matches {
 			transfer.remove_item(usize(index))
 		}
 		index--
@@ -245,20 +282,25 @@ pub fn (mut transfer DataTransfer) clear_data(maybe_format ?string) {
 
 fn (mut transfer DataTransfer) update_data_transfer_types_list() {
 	mut types := []string{}
+	mut types_utf16 := []libjs.Utf16String{}
 	if store := transfer.associated_store {
 		mut contains_file := false
 		for item in store.item_list {
 			if item.kind == .text {
 				types << item.type_string
+				types_utf16 << item.type_utf16()
 			} else {
 				contains_file = true
 			}
 		}
 		if contains_file {
 			types << 'Files'
+			types_utf16 << libjs.utf16_string('Files')
 		}
 	}
 	transfer.types_ = types
+	transfer.types_utf16_ = types_utf16
+	transfer.types_revision_++
 }
 
 pub type DataTransferStringCallback = fn (string)

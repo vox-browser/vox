@@ -38,6 +38,10 @@ mut:
 	wheel_event_prototype voidptr
 	drag_event_prototype voidptr
 	data_transfer_factory voidptr
+	data_transfer_prototype voidptr
+	data_transfer_constructor voidptr
+	data_transfer_freeze_array voidptr
+	data_transfer_types_arrays map[voidptr]DataTransferTypesArray
 	data_transfers map[voidptr]&html.DataTransfer
 	data_transfer_wrappers map[voidptr]voidptr
 	closed             bool
@@ -79,6 +83,9 @@ pub fn (mut runtime Runtime) install_event_target_binding() ! {
 		if binding.drag_event_prototype == unsafe { nil } && binding.mouse_event_prototype != unsafe { nil } {
 			runtime.install_drag_event_binding()!
 		}
+		if binding.data_transfer_constructor == unsafe { nil } && binding.ui_event_prototype != unsafe { nil } {
+			runtime.install_data_transfer_binding()!
+		}
 		return
 	}
 	runtime.install_dom_exception_binding()!
@@ -105,12 +112,14 @@ pub fn (mut runtime Runtime) install_event_target_binding() ! {
 			runtime.install_pointer_event_binding()!
 			runtime.install_wheel_event_binding()!
 			runtime.install_drag_event_binding()!
+			runtime.install_data_transfer_binding()!
 		}
 	}
 	runtime.add_close_handler(fn [owner, mut binding] () {
 		binding.closed = true
 		binding.data_transfers.clear()
 		binding.data_transfer_wrappers.clear()
+		binding.data_transfer_types_arrays.clear()
 		event_target_bindings_.delete(owner)
 	})
 	if settings := runtime.scripting_settings_ {

@@ -1,5 +1,4 @@
-// Bounded actual DataTransfer receiver identity for nullable DragEvent fields.
-// The public DataTransfer constructor and operations are separate translations.
+// Actual DataTransfer receiver identity shared by DragEvent and its public binding.
 module browserjs
 
 import html
@@ -10,8 +9,18 @@ fn (mut runtime Runtime) install_data_transfer_identity() ! {
 	binding.data_transfer_factory = runtime.retain_javascript_value(runtime.evaluate_host_value(r'(function(){
  const create=Object.create,define=Object.defineProperty,prototype=create(Object.prototype);
  define(prototype,Symbol.toStringTag,{value:"DataTransfer",configurable:true});
- return function(){return create(prototype)};
+ function wrap(){return create(prototype)};
+ define(wrap,"prototype",{value:prototype,writable:false});return wrap;
 })()')!)!
+	binding.data_transfer_prototype = runtime.retain_javascript_value(runtime.binding_property(binding.data_transfer_factory,
+		'prototype')!)!
+}
+
+fn (mut runtime Runtime) bind_data_transfer(wrapper voidptr, transfer &html.DataTransfer) ! {
+	mut binding := runtime.event_binding()!
+	runtime.retain_javascript_value(wrapper)!
+	binding.data_transfers[wrapper] = transfer
+	binding.data_transfer_wrappers[voidptr(transfer)] = wrapper
 }
 
 pub fn (mut runtime Runtime) javascript_data_transfer(transfer &html.DataTransfer) !voidptr {
@@ -24,9 +33,7 @@ pub fn (mut runtime Runtime) javascript_data_transfer(transfer &html.DataTransfe
 	runtime.install_data_transfer_identity()!
 	wrapper := runtime.call_javascript_function(binding.data_transfer_factory,
 		C.JSValueMakeUndefined(runtime.context), [])!
-	runtime.retain_javascript_value(wrapper)!
-	binding.data_transfers[wrapper] = transfer
-	binding.data_transfer_wrappers[voidptr(transfer)] = wrapper
+	runtime.bind_data_transfer(wrapper, transfer)!
 	return wrapper
 }
 
