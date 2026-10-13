@@ -1527,7 +1527,7 @@ fn matches_selector_at(selector Selector, component_list_index int, initial_elem
 
 	if selector_kind == .relative && component_list_index == 0 {
 		anchor_element := anchor or { return true }
-		return element != anchor_element
+		return voidptr(element) != voidptr(anchor_element)
 	}
 
 	match compound_selector.combinator {
@@ -1543,7 +1543,7 @@ fn matches_selector_at(selector Selector, component_list_index int, initial_elem
 				ancestor_node := ancestor or { break }
 				if ancestor_element := ancestor_node.as_element() {
 					if anchor_element := anchor {
-						if ancestor_element == anchor_element {
+						if voidptr(ancestor_element) == voidptr(anchor_element) {
 							return false
 						}
 					}
@@ -1578,7 +1578,7 @@ fn matches_selector_at(selector Selector, component_list_index int, initial_elem
 				mut mutable_element := unsafe { &dom.Element(element) }
 				mutable_element.affected_by_direct_sibling_combinator = true
 				if subject := context.subject {
-					if element != subject {
+					if voidptr(element) != voidptr(subject) {
 						mutable_element.set_affected_by_sibling_combinator_in_non_subject_position()
 					}
 				} else {
@@ -1607,7 +1607,7 @@ fn matches_selector_at(selector Selector, component_list_index int, initial_elem
 				mut mutable_element := unsafe { &dom.Element(element) }
 				mutable_element.affected_by_indirect_sibling_combinator = true
 				if subject := context.subject {
-					if element != subject {
+					if voidptr(element) != voidptr(subject) {
 						mutable_element.set_affected_by_sibling_combinator_in_non_subject_position()
 					}
 				} else {
@@ -1775,17 +1775,16 @@ fn matches_simple(component SimpleSelector, element &dom.Element, shadow_host ?&
 	}
 }
 
+fn note_structural_pseudo_class_match_attempt(context &MatchContext, target &dom.Element) {
+	if subject := context.subject {
+		if voidptr(target) == voidptr(subject) { return }
+	}
+	mut mutable_target := unsafe { &dom.Element(target) }
+	mutable_target.set_affected_by_structural_pseudo_class_in_non_subject_position()
+}
+
 fn matches_pseudo_class(pseudo_class PseudoClassSelector, element &dom.Element, shadow_host ?&dom.Element, mut context MatchContext, scope ?&dom.ParentNode, selector_kind SelectorKind) bool {
 	context.attempted_pseudo_class_matches.set(pseudo_class.type_, true)
-	note_structural_pseudo_class_match_attempt := fn [context] (target &dom.Element) {
-		if subject := context.subject {
-			if target == subject {
-				return
-			}
-		}
-		mut mutable_target := unsafe { &dom.Element(target) }
-		mutable_target.set_affected_by_structural_pseudo_class_in_non_subject_position()
-	}
 	match pseudo_class.type_ {
 		.invalid {
 			return false
@@ -1825,7 +1824,7 @@ fn matches_pseudo_class(pseudo_class PseudoClassSelector, element &dom.Element, 
 			if context.collect_per_element_selector_involvement_metadata {
 				mut mutable_element := unsafe { &dom.Element(element) }
 				mutable_element.affected_by_first_child_pseudo_class = true
-				note_structural_pseudo_class_match_attempt(element)
+				note_structural_pseudo_class_match_attempt(&context, element)
 			}
 			return previous_element_sibling(element) == none
 		}
@@ -1833,7 +1832,7 @@ fn matches_pseudo_class(pseudo_class PseudoClassSelector, element &dom.Element, 
 			if context.collect_per_element_selector_involvement_metadata {
 				mut mutable_element := unsafe { &dom.Element(element) }
 				mutable_element.set_affected_by_last_child_pseudo_class(true)
-				note_structural_pseudo_class_match_attempt(element)
+				note_structural_pseudo_class_match_attempt(&context, element)
 			}
 			return next_element_sibling(element) == none
 		}
@@ -1842,7 +1841,7 @@ fn matches_pseudo_class(pseudo_class PseudoClassSelector, element &dom.Element, 
 				mut mutable_element := unsafe { &dom.Element(element) }
 				mutable_element.affected_by_first_child_pseudo_class = true
 				mutable_element.set_affected_by_last_child_pseudo_class(true)
-				note_structural_pseudo_class_match_attempt(element)
+				note_structural_pseudo_class_match_attempt(&context, element)
 			}
 			return previous_element_sibling(element) == none && next_element_sibling(element) == none
 		}
@@ -1881,7 +1880,7 @@ fn matches_pseudo_class(pseudo_class PseudoClassSelector, element &dom.Element, 
 			if context.collect_per_element_selector_involvement_metadata {
 				mut mutable_element := unsafe { &dom.Element(element) }
 				mutable_element.affected_by_forward_positional_pseudo_class = true
-				note_structural_pseudo_class_match_attempt(element)
+				note_structural_pseudo_class_match_attempt(&context, element)
 			}
 			return previous_sibling_with_same_type(element) == none
 		}
@@ -1889,7 +1888,7 @@ fn matches_pseudo_class(pseudo_class PseudoClassSelector, element &dom.Element, 
 			if context.collect_per_element_selector_involvement_metadata {
 				mut mutable_element := unsafe { &dom.Element(element) }
 				mutable_element.set_affected_by_backward_positional_pseudo_class(true)
-				note_structural_pseudo_class_match_attempt(element)
+				note_structural_pseudo_class_match_attempt(&context, element)
 			}
 			return next_sibling_with_same_type(element) == none
 		}
@@ -1898,7 +1897,7 @@ fn matches_pseudo_class(pseudo_class PseudoClassSelector, element &dom.Element, 
 				mut mutable_element := unsafe { &dom.Element(element) }
 				mutable_element.affected_by_forward_positional_pseudo_class = true
 				mutable_element.set_affected_by_backward_positional_pseudo_class(true)
-				note_structural_pseudo_class_match_attempt(element)
+				note_structural_pseudo_class_match_attempt(&context, element)
 			}
 			return previous_sibling_with_same_type(element) == none && next_sibling_with_same_type(element) == none
 		}
@@ -1934,7 +1933,7 @@ fn matches_pseudo_class(pseudo_class PseudoClassSelector, element &dom.Element, 
 			if context.collect_per_element_selector_involvement_metadata {
 				mut mutable_element := unsafe { &dom.Element(element) }
 				if subject := context.subject {
-					if element == subject {
+					if voidptr(element) == voidptr(subject) {
 						mutable_element.affected_by_has_pseudo_class_in_subject_position = true
 					} else {
 						mutable_element.affected_by_has_pseudo_class_in_non_subject_position = true
@@ -1977,7 +1976,7 @@ fn matches_pseudo_class(pseudo_class PseudoClassSelector, element &dom.Element, 
 					}
 					else {}
 				}
-				note_structural_pseudo_class_match_attempt(element)
+				note_structural_pseudo_class_match_attempt(&context, element)
 			}
 
 			// https://drafts.csswg.org/selectors-4/#child-index
@@ -1994,7 +1993,7 @@ fn matches_pseudo_class(pseudo_class PseudoClassSelector, element &dom.Element, 
 					}
 					for child in parent.children {
 						child_element := child.as_element() or { continue }
-						if child_element == element {
+						if voidptr(child_element) == voidptr(element) {
 							break
 						}
 						if matches_nth_selector_list(pseudo_class.argument_selector_list, child_element, shadow_host, mut context) {
@@ -2011,7 +2010,7 @@ fn matches_pseudo_class(pseudo_class PseudoClassSelector, element &dom.Element, 
 					}
 					for i := parent.children.len - 1; i >= 0; i-- {
 						child_element := parent.children[i].as_element() or { continue }
-						if child_element == element {
+						if voidptr(child_element) == voidptr(element) {
 							break
 						}
 						if matches_nth_selector_list(pseudo_class.argument_selector_list, child_element, shadow_host, mut context) {
@@ -3340,7 +3339,7 @@ pub fn (selector Selector) absolutized(selector_for_nesting SimpleSelector) ?Sel
 fn traverse_up(node &dom.Node, shadow_host ?&dom.Element) ?&dom.Node {
 	if host := shadow_host {
 		// NOTE: We only traverse up to the shadow host, not beyond.
-		if node == host.as_node() {
+		if node.is_same_node(host.as_node()) {
 			return none
 		}
 		return parent_or_shadow_host_element_node(node)
@@ -3614,7 +3613,7 @@ fn matches_attribute(attribute SelectorAttribute, style_sheet_for_rule ?&CSSStyl
 			// See: https://html.spec.whatwg.org/multipage/semantics-other.html#case-sensitivity-of-selectors
 			if element.document() != unsafe { nil } && element.document().is_html_document() && element.namespace_uri() or {
 				''
-			} == selector_html_namespace && attribute.qualified_name.namespace_type == .default_ && attribute_name in selector_html_case_insensitive_attribute_names() {
+			} == selector_html_namespace && attribute.qualified_name.namespace_type == .default_ && selector_html_attribute_is_case_insensitive(attribute_name) {
 				SelectorCaseSensitivity.case_insensitive
 			} else {
 				SelectorCaseSensitivity.case_sensitive
@@ -3818,7 +3817,7 @@ fn next_sibling_with_same_type(element &dom.Element) ?&dom.Element {
 /// Compound selectors (:has(), :is(), :where()), nesting, and pseudo-elements are allowed as they may contain or be contained within :host.
 fn should_block_shadow_host_matching(component SimpleSelector, shadow_host ?&dom.Element, element &dom.Element) bool {
 	host := shadow_host or { return false }
-	if element != host {
+	if voidptr(element) != voidptr(host) {
 		return false
 	}
 
@@ -3871,7 +3870,7 @@ fn matches_host_pseudo_class(element &dom.Element, shadow_host ?&dom.Element, mu
 	// When evaluated in the context of a shadow tree, it matches the shadow tree’s shadow host if the shadow host,
 	// in its normal context, matches the selector argument. In any other context, it matches nothing.
 	host := shadow_host or { return false }
-	if element != host {
+	if voidptr(element) != voidptr(host) {
 		return false
 	}
 
@@ -4376,8 +4375,8 @@ fn selector_string_hash(value string) u32 {
 	return hash
 }
 
-fn selector_html_case_insensitive_attribute_names() []string {
-	return ['accept', 'accept-charset', 'align', 'alink', 'axis', 'bgcolor', 'charset', 'checked',
+fn selector_html_attribute_is_case_insensitive(name string) bool {
+	return name in ['accept', 'accept-charset', 'align', 'alink', 'axis', 'bgcolor', 'charset', 'checked',
 		'clear', 'codetype', 'color', 'compact', 'declare', 'defer', 'dir', 'direction', 'disabled',
 		'enctype', 'face', 'frame', 'hreflang', 'http-equiv', 'lang', 'language', 'link', 'media',
 		'method', 'multiple', 'nohref', 'noresize', 'noshade', 'nowrap', 'readonly', 'rel', 'rev',
