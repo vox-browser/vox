@@ -1097,3 +1097,22 @@ Agent checks run with `v -old-compiler -enable-globals`. Isolated worktrees use 
   original scope; ledger stays 32 fixed / 25 partial / 9 open.
   [Evidence](NATIVE_MEDIA_CLICK_HANDLER_OWNER.md), consolidated SHA256:
   `b6cfaa3945616335650fee936b7c09ae1fb09ae7677e1d41bf54702ea8de5bf8`.
+
+- Native media auxiliary/double-click handlers (`5ba4d87c`, 2026-10-13) add
+  two native attributes through the existing owner/handler algorithms.
+  Trusted Page tests preserve primary/double cancellation independence,
+  middle/right auxclick false versus zero, self-mutation, thrown reason identity
+  and the earlier outer primary receipt. Both parent files compile and fail
+  five initial descriptor guards; identical final bytes pass focused retry and
+  ordinary optimized tests, then 25/25 files in both GC modes. Initial focused
+  disk exhaustion executed no tests and has no persisted full snapshot proof;
+  its log/diagnostic remains separate. Signed startup, two exact synthetic-Event
+  pages and all 11 smoke cases pass (eight exact). All 51 current and 964 prior
+  artifact hashes verify.
+  Main/Page/dispatcher/bootstrap and all 2,210 assigned package bytes/counts
+  remain unchanged. Explicit targets/counts do not establish physical input,
+  full interfaces/prototypes or raw inline compilation; realms, weak ownership,
+  full media/physical playback and the load FIXME remain open. Ledger remains
+  32 fixed / 25 partial / 9 open.
+  [Evidence](NATIVE_MEDIA_AUXILIARY_HANDLER_OWNER.md), consolidated SHA256:
+  `55b95fa856b311d5bad0e32d8b14089bf3289afa54ecf79e89ea1af01c50b63d`.

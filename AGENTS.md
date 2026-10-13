@@ -880,6 +880,16 @@
   full/physical media and the pinned load FIXME remain separate work. See
   [native click evidence](docs/translation-audit/NATIVE_MEDIA_CLICK_HANDLER_OWNER.md).
 
+- Native media onauxclick/ondblclick now reuse actual DOM handler slots and
+  existing Page dispatch. Double-click cancellation preserves the primary
+  click's activation result; middle/right auxclick exact false blocks it.
+  Handler identity/order, self-replacement, exception reporting and the earlier
+  primary receipt survive ordinary trusted Page tests. Main/Page/dispatcher/
+  bootstrap remain unchanged. Explicit targets/counts and synthetic screenshot
+  pages leave Cocoa/hit testing, complete input fields/prototypes, raw inline
+  compilation, realms, weak ownership and full/physical media/load boundaries
+  open. See [auxiliary handler evidence](docs/translation-audit/NATIVE_MEDIA_AUXILIARY_HANDLER_OWNER.md).
+
 ## Translated module inventory
 
 All 78 translated LibWeb packages and all 1,193 current module-owned C++

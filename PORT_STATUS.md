@@ -366,6 +366,27 @@ attributes, foreign realms, weak ownership, full/physical media and the pinned
 load captured-task FIXME remain separate work.
 [Native click evidence](docs/translation-audit/NATIVE_MEDIA_CLICK_HANDLER_OWNER.md).
 
+Media onauxclick and ondblclick now share actual audio/video native
+handler slots. Primary dblclick follows click even when click is canceled;
+its own cancellation does not change the primary activation result. Middle/
+right auxclick uses exact false cancellation, while zero permits activation.
+Parsed/created owners preserve identity, handler order, self-replacement and
+exception reporting. Existing primary receipts suppress same-release raw
+onclick installed by a throwing dblclick callback. Implementation adds only
+two names to the selected handler list; main/Page/dispatcher/bootstrap remain
+unchanged. Implementation and five cases: `5ba4d87c`. Parent baseline compiles
+both files and fails all five initial descriptor guards, leaving later Page
+assertions unexecuted there. Final bytes pass focused/ordinary optimized tests,
+and 25/25 selected files pass in both GC modes. Signed startup, two exact
+synthetic-Event pages and all 11 configured smoke cases pass (eight exact).
+
+Actual trusted Page fixtures supply explicit DOM targets/buttons/counts;
+synthetic-Event pages supply separate browser binding coverage. Physical Cocoa
+input/hit testing, platform double-click recognition, full input fields and
+prototypes, raw inline compilation, foreign realms, weak ownership, full media/
+physical playback and the pinned load captured-task FIXME remain open.
+[Auxiliary handler evidence](docs/translation-audit/NATIVE_MEDIA_AUXILIARY_HANDLER_OWNER.md).
+
 The `:indeterminate`, `:open`, and `:closed` selectors now read live checkbox,
 input-picker, and select-picker state. Control transitions mirror that state at
 the DOM boundary and schedule style invalidation; `switch` checkboxes retain
