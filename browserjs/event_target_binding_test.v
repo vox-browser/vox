@@ -44,7 +44,7 @@ fn test_native_event_listener_object_original_throw_and_owner_callback_context()
 	$if !darwin { return }
 	mut runtime, settings := native_event_binding_fixture()
 	defer { runtime.close() }
-	owner := voidptr(&runtime)
+	owner := voidptr(runtime)
 	runtime.define_value_host_function('__eventContext', fn [owner, settings] (_ voidptr, _ []voidptr) !voidptr {
 		runtime := unsafe { &Runtime(owner) }
 		valid := settings.realm().script_execution_depth > 0
