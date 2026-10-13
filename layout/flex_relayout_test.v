@@ -104,3 +104,40 @@ fn test_column_flex_reruns_contents_when_flexing_changes_the_height() {
 	assert flex_relayout_used(result, 'item').content_height().to_double() == 80
 	assert flex_relayout_used(result, 'leaf').offset.y().to_double() == 30
 }
+
+fn test_nested_column_flex_reuses_automatic_implicit_grid_rows() {
+	wrappers := '<div class="column"><div class="grid">'.repeat(6)
+	closing := '</div></div>'.repeat(6)
+	document := html.parse_document('<!doctype html><style>
+		body { margin:0 } .column { display:flex; flex-direction:column; width:100px }
+		.grid { display:grid; grid-template-columns:100px }
+		#leaf { height:12px; width:100px } #percentage { height:50% }
+	</style><div class="column" id="outer">${wrappers}<div id="leaf"><div id="percentage"></div></div>${closing}</div>')
+	result := run_document_layout(document, 800, 600) or { panic('layout failed') }
+	assert flex_relayout_used(result, 'outer').content_height().to_double() == 12
+	assert flex_relayout_used(result, 'leaf').content_height().to_double() == 12
+	assert flex_relayout_used(result, 'percentage').content_height().to_double() == 6
+}
+
+fn test_column_flex_keeps_definite_height_relayout_for_percentage_grid_rows() {
+	for row_property in ['grid-template-rows', 'grid-auto-rows'] {
+		document := html.parse_document('<!doctype html><style>
+			body { margin:0 } #outer { display:flex; flex-direction:column; width:100px }
+			#grid { display:grid; ${row_property}:50% } #cell { height:20px }
+		</style><div id="outer"><div id="grid"><div id="cell"></div></div></div>')
+		result := run_document_layout(document, 800, 600) or { panic('layout failed') }
+		grid := flex_relayout_used(result, 'grid')
+		assert grid.content_height().to_double() == 20
+		assert grid.grid_template_rows()[0].to_double() == 10
+	}
+}
+
+fn test_column_flex_reruns_automatic_grid_rows_when_height_changes() {
+	document := html.parse_document('<!doctype html><style>
+		body { margin:0 } #outer { display:flex; flex-direction:column; width:100px; height:80px }
+		#grid { display:grid; flex-grow:1; align-content:center } #cell { height:20px }
+	</style><div id="outer"><div id="grid"><div id="cell"></div></div></div>')
+	result := run_document_layout(document, 800, 600) or { panic('layout failed') }
+	assert flex_relayout_used(result, 'grid').content_height().to_double() == 80
+	assert flex_relayout_used(result, 'cell').offset.y().to_double() == 30
+}

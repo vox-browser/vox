@@ -1237,6 +1237,24 @@ fn cache_intrinsic_inline_flex_baselines(mut state LayoutState, container &Node,
 // Promoting an unchanged used height to a definite percentage basis only
 // requires inside-layout again when some descendant consumes that basis.
 // Cache this tree property within the layout state, whose styles stay fixed.
+fn flex_grid_has_only_implicit_auto_rows(node &Node) bool {
+	computed := node.computed_values()
+	if !computed.grid_template_rows().is_empty() {
+		return false
+	}
+	for track in computed.grid_auto_rows().track_list() {
+		value := track.value_
+		if value !is css.GridSize {
+			return false
+		}
+		grid_size := value as css.GridSize
+		if !grid_size.is_auto(AvailableSize.make_definite(CSSPixels.new(0))) {
+			return false
+		}
+	}
+	return true
+}
+
 fn flex_subtree_depends_on_definite_height(mut state LayoutState, node &Node) bool {
 	styled := node.as_node_with_style() or { return false }
 	key := styled.layout_index()
@@ -1244,7 +1262,12 @@ fn flex_subtree_depends_on_definite_height(mut state LayoutState, node &Node) bo
 		return cached
 	}
 	computed := node.computed_values()
-	mut depends := node.is_absolutely_positioned() || node.display().is_grid_inside()
+	// With unchanged content dimensions, implicit automatic grid rows have
+	// the same contributions and free space. Their descendants still undergo
+	// the dependency walk below. Explicit, percentage, flexible and subgrid
+	// rows retain the conservative inside-layout pass.
+	mut depends := node.is_absolutely_positioned()
+		|| (node.display().is_grid_inside() && !flex_grid_has_only_implicit_auto_rows(node))
 		|| computed.writing_mode() != .horizontal_tb
 	for property_id in [css.PropertyID.height, .min_height, .max_height, .top, .bottom] {
 		if computed.size_value(property_id).contains_percentage() {
