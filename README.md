@@ -401,3 +401,28 @@ Run the full translation test suite with:
 ```sh
 v -enable-globals test .
 ```
+
+## Native media wheel handler
+
+Native HTMLMediaElement.onwheel now uses the existing owner-backed handler registry,
+which exposes 40 handler names. Receiver branding precedes replay. Callback identity,
+listener-slot replacement/null removal, exact boolean-false cancellation and the actual
+Page scripting gate use the shared EventTarget machinery. Parsed video and script-created
+audio receive real WheelEvent deltas and native owner identity, with trusted embedding
+dispatch and same-wrapper untrusted public redispatch. Raw content source stays uncompiled.
+At `0cd374b6`, 6 new / 13 focused cases pass;
+8 files / 27 cases pass in each GC mode,
+and 6 optimized cases pass at corrected validation `ea533888`.
+The separate compatibility commit removes two redundant CSS option defaults with
+zero line-count change; CSS semantic tests pass in both GC modes. Original optimized
+and production compilation failures remain preserved without passing credit.
+Ten physical production stages pass. The original posthoc provenance child fails a
+stale GC-branch parser check; its failure remains preserved and receives no full
+supervisor credit. A metadata-only supplemental provenance proof completes with
+actual exit zero using the same build/screenshots. Signed startup, two pixel-exact public handler
+pages and eleven configured smoke cases pass. Only ordinary actual false sets the
+canceled flag, including for a noncancelable event; preventDefault retains its own gate.
+Physical Cocoa/Page delivery, default scrolling, blocking-wheel subtree/compositor
+invalidation, complete HTMLElement handler coverage and weak/foreign ownership remain
+open. The browser still uses JavaScriptCore. Existing native play() promises remain complete.
+See [media wheel-handler evidence](docs/translation-audit/NATIVE_MEDIA_WHEEL_HANDLER_OWNER.md).
