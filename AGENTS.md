@@ -1089,16 +1089,25 @@
 ## Translated module inventory
 
 All 78 translated LibWeb packages and all 1,193 current module-owned C++
-implementation units have audited V mappings. Verified at `e3ff95fd` on
-2026-10-13, 2,225 assigned files contain 433,242 implementation V LOC and
-160,313 test V LOC.
-The public native DataTransferItem.getAsString feature changes only two
-assigned HTML paths: +11 implementation / +41 test lines and +1 assigned file
-from actual parent `967d1891`. 7 root/browser support and test paths remain
-excluded. Assigned hashes and counts at the actual feature parent remain
-unchanged from the prior `bbe330a8` inventory; no intervening assigned slice
-is counted. These are physical counts and do not establish behavioral
-equivalence or additional test credit.
+implementation units have audited V mappings. Verified at `fdc13cca` on
+2026-10-13, 2,227 assigned files contain 433,263 implementation V LOC and
+160,393 test V LOC.
+The public native DataTransferItem.webkitGetAsEntry and FileSystemEntry
+metadata feature changes only four assigned EntriesAPI/HTML paths: +21
+implementation / +80 test lines and +2 assigned files from actual parent
+`fffc5c57`. The owner deltas are EntriesAPI +21 implementation / +27 test
+lines / +1 assigned file; HTML +0 implementation / +53 test lines / +1
+assigned file. 9 root/browser support and test paths remain excluded. Assigned
+hashes and counts at the actual feature parent remain unchanged from the prior
+`e3ff95fd` inventory; no intervening assigned slice is counted. These are
+physical counts and do not establish behavioral equivalence or additional test
+credit.
+The previous DataTransfer string-callback inventory at `e3ff95fd` remains preserved in
+`Build/audit-fixes/native-data-transfer-string-callback-inventory-current.json` (SHA256 `61b814a88cb00769fd88dcb29f12b4b93fd0c80e582b4a74fdbb5e33309cead5`),
+with 2,225 files / 433,242 implementation / 160,313 test V LOC. Its separate
+feature accounting remains +11 HTML implementation / +41 test lines / +1 file;
+the prior DataTransfer addition, items, string and older evidence retain their
+own source pins.
 The previous DataTransfer item-addition inventory at `bbe330a8` remains preserved in
 `Build/audit-fixes/native-data-transfer-add-inventory-current.json` (SHA256 `4872c275d35da716c0cbbfb3f86e95d85375ddb8202e84a3dd10bc28c10d4648`),
 with 2,224 files / 433,231 implementation / 160,272 test V LOC. Its separate
@@ -1127,7 +1136,7 @@ their shared DOM test files are counted under the corresponding owner once.
 | Crypto (`webcrypto/`) | 7,957 | DOM | 43,499 |
 | DOMURL | 854 | Editing | 13,938 |
 | Encoding | 5,356 | EncryptedMediaExtensions | 572 |
-| EntriesAPI | 44 | EventTiming | 153 |
+| EntriesAPI | 65 | EventTiming | 153 |
 | Fetch | 6,678 | FileAPI | 1,493 |
 | Fullscreen | 93 | GPC | 16 |
 | Gamepad | 860 | Geolocation | 535 |
@@ -1158,7 +1167,7 @@ their shared DOM test files are counted under the corresponding owner once.
 | WebXR | 411 | Worker | 142 |
 | XHR | 1,695 | XLink | 13 |
 | XML | 477 | XPath | 672 |
-| **Total** | **433,242** |  |  |
+| **Total** | **433,263** |  |  |
 
 `PORT_STATUS.md` is the canonical detailed inventory. It also records upstream
 C++ file/LOC counts, per-module test LOC, status, and the counting conventions;

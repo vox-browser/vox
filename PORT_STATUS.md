@@ -1128,21 +1128,30 @@ V's standard `crypto.*` modules without shadowing that namespace.
 The IDL-only `Fullscreen` package delegates its state machine to the shared
 translated DOM implementation.
 
-Verified at `e3ff95fd`, the physical inventory is retained in
-`Build/audit-fixes/native-data-transfer-string-callback-inventory-current.json` (SHA256 `61b814a88cb00769fd88dcb29f12b4b93fd0c80e582b4a74fdbb5e33309cead5`).
-All 78 owners and 2,225 assigned files match their committed byte hashes and
-physical newline counts: 433,242 implementation V LOC and 160,313 test V LOC.
-The public native DataTransferItem.getAsString feature changes only two
-assigned HTML paths: +11 implementation / +41 test lines and +1 assigned file
-from actual parent `967d1891`. 7 root/browser support and test paths remain
-excluded. Assigned hashes and counts at the actual feature parent remain
-unchanged from the prior `bbe330a8` inventory; no intervening assigned slice
-is counted. These are physical counts and do not establish behavioral
-equivalence or additional test credit.
-Exact full Git and assigned input maps are retained for the prior addition
-inventory, actual feature parent and committed feature. Later concurrent
-canonical work stays outside this pin. Upstream source-unit counts, mapping
-labels and the historical finding ledger remain unchanged.
+Verified at `fdc13cca`, the physical inventory is retained in
+`Build/audit-fixes/native-data-transfer-entry-inventory-current.json` (SHA256 `f3062da8a0c0354822688a690594c6497ce8771933ef566068f0229a61e35a26`).
+All 78 owners and 2,227 assigned files match their committed byte hashes and
+physical newline counts: 433,263 implementation V LOC and 160,393 test V LOC.
+The public native DataTransferItem.webkitGetAsEntry and FileSystemEntry
+metadata feature changes only four assigned EntriesAPI/HTML paths: +21
+implementation / +80 test lines and +2 assigned files from actual parent
+`fffc5c57`. The owner deltas are EntriesAPI +21 implementation / +27 test
+lines / +1 assigned file; HTML +0 implementation / +53 test lines / +1
+assigned file. 9 root/browser support and test paths remain excluded. Assigned
+hashes and counts at the actual feature parent remain unchanged from the prior
+`e3ff95fd` inventory; no intervening assigned slice is counted. These are
+physical counts and do not establish behavioral equivalence or additional test
+credit.
+Exact full Git and assigned input maps are retained for the prior
+string-callback inventory, actual feature parent and committed feature. Later
+concurrent canonical work stays outside this pin. Upstream source-unit counts,
+mapping labels and the historical finding ledger remain unchanged.
+The previous DataTransfer string-callback inventory at `e3ff95fd` remains preserved in
+`Build/audit-fixes/native-data-transfer-string-callback-inventory-current.json` (SHA256 `61b814a88cb00769fd88dcb29f12b4b93fd0c80e582b4a74fdbb5e33309cead5`),
+with 2,225 files / 433,242 implementation / 160,313 test V LOC. Its separate
+feature accounting remains +11 HTML implementation / +41 test lines / +1 file;
+the prior DataTransfer addition, items, string and older evidence retain their
+own source pins.
 The previous DataTransfer item-addition inventory at `bbe330a8` remains preserved in
 `Build/audit-fixes/native-data-transfer-add-inventory-current.json` (SHA256 `4872c275d35da716c0cbbfb3f86e95d85375ddb8202e84a3dd10bc28c10d4648`),
 with 2,224 files / 433,231 implementation / 160,272 test V LOC. Its separate
@@ -1206,7 +1215,7 @@ The previous unsupported-play inventory remains preserved in
 `166070c623211b8600db5300c89ed5219375d0e4045728c12117361ad8cca27c`).
 Source-unit mappings and physical LOC do not establish runtime parity.
 
-The table below records package V LOC verified at `e3ff95fd` on 2026-10-13; upstream counts
+The table below records package V LOC verified at `fdc13cca` on 2026-10-13; upstream counts
 and structural mapping labels retain the pinned inventory. It covers 76 current
 implementation-bearing upstream modules plus the translated IDL/IPC-only
 `Fullscreen` and `Worker` packages, and all 1,193 module-owned `.cpp`
@@ -1233,7 +1242,7 @@ from the current-module totals.
 | `Editing` | 26 | 12,720 | 13,938 | 226 | Complete |
 | `Encoding` | 6 | 769 | 5,356 | 4,495 | Complete |
 | `EncryptedMediaExtensions` | 3 | 535 | 572 | 329 | Complete |
-| `EntriesAPI` | 1 | 47 | 44 | 32 | Complete |
+| `EntriesAPI` | 1 | 47 | 65 | 59 | Complete |
 | `EventTiming` | 1 | 122 | 153 | 95 | Complete |
 | `Fetch` | 33 | 8,493 | 6,678 | 3,228 | Complete |
 | `FileAPI` | 6 | 1,357 | 1,493 | 858 | Complete |
@@ -1242,7 +1251,7 @@ from the current-module totals.
 | `Gamepad` | 6 | 1,351 | 860 | 323 | Complete |
 | `Geolocation` | 4 | 643 | 535 | 224 | Complete |
 | `Geometry` | 8 | 2,078 | 2,121 | 1,041 | Complete |
-| `HTML` | 286 | 83,853 | 69,710 | 40,669 | Complete |
+| `HTML` | 286 | 83,853 | 69,710 | 40,722 | Complete |
 | `HighResolutionTime` | 2 | 516 | 500 | 213 | Complete |
 | `IndexedDB` | 19 | 6,991 | 5,455 | 1,388 | Complete |
 | `Infra` | 3 | 385 | 548 | 102 | Complete |
@@ -1295,7 +1304,7 @@ from the current-module totals.
 | `XLink` | 1 | 16 | 13 | 10 | Complete |
 | `XML` | 2 | 556 | 477 | 164 | Complete |
 | `XPath` | 5 | 435 | 672 | 210 | Complete |
-| **Total** | **1,193** | **329,970** | **433,242** | **160,313** | **74 complete, 4 present, 0 untranslated** |
+| **Total** | **1,193** | **329,970** | **433,263** | **160,393** | **74 complete, 4 present, 0 untranslated** |
 
 ### Live editability refresh
 

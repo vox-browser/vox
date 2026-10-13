@@ -103,21 +103,30 @@ drag images, hardware file delivery and weak/foreign ownership remain open.
 See [DataTransfer files
 evidence](../docs/translation-audit/NATIVE_DATA_TRANSFER_FILES_OWNER.md).
 
-Verified at `e3ff95fd`, the disjoint DOM inventory contains 43,499
+Verified at `fdc13cca`, the disjoint DOM inventory contains 43,499
 implementation V LOC and 5,050 test V LOC across 101 assigned files.
-`Build/audit-fixes/native-data-transfer-string-callback-inventory-current.json` (SHA256 `61b814a88cb00769fd88dcb29f12b4b93fd0c80e582b4a74fdbb5e33309cead5`).
+`Build/audit-fixes/native-data-transfer-entry-inventory-current.json` (SHA256 `f3062da8a0c0354822688a690594c6497ce8771933ef566068f0229a61e35a26`).
 Every assigned committed byte hash and physical newline is verified.
-DOM/UIEvents assigned bytes remain unchanged from the preserved `bbe330a8`,
-`e775be45` and `b335958e` inventories; UIEvents contains 1,489 implementation
-/ 474 test V LOC. Integrated totals across 78 owners / 2,225 files are 433,242
-implementation / 160,313 test V LOC.
-The public native DataTransferItem.getAsString feature changes only two
-assigned HTML paths: +11 implementation / +41 test lines and +1 assigned file
-from actual parent `967d1891`. 7 root/browser support and test paths remain
-excluded. Assigned hashes and counts at the actual feature parent remain
-unchanged from the prior `bbe330a8` inventory; no intervening assigned slice
-is counted. These are physical counts and do not establish behavioral
-equivalence or additional test credit.
+DOM/UIEvents assigned bytes remain unchanged from the preserved `e3ff95fd`,
+`bbe330a8`, `e775be45` and `b335958e` inventories; UIEvents contains 1,489
+implementation / 474 test V LOC. Integrated totals across 78 owners / 2,227
+files are 433,263 implementation / 160,393 test V LOC.
+The public native DataTransferItem.webkitGetAsEntry and FileSystemEntry
+metadata feature changes only four assigned EntriesAPI/HTML paths: +21
+implementation / +80 test lines and +2 assigned files from actual parent
+`fffc5c57`. The owner deltas are EntriesAPI +21 implementation / +27 test
+lines / +1 assigned file; HTML +0 implementation / +53 test lines / +1
+assigned file. 9 root/browser support and test paths remain excluded. Assigned
+hashes and counts at the actual feature parent remain unchanged from the prior
+`e3ff95fd` inventory; no intervening assigned slice is counted. These are
+physical counts and do not establish behavioral equivalence or additional test
+credit.
+The previous DataTransfer string-callback inventory at `e3ff95fd` remains preserved in
+`Build/audit-fixes/native-data-transfer-string-callback-inventory-current.json` (SHA256 `61b814a88cb00769fd88dcb29f12b4b93fd0c80e582b4a74fdbb5e33309cead5`),
+with 2,225 files / 433,242 implementation / 160,313 test V LOC. Its separate
+feature accounting remains +11 HTML implementation / +41 test lines / +1 file;
+the prior DataTransfer addition, items, string and older evidence retain their
+own source pins.
 The previous DataTransfer item-addition inventory at `bbe330a8` remains preserved in
 `Build/audit-fixes/native-data-transfer-add-inventory-current.json` (SHA256 `4872c275d35da716c0cbbfb3f86e95d85375ddb8202e84a3dd10bc28c10d4648`),
 with 2,224 files / 433,231 implementation / 160,272 test V LOC. Its separate
