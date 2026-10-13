@@ -917,6 +917,15 @@ pub fn (values &ComputedValues) length_percentage_to_px(property_id PropertyID, 
 		}
 	}
 	resolved := length_percentage or { return none }
+	// Absolute lengths and percentages do not consume font, viewport or
+	// container-query state. Preserve the shared fixed-point conversion while
+	// avoiding a context and its query-cache allocation for these common cases.
+	if resolved.is_length() {
+		length := resolved.length()
+		if length.is_absolute() { return length.absolute_length_to_px().to_double() }
+	} else if resolved.is_percentage() {
+		return resolved.to_px(LengthResolutionContext{}, CSSPixels.nearest_value_for(percentage_basis_px)).to_double()
+	}
 	context := unsafe { &ComputedProperties(values) }.length_resolution_context()
 	return resolved.to_px(context, CSSPixels.nearest_value_for(percentage_basis_px)).to_double()
 }

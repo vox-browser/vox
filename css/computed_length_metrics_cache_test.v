@@ -47,12 +47,12 @@ fn test_length_metrics_reuse_does_not_share_container_query_lookup_state() {
 fn test_layout_length_accessors_retain_metrics_on_the_owning_style() {
 	mut style := ComputedProperties.new()
 	style.set_property(.font_size, &dom.StyleValue{css_text: '20px'}, .no, .no)
-	style.set_property(.padding_left, &dom.StyleValue{css_text: '3px'}, .no, .no)
+	style.set_property(.padding_left, &dom.StyleValue{css_text: '2em'}, .no, .no)
 	values := resolve_computed_values(style)
 	style.cached_length_metrics_ = unsafe { nil }
-	assert values.length_percentage_to_px(.padding_left, 100) or { -1 } == 3
+	assert values.length_percentage_to_px(.padding_left, 100) or { -1 } == 40
 	cache := style.cached_length_metrics_
 	assert cache != unsafe { nil }
-	assert values.length_percentage_to_px(.padding_left, 200) or { -1 } == 3
+	assert values.length_percentage_to_px(.padding_left, 200) or { -1 } == 40
 	assert voidptr(style.cached_length_metrics_) == voidptr(cache)
 }
