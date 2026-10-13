@@ -22,12 +22,32 @@ records. Seven focused and optimized cases pass; all 17 selected files
 pass in both GC modes. Final private production verification:
 ten stages pass at c9dc0da2, with two pixel-exact untrusted Pointer pages and
 all 11 smoke cases (eight exact). The pinned validation source includes
-the preceding CSS fix and excludes later canonical Layout work. WheelEvent
-and DragEvent interfaces, Element pointer capture and hardware generation
-remain open. See
+the preceding CSS fix and excludes later canonical Layout work. The later
+WheelEvent binding supplies its own interface. DragEvent, Element pointer
+capture and hardware generation remain open. See
 [related-target evidence](../docs/translation-audit/MOUSE_EVENT_RELATED_TARGET.md)
 [MouseEvent evidence](../docs/translation-audit/NATIVE_MOUSE_EVENT_OWNER.md)
 and [PointerEvent evidence](../docs/translation-audit/NATIVE_POINTER_EVENT_OWNER.md).
+
+Window-owned runtimes now expose WheelEvent's constructor, seven native
+getters and three delta-mode constants over actual records, inheriting
+MouseEvent/UIEvent/Event. Thirty-four dictionary members convert in
+inherited lexical order; restricted doubles, wrapped integers and native
+round-to-even legacy fallback preserve the pinned source. Initial/late
+owner exposure, wrapper identity, relatedTarget and inherited initializers
+remain live. Five native and two owner cases pass focused and optimized;
+all 20 selected files pass in both GC modes at 813dd838. Final production
+exits nine steps, with eight fresh checks and ten logical checks including
+the explicitly verified retained -prod -gc none build: strict signing/startup,
+two exact pages and 11 smoke cases (eight exact). The failed media
+onwheel probe preserves 43 artifacts. That failed page receives no pass
+credit; final native listener pages use the same frozen private signed image.
+The closure retains 102 current / 1,960 prior hashes. Factory/DOM
+owner dispatch establishes synthetic native bindings; physical Cocoa/Page
+wheel delivery/default scrolling and compact media onwheel remain open,
+alongside DragEvent, foreign realms and weak ownership. Later concurrent
+canonical work remains outside the isolated source pin.
+[WheelEvent evidence](../docs/translation-audit/NATIVE_WHEEL_EVENT_OWNER.md).
 
 Verified at `c9dc0da2`, the disjoint DOM inventory contains 43,497
 implementation V LOC and 4,979 test V LOC across 100 assigned files.

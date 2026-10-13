@@ -1232,3 +1232,33 @@ Agent checks run with `v -old-compiler -enable-globals`. Isolated worktrees use 
   remain open. Historical ledger remains 32 fixed / 25 partial / 9 open.
   [Evidence](NATIVE_POINTER_EVENT_OWNER.md), consolidated SHA256:
   `4a8392c1a326542d3d395ad6da9dfc8b3d87935a0d74776dd754d33d32a191a4`.
+
+- Owner-local Window WheelEvent (`813dd838`, 2026-10-13).
+  Window-owned runtimes now expose WheelEvent's constructor, seven native
+  getters and three delta-mode constants over actual records, inheriting
+  MouseEvent/UIEvent/Event. Thirty-four dictionary members convert in
+  inherited lexical order; restricted doubles, wrapped integers and native
+  round-to-even legacy fallback preserve the pinned source. Initial/late
+  owner exposure, wrapper identity, relatedTarget and inherited initializers
+  remain live. Five native and two owner cases pass focused and optimized;
+  all 20 selected files pass in both GC modes at 813dd838. Final production
+  exits nine steps, with eight fresh checks and ten logical checks including
+  the explicitly verified retained -prod -gc none build: strict signing/startup,
+  two exact pages and 11 smoke cases (eight exact). The failed media
+  onwheel probe preserves 43 artifacts. That failed page receives no pass
+  credit; final native listener pages use the same frozen private signed image.
+  The closure retains 102 current / 1,960 prior hashes. Factory/DOM
+  owner dispatch establishes synthetic native bindings; physical Cocoa/Page
+  wheel delivery/default scrolling and compact media onwheel remain open,
+  alongside DragEvent, foreign realms and weak ownership. Later concurrent
+  canonical work remains outside the isolated source pin.
+  Both new files compile on parent 368ef4c7 and seven initial exposure
+  guards fail; later parent assertions are unexecuted. Exact new-test
+  bytes remain identical through final focused/optimized validation.
+  Independent proof verifies every committed isolated input; owned RAM
+  cleanup retains persistent image/source/evidence. The inventory
+  attributes all assigned deltas to preceding Layout/CSS commits;
+  table/reference updates belong to a separate commit. Historical ledger
+  remains 32 fixed / 25 partial / 9 open.
+  [Evidence](NATIVE_WHEEL_EVENT_OWNER.md), consolidated SHA256:
+  `62acadfa4802e481055569c6beb3cb11c001c4543453c909740d60378ff990a4`.

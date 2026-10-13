@@ -918,8 +918,8 @@
   cleanup. Six core/actual-owner cases pass, with 12 selected files in both GC
   modes and ordinary optimized validation. That core slice used a private
   owner observer; the later owner-local MouseEvent binding supplies its public
-  constructor/getters, followed by the concrete PointerEvent surface.
-  WheelEvent and DragEvent interfaces remain open. See
+  constructor/getters, followed by the concrete PointerEvent and WheelEvent
+  surfaces. The DragEvent interface remains open. See
   [related-target evidence](docs/translation-audit/MOUSE_EVENT_RELATED_TARGET.md).
 
 - Window-owned runtimes now expose MouseEvent's public constructor, nineteen
@@ -930,7 +930,8 @@
   and 11 smoke cases pass there. At a03691e5, 14 selected files pass in both GC
   modes after a separate one-line callback-fixture pointer correction. Binding/new-test
   bytes remain identical. The later PointerEvent binding completes that
-  concrete owner-local interface. Wheel/Drag interfaces, foreign views/realms,
+  concrete owner-local interface. The later WheelEvent binding supplies its
+  own interface; DragEvent, foreign views/realms,
   weak ownership and full Page/physical input remain open. See
   [MouseEvent evidence](docs/translation-audit/NATIVE_MOUSE_EVENT_OWNER.md).
 
@@ -947,9 +948,29 @@
   and 1,859 prior hashes. The preceding committed CSS regression remains in
   the 17-file batch. Later canonical Layout work is outside the frozen
   c9dc0da2 validation source. Element pointer capture, hardware input/prediction,
-  concrete Wheel/Drag interfaces, foreign views/realms, weak ownership and
+  concrete DragEvent interface, foreign views/realms, weak ownership and
   full Page/physical input remain open. See
   [PointerEvent evidence](docs/translation-audit/NATIVE_POINTER_EVENT_OWNER.md).
+
+- Window-owned runtimes now expose WheelEvent's constructor, seven native
+  getters and three delta-mode constants over actual records, inheriting
+  MouseEvent/UIEvent/Event. Thirty-four dictionary members convert in
+  inherited lexical order; restricted doubles, wrapped integers and native
+  round-to-even legacy fallback preserve the pinned source. Initial/late
+  owner exposure, wrapper identity, relatedTarget and inherited initializers
+  remain live. Five native and two owner cases pass focused and optimized;
+  all 20 selected files pass in both GC modes at 813dd838. Final production
+  exits nine steps, with eight fresh checks and ten logical checks including
+  the explicitly verified retained -prod -gc none build: strict signing/startup,
+  two exact pages and 11 smoke cases (eight exact). The failed media
+  onwheel probe preserves 43 artifacts. That failed page receives no pass
+  credit; final native listener pages use the same frozen private signed image.
+  The closure retains 102 current / 1,960 prior hashes. Factory/DOM
+  owner dispatch establishes synthetic native bindings; physical Cocoa/Page
+  wheel delivery/default scrolling and compact media onwheel remain open,
+  alongside DragEvent, foreign realms and weak ownership. Later concurrent
+  canonical work remains outside the isolated source pin.
+  See [WheelEvent evidence](docs/translation-audit/NATIVE_WHEEL_EVENT_OWNER.md).
 
 ## Translated module inventory
 
