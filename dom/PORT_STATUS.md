@@ -291,3 +291,22 @@ File names use USVString conversion; copied bytes and access modes have native
 owner-task coverage. getAsString/webkitGetAsEntry/setDragImage, physical delivery
 and default actions, media ondrag handlers and weak/foreign ownership remain open.
 See [DataTransfer item-add evidence](../docs/translation-audit/NATIVE_DATA_TRANSFER_ITEM_ADD_OWNER.md).
+
+## Native DataTransferItem.getAsString
+
+Window-owned DataTransferItem.getAsString now brands its native receiver before
+required-argument and nullable-callable conversion, then snapshots readable text
+as raw UTF-16. It queues an asynchronous unspecified task without a Document;
+callbacks receive one argument, retain their captured incumbent owner, and keep
+the original data after removal or store changes. Return values and throws are
+discarded without then access or exception reporting; queued roots are released
+and closing the runtime safely skips pending calls. At `e3ff95fd`, 8 new /
+15 focused cases pass; 15 selected files /
+47 cases pass in each GC mode, and 8 optimized cases pass.
+Signed startup, two pixel-exact asynchronous callback pages and eleven screenshot
+smoke cases pass (8 exact, 3 at established tolerances). Native owner fixtures
+verify video/audio drag dispatch, callbacks with the actual Page scripting gate
+disabled, and asynchronous DOM mutations. Foreign function
+realms, weak ownership, entries, drag images, physical delivery/default actions
+and media ondrag handlers remain open. The browser still uses JavaScriptCore.
+See [DataTransfer string-callback evidence](../docs/translation-audit/NATIVE_DATA_TRANSFER_ITEM_STRING_CALLBACK_OWNER.md).

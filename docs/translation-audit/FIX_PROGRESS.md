@@ -1372,3 +1372,29 @@ Agent checks run with `v -old-compiler -enable-globals`. Isolated worktrees use 
   implementation / 160,272 test V LOC, pinned separately to the code.
   Historical ledger remains 32 fixed / 25 partial / 9 open.
   Consolidated evidence SHA256: `dab3d2b8c3e5dc1e7a21f047c86d530a39ba48195398c45b1bb6d211ed7afad3`.
+
+- Native Window DataTransferItem.getAsString (`e3ff95fd`, 2026-10-13).
+  Receiver branding, required nullable callable conversion, raw UTF-16 snapshots,
+  asynchronous unspecified/documentless tasks and captured callback ownership
+  are implemented. Original throws/results are discarded without then access
+  or reporting. Repeated abrupt completions release their roots; pending close
+  is safe. 8 new / 15 focused cases, 15 selected files /
+  47 cases in each GC mode and 8 optimized cases pass.
+  Signed startup, two exact actual asynchronous pages and eleven smoke cases
+  pass (8 exact, 3 retaining established tolerance residuals).
+  Parent baseline: 2 files compile and 6 availability guards fail;
+  later assertions earn no baseline credit. Original compilation failures
+  (`baseline-v1`, `baseline-v2`) remain preserved with no passing batch credit.
+  Original focused-v4 passes 5 files and fails 1 owner file, with no passing
+  batch credit: its realm.can_run flag does not disable real Page-owned settings.
+  The corrected owner fixture uses Page.set_is_scripting_enabled(false), restores
+  that preference and leaves all implementation hashes unchanged.
+  The public JSC diagnostic for non-callable objects uses [object Object]
+  rather than upstream native-class names. Foreign realms, weak ownership,
+  entries, drag images, physical/default drag actions and media ondrag remain open.
+  See [DataTransfer string-callback evidence](NATIVE_DATA_TRANSFER_ITEM_STRING_CALLBACK_OWNER.md).
+  Assigned HTML delta: +11 implementation / +41 test lines and one added file;
+  7 browser/root feature paths remain excluded. Physical recount records
+  78 owners / 2,225 files, 433,242 implementation /
+  160,313 test V LOC. Historical ledger stays 32 fixed / 25 partial / 9 open.
+  Consolidated evidence SHA256: `e4f63178cdce85059971b77f5cd8b591dcf18356b72f93f05ddeb35910fdcd81`.
