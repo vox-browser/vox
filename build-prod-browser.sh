@@ -121,15 +121,27 @@ zoneinfo_exclude='@vlib/time/zoneinfo.native.v'
 # The translated tree is validated with V's stable compatibility compiler.
 # Select the same frontend explicitly so a newer default compiler on PATH does
 # not turn a browser build into an unrelated source-migration attempt.
-echo "Building Ladybird V with: -old-compiler -enable-globals -prod -gc $gc_mode"
+# This compatibility compiler's -prod mode snapshots every pointer in live
+# aggregates around calls. Growing CSS token arrays are traversed on every
+# token, turning linear parsing into quadratic work. Use a fully scanned heap
+# and optimize the generated C directly instead. Full scanning keeps nested
+# strings/arrays reachable without those expensive snapshots.
+set -- -old-compiler -exclude "$zoneinfo_exclude" -enable-globals
+if [ "$gc_mode" = boehm ]; then
+    set -- "$@" -gc boehm_full
+    extra_cflags="$extra_cflags -O2"
+else
+    set -- "$@" -prod -gc none
+fi
+echo "Building Ladybird V with: $* -cflags $extra_cflags"
 # Root browser features are split across main.v and companion module files.
 cd "$repo_dir"
 if [ -n "$extra_ldflags" ]; then
-    "$v_compiler" -old-compiler -exclude "$zoneinfo_exclude" -enable-globals -prod -gc "$gc_mode" \
+    "$v_compiler" "$@" \
         -cflags "$extra_cflags" -ldflags "$extra_ldflags" \
         -o "$binary_dir/Ladybird" .
 else
-    "$v_compiler" -old-compiler -exclude "$zoneinfo_exclude" -enable-globals -prod -gc "$gc_mode" \
+    "$v_compiler" "$@" \
         -cflags "$extra_cflags" \
         -o "$binary_dir/Ladybird" .
 fi
