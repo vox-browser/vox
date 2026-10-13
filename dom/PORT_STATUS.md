@@ -10,8 +10,14 @@ DOM dispatch. Constructors, typed accessors, legacy initialization and clones
 retain its current state; trusted hover no longer maintains a second copy.
 Real shadow-slot retargeting, suppression and clear-target cleanup are covered
 by four core cases and two actual Window-owner cases, including inherited
-HTML DragEvent. Public JavaScript MouseEvent fields remain open. See
-[related-target evidence](../docs/translation-audit/MOUSE_EVENT_RELATED_TARGET.md).
+HTML DragEvent. That historical core slice used a private native owner
+observer. The later owner-local MouseEvent binding now exposes the public
+constructor, nineteen getters and two operations over these same records,
+including canonical relatedTarget and virtual PointerEvent coordinates; it
+changes no DOM/Page/dispatch algorithm. Concrete PointerEvent, WheelEvent and
+DragEvent public interfaces remain open. See
+[related-target evidence](../docs/translation-audit/MOUSE_EVENT_RELATED_TARGET.md)
+and [MouseEvent evidence](../docs/translation-audit/NATIVE_MOUSE_EVENT_OWNER.md).
 
 The current disjoint DOM inventory at `dd0cc2d5` contains 43,497
 implementation V LOC and 4,979 test V LOC across 100 assigned files.

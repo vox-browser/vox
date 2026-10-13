@@ -403,9 +403,10 @@ in both GC modes. Signed startup, two exact synthetic-Event pages and all
 11 configured smoke cases pass (eight exact).
 
 Trusted Page fixtures supply explicit native DOM targets; synthetic Event
-pages provide separate browser binding coverage. The shared base Event
-surface does not provide full MouseEvent/PointerEvent fields. Node-less
-InputTarget logging remains a separate fallback. `Page.handle_mousemove()`
+pages provide separate browser binding coverage. That handler slice validates
+the base Event surface; the later owner-local MouseEvent binding exposes
+inherited mouse fields. Node-less InputTarget logging remains a separate
+fallback. `Page.handle_mousemove()`
 ignores button-mask/modifier arguments and does not install complete client
 coordinates; these tests establish no field parity. Physical Cocoa transport/
 hit testing, full prototypes, raw inline compilation, foreign realms, weak ownership and
@@ -429,7 +430,7 @@ View mapping is explicitly owner-local; foreign WindowProxy wrappers are
 unsupported. Trusted Page fixtures use explicit targets and platform values,
 and expose existing record data rather than full input construction parity:
 pressed compatibility moves retain the V mousedown detail and supplied button;
-upstream normal mousemove supplies zero detail and primary. Concrete UI
+upstream normal mousemove supplies zero detail and primary. Other concrete UI
 subclass constructors/prototypes/fields, Page mousemove argument/coordinate
 mapping, physical Cocoa input/hit testing/default actions, raw inline element
 compilation, foreign realms and weak ownership remain open, along with full
@@ -443,9 +444,31 @@ canonical slot, including inherited DragEvent records. Six focused cases
 compile and fail actual assertions on the parent, then pass with final bytes;
 12 selected files pass in both GC modes and the new cases pass optimized.
 Signed startup and all 11 existing smoke cases pass (eight exact). The actual
-Window-owner fixture uses a private native observer; public JavaScript
-MouseEvent getters/constructors and concrete subclass prototypes remain open.
+Window-owner fixture in that core slice uses a private native observer. The
+later owner-local MouseEvent binding supplies its public constructor/getters;
+concrete PointerEvent, WheelEvent and DragEvent interfaces remain open.
 [Related-target evidence](docs/translation-audit/MOUSE_EVENT_RELATED_TARGET.md).
+
+Window-owned runtimes now expose MouseEvent's constructor, nineteen native
+getters and getModifierState/initMouseEvent. Actual mouse-derived records
+inherit the retained UIEvent/Event chain, with source dictionary/legacy
+conversion, virtual PointerEvent coordinates and canonical relatedTarget.
+The owner-local constructor observes newTarget.prototype once and uses the
+original interface fallback; omitted dictionaries preserve their empty default.
+Implementation/new tests are committed as db342c95. Six focused cases match
+those bytes, and ordinary optimized cases pass there, together with signed
+startup, two exact synthetic untrusted MouseEvent pages and all 11 smoke
+cases (eight exact).
+
+Final 14/14 default and GC-disabled batches run at a03691e5, which changes only
+an existing test's capture from the local Runtime pointer variable's address
+to the actual Runtime. All binding/new-case bytes remain identical. The first
+default failure and seven isolated diagnostics remain recorded separately;
+labels prove the wrong capture but do not establish a host-GC or nil-context
+causal mechanism. Concrete Pointer/Wheel/Drag constructors/prototypes/additional
+fields, foreign views/realms, weak ownership, complete Page input construction
+and physical Cocoa input/hit testing/default actions remain open.
+[MouseEvent evidence](docs/translation-audit/NATIVE_MOUSE_EVENT_OWNER.md).
 
 The `:indeterminate`, `:open`, and `:closed` selectors now read live checkbox,
 input-picker, and select-picker state. Control transitions mirror that state at

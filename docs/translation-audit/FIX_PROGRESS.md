@@ -1177,3 +1177,27 @@ Agent checks run with `v -old-compiler -enable-globals`. Isolated worktrees use 
   32 fixed / 25 partial / 9 open.
   [Evidence](MOUSE_EVENT_RELATED_TARGET.md), consolidated SHA256:
   `7ba7b929b6c7b0ef1ab33ad1f828db8b5ee23f250cbde7ad35d175d7b4605e1d`.
+
+- Owner-local Window MouseEvent (`db342c95`, 2026-10-13) exposes the public
+  constructor, nineteen native getters and getModifierState/initMouseEvent.
+  Source dictionary/legacy conversion, a single newTarget prototype read,
+  concrete PointerEvent coordinate overrides and public canonical relatedTarget use
+  actual native records and the retained UIEvent/Event chain. The two parent
+  files compile and six initial availability/prototype guards fail; later
+  parent assertions are unexecuted. Six final focused and ordinary optimized
+  cases pass at the implementation bytes, and signed production passes ten
+  stages, two exact synthetic untrusted pages and all 11 smoke cases (eight
+  exact), preserving 51 current / 1,331 prior hashes.
+  Final 14/14 batches in both GC modes run at the separately committed fixture
+  correction a03691e5. It changes only one existing Runtime pointer capture;
+  implementation and six new test bytes remain identical. Original default
+  13/14 failure, GC-none pass and seven ignored diagnostic runs are preserved.
+  Labels prove the wrong pointer/context, without a host-GC/nil-context claim.
+  Guarded cleanup detaches owned RAM disk7 with persistent evidence retained.
+  All 78 owners / 2,211 assigned hashes/newlines and 432,871 implementation /
+  159,242 test V LOC remain unchanged; root/browser support stays excluded.
+  Concrete Pointer/Wheel/Drag interfaces, foreign views/realms, weak ownership,
+  full Page/physical input and broader media/load work remain open. Historical
+  ledger remains 32 fixed / 25 partial / 9 open.
+  [Evidence](NATIVE_MOUSE_EVENT_OWNER.md), consolidated SHA256:
+  `7500513853bce4ff63746bf055c3123cf2c3eb00c56755ab23907d34d0409c88`.

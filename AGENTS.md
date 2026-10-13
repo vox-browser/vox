@@ -904,8 +904,8 @@
 - Window-owned runtimes now expose UIEvent constructor, view/detail/virtual
   which and the native legacy initializer over actual records. Receiver checks,
   WebIDL conversion order, dispatch guard, late attachment and captured parent/
-  global identity use the existing owner. All ten UI families share the
-  retained inherited prototype; actual Page media callbacks keep current-event,
+  global identity use the existing owner. All ten UI families inherit the
+  retained prototype; actual Page media callbacks keep current-event,
   cancellation and DOM polling. Owner-local views, existing Page move-data
   construction and concrete subclass interfaces remain explicit boundaries,
   alongside physical input, raw inline element compilation, realms, weak
@@ -916,9 +916,22 @@
   Construction, typed getters, legacy initialization, clones and trusted hover
   delivery follow per-listener shadow retargeting, suppression and clear-target
   cleanup. Six core/actual-owner cases pass, with 12 selected files in both GC
-  modes and ordinary optimized validation. Public JavaScript MouseEvent fields
-  and concrete subclass bindings remain open. See
+  modes and ordinary optimized validation. That core slice used a private
+  owner observer; the later owner-local MouseEvent binding supplies its public
+  constructor/getters. Concrete PointerEvent, WheelEvent and DragEvent
+  interfaces remain open. See
   [related-target evidence](docs/translation-audit/MOUSE_EVENT_RELATED_TARGET.md).
+
+- Window-owned runtimes now expose MouseEvent's public constructor, nineteen
+  native getters and getModifierState/initMouseEvent over actual records.
+  Dictionary conversion, a single constructor prototype read, PointerEvent
+  coordinate overrides and canonical relatedTarget use the retained owner.
+  Six focused/optimized cases match db342c95; signed startup, two exact pages
+  and 11 smoke cases pass there. At a03691e5, 14 selected files pass in both GC
+  modes after a separate one-line callback-fixture pointer correction. Binding/new-test
+  bytes remain identical. Concrete Pointer/Wheel/Drag interfaces, foreign
+  views/realms, weak ownership and full Page/physical input remain open. See
+  [MouseEvent evidence](docs/translation-audit/NATIVE_MOUSE_EVENT_OWNER.md).
 
 ## Translated module inventory
 
