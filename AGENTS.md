@@ -1041,12 +1041,17 @@
 ## Translated module inventory
 
 All 78 translated LibWeb packages and all 1,193 current module-owned C++
-implementation units have audited V mappings. Verified at `b335958e` on
-2026-10-13, 2,217 assigned files contain 433,002 implementation V LOC and
-159,798 test V LOC. The native DataTransfer string slice adds +42 HTML
-implementation / +114 test lines and one assigned test file; intervening docs
-change no assigned bytes. Root/browser bindings and their tests remain
-excluded.
+implementation units have audited V mappings. Verified at `e775be45` on
+2026-10-13, 2,223 assigned files contain 433,216 implementation V LOC and
+160,217 test V LOC.
+The native DataTransfer items feature changes only assigned HTML
+implementation and its new core test: +10 implementation / +74 test lines and
+one assigned file from actual parent `9b8881df`. Nine preceding independently
+committed slices since `b335958e` account separately for CSS +56
+implementation / +158 test lines / +3 files, Layout +121 / +144 / +1 and
+Platform +27 / +43 / +1. Nine root/browser support/test feature paths remain
+excluded. These are physical counts and do not establish behavioral
+equivalence or additional test credit.
 Physical LOC includes comments and blank lines. Root support code and browser
 integration code are excluded. Package counts include generated V assets and
 supporting translations; WebAssembly includes the separately audited LibWasm
@@ -1057,7 +1062,7 @@ their shared DOM test files are counted under the corresponding owner once.
 | Module | Implementation V LOC | Module | Implementation V LOC |
 | --- | ---: | --- | ---: |
 | ARIA | 2,574 | Animations | 4,254 |
-| Bindings | 2,718 | CSS | 114,959 |
+| Bindings | 2,718 | CSS | 115,015 |
 | Clipboard | 1,123 | Compositor | 2,403 |
 | Compression | 471 | ContentSecurityPolicy | 2,816 |
 | CookieStore | 1,059 | CredentialManagement | 420 |
@@ -1068,17 +1073,17 @@ their shared DOM test files are counted under the corresponding owner once.
 | Fetch | 6,678 | FileAPI | 1,493 |
 | Fullscreen | 93 | GPC | 16 |
 | Gamepad | 860 | Geolocation | 535 |
-| Geometry | 2,121 | HTML | 69,674 |
+| Geometry | 2,121 | HTML | 69,684 |
 | HighResolutionTime | 500 | IndexedDB | 5,455 |
 | Infra | 548 | Internals | 2,337 |
-| IntersectionObserver | 668 | Layout | 44,796 |
+| IntersectionObserver | 668 | Layout | 44,917 |
 | Loader | 1,921 | MathML | 653 |
 | MediaCapabilitiesAPI | 657 | MediaCapture | 1,240 |
 | MediaSourceExtensions | 4,079 | MimeSniff | 1,108 |
 | MixedContent | 93 | NavigationTiming | 645 |
 | NotificationsAPI | 370 | Page | 6,855 |
 | Painting | 7,993 | PerformanceTimeline | 502 |
-| PermissionsAPI | 239 | Platform | 2,824 |
+| PermissionsAPI | 239 | Platform | 2,851 |
 | ReferrerPolicy | 105 | RequestIdleCallback | 59 |
 | ResizeObserver | 605 | ResourceTiming | 342 |
 | SRI | 156 | SVG | 6,747 |
@@ -1095,7 +1100,7 @@ their shared DOM test files are counted under the corresponding owner once.
 | WebXR | 411 | Worker | 142 |
 | XHR | 1,695 | XLink | 13 |
 | XML | 477 | XPath | 672 |
-| **Total** | **433,002** |  |  |
+| **Total** | **433,216** |  |  |
 
 `PORT_STATUS.md` is the canonical detailed inventory. It also records upstream
 C++ file/LOC counts, per-module test LOC, status, and the counting conventions;

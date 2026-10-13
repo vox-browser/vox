@@ -1128,16 +1128,25 @@ V's standard `crypto.*` modules without shadowing that namespace.
 The IDL-only `Fullscreen` package delegates its state machine to the shared
 translated DOM implementation.
 
-Verified at `b335958e`, the physical inventory is retained in
-`Build/audit-fixes/source-current-module-loc-b335958e.json` (SHA256 `d1312ce3780a77a3ebcab3a487d3052ebbdedb51cfdd0e60a4992134892dea81`).
-All 78 owners and 2,217 assigned files match their committed byte hashes and
-physical newline counts: 433,002 implementation V LOC and 159,798 test V LOC.
-Only HTML changes from parent `87e3e2a5`: +42 implementation / +114 test lines
-and one new assigned test file. The preceding docs since `682a7827` change no
-assigned input bytes, newlines or ownership. Six root/browser support/test
-feature paths remain excluded. Exact input maps are retained for all three
-pinned source snapshots. Later concurrent canonical work is outside this
-inventory; counts do not establish runtime parity.
+Verified at `e775be45`, the physical inventory is retained in
+`Build/audit-fixes/native-data-transfer-items-inventory-current.json` (SHA256 `7b5ad87afb6c18b8529c2fce174a96e9ef9e863926ffaaa3618d1dde0ba3dfed`).
+All 78 owners and 2,223 assigned files match their committed byte hashes and
+physical newline counts: 433,216 implementation V LOC and 160,217 test V LOC.
+The native DataTransfer items feature changes only assigned HTML
+implementation and its new core test: +10 implementation / +74 test lines and
+one assigned file from actual parent `9b8881df`. Nine preceding independently
+committed slices since `b335958e` account separately for CSS +56
+implementation / +158 test lines / +3 files, Layout +121 / +144 / +1 and
+Platform +27 / +43 / +1. Nine root/browser support/test feature paths remain
+excluded. These are physical counts and do not establish behavioral
+equivalence or additional test credit.
+Exact full Git and assigned input maps are retained for the previous
+inventory, actual feature parent and committed feature. Later concurrent
+canonical work stays outside this pin. Upstream source-unit counts, mapping
+labels and the historical finding ledger remain unchanged.
+The prior DataTransfer string inventory remains preserved in
+`Build/audit-fixes/source-current-module-loc-b335958e.json` (SHA256 `d1312ce3780a77a3ebcab3a487d3052ebbdedb51cfdd0e60a4992134892dea81`),
+with 2,217 files / 433,002 implementation / 159,798 test V LOC.
 The prior DragEvent inventory remains preserved in
 `Build/audit-fixes/source-current-module-loc-682a7827.json` (SHA256 `1e30f605ac80b9e550e7749cc1c62330556e8491793952db1de86a8b2b54a9a3`),
 with 2,216 files / 432,960 implementation / 159,684 test V LOC.
@@ -1187,7 +1196,7 @@ The previous unsupported-play inventory remains preserved in
 `166070c623211b8600db5300c89ed5219375d0e4045728c12117361ad8cca27c`).
 Source-unit mappings and physical LOC do not establish runtime parity.
 
-The table below records package V LOC verified at `b335958e` on 2026-10-13; upstream counts
+The table below records package V LOC verified at `e775be45` on 2026-10-13; upstream counts
 and structural mapping labels retain the pinned inventory. It covers 76 current
 implementation-bearing upstream modules plus the translated IDL/IPC-only
 `Fullscreen` and `Worker` packages, and all 1,193 module-owned `.cpp`
@@ -1201,7 +1210,7 @@ from the current-module totals.
 | `ARIA` | 6 | 1,955 | 2,574 | 410 | Complete |
 | `Animations` | 10 | 5,187 | 4,254 | 1,420 | Complete |
 | `Bindings` | 11 | 2,501 | 2,718 | 1,116 | Complete |
-| `CSS` | 215 | 47,722 | 114,959 | 17,805 | Present |
+| `CSS` | 215 | 47,722 | 115,015 | 17,963 | Present |
 | `Clipboard` | 4 | 1,009 | 1,123 | 409 | Complete |
 | `Compositor` | 6 | 1,687 | 2,403 | 361 | Complete |
 | `Compression` | 2 | 348 | 471 | 143 | Complete |
@@ -1223,13 +1232,13 @@ from the current-module totals.
 | `Gamepad` | 6 | 1,351 | 860 | 323 | Complete |
 | `Geolocation` | 4 | 643 | 535 | 224 | Complete |
 | `Geometry` | 8 | 2,078 | 2,121 | 1,041 | Complete |
-| `HTML` | 286 | 83,853 | 69,674 | 40,499 | Complete |
+| `HTML` | 286 | 83,853 | 69,684 | 40,573 | Complete |
 | `HighResolutionTime` | 2 | 516 | 500 | 213 | Complete |
 | `IndexedDB` | 19 | 6,991 | 5,455 | 1,388 | Complete |
 | `Infra` | 3 | 385 | 548 | 102 | Complete |
 | `Internals` | 7 | 2,583 | 2,337 | 1,067 | Complete |
 | `IntersectionObserver` | 2 | 528 | 668 | 413 | Complete |
-| `Layout` | 9 | 4,001 | 44,796 | 18,217 | Present |
+| `Layout` | 9 | 4,001 | 44,917 | 18,361 | Present |
 | `Loader` | 6 | 1,291 | 1,921 | 664 | Complete |
 | `MathML` | 6 | 369 | 653 | 162 | Complete |
 | `MediaCapabilitiesAPI` | 1 | 345 | 657 | 129 | Complete |
@@ -1243,7 +1252,7 @@ from the current-module totals.
 | `Painting` | 22 | 8,227 | 7,993 | 2,628 | Present |
 | `PerformanceTimeline` | 5 | 476 | 502 | 154 | Complete |
 | `PermissionsAPI` | 3 | 388 | 239 | 74 | Complete |
-| `Platform` | 4 | 431 | 2,824 | 649 | Complete |
+| `Platform` | 4 | 431 | 2,851 | 692 | Complete |
 | `ReferrerPolicy` | 2 | 341 | 105 | 223 | Complete |
 | `RequestIdleCallback` | 1 | 52 | 59 | 18 | Complete |
 | `ResizeObserver` | 4 | 424 | 605 | 231 | Complete |
@@ -1276,7 +1285,7 @@ from the current-module totals.
 | `XLink` | 1 | 16 | 13 | 10 | Complete |
 | `XML` | 2 | 556 | 477 | 164 | Complete |
 | `XPath` | 5 | 435 | 672 | 210 | Complete |
-| **Total** | **1,193** | **329,970** | **433,002** | **159,798** | **74 complete, 4 present, 0 untranslated** |
+| **Total** | **1,193** | **329,970** | **433,216** | **160,217** | **74 complete, 4 present, 0 untranslated** |
 
 ### Live editability refresh
 

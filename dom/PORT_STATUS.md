@@ -103,18 +103,24 @@ drag images, hardware file delivery and weak/foreign ownership remain open.
 See [DataTransfer files
 evidence](../docs/translation-audit/NATIVE_DATA_TRANSFER_FILES_OWNER.md).
 
-Verified at `b335958e`, the disjoint DOM inventory contains 43,499
+Verified at `e775be45`, the disjoint DOM inventory contains 43,499
 implementation V LOC and 5,050 test V LOC across 101 assigned files.
-`Build/audit-fixes/source-current-module-loc-b335958e.json` (SHA256 `d1312ce3780a77a3ebcab3a487d3052ebbdedb51cfdd0e60a4992134892dea81`).
+`Build/audit-fixes/native-data-transfer-items-inventory-current.json` (SHA256 `7b5ad87afb6c18b8529c2fce174a96e9ef9e863926ffaaa3618d1dde0ba3dfed`).
 Every assigned committed byte hash and physical newline is verified.
-DOM/UIEvents assigned bytes remain unchanged by this slice; UIEvents remains
-1,489 implementation / 474 test V LOC. Integrated totals across 78 owners /
-2,217 files are 433,002 implementation / 159,798 test V LOC.
-Only the assigned HTML string model and new HTML test change: +42
-implementation / +114 test lines and one file. Intervening docs change no
-assigned bytes, newlines or ownership. Six root/browser support/test paths
-remain excluded. Later concurrent work is outside this pin; counts do not
-establish runtime parity.
+DOM/UIEvents assigned bytes remain unchanged from the preserved `b335958e`
+inventory; UIEvents remains 1,489 implementation / 474 test V LOC. Integrated
+totals across 78 owners / 2,223 files are 433,216 implementation / 160,217
+test V LOC.
+The native DataTransfer items feature changes only assigned HTML
+implementation and its new core test: +10 implementation / +74 test lines and
+one assigned file from actual parent `9b8881df`. Nine preceding independently
+committed slices since `b335958e` account separately for CSS +56
+implementation / +158 test lines / +3 files, Layout +121 / +144 / +1 and
+Platform +27 / +43 / +1. Nine root/browser support/test feature paths remain
+excluded. These are physical counts and do not establish behavioral
+equivalence or additional test credit.
+The previous DataTransfer string record remains preserved at
+`Build/audit-fixes/source-current-module-loc-b335958e.json` (SHA256 `d1312ce3780a77a3ebcab3a487d3052ebbdedb51cfdd0e60a4992134892dea81`).
 The previous DragEvent record remains preserved at
 `Build/audit-fixes/source-current-module-loc-682a7827.json` (SHA256 `1e30f605ac80b9e550e7749cc1c62330556e8491793952db1de86a8b2b54a9a3`).
 The previous WheelEvent record remains preserved at
