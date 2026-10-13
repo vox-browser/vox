@@ -670,12 +670,52 @@ fn (triplet U32Triplet) to_twin_23() U32Twin {
 pub struct Tokenizer {
 mut:
 	decoded_input string
-	code_points   []u32
-	byte_offsets  []int
+	input_arena   TokenizerInputArena
 	index         int
 	prev_index    int
 	position      TokenPosition
 	prev_position TokenPosition
+}
+
+// The tokenizer alone owns these numeric lookup tables. Tokens borrow only
+// decoded_input, so the tables need neither tracing nor a lifetime beyond the
+// tokenization call. Allocate both in one arena and release it at that boundary.
+struct TokenizerInputArena {
+mut:
+	storage      voidptr
+	code_points  &u32 = unsafe { nil }
+	byte_offsets &int = unsafe { nil }
+	len          int
+}
+
+fn C.malloc(usize) voidptr
+fn C.free(voidptr)
+
+fn TokenizerInputArena.new(input string) TokenizerInputArena {
+	if input.len == 0 { return TokenizerInputArena{} }
+	storage := unsafe { C.malloc(usize(input.len) * (sizeof(u32) + sizeof(int))) }
+	if storage == unsafe { nil } { panic('Unable to allocate CSS tokenizer input') }
+	mut arena := TokenizerInputArena{
+		storage: storage
+		code_points: unsafe { &u32(storage) }
+		byte_offsets: unsafe { &int(&u8(storage) + usize(input.len) * sizeof(u32)) }
+	}
+	mut byte_offset := 0
+	for code_point in input.runes_iterator() {
+		unsafe {
+			arena.code_points[arena.len] = u32(code_point)
+			arena.byte_offsets[arena.len] = byte_offset
+		}
+		arena.len++
+		// input has already been decoded and filtered to valid UTF-8.
+		byte_offset += utf8_char_len(input[byte_offset])
+	}
+	return arena
+}
+
+fn (mut arena TokenizerInputArena) release() {
+	unsafe { C.free(arena.storage) }
+	arena = TokenizerInputArena{}
 }
 
 fn decode_css_input(input string, encoding_name string) string {
@@ -698,7 +738,7 @@ fn filter_code_points(input string, encoding string) string {
 
 	// OPTIMIZATION: If the input doesn't contain any filterable characters, we can skip the filtering
 	mut contains_filterable := false
-	for code_point in decoded_input.runes() {
+	for code_point in decoded_input.runes_iterator() {
 		code_point_u32 := u32(code_point)
 		if code_point_u32 == `\r` || code_point_u32 == `\f` || code_point_u32 == 0
 			|| is_unicode_surrogate(code_point_u32) {
@@ -714,7 +754,7 @@ fn filter_code_points(input string, encoding string) string {
 	mut last_was_carriage_return := false
 
 	// To filter code points from a stream of (unfiltered) code points input:
-	for code_point in decoded_input.runes() {
+	for code_point in decoded_input.runes_iterator() {
 		code_point_u32 := u32(code_point)
 		// Replace any U+000D CARRIAGE RETURN (CR) code points,
 		// U+000C FORM FEED (FF) code points,
@@ -750,29 +790,16 @@ fn filter_code_points(input string, encoding string) string {
 	return builder.str()
 }
 
-fn code_points_and_byte_offsets(input string) ([]u32, []int) {
-	mut code_points := []u32{}
-	mut byte_offsets := []int{}
-	mut byte_offset := 0
-	for code_point in input.runes() {
-		code_points << u32(code_point)
-		byte_offsets << byte_offset
-		byte_offset += code_point.str().len
-	}
-	return code_points, byte_offsets
-}
-
 pub fn Tokenizer.tokenize(input string, encoding string) []Token {
 	mut tokenizer := Tokenizer.new(filter_code_points(input, encoding))
+	defer { tokenizer.input_arena.release() }
 	return tokenizer.tokenize_all()
 }
 
 fn Tokenizer.new(decoded_input string) Tokenizer {
-	code_points, byte_offsets := code_points_and_byte_offsets(decoded_input)
 	return Tokenizer{
 		decoded_input: decoded_input
-		code_points:   code_points
-		byte_offsets:  byte_offsets
+		input_arena: TokenizerInputArena.new(decoded_input)
 	}
 }
 
@@ -900,12 +927,12 @@ fn is_upper_e(code_point u32) bool {
 }
 
 fn (mut tokenizer Tokenizer) next_code_point() u32 {
-	if tokenizer.index >= tokenizer.code_points.len {
+	if tokenizer.index >= tokenizer.input_arena.len {
 		return tokenizer_eof
 	}
 	tokenizer.prev_index = tokenizer.index
 	tokenizer.index++
-	code_point := tokenizer.code_points[tokenizer.prev_index]
+	code_point := unsafe { tokenizer.input_arena.code_points[tokenizer.prev_index] }
 
 	tokenizer.prev_position = tokenizer.position
 	if is_newline(code_point) {
@@ -920,10 +947,10 @@ fn (mut tokenizer Tokenizer) next_code_point() u32 {
 
 fn (tokenizer Tokenizer) peek_code_point(offset usize) u32 {
 	index := tokenizer.index + int(offset)
-	if index >= tokenizer.code_points.len {
+	if index >= tokenizer.input_arena.len {
 		return tokenizer_eof
 	}
-	return tokenizer.code_points[index]
+	return unsafe { tokenizer.input_arena.code_points[index] }
 }
 
 fn (tokenizer Tokenizer) peek_twin() U32Twin {
@@ -931,8 +958,8 @@ fn (tokenizer Tokenizer) peek_twin() U32Twin {
 		first:  tokenizer_eof
 		second: tokenizer_eof
 	}
-	for i := 0; i < 2 && tokenizer.index + i < tokenizer.code_points.len; i++ {
-		values.set(usize(i), tokenizer.code_points[tokenizer.index + i])
+	for i := 0; i < 2 && tokenizer.index + i < tokenizer.input_arena.len; i++ {
+		values.set(usize(i), unsafe { tokenizer.input_arena.code_points[tokenizer.index + i] })
 	}
 	return values
 }
@@ -943,8 +970,8 @@ fn (tokenizer Tokenizer) peek_triplet() U32Triplet {
 		second: tokenizer_eof
 		third:  tokenizer_eof
 	}
-	for i := 0; i < 3 && tokenizer.index + i < tokenizer.code_points.len; i++ {
-		values.set(usize(i), tokenizer.code_points[tokenizer.index + i])
+	for i := 0; i < 3 && tokenizer.index + i < tokenizer.input_arena.len; i++ {
+		values.set(usize(i), unsafe { tokenizer.input_arena.code_points[tokenizer.index + i] })
 	}
 	return values
 }
@@ -1227,7 +1254,7 @@ fn (mut tokenizer Tokenizer) consume_an_ident_sequence() string {
 			// Consume an escaped code point. Append the returned code point to result.
 			if result == unsafe { nil } {
 				result = &TokenizerNameBuilder{ text: strings.new_builder(16) }
-				result.text.write_string(tokenizer.decoded_input[start_byte_offset..tokenizer.byte_offsets[tokenizer.prev_index]])
+				result.text.write_string(tokenizer.decoded_input[start_byte_offset..unsafe { tokenizer.input_arena.byte_offsets[tokenizer.prev_index] }])
 			}
 			append_code_point(mut result.text, tokenizer.consume_escaped_code_point())
 			continue
@@ -1889,10 +1916,10 @@ fn (mut tokenizer Tokenizer) consume_a_token() Token {
 }
 
 fn (tokenizer Tokenizer) current_byte_offset() int {
-	if tokenizer.index >= tokenizer.byte_offsets.len {
+	if tokenizer.index >= tokenizer.input_arena.len {
 		return tokenizer.decoded_input.len
 	}
-	return tokenizer.byte_offsets[tokenizer.index]
+	return unsafe { tokenizer.input_arena.byte_offsets[tokenizer.index] }
 }
 
 fn (tokenizer Tokenizer) input_since(offset int) string {
