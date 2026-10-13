@@ -251,6 +251,18 @@ constructor, data/item/file operations and physical drag delivery remain
 separate work. See [DragEvent
 evidence](docs/translation-audit/NATIVE_DRAG_EVENT_OWNER.md).
 
+Window-owned JavaScriptCore runtimes now expose native DataTransfer
+construction, dropEffect/effectAllowed, getData/setData/clearData and frozen
+types over actual HTML stores. Existing owner-local wrappers gain the public
+prototype without changing identity. UTF-16 preserves NUL and lone surrogates;
+type arrays cache by native record, revision and runtime. The `b335958e`
+source passes nine focused/optimized cases, thirteen selected files in both GC
+modes, signed startup, two pixel-exact nonnull-transfer pages and eleven
+screenshot smoke cases. Public item/file-list and drag-image surfaces,
+physical drag delivery, store transitions/default actions, foreign realms and
+weak ownership remain open. See [DataTransfer string-store
+evidence](docs/translation-audit/NATIVE_DATA_TRANSFER_STRING_OWNER.md).
+
 On macOS, production layout uses Arial/Helvetica-compatible metrics to match
 the native Cocoa painter. Set `LADYBIRD_BROWSER_FONT` to another TrueType font
 path to override it; `LADYBIRD_LAYOUT_TEST_FONT` continues to take precedence

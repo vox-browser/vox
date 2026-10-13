@@ -1299,3 +1299,22 @@ Agent checks run with `v -old-compiler -enable-globals`. Isolated worktrees use 
   assertions are unexecuted on the parent. Inventory updates belong to a
   separate commit. Historical ledger remains 32 fixed / 25 partial / 9 open.
   Consolidated evidence SHA256: `4d25a5a50607546dc653b9c4faabd55a5b87b444524f9e6d58f9b158cad6d2c8`.
+
+- Native Window DataTransfer string store (`b335958e`, 2026-10-13).
+  Window-owned JavaScriptCore runtimes now expose native DataTransfer
+  construction, dropEffect/effectAllowed, getData/setData/clearData and frozen
+  types over actual HTML stores. Existing owner-local wrappers gain the public
+  prototype without changing identity. UTF-16 preserves NUL and lone surrogates;
+  type arrays cache by native record, revision and runtime. The `b335958e`
+  source passes nine focused/optimized cases, thirteen selected files in both GC
+  modes, signed startup, two pixel-exact nonnull-transfer pages and eleven
+  screenshot smoke cases. Public item/file-list and drag-image surfaces,
+  physical drag delivery, store transitions/default actions, foreign realms and
+  weak ownership remain open. See [DataTransfer string-store
+  evidence](NATIVE_DATA_TRANSFER_STRING_OWNER.md).
+  Parent baseline compiles two files; seven initial availability guards fail.
+  Original JS option comparisons failed compilation and earn no pass credit;
+  only those two fixture comparisons were corrected. Core UTF-16/revision
+  API cases are first exercised after implementation. Inventory changes
+  belong to a separate commit. Ledger remains 32 fixed / 25 partial / 9 open.
+  Consolidated evidence SHA256: `1f0e60d7a96ed1734a5d2d5c8b2765e9b914bf6d364b73a583d46104b128ef22`.
