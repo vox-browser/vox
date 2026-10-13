@@ -49,17 +49,25 @@ alongside DragEvent, foreign realms and weak ownership. Later concurrent
 canonical work remains outside the isolated source pin.
 [WheelEvent evidence](../docs/translation-audit/NATIVE_WHEEL_EVENT_OWNER.md).
 
-Verified at `c9dc0da2`, the disjoint DOM inventory contains 43,497
+Verified at `813dd838`, the disjoint DOM inventory contains 43,497
 implementation V LOC and 4,979 test V LOC across 100 assigned files.
+`Build/audit-fixes/source-current-module-loc-813dd838.json` (SHA256
+`7d2154cc1ce69f1ea0dda25e8eda6f2df52c76abc7df473c463da13e8ca1cce5`)
+verifies every assigned committed byte hash and physical newline. DOM and
+the separate UIEvents owner (1,489 implementation / 474 test
+V LOC) remain unchanged. Integrated totals across 78 owners / 2,213
+files are 432,942 implementation / 159,469 test V LOC.
+The preceding independent package commits a031fa8f and 8221067c contribute
+the entire increase of 73 implementation and 121 test V lines.
+All assigned bytes and newline counts also match the WheelEvent parent
+`368ef4c7`. The seven WheelEvent feature paths remain excluded
+root/browser support; this binding changes no assigned package counts.
+Concurrent canonical work after 813dd838 remains outside this pinned
+inventory. Counts and mappings do not establish runtime parity.
+The previous PointerEvent record remains preserved at
 `Build/audit-fixes/source-current-module-loc-c9dc0da2.json` (SHA256
-`3c5062172b28d38dda0a7e9d3d842470e270a78fd45aee5f07ba0a68633c54b5`) verifies every assigned
-committed byte hash and physical newline. DOM and the separate UIEvents owner
-(1,489 implementation / 474 test V LOC) remain unchanged. Integrated totals
-across 78 owners / 2,212 files are 432,869 implementation / 159,348 test V LOC;
-only preceding CSS work contributes the -2 implementation / +106 test delta.
-Native browser bindings, owner tests and the callback-context fixture correction
-remain excluded support. Subsequent canonical Layout work is outside this
-pinned inventory. The previous db342c95 record remains preserved at
+`3c5062172b28d38dda0a7e9d3d842470e270a78fd45aee5f07ba0a68633c54b5`).
+The previous db342c95 record remains preserved at
 `Build/audit-fixes/source-current-module-loc-db342c95.json` (SHA256
 `8faec2d3db2fcb54835b7e6867dfbe177b498d5da213b5b5b145212b0b234522`). The preceding
 `Build/audit-fixes/source-current-module-loc-dd0cc2d5.json` (SHA256

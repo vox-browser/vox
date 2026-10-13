@@ -975,10 +975,11 @@
 ## Translated module inventory
 
 All 78 translated LibWeb packages and all 1,193 current module-owned C++
-implementation units have audited V mappings. Verified at `c9dc0da2` on
-2026-10-13, 2,212 assigned files contain 432,869 implementation V LOC and
-159,348 test V LOC. This pinned inventory includes the preceding CSS commit
-and excludes subsequent canonical Layout work.
+implementation units have audited V mappings. Verified at `813dd838` on
+2026-10-13, 2,213 assigned files contain 432,942 implementation V LOC and
+159,469 test V LOC. This pinned inventory includes preceding
+independently committed Layout/CSS work; the WheelEvent binding changes
+only excluded root/browser support.
 Physical LOC includes comments and blank lines. Root support code and browser
 integration code are excluded. Package counts include generated V assets and
 supporting translations; WebAssembly includes the separately audited LibWasm
@@ -989,7 +990,7 @@ their shared DOM test files are counted under the corresponding owner once.
 | Module | Implementation V LOC | Module | Implementation V LOC |
 | --- | ---: | --- | ---: |
 | ARIA | 2,574 | Animations | 4,254 |
-| Bindings | 2,718 | CSS | 114,942 |
+| Bindings | 2,718 | CSS | 114,959 |
 | Clipboard | 1,123 | Compositor | 2,403 |
 | Compression | 471 | ContentSecurityPolicy | 2,816 |
 | CookieStore | 1,059 | CredentialManagement | 420 |
@@ -1003,7 +1004,7 @@ their shared DOM test files are counted under the corresponding owner once.
 | Geometry | 2,121 | HTML | 69,630 |
 | HighResolutionTime | 500 | IndexedDB | 5,455 |
 | Infra | 548 | Internals | 2,337 |
-| IntersectionObserver | 668 | Layout | 44,740 |
+| IntersectionObserver | 668 | Layout | 44,796 |
 | Loader | 1,921 | MathML | 653 |
 | MediaCapabilitiesAPI | 657 | MediaCapture | 1,240 |
 | MediaSourceExtensions | 4,079 | MimeSniff | 1,108 |
@@ -1027,7 +1028,7 @@ their shared DOM test files are counted under the corresponding owner once.
 | WebXR | 411 | Worker | 142 |
 | XHR | 1,695 | XLink | 13 |
 | XML | 477 | XPath | 672 |
-| **Total** | **432,869** |  |  |
+| **Total** | **432,942** |  |  |
 
 `PORT_STATUS.md` is the canonical detailed inventory. It also records upstream
 C++ file/LOC counts, per-module test LOC, status, and the counting conventions;

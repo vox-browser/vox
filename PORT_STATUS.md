@@ -1074,19 +1074,27 @@ V's standard `crypto.*` modules without shadowing that namespace.
 The IDL-only `Fullscreen` package delegates its state machine to the shared
 translated DOM implementation.
 
-Verified at `c9dc0da2`, the physical inventory is retained in
+Verified at `813dd838`, the physical inventory is retained in
+`Build/audit-fixes/source-current-module-loc-813dd838.json` (SHA256
+`7d2154cc1ce69f1ea0dda25e8eda6f2df52c76abc7df473c463da13e8ca1cce5`).
+All 78 owners and 2,213 assigned files match their committed byte
+hashes and physical newline counts: 432,942 implementation V LOC
+and 159,469 test V LOC.
+CSS contains 189 files / 114,959 implementation / 17,805 test V LOC
+(+17 implementation / +63 test lines since c9dc0da2). Layout contains
+91 files / 44,796 implementation / 18,217 test V LOC
+(+56 implementation / +58 test lines and one new file).
+The preceding independent package commits a031fa8f and 8221067c contribute
+the entire increase of 73 implementation and 121 test V lines.
+All assigned bytes and newline counts also match the WheelEvent parent
+`368ef4c7`. The seven WheelEvent feature paths remain excluded
+root/browser support; this binding changes no assigned package counts.
+Concurrent canonical work after 813dd838 remains outside this pinned
+inventory. Counts and mappings do not establish runtime parity.
+The prior PointerEvent inventory remains preserved in
 `Build/audit-fixes/source-current-module-loc-c9dc0da2.json` (SHA256
-`3c5062172b28d38dda0a7e9d3d842470e270a78fd45aee5f07ba0a68633c54b5`).
-All 78 owners and 2,212 assigned files match their committed byte hashes and
-physical newline counts: 432,869 implementation V LOC and 159,348 test V LOC.
-The preceding independent CSS commit `7c3576ec` changes three implementation
-files with a net reduction of two lines and adds its 106-line regression:
-CSS contains 189 files / 114,942 implementation / 17,742 test V LOC.
-All other assigned files, owner assignments, byte hashes and counts remain
-unchanged. All assigned bytes also match 7c3576ec; the nine PointerEvent feature
-paths remain excluded root/browser support, alongside earlier native bindings
-and the callback-context fixture correction. Subsequent canonical Layout work
-is outside this pinned inventory. Counts and mappings do not establish parity.
+`3c5062172b28d38dda0a7e9d3d842470e270a78fd45aee5f07ba0a68633c54b5`),
+with 2,212 files / 432,869 implementation / 159,348 test V LOC.
 The prior MouseEvent inventory remains preserved in
 `Build/audit-fixes/source-current-module-loc-db342c95.json` (SHA256
 `8faec2d3db2fcb54835b7e6867dfbe177b498d5da213b5b5b145212b0b234522`),
@@ -1125,7 +1133,7 @@ The previous unsupported-play inventory remains preserved in
 `166070c623211b8600db5300c89ed5219375d0e4045728c12117361ad8cca27c`).
 Source-unit mappings and physical LOC do not establish runtime parity.
 
-The table below records package V LOC verified at `c9dc0da2` on 2026-10-13; upstream counts
+The table below records package V LOC verified at `813dd838` on 2026-10-13; upstream counts
 and structural mapping labels retain the pinned inventory. It covers 76 current
 implementation-bearing upstream modules plus the translated IDL/IPC-only
 `Fullscreen` and `Worker` packages, and all 1,193 module-owned `.cpp`
@@ -1139,7 +1147,7 @@ from the current-module totals.
 | `ARIA` | 6 | 1,955 | 2,574 | 410 | Complete |
 | `Animations` | 10 | 5,187 | 4,254 | 1,420 | Complete |
 | `Bindings` | 11 | 2,501 | 2,718 | 1,116 | Complete |
-| `CSS` | 215 | 47,722 | 114,942 | 17,742 | Present |
+| `CSS` | 215 | 47,722 | 114,959 | 17,805 | Present |
 | `Clipboard` | 4 | 1,009 | 1,123 | 409 | Complete |
 | `Compositor` | 6 | 1,687 | 2,403 | 361 | Complete |
 | `Compression` | 2 | 348 | 471 | 143 | Complete |
@@ -1167,7 +1175,7 @@ from the current-module totals.
 | `Infra` | 3 | 385 | 548 | 102 | Complete |
 | `Internals` | 7 | 2,583 | 2,337 | 1,067 | Complete |
 | `IntersectionObserver` | 2 | 528 | 668 | 413 | Complete |
-| `Layout` | 9 | 4,001 | 44,740 | 18,159 | Present |
+| `Layout` | 9 | 4,001 | 44,796 | 18,217 | Present |
 | `Loader` | 6 | 1,291 | 1,921 | 664 | Complete |
 | `MathML` | 6 | 369 | 653 | 162 | Complete |
 | `MediaCapabilitiesAPI` | 1 | 345 | 657 | 129 | Complete |
@@ -1214,7 +1222,7 @@ from the current-module totals.
 | `XLink` | 1 | 16 | 13 | 10 | Complete |
 | `XML` | 2 | 556 | 477 | 164 | Complete |
 | `XPath` | 5 | 435 | 672 | 210 | Complete |
-| **Total** | **1,193** | **329,970** | **432,869** | **159,348** | **74 complete, 4 present, 0 untranslated** |
+| **Total** | **1,193** | **329,970** | **432,942** | **159,469** | **74 complete, 4 present, 0 untranslated** |
 
 ### Live editability refresh
 
