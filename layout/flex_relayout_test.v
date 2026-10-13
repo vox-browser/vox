@@ -70,3 +70,37 @@ fn test_block_flex_resolves_its_automatic_height_in_its_own_layout() {
 		assert flex_relayout_used(result, 'leaf').content_height().to_double() == 12
 	}
 }
+
+fn test_deep_auto_height_column_flex_keeps_natural_geometry() {
+	wrappers := '<div class="column">'.repeat(16)
+	closing := '</div>'.repeat(16)
+	document := html.parse_document('<!doctype html><style>
+		body { margin:0 } .column { display:flex; flex-direction:column; width:100px }
+		#leaf { height:12px; width:100px } #percentage { height:50% }
+	</style><div class="column" id="outer">${wrappers}<div id="leaf"><div id="percentage"></div></div>${closing}</div>')
+	result := run_document_layout(document, 800, 600) or { panic('layout failed') }
+	assert flex_relayout_used(result, 'outer').content_height().to_double() == 12
+	assert flex_relayout_used(result, 'leaf').content_height().to_double() == 12
+	assert flex_relayout_used(result, 'percentage').content_height().to_double() == 6
+}
+
+fn test_column_flex_promotes_unchanged_height_for_percentage_descendants() {
+	document := html.parse_document('<!doctype html><style>
+		body { margin:0 } #outer { display:flex; flex-direction:column; width:100px }
+		#spacer { height:40px } #percentage { height:50%; width:10px }
+	</style><div id="outer"><div id="item"><div id="spacer"></div><div id="percentage"></div></div></div>')
+	result := run_document_layout(document, 800, 600) or { panic('layout failed') }
+	assert flex_relayout_used(result, 'item').content_height().to_double() == 40
+	assert flex_relayout_used(result, 'percentage').content_height().to_double() == 20
+}
+
+fn test_column_flex_reruns_contents_when_flexing_changes_the_height() {
+	document := html.parse_document('<!doctype html><style>
+		body { margin:0 } #outer { display:flex; flex-direction:column; width:100px; height:80px }
+		#item { display:flex; flex-direction:column; flex-grow:1; justify-content:center }
+		#leaf { height:20px; width:10px }
+	</style><div id="outer"><div id="item"><div id="leaf"></div></div></div>')
+	result := run_document_layout(document, 800, 600) or { panic('layout failed') }
+	assert flex_relayout_used(result, 'item').content_height().to_double() == 80
+	assert flex_relayout_used(result, 'leaf').offset.y().to_double() == 30
+}

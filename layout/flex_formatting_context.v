@@ -1732,7 +1732,22 @@ fn run_column_flex_formatting_context(mut state LayoutState, container &Node, mu
 		if width := forced_width {
 			forced_width = clamp_layout_content_size(item, width, container_width, current, true)
 		}
-		item_state := layout_independent_child(mut state, item, mut container_state, container_width, container_height, forced_width, line.targets[index])
+		// The first pass already laid out this item at its natural main size.
+		// Repeating unchanged inside-layout at every nested column multiplies
+		// the work. Promote the used height to a definite basis in place when
+		// no descendant consumes that transition; changed sizes still rerun.
+		reuse_geometry := layout_mode != .intrinsic_sizing
+			&& current.content_height() == line.targets[index]
+			&& (if width := forced_width { width == current.content_width() } else { true })
+			&& (current.has_definite_height()
+				|| !flex_subtree_depends_on_definite_height(mut state, item))
+		item_state := if reuse_geometry {
+			mut reused := state.get_mutable(styled)
+			reused.set_has_definite_height(true)
+			reused
+		} else {
+			layout_independent_child(mut state, item, mut container_state, container_width, container_height, forced_width, line.targets[index])
+		}
 		total_main = total_main.plus(item_state.margin_box_height())
 	}
 	mut auto_main_margin_count := 0
