@@ -244,6 +244,7 @@ pub:
 	parent_index             int
 	depth                    int
 	has_empty_effective_clip bool
+	has_backface_visibility bool
 }
 
 pub struct AccumulatedVisualContextTree {
@@ -291,11 +292,19 @@ pub fn (mut tree AccumulatedVisualContextTree) append(data VisualContextData, pa
 		}
 	}
 	index := tree.nodes.len
-	tree.nodes << AccumulatedVisualContextNode{data, parent, depth, empty_clip}
+	has_backface_visibility := data is BackfaceVisibilityVisualData
+		|| (parent > 0 && parent < tree.nodes.len && tree.nodes[parent].has_backface_visibility)
+	tree.nodes << AccumulatedVisualContextNode{
+		data: data
+		parent_index: parent
+		depth: depth
+		has_empty_effective_clip: empty_clip
+		has_backface_visibility: has_backface_visibility
+	}
 	return index
 }
 
-pub fn (tree AccumulatedVisualContextTree) find_common_ancestor(first int, second int) int {
+pub fn (tree &AccumulatedVisualContextTree) find_common_ancestor(first int, second int) int {
 	if first <= 0 || second <= 0 || first >= tree.nodes.len || second >= tree.nodes.len {
 		return 0
 	}
@@ -314,7 +323,7 @@ pub fn (tree AccumulatedVisualContextTree) find_common_ancestor(first int, secon
 	return a
 }
 
-fn (tree AccumulatedVisualContextTree) build_ancestor_chain(index int) []int {
+fn (tree &AccumulatedVisualContextTree) build_ancestor_chain(index int) []int {
 	if index <= 0 || index >= tree.nodes.len {
 		return []
 	}
@@ -376,9 +385,14 @@ fn visual_context_local_matrix(node AccumulatedVisualContextNode,
 	}
 }
 
-pub fn (tree AccumulatedVisualContextTree) context_is_backface_culled(index int,
+pub fn (tree &AccumulatedVisualContextTree) context_is_backface_culled(index int,
 	snapshot ScrollStateSnapshot) bool {
 	if index <= 0 || index >= tree.nodes.len {
+		return false
+	}
+	// Ordinary 2D contexts have no hidden-backface plane. Avoid allocating an
+	// ancestor chain and matrix map for every hit-test candidate in that case.
+	if !tree.nodes[index].has_backface_visibility {
 		return false
 	}
 	chain := tree.build_ancestor_chain(index)
@@ -415,7 +429,7 @@ pub fn (tree AccumulatedVisualContextTree) context_is_backface_culled(index int,
 // plain V array would allocate for every candidate.
 const inline_visual_context_ancestor_capacity = 8
 
-fn (tree AccumulatedVisualContextTree) transform_point_for_hit_test_through_node(index int,
+fn (tree &AccumulatedVisualContextTree) transform_point_for_hit_test_through_node(index int,
 	point Point, snapshot ScrollStateSnapshot) ?Point {
 	node := tree.nodes[index]
 	return match node.data {
@@ -457,7 +471,7 @@ fn (tree AccumulatedVisualContextTree) transform_point_for_hit_test_through_node
 	}
 }
 
-pub fn (tree AccumulatedVisualContextTree) transform_point_for_hit_test(index int,
+pub fn (tree &AccumulatedVisualContextTree) transform_point_for_hit_test(index int,
 	screen_point Point, snapshot ScrollStateSnapshot) ?Point {
 	if index == 0 {
 		return screen_point
@@ -491,7 +505,7 @@ pub fn (tree AccumulatedVisualContextTree) transform_point_for_hit_test(index in
 	return point
 }
 
-fn (tree AccumulatedVisualContextTree) inverse_transform_point_through_node(index int,
+fn (tree &AccumulatedVisualContextTree) inverse_transform_point_through_node(index int,
 	point Point) Point {
 	return match tree.nodes[index].data {
 		PerspectiveVisualData {
@@ -514,7 +528,7 @@ fn (tree AccumulatedVisualContextTree) inverse_transform_point_through_node(inde
 	}
 }
 
-pub fn (tree AccumulatedVisualContextTree) inverse_transform_point(index int,
+pub fn (tree &AccumulatedVisualContextTree) inverse_transform_point(index int,
 	screen_point Point) Point {
 	if index <= 0 || index >= tree.nodes.len {
 		return screen_point
@@ -543,7 +557,7 @@ pub fn (tree AccumulatedVisualContextTree) inverse_transform_point(index int,
 	return point
 }
 
-pub fn (tree AccumulatedVisualContextTree) transform_rect_to_viewport(index int,
+pub fn (tree &AccumulatedVisualContextTree) transform_rect_to_viewport(index int,
 	source Rect, snapshot ScrollStateSnapshot) Rect {
 	mut rect := source
 	mut current := index
@@ -572,7 +586,7 @@ pub fn (tree AccumulatedVisualContextTree) transform_rect_to_viewport(index int,
 	return rect
 }
 
-pub fn (tree AccumulatedVisualContextTree) dump(index int) string {
+pub fn (tree &AccumulatedVisualContextTree) dump(index int) string {
 	if index <= 0 || index >= tree.nodes.len {
 		return ''
 	}
