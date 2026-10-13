@@ -29,14 +29,19 @@ remain open. See
 [MouseEvent evidence](../docs/translation-audit/NATIVE_MOUSE_EVENT_OWNER.md)
 and [PointerEvent evidence](../docs/translation-audit/NATIVE_POINTER_EVENT_OWNER.md).
 
-The current disjoint DOM inventory at `db342c95` contains 43,497
+Verified at `c9dc0da2`, the disjoint DOM inventory contains 43,497
 implementation V LOC and 4,979 test V LOC across 100 assigned files.
+`Build/audit-fixes/source-current-module-loc-c9dc0da2.json` (SHA256
+`3c5062172b28d38dda0a7e9d3d842470e270a78fd45aee5f07ba0a68633c54b5`) verifies every assigned
+committed byte hash and physical newline. DOM and the separate UIEvents owner
+(1,489 implementation / 474 test V LOC) remain unchanged. Integrated totals
+across 78 owners / 2,212 files are 432,869 implementation / 159,348 test V LOC;
+only preceding CSS work contributes the -2 implementation / +106 test delta.
+Native browser bindings, owner tests and the callback-context fixture correction
+remain excluded support. Subsequent canonical Layout work is outside this
+pinned inventory. The previous db342c95 record remains preserved at
 `Build/audit-fixes/source-current-module-loc-db342c95.json` (SHA256
-`8faec2d3db2fcb54835b7e6867dfbe177b498d5da213b5b5b145212b0b234522`) recounts every assigned
-byte hash and physical newline, all unchanged from the preceding inventory.
-The shared UIEvents owner contains 1,489 implementation / 474 test V LOC;
-its assignment stays separate. Native browser bindings, owner tests and the
-callback-context fixture correction remain excluded support. The preceding
+`8faec2d3db2fcb54835b7e6867dfbe177b498d5da213b5b5b145212b0b234522`). The preceding
 `Build/audit-fixes/source-current-module-loc-dd0cc2d5.json` (SHA256
 `568534bda24ca5538af3196bacd984810907a7fd79a60c064135af6cb4478b51`) remains preserved.
 The source mapping audit and historical physical counts below retain their

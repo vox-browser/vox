@@ -1052,15 +1052,23 @@ V's standard `crypto.*` modules without shadowing that namespace.
 The IDL-only `Fullscreen` package delegates its state machine to the shared
 translated DOM implementation.
 
-The verified `db342c95` physical inventory is retained in
+Verified at `c9dc0da2`, the physical inventory is retained in
+`Build/audit-fixes/source-current-module-loc-c9dc0da2.json` (SHA256
+`3c5062172b28d38dda0a7e9d3d842470e270a78fd45aee5f07ba0a68633c54b5`).
+All 78 owners and 2,212 assigned files match their committed byte hashes and
+physical newline counts: 432,869 implementation V LOC and 159,348 test V LOC.
+The preceding independent CSS commit `7c3576ec` changes three implementation
+files with a net reduction of two lines and adds its 106-line regression:
+CSS contains 189 files / 114,942 implementation / 17,742 test V LOC.
+All other assigned files, owner assignments, byte hashes and counts remain
+unchanged. All assigned bytes also match 7c3576ec; the nine PointerEvent feature
+paths remain excluded root/browser support, alongside earlier native bindings
+and the callback-context fixture correction. Subsequent canonical Layout work
+is outside this pinned inventory. Counts and mappings do not establish parity.
+The prior MouseEvent inventory remains preserved in
 `Build/audit-fixes/source-current-module-loc-db342c95.json` (SHA256
-`8faec2d3db2fcb54835b7e6867dfbe177b498d5da213b5b5b145212b0b234522`).
-All 78 owners and 2,211 assigned files retain their committed byte hashes and
-physical newline counts: 432,871 implementation V LOC and 159,242 test V LOC.
-The MouseEvent binding and focused tests belong to root/browser support, as
-does the separate callback-context fixture correction; all remain excluded
-from these package totals. Assigned bytes also match validation commit
-`a03691e5`. Counts and structural mappings do not establish browser parity.
+`8faec2d3db2fcb54835b7e6867dfbe177b498d5da213b5b5b145212b0b234522`),
+with 2,211 files / 432,871 implementation / 159,242 test V LOC.
 The previous canonical related-target inventory remains preserved in
 `Build/audit-fixes/source-current-module-loc-dd0cc2d5.json` (SHA256
 `568534bda24ca5538af3196bacd984810907a7fd79a60c064135af6cb4478b51`).
@@ -1095,7 +1103,7 @@ The previous unsupported-play inventory remains preserved in
 `166070c623211b8600db5300c89ed5219375d0e4045728c12117361ad8cca27c`).
 Source-unit mappings and physical LOC do not establish runtime parity.
 
-The table below refreshes tracked package V LOC on 2026-10-13; upstream counts
+The table below records package V LOC verified at `c9dc0da2` on 2026-10-13; upstream counts
 and structural mapping labels retain the pinned inventory. It covers 76 current
 implementation-bearing upstream modules plus the translated IDL/IPC-only
 `Fullscreen` and `Worker` packages, and all 1,193 module-owned `.cpp`
@@ -1109,7 +1117,7 @@ from the current-module totals.
 | `ARIA` | 6 | 1,955 | 2,574 | 410 | Complete |
 | `Animations` | 10 | 5,187 | 4,254 | 1,420 | Complete |
 | `Bindings` | 11 | 2,501 | 2,718 | 1,116 | Complete |
-| `CSS` | 215 | 47,722 | 114,944 | 17,636 | Present |
+| `CSS` | 215 | 47,722 | 114,942 | 17,742 | Present |
 | `Clipboard` | 4 | 1,009 | 1,123 | 409 | Complete |
 | `Compositor` | 6 | 1,687 | 2,403 | 361 | Complete |
 | `Compression` | 2 | 348 | 471 | 143 | Complete |
@@ -1184,7 +1192,7 @@ from the current-module totals.
 | `XLink` | 1 | 16 | 13 | 10 | Complete |
 | `XML` | 2 | 556 | 477 | 164 | Complete |
 | `XPath` | 5 | 435 | 672 | 210 | Complete |
-| **Total** | **1,193** | **329,970** | **432,871** | **159,242** | **74 complete, 4 present, 0 untranslated** |
+| **Total** | **1,193** | **329,970** | **432,869** | **159,348** | **74 complete, 4 present, 0 untranslated** |
 
 ### Live editability refresh
 
