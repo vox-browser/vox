@@ -831,9 +831,20 @@
   MediaSource failure and ended rejection share the current Document execution
   context. Load's pinned FIXME for already-captured canceled-task batches remains
   pending. Full resource/readiness/seek/MSE, enough-data autoplay, Permissions
-  Policy, ordinary compact listener routing, physical decoding and automatic
-  ownership remain separate work. See
+  Policy, physical decoding and automatic ownership remain separate work. See
   [native play evidence](docs/translation-audit/NATIVE_MEDIA_PLAY_PROMISE_OWNER.md).
+
+- Ordinary HTML audio/video `addEventListener`, `removeEventListener` and
+  `dispatchEvent` calls now share the actual DOM owner's native EventTarget
+  records. Successful compact media binding removes the generic own listener
+  stub, preserving trusted queued play/pause/readiness events, callback identity,
+  capture, once and listener-object behavior. A retained-frame fixture no longer
+  causes fake late loadeddata/seeked callbacks. Real Page pointer release delivers
+  media listeners before compact replay, with no duplicate click; native click
+  cancellation reaches the Page flag. Image, object and SVG compact listeners
+  retain their existing path. General nonmedia EventTarget, handler attributes,
+  full media interfaces and Cocoa/input hit-testing parity remain separate work.
+  See [ordinary media listener evidence](docs/translation-audit/NATIVE_MEDIA_EVENT_LISTENER_OWNER.md).
 
 ## Translated module inventory
 

@@ -299,9 +299,24 @@ under the current Document execution context. All 17 new cases pass within
 native probe, two exact play viewports, 14 exact SVG preservation pairs and all
 11 configured smoke cases pass. The pinned load FIXME for already-captured
 canceled-task batches remains pending; complete resource/readiness/seek/MSE,
-Permissions Policy, enough-data autoplay, ordinary compact listener routing,
-physical decoding and automatic ownership remain open. See
+Permissions Policy, enough-data autoplay, physical decoding and automatic
+ownership remain open. See
 [native play promise evidence](docs/translation-audit/NATIVE_MEDIA_PLAY_PROMISE_OWNER.md).
+
+Ordinary audio/video listener registration now inherits the installed native
+EventTarget method after successful compact media binding. Registration,
+removal and dispatch share the actual DOM owner, including parsed and created
+media, trusted queued events and the existing play-promise settlement order.
+Listener identity, capture-sensitive removal, once and object callbacks use the
+existing native machinery. Late registration on a ready frame creates no fake
+loadeddata/seeked callback. Actual Page pointer release delivers one trusted
+media click before compact replay and preserves cancellation; image, object
+and SVG compact paths remain covered. All six new cases pass within 19/19
+selected files in both GC modes. Signed startup, the active ordinary production
+probe, two exact listener viewports, 14 exact SVG pairs and all 11 configured
+smoke cases pass. General nonmedia EventTarget, handler attributes, complete
+media interfaces and Cocoa/input hit-testing parity remain open. See
+[ordinary media listener evidence](docs/translation-audit/NATIVE_MEDIA_EVENT_LISTENER_OWNER.md).
 
 The `:indeterminate`, `:open`, and `:closed` selectors now read live checkbox,
 input-picker, and select-picker state. Control transitions mirror that state at

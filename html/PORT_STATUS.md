@@ -5,13 +5,37 @@ Upstream reference: `~/code/3rd/ladybird/Libraries/LibWeb/HTML`
 Translation workspace: `~/code/vox2/html`
 Source pin: `963d46a829f3e1b79f44dba9d02afb70654300fa`
 Historical mapping inventory: 2026-09-08
-Selected Source owner slices reviewed: 2026-10-11
+Selected Source owner slices reviewed: 2026-10-13
 
 The historical inventory below found candidate V mappings for 261 HTML source
 files. Its file/symbol/LOC counts and 107-file test result describe that earlier
 inventory, not current logic, generated-binding or browser parity. The current
 audit and fix evidence is in `docs/translation-audit/`; mapping a source name or
 a runtime hook does not establish that its complete logic was translated.
+
+## Ordinary native media event listeners
+
+Parsed and script-created audio/video compact wrappers now inherit native
+EventTarget registration, removal and dispatch after successful media binding.
+Ordinary listeners receive trusted queued play/pause/readiness events from the
+actual DOM owner before the existing play-promise batch settles. Duplicate,
+capture-sensitive removal, once and listener-object behavior use the same native
+list. Late registration on a retained frame with manually set current-data
+readiness no longer creates plain loadeddata/seeked callbacks.
+Implementation and six new cases: `4ef8e6e5`. Both new files compile on the
+unchanged parent and all six cases fail at runtime, then pass with identical
+test bytes. Both frozen 19-file runs pass, including the 66-case main regression.
+The signed build/startup, active ordinary production probe, two exact listener
+viewports, 14 exact SVG pairs and all 11 configured smoke cases pass.
+
+[Ordinary listener evidence](../docs/translation-audit/NATIVE_MEDIA_EVENT_LISTENER_OWNER.md)
+records actual Page pointer/click delivery before compact replay, native
+cancellation and generic image/object/SVG preservation. The Page fixture uses
+explicit DOM targets; Cocoa/AppKit transport and coordinate hit testing remain
+separate. General nonmedia EventTarget, handler attributes and full media
+interfaces remain open. The pinned load captured-task FIXME and the other
+resource/readiness/seek/MSE, physical playback and ownership boundaries below
+remain unchanged.
 
 ## Native media play promise owner
 
@@ -32,9 +56,9 @@ the ordinary native probe, two exact play viewports, 14 exact SVG pairs and all
 retains the final three-file runtime baseline and unchanged verification
 snapshots. Load's pinned FIXME for already-captured canceled-task batches remains
 pending. Full resource/readiness/seek/MSE, enough-data autoplay, Permissions
-Policy, ordinary compact listener routing, physical decoding/manager, foreign
-engine realms and automatic ownership remain open. Raw UTF16 MediaError storage
-remains a wider representation boundary. Earlier sections retain their original
+Policy, physical decoding/manager, foreign engine realms and automatic
+ownership remain open. Raw UTF16 MediaError storage remains a wider
+representation boundary. Earlier sections retain their original
 slice evidence; native play and the typed rejection sinks above are now connected.
 
 ## Unsupported media play rejection
@@ -219,8 +243,9 @@ retains all baseline/fixture diagnostics, eight final cases and 14/14 files in
 each GC mode, including the 66-case main regression. The same frozen production
 snapshot builds, signs, passes startup, matches the public state/event-owner
 viewport exactly and passes all 11 smoke cases within their existing bounds.
-Source manager Ended state, ordinary compact listener routing, other event
-scheduling, full operations, realms and physical GC remain separate. These selected fixes do not establish full HTML parity.
+Source manager Ended state, other event scheduling, full operations, realms and
+physical GC remain separate. These selected fixes do not establish full HTML
+parity.
 
 ## Media ended cache boundary
 

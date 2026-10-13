@@ -1018,3 +1018,27 @@ Agent checks run with `v -old-compiler -enable-globals`. Isolated worktrees use 
   MediaError storage and automatic ownership remain open. Earlier entries retain
   their contemporaneous verification scope; the historical ledger stays
   **32 fixed / 25 partial / 9 open**.
+
+- Ordinary compact media listener ownership (`4ef8e6e5`, 2026-10-13) removes the
+  generic own addEventListener only after successful HTML audio/video binding.
+  Ordinary add/remove/dispatch now share actual DOM EventTarget records, with
+  trusted queued playback/readiness delivery, identity, capture, once and object
+  callbacks. Late registration on a seeded current-data frame creates no fake
+  loadeddata/seeked callback. Actual Page pointer release delivers one trusted
+  media click before compact replay and preserves native cancellation; generic
+  image/object/SVG compact behavior remains covered. Both new files compile on
+  unchanged parent `7cc68c1e`, and all **six new cases** fail at runtime without
+  compiler errors or panics. The same test bytes pass afterward. Both unchanged
+  committed selected runs pass **19/19 files**, including the **66-case** main
+  regression. The signed production build/startup, active ordinary probe,
+  **two exact listener viewports**, **14 exact SVG pairs** and all **11 smoke
+  cases** pass (eight smoke cases exact). All 99 production artifacts verify;
+  all 236 previous evidence artifacts remain unchanged. The initial probe API
+  precheck failure and formatter-version disagreement remain separate diagnostics.
+  [Evidence](NATIVE_MEDIA_EVENT_LISTENER_OWNER.md), consolidated SHA256:
+  `75028b97d12dfa3d4937d145ec36368222bbc10abc77f56388e69da31fc4e0b9`.
+  Package inventory counts are unchanged because this slice is root browser
+  support. The pinned load captured-task FIXME, general nonmedia EventTarget,
+  handler attributes, full media interfaces, Cocoa/input hit testing, physical
+  playback and other recorded boundaries remain open. Earlier entries retain
+  their contemporaneous scope; the ledger stays **32 fixed / 25 partial / 9 open**.
