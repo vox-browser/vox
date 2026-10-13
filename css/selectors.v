@@ -24,6 +24,7 @@ pub enum HasMatchResult {
 pub struct HasResultCache {
 pub mut:
 	results map[string]HasMatchResult
+	attempted_pseudo_classes map[string]PseudoClassBitmap
 }
 
 pub struct MatchContext {
@@ -3535,13 +3536,18 @@ fn has_result_cache_key(selector Selector, anchor &dom.Element) string {
 fn matches_has_pseudo_class(selector Selector, anchor &dom.Element, shadow_host ?&dom.Element, mut context MatchContext, scope ?&dom.ParentNode) bool {
 	cache_key := has_result_cache_key(selector, anchor)
 	if cached := context.has_result_cache.results[cache_key] {
+		context.attempted_pseudo_class_matches.merge(context.has_result_cache.attempted_pseudo_classes[cache_key])
 		return cached == .matched
 	}
 
 	saved_inside_has := context.inside_has_argument_match
+	saved_attempts := context.attempted_pseudo_class_matches
+	context.attempted_pseudo_class_matches = PseudoClassBitmap{}
 	context.inside_has_argument_match = true
 	result := matches_relative_selector(selector, 0, anchor, shadow_host, mut context, anchor, scope)
 	context.inside_has_argument_match = saved_inside_has
+	context.has_result_cache.attempted_pseudo_classes[cache_key] = context.attempted_pseudo_class_matches
+	context.attempted_pseudo_class_matches.merge(saved_attempts)
 	context.has_result_cache.results[cache_key] = if result {
 		HasMatchResult.matched
 	} else {

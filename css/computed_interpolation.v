@@ -10745,6 +10745,7 @@ pub fn (mut s StyleComputer) reset_ancestor_filter() {
 
 pub fn (mut s StyleComputer) reset_has_result_cache() {
 	s.has_result_cache_.results.clear()
+	s.has_result_cache_.attempted_pseudo_classes.clear()
 }
 
 fn for_each_element_hash(element &dom.Element, callback fn (u32)) {

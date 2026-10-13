@@ -104,3 +104,66 @@ fn test_has_result_cache_in_style_passes_and_live_mutation() {
 		assert element_matches_selector(anchor, '.anchor:has(> .flag)') == (index % 2 != 0)
 	}
 }
+
+fn test_has_cache_hits_preserve_attempted_pseudo_classes_for_each_subject() {
+	document := dom.Document.create(dom.url_about_blank())
+	anchor := has_cache_test_element(document, 'section', 'anchor')
+	trigger := has_cache_test_element(document, 'button', 'trigger')
+	first := has_cache_test_element(document, 'span', 'target')
+	second := has_cache_test_element(document, 'span', 'target')
+	has_cache_test_append(anchor.as_node(), trigger)
+	has_cache_test_append(anchor.as_node(), first)
+	has_cache_test_append(anchor.as_node(), second)
+	selector := has_cache_test_selector('.anchor:has(.trigger:hover) .target')
+	mut cache := &HasResultCache{}
+	mut first_context := MatchContext{
+		has_result_cache: cache
+	}
+	assert !matches(selector, first, none, mut first_context, none, none, .normal, none)
+	assert first_context.attempted_pseudo_class_matches.get(.hover)
+	mut second_context := MatchContext{
+		has_result_cache: cache
+	}
+	assert !matches(selector, second, none, mut second_context, none, none, .normal, none)
+	assert second_context.attempted_pseudo_class_matches.get(.hover)
+	assert second_context.attempted_pseudo_class_matches.get(.has)
+	assert cache.results.len == 1
+}
+
+fn test_hover_has_invalidation_keeps_old_and_new_results_separate() {
+	mut document := dom.Document.create(dom.url_about_blank())
+	document.set_browsing_context(&dom.BrowsingContext{})
+	css_style_computer_for(document)
+	root := has_cache_test_element(document, 'html', '')
+	anchor := has_cache_test_element(document, 'section', 'anchor')
+	trigger := has_cache_test_element(document, 'button', 'trigger')
+	has_cache_test_append(document.as_node(), root)
+	has_cache_test_append(root.as_node(), anchor)
+	has_cache_test_append(anchor.as_node(), trigger)
+	mut targets := []&dom.Element{}
+	for _ in 0 .. 192 {
+		target := has_cache_test_element(document, 'span', 'target')
+		has_cache_test_append(anchor.as_node(), target)
+		targets << target
+	}
+	add_document_author_style_sheet(document,
+		'.target { color: blue } .anchor:has(.trigger:hover) .target { color: red }')
+	document.update_style()
+	for target in targets {
+		assert target.affected_by_pseudo_class(.hover)
+		assert computed_value_for(target, .color) or { '' } == 'rgb(0, 0, 255)'
+	}
+	document.set_hovered_node(trigger.as_node())
+	for target in targets {
+		assert target.needs_style_update()
+	}
+	document.update_style()
+	for target in targets {
+		assert computed_value_for(target, .color) or { '' } == 'rgb(255, 0, 0)'
+	}
+	document.set_hovered_node(none)
+	document.update_style()
+	for target in targets {
+		assert computed_value_for(target, .color) or { '' } == 'rgb(0, 0, 255)'
+	}
+}
