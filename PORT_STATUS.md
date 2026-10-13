@@ -318,6 +318,20 @@ smoke cases pass. General nonmedia EventTarget, handler attributes, complete
 media interfaces and Cocoa/input hit-testing parity remain open. See
 [ordinary media listener evidence](docs/translation-audit/NATIVE_MEDIA_EVENT_LISTENER_OWNER.md).
 
+Script-assigned onplay/onpause/onloadeddata and 20 other media handlers now
+reach the actual DOM owner through native accessors. Parsed and created media
+preserve callback identity, listener-slot order and trusted queued event/Promise
+order. The shared LegacyTreatNonObjectAsNull conversion retains any object and
+skips noncallable invocation without reading handleEvent or entering callback
+contexts; primitives clear the handler. All ten new cases pass within 24/24
+selected files in both GC modes. Signed startup, an active ordinary production
+probe, two exact handler viewports, 14 exact SVG pairs and all 11 configured
+smoke cases pass. Raw inline element compilation, onclick/general HTMLElement
+handlers, full prototype placement, foreign realms and weak ownership remain
+open, along with the pinned load captured-task FIXME and full media/physical
+decoding. See
+[native media handler evidence](docs/translation-audit/NATIVE_MEDIA_EVENT_HANDLER_OWNER.md).
+
 The `:indeterminate`, `:open`, and `:closed` selectors now read live checkbox,
 input-picker, and select-picker state. Control transitions mirror that state at
 the DOM boundary and schedule style invalidation; `switch` checkboxes retain

@@ -13,6 +13,27 @@ inventory, not current logic, generated-binding or browser parity. The current
 audit and fix evidence is in `docs/translation-audit/`; mapping a source name or
 a runtime hook does not establish that its complete logic was translated.
 
+
+## Native media event-handler attributes
+
+Ordinary onplay, onpause, onloadeddata and 20 other media handler attributes
+now use native descriptors backed by the actual DOM owner. Parsed and created
+audio/video retain callback identity, listener slot ordering and queued event/
+Promise order. The shared legacy conversion accepts any object by identity,
+clears primitives, and silently skips noncallable objects before entering
+callback contexts or reading handleEvent; the old Window assertion is corrected.
+Implementation and ten new cases: `60ef4bb2`. The corrected unchanged baseline
+compiles all three files and fails all ten cases; identical final tests then pass
+within 24/24 selected files in both GC modes. Signed startup, the active ordinary
+production probe, two exact viewports, 14 exact SVG pairs and all 11 smoke cases
+pass.
+
+[Media handler evidence](../docs/translation-audit/NATIVE_MEDIA_EVENT_HANDLER_OWNER.md)
+retains initial fixture diagnostics and frozen snapshots. Raw element inline
+compilation, onclick/general HTMLElement handlers, full prototype placement,
+foreign realms and weak ownership remain open. The pinned load captured-task
+FIXME, complete resource/readiness/seek/MSE and physical decoding remain open.
+
 ## Ordinary native media event listeners
 
 Parsed and script-created audio/video compact wrappers now inherit native

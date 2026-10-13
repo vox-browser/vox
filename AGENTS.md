@@ -846,6 +846,18 @@
   full media interfaces and Cocoa/input hit-testing parity remain separate work.
   See [ordinary media listener evidence](docs/translation-audit/NATIVE_MEDIA_EVENT_LISTENER_OWNER.md).
 
+- Script-assigned media handlers now use native accessors for the selected 23
+  media events on the actual DOM audio/video owner. Parsed and created media
+  keep callback identity, listener-slot ordering, queued event delivery and
+  existing play Promise order. Shared legacy handler conversion retains any
+  object, clears primitive values and silently skips noncallable objects before
+  callback context entry or handleEvent reads; ordinary listener objects keep
+  their separate handleEvent path. Raw inline element compilation, onclick/
+  general HTMLElement handlers, complete prototype placement, foreign realms
+  and weak ownership remain separate work. The pinned load captured-task FIXME
+  and full media/physical decoding boundaries remain. See
+  [native media handler evidence](docs/translation-audit/NATIVE_MEDIA_EVENT_HANDLER_OWNER.md).
+
 ## Translated module inventory
 
 All 78 translated LibWeb packages and all 1,193 current module-owned C++

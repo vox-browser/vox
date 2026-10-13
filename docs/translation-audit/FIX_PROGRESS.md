@@ -1042,3 +1042,20 @@ Agent checks run with `v -old-compiler -enable-globals`. Isolated worktrees use 
   handler attributes, full media interfaces, Cocoa/input hit testing, physical
   playback and other recorded boundaries remain open. Earlier entries retain
   their contemporaneous scope; the ledger stays **32 fixed / 25 partial / 9 open**.
+
+- Native media handler attributes (`60ef4bb2`, 2026-10-13) install the selected
+  23 native on* accessors on the partial media prototype, backed by the actual
+  DOM audio/video owner. Shared legacy conversion accepts noncallable objects
+  by identity and silently skips invocation before callback contexts or
+  handleEvent reads; primitives clear the handler. Replacement preserves
+  listener order, and trusted play/pause/readiness events retain their Promise
+  settlement order. All ten cases compile and fail on the unchanged corrected
+  baseline, then pass with identical tests within 24/24 files in both GC modes.
+  Initial fixture diagnostics remain retained. Signed startup, the active
+  production probe, two exact viewports, 14 exact SVG pairs and all 11 smoke
+  cases pass. Raw inline element compilation, onclick/general HTMLElement
+  handlers, full prototype placement, foreign realms, weak ownership, the
+  pinned load captured-task FIXME and complete/physical media remain open.
+  Ledger stays 32 fixed / 25 partial / 9 open.
+  [Evidence](NATIVE_MEDIA_EVENT_HANDLER_OWNER.md), consolidated SHA256:
+  `4903a7137ef0c2364ebbd35e82e588097f3de62aa575e7746337d4548a0f030e`.
