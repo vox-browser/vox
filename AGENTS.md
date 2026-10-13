@@ -1055,17 +1055,21 @@
 ## Translated module inventory
 
 All 78 translated LibWeb packages and all 1,193 current module-owned C++
-implementation units have audited V mappings. Verified at `e775be45` on
-2026-10-13, 2,223 assigned files contain 433,216 implementation V LOC and
-160,217 test V LOC.
-The native DataTransfer items feature changes only assigned HTML
-implementation and its new core test: +10 implementation / +74 test lines and
-one assigned file from actual parent `9b8881df`. Nine preceding independently
-committed slices since `b335958e` account separately for CSS +56
-implementation / +158 test lines / +3 files, Layout +121 / +144 / +1 and
-Platform +27 / +43 / +1. Nine root/browser support/test feature paths remain
-excluded. These are physical counts and do not establish behavioral
+implementation units have audited V mappings. Verified at `bbe330a8` on
+2026-10-13, 2,224 assigned files contain 433,231 implementation V LOC and
+160,272 test V LOC.
+The public native DataTransferItemList.add feature changes only two assigned
+HTML paths: +15 implementation / +55 test lines and +1 assigned file from
+actual parent `e443227c`. 6 root/browser support and test paths remain
+excluded. Assigned hashes and counts at the actual feature parent remain
+unchanged from the prior `e775be45` inventory; no intervening assigned slice
+is counted. These are physical counts and do not establish behavioral
 equivalence or additional test credit.
+The previous DataTransfer items inventory at `e775be45` remains preserved in
+`Build/audit-fixes/native-data-transfer-items-inventory-current.json` (SHA256 `7b5ad87afb6c18b8529c2fce174a96e9ef9e863926ffaaa3618d1dde0ba3dfed`),
+with 2,223 files / 433,216 implementation / 160,217 test V LOC. Its separate
+feature accounting remains +10 HTML implementation / +74 test lines / +1 file;
+the prior DataTransfer string and older evidence retain their own source pins.
 Physical LOC includes comments and blank lines. Root support code and browser
 integration code are excluded. Package counts include generated V assets and
 supporting translations; WebAssembly includes the separately audited LibWasm
@@ -1087,7 +1091,7 @@ their shared DOM test files are counted under the corresponding owner once.
 | Fetch | 6,678 | FileAPI | 1,493 |
 | Fullscreen | 93 | GPC | 16 |
 | Gamepad | 860 | Geolocation | 535 |
-| Geometry | 2,121 | HTML | 69,684 |
+| Geometry | 2,121 | HTML | 69,699 |
 | HighResolutionTime | 500 | IndexedDB | 5,455 |
 | Infra | 548 | Internals | 2,337 |
 | IntersectionObserver | 668 | Layout | 44,917 |
@@ -1114,7 +1118,7 @@ their shared DOM test files are counted under the corresponding owner once.
 | WebXR | 411 | Worker | 142 |
 | XHR | 1,695 | XLink | 13 |
 | XML | 477 | XPath | 672 |
-| **Total** | **433,216** |  |  |
+| **Total** | **433,231** |  |  |
 
 `PORT_STATUS.md` is the canonical detailed inventory. It also records upstream
 C++ file/LOC counts, per-module test LOC, status, and the counting conventions;
