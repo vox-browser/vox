@@ -947,9 +947,14 @@ pub fn compute_required_invalidation(old_style &ComputedProperties, new_style &C
 	mut invalidation := RequiredInvalidationAfterStyleChange{}
 	mut mutable_old_style := unsafe { &ComputedProperties(old_style) }
 	mut mutable_new_style := unsafe { &ComputedProperties(new_style) }
+	// A pending cascade cannot be compared by value upstream. Preserve its
+	// identity across unrelated style updates while its font inputs and owning
+	// font environment remain unchanged; loading/display transitions advance
+	// that environment and must continue to invalidate geometry.
+	reused_font_cache := mutable_new_style.reuse_unchanged_font_cache(old_style, font_computer)
 	old_font_list := mutable_old_style.computed_font_list(font_computer)
 	new_font_list := mutable_new_style.computed_font_list(font_computer)
-	if !old_font_list.equals(new_font_list) {
+	if !reused_font_cache && !old_font_list.equals(new_font_list) {
 		invalidation.ensure_at_least(.relayout)
 	}
 	for property_id in computed_interpolation_longhand_property_ids() {

@@ -1530,7 +1530,10 @@ fn computed_interpolation_style_value_is_currentcolor(value &dom.StyleValue) boo
 fn property_affects_computed_font_list(id PropertyID) bool {
 	computed_interpolation_verify_longhand_property(id)
 	return id in [.font_family, .font_size, .font_style, .font_weight, .font_width,
-		.font_variation_settings]
+		.font_variation_settings, .font_optical_sizing, .font_feature_settings,
+		.font_variant_alternates, .font_variant_caps, .font_variant_east_asian,
+		.font_variant_emoji, .font_variant_ligatures, .font_variant_numeric,
+		.font_variant_position, .font_kerning, .text_rendering]
 }
 
 fn property_affects_font_metrics(id PropertyID) bool {
@@ -1577,6 +1580,7 @@ pub mut:
 	display_before_box_type_transformation_  Display = Display.new()
 	cached_computed_font_list_               ?&FontCascadeList
 	cached_computed_font_list_generation_    u64
+	cached_computed_font_list_owner_         &FontComputer = unsafe { nil }
 	cached_first_available_computed_font_    &PlatformFont = unsafe { nil }
 	line_height_                             ?CSSPixels
 	attempted_pseudo_class_matches_          PseudoClassBitmap
@@ -5782,13 +5786,35 @@ pub fn (c &ComputedProperties) cached_computed_font_list() ?&FontCascadeList {
 pub fn (mut c ComputedProperties) clear_computed_font_list_cache() {
 	c.cached_computed_font_list_ = none
 	c.cached_computed_font_list_generation_ = 0
+	c.cached_computed_font_list_owner_ = unsafe { nil }
 	c.cached_first_available_computed_font_ = unsafe { nil }
+}
+
+fn (mut c ComputedProperties) reuse_unchanged_font_cache(previous &ComputedProperties,
+	font_computer &FontComputer) bool {
+	font_list := previous.cached_computed_font_list_ or { return false }
+	if voidptr(previous.cached_computed_font_list_owner_) != voidptr(font_computer)
+		|| previous.cached_computed_font_list_generation_ != font_computer.environment_generation() {
+		return false
+	}
+	for property_id in computed_interpolation_longhand_property_ids() {
+		if property_affects_computed_font_list(property_id)
+			&& style_value_option_changed(previous.property(property_id, .yes), c.property(property_id, .yes)) {
+			return false
+		}
+	}
+	c.cached_computed_font_list_ = font_list
+	c.cached_computed_font_list_generation_ = previous.cached_computed_font_list_generation_
+	c.cached_computed_font_list_owner_ = font_computer
+	c.cached_first_available_computed_font_ = previous.cached_first_available_computed_font_
+	return true
 }
 
 pub fn (mut c ComputedProperties) computed_font_list(font_computer &FontComputer) &FontCascadeList {
 	mut font_environment_changed := false
 	if font_list := c.cached_computed_font_list_ {
-		if c.cached_computed_font_list_generation_ == font_computer.environment_generation() {
+		if voidptr(c.cached_computed_font_list_owner_) == voidptr(font_computer)
+			&& c.cached_computed_font_list_generation_ == font_computer.environment_generation() {
 			return font_list
 		}
 		c.clear_computed_font_list_cache()
@@ -5823,6 +5849,7 @@ pub fn (mut c ComputedProperties) computed_font_list(font_computer &FontComputer
 	font_list.extend(computed)
 	c.cached_computed_font_list_ = font_list
 	c.cached_computed_font_list_generation_ = font_computer.environment_generation()
+	c.cached_computed_font_list_owner_ = font_computer
 	if font_environment_changed {
 		// A face loaded after this style was materialized. Refresh the selected
 		// face and the layout-facing line height together so the current shaping
