@@ -32,6 +32,9 @@ mut:
 	ui_event_constructor voidptr
 	ui_event_prototype voidptr
 	mouse_event_prototype voidptr
+	mouse_event_constructor voidptr
+	pointer_event_prototype voidptr
+	pointer_event_sequence_converter voidptr
 	closed             bool
 }
 
@@ -62,6 +65,9 @@ pub fn (mut runtime Runtime) install_event_target_binding() ! {
 		if binding.mouse_event_prototype == unsafe { nil } && binding.ui_event_prototype != unsafe { nil } {
 			runtime.install_mouse_event_binding()!
 		}
+		if binding.pointer_event_prototype == unsafe { nil } && binding.mouse_event_prototype != unsafe { nil } {
+			runtime.install_pointer_event_binding()!
+		}
 		return
 	}
 	runtime.install_dom_exception_binding()!
@@ -85,6 +91,7 @@ pub fn (mut runtime Runtime) install_event_target_binding() ! {
 		if settings.global_object().data.kind == .window {
 			runtime.install_ui_event_binding()!
 			runtime.install_mouse_event_binding()!
+			runtime.install_pointer_event_binding()!
 		}
 	}
 	runtime.add_close_handler(fn [owner, mut binding] () {
@@ -172,7 +179,9 @@ pub fn (mut runtime Runtime) javascript_event(event &dom.Event) !voidptr {
 		}
 	}
 	mut prototype := C.JSValueMakeNull(runtime.context)
-	if binding.mouse_event_prototype != unsafe { nil } && native_event_is_mouse_event(event) {
+	if binding.pointer_event_prototype != unsafe { nil } && event.interface_ == .pointer_event {
+		prototype = binding.pointer_event_prototype
+	} else if binding.mouse_event_prototype != unsafe { nil } && native_event_is_mouse_event(event) {
 		prototype = binding.mouse_event_prototype
 	} else if binding.ui_event_prototype != unsafe { nil } && native_event_is_ui_event(event) {
 		prototype = binding.ui_event_prototype

@@ -46,6 +46,8 @@ fn (mut runtime Runtime) install_mouse_event_binding() ! {
 	arguments << functions
 	binding.mouse_event_prototype = runtime.retain_javascript_value(runtime.call_javascript_function(factory,
 		C.JSValueMakeUndefined(runtime.context), arguments)!)!
+	binding.mouse_event_constructor = runtime.retain_javascript_value(runtime.binding_property(binding.mouse_event_prototype,
+		'constructor')!)!
 }
 
 fn (runtime &Runtime) mouse_event_native_related_target(value voidptr) !&dom.EventTarget {

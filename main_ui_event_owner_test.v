@@ -52,7 +52,7 @@ globalThis.uiOwnerOrder=[];globalThis.uiOwnerSaved=[];globalThis.uiOwnerChecks=[
 for(const player of [video,uiAudio])for(const type of ["pointerdown","mousedown","pointerup","mouseup","click","dblclick"]){
  const callback=function(event){
   uiOwnerOrder.push(type);uiOwnerSaved.push(event);const detail=type.startsWith("pointer")?0:2;
-  uiOwnerChecks.push(this===player&&arguments.length===1&&event instanceof Event&&event instanceof UIEvent&&event instanceof MouseEvent&&Object.getPrototypeOf(event)===MouseEvent.prototype&&Object.getPrototypeOf(MouseEvent.prototype)===UIEvent.prototype&&event.type===type&&event.isTrusted&&event.view===window&&event.detail===detail&&event.which===1&&event.bubbles&&event.cancelable&&event.target===player&&event.currentTarget===player&&window.event===event);
+  uiOwnerChecks.push(this===player&&arguments.length===1&&event instanceof Event&&event instanceof UIEvent&&event instanceof MouseEvent&&Object.getPrototypeOf(event)===(type.startsWith("pointer")?PointerEvent.prototype:MouseEvent.prototype)&&(event instanceof PointerEvent)===type.startsWith("pointer")&&Object.getPrototypeOf(MouseEvent.prototype)===UIEvent.prototype&&event.type===type&&event.isTrusted&&event.view===window&&event.detail===detail&&event.which===1&&event.bubbles&&event.cancelable&&event.target===player&&event.currentTarget===player&&window.event===event);
   const result=event.initUIEvent("changed during dispatch",false,false,null,99);
   uiOwnerChecks.push(result===undefined&&event.type===type&&event.isTrusted&&event.view===window&&event.detail===detail&&event.which===1&&event.bubbles&&event.cancelable&&event.currentTarget===player&&window.event===event);document.getElementById("result").textContent=uiOwnerOrder.join(",");
  };player["on"+type]=callback;uiOwnerChecks.push(player["on"+type]===callback);
@@ -118,7 +118,7 @@ globalThis.uiMotionOrder=[];globalThis.uiMotionSaved=[];globalThis.uiMotionCheck
 for(const player of [video,uiAudio])for(const type of ["pointermove","mousemove","auxclick"]){
  player["on"+type]=function(event){
   uiMotionOrder.push(type);uiMotionSaved.push(event);const detail=type==="pointermove"?0:3;
-  uiMotionChecks.push(this===player&&arguments.length===1&&event instanceof UIEvent&&event instanceof Event&&event instanceof MouseEvent&&Object.getPrototypeOf(event)===MouseEvent.prototype&&Object.getPrototypeOf(MouseEvent.prototype)===UIEvent.prototype&&event.type===type&&event.isTrusted&&event.view===window&&event.detail===detail&&event.which===uiMotionWhich&&event.target===player&&event.currentTarget===player&&window.event===event);
+  uiMotionChecks.push(this===player&&arguments.length===1&&event instanceof UIEvent&&event instanceof Event&&event instanceof MouseEvent&&Object.getPrototypeOf(event)===(type.startsWith("pointer")?PointerEvent.prototype:MouseEvent.prototype)&&(event instanceof PointerEvent)===type.startsWith("pointer")&&Object.getPrototypeOf(MouseEvent.prototype)===UIEvent.prototype&&event.type===type&&event.isTrusted&&event.view===window&&event.detail===detail&&event.which===uiMotionWhich&&event.target===player&&event.currentTarget===player&&window.event===event);
   event.initUIEvent("ignored during dispatch",false,false,null,-1);uiMotionChecks.push(event.type===type&&event.detail===detail&&event.view===window&&event.which===uiMotionWhich&&event.isTrusted&&event.bubbles&&event.cancelable&&window.event===event);document.getElementById("result").textContent=uiMotionOrder.join(",");if(type==="auxclick")return false;
  };
 }
