@@ -26,7 +26,7 @@ fn data_transfer_items_identity_factory() string {
    ownKeys(target){const keys=[];function append(key){define(keys,keys.length,{value:key,writable:true,enumerable:true,configurable:true})}for(let index=0;index<4294967295;++index){if(operate("indexed",wrapper,index)===undefined)break;append(`${index}`)}const ordinary=ownKeys(target);for(let index=0;index<ordinary.length;++index){const key=ordinary[index];if(typeof key==="string")append(key)}for(let index=0;index<ordinary.length;++index){const key=ordinary[index];if(typeof key==="symbol")append(key)}return keys}
   });return wrapper;
  }
- function install(global,getKind,getType,getAsFile,getLength,remove,clear){
+ function install(global,getKind,getType,getAsFile,getLength,add,remove,clear){
  const DataTransferItem=new P(function DataTransferItem(){throw new T("DataTransferItem constructor must be called with \u0027new\u0027")},{construct(){throw new T("DataTransferItem is not a constructor")}});
  const DataTransferItemList=new P(function DataTransferItemList(){throw new T("DataTransferItemList constructor must be called with \u0027new\u0027")},{construct(){throw new T("DataTransferItemList is not a constructor")}});
  const interfaces=[[DataTransferItem,itemPrototype,"DataTransferItem"],[DataTransferItemList,listPrototype,"DataTransferItemList"]];
@@ -39,6 +39,7 @@ fn data_transfer_items_identity_factory() string {
  define(itemPrototype,"type",{get:getType,enumerable:true,configurable:true});
  define(itemPrototype,"getAsFile",{value:getAsFile,writable:true,enumerable:true,configurable:true});
  define(listPrototype,"length",{get:getLength,enumerable:true,configurable:true});
+ define(listPrototype,"add",{value:add,writable:true,enumerable:true,configurable:true});
  define(listPrototype,"remove",{value:remove,writable:true,enumerable:true,configurable:true});
  define(listPrototype,"clear",{value:clear,writable:true,enumerable:true,configurable:true});
  return {DataTransferItem,DataTransferItemList};

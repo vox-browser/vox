@@ -21,7 +21,8 @@ pub fn (mut runtime Runtime) javascript_data_transfer_item_file(item &html.DataT
 
 // Only the generated add(File) branch is adapted here. Its input requires the
 // actual File implementation before the Source read/write applicability gate.
-// The producer adapter retains its typed result; the public add() overload is pending.
+// The producer adapter retains its typed result; the public add() arbiter uses
+// the same native File record and implementation producer.
 pub fn (mut runtime Runtime) add_javascript_data_transfer_file(mut list html.DataTransferItemList, value voidptr) !html.DataTransferItemAddResult {
 	runtime.require_javascript_value_context()!
 	file := runtime.native_file(value) or {

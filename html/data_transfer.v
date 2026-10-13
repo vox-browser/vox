@@ -466,6 +466,21 @@ pub fn (mut list DataTransferItemList) add_string(data string, type_string strin
 	}
 }
 
+// DataTransferItemList.cpp stores DOMString code units and only folds ASCII.
+pub fn (mut list DataTransferItemList) add_string_utf16(data libjs.Utf16String, type_string libjs.Utf16String) !DataTransferItemAddResult {
+	mode := list.data_transfer.mode() or { return DataTransferItemAddResult{} }
+	if mode != .read_write {
+		return DataTransferItemAddResult{}
+	}
+	if list.data_transfer.contains_item_with_type(.text, type_string.str()) {
+		return error('NotSupportedError: There is already a DataTransferItem with type ${type_string.str()}')
+	}
+	mut transfer := unsafe { &DataTransfer(list.data_transfer) }
+	return DataTransferItemAddResult{
+		item: transfer.add_item(DragDataStoreItem.text_utf16(type_string.to_ascii_lowercase(), data))
+	}
+}
+
 pub fn (mut list DataTransferItemList) add_file(file FormDataFile) ?&DataTransferItem {
 	mode := list.data_transfer.mode() or { return none }
 	if mode != .read_write {

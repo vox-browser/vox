@@ -60,9 +60,9 @@ fn (mut runtime Runtime) install_data_transfer_items_binding() ! {
 	if binding.item_constructor != unsafe { nil } { return }
 	owner := voidptr(&runtime)
 	mut functions := []voidptr{}
-	for operation in ['kind', 'type', 'getAsFile', 'length', 'remove', 'clear'] {
+	for operation in ['kind', 'type', 'getAsFile', 'length', 'add', 'remove', 'clear'] {
 		name := if operation in ['kind', 'type', 'length'] { 'get ' + operation } else { operation }
-		length := if operation == 'remove' { 1 } else { 0 }
+		length := if operation in ['add', 'remove'] { 1 } else { 0 }
 		functions << runtime.make_native_value_host_function(name, length, fn [owner, operation] (receiver voidptr, args []voidptr) !voidptr {
 			mut runtime := unsafe { &Runtime(owner) }
 			return runtime.data_transfer_items_binding_call(operation, receiver, args)
@@ -86,10 +86,38 @@ fn (mut runtime Runtime) data_transfer_items_binding_call(operation string, rece
 			else { runtime.javascript_data_transfer_item_file(item)! }
 		}
 	}
-	// Brand before arity, author conversion, then the implementation's mode gate.
+	// The generated overload arbiter runs before the selected function's brand.
+	if operation == 'add' && args.len == 0 {
+		return runtime.event_binding_type_error('Overload resolution failed')
+	}
+	// Selected operations brand before conversion and the implementation's gate.
 	mut list := runtime.native_data_transfer_item_list(receiver)!
 	match operation {
 		'length' { return C.JSValueMakeNumber(runtime.context, f64(u32(list.length()))) }
+		'add' {
+			// Generated effective overload sets choose File for one argument and
+			// DOMString, DOMString for two or more, regardless of the first value.
+			if args.len == 1 {
+				file := runtime.native_file(args[0]) or {
+					return runtime.event_binding_type_error('Not an object of type File')
+				}
+				item := list.add_file_record(file) or { return C.JSValueMakeNull(runtime.context) }
+				return runtime.javascript_data_transfer_item(item)
+			}
+			data := runtime.binding_dom_utf16(args[0])!
+			type_string := runtime.binding_dom_utf16(args[1])!
+			result := list.add_string_utf16(data, type_string) or {
+				if err.msg().starts_with('NotSupportedError: ') {
+					message := libjs.utf16_string_from_utf8_without_validation(err.msg().all_after('NotSupportedError: '))
+					exception := webidl.DOMException.create_utf16_record(libjs.utf16_string('NotSupportedError'), message)
+					actual := runtime.javascript_dom_exception(webidl.dom_exception_value_for_record(exception))!
+					return runtime.actual_javascript_exception(actual)
+				}
+				return err
+			}
+			item := result.item or { return C.JSValueMakeNull(runtime.context) }
+			return runtime.javascript_data_transfer_item(item)
+		}
 		'remove' {
 			if args.len < 1 { return runtime.event_binding_type_error('remove() requires one argument') }
 			index := u32(webidl.convert_to_int(runtime.webidl_value(args[0])!, 32, false, .no, .no)!)
