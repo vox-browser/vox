@@ -37,6 +37,8 @@ fn (mut runtime Runtime) install_ui_event_binding() ! {
 	arguments << functions
 	binding.ui_event_prototype = runtime.retain_javascript_value(runtime.call_javascript_function(factory,
 		C.JSValueMakeUndefined(runtime.context), arguments)!)!
+	binding.ui_event_constructor = runtime.retain_javascript_value(runtime.binding_property(binding.ui_event_prototype,
+		'constructor')!)!
 }
 
 fn (runtime &Runtime) ui_event_owning_window() !&html.WindowModel {

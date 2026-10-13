@@ -171,7 +171,7 @@ fn test_native_ui_event_family_wrappers_keep_identity_virtual_which_and_dispatch
 		unsafe { &dom.Event(keyboard) }, unsafe { &dom.Event(composition) }, unsafe { &dom.Event(focus) },
 		unsafe { &dom.Event(input) }, unsafe { &dom.Event(text) }, unsafe { &dom.Event(wheel) },
 		unsafe { &dom.Event(drag) }]
-	assert runtime.evaluate_host('globalThis.originalUIEvent=UIEvent;globalThis.originalUIPrototype=UIEvent.prototype;delete globalThis.UIEvent;globalThis.UIEvent=function ReplacementUIEvent(){};globalThis.nativeUIFamilies=[];0')! == '0'
+	assert runtime.evaluate_host('globalThis.originalUIEvent=UIEvent;globalThis.originalUIPrototype=UIEvent.prototype;globalThis.originalMouseEvent=MouseEvent;globalThis.originalMousePrototype=MouseEvent.prototype;delete globalThis.UIEvent;globalThis.UIEvent=function ReplacementUIEvent(){};globalThis.nativeUIFamilies=[];0')! == '0'
 	for index, event in events {
 		wrapper := runtime.javascript_event(event)!
 		assert runtime.native_event(wrapper)! == event
@@ -182,8 +182,8 @@ fn test_native_ui_event_family_wrappers_keep_identity_virtual_which_and_dispatch
 		runtime.evaluate_host('nativeUIFamilies.push(__uiFamily${index}());0')!
 	}
 	assert runtime.evaluate_host(r'(()=>{
- const which=[0,3,3,65,0,0,0,0,3,3];
- return nativeUIFamilies.length===10&&nativeUIFamilies.every((event,index)=>event instanceof originalUIEvent&&event instanceof Event&&Object.getPrototypeOf(event)===originalUIPrototype&&Object.prototype.toString.call(event)==="[object UIEvent]"&&event.isTrusted&&event.detail===(index===7?0:7)&&event.which===which[index]&&event.view===(index===7?null:globalThis)&&event.currentTarget===null)&&nativeUIFamilies.every(event=>!(event instanceof UIEvent))&&new Event("base").detail===undefined;
+ const which=[0,3,3,65,0,0,0,0,3,3],mouse=[1,2,8,9];
+ return nativeUIFamilies.length===10&&nativeUIFamilies.every((event,index)=>event instanceof originalUIEvent&&event instanceof Event&&Object.getPrototypeOf(event)===(mouse.includes(index)?originalMousePrototype:originalUIPrototype)&&(event instanceof originalMouseEvent)===mouse.includes(index)&&Object.prototype.toString.call(event)===(mouse.includes(index)?"[object MouseEvent]":"[object UIEvent]")&&event.isTrusted&&event.detail===(index===7?0:7)&&event.which===which[index]&&event.view===(index===7?null:globalThis)&&event.currentTarget===null)&&nativeUIFamilies.every(event=>!(event instanceof UIEvent))&&new Event("base").detail===undefined;
 })()')! == 'true'
 	mouse.button_ = 4
 	keyboard.key_code_ = 90

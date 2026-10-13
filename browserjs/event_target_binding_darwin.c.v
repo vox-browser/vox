@@ -29,7 +29,9 @@ mut:
 	factory            voidptr
 	define_trusted     voidptr
 	event_constructor  voidptr
+	ui_event_constructor voidptr
 	ui_event_prototype voidptr
+	mouse_event_prototype voidptr
 	closed             bool
 }
 
@@ -57,6 +59,9 @@ pub fn (mut runtime Runtime) install_event_target_binding() ! {
 				}
 			}
 		}
+		if binding.mouse_event_prototype == unsafe { nil } && binding.ui_event_prototype != unsafe { nil } {
+			runtime.install_mouse_event_binding()!
+		}
 		return
 	}
 	runtime.install_dom_exception_binding()!
@@ -79,6 +84,7 @@ pub fn (mut runtime Runtime) install_event_target_binding() ! {
 	if settings := runtime.scripting_settings_ {
 		if settings.global_object().data.kind == .window {
 			runtime.install_ui_event_binding()!
+			runtime.install_mouse_event_binding()!
 		}
 	}
 	runtime.add_close_handler(fn [owner, mut binding] () {
@@ -166,7 +172,9 @@ pub fn (mut runtime Runtime) javascript_event(event &dom.Event) !voidptr {
 		}
 	}
 	mut prototype := C.JSValueMakeNull(runtime.context)
-	if binding.ui_event_prototype != unsafe { nil } && native_event_is_ui_event(event) {
+	if binding.mouse_event_prototype != unsafe { nil } && native_event_is_mouse_event(event) {
+		prototype = binding.mouse_event_prototype
+	} else if binding.ui_event_prototype != unsafe { nil } && native_event_is_ui_event(event) {
 		prototype = binding.ui_event_prototype
 	}
 	wrapper := runtime.call_javascript_function(binding.factory,
