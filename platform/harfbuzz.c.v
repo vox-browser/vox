@@ -171,10 +171,23 @@ pub fn document_font_path(weight int) ?string {
 // Resolve the exact file retained by a CSS @font-face before consulting the
 // installed family cascade.
 pub fn (font &Font) font_path() ?string {
-	if font.source_path != '' && os.is_file(font.source_path) {
-		return font.source_path
+	// Font inputs are immutable. Retain the selected face path for this font
+	// handle instead of checking its file for every glyph and replay bound.
+	if font.resolved_path_ != '' {
+		return font.resolved_path_
 	}
-	return font_path_for_family(font.family, font.weight)
+	path := if font.source_path != '' && os.is_file(font.source_path) {
+		font.source_path
+	} else {
+		font_path_for_family(font.family, font.weight)?
+	}
+	// A missing explicit source may still appear later. Do not pin the
+	// temporary system fallback selected while that source is unavailable.
+	if font.source_path == '' || path == font.source_path {
+		mut mutable_font := unsafe { &Font(font) }
+		mutable_font.resolved_path_ = path
+	}
+	return path
 }
 
 // CSS weight selects the regular or bold member of the macOS collections used

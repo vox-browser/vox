@@ -60,6 +60,9 @@ pub:
 	// through the family cascade.
 	source_path string
 	is_invisible bool
+mut:
+	resolved_path_ string
+	decoded_face_ &ttf.TTF_File = unsafe { nil }
 }
 
 pub struct FontPixelMetrics {
@@ -447,10 +450,17 @@ fn (font &Font) kerning_for_glyph(glyph_index int) f32 {
 }
 
 fn font_face(font &Font) ?&ttf.TTF_File {
+	if font.decoded_face_ != unsafe { nil } {
+		return font.decoded_face_
+	}
 	path := font.font_path()?
 	face_index := font.face_index()
 	cache_key := '${path}|${face_index}'
 	if face := platform_font_faces[cache_key] {
+		if font.resolved_path_ != '' {
+			mut mutable_font := unsafe { &Font(font) }
+			mutable_font.decoded_face_ = face
+		}
 		return face
 	}
 	if platform_font_face_attempted[cache_key] {
@@ -468,6 +478,10 @@ fn font_face(font &Font) ?&ttf.TTF_File {
 	}
 	face.init()
 	platform_font_faces[cache_key] = face
+	if font.resolved_path_ != '' {
+		mut mutable_font := unsafe { &Font(font) }
+		mutable_font.decoded_face_ = face
+	}
 	return face
 }
 
