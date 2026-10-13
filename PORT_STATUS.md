@@ -960,14 +960,17 @@ V's standard `crypto.*` modules without shadowing that namespace.
 The IDL-only `Fullscreen` package delegates its state machine to the shared
 translated DOM implementation.
 
-The verified `5ba4d87c` physical inventory is retained in
-`Build/audit-fixes/source-current-module-loc-5ba4d87c.json` (SHA256
-`90982b16fe88bc53a2ad6f1a6f89d53950ef88a4e7250cc86ec5619997e7dadc`).
-The native media auxclick/dblclick slice changes browser support and adds two
-root/browser test files, which remain excluded from the assigned inventory.
-All 78 owners and 2,210 assigned package files retain their earlier hashes and
+The verified `e5ae9afb` physical inventory is retained in
+`Build/audit-fixes/source-current-module-loc-e5ae9afb.json` (SHA256
+`16e41f1d3ac526bd0ed255fae0aeebb752d66421da4b1d587f69cde20f9a5c9c`).
+The native media pointermove/mousemove slice changes browser support and adds
+two root/browser test files, excluded from the assigned package inventory.
+All 78 owners and 2,210 assigned files retain the earlier byte hashes and
 physical newline counts: 432,874 implementation V LOC and 158,957 test V LOC.
 The unchanged counts and structural mappings do not establish browser parity.
+The previous media auxclick/dblclick inventory remains preserved in
+`Build/audit-fixes/source-current-module-loc-5ba4d87c.json` (SHA256
+`90982b16fe88bc53a2ad6f1a6f89d53950ef88a4e7250cc86ec5619997e7dadc`).
 The previous media onclick inventory remains preserved in
 `Build/audit-fixes/source-current-module-loc-8c567b08.json` (SHA256
 `1aef0cc514a53f73405c61efa11b1400cccb54024aecb7b7479a56cdf63a458b`).
