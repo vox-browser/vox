@@ -20,15 +20,17 @@ pub:
 @[heap]
 struct EventTargetBinding {
 mut:
-	targets         map[voidptr]&dom.EventTarget
-	target_wrappers map[voidptr]voidptr
-	events          map[voidptr]&dom.Event
-	event_wrappers  map[voidptr]voidptr
-	callbacks       map[voidptr]voidptr
-	providers       []EventWrapperProvider
-	factory         voidptr
-	define_trusted  voidptr
-	closed          bool
+	targets            map[voidptr]&dom.EventTarget
+	target_wrappers    map[voidptr]voidptr
+	events             map[voidptr]&dom.Event
+	event_wrappers     map[voidptr]voidptr
+	callbacks          map[voidptr]voidptr
+	providers          []EventWrapperProvider
+	factory            voidptr
+	define_trusted     voidptr
+	event_constructor  voidptr
+	ui_event_prototype voidptr
+	closed             bool
 }
 
 __global event_target_bindings_ = map[voidptr]&EventTargetBinding{}
@@ -47,7 +49,16 @@ fn (runtime &Runtime) event_binding_type_error(message string) IError {
 pub fn (mut runtime Runtime) install_event_target_binding() ! {
 	runtime.require_javascript_value_context()!
 	owner := voidptr(&runtime)
-	if _ := event_target_bindings_[owner] { return }
+	if binding := event_target_bindings_[owner] {
+		if binding.ui_event_prototype == unsafe { nil } {
+			if settings := runtime.scripting_settings_ {
+				if settings.global_object().data.kind == .window {
+					runtime.install_ui_event_binding()!
+				}
+			}
+		}
+		return
+	}
 	runtime.install_dom_exception_binding()!
 	mut binding := &EventTargetBinding{}
 	event_target_bindings_[owner] = binding
@@ -62,8 +73,14 @@ pub fn (mut runtime Runtime) install_event_target_binding() ! {
 	runtime.evaluate_host(event_target_bootstrap())!
 	binding.factory = runtime.evaluate_host_value('__ladybirdEventFactory')!
 	binding.define_trusted = runtime.evaluate_host_value('__ladybirdEventDefineTrusted')!
+	binding.event_constructor = runtime.evaluate_host_value('Event')!
 	runtime.retain_javascript_value(binding.factory)!
 	runtime.retain_javascript_value(binding.define_trusted)!
+	if settings := runtime.scripting_settings_ {
+		if settings.global_object().data.kind == .window {
+			runtime.install_ui_event_binding()!
+		}
+	}
 	runtime.add_close_handler(fn [owner, mut binding] () {
 		binding.closed = true
 		event_target_bindings_.delete(owner)
@@ -148,10 +165,18 @@ pub fn (mut runtime Runtime) javascript_event(event &dom.Event) !voidptr {
 			return wrapper
 		}
 	}
+	mut prototype := C.JSValueMakeNull(runtime.context)
+	if binding.ui_event_prototype != unsafe { nil } && native_event_is_ui_event(event) {
+		prototype = binding.ui_event_prototype
+	}
 	wrapper := runtime.call_javascript_function(binding.factory,
 		C.JSValueMakeUndefined(runtime.context), [
-		runtime.binding_string(if event.interface_ == .before_unload_event { 'beforeunload' } else { 'event' }),
-		C.JSValueMakeNull(runtime.context),
+		runtime.binding_string(if event.interface_ == .before_unload_event {
+			'beforeunload'
+		} else {
+			'event'
+		}),
+		prototype,
 	])!
 	runtime.bind_event(wrapper, event)!
 	return wrapper
