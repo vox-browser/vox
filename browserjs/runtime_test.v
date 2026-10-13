@@ -59,6 +59,40 @@ fn test_libjs_backend_isolates_errors_and_never_falls_back_to_javascriptcore() {
 	assert runtime.context == unsafe { nil }
 }
 
+fn test_document_execution_rejects_modules_before_frontend_preparation() {
+	module_source := ScriptSource{
+		code:        'export default ;'
+		url:         'unsupported-module.js'
+		source_type: .module
+	}
+	// The explicit AST API still parses modules and reports syntax errors.
+	if _ := prepare_script(module_source) {
+		assert false
+	} else {
+		assert err.msg().starts_with('SyntaxError: unsupported-module.js:')
+	}
+	mut runtime := Runtime.create_with_engine(.libjs)
+	defer { runtime.close() }
+	errors := runtime.run_document_scripts_collect_errors([
+		module_source,
+		ScriptSource{ code: 'var continued_after_module = 42;' },
+	])
+	assert errors == ['Module execution is not yet implemented by the browser JavaScript backend']
+	assert runtime.evaluate('continued_after_module;')! == '42'
+	runtime.close()
+	assert runtime.run_document_scripts_collect_errors([module_source]) == ['JavaScript runtime is closed']
+	$if darwin {
+		mut browser_runtime := Runtime.create()
+		defer { browser_runtime.close() }
+		browser_runtime.evaluate_host('globalThis.entries = []; globalThis.console = { error: value => entries.push(String(value)) };')!
+		browser_runtime.run_document_scripts([
+			module_source,
+			ScriptSource{ code: 'entries.push("continued");' },
+		])!
+		assert browser_runtime.evaluate('JSON.stringify(entries)')! == '["Module execution is not yet implemented by the browser JavaScript backend","continued"]'
+	}
+}
+
 fn test_libjs_backend_executes_bigint_and_translated_property_reads() {
 	mut runtime := Runtime.create_with_engine(.libjs)
 	defer { runtime.close() }

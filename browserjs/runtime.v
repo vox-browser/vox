@@ -182,13 +182,24 @@ pub fn (runtime &Runtime) evaluate_prepared(script &PreparedScript) !string {
 	return runtime.execute_prepared(script, true)
 }
 
-fn (runtime &Runtime) execute_prepared(script &PreparedScript, stringify_result bool) !string {
+fn (runtime &Runtime) check_execution_support(source_type libjs.SourceType) ! {
 	if runtime.closed {
 		return error('JavaScript runtime is closed')
 	}
-	if script.source.source_type == .module {
+	if source_type == .module {
 		return error('Module execution is not yet implemented by the browser JavaScript backend')
 	}
+}
+
+// Keep explicit preparation available for module AST consumers. Document
+// execution must reject an unsupported source type before parsing its AST.
+fn (runtime &Runtime) prepare_document_script(source ScriptSource) !&PreparedScript {
+	runtime.check_execution_support(source.source_type)!
+	return prepare_script(source)
+}
+
+fn (runtime &Runtime) execute_prepared(script &PreparedScript, stringify_result bool) !string {
+	runtime.check_execution_support(script.source.source_type)!
 	if runtime.engine == .libjs {
 		if script.frontend.reached_recursion_limit {
 			return error('LibJS frontend recursion limit reached; this program cannot be executed by the translated runtime')
@@ -292,7 +303,7 @@ pub fn (runtime &Runtime) run_document_scripts(sources []ScriptSource) ! {
 		return
 	}
 	for source in sources {
-		script := prepare_script(source) or {
+		script := runtime.prepare_document_script(source) or {
 			runtime.evaluate_host('console.error(${json2.encode(err.msg())})')!
 			continue
 		}
@@ -308,7 +319,7 @@ pub fn (runtime &Runtime) run_document_scripts(sources []ScriptSource) ! {
 pub fn (runtime &Runtime) run_document_scripts_collect_errors(sources []ScriptSource) []string {
 	mut errors := []string{}
 	for source in sources {
-		script := prepare_script(source) or {
+		script := runtime.prepare_document_script(source) or {
 			errors << err.msg()
 			continue
 		}
