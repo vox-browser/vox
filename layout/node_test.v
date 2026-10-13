@@ -244,6 +244,7 @@ fn test_first_available_font_uses_computed_font_cascade() {
 	font := unsafe { &Node(node) }.first_available_font()
 	assert font.point_size == 20
 	assert font.weight == 700
+	assert voidptr(unsafe { &Node(node) }.first_available_font()) == voidptr(font)
 
 	// A retained line-box fragment can outlive the style mutation that clears
 	// ComputedProperties' cache. C++ keeps the cascade in immutable
@@ -256,6 +257,15 @@ fn test_first_available_font_uses_computed_font_cascade() {
 	assert rematerialized.family == font.family
 	assert rematerialized.point_size == 20
 	assert rematerialized.weight == 700
+	retained_values.set_property_without_modifying_flags(.font_size, &dom.StyleValue{
+		css_text: '23px'
+	})
+	updated := unsafe { &Node(node) }.first_available_font()
+	assert updated.point_size == 23
+	assert updated.weight == 700
+	assert voidptr(updated) != voidptr(font)
+	assert font.point_size == 20
+	assert voidptr(unsafe { &Node(node) }.first_available_font()) == voidptr(updated)
 }
 
 fn test_apply_style_propagates_to_anonymous_wrappers_and_continuations() {

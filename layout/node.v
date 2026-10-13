@@ -69,6 +69,8 @@ pub mut:
 	is_svg_text_box_                 bool
 	is_svg_text_path_box_            bool
 	is_svg_foreign_object_box_       bool
+	cached_platform_font_           &platform.Font = unsafe { nil }
+	cached_platform_font_source_    &css.PlatformFont = unsafe { nil }
 }
 
 // Node(DOM::Document&, DOM::Node*) — a layout node for `dom_node` (null for anonymous boxes).
@@ -399,7 +401,17 @@ pub fn (n &Node) first_available_font() &platform.Font {
 	// lifetime invariant.
 	mut computed_values := unsafe { &css.ComputedProperties(n.computed_values()) }
 	computed_font := computed_values.first_available_computed_font(css.css_style_computer_for(n.document()).font_computer())
-	return &platform.Font{
+	cached := n.cached_platform_font_
+	if cached != unsafe { nil } {
+		if voidptr(n.cached_platform_font_source_) == voidptr(computed_font)
+			&& cached.family == computed_font.typeface.family_name
+			&& cached.point_size == computed_font.point_size / 0.75
+			&& cached.weight == int(computed_font.variations.weight)
+			&& cached.source_path == computed_font.typeface.source_path {
+			return cached
+		}
+	}
+	font := &platform.Font{
 		family:      computed_font.typeface.family_name.clone()
 		point_size: computed_font.point_size / 0.75
 		weight: int(computed_font.variations.weight)
@@ -408,6 +420,10 @@ pub fn (n &Node) first_available_font() &platform.Font {
 		// PlatformTypeface copy's string storage.
 		source_path: computed_font.typeface.source_path.clone()
 	}
+	mut mutable_node := unsafe { &Node(n) }
+	mutable_node.cached_platform_font_ = font
+	mutable_node.cached_platform_font_source_ = computed_font
+	return font
 }
 
 // ComputedValues owns a materialized FontCascadeList upstream. The V
