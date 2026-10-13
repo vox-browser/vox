@@ -5,12 +5,13 @@ import css
 import dom
 import html
 
-// The compact prototype exposes this media-event subset of GlobalEventHandlers.
+// The compact prototype exposes this media, input and drag subset of GlobalEventHandlers.
 const media_element_event_handler_names = ['abort', 'canplay', 'canplaythrough', 'durationchange',
 	'emptied', 'ended', 'error', 'loadeddata', 'loadedmetadata', 'loadstart', 'pause', 'play',
 	'playing', 'progress', 'ratechange', 'resize', 'seeked', 'seeking', 'stalled', 'suspend',
 	'timeupdate', 'volumechange', 'waiting', 'pointerdown', 'pointerup', 'mousedown', 'mouseup',
-	'click', 'auxclick', 'dblclick', 'pointermove', 'mousemove']
+	'click', 'auxclick', 'dblclick', 'pointermove', 'mousemove', 'drag', 'dragend', 'dragenter',
+	'dragleave', 'dragover', 'dragstart', 'drop']
 
 pub type MediaElementReplayHook = fn (&Runtime) !
 
