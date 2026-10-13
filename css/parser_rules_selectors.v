@@ -1,6 +1,7 @@
 module css
 
 import dom
+import strings
 
 type ParserRuleDeclarations = []Declaration
 
@@ -3078,66 +3079,72 @@ fn declaration_contains_a_curly_block_and_non_whitespace(declaration_value []Com
 // attribute. Numeric tokens cannot contain escapes and identifier-like tokens
 // cannot carry a sign, so take each from the side that preserves it.
 fn parser_selector_prelude_to_string(values []ComponentValue) string {
-	mut builder := ''
+	mut builder := strings.new_builder(values.len * 8)
 	for value in values {
-		builder += parser_selector_prelude_component_to_string(value)
+		parser_append_selector_prelude_component(mut builder, value)
 	}
-	return builder
+	return builder.str()
 }
 
 fn parser_selector_prelude_component_to_string(value ComponentValue) string {
+	mut builder := strings.new_builder(32)
+	parser_append_selector_prelude_component(mut builder, value)
+	return builder.str()
+}
+
+fn parser_append_selector_prelude_component(mut builder strings.Builder, value ComponentValue) {
 	match value.value {
 		Token {
 			token := value.value as Token
 			if token.type_ in [TokenType.number, .percentage, .dimension] {
 				original := token.original_source_text()
 				if original.len > 0 {
-					return original
+					builder.write_string(original)
+					return
 				}
 			}
-			return token.to_string()
+			builder.write_string(token.to_string())
 		}
 		SimpleBlock {
 			block := value.value as SimpleBlock
-			mut builder := block.token.bracket_string()
+			builder.write_string(block.token.bracket_string())
 			for item in block.value {
-				builder += parser_selector_prelude_component_to_string(item)
+				parser_append_selector_prelude_component(mut builder, item)
 			}
-			builder += block.token.bracket_mirror_string()
-			return builder
+			builder.write_string(block.token.bracket_mirror_string())
 		}
 		Function {
 			function := value.value as Function
-			mut builder := serialize_an_identifier(function.name) + '('
+			builder.write_string(serialize_an_identifier(function.name))
+			builder.write_u8(`(`)
 			for item in function.value {
-				builder += parser_selector_prelude_component_to_string(item)
+				parser_append_selector_prelude_component(mut builder, item)
 			}
-			builder += ')'
-			return builder
+			builder.write_u8(`)`)
 		}
 		else {
-			return value.to_string()
+			builder.write_string(value.to_string())
 		}
 	}
 }
 
 fn parser_component_values_to_string(values []ComponentValue) string {
-	mut builder := ''
+	mut builder := strings.new_builder(values.len * 8)
 	for value in values {
 		if value.is(.end_of_file) {
 			continue
 		}
-		builder += value.to_string()
+		builder.write_string(value.to_string())
 	}
-	return builder
+	return builder.str()
 }
 
 fn parser_component_values_original_text(values []ComponentValue) string {
-	mut builder := ''
+	mut builder := strings.new_builder(values.len * 8)
 	for value in values {
-		builder += value.original_source_text()
+		builder.write_string(value.original_source_text())
 	}
-	return builder
+	return builder.str()
 }
 
 fn parser_is_valid_layer_name_part(token ComponentValue) bool {
