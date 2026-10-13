@@ -211,10 +211,12 @@ bundle with:
 open Build/v/Ladybird.app
 ```
 
-The production builder uses `-enable-globals -prod -gc none`, integrates the
+The production builder uses `-enable-globals -prod -gc boehm`, integrates the
 upstream Skia text bridge when its release dependencies are available, writes
 `Build/v/Ladybird.app`, and ad-hoc signs the bundle. `build_ladybird.sh` remains
-as a compatibility alias for existing tooling.
+as a compatibility alias for existing tooling. Garbage collection reclaims
+temporary parsing and layout data during interactive page updates. Set
+`LADYBIRD_V_GC=none` to build without it for heap-ownership diagnostics.
 
 The application provides a native single-tab browser chrome with back/forward,
 reload, home, an editable address/search field, link navigation, loading and
