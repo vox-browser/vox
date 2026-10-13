@@ -19,13 +19,18 @@ DragEvent public interfaces remain open. See
 [related-target evidence](../docs/translation-audit/MOUSE_EVENT_RELATED_TARGET.md)
 and [MouseEvent evidence](../docs/translation-audit/NATIVE_MOUSE_EVENT_OWNER.md).
 
-The current disjoint DOM inventory at `dd0cc2d5` contains 43,497
+The current disjoint DOM inventory at `db342c95` contains 43,497
 implementation V LOC and 4,979 test V LOC across 100 assigned files.
+`Build/audit-fixes/source-current-module-loc-db342c95.json` (SHA256
+`8faec2d3db2fcb54835b7e6867dfbe177b498d5da213b5b5b145212b0b234522`) recounts every assigned
+byte hash and physical newline, all unchanged from the preceding inventory.
+The shared UIEvents owner contains 1,489 implementation / 474 test V LOC;
+its assignment stays separate. Native browser bindings, owner tests and the
+callback-context fixture correction remain excluded support. The preceding
 `Build/audit-fixes/source-current-module-loc-dd0cc2d5.json` (SHA256
-`568534bda24ca5538af3196bacd984810907a7fd79a60c064135af6cb4478b51`) recounts every assigned
-byte hash and physical newline. The shared UIEvents owner contains 1,489
-implementation / 474 test V LOC; its assignment stays separate. The source
-mapping audit and historical physical counts below retain their earlier scope.
+`568534bda24ca5538af3196bacd984810907a7fd79a60c064135af6cb4478b51`) remains preserved.
+The source mapping audit and historical physical counts below retain their
+earlier scope.
 
 | Upstream `.cpp` | LOC | Primary V mapping |
 |---|---:|---|

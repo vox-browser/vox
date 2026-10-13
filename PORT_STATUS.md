@@ -1018,16 +1018,20 @@ V's standard `crypto.*` modules without shadowing that namespace.
 The IDL-only `Fullscreen` package delegates its state machine to the shared
 translated DOM implementation.
 
-The verified `dd0cc2d5` physical inventory is retained in
+The verified `db342c95` physical inventory is retained in
+`Build/audit-fixes/source-current-module-loc-db342c95.json` (SHA256
+`8faec2d3db2fcb54835b7e6867dfbe177b498d5da213b5b5b145212b0b234522`).
+All 78 owners and 2,211 assigned files retain their committed byte hashes and
+physical newline counts: 432,871 implementation V LOC and 159,242 test V LOC.
+The MouseEvent binding and focused tests belong to root/browser support, as
+does the separate callback-context fixture correction; all remain excluded
+from these package totals. Assigned bytes also match validation commit
+`a03691e5`. Counts and structural mappings do not establish browser parity.
+The previous canonical related-target inventory remains preserved in
 `Build/audit-fixes/source-current-module-loc-dd0cc2d5.json` (SHA256
 `568534bda24ca5538af3196bacd984810907a7fd79a60c064135af6cb4478b51`).
-All 78 owners and 2,211 assigned files are recounted from committed bytes:
-432,871 implementation V LOC and 159,242 test V LOC. Only DOM and UIEvents
-change: implementation shrinks by two lines in DOM and one in UIEvents,
-and the new 285-line core test belongs to DOM. The browser owner
-test remains excluded support. Other owner mappings, hashes and physical
-newline counts remain unchanged. Counts and structural mappings do not
-establish browser parity.
+That slice changed only DOM and UIEvents: implementation shrank by two lines
+in DOM and one in UIEvents, and its 285-line core test belongs to DOM.
 The previous UIEvent inventory remains preserved in
 `Build/audit-fixes/source-current-module-loc-d1b86d81.json` (SHA256
 `1d396d2178a0173ebe3f267c44e8a13bb7eac2ce5ce68cfdade2ad6ce2dfa265`).
