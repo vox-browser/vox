@@ -1112,9 +1112,19 @@
 ## Translated module inventory
 
 All 78 translated LibWeb packages and all 1,193 current module-owned C++
-implementation units have audited V mappings. Verified at `a503c977` on
-2026-10-14, 2,227 assigned files contain 433,263 implementation V LOC and
-160,393 test V LOC.
+implementation units have audited V mappings. Verified at `0cd374b6` on
+2026-10-14, 2,237 assigned files contain 433,369 implementation V LOC and
+160,729 test V LOC.
+The onwheel feature changes three excluded browser/root paths and adds no
+assigned implementation, test or file count. Independent intervening assigned
+commits are reconciled separately from `a503c977` to actual parent `777c3cf9`:
+CSS +76 implementation / +266 test lines / +8 files; DOM +3 implementation /
++16 test lines / +1 files; Layout +27 implementation / +54 test lines / +1
+files. Exact per-path hashes/newlines and per-commit attribution remain in the
+counter; these commits receive no separate feature or test credit here. Later
+work outside `0cd374b6` requires its own pin.
+The previous native media drag-handler inventory at `a503c977` (2026-10-14) remains preserved in
+`Build/audit-fixes/native-media-drag-handlers-inventory-current.json` (SHA256 `9dc686e6ab4186f3d7a1bd4e137bf657ccad63e8b1d89f7d424a66b29b9da2bc`).
 The seven native media drag/drop handler attributes change only three excluded
 browser/root support paths. Assigned implementation and test LOC, all 78 owner
 rows and every assigned byte hash/newline count remain unchanged from the
@@ -1162,11 +1172,11 @@ their shared DOM test files are counted under the corresponding owner once.
 | Module | Implementation V LOC | Module | Implementation V LOC |
 | --- | ---: | --- | ---: |
 | ARIA | 2,574 | Animations | 4,254 |
-| Bindings | 2,718 | CSS | 115,015 |
+| Bindings | 2,718 | CSS | 115,091 |
 | Clipboard | 1,123 | Compositor | 2,403 |
 | Compression | 471 | ContentSecurityPolicy | 2,816 |
 | CookieStore | 1,059 | CredentialManagement | 420 |
-| Crypto (`webcrypto/`) | 7,957 | DOM | 43,499 |
+| Crypto (`webcrypto/`) | 7,957 | DOM | 43,502 |
 | DOMURL | 854 | Editing | 13,938 |
 | Encoding | 5,356 | EncryptedMediaExtensions | 572 |
 | EntriesAPI | 65 | EventTiming | 153 |
@@ -1176,7 +1186,7 @@ their shared DOM test files are counted under the corresponding owner once.
 | Geometry | 2,121 | HTML | 69,710 |
 | HighResolutionTime | 500 | IndexedDB | 5,455 |
 | Infra | 548 | Internals | 2,337 |
-| IntersectionObserver | 668 | Layout | 44,917 |
+| IntersectionObserver | 668 | Layout | 44,944 |
 | Loader | 1,921 | MathML | 653 |
 | MediaCapabilitiesAPI | 657 | MediaCapture | 1,240 |
 | MediaSourceExtensions | 4,079 | MimeSniff | 1,108 |
@@ -1200,7 +1210,7 @@ their shared DOM test files are counted under the corresponding owner once.
 | WebXR | 411 | Worker | 142 |
 | XHR | 1,695 | XLink | 13 |
 | XML | 477 | XPath | 672 |
-| **Total** | **433,263** |  |  |
+| **Total** | **433,369** |  |  |
 
 `PORT_STATUS.md` is the canonical detailed inventory. It also records upstream
 C++ file/LOC counts, per-module test LOC, status, and the counting conventions;

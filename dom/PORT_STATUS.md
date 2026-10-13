@@ -103,14 +103,22 @@ drag images, hardware file delivery and weak/foreign ownership remain open.
 See [DataTransfer files
 evidence](../docs/translation-audit/NATIVE_DATA_TRANSFER_FILES_OWNER.md).
 
-Verified at `a503c977`, the disjoint DOM inventory contains 43,499
-implementation V LOC and 5,050 test V LOC across 101 assigned files.
+Verified at `0cd374b6`, the disjoint DOM inventory contains 43,502
+implementation V LOC and 5,066 test V LOC across 102 assigned files.
+`Build/audit-fixes/native-media-wheel-handler-inventory-current.json` (SHA256 `393db2d4bee0aeabeae05a4d6caf1c0785526ad70ea2065cdf7cc33ed26b3495`).
+UIEvents contains 1,489 implementation / 474 test V LOC. Integrated totals
+across 78 owners / 2,237 files are 433,369 implementation / 160,729 test V
+LOC.
+The onwheel feature changes three excluded browser/root paths and adds no
+assigned implementation, test or file count. Independent intervening assigned
+commits are reconciled separately from `a503c977` to actual parent `777c3cf9`:
+CSS +76 implementation / +266 test lines / +8 files; DOM +3 implementation /
++16 test lines / +1 files; Layout +27 implementation / +54 test lines / +1
+files. Exact per-path hashes/newlines and per-commit attribution remain in the
+counter; these commits receive no separate feature or test credit here. Later
+work outside `0cd374b6` requires its own pin.
+The previous native media drag-handler inventory at `a503c977` (2026-10-14) remains preserved in
 `Build/audit-fixes/native-media-drag-handlers-inventory-current.json` (SHA256 `9dc686e6ab4186f3d7a1bd4e137bf657ccad63e8b1d89f7d424a66b29b9da2bc`).
-Every assigned committed byte hash and physical newline is verified.
-DOM/UIEvents assigned bytes remain unchanged from the preserved `fdc13cca`,
-`e3ff95fd`, `bbe330a8`, `e775be45` and `b335958e` inventories; UIEvents
-contains 1,489 implementation / 474 test V LOC. Integrated totals across 78
-owners / 2,227 files are 433,263 implementation / 160,393 test V LOC.
 The seven native media drag/drop handler attributes change only three excluded
 browser/root support paths. Assigned implementation and test LOC, all 78 owner
 rows and every assigned byte hash/newline count remain unchanged from the

@@ -1128,10 +1128,20 @@ V's standard `crypto.*` modules without shadowing that namespace.
 The IDL-only `Fullscreen` package delegates its state machine to the shared
 translated DOM implementation.
 
-Verified at `a503c977`, the physical inventory is retained in
+Verified at `0cd374b6`, the physical inventory is retained in
+`Build/audit-fixes/native-media-wheel-handler-inventory-current.json` (SHA256 `393db2d4bee0aeabeae05a4d6caf1c0785526ad70ea2065cdf7cc33ed26b3495`).
+All 78 owners / 2,237 assigned files contain 433,369 implementation / 160,729
+test V LOC at this code pin.
+The onwheel feature changes three excluded browser/root paths and adds no
+assigned implementation, test or file count. Independent intervening assigned
+commits are reconciled separately from `a503c977` to actual parent `777c3cf9`:
+CSS +76 implementation / +266 test lines / +8 files; DOM +3 implementation /
++16 test lines / +1 files; Layout +27 implementation / +54 test lines / +1
+files. Exact per-path hashes/newlines and per-commit attribution remain in the
+counter; these commits receive no separate feature or test credit here. Later
+work outside `0cd374b6` requires its own pin.
+The previous native media drag-handler inventory at `a503c977` (2026-10-14) remains preserved in
 `Build/audit-fixes/native-media-drag-handlers-inventory-current.json` (SHA256 `9dc686e6ab4186f3d7a1bd4e137bf657ccad63e8b1d89f7d424a66b29b9da2bc`).
-All 78 owners and 2,227 assigned files match their committed byte hashes and
-physical newline counts: 433,263 implementation V LOC and 160,393 test V LOC.
 The seven native media drag/drop handler attributes change only three excluded
 browser/root support paths. Assigned implementation and test LOC, all 78 owner
 rows and every assigned byte hash/newline count remain unchanged from the
@@ -1229,7 +1239,7 @@ The previous unsupported-play inventory remains preserved in
 `166070c623211b8600db5300c89ed5219375d0e4045728c12117361ad8cca27c`).
 Source-unit mappings and physical LOC do not establish runtime parity.
 
-The table below records package V LOC verified at `a503c977` on 2026-10-14; upstream counts
+The table below records package V LOC verified at `0cd374b6` on 2026-10-14; upstream counts
 and structural mapping labels retain the pinned inventory. It covers 76 current
 implementation-bearing upstream modules plus the translated IDL/IPC-only
 `Fullscreen` and `Worker` packages, and all 1,193 module-owned `.cpp`
@@ -1243,7 +1253,7 @@ from the current-module totals.
 | `ARIA` | 6 | 1,955 | 2,574 | 410 | Complete |
 | `Animations` | 10 | 5,187 | 4,254 | 1,420 | Complete |
 | `Bindings` | 11 | 2,501 | 2,718 | 1,116 | Complete |
-| `CSS` | 215 | 47,722 | 115,015 | 17,963 | Present |
+| `CSS` | 215 | 47,722 | 115,091 | 18,229 | Present |
 | `Clipboard` | 4 | 1,009 | 1,123 | 409 | Complete |
 | `Compositor` | 6 | 1,687 | 2,403 | 361 | Complete |
 | `Compression` | 2 | 348 | 471 | 143 | Complete |
@@ -1251,7 +1261,7 @@ from the current-module totals.
 | `CookieStore` | 2 | 850 | 1,059 | 482 | Complete |
 | `CredentialManagement` | 6 | 382 | 420 | 301 | Complete |
 | `Crypto` | 6 | 13,412 | 7,957 | 7,989 | Complete |
-| `DOM` | 59 | 34,859 | 43,499 | 5,050 | Complete |
+| `DOM` | 59 | 34,859 | 43,502 | 5,066 | Complete |
 | `DOMURL` | 4 | 1,039 | 854 | 464 | Complete |
 | `Editing` | 26 | 12,720 | 13,938 | 226 | Complete |
 | `Encoding` | 6 | 769 | 5,356 | 4,495 | Complete |
@@ -1271,7 +1281,7 @@ from the current-module totals.
 | `Infra` | 3 | 385 | 548 | 102 | Complete |
 | `Internals` | 7 | 2,583 | 2,337 | 1,067 | Complete |
 | `IntersectionObserver` | 2 | 528 | 668 | 413 | Complete |
-| `Layout` | 9 | 4,001 | 44,917 | 18,361 | Present |
+| `Layout` | 9 | 4,001 | 44,944 | 18,415 | Present |
 | `Loader` | 6 | 1,291 | 1,921 | 664 | Complete |
 | `MathML` | 6 | 369 | 653 | 162 | Complete |
 | `MediaCapabilitiesAPI` | 1 | 345 | 657 | 129 | Complete |
@@ -1318,7 +1328,7 @@ from the current-module totals.
 | `XLink` | 1 | 16 | 13 | 10 | Complete |
 | `XML` | 2 | 556 | 477 | 164 | Complete |
 | `XPath` | 5 | 435 | 672 | 210 | Complete |
-| **Total** | **1,193** | **329,970** | **433,263** | **160,393** | **74 complete, 4 present, 0 untranslated** |
+| **Total** | **1,193** | **329,970** | **433,369** | **160,729** | **74 complete, 4 present, 0 untranslated** |
 
 ### Live editability refresh
 
