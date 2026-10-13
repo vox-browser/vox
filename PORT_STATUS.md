@@ -914,14 +914,21 @@ V's standard `crypto.*` modules without shadowing that namespace.
 The IDL-only `Fullscreen` package delegates its state machine to the shared
 translated DOM implementation.
 
-The verified `9ee0685b` physical inventory is retained in
+The verified `8c567b08` physical inventory is retained in
+`Build/audit-fixes/source-current-module-loc-8c567b08.json` (SHA256
+`1aef0cc514a53f73405c61efa11b1400cccb54024aecb7b7479a56cdf63a458b`).
+The media onclick slice adds explicit compact replay bookkeeping to DOM and
+Page, plus one assigned Page test file. DOM implementation grows by 34 lines;
+Page grows by 15 implementation and 156 test lines. The 78 owners now contain
+2,210 assigned files, 432,874 implementation V LOC and
+158,957 test V LOC, an increase of 49 implementation and 156 test
+lines. All assigned hashes and physical newline counts were recomputed; other
+assigned package bytes and counts remain unchanged. Root/browser support and
+its tests remain excluded. These adapter records do not establish behavioral
+or browser parity.
+The previous media press/release-handler inventory remains preserved in
 `Build/audit-fixes/source-current-module-loc-9ee0685b.json` (SHA256
 `e8b19228fb5b400542347570c7198c7314e675bdee14a05ac890e947a31e38da`).
-The media press/release-handler slice changes native browser support and adds
-one browser test file and one root integration test file.
-All 2,209 assigned package files retain their previous hashes and physical line
-counts; the 78-owner totals are unchanged. Root and browser implementation and
-tests remain excluded from these counts.
 The previous media-handler inventory remains preserved in
 `Build/audit-fixes/source-current-module-loc-60ef4bb2.json` (SHA256
 `087ef5bb19a9b329c861227032f77769c3f552171b6a30ab496b2e37d4522a7b`).
@@ -958,7 +965,7 @@ from the current-module totals.
 | `CookieStore` | 2 | 850 | 1,059 | 482 | Complete |
 | `CredentialManagement` | 6 | 382 | 420 | 301 | Complete |
 | `Crypto` | 6 | 13,412 | 7,957 | 7,989 | Complete |
-| `DOM` | 59 | 34,859 | 43,465 | 4,694 | Complete |
+| `DOM` | 59 | 34,859 | 43,499 | 4,694 | Complete |
 | `DOMURL` | 4 | 1,039 | 854 | 464 | Complete |
 | `Editing` | 26 | 12,720 | 13,938 | 226 | Complete |
 | `Encoding` | 6 | 769 | 5,356 | 4,495 | Complete |
@@ -988,7 +995,7 @@ from the current-module totals.
 | `MixedContent` | 1 | 127 | 93 | 105 | Complete |
 | `NavigationTiming` | 4 | 497 | 645 | 130 | Complete |
 | `NotificationsAPI` | 1 | 301 | 370 | 101 | Complete |
-| `Page` | 8 | 6,450 | 6,840 | 2,687 | Complete |
+| `Page` | 8 | 6,450 | 6,855 | 2,843 | Complete |
 | `Painting` | 22 | 8,227 | 7,979 | 2,585 | Present |
 | `PerformanceTimeline` | 5 | 476 | 502 | 154 | Complete |
 | `PermissionsAPI` | 3 | 388 | 239 | 74 | Complete |
@@ -1025,7 +1032,7 @@ from the current-module totals.
 | `XLink` | 1 | 16 | 13 | 10 | Complete |
 | `XML` | 2 | 556 | 477 | 164 | Complete |
 | `XPath` | 5 | 435 | 672 | 210 | Complete |
-| **Total** | **1,193** | **329,970** | **432,825** | **158,801** | **74 complete, 4 present, 0 untranslated** |
+| **Total** | **1,193** | **329,970** | **432,874** | **158,957** | **74 complete, 4 present, 0 untranslated** |
 
 ### Live editability refresh
 
