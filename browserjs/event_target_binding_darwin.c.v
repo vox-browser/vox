@@ -36,6 +36,9 @@ mut:
 	pointer_event_prototype voidptr
 	pointer_event_sequence_converter voidptr
 	wheel_event_prototype voidptr
+	data_transfer_factory voidptr
+	data_transfers map[voidptr]&html.DataTransfer
+	data_transfer_wrappers map[voidptr]voidptr
 	closed             bool
 }
 
@@ -101,6 +104,8 @@ pub fn (mut runtime Runtime) install_event_target_binding() ! {
 	}
 	runtime.add_close_handler(fn [owner, mut binding] () {
 		binding.closed = true
+		binding.data_transfers.clear()
+		binding.data_transfer_wrappers.clear()
 		event_target_bindings_.delete(owner)
 	})
 	if settings := runtime.scripting_settings_ {
