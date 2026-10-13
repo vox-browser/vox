@@ -1,6 +1,6 @@
 # GitHub rendering investigation
 
-Measured on macOS on 2026-10-13 with `https://github.com/vlang/v` and the
+Measured on macOS on 2026-10-13 and 2026-10-14 with `https://github.com/vlang/v` and the
 repository's native browser. These are individual diagnostic runs, not an
 upstream parity benchmark.
 
@@ -9,8 +9,9 @@ upstream parity benchmark.
 - The V 0.5.2 compatibility compiler's `-prod` Boehm code repeatedly snapshots
   nested pointers in live aggregates. Tokenization walks the growing token
   array around calls, turning large stylesheet parsing into quadratic work.
-  The browser builder now uses `-gc boehm_full` and C `-O2` without `-prod`.
-  Full heap scanning retains nested token strings without these snapshots.
+  The browser builder uses C `-O2` without `-prod`. The initial fix used
+  `boehm_full`; optimized retention checks subsequently allowed pointer-aware
+  `boehm`, which leaves pointer-free buffers atomic.
 - Block layout measured automatic-height flex subtrees before running their
   actual flex layout. Ordinary horizontal flex containers now resolve their
   own height during that run. Buttons, vertical writing modes, and percentage
@@ -102,7 +103,74 @@ Upstream Ladybird uses its tracing `LibGC` collector for DOM and JavaScript
 objects alongside reference counting and layout arenas. Vox retains Boehm GC
 for live and shared V object graphs. Its scoped measurement arena is an
 ownership optimization, not a switch to a globally uncollected heap.
+`LADYBIRD_V_GC=boehm_full` retains the fully scanned diagnostic mode, and
 `LADYBIRD_V_GC=none` remains available for ownership diagnostics.
+
+The compatibility compiler forces GC off when `-prealloc` is used, including
+when an explicit `-gc` argument is present. Its thread-local and scoped bump
+arenas cannot be enabled for selected packages through that flag. The native
+browser therefore uses scoped ownership where the lifetime is proven: CSS
+tokenizer code points and byte offsets now share one pointer-free allocation
+freed after tokenization, while intrinsic geometry retains its chunk arena.
+The tokenizer retention and arena tests also pass with `-prealloc`. Enabling
+that flag globally still requires ownership for document graphs, shared caches,
+and updates that outlive a particular frame.
+
+## V profiling and allocation follow-up
+
+The investigation used V's `-profile`, with inline functions excluded, around
+native layout entry points. The diagnostic recorded three layout calls before
+an ongoing background refresh was interrupted; its totals are not one isolated
+navigation. It recorded about 38.8 million `_v_malloc` calls, 14.7 million
+computed-property reads, 1.28 million length-context constructions, and
+6.4 million layout ancestry checks. Instrumentation and V's non-thread-safe
+profiler make these diagnostic counts more useful than their absolute timings.
+
+A separate sampled GC allocation wrapper confirmed the generated-C causes:
+optional map misses constructed error objects; selector matching allocated an
+attribute-name array and a captured metadata closure; DOM value equality copied
+whole heap node records; and default length wrappers constructed unused
+`CalculatedStyleValue` objects, maps, and arrays. Even absent optional values
+could retain those unused objects in their payloads.
+
+The follow-up changes are:
+
+- Guard missing animated-property and pseudo-element entries before lookup.
+- Use pointer identity in selector matching and a borrowed metadata helper;
+  compare case-insensitive attribute names without rebuilding a list.
+- Use zero-length defaults, explicit absent optionals, and direct conversion
+  returns instead of building discarded calculation objects.
+- Retain font length metrics on the owning style, borrow that style through
+  layout aliases, and reuse native font handles on retained layout nodes.
+- Visit shared external containing-block chains once per intrinsic probe.
+- Retain the installed document selector-query state. Repeated font/style
+  lookups previously rebuilt it and cleared its parsed-selector cache.
+- Resolve absolute and percentage layout lengths before creating a font or
+  container-query context; relative and calculated lengths retain that context.
+
+Before the selector/default/font-handle changes, the allocation wrapper counted
+81.3 million managed allocation calls requesting 8.1 GB through native capture.
+After those changes it counted 50.4 million calls requesting 5.5 GB. These are
+cumulative requested bytes, not live memory or RSS, and exclude JavaScriptCore
+and other native allocations. These two runs installed the cached document in
+5.1 and 5.9 seconds with different host contention, so the allocation reduction
+does not establish a corresponding timing ratio. The later query-hook and
+context-free length changes are additional to those allocation measurements.
+
+The final signed production build, with profiling disabled and all follow-up
+changes included, installed the cached GitHub document in 5413 ms and 5549 ms.
+An adjacent run of the saved earlier binary took 8086 ms. The final two geometry
+passes took 855/794 ms and 903/747 ms, versus 1403/1373 ms in that earlier run.
+The final peak RSS was about 1.4 GiB. The full screenshot processes took 6.8 and
+7.3 seconds, including startup and capture; these must not be called FCP.
+The normal collector log accounted for about 5.5 GB between 59 collections,
+versus about 9.0 GB between 79 collections in the initial allocation diagnostic.
+Those interval totals include padding and omit the final allocation interval.
+
+Host load ranged from roughly 30 to 90 during final compilation and measurement.
+These individual runs show a remaining gap to the earlier 1.5-second Chrome FCP
+measurement; they do not establish Chrome parity. GitHub module execution and
+its hydrated file rows remain unsupported by the compact browser backend.
 
 ## Validation and reproduction
 
@@ -110,7 +178,11 @@ Focused tests cover forced-GC token retention, arena pointer stability and
 release with both `boehm_full` and `none`, flex sizing, pending-font cache
 invalidation, import-map navigation, and module rejection followed by classic
 script execution. The signed native bundle passes `--headless-smoke`.
-The continued optimization tests also cover column/grid percentage bases,
+The continued optimization tests also cover stylesheet-graph retention with
+optimized pointer-aware GC, UTF-8 arena offsets, live font/context changes,
+selector case sensitivity and metadata, animation/transition precedence,
+pseudo-element identity, retained query hooks, and context-free layout lengths.
+They also cover column/grid percentage bases,
 changed flex heights, font-file retention and late availability, large CSS
 component serialization, and lazy DOM reads with pending writes and inserted
 nodes. Final native comparisons pass for `inline-node`, `ordered-list`,
@@ -126,3 +198,20 @@ LADYBIRD_DEBUG_TIMING=1 Build/v/Vox.app/Contents/MacOS/Vox https://github.com/vl
 Use `sample PID 2 5 -file OUTPUT.txt` during a slow phase to inspect the native
 stack. Account for cached-page installation and background refresh separately;
 a blank upstream headless screenshot is not a valid speed comparison.
+
+Build an instrumented native browser with V's profiler, then restore the normal
+build before measuring speed:
+
+```sh
+LADYBIRD_V_PROFILE="$PWD/Build/v/github.vprof.txt" sh build-prod-browser.sh
+LADYBIRD_SCREENSHOT_DELAY_SECONDS=0 Build/v/Vox.app/Contents/MacOS/Vox \
+  --screenshot "$PWD/Build/v/github.profile.png" https://github.com/vlang/v
+sort -k3,3nr Build/v/github.vprof.txt | head -n 30
+sh build-prod-browser.sh
+```
+
+The current profiler emits calls, inclusive milliseconds, exclusive
+milliseconds, average nanoseconds, and the C function name.
+`LADYBIRD_V_PROFILE_FNS` overrides the default navigation/layout entry points.
+The build supplies the macOS stdio compatibility flags required by this
+compiler's profiling output.
