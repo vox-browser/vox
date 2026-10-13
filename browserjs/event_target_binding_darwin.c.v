@@ -36,6 +36,7 @@ mut:
 	pointer_event_prototype voidptr
 	pointer_event_sequence_converter voidptr
 	wheel_event_prototype voidptr
+	drag_event_prototype voidptr
 	data_transfer_factory voidptr
 	data_transfers map[voidptr]&html.DataTransfer
 	data_transfer_wrappers map[voidptr]voidptr
@@ -75,6 +76,9 @@ pub fn (mut runtime Runtime) install_event_target_binding() ! {
 		if binding.wheel_event_prototype == unsafe { nil } && binding.mouse_event_prototype != unsafe { nil } {
 			runtime.install_wheel_event_binding()!
 		}
+		if binding.drag_event_prototype == unsafe { nil } && binding.mouse_event_prototype != unsafe { nil } {
+			runtime.install_drag_event_binding()!
+		}
 		return
 	}
 	runtime.install_dom_exception_binding()!
@@ -100,6 +104,7 @@ pub fn (mut runtime Runtime) install_event_target_binding() ! {
 			runtime.install_mouse_event_binding()!
 			runtime.install_pointer_event_binding()!
 			runtime.install_wheel_event_binding()!
+			runtime.install_drag_event_binding()!
 		}
 	}
 	runtime.add_close_handler(fn [owner, mut binding] () {
@@ -193,6 +198,8 @@ pub fn (mut runtime Runtime) javascript_event(event &dom.Event) !voidptr {
 		prototype = binding.pointer_event_prototype
 	} else if binding.wheel_event_prototype != unsafe { nil } && event.interface_ == .wheel_event {
 		prototype = binding.wheel_event_prototype
+	} else if binding.drag_event_prototype != unsafe { nil } && event.interface_ == .drag_event {
+		prototype = binding.drag_event_prototype
 	} else if binding.mouse_event_prototype != unsafe { nil } && native_event_is_mouse_event(event) {
 		prototype = binding.mouse_event_prototype
 	} else if binding.ui_event_prototype != unsafe { nil } && native_event_is_ui_event(event) {

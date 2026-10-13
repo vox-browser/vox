@@ -35,8 +35,10 @@ pub fn DragEvent.create(event_name string, event_init DragEventInit, page_x f64,
 }
 
 pub fn DragEvent.construct_impl(event_name string, event_init DragEventInit) !&DragEvent {
-	return DragEvent.create(event_name, event_init, event_init.client_x, event_init.client_y,
+	mut event := DragEvent.create(event_name, event_init, event_init.client_x, event_init.client_y,
 		event_init.client_x, event_init.client_y)
+	event.set_is_trusted(false)
+	return event
 }
 
 pub fn (event &DragEvent) data_transfer() ?&DataTransfer {
