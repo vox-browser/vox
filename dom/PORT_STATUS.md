@@ -103,21 +103,27 @@ drag images, hardware file delivery and weak/foreign ownership remain open.
 See [DataTransfer files
 evidence](../docs/translation-audit/NATIVE_DATA_TRANSFER_FILES_OWNER.md).
 
-Verified at `bbe330a8`, the disjoint DOM inventory contains 43,499
+Verified at `e3ff95fd`, the disjoint DOM inventory contains 43,499
 implementation V LOC and 5,050 test V LOC across 101 assigned files.
-`Build/audit-fixes/native-data-transfer-add-inventory-current.json` (SHA256 `4872c275d35da716c0cbbfb3f86e95d85375ddb8202e84a3dd10bc28c10d4648`).
+`Build/audit-fixes/native-data-transfer-string-callback-inventory-current.json` (SHA256 `61b814a88cb00769fd88dcb29f12b4b93fd0c80e582b4a74fdbb5e33309cead5`).
 Every assigned committed byte hash and physical newline is verified.
-DOM/UIEvents assigned bytes remain unchanged from the preserved `e775be45` and
-`b335958e` inventories; UIEvents contains 1,489 implementation / 474 test V
-LOC. Integrated totals across 78 owners / 2,224 files are 433,231
-implementation / 160,272 test V LOC.
-The public native DataTransferItemList.add feature changes only two assigned
-HTML paths: +15 implementation / +55 test lines and +1 assigned file from
-actual parent `e443227c`. 6 root/browser support and test paths remain
+DOM/UIEvents assigned bytes remain unchanged from the preserved `bbe330a8`,
+`e775be45` and `b335958e` inventories; UIEvents contains 1,489 implementation
+/ 474 test V LOC. Integrated totals across 78 owners / 2,225 files are 433,242
+implementation / 160,313 test V LOC.
+The public native DataTransferItem.getAsString feature changes only two
+assigned HTML paths: +11 implementation / +41 test lines and +1 assigned file
+from actual parent `967d1891`. 7 root/browser support and test paths remain
 excluded. Assigned hashes and counts at the actual feature parent remain
-unchanged from the prior `e775be45` inventory; no intervening assigned slice
+unchanged from the prior `bbe330a8` inventory; no intervening assigned slice
 is counted. These are physical counts and do not establish behavioral
 equivalence or additional test credit.
+The previous DataTransfer item-addition inventory at `bbe330a8` remains preserved in
+`Build/audit-fixes/native-data-transfer-add-inventory-current.json` (SHA256 `4872c275d35da716c0cbbfb3f86e95d85375ddb8202e84a3dd10bc28c10d4648`),
+with 2,224 files / 433,231 implementation / 160,272 test V LOC. Its separate
+feature accounting remains +15 HTML implementation / +55 test lines / +1 file;
+the prior DataTransfer items, string and older evidence retain their own
+source pins.
 The previous DataTransfer items inventory at `e775be45` remains preserved in
 `Build/audit-fixes/native-data-transfer-items-inventory-current.json` (SHA256 `7b5ad87afb6c18b8529c2fce174a96e9ef9e863926ffaaa3618d1dde0ba3dfed`),
 with 2,223 files / 433,216 implementation / 160,217 test V LOC. Its separate

@@ -1128,21 +1128,27 @@ V's standard `crypto.*` modules without shadowing that namespace.
 The IDL-only `Fullscreen` package delegates its state machine to the shared
 translated DOM implementation.
 
-Verified at `bbe330a8`, the physical inventory is retained in
-`Build/audit-fixes/native-data-transfer-add-inventory-current.json` (SHA256 `4872c275d35da716c0cbbfb3f86e95d85375ddb8202e84a3dd10bc28c10d4648`).
-All 78 owners and 2,224 assigned files match their committed byte hashes and
-physical newline counts: 433,231 implementation V LOC and 160,272 test V LOC.
-The public native DataTransferItemList.add feature changes only two assigned
-HTML paths: +15 implementation / +55 test lines and +1 assigned file from
-actual parent `e443227c`. 6 root/browser support and test paths remain
+Verified at `e3ff95fd`, the physical inventory is retained in
+`Build/audit-fixes/native-data-transfer-string-callback-inventory-current.json` (SHA256 `61b814a88cb00769fd88dcb29f12b4b93fd0c80e582b4a74fdbb5e33309cead5`).
+All 78 owners and 2,225 assigned files match their committed byte hashes and
+physical newline counts: 433,242 implementation V LOC and 160,313 test V LOC.
+The public native DataTransferItem.getAsString feature changes only two
+assigned HTML paths: +11 implementation / +41 test lines and +1 assigned file
+from actual parent `967d1891`. 7 root/browser support and test paths remain
 excluded. Assigned hashes and counts at the actual feature parent remain
-unchanged from the prior `e775be45` inventory; no intervening assigned slice
+unchanged from the prior `bbe330a8` inventory; no intervening assigned slice
 is counted. These are physical counts and do not establish behavioral
 equivalence or additional test credit.
-Exact full Git and assigned input maps are retained for the prior items
+Exact full Git and assigned input maps are retained for the prior addition
 inventory, actual feature parent and committed feature. Later concurrent
 canonical work stays outside this pin. Upstream source-unit counts, mapping
 labels and the historical finding ledger remain unchanged.
+The previous DataTransfer item-addition inventory at `bbe330a8` remains preserved in
+`Build/audit-fixes/native-data-transfer-add-inventory-current.json` (SHA256 `4872c275d35da716c0cbbfb3f86e95d85375ddb8202e84a3dd10bc28c10d4648`),
+with 2,224 files / 433,231 implementation / 160,272 test V LOC. Its separate
+feature accounting remains +15 HTML implementation / +55 test lines / +1 file;
+the prior DataTransfer items, string and older evidence retain their own
+source pins.
 The previous DataTransfer items inventory at `e775be45` remains preserved in
 `Build/audit-fixes/native-data-transfer-items-inventory-current.json` (SHA256 `7b5ad87afb6c18b8529c2fce174a96e9ef9e863926ffaaa3618d1dde0ba3dfed`),
 with 2,223 files / 433,216 implementation / 160,217 test V LOC. Its separate
@@ -1200,7 +1206,7 @@ The previous unsupported-play inventory remains preserved in
 `166070c623211b8600db5300c89ed5219375d0e4045728c12117361ad8cca27c`).
 Source-unit mappings and physical LOC do not establish runtime parity.
 
-The table below records package V LOC verified at `bbe330a8` on 2026-10-13; upstream counts
+The table below records package V LOC verified at `e3ff95fd` on 2026-10-13; upstream counts
 and structural mapping labels retain the pinned inventory. It covers 76 current
 implementation-bearing upstream modules plus the translated IDL/IPC-only
 `Fullscreen` and `Worker` packages, and all 1,193 module-owned `.cpp`
@@ -1236,7 +1242,7 @@ from the current-module totals.
 | `Gamepad` | 6 | 1,351 | 860 | 323 | Complete |
 | `Geolocation` | 4 | 643 | 535 | 224 | Complete |
 | `Geometry` | 8 | 2,078 | 2,121 | 1,041 | Complete |
-| `HTML` | 286 | 83,853 | 69,699 | 40,628 | Complete |
+| `HTML` | 286 | 83,853 | 69,710 | 40,669 | Complete |
 | `HighResolutionTime` | 2 | 516 | 500 | 213 | Complete |
 | `IndexedDB` | 19 | 6,991 | 5,455 | 1,388 | Complete |
 | `Infra` | 3 | 385 | 548 | 102 | Complete |
@@ -1289,7 +1295,7 @@ from the current-module totals.
 | `XLink` | 1 | 16 | 13 | 10 | Complete |
 | `XML` | 2 | 556 | 477 | 164 | Complete |
 | `XPath` | 5 | 435 | 672 | 210 | Complete |
-| **Total** | **1,193** | **329,970** | **433,231** | **160,272** | **74 complete, 4 present, 0 untranslated** |
+| **Total** | **1,193** | **329,970** | **433,242** | **160,313** | **74 complete, 4 present, 0 untranslated** |
 
 ### Live editability refresh
 
