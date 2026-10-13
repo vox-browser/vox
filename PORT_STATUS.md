@@ -935,18 +935,17 @@ V's standard `crypto.*` modules without shadowing that namespace.
 The IDL-only `Fullscreen` package delegates its state machine to the shared
 translated DOM implementation.
 
-The verified `8c567b08` physical inventory is retained in
+The verified `5ba4d87c` physical inventory is retained in
+`Build/audit-fixes/source-current-module-loc-5ba4d87c.json` (SHA256
+`90982b16fe88bc53a2ad6f1a6f89d53950ef88a4e7250cc86ec5619997e7dadc`).
+The native media auxclick/dblclick slice changes browser support and adds two
+root/browser test files, which remain excluded from the assigned inventory.
+All 78 owners and 2,210 assigned package files retain their earlier hashes and
+physical newline counts: 432,874 implementation V LOC and 158,957 test V LOC.
+The unchanged counts and structural mappings do not establish browser parity.
+The previous media onclick inventory remains preserved in
 `Build/audit-fixes/source-current-module-loc-8c567b08.json` (SHA256
 `1aef0cc514a53f73405c61efa11b1400cccb54024aecb7b7479a56cdf63a458b`).
-The media onclick slice adds explicit compact replay bookkeeping to DOM and
-Page, plus one assigned Page test file. DOM implementation grows by 34 lines;
-Page grows by 15 implementation and 156 test lines. The 78 owners now contain
-2,210 assigned files, 432,874 implementation V LOC and
-158,957 test V LOC, an increase of 49 implementation and 156 test
-lines. All assigned hashes and physical newline counts were recomputed; other
-assigned package bytes and counts remain unchanged. Root/browser support and
-its tests remain excluded. These adapter records do not establish behavioral
-or browser parity.
 The previous media press/release-handler inventory remains preserved in
 `Build/audit-fixes/source-current-module-loc-9ee0685b.json` (SHA256
 `e8b19228fb5b400542347570c7198c7314e675bdee14a05ac890e947a31e38da`).
