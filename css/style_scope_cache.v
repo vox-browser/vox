@@ -1882,19 +1882,12 @@ fn style_scope_slot_node(slot &dom.HTMLSlotElement) &dom.Node {
 	return unsafe { &dom.Node(slot) }
 }
 
-fn style_scope_has_result_cache_boundary(style_computer &StyleComputer) map[string]HasMatchResult {
-	// MatchContext and StyleComputer own the same cache for the duration of a
-	// style pass, just as the C++ context holds a reference to StyleComputer's
-	// HashMap. Copying the whole map into and back out of every selector match
-	// turns a constant-time boundary into quadratic traffic on :has()-heavy
-	// pages and needless allocations even when the cache is empty.
-	return unsafe { style_computer.has_result_cache_ }
-}
-
-fn style_scope_store_has_result_cache_boundary(style_computer &StyleComputer, cache map[string]HasMatchResult) {
-	// The map is shared by reference in style_scope_has_result_cache_boundary().
-	_ = style_computer
-	_ = cache
+fn style_scope_has_result_cache_boundary(style_computer &StyleComputer) &HasResultCache {
+	// Share the map header as well as its storage. A shallow map copy retains
+	// stale length/capacity and allocation pointers when another context grows
+	// the cache. A heap-owned holder keeps every match and style-pass reset on
+	// the same map without cloning its entries for each selector.
+	return style_computer.has_result_cache_
 }
 
 fn style_scope_merge_attempted_pseudo_class_matches(mut attempted PseudoClassBitmap, context MatchContext) {
@@ -2237,7 +2230,6 @@ pub fn style_computer_collect_matching_rules_in_scope(style_computer &StyleCompu
 		}
 
 		style_scope_merge_attempted_pseudo_class_matches(mut attempted_pseudo_class_matches, context)
-		style_scope_store_has_result_cache_boundary(style_computer, context.has_result_cache)
 		if did_match {
 			if container_rule := rule_to_run.container_rule {
 				contains_size_feature := container_rule.container_rule_contains_size_feature()

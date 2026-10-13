@@ -10645,7 +10645,7 @@ pub mut:
 	cached_generic_computation_context                   ?ComputationContext
 	viewport_rect_                                       CSSPixelRect
 	ancestor_filter_                                     CountingBloomFilter = CountingBloomFilter.new()
-	has_result_cache_                                    map[string]HasMatchResult
+	has_result_cache_                                    &HasResultCache = &HasResultCache{}
 	css_animation_storage_                               &CSSAnimationStorage = unsafe { nil }
 	css_transition_storage_                              &CSSTransitionStorage = unsafe { nil }
 	document_timeline_                                   &AnimationTimeline = unsafe { nil }
@@ -10744,7 +10744,7 @@ pub fn (mut s StyleComputer) reset_ancestor_filter() {
 }
 
 pub fn (mut s StyleComputer) reset_has_result_cache() {
-	s.has_result_cache_.clear()
+	s.has_result_cache_.results.clear()
 }
 
 fn for_each_element_hash(element &dom.Element, callback fn (u32)) {
