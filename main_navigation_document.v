@@ -45,6 +45,10 @@ fn parse_browser_navigation_document_with_optional_page_and_response_time(markup
 		settings.cross_origin_isolated_capability() == .yes)
 	document.set_document_type(.html)
 	document.set_allow_declarative_shadow_roots(true)
+	// This compact embedder creates the active navigation document directly,
+	// rather than committing it through session-history traversal. Grant the
+	// source document's script readiness before parser-inserted import maps run.
+	document.set_ready_to_run_scripts()
 	html.parse_html_from_a_string(document, markup)
 	return document
 }

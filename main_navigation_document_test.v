@@ -4,6 +4,12 @@ import css
 import dom
 import html
 
+fn test_compact_navigation_grants_script_readiness_before_inline_import_maps() {
+	document := parse_browser_navigation_document_with_response_time('<!doctype html><script type="importmap">{"imports":{"fixture":"./module.js"}}</script><p id="after">parsed</p>', dom.URL{value: 'https://navigation.example/page'}, none, none, 1_000_000)
+	assert document.document_ready_to_run_scripts()
+	assert document.get_element_by_id('after') != none
+}
+
 fn test_browser_navigation_origin_uses_final_document_url_and_preserves_base_url_separately() {
 	document := parse_browser_navigation_document('<!doctype html><base href="https://cdn.example/assets/"><p>navigation</p>', dom.URL{
 		value: 'https://final.example/page'
