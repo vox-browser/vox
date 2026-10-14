@@ -549,3 +549,18 @@ excluded under the sealed 78-owner assignment. Counter:
 Existing global tables, pins, source mappings and historical ledgers remain
 preserved. Accounting adds no behavioral parity or validation credit.
 See [evidence](../docs/translation-audit/NATIVE_MEDIA_LIFECYCLE_RAW_HANDLER.md).
+
+Native compact media raw `onplaying` / `onwaiting` (`2aab6ba2`, 2026-10-14 UTC):
+Owner-local HTML audio/video readiness attributes compile lazily through the
+existing name-aware native compiler and ordered content-attribute replay.
+Actual queued waiting preserves pending play promises; actual playing delivers
+its raw callback before resolving its captured promise batch, including when
+that handler calls pause(). Native Event identity, Element -> Document -> Global
+scope, caching, resolver reentrancy, raw/IDL replacement, CSP, scripting gates,
+original exceptions and DOM/paint replay pass focused checks. Six new cases and
+the three changed boundary fixtures pass: 16 cases in five selected files in
+both GC modes. Unsupported-name boundaries now use oncanplay; other raw media
+names and unavailable/foreign owners remain open. Production and broad
+regression suites are deferred under the user's ten-fix cadence. Batch counter:
+1/10 after aa6f0246. The preexisting synchronous buffering-drop waiting path is
+outside this slice and differs from the pinned upstream FIXME. See [evidence](../docs/translation-audit/NATIVE_MEDIA_READINESS_RAW_HANDLER.md).
