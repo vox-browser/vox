@@ -2591,3 +2591,19 @@ Global tables, pins, mappings and historical ledgers stay preserved; accounting
 adds no behavioral or test credit. Batch remains 6/10 after aa6f0246, since
 this independent documentation commit is not another translation fix.
 See [evidence](docs/translation-audit/NATIVE_MEDIA_SEEK_RAW_HANDLER.md).
+
+Native compact media raw `onprogress` / `onsuspend` (`739e00b8`, 2026-10-14 UTC):
+Owner-local HTML audio/video progress attributes compile lazily through the
+existing name-aware native compiler and ordered content-attribute replay.
+Fresh native ongoing processing queues loading and its initial progress;
+the actual queued completion dispatches progress, moves networkState to idle,
+then dispatches suspend within one task. Parsed video and created audio expose
+live loading/idle states, Element -> Document -> Global scopes, native Event
+identity/cache/owner gates and retained painting. Equal raw writes, prequeued
+replacement/reentrant completion, removals, scripting gates, strict original
+exceptions and later listeners pass six cases in two files in both GC modes.
+No network, timer-boundary, preload/cancel, decoding/backend or completion
+readiness credit is claimed. Four current owned files and two exact main
+gates are authenticated through retained snapshots; current full main and
+foreign changes receive no test credit. Production and broad suites remain
+deferred. Batch counter: 7/10 after aa6f0246. See [evidence](docs/translation-audit/NATIVE_MEDIA_PROGRESS_RAW_HANDLER.md).
