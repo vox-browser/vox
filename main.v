@@ -2280,6 +2280,14 @@ fn run_document_script_sources(document &dom.Document, current_url string, sourc
 	}
 	mut canvas_host := browserjs.CanvasHost.create(document)
 	mut mutable_runtime := unsafe { &browserjs.Runtime(runtime) }
+	mut navigator_host := browserjs.NavigatorHost.create(document) or {
+		messages << 'JavaScript Navigator bindings: ${err.msg()}'
+		return none
+	}
+	navigator_host.install(mut mutable_runtime) or {
+		messages << 'JavaScript Navigator bindings: ${err.msg()}'
+		return none
+	}
 	canvas_host.install(mut mutable_runtime) or {
 		messages << 'JavaScript canvas bindings: ${err.msg()}'
 		return none
