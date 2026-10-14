@@ -295,16 +295,18 @@ pub mut:
 	replaced_image_position_x string
 	replaced_image_position_y string
 	replaced_image_rendering  css.ImageRendering
-	replaced_image_paintable  ?painting.ImagePaintable
+	// Immutable geometry is shared with retained paint commands. Ordinary
+	// boxes pay only for absent references rather than every media variant.
+	replaced_image_paintable  ?&painting.ImagePaintable = none
 	replaced_image_bitmap     ?&dom.Bitmap_
 	canvas_bitmap             ?&dom.Bitmap_
-	canvas_paintable          ?painting.CanvasPaintable
+	canvas_paintable          ?&painting.CanvasPaintable = none
 	video_bitmap              ?&dom.Bitmap_
 	video_frame_source        ?&painting.VideoFrameSource
 	video_representation      painting.VideoRepresentation
-	video_paintable           ?painting.VideoPaintable
+	video_paintable           ?&painting.VideoPaintable = none
 	nested_viewport_document  ?&dom.Document
-	nested_viewport_paintable ?painting.NavigableContainerViewportPaintable
+	nested_viewport_paintable ?&painting.NavigableContainerViewportPaintable = none
 	// Retained for detached compatibility commands; typed HTML/SVG images carry
 	// their source semantics in replaced_image_paintable.
 	is_svg_image               bool
@@ -968,23 +970,24 @@ pub mut:
 	// BackgroundPainting temporarily switches only fixed layers to the visual
 	// context which compensates every ancestor scroll frame.
 	visual_context_index ?int = none
-	// ImagePaintable's retained, typed replaced-content geometry. Background
-	// images leave this empty and continue through BackgroundPainting.
-	image_paintable       ?painting.ImagePaintable = none
+	// Allocate immutable replaced-content snapshots only for commands which
+	// use them. Most commands are text or borders and need no media payload.
+	// Background images continue through BackgroundPainting.
+	image_paintable       ?&painting.ImagePaintable = none
 	replaced_image_bitmap ?&dom.Bitmap_ = none
 	// CanvasPaintable publishes its current RGBA surface as external content.
 	canvas_bitmap    ?&dom.Bitmap_ = none
-	canvas_paintable ?painting.CanvasPaintable = none
+	canvas_paintable ?&painting.CanvasPaintable = none
 	// VideoPaintable retains the representation switch separately from the
 	// optional poster/current-frame bitmap.
 	video_bitmap         ?&dom.Bitmap_ = none
 	video_frame_source   ?&painting.VideoFrameSource = none
 	video_representation painting.VideoRepresentation
-	video_paintable      ?painting.VideoPaintable = none
+	video_paintable      ?&painting.VideoPaintable = none
 	// NavigableContainerViewportPaintable retains the hosted document's
 	// display list as a nested command stream rather than rasterizing it.
 	nested_viewport_commands  []PaintCommand
-	nested_viewport_paintable ?painting.NavigableContainerViewportPaintable = none
+	nested_viewport_paintable ?&painting.NavigableContainerViewportPaintable = none
 	// Synthetic balanced controls around the complete background color/layer
 	// group. The begin command owns the inclusive-subtree glyph runs.
 	text_clip_runs []PaintTextClipRun

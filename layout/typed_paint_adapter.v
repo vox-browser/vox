@@ -3363,16 +3363,16 @@ fn block_box_from_typed_layout_shallow(node &Node, state &LayoutState, ancestor_
 	mut replaced_image_size := ''
 	mut replaced_image_position_x := '50%'
 	mut replaced_image_position_y := '50%'
-	mut replaced_image_paintable := ?painting.ImagePaintable(none)
+	mut replaced_image_paintable := ?&painting.ImagePaintable(none)
 	mut replaced_image_bitmap := ?&dom.Bitmap_(none)
 	mut canvas_bitmap := ?&dom.Bitmap_(none)
-	mut canvas_paintable := ?painting.CanvasPaintable(none)
+	mut canvas_paintable := ?&painting.CanvasPaintable(none)
 	mut video_bitmap := ?&dom.Bitmap_(none)
 	mut video_frame_source := ?&painting.VideoFrameSource(none)
 	mut video_representation := painting.VideoRepresentation.transparent_black
-	mut video_paintable := ?painting.VideoPaintable(none)
+	mut video_paintable := ?&painting.VideoPaintable(none)
 	mut nested_viewport_document := ?&dom.Document(none)
-	mut nested_viewport_paintable := ?painting.NavigableContainerViewportPaintable(none)
+	mut nested_viewport_paintable := ?&painting.NavigableContainerViewportPaintable(none)
 	mut form_control_kind := ''
 	mut form_control_checked := false
 	mut form_control_indeterminate := false
@@ -3605,7 +3605,7 @@ fn block_box_from_typed_layout_shallow(node &Node, state &LayoutState, ancestor_
 				width: used.content_width().to_double()
 				height: used.content_height().to_double()
 			}, painting.Size{concrete_size.width().to_double(), concrete_size.height().to_double()}, computed.object_fit(), computed.object_position(), computed.length_resolution_context(), painting.new_device_pixel_converter(1.0) or { panic(err) })
-			nested_viewport_paintable = painting.NavigableContainerViewportPaintable{
+			nested_viewport_paintable = &painting.NavigableContainerViewportPaintable{
 				viewport_rect: painting.Rect{
 					x: position.x().to_double()
 					y: position.y().to_double()
@@ -3650,7 +3650,7 @@ fn block_box_from_typed_layout_shallow(node &Node, state &LayoutState, ancestor_
 		if image_box := node.as_box() {
 			replaced_intrinsic_size = image_box.natural_size()
 		}
-		replaced_image_paintable = painting.ImagePaintable{
+		replaced_image_paintable = &painting.ImagePaintable{
 			image_rect: painting.Rect{
 				x: paint_position.x().to_double()
 				y: paint_position.y().to_double()
@@ -3682,7 +3682,7 @@ fn block_box_from_typed_layout_shallow(node &Node, state &LayoutState, ancestor_
 			canvas := unsafe { &dom.HTMLCanvasElement(canvas_element) }
 			if bitmap := html.html_canvas_element_present_existing_surface(canvas) {
 				canvas_bitmap = bitmap
-				canvas_paintable = painting.CanvasPaintable{
+				canvas_paintable = &painting.CanvasPaintable{
 					canvas_rect: painting.Rect{
 						x: position.x().to_double()
 						y: position.y().to_double()
@@ -3726,7 +3726,7 @@ fn block_box_from_typed_layout_shallow(node &Node, state &LayoutState, ancestor_
 				}
 				.transparent_black {}
 			}
-			video_paintable = painting.VideoPaintable{
+			video_paintable = &painting.VideoPaintable{
 				video_rect: painting.Rect{
 					x: position.x().to_double()
 					y: position.y().to_double()
@@ -3762,7 +3762,7 @@ fn block_box_from_typed_layout_shallow(node &Node, state &LayoutState, ancestor_
 		viewport := unsafe { &NavigableContainerViewport(node) }
 		viewport.did_set_content_size(used.content_size())
 		nested_viewport_document = viewport.content_document()
-		nested_viewport_paintable = painting.NavigableContainerViewportPaintable{
+		nested_viewport_paintable = &painting.NavigableContainerViewportPaintable{
 			viewport_rect: painting.Rect{
 				x: position.x().to_double()
 				y: position.y().to_double()
