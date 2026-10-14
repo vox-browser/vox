@@ -2554,6 +2554,95 @@ Evidence: `Build/instructions/vox-opt26-interleaved-*` and
 gc-macro-proof,gc-policy-result,cli-resume,capture-audit,build-retry,
 validation-result,bundle-result}.json`.
 
+## Skip scans for absent pseudo styles
+
+Feature `909f2968` avoids the known-pseudo-element scan during keyframe
+invalidation when an element has no pseudo records. The base element's
+animation names are checked first. A nonempty record map retains the complete
+original scan, including computed pseudo styles that have no layout node.
+Checking only painted pseudo-elements would miss those styles.
+
+Six focused functional cases plus one diagnostic pass with **1,131 assertions**
+in before/final C-optimized Boehm builds and in the final no-GC ownership build.
+Coverage includes base lists and quoted names, case sensitivity, unlaid-out
+pseudo styles, the highest known pseudo, cleared/reused records, forced GC,
+precise invalidation, shadow descendants and shadow-host fan-out.
+The controlled diagnostic makes 4,096 passes over 64 live elements: 62 empty
+pseudo maps, one base animation name and one pseudo-only name. Three fixed
+alternating pairs all improve: median **350,882,116 → 19,244,283 instructions
+(−94.52%)**, preserving the independent checksum of 4,096. Setup, eight warmups,
+forced collection and assertions stay outside the counter.
+
+Fresh paired V profiles of the identical focused replay record 262,678 calls
+to the invalidation predicate in each build. Pseudo-style queries fall from
+**5,440,151 to 310,031 (−94.30%)**, avoiding 5,130,120 queries; actual
+animation-name style checks remain 8,222 in both builds. These are full-process
+C `-O1`/Boehm call counts, including setup and the probe, with `-profile-no-inline`
+and no filter or counter reset. Instrumented timings and instruction counts
+receive no normal-page credit.
+
+Thirty alternating normal-build pairs were fixed before measurement, comparing
+the retained round26 executable/source snapshot with this guard. Both executable
+images are persisted in `Build/v`, use C `-O2` with Boehm and one marker, and
+load the same frozen native library. Both clear `GC_MARKERS`; profiling and
+allocation wrappers are off. Fresh byte-identical copies of the immutable cache
+use one RAM-backed parent for all pairs, chosen before measurement to avoid
+system-disk cache-copy exhaustion. The endpoint remains
+`native.scopes.navigation_to_first_document_paint[0]` at 1024×768.
+
+| Build | Median instructions through first native document frame |
+| --- | ---: |
+| Probe all known pseudos | 32,167,225,634 |
+| Skip empty pseudo maps | 31,715,678,253.5 |
+
+The observed reduction is **451,547,380.5 instructions
+(1.40%)**, with **23/30 pairs improving**.
+The paired median saving is 457,607,797.5; its 95% paired
+percentile bootstrap interval is **384,674,505 to 551,900,614.5** instructions
+(30,000 resamples, seed 27). Repeatable page savings credited:
+451,547,380.5. No completed observations were discarded and
+the sample was not extended after results.
+
+All sixty primary intervals have one installation, two geometry passes and one
+shell paint recording before the first frame. All captures have valid viewport,
+cache and binary hashes. Candidate pair 1 refreshed after the primary endpoint;
+its screenshot shows the later document and its process/installation totals
+include that extra work. The retained primary sample is the initial cached
+frame at 31,685,160,623 instructions, exactly the predeclared first-scope rule.
+The later refresh is recorded separately in `instruction-opt27-capture-audit.json`.
+
+All other generated executable logic, layouts and resources match after compiler
+identities and authenticated embed keys are canonicalized. Removing the one
+new C branch reproduces the old predicate after temporary names are normalized;
+the existing pseudo scan is unchanged. Native flags, GC initialization and all
+120 frozen native inputs are unchanged apart from artifact paths.
+
+The observed saving crossed the user's 5,000,000-instruction gate. One broad
+batch completed: all six final jobs for 87 selected CSS/SVG/layout cases pass
+in both GC modes. Initial outer `vtest` jobs reported blank compilation failures
+with zero test runtime during disk exhaustion, and the supervisor's result write
+also failed with ENOSPC. The successful SVG/Boehm job was retained; the five
+unfinished jobs used the identical V test harness and unchanged sources with
+explicit RAM-backed outputs. Their actual commands, logs and exits are retained.
+All nineteen screenshot comparisons pass, sixteen pixel-exact; existing
+differences remain inline-node (13 pixels), text-decorations (1,341) and
+canvas-text (1,994). The focused viewport is pixel-exact.
+
+The measured candidate is installed in `Build/v/Vox.app`; ad-hoc signing,
+deep strict verification and headless startup pass. Native text SHA-256:
+`de648d132a6e0fa544029a1bb353b8f56d2d503e0a5cf3e777a269733b39b30c`. The existing GUI process was not restarted.
+Independent native media work is preserved in the repository and excluded from
+both comparison snapshots; the installed artifact retains the measured runtime
+scope. GC remains enabled. The broad baseline is now `909f2968` at
+31,715,678,253.5 instructions; additional savings after this
+batch reset to zero. Chrome instruction/functionality parity remains open.
+
+Evidence is under `Build/instructions/vox-opt27-interleaved-*` and
+`Build/v/instruction-opt27-*`, including `comparison-evidence.json`,
+`matching-provenance.json`, `profile-evidence.json`, `diagnostic-result.json`,
+`capture-audit.json`, `broad-resume.json`, `completed-artifact-compression.json`,
+`validation-result.json` and `bundle-result.json` with the round prefix.
+
 ## Causes and changes
 
 - The V 0.5.2 compatibility compiler's `-prod` Boehm code repeatedly snapshots
