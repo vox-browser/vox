@@ -2632,8 +2632,9 @@ pub fn (b &BlockBox) paint_commands() []PaintCommand {
 
 fn (b &BlockBox) paint_commands_from_plan(entries []PaintOrderEntry, steps []CompatibilityPaintStep) []PaintCommand {
 	phase_commands, command_count := b.build_paint_phase_command_cache(entries)
-	return filter_line_box_debug_commands(replay_cached_paint_commands(steps, phase_commands,
-		command_count), false)
+	mut commands := replay_cached_paint_commands(steps, phase_commands, command_count)
+	filter_line_box_debug_commands(mut commands, false)
+	return commands
 }
 
 // Translation of PaintableBox::m_cached_phase_commands. Each retained box has
@@ -2789,11 +2790,23 @@ fn append_line_box_debug_commands(mut commands []PaintCommand, fragment TextFrag
 	}
 }
 
-fn filter_line_box_debug_commands(commands []PaintCommand, visible bool) []PaintCommand {
+// Only compact a newly replayed command buffer, never a retained phase bucket.
+// Cached guides remain available when the inspector toggles their visibility.
+fn filter_line_box_debug_commands(mut commands []PaintCommand, visible bool) {
 	if visible {
-		return commands
+		return
 	}
-	return commands.filter(!it.line_box_debug)
+	mut write_index := 0
+	for read_index in 0 .. commands.len {
+		if commands[read_index].line_box_debug {
+			continue
+		}
+		if write_index != read_index {
+			commands[write_index] = commands[read_index]
+		}
+		write_index++
+	}
+	commands.trim(write_index)
 }
 
 // Compatibility layout can still supply word fragments for one naturally-spaced DOM text node;

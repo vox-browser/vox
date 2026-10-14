@@ -1947,7 +1947,7 @@ fn viewport_record_display_list(target voidptr) &dom.DisplayList {
 	if model := html.NavigableModel.navigable_with_active_document(result.document) {
 		show_line_box_borders = model.should_show_line_box_borders()
 	}
-	commands = filter_line_box_debug_commands(commands, show_line_box_borders)
+	filter_line_box_debug_commands(mut commands, show_line_box_borders)
 	commands << result.paint_tree.paint_inspector_overlay(result.document, result.visual_context_tree,
 		snapshot)
 	if model := html.NavigableModel.navigable_with_active_document(result.document) {
