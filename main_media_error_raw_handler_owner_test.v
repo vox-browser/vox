@@ -295,7 +295,9 @@ globalThis.mreIDL=function(event){mreOrder.push("idl");mreSaved.push(event);mreC
 	assert runtime.evaluate_host('mreVideo.onerror=mreIDL;mreVideo.removeAttribute("onerror");mreVideo.onerror===mreIDL')! == 'true'
 	media_error_raw_owner_queue(media, state, 'retained IDL without attribute', false)
 	media_error_raw_owner_drain(document)
-	assert runtime.evaluate_host('mreOrder.join(",")==="replacement,later,first,second,idl,later,later,idl,later"&&mreChecks.length===7&&mreChecks.every(Boolean)&&mreSaved.length===3&&mreSaved.every(event=>event.defaultPrevented)&&window.event===undefined')! == 'true'
+	// Removing the raw slot removed its listener. Reinstalling the IDL slot
+	// appends its new listener after the existing ordinary listener.
+	assert runtime.evaluate_host('mreOrder.join(",")==="replacement,later,first,second,idl,later,later,later,idl"&&mreChecks.length===7&&mreChecks.every(Boolean)&&mreSaved.length===3&&mreSaved.every(event=>event.defaultPrevented)&&window.event===undefined')! == 'true'
 	assert media.event_count('error') == 4 && state.events.len == 4
 	for index, event in [state.events[0], state.events[1], state.events[3]] {
 		media_error_raw_owner_event(mut runtime, event, 'mreSaved[${index}]')!
@@ -337,7 +339,10 @@ fn test_media_raw_error_reentrant_load_resets_failure_and_keeps_the_captured_bat
 		return actual_true
 	})!
 	body := r'mreOrder.push("before-load");mreSaved.push(event);mreChecks.push(arguments.length===1&&event===arguments[0]&&this===mreVideo&&event.isTrusted&&window.event===event&&networkState===3&&mreReasons.length===0&&__mediaErrorRawPendingRecord());this.load();mreOrder.push("after-load");mreChecks.push(networkState===0&&readyState===0&&paused===true&&__mediaErrorRawResetRecord());document.getElementById("mre-result").textContent="raw media error reset painted";return false;'
-	assert runtime.evaluate_host('mreVideo.setAttribute("onerror",${json2.encode(body)});mreVideo.addEventListener("error",function(event){mreOrder.push("later");mreChecks.push(this===mreVideo&&event===mreSaved[0]&&event.defaultPrevented&&window.event===event&&this.networkState===0)});true')! == 'true'
+	// Replay the compact attribute and compile its native slot before adding
+	// the listener whose ordering this controlled task is meant to exercise.
+	assert runtime.evaluate_host('mreVideo.setAttribute("onerror",${json2.encode(body)});globalThis.mreReset=mreVideo.onerror;typeof mreReset==="function"&&mreReset.name==="onerror"&&mreReset.length===1&&mreVideo.onerror===mreReset')! == 'true'
+	assert runtime.evaluate_host('mreVideo.addEventListener("error",function(event){mreOrder.push("later");mreChecks.push(this===mreVideo&&event===mreSaved[0]&&event.defaultPrevented&&window.event===event&&this.networkState===0)});true')! == 'true'
 	media_error_raw_owner_observe(video, state)
 	media_error_raw_owner_queue(media, state, state.message, true)
 	(media_error_raw_owner_take_task(document) or { panic('Missing reset source failure task') }).execute()
@@ -375,7 +380,9 @@ fn test_media_raw_error_scripting_gate_strict_original_exception_later_listener_
 	state := &MediaErrorRawOwnerState{ message: 'strict source failure' }
 	media_error_raw_owner_probe(mut runtime, document, media, state, '__mediaErrorRawStrictRecord')!
 	body := r'"use strict";mreOrder.push("strict");mreSaved.push(event);mreChecks.push(arguments.length===1&&event===arguments[0]&&this===mreVideo&&event.target===this&&event.currentTarget===this&&event instanceof Event&&event.isTrusted&&!event.bubbles&&!event.cancelable&&window.event===event&&this.networkState===3&&__mediaErrorRawStrictRecord());try{void arguments.callee;mreChecks.push(false)}catch(error){mreChecks.push(error instanceof TypeError)}this.onerror=null;globalThis.mreLiveName=onerror;throw mreReason;'
-	assert runtime.evaluate_host('mreVideo.setAttribute("onerror",${json2.encode(body)});true')! == 'true'
+	// A state getter flushes the compact attribute without compiling onerror,
+	// preserving a raw string slot for the disabled-scripting check below.
+	assert runtime.evaluate_host('mreVideo.setAttribute("onerror",${json2.encode(body)});mreVideo.paused===true')! == 'true'
 	slot := native.data.event_handler_map['error'] or { panic('Gated raw error slot missing') }
 	mut owner := app.page_model
 	owner.set_is_scripting_enabled(false)
