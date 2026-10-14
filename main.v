@@ -2988,6 +2988,7 @@ fn (mut app BrowserApp) install_loaded_page(loaded LoadedPage, add_history bool)
 		if resource.error == '' && app.resource_cache.len < max_cached_resources {
 			app.resource_cache[resource_url] = resource
 		}
+		publish_browser_svg_resource(resource)
 	}
 	app.js_messages << install_external_styles(app.document, resource_base_url, preloaded_resources)
 	checkpoint = debug_timing_checkpoint('install_styles', checkpoint)
@@ -3901,18 +3902,30 @@ fn (mut app BrowserApp) request_background_resource(image_url string) {
 }
 
 fn (mut app BrowserApp) poll_background_resources() {
+	mut new_svg_resource := false
 	for {
 		select {
 			resource := <-app.background_resource_results {
 				app.background_resource_pending.delete(resource.url)
+				previous_svg_available := if previous := app.resource_cache[resource.url] {
+					previous.error == '' && previous.body != ''
+				} else { false }
+				failed_previous_svg := previous_svg_available
+					&& (resource.error != '' || resource.body == '')
+					&& resource.url.all_before('#').all_before('?').to_lower().ends_with('.svg')
 				if app.resource_cache.len < max_cached_resources || resource.url in app.resource_cache {
 					app.resource_cache[resource.url] = resource
 				}
+				if publish_browser_svg_resource(resource) || failed_previous_svg { new_svg_resource = true }
 			}
 			else {
-				return
+				break
 			}
 		}
+	}
+	if new_svg_resource && app.document != unsafe { nil } {
+		app.document.tear_down_layout_tree()
+		app.relayout(app.viewport_width, app.viewport_height + app.chrome_height())
 	}
 }
 
@@ -5821,7 +5834,7 @@ fn (mut app BrowserApp) draw() {
 	// presented this first frame. This keeps TLS/framework initialization from
 	// delaying the window and gives cached pages an immediate first paint.
 	app.start_pending_navigation()
-	if app.screenshot_path != '' && !app.screenshot_scheduled && app.document != unsafe { nil } && !app.load_status.starts_with('Loading ') {
+	if app.screenshot_path != '' && !app.screenshot_scheduled && app.document != unsafe { nil } && !app.load_status.starts_with('Loading ') && app.background_resource_pending.len == 0 {
 		app.screenshot_scheduled = true
 		schedule_native_screenshot(app.screenshot_path)
 	}
