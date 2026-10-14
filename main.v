@@ -2077,8 +2077,8 @@ fn apply_javascript_state(document &dom.Document, encoded string, canvas_element
 				if kind == 'wheelContentAttribute' {
 					// Replay explicit writes even when the attribute text is unchanged:
 					// those writes replace an earlier IDL-installed handler.
-					if value := json_string_property(operation, 'value') {
-						target.set_attribute_value('onwheel', value)
+					if wheel_attribute_value := json_string_property(operation, 'value') {
+						target.set_attribute_value('onwheel', wheel_attribute_value)
 					} else {
 						target.remove_attribute('onwheel')
 					}
