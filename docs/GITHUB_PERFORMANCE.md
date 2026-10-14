@@ -172,6 +172,55 @@ These individual runs show a remaining gap to the earlier 1.5-second Chrome FCP
 measurement; they do not establish Chrome parity. GitHub module execution and
 its hydrated file rows remain unsupported by the compact browser backend.
 
+## Retained parser input and SVG geometry follow-up
+
+The next allocation-stack diagnostic found repeated copies of parser input,
+three parses of each validated selector, full native-element registry snapshots
+for individual bindings, and complete computed-style materialization while
+building SVG models. It also found document-root checks invoking value equality,
+which copied two 640-byte DOM node records for each unsuccessful check.
+
+The follow-up retains immutable component/token spans across parser transactions,
+supplies EOF without appending a sentinel, and validates a single selector graph.
+CSS keyword comparisons fold only ASCII bytes without allocating lowercase
+strings. Containing-block recomputation indexes inline nodes once, preserving
+continuation order and ignoring stale DOM handles from an earlier layout tree.
+Native bindings resolve one registry key while preserving provider precedence
+and live replacements. SVG models read their filter properties directly, and
+path boxes retain immutable parsed geometry keyed by the applied CSS `d` value.
+Document-root checks now compare pointer identity.
+
+The allocation wrapper counted 47,305,300 managed allocation calls requesting
+4,527,048,497 bytes before the registry/selector/SVG changes and 35,244,219 calls
+requesting 4,073,835,695 bytes afterward: about 25.5% fewer calls and 10.0% fewer
+requested bytes. These process totals include capture-related frames and exclude
+native/JSC allocation. The latter measurement precedes the document-root change.
+Their instrumented document-install times were 4819 ms and 2942 ms; host load
+changed between runs, so those times do not establish a controlled speedup ratio.
+
+The final signed, uninstrumented GC build installed the cached document in
+4550 ms and 4148 ms. Installation through first native frame submission took
+4930 ms and 4341 ms; navigation through that submission took 5290 ms and 4574 ms.
+Peak RSS was 1286.5 MB and 1349.3 MB. The timing output now reports these complete
+intervals, and `first_paint_total` includes the complete frame rather than just
+the final segment after document replay. Native submission is not web FCP.
+
+A fresh isolated Chrome 155.0.8059.80 run reported FCP at 2436 ms, DOMContentLoaded
+at 1331 ms, and load at 1468 ms. Its screenshot showed populated rows and 72
+file/directory links. Vox's cached screenshot still shows loading placeholders;
+its module backend remains incomplete. The inputs also differ between cached
+Vox HTML/resources and Chrome's cold network navigation. Chrome speed and
+functionality parity have not been achieved.
+
+GC remains enabled. A lower heap-divisor probe timed out before startup timing
+was emitted and provides no valid navigation measurement; it did not change
+the default collector policy. Compiler scratch files were moved to a scratch
+volume after disk exhaustion interrupted builds. Those interrupted compilations
+are not test-body failures. Retried parser and SVG suites passed, including
+forced collection, and borrowed parser input also passed with `-prealloc`.
+The final native startup/signature checks and six screenshot comparisons pass;
+ordered lists, SVG image replacement, and both turbulence cases are pixel-exact.
+
 ## Validation and reproduction
 
 Focused tests cover forced-GC token retention, arena pointer stability and
