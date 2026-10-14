@@ -2965,14 +2965,8 @@ fn (mut parser RuleSelectorParser) parse_a_selector_list(mut tokens ParserTokenS
 			} else {
 				return none
 			}
-		} else if parser_selector_text_is_syntactically_valid(selector_text, mode, parser.declared_namespaces) {
-			mut parsed := selector_list_from_text(selector_text, mode == .relative)
-			if parsed.selectors.len == 0 {
-				parsed.selectors << selector_from_text(selector_text)
-			}
-			for selector in parsed.selectors {
-				selectors.selectors << selector
-			}
+		} else if selector := parser_parse_validated_selector(selector_text, mode, parser.declared_namespaces) {
+			selectors.selectors << selector
 		} else if parsing_mode == .forgiving {
 			selectors.selectors << selector_from_text(selector_text)
 		} else {
@@ -3148,26 +3142,36 @@ fn parser_is_valid_layer_name_part(token ComponentValue) bool {
 	return token.is(.ident) && !is_css_wide_keyword_local(token.token().ident())
 }
 
-fn parser_selector_text_is_syntactically_valid(selector_text string, mode ParserSelectorType, declared_namespaces map[string]bool) bool {
+fn parser_parse_validated_selector(selector_text string, mode ParserSelectorType, declared_namespaces map[string]bool) ?Selector {
 	trimmed := selector_text.trim_space()
 	if trimmed.len == 0 {
-		return false
+		return none
 	}
 	if mode == .standalone && (trimmed.starts_with('>') || trimmed.starts_with('+')
 		|| trimmed.starts_with('~')) {
-		return false
+		return none
 	}
 	if trimmed.ends_with('>') || trimmed.ends_with('+') || trimmed.ends_with('~')
 		|| trimmed.ends_with(',') {
-		return false
+		return none
 	}
 	if !parser_balanced_selector_text(trimmed) {
-		return false
+		return none
 	}
-	if selector_text_has_invalid_simple_selectors(trimmed, mode == .relative) {
-		return false
+	// Syntax validation, namespace validation and the returned selector must
+	// share one graph instead of parsing the same complex selector three times.
+	mut selector := selector_from_text(trimmed)
+	compounds := selector.compound_selectors()
+	if parsed_selector_has_invalid_simple_selectors(trimmed, compounds, mode == .relative)
+		|| parser_selector_value_uses_undeclared_namespace(selector, declared_namespaces) {
+		return none
 	}
-	return !parser_selector_uses_undeclared_namespace(trimmed, declared_namespaces)
+	if mode == .relative && compounds.len > 0 && compounds[0].combinator == .no_combinator {
+		mut adapted := compounds.clone()
+		adapted[0].combinator = .descendant
+		selector = selector_from_compound_selectors(adapted)
+	}
+	return selector
 }
 
 fn parser_balanced_selector_text(text string) bool {
@@ -3205,26 +3209,6 @@ fn parser_balanced_selector_text(text string) bool {
 		i++
 	}
 	return parens == 0 && squares == 0 && quote == 0
-}
-
-fn parser_selector_uses_undeclared_namespace(text string, declared_namespaces map[string]bool) bool {
-	for selector_text in split_selector_list_text(text) {
-		if parser_complex_selector_uses_undeclared_namespace(selector_text.trim_space(), declared_namespaces) {
-			return true
-		}
-	}
-	return false
-}
-
-fn parser_complex_selector_uses_undeclared_namespace(text string, declared_namespaces map[string]bool) bool {
-	for compound_selector in parse_complex_selector(text) {
-		for simple_selector in compound_selector.simple_selectors {
-			if parser_simple_selector_uses_undeclared_namespace(simple_selector, declared_namespaces) {
-				return true
-			}
-		}
-	}
-	return false
 }
 
 fn parser_simple_selector_uses_undeclared_namespace(simple_selector SimpleSelector, declared_namespaces map[string]bool) bool {

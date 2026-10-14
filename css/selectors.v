@@ -2885,10 +2885,13 @@ fn selector_list_text_is_valid_for_standard(text string, relative bool) bool {
 }
 
 fn selector_text_has_invalid_simple_selectors(text string, relative bool) bool {
+	return parsed_selector_has_invalid_simple_selectors(text, parse_complex_selector(text), relative)
+}
+
+fn parsed_selector_has_invalid_simple_selectors(text string, compound_selectors []CompoundSelector, relative bool) bool {
 	if selector_text_has_bad_top_level_combinators(text, relative) {
 		return true
 	}
-	compound_selectors := parse_complex_selector(text)
 	if compound_selectors.len == 0 {
 		return true
 	}
