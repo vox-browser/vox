@@ -5610,6 +5610,11 @@ pub fn (mut e Element) attribute_changed(local_name string, old_value ?string, v
 	}
 
 	value_or_empty := value or { '' }
+	if local_name == 'autoplay' && e.is_html_element() && e.local_name() in ['audio', 'video'] {
+		if hook := e.document().media_element_autoplay_attribute_changed_hook_ {
+			hook(&e)
+		}
+	}
 	// HTMLLinkElement::attribute_changed forwards media to its associated
 	// sheet without replacing the sheet or fetching the resource again.
 	if e.is_html_element() && e.local_name() == 'link' && local_name == 'media' {

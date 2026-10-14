@@ -281,6 +281,7 @@ pub fn HTMLMediaElement.create(element ?&dom.HTMLElement, base_url dom.URL) &HTM
 		dom_element := unsafe { &dom.Element(html_element) }
 		mut document := dom_element.document()
 		document.set_media_element_state_query(media_element_matches_pseudo_class)
+		document.set_media_element_autoplay_attribute_changed_hook(html_media_element_autoplay_attribute_changed)
 		mut observer := dom.DocumentObserver.create(mut document)
 		observer.set_document_became_inactive(fn [media] () {
 			mut mutable_media := unsafe { &HTMLMediaElement(media) }
@@ -356,7 +357,7 @@ pub fn html_media_element_for_dom_element(element &dom.Element) ?&HTMLMediaEleme
 			model.set_source(element.get_attribute('src'))
 			model.set_crossorigin(element.get_attribute('crossorigin'))
 			model.set_preload(element.get_attribute('preload'))
-			model.set_autoplay(element.has_attribute('autoplay'))
+			model.autoplay_ = element.has_attribute('autoplay')
 			audio.media_element_model_ = model
 		}
 		return unsafe { &HTMLMediaElement(audio.media_element_model_) }
@@ -369,7 +370,7 @@ pub fn html_media_element_for_dom_element(element &dom.Element) ?&HTMLMediaEleme
 			model.set_source(element.get_attribute('src'))
 			model.set_crossorigin(element.get_attribute('crossorigin'))
 			model.set_preload(element.get_attribute('preload'))
-			model.set_autoplay(element.has_attribute('autoplay'))
+			model.autoplay_ = element.has_attribute('autoplay')
 			video.media_element_model_ = model
 		}
 		return unsafe { &HTMLMediaElement(video.media_element_model_) }
@@ -389,6 +390,20 @@ fn media_element_matches_pseudo_class(element &dom.Element, pseudo_class dom.Med
 		.buffering { media.blocked() }
 		.stalled { media.stalled() }
 	}
+}
+
+fn html_media_element_autoplay_attribute_changed(element &dom.Element) {
+	if !element.is_html_element() { return }
+	model_pointer := match element.local_name() {
+		'audio' { unsafe { &dom.HTMLAudioElement(element) }.media_element_model_ }
+		'video' { unsafe { &dom.HTMLVideoElement(element) }.media_element_model_ }
+		else { return }
+	}
+	// Attribute scans during parsing do not materialize media state. Only a
+	// resource selection which already belongs to this actual owner can resume.
+	if model_pointer == unsafe { nil } { return }
+	mut media := unsafe { &HTMLMediaElement(model_pointer) }
+	media.autoplay_attribute_changed()
 }
 
 // CSS/Invalidation/ElementStateInvalidator.cpp records typed state changes.
@@ -423,6 +438,7 @@ pub fn (mut element HTMLMediaElement) adopted_from(old_document &dom.Document) {
 	html_element := element.associated_element_ or { return }
 	mut new_document := unsafe { &dom.Element(html_element) }.document()
 	element.base_url_ = new_document.base_url()
+	new_document.set_media_element_autoplay_attribute_changed_hook(html_media_element_autoplay_attribute_changed)
 	if observer := element.document_observer_ {
 		mut mutable_observer := unsafe { &dom.DocumentObserver(observer) }
 		mutable_observer.retarget_for_adoption(mut new_document)
@@ -831,8 +847,27 @@ pub fn (mut element HTMLMediaElement) set_loop(value bool) {
 	}
 }
 
+pub fn (element &HTMLMediaElement) autoplay() bool {
+	if html_element := element.associated_element_ {
+		return unsafe { &dom.Element(html_element) }.has_attribute('autoplay')
+	}
+	return element.autoplay_
+}
+
 pub fn (mut element HTMLMediaElement) set_autoplay(value bool) {
 	element.autoplay_ = value
+	if html_element := element.associated_element_ {
+		mut dom_element := unsafe { &dom.Element(html_element) }
+		if value {
+			dom_element.set_attribute_value('autoplay', '')
+		} else {
+			dom_element.remove_attribute('autoplay')
+		}
+	}
+	element.autoplay_attribute_changed()
+}
+
+fn (mut element HTMLMediaElement) autoplay_attribute_changed() {
 	if element.waiting_for_an_implementation_defined_event_to_fetch_the_resource_
 		&& !element.should_wait_for_an_implementation_defined_event_before_fetching_the_resource() {
 		element.continue_fetching_the_resource_after_an_implementation_defined_event() or {}
@@ -1938,7 +1973,7 @@ pub fn (mut element HTMLMediaElement) advance_playback(elapsed_seconds f64) {
 }
 
 pub fn (element &HTMLMediaElement) is_eligible_for_autoplay() bool {
-	if !element.can_autoplay_ || !element.paused_ || !element.autoplay_ || !element.allow_autoplay_ {
+	if !element.can_autoplay_ || !element.paused_ || !element.autoplay() || !element.allow_autoplay_ {
 		return false
 	}
 	if html_element := element.associated_element_ {

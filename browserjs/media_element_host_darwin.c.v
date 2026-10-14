@@ -141,6 +141,20 @@ pub fn (mut host MediaElementHost) install(mut runtime Runtime) ! {
 			return host.runtime.actual_javascript_exception(host.runtime.binding_exception_value(err))
 		}
 	})!
+	autoplay_getter := runtime.make_native_value_host_function('get autoplay', 0, fn [handle] (receiver voidptr, _ []voidptr) !voidptr {
+		mut host := unsafe { &MediaElementHost(handle) }
+		return host.autoplay(receiver) or {
+			return host.runtime.actual_javascript_exception(host.runtime.binding_exception_value(err))
+		}
+	})!
+	autoplay_setter := runtime.make_native_value_host_function('set autoplay', 1, fn [handle] (receiver voidptr, args []voidptr) !voidptr {
+		mut host := unsafe { &MediaElementHost(handle) }
+		mut value := C.JSValueMakeUndefined(host.runtime.context)
+		if args.len > 0 { value = args[0] }
+		return host.set_autoplay(receiver, value) or {
+			return host.runtime.actual_javascript_exception(host.runtime.binding_exception_value(err))
+		}
+	})!
 	bind := runtime.make_value_host_function(fn [handle] (_ voidptr, args []voidptr) !voidptr {
 		mut host := unsafe { &MediaElementHost(handle) }
 		return host.bind(args) or {
@@ -153,7 +167,8 @@ pub fn (mut host MediaElementHost) install(mut runtime Runtime) ! {
 	host.prototype = runtime.retain_javascript_value(runtime.call_javascript_function(factory,
 		C.JSValueMakeUndefined(runtime.context), [array, setter_array, bind, fast_seek, start_date,
 			pause, load, play, handler_getter_array, handler_setter_array, can_play_type,
-			default_muted_getter, default_muted_setter, set_attribute_sync, loop_getter, loop_setter])!)!
+			default_muted_getter, default_muted_setter, set_attribute_sync, loop_getter, loop_setter,
+			autoplay_getter, autoplay_setter])!)!
 	runtime.add_canvas_element_provider_with_lookup(fn [handle] () map[string]&dom.Element {
 		host := unsafe { &MediaElementHost(handle) }
 		return host.elements_for_binding()
@@ -259,6 +274,30 @@ fn (mut host MediaElementHost) set_loop(receiver voidptr, value voidptr) !voidpt
 			C.JSValueMakeUndefined(host.runtime.context), [receiver,
 				host.runtime.binding_string('loop'), C.JSValueMakeBoolean(host.runtime.context, present)])!
 	}
+	return C.JSValueMakeUndefined(host.runtime.context)
+}
+
+fn (mut host MediaElementHost) autoplay(receiver voidptr) !voidptr {
+	host.media_element_for_binding(receiver)!
+	if replay := host.replay { replay(host.runtime)! }
+	element := host.bound_elements[receiver] or {
+		return error('TypeError: Not an object of type HTMLMediaElement')
+	}
+	return C.JSValueMakeBoolean(host.runtime.context, element.has_attribute('autoplay'))
+}
+
+fn (mut host MediaElementHost) set_autoplay(receiver voidptr, value voidptr) !voidptr {
+	mut media := host.media_element_for_binding(receiver)!
+	present := C.JSValueToBoolean(host.runtime.context, value)
+	if replay := host.replay { replay(host.runtime)! }
+	// Resource fetching can reenter JavaScript after the DOM mutation. Publish
+	// the outer write first so an inner reflected write remains the final value.
+	if host.attribute_sync != unsafe { nil } {
+		host.runtime.call_javascript_function(host.attribute_sync,
+			C.JSValueMakeUndefined(host.runtime.context), [receiver,
+				host.runtime.binding_string('autoplay'), C.JSValueMakeBoolean(host.runtime.context, present)])!
+	}
+	media.set_autoplay(present)
 	return C.JSValueMakeUndefined(host.runtime.context)
 }
 
@@ -440,11 +479,11 @@ fn (mut host MediaElementHost) set_property(name string, receiver voidptr, value
 
 // The compact DOM hierarchy remains partial. This base prototype exposes only
 // the completed state/range getters, rate/volume/time accessors, fastSeek,
-// getStartDate, pause, load, play, canPlayType, defaultMuted and loop reflection,
+// getStartDate, pause, load, play, canPlayType, defaultMuted, loop and autoplay reflection,
 // selected media and input handler attributes,
 // and constants.
 // Full HTMLElement/audio/video interfaces remain open.
-const media_element_native_factory = r'(function(getters,setters,bind,fastSeek,getStartDate,pause,load,play,handlerGetters,handlerSetters,canPlayType,defaultMutedGetter,defaultMutedSetter,setAttributeSync,loopGetter,loopSetter){
+const media_element_native_factory = r'(function(getters,setters,bind,fastSeek,getStartDate,pause,load,play,handlerGetters,handlerSetters,canPlayType,defaultMutedGetter,defaultMutedSetter,setAttributeSync,loopGetter,loopSetter,autoplayGetter,autoplaySetter){
  "use strict";
  const define=Object.defineProperty,create=Object.create,P=Proxy,T=TypeError;
  const prototype=create(EventTarget.prototype);
@@ -465,6 +504,7 @@ const media_element_native_factory = r'(function(getters,setters,bind,fastSeek,g
  define(prototype,"canPlayType",{value:canPlayType,writable:true,enumerable:true,configurable:true});
  define(prototype,"defaultMuted",{get:defaultMutedGetter,set:defaultMutedSetter,enumerable:true,configurable:true});
  define(prototype,"loop",{get:loopGetter,set:loopSetter,enumerable:true,configurable:true});
+ define(prototype,"autoplay",{get:autoplayGetter,set:autoplaySetter,enumerable:true,configurable:true});
  define(prototype,Symbol.toStringTag,{value:"HTMLMediaElement",configurable:true});
  const constructor=new P(function HTMLMediaElement(){},{apply(){throw new T("Illegal HTMLMediaElement constructor")},construct(){throw new T("Illegal HTMLMediaElement constructor")}});
  define(constructor,"prototype",{value:prototype,writable:false});
