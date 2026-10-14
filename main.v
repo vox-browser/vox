@@ -322,6 +322,7 @@ mut:
 	screenshot_scroll_applied           bool
 	layout_tree_only                    bool
 	document_presented                  bool
+	paint_timing                        BrowserPaintTiming
 	animation_epoch_ns                  u64
 	initial_window_frame_presented      bool
 	refresh_not_before                  i64
@@ -2865,6 +2866,7 @@ fn (mut app BrowserApp) install_loaded_page(loaded LoadedPage, add_history bool)
 	app.js_messages = []
 	mut checkpoint := time.sys_mono_now()
 	install_start := checkpoint
+	app.paint_timing.document_install_start_ns = i64(install_start)
 	initiator_origin := if app.document != unsafe { nil } { ?dom.Origin(app.document.origin()) } else { none }
 	previous_document := if app.document != unsafe { nil } { ?&dom.Document(app.document) } else { ?&dom.Document(none) }
 	app.document = if document_url := dom.dom_url_parse(loaded.url, dom.url_about_blank(),
@@ -2964,6 +2966,7 @@ fn (mut app BrowserApp) navigate(address string, add_history bool) {
 		''
 	}
 	resolved := resolve_url(address, base)
+	app.paint_timing.begin_navigation()
 	app.load_status = 'Loading ${resolved}'
 	app.status = app.load_status
 	app.navigation_generation++
@@ -5584,6 +5587,7 @@ fn (mut app BrowserApp) draw() {
 	report_first_paint := debug_timing_enabled() && app.document != unsafe { nil }
 		&& !app.document_presented
 	mut paint_checkpoint := time.sys_mono_now()
+	first_paint_start := paint_checkpoint
 	window := browser_window_size()
 	content_viewport_height := if app.screenshot_viewport_height > 0 {
 		app.screenshot_viewport_height
@@ -5697,7 +5701,10 @@ fn (mut app BrowserApp) draw() {
 		}
 	}
 	if report_first_paint {
-		debug_timing_checkpoint('first_paint_total', paint_checkpoint)
+		debug_timing_checkpoint('first_paint_total', first_paint_start)
+	}
+	if app.document != unsafe { nil } && !app.document_presented {
+		app.paint_timing.report_document_paint()
 	}
 	if app.document != unsafe { nil } {
 		app.document_presented = true
