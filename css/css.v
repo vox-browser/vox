@@ -833,15 +833,30 @@ pub fn serialize_a_number(value f64) string {
 		return '-inf'
 	}
 
-	mut serialized := '${value:.6f}'
-	for serialized.contains('.') && serialized.ends_with('0') {
-		serialized = serialized[..serialized.len - 1]
+	// Most computed CSS values are small integers. Avoid fixed-point
+	// formatting and its fractional tail when an exact int conversion fits.
+	if value >= -2147483648.0 && value <= 2147483647.0 {
+		integer := int(value)
+		if value == f64(integer) {
+			return integer.str()
+		}
 	}
-	if serialized.ends_with('.') {
-		serialized = serialized[..serialized.len - 1]
+	serialized := '${value:.6f}'
+	decimal := serialized.index_u8(`.`)
+	mut end := serialized.len
+	if decimal >= 0 {
+		for end > decimal + 1 && serialized[end - 1] == `0` {
+			end--
+		}
+		if end == decimal + 1 {
+			end = decimal
+		}
 	}
-	if serialized == '-0' {
+	if end == 2 && serialized[0] == `-` && serialized[1] == `0` {
 		return '0'
+	}
+	if end != serialized.len {
+		return serialized[..end]
 	}
 	return serialized
 }
