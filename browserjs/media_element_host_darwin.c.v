@@ -101,6 +101,12 @@ pub fn (mut host MediaElementHost) install(mut runtime Runtime) ! {
 		// Promise-returning WebIDL operations reject binding abrupt completions.
 		return host.play(receiver) or { host.reject_play_binding_exception(err) }
 	})!
+	can_play_type := runtime.make_native_value_host_function('canPlayType', 1, fn [handle] (receiver voidptr, args []voidptr) !voidptr {
+		mut host := unsafe { &MediaElementHost(handle) }
+		return host.can_play_type(receiver, args) or {
+			return host.runtime.actual_javascript_exception(host.runtime.binding_exception_value(err))
+		}
+	})!
 	bind := runtime.make_value_host_function(fn [handle] (_ voidptr, args []voidptr) !voidptr {
 		mut host := unsafe { &MediaElementHost(handle) }
 		return host.bind(args) or {
@@ -112,7 +118,7 @@ pub fn (mut host MediaElementHost) install(mut runtime Runtime) ! {
 	defer { runtime.release_javascript_value(factory) }
 	host.prototype = runtime.retain_javascript_value(runtime.call_javascript_function(factory,
 		C.JSValueMakeUndefined(runtime.context), [array, setter_array, bind, fast_seek, start_date,
-			pause, load, play, handler_getter_array, handler_setter_array])!)!
+			pause, load, play, handler_getter_array, handler_setter_array, can_play_type])!)!
 	runtime.add_canvas_element_provider_with_lookup(fn [handle] () map[string]&dom.Element {
 		host := unsafe { &MediaElementHost(handle) }
 		return host.elements_for_binding()
@@ -217,6 +223,20 @@ fn (mut host MediaElementHost) fast_seek(receiver voidptr, args []voidptr) !void
 	return C.JSValueMakeUndefined(host.runtime.context)
 }
 
+fn (mut host MediaElementHost) can_play_type(receiver voidptr, args []voidptr) !voidptr {
+	media := host.media_element_for_binding(receiver)!
+	if args.len == 0 { return error('TypeError: canPlayType() needs one argument') }
+	// DOMString retains every UTF-16 code unit, including lone surrogates.
+	converted := host.runtime.binding_dom_utf16(args[0])!
+	type_ := converted.str()
+	if replay := host.replay { replay(host.runtime)! }
+	return host.runtime.binding_string(match media.can_play_type(type_) {
+		.empty { '' }
+		.maybe { 'maybe' }
+		.probably { 'probably' }
+	})
+}
+
 fn (mut host MediaElementHost) start_date(receiver voidptr) !voidptr {
 	media := host.media_element_for_binding(receiver)!
 	if replay := host.replay { replay(host.runtime)! }
@@ -314,10 +334,10 @@ fn (mut host MediaElementHost) set_property(name string, receiver voidptr, value
 
 // The compact DOM hierarchy remains partial. This base prototype exposes only
 // the completed state/range getters, rate/volume/time accessors, fastSeek,
-// getStartDate, pause, load, play, selected media and input handler attributes,
+// getStartDate, pause, load, play, canPlayType, selected media and input handler attributes,
 // and constants.
 // Full HTMLElement/audio/video interfaces remain open.
-const media_element_native_factory = r'(function(getters,setters,bind,fastSeek,getStartDate,pause,load,play,handlerGetters,handlerSetters){
+const media_element_native_factory = r'(function(getters,setters,bind,fastSeek,getStartDate,pause,load,play,handlerGetters,handlerSetters,canPlayType){
  "use strict";
  const define=Object.defineProperty,create=Object.create,P=Proxy,T=TypeError;
  const prototype=create(EventTarget.prototype);
@@ -335,6 +355,7 @@ const media_element_native_factory = r'(function(getters,setters,bind,fastSeek,g
  define(prototype,"pause",{value:pause,writable:true,enumerable:true,configurable:true});
  define(prototype,"load",{value:load,writable:true,enumerable:true,configurable:true});
  define(prototype,"play",{value:play,writable:true,enumerable:true,configurable:true});
+ define(prototype,"canPlayType",{value:canPlayType,writable:true,enumerable:true,configurable:true});
  define(prototype,Symbol.toStringTag,{value:"HTMLMediaElement",configurable:true});
  const constructor=new P(function HTMLMediaElement(){},{apply(){throw new T("Illegal HTMLMediaElement constructor")},construct(){throw new T("Illegal HTMLMediaElement constructor")}});
  define(constructor,"prototype",{value:prototype,writable:false});
