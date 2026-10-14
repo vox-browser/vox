@@ -7,6 +7,7 @@ import os
 import painting
 import svg
 import time
+import processmetrics
 import url
 
 const audio_controls_markup = '<style>
@@ -284,6 +285,7 @@ fn prepare_document_for_layout(document &dom.Document) {
 }
 
 fn layout_timing_checkpoint(label string, previous u64) u64 {
+	processmetrics.instruction_checkpoint(label)
 	now := time.sys_mono_now()
 	if os.getenv('LADYBIRD_DEBUG_TIMING') != '' {
 		eprintln('Ladybird V timing: ${label} ${(now - previous) / 1_000_000} ms')

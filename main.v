@@ -26,6 +26,7 @@ import os
 import page
 import painting
 import platform
+import processmetrics
 import referrerpolicy
 import requestserver
 import selection
@@ -447,8 +448,10 @@ fn debug_timing_enabled() bool {
 
 // debug_timing_checkpoint reports the elapsed time since `previous` for one load
 // phase when LADYBIRD_DEBUG_TIMING is set, and returns the current timestamp so
-// callers can chain checkpoints. It has no effect when the env var is unset.
+// callers can chain checkpoints. VOX_PROFILE_INSTRUCTIONS independently emits
+// cumulative CPU instruction counts at the same boundaries.
 fn debug_timing_checkpoint(label string, previous u64) u64 {
+	processmetrics.instruction_checkpoint(label)
 	now := time.sys_mono_now()
 	if debug_timing_enabled() {
 		eprintln('Ladybird V timing: ${label} ${(now - previous) / 1_000_000} ms')
@@ -2867,6 +2870,7 @@ fn (mut app BrowserApp) install_loaded_page(loaded LoadedPage, add_history bool)
 	mut checkpoint := time.sys_mono_now()
 	install_start := checkpoint
 	app.paint_timing.document_install_start_ns = i64(install_start)
+	app.paint_timing.installation_instructions = processmetrics.begin_instructions()
 	initiator_origin := if app.document != unsafe { nil } { ?dom.Origin(app.document.origin()) } else { none }
 	previous_document := if app.document != unsafe { nil } { ?&dom.Document(app.document) } else { ?&dom.Document(none) }
 	app.document = if document_url := dom.dom_url_parse(loaded.url, dom.url_about_blank(),
@@ -2937,6 +2941,7 @@ fn (mut app BrowserApp) install_loaded_page(loaded LoadedPage, add_history bool)
 	})
 	checkpoint = debug_timing_checkpoint('relayout', checkpoint)
 	debug_timing_checkpoint('install_total', install_start)
+	processmetrics.report_instructions('install_total', app.paint_timing.installation_instructions, processmetrics.begin_instructions())
 	title := document_title(app.document)
 	gg.set_window_title(if title != '' { '${title} — vox' } else { 'vox' })
 	if destination := javascript_navigation {
