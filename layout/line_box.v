@@ -78,7 +78,7 @@ pub fn LineBoxFragment.new_block_ellipsis(layout_node &Node, style_source &Node,
 		style_source_: style_source
 		block_ellipsis_text_: text
 		start_: start
-		length_in_code_units_: utf16_code_units_for_line_box(text).len
+		length_in_code_units_: utf16_length_for_line_box(text)
 		inline_offset_: inline_offset
 		block_offset_: block_offset
 		inline_length_: inline_length
@@ -653,6 +653,19 @@ pub fn (line &LineBox) original_available_width() AvailableSize {
 
 fn is_ascii_space_code_unit(code_unit u16) bool {
 	return code_unit in [u16(0x09), 0x0a, 0x0b, 0x0c, 0x0d, 0x20]
+}
+
+// Count offsets without materializing code units. The iterator uses the same
+// decoder as string.runes(), including one replacement rune per invalid byte.
+fn utf16_length_for_line_box(value string) int {
+	if value.is_ascii() {
+		return value.len
+	}
+	mut length := 0
+	for character in value.runes_iterator() {
+		length += if u32(character) > 0xffff { 2 } else { 1 }
+	}
+	return length
 }
 
 fn utf16_code_units_for_line_box(value string) []u16 {

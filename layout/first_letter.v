@@ -91,7 +91,7 @@ fn find_first_letter_in_inline_subtree(node &Node) (?FirstLetterTarget, bool) {
 		white_space := node.computed_values().white_space_collapse()
 		preserves := white_space in [.preserve, .preserve_breaks, .break_spaces]
 		if end := first_letter_end(text.source_text_, preserves) {
-			return FirstLetterTarget{text, end, utf16_code_units_for_line_box(text.source_text_).len}, true
+			return FirstLetterTarget{text, end, utf16_length_for_line_box(text.source_text_)}, true
 		}
 		return none, false
 	}

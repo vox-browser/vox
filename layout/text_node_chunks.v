@@ -460,7 +460,7 @@ fn text_grapheme_boundaries(text string) []int {
 	boundaries << 0
 	mut offset := 0
 	for grapheme in text.graphemes() {
-		offset += utf16_code_units_for_line_box(grapheme).len
+		offset += utf16_length_for_line_box(grapheme)
 		boundaries << offset
 	}
 	return boundaries

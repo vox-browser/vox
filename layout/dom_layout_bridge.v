@@ -133,7 +133,7 @@ fn collect_dom_visual_lines(box &Node, state &LayoutState) []dom.VisualLine {
 	text_length := if source_node := box.dom_node() {
 		source_node.length()
 	} else {
-		utf16_code_units_for_line_box(text_node.text_for_rendering()).len
+		utf16_length_for_line_box(text_node.text_for_rendering())
 	}
 	mut projections := []VisualLineProjection{}
 	mut can_own_following_empty_line := false

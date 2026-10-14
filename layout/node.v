@@ -1955,7 +1955,7 @@ fn collect_viewport_text_blocks(node &Node, mut builder ViewportTextBlockBuilder
 					}
 				}
 				current_text := text_node.text_for_rendering()
-				builder.current_start_position += utf16_code_units_for_line_box(current_text).len
+				builder.current_start_position += utf16_length_for_line_box(current_text)
 				builder.current_text += current_text
 			}
 		}
@@ -2239,11 +2239,11 @@ fn (mut n TextNode) compute_text_for_rendering() {
 }
 
 pub fn (n &TextNode) source_offset_for_rendered_text_offset(offset int, boundary platform.TextMappingBoundary) int {
-	units := utf16_code_units_for_line_box(n.text_for_rendering())
+	length := utf16_length_for_line_box(n.text_for_rendering())
 	clamped := if offset < 0 {
 		0
-	} else if offset > units.len {
-		units.len
+	} else if offset > length {
+		length
 	} else {
 		offset
 	}
@@ -2252,7 +2252,7 @@ pub fn (n &TextNode) source_offset_for_rendered_text_offset(offset int, boundary
 }
 
 pub fn (n &TextNode) rendered_text_offset_for_source_offset(offset int, boundary platform.TextMappingBoundary) int {
-	units := utf16_code_units_for_line_box(n.text_for_rendering())
+	length := utf16_length_for_line_box(n.text_for_rendering())
 	source_end := n.source_range_start_ + n.rendered_source_length_
 	clamped := if offset < n.source_range_start_ {
 		n.source_range_start_
@@ -2263,7 +2263,7 @@ pub fn (n &TextNode) rendered_text_offset_for_source_offset(offset int, boundary
 	}
 	mapped := platform.rendered_text_offset_for_source_offset(n.rendered_text_edits_,
 		n.source_range_start_, clamped, boundary)
-	return if mapped > units.len { units.len } else { mapped }
+	return if mapped > length { length } else { mapped }
 }
 pub fn (n &Node) is_text_node() bool {
 	return n.is_text_node_
