@@ -21,11 +21,13 @@ pub struct MediaElementHost {
 	settings &html.EnvironmentSettingsObject
 	replay   ?MediaElementReplayHook
 mut:
-	runtime   &Runtime = unsafe { nil }
-	prototype voidptr
-	elements  map[string]&dom.Element
-	records   map[voidptr]&html.HTMLMediaElement
-	closed    bool
+	runtime        &Runtime = unsafe { nil }
+	prototype      voidptr
+	elements       map[string]&dom.Element
+	records        map[voidptr]&html.HTMLMediaElement
+	bound_elements map[voidptr]&dom.Element
+	attribute_sync voidptr
+	closed         bool
 }
 
 pub fn MediaElementHost.create(document &dom.Document, replay ?MediaElementReplayHook) !&MediaElementHost {

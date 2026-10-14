@@ -107,6 +107,26 @@ pub fn (mut host MediaElementHost) install(mut runtime Runtime) ! {
 			return host.runtime.actual_javascript_exception(host.runtime.binding_exception_value(err))
 		}
 	})!
+	default_muted_getter := runtime.make_native_value_host_function('get defaultMuted', 0, fn [handle] (receiver voidptr, _ []voidptr) !voidptr {
+		mut host := unsafe { &MediaElementHost(handle) }
+		return host.default_muted(receiver) or {
+			return host.runtime.actual_javascript_exception(host.runtime.binding_exception_value(err))
+		}
+	})!
+	default_muted_setter := runtime.make_native_value_host_function('set defaultMuted', 1, fn [handle] (receiver voidptr, args []voidptr) !voidptr {
+		mut host := unsafe { &MediaElementHost(handle) }
+		mut value := C.JSValueMakeUndefined(host.runtime.context)
+		if args.len > 0 { value = args[0] }
+		return host.set_default_muted(receiver, value) or {
+			return host.runtime.actual_javascript_exception(host.runtime.binding_exception_value(err))
+		}
+	})!
+	set_attribute_sync := runtime.make_value_host_function(fn [handle] (_ voidptr, args []voidptr) !voidptr {
+		mut host := unsafe { &MediaElementHost(handle) }
+		return host.set_attribute_sync(args) or {
+			return host.runtime.actual_javascript_exception(host.runtime.binding_exception_value(err))
+		}
+	})!
 	bind := runtime.make_value_host_function(fn [handle] (_ voidptr, args []voidptr) !voidptr {
 		mut host := unsafe { &MediaElementHost(handle) }
 		return host.bind(args) or {
@@ -118,7 +138,8 @@ pub fn (mut host MediaElementHost) install(mut runtime Runtime) ! {
 	defer { runtime.release_javascript_value(factory) }
 	host.prototype = runtime.retain_javascript_value(runtime.call_javascript_function(factory,
 		C.JSValueMakeUndefined(runtime.context), [array, setter_array, bind, fast_seek, start_date,
-			pause, load, play, handler_getter_array, handler_setter_array, can_play_type])!)!
+			pause, load, play, handler_getter_array, handler_setter_array, can_play_type,
+			default_muted_getter, default_muted_setter, set_attribute_sync])!)!
 	runtime.add_canvas_element_provider_with_lookup(fn [handle] () map[string]&dom.Element {
 		host := unsafe { &MediaElementHost(handle) }
 		return host.elements_for_binding()
@@ -130,6 +151,8 @@ pub fn (mut host MediaElementHost) install(mut runtime Runtime) ! {
 	runtime.add_close_handler(fn [handle] () {
 		mut host := unsafe { &MediaElementHost(handle) }
 		host.closed = true
+		host.attribute_sync = unsafe { nil }
+		host.bound_elements.clear()
 		host.records.clear()
 		host.elements.clear()
 	})
@@ -153,6 +176,52 @@ fn (mut host MediaElementHost) bind(args []voidptr) !voidptr {
 	host.runtime.bind_event_target(wrapper, unsafe { &dom.EventTarget(element) })!
 	C.JSObjectSetPrototype(host.runtime.context, wrapper, host.prototype)
 	host.records[wrapper] = media
+	host.bound_elements[wrapper] = element
+	return C.JSValueMakeUndefined(host.runtime.context)
+}
+
+fn (mut host MediaElementHost) set_attribute_sync(args []voidptr) !voidptr {
+	if host.closed || args.len != 1 || !C.JSValueIsObject(host.runtime.context, args[0])
+		|| !C.JSObjectIsFunction(host.runtime.context, args[0]) {
+		return error('TypeError: Media attribute synchronization must be callable')
+	}
+	if host.attribute_sync != unsafe { nil } {
+		return error('TypeError: Media attribute synchronization is already installed')
+	}
+	host.attribute_sync = host.runtime.retain_javascript_value(args[0])!
+	return C.JSValueMakeUndefined(host.runtime.context)
+}
+
+fn (mut host MediaElementHost) default_muted(receiver voidptr) !voidptr {
+	host.media_element_for_binding(receiver)!
+	if replay := host.replay { replay(host.runtime)! }
+	element := host.bound_elements[receiver] or {
+		return error('TypeError: Not an object of type HTMLMediaElement')
+	}
+	return C.JSValueMakeBoolean(host.runtime.context, element.has_attribute('muted'))
+}
+
+fn (mut host MediaElementHost) set_default_muted(receiver voidptr, value voidptr) !voidptr {
+	host.media_element_for_binding(receiver)!
+	// Reflected boolean setters perform ToBoolean without author conversion hooks.
+	present := C.JSValueToBoolean(host.runtime.context, value)
+	if replay := host.replay { replay(host.runtime)! }
+	mut element := host.bound_elements[receiver] or {
+		return error('TypeError: Not an object of type HTMLMediaElement')
+	}
+	if present {
+		element.set_attribute_value('muted', '')
+	} else {
+		element.remove_attribute('muted')
+	}
+	// This content attribute does not change the independent runtime muted state.
+	// DOM mutation preserves its mutation records and custom-element reaction queue;
+	// synchronous customized-built-in reaction delivery remains a runtime boundary.
+	if host.attribute_sync != unsafe { nil } {
+		host.runtime.call_javascript_function(host.attribute_sync,
+			C.JSValueMakeUndefined(host.runtime.context), [receiver,
+				host.runtime.binding_string('muted'), C.JSValueMakeBoolean(host.runtime.context, present)])!
+	}
 	return C.JSValueMakeUndefined(host.runtime.context)
 }
 
@@ -334,10 +403,11 @@ fn (mut host MediaElementHost) set_property(name string, receiver voidptr, value
 
 // The compact DOM hierarchy remains partial. This base prototype exposes only
 // the completed state/range getters, rate/volume/time accessors, fastSeek,
-// getStartDate, pause, load, play, canPlayType, selected media and input handler attributes,
+// getStartDate, pause, load, play, canPlayType, defaultMuted reflection,
+// selected media and input handler attributes,
 // and constants.
 // Full HTMLElement/audio/video interfaces remain open.
-const media_element_native_factory = r'(function(getters,setters,bind,fastSeek,getStartDate,pause,load,play,handlerGetters,handlerSetters,canPlayType){
+const media_element_native_factory = r'(function(getters,setters,bind,fastSeek,getStartDate,pause,load,play,handlerGetters,handlerSetters,canPlayType,defaultMutedGetter,defaultMutedSetter,setAttributeSync){
  "use strict";
  const define=Object.defineProperty,create=Object.create,P=Proxy,T=TypeError;
  const prototype=create(EventTarget.prototype);
@@ -356,6 +426,7 @@ const media_element_native_factory = r'(function(getters,setters,bind,fastSeek,g
  define(prototype,"load",{value:load,writable:true,enumerable:true,configurable:true});
  define(prototype,"play",{value:play,writable:true,enumerable:true,configurable:true});
  define(prototype,"canPlayType",{value:canPlayType,writable:true,enumerable:true,configurable:true});
+ define(prototype,"defaultMuted",{get:defaultMutedGetter,set:defaultMutedSetter,enumerable:true,configurable:true});
  define(prototype,Symbol.toStringTag,{value:"HTMLMediaElement",configurable:true});
  const constructor=new P(function HTMLMediaElement(){},{apply(){throw new T("Illegal HTMLMediaElement constructor")},construct(){throw new T("Illegal HTMLMediaElement constructor")}});
  define(constructor,"prototype",{value:prototype,writable:false});
@@ -364,5 +435,6 @@ const media_element_native_factory = r'(function(getters,setters,bind,fastSeek,g
  for(const name of Object.keys(constants))for(const object of [constructor,prototype])define(object,name,{value:constants[name],enumerable:true});
  define(globalThis,"HTMLMediaElement",{value:constructor,writable:true,configurable:true});
  define(globalThis,"__ladybirdMediaElementBind",{value:bind,configurable:true});
+ define(globalThis,"__ladybirdMediaElementSetAttributeSync",{value:setAttributeSync,configurable:true});
  return prototype;
 })'
