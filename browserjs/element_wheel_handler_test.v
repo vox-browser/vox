@@ -135,7 +135,7 @@ fn test_native_element_onwheel_descriptors_brand_before_replay_and_retain_legacy
 	assert state.calls == 0
 	assert runtime.evaluate_host('handlerDiv.onwheel===null&&handlerButton.onwheel===null')! == 'true'
 	assert state.calls == 2
-	mut observed := state
+	mut observed := unsafe { &ElementWheelHandlerReplayState(state) }
 	observed.target = fixture.document.get_element_by_id('handlerDiv') or { panic('missing replay target') }
 	observed.pending_raw = true
 	assert runtime.evaluate_host('globalThis.handlerAfterReplay=function(){return false};handlerDiv.onwheel=handlerAfterReplay;handlerDiv.onwheel===handlerAfterReplay')! == 'true'

@@ -69,7 +69,7 @@ fn element_wheel_handler_owner_probe(mut runtime browserjs.Runtime, document &do
 fn element_wheel_handler_owner_observe(element &dom.Element, scroller &dom.Element, observation &ElementWheelHandlerOwnerObservation) {
 	handle := voidptr(observation)
 	callback := &dom.CallbackType{
-		invoke: fn [handle, scroller] (event &dom.Event, _ ?&dom.EventTarget) dom.JSValue {
+		handle_event: fn [handle, scroller] (event &dom.Event, _ ?&dom.EventTarget) dom.JSValue {
 			mut saved := unsafe { &ElementWheelHandlerOwnerObservation(handle) }
 			assert event.interface_ == .wheel_event
 			saved.events << event
