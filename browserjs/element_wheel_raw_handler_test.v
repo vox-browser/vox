@@ -1,14 +1,85 @@
 module browserjs
 
 import dom
+import html
+import json2
+import page
 
-fn element_raw_wheel_fixture() !&ElementWheelHandlerFixture {
-	fixture := element_wheel_handler_fixture(none)!
-	mut runtime := fixture.runtime
+@[heap]
+struct ElementRawWheelFixture {
+	runtime  &Runtime
+	host     &ElementWheelHost
+	owner    &page.Page
+	document &dom.Document
+	settings &html.EnvironmentSettingsObject
+}
+
+fn element_raw_wheel_fixture() !&ElementRawWheelFixture {
+	owner := page.Page.create(1)!
+	url := dom.URL{ value: 'https://native-element-raw-wheel.example.test/' }
+	mut document := html.create_navigation_document_for_page(url, url.origin(), none,
+		unsafe { &dom.Page(owner) })!
+	document.set_document_type(.html)
+	html.parse_html_from_a_string(document, '<div id="handlerDiv"></div>')
+	settings := unsafe { &html.EnvironmentSettingsObject(document.relevant_settings_object()) }
+	mut runtime := Runtime.create()
+	mut host := ElementWheelHost.create(document)!
+	host.install(mut runtime)!
+	runtime.evaluate_host('globalThis.window=globalThis;0')!
+	runtime.install_window_event_handler_binding()!
+	runtime.install_window_current_event_binding()!
+	runtime.evaluate_host(r'
+globalThis.elementRawWheelSpecs=Object.create(null);globalThis.elementRawWheelFacades=Object.create(null);
+globalThis.elementRawWheelResolve=function(key){
+ if(elementRawWheelFacades[key])return elementRawWheelFacades[key];
+ const spec=elementRawWheelSpecs[key];if(!spec)return null;
+ const wrapper={addEventListener(){},removeEventListener(){}};
+ __ladybirdElementWheelBind(wrapper,key,spec.tag,spec.namespace);
+ elementRawWheelFacades[key]=wrapper;return wrapper;
+};
+__ladybirdElementWheelSetResolver(elementRawWheelResolve);0')!
+	for key, element in host.elements_for_binding() {
+		spec := json2.encode({
+			'tag':       element.local_name()
+			'namespace': element.namespace_uri() or { '' }
+		})
+		runtime.evaluate_host('elementRawWheelSpecs[${json2.encode(key)}]=${spec};0')!
+		id := element.get_attribute_value('id')
+		if id != '' {
+			runtime.evaluate_host('globalThis[${json2.encode(id)}]=elementRawWheelResolve(${json2.encode(key)});0')!
+		}
+	}
+	handle := voidptr(runtime)
+	runtime.define_value_host_function('__elementRawWheelContext', fn [handle, settings] (_ voidptr, _ []voidptr) !voidptr {
+		runtime := unsafe { &Runtime(handle) }
+		return C.JSValueMakeBoolean(runtime.context, settings.realm().script_execution_depth > 0
+			&& settings.realm().callback_execution_depth > 0
+			&& runtime.libjs_vm().has_running_execution_context()
+			&& voidptr(html.current_principal_settings_object()) == voidptr(settings)
+			&& voidptr(html.incumbent_settings_object()) == voidptr(settings))
+	})!
 	runtime.evaluate_host('globalThis.document={scopeKey:"document"};globalThis.scopeKey="global";globalThis.rawRuns=0;0')!
-	runtime.install_document_window_event_binding(fixture.document,
+	runtime.install_document_window_event_binding(document,
 		runtime.evaluate_host_value('document')!)!
-	return fixture
+	return &ElementRawWheelFixture{ runtime: runtime, host: host, owner: owner,
+		document: document, settings: settings }
+}
+
+fn element_raw_wheel_event(fixture &ElementRawWheelFixture) &dom.Event {
+	wheel := dom.WheelEvent.create_from_platform_event(voidptr(fixture.document.get_window() or {
+		panic('missing raw wheel owner Window')
+	}), 'wheel', dom.CSSPixelPoint_{ x_: 30.5, y_: -40.75 },
+		dom.CSSPixelPoint_{ x_: 13.75, y_: 24.625 }, dom.CSSPixelPoint_{ x_: 3.75, y_: 4.625 },
+		dom.CSSPixelPoint_{ x_: 1.25, y_: 2.5 }, 2.5, -3.5, 2, 5,
+		dom.modifier_ctrl | dom.modifier_alt)
+	return unsafe { &dom.Event(wheel) }
+}
+
+fn element_raw_wheel_assert_contexts(fixture &ElementRawWheelFixture) {
+	assert fixture.settings.realm().script_execution_depth == 0
+	assert fixture.settings.realm().callback_execution_depth == 0
+	assert fixture.runtime.libjs_vm().execution_context_stack().len == 0
+	assert fixture.runtime.libjs_vm().interpreter_stack().depth() == 0
 }
 
 fn test_raw_element_wheel_lazily_caches_owner_scopes_without_helper_or_self_bindings() {
@@ -19,7 +90,7 @@ fn test_raw_element_wheel_lazily_caches_owner_scopes_without_helper_or_self_bind
 	mut target := fixture.document.get_element_by_id('handlerDiv')?
 	native_target := unsafe { &dom.EventTarget(target) }
 	runtime.evaluate_host('handlerDiv.scopeKey="element";handlerDiv.event={sentinel:true};globalThis.rawChecks=[];0')!
-	body := r'rawRuns++;rawChecks.push(scopeKey==="element"&&arguments.length===1&&event===arguments[0]&&this===handlerDiv&&window.event===event&&__elementWheelHandlerContext());delete this.scopeKey;rawChecks.push(scopeKey==="document");delete document.scopeKey;rawChecks.push(scopeKey==="global");this.onwheel=null;rawChecks.push(onwheel===null);return false;'
+	body := r'rawRuns++;rawChecks.push(scopeKey==="element"&&arguments.length===1&&event===arguments[0]&&this===handlerDiv&&window.event===event&&__elementRawWheelContext());delete this.scopeKey;rawChecks.push(scopeKey==="document");delete document.scopeKey;rawChecks.push(scopeKey==="global");this.onwheel=null;rawChecks.push(onwheel===null);return false;'
 	target.set_attribute_value('onwheel', body)
 	slot := native_target.data.event_handler_map['wheel'] or { panic('raw slot') }
 	listener := slot.listener or { panic('raw listener') }
@@ -32,12 +103,12 @@ fn test_raw_element_wheel_lazily_caches_owner_scopes_without_helper_or_self_bind
 	assert runtime.evaluate_host('__rawElementCallback()===handlerDiv.onwheel&&handlerDiv.onwheel.name==="onwheel"&&handlerDiv.onwheel.length===1&&Object.hasOwn(handlerDiv.onwheel,"prototype")&&Function.prototype.toString.call(handlerDiv.onwheel).includes("rawRuns++")&&rawRuns===0')! == 'true'
 	assert voidptr(native_target.get_current_value_of_event_handler('wheel') or { panic('cache') }) == voidptr(callback)
 	assert voidptr(slot.listener or { panic('listener identity') }) == voidptr(listener)
-	event := element_wheel_handler_event(fixture)
+	event := element_raw_wheel_event(fixture)
 	assert !native_target.dispatch_event(event)
 	assert runtime.evaluate_host('rawRuns===1&&rawChecks.length===4&&rawChecks.every(Boolean)&&handlerDiv.onwheel===null&&window.event===undefined')! == 'true'
 	assert event.default_prevented() && event.is_trusted()
 	assert target.get_attribute_value('onwheel') == body
-	element_wheel_handler_assert_contexts(fixture)
+	element_raw_wheel_assert_contexts(fixture)
 }
 
 fn test_raw_element_wheel_function_body_gate_csp_and_unsupported_handlers_keep_native_slots() {
@@ -81,7 +152,7 @@ fn test_raw_element_wheel_function_body_gate_csp_and_unsupported_handlers_keep_n
 		assert (owner.data.event_handler_map['wheel'] or { panic('unsupported owner') }).value.kind == .string
 	}
 	assert fixture.settings.realm().reported_exceptions.len == 0
-	element_wheel_handler_assert_contexts(fixture)
+	element_raw_wheel_assert_contexts(fixture)
 }
 
 fn test_raw_element_wheel_strict_callbacks_preserve_original_exceptions_page_gates_and_window_compiler() {
@@ -97,10 +168,10 @@ fn test_raw_element_wheel_strict_callbacks_preserve_original_exceptions_page_gat
 	actual := runtime.javascript_event_handler(native_target, 'wheel')!
 	mut page_owner := fixture.owner
 	page_owner.set_is_scripting_enabled(false)
-	assert native_target.dispatch_event(element_wheel_handler_event(fixture))
+	assert native_target.dispatch_event(element_raw_wheel_event(fixture))
 	assert runtime.evaluate_host('rawRuns===0')! == 'true'
 	page_owner.set_is_scripting_enabled(true)
-	assert native_target.dispatch_event(element_wheel_handler_event(fixture))
+	assert native_target.dispatch_event(element_raw_wheel_event(fixture))
 	assert runtime.evaluate_host('rawRuns===1&&rawStrict&&window.event===undefined')! == 'true'
 	assert fixture.settings.realm().reported_exceptions.len == 1
 	reasons := runtime.take_reported_javascript_exception_values()
@@ -117,5 +188,5 @@ fn test_raw_element_wheel_strict_callbacks_preserve_original_exceptions_page_gat
 	runtime.close()
 	assert native_target.get_current_value_of_event_handler('wheel') == none
 	assert (native_target.data.event_handler_map['wheel'] or { panic('closed raw') }).value.kind == .string
-	element_wheel_handler_assert_contexts(fixture)
+	element_raw_wheel_assert_contexts(fixture)
 }
