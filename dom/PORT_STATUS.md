@@ -811,3 +811,16 @@ Prior records, scratch and unrelated work remain retained. Broad baseline
 advances from aa6f0246 to 05655652; cadence resets to 0/10 only after the
 actual broad terminal receipts. No full repository or full interface parity
 claim. See [evidence](../docs/translation-audit/NATIVE_MEDIA_COMPLETION_RAW_HANDLER.md).
+
+Native compact media raw ended/resize scoped inventory (`05655652`,
+2026-10-14 UTC): Five owned browser/root paths remain excluded under the
+sealed 78-owner rules. Original feature and one-path fixture-repair byte and physical-LF accounting
+against their separate actual parents
+adds zero assigned DOM files, implementation lines or test lines. Counter:
+`Build/audit-fixes/native-media-completion-raw-handler-inventory-scoped-v2.json` (SHA256 `94636fc4d955f1876457b225e9670258514bded337ed9c9dbdc0bd7c8a805730`).
+Global tables, pins, mappings and historical ledgers stay preserved;
+counting adds no behavior/test credit. The completed ten-fix broad batch
+retains 43/137 native union per GC mode, full LibJS 234 each GC, exact AST 100
+and signed production/screenshot evidence; baseline is 05655652 and the
+next batch remains 0/10. This independently reviewable documentation commit
+is not another translation fix. See [evidence](../docs/translation-audit/NATIVE_MEDIA_COMPLETION_RAW_HANDLER.md).
