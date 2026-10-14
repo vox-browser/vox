@@ -1450,3 +1450,16 @@ Global tables, pins, source mappings and historical ledgers remain preserved;
 accounting adds no test or behavioral parity credit. Batch counter remains
 2/10 after aa6f0246; this documentation commit is not another translation fix.
 See [evidence](docs/translation-audit/NATIVE_MEDIA_CANPLAY_RAW_HANDLER.md).
+
+Native compact media raw `onloadedmetadata` / `onloadeddata` (`f9ec154f`, 2026-10-14 UTC):
+Owner-local HTML audio/video metadata/data attributes compile lazily through
+the existing name-aware native compiler and ordered content-attribute replay.
+Actual media tasks preserve metadata-before-data notification and consume the
+first-data flag when queuing, once per load. Native Event identity, Element ->
+Document -> Global scope, caching, resolver reentrancy, raw/IDL replacement,
+CSP, scripting gates, original exceptions and DOM/paint replay pass focused
+checks. Six new cases and the two changed binding boundary fixtures pass:
+12 cases in four selected files in both GC modes. Unsupported-name boundaries
+now use onerror; other raw media names and unavailable/foreign owners remain
+open. Production and broad regression suites are deferred under the user's
+ten-fix cadence. Batch counter: 3/10 after aa6f0246. See [evidence](docs/translation-audit/NATIVE_MEDIA_DATA_RAW_HANDLER.md).
