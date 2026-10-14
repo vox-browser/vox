@@ -759,11 +759,18 @@ fn (mut arena TokenizerInputArena) release() {
 }
 
 fn decode_css_input(input string, encoding_name string) string {
-	decoder := text_encoding.TextDecoder.construct(encoding_name,
+	mut decoder := text_encoding.TextDecoder.construct(encoding_name,
 		text_encoding.TextDecoderOptions{}) or {
 		panic('VERIFY(TextCodec::decoder_for(${encoding_name}).has_value())')
 	}
-	return decoder.decode(input.bytes(), text_encoding.TextDecodeOptions{}) or {
+	// CSS consumes UTF-8. Use the selected decoder's existing UTF-8 destination
+	// instead of materializing the web TextDecoder's UTF-16 result and converting
+	// it back. This fresh one-shot owner is discarded after the final item.
+	mut output := text_encoding.TextDecoderOutputQueue{}
+	decoder.process_an_item(input.bytes(), true, mut output) or {
+		panic('MUST(decoder->to_utf8(input)): ${err.msg()}')
+	}
+	return decoder.serialize_io_queue(mut output) or {
 		panic('MUST(decoder->to_utf8(input)): ${err.msg()}')
 	}
 }
