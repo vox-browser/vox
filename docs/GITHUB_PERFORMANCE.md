@@ -4,6 +4,118 @@ Measured on macOS on 2026-10-13 and 2026-10-14 with `https://github.com/vlang/v`
 repository's native browser. These are individual diagnostic runs, not an
 upstream parity benchmark.
 
+## CPU instruction measurements
+
+Retired CPU instructions are now the primary work metric for subsequent
+optimization. The older wall-clock observations below remain historical
+diagnostics. `VOX_PROFILE_INSTRUCTIONS=1` enables native cumulative checkpoints
+and exact process-counter intervals for installation and first frame submission.
+It works with the normal signed GC build; neither V's function profiler nor the
+allocation wrapper is enabled for these measurements.
+
+The counter is `proc_pid_rusage(..., RUSAGE_INFO_V4, ...)::ri_instructions`.
+Apple's [Recount documentation](https://github.com/apple-oss-distributions/xnu/blob/main/doc/observability/recount.md)
+describes retired instruction accounting for tasks across their threads,
+including kernel execution charged to them. GPU execution and external
+services such as WindowServer are excluded. These are hardware counts, not
+estimates from elapsed time or V function-call counts. This Mac exposes them
+without elevated permissions; unsupported systems report unavailable counters.
+
+Measured on arm64 Darwin 25.5.0, 2026-10-14, at a 1024×768 document viewport:
+
+| Interval | Run 1 instructions | Run 2 instructions | Run 3 instructions | Median instructions |
+| --- | ---: | ---: | ---: | ---: |
+| Vox: document installation | 55,489,577,542 | 55,318,675,420 | 54,252,275,306 | 55,318,675,420 |
+| Vox: installation through first native frame | 59,086,726,044 | 58,890,426,942 | 57,818,863,748 | 58,890,426,942 |
+| Vox: navigation through first native frame | 60,461,541,528 | 60,265,796,423 | 59,237,360,447 | 60,265,796,423 |
+| Vox: process start through exit after capture | 86,304,129,954 | 65,191,818,531 | 69,574,762,502 | 69,574,762,502 |
+| Chrome: navigation through completed-document capture, observed descendants | 11,901,119,888 | 12,506,518,885 | 12,908,501,390 | 12,506,518,885 |
+| Chrome: process start through completed-document capture, observed descendants | 18,749,106,807 | 18,953,252,883 | 19,193,385,077 | 18,953,252,883 |
+
+Vox's final process counts were read while it was a zombie, before `wait()`
+reaped it, and include capture and shutdown. All three runs observed one browser
+process and obtained its final exit sample. The first-frame intervals end at
+native frame submission and exclude subsequent capture-related work. The much
+wider full-process range reflects additional work after first paint; use the
+navigation/installation intervals when judging changes to initial rendering.
+
+Chrome 155.0.8059.80 used a fresh isolated profile for each run. The tool observed
+12 processes per run, including helpers, and waited for `readyState=complete`,
+font readiness and populated GitHub file links before capture. All runs exposed
+72 file/directory links. Child processes that disappeared before a final sample
+retain their last observed count: respectively 3, 3 and 2 such processes in
+these runs, with no permission failures. Short-lived children can also fall
+between samples. Chrome's totals are therefore **observed-descendant lower
+bounds**, explicitly marked in JSON, rather than exact complete browser totals.
+Counting just Chrome's main PID would exclude its renderers and other helpers.
+
+The endpoints and functionality differ. Vox loads cached HTML/resources and
+still displays file-row placeholders because its module backend is incomplete;
+Chrome navigates the live URL and renders populated rows. Native submission is
+not web FCP. These counts establish remaining CPU work, not a controlled speed
+ratio or Chrome parity. Instruction counts reduce scheduling/frequency noise
+but still change with executed work, GC scheduling, background activity, and
+network-dependent content.
+
+The largest checkpoint intervals during Vox installation were:
+
+| Checkpoint interval, summed across both initial layout passes where applicable | Median instructions |
+| --- | ---: |
+| Formatting contexts and preliminary layout attachment | 15,591,571,027 |
+| External stylesheet installation | 14,487,559,899 |
+| Box construction and intervening style updates | 13,039,227,394 |
+| Script startup | 2,964,339,594 |
+| Initial retained paint commands | 2,694,847,852 |
+
+These are **adjacent cumulative checkpoint deltas** in log order. A checkpoint
+can include preparatory work since the previous marker and other process
+threads; it is not the self cost of the function named in the label. The
+separate `install_total` and first-frame scopes overlap those deltas and must
+not be added to them. Stylesheet installation, style/box construction and
+formatting remain the primary targets for further instruction reduction.
+
+The earlier saved `Build/v/Vox-gc-baseline` binary consumed 112,372,918,564
+instructions through exit after capture in one run. It predates several
+optimization rounds, lacks native scope counters, and is only a diagnostic
+reference; this is not an isolated measurement of the counter instrumentation.
+
+Raw logs, counts and captures are under
+`Build/instructions/{vox,chrome}-github-counts.run-{1,2,3}.{json,log,png}`.
+The measured Vox executable SHA-256 is
+`7a29a1f9ab2985566d488b2a3bd8c75db99e362ef38123a3c617ddc14880bdab`;
+Chrome's is `4dbcffd1126e00453193bc5cc6bf096f37a53fda8567516b22ec576c55e2df4e`.
+The tool records each binary hash, kernel, input, viewport, per-process coverage,
+phase deltas and native scopes. It captures only the document viewport in new
+Vox runs, preserving a separate raw window PNG; the original measurement images
+predate that crop and include the 112px browser chrome.
+
+Reproduce with:
+
+```sh
+sh build-prod-browser.sh
+python3 tools/measure_browser_instructions.py --engine vox --repeat 3 \
+  --output Build/instructions/vox-github-counts
+python3 tools/measure_browser_instructions.py --engine chrome --repeat 3 \
+  --output Build/instructions/chrome-github-counts
+```
+
+Use `--binary PATH` for another executable, `--url URL_OR_LOCAL_FILE` for another
+input, and `--scratch-dir PATH` to place Chrome's disposable profiles elsewhere.
+This investigation's Chrome app is on `/Volumes/LoomScratch/vox2-github-performance/Google Chrome.app`;
+the default command uses `/Applications/Google Chrome.app`. Chrome's interval
+ends before observer-side PNG writing and browser shutdown. Vox's viewport crop
+runs after its exit sample. The watchdog uses elapsed time only to terminate a
+stalled run; the reported metric is instructions. No personal Chrome profile is
+used.
+
+Validation: the counter module's two V cases, eight Python accounting/ABI/native
+counter cases, the signed production build and native `--headless-smoke` pass.
+The Python tests exercise live counters and zombie exit counters as well as
+descendant retention, PID reuse, missing final samples and overlapping scopes.
+Native smoke also passes with instruction checkpoints enabled. The counter and
+browser instrumentation are opt-in; the normal GC/arena allocation policy is
+unchanged.
+
 ## Causes and changes
 
 - The V 0.5.2 compatibility compiler's `-prod` Boehm code repeatedly snapshots
@@ -50,7 +162,7 @@ upstream parity benchmark.
   no longer serialize every ancestor's complete subtree. Pending script writes
   and CSSOM rule mutations preserve their existing replay behavior.
 
-## Observed timings
+## Historical wall-clock observations
 
 The native timing log separates processing phases from network fetches and
 the screenshot settle delay.
