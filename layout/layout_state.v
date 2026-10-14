@@ -739,60 +739,60 @@ fn (u &UsedValues) border_bottom_collapsed() CSSPixels {
 }
 
 pub fn (u &UsedValues) margin_box_left() CSSPixels {
-	return css_pixels_sum([u.margin_left, u.border_left_collapsed(), u.padding_left])
+	return css_pixels_sum3(u.margin_left, u.border_left_collapsed(), u.padding_left)
 }
 
 pub fn (u &UsedValues) margin_box_right() CSSPixels {
-	return css_pixels_sum([u.margin_right, u.border_right_collapsed(), u.padding_right])
+	return css_pixels_sum3(u.margin_right, u.border_right_collapsed(), u.padding_right)
 }
 
 pub fn (u &UsedValues) margin_box_top() CSSPixels {
-	return css_pixels_sum([u.margin_top, u.border_top_collapsed(), u.padding_top])
+	return css_pixels_sum3(u.margin_top, u.border_top_collapsed(), u.padding_top)
 }
 
 pub fn (u &UsedValues) margin_box_bottom() CSSPixels {
-	return css_pixels_sum([u.margin_bottom, u.border_bottom_collapsed(), u.padding_bottom])
+	return css_pixels_sum3(u.margin_bottom, u.border_bottom_collapsed(), u.padding_bottom)
 }
 
 pub fn (u &UsedValues) margin_box_width() CSSPixels {
-	return css_pixels_sum([u.margin_box_left(), u.content_width_, u.margin_box_right()])
+	return css_pixels_sum3(u.margin_box_left(), u.content_width_, u.margin_box_right())
 }
 
 pub fn (u &UsedValues) margin_box_height() CSSPixels {
-	return css_pixels_sum([u.margin_box_top(), u.content_height_, u.margin_box_bottom()])
+	return css_pixels_sum3(u.margin_box_top(), u.content_height_, u.margin_box_bottom())
 }
 
 // --- Border box (border + padding + content) ---
 pub fn (u &UsedValues) border_box_left() CSSPixels {
-	return css_pixels_sum([u.border_left_collapsed(), u.padding_left])
+	return css_pixels_sum2(u.border_left_collapsed(), u.padding_left)
 }
 
 pub fn (u &UsedValues) border_box_right() CSSPixels {
-	return css_pixels_sum([u.border_right_collapsed(), u.padding_right])
+	return css_pixels_sum2(u.border_right_collapsed(), u.padding_right)
 }
 
 pub fn (u &UsedValues) border_box_top() CSSPixels {
-	return css_pixels_sum([u.border_top_collapsed(), u.padding_top])
+	return css_pixels_sum2(u.border_top_collapsed(), u.padding_top)
 }
 
 pub fn (u &UsedValues) border_box_bottom() CSSPixels {
-	return css_pixels_sum([u.border_bottom_collapsed(), u.padding_bottom])
+	return css_pixels_sum2(u.border_bottom_collapsed(), u.padding_bottom)
 }
 
 pub fn (u &UsedValues) border_box_width() CSSPixels {
-	return css_pixels_sum([u.border_box_left(), u.content_width_, u.border_box_right()])
+	return css_pixels_sum3(u.border_box_left(), u.content_width_, u.border_box_right())
 }
 
 pub fn (u &UsedValues) border_box_height() CSSPixels {
-	return css_pixels_sum([u.border_box_top(), u.content_height_, u.border_box_bottom()])
+	return css_pixels_sum3(u.border_box_top(), u.content_height_, u.border_box_bottom())
 }
 
 pub fn (u &UsedValues) padding_box_width() CSSPixels {
-	return css_pixels_sum([u.padding_left, u.content_width_, u.padding_right])
+	return css_pixels_sum3(u.padding_left, u.content_width_, u.padding_right)
 }
 
 pub fn (u &UsedValues) padding_box_height() CSSPixels {
-	return css_pixels_sum([u.padding_top, u.content_height_, u.padding_bottom])
+	return css_pixels_sum3(u.padding_top, u.content_height_, u.padding_bottom)
 }
 
 // --- LayoutState ---
@@ -1088,12 +1088,18 @@ pub fn (state &LayoutState) try_get_mutable(node &NodeWithStyle) ?&UsedValues {
 }
 
 // --- CSSPixels helpers (the port's CSSPixels has no arithmetic operators) ---
-fn css_pixels_sum(values []CSSPixels) CSSPixels {
-	mut total := 0.0
-	for value in values {
-		total += value.to_double()
-	}
-	return CSSPixels.nearest_value_for(total)
+// Keep intermediate sums in f64 and clamp once, including when large positive
+// edges cancel negative margins. Fixed arguments need no temporary heap array.
+fn css_pixels_sum2(a CSSPixels, b CSSPixels) CSSPixels {
+	return CSSPixels.nearest_value_for(a.to_double() + b.to_double())
+}
+
+fn css_pixels_sum3(a CSSPixels, b CSSPixels, c CSSPixels) CSSPixels {
+	return CSSPixels.nearest_value_for(a.to_double() + b.to_double() + c.to_double())
+}
+
+fn css_pixels_sum5(a CSSPixels, b CSSPixels, c CSSPixels, d CSSPixels, e CSSPixels) CSSPixels {
+	return CSSPixels.nearest_value_for(a.to_double() + b.to_double() + c.to_double() + d.to_double() + e.to_double())
 }
 
 fn css_pixel_point_add(a css.CSSPixelPoint, b css.CSSPixelPoint) css.CSSPixelPoint {

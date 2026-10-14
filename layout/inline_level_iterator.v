@@ -43,8 +43,8 @@ pub mut:
 }
 
 pub fn (item &InlineLevelItem) border_box_width() CSSPixels {
-	return css_pixels_sum([item.border_start, item.padding_start, item.width, item.padding_end,
-		item.border_end])
+	return css_pixels_sum5(item.border_start, item.padding_start, item.width, item.padding_end,
+		item.border_end)
 }
 
 fn overflow_break_applies_to_style(style &css.ComputedProperties, available_width AvailableSize) bool {
@@ -127,7 +127,7 @@ fn (item &InlineLevelItem) split_overflow_item_at_shaped_glyph(node &Node,
 	for boundary in boundaries {
 		boundary_set[boundary] = true
 	}
-	leading_width := css_pixels_sum([item.margin_start, item.border_start, item.padding_start])
+	leading_width := css_pixels_sum3(item.margin_start, item.border_start, item.padding_start)
 	mut split_glyph_index := -1
 	mut split_code_units := 0
 	mut code_units := run.glyphs_[0].length_in_code_units
@@ -205,7 +205,7 @@ fn (item &InlineLevelItem) split_for_overflow_break(maximum_width CSSPixels, tak
 
 	letter_spacing := f32(resolved_text_spacing_for_node(node, .letter_spacing).to_double())
 	word_spacing := f32(resolved_text_spacing_for_node(node, .word_spacing).to_double())
-	leading_width := css_pixels_sum([item.margin_start, item.border_start, item.padding_start])
+	leading_width := css_pixels_sum3(item.margin_start, item.border_start, item.padding_start)
 	mut split := -1
 	for boundary in boundaries {
 		prefix_text := utf16_substring_for_line_box(text, start, boundary - start)

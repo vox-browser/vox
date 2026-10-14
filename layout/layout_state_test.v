@@ -5,6 +5,20 @@ import css
 import painting
 
 // LayoutState stores per-box UsedValues; UsedValues computes the box-model boxes from content + edges.
+fn test_used_edges_sum_without_clamping_before_negative_margin_cancellation() {
+	mut values := UsedValues{}
+	values.margin_left = CSSPixels.from_raw(2_147_483_647)
+	values.border_left = CSSPixels.from_raw(2_147_483_647)
+	values.padding_left = CSSPixels.from_raw(-2_147_483_647)
+	assert values.margin_box_left().raw_value() == 2_147_483_647
+	values.border_left = CSSPixels.from_raw(3)
+	values.padding_left = CSSPixels.from_raw(5)
+	values.border_right = CSSPixels.from_raw(7)
+	values.padding_right = CSSPixels.from_raw(13)
+	values.set_content_width(CSSPixels.from_raw(11))
+	assert values.border_box_width().raw_value() == 39
+}
+
 fn test_used_values_keeps_rare_state_out_of_the_common_allocation() {
 	assert sizeof(UsedValues) <= 320
 	values := UsedValues{}
