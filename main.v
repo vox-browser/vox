@@ -297,6 +297,8 @@ mut:
 	content_height                      f64
 	paint_commands                      []layout.PaintCommand
 	paint_commands_have_backdrop_filter bool
+	frame_preparation_depth             int
+	paint_commands_pending              bool
 	status                              string
 	load_status                         string
 	js_messages                         []string
@@ -2792,7 +2794,7 @@ fn (mut app BrowserApp) relayout(window_width int, window_height int) {
 	} else {
 		1
 	}
-	mut layout_checkpoint := time.sys_mono_now()
+	layout_checkpoint := time.sys_mono_now()
 	if app.layout_tree_only {
 		// The dump reads the retained typed tree directly. Building the separate
 		// renderer transport here would add a full unused tree traversal.
@@ -2801,26 +2803,18 @@ fn (mut app BrowserApp) relayout(window_width int, window_height int) {
 		app.root_box = layout.BlockBox{}
 		app.paint_commands = []layout.PaintCommand{}
 		app.paint_commands_have_backdrop_filter = false
+		app.paint_commands_pending = false
 		app.content_height = f64(viewport_height)
 		app.viewport_width = viewport_width
 		app.viewport_height = viewport_height
 		return
 	}
 	app.root_box = layout.layout_document_typed_in_viewport(app.document, f64(viewport_width), f64(viewport_height))
-	layout_checkpoint = debug_timing_checkpoint('  layout_tree', layout_checkpoint)
+	debug_timing_checkpoint('  layout_tree', layout_checkpoint)
 	// The compact native shell owns one visible top-level document. Layout
 	// creates its DOM navigable; attach the HTML model before display-list
 	// recording so focus-gated painting such as editable carets is visible.
 	focus_compact_browser_navigable(app.document)
-	mut mutable_document := unsafe { &dom.Document(app.document) }
-	if display_list := mutable_document.record_display_list() {
-		app.paint_commands = layout.display_list_commands(display_list)
-		app.paint_commands_have_backdrop_filter = paint_commands_contain_backdrop_filter(app.paint_commands)
-	} else {
-		app.paint_commands = []layout.PaintCommand{}
-		app.paint_commands_have_backdrop_filter = false
-	}
-	debug_timing_checkpoint('  paint_commands', layout_checkpoint)
 	root_rect := app.root_box.border_box()
 	document_height := root_rect.y + root_rect.height
 	app.content_height = if document_height > f64(viewport_height) {
@@ -2831,7 +2825,10 @@ fn (mut app BrowserApp) relayout(window_width int, window_height int) {
 	app.viewport_width = viewport_width
 	app.viewport_height = viewport_height
 	app.set_scroll_y(app.scroll_y, window_height)
-	app.status = '${app.load_status} · ${app.paint_commands.len} paints · ${int(root_rect.width)}×${int(root_rect.height)} CSS px'
+	app.paint_commands_pending = true
+	if app.frame_preparation_depth == 0 {
+		app.record_document_paint_commands()
+	}
 }
 
 fn (mut app BrowserApp) advance_document_animations(window_width int, content_viewport_height int) {
@@ -5612,6 +5609,7 @@ fn address_for_display(address string, cursor int, active bool, max_characters i
 }
 
 fn (mut app BrowserApp) draw() {
+	app.begin_frame_preparation()
 	// The local native display callback supplies the opportunity. HTML queues
 	// its rendering task and owns eligibility, timestamps and callback ordering.
 	app.deliver_rendering_opportunity(time.sys_mono_now(), sapp.frame_duration() * 1000.0)
@@ -5644,15 +5642,7 @@ fn (mut app BrowserApp) draw() {
 		app.screenshot_scroll_applied = true
 		app.set_scroll_y(f64(app.screenshot_scroll_y), window.height)
 	}
-	// Scroll offsets invalidate only the assembled display list. Replay its
-	// retained phase commands with the fresh scroll snapshot before drawing.
-	if app.document != unsafe { nil } && app.document.cached_display_list() == none {
-		mut mutable_document := unsafe { &dom.Document(app.document) }
-		if display_list := mutable_document.record_display_list() {
-			app.paint_commands = layout.display_list_commands(display_list)
-			app.paint_commands_have_backdrop_filter = paint_commands_contain_backdrop_filter(app.paint_commands)
-		}
-	}
+	app.finish_frame_preparation()
 	app.portable_shadow_image_index = 0
 	app.ctx.begin()
 	$if macos {
