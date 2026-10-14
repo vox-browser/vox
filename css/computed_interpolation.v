@@ -11495,6 +11495,7 @@ pub fn (s &StyleComputer) compute_properties(abstract_element dom.AbstractElemen
 	// Parent computed style to inherit from, bridged from the DOM-side placeholder. Available only if the
 	// inheritance source element has already had its (bridged) computed style stored.
 	inherited_computed := parent_computed_properties(abstract_element)
+	property_source := ComputedPropertyValueSource{properties: properties}
 	mut inherited_source_available := false
 	if _ := inherited_computed {
 		inherited_source_available = true
@@ -11599,11 +11600,8 @@ pub fn (s &StyleComputer) compute_properties(abstract_element dom.AbstractElemen
 		mut computation_context := s.get_computation_context_for_property(property_id, properties, abstract_element)
 		computation_context.reset_viewport_metric_dependency_tracking()
 		computed_value := if requires_computation {
-			StyleComputer.compute_value_of_property(property_id, style_value, fn [properties] (id PropertyID) &dom.StyleValue {
-				return properties.property(id, .no) or {
-					computed_interpolation_property_initial_value(id)
-				}
-			}, computation_context, 1.0)
+			compute_value_of_property_from_source(property_id, style_value, property_source,
+				computation_context, 1.0)
 		} else {
 			style_value
 		}
@@ -11986,17 +11984,15 @@ fn html_input_element_adjust_computed_style(mut properties ComputedProperties, e
 }
 
 pub fn (s &StyleComputer) compute_property_values(mut computed_properties ComputedProperties, abstract_element ?dom.AbstractElement) {
+	property_source := ComputedPropertyValueSource{properties: &computed_properties}
 	for property_id in computed_interpolation_property_computation_order() {
 		specified_value := computed_properties.property(property_id, .no) or {
 			computed_interpolation_property_initial_value(property_id)
 		}
 		mut computation_context := s.get_computation_context_for_property(property_id, computed_properties, abstract_element)
 		computation_context.reset_viewport_metric_dependency_tracking()
-		computed_value := StyleComputer.compute_value_of_property(property_id, specified_value, fn [computed_properties] (id PropertyID) &dom.StyleValue {
-			return computed_properties.property(id, .no) or {
-				computed_interpolation_property_initial_value(id)
-			}
-		}, computation_context, 1.0)
+		computed_value := compute_value_of_property_from_source(property_id, specified_value,
+			property_source, computation_context, 1.0)
 		computed_properties.set_property_without_modifying_flags(property_id, computed_value)
 		if computation_context.depends_on_viewport_metrics() {
 			computed_properties.set_depends_on_viewport_metrics()
@@ -12156,7 +12152,31 @@ fn repeat_style_value_list_to_n_elements(style_value &dom.StyleValue, n int) &do
 	return dom_style_value_from_value_logic(StyleValue(StyleValueList.create_collapsible(repeated_values, value_list.separator())))
 }
 
+// A property computation reads dependencies synchronously. Ordinary style passes
+// borrow the live style instead of allocating a managed closure per property;
+// callers with a custom lookup retain the public callback boundary below.
+struct ComputedPropertyValueSource {
+	properties    &ComputedProperties = unsafe { nil }
+	callback      fn (PropertyID) &dom.StyleValue = unsafe { nil }
+	uses_callback bool
+}
+
+fn (source ComputedPropertyValueSource) get(property_id PropertyID) &dom.StyleValue {
+	if source.uses_callback {
+		return source.callback(property_id)
+	}
+	return source.properties.property(property_id, .no) or {
+		computed_interpolation_property_initial_value(property_id)
+	}
+}
+
 pub fn StyleComputer.compute_value_of_property(property_id PropertyID, specified_value &dom.StyleValue, get_property_specified_value fn (PropertyID) &dom.StyleValue, computation_context ComputationContext, device_pixels_per_css_pixel f64) &dom.StyleValue {
+	return compute_value_of_property_from_source(property_id, specified_value,
+		ComputedPropertyValueSource{callback: get_property_specified_value, uses_callback: true},
+		computation_context, device_pixels_per_css_pixel)
+}
+
+fn compute_value_of_property_from_source(property_id PropertyID, specified_value &dom.StyleValue, property_source ComputedPropertyValueSource, computation_context ComputationContext, device_pixels_per_css_pixel f64) &dom.StyleValue {
 	typed_specified_value := typed_style_value_logic_from_dom(specified_value) or {
 		panic('StyleComputer.compute_value_of_property requires a typed StyleValue')
 	}
@@ -12176,7 +12196,7 @@ pub fn StyleComputer.compute_value_of_property(property_id PropertyID, specified
 		// unlike other coordinating list property groups.
 		.background_attachment, .background_clip, .background_origin, .background_position_x,
 		.background_position_y, .background_repeat, .background_size {
-			background_image := get_property_specified_value(.background_image)
+			background_image := property_source.get(.background_image)
 			typed_background_image := typed_style_value_logic_from_dom(background_image) or {
 				panic('background-image requires a typed StyleValue')
 			}
@@ -12199,7 +12219,7 @@ pub fn StyleComputer.compute_value_of_property(property_id PropertyID, specified
 			StyleComputer.compute_font_feature_tag_value_list(absolutized_value, computation_context)
 		}
 		.font_size {
-			math_depth_value := get_property_specified_value(.math_depth)
+			math_depth_value := property_source.get(.math_depth)
 			computed_math_depth := int(computed_interpolation_integer_from_dom_style_value(math_depth_value) or {
 				0
 			})
