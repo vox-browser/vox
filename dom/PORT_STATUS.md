@@ -652,3 +652,17 @@ Accounting adds no behavior or validation credit. Three source epochs and both
 failed owner-compilation attempts remain explicit. Batch stays 4/10 after
 aa6f0246; fixture corrections and documentation add no translation fix.
 See [evidence](../docs/translation-audit/NATIVE_MEDIA_SETTINGS_RAW_HANDLER.md).
+
+Native compact media raw `ontimeupdate` / `ondurationchange` (`ef218fdf`, 2026-10-14 UTC):
+Owner-local HTML audio/video timeline attributes compile lazily through the
+existing name-aware native compiler and ordered content-attribute replay.
+Actual native duration calls, including equal known values, queue durationchange;
+NaN resets are silent. Fresh normal time-marches tasks deliver timeupdate,
+and its running-handler guard suppresses a reentrant request. Parsed video
+and created audio keep live duration and currentTime values, Element ->
+Document -> Global scope, Event identity, cache and owner gates. Prequeued
+replacement/removal, original strict exceptions, later listeners and retained
+DOM painting pass six cases in two selected files in both GC modes. Other raw
+media names and unavailable/foreign owners remain open. Production and broad
+regression suites are deferred under the user's ten-fix cadence. Batch counter:
+5/10 after aa6f0246. See [evidence](../docs/translation-audit/NATIVE_MEDIA_TIMELINE_RAW_HANDLER.md).
