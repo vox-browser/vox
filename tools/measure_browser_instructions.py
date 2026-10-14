@@ -1,0 +1,316 @@
+#!/usr/bin/env python3
+"""Measure browser CPU instructions through a rendered document capture.
+
+Vox additionally reports exact in-process installation/first-frame intervals.
+Chrome uses an isolated profile and includes observed renderer/GPU/utility tasks.
+Elapsed time is used only as a watchdog, never as the reported work metric.
+"""
+import argparse
+import base64
+import hashlib
+import json
+import os
+from pathlib import Path
+import platform
+import re
+import signal
+import socket
+import statistics
+import struct
+import subprocess
+import tempfile
+import time
+import urllib.parse
+import urllib.request
+
+from process_instruction_counts import MacCounters, ProcessTreeCounter, CounterSampler
+
+REPO = Path(__file__).resolve().parents[1]
+
+
+class CDP:
+    def __init__(self, url):
+        parsed = urllib.parse.urlparse(url)
+        self.sock = socket.create_connection((parsed.hostname, parsed.port), timeout=15)
+        self.sock.settimeout(15)
+        self.pending = bytearray()
+        self.sequence = 0
+        key = base64.b64encode(os.urandom(16)).decode()
+        request = (f"GET {parsed.path} HTTP/1.1\r\nHost: {parsed.hostname}:{parsed.port}\r\n"
+                   f"Upgrade: websocket\r\nConnection: Upgrade\r\nSec-WebSocket-Key: {key}\r\n"
+                   "Sec-WebSocket-Version: 13\r\n\r\n")
+        self.sock.sendall(request.encode())
+        while b"\r\n\r\n" not in self.pending:
+            chunk = self.sock.recv(4096)
+            if not chunk:
+                raise EOFError("CDP connection closed during handshake")
+            self.pending.extend(chunk)
+        header, rest = bytes(self.pending).split(b"\r\n\r\n", 1)
+        if header.split(b"\r\n", 1)[0].split()[1] != b"101":
+            raise RuntimeError(header.decode())
+        self.pending = bytearray(rest)
+
+    def read(self, count):
+        while len(self.pending) < count:
+            chunk = self.sock.recv(max(4096, count - len(self.pending)))
+            if not chunk:
+                raise EOFError("CDP connection closed")
+            self.pending.extend(chunk)
+        result = bytes(self.pending[:count])
+        del self.pending[:count]
+        return result
+
+    def send(self, body, opcode=1):
+        size = len(body)
+        header = bytes([0x80 | opcode, 0x80 | (size if size < 126 else 126 if size <= 65535 else 127)])
+        if size >= 126:
+            header += struct.pack("!H" if size <= 65535 else "!Q", size)
+        mask = os.urandom(4)
+        self.sock.sendall(header + mask + bytes(b ^ mask[i % 4] for i, b in enumerate(body)))
+
+    def receive(self):
+        parts = []
+        while True:
+            flags, length = self.read(2)
+            opcode = flags & 15
+            count = length & 127
+            if count == 126:
+                count = struct.unpack("!H", self.read(2))[0]
+            elif count == 127:
+                count = struct.unpack("!Q", self.read(8))[0]
+            mask = self.read(4) if length & 128 else None
+            body = self.read(count)
+            if mask:
+                body = bytes(b ^ mask[i % 4] for i, b in enumerate(body))
+            if opcode == 8:
+                raise EOFError("CDP connection closed")
+            if opcode == 9:
+                self.send(body, 10)
+                continue
+            if opcode == 10:
+                continue
+            parts.append(body)
+            if flags & 128:
+                return json.loads(b"".join(parts))
+
+    def call(self, method, params=None):
+        self.sequence += 1
+        self.send(json.dumps({"id": self.sequence, "method": method, "params": params or {}}).encode())
+        while True:
+            response = self.receive()
+            if response.get("id") == self.sequence:
+                if "error" in response:
+                    raise RuntimeError(response["error"])
+                return response.get("result", {})
+
+
+def parse_native_counters(text):
+    phases, scopes, unavailable = [], {}, []
+    previous = 0
+    for line in text.splitlines():
+        match = re.fullmatch(r"Vox instructions (cumulative|scope): (.*?) (\d+)", line)
+        if match:
+            kind, label, number = match.groups()
+            value = int(number)
+            if kind == "scope":
+                scopes.setdefault(label, []).append(value)
+            else:
+                if value < previous:
+                    raise RuntimeError("Native cumulative instruction counter decreased")
+                phases.append({"label": label, "instructions": value - previous,
+                               "cumulative_instructions": value})
+                previous = value
+        elif line.startswith("Vox instructions unavailable:"):
+            unavailable.append(line)
+    return {"phases": phases, "scopes": scopes, "unavailable": unavailable,
+            "phase_note": "adjacent cumulative checkpoint deltas; nested scopes overlap and must not be summed"}
+
+
+def stop_process(process):
+    if process.returncode is None:
+        try:
+            os.killpg(process.pid, signal.SIGTERM)
+        except ProcessLookupError:
+            pass
+        try:
+            process.wait(timeout=3)
+        except subprocess.TimeoutExpired:
+            os.killpg(process.pid, signal.SIGKILL)
+            process.wait()
+
+
+def crop_document_viewport(window, screenshot, width, height):
+    # Match capture_screenshot.sh: 88px toolbar, 24px status bar, Retina scale.
+    header = window.read_bytes()[:24]
+    if header[:8] != b"\x89PNG\r\n\x1a\n" or len(header) != 24:
+        raise RuntimeError(f"Invalid native PNG: {window}")
+    pixels_wide, pixels_high = struct.unpack("!II", header[16:24])
+    scale = pixels_wide // width
+    if scale < 1 or pixels_wide % width or (88 + height) * scale > pixels_high:
+        raise RuntimeError("Native capture does not contain the requested document viewport")
+    subprocess.run(["sips", "--cropToHeightWidth", str(height * scale), str(width * scale),
+                    "--cropOffset", str(88 * scale), "0", str(window), "--out", str(screenshot)],
+                   check=True, stdout=subprocess.DEVNULL)
+    if scale != 1:
+        subprocess.run(["sips", "--resampleHeightWidth", str(height), str(width), str(screenshot)],
+                       check=True, stdout=subprocess.DEVNULL)
+
+
+def run_vox(args, prefix, api):
+    binary = args.binary or REPO / "Build/v/Vox.app/Contents/MacOS/Vox"
+    screenshot = Path(str(prefix) + ".png")
+    window_screenshot = Path(str(prefix) + ".window.png")
+    window_screenshot.unlink(missing_ok=True)
+    log_path = Path(str(prefix) + ".log")
+    env = dict(os.environ, VOX_PROFILE_INSTRUCTIONS="1", LADYBIRD_SCREENSHOT_DELAY_SECONDS="0")
+    env.pop("LADYBIRD_DEBUG_TIMING", None)
+    env.pop("GC_PRINT_STATS", None)
+    command = [str(binary), "--window-width", str(args.width), "--window-height", str(args.height + 112),
+               "--screenshot", str(window_screenshot), args.url]
+    with log_path.open("w") as log:
+        process = subprocess.Popen(command, cwd=REPO, env=env, stdout=log, stderr=subprocess.STDOUT,
+                                   start_new_session=True)
+        counter = ProcessTreeCounter(api, process.pid)
+        try:
+            deadline = time.monotonic() + args.timeout
+            while True:
+                readings = counter.sample()
+                root = readings.get(counter.root_identity)
+                if root and root.exited:
+                    report = counter.report()
+                    break
+                if time.monotonic() > deadline:
+                    raise RuntimeError("Vox did not finish its document capture before the watchdog")
+                time.sleep(.02)
+            # Read the exact root's zombie counters before wait() reaps it.
+            code = process.wait()
+        finally:
+            stop_process(process)
+    if code != 0 or not window_screenshot.exists():
+        raise RuntimeError(f"Vox capture failed (exit {code}); see {log_path}")
+    # Cropping runs in the observer after the browser's final counter sample.
+    crop_document_viewport(window_screenshot, screenshot, args.width, args.height)
+    report.update(engine="vox", binary=str(binary), endpoint="process exit after native document capture",
+                  url=args.url, viewport=[args.width, args.height], exit=code,
+                  native=parse_native_counters(log_path.read_text()), screenshot=str(screenshot),
+                  native_window_screenshot=str(window_screenshot))
+    return report
+
+
+def run_chrome(args, prefix, api):
+    binary = args.binary or Path("/Applications/Google Chrome.app/Contents/MacOS/Google Chrome")
+    screenshot = Path(str(prefix) + ".png")
+    log_path = Path(str(prefix) + ".log")
+    with tempfile.TemporaryDirectory(prefix="vox-chrome-instructions-", dir=args.scratch_dir) as profile:
+        command = [str(binary), "--headless=new", "--no-first-run", "--no-default-browser-check",
+                   "--disable-background-networking", "--remote-debugging-port=0",
+                   f"--user-data-dir={profile}", "about:blank"]
+        with log_path.open("w") as log:
+            process = subprocess.Popen(command, stdout=log, stderr=subprocess.STDOUT, start_new_session=True)
+            counter = ProcessTreeCounter(api, process.pid)
+            client = None
+            try:
+                with CounterSampler(counter):
+                    active = Path(profile) / "DevToolsActivePort"
+                    deadline = time.monotonic() + args.timeout
+                    while not active.exists():
+                        if time.monotonic() > deadline:
+                            raise RuntimeError("Chrome debugger did not start before the watchdog")
+                        root = counter.sample().get(counter.root_identity)
+                        if root and root.exited:
+                            raise RuntimeError(f"Chrome exited before debugger startup; see {log_path}")
+                        time.sleep(.02)
+                    port = int(active.read_text().splitlines()[0])
+                    with urllib.request.urlopen(f"http://127.0.0.1:{port}/json/list", timeout=15) as response:
+                        targets = json.load(response)
+                    client = CDP(next(t["webSocketDebuggerUrl"] for t in targets if t["type"] == "page"))
+                    version = client.call("Browser.getVersion")
+                    client.call("Page.enable")
+                    client.call("Runtime.enable")
+                    client.call("Emulation.setDeviceMetricsOverride", {
+                        "width": args.width, "height": args.height, "deviceScaleFactor": 1, "mobile": False})
+                    baseline = counter.sample()
+                    client.call("Page.navigate", {"url": args.url})
+                    expression = r'''JSON.stringify({title:document.title,url:location.href,
+                        ready:document.readyState,textLength:document.body?.innerText.length||0,
+                        fileLinks:[...document.querySelectorAll('a')].filter(a=>/\/vlang\/v\/(blob|tree)\//.test(a.href)).length})'''
+                    while True:
+                        evaluated = client.call("Runtime.evaluate", {"expression": expression, "returnByValue": True})
+                        value = evaluated.get("result", {}).get("value")
+                        document = json.loads(value) if value else {}
+                        github = urllib.parse.urlparse(args.url).hostname == "github.com" and "/vlang/v" in args.url
+                        if (document.get("ready") == "complete" and document.get("textLength", 0) > 0
+                                and (not github or document.get("fileLinks", 0) > 0)):
+                            break
+                        if time.monotonic() > deadline:
+                            raise RuntimeError("Chrome did not load document content before the watchdog")
+                        time.sleep(.02)
+                    client.call("Runtime.evaluate", {"expression": "document.fonts.ready.then(()=>true)",
+                                                     "awaitPromise": True, "returnByValue": True})
+                    data = client.call("Page.captureScreenshot", {"format": "png", "captureBeyondViewport": False})["data"]
+                    # Counters end before screenshot decoding/writing and browser shutdown.
+                    navigation_report = counter.report(baseline)
+                    report = counter.report()
+                    screenshot.write_bytes(base64.b64decode(data))
+                    report.update(engine="chrome", binary=str(binary), version=version,
+                                  endpoint="completed document and first CDP screenshot response",
+                                  url=args.url, viewport=[args.width, args.height],
+                                  navigation_to_screenshot=navigation_report, document=document,
+                                  screenshot=str(screenshot))
+                    try:
+                        client.call("Browser.close")
+                    except (EOFError, OSError):
+                        pass
+            finally:
+                if client:
+                    client.sock.close()
+                stop_process(process)
+    return report
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--engine", choices=["vox", "chrome"], default="vox")
+    parser.add_argument("--binary", type=Path)
+    parser.add_argument("--url", default="https://github.com/vlang/v")
+    parser.add_argument("--output", type=Path, default=REPO / "Build/instructions/github")
+    parser.add_argument("--repeat", type=int, default=1)
+    parser.add_argument("--width", type=int, default=1024)
+    parser.add_argument("--height", type=int, default=768)
+    parser.add_argument("--timeout", type=float, default=90)
+    parser.add_argument("--scratch-dir", type=Path)
+    args = parser.parse_args()
+    if args.repeat < 1 or args.timeout <= 0 or args.width < 1 or args.height < 1:
+        parser.error("repeat, dimensions, and watchdog must be positive")
+    if args.binary:
+        args.binary = args.binary.resolve()
+    local = Path(args.url)
+    if local.is_file():
+        args.url = local.resolve().as_uri()
+    args.output = args.output.resolve()
+    args.output.parent.mkdir(parents=True, exist_ok=True)
+    api = MacCounters()
+    runs = []
+    for index in range(args.repeat):
+        prefix = Path(str(args.output) + f".run-{index + 1}")
+        result = (run_vox if args.engine == "vox" else run_chrome)(args, prefix, api)
+        result["binary_sha256"] = hashlib.sha256(Path(result["binary"]).read_bytes()).hexdigest()
+        Path(str(prefix) + ".json").write_text(json.dumps(result, indent=2) + "\n")
+        runs.append(result)
+        print(json.dumps({"run": index + 1, "engine": args.engine,
+                          "observed_process_tree_instructions": result["instructions"],
+                          "aggregate_is_lower_bound": result["aggregate_is_lower_bound"],
+                          "root_instructions": result["root_instructions"],
+                          "root_final_exit_sample": result["root_final_exit_sample"],
+                          "missing_final_sample_count": result["missing_final_sample_count"],
+                          "native_scopes": result.get("native", {}).get("scopes"),
+                          "navigation_to_screenshot_instructions": result.get("navigation_to_screenshot", {}).get("instructions")}), flush=True)
+    summary = {"machine": platform.machine(), "kernel": platform.release(), "engine": args.engine,
+               "aggregate_is_lower_bound": True,
+               "median_observed_process_tree_instructions": statistics.median(r["instructions"] for r in runs),
+               "median_root_instructions": statistics.median(r["root_instructions"] for r in runs), "runs": runs}
+    Path(str(args.output) + ".json").write_text(json.dumps(summary, indent=2) + "\n")
+
+
+if __name__ == "__main__":
+    main()
