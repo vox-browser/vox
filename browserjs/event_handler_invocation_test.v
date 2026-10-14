@@ -11,6 +11,8 @@ fn native_handler_fixture() (&Runtime, &html.EnvironmentSettingsObject, &dom.Eve
 	mut runtime := Runtime.create()
 	runtime.bind_scripting_environment(settings) or { panic(err) }
 	runtime.install_event_target_binding() or { panic(err) }
+	// The Window wrapper is the actual global. Borrow EventTarget methods below
+	// while preserving that receiver's native Window identity.
 	target := unsafe { &dom.EventTarget(window) }
 	wrapper := runtime.javascript_event_target(target, none) or { panic(err) }
 	runtime.define_value_host_function('__handlerWindow', fn [wrapper] (_ voidptr, _ []voidptr) !voidptr {
@@ -38,7 +40,7 @@ fn test_native_window_error_handler_receives_five_original_values_and_strict_boo
    handlerArgumentsValid=arguments.length===5&&message==="native failure"&&source==="owner.js"&&line===17&&column===23&&error===handlerReason&&this===__handlerWindow()&&__handlerContext();
    return handlerReturn;
  };
- __handlerWindow().addEventListener("error",function(event){ordinaryErrorListenerValid=arguments.length===1&&event===globalThis.expectedErrorEvent&&this===__handlerWindow();});
+ EventTarget.prototype.addEventListener.call(__handlerWindow(),"error",function(event){ordinaryErrorListenerValid=arguments.length===1&&event===globalThis.expectedErrorEvent&&this===__handlerWindow();});
  ')!
 	function := runtime.evaluate_host_value('errorHandler')!
 	runtime.set_javascript_event_handler(target, 'error', function)!
@@ -141,7 +143,7 @@ fn test_native_beforeunload_conversion_throw_reports_original_once_and_dispatch_
  };
  ')!
 	runtime.set_javascript_event_handler(target, 'beforeunload', runtime.evaluate_host_value('throwingReturn')!)!
-	runtime.evaluate_host('__handlerWindow().addEventListener("beforeunload",function(event){beforeUnloadLater++;globalThis.laterSawEmpty=event.returnValue===""&&event.defaultPrevented})')!
+	runtime.evaluate_host('EventTarget.prototype.addEventListener.call(__handlerWindow(),"beforeunload",function(event){beforeUnloadLater++;globalThis.laterSawEmpty=event.returnValue===""&&event.defaultPrevented})')!
 	event := dom.BeforeUnloadEvent.create('beforeunload', dom.EventInit{ cancelable: true })
 	assert !target.dispatch_event(unsafe { &dom.Event(event) })
 	assert event.return_value() == ''
