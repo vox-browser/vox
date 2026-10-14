@@ -1939,7 +1939,15 @@ pub fn CSSPixels.nearest_value_for(value f64) CSSPixels {
 	if math.is_nan(value) {
 		return CSSPixels{}
 	}
-	return CSSPixels.from_raw(css_pixels_clamp_f64_to_raw(math.round_to_even(value * f64(css_pixels_fixed_point_denominator))))
+	scaled := value * f64(css_pixels_fixed_point_denominator)
+	$if clang {
+		// Fixed ties-to-even rounding, independent of the current FP rounding
+		// mode. Clang lowers this to FRINTN on AArch64 instead of the general
+		// bit-based implementation used by math.round_to_even().
+		return CSSPixels.from_raw(css_pixels_clamp_f64_to_raw(C.__builtin_roundeven(scaled)))
+	} $else {
+		return CSSPixels.from_raw(css_pixels_clamp_f64_to_raw(math.round_to_even(scaled)))
+	}
 }
 
 pub fn CSSPixels.floored_value_for(value f64) CSSPixels {
