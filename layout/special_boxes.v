@@ -377,6 +377,11 @@ struct SVGImageSource {
 	url    dom.URL
 }
 
+struct SVGImageDocumentCacheEntry {
+	source   string
+	document &dom.Document
+}
+
 // Remote bytes enter through the embedder-populated ResourceLoader store. This
 // performs the translated request filtering and response checks without adding
 // a network transport or blocking network I/O to layout.
@@ -411,7 +416,6 @@ fn remote_svg_image_source(document &dom.Document, image_url dom.URL) ?SVGImageS
 		url:    image_url
 	}
 }
-
 
 fn svg_image_source_for_source(document &dom.Document, source string) ?SVGImageSource {
 	if source.len == 0 {
@@ -456,9 +460,6 @@ fn svg_image_source_for_source(document &dom.Document, source string) ?SVGImageS
 	mut path := serialized
 	if serialized.starts_with('file://') {
 		path = url.percent_decode(parsed_url.serialize_path()).bytestr()
-	} else if serialized.starts_with('http://') || serialized.starts_with('https://') {
-		image_source := svg_image_source_for_source(document, source) or { return none }
-		return svg_image_natural_size(image_source.source)
 	} else if serialized.contains('://') {
 		return none
 	}
@@ -473,11 +474,39 @@ fn svg_image_source_for_source(document &dom.Document, source string) ?SVGImageS
 
 fn svg_image_document_for_source(document &dom.Document, source string) ?&dom.Document {
 	image_source := svg_image_source_for_source(document, source) or { return none }
+	return parse_svg_image_document(image_source, document.preferred_color_scheme())
+}
+
+// Background layers within one layout tree use the same decoded image. Keep
+// color-scheme variants separate because the isolated document owns its media
+// environment, and compare the source bytes before reusing a URL after a
+// response or local-file replacement. Failed loads never reuse a cached image.
+fn svg_image_document_for_source_in_viewport(node &Node, source string,
+	color_scheme css.PreferredColorScheme) ?&dom.Document {
+	image_source := svg_image_source_for_source(node.document(), source) or { return none }
+	scheme := css.preferred_color_scheme_to_string(color_scheme)
+	viewport := node.root_viewport() or { return parse_svg_image_document(image_source, scheme) }
+	cache_key := scheme + '\n' + image_source.url.serialize()
+	if existing := viewport.svg_image_documents_[cache_key] {
+		if existing.source == image_source.source {
+			return existing.document
+		}
+	}
+	isolated := parse_svg_image_document(image_source, scheme) or { return none }
+	mut mutable_viewport := unsafe { &Viewport(viewport) }
+	mutable_viewport.svg_image_documents_[cache_key] = SVGImageDocumentCacheEntry{
+		source:   image_source.source
+		document: isolated
+	}
+	return isolated
+}
+
+fn parse_svg_image_document(image_source SVGImageSource, color_scheme string) ?&dom.Document {
 	mut svg_document := dom.Document.create(image_source.url)
 	svg_document.set_content_type('image/svg+xml')
 	svg_document.set_document_type(.xml)
 	svg_document.set_is_svg_image_document(true)
-	svg_document.set_svg_image_color_scheme(document.preferred_color_scheme())
+	svg_document.set_svg_image_color_scheme(color_scheme)
 	html.parse_xml_document_source(svg_document, image_source.source) or { return none }
 	if image_source.url.scheme() in ['http', 'https'] {
 		root := svg_document.document_element() or { return none }
@@ -548,6 +577,9 @@ fn image_intrinsic_size_for_source(document &dom.Document, source string) ?css.S
 	if serialized.starts_with('file://') {
 		parsed := parsed_url or { return none }
 		path = url.percent_decode(parsed.serialize_path()).bytestr()
+	} else if serialized.starts_with('http://') || serialized.starts_with('https://') {
+		image_source := svg_image_source_for_source(document, source) or { return none }
+		return svg_image_natural_size(image_source.source)
 	} else if serialized.contains('://') {
 		return none
 	}

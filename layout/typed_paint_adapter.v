@@ -1439,7 +1439,7 @@ fn image_color_scheme(document &dom.Document, computed &css.ComputedProperties) 
 	return preferred_scheme
 }
 
-fn computed_background_image_layers(element &dom.Element, computed &css.ComputedProperties,
+fn computed_background_image_layers(node &Node, element &dom.Element, computed &css.ComputedProperties,
 	color_context css.ColorResolutionContext) []BackgroundImageLayer {
 	value := computed.typed_property_value(.background_image) or { return []BackgroundImageLayer{} }
 	computed_layers := computed.background_layers()
@@ -1496,12 +1496,8 @@ fn computed_background_image_layers(element &dom.Element, computed &css.Computed
 		} else if gradient_source == none {
 			continue
 		}
-		svg_document := svg_image_document_for_source(element.document(), resolved_url)
 		color_scheme := image_color_scheme(element.document(), computed)
-		if isolated_document := svg_document {
-			mut mutable_document := unsafe { &dom.Document(isolated_document) }
-			mutable_document.set_svg_image_color_scheme(css.preferred_color_scheme_to_string(color_scheme))
-		}
+		svg_document := svg_image_document_for_source_in_viewport(node, resolved_url, color_scheme)
 		intrinsic_width, intrinsic_height := background_svg_intrinsic_dimensions(element.document(), resolved_url, svg_document != none)
 		repeat_x, repeat_y := parsed_background_repeat(computed_coordinated_background_value(computed, .background_repeat, index, 'repeat'))
 		layers << BackgroundImageLayer{
@@ -2479,7 +2475,7 @@ fn paintable_box_paint_background(mut root_box BlockBox, root_layout_node &Node,
 					color_context.current_color = computed_paint_color(body_computed, .color, color_context, css.Color{0, 0, 0, 255})
 					root_box.background_color = computed_paint_color(body_computed, .background_color, color_context, css.Color{0, 0, 0, 0})
 					root_box.background_gradient = computed_background_gradient(body_computed, root_box.border_box().width, root_box.border_box().height, color_context)
-					root_box.background_images = computed_background_image_layers(body_element, body_computed, color_context)
+					root_box.background_images = computed_background_image_layers(body_layout_node, body_element, body_computed, color_context)
 					// If the body's background was propagated to the root element, use the
 					// body's image-rendering value too.
 					root_box.replaced_image_rendering = body_computed.image_rendering()
@@ -3460,7 +3456,7 @@ fn block_box_from_typed_layout_shallow(node &Node, state &LayoutState, ancestor_
 			shadow = shadows[0]
 		}
 		background_gradient = computed_background_gradient(computed, used.border_box_width().to_double(), used.border_box_height().to_double(), color_context)
-		background_images = computed_background_image_layers(styled_element, computed, color_context)
+		background_images = computed_background_image_layers(node, styled_element, computed, color_context)
 		if positioned {
 			if computed_z_index := computed.z_index() {
 				z_index = computed_z_index
@@ -4105,7 +4101,7 @@ fn text_lines_from_typed_layout(container &Node, used &UsedValues, state &Layout
 					if owner := painted_owner_element(inline_owner) {
 						mut owner_color_context := color_resolution_context_for_typed_node(inline_owner, owner_computed.color())
 						owner_color_context.current_color = owner_computed.color()
-						background_images = computed_background_image_layers(owner, owner_computed, owner_color_context)
+						background_images = computed_background_image_layers(inline_owner, owner, owner_computed, owner_color_context)
 						inline_node_id = i64(owner.as_node().unique_id())
 					}
 					border_colors = computed_border_colors(owner_computed)
