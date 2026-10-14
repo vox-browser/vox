@@ -2144,6 +2144,108 @@ older artifacts; archive journals retain SHA-256 and executable modes.
 Chrome instruction and functionality parity remain unverified, including
 GitHub module hydration and populated file rows.
 
+## Borrowed sources for synchronous property computation
+
+Feature `8b80c79a` replaces a managed property-lookup closure allocated for
+each ordinary computed property with one small descriptor per style pass.
+The descriptor borrows the live `ComputedProperties` record and is used only
+synchronously. Only background coordination and font sizing request dependency
+values. The public callback API remains available for custom callers and
+keyframes, including their specified-value overlay and computed/initial
+fallbacks. The main cascade previously captured a pointer, not a complete style
+record; its avoidable cost was closure allocation and registration. The separate
+recomputation method previously captured the record by value. The generated-C
+audit authenticates both removed closure contexts and the three-field source
+layout; the property computation body matches after exactly its two dependency
+lookups and required source-root barriers are projected. All unrelated
+executable logic, layouts and resources match after named type IDs, compiler
+symbol/temporary identities, embed keys and assertion offsets are canonicalized.
+
+Four new cases check lazy custom callbacks across explicit collection,
+background layer coordination, math-depth font sizing, repeated live-style
+recomputation, importance/inheritance flags, and keyframe overlays and
+fallbacks. Together with the prior keyword and animated-inheritance checks,
+**fourteen functional cases plus one diagnostic pass in both GC modes**,
+including C `-O2` with Boehm. Each run passes 3,341 assertions.
+Boehm and JavaScriptCore remain enabled; no arena lifetime is extended into
+live cyclic/shared DOM or JavaScript state.
+
+Three fixed alternating diagnostics perform 256 complete property-computation
+passes with all 355 initial longhands explicitly cascaded and font size fixed
+at 16px. A sixteen-entry ring retains outputs; setup, eight warmups, collection
+and assertions stay outside the hardware counter scope. Every checksum matches
+the independent reference `(355 + 16*64)*256 = 353024`.
+Median work falls **240,480,935 → 173,316,500
+instructions (27.93% fewer)**; all three pairs improve.
+This explicit all-longhand diagnostic does not represent GitHub's complete
+cascade or whole-page cost. Plans, retained aggregate and results are under
+`Build/v/instruction-opt23-*` and `opt23-property-source-focused-test.v.txt`.
+
+A fresh `v -profile` comparison uses separate C `-O1`/Boehm builds with the same
+focused input. `-profile-no-inline` omits inline-marked functions from
+instrumentation; it does not disable Clang inlining. Profiling covers the full
+process, including module initialization, all cases, warmups and the diagnostic;
+there is no `-profile-fns` filter or counter reset. Both builds execute 286
+main cascade calls, two recomputation calls and 56,804 property computations.
+Managed closure creation/registration calls fall **63,154 → 6,357
+(89.93% fewer)**, and `memdup` calls fall 354,494 → 240,900.
+The new dependency getter runs 2,155 times. These are diagnostic call counts,
+not GitHub whole-page allocation counts. Instrumented times and instruction
+counts are excluded from normal page results. Raw profiles, exact argv and
+generated-C scope proofs are retained under `Build/v/instruction-opt23-*`.
+
+Thirty alternating normal-build GitHub pairs were fixed before measurement,
+using fresh copies of the same immutable cache, the frozen native library,
+a 1024×768 document viewport and the first native
+`navigation_to_first_document_paint` endpoint.
+
+| Build | Median instructions through first native document frame |
+| --- | ---: |
+| Per-property managed lookup closure | 34,154,501,639 |
+| Borrowed synchronous property source | 33,258,794,887 |
+
+The observed change is **-2.62%** (895,706,752 fewer instructions);
+**24/30 pairs improve**. The paired median saving is 501,954,294.5; its
+95% paired percentile bootstrap interval is **100,859,636.5 to 1,199,365,742**
+instructions (30,000 resamples, seed 23). The paired interval excludes zero and
+supports a repeatable reduction for this cached workload. Repeatable page
+savings credited: 895,706,752. All sixty captures have valid 1024×768 geometry,
+one installation, two required geometry passes and one shell paint recording
+before the first frame. No observations were discarded, selected or added
+after results. Disk exhaustion interrupted cache copying before pair 8's first
+browser launch. The original seven pairs and failure logs were retained, and
+the unchanged schedule resumed at pair 8; the failed cache copy produced no
+browser observation. Completed artifacts were compressed with SHA-256
+round-trip checks and executable modes retained in archive journals.
+Checkpoint intervals remain process-wide deltas rather than function self cost.
+Raw reports are `Build/instructions/vox-opt23-interleaved-*`; paired evidence
+is `Build/v/instruction-opt23-comparison-evidence.json`.
+
+The control reuses the exact round22 executable and source snapshot, including
+consolidated keyword classification `eb4e269e`. The sole runtime source change
+is `css/computed_interpolation.v`; all 120 common native input hashes and the
+shared library remain unchanged. Source manifests, exact argv and the generated
+C audit are retained in `Build/v/instruction-opt23-matching-provenance.json`.
+
+The observed page median crossed the user's 5,000,000-instruction gate, so
+one broad batch ran after all measurements. All six commands for 87 selected
+CSS, SVG and layout cases pass in both GC modes. All nineteen screenshot
+comparisons pass, sixteen pixel-exact; existing differences remain inline-node
+(13 pixels), text-decorations (1,341) and canvas-text (1,994). The focused
+Unicode/control viewport, extended with coordinated background layers and
+math-depth font sizing, is pixel-exact between builds. Actual exits and metrics
+are retained in `Build/v/instruction-opt23-validation-result.json`.
+The broad-verified baseline is now `8b80c79a` at the observed median
+33,258,794,887; additional savings after this batch reset to zero.
+
+The measured candidate replaces the authenticated round22 executable in
+`Build/v/Vox.app`; native text SHA-256 is `783716b09e63e10655019eeb857344f3277e408ec94342a0b24f1ee27f83ef2c`.
+Bundle signing, deep strict verification and headless startup pass.
+Independent native media completion/error-handler changes are preserved and
+excluded from both compared binaries and the app snapshot. The existing GUI
+process was left running. Chrome instruction and functionality parity remain
+unverified, including GitHub module hydration and populated file rows.
+
 ## Causes and changes
 
 - The V 0.5.2 compatibility compiler's `-prod` Boehm code repeatedly snapshots

@@ -1358,15 +1358,15 @@ evidence](docs/translation-audit/NATIVE_MEDIA_WHEEL_RAW_HANDLER.md).
   broad verification. Compare the same benchmark endpoint and workload, record
   the measured baseline and accumulated savings, and do not run broad suites
   for every individual fix below that threshold.
-  The latest performance broad batch is consolidated CSS keyword checks `eb4e269e`:
-  ten functional checks plus one diagnostic pass in each GC mode, including
+  The latest performance broad batch is borrowed CSS property sources `8b80c79a`:
+  fourteen functional checks plus one diagnostic pass in each GC mode, including
   optimized Boehm. All six commands for 87 selected CSS/SVG/layout cases and
   all 19 screenshots pass (16 exact); the extended focused viewport is exact.
-  Its observed GitHub first-frame median is 33,958,775,388 instructions,
-  a -0.27% change against its matching control. 15 of 30 pairs improve;
-  the paired interval includes zero. Repeatable page savings credited:
-  0; additional savings after this batch: zero. The controlled property
-  diagnostic improves 4.79%; V-profile confirms fewer keyword lookups.
+  Its observed GitHub first-frame median is 33,258,794,887 instructions,
+  a -2.62% change against its matching control. 24 of 30 pairs improve;
+  the paired interval excludes zero. Repeatable page savings credited:
+  895,706,752; additional savings after this batch: zero. The controlled property
+  diagnostic improves 27.93%; V-profile confirms 89.93% fewer managed closures.
   See `docs/GITHUB_PERFORMANCE.md` for uncertainty, source snapshots and app scope.
 - Outside instruction-count optimization, run broad regression suites once per
   ten completed fixes, not after every fix.
