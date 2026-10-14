@@ -17,6 +17,14 @@ pub:
 	create fn (&dom.Event) !voidptr
 }
 
+// Resolve compact DOM facades before allocating a bare EventTarget wrapper.
+// The owner installs this hook without changing EventTarget's DOM algorithms.
+pub struct EventTargetWrapperProvider {
+pub:
+	owner  voidptr
+	create fn (&dom.EventTarget) !voidptr
+}
+
 @[heap]
 struct EventTargetBinding {
 mut:
@@ -26,6 +34,7 @@ mut:
 	event_wrappers     map[voidptr]voidptr
 	callbacks          map[voidptr]voidptr
 	providers          []EventWrapperProvider
+	target_providers   []EventTargetWrapperProvider
 	factory            voidptr
 	define_trusted     voidptr
 	event_constructor  voidptr
@@ -170,6 +179,18 @@ pub fn (mut runtime Runtime) bind_event_target(wrapper voidptr, target &dom.Even
 pub fn (mut runtime Runtime) javascript_event_target(target &dom.EventTarget, prototype ?voidptr) !voidptr {
 	binding := runtime.event_binding()!
 	if wrapper := binding.target_wrappers[voidptr(target)] { return wrapper }
+	for provider in binding.target_providers {
+		wrapper := provider.create(target)!
+		if wrapper == unsafe { nil } { continue }
+		if existing := binding.targets[wrapper] {
+			if voidptr(existing) != voidptr(target) {
+				return runtime.event_binding_type_error('EventTarget provider returned another owner')
+			}
+		} else {
+			runtime.bind_event_target(wrapper, target)!
+		}
+		return wrapper
+	}
 	wrapper := runtime.call_javascript_function(binding.factory,
 		C.JSValueMakeUndefined(runtime.context), [
 		runtime.binding_string('target'),
@@ -177,6 +198,12 @@ pub fn (mut runtime Runtime) javascript_event_target(target &dom.EventTarget, pr
 	])!
 	runtime.bind_event_target(wrapper, target)!
 	return wrapper
+}
+
+pub fn (mut runtime Runtime) install_event_target_wrapper_provider(provider EventTargetWrapperProvider) ! {
+	mut binding := runtime.event_binding()!
+	binding.target_providers = binding.target_providers.filter(it.owner != provider.owner)
+	binding.target_providers << provider
 }
 
 pub fn (runtime &Runtime) native_event_target(wrapper voidptr) !&dom.EventTarget {

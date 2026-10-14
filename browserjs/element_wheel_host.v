@@ -1,0 +1,75 @@
+// Compact Element wheel listeners retain the actual owning DOM EventTarget.
+module browserjs
+
+import css
+import dom
+import html
+
+@[heap]
+pub struct ElementWheelHost {
+	document &dom.Document
+	settings &html.EnvironmentSettingsObject
+mut:
+	runtime  &Runtime = unsafe { nil }
+	elements map[string]&dom.Element
+	records  map[voidptr]&dom.Element
+	resolver voidptr
+	closed   bool
+}
+
+pub fn ElementWheelHost.create(document &dom.Document) !&ElementWheelHost {
+	if document.relevant_settings_object() == unsafe { nil } {
+		_ = html.WindowModel.create_top_level(document, none, '')!
+	}
+	mut host := &ElementWheelHost{
+		document: document
+		settings: unsafe { &html.EnvironmentSettingsObject(document.relevant_settings_object()) }
+	}
+	for index, element in css.query_selector_all(unsafe { &dom.Node(document) }, '*') {
+		host.elements['__element_${index}'] = element
+	}
+	return host
+}
+
+pub fn (host &ElementWheelHost) elements_for_binding() map[string]&dom.Element {
+	return host.elements.clone()
+}
+
+fn (mut host ElementWheelHost) refresh_elements() {
+	for key, element in host.runtime.canvas_elements_for_binding() {
+		host.elements[key] = element
+	}
+}
+
+fn (mut host ElementWheelHost) element_for_wheel_binding(key string, tag string, namespace string) !&dom.Element {
+	host.refresh_elements()
+	if element := host.elements[key] {
+		name := if key.starts_with('__created_') {
+			element.qualified_name_str()
+		} else {
+			element.local_name()
+		}
+		if voidptr(element.document()) != voidptr(host.document) || name != tag || (element.namespace_uri() or {
+			''
+		}) != namespace {
+			return error('TypeError: Element wrapper metadata does not match its native owner')
+		}
+		if element.is_html_element() && element.local_name() in ['audio', 'video'] {
+			return error('TypeError: Media elements retain their native media binding')
+		}
+		return element
+	}
+	if !key.starts_with('__created_') {
+		return error('TypeError: Element wrapper has no owning native element')
+	}
+	optional_namespace := if namespace == '' { ?string(none) } else { ?string(namespace) }
+	element := host.document.create_element_ns(optional_namespace, tag)!
+	if element.qualified_name_str() != tag || (element.namespace_uri() or { '' }) != namespace {
+		return error('TypeError: Created Element namespace or local name does not match')
+	}
+	if element.is_html_element() && element.local_name() in ['audio', 'video'] {
+		return error('TypeError: Media elements retain their native media binding')
+	}
+	host.elements[key] = element
+	return element
+}
