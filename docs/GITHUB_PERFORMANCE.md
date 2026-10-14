@@ -625,6 +625,128 @@ four SVG mutation cases and both added line-height cases pixel-exact. These use
 the normal capture helper copied with automatic rebuilding disabled; results
 are in `instruction-opt6-css-serialization-screenshots.log`.
 
+
+## Rejected transient glyph-run wrapper arena
+
+A uniform allocation-stack sample identified short-lived `GlyphRun` forks in
+intrinsic sizing. An experiment placed their wrappers in GC-scanned chunks of
+sixteen inside the existing scalar-measurement arena. Shared glyph buffers and
+fonts kept their normal ownership; cache-miss shapes retained separate heap
+copies. Thirty-three layout cases plus two platform fork cases passed in both
+GC modes, including forced collection, with the three new lifetime cases also
+passing C `-O2`. An initial fixture used value equality instead of pointer
+identity; the corrected fixture produced those passing results.
+
+Five interleaved normal-build pairs did not show an instruction improvement:
+first-frame medians were **36,930,617,480 before** and **37,056,480,856 with the
+arena**, a 0.34% increase within the observed variation. Separate C `-O0`
+allocation diagnostics with three layout/paint checkpoints each counted
+16,227,567 calls requesting 2,999,170,913 bytes before and 16,039,725 calls
+requesting 3,006,068,290 bytes afterward. Fewer allocation calls alone did not
+justify retaining the change. The wrapper arena was removed; the existing
+`UsedValues` measurement arena and normal GC policy remain in place.
+
+The rejected source patch, fixture, pinned-source manifest and executable are
+retained under `Build/v/instruction-opt7-*`,
+`Build/v/measurement-glyph-run-arena-test.v.txt`, and
+`Build/v/Vox-opt7-glyph-arena-bin`. The five-pair reports and summary use
+`Build/instructions/vox-opt7-interleaved-*`. Three candidate runs installed a
+second document after their first frame, so only the first installation and
+first-frame scopes were compared; through-exit work and lifetime footprints
+are not comparable for those runs.
+
+## Reusing immutable CSS token spellings
+
+The allocation profile also showed duplicate strings for ordinary identifiers:
+the tokenizer copied the decoded name and then copied the identical source
+span again. Unescaped identifiers now share that one immutable spelling.
+Escaped identifiers retain their decoded value and exact source separately,
+using an explicit escape flag rather than assuming equal byte lengths imply
+equal text. Single printable ASCII spellings, newline, tab and empty spans use
+terminated literals. ASCII delimiter values reuse a matching single-byte
+source spelling; other code points and differing source text retain conversion.
+Every shared spelling remains NUL-terminated for native C interfaces.
+
+Ten normal signed C `-O2` runs per build were interleaved, reversing order on
+alternate pairs. Both builds use the same source snapshot at `59ecd8a0`, shared
+build/branding inputs, compiler flags, and immutable GitHub cache; only the token
+spelling implementation differs. This holds concurrent event-handler changes
+outside the performance comparison. Normal GC remains pointer-aware Boehm, and
+`-keepc` is the only added inspection flag.
+
+| Build | Median installation instructions, rounded | Median navigation through first native frame, rounded |
+| --- | ---: | ---: |
+| Matching baseline | 33,597,969,650 | 38,208,989,604 |
+| Shared token spellings | 33,327,901,674 | 36,911,794,184 |
+
+The first-frame median falls **3.4%** and installation **0.8%**. Eight of ten
+paired first-frame counts improve; the ranges overlap. These are process-wide
+local measurements, including collector and repaint variation, rather than
+isolated tokenizer self costs. The initial five-pair first-frame difference
+was 6.5%; extending to ten pairs reduced the estimate. No percentages are added
+to earlier rounds, and Chrome parity is not established. The earlier Chrome
+observed-descendant lower bound has a different endpoint and workload; GitHub
+module hydration remains incomplete in Vox.
+
+The baseline executable is `Build/v/Vox-opt7-pinned-before-bin`, SHA-256
+`ef4db860f1ae23ce56a819a9de32ee7d375afd906efdaf8c3bb57d3be12499c8`.
+The candidate is `Build/v/Vox-opt8-token-spelling-bin`, SHA-256
+`ff94dfc7104b160a751e3860fb6f0ee0fd9aa47b34ee94f78554576fb937194a`.
+`Build/v/instruction-opt8-source-manifest.json` records the source and build-input
+hashes. Raw counter reports are
+`Build/instructions/vox-opt8-interleaved-{before,final}-{1..10}.run-1.json`, with
+`vox-opt8-interleaved-summary.json`. All twenty reports use cache fingerprint
+`0570cfa09af662a0f1fa6735a563bad9dc2d332579e75ef06d50931f6a3aae95`,
+record one installation, and retain an exit sample for the root process.
+
+The four new cases verify shared identifier storage, all 95 printable ASCII
+spellings, all 128 ASCII delimiter code points, terminating zeros, Unicode,
+escape decoding including equal-length substitutions, and retention after the
+producer returns and forced collections run. The combined seven-file batch
+passes all 26 cases in both GC modes, and the four new cases pass with C `-O2`
+and Boehm. The original extended fixture had a mixed `u32`/`rune` array compiler
+error; only the corrected runs receive those passing results. Validation uses
+`Build/v/instruction-opt8-*-corrected-test.log` and the focused-test manifest.
+
+
+A separate C `-O0` allocation diagnostic now records counters at the first-frame
+report, avoiding the varying number of later paint passes through capture/exit.
+The matching first-frame marks count **15,670,829 to 14,921,105 managed V
+allocation calls** (749,724 fewer, 4.8%) and requested bytes
+2,746,023,786 to 2,741,336,374 (4,687,412 fewer). These are allocation-wrapper
+counts and requested bytes, not live memory or normal-build instruction costs.
+The earlier through-exit diagnostics had three versus four layout/paint
+checkpoints and are not used to attribute allocation gains. Scoped diagnostics,
+summary, generated C and wrapper use `Build/instructions/vox-opt8-{before,final}-allocation-scopes*`,
+`vox-opt8-first-frame-allocation-summary.json`, and
+`Build/v/native_allocation_scope_profile.h`.
+
+The exact saved candidate passes all nineteen viewport comparisons: sixteen
+pixel-exact and the existing bounded tolerances for `inline-node`,
+`text-decorations`, and `canvas-text`. The four SVG mutation cases and both
+added line-height cases are exact. Native startup smoke passes, and the signed
+private app bundle verifies with the exact same executable bytes as the saved
+candidate. These checks use `Build/v/instruction-opt8-{pinned-smoke.log,pinned-signature-result.json,token-spelling-screenshots.log,screenshot-summary.json}`.
+
+Broad validation for instruction optimization is now batched after each
+additional **5,000,000 measured instructions saved**, using the same benchmark
+endpoint and workload. Focused checks remain per fix. This batch crossed that
+threshold, and its completed 26-case/two-GC and nineteen-screenshot runs are the
+new performance verification baseline at `cc8c4e7c`; no additional broad suite
+is run merely for the documentation or cadence update.
+
+
+The canonical `Build/v/Vox.app` was also rebuilt with the token-spelling change
+and the independent native handler changes already present in `cc8c4e7c`.
+The CLI interrupted its first native compilation; the saved generated C and
+original response-file flags were used to complete the backend and signing.
+In-bundle signature verification and headless startup pass. Its executable
+SHA-256 is `94ff47186ba5e27892bb2ea89fc9078cbd6382d207e7ad7bb2358dd1191df512`;
+`Build/v/instruction-opt8-integrated-build-result.json` and
+`instruction-opt8-integrated-smoke.log` retain the result. Instruction medians
+above belong to the matching pinned comparison, rather than this separately
+integrated binary.
+
 ## Causes and changes
 
 - The V 0.5.2 compatibility compiler's `-prod` Boehm code repeatedly snapshots
