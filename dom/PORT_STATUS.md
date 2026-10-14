@@ -695,3 +695,13 @@ retained. Four current owned files and two exact main gates are authenticated
 through retained snapshots; current foreign paint receives no pass credit.
 Production and broad suites remain deferred. Batch counter: 6/10 after aa6f0246.
 See [evidence](../docs/translation-audit/NATIVE_MEDIA_SEEK_RAW_HANDLER.md).
+
+Native compact media raw seek-handler scoped inventory (`b864154a`,
+2026-10-14 UTC): Five owned browser/root paths are excluded under the sealed
+78-owner rules. Feature/actual-parent byte and physical-LF accounting adds zero
+assigned DOM files, implementation lines or test lines. Counter:
+`Build/audit-fixes/native-media-seek-raw-handler-inventory-scoped-v1.json` (SHA256 `61d0c1314a40b3bb5b59c183d4d7a49ba71512fbd61063dd0b3d7d773a0e9179`).
+Global tables, pins, mappings and historical ledgers stay preserved; accounting
+adds no behavioral or test credit. Batch remains 6/10 after aa6f0246, since
+this independent documentation commit is not another translation fix.
+See [evidence](../docs/translation-audit/NATIVE_MEDIA_SEEK_RAW_HANDLER.md).
