@@ -2032,6 +2032,118 @@ could not build its tool because its configured compiler checkout lacked
 runtime credit. Chrome instruction and functionality parity remain unverified,
 including GitHub module hydration and populated file rows.
 
+## Consolidated keyword classification during property computation
+
+Feature `eb4e269e` classifies each cascaded value once for `inherit`,
+`unset` and color's `currentcolor` rule. It separately classifies the value
+after inheritance, preserving the initial/unset fallback even when inheritance
+replaces the value. The final relative-font keyword check now runs only for
+`font-size` and `font-weight`. Relative length dependencies on all properties
+continue through the existing length path. This removes repeated reads and
+optional-result handling from `StyleComputer.compute_properties()` without
+changing type ownership, arena lifetimes, Boehm collection or JavaScriptCore.
+
+Five new regression cases cover typed and serialized CSS-wide values,
+inherited flags and importance, missing parent defaults, `currentcolor`,
+relative fonts and lengths, spoofed bridge text, and checking the replacement
+inherited value afresh. With retained-keyword and animated-inheritance checks,
+**ten focused functional cases plus one diagnostic pass in both GC modes**,
+including C `-O2` with Boehm. Each regular run passes 3,209 assertions.
+
+Three fixed interleaved diagnostics perform 256 complete property-computation
+passes with all 355 initial longhands explicitly cascaded and font size fixed
+at 16px. A sixteen-entry ring retains outputs. Input setup, eight warmups,
+collection and assertions stay outside the counter interval. Every checksum
+matches the independent reference `(355 + 16*64)*256 = 353024`.
+Median work falls **250,761,811 → 238,750,508
+instructions (4.79% fewer)**; all three pairs improve.
+This diagnostic measures complete property computation for an explicit
+all-longhand input, rather than GitHub's particular cascade or whole-page cost.
+Plans, retained aggregate, binaries and results are under
+`Build/v/instruction-opt22-*` and `opt22-cascade-focused-test.v.txt`.
+
+A fresh `v -profile` comparison executes the same focused workload in two
+separate C `-O1`/Boehm builds using `-profile-no-inline`, which omits inline-marked
+functions from profiling rather than disabling Clang inlining. Retained legacy
+generated C saves the previous profiling flag but omits its restoration; these
+counters cover the replay from the first selected call through process exit.
+Both builds record 285 calls to `compute_properties`.
+Keyword helper calls fall **480,653 → 196,843
+(59.05% fewer)**.
+These are call counts across all focused cases and the diagnostic, including
+warmups. Instrumented times and instruction counts are excluded from normal
+page measurements. Raw profiles and scope notes are
+`Build/v/instruction-opt22-{before,final}-v-profile.txt` and
+`Build/v/instruction-opt22-profile-evidence.json`.
+
+Thirty alternating normal-build GitHub pairs were fixed before results were
+observed. They use fresh copies of the same immutable cache, the frozen native
+library, a 1024×768 document viewport and the first native
+`navigation_to_first_document_paint` endpoint.
+
+| Build | Median instructions through first native document frame |
+| --- | ---: |
+| Repeated keyword classification | 34,050,968,012 |
+| Consolidated classification | 33,958,775,388 |
+
+The observed change is **-0.27%**
+(92,192,624 fewer instructions);
+**15/30 pairs improve**. The paired median saving is
+7,667,421.5; its 95% paired percentile bootstrap interval is
+**-149,035,714.5 to 929,117,874.5** instructions (30,000 resamples, seed 22).
+The paired interval includes zero, so a repeatable whole-page gain remains
+unestablished. Zero repeatable page savings are credited. All sixty captures
+have valid 1024×768 geometry, one installation,
+two required geometry passes and one shell paint recording before the first
+frame. No samples were discarded, extended or selected after results.
+Checkpoint intervals remain process-wide deltas rather than function self cost.
+Raw reports are `Build/instructions/vox-opt22-interleaved-*`; paired evidence
+is `Build/v/instruction-opt22-comparison-evidence.json`.
+
+The control reuses the exact round21 candidate executable and source snapshot,
+including direct retained keyword reads `a888f10b`. The sole runtime source
+change is `css/computed_interpolation.v`. After authenticated embed lookup keys,
+compiler temporary/symbol identities and source assertion offsets are
+canonicalized, the generated-C audit finds only changed `compute_properties`
+logic. The unchanged private currentcolor predicate loses its last production
+caller and is no longer emitted. Type layouts, resources and every other
+function's logic match. All 120 common native input hashes and the shared
+library remain unchanged. Source hashes, exact argv and the C projection audit
+are retained in `Build/v/instruction-opt22-matching-provenance.json`.
+
+The observed median crossed the user's 5,000,000-instruction gate, so one
+broad batch ran after measurement. All six commands for 87 selected CSS, SVG and
+layout cases pass in both GC modes. All nineteen screenshot comparisons pass,
+sixteen pixel-exact; existing differences remain inline-node (13 pixels),
+text-decorations (1,341) and canvas-text (1,994). The focused Unicode/control
+viewport, extended with CSS-wide, relative-font and currentcolor examples,
+is pixel-exact between the builds. Actual exits and metrics are retained in
+`Build/v/instruction-opt22-validation-result.json` and per-command logs.
+The broad-verified baseline is now `eb4e269e` at the observed median
+33,958,775,388; repeatable page savings credited are 0,
+with additional savings after this batch reset to zero.
+
+The measured candidate replaces the authenticated prior executable in
+`Build/v/Vox.app`; native text SHA-256 is `34023c0f9fb2c44be79267262203bbd3848fff3e7d338af882241e346fd4cf10`.
+Bundle signing, deep strict verification and headless startup pass.
+Installation follows the existing positive observed median policy, with the
+uncertainty above. Independent media completion sources are preserved and
+excluded from both compared binaries and this app snapshot. The existing GUI
+process was left running.
+
+The initial focused fixture passed a serialized-only non-CSS-wide
+background-color to a computation boundary requiring a typed value. Unchanged
+control and candidate failed with the same panic before their diagnostics.
+Those results and original C/executables are retained without runtime credit.
+Only the fixture was corrected: background-color keeps its parsed type, while
+the serialized CSS-wide inheritance cases remain covered. All subsequent
+focused runs pass before page measurement begins. The browser implementation
+and normal build inputs were unchanged by this fixture correction.
+Low disk space was managed by round-trip-verified compression of completed
+older artifacts; archive journals retain SHA-256 and executable modes.
+Chrome instruction and functionality parity remain unverified, including
+GitHub module hydration and populated file rows.
+
 ## Causes and changes
 
 - The V 0.5.2 compatibility compiler's `-prod` Boehm code repeatedly snapshots
