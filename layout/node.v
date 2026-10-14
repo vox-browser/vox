@@ -378,16 +378,16 @@ pub fn (mut n Node) set_has_been_wrapped_in_table_wrapper(value bool) {
 }
 
 pub fn (n &Node) display() css.Display {
-	if styled := n.as_node_with_style() {
-		return styled.computed_values().display()
+	if n.has_style_ {
+		return unsafe { &NodeWithStyle(n) }.computed_values().display()
 	}
 	// Node::display(): unstyled text content participates in inline flow.
 	return css.Display.from_outside_inside(.inline_, .flow)
 }
 
 pub fn (n &Node) display_before_box_type_transformation() css.Display {
-	if styled := n.as_node_with_style() {
-		return styled.computed_values().display_before_box_type_transformation()
+	if n.has_style_ {
+		return unsafe { &NodeWithStyle(n) }.computed_values().display_before_box_type_transformation()
 	}
 	return css.Display.from_outside_inside(.inline_, .flow)
 }
@@ -395,8 +395,10 @@ pub fn (n &Node) display_before_box_type_transformation() css.Display {
 // Node::computed_values(): unstyled text nodes inherit the immutable computed
 // values of their styled parent.
 pub fn (n &Node) computed_values() &css.ComputedValues {
-	if styled := n.as_node_with_style() {
-		return styled.computed_values()
+	// The same discriminant guards as_node_with_style(). Avoid materializing an
+	// optional pointer (and its GC stack root) on these frequent field reads.
+	if n.has_style_ {
+		return unsafe { &NodeWithStyle(n) }.computed_values()
 	}
 	parent := n.parent() or { panic('VERIFY(has_style_or_parent_with_style())') }
 	return parent.computed_values()
