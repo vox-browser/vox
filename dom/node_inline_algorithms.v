@@ -6,6 +6,11 @@
 // points translated from Libraries/LibWeb/DOM.
 module dom
 
+fn (n &Node) element_has_namespace_and_one_local_name(namespace_ string, local_name string) bool {
+	element := n.as_element() or { return false }
+	return element.namespace_uri() or { '' } == namespace_ && element.local_name() == local_name
+}
+
 fn (n &Node) element_has_namespace_and_local_name(namespace_ string, local_names []string) bool {
 	element := n.as_element() or { return false }
 	return element.namespace_uri() or { '' } == namespace_ && element.local_name() in local_names
@@ -63,47 +68,47 @@ pub fn (n &Node) is_svg_graphics_element() bool {
 }
 
 pub fn (n &Node) is_svg_mask_element() bool {
-	return n.is_svg_element_with_any_local_name(['mask'])
+	return n.element_has_namespace_and_one_local_name(namespace_svg_uri, 'mask')
 }
 
 pub fn (n &Node) is_svg_script_element() bool {
-	return n.is_svg_element_with_any_local_name(['script'])
+	return n.element_has_namespace_and_one_local_name(namespace_svg_uri, 'script')
 }
 
 pub fn (n &Node) is_svg_style_element() bool {
-	return n.is_svg_element_with_any_local_name(['style'])
+	return n.element_has_namespace_and_one_local_name(namespace_svg_uri, 'style')
 }
 
 pub fn (n &Node) is_svg_svg_element() bool {
-	return n.is_svg_element_with_any_local_name(['svg'])
+	return n.element_has_namespace_and_one_local_name(namespace_svg_uri, 'svg')
 }
 
 pub fn (n &Node) is_svg_symbol_element() bool {
-	return n.is_svg_element_with_any_local_name(['symbol'])
+	return n.element_has_namespace_and_one_local_name(namespace_svg_uri, 'symbol')
 }
 
 pub fn (n &Node) is_svg_use_element() bool {
-	return n.is_svg_element_with_any_local_name(['use'])
+	return n.element_has_namespace_and_one_local_name(namespace_svg_uri, 'use')
 }
 
 pub fn (n &Node) is_svg_view_element() bool {
-	return n.is_svg_element_with_any_local_name(['view'])
+	return n.element_has_namespace_and_one_local_name(namespace_svg_uri, 'view')
 }
 
 pub fn (n &Node) is_svg_a_element() bool {
-	return n.is_svg_element_with_any_local_name(['a'])
+	return n.element_has_namespace_and_one_local_name(namespace_svg_uri, 'a')
 }
 
 pub fn (n &Node) is_svg_g_element() bool {
-	return n.is_svg_element_with_any_local_name(['g'])
+	return n.element_has_namespace_and_one_local_name(namespace_svg_uri, 'g')
 }
 
 pub fn (n &Node) is_svg_switch_element() bool {
-	return n.is_svg_element_with_any_local_name(['switch'])
+	return n.element_has_namespace_and_one_local_name(namespace_svg_uri, 'switch')
 }
 
 pub fn (n &Node) is_svg_foreign_object_element() bool {
-	return n.is_svg_element_with_any_local_name(['foreignObject'])
+	return n.element_has_namespace_and_one_local_name(namespace_svg_uri, 'foreignObject')
 }
 
 pub fn (n &Node) is_dom_node() bool {
@@ -116,31 +121,31 @@ pub fn (n &Node) is_html_element() bool {
 }
 
 pub fn (n &Node) is_html_html_element() bool {
-	return n.is_html_element_with_any_local_name(['html'])
+	return n.element_has_namespace_and_one_local_name(namespace_html_uri, 'html')
 }
 
 pub fn (n &Node) is_html_anchor_element() bool {
-	return n.is_html_element_with_any_local_name(['a'])
+	return n.element_has_namespace_and_one_local_name(namespace_html_uri, 'a')
 }
 
 pub fn (n &Node) is_html_area_element() bool {
-	return n.is_html_element_with_any_local_name(['area'])
+	return n.element_has_namespace_and_one_local_name(namespace_html_uri, 'area')
 }
 
 pub fn (n &Node) is_html_base_element() bool {
-	return n.is_html_element_with_any_local_name(['base'])
+	return n.element_has_namespace_and_one_local_name(namespace_html_uri, 'base')
 }
 
 pub fn (n &Node) is_html_meta_element() bool {
-	return n.is_html_element_with_any_local_name(['meta'])
+	return n.element_has_namespace_and_one_local_name(namespace_html_uri, 'meta')
 }
 
 pub fn (n &Node) is_html_body_element() bool {
-	return n.is_html_element_with_any_local_name(['body'])
+	return n.element_has_namespace_and_one_local_name(namespace_html_uri, 'body')
 }
 
 pub fn (n &Node) is_html_head_element() bool {
-	return n.is_html_element_with_any_local_name(['head'])
+	return n.element_has_namespace_and_one_local_name(namespace_html_uri, 'head')
 }
 
 pub fn (n &Node) is_html_heading_element() bool {
@@ -148,11 +153,11 @@ pub fn (n &Node) is_html_heading_element() bool {
 }
 
 pub fn (n &Node) is_html_input_element() bool {
-	return n.is_html_element_with_any_local_name(['input'])
+	return n.element_has_namespace_and_one_local_name(namespace_html_uri, 'input')
 }
 
 pub fn (n &Node) is_html_link_element() bool {
-	return n.is_html_element_with_any_local_name(['link'])
+	return n.element_has_namespace_and_one_local_name(namespace_html_uri, 'link')
 }
 
 pub fn (n &Node) is_html_media_element() bool {
@@ -160,35 +165,35 @@ pub fn (n &Node) is_html_media_element() bool {
 }
 
 pub fn (n &Node) is_html_optgroup_element() bool {
-	return n.is_html_element_with_any_local_name(['optgroup'])
+	return n.element_has_namespace_and_one_local_name(namespace_html_uri, 'optgroup')
 }
 
 pub fn (n &Node) is_html_option_element() bool {
-	return n.is_html_element_with_any_local_name(['option'])
+	return n.element_has_namespace_and_one_local_name(namespace_html_uri, 'option')
 }
 
 pub fn (n &Node) is_html_progress_element() bool {
-	return n.is_html_element_with_any_local_name(['progress'])
+	return n.element_has_namespace_and_one_local_name(namespace_html_uri, 'progress')
 }
 
 pub fn (n &Node) is_html_script_element() bool {
-	return n.is_html_element_with_any_local_name(['script'])
+	return n.element_has_namespace_and_one_local_name(namespace_html_uri, 'script')
 }
 
 pub fn (n &Node) is_html_select_element() bool {
-	return n.is_html_element_with_any_local_name(['select'])
+	return n.element_has_namespace_and_one_local_name(namespace_html_uri, 'select')
 }
 
 pub fn (n &Node) is_html_style_element() bool {
-	return n.is_html_element_with_any_local_name(['style'])
+	return n.element_has_namespace_and_one_local_name(namespace_html_uri, 'style')
 }
 
 pub fn (n &Node) is_html_template_element() bool {
-	return n.is_html_element_with_any_local_name(['template'])
+	return n.element_has_namespace_and_one_local_name(namespace_html_uri, 'template')
 }
 
 pub fn (n &Node) is_html_table_element() bool {
-	return n.is_html_element_with_any_local_name(['table'])
+	return n.element_has_namespace_and_one_local_name(namespace_html_uri, 'table')
 }
 
 pub fn (n &Node) is_html_table_section_element() bool {
@@ -196,7 +201,7 @@ pub fn (n &Node) is_html_table_section_element() bool {
 }
 
 pub fn (n &Node) is_html_table_row_element() bool {
-	return n.is_html_element_with_any_local_name(['tr'])
+	return n.element_has_namespace_and_one_local_name(namespace_html_uri, 'tr')
 }
 
 pub fn (n &Node) is_html_table_cell_element() bool {
@@ -204,75 +209,75 @@ pub fn (n &Node) is_html_table_cell_element() bool {
 }
 
 pub fn (n &Node) is_html_title_element() bool {
-	return n.is_html_element_with_any_local_name(['title'])
+	return n.element_has_namespace_and_one_local_name(namespace_html_uri, 'title')
 }
 
 pub fn (n &Node) is_html_br_element() bool {
-	return n.is_html_element_with_any_local_name(['br'])
+	return n.element_has_namespace_and_one_local_name(namespace_html_uri, 'br')
 }
 
 pub fn (n &Node) is_html_button_element() bool {
-	return n.is_html_element_with_any_local_name(['button'])
+	return n.element_has_namespace_and_one_local_name(namespace_html_uri, 'button')
 }
 
 pub fn (n &Node) is_html_slot_element() bool {
-	return n.is_html_element_with_any_local_name(['slot'])
+	return n.element_has_namespace_and_one_local_name(namespace_html_uri, 'slot')
 }
 
 pub fn (n &Node) is_html_embed_element() bool {
-	return n.is_html_element_with_any_local_name(['embed'])
+	return n.element_has_namespace_and_one_local_name(namespace_html_uri, 'embed')
 }
 
 pub fn (n &Node) is_html_object_element() bool {
-	return n.is_html_element_with_any_local_name(['object'])
+	return n.element_has_namespace_and_one_local_name(namespace_html_uri, 'object')
 }
 
 pub fn (n &Node) is_html_form_element() bool {
-	return n.is_html_element_with_any_local_name(['form'])
+	return n.element_has_namespace_and_one_local_name(namespace_html_uri, 'form')
 }
 
 pub fn (n &Node) is_html_image_element() bool {
-	return n.is_html_element_with_any_local_name(['img'])
+	return n.element_has_namespace_and_one_local_name(namespace_html_uri, 'img')
 }
 
 pub fn (n &Node) is_html_iframe_element() bool {
-	return n.is_html_element_with_any_local_name(['iframe'])
+	return n.element_has_namespace_and_one_local_name(namespace_html_uri, 'iframe')
 }
 
 pub fn (n &Node) is_html_div_element() bool {
-	return n.is_html_element_with_any_local_name(['div'])
+	return n.element_has_namespace_and_one_local_name(namespace_html_uri, 'div')
 }
 
 pub fn (n &Node) is_html_span_element() bool {
-	return n.is_html_element_with_any_local_name(['span'])
+	return n.element_has_namespace_and_one_local_name(namespace_html_uri, 'span')
 }
 
 pub fn (n &Node) is_html_textarea_element() bool {
-	return n.is_html_element_with_any_local_name(['textarea'])
+	return n.element_has_namespace_and_one_local_name(namespace_html_uri, 'textarea')
 }
 
 pub fn (n &Node) is_html_frameset_element() bool {
-	return n.is_html_element_with_any_local_name(['frameset'])
+	return n.element_has_namespace_and_one_local_name(namespace_html_uri, 'frameset')
 }
 
 pub fn (n &Node) is_html_fieldset_element() bool {
-	return n.is_html_element_with_any_local_name(['fieldset'])
+	return n.element_has_namespace_and_one_local_name(namespace_html_uri, 'fieldset')
 }
 
 pub fn (n &Node) is_html_li_element() bool {
-	return n.is_html_element_with_any_local_name(['li'])
+	return n.element_has_namespace_and_one_local_name(namespace_html_uri, 'li')
 }
 
 pub fn (n &Node) is_html_menu_element() bool {
-	return n.is_html_element_with_any_local_name(['menu'])
+	return n.element_has_namespace_and_one_local_name(namespace_html_uri, 'menu')
 }
 
 pub fn (n &Node) is_html_olist_element() bool {
-	return n.is_html_element_with_any_local_name(['ol'])
+	return n.element_has_namespace_and_one_local_name(namespace_html_uri, 'ol')
 }
 
 pub fn (n &Node) is_html_ulist_element() bool {
-	return n.is_html_element_with_any_local_name(['ul'])
+	return n.element_has_namespace_and_one_local_name(namespace_html_uri, 'ul')
 }
 
 pub fn (n &Node) is_html_ol_ul_menu_element() bool {
