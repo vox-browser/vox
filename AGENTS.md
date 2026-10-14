@@ -1349,3 +1349,16 @@ lines and zero test physical V lines. Counter:
 preserves existing global tables, pins, references, source-unit mappings and historical
 ledgers. See [raw media wheel-handler
 evidence](docs/translation-audit/NATIVE_MEDIA_WHEEL_RAW_HANDLER.md).
+
+## Verification cadence
+
+- Run focused checks for each completed fix or translation slice.
+- Run broad regression suites once per ten completed fixes, not after every fix.
+  Broad suites include full translation/package test batches, the full LibJS AST
+  corpus, the default screenshot smoke set, and broad SVG regression batches.
+  Between batches, select only the cases directly relevant to the change.
+- Record each completed fix after the latest broad-test baseline in its audit
+  entry so the next broad run happens at ten fixes. The latest completed broad
+  unit-test baseline is aa6f0246: 47 cases in 14 selected files passed in both GC
+  modes before this cadence was requested. Start the next ten-fix batch after
+  that commit; do not repeat its completed broad tests.
