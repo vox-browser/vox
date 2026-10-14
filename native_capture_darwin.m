@@ -524,9 +524,14 @@ int native_window_height(void) {
 }
 
 static void native_request_browser_redraw(void) {
-	NSWindow *window = [NSApp mainWindow];
+	// An asynchronous resource can complete while the application has no main
+	// or key window. Keep redrawing the window that owns our retained drawable.
+	NSWindow *window = [native_browser_view() window];
 	if (window == nil) {
-		window = [NSApp keyWindow];
+		window = [NSApp mainWindow];
+		if (window == nil) {
+			window = [NSApp keyWindow];
+		}
 	}
 	NSMutableArray<NSView *> *views = [NSMutableArray array];
 	if ([window contentView] != nil) {
