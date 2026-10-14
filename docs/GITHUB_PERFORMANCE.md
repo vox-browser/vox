@@ -2740,6 +2740,95 @@ Evidence: `Build/instructions/vox-opt28-interleaved-*` and
 `Build/v/instruction-opt28-*`, including comparison, C/source provenance,
 focused diagnostics, fresh profiles, capture audit, validation and bundle results.
 
+## Probe decoded CSS bytes before scalar filtering
+
+Feature `5e617ea2` checks decoded CSS bytes for CR, FF and NUL before
+entering the Unicode replacement loop. These code points are single bytes in
+validated UTF-8; surrogate code points cannot occur in decoder output. Decoding
+and the complete replacement loop remain unchanged, including legacy encoding,
+UTF-16, BOM and malformed-input handling. GC stays enabled with one marker.
+
+Seventeen focused functional cases plus one diagnostic pass **165,227 assertions**
+in before/final Boehm and final no-GC builds, all C `-O2`. Five new cases cover
+all ASCII bytes beside Unicode scalars, repeated CR/CRLF, legacy and UTF-16
+input, BOMs and malformed UTF-8. An initial check exposed the direct filter's
+pre-existing loss of a final standalone CR in both control and candidate; that
+separate behavior is unchanged and recorded in the initial-check evidence.
+Nonterminal CR and CRLF behavior is covered by the completed focused suite.
+
+The controlled probe retains decoding: 512 complete filter calls on 2,112-byte
+Unicode CSS input, with setup, eight warmups, forced GC and assertions outside
+the counter. Three alternating pairs all improve; the independent checksum
+remains 1,136,128. Median instructions: **172,592,494 →
+158,433,048 (-8.20%)**.
+Fresh full-process `v -profile` replays retain 714 filter calls in each build;
+rune-iterator calls fall **1,177,237 → 33,072**. Profiles use C
+`-O1`, Boehm, `-profile-no-inline`, no filter and no counter reset. Instrumented
+timings and counts receive no normal-page credit.
+
+Thirty alternating normal-build pairs were fixed before observation, using
+30,000 paired bootstrap resamples and seed 29. Both executable images are
+persisted in `Build/v`, use C `-O2`/Boehm/one marker, and load the same frozen
+native library. Fresh byte-identical cached GitHub copies use the same
+RAM-backed parent. The endpoint is `navigation_to_first_document_paint[0]`
+at 1024×768. The control is the retained round28 executable; the candidate
+changes only this presence probe in the frozen runtime.
+
+| Build | Median instructions through first native document frame |
+| --- | ---: |
+| Scalar presence check | 31,793,399,656.5 |
+| Byte presence check | 31,699,419,363.5 |
+
+Observed saving: **93,980,293 (0.30%)**;
+17/30 pairs improve. Paired median saving: 62,499,053.5.
+The 95% paired percentile bootstrap interval is **-80,422,250.5 to 105,220,236.5**
+instructions. The interval includes zero; repeatable page savings credited: **0**.
+All sixty first-frame intervals retain one installation, two geometry passes
+and one shell paint recording. 10 captures have later installations;
+those later frames remain separate from the fixed first-scope observation.
+Executable hashes and retained copied-cache fingerprints match. The control at
+pair 13 completed its primary at 31,654,246,001 instructions, then hit the
+watchdog during later refresh/layout work. That primary is retained directly
+from its unchanged native log without a rerun; the missing screenshot and
+unavailable final process-exit report are recorded explicitly. Fifty-nine
+completed screenshots have verified dimensions; the recovered observation has
+only the requested viewport recorded. Its original per-copy cache fingerprint
+was not persisted after the observer failure; its template hash is recomputed
+and checked against completed captures under the same fresh-copy protocol.
+No completed primary observations were discarded or the sample extended. One
+startup failure in candidate pair 22 occurred before parsing or the primary
+endpoint. Its failed attempt is archived; the successful retry stayed within
+the predeclared three-attempt limit.
+
+The generated-C audit permits only `filter_code_points` to change. Its entire
+replacement tail matches after temporary names are normalized; decoding,
+other logic, layouts and resources match. Native flags, GC initialization and
+all 120 frozen native inputs are unchanged. Generated C and profile C archives
+are retained under `Build/v` alongside source manifests and raw observations.
+
+The observed saving crossed the 5,000,000-instruction gate. One broad batch
+passes all 87 selected CSS/SVG/layout cases in both GC modes, six recorded zero
+exits through the direct V test harness with RAM-backed outputs. All nineteen
+screenshot comparisons complete, sixteen exact; existing differences remain
+inline-node 13, text-decorations 1,341 and canvas-text 1,994. Focused viewport exact.
+
+The newer independently built app is preserved. Its complete 149-instruction
+native filter matches the measured candidate: both relocated constants and all
+twelve call targets are authenticated, and every other instruction word is
+identical. The full independent app receives no extra page-performance credit.
+Signature, headless startup and default/override GC marker checks pass. The
+obsolete duplicate current-source build was stopped and receives no build-pass
+credit; its interrupted result and cancellation reason remain recorded.
+Native text SHA: `4b7724de4f9b0c69301454f45438b6d82daeb52f82b0a17525fa7071d7758af5`. No GUI process was restarted.
+The broad baseline is `5e617ea2` at 31,699,419,363.5 instructions,
+with zero additional savings after this batch. Chrome parity remains open:
+its earlier capture uses a different endpoint and hydrated content.
+
+Evidence: `Build/instructions/vox-opt29-interleaved-*` and
+`Build/v/instruction-opt29-*`, including comparison, source/C provenance,
+profiles, diagnostics, capture audit, regression exits, current-app native
+verification, interrupted duplicate-build evidence and bundle verification.
+
 ## Causes and changes
 
 - The V 0.5.2 compatibility compiler's `-prod` Boehm code repeatedly snapshots

@@ -1358,20 +1358,19 @@ evidence](docs/translation-audit/NATIVE_MEDIA_WHEEL_RAW_HANDLER.md).
   broad verification. Compare the same benchmark endpoint and workload, record
   the measured baseline and accumulated savings, and do not run broad suites
   for every individual fix below that threshold.
-  The latest performance broad batch is ASCII tokenizer arenas `2cb35962`:
-  12 focused functional cases plus one diagnostic pass 165,086 assertions in
-  before/final Boehm and final no-GC ownership builds, all C-O2. All six direct
-  harness jobs for 87 selected CSS/SVG/layout cases pass in both GC modes;
-  all 19 screenshots complete, 16 exact, and the focused viewport is exact.
-  Its observed GitHub first-frame median is 31,626,063,087 instructions,
-  a -0.49% change against its matching control; 20 of 30 pairs improve.
-  Repeatable savings credited: 154,881,094; additional savings after this batch: zero.
-  Controlled local instructions improve 80.68%; V-profile call counts
-  are distinct from the normal-page result. GC remains enabled with one marker.
-  Chrome parity remains open. See `docs/GITHUB_PERFORMANCE.md` for uncertainty,
-  sources, cache storage and the preserved independent native media scope.
-  A later independent app build retains this optimization; its signature, startup
-  and GC checks pass separately from the measured executable.
+  The latest performance broad batch is decoded CSS byte probes `5e617ea2`:
+  17 focused functional cases plus one diagnostic pass 165,227 assertions in
+  before/final Boehm and final no-GC builds, all C-O2. All six jobs for 87 selected
+  CSS/SVG/layout cases pass in both GC modes; 19 screenshots complete, 16 exact,
+  focused viewport exact. The observed GitHub first-frame median is
+  31,699,419,363.5 instructions, -0.30% against its matching control;
+  17/30 pairs improve. Repeatable savings credited: 0;
+  additional savings after this batch: zero. Controlled filtering instructions
+  improve 8.20%, with decoding retained. V-profile counts are distinct
+  from the normal-page result. GC stays enabled with one marker; Chrome parity
+  remains open. The newer independent app retains fixes and receives
+  no extra benchmark credit. See `docs/GITHUB_PERFORMANCE.md` for uncertainty,
+  the pre-existing terminal-CR behavior and source/build provenance.
 - Outside instruction-count optimization, run broad regression suites once per
   ten completed fixes, not after every fix.
   Broad suites include full translation/package test batches, the full LibJS AST
