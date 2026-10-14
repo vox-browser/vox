@@ -3392,7 +3392,9 @@ pub fn (lp LengthPercentage) to_string_with_mode(mode SerializationMode) string 
 
 pub struct LengthPercentageOrAuto {
 pub mut:
-	length_percentage_ ?LengthPercentage
+	// An implicit absent option still constructs the default sum-type payload
+	// in the compatibility compiler. Auto needs no allocated Length value.
+	length_percentage_ ?LengthPercentage = none
 }
 
 pub fn LengthPercentageOrAuto.from_length_percentage(length_percentage LengthPercentage) LengthPercentageOrAuto {
