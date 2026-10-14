@@ -85,6 +85,9 @@ pub mut:
 	glyph_positions_   []f64
 	bounding_box_      GlyphRunBounds
 	replay_data_dirty_ bool
+mut:
+	shared_glyphs_      bool
+	shared_replay_data_ bool
 }
 
 fn finite_glyph_coordinate(value f32) bool {
@@ -242,6 +245,26 @@ pub fn (run &GlyphRun) clone_for_layout() &GlyphRun {
 	}
 }
 
+// Intrinsic text caches own immutable runs. Borrow their storage until a line
+// actually modifies it; most probe chunks are consumed without any mutation.
+// Call invalidate_replay_data() before editing a fork's public glyph storage.
+pub fn (run &GlyphRun) fork_for_layout() &GlyphRun {
+	return &GlyphRun{
+		glyphs_: run.glyphs_
+		font_: run.font_
+		text_type_: run.text_type_
+		face_: run.face_
+		width_: run.width_
+		space_width: run.space_width
+		glyph_indices_: run.glyph_indices_
+		glyph_positions_: run.glyph_positions_
+		bounding_box_: run.bounding_box_
+		replay_data_dirty_: run.replay_data_dirty_
+		shared_glyphs_: true
+		shared_replay_data_: true
+	}
+}
+
 // Packed retained playback data. CGPoint uses two f64 values on macOS, so the
 // position buffer can cross the V/CoreGraphics boundary without rebuilding it
 // on every paint.
@@ -261,8 +284,14 @@ pub fn (mut run GlyphRun) refresh_replay_data() {
 	if !run.replay_data_dirty_ {
 		return
 	}
-	run.glyph_indices_.clear()
-	run.glyph_positions_.clear()
+	if run.shared_replay_data_ {
+		run.glyph_indices_ = []u16{cap: run.glyphs_.len}
+		run.glyph_positions_ = []f64{cap: run.glyphs_.len * 2}
+		run.shared_replay_data_ = false
+	} else {
+		run.glyph_indices_.clear()
+		run.glyph_positions_.clear()
+	}
 	for glyph in run.glyphs_ {
 		if !glyph.should_paint {
 			continue
@@ -276,6 +305,10 @@ pub fn (mut run GlyphRun) refresh_replay_data() {
 }
 
 pub fn (mut run GlyphRun) invalidate_replay_data() {
+	if run.shared_glyphs_ {
+		run.glyphs_ = run.glyphs_.clone()
+		run.shared_glyphs_ = false
+	}
 	run.replay_data_dirty_ = true
 }
 

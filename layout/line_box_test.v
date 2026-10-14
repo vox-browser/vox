@@ -86,6 +86,24 @@ fn test_line_box_merges_contiguous_glyph_runs_and_trims_trailing_whitespace() {
 	assert !line.is_empty_or_ends_in_whitespace()
 }
 
+fn test_merging_layout_forks_keeps_cached_shapes_unchanged() {
+	text_node, _ := make_line_box_text_node('ab')
+	font := &platform.Font{family: 'Test', point_size: 16}
+	cached := platform.GlyphRun.new(font, .ltr, [platform.Glyph{code_point: u32(`a`), advance: 8}])
+	first := cached.fork_for_layout()
+	second := cached.fork_for_layout()
+	mut line := LineBox.new(.ltr, .horizontal_tb)
+	line.add_fragment(unsafe { &Node(text_node) }, 0, 1, CSSPixels.new(0), CSSPixels.new(0), CSSPixels.new(0), CSSPixels.new(0), CSSPixels.new(8), CSSPixels.new(16), CSSPixels.new(0), CSSPixels.new(0), first)
+	line.add_fragment(unsafe { &Node(text_node) }, 1, 1, CSSPixels.new(0), CSSPixels.new(0), CSSPixels.new(0), CSSPixels.new(0), CSSPixels.new(8), CSSPixels.new(16), CSSPixels.new(0), CSSPixels.new(0), second)
+	assert line.fragments().len == 1
+	run := line.fragments()[0].glyph_run() or { panic('missing merged run') }
+	assert run.glyphs_.len == 2
+	assert run.glyphs_[1].position.x == 8
+	assert cached.glyphs_.len == 1
+	assert cached.glyphs_[0].position.x == 0
+	assert second.glyphs_.len == 1
+}
+
 fn test_line_box_accumulates_whitespace_when_fully_whitespace_runs_merge() {
 	text_node, _ := make_line_box_text_node('a  ')
 	font := &platform.Font{

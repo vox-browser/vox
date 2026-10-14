@@ -748,7 +748,7 @@ fn (iterator &InlineLevelIterator) shape_text_for_layout(text_node &TextNode, in
 			&& cached.text == text && voidptr(cached.font) == voidptr(font)
 			&& cached.text_type == text_type {
 			return platform.ShapedText{
-				glyph_run: cached.glyph_run.clone_for_layout()
+				glyph_run: cached.glyph_run.fork_for_layout()
 				trailing_whitespace: cached.trailing_whitespace
 			}
 		}
