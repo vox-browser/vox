@@ -1580,7 +1580,6 @@ fn media_feature_ident_value(name string) MediaFeatureValueLocal {
 fn media_feature_integer_value(value f64) MediaFeatureValueLocal {
 	return MediaFeatureValueLocal{
 		kind: .integer
-		text: serialize_a_number(value)
 		value: value
 	}
 }
@@ -1588,7 +1587,6 @@ fn media_feature_integer_value(value f64) MediaFeatureValueLocal {
 fn media_feature_length_value(value f64) MediaFeatureValueLocal {
 	return MediaFeatureValueLocal{
 		kind: .length
-		text: '${serialize_a_number(value)}px'
 		value: value
 	}
 }
@@ -1596,7 +1594,6 @@ fn media_feature_length_value(value f64) MediaFeatureValueLocal {
 fn media_feature_ratio_value(value f64) MediaFeatureValueLocal {
 	return MediaFeatureValueLocal{
 		kind: .ratio
-		text: serialize_a_number(value)
 		value: value
 	}
 }
@@ -1604,7 +1601,6 @@ fn media_feature_ratio_value(value f64) MediaFeatureValueLocal {
 fn media_feature_resolution_value(value f64) MediaFeatureValueLocal {
 	return MediaFeatureValueLocal{
 		kind: .resolution
-		text: '${serialize_a_number(value)}dppx'
 		value: value
 	}
 }
@@ -1652,6 +1648,12 @@ fn compare_media_feature_values(left MediaFeatureValueLocal, comparison MediaFea
 }
 
 fn media_feature_numeric_value(value MediaFeatureValueLocal, document ?&dom.Document) ?f64 {
+	// Queried environment/container values already use canonical units. Their
+	// text is never serialized; avoid formatting and constructing a resolution
+	// context just to return the number we already have.
+	if value.typed_value == none {
+		return value.value
+	}
 	return query_feature_numeric_value(value, media_feature_length_resolution_context(document))
 }
 

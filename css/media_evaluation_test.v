@@ -34,3 +34,23 @@ fn test_prefers_color_scheme_uses_an_svg_image_document_override() {
 	assert sheet.rules.evaluate_media_queries(document)
 	assert !media_rule.condition_matches()
 }
+
+fn test_media_numeric_environment_values_keep_fractional_units_and_query_serialization() {
+	mut document := dom.Document.create(dom.url_about_blank())
+	document.set_viewport_rect(dom.Rect{0, 0, 800.5, 400.25})
+	for name, expected in {'width': 800.5, 'height': 400.25, 'aspect-ratio': 2.0,
+		'resolution': 1.0, 'color': 8.0} {
+		value := query_media_feature(name, document) or { panic('missing ${name}') }
+		assert media_feature_numeric_value(value, document)? == expected
+	}
+	for text in ['(width > 800px)', '(height = 400.25px)', '(aspect-ratio = 2 / 1)',
+		'(resolution = 96dpi)', '(color = 8)'] {
+		query := parse_media_query(ParsingParams{}, text) or { panic('invalid ${text}') }
+		serialized := query.to_string()
+		assert query.evaluate(document), text
+		reparsed := parse_media_query(ParsingParams{}, serialized) or { panic('invalid serialization') }
+		assert reparsed.evaluate(document), serialized
+	}
+	query := parse_media_query(ParsingParams{}, '(width > 801px)') or { panic('invalid query') }
+	assert !query.evaluate(document)
+}
