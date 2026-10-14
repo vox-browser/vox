@@ -151,7 +151,8 @@ globalThis.mtrVideo=document.getElementById("mtr-video");globalThis.mtrAudio=doc
 	for index, media in [video, audio] {
 		alias := if index == 0 { 'mtrVideo' } else { 'mtrAudio' }
 		mut current := unsafe { &html.HTMLMediaElement(media) }
-		current.set_source(if index == 0 { '/played-video.mp4' } else { '/played-audio.webm' })
+		source_path := if index == 0 { '/played-video.mp4' } else { '/played-audio.webm' }
+		current.set_source(source_path)
 		mime_type := if index == 0 { 'video/mp4' } else { 'audio/webm' }
 		current.set_fetch_hook(fn [mime_type] (_ dom.URL, offset u64) !html.MediaResourceResponse {
 			assert offset == 0
