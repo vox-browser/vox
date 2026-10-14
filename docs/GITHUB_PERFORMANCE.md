@@ -2246,6 +2246,104 @@ excluded from both compared binaries and the app snapshot. The existing GUI
 process was left running. Chrome instruction and functionality parity remain
 unverified, including GitHub module hydration and populated file rows.
 
+## Borrowed reads of retained scalar style values
+
+Feature `fab6eba8` reads the retained typed box directly when extracting a
+length, number or percentage. The DOM value owns that box throughout the
+synchronous read. This removes an intermediate optional `StyleValue` copy and
+its GC root; it does not remove required collection or allocate a replacement
+arena. A retained value with a different type still returns no scalar even
+when its serialized text looks valid. Values without a typed handle retain
+the original parser, whitespace handling and trailing-token rejection.
+
+Four new cases cover length units and signed/fractional magnitudes, exact
+number/percentage types, misleading bridge text, other retained types and
+calculations, serialized parsing, invalid trailing input, and replacement
+handles across explicit collection. Together with the retained cascade,
+keyword, inheritance and property-source checks, **eighteen functional cases
+plus one diagnostic pass in both GC modes**, including C `-O2` with Boehm.
+Each run passes 3,729 assertions. The initial candidate builds exhausted disk
+space while generating C, after zero V checker errors and before tests ran.
+Those logs, exits and empty C outputs are retained. Completed profiling and older
+allocation-trace artifacts were compressed with SHA-256 round-trip checks and
+executable modes recorded; the unchanged candidate then passed both GC modes.
+
+A fresh full-process `v -profile` GitHub replay uses the exact round23 runtime
+snapshot and frozen native inputs in a separate C `-O1`/Boehm build. It records
+465,867 calls to the length reader, 135,992 to the number reader and 3,625 to
+the percentage reader: 605,484 calls across the screenshot process. These are
+diagnostic calls across module initialization and all rendering work, not
+first-frame-only counts or estimates of instructions saved. Profiling has no
+`-profile-fns` filter or counter reset; `-profile-no-inline` omits inline-marked
+functions from instrumentation. Instrumented times and instruction counts are
+excluded from normal page results. The raw profile, exact argv, generated-C
+scope proof and source manifest reference are under
+`Build/v/instruction-opt24-profile-*` and `instruction-opt24-v-profile.txt`.
+
+Three fixed alternating diagnostics perform 256 complete property-computation
+passes with all 355 initial longhands explicitly cascaded and font size fixed
+at 16px. A sixteen-entry ring retains outputs; setup, eight warmups, collection
+and assertions stay outside the hardware counter interval. All checksums match
+the independent reference `(355 + 16*64)*256 = 353024`.
+Median work falls **173,400,898 → 171,215,549
+instructions (1.26% fewer)**; all three pairs improve. This all-longhand
+diagnostic is separate from GitHub whole-page work. Plans, aggregate, exact
+commands and results are retained under `Build/v/instruction-opt24-*` and
+`opt24-scalar-focused-test.v.txt`.
+
+Thirty alternating normal-build GitHub pairs were fixed before measurement,
+using fresh copies of the same immutable cache, the frozen native library,
+a 1024×768 viewport and the first native
+`navigation_to_first_document_paint` endpoint.
+
+| Build | Median instructions through first native document frame |
+| --- | ---: |
+| Optional typed scalar inspection | 33,186,479,019 |
+| Borrowed scalar inspection | 33,138,879,247 |
+
+The observed change is **-0.14%**
+(47,599,772 instructions saved); **16/30 pairs improve**.
+The paired median saving is 67,859,699.5; its 95% paired percentile
+bootstrap interval is **-221,048,596.5 to 256,119,497.5** instructions
+(30,000 resamples, seed 24). The paired interval includes zero, so a repeatable
+whole-page gain remains unestablished. Repeatable page savings credited: 0.
+All sixty captures have valid 1024×768 geometry, one installation,
+two required geometry passes and one shell paint recording before the first
+frame. No observations were discarded, extended or selected after results.
+Checkpoint intervals remain process-wide deltas rather than function self cost.
+Raw reports are `Build/instructions/vox-opt24-interleaved-*`; paired evidence
+is `Build/v/instruction-opt24-comparison-evidence.json`.
+
+The control reuses the exact round23 executable and immutable runtime snapshot,
+including borrowed property sources `8b80c79a`. The sole runtime source change
+is `css/computed_interpolation.v`. The generated-C audit requires every other
+function, type layout and resource to match after compiler identities, embed
+keys and authenticated source assertion offsets are canonicalized. All three
+serialized parser tails match byte for byte. All 120 common native input hashes
+and the shared library remain unchanged. Proofs are retained in
+`Build/v/instruction-opt24-matching-provenance.json`.
+
+The observed page median crossed the user's 5,000,000-instruction gate, so
+one broad batch ran after measurement. All six commands for 87 selected CSS,
+SVG and layout cases pass in both GC modes. All nineteen screenshot comparisons
+pass, sixteen pixel-exact; existing differences remain inline-node (13 pixels),
+text-decorations (1,341) and canvas-text (1,994). The focused Unicode/control,
+background and math-depth viewport is pixel-exact between builds. Actual exits
+and metrics are retained in `Build/v/instruction-opt24-validation-result.json`.
+The broad-verified baseline is now `fab6eba8` at the observed median
+33,138,879,247; additional savings after this batch reset to zero.
+
+The measured candidate replaces the authenticated round23 executable in
+`Build/v/Vox.app`; native text SHA-256 is `eef341b4e7695e7623fe71942dac1447431be5da7ffb859fee7c0da0d5f51221`.
+Bundle signing, deep strict verification and headless startup pass.
+Installation follows the existing positive observed median policy, with the
+uncertainty above.
+Independent native media completion/error-handler changes are preserved and
+excluded from the compared binaries and app snapshot. The existing GUI process
+was left running. Boehm and JavaScriptCore remain enabled. Chrome instruction
+and functionality parity remain unverified, including GitHub module hydration
+and populated file rows.
+
 ## Causes and changes
 
 - The V 0.5.2 compatibility compiler's `-prod` Boehm code repeatedly snapshots
