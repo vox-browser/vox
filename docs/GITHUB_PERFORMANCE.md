@@ -484,6 +484,81 @@ the normal capture helper with rebuilding disabled so later source edits cannot
 replace the measured executable. Validation logs use `Build/v/instruction-opt4-*`;
 the viewport results are in `instruction-opt4-shared-media-screenshots.log`.
 
+## Retained selected-font metrics
+
+A fresh allocation-stack diagnostic, together with the earlier V `-profile`
+call counts, identified repeated native font construction in CSS `line_height()`
+and font-relative length contexts. Although `platform.Font` already caches its
+decoded face and pixel metrics, these callers constructed a temporary handle,
+cloned its strings, and discarded that cache after each query.
+
+The selected `PlatformFont` now retains a native metrics handle. Cache hits
+validate the family, CSS pixel size, integer weight, and explicit source path
+consumed by the existing bridge. Changed inputs create a replacement handle;
+previous handles retain their original values. The existing native metrics
+cache still retries an unavailable explicit source instead of retaining its
+temporary fallback. The implementation and focused tests are in `2807ba3c`.
+
+The late-file test also exposed an existing glyph-unit cache error: it keyed
+advances by requested family/source/weight, allowing a fallback's raw advance
+to be scaled using the subsequently loaded face's units per em. Commit
+`5c5382e4` keys those units by the actual decoded face and code point instead.
+The process font-face cache retains those identities for its lifetime. Aliases
+of the same concrete face can share units, and regular/bold collection faces
+remain distinct. This also removes family-name normalization from those lookups.
+
+Five normal signed C `-O2` runs per build were interleaved, reversing order on
+alternate iterations and copying the same immutable GitHub cache each time:
+
+| Build | Median installation instructions | Median navigation through first native frame | Median process peak physical footprint, MiB |
+| --- | ---: | ---: | ---: |
+| Preceding shared-media build | 33,696,355,216 | 39,222,539,247 | 1,541.8 |
+| Retained metrics handles and decoded-face glyph keys | 33,229,651,184 | 37,651,905,505 | 1,548.0 |
+
+The first-frame median falls **4.0%**, installation 1.4%. Median lifetime peak
+footprint increases 6.3 MiB (0.4%), rather than showing a memory reduction.
+Final first-frame counts are 37,651,905,505; 37,511,148,463; 37,393,358,563;
+38,485,450,601; and 39,796,348,449. The ranges overlap and one paired final run
+uses more instructions than its baseline; collector scheduling and background
+work still affect these process-wide intervals. The table reports this round's
+comparison rather than adding its percentage to earlier rounds. It does not
+establish Chrome parity or complete GitHub module hydration.
+
+Separate C `-O0` allocation diagnostics count 18,778,053 managed calls requesting
+3,289,932,917 bytes before, and 17,718,245 calls requesting 3,275,761,085 bytes
+after. Both use the same cache and record four layout-tree/paint-command
+checkpoints through capture/exit. The wrapper samples one mixed-sequence call
+in 4,096 for stacks; the former line-height allocation stacks disappear from
+the sample, and font-context stacks become much less frequent. These whole-run
+totals are not first-frame allocation counts or normal-build instruction costs.
+GC policy and intrinsic-measurement arenas remain unchanged.
+
+The baseline executable is `Build/v/Vox-opt4-shared-media-bin`, SHA-256
+`4d78170793c19e7c0107c70f38cd43a59453f87c4f7b6ad31f3b4d2446c3cad4`.
+The final is `Build/v/Vox-opt5-font-metrics-bin`, SHA-256
+`114fb2ec163c5e5d3640cab537147c6ffc789e995a1ce1fcd86fd3f9be501fd2`,
+also installed in `Build/v/Vox.app`. The build uses the normal script's GC and
+optimization flags, adding only `-keepc` for ownership inspection.
+Results are `Build/instructions/vox-opt5-interleaved-{before,final}-[1-5].run-1.json`
+and `vox-opt5-interleaved-summary.json`. Allocation diagnostics are
+`vox-opt5-{allocation-diagnostic,final-allocation-diagnostic}.run-1.{json,log}`.
+An earlier, non-interleaved handle-only pilot uses
+`vox-opt5-font-metrics-only.run-{1,2,3}.json`; it is not the final comparison.
+
+New tests exercise fractional-size retention after forced collection, every
+bridged input change, shared line-height/length metrics, replacement after style
+mutation, delayed font-file appearance, and glyph advances across face aliases
+and sizes. Both new suites pass with C `-O2` and pointer-aware Boehm, and with
+`-gc none`. Existing computed-length-cache, font-cascade, layout-node, and native
+pixel-metrics suites pass, as do signed-bundle verification and native startup
+smoke checks. The exact saved measured executable passes nineteen viewport
+comparisons: the previous seventeen-case set plus `css/line-height-zero` and
+`select-line-height-ignored`. Both added cases and all four SVG mutation cases
+are pixel-exact. The capture helper uses the saved executable with automatic
+rebuilding disabled. Logs use `Build/v/instruction-opt5-*`; final ownership
+results are in `instruction-opt5-font-final-{retention,gc-none}-tests.log`,
+and screenshots in `instruction-opt5-font-metrics-screenshots.log`.
+
 ## Causes and changes
 
 - The V 0.5.2 compatibility compiler's `-prod` Boehm code repeatedly snapshots
