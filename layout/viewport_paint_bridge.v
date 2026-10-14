@@ -1790,9 +1790,10 @@ fn lower_visual_layers(commands []PaintCommand) []PaintCommand {
 	mut result := []PaintCommand{cap: commands.len}
 	mut active := []PaintVisualLayer{}
 	for source_command in commands {
-		mut desired := []PaintVisualLayer{}
-		if source_command.visual_layer_list != unsafe { nil } {
-			desired = source_command.visual_layer_list.items.clone()
+		desired := if source_command.visual_layer_list != unsafe { nil } {
+			source_command.visual_layer_list.items
+		} else {
+			[]PaintVisualLayer{}
 		}
 		mut common := 0
 		for common < active.len && common < desired.len
@@ -1807,7 +1808,9 @@ fn lower_visual_layers(commands []PaintCommand) []PaintCommand {
 				visual_layer: active[index]
 			}
 		}
-		active = active[..common].clone()
+		// Desired paths are immutable retained input. Reuse our private active
+		// stack's capacity while preserving the payload of each open prefix.
+		active.trim(common)
 		for index := common; index < desired.len; index++ {
 			result << PaintCommand{
 				kind: compatibility_begin_visual_layer_kind(desired[index])
