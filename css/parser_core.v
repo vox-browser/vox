@@ -721,6 +721,25 @@ fn TokenizerInputArena.new(input string) TokenizerInputArena {
 		code_points: unsafe { &u32(storage) }
 		byte_offsets: unsafe { &int(&u8(storage) + usize(input.len) * sizeof(u32)) }
 	}
+	// ASCII code points and byte offsets are identical. Avoid constructing an
+	// optional rune for each byte while filling these privately owned tables.
+	mut all_ascii := true
+	for byte in input {
+		if byte >= 0x80 {
+			all_ascii = false
+			break
+		}
+	}
+	if all_ascii {
+		for offset, byte in input {
+			unsafe {
+				arena.code_points[offset] = u32(byte)
+				arena.byte_offsets[offset] = offset
+			}
+		}
+		arena.len = input.len
+		return arena
+	}
 	mut byte_offset := 0
 	for code_point in input.runes_iterator() {
 		unsafe {
