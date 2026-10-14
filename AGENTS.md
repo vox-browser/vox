@@ -1440,3 +1440,13 @@ both GC modes. Unsupported-name boundaries now use onerror; other raw media
 names and unavailable/foreign owners remain open. Production and broad
 regression suites are deferred under the user's ten-fix cadence. Batch counter:
 2/10 after aa6f0246. See [evidence](docs/translation-audit/NATIVE_MEDIA_CANPLAY_RAW_HANDLER.md).
+
+Native compact media raw can-play-handler scoped inventory (`bc80a4b7`,
+2026-10-14 UTC): All eight owned browser/root support paths are excluded under
+the sealed 78-owner rules. Independent feature/parent physical-LF accounting
+adds zero assigned DOM files, implementation lines and test lines. Counter:
+`Build/audit-fixes/native-media-canplay-raw-handler-inventory-scoped-v1.json` (SHA256 `d8a72dad76f60ae0753acfec6ebf6c89280c162ff69d89d209e1cc7c827c2ce5`).
+Global tables, pins, source mappings and historical ledgers remain preserved;
+accounting adds no test or behavioral parity credit. Batch counter remains
+2/10 after aa6f0246; this documentation commit is not another translation fix.
+See [evidence](docs/translation-audit/NATIVE_MEDIA_CANPLAY_RAW_HANDLER.md).
