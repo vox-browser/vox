@@ -480,3 +480,15 @@ Raw non-wheel handlers, unavailable form-owner models, excluded
 media/img/object/fieldset/output/custom owners, foreign realms and physical device
 injection remain open. See [raw HTML wheel-handler
 evidence](../docs/translation-audit/NATIVE_ELEMENT_WHEEL_RAW_HANDLER.md).
+
+Native compact HTML raw wheel-handler scoped inventory (`16274a24`, 2026-10-14 UTC): The
+feature owns three assigned DOM paths and five excluded browser/root support paths.
+Independent counter result against its own parent: DOM adds one assigned file, six
+implementation and 129 test physical V lines against feature parent b01cc68a. All five
+browser/root paths and both later fixture-only commits are excluded; their assigned
+deltas are zero. Counter:
+`Build/audit-fixes/native-element-wheel-raw-handler-inventory-scoped-v1.json` (SHA256
+`423f80910bd1daaf59158dcc7525e59823a33b99d8a990321fadce36d5b8786f`) This append
+preserves current global tables, pins, references, source-unit mappings and historical
+finding ledgers. See [raw HTML wheel-handler
+evidence](../docs/translation-audit/NATIVE_ELEMENT_WHEEL_RAW_HANDLER.md).
