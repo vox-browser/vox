@@ -862,26 +862,28 @@ fn (mut arena MeasurementUsedValuesArena) release() {
 @[heap]
 struct UsedValuesPage {
 mut:
-	entries []?&UsedValues
+	// A missing entry is a null pointer. Keeping the slots in the page avoids
+	// a second allocation and the much larger optional-pointer records.
+	// voidptr also avoids the compatibility compiler's invalid C assignment
+	// when constructing a heap record containing a fixed reference array.
+	entries [layout_state_page_size]voidptr
 }
 
 fn UsedValuesPage.new() &UsedValuesPage {
-	return &UsedValuesPage{
-		entries: []?&UsedValues{len: int(layout_state_page_size), init: none}
-	}
+	return &UsedValuesPage{}
 }
 
 @[heap]
 struct UsedValuesPagedStore {
 mut:
-	pages []?&UsedValuesPage
+	pages []&UsedValuesPage
 	measurement_arena ?&MeasurementUsedValuesArena
 }
 
 fn (mut store UsedValuesPagedStore) ensure_capacity(count u32) {
 	required_page_count := int((count + layout_state_page_size - 1) >> layout_state_page_bits)
 	for store.pages.len < required_page_count {
-		store.pages << none
+		store.pages << unsafe { &UsedValuesPage(nil) }
 	}
 }
 
@@ -890,8 +892,15 @@ fn (store &UsedValuesPagedStore) get(index u32) ?&UsedValues {
 	if page_index >= store.pages.len {
 		return none
 	}
-	page := store.pages[page_index] or { return none }
-	return page.entries[int(index & layout_state_page_mask)] or { return none }
+	page := store.pages[page_index]
+	if page == unsafe { nil } {
+		return none
+	}
+	entry := page.entries[int(index & layout_state_page_mask)]
+	if entry == unsafe { nil } {
+		return none
+	}
+	return unsafe { &UsedValues(entry) }
 }
 
 fn (mut store UsedValuesPagedStore) allocate(index u32) &UsedValues {
@@ -899,26 +908,30 @@ fn (mut store UsedValuesPagedStore) allocate(index u32) &UsedValues {
 	if page_index >= store.pages.len {
 		store.ensure_capacity(index + 1)
 	}
-	mut page := store.pages[page_index] or {
-		new_page := UsedValuesPage.new()
-		store.pages[page_index] = new_page
-		new_page
+	mut page := store.pages[page_index]
+	if page == unsafe { nil } {
+		page = UsedValuesPage.new()
+		store.pages[page_index] = page
 	}
 	entry := if mut arena := store.measurement_arena {
 		arena.allocate()
 	} else {
 		&UsedValues{}
 	}
-	page.entries[int(index & layout_state_page_mask)] = entry
+	page.entries[int(index & layout_state_page_mask)] = voidptr(entry)
 	return entry
 }
 
 fn (store &UsedValuesPagedStore) for_each(callback fn (&UsedValues)) {
-	for maybe_page in store.pages {
-		page := maybe_page or { continue }
-		for maybe_entry in page.entries {
-			entry := maybe_entry or { continue }
-			callback(entry)
+	for page in store.pages {
+		if page == unsafe { nil } {
+			continue
+		}
+		for entry in page.entries {
+			if entry == unsafe { nil } {
+				continue
+			}
+			callback(unsafe { &UsedValues(entry) })
 		}
 	}
 }
@@ -950,14 +963,11 @@ pub fn LayoutState.new_for_subtree(subtree_root &NodeWithStyle) &LayoutState {
 // its UsedValues pointers escape. Committed layout keeps its ordinary heap.
 fn (mut state LayoutState) release_measurement() {
 	mut arena := state.used_values_store.measurement_arena or { return }
-	for maybe_page in state.used_values_store.pages {
-		if page := maybe_page {
-			unsafe { page.entries.free() }
-			free_measurement_allocation(page)
-		}
+	for page in state.used_values_store.pages {
+		free_measurement_allocation(page)
 	}
 	unsafe { state.used_values_store.pages.free() }
-	state.used_values_store.pages = []?&UsedValuesPage{}
+	state.used_values_store.pages = []&UsedValuesPage{}
 	arena.release()
 }
 
@@ -985,7 +995,11 @@ fn (mut state LayoutState) set_subgrid_axis_data(node &NodeWithStyle, columns bo
 }
 
 fn (state &LayoutState) subgrid_axis_data(node &NodeWithStyle, columns bool) ?GridSubgridAxisData {
-	data := state.subgrid_data[node.layout_index()] or { return none }
+	index := node.layout_index()
+	if index !in state.subgrid_data {
+		return none
+	}
+	data := unsafe { state.subgrid_data[index] }
 	return if columns { data.columns } else { data.rows }
 }
 
@@ -1029,7 +1043,8 @@ pub fn (mut state LayoutState) populate_node_from(mut source LayoutState, node &
 	if source_rare := source_values.rare_ {
 		values.rare_ = source_rare.clone()
 	}
-	if subgrid := source.subgrid_data[index] {
+	if index in source.subgrid_data {
+		subgrid := unsafe { source.subgrid_data[index] }
 		state.subgrid_data[index] = subgrid
 	}
 	values.containing_block_used_values_ = none
