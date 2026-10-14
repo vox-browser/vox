@@ -14,7 +14,6 @@ __global (
 	platform_font_faces          = map[string]&ttf.TTF_File{}
 	platform_font_face_attempted = map[string]bool{}
 	platform_font_plugin         &FontPlugin
-	platform_pixel_metrics_cache = map[string]FontPixelMetrics{}
 	platform_glyph_units_cache   = map[string]GlyphUnitsEntry{}
 )
 
@@ -63,6 +62,8 @@ pub:
 mut:
 	resolved_path_ string
 	decoded_face_ &ttf.TTF_File = unsafe { nil }
+	pixel_metrics_ FontPixelMetrics
+	has_pixel_metrics_ bool
 }
 
 pub struct FontPixelMetrics {
@@ -212,16 +213,19 @@ fn outline_bytes_for_face(bytes []u8, face_index int) ?[]u8 {
 // uses typo metrics (819/-205/94 at 1024 units per em) in the deterministic
 // screenshot environment.
 pub fn (font &Font) pixel_metrics() FontPixelMetrics {
-	// pixel_metrics is a pure function of point size and face weight, yet Layout
-	// calls it hundreds of thousands of times per document. Memoize on the exact
-	// f32 bit pattern plus weight so repeat sizes are O(1).
-	point_size_bits := unsafe { *(&u32(&font.point_size)) }
-	key := '${font.family.to_lower()}|${font.source_path}|${font.weight}|${point_size_bits}'
-	if cached := platform_pixel_metrics_cache[key] {
-		return cached
+	// Font inputs are immutable. Keep the result on the handle so layout does
+	// not allocate and hash a textual cache key for every metrics query.
+	if font.has_pixel_metrics_ {
+		return font.pixel_metrics_
 	}
 	metrics := font.pixel_metrics_uncached()
-	platform_pixel_metrics_cache[key] = metrics
+	// An unavailable explicit source can become available later. Its temporary
+	// fallback must not become the handle's permanent metrics.
+	if font.decoded_face_ != unsafe { nil } {
+		mut mutable_font := unsafe { &Font(font) }
+		mutable_font.pixel_metrics_ = metrics
+		mutable_font.has_pixel_metrics_ = true
+	}
 	return metrics
 }
 
