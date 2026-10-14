@@ -11597,19 +11597,22 @@ pub fn (s &StyleComputer) compute_properties(abstract_element dom.AbstractElemen
 		if depends_on_inherited_info {
 			properties.add_inheritance_dependent_specified_value(property_id, style_value)
 		}
-		mut computation_context := s.get_computation_context_for_property(property_id, properties, abstract_element)
-		computation_context.reset_viewport_metric_dependency_tracking()
-		computed_value := if requires_computation {
-			compute_value_of_property_from_source(property_id, style_value, property_source,
-				computation_context, 1.0)
-		} else {
-			style_value
-		}
-		if computation_context.depends_on_viewport_metrics() {
-			properties.set_depends_on_viewport_metrics()
-			if property_affects_font_metrics(property_id) {
-				properties.set_font_metrics_depend_on_viewport_metrics()
+		mut computed_value := style_value
+		if requires_computation {
+			mut computation_context := s.get_computation_context_for_property(property_id, properties, abstract_element)
+			computation_context.reset_viewport_metric_dependency_tracking()
+			computed_value = compute_value_of_property_from_source(property_id, style_value,
+				property_source, computation_context, 1.0)
+			if computation_context.depends_on_viewport_metrics() {
+				properties.set_depends_on_viewport_metrics()
+				if property_affects_font_metrics(property_id) {
+					properties.set_font_metrics_depend_on_viewport_metrics()
+				}
 			}
+		} else {
+			// Keep each category's first observation at the same point in the
+			// computation order without copying a cached context we will not use.
+			s.ensure_cached_computation_context_for_property(property_id, properties, abstract_element)
 		}
 		properties.set_property_without_modifying_flags(property_id, computed_value)
 		if can_reuse_default_computed_value {
@@ -15155,13 +15158,31 @@ pub fn (s &StyleComputer) computation_context_cache_is_empty() bool {
 	return s.cached_font_computation_context == none && s.cached_line_height_computation_context == none && s.cached_generic_computation_context == none
 }
 
-pub fn (s &StyleComputer) get_computation_context_for_property(property_id PropertyID, computed_properties &ComputedProperties, abstract_element ?dom.AbstractElement) ComputationContext {
-	font_computation_property := property_id in [.color_scheme, .font_family, .font_feature_settings,
+fn property_uses_font_computation_context(property_id PropertyID) bool {
+	return property_id in [.color_scheme, .font_family, .font_feature_settings,
 		.font_kerning, .font_optical_sizing, .font_size, .font_style, .font_variant_alternates,
 		.font_variant_caps, .font_variant_east_asian, .font_variant_emoji, .font_variant_ligatures,
 		.font_variant_numeric, .font_variant_position, .font_variation_settings, .font_weight,
 		.font_width, .math_depth, .text_rendering]
-	if font_computation_property {
+}
+
+fn (s &StyleComputer) ensure_cached_computation_context_for_property(property_id PropertyID, computed_properties &ComputedProperties, abstract_element ?dom.AbstractElement) {
+	if property_uses_font_computation_context(property_id) {
+		if s.cached_font_computation_context != none {
+			return
+		}
+	} else if property_id == .line_height {
+		if s.cached_line_height_computation_context != none {
+			return
+		}
+	} else if s.cached_generic_computation_context != none {
+		return
+	}
+	_ = s.get_computation_context_for_property(property_id, computed_properties, abstract_element)
+}
+
+pub fn (s &StyleComputer) get_computation_context_for_property(property_id PropertyID, computed_properties &ComputedProperties, abstract_element ?dom.AbstractElement) ComputationContext {
+	if property_uses_font_computation_context(property_id) {
 		if cached := s.cached_font_computation_context {
 			return cached
 		}
