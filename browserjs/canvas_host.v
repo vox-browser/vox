@@ -133,7 +133,13 @@ fn (mut host CanvasHost) context_for(key string, width u32, height u32, settings
 	if existing := host.contexts[key] { return existing }
 	if element := host.elements[key] {
 		if element.local_name() != 'canvas' { return error('TypeError: expected a canvas element') }
-		canvas := unsafe { &dom.HTMLCanvasElement(element) }
+		mut canvas := unsafe { &dom.HTMLCanvasElement(element) }
+		if html.html_canvas_element_width(canvas) != width {
+			html.html_canvas_element_set_width(mut canvas, width)!
+		}
+		if html.html_canvas_element_height(canvas) != height {
+			html.html_canvas_element_set_height(mut canvas, height)!
+		}
 		context := html.html_canvas_element_get_context(canvas, '2d', settings)!
 		record := &CanvasHostContext{ context: &context.OffscreenCanvasRenderingContext2D, element_context: context }
 		host.contexts[key] = record
