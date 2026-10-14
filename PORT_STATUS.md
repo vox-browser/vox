@@ -2351,3 +2351,18 @@ and historical ledgers intact. Counter:
 `Build/audit-fixes/native-element-wheel-handler-inventory-scoped-v1.json` (SHA256
 `e9b99ef0d72ed5fe2595c7a02c3bc59fa17c1851853fffd8e03b67189e8ae507`). [Element onwheel
 evidence](docs/translation-audit/NATIVE_ELEMENT_WHEEL_HANDLER.md).
+
+Native compact HTML raw `onwheel` (`16274a24`, 2026-10-14 UTC): Raw wheel attributes
+compile lazily into the actual owner's EventTarget slot. Scoped lookup uses the Element
+facade, actual cached form owner when available, owning Document facade and relevant
+global. FunctionBody validation precedes the scoped factory; strictness, cached callback
+identity, listener order, equal-text raw/IDL replacement, CSP checks and exact false
+cancellation use the native handler path. Validation: All 23 cases in seven selected
+files pass in each GC mode through exact-source composition; production 16274a24 passes
+signed build/startup, two exact raw-handler pages, all 11 smoke cases (eight exact) and
+eight exact SVG regressions through a retained continuation. The actual JavaScriptCore
+function source remains anonymous, and compact named-property surfaces remain partial.
+Raw non-wheel handlers, unavailable form-owner models, excluded
+media/img/object/fieldset/output/custom owners, foreign realms and physical device
+injection remain open. See [raw HTML wheel-handler
+evidence](docs/translation-audit/NATIVE_ELEMENT_WHEEL_RAW_HANDLER.md).
