@@ -936,7 +936,39 @@ fn find_inline_layout_node_for_dom(root &Node, target &dom.Element) ?&InlineNode
 	return none
 }
 
-fn (mut n Node) recompute_inline_abspos_containing_block() {
+struct InlineContainingBlockLookup {
+mut:
+	nodes map[u64]&InlineNode
+}
+
+fn collect_inline_containing_block_nodes(root &Node, mut lookup InlineContainingBlockLookup) {
+	if inline := root.as_inline_node() {
+		if dom_node := root.dom_node() {
+			id := u64(dom_node.unique_id())
+			// Inline continuations share a DOM node. Preserve the first pre-order
+			// match selected by the original tree search.
+			if id !in lookup.nodes {
+				lookup.nodes[id] = inline
+			}
+		}
+	}
+	for child in root.children() {
+		collect_inline_containing_block_nodes(child, mut lookup)
+	}
+}
+
+fn lookup_inline_containing_block(root &Node, target &dom.Element, lookup &InlineContainingBlockLookup) ?&InlineNode {
+	if lookup != unsafe { nil } {
+		id := u64(target.as_node().unique_id())
+		if id !in lookup.nodes {
+			return none
+		}
+		return unsafe { lookup.nodes[id] }
+	}
+	return find_inline_layout_node_for_dom(root, target)
+}
+
+fn (mut n Node) recompute_inline_abspos_containing_block(lookup &InlineContainingBlockLookup) {
 	containing_block := n.containing_block_ or { return }
 	containing_dom_node := unsafe { &Node(containing_block) }.dom_node()
 	mut dom_ancestor := if generator := n.pseudo_element_generator_ {
@@ -955,7 +987,7 @@ fn (mut n Node) recompute_inline_abspos_containing_block() {
 				break
 			}
 		}
-		if inline := find_inline_layout_node_for_dom(root, candidate) {
+		if inline := lookup_inline_containing_block(root, candidate, lookup) {
 			inline_node := unsafe { &Node(inline) }
 			computed := inline_node.computed_values()
 			will_change := computed.will_change()
@@ -975,6 +1007,10 @@ fn (mut n Node) recompute_inline_abspos_containing_block() {
 
 // Node::recompute_containing_block().
 pub fn (mut n Node) recompute_containing_block() {
+	n.recompute_containing_block_with_inline_lookup(unsafe { nil })
+}
+
+fn (mut n Node) recompute_containing_block_with_inline_lookup(lookup &InlineContainingBlockLookup) {
 	n.inline_containing_block_ = none
 	if n.is_text_node() {
 		n.containing_block_ = nearest_ancestor_capable_of_forming_a_containing_block(n)
@@ -991,7 +1027,7 @@ pub fn (mut n Node) recompute_containing_block() {
 
 			if candidate.establishes_an_absolute_positioning_containing_block() {
 				n.containing_block_ = candidate.as_box()
-				n.recompute_inline_abspos_containing_block()
+				n.recompute_inline_abspos_containing_block(lookup)
 				return
 			}
 			ancestor = candidate.parent()
@@ -1034,10 +1070,20 @@ pub fn (n &Node) non_anonymous_containing_block() ?&Box {
 }
 
 pub fn recompute_containing_blocks(root &Node) {
+	// DOM-side layout handles are attached after geometry is computed, so
+	// upstream's direct DOM-to-inline lookup is not available during a rebuild.
+	// Index the current tree once instead of searching it for every ancestor.
+	viewport_root := if viewport := root.root_viewport() { unsafe { &Node(viewport) } } else { root }
+	mut lookup := InlineContainingBlockLookup{}
+	collect_inline_containing_block_nodes(viewport_root, mut lookup)
+	recompute_containing_blocks_with_inline_lookup(root, &lookup)
+}
+
+fn recompute_containing_blocks_with_inline_lookup(root &Node, lookup &InlineContainingBlockLookup) {
 	mut mutable_root := unsafe { &Node(root) }
-	mutable_root.recompute_containing_block()
+	mutable_root.recompute_containing_block_with_inline_lookup(lookup)
 	for child in root.children() {
-		recompute_containing_blocks(child)
+		recompute_containing_blocks_with_inline_lookup(child, lookup)
 	}
 }
 
