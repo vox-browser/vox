@@ -16,9 +16,9 @@ fn media_wheel_handler_document(markup string, address string) !(&page.Page, &do
 }
 
 fn media_wheel_handler_guard(runtime &browserjs.Runtime) !bool {
-	// This public guard compiles on the parent and fails before assigning an
-	// own property could conceal a missing native handler descriptor.
-	return runtime.evaluate_host(r'(()=>{const d=Object.getOwnPropertyDescriptor(HTMLMediaElement.prototype,"onwheel");return !!d&&d.get.name==="get onwheel"&&d.set.name==="set onwheel"&&d.get.length===0&&d.set.length===1&&[d.get,d.set].every(callback=>Function.prototype.toString.call(callback).includes("[native code]"))&&[video,mediaWheelAudio].every(player=>player.onwheel===null&&!Object.hasOwn(player,"onwheel"))})()')! == 'true'
+	// Inspect the native descriptor without invoking the getter: a parsed raw
+	// attribute must remain uncompiled until the test explicitly reads or fires it.
+	return runtime.evaluate_host(r'(()=>{const d=Object.getOwnPropertyDescriptor(HTMLMediaElement.prototype,"onwheel");return !!d&&d.get.name==="get onwheel"&&d.set.name==="set onwheel"&&d.get.length===0&&d.set.length===1&&[d.get,d.set].every(callback=>Function.prototype.toString.call(callback).includes("[native code]"))&&[video,mediaWheelAudio].every(player=>!Object.hasOwn(player,"onwheel"))})()')! == 'true'
 }
 
 fn media_wheel_handler_app(owner &page.Page, document &dom.Document, runtime &browserjs.Runtime) BrowserApp {
@@ -161,8 +161,10 @@ fn test_media_wheel_raw_source_and_self_replacement_preserve_native_slot_order()
 	}
 	assert raw_handler.value.kind == .string && raw_handler.value.string_data == raw_source
 	assert dom.event_target_dispatch_event(video_target, media_wheel_handler_event(document))
-	assert runtime.evaluate_host('video.onwheel===null&&rawMediaWheelRuns===0')! == 'true'
-	assert raw_handler.value.kind == .string && raw_handler.value.string_data == raw_source
+	assert runtime.evaluate_host('globalThis.mediaWheelCompiled=video.onwheel;typeof mediaWheelCompiled==="function"&&mediaWheelCompiled.name==="onwheel"&&mediaWheelCompiled.length===1&&video.onwheel===mediaWheelCompiled&&rawMediaWheelRuns===1')! == 'true'
+	assert raw_handler.value.kind == .object
+	compiled := video_target.get_current_value_of_event_handler('wheel') or { panic('Raw media wheel callback missing') }
+	assert compiled.compiled_source_text_ == 'function onwheel(event) {\n${raw_source}\n}'
 	runtime.evaluate_host(r'
 globalThis.mediaWheelSlotOrder=[];globalThis.mediaWheelSlotChecks=[];globalThis.mediaWheelRawCalls=0;globalThis.mediaWheelObjectReads=0;
 video.onwheel=function(event){mediaWheelRawCalls++;mediaWheelSlotChecks.push(this===video&&event instanceof WheelEvent&&event.isTrusted&&event.target===video&&event.currentTarget===video&&window.event===event&&__mediaWheelHandlerContext());return false};
@@ -179,7 +181,7 @@ document.body.appendChild(mediaWheelAudio);void mediaWheelAudio.paused;0
 	assert voidptr(assigned) == voidptr(raw_handler) && assigned.value.kind == .object
 	assert !dom.event_target_dispatch_event(video_target, media_wheel_handler_event(document))
 	assert video.get_attribute('onwheel')? == raw_source
-	assert runtime.evaluate_host('video.onwheel=null;video.onwheel===null&&mediaWheelRawCalls===1&&rawMediaWheelRuns===0')! == 'true'
+	assert runtime.evaluate_host('video.onwheel=null;video.onwheel===null&&mediaWheelRawCalls===1&&rawMediaWheelRuns===1')! == 'true'
 	assert 'wheel' !in video_target.data.event_handler_map && video_target.event_listener_list().len == 0
 	assert video.get_attribute('onwheel')? == raw_source
 	audio_target := runtime.native_event_target(runtime.evaluate_host_value('mediaWheelAudio')!)!

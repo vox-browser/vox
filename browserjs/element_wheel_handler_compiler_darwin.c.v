@@ -21,6 +21,11 @@ fn (mut host ElementWheelHost) install_raw_wheel_handler_compiler() ! {
 				return voidptr(target) == voidptr(settings.global_object())
 			}
 			element := host.raw_wheel_handler_element(target) or { return false }
+			binding := host.runtime.event_binding() or { return false }
+			if voidptr(host.document) !in binding.target_wrappers { return false }
+			if element.local_name() in ['audio', 'video'] {
+				return host.raw_media_wheel_handler_available(target, element)
+			}
 			if !raw_wheel_handler_form_owner_available(element) { return false }
 			if control := raw_wheel_handler_control(element) {
 				if form := control.form() {
@@ -29,8 +34,7 @@ fn (mut host ElementWheelHost) install_raw_wheel_handler_compiler() ! {
 					}
 				}
 			}
-			binding := host.runtime.event_binding() or { return false }
-			return voidptr(host.document) in binding.target_wrappers
+			return true
 		}
 		compile: fn [owner, settings] (target &dom.EventTarget, name string, body string, source string) ?&dom.CallbackType {
 			mut host := unsafe { &ElementWheelHost(owner) }
@@ -47,7 +51,7 @@ fn (mut host ElementWheelHost) raw_wheel_handler_element(target &dom.EventTarget
 	for _, element in host.elements {
 		if voidptr(element) != voidptr(target) { continue }
 		if voidptr(element.document()) != voidptr(host.document) || !element.is_html_element()
-			|| element.local_name() in ['audio', 'video', 'img', 'object', 'fieldset', 'output']
+			|| element.local_name() in ['img', 'object', 'fieldset', 'output']
 			|| element.is_form_associated_custom_element() { return none }
 		return element
 	}
@@ -87,8 +91,7 @@ fn raw_wheel_handler_form_owner_available(element &dom.Element) bool {
 		|| raw_wheel_handler_control(element) != none
 }
 
-fn (mut host ElementWheelHost) compile_raw_wheel_handler(target &dom.EventTarget, body string, source string) ?&dom.CallbackType {
-	mut runtime := host.runtime
+fn (runtime &Runtime) raw_wheel_handler_body_is_valid(body string) bool {
 	name := js_source_string('onwheel')
 	parameter := js_source_string('event')
 	body_value := js_source_string(body)
@@ -100,7 +103,12 @@ fn (mut host ElementWheelHost) compile_raw_wheel_handler(target &dom.EventTarget
 	mut exception := voidptr(0)
 	validated := C.JSObjectMakeFunction(runtime.context, name, 1, &parameter,
 		body_value, unsafe { nil }, 1, &exception)
-	if exception != unsafe { nil } || validated == unsafe { nil } { return none }
+	return exception == unsafe { nil } && validated != unsafe { nil }
+}
+
+fn (mut host ElementWheelHost) compile_raw_wheel_handler(target &dom.EventTarget, body string, source string) ?&dom.CallbackType {
+	mut runtime := host.runtime
+	if !runtime.raw_wheel_handler_body_is_valid(body) { return none }
 	element := host.raw_wheel_handler_element(target) or { return none }
 	mut vm := runtime.agent_vm
 	mut context := runtime.realm_context
@@ -131,7 +139,7 @@ fn (mut host ElementWheelHost) compile_raw_wheel_handler(target &dom.EventTarget
 	// implicit bindings. Name inference avoids an onwheel self binding.
 	factory_body := js_source_string(openings + 'return ({onwheel:function(event){\n' + body + '\n}}).onwheel;' + endings)
 	defer { C.JSStringRelease(factory_body) }
-	exception = unsafe { nil }
+	mut exception := voidptr(0)
 	factory := C.JSObjectMakeFunction(runtime.context, unsafe { nil }, 0, unsafe { nil },
 		factory_body, unsafe { nil }, 1, &exception)
 	if exception != unsafe { nil } || factory == unsafe { nil } { return none }

@@ -126,6 +126,8 @@ pub fn (mut host MediaElementHost) install(mut runtime Runtime) ! {
 		host.records.clear()
 		host.elements.clear()
 	})
+	// The combined Document compiler must use this owner's actual media records.
+	runtime.media_element_hosts_ << &host
 }
 
 fn (mut host MediaElementHost) bind(args []voidptr) !voidptr {

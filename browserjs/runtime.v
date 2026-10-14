@@ -76,6 +76,7 @@ mut:
 	value_function_metadata_intrinsic_ voidptr
 	webidl_promise_bridges_    map[voidptr]&WebIDLJavaScriptPromiseBridge
 	canvas_element_providers_ []CanvasElementBindingProvider
+	media_element_hosts_ []&MediaElementHost
 	close_handlers_ []fn ()
 	document_state_dirty_ bool
 	scripting_settings_ ?&html.EnvironmentSettingsObject
@@ -350,6 +351,7 @@ pub fn (mut runtime Runtime) close() {
 	runtime.native_stream_wrapper_records_.clear()
 	runtime.webidl_promise_bridges_.clear()
 	runtime.canvas_element_providers_.clear()
+	runtime.media_element_hosts_.clear()
 	if settings := runtime.scripting_settings_ {
 		mut event_loop := unsafe { &html.EventLoop(settings.responsible_event_loop()) }
 		event_loop.detach_embedding_vm(runtime.agent_vm)
