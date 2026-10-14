@@ -1240,6 +1240,9 @@ pub fn (et &EventTarget) get_current_value_of_event_handler(name string) ?&Callb
 		// An unavailable owner/environment is an explicit port boundary. Preserve
 		// the raw value for an actual compiler; never fabricate a callable.
 		if !compiler.can_compile(et) { return none }
+		if available := compiler.can_compile_handler {
+			if !available(et, name) { return none }
+		}
 		callback := compiler.compile(et, name, handler.value.string_data,
 			inline_event_handler_function_source(et, name, handler.value.string_data)) or {
 			// Source parse/early-error failure nulls the value while retaining this

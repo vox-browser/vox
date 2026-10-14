@@ -1,4 +1,4 @@
-// Raw media wheel handlers use the same FunctionBody compiler and actual scopes.
+// Raw media wheel and play/pause handlers share FunctionBody compilation and scopes.
 module browserjs
 
 import dom
@@ -23,18 +23,19 @@ fn cached_raw_wheel_media(element &dom.Element) ?&html.HTMLMediaElement {
 	return unsafe { &html.HTMLMediaElement(video.media_element_model_) }
 }
 
-fn (mut host ElementWheelHost) raw_media_wheel_handler_available(target &dom.EventTarget, element &dom.Element) bool {
+fn (mut host ElementWheelHost) raw_media_wheel_handler_available(target &dom.EventTarget, element &dom.Element, name string) bool {
+	if name !in ['wheel', 'play', 'pause'] { return false }
 	if host.live_raw_media_wheel_hosts().len == 0 { return false }
 	binding := host.runtime.event_binding() or { return false }
 	mut wrapper := binding.target_wrappers[voidptr(target)] or { voidptr(0) }
 	if wrapper == unsafe { nil } {
 		if host.resolver == unsafe { nil } { return false }
-		slot := target.data.event_handler_map['wheel'] or { return false }
+		slot := target.data.event_handler_map[name] or { return false }
 		if slot.value.kind != .string { return false }
 		body := slot.value.string_data
 		// Upstream parses and checks early errors before creating scope wrappers.
 		// Leave malformed bodies to compile() so it nulls only the handler value.
-		if !host.runtime.raw_wheel_handler_body_is_valid(body) { return true }
+		if !host.runtime.raw_wheel_handler_body_is_valid(name, body) { return true }
 		mut vm := host.runtime.agent_vm
 		mut context := host.runtime.realm_context
 		vm.push_execution_context(mut context)
@@ -42,7 +43,7 @@ fn (mut host ElementWheelHost) raw_media_wheel_handler_available(target &dom.Eve
 		popped := vm.pop_execution_context()
 		assert voidptr(popped) == voidptr(context)
 		// A resolver may remove or replace the slot; do not compile stale source.
-		current := target.data.event_handler_map['wheel'] or { return false }
+		current := target.data.event_handler_map[name] or { return false }
 		if voidptr(current) != voidptr(slot) || current.value.kind != .string
 			|| current.value.string_data != body { return false }
 	}

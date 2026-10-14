@@ -299,9 +299,9 @@ fn test_raw_media_wheel_function_body_csp_name_filter_and_unavailable_owners_pre
 	}
 	runtime.evaluate_host('mediaRawResolverBefore=null;0')!
 	assert runtime.evaluate_host('mediaRawRuns===0')! == 'true'
-	audio_element.set_attribute_value('onplay', 'globalThis.mediaRawRuns++;')
-	assert target.get_current_value_of_event_handler('play') == none
-	assert (target.data.event_handler_map['play'] or { panic('unsupported media raw name') }).value.kind == .string
+	audio_element.set_attribute_value('onplaying', 'globalThis.mediaRawRuns++;')
+	assert target.get_current_value_of_event_handler('playing') == none
+	assert (target.data.event_handler_map['playing'] or { panic('unsupported media raw name') }).value.kind == .string
 	audio_element.set_attribute_value('onwheel', 'return false;')
 	callback := target.get_current_value_of_event_handler('wheel') or { panic('valid media raw callback') }
 	mut document := fixture.document

@@ -8,6 +8,8 @@ pub struct InlineEventHandlerCompiler {
 pub:
 	supports_handler ?InlineEventHandlerSupport
 	can_compile fn (&EventTarget) bool
+	// Optional owner availability for this exact raw slot, after environment checks.
+	can_compile_handler ?InlineEventHandlerSupport
 	compile     fn (&EventTarget, string, string, string) ?&CallbackType
 }
 
