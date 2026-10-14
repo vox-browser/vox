@@ -747,6 +747,68 @@ SHA-256 is `94ff47186ba5e27892bb2ea89fc9078cbd6382d207e7ad7bb2358dd1191df512`;
 above belong to the matching pinned comparison, rather than this separately
 integrated binary.
 
+## Sparse animation invalidation and streamed SVG paths
+
+Animation invalidation now visits the union of the two sparse animated-property
+maps instead of probing every longhand twice. This removes expected-miss error
+allocations while preserving additions, removals, semantic equality, shorthand
+exclusion, and the union of invalidation flags. SVG path serialization now
+appends commands directly to one builder instead of building command strings,
+arrays of formatted numbers, and a second array for the complete path. Number
+formatting, command case, spacing, and the uppercase close command are unchanged.
+These changes are `546b7b83` and `d31999c9`, each with three focused cases.
+
+The SVG microbenchmark alternated five pairs of ten serializations of a path
+containing 4,096 cubic commands and a close command. Median counts fell from
+**273,071,398 to 230,882,778 instructions**, or **15.4%**. It also runs the final
+three semantic/retention cases with C `-O2` and Boehm. This is a helper-specific
+result, not a measured GitHub page improvement. The fixture and reports are
+`Build/v/opt9-path-microbenchmark-test.v.txt` and
+`instruction-opt9-svg-{optimized-microbenchmark.log,microbenchmark-summary.json}`.
+
+Ten interleaved native GitHub pairs did **not** establish a page-level gain:
+
+| Build | Median installation instructions, rounded | Median navigation through first native frame, rounded |
+| --- | ---: | ---: |
+| Matching control | 33,340,875,358 | 36,773,773,336 |
+| Sparse animation maps and streamed paths | 33,393,506,154 | 36,839,600,671 |
+
+Installation increased 0.16% and first-frame instructions increased **0.18%**;
+three of ten paired first-frame counts improved, with heavily overlapping
+ranges. The managed-allocation diagnostic counts 14,921,172 to 14,792,339 calls
+before first paint, requesting 2,741,339,421 to 2,738,588,542 bytes: 128,833 fewer
+calls and 2,750,879 fewer requested bytes. Fewer allocations and the isolated SVG
+gain do not establish a browser-wide instruction reduction. No positive savings
+are credited toward the next 5,000,000-instruction broad-test threshold, and the
+prepared broad unit/screenshot batch was skipped.
+
+Both normal builds use C `-O2`, pointer-aware Boehm, identical shared libraries,
+and the same immutable GitHub cache. The control restores only the three prior
+V-generated animation/SVG function bodies in the exact captured candidate C;
+the previously unreferenced instruction serializer is restored before the path
+serializer. Concurrent native media handler changes are therefore common to
+both builds. This construction and its function/source hashes are recorded in
+`Build/v/instruction-opt9-control-provenance.json`; the captured V source manifest
+records no source changes during the candidate build. Raw normal-build counts
+and summary use `Build/instructions/vox-opt9-interleaved-*`; scoped allocation
+diagnostics use `vox-opt9-{before,final}-allocation-scopes*` and
+`vox-opt9-first-frame-allocation-summary.json`. C `-O0` allocation instrumentation
+is not used for the normal-build instruction comparison.
+
+The matching control executable is `Build/v/Vox-opt9-control-bin`, SHA-256
+`a9b0b5380335b094eaf95024d3a0a39639cd9ee6be022caf294ee70d664a528d`.
+The candidate is `Build/v/Vox-opt9-final-bin`, SHA-256
+`b7c59ca6b6f4c1f6bd4759f8a95f56f11be01b86fce3dfdde7d4e4931176a5b2`.
+Both use the preceding round's cache fingerprint. All twenty runs record one
+document installation and a final root-process exit sample. The six new cases
+pass in both GC modes; the animation cases also pass C `-O2`, and the final SVG
+cases pass C `-O2` in the microbenchmark fixture. The canonical signed
+`Build/v/Vox.app` contains the exact saved candidate bytes and passes native
+startup smoke and in-bundle signature verification. Evidence is in
+`Build/v/instruction-opt9-*-test.log`, `instruction-opt9-smoke.log`, and
+`instruction-opt9-signature-result.json`. GC and arena policy are unchanged.
+Chrome instruction or functionality parity remains unestablished.
+
 ## Causes and changes
 
 - The V 0.5.2 compatibility compiler's `-prod` Boehm code repeatedly snapshots
