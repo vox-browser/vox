@@ -1706,6 +1706,114 @@ round-trip verification. No compiler/test/page failure occurred in this round.
 Chrome instruction and functionality parity remain unestablished, including
 GitHub module hydration and populated file rows.
 
+## Direct reads of guarded layout styles
+
+Feature `11442940` removes temporary optional casts from the three layout
+`Node` style accessors: `computed_values()`, `display()` and
+`display_before_box_type_transformation()`. Each uses the same `has_style_`
+discriminant checked by `as_node_with_style()` before accessing the embedded
+`NodeWithStyle`. Unstyled computed-value reads still walk the live parent chain
+and retain the disconnected-root assertion; unstyled display reads still return
+inline flow. No cached pointer, field-layout, allocation-policy or GC changes
+are involved. Boehm remains enabled in normal builds, with JavaScriptCore and
+without global `-prealloc` or V `-prod`.
+
+The recent `v -profile` diagnostic recorded 8,818,514 `Node.computed_values()`
+calls and 2,629,842 `Node.display()` calls across its layout/paint passes, including
+work after the first frame. The normal C `-O2` control's native assembly shows
+stack stores/reloads for the temporary styled pointer. The generated C includes
+`GC_reachable_here(&styled)` around that optional binding even though the
+accessor needs only a guarded field read. Reading through the guarded receiver
+removes that temporary; the receiver and returned style retain normal traced
+ownership. Its direct style path drops from twelve native instructions to seven.
+Before/after assembly is retained under
+`Build/v/instruction-opt19-native-style-*.txt`.
+
+Four new functional cases cover four concrete styled-node types, pointer
+identity, different transformed/original display values, unstyled chains at
+multiple depths, reparenting, live ancestor style replacement, nearest styled
+ancestor selection and collection between reads. Together with the sixteen
+existing node cases, **20 functional checks plus one diagnostic pass in both
+GC modes**, including C `-O2` with Boehm. Each focused run passes 15,299 assertions.
+The first focused compiles rejected a fixture's `.none` spelling; the enum uses
+`.none_`. Those actual exit-one reports and logs remain retained without runtime
+credit; only the corrected focused commands were rerun. No production source
+or benchmark samples changed during that correction.
+
+Three fixed interleaved diagnostic pairs exercise one million iterations of
+all three accessors across 128 nodes: styled roots and unstyled chains at depths
+one through three, with four display types. Setup, collection and assertions
+are outside the hardware counter interval. Every checksum matches the independent
+reference of 375,000. Median work falls **53,519,687 →
+34,837,149 retired instructions (34.91% fewer)**;
+all three pairs improve. These separate C `-O2`/Boehm test executables establish
+accessor-work reduction, rather than whole-page savings. Plans, retained
+aggregate, results and initial compile failures are under
+`Build/v/instruction-opt19-*` and `opt19-style-focused-test.v.txt`.
+
+Thirty alternating normal-build GitHub pairs were fixed before results were
+observed, using fresh copies of the same immutable cache, the same frozen native
+library, a 1024×768 document viewport and the first native
+`navigation_to_first_document_paint` endpoint.
+
+| Build | Median instructions through first native document frame |
+| --- | ---: |
+| Optional styled-pointer binding | 34,317,297,094 |
+| Direct guarded style access | 34,294,041,571.5 |
+
+The observed median change is **-0.07%**
+(23,255,522.5 fewer instructions); **14/30 pairs improve**.
+The paired median saving is -19,373,783.5; its 95% paired percentile
+bootstrap interval is **-973,558,548 to 194,553,829.5** instructions
+(30,000 resamples, seed 19). The paired interval includes zero, so a repeatable
+whole-page reduction remains unestablished. Zero repeatable page savings are
+credited.
+All sixty captures have valid geometry and one installation, with the same two
+required geometry passes and one shell paint recording before the first frame.
+No page samples were discarded, extended or selected after observing results.
+Checkpoint intervals remain process-wide deltas rather than function self cost.
+Raw page evidence is `Build/instructions/vox-opt19-interleaved-*`; paired evidence
+is `Build/v/instruction-opt19-comparison-evidence.json`.
+
+The control reuses the exact previously measured round18 candidate executable
+and immutable source snapshot, including count-only UTF-16 lengths `4a07b578`.
+The candidate changes only `layout/node.v`. Subsequent independent media
+completion work remains preserved in the workspace and is excluded from both
+compared binaries. After authenticating path-derived embed lookup keys and
+normalizing compiler anonymous hashes/temporary names, the generated-C diff is
+7,021 bytes. The reviewed body changes are only
+`Node.display()` and `Node.computed_values()`; the third accessor is absent from
+the normal browser's emitted functions and is exercised by the focused tests.
+All remaining generated C, including type IDs, struct layouts and embedded data,
+is identical. All 120 common native input hashes and the frozen shared library
+remain unchanged. Source hashes, argv and the projection audit are retained in
+`Build/v/instruction-opt19-matching-provenance.json`.
+
+The observed page median crossed the user's 5,000,000-instruction gate, so
+one broad batch ran after the completed measurement. All six commands for the
+87 selected CSS/SVG/layout cases pass in Boehm and no-GC modes; all nineteen
+screenshot comparisons pass, sixteen pixel-exact. Existing differences remain
+inline-node (13 pixels), text-decorations (1,341) and canvas-text (1,994). The
+focused multilingual/first-letter/ellipsis/control viewport is pixel-exact
+between the two binaries. Actual exits and image metrics are in
+`Build/v/instruction-opt19-validation-result.json` and its per-command logs.
+The new broad-verified baseline is `11442940` at the observed median
+34,294,041,571.5; credited repeatable savings are 0 and
+additional savings after this batch reset to zero. Diagnostic savings never
+contribute to that counter.
+
+The measured candidate replaces only the authenticated, unchanged prior
+canonical executable in `Build/v/Vox.app`; its native `__TEXT,__text` hash is
+`38caf26aa3621c8afd60eef068ba833661321ccc373707bc9749a82172ad45a4`. Bundle signing,
+deep strict verification and `--headless-smoke` pass. The existing GUI process
+was left running; relaunch the bundle to load the new executable. Later media
+sources are preserved but excluded from this measured app snapshot.
+
+Earlier completed generated C and current derived normalization artifacts were
+losslessly gzip-archived under disk pressure, with original SHA-256 and
+round-trip verification. Chrome instruction and functionality parity remain
+unestablished, including GitHub module hydration and populated file rows.
+
 ## Causes and changes
 
 - The V 0.5.2 compatibility compiler's `-prod` Boehm code repeatedly snapshots
