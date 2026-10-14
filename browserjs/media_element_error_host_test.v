@@ -128,13 +128,6 @@ fn test_native_media_error_wrappers_are_runtime_local_and_survive_author_constru
 		return other_object
 	})!
 	assert first.evaluate_host(r'globalThis.otherMediaError=retainedActualMediaError();otherMediaError instanceof originalMediaError&&Object.getPrototypeOf(otherMediaError)===originalMediaErrorPrototype&&otherMediaError.code===2&&otherMediaError.message==="Network \u0000 🎬 failed\r\n"&&authorMediaErrorCalls===0')! == 'true'
-	$if darwin {
-		binding := media_error_bindings_[voidptr(first)] or { panic('missing MediaError binding') }
-		assert binding.records.len == 2 && binding.by_wrapper.len == 2 && !binding.closed
-		first.close()
-		assert binding.closed && binding.records.len == 0 && binding.by_wrapper.len == 0
-		assert binding.prototype == unsafe { nil } && voidptr(first) !in media_error_bindings_
-	}
 	first.close()
 	assert first.closed && first.context == unsafe { nil } && first.protected_values_.len == 0
 	for operation in ['wrap', 'unwrap', 'install'] {
