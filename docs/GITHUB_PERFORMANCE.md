@@ -2466,6 +2466,94 @@ not confirmatory, adds no credited saving and does not extend the thirty-pair
 candidate comparison. Plans and raw data are retained under
 `Build/v/instruction-opt25-gc-*` and `instruction-gc-markers-probe-*`.
 
+## Default Boehm marking to the initiating thread
+
+Feature `36142146` sets `GC_MARKERS=1` through a V compiler flag in
+`main.v`. This host previously used sixteen total markers, including fifteen
+helper threads. Boehm remains enabled for the shared DOM graph, and
+JavaScriptCore retains its collector. Existing scoped arenas remain in use.
+The linked header calls `GC_set_markers_count(1)` before `GC_init()`;
+the library then honors the `GC_MARKERS` environment override.
+`tools/check_gc_markers.py` verifies actual browser startup: default marker
+counts change from sixteen to one, both builds use two under `GC_MARKERS=2`,
+and all four checks complete eight collections and pass the engine/JS smoke test.
+
+Thirty alternating pairs were fixed before measurement, comparing the retained
+round24 executable with the same frozen runtime plus this flag. Both use normal
+C `-O2`, Boehm GC, the frozen native library, fresh copies of the immutable GitHub
+cache and a 1024×768 document viewport. Both clear the environment override;
+V profiling and allocation wrappers are off. The primary counter is
+`native.scopes.navigation_to_first_document_paint[0]`.
+
+| Build | Median instructions through first native document frame |
+| --- | ---: |
+| Automatic marker count | 33,036,972,779.5 |
+| One marker by default | 32,136,369,324.5 |
+
+The observed reduction is **900,603,455 instructions
+(2.73%)**, with **24/30 pairs improving**.
+The paired median saving is 925,426,541; its 95% paired
+percentile bootstrap interval is **835,019,108.5 to 1,168,396,823.5** instructions
+(30,000 resamples, seed 26). This supports a repeatable reduction for this
+cached workload. Repeatable savings credited: 900,603,455.
+All sixty complete captures retain the cache and binary hashes, one installation,
+two geometry passes, one shell paint before the first frame and valid viewport
+geometry. FuseCode interrupted one attempt in pair 25 before the primary endpoint:
+all 48 complete reports were retained, the incomplete attempt was logged and
+retried, and the original schedule finished without discarding a completed
+observation or extending the sample.
+
+A separate fixed thirty-pair confirmation uses the **same executable and file
+path** for both variants, selecting sixteen markers or one through the verified
+environment override. Its medians are 32,983,649,024.5 and
+32,230,529,807 instructions, a **2.28%** reduction
+(753,119,217.5 instructions); **22/30 pairs improve**.
+The paired median saving is 758,435,970.5, with a positive 95%
+paired interval of 476,027,209 to 887,849,820 (30,000 resamples, seed 2601).
+All sixty confirmation captures pass the same cache, binary, geometry and frame
+checks. One cache copy failed with ENOSPC before the pair-26 browser launch;
+all fifty completed reports were retained, and the remaining five scheduled
+pairs resumed with the cache in the same location. These samples remain
+separate from the primary comparison. They confirm the GC effect without
+additional savings credit or another broad batch. See
+`Build/v/instruction-opt26-same-image-{plan,result,resume}.json` and
+`Build/instructions/vox-opt26-same-image-*`.
+
+System-disk exhaustion interrupted compiler output before measurement began.
+Generated C and compiler temporary files then used scoped scratch storage;
+the candidate executable and compressed C evidence are persisted in `Build/v`.
+All generated executable logic, record layouts and embedded resources match
+after compiler identities and authenticated source-line metadata are normalized.
+The initial audit difference was the include comment shifting from `main.v:46`
+to `main.v:49`, exactly matching the three inserted source lines. Native arguments
+add only the marker definition apart from artifact paths; all 120 frozen native
+inputs remain unchanged.
+
+Thirty focused functional cases plus one diagnostic pass with 3,997 assertions
+in both optimized Boehm builds and the final no-GC ownership build. The focused
+Unicode/control, background and math-depth viewport is pixel-exact. The saving
+crossed the user's 5,000,000-instruction gate, so one broad batch ran: all six
+commands for 87 selected CSS/SVG/layout cases pass in both GC modes with the new
+marker definition. All nineteen screenshot comparisons pass, sixteen pixel-exact.
+Existing differences remain inline-node (13 pixels), text-decorations (1,341)
+and canvas-text (1,994).
+
+The signed candidate replaces the authenticated round24 executable in
+`Build/v/Vox.app`; deep strict signing verification and headless startup pass.
+Native text SHA-256: `84a9c7ed826ca9a414b4d64c347a0c01c95a8921926e5a84234fbed30b91643b`.
+The existing GUI process was not restarted. Independent native media work is
+preserved in the repository and excluded from both measured snapshots; the
+installed artifact retains that measured runtime scope.
+The broad baseline is now `36142146` at 32,136,369,324.5
+instructions, with additional savings after this batch reset to zero.
+Chrome instruction and functionality parity remain open: its earlier counts
+use a different endpoint and populated file rows.
+
+Evidence: `Build/instructions/vox-opt26-interleaved-*` and
+`Build/v/instruction-opt26-{comparison-evidence,matching-provenance,c-audit-result,
+gc-macro-proof,gc-policy-result,cli-resume,capture-audit,build-retry,
+validation-result,bundle-result}.json`.
+
 ## Causes and changes
 
 - The V 0.5.2 compatibility compiler's `-prod` Boehm code repeatedly snapshots

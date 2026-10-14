@@ -1358,23 +1358,19 @@ evidence](docs/translation-audit/NATIVE_MEDIA_WHEEL_RAW_HANDLER.md).
   broad verification. Compare the same benchmark endpoint and workload, record
   the measured baseline and accumulated savings, and do not run broad suites
   for every individual fix below that threshold.
-  The latest performance broad batch is borrowed scalar reads `fab6eba8`:
-  eighteen functional checks plus one diagnostic pass in each GC mode, including
-  optimized Boehm. All six commands for 87 selected CSS/SVG/layout cases and
-  all 19 screenshots pass (16 exact); the extended focused viewport is exact.
-  Its observed GitHub first-frame median is 33,138,879,247 instructions,
-  a -0.14% change against its matching control. 16 of 30 pairs improve;
-  the paired interval includes zero. Repeatable page savings credited:
-  0; additional savings after this batch: zero.
-  The controlled property diagnostic improves 1.26%; the fresh V-profile records
-  605,484 scalar-reader calls across the GitHub screenshot process.
-  See `docs/GITHUB_PERFORMANCE.md` for uncertainty, source snapshots and app scope.
-  Subsequent context-copy feature `3ad9a504` passed thirty focused checks
-  plus one diagnostic in both GC modes. Its observed GitHub change is
-  +2.61%; the paired interval includes zero. Broad suites are
-  skipped below 5M; additional credited savings: 0.
-  Its controlled property diagnostic improves 2.82%, but the production change
-  was reverted by `46fdbe37`; the installed app remains round24. See the performance document.
+  The latest performance broad batch is the single-marker GC default `36142146`:
+  thirty focused functional checks plus one diagnostic pass with 3,997 assertions
+  in each GC mode, including optimized Boehm. Active GC and GC_MARKERS overrides
+  pass real-browser startup checks. All six commands for 87 selected CSS/SVG/layout
+  cases and all 19 screenshots pass (16 exact); the focused viewport is exact.
+  Its observed GitHub first-frame median is 32,136,369,324.5 instructions,
+  a -2.73% change against its matching control. 24 of 30 pairs improve;
+  the positive paired interval supports a repeatable reduction for this workload.
+  Repeatable savings credited: 900,603,455; additional savings after
+  this batch: zero. GC remains enabled; Chrome parity remains open.
+  Same-executable confirmation also improves 2.28% (22/30 pairs, positive interval);
+  its samples stay separate and add no second savings credit or broad batch.
+  See `docs/GITHUB_PERFORMANCE.md` for sources, interruption recovery and app scope.
 - Outside instruction-count optimization, run broad regression suites once per
   ten completed fixes, not after every fix.
   Broad suites include full translation/package test batches, the full LibJS AST
