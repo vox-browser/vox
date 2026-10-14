@@ -3330,7 +3330,8 @@ pub fn (e &Element) is_document_element() bool {
 	if doc == unsafe { nil } {
 		return false
 	}
-	return doc.document_element() or { return false } == e
+	root := doc.document_element() or { return false }
+	return voidptr(root) == voidptr(e)
 }
 
 // --- Void elements ---
