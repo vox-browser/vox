@@ -82,10 +82,10 @@ fn test_native_media_error_interface_metadata_constants_and_exact_actual_records
 		object := runtime.javascript_media_error(actual)!
 		assert runtime.javascript_media_error(actual)! == object
 		assert voidptr(runtime.native_media_error(object)!) == voidptr(actual)
-		runtime.define_value_host_function('actualMediaError', fn [object] (_ voidptr, _ []voidptr) !voidptr {
+		runtime.define_value_host_function('actualMediaError${index}', fn [object] (_ voidptr, _ []voidptr) !voidptr {
 			return object
 		})!
-		assert runtime.evaluate_host('globalThis.currentMediaError=actualMediaError();currentMediaError.code===${
+		assert runtime.evaluate_host('globalThis.currentMediaError=actualMediaError${index}();currentMediaError.code===${
 			index + 1}&&currentMediaError instanceof MediaError&&Object.getPrototypeOf(currentMediaError)===MediaError.prototype&&Object.prototype.toString.call(currentMediaError)==="[object MediaError]"&&Object.keys(currentMediaError).length===0&&!Object.hasOwn(currentMediaError,"code")&&!Object.hasOwn(currentMediaError,"message")&&!("addEventListener" in currentMediaError)')! == 'true'
 		assert runtime.evaluate_host('currentMediaError.message')! == message
 		assert runtime.evaluate_host(r'(()=>{
