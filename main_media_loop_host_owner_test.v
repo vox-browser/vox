@@ -156,7 +156,11 @@ fn test_native_loop_owner_restarts_actual_endpoint_then_restores_completion_and_
 	// Controlled response metadata establishes the real owner's translated seekable range.
 	assert runtime.evaluate_host('mlpVideo.src="/loop-video.mp4";mlpVideo.load();mlpAudio.src="/loop-audio.mp4";mlpAudio.load();mlpVideo.readyState===4&&mlpAudio.readyState===4')! == 'true'
 	media_loop_owner_drain(document)
-	assert probe.fetches == 2 && video.seekable().length() == 1 && audio.seekable().length() == 1
+	// src replay selects automatically, and the explicit load fetches again per owner.
+	assert probe.fetches == 4
+	assert video.event_count('loadstart') == 2 && audio.event_count('loadstart') == 2
+	assert video.seekable().length() == 1
+	assert audio.seekable().length() == 1
 	assert runtime.evaluate_host(r'globalThis.loop="global fake";document.loop="document fake";globalThis.mlpEnds=[];globalThis.mlpEndChecks=[];globalThis.mlpEndEvents=[];
 for(const target of [mlpVideo,mlpAudio]){target.loop=true;target.setAttribute("onended","mlpEnds.push(this.id);mlpEndEvents.push(event);mlpEndChecks.push(loop===false&&this.loop===false&&document.loop===\"document fake\"&&globalThis.loop===\"global fake\"&&event===arguments[0]&&event instanceof Event&&event.isTrusted&&event.target===this&&event.currentTarget===this&&window.event===event&&paused===true&&ended===true);return false;");void target.onended}mlpEnds.length===0')! == 'true'
 	mut event_loop := html.main_thread_event_loop()
@@ -204,7 +208,8 @@ for(const target of [mlpVideo,mlpAudio]){target.loop=true;target.setAttribute("o
 		assert media.paused() && media.ended() && media.current_time() == 1
 		assert media.event_count('pause') == 1 && media.event_count('ended') == 1
 	}
-	assert probe.fetches == 2 && media_loop_owner_take_task(document) == none
+	assert probe.fetches == 4
+	assert media_loop_owner_take_task(document) == none
 	media_loop_owner_balance(runtime, document)
 }
 
