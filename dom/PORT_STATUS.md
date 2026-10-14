@@ -539,3 +539,13 @@ then requested broad suites once per ten fixes; the remaining broad screenshot c
 and broad smoke/SVG cases have no full-suite credit for this slice. Other raw media names,
 generic/foreign owners, partial named-property interfaces, anonymous JSC intrinsic
 source and full LibJS/HTML/interface parity remain open. See [evidence](../docs/translation-audit/NATIVE_MEDIA_LIFECYCLE_RAW_HANDLER.md).
+
+Native compact media raw lifecycle-handler scoped inventory (`aa6f0246`,
+2026-10-14 UTC): Against its actual feature parent, three owned DOM paths add
+1 assigned file, 5 implementation and
+93 test physical V lines. Seven browser/root support paths are
+excluded under the sealed 78-owner assignment. Counter:
+`Build/audit-fixes/native-media-lifecycle-raw-handler-inventory-scoped-v1.json` (SHA256 `7d14c9c050b3314215db3864ce01b7a3d9df2e704f13d8f05b8ffa5755e74f62`).
+Existing global tables, pins, source mappings and historical ledgers remain
+preserved. Accounting adds no behavioral parity or validation credit.
+See [evidence](../docs/translation-audit/NATIVE_MEDIA_LIFECYCLE_RAW_HANDLER.md).
