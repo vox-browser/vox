@@ -2460,3 +2460,17 @@ Global tables, pins, source mappings and historical ledgers remain preserved;
 accounting adds no test or behavioral parity credit. Batch counter remains
 1/10 after aa6f0246; this documentation commit is not another translation fix.
 See [evidence](docs/translation-audit/NATIVE_MEDIA_READINESS_RAW_HANDLER.md).
+
+Native compact media raw `oncanplay` / `oncanplaythrough` (`bc80a4b7`, 2026-10-14 UTC):
+Owner-local HTML audio/video can-play attributes compile lazily through the
+existing name-aware native compiler and ordered content-attribute replay.
+Actual readiness delivery fires canplay before the captured playing promise
+batch resolves; canplaythrough follows its fulfillment. A canplay handler may
+pause without stealing the previously captured promise batch. Native Event identity, Element -> Document -> Global
+scope, caching, resolver reentrancy, raw/IDL replacement, CSP, scripting gates,
+original exceptions and DOM/paint replay pass focused checks. Six new cases and
+the three changed boundary fixtures pass: 16 cases in five selected files in
+both GC modes. Unsupported-name boundaries now use onerror; other raw media
+names and unavailable/foreign owners remain open. Production and broad
+regression suites are deferred under the user's ten-fix cadence. Batch counter:
+2/10 after aa6f0246. See [evidence](docs/translation-audit/NATIVE_MEDIA_CANPLAY_RAW_HANDLER.md).
