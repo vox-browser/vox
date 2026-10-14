@@ -8,6 +8,10 @@ import html
 
 pub type ImageReplayHook = fn (&Runtime) !
 
+// The native request model and its element retain the live CORS mode and
+// document owner, including for a script-created or adopted image.
+pub type ImageRequestFetchHook = fn (&dom.HTMLImageElement, &html.HTMLImageElementModel, dom.URL) !html.DecodedImageData
+
 @[heap]
 struct ImageHostRecord {
 	key     string
@@ -27,6 +31,7 @@ mut:
 	records   map[voidptr]&ImageHostRecord
 	prototype voidptr
 	closed    bool
+	request_fetch_hook ?ImageRequestFetchHook
 }
 
 pub fn ImageHost.create(document &dom.Document, fetch_hook ?html.HTMLImageFetchHook, replay ?ImageReplayHook) !&ImageHost {
@@ -38,6 +43,32 @@ pub fn ImageHost.create(document &dom.Document, fetch_hook ?html.HTMLImageFetchH
 		host.elements['__element_${index}'] = element
 	}
 	return host
+}
+
+pub fn ImageHost.create_with_request_fetch(document &dom.Document, fetch_hook ImageRequestFetchHook, replay ?ImageReplayHook) !&ImageHost {
+	mut host := ImageHost.create(document, none, replay)!
+	host.request_fetch_hook = fetch_hook
+	for _, element in host.elements {
+		if !element.is_html_element() || element.local_name() != 'img' { continue }
+		image := unsafe { &dom.HTMLImageElement(element) }
+		mut model := host.configure_image_fetch(image)
+		if element.has_attribute('src') || element.has_attribute('srcset') {
+			model.update_the_image_data(false, false)
+		}
+	}
+	return host
+}
+
+fn (host &ImageHost) configure_image_fetch(image &dom.HTMLImageElement) &html.HTMLImageElementModel {
+	mut model := html.html_image_element_model_for_dom_element(image)
+	if hook := host.request_fetch_hook {
+		model.set_fetch_hook(fn [hook, image, model] (resource_url dom.URL) !html.DecodedImageData {
+			return hook(image, model, resource_url)
+		})
+	} else {
+		model.set_fetch_hook(host.fetch_hook)
+	}
+	return model
 }
 
 pub fn (host &ImageHost) elements_for_binding() map[string]&dom.Element {

@@ -1220,6 +1220,11 @@ fn browser_image_resource_bytes(resource_url dom.URL) ![]u8 {
 	if !serialized.contains('://') {
 		return os.read_bytes(serialized)
 	}
+	if serialized.starts_with('http://') || serialized.starts_with('https://') {
+		// Reuse navigation's preloaded resource cache before fetching a missing
+		// resource. Native image requests must decode the same bytes as painting.
+		return fetch_text_resource(serialized, '')!.bytes()
+	}
 	return error('Unsupported image resource URL')
 }
 
@@ -1249,7 +1254,26 @@ fn browser_decode_raster_image_bytes(bytes []u8) !&dom.Bitmap_ {
 // The existing compact raster decoder supplies the actual HTML request.
 fn browser_fetch_image_resource(resource_url dom.URL) !html.DecodedImageData {
 	bitmap := browser_decode_raster_image_bytes(browser_image_resource_bytes(resource_url)!)!
-	return html.BitmapDecodedImageData.create([html.BitmapDecodedImageFrame{frame: dom.DecodedImageFrame_.create(bitmap)}], 0, false)
+	decoded := html.BitmapDecodedImageData.create([html.BitmapDecodedImageFrame{frame: dom.DecodedImageFrame_.create(bitmap)}], 0, false)
+	// Legacy cache entries contain only encoded bytes, without final redirect
+	// origins or response headers. Keep those remote pixels opaque to readback.
+	decoded.set_is_cors_cross_origin(resource_url.scheme() in ['http', 'https'])
+	return decoded
+}
+
+fn browser_fetch_image_request(element &dom.HTMLImageElement, model &html.HTMLImageElementModel,
+	resource_url dom.URL) !html.DecodedImageData {
+	if resource_url.scheme() in ['http', 'https'] && model.crossorigin() != .no_cors {
+		native_element := unsafe { &dom.Element(element) }
+		owner := native_element.document()
+		origin := if owner.origin().value == '' { owner.url.origin() } else { owner.origin() }
+		if !resource_url.origin().is_same_origin(origin) {
+			// The compact byte cache does not retain CORS response headers. A
+			// CORS-mode request cannot approve an unverified cross-origin response.
+			return error('Cross-origin image CORS responses are not supported by the native cache')
+		}
+	}
+	return browser_fetch_image_resource(resource_url)
 }
 
 fn browser_fetch_object_resource(resource_url dom.URL) !html.ObjectResourceResponse {
@@ -2420,7 +2444,7 @@ fn run_document_script_sources(document &dom.Document, current_url string, sourc
 		messages << 'JavaScript view-transition bindings: ${err.msg()}'
 		return none
 	}
-	mut image_host := browserjs.ImageHost.create(document, browser_fetch_image_resource, fn [document] (callback_runtime &browserjs.Runtime) ! {
+	mut image_host := browserjs.ImageHost.create_with_request_fetch(document, browser_fetch_image_request, fn [document] (callback_runtime &browserjs.Runtime) ! {
 		state := callback_runtime.evaluate_host('__ladybirdFinalize()')!
 		mut replay_messages := []string{}
 		apply_javascript_state(document, state, callback_runtime.canvas_elements_for_binding(), mut replay_messages)

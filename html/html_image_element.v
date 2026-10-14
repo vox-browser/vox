@@ -438,7 +438,8 @@ pub fn (mut image HTMLImageElementModel) update_the_image_data_impl(restart_anim
 		}
 		return
 	}
-	decoded.set_is_cors_cross_origin(image_response_is_cors_cross_origin(image, url))
+	decoded.set_is_cors_cross_origin(decoded.is_cors_cross_origin()
+		|| image_response_is_cors_cross_origin(image, url))
 	data := SharedResourceImageData{
 		data: decoded
 	}

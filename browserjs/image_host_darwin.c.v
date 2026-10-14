@@ -91,8 +91,7 @@ fn (mut host ImageHost) bind(arguments []voidptr) !voidptr {
 	key := host.runtime.binding_dom_string(arguments[1])!
 	element := host.element_for_binding(key)!
 	image := unsafe { &dom.HTMLImageElement(element) }
-	mut model := html.html_image_element_model_for_dom_element(image)
-	model.set_fetch_hook(host.fetch_hook)
+	mut model := host.configure_image_fetch(image)
 	host.records[wrapper] = &ImageHostRecord{ key: key, element: image, model: model }
 	host.runtime.bind_event_target(wrapper, unsafe { &dom.EventTarget(element) })!
 	C.JSObjectSetPrototype(host.runtime.context, wrapper, host.prototype)
@@ -139,6 +138,13 @@ fn (mut host ImageHost) get(receiver voidptr, arguments []voidptr) !voidptr {
 	record := host.records[receiver] or { return error('TypeError: HTMLImageElement receiver is not an image') }
 	property := host.runtime.binding_dom_string(arguments[0])!
 	return match property {
+		'crossOrigin' {
+			match record.model.crossorigin() {
+				.no_cors { C.JSValueMakeNull(host.runtime.context) }
+				.anonymous { host.runtime.binding_string('anonymous') }
+				.use_credentials { host.runtime.binding_string('use-credentials') }
+			}
+		}
 		'complete' { C.JSValueMakeBoolean(host.runtime.context, record.model.complete()) }
 		'naturalWidth' { C.JSValueMakeNumber(host.runtime.context, record.model.natural_width()) }
 		'naturalHeight' { C.JSValueMakeNumber(host.runtime.context, record.model.natural_height()) }
@@ -154,12 +160,13 @@ fn (mut host ImageHost) get(receiver voidptr, arguments []voidptr) !voidptr {
 }
 
 const image_host_bootstrap = r'(function(decode,get,setAttribute,bind){
- const apply=Reflect.apply,define=Object.defineProperty;
+ const apply=Reflect.apply,define=Object.defineProperty,String=globalThis.String;
  function HTMLImageElement(){throw new TypeError("Illegal HTMLImageElement constructor")}
  const prototype=HTMLImageElement.prototype;Object.setPrototypeOf(prototype,EventTarget.prototype);
  define(prototype,"decode",{value:function decode(){return apply(decodeNative,this,[])},writable:true,enumerable:true,configurable:true});
  const decodeNative=decode;
  for(const name of ["naturalWidth","naturalHeight","currentSrc"])define(prototype,name,{get:function(){return apply(get,this,[name])},enumerable:true,configurable:true});
+ define(prototype,"crossOrigin",{get:function(){return apply(get,this,["crossOrigin"])},set:function(value){const converted=value===null?null:String(value);setAttribute(this,"crossorigin",converted);const state=this.__state;if(state&&state.attributes){if(converted===null)delete state.attributes.crossorigin;else state.attributes.crossorigin=converted;state.attributesDirty=true;}},enumerable:true,configurable:true});
  define(prototype,Symbol.toStringTag,{value:"HTMLImageElement",configurable:true});
  define(globalThis,"HTMLImageElement",{value:HTMLImageElement,writable:true,configurable:true});
  define(globalThis,"__ladybirdImageBind",{value:bind,configurable:true});
