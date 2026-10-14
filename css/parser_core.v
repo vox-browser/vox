@@ -740,6 +740,21 @@ fn (mut arena TokenizerInputArena) release() {
 }
 
 fn decode_css_input(input string, encoding_name string) string {
+	// ASCII bytes already have their UTF-8 decoding. Avoid constructing a
+	// TextDecoder and round-tripping every parser input through UTF-16.
+	// Filtering CR, FF and NUL remains the caller's next step.
+	if encoding_name == 'utf-8' {
+		mut ascii := true
+		for byte in input {
+			if byte >= 0x80 {
+				ascii = false
+				break
+			}
+		}
+		if ascii {
+			return input
+		}
+	}
 	decoder := text_encoding.TextDecoder.construct(encoding_name,
 		text_encoding.TextDecoderOptions{}) or {
 		panic('VERIFY(TextCodec::decoder_for(${encoding_name}).has_value())')
