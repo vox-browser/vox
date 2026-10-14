@@ -5107,7 +5107,7 @@ pub fn (c &ComputedProperties) transitions() []TransitionProperties {
 		if !equals_ignoring_ascii_case(property_name, 'none') {
 			if transition_property := property_id_from_string(property_name) {
 				candidates := if property_is_shorthand(transition_property) {
-					longhands_for_shorthand_local(transition_property)
+					generated_expanded_longhands_for_shorthand(transition_property)
 				} else {
 					[transition_property]
 				}
