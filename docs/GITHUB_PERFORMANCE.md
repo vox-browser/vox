@@ -809,6 +809,84 @@ startup smoke and in-bundle signature verification. Evidence is in
 `instruction-opt9-signature-result.json`. GC and arena policy are unchanged.
 Chrome instruction or functionality parity remains unestablished.
 
+The follow-up layout trace found that the two initial geometry passes are not
+duplicates: two pending size-query containers require reevaluation, which
+changes ten descendants' `display` values (`flex` to `none` and `block` to
+`inline-block`). The second pass rebuilds for those changes. It was retained.
+The C `-O0` diagnostic and capture are saved as
+`Build/v/instruction-opt10-layout-trace*` and
+`Build/instructions/vox-opt10-layout-trace.run-1.log`; their instruction counts
+are not normal-build performance results.
+
+## Rejected ASCII CSS decoding shortcut
+
+A follow-up experiment reused ASCII input for the canonical `utf-8` label,
+avoiding a TextDecoder construction and a UTF-16 round trip for every such CSS
+parser input. CR/FF/NUL filtering remained in the tokenizer; non-ASCII input
+and other labels retained their decoder. Four cases covered all ASCII bytes,
+BOM handling, malformed UTF-8, alternate encodings, token positions, and token
+retention after the producer returned and collections ran. They passed in both
+GC modes and with C `-O2`. The C `-O2` fixture also ran its instruction loop,
+but the successful V test runner suppressed that loop's counter output; no
+isolated decoding instruction numbers are claimed from it.
+
+Ten interleaved normal C `-O2` pairs showed a first-frame regression:
+
+| Build | Median installation instructions, rounded | Median navigation through first native frame |
+| --- | ---: | ---: |
+| Retained animation/SVG control | 33,255,771,839 | 36,636,857,516 |
+| ASCII decoding experiment | 33,073,972,251 | 37,528,208,124 |
+
+Installation improved **0.55%**, but first-frame instructions increased
+**891,350,608 (2.43%)**, with nine of ten paired first-frame counts worse.
+The separate allocation diagnostic nevertheless counted 14,792,339 to
+14,537,213 managed calls and 2,738,588,542 to 2,705,547,605 requested bytes
+through first paint: 255,126 fewer calls and 33,040,937 fewer requested bytes.
+A separate normal-build GC-statistics pair observed 29 versus 30 collections
+by first paint, demonstrating changed collector pacing. That one diagnostic
+pair does not attribute the entire median difference to GC. Allocation-call
+reductions alone remain insufficient evidence of a page-level instruction gain.
+
+The experiment was committed at `97c69dfb` and reverted at `def3c1cb`.
+Its source and four tests remain in
+`Build/v/instruction-opt10-rejected-ascii.patch`, with the optimized fixture at
+`Build/v/opt10-decoding-microbenchmark-test.v.txt`. Raw counters and summary use
+`Build/instructions/vox-opt10-interleaved-*`; allocation reports use
+`vox-opt10-ascii-allocation-scopes*` and
+`vox-opt10-first-frame-allocation-summary.json`. GC diagnostics use
+`vox-opt10-{before,final}-gcstats*` and
+`Build/v/instruction-opt10-gcstats-summary.json`.
+
+The saved control is `Build/v/Vox-opt9-final-bin`, SHA-256
+`b7c59ca6b6f4c1f6bd4759f8a95f56f11be01b86fce3dfdde7d4e4931176a5b2`.
+The rejected candidate is `Build/v/Vox-opt10-ascii-bin`, SHA-256
+`c55d81e515c36c01bf81c99d606263635e220b9940669f48bd4a8a375458fe98`.
+Both use the same immutable cache fingerprint and the same freshly rebuilt
+shared library, SHA-256
+`4eef3aa87146e510d851b5993358a1bbd15dc5d727a1d7872769cdba90f8cd14`.
+That library remained unchanged through all twenty runs. It differs from the
+preceding round's library artifact; no cross-round instruction difference is
+credited to this rebuild.
+
+An independent media-handler commit landed after V generated the candidate C.
+The initial source guard stopped the comparison. The captured C was then
+compared against the saved control: replacing just the decoder body made all
+code agree after normalizing generated anonymous/local identifiers, assertion
+line numbers, and qsort-helper ordering. The later `bc80a4b7` media changes are
+absent from both executables. This evidence is recorded in
+`Build/v/instruction-opt10-source-comparison-proof.json`; the full captured C is
+`instruction-opt10-candidate.c`. All twenty measured runs record one document
+installation and a final root-process exit sample.
+
+The canonical `Build/v/Vox.app` was restored to the retained control's exact
+executable bytes and passes signature verification and startup smoke with the
+current shared library. Its pinned source predates `bc80a4b7`. Results are in
+`Build/v/instruction-opt10-{restored-bundle-result.json,restored-smoke.log}`.
+Neither this experiment nor the preceding animation/SVG comparison credits a
+positive first-frame saving. The prepared 71-case/two-GC and nineteen-viewport
+broad batch was skipped; the last completed performance broad baseline remains
+`cc8c4e7c`, with zero new credited instructions saved toward the next 5,000,000.
+
 ## Causes and changes
 
 - The V 0.5.2 compatibility compiler's `-prod` Boehm code repeatedly snapshots
