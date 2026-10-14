@@ -2617,3 +2617,21 @@ Global tables, pins, mappings and historical ledgers stay preserved;
 accounting adds no behavioral or test credit. Batch remains 7/10 after
 aa6f0246, since this independent documentation commit is not another
 translation fix. See [evidence](docs/translation-audit/NATIVE_MEDIA_PROGRESS_RAW_HANDLER.md).
+
+Native compact media raw `onabort` / `onemptied` (`50d3cd34`, 2026-10-14 UTC):
+Owner-local HTML audio/video reset attributes compile lazily through the
+existing name-aware native compiler and ordered content-attribute replay.
+Actual source-empty JavaScript load calls discard only each owner's pending
+media tasks and queue abort, emptied and a conditional position timeupdate.
+Parsed video and created audio retain callback caches/scopes, native Event
+identity, owner gates, live replacement/reentrant load/removal and painting.
+Closed scripting gates preserve raw strings; a strict abort exception leaves
+later listeners and the separate emptied task intact. Six cases in two files
+pass in both GC modes. V's existing eager empty-resource selection exposes
+Empty(0), differing from upstream's immediate NoSource(3) and queued
+stable-state selection; that timing deviation remains. No complete source
+selection/EMPTY-reset, prior promises, play/seek policy, network/fetch,
+decoder/backend or timer-boundary credit is claimed. Four current files and
+two exact main gates are authenticated through retained snapshots, with no
+full-current/foreign-main test credit. Batch: 8/10 after aa6f0246; production
+and broad suites remain deferred. See [evidence](docs/translation-audit/NATIVE_MEDIA_RESET_RAW_HANDLER.md).
