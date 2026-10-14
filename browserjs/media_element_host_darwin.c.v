@@ -13,11 +13,12 @@ pub fn (mut host MediaElementHost) install(mut runtime Runtime) ! {
 	runtime.bind_scripting_environment(host.settings)!
 	runtime.install_event_target_binding()!
 	runtime.install_time_ranges_binding()!
+	runtime.install_media_error_binding()!
 	runtime.install_dom_exception_binding()!
 	host.runtime = &runtime
 	handle := voidptr(&host)
 	mut getters := []voidptr{}
-	for name in ['buffered', 'currentSrc', 'networkState', 'readyState', 'seeking', 'duration', 'paused', 'ended', 'defaultPlaybackRate', 'playbackRate', 'volume', 'muted', 'currentTime'] {
+	for name in ['buffered', 'currentSrc', 'networkState', 'readyState', 'seeking', 'duration', 'paused', 'ended', 'defaultPlaybackRate', 'playbackRate', 'volume', 'muted', 'currentTime', 'error'] {
 		getters << runtime.make_native_value_host_function('get ${name}', 0, fn [handle, name] (receiver voidptr, _ []voidptr) !voidptr {
 			mut host := unsafe { &MediaElementHost(handle) }
 			return host.get(name, receiver) or {
@@ -167,6 +168,10 @@ fn (mut host MediaElementHost) get(name string, receiver voidptr) !voidptr {
 		'volume' { C.JSValueMakeNumber(host.runtime.context, media.volume()) }
 		'muted' { C.JSValueMakeBoolean(host.runtime.context, media.muted()) }
 		'currentTime' { C.JSValueMakeNumber(host.runtime.context, media.current_time()) }
+		'error' {
+			if failure := media.error() { host.runtime.javascript_media_error(failure)! }
+			else { C.JSValueMakeNull(host.runtime.context) }
+		}
 		else { return error('Unknown media element getter') }
 	}
 }
@@ -318,6 +323,7 @@ const media_element_native_factory = r'(function(getters,setters,bind,fastSeek,g
  for(let i=0;i<names.length;i++)define(prototype,names[i],{get:getters[i],enumerable:true,configurable:true});
  const properties=["defaultPlaybackRate","playbackRate","volume","muted","currentTime"];
  for(let i=0;i<properties.length;i++)define(prototype,properties[i],{get:getters[names.length+i],set:setters[i],enumerable:true,configurable:true});
+ define(prototype,"error",{get:getters[names.length+properties.length],enumerable:true,configurable:true});
  const handlerNames=__MEDIA_HANDLER_NAMES__;
  for(let i=0;i<handlerNames.length;i++)define(prototype,"on"+handlerNames[i],{get:handlerGetters[i],set:handlerSetters[i],enumerable:true,configurable:true});
  define(prototype,"fastSeek",{value:fastSeek,writable:true,enumerable:true,configurable:true});
