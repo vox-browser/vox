@@ -676,3 +676,22 @@ Global tables, pins, source mappings and historical ledgers are preserved;
 accounting adds no test or behavioral parity credit. Batch counter remains
 5/10 after aa6f0246; this documentation commit is not another translation fix.
 See [evidence](../docs/translation-audit/NATIVE_MEDIA_TIMELINE_RAW_HANDLER.md).
+
+Native compact media raw `onseeking` / `onseeked` (`b864154a`, 2026-10-14 UTC):
+Owner-local HTML audio/video seek attributes compile lazily through the
+existing name-aware native compiler and ordered content-attribute replay.
+Controlled metadata/range/clock hooks exercise parsed-video currentTime
+accurate seeks and created-audio fastSeek fast-after requests. Actual seeking
+tasks observe the live seeking flag; native completion clears it before
+timeupdate and seeked delivery. Element -> Document -> Global scope, Event
+identity, cache and owner gates, live prequeued/reentrant replacement/removal,
+strict original exceptions, later listeners and retained DOM painting pass
+six cases in two selected files in both GC modes. HAVE_NOTHING and failed conversion paths
+queue no seek events. Real network, decode, backend completion,
+cancellation, seeks without a playback manager, and full seek-range parity
+receive no new credit. The tested committed feature epoch supplies these passes. The initial seal
+refused concurrent foreign main.v paint changes; its actual failed record is
+retained. Four current owned files and two exact main gates are authenticated
+through retained snapshots; current foreign paint receives no pass credit.
+Production and broad suites remain deferred. Batch counter: 6/10 after aa6f0246.
+See [evidence](../docs/translation-audit/NATIVE_MEDIA_SEEK_RAW_HANDLER.md).
