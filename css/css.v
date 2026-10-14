@@ -862,6 +862,11 @@ pub fn serialize_a_number(value f64) string {
 }
 
 pub fn serialize_an_identifier(ident string) string {
+	// Ordinary ASCII identifiers need no escaping. Retain the immutable
+	// input instead of constructing a rune array and copying it to a builder.
+	if identifier_serializes_verbatim(ident) {
+		return ident
+	}
 	mut builder := strings.new_builder(ident.len)
 	runes := ident.runes()
 	first_character := if runes.len == 0 { rune(0) } else { runes[0] }
@@ -896,6 +901,27 @@ pub fn serialize_an_identifier(ident string) string {
 		builder.write_rune(character)
 	}
 	return builder.str()
+}
+
+fn identifier_serializes_verbatim(ident string) bool {
+	if ident.len == 0 {
+		return true
+	}
+	first := ident[0]
+	if first >= `0` && first <= `9` {
+		return false
+	}
+	if first == `-` && (ident.len == 1 || (ident[1] >= `0` && ident[1] <= `9`)) {
+		return false
+	}
+	for character in ident {
+		if character != `-` && character != `_` && !(character >= `0` && character <= `9`)
+			&& !(character >= `A` && character <= `Z`)
+			&& !(character >= `a` && character <= `z`) {
+			return false
+		}
+	}
+	return true
 }
 
 pub fn serialize_a_string(value string) string {
