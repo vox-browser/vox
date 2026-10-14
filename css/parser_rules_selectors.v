@@ -120,17 +120,15 @@ fn ParserTokenStream.from_tokens(tokens []Token) ParserTokenStream {
 	for !token_stream.next_token().is(.end_of_file) {
 		values << parser_consume_a_component_value_from_tokens(mut token_stream)
 	}
-	values << ComponentValue.from_token(Tokenizer.create_eof_token())
 	return ParserTokenStream{
 		values: values
 	}
 }
 
 fn ParserTokenStream.from_values(values []ComponentValue) ParserTokenStream {
-	mut stream_values := values.clone()
-	if stream_values.len == 0 || !stream_values[stream_values.len - 1].is(.end_of_file) {
-		stream_values << ComponentValue.from_token(Tokenizer.create_eof_token())
-	}
+	// Like upstream's token span, this stream borrows immutable component input
+	// and supplies EOF beyond that span. No copy or appended sentinel is needed.
+	stream_values := if values.len > 0 && values.last().is(.end_of_file) { values[..values.len - 1] } else { values }
 	return ParserTokenStream{
 		values: stream_values
 	}
@@ -144,10 +142,9 @@ fn (stream ParserTokenStream) has_next_token() bool {
 	return stream.index < stream.values.len && !stream.values[stream.index].is(.end_of_file)
 }
 
-// remaining_token_count returns the number of real (non-EOF) tokens left from the
-// current position. `values` always ends with an EOF sentinel, so it is excluded.
+// The stored span contains real tokens; EOF is supplied by next_token().
 fn (stream ParserTokenStream) remaining_token_count() int {
-	remaining := stream.values.len - 1 - stream.index
+	remaining := stream.values.len - stream.index
 	return if remaining < 0 { 0 } else { remaining }
 }
 
@@ -212,7 +209,7 @@ fn (mut stream ParserTokenStream) discard_a_mark() {
 }
 
 fn (stream ParserTokenStream) dump_string() string {
-	return parser_component_values_to_string(stream.values[..stream.values.len - 1])
+	return parser_component_values_to_string(stream.values)
 }
 
 fn (stream ParserTokenStream) tokens_since(start_index int) []ComponentValue {
@@ -1383,7 +1380,7 @@ fn (mut parser RuleSelectorParser) convert_to_import_rule(rule AtRule) ?&CSSRule
 	}
 
 	media_text :=
-		parser_component_values_to_string(tokens.values[tokens.index..tokens.values.len - 1]).trim_space()
+		parser_component_values_to_string(tokens.values[tokens.index..]).trim_space()
 	mut media_queries := []&MediaQuery{}
 	if media_text.len != 0 {
 		media_queries = parse_css_media_query_list_value_logic(media_text)
@@ -2084,7 +2081,7 @@ fn parse_function_css_type(mut tokens ParserTokenStream) ?SyntaxNode {
 	transaction_index := tokens.index
 	tokens.discard_whitespace()
 
-	mut component_tokens := ComponentValueTokenStream.new(tokens.values[tokens.index..tokens.values.len - 1])
+	mut component_tokens := ComponentValueTokenStream.new(tokens.values[tokens.index..])
 	if syntax_component := parse_syntax_component(mut component_tokens, .no) {
 		tokens.index += component_tokens.index
 		return syntax_component
@@ -2889,7 +2886,7 @@ fn parse_counter_style_additive_symbols_descriptor_value(value string) ?CounterS
 
 fn parse_page_selector_list_for_rule_parsing(mut tokens ParserTokenStream) ?PageSelectorList {
 	text := tokens.dump_string().trim_space()
-	tokens.index = tokens.values.len - 1
+	tokens.index = tokens.values.len
 	return parse_page_selector_list(text)
 }
 

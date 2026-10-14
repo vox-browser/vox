@@ -78,3 +78,34 @@ fn test_token_stream_marks() {
 	stream.restore_a_mark() // Back to 0
 	assert stream.remaining_token_count() == 7
 }
+
+fn test_component_token_stream_borrows_input_and_provides_virtual_eof() {
+	values := [ComponentValue.from_token(ident_token('one')), ComponentValue.from_token(ident_token('two'))]
+	mut stream := ParserTokenStream.from_values(values)
+	assert stream.values.data == values.data
+	assert stream.remaining_token_count() == 2
+	assert stream.dump_string() == 'onetwo'
+	stream.mark()
+	stream.consume_a_token()
+	stream.consume_a_token()
+	assert !stream.has_next_token()
+	assert stream.next_token().is(.end_of_file)
+	assert stream.peek_token(0).is(.end_of_file)
+	assert stream.tokens_since(0).len == 2
+	stream.consume_a_token()
+	assert stream.tokens_since(0).len == 2
+	stream.restore_a_mark()
+	assert stream.remaining_token_count() == 2
+	assert stream.peek_token(1).is_ident('two')
+	assert values.len == 2
+	with_eof := [values[0], values[1], ComponentValue.from_token(Tokenizer.create_eof_token())]
+	mut sentinel_stream := ParserTokenStream.from_values(with_eof)
+	assert sentinel_stream.values.data == with_eof.data
+	assert sentinel_stream.remaining_token_count() == 2
+	assert sentinel_stream.dump_string() == stream.dump_string()
+	mut empty := ParserTokenStream.from_values([]ComponentValue{})
+	assert empty.is_empty()
+	assert empty.remaining_token_count() == 0
+	assert empty.dump_string() == ''
+	assert empty.consume_a_token().is(.end_of_file)
+}
