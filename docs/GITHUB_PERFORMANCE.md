@@ -1282,6 +1282,104 @@ executable SHA-256 to
 `d55690f5cd2bef86b5720261946d8b3cca2c8be67635a642dc3a66036d112ac5`.
 Evidence uses `Build/v/instruction-opt14-bundle-*`. Relaunch Vox to use it.
 
+## Native CSS pixel ties-to-even rounding
+
+Feature `0f4faeec` replaces the software `math.round_to_even()` conversion in
+`CSSPixels.nearest_value_for()` with Clang's fixed-rounding intrinsic. The
+AArch64 production code uses `FRINTN`; it does not read the ambient rounding
+direction as `rint()` or `nearbyint()` would. NaN handling and raw integer
+saturation remain unchanged, and other V C compilers retain the portable path.
+The earlier `v -profile` dump (`Build/v/github-v-profile.txt`) recorded 38.3
+million calls to this conversion across its multiple-layout diagnostic; that
+count identifies the hot path, not one isolated GitHub navigation.
+
+Four new focused tests cover positive and negative halfway cases, representable
+neighbors of ties, saturation boundaries, NaNs, infinities, signed zero,
+subnormals, 8192 deterministic float bit patterns, and all four ambient rounding
+modes. Together with fourteen existing CSS pixel tests, all **18 cases pass in
+both GC modes**, including C `-O2` with Boehm. This changes arithmetic work rather
+than ownership: production retains Boehm and JavaScriptCore, without global
+`-prealloc` or V `-prod`.
+
+The normal optimized candidate inlines every use of the small conversion and
+has no standalone nearest-value symbol, so the initial direct-call debugger
+diagnostic could not run against it. That setup result is retained under
+`instruction-opt15-inprocess-*`. A second diagnostic measures the unchanged,
+retained `CSSPixelPoint.from_values()` entry point in both normal binaries. It
+performs two pixel roundings per call. Across three interleaved pairs of one
+million calls, the median is **121,107,471 → 67,031,682 instructions (44.65%
+fewer)**. All checksums match an independent expected sum of −1,073,728. Hardware
+snapshots inside the debugger expression exclude stop/trap overhead; the
+identical expression loop remains in both counts. This is a point-construction
+diagnostic, not a page measurement. Evidence is
+`Build/v/instruction-opt15-point-probe-result.json` and its command/log files.
+
+Thirty interleaved GitHub pairs were fixed before observing results. Both
+binaries use normal C `-O2`/Boehm, the same frozen native library and immutable
+cache, fresh cache copies, a 1024×768 viewport, and alternating pair order.
+
+| Build | Median navigation through first submitted native document frame |
+| --- | ---: |
+| Portable pixel rounding | 34,985,509,358 |
+| Native pixel rounding | 34,612,742,404 |
+
+The matched first-frame median falls **372,766,954 instructions (1.07%)**.
+Twenty-two pairs improve; the paired median saving is **319,311,618.5**.
+Its 95% paired percentile bootstrap interval is **126,125,054 to 534,252,632.5**
+instructions (30,000 resamples, seed 15), and the one-sided sign probability is
+0.0081. All sixty captures have valid geometry and one installation per run,
+with no later refresh installations. Both builds retain two required geometry
+passes and one shell paint recording before the primary endpoint. No runs were
+discarded. The first native `navigation_to_first_document_paint` scope remains
+the comparison; process-exit totals and diagnostic intervals are separate.
+
+The control reuses the previous measured candidate after verifying every
+captured runtime source hash against the workspace before editing. The C
+captures differ only in the rounding function after normalizing generated
+anonymous-function file indices and multi-return temporary names; all 120
+common object/archive inputs retain their hashes. Provenance is in
+`Build/v/instruction-opt15-matching-provenance.json`; the fixed sampling plan is
+`instruction-opt15-measurement-plan.json`. Raw reports and summary use
+`Build/instructions/vox-opt15-interleaved-*`, with paired evidence in
+`Build/v/instruction-opt15-comparison-evidence.json`.
+
+The measured saving crossed the 5,000,000-instruction trigger, so **one** broad
+batch ran: 87 selected CSS/SVG/layout cases in each GC mode and 19 viewport
+comparisons, 16 pixel-exact. The same bounded differences remain for inline-node
+(13 pixels), text-decorations (1341), and canvas-text (1994). The focused
+intrinsic flex/grid/table viewport is pixel-exact before/after. Evidence is
+`Build/v/instruction-opt15-validation-result.json`, `instruction-opt15-broad-*`,
+`instruction-opt15-screenshots.log`, and
+`Build/comparisons/instruction-opt15-{intrinsic,batch}/`.
+
+The new broad-test baseline is `0f4faeec` at **34,612,742,404** first-frame
+instructions, with this saving included and zero additional instructions saved
+toward the next 5,000,000. Compare against the matching current control above;
+the preceding round's historical median is a separate sample. Chrome
+instruction and functionality parity remain unestablished, including the
+existing GitHub module-hydration gap.
+
+The signed canonical `Build/v/Vox.app` contains the measured snapshot. Before
+installation its executable and code section matched the unchanged installed
+control exactly. Concurrent media progress/suspend source work appeared after
+capture; it remains in the workspace and is not included in this measured
+snapshot. The installer therefore guarded the exact installed control plus the
+owned optimization sources, rather than overwriting a newer independently
+built app. The candidate and installed `__TEXT,__text` hashes match, and strict
+signature verification and headless startup pass. A missing Python import in
+the initial verification helper stopped installation before any copy; only
+installation/verification resumed after correction, preserving the completed
+unit, screenshot and instruction results.
+
+The control SHA-256 is
+`57b4cb60ea60c70fa79c2a2e7be56db9bc0b4e143e7630385d663b71958fb965`;
+the candidate is
+`09db0c5e0d1f84c79816e854ad1f05925b2afd8eee2214c815579e55b1f3cfd2`.
+Bundle signing changes the installed executable hash to
+`98b7473632294a02824ebe7161d84a19dac006bbc727e434ae8952e08f716f1e`.
+Installation guards, later source differences and signature/code checks are in
+`Build/v/instruction-opt15-bundle-*`. Relaunch Vox to use it.
+
 ## Causes and changes
 
 - The V 0.5.2 compatibility compiler's `-prod` Boehm code repeatedly snapshots

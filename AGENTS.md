@@ -1358,14 +1358,14 @@ evidence](docs/translation-audit/NATIVE_MEDIA_WHEEL_RAW_HANDLER.md).
   broad verification. Compare the same benchmark endpoint and workload, record
   the measured baseline and accumulated savings, and do not run broad suites
   for every individual fix below that threshold.
-  The latest performance broad batch is deferred native frame paint `31ba3356`:
-  87 selected CSS/SVG/layout cases and 11 focused native frame checks passed in
-  both GC modes; 19 screenshot comparisons passed (16 pixel-exact). Its candidate
-  GitHub first-frame median is 35,155,866,846 instructions, with zero additional
-  savings accumulated. Thirty matching pairs measure 1,160,563,641 fewer
-  instructions (3.20%); 22 pairs improve and the paired bootstrap interval is
-  positive. One later background refresh is outside the measured first-frame
-  endpoint. See `docs/GITHUB_PERFORMANCE.md` for scope and provenance.
+  The latest performance broad batch is native CSS pixel rounding `0f4faeec`:
+  87 selected CSS/SVG/layout cases and 18 focused pixel checks passed in both GC
+  modes; 19 screenshot comparisons passed (16 pixel-exact). Its candidate GitHub
+  first-frame median is 34,612,742,404 instructions, with zero additional savings
+  accumulated. Thirty matching pairs measure 372,766,954 fewer instructions
+  (1.07%); 22 pairs improve and the paired bootstrap interval is positive.
+  The normal-binary point-construction diagnostic improves 44.65%. See
+  `docs/GITHUB_PERFORMANCE.md` for scope, provenance and the measured app snapshot.
 - Outside instruction-count optimization, run broad regression suites once per
   ten completed fixes, not after every fix.
   Broad suites include full translation/package test batches, the full LibJS AST
