@@ -31,7 +31,7 @@ wheelCanvasContext.fillStyle="red";wheelCanvasContext.lineWidth=7;
 wheelCanvasContext.fillRect(599,279,1,1);
 wheelCanvasChecks.push(JSON.stringify(Array.from(wheelCanvasContext.getImageData(599,279,1,1).data))==="[255,0,0,255]");
 const again=wheelCanvas.getContext("2d");
-wheelCanvasChecks.push(again===wheelCanvasContext&&again.lineWidth===7&&again.fillStyle==="#ff0000"&&JSON.stringify(Array.from(again.getImageData(599,279,1,1).data))==="[255,0,0,255]");0
+wheelCanvasChecks.push(again===wheelCanvasContext&&again.lineWidth===7&&again.fillStyle==="rgb(255 0 0)"&&JSON.stringify(Array.from(again.getImageData(599,279,1,1).data))==="[255,0,0,255]");0
 '], runtime, mut messages)
 	assert messages == []
 	assert runtime.evaluate_host('wheelCanvasChecks.length===2&&wheelCanvasChecks.every(Boolean)')! == 'true'
@@ -48,8 +48,8 @@ wheelCanvasChecks.push(again===wheelCanvasContext&&again.lineWidth===7&&again.fi
 	context := html.html_canvas_element_get_context(canvas, '2d', none)!
 	bitmap := context.surface() or { panic('created canvas surface missing') }
 	assert bitmap.width == 600 && bitmap.height == 280
-	assert context.get_image_data(599, 279, 1, 1, none)!.data() == [u8(255), 0, 0, 255]
-	assert context.get_image_data(0, 0, 1, 1, none)!.data() == [u8(0), 0, 0, 0]
+	assert (context.get_image_data(599, 279, 1, 1, none)!).data() == [u8(255), 0, 0, 255]
+	assert (context.get_image_data(0, 0, 1, 1, none)!).data() == [u8(0), 0, 0, 0]
 	mut app := &BrowserApp{
 		page_model: owner
 		document: document
@@ -71,7 +71,7 @@ wheelCanvasChecks.push(again===wheelCanvasContext&&again.lineWidth===7&&again.fi
 	again := html.html_canvas_element_get_context(canvas, '2d', none)!
 	assert voidptr(again) == voidptr(context)
 	assert html.html_canvas_element_width(canvas) == 600 && html.html_canvas_element_height(canvas) == 280
-	assert again.get_image_data(599, 279, 1, 1, none)!.data() == [u8(255), 0, 0, 255]
+	assert (again.get_image_data(599, 279, 1, 1, none)!).data() == [u8(255), 0, 0, 255]
 	assert runtime.evaluate_host('wheelCanvas.getContext("2d")===wheelCanvasContext&&wheelCanvasContext.lineWidth===7&&JSON.stringify(Array.from(wheelCanvasContext.getImageData(599,279,1,1).data))==="[255,0,0,255]"')! == 'true'
 	settings := unsafe { &html.EnvironmentSettingsObject(document.relevant_settings_object()) }
 	assert settings.realm().reported_exceptions.len == 0
