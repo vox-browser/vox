@@ -174,8 +174,8 @@ fn test_raw_element_wheel_strict_callbacks_preserve_original_exceptions_page_gat
 	assert native_target.dispatch_event(element_raw_wheel_event(fixture))
 	assert runtime.evaluate_host('rawRuns===1&&rawStrict&&window.event===undefined')! == 'true'
 	assert fixture.settings.realm().reported_exceptions.len == 1
-	reasons := runtime.take_reported_javascript_exception_values()
-	assert reasons.len == 1 && reasons[0] == runtime.evaluate_host_value('rawThrown')!
+	reported := fixture.settings.realm().reported_exceptions[0].value.as_webidl_value()!
+	assert runtime.actual_webidl_value(reported)! == runtime.evaluate_host_value('rawThrown')!
 	assert voidptr(native_target.get_current_value_of_event_handler('wheel') or { panic('cached throwing callback') }) == voidptr(callback)
 	assert runtime.javascript_event_handler(native_target, 'wheel')! == actual
 	window_target := fixture.settings.global_object()
