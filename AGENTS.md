@@ -1463,3 +1463,13 @@ checks. Six new cases and the two changed binding boundary fixtures pass:
 now use onerror; other raw media names and unavailable/foreign owners remain
 open. Production and broad regression suites are deferred under the user's
 ten-fix cadence. Batch counter: 3/10 after aa6f0246. See [evidence](docs/translation-audit/NATIVE_MEDIA_DATA_RAW_HANDLER.md).
+
+Native compact media raw metadata/data-handler scoped inventory (`f9ec154f`,
+2026-10-14 UTC): All seven owned browser/root support paths are excluded under
+the sealed 78-owner rules. Independent feature/parent physical-LF accounting
+adds zero assigned DOM files, implementation lines and test lines. Counter:
+`Build/audit-fixes/native-media-data-raw-handler-inventory-scoped-v1.json` (SHA256 `347a64f0ce1cf3a34bdbfd5645693321965b25bc2df0dd4d2979c6e9b46df767`).
+Global tables, pins, source mappings and historical ledgers remain preserved;
+accounting adds no test or behavioral parity credit. Batch counter remains
+3/10 after aa6f0246; this documentation commit is not another translation fix.
+See [evidence](docs/translation-audit/NATIVE_MEDIA_DATA_RAW_HANDLER.md).
