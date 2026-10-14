@@ -456,3 +456,12 @@ Signed build/startup, two exact handler pages, all 11 smoke cases (eight exact) 
 eight exact SVG regressions passed. Current global inventory and historical records
 remain intact. See [Element onwheel
 evidence](../docs/translation-audit/NATIVE_ELEMENT_WHEEL_HANDLER.md).
+
+Native compact Element wheel-handler scoped inventory (`d86d5ac2`, 2026-10-14 UTC): all
+six owned browser/root implementation and test paths remain excluded by the existing
+translation-owner rules. Each owned commit has zero assigned-file, implementation-LOC
+and test-LOC delta against its own parent. This append keeps current global tables, pins
+and historical ledgers intact. Counter:
+`Build/audit-fixes/native-element-wheel-handler-inventory-scoped-v1.json` (SHA256
+`e9b99ef0d72ed5fe2595c7a02c3bc59fa17c1851853fffd8e03b67189e8ae507`). [Element onwheel
+evidence](../docs/translation-audit/NATIVE_ELEMENT_WHEEL_HANDLER.md).
