@@ -776,12 +776,12 @@ fn log_parse_error() {}
 fn filter_code_points(input string, encoding string) string {
 	decoded_input := decode_css_input(input, encoding)
 
-	// OPTIMIZATION: If the input doesn't contain any filterable characters, we can skip the filtering
+	// The decoder produces valid UTF-8: CR, FF and NUL occur only as single
+	// bytes, and surrogate code points cannot occur. Probe bytes before paying
+	// for scalar iteration in the replacement path below.
 	mut contains_filterable := false
-	for code_point in decoded_input.runes_iterator() {
-		code_point_u32 := u32(code_point)
-		if code_point_u32 == `\r` || code_point_u32 == `\f` || code_point_u32 == 0
-			|| is_unicode_surrogate(code_point_u32) {
+	for byte in decoded_input {
+		if byte == `\r` || byte == `\f` || byte == 0 {
 			contains_filterable = true
 			break
 		}
