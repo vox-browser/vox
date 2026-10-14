@@ -283,9 +283,11 @@ globalThis.mcpEndIDL=function(event){mcpOrder.push("idl-ended");mcpSaved.push(ev
 	media_completion_raw_owner_bridge(mut runtime, model, media)!
 	end_body := r'mcpOrder.push("replacement-ended");mcpSaved.push(event);mcpChecks.push(this===mcpVideo&&event.isTrusted&&event.target===this&&event.currentTarget===this&&window.event===event&&this.ended&&this.paused&&this.currentTime===1&&__mediaCompletionRawOwnerContext()&&__mediaCompletionRawDimensions200());this.onended=mcpEndIDL;__mediaCompletionRawQueueEnd();return false;'
 	resize_body := r'mcpOrder.push("replacement-resize");mcpSaved.push(event);mcpChecks.push(this===mcpVideo&&event.isTrusted&&event.target===this&&event.currentTarget===this&&window.event===event&&this.ended&&!this.paused&&this.currentTime===1&&__mediaCompletionRawOwnerContext()&&__mediaCompletionRawDimensions100());this.setAttribute("onended",mcpNextEnd);void this.paused;__mediaCompletionRawQueueResize();this.onresize=mcpResizeIDL;document.getElementById("mcp-result").textContent="reentrant native completion painted";return false;'
+	superseded_resize_body := 'mcpOrder.push("superseded-resize");'
+	superseded_end_body := 'mcpOrder.push("superseded-ended");'
 	model.set_video_dimensions(100, 50)
 	media.reached_end_of_media_playback()
-	assert runtime.evaluate_host('globalThis.mcpNextEnd=${json2.encode(end_body)};mcpVideo.setAttribute("onresize","mcpOrder.push(\"superseded-resize\");");mcpVideo.setAttribute("onended","mcpOrder.push(\"superseded-ended\");");mcpVideo.setAttribute("onresize",${json2.encode(resize_body)});mcpVideo.paused===false&&mcpOrder.length===0')! == 'true'
+	assert runtime.evaluate_host('globalThis.mcpNextEnd=${json2.encode(end_body)};mcpVideo.setAttribute("onresize",${json2.encode(superseded_resize_body)});mcpVideo.setAttribute("onended",${json2.encode(superseded_end_body)});mcpVideo.setAttribute("onresize",${json2.encode(resize_body)});mcpVideo.paused===false&&mcpOrder.length===0')! == 'true'
 	assert resize_slot.value.kind == .string && resize_slot.value.string_data == resize_body
 	(media_completion_raw_owner_take_task(document) or { panic('Missing prequeued resize task') }).execute()
 	assert runtime.evaluate_host('mcpOrder.join(",")==="replacement-resize"&&mcpVideo.onresize===mcpResizeIDL&&mcpSaved.length===1')! == 'true'
