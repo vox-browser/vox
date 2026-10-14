@@ -1336,3 +1336,16 @@ cases. Other raw handlers, unavailable/generic/foreign owners, close during acti
 partial named-property interfaces, anonymous JSC intrinsic source and physical input
 parity remain open. See [raw media wheel-handler
 evidence](docs/translation-audit/NATIVE_MEDIA_WHEEL_RAW_HANDLER.md).
+
+Native compact media raw wheel-handler scoped inventory (`ba8108a9`, 2026-10-14 UTC):
+The seven owned implementation/test paths are excluded browser/root support under the
+sealed owner rules. Verified assigned DOM delta: zero files, zero implementation lines
+and zero test lines. Actual independent feature/parent accounting: Against actual parent
+58149ba1, all seven feature paths are excluded browser/root support under the sealed
+78-owner assignment. Assigned DOM changes are zero files, zero implementation physical V
+lines and zero test physical V lines. Counter:
+`Build/audit-fixes/native-media-wheel-raw-handler-inventory-scoped-v1.json` (SHA256
+`db2fda4bc1e5b241de40e7d5f053316f180ca4c45baa7b99b329ac130a29ffed`) This append
+preserves existing global tables, pins, references, source-unit mappings and historical
+ledgers. See [raw media wheel-handler
+evidence](docs/translation-audit/NATIVE_MEDIA_WHEEL_RAW_HANDLER.md).
