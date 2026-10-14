@@ -1,6 +1,7 @@
 module svg
 
 import math
+import strings
 
 pub enum PathInstructionType {
 	move
@@ -46,18 +47,39 @@ pub fn (instruction PathInstruction) serialize() string {
 	if instruction.type_ == .close_path {
 		return 'Z'
 	}
-	mut letter := instruction_letter(instruction.type_).ascii_str()
+	mut builder := strings.new_builder(16)
+	instruction.append_serialization(mut builder)
+	return builder.str()
+}
+
+fn (instruction PathInstruction) append_serialization(mut builder strings.Builder) {
+	if instruction.type_ == .close_path {
+		builder.write_u8(`Z`)
+		return
+	}
+	mut letter := instruction_letter(instruction.type_)
 	if !instruction.absolute {
-		letter = letter.to_lower()
+		letter += 0x20
 	}
-	if instruction.data.len == 0 {
-		return letter
+	builder.write_u8(letter)
+	for value in instruction.data {
+		builder.write_u8(` `)
+		builder.write_string(format_number(value))
 	}
-	return letter + ' ' + instruction.data.map(format_number(it)).join(' ')
 }
 
 pub fn (path Path) serialize() string {
-	return path.instructions.map(it.serialize()).join(' ')
+	if path.instructions.len == 0 {
+		return ''
+	}
+	mut builder := strings.new_builder(path.instructions.len * 16)
+	for index, instruction in path.instructions {
+		if index > 0 {
+			builder.write_u8(` `)
+		}
+		instruction.append_serialization(mut builder)
+	}
+	return builder.str()
 }
 
 fn path_arity(kind PathInstructionType) int {
