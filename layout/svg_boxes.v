@@ -52,6 +52,15 @@ pub fn SVGGraphicsBox.new(document &dom.Document, element &dom.Element, computed
 @[heap]
 pub struct SVGGeometryBox {
 	SVGGraphicsBox
+mut:
+	cached_path_geometry &CachedSVGPathGeometry = unsafe { nil }
+}
+
+@[heap]
+struct CachedSVGPathGeometry {
+	instructions string
+	path         svg.Path
+	bounds       svg.Rect
 }
 
 pub fn SVGGeometryBox.new(document &dom.Document, element &dom.Element, computed_values &css.ComputedProperties) &SVGGeometryBox {

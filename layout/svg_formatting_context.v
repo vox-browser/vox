@@ -351,6 +351,15 @@ fn (mut context SVGFormattingContext) layout_path_like_element(graphics_box &Nod
 	mut graphics_state := context.state.get_mutable(styled)
 	element := svg_element_for_layout_node(graphics_box) or { return }
 	if graphics_box.is_svg_geometry_box() {
+		if element.local_name() == 'path' {
+			geometry := cached_svg_path_geometry(graphics_box)
+			stroke_width := visible_svg_stroke_width(graphics_box, context.viewport_size)
+			set_used_values_rect(mut graphics_state, inflate_svg_rect(quantize_svg_rect(geometry.bounds), stroke_width))
+			graphics_state.set_computed_svg_path(geometry.path)
+			graphics_state.set_has_definite_width(true)
+			graphics_state.set_has_definite_height(true)
+			return
+		}
 		path := svg.geometry_path(svg_geometry_element_model(graphics_box, element, context.viewport_size), context.viewport_size.width().to_double(), context.viewport_size.height().to_double())
 		bounds := svg_path_bounds(path) or { svg.Rect{} }
 		stroke_width := visible_svg_stroke_width(graphics_box, context.viewport_size)
@@ -371,6 +380,38 @@ fn (mut context SVGFormattingContext) layout_path_like_element(graphics_box &Nod
 	}
 	graphics_state.set_has_definite_width(true)
 	graphics_state.set_has_definite_height(true)
+}
+
+fn svg_computed_path_instructions(graphics_box &Node) string {
+	value := graphics_box.computed_values().typed_property_value(.d) or { return '' }
+	if value is css.BasicShapeStyleValue {
+		shape := value.basic_shape()
+		if shape is css.BasicShapePath {
+			return shape.path_instructions
+		}
+	}
+	return ''
+}
+
+fn cached_svg_path_geometry(graphics_box &Node) &CachedSVGPathGeometry {
+	mut geometry_box := unsafe { &SVGGeometryBox(graphics_box) }
+	instructions := svg_computed_path_instructions(graphics_box)
+	cached := geometry_box.cached_path_geometry
+	if cached != unsafe { nil } {
+		if cached.instructions == instructions {
+			return cached
+		}
+	}
+	// SVG path coordinates do not depend on the viewport. Layout probes can
+	// share this immutable parsed path while stroke and transforms stay live.
+	path := svg.parse_path_data(instructions)
+	geometry := &CachedSVGPathGeometry{
+		instructions: instructions
+		path: path
+		bounds: svg_path_bounds(path) or { svg.Rect{} }
+	}
+	geometry_box.cached_path_geometry = geometry
+	return geometry
 }
 
 fn (mut context SVGFormattingContext) layout_text_element(graphics_box &Node, element &dom.Element, mut graphics_state UsedValues) svg.Rect {
@@ -1173,18 +1214,7 @@ fn svg_geometry_element_model(graphics_box &Node, element &dom.Element, viewport
 	computed := graphics_box.computed_values()
 	match element.local_name() {
 		'path' {
-			value := computed.typed_property_value(.d) or {
-				model.attributes.delete('d')
-				return model
-			}
-			if value is css.BasicShapeStyleValue {
-				shape := value.basic_shape()
-				if shape is css.BasicShapePath {
-					model.attributes['d'] = shape.path_instructions
-					return model
-				}
-			}
-			model.attributes.delete('d')
+			model.attributes['d'] = svg_computed_path_instructions(graphics_box)
 			return model
 		}
 		'circle' {
