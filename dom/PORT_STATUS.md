@@ -564,3 +564,13 @@ names and unavailable/foreign owners remain open. Production and broad
 regression suites are deferred under the user's ten-fix cadence. Batch counter:
 1/10 after aa6f0246. The preexisting synchronous buffering-drop waiting path is
 outside this slice and differs from the pinned upstream FIXME. See [evidence](../docs/translation-audit/NATIVE_MEDIA_READINESS_RAW_HANDLER.md).
+
+Native compact media raw readiness-handler scoped inventory (`2aab6ba2`,
+2026-10-14 UTC): All eight owned browser/root support paths are excluded under
+the sealed 78-owner rules. Independent feature/parent physical-LF accounting
+adds zero assigned DOM files, implementation lines and test lines. Counter:
+`Build/audit-fixes/native-media-readiness-raw-handler-inventory-scoped-v1.json` (SHA256 `4a5ddcd1962bb29fa86e50defd18600203d011e90c3fb235276c46b3c3a07858`).
+Global tables, pins, source mappings and historical ledgers remain preserved;
+accounting adds no test or behavioral parity credit. Batch counter remains
+1/10 after aa6f0246; this documentation commit is not another translation fix.
+See [evidence](../docs/translation-audit/NATIVE_MEDIA_READINESS_RAW_HANDLER.md).
