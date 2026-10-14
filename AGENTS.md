@@ -1370,6 +1370,8 @@ evidence](docs/translation-audit/NATIVE_MEDIA_WHEEL_RAW_HANDLER.md).
   are distinct from the normal-page result. GC remains enabled with one marker.
   Chrome parity remains open. See `docs/GITHUB_PERFORMANCE.md` for uncertainty,
   sources, cache storage and the preserved independent native media scope.
+  A later independent app build retains this optimization; its signature, startup
+  and GC checks pass separately from the measured executable.
 - Outside instruction-count optimization, run broad regression suites once per
   ten completed fixes, not after every fix.
   Broad suites include full translation/package test batches, the full LibJS AST

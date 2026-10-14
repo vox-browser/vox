@@ -2717,11 +2717,20 @@ the focused viewport is exact. A launch produced no image after twelve
 completed comparisons; all six test passes and the twelve completed image
 comparisons were retained, and only the seven unfinished comparisons resumed.
 
-The measured candidate is installed in `Build/v/Vox.app`; ad-hoc signing,
+The measured candidate was installed in `Build/v/Vox.app`; ad-hoc signing,
 deep strict signature verification, headless startup and default/override GC
-marker checks pass. Native text SHA-256: `3d44b5a4208c993ac5d9456ffa20f6696ea63d8a080fc0c49eac88e68c64ec62`.
-The existing GUI process was not restarted. Independent native media changes
-remain preserved and excluded from these frozen comparison snapshots.
+marker checks passed. Its native text SHA-256 is
+`3d44b5a4208c993ac5d9456ffa20f6696ea63d8a080fc0c49eac88e68c64ec62`.
+A subsequent independent build replaced the app before the final audit. That
+newer app is preserved and includes the optimization: all 183 constructor
+instructions match after authenticating relocated constants and call targets.
+Signature, headless startup and default/override GC checks pass again for that
+app, whose native text SHA-256 is
+`9cf9a6c3c664c74533eff03f5b1dd36b533316ed9ea6add4d7fa80af24a56d8e`.
+The full independent build is not rebenchmarked and receives no additional
+instruction credit. The existing GUI process was not restarted by this round.
+Independent native media changes remain preserved; they are excluded from the
+frozen performance comparisons and present in the later independent app build.
 The broad baseline is `2cb35962` at 31,626,063,087
 instructions, with zero additional savings after this batch. Chrome
 instruction/functionality parity remains open; its earlier capture uses a
