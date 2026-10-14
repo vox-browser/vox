@@ -1358,14 +1358,18 @@ evidence](docs/translation-audit/NATIVE_MEDIA_WHEEL_RAW_HANDLER.md).
   broad verification. Compare the same benchmark endpoint and workload, record
   the measured baseline and accumulated savings, and do not run broad suites
   for every individual fix below that threshold.
-  The latest performance broad batch is native CSS pixel rounding `0f4faeec`:
-  87 selected CSS/SVG/layout cases and 18 focused pixel checks passed in both GC
-  modes; 19 screenshot comparisons passed (16 pixel-exact). Its candidate GitHub
-  first-frame median is 34,612,742,404 instructions, with zero additional savings
-  accumulated. Thirty matching pairs measure 372,766,954 fewer instructions
-  (1.07%); 22 pairs improve and the paired bootstrap interval is positive.
-  The normal-binary point-construction diagnostic improves 44.65%. See
-  `docs/GITHUB_PERFORMANCE.md` for scope, provenance and the measured app snapshot.
+  The latest performance broad batch is indexed layout ancestry `27011ca9`:
+  13 focused tree/ancestry cases passed in each GC mode, including optimized
+  Boehm. Six retained V group logs report 87 selected CSS/SVG/layout cases
+  passing per GC mode; 19 screenshot comparisons pass (16 exact), including
+  a three-case continuation after storage exhaustion. The original supervisor
+  terminal record is unavailable and receives no full-pass credit; completed
+  unit suites and screenshots were not repeated.
+  Its observed GitHub first-frame median is 33,850,149,374 instructions.
+  Only 17 of 30 matching pairs improve and the paired interval includes zero;
+  zero repeatable whole-page savings are credited and zero additional savings
+  accumulated. A controlled ancestry diagnostic improves 16.77%.
+  See `docs/GITHUB_PERFORMANCE.md` for uncertainty, provenance and app scope.
 - Outside instruction-count optimization, run broad regression suites once per
   ten completed fixes, not after every fix.
   Broad suites include full translation/package test batches, the full LibJS AST

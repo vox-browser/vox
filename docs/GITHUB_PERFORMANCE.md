@@ -1380,6 +1380,117 @@ Bundle signing changes the installed executable hash to
 Installation guards, later source differences and signature/code checks are in
 `Build/v/instruction-opt15-bundle-*`. Relaunch Vox to use it.
 
+## Indexed layout ancestry
+
+Feature `27011ca9` records preorder subtree ranges during the existing geometry
+indexing pass. Indexed ancestry queries compare bounds instead of repeatedly
+walking parent links. A shared validity record is invalidated by child mutation,
+and queries use the original parent walk until reindexing. Physical owner
+addresses keep copied nodes from borrowing another node's range. Partial subtree
+reindexing invalidates enclosing ranges; unstyled nodes participate in tree order
+without consuming geometry indices. The cost is 24 additional bytes per Node on
+this 64-bit build and one shared record per indexing pass. Ownership remains
+Boehm-managed, including retained layout graphs; global `-prealloc` and V
+`-prod` remain disabled, and the browser still uses JavaScriptCore.
+
+The earlier `v -profile` output in `Build/v/github-v-profile.txt` recorded
+6,402,057 layout ancestry calls across its multiple-layout diagnostic. It
+identifies the operation investigated here, rather than the current number of
+calls in one navigation. Eight new tests cover indexed ancestry against a parent
+walk for every pair in a 128-node tree, tree mutation and moves, replacements,
+partial reindexing, copied-node identity, geometry indexing and forced collection.
+With the four existing tree tests and the updated external-containing-block seed
+fixture, **13 focused cases / 34,102 assertions pass in each GC mode**, including
+C `-O2` with Boehm.
+
+A fixed three-pair diagnostic exercises one million varied ancestry queries over
+128 balanced nodes. Dedicated executables use the same V compatibility compiler,
+C `-O2` and Boehm, with tree construction and indexing outside the hardware counter
+scope. Every checksum matches the independent parent-walk expectation of 62,501.
+The median is **43,430,694 → 36,148,055 instructions
+(16.77% fewer)**; all three pairs improve. These are controlled
+ancestry counts, not page measurements. Evidence is
+`Build/v/instruction-opt16-diagnostic-{plan,result}.json` and the retained source,
+commands and logs. The first direct debugger probe could not find the ancestry
+symbol in the optimized browser. The first diagnostic compilation ran successfully
+but V removed its test executable, preventing subsequent paired runs. Those setup
+failures and initial diagnostic logs remain retained; `-keepc` retains the rebuilt
+diagnostic executables for the predeclared pairs. Browser measurements and broad
+unit tests were not repeated for either diagnostic correction.
+
+Thirty alternating GitHub pairs were fixed before observing results. The primary
+scope remains the first `navigation_to_first_document_paint` record, using fresh
+copies of the immutable cache, a 1024×768 document viewport, normal C `-O2`/Boehm
+binaries and the same frozen native library.
+
+| Build | Median instructions through first native document frame |
+| --- | ---: |
+| Parent walking | 34,632,915,358.5 |
+| Indexed ancestry | 33,850,149,374 |
+
+The observed median reduction is **782,765,984.5 instructions
+(2.26%)**, but only **17/30 pairs improve**.
+The paired median saving is 45,489,184; its 95% paired
+bootstrap interval is **-71,167,041.5 to
+610,838,477** instructions (30,000
+resamples, seed 16). The one-sided sign probability is
+0.2923. **A repeatable whole-page saving is not
+established.** The narrower formatting-interval comparison is also uncertain;
+these adjacent checkpoint intervals are not isolated self time. All sixty captures
+have valid geometry and one installation, with two required geometry passes and
+one shell paint recording before the first frame. No page samples were discarded.
+Raw reports use `Build/instructions/vox-opt16-interleaved-*`; paired evidence is
+`Build/v/instruction-opt16-comparison-evidence.json`.
+
+The fresh control captures committed runtime sources at `06dbde16`. Concurrent
+media abort/emptied changes are excluded from the frozen candidate source tree;
+its runtime differs from the control only in `layout/node.v` and
+`layout/tree_node.v`. Generated C restores repository source/header/resource path
+prefixes after compilation from that frozen tree. Remaining generated differences
+are cache implementation and derived Node initialization/equality/stringification,
+source-derived anonymous/embed identifiers, a new type shifting subsequent V type
+IDs, and owned assertion line numbers. All 120 common native object/archive inputs
+retain their hashes. See `Build/v/instruction-opt16-matching-provenance.json`.
+
+The observed median crossed the 5,000,000-instruction trigger, so **one** broad
+batch ran. Six retained V group logs report the **87 selected CSS/SVG/layout cases
+passing in each GC mode**. The focused intrinsic flex/grid/table viewport is
+pixel-exact before/after. The first screenshot batch completed sixteen comparisons
+before macOS reported a full disk. Its supervisor did not preserve a complete
+terminal result, so that initial supervisor receives no full-pass credit. Two
+derived normalized-C artifacts were compressed with their hashes retained, and
+only the three remaining screenshot cases resumed. Composed verification records
+**19 comparisons passing, 16 pixel-exact**, with the same bounded differences in
+inline-node, text-decorations and canvas-text. Neither unit suites nor completed
+screenshots repeated. Initial failure and continuation evidence are in
+`Build/v/instruction-opt16-validation-initial-failure.json`,
+`instruction-opt16-validation-result.json`, the broad/screenshot logs and
+`Build/comparisons/instruction-opt16-{intrinsic,batch}/`.
+
+The latest broad-verified candidate is `27011ca9` at an observed first-frame
+median of **33,850,149,374** instructions. **Zero repeatable
+page-level savings are credited**, with zero additional instructions accumulated
+since this batch. The controlled diagnostic does not contribute to that counter.
+Chrome instruction/functionality parity remains unestablished, including the
+existing GitHub module-hydration gap.
+
+The signed canonical `Build/v/Vox.app` contains this measured snapshot. Its prior
+executable was unchanged from the measured pixel-rounding bundle. The fresh
+control additionally includes the committed progress/suspend slice; those three
+runtime-file differences are authenticated against the captured HEAD. Later media
+abort/emptied source work remains intact and is excluded from this snapshot.
+Candidate and installed code hashes match, strict signature verification and
+headless startup pass, and the running browser was not restarted. Relaunch Vox to
+use the updated bundle. Installation evidence is
+`Build/v/instruction-opt16-bundle-{result,text-result}.json`.
+
+The control SHA-256 is
+`375d72a50389d253bba7c0f908dcaf00db61405c04b5902e3d1aedfcf337d993`;
+the candidate is
+`b36a057b58336992e80b0943e928642dd39af09983370459a9062d7e274590db`.
+Bundle signing changes the installed executable hash to
+`86b2bc6c5261cde99973d08fb737fcf095d0090c832de3244cd41e0acfc89223`.
+
 ## Causes and changes
 
 - The V 0.5.2 compatibility compiler's `-prod` Boehm code repeatedly snapshots
