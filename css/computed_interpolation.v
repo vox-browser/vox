@@ -5933,12 +5933,7 @@ pub fn (c &ComputedProperties) line_height() CSSPixels {
 	// before layout-facing values in resolve_computed_values_for_document().
 	if c.cached_first_available_computed_font_ != unsafe { nil } {
 		computed_font := c.cached_first_available_computed_font_
-		font := platform.Font{
-			family:      computed_font.typeface.family_name.clone()
-			point_size: computed_font.point_size / 0.75
-			weight: int(computed_font.variations.weight)
-			source_path: computed_font.typeface.source_path.clone()
-		}
+		font := computed_font.font_for_metrics()
 		metrics := font.pixel_metrics()
 		return CSSPixels.new(int(math.round_to_even(f64(metrics.ascent))) + int(math.round_to_even(f64(metrics.descent))))
 	}
@@ -12736,12 +12731,7 @@ fn computed_interpolation_font_metrics_for_size(font_size CSSPixels) LengthFontM
 fn computed_interpolation_font_metrics_for_style(computed_properties &ComputedProperties, font_computer &FontComputer) LengthFontMetrics {
 	mut mutable_properties := unsafe { &ComputedProperties(computed_properties) }
 	computed_font := mutable_properties.first_available_computed_font(font_computer)
-	font := platform.Font{
-		family:      computed_font.typeface.family_name.clone()
-		point_size: computed_font.point_size / 0.75
-		weight: int(computed_font.variations.weight)
-		source_path: computed_font.typeface.source_path.clone()
-	}
+	font := computed_font.font_for_metrics()
 	metrics := font.pixel_metrics()
 	return LengthFontMetrics{
 		font_size: computed_properties.font_size()

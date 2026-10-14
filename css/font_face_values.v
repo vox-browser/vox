@@ -3472,6 +3472,30 @@ pub mut:
 	variations FontVariationSettings
 	features   ShapeFeatures
 	is_invisible bool
+mut:
+	metrics_font_ &platform.Font = unsafe { nil }
+}
+
+// CSS metrics queries must reuse the native handle: its decoded face and
+// pixel metrics are cached on that handle. The translated font records remain
+// mutable, so validate every input consumed by this metrics bridge first.
+fn (font &PlatformFont) font_for_metrics() &platform.Font {
+	cached := font.metrics_font_
+	if cached != unsafe { nil } && cached.family == font.typeface.family_name
+		&& cached.point_size == font.point_size / 0.75
+		&& cached.weight == int(font.variations.weight)
+		&& cached.source_path == font.typeface.source_path {
+		return cached
+	}
+	native_font := &platform.Font{
+		family: font.typeface.family_name.clone()
+		point_size: font.point_size / 0.75
+		weight: int(font.variations.weight)
+		source_path: font.typeface.source_path.clone()
+	}
+	mut mutable_font := unsafe { &PlatformFont(font) }
+	mutable_font.metrics_font_ = native_font
+	return native_font
 }
 
 fn owned_platform_typeface(typeface &PlatformTypeface) &PlatformTypeface {
