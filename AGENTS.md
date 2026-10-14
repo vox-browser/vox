@@ -1353,12 +1353,23 @@ evidence](docs/translation-audit/NATIVE_MEDIA_WHEEL_RAW_HANDLER.md).
 ## Verification cadence
 
 - Run focused checks for each completed fix or translation slice.
-- Run broad regression suites once per ten completed fixes, not after every fix.
+- For instruction-count optimization, batch broad regression suites after each
+  cumulative measured reduction of 5,000,000 retired instructions since the last
+  broad verification. Compare the same benchmark endpoint and workload, record
+  the measured baseline and accumulated savings, and do not run broad suites
+  for every individual fix below that threshold.
+  The latest performance broad batch is the token-spelling change `cc8c4e7c`:
+  26 tokenizer/parser cases passed in both GC modes and 19 screenshot comparisons
+  passed. Its matching-snapshot GitHub first-frame median is 36,911,794,183.5
+  instructions; see `docs/GITHUB_PERFORMANCE.md` for the comparison and limits.
+- Outside instruction-count optimization, run broad regression suites once per
+  ten completed fixes, not after every fix.
   Broad suites include full translation/package test batches, the full LibJS AST
   corpus, the default screenshot smoke set, and broad SVG regression batches.
   Between batches, select only the cases directly relevant to the change.
-- Record each completed fix after the latest broad-test baseline in its audit
-  entry so the next broad run happens at ten fixes. The latest completed broad
-  unit-test baseline is aa6f0246: 47 cases in 14 selected files passed in both GC
+- Outside instruction-count optimization, record each completed fix after the
+  latest broad-test baseline in its audit entry so the next broad run happens at
+  ten fixes. Its latest broad unit-test baseline is aa6f0246: 47 cases in 14
+  selected files passed in both GC
   modes before this cadence was requested. Start the next ten-fix batch after
   that commit; do not repeat its completed broad tests.
