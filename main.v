@@ -3218,6 +3218,19 @@ fn (mut app BrowserApp) draw_portable_shadow(command layout.PaintCommand, page_x
 		app.js_messages << 'Shadow replay: ${err.msg()}'
 		return
 	}
+	$if macos {
+		if app.ctx.native_rendering {
+			image := &gg.Image{
+				width: bitmap.width
+				height: bitmap.height
+				nr_channels: 6
+				ok: true
+				data: bitmap.pixels.data
+			}
+			C.native_draw_image_part(image, bitmap.x + page_x, bitmap.y + page_y - f32(scroll_y), f32(bitmap.width) / app.ctx.scale, f32(bitmap.height) / app.ctx.scale, 0, 0, f32(bitmap.width), f32(bitmap.height), f32(app.ctx.height), 1)
+			return
+		}
+	}
 	index := app.portable_shadow_image_index
 	app.portable_shadow_image_index++
 	mut slot := if index < app.portable_shadow_images.len {
@@ -4711,7 +4724,7 @@ fn (mut app BrowserApp) draw_command(source_command layout.PaintCommand, page_x 
 				}
 			}
 			if non_axis_aligned {
-				app.ctx.draw_convex_poly(rect_points, fill)
+				draw_browser_polygon(app.ctx, rect_points, fill)
 			} else if command.outer_shadow {
 				$if macos {
 					if app.ctx.native_rendering {
@@ -4754,7 +4767,7 @@ fn (mut app BrowserApp) draw_command(source_command layout.PaintCommand, page_x 
 				points << point_y
 			}
 			if points.len >= 6 {
-				app.ctx.draw_convex_poly(points, fill)
+				draw_browser_polygon(app.ctx, points, fill)
 			}
 		}
 		'fill_inset_shadow' {
@@ -4786,12 +4799,12 @@ fn (mut app BrowserApp) draw_command(source_command layout.PaintCommand, page_x 
 					points << point_y
 				}
 				for index := 0; index + 3 < points.len; index += 2 {
-					app.ctx.draw_line_with_config(points[index], points[index + 1], points[index + 2], points[index + 3], gg.PenConfig{
+					draw_browser_line(app.ctx, points[index], points[index + 1], points[index + 2], points[index + 3], gg.PenConfig{
 						color: stroke
 						thickness: f32(command.stroke_width)
 					})
 				}
-				app.ctx.draw_line_with_config(points[points.len - 2], points[points.len - 1], points[0], points[1], gg.PenConfig{
+				draw_browser_line(app.ctx, points[points.len - 2], points[points.len - 1], points[0], points[1], gg.PenConfig{
 					color: stroke
 					thickness: f32(command.stroke_width)
 				})
@@ -4827,7 +4840,7 @@ fn (mut app BrowserApp) draw_command(source_command layout.PaintCommand, page_x 
 					points << point_x
 					points << point_y
 				}
-				app.ctx.draw_convex_poly(points, fill)
+				draw_browser_polygon(app.ctx, points, fill)
 			} else {
 				app.ctx.draw_ellipse_filled(x + w / 2, y + h / 2, w / 2, h / 2, fill)
 			}
@@ -4857,7 +4870,7 @@ fn (mut app BrowserApp) draw_command(source_command layout.PaintCommand, page_x 
 						return
 					}
 				}
-				app.ctx.draw_line_with_config(from_x, from_y, to_x, to_y, gg.PenConfig{
+				draw_browser_line(app.ctx, from_x, from_y, to_x, to_y, gg.PenConfig{
 					color: line_color
 					line_type: match command.line_style {
 						'dotted' { gg.PenLineType.dotted }
@@ -4885,7 +4898,7 @@ fn (mut app BrowserApp) draw_command(source_command layout.PaintCommand, page_x 
 						return
 					}
 				}
-				app.ctx.draw_convex_poly(points, fill)
+				draw_browser_polygon(app.ctx, points, fill)
 			}
 		}
 		'fill_gradient' {
@@ -4997,10 +5010,10 @@ fn (mut app BrowserApp) draw_command(source_command layout.PaintCommand, page_x 
 								if app.ctx.native_rendering {
 									unsafe { C.native_draw_polygon_srgb(&cell_points[0], 4, f32(app.ctx.height), fill) }
 								} else {
-									app.ctx.draw_convex_poly(cell_points, fill)
+									draw_browser_polygon(app.ctx, cell_points, fill)
 								}
 							} $else {
-								app.ctx.draw_convex_poly(cell_points, fill)
+								draw_browser_polygon(app.ctx, cell_points, fill)
 							}
 						}
 					}
@@ -5515,7 +5528,7 @@ fn (mut app BrowserApp) draw_command(source_command layout.PaintCommand, page_x 
 			if command.color.len > 0 {
 				for polygon in screen_polygons {
 					if polygon.len >= 6 {
-						app.ctx.draw_convex_poly(polygon, paint_color(command.color, command.opacity * command.fill_opacity))
+						draw_browser_polygon(app.ctx, polygon, paint_color(command.color, command.opacity * command.fill_opacity))
 					}
 				}
 			}
@@ -5524,7 +5537,7 @@ fn (mut app BrowserApp) draw_command(source_command layout.PaintCommand, page_x 
 				points := screen_polygons[0]
 				stroke := paint_color(command.stroke_color, command.opacity * command.stroke_opacity)
 				for index := 0; index + 3 < points.len; index += 2 {
-					app.ctx.draw_line_with_config(points[index], points[index + 1], points[index + 2], points[index + 3], gg.PenConfig{
+					draw_browser_line(app.ctx, points[index], points[index + 1], points[index + 2], points[index + 3], gg.PenConfig{
 						color: stroke
 						thickness: f32(command.stroke_width)
 					})
@@ -5649,7 +5662,7 @@ fn (mut app BrowserApp) draw() {
 	}
 	app.finish_frame_preparation()
 	app.portable_shadow_image_index = 0
-	app.ctx.begin()
+	begin_browser_frame(app.ctx)
 	$if macos {
 		if app.ctx.native_rendering
 			&& app.paint_commands_have_backdrop_filter {
@@ -5725,7 +5738,7 @@ fn (mut app BrowserApp) draw() {
 		}
 		app.ctx.draw_text(12, status_y + 4, footer, color: gg.rgb(203, 213, 225), size: 12)
 	}
-	app.ctx.end()
+	end_browser_frame(app.ctx)
 	if !app.initial_window_frame_presented {
 		app.initial_window_frame_presented = true
 		if app.pending_cached_page != none {
@@ -6185,6 +6198,7 @@ fn main() {
 		}
 		user_data: app
 	)
+	configure_native_browser_context(mut app.ctx)
 	main_checkpoint = debug_timing_checkpoint('startup_context', main_checkpoint)
 	if defer_remote_navigation {
 		app.navigate(initial_url, true)

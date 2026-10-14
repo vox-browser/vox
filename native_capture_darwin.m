@@ -1090,15 +1090,38 @@ void native_draw_polygon_srgb(const float *points, int point_count, float canvas
 int native_draw_line_srgb(float from_x, float from_y, float to_x, float to_y,
 	float thickness, int line_style, float canvas_width, float canvas_height,
 	gg__Color color) {
-#ifdef LADYBIRD_V_HAS_SKIA_TEXT
 	CGContextRef context = [[NSGraphicsContext currentContext] CGContext];
+	if (context == NULL || thickness <= 0.0f) {
+		return 0;
+	}
+#ifdef LADYBIRD_V_HAS_SKIA_TEXT
 	if (ladybird_v_skia_draw_line(context, from_x, from_y, to_x, to_y,
 		thickness, line_style, canvas_width, canvas_height, color.r, color.g,
 		color.b, color.a)) {
 		return 1;
 	}
 #endif
-	return 0;
+	// Keep the native backend independent of GG's immediate-mode GPU pipeline,
+	// including builds without the optional Skia bridge.
+	CGContextSaveGState(context);
+	CGColorRef cg_color = native_srgb_color(color);
+	CGContextSetStrokeColorWithColor(context, cg_color);
+	CGContextSetLineWidth(context, thickness);
+	if (line_style == 1) {
+		CGFloat dash[] = { 0.0, thickness * 2.0 };
+		CGContextSetLineDash(context, 0.0, dash, 2);
+		CGContextSetLineCap(context, kCGLineCapRound);
+	} else if (line_style == 2) {
+		CGFloat dash[] = { thickness * 3.0, thickness * 3.0 };
+		CGContextSetLineDash(context, 0.0, dash, 2);
+	}
+	CGContextBeginPath(context);
+	CGContextMoveToPoint(context, from_x, canvas_height - from_y);
+	CGContextAddLineToPoint(context, to_x, canvas_height - to_y);
+	CGContextStrokePath(context);
+	CGColorRelease(cg_color);
+	CGContextRestoreGState(context);
+	return 1;
 }
 
 static void native_add_elliptical_arc(CGMutablePathRef path, CGFloat center_x,
