@@ -1453,7 +1453,7 @@ pub fn adapt_scope_relative_selector_list(selectors SelectorList) SelectorList {
 }
 
 pub fn selector_matches(selector Selector, element &dom.Element) bool {
-	mut context := MatchContext{}
+	mut context := MatchContext{has_result_cache: unsafe { nil }}
 	return matches(selector, element, none, mut context, none, none, .normal, none)
 }
 
@@ -3536,6 +3536,9 @@ fn has_result_cache_key(selector Selector, anchor &dom.Element) string {
 }
 
 fn matches_has_pseudo_class(selector Selector, anchor &dom.Element, shadow_host ?&dom.Element, mut context MatchContext, scope ?&dom.ParentNode) bool {
+	if context.has_result_cache == unsafe { nil } {
+		context.has_result_cache = &HasResultCache{}
+	}
 	cache_key := has_result_cache_key(selector, anchor)
 	if cached := context.has_result_cache.results[cache_key] {
 		context.attempted_pseudo_class_matches.merge(context.has_result_cache.attempted_pseudo_classes[cache_key])

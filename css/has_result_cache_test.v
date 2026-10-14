@@ -18,6 +18,25 @@ fn has_cache_test_selector(source string) Selector {
 	return list.selectors[0]
 }
 
+fn test_one_shot_selector_matching_allocates_has_cache_only_when_reached() {
+	document := dom.Document.create(dom.url_about_blank())
+	anchor := has_cache_test_element(document, 'section', 'anchor')
+	child := has_cache_test_element(document, 'span', 'flag')
+	has_cache_test_append(anchor.as_node(), child)
+	mut context := MatchContext{has_result_cache: unsafe { nil }}
+	assert matches(has_cache_test_selector('.anchor'), anchor, none, mut context, none, none, .normal, none)
+	assert context.has_result_cache == unsafe { nil }
+	assert !matches(has_cache_test_selector('.other'), anchor, none, mut context, none, none, .normal, none)
+	assert context.has_result_cache == unsafe { nil }
+	assert matches(has_cache_test_selector('.anchor:has(> .flag)'), anchor, none, mut context, none, none, .normal, none)
+	assert context.has_result_cache != unsafe { nil }
+	assert context.has_result_cache.results.len == 1
+	assert selector_matches(has_cache_test_selector('.anchor:has(> .flag)'), anchor)
+	mut mutable_child := unsafe { &dom.Element(child) }
+	mutable_child.set_attribute_value('class', 'removed')
+	assert !selector_matches(has_cache_test_selector('.anchor:has(> .flag)'), anchor)
+}
+
 fn test_has_result_cache_is_shared_across_matching_contexts_and_growth() {
 	document := dom.Document.create(dom.url_about_blank())
 	mut computer := css_style_computer_for(document)

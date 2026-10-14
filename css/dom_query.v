@@ -65,7 +65,7 @@ fn dom_selector_query_matches(target voidptr, selector_text string, element &dom
 	mut state := unsafe { &DocumentSelectorQueryState(target) }
 	selectors := state.parse(selector_text) or { return false }
 	for selector in selectors.selectors {
-		mut context := MatchContext{}
+		mut context := MatchContext{has_result_cache: unsafe { nil }}
 		if matches(selector, element, none, mut context, none, scoping_root, .normal, none) {
 			return true
 		}
