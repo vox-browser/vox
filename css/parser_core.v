@@ -82,7 +82,22 @@ fn is_unicode_surrogate(code_point u32) bool {
 }
 
 fn equals_ignoring_ascii_case(left string, right string) bool {
-	return left.to_lower() == right.to_lower()
+	if left.len != right.len {
+		return false
+	}
+	for i in 0 .. left.len {
+		left_byte := left[i]
+		right_byte := right[i]
+		if left_byte == right_byte {
+			continue
+		}
+		folded_left := if left_byte >= `A` && left_byte <= `Z` { left_byte + 32 } else { left_byte }
+		folded_right := if right_byte >= `A` && right_byte <= `Z` { right_byte + 32 } else { right_byte }
+		if folded_left != folded_right {
+			return false
+		}
+	}
+	return true
 }
 
 fn string_from_code_point(code_point u32) string {
