@@ -30,8 +30,19 @@ pub fn QualifiedName.new(local_name string, prefix ?string, namespace_ ?string) 
 }
 
 fn to_ascii_lowercase(value string) string {
+	mut first_uppercase := -1
+	for i, byte in value {
+		if byte >= `A` && byte <= `Z` {
+			first_uppercase = i
+			break
+		}
+	}
+	if first_uppercase < 0 {
+		return value
+	}
 	mut bytes := value.bytes()
-	for i, byte in bytes {
+	for i := first_uppercase; i < bytes.len; i++ {
+		byte := bytes[i]
 		if byte >= `A` && byte <= `Z` {
 			bytes[i] = byte + 0x20
 		}
@@ -41,7 +52,7 @@ fn to_ascii_lowercase(value string) string {
 
 fn qualified_name_hash_string(value string) u64 {
 	mut hash := u64(1469598103934665603)
-	for byte in value.bytes() {
+	for byte in value {
 		hash ^= u64(byte)
 		hash *= 1099511628211
 	}
