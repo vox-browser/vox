@@ -10753,7 +10753,10 @@ pub fn StyleComputer.get_animated_inherit_value(property_id PropertyID, abstract
 	// The public accessor returns an owning copy for API callers; style
 	// computation only needs one entry and must not clone the entire animation
 	// map (usually empty) dozens of times per element.
-	animated_value := parent.animated_property_values_[property_id] or { return none }
+	if property_id !in parent.animated_property_values_ {
+		return none
+	}
+	animated_value := unsafe { parent.animated_property_values_[property_id] }
 	return AnimatedInheritValue{
 		value: animated_value
 		is_result_of_transition: if parent.is_animated_property_result_of_transition(property_id) {
