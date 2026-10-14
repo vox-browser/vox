@@ -1469,8 +1469,11 @@ __global (
 )
 
 fn computed_interpolation_style_value_keyword(value &dom.StyleValue) ?Keyword {
-	if typed := typed_style_value_logic_from_dom(value) {
-		keyword := typed.to_keyword()
+	if value.css_value_handle != unsafe { nil } {
+		// The DOM value owns this box throughout the read. Inspect its retained
+		// value directly rather than copying an optional sum type and rooting it.
+		typed := unsafe { &TypedStyleValueBox(value.css_value_handle) }
+		keyword := typed.value.to_keyword()
 		if keyword != .invalid {
 			return keyword
 		}
