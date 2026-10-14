@@ -856,6 +856,15 @@ pub:
 	font_smoothing      css.FontSmoothing
 }
 
+// BackgroundPainting resolves these retained CSS values at replay time. Share
+// one snapshot through phase caches and recordings instead of embedding the
+// complete length-resolution context in every text and border command.
+pub struct PaintBackgroundLayerData {
+pub:
+	layer              css.BackgroundLayerData
+	resolution_context css.LengthResolutionContext
+}
+
 // Spell out absent payloads: the compatibility compiler otherwise constructs
 // their nested defaults (including allocated lengths) before wrapping in none.
 pub struct PaintCommand {
@@ -962,8 +971,7 @@ pub mut:
 	image_clip_height           f64
 	image_clip_radii            BoxRadii
 	image_attachment            string
-	image_computed_layer        ?css.BackgroundLayerData = none
-	image_resolution_context    css.LengthResolutionContext
+	background_layer_data       ?&PaintBackgroundLayerData = none
 	image_scroll_offset_x       f64
 	image_scroll_offset_y       f64
 	background_blend_mode       painting.BlendMode
@@ -1221,6 +1229,14 @@ fn background_image_layer_blend_mode(layer BackgroundImageLayer) painting.BlendM
 	return .normal
 }
 
+fn retained_background_layer_data(layer BackgroundImageLayer) ?&PaintBackgroundLayerData {
+	computed_layer := layer.computed_layer or { return none }
+	return &PaintBackgroundLayerData{
+		layer: computed_layer
+		resolution_context: layer.resolution_context
+	}
+}
+
 fn background_layer_command(layer BackgroundImageLayer, origin LayoutRect, clip LayoutRect,
 	clip_radii BoxRadii, opacity f64, radius f64, points []f64,
 	background_scroll_offset painting.Point, image_rendering css.ImageRendering,
@@ -1264,8 +1280,7 @@ fn background_layer_command(layer BackgroundImageLayer, origin LayoutRect, clip 
 			image_clip_height: clip.height
 			image_clip_radii: clip_radii
 			image_attachment: layer.attachment
-			image_computed_layer: computed_layer
-			image_resolution_context: layer.resolution_context
+			background_layer_data: retained_background_layer_data(layer)
 			image_scroll_offset_x: background_scroll_offset.x
 			image_scroll_offset_y: background_scroll_offset.y
 			background_blend_mode: blend_mode
@@ -1303,8 +1318,7 @@ fn background_layer_command(layer BackgroundImageLayer, origin LayoutRect, clip 
 		image_clip_height: clip.height
 		image_clip_radii: clip_radii
 		image_attachment: layer.attachment
-		image_computed_layer: layer.computed_layer
-		image_resolution_context: layer.resolution_context
+		background_layer_data: retained_background_layer_data(layer)
 		image_scroll_offset_x: background_scroll_offset.x
 		image_scroll_offset_y: background_scroll_offset.y
 		background_blend_mode: blend_mode
@@ -3970,12 +3984,12 @@ pub fn resolved_background_gradient_tiles(command PaintCommand) []painting.Rect 
 	if !command.gradient_background_layer {
 		return [painting.Rect{command.x, command.y, command.width, command.height}]
 	}
-	layer := command.image_computed_layer or { return []painting.Rect{} }
+	background_data := command.background_layer_data or { return []painting.Rect{} }
 	resolved := painting.resolve_background_layer_without_intrinsic(painting.BackgroundLayerWithoutIntrinsicResolutionInput{
-		layer: layer
+		layer: background_data.layer
 		image_id: 'gradient'
 		background_positioning_area: painting.Rect{command.x, command.y, command.width, command.height}
-		resolution_context: command.image_resolution_context
+		resolution_context: background_data.resolution_context
 	}) or { return []painting.Rect{} }
 	return painting.background_tiles_limited(resolved, painting.Point{command.image_scroll_offset_x, command.image_scroll_offset_y}, painting.Rect{command.image_clip_x, command.image_clip_y, command.image_clip_width, command.image_clip_height}, 4096)
 }

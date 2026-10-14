@@ -72,17 +72,18 @@ fn test_typed_document_paint_preserves_computed_background_image_layers() {
 	assert commands[0].image_size == '30px auto'
 	assert commands[0].image_position_x == '25%'
 	assert commands[0].image_position_y == '50%'
-	retained_layer := commands[0].image_computed_layer or {
+	background_data := commands[0].background_layer_data or {
 		panic('typed background layer was flattened to renderer strings')
 	}
+	retained_layer := background_data.layer
 	assert retained_layer.repeat_x == .round
 	assert retained_layer.repeat_y == .space
 	assert retained_layer.blend_mode == .multiply
 	assert commands[0].background_blend_mode == .multiply
 	assert !retained_layer.size_x.is_auto()
 	assert retained_layer.size_y.is_auto()
-	assert retained_layer.position_x.to_px(commands[0].image_resolution_context, css.CSSPixels.nearest_value_for(100)).to_double() == 25
-	assert retained_layer.position_y.to_px(commands[0].image_resolution_context, css.CSSPixels.nearest_value_for(100)).to_double() == 50
+	assert retained_layer.position_x.to_px(background_data.resolution_context, css.CSSPixels.nearest_value_for(100)).to_double() == 25
+	assert retained_layer.position_y.to_px(background_data.resolution_context, css.CSSPixels.nearest_value_for(100)).to_double() == 50
 	mut group_begin := -1
 	mut image_index := -1
 	mut group_end := -1

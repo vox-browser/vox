@@ -622,9 +622,10 @@ fn test_typed_background_images_keep_gradient_url_layer_order_and_geometry() {
 	assert gradient_command.image_clip_height == 80
 	assert gradient_command.image_attachment == 'local'
 	assert gradient_command.background_blend_mode == .multiply
-	gradient_layer := gradient_command.image_computed_layer or {
+	gradient_data := gradient_command.background_layer_data or {
 		panic('gradient lost its typed BackgroundLayerData')
 	}
+	gradient_layer := gradient_data.layer
 	assert gradient_layer.repeat_x == .space
 	assert gradient_layer.repeat_y == .no_repeat
 	assert gradient_layer.origin == .content_box

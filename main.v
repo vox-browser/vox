@@ -5205,14 +5205,14 @@ fn (mut app BrowserApp) draw_command(source_command layout.PaintCommand, page_x 
 			area := painting.Rect{command.x, command.y, command.width, command.height}
 			clip := painting.Rect{command.image_clip_x, command.image_clip_y, command.image_clip_width, command.image_clip_height}
 			mut resolved_layer := ?painting.ResolvedBackgroundLayer(none)
-			if computed_layer := command.image_computed_layer {
+			if background_data := command.background_layer_data {
 				resolved_layer = painting.resolve_background_layer(painting.BackgroundLayerResolutionInput{
-					layer: computed_layer
+					layer: background_data.layer
 					image_id: command.image_url
 					natural_width: f64(intrinsic_width)
 					natural_height: f64(intrinsic_height)
 					background_positioning_area: area
-					resolution_context: command.image_resolution_context
+					resolution_context: background_data.resolution_context
 				})
 			}
 			if resolved_layer == none {
