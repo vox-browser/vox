@@ -1608,6 +1608,104 @@ the candidate is
 Bundle signing changes the installed executable hash to
 `93b958d6d52a31950e926ce840bdb1f9dfcf019b1b10470d108b1eac698d623b`.
 
+## Count-only UTF-16 text lengths
+
+Feature `4a07b578` replaces seven length-only UTF-16 array conversions with
+an allocation-free count in the layout text paths: source/rendered caret mapping,
+viewport text positions, generated visual-line lengths, first-letter source
+ranges, block ellipses and grapheme boundary offsets. ASCII returns the byte
+length after the existing ASCII check. Other input uses V's rune iterator,
+which shares the exact decoder used by the old materialized rune array, and
+counts supplementary characters as two UTF-16 code units. Full code-unit
+conversions remain where callers need their contents. No persistent cache,
+struct layout, GC or allocation-lifetime policy changes are involved; normal
+builds retain Boehm and JavaScriptCore without global `-prealloc` or V `-prod`.
+
+The preceding fresh `v -profile` capture recorded 104,484 calls to the shared
+UTF-16 conversion helper across its layout/paint passes. This identifies a
+source of repeated allocation, rather than a first-frame retired-instruction
+count. Four new cases cover known Unicode lengths, all 65,536 two-byte inputs,
+truncated multibyte strings, 4,096 deterministic malformed/mixed inputs and live
+rendered-length clamping. Together with the ten existing first-letter cases and
+twelve text-chunk cases, **26 functional checks plus one diagnostic pass in both
+GC modes**. The Boehm tests use C `-O2`; each full focused run passes 87,206
+assertions. Existing expanding-case, sliced-source and DOM mutation tests retain
+their original geometry and text mapping assertions.
+
+Three fixed interleaved diagnostic pairs count 250,000 lengths over sixteen
+ASCII/Unicode/embedded-NUL/malformed strings, with setup and assertions outside
+the hardware counter interval. All checksums match the independent UTF-16
+reference of 27,343,750. Median work falls **1,892,538,446 →
+195,016,955 retired instructions (89.70% fewer)**;
+all three pairs improve. These are separate C `-O2`/Boehm test executables, not
+whole-page measurements. The before executable adds a test-only length wrapper
+around the old array conversion, leaving its production layout implementation
+unchanged. Plans, retained aggregate and diagnostic counts are under
+`Build/v/instruction-opt18-*` and `opt18-utf16-focused-test.v.txt`.
+
+Thirty alternating normal-build GitHub pairs were fixed before results were
+observed, with fresh copies of the same immutable cache, the same frozen native
+library, a 1024×768 document viewport and the first native
+`navigation_to_first_document_paint` endpoint.
+
+| Build | Median instructions through first native document frame |
+| --- | ---: |
+| Materialized length conversions | 34,794,106,174 |
+| Count-only length conversions | 34,334,019,490.5 |
+
+The observed median change is **-1.32%**
+(460,086,683.5 fewer instructions); **24/30 pairs improve**.
+The paired median saving is 482,906,045.5; its 95% paired percentile
+bootstrap interval is **391,414,424.5 to 621,322,664.5** instructions
+(30,000 resamples, seed 18). The paired interval excludes zero and supports a repeatable reduction for this workload.
+All sixty captures have valid geometry and one installation, with the same two
+required geometry passes and one shell paint recording before the first frame.
+No page samples were discarded, extended or selected after observing results.
+Adjacent checkpoint intervals remain process-wide deltas, not function self cost.
+Raw page evidence is `Build/instructions/vox-opt18-interleaved-*`; paired evidence
+is `Build/v/instruction-opt18-comparison-evidence.json`.
+
+The control reuses the exact previously measured round17 candidate executable
+and immutable source snapshot, including integer layout sums `489816e4`.
+Its source recipe is committed runtime `b4a325cb` plus that layout-sum feature.
+The candidate adds only the five owned layout sources. Subsequent independent
+media completion work (`6d566297`) is excluded from both compared builds and
+remains preserved in the workspace. The generated-C audit reviews the seven
+changed/new emitted functions and their prototype, plus path-derived embed keys
+and compiler temporary/anonymous names. All other generated C, including type
+IDs, struct layouts and embedded data, is identical. The viewport text-position
+call is absent from this native binary's emitted functions. All 120 common
+native input hashes and the frozen shared library remain unchanged. The C diff
+is 10,302 bytes after anonymous-hash/temporary normalization; matching source
+hashes, argv and the projection audit are retained in
+`Build/v/instruction-opt18-matching-provenance.json`.
+
+The observed page median crossed the user's 5,000,000-instruction gate, so
+one broad batch ran after the completed measurement. All six commands for the
+87 selected CSS/SVG/layout cases pass in Boehm and no-GC modes; all nineteen
+screenshot comparisons pass, sixteen pixel-exact. The three existing screenshot
+differences remain inline-node (13 pixels), text-decorations (1,341) and
+canvas-text (1,994). The focused multilingual/first-letter/ellipsis/control
+viewport is pixel-exact between the two binaries. Actual command exits and
+image metrics are in `Build/v/instruction-opt18-validation-result.json` and its
+per-command logs. The new broad-verified baseline is `4a07b578` at the observed
+median 34,334,019,490.5; credited repeatable savings are 460,086,683.5
+and additional savings after this broad batch reset to zero. Diagnostic savings
+never contribute to that counter.
+
+The measured candidate replaces only the authenticated, unchanged prior
+canonical executable in `Build/v/Vox.app`; its native `__TEXT,__text` hash is
+`aa4483fe3b39d7084150d8810e5ca9c356cfed2843164430c0a2db141d209f83`. Bundle signing,
+deep strict verification and `--headless-smoke` pass. The existing GUI process
+was left running; relaunch the bundle to load the new executable. Later media
+sources are preserved but excluded from this measured app snapshot.
+
+Completed generated C and derived normalization artifacts were losslessly
+gzip-archived to retain evidence under disk pressure, with original SHA-256 and
+round-trip verification. No compiler/test/page failure occurred in this round.
+Chrome instruction and functionality parity remain unestablished, including
+GitHub module hydration and populated file rows.
+
 ## Causes and changes
 
 - The V 0.5.2 compatibility compiler's `-prod` Boehm code repeatedly snapshots
