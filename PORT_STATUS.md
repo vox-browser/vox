@@ -2552,3 +2552,13 @@ DOM painting pass six cases in two selected files in both GC modes. Other raw
 media names and unavailable/foreign owners remain open. Production and broad
 regression suites are deferred under the user's ten-fix cadence. Batch counter:
 5/10 after aa6f0246. See [evidence](docs/translation-audit/NATIVE_MEDIA_TIMELINE_RAW_HANDLER.md).
+
+Native compact media raw timeline-handler scoped inventory (`ef218fdf`,
+2026-10-14 UTC): Five owned browser/root support paths are excluded under the
+sealed 78-owner rules. Independent feature/parent physical-LF accounting adds
+zero assigned DOM files, implementation lines and test lines. Counter:
+`Build/audit-fixes/native-media-timeline-raw-handler-inventory-scoped-v1.json` (SHA256 `956970f14822b2169d7ce285ee59179e20f5a4bf8b26cbdcae57127900d4199c`).
+Global tables, pins, source mappings and historical ledgers are preserved;
+accounting adds no test or behavioral parity credit. Batch counter remains
+5/10 after aa6f0246; this documentation commit is not another translation fix.
+See [evidence](docs/translation-audit/NATIVE_MEDIA_TIMELINE_RAW_HANDLER.md).
