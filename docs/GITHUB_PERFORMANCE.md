@@ -2643,6 +2643,94 @@ Evidence is under `Build/instructions/vox-opt27-interleaved-*` and
 `capture-audit.json`, `broad-resume.json`, `completed-artifact-compression.json`,
 `validation-result.json` and `bundle-result.json` with the round prefix.
 
+## Fill ASCII tokenizer arenas directly
+
+Feature `2cb35962` fills the tokenizer's code-point and byte-offset tables
+from bytes when every byte is below 128. The allocation and release boundary
+stay unchanged; non-ASCII input retains the original rune iterator. Boehm
+remains enabled with one marker, and JavaScript still uses JavaScriptCore.
+An initial printable-only `string.is_ascii()` check missed CSS newlines and
+showed no controlled gain; it was replaced before any browser observations.
+
+Twelve focused functional cases plus one diagnostic pass **165,086 assertions**
+in before/final Boehm builds and final `-gc none`, all with C `-O2`. Coverage
+includes all 128 ASCII bytes, Unicode byte offsets, CRLF/FF/NUL filtering,
+empty input, escape spellings, retained source strings and forced collections.
+The controlled probe fills and releases 1,024 arenas of 1,984 ASCII bytes,
+including newlines. Setup, eight warmups, forced GC and assertions are outside
+the counter; all three alternating pairs preserve checksum 4,161,536.
+Its median is **67,726,882 → 13,086,891
+instructions (-80.68%)**. This is a local result.
+
+Fresh full-process `v -profile` replays record 1,283 arena
+constructions in each build. Rune-iterator calls fall from **2,538,014
+to 277,440**. These C `-O1`/Boehm call counts include initialization,
+functional tests and the probe; no filter or counter reset is used.
+Instrumented timings and counts are excluded from normal-page measurements.
+
+Thirty alternating normal-build pairs were fixed in advance, seed 28 and
+30,000 paired bootstrap resamples. Both persisted executable images use C
+`-O2`, Boehm, one marker and the same frozen native library. Each run receives
+a fresh byte-identical cached GitHub copy on the same RAM-backed volume.
+The endpoint remains `navigation_to_first_document_paint[0]` at 1024×768.
+
+| Build | Median instructions through first native document frame |
+| --- | ---: |
+| Rune iterator for every input | 31,780,944,181 |
+| Direct ASCII table fill | 31,626,063,087 |
+
+Observed saving: **154,881,094 instructions
+(0.49%)**, 20/30 pairs improve.
+Paired median saving: 72,481,159; 95% paired percentile
+bootstrap interval: **13,874 to 173,522,760.5** instructions. The lower bound
+is close to zero, so the evidence for a repeatable page gain is narrow.
+Repeatable page savings credited: 154,881,094. No completed observations
+were discarded and the sample was not extended after results. Two startup attempts,
+one control and one candidate, hit the watchdog before parsing or the primary
+endpoint. All 32 completed captures at the first interruption and all 53 at
+the second were retained by hash. The remaining captures resumed with the same
+binaries, cache and order; both incomplete logs are preserved separately.
+
+All sixty captures retain valid viewport, cache and executable hashes; the
+capture audit confirms one installation, two geometry passes and one shell
+paint recording before each primary endpoint. Ten captures have a later
+installation; their screenshots/process totals include that later work, while
+the predeclared first-frame sample is retained for every capture.
+The generated-C audit permits only the arena constructor to change; all other
+logic, layouts and resources match after compiler identities are normalized.
+Two byte-identical interface helpers only change declaration order; one parser
+assertion line is mapped to its unchanged source.
+All 120 frozen native inputs, GC initialization and native flags are unchanged.
+Disk exhaustion during initial snapshot creation was handled by moving this
+round's snapshots and compiler scratch to the existing RAM-backed volume.
+The snapshot's upstream dependency link was restored before successful builds.
+Those pre-measurement failures are retained separately. After measurement
+and broad tests, all three snapshots were persisted back under `Build/` with
+runtime hashes verified; compiler and profile C archives are also durable.
+
+The observed saving crossed the 5,000,000-instruction gate. One broad batch
+passes: six direct V test-harness jobs cover 87 selected CSS/SVG/layout cases
+in both GC modes, with explicit RAM-backed outputs and six recorded zero exits.
+All nineteen screenshot comparisons complete, sixteen exact. Existing pixel
+differences remain inline-node 13, text-decorations 1,341 and canvas-text 1,994;
+the focused viewport is exact. A launch produced no image after twelve
+completed comparisons; all six test passes and the twelve completed image
+comparisons were retained, and only the seven unfinished comparisons resumed.
+
+The measured candidate is installed in `Build/v/Vox.app`; ad-hoc signing,
+deep strict signature verification, headless startup and default/override GC
+marker checks pass. Native text SHA-256: `3d44b5a4208c993ac5d9456ffa20f6696ea63d8a080fc0c49eac88e68c64ec62`.
+The existing GUI process was not restarted. Independent native media changes
+remain preserved and excluded from these frozen comparison snapshots.
+The broad baseline is `2cb35962` at 31,626,063,087
+instructions, with zero additional savings after this batch. Chrome
+instruction/functionality parity remains open; its earlier capture uses a
+different endpoint and hydrated content.
+
+Evidence: `Build/instructions/vox-opt28-interleaved-*` and
+`Build/v/instruction-opt28-*`, including comparison, C/source provenance,
+focused diagnostics, fresh profiles, capture audit, validation and bundle results.
+
 ## Causes and changes
 
 - The V 0.5.2 compatibility compiler's `-prod` Boehm code repeatedly snapshots

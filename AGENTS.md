@@ -1358,21 +1358,18 @@ evidence](docs/translation-audit/NATIVE_MEDIA_WHEEL_RAW_HANDLER.md).
   broad verification. Compare the same benchmark endpoint and workload, record
   the measured baseline and accumulated savings, and do not run broad suites
   for every individual fix below that threshold.
-  The latest performance broad batch is absent pseudo scans `909f2968`:
-  six focused functional checks plus one diagnostic pass with 1,131 assertions
-  in both GC modes, including optimized Boehm. All six final jobs for 87 selected
-  CSS/SVG/layout cases and all 19 screenshots pass (16 exact); focused viewport exact.
-  Initial ENOSPC interrupted compilation/result writes; the SVG/Boehm pass was kept
-  and five unfinished jobs resumed through the same harness with RAM-backed outputs.
-  Its observed GitHub first-frame median is 31,715,678,253.5 instructions,
-  a -1.40% change against its matching control. 23 of 30 pairs improve;
-  the positive paired interval supports a repeatable reduction for this workload.
-  Repeatable savings credited: 451,547,380.5; additional savings
-  after this batch: zero. Controlled local instructions improve 94.52%, and fresh
-  V-profile pseudo queries fall 94.30%; those are distinct from the page result.
-  GC remains enabled with one marker; Chrome parity remains open.
-  See `docs/GITHUB_PERFORMANCE.md` for sources, cache storage, post-primary refresh
-  and the preserved independent native media scope.
+  The latest performance broad batch is ASCII tokenizer arenas `2cb35962`:
+  12 focused functional cases plus one diagnostic pass 165,086 assertions in
+  before/final Boehm and final no-GC ownership builds, all C-O2. All six direct
+  harness jobs for 87 selected CSS/SVG/layout cases pass in both GC modes;
+  all 19 screenshots complete, 16 exact, and the focused viewport is exact.
+  Its observed GitHub first-frame median is 31,626,063,087 instructions,
+  a -0.49% change against its matching control; 20 of 30 pairs improve.
+  Repeatable savings credited: 154,881,094; additional savings after this batch: zero.
+  Controlled local instructions improve 80.68%; V-profile call counts
+  are distinct from the normal-page result. GC remains enabled with one marker.
+  Chrome parity remains open. See `docs/GITHUB_PERFORMANCE.md` for uncertainty,
+  sources, cache storage and the preserved independent native media scope.
 - Outside instruction-count optimization, run broad regression suites once per
   ten completed fixes, not after every fix.
   Broad suites include full translation/package test batches, the full LibJS AST
