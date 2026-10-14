@@ -2,8 +2,11 @@
 // supplies its engine compiler across the DOM/HTML/runtime module boundary.
 module dom
 
+pub type InlineEventHandlerSupport = fn (&EventTarget, string) bool
+
 pub struct InlineEventHandlerCompiler {
 pub:
+	supports_handler ?InlineEventHandlerSupport
 	can_compile fn (&EventTarget) bool
 	compile     fn (&EventTarget, string, string, string) ?&CallbackType
 }

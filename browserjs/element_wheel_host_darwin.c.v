@@ -9,6 +9,7 @@ pub fn (mut host ElementWheelHost) install(mut runtime Runtime) ! {
 	runtime.bind_scripting_environment(host.settings)!
 	runtime.install_event_target_binding()!
 	host.runtime = &runtime
+	host.install_raw_wheel_handler_compiler()!
 	handle := voidptr(&host)
 	bind := runtime.make_value_host_function(fn [handle] (_ voidptr, args []voidptr) !voidptr {
 		mut host := unsafe { &ElementWheelHost(handle) }

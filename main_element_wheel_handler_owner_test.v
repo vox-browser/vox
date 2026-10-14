@@ -121,7 +121,7 @@ ehTarget.addEventListener("wheel",function(e){ehOrder.push("before");ehChecks.pu
 ehTarget.onwheel=function(){ehOrder.push("obsolete")};
 ehTarget.addEventListener("wheel",function(e){ehOrder.push("after");ehAfterStates.push(e.defaultPrevented);ehChecks.push(this===ehTarget&&e.currentTarget===ehTarget&&window.event===e)});
 ehTarget.removeAttribute("onwheel");ehTarget.setAttribute("onwheel","globalThis.ehRawRuns++");
-globalThis.ehAbsentRawGetter=ehTarget.onwheel===null;
+globalThis.ehAbsentRawGetter=typeof ehTarget.onwheel==="function";
 globalThis.ehReplacement=function(e){ehOrder.push("handler");ehSaved.push(e);ehChecks.push(arguments.length===1&&this===ehTarget&&e.target===ehTarget&&e.currentTarget===ehTarget&&e instanceof WheelEvent&&Object.getPrototypeOf(e)===WheelEvent.prototype&&e.isTrusted&&e.bubbles&&e.cancelable&&e.composed&&e.view===window&&e.deltaMode===WheelEvent.DOM_DELTA_PIXEL&&window.event===e&&__elementWheelHandlerOwnerContext());document.getElementById("eh-result").textContent="handler painted";ehTarget.style.color="rgb(0,128,0)";return ehReturn};
 ehTarget.onwheel=ehReplacement;
 ehTarget.setAttribute("onwheel","globalThis.ehRawRuns++");ehTarget.onwheel=ehReplacement;0
@@ -153,15 +153,17 @@ ehTarget.setAttribute("onwheel","globalThis.ehRawRuns++");ehTarget.onwheel=ehRep
 		element_wheel_handler_owner_event(mut runtime, observation.events[index + 1], 'ehSaved[${index + 1}]', true)!
 	}
 	// Repeating the same raw text after IDL assignment wins on getter replay.
-	// It remains uncompiled even though the attribute bytes do not change.
-	assert runtime.evaluate_host('ehOrder=[];ehTarget.setAttribute("onwheel","globalThis.ehRawRuns++");ehTarget.onwheel===null')! == 'true'
+	// Reading lazily compiles the replacement without moving its listener slot.
+	assert runtime.evaluate_host('ehOrder=[];ehTarget.setAttribute("onwheel","globalThis.ehRawRuns++");typeof ehTarget.onwheel==="function"')! == 'true'
 	raw := native_target.data.event_handler_map['wheel'] or { panic('Raw native slot missing') }
-	assert voidptr(raw) == voidptr(slot) && raw.value.kind == .string
-	assert raw.value.string_data == 'globalThis.ehRawRuns++' && target.get_attribute('onwheel')? == raw.value.string_data
+	assert voidptr(raw) == voidptr(slot) && raw.value.kind == .object
+	raw_callback := unsafe { &dom.CallbackType(raw.value.object_data) }
+	assert raw_callback.compiled_source_text_ == 'function onwheel(event) {\n' + 'globalThis.ehRawRuns++' + '\n}'
+	assert target.get_attribute('onwheel')? == 'globalThis.ehRawRuns++'
 	assert app.handle_wheel_at_viewport_point(page.PixelPoint{12.5, 12.25}, page.PixelPoint{}, 0, 0, 0, 0, 2.5, false) == .handled
 	assert scroller.el_scroll_offset().y() == 7.5 && app.scroll_y == 0
-	assert runtime.evaluate_host('ehOrder.join(",")==="before,after"&&ehSaved.length===3&&ehRawRuns===0')! == 'true'
-	assert raw.value.kind == .string
+	assert runtime.evaluate_host('ehOrder.join(",")==="before,after"&&ehSaved.length===3&&ehRawRuns===1')! == 'true'
+	assert raw.value.kind == .object
 	// Null removes the slot; reinstalling adds it after the existing listeners.
 	assert runtime.evaluate_host('ehTarget.onwheel=null;ehTarget.onwheel===null')! == 'true'
 	assert 'wheel' !in native_target.data.event_handler_map
@@ -170,7 +172,7 @@ ehTarget.setAttribute("onwheel","globalThis.ehRawRuns++");ehTarget.onwheel=ehRep
 	assert scroller.el_scroll_offset().y() == 7.5 && app.scroll_y == 0
 	restarted := native_target.data.event_handler_map['wheel'] or { panic('Reinstalled slot missing') }
 	assert voidptr(restarted) != voidptr(slot)
-	assert runtime.evaluate_host('ehOrder.join(",")==="before,after,handler"&&!ehAfterStates[4]&&ehSaved[3].defaultPrevented&&ehRawRuns===0&&ehChecks.every(Boolean)')! == 'true'
+	assert runtime.evaluate_host('ehOrder.join(",")==="before,after,handler"&&!ehAfterStates[4]&&ehSaved[3].defaultPrevented&&ehRawRuns===1&&ehChecks.every(Boolean)')! == 'true'
 	element_wheel_handler_owner_event(mut runtime, observation.events[4], 'ehSaved[3]', true)!
 	// Removing an existing raw attribute clears the later IDL handler. Removing
 	// that now-absent attribute must leave a subsequently installed handler alone.

@@ -1234,6 +1234,9 @@ pub fn (et &EventTarget) get_current_value_of_event_handler(name string) ?&Callb
 		// Source returns before changing the raw value when scripting is disabled.
 		if unsafe { &Node(document) }.is_scripting_disabled() { return none }
 		compiler := document.inline_event_handler_compiler_ or { return none }
+		if supports := compiler.supports_handler {
+			if !supports(et, name) { return none }
+		}
 		// An unavailable owner/environment is an explicit port boundary. Preserve
 		// the raw value for an actual compiler; never fabricate a callable.
 		if !compiler.can_compile(et) { return none }
