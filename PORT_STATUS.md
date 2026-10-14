@@ -2407,3 +2407,21 @@ lines and zero test physical V lines. Counter:
 preserves existing global tables, pins, references, source-unit mappings and historical
 ledgers. See [raw media wheel-handler
 evidence](docs/translation-audit/NATIVE_MEDIA_WHEEL_RAW_HANDLER.md).
+
+Native compact media raw `onplay` / `onpause` (`aa6f0246`, 2026-10-14 UTC):
+HTML audio/video attributes now compile lazily through their actual native owner.
+The optional name-aware DOM availability guard preserves unsupported or unavailable
+raw slots and legacy compilers. The media resolver checks the requested slot before
+and after lazy binding; isolated FunctionBody parsing precedes wrapper creation.
+Element -> Document -> Global scope, callback caching, CSP and scripting gates,
+original exceptions, listener order and balanced owner contexts remain native.
+Explicit equal-text attribute writes replace IDL callbacks; absent removals retain
+IDL-only callbacks. Actual queued play/pause delivery, replacement before delivery,
+reentrant pause, trusted Event identity and pending-promise ordering pass focused
+owner tests. All 47 cases in 14
+selected files pass in both GC modes, including eight new cases. A fresh signed
+Boehm browser passes startup and two pixel-exact author-dispatch pages. The user
+then requested broad suites once per ten fixes; the remaining broad screenshot continuation was stopped
+and broad smoke/SVG cases have no full-suite credit for this slice. Other raw media names,
+generic/foreign owners, partial named-property interfaces, anonymous JSC intrinsic
+source and full LibJS/HTML/interface parity remain open. See [evidence](docs/translation-audit/NATIVE_MEDIA_LIFECYCLE_RAW_HANDLER.md).
