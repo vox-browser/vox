@@ -75,7 +75,7 @@ mut:
 	value_bigint_intrinsic_ voidptr
 	value_function_metadata_intrinsic_ voidptr
 	webidl_promise_bridges_    map[voidptr]&WebIDLJavaScriptPromiseBridge
-	canvas_element_providers_ []CanvasElementProvider
+	canvas_element_providers_ []CanvasElementBindingProvider
 	close_handlers_ []fn ()
 	document_state_dirty_ bool
 	scripting_settings_ ?&html.EnvironmentSettingsObject

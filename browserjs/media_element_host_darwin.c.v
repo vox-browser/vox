@@ -112,9 +112,13 @@ pub fn (mut host MediaElementHost) install(mut runtime Runtime) ! {
 	host.prototype = runtime.retain_javascript_value(runtime.call_javascript_function(factory,
 		C.JSValueMakeUndefined(runtime.context), [array, setter_array, bind, fast_seek, start_date,
 			pause, load, play, handler_getter_array, handler_setter_array])!)!
-	runtime.add_canvas_element_provider(fn [handle] () map[string]&dom.Element {
+	runtime.add_canvas_element_provider_with_lookup(fn [handle] () map[string]&dom.Element {
 		host := unsafe { &MediaElementHost(handle) }
 		return host.elements_for_binding()
+	}, fn [handle] (key string) ?&dom.Element {
+		host := unsafe { &MediaElementHost(handle) }
+		if key !in host.elements { return none }
+		return unsafe { host.elements[key] }
 	})
 	runtime.add_close_handler(fn [handle] () {
 		mut host := unsafe { &MediaElementHost(handle) }

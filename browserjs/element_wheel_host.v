@@ -42,7 +42,9 @@ fn (mut host ElementWheelHost) refresh_elements() {
 }
 
 fn (mut host ElementWheelHost) element_for_wheel_binding(key string, tag string, namespace string) !&dom.Element {
-	host.refresh_elements()
+	if element := host.runtime.canvas_element_for_binding(key) {
+		host.elements[key] = element
+	}
 	if element := host.elements[key] {
 		name := if key.starts_with('__created_') {
 			element.qualified_name_str()

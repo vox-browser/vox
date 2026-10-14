@@ -56,8 +56,11 @@ pub fn (mut host CanvasWebGLHost) install(mut runtime Runtime) ! {
 		for key, element in runtime.canvas_elements_for_binding() { host.elements[key] = element }
 		return host.call(input)
 	})!
-	runtime.add_canvas_element_provider(fn [mut host] () map[string]&dom.Element {
+	runtime.add_canvas_element_provider_with_lookup(fn [mut host] () map[string]&dom.Element {
 		return host.elements_for_binding()
+	}, fn [mut host] (key string) ?&dom.Element {
+		if key !in host.elements { return none }
+		return unsafe { host.elements[key] }
 	})
 	$if darwin {
 		host.install_xr(mut runtime)!

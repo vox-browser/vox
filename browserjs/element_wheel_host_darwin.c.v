@@ -33,9 +33,13 @@ pub fn (mut host ElementWheelHost) install(mut runtime Runtime) ! {
 		type_,
 		set_resolver,
 	])!
-	runtime.add_canvas_element_provider(fn [handle] () map[string]&dom.Element {
+	runtime.add_canvas_element_provider_with_lookup(fn [handle] () map[string]&dom.Element {
 		host := unsafe { &ElementWheelHost(handle) }
 		return host.elements_for_binding()
+	}, fn [handle] (key string) ?&dom.Element {
+		host := unsafe { &ElementWheelHost(handle) }
+		if key !in host.elements { return none }
+		return unsafe { host.elements[key] }
 	})
 	runtime.install_event_target_wrapper_provider(EventTargetWrapperProvider{
 		owner:  handle

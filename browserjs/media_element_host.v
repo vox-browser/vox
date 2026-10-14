@@ -55,8 +55,8 @@ pub fn (host &MediaElementHost) media_element_for_binding(wrapper voidptr) !&htm
 }
 
 fn (mut host MediaElementHost) element_for_binding(key string, tag string) !&dom.Element {
-	for known_key, element in host.runtime.canvas_elements_for_binding() {
-		host.elements[known_key] = element
+	if element := host.runtime.canvas_element_for_binding(key) {
+		host.elements[key] = element
 	}
 	if element := host.elements[key] {
 		if element.is_html_element() && element.local_name() in ['audio', 'video']
