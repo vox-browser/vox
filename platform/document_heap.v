@@ -7,12 +7,15 @@ $if gcboehm ? {
 	fn C.GC_expand_hp(bytes usize) int
 }
 
-// Large documents create substantial short-lived parser/style/layout input.
-// Give the collector room before that burst instead of repeatedly growing and
-// marking a small heap. This is a capacity hint: collection stays enabled and
-// allocation failure leaves its ordinary growth policy intact.
-pub fn reserve_gc_heap_for_document(source_bytes int) bool {
-	if source_bytes < 256 * 1024 {
+pub fn document_heap_reservation_element_threshold() int {
+	return 2048
+}
+
+// Substantial DOMs create short-lived style/layout input. Give the collector
+// room before that burst, while large comments and text blobs keep ordinary
+// growth. Collection stays enabled; a refused hint leaves normal growth intact.
+pub fn reserve_gc_heap_for_document(element_count int) bool {
+	if element_count < document_heap_reservation_element_threshold() {
 		return false
 	}
 	$if gcboehm ? {

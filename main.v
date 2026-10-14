@@ -2868,6 +2868,22 @@ fn document_has_window_event_handlers(document &dom.Document) bool {
 	return window.data.event_handler_map.len > 0
 }
 
+fn reserve_document_heap_for_layout(document &dom.Document) {
+	$if gcboehm ? {
+		root := unsafe { &dom.Node(document) }
+		mut current := root.first_child() or { return }
+		mut count := 0
+		threshold := platform.document_heap_reservation_element_threshold()
+		for count < threshold {
+			if current.is_element() {
+				count++
+			}
+			current = current.next_in_pre_order(none) or { break }
+		}
+		_ = platform.reserve_gc_heap_for_document(count)
+	}
+}
+
 fn (mut app BrowserApp) install_loaded_page(loaded LoadedPage, add_history bool) {
 	app.markup = loaded.markup
 	app.source_label = loaded.url
@@ -2883,7 +2899,6 @@ fn (mut app BrowserApp) install_loaded_page(loaded LoadedPage, add_history bool)
 	install_start := checkpoint
 	app.paint_timing.document_install_start_ns = i64(install_start)
 	app.paint_timing.installation_instructions = processmetrics.begin_instructions()
-	_ = platform.reserve_gc_heap_for_document(loaded.markup.len)
 	initiator_origin := if app.document != unsafe { nil } { ?dom.Origin(app.document.origin()) } else { none }
 	previous_document := if app.document != unsafe { nil } { ?&dom.Document(app.document) } else { ?&dom.Document(none) }
 	app.document = if document_url := dom.dom_url_parse(loaded.url, dom.url_about_blank(),
@@ -2892,6 +2907,7 @@ fn (mut app BrowserApp) install_loaded_page(loaded LoadedPage, add_history bool)
 	} else {
 		parse_browser_navigation_document_for_page_with_response_time(loaded.markup, dom.url_about_blank(), initiator_origin, previous_document, unsafe { &dom.Page(app.page_model) }, loaded.monotonic_response_time_ns)
 	}
+	reserve_document_heap_for_layout(app.document)
 	if app.page_model != unsafe { nil } && !app.page_model.has_local_root_navigable() {
 		if navigable := app.document.navigable() {
 			mut page_model := app.page_model
