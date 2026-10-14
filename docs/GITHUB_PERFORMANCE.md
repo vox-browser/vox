@@ -887,6 +887,107 @@ positive first-frame saving. The prepared 71-case/two-GC and nineteen-viewport
 broad batch was skipped; the last completed performance broad baseline remains
 `cc8c4e7c`, with zero new credited instructions saved toward the next 5,000,000.
 
+## Shared background paint snapshots
+
+The retained-paint investigation found another large optional payload embedded
+in every command: a computed background layer and its CSS length-resolution
+context. Text, border, and other commands paid for that storage when they had
+no background. Commit `63b148e1` moves those values to one immutable,
+GC-owned snapshot per recorded background layer. Phase caches and subsequent
+display-list copies share it. Replay still resolves image and gradient geometry
+using the retained context, clipping, and current scroll state.
+
+The normal arm64 layout shrinks `PaintCommand` from **4,488 to 4,128 bytes**,
+an **8.0%** reduction. Each actual background snapshot occupies 368 bytes;
+ordinary commands retain no snapshot. This storage reduction is not itself a
+page-level instruction result. Four focused cases cover absent payloads,
+font-relative and percentage geometry after forced collections, replacement of
+the source background, and snapshot identity across cache/display-list replay.
+They pass with Boehm, `-gc none`, and C `-O2`; two existing background geometry
+cases also pass. The optimized test log records the executed cases and sizes at
+`Build/v/instruction-opt11-background-optimized-test.log`.
+
+Ten interleaved pairs, reversing order on alternate pairs, measured:
+
+| Build | Median installation instructions | Median navigation through first native frame |
+| --- | ---: | ---: |
+| Matching control | 33,350,721,723 | 37,825,806,661 |
+| Shared background snapshots | 33,372,598,403 | 36,743,307,516.5 |
+
+The first-frame median falls **1,082,499,144.5 instructions (2.86%)**;
+installation changes **+0.066%**. Seven of ten paired first-frame measurements
+improve, with a median paired saving of 768,923,607.5. Ranges overlap: control
+36.644–40.203 billion, candidate 36.584–39.288 billion. These are observed
+normal-build counts, not an extrapolation from command size. Raw reports and
+summary use `Build/instructions/vox-opt11-interleaved-*`; paired evidence is
+`Build/v/instruction-opt11-comparison-evidence.json`.
+
+Four control runs and one candidate run install another document after the
+first-frame scope has ended. Their log ordering is checked in the paired
+evidence. The primary comparison always uses the first
+`navigation_to_first_document_paint` interval and first installation, excluding
+that later work. All twenty runs record a final root-process exit sample.
+Post-capture process totals are not the optimization metric.
+
+The matching control is `Build/v/Vox-opt11-control-bin`, SHA-256
+`a595ec5f452d5e90955a7f5babbd7648c3bb2a64c0ce1a0aca602c5f37f78fce`.
+The measured candidate is `Build/v/Vox-opt11-background-bin`, SHA-256
+`941491ec45f1024ffe218d67aee0246ffb9943ee12acd7af6368c006316c7676`.
+A focused before/after native viewport covering fractional font-relative
+geometry, repeat modes, gradients, URL layers, blending, fixed/transformed
+backgrounds, and content-box clipping is **pixel-exact**. Its fixture, log, and
+images use `Build/v/instruction-opt11-background-reference.html`,
+`instruction-opt11-background-visual.log`, and
+`Build/comparisons/instruction-opt11-background/`.
+
+Both page-comparison binaries use the normal C `-O2` and pointer-aware Boehm
+configuration. The control is captured at `e881de58`, and the candidate's
+background implementation is `63b148e1`. Five generated handler/bootstrap
+function bodies restore the independently added `loadedmetadata`/`loadeddata`
+guard expansions to the control behavior; no background changes are restored.
+Function hashes and normalized-body agreement are recorded in
+`Build/v/instruction-opt11-matching-provenance.json`. Both V generation manifests
+record stable source files during capture. The comparison loads the same frozen
+bridge library, SHA-256
+`4eef3aa87146e510d851b5993358a1bbd15dc5d727a1d7872769cdba90f8cd14`,
+from `Build/v/opt11-shared/`; loader traces verify the path for both binaries.
+The GitHub cache fingerprint is unchanged. GC and arena policy are unchanged:
+recorded commands can outlive their producer, so these snapshots require
+retained ownership.
+
+The measured saving crossed the 5,000,000-instruction cadence threshold. One
+broad batch passes **61 selected cases in each GC mode** (31 CSS, 10 SVG,
+20 layout) and **19 native viewport comparisons**, with 16 pixel-exact. The
+three remaining comparisons use the existing bounded tolerances for
+`inline-node`, `text-decorations`, and `canvas-text`; all four SVG mutation
+comparisons remain exact. The layout aggregate's initial import-alias error
+prevented compilation; only those two failed fixture compilations were retried
+after correcting the alias. Production code and test bodies were unchanged.
+Evidence uses `Build/v/instruction-opt11-{broad-*,screenshots.log,validation-result.json}`
+and `Build/comparisons/instruction-opt11-batch/`.
+
+This is the new broad-verification baseline at `63b148e1`, with the measured
+candidate's **36,743,307,516.5** first-frame median. Additional savings since
+that completed batch reset to zero. The matching comparison establishes a Vox
+improvement; the different Chrome workload and rendering endpoint still prevent
+a Chrome-parity claim.
+
+The original, unmodified captured candidate C was also compiled with the
+completed metadata/first-data handler additions, using runtime sources captured
+at `867c5728`. That separately integrated executable is
+`Build/v/Vox-opt11-integrated-bin`, SHA-256
+`cd7b6ef3e955994c510aa4b6c6079d156f2dfe205b31db68d72198de82425f41`,
+and passes startup smoke. During its compilation another build replaced the
+canonical app. The install guard preserved that independently built app:
+its executable contains the new background-snapshot helper and passes startup,
+strict signature verification, and a pixel-exact focused viewport comparison
+against the measured candidate. Its executable SHA-256 is
+`598f9031f0ebd9a8b13929a0b2b2729ca4a4f4a10dd826966163f8a9f08b59d2`;
+its complete source revision is not attributed. Evidence uses
+`Build/v/instruction-opt11-{integrated-source-manifest.json,integrated-smoke.log,bundle-result.json,bundle-visual.log,bundle-signature.log}`.
+The page medians above belong to the pinned matching comparison, rather than
+either separately built executable.
+
 ## Causes and changes
 
 - The V 0.5.2 compatibility compiler's `-prod` Boehm code repeatedly snapshots
