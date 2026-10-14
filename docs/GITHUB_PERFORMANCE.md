@@ -318,6 +318,111 @@ GC_INITIAL_HEAP_SIZE=1073741824 python3 tools/measure_browser_instructions.py \
   --repeat 3 --output Build/instructions/vox-gc-1g
 ```
 
+## Sparse layout storage and paint preparation
+
+A fresh native sample and allocation-stack diagnostic identified sparse layout
+pages, expected subgrid map misses, unused optional paint payloads, coordinate
+walks, and visual-layer array copies as remaining allocation work. The diagnostic
+counted 19,368,346 managed allocation calls requesting 3,754,801,539 bytes through
+capture/exit. It used C `-O0` and sampled backtraces; its instruction totals are
+not normal-build measurements or function self costs.
+
+The normal signed C `-O2` builds were then interleaved five times each, rotating
+their order and copying the same immutable cache snapshot for every run:
+
+| Build | Median installation instructions | Median navigation through first native frame | Median process peak physical footprint, MiB |
+| --- | ---: | ---: | ---: |
+| Saved preceding build | 37,837,758,274 | 43,610,299,125 | 1,661.6 |
+| Compact pages, empty paint payloads, coordinate walks, and layer-stack reuse | 35,823,050,650 | 41,583,891,499 | 1,643.8 |
+| Also compact hidden debug guides in the replay buffer | 34,849,369,922 | 40,419,781,629 | 1,626.0 |
+
+The final median uses **7.3% fewer first-frame instructions** and 7.9% fewer
+installation instructions than the interleaved baseline. Its five first-frame
+counts are 40,419,781,629; 40,643,501,821; 40,317,833,624; 40,430,983,296; and
+39,240,788,918. Compaction alone reduces the first-frame median 2.8% versus the
+preceding optimized build. Earlier three-run and five-run series also varied,
+so their small changes must not be added together or attributed entirely to
+individual functions.
+Peak memory covers the entire process through capture/exit, not just first paint.
+
+Sparse geometry pages now contain inline nullable pointer slots rather than a
+separately allocated array of optional records. Committed geometry retains its
+ordinary collector ownership; intrinsic probes retain their existing bounded
+allocation chunks and explicit release. Subgrid lookups guard expected misses
+before reading the map, avoiding the compatibility compiler's error allocation.
+
+Paint commands explicitly default absent payloads to `none`. Otherwise this
+compiler constructs unused image/video positions and gradient defaults before
+wrapping them as absent. Generated C now omits those length constructors.
+Ordinary coordinate walks use an allocation-free cycle check; malformed cycles
+still use the former guarded traversal and count each distinct record once.
+Visual-layer lowering reads immutable retained paths and trims its private stack
+instead of cloning both arrays for each command. It preserves the payload of an
+already-open prefix when a later path has the same scope identity.
+
+A follow-up diagnostic sampled every allocation of at least 64 KiB as well as
+sparse smaller calls. It recorded 18,778,186 calls requesting 3,593,463,020 bytes
+through capture/exit, before debug-guide compaction. The copied filter buffer
+alone requested 80,175,456 bytes across four recordings: each `PaintCommand`
+occupies 5,704 bytes. The final change removes this copy by stably compacting the
+newly replayed buffer in place. Retained phase buckets keep their guides, and
+turning guides on and off preserves both the cache and earlier recordings.
+These diagnostic totals include later frames and are not isolated first-frame
+allocation counts. Large compatibility paint-tree and command buffers remain
+material targets; GC tuning alone does not remove their work.
+
+GC remains enabled, with the existing DOM-gated 512 MiB capacity hint and worker
+policy. Three-run probes on the unchanged preceding binary with `GC_MARKERS`
+set to 1, 2, or 4 produced first-frame medians of 41.521, 41.726, and 41.623 billion
+instructions. Their small, overlapping differences do not justify a new default.
+Neither this round nor the earlier Chrome lower-bound comparison establishes
+Chrome speed or functionality parity; GitHub module hydration remains incomplete.
+
+The controlled comparison's executable SHA-256 is
+`27e11875063ff5f8b2a24c3564c45511613f1a59c2c07b538b467f2d9460ce8f`.
+Raw final results are `Build/instructions/vox-opt3b-interleaved-{before,previous,compaction}-[1-5].run-1.json`.
+Earlier five-run results use `vox-opt3-interleaved-{before,defaults,final}-[1-5].run-1.json`;
+the individual three-run stages use `vox-opt3-{layout-storage,paint-default,paint-offset,final}.run-*.json`.
+Collector probes use `vox-opt3-gc-markers-{1,2,4}.run-*.json`. All interleaved runs
+record the same cache fingerprint documented above.
+
+Focused layout-state/arena, paint transport, typed adapter, text-run, and
+document-tree suites pass. Sparse storage and release also pass with `-gc none`;
+storage, coordinate, and visual-layer tests pass with C `-O2` and pointer-aware
+Boehm collection, as does the repeated guide-toggle/cache-retention test. The
+signed measured build passes `--headless-smoke` and all
+17 viewport comparisons: the existing fifteen-case set plus
+`abspos-inside-opacity-inside-relpos` and
+`visual-context/backdrop-filter-inside-filter-layer`. All four SVG mutation
+cases and both added position/filter cases are pixel-exact.
+
+Validation logs use `Build/v/instruction-opt3-*`. All seventeen final compaction
+comparisons pass in `instruction-opt3-compaction-screenshots.log`. They use the
+exact saved measured executable through a copy of the normal capture helper
+with rebuilding disabled. Earlier screenshots triggered an unsuccessful
+automatic rebuild during concurrent wheel-handler edits; those in-progress
+sources are outside the controlled measured snapshot.
+
+The compaction build uses the normal build script from a pinned source snapshot
+under `Build/opt3-pinned-source`, preserving the preceding build's wheel code
+while the independent edits were in progress. It writes the same signed `Build/v/Vox.app`;
+the saved measured executable is `Build/v/Vox-opt3-compaction-bin`. Archived
+tests have a `.v.txt` suffix so normal test discovery does not run them twice.
+The source-tree build outputs are linked to the repository's existing outputs.
+
+After the independent wheel work was committed, the current checkout was built
+again with `sh build-prod-browser.sh`. The integrated bundle passes signature
+verification and `--headless-smoke`; its SHA-256 is
+`2aae73baffa39798d7f3a127ffbfe9f736769d14b3cabc22d5f7276f47aa7823`.
+Three integration measurements give first-frame counts of 40,754,046,316;
+40,726,892,057; and 40,469,323,798, with a 34,819,209,201-instruction installation
+median. These include the updated wheel code and are recorded separately as
+`Build/instructions/vox-opt3-integrated.run-*.json`, rather than replacing the
+interleaved comparison with a different source snapshot.
+The integrated bundle also passes the four SVG mutation comparisons and the
+backdrop/filter-layer comparison, all pixel-exact, in
+`Build/v/instruction-opt3-integrated-screenshots.log`.
+
 ## Causes and changes
 
 - The V 0.5.2 compatibility compiler's `-prod` Boehm code repeatedly snapshots
