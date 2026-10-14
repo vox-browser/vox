@@ -235,17 +235,16 @@ fn svg_element_model(element &dom.Element) svg.Element {
 	// model so the shared filter-graph translation sees the same inputs.
 	if element.local_name() in ['feFlood', 'feDropShadow'] {
 		if properties := css.computed_properties_for_element(element) {
-			computed := css.resolve_computed_values_for_document(properties, element.document())
-			color := computed.flood_color()
-			attributes['flood-color'] = '#${color.r:02x}${color.g:02x}${color.b:02x}${color.a:02x}'
-			attributes['flood-opacity'] = '${computed.flood_opacity()}'
+			context := css.ColorResolutionContext.for_computed_properties(properties, element.document())
+			color := properties.color_or_fallback(.flood_color, context, css.ComputedColor.black())
+			attributes['flood-color'] = '#${color.red():02x}${color.green():02x}${color.blue():02x}${color.alpha():02x}'
+			attributes['flood-opacity'] = '${properties.flood_opacity()}'
 		}
 	}
 	// SVGFilterElement::gfx_filter() reads this inherited property from each
 	// primitive's computed style. Preserve it in the standalone SVG graph model.
 	if properties := css.computed_properties_for_element(element) {
-		computed := css.resolve_computed_values_for_document(properties, element.document())
-		attributes['color-interpolation-filters'] = match computed.color_interpolation_filters() {
+		attributes['color-interpolation-filters'] = match properties.color_interpolation_filters() {
 			.auto_ { 'auto' }
 			.srgb { 'sRGB' }
 			.srgb_linear { 'linearRGB' }
