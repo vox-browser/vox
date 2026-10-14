@@ -332,6 +332,7 @@ def main():
                           "aggregate_is_lower_bound": result["aggregate_is_lower_bound"],
                           "root_instructions": result["root_instructions"],
                           "root_final_exit_sample": result["root_final_exit_sample"],
+                          "root_lifetime_max_phys_footprint": result["root_lifetime_max_phys_footprint"],
                           "missing_final_sample_count": result["missing_final_sample_count"],
                           "native_scopes": result.get("native", {}).get("scopes"),
                           "navigation_to_screenshot_instructions": result.get("navigation_to_screenshot", {}).get("instructions")}), flush=True)

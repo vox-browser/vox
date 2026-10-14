@@ -31,6 +31,19 @@ class FakeCounters:
 
 
 class CounterAccountingTests(unittest.TestCase):
+    def test_peak_memory_is_retained_and_is_not_summed_across_processes(self):
+        api = FakeCounters()
+        api.readings[1] = Reading(1, 100, False, 1000, 2000, 6000)
+        api.readings[2] = Reading(2, 200, False, 300, 400, 2000)
+        counter = ProcessTreeCounter(api, 1)
+        baseline = counter.sample()
+        api.readings[1] = Reading(1, 100, True, 1200, 2400, 4000)
+        report = counter.report(baseline)
+        self.assertEqual(report["root_lifetime_max_phys_footprint"], 6000)
+        self.assertEqual(report["processes"][0]["lifetime_max_phys_footprint"], 6000)
+        self.assertEqual(report["processes"][1]["lifetime_max_phys_footprint"], 2000)
+        self.assertEqual(report["instructions"], 200)
+
     def test_cache_snapshot_is_fresh_for_each_run_and_does_not_modify_template(self):
         with tempfile.TemporaryDirectory() as directory:
             template = Path(directory) / "template"
@@ -125,6 +138,7 @@ class NativeCounterTests(unittest.TestCase):
         first = api.read(os.getpid())
         second = api.read(os.getpid())
         self.assertGreater(second.instructions, first.instructions)
+        self.assertGreater(first.peak_physical_footprint, 0)
         self.assertEqual(first.identity, second.identity)
 
     def test_exit_counters_can_be_read_before_wait_reaps_the_child(self):

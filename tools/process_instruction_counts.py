@@ -34,6 +34,7 @@ class Reading:
     exited: bool
     instructions: int
     cycles: int
+    peak_physical_footprint: int = 0
 
     @property
     def identity(self):
@@ -61,7 +62,8 @@ class MacCounters:
             code = ctypes.get_errno()
             raise OSError(code, os.strerror(code), str(pid))
         return Reading(pid, usage.ri_proc_start_abstime, usage.ri_proc_exit_abstime != 0,
-                       usage.ri_instructions, usage.ri_cycles)
+                       usage.ri_instructions, usage.ri_cycles,
+                       max(usage.ri_lifetime_max_phys_footprint, usage.ri_phys_footprint))
 
     def children(self, pid):
         capacity = 32
@@ -96,6 +98,7 @@ class ProcessTreeCounter:
         self.records = {}
         self.paths = {}
         self.missing_final = set()
+        self.peak_footprints = {}
         self.denied = {}
         self.lock = threading.Lock()
 
@@ -125,6 +128,8 @@ class ProcessTreeCounter:
                 if pid == self.root_pid:
                     self.root_identity = reading.identity
                 self.records[reading.identity] = reading
+                self.peak_footprints[reading.identity] = max(
+                    self.peak_footprints.get(reading.identity, 0), reading.peak_physical_footprint)
                 if reading.identity not in self.paths:
                     self.paths[reading.identity] = self.api.path(pid)
                 if reading.exited:
@@ -141,6 +146,7 @@ class ProcessTreeCounter:
             missing_final = set(self.missing_final)
             denied = dict(self.denied)
             root_identity = self.root_identity
+            peak_footprints = dict(self.peak_footprints)
         processes = []
         for key, reading in sorted(readings.items()):
             old = baseline.get(key)
@@ -151,12 +157,15 @@ class ProcessTreeCounter:
             processes.append({"pid": reading.pid, "start_ticks": reading.start,
                               "executable": paths[key], "instructions": instructions,
                               "cycles": cycles, "final_exit_sample": reading.exited,
+                              "lifetime_max_phys_footprint": peak_footprints.get(key) or None,
                               "missing_final_sample": key in missing_final})
         root = readings.get(root_identity)
         root_before = baseline.get(root_identity)
         return {"instructions": sum(p["instructions"] for p in processes),
                 "root_instructions": (root.instructions - (root_before.instructions if root_before else 0)) if root else None,
                 "root_final_exit_sample": root.exited if root else False,
+                # Per-process peaks occur at different times; do not sum them.
+                "root_lifetime_max_phys_footprint": peak_footprints.get(root_identity) or None,
                 "aggregate_is_lower_bound": True,
                 "missing_final_sample_count": sum(p["missing_final_sample"] for p in processes),
                 "processes": processes, "unreadable_pids": denied,
