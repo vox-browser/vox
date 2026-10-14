@@ -444,3 +444,15 @@ all older inventory, source-unit mapping and finding-ledger records.
 Current global inventory fields, tables and references remain unchanged.
 Later independent canonical CSS/Layout changes are outside this code pin
 and receive no Element wheel validation or parity credit.
+
+Native compact Element `onwheel` (`d86d5ac2`, 2026-10-14 UTC): HTML, SVG and MathML
+facades use their actual EventTarget handler slot, preserving native owner identity,
+legacy callback conversion, replacement order and exact false cancellation. Raw HTML
+attribute replay preserves equal-text writes and absent removals; raw Element source
+remains uncompiled. Seven selected files /17 cases pass in each GC mode through composed
+verification: nine cases completed before a CLI interruption and eight remaining cases
+completed in persistent runs. Verification uses production 3a3aa08a and tests 29aab226.
+Signed build/startup, two exact handler pages, all 11 smoke cases (eight exact) and
+eight exact SVG regressions passed. Current global inventory and historical records
+remain intact. See [Element onwheel
+evidence](../docs/translation-audit/NATIVE_ELEMENT_WHEEL_HANDLER.md).
