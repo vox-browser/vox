@@ -1358,11 +1358,13 @@ evidence](docs/translation-audit/NATIVE_MEDIA_WHEEL_RAW_HANDLER.md).
   broad verification. Compare the same benchmark endpoint and workload, record
   the measured baseline and accumulated savings, and do not run broad suites
   for every individual fix below that threshold.
-  The latest performance broad batch is shared SVG gradient snapshots `df931f85`:
-  80 selected CSS/SVG/layout cases passed in both GC modes and 19 screenshot
-  comparisons passed (16 pixel-exact). Its matching-snapshot GitHub first-frame
-  median is 36,159,520,428 instructions, with zero additional savings accumulated
-  since this batch; see `docs/GITHUB_PERFORMANCE.md` for the comparison and limits.
+  The latest performance broad batch is on-demand intrinsic geometry `1e35047a`:
+  87 selected CSS/SVG/layout cases passed in both GC modes and 19 screenshot
+  comparisons passed (16 pixel-exact). Its candidate GitHub first-frame median
+  is 36,500,209,444.5 instructions, with zero additional savings accumulated.
+  The observed 0.40% page reduction is noisy (six of ten pairs improve); the
+  allocator diagnostic improves 25.57%. See `docs/GITHUB_PERFORMANCE.md` for
+  the scopes, control provenance, and uncertainty.
 - Outside instruction-count optimization, run broad regression suites once per
   ten completed fixes, not after every fix.
   Broad suites include full translation/package test batches, the full LibJS AST

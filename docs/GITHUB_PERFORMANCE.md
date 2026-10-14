@@ -1094,6 +1094,93 @@ scopes. They are recorded in `Build/v/instruction-opt12-remaining-checkpoints.js
 to guide the next profiling pass. Chrome functionality and instruction parity
 remain unestablished.
 
+## Initialize intrinsic geometry only when used
+
+Feature `1e35047a` removes eager construction of all sixteen `UsedValues` records
+when an intrinsic-measurement chunk is allocated. Each requested record already
+receives its complete `UsedValues{}` defaults on first use. Constructing every
+slot first repeated that work and initialized slots that short probes never use.
+The empty line-box array headers do not themselves allocate native buffers at
+C `-O2`; the removed work is default initialization and copying.
+
+The chunk keeps its original fixed-array layout and one scanned allocation.
+`vcalloc` leaves unused slots zeroed; the existing per-slot assignment installs
+valid optional and array defaults before a record is exposed. The existing
+probe-boundary release, chunk capacity, committed geometry ownership, and GC
+policy are unchanged. No global `-prealloc` or GC disabling is introduced.
+
+A fresh native sample exercises this allocator during intrinsic layout. A
+separate headless diagnostic calls the normal binaries' paged-store allocation
+and scalar-probe release functions for **10,000 probes of eight records each**.
+Hardware snapshots surround that loop inside one debugger expression, excluding
+debugger stop/step overhead and state-factory setup. Three interleaved pairs
+measure median **78,066,647 → 58,105,102 instructions**, a **25.57%** reduction;
+all three pairs improve. This isolates geometry allocation/initialization and
+release; it is not a measurement of complete intrinsic layout or page loading.
+The six counts and exact diagnostic scope are in
+`Build/v/instruction-opt13-inprocess-probe-result.json`, with the expression and
+logs under `instruction-opt13-inprocess-*`. Earlier debugger step-out counts
+include trap overhead and are excluded from the saving claim.
+
+Ten normal-build GitHub pairs, reversing order on alternating pairs, measure:
+
+| Build | Median installation instructions | Median navigation through first native frame |
+| --- | ---: | ---: |
+| Matching eager-initialization control | 32,237,342,342 | 36,645,898,548.5 |
+| Initialize requested records only | 32,175,571,592 | 36,500,209,444.5 |
+
+The observed first-frame median is **145,689,104 instructions lower (0.40%)**,
+but only **six of ten pairs improve**. A paired bootstrap interval for the
+median saving spans **−390,541,355 to +1,343,835,733.5** instructions. This small
+whole-page difference remains within the observed variation; a repeatable page
+saving is not established. Installation's observed reduction is 61,770,750
+instructions (0.19%). All twenty runs have valid capture geometry, exactly one
+document installation, and final root-process exit samples; none were rerun.
+Raw reports and the cohort summary use
+`Build/instructions/vox-opt13-interleaved-*`; paired statistics and the remaining
+checkpoint medians are in `Build/v/instruction-opt13-comparison-evidence.json`.
+
+Both comparands include the same concurrent native media-handler updates. The
+control uses the common captured V-generated C with only the eager arena
+allocator restored from the preceding verified capture. Its restored function
+matches an independent V generation from the original source byte for byte;
+all six referenced geometry/chunk record definitions are also identical. Every
+other generated C byte is shared, and both native builds use identical C `-O2`
+flags, objects, pointer-aware Boehm, and the frozen rendering library. The
+restoration audit and independent verification are in
+`instruction-opt13-control-{generation-result,verification-result}.json`;
+source, flags, and hashes are in `instruction-opt13-matching-provenance.json`.
+The immutable GitHub cache fingerprint remains
+`0570cfa09af662a0f1fa6735a563bad9dc2d332579e75ef06d50931f6a3aae95`.
+
+The observed page median crossed the requested 5,000,000-instruction trigger,
+so one broad batch ran: **87 cases in each GC mode** (31 CSS, 10 SVG, 46 layout)
+and **19 native viewport comparisons**, with 16 pixel-exact and the same three
+bounded differences as the preceding baseline. Seven focused checks also pass
+with GC disabled and with optimized C `-O2`/Boehm, including forced collections,
+complete defaults across chunk boundaries, release/reuse, pointer stability,
+and nested allocations retained after their producer returns. The focused
+flex/grid/table intrinsic viewport is pixel-exact before/after. A temporary
+capture-helper permission failure occurred before the first broad screenshot;
+only that capture batch resumed, preserving the completed unit results.
+Evidence uses `instruction-opt13-{validation-result,focused-*,screenshots}.json`
+(or `.log`) and `Build/comparisons/instruction-opt13-{intrinsic,batch}/`.
+
+The new broad-test baseline is `1e35047a` at **36,500,209,444.5** observed
+first-frame instructions, with zero additional savings accumulated. The ledger
+credits no established whole-page saving for this noisy result; the allocator
+microbenchmark is recorded separately. Chrome instruction and functionality
+parity remain unestablished, including the existing GitHub module-hydration gap.
+
+The signed canonical `Build/v/Vox.app` contains the measured candidate's code,
+passes startup smoke and strict signature verification, and has the same
+`__TEXT,__text` hash as the saved standalone binary. The control SHA-256 is
+`8dc29e9f0008472c8bf24fa3e8c163316259ecc50adaf14d3c028608d29da97a`;
+the candidate is `3665b98650cb37ddb21836c764c22e41779e1c9bb2aa21143202b1dc435d9b6a`.
+Bundle signing changes the installed executable hash to
+`b01846ea4edc0b3155936b0170ac7b429f4481083eaabab4b25564b6e65f92c0`.
+Bundle evidence uses `Build/v/instruction-opt13-bundle-*`. Relaunch Vox to use it.
+
 ## Causes and changes
 
 - The V 0.5.2 compatibility compiler's `-prod` Boehm code repeatedly snapshots
