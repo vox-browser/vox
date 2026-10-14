@@ -2316,3 +2316,17 @@ Native wheel input reaches the owning Page's actual trusted DOM WheelEvent befor
 
 Native ordinary Element wheel listeners (`25c58496`, 2026-10-14 UTC):
 Ordinary compact Element facades now route case-sensitive wheel add/remove listeners to their actual owning DOM EventTarget, preserving other legacy click/load delivery. Lazy facade resolution and retained created-node identities cover HTML, SVG qualified names and nullable namespaces. Receiver branding precedes one author DOMString conversion; captured native options retain callback/capture identity, once, passive and AbortSignal behavior. Listener return false is ignored; preventDefault retains its gates. Verification on 2026-10-14 UTC composes five unchanged files /16 passing cases with three corrected owner cases in each GC mode (six files /19 cases, six new functions). Original numeric-expression and intermediate conditional-pointer compiler fixture failures retain zero owner-body/full-batch credit. A bounded first-context CanvasHost sizing correction preserves the existing canvas identity and honors dimensions set before getContext. Fresh isolated signed production at the synthetic feature-plus-correction pin completes five stages and verifies six software GG injections, eleven screenshot smoke cases (eight exact /three tolerated) and eight exact SVG regressions. The original canonical preflight has no build credit; the first isolated production retains a canvas-text failure, ten smoke passes and no full-batch/SVG credit. Both failures and a later interrupted build with unavailable terminal status remain preserved without full pass credit; concurrent canonical work is preserved. No onwheel IDL/raw content compilation or full HTMLElement prototype surface is added. See [Element wheel-listener evidence](docs/translation-audit/NATIVE_ELEMENT_WHEEL_LISTENERS.md).
+
+Scoped ordinary Element wheel-listener inventory (`25c58496`, 2026-10-14 UTC):
+At this code pin only, the independent counter records 78 owners /2,238
+assigned files /433,415 implementation /161,056 test physical V LOC. All
+eight feature paths are excluded browser/root support paths: zero assigned
+file, implementation or test deltas, with assigned hashes/newlines exact.
+`Build/audit-fixes/native-element-wheel-listeners-inventory-current.json` (SHA256 `f27a9da741d5ab51c87a9eec381c4fbc35a38fb95fc914aed4d2854836521a7d`).
+The prior 33ba13ac/590ac counter and its separate Page +46 implementation
+/+327 test lines /one-file attribution remain dated history, along with
+all older inventory, source-unit mapping and finding-ledger records.
+`Build/audit-fixes/native-wheel-input-routing-inventory-current.json` (SHA256 `590ac39c939ef72b92c769b0c66f7fdaf09c2825e64ce6a64141dbaa39764557`).
+Current global inventory fields, tables and references remain unchanged.
+Later independent canonical CSS/Layout changes are outside this code pin
+and receive no Element wheel validation or parity credit.
