@@ -492,3 +492,19 @@ deltas are zero. Counter:
 preserves current global tables, pins, references, source-unit mappings and historical
 finding ledgers. See [raw HTML wheel-handler
 evidence](../docs/translation-audit/NATIVE_ELEMENT_WHEEL_RAW_HANDLER.md).
+
+Native compact media raw `onwheel` (`ba8108a9`, 2026-10-14 UTC): Audio/video raw wheel
+attributes compile lazily through the actual native owner. The combined Document
+compiler verifies the same Runtime, Document, settings, wrapper, cached model and live
+MediaElementHost record; an array retains installed owners. Isolated FunctionBody
+parsing precedes lazy wrapper resolution, which is followed by slot/source and ownership
+rechecks. Lookup uses actual Element -> Document -> Global objects, with no
+ancestor-form scope. Cache, listener order, equal-text raw/IDL replacement, CSP,
+strictness, scripting gates, original exceptions and exact false cancellation stay on
+the native handler path. Actual validation: All 30 cases in nine selected files pass in
+each GC mode, including six new cases; the fresh signed browser passes startup, two
+exact media raw handler pages, all 11 smoke cases (eight exact) and eight exact SVG
+cases. Other raw handlers, unavailable/generic/foreign owners, close during active JS,
+partial named-property interfaces, anonymous JSC intrinsic source and physical input
+parity remain open. See [raw media wheel-handler
+evidence](../docs/translation-audit/NATIVE_MEDIA_WHEEL_RAW_HANDLER.md).
