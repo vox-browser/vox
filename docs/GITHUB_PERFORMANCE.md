@@ -1181,6 +1181,107 @@ Bundle signing changes the installed executable hash to
 `b01846ea4edc0b3155936b0170ac7b429f4481083eaabab4b25564b6e65f92c0`.
 Bundle evidence uses `Build/v/instruction-opt13-bundle-*`. Relaunch Vox to use it.
 
+## Coalesce native paint recording during frame preparation
+
+Feature `31ba3356` keeps layout synchronous while delaying the native shell's
+paint-command assembly until frame preparation finishes. A single native draw
+can install the cached document, process callbacks, resize, sample animations,
+and set the screenshot scroll offset before presenting pixels. Previously,
+`relayout()` recorded immediately, so GitHub's initial layout and animation
+update each assembled a list before its first submitted document frame.
+
+The shell now records after those updates. DOM geometry and explicit display-
+list queries remain synchronous; a pending shell refresh adopts even an already
+cached list after a document replacement. Nested native frames flush their own
+current commands while preserving the outer frame's deferral. Relayout calls
+outside native frame preparation still record immediately. Focused checks cover
+mutations, animation transforms, synchronous geometry and paint queries, nested
+frames, replacement documents, scrolling, editable carets, callback order and
+exceptions, and layout-tree-only mode. All eleven pass with Boehm and with GC
+disabled, using the production native feature defines and libraries. The
+focused C test builds are unoptimized; the measured browser binaries use normal
+C `-O2`, Boehm, and the old V compiler without `-prod` or `-prealloc`.
+
+An initial focused-test link command omitted the native bridge libraries;
+relinking the unchanged generated test C with the correct libraries resolved it.
+An attempted retention of Clang's temporary optimized object preserved its empty
+initial inode, so the focused tests were rebuilt without C optimization. These
+setup failures are retained under `Build/v/instruction-opt14-focused-*`; no
+behavior assertions failed. The production builds already had the complete
+native link command and were unaffected.
+
+The first ten interleaved pairs observed **36,316,430,487 → 35,660,421,509.5**
+first-frame instructions (1.81% lower), but only seven pairs improved and the
+paired bootstrap interval included zero. Before taking more samples, the run
+was extended to a fixed **thirty pairs** with the same saved binaries, cache,
+flags, shared library, viewport, endpoint, and alternating order. The first-ten
+reports remain separate from the thirty-pair summary. No runs were discarded.
+
+| Build | Median navigation through first submitted native document frame |
+| --- | ---: |
+| Immediate shell recording | 36,316,430,487 |
+| Deferred shell recording | 35,155,866,846 |
+
+The thirty-pair first-frame median falls **1,160,563,641 instructions (3.20%)**.
+Twenty-two pairs improve. The paired median saving is **1,157,509,205**; its
+95% percentile bootstrap interval is **165,262,518 to 1,896,450,137.5**
+instructions (30,000 paired resamples, seed 14). The one-sided sign probability
+is 0.0081. Every control records twice and every candidate once before the
+first frame. The paint-command checkpoint interval totals are lower in all
+thirty pairs; those adjacent checkpoint intervals are diagnostic rather than
+renderer self costs, and work can move between them. The unchanged first-frame
+scope is the page comparison. Installation intervals no longer cover the same
+work because their eager paint now runs later in frame preparation.
+
+All sixty captures have valid native geometry and exactly one installation
+before the primary endpoint. Candidate pair 19 additionally installs a live
+background refresh **after** that endpoint. Native draw reports first-frame
+instructions before it starts the pending network navigation, so that refresh
+cannot enter the reported primary count. The run is retained, and its later
+installation and final capture are not used as page-work comparators. This is
+recorded in the evidence rather than silently discarding or rerunning it.
+
+Raw reports use `Build/instructions/vox-opt14-interleaved-*`; the thirty-pair
+summary is `vox-opt14-interleaved-30-summary.json`. First-ten statistics remain
+in `instruction-opt14-comparison-evidence.json`; the complete comparison,
+interval diagnostics, hashes and refresh audit are in
+`Build/v/instruction-opt14-30-comparison-evidence.json`.
+
+The control is a fresh C capture before the change; runtime source manifests
+show only `main.v` and the new `main_frame_paint.v` differ. Both captures remained
+stable during generation, and native commands match except for their C input
+and binary output. All 120 shared object/archive inputs retain their recorded
+hashes. The control binary SHA-256 is
+`6b0e767dffae1d38cbec4531232de146ec1219417537c82f3838507cd8b7b619`;
+the candidate is
+`57b4cb60ea60c70fa79c2a2e7be56db9bc0b4e143e7630385d663b71958fb965`.
+The frozen native library and immutable GitHub cache retain the preceding
+round's fingerprints. Capture manifests, flags, input hashes, and installation
+guards are in `Build/v/instruction-opt14-matching-provenance.json`.
+
+The first-ten observed median crossed the 5,000,000-instruction trigger, so
+**one** broad batch ran: 87 selected CSS/SVG/layout cases in each GC mode and
+19 native viewport comparisons, 16 pixel-exact. The same three bounded
+screenshot differences remain. The focused intrinsic flex/grid/table viewport
+is also pixel-exact before/after. Extending the instruction comparison did not
+repeat the broad batch. Evidence is in
+`Build/v/instruction-opt14-validation-result.json`,
+`instruction-opt14-broad-*`, `instruction-opt14-screenshots.log`, and
+`Build/comparisons/instruction-opt14-{intrinsic,batch}/`.
+
+The new broad-test baseline is `31ba3356` at **35,155,866,846** first-frame
+instructions. The 1,160,563,641 measured saving is included in that verified
+baseline, with zero additional savings accumulated toward the next 5,000,000.
+Chrome instruction and functionality parity remain unestablished, including
+the existing GitHub module-hydration gap.
+
+The signed canonical `Build/v/Vox.app` contains the measured candidate, passes
+headless startup and strict signature verification, and has an identical
+`__TEXT,__text` hash to the saved candidate. Bundle signing changes its installed
+executable SHA-256 to
+`d55690f5cd2bef86b5720261946d8b3cca2c8be67635a642dc3a66036d112ac5`.
+Evidence uses `Build/v/instruction-opt14-bundle-*`. Relaunch Vox to use it.
+
 ## Causes and changes
 
 - The V 0.5.2 compatibility compiler's `-prod` Boehm code repeatedly snapshots
