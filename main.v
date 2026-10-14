@@ -1288,6 +1288,7 @@ fn browser_fetch_video_poster(resource_url dom.URL) !&dom.Bitmap_ {
 fn install_video_poster_fetch_hooks(document &dom.Document) {
 	root := unsafe { &dom.Node(document) }
 	for element in css.query_selector_all(root, 'video') {
+		if !element.is_html_element() { continue }
 		video_element := unsafe { &dom.HTMLVideoElement(element) }
 		mut model := html.html_video_element_model_for_dom_element(video_element)
 		model.set_poster_fetch_hook(browser_fetch_video_poster)
@@ -1306,6 +1307,7 @@ fn install_local_video_frames(document &dom.Document, base_url string, markup st
 	seconds := requested_video_frame_time(markup)
 	mut decoded := map[string]&dom.Bitmap_{}
 	for element in css.query_selector_all(root, 'video') {
+		if !element.is_html_element() { continue }
 		mut source := element.get_attribute_value('src')
 		if source == '' {
 			if markup.contains('solid-blue-160x120.webm') {
@@ -1426,7 +1428,7 @@ fn javascript_initial_state(document &dom.Document, current_url string, scripts 
 			'hasChildren':  json2.Any(element.as_node().has_children())
 			'disabled':     json2.Any(element.has_attribute('disabled'))
 		}
-		if element.local_name() == 'video' {
+		if element.is_html_element() && element.local_name() == 'video' {
 			video := unsafe { &dom.HTMLVideoElement(element) }
 			model := html.html_video_element_model_for_dom_element(video)
 			if frame := model.current_decoded_image_frame() {
@@ -1912,7 +1914,7 @@ fn apply_javascript_canvas_state(document &dom.Document, mut element dom.Element
 	// byte-valued JSON numbers is both lossy and needlessly expensive.
 	if source_id := json_string_property(element_state, 'canvasVideoSource') {
 		if source_element := document.get_element_by_id(source_id) {
-			if source_element.local_name() == 'video' {
+			if source_element.is_html_element() && source_element.local_name() == 'video' {
 				video := unsafe { &dom.HTMLVideoElement(source_element) }
 				model := html.html_video_element_model_for_dom_element(video)
 				if source_frame := model.current_decoded_image_frame() {
