@@ -775,7 +775,7 @@ pub:
 	scope_id   u64
 	opacity    f64 = 1.0
 	blend_mode painting.CompositingAndBlendingOperator
-	filter     ?painting.GfxFilter
+	filter     ?painting.GfxFilter = none
 	mask_clip  PaintClip
 }
 
@@ -854,6 +854,8 @@ pub:
 	font_smoothing      css.FontSmoothing
 }
 
+// Spell out absent payloads: the compatibility compiler otherwise constructs
+// their nested defaults (including allocated lengths) before wrapping in none.
 pub struct PaintCommand {
 pub mut:
 	kind      string // fill_rect/fill_rounded_rect/stroke_rounded_rect/fill_ellipse/stroke_ellipse/fill_polygon/draw_line/draw_text/draw_svg_path
@@ -864,7 +866,7 @@ pub mut:
 	color     string
 	force_dark_role           painting.ForceDarkRole
 	force_dark_role_set       bool
-	force_dark_backdrop       ?painting.Color
+	force_dark_backdrop       ?painting.Color = none
 	apply_force_dark_to_image bool
 	line_box_debug            bool
 	text      string // for 'draw_text'
@@ -876,7 +878,7 @@ pub mut:
 	// DisplayListRecorder::DrawGlyphRun retains shaped glyph indices and
 	// positions. Raw text remains only as the portable/backend compatibility
 	// fallback; the native player must not shape it again during every repaint.
-	glyph_run           ?&platform.GlyphRun
+	glyph_run           ?&platform.GlyphRun = none
 	glyph_translation_x f64
 	glyph_translation_y f64
 	glyph_orientation   painting.Orientation
@@ -911,7 +913,7 @@ pub mut:
 	shadow_inner_height   f64
 	shadow_inner_radii    BoxRadii
 	// The gradient for a 'fill_gradient' command (a linear-gradient background).
-	gradient                  ?LinearGradient
+	gradient                  ?LinearGradient = none
 	gradient_background_layer bool
 	// `draw_svg_path` payload.
 	path      string
@@ -922,12 +924,12 @@ pub mut:
 	points                 []f64
 	path_polygons          [][]f64
 	stroke_color           string
-	fill_linear_gradient   ?painting.SVGLinearGradientPaintStyle
-	stroke_linear_gradient ?painting.SVGLinearGradientPaintStyle
-	fill_radial_gradient   ?painting.SVGRadialGradientPaintStyle
-	stroke_radial_gradient ?painting.SVGRadialGradientPaintStyle
-	fill_pattern           ?&painting.SVGPatternPaintStyle
-	stroke_pattern         ?&painting.SVGPatternPaintStyle
+	fill_linear_gradient   ?painting.SVGLinearGradientPaintStyle = none
+	stroke_linear_gradient ?painting.SVGLinearGradientPaintStyle = none
+	fill_radial_gradient   ?painting.SVGRadialGradientPaintStyle = none
+	stroke_radial_gradient ?painting.SVGRadialGradientPaintStyle = none
+	fill_pattern           ?&painting.SVGPatternPaintStyle = none
+	stroke_pattern         ?&painting.SVGPatternPaintStyle = none
 	stroke_width           f64
 	stroke_dasharray       []f64
 	stroke_dashoffset      f64
@@ -942,7 +944,7 @@ pub mut:
 	stroke_opacity         f64 = 1.0
 	// `draw_background_image` payload. Intrinsic dimensions are resolved by the image renderer.
 	image_url                   string
-	background_svg_document     ?&dom.Document
+	background_svg_document     ?&dom.Document = none
 	background_svg_color_scheme css.PreferredColorScheme = .auto_
 	image_intrinsic_width       f64
 	image_intrinsic_height      f64
@@ -958,31 +960,31 @@ pub mut:
 	image_clip_height           f64
 	image_clip_radii            BoxRadii
 	image_attachment            string
-	image_computed_layer        ?css.BackgroundLayerData
+	image_computed_layer        ?css.BackgroundLayerData = none
 	image_resolution_context    css.LengthResolutionContext
 	image_scroll_offset_x       f64
 	image_scroll_offset_y       f64
 	background_blend_mode       painting.BlendMode
 	// BackgroundPainting temporarily switches only fixed layers to the visual
 	// context which compensates every ancestor scroll frame.
-	visual_context_index ?int
+	visual_context_index ?int = none
 	// ImagePaintable's retained, typed replaced-content geometry. Background
 	// images leave this empty and continue through BackgroundPainting.
-	image_paintable       ?painting.ImagePaintable
-	replaced_image_bitmap ?&dom.Bitmap_
+	image_paintable       ?painting.ImagePaintable = none
+	replaced_image_bitmap ?&dom.Bitmap_ = none
 	// CanvasPaintable publishes its current RGBA surface as external content.
-	canvas_bitmap    ?&dom.Bitmap_
-	canvas_paintable ?painting.CanvasPaintable
+	canvas_bitmap    ?&dom.Bitmap_ = none
+	canvas_paintable ?painting.CanvasPaintable = none
 	// VideoPaintable retains the representation switch separately from the
 	// optional poster/current-frame bitmap.
-	video_bitmap         ?&dom.Bitmap_
-	video_frame_source   ?&painting.VideoFrameSource
+	video_bitmap         ?&dom.Bitmap_ = none
+	video_frame_source   ?&painting.VideoFrameSource = none
 	video_representation painting.VideoRepresentation
-	video_paintable      ?painting.VideoPaintable
+	video_paintable      ?painting.VideoPaintable = none
 	// NavigableContainerViewportPaintable retains the hosted document's
 	// display list as a nested command stream rather than rasterizing it.
 	nested_viewport_commands  []PaintCommand
-	nested_viewport_paintable ?painting.NavigableContainerViewportPaintable
+	nested_viewport_paintable ?painting.NavigableContainerViewportPaintable = none
 	// Synthetic balanced controls around the complete background color/layer
 	// group. The begin command owns the inclusive-subtree glyph runs.
 	text_clip_runs []PaintTextClipRun
@@ -999,7 +1001,7 @@ pub mut:
 	// A DisplayListRecorder clip local to this command's paint phase. Unlike an
 	// accumulated visual-context clip, it does not apply to other phases or
 	// descendants (FieldSetPaintable uses this for its background and top edge).
-	recording_clip ?LayoutRect
+	recording_clip ?LayoutRect = none
 	// Effects and SVG masks are group operations. Retain their ancestor order so
 	// replay can emit balanced layer boundaries around the complete subtree.
 	visual_layer_list &PaintVisualLayerList = unsafe { nil }
@@ -1007,7 +1009,7 @@ pub mut:
 	// ApplyBackdropFilter samples the already-painted destination. If this box
 	// also has `filter`, that sample comes from outside its newly-opened filter
 	// layer while the filtered backdrop is painted into the layer with the box.
-	backdrop_filter                ?painting.GfxFilter
+	backdrop_filter                ?painting.GfxFilter = none
 	backdrop_source_outside_filter bool
 	// Synthetic display-list controls bracket all commands belonging to one
 	// SVG mask/clip stacking scope so destination-in is applied once.
