@@ -316,7 +316,8 @@ fn text_may_require_bidi_processing(text_node &TextNode) bool {
 		return false
 	}
 	for code_point in text.runes() {
-		if dom.unicode_bidirectional_class(u32(code_point)) in [
+		bidi_class := dom.unicode_bidirectional_class(u32(code_point))
+		if bidi_class in [
 			.right_to_left,
 			.right_to_left_arabic,
 			.right_to_left_embedding,
