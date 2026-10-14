@@ -62,6 +62,34 @@ fn paint_cumulative_offset(node &Node, state &LayoutState, used &UsedValues) css
 	mut offset := css.CSSPixelPoint{}
 	mut current_node := node
 	mut current_used := used
+	mut checkpoint := used
+	mut distance := u64(0)
+	mut window := u64(1)
+	for {
+		offset = css_pixel_point_add(offset, paint_local_offset(current_node, state, current_used))
+		containing := current_used.containing_block_used_values() or { break }
+		current_used = containing
+		current_node = unsafe { &Node(containing.node()) }
+		distance++
+		// Brent's cycle check needs no visited collection for ordinary ancestor
+		// chains. A malformed cycle takes the guarded path below, which retains
+		// the old rule of adding each distinct record exactly once.
+		if voidptr(current_used) == voidptr(checkpoint) {
+			return paint_cumulative_offset_with_cycle_guard(node, state, used)
+		}
+		if distance == window {
+			checkpoint = current_used
+			window *= 2
+			distance = 0
+		}
+	}
+	return offset
+}
+
+fn paint_cumulative_offset_with_cycle_guard(node &Node, state &LayoutState, used &UsedValues) css.CSSPixelPoint {
+	mut offset := css.CSSPixelPoint{}
+	mut current_node := node
+	mut current_used := used
 	mut visited := map[u64]bool{}
 	for {
 		key := u64(voidptr(current_used))
