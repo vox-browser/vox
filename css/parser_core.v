@@ -237,9 +237,15 @@ pub fn Token.create_url(url string, original_source_text string) Token {
 }
 
 pub fn Token.create_delim(delim u32, original_source_text string) Token {
+	value := if delim <= 0x7f && original_source_text.len == 1
+		&& original_source_text[0] == u8(delim) {
+		original_source_text
+	} else {
+		string_from_code_point(delim)
+	}
 	return Token{
 		type_:                 .delim
-		value:                 string_from_code_point(delim)
+		value:                 value
 		original_source_text_: original_source_text
 	}
 }
@@ -1073,7 +1079,7 @@ fn (mut tokenizer Tokenizer) consume_an_ident_like_token() Token {
 
 	// Consume an ident sequence, and let string be the result.
 	start_byte_offset := tokenizer.current_byte_offset()
-	ident_string := tokenizer.consume_an_ident_sequence()
+	ident_string, had_escape := tokenizer.consume_an_ident_sequence_with_escape_flag()
 
 	// If string's value is an ASCII case-insensitive match for "url", and the next input code
 	// point is U+0028 LEFT PARENTHESIS ((), consume it.
@@ -1114,7 +1120,14 @@ fn (mut tokenizer Tokenizer) consume_an_ident_like_token() Token {
 	}
 
 	// Otherwise, create an <ident-token> with its value set to string and return it.
-	return Token.create_ident(ident_string, tokenizer.input_since(start_byte_offset))
+	// Unescaped identifiers already have the exact, terminated source spelling.
+	// Keep one immutable string instead of copying the same span a second time.
+	original_source_text := if had_escape {
+		tokenizer.input_since(start_byte_offset)
+	} else {
+		ident_string
+	}
+	return Token.create_ident(ident_string, original_source_text)
 }
 
 // https://www.w3.org/TR/css-syntax-3/#consume-number
@@ -1233,6 +1246,11 @@ mut:
 }
 
 fn (mut tokenizer Tokenizer) consume_an_ident_sequence() string {
+	name, _ := tokenizer.consume_an_ident_sequence_with_escape_flag()
+	return name
+}
+
+fn (mut tokenizer Tokenizer) consume_an_ident_sequence_with_escape_flag() (string, bool) {
 	// This section describes how to consume an ident sequence from a stream of code points.
 	// It returns a string containing the largest name that can be formed from adjacent
 	// code points in the stream, starting from the first.
@@ -1282,9 +1300,9 @@ fn (mut tokenizer Tokenizer) consume_an_ident_sequence() string {
 	}
 
 	if result != unsafe { nil } {
-		return result.text.str()
+		return result.text.str(), true
 	}
-	return tokenizer.decoded_input[start_byte_offset..tokenizer.current_byte_offset()]
+	return tokenizer.input_since(start_byte_offset), false
 }
 
 // https://www.w3.org/TR/css-syntax-3/#consume-url-token
@@ -1937,6 +1955,23 @@ fn (tokenizer Tokenizer) current_byte_offset() int {
 	return unsafe { tokenizer.input_arena.byte_offsets[tokenizer.index] }
 }
 
+// Common token spellings are immutable, individually terminated literals.
+// Returning them avoids a heap string for each punctuation mark or ASCII name.
+const tokenizer_ascii_source_text = [
+	' ', '!', '"', '#', '\$', '%', '&', '\'',
+	'(', ')', '*', '+', ',', '-', '.', '/',
+	'0', '1', '2', '3', '4', '5', '6', '7',
+	'8', '9', ':', ';', '<', '=', '>', '?',
+	'@', 'A', 'B', 'C', 'D', 'E', 'F', 'G',
+	'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O',
+	'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W',
+	'X', 'Y', 'Z', '[', '\\', ']', '^', '_',
+	'`', 'a', 'b', 'c', 'd', 'e', 'f', 'g',
+	'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o',
+	'p', 'q', 'r', 's', 't', 'u', 'v', 'w',
+	'x', 'y', 'z', '{', '|', '}', '~',
+]!
+
 fn (tokenizer Tokenizer) input_since(offset int) string {
 	mut start := offset
 	if start < 0 {
@@ -1945,6 +1980,17 @@ fn (tokenizer Tokenizer) input_since(offset int) string {
 	mut end := tokenizer.current_byte_offset()
 	if end < start {
 		end = start
+	}
+	if end == start {
+		return ''
+	}
+	if end == start + 1 {
+		byte := tokenizer.decoded_input[start]
+		if byte >= 0x20 && byte <= 0x7e {
+			return tokenizer_ascii_source_text[int(byte) - 0x20]
+		}
+		if byte == `\n` { return '\n' }
+		if byte == `\t` { return '\t' }
 	}
 	return tokenizer.decoded_input[start..end]
 }
