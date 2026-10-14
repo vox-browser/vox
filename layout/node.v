@@ -71,6 +71,11 @@ pub mut:
 	is_svg_foreign_object_box_       bool
 	cached_platform_font_           &platform.Font = unsafe { nil }
 	cached_platform_font_source_    &css.PlatformFont = unsafe { nil }
+mut:
+	tree_order_       &LayoutTreeOrder = unsafe { nil }
+	tree_order_owner_ voidptr
+	tree_order_start_ u32
+	tree_order_end_   u32
 }
 
 // Node(DOM::Document&, DOM::Node*) — a layout node for `dom_node` (null for anonymous boxes).
@@ -90,6 +95,8 @@ pub fn layout_nodes_same(a &Node, b &Node) bool {
 
 // TreeNode<Node>::append_child — append `child` as this node's last child.
 pub fn (mut n Node) append_child(child &Node) {
+	n.invalidate_tree_order()
+	child.invalidate_tree_order()
 	mut mutable_child := unsafe { &Node(child) }
 	mutable_child.parent_ = n
 	mutable_child.index_in_parent_ = n.children_.len
@@ -106,13 +113,16 @@ pub fn (mut n Node) inserted_into(parent &Node) {
 }
 
 fn (mut n Node) replace_children(children []&Node) {
+	n.invalidate_tree_order()
 	for old_child in n.children_ {
+		old_child.invalidate_tree_order()
 		mut mutable_old_child := unsafe { &Node(old_child) }
 		mutable_old_child.parent_ = none
 		mutable_old_child.index_in_parent_ = -1
 	}
 	n.children_ = children.clone()
 	for index, child in n.children_ {
+		child.invalidate_tree_order()
 		mut mutable_child := unsafe { &Node(child) }
 		mutable_child.parent_ = n
 		mutable_child.index_in_parent_ = index
@@ -1357,10 +1367,20 @@ pub fn (mut n NodeWithStyle) set_layout_index(index u32) {
 // inclusive pre-order before constructing LayoutState. Text nodes intentionally
 // do not consume an index because they do not have independent UsedValues.
 pub fn assign_layout_indexes(root &Node) u32 {
-	return assign_layout_indexes_in_subtree(root, 0)
+	mut order := &LayoutTreeOrder{}
+	count := assign_layout_indexes_in_subtree(root, 0, mut order)
+	order.valid = true
+	return count
 }
 
-fn assign_layout_indexes_in_subtree(node &Node, starting_index u32) u32 {
+fn assign_layout_indexes_in_subtree(node &Node, starting_index u32, mut order LayoutTreeOrder) u32 {
+	// Reindexing a subtree also invalidates the enclosing tree's old ranges.
+	node.invalidate_tree_order()
+	mut mutable_node := unsafe { &Node(node) }
+	mutable_node.tree_order_ = &order
+	mutable_node.tree_order_owner_ = voidptr(node)
+	mutable_node.tree_order_start_ = order.next_index
+	order.next_index++
 	mut next_index := starting_index
 	if styled := node.as_node_with_style() {
 		mut mutable_styled := unsafe { &NodeWithStyle(styled) }
@@ -1368,8 +1388,9 @@ fn assign_layout_indexes_in_subtree(node &Node, starting_index u32) u32 {
 		next_index++
 	}
 	for child in node.children() {
-		next_index = assign_layout_indexes_in_subtree(child, next_index)
+		next_index = assign_layout_indexes_in_subtree(child, next_index, mut order)
 	}
+	mutable_node.tree_order_end_ = order.next_index
 	return next_index
 }
 

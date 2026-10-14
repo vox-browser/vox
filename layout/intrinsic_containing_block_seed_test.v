@@ -26,6 +26,7 @@ fn test_intrinsic_seed_retains_external_blocks_with_shared_ancestor_chains() {
 		child.containing_block_ = if i % 2 == 0 { external } else { measured }
 		measured_node.append_child(unsafe { &Node(child) })
 	}
+	assert assign_layout_indexes(outer_node) == 259
 	mut source := LayoutState.new()
 	mut outer_values := source.get_mutable(unsafe { &NodeWithStyle(outer) })
 	outer_values.set_content_width(CSSPixels.new(100))

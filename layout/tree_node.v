@@ -7,6 +7,23 @@ module layout
 
 import dom
 
+// One shared validity flag lets every child mutation invalidate a tree's
+// preorder ranges in constant work. Geometry indices still count styled nodes
+// only; these ranges include text and other unstyled nodes as well.
+@[heap]
+struct LayoutTreeOrder {
+mut:
+	valid      bool
+	next_index u32
+}
+
+fn (n &Node) invalidate_tree_order() {
+	if n.tree_order_ != unsafe { nil } {
+		mut order := unsafe { &LayoutTreeOrder(n.tree_order_) }
+		order.valid = false
+	}
+}
+
 pub fn (n &Node) index() int {
 	return if n.parent_ == none { 0 } else { n.index_in_parent_ }
 }
@@ -20,6 +37,15 @@ pub fn (n &Node) root() &Node {
 }
 
 pub fn (n &Node) is_ancestor_of(other &Node) bool {
+	order := n.tree_order_
+	if order != unsafe { nil } && order.valid
+		&& voidptr(order) == voidptr(other.tree_order_)
+		&& n.tree_order_owner_ == voidptr(n) && other.tree_order_owner_ == voidptr(other) {
+		// A copied Node carries its old range too. Check physical ownership so
+		// value copies keep the same pointer-identity semantics as a parent walk.
+		return n.tree_order_start_ < other.tree_order_start_
+			&& other.tree_order_start_ < n.tree_order_end_
+	}
 	mut ancestor := other.parent()
 	for {
 		candidate := ancestor or { return false }
@@ -81,6 +107,8 @@ pub fn (n &Node) has_following_node_matching(predicate fn (&Node) bool) bool {
 
 pub fn (mut n Node) prepend_child(child &Node) {
 	assert child.parent() == none
+	n.invalidate_tree_order()
+	child.invalidate_tree_order()
 	mut mutable_child := unsafe { &Node(child) }
 	mutable_child.parent_ = &n
 	n.children_.prepend(child)
@@ -95,6 +123,8 @@ pub fn (mut n Node) insert_before(child &Node, reference ?&Node) {
 		assert child.parent() == none
 		assert reference_node.parent() != none
 		assert layout_nodes_same(reference_node.parent() or { return }, &n)
+		n.invalidate_tree_order()
+		child.invalidate_tree_order()
 		mut mutable_child := unsafe { &Node(child) }
 		mutable_child.parent_ = &n
 		index := reference_node.index()
@@ -112,6 +142,8 @@ pub fn (mut n Node) remove_child(child &Node) {
 	parent := child.parent() or { panic('layout child has no parent') }
 	assert layout_nodes_same(parent, &n)
 	index := child.index()
+	n.invalidate_tree_order()
+	child.invalidate_tree_order()
 	n.children_.delete(index)
 	mut mutable_child := unsafe { &Node(child) }
 	mutable_child.parent_ = none
@@ -128,6 +160,9 @@ pub fn (mut n Node) replace_child(new_child &Node, old_child &Node) {
 	parent := old_child.parent() or { panic('layout child has no parent') }
 	assert layout_nodes_same(parent, &n)
 	index := old_child.index()
+	n.invalidate_tree_order()
+	new_child.invalidate_tree_order()
+	old_child.invalidate_tree_order()
 	n.children_[index] = new_child
 	mut mutable_new_child := unsafe { &Node(new_child) }
 	mutable_new_child.parent_ = &n
