@@ -171,7 +171,10 @@ msrRuns===12&&msrOrder.join(",")==="msr-video:ratechange,msr-video:volumechange,
 ')! == 'true'
 	assert observation.events.len == 12
 	for index, event in observation.events {
-		expected_target := if index < 6 { voidptr(video) } else { voidptr(audio) }
+		mut expected_target := voidptr(video)
+		if index >= 6 {
+			expected_target = voidptr(audio)
+		}
 		assert observation.targets[index] == expected_target
 		media_settings_raw_owner_event(mut runtime, event, 'msrSaved[${index}]')!
 	}
