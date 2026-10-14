@@ -4249,7 +4249,7 @@ fn top_level_index(text string, needle string) ?int {
 			quote = ch
 			continue
 		}
-		if text[i..i + needle.len] == needle {
+		if selector_text_matches_at(text, needle, i, false) {
 			return i
 		}
 	}
@@ -4257,10 +4257,9 @@ fn top_level_index(text string, needle string) ?int {
 }
 
 fn top_level_ascii_word_index(text string, word string) ?int {
-	lower := text.to_lower()
 	mut quote := u8(0)
-	for i := 0; i <= lower.len - word.len; i++ {
-		ch := lower[i]
+	for i := 0; i <= text.len - word.len; i++ {
+		ch := text[i]
 		if quote != 0 {
 			if ch == quote {
 				quote = 0
@@ -4271,14 +4270,29 @@ fn top_level_ascii_word_index(text string, word string) ?int {
 			quote = ch
 			continue
 		}
-		before_ok := i == 0 || is_ascii_whitespace_byte(lower[i - 1])
+		before_ok := i == 0 || is_ascii_whitespace_byte(text[i - 1])
 		after_index := i + word.len
-		after_ok := after_index >= lower.len || is_ascii_whitespace_byte(lower[after_index])
-		if before_ok && after_ok && lower[i..after_index] == word {
+		after_ok := after_index >= text.len || is_ascii_whitespace_byte(text[after_index])
+		if before_ok && after_ok && selector_text_matches_at(text, word, i, true) {
 			return i
 		}
 	}
 	return none
+}
+
+// Compare a span in place. V string slices allocate, which otherwise creates
+// one short-lived string at every byte while scanning attribute operators.
+fn selector_text_matches_at(text string, needle string, index int, fold_ascii bool) bool {
+	for j in 0 .. needle.len {
+		mut byte := text[index + j]
+		if fold_ascii && byte >= `A` && byte <= `Z` {
+			byte += 0x20
+		}
+		if byte != needle[j] {
+			return false
+		}
+	}
+	return true
 }
 
 fn starts_with_combinator(text string) bool {
@@ -4371,7 +4385,7 @@ fn selector_min_u32(left u32, right u32) u32 {
 
 fn selector_string_hash(value string) u32 {
 	mut hash := u32(2166136261)
-	for ch in value.bytes() {
+	for ch in value {
 		hash ^= u32(ch)
 		hash *= u32(16777619)
 	}
