@@ -2635,3 +2635,13 @@ decoder/backend or timer-boundary credit is claimed. Four current files and
 two exact main gates are authenticated through retained snapshots, with no
 full-current/foreign-main test credit. Batch: 8/10 after aa6f0246; production
 and broad suites remain deferred. See [evidence](docs/translation-audit/NATIVE_MEDIA_RESET_RAW_HANDLER.md).
+
+Native compact media raw abort/emptied scoped inventory (`50d3cd34`,
+2026-10-14 UTC): Five owned browser/root paths are excluded under the sealed
+78-owner rules. Feature/actual-parent byte and physical-LF accounting adds
+zero assigned DOM files, implementation lines or test lines. Counter:
+`Build/audit-fixes/native-media-reset-raw-handler-inventory-scoped-v1.json` (SHA256 `92535a67615d288fc4c5b7001fdd34c1a3ddd7c4c9c27cd296e478209b4f9677`).
+Global tables, pins, mappings and historical ledgers stay preserved;
+accounting adds no behavioral or test credit. Batch remains 8/10 after
+aa6f0246, since this independent documentation commit is not another
+translation fix. See [evidence](docs/translation-audit/NATIVE_MEDIA_RESET_RAW_HANDLER.md).
