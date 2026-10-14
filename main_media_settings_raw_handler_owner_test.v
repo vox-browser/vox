@@ -171,7 +171,8 @@ msrRuns===12&&msrOrder.join(",")==="msr-video:ratechange,msr-video:volumechange,
 ')! == 'true'
 	assert observation.events.len == 12
 	for index, event in observation.events {
-		assert observation.targets[index] == if index < 6 { voidptr(video) } else { voidptr(audio) }
+		expected_target := if index < 6 { voidptr(video) } else { voidptr(audio) }
+		assert observation.targets[index] == expected_target
 		media_settings_raw_owner_event(mut runtime, event, 'msrSaved[${index}]')!
 	}
 	video_media := html.html_media_element_for_dom_element(video) or { panic('Video settings owner missing') }
