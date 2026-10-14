@@ -1491,3 +1491,17 @@ owner gates, replacement/removal, reentrant setters, exceptions, later listeners
 and retained DOM painting are covered. Production and broad suites are
 deferred. Batch: 4/10 after aa6f0246; fixture corrections belong to this one
 translation slice. See [evidence](docs/translation-audit/NATIVE_MEDIA_SETTINGS_RAW_HANDLER.md).
+
+Native media settings-handler component inventory (`5d549d51`,
+`d1a0df47`, `89fab31e`, 2026-10-14 UTC): Three root components compare
+the original five-path feature and two one-path owner-fixture corrections
+against their actual parents. Foreign intervening commits are excluded;
+final current source hashes are stored separately against frozen-v3. The five
+owned browser/root paths are excluded under sealed 78-owner rules, adding zero
+assigned DOM files, implementation lines or test lines. Counter:
+`Build/audit-fixes/native-media-settings-raw-handler-inventory-scoped-v4.json` (SHA256 `210c1aa9c3436fe0ae6d48d4fac3e7cfaf5dccf4a89a3e53d7444676bfda1220`). Global
+tables, pins, source mappings and historical ledgers remain preserved.
+Accounting adds no behavior or validation credit. Three source epochs and both
+failed owner-compilation attempts remain explicit. Batch stays 4/10 after
+aa6f0246; fixture corrections and documentation add no translation fix.
+See [evidence](docs/translation-audit/NATIVE_MEDIA_SETTINGS_RAW_HANDLER.md).
