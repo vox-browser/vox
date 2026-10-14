@@ -12395,9 +12395,12 @@ fn computed_interpolation_snap_a_length_as_a_border_width(device_pixels_per_css_
 }
 
 fn computed_interpolation_length_from_dom_style_value(style_value &dom.StyleValue) ?Length {
-	if parsed_value := typed_style_value_logic_from_dom(style_value) {
-		if parsed_value is LengthStyleValue {
-			return parsed_value.length()
+	if style_value.css_value_handle != unsafe { nil } {
+		// The DOM value owns the typed box throughout this synchronous read.
+		// Avoid copying and rooting an optional StyleValue just to inspect its tag.
+		typed := unsafe { &TypedStyleValueBox(style_value.css_value_handle) }
+		if typed.value is LengthStyleValue {
+			return typed.value.length()
 		}
 		return none
 	}
@@ -12981,9 +12984,10 @@ fn computed_interpolation_style_value_from_css_numeric_value(value CSSNumericVal
 }
 
 fn computed_interpolation_number_from_dom_style_value(style_value &dom.StyleValue) ?f64 {
-	if parsed_value := typed_style_value_logic_from_dom(style_value) {
-		if parsed_value is NumberStyleValue {
-			return parsed_value.number()
+	if style_value.css_value_handle != unsafe { nil } {
+		typed := unsafe { &TypedStyleValueBox(style_value.css_value_handle) }
+		if typed.value is NumberStyleValue {
+			return typed.value.number()
 		}
 		return none
 	}
@@ -13006,9 +13010,10 @@ fn computed_interpolation_integer_from_dom_style_value(style_value &dom.StyleVal
 }
 
 fn computed_interpolation_percentage_from_dom_style_value(style_value &dom.StyleValue) ?Percentage {
-	if parsed_value := typed_style_value_logic_from_dom(style_value) {
-		if parsed_value is PercentageStyleValue {
-			return parsed_value.percentage()
+	if style_value.css_value_handle != unsafe { nil } {
+		typed := unsafe { &TypedStyleValueBox(style_value.css_value_handle) }
+		if typed.value is PercentageStyleValue {
+			return typed.value.percentage()
 		}
 		return none
 	}
