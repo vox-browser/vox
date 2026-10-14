@@ -1358,21 +1358,16 @@ evidence](docs/translation-audit/NATIVE_MEDIA_WHEEL_RAW_HANDLER.md).
   broad verification. Compare the same benchmark endpoint and workload, record
   the measured baseline and accumulated savings, and do not run broad suites
   for every individual fix below that threshold.
-  The latest performance broad batch is guarded layout style reads `11442940`:
-  20 functional checks plus one diagnostic passed in each GC mode, including
+  The latest performance broad batch is direct retained CSS keywords `a888f10b`:
+  four functional checks plus one diagnostic passed in each GC mode, including
   optimized Boehm. All six commands for 87 selected CSS/SVG/layout cases and
   all 19 screenshot comparisons pass (16 exact); the focused viewport is exact.
-  Its observed GitHub first-frame median is 34,294,041,571.5 instructions.
-  14 of 30 matching pairs improve; the paired interval includes zero.
-  Repeatable whole-page savings credited: 0; additional savings after
-  this batch: zero. The controlled accessor diagnostic improves 34.91%.
+  Its observed GitHub first-frame median is 34,248,541,966.5 instructions,
+  down 144,407,093.5 (0.42%) against its matching control.
+  20 of 30 pairs improve; the paired confidence interval includes zero.
+  Repeatable whole-page savings credited: zero; additional savings after
+  this batch: zero. The controlled keyword diagnostic improves 40.03%.
   See `docs/GITHUB_PERFORMANCE.md` for uncertainty, source snapshots and app scope.
-  The subsequent absent-length feature `3894727a` passes ten focused checks
-  plus one diagnostic per GC mode, with 73.96% fewer diagnostic instructions.
-  Its 30-pair page median changes +0.04% and does not cross the next 5M
-  gate; broad suites are deferred and the prior baseline remains. Initial ENOSPC
-  attempts retain zero runtime credit; resumed native compiles and tests pass
-  from saved C.
 - Outside instruction-count optimization, run broad regression suites once per
   ten completed fixes, not after every fix.
   Broad suites include full translation/package test batches, the full LibJS AST

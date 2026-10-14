@@ -1931,6 +1931,107 @@ active snapshots were excluded. The clone journal is
 Chrome instruction and functionality parity remain unestablished, including
 GitHub module hydration and populated file rows.
 
+## Reading retained CSS keywords without optional copies
+
+Feature `a888f10b` reads the keyword from the typed box already owned by
+the DOM style value. Previously it copied a `?StyleValue`, unwrapped that
+sum type and retained a GC-root temporary before calling `to_keyword()`.
+The normal optimized native code still performed those copies. The direct
+read uses the same type discriminator and keyword payload, matching upstream
+`StyleValues/StyleValue.cpp:StyleValue::to_keyword()`. A retained non-keyword
+continues to return absence even if its bridge text looks like a keyword;
+values without a typed handle keep their trimmed, case-insensitive text
+fallback. The read borrows no pointer beyond the call. Boehm ownership and
+JavaScriptCore are retained; no global arena or compiler GC policy changes.
+
+The recent `v -profile` diagnostic recorded 3,371,354 calls to the keyword
+helper across its layout/paint passes, including work beyond the first frame.
+Those calls guided the investigation and are not first-frame instruction counts.
+Normal C `-O2` assembly confirms removal of the optional sum copy and rooting
+temporary; the helper's stack frame falls from 160 to 48 bytes. Assembly and
+the two generated helper bodies are retained under
+`Build/v/instruction-opt21-native-keyword-*.txt` and `instruction-opt21-keyword-*`.
+
+Four focused cases cover all 869 non-invalid keyword enum values, retained
+non-keyword and invalid types, CSS-wide/current-color predicates, serialized
+fallbacks, and replacement handles across collection. They pass in Boehm
+(C `-O2`) and no-GC modes. With the separate instruction diagnostic, each run
+passes 1,056 assertions. The three fixed, alternating diagnostic pairs cycle
+four million reads across six retained keywords and two non-keyword values.
+Setup, collection and assertions stay outside the counter interval. The
+independent reference sums known keyword ordinals, with checksum 1,191,500,000;
+every run agrees. Median work falls **320,428,681 →
+192,176,161 instructions (40.03% fewer)**,
+with all three pairs improving. This establishes reader-work reduction,
+rather than a whole-page saving.
+
+Thirty alternating normal-build GitHub pairs were fixed before results were
+observed. They use fresh copies of the same immutable cache, the same frozen
+native library, a 1024×768 document viewport and the first native
+`navigation_to_first_document_paint` endpoint.
+
+| Build | Median instructions through first native document frame |
+| --- | ---: |
+| Optional typed-value copy | 34,392,949,060 |
+| Direct retained keyword read | 34,248,541,966.5 |
+
+The observed median falls **144,407,093.5 instructions
+(0.42%)**; **20/30 pairs improve**.
+The paired median saving is 163,388,035.5; the 95% paired
+percentile bootstrap interval is **-62,398,475.5 to 900,344,421.5**
+instructions (30,000 resamples, seed 21). The interval includes zero, so a
+repeatable page gain remains unestablished and **zero repeatable page savings
+are credited**. All sixty captures have one installation, two required geometry
+passes and one shell paint recording before the first frame. No samples were
+discarded, extended or selected after results. Checkpoint intervals remain
+process-wide deltas, rather than function self cost. Raw reports are
+`Build/instructions/vox-opt21-interleaved-*`; paired evidence is
+`Build/v/instruction-opt21-comparison-evidence.json`.
+
+The control is the retained round20 candidate, including absent optional
+lengths `3894727a`. The candidate changes only `css/computed_interpolation.v`.
+Its earlier typed-box reference moves the identical one-field generated C
+definition and renumbers some CSS type tags. The projection audit authenticates
+those IDs by named sum-type members, casts and type-name metadata. It also
+canonicalizes anonymous-function hashes/positional names (keeping distinct
+same-signature ordinals), per-function temporary identities, authenticated
+path-derived embed keys and the changed source's three-line assertion offsets.
+After these metadata changes, only the keyword helper's executable logic
+differs. Layouts, resources and every other function's logic match. All 120
+common native input hashes and the shared library remain unchanged. Exact
+source hashes, argv and audit provenance are retained under
+`Build/v/instruction-opt21-*`.
+
+The observed median exceeds the user's 5,000,000-instruction gate, so one broad
+batch ran after measurement. All six commands for 87 selected CSS/SVG/layout
+cases pass in both GC modes. All nineteen screenshot comparisons pass, sixteen
+pixel-exact; existing differences remain inline-node (13 pixels),
+text-decorations (1,341) and canvas-text (1,994). The focused viewport is
+pixel-exact between the binaries. Actual exits and image metrics are retained
+in `Build/v/instruction-opt21-validation-result.json` and per-command logs.
+The new broad-verified baseline is `a888f10b` at the observed median
+34,248,541,966.5; repeatable page savings credited are zero and
+additional savings after this batch reset to zero.
+
+The measured candidate is installed in `Build/v/Vox.app`. Installation follows
+the existing positive observed median policy, with the uncertainty above.
+The preceding installed executable is authenticated against round19; cumulative
+runtime changes are exactly the two CSS files for absent lengths and this
+reader. Native text SHA-256 is `4d568b4d6f6d34d7c1384397c0e617c1b8b5333a32ebee515771655eecbb6eee`.
+Bundle signing, deep strict verification and headless startup pass. Independent
+media completion sources are preserved and excluded from both benchmark builds
+and this app snapshot. The existing GUI process was left running.
+
+Low disk space was managed by round-trip-verified compression of completed C
+and executable artifacts and by APFS cloning of byte-identical, mode-matching
+files in completed source snapshots from rounds17–20. Source bytes, permissions
+and timestamps are preserved; active round21 snapshots were excluded. Archive
+journals retain SHA-256 and executable modes. The optional formatter command
+could not build its tool because its configured compiler checkout lacked
+`libgc.a`; it made no source edits. No test or page-capture failures receive
+runtime credit. Chrome instruction and functionality parity remain unverified,
+including GitHub module hydration and populated file rows.
+
 ## Causes and changes
 
 - The V 0.5.2 compatibility compiler's `-prod` Boehm code repeatedly snapshots
