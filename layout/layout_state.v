@@ -1107,22 +1107,33 @@ pub fn (state &LayoutState) try_get_mutable(node &NodeWithStyle) ?&UsedValues {
 }
 
 // --- CSSPixels helpers (the port's CSSPixels has no arithmetic operators) ---
-// Keep intermediate sums in f64 and clamp once, including when large positive
-// edges cancel negative margins. Fixed arguments need no temporary heap array.
+// Raw fixed-point values fit exactly in i64 even with five operands. Clamp
+// once after adding every contribution, so large edges can cancel margins
+// without an intermediate saturation or a floating-point round trip.
 fn css_pixels_sum2(a CSSPixels, b CSSPixels) CSSPixels {
-	return CSSPixels.nearest_value_for(a.to_double() + b.to_double())
+	return a.plus(b)
 }
 
 fn css_pixels_sum3(a CSSPixels, b CSSPixels, c CSSPixels) CSSPixels {
-	return CSSPixels.nearest_value_for(a.to_double() + b.to_double() + c.to_double())
+	return css_pixels_from_wide_raw_sum(i64(a.raw_value()) + i64(b.raw_value()) + i64(c.raw_value()))
 }
 
 fn css_pixels_sum5(a CSSPixels, b CSSPixels, c CSSPixels, d CSSPixels, e CSSPixels) CSSPixels {
-	return CSSPixels.nearest_value_for(a.to_double() + b.to_double() + c.to_double() + d.to_double() + e.to_double())
+	return css_pixels_from_wide_raw_sum(i64(a.raw_value()) + i64(b.raw_value()) + i64(c.raw_value()) + i64(d.raw_value()) + i64(e.raw_value()))
+}
+
+fn css_pixels_from_wide_raw_sum(value i64) CSSPixels {
+	if value > i64(CSSPixels.max().raw_value()) {
+		return CSSPixels.max()
+	}
+	if value < i64(CSSPixels.min().raw_value()) {
+		return CSSPixels.min()
+	}
+	return CSSPixels.from_raw(int(value))
 }
 
 fn css_pixel_point_add(a css.CSSPixelPoint, b css.CSSPixelPoint) css.CSSPixelPoint {
-	return css.CSSPixelPoint.from_values(a.x().to_double() + b.x().to_double(), a.y().to_double() + b.y().to_double())
+	return a.plus(b)
 }
 
 pub fn clamp_to_max_dimension_value(value CSSPixels) CSSPixels {
