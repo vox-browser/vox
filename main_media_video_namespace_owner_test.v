@@ -4,9 +4,9 @@ import browserjs
 import dom
 import encoding.base64
 import html
-import json2
 import page
 import time
+import x.json2
 
 const media_video_namespace_owner_markup = '<!doctype html><video id="namespace-html"></video><svg><video id="namespace-svg"></video></svg><canvas id="namespace-canvas" width="2" height="2"></canvas>'
 
@@ -93,6 +93,18 @@ try{Object.getOwnPropertyDescriptor(HTMLMediaElement.prototype,"readyState").get
 	assert messages == [] && runtime.evaluate_host('namespaceFramePassed')! == 'true'
 	assert voidptr(runtime.native_event_target(runtime.evaluate_host_value('namespaceHTML')!)!) == voidptr(html_video)
 	assert voidptr(runtime.native_event_target(runtime.evaluate_host_value('namespaceSVG')!)!) == voidptr(svg_video)
+	mut app := &BrowserApp{
+		page_model:      unsafe { &page.Page(document.page()) }
+		document:        document
+		js_runtime:      runtime
+		viewport_width:  320
+		viewport_height: 240
+	}
+	// Keep the parsed SVG video in the real retained renderer traversal too.
+	app.relayout(320, 240 + app.chrome_height())
+	assert document.layout_is_up_to_date() && document.paintable_box() != none
+	assert app.paint_commands.len > 0 && app.js_messages == []
+	assert app.paint_commands.filter(it.kind == 'draw_video').len == 1
 	assert html.html_media_element_for_dom_element(svg_video) == none
 	assert voidptr(model.current_decoded_image_frame()?.bitmap()) == voidptr(bitmap)
 	settings := unsafe { &html.EnvironmentSettingsObject(document.relevant_settings_object()) }

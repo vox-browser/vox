@@ -3334,11 +3334,13 @@ fn block_box_from_typed_layout_shallow(node &Node, state &LayoutState, ancestor_
 	}
 	mut element := ?&dom.Element(none)
 	mut tag_name := ''
+	mut is_html_video := false
 	mut node_id := i64(0)
 	if dom_node := node.dom_node() {
 		if dom_element := dom_node.as_element() {
 			element = dom_element
 			tag_name = dom_element.local_name()
+			is_html_video = dom_element.is_html_element() && tag_name == 'video'
 			node_id = i64(dom_element.as_node().unique_id())
 		}
 	}
@@ -3706,7 +3708,7 @@ fn block_box_from_typed_layout_shallow(node &Node, state &LayoutState, ancestor_
 			}
 		}
 	}
-	if tag_name == 'video' {
+	if is_html_video {
 		if video_element := element {
 			video := unsafe { &dom.HTMLVideoElement(video_element) }
 			model := html.html_video_element_model_for_dom_element(video)
