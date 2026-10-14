@@ -1485,7 +1485,7 @@ fn javascript_bootstrap(state map[string]json2.Any) string {
 		'function __styleName(name) { const result=String(name).replace(/[A-Z]/g, function (character) { return "-" + character.toLowerCase(); }); return result.indexOf("webkit-")===0?"-"+result:result; }',
 		'function __elementStates() { return Object.keys(__state.elements).map(function (key) { return __state.elements[key]; }).filter(function(s){return !s.removed;}).sort(function (a,b) { return (+a.elementIndex||0)-(+b.elementIndex||0); }); }',
 		'function __attributeName(s, name) { name=String(name); return s.namespaceURI==="http://www.w3.org/1999/xhtml"?name.toLowerCase():name; }',
-		'function __isMediaLifecycleAttribute(s,name){return s.namespaceURI==="http://www.w3.org/1999/xhtml"&&(s.tagName==="audio"||s.tagName==="video")&&(name==="onplay"||name==="onpause"||name==="onplaying"||name==="onwaiting");}',
+		'function __isMediaLifecycleAttribute(s,name){return s.namespaceURI==="http://www.w3.org/1999/xhtml"&&(s.tagName==="audio"||s.tagName==="video")&&(name==="onplay"||name==="onpause"||name==="onplaying"||name==="onwaiting"||name==="oncanplay"||name==="oncanplaythrough");}',
 		'function __setAttribute(s, name, value) { name=__attributeName(s,name); value=String(value); s.attributes[name]=value; s.attributesDirty=true; if(name==="onwheel")__state.operations.push({op:"wheelContentAttribute",target:s.bridgeKey,value:value}); if(__isMediaLifecycleAttribute(s,name))__state.operations.push({op:"mediaLifecycleContentAttribute",target:s.bridgeKey,name:name,value:value}); if(s.tagName==="img"&&s.namespaceURI==="http://www.w3.org/1999/xhtml")__ladybirdImageSetAttribute(__element(s),name,value); if(s.tagName==="canvas"&&(name==="width"||name==="height")){s[name]=value;__canvasResize(s);} if(name==="id")s.id=value; if(name==="class")s.className=value; if(name==="style")s.styleText=value; if(name==="src")s.src=value; if(name==="disabled")s.disabled=true; }',
 		'function __removeAttribute(s, name) { name=__attributeName(s,name); const hadWheel=name==="onwheel"&&Object.prototype.hasOwnProperty.call(s.attributes,name); const hadMediaLifecycle=__isMediaLifecycleAttribute(s,name)&&Object.prototype.hasOwnProperty.call(s.attributes,name); delete s.attributes[name]; s.attributesDirty=true; if(hadWheel)__state.operations.push({op:"wheelContentAttribute",target:s.bridgeKey,value:null}); if(hadMediaLifecycle)__state.operations.push({op:"mediaLifecycleContentAttribute",target:s.bridgeKey,name:name,value:null}); if(s.tagName==="canvas"&&(name==="width"||name==="height")){delete s[name];__canvasResize(s);} if(name==="id")s.id=""; if(name==="class")s.className=""; if(name==="style")s.styleText=""; if(name==="src")s.src=""; if(name==="disabled")s.disabled=false; }',
 		'function __styleProxy(s) {',
@@ -2086,7 +2086,7 @@ fn apply_javascript_state(document &dom.Document, encoded string, canvas_element
 				} else if kind == 'mediaLifecycleContentAttribute' {
 					name := json_string_property(operation, 'name') or { continue }
 					if !target.is_html_element() || target.local_name() !in ['audio', 'video']
-						|| name !in ['onplay', 'onpause', 'onplaying', 'onwaiting'] { continue }
+						|| name !in ['onplay', 'onpause', 'onplaying', 'onwaiting', 'oncanplay', 'oncanplaythrough'] { continue }
 					// Explicit equal-text writes replace IDL callbacks just like parser attributes.
 					if attribute_value := json_string_property(operation, 'value') {
 						target.set_attribute_value(name, attribute_value)

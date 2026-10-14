@@ -13,7 +13,7 @@ fn (mut host ElementWheelHost) install_raw_wheel_handler_compiler() ! {
 			if name == 'wheel' || (target.data.kind == .window
 				&& voidptr(target) == voidptr(settings.global_object())) { return true }
 			mut host := unsafe { &ElementWheelHost(owner) }
-			if name !in ['play', 'pause', 'playing', 'waiting'] || host.closed || host.runtime.closed { return false }
+			if name !in ['play', 'pause', 'playing', 'waiting', 'canplay', 'canplaythrough'] || host.closed || host.runtime.closed { return false }
 			element := host.raw_wheel_handler_element(target) or { return false }
 			return element.local_name() in ['audio', 'video']
 		}
@@ -121,7 +121,7 @@ fn (runtime &Runtime) raw_wheel_handler_body_is_valid(handler_name string, body 
 
 fn (mut host ElementWheelHost) compile_raw_wheel_handler(target &dom.EventTarget, name string, body string, source string) ?&dom.CallbackType {
 	mut runtime := host.runtime
-	if name !in ['wheel', 'play', 'pause', 'playing', 'waiting'] || !runtime.raw_wheel_handler_body_is_valid(name, body) { return none }
+	if name !in ['wheel', 'play', 'pause', 'playing', 'waiting', 'canplay', 'canplaythrough'] || !runtime.raw_wheel_handler_body_is_valid(name, body) { return none }
 	element := host.raw_wheel_handler_element(target) or { return none }
 	mut vm := runtime.agent_vm
 	mut context := runtime.realm_context
