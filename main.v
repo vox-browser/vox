@@ -1519,7 +1519,7 @@ fn javascript_bootstrap(state map[string]json2.Any) string {
 		'function Element(){throw new TypeError("Illegal Element constructor");} Object.setPrototypeOf(Element,EventTarget); Object.setPrototypeOf(Element.prototype,EventTarget.prototype); Object.defineProperty(Element,"prototype",{writable:false}); Object.defineProperty(Element.prototype,Symbol.toStringTag,{value:"Element",configurable:true}); Object.defineProperty(globalThis,"Element",{value:Element,writable:true,configurable:true});',
 		'for(const constructor of [globalThis.HTMLImageElement,globalThis.HTMLMediaElement])if(constructor)Object.setPrototypeOf(constructor.prototype,Element.prototype);',
 		'function __queryElement(value){if(value===null)return null;const known=__state.elements[value.bridgeKey];if(known)return __element(known);__state.elements[value.bridgeKey]=value;return __element(value);}',
-		'function __queryElements(key,action,selector){const request={key:key,action:action,selector:selector},states=Object.keys(__state.elements).map(function(key){return __state.elements[key];});if(__state.operations.length||states.some(function(s){return s.attributesDirty||s.textContentDirty||s.innerHTMLDirty;})){request.snapshot=__ladybirdFinalize();request.logCount=__state.logs.length;for(const s of states){s.attributesDirty=false;s.textContentDirty=false;s.innerHTMLDirty=false;}}let result;try{result=JSON.parse(__nativeElementQuery(JSON.stringify(request)));}catch(error){if(String(error.message).indexOf("SyntaxError:")===0)throw new DOMException(String(error.message).slice(12).trim(),"SyntaxError");throw error;}return action==="matches"?result:action==="querySelectorAll"?result.map(__queryElement):__queryElement(result);}',
+		'function __queryElements(key,action,selector){const request={key:key,action:action,selector:selector},pending=Object.create(null);for(const key of Object.keys(__state.elements)){const s=__state.elements[key];if(s.attributesDirty||s.textContentDirty||s.innerHTMLDirty||s.checkedDirty||s.indeterminateDirty)pending[key]=s;}if(__state.operations.length||Object.keys(pending).length){const snapshot=Object.assign({},__state,{elements:pending,logs:[]});delete snapshot.videoSources;request.snapshot=JSON.stringify(snapshot);request.logCount=0;__state.operations=[];for(const key of Object.keys(pending)){const s=pending[key];s.attributesDirty=false;s.textContentDirty=false;s.innerHTMLDirty=false;s.checkedDirty=false;s.indeterminateDirty=false;}}let result;try{result=JSON.parse(__nativeElementQuery(JSON.stringify(request)));}catch(error){if(String(error.message).indexOf("SyntaxError:")===0)throw new DOMException(String(error.message).slice(12).trim(),"SyntaxError");throw error;}return action==="matches"?result:action==="querySelectorAll"?result.map(__queryElement):__queryElement(result);}',
 		'for(const name of ["matches","closest","querySelector","querySelectorAll"]){const method={ [name](selectors){"use strict";const s=__elementApply(__elementRecordGet,__elementRecords,[this]);if(!s)throw new TypeError("Illegal Element receiver");if(arguments.length===0)throw new TypeError(name+" requires a selector");if(typeof selectors==="symbol")throw new TypeError("Cannot convert a Symbol to a string");return __queryElements(s.bridgeKey,name,String(selectors));} }[name];Object.defineProperty(Element.prototype,name,{value:method,writable:true,enumerable:true,configurable:true});} Object.defineProperty(Element.prototype,"webkitMatchesSelector",{value:Element.prototype.matches,writable:true,enumerable:true,configurable:true});',
 		'const __readElementContent=globalThis.__ladybirdReadElementContent; function __elementContent(s,name){if(Object.prototype.hasOwnProperty.call(s,name))return s[name];return s.created?"":__readElementContent(String(s.bridgeKey)+":"+name);}',
 		'function __listenerKey(s, n) { return (s && (s.bridgeKey || s.id) ? (s.bridgeKey || s.id) : "document") + ":" + n; }',
@@ -2076,10 +2076,14 @@ fn apply_javascript_state(document &dom.Document, encoded string, canvas_element
 					}
 				}
 				if class_name := json_string_property(element_state, 'className') {
-					element.set_attribute_value('class', class_name)
+					if class_name != element.get_attribute_value('class') {
+						element.set_attribute_value('class', class_name)
+					}
 				}
 				if style_text := json_string_property(element_state, 'styleText') {
-					element.set_attribute_value('style', style_text)
+					if style_text != element.get_attribute_value('style') {
+						element.set_attribute_value('style', style_text)
+					}
 				}
 				if source := json_string_property(element_state, 'src') {
 					if source != (element.get_attribute('src') or { '' }) {
@@ -2265,8 +2269,10 @@ fn apply_javascript_state(document &dom.Document, encoded string, canvas_element
 	}
 	if title := json_string_property(state, 'title') {
 		if mut title_element := css.query_selector(root, 'title') {
-			mut title_node := unsafe { &dom.Node(title_element) }
-			title_node.set_text_content(title) or {}
+			if title != (title_element.as_node().text_content() or { '' }) {
+				mut title_node := unsafe { &dom.Node(title_element) }
+				title_node.set_text_content(title) or {}
+			}
 		}
 	}
 	// The compact bridge applies a script's DOM mutations as one replay pass.
