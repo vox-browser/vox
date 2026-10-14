@@ -11544,22 +11544,13 @@ pub fn (s &StyleComputer) compute_properties(abstract_element dom.AbstractElemen
 
 		mut should_inherit := value == none && is_inherited_property
 
-		// https://www.w3.org/TR/css-cascade-4/#inherit
-		// If the cascaded value of a property is the inherit keyword, the property’s specified and computed values are the inherited value.
+		// Classify the cascaded value once for inherit/unset and color's
+		// currentcolor inheritance rule. All three checks read the same value.
 		if style_value := value {
-			should_inherit = should_inherit || computed_interpolation_style_value_is_inherit(style_value)
-		}
-
-		// https://www.w3.org/TR/css-cascade-4/#inherit-initial
-		// If the cascaded value of a property is the unset keyword, then if it is an inherited property, this is treated as inherit, and if it is not, this is treated as initial.
-		if style_value := value {
-			should_inherit = should_inherit || (computed_interpolation_style_value_is_unset(style_value) && is_inherited_property)
-		}
-
-		// https://www.w3.org/TR/css-color-4/#resolving-other-colors
-		// In the color property, the used value of currentcolor is the resolved inherited value.
-		if style_value := value {
-			should_inherit = should_inherit || (property_id == .color && computed_interpolation_style_value_is_currentcolor(style_value))
+			keyword := computed_interpolation_style_value_keyword(style_value) or { Keyword.invalid }
+			should_inherit = should_inherit || keyword == .inherit
+				|| (keyword == .unset && is_inherited_property)
+				|| (property_id == .color && keyword == .currentcolor)
 		}
 
 		if should_inherit && inherited_source_available {
@@ -11580,7 +11571,9 @@ pub fn (s &StyleComputer) compute_properties(abstract_element dom.AbstractElemen
 		}
 
 		if style_value := value {
-			if computed_interpolation_style_value_is_initial(style_value) || computed_interpolation_style_value_is_unset(style_value) || (should_inherit && !inherited_source_available) {
+			// Inheritance may have replaced the value; classify that result afresh.
+			keyword := computed_interpolation_style_value_keyword(style_value) or { Keyword.invalid }
+			if keyword == .initial || keyword == .unset || (should_inherit && !inherited_source_available) {
 				value = computed_interpolation_property_initial_value(property_id)
 				requires_computation = property_requires_computation_with_initial_value(property_id)
 			}
@@ -11590,10 +11583,13 @@ pub fn (s &StyleComputer) compute_properties(abstract_element dom.AbstractElemen
 		}
 
 		style_value := value or { continue }
-		keyword := computed_interpolation_style_value_keyword(style_value) or { Keyword.invalid }
-		mut depends_on_inherited_info := (property_id == .font_weight
-			&& keyword in [.bolder, .lighter])
-			|| (property_id == .font_size && keyword in [.larger, .smaller])
+		mut depends_on_inherited_info := false
+		if property_id == .font_weight || property_id == .font_size {
+			keyword := computed_interpolation_style_value_keyword(style_value) or { Keyword.invalid }
+			depends_on_inherited_info = (property_id == .font_weight
+				&& keyword in [.bolder, .lighter])
+				|| (property_id == .font_size && keyword in [.larger, .smaller])
+		}
 		if length := computed_interpolation_length_from_dom_style_value(style_value) {
 			depends_on_inherited_info = depends_on_inherited_info || length.is_font_relative()
 		}
