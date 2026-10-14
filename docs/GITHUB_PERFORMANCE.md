@@ -2344,6 +2344,128 @@ was left running. Boehm and JavaScriptCore remain enabled. Chrome instruction
 and functionality parity remain unverified, including GitHub module hydration
 and populated file rows.
 
+## Rejected unused-context copy optimization
+
+Attempt `3ad9a504`, reverted by `46fdbe37` after its page median regressed,
+avoided repeated cached-context copies and dependency resets
+for values needing no computation. Their first visit still initializes a cold
+context category through the original getter at the same point in property
+order; later visits inspect only cache presence. This preserves the first
+observed font metrics, writing mode and
+query-container lookup state. Simply deferring all context initialization could
+change those inputs. Font, line-height and generic categories keep the same
+mapping, and the public getter still returns an independent context value.
+Viewport tracking continues to reset and propagate around every actual value
+computation. Cache ownership, Boehm collection and JavaScriptCore are unchanged.
+
+Five new cases cover all nineteen font-category IDs, separate line-height and
+generic caches, seeded font metrics, per-pass clearing across collection,
+unchanged/inherited values with stale dependency flags, first generic-context
+initialization before a later writing-mode change, and actual viewport/font
+dependencies across successive passes. Together with the retained cascade,
+scalar, inheritance, property-source and targeted length/cache tests,
+**thirty functional cases plus one diagnostic pass in both GC modes**,
+including C `-O2` with Boehm. Each run passes 3,997 assertions.
+
+The initial fixture helpers used Result propagation without Result return
+types and declared a value return for a pointer constructor. All three initial
+checkers rejected these helpers before C generation or tests. Only the helpers
+were corrected; runtime sources and normal browser inputs stayed unchanged.
+Original fixtures, aggregate hashes, checker exits and dependency failures are
+retained in `Build/v/instruction-opt25-fixture-revision.json` and related logs.
+Completed older artifacts were compressed with SHA-256 round-trip checks and
+executable modes retained in archive journals.
+
+A paired `v -profile` replay uses the identical focused aggregate in separate
+C `-O1`/Boehm builds. Both execute **302 style passes, 56,880 value computations
+and 899 font-metric construction calls**. Context-getter calls fall
+**97,638 → 57,004 (41.62% fewer)**. The new cache-presence path handles
+40,734 unchanged-value visits. Tracking resets fall 97,613 → 56,879.
+Profiling covers module initialization, all focused cases, warmups and the
+diagnostic, with no `-profile-fns` filter or counter reset.
+`-profile-no-inline` omits inline-marked functions from instrumentation.
+Only call counts are interpreted; instrumented times and instructions are
+excluded from normal page results. Exact argv, raw profiles and generated-C
+scope proofs are under `Build/v/instruction-opt25-profile-*` and
+`instruction-opt25-{before,final}-v-profile.txt`.
+
+Three fixed alternating diagnostics perform 256 complete property-computation
+passes with all 355 initial longhands explicitly cascaded and font size fixed
+at 16px. A sixteen-entry ring retains outputs; setup, eight warmups, collection
+and assertions stay outside the hardware counter interval. All checksums match
+the independent reference `(355 + 16*64)*256 = 353024`.
+Median work falls **169,899,922 → 165,106,228
+instructions (2.82% fewer)**; all three pairs improve. This all-longhand
+diagnostic is separate from GitHub's cascade and whole-page work. Plans,
+aggregate, commands and results are retained under `Build/v/instruction-opt25-*`
+and `opt25-context-focused-test.v.txt`.
+
+Thirty alternating normal-build GitHub pairs were fixed before measurement,
+using fresh copies of the same immutable cache, the frozen native library,
+a 1024×768 viewport and the first native
+`navigation_to_first_document_paint` endpoint.
+
+| Build | Median instructions through first native document frame |
+| --- | ---: |
+| Context copies for every visited value | 32,917,340,013.5 |
+| Context copies only for computed values | 33,775,976,869 |
+
+The observed change is **+2.61%**
+(-858,636,855.5 instructions saved); **15/30 pairs improve**.
+The paired median saving is -4,633,306.5; its 95% paired percentile
+bootstrap interval is **-868,011,039 to 159,457,339.5** instructions
+(30,000 resamples, seed 25). The paired interval includes zero, so a repeatable
+whole-page change remains unestablished. Repeatable savings credited: 0.
+The worse observed median was sufficient to reject this optimization;
+`46fdbe37` restores the previously verified implementation and removes its
+feature tests. The candidate, tests and evidence remain in history and snapshots.
+All sixty captures have valid 1024×768 geometry, one installation,
+two required geometry passes and one shell paint recording before the first
+frame. No observations were discarded, extended or selected after results.
+Checkpoint intervals remain process-wide deltas rather than function self cost.
+Raw reports are `Build/instructions/vox-opt25-interleaved-*`; paired evidence
+is `Build/v/instruction-opt25-comparison-evidence.json`.
+
+The control reuses the exact round24 executable and immutable runtime snapshot,
+including retained scalar reads `fab6eba8`. The sole runtime source change is
+`css/computed_interpolation.v`. The generated-C audit permits changes only to
+the property loop and context getter plus two new private helpers. It
+authenticates the original nineteen font-category IDs and verifies that context
+construction and cache-hit source bodies after classification are identical.
+The warm path has no optional-context local; a cache hit reads only presence.
+All other executable logic, layouts and resources match after compiler
+identities, embed keys and authenticated assertion-line mappings are
+canonicalized. All 120 common native input hashes and the shared library
+remain unchanged. Proofs are in `Build/v/instruction-opt25-matching-provenance.json`.
+
+The observed page saving stayed below the user's 5,000,000-instruction gate,
+so broad suites were skipped. The focused Unicode/control, background and
+math-depth viewport is pixel-exact between builds. Actual exits and metrics are
+retained in `Build/v/instruction-opt25-validation-result.json`. The last broad
+baseline remains `fab6eba8`; additional credited savings are
+0.
+
+The observed page median did not improve, so the signed round24 application
+remains installed in `Build/v/Vox.app`. The local diagnostic improvement receives
+no whole-page runtime credit.
+Independent native media completion/error-handler changes are preserved and
+excluded from the compared binaries and app snapshot. The existing GUI process
+was left running. Chrome instruction and functionality parity remain
+unverified, including GitHub module hydration and populated file rows.
+
+
+Separate GC tracing replays the same before/candidate binaries in three fixed
+pairs. Collections through the first frame are 27/29/27 for the control and
+27/28/27 for the candidate. The library starts fifteen marker helper threads
+on this eighteen-processor host. Trace timing and instrumented instruction
+counts are excluded from the normal result. A separate three-pair probe on the
+unchanged round24 binary compares the default collector with `GC_MARKERS=1`:
+its observed median falls 32,779,422,844 → 32,108,764,221 instructions (2.05%),
+with two of three pairs improving. This preliminary configuration probe is
+not confirmatory, adds no credited saving and does not extend the thirty-pair
+candidate comparison. Plans and raw data are retained under
+`Build/v/instruction-opt25-gc-*` and `instruction-gc-markers-probe-*`.
+
 ## Causes and changes
 
 - The V 0.5.2 compatibility compiler's `-prod` Boehm code repeatedly snapshots

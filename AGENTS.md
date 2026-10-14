@@ -1369,6 +1369,12 @@ evidence](docs/translation-audit/NATIVE_MEDIA_WHEEL_RAW_HANDLER.md).
   The controlled property diagnostic improves 1.26%; the fresh V-profile records
   605,484 scalar-reader calls across the GitHub screenshot process.
   See `docs/GITHUB_PERFORMANCE.md` for uncertainty, source snapshots and app scope.
+  Subsequent context-copy feature `3ad9a504` passed thirty focused checks
+  plus one diagnostic in both GC modes. Its observed GitHub change is
+  +2.61%; the paired interval includes zero. Broad suites are
+  skipped below 5M; additional credited savings: 0.
+  Its controlled property diagnostic improves 2.82%, but the production change
+  was reverted by `46fdbe37`; the installed app remains round24. See the performance document.
 - Outside instruction-count optimization, run broad regression suites once per
   ten completed fixes, not after every fix.
   Broad suites include full translation/package test batches, the full LibJS AST
