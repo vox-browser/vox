@@ -2,6 +2,8 @@ module browserjs
 
 import dom
 
+fn C.JSValueMakeUndefined(context voidptr) voidptr
+
 pub fn (mut host ElementWheelHost) install(mut runtime Runtime) ! {
 	runtime.require_javascript_value_context()!
 	runtime.bind_scripting_environment(host.settings)!
@@ -39,7 +41,12 @@ pub fn (mut host ElementWheelHost) install(mut runtime Runtime) ! {
 		target := host.wheel_handler_target(receiver) or {
 			return host.runtime.actual_javascript_exception(host.runtime.binding_exception_value(err))
 		}
-		value := if args.len == 0 { C.JSValueMakeUndefined(host.runtime.context) } else { args[0] }
+		mut value := voidptr(0)
+		if args.len == 0 {
+			value = C.JSValueMakeUndefined(host.runtime.context)
+		} else {
+			value = args[0]
+		}
 		// Capture callback settings before flushing queued content attributes;
 		// an earlier raw onwheel write must not overwrite this later IDL write.
 		callback := host.runtime.event_callback(value, true)!
@@ -47,7 +54,7 @@ pub fn (mut host ElementWheelHost) install(mut runtime Runtime) ! {
 		target.set_event_handler_attribute('wheel', if callback != unsafe { nil } {
 			?&dom.CallbackType(callback)
 		} else {
-			none
+			?&dom.CallbackType(none)
 		})
 		return C.JSValueMakeUndefined(host.runtime.context)
 	})!
