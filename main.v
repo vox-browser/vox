@@ -1248,6 +1248,9 @@ fn browser_decode_raster_image_bytes(bytes []u8) !&dom.Bitmap_ {
 		height: image.height
 		pitch: image.width * 4
 		data: pixels
+		// stb preserves the encoded top-to-bottom scanline order. Keep the
+		// native image bridge from reflecting those rows as Quartz storage.
+		native_rows_are_top_down: true
 	}
 }
 
@@ -3882,7 +3885,17 @@ fn (mut app BrowserApp) create_image_from_resource_bytes(image_url string, bytes
 			return app.ctx.create_image(path)
 		}
 	}
-	return app.ctx.create_image_from_byte_array(bytes)
+	mut image := app.ctx.create_image_from_byte_array(bytes)!
+	$if macos {
+		if app.ctx.native_rendering {
+			// gg's byte decoder also uses stb's top-to-bottom rows. Native paint
+			// reads the cached image, so retain that order in both representations.
+			image.nr_channels = 6
+			mut cached := app.ctx.get_cached_image_by_idx(image.id)
+			cached.nr_channels = 6
+		}
+	}
+	return image
 }
 
 fn browser_local_file_path(serialized_url string) ?string {
