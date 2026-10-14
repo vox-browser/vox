@@ -41,6 +41,9 @@ import webvtt
 import xpath
 import x.json2
 
+// Mark on the initiating thread by default; GC_MARKERS can override this.
+#flag -DGC_MARKERS=1
+
 #flag darwin -framework CoreImage
 
 #include "native_capture_darwin.m"
