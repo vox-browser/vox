@@ -2507,3 +2507,20 @@ Global tables, pins, source mappings and historical ledgers remain preserved;
 accounting adds no test or behavioral parity credit. Batch counter remains
 3/10 after aa6f0246; this documentation commit is not another translation fix.
 See [evidence](docs/translation-audit/NATIVE_MEDIA_DATA_RAW_HANDLER.md).
+
+Native compact media raw `onratechange` / `onvolumechange` (`5d549d51`;
+owner-fixture corrections `d1a0df47` and `89fab31e`, 2026-10-14 UTC):
+Owner-local audio/video settings attributes use lazy native compilation and
+ordered content-attribute replay. Changed setters queue native media tasks;
+equal writes and rejected values add none. Six focused cases per GC mode pass
+across three detached source epochs: binding cases pass at the original
+feature, and owner cases pass at the final explicit-branch correction. Original
+combined commands exit 1 after binding success on owner C compilation; owner
+runtime cases are zero. The first owner-only correction also exits 1 at the V
+frontend with zero runtime cases. Both failures, all sources, helpers and logs
+remain retained. The final epoch keeps identified foreign committed changes
+without adding root feature or broad-suite credit. Scopes, Event identity,
+owner gates, replacement/removal, reentrant setters, exceptions, later listeners
+and retained DOM painting are covered. Production and broad suites are
+deferred. Batch: 4/10 after aa6f0246; fixture corrections belong to this one
+translation slice. See [evidence](docs/translation-audit/NATIVE_MEDIA_SETTINGS_RAW_HANDLER.md).
