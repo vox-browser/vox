@@ -548,6 +548,11 @@ fn element_or_pseudo_references_animation_name(element &dom.Element, animation_n
 			}
 		}
 	}
+	// Computed pseudo styles need not have layout nodes. The record map is
+	// empty for most elements, so avoid probing every known pseudo on a miss.
+	if element.pseudo_element_data.len == 0 {
+		return false
+	}
 	for pseudo := 0; pseudo < int(dom.PseudoElement.known_pseudo_element_count); pseudo++ {
 		if placeholder := element.computed_properties_for_pseudo(pseudo) {
 			if computed := computed_properties_from_dom(placeholder) {
