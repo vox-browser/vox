@@ -97,9 +97,11 @@ fn test_force_dark_command_resolution_translates_css_and_svg_gradient_stops() {
 		PaintCommand{
 			force_dark_role: .svg
 			force_dark_role_set: true
-			fill_linear_gradient: painting.SVGLinearGradientPaintStyle{
-				gradient: painting.SVGGradientPaintStyle{
-					color_stops: [painting.ColorStop{color: black, position: 0}]
+			svg_gradient_data: &PaintSVGGradientData{
+				fill_linear_gradient: painting.SVGLinearGradientPaintStyle{
+					gradient: painting.SVGGradientPaintStyle{
+						color_stops: [painting.ColorStop{color: black, position: 0}]
+					}
 				}
 			}
 		},
@@ -110,7 +112,7 @@ fn test_force_dark_command_resolution_translates_css_and_svg_gradient_stops() {
 	assert css_gradient.colors[0] == css.Color{expected_background.r, expected_background.g,
 		expected_background.b, expected_background.a}
 	assert css_gradient.stops[0].color == css_gradient.colors[0]
-	svg_gradient := resolved[1].fill_linear_gradient or { panic('missing SVG gradient') }
+	svg_gradient := resolved[1].fill_linear_gradient() or { panic('missing SVG gradient') }
 	assert svg_gradient.gradient.color_stops[0].color == painting.force_dark_resolve(black,
 		.svg, settings)
 }

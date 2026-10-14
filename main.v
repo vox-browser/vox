@@ -5429,10 +5429,7 @@ fn (mut app BrowserApp) draw_command(source_command layout.PaintCommand, page_x 
 					}
 					fill := paint_color(command.color, command.opacity * command.fill_opacity)
 					stroke := paint_color(command.stroke_color, command.opacity * command.stroke_opacity)
-					if command.fill_linear_gradient == none
-						&& command.stroke_linear_gradient == none
-						&& command.fill_radial_gradient == none
-						&& command.stroke_radial_gradient == none && command.fill_pattern == none
+					if command.svg_gradient_data == none && command.fill_pattern == none
 						&& command.stroke_pattern == none && !command.stroke_first {
 						unsafe {
 							C.native_draw_svg_path_srgb(&command.path_data[0], command.path_data.len / layout.compatibility_clip_path_segment_stride, if command.fill_even_odd {
@@ -5458,9 +5455,9 @@ fn (mut app BrowserApp) draw_command(source_command layout.PaintCommand, page_x 
 					order := if command.stroke_first { [1, 0] } else { [0, 1] }
 					for part in order {
 						if part == 0 {
-							if gradient := command.fill_linear_gradient {
+							if gradient := command.fill_linear_gradient() {
 								draw_native_svg_linear_gradient_path(command.path_data, command.fill_even_odd, path_matrix, page_x, page_y, f32(scroll_y), f32(app.ctx.height), false, command.stroke_width, command.stroke_linecap, command.stroke_linejoin, command.stroke_miterlimit, gradient, command.opacity * command.fill_opacity, false)
-							} else if gradient := command.fill_radial_gradient {
+							} else if gradient := command.fill_radial_gradient() {
 								draw_native_svg_radial_gradient_path(command.path_data, command.fill_even_odd, path_matrix, page_x, page_y, f32(scroll_y), f32(app.ctx.height), false, command.stroke_width, command.stroke_linecap, command.stroke_linejoin, command.stroke_miterlimit, gradient, command.opacity * command.fill_opacity, false)
 							} else if pattern := command.fill_pattern {
 								app.draw_native_svg_pattern_path(command.path_data, command.fill_even_odd, path_matrix, page_x, page_y, f32(scroll_y), f32(app.ctx.height), false, command.stroke_width, command.stroke_linecap, command.stroke_linejoin, command.stroke_miterlimit, pattern, command.opacity * command.fill_opacity, false)
@@ -5474,9 +5471,9 @@ fn (mut app BrowserApp) draw_command(source_command layout.PaintCommand, page_x 
 								}
 							}
 						} else if command.stroke_width > 0 {
-							if gradient := command.stroke_linear_gradient {
+							if gradient := command.stroke_linear_gradient() {
 								draw_native_svg_linear_gradient_path(command.path_data, command.fill_even_odd, path_matrix, page_x, page_y, f32(scroll_y), f32(app.ctx.height), true, command.stroke_width, command.stroke_linecap, command.stroke_linejoin, command.stroke_miterlimit, gradient, command.opacity * command.stroke_opacity, false)
-							} else if gradient := command.stroke_radial_gradient {
+							} else if gradient := command.stroke_radial_gradient() {
 								draw_native_svg_radial_gradient_path(command.path_data, command.fill_even_odd, path_matrix, page_x, page_y, f32(scroll_y), f32(app.ctx.height), true, command.stroke_width, command.stroke_linecap, command.stroke_linejoin, command.stroke_miterlimit, gradient, command.opacity * command.stroke_opacity, false)
 							} else if pattern := command.stroke_pattern {
 								app.draw_native_svg_pattern_path(command.path_data, command.fill_even_odd, path_matrix, page_x, page_y, f32(scroll_y), f32(app.ctx.height), true, command.stroke_width, command.stroke_linecap, command.stroke_linejoin, command.stroke_miterlimit, pattern, command.opacity * command.stroke_opacity, false)

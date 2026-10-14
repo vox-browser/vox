@@ -935,10 +935,7 @@ pub mut:
 	points                 []f64
 	path_polygons          [][]f64
 	stroke_color           string
-	fill_linear_gradient   ?painting.SVGLinearGradientPaintStyle = none
-	stroke_linear_gradient ?painting.SVGLinearGradientPaintStyle = none
-	fill_radial_gradient   ?painting.SVGRadialGradientPaintStyle = none
-	stroke_radial_gradient ?painting.SVGRadialGradientPaintStyle = none
+	svg_gradient_data      ?&PaintSVGGradientData = none
 	fill_pattern           ?&painting.SVGPatternPaintStyle = none
 	stroke_pattern         ?&painting.SVGPatternPaintStyle = none
 	stroke_width           f64
@@ -2365,8 +2362,9 @@ fn (b &BlockBox) flat_paint_commands_for_entries(entries []PaintOrderEntry, sele
 				color: box.svg_fill_color
 				force_dark_role: .svg
 				force_dark_role_set: true
-				fill_linear_gradient: box.svg_fill_linear_gradient
-				fill_radial_gradient: box.svg_fill_radial_gradient
+				svg_gradient_data: retained_svg_gradient_data(box.svg_fill_linear_gradient,
+					box.svg_stroke_linear_gradient, box.svg_fill_radial_gradient,
+					box.svg_stroke_radial_gradient)
 				fill_pattern: box.svg_fill_pattern
 				opacity: opacity
 				path: box.svg_path
@@ -2375,8 +2373,6 @@ fn (b &BlockBox) flat_paint_commands_for_entries(entries []PaintOrderEntry, sele
 				points: box.svg_points
 				fill_even_odd: box.svg_fill_even_odd
 				stroke_color: box.svg_stroke_color
-				stroke_linear_gradient: box.svg_stroke_linear_gradient
-				stroke_radial_gradient: box.svg_stroke_radial_gradient
 				stroke_pattern: box.svg_stroke_pattern
 				stroke_width: box.svg_stroke_width
 				stroke_dasharray: box.svg_stroke_dasharray
@@ -5232,11 +5228,11 @@ pub fn (b &BlockBox) render_svg(width f64, height f64) string {
 			path_matrix := normalized_affine(command.path_transform)
 			mut fill := if command.color.len > 0 { command.color } else { 'none' }
 			mut stroke := if command.stroke_color.len > 0 { command.stroke_color } else { 'none' }
-			if gradient := command.fill_linear_gradient {
+			if gradient := command.fill_linear_gradient() {
 				id := 'svg-paint${defs.len}'
 				defs << retained_svg_linear_gradient_definition(id, gradient)
 				fill = 'url(#${id})'
-			} else if gradient := command.fill_radial_gradient {
+			} else if gradient := command.fill_radial_gradient() {
 				id := 'svg-paint${defs.len}'
 				defs << retained_svg_radial_gradient_definition(id, gradient)
 				fill = 'url(#${id})'
@@ -5245,11 +5241,11 @@ pub fn (b &BlockBox) render_svg(width f64, height f64) string {
 				defs << retained_svg_pattern_definition(id, pattern, 0)
 				fill = 'url(#${id})'
 			}
-			if gradient := command.stroke_linear_gradient {
+			if gradient := command.stroke_linear_gradient() {
 				id := 'svg-paint${defs.len}'
 				defs << retained_svg_linear_gradient_definition(id, gradient)
 				stroke = 'url(#${id})'
-			} else if gradient := command.stroke_radial_gradient {
+			} else if gradient := command.stroke_radial_gradient() {
 				id := 'svg-paint${defs.len}'
 				defs << retained_svg_radial_gradient_definition(id, gradient)
 				stroke = 'url(#${id})'

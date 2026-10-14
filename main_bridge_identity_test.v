@@ -57,7 +57,7 @@ requestAnimationFrame(()=>requestAnimationFrame(()=>{
 	commands := result.paint_tree.paint_commands().filter(it.kind == 'draw_svg_path' && it.fill_linear_gradient != none)
 	assert commands.len == 2
 	for command in commands {
-		paint := command.fill_linear_gradient?
+		paint := command.fill_linear_gradient()?
 		assert paint.gradient.color_stops.last().color == painting.Color{0, 128, 0, 255}
 	}
 }

@@ -496,10 +496,10 @@ fn test_javascript_bridge_replays_svg_paint_server_mutations() {
 
 		updated := layout.run_document_layout(document, 500, 100) or { panic('missing updated layout') }
 		gradients := updated.paint_tree.paint_commands().filter(it.kind == 'draw_svg_path'
-			&& it.fill_linear_gradient != none)
+			&& it.fill_linear_gradient() != none)
 		assert gradients.len == 5
 		for command in gradients {
-			gradient := command.fill_linear_gradient or { panic('missing retained gradient') }
+			gradient := command.fill_linear_gradient() or { panic('missing retained gradient') }
 			assert gradient.gradient.color_stops.last().color == painting.Color{0, 128, 0, 255}
 		}
 	}

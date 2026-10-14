@@ -2495,8 +2495,8 @@ fn test_svg_linear_gradient_paints_retain_linked_resource_algorithms() {
 	assert command.color == ''
 	assert command.stroke_color == ''
 	assert command.stroke_first
-	fill := command.fill_linear_gradient or { panic('missing retained fill gradient') }
-	stroke := command.stroke_linear_gradient or { panic('missing retained stroke gradient') }
+	fill := command.fill_linear_gradient() or { panic('missing retained fill gradient') }
+	stroke := command.stroke_linear_gradient() or { panic('missing retained stroke gradient') }
 	assert math.abs(fill.start_point.x - 10.0) < 0.001
 	assert math.abs(fill.start_point.y - 10.0) < 0.001
 	assert math.abs(fill.end_point.x - 50.0) < 0.001
@@ -2556,7 +2556,7 @@ fn test_svg_paint_servers_resolve_inside_use_shadow_trees() {
 	root := layout_document_typed_in_viewport(document, 100, 100)
 	paths := root.paint_commands().filter(it.kind == 'draw_svg_path')
 	assert paths.len == 1
-	paint := paths[0].fill_linear_gradient or { panic('missing shadow-tree gradient') }
+	paint := paths[0].fill_linear_gradient() or { panic('missing shadow-tree gradient') }
 	assert paint.gradient.color_stops.map(it.color) == [
 		painting.Color{255, 0, 0, 255},
 		painting.Color{0, 0, 255, 255},
@@ -2571,7 +2571,7 @@ fn test_svg_paint_resource_mutation_invalidates_the_retained_display_list() {
 		panic('missing initial display list')
 	}
 	initial_path := display_list_commands(initial_display_list).filter(it.kind == 'draw_svg_path')[0]
-	initial_gradient := initial_path.fill_linear_gradient or { panic('missing initial gradient') }
+	initial_gradient := initial_path.fill_linear_gradient() or { panic('missing initial gradient') }
 	assert initial_gradient.gradient.color_stops[0].color == painting.Color{255, 0, 0, 255}
 	assert mutable_document.cached_display_list() != none
 
@@ -2596,7 +2596,7 @@ fn test_svg_paint_resource_mutation_invalidates_the_retained_display_list() {
 		panic('missing updated display list')
 	}
 	updated_path := display_list_commands(updated_display_list).filter(it.kind == 'draw_svg_path')[0]
-	updated_gradient := updated_path.fill_linear_gradient or { panic('missing updated gradient') }
+	updated_gradient := updated_path.fill_linear_gradient() or { panic('missing updated gradient') }
 	assert updated_gradient.gradient.color_stops[0].color == painting.Color{0, 128, 0, 255}
 }
 
@@ -2608,7 +2608,7 @@ fn test_svg_paint_resource_lookup_is_rebuilt_after_an_id_collision_changes() {
 		panic('missing initial display list')
 	}
 	initial_path := display_list_commands(initial_display_list).filter(it.kind == 'draw_svg_path')[0]
-	assert initial_path.fill_linear_gradient == none
+	assert initial_path.fill_linear_gradient() == none
 	assert initial_path.color == 'rgb(255 0 0)'
 	assert mutable_document.cached_display_list() != none
 
@@ -2620,7 +2620,7 @@ fn test_svg_paint_resource_lookup_is_rebuilt_after_an_id_collision_changes() {
 		panic('missing updated display list')
 	}
 	updated_path := display_list_commands(updated_display_list).filter(it.kind == 'draw_svg_path')[0]
-	updated_gradient := updated_path.fill_linear_gradient or { panic('missing updated gradient') }
+	updated_gradient := updated_path.fill_linear_gradient() or { panic('missing updated gradient') }
 	assert updated_gradient.gradient.color_stops[0].color == painting.Color{0, 128, 0, 255}
 }
 
@@ -2633,10 +2633,10 @@ fn test_svg_radial_gradient_paints_retain_two_circle_linked_resource_algorithms(
 	assert command.color == ''
 	assert command.stroke_color == ''
 	assert command.stroke_first
-	fill := command.fill_radial_gradient or { panic('missing retained radial fill') }
-	stroke := command.stroke_radial_gradient or { panic('missing retained radial stroke') }
-	assert command.fill_linear_gradient == none
-	assert command.stroke_linear_gradient == none
+	fill := command.fill_radial_gradient() or { panic('missing retained radial fill') }
+	stroke := command.stroke_radial_gradient() or { panic('missing retained radial stroke') }
+	assert command.fill_linear_gradient() == none
+	assert command.stroke_linear_gradient() == none
 	assert math.abs(fill.start_center.x - 20.0) < 0.001
 	assert math.abs(fill.start_center.y - 40.0) < 0.001
 	assert math.abs(fill.start_radius - 10.0) < 0.001
@@ -2663,7 +2663,7 @@ fn test_svg_radial_gradient_object_bounding_box_defaults_match_cpp_width_resolut
 	root := layout_document_typed_in_viewport(document, 120, 120)
 	paths := root.paint_commands().filter(it.kind == 'draw_svg_path')
 	assert paths.len == 1
-	gradient := paths[0].fill_radial_gradient or { panic('missing default radial gradient') }
+	gradient := paths[0].fill_radial_gradient() or { panic('missing default radial gradient') }
 	assert gradient.start_center == painting.Point{50, 25}
 	assert gradient.end_center == painting.Point{50, 25}
 	assert gradient.start_radius == 0
