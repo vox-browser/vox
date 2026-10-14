@@ -692,8 +692,8 @@ mut:
 	prev_position TokenPosition
 }
 
-// The tokenizer alone owns these numeric lookup tables. Tokens borrow only
-// decoded_input, so the tables need neither tracing nor a lifetime beyond the
+// The tokenizer alone owns these numeric lookup tables. Tokens retain only
+// decoded text, so the tables need neither tracing nor a lifetime beyond the
 // tokenization call. Allocate both in one arena and release it at that boundary.
 struct TokenizerInputArena {
 mut:

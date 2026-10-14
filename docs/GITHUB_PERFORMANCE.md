@@ -559,6 +559,72 @@ rebuilding disabled. Logs use `Build/v/instruction-opt5-*`; final ownership
 results are in `instruction-opt5-font-final-{retention,gc-none}-tests.log`,
 and screenshots in `instruction-opt5-font-metrics-screenshots.log`.
 
+## CSS serialization fast paths
+
+The remaining allocation stacks included number and identifier serialization.
+Numbers previously used fixed-point formatting even for ordinary integers,
+then copied the string once for every trailing zero removed. Commit `6897fa31`
+formats exact signed 32-bit integers directly and trims fractional tails with
+one scan and at most one substring copy. Larger values retain the fixed-point
+formatter. Negative zero, six-decimal rounding, and non-finite spellings stay
+unchanged, including the existing documented large-number deviation.
+
+Commit `143018d3` lets ASCII identifiers which need no escaping retain their
+immutable input string. Leading digits, a hyphen followed by a digit, a lone
+hyphen, punctuation, controls, and non-ASCII input retain the existing Unicode
+escape path. This avoids the rune array and builder for ordinary names.
+Tokenizer source-slice copies remain a separate material allocation source;
+the earlier ownership wording above has been corrected accordingly.
+
+Five normal signed C `-O2` runs per build were interleaved, reversing order on
+alternate iterations. Every run copied the same immutable GitHub cache:
+
+| Build | Median installation instructions | Median navigation through first native frame | Median process peak physical footprint, MiB |
+| --- | ---: | ---: | ---: |
+| Preceding selected-font build | 34,494,815,746 | 39,066,355,139 | 1,565.5 |
+| Number and identifier serialization fast paths | 33,818,055,305 | 37,623,859,617 | 1,552.3 |
+
+The first-frame median falls **3.7%**, installation 2.0%, and lifetime peak
+footprint 13.2 MiB (0.8%). Final first-frame counts are 37,211,164,239;
+38,629,283,450; 38,413,122,416; 37,623,859,617; and 37,452,740,909.
+The ranges overlap; one paired final run is slightly higher than its baseline.
+These are local process-wide medians with collector/background variation, not
+isolated function self costs. They must not be added to earlier percentages or
+treated as proof of Chrome parity; GitHub module hydration remains incomplete.
+
+A separate C `-O0` allocation diagnostic counts 16,783,869 managed calls
+requesting 3,253,776,646 bytes through capture/exit, versus the preceding
+17,718,245 calls requesting 3,275,761,085 bytes. Both record four layout-tree and
+paint-command checkpoints with the same cache. Uniform mixed-sequence stack
+samples for number serialization fall from 165 to 55, and identifier samples
+from 86 to 1. These samples are not absolute function call counts, and the
+diagnostic instruction totals are not normal-build measurements. GC settings
+and intrinsic-measurement arenas are unchanged.
+
+The baseline executable is `Build/v/Vox-opt5-font-metrics-bin`, SHA-256
+`114fb2ec163c5e5d3640cab537147c6ffc789e995a1ce1fcd86fd3f9be501fd2`.
+The final is `Build/v/Vox-opt6-css-serialization-bin`, SHA-256
+`e25adf422d56108a3a3a57372972d3ce0e63fcf1ca283ea27bb6f50f6d2a67bb`,
+also installed in `Build/v/Vox.app`. The normal build flags are unchanged;
+only `-keepc` was added for generated-code inspection.
+Raw measurements use `Build/instructions/vox-opt6-interleaved-{before,final}-[1-5].run-1.json`
+and `vox-opt6-interleaved-summary.json`; the allocation diagnostic uses
+`vox-opt6-final-allocation-diagnostic.run-1.{json,log}`.
+
+The number tests check explicit rounding/special-value boundaries and over
+20,000 integer/fractional cases against the existing fixed-precision formatter
+and integer spellings, including magnitudes from `1e-308` to `1e308`. Identifier
+tests cover ASCII and Unicode escape boundaries and retain a dynamically
+created identifier after its producer exits and forced collections run.
+Both new suites pass with ordinary settings, C `-O2` plus pointer-aware Boehm,
+and `-gc none`. Component-text and shorthand serialization suites pass, as do
+signature verification and native startup smoke checks. Validation logs use
+`Build/v/instruction-opt6-*`. The exact saved measured executable passes the
+same nineteen viewport comparisons used in the preceding round, including the
+four SVG mutation cases and both added line-height cases pixel-exact. These use
+the normal capture helper copied with automatic rebuilding disabled; results
+are in `instruction-opt6-css-serialization-screenshots.log`.
+
 ## Causes and changes
 
 - The V 0.5.2 compatibility compiler's `-prod` Boehm code repeatedly snapshots
@@ -597,8 +663,9 @@ and screenshots in `instruction-opt5-font-metrics-screenshots.log`.
   construction for every character. An unavailable explicit source continues
   to be retried instead of permanently selecting its temporary fallback.
 - CSS component text serialization now uses linear builders. Unescaped
-  identifier tokens borrow their contiguous filtered-input span; escaped names
-  still use the decoder and builder. Optimized forced-GC tests cover a late
+  identifier tokens use a contiguous filtered-input slice without a builder;
+  the compatibility compiler copies that slice. Escaped names still use the
+  decoder and builder. Optimized forced-GC tests cover a late
   identifier retained after the tokenizer and other tokens have gone away.
 - The compact script bridge reads `innerHTML` and `textContent` lazily from
   captured native element identities. Initial state and unchanged snapshots
