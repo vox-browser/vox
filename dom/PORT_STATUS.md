@@ -824,3 +824,7 @@ retains 43/137 native union per GC mode, full LibJS 234 each GC, exact AST 100
 and signed production/screenshot evidence; baseline is 05655652 and the
 next batch remains 0/10. This independently reviewable documentation commit
 is not another translation fix. See [evidence](../docs/translation-audit/NATIVE_MEDIA_COMPLETION_RAW_HANDLER.md).
+
+Native compact media raw `onerror` (6ccb30aa, 2026-10-14 UTC):
+HTML audio/video raw error attributes compile lazily through their actual native owner and ordered content-attribute bridge. Media callbacks receive one Event argument, including genuine ErrorEvent probes; Window's special error convention remains separate. Seven new cases cover native failure records/events, scopes/cache, replacement/removal, scripting/CSP gates, original exceptions, retained painting, captured play promise ordering and reentrant load(). Focused evidence combines seven passing v2 cases and four corrected owner cases per GC mode, totaling 11 cases across three files; the passing seven are not rerun. Failed whole-batch attempts remain retained without wholesale pass credit. Twelve old browser boundary fixtures receive static-only verification of their three-line onstalled substitution. Native MediaError JavaScript getters and backend scheduling remain open. Broad regression, production and screenshot checks are deferred; batch counter is 1/10 after 05655652.
+See [evidence](../docs/translation-audit/NATIVE_MEDIA_ERROR_RAW_HANDLER.md).
