@@ -19,8 +19,8 @@ __global (
 
 // GlyphUnitsEntry memoizes a glyph's point-size-independent metrics: the raw
 // advance width in font design units and the resolved glyph index. The cache is
-// keyed by code point and requested weight so regular and bold faces cannot
-// reuse one another's metrics.
+// keyed by decoded face identity and code point. A missing explicit source
+// can initially select a fallback, then resolve to a different face later.
 struct GlyphUnitsEntry {
 	advance_units int
 	glyph_index   int
@@ -402,7 +402,9 @@ fn (font &Font) glyph_metrics(code_point u32) (f32, int) {
 	units_per_em := f32(face.units_per_em)
 	// The raw advance and glyph index are point-size independent, so cache them
 	// per code point and only scale by the requested size here.
-	cache_key := '${font.family.to_lower()}|${font.source_path}|${font.weight}|${code_point}'
+	// platform_font_faces retains every decoded face, so these identities stay
+	// stable for the lifetime of the cache, including distinct collection faces.
+	cache_key := '${u64(voidptr(face))}|${code_point}'
 	if entry := platform_glyph_units_cache[cache_key] {
 		return f32(entry.advance_units) * font.point_size / units_per_em, entry.glyph_index
 	}
