@@ -10,10 +10,10 @@ fn test_syntax_highlighter_retains_spans_and_folding_regions() {
 }
 
 fn test_invalidation_set_serialization_retains_all_properties() {
-	set := InvalidationSet{
+	mut set := InvalidationSet{
 		needs_invalidate_self_: true
-		properties_: [InvalidationProperty.class('active')]
 	}
+	set.set_needs_invalidate_class('active')
 	serialized := set.to_string()
 	assert serialized == '\$, .active'
 }

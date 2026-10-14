@@ -9723,13 +9723,16 @@ pub struct InvalidationSet {
 mut:
 	needs_invalidate_self_          bool
 	needs_invalidate_whole_subtree_ bool
-	properties_                     []InvalidationProperty
+	// Stylesheets can collect thousands of distinct rightmost selector keys.
+	// A linear uniqueness scan serialized every preceding key on each insert,
+	// making stylesheet installation quadratic and allocating during each scan.
+	properties_                     map[string]InvalidationProperty
 }
 
 pub fn (mut s InvalidationSet) include_all_from(other InvalidationSet) {
 	s.needs_invalidate_self_ = s.needs_invalidate_self_ || other.needs_invalidate_self_
 	s.needs_invalidate_whole_subtree_ = s.needs_invalidate_whole_subtree_ || other.needs_invalidate_whole_subtree_
-	for property in other.properties_ {
+	for _, property in other.properties_ {
 		s.add_property(property)
 	}
 }
@@ -9752,12 +9755,10 @@ pub fn (mut s InvalidationSet) set_needs_invalidate_whole_subtree() {
 
 fn (mut s InvalidationSet) add_property(property InvalidationProperty) {
 	key := property.key()
-	for existing in s.properties_ {
-		if existing.key() == key {
-			return
-		}
+	if key in s.properties_ {
+		return
 	}
-	s.properties_ << property
+	s.properties_[key] = property
 }
 
 pub fn (mut s InvalidationSet) set_needs_invalidate_class(name string) {
@@ -9789,7 +9790,11 @@ pub fn (s &InvalidationSet) has_properties() bool {
 }
 
 pub fn (s &InvalidationSet) properties() ComputedInterpolationInvalidationProperties {
-	return s.properties_.clone()
+	mut result := []InvalidationProperty{cap: s.properties_.len}
+	for _, property in s.properties_ {
+		result << property
+	}
+	return result
 }
 
 pub fn (s &InvalidationSet) for_each_property(callback fn (InvalidationProperty) bool) {
@@ -9803,7 +9808,7 @@ pub fn (s &InvalidationSet) for_each_property(callback fn (InvalidationProperty)
 			return
 		}
 	}
-	for property in s.properties_ {
+	for _, property in s.properties_ {
 		if !callback(property) {
 			return
 		}
@@ -9818,7 +9823,7 @@ pub fn (s &InvalidationSet) to_string() string {
 	if s.needs_invalidate_whole_subtree_ {
 		parts << InvalidationProperty.invalidate_whole_subtree().to_string()
 	}
-	for property in s.properties_ {
+	for _, property in s.properties_ {
 		parts << property.to_string()
 	}
 	return parts.join(', ')
