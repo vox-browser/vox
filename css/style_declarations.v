@@ -439,15 +439,19 @@ fn css_style_properties_length(properties &CSSStyleProperties) int {
 }
 
 pub fn parse_custom_property_value(value string) &dom.StyleValue {
-	mut parser := Parser.from_css_text(value)
-	mut tokens := ComponentValueStream.new(parser.component_values)
+	return parse_custom_property_components(parse_component_values_for_value_logic(value), value)
+}
+
+fn parse_custom_property_components(values []ComponentValue, original_text string) &dom.StyleValue {
+	mut parser := Parser{component_values: values}
+	mut tokens := ComponentValueStream.new(values)
 	if keyword := parser.parse_css_wide_keyword_value(mut tokens) {
 		tokens.consume_whitespace()
 		if tokens.is_empty() {
 			return dom_style_value_from_value_logic(keyword)
 		}
 	}
-	return dom_style_value_from_value_logic(StyleValue(UnresolvedStyleValue.create_with_original_source_text(parser.component_values, value)))
+	return dom_style_value_from_value_logic(StyleValue(UnresolvedStyleValue.create_with_original_source_text(values, original_text)))
 }
 
 fn cssom_style_property_as_style_property(property CSSStyleProperty) ?StyleProperty {

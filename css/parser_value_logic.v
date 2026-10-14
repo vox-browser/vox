@@ -867,7 +867,7 @@ fn (mut parser Parser) parse_css_value_tokens(property_id PropertyID, mut tokens
 	// Properties containing syntactically valid var()/attr()/env()/if()/inherit()
 	// are resolved after the custom-property cascade. Invalid argument grammars
 	// are rejected now rather than becoming guaranteed-invalid at computed time.
-	remaining := tokens.values[tokens.index..].clone()
+	remaining := tokens.values[tokens.index..]
 	mut substitution_presence := SubstitutionFunctionsPresence{}
 	for token in remaining {
 		if token.is(.semicolon) {

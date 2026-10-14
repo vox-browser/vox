@@ -2330,29 +2330,37 @@ fn (mut parser RuleSelectorParser) convert_child_rule_list(children []RuleOrList
 fn (mut parser RuleSelectorParser) convert_to_style_declaration(declarations ParserRuleDeclarations) &CSSStyleProperties {
 	mut properties := []StyleProperty{}
 	mut custom_properties := map[string]StyleProperty{}
+	params := parser.parsing_params()
 	for declaration in declarations {
-		value := parser_component_values_to_string(declaration.value).trim_space()
 		if is_a_custom_property_name_string(declaration.name) {
 			value_text := if original := declaration.original_value_text {
 				original
 			} else {
-				value
+				parser_component_values_to_string(declaration.value).trim_space()
 			}
 			custom_properties[declaration.name] = StyleProperty{
 				important: declaration.important
 				property_id: .color
-				value: parse_custom_property_value(value_text)
+				value: parse_custom_property_components(declaration.value, value_text)
 			}
 		} else {
 			property := PropertyNameAndID.from_name(declaration.name) or { continue }
 			property_id := property.id() or { continue }
-			parsed_value := parse_css_value(parser.parsing_params(), value, property_id) or {
+			// Syntax parsing already produced this immutable component tree.
+			// Serializing and tokenizing it again both allocates and can merge
+			// tokens separated by comments, changing the declaration's grammar.
+			mut value_parser := Parser{
+				component_values: declaration.value
+				context: params
+				value_context: parser.value_context.clone()
+			}
+			parsed := value_parser.parse_css_value(property_id) or {
 				continue
 			}
 			properties << StyleProperty{
 				important: declaration.important
 				property_id: property_id
-				value: parsed_value
+				value: dom_style_value_from_value_logic(parsed)
 			}
 		}
 	}
