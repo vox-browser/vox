@@ -113,8 +113,8 @@ counter cases, the signed production build and native `--headless-smoke` pass.
 The Python tests exercise live counters and zombie exit counters as well as
 descendant retention, PID reuse, missing final samples and overlapping scopes.
 Native smoke also passes with instruction checkpoints enabled. The counter and
-browser instrumentation are opt-in; the normal GC/arena allocation policy is
-unchanged.
+browser instrumentation are opt-in; adding those counters did not change the
+GC/arena allocation policy. Subsequent heap-capacity tuning is described below.
 
 ## Controlled instruction optimization, 2026-10-14
 
@@ -222,6 +222,94 @@ Chrome's earlier observed navigation/capture median remains 12,506,518,885
 instructions. Its endpoint, process coverage, starting resources, and working
 module execution differ from Vox's. These changes reduce Vox's work but do not
 establish Chrome parity.
+
+## Further fixed-cache instruction reduction
+
+The next round uses the same snapshot and three runs per stage. Its fresh
+baseline is the saved preceding build, rather than a new network response.
+
+| Stage | Median installation instructions | Median navigation through first native frame |
+| --- | ---: | ---: |
+| Fresh preceding-build baseline | 48,669,853,599 | 53,505,472,316 |
+| Reuse immutable unresolved style defaults | 48,252,629,730 | 53,928,672,486 |
+| Collect rule buckets directly | 47,143,413,017 | 53,057,966,448 |
+| Final build with heavy-document GC capacity hint and allocation-free bidi classification | 37,787,118,615 | 42,626,718,364 |
+
+The final navigation median is **20.3% lower** than this round's baseline;
+installation work is 22.4% lower. The three final navigation counts are
+42,243,723,651; 42,626,718,364; and 42,668,285,233. The executable SHA-256 is
+`197c01f0e4fc16b8147f981e757865fc59141f99befc949b80e4754ff94f650d`.
+First-frame counts include animation/paint work and remain more variable than
+installation counts; the template change alone did not resolve a first-frame
+gain. No Chrome speed or functionality parity is established.
+
+The computed-style constructor now shares immutable unresolved layout defaults,
+while each style owns its property array, flags, and mutable maps. Resolution
+replaces the defaults. This avoids constructing nested length and unused
+optional payload graphs for every element. Candidate-rule lookup now iterates
+attributes directly, reserves one bucket vector, and reuses lowercase ASCII
+attribute names. Bucket ordering, namespace behavior, and existing Unicode
+folding are preserved. Bidi classification evaluates its class once before the
+membership check, allowing the compatibility compiler to emit comparisons
+instead of a temporary array.
+
+### Collector capacity experiment
+
+Repeated early collection/growth is a material source of CPU work. On one
+unchanged saved binary, varying only `GC_INITIAL_HEAP_SIZE` produced:
+
+| Initial heap | Median first-frame instructions, billions | Median peak process physical footprint, MiB |
+| --- | ---: | ---: |
+| Default | 52.241 | 1,596.6 |
+| 256 MiB | 48.264 | 1,599.4 |
+| 512 MiB | 41.757 | 1,647.1 |
+| 768 MiB | 38.028 | 1,811.8 |
+| 1 GiB | 33.666 | 1,941.0 |
+| 2 GiB | 26.080 | 2,725.5 |
+
+These are three-run medians, not isolated collector self-instruction counts.
+The 512 MiB choice gives a substantial work reduction with a modest peak-memory
+increase. Larger heaps reduce instructions further at a much larger memory
+cost; none establishes Chrome parity.
+
+The browser now calls `GC_expand_hp()` before parsing source documents of at
+least 256 KiB, requesting only the shortfall to a 512 MiB heap. This is a
+capacity hint, not a memory cap or an arena, and GC stays enabled. Small pages
+retain normal growth. Existing `GC_INITIAL_HEAP_SIZE` or `GC_MAXIMUM_HEAP_SIZE`
+settings take precedence, and a refused expansion leaves ordinary allocation
+working. Repeated navigations do not reserve another 512 MiB once capacity is
+already sufficient. The final runtime-hint build reached a 1,635.2 MiB median
+peak physical footprint, about 39 MiB above the unchanged-binary default probe.
+
+Memory is measured with `ri_lifetime_max_phys_footprint` and observed
+`ri_phys_footprint` from the same rusage V4 ABI as instructions. Peaks cover the
+whole process lifetime through capture/exit, not just first paint. The standard
+benchmark now records root and per-process peaks, retains earlier samples when
+a later sample loses metadata, and never sums peaks from different processes.
+
+An eight-token allocation-chunk prototype also passed optimized forced-GC and
+`-prealloc` retention tests. It increased installation work to a 48.975 billion
+median versus 47.143 billion before it, so it was removed. Its raw counts and
+source snapshot remain under `Build/`; fewer allocation calls alone were not a
+valid reason to keep it.
+
+The signed final build, native smoke, focused style/rule-cache/font/layout
+regressions, optimized retention tests, and heap-policy checks with both Boehm
+and `-gc none` pass. Eleven Python counter tests pass. All 16 final viewport
+comparisons pass, including a canonical input padded past the heap-hint
+threshold and the four pixel-exact SVG mutation cases. Raw measurements are
+`Build/instructions/vox-opt2-{before,style-template,rule-bucket,heap-hint}.run-*.json`
+and `vox-opt2-gc-*.run-*.json`; validation logs are under
+`Build/v/instruction-opt2-*`.
+
+For another explicit memory/work tradeoff, the existing collector setting is
+respected without changing the build:
+
+```sh
+GC_INITIAL_HEAP_SIZE=1073741824 python3 tools/measure_browser_instructions.py \
+  --engine vox --cache-template Build/instructions/github-cache-template \
+  --repeat 3 --output Build/instructions/vox-gc-1g
+```
 
 ## Causes and changes
 
