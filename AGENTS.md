@@ -1367,6 +1367,12 @@ evidence](docs/translation-audit/NATIVE_MEDIA_WHEEL_RAW_HANDLER.md).
   Repeatable whole-page savings credited: 0; additional savings after
   this batch: zero. The controlled accessor diagnostic improves 34.91%.
   See `docs/GITHUB_PERFORMANCE.md` for uncertainty, source snapshots and app scope.
+  The subsequent absent-length feature `3894727a` passes ten focused checks
+  plus one diagnostic per GC mode, with 73.96% fewer diagnostic instructions.
+  Its 30-pair page median changes +0.04% and does not cross the next 5M
+  gate; broad suites are deferred and the prior baseline remains. Initial ENOSPC
+  attempts retain zero runtime credit; resumed native compiles and tests pass
+  from saved C.
 - Outside instruction-count optimization, run broad regression suites once per
   ten completed fixes, not after every fix.
   Broad suites include full translation/package test batches, the full LibJS AST

@@ -1814,6 +1814,123 @@ losslessly gzip-archived under disk pressure, with original SHA-256 and
 round-trip verification. Chrome instruction and functionality parity remain
 unestablished, including GitHub module hydration and populated file rows.
 
+## Absent optional lengths without payload allocations
+
+Feature `3894727a` makes `LengthPercentageOrAuto.length_percentage_` explicitly
+default to `none`. The compatibility compiler otherwise constructs a zero-length
+sum-type payload, including its heap allocation, before marking the option
+absent. That payload has no value to expose. Explicit absence agrees with the
+upstream `Optional<LengthPercentage>` default in `CSS/PercentageOr.h`, including
+the four auto sides of `CSS/LengthBox`. Present lengths, percentages and
+calculations retain their existing ownership. No object-layout, lifetime or GC
+policy changes are involved. Normal builds retain Boehm and JavaScriptCore,
+without global `-prealloc` or V `-prod`.
+
+The recent `v -profile` diagnostic recorded 104,365 `make_auto()` calls across
+its layout/paint passes, including work after the first frame. Its call counts
+are a hotspot diagnostic rather than first-frame retired-instruction counts.
+The normal control's C and assembly show a heap-backed 16-byte `Length` payload
+being constructed for that absent value. The candidate's auto constructor
+returns an explicit absent option with no payload construction. The generated
+C removes **37 static construction sites**: the auto constructor and eighteen
+sites each in the two computed-property constructors. The other sixteen
+implicit optional-length sites belong to different fields and remain unchanged.
+Static sites are not runtime allocation counts; cached constructor branches do
+not execute on every call. Before/after assembly is retained under
+`Build/v/instruction-opt20-native-option-*.txt`.
+
+The static-site inventory also flags thirty allocating defaults in
+`block_box_from_typed_layout_shallow()`. They occur in its three empty fallback
+returns for missing style, missing used values or disabled SVG; its populated
+paint-box path supplies the option values explicitly. Multiplying those static
+sites by total function calls would overestimate executed allocation work.
+The investigation is retained in
+`Build/v/instruction-opt20-paint-default-investigation.json`.
+
+Three new focused cases check nested/default boxes and arrays, independent
+slots, typed and DOM conversions, and retained lengths/percentages/calculations
+surviving reset and collection. Together with existing default, length-or-auto
+and precision cases, **ten functional checks plus one diagnostic pass in both
+GC modes**, including C `-O2` with Boehm. Each focused run passes 181 assertions.
+
+Three fixed interleaved diagnostics perform 250,000 iterations. Each stores
+one explicit auto value and a partially initialized `LengthBox` with three auto
+sides and a changing explicit width. Thus the interval exercises one million
+absent optional-length constructions and retains explicit width payloads.
+Setup, collection and assertions are outside the hardware counter interval.
+Every checksum matches the independent integer reference of 1,017,000,000.
+Median work falls **233,722,409 → 60,850,034
+retired instructions (73.96% fewer)**; all three pairs improve.
+These separate C `-O2`/Boehm test executables establish constructor-work reduction,
+rather than page savings. Plans, retained aggregate and results are under
+`Build/v/instruction-opt20-*` and `opt20-optional-length-focused-test.v.txt`.
+
+Thirty alternating normal-build GitHub pairs were fixed before results were
+observed, using fresh copies of the same immutable cache, the same frozen native
+library, a 1024×768 document viewport and the first native
+`navigation_to_first_document_paint` endpoint.
+
+| Build | Median instructions through first native document frame |
+| --- | ---: |
+| Implicit absent-length payload | 34,187,647,382 |
+| Explicit absent optional length | 34,200,115,498.5 |
+
+The observed median change is **+0.04%**
+(12,468,116.5 more instructions); **13/30 pairs improve**.
+The paired median saving is -15,800,703; its 95% paired percentile
+bootstrap interval is **-284,085,015.5 to 398,932,428** instructions
+(30,000 resamples, seed 20). The paired interval includes zero, so a repeatable
+whole-page reduction remains unestablished. Zero repeatable page savings are
+credited.
+All sixty captures have valid geometry and one installation, with the same two
+required geometry passes and one shell paint recording before the first frame.
+No page samples were discarded, extended or selected after observing results.
+Raw reports are `Build/instructions/vox-opt20-interleaved-*`; paired evidence is
+`Build/v/instruction-opt20-comparison-evidence.json`. Checkpoint intervals remain
+process-wide deltas rather than function self cost.
+
+The control reuses the exact previously measured round19 candidate executable
+and immutable source snapshot, including guarded style reads `11442940`.
+The candidate changes only `css/css.v`. Subsequent independent media completion
+sources remain preserved and are excluded from both compared binaries.
+The generated-C diff is 130,115 bytes after anonymous-hash
+and compiler temporary normalization. Its projection audit rewrites only the
+exact generated absent-option zero-Length initializer and copy-only aliases to
+the explicit absent option, canonicalizes temporary identities within each
+function, and authenticates path-derived embed lookup keys. All other code,
+type IDs, object layouts and embedded data match. All 120 common native input
+hashes and the frozen shared library remain unchanged. Matching source hashes,
+argv and the projection audit are retained in
+`Build/v/instruction-opt20-matching-provenance.json`.
+
+The completed page measurement stayed below the user's 5,000,000-instruction
+gate, so broad suites did not run. The focused viewport is pixel-exact. The
+preceding broad baseline remains guarded style reads `11442940`; the diagnostic
+contributes no page savings credit.
+
+The installed app was preserved because the page median did not improve.
+
+Disk exhaustion interrupted the initial optimized focused native compiles
+before their object outputs could be opened. It also prevented their supervisors
+from writing result JSON: only the supervisors' actual exit-one results and
+compiler diagnostics are available for that initial attempt, with zero runtime
+credit. The successful no-GC run was retained. After verified compression of
+completed C captures and older benchmark executables, only the two native
+compiles resumed from saved C/response files; the V frontends were not repeated.
+Resumed compiler and runtime exits are recorded separately. The normal browser
+build kept its frozen inputs; no page capture began until the prerequisite
+builds passed. Original failed logs, supervisor results, artifact SHA-256,
+archive round-trip checks and executable modes are retained. Derived C
+normalization archives were recovered from untouched original C after their
+first compression attempt also ran out of space. Byte-identical, mode-matching
+files in completed source snapshots through round16 now share APFS copy-on-write
+storage. Their bytes, permissions and timestamps are preserved and verified;
+active snapshots were excluded. The clone journal is
+`Build/v/instruction-opt20-historical-source-clones.json`.
+
+Chrome instruction and functionality parity remain unestablished, including
+GitHub module hydration and populated file rows.
+
 ## Causes and changes
 
 - The V 0.5.2 compatibility compiler's `-prod` Boehm code repeatedly snapshots
