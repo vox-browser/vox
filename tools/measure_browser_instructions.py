@@ -7,12 +7,14 @@ Elapsed time is used only as a watchdog, never as the reported work metric.
 """
 import argparse
 import base64
+from contextlib import contextmanager
 import hashlib
 import json
 import os
 from pathlib import Path
 import platform
 import re
+import shutil
 import signal
 import socket
 import statistics
@@ -156,13 +158,31 @@ def crop_document_viewport(window, screenshot, width, height):
                        check=True, stdout=subprocess.DEVNULL)
 
 
-def run_vox(args, prefix, api):
+@contextmanager
+def fresh_vox_cache(template, scratch_dir=None):
+    """Copy and fingerprint input outside the measured browser process."""
+    if template is None:
+        yield None, None
+        return
+    with tempfile.TemporaryDirectory(prefix="vox-instruction-cache-", dir=scratch_dir) as temporary:
+        cache = Path(temporary) / "cache"
+        shutil.copytree(template, cache)
+        digest = hashlib.sha256()
+        for path in sorted(cache.rglob("*")):
+            if path.is_file():
+                digest.update(str(path.relative_to(cache)).encode() + b"\0" + path.read_bytes())
+        yield cache, digest.hexdigest()
+
+
+def run_vox(args, prefix, api, cache_dir=None):
     binary = args.binary or REPO / "Build/v/Vox.app/Contents/MacOS/Vox"
     screenshot = Path(str(prefix) + ".png")
     window_screenshot = Path(str(prefix) + ".window.png")
     window_screenshot.unlink(missing_ok=True)
     log_path = Path(str(prefix) + ".log")
     env = dict(os.environ, VOX_PROFILE_INSTRUCTIONS="1", LADYBIRD_SCREENSHOT_DELAY_SECONDS="0")
+    if cache_dir is not None:
+        env["LADYBIRD_CACHE_DIR"] = str(cache_dir)
     env.pop("LADYBIRD_DEBUG_TIMING", None)
     env.pop("GC_PRINT_STATS", None)
     command = [str(binary), "--window-width", str(args.width), "--window-height", str(args.height + 112),
@@ -279,11 +299,17 @@ def main():
     parser.add_argument("--height", type=int, default=768)
     parser.add_argument("--timeout", type=float, default=90)
     parser.add_argument("--scratch-dir", type=Path)
+    parser.add_argument("--cache-template", type=Path,
+                        help="Vox only: start every run with a fresh copy of this page/resource cache")
     args = parser.parse_args()
     if args.repeat < 1 or args.timeout <= 0 or args.width < 1 or args.height < 1:
         parser.error("repeat, dimensions, and watchdog must be positive")
     if args.binary:
         args.binary = args.binary.resolve()
+    if args.cache_template:
+        if args.engine != "vox" or not args.cache_template.is_dir():
+            parser.error("cache-template requires engine vox and an existing directory")
+        args.cache_template = args.cache_template.resolve()
     local = Path(args.url)
     if local.is_file():
         args.url = local.resolve().as_uri()
@@ -293,7 +319,11 @@ def main():
     runs = []
     for index in range(args.repeat):
         prefix = Path(str(args.output) + f".run-{index + 1}")
-        result = (run_vox if args.engine == "vox" else run_chrome)(args, prefix, api)
+        with fresh_vox_cache(args.cache_template, args.scratch_dir) as (cache, template_hash):
+            result = (run_vox(args, prefix, api, cache) if args.engine == "vox"
+                      else run_chrome(args, prefix, api))
+            if template_hash is not None:
+                result["cache_template_sha256"] = template_hash
         result["binary_sha256"] = hashlib.sha256(Path(result["binary"]).read_bytes()).hexdigest()
         Path(str(prefix) + ".json").write_text(json.dumps(result, indent=2) + "\n")
         runs.append(result)

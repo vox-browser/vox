@@ -1,12 +1,14 @@
 import ctypes
 import errno
 import os
+from pathlib import Path
 import subprocess
 import sys
 import time
+import tempfile
 import unittest
 
-from measure_browser_instructions import parse_native_counters
+from measure_browser_instructions import fresh_vox_cache, parse_native_counters
 from process_instruction_counts import MacCounters, ProcessTreeCounter, Reading, RusageInfoV4
 
 
@@ -29,6 +31,32 @@ class FakeCounters:
 
 
 class CounterAccountingTests(unittest.TestCase):
+    def test_cache_snapshot_is_fresh_for_each_run_and_does_not_modify_template(self):
+        with tempfile.TemporaryDirectory() as directory:
+            template = Path(directory) / "template"
+            (template / "pages").mkdir(parents=True)
+            source = template / "pages" / "document"
+            source.write_bytes(b"original page")
+            with fresh_vox_cache(template) as (cache, first_hash):
+                snapshot = cache
+                (cache / "pages" / "document").write_bytes(b"network refresh")
+            self.assertFalse(snapshot.exists())
+            self.assertEqual(source.read_bytes(), b"original page")
+            with fresh_vox_cache(template) as (cache, second_hash):
+                self.assertEqual((cache / "pages" / "document").read_bytes(), b"original page")
+                self.assertEqual(first_hash, second_hash)
+            source.write_bytes(b"new template")
+            with fresh_vox_cache(template) as (_, changed_hash):
+                self.assertNotEqual(first_hash, changed_hash)
+
+    def test_cache_snapshot_cleanup_also_runs_after_capture_failure(self):
+        with tempfile.TemporaryDirectory() as directory:
+            with self.assertRaisesRegex(RuntimeError, "capture failed"):
+                with fresh_vox_cache(Path(directory)) as (cache, _):
+                    snapshot = cache
+                    raise RuntimeError("capture failed")
+            self.assertFalse(snapshot.exists())
+
     def test_rusage_v4_abi_matches_the_public_macos_structure(self):
         self.assertEqual(ctypes.sizeof(RusageInfoV4), 296)
         self.assertEqual(RusageInfoV4.ri_instructions.offset, 248)
