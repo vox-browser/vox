@@ -812,8 +812,23 @@ pub fn (mut element HTMLMediaElement) set_crossorigin(value ?string) {
 	element.crossorigin_ = cors_setting_attribute_from_keyword(value)
 }
 
+pub fn (element &HTMLMediaElement) loop() bool {
+	if html_element := element.associated_element_ {
+		return unsafe { &dom.Element(html_element) }.has_attribute('loop')
+	}
+	return element.loop_
+}
+
 pub fn (mut element HTMLMediaElement) set_loop(value bool) {
 	element.loop_ = value
+	if html_element := element.associated_element_ {
+		mut dom_element := unsafe { &dom.Element(html_element) }
+		if value {
+			dom_element.set_attribute_value('loop', '')
+		} else {
+			dom_element.remove_attribute('loop')
+		}
+	}
 }
 
 pub fn (mut element HTMLMediaElement) set_autoplay(value bool) {
@@ -1976,7 +1991,7 @@ pub fn (mut element HTMLMediaElement) upon_has_ended_playback_possibly_changed()
 }
 
 pub fn (mut element HTMLMediaElement) reached_end_of_media_playback() {
-	element.loop_was_specified_at_end_ = element.loop_
+	element.loop_was_specified_at_end_ = element.loop()
 	if element.loop_was_specified_at_end_ {
 		if !element.paused_ {
 			element.seek_element(0, .accurate)
