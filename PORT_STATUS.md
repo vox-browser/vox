@@ -2673,3 +2673,27 @@ Global tables, pins, mappings and historical ledgers stay preserved;
 accounting adds no behavioral or test credit. Batch remains 9/10 after
 aa6f0246, since this independent documentation commit is not another
 translation fix. See [evidence](docs/translation-audit/NATIVE_MEDIA_LOADSTART_RAW_HANDLER.md).
+
+Native compact media raw `onended` / `onresize` (`05655652`, 2026-10-14 UTC):
+Owner-local HTML audio/video raw attributes compile lazily through the
+existing native compiler and ordered content-attribute replay. Controlled
+native video dimensions supply trusted resize tasks; equal or empty dimensions
+do not. Parsed video and created audio expose the preserved deferred ended
+flag and native timeupdate/pause/ended task order at a controlled endpoint.
+Six focused cases cover scopes/cache, native Event identity, equal writes,
+latest prequeued raw bodies, reentry/removals, scripting gates, original strict
+exceptions, later listeners and retained painting. No decoder/backend,
+live JavaScript video geometry, pending-promise or full playback parity credit.
+Ten-fix validation combines focused 2/6 with explicit initial native 40/126
+passing subsets plus isolated corrected invocation fixture 1/5 per GC mode,
+giving 43 files/137 cases without repeating successful native files. Initial
+native exits remain 1/1; aggregate success does not give those batches whole
+pass credit. Full LibJS original exits are 0/0: default retains 232 explicit
+rows plus unchanged missing 2/3 observed once; no-GC retains all 234 rows.
+All effective 234 files pass each mode without a full suite repeat; AST 100
+is exact, and the fresh signed Boehm browser passes startup, two exact wheel
+pages, default 11 smoke with unchanged tolerances and eight exact SVG cases.
+Prior records, scratch and unrelated work remain retained. Broad baseline
+advances from aa6f0246 to 05655652; cadence resets to 0/10 only after the
+actual broad terminal receipts. No full repository or full interface parity
+claim. See [evidence](docs/translation-audit/NATIVE_MEDIA_COMPLETION_RAW_HANDLER.md).
