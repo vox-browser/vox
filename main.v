@@ -2883,6 +2883,7 @@ fn (mut app BrowserApp) install_loaded_page(loaded LoadedPage, add_history bool)
 	install_start := checkpoint
 	app.paint_timing.document_install_start_ns = i64(install_start)
 	app.paint_timing.installation_instructions = processmetrics.begin_instructions()
+	_ = platform.reserve_gc_heap_for_document(loaded.markup.len)
 	initiator_origin := if app.document != unsafe { nil } { ?dom.Origin(app.document.origin()) } else { none }
 	previous_document := if app.document != unsafe { nil } { ?&dom.Document(app.document) } else { ?&dom.Document(none) }
 	app.document = if document_url := dom.dom_url_parse(loaded.url, dom.url_about_blank(),
