@@ -116,6 +116,113 @@ Native smoke also passes with instruction checkpoints enabled. The counter and
 browser instrumentation are opt-in; the normal GC/arena allocation policy is
 unchanged.
 
+## Controlled instruction optimization, 2026-10-14
+
+The next rounds use a fresh copy of the same 359 cached page/resource files for
+every run. The snapshot SHA-256 is
+`0570cfa09af662a0f1fa6735a563bad9dc2d332579e75ef06d50931f6a3aae95`.
+The benchmark now accepts `--cache-template` and fingerprints the actual copied
+input in each JSON result. Browser writes and network refreshes cannot change
+the next run's starting cache. Background networking still runs, so this is a
+controlled starting input rather than an offline replay. First-frame intervals
+exclude later document replacement and capture work.
+
+| Stage, normal signed C `-O2` / Boehm build | Median installation instructions | Median navigation through first native frame |
+| --- | ---: | ---: |
+| After component/context reuse, hashed invalidation sets, glyph-buffer sharing, fixed-arity edge sums, and DOM/animation lookup fixes | 52,361,249,718 | 57,340,083,570 |
+| Defer unused ordinary declarations in large DOM-owned stylesheets | 50,732,412,766 | 55,586,162,661 |
+| Retain font metrics on handles; avoid selector-span and DOM-name copies | 48,728,232,208 | 54,572,198,152 |
+| Replace temporary arrays in common layout predicates | 48,474,488,345 | 53,425,100,681 |
+| Final build, including numeric query and on-demand selector-cache cleanup | 48,466,031,817 | 53,424,928,934 |
+
+Each row uses three runs. The first row already includes several independently
+committed improvements, so it is not the original browser baseline. The older
+uncontrolled navigation median before those changes was 60,067,376,980
+instructions; cache contents changed during that series, preventing an exact
+combined percentage claim.
+
+The final controlled first-frame median is 6.8% below the first controlled row.
+Its three counts are 53,316,369,219; 54,590,522,853; and 53,424,928,934. The last
+two allocation cleanups do not show a separate instruction gain beyond run
+variation. The final executable SHA-256 is
+`37e1dcb6e442a28dbb49b7f8e906308767302f589e8034933090f0cee0e4571c`;
+it also incorporates concurrent native wheel-handler work.
+
+The remaining adjacent checkpoint medians before first submission include
+13,644,028,352 instructions for box construction/intervening style work,
+13,181,838,433 across formatting-context passes, 9,475,639,474 for external
+stylesheet installation, and 6,422,418,754 across retained paint-command stages.
+These process-wide deltas identify the next areas to profile; they do not
+attribute all work to those functions or isolate collector self cost.
+
+The changes address measured allocation work:
+
+- Ordinary CSS declarations reuse their parsed component tree and block parsing
+  context. Invalidation features use hashed membership instead of comparing
+  every previously inserted serialized key.
+- Large DOM-owned sheets parse syntax and selectors eagerly, then materialize
+  ordinary properties on matching or CSSOM access. Descriptors remain eager;
+  custom properties, quirks context, resource ownership, and base URLs survive
+  deferred conversion. Public parser APIs retain eager behavior.
+- Cached shaped text shares glyph and replay buffers until layout edits them.
+  Fixed-arity edge sums and common DOM type checks avoid temporary arrays.
+- Immutable font handles retain pixel metrics. Missing explicit font sources
+  remain retryable. Selector operator scans compare spans directly, hashes read
+  string bytes directly, and unchanged lowercase DOM names reuse their input.
+- Common display, overflow, selection, and whitespace checks use direct
+  comparisons. The compatibility compiler otherwise allocates heap arrays for
+  these two-value membership expressions.
+- Numeric environment/container query values keep their canonical numbers
+  without formatting unused text. Authored units and calculations still follow
+  the existing typed resolution and serialization paths. One-shot selector
+  matching allocates its relational cache only when it reaches `:has()`.
+
+An allocation-stack diagnostic of the deferred build recorded 25,212,974 GC
+allocation calls requesting 3,922,605,181 bytes through exit after capture.
+It used C `-O0` and sampled allocation backtraces; its instruction totals are
+excluded from the normal-build benchmark. It identified font-key construction,
+selector scan substrings, media-value formatting, and temporary predicate arrays
+as remaining allocation sources. Allocation counts and requested bytes are not
+peak live memory or self instruction costs.
+
+An experimental token-array arena view passed semantic and optimized forced-GC
+retention checks but increased the controlled first-frame median to
+62,145,958,194 instructions. It was removed. Keeping entire lexer arrays alive
+appears to outweigh the avoided per-token boxes; this is an inference from the
+measured regression, not a separately attributed GC instruction count.
+
+GC stays enabled in the native browser. The font-metrics and selector-span tests
+also pass with `-prealloc`; this does not establish ownership for replacing the
+collector across live document graphs and shared caches. Ten Python benchmark
+tests cover isolated cache inputs, cleanup after failure, native counters, and
+process-tree accounting.
+
+The signed final bundle passes native `--headless-smoke` and all 15 viewport
+comparisons in `Build/v/instruction-opt-final-screenshots.log`: the eleven
+configured smoke cases plus image source replacement, paint-server ID collision,
+gradient-stop movement, and late pattern-image loading after referencer removal.
+The four added SVG comparisons are pixel-exact. Focused CSS/DOM/font/layout
+regressions pass, including optimized Boehm retention of deferred declarations
+and glyph buffers, live media changes, missing-font retries, and fresh `:has()`
+results after DOM mutation. No profiler or allocation wrapper is present in the
+measured final bundle.
+
+Raw controlled results are under
+`Build/instructions/vox-controlled-{before,deferred}-*.run-1.json` and
+`Build/instructions/vox-controlled-{font-selector,predicates,final}.run-*.json`. The retained
+snapshot and its per-file manifest are in `Build/instructions/`.
+
+```sh
+python3 tools/measure_browser_instructions.py --engine vox --repeat 3 \
+  --cache-template Build/instructions/github-cache-template \
+  --output Build/instructions/vox-controlled
+```
+
+Chrome's earlier observed navigation/capture median remains 12,506,518,885
+instructions. Its endpoint, process coverage, starting resources, and working
+module execution differ from Vox's. These changes reduce Vox's work but do not
+establish Chrome parity.
+
 ## Causes and changes
 
 - The V 0.5.2 compatibility compiler's `-prod` Boehm code repeatedly snapshots
