@@ -602,10 +602,8 @@ pub fn (line &LineBox) ends_in_preserved_whitespace() bool {
 	if !last.ends_in_whitespace() {
 		return false
 	}
-	return last.layout_node_.computed_values().white_space_collapse() !in [
-		.collapse,
-		.preserve_breaks,
-	]
+	collapse := last.layout_node_.computed_values().white_space_collapse()
+	return collapse != .collapse && collapse != .preserve_breaks
 }
 
 pub fn (line &LineBox) is_empty() bool {

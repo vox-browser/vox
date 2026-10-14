@@ -107,17 +107,18 @@ fn creates_block_formatting_context(box &NodeWithStyle) bool {
 		return true
 	}
 	computed := box.computed_values()
-	if computed.overflow_x() !in [.visible, .clip] || computed.overflow_y() !in [
-		.visible,
-		.clip,
-	] {
+	overflow_x := computed.overflow_x()
+	overflow_y := computed.overflow_y()
+	if (overflow_x != .visible && overflow_x != .clip)
+		|| (overflow_y != .visible && overflow_y != .clip) {
 		return true
 	}
 	if display.is_flow_root_inside() || node.has_layout_containment()
 		|| node.has_paint_containment() {
 		return true
 	}
-	if computed.continue_value() in [.collapse, .discard] {
+	continue_value := computed.continue_value()
+	if continue_value == .collapse || continue_value == .discard {
 		return true
 	}
 	// https://drafts.csswg.org/css-conditional-5/#valdef-container-type-size

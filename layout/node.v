@@ -661,10 +661,11 @@ fn layout_input_type_allows_readonly(element &dom.Element) bool {
 }
 
 fn layout_form_text_control_is_mutable(element &dom.Element) bool {
-	if element.local_name() !in ['input', 'textarea'] || element.is_actually_disabled() {
+	local_name := element.local_name()
+	if (local_name != 'input' && local_name != 'textarea') || element.is_actually_disabled() {
 		return false
 	}
-	if element.local_name() == 'textarea' {
+	if local_name == 'textarea' {
 		return !element.has_attribute('readonly')
 	}
 	return !element.has_attribute('readonly') || !layout_input_type_allows_readonly(element)

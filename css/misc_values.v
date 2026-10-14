@@ -392,7 +392,7 @@ pub fn (d Display) is_table_inside() bool {
 }
 
 pub fn (d Display) is_flex_inside() bool {
-	return d.is_outside_and_inside() && d.inside() in [.flex, .webkit_box]
+	return d.is_outside_and_inside() && (d.inside_ == .flex || d.inside_ == .webkit_box)
 }
 
 pub fn (d Display) is_webkit_box_inside() bool {
