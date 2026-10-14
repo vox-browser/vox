@@ -152,7 +152,7 @@ fn test_native_element_wheel_host_brands_before_conversion_and_preserves_legacy_
   let rejected=false;try{__ladybirdElementWheelBind(elementWheelLegacyFacade(),"__created_invalid_wheel",tag,namespace)}catch(error){rejected=error instanceof Error}
   if(!rejected)return false;
  }
- return typeof add==="function"&&add.length===2&&remove.length===2&&dispatch.length===1&&!("onwheel" in wheelDiv);
+ return typeof add==="function"&&add.length===2&&remove.length===2&&dispatch.length===1&&!!Object.getOwnPropertyDescriptor(wheelDiv,"onwheel");
 })()')! == 'true'
 	marker := runtime.evaluate_host_value('elementWheelOriginalReason')!
 	element_wheel_expect_original_exception(mut runtime,

@@ -5,10 +5,13 @@ import css
 import dom
 import html
 
+pub type ElementWheelReplayHook = fn (&Runtime) !
+
 @[heap]
 pub struct ElementWheelHost {
 	document &dom.Document
 	settings &html.EnvironmentSettingsObject
+	replay   ?ElementWheelReplayHook
 mut:
 	runtime  &Runtime = unsafe { nil }
 	elements map[string]&dom.Element
@@ -18,12 +21,17 @@ mut:
 }
 
 pub fn ElementWheelHost.create(document &dom.Document) !&ElementWheelHost {
+	return ElementWheelHost.create_with_replay(document, none)
+}
+
+pub fn ElementWheelHost.create_with_replay(document &dom.Document, replay ?ElementWheelReplayHook) !&ElementWheelHost {
 	if document.relevant_settings_object() == unsafe { nil } {
 		_ = html.WindowModel.create_top_level(document, none, '')!
 	}
 	mut host := &ElementWheelHost{
 		document: document
 		settings: unsafe { &html.EnvironmentSettingsObject(document.relevant_settings_object()) }
+		replay:   replay
 	}
 	for index, element in css.query_selector_all(unsafe { &dom.Node(document) }, '*') {
 		host.elements['__element_${index}'] = element

@@ -1485,8 +1485,8 @@ fn javascript_bootstrap(state map[string]json2.Any) string {
 		'function __styleName(name) { const result=String(name).replace(/[A-Z]/g, function (character) { return "-" + character.toLowerCase(); }); return result.indexOf("webkit-")===0?"-"+result:result; }',
 		'function __elementStates() { return Object.keys(__state.elements).map(function (key) { return __state.elements[key]; }).filter(function(s){return !s.removed;}).sort(function (a,b) { return (+a.elementIndex||0)-(+b.elementIndex||0); }); }',
 		'function __attributeName(s, name) { name=String(name); return s.namespaceURI==="http://www.w3.org/1999/xhtml"?name.toLowerCase():name; }',
-		'function __setAttribute(s, name, value) { name=__attributeName(s,name); value=String(value); s.attributes[name]=value; s.attributesDirty=true; if(s.tagName==="img"&&s.namespaceURI==="http://www.w3.org/1999/xhtml")__ladybirdImageSetAttribute(__element(s),name,value); if(s.tagName==="canvas"&&(name==="width"||name==="height")){s[name]=value;__canvasResize(s);} if(name==="id")s.id=value; if(name==="class")s.className=value; if(name==="style")s.styleText=value; if(name==="src")s.src=value; if(name==="disabled")s.disabled=true; }',
-		'function __removeAttribute(s, name) { name=__attributeName(s,name); delete s.attributes[name]; s.attributesDirty=true; if(s.tagName==="canvas"&&(name==="width"||name==="height")){delete s[name];__canvasResize(s);} if(name==="id")s.id=""; if(name==="class")s.className=""; if(name==="style")s.styleText=""; if(name==="src")s.src=""; if(name==="disabled")s.disabled=false; }',
+		'function __setAttribute(s, name, value) { name=__attributeName(s,name); value=String(value); s.attributes[name]=value; s.attributesDirty=true; if(name==="onwheel")__state.operations.push({op:"wheelContentAttribute",target:s.bridgeKey,value:value}); if(s.tagName==="img"&&s.namespaceURI==="http://www.w3.org/1999/xhtml")__ladybirdImageSetAttribute(__element(s),name,value); if(s.tagName==="canvas"&&(name==="width"||name==="height")){s[name]=value;__canvasResize(s);} if(name==="id")s.id=value; if(name==="class")s.className=value; if(name==="style")s.styleText=value; if(name==="src")s.src=value; if(name==="disabled")s.disabled=true; }',
+		'function __removeAttribute(s, name) { name=__attributeName(s,name); const hadWheel=name==="onwheel"&&Object.prototype.hasOwnProperty.call(s.attributes,name); delete s.attributes[name]; s.attributesDirty=true; if(hadWheel)__state.operations.push({op:"wheelContentAttribute",target:s.bridgeKey,value:null}); if(s.tagName==="canvas"&&(name==="width"||name==="height")){delete s[name];__canvasResize(s);} if(name==="id")s.id=""; if(name==="class")s.className=""; if(name==="style")s.styleText=""; if(name==="src")s.src=""; if(name==="disabled")s.disabled=false; }',
 		'function __styleProxy(s) {',
 		'  const values = Object.create(null);',
 		'  String(s.styleText || "").split(";").forEach(function (part) { const i = part.indexOf(":"); if (i > 0) values[part.slice(0, i).trim()] = part.slice(i + 1).trim(); });',
@@ -1513,7 +1513,7 @@ fn javascript_bootstrap(state map[string]json2.Any) string {
 		'    o.style = __styleProxy(s); o.classList = __classList(s); Object.defineProperty(o,"__state",{value:s}); Object.defineProperty(s, "__object", { value: o, writable: true, configurable: true }); if(s.tagName==="img"&&s.namespaceURI==="http://www.w3.org/1999/xhtml")__ladybirdImageBind(o,s.bridgeKey); if((s.tagName==="audio"||s.tagName==="video")&&s.namespaceURI==="http://www.w3.org/1999/xhtml"){__bindMediaElement(o,s.bridgeKey,s.tagName);delete o.addEventListener;delete o.removeEventListener;}else if(s.tagName!=="#document-fragment"&&s.tagName!=="#text"){__bindElementWheel(o,s.bridgeKey,s.tagName,s.namespaceURI);}',
 		'  } return s.__object;',
 		'}',
-		'let __createdElementCount=0; function __createElement(namespaceURI,name){const key="__created_"+(++__createdElementCount),s={created:true,bridgeKey:key,elementIndex:1000000000+__createdElementCount,namespaceURI:String(namespaceURI||"http://www.w3.org/1999/xhtml"),tagName:String(name),id:"",src:"",width:"",height:"",textContent:"",innerHTML:"",className:"",styleText:"",onclick:"",attributes:{},hasChildren:false,children:[],disabled:false,checked:false,indeterminate:false};__state.elements[key]=s;return __element(s);}',
+		'let __createdElementCount=0; function __createElement(namespaceURI,name){const key="__created_"+(++__createdElementCount),s={created:true,bridgeKey:key,elementIndex:1000000000+__createdElementCount,namespaceURI:namespaceURI==null?"":String(namespaceURI),tagName:String(name),id:"",src:"",width:"",height:"",textContent:"",innerHTML:"",className:"",styleText:"",onclick:"",attributes:{},hasChildren:false,children:[],disabled:false,checked:false,indeterminate:false};__state.elements[key]=s;return __element(s);}',
 		'function __matches(s,q){q=String(q||"").trim();if(!q)return false;if(q[0]==="#")return s.id===q.slice(1);return s.tagName.toLowerCase()===q.toLowerCase();}',
 		'function __rangePoint(node,offset){const s=node&&node.__state;if(s)return{target:s.bridgeKey,firstChild:false,offset:+offset||0};if(node&&node.__firstChildOf)return{target:node.__firstChildOf,firstChild:true,offset:+offset||0};throw new TypeError("Invalid range node");}',
 		'function __range(){return{selected:null,start:null,end:null,selectNodeContents:function(node){const point=__rangePoint(node,0);this.selected={target:point.target,firstChild:point.firstChild};},setStart:function(node,offset){this.start=__rangePoint(node,offset);},setEnd:function(node,offset){this.end=__rangePoint(node,offset);},surroundContents:function(node){const s=node&&node.__state;if(!s)throw new TypeError("Invalid range parent");__state.operations.push({op:"surroundSelectedContents",target:s.bridgeKey});}};}',
@@ -2074,7 +2074,15 @@ fn apply_javascript_state(document &dom.Document, encoded string, canvas_element
 				}
 				target_key := json_string_property(operation, 'target') or { continue }
 				mut target := element_by_bridge_key[target_key] or { continue }
-				if kind == 'appendCreated' {
+				if kind == 'wheelContentAttribute' {
+					// Replay explicit writes even when the attribute text is unchanged:
+					// those writes replace an earlier IDL-installed handler.
+					if value := json_string_property(operation, 'value') {
+						target.set_attribute_value('onwheel', value)
+					} else {
+						target.remove_attribute('onwheel')
+					}
+				} else if kind == 'appendCreated' {
 					child_value := operation['child'] or { continue }
 					if child_value !is map[string]json2.Any {
 						continue
@@ -2401,7 +2409,11 @@ fn run_document_script_sources(document &dom.Document, current_url string, sourc
 		messages << 'JavaScript media element bindings: ${err.msg()}'
 		return none
 	}
-	mut element_wheel_host := browserjs.ElementWheelHost.create(document) or {
+	mut element_wheel_host := browserjs.ElementWheelHost.create_with_replay(document, fn [document] (callback_runtime &browserjs.Runtime) ! {
+		state := callback_runtime.evaluate_host('__ladybirdFinalize()')!
+		mut replay_messages := []string{}
+		apply_javascript_state(document, state, callback_runtime.canvas_elements_for_binding(), mut replay_messages)
+	}) or {
 		messages << 'JavaScript element wheel bindings: ${err.msg()}'
 		return none
 	}

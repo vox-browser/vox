@@ -26,12 +26,39 @@ pub fn (mut host ElementWheelHost) install(mut runtime Runtime) ! {
 			return host.runtime.actual_javascript_exception(host.runtime.binding_exception_value(err))
 		}
 	})!
+	get_handler := runtime.make_native_value_host_function('get onwheel', 0, fn [handle] (receiver voidptr, _ []voidptr) !voidptr {
+		host := unsafe { &ElementWheelHost(handle) }
+		target := host.wheel_handler_target(receiver) or {
+			return host.runtime.actual_javascript_exception(host.runtime.binding_exception_value(err))
+		}
+		if replay := host.replay { replay(host.runtime)! }
+		return host.runtime.javascript_event_handler(target, 'wheel')!
+	})!
+	set_handler := runtime.make_native_value_host_function('set onwheel', 1, fn [handle] (receiver voidptr, args []voidptr) !voidptr {
+		mut host := unsafe { &ElementWheelHost(handle) }
+		target := host.wheel_handler_target(receiver) or {
+			return host.runtime.actual_javascript_exception(host.runtime.binding_exception_value(err))
+		}
+		value := if args.len == 0 { C.JSValueMakeUndefined(host.runtime.context) } else { args[0] }
+		// Capture callback settings before flushing queued content attributes;
+		// an earlier raw onwheel write must not overwrite this later IDL write.
+		callback := host.runtime.event_callback(value, true)!
+		if replay := host.replay { replay(host.runtime)! }
+		target.set_event_handler_attribute('wheel', if callback != unsafe { nil } {
+			?&dom.CallbackType(callback)
+		} else {
+			none
+		})
+		return C.JSValueMakeUndefined(host.runtime.context)
+	})!
 	factory := runtime.evaluate_host_value(element_wheel_host_bootstrap)!
 	defer { runtime.release_javascript_value(factory) }
 	runtime.call_javascript_function(factory, C.JSValueMakeUndefined(runtime.context), [
 		bind,
 		type_,
 		set_resolver,
+		get_handler,
+		set_handler,
 	])!
 	runtime.add_canvas_element_provider_with_lookup(fn [handle] () map[string]&dom.Element {
 		host := unsafe { &ElementWheelHost(handle) }
@@ -55,6 +82,24 @@ pub fn (mut host ElementWheelHost) install(mut runtime Runtime) ! {
 		host.records.clear()
 		host.elements.clear()
 	})
+}
+
+fn element_exposes_wheel_handler(element &dom.Element) bool {
+	return (element.namespace_uri() or { '' }) in ['http://www.w3.org/1999/xhtml',
+		'http://www.w3.org/2000/svg', 'http://www.w3.org/1998/Math/MathML']
+}
+
+fn (host &ElementWheelHost) wheel_handler_target(receiver voidptr) !&dom.EventTarget {
+	if host.closed { return error('TypeError: Element wheel binding is closed') }
+	// The receiver must be this host's actual facade, not a Proxy, inherited
+	// facade, arbitrary EventTarget or an element without GlobalEventHandlers.
+	element := host.records[receiver] or {
+		return error('TypeError: Not an object with a native Element wheel handler')
+	}
+	if !element_exposes_wheel_handler(element) {
+		return error('TypeError: Not an object with a native Element wheel handler')
+	}
+	return unsafe { &dom.EventTarget(element) }
 }
 
 fn (host &ElementWheelHost) wheel_listener_type(args []voidptr) !voidptr {
@@ -89,7 +134,7 @@ fn (mut host ElementWheelHost) bind_wheel_element(args []voidptr) !voidptr {
 		host.runtime.bind_event_target(wrapper, unsafe { &dom.EventTarget(element) })!
 	}
 	host.records[wrapper] = element
-	return C.JSValueMakeUndefined(host.runtime.context)
+	return C.JSValueMakeBoolean(host.runtime.context, element_exposes_wheel_handler(element))
 }
 
 fn (mut host ElementWheelHost) set_wheel_element_resolver(args []voidptr) !voidptr {
@@ -124,14 +169,15 @@ fn (mut host ElementWheelHost) resolve_wheel_element_wrapper(target &dom.EventTa
 	return unsafe { nil }
 }
 
-const element_wheel_host_bootstrap = r'(function(bind,type,setResolver){
+const element_wheel_host_bootstrap = r'(function(bind,type,setResolver,getHandler,setHandler){
  "use strict";
  const apply=Reflect.apply,define=Object.defineProperty,wrapped=new WeakSet(),has=WeakSet.prototype.has,add=WeakSet.prototype.add;
  const nativeAdd=EventTarget.prototype.addEventListener,nativeRemove=EventTarget.prototype.removeEventListener,nativeDispatch=EventTarget.prototype.dispatchEvent;
  define(globalThis,"__ladybirdElementWheelSetResolver",{value:setResolver,configurable:true});
  define(globalThis,"__ladybirdElementWheelBind",{value:function(o,key,tag,namespace){
-  apply(bind,undefined,[o,key,tag,namespace]);
+  const exposesHandler=apply(bind,undefined,[o,key,tag,namespace]);
   if(apply(has,wrapped,[o]))return;
+  if(exposesHandler)define(o,"onwheel",{get:getHandler,set:setHandler,enumerable:true,configurable:true});
   const legacyAdd=o.addEventListener,legacyRemove=o.removeEventListener;
   define(o,"addEventListener",{value:function addEventListener(name,callback){
    if(arguments.length<2)return apply(nativeAdd,this,arguments);
