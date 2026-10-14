@@ -1167,19 +1167,23 @@ fn (s &StyleComputer) recompute_inherited_style_with_invalidation(mut abstract_e
 
 fn animated_property_maps_invalidation(old_values map[PropertyID]&dom.StyleValue, new_values map[PropertyID]&dom.StyleValue) RequiredInvalidationAfterStyleChange {
 	mut invalidation := RequiredInvalidationAfterStyleChange{}
-	for property_id in computed_interpolation_longhand_property_ids() {
-		mut old_value := ?&dom.StyleValue(none)
-		mut new_value := ?&dom.StyleValue(none)
-		if value := old_values[property_id] {
-			old_value = value
-		}
-		if value := new_values[property_id] {
-			new_value = value
-		}
-		if old_value == none && new_value == none {
+	// Animation maps contain only the affected properties. Visit their union
+	// directly instead of probing every longhand and allocating errors on misses.
+	for property_id, old_value in old_values {
+		if !computed_interpolation_is_longhand_property(property_id) {
 			continue
 		}
+		mut new_value := ?&dom.StyleValue(none)
+		if property_id in new_values {
+			new_value = unsafe { new_values[property_id] }
+		}
 		invalidation = required_invalidation_after_style_change_or(invalidation, compute_property_invalidation(property_id, old_value, new_value))
+	}
+	for property_id, new_value in new_values {
+		if !computed_interpolation_is_longhand_property(property_id) || property_id in old_values {
+			continue
+		}
+		invalidation = required_invalidation_after_style_change_or(invalidation, compute_property_invalidation(property_id, none, new_value))
 	}
 	return invalidation
 }
