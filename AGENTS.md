@@ -1619,3 +1619,21 @@ Global tables, pins, mappings and historical ledgers stay preserved;
 accounting adds no behavioral or test credit. Batch remains 8/10 after
 aa6f0246, since this independent documentation commit is not another
 translation fix. See [evidence](docs/translation-audit/NATIVE_MEDIA_RESET_RAW_HANDLER.md).
+
+Native compact media raw `onloadstart` (`b4a325cb`, 2026-10-14 UTC):
+Owner-local HTML audio/video loadstart attributes compile lazily through the
+existing name-aware native compiler and ordered content-attribute replay.
+Parsed video and created audio source replay plus explicit JavaScript load
+produce two trusted native callbacks and static response-hook calls per owner.
+V invokes each callback synchronously before its hook and native load return,
+while loading with empty currentSrc and HAVE_NOTHING readiness. Six cases in
+two files pass in both GC modes, covering scopes/cache/Event identity,
+latest raw bodies before queued load invocation, nested same-source load,
+removals, scripting gates, strict original exceptions, later listeners and
+painting. Upstream queues selection/loadstart and installs currentSrc before
+delivery; that existing V timing deviation remains. No generation-cancel,
+source-switch, error-interface, network/backend, promise or full parity
+credit is claimed. Four current files and two exact main gates are
+authenticated through retained snapshots, with no full-current/foreign-main
+credit. Batch: 9/10 after aa6f0246; production and broad suites remain
+deferred. See [evidence](docs/translation-audit/NATIVE_MEDIA_LOADSTART_RAW_HANDLER.md).
