@@ -1351,6 +1351,8 @@ fn computed_interpolation_longhand_property_ids() ComputedInterpolationPropertyI
 
 __global computed_interpolation_longhand_ids_cache = []PropertyID{}
 
+__global computed_interpolation_unresolved_style_template = unsafe { &ComputedProperties(nil) }
+
 fn computed_interpolation_is_longhand_property(property_id PropertyID) bool {
 	// PropertyID is generated with every longhand in one contiguous block followed by
 	// the shorthand-only entries. This is the V equivalent of the constant-time
@@ -1867,11 +1869,21 @@ fn computed_properties_with_initial_values() &ComputedProperties {
 		computed_interpolation_initial_values_complete = true
 	}
 	note_computed_values_created()
+	if computed_interpolation_unresolved_style_template == unsafe { nil } {
+		computed_interpolation_unresolved_style_template = &ComputedProperties{}
+	}
+	template := computed_interpolation_unresolved_style_template
+	// The layout-cache defaults are immutable until resolve_computed_values()
+	// replaces them. Reuse their value graphs instead of allocating every nested
+	// length and optional payload for every element. Each mutable store remains
+	// owned by the new style, including the layout-facing variation-settings map.
 	return &ComputedProperties{
+		...template
 		property_values_: computed_interpolation_initial_value_cache.clone()
 		animated_property_values_: map[PropertyID]&dom.StyleValue{}
 		animated_custom_property_values_: map[string]&dom.StyleValue{}
 		inheritance_dependent_specified_values_: map[PropertyID]&dom.StyleValue{}
+		computed_values_font_variation_settings_: map[string]f64{}
 	}
 }
 
