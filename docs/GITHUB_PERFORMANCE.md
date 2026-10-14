@@ -233,12 +233,13 @@ baseline is the saved preceding build, rather than a new network response.
 | Fresh preceding-build baseline | 48,669,853,599 | 53,505,472,316 |
 | Reuse immutable unresolved style defaults | 48,252,629,730 | 53,928,672,486 |
 | Collect rule buckets directly | 47,143,413,017 | 53,057,966,448 |
-| Final build with heavy-document GC capacity hint and allocation-free bidi classification | 37,787,118,615 | 42,626,718,364 |
+| Source-size heap-hint prototype and allocation-free bidi classification | 37,787,118,615 | 42,626,718,364 |
+| Final build with DOM-size heap-capacity hint | 37,554,213,581 | 42,443,808,462 |
 
-The final navigation median is **20.3% lower** than this round's baseline;
-installation work is 22.4% lower. The three final navigation counts are
-42,243,723,651; 42,626,718,364; and 42,668,285,233. The executable SHA-256 is
-`197c01f0e4fc16b8147f981e757865fc59141f99befc949b80e4754ff94f650d`.
+The final navigation median is **20.7% lower** than this round's baseline;
+installation work is 22.8% lower. The three final navigation counts are
+42,443,808,462; 43,423,925,473; and 42,072,804,594. The executable SHA-256 is
+`212b47bd29be89be86f1118f648cbc7965782718b491ec4bb4be25f91ac96a70`.
 First-frame counts include animation/paint work and remain more variable than
 installation counts; the template change alone did not resolve a first-frame
 gain. No Chrome speed or functionality parity is established.
@@ -272,14 +273,19 @@ The 512 MiB choice gives a substantial work reduction with a modest peak-memory
 increase. Larger heaps reduce instructions further at a much larger memory
 cost; none establishes Chrome parity.
 
-The browser now calls `GC_expand_hp()` before parsing source documents of at
-least 256 KiB, requesting only the shortfall to a 512 MiB heap. This is a
-capacity hint, not a memory cap or an arena, and GC stays enabled. Small pages
-retain normal growth. Existing `GC_INITIAL_HEAP_SIZE` or `GC_MAXIMUM_HEAP_SIZE`
-settings take precedence, and a refused expansion leaves ordinary allocation
-working. Repeated navigations do not reserve another 512 MiB once capacity is
-already sufficient. The final runtime-hint build reached a 1,635.2 MiB median
-peak physical footprint, about 39 MiB above the unchanged-binary default probe.
+After parsing, the browser now counts up to 2,048 light-DOM elements and calls
+`GC_expand_hp()` only when that threshold is reached, requesting the shortfall
+to a 512 MiB heap before style/layout work. This is a capacity hint, not a
+memory cap or an arena, and GC stays enabled. Smaller DOMs retain normal growth.
+Existing `GC_INITIAL_HEAP_SIZE` or `GC_MAXIMUM_HEAP_SIZE` settings take precedence,
+and a refused expansion leaves ordinary allocation working. Repeated
+navigations do not reserve another 512 MiB once capacity is sufficient.
+
+The initial source-size trigger was refined because a large comment could
+qualify a tiny DOM. In single diagnostic runs, the padded-comment fixture's
+peak fell from 435.5 to 394.0 MiB with the DOM guard. The final GitHub build
+retains the instruction improvement and reached a 1,638.1 MiB median peak
+physical footprint, about 42 MiB above the unchanged-binary default probe.
 
 Memory is measured with `ri_lifetime_max_phys_footprint` and observed
 `ri_phys_footprint` from the same rusage V4 ABI as instructions. Peaks cover the
@@ -295,11 +301,12 @@ valid reason to keep it.
 
 The signed final build, native smoke, focused style/rule-cache/font/layout
 regressions, optimized retention tests, and heap-policy checks with both Boehm
-and `-gc none` pass. Eleven Python counter tests pass. All 16 final viewport
-comparisons pass, including a canonical input padded past the heap-hint
-threshold and the four pixel-exact SVG mutation cases. Raw measurements are
+and `-gc none` pass. Eleven Python counter tests pass. All 17 final viewport
+comparisons pass: fifteen existing cases, a padded-comment input that must keep
+normal heap growth, and a dense hidden DOM that reaches the reservation
+threshold. The four SVG mutation cases remain pixel-exact. Raw measurements are
 `Build/instructions/vox-opt2-{before,style-template,rule-bucket,heap-hint}.run-*.json`
-and `vox-opt2-gc-*.run-*.json`; validation logs are under
+and `vox-opt2-{dom-heap,gc-*}.run-*.json`; validation logs are under
 `Build/v/instruction-opt2-*`.
 
 For another explicit memory/work tradeoff, the existing collector setting is
