@@ -423,6 +423,67 @@ The integrated bundle also passes the four SVG mutation comparisons and the
 backdrop/filter-layer comparison, all pixel-exact, in
 `Build/v/instruction-opt3-integrated-screenshots.log`.
 
+## Shared retained media snapshots
+
+The allocation diagnostic's large paint-tree and command buffers led to another
+storage change. Every compatibility layout box and every paint command embedded
+image, canvas, video, and nested-document geometry, including text and border
+commands which use none of it. These immutable geometry records now live behind
+optional references and are allocated only when present. The typed adapter
+creates the snapshot once; retained commands share it. Replacing source geometry
+installs a new snapshot while earlier recordings keep their original geometry.
+
+On the measured arm64 build, `PaintCommand` shrinks from 5,704 to 4,488 bytes
+(21.3%), and `BlockBox` from 6,432 to 5,216 bytes (18.9%). This reduces buffer
+initialization, copies, and collector scanning without dropping paint state.
+The snapshots remain GC-owned because recordings can outlive their source tree.
+The collector policy, DOM-gated heap hint, and intrinsic-measurement arena are
+unchanged; the browser does not use global `-prealloc`.
+
+The normal signed C `-O2` builds were interleaved five times each, reversing
+their order on alternate iterations. Every launch received a fresh copy of the
+same immutable GitHub cache snapshot documented above:
+
+| Build | Median installation instructions | Median navigation through first native frame | Median process peak physical footprint, MiB |
+| --- | ---: | ---: | ---: |
+| Preceding integrated build | 35,237,266,612 | 40,542,953,366 | 1,654.7 |
+| Shared out-of-line media snapshots | 34,430,229,156 | 38,904,617,957 | 1,544.2 |
+
+The first-frame median falls **4.0%**, installation 2.3%, and process peak memory
+6.7% (110.5 MiB). The five final first-frame counts are 38,904,617,957;
+39,486,173,932; 37,854,260,087; 38,916,534,972; and 38,032,921,234.
+Peak footprint covers the process through capture/exit. A command-only pilot
+reduced footprint but its three instruction counts overlapped the baseline;
+the table measures the final change across both boxes and commands, without
+attributing the complete difference to either field layout in isolation.
+Chrome parity remains unestablished, for the endpoint and functionality reasons
+described above.
+
+The implementation and focused tests are in commit `ba00aca9`.
+The baseline executable is `Build/v/Vox-opt3-integrated-bin`, SHA-256
+`2aae73baffa39798d7f3a127ffbfe9f736769d14b3cabc22d5f7276f47aa7823`.
+The final executable is `Build/v/Vox-opt4-shared-media-bin`, SHA-256
+`4d78170793c19e7c0107c70f38cd43a59453f87c4f7b6ad31f3b4d2446c3cad4`.
+It was built from the current checkout with the normal build script's GC and
+optimization flags, adding only `-keepc` to inspect generated ownership.
+The same binary is installed in `Build/v/Vox.app`.
+Raw measurements are `Build/instructions/vox-opt4-interleaved-{before,final}-[1-5].run-1.json`;
+`vox-opt4-interleaved-summary.json` records their medians. The earlier pilot
+uses `vox-opt4-media.run-{1,2,3}.json`.
+
+The focused snapshot suite checks absent payloads and record-size bounds,
+geometry replay and bitmap retention after forced collection, shared identity,
+and preservation of older image geometry after source replacement. It passes
+with C `-O2` and the production pointer-aware Boehm collector, with ordinary test
+settings, and with `-gc none`. Paint transport, typed adapter, and retained
+debug-guide compaction suites also pass, as do signature verification and native
+`--headless-smoke`. The exact saved measured executable passes the same seventeen
+viewport comparisons used in the preceding round, including all four SVG
+mutation cases and both position/filter cases pixel-exact. These use a copy of
+the normal capture helper with rebuilding disabled so later source edits cannot
+replace the measured executable. Validation logs use `Build/v/instruction-opt4-*`;
+the viewport results are in `instruction-opt4-shared-media-screenshots.log`.
+
 ## Causes and changes
 
 - The V 0.5.2 compatibility compiler's `-prod` Boehm code repeatedly snapshots
