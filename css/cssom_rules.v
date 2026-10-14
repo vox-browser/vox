@@ -166,6 +166,8 @@ pub mut:
 	// Bit 0 is present for normal declarations and bit 1 for !important ones.
 	// It is populated together with typed_properties_cache_.
 	typed_importance_mask_ u8
+mut:
+	deferred_declarations_ ?&DeferredStyleDeclaration
 }
 
 pub fn CSSStyleProperties.create() &CSSStyleProperties {
@@ -175,10 +177,12 @@ pub fn CSSStyleProperties.create() &CSSStyleProperties {
 }
 
 pub fn (properties &CSSStyleProperties) length() int {
+	properties.ensure_declarations_parsed()
 	return properties.properties.len + properties.custom_properties.len
 }
 
 pub fn (properties &CSSStyleProperties) serialized() string {
+	properties.ensure_declarations_parsed()
 	return css_style_properties_serialized(properties)
 }
 
@@ -795,14 +799,7 @@ pub fn (mut rule CSSRule) set_parent_style_sheet(parent_style_sheet ?&CSSStyleSh
 				base_url = location
 			}
 		}
-		if base_url.len > 0 {
-			for mut property in declaration_with_base.properties {
-				if value := property.style_value {
-					mut value_with_base := unsafe { &dom.StyleValue(value) }
-					value_with_base.base_url = base_url
-				}
-			}
-		}
+		declaration_with_base.set_rule_base_url(base_url)
 	}
 	rule.clear_caches()
 
@@ -832,11 +829,8 @@ pub fn (mut rule CSSRule) set_parent_style_sheet(parent_style_sheet ?&CSSStyleSh
 	if rule.type_ == .style {
 		// This is annoying: Style values that request resources need to know their CSSStyleSheet in order to fetch them.
 		if declaration := rule.declaration {
-			for property in declaration.properties {
-				if dom_value := property.style_value {
-					set_style_sheet_on_dom_style_value(dom_value, parent_style_sheet)
-				}
-			}
+			mut mutable_declaration := unsafe { &CSSStyleProperties(declaration) }
+			mutable_declaration.set_rule_resource_owner(parent_style_sheet)
 		}
 	}
 }
@@ -1501,13 +1495,15 @@ fn (rule &CSSRule) serialized_namespace_rule() string {
 
 // https://drafts.csswg.org/cssom-1/#dom-cssstylerule-style
 pub fn (rule &CSSRule) style() ?&CSSStyleProperties {
-	return rule.declaration
+	declaration := rule.declaration or { return none }
+	declaration.ensure_declarations_parsed()
+	return declaration
 }
 
 // https://drafts.css-houdini.org/css-typed-om-1/#dom-cssstylerule-stylemap
 pub fn (mut rule CSSRule) style_map() ?&CSSOMStylePropertyMap {
 	if rule.style_map_cache == none {
-		if declaration := rule.declaration {
+		if declaration := rule.style() {
 			rule.style_map_cache = CSSOMStylePropertyMap.create(declaration)
 		}
 	}

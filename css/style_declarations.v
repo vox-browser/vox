@@ -854,6 +854,7 @@ pub fn (mut properties CSSStyleProperties) update_style_attribute() {
 
 // https://drafts.csswg.org/cssom/#dom-cssstyledeclaration-csstext
 pub fn (properties &CSSStyleProperties) css_text() string {
+	properties.ensure_declarations_parsed()
 	// 1. If the computed flag is set, then return the empty string.
 	if properties.is_computed() {
 		return ''
@@ -864,6 +865,7 @@ pub fn (properties &CSSStyleProperties) css_text() string {
 }
 
 pub fn (properties &CSSStyleProperties) item(index usize) string {
+	properties.ensure_declarations_parsed()
 	// The item(index) method must return the property name of the CSS declaration at position index.
 	// If there is no indexth object in the collection, then the method must return the empty string.
 	custom_properties_count := properties.custom_properties.len
@@ -889,6 +891,7 @@ pub fn (properties &CSSStyleProperties) item(index usize) string {
 }
 
 pub fn (properties &CSSStyleProperties) item_value(index usize) ?string {
+	properties.ensure_declarations_parsed()
 	value := properties.item(index)
 	if value.len == 0 {
 		return none
@@ -897,6 +900,7 @@ pub fn (properties &CSSStyleProperties) item_value(index usize) ?string {
 }
 
 pub fn (properties &CSSStyleProperties) get_property(property_id PropertyID) ?StyleProperty {
+	properties.ensure_declarations_parsed()
 	return properties.get_property_internal(PropertyNameAndID.from_id(property_id))
 }
 
@@ -915,6 +919,7 @@ fn computed_custom_property_for_cssom(owner dom.AbstractElement, name string) ?&
 }
 
 pub fn (properties &CSSStyleProperties) custom_property(custom_property_name string) ?StyleProperty {
+	properties.ensure_declarations_parsed()
 	if properties.is_computed() {
 		owner := properties.owner_node or { return none }
 		value := computed_custom_property_for_cssom(owner, custom_property_name) or {
@@ -946,6 +951,7 @@ pub fn (properties &CSSStyleProperties) custom_property(custom_property_name str
 
 // https://drafts.csswg.org/cssom/#dom-cssstyledeclaration-setproperty
 pub fn (mut properties CSSStyleProperties) set_property(property_name string, value string, priority string) ! {
+	properties.ensure_declarations_parsed()
 	// 1. If the computed flag is set, then throw a NoModificationAllowedError exception.
 	if properties.is_computed() {
 		return error('NoModificationAllowedError: Cannot modify properties in result of getComputedStyle()')
@@ -963,6 +969,7 @@ pub fn (mut properties CSSStyleProperties) set_property(property_name string, va
 
 // https://drafts.csswg.org/cssom/#dom-cssstyledeclaration-setproperty
 pub fn (mut properties CSSStyleProperties) set_property_internal(property PropertyNameAndID, value string, priority string) ! {
+	properties.ensure_declarations_parsed()
 	// NB: Steps 1 and 2 only apply to the IDL method that invokes this.
 
 	// 3. If value is the empty string, invoke removeProperty() with property as argument and return.
@@ -1050,6 +1057,7 @@ pub fn (mut properties CSSStyleProperties) set_property_by_id(property_id Proper
 // point: keep the parsed StyleValue graph and expand shorthands directly,
 // without serializing and reparsing it through set_property().
 pub fn (mut properties CSSStyleProperties) set_property_style_value(property PropertyNameAndID, style_value &dom.StyleValue) ! {
+	properties.ensure_declarations_parsed()
 	if properties.is_computed() {
 		return error('NoModificationAllowedError: Cannot modify properties in result of getComputedStyle()')
 	}
@@ -1093,6 +1101,7 @@ pub fn (mut properties CSSStyleProperties) set_property_style_value(property Pro
 }
 
 pub fn (mut properties CSSStyleProperties) set_a_css_declaration(property_id PropertyID, value &dom.StyleValue, important Important) bool {
+	properties.ensure_declarations_parsed()
 	return properties.set_a_css_declaration_with_serialized(property_id, value, important, dom_style_value_to_css_text(value))
 }
 
@@ -1142,11 +1151,13 @@ fn (mut properties CSSStyleProperties) set_a_css_declaration_with_serialized(pro
 }
 
 pub fn (mut properties CSSStyleProperties) remove_property(property_name string) !string {
+	properties.ensure_declarations_parsed()
 	property := css_style_property_name_and_id_from_name(property_name) or { return '' }
 	return properties.remove_property_internal(property)!
 }
 
 pub fn (mut properties CSSStyleProperties) remove_property_internal(property PropertyNameAndID) !string {
+	properties.ensure_declarations_parsed()
 	if properties.is_readonly() {
 		return error('NoModificationAllowedError: Cannot modify readonly CSSStyleProperties')
 	}
@@ -1180,6 +1191,7 @@ pub fn (mut properties CSSStyleProperties) remove_property_internal(property Pro
 }
 
 pub fn (mut properties CSSStyleProperties) set_css_text(css_text string) ! {
+	properties.ensure_declarations_parsed()
 	if properties.is_readonly() {
 		return error('NoModificationAllowedError: Cannot modify readonly CSSStyleProperties')
 	}
@@ -1190,6 +1202,7 @@ pub fn (mut properties CSSStyleProperties) set_css_text(css_text string) ! {
 
 // CSSStyleProperties::empty_the_declarations().
 pub fn (mut properties CSSStyleProperties) empty_the_declarations() {
+	properties.ensure_declarations_parsed()
 	properties.clear_typed_properties_cache()
 	properties.properties.clear()
 	properties.custom_properties.clear()
@@ -1199,6 +1212,7 @@ pub fn (mut properties CSSStyleProperties) empty_the_declarations() {
 // specified order, expanding shorthands and retaining only the winner at its
 // specified relative position.
 pub fn (mut properties CSSStyleProperties) set_the_declarations(property_values []StyleProperty, custom_property_values map[string]StyleProperty) {
+	properties.ensure_declarations_parsed()
 	properties.clear_typed_properties_cache()
 	properties.properties = css_style_properties_to_cssom_properties(convert_declarations_to_specified_order(property_values))
 	properties.custom_properties.clear()
@@ -1209,6 +1223,7 @@ pub fn (mut properties CSSStyleProperties) set_the_declarations(property_values 
 
 // CSSStyleProperties::set_declarations_from_text().
 pub fn (mut properties CSSStyleProperties) set_declarations_from_text(css_text string) {
+	properties.ensure_declarations_parsed()
 	properties.empty_the_declarations()
 	context := if owner_node := properties.owner_node {
 		ParsingParams{
@@ -1224,6 +1239,7 @@ pub fn (mut properties CSSStyleProperties) set_declarations_from_text(css_text s
 }
 
 pub fn (properties &CSSStyleProperties) get_property_internal(property PropertyNameAndID) ?StyleProperty {
+	properties.ensure_declarations_parsed()
 	if property.is_custom_property() {
 		return properties.get_direct_property(property)
 	}
@@ -1298,6 +1314,7 @@ pub fn (properties &CSSStyleProperties) get_property_internal(property PropertyN
 
 // CSSStyleProperties::get_direct_property().
 pub fn (properties &CSSStyleProperties) get_direct_property(property PropertyNameAndID) ?StyleProperty {
+	properties.ensure_declarations_parsed()
 	if properties.is_computed() {
 		owner := properties.owner_node or { return none }
 		element := owner.element()
@@ -1813,6 +1830,7 @@ pub fn (properties &CSSStyleProperties) has_property(property PropertyNameAndID)
 }
 
 pub fn (properties &CSSStyleProperties) property_value(property_name string) string {
+	properties.ensure_declarations_parsed()
 	property := css_style_property_name_and_id_from_name(property_name) or { return '' }
 	if property.is_custom_property() {
 		if properties.is_computed() {
@@ -1852,10 +1870,12 @@ pub fn (mut properties CSSStyleProperties) set_css_float(value string) ! {
 }
 
 pub fn (properties &CSSStyleProperties) custom_property_count() usize {
+	properties.ensure_declarations_parsed()
 	return usize(properties.custom_properties.len)
 }
 
 pub fn (properties &CSSStyleProperties) property_priority(property_name string) string {
+	properties.ensure_declarations_parsed()
 	property := css_style_property_name_and_id_from_name(property_name) or { return '' }
 	if property.is_custom_property() {
 		if value := properties.custom_properties[property.name()] {
@@ -1874,10 +1894,12 @@ pub fn (properties &CSSStyleProperties) property_priority(property_name string) 
 }
 
 pub fn (properties &CSSStyleProperties) get_property_value(property_name string) string {
+	properties.ensure_declarations_parsed()
 	return properties.property_value(property_name)
 }
 
 pub fn (properties &CSSStyleProperties) get_property_priority(property_name string) string {
+	properties.ensure_declarations_parsed()
 	return properties.property_priority(property_name)
 }
 

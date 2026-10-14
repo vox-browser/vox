@@ -61,6 +61,7 @@ pub mut:
 
 pub struct RuleSelectorParser {
 pub mut:
+	defer_style_declarations bool
 	tokens              []Token
 	token_stream        ParserTokenStream
 	document            &dom.Document = unsafe { nil }
@@ -1169,7 +1170,7 @@ fn (mut parser RuleSelectorParser) convert_to_style_rule(qualified_rule Qualifie
 		selectors = adapt_nested_relative_selector_list(selectors, parser.parent_for_style_nesting(nested))
 	}
 
-	declaration := parser.convert_to_style_declaration(qualified_rule.declarations)
+	declaration := parser.declaration_for_style_rule(qualified_rule.declarations)
 	mut child_rules := []&CSSRule{}
 	for child in qualified_rule.child_rules {
 		match child {
@@ -1191,7 +1192,7 @@ fn (mut parser RuleSelectorParser) convert_to_style_rule(qualified_rule Qualifie
 				}
 			}
 			DeclarationList {
-				child_rules << CSSRule.create_nested_declarations(parser.convert_to_style_declaration(child.declarations))
+				child_rules << CSSRule.create_nested_declarations(parser.declaration_for_style_rule(child.declarations))
 			}
 		}
 	}
