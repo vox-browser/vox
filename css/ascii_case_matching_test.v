@@ -1,5 +1,15 @@
 module css
 
+fn test_ascii_lowercase_borrows_unchanged_text_and_keeps_unicode_bytes() {
+	lower := 'margin-inline café'
+	unchanged := to_ascii_lowercase(lower)
+	assert unchanged == lower
+	assert unchanged.str == lower.str
+	assert to_ascii_lowercase('MaRgIn-CAFÉ') == 'margin-cafÉ'
+	assert to_ascii_lowercase('ÉK') == 'ÉK'
+	assert to_ascii_lowercase('') == ''
+}
+
 fn test_ascii_case_matching_compares_bytes_without_unicode_folding() {
 	assert equals_ignoring_ascii_case('', '')
 	assert equals_ignoring_ascii_case('URL', 'url')

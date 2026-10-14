@@ -343,8 +343,19 @@ pub fn property_accepts_keyword(property_id PropertyID, keyword Keyword) bool {
 }
 
 fn to_ascii_lowercase(value string) string {
+	mut first_uppercase := -1
+	for i, byte in value {
+		if byte >= `A` && byte <= `Z` {
+			first_uppercase = i
+			break
+		}
+	}
+	if first_uppercase < 0 {
+		return value
+	}
 	mut bytes := value.bytes()
-	for i, byte in bytes {
+	for i := first_uppercase; i < bytes.len; i++ {
+		byte := bytes[i]
 		if byte >= `A` && byte <= `Z` {
 			bytes[i] = byte + 0x20
 		}
