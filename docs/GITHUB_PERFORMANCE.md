@@ -2829,6 +2829,103 @@ Evidence: `Build/instructions/vox-opt29-interleaved-*` and
 profiles, diagnostics, capture audit, regression exits, current-app native
 verification, interrupted duplicate-build evidence and bundle verification.
 
+## Keep decoded CSS in its UTF-8 destination
+
+Feature `a278f7b1` keeps the same fresh selected decoder and invokes its
+existing Common UTF-8 processing/output methods. CSS previously materialized
+the public TextDecoder's genuine UTF-16 result and converted it back to UTF-8.
+The final item flushes the one-shot owner, which is then discarded. Encoding
+selection, BOMs, malformed-input repairs, CSS filtering and tokenizer arenas
+remain unchanged. The public TextDecoder and all encoding implementations are
+unchanged; decoding remains enabled. Boehm stays enabled with one marker.
+
+Twenty-two functional cases plus one diagnostic pass **169,128 assertions**
+in before/final Boehm and final no-GC builds, all C `-O2`. Five new cases add
+3,901 assertions covering valid scalars and controls, malformed/truncated UTF-8,
+UTF-16 endian/BOM/surrogate boundaries, aliases, legacy encodings, Shift_JIS and
+fresh-owner isolation. They compare the unchanged public destination with the
+CSS destination and include explicit expected Unicode results.
+
+Three alternating controlled pairs improve complete filtering instructions:
+**158,257,859 → 84,545,269
+(-46.58%)**. Each probe makes 512 complete filter calls on
+2,112-byte Unicode CSS, with setup, eight warmups, forced GC and assertions
+outside the hardware counter. All checksums remain 1,136,128.
+Fresh full-process `v -profile` replays of the focused harness retain
+4,615 CSS decode calls
+in each build. Selected UTF-8 decoder calls to its UTF-16 destination fall
+**8,424 → 3,848**; calls to its UTF-8 destination
+change **0 → 4,576**. Oracle checks still use
+the public UTF-16 destination. Profiles use C `-O1`, Boehm and
+`-profile-no-inline`, with no filter/reset; only call counts are interpreted.
+
+The page comparison fixes thirty alternating normal-build pairs before any
+observation, with 30,000 paired bootstrap resamples and seed 30. Both C
+`-O2`/Boehm/one-marker executables are persisted before measurement and load
+the same frozen native library. Every run starts with a fresh identical cached
+GitHub copy on the same RAM-backed volume. The viewport is 1024×768; the primary
+endpoint is `navigation_to_first_document_paint[0]`.
+
+| Build | Median instructions through first native document frame |
+| --- | ---: |
+| Public UTF-16 projection | 31,623,734,484.5 |
+| Existing UTF-8 destination | 31,304,933,831.5 |
+
+Observed saving: **318,800,653 instructions
+(1.01%)**; 24/30 pairs improve. Paired median saving:
+289,428,758.5. The 95% paired percentile bootstrap interval is
+**230,304,180.5 to 883,081,890.5** instructions. The positive paired interval supports a repeatable gain on this cached workload.
+Repeatable page savings credited: 318,800,653.
+
+All sixty first-frame intervals retain one installation, two geometry passes
+and one shell paint recording. 5 observations have later
+installations, outside the primary endpoint. 60 screenshots have verified
+1024×768 dimensions. All sixty primary observations also have completed screenshot/process reports.
+One startup retry is archived, permitted only before parsing and
+the primary under the predeclared three-attempt limit. No completed primary is
+discarded and the sample is not extended.
+The first six pairs completed during an earlier CLI resume and are retained;
+the next interrupted startup ended before parsing at pair 7. Its terminal
+status is unavailable and receives no pass credit. Continuation starts with
+that same unmeasured slot, with receipts in
+`Build/v/instruction-opt30-cli-resume-2.json`.
+
+The generated-C audit permits only `decode_css_input` to change. The queue
+struct moves to its first CSS use; its complete definition is authenticated as
+identical, as are two reordered interface helpers. All other logic, layouts,
+resources, native flags and GC initialization match after established compiler
+identity/source-location normalization. All 120 cached native inputs match.
+Before the first observation, 37 repository native includes are pinned to the
+immutable source snapshot; their hashes are checked. This keeps an independent
+Root native line-paint change out of the performance candidate. The control's
+frozen native source is identical. The initial declaration-order audit failure
+and interrupted compile logs remain retained without pass credit.
+
+The compiled candidate C SHA256 is
+`f2842eef2e2b9b0b99432b594458454b950b3d3ef3cb5e377d47357d73f0aab7`.
+Durable compressed C, focused-binary and profile-binary archives have both
+uncompressed and archive hashes in
+`Build/v/instruction-opt30-artifact-archives.json`; full-process profile C hashes
+are in `Build/v/instruction-opt30-profile-evidence.json`. The pre-existing
+terminal standalone-CR loss documented in the previous round remains outside
+this change.
+
+The observed reduction crossed the 5,000,000-instruction gate. One broad batch passes all 87 selected CSS/SVG/layout cases in both GC modes, six actual zero exits. Nineteen screenshot comparisons complete, sixteen exact; the existing differences remain inline-node 13, text-decorations 1,341 and canvas-text 1,994. The focused viewport is pixel-exact.
+The broad cases use the retained selected regression snapshot and this CSS
+implementation, with its source base and overlay declared in
+`Build/v/instruction-opt30-broad-manifest.json`.
+
+The separately built current-source snapshot is available at `/Users/alex/code/vox2/Build/v/Vox-opt30.app`. Its decoder C body matches the measured candidate byte for byte, retaining independent work present at snapshot time. It receives no extra page-performance credit; frozen regression results do not cover unrelated current-source changes. The canonical app is preserved because its original pre-build hash was not persisted across the CLI interruption. No GUI process is restarted.
+Signature, headless startup and actual GC collection checks pass, with default
+marker 1 and override 2. App native text SHA:
+`b522380c6c8d605024463417c0561e58dbbcc7ac004f2942dc86f68ee1a2978c`.
+
+Chrome parity remains open: its earlier capture measures a different endpoint
+and hydrated content. Evidence is retained in
+`Build/instructions/vox-opt30-interleaved-*` and `Build/v/instruction-opt30-*`,
+including original observations, C/native-input provenance, profiles, diagnostics,
+actual regression exits, snapshot/app provenance and GC checks.
+
 ## Causes and changes
 
 - The V 0.5.2 compatibility compiler's `-prod` Boehm code repeatedly snapshots
