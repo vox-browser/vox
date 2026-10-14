@@ -1,4 +1,4 @@
-// Raw media wheel and play/pause handlers share FunctionBody compilation and scopes.
+// Raw media wheel and lifecycle handlers share FunctionBody compilation and scopes.
 module browserjs
 
 import dom
@@ -24,7 +24,7 @@ fn cached_raw_wheel_media(element &dom.Element) ?&html.HTMLMediaElement {
 }
 
 fn (mut host ElementWheelHost) raw_media_wheel_handler_available(target &dom.EventTarget, element &dom.Element, name string) bool {
-	if name !in ['wheel', 'play', 'pause'] { return false }
+	if name !in ['wheel', 'play', 'pause', 'playing', 'waiting'] { return false }
 	if host.live_raw_media_wheel_hosts().len == 0 { return false }
 	binding := host.runtime.event_binding() or { return false }
 	mut wrapper := binding.target_wrappers[voidptr(target)] or { voidptr(0) }

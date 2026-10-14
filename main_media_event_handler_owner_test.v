@@ -179,12 +179,12 @@ readyAudio.src="/sound.mp3";video.load();readyAudio.load();
 	media_handler_drain(document)
 }
 
-fn test_raw_media_onplaying_stays_uncompiled_and_idl_replacement_preserves_content_attribute() {
+fn test_raw_media_oncanplay_stays_uncompiled_and_idl_replacement_preserves_content_attribute() {
 	$if !darwin {
 		return
 	}
 	raw_source := 'globalThis.rawMediaHandlerRuns++'
-	mut document := media_handler_document('<video id="raw" onplaying="${raw_source}"></video>',
+	mut document := media_handler_document('<video id="raw" oncanplay="${raw_source}"></video>',
 		'https://ordinary-raw-media-handler.example.test/')!
 	mut runtime := browserjs.Runtime.create()
 	defer {
@@ -193,36 +193,36 @@ fn test_raw_media_onplaying_stays_uncompiled_and_idl_replacement_preserves_conte
 	}
 	mut messages := []string{}
 	run_document_javascript(document, document.url.serialize(), [
-		r'globalThis.rawMediaHandlerRuns=0;globalThis.rawReplacementCalls=0;globalThis.rawReplacementChecks=[];globalThis.rawContentSource=raw.getAttribute("onplaying");',
+		r'globalThis.rawMediaHandlerRuns=0;globalThis.rawReplacementCalls=0;globalThis.rawReplacementChecks=[];globalThis.rawContentSource=raw.getAttribute("oncanplay");',
 	], runtime, mut messages)
 	assert messages == []
-	assert runtime.evaluate_host(r'(()=>{const descriptor=Object.getOwnPropertyDescriptor(HTMLMediaElement.prototype,"onplaying");return !!descriptor&&typeof descriptor.get==="function"&&typeof descriptor.set==="function"&&raw.onplaying===null})()')! == 'true'
+	assert runtime.evaluate_host(r'(()=>{const descriptor=Object.getOwnPropertyDescriptor(HTMLMediaElement.prototype,"oncanplay");return !!descriptor&&typeof descriptor.get==="function"&&typeof descriptor.set==="function"&&raw.oncanplay===null})()')! == 'true'
 	element := document.get_element_by_id('raw')?
 	target := runtime.native_event_target(runtime.evaluate_host_value('raw')!)!
-	raw_handler := target.data.event_handler_map['playing'] or {
+	raw_handler := target.data.event_handler_map['canplay'] or {
 		assert false, 'missing raw media handler'
 		return
 	}
 	assert raw_handler.value.kind == .string && raw_handler.value.string_data == raw_source
 	assert target.event_listener_list().len == 1
-	assert runtime.evaluate_host('raw.dispatchEvent(new Event("playing"));rawMediaHandlerRuns===0&&raw.onplaying===null&&raw.getAttribute("onplaying")===rawContentSource')! == 'true'
+	assert runtime.evaluate_host('raw.dispatchEvent(new Event("canplay"));rawMediaHandlerRuns===0&&raw.oncanplay===null&&raw.getAttribute("oncanplay")===rawContentSource')! == 'true'
 	assert raw_handler.value.kind == .string && raw_handler.value.string_data == raw_source
 	runtime.evaluate_host(r'
 globalThis.rawReplacement=function(event){rawReplacementCalls++;rawReplacementChecks.push(this===raw&&event.target===raw&&event.currentTarget===raw&&event instanceof Event&&!event.isTrusted&&window.event===event)};
-raw.onplaying=rawReplacement;raw.dispatchEvent(new Event("playing"));
+raw.oncanplay=rawReplacement;raw.dispatchEvent(new Event("canplay"));
 ')!
-	assert runtime.evaluate_host('raw.onplaying===rawReplacement&&!Object.hasOwn(raw,"onplaying")&&rawReplacementCalls===1&&rawReplacementChecks.every(Boolean)&&rawMediaHandlerRuns===0&&raw.getAttribute("onplaying")===rawContentSource&&window.event===undefined')! == 'true'
-	assigned_handler := target.data.event_handler_map['playing'] or {
+	assert runtime.evaluate_host('raw.oncanplay===rawReplacement&&!Object.hasOwn(raw,"oncanplay")&&rawReplacementCalls===1&&rawReplacementChecks.every(Boolean)&&rawMediaHandlerRuns===0&&raw.getAttribute("oncanplay")===rawContentSource&&window.event===undefined')! == 'true'
+	assigned_handler := target.data.event_handler_map['canplay'] or {
 		assert false, 'missing assigned media handler'
 		return
 	}
 	assert voidptr(assigned_handler) == voidptr(raw_handler)
 	assert assigned_handler.value.kind == .object
 	assert target.event_listener_list().len == 1
-	assert element.get_attribute('onplaying')? == raw_source
-	assert runtime.evaluate_host('raw.onplaying=null;raw.dispatchEvent(new Event("playing"));raw.onplaying===null&&rawReplacementCalls===1&&rawMediaHandlerRuns===0&&raw.getAttribute("onplaying")===rawContentSource')! == 'true'
-	assert 'playing' !in target.data.event_handler_map
+	assert element.get_attribute('oncanplay')? == raw_source
+	assert runtime.evaluate_host('raw.oncanplay=null;raw.dispatchEvent(new Event("canplay"));raw.oncanplay===null&&rawReplacementCalls===1&&rawMediaHandlerRuns===0&&raw.getAttribute("oncanplay")===rawContentSource')! == 'true'
+	assert 'canplay' !in target.data.event_handler_map
 	assert target.event_listener_list().len == 0
-	assert element.get_attribute('onplaying')? == raw_source
+	assert element.get_attribute('oncanplay')? == raw_source
 	assert !runtime.libjs_vm().has_running_execution_context()
 }

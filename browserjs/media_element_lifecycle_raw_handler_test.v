@@ -311,9 +311,9 @@ fn test_raw_media_lifecycle_function_body_csp_name_filter_and_unavailable_owners
 		ordinary_target := unsafe { &dom.EventTarget(ordinary_element) }
 		assert ordinary_target.get_current_value_of_event_handler(name) == none
 		assert (ordinary_target.data.event_handler_map[name] or { panic('ordinary raw lifecycle unsupported') }).value.kind == .string
-		audio_element.set_attribute_value('onplaying', 'globalThis.mediaLifecycleRuns++;')
-		assert target.get_current_value_of_event_handler('playing') == none
-		assert (target.data.event_handler_map['playing'] or { panic('unsupported media raw name') }).value.kind == .string
+		audio_element.set_attribute_value('oncanplay', 'globalThis.mediaLifecycleRuns++;')
+		assert target.get_current_value_of_event_handler('canplay') == none
+		assert (target.data.event_handler_map['canplay'] or { panic('unsupported media raw name') }).value.kind == .string
 		audio_element.set_attribute_value('on${name}', 'return false;')
 		callback := target.get_current_value_of_event_handler(name) or { panic('valid media raw callback') }
 		mut document := fixture.document
