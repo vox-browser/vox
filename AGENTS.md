@@ -1358,17 +1358,16 @@ evidence](docs/translation-audit/NATIVE_MEDIA_WHEEL_RAW_HANDLER.md).
   broad verification. Compare the same benchmark endpoint and workload, record
   the measured baseline and accumulated savings, and do not run broad suites
   for every individual fix below that threshold.
-  The latest performance broad batch is indexed layout ancestry `27011ca9`:
-  13 focused tree/ancestry cases passed in each GC mode, including optimized
-  Boehm. Six retained V group logs report 87 selected CSS/SVG/layout cases
-  passing per GC mode; 19 screenshot comparisons pass (16 exact), including
-  a three-case continuation after storage exhaustion. The original supervisor
-  terminal record is unavailable and receives no full-pass credit; completed
-  unit suites and screenshots were not repeated.
-  Its observed GitHub first-frame median is 33,850,149,374 instructions.
-  Only 17 of 30 matching pairs improve and the paired interval includes zero;
+  The latest performance broad batch is integer layout sums `489816e4`:
+  eight functional checks plus a controlled instruction diagnostic passed in
+  each GC mode, including optimized Boehm. All six commands for 87 selected
+  CSS/SVG/layout cases and all 19 screenshot comparisons pass (16 exact).
+  Its observed GitHub first-frame median is 34,666,996,715.5 instructions.
+  Twenty of 30 matching pairs improve, but the paired interval includes zero;
   zero repeatable whole-page savings are credited and zero additional savings
-  accumulated. A controlled ancestry diagnostic improves 16.77%.
+  accumulated. The controlled sum diagnostic improves 48.64%.
+  Initial ENOSPC compiler failures are retained without runtime credit; only
+  those build steps resumed from saved C after verified artifact compression.
   See `docs/GITHUB_PERFORMANCE.md` for uncertainty, provenance and app scope.
 - Outside instruction-count optimization, run broad regression suites once per
   ten completed fixes, not after every fix.

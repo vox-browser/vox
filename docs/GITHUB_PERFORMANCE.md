@@ -1491,6 +1491,123 @@ the candidate is
 Bundle signing changes the installed executable hash to
 `86b2bc6c5261cde99973d08fb737fcf095d0090c832de3244cd41e0acfc89223`.
 
+## Integer fixed-point layout sums
+
+Feature `489816e4` removes floating-point round trips from the four layout sum
+helpers in `layout/layout_state.v`. Pixel and point pairs use the existing
+saturating fixed-point addition. Three- and five-operand sums add raw values in
+`i64` and clamp once at the end, preserving cancellation between oversized edges
+and negative margins. Every raw operand is a signed 32-bit integer; even five
+operands fit exactly in the wide accumulator. Results retain the previous
+1/64-pixel precision, including saturation boundaries. There are no struct-layout,
+allocation-policy or GC changes. Normal builds retain Boehm and JavaScriptCore,
+without global `-prealloc` or V `-prod`.
+
+This slice starts with a **fresh `v -profile` capture** of the current engine,
+using committed runtime sources at `b4a325cb`. Its diagnostic records
+2,643,505 point additions and 434,088 / 549,234 / 975,908 scalar sums with two,
+three and five operands. Counts include the instrumented capture's layout/paint
+passes, including work after the first frame, rather than one first-frame scope.
+The diagnostic uses C `-O1` and profiling timers; its instruction totals are not
+compared to the normal binaries. Source, argv, logs and the full profile are under
+`Build/v/instruction-opt17-{profile-*,v-profile.txt}`.
+
+Four new tests compare boundary pairs and full-range deterministic raw values
+against the old floating-point path, verify deferred saturation through
+cancellation, and check independent point axes. With four existing DOM client-
+geometry cases, **eight functional cases pass in both GC modes**, including
+C `-O2` with Boehm. The retained aggregate also runs one instruction diagnostic;
+each complete focused run passes 33,943 assertions.
+
+The controlled diagnostic fixes three interleaved pairs before execution. One
+million iterations exercise all four helpers and produce five scalar/coordinate
+outputs each, using small, fractional, extreme and saturating raw inputs. Setup
+and assertions are outside the hardware counter scope. All checksums match an
+independent integer reference of -302,011,986,410,836.
+The median is **109,066,434 → 56,016,176
+instructions (48.64% fewer)**, with all three pairs improving.
+These dedicated C `-O2`/Boehm test executables establish the sum-work reduction;
+they are separate from page measurements. Evidence is
+`Build/v/instruction-opt17-diagnostic-{plan,result}.json` and
+`opt17-integer-sums-focused-test.v.txt`.
+
+Thirty alternating normal-build GitHub pairs were fixed before observing results.
+Both use C `-O2`/Boehm, the same frozen native library, fresh copies of the immutable
+cache and a 1024×768 document viewport. The primary endpoint remains the first
+native `navigation_to_first_document_paint` scope.
+
+| Build | Median instructions through first native document frame |
+| --- | ---: |
+| Floating-point sums | 34,822,469,699.5 |
+| Integer sums | 34,666,996,715.5 |
+
+The observed median falls **155,472,984 instructions
+(0.45%)**; **20/30 pairs improve**. The paired
+median saving is 252,739,132.5; its 95% paired percentile
+bootstrap interval is **-10,971,201
+to 1,183,628,166.5** instructions
+(30,000 resamples, seed 17). The one-sided sign probability is
+0.0494. The paired interval still includes zero,
+so **a repeatable whole-page saving remains unestablished**. All sixty captures
+have valid geometry and one installation, with two required geometry passes and
+one shell paint recording before the first frame. No page samples were discarded
+or added after inspecting results. Raw reports use
+`Build/instructions/vox-opt17-interleaved-*`; paired evidence is
+`Build/v/instruction-opt17-comparison-evidence.json`.
+
+The frozen control and candidate runtime differ only in `layout/layout_state.v`.
+After normalizing source-derived anonymous symbols and temporary names, the C
+difference contains only the four helper replacements, the new wide-sum clamp
+and its declaration, plus matching source-derived embed keys. Embedded content
+and all 120 common native object/archive inputs remain byte-identical. Source
+capture paths are normalized back to the repository root before native
+compilation. See `Build/v/instruction-opt17-matching-provenance.json` and
+`instruction-opt17-generated-c.diff`.
+
+Storage exhaustion interrupted the initial focused/native object emission and
+link steps before any page measurements. Original compiler logs and available
+failure records are retained; missing initial supervisor terminal records receive
+no successful-build or runtime credit. Older generated C captures were archived
+as verified gzip streams, preserving their original SHA-256 hashes. A redundant
+normalized profiling C capture was archived while its untouched raw input remained
+available. Resumed builds reuse retained C and exact compiler arguments, with
+actual native compile and runtime exits captured. Source generation was not
+repeated. Archive indexes are `instruction-opt17-earlier-c-compression.json` and
+`instruction-opt17-profile-c-compression.json`.
+
+The observed page median crossed the 5,000,000-instruction trigger, so **one**
+broad batch ran: **87 selected CSS/SVG/layout cases in each GC mode and 19
+screenshot comparisons, 16 pixel-exact**. All six group commands and the full
+screenshot batch record actual exit zero. The same bounded differences remain
+for inline-node, text-decorations and canvas-text; the focused intrinsic
+flex/grid/table viewport is pixel-exact before/after. Group results are persisted
+before screenshots. Evidence is `Build/v/instruction-opt17-validation-result.json`,
+`instruction-opt17-broad-*-result.json`, `instruction-opt17-screenshots.log` and
+`Build/comparisons/instruction-opt17-{intrinsic,batch}/`.
+
+The new broad-verified baseline is `489816e4` at an observed first-frame median
+of **34,666,996,715.5** instructions. **Zero repeatable page
+savings are credited**, with zero additional instructions accumulated since this
+batch. Diagnostic savings do not contribute to that counter. Chrome instruction
+and functionality parity remain unestablished, including the GitHub
+module-hydration gap.
+
+The signed canonical `Build/v/Vox.app` contains the measured candidate. Installation
+guards authenticated the unchanged previous measured ancestry bundle and the
+committed reset/loadstart source lineage added by this fresh control. At
+installation all captured runtime hashes matched the workspace; unrelated
+branding/documentation changes remain preserved. Candidate and installed code
+sections match, strict signature verification and headless startup pass, and the
+running browser was not restarted. Relaunch Vox to use it. Evidence is
+`Build/v/instruction-opt17-bundle-{result,text-result}.json`.
+
+The control SHA-256 is
+`917f64bb7cb8a5b4c21180842ce923f5a7d6efe5f007f4e5663f4853b1072623`;
+the candidate is
+`59a9ab1e1214c1098eca742e6a5bc922adc8801488765ed65ee0c0cf93e7aff2`.
+Bundle signing changes the installed executable hash to
+`93b958d6d52a31950e926ce840bdb1f9dfcf019b1b10470d108b1eac698d623b`.
+
 ## Causes and changes
 
 - The V 0.5.2 compatibility compiler's `-prod` Boehm code repeatedly snapshots
