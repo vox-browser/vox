@@ -380,13 +380,15 @@ mut:
 
 fn ComponentValueStream.new(values []ComponentValue) ComponentValueStream {
 	return ComponentValueStream{
-		values: values.clone()
+		values: values
 	}
 }
 
 fn (stream ComponentValueStream) clone() ComponentValueStream {
+	// Parser transactions move only their cursor. Component values are read
+	// through this stream and remain owned by the parser's traced input graph.
 	return ComponentValueStream{
-		values: stream.values.clone()
+		values: stream.values
 		index: stream.index
 	}
 }
