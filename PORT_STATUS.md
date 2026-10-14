@@ -2607,3 +2607,13 @@ readiness credit is claimed. Four current owned files and two exact main
 gates are authenticated through retained snapshots; current full main and
 foreign changes receive no test credit. Production and broad suites remain
 deferred. Batch counter: 7/10 after aa6f0246. See [evidence](docs/translation-audit/NATIVE_MEDIA_PROGRESS_RAW_HANDLER.md).
+
+Native compact media raw progress/suspend scoped inventory (`739e00b8`,
+2026-10-14 UTC): Five owned browser/root paths are excluded under the sealed
+78-owner rules. Feature/actual-parent byte and physical-LF accounting adds
+zero assigned DOM files, implementation lines or test lines. Counter:
+`Build/audit-fixes/native-media-progress-raw-handler-inventory-scoped-v1.json` (SHA256 `07dd77510b5be5d09cafc3b80723e24291f77107a3c3faeb71141d42d9db94bb`).
+Global tables, pins, mappings and historical ledgers stay preserved;
+accounting adds no behavioral or test credit. Batch remains 7/10 after
+aa6f0246, since this independent documentation commit is not another
+translation fix. See [evidence](docs/translation-audit/NATIVE_MEDIA_PROGRESS_RAW_HANDLER.md).
