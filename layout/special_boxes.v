@@ -7,6 +7,8 @@ import css
 import dom
 import encoding.base64
 import html
+import http
+import loader
 import math
 import os
 import stbi
@@ -375,6 +377,42 @@ struct SVGImageSource {
 	url    dom.URL
 }
 
+// Remote bytes enter through the embedder-populated ResourceLoader store. This
+// performs the translated request filtering and response checks without adding
+// a network transport or blocking network I/O to layout.
+fn remote_svg_image_source(document &dom.Document, image_url dom.URL) ?SVGImageSource {
+	if !loader.is_initialized() { return none }
+	mut fetch_url := image_url
+	fetch_url.set_fragment(none)
+	mut request := loader.LoadRequest.create(http.HeaderList.create())
+	request.set_url(fetch_url)
+	request.set_source_url(document.url)
+	request.set_destination(.image)
+	mut resource_loader := loader.ResourceLoader.the()
+	response := resource_loader.load(mut request)
+	if !response.success || response.data.len == 0 { return none }
+	status := response.status_code or { return none }
+	if status < 200 || status >= 300 { return none }
+	mut content_type := ?string(none)
+	for header in response.headers {
+		if header.name.to_lower() == 'content-type' {
+			content_type = header.value.split(';')[0].trim_space().to_lower()
+		}
+	}
+	if declared_type := content_type {
+		if declared_type != 'image/svg+xml' { return none }
+	} else if !fetch_url.serialize_path().to_lower().ends_with('.svg') {
+		// The compact disk cache predates response metadata. Preserve that cache's
+		// SVG URL classification only when a response supplied no Content-Type.
+		return none
+	}
+	return SVGImageSource{
+		source: response.data.bytestr()
+		url:    image_url
+	}
+}
+
+
 fn svg_image_source_for_source(document &dom.Document, source string) ?SVGImageSource {
 	if source.len == 0 {
 		return none
@@ -382,6 +420,9 @@ fn svg_image_source_for_source(document &dom.Document, source string) ?SVGImageS
 	trimmed_source := source.trim_space()
 	parsed_url := document.encoding_parse_url(trimmed_source) or { return none }
 	serialized := parsed_url.serialize()
+	if parsed_url.scheme() in ['http', 'https'] {
+		return remote_svg_image_source(document, parsed_url)
+	}
 	if serialized.starts_with('data:') {
 		comma := serialized.index(',') or { return none }
 		metadata := serialized[..comma].to_lower()
@@ -415,6 +456,9 @@ fn svg_image_source_for_source(document &dom.Document, source string) ?SVGImageS
 	mut path := serialized
 	if serialized.starts_with('file://') {
 		path = url.percent_decode(parsed_url.serialize_path()).bytestr()
+	} else if serialized.starts_with('http://') || serialized.starts_with('https://') {
+		image_source := svg_image_source_for_source(document, source) or { return none }
+		return svg_image_natural_size(image_source.source)
 	} else if serialized.contains('://') {
 		return none
 	}
@@ -435,6 +479,13 @@ fn svg_image_document_for_source(document &dom.Document, source string) ?&dom.Do
 	svg_document.set_is_svg_image_document(true)
 	svg_document.set_svg_image_color_scheme(document.preferred_color_scheme())
 	html.parse_xml_document_source(svg_document, image_source.source) or { return none }
+	if image_source.url.scheme() in ['http', 'https'] {
+		root := svg_document.document_element() or { return none }
+		if root.local_name() != 'svg'
+			|| (root.namespace_uri() or { '' }) != 'http://www.w3.org/2000/svg' {
+			return none
+		}
+	}
 	return svg_document
 }
 
