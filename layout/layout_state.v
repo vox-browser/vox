@@ -839,7 +839,11 @@ mut:
 fn (mut arena MeasurementUsedValuesArena) allocate() &UsedValues {
 	mut chunk := if arena.chunks.len == 0
 		|| arena.chunks.last().used == measurement_arena_chunk_size {
-		new_chunk := &MeasurementUsedValuesChunk{}
+		// Keep unused slots zeroed and scanned, then construct each record on
+		// first use below. A normal struct literal eagerly constructs all sixteen
+		// records before copying them into the chunk, including their array and
+		// optional defaults, which would be overwritten when the slot is used.
+		new_chunk := unsafe { &MeasurementUsedValuesChunk(vcalloc(isize(sizeof(MeasurementUsedValuesChunk)))) }
 		arena.chunks << new_chunk
 		new_chunk
 	} else {
