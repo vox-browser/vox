@@ -256,27 +256,28 @@ pub fn (mut cache RuleCache) add_rule(matching_rule &MatchingRule, pseudo_elemen
 
 pub fn (cache &RuleCache) matching_rule_buckets(abstract_element dom.AbstractElement) [][]&MatchingRule {
 	element := abstract_element.element()
-	mut buckets := [][]&MatchingRule{}
+	attribute_count := if attrs := element.attributes_ { attrs.length() } else { 0 }
+	mut buckets := [][]&MatchingRule{cap: element.classes.len + attribute_count + 5}
 	for original_class_name in element.classes {
 		class_name := cache.selector_name_bucket_key(original_class_name)
 		if class_name in cache.rules_by_class {
-			buckets << (cache.rules_by_class[class_name] or { []&MatchingRule{} })
+			buckets << unsafe { cache.rules_by_class[class_name] }
 		}
 	}
 	if original_id := element.id() {
 		id := cache.selector_name_bucket_key(original_id)
 		if id in cache.rules_by_id {
-			buckets << (cache.rules_by_id[id] or { []&MatchingRule{} })
+			buckets << unsafe { cache.rules_by_id[id] }
 		}
 	}
 	tag_name := element.lowercased_local_name()
 	if tag_name in cache.rules_by_tag_name {
-		buckets << (cache.rules_by_tag_name[tag_name] or { []&MatchingRule{} })
+		buckets << unsafe { cache.rules_by_tag_name[tag_name] }
 	}
 	if pseudo := style_scope_pseudo_element_from_abstract_element(abstract_element) {
 		if is_known_pseudo_element_type(pseudo) {
 			if pseudo in cache.rules_by_pseudo_element {
-				buckets << (cache.rules_by_pseudo_element[pseudo] or { []&MatchingRule{} })
+				buckets << unsafe { cache.rules_by_pseudo_element[pseudo] }
 			}
 		} else {
 			// NOTE: We don't cache rules for unknown pseudo-elements. They can't
@@ -288,22 +289,28 @@ pub fn (cache &RuleCache) matching_rule_buckets(abstract_element dom.AbstractEle
 		buckets << cache.root_rules
 	}
 
-	mut attribute_buckets := [][]&MatchingRule{}
-	attribute_buckets_ptr := &attribute_buckets
-	element.for_each_attribute(fn [cache, attribute_buckets_ptr] (attribute &dom.Attr_) {
-		name := attribute.name().to_lower()
-		if name in cache.rules_by_attribute_name {
-			unsafe {
-				mut collected := *attribute_buckets_ptr
-				collected << (cache.rules_by_attribute_name[name] or { []&MatchingRule{} })
-				*attribute_buckets_ptr = collected
+	if attrs := element.attributes_ {
+		for attribute in attrs.attrs {
+			name := rule_cache_attribute_bucket_name(attribute.name())
+			if name in cache.rules_by_attribute_name {
+				buckets << unsafe { cache.rules_by_attribute_name[name] }
 			}
 		}
-	})
-	buckets << attribute_buckets
+	}
 
 	buckets << cache.other_rules
 	return buckets
+}
+
+fn rule_cache_attribute_bucket_name(name string) string {
+	// Preserve the selector-name cache's existing Unicode folding, while the
+	// overwhelmingly common lowercase ASCII names need no new string.
+	for byte in name {
+		if (byte >= `A` && byte <= `Z`) || byte >= 0x80 {
+			return name.to_lower()
+		}
+	}
+	return name
 }
 
 pub fn (cache &RuleCache) for_each_matching_rules(abstract_element dom.AbstractElement, callback fn([]&MatchingRule) RuleCacheIterationDecision) {
