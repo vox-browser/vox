@@ -988,6 +988,112 @@ its complete source revision is not attributed. Evidence uses
 The page medians above belong to the pinned matching comparison, rather than
 either separately built executable.
 
+## Shared SVG gradient paint snapshots
+
+Commit `df931f85` removes the four inline optional SVG gradient styles from
+`PaintCommand` and retains them in one immutable `PaintSVGGradientData`
+snapshot. Ordinary commands and solid-color SVG paths retain no snapshot;
+gradient-painted paths share their snapshot across phase caches and display-list
+copies. The native solid-path fast path checks the absent snapshot directly.
+Gradient readers retain the same optional value semantics, including linear
+and radial fill/stroke geometry, transforms, spread, and color interpolation.
+
+Force-dark creates a replacement snapshot and replacement stop arrays for each
+resolved command, preserving the author snapshot shared by other commands or
+earlier recordings. Four new cases cover absent payloads, all four retained
+gradient slots after the producer returns and forced collections run, force-dark
+isolation, replay identity, and replacement after a live SVG stop mutation.
+Those four cases and seven existing gradient/resource/force-dark cases pass in
+both GC modes. Their aggregate and logs are
+`Build/v/opt12-svg-focused-test.v.txt` and
+`instruction-opt12-focused-{boehm,none}.log`.
+
+The four new cases also pass with C `-O2` and Boehm, including their forced
+collections and live mutation checks. The executed diagnostic records
+**3,240 bytes per command**, down from 4,128: **888 bytes (21.5%)** smaller.
+An actual gradient snapshot occupies 928 bytes and is shared by copies of its
+command; this is a command-storage measurement, not a claim that every
+gradient-painted path uses 21.5% less total memory. The fixture and complete
+executed test output are `Build/v/opt12-svg-optimized-test.v.txt` and
+`instruction-opt12-optimized-test.log`.
+
+Ten valid interleaved pairs, reversing order on alternate pairs, measured:
+
+| Build | Median installation instructions | Median navigation through first native frame |
+| --- | ---: | ---: |
+| Matching background-snapshot control | 33,342,377,657 | 36,878,826,334 |
+| Shared SVG gradient snapshots | 32,252,656,852.5 | 36,159,520,428 |
+
+The first-frame median falls **719,305,906 instructions (1.95%)** and installation
+falls **1,089,720,804.5 (3.27%)**. Eight of ten paired first-frame counts improve;
+the median paired saving is 1,140,056,577. Ranges overlap: control
+36.574–38.080 billion, candidate 35.429–37.922 billion. These are normal-build
+hardware counts, not a projection from the command-size reduction. Four control
+runs install a refreshed document after the first-frame interval has ended;
+the comparison uses the first installation and first navigation scope. All
+twenty valid runs have a final root-process exit sample.
+
+One initial candidate capture produced a 1728×880 window instead of the
+requested 1024×880. The existing observer geometry check rejected it after the
+browser exited successfully. Its log and PNG remain under
+`Build/instructions/vox-opt12-interleaved-final-8-invalid-viewport.run-1.*`;
+the comparison resumed the remaining pairs without rerunning completed pairs.
+Its first-frame count is 37,722,486,923. As a sensitivity check, substituting
+that count for the retry gives a candidate median of 36,704,044,356.5, still
+174,781,977.5 instructions (0.47%) below the control. That invalid-geometry
+capture is not included in the matching-viewport performance result.
+
+Raw valid reports and summary use `Build/instructions/vox-opt12-interleaved-*`.
+Paired differences, refresh ordering, and capture-failure sensitivity are in
+`Build/v/instruction-opt12-comparison-evidence.json`. The control executable is
+`Build/v/Vox-opt12-control-bin`, SHA-256
+`4a541b1758823ec1a4e7c5ea92bdfaeedfad239fd08e03ee888b26a51176b8d3`.
+The candidate is `Build/v/Vox-opt12-gradient-bin`, SHA-256
+`08b4be2ad7096ffc589893e4582dac5a993c96d6a4f292f34a637be29ff2916b`.
+A focused native before/after viewport with linear/radial fill and stroke,
+linked/transformed gradients, mixed patterns, masks, and solid SVG paths is
+**pixel-exact**. Its fixture and log use
+`Build/v/instruction-opt12-gradient-{reference.html,visual.log}`; images are in
+`Build/comparisons/instruction-opt12-gradient/`.
+
+The control and candidate are separate normal C `-O2`, pointer-aware Boehm
+builds. Both V-generated C captures record no runtime source changes during
+generation. Their only four runtime source differences are this feature's
+transport, snapshot helpers, force-dark, and native consumer changes; no
+generated function substitutions are needed. The source manifests, native
+commands, and hashes use `Build/v/instruction-opt12-*`, including
+`instruction-opt12-matching-provenance.json`. Both comparison binaries load the
+frozen `Build/v/opt12-shared/libLadybirdVSkiaText.dylib` and the same immutable
+GitHub cache. GC and arena policy are unchanged.
+
+The measured saving crossed the next 5,000,000-instruction threshold. One
+broad batch passes **80 cases in each GC mode** (31 CSS, 10 SVG, 39 layout)
+and **19 viewport comparisons**, with 16 pixel-exact. The three remaining
+comparisons use the existing tolerances for `inline-node`, `text-decorations`,
+and `canvas-text`; all four SVG mutation cases remain exact. Results are in
+`Build/v/instruction-opt12-validation-result.json`, the `instruction-opt12-broad-*`
+and `instruction-opt12-screenshots.log` logs, and
+`Build/comparisons/instruction-opt12-batch/`. The new performance broad baseline
+is `df931f85` at **36,159,520,428** first-frame instructions. Additional savings
+since the completed batch reset to zero.
+
+The signed canonical `Build/v/Vox.app` contains this candidate's code and passes
+startup smoke and strict signature verification. Runtime source hashes still
+match the captured candidate; later commits changed independent test fixtures.
+Bundle signing changes the executable hash to
+`e334eba8eec2344722c4bcdd1b7095ff31ac40d9ae7ea79b4bc009cb8bbdee31`;
+the saved standalone comparison binary above retains its measured bytes.
+Evidence uses `Build/v/instruction-opt12-bundle-{result.json,smoke.log,signature.log}`.
+
+The remaining candidate checkpoint medians include **11.004 billion**
+instructions in formatting-context intervals, **8.572 billion** in box-building
+intervals, and **4.551 billion** in stylesheet installation. These are adjacent
+checkpoint deltas before first paint, summed by label per run and then median,
+not function self costs or additional costs to add to the overlapping native
+scopes. They are recorded in `Build/v/instruction-opt12-remaining-checkpoints.json`
+to guide the next profiling pass. Chrome functionality and instruction parity
+remain unestablished.
+
 ## Causes and changes
 
 - The V 0.5.2 compatibility compiler's `-prod` Boehm code repeatedly snapshots

@@ -1358,10 +1358,10 @@ evidence](docs/translation-audit/NATIVE_MEDIA_WHEEL_RAW_HANDLER.md).
   broad verification. Compare the same benchmark endpoint and workload, record
   the measured baseline and accumulated savings, and do not run broad suites
   for every individual fix below that threshold.
-  The latest performance broad batch is shared background snapshots `63b148e1`:
-  61 selected CSS/SVG/layout cases passed in both GC modes and 19 screenshot
+  The latest performance broad batch is shared SVG gradient snapshots `df931f85`:
+  80 selected CSS/SVG/layout cases passed in both GC modes and 19 screenshot
   comparisons passed (16 pixel-exact). Its matching-snapshot GitHub first-frame
-  median is 36,743,307,516.5 instructions, with zero additional savings accumulated
+  median is 36,159,520,428 instructions, with zero additional savings accumulated
   since this batch; see `docs/GITHUB_PERFORMANCE.md` for the comparison and limits.
 - Outside instruction-count optimization, run broad regression suites once per
   ten completed fixes, not after every fix.
