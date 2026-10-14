@@ -1637,3 +1637,13 @@ credit is claimed. Four current files and two exact main gates are
 authenticated through retained snapshots, with no full-current/foreign-main
 credit. Batch: 9/10 after aa6f0246; production and broad suites remain
 deferred. See [evidence](docs/translation-audit/NATIVE_MEDIA_LOADSTART_RAW_HANDLER.md).
+
+Native compact media raw loadstart scoped inventory (`b4a325cb`,
+2026-10-14 UTC): Five owned browser/root paths are excluded under the sealed
+78-owner rules. Feature/actual-parent byte and physical-LF accounting adds
+zero assigned DOM files, implementation lines or test lines. Counter:
+`Build/audit-fixes/native-media-loadstart-raw-handler-inventory-scoped-v1.json` (SHA256 `8b35cc3810a833155a918c22a226234024c7fe191a877e12e332e94ae8a9b864`).
+Global tables, pins, mappings and historical ledgers stay preserved;
+accounting adds no behavioral or test credit. Batch remains 9/10 after
+aa6f0246, since this independent documentation commit is not another
+translation fix. See [evidence](docs/translation-audit/NATIVE_MEDIA_LOADSTART_RAW_HANDLER.md).
