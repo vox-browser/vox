@@ -5706,6 +5706,60 @@ and endpoint accounting remain open; no faster-than-Chrome claim is made.
 Evidence: `Build/instructions/vox-opt60-interleaved-*` and
 `Build/v/instruction-opt60-*`.
 
+## Hardware diagnostic: layout and text shaping after round 60
+
+A separate diagnostic wraps eight frozen 60 C-O2 layout/shaping entries. It
+records all owner-thread entries, but hardware snapshots surround only the
+outermost call of each same function. Tracking begins at the first navigation
+and stops at `navigation_to_first_document_paint[0]`. Different functions overlap;
+process-wide counters include charged worker work and instrumentation effects.
+**Do not sum scopes, infer self-cost, subtract them from normal medians, or award
+page credit.** Entry counts describe repeated/nested work, not CPU savings.
+
+| Function | All entries | Outermost scopes | Inclusive retired instructions |
+| --- | ---: | ---: | ---: |
+| `layout__run_flex_formatting_context_with_mode` | 9,116 | 452 | 6,381,974,558 |
+| `layout__layout_viewport` | 2 | 2 | 6,031,631,665 |
+| `layout__run_inline_formatting_context_internal` | 44,526 | 36,932 | 5,161,505,762 |
+| `layout__InlineLevelIterator__static__new` | 44,526 | 39,846 | 2,482,012,085 |
+| `layout__run_grid_formatting_context` | 284 | 284 | 924,959,239 |
+| `layout__run_table_formatting_context` | 392 | 392 | 765,940,407 |
+| `platform__shape_text_with_spacing` | 9,334 | 9,334 | 223,530,296 |
+| `platform__shape_text_uncached` | 1,540 | 1,540 | 40,452,402 |
+
+All depths return to 0 at the frame boundary; counter failures: 0. The diagnostic
+makes the repeated inline-construction work visible: 44,526 complete iterator
+entries. Its constructor remains byte-identical in current Root and frozen 60
+at inspection time. This supports investigating that implementation next; the
+inclusive totals alone do not identify its internal cost or justify caching.
+
+Native compilation, signing, startup, frozen-library smoke, observer and browser
+all actually exit 0. There is one completed primary and 1024×768 viewport PNG,
+with no startup retry or recovery. Its **instrumented** first-frame count is
+**20,364,399,872**, receiving
+**0 performance credit**. First-frame preparation remains 1 install/2 geometry/
+1 paint. The child-only placement helper follows the updated test policy;
+actual placement succeeds and the foreground app is preserved. The copied
+observer adds only that browser environment and an explicit repository root;
+undoing those additions restores the original observer functions exactly.
+
+The independent audit reconstructs every wrapper from a narrow counter/forward
+specification, checks the unchanged renamed original body, and restores the
+complete generated C byte-for-byte to frozen 60. All 120 native input hashes and
+exact native arguments are retained. Original resources, layouts, GC policy and
+algorithms stay unchanged. Boehm/default marker 1 and the same 4 GiB hint remain;
+independent current-Root memory/UI/native work is excluded. Compiled diagnostic
+C SHA256: `7e8129ef52df17ae6b0210870085a798eda3e5ebc08e74b8b4ed583a295c0df1`; durable gzip SHA256:
+`e1e01e3dbbdae6111494ea26921c0851357453cdc302d366a22a5e535a2e4fcf`. Binary SHA256: `cd4163f5567499a8478c0521058868ba19b2d99abc26731d4cbf606cd7254966`.
+Patch SHA256: `98d650b58c37d61af231fa1e5381899aa9d0d1f75812158f32a638585485b878`. Proof, actual exits, copied-observer
+and placement hashes, retained raw report and screenshot are under
+`Build/v/instruction-hotspots61-*` and
+`Build/instructions/vox-hotspots61-diagnostic.run-1.*`.
+
+No implementation or ledger baseline changes arise from this diagnostic. Broad
+baseline stays round 60 (`89f28a48`), with additional observed savings 0. The
+canonical app and user GUI remain untouched. Chrome parity remains open.
+
 ## Causes and changes
 
 - The V 0.5.2 compatibility compiler's `-prod` Boehm code repeatedly snapshots
