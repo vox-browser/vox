@@ -7105,6 +7105,117 @@ regression or performance credit. Equivalent Chrome content/start/submission
 accounting remains open; faster-than-Chrome performance is unproven. Evidence:
 `Build/instructions/vox-opt74-interleaved-*` and `Build/v/instruction-opt74-*`.
 
+## Allocate retained geometry in stable scanned chunks
+
+This integration imports only the three exact source hunks of independently
+authored feature `46ee6c14` (Alexander Medvednikov). Committed geometry
+uses stable slots in GC-scanned chunks through a private retained arena. The
+existing measurement allocator initializes each slot with the same UsedValues
+defaults. Measurement probes keep their separate arena and explicit release;
+committed chunks remain GC-owned because pointers can escape to paintables.
+The store gains a nil retained-arena pointer and a private wrapper record.
+UsedValues layout, measurement allocation/release, filtering, public APIs and
+GC policy are unchanged. Contemporary Root and unrelated changes are excluded.
+
+Before/final Boehm and final no-GC C-O2 each pass **20,085
+assertions in 19 cases** (18 functional and an inactive diagnostic), using the
+identical common source SHA256 `77340d562968c2398cad8acae0585748647add17e83d06918d31747113332dea`.
+Coverage includes sparse pages, box edges and constraints, collapsed borders,
+containing blocks, copied probe geometry, complete slot defaults, stable
+addresses through growth, nested line boxes/rare grid data, escaped interior
+pointers surviving collections after their store returns, and measurement
+release isolation. The original three imported tests retain every semantic
+assertion in the common source; only three new private representation checks
+are excluded because the old control has no retained-arena field. A separate
+immutable candidate snapshot runs those original tests byte-for-byte in both
+GC modes: **2,356 assertions each**.
+Root sources and concurrent edits are preserved.
+
+Three predeclared alternating local pairs count **256 complete public geometry
+batches over 256 retained nodes**: LayoutState construction, get_mutable
+initialization, content sizes/offsets/edges, rare grid and line-box writes,
+try_get, derived geometry and checksum reads. Setup, eight warmups, expected
+result and forced GC precede the hardware interval; assertion follows it.
+Before: 130,517,994 / 130,776,827 / 130,351,907. Candidate by pair: 124,290,779 / 124,155,326 / 124,170,756.
+Median **130,517,994→124,170,756
+(-4.86%)**; checksum **1,251,401,728**
+in all six actual zero exits. This local result receives no page credit.
+
+Both full-process C-O1/Boehm profiles actually pass without filter/reset:
+
+| Function | Before calls | Candidate calls |
+| --- | ---: | ---: |
+| `layout__opt75_complete_committed_geometry` | 265 | 265 |
+| `layout__LayoutState__static__new` | 274 | 274 |
+| `layout__LayoutState_get_mutable` | 67,855 | 67,855 |
+| `layout__LayoutState_try_get` | 67,848 | 67,848 |
+| `layout__UsedValuesPagedStore_allocate` | 68,660 | 68,660 |
+| `layout__MeasurementUsedValuesArena_allocate` | 599 | 68,742 |
+| `layout__MeasurementUsedValuesArena_release` | 7 | 7 |
+
+These are call counts, not hardware instruction savings. Complete batches,
+public state creation/get/try_get, store allocations and measurement releases
+match. Calls to the existing measurement allocator increase because it now
+also supplies committed slots. Original outputs, actual exits and generated-C
+proof of full-process scope are durable.
+
+Strict C audit permits the store allocator, two constructor nil-default
+insertions, a private retained arena record/typedef and the store pointer field.
+All three normal before/final targets match independently generated focused C
+byte-for-byte. Both constructors differ only by the new nil field default;
+the allocator's page setup, measurement branch and published page entry are
+unchanged. The committed branch creates the holder lazily and calls the exact
+existing scanned allocator. All other C, including UsedValues layout and the
+measurement allocator/release, resources, filtering and GC policy match after
+established compiler identities, unchanged assertion-line mapping, 37 frozen
+includes and four byte-identical helper reorderings. Exact native arguments
+and all 120 pinned inputs match. C SHA256 `16e600cd8872155f700bdd9b0a1562775927178e2c2ba8cfa305962efbf77436`;
+durable normal, focused, contract and profile archives are listed in
+`instruction-opt75-artifact-archives.json`. Compiler scratch is durable SSD;
+fresh benchmark cache copies retain the same RAM medium.
+
+The predeclared page cohort is **30 alternating pairs**, odd before/final,
+even final/before, **30,000 paired bootstrap resamples, seed 75**. Both regular
+persisted binaries use fresh copies of the same 359 cached bodies, frozen text
+and child-only placement helpers, C-O2/Boehm/one marker and unchanged 4 GiB
+hint; no prod/prealloc. Fixed document viewport 1024×768 and endpoint
+`navigation_to_first_document_paint[0]`; no historical or Root comparison.
+
+| Build | Median first-frame retired instructions | Median lifetime process peak, MiB |
+| --- | ---: | ---: |
+| Fresh accepted frozen74 control | 18,150,124,879.5 | 3,627.2 |
+| Stable retained geometry | 18,150,904,184 | 3,627.8 |
+
+Difference of marginal medians: **-779,304.5** instructions
+saved (+0.004% change), **12/30** wins.
+Paired median saving **-3,032,812**, paired 95% interval
+**[-14,174,114, 7,072,008.5]**. The interval includes zero; repeatable page credit is **0**. Whole-page savings are not established.
+
+All 60 primary observations and **60 actual PNGs** remain. Recovered
+primaries: none; pre-parse retries: 0. First primaries
+retain 1 installation/2 geometry preparations/1 paint. Later completed refreshes
+remain separate: none. No completed primary is extended,
+discarded or rerun. Recoveries disclose unknown final exit and missing PNG,
+fingerprint and peak. Peaks cover capture/exit and later refreshes, not
+first-frame live memory, and are never summed. The read-only decoded capture check finds 30 before and 29 candidate RGB classes, 2 shared. All differences stay within the original skeleton bands, x45–662: y335–344 and ten 14px bands starting at380 with41px spacing. All pixels outside these bands match. No animation was disabled and no observation repeated; evidence is instruction-opt75-page-pixel-class-check.json.
+The first detached read-only pixel checker started before its observation adapter
+was copied and failed during import. Its log is preserved under
+`instruction-opt75-pixel-checker-startup-failure`; its actual final process exit
+was not captured. After the adapter became available, the read-only check
+actually exited 0. No capture or primary observation was repeated.
+The focused grid/flex/table, Unicode and intrinsic geometry viewport is
+pixel-exact at 1024×768.
+Prior observed carry is 0. Cumulative observed saving **0** stays below the 5M gate. Broad validation is deferred and the accepted round74 broad baseline remains.
+
+The isolated signed app is `/Users/alex/code/vox2/Build/v/Vox-opt75.app`; native instruction text
+matches the measured executable, with the frozen helper pinned inside the
+bundle and its actual default loaded path/hash checked. Signatures, startup
+and actual GC collections pass with default marker 1 and override 2. Canonical
+app and user GUI remain preserved; contemporary Root has no extra source,
+regression or performance credit. Equivalent Chrome content/start/submission
+accounting remains open; faster-than-Chrome performance is unproven. Evidence:
+`Build/instructions/vox-opt75-interleaved-*` and `Build/v/instruction-opt75-*`.
+
 ## Causes and changes
 
 - The V 0.5.2 compatibility compiler's `-prod` Boehm code repeatedly snapshots

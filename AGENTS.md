@@ -1680,6 +1680,16 @@ evidence](docs/translation-audit/NATIVE_MEDIA_WHEEL_RAW_HANDLER.md).
   focused chunk viewport exact. Additional observed savings: 0.
   Same 4 GiB/placement; canonical/GUI preserved; contemporary Root excluded.
   Chrome parity remains open.
+  Stable scanned retained geometry `46ee6c14` (independent committed slice)
+  passes 20,085 common assertions in 19 cases per configuration,
+  plus 3 private candidate cases/2,356 assertions both GC.
+  Complete public geometry batches use 4.86% fewer instructions.
+  Page point saving -779,304.5, 12/30 wins,
+  paired interval [-14,174,114, 7,072,008.5]; repeatable credit 0.
+  Broad verification: deferred below cumulative 5M gate;
+  focused geometry viewport exact. Additional observed savings: 0.
+  Same 4 GiB/placement; canonical/GUI preserved; contemporary Root excluded.
+  Chrome parity remains open.
 - Outside instruction-count optimization, run broad regression suites once per
   ten completed fixes, not after every fix.
   Broad suites include full translation/package test batches, the full LibJS AST
