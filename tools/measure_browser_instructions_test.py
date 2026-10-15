@@ -97,6 +97,34 @@ class ChromeDirectLaunchTests(unittest.TestCase):
                          ['Browser.getVersion', 'Page.enable', 'Runtime.enable',
                           'Emulation.setDeviceMetricsOverride'])
 
+    def test_disabled_author_scripts_are_installed_during_blank_setup(self):
+        args = self.args('/scratch', direct=False)
+        args.chrome_disable_javascript = True
+        client = Mock()
+        measurement.prepare_chrome_target(client, args)
+        calls = client.call.call_args_list
+        self.assertEqual(calls[-1].args,
+                         ('Emulation.setScriptExecutionDisabled', {'value': True}))
+        self.assertLess([c.args[0] for c in calls].index('Emulation.setDeviceMetricsOverride'),
+                        [c.args[0] for c in calls].index('Emulation.setScriptExecutionDisabled'))
+        self.assertNotIn('Page.navigate', [c.args[0] for c in calls])
+
+    def test_disabled_author_scripts_reject_direct_launch_before_process_start(self):
+        args = self.args('/scratch')
+        args.chrome_disable_javascript = True
+        with self.assertRaisesRegex(ValueError, 'policy precedes navigation'):
+            measurement.chrome_launch_command(args, args.binary, '/fresh-profile')
+
+    def test_cli_rejects_javascript_policy_without_chrome_blank_launch(self):
+        for options in [[], ['--engine', 'chrome', '--chrome-launch-mode', 'direct',
+                             '--chrome-outer-window-height', '911']]:
+            with self.subTest(options=options):
+                result = subprocess.run([sys.executable, str(Path(measurement.__file__)),
+                                         '--chrome-disable-javascript', *options],
+                                        capture_output=True, text=True)
+                self.assertEqual(result.returncode, 2)
+                self.assertIn('policy precedes navigation', result.stderr)
+
     def test_direct_viewport_guard_rejects_browser_chrome_height_and_retina_scale(self):
         args = self.args('/scratch')
         measurement.validate_direct_chrome_viewport(args, {'width': 1024, 'height': 768, 'scale': 1})

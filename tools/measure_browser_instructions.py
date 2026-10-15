@@ -37,6 +37,9 @@ def fingerprint_files(paths):
 
 
 def chrome_launch_command(args, binary, profile):
+    if (getattr(args, "chrome_disable_javascript", False)
+            and getattr(args, "chrome_launch_mode", "blank") == "direct"):
+        raise ValueError("Disabling Chrome author JavaScript requires blank launch so the policy precedes navigation")
     command = [str(binary), "--headless=new", "--no-first-run", "--no-default-browser-check",
                "--disable-background-networking", "--remote-debugging-port=0",
                f"--user-data-dir={profile}"]
@@ -55,6 +58,8 @@ def prepare_chrome_target(client, args):
     client.call("Runtime.enable")
     client.call("Emulation.setDeviceMetricsOverride", {
         "width": args.width, "height": args.height, "deviceScaleFactor": 1, "mobile": False})
+    if getattr(args, "chrome_disable_javascript", False):
+        client.call("Emulation.setScriptExecutionDisabled", {"value": True})
     return version
 
 
@@ -385,6 +390,9 @@ def run_chrome(args, prefix, api):
                                   url=args.url, viewport=[args.width, args.height],
                                   command=command,
                                   chrome_launch_mode="direct" if direct else "blank",
+                                  author_javascript_enabled=not getattr(args, "chrome_disable_javascript", False),
+                                  author_javascript_policy=("disabled by CDP before Page.navigate; observer Runtime.evaluate remains enabled"
+                                      if getattr(args, "chrome_disable_javascript", False) else "browser default"),
                                   process_launch_to_capture_observed_ms=(endpoint_at - launched_at) * 1000,
                                   final_sample_precedes_capture_ms=(endpoint_at - endpoint_snapshot.sampled_at) * 1000,
                                   endpoint_note="observed counters from the last complete sampling pass before screenshot response; omit subsequent audit and browser shutdown",
@@ -420,6 +428,8 @@ def main():
     parser.add_argument("--scratch-dir", type=Path)
     parser.add_argument("--chrome-launch-mode", choices=["blank", "direct"], default="blank",
                         help="blank preserves historical CDP setup/navigation; direct launches the URL without resizing or navigating")
+    parser.add_argument("--chrome-disable-javascript", action="store_true",
+                        help="Chrome blank launch only: disable author script execution before navigation; observer CDP evaluation remains enabled")
     parser.add_argument("--chrome-outer-window-height", type=int,
                         help="direct mode: calibrated initial outer height yielding the requested document viewport")
     parser.add_argument("--sample-interval", type=float, default=.005,
@@ -437,6 +447,8 @@ def main():
         parser.error("repeat, dimensions, and watchdog must be positive")
     if args.vox_arg and args.engine != "vox":
         parser.error("--vox-arg requires engine vox")
+    if args.chrome_disable_javascript and (args.engine != "chrome" or args.chrome_launch_mode != "blank"):
+        parser.error("--chrome-disable-javascript requires engine chrome and blank launch so the policy precedes navigation")
     if args.chrome_launch_mode == "direct":
         if args.engine != "chrome" or not args.chrome_outer_window_height or args.chrome_outer_window_height <= 0:
             parser.error("direct launch requires engine chrome and a positive --chrome-outer-window-height")
