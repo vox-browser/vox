@@ -2610,6 +2610,13 @@ pub fn (mut e Element) run_attribute_change_steps(local_name string, old_value ?
 			hook(track, local_name, value)
 		}
 	}
+	if namespace_ == none && e.is_html_element() && e.local_name() == 'video'
+		&& local_name == 'poster' {
+		video := unsafe { &HTMLVideoElement(&e) }
+		if hook := video.video_poster_attribute_changed_hook_ {
+			hook(video, value)
+		}
+	}
 	if !option_string_equal(old_value, value) {
 		e.invalidate_style_after_attribute_change(local_name, old_value, value)
 	}

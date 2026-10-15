@@ -34,14 +34,10 @@ fn vpd_install_fetch(mut video HTMLVideoElementModel, observed &VpdObservation) 
 }
 
 fn vpd_change_poster(mut element dom.Element, value string) {
-	old := element.get_attribute_ns(none, 'poster')
 	element.set_attribute_value('poster', value)
-	// Exercise the existing concrete hook; automatic forwarding is a separate slice.
-	html_video_element_attribute_changed(unsafe { &dom.HTMLVideoElement(&element) },
-		'poster', old, value, none)
 }
 
-fn test_video_poster_uses_adopted_owner_document_base_through_concrete_attribute_hook() {
+fn test_video_poster_uses_adopted_owner_document_base_through_live_attribute() {
 	mut original := vpd_document('https://poster-old.example/root/page.html',
 		'<!doctype html><base href="https://old-cdn.example/assets/"><video id="video"></video>')!
 	mut destination := vpd_document('https://poster-new.example/next/page.html',

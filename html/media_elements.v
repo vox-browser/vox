@@ -72,6 +72,7 @@ pub fn html_video_element_model_for_dom_element(element &dom.HTMLVideoElement) &
 	model := HTMLVideoElementModel.create(media, dom_element.document().base_url())
 	mut mutable_element := unsafe { &dom.HTMLVideoElement(element) }
 	mutable_element.video_element_model_ = model
+	mutable_element.video_poster_attribute_changed_hook_ = html_video_element_poster_attribute_changed
 	return model
 }
 
@@ -79,9 +80,13 @@ pub fn html_video_element_attribute_changed(element &dom.HTMLVideoElement, name 
 	mut dom_element := unsafe { &dom.Element(element) }
 	dom_element.attribute_changed(name, old_value, value, namespace_)
 	if namespace_ == none && name == 'poster' {
-		mut video := html_video_element_model_for_dom_element(element)
-		video.set_poster(value)
+		html_video_element_poster_attribute_changed(element, value)
 	}
+}
+
+fn html_video_element_poster_attribute_changed(element &dom.HTMLVideoElement, value ?string) {
+	mut video := html_video_element_model_for_dom_element(element)
+	video.set_poster(value)
 }
 
 pub fn (mut video HTMLVideoElementModel) set_poster_fetch_hook(hook ?PosterFrameFetchHook) {
