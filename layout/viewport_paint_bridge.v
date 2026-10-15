@@ -2032,6 +2032,164 @@ fn replay_cached_paint_commands_with_visual_context(steps []CompatibilityPaintSt
 	return commands, layer_steps
 }
 
+// Source commands stay in their retained phase buckets until the final display
+// list is materialized. Keeping this plan compact avoids a second full-width
+// command vector on every animation or scroll repaint.
+struct CompatibilityCachedVisualReplayStep {
+	command       &PaintCommand = unsafe { nil }
+	box           &BlockBox = unsafe { nil }
+	context_index int
+	layer_list    &PaintVisualLayerList = unsafe { nil }
+}
+
+fn cached_visual_replay_command_count(steps []CompatibilityCachedVisualReplayStep) int {
+	mut count := 0
+	mut previous := unsafe { &PaintVisualLayerList(nil) }
+	for step in steps {
+		desired := step.layer_list
+		previous_count := if previous != unsafe { nil } { previous.items.len } else { 0 }
+		desired_count := if desired != unsafe { nil } { desired.items.len } else { 0 }
+		mut common := 0
+		for common < previous_count && common < desired_count
+			&& previous.items[common].kind == desired.items[common].kind
+			&& previous.items[common].scope_id == desired.items[common].scope_id {
+			common++
+		}
+		count += previous_count + desired_count - common * 2
+		if step.command != unsafe { nil } { count++ }
+		previous = desired
+	}
+	return count + if previous != unsafe { nil } { previous.items.len } else { 0 }
+}
+
+fn record_cached_paint_commands_with_visual_context(steps []CompatibilityPaintStep,
+	phase_commands [][]PaintCommand, command_count int, tree painting.AccumulatedVisualContextTree,
+	snapshot painting.ScrollStateSnapshot, show_line_box_borders bool) []PaintCommand {
+	mut contexts := map[int]CompatibilityFlattenedVisualContext{}
+	mut plan := []CompatibilityCachedVisualReplayStep{cap: command_count}
+	for step in steps {
+		if step.entry_index < 0 { continue }
+		default_context_index := if step.phase == .foreground && step.box.paintable_with_lines {
+			step.box.accumulated_visual_context_for_descendants_idx
+		} else {
+			step.box.accumulated_visual_context_index
+		}
+		bucket := step.entry_index * compatibility_paint_phase_count + int(step.phase)
+		for index in 0 .. phase_commands[bucket].len {
+			cached := unsafe { &phase_commands[bucket][index] }
+			context_index := cached.visual_context_index or { default_context_index }
+			context := if existing := contexts[context_index] {
+				existing
+			} else {
+				flattened := flatten_compatibility_visual_context(tree, context_index, snapshot)
+				contexts[context_index] = flattened
+				flattened
+			}
+			if context.backface_culled { continue }
+			plan << CompatibilityCachedVisualReplayStep{
+				command: if cached.line_box_debug && !show_line_box_borders { unsafe { &PaintCommand(nil) } } else { cached }
+				box: step.box
+				context_index: context_index
+				layer_list: context.layer_list
+			}
+		}
+	}
+
+	// The only wide vector is fresh, exact-sized output. Published display lists
+	// and cached phase commands remain immutable, including their shared clips.
+	mut result := []PaintCommand{cap: cached_visual_replay_command_count(plan)}
+	mut active := []PaintVisualLayer{}
+	for step in plan {
+		context := contexts[step.context_index] or { panic('missing replay visual context') }
+		desired := if step.layer_list != unsafe { nil } {
+			step.layer_list.items
+		} else {
+			[]PaintVisualLayer{}
+		}
+		mut common := 0
+		for common < active.len && common < desired.len
+			&& active[common].kind == desired[common].kind
+			&& active[common].scope_id == desired[common].scope_id {
+			common++
+		}
+		for index := active.len - 1; index >= common; index-- {
+			result << PaintCommand{
+				kind: compatibility_end_visual_layer_kind(active[index])
+				visual_layer_data: &PaintVisualLayer{ ...active[index] }
+			}
+		}
+		active.trim(common)
+		for index := common; index < desired.len; index++ {
+			layer_clip := desired[index].clip_rect or { LayoutRect{} }
+			result << PaintCommand{
+				kind: compatibility_begin_visual_layer_kind(desired[index])
+				visual_layer_data: &PaintVisualLayer{ ...desired[index] }
+				has_clip: desired[index].clip_rect != none
+				clip_x: layer_clip.x
+				clip_y: layer_clip.y
+				clip_width: layer_clip.width
+				clip_height: layer_clip.height
+				transform: context.transform
+				fixed_to_viewport: step.box.fixed_to_viewport
+			}
+			active << desired[index]
+		}
+		if step.command == unsafe { nil } { continue }
+		mut command := *step.command
+		command.transform = context.transform
+		command.fixed_to_viewport = step.box.fixed_to_viewport
+		if recording_clip := command.recording_clip {
+			mapped_recording_clip := compatibility_affine_map_rect(context.transform, recording_clip)
+			mut clips := []PaintClip{}
+			if context.clip_list != unsafe { nil } { clips << context.clip_list.items }
+			clips << PaintClip{rect: recording_clip, transform: context.transform}
+			command.has_clip = true
+			command.clip_list = &PaintClipList{items: clips}
+			combined_clip := if context.has_clip {
+				compatibility_intersect_rects(context.clip, mapped_recording_clip)
+			} else {
+				mapped_recording_clip
+			}
+			command.clip_x = combined_clip.x
+			command.clip_y = combined_clip.y
+			command.clip_width = combined_clip.width
+			command.clip_height = combined_clip.height
+		} else {
+			command.has_clip = context.has_clip
+			command.clip_list = context.clip_list
+			if context.has_clip {
+				command.clip_x = context.clip.x
+				command.clip_y = context.clip.y
+				command.clip_width = context.clip.width
+				command.clip_height = context.clip.height
+			}
+		}
+		command.group_opacity = context.group_opacity
+		apply_live_scrollbar_offset(mut command, step.box)
+		apply_live_background_offsets(mut command, step.box)
+		if command.clip_list != unsafe { nil } && desired.any(it.kind == .svg_mask) {
+			mut ordinary_clips := []PaintClip{}
+			for clip in command.clip_list.items {
+				if !paint_clip_is_svg_layer_mask(clip) { ordinary_clips << clip }
+			}
+			command.clip_list = if ordinary_clips.len > 0 {
+				&PaintClipList{items: ordinary_clips}
+			} else {
+				unsafe { &PaintClipList(nil) }
+			}
+		}
+		command.visual_layer_list = unsafe { nil }
+		result << command
+	}
+	for index := active.len - 1; index >= 0; index-- {
+		result << PaintCommand{
+			kind: compatibility_end_visual_layer_kind(active[index])
+			visual_layer_data: &PaintVisualLayer{ ...active[index] }
+		}
+	}
+	return result
+}
+
 fn viewport_record_display_list(target voidptr) &dom.DisplayList {
 	mut result := viewport_layout_result(target)
 	if result.display_list != unsafe { nil } && !result.needs_repaint {
@@ -2052,10 +2210,9 @@ fn viewport_record_display_list(target voidptr) &dom.DisplayList {
 	if model := html.NavigableModel.navigable_with_active_document(result.document) {
 		show_line_box_borders = model.should_show_line_box_borders()
 	}
-	replayed, layer_steps := replay_cached_paint_commands_with_visual_context(result.paint_steps,
+	mut commands := record_cached_paint_commands_with_visual_context(result.paint_steps,
 		result.paint_phase_commands, result.paint_phase_command_count, result.visual_context_tree,
 		snapshot, show_line_box_borders)
-	mut commands := lower_visual_replay_steps(replayed, layer_steps)
 	commands << result.paint_tree.paint_inspector_overlay(result.document, result.visual_context_tree,
 		snapshot)
 	if model := html.NavigableModel.navigable_with_active_document(result.document) {
