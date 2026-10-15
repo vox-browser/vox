@@ -4153,6 +4153,11 @@ pub mut:
 	has_completed_initial_paint_ bool
 	initial_paint_had_pending_fonts_ bool
 	environment_generation_ u64 = 1
+mut:
+	// Internal font computation only reads these valid empty maps. Public
+	// snapshot getters always construct their own independently mutable maps.
+	normal_variation_settings_ map[string]f64
+	normal_feature_settings_ map[string]u32
 }
 
 pub fn FontComputer.create() &FontComputer {

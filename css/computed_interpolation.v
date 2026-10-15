@@ -3929,6 +3929,10 @@ fn (c &ComputedProperties) copy_font_feature_settings_into(mut settings map[stri
 pub fn (c &ComputedProperties) font_feature_data() FontFeatureData {
 	mut settings := map[string]u32{}
 	c.copy_font_feature_settings_into(mut settings)
+	return c.font_feature_data_with_settings(settings)
+}
+
+fn (c &ComputedProperties) font_feature_data_with_settings(settings map[string]u32) FontFeatureData {
 	return FontFeatureData{
 		font_variant_alternates: c.font_variant_alternates()
 		font_variant_caps: c.font_variant_caps()
@@ -5720,7 +5724,7 @@ pub fn (mut c ComputedProperties) computed_font_list(font_computer &FontComputer
 		families << 'sans-serif'
 	}
 	mut mutable_font_computer := unsafe { &FontComputer(font_computer) }
-	font_list := mutable_font_computer.compute_font_for_style_values(families, c.font_size(), c.font_slope(), c.font_weight(), c.font_width(), c.font_optical_sizing(), c.font_variation_settings(), c.font_feature_data())
+	font_list := mutable_font_computer.compute_font_for_style_values(families, c.font_size(), c.font_slope(), c.font_weight(), c.font_width(), c.font_optical_sizing(), font_computer.variation_settings_for_computation(c), font_computer.feature_data_for_computation(c))
 	assert !font_list.is_empty()
 	c.cached_computed_font_list_ = font_list
 	c.cached_computed_font_list_generation_ = font_computer.environment_generation()
