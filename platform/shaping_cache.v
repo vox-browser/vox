@@ -95,11 +95,10 @@ fn (cache &ShapingCache) text_index(font_index int, text string) int {
 }
 
 fn single_ascii_cache_index(text string, params ShapeParams) int {
-	units := utf16_units_for_shaping(text)
-	if units.len == 1 && int(units[0]) < single_ascii_shape_cache_size
+	if text.len == 1 && int(text[0]) < single_ascii_shape_cache_size
 		&& params.text_type == .common && params.letter_spacing_bits & u32(0x7fff_ffff) == 0
 		&& params.word_spacing_bits & u32(0x7fff_ffff) == 0 {
-		return int(units[0])
+		return int(text[0])
 	}
 	return -1
 }
@@ -279,7 +278,8 @@ fn shaping_cache_font_key(font &Font) string {
 
 fn cached_shape_from(shaped ShapedText) CachedShape {
 	return CachedShape{
-		glyphs: shaped.glyph_run.glyphs().clone()
+		// store() owns the retained copy. This view stays local and read-only.
+		glyphs: shaped.glyph_run.glyphs()
 		face: shaped.glyph_run.face()
 		trailing_whitespace: shaped.trailing_whitespace
 	}
@@ -308,10 +308,27 @@ fn shape_text_cached(baseline_start_x f32, letter_spacing f32, word_spacing f32,
 	shaped := shape_text_uncached(0, letter_spacing, word_spacing, text, font, text_type)
 	shape := cached_shape_from(shaped)
 	cache.store(font_key, text, params, shape)
+	// The uncached run already owns its mutable glyph and playback storage.
+	// store() cloned the cache's glyphs, so this run can go directly to its caller.
+	if baseline_start_x == 0 {
+		return shaped
+	}
 	return shaped_text_with_baseline(shape, baseline_start_x, font, text_type)
 }
 
 // Width-only callers share the exact cache used by full glyph-run callers.
 pub fn shaped_text_width(letter_spacing f32, word_spacing f32, text string, font &Font, text_type GlyphRunTextType) f32 {
-	return shape_text_cached(0, letter_spacing, word_spacing, text, font, text_type).glyph_run.width()
+	font_key := shaping_cache_font_key(font)
+	params := ShapeParams.new(text_type, letter_spacing, word_spacing)
+	mut cache := shared_shaping_cache()
+	if shape := cache.lookup(font_key, text, params) {
+		mut width := f32(0)
+		for glyph in shape.glyphs {
+			width += glyph.advance
+		}
+		return width
+	}
+	shaped := shape_text_uncached(0, letter_spacing, word_spacing, text, font, text_type)
+	cache.store(font_key, text, params, cached_shape_from(shaped))
+	return shaped.glyph_run.width()
 }
