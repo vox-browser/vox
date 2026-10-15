@@ -283,6 +283,7 @@ struct PortableShadowImage {
 
 struct BrowserApp {
 mut:
+	paint_colors                        PaintColorCache
 	ctx                                 &gg.Context = unsafe { nil }
 	page_model                          &page.Page = unsafe { nil }
 	js_runtime                          &browserjs.Runtime = unsafe { nil }
@@ -4317,8 +4318,8 @@ fn (mut app BrowserApp) prepare_native_svg_layer_mask(clip layout.PaintClip, pag
 							continue
 						}
 						matrix := normalized_paint_transform(operation.transform)
-						fill := paint_color(operation.fill_color, operation.fill_opacity)
-						stroke := paint_color(operation.stroke_color, operation.stroke_opacity)
+						fill := app.paint_colors.color(operation.fill_color, operation.fill_opacity)
+						stroke := app.paint_colors.color(operation.stroke_color, operation.stroke_opacity)
 						if operation.fill_linear_gradient == none
 							&& operation.stroke_linear_gradient == none
 							&& operation.fill_radial_gradient == none
@@ -4907,7 +4908,7 @@ fn (mut app BrowserApp) draw_command(source_command layout.PaintCommand, page_x 
 			app.ctx.scissor_rect(0, 0, app.ctx.width, app.ctx.height)
 		}
 		'paint_outer_box_shadow' {
-			fill := paint_color(command.color, command.opacity)
+			fill := app.paint_colors.color(command.color, command.opacity)
 			$if macos {
 				if app.ctx.native_rendering {
 					shadow := command.corner_radii
@@ -4922,7 +4923,7 @@ fn (mut app BrowserApp) draw_command(source_command layout.PaintCommand, page_x 
 			app.draw_portable_shadow(command, page_x, page_y, scroll_y)
 		}
 		'paint_inner_box_shadow' {
-			fill := paint_color(command.color, command.opacity)
+			fill := app.paint_colors.color(command.color, command.opacity)
 			$if macos {
 				if app.ctx.native_rendering {
 					outer := command.corner_radii
@@ -4939,7 +4940,7 @@ fn (mut app BrowserApp) draw_command(source_command layout.PaintCommand, page_x 
 			app.draw_portable_shadow(command, page_x, page_y, scroll_y)
 		}
 		'fill_rect' {
-			fill := paint_color(command.color, command.opacity)
+			fill := app.paint_colors.color(command.color, command.opacity)
 			$if macos {
 				if app.ctx.native_rendering && !command.outer_shadow && command.radius > 0 {
 					used_radius := f32(clamp(command.radius, 0.0, math.min(command.width, command.height) / 2.0))
@@ -4975,7 +4976,7 @@ fn (mut app BrowserApp) draw_command(source_command layout.PaintCommand, page_x 
 			}
 		}
 		'fill_rounded_rect' {
-			fill := paint_color(command.color, command.opacity)
+			fill := app.paint_colors.color(command.color, command.opacity)
 			$if macos {
 				if app.ctx.native_rendering {
 					radii := command.corner_radii
@@ -4999,7 +5000,7 @@ fn (mut app BrowserApp) draw_command(source_command layout.PaintCommand, page_x 
 			}
 		}
 		'fill_inset_shadow' {
-			fill := paint_color(command.color, command.opacity)
+			fill := app.paint_colors.color(command.color, command.opacity)
 			base := command.blur + command.shadow_spread
 			left := f32(clamp(base - command.shadow_offset_x, 0.0, command.width))
 			right := f32(clamp(base + command.shadow_offset_x, 0.0, command.width))
@@ -5011,7 +5012,7 @@ fn (mut app BrowserApp) draw_command(source_command layout.PaintCommand, page_x 
 			if bottom > 0 { draw_srgb_rect(app.ctx, x, y + h - bottom, w, bottom, fill) }
 		}
 		'stroke_rounded_rect' {
-			stroke := paint_color(command.color, command.opacity)
+			stroke := app.paint_colors.color(command.color, command.opacity)
 			$if macos {
 				if app.ctx.native_rendering && command.points.len < 4 {
 					used_radius := f32(command.radius)
@@ -5053,7 +5054,7 @@ fn (mut app BrowserApp) draw_command(source_command layout.PaintCommand, page_x 
 			}
 		}
 		'fill_ellipse' {
-			fill := paint_color(command.color, command.opacity)
+			fill := app.paint_colors.color(command.color, command.opacity)
 			$if macos {
 				if app.ctx.native_rendering {
 					C.native_draw_ellipse_srgb(f32(command.x), f32(command.y), f32(command.width), f32(command.height), f32(matrix[0]), f32(matrix[1]), f32(matrix[2]), f32(matrix[3]), f32(matrix[4]), f32(matrix[5]), page_x, page_y, f32(scroll_y), f32(app.ctx.height), fill, 1, 0)
@@ -5074,7 +5075,7 @@ fn (mut app BrowserApp) draw_command(source_command layout.PaintCommand, page_x 
 			}
 		}
 		'stroke_ellipse' {
-			stroke := paint_color(command.color, command.opacity)
+			stroke := app.paint_colors.color(command.color, command.opacity)
 			$if macos {
 				if app.ctx.native_rendering {
 					C.native_draw_ellipse_srgb(f32(command.x), f32(command.y), f32(command.width), f32(command.height), f32(matrix[0]), f32(matrix[1]), f32(matrix[2]), f32(matrix[3]), f32(matrix[4]), f32(matrix[5]), page_x, page_y, f32(scroll_y), f32(app.ctx.height), stroke, 0, f32(command.stroke_width))
@@ -5087,7 +5088,7 @@ fn (mut app BrowserApp) draw_command(source_command layout.PaintCommand, page_x 
 			if command.points.len >= 4 {
 				from_x, from_y := paint_screen_point(command, command.points[0], command.points[1], page_x, page_y, scroll_y)
 				to_x, to_y := paint_screen_point(command, command.points[2], command.points[3], page_x, page_y, scroll_y)
-				line_color := paint_color(command.color, command.opacity)
+				line_color := app.paint_colors.color(command.color, command.opacity)
 				$if macos {
 					line_style := match command.line_style {
 						'dotted' { 1 }
@@ -5117,7 +5118,7 @@ fn (mut app BrowserApp) draw_command(source_command layout.PaintCommand, page_x 
 				points << point_y
 			}
 			if points.len >= 6 {
-				fill := paint_color(command.color, command.opacity)
+				fill := app.paint_colors.color(command.color, command.opacity)
 				$if macos {
 					if app.ctx.native_rendering {
 						unsafe {
@@ -5676,9 +5677,9 @@ fn (mut app BrowserApp) draw_command(source_command layout.PaintCommand, page_x 
 					} else {
 						[f64(0)]
 					}
-					fill := paint_color_with_retained(command.color, command.opacity * command.fill_opacity,
+					fill := app.paint_colors.color_with_retained(command.color, command.opacity * command.fill_opacity,
 						command.retained_svg_fill_color())
-					stroke := paint_color_with_retained(command.stroke_color, command.opacity * command.stroke_opacity,
+					stroke := app.paint_colors.color_with_retained(command.stroke_color, command.opacity * command.stroke_opacity,
 						command.retained_svg_stroke_color())
 					if command.svg_gradient_data == none && command.fill_pattern == none
 						&& command.stroke_pattern == none && !command.stroke_first {
@@ -5764,7 +5765,7 @@ fn (mut app BrowserApp) draw_command(source_command layout.PaintCommand, page_x 
 			if command.color.len > 0 {
 				for polygon in screen_polygons {
 					if polygon.len >= 6 {
-						draw_browser_polygon(app.ctx, polygon, paint_color_with_retained(command.color,
+						draw_browser_polygon(app.ctx, polygon, app.paint_colors.color_with_retained(command.color,
 							command.opacity * command.fill_opacity, command.retained_svg_fill_color()))
 					}
 				}
@@ -5772,7 +5773,7 @@ fn (mut app BrowserApp) draw_command(source_command layout.PaintCommand, page_x 
 			if command.stroke_color.len > 0 && screen_polygons.len > 0
 				&& screen_polygons[0].len >= 4 && command.stroke_width > 0 {
 				points := screen_polygons[0]
-				stroke := paint_color_with_retained(command.stroke_color, command.opacity * command.stroke_opacity,
+				stroke := app.paint_colors.color_with_retained(command.stroke_color, command.opacity * command.stroke_opacity,
 					command.retained_svg_stroke_color())
 				for index := 0; index + 3 < points.len; index += 2 {
 					draw_browser_line(app.ctx, points[index], points[index + 1], points[index + 2], points[index + 3], gg.PenConfig{
@@ -5787,7 +5788,7 @@ fn (mut app BrowserApp) draw_command(source_command layout.PaintCommand, page_x 
 				font_scale := math.sqrt(matrix[0] * matrix[0] + matrix[1] * matrix[1])
 				font_size := int(clamp(command.font_size * font_scale, 1.0, 256.0) + 0.5)
 				text_y := $if macos { native_text_draw_y(y, h) } $else { y }
-				text_color := paint_color(command.color, command.opacity)
+				text_color := app.paint_colors.color(command.color, command.opacity)
 				$if macos {
 					if app.ctx.native_rendering {
 						if native_draw_retained_glyph_run(command, page_x, page_y, scroll_y, f32(app.ctx.width), f32(app.ctx.height), text_color, 0, false) {
@@ -5813,7 +5814,7 @@ fn (mut app BrowserApp) draw_command(source_command layout.PaintCommand, page_x 
 				font_scale := math.sqrt(matrix[0] * matrix[0] + matrix[1] * matrix[1])
 				font_size := int(clamp(command.font_size * font_scale, 1.0, 256.0) + 0.5)
 				text_y := $if macos { native_text_draw_y(y, h) } $else { y }
-				shadow_color := paint_color(command.color, command.opacity)
+				shadow_color := app.paint_colors.color(command.color, command.opacity)
 				$if macos {
 					if app.ctx.native_rendering {
 						if native_draw_retained_glyph_run(command, page_x, page_y, scroll_y, f32(app.ctx.width), f32(app.ctx.height), shadow_color, f32(command.blur * font_scale), true) {
