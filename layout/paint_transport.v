@@ -2000,6 +2000,15 @@ fn (b &BlockBox) flat_paint_commands(entries []PaintOrderEntry) []PaintCommand {
 // Generate only the selected paintables when refreshing invalid cache entries.
 // An empty selector is the initial full-cache path.
 fn (b &BlockBox) flat_paint_commands_for_entries(entries []PaintOrderEntry, selected []bool) []PaintCommand {
+	mut recorder := PaintPhaseCommandRecorder{}
+	return b.record_paint_commands_for_entries(entries, selected, mut recorder)
+}
+
+// The flat compatibility API retains its complete vector. Retained painting
+// publishes one entry at a time instead: its temporary buffer is reused, and
+// no document-sized second copy needs to survive until cache construction ends.
+fn (b &BlockBox) record_paint_commands_for_entries(entries []PaintOrderEntry, selected []bool,
+	mut recorder PaintPhaseCommandRecorder) []PaintCommand {
 	mut commands := []PaintCommand{}
 	metrics := painting.new_chrome_metrics(1.0) or { return commands }
 	for entry_index, entry in entries {
@@ -2471,6 +2480,15 @@ fn (b &BlockBox) flat_paint_commands_for_entries(entries []PaintOrderEntry, sele
 		for command_index := overlay_start; command_index < overlay_end; command_index++ {
 			commands[command_index].paint_phase = .overlay
 		}
+		if recorder.phase_commands.len > 0 {
+			recorder.publish_commands(mut commands)
+		}
+	}
+	// A render-blocked nested viewport can leave commands from the beginning
+	// of its entry unclassified. Preserve the flat API's existing transport for
+	// that early exit, including when it is the final entry.
+	if recorder.phase_commands.len > 0 {
+		recorder.publish_commands(mut commands)
 	}
 	return commands
 }
@@ -2661,13 +2679,57 @@ fn (b &BlockBox) paint_commands_from_plan(entries []PaintOrderEntry, steps []Com
 // one bucket for every PaintPhase, populated by its first paint and reused by
 // later display-list recordings until paint-cache invalidation.
 fn (b &BlockBox) build_paint_phase_command_cache(entries []PaintOrderEntry) ([][]PaintCommand, int) {
-	flat_commands := b.flat_paint_commands(entries)
-	mut phase_commands := [][]PaintCommand{len: entries.len * compatibility_paint_phase_count}
-	for command in flat_commands {
-		bucket := command.paint_box_index * compatibility_paint_phase_count + int(command.paint_phase)
-		phase_commands[bucket] << command
+	mut recorder := new_paint_phase_command_recorder(entries.len)
+	b.record_paint_commands_for_entries(entries, []bool{}, mut recorder)
+	return recorder.phase_commands, recorder.command_count
+}
+
+struct PaintPhaseCommandRecorder {
+mut:
+	phase_commands  [][]PaintCommand
+	bucket_counts   []int
+	touched_buckets []int
+	command_count   int
+}
+
+fn new_paint_phase_command_recorder(entry_count int) PaintPhaseCommandRecorder {
+	bucket_count := entry_count * compatibility_paint_phase_count
+	return PaintPhaseCommandRecorder{
+		phase_commands: [][]PaintCommand{len: bucket_count}
+		bucket_counts: []int{len: bucket_count}
+		touched_buckets: []int{cap: compatibility_paint_phase_count}
 	}
-	return phase_commands, flat_commands.len
+}
+
+fn (mut recorder PaintPhaseCommandRecorder) publish_commands(mut commands []PaintCommand) {
+	// Count through references: PaintCommand contains wide optional payloads,
+	// and examining its phase must not copy one of those records.
+	for index in 0 .. commands.len {
+		command := unsafe { &commands[index] }
+		bucket := command.paint_box_index * compatibility_paint_phase_count + int(command.paint_phase)
+		if recorder.bucket_counts[bucket] == 0 {
+			recorder.touched_buckets << bucket
+		}
+		recorder.bucket_counts[bucket]++
+	}
+	for bucket in recorder.touched_buckets {
+		// Usually a bucket is written once. Keeping an existing prefix also
+		// preserves commands retained by the flat generator's early exits.
+		mut next := []PaintCommand{cap: recorder.phase_commands[bucket].len + recorder.bucket_counts[bucket]}
+		next << recorder.phase_commands[bucket]
+		recorder.phase_commands[bucket] = next
+	}
+	for index in 0 .. commands.len {
+		command := unsafe { &commands[index] }
+		bucket := command.paint_box_index * compatibility_paint_phase_count + int(command.paint_phase)
+		recorder.phase_commands[bucket] << *command
+	}
+	for bucket in recorder.touched_buckets {
+		recorder.bucket_counts[bucket] = 0
+	}
+	recorder.touched_buckets.clear()
+	recorder.command_count += commands.len
+	commands.clear()
 }
 
 // Regenerate only invalidated PaintableBox entries. This is the retained-cache
@@ -2685,17 +2747,20 @@ fn (b &BlockBox) refresh_paint_phase_command_cache(entries []PaintOrderEntry, mu
 	if !has_invalid_entry {
 		return 0
 	}
-	flat_commands := b.flat_paint_commands_for_entries(entries, selected)
-	for command in flat_commands {
-		bucket := command.paint_box_index * compatibility_paint_phase_count + int(command.paint_phase)
-		phase_commands[bucket] << command
+	mut recorder := PaintPhaseCommandRecorder{
+		phase_commands: unsafe { phase_commands }
+		bucket_counts: []int{len: phase_commands.len}
+		touched_buckets: []int{cap: compatibility_paint_phase_count}
 	}
+	// The owner has already cleared invalidated buckets. Valid bucket headers
+	// remain unchanged, while refreshed entries receive exact-sized storage.
+	b.record_paint_commands_for_entries(entries, selected, mut recorder)
 	for index in 0 .. entries.len {
 		if selected[index] {
 			entry_valid[index] = true
 		}
 	}
-	return flat_commands.len
+	return recorder.command_count
 }
 
 // StackingContext::paint_node() replays the cached phase vector at each step in
