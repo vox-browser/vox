@@ -4307,6 +4307,110 @@ credit from this cohort. Chrome parity remains unestablished.
 Evidence: `Build/instructions/vox-opt47-interleaved-*` and
 `Build/v/instruction-opt47-*`.
 
+## Reject the inside-layout predicate after paired regression
+
+Attempt `45645bb8` was **reverted by `4b471c1d`**.
+Only 9 of 30 pairs improve, and the entire paired interval is negative. The
+39.92% local saving does not carry to cached GitHub. Repeatable page credit is
+zero. All measurements below describe the retained rejected candidate, not the
+current implementation. The repository returns to round 47 with the same
+4 GiB heap hint; no completed primary is rerun or discarded.
+
+The rejected feature `45645bb8` added one private inside-layout dependency predicate for
+three existing queries in the row and column flex routines. The callers already
+hold used dimensions unchanged while promoting height definiteness. An eligible
+root's own percentages still use its unchanged parent basis; descendants that
+consume its newly definite height remain relevant. Eligibility is limited to
+horizontal, non-replaced, in-flow HTML flex containers. Unknown nodes, other
+namespaces, vertical modes, percentage gaps, aspect-ratio cases and independent
+length heights retain the conservative answer.
+
+The original subtree predicate and its cache remain unchanged. In particular,
+a node's cached dependency as a descendant is not overwritten with its different
+inside-layout answer. The new helper still queries that predicate for every
+relevant child. Existing dimension, definiteness and layout-mode guards choose
+reuse; no target-size computation or percentage resolution rule is replaced.
+
+The common harness passes **23,087 assertions across 23 cases** (22 functional
+plus an inactive diagnostic) in before/final Boehm and final no-GC C-O2 builds.
+It retains the previous focused checks and adds four cases for own percentage
+height/minimum/maximum constraints, genuine descendant percentages, changed
+stretch targets, and column descendant basis/baseline preservation. Retained
+geometry survives collection; the common source is identical in both variants.
+
+Three fixed alternating local pairs execute **512 complete normal contexts**,
+each containing an own-percentage-height item around six ordinary flex rows.
+Each call builds fresh measurement state, populates ancestors, runs normal flex
+layout and releases measurement storage inside the counter. Median retired
+instructions change from **161,970,652 to 97,316,297**
+(-39.92%), with all three improving and all six geometry
+checksums 9,175,040. Document setup, eight warmups, expected result and forced
+collection precede the counter; assertions follow it. This local result gets
+no separate page credit.
+
+Full-process C-O1/Boehm profiles run the complete common harness and active
+probe with no filter/reset. Complete probe calls remain
+**521** each. Flex-context calls fall
+**7,899 to 4,236**,
+and independent-child calls fall **8,481 to
+4,291**. Old subtree-predicate calls change
+**7,893 to 8,424**;
+the new helper is absent before and records **4,209**
+after. Call counts remain distinct from hardware instruction measurements.
+
+The strict C audit permits three callee replacements in two existing flex
+functions and one new helper/declaration. Removing those exact additions and
+masking only those two bodies leaves all remaining generated logic, layouts,
+resources, original subtree/cache code and GC setup identical after established
+compiler identities, exact assertion-line mapping and frozen include paths.
+Four helpers may reorder only with identical raw bodies. All 120 native inputs,
+37 quoted includes and native C-O2 arguments remain authenticated. An initial
+audit expected the declaration without its actual `VV_LOC` prefix; that failed
+audit and blocked dependent receipts are retained. Only the exact declaration
+spelling was corrected. No browser primary existed then; the unstarted cohort
+resumed after the strict audit passed, without rebuilding successful checks.
+Compiled C SHA256: `fc0afd6a7b0ce1754a100f76029a06b8d6a7e3a99de09bc1725b200e34279f26`.
+Archive hashes are in `instruction-opt48-artifact-archives.json`.
+
+The predeclared cohort fixes 30 alternating pairs, 30,000 paired bootstrap
+resamples and seed 48. Regular frozen round 47 and candidate binaries use the
+same 359-body cache, fresh copies, frozen helper, 1024×768 document viewport and
+`navigation_to_first_document_paint[0]`. Both retain the 4 GiB DOM-gated hint,
+enabled Boehm, one marker and no prod/prealloc; there is no capacity increase.
+
+| Build | Median first-frame retired instructions | Median process peak, MiB |
+| --- | ---: | ---: |
+| Frozen round 47 control | 19,041,048,266 | 3,725.3 |
+| Inside-layout height consumers | 19,024,212,478 | 3,723.6 |
+
+Observed matching median saving: **16,835,788** instructions
+(+0.088%). 9/30 pairs improve. Paired
+median saving is -5,482,367.5, with a 95% paired percentile
+interval of **-11,520,201 to -1,676,768**. Repeatable page credit is **0**,
+requiring a strictly positive lower bound. This interval estimates the paired
+median; the point saving is the difference of marginal medians. Memory is the
+root process's lifetime maximum through capture/exit, not just first paint.
+Missing peaks: before 0, final 0;
+process peaks are never summed.
+
+All 60 primaries remain, with 60 actual PNGs, 0 recovered
+post-primary counters and 0 archived pre-parse startup retries. No
+completed primary is rerun, discarded or extended. Each has one installation,
+two geometry preparations and one paint; 0 later
+refreshes are retained separately. Launch arrays and all cache/helper/binary
+hashes are authenticated.
+
+All six direct V harness jobs exit zero: CSS 31, SVG 10 and layout 46 in each GC mode, 174 case executions. All 19 screenshot comparisons pass, 16 exact; known differences remain inline-node 13, text-decorations 1,341 and canvas-text 1,994. The positive difference of marginal medians triggered the predeclared broad gate even though the paired interval rejects the feature. These passes belong to the rejected candidate and do not reset the shipping baseline, which remains round46 (`0c8030d5`). No new observed savings are accumulated for the reverted code.
+The focused own-constraint/descendant/stretch viewport is pixel-exact. Selected
+broad runtime is pinned separately from Root. The preserved signed rejected-candidate
+app is `/Users/alex/code/vox2/Build/v/Vox-opt48.app`. Signature, startup, matching native text and
+actual collections pass with default marker 1 and override 2. Canonical and GUI
+apps are preserved. Independent Root work receives no performance or regression
+credit. Chrome parity remains unestablished.
+
+Evidence: `Build/instructions/vox-opt48-interleaved-*` and
+`Build/v/instruction-opt48-*`.
+
 ## Causes and changes
 
 - The V 0.5.2 compatibility compiler's `-prod` Boehm code repeatedly snapshots
