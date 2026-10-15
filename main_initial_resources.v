@@ -4,8 +4,12 @@ import css
 import dom
 
 fn (mut app BrowserApp) preload_initial_document_resources(base_url string) map[string]PreloadedResource {
+	mut cached := app.resource_cache.clone()
+	for resource_url, resource in app.navigation_preloaded_resources {
+		cached[resource_url] = resource
+	}
 	if app.document.as_node().is_scripting_enabled() {
-		loaded := preload_document_resources(app.document, base_url, app.resource_cache)
+		loaded := preload_document_resources(app.document, base_url, cached)
 		app.js_messages << install_external_styles(app.document, base_url, loaded)
 		return loaded
 	}
@@ -20,7 +24,7 @@ fn (mut app BrowserApp) preload_initial_document_resources(base_url string) map[
 			style_urls << resource_url
 		}
 	}
-	mut loaded := preload_document_resource_urls(app.document, base_url, style_urls, app.resource_cache)
+	mut loaded := preload_document_resource_urls(app.document, base_url, style_urls, cached)
 	app.js_messages << install_external_styles(app.document, base_url, loaded)
 	// Media queries and author overrides must participate in the same cascade
 	// used by layout before deciding whether an image has a display box.
@@ -32,12 +36,16 @@ fn (mut app BrowserApp) preload_initial_document_resources(base_url string) map[
 	css.sync_document_style_elements(app.document)
 	foreground, background := partition_nonrendered_image_preloads(app.document, base_url, image_urls)
 	for resource_url in background {
+		if resource := app.navigation_preloaded_resources[resource_url] {
+			loaded[resource_url] = resource
+			continue
+		}
 		app.request_background_resource(resource_url)
 		if resource_url in app.background_resource_pending {
 			app.nonrendered_image_preloads[resource_url] = true
 		}
 	}
-	for resource_url, resource in preload_document_resource_urls(app.document, base_url, foreground, app.resource_cache) {
+	for resource_url, resource in preload_document_resource_urls(app.document, base_url, foreground, cached) {
 		loaded[resource_url] = resource
 	}
 	return loaded

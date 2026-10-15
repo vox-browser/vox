@@ -281,6 +281,7 @@ struct PortableShadowImage {
 	height int
 }
 
+@[heap]
 struct BrowserApp {
 mut:
 	paint_colors                        PaintColorCache
@@ -316,6 +317,9 @@ mut:
 	navigation_generation               int
 	pending_navigation                  ?PendingNavigation
 	pending_cached_page                 ?PendingCachedPage
+	pending_page_preload                ?PendingPagePreload
+	navigation_preloaded_resources      map[string]PreloadedResource
+	pending_native_navigation           ?string
 	background_image_ids                map[string]int
 	force_dark_image_states             map[string]int
 	force_dark_image_bitmaps            map[string]&dom.Bitmap_
@@ -2956,6 +2960,8 @@ fn (mut app BrowserApp) adopt_current_document_geometry() {
 // Scrollbar and ResizeHandle state machines.
 fn (mut app BrowserApp) dispatch_chrome_pointer_event_at_viewport_point(event_type string,
 	button int, x f64, y f64) ChromePointerDispatchResult {
+	mut heap_scope := platform.begin_browser_activity_heap_scope()
+	defer { heap_scope.finish() }
 	if app.document == unsafe { nil } || app.page_model == unsafe { nil } {
 		return ChromePointerDispatchResult{}
 	}
@@ -3061,6 +3067,7 @@ fn (mut app BrowserApp) relayout(window_width int, window_height int) {
 	// creates its DOM navigable; attach the HTML model before display-list
 	// recording so focus-gated painting such as editable carets is visible.
 	focus_compact_browser_navigable(app.document)
+	app.install_compact_navigation_handler()
 	root_rect := app.root_box.border_box()
 	document_height := root_rect.y + root_rect.height
 	app.content_height = if document_height > f64(viewport_height) {
@@ -3123,6 +3130,8 @@ fn document_has_window_event_handlers(document &dom.Document) bool {
 }
 
 fn (mut app BrowserApp) install_loaded_page(loaded LoadedPage, add_history bool) {
+	mut heap_scope := platform.begin_browser_activity_heap_scope()
+	defer { heap_scope.finish() }
 	app.markup = loaded.markup
 	app.source_label = loaded.url
 	app.address = loaded.url
@@ -3166,8 +3175,8 @@ fn (mut app BrowserApp) install_loaded_page(loaded LoadedPage, add_history bool)
 	preloaded_resources := app.preload_initial_document_resources(resource_base_url)
 	checkpoint = debug_timing_checkpoint('preload_resources', checkpoint)
 	for resource_url, resource in preloaded_resources {
-		if resource.error == '' && !resource.adblock_replacement && app.resource_cache.len < max_cached_resources {
-			app.resource_cache[resource_url] = resource
+		if resource.error == '' && !resource.adblock_replacement {
+			app.retain_navigation_resource(resource_url, resource)
 		}
 		publish_browser_svg_resource(resource)
 	}
@@ -3256,6 +3265,8 @@ fn (mut app BrowserApp) navigate(address string, add_history bool) {
 	app.navigation_generation++
 	app.pending_navigation = none
 	app.pending_cached_page = none
+	app.cancel_page_preload()
+	app.pending_native_navigation = none
 	if app.ctx != unsafe { nil } {
 		generation := app.navigation_generation
 		mut defer_until_first_paint := !app.document_presented
@@ -3290,7 +3301,7 @@ fn (mut app BrowserApp) navigate(address string, add_history bool) {
 						app.snapshot_hold_until = time.sys_mono_now() + 8_000_000_000
 					}
 				}
-				app.install_loaded_page(cached, add_history)
+				app.prepare_loaded_page(cached, add_history)
 			}
 			had_cached_page = true
 			defer_until_first_paint = true
@@ -3338,7 +3349,7 @@ fn (mut app BrowserApp) install_pending_cached_page() {
 	if pending.generation != app.navigation_generation {
 		return
 	}
-	app.install_loaded_page(pending.loaded, pending.add_history)
+	app.prepare_loaded_page(pending.loaded, pending.add_history)
 }
 
 fn (mut app BrowserApp) start_pending_navigation() {
@@ -3351,6 +3362,7 @@ fn (mut app BrowserApp) start_pending_navigation() {
 }
 
 fn (mut app BrowserApp) poll_navigation() {
+	app.poll_page_preload()
 	select {
 		result := <-app.navigation_results {
 			if result.generation != app.navigation_generation {
@@ -3360,14 +3372,12 @@ fn (mut app BrowserApp) poll_navigation() {
 			// pinning the cached raster so the next frame reveals the real page.
 			app.snapshot_hold = false
 			if loaded := result.loaded {
-				if result.had_cached_page && app.address == loaded.url && app.markup == loaded.markup {
+				if result.had_cached_page && app.pending_page_preload == none
+					&& app.address == loaded.url && app.markup == loaded.markup {
 					app.replace_load_status(loaded.status)
 					app.update_current_history_entry(loaded)
 				} else {
-					app.install_loaded_page(loaded, result.add_history)
-					if result.had_cached_page {
-						app.update_current_history_entry(loaded)
-					}
+					app.prepare_loaded_page(loaded, result.add_history)
 				}
 			} else if result.had_cached_page {
 				app.replace_load_status('Cached · refresh failed: ${result.error}')
@@ -3392,6 +3402,8 @@ fn (mut app BrowserApp) history_go(delta int) {
 	}
 	app.history_index = target
 	app.navigation_generation++
+	app.cancel_page_preload()
+	app.pending_native_navigation = none
 	entry := app.history[target]
 	app.page_model.traverse_the_history_by_delta(delta)
 	app.install_loaded_page(LoadedPage{
@@ -5929,7 +5941,10 @@ fn address_for_display(address string, cursor int, active bool, max_characters i
 }
 
 fn (mut app BrowserApp) draw() {
+	mut heap_scope := platform.begin_browser_activity_heap_scope()
+	defer { heap_scope.finish() }
 	app.begin_frame_preparation()
+	app.poll_native_navigation()
 	// The local native display callback supplies the opportunity. HTML queues
 	// its rendering task and owns eligibility, timestamps and callback ordering.
 	app.deliver_rendering_opportunity(time.sys_mono_now(), sapp.frame_duration() * 1000.0)
@@ -6162,6 +6177,9 @@ fn (mut app BrowserApp) handle_click(x f32, y f32) {
 // The compact JavaScriptCore bridge remains the page-script backend. Its click
 // listener replay follows the actual DOM pointerup/click dispatch on release.
 fn (mut app BrowserApp) replay_compact_javascript_click(x f32, y f32) {
+	native_destination := app.pending_native_navigation
+	app.pending_native_navigation = none
+	generation := app.navigation_generation
 	if mut target := app.element_at_window_point(x, y) {
 		for {
 			if target.get_attribute_value('id') != '' {
@@ -6172,6 +6190,11 @@ fn (mut app BrowserApp) replay_compact_javascript_click(x f32, y f32) {
 			}
 			target = target.as_node().parent_element() or { break }
 		}
+	}
+	if app.navigation_generation != generation { return }
+	if destination := native_destination {
+		app.navigate(destination, true)
+		return
 	}
 	if destination := app.link_at_point(x, y) {
 		app.navigate(destination, true)

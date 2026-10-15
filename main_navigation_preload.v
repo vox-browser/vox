@@ -1,0 +1,218 @@
+module main
+
+import dom
+import css
+import html
+import platform
+
+// Resource requests must not block the native event callback that commits a
+// navigation. Discover them on the owning thread, then wait through the frame
+// loop while the current document remains available for input and painting.
+struct PendingPagePreload {
+	loaded      LoadedPage
+	add_history bool
+	generation  int
+	results     chan PreloadedResource
+mut:
+	remaining          int
+	resources          map[string]PreloadedResource
+	discovery_document &dom.Document = unsafe { nil }
+	image_urls         []string
+}
+
+fn (mut app BrowserApp) cancel_page_preload() {
+	if mut pending := app.pending_page_preload {
+		if pending.discovery_document != unsafe { nil } { pending.discovery_document.finalize() }
+	}
+	app.pending_page_preload = none
+}
+
+fn (mut app BrowserApp) commit_preloaded_page(loaded LoadedPage, add_history bool) {
+	app.install_loaded_page(loaded, add_history)
+	app.update_current_history_entry(loaded)
+}
+
+fn (mut app BrowserApp) retain_navigation_resource(resource_url string, resource PreloadedResource) {
+	if resource_url !in app.resource_cache && app.resource_cache.len >= max_cached_resources {
+		for key, _ in app.resource_cache {
+			app.resource_cache.delete(key)
+			break
+		}
+	}
+	app.resource_cache[resource_url] = resource
+}
+
+fn parse_page_preload_document(loaded LoadedPage, scripting_enabled bool) &dom.Document {
+	document_url := dom.dom_url_parse(loaded.url, dom.url_about_blank(), 'UTF-8') or { dom.url_about_blank() }
+	mut document := dom.Document.create(document_url)
+	document.set_scripting_enabled_by_embedder(scripting_enabled)
+	document.set_allow_declarative_shadow_roots(true)
+	// Match noscript parsing without creating a Window, executing import maps
+	// or preparing scripts in this resource-discovery document.
+	mut parser := html.HTMLParser.create_with_scripting_mode(document, loaded.markup,
+		if scripting_enabled {
+			dom.ParserScriptingMode.inert
+		} else {
+			dom.ParserScriptingMode.disabled
+		})
+	parser.run()
+	return document
+}
+
+fn queue_navigation_preloads(mut pending PendingPagePreload, urls []string,
+	types map[string]string, cache map[string]PreloadedResource) {
+	pending.remaining += urls.len
+	for resource_url in urls {
+		cached := if resource := cache[resource_url] { [resource] } else { []PreloadedResource{} }
+		spawn fetch_navigation_preload(resource_url, pending.loaded.url,
+			types[resource_url] or { 'image' }, cached, pending.results)
+	}
+}
+
+fn fetch_navigation_preload(resource_url string, source_url string, request_type string,
+	cached []PreloadedResource, results chan PreloadedResource) {
+	resource := if cached.len > 0 {
+		filter_preloaded_resource(cached[0], source_url, request_type) or {
+			PreloadedResource{ url: resource_url, error: err.msg(), source_url: source_url, request_type: request_type }
+		}
+	} else {
+		fetch_browser_resource(resource_url, '', source_url, request_type) or {
+			PreloadedResource{ url: resource_url, error: err.msg(), source_url: source_url, request_type: request_type }
+		}
+	}
+	results <- resource
+	$if macos {
+		C.native_wake_browser()
+	}
+}
+
+fn (mut app BrowserApp) prepare_loaded_page(loaded LoadedPage, add_history bool) {
+	history_needed := add_history || if pending := app.pending_page_preload {
+		pending.generation == app.navigation_generation && pending.add_history
+	} else {
+		false
+	}
+	app.cancel_page_preload()
+	if app.ctx == unsafe { nil } {
+		app.commit_preloaded_page(loaded, history_needed)
+		return
+	}
+	app.start_page_preload(loaded, history_needed)
+}
+
+fn (mut app BrowserApp) start_page_preload(loaded LoadedPage, add_history bool) {
+	mut heap_scope := platform.begin_browser_activity_heap_scope()
+	defer { heap_scope.finish() }
+	app.cancel_page_preload()
+	// Discovery owns a detached context. Creating it with the displayed page's
+	// context would deactivate that document before its replacement is ready.
+	scripting_enabled := browser_scripting_enabled(loaded.url, app.script_policy)
+		&& (app.page_model == unsafe { nil } || app.page_model.is_scripting_enabled())
+	mut document := parse_page_preload_document(loaded, scripting_enabled)
+	base_url := document.base_url().serialize()
+	urls := document_preload_resource_urls(document, base_url)
+	types := document_preload_resource_types(document, base_url)
+	if urls.len == 0 {
+		document.finalize()
+		app.commit_preloaded_page(loaded, add_history)
+		return
+	}
+	results := chan PreloadedResource{cap: urls.len}
+	mut pending := PendingPagePreload{
+		loaded:      loaded
+		add_history: add_history
+		generation:  app.navigation_generation
+		results:     results
+	}
+	mut initial_urls := []string{}
+	for resource_url in urls {
+		if !scripting_enabled && (types[resource_url] or { 'image' }) == 'image' {
+			pending.image_urls << resource_url
+		} else {
+			initial_urls << resource_url
+		}
+	}
+	if pending.image_urls.len > 0 {
+		pending.discovery_document = document
+	} else {
+		document.finalize()
+	}
+	queue_navigation_preloads(mut pending, initial_urls, types, app.resource_cache)
+	app.pending_page_preload = pending
+	if pending.remaining == 0 { request_browser_frame() }
+}
+
+fn (mut app BrowserApp) poll_page_preload() {
+	mut pending := app.pending_page_preload or { return }
+	if pending.generation != app.navigation_generation {
+		app.cancel_page_preload()
+		return
+	}
+	for pending.remaining > 0 {
+		select {
+			resource := <-pending.results {
+				pending.resources[resource.url] = resource
+				pending.remaining--
+			}
+			else {
+				break
+			}
+		}
+	}
+	if pending.remaining > 0 {
+		app.pending_page_preload = pending
+		return
+	}
+	if pending.discovery_document != unsafe { nil } {
+		mut document := pending.discovery_document
+		base_url := document.base_url().serialize()
+		_ = install_external_styles(document, base_url, pending.resources)
+		document.set_viewport_rect(dom.Rect{
+			width:  if app.viewport_width > 0 { app.viewport_width } else { initial_width }
+			height: if app.viewport_height > 0 {
+				app.viewport_height
+			} else {
+				initial_height - app.chrome_height()
+			}
+		})
+		css.sync_document_style_elements(document)
+		foreground, _ := partition_nonrendered_image_preloads(document, base_url, pending.image_urls)
+		document.finalize()
+		pending.discovery_document = unsafe { nil }
+		pending.image_urls = []string{}
+		queue_navigation_preloads(mut pending, foreground, map[string]string{}, app.resource_cache)
+		if pending.remaining > 0 {
+			app.pending_page_preload = pending
+			return
+		}
+	}
+	app.pending_page_preload = none
+	// Keep failures too: installation must consume the completed failure rather
+	// than retrying the same slow request synchronously on the UI thread. This
+	// per-install cache is independent of the bounded reusable resource cache.
+	app.navigation_preloaded_resources = pending.resources.clone()
+	defer { app.navigation_preloaded_resources = map[string]PreloadedResource{} }
+	app.commit_preloaded_page(pending.loaded, pending.add_history)
+}
+
+// DOM click activation and the compact script replay share the shell's loader.
+// Letting the translated navigable commit separately would replace its active
+// Document with an empty one before the shell has fetched the destination.
+fn (mut app BrowserApp) install_compact_navigation_handler() {
+	mut navigable := app.document.navigable() or { return }
+	app_handle := voidptr(&app)
+	navigable.navigate_callback_ = fn [app_handle] (_ voidptr, destination dom.URL,
+		_ &dom.Document, _ string, _ dom.UserNavigationInvolvement) ! {
+		mut app := unsafe { &BrowserApp(app_handle) }
+		app.pending_native_navigation = destination.serialize()
+		$if macos {
+			C.native_wake_browser()
+		}
+	}
+}
+
+fn (mut app BrowserApp) poll_native_navigation() {
+	destination := app.pending_native_navigation or { return }
+	app.pending_native_navigation = none
+	app.navigate(destination, true)
+}
