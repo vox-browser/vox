@@ -371,6 +371,13 @@ Build/v/Ladybird.app/Contents/MacOS/Ladybird --headless-smoke --js-engine=javasc
 Build/v/Ladybird.app/Contents/MacOS/Ladybird --headless-smoke --js-engine=libjs
 ```
 
+Wikipedia and its subdomains use HTML and CSS without fetching or parsing page
+JavaScript or creating a page runtime. Pass `--disable-javascript` for the same
+behavior on other sites, or `--enable-javascript` to override the automatic site
+policy. The five-pair Wikipedia comparison measured 859 ms to 694 ms for document
+installation through the first submitted frame (19.21% less time); see the
+[policy and rendering measurements](docs/WIKIPEDIA_HTML_CSS_PERFORMANCE.md).
+
 `--js-engine javascriptcore` and `--js-engine libjs` are also accepted. The
 JavaScriptCore smoke tests DOM mutation and click events; the LibJS smoke tests
 bytecode execution and reports that DOM bindings are pending. Run translated

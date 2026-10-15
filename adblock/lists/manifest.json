@@ -1,0 +1,138 @@
+{
+  "engine": {
+    "name": "uBlock Origin",
+    "version": "1.75.0",
+    "commit": "21f0e686506bb21b514b451c8c6cb9bf8c82d232",
+    "source": "https://github.com/gorhill/uBlock/tree/21f0e686506bb21b514b451c8c6cb9bf8c82d232"
+  },
+  "downloaded_at": "2026-10-15T02:18:09.122Z",
+  "preprocessor_environment": [
+    "ublock",
+    "chromium",
+    "user_stylesheet"
+  ],
+  "lists": [
+    {
+      "name": "ublock-filters",
+      "title": "uBlock filters – Ads",
+      "source_url": "https://ublockorigin.github.io/uAssets/filters/filters.txt",
+      "file": "lists/ublock-filters.txt",
+      "sha256": "b6d908ab04d5ea5dc99360eb9a79531ad6470833a08fdbd39b3b3135082fe9da",
+      "includes": [
+        {
+          "url": "https://ublockorigin.github.io/uAssets/filters/filters-general.txt",
+          "sha256": "33251d64eae55b9daa63cb4ffe24934d3c924964941ae32bd9487fca974ea0be"
+        },
+        {
+          "url": "https://ublockorigin.github.io/uAssets/filters/filters-2020.txt",
+          "sha256": "b6235860c4bc90386d9b7d37e0c95961a113eec6965c71c0a6b71b256d9baf4c"
+        },
+        {
+          "url": "https://ublockorigin.github.io/uAssets/filters/filters-2021.txt",
+          "sha256": "505675892dc3c30c57a8eb15f562588936d36a757b5a8a3e765f991525a956fc"
+        },
+        {
+          "url": "https://ublockorigin.github.io/uAssets/filters/filters-2022.txt",
+          "sha256": "b48bad82073555a805b7b232c8768c3d4d6d3a66f2dc95187b9e9eab29096e43"
+        },
+        {
+          "url": "https://ublockorigin.github.io/uAssets/filters/filters-2023.txt",
+          "sha256": "cdffdb1f7383dd7d9e0de532e8f76e3ac6de4132f41972de6a58d600a14533f9"
+        },
+        {
+          "url": "https://ublockorigin.github.io/uAssets/filters/filters-2024.txt",
+          "sha256": "838590b672afc0869ade2b99e020498e0c68e0362e54962980a29a3824b501f4"
+        },
+        {
+          "url": "https://ublockorigin.github.io/uAssets/filters/filters-2025.txt",
+          "sha256": "c8bd1ec2ab03fa1225985c7575a58235d93c0a40a28f3b3d6516b7e126e3845e"
+        },
+        {
+          "url": "https://ublockorigin.github.io/uAssets/filters/filters-2026.txt",
+          "sha256": "700678a6368c4ba016913626c6ab341052fe00e01d38acac44ec50b7803614d4"
+        },
+        {
+          "url": "https://ublockorigin.github.io/uAssets/filters/ubo-link-shorteners.txt",
+          "sha256": "624b919c76cbd49e621dbed2f0599066a0d467b6708dff09c36bb09a460356c8"
+        },
+        {
+          "url": "https://ublockorigin.github.io/uAssets/filters/filters-mobile.txt",
+          "sha256": "e32cef40f31e9ab1d5e18823e310735ab0f494cd5f131e86fdcbe761186988f6"
+        }
+      ]
+    },
+    {
+      "name": "ublock-badware",
+      "title": "uBlock filters – Badware risks",
+      "source_url": "https://ublockorigin.github.io/uAssets/filters/badware.txt",
+      "file": "lists/ublock-badware.txt",
+      "sha256": "dbb7b3a6e20266b92fb35e940a4ace8e023259078a3d6a2f716eaebc9b653d0f",
+      "includes": []
+    },
+    {
+      "name": "ublock-privacy",
+      "title": "uBlock filters – Privacy",
+      "source_url": "https://ublockorigin.github.io/uAssets/filters/privacy.txt",
+      "file": "lists/ublock-privacy.txt",
+      "sha256": "980c6860384e9158e6f51e134d710e11aef00fdea3b96be1092f8e3c73fd7637",
+      "includes": [
+        {
+          "url": "https://ublockorigin.github.io/uAssets/filters/resource-abuse.txt",
+          "sha256": "e77991b337dad1ef43ea181b36504fc9ff9bfa549eb2b9a9aec47181339e8584"
+        }
+      ]
+    },
+    {
+      "name": "ublock-unbreak",
+      "title": "uBlock filters – Unbreak",
+      "source_url": "https://ublockorigin.github.io/uAssets/filters/unbreak.txt",
+      "file": "lists/ublock-unbreak.txt",
+      "sha256": "e9d95cbb61cc83990e75104a4103585af146c6c6e8dfda07cad6c9713ddbb632",
+      "includes": []
+    },
+    {
+      "name": "ublock-quick-fixes",
+      "title": "uBlock filters – Quick fixes",
+      "source_url": "https://ublockorigin.github.io/uAssets/filters/quick-fixes.txt",
+      "file": "lists/ublock-quick-fixes.txt",
+      "sha256": "ad334cfe66a3523dd82a954a2efdfd065c99f613dc093b8ce3d5597fd0632f9b",
+      "includes": []
+    },
+    {
+      "name": "easylist",
+      "title": "EasyList",
+      "source_url": "https://ublockorigin.github.io/uAssets/thirdparties/easylist.txt",
+      "file": "lists/easylist.txt",
+      "sha256": "75dad8d3b219649590427fe8c3257e10461dc403c5e8afc315d94fdeaaeb078b",
+      "includes": []
+    },
+    {
+      "name": "easyprivacy",
+      "title": "EasyPrivacy",
+      "source_url": "https://ublockorigin.github.io/uAssets/thirdparties/easyprivacy.txt",
+      "file": "lists/easyprivacy.txt",
+      "sha256": "9fab16346701f525c0d41f340071f0d72f767df8a399c48c545643eaad4e927e",
+      "includes": []
+    },
+    {
+      "name": "urlhaus-1",
+      "title": "Online Malicious URL Blocklist",
+      "source_url": "https://malware-filter.gitlab.io/urlhaus-filter/urlhaus-filter-ag-online.txt",
+      "file": "lists/urlhaus-1.txt",
+      "sha256": "05243718a2a12f3e998487a4bced75d16d111209ebc5f2872fb531fb22019ed9",
+      "includes": []
+    },
+    {
+      "name": "plowe-0",
+      "title": "Peter Lowe’s Ad and tracking server list",
+      "source_url": "https://pgl.yoyo.org/adservers/serverlist.php?hostformat=hosts&showintro=1&mimetype=plaintext",
+      "file": "lists/plowe-0.txt",
+      "sha256": "25e97ac24ebf04c6df613c0726d66121725af6c2a68504ee2560b66df9092a20",
+      "includes": []
+    }
+  ],
+  "public_suffix_list": {
+    "source_url": "https://publicsuffix.org/list/public_suffix_list.dat",
+    "sha256": "ba7d836c0ea57a8bcf9f1fcb868066a7554bed029b441ecc6204ad8494a32612"
+  }
+}

@@ -731,6 +731,8 @@ pub:
 }
 
 fn perform_host_fetch(params &FetchParams, request &Request, host &FetchHost) &PendingResponse {
+	mut filtered_request := unsafe { &Request(request) }
+	if response := filtered_request.apply_adblock() { return PendingResponse.create(mut filtered_request, response) }
 	if perform := host.perform_async_with_params { return perform(params, request) }
 	if perform := host.perform_async { return perform(request) }
 	mut mutable_request := unsafe { &Request(request) }
@@ -994,6 +996,26 @@ pub fn main_fetch(params &FetchParams, host &FetchHost) &PendingResponse {
 	}
 	if apply_request_security_policies(mut request) {
 		response = Response.network_error('Request was blocked')
+	}
+	if response == none {
+		for attempt in 0 .. 8 {
+			original_url := request.current_url().serialize()
+			candidate := request.apply_adblock()
+			rewritten_url := request.current_url().serialize()
+			// Security policy must inspect the URL that will actually be fetched.
+			// It can also upgrade an insecure rewritten URL, which then needs a
+			// fresh filtering decision before a preload or cache may be reused.
+			if rewritten_url != original_url && apply_request_security_policies(mut request) {
+				response = Response.network_error('Request was blocked')
+				break
+			}
+			if request.current_url().serialize() != rewritten_url {
+				if attempt == 7 { response = Response.network_error('Adblock security-policy rewrite limit exceeded') }
+				continue
+			}
+			if filtered_response := candidate { response = filtered_response }
+			break
+		}
 	}
 	// 8. If request's referrer policy is the empty string, then set request's referrer policy to request's policy
 	//    container's referrer policy.

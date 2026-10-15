@@ -198,6 +198,7 @@ fn (mut parser SpeculativeHTMLParser) speculative_fetch(element SpeculativeMockE
 	mut destination := ?RequestDestination(none)
 	mut modulepreload_destination := ?fetch.Destination(none)
 	if element.local_name == 'script' {
+		if !parser.document.is_scripting_enabled_by_embedder() { return }
 		source = element.attribute('src') or { return }
 		destination = .script
 	} else if element.local_name == 'link' {
@@ -206,6 +207,7 @@ fn (mut parser SpeculativeHTMLParser) speculative_fetch(element SpeculativeMockE
 		if speculative_rel_contains_keyword(rel, 'stylesheet') {
 			destination = .style
 		} else if speculative_rel_contains_keyword(rel, 'modulepreload') {
+			if !parser.document.is_scripting_enabled_by_embedder() { return }
 			if !media_attribute_matches_environment(parser.document, element.attribute('media') or {
 				''
 			}) {
@@ -219,6 +221,10 @@ fn (mut parser SpeculativeHTMLParser) speculative_fetch(element SpeculativeMockE
 				return
 			}
 			destination = translated.destination
+			if actual_destination := destination {
+				if actual_destination == .script
+					&& !parser.document.is_scripting_enabled_by_embedder() { return }
+			}
 		} else {
 			return
 		}

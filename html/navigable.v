@@ -1055,6 +1055,7 @@ fn create_navigation_params_by_fetching(entry &SessionHistoryEntry, navigable &N
 		request.set_client(client)
 	}
 	request.destination = .document
+	request.target_is_nested_navigable = !navigable.is_top_level_traversable()
 	request.credentials_mode = .include
 	request.use_url_credentials = true
 	request.redirect_mode = .manual
@@ -1638,6 +1639,9 @@ fn (mut model NavigableModel) navigate_to_a_fragment(url dom.URL, history_handli
 pub fn (mut model NavigableModel) evaluate_javascript_url(url dom.URL, new_document_origin dom.Origin, user_involvement dom.UserNavigationInvolvement, navigation_id string) ?&dom.Document {
 	_ = user_involvement
 	active_document := model.active_document() or { return none }
+	if active_document.as_node().is_scripting_disabled() {
+		return none
+	}
 	hook := model.javascript_url_hook_ or { return none }
 	source := url.serialize().all_after('javascript:')
 	result := hook(source, active_document) or { return none }

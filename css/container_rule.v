@@ -1201,7 +1201,10 @@ fn evaluate_size_feature(feature_name string, kind MediaFeatureEvalKind, value ?
 	container := evaluation_context.query_container or { return .unknown }
 	queried_value := size_feature_value_for_query_container(feature_name, container) or {
 		mut document := unsafe { &dom.Document(container.document()) }
-		if !document.layout_is_up_to_date() || document.is_running_update_layout() {
+		// A container can remain boxless after layout (for example inside a
+		// display:none subtree). Only defer while geometry can still change;
+		// the stabilization loop itself does not imply unfinished layout.
+		if !document.layout_is_up_to_date() {
 			document.set_needs_container_query_evaluation_after_layout(container)
 		}
 		return .unknown

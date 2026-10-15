@@ -386,6 +386,11 @@ fn (mut p HTMLParser) decrement_script_nesting_level() {
 }
 
 fn (mut p HTMLParser) register_parser_inserted_script(element &dom.Element, token &HTMLToken) {
+	// Keep raw DOM text without creating prepared-script records or source copies
+	// for pages whose scripting has been disabled before parsing.
+	if !p.document_.is_scripting_enabled_by_embedder() {
+		return
+	}
 	mut script := HTMLScriptElementModel.create(p.document_.base_url())
 	script_element := unsafe { &dom.HTMLScriptElement(element) }
 	attach_html_script_element_model(script_element, script)

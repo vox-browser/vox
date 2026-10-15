@@ -1,0 +1,302 @@
+{
+  "upstream": "https://github.com/gorhill/uBlock",
+  "version": "1.75.0",
+  "commit": "21f0e686506bb21b514b451c8c6cb9bf8c82d232",
+  "files": [
+    {
+      "file": "LICENSE.txt",
+      "upstream_path": "LICENSE.txt",
+      "sha256": "e73d33841f942fa73aa5a63d4a6399cc39a29564db1dbca0915485842fcb236d"
+    },
+    {
+      "file": "assets.json",
+      "upstream_path": "assets/assets.json",
+      "sha256": "61488d15d26dfb7a8c73e8e2692ebf636300eb4fb6b98bc8356e317631487996"
+    },
+    {
+      "file": "js/arglist-parser.js",
+      "upstream_path": "src/js/arglist-parser.js",
+      "sha256": "57dbdf89705f59d79bb20189c8b1c784ea4105323d0bcd07eec74e818cc8c106"
+    },
+    {
+      "file": "js/biditrie.js",
+      "upstream_path": "src/js/biditrie.js",
+      "sha256": "cc0e454a45462a69eb30d61b5a94c0b6304fcc12792229af43057d27c99a5953"
+    },
+    {
+      "file": "js/cosmetic-filtering.js",
+      "upstream_path": "src/js/cosmetic-filtering.js",
+      "sha256": "def6bfcdae9164abf30a010f03bee4a459210221b24dcf825fc071e82e9dc9ef"
+    },
+    {
+      "file": "js/filtering-context.js",
+      "upstream_path": "src/js/filtering-context.js",
+      "sha256": "8d6d8eec4013a637754907a8cbfa29dba3c921ef484118b6925f6de1f4308d91"
+    },
+    {
+      "file": "js/hntrie.js",
+      "upstream_path": "src/js/hntrie.js",
+      "sha256": "ef504aa8ec4644084139112f23330a820bc8c6a89c508017c158aa57f7a71a60"
+    },
+    {
+      "file": "js/jsonpath.js",
+      "upstream_path": "src/js/jsonpath.js",
+      "sha256": "e540f29cc99c4c27a86711ad2ad2d61a4640c445595b97cf27160563acfc82db"
+    },
+    {
+      "file": "js/mrucache.js",
+      "upstream_path": "src/js/mrucache.js",
+      "sha256": "622e1c9784bd0651d3032288c774566be64f623bf4e1004cb33d76f49e866aa5"
+    },
+    {
+      "file": "js/redirect-engine.js",
+      "upstream_path": "src/js/redirect-engine.js",
+      "sha256": "b7df8414b54742c45a998c4cc226b89867dc48c6e37209660789d661a43e1215"
+    },
+    {
+      "file": "js/redirect-resources.js",
+      "upstream_path": "src/js/redirect-resources.js",
+      "sha256": "1766febc40ecd611c834b63f9838a08699cf89b208a78677d3a2d355696476c3"
+    },
+    {
+      "file": "js/regex-analyzer.js",
+      "upstream_path": "src/js/regex-analyzer.js",
+      "sha256": "d0b6e2417248598c5fd8dce44b988e4e17eb65542412bd8c419093251ee7f159"
+    },
+    {
+      "file": "js/resources/abort-current-script.js",
+      "upstream_path": "src/js/resources/abort-current-script.js",
+      "sha256": "820b2234576b91a7d71b8ff380a03d604a561a83a0ad7334900d146b616e380d"
+    },
+    {
+      "file": "js/resources/attribute.js",
+      "upstream_path": "src/js/resources/attribute.js",
+      "sha256": "c8cfbf5f44baa8d80f8150218540d50fce0a6d4f65823ec15648ae105603a90e"
+    },
+    {
+      "file": "js/resources/base.js",
+      "upstream_path": "src/js/resources/base.js",
+      "sha256": "5eb0f5c20866149f99537e64959c51c466f9b43cd4fde1682ae0534a4096a4b8"
+    },
+    {
+      "file": "js/resources/cookie.js",
+      "upstream_path": "src/js/resources/cookie.js",
+      "sha256": "31cf19e9dd0f6e5c957e9e952647e1bc7094ff603303924625c3c530a009a315"
+    },
+    {
+      "file": "js/resources/create-html.js",
+      "upstream_path": "src/js/resources/create-html.js",
+      "sha256": "0d8025aa3748395c6d0c7bd1b7487a2d2d8b1632e109b509576341cb7254fedf"
+    },
+    {
+      "file": "js/resources/href-sanitizer.js",
+      "upstream_path": "src/js/resources/href-sanitizer.js",
+      "sha256": "b17df68062d8d87240c970763c10e891224961759b6178cb7c58e1ade2ed7bfc"
+    },
+    {
+      "file": "js/resources/json-edit.js",
+      "upstream_path": "src/js/resources/json-edit.js",
+      "sha256": "cff39a24d2ae6311bbd769785dd56bddecdb0e2a7d80a7e64d2b33869a03a1b7"
+    },
+    {
+      "file": "js/resources/json-prune.js",
+      "upstream_path": "src/js/resources/json-prune.js",
+      "sha256": "e4f13cc99cb4ae8428de4889135ed5f62e30f02c397f3f5f4b2941189bd76ced"
+    },
+    {
+      "file": "js/resources/localstorage.js",
+      "upstream_path": "src/js/resources/localstorage.js",
+      "sha256": "ea2ebb44b8189fb4c98e08a86c2ac6afde781c6b3d6af03195b8fcaeaef89ced"
+    },
+    {
+      "file": "js/resources/noeval.js",
+      "upstream_path": "src/js/resources/noeval.js",
+      "sha256": "0b42472114120bd586410d0bbfd912c198de1abb0b3b62d11183ff6b893e5731"
+    },
+    {
+      "file": "js/resources/object-prune.js",
+      "upstream_path": "src/js/resources/object-prune.js",
+      "sha256": "fc68ac88bcadc6774c0a1a3d87b142a9062d804dc5f0f87bb18a7d48c690d135"
+    },
+    {
+      "file": "js/resources/parse-replace.js",
+      "upstream_path": "src/js/resources/parse-replace.js",
+      "sha256": "fca20f23d68dfc906a02838330e26d1123dce48fcdaa086b37dba5c0d5b38e57"
+    },
+    {
+      "file": "js/resources/prevent-addeventlistener.js",
+      "upstream_path": "src/js/resources/prevent-addeventlistener.js",
+      "sha256": "ce919028953e4cb4a49db61e0649d475ccab7b3cf150c77aeb001305a384b8c8"
+    },
+    {
+      "file": "js/resources/prevent-bab.js",
+      "upstream_path": "src/js/resources/prevent-bab.js",
+      "sha256": "ef5762c46a193211b335e0cb2ea439865cb98cb9cd4df8a90b159ddd35a66094"
+    },
+    {
+      "file": "js/resources/prevent-clipboard-write.js",
+      "upstream_path": "src/js/resources/prevent-clipboard-write.js",
+      "sha256": "c16b573b6d91438ff0d16db9fcc336542ad38877e8e11ecfe8fc9e1f118156c1"
+    },
+    {
+      "file": "js/resources/prevent-dialog.js",
+      "upstream_path": "src/js/resources/prevent-dialog.js",
+      "sha256": "904fcae08eb72ea2e1624650c7e24741fc80f717f8c2438367807fbca195821d"
+    },
+    {
+      "file": "js/resources/prevent-fetch.js",
+      "upstream_path": "src/js/resources/prevent-fetch.js",
+      "sha256": "46ab941003b999cb506201c786eaf428e78a4c3e519656f45361d7b0a1b6c887"
+    },
+    {
+      "file": "js/resources/prevent-innerHTML.js",
+      "upstream_path": "src/js/resources/prevent-innerHTML.js",
+      "sha256": "18719306c7beb87b5f09d5b241cf2ec893638e3fb96a93d2218cbde217bbee2d"
+    },
+    {
+      "file": "js/resources/prevent-navigation.js",
+      "upstream_path": "src/js/resources/prevent-navigation.js",
+      "sha256": "bd7031b200172aca316b489e4b4e95a52e891b1098b83c483a45f8cf7995ac49"
+    },
+    {
+      "file": "js/resources/prevent-settimeout.js",
+      "upstream_path": "src/js/resources/prevent-settimeout.js",
+      "sha256": "4a5152c4cc9715183bc9e49c4e4e27a87f02b978de89b71c6a1586cc9cc15f95"
+    },
+    {
+      "file": "js/resources/prevent-xhr.js",
+      "upstream_path": "src/js/resources/prevent-xhr.js",
+      "sha256": "3619684e46f0cfc7a9f48553cc8e8f193c807b61a07e4b9e9a7ff043c242d9bf"
+    },
+    {
+      "file": "js/resources/proxy-apply.js",
+      "upstream_path": "src/js/resources/proxy-apply.js",
+      "sha256": "7fb12b6e29dcdae0dcaa5709e76271bf6152eb0dfc7e55894ffceb3eafd8a4ca"
+    },
+    {
+      "file": "js/resources/replace-argument.js",
+      "upstream_path": "src/js/resources/replace-argument.js",
+      "sha256": "667a602eee73ced208f9f42a6eba85300a0fb81b6dedbd6abbbc1a974a6cde10"
+    },
+    {
+      "file": "js/resources/run-at.js",
+      "upstream_path": "src/js/resources/run-at.js",
+      "sha256": "12daa1b79691095b8ba782b77122ef68923ff2dd1020f3b1b008fc33adf95a6c"
+    },
+    {
+      "file": "js/resources/safe-self.js",
+      "upstream_path": "src/js/resources/safe-self.js",
+      "sha256": "e7b95af1ff71e4571c62339dc39fd530dce1599da27a887761a4dd25526aa35f"
+    },
+    {
+      "file": "js/resources/scriptlets.js",
+      "upstream_path": "src/js/resources/scriptlets.js",
+      "sha256": "8c414bbfa63fbd7d1e5586d9938f9ba97f4c61d7d1c6050764efd0b76126a215"
+    },
+    {
+      "file": "js/resources/set-constant.js",
+      "upstream_path": "src/js/resources/set-constant.js",
+      "sha256": "827d8ca244d2fbcdb967592c9247958e9e6eb7ebbe7186d0165015093ced0ab9"
+    },
+    {
+      "file": "js/resources/shared.js",
+      "upstream_path": "src/js/resources/shared.js",
+      "sha256": "26b04fa095d81230f46ac90addf6810a01bbf096f06afd14304dfbb9001995e2"
+    },
+    {
+      "file": "js/resources/spoof-css.js",
+      "upstream_path": "src/js/resources/spoof-css.js",
+      "sha256": "dd30b098802b23ef0b46c62d9242c0af49997a6d66afac54493791d7fbcee225"
+    },
+    {
+      "file": "js/resources/stack-trace.js",
+      "upstream_path": "src/js/resources/stack-trace.js",
+      "sha256": "7a912904f5816f09605cbafa6e40be595e520f96eeb8e267e4f628f29a9767db"
+    },
+    {
+      "file": "js/resources/utils.js",
+      "upstream_path": "src/js/resources/utils.js",
+      "sha256": "17b876f443cbf999cfaef3c4f610f46d5e7ea719c8516aea8473c739d02e3fda"
+    },
+    {
+      "file": "js/resources/vod.js",
+      "upstream_path": "src/js/resources/vod.js",
+      "sha256": "8de2a299d79f51336ebaa5ac66c2c8f73e0ca34dfe562e1e18da557d0b594899"
+    },
+    {
+      "file": "js/s14e-serializer.js",
+      "upstream_path": "src/js/s14e-serializer.js",
+      "sha256": "a7602c21732f828c1601b47ec484b76bcecbb3b7b1459ba7ca4f429f8a3037bd"
+    },
+    {
+      "file": "js/scriptlet-filtering-core.js",
+      "upstream_path": "src/js/scriptlet-filtering-core.js",
+      "sha256": "87e4e693c41550e9502ba9a223e8c8cd87507cca00470f1261d9241c164fbfa2"
+    },
+    {
+      "file": "js/static-ext-filtering-db.js",
+      "upstream_path": "src/js/static-ext-filtering-db.js",
+      "sha256": "5cb3c672ea4a047e5bb462824d61937cab76ba21f17e155a3a02f0df1f886cb4"
+    },
+    {
+      "file": "js/static-filtering-io.js",
+      "upstream_path": "src/js/static-filtering-io.js",
+      "sha256": "bcb5ad3e1789a3b41f65a0862ae1c4cfe1e01d227c107db8fb75f1466766b3f3"
+    },
+    {
+      "file": "js/static-filtering-parser.js",
+      "upstream_path": "src/js/static-filtering-parser.js",
+      "sha256": "f989e66719b89d86015024a3c2a01316e2bd86a3c4cf8e90c6ab0a9f32765173"
+    },
+    {
+      "file": "js/static-net-filtering.js",
+      "upstream_path": "src/js/static-net-filtering.js",
+      "sha256": "d9bec1596ab3c507755aa4a96be41d380accd2ce836d2d94f2d220d822c8e0d2"
+    },
+    {
+      "file": "js/tasks.js",
+      "upstream_path": "src/js/tasks.js",
+      "sha256": "dfeab767fd9e28fbbc0e00456b3d3de4c502b493f73fabe582ebaecf97e11886"
+    },
+    {
+      "file": "js/text-utils.js",
+      "upstream_path": "src/js/text-utils.js",
+      "sha256": "7f83fa6f050bbc05c43fae18e6cba322c9ceac5a2f2cf36497ea0c1af61af98d"
+    },
+    {
+      "file": "js/uri-utils.js",
+      "upstream_path": "src/js/uri-utils.js",
+      "sha256": "5bd770a3c59cbaba9b74cd8645c9876787c70cce6a96eabc15798727bd2784a5"
+    },
+    {
+      "file": "js/urlskip.js",
+      "upstream_path": "src/js/urlskip.js",
+      "sha256": "1d71ddafee30b70137e603e32c79b5ae65af65e7b71f4b61ae65301d76216d6d"
+    },
+    {
+      "file": "lib/csstree/LICENSE",
+      "upstream_path": "src/lib/csstree/LICENSE",
+      "sha256": "be1fdbf86bfd2c72d8bce3b46fb28b24dd5e147b7d299c810c599509ddc0a66e"
+    },
+    {
+      "file": "lib/csstree/css-tree.js",
+      "upstream_path": "src/lib/csstree/css-tree.js",
+      "sha256": "ecc4507fac946cbe442962e11bb058195dbe72545cce42f34338a83726ec56e0"
+    },
+    {
+      "file": "lib/publicsuffixlist/publicsuffixlist.js",
+      "upstream_path": "src/lib/publicsuffixlist/publicsuffixlist.js",
+      "sha256": "282288bb44a4fd0a8cf2157ab64ea82963820cce4e7fd5483ecdd266e6755eeb"
+    },
+    {
+      "file": "lib/punycode.js",
+      "upstream_path": "src/lib/punycode.js",
+      "sha256": "329249856a82a02f69fb2d929f89e02aefa6b04cca4ef6a3b9bebfa48d6e824c"
+    },
+    {
+      "file": "lib/regexanalyzer/regex.js",
+      "upstream_path": "src/lib/regexanalyzer/regex.js",
+      "sha256": "5191149eb2577fab7a67ef10c7bb3e165c75c7b242a4f9d5215d0e7589a141cb"
+    }
+  ]
+}

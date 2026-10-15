@@ -400,7 +400,10 @@ fn test_size_container_query_without_geometry_queues_post_layout_evaluation() {
 	mutable_document.set_browsing_context(&dom.BrowsingContext{
 		active_document_: document
 	})
-	mutable_document.is_running_update_layout_ = true
+	mutable_document.set_cached_navigable(&dom.Navigable{
+		active_document_: document
+	})
+	assert !document.layout_is_up_to_date()
 	query := parsed_single_container_query('(width: 320px)')
 	assert query.evaluate(dom.AbstractElement.new(subject, none), none) == .unknown
 	assert document.needs_container_query_evaluation_after_layout(container)

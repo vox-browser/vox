@@ -5181,6 +5181,7 @@ pub mut:
 	ready_for_post_load_tasks bool
 	ready_to_run_scripts      bool
 	deferred_parser_start     ?fn ()
+	scripting_enabled_by_embedder_ bool = true
 
 	// Encoding
 	encoding                    ?string

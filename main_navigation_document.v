@@ -36,10 +36,15 @@ fn create_browser_navigation_document(document_url dom.URL, origin dom.Origin, p
 }
 
 fn parse_browser_navigation_document_with_optional_page_and_response_time(markup string, document_url dom.URL, initiator_origin ?dom.Origin, previous ?&dom.Document, page ?&dom.Page, response_time_ns i64) &dom.Document {
+	return parse_browser_navigation_document_with_scripting(markup, document_url, initiator_origin, previous, page, response_time_ns, true)
+}
+
+fn parse_browser_navigation_document_with_scripting(markup string, document_url dom.URL, initiator_origin ?dom.Origin, previous ?&dom.Document, page ?&dom.Page, response_time_ns i64, scripting_enabled bool) &dom.Document {
 	origin := html.determine_the_origin(document_url, html.SandboxingFlagSet{}, initiator_origin)
 	mut document := create_browser_navigation_document(document_url, origin, previous, page) or {
 		panic(err)
 	}
+	document.set_scripting_enabled_by_embedder(scripting_enabled)
 	settings := unsafe { &html.EnvironmentSettingsObject(document.relevant_settings_object()) }
 	document.load_timing_info.navigation_start_time = highresolutiontime.coarsen_time(f64(response_time_ns) / 1.0e6,
 		settings.cross_origin_isolated_capability() == .yes)

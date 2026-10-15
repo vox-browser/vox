@@ -42,6 +42,11 @@ pub fn (mut connection CurlConnection) fetch_host() &fetch.FetchHost {
 pub fn (mut connection CurlConnection) start_fetch(params &fetch.FetchParams, input &fetch.Request) &fetch.PendingResponse {
 	mut request := unsafe { &fetch.Request(input) }
 	pending := fetch.PendingResponse.create(mut request, none)
+	if filtered_response := request.apply_adblock() {
+		mut output := pending
+		output.resolve(filtered_response)
+		return pending
+	}
 	if connection.closed_ {
 		mut output := pending
 		output.resolve(fetch.Response.network_error('RequestServer is currently unavailable'))

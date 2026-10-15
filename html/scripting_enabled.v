@@ -9,6 +9,7 @@ pub fn is_scripting_enabled_for_settings(settings &EnvironmentSettingsObject) bo
 		return true
 	}
 	document := window.associated_document()
+	if !document.is_scripting_enabled_by_embedder() { return false }
 	if document.has_page() && document.page().has_scripting_enabled_owner() {
 		if !document.page().is_scripting_enabled() {
 			parsed := liburl.parse(document.url.serialize()) or { return false }

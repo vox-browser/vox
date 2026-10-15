@@ -1,0 +1,4 @@
+# Keep upstream snapshots byte-for-byte identical to their recorded hashes.
+lists/** -whitespace
+vendor/** -whitespace
+extended/procedural.js -whitespace

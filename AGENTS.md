@@ -1358,7 +1358,7 @@ evidence](docs/translation-audit/NATIVE_MEDIA_WHEEL_RAW_HANDLER.md).
   broad verification. Compare the same benchmark endpoint and workload, record
   the measured baseline and accumulated savings, and do not run broad suites
   for every individual fix below that threshold.
-  The latest performance broad batch covers the Wikipedia fixes through
+  The Wikipedia performance broad batch covers the fixes through
   `24626bff` and test corrections `3d88268d`/`12713a3b`: 135 selected
   CSS/SVG/layout/native cases pass in both Boehm and no-GC C-O0 builds, all 100
   upstream LibJS AST fixtures compare exactly, and production C-O2 Boehm startup
@@ -1378,6 +1378,12 @@ evidence](docs/translation-audit/NATIVE_MEDIA_WHEEL_RAW_HANDLER.md).
   `docs/GITHUB_PERFORMANCE.md`. Production GC remains enabled with one
   marker. Independent canonical work is preserved when its pre-build identity
   is unavailable.
+  GitHub public-length resolution `137e4e85` passes 2,004 focused assertions
+  per configuration and reduces the controlled resolver probe by 62.92%.
+  Its matching 30-pair first-frame saving is 76,262,583 instructions;
+  repeatable page credit is 0. Broad verification: passed.
+  The focused viewport is exact. Chrome parity remains open; the isolated Root
+  snapshot app receives no extra page credit. See `docs/GITHUB_PERFORMANCE.md`.
 - Outside instruction-count optimization, run broad regression suites once per
   ten completed fixes, not after every fix.
   Broad suites include full translation/package test batches, the full LibJS AST
@@ -1764,3 +1770,8 @@ See [evidence](docs/translation-audit/NATIVE_MEDIA_CROSS_ORIGIN_HOST.md).
 Native media crossOrigin (f2e223c9, 2026-10-15 UTC):
 The original five-path feature adds 65 implementation LF and 567 test LF. Its separate two-path fixture correction adds four test LF, yielding 571 total test LF: native binding 161 LF/3 cases, browser owner 217 LF/2 cases, and HTML owner 193 LF/2 cases. Across both transactions there are seven physical rows and five unique paths. Assigned HTML gains 19 implementation LF, 193 test LF and one test file. Excluded browser/root support gains 46 implementation LF, 378 test LF and two test files. Assigned DOM file, implementation-line and test-line deltas are zero; historical owner tables retain their pins. Both original whole selections failed and receive no wholesale pass credit. Only binding three-case credit per GC mode is carried; fresh two-owner/four-case validation passes in both GC modes with actual test and supervisor exits zero. The later ten-fix checkpoint will carry the verified focused three-file/seven-case composite without rerunning it and select only the remaining 63 native files/189 cases for a 66-file/196-case union per mode. All broad claims and the cadence reset remain pending.
 See [evidence](docs/translation-audit/NATIVE_MEDIA_CROSS_ORIGIN_HOST.md).
+
+Native media reflection ten-fix checkpoint (2026-10-15 UTC):
+All selected validation for the native media reflection ten-fix checkpoint passed. Each GC mode has a disjoint 66-file/196-case native union: 63 newly checked files/189 cases plus the verified three-file/seven-case focused composite. Both GC modes passed all 234 LibJS files/778 test functions, and the unchanged official AST driver matched all 100 upstream cases exactly. Production carries the successful signed Boehm build, signing and startup from the retained failed original attempt; the production-only recovery passed two exact comparisons of retained page-load captures, eleven default smoke cases (eight exact, three under existing allowances), and eight exact SVG guards on the same signed executable. No browser rebuild, retained-pair recapture or successful focused-check rerun occurred. The authenticated evidence seal retains cadence at 10/10; only the final supervisor and root actual-zero receipt can reset it to 0/10 at tested fixture epoch f2e223c9e189004f0694c628535b286ed39a87fd. Browser execution still uses JavaScriptCore; full LibJS and native media backend/interface parity remain open.
+Native reflection ten-fix checkpoint: all reviewed broad validation passed. Cadence remains 10/10 until the final supervisor and root actual-zero receipt authenticate reset to 0/10 at broad baseline f2e223c9e189004f0694c628535b286ed39a87fd.
+See [batch evidence](docs/translation-audit/NATIVE_MEDIA_REFLECTION_TEN_FIX_BATCH.md).

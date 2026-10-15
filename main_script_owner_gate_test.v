@@ -142,11 +142,10 @@ fn test_native_loaded_page_does_not_run_scripts_with_disabled_actual_page() {
 	}, false)
 	mut document := app.document
 	defer {
-		app.js_runtime.close()
 		document.finalize()
 	}
 	assert document.get_element_by_id('fallback') != none
 	assert document.get_element_by_id('result')?.as_node().text_content()? == 'initial'
 	assert app.js_messages == []
-	assert app.js_runtime.evaluate_host('typeof disabledNativeExecuted')! == 'undefined'
+	assert app.js_runtime == unsafe { nil }
 }

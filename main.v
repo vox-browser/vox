@@ -1,6 +1,8 @@
 module main
 
 import color
+import adblock
+import browsernet
 import browserjs
 import crypto.sha256
 import css
@@ -21,7 +23,6 @@ import layout
 import math
 import mimesniff
 import namespace_
-import net.http as vhttp
 import os
 import page
 import painting
@@ -286,6 +287,7 @@ mut:
 	page_model                          &page.Page = unsafe { nil }
 	js_runtime                          &browserjs.Runtime = unsafe { nil }
 	js_engine                           browserjs.Engine = .javascriptcore
+	script_policy                       BrowserScriptPolicy
 	document                            &dom.Document = unsafe { nil }
 	root_box                            layout.BlockBox
 	markup                              string
@@ -359,6 +361,7 @@ struct ChromePointerDispatchResult {
 struct LaunchOptions {
 mut:
 	js_engine                  browserjs.Engine = .javascriptcore
+	script_policy              BrowserScriptPolicy
 	source                     string
 	headless_smoke             bool
 	headless_layout_tree       bool
@@ -411,6 +414,10 @@ struct PreloadedResource {
 	url   string
 	body  string
 	error string
+	source_url string
+	final_url string
+	request_type string
+	adblock_replacement bool
 }
 
 // Keep the root executable linked against the translated support modules too. The visible page
@@ -557,6 +564,10 @@ fn parse_launch_options(arguments []string) !LaunchOptions {
 		argument := arguments[index]
 		if argument == '--headless-smoke' {
 			options.headless_smoke = true
+		} else if argument == '--enable-javascript' {
+			options.script_policy = .enabled
+		} else if argument == '--disable-javascript' {
+			options.script_policy = .disabled
 		} else if argument == '--js-engine' {
 			if index + 1 >= arguments.len { return error('--js-engine requires javascriptcore or libjs') }
 			index++
@@ -794,6 +805,8 @@ fn read_cached_page(resource_url string) ?LoadedPage {
 	if !resource_url.starts_with('http://') && !resource_url.starts_with('https://') {
 		return none
 	}
+	filtered := browsernet.filter(adblock.Request{url: resource_url, source_url: resource_url, request_type: 'main_frame'}) or { return none }
+	if filtered.url != resource_url || filtered.replacement != none { return none }
 	path := browser_cache_entry_path(browser_cache_root(), 'pages', resource_url)
 	markup := read_browser_cache_entry(path) or { return none }
 	return LoadedPage{
@@ -818,8 +831,13 @@ fn read_cached_resource(resource_url string) ?string {
 }
 
 fn cache_resource(resource_url string, body string) {
+	cache_resource_response(resource_url, resource_url, body)
+}
+
+fn cache_resource_response(resource_url string, final_url string, body string) {
 	path := browser_cache_entry_path(browser_cache_root(), 'resources', resource_url)
 	write_browser_cache_entry(path, body)
+	write_browser_cache_entry(path + '.url', final_url)
 }
 
 fn cached_snapshot_path(resource_url string) string {
@@ -853,18 +871,8 @@ fn fetch_page(address string, base string) !LoadedPage {
 	if !resolved.starts_with('http://') && !resolved.starts_with('https://') {
 		return error('Unsupported URL scheme')
 	}
-	response := vhttp.fetch(
-		url: resolved
-		method: .get
-		user_agent: 'Ladybird V/0.1'
-		// The current pooled HTTP/2 client can leave a stream waiting indefinitely
-		// after ALPN succeeds. Browser navigation must remain bounded and responsive.
-		enable_http2: false
-		read_timeout: 10 * time.second
-		write_timeout: 10 * time.second
-		validate: true
-		verify: tls_ca_bundle()
-	)!
+	result := browsernet.get(adblock.Request{url: resolved, source_url: resolved, request_type: 'main_frame'}, tls_ca_bundle())!
+	response := result.response
 	content_type := response.header.get(.content_type) or { 'text/html' }
 	if response.status_code < 200 || response.status_code >= 400 {
 		return error('HTTP ${response.status_code} ${response.status_msg}')
@@ -875,7 +883,7 @@ fn fetch_page(address string, base string) !LoadedPage {
 		'<html><body><h1>${html_escape(content_type)}</h1><pre>${html_escape(response.body)}</pre></body></html>'
 	}
 	loaded := LoadedPage{
-		url: resolved
+		url: result.url
 		markup: markup
 		status: 'HTTP ${response.status_code} · ${response.body.len} bytes'
 		content_type: content_type
@@ -885,49 +893,90 @@ fn fetch_page(address string, base string) !LoadedPage {
 }
 
 fn fetch_text_resource(reference string, base string) !string {
+	return fetch_text_resource_for_request(reference, base, base, 'other')
+}
+
+fn fetch_text_resource_for_request(reference string, base string, source_url string, request_type string) !string {
+	return fetch_browser_resource(reference, base, source_url, request_type)!.body
+}
+
+fn fetch_browser_resource(reference string, base string, source_url string, request_type string) !PreloadedResource {
 	resolved := resolve_document_reference(reference, base)
 	if resolved.starts_with('file://') {
 		path := url.percent_decode(resolved['file://'.len..]).bytestr()
-		return read_local_file(path)
+		return PreloadedResource{url: resolved, body: read_local_file(path)!, source_url: source_url, final_url: resolved, request_type: request_type}
 	}
-	if resolved.starts_with('http://') || resolved.starts_with('https://') {
-		if cached := read_cached_resource(resolved) {
-			return cached
+	owner_url := if source_url == '' { resolved } else { source_url }
+	request := adblock.Request{url: resolved, source_url: owner_url, request_type: request_type}
+	filtered := browsernet.filter(request)!
+	if replacement := filtered.replacement {
+		return PreloadedResource{url: resolved, body: replacement.body, source_url: owner_url, final_url: filtered.url, request_type: request_type, adblock_replacement: true}
+	}
+	if filtered.url.starts_with('http://') || filtered.url.starts_with('https://') {
+		// Legacy entries have no redirect provenance. Re-fetch those entries so
+		// an allowed URL cannot hide a redirect to a blocked tracker.
+		path := browser_cache_entry_path(browser_cache_root(), 'resources', filtered.url)
+		if final_url := read_browser_cache_entry(path + '.url') {
+			final_request := adblock.Request{url: final_url, source_url: owner_url, request_type: request_type}
+			final_filter := browsernet.filter(final_request)!
+			if replacement := final_filter.replacement {
+				return PreloadedResource{url: resolved, body: replacement.body, source_url: owner_url, final_url: final_url, request_type: request_type, adblock_replacement: true}
+			}
+			if final_filter.url == final_url {
+				if cached := read_cached_resource(filtered.url) {
+					return PreloadedResource{url: resolved, body: cached, source_url: owner_url, final_url: final_url, request_type: request_type}
+				}
+			}
 		}
 	}
-	response := vhttp.fetch(
-		url: resolved
-		method: .get
-		user_agent: 'Ladybird V/0.1'
-		enable_http2: false
-		read_timeout: 10 * time.second
-		write_timeout: 10 * time.second
-		validate: true
-		verify: tls_ca_bundle()
-	)!
+	result := browsernet.get(adblock.Request{url: filtered.url, source_url: owner_url, request_type: request_type}, tls_ca_bundle())!
+	response := result.response
 	if response.status_code < 200 || response.status_code >= 400 {
 		return error('HTTP ${response.status_code}')
 	}
-	cache_resource(resolved, response.body)
-	return response.body
+	if !result.is_replacement { cache_resource_response(filtered.url, result.url, response.body) }
+	return PreloadedResource{url: resolved, body: response.body, source_url: owner_url, final_url: result.url, request_type: request_type, adblock_replacement: result.is_replacement}
 }
 
-fn fetch_resource_in_background(resource_url string, results chan PreloadedResource) {
-	body := fetch_text_resource(resource_url, '') or {
+fn fetch_resource_in_background(resource_url string, source_url string, request_type string, results chan PreloadedResource) {
+	resource := fetch_browser_resource(resource_url, '', source_url, request_type) or {
 		results <- PreloadedResource{
 			url: resource_url
 			error: err.msg()
+			source_url: source_url
+			request_type: request_type
 		}
 		return
 	}
-	results <- PreloadedResource{
-		url: resource_url
-		body: body
-	}
+	results <- resource
 }
 
-fn fetch_background_resource_in_background(resource_url string, results chan PreloadedResource) {
-	fetch_resource_in_background(resource_url, results)
+// A URL may be requested as both a script and an image. A replacement or a
+// rejection in one context is not a reusable network response in the other.
+fn filter_preloaded_resource(resource PreloadedResource, source_url string, request_type string) !PreloadedResource {
+	filtered := browsernet.filter(adblock.Request{url: resource.url, source_url: source_url, request_type: request_type})!
+	if replacement := filtered.replacement {
+		return PreloadedResource{url: resource.url, body: replacement.body, source_url: source_url, final_url: filtered.url, request_type: request_type, adblock_replacement: true}
+	}
+	if filtered.url != resource.url || resource.adblock_replacement
+		|| resource.error.starts_with('Blocked by adblock:')
+		|| resource.error.starts_with('Adblock unavailable:')
+		|| (resource.error != '' && (resource.source_url != source_url || resource.request_type != request_type)) {
+		return fetch_browser_resource(resource.url, '', source_url, request_type)
+	}
+	if resource.error != '' { return error(resource.error) }
+	if resource.final_url != '' {
+		final_filter := browsernet.filter(adblock.Request{url: resource.final_url, source_url: source_url, request_type: request_type})!
+		if replacement := final_filter.replacement {
+			return PreloadedResource{url: resource.url, body: replacement.body, source_url: source_url, final_url: resource.final_url, request_type: request_type, adblock_replacement: true}
+		}
+		if final_filter.url != resource.final_url { return fetch_browser_resource(resource.url, '', source_url, request_type) }
+	}
+	return resource
+}
+
+fn fetch_background_resource_in_background(resource_url string, source_url string, results chan PreloadedResource) {
+	fetch_resource_in_background(resource_url, source_url, 'image', results)
 	$if macos {
 		C.native_wake_browser()
 	}
@@ -999,17 +1048,19 @@ fn document_preload_resource_urls(document &dom.Document, base_url string) []str
 			}
 		}
 	}
-	for script in css.query_selector_all(root, 'script[src]') {
-		type_ := script.get_attribute_value('type').trim_space().to_lower()
-		if type_ != '' && type_ !in ['text/javascript', 'application/javascript', 'module'] {
-			continue
-		}
-		resource_url := resolve_document_reference(script.get_attribute_value('src'), base_url)
-		if (resource_url.starts_with('http://') || resource_url.starts_with('https://')) && resource_url !in seen {
-			seen[resource_url] = true
-			urls << resource_url
-			if urls.len == max_preloaded_resources {
-				return urls
+	if browser_document_can_load_scripts(document) {
+		for script in css.query_selector_all(root, 'script[src]') {
+			type_ := script.get_attribute_value('type').trim_space().to_lower()
+			if type_ != '' && type_ !in ['text/javascript', 'application/javascript', 'module'] {
+				continue
+			}
+			resource_url := resolve_document_reference(script.get_attribute_value('src'), base_url)
+			if (resource_url.starts_with('http://') || resource_url.starts_with('https://')) && resource_url !in seen {
+				seen[resource_url] = true
+				urls << resource_url
+				if urls.len == max_preloaded_resources {
+					return urls
+				}
 			}
 		}
 	}
@@ -1058,8 +1109,19 @@ fn preload_document_resources(document &dom.Document, base_url string, cached ma
 	mut loaded := map[string]PreloadedResource{}
 	mut pending_urls := []string{}
 	for resource_url in urls {
+		request_type := document_preload_resource_type(document, resource_url, base_url)
+		filtered := browsernet.filter(adblock.Request{url: resource_url, source_url: document.url.serialize(), request_type: request_type}) or {
+			loaded[resource_url] = PreloadedResource{url: resource_url, error: err.msg()}
+			continue
+		}
+		if replacement := filtered.replacement {
+			loaded[resource_url] = PreloadedResource{url: resource_url, body: replacement.body, source_url: document.url.serialize(), final_url: filtered.url, request_type: request_type, adblock_replacement: true}
+			continue
+		}
 		if existing := cached[resource_url] {
-			loaded[resource_url] = existing
+			loaded[resource_url] = filter_preloaded_resource(existing, document.url.serialize(), request_type) or {
+				PreloadedResource{url: resource_url, error: err.msg(), source_url: document.url.serialize(), request_type: request_type}
+			}
 		} else {
 			pending_urls << resource_url
 		}
@@ -1069,13 +1131,27 @@ fn preload_document_resources(document &dom.Document, base_url string, cached ma
 	}
 	results := chan PreloadedResource{ cap: pending_urls.len }
 	for resource_url in pending_urls {
-		spawn fetch_resource_in_background(resource_url, results)
+		spawn fetch_resource_in_background(resource_url, document.url.serialize(), document_preload_resource_type(document, resource_url, base_url), results)
 	}
 	for _ in pending_urls {
 		resource := <-results
 		loaded[resource.url] = resource
 	}
 	return loaded
+}
+
+fn document_preload_resource_type(document &dom.Document, resource_url string, base_url string) string {
+	root := unsafe { &dom.Node(document) }
+	for element in css.query_selector_all(root, 'link[rel][href]') {
+		if element.get_attribute_value('rel').to_lower().split(' ').any(it == 'stylesheet')
+			&& resolve_document_reference(element.get_attribute_value('href'), base_url) == resource_url { return 'stylesheet' }
+	}
+	if browser_document_can_load_scripts(document) {
+		for element in css.query_selector_all(root, 'script[src]') {
+			if resolve_document_reference(element.get_attribute_value('src'), base_url) == resource_url { return 'script' }
+		}
+	}
+	return 'image'
 }
 
 fn install_external_styles(document &dom.Document, base_url string, preloaded map[string]PreloadedResource) []string {
@@ -1087,6 +1163,10 @@ fn install_external_styles(document &dom.Document, base_url string, preloaded ma
 		}
 		href := link.get_attribute_value('href')
 		resolved_url := resolve_document_reference(href, base_url)
+		_ := browsernet.filter(adblock.Request{url: resolved_url, source_url: document.url.serialize(), request_type: 'stylesheet'}) or {
+			messages << 'Stylesheet ${href}: ${err.msg()}'
+			continue
+		}
 		if resolved_url.starts_with('file://') {
 			path := url.percent_decode(resolved_url['file://'.len..]).bytestr()
 			if path != '' && os.is_file(path) {
@@ -1095,13 +1175,13 @@ fn install_external_styles(document &dom.Document, base_url string, preloaded ma
 			}
 		}
 		stylesheet := if resource := preloaded[resolved_url] {
-			if resource.error != '' {
-				messages << 'Stylesheet ${href}: ${resource.error}'
+			filtered_resource := filter_preloaded_resource(resource, document.url.serialize(), 'stylesheet') or {
+				messages << 'Stylesheet ${href}: ${err.msg()}'
 				continue
 			}
-			resource.body
+			filtered_resource.body
 		} else {
-			fetch_text_resource(href, base_url) or {
+			fetch_text_resource_for_request(href, base_url, document.url.serialize(), 'stylesheet') or {
 				messages << 'Stylesheet ${href}: ${err.msg()}'
 				continue
 			}
@@ -1119,6 +1199,7 @@ fn install_external_styles(document &dom.Document, base_url string, preloaded ma
 }
 
 fn script_sources(document &dom.Document, base_url string, preloaded map[string]PreloadedResource, mut messages []string) []browserjs.ScriptSource {
+	if !browser_document_can_load_scripts(document) { return [] }
 	root := unsafe { &dom.Node(document) }
 	mut sources := []browserjs.ScriptSource{}
 	for script_element in css.query_selector_all(root, 'script') {
@@ -1128,14 +1209,20 @@ fn script_sources(document &dom.Document, base_url string, preloaded map[string]
 		}
 		if src := script_element.get_attribute('src') {
 			resolved_url := resolve_document_reference(src, base_url)
-			source := if resource := preloaded[resolved_url] {
-				if resource.error != '' {
-					messages << 'Script ${src}: ${resource.error}'
+			filtered := browsernet.filter(adblock.Request{url: resolved_url, source_url: document.url.serialize(), request_type: 'script'}) or {
+				messages << 'Script ${src}: ${err.msg()}'
+				continue
+			}
+			source := if replacement := filtered.replacement {
+				replacement.body
+			} else if resource := preloaded[resolved_url] {
+				filtered_resource := filter_preloaded_resource(resource, document.url.serialize(), 'script') or {
+					messages << 'Script ${src}: ${err.msg()}'
 					continue
 				}
-				resource.body
+				filtered_resource.body
 			} else {
-				fetch_text_resource(src, base_url) or {
+				fetch_text_resource_for_request(src, base_url, document.url.serialize(), 'script') or {
 					messages << 'Script ${src}: ${err.msg()}'
 					continue
 				}
@@ -1204,6 +1291,14 @@ fn native_bitmap_channel_marker(bitmap &dom.Bitmap_, premultiplied bool) int {
 }
 
 fn browser_image_resource_bytes(resource_url dom.URL) ![]u8 {
+	return browser_image_resource_bytes_for_document(resource_url, '')
+}
+
+fn browser_image_resource_bytes_for_document(resource_url dom.URL, source_url string) ![]u8 {
+	return browser_resource_bytes_for_document(resource_url, source_url, 'image')
+}
+
+fn browser_resource_bytes_for_document(resource_url dom.URL, source_url string, request_type string) ![]u8 {
 	serialized := resource_url.serialize()
 	if serialized.starts_with('data:') {
 		comma := serialized.index(',') or { return error('Malformed data URL') }
@@ -1224,7 +1319,7 @@ fn browser_image_resource_bytes(resource_url dom.URL) ![]u8 {
 	if serialized.starts_with('http://') || serialized.starts_with('https://') {
 		// Reuse navigation's preloaded resource cache before fetching a missing
 		// resource. Native image requests must decode the same bytes as painting.
-		return fetch_text_resource(serialized, '')!.bytes()
+		return fetch_text_resource_for_request(serialized, '', source_url, request_type)!.bytes()
 	}
 	return error('Unsupported image resource URL')
 }
@@ -1257,7 +1352,11 @@ fn browser_decode_raster_image_bytes(bytes []u8) !&dom.Bitmap_ {
 
 // The existing compact raster decoder supplies the actual HTML request.
 fn browser_fetch_image_resource(resource_url dom.URL) !html.DecodedImageData {
-	bitmap := browser_decode_raster_image_bytes(browser_image_resource_bytes(resource_url)!)!
+	return browser_fetch_image_resource_for_document(resource_url, '')
+}
+
+fn browser_fetch_image_resource_for_document(resource_url dom.URL, source_url string) !html.DecodedImageData {
+	bitmap := browser_decode_raster_image_bytes(browser_image_resource_bytes_for_document(resource_url, source_url)!)!
 	decoded := html.BitmapDecodedImageData.create([html.BitmapDecodedImageFrame{frame: dom.DecodedImageFrame_.create(bitmap)}], 0, false)
 	// Legacy cache entries contain only encoded bytes, without final redirect
 	// origins or response headers. Keep those remote pixels opaque to readback.
@@ -1277,11 +1376,15 @@ fn browser_fetch_image_request(element &dom.HTMLImageElement, model &html.HTMLIm
 			return error('Cross-origin image CORS responses are not supported by the native cache')
 		}
 	}
-	return browser_fetch_image_resource(resource_url)
+	return browser_fetch_image_resource_for_document(resource_url, unsafe { &dom.Element(element) }.document().url.serialize())
 }
 
 fn browser_fetch_object_resource(resource_url dom.URL) !html.ObjectResourceResponse {
-	bytes := browser_image_resource_bytes(resource_url)!
+	return browser_fetch_object_resource_for_document(resource_url, '')
+}
+
+fn browser_fetch_object_resource_for_document(resource_url dom.URL, source_url string) !html.ObjectResourceResponse {
+	bytes := browser_resource_bytes_for_document(resource_url, source_url, 'object')!
 	mime_type := if detected := mimesniff.match_an_image_type_pattern(bytes) {
 		detected.essence()
 	} else {
@@ -1299,7 +1402,9 @@ fn install_object_image_fetch_hooks(document &dom.Document) {
 	for element in css.query_selector_all(root, 'object') {
 		object_element := unsafe { &dom.HTMLObjectElement(element) }
 		mut model := html.html_object_element_model_for_dom_element(object_element)
-		model.set_fetch_hook(browser_fetch_object_resource)
+		model.set_fetch_hook(fn [element] (resource_url dom.URL) !html.ObjectResourceResponse {
+			return browser_fetch_object_resource_for_document(resource_url, element.document().url.serialize())
+		})
 		// The compact native shell does not construct a full navigable graph for
 		// its top-level document, but that document is its active presentation.
 		model.set_environment(element.as_node().is_connected(), true, false)
@@ -1319,7 +1424,9 @@ fn install_video_poster_fetch_hooks(document &dom.Document) {
 		if !element.is_html_element() { continue }
 		video_element := unsafe { &dom.HTMLVideoElement(element) }
 		mut model := html.html_video_element_model_for_dom_element(video_element)
-		model.set_poster_fetch_hook(browser_fetch_video_poster)
+		model.set_poster_fetch_hook(fn [element] (resource_url dom.URL) !&dom.Bitmap_ {
+			return browser_decode_raster_image_bytes(browser_image_resource_bytes_for_document(resource_url, element.document().url.serialize())!)
+		})
 		if poster := element.get_attribute('poster') {
 			model.set_poster(poster)
 		}
@@ -2572,6 +2679,11 @@ fn run_document_script_sources(document &dom.Document, current_url string, sourc
 		messages << 'JavaScript animation-frame bindings: ${err.msg()}'
 		return none
 	}
+	install_browser_page_storage(document, runtime) or {
+		messages << 'JavaScript storage bindings: ${err.msg()}'
+		return none
+	}
+	install_browser_adblock_scriptlets(document, runtime, mut messages)
 	for source in sources {
 		if !compact_document_can_run_script(document) { continue }
 		runtime.run_document_scripts([source]) or {
@@ -2861,6 +2973,7 @@ fn (mut app BrowserApp) relayout(window_width int, window_height int) {
 	if app.document == unsafe { nil } {
 		return
 	}
+	refresh_browser_adblock(app.document, app.js_runtime, mut app.js_messages)
 	viewport_width := if window_width > 0 { window_width } else { initial_width }
 	chrome_height := app.chrome_height()
 	viewport_height := if window_height > chrome_height {
@@ -2983,13 +3096,15 @@ fn (mut app BrowserApp) install_loaded_page(loaded LoadedPage, add_history bool)
 	app.paint_timing.installation_instructions = processmetrics.begin_instructions()
 	initiator_origin := if app.document != unsafe { nil } { ?dom.Origin(app.document.origin()) } else { none }
 	previous_document := if app.document != unsafe { nil } { ?&dom.Document(app.document) } else { ?&dom.Document(none) }
+	scripting_enabled := browser_scripting_enabled(loaded.url, app.script_policy)
 	app.document = if document_url := dom.dom_url_parse(loaded.url, dom.url_about_blank(),
 		'UTF-8') {
-		parse_browser_navigation_document_for_page_with_response_time(loaded.markup, document_url, initiator_origin, previous_document, unsafe { &dom.Page(app.page_model) }, loaded.monotonic_response_time_ns)
+		parse_browser_navigation_document_with_scripting(loaded.markup, document_url, initiator_origin, previous_document, unsafe { &dom.Page(app.page_model) }, loaded.monotonic_response_time_ns, scripting_enabled)
 	} else {
-		parse_browser_navigation_document_for_page_with_response_time(loaded.markup, dom.url_about_blank(), initiator_origin, previous_document, unsafe { &dom.Page(app.page_model) }, loaded.monotonic_response_time_ns)
+		parse_browser_navigation_document_with_scripting(loaded.markup, dom.url_about_blank(), initiator_origin, previous_document, unsafe { &dom.Page(app.page_model) }, loaded.monotonic_response_time_ns, scripting_enabled)
 	}
 	reserve_document_heap_for_layout(app.document)
+	install_browser_adblock_styles(app.document, '') or { app.js_messages << 'Adblock styles: ${err.msg()}' }
 	if app.page_model != unsafe { nil } && !app.page_model.has_local_root_navigable() {
 		if navigable := app.document.navigable() {
 			mut page_model := app.page_model
@@ -3009,7 +3124,7 @@ fn (mut app BrowserApp) install_loaded_page(loaded LoadedPage, add_history bool)
 	preloaded_resources := preload_document_resources(app.document, resource_base_url, app.resource_cache)
 	checkpoint = debug_timing_checkpoint('preload_resources', checkpoint)
 	for resource_url, resource in preloaded_resources {
-		if resource.error == '' && app.resource_cache.len < max_cached_resources {
+		if resource.error == '' && !resource.adblock_replacement && app.resource_cache.len < max_cached_resources {
 			app.resource_cache[resource_url] = resource
 		}
 		publish_browser_svg_resource(resource)
@@ -3025,11 +3140,22 @@ fn (mut app BrowserApp) install_loaded_page(loaded LoadedPage, add_history bool)
 		app.js_runtime = unsafe { nil }
 	}
 	sources := script_sources(app.document, resource_base_url, preloaded_resources, mut app.js_messages)
-	javascript_navigation := if sources.len > 0 || document_has_window_event_handlers(app.document) {
+	javascript_navigation := if app.document.as_node().is_scripting_enabled()
+		&& (sources.len > 0 || document_has_window_event_handlers(app.document)
+		|| browser_adblock_requires_runtime(app.document)) {
 		app.js_runtime = create_browser_script_runtime(app.js_engine)
 		run_document_script_sources(app.document, loaded.url, sources, app.js_runtime, mut app.js_messages)
 	} else {
 		none
+	}
+	if debug_timing_enabled() {
+		mut source_bytes := 0
+		for source in sources { source_bytes += source.code.len }
+		mut preloaded_scripts := 0
+		for _, resource in preloaded_resources {
+			if resource.request_type == 'script' { preloaded_scripts++ }
+		}
+		eprintln('Ladybird V scripting: enabled=${app.document.as_node().is_scripting_enabled()} runtime=${app.js_runtime != unsafe { nil }} sources=${sources.len} source_bytes=${source_bytes} preloaded_scripts=${preloaded_scripts}')
 	}
 	checkpoint = debug_timing_checkpoint('run_javascript', checkpoint)
 	if cookie_blocker_enabled_by_default {
@@ -3864,11 +3990,13 @@ fn paint_commands_contain_backdrop_filter(commands []layout.PaintCommand) bool {
 }
 
 fn (app &BrowserApp) background_image_bytes(image_url string) ![]u8 {
+	source_url := if app.document != unsafe { nil } { app.document.url.serialize() } else { app.address }
+	if image_url.starts_with('http://') || image_url.starts_with('https://') {
+		filtered := browsernet.filter(adblock.Request{url: image_url, source_url: source_url, request_type: 'image'})!
+		if replacement := filtered.replacement { return replacement.body.bytes() }
+	}
 	if resource := app.resource_cache[image_url] {
-		if resource.error == '' {
-			return resource.body.bytes()
-		}
-		return error(resource.error)
+		return filter_preloaded_resource(resource, source_url, 'image')!.body.bytes()
 	}
 	if image_url.starts_with('data:') {
 		comma := image_url.index(',') or { return error('Malformed data URL') }
@@ -3932,7 +4060,8 @@ fn (mut app BrowserApp) request_background_resource(image_url string) {
 		return
 	}
 	app.background_resource_pending[image_url] = true
-	spawn fetch_background_resource_in_background(image_url, app.background_resource_results)
+	source_url := if app.document != unsafe { nil } { app.document.url.serialize() } else { app.address }
+	spawn fetch_background_resource_in_background(image_url, source_url, app.background_resource_results)
 }
 
 fn (mut app BrowserApp) poll_background_resources() {
@@ -3975,13 +4104,19 @@ fn (mut app BrowserApp) poll_background_resources() {
 }
 
 fn (mut app BrowserApp) background_image(image_url string) ?&gg.Image {
-	if image_id := app.background_image_ids[image_url] {
+	source_url := if app.document != unsafe { nil } { app.document.url.serialize() } else { app.address }
+	cache_key := source_url + '\n' + adblock.is_enabled().str() + '\n' + image_url
+	if image_id := app.background_image_ids[cache_key] {
 		image := app.ctx.get_cached_image_by_idx(image_id)
 		if image.ok {
 			return image
 		}
 	}
 	if image_url.starts_with('http://') || image_url.starts_with('https://') {
+		if resource := app.resource_cache[image_url] {
+			if (resource.error != '' || resource.adblock_replacement)
+				&& (resource.source_url != source_url || resource.request_type != 'image') { app.resource_cache.delete(image_url) }
+		}
 		if image_url !in app.resource_cache {
 			app.request_background_resource(image_url)
 			return none
@@ -3996,7 +4131,7 @@ fn (mut app BrowserApp) background_image(image_url string) ?&gg.Image {
 		bytes := app.background_image_bytes(image_url) or { return none }
 		app.create_image_from_resource_bytes(image_url, bytes) or { return none }
 	}
-	app.background_image_ids[image_url] = image.id
+	app.background_image_ids[cache_key] = image.id
 	return app.ctx.get_cached_image_by_idx(image.id)
 }
 
@@ -6216,6 +6351,7 @@ fn main() {
 		screenshot_scroll_y: options.screenshot_scroll_y
 		layout_tree_only: options.headless_layout_tree
 		js_engine: options.js_engine
+		script_policy: options.script_policy
 		use_document_font: use_document_font
 		viewport_width: options.width
 		viewport_height: initial_viewport_height

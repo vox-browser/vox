@@ -274,7 +274,9 @@ fn (mut p HTMLParser) process_using_the_rules_for_foreign_content(mut token HTML
 			location := p.find_appropriate_place_for_inserting_node()
 			parent := location.parent or { return }
 			element := p.create_element_for(token, acn_namespace, parent)
-			p.register_parser_inserted_svg_script(element, token)
+			if p.document_.is_scripting_enabled_by_embedder() {
+				p.register_parser_inserted_svg_script(element, token)
+			}
 			p.insert_an_element_at_the_adjusted_insertion_location(element)
 			p.stack_of_open_elements.push(element)
 			if token.is_self_closing() {
@@ -329,6 +331,9 @@ fn (mut p HTMLParser) process_using_the_rules_for_foreign_content(mut token HTML
 
 fn (mut p HTMLParser) process_svg_script_end_tag(element &dom.Element) {
 	p.stack_of_open_elements.pop()
+	if !p.document_.is_scripting_enabled_by_embedder() {
+		return
+	}
 	p.tokenizer.store_old_insertion_point()
 	p.tokenizer.update_insertion_point()
 	p.increment_script_nesting_level()
