@@ -300,22 +300,15 @@ fn attach_layout_node_recursive(box &Node, parent_placeholder ?&dom.LayoutNode, 
 		if first := text_node.first_letter_ {
 			placeholder.rendered_text_ = first.text_for_rendering() + placeholder.rendered_text_
 			if collect_text_chunks {
-				mut first_iterator := TextNodeChunkIterator.new(first, false, false)
-				for {
-					chunk := first_iterator.next() or { break }
-					placeholder.rendered_text_chunks_ << chunk.view
-				}
+				collected := collect_dom_rendered_text(first)
+				if collected != '' { placeholder.rendered_text_chunks_ << collected }
 			}
 		}
-		// HTMLElement::rendered_text_collection_steps consumes TextNode::ChunkIterator with both
-		// wrapping and line-break preservation disabled. The chunks, rather than text_for_rendering()
-		// itself, apply the remaining collapsible-space processing used by innerText.
+		// innerText consumes the concatenated no-wrap text after the remaining
+		// collapsible-space processing; font and grapheme chunks are unnecessary.
 		if collect_text_chunks {
-			mut iterator := TextNodeChunkIterator.new(text_node, false, false)
-			for {
-				chunk := iterator.next() or { break }
-				placeholder.rendered_text_chunks_ << chunk.view
-			}
+			collected := collect_dom_rendered_text(text_node)
+			if collected != '' { placeholder.rendered_text_chunks_ << collected }
 		}
 	}
 	placeholders[u64(voidptr(box))] = placeholder

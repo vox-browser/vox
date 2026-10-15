@@ -27,7 +27,8 @@ fn test_initial_bridge_keeps_structure_and_ordinals_without_collecting_text_chun
 	_ = attach_layout_nodes(root)
 	complete := text.layout_node() or { panic('missing complete text association') }
 	assert complete.rendered_text_chunks_.join('') == ' a b '
-	assert text_node.cached_utf16_code_units_ != none
+	// Completed text collection also leaves shaping-only UTF-16 data lazy.
+	assert text_node.cached_utf16_code_units_ == none
 }
 
 fn test_final_bridge_keeps_first_letter_inner_text_range_geometry_and_caret_stops() {
