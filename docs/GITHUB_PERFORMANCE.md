@@ -3532,6 +3532,99 @@ Evidence: `Build/instructions/vox-opt38-interleaved-*` and
 `Build/v/instruction-opt38-*`. The completed broad batch resets the GitHub
 baseline to 31,062,009,877 instructions, with zero additional observed savings.
 
+## Reuse unchanged column-flex geometry during intrinsic sizing
+
+Feature `e4f2da02` applies the existing guarded column-flex geometry reuse
+to intrinsic sizing too. The natural child layout still runs first, in normal
+mode. When the final height and forced width match, and no descendant consumes
+a newly definite height, its geometry can be retained instead of laying out
+the same subtree again. Changed flex targets and percentage-dependent descendants
+still rerun. Inline-flex baselines are retained before intrinsic line boxes
+are discarded. This removes one mode restriction from the existing guard;
+the remaining sizing, dependency and baseline behavior is unchanged.
+
+Fourteen functional cases and an inactive diagnostic pass **18,854 assertions**
+per configuration in before/final Boehm and final no-GC C-O2 builds. Three new
+cases cover retained first-pass baselines with centered intrinsic content,
+percentage descendants after height promotion, and changed shrink targets.
+The initial harness's immutable-state access failed compilation before any
+test ran. Those logs remain in `instruction-opt39-initial-harness-failure`;
+only the harness accessor was corrected before the successful checks.
+
+Three fixed alternating diagnostic pairs run **2,048 complete intrinsic
+max-content height probes** through ten nested column-flex containers.
+Medians change from **1,346,808,160 to 776,540,639**
+retired instructions (-42.34%). All three pairs improve;
+all six checksums are 10,485,760. Setup, eight warmups, expected results and
+forced collection precede the counter, with checksum assertions afterward.
+This is a local result without separate page credit. Full-process C-O1/Boehm
+profiles have no filter or counter reset: column-flex calls change from
+**43,423 to 22,763**, and child-layout calls from **45,542 to 22,803**.
+Profile call counts support the mechanism; they are not hardware instructions.
+
+The strict generated-C audit permits only
+`layout__run_column_flex_formatting_context` to change. All other generated
+logic, layouts, resources and collector setup match after established compiler
+identity, exact assertion-line and frozen-include normalization. Four helpers
+may reorder only when their raw bodies are identical. All 120 native inputs,
+37 quoted includes and native C-O2 arguments remain authenticated. Compiled C
+SHA256: `ed777ac45fa1f835fc2247860ca78ae35d31f868f35cb9fa500c6c289b2c7397`.
+Durable generated-C and profile archives are hashed in
+`Build/v/instruction-opt39-artifact-archives.json`.
+
+The predeclared cohort contains 30 alternating pairs and 30,000 paired bootstrap
+resamples, seed 39. Both regular binaries use the same 359-body cache with
+fresh copies, frozen helper, 1024×768 viewport and
+`navigation_to_first_document_paint[0]`. Normal C-O2/Boehm retains one marker,
+without prod/prealloc. The control is the frozen round 38 final runtime.
+
+| Build | Median first-frame retired instructions |
+| --- | ---: |
+| Frozen round 38 control | 31,058,303,623.5 |
+| Intrinsic column geometry reuse | 30,989,389,977.5 |
+
+Observed matching median saving is **68,913,646** instructions
+(+0.222%). 18/30 pairs improve. The paired
+median saving is 46,124,713.5; its 95% paired percentile
+interval is **-163,544,061.5 to 1,050,264,518**. Repeatable page credit is **0**,
+requiring a strictly positive lower confidence bound. The interval estimates the
+paired median; the point saving above is the difference of marginal medians.
+
+All 60 primary observations remain, with 60 actual PNGs, 0
+recovered post-primary counters and 0 archived pre-parse startup retries.
+No completed primary is rerun, discarded or extended. The first attempt stopped
+at fresh-cache directory creation before launching a browser; its failed
+pipeline receipts remain in `instruction-opt39-prelaunch-directory-failure`.
+Creating the declared scratch parent allowed the unexecuted cohort to start.
+Every primary has one installation, two geometry preparations and one paint;
+there are 0 separately retained post-primary
+refreshes. Capture evidence is `instruction-opt39-capture-audit.json`.
+
+A concurrent observer change extracts its default launch list into a helper
+that accepts optional explicit arguments. This cohort passes none. Five Vox
+routines remain AST-identical to the starting observer; `run_vox` is identical
+after unfolding that exact default helper. All 60 recorded launch arrays are
+verified separately. The fixed native endpoint and binaries are unchanged.
+
+All six direct V harness jobs exit zero: CSS 31, SVG 10 and layout 46 in both GC modes, totaling 174 case executions. All 19 screenshot comparisons pass, 16 exact; known differences remain inline-node 13, text-decorations 1,341 and canvas-text 1,994.
+The focused intrinsic-column, baseline, percentage and shrink viewport is
+pixel-exact. The selected broad runtime and this feature's overlay are pinned
+separately from contemporary Root and use SSD scratch.
+The first broad screenshot command stopped before capture because its copied
+helper lacked executable permission. That failed receipt and its blocked
+dependents remain in `instruction-opt39-validation-launch-permission-failure`.
+After restoring permission, only unfinished screenshot work resumed; the exact
+focused comparison and all six successful regression jobs were retained.
+
+The signed isolated comparison app is `/Users/alex/code/vox2/Build/v/Vox-opt39.app`. Signature,
+startup, matching native text and actual collections pass with default marker
+1 and override 2. Canonical and GUI apps are preserved. Independent Root work
+is excluded from the frozen app and receives no performance or regression
+credit from this cohort. Chrome parity remains unestablished.
+
+Evidence: `Build/instructions/vox-opt39-interleaved-*` and
+`Build/v/instruction-opt39-*`.
+
 ## Causes and changes
 
 - The V 0.5.2 compatibility compiler's `-prod` Boehm code repeatedly snapshots

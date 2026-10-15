@@ -1413,6 +1413,12 @@ evidence](docs/translation-audit/NATIVE_MEDIA_WHEEL_RAW_HANDLER.md).
   repeatable page credit 0.
   Broad verification: passed 87 selected cases both GC and 19 screenshots (16 exact).
   The focused viewport is exact; Chrome parity remains open.
+  Intrinsic column geometry `e4f2da02` passes 18,854 focused assertions
+  per configuration; its complete nested-column probe uses 42.34% fewer
+  instructions. Matching 30-pair observed savings are 68,913,646,
+  with repeatable page credit 0.
+  Broad verification: passed 87 selected cases both GC and 19 screenshots (16 exact).
+  The focused viewport is exact; Chrome parity remains open.
 - Outside instruction-count optimization, run broad regression suites once per
   ten completed fixes, not after every fix.
   Broad suites include full translation/package test batches, the full LibJS AST
