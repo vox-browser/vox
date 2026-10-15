@@ -6778,6 +6778,114 @@ content/start/submission accounting remains open; faster-than-Chrome performance
 is unproven. Evidence: `Build/instructions/vox-opt71-interleaved-*` and
 `Build/v/instruction-opt71-*`.
 
+## Skip property contexts when no computation is required
+
+This integration imports only the exact source slice of independently authored
+feature `e58fb75b` (Alexander Medvednikov). It moves construction and reset
+of a property's computation context, actual computation and dependency checks
+inside the existing `requires_computation` branch. Values already computed by
+inheritance or initialization keep their identity and flags. Required font,
+length, calculation and viewport computations still follow the same path.
+No contemporary Root snapshot or unrelated working edits enter this comparison.
+No new record, state, cache, public API, filtering, arena or GC policy is added.
+
+Before/final Boehm and final no-GC C-O2 builds each pass **2,460 assertions in
+16 cases** (15 functional plus an inactive diagnostic), with identical common
+source SHA256 `844cf5e77d7aab59268350ad7e48c37acab9e3cb6b781bb1e163a4e722df3cd7`. The author's three
+focused cases check inherited value identity and flags, font/viewport dependency
+propagation across resize, required relative/calculated values and removal of
+stale viewport dependence after fixed replacement. Existing inherited-property,
+initial template, property lookup, length metrics and keyword checks remain.
+The imported tests match their existing commit exactly; Root implementation and
+concurrent edits are preserved.
+
+Three predeclared alternating local pairs run **128 complete public
+`compute_style` batches**, with 16 children using inherited, initial,
+relative/calculated and viewport properties. Complete computation and result
+checksum reads are counted. Setup, parent installation, eight warmups, expected
+result and forced GC precede the hardware interval; checksum assertion follows.
+Before counts: 576,292,401 / 573,890,636 / 574,841,185. Candidate counts by pair:
+540,838,848 / 541,254,940 / 543,956,100. Median instructions change
+**574,841,185→541,254,940 (-5.84%)**,
+all three pairs improving, checksum **19,785,728** in all six observations.
+This local result receives no extra page credit.
+
+Both full-process C-O1/Boehm profiles actually pass without filter/reset.
+Complete public batch calls stay 137; compute-style, compute-properties and
+actual property-computation counts match. Context construction calls change
+187,439→8,857.
+Exact counts and generated-C full-process proof remain archived. No profile
+time or call count substitutes for retired hardware instructions.
+
+Strict C audit permits only the exact branch relocation in
+`css__StyleComputer_compute_properties`. Normal before/final bodies match their
+independently generated focused bodies byte-for-byte. The exact moved block and
+compiler-generated lexical context-root changes are authenticated; all remaining
+target bytes, including inherited/default values, flags, cache logic and later
+value roots, match. No new record/global is allowed. All other C, schemas,
+resources, filtering, arenas and GC policy match after established compiler
+identities, unchanged assertion-line mapping, 37 frozen includes and four
+byte-identical helper reorderings. Exact native arguments and 120 pinned input
+hashes match. C SHA256 `eb604da4f46c2a62c00bcab6f292a912946be203150e580df1a3cf24e4a709ae`; durable
+normal/focused/profile archive hashes are in
+`instruction-opt72-artifact-archives.json`.
+
+The first audit draft retained numeric rounds 70/71 instead of 71/72 and
+therefore compared the wrong normal target. Its failed result, original script
+and empty actual normal/focused diff remain under
+`instruction-opt72-c-audit-focused-target-failure`. A second draft counted a two-tab root barrier as a substring of the new
+three-tab barrier; its failure and gated pipeline-start failure remain under
+`instruction-opt72-c-audit-root-pattern-failure`. The corrected audit selects
+rounds 71/72 and anchors removal to the one exact outer context-root line.
+All remaining comparison rules stay strict; no runtime job or completed
+instruction observation is repeated.
+
+The predeclared page cohort fixes **30 alternating pairs**, odd before/final
+and even final/before; **30,000 paired bootstrap resamples, seed 72**. Both
+persisted regular binaries use fresh copies of the same 359 cached bodies,
+frozen text helper, identical child-only placement helper, C-O2/Boehm/default
+marker 1 and unchanged 4 GiB hint; no prod/prealloc. Fixed document viewport
+1024×768, endpoint `navigation_to_first_document_paint[0]`. Only this fresh
+matched cohort is compared; historical medians and independent Root work are
+excluded.
+
+| Build | Median first-frame retired instructions | Median process peak, MiB |
+| --- | ---: | ---: |
+| Fresh accepted frozen71 control | 18,276,309,553 | 3,635.7 |
+| Required property contexts only | 18,178,986,346 | 3,633 |
+
+Difference of marginal medians: **97,323,207** instructions
+saved (-0.533% change), **30/30** wins.
+Paired median saving **101,983,295**; paired 95% interval
+**[98,599,644, 105,813,109]**. The positive paired interval establishes repeatable page credit of **97,323,207** instructions.
+
+All 60 primary observations and **60 actual viewport PNGs** remain.
+Recovered primaries: none; pre-parse retries: 0.
+First primaries retain 1 installation/2 geometry preparations/1 paint. Later
+completed refreshes remain separate: none.
+The retained whole-page PNGs vary with the existing animated skeleton shimmer:
+30 distinct decoded images per variant, one image shared across variants.
+The union of differences across all 60 captures stays within the skeleton
+placeholder bands (x 45–662, y 335–344 and the ten 14px bands starting at
+380 with 41px spacing). Header, About, file labels and geometry outside those
+bands match. No animation was disabled or capture repeated; the read-only
+pixel evidence remains in `instruction-opt72-page-pixel-class-check.json`.
+No completed primary is extended, discarded or rerun. Any recovery discloses
+unknown final exit and missing PNG/fingerprint/peak. Lifetime peaks cover
+capture/exit and later refreshes, are not first-frame live memory and are never
+summed. The focused inherited/relative/viewport/fixed-style viewport is exact
+at 1024×768. Prior observed carry is **4,121,747.5**. Cumulative observed saving **101,444,954.5** crosses the 5M gate. Six direct harness jobs actually pass CSS 31/SVG 10/layout 46 in both GCs (**174 executions**). All **19 screenshots pass, 16 exact**; known differences remain inline-node 13, text-decorations 1,341 and canvas-text 1,994. The completed broad batch resets additional observed savings to 0.
+
+The isolated signed app is `/Users/alex/code/vox2/Build/v/Vox-opt72.app`; native instruction text
+matches the measured regular executable. The frozen helper is pinned inside
+the bundle and its actual default loaded path/hash is checked. Signatures,
+startup and actual collections pass, with default marker 1 and override 2.
+Canonical app and user GUI are preserved, and actual before/after hashes
+disclose concurrent advancement. Contemporary Root receives no additional
+source/regression/performance credit. Equivalent Chrome content/start/submission
+accounting remains open; faster-than-Chrome performance is unproven. Evidence:
+`Build/instructions/vox-opt72-interleaved-*` and `Build/v/instruction-opt72-*`.
+
 ## Causes and changes
 
 - The V 0.5.2 compatibility compiler's `-prod` Boehm code repeatedly snapshots

@@ -1651,6 +1651,15 @@ evidence](docs/translation-audit/NATIVE_MEDIA_WHEEL_RAW_HANDLER.md).
   focused retained-line viewport exact. Additional observed savings: 4,121,747.5.
   Same 4 GiB/placement; canonical/GUI preserved; contemporary Root excluded.
   Chrome parity remains open.
+  Required property contexts `e58fb75b` (independent committed slice)
+  pass 2,460 focused assertions per configuration; complete public style
+  batches use 5.84% fewer instructions. Page point saving 97,323,207,
+  30/30 wins, paired interval [98,599,644, 105,813,109];
+  repeatable page credit 97,323,207. Broad verification:
+  87 selected cases both GC and 19 screenshots (16 exact);
+  focused property-context viewport exact. Additional observed savings: 0.
+  Same 4 GiB/placement; canonical/GUI preserved; contemporary Root excluded.
+  Chrome parity remains open.
 - Outside instruction-count optimization, run broad regression suites once per
   ten completed fixes, not after every fix.
   Broad suites include full translation/package test batches, the full LibJS AST
