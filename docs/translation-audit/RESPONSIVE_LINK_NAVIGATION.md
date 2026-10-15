@@ -102,3 +102,76 @@ validated and installed executable share SHA-256
 `f63b2e494162ac8472f6d297fd226536a8758e146f7d7c3850ec12f9304280e1`.
 This is the second focused browser fix in this report's task chain. It does not
 establish that every intermittent navigation failure or crash has this cause.
+
+## Follow-up: synchronous document work and redraw-event flooding
+
+The next report still reproduced a CPU stall after the asynchronous fetches
+completed. HTML parsing, stylesheet installation, style computation, layout,
+and paint preparation ran in one native callback. In addition, every rendering
+request enqueued a separate main-queue block and application-defined wake event.
+Those wake events could fill the cooperative pump's bounded input batch ahead
+of real input. A cold-load diagnostic that coalesced only those wake events
+reduced the largest independently posted event delay to 163 ms; this was a
+diagnostic interposer, not production verification.
+
+The browser now opens an owning-thread work scope around document preparation,
+frame preparation and pointer dispatch. Engine checkpoints service native input
+approximately every 16 ms. The AppKit pump gives incoming sources a bounded
+one-millisecond run-loop opportunity before reading queued events and restores
+the interrupted graphics context. Native frame updates retain the last complete
+image during document work and refuse recursive painting.
+
+Document timers remain deferred and coalesced until the outer work scope exits;
+stopped or restarted timer registrations invalidate their old deliveries. Page
+input waits for complete geometry, retaining its document identity and navigation
+generation. Replacement navigation and history requests run at a safe frame
+boundary; coordinates belonging to a replaced page are discarded. Native chrome
+continues receiving input while the document is busy.
+
+Native immediate redraw requests now share one atomic pending wake. A delivery
+clears that flag before requesting display, allowing later requests to schedule
+a fresh wake without accumulating an event for every style invalidation.
+
+For sustained work, a collector divisor above 8 temporarily becomes 8 after
+64 ms. Collection stays enabled, explicit collector environment settings retain
+control, and scope exit restores the preceding policy unless another owner has
+changed it. This does not change the idle policy or reserve a fixed heap.
+
+Focused coverage adds five platform cases and six browser work cases, and
+extends the retained-window redraw case to check a 1,025-request burst and a
+subsequent delivery. These pass in Boehm and no-GC C-O0 builds. Earlier successful
+navigation-preload, native-click, timer and native-layer tests remain recorded
+in `Build/italian-freeze/focused-results.json`. The initial compile fixture
+errors, diagnostic-library crash, stopped rebuild and production candidates
+that still stalled remain retained; they receive no final-success credit.
+
+Commit `3f5d7e1e` was verified in the optimized, signed Boehm bundle.
+Startup and signature checks pass. Fresh native clicks on the portal's Italiano
+label render `https://it.wikipedia.org/wiki/Pagina_principale` with both warm and
+empty caches; both final screenshots were visually checked. A separate Home
+click during loading reaches `about:home`, and late Italian responses do not
+replace it.
+
+The input probe posts events from a separate native thread every 100 ms. The
+old executable's longest observed delivery delay was 2,377 ms. The final warm
+and cold runs observed maxima of 458 ms and 253 ms respectively. Italian first
+paint followed navigation in 6,323 ms warm and 8,508 ms cold. These are observed
+runs, including network and collector behavior, rather than general latency or
+page-load guarantees. A main-queue heartbeat alone is insufficient here because
+it cannot reenter its own dispatch block; the independent event probe measures
+actual queued-event delivery.
+
+The same-size SVG image source switch remains pixel-exact: all 480,000 compared
+document pixels match. Final receipts, test logs, sampled stacks and screenshots
+are retained in `Build/italian-freeze/`, notably
+`coalesced-validation-results.json`, `coalesced-warm-result.json`,
+`coalesced-cold-result.json`, `final-work-test-results.json`,
+`adaptive-final-results.json` and `redraw-coalesced-results.json`.
+The tested executable and installed bundle share SHA-256
+`9ed74034257e9f4a26a34514cd1779dc626975962fdcf09a933fc3a76e2015a2`.
+
+This is the third focused browser fix in this report's task chain. No full
+repository or broad screenshot-suite pass is claimed. JavaScript execution,
+arbitrary synchronous resource APIs and single native/collector calls can still
+occupy the thread between checkpoints. This evidence does not establish a
+common cause for every intermittent crash.
