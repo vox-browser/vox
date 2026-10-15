@@ -1670,6 +1670,16 @@ evidence](docs/translation-audit/NATIVE_MEDIA_WHEEL_RAW_HANDLER.md).
   focused chunk viewport exact. Additional observed savings: 0.
   Same 4 GiB/placement; canonical/GUI preserved; contemporary Root excluded.
   Chrome parity remains open.
+  Lazy invisible font cache `cc2573b5` (independent committed slice)
+  passes 1,566 common assertions in 17 cases per configuration,
+  plus 3 private candidate cases/1,025 assertions both GC. Complete public
+  chunk iteration uses 0.48% fewer instructions.
+  Page point saving 8,110,549, 19/30 wins,
+  paired interval [-3,655,531.5, 24,806,773.5]; repeatable credit 0.
+  Broad verification: 87 selected cases both GC and 19 screenshots (16 exact);
+  focused chunk viewport exact. Additional observed savings: 0.
+  Same 4 GiB/placement; canonical/GUI preserved; contemporary Root excluded.
+  Chrome parity remains open.
 - Outside instruction-count optimization, run broad regression suites once per
   ten completed fixes, not after every fix.
   Broad suites include full translation/package test batches, the full LibJS AST

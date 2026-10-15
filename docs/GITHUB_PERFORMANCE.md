@@ -6990,6 +6990,121 @@ regression or performance credit. Equivalent Chrome content/start/submission
 accounting remains open; faster-than-Chrome performance is unproven. Evidence:
 `Build/instructions/vox-opt73-interleaved-*` and `Build/v/instruction-opt73-*`.
 
+## Allocate invisible font caches only when selected
+
+This integration imports only the four exact source hunks of independently
+authored feature `cc2573b5` (Alexander Medvednikov). Ordinary text iterators
+retain a nil pointer instead of constructing an empty invisible-font map.
+The first invisible fallback allocates a private, GC-owned one-map holder.
+The original serialized font key and invisible-font creation are preserved;
+subsequent reads share the same cached font. This changes a private iterator
+field and adds two private helpers and the holder record. No filtering, arena,
+public web API or GC policy changes. Contemporary Root and unrelated changes
+are excluded.
+
+Before/final Boehm and final no-GC C-O2 each pass **1,566
+assertions in 17 cases** (16 functional and an inactive diagnostic), using the
+identical common source SHA256 `30beb5864314757c61e6b0af811605a06a397fdebaf23c5240402c1319a89fd9`.
+Coverage includes Unicode chunk boundaries, bidi, font selection, rendered
+UTF-16 owner reuse, surrogate offsets, visible/invisible fallback semantics,
+cache identity across cascade reinstall, fractional font sizes, variation
+weight, iterator isolation and old invisible-font owners surviving collection.
+A separate immutable candidate snapshot runs the original three private cache
+tests byte-for-byte in both GC modes: **1,025
+assertions each**, including zero-allocation missing-cache reads and nil storage
+for ordinary visible text. Root sources and concurrent edits are preserved.
+
+The original preparation assumptions of five source hunks and 18 common cases
+were corrected to the actual four hunks and 17 cases before runtime checks.
+Their failed attempts are retained. The added semantic fixture initially set a
+Typeface weight of 700 while its FontVariationSettings still requested 400.
+All three focused jobs therefore failed that one fixture; the other 16 cases
+passed. Only the fixture was corrected to request variation weight 700, and
+only the failed focused jobs were rerun. Original logs, sources, binaries and
+results remain under `instruction-opt74-focused-weight-fixture-failure`.
+No completed diagnostic, profile or page observation was repeated.
+
+Three predeclared alternating local pairs count **256 complete public chunk
+iteration batches** across 16 retained nodes: construction, font selection,
+segmentation, every `next()` and checksum reads. ASCII, combining, emoji,
+CJK, bidi and preserved controls are included. Setup, eight warmups, expected
+result and forced GC precede the interval; assertion follows it.
+Before: 2,576,497,365 / 2,576,155,636 / 2,578,782,605. Candidate by pair: 2,563,816,443 / 2,564,146,766 / 2,565,655,665.
+Median **2,576,497,365→2,564,146,766
+(-0.48%)**; checksum **16,097,280**
+in all six actual zero exits. This local result receives no page credit.
+
+Both full-process C-O1/Boehm profiles actually pass without filter/reset:
+
+| Function | Before calls | Candidate calls |
+| --- | ---: | ---: |
+| `layout__opt74_complete_public_chunks` | 265 | 265 |
+| `layout__TextNodeChunkIterator__static__new` | 4,272 | 4,272 |
+| `layout__TextNodeChunkIterator__static__new_with_direction` | 4,272 | 4,272 |
+| `layout__utf16_code_units_for_line_box` | 78 | 78 |
+| `layout__TextNodeChunkIterator_font_for_code_point` | 681,655 | 681,655 |
+| `layout__text_node_chunk_invisible_font` | 3 | 3 |
+
+These are call counts, not hardware instruction savings. All six selected
+existing counts remain equal, including three invisible-font creations.
+The new private cached-read and invisible-selection helpers each run six times
+in the candidate and are absent from the control. Original outputs, actual
+exits and generated-C proof of full-process scope are durable.
+
+Strict C audit permits exactly two changed bodies (the iterator constructor
+and font selection), two added helpers, the private one-map record/typedef and
+the eager-map-to-nil-pointer field replacement. Normal before/final targets
+each match independently generated focused C byte-for-byte. Constructor
+replacement, unchanged font-selection prefix, original key, nil read without
+allocation and lazy holder/map publication are authenticated. All other C,
+fields, resources, filtering, arenas and GC policy match after established
+compiler identities, unchanged assertion-line mapping, 37 frozen includes,
+four byte-identical helper reorderings and one exact adjacent swap of unchanged
+independent UnicodeRange-array/font-map typedefs. The initial audit finding and
+original script/diff are retained under `instruction-opt74-c-audit-typedef-order-failure`;
+only that authenticated swap was added to the comparison. Exact native arguments
+and all 120 pinned inputs match. C SHA256 `72273eae503beca40aa197f15ec07bc85f4cdf1fd3c95d76cb7f027f7a75b9bd`;
+durable normal, focused, contract and profile archives are listed in
+`instruction-opt74-artifact-archives.json`. Compiler scratch is durable SSD;
+fresh benchmark cache copies use the same RAM volume as the control cohort.
+
+The predeclared page cohort is **30 alternating pairs**, odd before/final,
+even final/before, **30,000 paired bootstrap resamples, seed 74**. Both regular
+persisted binaries use fresh copies of the same 359 cached bodies, frozen text
+and child-only placement helpers, C-O2/Boehm/one marker and unchanged 4 GiB
+hint; no prod/prealloc. Fixed document viewport 1024×768 and endpoint
+`navigation_to_first_document_paint[0]`; no historical or Root comparison.
+
+| Build | Median first-frame retired instructions | Median lifetime process peak, MiB |
+| --- | ---: | ---: |
+| Fresh accepted frozen73 control | 18,166,866,060 | 3,631.5 |
+| Lazy invisible-font cache | 18,158,755,511 | 3,627 |
+
+Difference of marginal medians: **8,110,549** instructions
+saved (-0.045% change), **19/30** wins.
+Paired median saving **14,299,650**, paired 95% interval
+**[-3,655,531.5, 24,806,773.5]**. The interval includes zero; repeatable page credit is **0**. Whole-page savings are not established.
+
+All 60 primary observations and **60 actual PNGs** remain. Recovered
+primaries: none; pre-parse retries: 0. First primaries
+retain 1 installation/2 geometry preparations/1 paint. Later completed refreshes
+remain separate: none. No completed primary is extended,
+discarded or rerun. Recoveries disclose unknown final exit and missing PNG,
+fingerprint and peak. Peaks cover capture/exit and later refreshes, not
+first-frame live memory, and are never summed. The read-only decoded capture check finds 30 before and 30 candidate RGB classes, 0 shared. All differences stay within the original skeleton bands, x45–662: y335–344 and ten 14px bands starting at380 with41px spacing. All pixels outside these bands match. No animation was disabled and no observation repeated; evidence is instruction-opt74-page-pixel-class-check.json.
+The focused wrapped Unicode, first-letter and transformed-text viewport is
+pixel-exact at 1024×768.
+Prior observed carry is 0. Cumulative observed saving **8,110,549** crosses the 5M gate. Six direct harness jobs actually pass CSS 31/SVG 10/layout 46 in both GCs (**174 executions**). All **19 screenshots pass, 16 exact**; known differences remain inline-node 13, text-decorations 1,341 and canvas-text 1,994. The completed broad batch resets additional observed savings to 0.
+
+The isolated signed app is `/Users/alex/code/vox2/Build/v/Vox-opt74.app`; native instruction text
+matches the measured executable, with the frozen helper pinned inside the
+bundle and its actual default loaded path/hash checked. Signatures, startup
+and actual GC collections pass with default marker 1 and override 2. Canonical
+app and user GUI remain preserved; contemporary Root has no extra source,
+regression or performance credit. Equivalent Chrome content/start/submission
+accounting remains open; faster-than-Chrome performance is unproven. Evidence:
+`Build/instructions/vox-opt74-interleaved-*` and `Build/v/instruction-opt74-*`.
+
 ## Causes and changes
 
 - The V 0.5.2 compatibility compiler's `-prod` Boehm code repeatedly snapshots
