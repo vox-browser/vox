@@ -1481,6 +1481,11 @@ evidence](docs/translation-audit/NATIVE_MEDIA_WHEEL_RAW_HANDLER.md).
   3,913,662, with repeatable page credit 0.
   Broad verification: deferred below the observed 5,000,000-instruction gate.
   The focused viewport is exact; both retain 4 GiB. Chrome parity remains open.
+  Optional rule-bucket lookup round50 is rejected before page sampling.
+  Its sparse matching probe retires 6.80% more instructions, with all three
+  pairs worse; the owned function is restored. Focused checks pass 1,640
+  assertions per configuration. Failed pre-counter probes/profiles are kept.
+  No page credit or baseline reset; round49 remains the control.
 - Outside instruction-count optimization, run broad regression suites once per
   ten completed fixes, not after every fix.
   Broad suites include full translation/package test batches, the full LibJS AST

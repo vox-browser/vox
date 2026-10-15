@@ -4501,6 +4501,57 @@ credit from this cohort. Chrome endpoint/content parity remains unestablished.
 Evidence: `Build/instructions/vox-opt49-interleaved-*` and
 `Build/v/instruction-opt49-*`.
 
+## Reject optional rule-bucket lookup after a sparse matching regression
+
+The uncommitted round50 prototype replaced five existence-plus-retrieval
+sequences in `RuleCache.matching_rule_buckets` with optional single lookups.
+The compatibility compiler emits an allocated `map key does not exist` error
+for each missing optional lookup, followed by disposal. The prior `_IN_MAP`
+guard skips missing buckets. This matters when each layer contains only a
+small subset of an element's classes. The prototype is restored to round49;
+its source, regular candidate binary and all evidence remain retained.
+
+Before/final Boehm and final no-GC C-O2 focused runs each pass **1,640 assertions
+in 18 cases**, covering scope invalidation, bucketing, quirks and shared shadow
+caches, plus three new cases for empty-bucket presence/order, returned array
+borrowing and duplicate occurrences, and folding/absent attributes. An initial
+fixture used the reserved V keyword `shared`; all three compilations exited 1
+before cases. Only that local was renamed, and those failures remain archived.
+
+The first active probe expected 9 author groups and failed before its hardware
+interval; the existing cache also exposes an empty root-layer group, giving 10.
+Both full-process profile commands exit 1 at that assertion; neither receives
+profile pass credit. The old local driver did not persist its failing process's
+exact terminal status, which remains unknown. No hardware samples completed
+then. An isolated one-case probe corrects that expectation and predeclares
+12 present and 24 absent classes across 8 named layers before taking samples.
+Its inactive native builds exit 0 and repeat no passing functional cases.
+
+Three fixed alternating pairs each construct **512 complete matching rule
+sets**. Setup, expected results, eight warmups and forced collection precede
+the hardware interval; allocation, bucket collection, selector matching and
+sorting remain inside it. Retained-result assertions follow. All six actual
+exits are 0, and every checksum is 49,664. Median retired instructions rise from
+**204,699,103 to 218,622,781** (**+6.80%**).
+All three pairs regress, so no browser cohort starts and page credit is 0.
+
+The strict normal-C audit permits only the bucket method to differ and restores
+all other logic/layouts/resources after the established normalization. It sees
+five old `_IN_MAP` guards and five new `map_get_check`/error sites; there is no
+array clone or map write in the new body. Its initial spelling assertion looked
+for `map_exists` instead of the actual `_IN_MAP` macro, after the whole-C
+projection already matched. That failed audit is retained; the exact spelling
+was corrected without relaxing the C comparison. Native compilation, signing
+and startup of the isolated regular candidate completed, but no candidate app,
+GC-policy run, viewport, broad batch or whole-page result is claimed.
+
+Failed fixtures/profiles/audit, exact generated C archives, native arguments,
+fixed local measurements and the restored-function receipt are under
+`Build/v/instruction-opt50-*`. Frozen source snapshots and the RAM scratch
+location are recorded separately; durable C archives and receipts stay under
+`Build/v`. Shipping broad baseline remains `0c8030d5`, with 3,913,662 observed
+instructions accumulated from round49. Chrome parity remains open.
+
 ## Causes and changes
 
 - The V 0.5.2 compatibility compiler's `-prod` Boehm code repeatedly snapshots
