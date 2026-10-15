@@ -184,6 +184,20 @@ pub fn (mut host MediaElementHost) install(mut runtime Runtime) ! {
 			return host.runtime.actual_javascript_exception(host.runtime.binding_exception_value(err))
 		}
 	})!
+	controls_getter := runtime.make_native_value_host_function('get controls', 0, fn [handle] (receiver voidptr, _ []voidptr) !voidptr {
+		mut host := unsafe { &MediaElementHost(handle) }
+		return host.controls(receiver) or {
+			return host.runtime.actual_javascript_exception(host.runtime.binding_exception_value(err))
+		}
+	})!
+	controls_setter := runtime.make_native_value_host_function('set controls', 1, fn [handle] (receiver voidptr, args []voidptr) !voidptr {
+		mut host := unsafe { &MediaElementHost(handle) }
+		mut value := C.JSValueMakeUndefined(host.runtime.context)
+		if args.len > 0 { value = args[0] }
+		return host.set_controls(receiver, value) or {
+			return host.runtime.actual_javascript_exception(host.runtime.binding_exception_value(err))
+		}
+	})!
 	bind := runtime.make_value_host_function(fn [handle] (_ voidptr, args []voidptr) !voidptr {
 		mut host := unsafe { &MediaElementHost(handle) }
 		return host.bind(args) or {
@@ -198,7 +212,7 @@ pub fn (mut host MediaElementHost) install(mut runtime Runtime) ! {
 			pause, load, play, handler_getter_array, handler_setter_array, can_play_type,
 			default_muted_getter, default_muted_setter, set_attribute_sync, loop_getter, loop_setter,
 			autoplay_getter, autoplay_setter, preload_getter, preload_setter,
-			cross_origin_getter, cross_origin_setter])!)!
+			cross_origin_getter, cross_origin_setter, controls_getter, controls_setter])!)!
 	runtime.add_canvas_element_provider_with_lookup(fn [handle] () map[string]&dom.Element {
 		host := unsafe { &MediaElementHost(handle) }
 		return host.elements_for_binding()
@@ -379,6 +393,37 @@ fn (mut host MediaElementHost) set_cross_origin(receiver voidptr, value voidptr)
 				host.runtime.binding_string('crossorigin'), synchronized_value])!
 	}
 	media.set_crossorigin(raw)
+	return C.JSValueMakeUndefined(host.runtime.context)
+}
+
+fn (mut host MediaElementHost) controls(receiver voidptr) !voidptr {
+	host.media_element_for_binding(receiver)!
+	if replay := host.replay { replay(host.runtime)! }
+	element := host.bound_elements[receiver] or {
+		return error('TypeError: Not an object of type HTMLMediaElement')
+	}
+	return C.JSValueMakeBoolean(host.runtime.context, element.has_attribute_ns(none, 'controls'))
+}
+
+fn (mut host MediaElementHost) set_controls(receiver voidptr, value voidptr) !voidptr {
+	host.media_element_for_binding(receiver)!
+	// WebIDL boolean conversion does not invoke author conversion hooks.
+	present := C.JSValueToBoolean(host.runtime.context, value)
+	if replay := host.replay { replay(host.runtime)! }
+	mut element := host.bound_elements[receiver] or {
+		return error('TypeError: Not an object of type HTMLMediaElement')
+	}
+	if host.attribute_sync != unsafe { nil } {
+		host.runtime.call_javascript_function(host.attribute_sync,
+			C.JSValueMakeUndefined(host.runtime.context), [receiver,
+				host.runtime.binding_string('controls'), C.JSValueMakeBoolean(host.runtime.context, present)])!
+	}
+	// Reflect the content attribute, independently of the controls UI's lifecycle.
+	if present {
+		element.set_attribute_value('controls', '')
+	} else {
+		element.remove_attribute_ns(none, 'controls')
+	}
 	return C.JSValueMakeUndefined(host.runtime.context)
 }
 
@@ -564,7 +609,7 @@ fn (mut host MediaElementHost) set_property(name string, receiver voidptr, value
 // selected media and input handler attributes,
 // and constants.
 // Full HTMLElement/audio/video interfaces remain open.
-const media_element_native_factory = r'(function(getters,setters,bind,fastSeek,getStartDate,pause,load,play,handlerGetters,handlerSetters,canPlayType,defaultMutedGetter,defaultMutedSetter,setAttributeSync,loopGetter,loopSetter,autoplayGetter,autoplaySetter,preloadGetter,preloadSetter,crossOriginGetter,crossOriginSetter){
+const media_element_native_factory = r'(function(getters,setters,bind,fastSeek,getStartDate,pause,load,play,handlerGetters,handlerSetters,canPlayType,defaultMutedGetter,defaultMutedSetter,setAttributeSync,loopGetter,loopSetter,autoplayGetter,autoplaySetter,preloadGetter,preloadSetter,crossOriginGetter,crossOriginSetter,controlsGetter,controlsSetter){
  "use strict";
  const define=Object.defineProperty,create=Object.create,P=Proxy,T=TypeError;
  const prototype=create(EventTarget.prototype);
@@ -588,6 +633,7 @@ const media_element_native_factory = r'(function(getters,setters,bind,fastSeek,g
  define(prototype,"autoplay",{get:autoplayGetter,set:autoplaySetter,enumerable:true,configurable:true});
  define(prototype,"preload",{get:preloadGetter,set:preloadSetter,enumerable:true,configurable:true});
  define(prototype,"crossOrigin",{get:crossOriginGetter,set:crossOriginSetter,enumerable:true,configurable:true});
+ define(prototype,"controls",{get:controlsGetter,set:controlsSetter,enumerable:true,configurable:true});
  define(prototype,Symbol.toStringTag,{value:"HTMLMediaElement",configurable:true});
  const constructor=new P(function HTMLMediaElement(){},{apply(){throw new T("Illegal HTMLMediaElement constructor")},construct(){throw new T("Illegal HTMLMediaElement constructor")}});
  define(constructor,"prototype",{value:prototype,writable:false});
