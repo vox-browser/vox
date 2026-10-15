@@ -1258,7 +1258,7 @@ fn flex_grid_has_only_implicit_auto_rows(node &Node) bool {
 fn flex_subtree_depends_on_definite_height(mut state LayoutState, node &Node) bool {
 	styled := node.as_node_with_style() or { return false }
 	key := styled.layout_index()
-	if cached := state.definite_height_dependency_cache[key] {
+	if cached := state.cached_definite_height_dependency(key) {
 		return cached
 	}
 	computed := node.computed_values()
@@ -1309,7 +1309,7 @@ fn flex_subtree_depends_on_definite_height(mut state LayoutState, node &Node) bo
 			}
 		}
 	}
-	state.definite_height_dependency_cache[key] = depends
+	state.cache_definite_height_dependency(key, depends)
 	return depends
 }
 

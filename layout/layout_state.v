@@ -956,14 +956,28 @@ fn (store &UsedValuesPagedStore) for_each(callback fn (&UsedValues)) {
 	}
 }
 
+// Optional per-state indexes stay absent during ordinary block/inline layout
+// and intrinsic probes. Each index owns its mutable map once first written.
+@[heap]
+struct LayoutStateSubgridStorage {
+mut:
+	values map[u32]GridSubgridNodeData
+}
+
+@[heap]
+struct LayoutStateHeightDependencyStorage {
+mut:
+	values map[u32]bool
+}
+
 @[heap]
 pub struct LayoutState {
 pub mut:
 	used_values_store UsedValuesPagedStore
 	subtree_root      ?&NodeWithStyle
 mut:
-	subgrid_data map[u32]GridSubgridNodeData
-	definite_height_dependency_cache map[u32]bool
+	subgrid_storage_ &LayoutStateSubgridStorage = unsafe { nil }
+	height_dependency_storage_ &LayoutStateHeightDependencyStorage = unsafe { nil }
 }
 
 pub fn LayoutState.new() &LayoutState {
@@ -1004,22 +1018,43 @@ pub fn (mut state LayoutState) get(node &NodeWithStyle) &UsedValues {
 	return state.ensure_used_values_for(node)
 }
 
+fn (mut state LayoutState) ensure_subgrid_storage() &LayoutStateSubgridStorage {
+	if state.subgrid_storage_ == unsafe { nil } {
+		state.subgrid_storage_ = &LayoutStateSubgridStorage{}
+	}
+	return state.subgrid_storage_
+}
+
+fn (state &LayoutState) cached_definite_height_dependency(index u32) ?bool {
+	if state.height_dependency_storage_ == unsafe { nil } {
+		return none
+	}
+	return state.height_dependency_storage_.values[index] or { return none }
+}
+
+fn (mut state LayoutState) cache_definite_height_dependency(index u32, depends bool) {
+	if state.height_dependency_storage_ == unsafe { nil } {
+		state.height_dependency_storage_ = &LayoutStateHeightDependencyStorage{}
+	}
+	state.height_dependency_storage_.values[index] = depends
+}
+
 fn (mut state LayoutState) set_subgrid_axis_data(node &NodeWithStyle, columns bool, axis GridSubgridAxisData) {
-	mut data := state.subgrid_data[node.layout_index()] or { GridSubgridNodeData{} }
+	mut storage := state.ensure_subgrid_storage()
+	mut data := storage.values[node.layout_index()] or { GridSubgridNodeData{} }
 	if columns {
 		data.columns = axis
 	} else {
 		data.rows = axis
 	}
-	state.subgrid_data[node.layout_index()] = data
+	storage.values[node.layout_index()] = data
 }
 
 fn (state &LayoutState) subgrid_axis_data(node &NodeWithStyle, columns bool) ?GridSubgridAxisData {
-	index := node.layout_index()
-	if index !in state.subgrid_data {
+	if state.subgrid_storage_ == unsafe { nil } {
 		return none
 	}
-	data := unsafe { state.subgrid_data[index] }
+	data := state.subgrid_storage_.values[node.layout_index()] or { return none }
 	return if columns { data.columns } else { data.rows }
 }
 
@@ -1071,9 +1106,11 @@ pub fn (mut state LayoutState) populate_node_from(mut source LayoutState, node &
 			values.rare_ = source_rare.clone()
 		}
 	}
-	if index in source.subgrid_data {
-		subgrid := unsafe { source.subgrid_data[index] }
-		state.subgrid_data[index] = subgrid
+	if source.subgrid_storage_ != unsafe { nil } {
+		if subgrid := source.subgrid_storage_.values[index] {
+			mut storage := state.ensure_subgrid_storage()
+			storage.values[index] = subgrid
+		}
 	}
 	values.containing_block_used_values_ = none
 	return values
