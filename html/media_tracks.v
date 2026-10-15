@@ -90,6 +90,8 @@ pub type SetAudioTrackEnabled = fn(&AudioTrack, bool)
 
 pub type SetSelectedVideoTrack = fn(?&VideoTrack)
 
+type QueueVideoTrackListChangeTask = fn(&VideoTrackList)
+
 pub enum MediaTrackIterationDecision {
 	continue_
 	break_
@@ -248,6 +250,8 @@ pub struct VideoTrack {
 pub:
 	queue_change_task           QueueMediaTrackChangeTask @[required]
 	set_selected_playback_track SetSelectedVideoTrack @[required]
+mut:
+	queue_change_task_for_list ?QueueVideoTrackListChangeTask
 pub mut:
 	base             MediaTrackBase
 	selected         bool
@@ -278,7 +282,11 @@ pub fn (mut track VideoTrack) set_selected(selected bool) {
 		previously_unselected_track_is_selected := !track.selected && selected
 		selected_track_was_unselected_without_another_selection := track.selected && !selected
 		if previously_unselected_track_is_selected || selected_track_was_unselected_without_another_selection {
-			track.queue_change_task()
+			if queue_change := track.queue_change_task_for_list {
+				queue_change(list)
+			} else {
+				track.queue_change_task()
+			}
 		}
 	}
 

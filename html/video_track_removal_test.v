@@ -32,8 +32,8 @@ fn test_selected_video_removal_queues_one_owned_change_before_detaching_the_trac
 	state := &VideoTrackRemovalObservation{}
 	mut first := VideoTrack.create(MediaTrackMetadata{identifier: 11, name: 'Alternate'},
 		vtr_unexpected_change, vtr_unexpected_backend)
-	// The native change-task hook is injected here; the automatic media track
-	// factory still supplies its existing no-op queue callback.
+	// Supply the queue callback explicitly to isolate removal ordering from
+	// the media factory's automatic list-change scheduling.
 	mut selected := VideoTrack.create(MediaTrackMetadata{identifier: 22, name: 'Main'},
 		fn [media, list, target, state] () {
 			mut result := unsafe { &VideoTrackRemovalObservation(state) }
