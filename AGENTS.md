@@ -1358,7 +1358,7 @@ evidence](docs/translation-audit/NATIVE_MEDIA_WHEEL_RAW_HANDLER.md).
   broad verification. Compare the same benchmark endpoint and workload, record
   the measured baseline and accumulated savings, and do not run broad suites
   for every individual fix below that threshold.
-  The latest performance broad batch covers the Wikipedia fixes through
+  The Wikipedia performance broad batch covers the fixes through
   `24626bff` and test corrections `3d88268d`/`12713a3b`: 135 selected
   CSS/SVG/layout/native cases pass in both Boehm and no-GC C-O0 builds, all 100
   upstream LibJS AST fixtures compare exactly, and production C-O2 Boehm startup
@@ -1378,6 +1378,12 @@ evidence](docs/translation-audit/NATIVE_MEDIA_WHEEL_RAW_HANDLER.md).
   `docs/GITHUB_PERFORMANCE.md`. Production GC remains enabled with one
   marker. Independent canonical work is preserved when its pre-build identity
   is unavailable.
+  GitHub public-length resolution `137e4e85` passes 2,004 focused assertions
+  per configuration and reduces the controlled resolver probe by 62.92%.
+  Its matching 30-pair first-frame saving is 76,262,583 instructions;
+  repeatable page credit is 0. Broad verification: passed.
+  The focused viewport is exact. Chrome parity remains open; the isolated Root
+  snapshot app receives no extra page credit. See `docs/GITHUB_PERFORMANCE.md`.
 - Outside instruction-count optimization, run broad regression suites once per
   ten completed fixes, not after every fix.
   Broad suites include full translation/package test batches, the full LibJS AST

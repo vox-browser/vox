@@ -2926,6 +2926,109 @@ and hydrated content. Evidence is retained in
 including original observations, C/native-input provenance, profiles, diagnostics,
 actual regression exits, snapshot/app provenance and GC checks.
 
+## Resolve public lengths before constructing unused contexts
+
+Feature `137e4e85` extends the existing context-free layout conversion to
+both public computed-length entry paths. Absolute units use the existing
+fixed-point absolute conversion, and percentages retain the existing rounded
+basis and truncated percentage conversion. Relative and calculated values
+continue through the full font, viewport and per-resolution container-query
+context. SVG unitless-number rules, animation precedence and rejected value
+kinds remain unchanged.
+
+Eighteen functional cases plus one inactive diagnostic pass **2,004 assertions**
+in before/final Boehm and final no-GC builds, all native C `-O2`. Three new cases
+compare exact results against the original full-context path across every
+absolute unit, fractional and saturation boundaries, percentages, live font and
+viewport changes, calculations, animation replacement and SVG number rules.
+Existing query-container geometry and per-context cache isolation checks remain
+in the same focused harness.
+
+Three alternating controlled pairs reduce **8,192 complete public length
+resolutions** from **7,470,747 to 2,769,994** retired
+instructions (-62.92%). All checksums are 204,800. The probe
+uses 32 real computed styles with a DOM subject, half absolute and half
+percentage, and 128 iterations of both APIs. Setup, the full-context oracle,
+eight warmups, forced collection and checksum assertions are outside the
+counter. This is a local result and receives no separate page credit.
+
+Fresh full-process C `-O1`/Boehm profiles execute the same 4,682 property resolver
+calls and 4,675 component resolver calls in both builds. Context constructions
+fall **9,737 to 438**. Profiles include module initialization, all focused cases
+and the diagnostic, with `-profile-no-inline`, no filter and no counter reset.
+Only call counts are interpreted.
+
+Thirty alternating normal C `-O2`/Boehm/one-marker pairs were fixed before any
+primary observation, with 30,000 paired bootstrap resamples and seed 31. Each
+variant uses the same frozen library and a fresh copy of the unchanged 359-file
+cache on the same RAM volume. The document viewport is 1024×768; the endpoint
+remains `navigation_to_first_document_paint[0]`.
+
+| Build | Median first-frame retired instructions |
+| --- | ---: |
+| Full context for every public resolution | 32,288,188,899 |
+| Context-free public resolution when possible | 32,211,926,316 |
+
+Observed saving: **76,262,583 (0.24%)**.
+17/30 pairs improve; paired median saving is
+23,877,597. The 95% paired percentile interval is
+**-509,124,286 to 184,175,767.5** instructions. The paired interval includes zero or worse; a repeatable whole-page reduction is not established.
+Repeatable page credit: **0** instructions.
+
+All sixty primaries are retained. Each has one installation, two geometry
+passes and one shell paint preparation before the endpoint; later installations
+occur in 19 observations and remain separate.
+59 actual viewport screenshots have verified dimensions. Archived
+preparse startup retries: 1. Final pair 25 retains the completed primary from
+its post-primary capture watchdog, with unknown terminal status, no PNG and no
+original per-copy cache fingerprint. Its raw log and recovery provenance remain
+retained; the immutable template fingerprint and declared copy protocol survive.
+No completed primary is rerun or discarded, and the cohort is not extended.
+
+Interrupted native and broad controllers retain partial logs with unknown
+terminal statuses under `instruction-opt31-interrupted-resume-{1,2}`. Only
+unfinished work resumes. One screenshot attempt produced no PNG; its failed
+shell receipt and log remain under `instruction-opt31-screenshot-failure-1`.
+The successful resumption reuses every completed harness and screenshot. Broad
+commands use SSD scratch; the inherited receipt wording "RAM-backed output"
+is inaccurate, and the recorded commands show their actual paths.
+
+The generated-C audit permits exactly the two resolver bodies to change; all
+remaining executable logic, layouts, resources, GC initialization and native
+arguments match the frozen round30 control after established compiler identity
+normalization and authenticated snapshot include paths. All 120 common native
+inputs are unchanged. Compiled candidate C SHA256:
+`1ad6a77eba7529ffb02c8987aa57905930dcfa4bfced9c024a1cc546d719f7c4`.
+Durable C and profile archives retain raw/archive hashes in
+`Build/v/instruction-opt31-artifact-archives.json`; profile scope proofs and C
+hashes are in `Build/v/instruction-opt31-profile-evidence.json`.
+
+The focused absolute/percentage/relative/calc/SVG viewport is pixel-exact.
+The observed saving crossed the 5,000,000-instruction gate. All six direct V harness jobs pass: 87 selected CSS/SVG/layout cases in each GC mode, 174 executions. All 19 screenshot comparisons pass, 16 exact; unchanged differences are inline-node 13, text-decorations 1,341 and canvas-text 1,994. The selected regression snapshot's base and overlay remain declared
+in `Build/v/instruction-opt31-broad-manifest.json`.
+
+A separate immutable snapshot of contemporary Root sources is packaged at
+`/Users/alex/code/vox2/Build/v/Vox-opt31.app`. Its two resolver bodies match after authenticating the
+compiler-emitted LengthStyleValue/PercentageStyleValue IDs (210/211 in the
+measured image, 214/215 in this Root image) and their conversion helpers and
+associated CSS layouts. The initial byte-comparison failure remains retained.
+The first native attempt also retained a cJSON header failure; the resumed build
+uses the compatibility JSON module's declared cJSON header/object flags, with
+additional native inputs hashed separately. Its exact failed native status was
+not persisted by the initial controller and receives no pass credit. The
+successful resumed compile has an actual terminal status. These dependencies
+and independent Root changes receive no frozen benchmark credit or regression
+coverage. The canonical app and user's running GUI browser are preserved.
+Signature, headless smoke and actual GC collections pass with marker default 1
+and override 2. Snapshot app text SHA256:
+`cfcde1dcc9bff59fa950bd263ed088c0b4ec4e9edacbf214c975be503d8c7ff9`.
+
+Chrome parity remains unestablished: the earlier Chrome measurements use a
+different endpoint and hydrated GitHub content. The continuing optimization goal
+requires an equivalent-workload comparison, not a timing or call-count proxy.
+Evidence is retained under `Build/instructions/vox-opt31-interleaved-*` and
+`Build/v/instruction-opt31-*`, including all actual failures and resumed work.
+
 ## Causes and changes
 
 - The V 0.5.2 compatibility compiler's `-prod` Boehm code repeatedly snapshots
