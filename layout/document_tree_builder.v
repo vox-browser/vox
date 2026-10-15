@@ -556,9 +556,10 @@ fn run_document_layout_with_renderer_mode(document &dom.Document, viewport_width
 	mut mutable_document := unsafe { &dom.Document(document) }
 	previous_layout_handle := mutable_document.layout_engine_handle()
 	old_viewport := mutable_document.viewport_rect()
-	viewport_changed := old_viewport.x != 0 || old_viewport.y != 0
-		|| old_viewport.width != viewport_width || old_viewport.height != viewport_height
-	mutable_document.set_viewport_rect(dom.Rect{0, 0, viewport_width, viewport_height})
+	// The viewport origin is its scroll offset. Re-entering layout at the same
+	// size must preserve scrolling without turning a paint update into a resize.
+	viewport_changed := old_viewport.width != viewport_width || old_viewport.height != viewport_height
+	mutable_document.set_viewport_rect(dom.Rect{old_viewport.x, old_viewport.y, viewport_width, viewport_height})
 	if mutable_document.get_browsing_context() == none {
 		mutable_document.set_browsing_context(&dom.BrowsingContext{
 			active_document_: document
