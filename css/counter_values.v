@@ -2560,7 +2560,7 @@ pub fn CSSCounterStyleRule.create(name string, system ?CounterStyleSystemStyleVa
 	}
 }
 
-pub fn (rule CSSCounterStyleRule) name() string {
+pub fn (rule &CSSCounterStyleRule) name() string {
 	return rule.name_
 }
 
@@ -2580,7 +2580,7 @@ pub fn (mut rule CSSCounterStyleRule) set_name(name string) {
 	rule.clear_caches()
 }
 
-pub fn (rule CSSCounterStyleRule) system() string {
+pub fn (rule &CSSCounterStyleRule) system() string {
 	system := rule.system_style_value_ or { return '' }
 	return system.serialize(.normal)
 }
@@ -2609,11 +2609,11 @@ pub fn (mut rule CSSCounterStyleRule) set_system(system string) {
 	rule.clear_caches()
 }
 
-pub fn (rule CSSCounterStyleRule) system_style_value() ?CounterStyleSystemStyleValue {
+pub fn (rule &CSSCounterStyleRule) system_style_value() ?CounterStyleSystemStyleValue {
 	return rule.system_style_value_
 }
 
-pub fn (rule CSSCounterStyleRule) negative() string {
+pub fn (rule &CSSCounterStyleRule) negative() string {
 	negative := rule.negative_style_value_ or { return '' }
 	return negative.serialize(.normal)
 }
@@ -2625,11 +2625,11 @@ pub fn (mut rule CSSCounterStyleRule) set_negative(negative string) {
 	}
 }
 
-pub fn (rule CSSCounterStyleRule) negative_style_value() ?CounterStyleSymbolListStyleValue {
+pub fn (rule &CSSCounterStyleRule) negative_style_value() ?CounterStyleSymbolListStyleValue {
 	return rule.negative_style_value_
 }
 
-pub fn (rule CSSCounterStyleRule) prefix() string {
+pub fn (rule &CSSCounterStyleRule) prefix() string {
 	prefix := rule.prefix_style_value_ or { return '' }
 	return prefix.serialize(.normal)
 }
@@ -2641,11 +2641,11 @@ pub fn (mut rule CSSCounterStyleRule) set_prefix(prefix string) {
 	}
 }
 
-pub fn (rule CSSCounterStyleRule) prefix_style_value() ?StyleValue {
+pub fn (rule &CSSCounterStyleRule) prefix_style_value() ?StyleValue {
 	return rule.prefix_style_value_
 }
 
-pub fn (rule CSSCounterStyleRule) suffix() string {
+pub fn (rule &CSSCounterStyleRule) suffix() string {
 	suffix := rule.suffix_style_value_ or { return '' }
 	return suffix.serialize(.normal)
 }
@@ -2657,11 +2657,11 @@ pub fn (mut rule CSSCounterStyleRule) set_suffix(suffix string) {
 	}
 }
 
-pub fn (rule CSSCounterStyleRule) suffix_style_value() ?StyleValue {
+pub fn (rule &CSSCounterStyleRule) suffix_style_value() ?StyleValue {
 	return rule.suffix_style_value_
 }
 
-pub fn (rule CSSCounterStyleRule) range() string {
+pub fn (rule &CSSCounterStyleRule) range() string {
 	range := rule.range_style_value_ or { return '' }
 	return range.serialize(.normal)
 }
@@ -2673,11 +2673,11 @@ pub fn (mut rule CSSCounterStyleRule) set_range(range string) {
 	}
 }
 
-pub fn (rule CSSCounterStyleRule) range_style_value() ?CounterStyleRangeStyleValue {
+pub fn (rule &CSSCounterStyleRule) range_style_value() ?CounterStyleRangeStyleValue {
 	return rule.range_style_value_
 }
 
-pub fn (rule CSSCounterStyleRule) pad() string {
+pub fn (rule &CSSCounterStyleRule) pad() string {
 	pad := rule.pad_style_value_ or { return '' }
 	return pad.serialize(.normal)
 }
@@ -2689,11 +2689,11 @@ pub fn (mut rule CSSCounterStyleRule) set_pad(pad string) {
 	}
 }
 
-pub fn (rule CSSCounterStyleRule) pad_style_value() ?CounterStylePadStyleValue {
+pub fn (rule &CSSCounterStyleRule) pad_style_value() ?CounterStylePadStyleValue {
 	return rule.pad_style_value_
 }
 
-pub fn (rule CSSCounterStyleRule) fallback() string {
+pub fn (rule &CSSCounterStyleRule) fallback() string {
 	fallback := rule.fallback_style_value_ or { return '' }
 	return fallback.serialize(.normal)
 }
@@ -2705,11 +2705,11 @@ pub fn (mut rule CSSCounterStyleRule) set_fallback(fallback string) {
 	}
 }
 
-pub fn (rule CSSCounterStyleRule) fallback_style_value() ?StyleValue {
+pub fn (rule &CSSCounterStyleRule) fallback_style_value() ?StyleValue {
 	return rule.fallback_style_value_
 }
 
-pub fn (rule CSSCounterStyleRule) symbols() string {
+pub fn (rule &CSSCounterStyleRule) symbols() string {
 	symbols := rule.symbols_style_value_ or { return '' }
 	return symbols.serialize(.normal)
 }
@@ -2738,11 +2738,11 @@ pub fn (mut rule CSSCounterStyleRule) set_symbols(symbols string) {
 	rule.clear_caches()
 }
 
-pub fn (rule CSSCounterStyleRule) symbols_style_value() ?CounterStyleSymbolListStyleValue {
+pub fn (rule &CSSCounterStyleRule) symbols_style_value() ?CounterStyleSymbolListStyleValue {
 	return rule.symbols_style_value_
 }
 
-pub fn (rule CSSCounterStyleRule) additive_symbols() string {
+pub fn (rule &CSSCounterStyleRule) additive_symbols() string {
 	additive_symbols := rule.additive_symbols_style_value_ or { return '' }
 	return additive_symbols.serialize(.normal)
 }
@@ -2771,11 +2771,11 @@ pub fn (mut rule CSSCounterStyleRule) set_additive_symbols(additive_symbols stri
 	rule.clear_caches()
 }
 
-pub fn (rule CSSCounterStyleRule) additive_symbols_style_value() ?CounterStyleAdditiveSymbolsStyleValue {
+pub fn (rule &CSSCounterStyleRule) additive_symbols_style_value() ?CounterStyleAdditiveSymbolsStyleValue {
 	return rule.additive_symbols_style_value_
 }
 
-pub fn (rule CSSCounterStyleRule) speak_as() string {
+pub fn (rule &CSSCounterStyleRule) speak_as() string {
 	speak_as := rule.speak_as_style_value_ or { return '' }
 	return speak_as.serialize(.normal)
 }
@@ -2804,11 +2804,11 @@ pub fn (mut rule CSSCounterStyleRule) clear_caches() {
 	})
 }
 
-pub fn (rule CSSCounterStyleRule) speak_as_style_value() ?StyleValue {
+pub fn (rule &CSSCounterStyleRule) speak_as_style_value() ?StyleValue {
 	return rule.speak_as_style_value_
 }
 
-pub fn (rule CSSCounterStyleRule) serialized() string {
+pub fn (rule &CSSCounterStyleRule) serialized() string {
 	mut parts := []string{}
 	if value := rule.system_style_value_ {
 		parts << 'system: ${value.serialize(.normal)};'
