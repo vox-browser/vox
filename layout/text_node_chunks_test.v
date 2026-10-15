@@ -60,6 +60,64 @@ fn test_text_node_chunk_iterator_preserves_utf16_offsets_and_newline() {
 	assert last.start == 4
 }
 
+fn test_nowrap_text_chunks_keep_unicode_and_preserved_breaks_without_line_segmentation() {
+	document := dom.Document.create(dom.url_about_blank())
+	style := chunk_test_style(document, 'display:block; white-space-collapse:preserve; text-wrap-mode:nowrap')
+	text := 'ab-cd 你好 אבג Á😀\n\tend'
+	text_node := make_chunk_test_text_node(document, text, style)
+	mut iterator := TextNodeChunkIterator.new(text_node, false, true)
+	assert text_node.line_segmenter_ == unsafe { nil }
+	mut rendered := ''
+	mut end := 0
+	mut newline_count := 0
+	mut tab_count := 0
+	for {
+		chunk := iterator.next() or { break }
+		assert chunk.start == end
+		end += chunk.length
+		rendered += chunk.view
+		assert !chunk.can_break_after
+		if chunk.has_breaking_newline {
+			assert chunk.view == '\n'
+			newline_count++
+		}
+		if chunk.has_breaking_tab {
+			tab_count++
+		}
+	}
+	assert rendered == text
+	assert end == utf16_code_units_for_line_box(text).len
+	assert newline_count == 1
+	assert tab_count == 1
+	assert text_node.line_segmenter_ == unsafe { nil }
+}
+
+fn test_nowrap_text_collection_collapses_space_before_wrapped_layout_initializes_segmenter() {
+	document := dom.Document.create(dom.url_about_blank())
+	style := chunk_test_style(document, 'display:block; white-space-collapse:collapse; text-wrap-mode:wrap')
+	text_node := make_chunk_test_text_node(document, 'one   two-three', style)
+	mut collection_iterator := TextNodeChunkIterator.new(text_node, false, false)
+	mut collected := ''
+	for {
+		chunk := collection_iterator.next() or { break }
+		collected += chunk.view
+		assert !chunk.can_break_after
+	}
+	assert collected == 'one two-three'
+	assert text_node.line_segmenter_ == unsafe { nil }
+	mut layout_iterator := TextNodeChunkIterator.new(text_node, true, false)
+	assert text_node.line_segmenter_ != unsafe { nil }
+	mut found_hyphen_break := false
+	for {
+		chunk := layout_iterator.next() or { break }
+		if chunk.view == '-' {
+			assert chunk.can_break_after
+			found_hyphen_break = true
+		}
+	}
+	assert found_hyphen_break
+}
+
 fn test_text_node_chunk_iterator_uses_a_file_backed_face_on_its_first_shape() {
 	$if macos {
 		document := html.parse_document('<!doctype html><style>@font-face { font-family: Fixture; src: url("file:///System/Library/Fonts/Supplemental/Arial.ttf") } span { font: 20px Fixture }</style><span id="first">X</span><span id="second">X</span>')
