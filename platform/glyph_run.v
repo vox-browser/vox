@@ -178,6 +178,13 @@ pub fn GlyphRun.new(font &Font, text_type GlyphRunTextType, glyphs []Glyph) &Gly
 
 pub fn GlyphRun.new_with_face(font &Font, text_type GlyphRunTextType, glyphs []Glyph,
 	face GlyphRunFace) &GlyphRun {
+	return glyph_run_with_owned_glyphs(font, text_type, glyphs.clone(), face)
+}
+
+// The caller transfers a private glyph vector. Keep this boundary private so
+// public constructors retain their independent copy of caller-owned storage.
+fn glyph_run_with_owned_glyphs(font &Font, text_type GlyphRunTextType, glyphs []Glyph,
+	face GlyphRunFace) &GlyphRun {
 	mut space_width := f32(font.point_size * 0.5)
 	mut width := f32(0)
 	mut glyph_indices := []u16{cap: glyphs.len}
@@ -199,7 +206,7 @@ pub fn GlyphRun.new_with_face(font &Font, text_type GlyphRunTextType, glyphs []G
 		text_type_: text_type
 		face_: face
 		width_: width
-		glyphs_: glyphs.clone()
+		glyphs_: glyphs
 		space_width: space_width
 		glyph_indices_: glyph_indices
 		glyph_positions_: glyph_positions

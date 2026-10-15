@@ -328,7 +328,7 @@ fn shaped_text_with_baseline(shape CachedShape, baseline_start_x f32, font &Font
 		}
 	}
 	return ShapedText{
-		glyph_run: GlyphRun.new_with_face(font, text_type, glyphs, shape.face)
+		glyph_run: glyph_run_with_owned_glyphs(font, text_type, glyphs, shape.face)
 		trailing_whitespace: shape.trailing_whitespace
 	}
 }
