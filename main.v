@@ -6238,7 +6238,7 @@ fn (mut app BrowserApp) draw() {
 	// delaying the window and gives cached pages an immediate first paint.
 	app.start_pending_navigation()
 	if app.screenshot_path != '' && !app.scroll_profile.enabled && !app.screenshot_scheduled && app.document != unsafe { nil } && !app.load_status.starts_with('Loading ') && app.background_resource_pending.len == 0 {
-		if !app.font_resources_ready_for_capture() {
+		if !app.document_resources_ready_for_capture() {
 			$if macos { C.native_wake_browser_after(16) }
 			return
 		}

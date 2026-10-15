@@ -114,21 +114,54 @@ fn test_capture_waits_for_existing_fonts_and_clean_layout_without_materializing_
 	app.relayout(320, 240 + app.chrome_height())
 	mut fonts := css.css_style_computer_for(document).font_face_set_
 	assert !app.font_resources_ready_for_capture()
+	assert !app.document_resources_ready_for_capture()
 	document.update_readiness(.complete)
 	loop := html.main_thread_event_loop()
 	loop.update_font_face_sets_pending_on_the_environment([document])
 	assert app.font_resources_ready_for_capture()
+	assert app.document_resources_ready_for_capture()
+	failed_face := css.FontFaceObject.construct_impl('Failed capture font',
+		css.FontFaceSource.from_string(''), css.FontFaceDescriptors{})
+	assert failed_face.status() == .error
+	fonts.add(failed_face)!
+	assert app.document_resources_ready_for_capture()
 	fonts.switch_to_loading()
 	assert !app.font_resources_ready_for_capture()
+	assert !app.document_resources_ready_for_capture()
 	fonts.switch_to_loaded()
 	assert app.font_resources_ready_for_capture()
+	assert app.document_resources_ready_for_capture()
 	mut delayer := dom.DocumentLoadEventDelayer.new(mut document)
 	assert !app.font_resources_ready_for_capture()
+	assert !app.document_resources_ready_for_capture()
 	delayer.finish()
 	assert app.font_resources_ready_for_capture()
+	assert app.document_resources_ready_for_capture()
 	mut body := document.body()?.as_node().as_element()?
 	body.set_attribute_value('style', 'width:71px')
 	assert !app.font_resources_ready_for_capture()
+	assert !app.document_resources_ready_for_capture()
 	app.relayout(320, 240 + app.chrome_height())
 	assert app.font_resources_ready_for_capture()
+	assert app.document_resources_ready_for_capture()
+}
+
+fn test_capture_waits_for_completed_document_without_materializing_fonts() {
+	assert !BrowserApp{}.document_resources_ready_for_capture()
+	mut document := html.parse_document('<!doctype html><body>complete capture</body>')
+	app := BrowserApp{document:document,layout_tree_only:true}
+	defer { document.finalize() }
+	assert document.existing_font_face_set() == none
+	document.update_readiness(.loading)
+	assert app.font_resources_ready_for_capture()
+	assert !app.document_resources_ready_for_capture()
+	document.update_readiness(.interactive)
+	assert app.font_resources_ready_for_capture()
+	assert !app.document_resources_ready_for_capture()
+	document.update_readiness(.complete)
+	assert app.document_resources_ready_for_capture()
+	assert document.existing_font_face_set() == none
+	document.update_readiness(.loading)
+	assert !app.document_resources_ready_for_capture()
+	assert document.existing_font_face_set() == none
 }
