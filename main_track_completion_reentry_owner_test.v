@@ -151,7 +151,7 @@ fn mtcr_owner_run(failure bool) ! {
 		nested := list.item(0) or { panic('Missing nested completion cue') }
 		assert nested.id() == 'https://track-completion.example.test/base/${next}'
 		assert voidptr(nested.track() or { panic('Missing nested cue owner') }) == voidptr(track)
-		assert element.get_attribute_ns(none, 'src')? == next
+		assert (element.get_attribute_ns(none, 'src') or { panic('Missing final nested source') }) == next
 		assert model.event_count('load') == if failure { 2 } else { 3 }
 		assert model.event_count('error') == if failure { 1 } else { 0 }
 		if !failure {
