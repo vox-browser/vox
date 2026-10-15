@@ -3485,3 +3485,21 @@ milliseconds, average nanoseconds, and the C function name.
 `LADYBIRD_V_PROFILE_FNS` overrides the default navigation/layout entry points.
 The build supplies the macOS stdio compatibility flags required by this
 compiler's profiling output.
+
+## Round 34: rejected intrinsic chunk-pool prototype
+
+A source-owned pool of at most eight returned measurement chunks passed the
+16-case baseline and 19-case candidate focused selections (17,753 baseline
+assertions; 17,795 candidate assertions in both Boehm and no-GC C-O2 builds).
+Three fixed alternating diagnostic pairs measured 8,192 complete intrinsic
+width/height probes per observation, with setup, warmups and forced GC outside
+the counter. Median retired instructions rose from 1,355,157,482 to
+1,356,832,572 (+0.12%); two of three pairs worsened. Every checksum was
+180,379,648. This design is rejected with zero performance credit.
+
+The prototype, focused logs, initial import failure and all six diagnostic
+observations remain in `Build/v/instruction-opt34-*` and the frozen snapshots.
+Only this prototype's four owned runtime edits were restored; its uncommitted
+test was archived. No browser primary observations or normal browser build
+were started. The declared page cohort remains unexecuted, and the broad
+validation baseline stays at round 33. Chrome parity remains open.
