@@ -70,6 +70,8 @@ pub type MediaPlaybackNoArgHook = fn()
 
 pub type MediaPlaybackSetVolumeHook = fn(f64)
 
+pub type MediaPlaybackSetRateHook = fn(f32)
+
 pub type MediaPlaybackSetAudioTrackHook = fn(&AudioTrack, bool)
 
 pub type MediaPlaybackSetVideoTrackHook = fn(?&VideoTrack)
@@ -98,6 +100,7 @@ pub:
 	play                ?MediaPlaybackNoArgHook
 	pause               ?MediaPlaybackNoArgHook
 	set_volume          ?MediaPlaybackSetVolumeHook
+	set_playback_rate   ?MediaPlaybackSetRateHook
 	set_audio_track     ?MediaPlaybackSetAudioTrackHook
 	set_video_track     ?MediaPlaybackSetVideoTrackHook
 	seek                ?MediaPlaybackSeekHook
@@ -784,6 +787,7 @@ pub fn (mut element HTMLMediaElement) set_fetch_hook(hook ?MediaResourceFetchHoo
 pub fn (mut element HTMLMediaElement) set_playback_manager_hooks(hooks MediaPlaybackManagerHooks) {
 	element.playback_hooks_ = hooks
 	element.playback_manager_ready_ = true
+	element.update_playback_rate()
 }
 
 @[heap]
@@ -1399,9 +1403,6 @@ pub fn (mut element HTMLMediaElement) set_ready_state(state MediaReadyState) {
 	if mut video := element.video_element_model_ {
 		video.update_natural_dimensions()
 	}
-	if element.network_state_ == .empty {
-		return
-	}
 	// Metadata notification belongs to the readiness transition, including
 	// MediaSource initialization, rather than to the synchronous fetch adapter.
 	if element.network_state_ != .empty && old_state == .have_nothing
@@ -2015,7 +2016,16 @@ pub fn (mut element HTMLMediaElement) set_playback_rate(rate f64) ! {
 		})
 	}
 	element.playback_rate_ = rate
-	// PlaybackManager rate/clock/pipeline propagation remains a backend boundary.
+	element.update_playback_rate()
+}
+
+fn (element &HTMLMediaElement) update_playback_rate() {
+	if !element.playback_manager_ready_ {
+		return
+	}
+	if set_rate := element.playback_hooks_.set_playback_rate {
+		set_rate(f32(element.playback_rate_))
+	}
 }
 
 pub fn (mut element HTMLMediaElement) advance_playback(elapsed_seconds f64) {
@@ -2323,6 +2333,7 @@ pub fn (mut element HTMLMediaElement) on_metadata_parsed(duration f64) {
 
 pub fn (mut element HTMLMediaElement) set_up_playback_manager() {
 	element.playback_manager_ready_ = true
+	element.update_playback_rate()
 }
 
 pub fn (mut element HTMLMediaElement) process_media_data(status MediaFetchingStatus) {
