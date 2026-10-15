@@ -2026,6 +2026,16 @@ fn replay_cached_paint_commands_with_visual_context(steps []CompatibilityPaintSt
 	return commands, layer_steps
 }
 
+// This vector is a fresh replay snapshot, independent of the phase caches.
+// Transfer it directly when no layers need inserting. The general lowering
+// helper keeps its copying contract for callers which retain their input.
+fn finish_fresh_visual_replay(commands []PaintCommand, steps []CompatibilityVisualReplayStep) []PaintCommand {
+	if steps.all(it.layer_list == unsafe { nil }) {
+		return commands
+	}
+	return lower_visual_replay_steps(commands, steps)
+}
+
 fn viewport_record_display_list(target voidptr) &dom.DisplayList {
 	mut result := viewport_layout_result(target)
 	if result.display_list != unsafe { nil } && !result.needs_repaint {
@@ -2049,7 +2059,7 @@ fn viewport_record_display_list(target voidptr) &dom.DisplayList {
 	replayed, layer_steps := replay_cached_paint_commands_with_visual_context(result.paint_steps,
 		result.paint_phase_commands, result.paint_phase_command_count, result.visual_context_tree,
 		snapshot, show_line_box_borders)
-	mut commands := lower_visual_replay_steps(replayed, layer_steps)
+	mut commands := finish_fresh_visual_replay(replayed, layer_steps)
 	commands << result.paint_tree.paint_inspector_overlay(result.document, result.visual_context_tree,
 		snapshot)
 	if model := html.NavigableModel.navigable_with_active_document(result.document) {
