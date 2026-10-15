@@ -8,6 +8,7 @@
 module html
 
 import dom
+import fetch as webfetch
 import math
 import painting
 import platform
@@ -20,6 +21,10 @@ pub enum VideoRepresentation {
 }
 
 pub type PosterFrameFetchHook = fn(dom.URL) !&dom.Bitmap_
+
+// The Source request record reaches hosts that implement the Fetch boundary.
+// The URL-only hook remains a compatibility adapter for existing decoders.
+pub type PosterFrameRequestFetchHook = fn (&webfetch.Request) !&dom.Bitmap_
 
 // Painting installs this boundary when a video has a concrete renderer owner.
 pub type VideoPaintFactsUpdateHook = fn (&dom.HTMLVideoElement)
@@ -42,6 +47,7 @@ mut:
 	intrinsic_video_dimensions_ ?VideoDimensions
 	natural_dimensions_         ?VideoDimensions
 	poster_fetch_hook           ?PosterFrameFetchHook
+	poster_request_fetch_hook   ?PosterFrameRequestFetchHook
 	paint_facts_update_hook     ?VideoPaintFactsUpdateHook
 	poster_fetch_generation_    u64
 	poster_load_event_delayer_  ?dom.DocumentLoadEventDelayer
@@ -97,6 +103,20 @@ fn html_video_element_poster_attribute_changed(element &dom.HTMLVideoElement, va
 
 pub fn (mut video HTMLVideoElementModel) set_poster_fetch_hook(hook ?PosterFrameFetchHook) {
 	video.poster_fetch_hook = hook
+}
+
+pub fn (mut video HTMLVideoElementModel) set_poster_request_fetch_hook(hook ?PosterFrameRequestFetchHook) {
+	video.poster_request_fetch_hook = hook
+}
+
+fn (video &HTMLVideoElementModel) fetch_poster_frame(request &webfetch.Request) !&dom.Bitmap_ {
+	if hook := video.poster_request_fetch_hook {
+		return hook(request)!
+	}
+	if hook := video.poster_fetch_hook {
+		return hook(request.current_url())!
+	}
+	return error('No poster fetch hook')
 }
 
 pub fn (mut video HTMLVideoElementModel) set_paint_facts_update_hook(hook ?VideoPaintFactsUpdateHook) {
@@ -162,16 +182,28 @@ pub fn (mut video HTMLVideoElementModel) determine_element_poster_frame() {
 		video.update_natural_dimensions()
 		return
 	}
-	fetch := video.poster_fetch_hook or {
+	if video.poster_request_fetch_hook == none && video.poster_fetch_hook == none {
 		video.poster_frame_ = none
 		video.update_natural_dimensions()
 		return
 	}
+	mut request := webfetch.Request.create()
+	request.set_url(url)
+	if document := video.media.document() {
+		settings := document.relevant_settings_object()
+		if settings != unsafe { nil } {
+			request.set_client(unsafe { &EnvironmentSettingsObject(settings) })
+		}
+	}
+	request.set_destination(.image)
+	request.set_initiator_type(.video)
+	request.set_credentials_mode(.include)
+	request.set_use_url_credentials(true)
 	if mut document := video.media.document() {
 		video.poster_load_event_delayer_ = dom.DocumentLoadEventDelayer.new(mut document)
 	}
 
-	frame := fetch(url) or {
+	frame := video.fetch_poster_frame(request) or {
 		if generation != video.poster_fetch_generation_ {
 			return
 		}
