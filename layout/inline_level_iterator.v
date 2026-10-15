@@ -283,7 +283,8 @@ mut:
 	layout_mode                    LayoutMode
 	available_space                AvailableSpace
 	parent_block_context           ?&BlockFormattingContext
-	text_node_context              ?&InlineTextNodeContext
+	text_node_context              InlineTextNodeContext
+	has_text_node_context          bool
 	is_unidirectional_left_to_right bool
 	extra_leading_metrics          ?InlineExtraBoxMetrics
 	extra_trailing_metrics         ?InlineExtraBoxMetrics
@@ -536,7 +537,8 @@ fn (mut iterator InlineLevelIterator) skip_to_next() {
 }
 
 fn (mut iterator InlineLevelIterator) resolve_text_direction_from_context() platform.GlyphRunTextType {
-	context := iterator.text_node_context or { return .context_dependent }
+	if !iterator.has_text_node_context { return .context_dependent }
+	context := &iterator.text_node_context
 	mut next_known := ?platform.GlyphRunTextType(none)
 	for index := context.next_chunk_index; index < context.chunks.len; index++ {
 		type_ := context.chunks[index].text_type
@@ -563,13 +565,14 @@ fn (mut iterator InlineLevelIterator) resolve_text_direction_from_context() plat
 fn (mut iterator InlineLevelIterator) generate_next_item() ?InlineLevelItem {
 	current := iterator.current_node or { return none }
 	if text_node := current.as_text_node() {
-		if iterator.text_node_context == none {
+		if !iterator.has_text_node_context {
 			iterator.enter_text_node(text_node)
 		}
-		mut context := iterator.text_node_context or { return none }
+		mut context := &iterator.text_node_context
 		is_first_chunk := context.next_chunk_index == 0
 		if context.next_chunk_index >= context.chunks.len {
-			iterator.text_node_context = none
+			iterator.has_text_node_context = false
+			iterator.text_node_context = InlineTextNodeContext{}
 			iterator.previous_chunk_can_break_after = false
 			iterator.skip_to_next()
 			return iterator.generate_next_item()
@@ -813,7 +816,8 @@ fn (mut iterator InlineLevelIterator) enter_text_node(text_node &TextNode) {
 		mutable_text_node.cached_font_environment_generation_ = css.css_style_computer_for(text_node.Node.document()).font_computer().environment_generation()
 		mutable_text_node.cached_intrinsic_text_shapes_.clear()
 	}
-	iterator.text_node_context = &InlineTextNodeContext{
+	iterator.has_text_node_context = true
+	iterator.text_node_context = InlineTextNodeContext{
 		chunks: chunks
 		should_collapse_whitespace: white_space_collapse in [.collapse, .preserve_breaks]
 		should_wrap_lines: should_wrap_lines
