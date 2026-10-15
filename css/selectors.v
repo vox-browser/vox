@@ -2216,15 +2216,16 @@ fn fast_matches(selector Selector, element_to_match &dom.Element, shadow_host ?&
 }
 
 fn fast_matches_compound_selector(compound_selector CompoundSelector, element &dom.Element, shadow_host ?&dom.Element, mut context MatchContext) bool {
-	for simple_selector in compound_selector.simple_selectors {
-		if !fast_matches_simple_selector(simple_selector, element, shadow_host, mut context) {
+	// Borrow each immutable record for this call instead of copying its payload.
+	for index in 0 .. compound_selector.simple_selectors.len {
+		if !fast_matches_simple_selector(&compound_selector.simple_selectors[index], element, shadow_host, mut context) {
 			return false
 		}
 	}
 	return true
 }
 
-fn fast_matches_simple_selector(simple_selector SimpleSelector, element &dom.Element, shadow_host ?&dom.Element, mut context MatchContext) bool {
+fn fast_matches_simple_selector(simple_selector &SimpleSelector, element &dom.Element, shadow_host ?&dom.Element, mut context MatchContext) bool {
 	if should_block_shadow_host_matching(simple_selector, shadow_host, element) {
 		return false
 	}
