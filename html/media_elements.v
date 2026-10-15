@@ -81,7 +81,9 @@ pub fn html_video_element_model_for_dom_element(element &dom.HTMLVideoElement) &
 		HTMLMediaElement.create(unsafe { &dom.HTMLElement(dom_element) },
 			dom_element.document().base_url())
 	}
-	model := HTMLVideoElementModel.create(media, dom_element.document().base_url())
+	mut model := HTMLVideoElementModel.create(media, dom_element.document().base_url())
+	// Attribute changes before lazy model creation have no HTML hook to notify.
+	model.poster_ = dom_element.get_attribute_ns(none, 'poster')
 	mut mutable_element := unsafe { &dom.HTMLVideoElement(element) }
 	mutable_element.video_element_model_ = model
 	mutable_element.video_poster_attribute_changed_hook_ = html_video_element_poster_attribute_changed
