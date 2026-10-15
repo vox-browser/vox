@@ -1313,31 +1313,6 @@ fn flex_subtree_depends_on_definite_height(mut state LayoutState, node &Node) bo
 	return depends
 }
 
-// These callers promote an unchanged used height. Root percentages still
-// use the unchanged parent basis; only inside-layout consumers need a rerun.
-// Keep the subtree cache's original meaning when this node is a descendant.
-fn flex_inside_layout_depends_on_definite_height(mut state LayoutState, node &Node) bool {
- if !flex_subtree_depends_on_definite_height(mut state, node) { return false }
- computed := node.computed_values()
- if !node.display().is_flex_inside() || node.is_replaced_box()
-  || node.is_absolutely_positioned() || computed.writing_mode() != .horizontal_tb {
-  return true
- }
- dom_node := node.dom_node() or { return true }
- element := dom_node.as_element() or { return true }
- if (element.namespace_uri() or { '' }) != 'http://www.w3.org/1999/xhtml' { return true }
- if computed.gap_value(.row_gap).length_percentage.contains_percentage() { return true }
- if node.is_flex_item() && property_is_auto(computed, .height) {
-  if box := node.as_box() { if box.has_preferred_aspect_ratio() { return true } }
- }
- height := computed.size_value(.height)
- if height.is_length_percentage() && !height.contains_percentage() { return true }
- for child in node.children() {
-  if flex_subtree_depends_on_definite_height(mut state, child) { return true }
- }
- return false
-}
-
 fn run_flex_formatting_context_with_mode(mut state LayoutState, container &Node, mut container_state UsedValues, layout_mode LayoutMode, available_space AvailableSpace) FormattingContextResult {
 	direction := container.computed_values().effective_flex_direction()
 	if direction in [.column, .column_reverse] {
@@ -1492,7 +1467,7 @@ fn run_flex_formatting_context_with_mode(mut state LayoutState, container &Node,
 				if item_state.has_definite_height() {
 					continue
 				}
-				if !flex_inside_layout_depends_on_definite_height(mut state, item) {
+				if !flex_subtree_depends_on_definite_height(mut state, item) {
 					item_state.set_has_definite_height(true)
 					continue
 				}
@@ -1592,7 +1567,7 @@ fn run_flex_formatting_context_with_mode(mut state LayoutState, container &Node,
 				stretched := cross_size.minus(flex_or_grid_item_outer_block_edges(item_state))
 				if stretched == item_state.content_height()
 					&& (item_state.has_definite_height()
-						|| !flex_inside_layout_depends_on_definite_height(mut state, item)) {
+						|| !flex_subtree_depends_on_definite_height(mut state, item)) {
 					item_state.set_has_definite_height(true)
 				} else {
 					item_state = layout_independent_child(mut state, item, mut container_state, container_width, if container_state.has_definite_height() {
@@ -1798,7 +1773,7 @@ fn run_column_flex_formatting_context(mut state LayoutState, container &Node, mu
 		reuse_geometry := current.content_height() == line.targets[index]
 			&& (if width := forced_width { width == current.content_width() } else { true })
 			&& (current.has_definite_height()
-				|| !flex_inside_layout_depends_on_definite_height(mut state, item))
+				|| !flex_subtree_depends_on_definite_height(mut state, item))
 		item_state := if reuse_geometry {
 			mut reused := state.get_mutable(styled)
 			reused.set_has_definite_height(true)
