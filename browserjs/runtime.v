@@ -79,6 +79,7 @@ mut:
 	media_element_hosts_ []&MediaElementHost
 	close_handlers_ []fn ()
 	document_state_dirty_ bool
+	document_replay_effects_pending_ bool
 	scripting_settings_ ?&html.EnvironmentSettingsObject
 }
 
@@ -369,4 +370,17 @@ pub fn (mut runtime Runtime) take_document_state_dirty() bool {
 	dirty := runtime.document_state_dirty_
 	runtime.document_state_dirty_ = false
 	return dirty
+}
+
+// A callback can need host synchronization without changing its document.
+// Keep real compact replay effects separate, including effects flushed by a
+// synchronous DOM query before the callback returns.
+pub fn (mut runtime Runtime) mark_document_replay_effects() {
+	runtime.document_replay_effects_pending_ = true
+}
+
+pub fn (mut runtime Runtime) take_document_replay_effects() bool {
+	pending := runtime.document_replay_effects_pending_
+	runtime.document_replay_effects_pending_ = false
+	return pending
 }

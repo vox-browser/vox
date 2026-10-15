@@ -352,6 +352,7 @@ mut:
 	layout_tree_only                    bool
 	document_presented                  bool
 	paint_timing                        BrowserPaintTiming
+	paint_display_list                  &dom.DisplayList = unsafe { nil }
 	animation_epoch_ns                  u64
 	initial_window_frame_presented      bool
 	refresh_not_before                  i64
@@ -2187,8 +2188,12 @@ fn apply_decoded_javascript_state(document &dom.Document, state map[string]json2
 		foreground := json_int_property(state, 'forceDarkForegroundThreshold') or { 150 }
 		background := json_int_property(state, 'forceDarkBackgroundThreshold') or { 205 }
 		mutable_model.set_force_dark_thresholds(i32(foreground), i32(background))
-		mutable_model.set_should_show_line_box_borders(json_bool_property(state,
-			'showLineBoxBorders'))
+		show_line_box_borders := json_bool_property(state, 'showLineBoxBorders')
+		if mutable_model.should_show_line_box_borders() != show_line_box_borders {
+			mutable_model.set_should_show_line_box_borders(show_line_box_borders)
+			mut mutable_document := unsafe { &dom.Document(document) }
+			mutable_document.set_needs_repaint_with_invalidation(.paint_commands)
+		}
 	}
 	root := unsafe { &dom.Node(document) }
 	mut initial_elements := []&dom.Element{}
@@ -2838,7 +2843,11 @@ fn (mut app BrowserApp) poll_javascript_tasks() {
 	}
 	navigation := apply_javascript_runtime_state(app.document, state, runtime, mut app.js_messages)
 	runtime.evaluate_host('__ladybirdClearLogs()') or {}
-	app.relayout(app.viewport_width, app.viewport_height + app.chrome_height())
+	replayed_effects := runtime.take_document_replay_effects()
+	if replayed_effects || app.document.needs_style_update_after_layout()
+		|| !app.document.layout_is_up_to_date() || app.javascript_tasks_have_unadopted_paint() {
+		app.relayout(app.viewport_width, app.viewport_height + app.chrome_height())
+	}
 	if app.ctx != unsafe { nil } {
 		title := document_title(app.document)
 		gg.set_window_title(if title != '' { '${title} — vox' } else { 'vox' })
@@ -3083,6 +3092,9 @@ fn (mut app BrowserApp) relayout(window_width int, window_height int) {
 		return
 	}
 	refresh_browser_adblock(app.document, app.js_runtime, mut app.js_messages)
+	// Cosmetic filtering consumes facade effects; ordinary paint recording can
+	// happen later in a frame after another callback has queued new effects.
+	if app.js_runtime != unsafe { nil } { app.js_runtime.take_document_replay_effects() }
 	viewport_width := if window_width > 0 { window_width } else { initial_width }
 	chrome_height := app.chrome_height()
 	viewport_height := if window_height > chrome_height {
@@ -3098,6 +3110,7 @@ fn (mut app BrowserApp) relayout(window_width int, window_height int) {
 		debug_timing_checkpoint('  layout_tree', layout_checkpoint)
 		app.root_box = layout.BlockBox{}
 		app.paint_commands = []layout.PaintCommand{}
+		app.paint_display_list = unsafe { nil }
 		app.paint_commands_have_backdrop_filter = false
 		app.paint_commands_pending = false
 		app.content_height = f64(viewport_height)

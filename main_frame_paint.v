@@ -18,6 +18,7 @@ fn (mut app BrowserApp) finish_frame_preparation() {
 	if app.layout_tree_only { return }
 	if app.document == unsafe { nil } {
 		app.paint_commands = []layout.PaintCommand{}
+		app.paint_display_list = unsafe { nil }
 		app.paint_commands_have_backdrop_filter = false
 		app.paint_commands_pending = false
 		return
@@ -32,7 +33,7 @@ fn (mut app BrowserApp) finish_frame_preparation() {
 	// A synchronous query may already have recorded the new document's list.
 	// Pending commands must still be adopted even when that cache is populated.
 	// Also refresh invalidated scroll snapshots without requiring a relayout.
-	if app.paint_commands_pending || app.document.cached_display_list() == none {
+	if app.paint_commands_pending || app.javascript_tasks_have_unadopted_paint() {
 		app.record_document_paint_commands()
 	}
 	// A nested native frame must present current commands too. The remaining
@@ -44,10 +45,12 @@ fn (mut app BrowserApp) record_document_paint_commands() {
 	app.memory_maintenance.document_changed(checkpoint)
 	mut document := unsafe { &dom.Document(app.document) }
 	if display_list := document.record_display_list() {
+		app.paint_display_list = display_list
 		app.paint_commands = layout.display_list_commands(display_list)
 		app.paint_commands_have_backdrop_filter = paint_commands_contain_backdrop_filter(app.paint_commands)
 	} else {
 		app.paint_commands = []layout.PaintCommand{}
+		app.paint_display_list = unsafe { nil }
 		app.paint_commands_have_backdrop_filter = false
 	}
 	// Recording can refresh paint-only styles in the retained transport without
@@ -57,4 +60,12 @@ fn (mut app BrowserApp) record_document_paint_commands() {
 	root_rect := app.root_box.border_box()
 	app.status = '${app.load_status} · ${app.paint_commands.len} paints · ${int(root_rect.width)}×${int(root_rect.height)} CSS px'
 	debug_timing_checkpoint('  paint_commands', checkpoint)
+}
+
+fn (app &BrowserApp) javascript_tasks_have_unadopted_paint() bool {
+	if app.layout_tree_only { return false }
+	if cached := app.document.cached_display_list() {
+		return voidptr(cached) != voidptr(app.paint_display_list)
+	}
+	return true
 }
