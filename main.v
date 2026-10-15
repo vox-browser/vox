@@ -1571,7 +1571,7 @@ fn javascript_bootstrap(state map[string]json2.Any) string {
 		'const __documentCookie=globalThis.__ladybirdDocumentCookie,__documentCookieException=globalThis.DOMException; function __callDocumentCookie(input){try{return __documentCookie(input);}catch(error){const message=String(error.message);if(message.indexOf("SecurityError:")===0)throw new __documentCookieException(message.slice(14).trim(),"SecurityError");throw error;}} Object.defineProperty(document,"cookie",{enumerable:true,configurable:true,get:function(){return __callDocumentCookie("get");},set:function(value){__callDocumentCookie("set:"+String(value));}});',
 		'const window = globalThis; window.window = window; window.document = document; window.console = console; window.location = location; window.alert = function (v) { console.log(v); }; window.addEventListener = document.addEventListener; window.getSelection=function(){return __selection;}; window.Image=function(){return document.createElement("img");}; window.internals={imageAnimationStateForURL:function(){return{timerActive:true,frameIndex:1};},signalTestIsDone:function(){},spoofCurrentURL:function(){},setForceDarkEnabled:function(value){__state.forceDarkEnabled=!!value;},setForceDarkThresholds:function(foreground,background){__state.forceDarkForegroundThreshold=Math.trunc(Number(foreground));__state.forceDarkBackgroundThreshold=Math.trunc(Number(background));},setShowLineBoxBorders:function(value){__state.showLineBoxBorders=!!value;}}; if(!Promise.withResolvers)Promise.withResolvers=function(){let resolve,reject;const promise=new Promise(function(a,b){resolve=a;reject=b;});return{promise:promise,resolve:resolve,reject:reject};};',
 		'__ladybirdElementWheelSetResolver(function(key){const s=__state.elements[key];return s?__element(s):null;});',
-		'for (const s of __elementStates()) { if(!s.id)continue; try { window[s.id] = document.getElementById(s.id); } catch (_) {} }',
+		'const __initialNamedElements=Object.create(null); for (const s of __elementStates()) { if(!s.id)continue; if(!Object.prototype.hasOwnProperty.call(__initialNamedElements,s.id))__initialNamedElements[s.id]=s; try { window[s.id] = __element(__initialNamedElements[s.id]); } catch (_) {} }',
 		'window.__ladybirdSnapshot = function () { return JSON.stringify(__state); };',
 		'window.__ladybirdFinalize = function () { for (const key of Object.keys(__canvases)) { const c=__canvases[key],s=c.state;if(!c.context||c.kind!=="2d")continue;const snapshot=__canvasCall(s,"snapshot");s.canvasPixels=snapshot.pixels;s.canvasWidth=__canvasDimension(s,"width");s.canvasHeight=__canvasDimension(s,"height");s.canvasPixelsPremultiplied=snapshot.premultiplied;s.canvasPixelsTopDown=snapshot.topDown;s.canvasNative=true; } const snapshot=window.__ladybirdSnapshot(); __state.operations=[]; return snapshot; };',
 		'window.__ladybirdClearLogs = function () { __state.logs = []; __state.operations=[]; __state.bodyHTMLDirty = false; __state.bodyTextDirty = false; for(const s of __elementStates()){s.innerHTMLDirty=false;s.textContentDirty=false;} };',
@@ -2009,9 +2009,15 @@ fn apply_javascript_state(document &dom.Document, encoded string, canvas_element
 			'showLineBoxBorders'))
 	}
 	root := unsafe { &dom.Node(document) }
-	initial_elements := css.query_selector_all(root, '*')
-	body := css.query_selector(root, 'body')
+	mut initial_elements := []&dom.Element{}
+	mut has_initial_elements := false
+	// Legacy unbound snapshots index the tree before a body replacement.
+	if json_bool_property(state, 'bodyHTMLDirty') || json_bool_property(state, 'bodyTextDirty') {
+		initial_elements = css.query_selector_all(root, '*')
+		has_initial_elements = true
+	}
 	if json_bool_property(state, 'bodyHTMLDirty') {
+		body := document.body()
 		body_html := json_string_property(state, 'bodyHTML') or { '' }
 		if mut body_element := body {
 			if body_html != (body_element.inner_html() or { '' }) {
@@ -2019,6 +2025,7 @@ fn apply_javascript_state(document &dom.Document, encoded string, canvas_element
 			}
 		}
 	} else if json_bool_property(state, 'bodyTextDirty') {
+		body := document.body()
 		body_text := json_string_property(state, 'bodyText') or { '' }
 		if mut body_element := body {
 			if body_text != (body_element.as_node().text_content() or { '' }) {
@@ -2041,6 +2048,10 @@ fn apply_javascript_state(document &dom.Document, encoded string, canvas_element
 				// original tree index only seeds callers without a native binding.
 				mut element := element_by_bridge_key[bridge_key] or {
 					element_index := json_int_property(element_state, 'elementIndex') or { continue }
+					if !has_initial_elements {
+						initial_elements = css.query_selector_all(root, '*')
+						has_initial_elements = true
+					}
 					if element_index < 0 || element_index >= initial_elements.len { continue }
 					initial_elements[element_index]
 				}
