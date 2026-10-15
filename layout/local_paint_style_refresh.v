@@ -47,7 +47,7 @@ fn refresh_local_paint_styles(mut result DocumentLayoutResult) {
 	if compositor_changed {
 		// Opacity zero and singular transforms also change paint-step membership.
 		// Rebuild those plans from the retained boxes, keeping resource snapshots.
-		viewport_invalidate_stacking_context(voidptr(&result))
+		viewport_invalidate_compositor_stacking_context(voidptr(&result))
 		result.needs_accumulated_visual_contexts = true
 		result.scroll_state.invalidate()
 	}

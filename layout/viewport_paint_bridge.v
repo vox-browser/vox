@@ -2529,7 +2529,10 @@ fn viewport_build_stacking_context_tree(target voidptr) {
 		concrete_handle: target
 		dump_callback: viewport_stacking_context_dump
 	}
-	result.paint_order, result.paint_steps = result.paint_tree.compatibility_paint_plan()
+	paint_order, paint_steps := result.paint_tree.compatibility_paint_plan()
+	viewport_reconcile_retained_paint_cache(mut result, paint_order)
+	result.paint_order = paint_order
+	result.paint_steps = paint_steps
 	result.stacking_context_tree_is_valid = true
 	viewport_build_hit_test_display_list(target)
 }
@@ -2633,6 +2636,52 @@ fn viewport_invalidate_stacking_context(target voidptr) {
 	result.paint_phase_command_count = 0
 	result.paint_phase_cache_valid = false
 	result.paint_phase_entry_valid.clear()
+}
+
+// Compositor samples keep the same retained boxes and stacking categories.
+// Rebuild step membership for opacity zero and singular transforms, but keep
+// each box's phase commands until the rebuilt order proves they still match.
+fn viewport_invalidate_compositor_stacking_context(target voidptr) {
+	mut result := viewport_layout_result(target)
+	result.stacking_context_tree_is_valid = false
+	result.stacking_context = unsafe { nil }
+	result.paint_steps.clear()
+	viewport_invalidate_hit_test_display_list(target)
+}
+
+fn viewport_reconcile_retained_paint_cache(mut result DocumentLayoutResult,
+	paint_order []PaintOrderEntry) {
+	if !result.paint_phase_cache_valid { return }
+	mut same_order := result.paint_order.len == paint_order.len
+		&& result.paint_phase_entry_valid.len == paint_order.len
+		&& result.paint_phase_commands.len == paint_order.len * compatibility_paint_phase_count
+	if same_order {
+		for index, entry in paint_order {
+			if voidptr(entry.box) != voidptr(result.paint_order[index].box) {
+				same_order = false
+				break
+			}
+		}
+	}
+	if !same_order {
+		result.paint_phase_commands.clear()
+		result.paint_phase_command_count = 0
+		result.paint_phase_cache_valid = false
+		result.paint_phase_entry_valid.clear()
+		return
+	}
+	// Cached commands contain cumulative opacity. A fading context must repaint
+	// its descendants too, while unrelated boxes retain paths, glyphs and images.
+	for index, entry in paint_order {
+		if entry.opacity == result.paint_order[index].opacity
+			|| !result.paint_phase_entry_valid[index] { continue }
+		for phase in 0 .. compatibility_paint_phase_count {
+			bucket := index * compatibility_paint_phase_count + phase
+			result.paint_phase_command_count -= result.paint_phase_commands[bucket].len
+			result.paint_phase_commands[bucket].clear()
+		}
+		result.paint_phase_entry_valid[index] = false
+	}
 }
 
 fn viewport_hit_test(target voidptr, x f64, y f64, type_ dom.HitTestType) ?dom.HitTestResult {
