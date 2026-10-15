@@ -1680,8 +1680,8 @@ pub fn (mut scope StyleScope) invalidate_style_of_elements_affected_by_has() {
 	}
 }
 
-fn style_scope_pseudo_classes_with_rule_cache() []PseudoClass {
-	return [.hover, .active, .focus, .focus_within, .focus_visible, .has, .target]
+fn style_scope_pseudo_classes_with_rule_cache() [7]PseudoClass {
+	return [PseudoClass.hover, .active, .focus, .focus_within, .focus_visible, .has, .target]!
 }
 
 fn style_scope_absolutized_selectors_for_rule(rule &CSSRule) SelectorList {
