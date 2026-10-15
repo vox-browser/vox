@@ -487,6 +487,9 @@ pub fn (mut element HTMLTrackElementModel) start_the_track_processing_model_para
 	element.awaiting_url_change = false
 	mut track := element.track
 	track.set_readiness_state(.loading)
+	if generation != element.processing_generation_ {
+		return
+	}
 	if element.track_url_ == '' {
 		element.track_failed_to_load()
 		return
@@ -527,8 +530,11 @@ pub fn (mut element HTMLTrackElementModel) start_the_track_processing_model_para
 		track.add_cue(mut cue)
 	}
 	element.loading_ = false
-	track.set_readiness_state(.loaded)
 	element.track_became_ready()
+	track.set_readiness_state(.loaded)
+	if generation != element.processing_generation_ {
+		return
+	}
 	element.fire_event('load')
 }
 
@@ -537,10 +543,14 @@ pub fn (mut element HTMLTrackElementModel) track_became_ready() {
 }
 
 fn (mut element HTMLTrackElementModel) track_failed_to_load() {
+	generation := element.processing_generation_
 	element.loading_ = false
 	mut track := element.track
-	track.set_readiness_state(.failed_to_load)
 	element.track_became_ready()
+	track.set_readiness_state(.failed_to_load)
+	if generation != element.processing_generation_ {
+		return
+	}
 	element.fire_event('error')
 }
 
