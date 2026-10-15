@@ -13,13 +13,22 @@ import css
 pub fn attach_layout_nodes(root_box &Node) &dom.LayoutNode {
 	mut placeholders := map[u64]&dom.LayoutNode{}
 	mut inline_pieces := map[u64][]InlineBoxPiece{}
-	return attach_layout_node_recursive(root_box, none, none, mut placeholders, mut inline_pieces)
+	return attach_layout_node_recursive(root_box, none, none, true, mut placeholders, mut inline_pieces)
 }
 
 pub fn attach_layout_nodes_with_state(root_box &Node, state &LayoutState) &dom.LayoutNode {
 	mut placeholders := map[u64]&dom.LayoutNode{}
 	mut inline_pieces := map[u64][]InlineBoxPiece{}
-	return attach_layout_node_recursive(root_box, none, state, mut placeholders, mut inline_pieces)
+	return attach_layout_node_recursive(root_box, none, state, true, mut placeholders, mut inline_pieces)
+}
+
+// Formatting needs the complete DOM/layout association before geometry is
+// available. innerText first updates layout and reads the final attachment, so
+// its font/grapheme-aware text chunks need only be collected at that commit.
+fn attach_layout_nodes_before_layout(root_box &Node) &dom.LayoutNode {
+	mut placeholders := map[u64]&dom.LayoutNode{}
+	mut inline_pieces := map[u64][]InlineBoxPiece{}
+	return attach_layout_node_recursive(root_box, none, none, false, mut placeholders, mut inline_pieces)
 }
 
 struct VisualLineProjection {
@@ -242,7 +251,7 @@ fn collect_dom_visual_lines(box &Node, state &LayoutState) []dom.VisualLine {
 	return result
 }
 
-fn attach_layout_node_recursive(box &Node, parent_placeholder ?&dom.LayoutNode, state ?&LayoutState, mut placeholders map[u64]&dom.LayoutNode, mut inline_pieces map[u64][]InlineBoxPiece) &dom.LayoutNode {
+fn attach_layout_node_recursive(box &Node, parent_placeholder ?&dom.LayoutNode, state ?&LayoutState, collect_text_chunks bool, mut placeholders map[u64]&dom.LayoutNode, mut inline_pieces map[u64][]InlineBoxPiece) &dom.LayoutNode {
 	mut visibility := dom.CSSVisibility_.visible
 	mut content_visibility := dom.CSSContentVisibility_.visible
 	mut overflow_x := dom.CSSOverflow_.visible
@@ -290,19 +299,23 @@ fn attach_layout_node_recursive(box &Node, parent_placeholder ?&dom.LayoutNode, 
 		placeholder.rendered_text_ = text_node.text_for_rendering()
 		if first := text_node.first_letter_ {
 			placeholder.rendered_text_ = first.text_for_rendering() + placeholder.rendered_text_
-			mut first_iterator := TextNodeChunkIterator.new(first, false, false)
-			for {
-				chunk := first_iterator.next() or { break }
-				placeholder.rendered_text_chunks_ << chunk.view
+			if collect_text_chunks {
+				mut first_iterator := TextNodeChunkIterator.new(first, false, false)
+				for {
+					chunk := first_iterator.next() or { break }
+					placeholder.rendered_text_chunks_ << chunk.view
+				}
 			}
 		}
 		// HTMLElement::rendered_text_collection_steps consumes TextNode::ChunkIterator with both
 		// wrapping and line-break preservation disabled. The chunks, rather than text_for_rendering()
 		// itself, apply the remaining collapsible-space processing used by innerText.
-		mut iterator := TextNodeChunkIterator.new(text_node, false, false)
-		for {
-			chunk := iterator.next() or { break }
-			placeholder.rendered_text_chunks_ << chunk.view
+		if collect_text_chunks {
+			mut iterator := TextNodeChunkIterator.new(text_node, false, false)
+			for {
+				chunk := iterator.next() or { break }
+				placeholder.rendered_text_chunks_ << chunk.view
+			}
 		}
 	}
 	placeholders[u64(voidptr(box))] = placeholder
@@ -401,7 +414,7 @@ fn attach_layout_node_recursive(box &Node, parent_placeholder ?&dom.LayoutNode, 
 		}
 	}
 	for child in box.children() {
-		attach_layout_node_recursive(child, placeholder, state, mut placeholders, mut inline_pieces)
+		attach_layout_node_recursive(child, placeholder, state, collect_text_chunks, mut placeholders, mut inline_pieces)
 	}
 	return placeholder
 }

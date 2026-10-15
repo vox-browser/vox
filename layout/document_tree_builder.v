@@ -726,7 +726,7 @@ fn finish_document_layout(document &dom.Document, root &Node, viewport_width f64
 	// which run during layout (notably list-item ordinal resolution) observe the
 	// same complete layout tree. Geometry is refreshed after layout below.
 	previous_query_container_geometry := snapshot_size_query_container_geometry(root)
-	initial_root_placeholder := attach_layout_nodes(root)
+	initial_root_placeholder := attach_layout_nodes_before_layout(root)
 	mut mutable_document := unsafe { &dom.Document(document) }
 	mutable_document.set_layout_viewport(&dom.LayoutViewport{
 		root_node: initial_root_placeholder
