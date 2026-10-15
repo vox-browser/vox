@@ -767,7 +767,7 @@ fn apply_property_list_to_cascade(mut cascaded_properties CascadedProperties, ab
 	// CSSStyleProperties retains an unresolved shorthand and pending-substitution
 	// placeholders for its longhands. Once the shorthand has resolved and set a
 	// longhand, a later placeholder must not overwrite that real value.
-	mut seen_properties := []u8{len: int(PropertyID.mask) + 1}
+	mut seen_properties := [int(PropertyID.mask) + 1]u8{}
 	for property in properties {
 		// OPTIMIZATION: only cascade the requested properties, when a set was given.
 		if properties_to_cascade.len > 0 && property.property_id !in properties_to_cascade && !property_is_shorthand(property.property_id) {
