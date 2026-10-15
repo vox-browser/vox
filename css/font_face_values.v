@@ -214,23 +214,13 @@ pub mut:
 
 // Gfx::ShapeFeatures FontFeatureData::to_shape_features(...) const
 pub fn (data FontFeatureData) to_shape_features(font_feature_values map[string][]u32) ShapeFeatures {
-	mut merged_features := map[string]u32{}
-
 	mut features := map[string]u32{}
 
 	// 6.4 https://drafts.csswg.org/css-fonts/#font-variant-ligatures-prop
-	mut disable_all_ligatures := fn [mut features] () {
-		features['liga'] = 0
-		features['clig'] = 0
-		features['dlig'] = 0
-		features['hlig'] = 0
-		features['calt'] = 0
-	}
-
 	if ligature := data.font_variant_ligatures {
 		if ligature.none_ {
 			// Specifies that all types of ligatures and contextual forms covered by this property are explicitly disabled.
-			disable_all_ligatures()
+			disable_all_shape_ligatures(mut features)
 		} else {
 			if common := ligature.common {
 				match common {
@@ -285,7 +275,7 @@ pub fn (data FontFeatureData) to_shape_features(font_feature_values map[string][
 		}
 	} else if data.text_rendering == .optimizespeed {
 		// AD-HOC: Disable ligatures if font-variant-ligatures is set to normal and text rendering is set to optimize speed.
-		disable_all_ligatures()
+		disable_all_shape_ligatures(mut features)
 	} else {
 		// A value of normal specifies that common default features are enabled, as described in detail in the next section.
 		features['liga'] = 1
@@ -555,7 +545,6 @@ pub fn (data FontFeatureData) to_shape_features(font_feature_values map[string][
 
 	// 10. Font features implied by the value of the font-variant property, the related font-variant subproperties and
 	//     any other CSS property that uses OpenType features (e.g. the font-kerning property) are applied.
-	merge_shape_feature_map(mut merged_features, features)
 
 	// FIXME: 11. Feature settings determined by properties other than font-variant or font-feature-settings are
 	//            applied. For example, setting a non-default value for the letter-spacing property disables optional
@@ -564,10 +553,10 @@ pub fn (data FontFeatureData) to_shape_features(font_feature_values map[string][
 	//            should be clamped to the values that are supported by the font.
 
 	// 13. Font features implied by the value of font-feature-settings property are applied.
-	merge_shape_feature_map(mut merged_features, data.font_feature_settings)
+	merge_shape_feature_map(mut features, data.font_feature_settings)
 
 	mut shape_features := ShapeFeatures{}
-	for tag, value in merged_features {
+	for tag, value in features {
 		if tag.len != 4 {
 			continue
 		}
@@ -577,6 +566,16 @@ pub fn (data FontFeatureData) to_shape_features(font_feature_values map[string][
 		}
 	}
 	return shape_features
+}
+
+// Mutate the same map header used by the caller. Capturing a map by value in
+// a closure can leave the caller's length stale on the old compiler backend.
+fn disable_all_shape_ligatures(mut features map[string]u32) {
+	features['liga'] = 0
+	features['clig'] = 0
+	features['dlig'] = 0
+	features['hlig'] = 0
+	features['calt'] = 0
 }
 
 fn merge_shape_feature_map(mut target map[string]u32, source map[string]u32) {
