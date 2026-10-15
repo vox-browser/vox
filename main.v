@@ -1542,10 +1542,7 @@ fn javascript_initial_state(document &dom.Document, current_url string, scripts 
 	for element_index, element in css.query_selector_all(root, '*') {
 		id := element.get_attribute_value('id')
 		bridge_key := '__element_${element_index}'
-		mut attributes := map[string]json2.Any{}
-		for name in element.get_attribute_names() {
-			attributes[name] = json2.Any(element.get_attribute_value(name))
-		}
+		attribute_records, attributes := browserjs.compact_attribute_state(element)
 		mut state := {
 			'id':           json2.Any(id)
 			'bridgeKey':    json2.Any(bridge_key)
@@ -1553,6 +1550,7 @@ fn javascript_initial_state(document &dom.Document, current_url string, scripts 
 			'tagName':      json2.Any(element.local_name())
 			'namespaceURI': json2.Any(element.namespace_uri() or { '' })
 			'attributes':   json2.Any(attributes)
+			'attributeRecords': json2.Any(attribute_records)
 			'src':          json2.Any(element.get_attribute_value('src'))
 			'width':        json2.Any(element.get_attribute_value('width'))
 			'height':       json2.Any(element.get_attribute_value('height'))
@@ -1620,6 +1618,7 @@ fn javascript_bootstrap(state map[string]json2.Any) string {
 		'const __bindMediaElement = globalThis.__ladybirdMediaElementBind;',
 		'const __bindElementWheel = globalThis.__ladybirdElementWheelBind;',
 		'const __listeners = Object.create(null);',
+		browserjs.compact_attribute_bootstrap(),
 		browserjs.media_element_reflection_bootstrap(),
 		'const __canvases = Object.create(null);',
 		'const __elementRecords=new WeakMap(),__elementRecordGet=WeakMap.prototype.get,__elementRecordSet=WeakMap.prototype.set,__elementApply=Reflect.apply,__nativeElementQuery=globalThis.__ladybirdElementQuery;',
@@ -1635,8 +1634,8 @@ fn javascript_bootstrap(state map[string]json2.Any) string {
 		'function __elementStates() { return Object.keys(__state.elements).map(function (key) { return __state.elements[key]; }).filter(function(s){return !s.removed;}).sort(function (a,b) { return (+a.elementIndex||0)-(+b.elementIndex||0); }); }',
 		'function __attributeName(s, name) { name=String(name); return s.namespaceURI==="http://www.w3.org/1999/xhtml"?name.toLowerCase():name; }',
 		'function __isMediaLifecycleAttribute(s,name){return s.namespaceURI==="http://www.w3.org/1999/xhtml"&&(s.tagName==="audio"||s.tagName==="video")&&(name==="onplay"||name==="onpause"||name==="onplaying"||name==="onwaiting"||name==="oncanplay"||name==="oncanplaythrough"||name==="onloadedmetadata"||name==="onloadeddata"||name==="onratechange"||name==="onvolumechange"||name==="ontimeupdate"||name==="ondurationchange"||name==="onseeking"||name==="onseeked"||name==="onprogress"||name==="onsuspend"||name==="onabort"||name==="onemptied"||name==="onloadstart"||name==="onended"||name==="onresize"||name==="onerror");}',
-		'function __setAttribute(s, name, value) { name=__attributeName(s,name); value=String(value); s.attributes[name]=value; s.attributesDirty=true; if(name==="onwheel")__state.operations.push({op:"wheelContentAttribute",target:s.bridgeKey,value:value}); if(__isMediaLifecycleAttribute(s,name))__state.operations.push({op:"mediaLifecycleContentAttribute",target:s.bridgeKey,name:name,value:value}); if(s.tagName==="img"&&s.namespaceURI==="http://www.w3.org/1999/xhtml")__ladybirdImageSetAttribute(__element(s),name,value); if(s.tagName==="canvas"&&(name==="width"||name==="height")){s[name]=value;__canvasResize(s);} if(name==="id")s.id=value; if(name==="class")s.className=value; if(name==="style")s.styleText=value; if(name==="src")s.src=value; if(name==="disabled")s.disabled=true; }',
-		'function __removeAttribute(s, name) { name=__attributeName(s,name); const hadWheel=name==="onwheel"&&Object.prototype.hasOwnProperty.call(s.attributes,name); const hadMediaLifecycle=__isMediaLifecycleAttribute(s,name)&&Object.prototype.hasOwnProperty.call(s.attributes,name); delete s.attributes[name]; s.attributesDirty=true; if(hadWheel)__state.operations.push({op:"wheelContentAttribute",target:s.bridgeKey,value:null}); if(hadMediaLifecycle)__state.operations.push({op:"mediaLifecycleContentAttribute",target:s.bridgeKey,name:name,value:null}); if(s.tagName==="canvas"&&(name==="width"||name==="height")){delete s[name];__canvasResize(s);} if(name==="id")s.id=""; if(name==="class")s.className=""; if(name==="style")s.styleText=""; if(name==="src")s.src=""; if(name==="disabled")s.disabled=false; }',
+		'function __setAttribute(s, name, value) { name=__attributeName(s,name); value=String(value); const attribute=__compactAttributes.set(s,name,value),plain=attribute.namespaceURI===null; if(plain&&name==="onwheel")__state.operations.push({op:"wheelContentAttribute",target:s.bridgeKey,value:value}); else if(plain&&__isMediaLifecycleAttribute(s,name))__state.operations.push({op:"mediaLifecycleContentAttribute",target:s.bridgeKey,name:name,value:value}); else __state.operations.push({op:"compactAttribute",target:s.bridgeKey,name:name,value:value}); if(!plain)return attribute; if(s.tagName==="img"&&s.namespaceURI==="http://www.w3.org/1999/xhtml")__ladybirdImageSetAttribute(__element(s),name,value); if(s.tagName==="canvas"&&(name==="width"||name==="height")){s[name]=value;__canvasResize(s);} if(name==="id")s.id=value; if(name==="class")s.className=value; if(name==="style")s.styleText=value; if(name==="src")s.src=value; if(name==="disabled")s.disabled=true; return attribute; }',
+		'function __removeAttribute(s, name) { name=__attributeName(s,name); const attribute=__compactAttributes.remove(s,name); if(!attribute)return; const plain=attribute.namespaceURI===null; if(plain&&name==="onwheel")__state.operations.push({op:"wheelContentAttribute",target:s.bridgeKey,value:null}); else if(plain&&__isMediaLifecycleAttribute(s,name))__state.operations.push({op:"mediaLifecycleContentAttribute",target:s.bridgeKey,name:name,value:null}); else __state.operations.push({op:"compactAttribute",target:s.bridgeKey,name:name,value:null}); if(!plain)return; if(s.tagName==="canvas"&&(name==="width"||name==="height")){delete s[name];__canvasResize(s);} if(name==="id")s.id=""; if(name==="class")s.className=""; if(name==="style")s.styleText=""; if(name==="src")s.src=""; if(name==="disabled")s.disabled=false; }',
 		'function __styleProxy(s) {',
 		'  const values = Object.create(null);',
 		'  String(s.styleText || "").split(";").forEach(function (part) { const i = part.indexOf(":"); if (i > 0) values[part.slice(0, i).trim()] = part.slice(i + 1).trim(); });',
@@ -1650,8 +1649,8 @@ fn javascript_bootstrap(state map[string]json2.Any) string {
 		browserjs.xhr_bootstrap(),
 		'function __decodeBase64(input) { const alphabet="ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"; const clean=String(input||"").replace(/[^A-Za-z0-9+/]/g,""); const output=new Uint8ClampedArray(Math.floor(clean.length*3/4)); let bits=0,value=0,index=0; for(const ch of clean){const digit=alphabet.indexOf(ch);if(digit<0)continue;value=(value<<6)|digit;bits+=6;if(bits>=8){bits-=8;output[index++]=(value>>bits)&255;}} return index===output.length?output:output.slice(0,index); }',
 		'function __videoFor(s) { if(s.__videoFrame)return s.__videoFrame; if(!s.videoPixels)return null; return s.__videoFrame={width:+s.videoWidth||0,height:+s.videoHeight||0,data:__decodeBase64(s.videoPixels)}; }',
-		'function __setElementSource(s,value) { __setAttribute(s,"src",value); if(s.tagName==="video"){const frame=__state.videoSources[s.src];if(frame){s.readyState=2;s.videoWidth=frame.width;s.videoHeight=frame.height;s.videoPixels=frame.pixels;s.__videoFrame=null;}} if(s.tagName==="img"){s.complete=true;const target=__element(s),event={type:"load",target:target};for(const listener of (__listeners[__listenerKey(s,"load")]||[]))listener.call(target,event);} }',
-		'function __setElementData(s,value) { __setAttribute(s,"data",value); if(s.tagName==="object"){const target=__element(s),event={type:"load",target:target};for(const listener of (__listeners[__listenerKey(s,"load")]||[]))listener.call(target,event);} }',
+		'function __setElementSource(s,value) { const attribute=__setAttribute(s,"src",value); if(attribute.namespaceURI!==null)return; if(s.tagName==="video"){const frame=__state.videoSources[s.src];if(frame){s.readyState=2;s.videoWidth=frame.width;s.videoHeight=frame.height;s.videoPixels=frame.pixels;s.__videoFrame=null;}} if(s.tagName==="img"){s.complete=true;const target=__element(s),event={type:"load",target:target};for(const listener of (__listeners[__listenerKey(s,"load")]||[]))listener.call(target,event);} }',
+		'function __setElementData(s,value) { const attribute=__setAttribute(s,"data",value); if(attribute.namespaceURI!==null)return; if(s.tagName==="object"){const target=__element(s),event={type:"load",target:target};for(const listener of (__listeners[__listenerKey(s,"load")]||[]))listener.call(target,event);} }',
 		'function __replaceStyleRuleProperty(s,index,name,value){let current=-1;const property=__styleName(name);s.textContent=String(__elementContent(s,"textContent")).replace(/([^{}]+)\\{([^{}]*)\\}/g,function(full,selector,body){current++;if(current!==+index)return full;const declarations=body.split(";").map(function(part){return part.trim();}).filter(Boolean);let replaced=false;for(let i=0;i<declarations.length;i++){const colon=declarations[i].indexOf(":");if(colon>=0&&declarations[i].slice(0,colon).trim().toLowerCase()===property.toLowerCase()){declarations[i]=property+": "+String(value);replaced=true;}}if(!replaced)declarations.push(property+": "+String(value));return selector+"{ "+declarations.join("; ")+"; }";});s.innerHTML="";s.textContentDirty=true;s.innerHTMLDirty=false;}',
 		'function __styleSheet(s){if(s.__sheet)return s.__sheet;const matches=String(__elementContent(s,"textContent")).match(/[^{}]+\\{[^{}]*\\}/g)||[];s.__sheet={cssRules:matches.map(function(_,index){const style=new Proxy({}, {set:function(o,p,v){__replaceStyleRuleProperty(s,index,p,v);return true;},get:function(o,p){if(p==="setProperty")return function(name,value){__replaceStyleRuleProperty(s,index,name,value);};return "";}});return{style:style};})};return s.__sheet;}',
 		'function __element(s) {',
@@ -1661,10 +1660,10 @@ fn javascript_bootstrap(state map[string]json2.Any) string {
 		'    Object.defineProperties(o, { id: { get: function () { return s.id; }, set:function(v){__setAttribute(s,"id",v);} }, firstChild:{get:function(){if(s.tagName==="#document-fragment")return s.children.length?__element(s.children[0]):null;return s.hasChildren?{__firstChildOf:s.bridgeKey}:null;}}, textContent: { get: function () { return __elementContent(s,"textContent"); }, set: function (v) { s.textContent = String(v); s.innerHTML = ""; s.textContentDirty=true; s.innerHTMLDirty=false; } }, innerHTML: { get: function () { return __elementContent(s,"innerHTML"); }, set: function (v) { s.innerHTML = String(v); s.innerHTMLDirty=true; s.textContentDirty=false; } }, className: { get: function () { return s.className; }, set: function (v) { __setAttribute(s,"class",v); } }, name:{get:function(){return s.attributes.name||"";},set:function(v){__setAttribute(s,"name",v);}}, content:{get:function(){return s.attributes.content||"";},set:function(v){__setAttribute(s,"content",v);}}, hidden:{get:function(){return Object.prototype.hasOwnProperty.call(s.attributes,"hidden");},set:function(v){if(v)__setAttribute(s,"hidden","");else __removeAttribute(s,"hidden");}}, disabled:{get:function(){return !!s.disabled;},set:function(v){if(v)__setAttribute(s,"disabled","");else __removeAttribute(s,"disabled");}}, checked:{get:function(){return !!s.checked;},set:function(v){s.checked=!!v;s.checkedDirty=true;}}, indeterminate:{get:function(){return !!s.indeterminate;},set:function(v){s.indeterminate=!!v;s.indeterminateDirty=true;}}, width:{get:function(){return __canvasDimension(s,"width");},set:function(v){s.width=String(Number(v)>>>0);__setAttribute(s,"width",s.width);}}, height:{get:function(){return __canvasDimension(s,"height");},set:function(v){s.height=String(Number(v)>>>0);__setAttribute(s,"height",s.height);}}, complete:{get:function(){return !!s.complete;}},  videoWidth:{get:function(){return +s.videoWidth||0;}}, videoHeight:{get:function(){return +s.videoHeight||0;}}, src:{get:function(){return s.src||"";},set:function(v){__setElementSource(s,v);}}, data:{get:function(){return s.attributes.data||"";},set:function(v){__setElementData(s,v);}}, sheet:{get:function(){return s.tagName==="style"?__styleSheet(s):null;}} });',
 		'    if(s.namespaceURI!=="http://www.w3.org/1999/xhtml"||(s.tagName!=="audio"&&s.tagName!=="video"))Object.defineProperty(o,"readyState",{get:function(){return +s.readyState||0;}});',
 		'    o.getBoundingClientRect=function(){return{x:0,y:0,width:0,height:0,top:0,left:0,right:0,bottom:0};};o.focus=function(){__state.operations.push({op:"focus",target:s.bridgeKey});};o.select=function(){__state.operations.push({op:"selectTextControl",target:s.bridgeKey});};o.insertBefore=function(child,reference){const c=child&&child.__state,r=reference&&reference.__state;if(c){if(c.created)__state.operations.push({op:"insertCreated",target:s.bridgeKey,child:c,reference:r?r.bridgeKey:"",referenceFirstChild:!!(reference&&reference.__firstChildOf===s.bridgeKey)});else __state.operations.push({op:"moveBefore",target:s.bridgeKey,child:c.bridgeKey,reference:r?r.bridgeKey:""});s.hasChildren=true;}return child;};',
-		'    o.style = __styleProxy(s); o.classList = __classList(s); Object.defineProperty(o,"__state",{value:s}); Object.defineProperty(s, "__object", { value: o, writable: true, configurable: true }); if(s.tagName==="img"&&s.namespaceURI==="http://www.w3.org/1999/xhtml")__ladybirdImageBind(o,s.bridgeKey); if((s.tagName==="audio"||s.tagName==="video")&&s.namespaceURI==="http://www.w3.org/1999/xhtml"){__bindMediaElement(o,s.bridgeKey,s.tagName);__recordMediaAttributes(o,s);delete o.addEventListener;delete o.removeEventListener;}else if(s.tagName!=="#document-fragment"&&s.tagName!=="#text"){__bindElementWheel(o,s.bridgeKey,s.tagName,s.namespaceURI);}',
+		'    o.style = __styleProxy(s); o.classList = __classList(s); Object.defineProperty(o,"__state",{value:s}); Object.defineProperty(s, "__object", { value: o, writable: true, configurable: true }); if(s.tagName==="img"&&s.namespaceURI==="http://www.w3.org/1999/xhtml")__ladybirdImageBind(o,s.bridgeKey); if((s.tagName==="audio"||s.tagName==="video")&&s.namespaceURI==="http://www.w3.org/1999/xhtml"){__bindMediaElement(o,s.bridgeKey,s.tagName);__recordMediaAttributes(o,s,__compactAttributes.reflect);delete o.addEventListener;delete o.removeEventListener;}else if(s.tagName!=="#document-fragment"&&s.tagName!=="#text"){__bindElementWheel(o,s.bridgeKey,s.tagName,s.namespaceURI);}',
 		'  } return s.__object;',
 		'}',
-		'let __createdElementCount=0; function __createElement(namespaceURI,name){const key="__created_"+(++__createdElementCount),s={created:true,bridgeKey:key,elementIndex:1000000000+__createdElementCount,namespaceURI:namespaceURI==null?"":String(namespaceURI),tagName:String(name),id:"",src:"",width:"",height:"",textContent:"",innerHTML:"",className:"",styleText:"",onclick:"",attributes:{},hasChildren:false,children:[],disabled:false,checked:false,indeterminate:false};__state.elements[key]=s;return __element(s);}',
+		'let __createdElementCount=0; function __createElement(namespaceURI,name){const key="__created_"+(++__createdElementCount),s={created:true,bridgeKey:key,elementIndex:1000000000+__createdElementCount,namespaceURI:namespaceURI==null?"":String(namespaceURI),tagName:String(name),id:"",src:"",width:"",height:"",textContent:"",innerHTML:"",className:"",styleText:"",onclick:"",attributes:{},attributeRecords:[],hasChildren:false,children:[],disabled:false,checked:false,indeterminate:false};__state.elements[key]=s;return __element(s);}',
 		'function __matches(s,q){q=String(q||"").trim();if(!q)return false;if(q[0]==="#")return s.id===q.slice(1);return s.tagName.toLowerCase()===q.toLowerCase();}',
 		'function __rangePoint(node,offset){const s=node&&node.__state;if(s)return{target:s.bridgeKey,firstChild:false,offset:+offset||0};if(node&&node.__firstChildOf)return{target:node.__firstChildOf,firstChild:true,offset:+offset||0};throw new TypeError("Invalid range node");}',
 		'function __range(){return{selected:null,start:null,end:null,selectNodeContents:function(node){const point=__rangePoint(node,0);this.selected={target:point.target,firstChild:point.firstChild};},setStart:function(node,offset){this.start=__rangePoint(node,offset);},setEnd:function(node,offset){this.end=__rangePoint(node,offset);},surroundContents:function(node){const s=node&&node.__state;if(!s)throw new TypeError("Invalid range parent");__state.operations.push({op:"surroundSelectedContents",target:s.bridgeKey});}};}',
@@ -1961,11 +1960,23 @@ fn apply_javascript_element_attribute(mut element dom.Element, name string, valu
 	} else if old_value == none {
 		return
 	}
+	// Public qualified-name operations retain the first matching Attr's identity.
+	// Reflected IDL setters instead write their own null-namespace slot directly.
+	mut namespace_uri := ?string(none)
+	if attribute := element.get_attribute_node(name) {
+		namespace_uri = attribute.namespace_uri()
+	}
 	if new_value := value {
-		element.set_attribute_value(name, new_value)
+		if attribute := element.get_attribute_node(name) {
+			element.set_attribute_value_ns(attribute.local_name(), new_value,
+				attribute.prefix(), attribute.namespace_uri())
+		} else {
+			element.set_attribute_value(name, new_value)
+		}
 	} else {
 		element.remove_attribute(name)
 	}
+	if namespace_uri != none { return }
 	if element.is_html_element() && element.local_name() in ['audio', 'video'] && name == 'src' {
 		if mut media := html.html_media_element_for_dom_element(element) {
 			media.set_source(value)
@@ -2025,11 +2036,26 @@ fn javascript_created_node(document &dom.Document, state map[string]json2.Any, m
 	mut element := element_by_bridge_key[key] or {
 		document.create_element_ns(namespace_uri, tag_name) or { return none }
 	}
-	if attribute_values := state['attributes'] {
-		if attribute_values is map[string]json2.Any {
-			for name, attribute_value in attribute_values as map[string]json2.Any {
-				if attribute_value is string {
-					apply_javascript_element_attribute(mut element, name, attribute_value)
+	// Known nodes already consumed their explicit ordered mutations. A newly
+	// materialized node receives its initial records once, preserving namespaces.
+	if key !in element_by_bridge_key || 'attributeRecords' !in state {
+		if attribute_values := state['attributeRecords'] {
+			if attribute_values is []json2.Any {
+				for item in attribute_values as []json2.Any {
+					if item !is map[string]json2.Any { continue }
+					attribute := item as map[string]json2.Any
+					name := json_string_property(attribute, 'localName') or { continue }
+					value := json_string_property(attribute, 'value') or { continue }
+					element.set_attribute_value_ns(name, value,
+						json_string_property(attribute, 'prefix'), json_string_property(attribute, 'namespaceURI'))
+				}
+			}
+		} else if attribute_values := state['attributes'] {
+			if attribute_values is map[string]json2.Any {
+				for name, attribute_value in attribute_values as map[string]json2.Any {
+					if attribute_value is string {
+						apply_javascript_element_attribute(mut element, name, attribute_value)
+					}
 				}
 			}
 		}
@@ -2165,7 +2191,8 @@ fn apply_javascript_state(document &dom.Document, encoded string, canvas_element
 					initial_elements[element_index]
 				}
 				element_by_bridge_key[bridge_key] = element
-				if json_bool_property(element_state, 'attributesDirty') {
+				uses_attribute_records := 'attributeRecords' in element_state
+				if !uses_attribute_records && json_bool_property(element_state, 'attributesDirty') {
 					if attribute_values := element_state['attributes'] {
 						if attribute_values is map[string]json2.Any {
 							attributes := attribute_values as map[string]json2.Any
@@ -2196,19 +2223,21 @@ fn apply_javascript_state(document &dom.Document, encoded string, canvas_element
 						node.set_text_content(text) or { messages << err.msg() }
 					}
 				}
-				if class_name := json_string_property(element_state, 'className') {
-					if class_name != element.get_attribute_value('class') {
-						element.set_attribute_value('class', class_name)
+				if !uses_attribute_records {
+					if class_name := json_string_property(element_state, 'className') {
+						if class_name != element.get_attribute_value('class') {
+							element.set_attribute_value('class', class_name)
+						}
 					}
-				}
-				if style_text := json_string_property(element_state, 'styleText') {
-					if style_text != element.get_attribute_value('style') {
-						element.set_attribute_value('style', style_text)
+					if style_text := json_string_property(element_state, 'styleText') {
+						if style_text != element.get_attribute_value('style') {
+							element.set_attribute_value('style', style_text)
+						}
 					}
-				}
-				if source := json_string_property(element_state, 'src') {
-					if source != (element.get_attribute('src') or { '' }) {
-						apply_javascript_element_attribute(mut element, 'src', source)
+					if source := json_string_property(element_state, 'src') {
+						if source != (element.get_attribute('src') or { '' }) {
+							apply_javascript_element_attribute(mut element, 'src', source)
+						}
 					}
 				}
 				if element.local_name() == 'input' {
@@ -2243,7 +2272,10 @@ fn apply_javascript_state(document &dom.Document, encoded string, canvas_element
 				}
 				target_key := json_string_property(operation, 'target') or { continue }
 				mut target := element_by_bridge_key[target_key] or { continue }
-				if kind == 'wheelContentAttribute' {
+				if kind == 'compactAttribute' {
+					name := json_string_property(operation, 'name') or { continue }
+					apply_javascript_element_attribute(mut target, name, json_string_property(operation, 'value'))
+				} else if kind == 'wheelContentAttribute' {
 					// Replay explicit writes even when the attribute text is unchanged:
 					// those writes replace an earlier IDL-installed handler.
 					if wheel_attribute_value := json_string_property(operation, 'value') {
