@@ -93,6 +93,13 @@ pub fn (mut video HTMLVideoElementModel) set_poster(value ?string) {
 	video.determine_element_poster_frame()
 }
 
+fn (video &HTMLVideoElementModel) parse_poster_url(poster string) ?dom.URL {
+	if element := video.media.associated_element_ {
+		return unsafe { &dom.Element(element) }.document().encoding_parse_url(poster)
+	}
+	return dom.dom_url_parse(poster, video.base_url_, 'UTF-8')
+}
+
 pub fn (mut video HTMLVideoElementModel) determine_element_poster_frame() {
 	poster := video.poster_ or {
 		video.poster_frame_ = none
@@ -105,7 +112,7 @@ pub fn (mut video HTMLVideoElementModel) determine_element_poster_frame() {
 		video.update_natural_dimensions()
 		return
 	}
-	url := dom.dom_url_parse(poster, video.base_url_, 'UTF-8') or {
+	url := video.parse_poster_url(poster) or {
 		video.poster_frame_ = none
 		video.update_natural_dimensions()
 		return
