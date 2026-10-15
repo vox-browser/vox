@@ -1439,9 +1439,26 @@ fn image_color_scheme(document &dom.Document, computed &css.ComputedProperties) 
 	return preferred_scheme
 }
 
+fn computed_image_value_has_no_layers(value css.StyleValue) bool {
+	if value.is_keyword() { return value.to_keyword() == .none_ }
+	if list := value.as_value_list() {
+		if list.separator() != .comma || list.size() == 0 { return false }
+		for item in list.values() {
+			if !item.is_keyword() || item.to_keyword() != .none_ { return false }
+		}
+		return true
+	}
+	return false
+}
+
 fn computed_background_image_layers(node &Node, element &dom.Element, computed &css.ComputedProperties,
 	color_context css.ColorResolutionContext) []BackgroundImageLayer {
 	value := computed.typed_property_value(.background_image) or { return []BackgroundImageLayer{} }
+	// Computed coordinating properties retain even a lone `none` in a list.
+	// Avoid layer/context storage when that retained list contains no image.
+	if computed_image_value_has_no_layers(value) {
+		return []BackgroundImageLayer{}
+	}
 	computed_layers := computed.background_layers()
 	base_url := if dom_value := computed.property(.background_image, .yes) {
 		dom_value.base_url
@@ -1530,6 +1547,9 @@ fn computed_background_image_layers(node &Node, element &dom.Element, computed &
 fn css_mask_image_for_box(element &dom.Element, computed &css.ComputedProperties,
 	border_rect painting.Rect, node &Node) ?painting.SVGMaskVisualData {
 	value := computed.typed_property_value(.mask_image) or { return none }
+	if computed_image_value_has_no_layers(value) {
+		return none
+	}
 	values := if list := value.as_value_list() {
 		if list.separator() == .comma { list.values() } else { [value] }
 	} else {
