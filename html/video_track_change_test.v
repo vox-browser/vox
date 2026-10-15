@@ -66,7 +66,7 @@ fn test_factory_video_tracks_queue_trusted_list_changes_before_resize_and_after_
 	mut settings := unsafe { &EnvironmentSettingsObject(document.relevant_settings_object()) }
 	original_origin := settings.time_origin()
 	defer {
-		settings.time_origin_ = original_origin
+		document.load_timing_info.navigation_start_time = original_origin
 		document.finalize()
 	}
 	mut list := media.video_tracks()
@@ -100,7 +100,7 @@ fn test_factory_video_tracks_queue_trusted_list_changes_before_resize_and_after_
 	assert media.queued_media_task_ids_.len == 2 && state.backend == ['1']
 	// Change the test realm's origin after queueing. A timestamp captured at
 	// mutation time cannot satisfy the delivery-time bounds below.
-	settings.time_origin_ = highresolutiontime.coarsened_shared_current_time(false) - 30000
+	document.load_timing_info.navigation_start_time = highresolutiontime.coarsened_shared_current_time(false) - 30000
 	mut loop := main_thread_event_loop()
 	loop.perform_a_microtask_checkpoint()
 	assert state.events == []
@@ -142,8 +142,8 @@ fn test_factory_video_track_changes_capture_each_current_list_and_retain_the_cre
 	original_origin := settings.time_origin()
 	original_other_origin := other_settings.time_origin()
 	defer {
-		settings.time_origin_ = original_origin
-		other_settings.time_origin_ = original_other_origin
+		document.load_timing_info.navigation_start_time = original_origin
+		other_document.load_timing_info.navigation_start_time = original_other_origin
 		document.finalize()
 		other_document.finalize()
 	}
@@ -170,8 +170,8 @@ fn test_factory_video_track_changes_capture_each_current_list_and_retain_the_cre
 	track.set_selected(false)
 	assert media.queued_media_task_ids_.len == 4 && other.queued_media_task_ids_.len == 0
 	assert state.events == [] && origin.length() == 0 && destination.length() == 0
-	settings.time_origin_ = highresolutiontime.coarsened_shared_current_time(false) - 30000
-	other_settings.time_origin_ = highresolutiontime.coarsened_shared_current_time(false) - 90000
+	document.load_timing_info.navigation_start_time = highresolutiontime.coarsened_shared_current_time(false) - 30000
+	other_document.load_timing_info.navigation_start_time = highresolutiontime.coarsened_shared_current_time(false) - 90000
 	for expected in ['origin', 'origin', 'destination', 'destination'] {
 		vtc_run_next(media, state)
 		assert state.events.last() == expected
