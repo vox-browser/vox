@@ -3625,6 +3625,33 @@ credit from this cohort. Chrome parity remains unestablished.
 Evidence: `Build/instructions/vox-opt39-interleaved-*` and
 `Build/v/instruction-opt39-*`.
 
+## Hardware instructions at collector event boundaries
+
+A separate diagnostic based on the frozen round 39 normal C installs Boehm's
+collection-event callback without changing collector settings. Under the
+allocator lock it records process-wide hardware instruction reads at each
+collection event. Its analysis window starts at navigation entry and ends at
+the existing native first-document-frame counter. Completed event intervals
+are clipped to that window; the retained log reconstructs every interval.
+
+The single diagnostic records **23 full collections**, with
+**14,822,083,472 instructions** inside their start/end
+boundaries, out of **32,108,421,151** in its navigation
+window (46.16%). Stop-world boundaries contain
+14,454,081,404 instructions. These scope types overlap and must
+not be summed. They include hook/counter overhead and any other process-thread
+work charged during the intervals, so they are not collector self-instruction
+counts. They identify temporary allocation as a useful next target; this is no
+normal-page improvement, paired cohort, or Chrome parity result.
+
+Native compilation, signing, startup, observer and browser all exit zero. No
+counter failures or unmatched collection boundaries occur. The instrumentation
+restores byte-for-byte to the normal round 39 C after removing exactly two
+wrappers, callback setup and diagnostic storage. Its durable C archive, binary,
+raw log, real exits, frozen-cache/helper identity and interval reconstruction
+are authenticated in `Build/v/instruction-gc40-final-audit.json` and
+`Build/v/instruction-gc40-instrumentation-audit.json`. Performance credit is zero.
+
 ## Causes and changes
 
 - The V 0.5.2 compatibility compiler's `-prod` Boehm code repeatedly snapshots
