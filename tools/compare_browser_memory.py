@@ -30,10 +30,41 @@ def activate_browser(pid):
     script = f'''ObjC.import("AppKit");
         const app=$.NSRunningApplication.runningApplicationWithProcessIdentifier({pid});
         const found=Number(app.processIdentifier)===Number({pid});
-        if(found) app.activateWithOptions(2);
-        delay(0.2);
-        JSON.stringify({{pid:Number(app.processIdentifier),active:found&&Boolean(app.active)}});'''
+        const before=found&&Boolean(app.active);
+        if(found&&!before) {{ app.activateWithOptions(2); delay(0.2); }}
+        JSON.stringify({{pid:Number(app.processIdentifier),was_active:before,
+            active:found&&Boolean(app.active)}});'''
     return json.loads(subprocess.check_output(['osascript', '-l', 'JavaScript', '-e', script], text=True))
+
+
+class ForegroundControl:
+    def __init__(self, pid, enabled, start_at=0, inspect=None):
+        self.pid, self.enabled = pid, enabled
+        self.next_check = start_at
+        self.inspect = inspect or activate_browser
+        self.checks = []
+
+    def poll(self, elapsed, force=False):
+        if not self.enabled or (not force and elapsed < self.next_check):
+            return
+        self.checks.append(dict(self.inspect(self.pid), seconds=elapsed))
+        self.next_check = elapsed + 1
+
+    def verify_steady(self, endpoint, window=2):
+        if not self.enabled:
+            return None
+        start = endpoint - window
+        before = [row for row in self.checks if row['seconds'] <= start]
+        recent = [row for row in self.checks if start < row['seconds'] <= endpoint]
+        if not before or not recent or endpoint - recent[-1]['seconds'] > 1.5:
+            raise RuntimeError('Insufficient foreground checks around the settled memory window')
+        if any(not row['active'] or not row['was_active'] for row in [before[-1], *recent]):
+            raise RuntimeError('Browser lost foreground focus around the settled memory window')
+        return [start, endpoint]
+
+    def activation_at(self, endpoint):
+        return next((row for row in reversed(self.checks)
+                     if row['seconds'] <= endpoint and row['active']), None)
 
 
 def summarize_samples(samples, endpoint, window=1):
@@ -114,18 +145,12 @@ def measure_vox(args, prefix):
                                        stderr=subprocess.STDOUT, start_new_session=True)
             counter = TreeMemory(process.pid, started)
             saved_at = None
-            activation = None
-            next_activation = 1.0
+            foreground = ForegroundControl(process.pid, args.foreground, start_at=1)
             try:
                 with CounterSampler(counter, args.interval):
                     while process.poll() is None:
                         elapsed = time.monotonic() - started
-                        if args.foreground and activation is None and elapsed >= next_activation:
-                            candidate = activate_browser(process.pid)
-                            if candidate['active']:
-                                activation = candidate
-                            else:
-                                next_activation = elapsed + .5
+                        foreground.poll(elapsed)
                         if saved_at is None and 'Saved Ladybird V window screenshot:' in log_path.read_text():
                             saved_at = time.monotonic() - started
                         if time.monotonic() - started > args.timeout:
@@ -137,16 +162,19 @@ def measure_vox(args, prefix):
                 stop_process(process)
         if process.returncode or saved_at is None or not window.is_file():
             raise RuntimeError(f'Vox capture failed; see {log_path}')
-        if args.foreground and activation is None:
-            raise RuntimeError('Vox did not become the foreground application')
         # Leave one second between the settled window and PNG capture.
-        summary = summarize_samples(counter.samples, saved_at - 1)
+        endpoint = saved_at - 1
+        foreground_window = foreground.verify_steady(endpoint)
+        summary = summarize_samples(counter.samples, endpoint)
         for key, record in runtime_files.items():
             if hashlib.sha256(runtime_paths[key].read_bytes()).hexdigest() != record['sha256']:
                 raise RuntimeError('Browser runtime input changed: ' + key)
         crop_document_viewport(window, screenshot, args.width, args.height)
         return {'command': command, 'cache_digest': digest, 'memory': summary,
-                'activation': activation,
+                'activation': foreground.activation_at(endpoint),
+                'foreground_checks': foreground.checks,
+                'foreground_steady_verified': foreground_window is not None,
+                'foreground_verified_window_seconds': foreground_window,
                 'runtime_files': runtime_files,
                 'collector_overrides': {k: v for k, v in env.items() if k.startswith('GC_')},
                 'runtime_overrides': {k: v for k, v in env.items() if k.startswith('JSC_')},
@@ -166,6 +194,7 @@ def measure_chrome(args, prefix):
             process = subprocess.Popen(command, stdout=log, stderr=subprocess.STDOUT,
                                        start_new_session=True)
             counter = TreeMemory(process.pid, started)
+            foreground = ForegroundControl(process.pid, args.foreground)
             client = None
             try:
                 with CounterSampler(counter, args.interval):
@@ -180,11 +209,10 @@ def measure_chrome(args, prefix):
                     client = CDP(next(t['webSocketDebuggerUrl'] for t in targets if t['type'] == 'page'))
                     version = client.call('Browser.getVersion')
                     client.call('Page.enable')
-                    activation = None
                     if args.foreground:
                         client.call('Page.bringToFront')
-                        activation = activate_browser(process.pid)
-                        if not activation['active']:
+                        foreground.poll(time.monotonic() - started)
+                        if not foreground.activation_at(time.monotonic() - started):
                             raise RuntimeError('Chrome did not become the foreground application')
                     client.call('Emulation.setDeviceMetricsOverride', {
                         'width': args.width, 'height': args.height, 'deviceScaleFactor': args.device_scale, 'mobile': False})
@@ -201,14 +229,22 @@ def measure_chrome(args, prefix):
                         time.sleep(.02)
                     client.call('Runtime.evaluate', {'expression': 'document.fonts.ready.then(()=>true)',
                                                      'awaitPromise': True, 'returnByValue': True})
-                    time.sleep(args.settle)
+                    settled_at = time.monotonic()
+                    while time.monotonic() - settled_at < args.settle:
+                        foreground.poll(time.monotonic() - started)
+                        time.sleep(.02)
+                    foreground.poll(time.monotonic() - started, force=True)
                     endpoint_at = time.monotonic() - started
+                    foreground_window = foreground.verify_steady(endpoint_at)
                     summary = summarize_samples(counter.samples, endpoint_at)
                     audit = client.call('Runtime.evaluate', {'expression':
                         'JSON.stringify({title:document.title,url:location.href,width:innerWidth,height:innerHeight,'
                         'textLength:document.body.innerText.length,scale:devicePixelRatio,focused:document.hasFocus(),visibility:document.visibilityState,sprites:document.querySelectorAll(".sprite").length})',
                         'returnByValue': True})
                     targets_audit = client.call('Target.getTargets')
+                    document = json.loads(audit['result']['value'])
+                    if args.foreground and (not document['focused'] or document['visibility'] != 'visible'):
+                        raise RuntimeError('Chrome document lost focus before capture')
                     pixels = client.call('Page.captureScreenshot', {'format': 'png', 'captureBeyondViewport': False})
                     screenshot.write_bytes(base64.b64decode(pixels['data']))
                     client.call('Browser.close')
@@ -216,8 +252,11 @@ def measure_chrome(args, prefix):
                 if client:
                     client.sock.close()
                 stop_process(process)
-        return {'command': command, 'version': version, 'document': json.loads(audit['result']['value']),
-                'activation': activation,
+        return {'command': command, 'version': version, 'document': document,
+                'activation': foreground.activation_at(endpoint_at),
+                'foreground_checks': foreground.checks,
+                'foreground_steady_verified': foreground_window is not None,
+                'foreground_verified_window_seconds': foreground_window,
                 'targets': targets_audit,
                 'memory': summary, 'samples': counter.samples, 'screenshot': str(screenshot)}
 

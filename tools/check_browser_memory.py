@@ -22,6 +22,8 @@ def compare(vox, chrome, max_ratio=.8):
                 raise ValueError('Chrome and Vox must use the same raster scale')
             if not sample.get('foreground_controlled') or not sample.get('activation', {}).get('active'):
                 raise ValueError('Both browsers must be activated for the foreground comparison')
+            if 'foreground_checks' in sample and not sample.get('foreground_steady_verified'):
+                raise ValueError('Foreground checks must cover the settled memory window')
             if engine == 'chrome':
                 document = sample.get('document', {})
                 if not document.get('focused') or document.get('visibility') != 'visible':

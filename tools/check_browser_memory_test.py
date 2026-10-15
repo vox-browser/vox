@@ -33,6 +33,7 @@ class MemoryTargetTests(unittest.TestCase):
             {'collector_overrides': {'GC_FREE_SPACE_DIVISOR': '64'}}, {'command': ['browser']},
             {'runtime_overrides': {'JSC_useJIT': 'false'}},
             {'foreground_controlled': False}, {'activation': {'active': False}},
+            {'foreground_checks': [], 'foreground_steady_verified': False},
         ]
         for mutation in mutations:
             with self.subTest(mutation=mutation), self.assertRaises(ValueError):
