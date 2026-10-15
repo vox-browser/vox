@@ -322,10 +322,10 @@ fn (mut fragment LineBoxFragment) append_glyph_run_ltr(glyph_run &platform.Glyph
 	destination.invalidate_replay_data()
 	match run_direction {
 		.ltr {
-			for source_glyph in glyph_run.glyphs_ {
-				mut glyph := source_glyph
-				glyph.position.translate_by(inline_offset, 0)
-				destination.glyphs_ << glyph
+			start := destination.glyphs_.len
+			destination.glyphs_ << glyph_run.glyphs_
+			for i in start .. destination.glyphs_.len {
+				destination.glyphs_[i].position.translate_by(inline_offset, 0)
 			}
 		}
 		.rtl {
@@ -334,10 +334,10 @@ fn (mut fragment LineBoxFragment) append_glyph_run_ltr(glyph_run &platform.Glyph
 					destination.glyphs_[i].position.translate_by(f32(run_width.to_double()), 0)
 				}
 			}
-			for source_glyph in glyph_run.glyphs_ {
-				mut glyph := source_glyph
-				glyph.position.translate_by(fragment.insert_position_, 0)
-				destination.glyphs_ << glyph
+			start := destination.glyphs_.len
+			destination.glyphs_ << glyph_run.glyphs_
+			for i in start .. destination.glyphs_.len {
+				destination.glyphs_[i].position.translate_by(fragment.insert_position_, 0)
 			}
 		}
 	}
@@ -362,10 +362,10 @@ fn (mut fragment LineBoxFragment) append_glyph_run_rtl(glyph_run &platform.Glyph
 					destination.glyphs_[i].position.translate_by(run_offset, 0)
 				}
 			}
-			for source_glyph in glyph_run.glyphs_ {
-				mut glyph := source_glyph
-				glyph.position.translate_by(fragment.insert_position_, 0)
-				destination.glyphs_ << glyph
+			start := destination.glyphs_.len
+			destination.glyphs_ << glyph_run.glyphs_
+			for i in start .. destination.glyphs_.len {
+				destination.glyphs_[i].position.translate_by(fragment.insert_position_, 0)
 			}
 		}
 		.rtl {
@@ -374,9 +374,7 @@ fn (mut fragment LineBoxFragment) append_glyph_run_rtl(glyph_run &platform.Glyph
 					destination.glyphs_[i].position.translate_by(run_offset, 0)
 				}
 			}
-			for glyph in glyph_run.glyphs_ {
-				destination.glyphs_ << glyph
-			}
+			destination.glyphs_ << glyph_run.glyphs_
 		}
 	}
 	fragment.inline_length_ = fragment.inline_length_.plus(run_width)
