@@ -1362,13 +1362,18 @@ JavaScriptCore linkage.
 
 ## Browser integration
 
-`browserjs.Runtime` now owns a translated VM and initialized realm. Its
+`browserjs.Runtime` owns a translated VM and initialized realm. Its explicit
 `prepare_script()` boundary retains the LibJS parse and scope analysis alongside
-the source URL, starting line, and script/module parse goal. `evaluate()` uses
-that boundary, while `evaluate_prepared()` reuses an existing parse. Classic
-program execution pushes a translated Script execution context with its realm
-and global environment, then removes it on both success and failure. Closing
-the runtime releases JavaScriptCore and clears the embedding context stack.
+the source URL, starting line, and script/module parse goal;
+`evaluate_prepared()` reuses that parse. `evaluate()` and document scripts use
+the selected backend's preparation. JavaScriptCore parses and validates their
+full source directly. Their translated Script records retain the actual
+`external_source_text`, realm, URL, starting line, host identity, and strictness
+from the directive prologue. These records have no translated AST, and LibJS
+bytecode compilation rejects them explicitly. LibJS execution still prepares
+the complete translated AST. Classic execution pushes a Script context with
+its realm and global environment, then removes it on success and failure.
+Closing the runtime releases JavaScriptCore and clears the embedding stack.
 
 Both the native browser in `main.v` and the inline-document layout bridge use
 this path for page scripts. Bootstrap, document readiness dispatch, and DOM
@@ -1384,11 +1389,11 @@ reported error.
 
 In the default JavaScriptCore mode, JavaScriptCore remains responsible for
 execution, JavaScript call frames, global bindings, objects, and promise reactions.
-The translated VM contexts describe the embedding boundary, not JavaScriptCore's internal frames. Input
-that reaches the frontend's 32-call guard is validated by JavaScriptCore;
-RegExp patterns also receive its syntax validation. Module sources use LibJS's
-module parse goal, but the compact browser reports that module execution is
-pending instead of running a module as a classic script.
+The translated VM contexts describe the embedding boundary; JavaScriptCore
+owns its internal frames and all syntax validation, including RegExp patterns
+and programs beyond the translated frontend's 32-call guard. The explicit
+frontend API retains LibJS's module parse goal. Browser execution rejects
+modules before preparation because module execution remains pending.
 
 The native command line selects the backend explicitly:
 
