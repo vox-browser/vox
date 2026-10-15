@@ -5857,6 +5857,79 @@ and endpoint accounting remain open; no faster-than-Chrome claim is made.
 Evidence: `Build/instructions/vox-opt61-interleaved-*` and
 `Build/v/instruction-opt61-*`.
 
+## Inline-iterator and Chrome content diagnostics after round61
+
+These diagnostics receive **zero performance credit** and leave the broad
+baseline and next control at round61 (`5362d3aa`). The canonical app and user GUI
+are preserved.
+
+An independently audited native C-O2 diagnostic wraps eight inline-iterator
+functions in the exact frozen61 C. Every entry is counted; hardware snapshots
+surround only outermost calls of the same function on the navigation owner.
+All depths return to zero at the first document frame and no counter fails.
+Native build/sign/startup, frozen-library smoke, observer and actual browser
+exits are zero. The one diagnostic primary and 1024×768 PNG remain, with no
+startup retry or recovery and the usual 1 install/2 geometry/1 paint preparation.
+
+| Function | Entries | Outermost calls | Inclusive hardware instructions |
+| --- | ---: | ---: | ---: |
+| InlineLevelIterator_generate_all_items | 44,526 | 39,846 | 37,503,788,738 |
+| InlineLevelIterator_generate_next_item | 550,346 | 439,546 | 32,561,892,302 |
+| resolved_text_spacing_for_node | 807,641 | 807,641 | 7,942,168,002 |
+| InlineLevelIterator_shape_text_for_layout | 400,846 | 400,846 | 4,186,009,357 |
+| InlineLevelIterator_skip_to_next | 146,156 | 146,156 | 1,481,037,913 |
+| InlineLevelIterator_enter_text_node | 68,534 | 68,534 | 1,121,673,985 |
+| TextNodeChunkIterator__static__new_with_direction | 8,968 | 8,968 | 752,286,480 |
+| InlineLevelIterator_compute_is_unidirectional_left_to_right | 44,526 | 44,526 | 474,402,903 |
+
+The high-frequency snapshots strongly perturb this fine diagnostic: its own
+first-frame counter is 56,337,054,377. Nested wrappers and their counter work
+are included in parent scopes. **Do not sum these values, subtract scopes,
+infer self-cost, rank normal CPU cost from these totals or compare this
+instrumented frame with normal page medians.** Entry counts only identify
+frequently executed paths for source inspection and independent complete local
+experiments; they are not savings. Independent audit reconstructs the exact
+wrapper whitelist and restores the entire original C byte-for-byte, verifies
+all 120 native inputs/arguments, runtime libraries, observer adaptation, capture
+and placement. Binary SHA256 `6ce8a0c60d3658fb80779399bc75408099775837fce8b418e95aa3e1af417900`;
+generated-C archive SHA256 `747a5f23393e8bc99980093c363fc94ef47ba33e97a769623a20f580fa83e50b`. Evidence:
+`Build/v/instruction-hotspots62-*` and
+`Build/instructions/vox-hotspots62-diagnostic.run-1.*`.
+
+A separate untraced Chrome content diagnostic starts its observed hardware
+baseline **before sending Page.navigate**, with author JavaScript enabled.
+A read-only PerformanceObserver records largest-contentful-paint candidates
+and the visible repository links at delivery. The selected candidate is the
+About paragraph containing “Simple, fast, safe, compiled language”, with
+`.github`, `bench`, `changelogs0.x`, `ci`, `cmd`, `doc`, `docs`, `editors/vim`,
+`examples` and `thirdparty` visible. Its rectangle is (720,301,272,144), and its
+renderTime is 1,264 ms relative to navigation. Milliseconds select the endpoint;
+**the work metric is retired instructions**. The later captured document is
+1024×768 and shows the repository table/About content, rather than the earlier
+header-only paint. This is a candidate for content alignment, not proof of
+identical engine work or frame submission.
+
+Conservative clock brackets and an explicit eight-ms early margin select a
+retained complete counter pass before that candidate. Independent arithmetic
+reconstructs all 177 snapshot passes and every fresh-reading task delta:
+**4,103,563,417 observed instructions**, 12 included tasks, two unavailable
+endpoint reads omitted. New tasks start at their first fresh observation;
+short-lived unsampled work is absent. This is a lower bound, with observer
+work and no repeated cohort. LCP presentation is not established equivalent to
+Vox's first native paint-command submission. Do not compare this number with
+Vox medians or claim cross-browser speed/parity.
+
+Chrome for Testing 155.0.8059.79 retains its pinned executable. The frozen
+359-file body cache is unchanged: 37 requests are replayed and 126 missing or
+non-GET requests are blocked. There is no live fallback. The legacy replay
+still infers MIME, status 200, wildcard CORS and no-store headers; complete
+response semantics are unavailable. Actual Chrome exit and independent audit
+exit are zero; the detached controller's terminal status was not captured and
+remains unknown. Audit records source/output hashes and all limitations in
+`Build/v/instruction-chrome-content62-audit.json`. Raw content/counter evidence
+is retained under `Build/instructions/chrome-frozen-probe/content-paint-62/`.
+Chrome parity remains open.
+
 ## Causes and changes
 
 - The V 0.5.2 compatibility compiler's `-prod` Boehm code repeatedly snapshots
