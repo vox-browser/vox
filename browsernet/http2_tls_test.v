@@ -1,0 +1,144 @@
+module browsernet
+
+import adblock
+import json2
+import net.http
+import os
+import time
+
+struct HTTP2TLSFixture {
+	directory       string
+	h2_port         int
+	h1_port         int
+	wrong_host_port int
+	process         &os.Process = unsafe { nil }
+}
+
+struct HTTP2TLSReady {
+	h2_port         int
+	h1_port         int
+	wrong_host_port int
+	node_version    string
+}
+
+struct HTTP2TLSStats {
+	handshakes     map[string]int
+	maximum_active int
+}
+
+struct HTTP2TLSReply {
+	response HTTPResult
+	error    string
+}
+
+fn start_http2_tls_fixture() ?HTTP2TLSFixture {
+	node := os.find_abs_path_of_executable('node') or { return none }
+	openssl := os.find_abs_path_of_executable('openssl') or { return none }
+	directory := os.join_path(os.temp_dir(), 'vox-http2-tls-${os.getpid()}-${time.sys_mono_now()}')
+	os.mkdir_all(directory) or { panic(err) }
+	mut process := os.new_process(node)
+	process.set_args([os.join_path(os.dir(@FILE), 'fixtures/http2_server.mjs'), directory, openssl])
+	process.set_redirect_stdio()
+	process.run()
+	ready := os.join_path(directory, 'ready.json')
+	for _ in 0 .. 1000 {
+		if os.exists(ready) {
+			ports := json2.decode[HTTP2TLSReady](os.read_file(ready) or { panic(err) }) or { panic(err) }
+			return HTTP2TLSFixture{ directory: directory, h2_port: ports.h2_port, h1_port: ports.h1_port, wrong_host_port: ports.wrong_host_port, process: process }
+		}
+		if !process.is_alive() { panic('TLS fixture exited: ${process.stderr_slurp()}') }
+		time.sleep(10 * time.millisecond)
+	}
+	process.signal_kill()
+	panic('Timed out starting local TLS fixture')
+}
+
+fn (fixture HTTP2TLSFixture) close() {
+	mut process := fixture.process
+	process.signal_kill()
+	process.wait()
+	process.close()
+	os.rmdir_all(fixture.directory) or {}
+}
+
+fn http2_tls_request(address string) adblock.Request {
+	return adblock.Request{ url: address, source_url: 'https://www.theverge.com/', request_type: 'image' }
+}
+
+fn http2_tls_fixture_get(address string, ca string, replies chan HTTP2TLSReply) {
+	response := get(http2_tls_request(address), ca) or {
+		replies <- HTTP2TLSReply{ error: err.msg() }
+		return
+	}
+	replies <- HTTP2TLSReply{ response: response }
+}
+
+fn test_https_preloads_multiplex_distinct_requests_and_preserve_binary_gzip_headers() {
+	fixture := start_http2_tls_fixture() or {
+		eprintln('SKIP HTTP2 TLS fixture: Node and OpenSSL required')
+		return
+	}
+	defer { fixture.close() }
+	ca := os.join_path(fixture.directory, 'ca.pem')
+	address := 'https://127.0.0.1:${fixture.h2_port}'
+	replies := chan HTTP2TLSReply{cap: 6}
+	for index in 0 .. 6 { spawn http2_tls_fixture_get('${address}/pooled/${index}', ca, replies) }
+	for _ in 0 .. 6 {
+		reply := <-replies
+		assert reply.error == '', reply.error
+		assert reply.response.response.status_code == 200
+		assert reply.response.response.body.bytes() == [u8(0), 1, 127, 128, 255, 0, 42]
+	}
+	stats := json2.decode[HTTP2TLSStats](os.read_file(os.join_path(fixture.directory, 'stats.json')) or { panic(err) }) or { panic(err) }
+	assert stats.handshakes['h2'] == 1
+	assert stats.maximum_active > 1
+	compressed := get(http2_tls_request('${address}/gzip'), ca) or { panic(err) }
+	assert compressed.response.body.bytes() == [u8(0), 1, 127, 128, 255, 0, 42]
+	assert compressed.response.header.get(.content_type) or { '' } == 'application/octet-stream'
+	assert compressed.response.header.custom_values('X-Fixture') == ['retained']
+	http.close_idle_connections()
+}
+
+fn assert_http2_tls_redirect_blocked(address string, ca string) {
+	_ := get(http2_tls_request('${address}/blocked-redirect'), ca) or {
+		assert err.msg().starts_with('Blocked by adblock:'), err.msg()
+		return
+	}
+	assert false, 'redirected tracker reached transport'
+}
+
+fn test_https_http1_fallback_and_manual_redirect_filtering_remain_enabled() {
+	fixture := start_http2_tls_fixture() or {
+		eprintln('SKIP HTTP2 TLS fixture: Node and OpenSSL required')
+		return
+	}
+	defer { fixture.close() }
+	ca := os.join_path(fixture.directory, 'ca.pem')
+	for port in [fixture.h1_port, fixture.h2_port] {
+		address := 'https://127.0.0.1:${port}'
+		response := get(http2_tls_request('${address}/dir/redirect'), ca) or { panic(err) }
+		assert response.url == '${address}/binary?allowed=1'
+		assert response.response.body.bytes() == [u8(0), 1, 127, 128, 255, 0, 42]
+		assert_http2_tls_redirect_blocked(address, ca)
+	}
+	http.close_idle_connections()
+}
+
+fn test_https_pool_does_not_bypass_ca_or_hostname_validation() {
+	fixture := start_http2_tls_fixture() or {
+		eprintln('SKIP HTTP2 TLS fixture: Node and OpenSSL required')
+		return
+	}
+	defer { fixture.close() }
+	ca := os.join_path(fixture.directory, 'ca.pem')
+	address := 'https://127.0.0.1:${fixture.h2_port}/binary'
+	trusted := get(http2_tls_request(address), ca) or { panic(err) }
+	assert trusted.response.status_code == 200
+	if response := get(http2_tls_request(address), os.join_path(fixture.directory, 'untrusted-ca.pem')) {
+		assert false, 'untrusted CA accepted: ${response.url}'
+	}
+	if response := get(http2_tls_request('https://127.0.0.1:${fixture.wrong_host_port}/binary'), ca) {
+		assert false, 'incorrect certificate hostname accepted: ${response.url}'
+	}
+	http.close_idle_connections()
+}

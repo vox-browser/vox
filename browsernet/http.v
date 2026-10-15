@@ -96,11 +96,13 @@ pub fn get(input adblock.Request, ca_bundle string) !HTTPResult {
 		if !resource_url.starts_with('http://') && !resource_url.starts_with('https://') {
 			return error('Unsupported URL scheme')
 		}
+		// Share ALPN-negotiated HTTP/2 connections across concurrent resources.
+		// HTTP/1 servers keep the same fallback and per-hop filtering above.
 		response := http.fetch(
 			url:            resource_url
 			method:         .get
 			user_agent:     'Ladybird V/0.1'
-			enable_http2:   false
+			enable_http2:   true
 			allow_redirect: false
 			read_timeout:   10 * time.second
 			write_timeout:  10 * time.second
