@@ -485,8 +485,11 @@ fn parse_web_vtt(body string) ![]&TextTrackCue {
 		}
 		timing := lines[timing_index].split('-->')
 		start := parse_vtt_timestamp(timing[0]) or { continue }
-		end_token := timing[1].trim_space().fields()[0]
-		end := parse_vtt_timestamp(end_token) or { continue }
+		end_fields := timing[1].trim_space().fields()
+		if end_fields.len == 0 {
+			continue
+		}
+		end := parse_vtt_timestamp(end_fields[0]) or { continue }
 		mut cue := TextTrackCue.create(start, end, lines[timing_index + 1..].join('\n')) or {
 			continue
 		}
