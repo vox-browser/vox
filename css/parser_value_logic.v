@@ -15562,8 +15562,8 @@ fn typed_style_value_logic_from_dom(value &dom.StyleValue) ?StyleValue {
 }
 
 fn style_value_logic_from_dom(property_id PropertyID, value &dom.StyleValue) ?StyleValue {
-	if typed := typed_style_value_logic_from_dom(value) {
-		return typed
+	if value.css_value_handle != unsafe { nil } {
+		return unsafe { (&TypedStyleValueBox(value.css_value_handle)).value }
 	}
 	return parse_css_value_logic(property_id, value.css_text)
 }
