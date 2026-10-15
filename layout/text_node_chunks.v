@@ -29,6 +29,14 @@ enum TextDirectionMode {
 	unidirectional_left_to_right
 }
 
+// Only font-display's invisible fallback needs this per-iterator cache.
+// Ordinary text retains no empty map or map backing storage.
+@[heap]
+struct InvisibleFontSelectionStorage {
+mut:
+	values map[string]&platform.Font
+}
+
 @[heap]
 pub struct TextNodeChunkIterator {
 	text_node              &TextNode = unsafe { nil }
@@ -47,7 +55,7 @@ mut:
 	font_cascade_fonts     []&platform.Font
 	font_cascade_ranges    [][]css.UnicodeRange
 	last_resort_font       ?&platform.Font
-	selected_fonts map[string]&platform.Font
+	selected_font_storage_ &InvisibleFontSelectionStorage = unsafe { nil }
 pub mut:
 	current_index            int
 	grapheme_boundary_index  int = 1
@@ -126,7 +134,6 @@ fn TextNodeChunkIterator.new_with_direction(text_node &TextNode, should_wrap_lin
 		word_break: text_node.Node.computed_values().word_break()
 		text_direction_mode: text_direction_mode
 		font: text_node.font_for_rendering()
-		selected_fonts: map[string]&platform.Font{}
 	}
 	iterator.install_font_cascade(font_cascade)
 	return iterator
@@ -257,12 +264,28 @@ fn (mut iterator TextNodeChunkIterator) font_for_code_point(code_point u32) &pla
 	if !fallback_is_invisible {
 		return selected
 	}
+	return iterator.invisible_font_for(selected)
+}
+
+fn (iterator &TextNodeChunkIterator) cached_invisible_font(key string) ?&platform.Font {
+	if iterator.selected_font_storage_ == unsafe { nil } {
+		return none
+	}
+	return iterator.selected_font_storage_.values[key] or { return none }
+}
+
+fn (mut iterator TextNodeChunkIterator) invisible_font_for(selected &platform.Font) &platform.Font {
 	key := '${selected.family}|${selected.source_path}|${selected.point_size}|${selected.weight}|invisible'
-	if font := iterator.selected_fonts[key] {
+	if font := iterator.cached_invisible_font(key) {
 		return font
 	}
 	font := text_node_chunk_invisible_font(selected)
-	iterator.selected_fonts[key] = font
+	if iterator.selected_font_storage_ == unsafe { nil } {
+		iterator.selected_font_storage_ = &InvisibleFontSelectionStorage{
+			values: map[string]&platform.Font{}
+		}
+	}
+	iterator.selected_font_storage_.values[key] = font
 	return font
 }
 
