@@ -5016,3 +5016,41 @@ report: `Build/instructions/vox-hotspots50-diagnostic.run-1.json`. The 4 GiB hin
 shipping ledger, canonical app and GUI browser are preserved. Current Root is
 excluded. Page credit remains 0 and Chrome parity remains open.
 
+
+## Chrome first-paint trace shows a header before repository content
+
+A fresh Chrome-for-Testing 155 frozen-replay content diagnostic records tracing
+screenshots around painting, rather than treating the probe's later screenshot
+as first-paint content. All 11 original frames remain. Visual inspection finds
+frames 000/001 blank, frames 002–004 showing only the top navigation header, and
+frame 005 showing the repository table and About text. Frames 003/004 are byte-
+identical to 002. Within the same trace/navigation, the first-paint marker
+precedes header frame 002; a later paragraph largest-contentful-paint candidate
+precedes repository frame 005. This ordering is not converted into CPU savings.
+
+The actual Chrome viewport remains 1024×768 with scale 1. Trace thumbnails are
+498×374 JPEGs, so they support this content observation, not a pixel-exact
+comparison. The Vox round 51 retained viewport already shows the repository
+filenames, but its PNG is also a separate capture. These observations reinforce
+that the earlier Chrome counter ending at first paint cannot be treated as an
+equivalent repository-view measurement. A content-aligned endpoint and normal,
+untraced hardware-instruction observations are still required before claiming
+Vox is faster. Font/wrapping, navigation overflow and image differences remain;
+neither endpoint nor pixel/content parity is established by this diagnostic.
+
+Probe and owned Chrome root actually exit 0, tracing reports no data loss, and
+the independent audit authenticates every JPEG against its original trace
+event, timestamp ordering, all 359 cache-body hashes, replayed response hashes,
+binary identity and logical viewport. Missing/non-GET requests stay blocked;
+legacy inferred MIME/status200/wildcard-CORS/no-store headers remain disclosed.
+The diagnostic launches a separate temporary headless profile and closes only
+that owned browser. Existing GUI browsers remain untouched. Tracing adds work;
+**performance credit is 0**, and the Vox verification ledger is unchanged.
+
+Evidence is under
+`Build/instructions/chrome-frozen-probe/first-paint-trace-1/`:
+`frame-002.jpg` (header), `frame-005.jpg` (repository), `trace-evidence.json`,
+`trace.json.gz` and `result.json`. Independent receipt:
+`Build/v/instruction-chrome-first-paint-trace-audit.json`.
+Trace archive SHA256: `5c8afe03203f734706f3519b120376a793eca11a96c3d9ae12bd5d774642a3ce`.
+Raw trace SHA256: `997dbf02b8acd1fb5702ac6b426fdfabce832f49e52f4c396fb18308f3edfe39`.
