@@ -286,6 +286,7 @@ mut:
 	page_model                          &page.Page = unsafe { nil }
 	js_runtime                          &browserjs.Runtime = unsafe { nil }
 	js_engine                           browserjs.Engine = .javascriptcore
+	script_policy                       BrowserScriptPolicy
 	document                            &dom.Document = unsafe { nil }
 	root_box                            layout.BlockBox
 	markup                              string
@@ -358,6 +359,7 @@ struct ChromePointerDispatchResult {
 struct LaunchOptions {
 mut:
 	js_engine                  browserjs.Engine = .javascriptcore
+	script_policy              BrowserScriptPolicy
 	source                     string
 	headless_smoke             bool
 	headless_layout_tree       bool
@@ -556,6 +558,10 @@ fn parse_launch_options(arguments []string) !LaunchOptions {
 		argument := arguments[index]
 		if argument == '--headless-smoke' {
 			options.headless_smoke = true
+		} else if argument == '--enable-javascript' {
+			options.script_policy = .enabled
+		} else if argument == '--disable-javascript' {
+			options.script_policy = .disabled
 		} else if argument == '--js-engine' {
 			if index + 1 >= arguments.len { return error('--js-engine requires javascriptcore or libjs') }
 			index++
@@ -998,17 +1004,19 @@ fn document_preload_resource_urls(document &dom.Document, base_url string) []str
 			}
 		}
 	}
-	for script in css.query_selector_all(root, 'script[src]') {
-		type_ := script.get_attribute_value('type').trim_space().to_lower()
-		if type_ != '' && type_ !in ['text/javascript', 'application/javascript', 'module'] {
-			continue
-		}
-		resource_url := resolve_document_reference(script.get_attribute_value('src'), base_url)
-		if (resource_url.starts_with('http://') || resource_url.starts_with('https://')) && resource_url !in seen {
-			seen[resource_url] = true
-			urls << resource_url
-			if urls.len == max_preloaded_resources {
-				return urls
+	if browser_document_can_load_scripts(document) {
+		for script in css.query_selector_all(root, 'script[src]') {
+			type_ := script.get_attribute_value('type').trim_space().to_lower()
+			if type_ != '' && type_ !in ['text/javascript', 'application/javascript', 'module'] {
+				continue
+			}
+			resource_url := resolve_document_reference(script.get_attribute_value('src'), base_url)
+			if (resource_url.starts_with('http://') || resource_url.starts_with('https://')) && resource_url !in seen {
+				seen[resource_url] = true
+				urls << resource_url
+				if urls.len == max_preloaded_resources {
+					return urls
+				}
 			}
 		}
 	}
@@ -1077,6 +1085,20 @@ fn preload_document_resources(document &dom.Document, base_url string, cached ma
 	return loaded
 }
 
+fn document_preload_resource_type(document &dom.Document, resource_url string, base_url string) string {
+	root := unsafe { &dom.Node(document) }
+	for element in css.query_selector_all(root, 'link[rel][href]') {
+		if element.get_attribute_value('rel').to_lower().split(' ').any(it == 'stylesheet')
+			&& resolve_document_reference(element.get_attribute_value('href'), base_url) == resource_url { return 'stylesheet' }
+	}
+	if browser_document_can_load_scripts(document) {
+		for element in css.query_selector_all(root, 'script[src]') {
+			if resolve_document_reference(element.get_attribute_value('src'), base_url) == resource_url { return 'script' }
+		}
+	}
+	return 'image'
+}
+
 fn install_external_styles(document &dom.Document, base_url string, preloaded map[string]PreloadedResource) []string {
 	root := unsafe { &dom.Node(document) }
 	mut messages := []string{}
@@ -1118,6 +1140,7 @@ fn install_external_styles(document &dom.Document, base_url string, preloaded ma
 }
 
 fn script_sources(document &dom.Document, base_url string, preloaded map[string]PreloadedResource, mut messages []string) []browserjs.ScriptSource {
+	if !browser_document_can_load_scripts(document) { return [] }
 	root := unsafe { &dom.Node(document) }
 	mut sources := []browserjs.ScriptSource{}
 	for script_element in css.query_selector_all(root, 'script') {
@@ -2982,11 +3005,12 @@ fn (mut app BrowserApp) install_loaded_page(loaded LoadedPage, add_history bool)
 	app.paint_timing.installation_instructions = processmetrics.begin_instructions()
 	initiator_origin := if app.document != unsafe { nil } { ?dom.Origin(app.document.origin()) } else { none }
 	previous_document := if app.document != unsafe { nil } { ?&dom.Document(app.document) } else { ?&dom.Document(none) }
+	scripting_enabled := browser_scripting_enabled(loaded.url, app.script_policy)
 	app.document = if document_url := dom.dom_url_parse(loaded.url, dom.url_about_blank(),
 		'UTF-8') {
-		parse_browser_navigation_document_for_page_with_response_time(loaded.markup, document_url, initiator_origin, previous_document, unsafe { &dom.Page(app.page_model) }, loaded.monotonic_response_time_ns)
+		parse_browser_navigation_document_with_scripting(loaded.markup, document_url, initiator_origin, previous_document, unsafe { &dom.Page(app.page_model) }, loaded.monotonic_response_time_ns, scripting_enabled)
 	} else {
-		parse_browser_navigation_document_for_page_with_response_time(loaded.markup, dom.url_about_blank(), initiator_origin, previous_document, unsafe { &dom.Page(app.page_model) }, loaded.monotonic_response_time_ns)
+		parse_browser_navigation_document_with_scripting(loaded.markup, dom.url_about_blank(), initiator_origin, previous_document, unsafe { &dom.Page(app.page_model) }, loaded.monotonic_response_time_ns, scripting_enabled)
 	}
 	reserve_document_heap_for_layout(app.document)
 	if app.page_model != unsafe { nil } && !app.page_model.has_local_root_navigable() {
@@ -3024,7 +3048,8 @@ fn (mut app BrowserApp) install_loaded_page(loaded LoadedPage, add_history bool)
 		app.js_runtime = unsafe { nil }
 	}
 	sources := script_sources(app.document, resource_base_url, preloaded_resources, mut app.js_messages)
-	javascript_navigation := if sources.len > 0 || document_has_window_event_handlers(app.document) {
+	javascript_navigation := if app.document.as_node().is_scripting_enabled()
+		&& (sources.len > 0 || document_has_window_event_handlers(app.document)) {
 		app.js_runtime = create_browser_script_runtime(app.js_engine)
 		run_document_script_sources(app.document, loaded.url, sources, app.js_runtime, mut app.js_messages)
 	} else {
@@ -6197,6 +6222,7 @@ fn main() {
 		screenshot_scroll_y: options.screenshot_scroll_y
 		layout_tree_only: options.headless_layout_tree
 		js_engine: options.js_engine
+		script_policy: options.script_policy
 		use_document_font: use_document_font
 		viewport_width: options.width
 		viewport_height: initial_viewport_height
