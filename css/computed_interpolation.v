@@ -2281,6 +2281,9 @@ pub fn (c &ComputedProperties) gap_value(property_id PropertyID) GapValue {
 
 pub fn (c &ComputedProperties) size_value(property_id PropertyID) Size {
 	value := c.property(property_id, .yes) or { return Size.make_auto() }
+	if value.css_value_handle != unsafe { nil } {
+		return Size.from_style_value(unsafe { (&TypedStyleValueBox(value.css_value_handle)).value })
+	}
 	parsed := style_value_logic_from_dom(property_id, value) or { return Size.make_auto() }
 	return Size.from_style_value(parsed)
 }
