@@ -1592,6 +1592,8 @@ pub mut:
 	depends_on_viewport_metrics_             bool
 	font_metrics_depend_on_viewport_metrics_ bool
 	font_input_refresh_safe_ bool
+	font_input_depends_on_font_size_ bool
+	font_input_parent_font_size_ ?&dom.StyleValue
 	// Lengths whose computed value remains viewport- or root-font-relative
 	// need the same style-computation context when Layout resolves their used
 	// value. LibWeb carries that context through the layout node; retaining it
@@ -11610,6 +11612,11 @@ pub fn (s &StyleComputer) compute_properties(abstract_element dom.AbstractElemen
 	// Parent computed style to inherit from, bridged from the DOM-side placeholder. Available only if the
 	// inheritance source element has already had its (bridged) computed style stored.
 	inherited_computed := parent_computed_properties(abstract_element)
+	properties.font_input_parent_font_size_ = if parent := inherited_computed {
+		parent.property(.font_size, .no) or { computed_interpolation_property_initial_value(.font_size) }
+	} else {
+		computed_interpolation_property_initial_value(.font_size)
+	}
 	property_source := ComputedPropertyValueSource{properties: properties}
 	mut inherited_source_available := false
 	if _ := inherited_computed {
@@ -11719,6 +11726,9 @@ pub fn (s &StyleComputer) compute_properties(abstract_element dom.AbstractElemen
 			computed_value = compute_value_of_property_from_source(property_id, style_value, property_source,
 				computation_context, 1.0)
 			if computation_context.did_resolve_font_relative_length {
+				properties.font_input_depends_on_font_size_ = true
+			}
+			if computation_context.did_resolve_font_face_relative_length {
 				properties.font_input_refresh_safe_ = false
 			}
 			if property_id == .font_size {

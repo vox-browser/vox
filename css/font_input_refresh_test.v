@@ -97,7 +97,7 @@ fn test_font_input_guard_tracks_nested_font_lengths_and_relative_font_size() {
 	document := dom.Document.create(dom.url_about_blank())
 	computer := StyleComputer.new(document)
 	for text in ['width:2ch', 'width:calc(2ch + 3px)',
-		'background-image:linear-gradient(red 1em, blue 2em)', 'box-shadow:1em 2px black',
+		'background-image:linear-gradient(red 1ex, blue 2ex)', 'box-shadow:1ch 2px black',
 		'font-size:125%', 'font-family:monospace'] {
 		mut element := document.create_element_ns(dom.namespace_html_uri, 'div') or { panic(err) }
 		element.set_attribute_value('style', text)
@@ -255,5 +255,154 @@ fn test_other_family_deferred_length_context_receives_refreshed_root_metrics() {
 		assert Length.new(1, .rlh).to_px(context) == root_metrics.line_height
 		assert current.root_line_height_px_ == font_input_style(root, none).line_height().to_double()
 		font_input_assert_full_cascade_oracle(unrelated, none)
+	}
+}
+
+fn test_font_input_refresh_retains_size_relative_values_after_real_face_load() {
+	$if macos {
+		mut document, _, subject, _ := font_input_fixture()
+		mut target := unsafe { &dom.Element(subject) }
+		target.set_attribute_value('style', 'font-size:.875rem;line-height:1.375rem;width:2em;padding:calc(1rem + 3px);background-image:linear-gradient(red 1em, blue 2em);box-shadow:1em 2px black')
+		document.update_style()
+		before := font_input_style(subject, none)
+		assert before.font_input_refresh_safe_
+		assert css_style_computer_for(document).can_refresh_font_inputs(dom.AbstractElement.new(subject, none))
+		_ = resolve_computed_values_for_document(before, document)
+		document.reset_style_invalidation_counters()
+		font_input_install_real_face(document)
+		document.update_style()
+		assert voidptr(font_input_style(subject, none)) == voidptr(before)
+		assert document.style_invalidation_counters().element_style_recomputations == 0
+		font_input_assert_full_cascade_oracle(subject, none)
+	}
+}
+
+fn test_font_input_face_metric_lengths_keep_full_cascade_after_real_face_load() {
+	$if macos {
+		for unit in ['ex', 'cap', 'ch', 'ic', 'lh', 'rex', 'rcap', 'rch', 'ric', 'rlh'] {
+			mut document, _, subject, _ := font_input_fixture()
+			mut target := unsafe { &dom.Element(subject) }
+			target.set_attribute_value('style', 'font-size:20px;width:2${unit}')
+			document.update_style()
+			before := font_input_style(subject, none)
+			assert !before.font_input_refresh_safe_, unit
+			font_input_install_real_face(document)
+			document.update_style()
+			assert voidptr(font_input_style(subject, none)) != voidptr(before), unit
+			font_input_assert_full_cascade_oracle(subject, none)
+		}
+	}
+}
+
+fn test_size_relative_font_input_guard_rejects_changed_parent_and_root_sizes() {
+	mut document, root, subject, _ := font_input_fixture()
+	mut target := unsafe { &dom.Element(subject) }
+	target.set_attribute_value('style', 'font-size:.875em;line-height:1.375rem;width:2em')
+	document.update_style()
+	computer := css_style_computer_for(document)
+	assert computer.can_refresh_font_inputs(dom.AbstractElement.new(subject, none))
+	mut parent := unsafe { &ComputedProperties(font_input_style(root, none)) }
+	old_size := parent.property(.font_size, .no) or { panic('parent font size') }
+	parent.set_property(.font_size, parse_css_value(ParsingParams{}, '40px', .font_size) or { panic('font size') }, .no, .no)
+	assert !computer.can_refresh_font_inputs(dom.AbstractElement.new(subject, none))
+	parent.set_property(.font_size, old_size, .no, .no)
+	assert computer.can_refresh_font_inputs(dom.AbstractElement.new(subject, none))
+	mut mutable_computer := unsafe { &StyleComputer(computer) }
+	mutable_computer.root_element_font_metrics.font_size = CSSPixels.new(40)
+	assert !computer.can_refresh_font_inputs(dom.AbstractElement.new(subject, none))
+}
+
+fn test_size_unit_tracking_distinguishes_font_size_from_loaded_face_metrics() {
+	mut context := ComputationContext{}
+	for unit in [LengthUnit.em, .rem] {
+		context.reset_viewport_metric_dependency_tracking()
+		_ = Length.new(2, unit).to_px(context.length_resolution_context)
+		assert context.did_resolve_font_relative_length
+		assert !context.did_resolve_font_face_relative_length
+	}
+	for unit in [LengthUnit.ex, .cap, .ch, .ic, .lh, .rex, .rcap, .rch, .ric, .rlh] {
+		context.reset_viewport_metric_dependency_tracking()
+		_ = Length.new(2, unit).to_px(context.length_resolution_context)
+		assert context.did_resolve_font_relative_length
+		assert context.did_resolve_font_face_relative_length
+	}
+}
+
+fn test_root_size_relative_font_size_keeps_the_original_computation_context() {
+	$if macos {
+		for size in ['1rem', 'calc(1rem + 3px)', 'calc(2em + 1px)'] {
+			mut document, root, _, _ := font_input_fixture()
+			mut target := unsafe { &dom.Element(root) }
+			target.set_attribute_value('style', 'font-family:FontInputFixture,sans-serif;font-size:${size};line-height:normal')
+			document.update_style()
+			before := font_input_style(root, none)
+			assert before.font_input_refresh_safe_, size
+			computer := css_style_computer_for(document)
+			assert !computer.can_refresh_font_inputs(dom.AbstractElement.new(root, none)), size
+			font_input_install_real_face(document)
+			// Compare both paths from the same root context. A root-relative
+			// font-size calculation itself publishes the next root metric state.
+			previous_metrics := computer.root_element_font_metrics
+			expected := computer.compute_style(dom.AbstractElement.new(root, none))
+			mut mutable_computer := unsafe { &StyleComputer(computer) }
+			mutable_computer.root_element_font_metrics = previous_metrics
+			mutable_computer.clear_computation_context_caches()
+			document.update_style()
+			after := font_input_style(root, none)
+			assert voidptr(after) != voidptr(before), size
+			for id in computed_interpolation_longhand_property_ids() {
+				assert (after.property(id, .no) or { panic('actual') }).css_text == (expected.property(id, .no) or { panic('expected') }).css_text, '${size}:${id}'
+			}
+			assert after.line_height() == expected.line_height(), size
+		}
+	}
+}
+
+fn test_other_family_nested_size_consumers_refresh_after_ancestor_font_metrics_change() {
+	$if macos {
+		mut document, root, outer, _ := font_input_fixture()
+		mut mutable_root := unsafe { &dom.Element(root) }
+		mutable_root.set_attribute_value('style', 'font-family:serif;font-size:20px;line-height:normal;padding:8px')
+		mut mutable_outer := unsafe { &dom.Element(outer) }
+		mutable_outer.set_attribute_value('style', 'font-family:FontInputFixture,monospace;font-size:20px')
+		mut parent := document.create_element_ns(dom.namespace_html_uri, 'div') or { panic(err) }
+		parent.set_attribute_value('style', 'font-family:serif;font-size:2ex')
+		mut child := document.create_element_ns(dom.namespace_html_uri, 'span') or { panic(err) }
+		child.set_attribute_value('id', 'size-consumer')
+		child.set_attribute_value('style', 'font-family:serif;font-size:calc(2em + 1px);width:calc(2em + 3px);background-image:linear-gradient(red 1em,blue 2em);box-shadow:1em 2px black')
+		mut outer_node := outer.as_node()
+		outer_node.append_child(parent.as_node()) or { panic(err) }
+		mut parent_node := parent.as_node()
+		parent_node.append_child(child.as_node()) or { panic(err) }
+		mut plain := document.create_element_ns(dom.namespace_html_uri, 'span') or { panic(err) }
+		plain.set_attribute_value('id', 'plain-consumer')
+		plain.set_attribute_value('style', 'font-family:serif')
+		parent_node.append_child(plain.as_node()) or { panic(err) }
+		add_document_author_style_sheet(document, '#size-consumer::before{content:"x";font-family:serif;font-size:calc(.5em + 1px);width:calc(2em + 3px)}#plain-consumer::before{content:"plain";font-family:serif}')
+		document.update_style()
+		before := font_input_style(child, none)
+		before_pseudo := font_input_style(child, .before)
+		plain_before := font_input_style(plain, .before)
+		parent_size := font_input_style(parent, none).font_size()
+		assert before.font_input_refresh_safe_
+		assert before.font_input_depends_on_font_size_
+		assert before_pseudo.font_input_refresh_safe_
+		assert before_pseudo.font_input_depends_on_font_size_
+		assert plain_before.font_input_refresh_safe_
+		assert !plain_before.font_input_depends_on_font_size_
+		font_input_install_real_face(document)
+		assert !root.has_pending_font_input_update()
+		assert parent.has_pending_font_input_update()
+		assert child.has_pending_font_input_update()
+		assert plain.has_pending_font_input_update()
+		document.update_style()
+		assert font_input_style(parent, none).font_size() != parent_size
+		assert voidptr(font_input_style(child, none)) != voidptr(before)
+		assert voidptr(font_input_style(child, .before)) != voidptr(before_pseudo)
+		assert font_input_style(plain, .before).font_size() == font_input_style(plain, none).font_size()
+		font_input_assert_full_cascade_oracle(child, none)
+		font_input_assert_full_cascade_oracle(child, .before)
+		font_input_assert_full_cascade_oracle(plain, none)
+		font_input_assert_full_cascade_oracle(plain, .before)
 	}
 }

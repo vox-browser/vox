@@ -25,6 +25,10 @@ fn retained_style_needs_font_inputs(style &dom.CSSComputedProperties_, family_na
 	// A different selected family can still depend on an ancestor/root face
 	// through ex/ch/lh or their root-relative forms, including nested calc().
 	if !computed.font_input_refresh_safe_ { return true }
+	// The ancestor's computed font size can itself use face metrics. Include
+	// nested em/rem consumers so their retained size-input checks run even
+	// when they select another family and have no direct inheritance entry.
+	if computed.font_input_depends_on_font_size_ { return true }
 	value := computed.property(.font_family, .yes) or { return false }
 	typed := style_value_logic_from_dom(.font_family, value) or { return false }
 	return font_family_value_names_family(typed, family_name)
@@ -60,16 +64,60 @@ fn mark_font_family_inputs_changed(document &dom.Document, family_name string) {
 		}
 		return .@continue
 	})
+	if root_metrics_may_change { return }
+	// A changed ancestor size also reaches ordinary inherited values and
+	// inherited pseudo styles with no explicit length dependency. Mark after
+	// the first pass so flat-tree inheritance works across slot/tree order.
+	document.for_each_shadow_including_descendant(fn (node &dom.Node) dom.TraversalDecision {
+		element := node.as_element() or { return .@continue }
+		if element.has_pending_font_input_update() || element.el_computed_properties() == none {
+			return .@continue
+		}
+		mut ancestor := element.element_to_inherit_style_from(none)
+		for ancestor != none {
+			current := ancestor or { break }
+			if current.has_pending_font_input_update() {
+				mut mutable_element := unsafe { &dom.Element(element) }
+				mutable_element.set_pending_font_input_update(true)
+				break
+			}
+			ancestor = current.element_to_inherit_style_from(none)
+		}
+		return .@continue
+	})
 }
 
 fn (s &StyleComputer) can_refresh_font_inputs(abstract_element dom.AbstractElement) bool {
 	bridge := abstract_element.computed_properties() or { return false }
 	computed := computed_properties_from_dom(bridge) or { return false }
 	if !computed.font_input_refresh_safe_ || computed.has_animated_properties()
-		|| computed.has_animated_custom_properties()
-		|| (computed.inheritance_specified_storage_ != unsafe { nil }
-			&& computed.inheritance_specified_storage_.values.len != 0) {
+		|| computed.has_animated_custom_properties() {
 		return false
+	}
+	// A font-metric-relative font size on an ancestor can change after loading
+	// its face. Keep em/rem results only while both size inputs stay identical.
+	if computed.root_font_size_px_ != s.root_element_font_metrics.font_size.to_double()
+		|| style_value_option_changed(computed.font_input_parent_font_size_,
+			StyleComputer.get_non_animated_inherit_value(.font_size, abstract_element)) {
+		return false
+	}
+	if abstract_element.pseudo_element() == none {
+		if root := abstract_element.document().document_element() {
+			if voidptr(root) == voidptr(abstract_element.element()) {
+				if value := computed.raw_cascaded_font_size() {
+					// The root's initial font context also governs nested calc()
+					// font-size leaves, which have no direct inheritance entry.
+					length := computed_interpolation_length_from_dom_style_value(value) or { return false }
+					if !length.is_absolute() { return false }
+				}
+			}
+		}
+	}
+	if computed.inheritance_specified_storage_ != unsafe { nil } {
+		for _, value in computed.inheritance_specified_storage_.values {
+			length := computed_interpolation_length_from_dom_style_value(value) or { return false }
+			if length.unit() !in [.em, .rem] { return false }
+		}
 	}
 	if s.css_animation_storage_ != unsafe { nil } {
 		for entry in s.css_animation_storage_.entries {
