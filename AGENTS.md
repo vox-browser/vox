@@ -1396,6 +1396,12 @@ evidence](docs/translation-audit/NATIVE_MEDIA_WHEEL_RAW_HANDLER.md).
   credit 0 because the interval includes zero. The selected 87-case batch passes
   both GC modes; 19 screenshots pass (16 exact), and the focused viewport is exact.
   Additional observed savings after that batch are zero; Chrome parity is open.
+  Empty custom-property inheritance `35615f24` passes 1,310 focused
+  assertions per configuration; the controlled installation probe uses 84.95%
+  fewer retired instructions. Matching 30-pair observed savings are
+  917,302,664, with repeatable page credit 917,302,664.
+  Broad verification: passed 87 selected cases both GC and 19 screenshots (16 exact).
+  The focused viewport is exact; Chrome parity remains open.
 - Outside instruction-count optimization, run broad regression suites once per
   ten completed fixes, not after every fix.
   Broad suites include full translation/package test batches, the full LibJS AST

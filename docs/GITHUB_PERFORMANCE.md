@@ -3224,6 +3224,90 @@ Evidence: `Build/instructions/vox-opt33-interleaved-*` and
 baseline to 31,972,073,267 instructions; additional observed
 savings after the batch are zero.
 
+## Inherit directly after an empty custom-property cascade
+
+Feature `35615f24` checks the matching author declarations and applicable
+inline style before allocating temporary cascade maps. When none defines a
+custom property and no animation overlay exists, the element receives its
+parent's existing inheritable environment directly, or none. This also removes
+stale own declarations. Registered non-inheriting properties use the same
+existing parent filter. Animation overlays and declarations with values retain
+the original cascade path; its source tail is byte-identical.
+
+Thirteen functional cases plus an inactive diagnostic pass **1,310 assertions**
+in the before/final Boehm and final no-GC C-O2 configurations. Three new cases
+cover removed declarations, live inherited data, inline and pseudo-element
+ownership, and animation values retained after base changes and collection.
+Initial compiler errors are retained. A strict generated-C audit caught three
+unrelated Root edits copied with the first source file. Their completed builds,
+checks and candidate profile remain separately archived without matched credit.
+The corrected frozen candidate contains only this feature; valid control checks
+and its profile are retained, and only candidate checks were repeated against
+the corrected runtime. A missing command file prevented one recovery wrapper
+from launching tests; its traceback is retained.
+
+Three fixed alternating diagnostic pairs reduce **8,192 complete custom-property
+installations** from **28,728,578 to 4,323,927** retired
+instructions (-84.95%). All three pairs improve, with checksum
+8,192 in all six observations. DOM setup, eight warmups and forced collection
+precede the counter; final data validation follows it. This is local evidence.
+Fresh full-process C-O1/Boehm profiles include the same focused harness and active
+diagnostic, with no filter/reset: installer calls remain
+**8,219** in each variant;
+ordinary cascade calls change from
+**8,232 to 11**.
+These are call counts, with no profile-time performance credit.
+
+The generated-C audit permits only the installer and its new declaration
+predicate to differ. All other logic, layouts, resources and GC setup match
+after established compiler identity/source-assertion normalization and the two
+authenticated byte-identical interface helper reorderings. All 120 native inputs,
+37 frozen includes and native C-O2 arguments are authenticated. Compiled C SHA256:
+`0f2d0b57616c545a2c067a4ea4a7094de8a4a888f8563f420c4d29b616271781`.
+The durable C/profile archive hashes are in
+`Build/v/instruction-opt35-artifact-archives.json`.
+
+Thirty alternating pairs were predeclared, with 30,000 paired bootstrap resamples
+and seed 35, the same 359-body cache and helper, fresh cache copies, 1024×768
+document viewports and `navigation_to_first_document_paint[0]`. Both variants
+include complete filenames and round 33 buffer release. Boehm uses one marker,
+with no prod/prealloc flags.
+
+| Build | Median first-frame retired instructions |
+| --- | ---: |
+| Frozen round 33 control | 32,043,531,858 |
+| Empty custom-property inheritance | 31,126,229,194 |
+
+Observed matching median saving: **917,302,664** instructions
+(2.863%). 21/30 pairs improve; paired median
+saving is 832,318,281.5. The 95% paired percentile interval is
+**41,975,924 to 1,081,594,740**. Repeatable page credit is **917,302,664**, requiring a
+strictly positive lower confidence bound. All 60 primary observations remain;
+there are 60 actual PNGs, 0 recovered post-primary counters and
+0 archived pre-parse startup retries. Completed primaries are never rerun,
+filtered or extended. Capture preparation and later refreshes remain separately
+audited in `Build/v/instruction-opt35-capture-audit.json`. Each primary retains
+one installation, two geometry passes and one paint preparation. Control pair 21
+has one separately retained later installation.
+
+All six direct V jobs pass: CSS 31, SVG 10 and layout 46 in each GC mode,
+174 case executions. All 19 screenshots pass, 16 exact; the retained differences
+are inline-node 13, text-decorations 1,341 and canvas-text 1,994. The commands use
+SSD scratch; inherited receipt wording about RAM output is inaccurate.
+The focused inheritance, inline, pseudo and layered custom-property viewport is
+pixel-exact. Broad runtime and overlays remain pinned separately from Root.
+
+The isolated frozen comparison app is `/Users/alex/code/vox2/Build/v/Vox-opt35.app`. Signature and
+startup pass, with actual collections under default marker 1 and override 2.
+Its native text matches the measured binary. Canonical and GUI apps remain
+preserved. Contemporary independent Root changes are excluded from the measured
+image; the current Root feature retains those changes. This app receives no
+extra current-Root credit, and Chrome parity remains open.
+
+Evidence: `Build/instructions/vox-opt35-interleaved-*` and
+`Build/v/instruction-opt35-*`. The completed broad batch resets the GitHub
+baseline to 31,126,229,194 instructions, with zero additional observed savings.
+
 ## Causes and changes
 
 - The V 0.5.2 compatibility compiler's `-prod` Boehm code repeatedly snapshots
