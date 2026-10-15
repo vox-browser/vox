@@ -184,6 +184,19 @@ pub fn (mut host MediaElementHost) install(mut runtime Runtime) ! {
 			return host.runtime.actual_javascript_exception(host.runtime.binding_exception_value(err))
 		}
 	})!
+	mut dimension_getters := []voidptr{}
+	for name in ['videoWidth', 'videoHeight'] {
+		dimension_getters << runtime.make_native_value_host_function('get ${name}', 0, fn [handle, name] (receiver voidptr, _ []voidptr) !voidptr {
+			mut host := unsafe { &MediaElementHost(handle) }
+			return host.video_dimension(name, receiver) or {
+				return host.runtime.actual_javascript_exception(host.runtime.binding_exception_value(err))
+			}
+		})!
+	}
+	dimension_array := C.JSObjectMakeArray(runtime.context, usize(dimension_getters.len), dimension_getters.data, &exception)
+	if exception != unsafe { nil } { return runtime.actual_javascript_exception(exception) }
+	runtime.retain_javascript_value(dimension_array)!
+	defer { runtime.release_javascript_value(dimension_array) }
 	poster_getter := runtime.make_native_value_host_function('get poster', 0, fn [handle] (receiver voidptr, _ []voidptr) !voidptr {
 		mut host := unsafe { &MediaElementHost(handle) }
 		return host.poster(receiver) or {
@@ -227,7 +240,7 @@ pub fn (mut host MediaElementHost) install(mut runtime Runtime) ! {
 			default_muted_getter, default_muted_setter, set_attribute_sync, loop_getter, loop_setter,
 			autoplay_getter, autoplay_setter, preload_getter, preload_setter,
 			cross_origin_getter, cross_origin_setter, controls_getter, controls_setter,
-			poster_getter, poster_setter])!)!
+			poster_getter, poster_setter, dimension_array])!)!
 	defer { runtime.release_javascript_value(prototypes) }
 	host.prototype = runtime.retain_javascript_value(runtime.binding_property(prototypes, 'media')!)!
 	host.video_prototype = runtime.retain_javascript_value(runtime.binding_property(prototypes, 'video')!)!
@@ -422,6 +435,15 @@ fn (host &MediaElementHost) video_element_for_binding(receiver voidptr) !&dom.El
 		if element.is_html_element() && element.local_name() == 'video' { return element }
 	}
 	return error('TypeError: Not an object of type HTMLVideoElement')
+}
+
+fn (mut host MediaElementHost) video_dimension(name string, receiver voidptr) !voidptr {
+	element := host.video_element_for_binding(receiver)!
+	if replay := host.replay { replay(host.runtime)! }
+	video := html.html_video_element_model_for_dom_element(unsafe { &dom.HTMLVideoElement(element) })
+	mut pixels := video.video_width()
+	if name == 'videoHeight' { pixels = video.video_height() }
+	return C.JSValueMakeNumber(host.runtime.context, f64(pixels))
 }
 
 fn (mut host MediaElementHost) poster(receiver voidptr) !voidptr {
@@ -663,7 +685,7 @@ fn (mut host MediaElementHost) set_property(name string, receiver voidptr, value
 // selected media and input handler attributes,
 // and constants.
 // Full HTMLElement/audio/video interfaces remain open.
-const media_element_native_factory = r'(function(getters,setters,bind,fastSeek,getStartDate,pause,load,play,handlerGetters,handlerSetters,canPlayType,defaultMutedGetter,defaultMutedSetter,setAttributeSync,loopGetter,loopSetter,autoplayGetter,autoplaySetter,preloadGetter,preloadSetter,crossOriginGetter,crossOriginSetter,controlsGetter,controlsSetter,posterGetter,posterSetter){
+const media_element_native_factory = r'(function(getters,setters,bind,fastSeek,getStartDate,pause,load,play,handlerGetters,handlerSetters,canPlayType,defaultMutedGetter,defaultMutedSetter,setAttributeSync,loopGetter,loopSetter,autoplayGetter,autoplaySetter,preloadGetter,preloadSetter,crossOriginGetter,crossOriginSetter,controlsGetter,controlsSetter,posterGetter,posterSetter,dimensionGetters){
  "use strict";
  const define=Object.defineProperty,create=Object.create,P=Proxy,T=TypeError;
  const prototype=create(EventTarget.prototype);
@@ -698,6 +720,7 @@ const media_element_native_factory = r'(function(getters,setters,bind,fastSeek,g
  define(globalThis,"__ladybirdMediaElementBind",{value:bind,configurable:true});
  define(globalThis,"__ladybirdMediaElementSetAttributeSync",{value:setAttributeSync,configurable:true});
  const videoPrototype=create(prototype);
+ for(const [index,name] of ["videoWidth","videoHeight"].entries())define(videoPrototype,name,{get:dimensionGetters[index],enumerable:true,configurable:true});
  define(videoPrototype,"poster",{get:posterGetter,set:posterSetter,enumerable:true,configurable:true});
  define(videoPrototype,Symbol.toStringTag,{value:"HTMLVideoElement",configurable:true});
  const videoConstructor=new P(function HTMLVideoElement(){},{apply(){throw new T("Illegal HTMLVideoElement constructor")},construct(){throw new T("Illegal HTMLVideoElement constructor")}});
