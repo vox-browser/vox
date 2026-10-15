@@ -130,7 +130,9 @@ zoneinfo_exclude='@vlib/time/zoneinfo.native.v'
 # leaving pointer-free buffers atomic. Optimized forced-GC tests cover nested
 # token strings, CSSOM values and arena records. boehm_full remains available
 # as an ownership diagnostic.
-set -- -old-compiler -exclude "$zoneinfo_exclude" -enable-globals
+http_modules=$(python3 "$repo_dir/tools/prepare_http_compat.py" "$v_compiler")
+set -- -old-compiler -exclude "$zoneinfo_exclude" -enable-globals \
+    -path "$http_modules|@vmodules|@vlib"
 if [ "$gc_mode" != none ]; then
     set -- "$@" -gc "$gc_mode"
     extra_cflags="$extra_cflags -O2"

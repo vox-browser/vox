@@ -17,7 +17,9 @@ case "$width:$height" in
     *[!0-9:]*|0:*|*:0) echo "WIDTH and HEIGHT must be positive integers" >&2; exit 2 ;;
 esac
 
-if [ ! -x "$browser" ] || find "$repo_dir" \
+if [ ! -x "$browser" ] \
+    || [ "$repo_dir/tools/prepare_http_compat.py" -nt "$browser" ] \
+    || find "$repo_dir" \
     \( -path "$repo_dir/Build" -o -path "$repo_dir/.git" \) -prune -o \
     -type f \( -name '*.v' -o -name '*.m' -o -name '*.cpp' \) ! -name '*_test.v' \
     ! -path "$repo_dir/tools/*" -newer "$browser" -print -quit | grep -q .; then
