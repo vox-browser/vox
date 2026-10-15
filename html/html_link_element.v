@@ -487,8 +487,13 @@ fn request_destination_from_preload_destination(destination ?string) ?RequestDes
 }
 
 pub fn (mut link HTMLLinkElementModel) fetch_and_process_linked_preload_resource() {
-	mut options := link.create_link_options()
 	destination := translate_a_preload_destination(link.as_) or { return }
+	if destination == 'script' {
+		if document := link.resource_document() {
+			if !document.is_scripting_enabled_by_embedder() { return }
+		}
+	}
+	mut options := link.create_link_options()
 	options.destination = if destination == '' { none } else { destination }
 	link.preload(mut options)
 }
@@ -544,6 +549,9 @@ fn ignore_modulepreload_fetch_complete(_ ?&Script) {}
 // https://html.spec.whatwg.org/multipage/links.html#link-type-modulepreload:fetch-and-process-the-linked-resource
 pub fn (mut link HTMLLinkElementModel) fetch_and_process_linked_modulepreload_resource() {
 	document := link.resource_document()
+	if actual_document := document {
+		if !actual_document.is_scripting_enabled_by_embedder() { return }
+	}
 	if !media_attribute_matches_environment(document, link.media_) || link.href_ == '' {
 		return
 	}
@@ -632,6 +640,13 @@ fn link_type_matches_destination(type_ string, destination ?string) bool {
 }
 
 pub fn (mut link HTMLLinkElementModel) preload(mut options LinkProcessingOptions) {
+	if destination := options.destination {
+		if destination == 'script' {
+			if document := options.document {
+				if !document.is_scripting_enabled_by_embedder() { return }
+			}
+		}
+	}
 	if !link_type_matches_destination(options.type_, options.destination) || options.href == '' {
 		return
 	}

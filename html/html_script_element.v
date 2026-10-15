@@ -459,6 +459,9 @@ pub fn (script &HTMLScriptElementModel) is_implicitly_potentially_render_blockin
 pub fn html_script_element_attribute_changed(element &dom.HTMLScriptElement, name string, old_value ?string, value ?string, namespace_ ?string) {
 	mut dom_element := script_dom_element(element)
 	dom_element.attribute_changed(name, old_value, value, namespace_)
+	if !dom_element.document().is_scripting_enabled_by_embedder() {
+		return
+	}
 	mut model := unsafe { &HTMLScriptElementModel(html_script_element_model_for_dom_element(element)) }
 	if name == 'crossorigin' {
 		model.crossorigin_ = cors_setting_attribute_from_keyword(value)
@@ -526,6 +529,9 @@ pub fn html_script_element_children_changed(element &dom.HTMLScriptElement, meta
 }
 
 pub fn html_script_element_post_connection(element &dom.HTMLScriptElement) {
+	if !script_dom_element(element).document().is_scripting_enabled_by_embedder() {
+		return
+	}
 	mut model := unsafe { &HTMLScriptElementModel(html_script_element_model_for_dom_element(element)) }
 	if model.is_parser_inserted() {
 		return

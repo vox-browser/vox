@@ -1487,6 +1487,9 @@ fn should_inline_script_attribute_be_blocked_by_content_security_policy(element 
 // https://html.spec.whatwg.org/multipage/webappapis.html#event-handler-attributes:concept-element-attributes-change-ext
 pub fn (et &EventTarget) element_event_handler_attribute_changed(local_name string, value ?string) {
 	// NOTE: Step 1 of this algorithm was handled in HTMLElement::attribute_changed.
+	if node := event_target_as_node(et) {
+		if !node.document().is_scripting_enabled_by_embedder() { return }
+	}
 
 	event_name := event_name_from_event_handler_attribute_local_name(local_name) or { return }
 

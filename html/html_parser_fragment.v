@@ -187,6 +187,7 @@ pub fn parse_html_fragment_with_options(context_element &dom.Element, markup str
 
 	// 2/3. Inherit quirks mode from the context's node document.
 	context_document := context_element.document()
+	temp_document.set_scripting_enabled_by_embedder(context_document.is_scripting_enabled_by_embedder())
 	if context_document.in_quirks_mode() {
 		temp_document.set_quirks_mode(.yes)
 	} else if context_document.in_limited_quirks_mode() {

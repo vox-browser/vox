@@ -3725,6 +3725,7 @@ pub fn (n &Node) is_scripting_enabled() bool {
 pub fn (n &Node) is_scripting_disabled() bool {
 	document := n.document()
 	return document == unsafe { nil } || document.browsing_context == unsafe { nil }
+		|| !document.is_scripting_enabled_by_embedder()
 		|| !n.relevant_settings_scripting_enabled()
 }
 
