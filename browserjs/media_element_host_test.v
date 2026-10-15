@@ -72,8 +72,8 @@ fn test_native_media_buffered_reads_actual_playback_hooks_and_preserves_static_s
 	})
 	assert runtime.evaluate_host('globalThis.saved=video.buffered;saved.length===2&&saved.start(0)===3&&saved.end(0)===5&&saved.start(1)===6&&saved.end(1)===7&&fallback.end(0)===2')! == 'true'
 	probe.ranges = [html.MediaBufferedRange{9, 10}]
-	runtime.evaluate_host('globalThis.rangePrototype=TimeRanges.prototype;globalThis.mediaPrototype=HTMLMediaElement.prototype;globalThis.authorReads=0;globalThis.TimeRanges=function(){authorReads++;throw "author TimeRanges"};globalThis.HTMLMediaElement=function(){authorReads++;throw "author media constructor"}')!
-	assert runtime.evaluate_host('globalThis.latest=video.buffered;Object.getPrototypeOf(latest)===rangePrototype&&Object.getPrototypeOf(video)===mediaPrototype&&latest.start(0)===9&&latest.end(0)===10&&saved.start(0)===3&&saved.end(0)===5&&saved.start(1)===6&&saved.end(1)===7&&fallback.end(0)===2&&authorReads===0')! == 'true'
+	runtime.evaluate_host('globalThis.rangePrototype=TimeRanges.prototype;globalThis.mediaPrototype=HTMLMediaElement.prototype;globalThis.videoPrototype=HTMLVideoElement.prototype;globalThis.authorReads=0;globalThis.TimeRanges=function(){authorReads++;throw "author TimeRanges"};globalThis.HTMLMediaElement=function(){authorReads++;throw "author media constructor"}')!
+	assert runtime.evaluate_host('globalThis.latest=video.buffered;Object.getPrototypeOf(latest)===rangePrototype&&Object.getPrototypeOf(video)===videoPrototype&&Object.getPrototypeOf(videoPrototype)===mediaPrototype&&latest.start(0)===9&&latest.end(0)===10&&saved.start(0)===3&&saved.end(0)===5&&saved.start(1)===6&&saved.end(1)===7&&fallback.end(0)===2&&authorReads===0')! == 'true'
 	assert runtime.native_time_ranges(runtime.evaluate_host_value('latest')!)!.start(0)! == 9
 }
 

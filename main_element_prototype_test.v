@@ -19,7 +19,7 @@ for(const element of [ordinary,picture,movie,vector,document.createElement("span
  if(!(element instanceof Element)||!(element instanceof EventTarget))throw new Error("element inheritance");
  if(Element.prototype.matches.call(element,"*")!==true)throw new Error("native match");
 }
-if(Object.getPrototypeOf(ordinary)!==Element.prototype||Object.getPrototypeOf(picture)!==HTMLImageElement.prototype||Object.getPrototypeOf(movie)!==HTMLMediaElement.prototype)throw new Error("specialized facade");
+if(Object.getPrototypeOf(ordinary)!==Element.prototype||Object.getPrototypeOf(picture)!==HTMLImageElement.prototype||Object.getPrototypeOf(movie)!==HTMLVideoElement.prototype)throw new Error("specialized facade");
 if(document.createDocumentFragment() instanceof Element)throw new Error("fragment is an element");
 for(const construct of [()=>Element(),()=>new Element()]){let failed=false;try{construct()}catch(error){failed=error instanceof TypeError}if(!failed)throw new Error("illegal constructor");}
 let traps=0;

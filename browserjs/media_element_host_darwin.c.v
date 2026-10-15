@@ -184,6 +184,20 @@ pub fn (mut host MediaElementHost) install(mut runtime Runtime) ! {
 			return host.runtime.actual_javascript_exception(host.runtime.binding_exception_value(err))
 		}
 	})!
+	poster_getter := runtime.make_native_value_host_function('get poster', 0, fn [handle] (receiver voidptr, _ []voidptr) !voidptr {
+		mut host := unsafe { &MediaElementHost(handle) }
+		return host.poster(receiver) or {
+			return host.runtime.actual_javascript_exception(host.runtime.binding_exception_value(err))
+		}
+	})!
+	poster_setter := runtime.make_native_value_host_function('set poster', 1, fn [handle] (receiver voidptr, args []voidptr) !voidptr {
+		mut host := unsafe { &MediaElementHost(handle) }
+		mut value := C.JSValueMakeUndefined(host.runtime.context)
+		if args.len > 0 { value = args[0] }
+		return host.set_poster(receiver, value) or {
+			return host.runtime.actual_javascript_exception(host.runtime.binding_exception_value(err))
+		}
+	})!
 	controls_getter := runtime.make_native_value_host_function('get controls', 0, fn [handle] (receiver voidptr, _ []voidptr) !voidptr {
 		mut host := unsafe { &MediaElementHost(handle) }
 		return host.controls(receiver) or {
@@ -207,12 +221,16 @@ pub fn (mut host MediaElementHost) install(mut runtime Runtime) ! {
 	factory := runtime.evaluate_host_value(media_element_native_factory.replace('__MEDIA_HANDLER_NAMES__',
 		json2.encode(media_element_event_handler_names)))!
 	defer { runtime.release_javascript_value(factory) }
-	host.prototype = runtime.retain_javascript_value(runtime.call_javascript_function(factory,
+	prototypes := runtime.retain_javascript_value(runtime.call_javascript_function(factory,
 		C.JSValueMakeUndefined(runtime.context), [array, setter_array, bind, fast_seek, start_date,
 			pause, load, play, handler_getter_array, handler_setter_array, can_play_type,
 			default_muted_getter, default_muted_setter, set_attribute_sync, loop_getter, loop_setter,
 			autoplay_getter, autoplay_setter, preload_getter, preload_setter,
-			cross_origin_getter, cross_origin_setter, controls_getter, controls_setter])!)!
+			cross_origin_getter, cross_origin_setter, controls_getter, controls_setter,
+			poster_getter, poster_setter])!)!
+	defer { runtime.release_javascript_value(prototypes) }
+	host.prototype = runtime.retain_javascript_value(runtime.binding_property(prototypes, 'media')!)!
+	host.video_prototype = runtime.retain_javascript_value(runtime.binding_property(prototypes, 'video')!)!
 	runtime.add_canvas_element_provider_with_lookup(fn [handle] () map[string]&dom.Element {
 		host := unsafe { &MediaElementHost(handle) }
 		return host.elements_for_binding()
@@ -247,7 +265,9 @@ fn (mut host MediaElementHost) bind(args []voidptr) !voidptr {
 		return error('TypeError: Not an object of type HTMLMediaElement')
 	}
 	host.runtime.bind_event_target(wrapper, unsafe { &dom.EventTarget(element) })!
-	C.JSObjectSetPrototype(host.runtime.context, wrapper, host.prototype)
+	mut prototype := host.prototype
+	if element.local_name() == 'video' { prototype = host.video_prototype }
+	C.JSObjectSetPrototype(host.runtime.context, wrapper, prototype)
 	host.records[wrapper] = media
 	host.bound_elements[wrapper] = element
 	return C.JSValueMakeUndefined(host.runtime.context)
@@ -393,6 +413,40 @@ fn (mut host MediaElementHost) set_cross_origin(receiver voidptr, value voidptr)
 				host.runtime.binding_string('crossorigin'), synchronized_value])!
 	}
 	media.set_crossorigin(raw)
+	return C.JSValueMakeUndefined(host.runtime.context)
+}
+
+fn (host &MediaElementHost) video_element_for_binding(receiver voidptr) !&dom.Element {
+	if host.closed { return error('Media element binding is closed') }
+	if element := host.bound_elements[receiver] {
+		if element.is_html_element() && element.local_name() == 'video' { return element }
+	}
+	return error('TypeError: Not an object of type HTMLVideoElement')
+}
+
+fn (mut host MediaElementHost) poster(receiver voidptr) !voidptr {
+	element := host.video_element_for_binding(receiver)!
+	if replay := host.replay { replay(host.runtime)! }
+	// Source reflection reads the first qualified Attr, while writes target
+	// the null-namespace slot through set_attribute_value().
+	raw := element.get_attribute('poster') or { return host.runtime.binding_string('') }
+	if url := element.document().encoding_parse_and_serialize_url(raw) {
+		return host.runtime.binding_string(url)
+	}
+	return host.runtime.binding_utf16_string(libjs.utf16_string_from_utf8_without_validation(raw).to_well_formed())
+}
+
+fn (mut host MediaElementHost) set_poster(receiver voidptr, value voidptr) !voidptr {
+	mut element := host.video_element_for_binding(receiver)!
+	converted := host.runtime.binding_dom_utf16(value)!.to_well_formed()
+	if replay := host.replay { replay(host.runtime)! }
+	// Publish facade text before the existing poster algorithm can reenter.
+	if host.attribute_sync != unsafe { nil } {
+		host.runtime.call_javascript_function(host.attribute_sync,
+			C.JSValueMakeUndefined(host.runtime.context), [receiver,
+				host.runtime.binding_string('poster'), host.runtime.binding_utf16_string(converted)!])!
+	}
+	element.set_attribute_value('poster', converted.str())
 	return C.JSValueMakeUndefined(host.runtime.context)
 }
 
@@ -609,7 +663,7 @@ fn (mut host MediaElementHost) set_property(name string, receiver voidptr, value
 // selected media and input handler attributes,
 // and constants.
 // Full HTMLElement/audio/video interfaces remain open.
-const media_element_native_factory = r'(function(getters,setters,bind,fastSeek,getStartDate,pause,load,play,handlerGetters,handlerSetters,canPlayType,defaultMutedGetter,defaultMutedSetter,setAttributeSync,loopGetter,loopSetter,autoplayGetter,autoplaySetter,preloadGetter,preloadSetter,crossOriginGetter,crossOriginSetter,controlsGetter,controlsSetter){
+const media_element_native_factory = r'(function(getters,setters,bind,fastSeek,getStartDate,pause,load,play,handlerGetters,handlerSetters,canPlayType,defaultMutedGetter,defaultMutedSetter,setAttributeSync,loopGetter,loopSetter,autoplayGetter,autoplaySetter,preloadGetter,preloadSetter,crossOriginGetter,crossOriginSetter,controlsGetter,controlsSetter,posterGetter,posterSetter){
  "use strict";
  const define=Object.defineProperty,create=Object.create,P=Proxy,T=TypeError;
  const prototype=create(EventTarget.prototype);
@@ -643,5 +697,13 @@ const media_element_native_factory = r'(function(getters,setters,bind,fastSeek,g
  define(globalThis,"HTMLMediaElement",{value:constructor,writable:true,configurable:true});
  define(globalThis,"__ladybirdMediaElementBind",{value:bind,configurable:true});
  define(globalThis,"__ladybirdMediaElementSetAttributeSync",{value:setAttributeSync,configurable:true});
- return prototype;
+ const videoPrototype=create(prototype);
+ define(videoPrototype,"poster",{get:posterGetter,set:posterSetter,enumerable:true,configurable:true});
+ define(videoPrototype,Symbol.toStringTag,{value:"HTMLVideoElement",configurable:true});
+ const videoConstructor=new P(function HTMLVideoElement(){},{apply(){throw new T("Illegal HTMLVideoElement constructor")},construct(){throw new T("Illegal HTMLVideoElement constructor")}});
+ Object.setPrototypeOf(videoConstructor,constructor);
+ define(videoConstructor,"prototype",{value:videoPrototype,writable:false});
+ define(videoPrototype,"constructor",{value:videoConstructor,writable:true,configurable:true});
+ define(globalThis,"HTMLVideoElement",{value:videoConstructor,writable:true,configurable:true});
+ return {media:prototype,video:videoPrototype};
 })'

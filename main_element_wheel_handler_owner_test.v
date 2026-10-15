@@ -201,7 +201,7 @@ globalThis.ehMath=document.createElementNS("http://www.w3.org/1998/Math/MathML",
 		document.finalize()
 	}
 	assert element_wheel_handler_owner_guard(runtime, '[ehCreated,ehSvg,ehRect,ehAnonymous,ehMath]')!
-	assert runtime.evaluate_host('[ehForeign,ehNull,ehEmpty].every(target=>!("onwheel" in target)&&!Object.hasOwn(target,"onwheel"))&&Object.getPrototypeOf(ehVideo)===HTMLMediaElement.prototype&&!Object.hasOwn(ehVideo,"onwheel")&&ehVideo.onwheel===null')! == 'true'
+	assert runtime.evaluate_host('[ehForeign,ehNull,ehEmpty].every(target=>!("onwheel" in target)&&!Object.hasOwn(target,"onwheel"))&&Object.getPrototypeOf(ehVideo)===HTMLVideoElement.prototype&&!Object.hasOwn(ehVideo,"onwheel")&&ehVideo.onwheel===null')! == 'true'
 	for expression in ['ehNull', 'ehEmpty'] {
 		foreign := unsafe { &dom.Element(runtime.native_event_target(runtime.evaluate_host_value(expression)!)!) }
 		assert foreign.namespace_uri() == none
