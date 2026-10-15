@@ -6221,6 +6221,97 @@ Page credit is **0**. Accepted round64 remains the next control and broad
 baseline; additional observed savings remain 0. Canonical and GUI browsers are
 preserved, and Chrome parity remains open.
 
+## Pass retained size values directly to the existing converter
+
+Feature `94643b1e` adds one nonnull-owner guard to public
+`ComputedProperties.size_value()`. It reads the existing typed owner and passes
+its value directly to unchanged `Size.from_style_value()`, avoiding construction
+and unwrapping of the intermediate optional from the general bridge. All size
+kinds use that same converter. The entire former body remains after the guard,
+including property lookup, automatic defaults and strict property-specific
+parsing for values without an owner. No cache, state, schema or public API is
+added; general/typed bridges, filtering, arenas and GC remain unchanged.
+
+Before/final Boehm and final no-GC C-O2 builds each actually pass **1,016
+assertions in 18 cases** (17 functional plus one inactive diagnostic). Three new
+cases cover all retained size kinds, unsupported retained types despite valid
+serialized text, absent and nil-owner fallbacks, invalid trailing tokens,
+mutation/replacement/clearing of the owner, retained earlier results and forced
+collection. An exact copy of the former public getter is an oracle alongside
+independent type/value expectations. The identical common source SHA256 is
+`19687b0b9b88191a55d5bd6515bb273726040d6902c7d0795a50a8dbd9834313`.
+
+Three fixed alternating local pairs run 512 complete public size-query batches
+over 32 retained styles and two properties each. Setup, expected results, eight
+warmups and forced GC precede the hardware interval; checksum assertions
+follow. Median instructions change **8,009,211→7,459,100
+(-6.87%)**, all three pairs improving, checksum 335,872 in
+all six observations. This local result receives no extra page credit. Both
+whole-process C-O1/Boehm profiles actually pass without filter/reset: complete
+batches 521, public size calls 33,437 and Size converter calls 33,469 remain equal.
+General bridge calls fall 33,733→309; typed helper calls remain 56. Profile call
+counts and timings never substitute for hardware instructions.
+
+Strict C comparison permits only `css__ComputedProperties_size_value`. The
+added guard and owner-read expression are authenticated exactly. The complete
+old C body/fallback matches after the sole temporary renumber `_t3`→`_t4`.
+All other functions, schemas, embedded resources, filtering, arenas and GC
+match after established compiler identities, exact unchanged assertion-line
+mapping, 37 frozen includes and four byte-identical helper reorderings. Exact
+C-O2 native arguments and 120 pinned native input hashes match. Compiled C
+SHA256: `4b406186f3fc29684f1398e90a5df8d31b4df13e5650421c533e5d112d539337`. Durable normal,
+focused and profile archive hashes are in `instruction-opt66-artifact-archives.json`.
+
+The initial fixture used a nonexistent `Keyword.red` enum. All three compiler
+exits 1 and zero executed cases remain under `instruction-opt66-fixture-keyword-failure`;
+the corrected fixture uses existing non-size `Keyword.normal`. No successful
+check or completed counter is repeated. The draft C audit also retains its
+failed assumption about guard parentheses/temporary spelling. Inspection
+authenticates the exact emitted guard and sole temporary renumber; no runtime
+or comparison allowance beyond that proven difference is changed.
+
+The predeclared cohort fixes **30 alternating pairs**, odd before/final and
+even final/before, with **30,000 paired bootstrap resamples, seed 66**. Both
+regular persisted binaries use fresh copies of the same 359 cached bodies,
+the frozen text helper and identical child-only window-placement helper,
+Boehm/default marker 1, native C-O2 and the same 4 GiB hint; no prod/prealloc.
+The document viewport is 1024×768 and the fixed endpoint remains
+`navigation_to_first_document_paint[0]`. Only this fresh matched cohort is
+compared; independent Root memory/UI/native work and rejected round 65 are
+excluded.
+
+| Build | Median first-frame retired instructions | Median process peak, MiB |
+| --- | ---: | ---: |
+| Fresh accepted frozen 64 control | 18,091,705,942.5 | 3,637.8 |
+| Direct retained-size input | 18,091,011,713 | 3,637.8 |
+
+Difference of marginal medians: **694,229.5** saved
+instructions; **10/30** wins. Paired median saving:
+**-3,509,537.5**. Paired 95% interval:
+**[-9,688,071.5, 234,536]**. The interval includes zero; repeatable page credit is **0**. Whole-page savings are not established.
+
+All 60 primary observations and **60 actual viewport PNGs** remain.
+Recovered primaries: none; pre-parse startup retries: 0.
+Every first primary retains 1 installation/2 geometry preparations/1 paint;
+later completed refreshes remain separate: none.
+No completed primary is extended, discarded or rerun. Any recovery explicitly
+lacks an actual final exit, PNG, per-copy fingerprint receipt and process peak.
+Lifetime peaks include capture/exit/later refreshes, are not first-frame live
+memory and are never summed. The focused typed-size/gradient viewport is
+pixel-exact at 1024×768. Prior observed carry is 0. Cumulative observed saving **694,229.5** stays below the 5M gate, so broad validation is deferred and the accepted round 64 broad baseline remains.
+
+The isolated signed app is `/Users/alex/code/vox2/Build/v/Vox-opt66.app`. Its frozen helper is pinned
+inside the app by executable-relative load command, and a default startup
+smoke verifies the actual loaded path/hash. Native instruction text matches
+the measured regular binary; only load command/signature differ. Signature,
+startup and real collections pass with default marker 1 and override 2.
+Canonical and user GUI apps are preserved; actual canonical before/after
+hashes disclose concurrent advancement. Contemporary Root receives no source
+pin or extra regression/performance credit. Equivalent Chrome content/start/
+submission accounting remains open; no faster-than-Chrome claim is made.
+Evidence: `Build/instructions/vox-opt66-interleaved-*` and
+`Build/v/instruction-opt66-*`.
+
 ## Causes and changes
 
 - The V 0.5.2 compatibility compiler's `-prod` Boehm code repeatedly snapshots

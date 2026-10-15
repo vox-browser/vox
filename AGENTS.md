@@ -1603,6 +1603,14 @@ evidence](docs/translation-audit/NATIVE_MEDIA_WHEEL_RAW_HANDLER.md).
   iterator builds regress 0.34% at the median (two of three pairs worse).
   Only owned context/function/test edits are restored; all evidence remains.
   No page credit or baseline reset; frozen64 remains the next control.
+  Direct retained-size input `94643b1e` passes 1,016 focused assertions
+  per configuration; complete public size batches use 6.87% fewer instructions.
+  Page point saving 694,229.5, 10/30 wins,
+  paired interval [-9,688,071.5, 234,536]; repeatable page credit 0.
+  Broad verification: deferred below cumulative 5M gate;
+  focused typed-size viewport exact. Additional observed savings: 694,229.5.
+  Same frozen 4 GiB runtime/placement; independent Root excluded; isolated app
+  pins frozen helper. Canonical/GUI preserved; Chrome parity remains open.
 - Outside instruction-count optimization, run broad regression suites once per
   ten completed fixes, not after every fix.
   Broad suites include full translation/package test batches, the full LibJS AST
