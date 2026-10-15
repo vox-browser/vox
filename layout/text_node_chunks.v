@@ -108,9 +108,16 @@ pub fn TextNodeChunkIterator.new(text_node &TextNode, should_wrap_lines bool, sh
 
 fn TextNodeChunkIterator.new_with_direction(text_node &TextNode, should_wrap_lines bool, should_respect_linebreaks bool, text_direction_mode TextDirectionMode) &TextNodeChunkIterator {
 	view := text_node.text_for_rendering()
-	mut code_units := utf16_code_units_for_line_box(view)
 	mut mutable_text_node := unsafe { &TextNode(text_node) }
-	mutable_text_node.cached_utf16_code_units_ = code_units
+	// Rendered-text invalidation clears this cache. Chunk iterators and line
+	// fragments only read its units, so repeated iterators can share them.
+	code_units := if cached := text_node.cached_utf16_code_units_ {
+		unsafe { cached }
+	} else {
+		units := utf16_code_units_for_line_box(view)
+		mutable_text_node.cached_utf16_code_units_ = units
+		units
+	}
 	font_cascade := text_node.Node.font_list()
 	mut iterator := &TextNodeChunkIterator{
 		text_node: text_node
