@@ -994,6 +994,7 @@ pub fn compute_required_invalidation(old_style &ComputedProperties, new_style &C
 fn (s &StyleComputer) recompute_style_with_invalidation(mut abstract_element dom.AbstractElement, did_change_custom_properties &bool) (RequiredInvalidationAfterStyleChange, &ComputedProperties) {
 	platform.cooperative_work_checkpoint()
 	mut element := unsafe { &dom.Element(abstract_element.element()) }
+	element.set_pending_font_input_update(false)
 	mut document := unsafe { &dom.Document(element.document()) }
 	document.record_element_style_recomputation()
 	element.reset_style_dependency_flags()
@@ -1536,7 +1537,20 @@ fn update_style_recursively(mut style_computer StyleComputer, node &dom.Node, ne
 			mut abstract_element := dom.AbstractElement.new(element, none)
 			node_invalidation, _ = style_computer.recompute_style_with_invalidation(mut abstract_element, &did_change_custom_properties)
 		} else {
-			if needs_inherited_style_update {
+			mut font_inputs_refreshed := false
+			if element.has_pending_font_input_update() {
+				mut mutable_element := unsafe { &dom.Element(element) }
+				mutable_element.set_pending_font_input_update(false)
+				if font_invalidation := style_computer.try_refresh_font_inputs(element) {
+					node_invalidation = font_invalidation
+					font_inputs_refreshed = true
+				} else {
+					mut abstract_element := dom.AbstractElement.new(element, none)
+					node_invalidation, _ = style_computer.recompute_style_with_invalidation(mut abstract_element, &did_change_custom_properties)
+					font_inputs_refreshed = true
+				}
+			}
+			if needs_inherited_style_update && !font_inputs_refreshed {
 				mut abstract_element := dom.AbstractElement.new(element, none)
 				node_invalidation = style_computer.recompute_inherited_style_with_invalidation(mut abstract_element)
 			}

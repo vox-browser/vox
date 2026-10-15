@@ -4208,15 +4208,9 @@ pub fn (mut computer FontComputer) clear_computed_font_cache(family_name string)
 	}
 	computer.computed_font_cache = kept.clone()
 
-	// The upstream style engine republishes only elements which retain one of
-	// the invalidated cascade identities. V's style groups are not independently
-	// published yet, so invalidate their owning document after a referenced
-	// cached cascade changes. A font selected during layout is then incorporated
-	// by update_layout()'s stabilization pass before the first paint.
 	if removed_referenced_family {
 		if document := computer.document_ {
-			mut document_node := unsafe { &dom.Node(document) }
-			document_node.invalidate_style(.css_font_loaded)
+			mark_font_family_inputs_changed(document, family_name)
 		}
 	}
 }

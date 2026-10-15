@@ -1562,6 +1562,7 @@ pub mut:
 	computed_properties_    ?&CSSComputedProperties_
 	layout_node_with_style_ ?&LayoutNodeWithStyle_
 	custom_property_data_   ?&CSSCustomPropertyData_
+	font_environment_changed_ bool
 
 	associated_shadow_host_pseudo_element_ ?int
 
@@ -2451,6 +2452,30 @@ pub fn (e &Element) paintable_box() ?&PaintableBox {
 // --- Style / Computed properties ---
 pub fn (e &Element) el_computed_properties() ?&CSSComputedProperties_ {
 	return e.computed_properties_
+}
+
+pub fn (e &Element) has_pending_font_input_update() bool {
+	return e.font_environment_changed_
+}
+
+// Font inputs do not invalidate selector/cascade inputs. Keep their pending
+// state separate so a simultaneous ordinary style mutation still wins.
+pub fn (mut e Element) set_pending_font_input_update(value bool) {
+	if e.font_environment_changed_ == value { return }
+	e.font_environment_changed_ = value
+	if !value { return }
+	mut node := e.as_node()
+	node.set_child_needs_style_update(true)
+	for ancestor := node.parent_or_shadow_host(); ancestor != none; {
+		mut current := unsafe { &Node(ancestor or { break }) }
+		current.set_child_needs_style_update(true)
+		ancestor = current.parent_or_shadow_host()
+	}
+	if e.document() != unsafe { nil } {
+		mut document := unsafe { &Document(e.document()) }
+		document.record_style_invalidation()
+		document.mark_needs_repaint(.no)
+	}
 }
 
 pub fn (e &Element) computed_properties_for_pseudo(pseudo_element ?int) ?&CSSComputedProperties_ {

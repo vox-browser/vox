@@ -12679,7 +12679,7 @@ pub fn (d &Document) element_needs_style_update(element &Element) bool {
 		}
 	}
 	// Check the element itself.
-	if element.needs_style_update() {
+	if element.needs_style_update() || element.has_pending_font_input_update() {
 		return true
 	}
 	if element.entire_subtree_needs_style_update() {
@@ -12691,7 +12691,8 @@ pub fn (d &Document) element_needs_style_update(element &Element) bool {
 	mut ancestor := element.element_to_inherit_style_from(none)
 	for ancestor != none {
 		current := ancestor or { break }
-		if current.needs_style_update() || current.entire_subtree_needs_style_update() {
+		if current.needs_style_update() || current.entire_subtree_needs_style_update()
+			|| current.has_pending_font_input_update() {
 			return true
 		}
 		ancestor = current.element_to_inherit_style_from(none)

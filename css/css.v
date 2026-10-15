@@ -2141,6 +2141,7 @@ pub mut:
 	font_metrics_depend_on_viewport_metrics      bool
 	root_font_metrics_depend_on_viewport_metrics bool
 	did_resolve_viewport_relative_length         ?&bool
+	did_resolve_font_relative_length             ?&bool
 	subject_inline_axis_is_horizontal            bool = true
 	subject_element                              ?&dom.Element
 	query_container_cache                        ?&LengthQueryContainerCache
@@ -2178,6 +2179,10 @@ pub fn (mut context LengthResolutionContext) set_did_resolve_viewport_relative_l
 	}
 }
 
+pub fn (mut context LengthResolutionContext) set_did_resolve_font_relative_length(flag &bool) {
+	unsafe { context.did_resolve_font_relative_length = flag }
+}
+
 pub fn (context LengthResolutionContext) viewport_metric_dependency_flag() ?&bool {
 	return context.did_resolve_viewport_relative_length
 }
@@ -2189,7 +2194,12 @@ pub fn (context LengthResolutionContext) record_viewport_relative_length_resolut
 	}
 }
 
+fn set_font_relative_length_resolved(flag &bool) {
+	unsafe { *flag = true }
+}
+
 pub fn (context LengthResolutionContext) record_font_relative_length_resolution(unit LengthUnit) {
+	if flag := context.did_resolve_font_relative_length { set_font_relative_length_resolved(flag) }
 	if context.did_resolve_viewport_relative_length == none {
 		return
 	}

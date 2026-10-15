@@ -1591,6 +1591,7 @@ pub mut:
 	raw_cascaded_font_size_                  ?&dom.StyleValue
 	depends_on_viewport_metrics_             bool
 	font_metrics_depend_on_viewport_metrics_ bool
+	font_input_refresh_safe_ bool
 	// Lengths whose computed value remains viewport- or root-font-relative
 	// need the same style-computation context when Layout resolves their used
 	// value. LibWeb carries that context through the layout node; retaining it
@@ -11597,6 +11598,10 @@ pub fn (s &StyleComputer) compute_properties(abstract_element dom.AbstractElemen
 	properties.subject_element_ = abstract_element.element()
 	mut recascaded_font_size_depends_on_viewport_metrics := false
 	recascaded_font_size := s.recascade_font_size_if_needed(abstract_element, mut cascaded_properties, &recascaded_font_size_depends_on_viewport_metrics)
+	// Only unchanged, context-independent specified values can keep their style
+	// record when a font face changes. Relative font recascading retains the
+	// complete cascade path.
+	properties.font_input_refresh_safe_ = recascaded_font_size == none
 	if font_size := recascaded_font_size {
 		properties.set_property(.font_size, font_size, .no, .no)
 		if recascaded_font_size_depends_on_viewport_metrics {
@@ -11715,6 +11720,16 @@ pub fn (s &StyleComputer) compute_properties(abstract_element dom.AbstractElemen
 			computation_context.reset_viewport_metric_dependency_tracking()
 			computed_value = compute_value_of_property_from_source(property_id, style_value, property_source,
 				computation_context, 1.0)
+			if computation_context.did_resolve_font_relative_length {
+				properties.font_input_refresh_safe_ = false
+			}
+			if property_id == .font_size {
+				if typed := typed_style_value_logic_from_dom(style_value) {
+					if font_size_value_depends_on_inherited_font_size(typed) {
+						properties.font_input_refresh_safe_ = false
+					}
+				}
+			}
 			if computation_context.depends_on_viewport_metrics() {
 				properties.set_depends_on_viewport_metrics()
 				if property_affects_font_metrics(property_id) {

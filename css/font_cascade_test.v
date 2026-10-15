@@ -337,13 +337,41 @@ fn test_initial_paint_waits_only_for_pending_cache_resident_font_work() {
 
 fn test_loaded_document_font_invalidates_style_before_the_first_paint() {
 	mut document := dom.Document.create(dom.url_about_blank())
-	mut computer := FontComputer.create_for_document(document)
-	computer.computed_font_cache['loaded fixture|16|0|400|100|auto||'] = FontCascadeList.create()
-	document.set_needs_full_style_update(false)
+	document.set_browsing_context(&dom.BrowsingContext{ active_document_: document })
+	document.set_navigable(&dom.Navigable{ active_document_: document })
+	mut root := document.create_element_ns(dom.namespace_html_uri, 'html') or { panic(err) }
+	root.set_attribute_value('style', 'font-family:serif;font-size:16px')
+	mut target := document.create_element_ns(dom.namespace_html_uri, 'div') or { panic(err) }
+	target.set_attribute_value('style', 'font-family:"Loaded Fixture",sans-serif;font-size:16px')
+	mut unrelated := document.create_element_ns(dom.namespace_html_uri, 'div') or { panic(err) }
+	unrelated.set_attribute_value('style', 'font-family:serif;font-size:16px')
+	mut document_node := unsafe { &dom.Node(document) }
+	document_node.append_child(root.as_node()) or { panic(err) }
+	mut root_node := root.as_node()
+	root_node.append_child(target.as_node()) or { panic(err) }
+	root_node.append_child(unrelated.as_node()) or { panic(err) }
+	style_computer := css_style_computer_for(document)
+	mut computer := unsafe { &FontComputer(style_computer.font_computer()) }
+	document.update_style()
+	bridge := target.el_computed_properties() or { panic('missing target style') }
+	mut style := unsafe { &ComputedProperties(computed_properties_from_dom(bridge) or { panic('missing style owner') }) }
+	previous_cascade := style.computed_font_list(computer)
+	assert !computer.has_completed_initial_paint()
 
 	computer.did_load_font('Loaded Fixture')
 
-	assert document.needs_full_style_update()
+	assert !document.needs_full_style_update()
+	assert target.has_pending_font_input_update()
+	assert document.element_needs_style_update(target)
+	assert document_node.child_needs_style_update()
+	assert !unrelated.has_pending_font_input_update()
+	assert !computer.has_completed_initial_paint()
+	document.update_style()
+	assert !target.has_pending_font_input_update()
+	assert voidptr(target.el_computed_properties() or { panic('missing target style') }) == voidptr(bridge)
+	assert style.cached_computed_font_list_generation_ == computer.environment_generation()
+	assert voidptr(style.computed_font_list(computer)) != voidptr(previous_cascade)
+	assert !computer.has_completed_initial_paint()
 }
 
 fn test_local_woff2_font_is_prepared_for_metrics_and_shaping() {
