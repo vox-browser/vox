@@ -20,7 +20,7 @@ fn mtsc_owner_element(document &dom.Document, id string) !&dom.Element {
 	return document.get_element_by_id(id) or { return error('Missing source-cue owner ${id}') }
 }
 
-fn mtsc_owner_fixture() !(&BrowserApp, &dom.Document, &browserjs.Runtime, &MtscOwnerProbe) {
+fn mtsc_owner_fixture(foreign_first bool) !(&BrowserApp, &dom.Document, &browserjs.Runtime, &MtscOwnerProbe) {
 	owner := page.Page.create(1)!
 	document := parse_browser_navigation_document_for_page_with_response_time('<!doctype html><video id="mtsc-video" preload="none" crossorigin="use-credentials"><track id="mtsc-video-track" data-source-cues="video" src="initial-video.vtt"></video><audio id="mtsc-audio" preload="none" crossorigin="anonymous"><track id="mtsc-audio-track" data-source-cues="audio" src="initial-audio.vtt"></audio>', dom.URL{
 		value: 'https://track-cues.example.test/base/'
@@ -36,6 +36,12 @@ fn mtsc_owner_fixture() !(&BrowserApp, &dom.Document, &browserjs.Runtime, &MtscO
 			return error('Changing track cues must not fetch media')
 		})
 		mut element := mtsc_owner_element(document, 'mtsc-${kind}-track')!
+		if foreign_first {
+			source := element.get_attribute_ns(none, 'src') or { panic('Missing initial plain source') }
+			element.remove_attribute_ns(none, 'src')
+			element.set_attribute_ns_for_bindings(mtsc_owner_foreign_namespace, 'src', 'foreign-first-${kind}.vtt')!
+			element.set_attribute_value('src', source)
+		}
 		track_dom := unsafe { &dom.HTMLTrackElement(element) }
 		mut model := html.html_track_element_model_for_dom_element(track_dom)
 		model.set_fetch_hook(fn [probe] (url dom.URL, cors html.CORSSettingAttribute) !html.TextTrackResourceResponse {
@@ -53,7 +59,9 @@ fn mtsc_owner_fixture() !(&BrowserApp, &dom.Document, &browserjs.Runtime, &MtscO
 		html.html_track_element_inserted(track_dom)
 		assert model.ready_state() == .loaded && model.track.mode() == .hidden
 		assert model.track.cues().length() == 1
-		element.set_attribute_ns_for_bindings(mtsc_owner_foreign_namespace, 'p:src', 'foreign-${kind}.vtt')!
+		if !foreign_first {
+			element.set_attribute_ns_for_bindings(mtsc_owner_foreign_namespace, 'p:src', 'foreign-${kind}.vtt')!
+		}
 		assert model.track.cues().length() == 1 && model.event_count('load') == 1
 	}
 	assert probe.urls == ['https://track-cues.example.test/base/initial-video.vtt', 'https://track-cues.example.test/base/initial-audio.vtt']
@@ -106,9 +114,65 @@ fn mtsc_owner_balance(app &BrowserApp, document &dom.Document, runtime &browserj
 	assert app.js_messages == []
 }
 
+fn mtsc_owner_foreign_first_sources() ! {
+	app, mut document, mut runtime, probe := mtsc_owner_fixture(true)!
+	defer { runtime.close(); document.finalize() }
+	for index, kind in ['video', 'audio'] {
+		element := mtsc_owner_element(document, 'mtsc-${kind}-track')!
+		track_dom := unsafe { &dom.HTMLTrackElement(element) }
+		model := html.html_track_element_model_for_dom_element(track_dom)
+		track := model.track
+		list := track.cues()
+		initial := list.item(0) or { panic('Missing foreign-first source cue') }
+		plain := element.get_attribute_node_ns(none, 'src') or { panic('Missing retained plain source') }
+		foreign := element.get_attribute_node_ns(mtsc_owner_foreign_namespace, 'src') or { panic('Missing first foreign source') }
+		assert voidptr(element.get_attribute_node('src') or { panic('Missing qualified source') }) == voidptr(foreign)
+		assert plain.value() == 'initial-${kind}.vtt'
+		assert initial.id() == 'https://track-cues.example.test/base/initial-${kind}.vtt'
+		mtsc_owner_assert_attached(initial, track)
+		before := probe.urls.len
+		alias := 'mtscTracks[${index}]'
+		assert runtime.evaluate_host('${alias}.getAttribute("src")==="foreign-first-${kind}.vtt"')! == 'true'
+		for _ in 0 .. 2 {
+			assert runtime.evaluate_host('${alias}.setAttribute("src","rewritten-foreign-${kind}.vtt");${alias}.getAttribute("src")==="rewritten-foreign-${kind}.vtt"')! == 'true'
+			mtsc_owner_flush(document, runtime)!
+			assert foreign.value() == 'rewritten-foreign-${kind}.vtt' && plain.value() == 'initial-${kind}.vtt'
+			assert voidptr(element.get_attribute_node_ns(none, 'src') or { panic('Lost plain source') }) == voidptr(plain)
+			assert voidptr(element.get_attribute_node_ns(mtsc_owner_foreign_namespace, 'src') or { panic('Lost foreign source') }) == voidptr(foreign)
+			assert voidptr(track.cues()) == voidptr(list) && list.length() == 1
+			assert voidptr(list.item(0) or { panic('Foreign rewrite removed source cue') }) == voidptr(initial)
+			mtsc_owner_assert_attached(initial, track)
+			assert probe.urls.len == before && model.ready_state() == .loaded
+			assert model.event_count('load') == 1 && model.event_count('error') == 0
+		}
+		assert runtime.evaluate_host('${alias}.removeAttribute("src");${alias}.getAttribute("src")==="initial-${kind}.vtt"')! == 'true'
+		mtsc_owner_flush(document, runtime)!
+		assert foreign.owner_element() == none && !element.has_attribute_ns(mtsc_owner_foreign_namespace, 'src')
+		assert plain.value() == 'initial-${kind}.vtt'
+		assert voidptr(element.get_attribute_node('src') or { panic('Lost remaining plain source') }) == voidptr(plain)
+		assert voidptr(track.cues()) == voidptr(list) && list.length() == 1
+		mtsc_owner_assert_attached(initial, track)
+		assert probe.urls.len == before && model.ready_state() == .loaded
+		assert model.event_count('load') == 1 && model.event_count('error') == 0
+		assert runtime.evaluate_host('${alias}.setAttribute("src","after-foreign-${kind}.vtt");${alias}.getAttribute("src")==="after-foreign-${kind}.vtt"')! == 'true'
+		mtsc_owner_flush(document, runtime)!
+		assert initial.track() == none && list.get_cue_by_id(initial.id()) == none
+		assert voidptr(track.cues()) == voidptr(list) && list.length() == 1
+		replacement := list.item(0) or { panic('Missing cue after foreign source removal') }
+		assert replacement.id() == 'https://track-cues.example.test/base/after-foreign-${kind}.vtt'
+		mtsc_owner_assert_attached(replacement, track)
+		assert plain.value() == 'after-foreign-${kind}.vtt' && probe.urls.len == before + 1
+		assert probe.cors.last() == if index == 0 { html.CORSSettingAttribute.use_credentials } else { .anonymous }
+		assert model.ready_state() == .loaded && model.event_count('load') == 2 && model.event_count('error') == 0
+		assert voidptr(html.html_track_element_model_for_dom_element(track_dom)) == voidptr(model)
+	}
+	assert probe.urls.len == 4
+	mtsc_owner_balance(app, document, runtime, probe)
+}
+
 fn test_compact_track_source_changes_clear_retained_cues_without_replacing_the_live_list() {
 	$if !darwin { return }
-	app, mut document, mut runtime, probe := mtsc_owner_fixture()!
+	app, mut document, mut runtime, probe := mtsc_owner_fixture(false)!
 	defer { runtime.close(); document.finalize() }
 	for index, kind in ['video', 'audio'] {
 		mut element := mtsc_owner_element(document, 'mtsc-${kind}-track')!
@@ -169,11 +233,12 @@ fn test_compact_track_source_changes_clear_retained_cues_without_replacing_the_l
 	}
 	assert probe.urls.len == 6
 	mtsc_owner_balance(app, document, runtime, probe)
+	mtsc_owner_foreign_first_sources()!
 }
 
 fn test_compact_track_empty_and_failed_sources_detach_old_cues_before_recovery() {
 	$if !darwin { return }
-	app, mut document, mut runtime, probe := mtsc_owner_fixture()!
+	app, mut document, mut runtime, probe := mtsc_owner_fixture(false)!
 	defer { runtime.close(); document.finalize() }
 	for index, kind in ['video', 'audio'] {
 		element := mtsc_owner_element(document, 'mtsc-${kind}-track')!
