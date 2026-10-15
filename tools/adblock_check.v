@@ -13,7 +13,21 @@ struct CorpusCase {
 	source_url   string
 	request_type string
 	method       string = 'GET'
+	phase        string = 'request'
+	response_headers []adblock.ResponseHeader
+	request_headers []adblock.ResponseHeader
 	expected     adblock.Decision
+}
+
+fn check_case(entry CorpusCase) adblock.Decision {
+	request := adblock.Request{url: entry.url, source_url: entry.source_url, request_type: entry.request_type, method: entry.method}
+	if entry.phase == 'response' {
+		mut headers := entry.response_headers.clone()
+		headers << entry.request_headers
+		return adblock.check_response(request, headers)
+	}
+	if entry.phase != 'request' { return adblock.Decision{error: 'Unknown filtering phase: ${entry.phase}'} }
+	return adblock.check(request)
 }
 
 // Batch entry point for comparing request decisions against full uBlock Origin.
@@ -39,13 +53,13 @@ fn main() {
 		eprintln(err)
 		exit(1)
 	}
-	requests := json.decode([]adblock.Request, content) or {
+	requests := json.decode([]CorpusCase, content) or {
 		eprintln(err)
 		exit(1)
 	}
 	mut decisions := []adblock.Decision{cap: requests.len}
 	for request in requests {
-		decision := adblock.check(request)
+		decision := check_case(request)
 		if decision.error != '' {
 			eprintln(decision.error)
 			exit(1)
@@ -71,12 +85,7 @@ fn verify(path string) {
 	mut failures := 0
 	mut blocked := 0
 	for entry in corpus.requests {
-		actual := adblock.check(adblock.Request{
-			url:          entry.url
-			source_url:   entry.source_url
-			request_type: entry.request_type
-			method:       entry.method
-		})
+		actual := check_case(entry)
 		if actual.error != '' {
 			eprintln(actual.error)
 			exit(1)

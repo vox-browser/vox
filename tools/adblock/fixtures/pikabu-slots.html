@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <title>Pikabu RU filter slot regression</title>
+  <style>
+    body { margin: 16px; font: 16px sans-serif; }
+    .story, .external_branding, .sidebar-block { min-height: 32px; margin: 8px; padding: 8px; }
+    .sidebar-block > div { height: 24px; }
+  </style>
+</head>
+<body>
+  <div id="slot-brand" class="external_branding">Рекламный бренд</div>
+  <section class="stories-feed__container">
+    <article id="organic-story" class="story" data-author-name="reader">
+      <div class="story__main"><p>Обычный рассказ читателя о прогулке.</p></div>
+    </article>
+    <article id="slot-placeholder" class="story">
+      <div class="story__main"><div id="Adfox_fixture">Рекламное место</div></div>
+      <div class="story__placeholder">Загрузка рекламы</div>
+    </article>
+    <article id="slot-sponsored" class="story" data-author-name="partner">
+      <div class="story__main"><p><span class="story__advert-info">Партнёрский материал</span></p></div>
+    </article>
+    <article id="slot-text" class="story" data-author-name="advertiser">
+      <div class="story__main"><p>Реклама. ИНН 1234567890</p></div>
+    </article>
+  </section>
+  <aside>
+    <div id="slot-sidebar" class="sidebar-block"><div>Боковая реклама</div></div>
+    <div id="organic-sidebar" class="sidebar-block sidebar-block_border"><div>Обычная боковая панель</div></div>
+  </aside>
+</body>
+</html>

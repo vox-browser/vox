@@ -8,6 +8,8 @@ import crypto from 'node:crypto';
 import { spawn, execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { navigationObservation } from './navigation.mjs';
+import { hasHeaderFilter, requestIdentity, summarizeRequestParity } from './request_stream.mjs';
+import { collectVisibility, validateVisibilityProbe } from './visibility_probe.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const options = {
@@ -16,6 +18,9 @@ const options = {
     output: path.join(root, 'Build/comparisons/adblock-theverge.json'),
     checker: path.join(root, 'Build/adblock-check'),
     'vox-log': '',
+    requests: '',
+    'document-fixture': '',
+    'visibility-probe': '',
     settle: 15,
 };
 for (let i = 2; i < process.argv.length; i += 2) {
@@ -29,11 +34,30 @@ if (!(options.settle > 0 && options.settle <= 120)) throw new Error('--settle mu
 const recordedVox = options['vox-log']
     ? (await fs.readFile(options['vox-log'], 'utf8')).split(/\r?\n/).filter(line => line.trim()).map(JSON.parse)
     : null;
+if (options.requests && recordedVox) throw new Error('Use either --requests or --vox-log');
+const requestedCorpus = options.requests ? JSON.parse(await fs.readFile(options.requests, 'utf8')) : null;
+if (requestedCorpus && (!Array.isArray(requestedCorpus) || requestedCorpus.some(entry =>
+    typeof entry.url !== 'string' || typeof entry.request_type !== 'string'))) {
+    throw new Error('--requests must contain an array of typed request or response checks');
+}
+const replayInput = recordedVox || requestedCorpus;
+if (Boolean(options['document-fixture']) !== Boolean(options['visibility-probe'])) {
+    throw new Error('--document-fixture and --visibility-probe must be supplied together');
+}
+if (replayInput && options['document-fixture']) throw new Error('Document fixtures require a live page visit');
+const fixtureHTML = options['document-fixture'] ? await fs.readFile(options['document-fixture'], 'utf8') : null;
+const probeSource = options['visibility-probe'] ? await fs.readFile(options['visibility-probe'], 'utf8') : null;
+const visibilityProbe = probeSource ? JSON.parse(probeSource) : null;
+const probeIDs = visibilityProbe ? validateVisibilityProbe(visibilityProbe) : [];
+if (visibilityProbe && new URL(visibilityProbe.url).hostname !== new URL(options.url).hostname) {
+    throw new Error('Visibility probe URL must match the requested site');
+}
 if (recordedVox && options.output === path.join(root, 'Build/comparisons/adblock-theverge.json')) {
     options.output = path.join(root, 'Build/comparisons/adblock-vox-theverge.json');
 }
 if (recordedVox?.some(entry => typeof entry.blocked !== 'boolean' || typeof entry.exception !== 'boolean'
-    || typeof entry.url !== 'string' || typeof entry.request_type !== 'string')) {
+    || typeof entry.url !== 'string' || typeof entry.request_type !== 'string'
+    || (entry.phase === 'response' && !Array.isArray(entry.response_headers)))) {
     throw new Error('--vox-log must contain JSON lines from VOX_ADBLOCK_LOG');
 }
 
@@ -169,23 +193,74 @@ try {
         return u.selectedFilterLists;
     })()`);
     await background.evaluate(`(async()=> (await import('./js/logger.js')).default.readAll('vox-parity'))()`);
+    // Observe the return value of the full extension's existing header filter.
+    // The normal logger omits the response headers and phase, while cancelled
+    // responses may never reach CDP's responseReceived event. This transparent
+    // wrapper preserves the original arguments, return value, and exceptions.
+    await background.evaluate(`(async()=>{
+        const {PageStore}=await import('./js/pagestore.js');
+        globalThis.voxParityHeaderChecks=[];
+        const original=PageStore.prototype.filterOnHeaders;
+        PageStore.prototype.filterOnHeaders=function(context,...headers){
+            const result=Reflect.apply(original,this,[context,...headers]);
+            voxParityHeaderChecks.push({
+                url:context.url,type:context.type,method:context.getMethodName(),
+                docHostname:context.getDocHostname(),tabId:context.tabId,
+                phase:'response',response_headers:structuredClone(headers[0]||[]),
+                request_headers:structuredClone(headers[1]||[]),
+                observed:{blocked:result===1,exception:result===2,rule:context.filter?.raw||''},
+            });
+            return result;
+        };
+    })()`);
     await page.send('Page.enable');
     await page.send('Network.enable');
     let navigation = null;
-    if (!recordedVox) {
+    let documentFixture = null;
+    let visibility = null;
+    let mainFrameID;
+    if (!replayInput) {
         const result = await page.send('Page.navigate', { url: options.url });
+        mainFrameID = result.frameId;
         await pause(options.settle * 1000);
         const snapshot = await page.evaluate(`({url:location.href,title:document.title,ready_state:document.readyState,body_text_length:document.body?.innerText.length||0,body_text_sample:document.body?.innerText.slice(0,4000)||'',element_count:document.querySelectorAll('*').length})`);
         navigation = navigationObservation(options.url, result, snapshot, page.events);
     }
+    if (fixtureHTML !== null) {
+        if (navigation?.coverage !== 'page') throw new Error('The requested live page must load before installing the shared DOM fixture');
+        const sourceIDs = await page.evaluate(`(function(html,ids){
+            const source=new DOMParser().parseFromString(html,'text/html');
+            const elements=Array.from(source.querySelectorAll('[id]'));
+            return ids.map(id=>({id,count:elements.filter(element=>element.id===id).length}));
+        })(${JSON.stringify(fixtureHTML)},${JSON.stringify(probeIDs)})`);
+        if (sourceIDs.some(entry => entry.count !== 1)) {
+            throw new Error('Every visibility probe ID must exist exactly once in the original fixture HTML');
+        }
+        await page.send('Page.setDocumentContent', { frameId: mainFrameID, html: fixtureHTML });
+        // Existing full-uBO content-script observers handle the newly inserted
+        // fixture. Do not emulate hiding or apply the checker CSS in Brave.
+        await pause(2000);
+        if (await page.evaluate('location.href') !== navigation.url) throw new Error('Installing the DOM fixture changed the document URL');
+        visibility = await page.evaluate(`(${collectVisibility.toString()})(${JSON.stringify(visibilityProbe)})`);
+        documentFixture = {
+            mode: 'shared synthetic ad-slot fixture at the live site URL',
+            file: path.resolve(options['document-fixture']),
+            sha256: crypto.createHash('sha256').update(fixtureHTML).digest('hex'),
+            probe_file: path.resolve(options['visibility-probe']),
+            probe_sha256: crypto.createHash('sha256').update(probeSource).digest('hex'),
+            original_ids: sourceIDs,
+            observer_settle_ms: 2000,
+        };
+    }
     const documentURL = navigation?.url && /^https?:/.test(navigation.url) ? navigation.url : options.url;
     const raw = await background.evaluate(`(async()=> (await import('./js/logger.js')).default.readAll('vox-parity'))()`);
     const logs = raw.map(JSON.parse).filter(entry => entry.realm === 'network' && /^https?:/.test(entry.url));
+    const headerChecks = await background.evaluate('globalThis.voxParityHeaderChecks');
     const networkRequests = page.events.filter(event => event.method === 'Network.requestWillBeSent').map(event => event.params);
     // Redirect logging can emit several records for one request; compare the
     // request once, preserving its document origin and exact browser type.
-    const entries = recordedVox || logs;
-    const requestMap = new Map(entries.filter(entry => /^https?:/.test(entry.url)).map(entry => {
+    const entries = replayInput || [...logs.filter(entry => !hasHeaderFilter(entry.filter)), ...headerChecks];
+    const normalizedEntries = entries.filter(entry => /^https?:/.test(entry.url)).map(entry => {
         const browserRequest = networkRequests.find(event => event.request.url === entry.url
             && event.request.method.toLowerCase() === (entry.method || 'get').toLowerCase()
             && event.documentURL && new URL(event.documentURL).hostname === entry.docHostname);
@@ -194,12 +269,15 @@ try {
             source_url: entry.source_url ?? browserRequest?.documentURL ?? (entry.docHostname ? `https://${entry.docHostname}/` : options.url),
             request_type: entry.request_type || entry.type,
             method: (entry.method || 'GET').toUpperCase(),
+            phase: entry.phase || 'request',
+            ...(entry.phase === 'response' ? { response_headers: entry.response_headers || [], request_headers: entry.request_headers || [] } : {}),
         };
-        return [JSON.stringify(request), { request, actual: recordedVox ? {
+        return { request, observed: entry.observed || null, actual: recordedVox ? {
             blocked: entry.blocked, exception: entry.exception,
             rule: entry.rule || '', redirect_url: entry.redirect_url || '', error: entry.error || '',
-        } : null }];
-    }));
+        } : null };
+    });
+    const requestMap = new Map(normalizedEntries.map(entry => [requestIdentity(entry.request), entry]));
     const requests = [...requestMap.values()].map(({ request }) => request);
     const expected = await background.evaluate(`(async()=>{
         const engine=(await import('./js/static-net-filtering.js')).default;
@@ -207,19 +285,23 @@ try {
         return ${JSON.stringify(requests)}.map(r=>{
             const c=new FilteringContext().setURL(r.url).setDocOriginFromURL(r.source_url||r.url).setTabOriginFromURL(${JSON.stringify(documentURL)}).setType(r.request_type);
             c.setMethod(r.method);
-            const result=engine.matchRequest(c);
+            const result=r.phase==='response'
+                ? r.request_type==='main_frame' ? 0 : engine.matchHeaders(c,r.response_headers||[],r.request_headers||[])
+                : engine.matchRequest(c);
             return {blocked:result===1,exception:result===2,rule:result?engine.toLogData()?.raw||'':''};
         });
     })()`);
     const observed = requests.map(request => {
+        if (request.phase === 'response') return requestMap.get(requestIdentity(request)).observed?.blocked ?? null;
         const sourceHostname = new URL(request.source_url || request.url).hostname;
-        const records = logs.filter(entry => entry.url === request.url && entry.type === request.request_type
+        const records = logs.filter(entry => !hasHeaderFilter(entry.filter) && entry.url === request.url && entry.type === request.request_type
             && entry.docHostname === sourceHostname && (entry.method || 'get').toUpperCase() === request.method);
         return records.length ? records.some(entry => entry.filter?.result === 1 && !entry.filter.modifier) : null;
     });
     const observedFilters = requests.map(request => {
+        if (request.phase === 'response') return [requestMap.get(requestIdentity(request)).observed?.rule || ''].filter(Boolean);
         const sourceHostname = new URL(request.source_url || request.url).hostname;
-        return logs.filter(entry => entry.url === request.url && entry.type === request.request_type
+        return logs.filter(entry => !hasHeaderFilter(entry.filter) && entry.url === request.url && entry.type === request.request_type
             && entry.docHostname === sourceHostname && (entry.method || 'get').toUpperCase() === request.method)
             .map(entry => entry.filter ?? null);
     });
@@ -234,7 +316,7 @@ try {
         actual[i].error || actual[i].blocked !== expected[i].blocked || actual[i].exception !== expected[i].exception
             ? [{ request, expected: expected[i], actual: actual[i] }] : []);
     let cosmeticComparison = null;
-    if (!recordedVox) {
+    if (!replayInput) {
         const tokens = await page.evaluate(`Array.from(new Set(Array.from(document.querySelectorAll('*')).flatMap(e=>[...(e.id?['#'+e.id]:[]),...Array.from(e.classList||[],c=>'.'+c)])))`);
         const cosmetic = await background.evaluate(`(async()=>{
             const c=(await import('./js/cosmetic-filtering.js')).default;
@@ -292,19 +374,28 @@ try {
     const capture = {
         captured_at: new Date().toISOString(), url: options.url,
         navigation,
-        input: recordedVox ? { mode: 'recorded-vox-network', file: path.resolve(options['vox-log']) } : { mode: 'live-brave-network' },
-        oracle: { browser: execFileSync(options.brave, ['--version'], { encoding: 'utf8' }).trim(), extension: 'uBlock Origin (full, Manifest V2)', version: extensionManifest.version, shields: 'disabled in isolated profile', settings: 'default lists; identical repository snapshots; empty user filters' },
+        document_fixture: documentFixture,
+        visibility,
+        input: recordedVox ? { mode: 'recorded-vox-network', file: path.resolve(options['vox-log']) } : requestedCorpus ? { mode: 'fixture-request-stream', file: path.resolve(options.requests) } : { mode: 'live-brave-network' },
+        oracle: { browser: execFileSync(options.brave, ['--version'], { encoding: 'utf8' }).trim(), extension: 'uBlock Origin (full, Manifest V2)', version: extensionManifest.version, shields: 'disabled in isolated profile', settings: 'repository-selected lists; identical snapshots; empty user filters' },
         engine: manifest.engine,
         lists: manifest.lists.map(({ name, sha256 }) => ({ name, sha256 })),
         counts: { requests: requests.length, blocked: expected.filter(x => x.blocked).length, allowed: expected.filter(x => !x.blocked).length, mismatches: mismatches.length, oracle_disagreements: oracleDisagreements.length },
-        network_observation: { request_events: networkRequests.length, ublock_network_log_entries: logs.length, failures: page.events.filter(event => event.method === 'Network.loadingFailed').map(({ params }) => ({ request_id: params.requestId, error: params.errorText, blocked_reason: params.blockedReason || '' })) },
+        network_observation: { request_events: networkRequests.length, ublock_network_log_entries: logs.length, response_header_checks: headerChecks.length, failures: page.events.filter(event => event.method === 'Network.loadingFailed').map(({ params }) => ({ request_id: params.requestId, error: params.errorText, blocked_reason: params.blockedReason || '' })) },
         requests: requests.map((request, i) => ({ ...request, observed_ublock_blocked: observed[i], observed_ublock_filters: observedFilters[i], expected: expected[i], actual: actual[i] })),
         cosmetic: cosmeticComparison, mismatches, oracle_disagreements: oracleDisagreements,
     };
+    const expectedByCheck = new Map(requests.map((request, index) => [requestIdentity(request), expected[index]]));
+    const actualByCheck = new Map(requests.map((request, index) => [requestIdentity(request), actual[index]]));
+    capture.common_stream = summarizeRequestParity(normalizedEntries.map(entry => ({
+        ...entry.request,
+        actual: entry.actual || actualByCheck.get(requestIdentity(entry.request)),
+        expected: expectedByCheck.get(requestIdentity(entry.request)),
+    })));
     await fs.mkdir(path.dirname(path.resolve(options.output)), { recursive: true });
     await fs.writeFile(options.output, JSON.stringify(capture, null, 2) + '\n');
-    console.log(JSON.stringify({ output: path.resolve(options.output), ...capture.counts, ...(navigation ? {coverage: navigation.coverage, status: navigation.status, title: navigation.title} : {}), ...(cosmeticComparison ? { css_matches: cosmeticComparison.css_matches, procedural_matches: cosmeticComparison.procedural_matches, scriptlet_filters_match: cosmeticComparison.scriptlet_filters_match } : {}) }));
-    if (mismatches.length || oracleDisagreements.length || (cosmeticComparison && (!cosmeticComparison.css_matches || !cosmeticComparison.procedural_matches || !cosmeticComparison.scriptlet_filters_match))) process.exitCode = 1;
+    console.log(JSON.stringify({ output: path.resolve(options.output), ...capture.counts, common_stream: { requests: capture.common_stream.distinct_requests, vox_blocked: capture.common_stream.vox.blocked, full_ublock_origin_blocked: capture.common_stream.full_ublock_origin.blocked, matches: capture.common_stream.matches }, ...(visibility ? { visibility: { ...visibility.counts, matches: visibility.matches } } : {}), ...(navigation ? {coverage: navigation.coverage, status: navigation.status, title: navigation.title} : {}), ...(cosmeticComparison ? { css_matches: cosmeticComparison.css_matches, procedural_matches: cosmeticComparison.procedural_matches, scriptlet_filters_match: cosmeticComparison.scriptlet_filters_match } : {}) }));
+    if (mismatches.length || oracleDisagreements.length || !capture.common_stream.matches || (visibility && !visibility.matches) || (cosmeticComparison && (!cosmeticComparison.css_matches || !cosmeticComparison.procedural_matches || !cosmeticComparison.scriptlet_filters_match))) process.exitCode = 1;
     else if (!requests.length || (navigation && navigation.coverage !== 'page')) process.exitCode = 2;
 } finally {
     background?.close();

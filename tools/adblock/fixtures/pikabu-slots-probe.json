@@ -1,0 +1,19 @@
+{
+  "url": "https://pikabu.ru/",
+  "candidates": [
+    "slot-brand",
+    "slot-placeholder",
+    "slot-sponsored",
+    "slot-text",
+    "slot-sidebar"
+  ],
+  "controls": [
+    "organic-story",
+    "organic-sidebar"
+  ],
+  "expected": {
+    "blocked": 5,
+    "visible": 0,
+    "controls_visible": 2
+  }
+}

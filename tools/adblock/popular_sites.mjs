@@ -22,12 +22,21 @@ export function assessReport(report, { minRequests = 10, recorded = false } = {}
     if (report.requests.some(entry => !entry || !['expected', 'actual'].every(key => typeof entry[key]?.blocked === 'boolean' && typeof entry[key]?.exception === 'boolean'))) {
         return { status: 'invalid-report', parity: 'unknown', coverage: recorded ? 'filtering-only' : 'unknown', issues: ['Missing individual engine decisions'] };
     }
+    const commonStream = report.common_stream;
+    if (commonStream !== undefined && (!validCount(commonStream?.distinct_requests)
+        || commonStream.distinct_requests > counts.requests || typeof commonStream.matches !== 'boolean')) {
+        return { status: 'invalid-report', parity: 'unknown', coverage: recorded ? 'filtering-only' : 'unknown', issues: ['Missing or invalid common-stream resource count or comparison'] };
+    }
     const errors = report.requests.filter(entry => entry.actual?.error).length;
     const differences = report.requests.filter(entry => entry.actual.blocked !== entry.expected.blocked || entry.actual.exception !== entry.expected.exception).length;
     let parity = 'pass';
     if (counts.mismatches || counts.oracle_disagreements || errors || differences) {
         parity = 'fail';
         issues.push(`${Math.max(counts.mismatches, differences)} decision mismatches; ${counts.oracle_disagreements} oracle disagreements; ${errors} engine errors`);
+    }
+    if (commonStream?.matches === false) {
+        parity = 'fail';
+        issues.push('Common-stream resource or phase decisions differ, contain errors, or have conflicting repeated checks');
     }
     const cosmetic = report.cosmetic;
     if (!recorded && (!cosmetic || !['css_matches', 'procedural_matches', 'scriptlet_filters_match'].every(key => typeof cosmetic[key] === 'boolean'))) {
@@ -51,8 +60,11 @@ export function assessReport(report, { minRequests = 10, recorded = false } = {}
         }
         if (coverage !== 'page') issues.push(`Live page coverage: ${coverage}`);
     }
-    if (counts.requests < minRequests) {
-        issues.push(`Only ${counts.requests} distinct requests; at least ${minRequests} required`);
+    // New reports may contain both request and response-header checks for one
+    // resource. Header checks must not inflate the minimum traffic threshold.
+    const distinctRequests = commonStream?.distinct_requests ?? counts.requests;
+    if (distinctRequests < minRequests) {
+        issues.push(`Only ${distinctRequests} distinct requests; at least ${minRequests} required`);
         if (coverage === 'page' || recorded) coverage = 'insufficient';
     }
     let status = 'pass';

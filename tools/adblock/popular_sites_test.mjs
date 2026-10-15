@@ -84,6 +84,31 @@ test('recorded Vox traffic establishes filtering parity, with no claim of page c
     assert.equal(result.coverage, 'filtering-only');
 });
 
+test('request and response phases cannot inflate the minimum distinct-resource coverage', () => {
+    const report = cleanReport();
+    report.common_stream = { distinct_requests: 1, matches: true };
+    const result = assessReport(report, { minRequests: 2 });
+    assert.equal(result.status, 'coverage-failure');
+    assert.equal(result.coverage, 'insufficient');
+    assert.match(result.issues[0], /Only 1 distinct requests/);
+    assert.equal(assessReport(report, { minRequests: 1 }).status, 'pass');
+    // Reports from the earlier request-only harness retain their old meaning.
+    delete report.common_stream;
+    assert.equal(assessReport(report, { minRequests: 2 }).status, 'pass');
+});
+
+test('stored common-stream conflicts and invalid resource counts cannot pass reports-only assessment', () => {
+    const report = cleanReport();
+    report.common_stream = { distinct_requests: 2, matches: false };
+    assert.equal(assessReport(report, { minRequests: 2 }).status, 'parity-failure');
+    for (const distinct_requests of [-1, 1.5, 3, '2']) {
+        report.common_stream = { distinct_requests, matches: true };
+        assert.equal(assessReport(report, { minRequests: 2 }).status, 'invalid-report');
+    }
+    report.common_stream = { distinct_requests: 2 };
+    assert.equal(assessReport(report, { minRequests: 2 }).status, 'invalid-report');
+});
+
 test('CLI removes stale output, continues after a harness failure, and returns a failing aggregate', async () => {
     const temporary = await fs.mkdtemp(path.join(os.tmpdir(), 'vox-adblock-matrix-test-'));
     try {
