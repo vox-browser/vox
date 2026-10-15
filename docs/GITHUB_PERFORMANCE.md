@@ -6115,6 +6115,77 @@ performance/regression credit. Equivalent Chrome content/start/submission
 accounting remains open; no faster-than-Chrome claim is made. Evidence:
 `Build/instructions/vox-opt64-interleaved-*` and `Build/v/instruction-opt64-*`.
 
+## Current artifact and cold adblock diagnostics after round 64
+
+These diagnostics receive **zero performance credit**. The accepted frozen
+round64 control and broad ledger remain unchanged. No production source is
+changed, and no new matched page cohort has begun.
+
+An isolated byte-identical copy of the contemporaneous canonical executable,
+SHA256 `97c1b5bebb24125d63c9adab2cd7f18e17186937647a051cc425e507a94d7a0c`,
+loads its separately pinned current text helper. Startup, both GC marker checks,
+observer and browser actually exit 0. One 1024×768 document capture retains one
+primary with 1 installation/2 geometry preparations/1 paint and
+**95,638,757,643 retired instructions** through the fixed first-document-paint
+endpoint. Its compiled-source pin and native compiler flags are **unknown**.
+
+The retained viewport visibly shows **26,549 commits**, while the unchanged
+359-body legacy template contains **26,399 commits**. Its fresh-copy fingerprint
+proves the copied inputs, not their use by the browser. Consequently this is
+**not an established equivalent cached workload**, and the 95.64B figure cannot
+be treated as a regression against frozen medians or compared with Chrome.
+Contemporaneous source deliberately rejects old subresource entries without
+redirect/header provenance; that is consistent with refetching, but the opaque
+artifact is not pinned to that source and the actual response path remains
+unverified. No cache policy is weakened or original response headers invented.
+The canonical executable and user GUI browser are preserved.
+
+A separate immutable snapshot of current adblock/processmetrics source then
+measures one cold, unmodified public `check()` in each of three fresh processes,
+interleaved with three fresh phase probes. C-O2/Boehm, old compiler and marker1
+are explicit. The file-backed snapshot is byte-identical to the copied current
+app asset. The complete cold API counts are **874,250,522 / 866,361,097 /
+857,194,573**, median **866,361,097** retired instructions. Setup, forced GC and
+post-counter assertions are outside the interval. All six processes actually
+exit 0 (three assertions per API process, five per phase process).
+
+| Separate phase | Median inclusive retired instructions |
+| --- | ---: |
+| Create JSC context | 8,268,820 |
+| Install snapshot | 73,727,002 |
+| Decompress engine source | 20,391,286 |
+| Evaluate engine source | 243,654,227 |
+| Initialize default engine | 461,765,161 |
+| Check one request | 56,313,635 |
+
+Phase reports run outside each interval; reporting gaps and charged JSC worker
+work make these separate diagnostic intervals unsuitable for summing or
+subtracting as self-cost. The known-source cold API result does not explain the
+opaque app's much larger pre-parse interval or identify a browser saving. The
+existing snapshot path already uses file mapping, native checksum/decompression
+and lazy JSON support; those are existing features, not newly implemented work.
+No call counts or milliseconds substitute for hardware instructions.
+
+Preparation failures are retained: an absent Root `v.mod`, an unexecuted patch
+quoting error, and a first compile missing the nested procedural asset. The
+corrected compiler actually exits 0, after which its controller fails while
+writing receipt metadata (`snapshot` undefined). That error and actual compiler
+exit remain archived; no successful compilation or completed observation is
+repeated. Only the six unstarted diagnostic processes resume. Independent audit
+rechecks immutable source/asset hashes, exact command/native flags, generated C
+archive, source call order, six raw counters and actual terminal receipts.
+
+Evidence: `Build/v/instruction-current-native65-{result,audit}.json`,
+`Build/instructions/vox-current-native65-diagnostic.run-1.{json,log,png}`,
+`Build/v/instruction-adblock-init65-{build-result,result,audit}.json` and
+all six per-process logs/receipts. Generated C SHA256:
+`7be1e2288ea0160beb5e6c689552cb341c4732c0f98c4537e96148917022213f`;
+archive SHA256:
+`363b9752348601c94b828edf3c777c2dd583efb4eb1d1442f4d7f0b83418dadc`.
+The private probe uses an owned RAM volume with durable C evidence. Chrome
+content/start/submission equivalence remains open; no faster-than-Chrome claim
+is made.
+
 ## Causes and changes
 
 - The V 0.5.2 compatibility compiler's `-prod` Boehm code repeatedly snapshots
