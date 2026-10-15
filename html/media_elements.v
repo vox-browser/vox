@@ -291,15 +291,16 @@ pub struct HTMLTrackElementModel {
 pub:
 	track &TextTrack
 mut:
-	base_url_           dom.URL
-	src_                string
-	track_url_          string
-	loading_            bool
-	awaiting_url_change bool
-	parent_media_       ?&HTMLMediaElement
-	fetch_hook_         ?TextTrackFetchHook
-	event_target_       &dom.EventTarget = unsafe { nil }
-	event_counts_       map[string]int
+	base_url_              dom.URL
+	src_                   string
+	track_url_             string
+	loading_               bool
+	processing_generation_ u64
+	awaiting_url_change    bool
+	parent_media_          ?&HTMLMediaElement
+	fetch_hook_            ?TextTrackFetchHook
+	event_target_          &dom.EventTarget = unsafe { nil }
+	event_counts_          map[string]int
 }
 
 pub fn HTMLTrackElementModel.create(base_url dom.URL) &HTMLTrackElementModel {
@@ -380,11 +381,7 @@ pub fn (mut element HTMLTrackElementModel) set_track_url(track_url string) {
 		return
 	}
 	element.track_url_ = track_url
-	if element.loading_ && element.track.mode() in [.hidden, .showing] {
-		element.loading_ = false
-	}
-	if element.awaiting_url_change && element.track.mode() in [.hidden, .showing] {
-		element.awaiting_url_change = false
+	if element.track.mode() in [.hidden, .showing] && (element.loading_ || element.awaiting_url_change) {
 		element.start_the_track_processing_model_parallel_steps()
 	}
 }
@@ -477,6 +474,10 @@ pub fn (mut element HTMLTrackElementModel) start_the_track_processing_model() {
 }
 
 pub fn (mut element HTMLTrackElementModel) start_the_track_processing_model_parallel_steps() {
+	element.processing_generation_++
+	generation := element.processing_generation_
+	element.loading_ = true
+	element.awaiting_url_change = false
 	mut track := element.track
 	track.set_readiness_state(.loading)
 	if element.track_url_ == '' {
@@ -498,7 +499,13 @@ pub fn (mut element HTMLTrackElementModel) start_the_track_processing_model_para
 		CORSSettingAttribute.no_cors
 	}
 	response := fetch(url, cors) or {
+		if generation != element.processing_generation_ {
+			return
+		}
 		element.track_failed_to_load()
+		return
+	}
+	if generation != element.processing_generation_ {
 		return
 	}
 	if response.status < 200 || response.status >= 300 {
