@@ -4173,6 +4173,51 @@ GUI apps are preserved. Chrome parity remains unestablished.
 Evidence: `Build/instructions/vox-opt46-interleaved-*` and
 `Build/v/instruction-opt46-*`.
 
+## Attribute flex work to layout indices
+
+The `layout47` diagnostic wraps flex-context entry on the navigation owner
+thread of the confirmed frozen round 45 **2 GiB** runtime. It records inclusive
+retired instructions by layout index and layout mode until the first native
+document-frame report. A fixed table adds diagnostic GC roots. Descriptions are
+created after the primary counter, using the last observed node at each index.
+Indices can be reassigned across layout preparations, so these are index/mode
+aggregates rather than authenticated persistent node identities.
+
+All **9,144** observed flex calls have valid counters and fit the table, producing
+591 index/mode rows. Their inclusive total is **43,151,447,717 instructions**.
+Nested scopes overlap and include child instrumentation and charged work in
+other threads; this total cannot be added to other scopes, interpreted as self
+work or credited as a normal-page saving. The diagnostic's earlier heap policy
+also prevents treating it as a measurement of the current 4 GiB runtime.
+
+Examples from normal-layout mode, labeled by the final node at each index:
+
+| Index | Final description | Calls | Inclusive retired instructions |
+| --- | --- | ---: | ---: |
+| 662 | PageLayout wrapper | 2 | 5,351,623,199 |
+| 663 | PageLayout content | 4 | 4,690,275,407 |
+| 769 | `Box_11` | 22 | 4,138,757,795 |
+| 1317 | `Box_2` | 44 | 3,905,541,441 |
+
+These overlapping results motivate inspecting repeated normal-layout passes,
+particularly the conservative definite-height dependency check. They do not
+by themselves justify skipping any pass or changing percentage-size behavior.
+The next implementation requires its own functional and hardware comparison.
+
+Native compilation, signing, smoke, observer and browser all actually exit zero.
+An independent audit removes the three wrappers and fixed storage and restores
+the original compiled C byte for byte. Native inputs, arguments, the 359-body
+cache, frozen helper and actual viewport are authenticated. An initial wrapper
+pattern assertion and an incorrect Node/NodeWithStyle getter boundary are
+preserved with no pass credit. The first failed compiler's exact terminal
+status was not retained; the corrected compiler's zero status is retained.
+No completed browser observation was repeated. Chrome parity remains open.
+
+Evidence: `Build/v/instruction-layout47-final-audit.json`,
+`Build/v/instruction-layout47-result.json` and
+`Build/instructions/vox-layout47-diagnostic.run-1.*`. The generated-C archive
+SHA256 is `311e473fcf3c7945663e796d6e6ae599fc1c025806c246c923cf71736d9c49ef`.
+
 ## Causes and changes
 
 - The V 0.5.2 compatibility compiler's `-prod` Boehm code repeatedly snapshots
