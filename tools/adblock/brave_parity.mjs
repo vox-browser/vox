@@ -14,6 +14,7 @@ const options = {
     url: 'https://www.theverge.com/',
     output: path.join(root, 'Build/comparisons/adblock-theverge.json'),
     checker: path.join(root, 'Build/adblock-check'),
+    'vox-log': '',
     settle: 15,
 };
 for (let i = 2; i < process.argv.length; i += 2) {
@@ -24,6 +25,16 @@ for (let i = 2; i < process.argv.length; i += 2) {
 }
 options.settle = Number(options.settle);
 if (!(options.settle > 0 && options.settle <= 120)) throw new Error('--settle must be 1..120 seconds');
+const recordedVox = options['vox-log']
+    ? (await fs.readFile(options['vox-log'], 'utf8')).split(/\r?\n/).filter(line => line.trim()).map(JSON.parse)
+    : null;
+if (recordedVox && options.output === path.join(root, 'Build/comparisons/adblock-theverge.json')) {
+    options.output = path.join(root, 'Build/comparisons/adblock-vox-theverge.json');
+}
+if (recordedVox?.some(entry => typeof entry.blocked !== 'boolean' || typeof entry.exception !== 'boolean'
+    || typeof entry.url !== 'string' || typeof entry.request_type !== 'string')) {
+    throw new Error('--vox-log must contain JSON lines from VOX_ADBLOCK_LOG');
+}
 
 async function findExtension() {
     if (options.extension) return path.resolve(options.extension);
@@ -158,108 +169,120 @@ try {
     })()`);
     await background.evaluate(`(async()=> (await import('./js/logger.js')).default.readAll('vox-parity'))()`);
     await page.send('Network.enable');
-    await page.send('Page.navigate', { url: options.url });
-    await pause(options.settle * 1000);
+    if (!recordedVox) {
+        await page.send('Page.navigate', { url: options.url });
+        await pause(options.settle * 1000);
+    }
     const raw = await background.evaluate(`(async()=> (await import('./js/logger.js')).default.readAll('vox-parity'))()`);
     const logs = raw.map(JSON.parse).filter(entry => entry.realm === 'network' && /^https?:/.test(entry.url));
     const networkRequests = page.events.filter(event => event.method === 'Network.requestWillBeSent').map(event => event.params);
     // Redirect logging can emit several records for one request; compare the
     // request once, preserving its document origin and exact browser type.
-    const requests = [...new Map(logs.map(entry => {
+    const entries = recordedVox || logs;
+    const requestMap = new Map(entries.filter(entry => /^https?:/.test(entry.url)).map(entry => {
         const browserRequest = networkRequests.find(event => event.request.url === entry.url
             && event.request.method.toLowerCase() === (entry.method || 'get').toLowerCase()
             && event.documentURL && new URL(event.documentURL).hostname === entry.docHostname);
         const request = {
             url: entry.url,
-            source_url: browserRequest?.documentURL || (entry.docHostname ? `https://${entry.docHostname}/` : options.url),
-            request_type: entry.type,
+            source_url: entry.source_url ?? browserRequest?.documentURL ?? (entry.docHostname ? `https://${entry.docHostname}/` : options.url),
+            request_type: entry.request_type || entry.type,
             method: (entry.method || 'GET').toUpperCase(),
         };
-        return [JSON.stringify(request), request];
-    })).values()];
-    if (requests.length < 10 || !requests.some(r => new URL(r.url).hostname === new URL(options.url).hostname)) {
+        return [JSON.stringify(request), { request, actual: recordedVox ? {
+            blocked: entry.blocked, exception: entry.exception,
+            rule: entry.rule || '', redirect_url: entry.redirect_url || '', error: entry.error || '',
+        } : null }];
+    }));
+    const requests = [...requestMap.values()].map(({ request }) => request);
+    if (!requests.length || (!recordedVox && (requests.length < 10 || !requests.some(r => new URL(r.url).hostname === new URL(options.url).hostname)))) {
         throw new Error(`The live page did not produce a useful request corpus (${requests.length} requests)`);
     }
     const expected = await background.evaluate(`(async()=>{
         const engine=(await import('./js/static-net-filtering.js')).default;
         const {FilteringContext}=await import('./js/filtering-context.js');
         return ${JSON.stringify(requests)}.map(r=>{
-            const c=new FilteringContext().setURL(r.url).setDocOriginFromURL(r.source_url).setTabOriginFromURL(${JSON.stringify(options.url)}).setType(r.request_type);
+            const c=new FilteringContext().setURL(r.url).setDocOriginFromURL(r.source_url||r.url).setTabOriginFromURL(${JSON.stringify(options.url)}).setType(r.request_type);
             c.setMethod(r.method);
             const result=engine.matchRequest(c);
             return {blocked:result===1,exception:result===2,rule:result?engine.toLogData()?.raw||'':''};
         });
     })()`);
     const observed = requests.map(request => {
-        const sourceHostname = new URL(request.source_url).hostname;
+        const sourceHostname = new URL(request.source_url || request.url).hostname;
         const records = logs.filter(entry => entry.url === request.url && entry.type === request.request_type
             && entry.docHostname === sourceHostname && (entry.method || 'get').toUpperCase() === request.method);
-        return records.some(entry => entry.filter?.result === 1 && !entry.filter.modifier);
+        return records.length ? records.some(entry => entry.filter?.result === 1 && !entry.filter.modifier) : null;
     });
-    const oracleDisagreements = requests.flatMap((request, index) => observed[index] !== expected[index].blocked
+    const oracleDisagreements = requests.flatMap((request, index) => observed[index] !== null && observed[index] !== expected[index].blocked
         ? [{ request, observed_blocked: observed[index], replayed: expected[index] }] : []);
     const requestFile = path.join(profile, 'requests.json');
     await fs.writeFile(requestFile, JSON.stringify(requests));
-    const actual = JSON.parse(execFileSync(options.checker, [requestFile], { cwd: root, encoding: 'utf8', maxBuffer: 32 * 1024 * 1024 }));
+    const actual = recordedVox ? [...requestMap.values()].map(({ actual }) => actual)
+        : JSON.parse(execFileSync(options.checker, [requestFile], { cwd: root, encoding: 'utf8', maxBuffer: 32 * 1024 * 1024 }));
     if (actual.length !== requests.length) throw new Error('Vox checker returned the wrong number of decisions');
     const mismatches = requests.flatMap((request, i) =>
         actual[i].error || actual[i].blocked !== expected[i].blocked || actual[i].exception !== expected[i].exception
             ? [{ request, expected: expected[i], actual: actual[i] }] : []);
-    const tokens = await page.evaluate(`Array.from(new Set(Array.from(document.querySelectorAll('*')).flatMap(e=>[...(e.id?['#'+e.id]:[]),...Array.from(e.classList||[],c=>'.'+c)])))`);
-    const cosmetic = await background.evaluate(`(async()=>{
-        const c=(await import('./js/cosmetic-filtering.js')).default;
-        const s=(await import('./js/scriptlet-filtering.js')).default;
-        const {domainFromHostname}=await import('./js/uri-utils.js');
-        const hostname=${JSON.stringify(new URL(options.url).hostname)};
-        const request={hostname,domain:domainFromHostname(hostname),url:${JSON.stringify(options.url)}};
-        c.removeFromSelectorCache(hostname,'cosmetic');
-        const specific=c.retrieveSpecificSelectors(request,{dontInject:true});
-        const hashToken=token=>{
-            const type=token.charCodeAt(0),text=token.slice(1),len=text.length,step=(len+7)>>>3;
-            let hash=((type<<5)+type)^len;
-            for(let i=0;i<len;i+=step) hash=((hash<<5)+hash)^text.charCodeAt(i);
-            return hash&0xFFFFFF;
+    let cosmeticComparison = null;
+    if (!recordedVox) {
+        const tokens = await page.evaluate(`Array.from(new Set(Array.from(document.querySelectorAll('*')).flatMap(e=>[...(e.id?['#'+e.id]:[]),...Array.from(e.classList||[],c=>'.'+c)])))`);
+        const cosmetic = await background.evaluate(`(async()=>{
+            const c=(await import('./js/cosmetic-filtering.js')).default;
+            const s=(await import('./js/scriptlet-filtering.js')).default;
+            const {domainFromHostname}=await import('./js/uri-utils.js');
+            const hostname=${JSON.stringify(new URL(options.url).hostname)};
+            const request={hostname,domain:domainFromHostname(hostname),url:${JSON.stringify(options.url)}};
+            c.removeFromSelectorCache(hostname,'cosmetic');
+            const specific=c.retrieveSpecificSelectors(request,{dontInject:true});
+            const hashToken=token=>{
+                const type=token.charCodeAt(0),text=token.slice(1),len=text.length,step=(len+7)>>>3;
+                let hash=((type<<5)+type)^len;
+                for(let i=0;i<len;i+=step) hash=((hash<<5)+hash)^text.charCodeAt(i);
+                return hash&0xFFFFFF;
+            };
+            const generic=c.retrieveGenericSelectors({tabId:${JSON.stringify(logs[0]?.tabId)},frameId:0,hashes:[...new Set(${JSON.stringify(tokens)}.filter(t=>t.length>1).map(hashToken))],exceptions:specific.exceptionFilters});
+            return {css:(specific.injectedCSS||'')+(generic?.injectedCSS?'\\n'+generic.injectedCSS:''),procedural:specific.proceduralFilters||[],filters:s.retrieve(request)?.filters||[]};
+        })()`);
+        const actualCosmetic = JSON.parse(execFileSync(options.checker, ['--document-filters', options.url, ...tokens], { cwd: root, encoding: 'utf8', maxBuffer: 32 * 1024 * 1024 }));
+        // Use Chromium's CSS parser to canonicalize declaration syntax, then split
+        // selector lists only at top-level commas (respect :has(), quotes and []),
+        // so harmless grouping and ordering differences do not affect the result.
+        const cssSets = await page.evaluate(`(function(sources){
+            const splitSelectors=text=>{
+                const out=[];let start=0,depth=0,quote='',escaped=false;
+                for(let i=0;i<text.length;i++){
+                    const ch=text[i];
+                    if(escaped){escaped=false;continue;}
+                    if(ch==='\\\\'){escaped=true;continue;}
+                    if(quote){if(ch===quote)quote='';continue;}
+                    if(ch==='"'||ch==="'"){quote=ch;continue;}
+                    if(ch==='('||ch==='[')depth++;
+                    else if(ch===')'||ch===']')depth--;
+                    else if(ch===','&&depth===0){out.push(text.slice(start,i).trim());start=i+1;}
+                }
+                out.push(text.slice(start).trim());return out;
+            };
+            return sources.map(css=>{
+                const sheet=new CSSStyleSheet();sheet.replaceSync(css);
+                return [...new Set(Array.from(sheet.cssRules).flatMap(rule=>rule.selectorText?splitSelectors(rule.selectorText).map(selector=>selector+'{'+rule.style.cssText+'}'):[]))].sort();
+            });
+        })(${JSON.stringify([cosmetic.css, actualCosmetic.css])})`);
+        const sameSet = (left, right) => JSON.stringify([...new Set(left)].sort()) === JSON.stringify([...new Set(right)].sort());
+        cosmeticComparison = {
+            token_count: tokens.length,
+            css_rules: cssSets[0].length,
+            scriptlet_filters: cosmetic.filters.length,
+            css_matches: sameSet(cssSets[0], cssSets[1]),
+            procedural_matches: sameSet(cosmetic.procedural, actualCosmetic.procedural),
+            scriptlet_filters_match: sameSet(cosmetic.filters, actualCosmetic.filters),
+            expected: cosmetic,
+            actual: actualCosmetic,
         };
-        const generic=c.retrieveGenericSelectors({tabId:${JSON.stringify(logs[0]?.tabId)},frameId:0,hashes:[...new Set(${JSON.stringify(tokens)}.filter(t=>t.length>1).map(hashToken))],exceptions:specific.exceptionFilters});
-        return {css:(specific.injectedCSS||'')+(generic?.injectedCSS?'\\n'+generic.injectedCSS:''),procedural:specific.proceduralFilters||[],filters:s.retrieve(request)?.filters||[]};
-    })()`);
-    const actualCosmetic = JSON.parse(execFileSync(options.checker, ['--document-filters', options.url, ...tokens], { cwd: root, encoding: 'utf8', maxBuffer: 32 * 1024 * 1024 }));
-    // Use Chromium's CSS parser to canonicalize declaration syntax, then split
-    // selector lists only at top-level commas (respect :has(), quotes and []),
-    // so harmless grouping and ordering differences do not affect the result.
-    const cssSets = await page.evaluate(`(function(sources){
-        const splitSelectors=text=>{
-            const out=[];let start=0,depth=0,quote='',escaped=false;
-            for(let i=0;i<text.length;i++){
-                const ch=text[i];
-                if(escaped){escaped=false;continue;}
-                if(ch==='\\\\'){escaped=true;continue;}
-                if(quote){if(ch===quote)quote='';continue;}
-                if(ch==='"'||ch==="'"){quote=ch;continue;}
-                if(ch==='('||ch==='[')depth++;
-                else if(ch===')'||ch===']')depth--;
-                else if(ch===','&&depth===0){out.push(text.slice(start,i).trim());start=i+1;}
-            }
-            out.push(text.slice(start).trim());return out;
-        };
-        return sources.map(css=>{
-            const sheet=new CSSStyleSheet();sheet.replaceSync(css);
-            return [...new Set(Array.from(sheet.cssRules).flatMap(rule=>rule.selectorText?splitSelectors(rule.selectorText).map(selector=>selector+'{'+rule.style.cssText+'}'):[]))].sort();
-        });
-    })(${JSON.stringify([cosmetic.css, actualCosmetic.css])})`);
-    const sameSet = (left, right) => JSON.stringify([...new Set(left)].sort()) === JSON.stringify([...new Set(right)].sort());
-    const cosmeticComparison = {
-        token_count: tokens.length,
-        css_rules: cssSets[0].length,
-        scriptlet_filters: cosmetic.filters.length,
-        css_matches: sameSet(cssSets[0], cssSets[1]),
-        procedural_matches: sameSet(cosmetic.procedural, actualCosmetic.procedural),
-        scriptlet_filters_match: sameSet(cosmetic.filters, actualCosmetic.filters),
-        expected: cosmetic,
-        actual: actualCosmetic,
-    };
+    }
     const capture = {
         captured_at: new Date().toISOString(), url: options.url,
+        input: recordedVox ? { mode: 'recorded-vox-network', file: path.resolve(options['vox-log']) } : { mode: 'live-brave-network' },
         oracle: { browser: execFileSync(options.brave, ['--version'], { encoding: 'utf8' }).trim(), extension: 'uBlock Origin (full, Manifest V2)', version: extensionManifest.version, shields: 'disabled in isolated profile', settings: 'default lists; identical repository snapshots; empty user filters' },
         engine: manifest.engine,
         lists: manifest.lists.map(({ name, sha256 }) => ({ name, sha256 })),
@@ -270,8 +293,8 @@ try {
     };
     await fs.mkdir(path.dirname(path.resolve(options.output)), { recursive: true });
     await fs.writeFile(options.output, JSON.stringify(capture, null, 2) + '\n');
-    console.log(JSON.stringify({ output: path.resolve(options.output), ...capture.counts, css_matches: cosmeticComparison.css_matches, procedural_matches: cosmeticComparison.procedural_matches, scriptlet_filters_match: cosmeticComparison.scriptlet_filters_match }));
-    if (mismatches.length || oracleDisagreements.length || !cosmeticComparison.css_matches || !cosmeticComparison.procedural_matches || !cosmeticComparison.scriptlet_filters_match) process.exitCode = 1;
+    console.log(JSON.stringify({ output: path.resolve(options.output), ...capture.counts, ...(cosmeticComparison ? { css_matches: cosmeticComparison.css_matches, procedural_matches: cosmeticComparison.procedural_matches, scriptlet_filters_match: cosmeticComparison.scriptlet_filters_match } : {}) }));
+    if (mismatches.length || oracleDisagreements.length || (cosmeticComparison && (!cosmeticComparison.css_matches || !cosmeticComparison.procedural_matches || !cosmeticComparison.scriptlet_filters_match))) process.exitCode = 1;
 } finally {
     background?.close();
     page?.close();
