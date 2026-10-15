@@ -3,6 +3,37 @@
 The core memory fix is commit `4606e121fe1227f845c25f09210cd821d4386ce4`.
 The RAM status-bar feature is commit `4eb6a162935708f6aa0db73d8c7a353652ee857f`.
 
+## Current app verification
+
+A fresh comparison on 2026-10-15 checks the installed app after later repository
+changes. Both browsers use the same frozen portal, JavaScript, 1024×768 CSS
+viewport, 2× raster scale, fresh profiles/caches, and 15-second settling interval.
+Five accepted foreground runs per browser give these physical footprints:
+
+| Browser | Settled median | Settled run range | Median sampled startup peak |
+| --- | ---: | ---: | ---: |
+| Vox | 315.7 MB | 312.0–322.5 MB | 333.4 MB |
+| Chrome for Testing | 602.7 MB | 600.9–610.7 MB | 788.2 MB |
+
+Vox uses **47.6% less RAM** by settled median. Every Vox run
+also falls below 80% of the lowest Chrome run. All five Vox document captures
+match one another. The installed executable, renderer, snapshot and app metadata
+still match the measured bundle at completion; its signature verifies.
+
+Foreground monitoring is fixed in `89cd504f`. The observer checks activity once
+per second and rejects focus changes around the settled sampling window. Two
+Chrome attempts failed that check and were excluded; their logs are retained.
+All accepted runs pass the window checks and Chrome's document focus audit.
+The observer/target suite passes all 14 tests.
+
+Evidence, raw samples, rejected-attempt logs and document captures are under
+`Build/wikipedia-chrome-memory/current-foreground-20261015-184349/`.
+`comparison.json` lists the accepted observations and target result;
+`manifest.json` records runtime hashes. The measured executable SHA-256 is
+`f280defce2d3fad4953f147d26ed8acda9a38e34ec9a95730038cd4839580653`.
+
+## Initial fix verification
+
 The signed app meets the 20% reduction target for the frozen Wikipedia portal.
 On 2026-10-15, five fresh foreground runs per browser gave these physical
 footprints (decimal MB):
@@ -108,6 +139,10 @@ Use the same frozen page URL, 1024×768 CSS viewport, native 2× raster scale,
 cache. Pass `--foreground` to both browsers and
 `--vox-arg=--enable-javascript` to Vox. Run five rounds and alternate which
 browser goes first. Chrome's document audit records its focus and visibility.
+The observer checks application activity once per second, reactivates its owned
+browser when needed, and requires stable foreground checks covering the final
+two seconds of RAM sampling. It rejects a run if focus changes around that
+window. Chrome's final document audit must also remain focused and visible.
 Background Chrome observations use less GPU memory and are unsuitable for a
 comparison against foreground Vox; earlier uncontrolled observations are retained
 only as diagnostic data. `tools/check_browser_memory.py --vox VOX_JSON... --chrome
