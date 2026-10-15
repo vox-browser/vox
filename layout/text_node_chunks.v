@@ -55,14 +55,8 @@ pub mut:
 	last_non_whitespace_font ?&platform.Font
 }
 
-fn text_node_chunk_platform_font(font css.PlatformFont) &platform.Font {
-	return &platform.Font{
-		family:       font.typeface.family_name.clone()
-		point_size: font.point_size / 0.75
-		weight: int(font.variations.weight)
-		source_path:  font.typeface.source_path.clone()
-		is_invisible: font.is_invisible
-	}
+fn text_node_chunk_platform_font(font &css.PlatformFont) &platform.Font {
+	return font.font_for_rendering()
 }
 
 fn text_node_chunk_invisible_font(font &platform.Font) &platform.Font {
@@ -79,13 +73,13 @@ fn (mut iterator TextNodeChunkIterator) install_font_cascade(font_cascade &css.F
 	iterator.font_cascade_list = font_cascade
 	iterator.font_cascade_fonts = []&platform.Font{cap: font_cascade.fonts.len}
 	iterator.font_cascade_ranges = [][]css.UnicodeRange{cap: font_cascade.fonts.len}
-	for entry in font_cascade.fonts {
-		iterator.font_cascade_fonts << text_node_chunk_platform_font(entry.font)
-		iterator.font_cascade_ranges << entry.unicode_ranges.clone()
+	for index in 0 .. font_cascade.fonts.len {
+		iterator.font_cascade_fonts << text_node_chunk_platform_font(&font_cascade.fonts[index].font)
+		iterator.font_cascade_ranges << font_cascade.fonts[index].unicode_ranges.clone()
 	}
 	iterator.last_resort_font = none
 	if font_cascade.last_resort_font != unsafe { nil } {
-		last_resort := text_node_chunk_platform_font(*font_cascade.last_resort_font)
+		last_resort := text_node_chunk_platform_font(font_cascade.last_resort_font)
 		// FontCascadeList retains its last-resort font by reference. Reuse the
 		// matching translated cascade object as well, so a missing glyph followed
 		// by covered glyphs from that same face stays one shaped fragment.

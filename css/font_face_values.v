@@ -3480,11 +3480,14 @@ mut:
 // pixel metrics are cached on that handle. The translated font records remain
 // mutable, so validate every input consumed by this metrics bridge first.
 fn (font &PlatformFont) font_for_metrics() &platform.Font {
+	return font.font_for_rendering()
+}
+
+// The native handle is immutable and can be shared by metrics, text iterators
+// and retained layout nodes. Revalidate the mutable CSS inputs before reuse.
+pub fn (font &PlatformFont) font_for_rendering() &platform.Font {
 	cached := font.metrics_font_
-	if cached != unsafe { nil } && cached.family == font.typeface.family_name
-		&& cached.point_size == font.point_size / 0.75
-		&& cached.weight == int(font.variations.weight)
-		&& cached.source_path == font.typeface.source_path {
+	if font.matches_native_font(cached) {
 		return cached
 	}
 	native_font := &platform.Font{
@@ -3492,10 +3495,19 @@ fn (font &PlatformFont) font_for_metrics() &platform.Font {
 		point_size: font.point_size / 0.75
 		weight: int(font.variations.weight)
 		source_path: font.typeface.source_path.clone()
+		is_invisible: font.is_invisible
 	}
 	mut mutable_font := unsafe { &PlatformFont(font) }
 	mutable_font.metrics_font_ = native_font
 	return native_font
+}
+
+fn (font &PlatformFont) matches_native_font(cached &platform.Font) bool {
+	return cached != unsafe { nil } && cached.family == font.typeface.family_name
+		&& cached.point_size == font.point_size / 0.75
+		&& cached.weight == int(font.variations.weight)
+		&& cached.source_path == font.typeface.source_path
+		&& cached.is_invisible == font.is_invisible
 }
 
 fn owned_platform_typeface(typeface &PlatformTypeface) &PlatformTypeface {
@@ -3528,6 +3540,9 @@ fn owned_platform_font(font &PlatformFont) PlatformFont {
 		}
 		features:     owned_shape_features(font.features)
 		is_invisible: font.is_invisible
+		// An input mutation replaces the clone's cache on its next lookup; the
+		// immutable old handle remains valid for previously retained fragments.
+		metrics_font_: if font.matches_native_font(font.metrics_font_) { font.metrics_font_ } else { unsafe { &platform.Font(nil) } }
 	}
 }
 

@@ -562,12 +562,12 @@ struct SVGSelectedFont {
 
 fn svg_cascade_platform_fonts(font_list &css.FontCascadeList) SVGPlatformFontCascade {
 	mut fonts := []&platform.Font{cap: font_list.fonts.len}
-	for entry in font_list.fonts {
-		fonts << text_node_chunk_platform_font(entry.font)
+	for index in 0 .. font_list.fonts.len {
+		fonts << text_node_chunk_platform_font(&font_list.fonts[index].font)
 	}
 	mut last_resort := &platform.Font(unsafe { nil })
 	if font_list.last_resort_font != unsafe { nil } {
-		converted := text_node_chunk_platform_font(*font_list.last_resort_font)
+		converted := text_node_chunk_platform_font(font_list.last_resort_font)
 		for font in fonts {
 			if font.has_same_identity(converted) {
 				last_resort = font

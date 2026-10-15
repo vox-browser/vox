@@ -635,7 +635,7 @@ fn block_ellipsis_font_for_code_point(cascade &css.FontCascadeList, code_point u
 		if !covers_code_point {
 			continue
 		}
-		font := text_node_chunk_platform_font(entry.font)
+		font := text_node_chunk_platform_font(&cascade.fonts[index].font)
 		if font.contains_glyph(code_point) {
 			if cascade.fallback_is_invisible_for_code_point_through(code_point, index) {
 				return text_node_chunk_invisible_font(font)
@@ -644,13 +644,13 @@ fn block_ellipsis_font_for_code_point(cascade &css.FontCascadeList, code_point u
 		}
 	}
 	if cascade.last_resort_font != unsafe { nil } {
-		mut font := text_node_chunk_platform_font(*cascade.last_resort_font)
+		mut font := text_node_chunk_platform_font(cascade.last_resort_font)
 		// FontCascadeList may use the same concrete face as both an authored
 		// entry and its last resort. Preserve that handle identity just like the
 		// text chunker so adjacent literal text and a block ellipsis remain one
 		// replayable shaped run even when the face has no glyph for the ellipsis.
-		for entry in cascade.fonts {
-			candidate := text_node_chunk_platform_font(entry.font)
+		for index in 0 .. cascade.fonts.len {
+			candidate := text_node_chunk_platform_font(&cascade.fonts[index].font)
 			if candidate.has_same_identity(font) {
 				font = candidate
 				break
@@ -661,7 +661,7 @@ fn block_ellipsis_font_for_code_point(cascade &css.FontCascadeList, code_point u
 		}
 		return font
 	}
-	return text_node_chunk_platform_font(cascade.fonts[0].font)
+	return text_node_chunk_platform_font(&cascade.fonts[0].font)
 }
 
 fn block_ellipsis_font(style_source &Node, ellipsis string) &platform.Font {
