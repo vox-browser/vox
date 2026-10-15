@@ -6312,6 +6312,105 @@ submission accounting remains open; no faster-than-Chrome claim is made.
 Evidence: `Build/instructions/vox-opt66-interleaved-*` and
 `Build/v/instruction-opt66-*`.
 
+## Measure existing resolved custom-property environment reuse
+
+Round 67 integrates the existing feature `50e85e25`, authored and committed
+by Alexander Medvednikov before this measurement. This round adds no Root
+runtime implementation. The candidate is accepted frozen 66 plus only that
+authenticated slice: pointer/retained-owner equality checks, synchronous live
+map-entry comparison, and reuse of an identical ordinary resolved environment
+after style computation. Reuse requires the same parent identity, ancestor
+count, own-value owner identity, importance, serialization and invalidity
+metadata. Animation overlays and distinct relative-URL owners remain separate.
+The live-entry comparison avoids the compatibility compiler's optional copy
+and heap box. Existing value equality, inheritance and registration-generation
+rules remain in force; no new schema, cache or GC policy is added.
+
+All three C-O2 focused configurations actually pass 23 harness cases. The
+control passes **1,541 assertions**: 17 shared functional cases, five inactive
+candidate identity contracts, and one inactive instruction diagnostic. The
+candidate in Boehm and no-GC each passes **1,753 assertions**: those 17 shared
+functional cases plus the five original feature contracts, and the inactive
+diagnostic. Contracts cover parent/own-value identity, importance, relative URL
+bases, animation overlays, serialization/invalidity metadata and complete style
+updates across mutation, registration and forced collection. Shared public
+checks verify computed values and inheritance without requiring the new
+identity contract from the control. Source SHA256:
+`3a142773ca19f85020d173e36c4a97151072f156220fab9afc5e2de43a66528c`. The candidate-only compile define
+changes test activation only; production native arguments stay identical.
+
+Three fixed alternating local pairs run 128 complete public full-style updates
+of one root with 65 custom properties and 32 inheriting children. Setup, initial
+expected-value assertion, eight warmups and forced GC precede the hardware
+interval; the checksum assertion follows. Median instructions change
+**2,257,691,490→2,043,218,095 (-9.50%)**,
+all three pairs improving; checksum 57,344 in all six observations. This receives
+no extra page credit. Both whole-process C-O1/Boehm profiles pass with no filter
+or reset; the five candidate contracts are inactive in both matched profiles.
+Complete update batches stay 137 and Document.update_style calls 148. Map equality
+calls change 4,514→14 and bridge value equality 291,852→22; the new comparator
+runs 160 times and environment reuse 4,548 times. These are call counts, not
+hardware instruction costs or page credit.
+
+Strict generated-C comparison permits only three edited bodies and two new
+helpers/prototypes from the existing commit. The old bridge fallback and full
+style-computation core match after removing exactly the authenticated inserted
+calls/guards and generated root barriers, with compiler temporary identities
+canonicalized. The map loop prefix remains exact; the new live entry has no
+optional or heap box. All other executable logic, schemas, embedded resources,
+filtering, arenas and GC match after established compiler identities, exact
+unchanged-source assertion mapping, 37 frozen includes and four byte-identical
+helper reorderings. Exact C-O2 arguments and 120 native input hashes match.
+Compiled C SHA256: `f3c0d06b4df738d22540cacff04040d661db6848ffc13517dcb6f0bbee3f9691`. Durable
+normal/focused/profile hashes are in `instruction-opt67-artifact-archives.json`.
+
+The initial new probe omitted a mutable Document argument. All three checker
+exits 1 and zero cases remain under `instruction-opt67-probe-mutability-failure`,
+along with an unsuccessful controller resume whose command file had temporarily
+been moved with those failed receipts. Both preparation errors occurred before
+any successful check or primary. Commands were restored byte-for-byte, the probe
+was corrected, and no successful job or completed measurement was repeated.
+
+The predeclared cohort fixes **30 alternating pairs**, odd before/final and
+even final/before, with **30,000 paired bootstrap resamples, seed 67**. Both
+persisted regular binaries use fresh copies of the same 359 cached bodies,
+frozen text helper and identical child-only window-placement helper, Boehm with
+default marker 1, native C-O2 and the same 4 GiB hint; no prod/prealloc. The document
+viewport stays 1024×768 and endpoint `navigation_to_first_document_paint[0]`.
+Only this fresh matched cohort is compared; contemporary Root custom-property,
+rule-matching, memory, UI and native work is excluded.
+
+| Build | Median first-frame retired instructions | Median process peak, MiB |
+| --- | ---: | ---: |
+| Fresh accepted frozen 66 control | 18,269,889,880 | 3,639.3 |
+| Existing environment-reuse integration | 18,273,935,264.5 | 3,637.1 |
+
+The page point estimate uses **4,045,384.5 more instructions (+0.022%)**;
+**11/30** wins. Paired median saving:
+**-7,405,179.5**. Paired 95% interval:
+**[-13,456,556.5,1,074,561]**. The interval includes zero; repeatable page credit is **0**. Whole-page savings are not established. The integration is retained for its confirmed local reduction and existing focused semantics; this is not evidence of a page improvement.
+
+All 60 primary observations and **60 actual viewport PNGs** remain.
+Recovered primaries: none; pre-parse startup retries: 0.
+Each first primary retains 1 installation / 2 geometry preparations / 1 paint;
+later completed refreshes stay separate: none.
+No completed primary is extended, discarded or rerun. Any recovery explicitly
+lacks actual final exit, PNG, per-copy fingerprint receipt and process peak.
+Lifetime peaks include capture/exit/later refreshes, are not first-frame live
+memory and are never summed. The custom-property focused viewport is exact at
+1024×768. Prior observed carry is 694,229.5. Cumulative observed saving **694,229.5** stays below the 5M gate, so broad validation is deferred and the accepted round 64 broad baseline remains.
+
+The isolated signed app is `/Users/alex/code/vox2/Build/v/Vox-opt67.app`. Its executable-relative load
+command pins the frozen helper inside the bundle; default smoke verifies the
+actual loaded path/hash. Native instruction text matches the measured regular
+binary. Signature, startup and actual collections pass with default marker 1
+and override 2. Canonical and user GUI apps are preserved; actual before/after
+hashes disclose concurrent advancement. Contemporary Root receives no extra
+source pin, regression or performance credit. Equivalent Chrome content/start/
+submission accounting remains open; faster-than-Chrome is not established.
+Evidence: `Build/instructions/vox-opt67-interleaved-*` and
+`Build/v/instruction-opt67-*`.
+
 ## Causes and changes
 
 - The V 0.5.2 compatibility compiler's `-prod` Boehm code repeatedly snapshots

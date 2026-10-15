@@ -1611,6 +1611,15 @@ evidence](docs/translation-audit/NATIVE_MEDIA_WHEEL_RAW_HANDLER.md).
   focused typed-size viewport exact. Additional observed savings: 694,229.5.
   Same frozen 4 GiB runtime/placement; independent Root excluded; isolated app
   pins frozen helper. Canonical/GUI preserved; Chrome parity remains open.
+  Existing environment reuse `50e85e25` integrates against frozen66:
+  1,541 control/1,753 candidate assertions; complete style-update probe -9.50%.
+  Page point saving -4,045,384.5, 11/30 wins,
+  paired interval [-13,456,556.5, 1,074,561]; repeatable page credit 0.
+  Frozen integration accepted.
+  Broad verification: deferred below cumulative 5M gate;
+  focused custom-property viewport exact. Additional observed savings: 694,229.5.
+  Same4GiB/placement; original feature attribution retained; contemporary Root
+  and canonical/GUI preserved. Chrome parity remains open.
 - Outside instruction-count optimization, run broad regression suites once per
   ten completed fixes, not after every fix.
   Broad suites include full translation/package test batches, the full LibJS AST
