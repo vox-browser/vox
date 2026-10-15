@@ -40,12 +40,12 @@ fn test_resolving_one_initial_style_does_not_change_another_or_the_template() {
 	third := computed_properties_with_initial_values()
 	assert !third.computed_values_resolved_
 	_ = resolve_computed_values(second)
-	assert first.computed_values_width_ != second.computed_values_width_
+	assert first.computed_layout_cache().computed_values_width_ != second.computed_layout_cache().computed_values_width_
 	assert second.root_font_size_px_ == 16
 	assert second.root_line_height_px_ == 19.2
 	assert second.cached_computed_font_list_ == none
-	assert second.computed_values_rotate_ == none
-	assert second.computed_values_content_ == none
+	assert second.computed_layout_cache().computed_values_rotate_ == none
+	assert second.computed_layout_cache().computed_values_content_ == none
 }
 
 fn test_initial_style_template_retains_nested_defaults_across_collection() {
@@ -53,12 +53,12 @@ fn test_initial_style_template_retains_nested_defaults_across_collection() {
 	for _ in 0 .. 3 {
 		$if gcboehm ? { C.GC_gcollect() }
 		next := computed_properties_with_initial_values()
-		assert next.computed_values_width_ == first.computed_values_width_
-		assert next.computed_values_margin_ == first.computed_values_margin_
-		assert next.computed_values_stroke_width_ == first.computed_values_stroke_width_
-		assert next.computed_values_list_style_type_.counter_style == none
-		assert next.computed_values_fill_ == none
-		assert next.computed_values_mask_ == none
-		assert next.computed_values_clip_path_ == none
+		assert next.computed_layout_cache().computed_values_width_ == first.computed_layout_cache().computed_values_width_
+		assert next.computed_layout_cache().computed_values_margin_ == first.computed_layout_cache().computed_values_margin_
+		assert next.computed_layout_cache().computed_values_stroke_width_ == first.computed_layout_cache().computed_values_stroke_width_
+		assert next.computed_layout_cache().computed_values_list_style_type_.counter_style == none
+		assert next.computed_layout_cache().computed_values_fill_ == none
+		assert next.computed_layout_cache().computed_values_mask_ == none
+		assert next.computed_layout_cache().computed_values_clip_path_ == none
 	}
 }
