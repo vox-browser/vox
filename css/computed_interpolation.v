@@ -11709,18 +11709,17 @@ pub fn (s &StyleComputer) compute_properties(abstract_element dom.AbstractElemen
 		if depends_on_inherited_info {
 			properties.add_inheritance_dependent_specified_value(property_id, style_value)
 		}
-		mut computation_context := s.get_computation_context_for_property(property_id, properties, abstract_element)
-		computation_context.reset_viewport_metric_dependency_tracking()
-		computed_value := if requires_computation {
-			compute_value_of_property_from_source(property_id, style_value, property_source,
+		mut computed_value := style_value
+		if requires_computation {
+			mut computation_context := s.get_computation_context_for_property(property_id, properties, abstract_element)
+			computation_context.reset_viewport_metric_dependency_tracking()
+			computed_value = compute_value_of_property_from_source(property_id, style_value, property_source,
 				computation_context, 1.0)
-		} else {
-			style_value
-		}
-		if computation_context.depends_on_viewport_metrics() {
-			properties.set_depends_on_viewport_metrics()
-			if property_affects_font_metrics(property_id) {
-				properties.set_font_metrics_depend_on_viewport_metrics()
+			if computation_context.depends_on_viewport_metrics() {
+				properties.set_depends_on_viewport_metrics()
+				if property_affects_font_metrics(property_id) {
+					properties.set_font_metrics_depend_on_viewport_metrics()
+				}
 			}
 		}
 		properties.set_property_without_modifying_flags(property_id, computed_value)
