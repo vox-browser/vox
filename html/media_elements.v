@@ -446,6 +446,13 @@ fn (mut element HTMLTrackElementModel) clear_source_cues() {
 	track.clear_cues()
 }
 
+fn (element &HTMLTrackElementModel) parse_source_url(value string) ?dom.URL {
+	if owner := element.dom_element_ {
+		return unsafe { &dom.Element(owner) }.document().encoding_parse_url(value)
+	}
+	return dom.dom_url_parse(value, element.base_url_, 'UTF-8')
+}
+
 pub fn (mut element HTMLTrackElementModel) set_src(value string) {
 	element.clear_source_cues()
 	element.src_ = value
@@ -453,7 +460,7 @@ pub fn (mut element HTMLTrackElementModel) set_src(value string) {
 		element.set_track_url('')
 		return
 	}
-	parsed := dom.dom_url_parse(value, element.base_url_, 'UTF-8') or {
+	parsed := element.parse_source_url(value) or {
 		element.set_track_url('')
 		return
 	}
@@ -658,7 +665,6 @@ fn (mut model HTMLTrackElementModel) content_attribute_changed(element &dom.HTML
 		'srclang' { model.set_srclang(value or { '' }) }
 		'src' {
 			if source := value {
-				model.base_url_ = unsafe { &dom.Element(element) }.document().base_url()
 				model.set_src(source)
 			} else {
 				model.clear_source_cues()
