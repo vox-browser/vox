@@ -13,23 +13,22 @@ import css
 pub fn attach_layout_nodes(root_box &Node) &dom.LayoutNode {
 	mut placeholders := map[u64]&dom.LayoutNode{}
 	mut inline_pieces := map[u64][]InlineBoxPiece{}
-	return attach_layout_node_recursive(root_box, none, none, true, mut placeholders, mut inline_pieces, map[u64]&dom.LayoutNode{})
+	return attach_layout_node_recursive(root_box, none, none, true, mut placeholders, mut inline_pieces, false)
 }
 
 pub fn attach_layout_nodes_with_state(root_box &Node, state &LayoutState) &dom.LayoutNode {
 	mut placeholders := map[u64]&dom.LayoutNode{}
 	mut inline_pieces := map[u64][]InlineBoxPiece{}
-	return attach_layout_node_recursive(root_box, none, state, true, mut placeholders, mut inline_pieces, map[u64]&dom.LayoutNode{})
+	return attach_layout_node_recursive(root_box, none, state, true, mut placeholders, mut inline_pieces, false)
 }
 
 // Formatting needs the complete DOM/layout association before geometry is
 // available. innerText first updates layout and reads the final attachment, so
 // its font/grapheme-aware text chunks need only be collected at that commit.
-// This attachment belongs to one geometry pass. Its fresh nodes are completed
-// in place after formatting; nodes retained from earlier passes remain snapshots.
+// Each typed layout node retains its live DOM boundary across geometry passes.
+// Independent LayoutState and renderer snapshots keep earlier geometry and paint data.
 struct PreparedDOMLayoutAttachment {
-	root         &dom.LayoutNode
-	placeholders map[u64]&dom.LayoutNode
+	root &dom.LayoutNode
 }
 
 fn attach_layout_nodes_before_layout(root_box &Node) &dom.LayoutNode {
@@ -40,20 +39,20 @@ fn prepare_dom_layout_attachment(root_box &Node) PreparedDOMLayoutAttachment {
 	mut placeholders := map[u64]&dom.LayoutNode{}
 	mut inline_pieces := map[u64][]InlineBoxPiece{}
 	root := attach_layout_node_recursive(root_box, none, none, false, mut placeholders,
-		mut inline_pieces, map[u64]&dom.LayoutNode{})
+		mut inline_pieces, true)
 	return PreparedDOMLayoutAttachment{
 		root: root
-		placeholders: placeholders
 	}
 }
 
 fn commit_dom_layout_attachment(root_box &Node, state &LayoutState, prepared PreparedDOMLayoutAttachment) &dom.LayoutNode {
+	assert prepared.root.layout_handle == voidptr(root_box)
 	// Keep a separate traversal map so continuation and containing-block links
 	// follow the same tree order as a fresh attachment.
 	mut placeholders := map[u64]&dom.LayoutNode{}
 	mut inline_pieces := map[u64][]InlineBoxPiece{}
 	return attach_layout_node_recursive(root_box, none, state, true, mut placeholders,
-		mut inline_pieces, prepared.placeholders)
+		mut inline_pieces, true)
 }
 
 struct VisualLineProjection {
@@ -276,7 +275,7 @@ fn collect_dom_visual_lines(box &Node, state &LayoutState) []dom.VisualLine {
 	return result
 }
 
-fn attach_layout_node_recursive(box &Node, parent_placeholder ?&dom.LayoutNode, state ?&LayoutState, collect_text_chunks bool, mut placeholders map[u64]&dom.LayoutNode, mut inline_pieces map[u64][]InlineBoxPiece, prepared map[u64]&dom.LayoutNode) &dom.LayoutNode {
+fn attach_layout_node_recursive(box &Node, parent_placeholder ?&dom.LayoutNode, state ?&LayoutState, collect_text_chunks bool, mut placeholders map[u64]&dom.LayoutNode, mut inline_pieces map[u64][]InlineBoxPiece, retain_live_nodes bool) &dom.LayoutNode {
 	mut visibility := dom.CSSVisibility_.visible
 	mut content_visibility := dom.CSSContentVisibility_.visible
 	mut overflow_x := dom.CSSOverflow_.visible
@@ -287,22 +286,25 @@ fn attach_layout_node_recursive(box &Node, parent_placeholder ?&dom.LayoutNode, 
 		overflow_x = overflow_to_dom_for_layout(styled.computed_values().overflow_x())
 	}
 	mut placeholder := unsafe { &dom.LayoutNode(nil) }
-	if previous := prepared[u64(voidptr(box))] {
-		placeholder = previous
+	if retain_live_nodes && box.dom_layout_node_ != unsafe { nil }
+		&& box.dom_layout_node_.layout_handle == voidptr(box) {
+		placeholder = box.dom_layout_node_
 	}
 	if placeholder == unsafe { nil } {
 		placeholder = &dom.LayoutNode{}
 	}
-	// Only borrow storage from this pass's initial attachment. Clear old slots
-	// before shortening the array so removed children are not retained by GC.
+	// The boundary is live, but renderer and LayoutState snapshots own their
+	// separate geometry. Clear removed child slots before reusing this storage.
 	mut retained_children := unsafe { placeholder.children_ }
 	for index in 0 .. retained_children.len {
 		retained_children[index] = unsafe { nil }
 	}
 	retained_children.clear()
+	retained_paintables := unsafe { placeholder.paintables_ }
 	unsafe {
 		*placeholder = dom.LayoutNode{
 			children_: retained_children
+			paintables_: retained_paintables
 			dom_node_: box.dom_node()
 			parent_: parent_placeholder
 			is_anonymous_: box.is_anonymous()
@@ -333,6 +335,10 @@ fn attach_layout_node_recursive(box &Node, parent_placeholder ?&dom.LayoutNode, 
 			refresh_empty_text_fragment_callback: refresh_layout_empty_text_fragment
 			view_transition_properties_callback: layout_view_transition_properties
 		}
+	}
+	if retain_live_nodes {
+		mut mutable_box := unsafe { &Node(box) }
+		mutable_box.dom_layout_node_ = placeholder
 	}
 	if text_node := box.as_text_node() {
 		placeholder.text_has_source_range_ = text_node.source_range_length_ != none
@@ -451,7 +457,7 @@ fn attach_layout_node_recursive(box &Node, parent_placeholder ?&dom.LayoutNode, 
 		}
 	}
 	for child in box.children() {
-		attach_layout_node_recursive(child, placeholder, state, collect_text_chunks, mut placeholders, mut inline_pieces, prepared)
+		attach_layout_node_recursive(child, placeholder, state, collect_text_chunks, mut placeholders, mut inline_pieces, retain_live_nodes)
 	}
 	return placeholder
 }
@@ -469,11 +475,15 @@ fn materialize_dom_paintables(box &Node, state &LayoutState, mut placeholder dom
 		}
 	}
 	count := layout_debug_paintable_count(box, state)
-	for _ in 0 .. count {
-		class_name := layout_debug_paintable_class(box)
-		mut paintable := &dom.Paintable{
-			layout_handle: voidptr(box)
+	previous_count := placeholder.paintables_.len
+	class_name := layout_debug_paintable_class(box)
+	for index in 0 .. count {
+		previous := if index < previous_count {
+			placeholder.paintables_[index]
+		} else {
+			unsafe { &dom.Paintable(nil) }
 		}
+		mut paintable := unsafe { &dom.Paintable(nil) }
 		if layout_debug_paintable_is_box(class_name) {
 			mut snapped_areas_x := []dom.ScrollSnapAreaReference_{}
 			mut snapped_areas_y := []dom.ScrollSnapAreaReference_{}
@@ -483,11 +493,19 @@ fn materialize_dom_paintables(box &Node, state &LayoutState, mut placeholder dom
 					snapped_areas_y = element.snapped_scroll_areas_y()
 				}
 			}
-			mut paintable_box := &dom.PaintableBox{
-				layout_handle: voidptr(box)
-				dom_node_: box.dom_node() or { unsafe { nil } }
-				snapped_areas_x_: snapped_areas_x
-				snapped_areas_y_: snapped_areas_y
+			mut paintable_box := unsafe { &dom.PaintableBox(nil) }
+			if previous != unsafe { nil } && previous.is_box && previous.layout_handle == voidptr(box) {
+				paintable_box = unsafe { &dom.PaintableBox(previous) }
+			} else {
+				paintable_box = &dom.PaintableBox{}
+			}
+			unsafe {
+				*paintable_box = dom.PaintableBox{
+					layout_handle: voidptr(box)
+					dom_node_: box.dom_node() or { nil }
+					snapped_areas_x_: snapped_areas_x
+					snapped_areas_y_: snapped_areas_y
+				}
 			}
 			paintable_box.is_box = true
 			paintable_box.visible = placeholder.visibility_ == .visible
@@ -522,8 +540,19 @@ fn materialize_dom_paintables(box &Node, state &LayoutState, mut placeholder dom
 				}
 			}
 			paintable = unsafe { &dom.Paintable(paintable_box) }
+		} else {
+			if previous != unsafe { nil } && !previous.is_box && previous.layout_handle == voidptr(box) {
+				paintable = previous
+			} else {
+				paintable = &dom.Paintable{}
+			}
+			unsafe { *paintable = dom.Paintable{ layout_handle: voidptr(box) } }
 		}
-		placeholder.paintables_ << paintable
+		if index < previous_count {
+			placeholder.paintables_[index] = paintable
+		} else {
+			placeholder.paintables_ << paintable
+		}
 		if dom_node := box.dom_node() {
 			if attach_text {
 				mut mutable_dom_node := unsafe { &dom.Node(dom_node) }
@@ -531,6 +560,10 @@ fn materialize_dom_paintables(box &Node, state &LayoutState, mut placeholder dom
 			}
 		}
 	}
+	for index in count .. previous_count {
+		placeholder.paintables_[index] = unsafe { nil }
+	}
+	placeholder.paintables_.trim(count)
 }
 
 fn apply_style_to_layout_node(layout_handle voidptr, css_computed_properties_handle voidptr) {
