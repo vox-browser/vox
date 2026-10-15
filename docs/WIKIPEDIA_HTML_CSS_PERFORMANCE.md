@@ -1,6 +1,8 @@
 # Wikipedia without JavaScript
 
-Wikipedia's median document-installation-to-first-frame time fell from **859 ms to 694 ms**, saving **165 ms (19.21%)**, in five alternating pairs on this Mac. The same rendering interval used **33.83% fewer CPU instructions**. JavaScript startup fell from 147 ms to zero; every disabled sample confirmed no runtime, source collection, or script preloads.
+Wikipedia's cached 1024×768 first document frame now takes **301 ms median**, with all five measured runs between **295 and 347 ms**, after the [rendering optimization below](#rendering-follow-up-below-500-ms). That follow-up compares two JavaScript-disabled builds and preserves the rendered page.
+
+The initial JavaScript policy experiment reduced median document-installation-to-first-frame time from **859 ms to 694 ms**, saving **165 ms (19.21%)**, in five alternating pairs on this Mac. The same rendering interval used **33.83% fewer CPU instructions**. JavaScript startup fell from 147 ms to zero; every disabled sample confirmed no runtime, source collection, or script preloads.
 
 Vox renders HTTP(S) pages on `wikipedia.org` and its subdomains using HTML and CSS by default. The site list in `main_script_policy.v` is explicit; other sites retain their normal JavaScript behavior. The policy belongs to each navigation document, so leaving Wikipedia restores the destination site's policy.
 
@@ -111,3 +113,58 @@ executable above. See `installed-build-result.json`,
 `installed-validation-result.json`, and `installed-screenshot-result.json` in the
 task's build directory. The previous executable and native library are backed up
 under `Build/wikipedia-html-css/bundle-before-install/`.
+
+## Rendering follow-up: below 500 ms
+
+Five alternating pairs of JavaScript-disabled production builds measured **820 → 301 ms**, a **519 ms (63.29%)** reduction and **2.72×** speedup. Every optimized sample met the 500 ms target. These are new matched-build measurements, separate from the earlier JavaScript-enabled comparison above.
+
+| Native scope | Before | After |
+| --- | ---: | ---: |
+| Document installation → first submitted document frame | 820 ms | 301 ms |
+| Resource preload interval | 629 ms | 69 ms |
+| Document parsing/setup | 32 ms | 31 ms |
+| Layout interval | 131 ms | 180 ms |
+| First paint replay | 18 ms | 19 ms |
+| Rendering interval, retired CPU instructions | 2,096,516,346 | 3,363,621,620 |
+| Native navigation → first submitted document frame | 1,095 ms | 568 ms |
+
+Document-installation-to-first-frame samples, in pair order:
+
+| Pair | Before | After |
+| --- | ---: | ---: |
+| 1 | 871 ms | 295 ms |
+| 2 | 820 ms | 311 ms |
+| 3 | 657 ms | 296 ms |
+| 4 | 697 ms | 301 ms |
+| 5 | 1,102 ms | 347 ms |
+
+The rendering endpoint is unchanged: document installation through the first submitted document frame, excluding earlier native startup, later screenshot capture, and process teardown. This is a cached rendering measurement, not a cold network load, web FCP, or a guarantee that complete browser launch finishes within 500 ms. The one-minute host load average ranged from 18.16 to 19.71. No builds, test compilations, or other screenshot captures owned by this task ran during these pairs.
+
+The main delay was waiting for image downloads inside Wikipedia's closed donation dialogs. Two badge images were absent from the unchanged initial resource cache, so their live HTTPS requests held up the visible portal. JavaScript-disabled pages now install their styles and viewport first, then distinguish HTML images under computed `display:none` ancestors from images needed by the first frame. Hidden images still start downloading eagerly through the existing resource request path; their transfers finish in the background. Visible images remain foreground work. This does not enable HTML lazy loading when scripting is disabled, omit requests, change adblock policy, or reuse a raster snapshot.
+
+The resource plan conservatively retains foreground loading for URLs also used by visible elements, CSS, SVG, responsive image candidates, or other resource roles. Author shadow roots retain the foreground path for all resource URLs. A hidden image that becomes visible before its response completes triggers layout and paint invalidation on completion. An image that remains hidden does not cause an unnecessary layout rebuild. Separately, text consumers that do not wrap no longer initialize the Unicode line segmenter merely to enumerate text chunks.
+
+This is a latency improvement. The measured first-frame instruction scope **increased by 60.44%**; no CPU reduction is claimed for this follow-up. Additional style/resource classification and asynchronous downloading trade more work before the frame for less time waiting on hidden transfers. Downloads can continue beyond the measured first frame, so this instruction scope also does not measure total page-load CPU work.
+
+All ten runs reported `enabled=false runtime=false sources=0 source_bytes=0 preloaded_scripts=0` and exactly one document installation. Every optimized screenshot is byte-identical to before samples 1 and 3, with zero differing pixels across the full 1024×768 document viewport. The baseline contains two image hashes (two and three samples); all five optimized images share the first hash. Direct pair comparisons are exact for pairs 1 and 3. Pairs 2, 4, and 5 differ at 1,716 pixels within the native search-field focus border/caret rectangle, `x=287, y=472, width=394, height=44`, and have zero differences outside it. These are the same two focus states already present in earlier captures; the portal content is unchanged.
+
+Both variants used fresh copies of the same eight-resource initial cache, fingerprint `46c277c0b7df22c8b1d5c1c00d55b1a2548750e7257cbe04f0b927de9ce8e5fd`. The missing badge responses were not added to the template. Background revalidation remained enabled and raster snapshots remained disabled. Each sample launched a fresh process; pair order alternated before/after and after/before. The native replay library was identical in both variants.
+
+The before executable SHA-256 is `8d06779203c63a58fb2a1f9614d0e38116207a6b5c9ea29150eed9fb6ece7b5e`; the after executable is `cca5ad8cd4a8ec505446505136768c5851dd1a9efbf010e45e0312b7e22ed7de`. Both use library `46f0a3f9fa2e4cac09af21502d076ca7c3b1369ff84b6c1a5694e6c4f610a2cd`. The source manifest starts at `b40f8cd6ab216e49b695fd74d2807804dfff6cfb`: 5,497 baseline files remain identical, three files changed, and four resource implementation/test files were added. The implementation is committed as `d1165164` and `9e4db022`.
+
+Evidence is retained under `Build/wikipedia-nojs-500/`: `paired/summary.json`, all ten sample logs/JSON/screenshots, `paired-benchmark-command.json`, `paired-benchmark-result.json`, `paired-visual-verification.json`, both literal source manifests, and both successful build receipts. The earlier installed-binary diagnostic and single candidate pair receive no credit in these results. Reproduce with the existing measurement driver and the preserved binaries:
+
+```sh
+python3 tools/measure_browser_render.py \
+  --before-binary Build/wikipedia-nojs-500/baseline/Vox \
+  --after-binary Build/wikipedia-nojs-500/candidate/Vox \
+  --before-arg=--disable-javascript \
+  --after-arg=--disable-javascript \
+  --cache-template Build/wikipedia-nojs-500/cache-template \
+  --repeat 5 --width 1024 --height 768 \
+  --output Build/wikipedia-nojs-500/recheck
+```
+
+Focused validation covers 20 distinct resource-plan, initial-image, adblock, and SVG-completion cases. The final three initial-image cases and three SVG cases pass in `Build/wikipedia-500/completion-result.json`; the unchanged eight plan and six adblock cases retain their passing results from `preload-regression-result.json`. The completion fixture declares image dimensions, matching Wikipedia's badges. The literal measured snapshot retains the earlier test fixture; this dimensions-only test correction does not alter compiled production code. Pre-existing remote raster intrinsic sizing without ImageHost remains outside this change. No-wrap text tests also pass. All eight required live SVG/image mutation screenshot comparisons are pixel-exact on the measured candidate, with unchanged inputs; see `svg-validation-result.json`. This selected coverage does not claim the full repository test suite passed.
+
+The installed bundle contains the measured candidate's identical native `__text` bytes after library-path relocation. Its executable hash is `4a2630310f5eff8481318d9b7c0769bb56df2faa973e9a8632c3cbb2bd15f5c0`; signature verification and both supported startup smoke modes pass. These checks are recorded in `installed-validation-result.json` and receive no extra performance credit. The browser still uses JavaScriptCore for pages with scripting enabled; the existing LibJS runtime limitations remain.

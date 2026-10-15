@@ -72,6 +72,7 @@ pub fn html_video_element_model_for_dom_element(element &dom.HTMLVideoElement) &
 	model := HTMLVideoElementModel.create(media, dom_element.document().base_url())
 	mut mutable_element := unsafe { &dom.HTMLVideoElement(element) }
 	mutable_element.video_element_model_ = model
+	mutable_element.video_poster_attribute_changed_hook_ = html_video_element_poster_attribute_changed
 	return model
 }
 
@@ -79,9 +80,13 @@ pub fn html_video_element_attribute_changed(element &dom.HTMLVideoElement, name 
 	mut dom_element := unsafe { &dom.Element(element) }
 	dom_element.attribute_changed(name, old_value, value, namespace_)
 	if namespace_ == none && name == 'poster' {
-		mut video := html_video_element_model_for_dom_element(element)
-		video.set_poster(value)
+		html_video_element_poster_attribute_changed(element, value)
 	}
+}
+
+fn html_video_element_poster_attribute_changed(element &dom.HTMLVideoElement, value ?string) {
+	mut video := html_video_element_model_for_dom_element(element)
+	video.set_poster(value)
 }
 
 pub fn (mut video HTMLVideoElementModel) set_poster_fetch_hook(hook ?PosterFrameFetchHook) {
@@ -91,6 +96,13 @@ pub fn (mut video HTMLVideoElementModel) set_poster_fetch_hook(hook ?PosterFrame
 pub fn (mut video HTMLVideoElementModel) set_poster(value ?string) {
 	video.poster_ = value
 	video.determine_element_poster_frame()
+}
+
+fn (video &HTMLVideoElementModel) parse_poster_url(poster string) ?dom.URL {
+	if element := video.media.associated_element_ {
+		return unsafe { &dom.Element(element) }.document().encoding_parse_url(poster)
+	}
+	return dom.dom_url_parse(poster, video.base_url_, 'UTF-8')
 }
 
 pub fn (mut video HTMLVideoElementModel) determine_element_poster_frame() {
@@ -105,7 +117,7 @@ pub fn (mut video HTMLVideoElementModel) determine_element_poster_frame() {
 		video.update_natural_dimensions()
 		return
 	}
-	url := dom.dom_url_parse(poster, video.base_url_, 'UTF-8') or {
+	url := video.parse_poster_url(poster) or {
 		video.poster_frame_ = none
 		video.update_natural_dimensions()
 		return
@@ -291,15 +303,18 @@ pub struct HTMLTrackElementModel {
 pub:
 	track &TextTrack
 mut:
-	base_url_           dom.URL
-	src_                string
-	track_url_          string
-	loading_            bool
-	awaiting_url_change bool
-	parent_media_       ?&HTMLMediaElement
-	fetch_hook_         ?TextTrackFetchHook
-	event_target_       &dom.EventTarget = unsafe { nil }
-	event_counts_       map[string]int
+	base_url_              dom.URL
+	src_                   string
+	track_url_             string
+	loading_               bool
+	processing_generation_ u64
+	source_cue_generation_ u64
+	awaiting_url_change    bool
+	parent_media_          ?&HTMLMediaElement
+	dom_element_           ?&dom.HTMLTrackElement
+	fetch_hook_            ?TextTrackFetchHook
+	event_target_          &dom.EventTarget = unsafe { nil }
+	event_counts_          map[string]int
 }
 
 pub fn HTMLTrackElementModel.create(base_url dom.URL) &HTMLTrackElementModel {
@@ -321,6 +336,7 @@ pub fn html_track_element_model_for_dom_element(element &dom.HTMLTrackElement) &
 	dom_element := unsafe { &dom.Element(element) }
 	mut model := create_track_element_model(dom_element.document().base_url(),
 		unsafe { &dom.EventTarget(element) })
+	model.dom_element_ = element
 	model.set_kind(dom_element.get_attribute_ns(none, 'kind') or { '' })
 	model.set_label(dom_element.get_attribute_ns(none, 'label') or { '' })
 	model.set_srclang(dom_element.get_attribute_ns(none, 'srclang') or { '' })
@@ -360,9 +376,25 @@ pub fn (mut element HTMLTrackElementModel) set_parent_media(media ?&HTMLMediaEle
 	element.parent_media_ = media
 }
 
-pub fn (mut element HTMLTrackElementModel) set_src(value string) {
+fn (element &HTMLTrackElementModel) current_parent_media() ?&HTMLMediaElement {
+	if owner := element.dom_element_ {
+		dom_element := unsafe { &dom.Element(owner) }
+		if parent := dom_element.as_node().parent_element() {
+			return html_media_element_for_dom_element(parent)
+		}
+		return none
+	}
+	return element.parent_media_
+}
+
+fn (mut element HTMLTrackElementModel) clear_source_cues() {
+	element.source_cue_generation_++
 	mut track := element.track
 	track.clear_cues()
+}
+
+pub fn (mut element HTMLTrackElementModel) set_src(value string) {
+	element.clear_source_cues()
 	element.src_ = value
 	if value == '' {
 		element.set_track_url('')
@@ -380,11 +412,7 @@ pub fn (mut element HTMLTrackElementModel) set_track_url(track_url string) {
 		return
 	}
 	element.track_url_ = track_url
-	if element.loading_ && element.track.mode() in [.hidden, .showing] {
-		element.loading_ = false
-	}
-	if element.awaiting_url_change && element.track.mode() in [.hidden, .showing] {
-		element.awaiting_url_change = false
+	if element.track.mode() in [.hidden, .showing] && (element.loading_ || element.awaiting_url_change) {
 		element.start_the_track_processing_model_parallel_steps()
 	}
 }
@@ -457,8 +485,11 @@ fn parse_web_vtt(body string) ![]&TextTrackCue {
 		}
 		timing := lines[timing_index].split('-->')
 		start := parse_vtt_timestamp(timing[0]) or { continue }
-		end_token := timing[1].trim_space().fields()[0]
-		end := parse_vtt_timestamp(end_token) or { continue }
+		end_fields := timing[1].trim_space().fields()
+		if end_fields.len == 0 {
+			continue
+		}
+		end := parse_vtt_timestamp(end_fields[0]) or { continue }
 		mut cue := TextTrackCue.create(start, end, lines[timing_index + 1..].join('\n')) or {
 			continue
 		}
@@ -469,7 +500,7 @@ fn parse_web_vtt(body string) ![]&TextTrackCue {
 }
 
 pub fn (mut element HTMLTrackElementModel) start_the_track_processing_model() {
-	if element.loading_ || element.track.mode() !in [.hidden, .showing] || element.parent_media_ == none {
+	if element.loading_ || element.track.mode() !in [.hidden, .showing] || element.current_parent_media() == none {
 		return
 	}
 	element.loading_ = true
@@ -477,8 +508,15 @@ pub fn (mut element HTMLTrackElementModel) start_the_track_processing_model() {
 }
 
 pub fn (mut element HTMLTrackElementModel) start_the_track_processing_model_parallel_steps() {
+	element.processing_generation_++
+	generation := element.processing_generation_
+	element.loading_ = true
+	element.awaiting_url_change = false
 	mut track := element.track
 	track.set_readiness_state(.loading)
+	if generation != element.processing_generation_ {
+		return
+	}
 	if element.track_url_ == '' {
 		element.track_failed_to_load()
 		return
@@ -492,13 +530,20 @@ pub fn (mut element HTMLTrackElementModel) start_the_track_processing_model_para
 		return
 	}
 
-	cors := if media := element.parent_media_ {
+	cors := if media := element.current_parent_media() {
 		media.crossorigin()
 	} else {
 		CORSSettingAttribute.no_cors
 	}
+	cue_generation := element.source_cue_generation_
 	response := fetch(url, cors) or {
+		if generation != element.processing_generation_ {
+			return
+		}
 		element.track_failed_to_load()
+		return
+	}
+	if generation != element.processing_generation_ {
 		return
 	}
 	if response.status < 200 || response.status >= 300 {
@@ -509,12 +554,17 @@ pub fn (mut element HTMLTrackElementModel) start_the_track_processing_model_para
 		element.track_failed_to_load()
 		return
 	}
-	for mut cue in cues {
-		track.add_cue(mut cue)
+	if cue_generation == element.source_cue_generation_ {
+		for mut cue in cues {
+			track.add_cue(mut cue)
+		}
 	}
 	element.loading_ = false
-	track.set_readiness_state(.loaded)
 	element.track_became_ready()
+	track.set_readiness_state(.loaded)
+	if generation != element.processing_generation_ {
+		return
+	}
 	element.fire_event('load')
 }
 
@@ -523,10 +573,14 @@ pub fn (mut element HTMLTrackElementModel) track_became_ready() {
 }
 
 fn (mut element HTMLTrackElementModel) track_failed_to_load() {
+	generation := element.processing_generation_
 	element.loading_ = false
 	mut track := element.track
-	track.set_readiness_state(.failed_to_load)
 	element.track_became_ready()
+	track.set_readiness_state(.failed_to_load)
+	if generation != element.processing_generation_ {
+		return
+	}
 	element.fire_event('error')
 }
 
@@ -554,8 +608,7 @@ fn (mut model HTMLTrackElementModel) content_attribute_changed(element &dom.HTML
 				model.base_url_ = unsafe { &dom.Element(element) }.document().base_url()
 				model.set_src(source)
 			} else {
-				mut track := model.track
-				track.clear_cues()
+				model.clear_source_cues()
 			}
 		}
 		'id' {

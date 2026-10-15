@@ -4501,6 +4501,154 @@ credit from this cohort. Chrome endpoint/content parity remains unestablished.
 Evidence: `Build/instructions/vox-opt49-interleaved-*` and
 `Build/v/instruction-opt49-*`.
 
+## Reject optional rule-bucket lookup after a sparse matching regression
+
+The uncommitted round50 prototype replaced five existence-plus-retrieval
+sequences in `RuleCache.matching_rule_buckets` with optional single lookups.
+The compatibility compiler emits an allocated `map key does not exist` error
+for each missing optional lookup, followed by disposal. The prior `_IN_MAP`
+guard skips missing buckets. This matters when each layer contains only a
+small subset of an element's classes. The prototype is restored to round49;
+its source, regular candidate binary and all evidence remain retained.
+
+Before/final Boehm and final no-GC C-O2 focused runs each pass **1,640 assertions
+in 18 cases**, covering scope invalidation, bucketing, quirks and shared shadow
+caches, plus three new cases for empty-bucket presence/order, returned array
+borrowing and duplicate occurrences, and folding/absent attributes. An initial
+fixture used the reserved V keyword `shared`; all three compilations exited 1
+before cases. Only that local was renamed, and those failures remain archived.
+
+The first active probe expected 9 author groups and failed before its hardware
+interval; the existing cache also exposes an empty root-layer group, giving 10.
+Both full-process profile commands exit 1 at that assertion; neither receives
+profile pass credit. The old local driver did not persist its failing process's
+exact terminal status, which remains unknown. No hardware samples completed
+then. An isolated one-case probe corrects that expectation and predeclares
+12 present and 24 absent classes across 8 named layers before taking samples.
+Its inactive native builds exit 0 and repeat no passing functional cases.
+
+Three fixed alternating pairs each construct **512 complete matching rule
+sets**. Setup, expected results, eight warmups and forced collection precede
+the hardware interval; allocation, bucket collection, selector matching and
+sorting remain inside it. Retained-result assertions follow. All six actual
+exits are 0, and every checksum is 49,664. Median retired instructions rise from
+**204,699,103 to 218,622,781** (**+6.80%**).
+All three pairs regress, so no browser cohort starts and page credit is 0.
+
+The strict normal-C audit permits only the bucket method to differ and restores
+all other logic/layouts/resources after the established normalization. It sees
+five old `_IN_MAP` guards and five new `map_get_check`/error sites; there is no
+array clone or map write in the new body. Its initial spelling assertion looked
+for `map_exists` instead of the actual `_IN_MAP` macro, after the whole-C
+projection already matched. That failed audit is retained; the exact spelling
+was corrected without relaxing the C comparison. Native compilation, signing
+and startup of the isolated regular candidate completed, but no candidate app,
+GC-policy run, viewport, broad batch or whole-page result is claimed.
+
+Failed fixtures/profiles/audit, exact generated C archives, native arguments,
+fixed local measurements and the restored-function receipt are under
+`Build/v/instruction-opt50-*`. Frozen source snapshots and the RAM scratch
+location are recorded separately; durable C archives and receipts stay under
+`Build/v`. Shipping broad baseline remains `0c8030d5`, with 3,913,662 observed
+instructions accumulated from round49. Chrome parity remains open.
+
+## Consume candidate rule buckets without a temporary array
+
+Feature `24b84c6d` changes normal and own-shadow-host cache enumeration
+inside `style_computer_collect_matching_rules_in_scope`. One private helper
+reads the same ordered class, ID, tag, pseudo-element, root, attribute and
+fallback buckets directly into the existing scope/namespace/ancestor filters.
+It avoids constructing an array of borrowed array headers before consuming
+those buckets. `RuleCache.matching_rule_buckets`, guarded map lookups, public
+APIs, sorting, selector matching, slot/part collection and attempted-pseudo
+metadata remain unchanged. The rejected round50 optional lookups are absent.
+The intervening filters read the same cache and do not mutate its buckets.
+
+Before/final Boehm and final no-GC C-O2 harnesses each pass **1,640 assertions
+across 18 cases** (17 functional plus an inactive diagnostic). Three new cases
+exercise full collection: ordered bucket candidates and empty entries,
+ordinary/pseudo/root filtering and hover attempt metadata; duplicate identity
+and quirks key folding; and the host's own shadow scope with its retained rule
+and root identity. Existing scope, bucket and quirks/shared-shadow checks stay
+in the identical common source. Initial focused jobs exit 1 when a synthetic
+null-namespace host rejects `attach_shadow`; only the fixture root/host
+namespace is corrected. Original receipts and exact failed C stay archived.
+
+Three fixed alternating local pairs each build **512 complete matching rule
+sets**, using eight named CSS layers, 12 present classes and 24 absent classes.
+Median retired instructions change from **223,070,498 to
+208,931,774** (-6.34%), with all three improving.
+All six checksums are 49,664. Setup, expected output, eight warmups and forced
+collection precede the interval; allocation, bucket collection, selector
+matching and sorting stay inside it. Retained-result assertions follow. The
+existing empty root-layer entry remains, making 10 author groups. This local
+result receives no separate page credit.
+
+Full-process C-O1/Boehm profiles run the whole common harness and active probe
+with one marker, no filters and no resets. Complete probe calls remain
+**521**; matching-scope calls stay
+**6,269**. Calls to the public bucket-array method
+fall **5,748 to 2**;
+the private direct helper is called **5,746** times
+and is absent from the control. The public-method decrease exactly equals new
+helper calls. These are call counts, never substituted for hardware work.
+
+The strict C audit permits one changed collection function and one added helper
+plus its exact prototype. Every other function, including the public bucket
+method and all filters, as well as layouts, resources and GC configuration,
+matches after established compiler identities, exact unchanged assertion-line
+mapping and frozen includes. Four helpers may reorder only with identical raw
+bodies. All 120 native inputs, 37 quoted includes and the exact C-O2 argument
+arrays are authenticated. Compiled C SHA256:
+`74dca5d54b663830d205ecd35e39b430f06769fc0321bf39cd075f256aea999b`. Durable focused/normal/profile
+archive hashes are in `instruction-opt51-artifact-archives.json`. The initial
+source-only audit rejected its own blank-line handling; exact reconstruction
+from the old source plus the precise helper/replacement fixes that audit
+without normalizing whitespace or repeating a build/test.
+
+The predeclared cohort fixes 30 alternating pairs and 30,000 paired bootstrap
+resamples, seed 51. Regular frozen round49 and candidate binaries use the same
+359-body cache, fresh copies, frozen helper, 1024×768 viewport and
+`navigation_to_first_document_paint[0]`. Both retain the same 4 GiB document-gated
+hint, enabled Boehm and one marker, without prod/prealloc.
+
+| Build | Median first-frame retired instructions | Median process peak, MiB |
+| --- | ---: | ---: |
+| Frozen round49 control | 19,088,671,900.5 | unavailable |
+| Direct bucket consumption | 19,040,703,765.5 | 3,694.3 |
+
+Observed matching median saving is **47,968,135** instructions
+(+0.251%). **28/30** pairs improve.
+Paired median saving is **50,149,698**; its 95% paired
+percentile interval is **44,924,185.5 to 58,667,943.5**. Repeatable page credit is
+**47,968,135**, requiring a strictly positive lower bound. The point saving
+is the difference of marginal medians; the interval estimates the paired median.
+Process memory is each root's lifetime maximum through capture/exit, not
+first-frame live memory. Missing peaks: before 1,
+final 0. Process peaks are never summed.
+
+All 60 completed primaries are retained, with 59 actual PNGs. Control pair 23
+is recovered from its original completed primary after a capture watchdog;
+its actual browser exit, PNG, peak footprint and cache-copy endpoint fingerprint
+remain unavailable. Candidate pair 6 has one archived pre-parse startup retry.
+Every first primary has one installation, two geometry preparations and one
+paint. Control pair 28 has one later refresh, kept separate from its primary.
+Completed counters are never discarded, rerun or replaced by screenshots.
+The 30-pair cohort never extends.
+
+The broad gate adds the prior **3,913,662** observed round49 instructions to
+this round's nonnegative point saving, giving
+**51,881,797**; confidence credit remains
+separate. All six direct V harness jobs exit zero: CSS 31, SVG 10 and layout 46 in each GC mode, 174 case executions. All 19 screenshot comparisons pass, 16 exact; known differences remain inline-node 13, text-decorations 1,341 and canvas-text 1,994.
+The focused nested-selector viewport is pixel-exact. The selected regression
+runtime is frozen separately from current Root. The signed isolated comparison
+app is `/Users/alex/code/vox2/Build/v/Vox-opt51.app`. Signature, startup, matching native text and
+actual collections pass with marker 1 by default and override 2. Canonical and
+GUI apps are preserved. Current Root receives no extra performance/regression
+credit. Chrome content/endpoint parity remains unestablished.
+Evidence: `Build/instructions/vox-opt51-interleaved-*` and
+`Build/v/instruction-opt51-*`.
+
 ## Causes and changes
 
 - The V 0.5.2 compatibility compiler's `-prod` Boehm code repeatedly snapshots
@@ -4868,3 +5016,41 @@ report: `Build/instructions/vox-hotspots50-diagnostic.run-1.json`. The 4 GiB hin
 shipping ledger, canonical app and GUI browser are preserved. Current Root is
 excluded. Page credit remains 0 and Chrome parity remains open.
 
+
+## Chrome first-paint trace shows a header before repository content
+
+A fresh Chrome-for-Testing 155 frozen-replay content diagnostic records tracing
+screenshots around painting, rather than treating the probe's later screenshot
+as first-paint content. All 11 original frames remain. Visual inspection finds
+frames 000/001 blank, frames 002–004 showing only the top navigation header, and
+frame 005 showing the repository table and About text. Frames 003/004 are byte-
+identical to 002. Within the same trace/navigation, the first-paint marker
+precedes header frame 002; a later paragraph largest-contentful-paint candidate
+precedes repository frame 005. This ordering is not converted into CPU savings.
+
+The actual Chrome viewport remains 1024×768 with scale 1. Trace thumbnails are
+498×374 JPEGs, so they support this content observation, not a pixel-exact
+comparison. The Vox round 51 retained viewport already shows the repository
+filenames, but its PNG is also a separate capture. These observations reinforce
+that the earlier Chrome counter ending at first paint cannot be treated as an
+equivalent repository-view measurement. A content-aligned endpoint and normal,
+untraced hardware-instruction observations are still required before claiming
+Vox is faster. Font/wrapping, navigation overflow and image differences remain;
+neither endpoint nor pixel/content parity is established by this diagnostic.
+
+Probe and owned Chrome root actually exit 0, tracing reports no data loss, and
+the independent audit authenticates every JPEG against its original trace
+event, timestamp ordering, all 359 cache-body hashes, replayed response hashes,
+binary identity and logical viewport. Missing/non-GET requests stay blocked;
+legacy inferred MIME/status200/wildcard-CORS/no-store headers remain disclosed.
+The diagnostic launches a separate temporary headless profile and closes only
+that owned browser. Existing GUI browsers remain untouched. Tracing adds work;
+**performance credit is 0**, and the Vox verification ledger is unchanged.
+
+Evidence is under
+`Build/instructions/chrome-frozen-probe/first-paint-trace-1/`:
+`frame-002.jpg` (header), `frame-005.jpg` (repository), `trace-evidence.json`,
+`trace.json.gz` and `result.json`. Independent receipt:
+`Build/v/instruction-chrome-first-paint-trace-audit.json`.
+Trace archive SHA256: `5c8afe03203f734706f3519b120376a793eca11a96c3d9ae12bd5d774642a3ce`.
+Raw trace SHA256: `997dbf02b8acd1fb5702ac6b426fdfabce832f49e52f4c396fb18308f3edfe39`.

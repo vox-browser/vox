@@ -121,7 +121,14 @@ fn TextNodeChunkIterator.new_with_direction(text_node &TextNode, should_wrap_lin
 		view: view
 		code_units: code_units
 		grapheme_boundaries: text_grapheme_boundaries(view)
-		line_boundaries: text_line_boundaries_from_segmenter(text_node.line_segmenter(), code_units.len)
+		// No-wrap consumers still need grapheme, font and preserved-break
+		// boundaries, but never query soft-wrap opportunities. In particular,
+		// collecting innerText must not initialize the Unicode line segmenter.
+		line_boundaries: if should_wrap_lines {
+			text_line_boundaries_from_segmenter(text_node.line_segmenter(), code_units.len)
+		} else {
+			[]bool{}
+		}
 		word_break: text_node.Node.computed_values().word_break()
 		text_direction_mode: text_direction_mode
 		font: text_node.font_for_rendering()

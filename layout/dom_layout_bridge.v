@@ -492,6 +492,9 @@ fn apply_style_to_layout_node(layout_handle voidptr, css_computed_properties_han
 	computed := unsafe { &css.ComputedProperties(css_computed_properties_handle) }
 	mut mutable_styled := unsafe { &NodeWithStyle(styled) }
 	mutable_styled.apply_style(computed)
+	if mut result := document_layout_result(node.document()) {
+		result.paint_tree_needs_style_update = true
+	}
 }
 
 fn clear_layout_image_observers(layout_handle voidptr) {

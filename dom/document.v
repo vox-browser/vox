@@ -1050,7 +1050,11 @@ pub struct HTMLVideoElement {
 pub mut:
 	media_element_model_ voidptr = unsafe { nil }
 	video_element_model_ voidptr = unsafe { nil }
+	video_poster_attribute_changed_hook_ ?VideoPosterAttributeChangedHook
 }
+
+// Installed by HTML on the lazy video owner; retained across document adoption.
+pub type VideoPosterAttributeChangedHook = fn (&HTMLVideoElement, ?string)
 
 @[heap]
 pub struct SVGElement {

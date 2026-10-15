@@ -325,6 +325,7 @@ mut:
 	resource_cache                      map[string]PreloadedResource
 	background_resource_results         chan PreloadedResource
 	background_resource_pending         map[string]bool
+	nonrendered_image_preloads          map[string]bool
 	screenshot_path                     string
 	screenshot_scheduled                bool
 	screenshot_viewport_height          int
@@ -357,6 +358,7 @@ struct ChromePointerDispatchResult {
 	target  string
 	handled bool
 	cursor  ?painting.ResizeCursor
+	mouse_cursor sapp.MouseCursor = .arrow
 }
 
 struct LaunchOptions {
@@ -875,7 +877,9 @@ fn fetch_page(address string, base string) !LoadedPage {
 	result := browsernet.get(adblock.Request{url: resolved, source_url: resolved, request_type: 'main_frame'}, tls_ca_bundle())!
 	response := result.response
 	content_type := response.header.get(.content_type) or { 'text/html' }
-	if response.status_code < 200 || response.status_code >= 400 {
+	// HTTP error responses can contain a real document, including a site's
+	// verification or sign-in UI. Only an empty error needs our fallback page.
+	if response.status_code < 200 || (response.status_code >= 400 && response.body == '') {
 		return error('HTTP ${response.status_code} ${response.status_msg}')
 	}
 	markup := if content_type.to_lower().contains('html') {
@@ -889,7 +893,10 @@ fn fetch_page(address string, base string) !LoadedPage {
 		status: 'HTTP ${response.status_code} · ${response.body.len} bytes'
 		content_type: content_type
 	}
-	cache_loaded_page(loaded)
+	// A challenge or server error must not replace a cached successful page.
+	if response.status_code < 400 {
+		cache_loaded_page(loaded)
+	}
 	return loaded
 }
 
@@ -1107,6 +1114,10 @@ fn document_preload_resource_urls(document &dom.Document, base_url string) []str
 
 fn preload_document_resources(document &dom.Document, base_url string, cached map[string]PreloadedResource) map[string]PreloadedResource {
 	urls := document_preload_resource_urls(document, base_url)
+	return preload_document_resource_urls(document, base_url, urls, cached)
+}
+
+fn preload_document_resource_urls(document &dom.Document, base_url string, urls []string, cached map[string]PreloadedResource) map[string]PreloadedResource {
 	resource_types := document_preload_resource_types(document, base_url)
 	mut loaded := map[string]PreloadedResource{}
 	mut pending_urls := []string{}
@@ -2986,6 +2997,7 @@ fn (mut app BrowserApp) dispatch_chrome_pointer_event_at_viewport_point(event_ty
 		target: target
 		handled: handled
 		cursor: cursor
+		mouse_cursor: browser_mouse_cursor_for_hit(hit, cursor)
 	}
 }
 
@@ -3151,7 +3163,7 @@ fn (mut app BrowserApp) install_loaded_page(loaded LoadedPage, add_history bool)
 	resource_base_url := app.document.base_url().serialize()
 	install_object_image_fetch_hooks(app.document)
 	install_video_poster_fetch_hooks(app.document)
-	preloaded_resources := preload_document_resources(app.document, resource_base_url, app.resource_cache)
+	preloaded_resources := app.preload_initial_document_resources(resource_base_url)
 	checkpoint = debug_timing_checkpoint('preload_resources', checkpoint)
 	for resource_url, resource in preloaded_resources {
 		if resource.error == '' && !resource.adblock_replacement && app.resource_cache.len < max_cached_resources {
@@ -3159,7 +3171,6 @@ fn (mut app BrowserApp) install_loaded_page(loaded LoadedPage, add_history bool)
 		}
 		publish_browser_svg_resource(resource)
 	}
-	app.js_messages << install_external_styles(app.document, resource_base_url, preloaded_resources)
 	checkpoint = debug_timing_checkpoint('install_styles', checkpoint)
 	install_local_video_frames(app.document, resource_base_url, loaded.markup)
 	checkpoint = debug_timing_checkpoint('install_video_frames', checkpoint)
@@ -4096,10 +4107,15 @@ fn (mut app BrowserApp) request_background_resource(image_url string) {
 
 fn (mut app BrowserApp) poll_background_resources() {
 	mut changed_svg_resources := map[string]bool{}
+	mut completed_nonrendered_images := map[string]bool{}
 	for {
 		select {
 			resource := <-app.background_resource_results {
 				app.background_resource_pending.delete(resource.url)
+				if resource.url in app.nonrendered_image_preloads {
+					app.nonrendered_image_preloads.delete(resource.url)
+					completed_nonrendered_images[resource.url] = true
+				}
 				previous_svg_available := if previous := app.resource_cache[resource.url] {
 					previous.error == '' && previous.body != ''
 				} else { false }
@@ -4117,6 +4133,12 @@ fn (mut app BrowserApp) poll_background_resources() {
 				break
 			}
 		}
+	}
+	if app.document != unsafe { nil } && completed_nonrendered_images.len > 0
+		&& completed_nonrendered_images_need_layout(app.document, completed_nonrendered_images) {
+		app.document.tear_down_layout_tree()
+		app.relayout(app.viewport_width, app.viewport_height + app.chrome_height())
+		return
 	}
 	if changed_svg_resources.len > 0 && app.document != unsafe { nil } {
 		if browser_svg_resources_need_layout(app.document, changed_svg_resources) {
@@ -6208,7 +6230,7 @@ fn (mut app BrowserApp) handle_event(event &gg.Event) {
 		}
 		.mouse_move {
 			result := app.dispatch_chrome_pointer_event_at_viewport_point('pointermove', 0, f64(event.mouse_x), f64(event.mouse_y - app.page_top()))
-			sapp.set_mouse_cursor(mouse_cursor_for_resize_handle(result.cursor))
+			sapp.set_mouse_cursor(result.mouse_cursor)
 			app.hovered_link = if result.handled {
 				''
 			} else {

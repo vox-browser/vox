@@ -60,6 +60,7 @@ fn install_document_painting_bridge(document &dom.Document, result &DocumentLayo
 // needlessly rebuilding layout geometry.
 fn refresh_document_paint_tree(document &dom.Document, mut result DocumentLayoutResult,
 	viewport_width f64, viewport_height f64) {
+	result.paint_tree_needs_style_update = false
 	// The renderer snapshot owns the concrete command vector behind Document's
 	// cached DisplayList. Invalidating that vector must invalidate the outer
 	// Document cache too, so record_display_list enters the actual paint path.
@@ -80,6 +81,14 @@ fn refresh_document_paint_tree(document &dom.Document, mut result DocumentLayout
 	if had_valid_hit_test_display_list {
 		viewport_build_stacking_context_tree(voidptr(&result))
 	}
+}
+
+fn refresh_document_paint_tree_if_needed(mut result DocumentLayoutResult) bool {
+	if !result.paint_tree_needs_style_update { return false }
+	viewport := result.document.viewport_rect()
+	refresh_document_paint_tree(result.document, mut result, viewport.width, viewport.height)
+	viewport_refresh_scroll_state(voidptr(&result))
+	return true
 }
 
 // Document::update_layout() builds this cache after committing paintables.
@@ -798,6 +807,8 @@ fn paintable_box_transform_to_local_coordinates(box &BlockBox,
 
 fn viewport_assign_accumulated_visual_contexts(target voidptr) {
 	mut result := viewport_layout_result(target)
+	// Refreshing the snapshot also assigns its new visual contexts.
+	if refresh_document_paint_tree_if_needed(mut result) { return }
 	mut boxes_by_layout := map[u64]&BlockBox{}
 	collect_compatibility_boxes(mut result.paint_tree, mut boxes_by_layout)
 	// The renderer transport omits the typed Viewport itself and puts its
@@ -2252,6 +2263,7 @@ fn viewport_display_list_dump(target voidptr) string {
 
 fn viewport_build_stacking_context_tree(target voidptr) {
 	mut result := viewport_layout_result(target)
+	refresh_document_paint_tree_if_needed(mut result)
 	if result.stacking_context_tree_is_valid {
 		viewport_build_hit_test_display_list(target)
 		return
@@ -2270,6 +2282,7 @@ fn viewport_build_stacking_context_tree(target voidptr) {
 
 fn viewport_build_hit_test_display_list(target voidptr) {
 	mut result := viewport_layout_result(target)
+	refresh_document_paint_tree_if_needed(mut result)
 	if result.hit_test_display_list_is_valid {
 		return
 	}
