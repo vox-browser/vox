@@ -73,6 +73,17 @@ fn computed_properties_length_percentage_to_px(c &ComputedProperties, property_i
 	if !typed.is_length() && !typed.is_percentage() && !typed.is_calculated() {
 		return none
 	}
+	// These conversions consume no font, viewport or query-container state.
+	// Keep the same fixed-point conversion used by the layout-value accessor.
+	if typed is LengthStyleValue {
+		length := typed.length()
+		if length.is_absolute() {
+			return length.absolute_length_to_px().to_double()
+		}
+	} else if typed is PercentageStyleValue {
+		return LengthPercentage.from_style_value_logic(typed).to_px(LengthResolutionContext{},
+			CSSPixels.nearest_value_for(percentage_basis_px)).to_double()
+	}
 	context := c.length_resolution_context()
 	return LengthPercentage.from_style_value_logic(typed).to_px(context,
 		CSSPixels.nearest_value_for(percentage_basis_px)).to_double()
@@ -93,6 +104,15 @@ pub fn (c &ComputedProperties) typed_property_value(property_id PropertyID) ?Sty
 pub fn (c &ComputedProperties) resolve_length_percentage_value_px(value StyleValue, percentage_basis_px f64) ?f64 {
 	if !value.is_length() && !value.is_percentage() && !value.is_calculated() {
 		return none
+	}
+	if value is LengthStyleValue {
+		length := value.length()
+		if length.is_absolute() {
+			return length.absolute_length_to_px().to_double()
+		}
+	} else if value is PercentageStyleValue {
+		return LengthPercentage.from_style_value_logic(value).to_px(LengthResolutionContext{},
+			CSSPixels.nearest_value_for(percentage_basis_px)).to_double()
 	}
 	context := c.length_resolution_context()
 	return LengthPercentage.from_style_value_logic(value).to_px(context,
