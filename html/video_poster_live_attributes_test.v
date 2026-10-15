@@ -96,7 +96,7 @@ fn test_video_live_poster_replacements_equal_writes_and_clearing_fetch_once() {
 fn test_video_poster_named_node_map_replacement_and_removal_use_actual_owner() {
 	mut document := vpla_document('<!doctype html><video id="v" poster="initial.png"></video>')!
 	defer { document.finalize() }
-	element := document.get_element_by_id('v') or { panic('Missing poster map owner') }
+	mut element := document.get_element_by_id('v') or { panic('Missing poster map owner') }
 	mut model := html_video_element_model_for_dom_element(unsafe { &dom.HTMLVideoElement(element) })
 	probe := vpla_observe(mut model)
 	initial := element.get_attribute_node_ns(none, 'poster') or { panic('Missing initial poster Attr') }
