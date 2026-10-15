@@ -6,6 +6,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "native_layer_presentation_darwin.h"
+#include "native_svg_mask_layer_darwin.h"
 
 #ifdef LADYBIRD_V_HAS_FFMPEG
 #include <libavcodec/avcodec.h>
@@ -3881,8 +3882,7 @@ void native_begin_svg_mask_layer(void) {
 	if (context == NULL) {
 		return;
 	}
-	CGContextSaveGState(context);
-	CGContextBeginTransparencyLayer(context, NULL);
+	native_begin_svg_mask_layer_in_context(context, native_svg_clip_rect);
 }
 
 void native_end_svg_mask_layer(unsigned long long input_key, int content_mask,

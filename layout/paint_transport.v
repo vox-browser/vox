@@ -778,6 +778,9 @@ pub:
 	scope_id   u64
 	opacity    f64 = 1.0
 	blend_mode painting.CompositingAndBlendingOperator
+	// Clip active at the effect node, before any descendant clips. Its viewport
+	// bounds conservatively limit the native transparency surface.
+	clip_rect  ?LayoutRect
 	filter     ?painting.GfxFilter = none
 	mask_clip  PaintClip
 }

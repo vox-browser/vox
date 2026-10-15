@@ -1745,6 +1745,7 @@ fn apply_compatibility_visual_context_chain(tree &painting.AccumulatedVisualCont
 					scope_id: u64(index)
 					opacity: node.data.opacity
 					blend_mode: node.data.blend_mode
+					clip_rect: if flattened.has_clip { flattened.clip } else { none }
 				}
 				flattened.group_opacity *= node.data.opacity
 			}
@@ -1871,9 +1872,15 @@ fn lower_visual_replay_steps(commands []PaintCommand, steps []CompatibilityVisua
 		// stack's capacity while preserving the payload of each open prefix.
 		active.trim(common)
 		for index := common; index < desired.len; index++ {
+			layer_clip := desired[index].clip_rect or { LayoutRect{} }
 			result << PaintCommand{
 				kind: compatibility_begin_visual_layer_kind(desired[index])
 				visual_layer_data: &PaintVisualLayer{ ...desired[index] }
+				has_clip: desired[index].clip_rect != none
+				clip_x: layer_clip.x
+				clip_y: layer_clip.y
+				clip_width: layer_clip.width
+				clip_height: layer_clip.height
 				// Filter bounds are in document coordinates. Preserve the first
 				// enclosed command's accumulated transform so the native graph can
 				// map them through scrolling and CSS transforms exactly once.

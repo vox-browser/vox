@@ -4687,6 +4687,13 @@ fn (mut app BrowserApp) draw_command(source_command layout.PaintCommand, page_x 
 	if command.kind == 'begin_css_effect_layer' {
 		$if macos {
 			if app.ctx.native_rendering {
+				C.native_begin_clip()
+				if command.has_clip {
+					// Apply the scope's ancestor bounds before allocating the layer.
+					// A fringe avoids applying fractional clip coverage twice.
+					fringe := if command.clip_width > 0 && command.clip_height > 0 { f32(2) } else { f32(0) }
+					C.native_add_corner_rounded_clip(f32(command.clip_x) - fringe, f32(command.clip_y) - fringe, f32(command.clip_width) + fringe * 2, f32(command.clip_height) + fringe * 2, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, page_x, page_y, 0, f32(app.ctx.height))
+				}
 				layer := command.visual_layer()
 				C.native_begin_css_effect_layer(f32(layer.opacity), int(layer.blend_mode))
 			}
@@ -4697,6 +4704,7 @@ fn (mut app BrowserApp) draw_command(source_command layout.PaintCommand, page_x 
 		$if macos {
 			if app.ctx.native_rendering {
 				C.native_end_css_effect_layer()
+				C.native_end_clip()
 			}
 		}
 		return
