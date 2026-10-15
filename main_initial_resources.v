@@ -13,6 +13,7 @@ fn (mut app BrowserApp) preload_initial_document_resources(base_url string) map[
 		app.js_messages << install_external_styles(app.document, base_url, loaded)
 		return loaded
 	}
+	_ = prepare_static_document_render_heap(app.document)
 	urls := document_preload_resource_urls(app.document, base_url)
 	types := document_preload_resource_types(app.document, base_url)
 	mut style_urls := []string{}
