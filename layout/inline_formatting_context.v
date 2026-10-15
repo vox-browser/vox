@@ -112,6 +112,12 @@ fn run_inline_formatting_context_internal(mut state LayoutState, containing_bloc
 	direction := containing_block.computed_values().direction()
 	writing_mode := containing_block.computed_values().writing_mode()
 	mut iterator := InlineLevelIterator.new(mut state, containing_block, containing_block_used_values, layout_mode, available_space, parent_block_context)
+	// This iterator's item records are consumed by value. Published line
+	// fragments retain their own node and glyph references, so the temporary
+	// outer item buffer has no owner after this formatting run completes.
+	defer {
+		unsafe { iterator.items.free() }
+	}
 	mut line_builder := LineBuilder.new_with_block_context(mut state, containing_block, containing_block_used_values, available_space.width, direction, writing_mode, parent_block_context)
 	mut leading_margin_from_collapsible_whitespace := CSSPixels.new(0)
 	mut leading_border_from_collapsible_whitespace := CSSPixels.new(0)
