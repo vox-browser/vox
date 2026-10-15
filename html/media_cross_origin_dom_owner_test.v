@@ -35,11 +35,14 @@ fn media_cross_origin_dom_load_track(element &dom.Element, probe &MediaCrossOrig
 	mut parent := element.as_node()
 	parent.append_child(track_element.as_node())!
 	html_track_element_inserted(track_dom)
-	assert voidptr(track.parent_media_?) == voidptr(html_media_element_for_dom_element(element)?)
+	parent_media := track.parent_media_ or { return error('missing track parent media') }
+	expected_media := html_media_element_for_dom_element(element) or { return error('missing actual media owner') }
+	assert voidptr(parent_media) == voidptr(expected_media)
 	assert track.track.kind() == .subtitles && track.track.mode() == .hidden
 	assert track.ready_state() == .loaded && track.event_count('load') == 1
 	assert track.track.cues().length() == 1
-	assert track.track.cues().item(0)?.text() == 'actual owner CORS'
+	cue := track.track.cues().item(0) or { return error('missing fetched track cue') }
+	assert cue.text() == 'actual owner CORS'
 }
 
 fn media_cross_origin_dom_drain(media &HTMLMediaElement) {

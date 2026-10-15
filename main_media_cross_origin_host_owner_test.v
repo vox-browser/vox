@@ -159,7 +159,8 @@ fn test_native_cross_origin_owner_updates_real_track_cors_without_reloading_medi
 	for index, item in [video, audio] {
 		mut media := unsafe { &html.HTMLMediaElement(item) }
 		mime := if index == 0 { 'video/mp4' } else { 'audio/webm' }
-		media.set_source(if index == 0 { '/video.mp4' } else { '/audio.webm' })
+		source := if index == 0 { '/video.mp4' } else { '/audio.webm' }
+		media.set_source(source)
 		media.set_fetch_hook(fn [probe, mime] (_ dom.URL, offset u64) !html.MediaResourceResponse {
 			assert offset == 0
 			mut observed := unsafe { &MediaCrossOriginOwnerProbe(probe) }
