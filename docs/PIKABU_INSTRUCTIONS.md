@@ -190,6 +190,7 @@ Counts are whole launch through the capture boundary described above.
 | Vox candidate v3 | 358,818,177,133 | Passed; regression |
 | Vox candidate v4 | 168,170,289,723 | Failed: document still interactive |
 | Vox candidate v6 | 127,377,534,003 | Passed |
+| Vox candidate v7 | 111,444,549,769 | Passed |
 
 Candidate v6 uses executable SHA256
 `cc105727ad0e7d08d12c94336ca6cd4d26e2c1318416dfddace23c626d1338c2`.
@@ -206,9 +207,25 @@ failed. The capture scheduling predicate now waits for actual document
 completion as well as font readiness. Candidate v5 was built with the older
 predicate and was not measured.
 
-The v6 saving triggers the repository's broad regression batch: 135 selected
-CSS/SVG/layout/native cases in each GC mode, the 100 exact upstream AST fixtures,
-production startup and 19 screenshot comparisons. That batch is pending.
+Both v6 and v7 have completed the repository's broad regression batch: 135
+selected CSS/SVG/layout/native cases in each GC mode, the 100 exact upstream
+AST fixtures, production startup and 19 screenshot comparisons. Sixteen
+screenshots are exact; three retain their existing sparse fuzzy bounds. All
+19 v7 outputs are pixel-identical to v6. The native redraw case runs unchanged
+in isolation, alongside the other 39 native cases, to avoid independently
+confirmed queued-wake interference in the original v6 aggregate. The original
+failed aggregate receipts remain preserved.
+
+Candidate v7 uses executable SHA256
+`25ddf4e9586f7f2695d1526a842edcc2eec85b77103bfceb11d098c14e2ef627`.
+It saves another 15,932,984,234 instructions (12.51%) relative to v6, with
+identical decoded pixels and the same completed-document and actual-Roboto
+checks. Its authenticated broad summary and cadence reset are retained at
+`Build/pikabu-instructions/broad-v7/{final-broad-summary,cadence-baseline-reset}.json`.
+The measured baseline after that batch is 111,444,549,769 instructions, with
+zero additional measured savings credited. Diagnostic profiles and isolated
+allocation probes do not advance that baseline.
+
 Vox remains above Brave's instruction count. A target claim still requires
 at least five alternating fresh Vox/Brave runs with all gates passing, preserved
 rows and unchanged input/runtime fingerprints.
