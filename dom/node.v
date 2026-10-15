@@ -1738,16 +1738,17 @@ pub fn (node &Node) style_scope() &StyleScope {
 	return node.document().style_scope()
 }
 
-fn add_observing_style_scope(mut scopes []&StyleScope, scope &StyleScope) {
-	if scope in scopes {
-		return
-	}
-	scopes << scope
+struct ObservingStyleScopes {
+	first &StyleScope
+mut:
+	additional []&StyleScope
 }
 
-struct ObservingStyleScopes {
-	first      &StyleScope
-	additional []&StyleScope
+fn (mut scopes ObservingStyleScopes) add(scope &StyleScope) {
+	if voidptr(scope) == voidptr(scopes.first) || scope in scopes.additional {
+		return
+	}
+	scopes.additional << scope
 }
 
 fn (node &Node) observing_style_scopes() ObservingStyleScopes {
@@ -1761,27 +1762,34 @@ fn (node &Node) observing_style_scopes() ObservingStyleScopes {
 			first: document.style_scope()
 		}
 	}
-	mut scopes := []&StyleScope{cap: 4}
-	add_observing_style_scope(mut scopes, node.style_scope())
+	mut scopes := ObservingStyleScopes{first: node.style_scope()}
 	if element := node.as_element() {
 		if shadow_root := element.shadow_root() {
-			add_observing_style_scope(mut scopes, shadow_root.style_scope())
+			scopes.add(shadow_root.style_scope())
 		}
 	}
+	// Ordinary parent edges stay in one tree and have the same effective scope.
+	// Resolve it again only when leaving a shadow root for its host. Adoption
+	// hooks retain the per-node lookup while document ownership is in transition.
+	mut reuse_ancestor_scope := document != unsafe { nil } && document.style_scope_adoption_depth_ == 0
+	mut previous := node
 	for ancestor := node.parent_or_shadow_host(); ancestor != none;  {
 		current := ancestor or { break }
-		add_observing_style_scope(mut scopes, current.style_scope())
+		if voidptr(current.document()) != voidptr(document) {
+			reuse_ancestor_scope = false
+		}
+		if !reuse_ancestor_scope || previous.is_shadow_root() {
+			scopes.add(current.style_scope())
+		}
 		if element := current.as_element() {
 			if shadow_root := element.shadow_root() {
-				add_observing_style_scope(mut scopes, shadow_root.style_scope())
+				scopes.add(shadow_root.style_scope())
 			}
 		}
+		previous = current
 		ancestor = current.parent_or_shadow_host()
 	}
-	return ObservingStyleScopes{
-		first: scopes[0]
-		additional: scopes[1..]
-	}
+	return scopes
 }
 
 pub fn (node &Node) for_each_style_scope_which_may_observe_the_node(callback fn (&StyleScope)) {
