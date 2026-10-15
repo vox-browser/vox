@@ -6688,6 +6688,96 @@ Chrome content/start/submission accounting remains open; no faster-than-Chrome
 claim is made. Evidence: `Build/instructions/vox-opt70-interleaved-*` and
 `Build/v/instruction-opt70-*`.
 
+## Reuse the last stable shaping font identity key
+
+Feature `029dbe41` retains one immutable private font-key snapshot.
+Equivalent stable handles reuse the existing exact serialization after matching
+family, explicit source, resolved path, weight, point-size **bits**, and invisible
+state. Face index depends only on the checked family/source/weight. No Font
+address is retained and no Font or public API schema changes. On a miss the
+original path resolution and complete serialization run unchanged, and the
+fully initialized record is published together with its key. Only a nonempty
+pinned resolved path can reuse/publish the snapshot; missing explicit sources
+remain retryable and select the source when it appears. One snapshot is rooted
+at a time through the existing thread-confined shaping-cache boundary.
+
+Before/final Boehm and final no-GC C-O2 configurations each pass **2,816
+assertions in 27 cases** (26 functional plus an inactive diagnostic). Three new
+cases compare exact former serialization across every identity field, including
+length delimiters, Unicode, case, signed zero, adjacent float values, two NaN
+payloads and fresh equivalent handles; retry a source that appears after a
+fallback and retain its pinned key after removal/collection; and compare complete
+public cached shapes against unchanged uncached shaping across LTR/RTL/common,
+Unicode, sizes, spacing, invisibility, baselines and trailing whitespace. Existing
+font-face retention, glyph/metrics identity, cache eviction, spacing and
+independent glyph-run checks remain. Common source SHA256
+`ff0e4b6c3d9a641032c89f9000c25fa787474a1624c87b5600d858283c312d34`.
+
+The predeclared local probe uses three alternating pairs, each **512 complete
+public-shaping batches** of 16 font identities and four Unicode/mixed-direction
+texts per font, baseline 17, letter spacing 0.25 and word spacing 0.5. All public
+shaping/key work is counted. Setup, eight warmups, expected result and forced GC
+precede the counter; checksum assertions follow it. Before counts are
+318,074,137 / 318,595,922 / 320,933,558; candidate counts by pair are
+268,097,599 / 267,303,203 / 268,385,590. Median instructions change
+**318,595,922→268,097,599 (-15.85%)**,
+all three pairs improving, checksum **147,417,088** in all six observations.
+This is a local result and receives no additional page credit.
+
+Both complete-process C-O1/Boehm profiles actually pass, with no filter/reset.
+Batch calls remain 521, public shaping 33,796 and key construction/lookup 35,390.
+Face-index calls change 36,534→9,787 and font-path calls 36,535→9,788.
+No profile time or call count substitutes for hardware instructions. Raw profile
+output, actual exits and generated-C scope proof remain archived.
+
+Strict C audit authenticates the normal target byte-for-byte against independent
+focused before/final C. Only private `platform__shaping_cache_font_key`, the
+exact seven-field immutable record/typedef, one global and its nil initialization
+are allowed to change. Original serialization is retained; all Font schema,
+shaping, cache lookup/storage/mutation, filtering, arenas, GC and other C match
+after established compiler identities, unchanged assertion-line mapping,
+37 frozen includes and four byte-identical helper reorderings. Native arguments
+and 120 pinned input hashes match. C SHA256
+`2c976d3f6ae96af60c03c7e60bb41703a0c553dc17d9e5d1a55cb4326a3ff0d1`; normal/focused/profile archive
+hashes are in `instruction-opt71-artifact-archives.json`.
+
+The fixed cohort uses **30 alternating pairs**, odd before/final and even
+final/before, **30,000 paired bootstrap resamples, seed 71**. Both persisted
+regular binaries use fresh copies of the same 359 cached bodies, frozen text
+helper, common child-only placement helper, native C-O2/Boehm/default marker 1
+and the same 4 GiB hint; no prod/prealloc. Fixed viewport 1024×768 and endpoint
+`navigation_to_first_document_paint[0]`; only fresh matched observations count.
+
+| Build | Median first-frame retired instructions | Median process peak, MiB |
+| --- | ---: | ---: |
+| Fresh accepted frozen70 control | 18,347,414,209 | 3,637.5 |
+| Stable shaping font key | 18,343,292,461.5 | 3,635.6 |
+
+Difference of marginal medians: **4,121,747.5** saved
+instructions (-0.022% change), **18/30**
+wins. Paired median saving **10,518,572.5**, paired 95%
+interval **[-4,968,837.5, 29,769,618.5]**. The interval includes zero; repeatable page credit is **0**. Whole-page savings are not established.
+
+All 60 primary observations and **60 actual PNGs** remain. Recovered
+primaries: none; pre-parse startup retries: 0.
+First primaries retain 1 installation/2 geometry preparations/1 paint. Later
+completed refreshes remain separate: none.
+No completed primary is extended, discarded or rerun. Recovered observations,
+if any, disclose unknown final exit, missing PNG/fingerprint/peak. Lifetime peak
+footprints include capture/exit and later refreshes, are not first-frame live
+memory and are never summed. Focused retained-line viewport is exact at
+1024×768. Prior observed carry is 0. Cumulative observed saving **4,121,747.5** stays below the 5M gate, so broad validation is deferred and the accepted round70 broad baseline remains.
+
+The signed isolated app is `/Users/alex/code/vox2/Build/v/Vox-opt71.app`. Native instruction text
+matches the measured regular binary. Its installed executable-relative frozen
+helper, default startup, signatures and actual collections pass; default marker
+1 and override 2 are checked. Canonical app and user GUI are preserved;
+concurrent advancement is disclosed by actual before/after hashes. Contemporary
+Root receives no extra source/regression/performance credit. Equivalent Chrome
+content/start/submission accounting remains open; faster-than-Chrome performance
+is unproven. Evidence: `Build/instructions/vox-opt71-interleaved-*` and
+`Build/v/instruction-opt71-*`.
+
 ## Causes and changes
 
 - The V 0.5.2 compatibility compiler's `-prod` Boehm code repeatedly snapshots

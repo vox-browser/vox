@@ -1642,6 +1642,15 @@ evidence](docs/translation-audit/NATIVE_MEDIA_WHEEL_RAW_HANDLER.md).
   focused inline viewport exact. Additional observed savings: 0.
   Same 4 GiB/placement; canonical/GUI preserved; contemporary Root excluded.
   Chrome parity remains open.
+  Stable shaping font keys `029dbe41` pass 2,816 focused assertions
+  per configuration; complete public shaping batches use 15.85% fewer
+  instructions. Page point saving 4,121,747.5,
+  18/30 wins, paired interval [-4,968,837.5, 29,769,618.5];
+  repeatable page credit 0. Broad verification:
+  deferred below cumulative 5M gate;
+  focused retained-line viewport exact. Additional observed savings: 4,121,747.5.
+  Same 4 GiB/placement; canonical/GUI preserved; contemporary Root excluded.
+  Chrome parity remains open.
 - Outside instruction-count optimization, run broad regression suites once per
   ten completed fixes, not after every fix.
   Broad suites include full translation/package test batches, the full LibJS AST
