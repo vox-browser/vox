@@ -189,6 +189,7 @@ pub fn (u &UsedValues) has_line_clamp_point() bool {
 }
 
 pub fn (mut u UsedValues) set_has_line_clamp_point(value bool) {
+	if u.has_line_clamp_point() == value { return }
 	mut rare := u.ensure_rare_data()
 	rare.has_line_clamp_point_ = value
 }
@@ -199,6 +200,7 @@ pub fn (u &UsedValues) is_invisible_for_line_clamp() bool {
 }
 
 pub fn (mut u UsedValues) set_invisible_for_line_clamp(value bool) {
+	if u.is_invisible_for_line_clamp() == value { return }
 	mut rare := u.ensure_rare_data()
 	rare.is_invisible_for_line_clamp_ = value
 }
@@ -217,6 +219,7 @@ pub fn (u &UsedValues) use_collapsing_borders_model() bool {
 }
 
 pub fn (mut u UsedValues) set_use_collapsing_borders_model(value bool) {
+	if u.use_collapsing_borders_model() == value { return }
 	mut rare := u.ensure_rare_data()
 	rare.uses_collapsing_borders_model_ = value
 }
@@ -227,6 +230,7 @@ pub fn (u &UsedValues) is_collapsed_borders_table_box() bool {
 }
 
 pub fn (mut u UsedValues) set_is_collapsed_borders_table_box(value bool) {
+	if u.is_collapsed_borders_table_box() == value { return }
 	mut rare := u.ensure_rare_data()
 	rare.is_collapsed_borders_table_box_ = value
 }
@@ -240,6 +244,7 @@ pub fn (u &UsedValues) hidden_by_collapsed_columns() bool {
 }
 
 pub fn (mut u UsedValues) set_hidden_by_collapsed_columns(value bool) {
+	if u.hidden_by_collapsed_columns() == value { return }
 	mut rare := u.ensure_rare_data()
 	rare.hidden_by_collapsed_columns_ = value
 }
@@ -309,6 +314,7 @@ pub fn (u &UsedValues) grid_row_line_names() [][]string {
 }
 
 pub fn (mut u UsedValues) set_grid_subgridded_axes(columns bool, rows bool) {
+	if u.grid_columns_are_subgrid() == columns && u.grid_rows_are_subgrid() == rows { return }
 	mut rare := u.ensure_rare_data()
 	rare.used_grid_columns_are_subgrid = columns
 	rare.used_grid_rows_are_subgrid = rows
@@ -690,6 +696,7 @@ pub fn (u &UsedValues) svg_viewport_transform() ?svg.AffineTransform {
 }
 
 pub fn (mut u UsedValues) set_svg_rendering_disabled(disabled bool) {
+	if u.svg_rendering_disabled() == disabled { return }
 	mut rare := u.ensure_rare_data()
 	rare.svg_rendering_disabled_ = disabled
 }
