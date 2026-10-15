@@ -3390,6 +3390,37 @@ Evidence: `Build/instructions/vox-opt37-interleaved-*` and
 `Build/v/instruction-opt37-*`. The completed broad batch resets the GitHub
 baseline to 30,970,670,843.5 instructions, with zero additional observed savings.
 
+## Fresh-reading audit for the experimental Chrome counter
+
+Tooling `bdf12eb1` adds a conservative delta helper for retained process-counter
+snapshots. It omits unavailable endpoint readings, waits for a fresh starting
+reading after an unavailable baseline, and starts newly observed tasks at their
+first actual counter rather than lifetime zero. Four focused unit cases pass,
+including task birth/exit, stale readings, later samples, root identity and
+counter monotonicity. This helper is independent of the unchanged Vox observer.
+
+The second isolated headless Chrome probe records **2,044,596,124** retired
+instructions across 12 included tasks and omits two tasks whose endpoint reads
+are unavailable. All 48 retained sampling passes, baseline/endpoint readings,
+missing-read sets and clock brackets are archived; the delta is independently
+recomputed from that evidence. Observer and browser exits are both zero.
+The original probe remains preserved, but its missing-read availability was
+not archived, so its asserted lower-bound status is not authenticated.
+
+This is an uncredited diagnostic. Sampling starts after the navigation response
+and ends conservatively before `paintTime`; tracing is disabled. The
+[2 October 2026 Paint Timing working draft](https://www.w3.org/TR/2026/WD-paint-timing-20261002/)
+distinguishes the rendering-update endpoint from later presentation. This probe
+still differs from Vox's native submitted-document-frame endpoint. Legacy cache
+headers are inferred: status 200, MIME by URL/type, wildcard CORS and no-store;
+missing/non-GET requests fail instead of reaching the live network. This body
+replay policy is disclosed and does not establish equivalent HTTP semantics or
+rendered content. No Chrome parity, speed ratio or page saving is claimed.
+
+Evidence: `Build/instructions/chrome-frozen-probe/counter-diagnostic-2/`,
+`Build/v/instruction-chrome-counter-v{1,2}-audit.json`. The binary SHA256 remains
+`c41c446837b5888d9574dbe462a4f01f02459bffee534eb945d2418984135a92`.
+
 ## Causes and changes
 
 - The V 0.5.2 compatibility compiler's `-prod` Boehm code repeatedly snapshots
