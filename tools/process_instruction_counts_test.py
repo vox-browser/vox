@@ -9,7 +9,7 @@ import tempfile
 import unittest
 from unittest.mock import patch
 
-from measure_browser_instructions import fresh_vox_cache, parse_native_counters
+from measure_browser_instructions import fingerprint_files, fresh_vox_cache, parse_native_counters
 from process_instruction_counts import CounterSampler, MacCounters, ProcessTreeCounter, Reading, RusageInfoV4
 
 
@@ -32,6 +32,17 @@ class FakeCounters:
 
 
 class CounterAccountingTests(unittest.TestCase):
+    def test_runtime_library_pin_detects_same_size_replacement(self):
+        with tempfile.TemporaryDirectory() as directory:
+            library = Path(directory) / "bridge.dylib"
+            library.write_bytes(b"first")
+            before = fingerprint_files([library])
+            library.write_bytes(b"other")
+            after = fingerprint_files([library])
+            self.assertNotEqual(before, after)
+            self.assertEqual(before[str(library.resolve())]["bytes"], 5)
+            self.assertEqual(after[str(library.resolve())]["bytes"], 5)
+
     def test_capture_boundary_excludes_later_samples_and_does_not_read_again(self):
         api = FakeCounters()
         counter = ProcessTreeCounter(api, 1)

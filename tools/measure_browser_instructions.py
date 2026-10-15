@@ -30,6 +30,12 @@ from process_instruction_counts import MacCounters, ProcessTreeCounter, CounterS
 REPO = Path(__file__).resolve().parents[1]
 
 
+def fingerprint_files(paths):
+    """Pin mutable non-system runtime inputs outside the measured interval."""
+    return {str(path.resolve()): {"sha256": hashlib.sha256(path.read_bytes()).hexdigest(),
+                                "bytes": path.stat().st_size} for path in paths}
+
+
 class CDP:
     def __init__(self, url):
         parsed = urllib.parse.urlparse(url)
@@ -342,6 +348,8 @@ def main():
                         help="Chrome: require this many .sprite elements before capturing")
     parser.add_argument("--expect-text-length", type=int,
                         help="Chrome: require this exact body innerText length before capturing")
+    parser.add_argument("--runtime-library", type=Path, action="append", default=[],
+                        help="pin this non-system runtime library before and after each run; may repeat")
     parser.add_argument("--cache-template", type=Path,
                         help="Vox only: start every run with a fresh copy of this page/resource cache")
     args = parser.parse_args()
@@ -365,6 +373,7 @@ def main():
         binary = args.binary or (REPO / "Build/v/Vox.app/Contents/MacOS/Vox" if args.engine == "vox"
                                  else Path("/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"))
         binary_before = hashlib.sha256(binary.read_bytes()).hexdigest()
+        runtime_before = fingerprint_files(args.runtime_library)
         with fresh_vox_cache(args.cache_template, args.scratch_dir) as (cache, template_hash):
             result = (run_vox(args, prefix, api, cache) if args.engine == "vox"
                       else run_chrome(args, prefix, api))
@@ -373,6 +382,9 @@ def main():
         result["binary_sha256"] = hashlib.sha256(Path(result["binary"]).read_bytes()).hexdigest()
         if result["binary_sha256"] != binary_before:
             raise RuntimeError("Measured executable changed during capture")
+        result["runtime_libraries"] = fingerprint_files(args.runtime_library)
+        if result["runtime_libraries"] != runtime_before:
+            raise RuntimeError("Measured runtime library changed during capture")
         result["measurement_driver_sha256"] = hashlib.sha256(Path(__file__).read_bytes()).hexdigest()
         result["counter_module_sha256"] = hashlib.sha256((REPO / "tools/process_instruction_counts.py").read_bytes()).hexdigest()
         result["sample_interval_seconds"] = args.sample_interval
