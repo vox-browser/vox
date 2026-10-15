@@ -354,6 +354,7 @@ int native_window_height(void) {
 }
 
 static void native_request_browser_redraw(void) {
+	++native_layer_redraw_generation;
 	// An asynchronous resource can complete while the application has no main
 	// or key window. Keep redrawing the window that owns our retained drawable.
 	NSWindow *window = [native_browser_view() window];

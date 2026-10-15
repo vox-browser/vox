@@ -16,6 +16,8 @@ static IMP native_layer_original_parent_wants_update;
 static CGFloat native_layer_capture_scale;
 static BOOL native_layer_presenting;
 static BOOL native_layer_document_work_active;
+// Main-thread redraw deliveries, distinct from merely servicing the run loop.
+static uint64_t native_layer_redraw_generation;
 
 static BOOL native_layer_is_browser_view(NSView *view) {
     Class browser = NSClassFromString(@"MyView2");
@@ -118,6 +120,7 @@ static void native_layer_moved_to_window(id self, SEL command) {
 static void native_layer_backing_changed(id self, SEL command) {
     if (native_layer_original_backing)
         ((void (*)(id, SEL))native_layer_original_backing)(self, command);
+    ++native_layer_redraw_generation;
     [(NSView *)self setNeedsDisplay:YES];
 }
 
@@ -125,7 +128,10 @@ static void native_layer_frame_size_changed(id self, SEL command, NSSize size) {
     NSSize previous = [(NSView *)self frame].size;
     if (native_layer_original_frame_size)
         ((void (*)(id, SEL, NSSize))native_layer_original_frame_size)(self, command, size);
-    if (!NSEqualSizes(previous, size)) [(NSView *)self setNeedsDisplay:YES];
+    if (!NSEqualSizes(previous, size)) {
+        ++native_layer_redraw_generation;
+        [(NSView *)self setNeedsDisplay:YES];
+    }
 }
 
 static BOOL native_layer_parent_wants_update(id self, SEL command) {

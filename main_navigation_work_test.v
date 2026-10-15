@@ -9,6 +9,9 @@ $if macos {
 
 fn C.vox_test_navigation_frame_guard() int
 fn C.vox_test_navigation_ui_pump() int
+fn C.vox_test_navigation_ui_redraw_generation() int
+fn C.vox_test_queue_navigation_redraw()
+fn C.vox_test_navigation_native_size_invalidations() int
 
 fn test_navigation_requested_during_engine_work_waits_for_a_safe_frame() {
 	mut app := &BrowserApp{ ctx: &gg.Context{} }
@@ -105,5 +108,35 @@ fn test_superseded_navigation_discards_queued_page_coordinates() {
 fn test_native_work_pump_receives_input_posted_from_another_thread() {
 	$if macos {
 		assert C.vox_test_navigation_ui_pump() == 3
+	}
+}
+
+fn test_native_work_pump_preserves_actual_resource_redraws_without_creating_idle_redraws() {
+	$if macos {
+		assert C.vox_test_navigation_ui_redraw_generation() == 7
+		mut app := &BrowserApp{ctx: &gg.Context{}}
+		mut scope := app.begin_navigation_work()
+		service_navigation_ui(voidptr(app))
+		assert !app.navigation_work_yielded
+		C.vox_test_queue_navigation_redraw()
+		for _ in 0 .. 16 {
+			service_navigation_ui(voidptr(app))
+			if app.navigation_work_yielded { break }
+		}
+		assert app.navigation_work_yielded
+		scope.finish()
+		// Finishing preserves the consumed resource wake once, after which an
+		// idle checkpoint must not turn that follow-up frame into a feedback loop.
+		service_navigation_ui(voidptr(app))
+		mut idle_scope := app.begin_navigation_work()
+		service_navigation_ui(voidptr(app))
+		assert !app.navigation_work_yielded
+		idle_scope.finish()
+	}
+}
+
+fn test_native_work_pump_preserves_changed_view_size_and_backing_invalidations() {
+	$if macos {
+		assert C.vox_test_navigation_native_size_invalidations() == 7
 	}
 }

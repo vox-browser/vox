@@ -7,7 +7,7 @@ $if macos {
 	#include "native_navigation_work_darwin.h"
 }
 
-fn C.vox_service_navigation_ui()
+fn C.vox_service_navigation_ui() int
 fn C.vox_set_navigation_work_active(int)
 
 struct DeferredNavigationInput {
@@ -32,9 +32,10 @@ struct DeferredPageInput {
 fn service_navigation_ui(context voidptr) {
 	mut app := unsafe { &BrowserApp(context) }
 	if app.ctx == unsafe { nil } { return }
-	app.navigation_work_yielded = true
 	$if macos {
-		C.vox_service_navigation_ui()
+		if C.vox_service_navigation_ui() != 0 {
+			app.navigation_work_yielded = true
+		}
 	}
 }
 

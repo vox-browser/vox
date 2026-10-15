@@ -6,8 +6,9 @@ static void vox_set_navigation_work_active(int active) {
 	native_layer_document_work_active = active != 0;
 }
 
-static void vox_service_navigation_ui(void) {
-	if (!NSThread.isMainThread || !NSApp) return;
+static int vox_service_navigation_ui(void) {
+	if (!NSThread.isMainThread || !NSApp) return 0;
+	uint64_t generation = native_layer_redraw_generation;
 	@autoreleasepool {
 		NSGraphicsContext *previous = NSGraphicsContext.currentContext;
 		@try {
@@ -28,4 +29,8 @@ static void vox_service_navigation_ui(void) {
 			NSGraphicsContext.currentContext = previous;
 		}
 	}
+	// A pump can consume a resource's wake while document work suppresses its
+	// native frame. Preserve that redraw, but never turn pumping alone into a
+	// request for another frame: slow static frames must eventually become idle.
+	return native_layer_redraw_generation != generation;
 }
