@@ -849,7 +849,7 @@ pub fn (mut element HTMLMediaElement) set_crossorigin(value ?string) {
 
 pub fn (element &HTMLMediaElement) loop() bool {
 	if html_element := element.associated_element_ {
-		return unsafe { &dom.Element(html_element) }.has_attribute('loop')
+		return unsafe { &dom.Element(html_element) }.has_attribute_ns(none, 'loop')
 	}
 	return element.loop_
 }
@@ -861,7 +861,7 @@ pub fn (mut element HTMLMediaElement) set_loop(value bool) {
 		if value {
 			dom_element.set_attribute_value('loop', '')
 		} else {
-			dom_element.remove_attribute('loop')
+			dom_element.remove_attribute_ns(none, 'loop')
 		}
 	}
 }
