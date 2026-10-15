@@ -54,7 +54,7 @@ requestAnimationFrame(()=>requestAnimationFrame(()=>{
 	gradient := document.get_element_by_id('move')?
 	assert voidptr(gradient.as_node().last_child()?) == voidptr(green_stop.as_node())
 	result := layout.run_document_layout(document, 200, 100) or { panic('missing source layout') }
-	commands := result.paint_tree.paint_commands().filter(it.kind == 'draw_svg_path' && it.fill_linear_gradient != none)
+	commands := result.paint_tree.paint_commands().filter(it.kind == 'draw_svg_path' && it.fill_linear_gradient() != none)
 	assert commands.len == 2
 	for command in commands {
 		paint := command.fill_linear_gradient()?
