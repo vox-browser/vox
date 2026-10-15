@@ -3795,6 +3795,90 @@ Chrome parity remains unestablished.
 Evidence: `Build/instructions/vox-opt41-interleaved-*` and
 `Build/v/instruction-opt41-*`.
 
+## Accumulate pending `:has()` mutation features in place
+
+Feature `32b44c5f` sends subsequent mutation-feature collection directly
+into the record already queued for a node. The unchanged element and subtree
+collectors retain the same tags, IDs, classes, attributes and namespace case
+variants. Sibling and pseudo-class flags accumulate monotonically; existing
+conservative and property features remain. First-record allocation, queue order,
+document scheduling, clearing and every other recording path are unchanged.
+Public mutable maps keep independent ownership.
+
+The common harness passes **573 assertions across 15 cases** (14 functional
+plus an inactive diagnostic) in before/final Boehm and final no-GC C-O2 builds.
+Four new cases compare repeated collection with the unchanged collect-and-merge
+oracle, check independent namespace expectations, queue ordering, retained
+records across clearing and collection, conservative/property features, and
+real DOM insertions of two distinct selector classes. The first candidate
+binding failed V's mutable-alias check before tests; its logs, receipts and
+immutable source remain preserved. Only that binding was corrected; the
+successful control harness was retained and never rerun.
+
+Three fixed alternating local pairs execute **8,192 complete already-queued
+node mutation-feature recordings**. Median retired instructions fall from
+**89,936,691 to 22,104,065**
+(-75.42%), with all three pairs improving and checksum 8 in
+all six observations. Setup, eight warmups, expected result and forced collection
+precede the counter; assertions follow it. This is local evidence with no
+separate page credit. Full-process C-O1/Boehm profiles run the entire common
+harness plus the active probe, without filters or resets. Recording calls remain
+**8,210** in each variant; feature constructors fall
+**8,226 to 22**,
+temporary collectors **8,214 to 10**,
+and merges **8,208 to 4**.
+Call counts are separate from hardware instruction measurements. An initial
+extraction used the wrong static-constructor symbol; both successful profiles
+were retained and their existing evidence re-extracted without rerunning them.
+
+The strict generated-C audit permits only
+`css__StyleScope_record_pending_has_invalidation_mutation_features` to change.
+All other executable logic, layouts, collectors, merge helpers, resources and
+GC setup match after established compiler identities, assertion-line mapping
+and frozen include paths. Four helpers may reorder only with identical raw
+bodies. All 120 native inputs, 37 quoted includes and native C-O2 arguments
+remain authenticated. Compiled C SHA256:
+`8004ae04295595413cd9135d7671cdf95e8e9aee9d0fe551e3edbec6b3530270`.
+Durable focused, normal and profile C archive hashes are in
+`instruction-opt42-artifact-archives.json`.
+
+The predeclared cohort contains 30 alternating pairs, 30,000 paired bootstrap
+resamples and seed 42. Regular frozen round 41 and candidate binaries use the
+same 359-body cache, fresh copies, helper, 1024×768 document viewport and
+`navigation_to_first_document_paint[0]`. Native C-O2/Boehm keeps one marker,
+without prod/prealloc.
+
+| Build | Median first-frame retired instructions |
+| --- | ---: |
+| Frozen round 41 control | 30,948,611,900 |
+| In-place pending feature accumulation | 30,974,728,492.5 |
+
+Observed matching median saving: **-26,116,592.5** instructions
+(-0.084%). 16/30 pairs improve. Paired
+median saving is 13,707,404.5, with a 95% paired percentile
+interval of **-70,388,590.5 to 51,858,644.5**. Repeatable page credit is **0**,
+requiring a strictly positive lower confidence bound. The interval estimates
+the paired median; the point saving above is the difference of marginal medians.
+All 60 primaries remain, with 60 actual PNGs, 0 recovered
+post-primary counters and 0 archived pre-parse startup retries. No
+completed primary is rerun, discarded or extended. Each primary has one
+installation, two geometry preparations and one paint; 0
+post-primary refreshes are retained separately. The unchanged observer hash
+retains its authenticated default Vox launch behavior; all actual launch arrays
+are checked separately.
+
+The observed matching median saving stays below the 5,000,000-instruction gate, so broad suites and the 19-case screenshot batch remain deferred.
+The focused live `:has()` insertion viewport is pixel-exact. Selected regression
+runtime includes the prior bulk-glyph change and this feature, pinned separately
+from current Root. The isolated signed comparison app is `/Users/alex/code/vox2/Build/v/Vox-opt42.app`.
+Signature, startup, matching native text and actual collections pass with
+default marker 1 and override 2. Canonical and GUI apps are preserved. Independent
+Root changes receive no performance or regression credit from this cohort.
+Chrome parity remains unestablished.
+
+Evidence: `Build/instructions/vox-opt42-interleaved-*` and
+`Build/v/instruction-opt42-*`.
+
 ## Causes and changes
 
 - The V 0.5.2 compatibility compiler's `-prod` Boehm code repeatedly snapshots

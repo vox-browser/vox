@@ -1426,6 +1426,12 @@ evidence](docs/translation-audit/NATIVE_MEDIA_WHEEL_RAW_HANDLER.md).
   repeatable page credit 0.
   Broad verification: deferred below the observed 5,000,000-instruction gate.
   The focused viewport is exact; Chrome parity remains open.
+  Queued `:has()` feature accumulation `32b44c5f` passes 573 focused assertions
+  per configuration; its complete repeated-recording probe uses 75.42% fewer
+  instructions. Matching 30-pair observed savings are -26,116,592.5,
+  with repeatable page credit 0.
+  Broad verification: deferred below the observed 5,000,000-instruction gate.
+  The focused viewport is exact; Chrome parity remains open.
 - Outside instruction-count optimization, run broad regression suites once per
   ten completed fixes, not after every fix.
   Broad suites include full translation/package test batches, the full LibJS AST
