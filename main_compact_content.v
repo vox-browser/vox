@@ -161,7 +161,8 @@ fn (mut binding CompactElementQueryBinding) query(input string) !string {
 		}
 	}
 	if action == 'querySelector' {
-		return if element := css.query_selector(root, selector) {
+		parent := unsafe { &dom.ParentNode(root) }
+		return if element := parent.query_selector(selector) {
 			json2.encode(binding.element_state(element))
 		} else {
 			'null'
@@ -169,7 +170,10 @@ fn (mut binding CompactElementQueryBinding) query(input string) !string {
 	}
 	if action == 'querySelectorAll' {
 		mut result := []json2.Any{}
-		for element in css.query_selector_all(root, selector) {
+		parent := unsafe { &dom.ParentNode(root) }
+		list := parent.query_selector_all(selector)!
+		for node in list.nodes {
+			element := node.as_element() or { continue }
 			result << binding.element_state(element)
 		}
 		return json2.encode(result)

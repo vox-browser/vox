@@ -1872,6 +1872,10 @@ fn matches_pseudo_class(pseudo_class PseudoClassSelector, element &dom.Element, 
 		}
 		.scope {
 			if scope_node := scope {
+				if scope_document := scope_node.as_node().as_document() {
+					return element.is_document_element()
+						&& voidptr(element.document()) == voidptr(scope_document)
+				}
 				return voidptr(scope_node.as_node()) == voidptr(element.as_node())
 			}
 			return element.is_html_element() && element.local_name() == 'html'
