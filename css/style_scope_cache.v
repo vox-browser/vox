@@ -1162,6 +1162,12 @@ fn collect_pending_has_invalidation_mutation_features(mutation_root &dom.Node, i
 
 fn collect_pending_has_invalidation_mutation_features_from_properties(properties []InvalidationProperty) &PendingHasInvalidationMutationFeatures {
 	mut features := PendingHasInvalidationMutationFeatures.new()
+	collect_pending_has_invalidation_properties_into(mut features, properties)
+	return features
+}
+
+fn collect_pending_has_invalidation_properties_into(mut features PendingHasInvalidationMutationFeatures,
+	properties []InvalidationProperty) {
 	for property in properties {
 		match property.type_ {
 			.class { features.class_names[property.name()] = true }
@@ -1174,7 +1180,6 @@ fn collect_pending_has_invalidation_mutation_features_from_properties(properties
 			.pseudo_class { features.pseudo_classes[property.pseudo_class] = true }
 		}
 	}
-	return features
 }
 
 fn (mut scope StyleScope) record_pending_has_invalidation_features(node &dom.Node, features &PendingHasInvalidationMutationFeatures) {
@@ -1260,6 +1265,13 @@ pub fn (mut scope StyleScope) record_pending_has_invalidation_mutation_features(
 }
 
 pub fn (mut scope StyleScope) record_pending_has_invalidation_mutation_properties(node &dom.Node, properties []InvalidationProperty) {
+	if mut features := scope.pending_has_invalidation_features[node.unique_id().value()] {
+		// Parser attributes and later mutations often add features to the same
+		// queued node. Keep that record rather than creating five throwaway maps
+		// and merging them into the record which already owns these features.
+		collect_pending_has_invalidation_properties_into(mut features, properties)
+		return
+	}
 	features := collect_pending_has_invalidation_mutation_features_from_properties(properties)
 	scope.record_pending_has_invalidation_features(node, features)
 }
