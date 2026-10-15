@@ -356,6 +356,8 @@ pub fn (mut element HTMLTrackElementModel) set_parent_media(media ?&HTMLMediaEle
 }
 
 pub fn (mut element HTMLTrackElementModel) set_src(value string) {
+	mut track := element.track
+	track.clear_cues()
 	element.src_ = value
 	if value == '' {
 		element.set_track_url('')
@@ -546,6 +548,9 @@ fn (mut model HTMLTrackElementModel) content_attribute_changed(element &dom.HTML
 			if source := value {
 				model.base_url_ = unsafe { &dom.Element(element) }.document().base_url()
 				model.set_src(source)
+			} else {
+				mut track := model.track
+				track.clear_cues()
 			}
 		}
 		'id' {

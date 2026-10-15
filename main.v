@@ -2274,7 +2274,17 @@ fn apply_decoded_javascript_state(document &dom.Document, state map[string]json2
 				mut target := element_by_bridge_key[target_key] or { continue }
 				if kind == 'compactAttribute' {
 					name := json_string_property(operation, 'name') or { continue }
-					apply_javascript_element_attribute(mut target, name, json_string_property(operation, 'value'))
+					// Every explicit track source write empties its cues, even when
+					// its text is unchanged. Snapshot reconciliation stays separate.
+					if name == 'src' && target.is_html_element() && target.local_name() == 'track' {
+						if value := json_string_property(operation, 'value') {
+							target.set_attribute_value(name, value)
+						} else {
+							target.remove_attribute(name)
+						}
+					} else {
+						apply_javascript_element_attribute(mut target, name, json_string_property(operation, 'value'))
+					}
 				} else if kind == 'wheelContentAttribute' {
 					// Replay explicit writes even when the attribute text is unchanged:
 					// those writes replace an earlier IDL-installed handler.

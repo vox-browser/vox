@@ -149,6 +149,17 @@ pub fn (mut t TextTrack) add_cue(mut cue TextTrackCue) {
 	t.cues_.add_cue(cue)
 }
 
+pub fn (mut t TextTrack) clear_cues() {
+	for mut cue in t.cues_.cues_ {
+		if owner := cue.track_ {
+			if voidptr(owner) == voidptr(&t) {
+				cue.track_ = none
+			}
+		}
+	}
+	t.cues_.cues_.clear()
+}
+
 pub fn (mut t TextTrack) set_media_element(media_element &HTMLMediaElement) {
 	t.media_element_ = media_element
 }
