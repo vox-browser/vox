@@ -63,12 +63,12 @@ fn test_raw_handler_scripting_disabled_preserves_handler_listener_and_source_for
 	element := document.create_element('button')!
 	target := unsafe { &EventTarget(element) }
 	target.element_event_handler_attribute_changed('onclick', 'return false;')
-	handler := target.data.event_handler_map['click'] or { panic('handler') }
+	handler := target.data.event_handler('click') or { panic('handler') }
 	listener := handler.listener or { panic('activated listener') }
 	assert target.get_current_value_of_event_handler('click') == none
 	assert probe.calls == 0 && handler.value.kind == .string
 	assert handler.value.string_data == 'return false;'
-	assert voidptr(target.data.event_handler_map['click'] or { panic('handler') }) == voidptr(handler)
+	assert voidptr(target.data.event_handler('click') or { panic('handler') }) == voidptr(handler)
 	assert voidptr(handler.listener or { panic('listener') }) == voidptr(listener)
 	document.browsing_context = &BrowsingContext{ active_document_: document }
 	compiled := target.get_current_value_of_event_handler('click') or { panic('compiler') }
@@ -85,11 +85,11 @@ fn test_raw_handler_syntax_failure_nulls_value_but_retains_activation_and_retrie
 	element := document.create_element('button')!
 	target := unsafe { &EventTarget(element) }
 	target.element_event_handler_attribute_changed('onclick', 'return (')
-	handler := target.data.event_handler_map['click'] or { panic('handler') }
+	handler := target.data.event_handler('click') or { panic('handler') }
 	listener := handler.listener or { panic('activated listener') }
 	assert target.get_current_value_of_event_handler('click') == none
 	assert probe.calls == 1 && handler.value.kind == .null_
-	assert voidptr(target.data.event_handler_map['click'] or { panic('handler') }) == voidptr(handler)
+	assert voidptr(target.data.event_handler('click') or { panic('handler') }) == voidptr(handler)
 	assert voidptr(handler.listener or { panic('listener') }) == voidptr(listener)
 	assert target.get_current_value_of_event_handler('click') == none
 	assert probe.calls == 1 && target.data.event_listener_list.len == 1
@@ -97,7 +97,7 @@ fn test_raw_handler_syntax_failure_nulls_value_but_retains_activation_and_retrie
 	target.element_event_handler_attribute_changed('onclick', 'return false;')
 	assert target.get_current_value_of_event_handler('click') != none
 	assert probe.calls == 2
-	assert voidptr(target.data.event_handler_map['click'] or { panic('handler') }) == voidptr(handler)
+	assert voidptr(target.data.event_handler('click') or { panic('handler') }) == voidptr(handler)
 	assert voidptr(handler.listener or { panic('listener') }) == voidptr(listener)
 }
 
@@ -109,7 +109,7 @@ fn test_raw_handler_csp_attribute_check_precedes_value_replacement_and_compiler(
 	element := document.create_element('button')!
 	target := unsafe { &EventTarget(element) }
 	target.element_event_handler_attribute_changed('onclick', 'return false;')
-	handler := target.data.event_handler_map['click'] or { panic('handler') }
+	handler := target.data.event_handler('click') or { panic('handler') }
 	document.set_csp_hook(DocumentCSPHook{
 		inline_check: fn (_ voidptr, _ &Element, type_ string, source string) bool {
 			assert type_ == 'script-attribute' && source == 'blocked body'
@@ -128,7 +128,7 @@ fn test_raw_handler_unavailable_owner_compiler_keeps_raw_value_without_callable(
 	element := document.create_element('button')!
 	target := unsafe { &EventTarget(element) }
 	target.element_event_handler_attribute_changed('onclick', 'return false;')
-	handler := target.data.event_handler_map['click'] or { panic('handler') }
+	handler := target.data.event_handler('click') or { panic('handler') }
 	assert target.get_current_value_of_event_handler('click') == none
 	assert handler.value.kind == .string
 	document.set_inline_event_handler_compiler(InlineEventHandlerCompiler{

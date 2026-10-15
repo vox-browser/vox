@@ -294,7 +294,7 @@ fn test_raw_media_drag_attributes_stay_uncompiled_when_native_idl_handlers_repla
 	video := document.get_element_by_id('video')?
 	assert voidptr(target) == voidptr(video) && target.event_listener_list().len == 7
 	for type_ in types {
-		raw_handler := target.data.event_handler_map[type_] or {
+		raw_handler := target.data.event_handler(type_) or {
 			assert false, 'Missing raw media drag handler ${type_}'
 			return
 		}
@@ -303,7 +303,7 @@ fn test_raw_media_drag_attributes_stay_uncompiled_when_native_idl_handlers_repla
 		assert runtime.evaluate_host('video.on${type_}===null&&rawMediaDragRuns===0')! == 'true'
 		assert raw_handler.value.kind == .string && raw_handler.value.string_data == raw_source
 		runtime.evaluate_host('video.on${type_}=function(event){rawMediaDragAssigned++;rawMediaDragChecks.push(arguments.length===1&&this===video&&event.type==="${type_}"&&event.target===video&&event.currentTarget===video&&event instanceof DragEvent&&event.isTrusted&&event.dataTransfer===null&&window.event===event&&__mediaDragHandlerContext());result.textContent="assigned:"+event.type;return false};0')!
-		assigned := target.data.event_handler_map[type_] or {
+		assigned := target.data.event_handler(type_) or {
 			assert false, 'Missing assigned media drag handler ${type_}'
 			return
 		}
@@ -311,7 +311,7 @@ fn test_raw_media_drag_attributes_stay_uncompiled_when_native_idl_handlers_repla
 		assert !dom.event_target_dispatch_event(target, media_drag_handler_event(document, type_, none))
 		assert video.get_attribute('on${type_}')? == raw_source
 		assert runtime.evaluate_host('video.on${type_}=null;video.on${type_}===null&&rawMediaDragRuns===0&&rawMediaDragChecks.every(Boolean)&&window.event===undefined')! == 'true'
-		assert type_ !in target.data.event_handler_map
+		assert !target.data.has_event_handler(type_)
 		assert dom.event_target_dispatch_event(target, media_drag_handler_event(document, type_, none))
 		assert video.get_attribute('on${type_}')? == raw_source
 	}

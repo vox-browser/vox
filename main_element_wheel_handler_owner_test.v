@@ -128,7 +128,7 @@ ehTarget.setAttribute("onwheel","globalThis.ehRawRuns++");ehTarget.onwheel=ehRep
 ')!
 	assert runtime.javascript_event_handler(native_target, 'wheel')! == runtime.evaluate_host_value('ehReplacement')!
 	assert runtime.evaluate_host('ehAbsentRawGetter&&ehTarget.onwheel===ehReplacement&&ehRawRuns===0')! == 'true'
-	slot := native_target.data.event_handler_map['wheel'] or { panic('Native wheel handler slot missing') }
+	slot := native_target.data.event_handler('wheel') or { panic('Native wheel handler slot missing') }
 	assert slot.value.kind == .object && target.get_attribute('onwheel')? == 'globalThis.ehRawRuns++'
 	app.handle_event(&gg.Event{
 		typ: .mouse_scroll
@@ -149,13 +149,13 @@ ehTarget.setAttribute("onwheel","globalThis.ehRawRuns++");ehTarget.onwheel=ehRep
 			0, 0, 0, 0, 2.5, false) == .handled
 		assert scroller.el_scroll_offset().y() == f64(index + 1) * 2.5 && app.scroll_y == 0
 		assert runtime.evaluate_host('ehOrder.join(",")==="before,handler,after"&&!ehSaved[${index + 1}].defaultPrevented&&ehChecks.every(Boolean)')! == 'true'
-		assert voidptr(native_target.data.event_handler_map['wheel'] or { panic('Replaced slot missing') }) == voidptr(slot)
+		assert voidptr(native_target.data.event_handler('wheel') or { panic('Replaced slot missing') }) == voidptr(slot)
 		element_wheel_handler_owner_event(mut runtime, observation.events[index + 1], 'ehSaved[${index + 1}]', true)!
 	}
 	// Repeating the same raw text after IDL assignment wins on getter replay.
 	// Reading lazily compiles the replacement without moving its listener slot.
 	assert runtime.evaluate_host('ehOrder=[];ehTarget.setAttribute("onwheel","globalThis.ehRawRuns++");typeof ehTarget.onwheel==="function"')! == 'true'
-	raw := native_target.data.event_handler_map['wheel'] or { panic('Raw native slot missing') }
+	raw := native_target.data.event_handler('wheel') or { panic('Raw native slot missing') }
 	assert voidptr(raw) == voidptr(slot) && raw.value.kind == .object
 	raw_callback := unsafe { &dom.CallbackType(raw.value.object_data) }
 	assert raw_callback.compiled_source_text_ == 'function onwheel(event) {\n' + 'globalThis.ehRawRuns++' + '\n}'
@@ -166,18 +166,18 @@ ehTarget.setAttribute("onwheel","globalThis.ehRawRuns++");ehTarget.onwheel=ehRep
 	assert raw.value.kind == .object
 	// Null removes the slot; reinstalling adds it after the existing listeners.
 	assert runtime.evaluate_host('ehTarget.onwheel=null;ehTarget.onwheel===null')! == 'true'
-	assert 'wheel' !in native_target.data.event_handler_map
+	assert !native_target.data.has_event_handler('wheel')
 	runtime.evaluate_host('ehOrder=[];ehReturn=false;ehTarget.onwheel=ehReplacement;0')!
 	assert app.handle_wheel_at_viewport_point(page.PixelPoint{12.5, 12.25}, page.PixelPoint{}, 0, 0, 0, 0, 3.75, false) == .cancelled
 	assert scroller.el_scroll_offset().y() == 7.5 && app.scroll_y == 0
-	restarted := native_target.data.event_handler_map['wheel'] or { panic('Reinstalled slot missing') }
+	restarted := native_target.data.event_handler('wheel') or { panic('Reinstalled slot missing') }
 	assert voidptr(restarted) != voidptr(slot)
 	assert runtime.evaluate_host('ehOrder.join(",")==="before,after,handler"&&!ehAfterStates[4]&&ehSaved[3].defaultPrevented&&ehRawRuns===1&&ehChecks.every(Boolean)')! == 'true'
 	element_wheel_handler_owner_event(mut runtime, observation.events[4], 'ehSaved[3]', true)!
 	// Removing an existing raw attribute clears the later IDL handler. Removing
 	// that now-absent attribute must leave a subsequently installed handler alone.
 	assert runtime.evaluate_host('ehTarget.removeAttribute("onwheel");ehTarget.onwheel===null')! == 'true'
-	assert target.get_attribute('onwheel') == none && 'wheel' !in native_target.data.event_handler_map
+	assert target.get_attribute('onwheel') == none && !native_target.data.has_event_handler('wheel')
 	assert runtime.evaluate_host('ehTarget.onwheel=ehReplacement;ehTarget.removeAttribute("onwheel");ehTarget.onwheel===ehReplacement')! == 'true'
 	assert target.get_attribute('onwheel') == none
 	assert runtime.javascript_event_handler(native_target, 'wheel')! == runtime.evaluate_host_value('ehReplacement')!

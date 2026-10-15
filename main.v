@@ -2880,7 +2880,7 @@ fn (mut app BrowserApp) media_click_replay_state(element &dom.Element) !map[stri
 	}
 	mut raw := ''
 	if !processed && compact_document_can_run_script(element.document()) {
-		if handler := target.data.event_handler_map['click'] {
+		if handler := target.data.event_handler('click') {
 			if handler.value.kind == .string {
 				raw = handler.value.string_data
 			}
@@ -3167,7 +3167,7 @@ fn (mut app BrowserApp) update_current_history_entry(loaded LoadedPage) {
 // facade must also initialize for raw Window handlers without script elements.
 fn document_has_window_event_handlers(document &dom.Document) bool {
 	window := document.get_window() or { return false }
-	return window.data.event_handler_map.len > 0
+	return window.data.event_handler_count() > 0
 }
 
 fn (mut app BrowserApp) install_loaded_page(loaded LoadedPage, add_history bool) {

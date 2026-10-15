@@ -180,7 +180,7 @@ globalThis.mlsAudio=document.createElement("audio");mlsAudio.id="mls-audio";mlsA
 	native_video := unsafe { &dom.EventTarget(video) }
 	native_audio := unsafe { &dom.EventTarget(audio) }
 	for target in [native_video, native_audio] {
-		slot := target.data.event_handler_map['loadstart'] or { panic('Raw loadstart slot missing') }
+		slot := target.data.event_handler('loadstart') or { panic('Raw loadstart slot missing') }
 		assert slot.value.kind == .string && slot.value.string_data == body
 	}
 	assert runtime.evaluate_host('globalThis.mlsVideoStart=mlsVideo.onloadstart;globalThis.mlsAudioStart=mlsAudio.onloadstart;typeof mlsVideoStart==="function"&&typeof mlsAudioStart==="function"&&mlsVideoStart!==mlsAudioStart&&mlsVideoStart.name==="onloadstart"&&mlsAudioStart.name==="onloadstart"&&mlsVideoStart.length===1&&mlsAudioStart.length===1&&mlsVideo.onloadstart===mlsVideoStart&&mlsAudio.onloadstart===mlsAudioStart&&!Object.hasOwn(mlsVideo,"onloadstart")&&!Object.hasOwn(mlsAudio,"onloadstart")&&mlsRuns===0')! == 'true'
@@ -243,11 +243,11 @@ globalThis.mlsIDL=function(event){mlsRuns++;mlsOrder.push("idl");mlsSaved.push(e
 	media_loadstart_raw_owner_probe(mut runtime, document)!
 	video := document.get_element_by_id('mls-video')?
 	native_video := unsafe { &dom.EventTarget(video) }
-	slot := native_video.data.event_handler_map['loadstart'] or { panic('Loadstart slot missing') }
+	slot := native_video.data.event_handler('loadstart') or { panic('Loadstart slot missing') }
 	listener := slot.listener or { panic('Loadstart listener missing') }
 	first_callback := native_video.get_current_value_of_event_handler('loadstart') or { panic('First loadstart callback missing') }
 	assert runtime.evaluate_host('mlsVideo.onloadstart=mlsIDL;mlsVideo.setAttribute("onloadstart",mlsSource);globalThis.mlsSecond=mlsVideo.onloadstart;typeof mlsSecond==="function"&&mlsSecond!==mlsFirst&&mlsSecond!==mlsIDL&&mlsSecond.name==="onloadstart"&&mlsSecond.length===1&&mlsVideo.onloadstart===mlsSecond&&mlsRuns===0')! == 'true'
-	assert voidptr(native_video.data.event_handler_map['loadstart'] or { panic('Replaced loadstart slot missing') }) == voidptr(slot)
+	assert voidptr(native_video.data.event_handler('loadstart') or { panic('Replaced loadstart slot missing') }) == voidptr(slot)
 	assert voidptr(slot.listener or { panic('Replaced loadstart listener missing') }) == voidptr(listener)
 	second_callback := native_video.get_current_value_of_event_handler('loadstart') or { panic('Second loadstart callback missing') }
 	assert voidptr(second_callback) != voidptr(first_callback) && second_callback.compiled_source_text_ == first_callback.compiled_source_text_
@@ -270,7 +270,7 @@ globalThis.mlsIDL=function(event){mlsRuns++;mlsOrder.push("idl");mlsSaved.push(e
 	assert voidptr(slot.listener or { panic('Nested loadstart listener missing') }) == voidptr(listener)
 	media_loadstart_raw_owner_drain(document)
 	assert runtime.evaluate_host('__mediaLoadstartRawQueueLoad();mlsVideo.removeAttribute("onloadstart");mlsVideo.onloadstart===null&&mlsRuns===2')! == 'true'
-	assert 'loadstart' !in native_video.data.event_handler_map && video.get_attribute('onloadstart') == none
+	assert !native_video.data.has_event_handler('loadstart') && video.get_attribute('onloadstart') == none
 	media_loadstart_raw_owner_drain(document)
 	assert runtime.evaluate_host('mlsRuns===2&&mlsOrder.length===2&&mlsSaved.length===2')! == 'true'
 	assert runtime.evaluate_host('mlsVideo.onloadstart=mlsIDL;mlsVideo.removeAttribute("onloadstart");__mediaLoadstartRawQueueLoad();mlsVideo.onloadstart===mlsIDL&&mlsRuns===2')! == 'true'
@@ -305,7 +305,7 @@ globalThis.mlsVideo=document.getElementById("mls-video");globalThis.mlsRuns=0;gl
 	media, fetch := media_loadstart_raw_owner_configure(mut runtime, video, '__mediaLoadstartRawStrictPending')!
 	body := r'"use strict";mlsRuns++;mlsOrder.push("strict-loadstart");mlsSaved.push(event);mlsChecks.push(arguments.length===1&&event===arguments[0]&&this===mlsVideo&&event.target===mlsVideo&&event.currentTarget===mlsVideo&&event instanceof Event&&event.isTrusted&&!event.bubbles&&!event.cancelable&&window.event===event&&mlsCallOpen&&this.networkState===2&&this.readyState===0&&this.currentSrc===""&&Number.isNaN(this.duration)&&this.currentTime===0&&this.paused&&__mediaLoadstartRawOwnerContext()&&__mediaLoadstartRawStrictPending());try{void arguments.callee;mlsChecks.push(false)}catch(error){mlsChecks.push(error instanceof TypeError)}this.onloadstart=null;globalThis.mlsLiveName=onloadstart;throw mlsReason;'
 	assert runtime.evaluate_host('mlsVideo.setAttribute("onloadstart",${json2.encode(body)});mlsVideo.paused')! == 'true'
-	slot := native_video.data.event_handler_map['loadstart'] or { panic('Strict loadstart slot missing') }
+	slot := native_video.data.event_handler('loadstart') or { panic('Strict loadstart slot missing') }
 	mut owner := app.page_model
 	owner.set_is_scripting_enabled(false)
 	assert runtime.evaluate_host('mlsVideo.src="/gated-start.mp4";void mlsVideo.paused;mlsVideo.load();mlsVideo.onloadstart===null&&mlsRuns===0&&mlsVideo.readyState===1&&mlsVideo.networkState===1')! == 'true'
@@ -323,7 +323,7 @@ mlsVideo.addEventListener("loadstart",function(event){mlsOrder.push("later-loads
 	assert strict_callback.compiled_source_text_ == 'function onloadstart(event) {\n${body}\n}'
 	assert runtime.javascript_event_handler(native_video, 'loadstart')! == runtime.evaluate_host_value('mlsStrict')!
 	assert runtime.evaluate_host('mlsCallOpen=true;mlsVideo.load();mlsCallOpen=false;mlsRuns===1&&mlsOrder.join(",")==="strict-loadstart,later-loadstart"&&mlsLiveName===null&&mlsVideo.onloadstart===null&&mlsLater&&mlsChecks.length===2&&mlsChecks.every(Boolean)&&mlsSaved.length===1&&!mlsSaved[0].defaultPrevented&&mlsVideo.readyState===1&&mlsVideo.networkState===1&&mlsVideo.currentSrc==="https://media-loadstart-raw-owner.example.test/gated-start.mp4"&&mlsVideo.duration===20&&window.event===undefined')! == 'true'
-	assert 'loadstart' !in native_video.data.event_handler_map && video.get_attribute_value('onloadstart') == body
+	assert !native_video.data.has_event_handler('loadstart') && video.get_attribute_value('onloadstart') == body
 	assert settings.realm().reported_exceptions.len == 1
 	reported := settings.realm().reported_exceptions[0].value.as_webidl_value()!
 	assert runtime.actual_webidl_value(reported)! == runtime.evaluate_host_value('mlsReason')!

@@ -15,7 +15,7 @@ fn test_handler_activation_retains_the_passed_handler_and_removes_its_exact_list
 		return js_undefined()
 	} }
 	target.set_event_handler_attribute('load', callback)
-	handler := target.data.event_handler_map['load'] or { panic('handler not installed') }
+	handler := target.data.event_handler('load') or { panic('handler not installed') }
 	listener := handler.listener or { panic('handler lost its activated listener identity') }
 	assert target.event_listener_list() == [listener]
 	target.dispatch_event(Event.create('load', EventInit{}))
@@ -44,7 +44,7 @@ fn test_replacing_a_handler_keeps_its_existing_listener_and_calls_the_replacemen
 	listener := target.event_listener_list()[0]
 	target.set_event_handler_attribute('load', second)
 	assert target.event_listener_list() == [listener]
-	assert target.data.event_handler_map['load'].listener? == listener
+	assert (target.data.event_handler('load') or { panic('missing event handler') }).listener? == listener
 	target.dispatch_event(Event.create('load', EventInit{}))
 	assert state.values == ['second']
 }

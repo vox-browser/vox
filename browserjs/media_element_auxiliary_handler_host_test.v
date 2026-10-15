@@ -121,7 +121,7 @@ fn test_native_media_auxiliary_handlers_keep_native_owner_slots_and_legacy_retur
 		assert voidptr(runtime.native_event_target(runtime.evaluate_host_value(owner_name)!)!) == voidptr(media.event_target())
 		assert media.event_target().event_listener_list().len == 6
 		for name in ['auxclick', 'dblclick'] {
-			handler := media.event_target().data.event_handler_map[name] or {
+			handler := media.event_target().data.event_handler(name) or {
 				panic('missing native auxiliary media handler slot')
 			}
 			assert handler.listener != none

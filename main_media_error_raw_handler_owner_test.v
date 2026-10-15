@@ -252,10 +252,10 @@ globalThis.mreIDL=function(event){mreOrder.push("idl");mreSaved.push(event);mreC
 	}
 	video := document.get_element_by_id('mre-video')?
 	native := unsafe { &dom.EventTarget(video) }
-	slot := native.data.event_handler_map['error'] or { panic('Error slot missing') }
+	slot := native.data.event_handler('error') or { panic('Error slot missing') }
 	listener := slot.listener or { panic('Error listener missing') }
 	assert runtime.evaluate_host('mreVideo.onerror=mreIDL;mreVideo.setAttribute("onerror",${json2.encode(body)});globalThis.mreEqual=mreVideo.onerror;mreEqual!==mreOriginal&&mreEqual!==mreIDL&&mreVideo.onerror===mreEqual')! == 'true'
-	assert voidptr(native.data.event_handler_map['error'] or { panic('Retained error slot missing') }) == voidptr(slot)
+	assert voidptr(native.data.event_handler('error') or { panic('Retained error slot missing') }) == voidptr(slot)
 	assert voidptr(slot.listener or { panic('Retained error listener missing') }) == voidptr(listener)
 	mut media := html.html_media_element_for_dom_element(video)?
 	state := &MediaErrorRawOwnerState{ message: 'Dedicated decoder \x00 🎬 failure' }
@@ -289,7 +289,7 @@ globalThis.mreIDL=function(event){mreOrder.push("idl");mreSaved.push(event);mreC
 	assert voidptr(slot.listener or { panic('Reentrant error listener missing') }) == voidptr(listener)
 	media_error_raw_owner_queue(media, state, 'removed raw body', false)
 	assert runtime.evaluate_host('mreVideo.removeAttribute("onerror");mreVideo.onerror===null')! == 'true'
-	assert 'error' !in native.data.event_handler_map
+	assert !native.data.has_event_handler('error')
 	media_error_raw_owner_drain(document)
 	assert runtime.evaluate_host('mreOrder.join(",")==="replacement,later,first,second,idl,later,later"&&mreSaved.length===2')! == 'true'
 	assert runtime.evaluate_host('mreVideo.onerror=mreIDL;mreVideo.removeAttribute("onerror");mreVideo.onerror===mreIDL')! == 'true'
@@ -383,7 +383,7 @@ fn test_media_raw_error_scripting_gate_strict_original_exception_later_listener_
 	// A state getter flushes the compact attribute without compiling onerror,
 	// preserving a raw string slot for the disabled-scripting check below.
 	assert runtime.evaluate_host('mreVideo.setAttribute("onerror",${json2.encode(body)});mreVideo.paused===true')! == 'true'
-	slot := native.data.event_handler_map['error'] or { panic('Gated raw error slot missing') }
+	slot := native.data.event_handler('error') or { panic('Gated raw error slot missing') }
 	mut owner := app.page_model
 	owner.set_is_scripting_enabled(false)
 	media_error_raw_owner_queue(media, state, state.message, false)
@@ -401,7 +401,7 @@ fn test_media_raw_error_scripting_gate_strict_original_exception_later_listener_
 	media_error_raw_owner_queue(media, state, state.message, false)
 	media_error_raw_owner_drain(document)
 	assert runtime.evaluate_host('mreOrder.join(",")==="strict,later"&&mreChecks.length===3&&mreChecks.every(Boolean)&&mreLiveName===null&&mreVideo.onerror===null&&mreSaved.length===1&&!mreSaved[0].defaultPrevented&&window.event===undefined')! == 'true'
-	assert 'error' !in native.data.event_handler_map && video.get_attribute_value('onerror') == body
+	assert !native.data.has_event_handler('error') && video.get_attribute_value('onerror') == body
 	settings := unsafe { &html.EnvironmentSettingsObject(document.relevant_settings_object()) }
 	assert settings.realm().reported_exceptions.len == 1
 	reported := settings.realm().reported_exceptions[0].value.as_webidl_value()!

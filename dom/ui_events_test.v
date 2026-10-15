@@ -456,7 +456,7 @@ fn test_inline_event_handler_source_uses_on_prefixed_function_name() {
 	assert inline_event_handler_function_source(event_target, 'click', 'return 42;') == 'function onclick(event) {\nreturn 42;\n}'
 	// A DOM-only document has no actual engine compiler and keeps the raw body.
 	assert event_target.get_current_value_of_event_handler('click') == none
-	assert event_target.data.event_handler_map['click'].value.kind == .string
+	assert (event_target.data.event_handler('click') or { panic('missing event handler') }).value.kind == .string
 }
 
 fn test_current_high_resolution_time_is_relative_to_the_window_time_origin() {

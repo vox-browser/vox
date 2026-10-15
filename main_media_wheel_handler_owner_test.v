@@ -155,7 +155,7 @@ fn test_media_wheel_raw_source_and_self_replacement_preserve_native_slot_order()
 	media_wheel_handler_probe(mut runtime, document)!
 	video := document.get_element_by_id('video')?
 	video_target := runtime.native_event_target(runtime.evaluate_host_value('video')!)!
-	raw_handler := video_target.data.event_handler_map['wheel'] or {
+	raw_handler := video_target.data.event_handler('wheel') or {
 		assert false, 'Missing raw media wheel handler'
 		return
 	}
@@ -174,7 +174,7 @@ mediaWheelAudio.onwheel=function(event){mediaWheelSlotOrder.push("first");mediaW
 mediaWheelAudio.addEventListener("wheel",function(event){mediaWheelSlotOrder.push("after");mediaWheelSlotChecks.push(this===mediaWheelAudio&&event.isTrusted&&window.event===event);result.textContent=mediaWheelSlotOrder.join(",")});
 document.body.appendChild(mediaWheelAudio);void mediaWheelAudio.paused;0
 ')!
-	assigned := video_target.data.event_handler_map['wheel'] or {
+	assigned := video_target.data.event_handler('wheel') or {
 		assert false, 'Missing assigned media wheel handler'
 		return
 	}
@@ -182,7 +182,7 @@ document.body.appendChild(mediaWheelAudio);void mediaWheelAudio.paused;0
 	assert !dom.event_target_dispatch_event(video_target, media_wheel_handler_event(document))
 	assert video.get_attribute('onwheel')? == raw_source
 	assert runtime.evaluate_host('video.onwheel=null;video.onwheel===null&&mediaWheelRawCalls===1&&rawMediaWheelRuns===1')! == 'true'
-	assert 'wheel' !in video_target.data.event_handler_map && video_target.event_listener_list().len == 0
+	assert !video_target.data.has_event_handler('wheel') && video_target.event_listener_list().len == 0
 	assert video.get_attribute('onwheel')? == raw_source
 	audio_target := runtime.native_event_target(runtime.evaluate_host_value('mediaWheelAudio')!)!
 	assert voidptr(audio_target) == voidptr(document.get_element_by_id('media-wheel-audio')?)

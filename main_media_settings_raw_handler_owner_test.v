@@ -133,7 +133,7 @@ globalThis.msrAudio=document.createElement("audio");msrAudio.id="msr-audio";msrA
 	native_audio := unsafe { &dom.EventTarget(audio) }
 	for target in [native_video, native_audio] {
 		for name in ['ratechange', 'volumechange'] {
-			slot := target.data.event_handler_map[name] or { panic('Raw settings slot missing') }
+			slot := target.data.event_handler(name) or { panic('Raw settings slot missing') }
 			assert slot.value.kind == .string && slot.value.string_data == body
 		}
 	}
@@ -207,8 +207,8 @@ globalThis.msrVolumeIDL=function(event){msrOrder.push("idl-volume");msrSaved.pus
 	}
 	video := document.get_element_by_id('msr-video')?
 	native_video := unsafe { &dom.EventTarget(video) }
-	rate_slot := native_video.data.event_handler_map['ratechange'] or { panic('Rate slot missing') }
-	volume_slot := native_video.data.event_handler_map['volumechange'] or { panic('Volume slot missing') }
+	rate_slot := native_video.data.event_handler('ratechange') or { panic('Rate slot missing') }
+	volume_slot := native_video.data.event_handler('volumechange') or { panic('Volume slot missing') }
 	rate_listener := rate_slot.listener or { panic('Rate listener missing') }
 	volume_listener := volume_slot.listener or { panic('Volume listener missing') }
 	first_rate := native_video.get_current_value_of_event_handler('ratechange') or { panic('First rate callback missing') }
@@ -218,8 +218,8 @@ msrVideo.onratechange=msrRateIDL;msrVideo.setAttribute("onratechange",msrSource)
 msrVideo.onvolumechange=msrVolumeIDL;msrVideo.setAttribute("onvolumechange",msrSource);globalThis.msrSecondVolume=msrVideo.onvolumechange;
 typeof msrSecondRate==="function"&&msrSecondRate!==msrFirstRate&&msrSecondRate!==msrRateIDL&&msrSecondRate.name==="onratechange"&&msrSecondRate.length===1&&typeof msrSecondVolume==="function"&&msrSecondVolume!==msrFirstVolume&&msrSecondVolume!==msrVolumeIDL&&msrSecondVolume.name==="onvolumechange"&&msrSecondVolume.length===1&&msrVideo.onratechange===msrSecondRate&&msrVideo.onvolumechange===msrSecondVolume&&msrOrder.length===0
 ')! == 'true'
-	assert voidptr(native_video.data.event_handler_map['ratechange'] or { panic('Replaced rate slot missing') }) == voidptr(rate_slot)
-	assert voidptr(native_video.data.event_handler_map['volumechange'] or { panic('Replaced volume slot missing') }) == voidptr(volume_slot)
+	assert voidptr(native_video.data.event_handler('ratechange') or { panic('Replaced rate slot missing') }) == voidptr(rate_slot)
+	assert voidptr(native_video.data.event_handler('volumechange') or { panic('Replaced volume slot missing') }) == voidptr(volume_slot)
 	assert voidptr(rate_slot.listener or { panic('Replaced rate listener missing') }) == voidptr(rate_listener)
 	assert voidptr(volume_slot.listener or { panic('Replaced volume listener missing') }) == voidptr(volume_listener)
 	second_rate := native_video.get_current_value_of_event_handler('ratechange') or { panic('Second rate callback missing') }
@@ -244,7 +244,7 @@ typeof msrSecondRate==="function"&&msrSecondRate!==msrFirstRate&&msrSecondRate!=
 	assert runtime.evaluate_host(r'
 msrVideo.defaultPlaybackRate=4;msrVideo.volume=0.25;msrVideo.onratechange=msrRateIDL;msrVideo.onvolumechange=msrVolumeIDL;msrVideo.removeAttribute("onratechange");msrVideo.removeAttribute("onvolumechange");msrVideo.onratechange===null&&msrVideo.onvolumechange===null&&msrOrder.length===4
 ')! == 'true'
-	assert 'ratechange' !in native_video.data.event_handler_map && 'volumechange' !in native_video.data.event_handler_map
+	assert !native_video.data.has_event_handler('ratechange') && !native_video.data.has_event_handler('volumechange')
 	assert video.get_attribute('onratechange') == none && video.get_attribute('onvolumechange') == none
 	media_settings_raw_owner_drain(document)
 	assert runtime.evaluate_host('msrOrder.length===4&&msrSaved.length===4')! == 'true'
@@ -284,8 +284,8 @@ globalThis.msrVideo=document.getElementById("msr-video");globalThis.msrRuns=0;gl
 	body := r'"use strict";msrRuns++;msrOrder.push("strict-rate");msrSaved.push(event);msrChecks.push(arguments.length===1&&event===arguments[0]&&this===msrVideo&&event.target===msrVideo&&event.currentTarget===msrVideo&&event instanceof Event&&event.isTrusted&&!event.bubbles&&!event.cancelable&&window.event===event&&this.playbackRate===0.5&&__mediaSettingsRawOwnerContext());try{void arguments.callee;msrChecks.push(false)}catch(error){msrChecks.push(error instanceof TypeError)}this.onratechange=null;globalThis.msrLiveName=onratechange;throw msrReason;'
 	volume_body := r'msrVolumeRuns++;msrOrder.push("raw-volume");msrSaved.push(event);msrChecks.push(event.isTrusted&&this===msrVideo&&window.event===event&&this.volume===0.5&&this.muted&&__mediaSettingsRawOwnerContext());return false;'
 	assert runtime.evaluate_host('msrVideo.setAttribute("onratechange",${json2.encode(body)});msrVideo.setAttribute("onvolumechange",${json2.encode(volume_body)});msrVideo.paused')! == 'true'
-	rate_slot := native_video.data.event_handler_map['ratechange'] or { panic('Strict rate slot missing') }
-	volume_slot := native_video.data.event_handler_map['volumechange'] or { panic('Raw volume slot missing') }
+	rate_slot := native_video.data.event_handler('ratechange') or { panic('Strict rate slot missing') }
+	volume_slot := native_video.data.event_handler('volumechange') or { panic('Raw volume slot missing') }
 	mut owner := app.page_model
 	owner.set_is_scripting_enabled(false)
 	assert runtime.evaluate_host('msrVideo.defaultPlaybackRate=2;msrVideo.volume=0.5;msrVideo.onratechange===null&&msrVideo.onvolumechange===null&&msrRuns===0&&msrVolumeRuns===0')! == 'true'
@@ -305,7 +305,7 @@ msrVideo.addEventListener("ratechange",function(event){msrOrder.push("later-rate
 	assert runtime.evaluate_host('msrVideo.playbackRate=0.5;msrOrder.length===0')! == 'true'
 	media_settings_raw_owner_drain(document)
 	assert runtime.evaluate_host('msrOrder.join(",")==="strict-rate,later-rate"&&msrRuns===1&&msrVolumeRuns===0&&msrLiveName===null&&msrVideo.onratechange===null&&msrLater&&msrChecks.length===2&&msrChecks.every(Boolean)&&window.event===undefined')! == 'true'
-	assert 'ratechange' !in native_video.data.event_handler_map && 'volumechange' in native_video.data.event_handler_map
+	assert !native_video.data.has_event_handler('ratechange') && native_video.data.has_event_handler('volumechange')
 	assert video.get_attribute_value('onratechange') == body && video.get_attribute_value('onvolumechange') == volume_body
 	assert settings.realm().reported_exceptions.len == 1
 	reported := settings.realm().reported_exceptions[0].value.as_webidl_value()!

@@ -160,7 +160,7 @@ for(var mdrElement of [mdrVideo,mdrAudio])for(var mdrEventName of ["canplay","pl
 	native_audio := unsafe { &dom.EventTarget(audio) }
 	for target in [native_video, native_audio] {
 		for name in ['loadedmetadata', 'loadeddata'] {
-			slot := target.data.event_handler_map[name] or { panic('Raw data slot missing') }
+			slot := target.data.event_handler(name) or { panic('Raw data slot missing') }
 			assert slot.value.kind == .string && slot.value.string_data == body
 		}
 	}
@@ -254,8 +254,8 @@ globalThis.mdrDataIDL=function(event){mdrOrder.push("idl-data");mdrSaved.push(ev
 	}
 	video := document.get_element_by_id('mdr-video')?
 	native_video := unsafe { &dom.EventTarget(video) }
-	metadata_slot := native_video.data.event_handler_map['loadedmetadata'] or { panic('Metadata slot missing') }
-	data_slot := native_video.data.event_handler_map['loadeddata'] or { panic('Data slot missing') }
+	metadata_slot := native_video.data.event_handler('loadedmetadata') or { panic('Metadata slot missing') }
+	data_slot := native_video.data.event_handler('loadeddata') or { panic('Data slot missing') }
 	metadata_listener := metadata_slot.listener or { panic('Metadata listener missing') }
 	data_listener := data_slot.listener or { panic('Data listener missing') }
 	first_metadata := native_video.get_current_value_of_event_handler('loadedmetadata') or { panic('First metadata callback missing') }
@@ -265,8 +265,8 @@ mdrVideo.onloadedmetadata=mdrMetadataIDL;mdrVideo.setAttribute("onloadedmetadata
 mdrVideo.onloadeddata=mdrDataIDL;mdrVideo.setAttribute("onloadeddata",mdrSource);globalThis.mdrSecondData=mdrVideo.onloadeddata;
 typeof mdrSecondMetadata==="function"&&mdrSecondMetadata!==mdrFirstMetadata&&mdrSecondMetadata!==mdrMetadataIDL&&mdrSecondMetadata.name==="onloadedmetadata"&&mdrSecondMetadata.length===1&&typeof mdrSecondData==="function"&&mdrSecondData!==mdrFirstData&&mdrSecondData!==mdrDataIDL&&mdrSecondData.name==="onloadeddata"&&mdrSecondData.length===1&&mdrVideo.onloadedmetadata===mdrSecondMetadata&&mdrVideo.onloadeddata===mdrSecondData&&mdrOrder.length===0
 ')! == 'true'
-	assert voidptr(native_video.data.event_handler_map['loadedmetadata'] or { panic('Replaced metadata slot missing') }) == voidptr(metadata_slot)
-	assert voidptr(native_video.data.event_handler_map['loadeddata'] or { panic('Replaced data slot missing') }) == voidptr(data_slot)
+	assert voidptr(native_video.data.event_handler('loadedmetadata') or { panic('Replaced metadata slot missing') }) == voidptr(metadata_slot)
+	assert voidptr(native_video.data.event_handler('loadeddata') or { panic('Replaced data slot missing') }) == voidptr(data_slot)
 	assert voidptr(metadata_slot.listener or { panic('Replaced metadata listener missing') }) == voidptr(metadata_listener)
 	assert voidptr(data_slot.listener or { panic('Replaced data listener missing') }) == voidptr(data_listener)
 	second_metadata := native_video.get_current_value_of_event_handler('loadedmetadata') or { panic('Second metadata callback missing') }
@@ -306,7 +306,7 @@ typeof mdrSecondMetadata==="function"&&mdrSecondMetadata!==mdrFirstMetadata&&mdr
 	assert runtime.evaluate_host(r'
 mdrVideo.onloadedmetadata=mdrMetadataIDL;mdrVideo.onloadeddata=mdrDataIDL;mdrVideo.removeAttribute("onloadedmetadata");mdrVideo.removeAttribute("onloadeddata");mdrVideo.onloadedmetadata===null&&mdrVideo.onloadeddata===null
 ')! == 'true'
-	assert 'loadedmetadata' !in native_video.data.event_handler_map && 'loadeddata' !in native_video.data.event_handler_map
+	assert !native_video.data.has_event_handler('loadedmetadata') && !native_video.data.has_event_handler('loadeddata')
 	assert video.get_attribute('onloadedmetadata') == none && video.get_attribute('onloadeddata') == none
 	assert runtime.evaluate_host(r'
 mdrVideo.onloadedmetadata=mdrMetadataIDL;mdrVideo.onloadeddata=mdrDataIDL;mdrVideo.removeAttribute("onloadedmetadata");mdrVideo.removeAttribute("onloadeddata");mdrVideo.load();mdrVideo.onloadedmetadata===mdrMetadataIDL&&mdrVideo.onloadeddata===mdrDataIDL&&mdrVideo.readyState===1&&mdrOrder.length===2
@@ -347,8 +347,8 @@ globalThis.mdrVideo=document.getElementById("mdr-video");globalThis.mdrRuns=0;gl
 	data_body := r'mdrDataRuns++;mdrOrder.push("raw-data");mdrSaved.push(event);mdrChecks.push(event.isTrusted&&this===mdrVideo&&window.event===event&&this.readyState===2&&__mediaDataRawOwnerContext());return false;'
 	// Synchronize through the compact state before capturing native slots.
 	assert runtime.evaluate_host('mdrVideo.setAttribute("onloadedmetadata",${json2.encode(body)});mdrVideo.setAttribute("onloadeddata",${json2.encode(data_body)});mdrVideo.paused')! == 'true'
-	metadata_slot := native_video.data.event_handler_map['loadedmetadata'] or { panic('Strict metadata slot missing') }
-	data_slot := native_video.data.event_handler_map['loadeddata'] or { panic('Raw data slot missing') }
+	metadata_slot := native_video.data.event_handler('loadedmetadata') or { panic('Strict metadata slot missing') }
+	data_slot := native_video.data.event_handler('loadeddata') or { panic('Raw data slot missing') }
 	mut owner := app.page_model
 	owner.set_is_scripting_enabled(false)
 	assert runtime.evaluate_host(r'mdrVideo.src="/gated-data.mp4";mdrVideo.load();mdrVideo.readyState===1&&mdrVideo.onloadedmetadata===null&&mdrVideo.onloadeddata===null&&mdrRuns===0&&mdrDataRuns===0')! == 'true'
@@ -371,7 +371,7 @@ mdrVideo.addEventListener("loadedmetadata",function(event){mdrOrder.push("later-
 	assert runtime.evaluate_host('mdrVideo.load();mdrVideo.readyState===1&&mdrOrder.length===0')! == 'true'
 	media_data_raw_owner_drain(document)
 	assert runtime.evaluate_host('mdrOrder.join(",")==="strict-metadata,later-metadata"&&mdrRuns===1&&mdrDataRuns===0&&mdrLiveName===null&&mdrVideo.onloadedmetadata===null&&mdrLater&&mdrChecks.length===2&&mdrChecks.every(Boolean)&&window.event===undefined')! == 'true'
-	assert 'loadedmetadata' !in native_video.data.event_handler_map && 'loadeddata' in native_video.data.event_handler_map
+	assert !native_video.data.has_event_handler('loadedmetadata') && native_video.data.has_event_handler('loadeddata')
 	assert video.get_attribute_value('onloadedmetadata') == body && video.get_attribute_value('onloadeddata') == data_body
 	assert settings.realm().reported_exceptions.len == 1
 	reported := settings.realm().reported_exceptions[0].value.as_webidl_value()!

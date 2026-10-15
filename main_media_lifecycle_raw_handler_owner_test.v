@@ -138,7 +138,7 @@ globalThis.mlAudio=document.createElement("audio");mlAudio.id="ml-audio";mlAudio
 	native_audio := unsafe { &dom.EventTarget(audio) }
 	for target in [native_video, native_audio] {
 		for name in ['play', 'pause'] {
-			slot := target.data.event_handler_map[name] or { panic('Raw lifecycle slot missing') }
+			slot := target.data.event_handler(name) or { panic('Raw lifecycle slot missing') }
 			assert slot.value.kind == .string && slot.value.string_data == body
 		}
 	}
@@ -205,7 +205,7 @@ globalThis.mlIDL=function(event){mlOrder.push("idl");mlSaved.push(event);mlCheck
 	}
 	video := document.get_element_by_id('ml-video')?
 	native_video := unsafe { &dom.EventTarget(video) }
-	slot := native_video.data.event_handler_map['pause'] or { panic('Pause slot missing') }
+	slot := native_video.data.event_handler('pause') or { panic('Pause slot missing') }
 	listener := slot.listener or { panic('Pause listener missing') }
 	first := native_video.get_current_value_of_event_handler('pause') or { panic('First raw pause callback missing') }
 	assert runtime.evaluate_host(r'
@@ -214,7 +214,7 @@ const request=mlVideo.play();mlVideo.pause();request.catch(reason=>{mlReasons.pu
 mlVideo.setAttribute("onplay","mlOrder.push(\"replacement-play\");mlSaved.push(event);return false;");
 typeof mlSecond==="function"&&mlSecond!==mlFirst&&mlSecond!==mlIDL&&mlSecond.name==="onpause"&&mlSecond.length===1&&mlVideo.onpause===mlSecond&&mlOrder.length===0
 ')! == 'true'
-	assert voidptr(native_video.data.event_handler_map['pause'] or { panic('Replaced pause slot missing') }) == voidptr(slot)
+	assert voidptr(native_video.data.event_handler('pause') or { panic('Replaced pause slot missing') }) == voidptr(slot)
 	assert voidptr(slot.listener or { panic('Replaced pause listener missing') }) == voidptr(listener)
 	second := native_video.get_current_value_of_event_handler('pause') or { panic('Second raw pause callback missing') }
 	assert voidptr(second) != voidptr(first) && second.compiled_source_text_ == first.compiled_source_text_
@@ -222,7 +222,7 @@ typeof mlSecond==="function"&&mlSecond!==mlFirst&&mlSecond!==mlIDL&&mlSecond.nam
 	media_lifecycle_raw_owner_checkpoint()
 	assert runtime.evaluate_host('mlOrder.join(",")==="replacement-play,raw-pause,after,rejected"&&mlReasons.length===1&&mlReasons[0].name==="AbortError"&&mlChecks.every(Boolean)&&mlSaved.every(event=>event.isTrusted&&event.defaultPrevented)')! == 'true'
 	assert runtime.evaluate_host('mlVideo.onpause=mlIDL;mlVideo.removeAttribute("onpause");mlVideo.onpause===null')! == 'true'
-	assert 'pause' !in native_video.data.event_handler_map && video.get_attribute('onpause') == none
+	assert !native_video.data.has_event_handler('pause') && video.get_attribute('onpause') == none
 	assert runtime.evaluate_host(r'
 mlVideo.onpause=mlIDL;mlVideo.removeAttribute("onpause");mlOrder=[];mlExpectedBefore=false;
 const secondRequest=mlVideo.play();mlVideo.pause();secondRequest.catch(reason=>{mlReasons.push(reason);mlOrder.push("rejected")});mlVideo.onpause===mlIDL
@@ -272,8 +272,8 @@ globalThis.mlVideo=document.getElementById("ml-video");globalThis.mlRuns=0;globa
 	pause_body := r'mlPauseRuns++;mlSaved.push(event);mlChecks.push(event.isTrusted&&this===mlVideo&&window.event===event&&__mediaLifecycleRawOwnerContext());return false;'
 	video.set_attribute_value('onplay', body)
 	video.set_attribute_value('onpause', pause_body)
-	play_slot := native_video.data.event_handler_map['play'] or { panic('Strict play slot missing') }
-	pause_slot := native_video.data.event_handler_map['pause'] or { panic('Raw pause slot missing') }
+	play_slot := native_video.data.event_handler('play') or { panic('Strict play slot missing') }
+	pause_slot := native_video.data.event_handler('pause') or { panic('Raw pause slot missing') }
 	mut owner := app.page_model
 	owner.set_is_scripting_enabled(false)
 	assert runtime.evaluate_host(r'
@@ -297,7 +297,7 @@ mlVideo.play().catch(reason=>mlReasons.push(reason));mlVideo.pause();typeof mlSt
 	media_lifecycle_raw_owner_drain(document)
 	media_lifecycle_raw_owner_checkpoint()
 	assert runtime.evaluate_host('mlRuns===1&&mlPauseRuns===1&&mlChecks.length===3&&mlChecks.every(Boolean)&&mlLiveName===null&&mlVideo.onplay===null&&mlVideo.onpause===mlPause&&mlLater&&mlSaved.length===2&&!mlSaved[0].defaultPrevented&&mlSaved[1].defaultPrevented&&window.event===undefined')! == 'true'
-	assert 'play' !in native_video.data.event_handler_map && 'pause' in native_video.data.event_handler_map
+	assert !native_video.data.has_event_handler('play') && native_video.data.has_event_handler('pause')
 	assert video.get_attribute_value('onplay') == body && video.get_attribute_value('onpause') == pause_body
 	assert settings.realm().reported_exceptions.len == 1
 	reported := settings.realm().reported_exceptions[0].value.as_webidl_value()!

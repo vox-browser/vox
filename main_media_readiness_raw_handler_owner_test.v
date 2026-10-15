@@ -155,7 +155,7 @@ globalThis.mrrAudio=document.createElement("audio");mrrAudio.id="mrr-audio";mrrA
 	native_audio := unsafe { &dom.EventTarget(audio) }
 	for target in [native_video, native_audio] {
 		for name in ['playing', 'waiting'] {
-			slot := target.data.event_handler_map[name] or { panic('Raw readiness slot missing') }
+			slot := target.data.event_handler(name) or { panic('Raw readiness slot missing') }
 			assert slot.value.kind == .string && slot.value.string_data == body
 		}
 	}
@@ -258,8 +258,8 @@ globalThis.mrrPlayingIDL=function(event){mrrOrder.push("idl-playing");mrrSaved.p
 	video := document.get_element_by_id('mrr-video')?
 	native_video := unsafe { &dom.EventTarget(video) }
 	mut media := media_readiness_raw_owner_prepare(mut runtime, document, video, 'mrrVideo')!
-	waiting_slot := native_video.data.event_handler_map['waiting'] or { panic('Waiting slot missing') }
-	playing_slot := native_video.data.event_handler_map['playing'] or { panic('Playing slot missing') }
+	waiting_slot := native_video.data.event_handler('waiting') or { panic('Waiting slot missing') }
+	playing_slot := native_video.data.event_handler('playing') or { panic('Playing slot missing') }
 	waiting_listener := waiting_slot.listener or { panic('Waiting listener missing') }
 	playing_listener := playing_slot.listener or { panic('Playing listener missing') }
 	first_waiting := native_video.get_current_value_of_event_handler('waiting') or { panic('First waiting callback missing') }
@@ -271,8 +271,8 @@ globalThis.mrrRequest=mrrVideo.play();mrrRequest.then(value=>{mrrChecks.push(val
 mrrVideo.setAttribute("onwaiting","mrrOrder.push(\"replacement-waiting\");mrrSaved.push(event);return false;");
 typeof mrrSecondWaiting==="function"&&mrrSecondWaiting!==mrrFirstWaiting&&mrrSecondWaiting!==mrrWaitingIDL&&mrrSecondWaiting.name==="onwaiting"&&mrrSecondWaiting.length===1&&typeof mrrSecondPlaying==="function"&&mrrSecondPlaying!==mrrFirstPlaying&&mrrSecondPlaying!==mrrPlayingIDL&&mrrSecondPlaying.name==="onplaying"&&mrrSecondPlaying.length===1&&mrrVideo.onplaying===mrrSecondPlaying&&mrrOrder.length===0
 ')! == 'true'
-	assert voidptr(native_video.data.event_handler_map['waiting'] or { panic('Replaced waiting slot missing') }) == voidptr(waiting_slot)
-	assert voidptr(native_video.data.event_handler_map['playing'] or { panic('Replaced playing slot missing') }) == voidptr(playing_slot)
+	assert voidptr(native_video.data.event_handler('waiting') or { panic('Replaced waiting slot missing') }) == voidptr(waiting_slot)
+	assert voidptr(native_video.data.event_handler('playing') or { panic('Replaced playing slot missing') }) == voidptr(playing_slot)
 	assert voidptr(waiting_slot.listener or { panic('Replaced waiting listener missing') }) == voidptr(waiting_listener)
 	assert voidptr(playing_slot.listener or { panic('Replaced playing listener missing') }) == voidptr(playing_listener)
 	second_playing := native_video.get_current_value_of_event_handler('playing') or { panic('Second playing callback missing') }
@@ -300,7 +300,7 @@ mrrVideo.setAttribute("onplaying","mrrOrder.push(\"reentrant-playing\");globalTh
 	assert runtime.evaluate_host(r'
 mrrVideo.onwaiting=mrrWaitingIDL;mrrVideo.onplaying=mrrPlayingIDL;mrrVideo.removeAttribute("onwaiting");mrrVideo.removeAttribute("onplaying");mrrVideo.onwaiting===null&&mrrVideo.onplaying===null
 ')! == 'true'
-	assert 'waiting' !in native_video.data.event_handler_map && 'playing' !in native_video.data.event_handler_map
+	assert !native_video.data.has_event_handler('waiting') && !native_video.data.has_event_handler('playing')
 	assert video.get_attribute('onwaiting') == none && video.get_attribute('onplaying') == none
 	assert runtime.evaluate_host(r'
 mrrVideo.onwaiting=mrrWaitingIDL;mrrVideo.onplaying=mrrPlayingIDL;mrrVideo.removeAttribute("onwaiting");mrrVideo.removeAttribute("onplaying");mrrOrder=[];mrrValues=[];mrrExpectedBefore=false;mrrVideo.onwaiting===mrrWaitingIDL&&mrrVideo.onplaying===mrrPlayingIDL
@@ -353,8 +353,8 @@ globalThis.mrrVideo=document.getElementById("mrr-video");globalThis.mrrRuns=0;gl
 	// Keep the raw attributes in the same compact state as the src mutation;
 	// a later native getter replays that complete dirty attribute snapshot.
 	assert runtime.evaluate_host('mrrVideo.setAttribute("onwaiting",${json2.encode(body)});mrrVideo.setAttribute("onplaying",${json2.encode(playing_body)});mrrVideo.paused')! == 'true'
-	waiting_slot := native_video.data.event_handler_map['waiting'] or { panic('Strict waiting slot missing') }
-	playing_slot := native_video.data.event_handler_map['playing'] or { panic('Raw playing slot missing') }
+	waiting_slot := native_video.data.event_handler('waiting') or { panic('Strict waiting slot missing') }
+	playing_slot := native_video.data.event_handler('playing') or { panic('Raw playing slot missing') }
 	mut owner := app.page_model
 	owner.set_is_scripting_enabled(false)
 	assert runtime.evaluate_host(r'
@@ -382,7 +382,7 @@ mrrVideo.addEventListener("waiting",function(event){mrrOrder.push("later-waiting
 	media_readiness_raw_owner_drain(document)
 	media_readiness_raw_owner_checkpoint()
 	assert runtime.evaluate_host('mrrOrder.join(",")==="strict-waiting,later-waiting"&&mrrRuns===1&&mrrPlayingRuns===0&&mrrValues.length===0&&mrrLiveName===null&&mrrVideo.onwaiting===null&&mrrLater&&mrrChecks.every(Boolean)&&window.event===undefined')! == 'true'
-	assert 'waiting' !in native_video.data.event_handler_map && 'playing' in native_video.data.event_handler_map
+	assert !native_video.data.has_event_handler('waiting') && native_video.data.has_event_handler('playing')
 	assert video.get_attribute_value('onwaiting') == body && video.get_attribute_value('onplaying') == playing_body
 	assert settings.realm().reported_exceptions.len == 1
 	reported := settings.realm().reported_exceptions[0].value.as_webidl_value()!

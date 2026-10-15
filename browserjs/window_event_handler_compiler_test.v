@@ -63,12 +63,12 @@ fn test_raw_window_syntax_and_early_errors_null_only_value_without_reporting_or_
 	defer { runtime.close() }
 	for body in ['return (', '"use strict";let event;'] {
 		target.element_event_handler_attribute_changed('onload', body)
-		handler := target.data.event_handler_map['load'] or { panic('handler') }
+		handler := target.data.event_handler('load') or { panic('handler') }
 		listener := handler.listener or { panic('listener') }
 		checkpoint_count := settings.realm().microtask_checkpoint_count
 		assert target.get_current_value_of_event_handler('load') == none
 		assert handler.value.kind == .null_
-		assert voidptr(target.data.event_handler_map['load'] or { panic('handler') }) == voidptr(handler)
+		assert voidptr(target.data.event_handler('load') or { panic('handler') }) == voidptr(handler)
 		assert voidptr(handler.listener or { panic('listener') }) == voidptr(listener)
 		assert C.JSValueIsNull(runtime.context, runtime.javascript_event_handler(target, 'load')!)
 		assert settings.realm().reported_exceptions.len == 0
@@ -87,7 +87,7 @@ fn test_raw_window_script_gate_and_unsupported_element_preserve_raw_source() {
 	mut runtime, settings, document, target := raw_window_handler_fixture()
 	defer { runtime.close() }
 	target.element_event_handler_attribute_changed('onload', 'return false;')
-	handler := target.data.event_handler_map['load'] or { panic('handler') }
+	handler := target.data.event_handler('load') or { panic('handler') }
 	mut realm := unsafe { &html.ScriptingRealm(settings.realm()) }
 	realm.scripting_enabled = false
 	assert target.get_current_value_of_event_handler('load') == none
@@ -98,7 +98,7 @@ fn test_raw_window_script_gate_and_unsupported_element_preserve_raw_source() {
 	element_target := unsafe { &dom.EventTarget(element) }
 	element_target.element_event_handler_attribute_changed('onclick', 'return false;')
 	assert element_target.get_current_value_of_event_handler('click') == none
-	assert (element_target.data.event_handler_map['click'] or { panic('element handler') }).value.kind == .string
+	assert (element_target.data.event_handler('click') or { panic('element handler') }).value.kind == .string
 }
 
 fn test_raw_window_error_handler_uses_source_five_arguments_and_original_reason() {
@@ -147,7 +147,7 @@ fn test_raw_body_handler_csp_precedes_window_value_replacement_and_syntax_compil
 	})
 	body_target.element_event_handler_attribute_changed('onload', 'return (')
 	assert target.get_current_value_of_event_handler('load') == none
-	assert (target.data.event_handler_map['load'] or { panic('handler') }).value.kind == .null_
+	assert (target.data.event_handler('load') or { panic('handler') }).value.kind == .null_
 }
 
 fn test_raw_window_exceptions_use_original_activation_owner_and_beforeunload_conversion() {

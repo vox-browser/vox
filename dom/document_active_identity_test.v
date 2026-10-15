@@ -34,7 +34,7 @@ fn test_source_inactive_body_cannot_read_replace_or_remove_retained_window_handl
 	new_window_target := unsafe { &EventTarget(new_window) }
 	mut old_body := old_document.create_element_ns(namespace_html_uri, 'body')!
 	old_body.set_attribute_value('onload', 'original owner body')
-	old_handler := old_window_target.data.event_handler_map['load'] or { panic('old Window handler') }
+	old_handler := old_window_target.data.event_handler('load') or { panic('old Window handler') }
 	old_listener := old_handler.listener or { panic('old Window listener') }
 	navigable.set_active_document(new_document)
 	assert !old_document.is_active() && new_document.is_active()
@@ -46,7 +46,7 @@ fn test_source_inactive_body_cannot_read_replace_or_remove_retained_window_handl
 	assert old_window_target.has_event_listener('load')
 	mut new_body := new_document.create_element_ns(namespace_html_uri, 'body')!
 	new_body.set_attribute_value('onload', 'replacement owner body')
-	assert (new_window_target.data.event_handler_map['load'] or { panic('new Window handler') }).value.string_data == 'replacement owner body'
+	assert (new_window_target.data.event_handler('load') or { panic('new Window handler') }).value.string_data == 'replacement owner body'
 }
 
 fn test_source_inactive_document_scroll_apis_do_not_read_or_modify_its_previous_window() {

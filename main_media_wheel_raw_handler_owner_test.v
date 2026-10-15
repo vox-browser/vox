@@ -127,8 +127,8 @@ mrVideo.addEventListener("wheel",function(event){mrAfterStates.push(event.defaul
 	native_audio := unsafe { &dom.EventTarget(audio) }
 	assert voidptr(runtime.native_event_target(runtime.evaluate_host_value('mrVideo')!)!) == voidptr(video)
 	assert voidptr(runtime.native_event_target(runtime.evaluate_host_value('mrAudio')!)!) == voidptr(audio)
-	video_slot := native_video.data.event_handler_map['wheel'] or { panic('Parsed raw media slot missing') }
-	audio_slot := native_audio.data.event_handler_map['wheel'] or { panic('Created raw media slot missing') }
+	video_slot := native_video.data.event_handler('wheel') or { panic('Parsed raw media slot missing') }
+	audio_slot := native_audio.data.event_handler('wheel') or { panic('Created raw media slot missing') }
 	video_listener := video_slot.listener or { panic('Parsed raw media listener missing') }
 	assert video_slot.value.kind == .string && video_slot.value.string_data == body
 	assert audio_slot.value.kind == .string && audio_slot.value.string_data == body
@@ -189,7 +189,7 @@ mrVideo.addEventListener("wheel",function(event){mrOrder.push("after");mrAfterSt
 	}
 	video := document.get_element_by_id('mr-video')?
 	native_video := unsafe { &dom.EventTarget(video) }
-	slot := native_video.data.event_handler_map['wheel'] or { panic('Raw media slot missing') }
+	slot := native_video.data.event_handler('wheel') or { panic('Raw media slot missing') }
 	listener := slot.listener or { panic('Raw media listener missing') }
 	first := native_video.get_current_value_of_event_handler('wheel') or { panic('First raw callback missing') }
 	assert first.compiled_source_text_ == 'function onwheel(event) {\n${body}\n}'
@@ -197,7 +197,7 @@ mrVideo.addEventListener("wheel",function(event){mrOrder.push("after");mrAfterSt
 globalThis.mrIDL=function(event){mrOrder.push("idl");mrSaved.push(event);return false};mrVideo.onwheel=mrIDL;mrVideo.setAttribute("onwheel",mrSource);globalThis.mrSecond=mrVideo.onwheel;
 typeof mrSecond==="function"&&mrSecond!==mrFirst&&mrSecond!==mrIDL&&mrSecond.name==="onwheel"&&mrSecond.length===1&&mrVideo.onwheel===mrSecond&&mrRuns===0
 ')! == 'true'
-	assert voidptr(native_video.data.event_handler_map['wheel'] or { panic('Replacement slot missing') }) == voidptr(slot)
+	assert voidptr(native_video.data.event_handler('wheel') or { panic('Replacement slot missing') }) == voidptr(slot)
 	assert voidptr(slot.listener or { panic('Replacement listener missing') }) == voidptr(listener)
 	second := native_video.get_current_value_of_event_handler('wheel') or { panic('Second raw callback missing') }
 	assert voidptr(second) != voidptr(first) && second.compiled_source_text_ == first.compiled_source_text_
@@ -207,7 +207,7 @@ typeof mrSecond==="function"&&mrSecond!==mrFirst&&mrSecond!==mrIDL&&mrSecond.nam
 	assert runtime.evaluate_host('mrRuns===1&&mrOrder.join(",")==="raw,after"&&mrAfterStates[0]&&mrSaved[0].defaultPrevented')! == 'true'
 	media_wheel_raw_handler_owner_event(mut runtime, event, 'mrSaved[0]', true)!
 	assert runtime.evaluate_host('mrVideo.onwheel=mrIDL;mrVideo.removeAttribute("onwheel");mrVideo.onwheel===null')! == 'true'
-	assert 'wheel' !in native_video.data.event_handler_map && video.get_attribute('onwheel') == none
+	assert !native_video.data.has_event_handler('wheel') && video.get_attribute('onwheel') == none
 	assert runtime.evaluate_host('mrVideo.onwheel=mrIDL;mrVideo.removeAttribute("onwheel");mrOrder=[];mrVideo.onwheel===mrIDL')! == 'true'
 	event2 := media_wheel_raw_handler_owner_platform_event(document)
 	assert !dom.event_target_dispatch_event(native_video, event2)
@@ -244,7 +244,7 @@ fn test_media_raw_onwheel_body_gate_csp_strict_exception_and_page_scripting_gate
 	for body in ['return (', '"use strict";let event;', '"use strict";with({}){};',
 		'}},globalThis.mrInjectionRuns++,{onwheel:function(event){'] {
 		video.set_attribute_value('onwheel', body)
-		slot := native_video.data.event_handler_map['wheel'] or { panic('Invalid raw media slot missing') }
+		slot := native_video.data.event_handler('wheel') or { panic('Invalid raw media slot missing') }
 		listener := slot.listener or { panic('Invalid raw media listener missing') }
 		assert slot.value.kind == .string && slot.value.string_data == body
 		assert runtime.evaluate_host('mrVideo.onwheel===null&&mrVideo.onwheel===null&&mrRuns===0&&mrInjectionRuns===0')! == 'true'
@@ -268,7 +268,7 @@ fn test_media_raw_onwheel_body_gate_csp_strict_exception_and_page_scripting_gate
 	})
 	body := r'"use strict";mrRuns++;mrSaved.push(event);mrChecks.push(arguments.length===1&&event===arguments[0]&&this===mrVideo&&event.target===mrVideo&&event.currentTarget===mrVideo&&event instanceof WheelEvent&&event.isTrusted&&window.event===event&&__mediaWheelRawHandlerOwnerContext());try{void arguments.callee;mrChecks.push(false)}catch(error){mrChecks.push(error instanceof TypeError)}this.onwheel=null;globalThis.mrLiveName=onwheel;throw mrThrowReason;'
 	video.set_attribute_value('onwheel', body)
-	slot := native_video.data.event_handler_map['wheel'] or { panic('Strict raw media slot missing') }
+	slot := native_video.data.event_handler('wheel') or { panic('Strict raw media slot missing') }
 	mut owner := app.page_model
 	owner.set_is_scripting_enabled(false)
 	assert runtime.evaluate_host('mrVideo.onwheel===null&&mrRuns===0')! == 'true'
@@ -284,7 +284,7 @@ fn test_media_raw_onwheel_body_gate_csp_strict_exception_and_page_scripting_gate
 	event := media_wheel_raw_handler_owner_platform_event(document)
 	assert dom.event_target_dispatch_event(native_video, event)
 	assert runtime.evaluate_host('mrRuns===1&&mrChecks.every(Boolean)&&mrLiveName===null&&mrVideo.onwheel===null&&mrLaterRan&&mrInjectionRuns===0')! == 'true'
-	assert 'wheel' !in native_video.data.event_handler_map && !event.default_prevented()
+	assert !native_video.data.has_event_handler('wheel') && !event.default_prevented()
 	assert video.get_attribute_value('onwheel') == body
 	assert settings.realm().reported_exceptions.len == 1
 	reported := settings.realm().reported_exceptions[0].value.as_webidl_value()!

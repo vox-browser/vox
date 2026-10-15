@@ -150,7 +150,7 @@ globalThis.mprAudio=document.createElement("audio");mprAudio.id="mpr-audio";mprA
 	native_audio := unsafe { &dom.EventTarget(audio) }
 	for target in [native_video, native_audio] {
 		for name in ['progress', 'suspend'] {
-			slot := target.data.event_handler_map[name] or { panic('Raw progress slot missing') }
+			slot := target.data.event_handler(name) or { panic('Raw progress slot missing') }
 			assert slot.value.kind == .string && slot.value.string_data == body
 		}
 	}
@@ -231,8 +231,8 @@ globalThis.mprSuspendIDL=function(event){mprOrder.push("idl-suspend");mprStates.
 	media_progress_raw_owner_probe(mut runtime, document)!
 	video := document.get_element_by_id('mpr-video')?
 	native_video := unsafe { &dom.EventTarget(video) }
-	progress_slot := native_video.data.event_handler_map['progress'] or { panic('Progress slot missing') }
-	suspend_slot := native_video.data.event_handler_map['suspend'] or { panic('Suspend slot missing') }
+	progress_slot := native_video.data.event_handler('progress') or { panic('Progress slot missing') }
+	suspend_slot := native_video.data.event_handler('suspend') or { panic('Suspend slot missing') }
 	progress_listener := progress_slot.listener or { panic('Progress listener missing') }
 	suspend_listener := suspend_slot.listener or { panic('Suspend listener missing') }
 	first_progress := native_video.get_current_value_of_event_handler('progress') or { panic('First progress callback missing') }
@@ -242,8 +242,8 @@ mprVideo.onprogress=mprProgressIDL;mprVideo.setAttribute("onprogress",mprSource)
 mprVideo.onsuspend=mprSuspendIDL;mprVideo.setAttribute("onsuspend",mprSource);globalThis.mprSecondSuspend=mprVideo.onsuspend;
 typeof mprSecondProgress==="function"&&mprSecondProgress!==mprFirstProgress&&mprSecondProgress!==mprProgressIDL&&mprSecondProgress.name==="onprogress"&&mprSecondProgress.length===1&&typeof mprSecondSuspend==="function"&&mprSecondSuspend!==mprFirstSuspend&&mprSecondSuspend!==mprSuspendIDL&&mprSecondSuspend.name==="onsuspend"&&mprSecondSuspend.length===1&&mprVideo.onprogress===mprSecondProgress&&mprVideo.onsuspend===mprSecondSuspend&&mprOrder.length===0
 ')! == 'true'
-	assert voidptr(native_video.data.event_handler_map['progress'] or { panic('Replaced progress slot missing') }) == voidptr(progress_slot)
-	assert voidptr(native_video.data.event_handler_map['suspend'] or { panic('Replaced suspend slot missing') }) == voidptr(suspend_slot)
+	assert voidptr(native_video.data.event_handler('progress') or { panic('Replaced progress slot missing') }) == voidptr(progress_slot)
+	assert voidptr(native_video.data.event_handler('suspend') or { panic('Replaced suspend slot missing') }) == voidptr(suspend_slot)
 	assert voidptr(progress_slot.listener or { panic('Replaced progress listener missing') }) == voidptr(progress_listener)
 	assert voidptr(suspend_slot.listener or { panic('Replaced suspend listener missing') }) == voidptr(suspend_listener)
 	second_progress := native_video.get_current_value_of_event_handler('progress') or { panic('Second progress callback missing') }
@@ -273,7 +273,7 @@ typeof mprSecondProgress==="function"&&mprSecondProgress!==mprFirstProgress&&mpr
 	assert media.event_count('progress') == 3 && media.event_count('suspend') == 2
 	// Present removals clear IDL values before an already queued completion.
 	assert runtime.evaluate_host('__mediaProgressRawComplete();mprVideo.removeAttribute("onprogress");mprVideo.removeAttribute("onsuspend");mprVideo.onprogress===null&&mprVideo.onsuspend===null&&mprOrder.length===5')! == 'true'
-	assert 'progress' !in native_video.data.event_handler_map && 'suspend' !in native_video.data.event_handler_map
+	assert !native_video.data.has_event_handler('progress') && !native_video.data.has_event_handler('suspend')
 	assert video.get_attribute('onprogress') == none && video.get_attribute('onsuspend') == none
 	media_progress_raw_owner_drain(document)
 	assert runtime.evaluate_host('mprOrder.length===5&&mprSaved.length===5')! == 'true'
@@ -313,8 +313,8 @@ globalThis.mprVideo=document.getElementById("mpr-video");globalThis.mprRuns=0;gl
 	body := r'"use strict";mprRuns++;mprOrder.push("strict-progress");mprSaved.push(event);mprChecks.push(arguments.length===1&&event===arguments[0]&&this===mprVideo&&event.target===mprVideo&&event.currentTarget===mprVideo&&event instanceof Event&&event.isTrusted&&!event.bubbles&&!event.cancelable&&window.event===event&&this.networkState===1&&this.readyState===0&&this.currentTime===0&&this.paused&&__mediaProgressRawOwnerContext());try{void arguments.callee;mprChecks.push(false)}catch(error){mprChecks.push(error instanceof TypeError)}this.onprogress=null;globalThis.mprLiveName=onprogress;throw mprReason;'
 	suspend_body := r'mprSuspendRuns++;mprOrder.push("raw-suspend");mprSaved.push(event);mprChecks.push(event.isTrusted&&this===mprVideo&&window.event===event&&this.networkState===1&&this.readyState===0&&this.currentTime===0&&this.paused&&__mediaProgressRawOwnerContext());return false;'
 	assert runtime.evaluate_host('mprVideo.setAttribute("onprogress",${json2.encode(body)});mprVideo.setAttribute("onsuspend",${json2.encode(suspend_body)});mprVideo.paused')! == 'true'
-	progress_slot := native_video.data.event_handler_map['progress'] or { panic('Strict progress slot missing') }
-	suspend_slot := native_video.data.event_handler_map['suspend'] or { panic('Raw suspend slot missing') }
+	progress_slot := native_video.data.event_handler('progress') or { panic('Strict progress slot missing') }
+	suspend_slot := native_video.data.event_handler('suspend') or { panic('Raw suspend slot missing') }
 	mut owner := app.page_model
 	owner.set_is_scripting_enabled(false)
 	assert runtime.evaluate_host('__mediaProgressRawGatedStart()&&mprVideo.onprogress===null&&mprVideo.onsuspend===null&&mprRuns===0&&mprSuspendRuns===0')! == 'true'
@@ -338,7 +338,7 @@ mprVideo.addEventListener("progress",function(event){mprOrder.push("later-progre
 	(media_progress_raw_owner_take_task(document) or { panic('Missing strict completion task') }).execute()
 	assert media_progress_raw_owner_take_task(document) == none
 	assert runtime.evaluate_host('mprOrder.join(",")==="strict-progress,later-progress,raw-suspend"&&mprRuns===1&&mprSuspendRuns===1&&mprLiveName===null&&mprVideo.onprogress===null&&mprVideo.onsuspend===mprSuspend&&mprLater&&mprChecks.length===3&&mprChecks.every(Boolean)&&mprSaved.length===2&&!mprSaved[0].defaultPrevented&&mprSaved[1].defaultPrevented&&window.event===undefined')! == 'true'
-	assert 'progress' !in native_video.data.event_handler_map && 'suspend' in native_video.data.event_handler_map
+	assert !native_video.data.has_event_handler('progress') && native_video.data.has_event_handler('suspend')
 	assert video.get_attribute_value('onprogress') == body && video.get_attribute_value('onsuspend') == suspend_body
 	assert settings.realm().reported_exceptions.len == 1
 	reported := settings.realm().reported_exceptions[0].value.as_webidl_value()!

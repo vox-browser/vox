@@ -121,7 +121,7 @@ fn test_native_media_movement_handlers_keep_native_owner_slots_and_legacy_return
 		assert voidptr(runtime.native_event_target(runtime.evaluate_host_value(owner_name)!)!) == voidptr(media.event_target())
 		assert media.event_target().event_listener_list().len == 3
 		name := if index == 0 { 'pointermove' } else { 'mousemove' }
-		handler := media.event_target().data.event_handler_map[name] or {
+		handler := media.event_target().data.event_handler(name) or {
 			panic('missing native movement media handler slot')
 		}
 		assert handler.listener != none

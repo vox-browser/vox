@@ -66,11 +66,11 @@ fn test_embedder_disabled_parser_renders_noscript_without_allocating_script_mode
 	assert unsafe { &dom.SVGScriptElement(svg_script) }.script_element_model_ == unsafe { nil }
 	button := document.get_element_by_id('button')?
 	assert button.get_attribute_value('onclick') == 'invalid javascript {{{'
-	assert unsafe { &dom.EventTarget(button) }.data.event_handler_map.len == 0
+	assert unsafe { &dom.EventTarget(button) }.data.event_handler_count() == 0
 	body := document.body()?
-	assert unsafe { &dom.EventTarget(body) }.data.event_handler_map.len == 0
+	assert unsafe { &dom.EventTarget(body) }.data.event_handler_count() == 0
 	window := document.get_window()?
-	assert unsafe { &dom.EventTarget(window) }.data.event_handler_map.len == 0
+	assert unsafe { &dom.EventTarget(window) }.data.event_handler_count() == 0
 }
 
 fn test_embedder_policy_applies_to_a_document_without_window_settings() {
@@ -97,7 +97,7 @@ fn test_embedder_disabled_fragment_parsing_keeps_scripts_inert_without_models() 
 		html_script := unsafe { &dom.HTMLScriptElement(html_element) }
 		assert html_script.script_element_model_ == unsafe { nil }
 		assert nodes[0].text_content()? == 'raw script text'
-		assert unsafe { &dom.EventTarget(html_script) }.data.event_handler_map.len == 0
+		assert unsafe { &dom.EventTarget(html_script) }.data.event_handler_count() == 0
 		svg_element := nodes[1].first_child()?.as_element()?
 		assert svg_element.namespace_uri()? == 'http://www.w3.org/2000/svg'
 		assert svg_element.local_name() == 'script'
@@ -119,5 +119,5 @@ fn test_embedder_disabled_script_attribute_and_connection_hooks_do_not_allocate_
 	html_script_element_attribute_changed(script, 'onclick', none, 'invalid {{{', none)
 	html_script_element_post_connection(script)
 	assert script.script_element_model_ == unsafe { nil }
-	assert unsafe { &dom.EventTarget(script) }.data.event_handler_map.len == 0
+	assert unsafe { &dom.EventTarget(script) }.data.event_handler_count() == 0
 }

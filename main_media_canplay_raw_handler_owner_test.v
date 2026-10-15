@@ -156,7 +156,7 @@ for(var mcrElement of [mcrVideo,mcrAudio])mcrElement.addEventListener("playing",
 	native_audio := unsafe { &dom.EventTarget(audio) }
 	for target in [native_video, native_audio] {
 		for name in ['canplay', 'canplaythrough'] {
-			slot := target.data.event_handler_map[name] or { panic('Raw canplay slot missing') }
+			slot := target.data.event_handler(name) or { panic('Raw canplay slot missing') }
 			assert slot.value.kind == .string && slot.value.string_data == body
 		}
 	}
@@ -268,8 +268,8 @@ globalThis.mcrThroughIDL=function(event){mcrOrder.push("idl-through");mcrSaved.p
 	video := document.get_element_by_id('mcr-video')?
 	native_video := unsafe { &dom.EventTarget(video) }
 	mut media := media_canplay_raw_owner_prepare(mut runtime, document, video, 'mcrVideo')!
-	canplay_slot := native_video.data.event_handler_map['canplay'] or { panic('Canplay slot missing') }
-	through_slot := native_video.data.event_handler_map['canplaythrough'] or { panic('Through slot missing') }
+	canplay_slot := native_video.data.event_handler('canplay') or { panic('Canplay slot missing') }
+	through_slot := native_video.data.event_handler('canplaythrough') or { panic('Through slot missing') }
 	canplay_listener := canplay_slot.listener or { panic('Canplay listener missing') }
 	through_listener := through_slot.listener or { panic('Through listener missing') }
 	first_canplay := native_video.get_current_value_of_event_handler('canplay') or { panic('First canplay callback missing') }
@@ -280,8 +280,8 @@ mcrVideo.oncanplaythrough=mcrThroughIDL;mcrVideo.setAttribute("oncanplaythrough"
 globalThis.mcrRequest=mcrVideo.play();mcrRequest.then(value=>{mcrChecks.push(value===undefined);mcrValues.push(value);mcrOrder.push("fulfilled")},reason=>mcrReasons.push(reason));
 typeof mcrSecondCanplay==="function"&&mcrSecondCanplay!==mcrFirstCanplay&&mcrSecondCanplay!==mcrCanplayIDL&&mcrSecondCanplay.name==="oncanplay"&&mcrSecondCanplay.length===1&&typeof mcrSecondThrough==="function"&&mcrSecondThrough!==mcrFirstThrough&&mcrSecondThrough!==mcrThroughIDL&&mcrSecondThrough.name==="oncanplaythrough"&&mcrSecondThrough.length===1&&mcrVideo.oncanplay===mcrSecondCanplay&&mcrVideo.oncanplaythrough===mcrSecondThrough&&mcrOrder.length===0
 ')! == 'true'
-	assert voidptr(native_video.data.event_handler_map['canplay'] or { panic('Replaced canplay slot missing') }) == voidptr(canplay_slot)
-	assert voidptr(native_video.data.event_handler_map['canplaythrough'] or { panic('Replaced through slot missing') }) == voidptr(through_slot)
+	assert voidptr(native_video.data.event_handler('canplay') or { panic('Replaced canplay slot missing') }) == voidptr(canplay_slot)
+	assert voidptr(native_video.data.event_handler('canplaythrough') or { panic('Replaced through slot missing') }) == voidptr(through_slot)
 	assert voidptr(canplay_slot.listener or { panic('Replaced canplay listener missing') }) == voidptr(canplay_listener)
 	assert voidptr(through_slot.listener or { panic('Replaced through listener missing') }) == voidptr(through_listener)
 	second_canplay := native_video.get_current_value_of_event_handler('canplay') or { panic('Second canplay callback missing') }
@@ -298,8 +298,8 @@ typeof mcrSecondCanplay==="function"&&mcrSecondCanplay!==mcrFirstCanplay&&mcrSec
 mcrVideo.setAttribute("oncanplay","mcrOrder.push(\"reentrant-canplay\");mcrSaved.push(event);mcrChecks.push(!this.paused&&mcrValues.length===0);this.pause();this.oncanplay=mcrCanplayIDL;return false;");
 mcrVideo.setAttribute("oncanplaythrough","mcrOrder.push(\"replacement-through\");mcrSaved.push(event);mcrChecks.push(this.paused&&mcrValues.length===1);document.getElementById(\"mcr-result\").textContent=\"reentrant canplay painted\";return false;");mcrValues.length===0&&!mcrVideo.paused
 ')! == 'true'
-	assert voidptr(native_video.data.event_handler_map['canplay'] or { panic('Queued replacement slot missing') }) == voidptr(canplay_slot)
-	assert voidptr(native_video.data.event_handler_map['canplaythrough'] or { panic('Queued replacement through slot missing') }) == voidptr(through_slot)
+	assert voidptr(native_video.data.event_handler('canplay') or { panic('Queued replacement slot missing') }) == voidptr(canplay_slot)
+	assert voidptr(native_video.data.event_handler('canplaythrough') or { panic('Queued replacement through slot missing') }) == voidptr(through_slot)
 	// The playing task already owns the pending batch. Pausing from canplay
 	// therefore cannot reject that batch or suppress the queued playing event.
 	(media_canplay_raw_owner_take_task(document) or { panic('Missing first-data task') }).execute()
@@ -319,7 +319,7 @@ mcrVideo.setAttribute("oncanplaythrough","mcrOrder.push(\"replacement-through\")
 	assert runtime.evaluate_host(r'
 mcrVideo.oncanplay=mcrCanplayIDL;mcrVideo.oncanplaythrough=mcrThroughIDL;mcrVideo.removeAttribute("oncanplay");mcrVideo.removeAttribute("oncanplaythrough");mcrVideo.oncanplay===null&&mcrVideo.oncanplaythrough===null
 ')! == 'true'
-	assert 'canplay' !in native_video.data.event_handler_map && 'canplaythrough' !in native_video.data.event_handler_map
+	assert !native_video.data.has_event_handler('canplay') && !native_video.data.has_event_handler('canplaythrough')
 	assert video.get_attribute('oncanplay') == none && video.get_attribute('oncanplaythrough') == none
 	assert runtime.evaluate_host(r'
 mcrVideo.oncanplay=mcrCanplayIDL;mcrVideo.oncanplaythrough=mcrThroughIDL;mcrVideo.removeAttribute("oncanplay");mcrVideo.removeAttribute("oncanplaythrough");mcrOrder=[];mcrValues=[];mcrVideo.oncanplay===mcrCanplayIDL&&mcrVideo.oncanplaythrough===mcrThroughIDL
@@ -372,8 +372,8 @@ globalThis.mcrVideo=document.getElementById("mcr-video");globalThis.mcrRuns=0;gl
 	// Synchronize raw attributes through the compact state before recording the
 	// slots, so src's pending attribute snapshot cannot overwrite them later.
 	assert runtime.evaluate_host('mcrVideo.setAttribute("oncanplay",${json2.encode(body)});mcrVideo.setAttribute("oncanplaythrough",${json2.encode(through_body)});mcrVideo.paused')! == 'true'
-	canplay_slot := native_video.data.event_handler_map['canplay'] or { panic('Strict canplay slot missing') }
-	through_slot := native_video.data.event_handler_map['canplaythrough'] or { panic('Raw through slot missing') }
+	canplay_slot := native_video.data.event_handler('canplay') or { panic('Strict canplay slot missing') }
+	through_slot := native_video.data.event_handler('canplaythrough') or { panic('Raw through slot missing') }
 	mut owner := app.page_model
 	owner.set_is_scripting_enabled(false)
 	assert runtime.evaluate_host(r'
@@ -407,7 +407,7 @@ mcrVideo.addEventListener("canplay",function(event){mcrOrder.push("later-canplay
 	media_canplay_raw_owner_checkpoint()
 	assert request.state() == .pending
 	assert runtime.evaluate_host('mcrOrder.join(",")==="strict-canplay,later-canplay"&&mcrRuns===1&&mcrThroughRuns===0&&mcrValues.length===0&&mcrLiveName===null&&mcrVideo.oncanplay===null&&mcrLater&&mcrChecks.every(Boolean)&&window.event===undefined')! == 'true'
-	assert 'canplay' !in native_video.data.event_handler_map && 'canplaythrough' in native_video.data.event_handler_map
+	assert !native_video.data.has_event_handler('canplay') && native_video.data.has_event_handler('canplaythrough')
 	assert video.get_attribute_value('oncanplay') == body && video.get_attribute_value('oncanplaythrough') == through_body
 	assert settings.realm().reported_exceptions.len == 1
 	reported := settings.realm().reported_exceptions[0].value.as_webidl_value()!

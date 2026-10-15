@@ -76,7 +76,7 @@ fn test_media_click_receipt_publishes_outer_owner_after_nested_click_and_double_
 		assert !inner.did_process_click_handler(video_target)
 	}
 	assert handler.take_last_click_event() == none
-	raw := video_target.data.event_handler_map['click'] or {
+	raw := video_target.data.event_handler('click') or {
 		assert false, 'missing raw replacement'
 		return
 	}
@@ -123,7 +123,7 @@ fn test_media_click_receipt_records_self_clearing_throw_and_cancellation_then_cl
 	assert thrown_receipt.did_process_click_handler(target)
 	assert !thrown_receipt.did_process_click_handler(other_target)
 	assert thrown_receipt.current_target() == none
-	assert 'click' !in target.data.event_handler_map
+	assert !target.data.has_event_handler('click')
 	mut observation := unsafe { &MediaClickReceiptObservation(state) }
 	observation.throw = false
 	target.set_event_handler_attribute('click', callback)

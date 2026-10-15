@@ -30,7 +30,7 @@ fn (mut host ElementWheelHost) raw_media_wheel_handler_available(target &dom.Eve
 	mut wrapper := binding.target_wrappers[voidptr(target)] or { voidptr(0) }
 	if wrapper == unsafe { nil } {
 		if host.resolver == unsafe { nil } { return false }
-		slot := target.data.event_handler_map[name] or { return false }
+		slot := target.data.event_handler(name) or { return false }
 		if slot.value.kind != .string { return false }
 		body := slot.value.string_data
 		// Upstream parses and checks early errors before creating scope wrappers.
@@ -43,7 +43,7 @@ fn (mut host ElementWheelHost) raw_media_wheel_handler_available(target &dom.Eve
 		popped := vm.pop_execution_context()
 		assert voidptr(popped) == voidptr(context)
 		// A resolver may remove or replace the slot; do not compile stale source.
-		current := target.data.event_handler_map[name] or { return false }
+		current := target.data.event_handler(name) or { return false }
 		if voidptr(current) != voidptr(slot) || current.value.kind != .string
 			|| current.value.string_data != body { return false }
 	}

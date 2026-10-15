@@ -143,7 +143,7 @@ fn test_raw_media_error_parsed_created_and_lazy_handlers_take_one_event_with_nat
 	assert fixture.settings.realm().microtask_checkpoint_count == checkpoint
 	assert unsafe { &dom.HTMLVideoElement(lazy_element) }.media_element_model_ != unsafe { nil }
 	for name in ['wheel', 'play'] {
-		slot := lazy_target.data.event_handler_map[name] or { panic('independent raw slot') }
+		slot := lazy_target.data.event_handler(name) or { panic('independent raw slot') }
 		assert slot.value.kind == .string && slot.value.string_data == 'return ('
 	}
 	lazy_wrapper := runtime.javascript_event_target(lazy_target, none)!
@@ -154,7 +154,7 @@ fn test_raw_media_error_parsed_created_and_lazy_handlers_take_one_event_with_nat
 		target := runtime.native_event_target(wrapper)!
 		mut element := unsafe { &dom.Element(target) }
 		if wrapper_name.starts_with('created') { element.set_attribute_value('onerror', media_error_raw_body) }
-		slot := target.data.event_handler_map['error'] or { panic('raw error slot') }
+		slot := target.data.event_handler('error') or { panic('raw error slot') }
 		listener := slot.listener or { panic('raw error listener') }
 		callback := target.get_current_value_of_event_handler('error') or { panic('raw error callback') }
 		assert callback.compiled_source_text_ == 'function onerror(event) {\n${media_error_raw_body}\n}'
@@ -209,7 +209,7 @@ fn test_raw_media_error_replacements_csp_function_body_and_unavailable_owners_pr
 	mut audio_element := fixture.document.get_element_by_id('audio')?
 	target := unsafe { &dom.EventTarget(audio_element) }
 	first := target.get_current_value_of_event_handler('error') or { panic('first raw callback') }
-	slot := target.data.event_handler_map['error'] or { panic('first raw slot') }
+	slot := target.data.event_handler('error') or { panic('first raw slot') }
 	listener := slot.listener or { panic('first raw listener') }
 	raw_body := 'mediaErrorRawRuns+=10;return false;'
 	audio_element.set_attribute_value('onerror', raw_body)
@@ -226,7 +226,7 @@ fn test_raw_media_error_replacements_csp_function_body_and_unavailable_owners_pr
 	assert voidptr(third) != voidptr(second)
 	assert !target.dispatch_event(media_error_raw_event('error'))
 	audio_element.remove_attribute('onerror')
-	assert 'error' !in target.data.event_handler_map
+	assert !target.data.has_event_handler('error')
 	assert target.get_current_value_of_event_handler('error') == none
 	assert target.dispatch_event(media_error_raw_event('error'))
 	assert runtime.evaluate_host('mediaErrorRawRuns===120&&audio.onerror===null')! == 'true'
@@ -248,7 +248,7 @@ fn test_raw_media_error_replacements_csp_function_body_and_unavailable_owners_pr
 	resolver_calls := fixture.resolver_probe.calls
 	for body in ['return (', '"use strict";let event;', '}},globalThis.mediaErrorRawRuns++,{onerror:function(event){'] {
 		invalid_element.set_attribute_value('onerror', body)
-		invalid_slot := invalid_target.data.event_handler_map['error'] or { panic('invalid raw slot') }
+		invalid_slot := invalid_target.data.event_handler('error') or { panic('invalid raw slot') }
 		invalid_listener := invalid_slot.listener or { panic('invalid raw listener') }
 		assert invalid_target.get_current_value_of_event_handler('error') == none
 		assert invalid_target.get_current_value_of_event_handler('error') == none
@@ -259,7 +259,7 @@ fn test_raw_media_error_replacements_csp_function_body_and_unavailable_owners_pr
 		assert unsafe { &dom.HTMLAudioElement(invalid_element) }.media_element_model_ == unsafe { nil }
 	}
 	invalid_element.set_attribute_value('onerror', 'return false;')
-	available_slot := invalid_target.data.event_handler_map['error'] or { panic('unavailable raw slot') }
+	available_slot := invalid_target.data.event_handler('error') or { panic('unavailable raw slot') }
 	available_listener := available_slot.listener or { panic('unavailable raw listener') }
 	mut wheel_host := fixture.wheel_host
 	resolver := wheel_host.resolver
@@ -282,20 +282,20 @@ fn test_raw_media_error_replacements_csp_function_body_and_unavailable_owners_pr
 	generic_target := unsafe { &dom.EventTarget(generic_element) }
 	runtime.bind_event_target(runtime.evaluate_host_value('Object.create(EventTarget.prototype)')!, generic_target)!
 	assert generic_target.get_current_value_of_event_handler('error') == none
-	assert (generic_target.data.event_handler_map['error'] or { panic('generic raw') }).value.kind == .string
+	assert (generic_target.data.event_handler('error') or { panic('generic raw') }).value.kind == .string
 	ordinary_target := unsafe { &dom.EventTarget(fixture.document.get_element_by_id('ordinary')?) }
 	assert ordinary_target.get_current_value_of_event_handler('error') == none
-	assert (ordinary_target.data.event_handler_map['error'] or { panic('ordinary raw error unsupported') }).value.kind == .string
+	assert (ordinary_target.data.event_handler('error') or { panic('ordinary raw error unsupported') }).value.kind == .string
 	audio_element.set_attribute_value('onstalled', 'globalThis.mediaErrorRawRuns++;')
 	assert target.get_current_value_of_event_handler('stalled') == none
-	assert (target.data.event_handler_map['stalled'] or { panic('unsupported media raw name') }).value.kind == .string
+	assert (target.data.event_handler('stalled') or { panic('unsupported media raw name') }).value.kind == .string
 	// Missing document and media owners are recoverable, retaining raw source.
 	no_document := media_error_raw_fixture('error', true, false)!
 	mut document_runtime := no_document.runtime
 	defer { document_runtime.close() }
 	document_target := unsafe { &dom.EventTarget(no_document.document.get_element_by_id('video')?) }
 	assert document_target.get_current_value_of_event_handler('error') == none
-	assert (document_target.data.event_handler_map['error'] or { panic('missing Document raw') }).value.kind == .string
+	assert (document_target.data.event_handler('error') or { panic('missing Document raw') }).value.kind == .string
 	document_runtime.install_document_window_event_binding(no_document.document, document_runtime.evaluate_host_value('document')!)!
 	assert document_target.get_current_value_of_event_handler('error') != none
 	no_media := media_error_raw_fixture('error', false, true)!
@@ -303,7 +303,7 @@ fn test_raw_media_error_replacements_csp_function_body_and_unavailable_owners_pr
 	defer { media_runtime.close() }
 	media_target := unsafe { &dom.EventTarget(no_media.document.get_element_by_id('audio')?) }
 	assert media_target.get_current_value_of_event_handler('error') == none
-	assert (media_target.data.event_handler_map['error'] or { panic('missing MediaElementHost raw') }).value.kind == .string
+	assert (media_target.data.event_handler('error') or { panic('missing MediaElementHost raw') }).value.kind == .string
 	mut late_host := no_media.media_host
 	late_host.install(mut media_runtime)!
 	assert media_target.get_current_value_of_event_handler('error') != none
@@ -326,7 +326,7 @@ fn test_raw_media_error_strict_throw_and_scripting_gates_balance_native_owner_co
 	owner.set_is_scripting_enabled(false)
 	audio_element.set_attribute_value('onerror', r'"use strict";mediaErrorRawRuns++;mediaErrorRawStrict=this===audio&&arguments.length===1&&event===arguments[0]&&networkState===0&&readyState===0&&paused===true&&currentTime===mediaErrorRawCurrentTimeGetter.call(this);throw mediaErrorRawThrown;')
 	assert target.get_current_value_of_event_handler('error') == none
-	assert (target.data.event_handler_map['error'] or { panic('disabled raw error') }).value.kind == .string
+	assert (target.data.event_handler('error') or { panic('disabled raw error') }).value.kind == .string
 	assert target.dispatch_event(media_error_raw_event('error'))
 	assert runtime.evaluate_host('mediaErrorRawRuns===0&&mediaErrorRawLater===0')! == 'true'
 	owner.set_is_scripting_enabled(true)
@@ -351,7 +351,7 @@ fn test_raw_media_error_strict_throw_and_scripting_gates_balance_native_owner_co
 	assert fixture.media_host.closed && fixture.media_host.records.len == 0
 	assert fixture.wheel_host.closed && fixture.wheel_host.records.len == 0
 	assert target.get_current_value_of_event_handler('error') == none
-	assert (target.data.event_handler_map['error'] or { panic('closed raw error') }).value.kind == .string
+	assert (target.data.event_handler('error') or { panic('closed raw error') }).value.kind == .string
 	assert target.dispatch_event(media_error_raw_event('error'))
 	media_error_raw_assert_contexts(fixture)
 }

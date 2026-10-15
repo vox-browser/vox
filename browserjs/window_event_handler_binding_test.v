@@ -76,14 +76,14 @@ fn test_public_window_raw_getter_compiles_lazily_in_actual_global_and_preserves_
 	target.element_event_handler_attribute_changed('onload', 'rawEntries.push(this===window&&onload===window.onload&&event.target===actualWindowDocument);return false;')
 	owner.set_is_scripting_enabled(false)
 	assert runtime.evaluate_host('window.onload===null')! == 'true'
-	assert target.data.event_handler_map['load'].value.kind == .string
+	assert (target.data.event_handler('load') or { panic('missing event handler') }).value.kind == .string
 	owner.set_is_scripting_enabled(true)
 	assert runtime.evaluate_host('typeof window.onload==="function"&&window.onload.name==="onload"&&window.onload.length===1&&window.onload===window.onload')! == 'true'
 	assert !target.dispatch_event(dom.Event.create('load', dom.EventInit{ cancelable: true }))
 	assert runtime.evaluate_host('rawEntries.length===1&&rawEntries[0]')! == 'true'
 	target.element_event_handler_attribute_changed('onload', 'let broken;let broken;')
 	assert runtime.evaluate_host('window.onload===null')! == 'true'
-	assert target.data.event_handler_map['load'].value.kind == .null_
+	assert (target.data.event_handler('load') or { panic('missing event handler') }).value.kind == .null_
 	assert target.event_listener_list().len == 1
 }
 
@@ -112,7 +112,7 @@ fn test_public_window_vendor_event_attribute_preserves_source_event_name_case() 
 	runtime.evaluate_host('globalThis.vendorType="";window.onwebkitanimationend=function(event){vendorType=event.type}')!
 	target.dispatch_event(dom.Event.create('webkitAnimationEnd', dom.EventInit{}))
 	assert runtime.evaluate_host('vendorType')! == 'webkitAnimationEnd'
-	assert target.data.event_handler_map['webkitAnimationEnd'].value.kind == .object
+	assert (target.data.event_handler('webkitAnimationEnd') or { panic('missing event handler') }).value.kind == .object
 }
 
 fn test_public_window_handler_callback_honors_actual_page_and_reports_original_exception() {

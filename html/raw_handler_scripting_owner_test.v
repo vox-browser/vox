@@ -27,7 +27,7 @@ fn test_parser_raw_handler_after_adoption_checks_current_document_scripting_befo
 	}
 	element := source.get_element_by_id('button')?
 	event_target := unsafe { &dom.EventTarget(element) }
-	handler := event_target.data.event_handler_map['click'] or { panic('parser-created raw handler') }
+	handler := event_target.data.event_handler('click') or { panic('parser-created raw handler') }
 	listener := handler.listener or { panic('activated original listener') }
 	state := &RawHandlerScriptingOwnerObservation{}
 	original_window := source.get_window()?

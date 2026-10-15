@@ -157,7 +157,7 @@ fn test_media_onclick_self_raw_attribute_replacement_waits_for_next_click_and_re
 	runtime.evaluate_host(r'video.onclick=function(event){nativeRawReplacementRuns++;globalThis.nativeRawReplacementValid=this===video&&event.target===video&&event.currentTarget===video&&event.isTrusted&&window.event===event;this.onclick=null;this.setAttribute("onclick","globalThis.newClickRawRuns++");void this.paused};0')!
 	video := document.get_element_by_id('video')?
 	native_target := runtime.native_event_target(runtime.evaluate_host_value('video')!)!
-	original_handler := native_target.data.event_handler_map['click'] or {
+	original_handler := native_target.data.event_handler('click') or {
 		assert false, 'missing native click handler'
 		return
 	}
@@ -165,7 +165,7 @@ fn test_media_onclick_self_raw_attribute_replacement_waits_for_next_click_and_re
 	media_click_handler_release(mut owner, video)
 	assert owner.event_handler.last_click_allowed()
 	assert runtime.evaluate_host('nativeRawReplacementRuns===1&&nativeRawReplacementValid&&oldClickRawRuns===0&&newClickRawRuns===0&&video.onclick===null&&window.event===undefined')! == 'true'
-	raw_handler := native_target.data.event_handler_map['click'] or {
+	raw_handler := native_target.data.event_handler('click') or {
 		assert false, 'missing replacement raw click handler'
 		return
 	}
@@ -182,7 +182,7 @@ fn test_media_onclick_self_raw_attribute_replacement_waits_for_next_click_and_re
 	assert runtime.evaluate_host('nativeRawReplacementRuns===1&&oldClickRawRuns===0&&newClickRawRuns===1')! == 'true'
 	runtime.evaluate_host('video.removeAttribute("onclick");void video.paused')!
 	assert video.get_attribute('onclick') == none
-	assert 'click' !in native_target.data.event_handler_map
+	assert !native_target.data.has_event_handler('click')
 	media_click_handler_release(mut owner, video)
 	assert !app.dispatch_javascript_event('click', video)
 	assert runtime.evaluate_host('nativeRawReplacementRuns===1&&oldClickRawRuns===0&&newClickRawRuns===1')! == 'true'
@@ -211,7 +211,7 @@ fn test_untouched_media_raw_click_fallback_hands_off_to_idl_and_generic_compact_
 	assert runtime.evaluate_host(r'(()=>{const d=Object.getOwnPropertyDescriptor(HTMLMediaElement.prototype,"onclick");return !!d&&typeof d.get==="function"&&typeof d.set==="function"&&raw.onclick===null})()')! == 'true'
 	raw := document.get_element_by_id('raw')?
 	native_target := runtime.native_event_target(runtime.evaluate_host_value('raw')!)!
-	raw_handler := native_target.data.event_handler_map['click'] or {
+	raw_handler := native_target.data.event_handler('click') or {
 		assert false, 'missing untouched raw click handler'
 		return
 	}
@@ -229,7 +229,7 @@ fn test_untouched_media_raw_click_fallback_hands_off_to_idl_and_generic_compact_
 	assert raw_handler.value.kind == .string && raw_handler.value.string_data == raw_source
 	owner.set_is_scripting_enabled(true)
 	runtime.evaluate_host(r'globalThis.assignedMediaClickHandler=function(event){assignedMediaClickRuns++;globalThis.assignedMediaClickValid=this===raw&&event.target===raw&&event.currentTarget===raw&&event instanceof Event&&event.isTrusted&&window.event===event};raw.onclick=assignedMediaClickHandler;0')!
-	assigned_handler := native_target.data.event_handler_map['click'] or {
+	assigned_handler := native_target.data.event_handler('click') or {
 		assert false, 'missing assigned click handler'
 		return
 	}

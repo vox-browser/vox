@@ -199,7 +199,7 @@ fn test_raw_media_onstalled_stays_uncompiled_and_idl_replacement_preserves_conte
 	assert runtime.evaluate_host(r'(()=>{const descriptor=Object.getOwnPropertyDescriptor(HTMLMediaElement.prototype,"onstalled");return !!descriptor&&typeof descriptor.get==="function"&&typeof descriptor.set==="function"&&raw.onstalled===null})()')! == 'true'
 	element := document.get_element_by_id('raw')?
 	target := runtime.native_event_target(runtime.evaluate_host_value('raw')!)!
-	raw_handler := target.data.event_handler_map['stalled'] or {
+	raw_handler := target.data.event_handler('stalled') or {
 		assert false, 'missing raw media handler'
 		return
 	}
@@ -212,7 +212,7 @@ globalThis.rawReplacement=function(event){rawReplacementCalls++;rawReplacementCh
 raw.onstalled=rawReplacement;raw.dispatchEvent(new Event("stalled"));
 ')!
 	assert runtime.evaluate_host('raw.onstalled===rawReplacement&&!Object.hasOwn(raw,"onstalled")&&rawReplacementCalls===1&&rawReplacementChecks.every(Boolean)&&rawMediaHandlerRuns===0&&raw.getAttribute("onstalled")===rawContentSource&&window.event===undefined')! == 'true'
-	assigned_handler := target.data.event_handler_map['stalled'] or {
+	assigned_handler := target.data.event_handler('stalled') or {
 		assert false, 'missing assigned media handler'
 		return
 	}
@@ -221,7 +221,7 @@ raw.onstalled=rawReplacement;raw.dispatchEvent(new Event("stalled"));
 	assert target.event_listener_list().len == 1
 	assert element.get_attribute('onstalled')? == raw_source
 	assert runtime.evaluate_host('raw.onstalled=null;raw.dispatchEvent(new Event("stalled"));raw.onstalled===null&&rawReplacementCalls===1&&rawMediaHandlerRuns===0&&raw.getAttribute("onstalled")===rawContentSource')! == 'true'
-	assert 'stalled' !in target.data.event_handler_map
+	assert !target.data.has_event_handler('stalled')
 	assert target.event_listener_list().len == 0
 	assert element.get_attribute('onstalled')? == raw_source
 	assert !runtime.libjs_vm().has_running_execution_context()

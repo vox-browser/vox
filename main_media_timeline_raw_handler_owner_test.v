@@ -134,7 +134,7 @@ globalThis.mtrAudio=document.createElement("audio");mtrAudio.id="mtr-audio";mtrA
 	native_audio := unsafe { &dom.EventTarget(audio) }
 	for target in [native_video, native_audio] {
 		for name in ['durationchange', 'timeupdate'] {
-			slot := target.data.event_handler_map[name] or { panic('Raw timeline slot missing') }
+			slot := target.data.event_handler(name) or { panic('Raw timeline slot missing') }
 			assert slot.value.kind == .string && slot.value.string_data == body
 		}
 	}
@@ -213,8 +213,8 @@ globalThis.mtrTimeIDL=function(event){mtrOrder.push("idl-time");mtrSaved.push(ev
 	}
 	video := document.get_element_by_id('mtr-video')?
 	native_video := unsafe { &dom.EventTarget(video) }
-	duration_slot := native_video.data.event_handler_map['durationchange'] or { panic('Duration slot missing') }
-	time_slot := native_video.data.event_handler_map['timeupdate'] or { panic('Time slot missing') }
+	duration_slot := native_video.data.event_handler('durationchange') or { panic('Duration slot missing') }
+	time_slot := native_video.data.event_handler('timeupdate') or { panic('Time slot missing') }
 	duration_listener := duration_slot.listener or { panic('Duration listener missing') }
 	time_listener := time_slot.listener or { panic('Time listener missing') }
 	first_duration := native_video.get_current_value_of_event_handler('durationchange') or { panic('First duration callback missing') }
@@ -224,8 +224,8 @@ mtrVideo.ondurationchange=mtrDurationIDL;mtrVideo.setAttribute("ondurationchange
 mtrVideo.ontimeupdate=mtrTimeIDL;mtrVideo.setAttribute("ontimeupdate",mtrSource);globalThis.mtrSecondTime=mtrVideo.ontimeupdate;
 typeof mtrSecondDuration==="function"&&mtrSecondDuration!==mtrFirstDuration&&mtrSecondDuration!==mtrDurationIDL&&mtrSecondDuration.name==="ondurationchange"&&mtrSecondDuration.length===1&&typeof mtrSecondTime==="function"&&mtrSecondTime!==mtrFirstTime&&mtrSecondTime!==mtrTimeIDL&&mtrSecondTime.name==="ontimeupdate"&&mtrSecondTime.length===1&&mtrVideo.ondurationchange===mtrSecondDuration&&mtrVideo.ontimeupdate===mtrSecondTime&&mtrOrder.length===0
 ')! == 'true'
-	assert voidptr(native_video.data.event_handler_map['durationchange'] or { panic('Replaced duration slot missing') }) == voidptr(duration_slot)
-	assert voidptr(native_video.data.event_handler_map['timeupdate'] or { panic('Replaced time slot missing') }) == voidptr(time_slot)
+	assert voidptr(native_video.data.event_handler('durationchange') or { panic('Replaced duration slot missing') }) == voidptr(duration_slot)
+	assert voidptr(native_video.data.event_handler('timeupdate') or { panic('Replaced time slot missing') }) == voidptr(time_slot)
 	assert voidptr(duration_slot.listener or { panic('Replaced duration listener missing') }) == voidptr(duration_listener)
 	assert voidptr(time_slot.listener or { panic('Replaced time listener missing') }) == voidptr(time_listener)
 	second_duration := native_video.get_current_value_of_event_handler('durationchange') or { panic('Second duration callback missing') }
@@ -280,7 +280,7 @@ typeof mtrSecondDuration==="function"&&mtrSecondDuration!==mtrFirstDuration&&mtr
 	time.sleep(310 * time.millisecond)
 	media.time_marches_on(.normal_playback)
 	assert runtime.evaluate_host('mtrVideo.removeAttribute("ondurationchange");mtrVideo.removeAttribute("ontimeupdate");mtrVideo.ondurationchange===null&&mtrVideo.ontimeupdate===null&&mtrOrder.length===4')! == 'true'
-	assert 'durationchange' !in native_video.data.event_handler_map && 'timeupdate' !in native_video.data.event_handler_map
+	assert !native_video.data.has_event_handler('durationchange') && !native_video.data.has_event_handler('timeupdate')
 	assert video.get_attribute('ondurationchange') == none && video.get_attribute('ontimeupdate') == none
 	media_timeline_raw_owner_drain(document)
 	assert runtime.evaluate_host('mtrOrder.length===4&&mtrSaved.length===4')! == 'true'
@@ -321,8 +321,8 @@ globalThis.mtrVideo=document.getElementById("mtr-video");globalThis.mtrRuns=0;gl
 	body := r'"use strict";mtrRuns++;mtrOrder.push("strict-duration");mtrSaved.push(event);mtrChecks.push(arguments.length===1&&event===arguments[0]&&this===mtrVideo&&event.target===mtrVideo&&event.currentTarget===mtrVideo&&event instanceof Event&&event.isTrusted&&!event.bubbles&&!event.cancelable&&window.event===event&&this.duration===30&&this.currentTime===0&&__mediaTimelineRawOwnerContext());try{void arguments.callee;mtrChecks.push(false)}catch(error){mtrChecks.push(error instanceof TypeError)}this.ondurationchange=null;globalThis.mtrLiveName=ondurationchange;throw mtrReason;'
 	time_body := r'mtrTimeRuns++;mtrOrder.push("raw-time");mtrSaved.push(event);mtrChecks.push(event.isTrusted&&this===mtrVideo&&window.event===event&&this.duration===30&&this.currentTime===0&&__mediaTimelineRawOwnerContext());return false;'
 	assert runtime.evaluate_host('mtrVideo.setAttribute("ondurationchange",${json2.encode(body)});mtrVideo.setAttribute("ontimeupdate",${json2.encode(time_body)});mtrVideo.paused')! == 'true'
-	duration_slot := native_video.data.event_handler_map['durationchange'] or { panic('Strict duration slot missing') }
-	time_slot := native_video.data.event_handler_map['timeupdate'] or { panic('Raw time slot missing') }
+	duration_slot := native_video.data.event_handler('durationchange') or { panic('Strict duration slot missing') }
+	time_slot := native_video.data.event_handler('timeupdate') or { panic('Raw time slot missing') }
 	mut owner := app.page_model
 	owner.set_is_scripting_enabled(false)
 	media.set_duration(20)
@@ -347,7 +347,7 @@ mtrVideo.addEventListener("durationchange",function(event){mtrOrder.push("later-
 	assert runtime.evaluate_host('mtrOrder.length===0')! == 'true'
 	(media_timeline_raw_owner_take_task(document) or { panic('Missing strict duration task') }).execute()
 	assert runtime.evaluate_host('mtrOrder.join(",")==="strict-duration,later-duration"&&mtrRuns===1&&mtrTimeRuns===0&&mtrLiveName===null&&mtrVideo.ondurationchange===null&&mtrLater&&mtrChecks.length===2&&mtrChecks.every(Boolean)&&window.event===undefined')! == 'true'
-	assert 'durationchange' !in native_video.data.event_handler_map && 'timeupdate' in native_video.data.event_handler_map
+	assert !native_video.data.has_event_handler('durationchange') && native_video.data.has_event_handler('timeupdate')
 	assert video.get_attribute_value('ondurationchange') == body && video.get_attribute_value('ontimeupdate') == time_body
 	assert settings.realm().reported_exceptions.len == 1
 	reported := settings.realm().reported_exceptions[0].value.as_webidl_value()!

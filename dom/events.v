@@ -873,9 +873,11 @@ pub mut:
 
 	event_listener_list []&DOMEventListener
 
+mut:
 	// https://html.spec.whatwg.org/multipage/webappapis.html#event-handler-map
-	// Spec Note: The order of the entries of event handler map could be arbitrary. It is not observable through any algorithms that operate on the map.
-	event_handler_map map[string]&EventHandler_
+	// Most EventTargets never publish a handler. Keep the ordinary V map
+	// managed separately and create it only after the first handler activates.
+	handler_storage_ &EventHandlerStorage = unsafe { nil }
 }
 
 @[heap]
@@ -913,10 +915,12 @@ pub fn (mut et EventTarget) visit_edges(mut visitor CellVisitor) {
 	for listener in et.data.event_listener_list {
 		visitor.visit(listener)
 	}
-	for _, handler in et.data.event_handler_map {
-		visitor.visit(handler)
-		if listener := handler.listener {
-			visitor.visit(listener)
+	if et.data.handler_storage_ != unsafe { nil } {
+		for _, handler in et.data.handler_storage_.handlers {
+			visitor.visit(handler)
+			if listener := handler.listener {
+				visitor.visit(listener)
+			}
 		}
 	}
 }
@@ -1227,7 +1231,7 @@ pub fn (et &EventTarget) get_current_value_of_event_handler(name string) ?&Callb
 	//               However, this would be very allocation heavy. For example, each DOM::Element includes GlobalEventHandlers, which defines 60+ event handler attributes.
 	//               Plus, the vast majority of these allocations would be likely wasted, as web content will only use a handful of these attributes on certain elements.
 	//               Thus, treat the event handler not being in the event handler map as equivalent to an event handler with an initial null value.
-	handler := et.data.event_handler_map[name] or { return none }
+	handler := et.data.event_handler(name) or { return none }
 	// 3. If eventHandler's value is an internal raw uncompiled handler, then compile it.
 	if handler.value.kind == .string {
 		document := inline_event_handler_document(et) or { return none }
@@ -1299,7 +1303,7 @@ pub fn (et &EventTarget) set_event_handler_attribute(name string, value ?&Callba
 
 	// 4. Otherwise:
 	mut target := unsafe { &EventTarget(event_target) }
-	if mut handler := target.data.event_handler_map[name] {
+	if mut handler := target.data.event_handler(name) {
 		handler.value = js_object(value)
 		event_target.activate_event_handler(name, handler)
 		return
@@ -1309,7 +1313,7 @@ pub fn (et &EventTarget) set_event_handler_attribute(name string, value ?&Callba
 		value: js_object(value)
 	}
 	event_target.activate_event_handler(name, handler)
-	target.data.event_handler_map[name] = handler
+	target.data.store_event_handler(name, handler)
 }
 
 // https://html.spec.whatwg.org/multipage/webappapis.html#activate-an-event-handler
@@ -1369,13 +1373,13 @@ pub fn (et &EventTarget) deactivate_event_handler(name string) {
 	// 5. If listener is not null, then remove an event listener with eventTarget and listener.
 	// 6. Set eventHandler's listener to null.
 	mut target := unsafe { &EventTarget(et) }
-	mut handler := target.data.event_handler_map[name] or { return }
+	mut handler := target.data.event_handler(name) or { return }
 	handler.value = js_null()
 	if listener := handler.listener {
 		et.remove_an_event_listener(listener)
 	}
 	handler.listener = none
-	target.data.event_handler_map.delete(name)
+	target.data.remove_event_handler(name)
 }
 
 // https://html.spec.whatwg.org/multipage/webappapis.html#the-event-handler-processing-algorithm
@@ -1522,7 +1526,7 @@ pub fn (et &EventTarget) element_event_handler_attribute_changed(local_name stri
 	//  5. Set eventHandler's value to the internal raw uncompiled handler value/location.
 	//  6. Activate an event handler given eventTarget and name.
 	mut target := unsafe { &EventTarget(event_target) }
-	if mut handler := target.data.event_handler_map[event_name] {
+	if mut handler := target.data.event_handler(event_name) {
 		handler.value = js_string(script_attribute)
 		event_target.activate_event_handler(event_name, handler)
 		return
@@ -1531,7 +1535,7 @@ pub fn (et &EventTarget) element_event_handler_attribute_changed(local_name stri
 		value: js_string(script_attribute)
 	}
 	event_target.activate_event_handler(event_name, handler)
-	target.data.event_handler_map[event_name] = handler
+	target.data.store_event_handler(event_name, handler)
 }
 
 // document.v already defines EventTarget.dispatch_event(event &Event) bool. This helper carries the translated EventTarget.cpp dispatch body

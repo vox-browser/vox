@@ -46,7 +46,7 @@ fn test_named_handler_availability_keeps_unavailable_slot_then_compiles_requeste
 	document.set_inline_event_handler_compiler(named_handler_availability_compiler(probe))
 	target.element_event_handler_attribute_changed('onplay', 'return false;')
 	target.element_event_handler_attribute_changed('onpause', 'return false;')
-	pause_slot := target.data.event_handler_map['pause'] or { panic('missing pause slot') }
+	pause_slot := target.data.event_handler('pause') or { panic('missing pause slot') }
 	listener := pause_slot.listener or { panic('missing pause listener') }
 	assert target.get_current_value_of_event_handler('pause') == none
 	assert pause_slot.value.kind == .string && pause_slot.value.string_data == 'return false;'
@@ -72,7 +72,7 @@ fn test_named_handler_availability_runs_after_environment_and_before_parse_failu
 	document.set_inline_event_handler_compiler(named_handler_availability_compiler(probe))
 	target.element_event_handler_attribute_changed('onpause', 'return (')
 	target.element_event_handler_attribute_changed('onplaying', 'return false;')
-	slot := target.data.event_handler_map['pause'] or { panic('missing pause slot') }
+	slot := target.data.event_handler('pause') or { panic('missing pause slot') }
 	listener := slot.listener or { panic('missing pause listener') }
 	assert target.get_current_value_of_event_handler('playing') == none
 	assert target.get_current_value_of_event_handler('pause') == none
@@ -86,7 +86,7 @@ fn test_named_handler_availability_runs_after_environment_and_before_parse_failu
 	assert slot.value.kind == .null_
 	assert voidptr(slot.listener or { panic('parse removed listener') }) == voidptr(listener)
 	assert target.event_listener_list().len == 2
-	assert (target.data.event_handler_map['playing'] or { panic('unsupported slot') }).value.kind == .string
+	assert (target.data.event_handler('playing') or { panic('unsupported slot') }).value.kind == .string
 	assert probe.steps == ['supports:playing', 'supports:pause', 'environment',
 		'supports:pause', 'environment', 'available:pause',
 		'supports:pause', 'environment', 'available:pause', 'compile:pause']

@@ -181,7 +181,7 @@ for(var mskElement of [mskVideo,mskAudio])mskElement.addEventListener("timeupdat
 	native_audio := unsafe { &dom.EventTarget(audio) }
 	for target in [native_video, native_audio] {
 		for name in ['seeking', 'seeked'] {
-			slot := target.data.event_handler_map[name] or { panic('Raw seek slot missing') }
+			slot := target.data.event_handler(name) or { panic('Raw seek slot missing') }
 			assert slot.value.kind == .string && slot.value.string_data == body
 		}
 	}
@@ -253,8 +253,8 @@ mskVideo.addEventListener("timeupdate",function(event){mskOrder.push("timeupdate
 	media_seek_raw_owner_probe(mut runtime, document)!
 	video := document.get_element_by_id('msk-video')?
 	native_video := unsafe { &dom.EventTarget(video) }
-	seeking_slot := native_video.data.event_handler_map['seeking'] or { panic('Seeking slot missing') }
-	seeked_slot := native_video.data.event_handler_map['seeked'] or { panic('Seeked slot missing') }
+	seeking_slot := native_video.data.event_handler('seeking') or { panic('Seeking slot missing') }
+	seeked_slot := native_video.data.event_handler('seeked') or { panic('Seeked slot missing') }
 	seeking_listener := seeking_slot.listener or { panic('Seeking listener missing') }
 	seeked_listener := seeked_slot.listener or { panic('Seeked listener missing') }
 	first_seeking := native_video.get_current_value_of_event_handler('seeking') or { panic('First seeking callback missing') }
@@ -264,8 +264,8 @@ mskVideo.onseeking=mskSeekingIDL;mskVideo.setAttribute("onseeking",mskSource);gl
 mskVideo.onseeked=mskSeekedIDL;mskVideo.setAttribute("onseeked",mskSource);globalThis.mskSecondSeeked=mskVideo.onseeked;
 typeof mskSecondSeeking==="function"&&mskSecondSeeking!==mskFirstSeeking&&mskSecondSeeking!==mskSeekingIDL&&mskSecondSeeking.name==="onseeking"&&mskSecondSeeking.length===1&&typeof mskSecondSeeked==="function"&&mskSecondSeeked!==mskFirstSeeked&&mskSecondSeeked!==mskSeekedIDL&&mskSecondSeeked.name==="onseeked"&&mskSecondSeeked.length===1&&mskVideo.onseeking===mskSecondSeeking&&mskVideo.onseeked===mskSecondSeeked&&mskOrder.length===0
 ')! == 'true'
-	assert voidptr(native_video.data.event_handler_map['seeking'] or { panic('Replaced seeking slot missing') }) == voidptr(seeking_slot)
-	assert voidptr(native_video.data.event_handler_map['seeked'] or { panic('Replaced seeked slot missing') }) == voidptr(seeked_slot)
+	assert voidptr(native_video.data.event_handler('seeking') or { panic('Replaced seeking slot missing') }) == voidptr(seeking_slot)
+	assert voidptr(native_video.data.event_handler('seeked') or { panic('Replaced seeked slot missing') }) == voidptr(seeked_slot)
 	assert voidptr(seeking_slot.listener or { panic('Replaced seeking listener missing') }) == voidptr(seeking_listener)
 	assert voidptr(seeked_slot.listener or { panic('Replaced seeked listener missing') }) == voidptr(seeked_listener)
 	second_seeking := native_video.get_current_value_of_event_handler('seeking') or { panic('Second seeking callback missing') }
@@ -295,7 +295,7 @@ typeof mskSecondSeeking==="function"&&mskSecondSeeking!==mskFirstSeeking&&mskSec
 	// Present attribute removal clears the IDL value before queued seeking and
 	// completion delivery. The ordinary timeupdate listener continues to run.
 	assert runtime.evaluate_host('mskVideo.fastSeek(6);mskVideo.removeAttribute("onseeking");mskVideo.removeAttribute("onseeked");mskVideo.onseeking===null&&mskVideo.onseeked===null&&mskVideo.seeking')! == 'true'
-	assert 'seeking' !in native_video.data.event_handler_map && 'seeked' !in native_video.data.event_handler_map
+	assert !native_video.data.has_event_handler('seeking') && !native_video.data.has_event_handler('seeked')
 	assert video.get_attribute('onseeking') == none && video.get_attribute('onseeked') == none
 	media_seek_raw_owner_drain(document)
 	assert runtime.evaluate_host('__mediaSeekRawFinish()&&!mskVideo.seeking&&mskOrder.length===4')! == 'true'
@@ -358,8 +358,8 @@ return mskEmpty.currentTime===5&&!mskEmpty.seeking&&mskEmptyRuns===0;
 	body := r'"use strict";mskRuns++;mskOrder.push("strict-seeking");mskSaved.push(event);mskChecks.push(arguments.length===1&&event===arguments[0]&&this===mskVideo&&event.target===mskVideo&&event.currentTarget===mskVideo&&event instanceof Event&&event.isTrusted&&!event.bubbles&&!event.cancelable&&window.event===event&&this.seeking&&this.currentTime===6&&__mediaSeekRawOwnerContext());try{void arguments.callee;mskChecks.push(false)}catch(error){mskChecks.push(error instanceof TypeError)}this.onseeking=null;globalThis.mskLiveName=onseeking;throw mskReason;'
 	seeked_body := r'mskSeekedRuns++;mskOrder.push("raw-seeked");mskSaved.push(event);mskChecks.push(event.isTrusted&&this===mskVideo&&window.event===event&&!this.seeking&&this.currentTime===6&&__mediaSeekRawOwnerContext());return false;'
 	assert runtime.evaluate_host('mskVideo.setAttribute("onseeking",${json2.encode(body)});mskVideo.setAttribute("onseeked",${json2.encode(seeked_body)});mskVideo.paused')! == 'true'
-	seeking_slot := native_video.data.event_handler_map['seeking'] or { panic('Strict seeking slot missing') }
-	seeked_slot := native_video.data.event_handler_map['seeked'] or { panic('Raw seeked slot missing') }
+	seeking_slot := native_video.data.event_handler('seeking') or { panic('Strict seeking slot missing') }
+	seeked_slot := native_video.data.event_handler('seeked') or { panic('Raw seeked slot missing') }
 	mut owner := app.page_model
 	owner.set_is_scripting_enabled(false)
 	assert runtime.evaluate_host('mskVideo.currentTime=6;mskVideo.seeking&&mskVideo.onseeking===null&&mskVideo.onseeked===null&&mskRuns===0&&mskSeekedRuns===0')! == 'true'
@@ -381,7 +381,7 @@ mskVideo.addEventListener("seeking",function(event){mskOrder.push("later-seeking
 	assert runtime.evaluate_host('mskVideo.fastSeek(6);mskVideo.seeking&&mskOrder.length===0')! == 'true'
 	media_seek_raw_owner_drain(document)
 	assert runtime.evaluate_host('mskOrder.join(",")==="strict-seeking,later-seeking"&&mskRuns===1&&mskSeekedRuns===0&&mskLiveName===null&&mskVideo.onseeking===null&&mskLater&&mskChecks.length===2&&mskChecks.every(Boolean)&&window.event===undefined')! == 'true'
-	assert 'seeking' !in native_video.data.event_handler_map && 'seeked' in native_video.data.event_handler_map
+	assert !native_video.data.has_event_handler('seeking') && native_video.data.has_event_handler('seeked')
 	assert video.get_attribute_value('onseeking') == body && video.get_attribute_value('onseeked') == seeked_body
 	assert settings.realm().reported_exceptions.len == 1
 	reported := settings.realm().reported_exceptions[0].value.as_webidl_value()!

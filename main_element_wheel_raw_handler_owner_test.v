@@ -113,7 +113,7 @@ erTarget.addEventListener("wheel",function(event){erOrder.push("after");erAfterS
 	target := document.get_element_by_id('eh-target')?
 	scroller := document.get_element_by_id('eh-scroller')?
 	native_target := unsafe { &dom.EventTarget(target) }
-	slot := native_target.data.event_handler_map['wheel'] or { panic('Parsed raw wheel slot missing') }
+	slot := native_target.data.event_handler('wheel') or { panic('Parsed raw wheel slot missing') }
 	listener := slot.listener or { panic('Parsed raw wheel listener missing') }
 	callback := native_target.get_current_value_of_event_handler('wheel') or { panic('Raw wheel callback missing') }
 	assert slot.value.kind == .object
@@ -144,7 +144,7 @@ erTarget.onwheel=erIDL;erTarget.setAttribute("onwheel",erSource);
 globalThis.erSecond=erTarget.onwheel;
 erOrder=[];typeof erSecond==="function"&&erSecond!==erFirst&&erSecond!==erIDL&&erSecond.name==="onwheel"&&erSecond.length===1&&erTarget.onwheel===erSecond&&erRuns===1
 ')! == 'true'
-	assert voidptr(native_target.data.event_handler_map['wheel'] or { panic('Recompiled slot missing') }) == voidptr(slot)
+	assert voidptr(native_target.data.event_handler('wheel') or { panic('Recompiled slot missing') }) == voidptr(slot)
 	assert voidptr(slot.listener or { panic('Recompiled listener missing') }) == voidptr(listener)
 	second := native_target.get_current_value_of_event_handler('wheel') or { panic('Recompiled callback missing') }
 	assert voidptr(second) != voidptr(callback) && second.compiled_source_text_ == callback.compiled_source_text_
@@ -156,7 +156,7 @@ erOrder=[];typeof erSecond==="function"&&erSecond!==erFirst&&erSecond!==erIDL&&e
 	// Removing an existing attribute deactivates a later IDL assignment. An
 	// absent-attribute removal leaves a subsequently installed callback intact.
 	assert runtime.evaluate_host('erTarget.onwheel=erIDL;erTarget.removeAttribute("onwheel");erTarget.onwheel===null')! == 'true'
-	assert 'wheel' !in native_target.data.event_handler_map
+	assert !native_target.data.has_event_handler('wheel')
 	assert target.get_attribute('onwheel') == none
 	assert runtime.evaluate_host('erTarget.onwheel=erIDL;erTarget.removeAttribute("onwheel");erOrder=[];erTarget.onwheel===erIDL')! == 'true'
 	assert app.handle_wheel_at_viewport_point(page.PixelPoint{12.5, 12.25}, page.PixelPoint{},
@@ -185,19 +185,19 @@ fn test_element_raw_onwheel_function_body_gate_strictness_parameter_and_live_han
 		// The last body can escape the generated anonymous function/object text.
 		// It is not a FunctionBody and must be rejected before any factory runs.
 		target.set_attribute_value('onwheel', body)
-		slot := native_target.data.event_handler_map['wheel'] or { panic('Invalid raw slot missing') }
+		slot := native_target.data.event_handler('wheel') or { panic('Invalid raw slot missing') }
 		listener := slot.listener or { panic('Invalid raw listener missing') }
 		assert slot.value.kind == .string && slot.value.string_data == body
 		assert runtime.evaluate_host('erTarget.onwheel===null&&erTarget.onwheel===null&&erInjectionRuns===0&&erStrictRuns===0')! == 'true'
 		assert slot.value.kind == .null_
-		assert voidptr(native_target.data.event_handler_map['wheel'] or { panic('Invalid slot removed') }) == voidptr(slot)
+		assert voidptr(native_target.data.event_handler('wheel') or { panic('Invalid slot removed') }) == voidptr(slot)
 		assert voidptr(slot.listener or { panic('Invalid listener removed') }) == voidptr(listener)
 		assert settings.realm().reported_exceptions.len == 0
 		element_wheel_raw_handler_owner_balance(runtime, document, 0)
 	}
 	body := r'"use strict";globalThis.erStrictRuns++;erSaved.push(event);erChecks.push(arguments.length===1&&arguments[0]===event&&this===erTarget&&event.target===erTarget&&event.currentTarget===erTarget&&event instanceof WheelEvent&&event.isTrusted&&window.event===event&&__elementWheelRawHandlerOwnerContext());try{void arguments.callee;erChecks.push(false)}catch(error){erChecks.push(error instanceof TypeError)}this.onwheel=null;globalThis.erLiveName=onwheel;return false;'
 	target.set_attribute_value('onwheel', body)
-	slot := native_target.data.event_handler_map['wheel'] or { panic('Strict raw slot missing') }
+	slot := native_target.data.event_handler('wheel') or { panic('Strict raw slot missing') }
 	mut owner := app.page_model
 	owner.set_is_scripting_enabled(false)
 	assert runtime.evaluate_host('erTarget.onwheel===null&&erStrictRuns===0')! == 'true'
@@ -214,7 +214,7 @@ fn test_element_raw_onwheel_function_body_gate_strictness_parameter_and_live_han
 		window_height: 240 + app.chrome_height()
 	})
 	assert runtime.evaluate_host('erStrictRuns===1&&erChecks.every(Boolean)&&erLiveName===null&&erTarget.onwheel===null&&erSaved[0].defaultPrevented&&erInjectionRuns===0')! == 'true'
-	assert 'wheel' !in native_target.data.event_handler_map
+	assert !native_target.data.has_event_handler('wheel')
 	assert target.get_attribute_value('onwheel') == body
 	assert document.get_element_by_id('eh-scroller')?.el_scroll_offset().y() == 0 && app.scroll_y == 0
 	event := runtime.native_event(runtime.evaluate_host_value('erSaved[0]')!)!

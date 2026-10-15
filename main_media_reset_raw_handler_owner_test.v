@@ -156,7 +156,7 @@ for(var mrrElement of [mrrVideo,mrrAudio])mrrElement.addEventListener("timeupdat
 	native_audio := unsafe { &dom.EventTarget(audio) }
 	for target in [native_video, native_audio] {
 		for name in ['abort', 'emptied'] {
-			slot := target.data.event_handler_map[name] or { panic('Raw reset slot missing') }
+			slot := target.data.event_handler(name) or { panic('Raw reset slot missing') }
 			assert slot.value.kind == .string && slot.value.string_data == body
 		}
 	}
@@ -234,8 +234,8 @@ globalThis.mrrEmptiedIDL=function(event){mrrOrder.push("idl-emptied");mrrSaved.p
 	media_reset_raw_owner_probe(mut runtime, document)!
 	video := document.get_element_by_id('mrr-video')?
 	native_video := unsafe { &dom.EventTarget(video) }
-	abort_slot := native_video.data.event_handler_map['abort'] or { panic('Abort slot missing') }
-	emptied_slot := native_video.data.event_handler_map['emptied'] or { panic('Emptied slot missing') }
+	abort_slot := native_video.data.event_handler('abort') or { panic('Abort slot missing') }
+	emptied_slot := native_video.data.event_handler('emptied') or { panic('Emptied slot missing') }
 	abort_listener := abort_slot.listener or { panic('Abort listener missing') }
 	emptied_listener := emptied_slot.listener or { panic('Emptied listener missing') }
 	first_abort := native_video.get_current_value_of_event_handler('abort') or { panic('First abort callback missing') }
@@ -245,8 +245,8 @@ mrrVideo.onabort=mrrAbortIDL;mrrVideo.setAttribute("onabort",mrrSource);globalTh
 mrrVideo.onemptied=mrrEmptiedIDL;mrrVideo.setAttribute("onemptied",mrrSource);globalThis.mrrSecondEmptied=mrrVideo.onemptied;
 typeof mrrSecondAbort==="function"&&mrrSecondAbort!==mrrFirstAbort&&mrrSecondAbort!==mrrAbortIDL&&mrrSecondAbort.name==="onabort"&&mrrSecondAbort.length===1&&typeof mrrSecondEmptied==="function"&&mrrSecondEmptied!==mrrFirstEmptied&&mrrSecondEmptied!==mrrEmptiedIDL&&mrrSecondEmptied.name==="onemptied"&&mrrSecondEmptied.length===1&&mrrVideo.onabort===mrrSecondAbort&&mrrVideo.onemptied===mrrSecondEmptied&&mrrOrder.length===0
 ')! == 'true'
-	assert voidptr(native_video.data.event_handler_map['abort'] or { panic('Replaced abort slot missing') }) == voidptr(abort_slot)
-	assert voidptr(native_video.data.event_handler_map['emptied'] or { panic('Replaced emptied slot missing') }) == voidptr(emptied_slot)
+	assert voidptr(native_video.data.event_handler('abort') or { panic('Replaced abort slot missing') }) == voidptr(abort_slot)
+	assert voidptr(native_video.data.event_handler('emptied') or { panic('Replaced emptied slot missing') }) == voidptr(emptied_slot)
 	assert voidptr(abort_slot.listener or { panic('Replaced abort listener missing') }) == voidptr(abort_listener)
 	assert voidptr(emptied_slot.listener or { panic('Replaced emptied listener missing') }) == voidptr(emptied_listener)
 	second_abort := native_video.get_current_value_of_event_handler('abort') or { panic('Second abort callback missing') }
@@ -272,7 +272,7 @@ typeof mrrSecondAbort==="function"&&mrrSecondAbort!==mrrFirstAbort&&mrrSecondAbo
 	assert voidptr(emptied_slot.listener or { panic('Reentrant emptied listener missing') }) == voidptr(emptied_listener)
 	assert media.event_count('abort') == 2 && media.event_count('emptied') == 1 && media.event_count('timeupdate') == 0
 	assert runtime.evaluate_host('__mediaResetRawIdleWarm();mrrVideo.load();mrrVideo.removeAttribute("onabort");mrrVideo.removeAttribute("onemptied");mrrVideo.onabort===null&&mrrVideo.onemptied===null&&mrrOrder.length===3')! == 'true'
-	assert 'abort' !in native_video.data.event_handler_map && 'emptied' !in native_video.data.event_handler_map
+	assert !native_video.data.has_event_handler('abort') && !native_video.data.has_event_handler('emptied')
 	assert video.get_attribute('onabort') == none && video.get_attribute('onemptied') == none
 	media_reset_raw_owner_drain(document)
 	assert runtime.evaluate_host('mrrOrder.length===3&&mrrSaved.length===3')! == 'true'
@@ -311,8 +311,8 @@ globalThis.mrrVideo=document.getElementById("mrr-video");globalThis.mrrRuns=0;gl
 	body := r'"use strict";mrrRuns++;mrrOrder.push("strict-abort");mrrSaved.push(event);mrrChecks.push(arguments.length===1&&event===arguments[0]&&this===mrrVideo&&event.target===mrrVideo&&event.currentTarget===mrrVideo&&event instanceof Event&&event.isTrusted&&!event.bubbles&&!event.cancelable&&window.event===event&&this.networkState===0&&this.readyState===0&&this.currentTime===0&&this.paused&&!this.seeking&&Number.isNaN(this.duration)&&__mediaResetRawOwnerContext());try{void arguments.callee;mrrChecks.push(false)}catch(error){mrrChecks.push(error instanceof TypeError)}this.onabort=null;globalThis.mrrLiveName=onabort;throw mrrReason;'
 	emptied_body := r'mrrEmptiedRuns++;mrrOrder.push("raw-emptied");mrrSaved.push(event);mrrChecks.push(event.isTrusted&&this===mrrVideo&&window.event===event&&this.networkState===0&&this.readyState===0&&this.currentTime===0&&this.paused&&!this.seeking&&Number.isNaN(this.duration)&&__mediaResetRawOwnerContext());return false;'
 	assert runtime.evaluate_host('mrrVideo.setAttribute("onabort",${json2.encode(body)});mrrVideo.setAttribute("onemptied",${json2.encode(emptied_body)});mrrVideo.paused')! == 'true'
-	abort_slot := native_video.data.event_handler_map['abort'] or { panic('Strict abort slot missing') }
-	emptied_slot := native_video.data.event_handler_map['emptied'] or { panic('Raw emptied slot missing') }
+	abort_slot := native_video.data.event_handler('abort') or { panic('Strict abort slot missing') }
+	emptied_slot := native_video.data.event_handler('emptied') or { panic('Raw emptied slot missing') }
 	mut owner := app.page_model
 	owner.set_is_scripting_enabled(false)
 	assert runtime.evaluate_host('__mediaResetRawGatedWarm();mrrVideo.load();mrrVideo.onabort===null&&mrrVideo.onemptied===null&&mrrRuns===0&&mrrEmptiedRuns===0')! == 'true'
@@ -333,7 +333,7 @@ mrrVideo.addEventListener("abort",function(event){mrrOrder.push("later-abort");g
 	assert runtime.evaluate_host('__mediaResetRawGatedIdle();mrrVideo.load();mrrOrder.length===0')! == 'true'
 	(media_reset_raw_owner_take_task(document) or { panic('Missing strict abort task') }).execute()
 	assert runtime.evaluate_host('mrrOrder.join(",")==="strict-abort,later-abort"&&mrrRuns===1&&mrrEmptiedRuns===0&&mrrLiveName===null&&mrrVideo.onabort===null&&mrrLater&&mrrChecks.length===2&&mrrChecks.every(Boolean)&&window.event===undefined')! == 'true'
-	assert 'abort' !in native_video.data.event_handler_map && 'emptied' in native_video.data.event_handler_map
+	assert !native_video.data.has_event_handler('abort') && native_video.data.has_event_handler('emptied')
 	assert video.get_attribute_value('onabort') == body && video.get_attribute_value('onemptied') == emptied_body
 	assert settings.realm().reported_exceptions.len == 1
 	reported := settings.realm().reported_exceptions[0].value.as_webidl_value()!

@@ -92,7 +92,7 @@ fn test_raw_element_wheel_lazily_caches_owner_scopes_without_helper_or_self_bind
 	runtime.evaluate_host('handlerDiv.scopeKey="element";handlerDiv.event={sentinel:true};globalThis.rawChecks=[];0')!
 	body := r'rawRuns++;rawChecks.push(scopeKey==="element"&&arguments.length===1&&event===arguments[0]&&this===handlerDiv&&window.event===event&&__elementRawWheelContext());delete this.scopeKey;rawChecks.push(scopeKey==="document");delete document.scopeKey;rawChecks.push(scopeKey==="global");this.onwheel=null;rawChecks.push(onwheel===null);return false;'
 	target.set_attribute_value('onwheel', body)
-	slot := native_target.data.event_handler_map['wheel'] or { panic('raw slot') }
+	slot := native_target.data.event_handler('wheel') or { panic('raw slot') }
 	listener := slot.listener or { panic('raw listener') }
 	checkpoints := fixture.settings.realm().microtask_checkpoint_count
 	callback := native_target.get_current_value_of_event_handler('wheel') or { panic('compiled callback') }
@@ -121,7 +121,7 @@ fn test_raw_element_wheel_function_body_gate_csp_and_unsupported_handlers_keep_n
 	for body in ['return (', '"use strict";let event;',
 		'}},globalThis.rawRuns++,{onwheel:function(event){'] {
 		target.set_attribute_value('onwheel', body)
-		slot := native_target.data.event_handler_map['wheel'] or { panic('invalid slot') }
+		slot := native_target.data.event_handler('wheel') or { panic('invalid slot') }
 		listener := slot.listener or { panic('invalid listener') }
 		assert runtime.evaluate_host('handlerDiv.onwheel===null&&handlerDiv.onwheel===null&&rawRuns===0')! == 'true'
 		assert slot.value.kind == .null_
@@ -130,7 +130,7 @@ fn test_raw_element_wheel_function_body_gate_csp_and_unsupported_handlers_keep_n
 	}
 	target.set_attribute_value('onclick', 'globalThis.rawRuns++')
 	assert native_target.get_current_value_of_event_handler('click') == none
-	assert (native_target.data.event_handler_map['click'] or { panic('unsupported click') }).value.kind == .string
+	assert (native_target.data.event_handler('click') or { panic('unsupported click') }).value.kind == .string
 	target.set_attribute_value('onwheel', 'return false;')
 	callback := native_target.get_current_value_of_event_handler('wheel') or { panic('valid callback') }
 	mut document := fixture.document
@@ -149,7 +149,7 @@ fn test_raw_element_wheel_function_body_gate_csp_and_unsupported_handlers_keep_n
 		owner := unsafe { &dom.EventTarget(element) }
 		owner.element_event_handler_attribute_changed('onwheel', 'return false;')
 		assert owner.get_current_value_of_event_handler('wheel') == none
-		assert (owner.data.event_handler_map['wheel'] or { panic('unsupported owner') }).value.kind == .string
+		assert (owner.data.event_handler('wheel') or { panic('unsupported owner') }).value.kind == .string
 	}
 	assert fixture.settings.realm().reported_exceptions.len == 0
 	element_raw_wheel_assert_contexts(fixture)
@@ -187,6 +187,6 @@ fn test_raw_element_wheel_strict_callbacks_preserve_original_exceptions_page_gat
 	target.set_attribute_value('onwheel', 'return false;')
 	runtime.close()
 	assert native_target.get_current_value_of_event_handler('wheel') == none
-	assert (native_target.data.event_handler_map['wheel'] or { panic('closed raw') }).value.kind == .string
+	assert (native_target.data.event_handler('wheel') or { panic('closed raw') }).value.kind == .string
 	element_raw_wheel_assert_contexts(fixture)
 }

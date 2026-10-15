@@ -16,7 +16,7 @@ fn test_static_native_parser_body_handler_is_retained_before_runtime_startup() {
 	assert document.relevant_settings_object() != unsafe { nil }
 	assert document_has_window_event_handlers(document)
 	window := document.get_window() or { panic('actual Window') }
-	handler := window.data.event_handler_map['load'] or { panic('parser-created Window handler') }
+	handler := window.data.event_handler('load') or { panic('parser-created Window handler') }
 	assert handler.value.kind == .string && handler.value.string_data == 'original parser body'
 	mut messages := []string{}
 	assert script_sources(document, document.base_url().serialize(), {}, mut messages).len == 0
@@ -69,7 +69,7 @@ fn test_static_native_body_handler_uses_actual_page_gate_and_keeps_raw_source_wh
 	assert document.get_element_by_id('fallback') != none
 	assert document.get_element_by_id('result')?.as_node().text_content()? == 'initial'
 	window := document.get_window() or { panic('owning Window') }
-	assert (window.data.event_handler_map['load'] or { panic('raw handler') }).value.kind == .string
+	assert (window.data.event_handler('load') or { panic('raw handler') }).value.kind == .string
 	assert app.js_messages == []
 }
 

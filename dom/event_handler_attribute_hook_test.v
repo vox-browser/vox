@@ -10,11 +10,11 @@ fn test_source_raw_attribute_hook_maps_full_names_and_vendor_event_case() {
 	element.set_attribute_value('onwebkitanimationend', 'original body')
 	assert target.has_event_listener('webkitAnimationEnd')
 	assert !target.has_event_listener('webkitanimationend')
-	handler := target.data.event_handler_map['webkitAnimationEnd'] or { panic('vendor handler') }
+	handler := target.data.event_handler('webkitAnimationEnd') or { panic('vendor handler') }
 	listener := handler.listener or { panic('vendor listener') }
 	element.set_attribute_value('onwebkitanimationend', 'replacement body')
 	assert handler.value.string_data == 'replacement body'
-	assert voidptr(target.data.event_handler_map['webkitAnimationEnd'] or { panic('handler') }) == voidptr(handler)
+	assert voidptr(target.data.event_handler('webkitAnimationEnd') or { panic('handler') }) == voidptr(handler)
 	assert voidptr(handler.listener or { panic('listener') }) == voidptr(listener)
 	element.remove_attribute('onwebkitanimationend')
 	assert !target.has_event_listener('webkitAnimationEnd')
@@ -39,8 +39,8 @@ fn test_source_html_attribute_dispatch_distinguishes_global_and_body_frameset_se
 		element.set_attribute_value('onload', 'reflected load')
 		element.set_attribute_value('onmessage', 'reflected message')
 		element.set_attribute_value('onclick', 'local click')
-		assert (window_target.data.event_handler_map['load'] or { panic('reflected load') }).value.string_data == 'reflected load'
-		assert (window_target.data.event_handler_map['message'] or { panic('reflected message') }).value.string_data == 'reflected message'
+		assert (window_target.data.event_handler('load') or { panic('reflected load') }).value.string_data == 'reflected load'
+		assert (window_target.data.event_handler('message') or { panic('reflected message') }).value.string_data == 'reflected message'
 		assert !target.has_event_listener('load') && !target.has_event_listener('message')
 		assert target.has_event_listener('click')
 		// The pinned EventTarget.cpp predicate omits these four header members.
@@ -70,10 +70,10 @@ fn test_source_native_handler_attribute_hook_checks_csp_once_before_replacement(
 	})
 	element.set_attribute_value('onclick', 'blocked body')
 	assert counts.calls == 1
-	assert (target.data.event_handler_map['click'] or { panic('click') }).value.string_data == 'original body'
+	assert (target.data.event_handler('click') or { panic('click') }).value.string_data == 'original body'
 	element.set_attribute_value('onclick', 'allowed body')
 	assert counts.calls == 2
-	assert (target.data.event_handler_map['click'] or { panic('click') }).value.string_data == 'allowed body'
+	assert (target.data.event_handler('click') or { panic('click') }).value.string_data == 'allowed body'
 	element.remove_attribute('onclick')
 	assert counts.calls == 2 && !target.has_event_listener('click')
 }

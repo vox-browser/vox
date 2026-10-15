@@ -182,7 +182,7 @@ detachedPointerAudio.addEventListener("click",function(event){mouseUpHandlerOrde
 	// the raw slot until an IDL assignment replaces it, without changing the HTML.
 	raw := document.get_element_by_id('raw')?
 	raw_target := runtime.native_event_target(runtime.evaluate_host_value('raw')!)!
-	raw_handler := raw_target.data.event_handler_map['pointerdown'] or {
+	raw_handler := raw_target.data.event_handler('pointerdown') or {
 		assert false, 'missing raw pointer handler'
 		return
 	}
@@ -193,7 +193,7 @@ detachedPointerAudio.addEventListener("click",function(event){mouseUpHandlerOrde
 	assert runtime.evaluate_host('raw.onpointerdown===null&&rawPointerHandlerRuns===0')! == 'true'
 	assert raw_handler.value.kind == .string && raw_handler.value.string_data == raw_source
 	runtime.evaluate_host(r'globalThis.assignedRawPointerCalls=0;raw.onpointerdown=function(event){assignedRawPointerCalls++;globalThis.assignedRawPointerValid=this===raw&&event.target===raw&&event.currentTarget===raw&&event.isTrusted};0')!
-	assigned := raw_target.data.event_handler_map['pointerdown'] or {
+	assigned := raw_target.data.event_handler('pointerdown') or {
 		assert false, 'missing assigned pointer handler'
 		return
 	}
@@ -203,7 +203,7 @@ detachedPointerAudio.addEventListener("click",function(event){mouseUpHandlerOrde
 	assert runtime.evaluate_host('assignedRawPointerCalls===1&&assignedRawPointerValid&&rawPointerHandlerRuns===0')! == 'true'
 	assert raw.get_attribute('onpointerdown')? == raw_source
 	assert runtime.evaluate_host('raw.onpointerdown=null;raw.onpointerdown===null')! == 'true'
-	assert 'pointerdown' !in raw_target.data.event_handler_map
+	assert !raw_target.data.has_event_handler('pointerdown')
 	assert raw_target.event_listener_list().len == 0
 	assert raw.get_attribute('onpointerdown')? == raw_source
 	assert !runtime.libjs_vm().has_running_execution_context()

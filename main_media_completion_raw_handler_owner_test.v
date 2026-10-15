@@ -179,7 +179,7 @@ globalThis.mcpAudio=document.createElement("audio");mcpAudio.id="mcp-audio";mcpA
 	native_video := unsafe { &dom.EventTarget(video) }
 	native_audio := unsafe { &dom.EventTarget(audio) }
 	for name in ['resize', 'ended'] {
-		slot := native_video.data.event_handler_map[name] or { panic('Raw completion slot missing') }
+		slot := native_video.data.event_handler(name) or { panic('Raw completion slot missing') }
 		assert slot.value.kind == .string && slot.value.string_data == body
 	}
 	assert runtime.evaluate_host('globalThis.mcpVideoResize=mcpVideo.onresize;globalThis.mcpVideoEnd=mcpVideo.onended;globalThis.mcpAudioEnd=mcpAudio.onended;typeof mcpVideoResize==="function"&&typeof mcpVideoEnd==="function"&&typeof mcpAudioEnd==="function"&&mcpVideoResize!==mcpVideoEnd&&mcpVideoEnd!==mcpAudioEnd&&mcpVideoResize.name==="onresize"&&mcpVideoEnd.name==="onended"&&mcpAudioEnd.name==="onended"&&[mcpVideoResize,mcpVideoEnd,mcpAudioEnd].every(fn=>fn.length===1)&&mcpVideo.onresize===mcpVideoResize&&mcpVideo.onended===mcpVideoEnd&&mcpAudio.onended===mcpAudioEnd&&!Object.hasOwn(mcpVideo,"onended")&&!Object.hasOwn(mcpVideo,"onresize")&&mcpRuns===0')! == 'true'
@@ -257,8 +257,8 @@ globalThis.mcpEndIDL=function(event){mcpOrder.push("idl-ended");mcpSaved.push(ev
 	media_completion_raw_owner_probe(mut runtime, document)!
 	video := document.get_element_by_id('mcp-video')?
 	native_video := unsafe { &dom.EventTarget(video) }
-	resize_slot := native_video.data.event_handler_map['resize'] or { panic('Resize slot missing') }
-	end_slot := native_video.data.event_handler_map['ended'] or { panic('Ended slot missing') }
+	resize_slot := native_video.data.event_handler('resize') or { panic('Resize slot missing') }
+	end_slot := native_video.data.event_handler('ended') or { panic('Ended slot missing') }
 	resize_listener := resize_slot.listener or { panic('Resize listener missing') }
 	end_listener := end_slot.listener or { panic('Ended listener missing') }
 	first_resize := native_video.get_current_value_of_event_handler('resize') or { panic('First resize callback missing') }
@@ -268,8 +268,8 @@ globalThis.mcpEndIDL=function(event){mcpOrder.push("idl-ended");mcpSaved.push(ev
 	second_end := native_video.get_current_value_of_event_handler('ended') or { panic('Second ended callback missing') }
 	assert voidptr(second_resize) != voidptr(first_resize) && second_resize.compiled_source_text_ == first_resize.compiled_source_text_
 	assert voidptr(second_end) != voidptr(first_end) && second_end.compiled_source_text_ == first_end.compiled_source_text_
-	assert voidptr(native_video.data.event_handler_map['resize'] or { panic('Preserved resize slot missing') }) == voidptr(resize_slot)
-	assert voidptr(native_video.data.event_handler_map['ended'] or { panic('Preserved ended slot missing') }) == voidptr(end_slot)
+	assert voidptr(native_video.data.event_handler('resize') or { panic('Preserved resize slot missing') }) == voidptr(resize_slot)
+	assert voidptr(native_video.data.event_handler('ended') or { panic('Preserved ended slot missing') }) == voidptr(end_slot)
 	assert voidptr(resize_slot.listener or { panic('Preserved resize listener missing') }) == voidptr(resize_listener)
 	assert voidptr(end_slot.listener or { panic('Preserved ended listener missing') }) == voidptr(end_listener)
 	mut media := media_completion_raw_owner_seed(document, video)
@@ -304,7 +304,7 @@ globalThis.mcpEndIDL=function(event){mcpOrder.push("idl-ended");mcpSaved.push(ev
 	model.set_video_dimensions(300, 150)
 	media.reached_end_of_media_playback()
 	assert runtime.evaluate_host('mcpVideo.removeAttribute("onresize");mcpVideo.removeAttribute("onended");mcpVideo.onresize===null&&mcpVideo.onended===null&&mcpOrder.length===4')! == 'true'
-	assert 'resize' !in native_video.data.event_handler_map && 'ended' !in native_video.data.event_handler_map
+	assert !native_video.data.has_event_handler('resize') && !native_video.data.has_event_handler('ended')
 	assert video.get_attribute('onresize') == none && video.get_attribute('onended') == none
 	media_completion_raw_owner_drain(document)
 	assert runtime.evaluate_host('mcpOrder.length===4&&mcpSaved.length===4')! == 'true'
@@ -349,8 +349,8 @@ globalThis.mcpVideo=document.getElementById("mcp-video");globalThis.mcpOrder=[];
 	end_body := r'"use strict";mcpOrder.push("strict-ended");mcpSaved.push(event);mcpChecks.push(arguments.length===1&&event===arguments[0]&&this===mcpVideo&&event.target===this&&event.currentTarget===this&&event instanceof Event&&event.isTrusted&&!event.bubbles&&!event.cancelable&&window.event===event&&this.ended&&this.paused&&this.readyState===1&&this.currentTime===1&&this.duration===1&&__mediaCompletionRawOwnerContext());try{void arguments.callee;mcpChecks.push(false)}catch(error){mcpChecks.push(error instanceof TypeError)}this.onended=null;globalThis.mcpLiveName=onended;throw mcpReason;'
 	resize_body := r'mcpOrder.push("raw-resize");mcpSaved.push(event);mcpChecks.push(this===mcpVideo&&event.isTrusted&&event.target===this&&event.currentTarget===this&&window.event===event&&this.ended&&this.paused&&this.readyState===1&&this.currentTime===1&&__mediaCompletionRawOwnerContext()&&__mediaCompletionRawDimensions200());document.getElementById("mcp-result").textContent="native resize after throwing ended";return false;'
 	assert runtime.evaluate_host('mcpVideo.setAttribute("onended",${json2.encode(end_body)});mcpVideo.setAttribute("onresize",${json2.encode(resize_body)});mcpVideo.paused===false')! == 'true'
-	end_slot := native_video.data.event_handler_map['ended'] or { panic('Strict ended slot missing') }
-	resize_slot := native_video.data.event_handler_map['resize'] or { panic('Gated resize slot missing') }
+	end_slot := native_video.data.event_handler('ended') or { panic('Strict ended slot missing') }
+	resize_slot := native_video.data.event_handler('resize') or { panic('Gated resize slot missing') }
 	mut owner := app.page_model
 	owner.set_is_scripting_enabled(false)
 	model.set_video_dimensions(100, 50)
@@ -377,7 +377,7 @@ mcpVideo.addEventListener("ended",function(event){mcpOrder.push("later-ended");g
 	(media_completion_raw_owner_take_task(document) or { panic('Missing subsequent native resize task') }).execute()
 	assert media_completion_raw_owner_take_task(document) == none
 	assert runtime.evaluate_host('mcpOrder.join(",")==="strict-ended,later-ended,raw-resize"&&mcpVideo.onresize===mcpResize&&mcpChecks.length===3&&mcpChecks.every(Boolean)&&mcpSaved.length===2&&!mcpSaved[0].defaultPrevented&&mcpSaved[1].defaultPrevented&&window.event===undefined')! == 'true'
-	assert 'ended' !in native_video.data.event_handler_map && 'resize' in native_video.data.event_handler_map
+	assert !native_video.data.has_event_handler('ended') && native_video.data.has_event_handler('resize')
 	assert video.get_attribute_value('onended') == end_body && video.get_attribute_value('onresize') == resize_body
 	assert settings.realm().reported_exceptions.len == 1
 	reported := settings.realm().reported_exceptions[0].value.as_webidl_value()!
