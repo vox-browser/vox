@@ -895,13 +895,17 @@ fn computed_shadow_transport(shadow_data []css.ShadowData, context css.LengthRes
 }
 
 fn computed_box_shadows(computed &css.ComputedValues) []BoxShadow {
+	shadows := computed.box_shadow()
+	if shadows.len == 0 { return []BoxShadow{} }
 	context := css.LengthResolutionContext.for_computed_properties(computed)
-	return computed_shadow_transport(computed.box_shadow(), context)
+	return computed_shadow_transport(shadows, context)
 }
 
 fn computed_text_shadows(computed &css.ComputedValues) []BoxShadow {
+	shadows := computed.text_shadow()
+	if shadows.len == 0 { return []BoxShadow{} }
 	context := css.LengthResolutionContext.for_computed_properties(computed)
-	return computed_shadow_transport(computed.text_shadow(), context)
+	return computed_shadow_transport(shadows, context)
 }
 
 fn compatibility_color_filter_type(operation css.ColorFilterType) painting.ColorFilterType {
