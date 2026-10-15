@@ -5930,6 +5930,67 @@ remains unknown. Audit records source/output hashes and all limitations in
 is retained under `Build/instructions/chrome-frozen-probe/content-paint-62/`.
 Chrome parity remains open.
 
+## Reject per-item output-parameter emission before page sampling
+
+Round62 tests a private `InlineLevelIterator` emitter that writes a complete
+item to its caller's destination and returns a Boolean. The eager builder
+initializes that destination inside each loop iteration. The public iterator
+API, state and item semantics are unchanged. Normal61 native disassembly shows
+the old wide optional carrier and an additional item copy; this is a source/
+static-code hypothesis, not performance credit.
+
+The identical frozen harness passes **7,846 assertions in 31 cases** (30
+functional plus one inactive diagnostic) in before/final Boehm and final no-GC
+C-O2 builds. Two new cases cover retained items across later iterator builds
+and collection, source identity, empty termination and preserved breaks. Prior
+inline/chunk/font/spacing/buffer tests remain. Common source SHA256:
+`c123de67f06e5e6d9a48f586a9d7e48c4512b4b630599388a98072c325248a82`. Both full-process C-O1 profiles pass without filter/reset. Complete
+build batches stay 521, constructor/eager-builder calls 826 each and shape calls
+68,993. The old optional emitter's 103,876 calls become 103,876 destination
+emitter calls. Counts describe equal work and do not establish CPU savings.
+
+Three fixed alternating local pairs each execute **512 complete public iterator
+builds**, over 32 retained text nodes and 160 items per build. Setup, expected
+items, eight warmups and forced GC precede the counter; checksum assertions
+follow. All six actual commands exit zero, with checksum 120,143,872.
+Before counts are 697,210,791 / 695,159,742 / 707,815,081; paired candidate counts
+are 918,268,605 / 708,538,701 / 919,576,443. Every pair is worse. Median retired
+instructions rise **697,210,791→918,268,605 (+31.71%)**. The large spread is
+retained; no sample is removed or extended. The attempt is rejected locally.
+The two owned private functions are restored exactly, preserving concurrent
+edits, and its two new tests are archived with the rejected sources.
+
+No normal browser C generation/native build or page primary starts. The local
+gate stops the prepared normal builder with a failure receipt and no native
+exit; no build success is claimed. The C-audit controller that only waits for
+the uncreated native command receives SIGTERM; its terminal status remains
+unknown and no normal-C audit pass is claimed. There are no page medians,
+confidence interval, screenshots, broad batch, bundle or GC-policy update for
+this rejected attempt. **Page credit is 0**. Last broad feature, baseline,
+additional carry and next control remain round61 (`5362d3aa`, carry 0).
+
+Preparation failures are retained. A selected harness filename and an
+uncollected `html` import are corrected before any compiler starts. The first
+compiler attempts exit 1 with zero functional cases because the new fixture
+compares an optional Node directly; it is corrected to unwrap and compare
+pointer identity. A subsequent draft finishes 31 cases but fails two newer
+Root nowrap tests identically in both frozen variants: those tests expect the
+independent lazy-segmenter implementation absent from frozen61. Exactly those
+two incompatible tests are excluded from the frozen common harness; the runtime
+is unchanged. Their original failures and generated C remain. No completed
+successful job is rerun; the final three complete harness commands really exit
+zero. Blocked diagnostic/profile/build receipts and zero-sample attempts are
+also archived rather than reported as passes.
+
+Durable focused/profile C archives and hashes are in
+`Build/v/instruction-opt62-artifact-archives.json`; runtime snapshots, the
+rejected tests, sources, raw logs, real terminal receipts, failure archives and
+local/profile evidence remain under `Build/v/instruction-opt62-*` and
+`Build/opt62-*-source`. RAM scratch is isolated through `Build/v/opt62-work`;
+durable archives permit regeneration if that shared volume disappears. No
+foreign files, canonical bundle or user GUI process are changed. Chrome parity
+remains open.
+
 ## Causes and changes
 
 - The V 0.5.2 compatibility compiler's `-prod` Boehm code repeatedly snapshots

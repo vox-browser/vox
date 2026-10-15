@@ -1579,6 +1579,13 @@ evidence](docs/translation-audit/NATIVE_MEDIA_WHEEL_RAW_HANDLER.md).
   Both variants use the same frozen test-window startup helper; historical
   medians receive no subtraction. Same frozen 4 GiB hint; Root work excluded.
   Chrome parity remains open.
+  Per-item private inline output round62 is rejected before page sampling.
+  All three complete local pairs regress; median instructions rise 31.71%.
+  Compatible focused harnesses pass 7,846 assertions per configuration;
+  incompatible newer Root fixtures and pre-counter failures are retained.
+  The two private functions are restored; no normal build/C audit/page/bundle
+  success or CPU credit is claimed. Broad baseline/next control stay `5362d3aa`,
+  additional carry 0. Canonical and GUI preserved; Chrome parity remains open.
 - Outside instruction-count optimization, run broad regression suites once per
   ten completed fixes, not after every fix.
   Broad suites include full translation/package test batches, the full LibJS AST
