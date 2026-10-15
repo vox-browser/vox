@@ -768,7 +768,11 @@ fn (iterator &InlineLevelIterator) shape_text_for_layout(text_node &TextNode, in
 			text: text
 			font: font
 			text_type: text_type
-			glyph_run: shaped.glyph_run.clone_for_layout()
+			glyph_run: shaped.glyph_run
+			trailing_whitespace: shaped.trailing_whitespace
+		}
+		return platform.ShapedText{
+			glyph_run: shaped.glyph_run.fork_for_layout()
 			trailing_whitespace: shaped.trailing_whitespace
 		}
 	}
