@@ -10384,14 +10384,25 @@ pub fn build_invalidation_sets_for_simple_selector(selector InvalidationSimpleSe
 }
 
 fn selector_contains_pseudo_class(selector Selector, pseudo_class CSSPseudoClass) bool {
-	for group in selector_groups_for_invalidation(selector) {
-		for simple_selector in group.simple_selectors {
-			if simple_selector.type_ == .pseudo_class && simple_selector.pseudo_class == pseudo_class {
-				return true
-			}
-			for nested_selector in simple_selector.nested_selectors {
-				if selector_contains_pseudo_class(nested_selector, pseudo_class) {
+	// This predicate only reads membership. Traverse the retained typed selectors
+	// directly instead of allocating invalidation groups and cloned argument lists.
+	for compound_selector in selector.compound_selectors() {
+		for simple_selector in compound_selector.simple_selectors {
+			if simple_selector.type_ == .pseudo_class {
+				if css_pseudo_class_from_selector_pseudo_class(simple_selector.pseudo_class.type_) == pseudo_class {
 					return true
+				}
+				for nested_selector in simple_selector.pseudo_class.argument_selector_list.selectors {
+					if selector_contains_pseudo_class(nested_selector, pseudo_class) {
+						return true
+					}
+				}
+			} else if simple_selector.type_ == .pseudo_element
+				&& simple_selector.pseudo_element.type_ == .slotted {
+				if argument_selector := simple_selector.pseudo_element.compound_selector {
+					if selector_contains_pseudo_class(argument_selector, pseudo_class) {
+						return true
+					}
 				}
 			}
 		}
