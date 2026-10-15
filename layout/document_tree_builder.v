@@ -280,8 +280,36 @@ fn build_layout_tree_from_computed_styles(document &dom.Document, mut style_comp
 }
 
 fn prepare_document_for_layout(document &dom.Document) {
+	materialize_focused_text_control_models(document)
 	materialize_svg_use_shadow_trees(document)
 	materialize_media_controls_shadow_trees(document)
+}
+
+// Selection and caret painting read these native owners. Create their rendering
+// state before style and layout, so the first display list cannot insert an
+// input shadow tree into an already committed document.
+fn materialize_focused_text_control_models(document &dom.Document) {
+	mut focused_identity := voidptr(0)
+	if focused := document.focused_area() {
+		if element := focused.as_element() {
+			materialize_text_control_model(document, element)
+			focused_identity = voidptr(element)
+		}
+	}
+	if active := document.active_element() {
+		if voidptr(active) != focused_identity {
+			materialize_text_control_model(document, active)
+		}
+	}
+}
+
+fn materialize_text_control_model(document &dom.Document, element &dom.Element) {
+	if voidptr(element.document()) != voidptr(document) || !element.is_html_element() { return }
+	if element.local_name() == 'input' {
+		_ = html.HTMLInputElementModel.create(unsafe { &dom.HTMLInputElement(element) })
+	} else if element.local_name() == 'textarea' {
+		_ = html.html_text_area_element_model_for_dom_element(unsafe { &dom.HTMLTextAreaElement(element) })
+	}
 }
 
 fn layout_timing_checkpoint(label string, previous u64) u64 {
