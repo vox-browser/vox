@@ -354,7 +354,7 @@ pub fn html_media_element_for_dom_element(element &dom.Element) ?&HTMLMediaEleme
 		if audio.media_element_model_ == unsafe { nil } {
 			mut model := HTMLMediaElement.create(unsafe { &dom.HTMLElement(element) },
 				element.document().base_url())
-			model.set_source(element.get_attribute('src'))
+			model.set_source(element.get_attribute_ns(none, 'src'))
 			model.crossorigin_ = cors_setting_attribute_from_keyword(element.get_attribute_ns(none, 'crossorigin'))
 			model.preload_ = element.get_attribute_ns(none, 'preload')
 			model.autoplay_ = element.has_attribute_ns(none, 'autoplay')
@@ -367,7 +367,7 @@ pub fn html_media_element_for_dom_element(element &dom.Element) ?&HTMLMediaEleme
 		if video.media_element_model_ == unsafe { nil } {
 			mut model := HTMLMediaElement.create(unsafe { &dom.HTMLElement(element) },
 				element.document().base_url())
-			model.set_source(element.get_attribute('src'))
+			model.set_source(element.get_attribute_ns(none, 'src'))
 			model.crossorigin_ = cors_setting_attribute_from_keyword(element.get_attribute_ns(none, 'crossorigin'))
 			model.preload_ = element.get_attribute_ns(none, 'preload')
 			model.autoplay_ = element.has_attribute_ns(none, 'autoplay')
@@ -557,7 +557,7 @@ fn media_source_candidates_from_dom(element &dom.Element) []string {
 	for child in element.as_node().children_as_vector() {
 		if source_element := child.as_element() {
 			if source_element.is_html_element() && source_element.local_name() == 'source' {
-				source := source_element.get_attribute_value('src')
+				source := source_element.get_attribute_ns(none, 'src') or { '' }
 				if source.trim_space() != '' {
 					candidates << source
 				}
