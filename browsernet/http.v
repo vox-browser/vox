@@ -1,7 +1,9 @@
 module browsernet
 
 import adblock
+import dom
 import encoding.base64
+import loader
 import net.http
 import time
 import url
@@ -17,6 +19,15 @@ pub:
 	url            string
 	response       http.Response
 	is_replacement bool
+}
+
+fn request_user_agent(resource_url string) string {
+	// Initial navigation may precede ResourceLoader initialization. Once the
+	// loader exists, share navigator.userAgent's configuration and site rules.
+	if loader.ResourceLoader.is_initialized() {
+		return loader.ResourceLoader.the().user_agent_for_url(dom.URL{value: resource_url})
+	}
+	return loader.default_user_agent()
 }
 
 // This same gate is used before reading the browser's disk cache. In
@@ -101,7 +112,7 @@ pub fn get(input adblock.Request, ca_bundle string) !HTTPResult {
 		response := http.fetch(
 			url:            resource_url
 			method:         .get
-			user_agent:     'Ladybird V/0.1'
+			user_agent:     request_user_agent(resource_url)
 			enable_http2:   true
 			allow_redirect: false
 			read_timeout:   10 * time.second
