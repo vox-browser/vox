@@ -196,6 +196,8 @@ Counts are whole launch through the capture boundary described above.
 | Vox candidate v10 | 91,187,097,317 | Passed; regression |
 | Vox candidate v11 | 106,101,297,297 | Passed; regression |
 | Vox candidate v12 | 83,818,061,906 | Passed |
+| Vox candidate v13 | 69,618,119,569 | Failed: extra body scrollbar |
+| Vox candidate v14 | 78,965,962,830 | Passed |
 
 Candidate v6 uses executable SHA256
 `cc105727ad0e7d08d12c94336ca6cd4d26e2c1318416dfddace23c626d1338c2`.
@@ -289,9 +291,37 @@ Candidate v12 also passed the same broad batch: 135 cases per GC mode,
 Sixteen screenshots are exact and three retain their existing fuzzy bounds;
 all 19 native outputs match v6 exactly. The authenticated summary and reset
 are retained under `Build/pikabu-instructions/broad-v12/`.
-The broad-verification baseline is now 83,818,061,906 instructions, with zero
+Candidate v13 separates the viewport's layout overrides from authored element
+styles, avoiding a full tree rebuild when the cascade restores body overflow.
+It also shares UA selector caches across empty shadow scopes, reduces anonymous
+style resolution, and removes redundant inline-position and glyph copies.
+Its content, completion, image and actual-Roboto checks pass, but 4,736 pixels
+differ from the native control: one extra body scrollbar at the right edge.
+That row receives no savings credit and triggers no broad-baseline reset.
+Its executable SHA256 is
+`d9276f0b65a634693ccf249ce26fb9aa26826a321808e4130d2d4ee6ceec4556`.
+The failed strict receipt remains preserved under
+`Build/pikabu-instructions/candidate-v13-measure-watch-state.json`.
+
+Candidate v14 fixes four paint helpers that still read authored overflow,
+writing mode, direction or scrollbar width instead of the layout overrides.
+The duplicate body scrollbar disappears while authored computed styles remain
+intact. Its executable SHA256 is
+`66eee3d64c6e90fc8e10d0c0c079d1a6e75bc2236abe329682546f036e9a8682`,
+built from frozen revision `2205cbf096608395dc3e897ad609c9bab1786773`.
+Its single completed checkpoint saves 4,852,099,076 instructions (5.79%)
+against v12. All content, font, fresh font-file and exact native-pixel checks
+pass with unchanged archive, lists, observer and endpoint.
+
+Candidate v14 passed 135 cases in each GC mode, all 100 exact AST fixtures,
+production startup and all 19 screenshot comparisons. Sixteen reference
+comparisons are exact; three retain the same existing fuzzy bounds. All 34
+native captures are fresh, and all 19 outputs match both v6 and v12 exactly.
+The authenticated summary and reset are retained under
+`Build/pikabu-instructions/broad-v14/`.
+The broad-verification baseline is now 78,965,962,830 instructions, with zero
 additional measured savings credited. Diagnostic profiles, isolated allocation
-probes and failed content checks do not advance that baseline.
+probes and failed content or pixel checks do not advance that baseline.
 
 Vox remains above Brave's instruction count. A target claim still requires
 at least five alternating fresh Vox/Brave runs with all gates passing, preserved
