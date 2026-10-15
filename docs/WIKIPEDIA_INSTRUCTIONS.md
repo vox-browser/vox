@@ -1,6 +1,12 @@
 # Wikipedia instruction benchmark
 
-Vox uses **29.817% fewer CPU instructions than Chrome** on the recorded Wikipedia portal load, exceeding the requested 20% reduction. Five production Vox captures and five fresh Chrome confirmations retain the same completed pixels as their respective baselines.
+The recorded Vox V6 build used **29.817% fewer CPU instructions than Chrome** on the Wikipedia portal load, exceeding the requested 20% reduction. Five production Vox captures and five fresh Chrome confirmations retain the same completed pixels as their respective baselines.
+
+The current browser uses normal managed-heap growth. The later automatic 4 GiB
+document heap expansion was removed after excessive Wikipedia memory use was
+reported. The historical instruction measurements below retain their original
+heap policy; they do not measure this memory fix. See [current memory
+verification](WIKIPEDIA_MEMORY.md).
 
 | Launch-to-capture comparison | Median retired instructions |
 | --- | ---: |
