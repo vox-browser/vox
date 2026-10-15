@@ -694,7 +694,8 @@ pub fn (values &ComputedValues) font_language_override() ?string {
 }
 
 pub fn (values &ComputedValues) font_variation_settings() map[string]f64 {
-	return values.computed_values_font_variation_settings_.clone()
+	if values.font_variation_storage_ == unsafe { nil } { return map[string]f64{} }
+	return values.font_variation_storage_.values.clone()
 }
 
 pub fn (values &ComputedValues) caret_color() Color {
@@ -1659,7 +1660,11 @@ pub fn (mut values MutableComputedValues) inherit_from(other &ComputedValues) {
 	values.computed_values_font_size_ = other.computed_values_font_size_
 	values.computed_values_font_weight_ = other.computed_values_font_weight_
 	values.computed_values_font_language_override_ = other.computed_values_font_language_override_
-	values.computed_values_font_variation_settings_ = other.computed_values_font_variation_settings_.clone()
+	if other.font_variation_storage_ == unsafe { nil } {
+		values.font_variation_storage_ = unsafe { nil }
+	} else {
+		values.set_font_variation_settings(other.font_variation_storage_.values)
+	}
 	values.computed_values_line_height_ = other.computed_values_line_height_
 	values.cached_computed_font_list_ = other.cached_computed_font_list_
 	values.cached_computed_font_list_generation_ = other.cached_computed_font_list_generation_
@@ -1775,7 +1780,13 @@ pub fn (mut values MutableComputedValues) set_font_language_override(value ?stri
 }
 
 pub fn (mut values MutableComputedValues) set_font_variation_settings(value map[string]f64) {
-	values.computed_values_font_variation_settings_ = value.clone()
+	if value.len == 0 {
+		values.font_variation_storage_ = unsafe { nil }
+		return
+	}
+	mut properties := unsafe { &ComputedProperties(values) }
+	mut storage := properties.ensure_font_variation_storage()
+	storage.values = value.clone()
 }
 
 pub fn (mut values MutableComputedValues) set_font_list(value &FontCascadeList) {

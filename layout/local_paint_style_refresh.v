@@ -7,8 +7,8 @@ import dom
 // paint order intact. Retain those plans and unrelated PaintableBox phase
 // caches instead of rebuilding every SVG/image transport in the document.
 fn paint_style_update_can_be_local(node &Node, previous &css.ComputedValues, current &css.ComputedProperties) bool {
-	if voidptr(previous) == voidptr(current) || previous.animated_property_values_.len > 0
-		|| current.animated_property_values_.len > 0 || node.is_generated_for_pseudo_element()
+	if voidptr(previous) == voidptr(current) || previous.has_animated_properties()
+		|| current.has_animated_properties() || node.is_generated_for_pseudo_element()
 		|| node.is_svg_box() || node.is_svg_svg_box() || node.is_svg_foreign_object_box()
 		|| node.is_viewport() || node.display().is_internal_table()
 		|| node.display().is_table_inside() { return false }

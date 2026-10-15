@@ -1580,8 +1580,6 @@ pub mut:
 	property_inherited_                      [computed_property_flag_byte_count]u8
 	animated_property_inherited_             [computed_property_flag_byte_count]u8
 	animated_property_result_of_transition_  [computed_property_flag_byte_count]u8
-	animated_property_values_                map[PropertyID]&dom.StyleValue
-	animated_custom_property_values_         map[string]&dom.StyleValue
 	display_before_box_type_transformation_  Display = Display.new()
 	cached_computed_font_list_               ?&FontCascadeList
 	cached_computed_font_list_generation_    u64
@@ -1590,7 +1588,6 @@ pub mut:
 	cached_length_metrics_                  &ComputedLengthMetrics = unsafe { nil }
 	line_height_                             ?CSSPixels
 	attempted_pseudo_class_matches_          PseudoClassBitmap
-	inheritance_dependent_specified_values_  map[PropertyID]&dom.StyleValue
 	raw_cascaded_font_size_                  ?&dom.StyleValue
 	depends_on_viewport_metrics_             bool
 	font_metrics_depend_on_viewport_metrics_ bool
@@ -1622,7 +1619,6 @@ pub mut:
 	computed_values_line_height_                   CSSPixels
 	computed_values_font_weight_                   f64
 	computed_values_font_language_override_        ?string
-	computed_values_font_variation_settings_       map[string]f64
 	computed_values_caret_color_                   Color = Color{0, 0, 0, 255}
 	computed_values_color_                         Color = Color{0, 0, 0, 255}
 	computed_values_accent_color_                  ?Color
@@ -1804,6 +1800,11 @@ pub mut:
 	computed_values_counter_increment_             []CounterData
 	computed_values_counter_reset_                 []CounterData
 	computed_values_counter_set_                   []CounterData
+mut:
+	animated_property_storage_     &ComputedPropertyValueMap       = unsafe { nil }
+	animated_custom_storage_       &ComputedCustomPropertyValueMap = unsafe { nil }
+	inheritance_specified_storage_ &ComputedPropertyValueMap       = unsafe { nil }
+	font_variation_storage_        &ComputedFontVariationMap       = unsafe { nil }
 }
 
 pub type ComputedValues = ComputedProperties
@@ -1847,9 +1848,6 @@ pub fn ComputedProperties.new() &ComputedProperties {
 	note_computed_values_created()
 	return &ComputedProperties{
 		property_values_: []&dom.StyleValue{len: number_of_longhand_properties, init: unsafe { nil }}
-		animated_property_values_: map[PropertyID]&dom.StyleValue{}
-		animated_custom_property_values_: map[string]&dom.StyleValue{}
-		inheritance_dependent_specified_values_: map[PropertyID]&dom.StyleValue{}
 	}
 }
 
@@ -1879,14 +1877,10 @@ fn computed_properties_with_initial_values() &ComputedProperties {
 	// The layout-cache defaults are immutable until resolve_computed_values()
 	// replaces them. Reuse their value graphs instead of allocating every nested
 	// length and optional payload for every element. Each mutable store remains
-	// owned by the new style, including the layout-facing variation-settings map.
+	// owned by the new style, including each lazily created metadata map.
 	return &ComputedProperties{
 		...template
 		property_values_: computed_interpolation_initial_value_cache.clone()
-		animated_property_values_: map[PropertyID]&dom.StyleValue{}
-		animated_custom_property_values_: map[string]&dom.StyleValue{}
-		inheritance_dependent_specified_values_: map[PropertyID]&dom.StyleValue{}
-		computed_values_font_variation_settings_: map[string]f64{}
 	}
 }
 
@@ -2075,19 +2069,25 @@ pub fn (c &ComputedProperties) container_name() []string {
 }
 
 pub fn (c &ComputedProperties) animated_property_values() map[PropertyID]&dom.StyleValue {
-	return c.animated_property_values_.clone()
+	if c.animated_property_storage_ == unsafe { nil } { return map[PropertyID]&dom.StyleValue{} }
+	return c.animated_property_storage_.values.clone()
 }
 
 pub fn (c &ComputedProperties) animated_custom_property_values() map[string]&dom.StyleValue {
-	return c.animated_custom_property_values_.clone()
+	if c.animated_custom_storage_ == unsafe { nil } { return map[string]&dom.StyleValue{} }
+	return c.animated_custom_storage_.values.clone()
 }
 
 pub fn (c &ComputedProperties) inheritance_dependent_specified_values() map[PropertyID]&dom.StyleValue {
-	return c.inheritance_dependent_specified_values_.clone()
+	if c.inheritance_specified_storage_ == unsafe { nil } {
+		return map[PropertyID]&dom.StyleValue{}
+	}
+	return c.inheritance_specified_storage_.values.clone()
 }
 
 pub fn (mut c ComputedProperties) add_inheritance_dependent_specified_value(property_id PropertyID, value &dom.StyleValue) {
-	c.inheritance_dependent_specified_values_[property_id] = unsafe { value }
+	mut storage := c.ensure_inheritance_specified_storage()
+	storage.values[property_id] = unsafe { value }
 }
 
 pub fn (c &ComputedProperties) raw_cascaded_font_size() ?&dom.StyleValue {
@@ -2099,19 +2099,22 @@ pub fn (mut c ComputedProperties) set_raw_cascaded_font_size(value &dom.StyleVal
 }
 
 pub fn (mut c ComputedProperties) reset_non_inherited_animated_properties() {
+	if c.animated_property_storage_ == unsafe { nil } { return }
 	mut to_remove := []PropertyID{}
-	for property_id, _ in c.animated_property_values_ {
+	for property_id, _ in c.animated_property_storage_.values {
 		if !c.is_animated_property_inherited(property_id) {
 			to_remove << property_id
 		}
 	}
 	for property_id in to_remove {
-		c.animated_property_values_.delete(property_id)
+		if c.animated_property_storage_ != unsafe { nil } {
+			c.animated_property_storage_.values.delete(property_id)
+		}
 	}
 }
 
 pub fn (mut c ComputedProperties) reset_animated_custom_properties() {
-	c.animated_custom_property_values_.clear()
+	if c.animated_custom_storage_ != unsafe { nil } { c.animated_custom_storage_.values.clear() }
 }
 
 pub fn (c &ComputedProperties) is_property_important(property_id PropertyID) bool {
@@ -2201,7 +2204,8 @@ pub fn (mut c ComputedProperties) set_property_without_modifying_flags(property_
 
 pub fn (mut c ComputedProperties) set_animated_property(property_id PropertyID, value &dom.StyleValue, result AnimatedPropertyResultOfTransition, inherited ComputedPropertyInheritance) {
 	computed_interpolation_verify_longhand_property(property_id)
-	c.animated_property_values_[property_id] = unsafe { value }
+	mut storage := c.ensure_animated_property_storage()
+	storage.values[property_id] = unsafe { value }
 	c.set_animated_property_inherited(property_id, inherited)
 	c.set_animated_property_result_of_transition(property_id, result)
 	if property_affects_computed_font_list(property_id) {
@@ -2210,22 +2214,25 @@ pub fn (mut c ComputedProperties) set_animated_property(property_id PropertyID, 
 }
 
 pub fn (mut c ComputedProperties) set_animated_custom_property(name string, value &dom.StyleValue) {
-	c.animated_custom_property_values_[name] = unsafe { value }
+	mut storage := c.ensure_animated_custom_storage()
+	storage.values[name] = unsafe { value }
 }
 
 pub fn (mut c ComputedProperties) remove_animated_property(property_id PropertyID) {
 	computed_interpolation_verify_longhand_property(property_id)
-	c.animated_property_values_.delete(property_id)
+	if c.animated_property_storage_ != unsafe { nil } {
+		c.animated_property_storage_.values.delete(property_id)
+	}
 }
 
 pub fn (c &ComputedProperties) property(property_id PropertyID, return_animated_value WithAnimationsApplied) ?&dom.StyleValue {
 	computed_interpolation_verify_longhand_property(property_id)
 	// Important properties override animated but not transitioned properties.
-	if return_animated_value == .yes && c.animated_property_values_.len > 0
+	if return_animated_value == .yes && c.has_animated_properties()
 		&& (!c.is_property_important(property_id)
 			|| c.is_animated_property_result_of_transition(property_id)) {
-		if property_id in c.animated_property_values_ {
-			return unsafe { c.animated_property_values_[property_id] }
+		if animated := c.animated_property_value(property_id) {
+			return animated
 		}
 	}
 
@@ -10776,10 +10783,7 @@ pub fn StyleComputer.get_animated_inherit_value(property_id PropertyID, abstract
 	// The public accessor returns an owning copy for API callers; style
 	// computation only needs one entry and must not clone the entire animation
 	// map (usually empty) dozens of times per element.
-	if property_id !in parent.animated_property_values_ {
-		return none
-	}
-	animated_value := unsafe { parent.animated_property_values_[property_id] }
+	animated_value := parent.animated_property_value(property_id) or { return none }
 	return AnimatedInheritValue{
 		value: animated_value
 		is_result_of_transition: if parent.is_animated_property_result_of_transition(property_id) {
@@ -11404,8 +11408,7 @@ pub fn (s &StyleComputer) collect_animation_into(abstract_element dom.AbstractEl
 		underlying_specified := custom_property_animation_underlying_value(abstract_element, name)
 		base_underlying := s.compute_animated_custom_property_value(abstract_element,
 			computed_properties, name, underlying_specified)
-		previous_values := computed_properties.animated_custom_property_values()
-		underlying := previous_values[name] or { base_underlying }
+		underlying := computed_properties.animated_custom_property_value(name) or { base_underlying }
 		start_specified := start_keyframe.custom_properties[name] or { base_underlying }
 		end_specified := end_keyframe.custom_properties[name] or { base_underlying }
 		mut start := s.compute_animated_custom_property_value(abstract_element, computed_properties,
@@ -11447,8 +11450,7 @@ fn publish_animated_custom_properties(computed_properties &ComputedProperties, a
 			base = current.parent
 		}
 	}
-	animated_values := computed_properties.animated_custom_property_values()
-	if animated_values.len == 0 {
+	if !computed_properties.has_animated_custom_properties() {
 		if current := data {
 			if current.is_animation_overlay() {
 				mut mutable_element := abstract_element
@@ -11457,6 +11459,7 @@ fn publish_animated_custom_properties(computed_properties &ComputedProperties, a
 		}
 		return
 	}
+	animated_values := computed_properties.animated_custom_property_values()
 
 	if current := data {
 		if current.is_animation_overlay() && current.own_values.len == animated_values.len {
@@ -13704,7 +13707,7 @@ fn (s &StyleComputer) compute_style_impl_with_animated_custom_property_recompute
 		false
 	}
 	if allow_animated_custom_property_recompute
-		&& (computed_properties.animated_custom_property_values_.len > 0
+		&& (computed_properties.has_animated_custom_properties()
 			|| (old_had_animation_overlay && !new_has_animation_overlay)) {
 		recomputed := s.compute_style_impl_with_animated_custom_property_recompute(abstract_element,
 			mode, did_change_custom_properties, scope, false) or { return none }

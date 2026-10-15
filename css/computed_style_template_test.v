@@ -13,17 +13,20 @@ fn test_initial_style_template_keeps_property_storage_flags_and_maps_independent
 	first.set_animated_property(.height, width, .yes, .yes)
 	first.set_animated_custom_property('--x', width)
 	first.add_inheritance_dependent_specified_value(.width, width)
-	first.computed_values_font_variation_settings_['wght'] = 650
+	mut first_values := unsafe { &MutableComputedValues(first) }
+	first_values.set_font_variation_settings({
+		'wght': f64(650)
+	})
 	assert (second.property(.width, .no) or { panic('missing width') }).css_text == initial_width.css_text
 	assert !second.is_property_important(.width)
 	assert !second.is_property_inherited(.width)
-	assert second.animated_property_values_.len == 0
-	assert second.animated_custom_property_values_.len == 0
-	assert second.inheritance_dependent_specified_values_.len == 0
-	assert second.computed_values_font_variation_settings_.len == 0
+	assert !second.has_animated_properties()
+	assert !second.has_animated_custom_properties()
+	assert second.inheritance_dependent_specified_values().len == 0
+	assert second.font_variation_storage_ == unsafe { nil }
 	third := computed_properties_with_initial_values()
-	assert third.animated_property_values_.len == 0
-	assert third.computed_values_font_variation_settings_.len == 0
+	assert !third.has_animated_properties()
+	assert third.font_variation_storage_ == unsafe { nil }
 }
 
 fn test_resolving_one_initial_style_does_not_change_another_or_the_template() {
