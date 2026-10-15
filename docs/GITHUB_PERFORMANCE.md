@@ -3705,6 +3705,96 @@ for the subsequent bulk-append experiment. The verified broad baseline stays
 at round 39. Evidence: `Build/v/instruction-opt40-rejected-result.json` and the
 focused/local receipts.
 
+## Append shaped glyph vectors in one operation
+
+Feature `90ddf27a` copies each incoming glyph vector through the existing
+array append operation, then applies the existing positional shifts to its new
+range. Both LTR and RTL fragments retain their insertion direction, prior-run
+shifts, end-padding rule and inline length. Existing replay invalidation and
+copy-on-write storage ownership remain unchanged. Only the two private glyph
+append functions change; the rejected round 40 capacity helper is excluded.
+
+The unchanged 12-case common harness (11 functional plus an inactive diagnostic)
+passes **956 assertions** in before/final Boehm and final no-GC C-O2 builds.
+The before success is retained from round 40: runtime manifest, common source,
+compiler flags, executed command, log and copied binary are authenticated.
+Three new cases cover long LTR/RTL appends, other cached forks, end padding,
+empty input and retained replay across collection. An additional candidate-only
+self-append regression passes **63 assertions** in each GC mode, for **1,019
+candidate assertions per configuration** across 13 harness cases.
+
+The control self-append attempt did not complete; its original controller and
+test were absent at a fresh process check, and its terminal status is unknown.
+It receives no pass credit and is never rerun. The old generated loop tests
+the source length while extending the same object's glyph vector, so the bound
+keeps growing. The new vector operation takes the source header by value and
+completes a bounded append. Both candidate self-append logs and the incomplete
+control log remain retained. The single-case V output omits a bracketed case
+index; a derived parser authenticates its passing function and 63-assertion
+summary without rerunning the successful candidate checks.
+
+Three fixed alternating local pairs run **512 complete normal inline formatting
+contexts** on sixteen text nodes. Median retired instructions change from
+**1,828,044,863 to 1,804,313,258**
+(-1.30%). All three pairs improve, and all six checksums are
+17,694,720. Setup, eight warmups, the expected result and forced collection
+precede the counter; checksum assertions follow it. This is local evidence
+without separate page credit. Full-process C-O1/Boehm profiles of the common
+harness and diagnostic have no filter/reset: LTR append calls remain **133,908**
+and RTL calls **4** in both variants. Profile call counts are not hardware
+instruction measurements.
+
+The strict C audit confines changes to the LTR/RTL append bodies, each using
+two existing `_PUSH_MANY_noscan` sites and the unchanged replay invalidation.
+All other logic, layouts, resources and GC setup match after established
+compiler identities, exact assertion-line mapping and frozen include paths.
+Four helpers may reorder only with identical raw bodies. All 120 native inputs,
+37 quoted includes and native C-O2 arguments remain authenticated. The first
+audit expected the expanded helper spelling instead of its existing macro;
+that failed assertion is preserved, and the corrected audit authenticates the
+exact macro sites without widening the allowed function scope. Compiled C
+SHA256: `a505540d9a635428f6cb8f01d169cb205b617bef53e1e3fa5f9963bed77612a1`.
+Durable C/profile archive hashes are in `instruction-opt41-artifact-archives.json`.
+
+The predeclared cohort fixes 30 alternating pairs and 30,000 paired bootstrap
+resamples, seed 41. Regular frozen round 39 and candidate binaries use the same
+359-body cache with fresh copies, helper, 1024×768 viewport and
+`navigation_to_first_document_paint[0]`. Normal C-O2/Boehm retains one marker,
+without prod/prealloc. Before the cohort began, interrupted pending controllers
+were absent with unknown terminal statuses; only the unstarted page pipeline
+was resumed. Every successful prerequisite remains retained.
+
+| Build | Median first-frame retired instructions |
+| --- | ---: |
+| Frozen round 39 control | 30,101,652,130.5 |
+| Bulk glyph append | 30,884,123,038.5 |
+
+The candidate marginal median is **782,470,908 instructions higher (+2.599%)**;
+observed matching savings are negative. 16/30 pairs improve. Paired
+median saving is 22,380,349, with a 95% paired percentile
+interval of **-799,503,938 to 107,688,401.5**. Repeatable page credit is **0**,
+requiring a strictly positive lower confidence bound. The interval estimates
+the paired median; the point saving above is the difference of marginal medians.
+All 60 primaries remain, with 60 actual PNGs, 0 recovered
+post-primary counters and 0 archived pre-parse startup retries. No
+completed primary is rerun, discarded or extended. Each primary has one
+installation, two geometry preparations and one paint; 0
+post-primary refreshes are retained separately. Native scopes, raw logs and all
+recorded launch arrays are authenticated; default observer command extraction
+is equivalent to the starting Vox command.
+
+The observed matching median saving stays below the 5,000,000-instruction gate, so broad suites and the 19-case screenshot batch remain deferred.
+The focused LTR/RTL, wrapping, Unicode and tab viewport is pixel-exact. Selected
+regression runtime and overlays are pinned separately from current Root, using
+SSD scratch. The isolated signed comparison app is `/Users/alex/code/vox2/Build/v/Vox-opt41.app`.
+Signature, startup, matching native text and actual collections pass with
+default marker 1 and override 2. Canonical and GUI apps are preserved. Independent
+Root changes receive no performance or regression credit from this cohort.
+Chrome parity remains unestablished.
+
+Evidence: `Build/instructions/vox-opt41-interleaved-*` and
+`Build/v/instruction-opt41-*`.
+
 ## Causes and changes
 
 - The V 0.5.2 compatibility compiler's `-prod` Boehm code repeatedly snapshots

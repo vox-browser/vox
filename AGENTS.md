@@ -1419,6 +1419,13 @@ evidence](docs/translation-audit/NATIVE_MEDIA_WHEEL_RAW_HANDLER.md).
   with repeatable page credit 0.
   Broad verification: passed 87 selected cases both GC and 19 screenshots (16 exact).
   The focused viewport is exact; Chrome parity remains open.
+  Bulk glyph append `90ddf27a` passes 956 common focused assertions per
+  configuration plus 63 candidate self-append assertions in each GC mode;
+  its complete inline-formatting probe uses 1.30% fewer instructions.
+  Matching 30-pair observed savings are -782,470,908, with
+  repeatable page credit 0.
+  Broad verification: deferred below the observed 5,000,000-instruction gate.
+  The focused viewport is exact; Chrome parity remains open.
 - Outside instruction-count optimization, run broad regression suites once per
   ten completed fixes, not after every fix.
   Broad suites include full translation/package test batches, the full LibJS AST
