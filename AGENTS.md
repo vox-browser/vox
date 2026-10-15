@@ -2,6 +2,8 @@
 
 ## Commits
 
+- Commit every completed feature and fix after running the relevant checks.
+  Do not leave implemented work uncommitted unless the user explicitly asks.
 - Commit each completed translation feature separately with a focused commit
   message. Do not combine unrelated translation slices in one commit.
 - Include the feature's focused tests in the same commit as its implementation.
