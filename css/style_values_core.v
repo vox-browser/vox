@@ -2983,886 +2983,2752 @@ pub fn string_from_keyword(keyword Keyword) string {
 }
 
 pub fn keyword_from_string(input string) ?Keyword {
-	return match to_ascii_lowercase(input) {
-		'-infinity' { Keyword.negative_infinity }
-		'-libweb-buttonfacedisabled' { Keyword.libweb_buttonfacedisabled }
-		'-libweb-buttonfacehover' { Keyword.libweb_buttonfacehover }
-		'-libweb-center' { Keyword.libweb_center }
-		'-libweb-inherit-or-center' { Keyword.libweb_inherit_or_center }
-		'-libweb-left' { Keyword.libweb_left }
-		'-libweb-link' { Keyword.libweb_link }
-		'-libweb-palette-active-link' { Keyword.libweb_palette_active_link }
-		'-libweb-palette-active-window-border1' { Keyword.libweb_palette_active_window_border1 }
-		'-libweb-palette-active-window-border2' { Keyword.libweb_palette_active_window_border2 }
-		'-libweb-palette-active-window-title' { Keyword.libweb_palette_active_window_title }
-		'-libweb-palette-base' { Keyword.libweb_palette_base }
-		'-libweb-palette-base-text' { Keyword.libweb_palette_base_text }
-		'-libweb-palette-button' { Keyword.libweb_palette_button }
-		'-libweb-palette-button-text' { Keyword.libweb_palette_button_text }
-		'-libweb-palette-desktop-background' { Keyword.libweb_palette_desktop_background }
-		'-libweb-palette-focus-outline' { Keyword.libweb_palette_focus_outline }
-		'-libweb-palette-highlight-window-border1' {
-			Keyword.libweb_palette_highlight_window_border1
+	name := to_ascii_lowercase(input)
+	// Reject unrelated names before comparing complete strings. These integer
+	// switches use no runtime table or retained allocation.
+	match name.len {
+		1 {
+			match name[0] {
+				0x65 {
+					return match name {
+						'e' { Keyword.e }
+						else { none }
+					}
+				}
+				0x78 {
+					return match name {
+						'x' { Keyword.x }
+						else { none }
+					}
+				}
+				0x79 {
+					return match name {
+						'y' { Keyword.y }
+						else { none }
+					}
+				}
+				else {}
+			}
 		}
-		'-libweb-palette-highlight-window-border2' {
-			Keyword.libweb_palette_highlight_window_border2
+		2 {
+			match name[0] {
+				0x61 {
+					return match name {
+						'a3' { Keyword.a3 }
+						'a4' { Keyword.a4 }
+						'a5' { Keyword.a5 }
+						else { none }
+					}
+				}
+				0x62 {
+					return match name {
+						'b4' { Keyword.b4 }
+						'b5' { Keyword.b5 }
+						else { none }
+					}
+				}
+				0x6f {
+					return match name {
+						'on' { Keyword.on }
+						else { none }
+					}
+				}
+				0x70 {
+					return match name {
+						'p3' { Keyword.p3 }
+						'pi' { Keyword.pi }
+						else { none }
+					}
+				}
+				0x75 {
+					return match name {
+						'up' { Keyword.up }
+						else { none }
+					}
+				}
+				else {}
+			}
 		}
-		'-libweb-palette-highlight-window-title' { Keyword.libweb_palette_highlight_window_title }
-		'-libweb-palette-hover-highlight' { Keyword.libweb_palette_hover_highlight }
-		'-libweb-palette-inactive-selection' { Keyword.libweb_palette_inactive_selection }
-		'-libweb-palette-inactive-selection-text' { Keyword.libweb_palette_inactive_selection_text }
-		'-libweb-palette-inactive-window-border1' { Keyword.libweb_palette_inactive_window_border1 }
-		'-libweb-palette-inactive-window-border2' { Keyword.libweb_palette_inactive_window_border2 }
-		'-libweb-palette-inactive-window-title' { Keyword.libweb_palette_inactive_window_title }
-		'-libweb-palette-link' { Keyword.libweb_palette_link }
-		'-libweb-palette-menu-base' { Keyword.libweb_palette_menu_base }
-		'-libweb-palette-menu-base-text' { Keyword.libweb_palette_menu_base_text }
-		'-libweb-palette-menu-selection' { Keyword.libweb_palette_menu_selection }
-		'-libweb-palette-menu-selection-text' { Keyword.libweb_palette_menu_selection_text }
-		'-libweb-palette-menu-stripe' { Keyword.libweb_palette_menu_stripe }
-		'-libweb-palette-moving-window-border1' { Keyword.libweb_palette_moving_window_border1 }
-		'-libweb-palette-moving-window-border2' { Keyword.libweb_palette_moving_window_border2 }
-		'-libweb-palette-moving-window-title' { Keyword.libweb_palette_moving_window_title }
-		'-libweb-palette-rubber-band-border' { Keyword.libweb_palette_rubber_band_border }
-		'-libweb-palette-rubber-band-fill' { Keyword.libweb_palette_rubber_band_fill }
-		'-libweb-palette-ruler' { Keyword.libweb_palette_ruler }
-		'-libweb-palette-ruler-active-text' { Keyword.libweb_palette_ruler_active_text }
-		'-libweb-palette-ruler-border' { Keyword.libweb_palette_ruler_border }
-		'-libweb-palette-ruler-inactive-text' { Keyword.libweb_palette_ruler_inactive_text }
-		'-libweb-palette-selection' { Keyword.libweb_palette_selection }
-		'-libweb-palette-selection-text' { Keyword.libweb_palette_selection_text }
-		'-libweb-palette-syntax-comment' { Keyword.libweb_palette_syntax_comment }
-		'-libweb-palette-syntax-control-keyword' { Keyword.libweb_palette_syntax_control_keyword }
-		'-libweb-palette-syntax-identifier' { Keyword.libweb_palette_syntax_identifier }
-		'-libweb-palette-syntax-keyword' { Keyword.libweb_palette_syntax_keyword }
-		'-libweb-palette-syntax-number' { Keyword.libweb_palette_syntax_number }
-		'-libweb-palette-syntax-operator' { Keyword.libweb_palette_syntax_operator }
-		'-libweb-palette-syntax-preprocessor-statement' {
-			Keyword.libweb_palette_syntax_preprocessor_statement
+		3 {
+			match name[0] {
+				0x61 {
+					return match name {
+						'add' { Keyword.add }
+						'all' { Keyword.all }
+						'ari' { Keyword.ari }
+						else { none }
+					}
+				}
+				0x65 {
+					return match name {
+						'end' { Keyword.end_ }
+						else { none }
+					}
+				}
+				0x68 {
+					return match name {
+						'hsl' { Keyword.hsl }
+						'hue' { Keyword.hue }
+						'hwb' { Keyword.hwb }
+						else { none }
+					}
+				}
+				0x6c {
+					return match name {
+						'lao' { Keyword.lao }
+						'lab' { Keyword.lab }
+						'lch' { Keyword.lch }
+						'ltr' { Keyword.ltr }
+						else { none }
+					}
+				}
+				0x6d {
+					return match name {
+						'mro' { Keyword.mro }
+						else { none }
+					}
+				}
+				0x6e {
+					return match name {
+						'nan' { Keyword.nan }
+						else { none }
+					}
+				}
+				0x6f {
+					return match name {
+						'off' { Keyword.off }
+						else { none }
+					}
+				}
+				0x70 {
+					return match name {
+						'pre' { Keyword.pre }
+						else { none }
+					}
+				}
+				0x72 {
+					return match name {
+						'row' { Keyword.row }
+						'rtl' { Keyword.rtl }
+						else { none }
+					}
+				}
+				0x73 {
+					return match name {
+						'sub' { Keyword.sub }
+						else { none }
+					}
+				}
+				0x74 {
+					return match name {
+						'top' { Keyword.top }
+						else { none }
+					}
+				}
+				0x78 {
+					return match name {
+						'xyz' { Keyword.xyz }
+						else { none }
+					}
+				}
+				else {}
+			}
 		}
-		'-libweb-palette-syntax-preprocessor-value' {
-			Keyword.libweb_palette_syntax_preprocessor_value
+		4 {
+			match name[0] {
+				0x61 {
+					return match name {
+						'afar' { Keyword.afar }
+						'agaw' { Keyword.agaw }
+						'auto' { Keyword.auto }
+						else { none }
+					}
+				}
+				0x62 {
+					return match name {
+						'back' { Keyword.back }
+						'blin' { Keyword.blin }
+						'bodo' { Keyword.bodo }
+						'bold' { Keyword.bold }
+						'both' { Keyword.both }
+						'butt' { Keyword.butt }
+						else { none }
+					}
+				}
+				0x63 {
+					return match name {
+						'cell' { Keyword.cell }
+						'clip' { Keyword.clip }
+						'copy' { Keyword.copy }
+						'crop' { Keyword.crop }
+						else { none }
+					}
+				}
+				0x64 {
+					return match name {
+						'dark' { Keyword.dark }
+						'disc' { Keyword.disc }
+						'dizi' { Keyword.dizi }
+						'down' { Keyword.down }
+						else { none }
+					}
+				}
+				0x65 {
+					return match name {
+						'ease' { Keyword.ease }
+						'else' { Keyword.else_ }
+						else { none }
+					}
+				}
+				0x66 {
+					return match name {
+						'fast' { Keyword.fast }
+						'fill' { Keyword.fill }
+						'fine' { Keyword.fine }
+						'flat' { Keyword.flat }
+						'flex' { Keyword.flex }
+						'flow' { Keyword.flow }
+						else { none }
+					}
+				}
+				0x67 {
+					return match name {
+						'grab' { Keyword.grab }
+						'grid' { Keyword.grid }
+						else { none }
+					}
+				}
+				0x68 {
+					return match name {
+						'help' { Keyword.help }
+						'hide' { Keyword.hide }
+						'high' { Keyword.high }
+						else { none }
+					}
+				}
+				0x6c {
+					return match name {
+						'left' { Keyword.left }
+						'less' { Keyword.less }
+						else { none }
+					}
+				}
+				0x6d {
+					return match name {
+						'mark' { Keyword.mark }
+						'math' { Keyword.math }
+						'meen' { Keyword.meen }
+						'menu' { Keyword.menu }
+						'more' { Keyword.more }
+						'move' { Keyword.move }
+						else { none }
+					}
+				}
+				0x6e {
+					return match name {
+						'newa' { Keyword.newa }
+						'none' { Keyword.none_ }
+						else { none }
+					}
+				}
+				0x6f {
+					return match name {
+						'odia' { Keyword.odia }
+						else { none }
+					}
+				}
+				0x70 {
+					return match name {
+						'page' { Keyword.page }
+						else { none }
+					}
+				}
+				0x72 {
+					return match name {
+						'root' { Keyword.root }
+						'ruby' { Keyword.ruby }
+						else { none }
+					}
+				}
+				0x73 {
+					return match name {
+						'safe' { Keyword.safe }
+						'saho' { Keyword.saho }
+						'self' { Keyword.self }
+						'shan' { Keyword.shan }
+						'show' { Keyword.show }
+						'size' { Keyword.size }
+						'slow' { Keyword.slow }
+						'srgb' { Keyword.srgb }
+						'swap' { Keyword.swap }
+						else { none }
+					}
+				}
+				0x74 {
+					return match name {
+						'text' { Keyword.text }
+						'thai' { Keyword.thai }
+						'thin' { Keyword.thin }
+						'true' { Keyword.true_ }
+						else { none }
+					}
+				}
+				0x75 {
+					return match name {
+						'urdu' { Keyword.urdu }
+						else { none }
+					}
+				}
+				0x77 {
+					return match name {
+						'wait' { Keyword.wait }
+						'wavy' { Keyword.wavy }
+						'wrap' { Keyword.wrap }
+						else { none }
+					}
+				}
+				else {}
+			}
 		}
-		'-libweb-palette-syntax-punctuation' { Keyword.libweb_palette_syntax_punctuation }
-		'-libweb-palette-syntax-string' { Keyword.libweb_palette_syntax_string }
-		'-libweb-palette-syntax-type' { Keyword.libweb_palette_syntax_type }
-		'-libweb-palette-text-cursor' { Keyword.libweb_palette_text_cursor }
-		'-libweb-palette-threed-highlight' { Keyword.libweb_palette_threed_highlight }
-		'-libweb-palette-threed-shadow1' { Keyword.libweb_palette_threed_shadow1 }
-		'-libweb-palette-threed-shadow2' { Keyword.libweb_palette_threed_shadow2 }
-		'-libweb-palette-visited-link' { Keyword.libweb_palette_visited_link }
-		'-libweb-palette-window' { Keyword.libweb_palette_window }
-		'-libweb-palette-window-text' { Keyword.libweb_palette_window_text }
-		'-libweb-right' { Keyword.libweb_right }
-		'-webkit-box' { Keyword.webkit_box }
-		'-webkit-inline-box' { Keyword.webkit_inline_box }
-		'-webkit-legacy' { Keyword.webkit_legacy }
-		'a3' { Keyword.a3 }
-		'a4' { Keyword.a4 }
-		'a5' { Keyword.a5 }
-		'a98-rgb' { Keyword.a98_rgb }
-		'absolute' { Keyword.absolute }
-		'accentcolor' { Keyword.accentcolor }
-		'accentcolortext' { Keyword.accentcolortext }
-		'accumulate' { Keyword.accumulate }
-		'active' { Keyword.active }
-		'activeborder' { Keyword.activeborder }
-		'activecaption' { Keyword.activecaption }
-		'activetext' { Keyword.activetext }
-		'add' { Keyword.add }
-		'additive' { Keyword.additive }
-		'adlam' { Keyword.adlam }
-		'afar' { Keyword.afar }
-		'agaw' { Keyword.agaw }
-		'alias' { Keyword.alias }
-		'all' { Keyword.all }
-		'all-petite-caps' { Keyword.all_petite_caps }
-		'all-scroll' { Keyword.all_scroll }
-		'all-small-caps' { Keyword.all_small_caps }
-		'allow-discrete' { Keyword.allow_discrete }
-		'alpha' { Keyword.alpha }
-		'alphabetic' { Keyword.alphabetic }
-		'alternate' { Keyword.alternate }
-		'alternate-reverse' { Keyword.alternate_reverse }
-		'always' { Keyword.always }
-		'anchors-valid' { Keyword.anchors_valid }
-		'anchors-visible' { Keyword.anchors_visible }
-		'ancient-tamil' { Keyword.ancient_tamil }
-		'anonymous' { Keyword.anonymous }
-		'antialiased' { Keyword.antialiased }
-		'anywhere' { Keyword.anywhere }
-		'appworkspace' { Keyword.appworkspace }
-		'arabic-abjad' { Keyword.arabic_abjad }
-		'arabic-indic' { Keyword.arabic_indic }
-		'ari' { Keyword.ari }
-		'armenian' { Keyword.armenian }
-		'auto' { Keyword.auto }
-		'auto-add' { Keyword.auto_add }
-		'avoid' { Keyword.avoid }
-		'avoid-column' { Keyword.avoid_column }
-		'avoid-page' { Keyword.avoid_page }
-		'avoid-region' { Keyword.avoid_region }
-		'balance-all' { Keyword.balance_all }
-		'clone' { Keyword.clone }
-		'page' { Keyword.page }
-		'recto' { Keyword.recto }
-		'region' { Keyword.region }
-		'slice' { Keyword.slice }
-		'verso' { Keyword.verso }
-		'avar2' { Keyword.avar2 }
-		'b4' { Keyword.b4 }
-		'b5' { Keyword.b5 }
-		'back' { Keyword.back }
-		'background' { Keyword.background }
-		'backwards' { Keyword.backwards }
-		'balance' { Keyword.balance }
-		'balinese' { Keyword.balinese }
-		'bamum' { Keyword.bamum }
-		'bangla' { Keyword.bangla }
-		'baseline' { Keyword.baseline }
-		'bengali' { Keyword.bengali }
-		'bevel' { Keyword.bevel }
-		'bidi-override' { Keyword.bidi_override }
-		'binary' { Keyword.binary }
-		'blin' { Keyword.blin }
-		'blink' { Keyword.blink }
-		'block' { Keyword.block }
-		'block-end' { Keyword.block_end }
-		'block-start' { Keyword.block_start }
-		'bodo' { Keyword.bodo }
-		'bold' { Keyword.bold }
-		'bolder' { Keyword.bolder }
-		'border-box' { Keyword.border_box }
-		'both' { Keyword.both }
-		'both-edges' { Keyword.both_edges }
-		'bottom' { Keyword.bottom }
-		'break-all' { Keyword.break_all }
-		'break-spaces' { Keyword.break_spaces }
-		'break-word' { Keyword.break_word }
-		'browser' { Keyword.browser }
-		'bullets' { Keyword.bullets }
-		'butt' { Keyword.butt }
-		'button' { Keyword.button }
-		'buttonborder' { Keyword.buttonborder }
-		'buttonface' { Keyword.buttonface }
-		'buttonhighlight' { Keyword.buttonhighlight }
-		'buttonshadow' { Keyword.buttonshadow }
-		'buttontext' { Keyword.buttontext }
-		'cambodian' { Keyword.cambodian }
-		'canvas' { Keyword.canvas }
-		'canvastext' { Keyword.canvastext }
-		'capitalize' { Keyword.capitalize }
-		'captiontext' { Keyword.captiontext }
-		'cell' { Keyword.cell }
-		'center' { Keyword.center }
-		'central' { Keyword.central }
-		'checkbox' { Keyword.checkbox }
-		'circle' { Keyword.circle }
-		'circled-decimal' { Keyword.circled_decimal }
-		'circled-ideograph' { Keyword.circled_ideograph }
-		'circled-katakana' { Keyword.circled_katakana }
-		'circled-korean-consonant' { Keyword.circled_korean_consonant }
-		'circled-korean-syllable' { Keyword.circled_korean_syllable }
-		'circled-lower-latin' { Keyword.circled_lower_latin }
-		'circled-upper-latin' { Keyword.circled_upper_latin }
-		'cjk-decimal' { Keyword.cjk_decimal }
-		'cjk-earthly-branch' { Keyword.cjk_earthly_branch }
-		'cjk-heavenly-stem' { Keyword.cjk_heavenly_stem }
-		'cjk-ideographic' { Keyword.cjk_ideographic }
-		'cjk-stem-branch' { Keyword.cjk_stem_branch }
-		'cjk-tally-mark' { Keyword.cjk_tally_mark }
-		'clip' { Keyword.clip }
-		'close-quote' { Keyword.close_quote }
-		'closest-corner' { Keyword.closest_corner }
-		'closest-side' { Keyword.closest_side }
-		'coarse' { Keyword.coarse }
-		'col-resize' { Keyword.col_resize }
-		'collapse' { Keyword.collapse }
-		'color' { Keyword.color }
-		'color-burn' { Keyword.color_burn }
-		'color-cbdt' { Keyword.color_cbdt }
-		'color-colrv0' { Keyword.color_colrv0 }
-		'color-colrv1' { Keyword.color_colrv1 }
-		'color-dodge' { Keyword.color_dodge }
-		'color-sbix' { Keyword.color_sbix }
-		'color-svg' { Keyword.color_svg }
-		'column' { Keyword.column }
-		'column-reverse' { Keyword.column_reverse }
-		'common-ligatures' { Keyword.common_ligatures }
-		'compact' { Keyword.compact }
-		'condensed' { Keyword.condensed }
-		'contain' { Keyword.contain }
-		'content' { Keyword.content }
-		'content-box' { Keyword.content_box }
-		'contents' { Keyword.contents }
-		'context-menu' { Keyword.context_menu }
-		'contextual' { Keyword.contextual }
-		'copy' { Keyword.copy }
-		'cover' { Keyword.cover }
-		'crisp-edges' { Keyword.crisp_edges }
-		'crispedges' { Keyword.crispedges }
-		'crop' { Keyword.crop }
-		'cross' { Keyword.cross }
-		'crosshair' { Keyword.crosshair }
-		'currentcolor' { Keyword.currentcolor }
-		'cursive' { Keyword.cursive }
-		'custom' { Keyword.custom }
-		'cyclic' { Keyword.cyclic }
-		'dark' { Keyword.dark }
-		'darken' { Keyword.darken }
-		'dashed' { Keyword.dashed }
-		'decimal' { Keyword.decimal }
-		'decimal-leading-zero' { Keyword.decimal_leading_zero }
-		'decreasing' { Keyword.decreasing }
-		'default' { Keyword.default }
-		'devanagari' { Keyword.devanagari }
-		'diagonal-fractions' { Keyword.diagonal_fractions }
-		'difference' { Keyword.difference }
-		'disc' { Keyword.disc }
-		'discard' { Keyword.discard }
-		'discard-before' { Keyword.discard_before }
-		'discard-after' { Keyword.discard_after }
-		'discard-inner' { Keyword.discard_inner }
-		'disclosure-closed' { Keyword.disclosure_closed }
-		'disclosure-open' { Keyword.disclosure_open }
-		'discretionary-ligatures' { Keyword.discretionary_ligatures }
-		'distribute' { Keyword.distribute }
-		'display-p3' { Keyword.display_p3 }
-		'display-p3-linear' { Keyword.display_p3_linear }
-		'dizi' { Keyword.dizi }
-		'dogri' { Keyword.dogri }
-		'dotted-decimal' { Keyword.dotted_decimal }
-		'dotted' { Keyword.dotted }
-		'double-circled-decimal' { Keyword.double_circled_decimal }
-		'double' { Keyword.double_ }
-		'down' { Keyword.down }
-		'e' { Keyword.e }
-		'e-resize' { Keyword.e_resize }
-		'each-line' { Keyword.each_line }
-		'ease' { Keyword.ease }
-		'ease-in' { Keyword.ease_in }
-		'ease-in-out' { Keyword.ease_in_out }
-		'ease-out' { Keyword.ease_out }
-		'element-shared' { Keyword.element_shared }
-		'ellipsis' { Keyword.ellipsis }
-		'else' { Keyword.else_ }
-		'embed' { Keyword.embed }
-		'emoji' { Keyword.emoji }
-		'enabled' { Keyword.enabled }
-		'end' { Keyword.end_ }
-		'ethiopic-halehame-am' { Keyword.ethiopic_halehame_am }
-		'ethiopic-halehame-ti-er' { Keyword.ethiopic_halehame_ti_er }
-		'ethiopic-halehame-ti-et' { Keyword.ethiopic_halehame_ti_et }
-		'ethiopic-halehame' { Keyword.ethiopic_halehame }
-		'ethiopic-numeric' { Keyword.ethiopic_numeric }
-		'evenodd' { Keyword.evenodd }
-		'ew-resize' { Keyword.ew_resize }
-		'exclude' { Keyword.exclude }
-		'exclusion' { Keyword.exclusion }
-		'expanded' { Keyword.expanded }
-		'extends' { Keyword.extends }
-		'extra-condensed' { Keyword.extra_condensed }
-		'extra-expanded' { Keyword.extra_expanded }
-		'fallback' { Keyword.fallback }
-		'false' { Keyword.false_ }
-		'fantasy' { Keyword.fantasy }
-		'farthest-corner' { Keyword.farthest_corner }
-		'farthest-side' { Keyword.farthest_side }
-		'fast' { Keyword.fast }
-		'features-aat' { Keyword.features_aat }
-		'features-graphite' { Keyword.features_graphite }
-		'features-opentype' { Keyword.features_opentype }
-		'field' { Keyword.field }
-		'fieldtext' { Keyword.fieldtext }
-		'fill' { Keyword.fill }
-		'fill-box' { Keyword.fill_box }
-		'filled-circled-decimal' { Keyword.filled_circled_decimal }
-		'fine' { Keyword.fine }
-		'fit-content' { Keyword.fit_content }
-		'fixed' { Keyword.fixed }
-		'flat' { Keyword.flat }
-		'flex' { Keyword.flex }
-		'flex-end' { Keyword.flex_end }
-		'flex-start' { Keyword.flex_start }
-		'flip-block' { Keyword.flip_block }
-		'flip-inline' { Keyword.flip_inline }
-		'flip-start' { Keyword.flip_start }
-		'flow' { Keyword.flow }
-		'flow-root' { Keyword.flow_root }
-		'forwards' { Keyword.forwards }
-		'from-font' { Keyword.from_font }
-		'full-size-kana' { Keyword.full_size_kana }
-		'full-width' { Keyword.full_width }
-		'fullwidth-decimal' { Keyword.fullwidth_decimal }
-		'fullwidth-lower-alpha' { Keyword.fullwidth_lower_alpha }
-		'fullwidth-upper-alpha' { Keyword.fullwidth_upper_alpha }
-		'fullwidth-upper-roman' { Keyword.fullwidth_upper_roman }
-		'fullscreen' { Keyword.fullscreen }
-		'gedeo' { Keyword.gedeo }
-		'geometricprecision' { Keyword.geometricprecision }
-		'georgian' { Keyword.georgian }
-		'grab' { Keyword.grab }
-		'grabbing' { Keyword.grabbing }
-		'grammar-error' { Keyword.grammar_error }
-		'graytext' { Keyword.graytext }
-		'greek-lower-ancient' { Keyword.greek_lower_ancient }
-		'greek-lower-modern' { Keyword.greek_lower_modern }
-		'greek-upper-ancient' { Keyword.greek_upper_ancient }
-		'greek-upper-modern' { Keyword.greek_upper_modern }
-		'grid' { Keyword.grid }
-		'groove' { Keyword.groove }
-		'gujarati-alpha' { Keyword.gujarati_alpha }
-		'gujarati' { Keyword.gujarati }
-		'gumuz' { Keyword.gumuz }
-		'gurmukhi' { Keyword.gurmukhi }
-		'hadiyaa' { Keyword.hadiyaa }
-		'hanging' { Keyword.hanging }
-		'hangul-consonant' { Keyword.hangul_consonant }
-		'hangul' { Keyword.hangul }
-		'hanifi-rohingya' { Keyword.hanifi_rohingya }
-		'harari' { Keyword.harari }
-		'hard-light' { Keyword.hard_light }
-		'hebrew' { Keyword.hebrew }
-		'height' { Keyword.height }
-		'help' { Keyword.help }
-		'hide' { Keyword.hide }
-		'hidden' { Keyword.hidden }
-		'high' { Keyword.high }
-		'high-quality' { Keyword.high_quality }
-		'highlight' { Keyword.highlight }
-		'highlighttext' { Keyword.highlighttext }
-		'hindi' { Keyword.hindi }
-		'hiragana-iroha' { Keyword.hiragana_iroha }
-		'hiragana' { Keyword.hiragana }
-		'historical-forms' { Keyword.historical_forms }
-		'historical-ligatures' { Keyword.historical_ligatures }
-		'horizontal' { Keyword.horizontal }
-		'horizontal-tb' { Keyword.horizontal_tb }
-		'hover' { Keyword.hover }
-		'hsl' { Keyword.hsl }
-		'hue' { Keyword.hue }
-		'hwb' { Keyword.hwb }
-		'inactiveborder' { Keyword.inactiveborder }
-		'inactivecaption' { Keyword.inactivecaption }
-		'inactivecaptiontext' { Keyword.inactivecaptiontext }
-		'increasing' { Keyword.increasing }
-		'ideographic' { Keyword.ideographic }
-		'incremental' { Keyword.incremental }
-		'infinite' { Keyword.infinite }
-		'infinity' { Keyword.infinity }
-		'infobackground' { Keyword.infobackground }
-		'infotext' { Keyword.infotext }
-		'inherit' { Keyword.inherit }
-		'initial' { Keyword.initial }
-		'initial-only' { Keyword.initial_only }
-		'inline' { Keyword.inline_ }
-		'inline-block' { Keyword.inline_block }
-		'inline-end' { Keyword.inline_end }
-		'inline-flex' { Keyword.inline_flex }
-		'inline-grid' { Keyword.inline_grid }
-		'inline-size' { Keyword.inline_size }
-		'inline-start' { Keyword.inline_start }
-		'inline-table' { Keyword.inline_table }
-		'inset' { Keyword.inset }
-		'inside' { Keyword.inside }
-		'inter-character' { Keyword.inter_character }
-		'inter-word' { Keyword.inter_word }
-		'interlace' { Keyword.interlace }
-		'intersect' { Keyword.intersect }
-		'invert' { Keyword.invert }
-		'inverted' { Keyword.inverted }
-		'isolate' { Keyword.isolate }
-		'isolate-override' { Keyword.isolate_override }
-		'italic' { Keyword.italic }
-		'japanese-formal' { Keyword.japanese_formal }
-		'japanese-informal' { Keyword.japanese_informal }
-		'javanese' { Keyword.javanese }
-		'jis-b4' { Keyword.jis_b4 }
-		'jis-b5' { Keyword.jis_b5 }
-		'jis04' { Keyword.jis04 }
-		'jis78' { Keyword.jis78 }
-		'jis83' { Keyword.jis83 }
-		'jis90' { Keyword.jis90 }
-		'jump-both' { Keyword.jump_both }
-		'jump-end' { Keyword.jump_end }
-		'jump-none' { Keyword.jump_none }
-		'jump-start' { Keyword.jump_start }
-		'justify' { Keyword.justify }
-		'kaffa' { Keyword.kaffa }
-		'kannada-alpha' { Keyword.kannada_alpha }
-		'kannada' { Keyword.kannada }
-		'kashmiri' { Keyword.kashmiri }
-		'katakana-iroha' { Keyword.katakana_iroha }
-		'katakana' { Keyword.katakana }
-		'kayah-li' { Keyword.kayah_li }
-		'kebena' { Keyword.kebena }
-		'keep-all' { Keyword.keep_all }
-		'kembata' { Keyword.kembata }
-		'khmer-consonant' { Keyword.khmer_consonant }
-		'khmer' { Keyword.khmer }
-		'konkani' { Keyword.konkani }
-		'konso' { Keyword.konso }
-		'korean-consonant' { Keyword.korean_consonant }
-		'korean-hangul-formal' { Keyword.korean_hangul_formal }
-		'korean-hanja-formal' { Keyword.korean_hanja_formal }
-		'korean-hanja-informal' { Keyword.korean_hanja_informal }
-		'korean-syllable' { Keyword.korean_syllable }
-		'kunama' { Keyword.kunama }
-		'landscape' { Keyword.landscape }
-		'lanna-hora' { Keyword.lanna_hora }
-		'lanna-tham' { Keyword.lanna_tham }
-		'lao' { Keyword.lao }
-		'lab' { Keyword.lab }
-		'large' { Keyword.large }
-		'larger' { Keyword.larger }
-		'layout' { Keyword.layout }
-		'lch' { Keyword.lch }
-		'ledger' { Keyword.ledger }
-		'left' { Keyword.left }
-		'legacy' { Keyword.legacy }
-		'legal' { Keyword.legal }
-		'lepcha' { Keyword.lepcha }
-		'less' { Keyword.less }
-		'letter' { Keyword.letter }
-		'light' { Keyword.light }
-		'lighten' { Keyword.lighten }
-		'lighter' { Keyword.lighter }
-		'limbu' { Keyword.limbu }
-		'line-through' { Keyword.line_through }
-		'linear' { Keyword.linear }
-		'linearrgb' { Keyword.linearrgb }
-		'lining-nums' { Keyword.lining_nums }
-		'linktext' { Keyword.linktext }
-		'list-item' { Keyword.list_item }
-		'listbox' { Keyword.listbox }
-		'local' { Keyword.local }
-		'longer' { Keyword.longer }
-		'lower-alpha-symbolic' { Keyword.lower_alpha_symbolic }
-		'lower-alpha' { Keyword.lower_alpha }
-		'lower-armenian' { Keyword.lower_armenian }
-		'lower-belorussian' { Keyword.lower_belorussian }
-		'lower-bulgarian' { Keyword.lower_bulgarian }
-		'lower-greek' { Keyword.lower_greek }
-		'lower-hexadecimal' { Keyword.lower_hexadecimal }
-		'lower-latin' { Keyword.lower_latin }
-		'lower-macedonian' { Keyword.lower_macedonian }
-		'lower-oromo-qubee' { Keyword.lower_oromo_qubee }
-		'lower-roman' { Keyword.lower_roman }
-		'lower-russian-full' { Keyword.lower_russian_full }
-		'lower-russian' { Keyword.lower_russian }
-		'lower-serbian' { Keyword.lower_serbian }
-		'lower-ukrainian-full' { Keyword.lower_ukrainian_full }
-		'lower-ukrainian' { Keyword.lower_ukrainian }
-		'lowercase' { Keyword.lowercase }
-		'ltr' { Keyword.ltr }
-		'luminance' { Keyword.luminance }
-		'luminosity' { Keyword.luminosity }
-		'maghrebi-abjad' { Keyword.maghrebi_abjad }
-		'maithili' { Keyword.maithili }
-		'malayalam-alpha' { Keyword.malayalam_alpha }
-		'malayalam' { Keyword.malayalam }
-		'manipulation' { Keyword.manipulation }
-		'manipuri' { Keyword.manipuri }
-		'marathi' { Keyword.marathi }
-		'margin-box' { Keyword.margin_box }
-		'mark' { Keyword.mark }
-		'markers' { Keyword.markers }
-		'marktext' { Keyword.marktext }
-		'match-parent' { Keyword.match_parent }
-		'match-source' { Keyword.match_source }
-		'math' { Keyword.math }
-		'math-auto' { Keyword.math_auto }
-		'mathematical' { Keyword.mathematical }
-		'mandatory' { Keyword.mandatory }
-		'max-content' { Keyword.max_content }
-		'medium' { Keyword.medium }
-		'meen' { Keyword.meen }
-		'meetei' { Keyword.meetei }
-		'menu' { Keyword.menu }
-		'menulist' { Keyword.menulist }
-		'menulist-button' { Keyword.menulist_button }
-		'menutext' { Keyword.menutext }
-		'meter' { Keyword.meter }
-		'middle' { Keyword.middle }
-		'min-content' { Keyword.min_content }
-		'minimal-ui' { Keyword.minimal_ui }
-		'miter' { Keyword.miter }
-		'mongolian' { Keyword.mongolian }
-		'monospace' { Keyword.monospace }
-		'more' { Keyword.more }
-		'most-block-size' { Keyword.most_block_size }
-		'most-height' { Keyword.most_height }
-		'most-inline-size' { Keyword.most_inline_size }
-		'most-width' { Keyword.most_width }
-		'move' { Keyword.move }
-		'mro' { Keyword.mro }
-		'multiply' { Keyword.multiply }
-		'myanmar' { Keyword.myanmar }
-		'n-resize' { Keyword.n_resize }
-		'nag-mundari' { Keyword.nag_mundari }
-		'nan' { Keyword.nan }
-		'ne-resize' { Keyword.ne_resize }
-		'nearest' { Keyword.nearest }
-		'nesw-resize' { Keyword.nesw_resize }
-		'new-base-60' { Keyword.new_base_60 }
-		'newa' { Keyword.newa }
-		'nko-cardinal' { Keyword.nko_cardinal }
-		'no-clip' { Keyword.no_clip }
-		'no-close-quote' { Keyword.no_close_quote }
-		'no-common-ligatures' { Keyword.no_common_ligatures }
-		'no-contextual' { Keyword.no_contextual }
-		'no-discretionary-ligatures' { Keyword.no_discretionary_ligatures }
-		'no-drop' { Keyword.no_drop }
-		'no-ellipsis' { Keyword.no_ellipsis }
-		'no-historical-ligatures' { Keyword.no_historical_ligatures }
-		'no-open-quote' { Keyword.no_open_quote }
-		'no-overflow' { Keyword.no_overflow }
-		'no-preference' { Keyword.no_preference }
-		'no-referrer' { Keyword.no_referrer }
-		'no-referrer-when-downgrade' { Keyword.no_referrer_when_downgrade }
-		'no-repeat' { Keyword.no_repeat }
-		'none' { Keyword.none_ }
-		'non-scaling-stroke' { Keyword.non_scaling_stroke }
-		'nonzero' { Keyword.nonzero }
-		'normal' { Keyword.normal }
-		'not-allowed' { Keyword.not_allowed }
-		'notch' { Keyword.notch }
-		'nowrap' { Keyword.nowrap }
-		'ns-resize' { Keyword.ns_resize }
-		'numbers' { Keyword.numbers }
-		'numeric' { Keyword.numeric }
-		'nw-resize' { Keyword.nw_resize }
-		'nwse-resize' { Keyword.nwse_resize }
-		'oblique' { Keyword.oblique }
-		'octal' { Keyword.octal }
-		'odia' { Keyword.odia }
-		'off' { Keyword.off }
-		'oklab' { Keyword.oklab }
-		'oklch' { Keyword.oklch }
-		'ol-chiki' { Keyword.ol_chiki }
-		'oldstyle-nums' { Keyword.oldstyle_nums }
-		'on' { Keyword.on }
-		'opaque' { Keyword.opaque }
-		'open-quote' { Keyword.open_quote }
-		'optimizelegibility' { Keyword.optimizelegibility }
-		'optimizequality' { Keyword.optimizequality }
-		'optimizespeed' { Keyword.optimizespeed }
-		'optional' { Keyword.optional }
-		'ordinal' { Keyword.ordinal }
-		'origin' { Keyword.origin }
-		'origin-when-cross-origin' { Keyword.origin_when_cross_origin }
-		'oriya' { Keyword.oriya }
-		'oromo' { Keyword.oromo }
-		'outset' { Keyword.outset }
-		'outside' { Keyword.outside }
-		'overlay' { Keyword.overlay }
-		'overline' { Keyword.overline }
-		'p3' { Keyword.p3 }
-		'padding-box' { Keyword.padding_box }
-		'paged' { Keyword.paged }
-		'paint' { Keyword.paint }
-		'palettes' { Keyword.palettes }
-		'pan-down' { Keyword.pan_down }
-		'pan-left' { Keyword.pan_left }
-		'pan-right' { Keyword.pan_right }
-		'pan-up' { Keyword.pan_up }
-		'pan-x' { Keyword.pan_x }
-		'pan-y' { Keyword.pan_y }
-		'parenthesized-decimal' { Keyword.parenthesized_decimal }
-		'parenthesized-hangul-consonant' { Keyword.parenthesized_hangul_consonant }
-		'parenthesized-hangul-syllable' { Keyword.parenthesized_hangul_syllable }
-		'parenthesized-ideograph' { Keyword.parenthesized_ideograph }
-		'parenthesized-lower-latin' { Keyword.parenthesized_lower_latin }
-		'paused' { Keyword.paused }
-		'persian-abjad' { Keyword.persian_abjad }
-		'persian-alphabetic' { Keyword.persian_alphabetic }
-		'persian' { Keyword.persian }
-		'petite-caps' { Keyword.petite_caps }
-		'pi' { Keyword.pi }
-		'picture-in-picture' { Keyword.picture_in_picture }
-		'pixelated' { Keyword.pixelated }
-		'plaintext' { Keyword.plaintext }
-		'plus-darker' { Keyword.plus_darker }
-		'plus-lighter' { Keyword.plus_lighter }
-		'pointer' { Keyword.pointer }
-		'portrait' { Keyword.portrait }
-		'pre' { Keyword.pre }
-		'pre-line' { Keyword.pre_line }
-		'pre-wrap' { Keyword.pre_wrap }
-		'preserve' { Keyword.preserve }
-		'preserve-3d' { Keyword.preserve_3d }
-		'preserve-breaks' { Keyword.preserve_breaks }
-		'preserve-spaces' { Keyword.preserve_spaces }
-		'pretty' { Keyword.pretty }
-		'progress' { Keyword.progress }
-		'progress-bar' { Keyword.progress_bar }
-		'progressive' { Keyword.progressive }
-		'prophoto-rgb' { Keyword.prophoto_rgb }
-		'proximity' { Keyword.proximity }
-		'proportional-nums' { Keyword.proportional_nums }
-		'proportional-width' { Keyword.proportional_width }
-		'punjabi' { Keyword.punjabi }
-		'push-button' { Keyword.push_button }
-		'radio' { Keyword.radio }
-		'rec2020' { Keyword.rec2020 }
-		'reduce' { Keyword.reduce }
-		'relative' { Keyword.relative }
-		'repeat' { Keyword.repeat }
-		'repeat-x' { Keyword.repeat_x }
-		'repeat-y' { Keyword.repeat_y }
-		'replace' { Keyword.replace }
-		'reverse' { Keyword.reverse }
-		'revert' { Keyword.revert }
-		'revert-layer' { Keyword.revert_layer }
-		'ridge' { Keyword.ridge }
-		'right' { Keyword.right }
-		'root' { Keyword.root }
-		'rotate-left' { Keyword.rotate_left }
-		'rotate-right' { Keyword.rotate_right }
-		'round' { Keyword.round }
-		'row' { Keyword.row }
-		'row-resize' { Keyword.row_resize }
-		'row-reverse' { Keyword.row_reverse }
-		'rtl' { Keyword.rtl }
-		'ruby' { Keyword.ruby }
-		'ruby-base' { Keyword.ruby_base }
-		'ruby-base-container' { Keyword.ruby_base_container }
-		'ruby-text' { Keyword.ruby_text }
-		'ruby-text-container' { Keyword.ruby_text_container }
-		'run-in' { Keyword.run_in }
-		'running' { Keyword.running }
-		's-resize' { Keyword.s_resize }
-		'safe' { Keyword.safe }
-		'saho' { Keyword.saho }
-		'same-origin' { Keyword.same_origin }
-		'sans-serif' { Keyword.sans_serif }
-		'sanskrit' { Keyword.sanskrit }
-		'santali' { Keyword.santali }
-		'saturation' { Keyword.saturation }
-		'scale-down' { Keyword.scale_down }
-		'scoop' { Keyword.scoop }
-		'screen' { Keyword.screen }
-		'scroll' { Keyword.scroll }
-		'scroll-position' { Keyword.scroll_position }
-		'scroll-state' { Keyword.scroll_state }
-		'scrollbar' { Keyword.scrollbar }
-		'se-resize' { Keyword.se_resize }
-		'searchfield' { Keyword.searchfield }
-		'selecteditem' { Keyword.selecteditem }
-		'selecteditemtext' { Keyword.selecteditemtext }
-		'self' { Keyword.self }
-		'self-block' { Keyword.self_block }
-		'self-block-end' { Keyword.self_block_end }
-		'self-block-start' { Keyword.self_block_start }
-		'self-end' { Keyword.self_end }
-		'self-inline' { Keyword.self_inline }
-		'self-inline-end' { Keyword.self_inline_end }
-		'self-inline-start' { Keyword.self_inline_start }
-		'self-x-end' { Keyword.self_x_end }
-		'self-x-start' { Keyword.self_x_start }
-		'self-y-end' { Keyword.self_y_end }
-		'self-y-start' { Keyword.self_y_start }
-		'self-start' { Keyword.self_start }
-		'semi-condensed' { Keyword.semi_condensed }
-		'semi-expanded' { Keyword.semi_expanded }
-		'separate' { Keyword.separate }
-		'serif' { Keyword.serif }
-		'shan' { Keyword.shan }
-		'shorter' { Keyword.shorter }
-		'show' { Keyword.show }
-		'sidama' { Keyword.sidama }
-		'sideways-lr' { Keyword.sideways_lr }
-		'sideways-rl' { Keyword.sideways_rl }
-		'silti' { Keyword.silti }
-		'simp-chinese-formal' { Keyword.simp_chinese_formal }
-		'simp-chinese-informal' { Keyword.simp_chinese_informal }
-		'simple-lower-roman' { Keyword.simple_lower_roman }
-		'simple-upper-roman' { Keyword.simple_upper_roman }
-		'simplified' { Keyword.simplified }
-		'sindhi' { Keyword.sindhi }
-		'size' { Keyword.size }
-		'slashed-zero' { Keyword.slashed_zero }
-		'slider-horizontal' { Keyword.slider_horizontal }
-		'slow' { Keyword.slow }
-		'small' { Keyword.small }
-		'small-caps' { Keyword.small_caps }
-		'smaller' { Keyword.smaller }
-		'smooth' { Keyword.smooth }
-		'soft-light' { Keyword.soft_light }
-		'solid' { Keyword.solid }
-		'space' { Keyword.space }
-		'space-around' { Keyword.space_around }
-		'space-between' { Keyword.space_between }
-		'space-evenly' { Keyword.space_evenly }
-		'span-all' { Keyword.span_all }
-		'span-block-end' { Keyword.span_block_end }
-		'span-block-start' { Keyword.span_block_start }
-		'span-bottom' { Keyword.span_bottom }
-		'span-end' { Keyword.span_end }
-		'span-inline-end' { Keyword.span_inline_end }
-		'span-inline-start' { Keyword.span_inline_start }
-		'span-left' { Keyword.span_left }
-		'span-right' { Keyword.span_right }
-		'span-self-block-end' { Keyword.span_self_block_end }
-		'span-self-block-start' { Keyword.span_self_block_start }
-		'span-self-end' { Keyword.span_self_end }
-		'span-self-inline-end' { Keyword.span_self_inline_end }
-		'span-self-inline-start' { Keyword.span_self_inline_start }
-		'span-self-start' { Keyword.span_self_start }
-		'span-self-x-end' { Keyword.span_self_x_end }
-		'span-self-x-start' { Keyword.span_self_x_start }
-		'span-self-y-end' { Keyword.span_self_y_end }
-		'span-self-y-start' { Keyword.span_self_y_start }
-		'span-start' { Keyword.span_start }
-		'span-top' { Keyword.span_top }
-		'span-x-end' { Keyword.span_x_end }
-		'span-x-start' { Keyword.span_x_start }
-		'span-y-end' { Keyword.span_y_end }
-		'span-y-start' { Keyword.span_y_start }
-		'spelling-error' { Keyword.spelling_error }
-		'spell-out' { Keyword.spell_out }
-		'square' { Keyword.square }
-		'square-button' { Keyword.square_button }
-		'squircle' { Keyword.squircle }
-		'srgb' { Keyword.srgb }
-		'srgb-linear' { Keyword.srgb_linear }
-		'stable' { Keyword.stable }
-		'stacked-fractions' { Keyword.stacked_fractions }
-		'standalone' { Keyword.standalone }
-		'standard' { Keyword.standard }
-		'start' { Keyword.start }
-		'static' { Keyword.static_ }
-		'sticky' { Keyword.sticky }
-		'stretch' { Keyword.stretch }
-		'strict' { Keyword.strict }
-		'strict-origin' { Keyword.strict_origin }
-		'strict-origin-when-cross-origin' { Keyword.strict_origin_when_cross_origin }
-		'stroke' { Keyword.stroke }
-		'stroke-box' { Keyword.stroke_box }
-		'style' { Keyword.style }
-		'sub' { Keyword.sub }
-		'subpixel-antialiased' { Keyword.subpixel_antialiased }
-		'subtract' { Keyword.subtract }
-		'subtractive' { Keyword.subtractive }
-		'sundanese' { Keyword.sundanese }
-		'super-decimal' { Keyword.super_decimal }
-		'super' { Keyword.super }
-		'sw-resize' { Keyword.sw_resize }
-		'swap' { Keyword.swap }
-		'symbolic' { Keyword.symbolic }
-		'table' { Keyword.table }
-		'table-caption' { Keyword.table_caption }
-		'table-cell' { Keyword.table_cell }
-		'table-column' { Keyword.table_column }
-		'table-column-group' { Keyword.table_column_group }
-		'table-footer-group' { Keyword.table_footer_group }
-		'table-header-group' { Keyword.table_header_group }
-		'table-row' { Keyword.table_row }
-		'table-row-group' { Keyword.table_row_group }
-		'tabular-nums' { Keyword.tabular_nums }
-		'tai-lue' { Keyword.tai_lue }
-		'tally-mark' { Keyword.tally_mark }
-		'tamil' { Keyword.tamil }
-		'telugu-alpha' { Keyword.telugu_alpha }
-		'telugu' { Keyword.telugu }
-		'text' { Keyword.text }
-		'text-bottom' { Keyword.text_bottom }
-		'text-top' { Keyword.text_top }
-		'textarea' { Keyword.textarea }
-		'textfield' { Keyword.textfield }
-		'thai-alpha' { Keyword.thai_alpha }
-		'thai' { Keyword.thai }
-		'thick' { Keyword.thick }
-		'thin' { Keyword.thin }
-		'threeddarkshadow' { Keyword.threeddarkshadow }
-		'threedface' { Keyword.threedface }
-		'threedhighlight' { Keyword.threedhighlight }
-		'threedlightshadow' { Keyword.threedlightshadow }
-		'threedshadow' { Keyword.threedshadow }
-		'tibetan' { Keyword.tibetan }
-		'tigre' { Keyword.tigre }
-		'titling-caps' { Keyword.titling_caps }
-		'to-zero' { Keyword.to_zero }
-		'top' { Keyword.top }
-		'trad-chinese-formal' { Keyword.trad_chinese_formal }
-		'trad-chinese-informal' { Keyword.trad_chinese_informal }
-		'traditional' { Keyword.traditional }
-		'true' { Keyword.true_ }
-		'ui-monospace' { Keyword.ui_monospace }
-		'ui-rounded' { Keyword.ui_rounded }
-		'ui-sans-serif' { Keyword.ui_sans_serif }
-		'ui-serif' { Keyword.ui_serif }
-		'ultra-condensed' { Keyword.ultra_condensed }
-		'ultra-expanded' { Keyword.ultra_expanded }
-		'under' { Keyword.under }
-		'underline' { Keyword.underline }
-		'unicase' { Keyword.unicase }
-		'unicode' { Keyword.unicode }
-		'unsafe' { Keyword.unsafe_ }
-		'unsafe-url' { Keyword.unsafe_url }
-		'unset' { Keyword.unset }
-		'up' { Keyword.up }
-		'upper-alpha-symbolic' { Keyword.upper_alpha_symbolic }
-		'upper-alpha' { Keyword.upper_alpha }
-		'upper-armenian' { Keyword.upper_armenian }
-		'upper-belorussian' { Keyword.upper_belorussian }
-		'upper-bulgarian' { Keyword.upper_bulgarian }
-		'upper-hexadecimal' { Keyword.upper_hexadecimal }
-		'upper-latin' { Keyword.upper_latin }
-		'upper-macedonian' { Keyword.upper_macedonian }
-		'upper-oromo-qubee' { Keyword.upper_oromo_qubee }
-		'upper-roman' { Keyword.upper_roman }
-		'upper-russian-full' { Keyword.upper_russian_full }
-		'upper-russian' { Keyword.upper_russian }
-		'upper-serbian' { Keyword.upper_serbian }
-		'upper-ukrainian-full' { Keyword.upper_ukrainian_full }
-		'upper-ukrainian' { Keyword.upper_ukrainian }
-		'uppercase' { Keyword.uppercase }
-		'upright' { Keyword.upright }
-		'urdu-abjad' { Keyword.urdu_abjad }
-		'urdu-alphabetic' { Keyword.urdu_alphabetic }
-		'urdu' { Keyword.urdu }
-		'use-credentials' { Keyword.use_credentials }
-		'variations' { Keyword.variations }
-		'vertical' { Keyword.vertical }
-		'vertical-lr' { Keyword.vertical_lr }
-		'vertical-rl' { Keyword.vertical_rl }
-		'vertical-text' { Keyword.vertical_text }
-		'view-box' { Keyword.view_box }
-		'visible' { Keyword.visible }
-		'visitedtext' { Keyword.visitedtext }
-		'w-resize' { Keyword.w_resize }
-		'wait' { Keyword.wait }
-		'warang-citi' { Keyword.warang_citi }
-		'wavy' { Keyword.wavy }
-		'width' { Keyword.width }
-		'window' { Keyword.window }
-		'windowframe' { Keyword.windowframe }
-		'windowtext' { Keyword.windowtext }
-		'wolaita' { Keyword.wolaita }
-		'words' { Keyword.words }
-		'wrap' { Keyword.wrap }
-		'wrap-reverse' { Keyword.wrap_reverse }
-		'x' { Keyword.x }
-		'x-end' { Keyword.x_end }
-		'x-large' { Keyword.x_large }
-		'x-start' { Keyword.x_start }
-		'x-small' { Keyword.x_small }
-		'xx-large' { Keyword.xx_large }
-		'xx-small' { Keyword.xx_small }
-		'xxx-large' { Keyword.xxx_large }
-		'xyz' { Keyword.xyz }
-		'xyz-d50' { Keyword.xyz_d50 }
-		'xyz-d65' { Keyword.xyz_d65 }
-		'y' { Keyword.y }
-		'y-end' { Keyword.y_end }
-		'y-start' { Keyword.y_start }
-		'yemsa' { Keyword.yemsa }
-		'zhuyin' { Keyword.zhuyin }
-		'zoom-in' { Keyword.zoom_in }
-		'zoom-out' { Keyword.zoom_out }
-		else { none }
+		5 {
+			match name[0] {
+				0x61 {
+					return match name {
+						'adlam' { Keyword.adlam }
+						'alias' { Keyword.alias }
+						'alpha' { Keyword.alpha }
+						'avoid' { Keyword.avoid }
+						'avar2' { Keyword.avar2 }
+						else { none }
+					}
+				}
+				0x62 {
+					return match name {
+						'bamum' { Keyword.bamum }
+						'bevel' { Keyword.bevel }
+						'blink' { Keyword.blink }
+						'block' { Keyword.block }
+						else { none }
+					}
+				}
+				0x63 {
+					return match name {
+						'clone' { Keyword.clone }
+						'color' { Keyword.color }
+						'cover' { Keyword.cover }
+						'cross' { Keyword.cross }
+						else { none }
+					}
+				}
+				0x64 {
+					return match name {
+						'dogri' { Keyword.dogri }
+						else { none }
+					}
+				}
+				0x65 {
+					return match name {
+						'embed' { Keyword.embed }
+						'emoji' { Keyword.emoji }
+						else { none }
+					}
+				}
+				0x66 {
+					return match name {
+						'false' { Keyword.false_ }
+						'field' { Keyword.field }
+						'fixed' { Keyword.fixed }
+						else { none }
+					}
+				}
+				0x67 {
+					return match name {
+						'gedeo' { Keyword.gedeo }
+						'gumuz' { Keyword.gumuz }
+						else { none }
+					}
+				}
+				0x68 {
+					return match name {
+						'hindi' { Keyword.hindi }
+						'hover' { Keyword.hover }
+						else { none }
+					}
+				}
+				0x69 {
+					return match name {
+						'inset' { Keyword.inset }
+						else { none }
+					}
+				}
+				0x6a {
+					return match name {
+						'jis04' { Keyword.jis04 }
+						'jis78' { Keyword.jis78 }
+						'jis83' { Keyword.jis83 }
+						'jis90' { Keyword.jis90 }
+						else { none }
+					}
+				}
+				0x6b {
+					return match name {
+						'kaffa' { Keyword.kaffa }
+						'khmer' { Keyword.khmer }
+						'konso' { Keyword.konso }
+						else { none }
+					}
+				}
+				0x6c {
+					return match name {
+						'large' { Keyword.large }
+						'legal' { Keyword.legal }
+						'light' { Keyword.light }
+						'limbu' { Keyword.limbu }
+						'local' { Keyword.local }
+						else { none }
+					}
+				}
+				0x6d {
+					return match name {
+						'meter' { Keyword.meter }
+						'miter' { Keyword.miter }
+						else { none }
+					}
+				}
+				0x6e {
+					return match name {
+						'notch' { Keyword.notch }
+						else { none }
+					}
+				}
+				0x6f {
+					return match name {
+						'octal' { Keyword.octal }
+						'oklab' { Keyword.oklab }
+						'oklch' { Keyword.oklch }
+						'oriya' { Keyword.oriya }
+						'oromo' { Keyword.oromo }
+						else { none }
+					}
+				}
+				0x70 {
+					return match name {
+						'paged' { Keyword.paged }
+						'paint' { Keyword.paint }
+						'pan-x' { Keyword.pan_x }
+						'pan-y' { Keyword.pan_y }
+						else { none }
+					}
+				}
+				0x72 {
+					return match name {
+						'recto' { Keyword.recto }
+						'radio' { Keyword.radio }
+						'ridge' { Keyword.ridge }
+						'right' { Keyword.right }
+						'round' { Keyword.round }
+						else { none }
+					}
+				}
+				0x73 {
+					return match name {
+						'slice' { Keyword.slice }
+						'scoop' { Keyword.scoop }
+						'serif' { Keyword.serif }
+						'silti' { Keyword.silti }
+						'small' { Keyword.small }
+						'solid' { Keyword.solid }
+						'space' { Keyword.space }
+						'start' { Keyword.start }
+						'style' { Keyword.style }
+						'super' { Keyword.super }
+						else { none }
+					}
+				}
+				0x74 {
+					return match name {
+						'table' { Keyword.table }
+						'tamil' { Keyword.tamil }
+						'thick' { Keyword.thick }
+						'tigre' { Keyword.tigre }
+						else { none }
+					}
+				}
+				0x75 {
+					return match name {
+						'under' { Keyword.under }
+						'unset' { Keyword.unset }
+						else { none }
+					}
+				}
+				0x76 {
+					return match name {
+						'verso' { Keyword.verso }
+						else { none }
+					}
+				}
+				0x77 {
+					return match name {
+						'width' { Keyword.width }
+						'words' { Keyword.words }
+						else { none }
+					}
+				}
+				0x78 {
+					return match name {
+						'x-end' { Keyword.x_end }
+						else { none }
+					}
+				}
+				0x79 {
+					return match name {
+						'y-end' { Keyword.y_end }
+						'yemsa' { Keyword.yemsa }
+						else { none }
+					}
+				}
+				else {}
+			}
+		}
+		6 {
+			match name[0] {
+				0x61 {
+					return match name {
+						'active' { Keyword.active }
+						'always' { Keyword.always }
+						else { none }
+					}
+				}
+				0x62 {
+					return match name {
+						'bangla' { Keyword.bangla }
+						'binary' { Keyword.binary }
+						'bolder' { Keyword.bolder }
+						'bottom' { Keyword.bottom }
+						'button' { Keyword.button }
+						else { none }
+					}
+				}
+				0x63 {
+					return match name {
+						'canvas' { Keyword.canvas }
+						'center' { Keyword.center }
+						'circle' { Keyword.circle }
+						'coarse' { Keyword.coarse }
+						'column' { Keyword.column }
+						'custom' { Keyword.custom }
+						'cyclic' { Keyword.cyclic }
+						else { none }
+					}
+				}
+				0x64 {
+					return match name {
+						'darken' { Keyword.darken }
+						'dashed' { Keyword.dashed }
+						'dotted' { Keyword.dotted }
+						'double' { Keyword.double_ }
+						else { none }
+					}
+				}
+				0x67 {
+					return match name {
+						'groove' { Keyword.groove }
+						else { none }
+					}
+				}
+				0x68 {
+					return match name {
+						'hangul' { Keyword.hangul }
+						'harari' { Keyword.harari }
+						'hebrew' { Keyword.hebrew }
+						'height' { Keyword.height }
+						'hidden' { Keyword.hidden }
+						else { none }
+					}
+				}
+				0x69 {
+					return match name {
+						'inline' { Keyword.inline_ }
+						'inside' { Keyword.inside }
+						'invert' { Keyword.invert }
+						'italic' { Keyword.italic }
+						else { none }
+					}
+				}
+				0x6a {
+					return match name {
+						'jis-b4' { Keyword.jis_b4 }
+						'jis-b5' { Keyword.jis_b5 }
+						else { none }
+					}
+				}
+				0x6b {
+					return match name {
+						'kebena' { Keyword.kebena }
+						'kunama' { Keyword.kunama }
+						else { none }
+					}
+				}
+				0x6c {
+					return match name {
+						'larger' { Keyword.larger }
+						'layout' { Keyword.layout }
+						'ledger' { Keyword.ledger }
+						'legacy' { Keyword.legacy }
+						'lepcha' { Keyword.lepcha }
+						'letter' { Keyword.letter }
+						'linear' { Keyword.linear }
+						'longer' { Keyword.longer }
+						else { none }
+					}
+				}
+				0x6d {
+					return match name {
+						'medium' { Keyword.medium }
+						'meetei' { Keyword.meetei }
+						'middle' { Keyword.middle }
+						else { none }
+					}
+				}
+				0x6e {
+					return match name {
+						'normal' { Keyword.normal }
+						'nowrap' { Keyword.nowrap }
+						else { none }
+					}
+				}
+				0x6f {
+					return match name {
+						'opaque' { Keyword.opaque }
+						'origin' { Keyword.origin }
+						'outset' { Keyword.outset }
+						else { none }
+					}
+				}
+				0x70 {
+					return match name {
+						'pan-up' { Keyword.pan_up }
+						'paused' { Keyword.paused }
+						'pretty' { Keyword.pretty }
+						else { none }
+					}
+				}
+				0x72 {
+					return match name {
+						'region' { Keyword.region }
+						'reduce' { Keyword.reduce }
+						'repeat' { Keyword.repeat }
+						'revert' { Keyword.revert }
+						'run-in' { Keyword.run_in }
+						else { none }
+					}
+				}
+				0x73 {
+					return match name {
+						'screen' { Keyword.screen }
+						'scroll' { Keyword.scroll }
+						'sidama' { Keyword.sidama }
+						'sindhi' { Keyword.sindhi }
+						'smooth' { Keyword.smooth }
+						'square' { Keyword.square }
+						'stable' { Keyword.stable }
+						'static' { Keyword.static_ }
+						'sticky' { Keyword.sticky }
+						'strict' { Keyword.strict }
+						'stroke' { Keyword.stroke }
+						else { none }
+					}
+				}
+				0x74 {
+					return match name {
+						'telugu' { Keyword.telugu }
+						else { none }
+					}
+				}
+				0x75 {
+					return match name {
+						'unsafe' { Keyword.unsafe_ }
+						else { none }
+					}
+				}
+				0x77 {
+					return match name {
+						'window' { Keyword.window }
+						else { none }
+					}
+				}
+				0x7a {
+					return match name {
+						'zhuyin' { Keyword.zhuyin }
+						else { none }
+					}
+				}
+				else {}
+			}
+		}
+		7 {
+			match name[0] {
+				0x61 {
+					return match name {
+						'a98-rgb' { Keyword.a98_rgb }
+						else { none }
+					}
+				}
+				0x62 {
+					return match name {
+						'balance' { Keyword.balance }
+						'bengali' { Keyword.bengali }
+						'browser' { Keyword.browser }
+						'bullets' { Keyword.bullets }
+						else { none }
+					}
+				}
+				0x63 {
+					return match name {
+						'central' { Keyword.central }
+						'compact' { Keyword.compact }
+						'contain' { Keyword.contain }
+						'content' { Keyword.content }
+						'cursive' { Keyword.cursive }
+						else { none }
+					}
+				}
+				0x64 {
+					return match name {
+						'decimal' { Keyword.decimal }
+						'default' { Keyword.default }
+						'discard' { Keyword.discard }
+						else { none }
+					}
+				}
+				0x65 {
+					return match name {
+						'ease-in' { Keyword.ease_in }
+						'enabled' { Keyword.enabled }
+						'evenodd' { Keyword.evenodd }
+						'exclude' { Keyword.exclude }
+						'extends' { Keyword.extends }
+						else { none }
+					}
+				}
+				0x66 {
+					return match name {
+						'fantasy' { Keyword.fantasy }
+						else { none }
+					}
+				}
+				0x68 {
+					return match name {
+						'hadiyaa' { Keyword.hadiyaa }
+						'hanging' { Keyword.hanging }
+						else { none }
+					}
+				}
+				0x69 {
+					return match name {
+						'inherit' { Keyword.inherit }
+						'initial' { Keyword.initial }
+						'isolate' { Keyword.isolate }
+						else { none }
+					}
+				}
+				0x6a {
+					return match name {
+						'justify' { Keyword.justify }
+						else { none }
+					}
+				}
+				0x6b {
+					return match name {
+						'kannada' { Keyword.kannada }
+						'kembata' { Keyword.kembata }
+						'konkani' { Keyword.konkani }
+						else { none }
+					}
+				}
+				0x6c {
+					return match name {
+						'lighten' { Keyword.lighten }
+						'lighter' { Keyword.lighter }
+						'listbox' { Keyword.listbox }
+						else { none }
+					}
+				}
+				0x6d {
+					return match name {
+						'marathi' { Keyword.marathi }
+						'markers' { Keyword.markers }
+						'myanmar' { Keyword.myanmar }
+						else { none }
+					}
+				}
+				0x6e {
+					return match name {
+						'nearest' { Keyword.nearest }
+						'no-clip' { Keyword.no_clip }
+						'no-drop' { Keyword.no_drop }
+						'nonzero' { Keyword.nonzero }
+						'numbers' { Keyword.numbers }
+						'numeric' { Keyword.numeric }
+						else { none }
+					}
+				}
+				0x6f {
+					return match name {
+						'oblique' { Keyword.oblique }
+						'ordinal' { Keyword.ordinal }
+						'outside' { Keyword.outside }
+						'overlay' { Keyword.overlay }
+						else { none }
+					}
+				}
+				0x70 {
+					return match name {
+						'persian' { Keyword.persian }
+						'pointer' { Keyword.pointer }
+						'punjabi' { Keyword.punjabi }
+						else { none }
+					}
+				}
+				0x72 {
+					return match name {
+						'rec2020' { Keyword.rec2020 }
+						'replace' { Keyword.replace }
+						'reverse' { Keyword.reverse }
+						'running' { Keyword.running }
+						else { none }
+					}
+				}
+				0x73 {
+					return match name {
+						'santali' { Keyword.santali }
+						'shorter' { Keyword.shorter }
+						'smaller' { Keyword.smaller }
+						'stretch' { Keyword.stretch }
+						else { none }
+					}
+				}
+				0x74 {
+					return match name {
+						'tai-lue' { Keyword.tai_lue }
+						'tibetan' { Keyword.tibetan }
+						'to-zero' { Keyword.to_zero }
+						else { none }
+					}
+				}
+				0x75 {
+					return match name {
+						'unicase' { Keyword.unicase }
+						'unicode' { Keyword.unicode }
+						'upright' { Keyword.upright }
+						else { none }
+					}
+				}
+				0x76 {
+					return match name {
+						'visible' { Keyword.visible }
+						else { none }
+					}
+				}
+				0x77 {
+					return match name {
+						'wolaita' { Keyword.wolaita }
+						else { none }
+					}
+				}
+				0x78 {
+					return match name {
+						'x-large' { Keyword.x_large }
+						'x-start' { Keyword.x_start }
+						'x-small' { Keyword.x_small }
+						'xyz-d50' { Keyword.xyz_d50 }
+						'xyz-d65' { Keyword.xyz_d65 }
+						else { none }
+					}
+				}
+				0x79 {
+					return match name {
+						'y-start' { Keyword.y_start }
+						else { none }
+					}
+				}
+				0x7a {
+					return match name {
+						'zoom-in' { Keyword.zoom_in }
+						else { none }
+					}
+				}
+				else {}
+			}
+		}
+		8 {
+			match name[0] {
+				0x61 {
+					return match name {
+						'absolute' { Keyword.absolute }
+						'additive' { Keyword.additive }
+						'anywhere' { Keyword.anywhere }
+						'armenian' { Keyword.armenian }
+						'auto-add' { Keyword.auto_add }
+						else { none }
+					}
+				}
+				0x62 {
+					return match name {
+						'balinese' { Keyword.balinese }
+						'baseline' { Keyword.baseline }
+						else { none }
+					}
+				}
+				0x63 {
+					return match name {
+						'checkbox' { Keyword.checkbox }
+						'collapse' { Keyword.collapse }
+						'contents' { Keyword.contents }
+						else { none }
+					}
+				}
+				0x65 {
+					return match name {
+						'e-resize' { Keyword.e_resize }
+						'ease-out' { Keyword.ease_out }
+						'ellipsis' { Keyword.ellipsis }
+						'expanded' { Keyword.expanded }
+						else { none }
+					}
+				}
+				0x66 {
+					return match name {
+						'fallback' { Keyword.fallback }
+						'fill-box' { Keyword.fill_box }
+						'flex-end' { Keyword.flex_end }
+						'forwards' { Keyword.forwards }
+						else { none }
+					}
+				}
+				0x67 {
+					return match name {
+						'georgian' { Keyword.georgian }
+						'grabbing' { Keyword.grabbing }
+						'graytext' { Keyword.graytext }
+						'gujarati' { Keyword.gujarati }
+						'gurmukhi' { Keyword.gurmukhi }
+						else { none }
+					}
+				}
+				0x68 {
+					return match name {
+						'hiragana' { Keyword.hiragana }
+						else { none }
+					}
+				}
+				0x69 {
+					return match name {
+						'infinite' { Keyword.infinite }
+						'infinity' { Keyword.infinity }
+						'infotext' { Keyword.infotext }
+						'inverted' { Keyword.inverted }
+						else { none }
+					}
+				}
+				0x6a {
+					return match name {
+						'javanese' { Keyword.javanese }
+						'jump-end' { Keyword.jump_end }
+						else { none }
+					}
+				}
+				0x6b {
+					return match name {
+						'kashmiri' { Keyword.kashmiri }
+						'katakana' { Keyword.katakana }
+						'kayah-li' { Keyword.kayah_li }
+						'keep-all' { Keyword.keep_all }
+						else { none }
+					}
+				}
+				0x6c {
+					return match name {
+						'linktext' { Keyword.linktext }
+						else { none }
+					}
+				}
+				0x6d {
+					return match name {
+						'maithili' { Keyword.maithili }
+						'manipuri' { Keyword.manipuri }
+						'marktext' { Keyword.marktext }
+						'menulist' { Keyword.menulist }
+						'menutext' { Keyword.menutext }
+						'multiply' { Keyword.multiply }
+						else { none }
+					}
+				}
+				0x6e {
+					return match name {
+						'n-resize' { Keyword.n_resize }
+						else { none }
+					}
+				}
+				0x6f {
+					return match name {
+						'ol-chiki' { Keyword.ol_chiki }
+						'optional' { Keyword.optional }
+						'overline' { Keyword.overline }
+						else { none }
+					}
+				}
+				0x70 {
+					return match name {
+						'palettes' { Keyword.palettes }
+						'pan-down' { Keyword.pan_down }
+						'pan-left' { Keyword.pan_left }
+						'portrait' { Keyword.portrait }
+						'pre-line' { Keyword.pre_line }
+						'pre-wrap' { Keyword.pre_wrap }
+						'preserve' { Keyword.preserve }
+						'progress' { Keyword.progress }
+						else { none }
+					}
+				}
+				0x72 {
+					return match name {
+						'relative' { Keyword.relative }
+						'repeat-x' { Keyword.repeat_x }
+						'repeat-y' { Keyword.repeat_y }
+						else { none }
+					}
+				}
+				0x73 {
+					return match name {
+						's-resize' { Keyword.s_resize }
+						'sanskrit' { Keyword.sanskrit }
+						'self-end' { Keyword.self_end }
+						'separate' { Keyword.separate }
+						'span-all' { Keyword.span_all }
+						'span-end' { Keyword.span_end }
+						'span-top' { Keyword.span_top }
+						'squircle' { Keyword.squircle }
+						'standard' { Keyword.standard }
+						'subtract' { Keyword.subtract }
+						'symbolic' { Keyword.symbolic }
+						else { none }
+					}
+				}
+				0x74 {
+					return match name {
+						'text-top' { Keyword.text_top }
+						'textarea' { Keyword.textarea }
+						else { none }
+					}
+				}
+				0x75 {
+					return match name {
+						'ui-serif' { Keyword.ui_serif }
+						else { none }
+					}
+				}
+				0x76 {
+					return match name {
+						'vertical' { Keyword.vertical }
+						'view-box' { Keyword.view_box }
+						else { none }
+					}
+				}
+				0x77 {
+					return match name {
+						'w-resize' { Keyword.w_resize }
+						else { none }
+					}
+				}
+				0x78 {
+					return match name {
+						'xx-large' { Keyword.xx_large }
+						'xx-small' { Keyword.xx_small }
+						else { none }
+					}
+				}
+				0x7a {
+					return match name {
+						'zoom-out' { Keyword.zoom_out }
+						else { none }
+					}
+				}
+				else {}
+			}
+		}
+		9 {
+			match name[0] {
+				0x2d {
+					return match name {
+						'-infinity' { Keyword.negative_infinity }
+						else { none }
+					}
+				}
+				0x61 {
+					return match name {
+						'alternate' { Keyword.alternate }
+						'anonymous' { Keyword.anonymous }
+						else { none }
+					}
+				}
+				0x62 {
+					return match name {
+						'backwards' { Keyword.backwards }
+						'block-end' { Keyword.block_end }
+						'break-all' { Keyword.break_all }
+						else { none }
+					}
+				}
+				0x63 {
+					return match name {
+						'cambodian' { Keyword.cambodian }
+						'color-svg' { Keyword.color_svg }
+						'condensed' { Keyword.condensed }
+						'crosshair' { Keyword.crosshair }
+						else { none }
+					}
+				}
+				0x65 {
+					return match name {
+						'each-line' { Keyword.each_line }
+						'ew-resize' { Keyword.ew_resize }
+						'exclusion' { Keyword.exclusion }
+						else { none }
+					}
+				}
+				0x66 {
+					return match name {
+						'fieldtext' { Keyword.fieldtext }
+						'flow-root' { Keyword.flow_root }
+						'from-font' { Keyword.from_font }
+						else { none }
+					}
+				}
+				0x68 {
+					return match name {
+						'highlight' { Keyword.highlight }
+						else { none }
+					}
+				}
+				0x69 {
+					return match name {
+						'interlace' { Keyword.interlace }
+						'intersect' { Keyword.intersect }
+						else { none }
+					}
+				}
+				0x6a {
+					return match name {
+						'jump-both' { Keyword.jump_both }
+						'jump-none' { Keyword.jump_none }
+						else { none }
+					}
+				}
+				0x6c {
+					return match name {
+						'landscape' { Keyword.landscape }
+						'linearrgb' { Keyword.linearrgb }
+						'list-item' { Keyword.list_item }
+						'lowercase' { Keyword.lowercase }
+						'luminance' { Keyword.luminance }
+						else { none }
+					}
+				}
+				0x6d {
+					return match name {
+						'malayalam' { Keyword.malayalam }
+						'math-auto' { Keyword.math_auto }
+						'mandatory' { Keyword.mandatory }
+						'mongolian' { Keyword.mongolian }
+						'monospace' { Keyword.monospace }
+						else { none }
+					}
+				}
+				0x6e {
+					return match name {
+						'ne-resize' { Keyword.ne_resize }
+						'no-repeat' { Keyword.no_repeat }
+						'ns-resize' { Keyword.ns_resize }
+						'nw-resize' { Keyword.nw_resize }
+						else { none }
+					}
+				}
+				0x70 {
+					return match name {
+						'pan-right' { Keyword.pan_right }
+						'pixelated' { Keyword.pixelated }
+						'plaintext' { Keyword.plaintext }
+						'proximity' { Keyword.proximity }
+						else { none }
+					}
+				}
+				0x72 {
+					return match name {
+						'ruby-base' { Keyword.ruby_base }
+						'ruby-text' { Keyword.ruby_text }
+						else { none }
+					}
+				}
+				0x73 {
+					return match name {
+						'scrollbar' { Keyword.scrollbar }
+						'se-resize' { Keyword.se_resize }
+						'span-left' { Keyword.span_left }
+						'spell-out' { Keyword.spell_out }
+						'sundanese' { Keyword.sundanese }
+						'sw-resize' { Keyword.sw_resize }
+						else { none }
+					}
+				}
+				0x74 {
+					return match name {
+						'table-row' { Keyword.table_row }
+						'textfield' { Keyword.textfield }
+						else { none }
+					}
+				}
+				0x75 {
+					return match name {
+						'underline' { Keyword.underline }
+						'uppercase' { Keyword.uppercase }
+						else { none }
+					}
+				}
+				0x78 {
+					return match name {
+						'xxx-large' { Keyword.xxx_large }
+						else { none }
+					}
+				}
+				else {}
+			}
+		}
+		10 {
+			match name[0] {
+				0x61 {
+					return match name {
+						'accumulate' { Keyword.accumulate }
+						'activetext' { Keyword.activetext }
+						'all-scroll' { Keyword.all_scroll }
+						'alphabetic' { Keyword.alphabetic }
+						'avoid-page' { Keyword.avoid_page }
+						else { none }
+					}
+				}
+				0x62 {
+					return match name {
+						'background' { Keyword.background }
+						'border-box' { Keyword.border_box }
+						'both-edges' { Keyword.both_edges }
+						'break-word' { Keyword.break_word }
+						'buttonface' { Keyword.buttonface }
+						'buttontext' { Keyword.buttontext }
+						else { none }
+					}
+				}
+				0x63 {
+					return match name {
+						'canvastext' { Keyword.canvastext }
+						'capitalize' { Keyword.capitalize }
+						'col-resize' { Keyword.col_resize }
+						'color-burn' { Keyword.color_burn }
+						'color-cbdt' { Keyword.color_cbdt }
+						'color-sbix' { Keyword.color_sbix }
+						'contextual' { Keyword.contextual }
+						'crispedges' { Keyword.crispedges }
+						else { none }
+					}
+				}
+				0x64 {
+					return match name {
+						'decreasing' { Keyword.decreasing }
+						'devanagari' { Keyword.devanagari }
+						'difference' { Keyword.difference }
+						'distribute' { Keyword.distribute }
+						'display-p3' { Keyword.display_p3 }
+						else { none }
+					}
+				}
+				0x66 {
+					return match name {
+						'flex-start' { Keyword.flex_start }
+						'flip-block' { Keyword.flip_block }
+						'flip-start' { Keyword.flip_start }
+						'full-width' { Keyword.full_width }
+						'fullscreen' { Keyword.fullscreen }
+						else { none }
+					}
+				}
+				0x68 {
+					return match name {
+						'hard-light' { Keyword.hard_light }
+						'horizontal' { Keyword.horizontal }
+						else { none }
+					}
+				}
+				0x69 {
+					return match name {
+						'increasing' { Keyword.increasing }
+						'inline-end' { Keyword.inline_end }
+						'inter-word' { Keyword.inter_word }
+						else { none }
+					}
+				}
+				0x6a {
+					return match name {
+						'jump-start' { Keyword.jump_start }
+						else { none }
+					}
+				}
+				0x6c {
+					return match name {
+						'lanna-hora' { Keyword.lanna_hora }
+						'lanna-tham' { Keyword.lanna_tham }
+						'luminosity' { Keyword.luminosity }
+						else { none }
+					}
+				}
+				0x6d {
+					return match name {
+						'margin-box' { Keyword.margin_box }
+						'minimal-ui' { Keyword.minimal_ui }
+						'most-width' { Keyword.most_width }
+						else { none }
+					}
+				}
+				0x6f {
+					return match name {
+						'open-quote' { Keyword.open_quote }
+						else { none }
+					}
+				}
+				0x72 {
+					return match name {
+						'row-resize' { Keyword.row_resize }
+						else { none }
+					}
+				}
+				0x73 {
+					return match name {
+						'sans-serif' { Keyword.sans_serif }
+						'saturation' { Keyword.saturation }
+						'scale-down' { Keyword.scale_down }
+						'self-block' { Keyword.self_block }
+						'self-x-end' { Keyword.self_x_end }
+						'self-y-end' { Keyword.self_y_end }
+						'self-start' { Keyword.self_start }
+						'simplified' { Keyword.simplified }
+						'small-caps' { Keyword.small_caps }
+						'soft-light' { Keyword.soft_light }
+						'span-right' { Keyword.span_right }
+						'span-start' { Keyword.span_start }
+						'span-x-end' { Keyword.span_x_end }
+						'span-y-end' { Keyword.span_y_end }
+						'standalone' { Keyword.standalone }
+						'stroke-box' { Keyword.stroke_box }
+						else { none }
+					}
+				}
+				0x74 {
+					return match name {
+						'table-cell' { Keyword.table_cell }
+						'tally-mark' { Keyword.tally_mark }
+						'thai-alpha' { Keyword.thai_alpha }
+						'threedface' { Keyword.threedface }
+						else { none }
+					}
+				}
+				0x75 {
+					return match name {
+						'ui-rounded' { Keyword.ui_rounded }
+						'unsafe-url' { Keyword.unsafe_url }
+						'urdu-abjad' { Keyword.urdu_abjad }
+						else { none }
+					}
+				}
+				0x76 {
+					return match name {
+						'variations' { Keyword.variations }
+						else { none }
+					}
+				}
+				0x77 {
+					return match name {
+						'windowtext' { Keyword.windowtext }
+						else { none }
+					}
+				}
+				else {}
+			}
+		}
+		11 {
+			match name[0] {
+				0x2d {
+					return match name {
+						'-webkit-box' { Keyword.webkit_box }
+						else { none }
+					}
+				}
+				0x61 {
+					return match name {
+						'accentcolor' { Keyword.accentcolor }
+						'antialiased' { Keyword.antialiased }
+						else { none }
+					}
+				}
+				0x62 {
+					return match name {
+						'balance-all' { Keyword.balance_all }
+						'block-start' { Keyword.block_start }
+						else { none }
+					}
+				}
+				0x63 {
+					return match name {
+						'captiontext' { Keyword.captiontext }
+						'cjk-decimal' { Keyword.cjk_decimal }
+						'close-quote' { Keyword.close_quote }
+						'color-dodge' { Keyword.color_dodge }
+						'content-box' { Keyword.content_box }
+						'crisp-edges' { Keyword.crisp_edges }
+						else { none }
+					}
+				}
+				0x65 {
+					return match name {
+						'ease-in-out' { Keyword.ease_in_out }
+						else { none }
+					}
+				}
+				0x66 {
+					return match name {
+						'fit-content' { Keyword.fit_content }
+						'flip-inline' { Keyword.flip_inline }
+						else { none }
+					}
+				}
+				0x69 {
+					return match name {
+						'ideographic' { Keyword.ideographic }
+						'incremental' { Keyword.incremental }
+						'inline-flex' { Keyword.inline_flex }
+						'inline-grid' { Keyword.inline_grid }
+						'inline-size' { Keyword.inline_size }
+						else { none }
+					}
+				}
+				0x6c {
+					return match name {
+						'lining-nums' { Keyword.lining_nums }
+						'lower-alpha' { Keyword.lower_alpha }
+						'lower-greek' { Keyword.lower_greek }
+						'lower-latin' { Keyword.lower_latin }
+						'lower-roman' { Keyword.lower_roman }
+						else { none }
+					}
+				}
+				0x6d {
+					return match name {
+						'max-content' { Keyword.max_content }
+						'min-content' { Keyword.min_content }
+						'most-height' { Keyword.most_height }
+						else { none }
+					}
+				}
+				0x6e {
+					return match name {
+						'nag-mundari' { Keyword.nag_mundari }
+						'nesw-resize' { Keyword.nesw_resize }
+						'new-base-60' { Keyword.new_base_60 }
+						'no-ellipsis' { Keyword.no_ellipsis }
+						'no-overflow' { Keyword.no_overflow }
+						'no-referrer' { Keyword.no_referrer }
+						'not-allowed' { Keyword.not_allowed }
+						'nwse-resize' { Keyword.nwse_resize }
+						else { none }
+					}
+				}
+				0x70 {
+					return match name {
+						'padding-box' { Keyword.padding_box }
+						'petite-caps' { Keyword.petite_caps }
+						'plus-darker' { Keyword.plus_darker }
+						'preserve-3d' { Keyword.preserve_3d }
+						'progressive' { Keyword.progressive }
+						'push-button' { Keyword.push_button }
+						else { none }
+					}
+				}
+				0x72 {
+					return match name {
+						'rotate-left' { Keyword.rotate_left }
+						'row-reverse' { Keyword.row_reverse }
+						else { none }
+					}
+				}
+				0x73 {
+					return match name {
+						'same-origin' { Keyword.same_origin }
+						'searchfield' { Keyword.searchfield }
+						'self-inline' { Keyword.self_inline }
+						'sideways-lr' { Keyword.sideways_lr }
+						'sideways-rl' { Keyword.sideways_rl }
+						'span-bottom' { Keyword.span_bottom }
+						'srgb-linear' { Keyword.srgb_linear }
+						'subtractive' { Keyword.subtractive }
+						else { none }
+					}
+				}
+				0x74 {
+					return match name {
+						'text-bottom' { Keyword.text_bottom }
+						'traditional' { Keyword.traditional }
+						else { none }
+					}
+				}
+				0x75 {
+					return match name {
+						'upper-alpha' { Keyword.upper_alpha }
+						'upper-latin' { Keyword.upper_latin }
+						'upper-roman' { Keyword.upper_roman }
+						else { none }
+					}
+				}
+				0x76 {
+					return match name {
+						'vertical-lr' { Keyword.vertical_lr }
+						'vertical-rl' { Keyword.vertical_rl }
+						'visitedtext' { Keyword.visitedtext }
+						else { none }
+					}
+				}
+				0x77 {
+					return match name {
+						'warang-citi' { Keyword.warang_citi }
+						'windowframe' { Keyword.windowframe }
+						else { none }
+					}
+				}
+				else {}
+			}
+		}
+		12 {
+			match name[0] {
+				0x2d {
+					return match name {
+						'-libweb-left' { Keyword.libweb_left }
+						'-libweb-link' { Keyword.libweb_link }
+						else { none }
+					}
+				}
+				0x61 {
+					return match name {
+						'activeborder' { Keyword.activeborder }
+						'appworkspace' { Keyword.appworkspace }
+						'arabic-abjad' { Keyword.arabic_abjad }
+						'arabic-indic' { Keyword.arabic_indic }
+						'avoid-column' { Keyword.avoid_column }
+						'avoid-region' { Keyword.avoid_region }
+						else { none }
+					}
+				}
+				0x62 {
+					return match name {
+						'break-spaces' { Keyword.break_spaces }
+						'buttonborder' { Keyword.buttonborder }
+						'buttonshadow' { Keyword.buttonshadow }
+						else { none }
+					}
+				}
+				0x63 {
+					return match name {
+						'closest-side' { Keyword.closest_side }
+						'color-colrv0' { Keyword.color_colrv0 }
+						'color-colrv1' { Keyword.color_colrv1 }
+						'context-menu' { Keyword.context_menu }
+						'currentcolor' { Keyword.currentcolor }
+						else { none }
+					}
+				}
+				0x66 {
+					return match name {
+						'features-aat' { Keyword.features_aat }
+						else { none }
+					}
+				}
+				0x68 {
+					return match name {
+						'high-quality' { Keyword.high_quality }
+						else { none }
+					}
+				}
+				0x69 {
+					return match name {
+						'initial-only' { Keyword.initial_only }
+						'inline-block' { Keyword.inline_block }
+						'inline-start' { Keyword.inline_start }
+						'inline-table' { Keyword.inline_table }
+						else { none }
+					}
+				}
+				0x6c {
+					return match name {
+						'line-through' { Keyword.line_through }
+						else { none }
+					}
+				}
+				0x6d {
+					return match name {
+						'manipulation' { Keyword.manipulation }
+						'match-parent' { Keyword.match_parent }
+						'match-source' { Keyword.match_source }
+						'mathematical' { Keyword.mathematical }
+						else { none }
+					}
+				}
+				0x6e {
+					return match name {
+						'nko-cardinal' { Keyword.nko_cardinal }
+						else { none }
+					}
+				}
+				0x70 {
+					return match name {
+						'plus-lighter' { Keyword.plus_lighter }
+						'progress-bar' { Keyword.progress_bar }
+						'prophoto-rgb' { Keyword.prophoto_rgb }
+						else { none }
+					}
+				}
+				0x72 {
+					return match name {
+						'revert-layer' { Keyword.revert_layer }
+						'rotate-right' { Keyword.rotate_right }
+						else { none }
+					}
+				}
+				0x73 {
+					return match name {
+						'scroll-state' { Keyword.scroll_state }
+						'selecteditem' { Keyword.selecteditem }
+						'self-x-start' { Keyword.self_x_start }
+						'self-y-start' { Keyword.self_y_start }
+						'slashed-zero' { Keyword.slashed_zero }
+						'space-around' { Keyword.space_around }
+						'space-evenly' { Keyword.space_evenly }
+						'span-x-start' { Keyword.span_x_start }
+						'span-y-start' { Keyword.span_y_start }
+						else { none }
+					}
+				}
+				0x74 {
+					return match name {
+						'table-column' { Keyword.table_column }
+						'tabular-nums' { Keyword.tabular_nums }
+						'telugu-alpha' { Keyword.telugu_alpha }
+						'threedshadow' { Keyword.threedshadow }
+						'titling-caps' { Keyword.titling_caps }
+						else { none }
+					}
+				}
+				0x75 {
+					return match name {
+						'ui-monospace' { Keyword.ui_monospace }
+						else { none }
+					}
+				}
+				0x77 {
+					return match name {
+						'wrap-reverse' { Keyword.wrap_reverse }
+						else { none }
+					}
+				}
+				else {}
+			}
+		}
+		13 {
+			match name[0] {
+				0x2d {
+					return match name {
+						'-libweb-right' { Keyword.libweb_right }
+						else { none }
+					}
+				}
+				0x61 {
+					return match name {
+						'activecaption' { Keyword.activecaption }
+						'anchors-valid' { Keyword.anchors_valid }
+						'ancient-tamil' { Keyword.ancient_tamil }
+						else { none }
+					}
+				}
+				0x62 {
+					return match name {
+						'bidi-override' { Keyword.bidi_override }
+						else { none }
+					}
+				}
+				0x64 {
+					return match name {
+						'discard-after' { Keyword.discard_after }
+						'discard-inner' { Keyword.discard_inner }
+						else { none }
+					}
+				}
+				0x66 {
+					return match name {
+						'farthest-side' { Keyword.farthest_side }
+						else { none }
+					}
+				}
+				0x67 {
+					return match name {
+						'grammar-error' { Keyword.grammar_error }
+						else { none }
+					}
+				}
+				0x68 {
+					return match name {
+						'highlighttext' { Keyword.highlighttext }
+						'horizontal-tb' { Keyword.horizontal_tb }
+						else { none }
+					}
+				}
+				0x6b {
+					return match name {
+						'kannada-alpha' { Keyword.kannada_alpha }
+						else { none }
+					}
+				}
+				0x6c {
+					return match name {
+						'lower-russian' { Keyword.lower_russian }
+						'lower-serbian' { Keyword.lower_serbian }
+						else { none }
+					}
+				}
+				0x6e {
+					return match name {
+						'no-contextual' { Keyword.no_contextual }
+						'no-open-quote' { Keyword.no_open_quote }
+						'no-preference' { Keyword.no_preference }
+						else { none }
+					}
+				}
+				0x6f {
+					return match name {
+						'oldstyle-nums' { Keyword.oldstyle_nums }
+						'optimizespeed' { Keyword.optimizespeed }
+						else { none }
+					}
+				}
+				0x70 {
+					return match name {
+						'persian-abjad' { Keyword.persian_abjad }
+						else { none }
+					}
+				}
+				0x73 {
+					return match name {
+						'semi-expanded' { Keyword.semi_expanded }
+						'space-between' { Keyword.space_between }
+						'span-self-end' { Keyword.span_self_end }
+						'square-button' { Keyword.square_button }
+						'strict-origin' { Keyword.strict_origin }
+						'super-decimal' { Keyword.super_decimal }
+						else { none }
+					}
+				}
+				0x74 {
+					return match name {
+						'table-caption' { Keyword.table_caption }
+						else { none }
+					}
+				}
+				0x75 {
+					return match name {
+						'ui-sans-serif' { Keyword.ui_sans_serif }
+						'upper-russian' { Keyword.upper_russian }
+						'upper-serbian' { Keyword.upper_serbian }
+						else { none }
+					}
+				}
+				0x76 {
+					return match name {
+						'vertical-text' { Keyword.vertical_text }
+						else { none }
+					}
+				}
+				else {}
+			}
+		}
+		14 {
+			match name[0] {
+				0x2d {
+					return match name {
+						'-libweb-center' { Keyword.libweb_center }
+						'-webkit-legacy' { Keyword.webkit_legacy }
+						else { none }
+					}
+				}
+				0x61 {
+					return match name {
+						'all-small-caps' { Keyword.all_small_caps }
+						'allow-discrete' { Keyword.allow_discrete }
+						else { none }
+					}
+				}
+				0x63 {
+					return match name {
+						'cjk-tally-mark' { Keyword.cjk_tally_mark }
+						'closest-corner' { Keyword.closest_corner }
+						'column-reverse' { Keyword.column_reverse }
+						else { none }
+					}
+				}
+				0x64 {
+					return match name {
+						'discard-before' { Keyword.discard_before }
+						'dotted-decimal' { Keyword.dotted_decimal }
+						else { none }
+					}
+				}
+				0x65 {
+					return match name {
+						'element-shared' { Keyword.element_shared }
+						'extra-expanded' { Keyword.extra_expanded }
+						else { none }
+					}
+				}
+				0x66 {
+					return match name {
+						'full-size-kana' { Keyword.full_size_kana }
+						else { none }
+					}
+				}
+				0x67 {
+					return match name {
+						'gujarati-alpha' { Keyword.gujarati_alpha }
+						else { none }
+					}
+				}
+				0x68 {
+					return match name {
+						'hiragana-iroha' { Keyword.hiragana_iroha }
+						else { none }
+					}
+				}
+				0x69 {
+					return match name {
+						'inactiveborder' { Keyword.inactiveborder }
+						'infobackground' { Keyword.infobackground }
+						else { none }
+					}
+				}
+				0x6b {
+					return match name {
+						'katakana-iroha' { Keyword.katakana_iroha }
+						else { none }
+					}
+				}
+				0x6c {
+					return match name {
+						'lower-armenian' { Keyword.lower_armenian }
+						else { none }
+					}
+				}
+				0x6d {
+					return match name {
+						'maghrebi-abjad' { Keyword.maghrebi_abjad }
+						else { none }
+					}
+				}
+				0x6e {
+					return match name {
+						'no-close-quote' { Keyword.no_close_quote }
+						else { none }
+					}
+				}
+				0x73 {
+					return match name {
+						'self-block-end' { Keyword.self_block_end }
+						'semi-condensed' { Keyword.semi_condensed }
+						'span-block-end' { Keyword.span_block_end }
+						'spelling-error' { Keyword.spelling_error }
+						else { none }
+					}
+				}
+				0x75 {
+					return match name {
+						'ultra-expanded' { Keyword.ultra_expanded }
+						'upper-armenian' { Keyword.upper_armenian }
+						else { none }
+					}
+				}
+				else {}
+			}
+		}
+		15 {
+			match name[0] {
+				0x61 {
+					return match name {
+						'accentcolortext' { Keyword.accentcolortext }
+						'all-petite-caps' { Keyword.all_petite_caps }
+						'anchors-visible' { Keyword.anchors_visible }
+						else { none }
+					}
+				}
+				0x62 {
+					return match name {
+						'buttonhighlight' { Keyword.buttonhighlight }
+						else { none }
+					}
+				}
+				0x63 {
+					return match name {
+						'circled-decimal' { Keyword.circled_decimal }
+						'cjk-ideographic' { Keyword.cjk_ideographic }
+						'cjk-stem-branch' { Keyword.cjk_stem_branch }
+						else { none }
+					}
+				}
+				0x64 {
+					return match name {
+						'disclosure-open' { Keyword.disclosure_open }
+						else { none }
+					}
+				}
+				0x65 {
+					return match name {
+						'extra-condensed' { Keyword.extra_condensed }
+						else { none }
+					}
+				}
+				0x66 {
+					return match name {
+						'farthest-corner' { Keyword.farthest_corner }
+						else { none }
+					}
+				}
+				0x68 {
+					return match name {
+						'hanifi-rohingya' { Keyword.hanifi_rohingya }
+						else { none }
+					}
+				}
+				0x69 {
+					return match name {
+						'inactivecaption' { Keyword.inactivecaption }
+						'inter-character' { Keyword.inter_character }
+						else { none }
+					}
+				}
+				0x6a {
+					return match name {
+						'japanese-formal' { Keyword.japanese_formal }
+						else { none }
+					}
+				}
+				0x6b {
+					return match name {
+						'khmer-consonant' { Keyword.khmer_consonant }
+						'korean-syllable' { Keyword.korean_syllable }
+						else { none }
+					}
+				}
+				0x6c {
+					return match name {
+						'lower-bulgarian' { Keyword.lower_bulgarian }
+						'lower-ukrainian' { Keyword.lower_ukrainian }
+						else { none }
+					}
+				}
+				0x6d {
+					return match name {
+						'malayalam-alpha' { Keyword.malayalam_alpha }
+						'menulist-button' { Keyword.menulist_button }
+						'most-block-size' { Keyword.most_block_size }
+						else { none }
+					}
+				}
+				0x6f {
+					return match name {
+						'optimizequality' { Keyword.optimizequality }
+						else { none }
+					}
+				}
+				0x70 {
+					return match name {
+						'preserve-breaks' { Keyword.preserve_breaks }
+						'preserve-spaces' { Keyword.preserve_spaces }
+						else { none }
+					}
+				}
+				0x73 {
+					return match name {
+						'scroll-position' { Keyword.scroll_position }
+						'self-inline-end' { Keyword.self_inline_end }
+						'span-inline-end' { Keyword.span_inline_end }
+						'span-self-start' { Keyword.span_self_start }
+						'span-self-x-end' { Keyword.span_self_x_end }
+						'span-self-y-end' { Keyword.span_self_y_end }
+						else { none }
+					}
+				}
+				0x74 {
+					return match name {
+						'table-row-group' { Keyword.table_row_group }
+						'threedhighlight' { Keyword.threedhighlight }
+						else { none }
+					}
+				}
+				0x75 {
+					return match name {
+						'ultra-condensed' { Keyword.ultra_condensed }
+						'upper-bulgarian' { Keyword.upper_bulgarian }
+						'upper-ukrainian' { Keyword.upper_ukrainian }
+						'urdu-alphabetic' { Keyword.urdu_alphabetic }
+						'use-credentials' { Keyword.use_credentials }
+						else { none }
+					}
+				}
+				else {}
+			}
+		}
+		16 {
+			match name[0] {
+				0x63 {
+					return match name {
+						'circled-katakana' { Keyword.circled_katakana }
+						'common-ligatures' { Keyword.common_ligatures }
+						else { none }
+					}
+				}
+				0x65 {
+					return match name {
+						'ethiopic-numeric' { Keyword.ethiopic_numeric }
+						else { none }
+					}
+				}
+				0x68 {
+					return match name {
+						'hangul-consonant' { Keyword.hangul_consonant }
+						'historical-forms' { Keyword.historical_forms }
+						else { none }
+					}
+				}
+				0x69 {
+					return match name {
+						'isolate-override' { Keyword.isolate_override }
+						else { none }
+					}
+				}
+				0x6b {
+					return match name {
+						'korean-consonant' { Keyword.korean_consonant }
+						else { none }
+					}
+				}
+				0x6c {
+					return match name {
+						'lower-macedonian' { Keyword.lower_macedonian }
+						else { none }
+					}
+				}
+				0x6d {
+					return match name {
+						'most-inline-size' { Keyword.most_inline_size }
+						else { none }
+					}
+				}
+				0x73 {
+					return match name {
+						'selecteditemtext' { Keyword.selecteditemtext }
+						'self-block-start' { Keyword.self_block_start }
+						'span-block-start' { Keyword.span_block_start }
+						else { none }
+					}
+				}
+				0x74 {
+					return match name {
+						'threeddarkshadow' { Keyword.threeddarkshadow }
+						else { none }
+					}
+				}
+				0x75 {
+					return match name {
+						'upper-macedonian' { Keyword.upper_macedonian }
+						else { none }
+					}
+				}
+				else {}
+			}
+		}
+		17 {
+			match name[0] {
+				0x61 {
+					return match name {
+						'alternate-reverse' { Keyword.alternate_reverse }
+						else { none }
+					}
+				}
+				0x63 {
+					return match name {
+						'circled-ideograph' { Keyword.circled_ideograph }
+						'cjk-heavenly-stem' { Keyword.cjk_heavenly_stem }
+						else { none }
+					}
+				}
+				0x64 {
+					return match name {
+						'disclosure-closed' { Keyword.disclosure_closed }
+						'display-p3-linear' { Keyword.display_p3_linear }
+						else { none }
+					}
+				}
+				0x65 {
+					return match name {
+						'ethiopic-halehame' { Keyword.ethiopic_halehame }
+						else { none }
+					}
+				}
+				0x66 {
+					return match name {
+						'features-graphite' { Keyword.features_graphite }
+						'features-opentype' { Keyword.features_opentype }
+						'fullwidth-decimal' { Keyword.fullwidth_decimal }
+						else { none }
+					}
+				}
+				0x6a {
+					return match name {
+						'japanese-informal' { Keyword.japanese_informal }
+						else { none }
+					}
+				}
+				0x6c {
+					return match name {
+						'lower-belorussian' { Keyword.lower_belorussian }
+						'lower-hexadecimal' { Keyword.lower_hexadecimal }
+						'lower-oromo-qubee' { Keyword.lower_oromo_qubee }
+						else { none }
+					}
+				}
+				0x70 {
+					return match name {
+						'proportional-nums' { Keyword.proportional_nums }
+						else { none }
+					}
+				}
+				0x73 {
+					return match name {
+						'self-inline-start' { Keyword.self_inline_start }
+						'slider-horizontal' { Keyword.slider_horizontal }
+						'span-inline-start' { Keyword.span_inline_start }
+						'span-self-x-start' { Keyword.span_self_x_start }
+						'span-self-y-start' { Keyword.span_self_y_start }
+						'stacked-fractions' { Keyword.stacked_fractions }
+						else { none }
+					}
+				}
+				0x74 {
+					return match name {
+						'threedlightshadow' { Keyword.threedlightshadow }
+						else { none }
+					}
+				}
+				0x75 {
+					return match name {
+						'upper-belorussian' { Keyword.upper_belorussian }
+						'upper-hexadecimal' { Keyword.upper_hexadecimal }
+						'upper-oromo-qubee' { Keyword.upper_oromo_qubee }
+						else { none }
+					}
+				}
+				else {}
+			}
+		}
+		18 {
+			match name[0] {
+				0x2d {
+					return match name {
+						'-webkit-inline-box' { Keyword.webkit_inline_box }
+						else { none }
+					}
+				}
+				0x63 {
+					return match name {
+						'cjk-earthly-branch' { Keyword.cjk_earthly_branch }
+						else { none }
+					}
+				}
+				0x64 {
+					return match name {
+						'diagonal-fractions' { Keyword.diagonal_fractions }
+						else { none }
+					}
+				}
+				0x67 {
+					return match name {
+						'geometricprecision' { Keyword.geometricprecision }
+						'greek-lower-modern' { Keyword.greek_lower_modern }
+						'greek-upper-modern' { Keyword.greek_upper_modern }
+						else { none }
+					}
+				}
+				0x6c {
+					return match name {
+						'lower-russian-full' { Keyword.lower_russian_full }
+						else { none }
+					}
+				}
+				0x6e {
+					return match name {
+						'non-scaling-stroke' { Keyword.non_scaling_stroke }
+						else { none }
+					}
+				}
+				0x6f {
+					return match name {
+						'optimizelegibility' { Keyword.optimizelegibility }
+						else { none }
+					}
+				}
+				0x70 {
+					return match name {
+						'persian-alphabetic' { Keyword.persian_alphabetic }
+						'picture-in-picture' { Keyword.picture_in_picture }
+						'proportional-width' { Keyword.proportional_width }
+						else { none }
+					}
+				}
+				0x73 {
+					return match name {
+						'simple-lower-roman' { Keyword.simple_lower_roman }
+						'simple-upper-roman' { Keyword.simple_upper_roman }
+						else { none }
+					}
+				}
+				0x74 {
+					return match name {
+						'table-column-group' { Keyword.table_column_group }
+						'table-footer-group' { Keyword.table_footer_group }
+						'table-header-group' { Keyword.table_header_group }
+						else { none }
+					}
+				}
+				0x75 {
+					return match name {
+						'upper-russian-full' { Keyword.upper_russian_full }
+						else { none }
+					}
+				}
+				else {}
+			}
+		}
+		19 {
+			match name[0] {
+				0x63 {
+					return match name {
+						'circled-lower-latin' { Keyword.circled_lower_latin }
+						'circled-upper-latin' { Keyword.circled_upper_latin }
+						else { none }
+					}
+				}
+				0x67 {
+					return match name {
+						'greek-lower-ancient' { Keyword.greek_lower_ancient }
+						'greek-upper-ancient' { Keyword.greek_upper_ancient }
+						else { none }
+					}
+				}
+				0x69 {
+					return match name {
+						'inactivecaptiontext' { Keyword.inactivecaptiontext }
+						else { none }
+					}
+				}
+				0x6b {
+					return match name {
+						'korean-hanja-formal' { Keyword.korean_hanja_formal }
+						else { none }
+					}
+				}
+				0x6e {
+					return match name {
+						'no-common-ligatures' { Keyword.no_common_ligatures }
+						else { none }
+					}
+				}
+				0x72 {
+					return match name {
+						'ruby-base-container' { Keyword.ruby_base_container }
+						'ruby-text-container' { Keyword.ruby_text_container }
+						else { none }
+					}
+				}
+				0x73 {
+					return match name {
+						'simp-chinese-formal' { Keyword.simp_chinese_formal }
+						'span-self-block-end' { Keyword.span_self_block_end }
+						else { none }
+					}
+				}
+				0x74 {
+					return match name {
+						'trad-chinese-formal' { Keyword.trad_chinese_formal }
+						else { none }
+					}
+				}
+				else {}
+			}
+		}
+		20 {
+			match name[0] {
+				0x2d {
+					return match name {
+						'-libweb-palette-base' { Keyword.libweb_palette_base }
+						'-libweb-palette-link' { Keyword.libweb_palette_link }
+						else { none }
+					}
+				}
+				0x64 {
+					return match name {
+						'decimal-leading-zero' { Keyword.decimal_leading_zero }
+						else { none }
+					}
+				}
+				0x65 {
+					return match name {
+						'ethiopic-halehame-am' { Keyword.ethiopic_halehame_am }
+						else { none }
+					}
+				}
+				0x68 {
+					return match name {
+						'historical-ligatures' { Keyword.historical_ligatures }
+						else { none }
+					}
+				}
+				0x6b {
+					return match name {
+						'korean-hangul-formal' { Keyword.korean_hangul_formal }
+						else { none }
+					}
+				}
+				0x6c {
+					return match name {
+						'lower-alpha-symbolic' { Keyword.lower_alpha_symbolic }
+						'lower-ukrainian-full' { Keyword.lower_ukrainian_full }
+						else { none }
+					}
+				}
+				0x73 {
+					return match name {
+						'span-self-inline-end' { Keyword.span_self_inline_end }
+						'subpixel-antialiased' { Keyword.subpixel_antialiased }
+						else { none }
+					}
+				}
+				0x75 {
+					return match name {
+						'upper-alpha-symbolic' { Keyword.upper_alpha_symbolic }
+						'upper-ukrainian-full' { Keyword.upper_ukrainian_full }
+						else { none }
+					}
+				}
+				else {}
+			}
+		}
+		21 {
+			match name[0] {
+				0x2d {
+					return match name {
+						'-libweb-palette-ruler' { Keyword.libweb_palette_ruler }
+						else { none }
+					}
+				}
+				0x66 {
+					return match name {
+						'fullwidth-lower-alpha' { Keyword.fullwidth_lower_alpha }
+						'fullwidth-upper-alpha' { Keyword.fullwidth_upper_alpha }
+						'fullwidth-upper-roman' { Keyword.fullwidth_upper_roman }
+						else { none }
+					}
+				}
+				0x6b {
+					return match name {
+						'korean-hanja-informal' { Keyword.korean_hanja_informal }
+						else { none }
+					}
+				}
+				0x70 {
+					return match name {
+						'parenthesized-decimal' { Keyword.parenthesized_decimal }
+						else { none }
+					}
+				}
+				0x73 {
+					return match name {
+						'simp-chinese-informal' { Keyword.simp_chinese_informal }
+						'span-self-block-start' { Keyword.span_self_block_start }
+						else { none }
+					}
+				}
+				0x74 {
+					return match name {
+						'trad-chinese-informal' { Keyword.trad_chinese_informal }
+						else { none }
+					}
+				}
+				else {}
+			}
+		}
+		22 {
+			match name[0] {
+				0x2d {
+					return match name {
+						'-libweb-palette-button' { Keyword.libweb_palette_button }
+						'-libweb-palette-window' { Keyword.libweb_palette_window }
+						else { none }
+					}
+				}
+				0x64 {
+					return match name {
+						'double-circled-decimal' { Keyword.double_circled_decimal }
+						else { none }
+					}
+				}
+				0x66 {
+					return match name {
+						'filled-circled-decimal' { Keyword.filled_circled_decimal }
+						else { none }
+					}
+				}
+				0x73 {
+					return match name {
+						'span-self-inline-start' { Keyword.span_self_inline_start }
+						else { none }
+					}
+				}
+				else {}
+			}
+		}
+		23 {
+			match name[0] {
+				0x2d {
+					return match name {
+						'-libweb-buttonfacehover' { Keyword.libweb_buttonfacehover }
+						else { none }
+					}
+				}
+				0x63 {
+					return match name {
+						'circled-korean-syllable' { Keyword.circled_korean_syllable }
+						else { none }
+					}
+				}
+				0x64 {
+					return match name {
+						'discretionary-ligatures' { Keyword.discretionary_ligatures }
+						else { none }
+					}
+				}
+				0x65 {
+					return match name {
+						'ethiopic-halehame-ti-er' { Keyword.ethiopic_halehame_ti_er }
+						'ethiopic-halehame-ti-et' { Keyword.ethiopic_halehame_ti_et }
+						else { none }
+					}
+				}
+				0x6e {
+					return match name {
+						'no-historical-ligatures' { Keyword.no_historical_ligatures }
+						else { none }
+					}
+				}
+				0x70 {
+					return match name {
+						'parenthesized-ideograph' { Keyword.parenthesized_ideograph }
+						else { none }
+					}
+				}
+				else {}
+			}
+		}
+		24 {
+			match name[0] {
+				0x63 {
+					return match name {
+						'circled-korean-consonant' { Keyword.circled_korean_consonant }
+						else { none }
+					}
+				}
+				0x6f {
+					return match name {
+						'origin-when-cross-origin' { Keyword.origin_when_cross_origin }
+						else { none }
+					}
+				}
+				else {}
+			}
+		}
+		25 {
+			match name[0] {
+				0x2d {
+					return match name {
+						'-libweb-inherit-or-center' { Keyword.libweb_inherit_or_center }
+						'-libweb-palette-base-text' { Keyword.libweb_palette_base_text }
+						'-libweb-palette-menu-base' { Keyword.libweb_palette_menu_base }
+						'-libweb-palette-selection' { Keyword.libweb_palette_selection }
+						else { none }
+					}
+				}
+				0x70 {
+					return match name {
+						'parenthesized-lower-latin' { Keyword.parenthesized_lower_latin }
+						else { none }
+					}
+				}
+				else {}
+			}
+		}
+		26 {
+			match name[0] {
+				0x2d {
+					return match name {
+						'-libweb-buttonfacedisabled' { Keyword.libweb_buttonfacedisabled }
+						else { none }
+					}
+				}
+				0x6e {
+					return match name {
+						'no-discretionary-ligatures' { Keyword.no_discretionary_ligatures }
+						'no-referrer-when-downgrade' { Keyword.no_referrer_when_downgrade }
+						else { none }
+					}
+				}
+				else {}
+			}
+		}
+		27 {
+			match name[0] {
+				0x2d {
+					return match name {
+						'-libweb-palette-active-link' { Keyword.libweb_palette_active_link }
+						'-libweb-palette-button-text' { Keyword.libweb_palette_button_text }
+						'-libweb-palette-menu-stripe' { Keyword.libweb_palette_menu_stripe }
+						'-libweb-palette-syntax-type' { Keyword.libweb_palette_syntax_type }
+						'-libweb-palette-text-cursor' { Keyword.libweb_palette_text_cursor }
+						'-libweb-palette-window-text' { Keyword.libweb_palette_window_text }
+						else { none }
+					}
+				}
+				else {}
+			}
+		}
+		28 {
+			match name[0] {
+				0x2d {
+					return match name {
+						'-libweb-palette-ruler-border' { Keyword.libweb_palette_ruler_border }
+						'-libweb-palette-visited-link' { Keyword.libweb_palette_visited_link }
+						else { none }
+					}
+				}
+				else {}
+			}
+		}
+		29 {
+			match name[0] {
+				0x2d {
+					return match name {
+						'-libweb-palette-focus-outline' { Keyword.libweb_palette_focus_outline }
+						'-libweb-palette-syntax-number' { Keyword.libweb_palette_syntax_number }
+						'-libweb-palette-syntax-string' { Keyword.libweb_palette_syntax_string }
+						else { none }
+					}
+				}
+				0x70 {
+					return match name {
+						'parenthesized-hangul-syllable' { Keyword.parenthesized_hangul_syllable }
+						else { none }
+					}
+				}
+				else {}
+			}
+		}
+		30 {
+			match name[0] {
+				0x2d {
+					return match name {
+						'-libweb-palette-menu-base-text' { Keyword.libweb_palette_menu_base_text }
+						'-libweb-palette-menu-selection' { Keyword.libweb_palette_menu_selection }
+						'-libweb-palette-selection-text' { Keyword.libweb_palette_selection_text }
+						'-libweb-palette-syntax-comment' { Keyword.libweb_palette_syntax_comment }
+						'-libweb-palette-syntax-keyword' { Keyword.libweb_palette_syntax_keyword }
+						'-libweb-palette-threed-shadow1' { Keyword.libweb_palette_threed_shadow1 }
+						'-libweb-palette-threed-shadow2' { Keyword.libweb_palette_threed_shadow2 }
+						else { none }
+					}
+				}
+				0x70 {
+					return match name {
+						'parenthesized-hangul-consonant' { Keyword.parenthesized_hangul_consonant }
+						else { none }
+					}
+				}
+				else {}
+			}
+		}
+		31 {
+			match name[0] {
+				0x2d {
+					return match name {
+						'-libweb-palette-hover-highlight' { Keyword.libweb_palette_hover_highlight }
+						'-libweb-palette-syntax-operator' { Keyword.libweb_palette_syntax_operator }
+						else { none }
+					}
+				}
+				0x73 {
+					return match name {
+						'strict-origin-when-cross-origin' { Keyword.strict_origin_when_cross_origin }
+						else { none }
+					}
+				}
+				else {}
+			}
+		}
+		32 {
+			match name[0] {
+				0x2d {
+					return match name {
+						'-libweb-palette-rubber-band-fill' { Keyword.libweb_palette_rubber_band_fill }
+						'-libweb-palette-threed-highlight' { Keyword.libweb_palette_threed_highlight }
+						else { none }
+					}
+				}
+				else {}
+			}
+		}
+		33 {
+			match name[0] {
+				0x2d {
+					return match name {
+						'-libweb-palette-ruler-active-text' { Keyword.libweb_palette_ruler_active_text }
+						'-libweb-palette-syntax-identifier' { Keyword.libweb_palette_syntax_identifier }
+						else { none }
+					}
+				}
+				else {}
+			}
+		}
+		34 {
+			match name[0] {
+				0x2d {
+					return match name {
+						'-libweb-palette-desktop-background' { Keyword.libweb_palette_desktop_background }
+						'-libweb-palette-inactive-selection' { Keyword.libweb_palette_inactive_selection }
+						'-libweb-palette-rubber-band-border' { Keyword.libweb_palette_rubber_band_border }
+						'-libweb-palette-syntax-punctuation' { Keyword.libweb_palette_syntax_punctuation }
+						else { none }
+					}
+				}
+				else {}
+			}
+		}
+		35 {
+			match name[0] {
+				0x2d {
+					return match name {
+						'-libweb-palette-active-window-title' { Keyword.libweb_palette_active_window_title }
+						'-libweb-palette-menu-selection-text' { Keyword.libweb_palette_menu_selection_text }
+						'-libweb-palette-moving-window-title' { Keyword.libweb_palette_moving_window_title }
+						'-libweb-palette-ruler-inactive-text' { Keyword.libweb_palette_ruler_inactive_text }
+						else { none }
+					}
+				}
+				else {}
+			}
+		}
+		37 {
+			match name[0] {
+				0x2d {
+					return match name {
+						'-libweb-palette-active-window-border1' { Keyword.libweb_palette_active_window_border1 }
+						'-libweb-palette-active-window-border2' { Keyword.libweb_palette_active_window_border2 }
+						'-libweb-palette-inactive-window-title' { Keyword.libweb_palette_inactive_window_title }
+						'-libweb-palette-moving-window-border1' { Keyword.libweb_palette_moving_window_border1 }
+						'-libweb-palette-moving-window-border2' { Keyword.libweb_palette_moving_window_border2 }
+						else { none }
+					}
+				}
+				else {}
+			}
+		}
+		38 {
+			match name[0] {
+				0x2d {
+					return match name {
+						'-libweb-palette-highlight-window-title' { Keyword.libweb_palette_highlight_window_title }
+						'-libweb-palette-syntax-control-keyword' { Keyword.libweb_palette_syntax_control_keyword }
+						else { none }
+					}
+				}
+				else {}
+			}
+		}
+		39 {
+			match name[0] {
+				0x2d {
+					return match name {
+						'-libweb-palette-inactive-selection-text' { Keyword.libweb_palette_inactive_selection_text }
+						'-libweb-palette-inactive-window-border1' { Keyword.libweb_palette_inactive_window_border1 }
+						'-libweb-palette-inactive-window-border2' { Keyword.libweb_palette_inactive_window_border2 }
+						else { none }
+					}
+				}
+				else {}
+			}
+		}
+		40 {
+			match name[0] {
+				0x2d {
+					return match name {
+						'-libweb-palette-highlight-window-border1' { Keyword.libweb_palette_highlight_window_border1 }
+						'-libweb-palette-highlight-window-border2' { Keyword.libweb_palette_highlight_window_border2 }
+						else { none }
+					}
+				}
+				else {}
+			}
+		}
+		41 {
+			match name[0] {
+				0x2d {
+					return match name {
+						'-libweb-palette-syntax-preprocessor-value' { Keyword.libweb_palette_syntax_preprocessor_value }
+						else { none }
+					}
+				}
+				else {}
+			}
+		}
+		45 {
+			match name[0] {
+				0x2d {
+					return match name {
+						'-libweb-palette-syntax-preprocessor-statement' { Keyword.libweb_palette_syntax_preprocessor_statement }
+						else { none }
+					}
+				}
+				else {}
+			}
+		}
+		else {}
 	}
+	return none
 }
 
 // --- StyleValue ---

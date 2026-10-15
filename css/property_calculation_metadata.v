@@ -183,1329 +183,1687 @@ fn canonical_property_name_from_metadata(name string) string {
 }
 
 fn property_id_from_canonical_name(name string) ?PropertyID {
-	return match name {
-		'-webkit-box-orient' {
-			PropertyID.webkit_box_orient
-		}
-		'-webkit-font-smoothing' {
-			PropertyID.webkit_font_smoothing
-		}
-		'-webkit-line-clamp' {
-			PropertyID.webkit_line_clamp
-		}
-		'-webkit-text-fill-color' {
-			PropertyID.webkit_text_fill_color
-		}
-		'accent-color' {
-			PropertyID.accent_color
-		}
-		'align-content' {
-			PropertyID.align_content
-		}
-		'align-items' {
-			PropertyID.align_items
-		}
-		'align-self' {
-			PropertyID.align_self
-		}
-		'all' {
-			PropertyID.all
-		}
-		'anchor-name' {
-			PropertyID.anchor_name
-		}
-		'anchor-scope' {
-			PropertyID.anchor_scope
-		}
-		'animation' {
-			PropertyID.animation
-		}
-		'animation-composition' {
-			PropertyID.animation_composition
-		}
-		'animation-delay' {
-			PropertyID.animation_delay
-		}
-		'animation-direction' {
-			PropertyID.animation_direction
-		}
-		'animation-duration' {
-			PropertyID.animation_duration
-		}
-		'animation-fill-mode' {
-			PropertyID.animation_fill_mode
-		}
-		'animation-iteration-count' {
-			PropertyID.animation_iteration_count
-		}
-		'animation-name' {
-			PropertyID.animation_name
-		}
-		'animation-play-state' {
-			PropertyID.animation_play_state
-		}
-		'animation-timeline' {
-			PropertyID.animation_timeline
-		}
-		'animation-timing-function' {
-			PropertyID.animation_timing_function
-		}
-		'appearance' {
-			PropertyID.appearance
-		}
-		'aspect-ratio' {
-			PropertyID.aspect_ratio
-		}
-		'backdrop-filter' {
-			PropertyID.backdrop_filter
-		}
-		'background' {
-			PropertyID.background
-		}
-		'background-attachment' {
-			PropertyID.background_attachment
-		}
-		'background-blend-mode' {
-			PropertyID.background_blend_mode
-		}
-		'background-clip' {
-			PropertyID.background_clip
-		}
-		'background-color' {
-			PropertyID.background_color
-		}
-		'background-image' {
-			PropertyID.background_image
-		}
-		'background-origin' {
-			PropertyID.background_origin
-		}
-		'background-position' {
-			PropertyID.background_position
-		}
-		'background-position-x' {
-			PropertyID.background_position_x
-		}
-		'background-position-y' {
-			PropertyID.background_position_y
-		}
-		'background-repeat' {
-			PropertyID.background_repeat
-		}
-		'background-size' {
-			PropertyID.background_size
-		}
-		'block-ellipsis' {
-			PropertyID.block_ellipsis
-		}
-		'block-size' {
-			PropertyID.block_size
-		}
-		'border' {
-			PropertyID.border
-		}
-		'border-block' {
-			PropertyID.border_block
-		}
-		'border-block-color' {
-			PropertyID.border_block_color
-		}
-		'border-block-end' {
-			PropertyID.border_block_end
-		}
-		'border-block-end-color' {
-			PropertyID.border_block_end_color
-		}
-		'border-block-end-style' {
-			PropertyID.border_block_end_style
-		}
-		'border-block-end-width' {
-			PropertyID.border_block_end_width
-		}
-		'border-block-start' {
-			PropertyID.border_block_start
-		}
-		'border-block-start-color' {
-			PropertyID.border_block_start_color
-		}
-		'border-block-start-style' {
-			PropertyID.border_block_start_style
-		}
-		'border-block-start-width' {
-			PropertyID.border_block_start_width
-		}
-		'border-block-style' {
-			PropertyID.border_block_style
-		}
-		'border-block-width' {
-			PropertyID.border_block_width
-		}
-		'border-bottom' {
-			PropertyID.border_bottom
-		}
-		'border-bottom-color' {
-			PropertyID.border_bottom_color
-		}
-		'border-bottom-left-radius' {
-			PropertyID.border_bottom_left_radius
-		}
-		'border-bottom-right-radius' {
-			PropertyID.border_bottom_right_radius
-		}
-		'border-bottom-style' {
-			PropertyID.border_bottom_style
-		}
-		'border-bottom-width' {
-			PropertyID.border_bottom_width
-		}
-		'border-collapse' {
-			PropertyID.border_collapse
-		}
-		'border-color' {
-			PropertyID.border_color
-		}
-		'border-end-end-radius' {
-			PropertyID.border_end_end_radius
-		}
-		'border-end-start-radius' {
-			PropertyID.border_end_start_radius
-		}
-		'border-image' {
-			PropertyID.border_image
-		}
-		'border-image-outset' {
-			PropertyID.border_image_outset
-		}
-		'border-image-repeat' {
-			PropertyID.border_image_repeat
-		}
-		'border-image-slice' {
-			PropertyID.border_image_slice
-		}
-		'border-image-source' {
-			PropertyID.border_image_source
-		}
-		'border-image-width' {
-			PropertyID.border_image_width
-		}
-		'border-inline' {
-			PropertyID.border_inline
-		}
-		'border-inline-color' {
-			PropertyID.border_inline_color
-		}
-		'border-inline-end' {
-			PropertyID.border_inline_end
-		}
-		'border-inline-end-color' {
-			PropertyID.border_inline_end_color
-		}
-		'border-inline-end-style' {
-			PropertyID.border_inline_end_style
-		}
-		'border-inline-end-width' {
-			PropertyID.border_inline_end_width
-		}
-		'border-inline-start' {
-			PropertyID.border_inline_start
-		}
-		'border-inline-start-color' {
-			PropertyID.border_inline_start_color
-		}
-		'border-inline-start-style' {
-			PropertyID.border_inline_start_style
-		}
-		'border-inline-start-width' {
-			PropertyID.border_inline_start_width
-		}
-		'border-inline-style' {
-			PropertyID.border_inline_style
-		}
-		'border-inline-width' {
-			PropertyID.border_inline_width
-		}
-		'border-left' {
-			PropertyID.border_left
-		}
-		'border-left-color' {
-			PropertyID.border_left_color
-		}
-		'border-left-style' {
-			PropertyID.border_left_style
-		}
-		'border-left-width' {
-			PropertyID.border_left_width
-		}
-		'border-radius' {
-			PropertyID.border_radius
-		}
-		'border-right' {
-			PropertyID.border_right
-		}
-		'border-right-color' {
-			PropertyID.border_right_color
-		}
-		'border-right-style' {
-			PropertyID.border_right_style
-		}
-		'border-right-width' {
-			PropertyID.border_right_width
-		}
-		'border-spacing' {
-			PropertyID.border_spacing
-		}
-		'border-start-end-radius' {
-			PropertyID.border_start_end_radius
-		}
-		'border-start-start-radius' {
-			PropertyID.border_start_start_radius
-		}
-		'border-style' {
-			PropertyID.border_style
-		}
-		'border-top' {
-			PropertyID.border_top
-		}
-		'border-top-color' {
-			PropertyID.border_top_color
-		}
-		'border-top-left-radius' {
-			PropertyID.border_top_left_radius
-		}
-		'border-top-right-radius' {
-			PropertyID.border_top_right_radius
-		}
-		'border-top-style' {
-			PropertyID.border_top_style
-		}
-		'border-top-width' {
-			PropertyID.border_top_width
-		}
-		'border-width' {
-			PropertyID.border_width
-		}
-		'bottom' {
-			PropertyID.bottom
-		}
-		'box-decoration-break' {
-			PropertyID.box_decoration_break
-		}
-		'box-shadow' {
-			PropertyID.box_shadow
-		}
-		'box-sizing' {
-			PropertyID.box_sizing
-		}
-		'backface-visibility' {
-			PropertyID.backface_visibility
-		}
-		'break-after' {
-			PropertyID.break_after
-		}
-		'break-before' {
-			PropertyID.break_before
-		}
-		'break-inside' {
-			PropertyID.break_inside
-		}
-		'caption-side' {
-			PropertyID.caption_side
-		}
-		'caret-color' {
-			PropertyID.caret_color
-		}
-		'clear' {
-			PropertyID.clear
-		}
-		'clip' {
-			PropertyID.clip
-		}
-		'clip-path' {
-			PropertyID.clip_path
-		}
-		'clip-rule' {
-			PropertyID.clip_rule
-		}
-		'color' {
-			PropertyID.color
-		}
-		'color-interpolation' {
-			PropertyID.color_interpolation
-		}
-		'color-interpolation-filters' {
-			PropertyID.color_interpolation_filters
-		}
-		'color-scheme' {
-			PropertyID.color_scheme
-		}
-		'column-count' {
-			PropertyID.column_count
-		}
-		'column-fill' {
-			PropertyID.column_fill
-		}
-		'column-gap' {
-			PropertyID.column_gap
-		}
-		'column-height' {
-			PropertyID.column_height
-		}
-		'column-rule' {
-			PropertyID.column_rule
-		}
-		'column-rule-color' {
-			PropertyID.column_rule_color
-		}
-		'column-rule-style' {
-			PropertyID.column_rule_style
-		}
-		'column-rule-width' {
-			PropertyID.column_rule_width
-		}
-		'column-span' {
-			PropertyID.column_span
-		}
-		'column-width' {
-			PropertyID.column_width
-		}
-		'columns' {
-			PropertyID.columns
-		}
-		'contain' {
-			PropertyID.contain
-		}
-		'contain-intrinsic-block-size' {
-			PropertyID.contain_intrinsic_block_size
-		}
-		'contain-intrinsic-height' {
-			PropertyID.contain_intrinsic_height
-		}
-		'contain-intrinsic-inline-size' {
-			PropertyID.contain_intrinsic_inline_size
-		}
-		'contain-intrinsic-size' {
-			PropertyID.contain_intrinsic_size
-		}
-		'contain-intrinsic-width' {
-			PropertyID.contain_intrinsic_width
-		}
-		'container' {
-			PropertyID.container
-		}
-		'container-name' {
-			PropertyID.container_name
-		}
-		'container-type' {
-			PropertyID.container_type
-		}
-		'content' {
-			PropertyID.content
-		}
-		'content-visibility' {
-			PropertyID.content_visibility
-		}
-		'continue' {
-			PropertyID.continue_
-		}
-		'corner-block-end-shape' {
-			PropertyID.corner_block_end_shape
-		}
-		'corner-block-start-shape' {
-			PropertyID.corner_block_start_shape
-		}
-		'corner-bottom-left-shape' {
-			PropertyID.corner_bottom_left_shape
-		}
-		'corner-bottom-right-shape' {
-			PropertyID.corner_bottom_right_shape
-		}
-		'corner-bottom-shape' {
-			PropertyID.corner_bottom_shape
-		}
-		'corner-end-end-shape' {
-			PropertyID.corner_end_end_shape
-		}
-		'corner-end-start-shape' {
-			PropertyID.corner_end_start_shape
-		}
-		'corner-inline-end-shape' {
-			PropertyID.corner_inline_end_shape
-		}
-		'corner-inline-start-shape' {
-			PropertyID.corner_inline_start_shape
-		}
-		'corner-left-shape' {
-			PropertyID.corner_left_shape
-		}
-		'corner-right-shape' {
-			PropertyID.corner_right_shape
-		}
-		'corner-shape' {
-			PropertyID.corner_shape
-		}
-		'corner-start-end-shape' {
-			PropertyID.corner_start_end_shape
-		}
-		'corner-start-start-shape' {
-			PropertyID.corner_start_start_shape
-		}
-		'corner-top-left-shape' {
-			PropertyID.corner_top_left_shape
-		}
-		'corner-top-right-shape' {
-			PropertyID.corner_top_right_shape
-		}
-		'corner-top-shape' {
-			PropertyID.corner_top_shape
-		}
-		'counter-increment' {
-			PropertyID.counter_increment
-		}
-		'counter-reset' {
-			PropertyID.counter_reset
-		}
-		'counter-set' {
-			PropertyID.counter_set
-		}
-		'cursor' {
-			PropertyID.cursor
-		}
-		'cx' {
-			PropertyID.cx
-		}
-		'cy' {
-			PropertyID.cy
-		}
-		'd' {
-			PropertyID.d
-		}
-		'direction' {
-			PropertyID.direction
-		}
-		'display' {
-			PropertyID.display
-		}
-		'dominant-baseline' {
-			PropertyID.dominant_baseline
-		}
-		'empty-cells' {
-			PropertyID.empty_cells
-		}
-		'fill' {
-			PropertyID.fill
-		}
-		'fill-opacity' {
-			PropertyID.fill_opacity
-		}
-		'fill-rule' {
-			PropertyID.fill_rule
-		}
-		'filter' {
-			PropertyID.filter
-		}
-		'flex' {
-			PropertyID.flex
-		}
-		'flex-basis' {
-			PropertyID.flex_basis
-		}
-		'flex-direction' {
-			PropertyID.flex_direction
-		}
-		'flex-flow' {
-			PropertyID.flex_flow
-		}
-		'flex-grow' {
-			PropertyID.flex_grow
-		}
-		'flex-shrink' {
-			PropertyID.flex_shrink
-		}
-		'flex-wrap' {
-			PropertyID.flex_wrap
-		}
-		'float' {
-			PropertyID.float_
-		}
-		'flood-color' {
-			PropertyID.flood_color
-		}
-		'flood-opacity' {
-			PropertyID.flood_opacity
-		}
-		'font' {
-			PropertyID.font
-		}
-		'font-family' {
-			PropertyID.font_family
-		}
-		'font-feature-settings' {
-			PropertyID.font_feature_settings
-		}
-		'font-kerning' {
-			PropertyID.font_kerning
-		}
-		'font-language-override' {
-			PropertyID.font_language_override
-		}
-		'font-optical-sizing' {
-			PropertyID.font_optical_sizing
-		}
-		'font-size' {
-			PropertyID.font_size
-		}
-		'font-style' {
-			PropertyID.font_style
-		}
-		'font-variant' {
-			PropertyID.font_variant
-		}
-		'font-variant-alternates' {
-			PropertyID.font_variant_alternates
-		}
-		'font-variant-caps' {
-			PropertyID.font_variant_caps
-		}
-		'font-variant-east-asian' {
-			PropertyID.font_variant_east_asian
-		}
-		'font-variant-emoji' {
-			PropertyID.font_variant_emoji
-		}
-		'font-variant-ligatures' {
-			PropertyID.font_variant_ligatures
-		}
-		'font-variant-numeric' {
-			PropertyID.font_variant_numeric
-		}
-		'font-variant-position' {
-			PropertyID.font_variant_position
-		}
-		'font-variation-settings' {
-			PropertyID.font_variation_settings
-		}
-		'font-weight' {
-			PropertyID.font_weight
-		}
-		'font-width' {
-			PropertyID.font_width
-		}
-		'gap' {
-			PropertyID.gap
-		}
-		'grid' {
-			PropertyID.grid
-		}
-		'grid-area' {
-			PropertyID.grid_area
-		}
-		'grid-auto-columns' {
-			PropertyID.grid_auto_columns
-		}
-		'grid-auto-flow' {
-			PropertyID.grid_auto_flow
-		}
-		'grid-auto-rows' {
-			PropertyID.grid_auto_rows
-		}
-		'grid-column' {
-			PropertyID.grid_column
-		}
-		'grid-column-end' {
-			PropertyID.grid_column_end
-		}
-		'grid-column-start' {
-			PropertyID.grid_column_start
-		}
-		'grid-row' {
-			PropertyID.grid_row
-		}
-		'grid-row-end' {
-			PropertyID.grid_row_end
-		}
-		'grid-row-start' {
-			PropertyID.grid_row_start
-		}
-		'grid-template' {
-			PropertyID.grid_template
-		}
-		'grid-template-areas' {
-			PropertyID.grid_template_areas
-		}
-		'grid-template-columns' {
-			PropertyID.grid_template_columns
-		}
-		'grid-template-rows' {
-			PropertyID.grid_template_rows
-		}
-		'height' {
-			PropertyID.height
-		}
-		'image-rendering' {
-			PropertyID.image_rendering
-		}
-		'inline-size' {
-			PropertyID.inline_size
-		}
-		'inset' {
-			PropertyID.inset
-		}
-		'inset-block' {
-			PropertyID.inset_block
-		}
-		'inset-block-end' {
-			PropertyID.inset_block_end
-		}
-		'inset-block-start' {
-			PropertyID.inset_block_start
-		}
-		'inset-inline' {
-			PropertyID.inset_inline
-		}
-		'inset-inline-end' {
-			PropertyID.inset_inline_end
-		}
-		'inset-inline-start' {
-			PropertyID.inset_inline_start
-		}
-		'isolation' {
-			PropertyID.isolation
-		}
-		'justify-content' {
-			PropertyID.justify_content
-		}
-		'justify-items' {
-			PropertyID.justify_items
-		}
-		'justify-self' {
-			PropertyID.justify_self
-		}
-		'left' {
-			PropertyID.left
-		}
-		'letter-spacing' {
-			PropertyID.letter_spacing
-		}
-		'line-clamp' {
-			PropertyID.line_clamp
-		}
-		'line-height' {
-			PropertyID.line_height
-		}
-		'list-style' {
-			PropertyID.list_style
-		}
-		'list-style-image' {
-			PropertyID.list_style_image
-		}
-		'list-style-position' {
-			PropertyID.list_style_position
-		}
-		'list-style-type' {
-			PropertyID.list_style_type
-		}
-		'margin' {
-			PropertyID.margin
-		}
-		'margin-block' {
-			PropertyID.margin_block
-		}
-		'margin-block-end' {
-			PropertyID.margin_block_end
-		}
-		'margin-block-start' {
-			PropertyID.margin_block_start
-		}
-		'margin-bottom' {
-			PropertyID.margin_bottom
-		}
-		'margin-inline' {
-			PropertyID.margin_inline
-		}
-		'margin-inline-end' {
-			PropertyID.margin_inline_end
-		}
-		'margin-inline-start' {
-			PropertyID.margin_inline_start
-		}
-		'margin-left' {
-			PropertyID.margin_left
-		}
-		'margin-right' {
-			PropertyID.margin_right
-		}
-		'margin-top' {
-			PropertyID.margin_top
-		}
-		'mask' {
-			PropertyID.mask
-		}
-		'mask-clip' {
-			PropertyID.mask_clip
-		}
-		'mask-composite' {
-			PropertyID.mask_composite
-		}
-		'mask-image' {
-			PropertyID.mask_image
-		}
-		'mask-mode' {
-			PropertyID.mask_mode
-		}
-		'mask-origin' {
-			PropertyID.mask_origin
-		}
-		'mask-position' {
-			PropertyID.mask_position
-		}
-		'mask-repeat' {
-			PropertyID.mask_repeat
-		}
-		'mask-size' {
-			PropertyID.mask_size
-		}
-		'mask-type' {
-			PropertyID.mask_type
-		}
-		'math-depth' {
-			PropertyID.math_depth
-		}
-		'math-shift' {
-			PropertyID.math_shift
-		}
-		'math-style' {
-			PropertyID.math_style
-		}
-		'max-block-size' {
-			PropertyID.max_block_size
-		}
-		'max-height' {
-			PropertyID.max_height
-		}
-		'max-lines' {
-			PropertyID.max_lines
-		}
-		'max-inline-size' {
-			PropertyID.max_inline_size
-		}
-		'max-width' {
-			PropertyID.max_width
-		}
-		'min-block-size' {
-			PropertyID.min_block_size
-		}
-		'min-height' {
-			PropertyID.min_height
-		}
-		'min-inline-size' {
-			PropertyID.min_inline_size
-		}
-		'min-width' {
-			PropertyID.min_width
-		}
-		'mix-blend-mode' {
-			PropertyID.mix_blend_mode
-		}
-		'object-fit' {
-			PropertyID.object_fit
-		}
-		'object-position' {
-			PropertyID.object_position
-		}
-		'opacity' {
-			PropertyID.opacity
-		}
-		'order' {
-			PropertyID.order
-		}
-		'orphans' {
-			PropertyID.orphans
-		}
-		'outline' {
-			PropertyID.outline
-		}
-		'outline-color' {
-			PropertyID.outline_color
-		}
-		'outline-offset' {
-			PropertyID.outline_offset
-		}
-		'outline-style' {
-			PropertyID.outline_style
-		}
-		'outline-width' {
-			PropertyID.outline_width
-		}
-		'overflow' {
-			PropertyID.overflow
-		}
-		'overflow-block' {
-			PropertyID.overflow_block
-		}
-		'overflow-clip-margin' {
-			PropertyID.overflow_clip_margin
-		}
-		'overflow-clip-margin-block' {
-			PropertyID.overflow_clip_margin_block
-		}
-		'overflow-clip-margin-block-end' {
-			PropertyID.overflow_clip_margin_block_end
-		}
-		'overflow-clip-margin-block-start' {
-			PropertyID.overflow_clip_margin_block_start
-		}
-		'overflow-clip-margin-bottom' {
-			PropertyID.overflow_clip_margin_bottom
-		}
-		'overflow-clip-margin-inline' {
-			PropertyID.overflow_clip_margin_inline
-		}
-		'overflow-clip-margin-inline-end' {
-			PropertyID.overflow_clip_margin_inline_end
-		}
-		'overflow-clip-margin-inline-start' {
-			PropertyID.overflow_clip_margin_inline_start
-		}
-		'overflow-clip-margin-left' {
-			PropertyID.overflow_clip_margin_left
-		}
-		'overflow-clip-margin-right' {
-			PropertyID.overflow_clip_margin_right
-		}
-		'overflow-clip-margin-top' {
-			PropertyID.overflow_clip_margin_top
-		}
-		'overflow-inline' {
-			PropertyID.overflow_inline
-		}
-		'overflow-wrap' {
-			PropertyID.overflow_wrap
-		}
-		'overflow-x' {
-			PropertyID.overflow_x
-		}
-		'overflow-y' {
-			PropertyID.overflow_y
-		}
-		'padding' {
-			PropertyID.padding
-		}
-		'padding-block' {
-			PropertyID.padding_block
-		}
-		'padding-block-end' {
-			PropertyID.padding_block_end
-		}
-		'padding-block-start' {
-			PropertyID.padding_block_start
-		}
-		'padding-bottom' {
-			PropertyID.padding_bottom
-		}
-		'padding-inline' {
-			PropertyID.padding_inline
-		}
-		'padding-inline-end' {
-			PropertyID.padding_inline_end
-		}
-		'padding-inline-start' {
-			PropertyID.padding_inline_start
-		}
-		'padding-left' {
-			PropertyID.padding_left
-		}
-		'padding-right' {
-			PropertyID.padding_right
-		}
-		'padding-top' {
-			PropertyID.padding_top
-		}
-		'page-break-after' {
-			PropertyID.page_break_after
-		}
-		'page-break-before' {
-			PropertyID.page_break_before
-		}
-		'page-break-inside' {
-			PropertyID.page_break_inside
-		}
-		'paint-order' {
-			PropertyID.paint_order
-		}
-		'perspective' {
-			PropertyID.perspective
-		}
-		'perspective-origin' {
-			PropertyID.perspective_origin
-		}
-		'place-content' {
-			PropertyID.place_content
-		}
-		'place-items' {
-			PropertyID.place_items
-		}
-		'place-self' {
-			PropertyID.place_self
-		}
-		'pointer-events' {
-			PropertyID.pointer_events
-		}
-		'position' {
-			PropertyID.position
-		}
-		'position-anchor' {
-			PropertyID.position_anchor
-		}
-		'position-area' {
-			PropertyID.position_area
-		}
-		'position-try-fallbacks' {
-			PropertyID.position_try_fallbacks
-		}
-		'position-try-order' {
-			PropertyID.position_try_order
-		}
-		'position-visibility' {
-			PropertyID.position_visibility
-		}
-		'quotes' {
-			PropertyID.quotes
-		}
-		'r' {
-			PropertyID.r
-		}
-		'resize' {
-			PropertyID.resize
-		}
-		'right' {
-			PropertyID.right
-		}
-		'rotate' {
-			PropertyID.rotate
-		}
-		'row-gap' {
-			PropertyID.row_gap
-		}
-		'rx' {
-			PropertyID.rx
-		}
-		'ry' {
-			PropertyID.ry
-		}
-		'scale' {
-			PropertyID.scale
-		}
-		'scroll-behavior' {
-			PropertyID.scroll_behavior
-		}
-		'scroll-margin' {
-			PropertyID.scroll_margin
-		}
-		'scroll-margin-block' {
-			PropertyID.scroll_margin_block
-		}
-		'scroll-margin-block-end' {
-			PropertyID.scroll_margin_block_end
-		}
-		'scroll-margin-block-start' {
-			PropertyID.scroll_margin_block_start
-		}
-		'scroll-margin-bottom' {
-			PropertyID.scroll_margin_bottom
-		}
-		'scroll-margin-inline' {
-			PropertyID.scroll_margin_inline
-		}
-		'scroll-margin-inline-end' {
-			PropertyID.scroll_margin_inline_end
-		}
-		'scroll-margin-inline-start' {
-			PropertyID.scroll_margin_inline_start
-		}
-		'scroll-margin-left' {
-			PropertyID.scroll_margin_left
-		}
-		'scroll-margin-right' {
-			PropertyID.scroll_margin_right
-		}
-		'scroll-margin-top' {
-			PropertyID.scroll_margin_top
-		}
-		'scroll-padding' {
-			PropertyID.scroll_padding
-		}
-		'scroll-padding-block' {
-			PropertyID.scroll_padding_block
-		}
-		'scroll-padding-block-end' {
-			PropertyID.scroll_padding_block_end
-		}
-		'scroll-padding-block-start' {
-			PropertyID.scroll_padding_block_start
-		}
-		'scroll-padding-bottom' {
-			PropertyID.scroll_padding_bottom
-		}
-		'scroll-padding-inline' {
-			PropertyID.scroll_padding_inline
-		}
-		'scroll-padding-inline-end' {
-			PropertyID.scroll_padding_inline_end
-		}
-		'scroll-padding-inline-start' {
-			PropertyID.scroll_padding_inline_start
-		}
-		'scroll-padding-left' {
-			PropertyID.scroll_padding_left
-		}
-		'scroll-padding-right' {
-			PropertyID.scroll_padding_right
-		}
-		'scroll-padding-top' {
-			PropertyID.scroll_padding_top
-		}
-		'scroll-snap-align' {
-			PropertyID.scroll_snap_align
-		}
-		'scroll-snap-stop' {
-			PropertyID.scroll_snap_stop
-		}
-		'scroll-snap-type' {
-			PropertyID.scroll_snap_type
-		}
-		'scroll-timeline' {
-			PropertyID.scroll_timeline
-		}
-		'scroll-timeline-axis' {
-			PropertyID.scroll_timeline_axis
-		}
-		'scroll-timeline-name' {
-			PropertyID.scroll_timeline_name
-		}
-		'scrollbar-color' {
-			PropertyID.scrollbar_color
-		}
-		'scrollbar-gutter' {
-			PropertyID.scrollbar_gutter
-		}
-		'scrollbar-width' {
-			PropertyID.scrollbar_width
-		}
-		'shape-image-threshold' {
-			PropertyID.shape_image_threshold
-		}
-		'shape-margin' {
-			PropertyID.shape_margin
-		}
-		'shape-outside' {
-			PropertyID.shape_outside
-		}
-		'shape-rendering' {
-			PropertyID.shape_rendering
-		}
-		'stop-color' {
-			PropertyID.stop_color
-		}
-		'stop-opacity' {
-			PropertyID.stop_opacity
-		}
-		'stroke' {
-			PropertyID.stroke
-		}
-		'stroke-dasharray' {
-			PropertyID.stroke_dasharray
-		}
-		'stroke-dashoffset' {
-			PropertyID.stroke_dashoffset
-		}
-		'stroke-linecap' {
-			PropertyID.stroke_linecap
-		}
-		'stroke-linejoin' {
-			PropertyID.stroke_linejoin
-		}
-		'stroke-miterlimit' {
-			PropertyID.stroke_miterlimit
-		}
-		'stroke-opacity' {
-			PropertyID.stroke_opacity
-		}
-		'stroke-width' {
-			PropertyID.stroke_width
-		}
-		'tab-size' {
-			PropertyID.tab_size
-		}
-		'table-layout' {
-			PropertyID.table_layout
-		}
-		'text-align' {
-			PropertyID.text_align
-		}
-		'text-anchor' {
-			PropertyID.text_anchor
-		}
-		'text-decoration' {
-			PropertyID.text_decoration
-		}
-		'text-decoration-color' {
-			PropertyID.text_decoration_color
-		}
-		'text-decoration-line' {
-			PropertyID.text_decoration_line
-		}
-		'text-decoration-skip-ink' {
-			PropertyID.text_decoration_skip_ink
-		}
-		'text-decoration-style' {
-			PropertyID.text_decoration_style
-		}
-		'text-decoration-thickness' {
-			PropertyID.text_decoration_thickness
-		}
-		'text-indent' {
-			PropertyID.text_indent
-		}
-		'text-justify' {
-			PropertyID.text_justify
-		}
-		'text-overflow' {
-			PropertyID.text_overflow
-		}
-		'text-rendering' {
-			PropertyID.text_rendering
-		}
-		'text-shadow' {
-			PropertyID.text_shadow
-		}
-		'text-transform' {
-			PropertyID.text_transform
-		}
-		'text-underline-offset' {
-			PropertyID.text_underline_offset
-		}
-		'text-underline-position' {
-			PropertyID.text_underline_position
-		}
-		'text-wrap' {
-			PropertyID.text_wrap
-		}
-		'text-wrap-mode' {
-			PropertyID.text_wrap_mode
-		}
-		'text-wrap-style' {
-			PropertyID.text_wrap_style
-		}
-		'timeline-scope' {
-			PropertyID.timeline_scope
-		}
-		'top' {
-			PropertyID.top
-		}
-		'touch-action' {
-			PropertyID.touch_action
-		}
-		'transform' {
-			PropertyID.transform
-		}
-		'transform-box' {
-			PropertyID.transform_box
-		}
-		'transform-origin' {
-			PropertyID.transform_origin
-		}
-		'transform-style' {
-			PropertyID.transform_style
-		}
-		'transition' {
-			PropertyID.transition
-		}
-		'transition-behavior' {
-			PropertyID.transition_behavior
-		}
-		'transition-delay' {
-			PropertyID.transition_delay
-		}
-		'transition-duration' {
-			PropertyID.transition_duration
-		}
-		'transition-property' {
-			PropertyID.transition_property
-		}
-		'transition-timing-function' {
-			PropertyID.transition_timing_function
-		}
-		'translate' {
-			PropertyID.translate
-		}
-		'unicode-bidi' {
-			PropertyID.unicode_bidi
-		}
-		'user-select' {
-			PropertyID.user_select
-		}
-		'vector-effect' {
-			PropertyID.vector_effect
-		}
-		'vertical-align' {
-			PropertyID.vertical_align
-		}
-		'view-timeline' {
-			PropertyID.view_timeline
-		}
-		'view-timeline-axis' {
-			PropertyID.view_timeline_axis
-		}
-		'view-timeline-inset' {
-			PropertyID.view_timeline_inset
-		}
-		'view-timeline-name' {
-			PropertyID.view_timeline_name
-		}
-		'view-transition-name' {
-			PropertyID.view_transition_name
-		}
-		'visibility' {
-			PropertyID.visibility
-		}
-		'white-space' {
-			PropertyID.white_space
-		}
-		'white-space-collapse' {
-			PropertyID.white_space_collapse
-		}
-		'white-space-trim' {
-			PropertyID.white_space_trim
-		}
-		'widows' {
-			PropertyID.widows
-		}
-		'width' {
-			PropertyID.width
-		}
-		'will-change' {
-			PropertyID.will_change
-		}
-		'word-break' {
-			PropertyID.word_break
-		}
-		'word-spacing' {
-			PropertyID.word_spacing
-		}
-		'writing-mode' {
-			PropertyID.writing_mode
-		}
-		'x' {
-			PropertyID.x
-		}
-		'y' {
-			PropertyID.y
-		}
-		'z-index' {
-			PropertyID.z_index
-		}
-		else { none }
+	// Reject unrelated names before comparing complete strings. These integer
+	// switches use no runtime table or retained allocation.
+	match name.len {
+		1 {
+			match name[0] {
+				0x64 {
+					return match name {
+						'd' { PropertyID.d }
+						else { none }
+					}
+				}
+				0x72 {
+					return match name {
+						'r' { PropertyID.r }
+						else { none }
+					}
+				}
+				0x78 {
+					return match name {
+						'x' { PropertyID.x }
+						else { none }
+					}
+				}
+				0x79 {
+					return match name {
+						'y' { PropertyID.y }
+						else { none }
+					}
+				}
+				else {}
+			}
+		}
+		2 {
+			match name[0] {
+				0x63 {
+					return match name {
+						'cx' { PropertyID.cx }
+						'cy' { PropertyID.cy }
+						else { none }
+					}
+				}
+				0x72 {
+					return match name {
+						'rx' { PropertyID.rx }
+						'ry' { PropertyID.ry }
+						else { none }
+					}
+				}
+				else {}
+			}
+		}
+		3 {
+			match name[0] {
+				0x61 {
+					return match name {
+						'all' { PropertyID.all }
+						else { none }
+					}
+				}
+				0x67 {
+					return match name {
+						'gap' { PropertyID.gap }
+						else { none }
+					}
+				}
+				0x74 {
+					return match name {
+						'top' { PropertyID.top }
+						else { none }
+					}
+				}
+				else {}
+			}
+		}
+		4 {
+			match name[0] {
+				0x63 {
+					return match name {
+						'clip' { PropertyID.clip }
+						else { none }
+					}
+				}
+				0x66 {
+					return match name {
+						'fill' { PropertyID.fill }
+						'flex' { PropertyID.flex }
+						'font' { PropertyID.font }
+						else { none }
+					}
+				}
+				0x67 {
+					return match name {
+						'grid' { PropertyID.grid }
+						else { none }
+					}
+				}
+				0x6c {
+					return match name {
+						'left' { PropertyID.left }
+						else { none }
+					}
+				}
+				0x6d {
+					return match name {
+						'mask' { PropertyID.mask }
+						else { none }
+					}
+				}
+				else {}
+			}
+		}
+		5 {
+			match name[0] {
+				0x63 {
+					return match name {
+						'clear' { PropertyID.clear }
+						'color' { PropertyID.color }
+						else { none }
+					}
+				}
+				0x66 {
+					return match name {
+						'float' { PropertyID.float_ }
+						else { none }
+					}
+				}
+				0x69 {
+					return match name {
+						'inset' { PropertyID.inset }
+						else { none }
+					}
+				}
+				0x6f {
+					return match name {
+						'order' { PropertyID.order }
+						else { none }
+					}
+				}
+				0x72 {
+					return match name {
+						'right' { PropertyID.right }
+						else { none }
+					}
+				}
+				0x73 {
+					return match name {
+						'scale' { PropertyID.scale }
+						else { none }
+					}
+				}
+				0x77 {
+					return match name {
+						'width' { PropertyID.width }
+						else { none }
+					}
+				}
+				else {}
+			}
+		}
+		6 {
+			match name[0] {
+				0x62 {
+					return match name {
+						'border' { PropertyID.border }
+						'bottom' { PropertyID.bottom }
+						else { none }
+					}
+				}
+				0x63 {
+					return match name {
+						'cursor' { PropertyID.cursor }
+						else { none }
+					}
+				}
+				0x66 {
+					return match name {
+						'filter' { PropertyID.filter }
+						else { none }
+					}
+				}
+				0x68 {
+					return match name {
+						'height' { PropertyID.height }
+						else { none }
+					}
+				}
+				0x6d {
+					return match name {
+						'margin' { PropertyID.margin }
+						else { none }
+					}
+				}
+				0x71 {
+					return match name {
+						'quotes' { PropertyID.quotes }
+						else { none }
+					}
+				}
+				0x72 {
+					return match name {
+						'resize' { PropertyID.resize }
+						'rotate' { PropertyID.rotate }
+						else { none }
+					}
+				}
+				0x73 {
+					return match name {
+						'stroke' { PropertyID.stroke }
+						else { none }
+					}
+				}
+				0x77 {
+					return match name {
+						'widows' { PropertyID.widows }
+						else { none }
+					}
+				}
+				else {}
+			}
+		}
+		7 {
+			match name[0] {
+				0x63 {
+					return match name {
+						'columns' { PropertyID.columns }
+						'contain' { PropertyID.contain }
+						'content' { PropertyID.content }
+						else { none }
+					}
+				}
+				0x64 {
+					return match name {
+						'display' { PropertyID.display }
+						else { none }
+					}
+				}
+				0x6f {
+					return match name {
+						'opacity' { PropertyID.opacity }
+						'orphans' { PropertyID.orphans }
+						'outline' { PropertyID.outline }
+						else { none }
+					}
+				}
+				0x70 {
+					return match name {
+						'padding' { PropertyID.padding }
+						else { none }
+					}
+				}
+				0x72 {
+					return match name {
+						'row-gap' { PropertyID.row_gap }
+						else { none }
+					}
+				}
+				0x7a {
+					return match name {
+						'z-index' { PropertyID.z_index }
+						else { none }
+					}
+				}
+				else {}
+			}
+		}
+		8 {
+			match name[0] {
+				0x63 {
+					return match name {
+						'continue' { PropertyID.continue_ }
+						else { none }
+					}
+				}
+				0x67 {
+					return match name {
+						'grid-row' { PropertyID.grid_row }
+						else { none }
+					}
+				}
+				0x6f {
+					return match name {
+						'overflow' { PropertyID.overflow }
+						else { none }
+					}
+				}
+				0x70 {
+					return match name {
+						'position' { PropertyID.position }
+						else { none }
+					}
+				}
+				0x74 {
+					return match name {
+						'tab-size' { PropertyID.tab_size }
+						else { none }
+					}
+				}
+				else {}
+			}
+		}
+		9 {
+			match name[0] {
+				0x61 {
+					return match name {
+						'animation' { PropertyID.animation }
+						else { none }
+					}
+				}
+				0x63 {
+					return match name {
+						'clip-path' { PropertyID.clip_path }
+						'clip-rule' { PropertyID.clip_rule }
+						'container' { PropertyID.container }
+						else { none }
+					}
+				}
+				0x64 {
+					return match name {
+						'direction' { PropertyID.direction }
+						else { none }
+					}
+				}
+				0x66 {
+					return match name {
+						'fill-rule' { PropertyID.fill_rule }
+						'flex-flow' { PropertyID.flex_flow }
+						'flex-grow' { PropertyID.flex_grow }
+						'flex-wrap' { PropertyID.flex_wrap }
+						'font-size' { PropertyID.font_size }
+						else { none }
+					}
+				}
+				0x67 {
+					return match name {
+						'grid-area' { PropertyID.grid_area }
+						else { none }
+					}
+				}
+				0x69 {
+					return match name {
+						'isolation' { PropertyID.isolation }
+						else { none }
+					}
+				}
+				0x6d {
+					return match name {
+						'mask-clip' { PropertyID.mask_clip }
+						'mask-mode' { PropertyID.mask_mode }
+						'mask-size' { PropertyID.mask_size }
+						'mask-type' { PropertyID.mask_type }
+						'max-lines' { PropertyID.max_lines }
+						'max-width' { PropertyID.max_width }
+						'min-width' { PropertyID.min_width }
+						else { none }
+					}
+				}
+				0x74 {
+					return match name {
+						'text-wrap' { PropertyID.text_wrap }
+						'transform' { PropertyID.transform }
+						'translate' { PropertyID.translate }
+						else { none }
+					}
+				}
+				else {}
+			}
+		}
+		10 {
+			match name[0] {
+				0x61 {
+					return match name {
+						'align-self' { PropertyID.align_self }
+						'appearance' { PropertyID.appearance }
+						else { none }
+					}
+				}
+				0x62 {
+					return match name {
+						'background' { PropertyID.background }
+						'block-size' { PropertyID.block_size }
+						'border-top' { PropertyID.border_top }
+						'box-shadow' { PropertyID.box_shadow }
+						'box-sizing' { PropertyID.box_sizing }
+						else { none }
+					}
+				}
+				0x63 {
+					return match name {
+						'column-gap' { PropertyID.column_gap }
+						else { none }
+					}
+				}
+				0x66 {
+					return match name {
+						'flex-basis' { PropertyID.flex_basis }
+						'font-style' { PropertyID.font_style }
+						'font-width' { PropertyID.font_width }
+						else { none }
+					}
+				}
+				0x6c {
+					return match name {
+						'line-clamp' { PropertyID.line_clamp }
+						'list-style' { PropertyID.list_style }
+						else { none }
+					}
+				}
+				0x6d {
+					return match name {
+						'margin-top' { PropertyID.margin_top }
+						'mask-image' { PropertyID.mask_image }
+						'math-depth' { PropertyID.math_depth }
+						'math-shift' { PropertyID.math_shift }
+						'math-style' { PropertyID.math_style }
+						'max-height' { PropertyID.max_height }
+						'min-height' { PropertyID.min_height }
+						else { none }
+					}
+				}
+				0x6f {
+					return match name {
+						'object-fit' { PropertyID.object_fit }
+						'overflow-x' { PropertyID.overflow_x }
+						'overflow-y' { PropertyID.overflow_y }
+						else { none }
+					}
+				}
+				0x70 {
+					return match name {
+						'place-self' { PropertyID.place_self }
+						else { none }
+					}
+				}
+				0x73 {
+					return match name {
+						'stop-color' { PropertyID.stop_color }
+						else { none }
+					}
+				}
+				0x74 {
+					return match name {
+						'text-align' { PropertyID.text_align }
+						'transition' { PropertyID.transition }
+						else { none }
+					}
+				}
+				0x76 {
+					return match name {
+						'visibility' { PropertyID.visibility }
+						else { none }
+					}
+				}
+				0x77 {
+					return match name {
+						'word-break' { PropertyID.word_break }
+						else { none }
+					}
+				}
+				else {}
+			}
+		}
+		11 {
+			match name[0] {
+				0x61 {
+					return match name {
+						'align-items' { PropertyID.align_items }
+						'anchor-name' { PropertyID.anchor_name }
+						else { none }
+					}
+				}
+				0x62 {
+					return match name {
+						'border-left' { PropertyID.border_left }
+						'break-after' { PropertyID.break_after }
+						else { none }
+					}
+				}
+				0x63 {
+					return match name {
+						'caret-color' { PropertyID.caret_color }
+						'column-fill' { PropertyID.column_fill }
+						'column-rule' { PropertyID.column_rule }
+						'column-span' { PropertyID.column_span }
+						'counter-set' { PropertyID.counter_set }
+						else { none }
+					}
+				}
+				0x65 {
+					return match name {
+						'empty-cells' { PropertyID.empty_cells }
+						else { none }
+					}
+				}
+				0x66 {
+					return match name {
+						'flex-shrink' { PropertyID.flex_shrink }
+						'flood-color' { PropertyID.flood_color }
+						'font-family' { PropertyID.font_family }
+						'font-weight' { PropertyID.font_weight }
+						else { none }
+					}
+				}
+				0x67 {
+					return match name {
+						'grid-column' { PropertyID.grid_column }
+						else { none }
+					}
+				}
+				0x69 {
+					return match name {
+						'inline-size' { PropertyID.inline_size }
+						'inset-block' { PropertyID.inset_block }
+						else { none }
+					}
+				}
+				0x6c {
+					return match name {
+						'line-height' { PropertyID.line_height }
+						else { none }
+					}
+				}
+				0x6d {
+					return match name {
+						'margin-left' { PropertyID.margin_left }
+						'mask-origin' { PropertyID.mask_origin }
+						'mask-repeat' { PropertyID.mask_repeat }
+						else { none }
+					}
+				}
+				0x70 {
+					return match name {
+						'padding-top' { PropertyID.padding_top }
+						'paint-order' { PropertyID.paint_order }
+						'perspective' { PropertyID.perspective }
+						'place-items' { PropertyID.place_items }
+						else { none }
+					}
+				}
+				0x74 {
+					return match name {
+						'text-anchor' { PropertyID.text_anchor }
+						'text-indent' { PropertyID.text_indent }
+						'text-shadow' { PropertyID.text_shadow }
+						else { none }
+					}
+				}
+				0x75 {
+					return match name {
+						'user-select' { PropertyID.user_select }
+						else { none }
+					}
+				}
+				0x77 {
+					return match name {
+						'white-space' { PropertyID.white_space }
+						'will-change' { PropertyID.will_change }
+						else { none }
+					}
+				}
+				else {}
+			}
+		}
+		12 {
+			match name[0] {
+				0x61 {
+					return match name {
+						'accent-color' { PropertyID.accent_color }
+						'anchor-scope' { PropertyID.anchor_scope }
+						'aspect-ratio' { PropertyID.aspect_ratio }
+						else { none }
+					}
+				}
+				0x62 {
+					return match name {
+						'border-block' { PropertyID.border_block }
+						'border-color' { PropertyID.border_color }
+						'border-image' { PropertyID.border_image }
+						'border-right' { PropertyID.border_right }
+						'border-style' { PropertyID.border_style }
+						'border-width' { PropertyID.border_width }
+						'break-before' { PropertyID.break_before }
+						'break-inside' { PropertyID.break_inside }
+						else { none }
+					}
+				}
+				0x63 {
+					return match name {
+						'caption-side' { PropertyID.caption_side }
+						'color-scheme' { PropertyID.color_scheme }
+						'column-count' { PropertyID.column_count }
+						'column-width' { PropertyID.column_width }
+						'corner-shape' { PropertyID.corner_shape }
+						else { none }
+					}
+				}
+				0x66 {
+					return match name {
+						'fill-opacity' { PropertyID.fill_opacity }
+						'font-kerning' { PropertyID.font_kerning }
+						'font-variant' { PropertyID.font_variant }
+						else { none }
+					}
+				}
+				0x67 {
+					return match name {
+						'grid-row-end' { PropertyID.grid_row_end }
+						else { none }
+					}
+				}
+				0x69 {
+					return match name {
+						'inset-inline' { PropertyID.inset_inline }
+						else { none }
+					}
+				}
+				0x6a {
+					return match name {
+						'justify-self' { PropertyID.justify_self }
+						else { none }
+					}
+				}
+				0x6d {
+					return match name {
+						'margin-block' { PropertyID.margin_block }
+						'margin-right' { PropertyID.margin_right }
+						else { none }
+					}
+				}
+				0x70 {
+					return match name {
+						'padding-left' { PropertyID.padding_left }
+						else { none }
+					}
+				}
+				0x73 {
+					return match name {
+						'shape-margin' { PropertyID.shape_margin }
+						'stop-opacity' { PropertyID.stop_opacity }
+						'stroke-width' { PropertyID.stroke_width }
+						else { none }
+					}
+				}
+				0x74 {
+					return match name {
+						'table-layout' { PropertyID.table_layout }
+						'text-justify' { PropertyID.text_justify }
+						'touch-action' { PropertyID.touch_action }
+						else { none }
+					}
+				}
+				0x75 {
+					return match name {
+						'unicode-bidi' { PropertyID.unicode_bidi }
+						else { none }
+					}
+				}
+				0x77 {
+					return match name {
+						'word-spacing' { PropertyID.word_spacing }
+						'writing-mode' { PropertyID.writing_mode }
+						else { none }
+					}
+				}
+				else {}
+			}
+		}
+		13 {
+			match name[0] {
+				0x61 {
+					return match name {
+						'align-content' { PropertyID.align_content }
+						else { none }
+					}
+				}
+				0x62 {
+					return match name {
+						'border-bottom' { PropertyID.border_bottom }
+						'border-inline' { PropertyID.border_inline }
+						'border-radius' { PropertyID.border_radius }
+						else { none }
+					}
+				}
+				0x63 {
+					return match name {
+						'column-height' { PropertyID.column_height }
+						'counter-reset' { PropertyID.counter_reset }
+						else { none }
+					}
+				}
+				0x66 {
+					return match name {
+						'flood-opacity' { PropertyID.flood_opacity }
+						else { none }
+					}
+				}
+				0x67 {
+					return match name {
+						'grid-template' { PropertyID.grid_template }
+						else { none }
+					}
+				}
+				0x6a {
+					return match name {
+						'justify-items' { PropertyID.justify_items }
+						else { none }
+					}
+				}
+				0x6d {
+					return match name {
+						'margin-bottom' { PropertyID.margin_bottom }
+						'margin-inline' { PropertyID.margin_inline }
+						'mask-position' { PropertyID.mask_position }
+						else { none }
+					}
+				}
+				0x6f {
+					return match name {
+						'outline-color' { PropertyID.outline_color }
+						'outline-style' { PropertyID.outline_style }
+						'outline-width' { PropertyID.outline_width }
+						'overflow-wrap' { PropertyID.overflow_wrap }
+						else { none }
+					}
+				}
+				0x70 {
+					return match name {
+						'padding-block' { PropertyID.padding_block }
+						'padding-right' { PropertyID.padding_right }
+						'place-content' { PropertyID.place_content }
+						'position-area' { PropertyID.position_area }
+						else { none }
+					}
+				}
+				0x73 {
+					return match name {
+						'scroll-margin' { PropertyID.scroll_margin }
+						'shape-outside' { PropertyID.shape_outside }
+						else { none }
+					}
+				}
+				0x74 {
+					return match name {
+						'text-overflow' { PropertyID.text_overflow }
+						'transform-box' { PropertyID.transform_box }
+						else { none }
+					}
+				}
+				0x76 {
+					return match name {
+						'vector-effect' { PropertyID.vector_effect }
+						'view-timeline' { PropertyID.view_timeline }
+						else { none }
+					}
+				}
+				else {}
+			}
+		}
+		14 {
+			match name[0] {
+				0x61 {
+					return match name {
+						'animation-name' { PropertyID.animation_name }
+						else { none }
+					}
+				}
+				0x62 {
+					return match name {
+						'block-ellipsis' { PropertyID.block_ellipsis }
+						'border-spacing' { PropertyID.border_spacing }
+						else { none }
+					}
+				}
+				0x63 {
+					return match name {
+						'container-name' { PropertyID.container_name }
+						'container-type' { PropertyID.container_type }
+						else { none }
+					}
+				}
+				0x66 {
+					return match name {
+						'flex-direction' { PropertyID.flex_direction }
+						else { none }
+					}
+				}
+				0x67 {
+					return match name {
+						'grid-auto-flow' { PropertyID.grid_auto_flow }
+						'grid-auto-rows' { PropertyID.grid_auto_rows }
+						'grid-row-start' { PropertyID.grid_row_start }
+						else { none }
+					}
+				}
+				0x6c {
+					return match name {
+						'letter-spacing' { PropertyID.letter_spacing }
+						else { none }
+					}
+				}
+				0x6d {
+					return match name {
+						'mask-composite' { PropertyID.mask_composite }
+						'max-block-size' { PropertyID.max_block_size }
+						'min-block-size' { PropertyID.min_block_size }
+						'mix-blend-mode' { PropertyID.mix_blend_mode }
+						else { none }
+					}
+				}
+				0x6f {
+					return match name {
+						'outline-offset' { PropertyID.outline_offset }
+						'overflow-block' { PropertyID.overflow_block }
+						else { none }
+					}
+				}
+				0x70 {
+					return match name {
+						'padding-bottom' { PropertyID.padding_bottom }
+						'padding-inline' { PropertyID.padding_inline }
+						'pointer-events' { PropertyID.pointer_events }
+						else { none }
+					}
+				}
+				0x73 {
+					return match name {
+						'scroll-padding' { PropertyID.scroll_padding }
+						'stroke-linecap' { PropertyID.stroke_linecap }
+						'stroke-opacity' { PropertyID.stroke_opacity }
+						else { none }
+					}
+				}
+				0x74 {
+					return match name {
+						'text-rendering' { PropertyID.text_rendering }
+						'text-transform' { PropertyID.text_transform }
+						'text-wrap-mode' { PropertyID.text_wrap_mode }
+						'timeline-scope' { PropertyID.timeline_scope }
+						else { none }
+					}
+				}
+				0x76 {
+					return match name {
+						'vertical-align' { PropertyID.vertical_align }
+						else { none }
+					}
+				}
+				else {}
+			}
+		}
+		15 {
+			match name[0] {
+				0x61 {
+					return match name {
+						'animation-delay' { PropertyID.animation_delay }
+						else { none }
+					}
+				}
+				0x62 {
+					return match name {
+						'backdrop-filter' { PropertyID.backdrop_filter }
+						'background-clip' { PropertyID.background_clip }
+						'background-size' { PropertyID.background_size }
+						'border-collapse' { PropertyID.border_collapse }
+						else { none }
+					}
+				}
+				0x67 {
+					return match name {
+						'grid-column-end' { PropertyID.grid_column_end }
+						else { none }
+					}
+				}
+				0x69 {
+					return match name {
+						'image-rendering' { PropertyID.image_rendering }
+						'inset-block-end' { PropertyID.inset_block_end }
+						else { none }
+					}
+				}
+				0x6a {
+					return match name {
+						'justify-content' { PropertyID.justify_content }
+						else { none }
+					}
+				}
+				0x6c {
+					return match name {
+						'list-style-type' { PropertyID.list_style_type }
+						else { none }
+					}
+				}
+				0x6d {
+					return match name {
+						'max-inline-size' { PropertyID.max_inline_size }
+						'min-inline-size' { PropertyID.min_inline_size }
+						else { none }
+					}
+				}
+				0x6f {
+					return match name {
+						'object-position' { PropertyID.object_position }
+						'overflow-inline' { PropertyID.overflow_inline }
+						else { none }
+					}
+				}
+				0x70 {
+					return match name {
+						'position-anchor' { PropertyID.position_anchor }
+						else { none }
+					}
+				}
+				0x73 {
+					return match name {
+						'scroll-behavior' { PropertyID.scroll_behavior }
+						'scroll-timeline' { PropertyID.scroll_timeline }
+						'scrollbar-color' { PropertyID.scrollbar_color }
+						'scrollbar-width' { PropertyID.scrollbar_width }
+						'shape-rendering' { PropertyID.shape_rendering }
+						'stroke-linejoin' { PropertyID.stroke_linejoin }
+						else { none }
+					}
+				}
+				0x74 {
+					return match name {
+						'text-decoration' { PropertyID.text_decoration }
+						'text-wrap-style' { PropertyID.text_wrap_style }
+						'transform-style' { PropertyID.transform_style }
+						else { none }
+					}
+				}
+				else {}
+			}
+		}
+		16 {
+			match name[0] {
+				0x62 {
+					return match name {
+						'background-color' { PropertyID.background_color }
+						'background-image' { PropertyID.background_image }
+						'border-block-end' { PropertyID.border_block_end }
+						'border-top-color' { PropertyID.border_top_color }
+						'border-top-style' { PropertyID.border_top_style }
+						'border-top-width' { PropertyID.border_top_width }
+						else { none }
+					}
+				}
+				0x63 {
+					return match name {
+						'corner-top-shape' { PropertyID.corner_top_shape }
+						else { none }
+					}
+				}
+				0x69 {
+					return match name {
+						'inset-inline-end' { PropertyID.inset_inline_end }
+						else { none }
+					}
+				}
+				0x6c {
+					return match name {
+						'list-style-image' { PropertyID.list_style_image }
+						else { none }
+					}
+				}
+				0x6d {
+					return match name {
+						'margin-block-end' { PropertyID.margin_block_end }
+						else { none }
+					}
+				}
+				0x70 {
+					return match name {
+						'page-break-after' { PropertyID.page_break_after }
+						else { none }
+					}
+				}
+				0x73 {
+					return match name {
+						'scroll-snap-stop' { PropertyID.scroll_snap_stop }
+						'scroll-snap-type' { PropertyID.scroll_snap_type }
+						'scrollbar-gutter' { PropertyID.scrollbar_gutter }
+						'stroke-dasharray' { PropertyID.stroke_dasharray }
+						else { none }
+					}
+				}
+				0x74 {
+					return match name {
+						'transform-origin' { PropertyID.transform_origin }
+						'transition-delay' { PropertyID.transition_delay }
+						else { none }
+					}
+				}
+				0x77 {
+					return match name {
+						'white-space-trim' { PropertyID.white_space_trim }
+						else { none }
+					}
+				}
+				else {}
+			}
+		}
+		17 {
+			match name[0] {
+				0x62 {
+					return match name {
+						'background-origin' { PropertyID.background_origin }
+						'background-repeat' { PropertyID.background_repeat }
+						'border-inline-end' { PropertyID.border_inline_end }
+						'border-left-color' { PropertyID.border_left_color }
+						'border-left-style' { PropertyID.border_left_style }
+						'border-left-width' { PropertyID.border_left_width }
+						else { none }
+					}
+				}
+				0x63 {
+					return match name {
+						'column-rule-color' { PropertyID.column_rule_color }
+						'column-rule-style' { PropertyID.column_rule_style }
+						'column-rule-width' { PropertyID.column_rule_width }
+						'corner-left-shape' { PropertyID.corner_left_shape }
+						'counter-increment' { PropertyID.counter_increment }
+						else { none }
+					}
+				}
+				0x64 {
+					return match name {
+						'dominant-baseline' { PropertyID.dominant_baseline }
+						else { none }
+					}
+				}
+				0x66 {
+					return match name {
+						'font-variant-caps' { PropertyID.font_variant_caps }
+						else { none }
+					}
+				}
+				0x67 {
+					return match name {
+						'grid-auto-columns' { PropertyID.grid_auto_columns }
+						'grid-column-start' { PropertyID.grid_column_start }
+						else { none }
+					}
+				}
+				0x69 {
+					return match name {
+						'inset-block-start' { PropertyID.inset_block_start }
+						else { none }
+					}
+				}
+				0x6d {
+					return match name {
+						'margin-inline-end' { PropertyID.margin_inline_end }
+						else { none }
+					}
+				}
+				0x70 {
+					return match name {
+						'padding-block-end' { PropertyID.padding_block_end }
+						'page-break-before' { PropertyID.page_break_before }
+						'page-break-inside' { PropertyID.page_break_inside }
+						else { none }
+					}
+				}
+				0x73 {
+					return match name {
+						'scroll-margin-top' { PropertyID.scroll_margin_top }
+						'scroll-snap-align' { PropertyID.scroll_snap_align }
+						'stroke-dashoffset' { PropertyID.stroke_dashoffset }
+						'stroke-miterlimit' { PropertyID.stroke_miterlimit }
+						else { none }
+					}
+				}
+				else {}
+			}
+		}
+		18 {
+			match name[0] {
+				0x2d {
+					return match name {
+						'-webkit-box-orient' { PropertyID.webkit_box_orient }
+						'-webkit-line-clamp' { PropertyID.webkit_line_clamp }
+						else { none }
+					}
+				}
+				0x61 {
+					return match name {
+						'animation-duration' { PropertyID.animation_duration }
+						'animation-timeline' { PropertyID.animation_timeline }
+						else { none }
+					}
+				}
+				0x62 {
+					return match name {
+						'border-block-color' { PropertyID.border_block_color }
+						'border-block-start' { PropertyID.border_block_start }
+						'border-block-style' { PropertyID.border_block_style }
+						'border-block-width' { PropertyID.border_block_width }
+						'border-image-slice' { PropertyID.border_image_slice }
+						'border-image-width' { PropertyID.border_image_width }
+						'border-right-color' { PropertyID.border_right_color }
+						'border-right-style' { PropertyID.border_right_style }
+						'border-right-width' { PropertyID.border_right_width }
+						else { none }
+					}
+				}
+				0x63 {
+					return match name {
+						'content-visibility' { PropertyID.content_visibility }
+						'corner-right-shape' { PropertyID.corner_right_shape }
+						else { none }
+					}
+				}
+				0x66 {
+					return match name {
+						'font-variant-emoji' { PropertyID.font_variant_emoji }
+						else { none }
+					}
+				}
+				0x67 {
+					return match name {
+						'grid-template-rows' { PropertyID.grid_template_rows }
+						else { none }
+					}
+				}
+				0x69 {
+					return match name {
+						'inset-inline-start' { PropertyID.inset_inline_start }
+						else { none }
+					}
+				}
+				0x6d {
+					return match name {
+						'margin-block-start' { PropertyID.margin_block_start }
+						else { none }
+					}
+				}
+				0x70 {
+					return match name {
+						'padding-inline-end' { PropertyID.padding_inline_end }
+						'perspective-origin' { PropertyID.perspective_origin }
+						'position-try-order' { PropertyID.position_try_order }
+						else { none }
+					}
+				}
+				0x73 {
+					return match name {
+						'scroll-margin-left' { PropertyID.scroll_margin_left }
+						'scroll-padding-top' { PropertyID.scroll_padding_top }
+						else { none }
+					}
+				}
+				0x76 {
+					return match name {
+						'view-timeline-axis' { PropertyID.view_timeline_axis }
+						'view-timeline-name' { PropertyID.view_timeline_name }
+						else { none }
+					}
+				}
+				else {}
+			}
+		}
+		19 {
+			match name[0] {
+				0x61 {
+					return match name {
+						'animation-direction' { PropertyID.animation_direction }
+						'animation-fill-mode' { PropertyID.animation_fill_mode }
+						else { none }
+					}
+				}
+				0x62 {
+					return match name {
+						'background-position' { PropertyID.background_position }
+						'border-bottom-color' { PropertyID.border_bottom_color }
+						'border-bottom-style' { PropertyID.border_bottom_style }
+						'border-bottom-width' { PropertyID.border_bottom_width }
+						'border-image-outset' { PropertyID.border_image_outset }
+						'border-image-repeat' { PropertyID.border_image_repeat }
+						'border-image-source' { PropertyID.border_image_source }
+						'border-inline-color' { PropertyID.border_inline_color }
+						'border-inline-start' { PropertyID.border_inline_start }
+						'border-inline-style' { PropertyID.border_inline_style }
+						'border-inline-width' { PropertyID.border_inline_width }
+						'backface-visibility' { PropertyID.backface_visibility }
+						else { none }
+					}
+				}
+				0x63 {
+					return match name {
+						'color-interpolation' { PropertyID.color_interpolation }
+						'corner-bottom-shape' { PropertyID.corner_bottom_shape }
+						else { none }
+					}
+				}
+				0x66 {
+					return match name {
+						'font-optical-sizing' { PropertyID.font_optical_sizing }
+						else { none }
+					}
+				}
+				0x67 {
+					return match name {
+						'grid-template-areas' { PropertyID.grid_template_areas }
+						else { none }
+					}
+				}
+				0x6c {
+					return match name {
+						'list-style-position' { PropertyID.list_style_position }
+						else { none }
+					}
+				}
+				0x6d {
+					return match name {
+						'margin-inline-start' { PropertyID.margin_inline_start }
+						else { none }
+					}
+				}
+				0x70 {
+					return match name {
+						'padding-block-start' { PropertyID.padding_block_start }
+						'position-visibility' { PropertyID.position_visibility }
+						else { none }
+					}
+				}
+				0x73 {
+					return match name {
+						'scroll-margin-block' { PropertyID.scroll_margin_block }
+						'scroll-margin-right' { PropertyID.scroll_margin_right }
+						'scroll-padding-left' { PropertyID.scroll_padding_left }
+						else { none }
+					}
+				}
+				0x74 {
+					return match name {
+						'transition-behavior' { PropertyID.transition_behavior }
+						'transition-duration' { PropertyID.transition_duration }
+						'transition-property' { PropertyID.transition_property }
+						else { none }
+					}
+				}
+				0x76 {
+					return match name {
+						'view-timeline-inset' { PropertyID.view_timeline_inset }
+						else { none }
+					}
+				}
+				else {}
+			}
+		}
+		20 {
+			match name[0] {
+				0x61 {
+					return match name {
+						'animation-play-state' { PropertyID.animation_play_state }
+						else { none }
+					}
+				}
+				0x62 {
+					return match name {
+						'box-decoration-break' { PropertyID.box_decoration_break }
+						else { none }
+					}
+				}
+				0x63 {
+					return match name {
+						'corner-end-end-shape' { PropertyID.corner_end_end_shape }
+						else { none }
+					}
+				}
+				0x66 {
+					return match name {
+						'font-variant-numeric' { PropertyID.font_variant_numeric }
+						else { none }
+					}
+				}
+				0x6f {
+					return match name {
+						'overflow-clip-margin' { PropertyID.overflow_clip_margin }
+						else { none }
+					}
+				}
+				0x70 {
+					return match name {
+						'padding-inline-start' { PropertyID.padding_inline_start }
+						else { none }
+					}
+				}
+				0x73 {
+					return match name {
+						'scroll-margin-bottom' { PropertyID.scroll_margin_bottom }
+						'scroll-margin-inline' { PropertyID.scroll_margin_inline }
+						'scroll-padding-block' { PropertyID.scroll_padding_block }
+						'scroll-padding-right' { PropertyID.scroll_padding_right }
+						'scroll-timeline-axis' { PropertyID.scroll_timeline_axis }
+						'scroll-timeline-name' { PropertyID.scroll_timeline_name }
+						else { none }
+					}
+				}
+				0x74 {
+					return match name {
+						'text-decoration-line' { PropertyID.text_decoration_line }
+						else { none }
+					}
+				}
+				0x76 {
+					return match name {
+						'view-transition-name' { PropertyID.view_transition_name }
+						else { none }
+					}
+				}
+				0x77 {
+					return match name {
+						'white-space-collapse' { PropertyID.white_space_collapse }
+						else { none }
+					}
+				}
+				else {}
+			}
+		}
+		21 {
+			match name[0] {
+				0x61 {
+					return match name {
+						'animation-composition' { PropertyID.animation_composition }
+						else { none }
+					}
+				}
+				0x62 {
+					return match name {
+						'background-attachment' { PropertyID.background_attachment }
+						'background-blend-mode' { PropertyID.background_blend_mode }
+						'background-position-x' { PropertyID.background_position_x }
+						'background-position-y' { PropertyID.background_position_y }
+						'border-end-end-radius' { PropertyID.border_end_end_radius }
+						else { none }
+					}
+				}
+				0x63 {
+					return match name {
+						'corner-top-left-shape' { PropertyID.corner_top_left_shape }
+						else { none }
+					}
+				}
+				0x66 {
+					return match name {
+						'font-feature-settings' { PropertyID.font_feature_settings }
+						'font-variant-position' { PropertyID.font_variant_position }
+						else { none }
+					}
+				}
+				0x67 {
+					return match name {
+						'grid-template-columns' { PropertyID.grid_template_columns }
+						else { none }
+					}
+				}
+				0x73 {
+					return match name {
+						'scroll-padding-bottom' { PropertyID.scroll_padding_bottom }
+						'scroll-padding-inline' { PropertyID.scroll_padding_inline }
+						'shape-image-threshold' { PropertyID.shape_image_threshold }
+						else { none }
+					}
+				}
+				0x74 {
+					return match name {
+						'text-decoration-color' { PropertyID.text_decoration_color }
+						'text-decoration-style' { PropertyID.text_decoration_style }
+						'text-underline-offset' { PropertyID.text_underline_offset }
+						else { none }
+					}
+				}
+				else {}
+			}
+		}
+		22 {
+			match name[0] {
+				0x2d {
+					return match name {
+						'-webkit-font-smoothing' { PropertyID.webkit_font_smoothing }
+						else { none }
+					}
+				}
+				0x62 {
+					return match name {
+						'border-block-end-color' { PropertyID.border_block_end_color }
+						'border-block-end-style' { PropertyID.border_block_end_style }
+						'border-block-end-width' { PropertyID.border_block_end_width }
+						'border-top-left-radius' { PropertyID.border_top_left_radius }
+						else { none }
+					}
+				}
+				0x63 {
+					return match name {
+						'contain-intrinsic-size' { PropertyID.contain_intrinsic_size }
+						'corner-block-end-shape' { PropertyID.corner_block_end_shape }
+						'corner-end-start-shape' { PropertyID.corner_end_start_shape }
+						'corner-start-end-shape' { PropertyID.corner_start_end_shape }
+						'corner-top-right-shape' { PropertyID.corner_top_right_shape }
+						else { none }
+					}
+				}
+				0x66 {
+					return match name {
+						'font-language-override' { PropertyID.font_language_override }
+						'font-variant-ligatures' { PropertyID.font_variant_ligatures }
+						else { none }
+					}
+				}
+				0x70 {
+					return match name {
+						'position-try-fallbacks' { PropertyID.position_try_fallbacks }
+						else { none }
+					}
+				}
+				else {}
+			}
+		}
+		23 {
+			match name[0] {
+				0x2d {
+					return match name {
+						'-webkit-text-fill-color' { PropertyID.webkit_text_fill_color }
+						else { none }
+					}
+				}
+				0x62 {
+					return match name {
+						'border-end-start-radius' { PropertyID.border_end_start_radius }
+						'border-inline-end-color' { PropertyID.border_inline_end_color }
+						'border-inline-end-style' { PropertyID.border_inline_end_style }
+						'border-inline-end-width' { PropertyID.border_inline_end_width }
+						'border-start-end-radius' { PropertyID.border_start_end_radius }
+						'border-top-right-radius' { PropertyID.border_top_right_radius }
+						else { none }
+					}
+				}
+				0x63 {
+					return match name {
+						'contain-intrinsic-width' { PropertyID.contain_intrinsic_width }
+						'corner-inline-end-shape' { PropertyID.corner_inline_end_shape }
+						else { none }
+					}
+				}
+				0x66 {
+					return match name {
+						'font-variant-alternates' { PropertyID.font_variant_alternates }
+						'font-variant-east-asian' { PropertyID.font_variant_east_asian }
+						'font-variation-settings' { PropertyID.font_variation_settings }
+						else { none }
+					}
+				}
+				0x73 {
+					return match name {
+						'scroll-margin-block-end' { PropertyID.scroll_margin_block_end }
+						else { none }
+					}
+				}
+				0x74 {
+					return match name {
+						'text-underline-position' { PropertyID.text_underline_position }
+						else { none }
+					}
+				}
+				else {}
+			}
+		}
+		24 {
+			match name[0] {
+				0x62 {
+					return match name {
+						'border-block-start-color' { PropertyID.border_block_start_color }
+						'border-block-start-style' { PropertyID.border_block_start_style }
+						'border-block-start-width' { PropertyID.border_block_start_width }
+						else { none }
+					}
+				}
+				0x63 {
+					return match name {
+						'contain-intrinsic-height' { PropertyID.contain_intrinsic_height }
+						'corner-block-start-shape' { PropertyID.corner_block_start_shape }
+						'corner-bottom-left-shape' { PropertyID.corner_bottom_left_shape }
+						'corner-start-start-shape' { PropertyID.corner_start_start_shape }
+						else { none }
+					}
+				}
+				0x6f {
+					return match name {
+						'overflow-clip-margin-top' { PropertyID.overflow_clip_margin_top }
+						else { none }
+					}
+				}
+				0x73 {
+					return match name {
+						'scroll-margin-inline-end' { PropertyID.scroll_margin_inline_end }
+						'scroll-padding-block-end' { PropertyID.scroll_padding_block_end }
+						else { none }
+					}
+				}
+				0x74 {
+					return match name {
+						'text-decoration-skip-ink' { PropertyID.text_decoration_skip_ink }
+						else { none }
+					}
+				}
+				else {}
+			}
+		}
+		25 {
+			match name[0] {
+				0x61 {
+					return match name {
+						'animation-iteration-count' { PropertyID.animation_iteration_count }
+						'animation-timing-function' { PropertyID.animation_timing_function }
+						else { none }
+					}
+				}
+				0x62 {
+					return match name {
+						'border-bottom-left-radius' { PropertyID.border_bottom_left_radius }
+						'border-inline-start-color' { PropertyID.border_inline_start_color }
+						'border-inline-start-style' { PropertyID.border_inline_start_style }
+						'border-inline-start-width' { PropertyID.border_inline_start_width }
+						'border-start-start-radius' { PropertyID.border_start_start_radius }
+						else { none }
+					}
+				}
+				0x63 {
+					return match name {
+						'corner-bottom-right-shape' { PropertyID.corner_bottom_right_shape }
+						'corner-inline-start-shape' { PropertyID.corner_inline_start_shape }
+						else { none }
+					}
+				}
+				0x6f {
+					return match name {
+						'overflow-clip-margin-left' { PropertyID.overflow_clip_margin_left }
+						else { none }
+					}
+				}
+				0x73 {
+					return match name {
+						'scroll-margin-block-start' { PropertyID.scroll_margin_block_start }
+						'scroll-padding-inline-end' { PropertyID.scroll_padding_inline_end }
+						else { none }
+					}
+				}
+				0x74 {
+					return match name {
+						'text-decoration-thickness' { PropertyID.text_decoration_thickness }
+						else { none }
+					}
+				}
+				else {}
+			}
+		}
+		26 {
+			match name[0] {
+				0x62 {
+					return match name {
+						'border-bottom-right-radius' { PropertyID.border_bottom_right_radius }
+						else { none }
+					}
+				}
+				0x6f {
+					return match name {
+						'overflow-clip-margin-block' { PropertyID.overflow_clip_margin_block }
+						'overflow-clip-margin-right' { PropertyID.overflow_clip_margin_right }
+						else { none }
+					}
+				}
+				0x73 {
+					return match name {
+						'scroll-margin-inline-start' { PropertyID.scroll_margin_inline_start }
+						'scroll-padding-block-start' { PropertyID.scroll_padding_block_start }
+						else { none }
+					}
+				}
+				0x74 {
+					return match name {
+						'transition-timing-function' { PropertyID.transition_timing_function }
+						else { none }
+					}
+				}
+				else {}
+			}
+		}
+		27 {
+			match name[0] {
+				0x63 {
+					return match name {
+						'color-interpolation-filters' { PropertyID.color_interpolation_filters }
+						else { none }
+					}
+				}
+				0x6f {
+					return match name {
+						'overflow-clip-margin-bottom' { PropertyID.overflow_clip_margin_bottom }
+						'overflow-clip-margin-inline' { PropertyID.overflow_clip_margin_inline }
+						else { none }
+					}
+				}
+				0x73 {
+					return match name {
+						'scroll-padding-inline-start' { PropertyID.scroll_padding_inline_start }
+						else { none }
+					}
+				}
+				else {}
+			}
+		}
+		28 {
+			match name[0] {
+				0x63 {
+					return match name {
+						'contain-intrinsic-block-size' { PropertyID.contain_intrinsic_block_size }
+						else { none }
+					}
+				}
+				else {}
+			}
+		}
+		29 {
+			match name[0] {
+				0x63 {
+					return match name {
+						'contain-intrinsic-inline-size' { PropertyID.contain_intrinsic_inline_size }
+						else { none }
+					}
+				}
+				else {}
+			}
+		}
+		30 {
+			match name[0] {
+				0x6f {
+					return match name {
+						'overflow-clip-margin-block-end' { PropertyID.overflow_clip_margin_block_end }
+						else { none }
+					}
+				}
+				else {}
+			}
+		}
+		31 {
+			match name[0] {
+				0x6f {
+					return match name {
+						'overflow-clip-margin-inline-end' { PropertyID.overflow_clip_margin_inline_end }
+						else { none }
+					}
+				}
+				else {}
+			}
+		}
+		32 {
+			match name[0] {
+				0x6f {
+					return match name {
+						'overflow-clip-margin-block-start' { PropertyID.overflow_clip_margin_block_start }
+						else { none }
+					}
+				}
+				else {}
+			}
+		}
+		33 {
+			match name[0] {
+				0x6f {
+					return match name {
+						'overflow-clip-margin-inline-start' { PropertyID.overflow_clip_margin_inline_start }
+						else { none }
+					}
+				}
+				else {}
+			}
+		}
+		else {}
 	}
+	return none
 }
 
 pub fn string_from_property_id(property_id PropertyID) string {

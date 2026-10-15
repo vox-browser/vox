@@ -9,6 +9,7 @@ generator preserves existing V enum spellings and adds every upstream keyword.
 from __future__ import annotations
 
 import argparse
+import collections
 import re
 from pathlib import Path
 
@@ -72,6 +73,25 @@ def replace_block(source: str, start_pattern: str, end_pattern: str, replacement
     return source[:start.start()] + replacement + source[end_offset:]
 
 
+
+def dispatched_lookup(rows, name, result):
+    groups = collections.defaultdict(lambda: collections.defaultdict(list))
+    for text, value in rows:
+        assert text and text.isascii()
+        groups[len(text)][ord(text[0])].append((text, value))
+    lines = [f'\t// Reject unrelated names before comparing complete strings. These integer',
+             '\t// switches use no runtime table or retained allocation.',
+             f'\tmatch {name}.len {{']
+    for length, prefixes in sorted(groups.items()):
+        lines += [f'\t\t{length} {{', f'\t\t\tmatch {name}[0] {{']
+        for prefix, entries in sorted(prefixes.items()):
+            lines += [f'\t\t\t\t0x{prefix:02x} {{', f'\t\t\t\t\treturn match {name} {{']
+            lines += [f"\t\t\t\t\t\t'{text}' {{ {result}.{value} }}" for text, value in entries]
+            lines += ['\t\t\t\t\t\telse { none }', '\t\t\t\t\t}', '\t\t\t\t}']
+        lines += ['\t\t\t\telse {}', '\t\t\t}', '\t\t}']
+    lines += ['\t\telse {}', '\t}', '\treturn none']
+    return '\n'.join(lines) + '\n'
+
 def main() -> int:
     args = parse_args()
     target = args.translation / "css/style_values_core.v"
@@ -100,9 +120,8 @@ def main() -> int:
     to_string += "\t}\n}\n\n"
     source = replace_block(source, r"^pub fn string_from_keyword\(keyword Keyword\) string \{\n", r"^pub fn keyword_from_string\(", to_string)
 
-    from_string = "pub fn keyword_from_string(input string) ?Keyword {\n\treturn match to_ascii_lowercase(input) {\n"
-    from_string += "".join(f"\t\t'{css_text}' {{ Keyword.{case} }}\n" for css_text, case in rows)
-    from_string += "\t\telse { none }\n\t}\n}\n\n"
+    from_string = "pub fn keyword_from_string(input string) ?Keyword {\n\tname := to_ascii_lowercase(input)\n"
+    from_string += dispatched_lookup(rows, 'name', 'Keyword') + "}\n\n"
     source = replace_block(source, r"^pub fn keyword_from_string\(input string\) \?Keyword \{\n", r"^// --- StyleValue ---", from_string)
 
     target.write_text(source)

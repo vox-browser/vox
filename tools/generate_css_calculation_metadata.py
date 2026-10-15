@@ -10,6 +10,7 @@ drifting from upstream.
 from __future__ import annotations
 
 import argparse
+import collections
 import json
 from collections import defaultdict
 from pathlib import Path
@@ -407,6 +408,25 @@ def v_keyword_name(name: str) -> str:
     return translated
 
 
+
+def dispatched_lookup(rows, name, result):
+    groups = collections.defaultdict(lambda: collections.defaultdict(list))
+    for text, value in rows:
+        assert text and text.isascii()
+        groups[len(text)][ord(text[0])].append((text, value))
+    lines = [f'\t// Reject unrelated names before comparing complete strings. These integer',
+             '\t// switches use no runtime table or retained allocation.',
+             f'\tmatch {name}.len {{']
+    for length, prefixes in sorted(groups.items()):
+        lines += [f'\t\t{length} {{', f'\t\t\tmatch {name}[0] {{']
+        for prefix, entries in sorted(prefixes.items()):
+            lines += [f'\t\t\t\t0x{prefix:02x} {{', f'\t\t\t\t\treturn match {name} {{']
+            lines += [f"\t\t\t\t\t\t'{text}' {{ {result}.{value} }}" for text, value in entries]
+            lines += ['\t\t\t\t\t\telse { none }', '\t\t\t\t\t}', '\t\t\t\t}']
+        lines += ['\t\t\t\telse {}', '\t\t\t}', '\t\t}']
+    lines += ['\t\telse {}', '\t}', '\treturn none']
+    return '\n'.join(lines) + '\n'
+
 def generate(properties: dict[str, object], enums: dict[str, list[str]]) -> str:
     enum_names = set(enums)
     output = [
@@ -431,23 +451,11 @@ def generate(properties: dict[str, object], enums: dict[str, list[str]]) -> str:
         )
     output.extend(("\t\telse { name }", "\t}", "}", ""))
 
-    output.extend(
-        (
-            "fn property_id_from_canonical_name(name string) ?PropertyID {",
-            "\treturn match name {",
-        )
-    )
-    for name, raw_property in properties.items():
-        if isinstance(raw_property, dict) and raw_property.get("legacy-alias-for"):
-            continue
-        output.extend(
-            (
-                f"\t\t{name!r} {{",
-                f"\t\t\tPropertyID.{v_property_name(name)}",
-                "\t\t}",
-            )
-        )
-    output.extend(("\t\telse { none }", "\t}", "}", ""))
+    output.append("fn property_id_from_canonical_name(name string) ?PropertyID {")
+    rows = [(name, v_property_name(name)) for name, raw_property in properties.items()
+            if not (isinstance(raw_property, dict) and raw_property.get("legacy-alias-for"))]
+    output.extend(dispatched_lookup(rows, 'name', 'PropertyID').splitlines())
+    output.extend(("}", ""))
 
     output.extend(
         (
