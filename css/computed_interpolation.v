@@ -9957,22 +9957,22 @@ fn copy_invalidation_plan(plan &InvalidationPlan) &InvalidationPlan {
 }
 
 fn add_invalidation_plan_for_properties(mut style_invalidation_data StyleInvalidationData, invalidation_properties InvalidationSet, plan &InvalidationPlan) {
-	invalidation_properties.for_each_property(fn [mut style_invalidation_data, plan] (invalidation_property InvalidationProperty) bool {
+	// The two flags are deliberately not registered as property dependencies.
+	// Stored properties already own their canonical keys; consume that ordered
+	// map directly without creating a callback or serializing each key again.
+	for key, invalidation_property in invalidation_properties.properties_ {
 		if !should_register_invalidation_property(invalidation_property) {
-			return true
+			continue
 		}
-
-		key := invalidation_property.key()
 		if key !in style_invalidation_data.invalidation_plans {
 			style_invalidation_data.invalidation_plans[key] = InvalidationPlan.create()
 			style_invalidation_data.invalidation_plan_properties[key] = invalidation_property
 		}
 		mut stored_invalidation := style_invalidation_data.invalidation_plans[key] or {
-			return true
+			continue
 		}
 		stored_invalidation.include_all_from(plan)
-		return true
-	})
+	}
 }
 
 pub enum SelectorCombinator {
