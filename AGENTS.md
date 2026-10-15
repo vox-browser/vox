@@ -1633,6 +1633,15 @@ evidence](docs/translation-audit/NATIVE_MEDIA_WHEEL_RAW_HANDLER.md).
   formatting regresses 0.56% at the median, with all three pairs worse.
   Only owned function/test edits are restored and all observations remain.
   Page credit and additional observed savings stay 0; frozen68 remains control.
+  Fresh intrinsic glyph-cache owners `585086c9` pass 23,486 focused
+  assertions per configuration; complete cold intrinsic formatting uses 5.32%
+  fewer instructions. Page point saving 8,157,499,
+  17/30 wins, paired interval [-7,804,090, 20,236,130.5];
+  repeatable page credit 0. Broad verification:
+  87 selected cases both GC and 19 screenshots (16 exact);
+  focused inline viewport exact. Additional observed savings: 0.
+  Same 4 GiB/placement; canonical/GUI preserved; contemporary Root excluded.
+  Chrome parity remains open.
 - Outside instruction-count optimization, run broad regression suites once per
   ten completed fixes, not after every fix.
   Broad suites include full translation/package test batches, the full LibJS AST

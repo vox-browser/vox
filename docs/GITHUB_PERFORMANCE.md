@@ -6585,6 +6585,109 @@ Chrome content/start/submission accounting remains open; no faster-than-Chrome
 claim is made. Evidence: `Build/instructions/vox-opt68-interleaved-*` and
 `Build/v/instruction-opt68-*`.
 
+## Retain fresh intrinsic glyph runs as immutable cache owners
+
+Feature `585086c9` changes only private `shape_text_for_layout()` cache
+insertion. The freshly shaped run becomes the existing intrinsic cache's
+immutable owner, and the first layout consumer receives the established
+copy-on-write fork. Previously the cache received a deep clone and the consumer
+received the original. Cache keys, lookup/hit behavior, normal-mode misses,
+shaping, invalidation and all public GlyphRun source remain unchanged. No new
+cache, retained field or public API is added; filtering, arenas and GC stay the
+same. Consumer edits still detach glyph/replay buffers through the existing
+mutation contract.
+
+Before/final Boehm and final no-GC native C-O2 configurations each actually pass
+**23,486 assertions in 28 cases** (27 functional plus one inactive diagnostic).
+Two new cases check LTR/RTL and Unicode miss/hit consumers against the unchanged
+platform shaper, independent mutation after detachment, cached glyph/replay and
+trailing-whitespace preservation, complete line merging, cache clearing and
+retained lines through forced collection. Existing wrapping, overflow, tab,
+inline-edge, public iterator and retained-fragment cases remain. Identical common
+source SHA256: `3a8e42572e6a8ba114e479763471274b90b0ca383a85b6c2743fe975cb7c9ffd`.
+
+Three fixed alternating local pairs run **512 complete public intrinsic inline
+formatting runs**, each with 16 text nodes and ten words per node at 300px width.
+Per-node intrinsic shape-cache clearing is **included** inside every measured
+complete run, ensuring insertion misses while retaining tokenized chunks.
+Setup, eight warmups, expected result and forced GC precede the hardware
+interval; the checksum assertion follows. Counts before are
+1,640,235,340 / 1,630,020,724 / 1,631,187,635; candidate counts by pair are
+1,545,049,576 / 1,544,445,151 / 1,542,298,041. Median instructions change
+**1,631,187,635→1,544,445,151 (-5.32%)**,
+all three pairs improving; checksum 17,694,720 in all six observations. Local
+savings receive no extra page credit.
+
+Both entire-process C-O1/Boehm profiles actually pass without filter/reset.
+Complete fresh intrinsic formatting batches stay 521 and formatting/shaping
+entry counts match. Exact selected counts are retained in
+`instruction-opt70-profile-evidence.json`: clone calls change
+92,172→0,
+and fork calls change
+75,298→167,470.
+A missing clone row means the unused function was not called; no profile time
+or call count substitutes for hardware instructions.
+
+Strict generated-C comparison authenticates the exact cache-owner assignment
+and returned fork in `layout__InlineLevelIterator_shape_text_for_layout`.
+The entire remaining target, including cache lookup/hits and the normal miss,
+matches. Removing the last clone caller makes the compiler omit its unused
+body/prototype; that exact old body is authenticated against independently
+generated focused control C, and the candidate has zero references. The public
+V clone method is unchanged. All remaining C, schemas, resources, filtering,
+arenas and GC match after established compiler identities, unchanged assertion
+line mapping, 37 frozen includes and four byte-identical helper reorderings.
+Exact native arguments and 120 pinned input hashes match. Compiled C SHA256
+`283054ae7d7562994e67b7af1b5007b59ae6294d34e7e8b6aa4e1b68eea36637`; durable normal/focused/profile
+archive hashes are in `instruction-opt70-artifact-archives.json`.
+
+The first audit template incorrectly referenced rejected round69's absent
+normal C; its original files remain under
+`instruction-opt70-c-audit-template-round-failure`. The next strict projection
+exposed only the now-unused clone definition/prototype. That failed projection
+remains under `instruction-opt70-c-audit-dead-clone-failure`; the corrected audit
+permits only the independently authenticated dead-code removal in addition to
+the exact private handoff. No successful runtime job or counter was repeated.
+
+The predeclared cohort fixes **30 alternating pairs**, odd before/final and
+even final/before, with **30,000 paired bootstrap resamples, seed 70**. Both
+regular persisted binaries use fresh copies of the same 359 cached bodies,
+frozen text helper and identical child-only placement helper, Boehm/default
+marker 1, native C-O2 and the same 4 GiB hint; no prod/prealloc. Viewport 1024×768,
+fixed endpoint `navigation_to_first_document_paint[0]`. Only the fresh matched
+cohort is compared; historical medians and independent Root work are excluded.
+
+| Build | Median first-frame retired instructions | Median process peak, MiB |
+| --- | ---: | ---: |
+| Fresh accepted frozen68 control | 18,329,265,514 | 3,639.8 |
+| Fresh intrinsic cache owner | 18,321,108,015 | 3,637.4 |
+
+Difference of marginal medians: **8,157,499** saved
+instructions (-0.045% change); **17/30**
+wins. Paired median saving **5,874,067**; paired 95%
+interval **[-7,804,090, 20,236,130.5]**. The interval includes zero; repeatable page credit is **0**. Whole-page savings are not established.
+
+All 60 primary observations and **60 actual viewport PNGs** remain.
+Recovered primaries: none; pre-parse startup retries: 0.
+Each first primary retains 1 installation / 2 geometry preparations / 1 paint;
+later completed refreshes stay separate: none.
+No completed primary is extended, discarded or rerun. Any recovery explicitly
+lacks actual final exit, PNG, per-copy fingerprint receipt and process peak.
+Lifetime peaks include capture/exit/later refreshes, are not first-frame live
+memory and are never summed. The focused inline viewport is exact at 1024×768.
+Prior observed carry is 0. Cumulative observed saving **8,157,499** crosses the 5M gate. Six direct harness jobs actually pass CSS 31/SVG 10/layout 46 in both GCs (**174 executions**). All **19 screenshots pass, 16 exact**; known differences remain inline-node 13, text-decorations 1,341 and canvas-text 1,994. The completed broad batch resets additional observed savings to 0.
+
+The isolated signed app is `/Users/alex/code/vox2/Build/v/Vox-opt70.app`. Its executable-relative load
+command pins the frozen helper inside the bundle; default startup smoke
+verifies the actual loaded path/hash. Native instruction text matches the
+measured regular binary. Signature, startup and actual collections pass with
+default marker 1 and override 2. Canonical and user GUI apps are preserved;
+actual before/after hashes disclose concurrent advancement. Contemporary Root
+receives no extra source pin, regression or performance credit. Equivalent
+Chrome content/start/submission accounting remains open; no faster-than-Chrome
+claim is made. Evidence: `Build/instructions/vox-opt70-interleaved-*` and
+`Build/v/instruction-opt70-*`.
+
 ## Causes and changes
 
 - The V 0.5.2 compatibility compiler's `-prod` Boehm code repeatedly snapshots
