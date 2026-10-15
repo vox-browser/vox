@@ -3968,13 +3968,13 @@ fn block_box_from_typed_layout_shallow(node &Node, state &LayoutState, ancestor_
 		svg_points: svg_points
 		svg_fill_color: svg_fill_color
 		svg_solid_color_data: svg_solid_color_data
-		svg_fill_linear_gradient: svg_fill_linear_gradient
-		svg_fill_radial_gradient: svg_fill_radial_gradient
+		svg_gradient_data: retained_svg_gradient_data(svg_fill_linear_gradient,
+			svg_stroke_linear_gradient, svg_fill_radial_gradient, svg_stroke_radial_gradient) or {
+			unsafe { nil }
+		}
 		svg_fill_pattern: svg_fill_pattern
 		svg_fill_even_odd: svg_fill_even_odd
 		svg_stroke_color: svg_stroke_color
-		svg_stroke_linear_gradient: svg_stroke_linear_gradient
-		svg_stroke_radial_gradient: svg_stroke_radial_gradient
 		svg_stroke_pattern: svg_stroke_pattern
 		svg_stroke_width: svg_stroke_width
 		svg_stroke_dasharray: svg_stroke_dasharray

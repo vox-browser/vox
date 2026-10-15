@@ -362,13 +362,9 @@ pub mut:
 	svg_points                 []f64
 	svg_fill_color             string
 	svg_solid_color_data       &PaintSVGSolidColorData = unsafe { nil }
-	svg_fill_linear_gradient   ?painting.SVGLinearGradientPaintStyle
-	svg_fill_radial_gradient   ?painting.SVGRadialGradientPaintStyle
 	svg_fill_pattern           ?&painting.SVGPatternPaintStyle
 	svg_fill_even_odd          bool
 	svg_stroke_color           string
-	svg_stroke_linear_gradient ?painting.SVGLinearGradientPaintStyle
-	svg_stroke_radial_gradient ?painting.SVGRadialGradientPaintStyle
 	svg_stroke_pattern         ?&painting.SVGPatternPaintStyle
 	svg_stroke_width           f64
 	svg_stroke_dasharray       []f64
@@ -428,6 +424,9 @@ pub mut:
 	// representation used by boxes which do not establish a transformed paint subtree.
 	paint_transform [6]f64
 mut:
+	// Ordinary boxes retain no SVG-gradient payload. Painted paths share one
+	// immutable snapshot with commands and earlier recordings.
+	svg_gradient_data                              &PaintSVGGradientData = unsafe { nil }
 	own_scroll_frame_index                         int
 	sticky_scroll_frame_index                      int
 	accumulated_visual_context_index               int
@@ -2418,9 +2417,15 @@ fn (b &BlockBox) record_paint_commands_for_entries(entries []PaintOrderEntry, se
 				svg_solid_color_data: box.svg_solid_color_data
 				force_dark_role: .svg
 				force_dark_role_set: true
-				svg_gradient_data: retained_svg_gradient_data(box.svg_fill_linear_gradient,
-					box.svg_stroke_linear_gradient, box.svg_fill_radial_gradient,
-					box.svg_stroke_radial_gradient)
+				svg_gradient_data: if !isnil(box.svg_gradient_data)
+					&& (box.svg_gradient_data.fill_linear_gradient != none
+						|| box.svg_gradient_data.stroke_linear_gradient != none
+						|| box.svg_gradient_data.fill_radial_gradient != none
+						|| box.svg_gradient_data.stroke_radial_gradient != none) {
+					box.svg_gradient_data
+				} else {
+					none
+				}
 				fill_pattern: box.svg_fill_pattern
 				opacity: opacity
 				path: box.svg_path

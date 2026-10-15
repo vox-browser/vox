@@ -22,22 +22,24 @@ fn ephemeral_svg_gradient_commands() []PaintCommand {
 		width: 100
 		height: 50
 		svg_path: 'M0 0L100 0L100 50Z'
-		svg_fill_linear_gradient: painting.SVGLinearGradientPaintStyle{
-			gradient: svg_gradient_snapshot_test_style(painting.Color{0, 0, 0, 255})
-			end_point: painting.Point{100, 50}
-		}
-		svg_stroke_linear_gradient: painting.SVGLinearGradientPaintStyle{
-			gradient: svg_gradient_snapshot_test_style(painting.Color{255, 0, 0, 255})
-			end_point: painting.Point{50, 100}
-		}
-		svg_fill_radial_gradient: painting.SVGRadialGradientPaintStyle{
-			gradient: svg_gradient_snapshot_test_style(painting.Color{0, 128, 0, 255})
-			end_radius: 40
-		}
-		svg_stroke_radial_gradient: painting.SVGRadialGradientPaintStyle{
-			gradient: svg_gradient_snapshot_test_style(painting.Color{255, 255, 255, 255})
-			start_radius: 2
-			end_radius: 60
+		svg_gradient_data: &PaintSVGGradientData{
+			fill_linear_gradient: painting.SVGLinearGradientPaintStyle{
+				gradient: svg_gradient_snapshot_test_style(painting.Color{0, 0, 0, 255})
+				end_point: painting.Point{100, 50}
+			}
+			stroke_linear_gradient: painting.SVGLinearGradientPaintStyle{
+				gradient: svg_gradient_snapshot_test_style(painting.Color{255, 0, 0, 255})
+				end_point: painting.Point{50, 100}
+			}
+			fill_radial_gradient: painting.SVGRadialGradientPaintStyle{
+				gradient: svg_gradient_snapshot_test_style(painting.Color{0, 128, 0, 255})
+				end_radius: 40
+			}
+			stroke_radial_gradient: painting.SVGRadialGradientPaintStyle{
+				gradient: svg_gradient_snapshot_test_style(painting.Color{255, 255, 255, 255})
+				start_radius: 2
+				end_radius: 60
+			}
 		}
 	}.paint_commands().filter(it.kind == 'draw_svg_path')
 }
