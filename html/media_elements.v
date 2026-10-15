@@ -303,10 +303,14 @@ mut:
 }
 
 pub fn HTMLTrackElementModel.create(base_url dom.URL) &HTMLTrackElementModel {
+	return create_track_element_model(base_url, dom.EventTarget.new())
+}
+
+fn create_track_element_model(base_url dom.URL, event_target &dom.EventTarget) &HTMLTrackElementModel {
 	return &HTMLTrackElementModel{
 		track: TextTrack.create()
 		base_url_: base_url
-		event_target_: dom.EventTarget.new()
+		event_target_: event_target
 	}
 }
 
@@ -315,7 +319,8 @@ pub fn html_track_element_model_for_dom_element(element &dom.HTMLTrackElement) &
 		return unsafe { &HTMLTrackElementModel(element.track_element_model_) }
 	}
 	dom_element := unsafe { &dom.Element(element) }
-	mut model := HTMLTrackElementModel.create(dom_element.document().base_url())
+	mut model := create_track_element_model(dom_element.document().base_url(),
+		unsafe { &dom.EventTarget(element) })
 	model.set_kind(dom_element.get_attribute_ns(none, 'kind') or { '' })
 	model.set_label(dom_element.get_attribute_ns(none, 'label') or { '' })
 	model.set_srclang(dom_element.get_attribute_ns(none, 'srclang') or { '' })
