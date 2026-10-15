@@ -1106,10 +1106,11 @@ fn document_preload_resource_urls(document &dom.Document, base_url string) []str
 
 fn preload_document_resources(document &dom.Document, base_url string, cached map[string]PreloadedResource) map[string]PreloadedResource {
 	urls := document_preload_resource_urls(document, base_url)
+	resource_types := document_preload_resource_types(document, base_url)
 	mut loaded := map[string]PreloadedResource{}
 	mut pending_urls := []string{}
 	for resource_url in urls {
-		request_type := document_preload_resource_type(document, resource_url, base_url)
+		request_type := resource_types[resource_url] or { 'image' }
 		filtered := browsernet.filter(adblock.Request{url: resource_url, source_url: document.url.serialize(), request_type: request_type}) or {
 			loaded[resource_url] = PreloadedResource{url: resource_url, error: err.msg()}
 			continue
@@ -1131,7 +1132,7 @@ fn preload_document_resources(document &dom.Document, base_url string, cached ma
 	}
 	results := chan PreloadedResource{ cap: pending_urls.len }
 	for resource_url in pending_urls {
-		spawn fetch_resource_in_background(resource_url, document.url.serialize(), document_preload_resource_type(document, resource_url, base_url), results)
+		spawn fetch_resource_in_background(resource_url, document.url.serialize(), resource_types[resource_url] or { 'image' }, results)
 	}
 	for _ in pending_urls {
 		resource := <-results
@@ -1140,19 +1141,6 @@ fn preload_document_resources(document &dom.Document, base_url string, cached ma
 	return loaded
 }
 
-fn document_preload_resource_type(document &dom.Document, resource_url string, base_url string) string {
-	root := unsafe { &dom.Node(document) }
-	for element in css.query_selector_all(root, 'link[rel][href]') {
-		if element.get_attribute_value('rel').to_lower().split(' ').any(it == 'stylesheet')
-			&& resolve_document_reference(element.get_attribute_value('href'), base_url) == resource_url { return 'stylesheet' }
-	}
-	if browser_document_can_load_scripts(document) {
-		for element in css.query_selector_all(root, 'script[src]') {
-			if resolve_document_reference(element.get_attribute_value('src'), base_url) == resource_url { return 'script' }
-		}
-	}
-	return 'image'
-}
 
 fn install_external_styles(document &dom.Document, base_url string, preloaded map[string]PreloadedResource) []string {
 	root := unsafe { &dom.Node(document) }
