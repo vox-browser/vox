@@ -22,6 +22,13 @@ fn (mut app BrowserApp) finish_frame_preparation() {
 		app.paint_commands_pending = false
 		return
 	}
+	// Boundary events such as mouseleave can leave a pending CSS state change.
+	// Commit it before consulting the cached display list for this frame.
+	mut document := unsafe { &dom.Document(app.document) }
+	if document.needs_style_update_after_layout() || !document.layout_is_up_to_date() {
+		document.update_layout(.html_event_loop_rendering_update)
+		app.adopt_current_document_geometry()
+	}
 	// A synchronous query may already have recorded the new document's list.
 	// Pending commands must still be adopted even when that cache is populated.
 	// Also refresh invalidated scroll snapshots without requiring a relayout.

@@ -462,6 +462,9 @@ mut:
 	cursor_cache_offset        int
 	cursor_cache_visible       bool
 	cursor_cache_initialized   bool
+	// CSS can apply a paint-only style through Document::update_layout(),
+	// without entering the embedder's explicit layout wrapper.
+	paint_tree_needs_style_update bool
 }
 
 fn document_layout_update_callback_with_paint_tree(document &dom.Document, viewport_width f64,
