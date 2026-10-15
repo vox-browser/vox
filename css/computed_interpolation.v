@@ -13414,7 +13414,13 @@ fn cascade_custom_properties_from_declaration(declaration &CSSStyleProperties, m
 }
 
 fn custom_property_bridge_values_equal(left &dom.CSSStyleValue_, right &dom.CSSStyleValue_) bool {
+	if voidptr(left) == voidptr(right) {
+		return true
+	}
 	if left.css_value_handle != unsafe { nil } && right.css_value_handle != unsafe { nil } {
+		if left.css_value_handle == right.css_value_handle {
+			return true
+		}
 		left_value := unsafe { &dom.StyleValue(left.css_value_handle) }
 		right_value := unsafe { &dom.StyleValue(right.css_value_handle) }
 		if left_typed := typed_style_value_logic_from_dom(left_value) {
@@ -13435,13 +13441,27 @@ fn custom_property_bridge_values_identical(left &dom.CSSStyleValue_, right &dom.
 }
 
 fn custom_property_maps_equal(left map[string]dom.CSSCustomProperty_, right map[string]dom.CSSCustomProperty_) bool {
+	return compare_custom_property_maps(left, right, false)
+}
+
+fn compare_custom_property_maps(left map[string]dom.CSSCustomProperty_,
+	right map[string]dom.CSSCustomProperty_, require_retained_identity bool) bool {
 	if left.len != right.len {
 		return false
 	}
 	for name, left_property in left {
-		right_property := right[name] or { return false }
+		if name !in right { return false }
+		// Compare the live map entry synchronously. Passing an optional value to
+		// the bridge comparison heap-boxes it in the compatibility compiler.
+		right_property := unsafe { &right[name] }
 		if left_property.important != right_property.important
-			|| !custom_property_bridge_values_equal(left_property.value, right_property.value) {
+			|| (require_retained_identity && (left_property.value.css_text != right_property.value.css_text
+				|| left_property.value.guaranteed_invalid != right_property.value.guaranteed_invalid))
+			|| !(if require_retained_identity {
+				custom_property_bridge_values_identical(left_property.value, right_property.value)
+			} else {
+				custom_property_bridge_values_equal(left_property.value, right_property.value)
+			}) {
 			return false
 		}
 	}
@@ -13530,6 +13550,22 @@ fn report_custom_property_change(old_data ?&dom.CSSCustomPropertyData_, new_data
 	old_overlay := if old_is_overlay { old_data } else { ?&dom.CSSCustomPropertyData_(none) }
 	new_overlay := if new_is_overlay { new_data } else { ?&dom.CSSCustomPropertyData_(none) }
 	return custom_property_own_values_differ(old_overlay, new_overlay)
+}
+
+fn reuse_unchanged_custom_property_environment(previous ?&dom.CSSCustomPropertyData_,
+	current ?&dom.CSSCustomPropertyData_) ?&dom.CSSCustomPropertyData_ {
+	old_data := previous or { return current }
+	new_data := current or { return current }
+	if voidptr(old_data) == voidptr(new_data) { return current }
+	// Animation samples own a distinct mutable overlay. Only ordinary resolved
+	// environments can keep the prior record and its generation-checked cache.
+	if old_data.is_animation_overlay() || new_data.is_animation_overlay()
+		|| old_data.ancestor_count != new_data.ancestor_count
+		|| !optional_custom_property_data_identity_equal(old_data.parent, new_data.parent)
+		|| !compare_custom_property_maps(old_data.own_values, new_data.own_values, true) {
+		return current
+	}
+	return previous
 }
 
 fn set_custom_properties_changed(did_change &bool) {
@@ -13756,6 +13792,12 @@ fn (s &StyleComputer) compute_style_impl_with_animated_custom_property_recompute
 	_, compute_elapsed := css_style_profile_checkpoint(profile_checkpoint)
 	css_style_profile_compute_ns += compute_elapsed
 	computed_properties.set_attempted_pseudo_class_matches(attempted_pseudo_class_matches)
+	// Keep unchanged resolved environments shared with inherited descendants.
+	// Replacing an equal root record would otherwise force every descendant to
+	// compare the root's complete custom-property map during the same style pass.
+	mut mutable_abstract_element := abstract_element
+	mutable_abstract_element.set_custom_property_data(reuse_unchanged_custom_property_environment(
+		old_custom_property_data, abstract_element.custom_property_data()))
 	if did_change := did_change_custom_properties {
 		new_custom_property_data := abstract_element.custom_property_data()
 		if report_custom_property_change(old_custom_property_data, new_custom_property_data) {
