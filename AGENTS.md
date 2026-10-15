@@ -1598,6 +1598,11 @@ evidence](docs/translation-audit/NATIVE_MEDIA_WHEEL_RAW_HANDLER.md).
   focused typed-size viewport exact. Additional observed savings: 0.
   Same frozen 4 GiB runtime/placement helper; Root work excluded; isolated helper
   pinned inside the app. Canonical/GUI preserved; Chrome parity remains open.
+  Per-text-context spacing storage round65 is rejected before page sampling.
+  All three C-O2 configurations pass 8,233 focused assertions; complete local
+  iterator builds regress 0.34% at the median (two of three pairs worse).
+  Only owned context/function/test edits are restored; all evidence remains.
+  No page credit or baseline reset; frozen64 remains the next control.
 - Outside instruction-count optimization, run broad regression suites once per
   ten completed fixes, not after every fix.
   Broad suites include full translation/package test batches, the full LibJS AST

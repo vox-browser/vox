@@ -6186,6 +6186,41 @@ The private probe uses an owned RAM volume with durable C evidence. Chrome
 content/start/submission equivalence remains open; no faster-than-Chrome claim
 is made.
 
+## Round 65: reject per-text-context spacing storage
+
+The prototype resolves letter/word spacing when entering each text node during
+synchronous eager iterator generation and stores two f64 values in the private
+context. All per-chunk font-dependent resolution and platform shaping remain
+available as the unchanged test oracle. Three new cases cover distinct adjacent
+styles, relative em/ch units with Unicode chunks, leading/preserved breaks,
+style replacement between builds, retained earlier items and forced collection.
+
+Before/final Boehm and final no-GC C-O2 builds each actually pass **8,233
+assertions in 34 cases** (33 functional plus one inactive diagnostic). The common
+harness retains the compatible round62 public iterator checks; its two excluded
+newer Root nowrap cases and prior failure evidence remain documented in round62.
+No functional fixture failed in this attempt.
+
+Three fixed alternating pairs measure 512 complete public iterator builds over
+32 text nodes and 160 items per build. All six checksums are 120,143,872.
+Before counts are **688,889,876 / 692,028,509 / 689,970,067**; final counts by
+pair are **898,572,742 / 690,547,991 / 692,312,239**. Median instructions rise
+**689,970,067→692,312,239 (+0.3395%)**, with two of three pairs worse. Every
+completed sample is retained; the cohort is not extended. This complete local
+result rejects the prototype before normal C generation or browser sampling.
+No improvement is inferred from the reduced number of spacing resolutions.
+
+The normal builder and profile driver retain nonzero local-gate receipts; no
+native normal exit, profile success, C equivalence audit, page cohort, broad
+batch or app/GC artifact is claimed. Only this attempt's two functions, context
+fields and uncommitted test are restored/archived. All three focused C files
+have authenticated durable gzip archives. Source snapshots, common harness,
+six actual terminal receipts and local results remain under
+`Build/opt65-*-source` and `Build/v/instruction-opt65-*`.
+Page credit is **0**. Accepted round64 remains the next control and broad
+baseline; additional observed savings remain 0. Canonical and GUI browsers are
+preserved, and Chrome parity remains open.
+
 ## Causes and changes
 
 - The V 0.5.2 compatibility compiler's `-prod` Boehm code repeatedly snapshots
