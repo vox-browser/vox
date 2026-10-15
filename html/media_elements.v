@@ -26,6 +26,16 @@ pub type PosterFrameFetchHook = fn(dom.URL) !&dom.Bitmap_
 // The URL-only hook remains a compatibility adapter for existing decoders.
 pub type PosterFrameRequestFetchHook = fn (&webfetch.Request) !&dom.Bitmap_
 
+// Encoded bytes and the platform decoder remain explicit host inputs.
+pub type PosterFrameDecodeHook = fn ([]u8) !DecodedImageData
+
+@[heap]
+pub struct PosterFrameFetchTransport {
+pub:
+	host   &webfetch.FetchHost @[required]
+	decode PosterFrameDecodeHook @[required]
+}
+
 // Painting installs this boundary when a video has a concrete renderer owner.
 pub type VideoPaintFactsUpdateHook = fn (&dom.HTMLVideoElement)
 
@@ -48,6 +58,9 @@ mut:
 	natural_dimensions_         ?VideoDimensions
 	poster_fetch_hook           ?PosterFrameFetchHook
 	poster_request_fetch_hook   ?PosterFrameRequestFetchHook
+	poster_fetch_transport_     ?&PosterFrameFetchTransport
+	poster_fetch_controller_    ?&webfetch.FetchController
+	poster_fetch_finished_generation_ u64
 	paint_facts_update_hook     ?VideoPaintFactsUpdateHook
 	poster_fetch_generation_    u64
 	poster_load_event_delayer_  ?dom.DocumentLoadEventDelayer
@@ -111,6 +124,47 @@ pub fn (mut video HTMLVideoElementModel) set_poster_request_fetch_hook(hook ?Pos
 	video.poster_request_fetch_hook = hook
 }
 
+pub fn (mut video HTMLVideoElementModel) set_poster_fetch_transport(transport ?&PosterFrameFetchTransport) {
+	video.poster_fetch_transport_ = transport
+}
+
+fn (mut video HTMLVideoElementModel) finish_poster_fetch(generation u64, frame ?&dom.Bitmap_) {
+	if generation != video.poster_fetch_generation_ { return }
+	video.poster_fetch_finished_generation_ = generation
+	video.poster_fetch_controller_ = none
+	video.poster_frame_ = frame
+	video.finish_delaying_poster_load_event()
+	video.update_natural_dimensions()
+}
+
+fn (mut video HTMLVideoElementModel) start_poster_fetch(request &webfetch.Request, generation u64,
+	transport &PosterFrameFetchTransport) {
+	algorithms := webfetch.FetchAlgorithms.create(webfetch.FetchAlgorithmsInput{
+		process_response_consume_body: fn [mut video, generation, transport] (response &webfetch.Response, body webfetch.BodyBytes) {
+			if generation != video.poster_fetch_generation_ { return }
+			if response.is_network_error() || body.kind == .failure {
+				video.finish_poster_fetch(generation, none)
+				return
+			}
+			// Source VERIFY(response->body()) remains active for malformed hosts.
+			if body.kind == .empty { panic('Video poster response requires a body') }
+			decoded := transport.decode(body.bytes) or {
+				video.finish_poster_fetch(generation, none)
+				return
+			}
+			frame := if first := decoded.frame(0) { ?&dom.Bitmap_(first.bitmap()) } else { ?&dom.Bitmap_(none) }
+			video.finish_poster_fetch(generation, frame)
+		}
+	})
+	mut controller := webfetch.fetch(request, algorithms, transport.host, .no)
+	// A host can reenter during fetch, or a client-less fetch can finish inline.
+	if generation != video.poster_fetch_generation_ || generation == video.poster_fetch_finished_generation_ {
+		controller.stop_fetch()
+		return
+	}
+	video.poster_fetch_controller_ = controller
+}
+
 fn (video &HTMLVideoElementModel) fetch_poster_frame(request &webfetch.Request) !&dom.Bitmap_ {
 	if hook := video.poster_request_fetch_hook {
 		return hook(request)!
@@ -164,9 +218,14 @@ fn (mut video HTMLVideoElementModel) retarget_poster_load_event_delay() {
 
 pub fn (mut video HTMLVideoElementModel) determine_element_poster_frame() {
 	// A new invocation supersedes the previous algorithm, even for the same
-	// URL or a clearing value. The synchronous host fetch can reenter it.
+	// URL or a clearing value. Hosts and decoder callbacks can reenter it.
 	video.poster_fetch_generation_++
 	generation := video.poster_fetch_generation_
+	if mut controller := video.poster_fetch_controller_ {
+		video.poster_fetch_controller_ = none
+		controller.stop_fetch()
+	}
+	if generation != video.poster_fetch_generation_ { return }
 	video.finish_delaying_poster_load_event()
 	poster := video.poster_ or {
 		video.poster_frame_ = none
@@ -184,7 +243,7 @@ pub fn (mut video HTMLVideoElementModel) determine_element_poster_frame() {
 		video.update_natural_dimensions()
 		return
 	}
-	if video.poster_request_fetch_hook == none && video.poster_fetch_hook == none {
+	if video.poster_fetch_transport_ == none && video.poster_request_fetch_hook == none && video.poster_fetch_hook == none {
 		video.poster_frame_ = none
 		video.update_natural_dimensions()
 		return
@@ -203,6 +262,11 @@ pub fn (mut video HTMLVideoElementModel) determine_element_poster_frame() {
 	request.set_use_url_credentials(true)
 	if mut document := video.media.document() {
 		video.poster_load_event_delayer_ = dom.DocumentLoadEventDelayer.new(mut document)
+	}
+
+	if transport := video.poster_fetch_transport_ {
+		video.start_poster_fetch(request, generation, transport)
+		return
 	}
 
 	frame := video.fetch_poster_frame(request) or {
