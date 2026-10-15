@@ -9,6 +9,7 @@ module platform
 fn C.libweb_v_register_timer(context voidptr, interval_ms int, timeout fn (voidptr)) voidptr
 fn C.libweb_v_unregister_timer(timer voidptr)
 fn C.libweb_v_pump_native_events(wait_seconds f64)
+fn C.libweb_v_is_main_thread() bool
 
 fn native_timer_timeout(context voidptr) {
 	mut timer := unsafe { &Timer(context) }

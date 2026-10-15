@@ -327,6 +327,10 @@ mut:
 	pending_page_preload                ?PendingPagePreload
 	navigation_preloaded_resources      map[string]PreloadedResource
 	pending_native_navigation           ?string
+	navigation_work_depth               int
+	navigation_work_yielded             bool
+	deferred_navigation_input           ?DeferredNavigationInput
+	deferred_page_input                 []DeferredPageInput
 	background_image_ids                map[string]int
 	force_dark_image_states             map[string]int
 	force_dark_image_bitmaps            map[string]&dom.Bitmap_
@@ -3167,6 +3171,8 @@ fn document_has_window_event_handlers(document &dom.Document) bool {
 }
 
 fn (mut app BrowserApp) install_loaded_page(loaded LoadedPage, add_history bool) {
+	mut navigation_work := app.begin_navigation_work()
+	defer { navigation_work.finish() }
 	mut heap_scope := platform.begin_browser_activity_heap_scope()
 	defer { heap_scope.finish() }
 	app.markup = loaded.markup
@@ -3292,6 +3298,10 @@ fn error_markup(address string, message string) string {
 }
 
 fn (mut app BrowserApp) navigate(address string, add_history bool) {
+	if app.navigation_work_depth > 0 {
+		app.deferred_navigation_input = DeferredNavigationInput{address: address, add_history: add_history}
+		return
+	}
 	base := if app.history_index >= 0 && app.history_index < app.history.len {
 		app.history[app.history_index].url
 	} else {
@@ -3436,6 +3446,11 @@ fn (mut app BrowserApp) poll_navigation() {
 }
 
 fn (mut app BrowserApp) history_go(delta int) {
+	if app.navigation_work_depth > 0 {
+		previous := app.deferred_navigation_input or { DeferredNavigationInput{} }
+		app.deferred_navigation_input = DeferredNavigationInput{history_delta: previous.history_delta + delta, is_history: true}
+		return
+	}
 	target := app.history_index + delta
 	if target < 0 || target >= app.history.len {
 		return
@@ -6008,6 +6023,11 @@ fn address_for_display(address string, cursor int, active bool, max_characters i
 }
 
 fn (mut app BrowserApp) draw() {
+	if app.navigation_work_depth > 0 { return }
+	app.poll_deferred_navigation_input()
+	app.poll_deferred_page_input()
+	mut navigation_work := app.begin_navigation_work()
+	defer { navigation_work.finish() }
 	app.begin_scroll_profile_frame()
 	mut heap_scope := platform.begin_browser_activity_heap_scope()
 	defer { heap_scope.finish() }
@@ -6061,6 +6081,7 @@ fn (mut app BrowserApp) draw() {
 	draw_srgb_rect(app.ctx, 0, 0, f32(window.width), f32(window.height), gg.rgb(255, 255, 255))
 	page_y := app.page_top()
 	for command in app.paint_commands {
+		platform.cooperative_work_checkpoint()
 		app.draw_command(command, 0, page_y, window.height)
 	}
 	for index in app.portable_shadow_image_index .. app.portable_shadow_images.len {
@@ -6288,6 +6309,21 @@ fn browser_pointer_button_mask(button int) u32 {
 
 fn (mut app BrowserApp) handle_event(event &gg.Event) {
 	app.platform_pointer_modifiers = browser_pointer_modifiers(event.modifiers)
+	if app.navigation_work_depth > 0 {
+		button := browser_pointer_button(event.mouse_button)
+		if event.typ == .mouse_down {
+			app.platform_pointer_buttons |= browser_pointer_button_mask(button)
+			app.suppress_next_click_for_chrome = false
+		} else if event.typ == .mouse_up {
+			app.platform_pointer_buttons &= ~browser_pointer_button_mask(button)
+		}
+		if event.typ in [.mouse_up, .mouse_leave] || (event.typ in [.mouse_down, .mouse_move, .mouse_scroll] && event.mouse_y >= app.page_top()) {
+			app.defer_page_input(event)
+		}
+		return
+	}
+	mut navigation_work := app.begin_navigation_work()
+	defer { navigation_work.finish() }
 	match event.typ {
 		.mouse_down {
 			button := browser_pointer_button(event.mouse_button)
@@ -6426,6 +6462,7 @@ fn (mut app BrowserApp) handle_key(key gg.KeyCode, modifier gg.Modifier) {
 		}
 		return
 	}
+	if app.navigation_work_depth > 0 { return }
 	match key {
 		.up { app.scroll_by(-42.0, height) }
 		.down { app.scroll_by(42.0, height) }

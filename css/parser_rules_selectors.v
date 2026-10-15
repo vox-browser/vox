@@ -2,6 +2,7 @@ module css
 
 import dom
 import strings
+import platform
 
 type ParserRuleDeclarations = []Declaration
 
@@ -489,6 +490,7 @@ fn (mut parser RuleSelectorParser) consume_a_stylesheets_contents(mut input Pars
 
 	// Process input:
 	for {
+		platform.cooperative_work_checkpoint()
 		token := input.next_token()
 
 		// <whitespace-token>
@@ -1058,6 +1060,7 @@ fn parser_consume_a_function(mut input RawTokenStream) Function {
 }
 
 fn (mut parser RuleSelectorParser) convert_to_rule(rule Rule, nested ParserNested, declaration_rule_kind NestedDeclarationRuleKind) ?&CSSRule {
+	platform.cooperative_work_checkpoint()
 	match rule {
 		AtRule {
 			if equals_ignoring_ascii_case(rule.name, 'keyframes')

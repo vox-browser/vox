@@ -4,6 +4,7 @@ import encoding as text_encoding
 import math
 import strconv
 import strings
+import platform
 
 const replacement_character = u32(0xfffd)
 const tokenizer_eof = u32(0xffffffff)
@@ -853,6 +854,7 @@ fn Tokenizer.new(decoded_input string) Tokenizer {
 fn (mut tokenizer Tokenizer) tokenize_all() []Token {
 	mut tokens := []Token{}
 	for {
+		if tokens.len % 256 == 0 { platform.cooperative_work_checkpoint() }
 		token_start := tokenizer.position
 		mut token := tokenizer.consume_a_token()
 		token.set_position_range(token_start, tokenizer.position)

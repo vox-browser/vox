@@ -64,6 +64,7 @@ static int native_test_async_redraw_without_active_window(void) {
 		// Exercise the same main-queue wake that a background fetch posts after
 		// placing its completed result in the browser's resource channel.
 		native_wake_browser();
+		for (unsigned i = 0; i < 1024; ++i) native_wake_browser();
 		CFAbsoluteTime deadline = CFAbsoluteTimeGetCurrent() + 1.0;
 		while (application.postedEvents == 0 && CFAbsoluteTimeGetCurrent() < deadline)
 			CFRunLoopRunInMode(kCFRunLoopDefaultMode, 0.01, true);
@@ -73,6 +74,11 @@ static int native_test_async_redraw_without_active_window(void) {
 		// Other cases can leave legitimate native wakes on the main queue.
 		if (application.postedEvents >= 1 && application.postedWindowNumber == 73)
 			result |= 4;
+		if (application.postedEvents == 1) result |= 8;
+		native_wake_browser();
+		while (application.postedEvents < 2 && CFAbsoluteTimeGetCurrent() < deadline)
+			CFRunLoopRunInMode(kCFRunLoopDefaultMode, 0.01, true);
+		if (application.postedEvents == 2) result |= 16;
 		NSApp = saved_application;
 		native_cached_browser_view = saved_drawable;
 #if !__has_feature(objc_arc)

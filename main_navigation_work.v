@@ -1,0 +1,102 @@
+module main
+
+import platform
+import gg
+
+$if macos {
+	#include "native_navigation_work_darwin.h"
+}
+
+fn C.vox_service_navigation_ui()
+fn C.vox_set_navigation_work_active(int)
+
+struct DeferredNavigationInput {
+	address       string
+	add_history   bool
+	history_delta int
+	is_history    bool
+}
+
+struct NavigationWorkScope {
+mut:
+	app  &BrowserApp = unsafe { nil }
+	host platform.CooperativeWorkScope
+}
+
+struct DeferredPageInput {
+	event      gg.Event
+	document   voidptr
+	generation int
+}
+
+fn service_navigation_ui(context voidptr) {
+	mut app := unsafe { &BrowserApp(context) }
+	if app.ctx == unsafe { nil } { return }
+	app.navigation_work_yielded = true
+	$if macos {
+		C.vox_service_navigation_ui()
+	}
+}
+
+fn (mut app BrowserApp) begin_navigation_work() NavigationWorkScope {
+	if app.ctx == unsafe { nil } { return NavigationWorkScope{} }
+	if app.navigation_work_depth == 0 { app.navigation_work_yielded = false }
+	app.navigation_work_depth++
+	$if macos {
+		if app.navigation_work_depth == 1 { C.vox_set_navigation_work_active(1) }
+	}
+	return NavigationWorkScope{
+		app:  &app
+		host: platform.begin_cooperative_work(voidptr(&app), service_navigation_ui)
+	}
+}
+
+fn (mut scope NavigationWorkScope) finish() {
+	if scope.app == unsafe { nil } { return }
+	mut app := scope.app
+	scope.app = unsafe { nil }
+	app.navigation_work_depth--
+	scope.host.finish()
+	if app.navigation_work_depth == 0 {
+		$if macos {
+			C.vox_set_navigation_work_active(0)
+			if app.navigation_work_yielded || app.deferred_navigation_input != none || app.deferred_page_input.len > 0 {
+				C.native_wake_browser()
+			}
+		}
+	}
+}
+
+fn (mut app BrowserApp) defer_page_input(event &gg.Event) {
+	input := DeferredPageInput{ event: *event, document: voidptr(app.document), generation: app.navigation_generation }
+	last := app.deferred_page_input.len - 1
+	if event.typ == .mouse_move && last >= 0 && app.deferred_page_input[last].event.typ == .mouse_move {
+		app.deferred_page_input[last] = input
+	} else {
+		app.deferred_page_input << input
+	}
+}
+
+fn (mut app BrowserApp) poll_deferred_page_input() {
+	if app.navigation_work_depth > 0 { return }
+	pending := app.deferred_page_input
+	app.deferred_page_input = []DeferredPageInput{}
+	for input in pending {
+		// Coordinates from an old page must never activate its replacement.
+		if input.document != voidptr(app.document) || input.generation != app.navigation_generation {
+			continue
+		}
+		app.handle_event(&input.event)
+	}
+}
+
+fn (mut app BrowserApp) poll_deferred_navigation_input() {
+	if app.navigation_work_depth > 0 { return }
+	input := app.deferred_navigation_input or { return }
+	app.deferred_navigation_input = none
+	if input.is_history {
+		app.history_go(input.history_delta)
+	} else {
+		app.navigate(input.address, input.add_history)
+	}
+}

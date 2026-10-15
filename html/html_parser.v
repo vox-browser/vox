@@ -3,6 +3,7 @@ module html
 
 import dom
 import encoding
+import platform
 
 __global html_parser_non_append_insertions u64
 
@@ -466,7 +467,10 @@ pub fn (mut p HTMLParser) run_until_insertion_point() {
 fn (mut p HTMLParser) run_with_stop_at_insertion_point(stop_at_insertion_point StopAtInsertionPoint) {
 	p.stop_parsing = false
 	mut reached_end_of_file := false
+	mut tokens_processed := 0
 	for {
+		tokens_processed++
+		if tokens_processed % 256 == 0 { platform.cooperative_work_checkpoint() }
 		if p.parser_pause_flag {
 			break
 		}

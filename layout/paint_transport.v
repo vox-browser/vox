@@ -2052,6 +2052,7 @@ fn (b &BlockBox) record_paint_commands_for_entries(entries []PaintOrderEntry, se
 	mut commands := []PaintCommand{}
 	metrics := painting.new_chrome_metrics(1.0) or { return commands }
 	for entry_index, entry in entries {
+		platform.cooperative_work_checkpoint()
 		if selected.len > 0 && !selected[entry_index] {
 			continue
 		}
@@ -2961,6 +2962,7 @@ fn unselected_text_fragment_commands_with_debug(fragments []TextFragment, opacit
 	mut commands := []PaintCommand{}
 	mut i := 0
 	for i < fragments.len {
+		platform.cooperative_work_checkpoint()
 		first := fragments[i]
 		mut j := i + 1
 		for j < fragments.len && text_fragments_share_run(first, fragments[j]) {

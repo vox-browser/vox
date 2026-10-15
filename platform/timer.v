@@ -21,6 +21,7 @@ mut:
 	single_shot_ bool
 	interval_dirty_ bool
 	native_timer_ voidptr
+	registration_generation_ u64
 }
 
 pub fn Timer.create() &Timer {
@@ -50,6 +51,7 @@ pub fn (mut timer Timer) start() {
 pub fn (mut timer Timer) start_with_interval(interval_ms int) {
 	if timer.active_ { timer.take_activity_root(); return }
 	timer.interval_ms_ = interval_ms
+	timer.registration_generation_++
 	timer.native_timer_ = register_native_timer(&timer, interval_ms)
 	timer.active_ = true
 	timer.take_activity_root()
@@ -121,6 +123,7 @@ pub fn (mut timer Timer) fire() {
 	if !timer.active_ {
 		return
 	}
+	if defer_timer_during_cooperative_work(&timer) { return }
 	if timer.single_shot_ {
 		// Core::Timer stops before the handler. Platform::Timer retains its
 		// activity root until that handler returns, unless it restarts the timer.

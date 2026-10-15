@@ -4,6 +4,10 @@
 #ifdef __APPLE__
 #include <CoreFoundation/CoreFoundation.h>
 #include <stdlib.h>
+#include <stdbool.h>
+#include <pthread.h>
+
+static bool libweb_v_is_main_thread(void) { return pthread_main_np() != 0; }
 
 typedef struct {
     void* context;

@@ -587,7 +587,13 @@ static void native_request_browser_redraw(void) {
 }
 
 void native_wake_browser(void) {
+	// Style and layout can request thousands of frames before the main queue
+	// runs. One wake covers all work already queued; keep later requests able
+	// to schedule another wake once this delivery begins.
+	static bool wake_queued;
+	if (__atomic_exchange_n(&wake_queued, true, __ATOMIC_ACQ_REL)) return;
 	dispatch_async(dispatch_get_main_queue(), ^{
+		__atomic_store_n(&wake_queued, false, __ATOMIC_RELEASE);
 		native_request_browser_redraw();
 	});
 }

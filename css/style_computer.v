@@ -1,6 +1,7 @@
 module css
 
 import dom
+import platform
 
 // Faithful translation of Ladybird's CSS/StyleComputer.cpp and the generated property metadata used
 // by its cascade.
@@ -991,6 +992,7 @@ pub fn compute_required_invalidation(old_style &ComputedProperties, new_style &C
 // and applies retained style to an existing layout tree when no rebuild is
 // required.
 fn (s &StyleComputer) recompute_style_with_invalidation(mut abstract_element dom.AbstractElement, did_change_custom_properties &bool) (RequiredInvalidationAfterStyleChange, &ComputedProperties) {
+	platform.cooperative_work_checkpoint()
 	mut element := unsafe { &dom.Element(abstract_element.element()) }
 	mut document := unsafe { &dom.Document(element.document()) }
 	document.record_element_style_recomputation()

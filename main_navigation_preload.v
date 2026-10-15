@@ -103,6 +103,8 @@ fn (mut app BrowserApp) prepare_loaded_page(loaded LoadedPage, add_history bool)
 }
 
 fn (mut app BrowserApp) start_page_preload(loaded LoadedPage, add_history bool) {
+	mut navigation_work := app.begin_navigation_work()
+	defer { navigation_work.finish() }
 	mut heap_scope := platform.begin_browser_activity_heap_scope()
 	defer { heap_scope.finish() }
 	app.cancel_page_preload()
@@ -165,6 +167,8 @@ fn (mut app BrowserApp) poll_page_preload() {
 		app.pending_page_preload = pending
 		return
 	}
+	mut navigation_work := app.begin_navigation_work()
+	defer { navigation_work.finish() }
 	if pending.discovery_document != unsafe { nil } {
 		mut document := pending.discovery_document
 		base_url := document.base_url().serialize()

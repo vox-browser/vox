@@ -14,6 +14,8 @@ static IMP native_layer_original_parent_draw;
 static IMP native_layer_original_parent_update;
 static IMP native_layer_original_parent_wants_update;
 static CGFloat native_layer_capture_scale;
+static BOOL native_layer_presenting;
+static BOOL native_layer_document_work_active;
 
 static BOOL native_layer_is_browser_view(NSView *view) {
     Class browser = NSClassFromString(@"MyView2");
@@ -90,9 +92,15 @@ static BOOL native_layer_wants_update(id self, SEL command) {
 
 static void native_layer_update(id self, SEL command) {
     (void)command;
+    if (native_layer_presenting || native_layer_document_work_active) return;
+    native_layer_presenting = YES;
+    @try {
     @autoreleasepool {
         native_layer_present_frame(self, native_layer_effective_scale(self),
             native_layer_original_draw);
+    }
+    } @finally {
+        native_layer_presenting = NO;
     }
 }
 
