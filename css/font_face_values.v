@@ -3566,18 +3566,39 @@ pub:
 }
 
 @[heap]
+struct FontCascadeInvisibleStorage {
+mut:
+	values map[string]&PlatformFont
+}
+
+@[heap]
 pub struct FontCascadeList {
 pub mut:
 	fonts            []FontCascadeEntry
 	pending_faces    []PendingFontFace
 	last_resort_font &PlatformFont = unsafe { nil }
-	invisible_fonts  map[string]&PlatformFont
+mut:
+	invisible_font_storage_ &FontCascadeInvisibleStorage = unsafe { nil }
 }
 
 pub fn FontCascadeList.create() &FontCascadeList {
-	return &FontCascadeList{
-		invisible_fonts: map[string]&PlatformFont{}
+	return &FontCascadeList{}
+}
+
+fn (list &FontCascadeList) cached_invisible_font(key string) ?&PlatformFont {
+	if list.invisible_font_storage_ == unsafe { nil } {
+		return none
 	}
+	return list.invisible_font_storage_.values[key] or { return none }
+}
+
+fn (mut list FontCascadeList) ensure_invisible_font_storage() &FontCascadeInvisibleStorage {
+	if list.invisible_font_storage_ == unsafe { nil } {
+		list.invisible_font_storage_ = &FontCascadeInvisibleStorage{
+			values: map[string]&PlatformFont{}
+		}
+	}
+	return list.invisible_font_storage_
 }
 
 pub fn (mut list FontCascadeList) add(font PlatformFont, unicode_ranges []UnicodeRange) {
@@ -3705,7 +3726,7 @@ fn (list &FontCascadeList) font_with_visibility(font &PlatformFont, invisible bo
 	}
 	mut mutable_list := unsafe { &FontCascadeList(list) }
 	key := platform_font_cache_key(font)
-	if cached := mutable_list.invisible_fonts[key] {
+	if cached := mutable_list.cached_invisible_font(key) {
 		return cached
 	}
 	variant := &PlatformFont{
@@ -3715,7 +3736,8 @@ fn (list &FontCascadeList) font_with_visibility(font &PlatformFont, invisible bo
 		features:     owned_shape_features(font.features)
 		is_invisible: true
 	}
-	mutable_list.invisible_fonts[key] = variant
+	mut storage := mutable_list.ensure_invisible_font_storage()
+	storage.values[key] = variant
 	return variant
 }
 
