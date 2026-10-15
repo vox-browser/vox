@@ -1,0 +1,360 @@
+{
+  "version": "1.75.0",
+  "commit": "21f0e686506bb21b514b451c8c6cb9bf8c82d232",
+  "procedural": {
+    "upstream_path": "src/js/contentscript-extra.js",
+    "sha256": "8457cd7c87cf618b478c9fcf3e9716e120f3a469a530a22c951bc6f7c79e3d73"
+  },
+  "resources": [
+    {
+      "name": "1x1.gif",
+      "upstream_path": "src/web_accessible_resources/1x1.gif",
+      "mime": "image/gif",
+      "text": false,
+      "sha256": "afe0dcfca292a0fae8bce08a48c14d3e59c9d82c6052ab6d48a22ecc6c48f277"
+    },
+    {
+      "name": "2x2.png",
+      "upstream_path": "src/web_accessible_resources/2x2.png",
+      "mime": "image/png",
+      "text": false,
+      "sha256": "adfa0c7de03bc3bea3de80b4a4514881c8b6296568f43a5acd5cd7a16fffd1c9"
+    },
+    {
+      "name": "32x32.png",
+      "upstream_path": "src/web_accessible_resources/32x32.png",
+      "mime": "image/png",
+      "text": false,
+      "sha256": "36e10c1f70cbc992f98a0e75950e29f3de9b7fd21becd41a3fcba3751c9423b9"
+    },
+    {
+      "name": "3x2.png",
+      "upstream_path": "src/web_accessible_resources/3x2.png",
+      "mime": "image/png",
+      "text": false,
+      "sha256": "c3fdb994f265ca41374d5aeeafefe0e0fe79b74508c7f09d26f6767971317eed"
+    },
+    {
+      "name": "adthrive_abd.js",
+      "upstream_path": "src/web_accessible_resources/adthrive_abd.js",
+      "mime": "text/javascript",
+      "text": true,
+      "sha256": "1a67bea76e55dc17057fae81f47ea478cd35e0c60aa101b57e76c73769931e35"
+    },
+    {
+      "name": "amazon_ads.js",
+      "upstream_path": "src/web_accessible_resources/amazon_ads.js",
+      "mime": "text/javascript",
+      "text": true,
+      "sha256": "41901805f575d9d06608682999cf588b12c318face2ed04e8566ec8cbec4c610"
+    },
+    {
+      "name": "amazon_apstag.js",
+      "upstream_path": "src/web_accessible_resources/amazon_apstag.js",
+      "mime": "text/javascript",
+      "text": true,
+      "sha256": "cf3f5c41c90134ff7ee66a471875b1e076384d789aa3827990ea99f00ee40231"
+    },
+    {
+      "name": "ampproject_v0.js",
+      "upstream_path": "src/web_accessible_resources/ampproject_v0.js",
+      "mime": "text/javascript",
+      "text": true,
+      "sha256": "3efb1cbcf4fd2a33619747a923d19b486fb93092b9dd95114084e175b026daa0"
+    },
+    {
+      "name": "chartbeat.js",
+      "upstream_path": "src/web_accessible_resources/chartbeat.js",
+      "mime": "text/javascript",
+      "text": true,
+      "sha256": "5e6add14da36b213c093e77fae622f2624cc3ec1ed77ef0a7da934a69a62288d"
+    },
+    {
+      "name": "click2load.html",
+      "upstream_path": "src/web_accessible_resources/click2load.html",
+      "mime": "text/html",
+      "text": true,
+      "sha256": "814bec18620c330c993c970d3fc218976d0b7a66664d8072657cd63607f03062"
+    },
+    {
+      "name": "dom-inspector.html",
+      "upstream_path": "src/web_accessible_resources/dom-inspector.html",
+      "mime": "text/html",
+      "text": true,
+      "sha256": "1311fc7a83e9c1974460533ad2471dc8e753381a722d393fdd067f95847cdce0"
+    },
+    {
+      "name": "doubleclick_instream_ad_status.js",
+      "upstream_path": "src/web_accessible_resources/doubleclick_instream_ad_status.js",
+      "mime": "text/javascript",
+      "text": true,
+      "sha256": "eed0dc1fdb5d97ed188ae16fd5e1024a5bb744af47340346be2146300a6c54b9"
+    },
+    {
+      "name": "empty",
+      "upstream_path": "src/web_accessible_resources/empty",
+      "mime": "application/octet-stream",
+      "text": false,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "name": "epicker-ui.html",
+      "upstream_path": "src/web_accessible_resources/epicker-ui.html",
+      "mime": "text/html",
+      "text": true,
+      "sha256": "9f478e42db5d5c81eeac29fda1e531596bb5bd1ae437a4f3e9f246a2ea58314d"
+    },
+    {
+      "name": "fingerprint2.js",
+      "upstream_path": "src/web_accessible_resources/fingerprint2.js",
+      "mime": "text/javascript",
+      "text": true,
+      "sha256": "7552c3423619eb239d6042a91f8430cbe4f298b4de9c263954abbcda07ec9725"
+    },
+    {
+      "name": "fingerprint3.js",
+      "upstream_path": "src/web_accessible_resources/fingerprint3.js",
+      "mime": "text/javascript",
+      "text": true,
+      "sha256": "6fd5703f2bdd85932f18adc99f30d8736d2bf5f09b1dde6c129f4616259fc827"
+    },
+    {
+      "name": "google-analytics_analytics.js",
+      "upstream_path": "src/web_accessible_resources/google-analytics_analytics.js",
+      "mime": "text/javascript",
+      "text": true,
+      "sha256": "6b4621868cac589a603fe1263aad242f67262ef971bdacaccc1a515cd0488466"
+    },
+    {
+      "name": "google-analytics_cx_api.js",
+      "upstream_path": "src/web_accessible_resources/google-analytics_cx_api.js",
+      "mime": "text/javascript",
+      "text": true,
+      "sha256": "b1bdb8c30c6744be3c68bba5de49df7a2f04d3d8b295f0a26ab1ade5af738139"
+    },
+    {
+      "name": "google-analytics_ga.js",
+      "upstream_path": "src/web_accessible_resources/google-analytics_ga.js",
+      "mime": "text/javascript",
+      "text": true,
+      "sha256": "f0546767675ac7eff724521236be831e8753a7b8c15aa1c792d8121cb5311094"
+    },
+    {
+      "name": "google-analytics_inpage_linkid.js",
+      "upstream_path": "src/web_accessible_resources/google-analytics_inpage_linkid.js",
+      "mime": "text/javascript",
+      "text": true,
+      "sha256": "816b8366769981f63ebda4aed7796d51edaf81f219951a1ac1f16220e9f26fac"
+    },
+    {
+      "name": "google-ima-dai.js",
+      "upstream_path": "src/web_accessible_resources/google-ima-dai.js",
+      "mime": "text/javascript",
+      "text": true,
+      "sha256": "e5e0bd1cac1fca4663d020e274d6e73104c56a0493670657d9a627571285159a"
+    },
+    {
+      "name": "google-ima.js",
+      "upstream_path": "src/web_accessible_resources/google-ima.js",
+      "mime": "text/javascript",
+      "text": true,
+      "sha256": "4bf8e398a46c982cd72ec1723e03f58784624da2f41caeeefb78e1fad1d47535"
+    },
+    {
+      "name": "googlesyndication_adsbygoogle.js",
+      "upstream_path": "src/web_accessible_resources/googlesyndication_adsbygoogle.js",
+      "mime": "text/javascript",
+      "text": true,
+      "sha256": "89485b47856cfde614bae69671c2ca23ae0846f05a75c1eb9981f45e4e2a9c3a"
+    },
+    {
+      "name": "googletagmanager_gtm.js",
+      "upstream_path": "src/web_accessible_resources/googletagmanager_gtm.js",
+      "mime": "text/javascript",
+      "text": true,
+      "sha256": "b60912f876edd2a2a4544dfad8ddd6e40d06c4e70cf7242b5deb86f0898faf20"
+    },
+    {
+      "name": "googletagservices_gpt.js",
+      "upstream_path": "src/web_accessible_resources/googletagservices_gpt.js",
+      "mime": "text/javascript",
+      "text": true,
+      "sha256": "7992fe36869090d43ceeb9a8d1867a6e60db7b70d69e95e6048a34a00fd33bcb"
+    },
+    {
+      "name": "hd-main.js",
+      "upstream_path": "src/web_accessible_resources/hd-main.js",
+      "mime": "text/javascript",
+      "text": true,
+      "sha256": "49a25cfcbc2fafeda3d9051e380f3ca50eef4b195087494da7b74dd046a767d2"
+    },
+    {
+      "name": "nitropay_ads.js",
+      "upstream_path": "src/web_accessible_resources/nitropay_ads.js",
+      "mime": "text/javascript",
+      "text": true,
+      "sha256": "180962cfdf1e2f2c8b7c2b194eb6249130eb9a7ace4a58e9bd59bbf59c62633a"
+    },
+    {
+      "name": "nobab2.js",
+      "upstream_path": "src/web_accessible_resources/nobab2.js",
+      "mime": "text/javascript",
+      "text": true,
+      "sha256": "3ee47f99116088a94e1c280d3cd6216a75513a9109a3876ed7926897ec7cfc96"
+    },
+    {
+      "name": "noeval-silent.js",
+      "upstream_path": "src/web_accessible_resources/noeval-silent.js",
+      "mime": "text/javascript",
+      "text": true,
+      "sha256": "bcb710ed7e64295cc8fe98b8611978e0801ffdce65107d1cb9c318339a5644d6"
+    },
+    {
+      "name": "noeval.js",
+      "upstream_path": "src/web_accessible_resources/noeval.js",
+      "mime": "text/javascript",
+      "text": true,
+      "sha256": "3cdd6f7412af4317374860533434959652db9e61633bdcae4755ad9039732bc6"
+    },
+    {
+      "name": "nofab.js",
+      "upstream_path": "src/web_accessible_resources/nofab.js",
+      "mime": "text/javascript",
+      "text": true,
+      "sha256": "dd7684145ffe90180075aa4d98a7a457cbdc6b73295bea17c55bf230332cf056"
+    },
+    {
+      "name": "noop-0.1s.mp3",
+      "upstream_path": "src/web_accessible_resources/noop-0.1s.mp3",
+      "mime": "audio/mpeg",
+      "text": false,
+      "sha256": "fc84c6967318b8ade681bf82ca93e63ecd62e2a8430e1a6d2e12390e8017eaa8"
+    },
+    {
+      "name": "noop-0.5s.mp3",
+      "upstream_path": "src/web_accessible_resources/noop-0.5s.mp3",
+      "mime": "audio/mpeg",
+      "text": false,
+      "sha256": "74dceaeb010690bf7b68f20d89d3891c989d8d0bd9cd388a87096269fbe0915e"
+    },
+    {
+      "name": "noop-1s.mp4",
+      "upstream_path": "src/web_accessible_resources/noop-1s.mp4",
+      "mime": "video/mp4",
+      "text": false,
+      "sha256": "a27edba0e34b2648a90a800ae94fdef3e39016d1b9bd6e54a31ede1f1cddfed0"
+    },
+    {
+      "name": "noop-vast2.xml",
+      "upstream_path": "src/web_accessible_resources/noop-vast2.xml",
+      "mime": "text/xml",
+      "text": true,
+      "sha256": "a8fb181a797b4e48bb5d239ab5030f33ed65ebf339e38a5131ce966331226cef"
+    },
+    {
+      "name": "noop-vast3.xml",
+      "upstream_path": "src/web_accessible_resources/noop-vast3.xml",
+      "mime": "text/xml",
+      "text": true,
+      "sha256": "71a904ba726ae38a8aa08425bae824e9850452b5c41a182bdc526a139ba3a9bc"
+    },
+    {
+      "name": "noop-vast4.xml",
+      "upstream_path": "src/web_accessible_resources/noop-vast4.xml",
+      "mime": "text/xml",
+      "text": true,
+      "sha256": "d06c733ba42b81cd66c7fcaabc75b51c59292cdbccdcfb6a88bf2b57d262047b"
+    },
+    {
+      "name": "noop-vmap1.xml",
+      "upstream_path": "src/web_accessible_resources/noop-vmap1.xml",
+      "mime": "text/xml",
+      "text": true,
+      "sha256": "fcc40f36d86c8f7146d4b2f0c1273cc46282c2c236303dabc172dfacfdf86508"
+    },
+    {
+      "name": "noop.css",
+      "upstream_path": "src/web_accessible_resources/noop.css",
+      "mime": "text/css",
+      "text": true,
+      "sha256": "cccc5e8a9a7ad608a04f242530345694bd7150bd73315513284142b6a39ba4b7"
+    },
+    {
+      "name": "noop.html",
+      "upstream_path": "src/web_accessible_resources/noop.html",
+      "mime": "text/html",
+      "text": true,
+      "sha256": "cee0f0272bae8618bb36b96eae44057ad7ad8325afc0096e2477713b146e1adc"
+    },
+    {
+      "name": "noop.js",
+      "upstream_path": "src/web_accessible_resources/noop.js",
+      "mime": "text/javascript",
+      "text": true,
+      "sha256": "5592bfa25de75c18ef0116cbb9990c122178b1efe5e076f1c45049a09d935a25"
+    },
+    {
+      "name": "noop.json",
+      "upstream_path": "src/web_accessible_resources/noop.json",
+      "mime": "application/json",
+      "text": true,
+      "sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+    },
+    {
+      "name": "noop.txt",
+      "upstream_path": "src/web_accessible_resources/noop.txt",
+      "mime": "text/plain",
+      "text": true,
+      "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b"
+    },
+    {
+      "name": "outbrain-widget.js",
+      "upstream_path": "src/web_accessible_resources/outbrain-widget.js",
+      "mime": "text/javascript",
+      "text": true,
+      "sha256": "8a7f3135798b4818da50f7e8d77564144f1054e68399e426af7f145446f5b7b6"
+    },
+    {
+      "name": "piano-analytics.js",
+      "upstream_path": "src/web_accessible_resources/piano-analytics.js",
+      "mime": "text/javascript",
+      "text": true,
+      "sha256": "b53897c0a853b71d7c0b1234ba5431f7253cbd2fd3a21d65bb1d3a68f2757df8"
+    },
+    {
+      "name": "popads-dummy.js",
+      "upstream_path": "src/web_accessible_resources/popads-dummy.js",
+      "mime": "text/javascript",
+      "text": true,
+      "sha256": "7d9ea48fc2dbf1c680406d5335aa567f84967e91b10e823b7e2462ce531fa281"
+    },
+    {
+      "name": "popads.js",
+      "upstream_path": "src/web_accessible_resources/popads.js",
+      "mime": "text/javascript",
+      "text": true,
+      "sha256": "85700e488f782dde2eac664d8127399f7650832678188ecbde143e5482a0bf58"
+    },
+    {
+      "name": "prebid-ads.js",
+      "upstream_path": "src/web_accessible_resources/prebid-ads.js",
+      "mime": "text/javascript",
+      "text": true,
+      "sha256": "4ef4348e32fffdfa739b160f77d0b96fc4c861c089cfae8458275e30436179b3"
+    },
+    {
+      "name": "scorecardresearch_beacon.js",
+      "upstream_path": "src/web_accessible_resources/scorecardresearch_beacon.js",
+      "mime": "text/javascript",
+      "text": true,
+      "sha256": "c177360b3723b924a168fc72ed728f924fe72e40cfc0c1d3fb5237849c590946"
+    },
+    {
+      "name": "sensors-analytics.js",
+      "upstream_path": "src/web_accessible_resources/sensors-analytics.js",
+      "mime": "text/javascript",
+      "text": true,
+      "sha256": "976b60cda987b64505d8faa361a371720dbb5a78daffb280cc2f18d7e5a40278"
+    }
+  ]
+}

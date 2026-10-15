@@ -1055,6 +1055,7 @@ fn create_navigation_params_by_fetching(entry &SessionHistoryEntry, navigable &N
 		request.set_client(client)
 	}
 	request.destination = .document
+	request.target_is_nested_navigable = !navigable.is_top_level_traversable()
 	request.credentials_mode = .include
 	request.use_url_credentials = true
 	request.redirect_mode = .manual

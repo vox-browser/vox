@@ -1,0 +1,14 @@
+{
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "node build.mjs",
+    "refresh-lists": "node refresh.mjs",
+    "refresh-source": "node refresh-source.mjs"
+  },
+  "devDependencies": {
+    "esbuild": "0.25.10",
+    "core-js": "3.45.1",
+    "fast-text-encoding": "1.0.6"
+  }
+}

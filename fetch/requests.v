@@ -247,6 +247,9 @@ pub mut:
 	service_workers_mode           ServiceWorkersMode = .all
 	initiator                      ?Initiator
 	destination                    ?Destination
+	// Embedding metadata for content filtering: navigation's Fetch destination
+	// remains document for both top-level and nested target navigables.
+	target_is_nested_navigable      bool
 	priority                       Priority = .auto
 	// https://fetch.spec.whatwg.org/#concept-request-origin
 	origin                                RequestOrigin
@@ -457,6 +460,7 @@ pub fn (request &Request) clone() &Request {
 		service_workers_mode: request.service_workers_mode
 		initiator: request.initiator
 		destination: request.destination
+		target_is_nested_navigable: request.target_is_nested_navigable
 		priority: request.priority
 		origin: request.origin
 		policy_container: request.policy_container

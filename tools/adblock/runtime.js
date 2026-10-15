@@ -1,0 +1,92 @@
+import './polyfills.js';
+import './platform.js';
+import * as sfp from '../../adblock/vendor/ublock/js/static-filtering-parser.js';
+import { CompiledListReader, CompiledListWriter } from '../../adblock/vendor/ublock/js/static-filtering-io.js';
+import { FilteringContext } from '../../adblock/vendor/ublock/js/filtering-context.js';
+import { LineIterator } from '../../adblock/vendor/ublock/js/text-utils.js';
+import publicSuffixList from '../../adblock/vendor/ublock/lib/publicsuffixlist/publicsuffixlist.js';
+import punycode from '../../adblock/vendor/ublock/lib/punycode.js';
+import snfe from '../../adblock/vendor/ublock/js/static-net-filtering.js';
+import { initializeCosmetics, documentFilters, redirectEngine, cosmeticSnapshot, restoreCosmetics } from './cosmetics.js';
+import defaultData from './generated-defaults.json';
+import * as serializer from '../../adblock/vendor/ublock/js/s14e-serializer.js';
+import publicSuffixData from '../../adblock/lists/public_suffix_list.dat';
+
+const environment = ['ublock', 'chromium', 'user_stylesheet'];
+const fctx = new FilteringContext();
+let networkCompiled = [];
+function compileNetwork(raw, name) {
+    const compiler = snfe.createCompiler();
+    const writer = new CompiledListWriter();
+    writer.properties.set('name', name);
+    // Official uBO lists may contain trusted options; custom filters are also
+    // user-owned, matching the full extension's trusted user filter behavior.
+    writer.properties.set('trustedSource', true);
+    const parser = new sfp.AstFilterParser({ maxTokenLength: snfe.MAX_TOKEN_LENGTH, trustedSource: true });
+    const lines = new LineIterator(raw);
+    compiler.start(writer);
+    while (!lines.eot()) {
+        let line = lines.next();
+        while (line.endsWith(' \\') && lines.peek(4) === '    ') {
+            line = line.slice(0, -2).trim() + lines.next().trim();
+        }
+        parser.parse(line);
+        if (parser.isNetworkFilter()) compiler.compile(parser, writer);
+    }
+    compiler.finish(writer);
+    return writer.toString();
+}
+
+globalThis.voxAdblockInitialize = customFilters => {
+    publicSuffixList.parse(publicSuffixData, punycode.toASCII);
+    if (customFilters === undefined && defaultData.selfie) {
+        const snapshot = serializer.deserialize(defaultData.selfie);
+        if (!snapshot || !Array.isArray(snapshot.network_compiled)) throw new Error('Invalid bundled uBlock Origin engine snapshot');
+        snfe.reset();
+        networkCompiled = snapshot.network_compiled;
+        for (const compiled of networkCompiled) snfe.fromCompiled(new CompiledListReader(compiled));
+        snfe.freeze();
+        snfe.optimize(0);
+        restoreCosmetics(snapshot.cosmetics);
+        return JSON.stringify({ filter_count: snfe.getFilterCount(), list_count: 9 });
+    }
+    const lists = customFilters === undefined ? defaultData.lists : [{ name: 'user-filters', raw: customFilters }];
+    const prepared = lists.map(list => ({ ...list, raw: sfp.utils.preparser.prune(list.raw, environment) }));
+    snfe.reset();
+    networkCompiled = prepared.map(list => compileNetwork(list.raw, list.name));
+    for (const compiled of networkCompiled) snfe.fromCompiled(new CompiledListReader(compiled));
+    snfe.freeze();
+    snfe.optimize(0);
+    initializeCosmetics(prepared);
+    return JSON.stringify({ filter_count: snfe.getFilterCount(), list_count: lists.length });
+};
+
+globalThis.voxAdblockSnapshot = () => serializer.serialize({ network_compiled: networkCompiled, cosmetics: cosmeticSnapshot() }, { compress: false });
+
+globalThis.voxAdblockCheck = details => {
+    const type = details.request_type === 'fetch' ? 'xmlhttprequest' : details.request_type || 'other';
+    fctx.setURL(details.url).setDocOriginFromURL(details.source_url || details.url)
+        .setTabOriginFromURL(details.source_url || details.url).setType(type).setMethod(details.method || 'GET');
+    fctx.redirectURL = undefined;
+    const result = snfe.matchRequest(fctx);
+    const log = result === 0 ? undefined : snfe.toLogData();
+    const decision = { blocked: result === 1, exception: result === 2, rule: log?.raw || '', redirect_url: '', error: '' };
+    if (result === 1) {
+        snfe.redirectRequest(redirectEngine, fctx);
+    } else {
+        snfe.transformURL(fctx);
+        if (snfe.hasQuery(fctx)) snfe.filterQuery(fctx);
+    }
+    if (fctx.redirectURL !== undefined && fctx.redirectURL !== details.url) decision.redirect_url = fctx.redirectURL;
+    return JSON.stringify(decision);
+};
+globalThis.voxDocumentFilters = (url, tokens = []) => {
+    const options = {};
+    for (const type of ['generichide', 'specifichide']) {
+        fctx.setURL(url).setDocOriginFromURL(url).setTabOriginFromURL(url).setType(type).setMethod('');
+        if (snfe.matchRequest(fctx, 0b11) === 2) {
+            options[type === 'generichide' ? 'noGenericCosmeticFiltering' : 'noSpecificCosmeticFiltering'] = true;
+        }
+    }
+    return documentFilters(url, tokens, options);
+};
