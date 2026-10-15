@@ -303,6 +303,7 @@ mut:
 	track_url_             string
 	loading_               bool
 	processing_generation_ u64
+	source_cue_generation_ u64
 	awaiting_url_change    bool
 	parent_media_          ?&HTMLMediaElement
 	fetch_hook_            ?TextTrackFetchHook
@@ -368,9 +369,14 @@ pub fn (mut element HTMLTrackElementModel) set_parent_media(media ?&HTMLMediaEle
 	element.parent_media_ = media
 }
 
-pub fn (mut element HTMLTrackElementModel) set_src(value string) {
+fn (mut element HTMLTrackElementModel) clear_source_cues() {
+	element.source_cue_generation_++
 	mut track := element.track
 	track.clear_cues()
+}
+
+pub fn (mut element HTMLTrackElementModel) set_src(value string) {
+	element.clear_source_cues()
 	element.src_ = value
 	if value == '' {
 		element.set_track_url('')
@@ -508,6 +514,7 @@ pub fn (mut element HTMLTrackElementModel) start_the_track_processing_model_para
 	} else {
 		CORSSettingAttribute.no_cors
 	}
+	cue_generation := element.source_cue_generation_
 	response := fetch(url, cors) or {
 		if generation != element.processing_generation_ {
 			return
@@ -526,8 +533,10 @@ pub fn (mut element HTMLTrackElementModel) start_the_track_processing_model_para
 		element.track_failed_to_load()
 		return
 	}
-	for mut cue in cues {
-		track.add_cue(mut cue)
+	if cue_generation == element.source_cue_generation_ {
+		for mut cue in cues {
+			track.add_cue(mut cue)
+		}
 	}
 	element.loading_ = false
 	element.track_became_ready()
@@ -578,8 +587,7 @@ fn (mut model HTMLTrackElementModel) content_attribute_changed(element &dom.HTML
 				model.base_url_ = unsafe { &dom.Element(element) }.document().base_url()
 				model.set_src(source)
 			} else {
-				mut track := model.track
-				track.clear_cues()
+				model.clear_source_cues()
 			}
 		}
 		'id' {
