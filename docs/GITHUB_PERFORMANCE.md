@@ -4649,6 +4649,90 @@ credit. Chrome content/endpoint parity remains unestablished.
 Evidence: `Build/instructions/vox-opt51-interleaved-*` and
 `Build/v/instruction-opt51-*`.
 
+## Reject a per-build selector projection memo after inconclusive page evidence
+
+Feature `0685dd2f` is reverted by `842abbea`. It created a private
+projection memo for one synchronous typed-selector invalidation build, threading
+its context through the private call graph. Each cached entry retained its
+original selector with the immutable group projection, protecting integer
+identity keys. No cache was global, retained across public calls or stored on
+public invalidation data. Cached metadata selected eligibility only; actual
+projections still read the current typed tree. Public signatures, data layouts
+and original projection/conversion helpers stayed unchanged.
+
+Before/final Boehm and final no-GC C-O2 each pass **6,215 assertions in 24 cases**
+(23 functional plus an inactive probe). Four new cases compare complete plans
+and feature metadata with an uncached view of the same typed tree, then check
+live edits between calls, scope-boundary payloads and retained outputs after
+releasing the selector graph and collecting. The uncached view clears metadata
+bits only; those bits affect optimization eligibility without changing the
+invalidation input. The common source and actual exits match in all configs.
+
+Three fixed alternating local pairs build 512 fresh complete invalidation data
+sets from 16 complex selectors. Median retired instructions change from
+**1,352,371,842 to 1,327,385,895**
+(-1.85%), all three improving; all six checksums are 49,664.
+Setup, expected results, eight warmups and forced collection precede the
+hardware interval; complete construction remains inside, with assertions after.
+This establishes a local result, not a page saving.
+
+Full-process C-O1/Boehm/one-marker profiles run the whole harness and active
+probe without filters or resets. Complete probe calls remain 521 and typed
+membership calls remain 74,869. Original projection calls fall 113,701→44,559
+and simple-selector conversions 211,269→91,689. The new cache factory has 15,073
+calls and cached lookup 110,790, both absent from the control. These are call
+counts, not hardware work. The strict C audit permits nine explicitly threaded
+functions, two private helpers/types and their exact declarations/map alias.
+Public entry signatures and all existing layouts remain unchanged. Original
+projection, conversion, invalidation-data constructor and formatters match
+raw C; every other executable/resource/GC change is excluded after established
+normalization and identical native inputs/arguments. Its initial extractor
+rejected an existing one-line formatter wrapper; exact one-line authentication
+repairs that audit without relaxing full-file comparison or rerunning builds.
+
+The predeclared cohort has 30 alternating pairs and 30,000 paired bootstrap
+resamples, seed 52, comparing regular frozen 51 and candidate binaries. Both use
+the same 359 cached bodies, fresh copies, frozen helper, 1024×768 viewport,
+`navigation_to_first_document_paint[0]`, enabled Boehm, one marker and the same
+4 GiB document-gated hint, without prod/prealloc. Independent current-Root memory
+and UI work, including heap-policy changes, is outside this frozen comparison.
+
+| Build | Median first-frame retired instructions | Median process peak, MiB |
+| --- | ---: | ---: |
+| Frozen 51 control | 19,060,848,264.5 | 3,696.1 |
+| Rejected projection memo | 19,058,583,418 | 3,696.3 |
+
+The difference of marginal medians is a saving of **2,264,846.5**
+(0.012% fewer), while only **12/30** pairs improve. The paired
+median saving is **-14,683,761.5**, with a 95% paired percentile
+interval of **-33,674,456.5 to 7,942,125**. Repeatable credit is **0**. The interval
+includes zero, so this is inconclusive and does not establish a regression.
+The memo adds complexity without demonstrated cached-page benefit, and is
+reverted. No completed primary is discarded, rerun or used to extend the cohort.
+
+All 60 primaries and 60 actual viewport PNGs remain, with no recovered counters.
+Two pre-parse startup retries are archived: control pair 1 and candidate pair 19,
+attempt 1 each. Every first primary has 1 installation/2 geometry preparations/
+1 paint. Later refreshes remain separate: control 21/30 and candidate 9/12/13.
+Memory is each root's lifetime maximum through capture/exit, not first-frame
+live memory; all 60 peaks remain, including later refreshes. No memory benefit
+is inferred. The focused viewport is exact. The observed point stays below 5M,
+so the 87-case/two-GC/19-screenshot broad batch is deferred. The rejected signed
+isolated app `/Users/alex/code/vox2/Build/v/Vox-opt52.app` is retained; signature/startup/native text and
+actual GC collections pass with default marker 1 and override 2. Canonical and
+GUI apps are preserved, including a newer independently advanced canonical
+image observed at bundle creation. No inference is made about its source pin.
+
+Shipping broad baseline remains `24b84c6d`, additional applied observed savings
+remain 0, and the next control stays `Vox-opt51-direct-bin`. The rejected point
+and all evidence stay in the ledger, without resetting that baseline or crediting
+unapplied code. Durable C/profile archives and hashes are in
+`instruction-opt52-artifact-archives.json`. Focused artifacts were moved
+byte-for-byte from a near-full shared RAM volume to an owned SSD directory;
+the stable work symlink and commands stay valid. No foreign files were removed.
+Evidence: `Build/instructions/vox-opt52-interleaved-*` and
+`Build/v/instruction-opt52-*`. Chrome parity remains open.
+
 ## Causes and changes
 
 - The V 0.5.2 compatibility compiler's `-prod` Boehm code repeatedly snapshots

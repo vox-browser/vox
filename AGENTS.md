@@ -1492,6 +1492,12 @@ evidence](docs/translation-audit/NATIVE_MEDIA_WHEEL_RAW_HANDLER.md).
   47,968,135, with repeatable page credit 47,968,135.
   Broad verification: passed 87 selected cases both GC and 19 screenshots (16 exact).
   The focused viewport is exact; both retain 4 GiB. Chrome parity remains open.
+  Selector projection memo `0685dd2f` is reverted by `842abbea`.
+  Focused checks pass 6,215 assertions per config; its local probe saves 1.85%.
+  Page evidence is inconclusive: 12/30 wins, paired median -14,683,761.5 and
+  interval [-33,674,456.5, 7,942,125]. All 60 primaries/PNGs remain; credit 0.
+  Broad is deferred below 5M. Shipping baseline stays `24b84c6d`, additional
+  applied savings 0; the next control is frozen 51. Chrome parity remains open.
 - Outside instruction-count optimization, run broad regression suites once per
   ten completed fixes, not after every fix.
   Broad suites include full translation/package test batches, the full LibJS AST
