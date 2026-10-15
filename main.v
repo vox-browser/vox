@@ -1547,7 +1547,7 @@ fn quoted_video_references(scripts []string) []string {
 	for source in scripts {
 		mut position := 0
 		for position < source.len {
-			if source[position] !in [`'`, `"`] {
+			if source[position] != `'` && source[position] != `"` {
 				position++
 				continue
 			}
@@ -1561,8 +1561,7 @@ fn quoted_video_references(scripts []string) []string {
 				break
 			}
 			value := source[start..position]
-			lower := value.to_lower()
-			if (lower.contains('.webm') || lower.contains('.mp4')) && value !in seen {
+			if quoted_video_reference_has_extension(value) && value !in seen {
 				seen[value] = true
 				references << value
 			}
@@ -1576,6 +1575,10 @@ fn javascript_video_source_states(current_url string, scripts []string) map[stri
 	mut sources := map[string]json2.Any{}
 	seconds := requested_video_frame_time(scripts.join('\n'))
 	for reference in quoted_video_references(scripts) {
+		// This legacy adapter decodes local files only. Relative and remote
+		// references on HTTP pages cannot produce a frame; avoid parsing large
+		// minified-script fragments which merely contain a video extension.
+		if !javascript_video_reference_can_be_local(reference, current_url) { continue }
 		resolved := resolve_document_reference(reference, current_url)
 		bitmap := decode_local_video_frame(resolved, seconds) or { continue }
 		frame_state := json2.Any(bitmap_javascript_state(bitmap))
