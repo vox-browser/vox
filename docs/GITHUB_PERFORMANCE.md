@@ -5268,6 +5268,98 @@ Evidence is in `Build/v/instruction-hotspots57-*.json` and
 **0**; the validation ledger and broad baseline remain unchanged. Chrome
 content/start/endpoint equivalence remains open.
 
+## Keep cascade scratch flags in a fixed local array
+
+Feature `9ec31a78` changes one line in private `apply_property_list_to_cascade`:
+its fresh dynamic byte array becomes a zeroed fixed local array with the same
+`int(PropertyID.mask) + 1` size, 433 bytes in this frozen runtime. All flag
+reads/writes, substitution checks, filters, shorthand expansion, logical aliases,
+importance, origins, layers and source ownership remain unchanged. The scratch
+never escapes. Public interfaces, records and retained property storage stay
+unchanged.
+
+Before/final Boehm and final no-GC C-O2 each pass **2,341 assertions in 12 cases**
+(11 functional plus an inactive probe). Three new cases exercise every generated
+longhand within the existing bound, initial values and logical aliases, source
+metadata, repeated calls and GC retention, shorthand filtering and normal/
+important precedence. Eight retained cases also cover deferred/unresolved
+shorthands, selection filtering, revert, source replacement and mapping contexts.
+The first three focused commands exit 1 with zero cases because the inactive probe
+uses two untyped empty arrays for a public alias-array argument. Its original
+common source, commands/logs and failed receipts remain under
+`instruction-opt57-probe-empty-array-fixture-failure`. Explicit `[]PropertyID{}`
+arguments fix only that fixture, before any diagnostic samples or profiles start.
+Only failed/unstarted checks resume; the normal native build and implementation are
+unchanged. Both final common sources have an identical hash.
+
+Three fixed alternating local pairs each run **512 complete fresh public author
+cascades** over 32 retained rules, including normal and important passes and fresh
+result construction. Setup, retained rules, expected results, eight warmups and
+forced collection precede the counter; assertions follow. Median retired
+instructions change **88,789,850→71,876,184** (-19.05%), with all three pairs
+improving and all six checksums 3,072. Retained width and padding values are
+independently checked. This is a confirmed local result without separate page
+credit.
+
+Full-process C-O1/Boehm/default-marker profiles use no filters or resets. Complete
+cascade calls stay **521**, private application calls **22,486**, and property-set
+calls **100,470** in both variants. The same cascade work remains; call counts are
+never substituted for hardware instructions.
+
+The strict C audit authenticates exactly one removed dynamic scratch constructor, a
+same-size zeroed local array, and four checked read/write substitutions. The
+remaining function body is byte-identical. Only three exact unused compiler
+declarations for the local fixed-array type may appear outside it. Every other
+function, public layout, resource and GC policy matches after established compiler
+identities, unchanged source assertions and 37 frozen includes. Four helpers may
+reorder only with raw-identical bodies. All 120 native inputs and exact native C-O2
+arguments match. Compiled C SHA256:
+`63507d80d447b50c668537cbf4803f7c117850a46547a24167aee8465b405d30`. Durable
+normal/focused/profile hashes are in `instruction-opt57-artifact-archives.json`.
+Only the owned function is staged against latest HEAD, preserving concurrent Root
+changes.
+
+The predeclared cohort fixes **30 alternating pairs**, with **30,000 paired
+bootstrap resamples, seed 57**. Regular frozen 56 and candidate binaries use the
+same 359 cached bodies, fresh copies, frozen helper, 1024×768 viewport and
+`navigation_to_first_document_paint[0]`. Both retain the same 4 GiB document-gated
+hint, Boehm/default marker 1, without prod/prealloc. Independent current-Root
+memory, UI and responsiveness changes are excluded.
+
+| Build | Median first-frame retired instructions | Median process peak, MiB |
+| --- | ---: | ---: |
+| Fresh matching frozen 56 control | 18,657,962,204 | 3,688.2 |
+| Local cascade scratch | 18,599,675,450.5 | 3,651.5 |
+
+The observed difference of marginal medians is **58,286,753.5** instructions saved
+(**0.312%**), with **30/30** pairs improving. Paired median saving is
+**60,538,318**, with a 95% paired percentile interval of **55,286,399 to
+65,388,786.5**. The positive paired interval establishes a repeatable reduction;
+credited page saving is **58,286,753.5** instructions. The comparison uses the
+fresh control, never the historical round56 median.
+
+All **60 primaries and 60 actual viewport PNGs** remain. Recovered primaries: none;
+pre-parse startup retries: 0. Each first primary has 1 installation/2 geometry
+preparations/1 paint. Later refresh runs remain separate: none. No completed
+primary is discarded, rerun or used to extend the cohort. Lifetime process peaks
+include later refreshes and are not first-frame live memory; peaks are never
+summed. The focused cascade viewport is pixel-exact. The observed point exceeds the
+5M gate with prior accumulation 0. All six direct V broad jobs pass: CSS 31, SVG 10
+and layout 46 under each GC, **174 executions**. All **19 screenshot comparisons
+pass, 16 exact**; known differences remain inline-node 13, text-decorations 1,341
+and canvas-text 1,994. The completed broad batch resets additional observed savings
+to 0; confidence credit stays separate.
+
+The signed isolated comparison app is
+`/Users/alex/code/vox2/Build/v/Vox-opt57.app`. Signature, startup, matching native
+text and actual collections pass with default marker 1 and override 2. Canonical
+and user GUI apps are preserved. No source pin or extra performance/regression
+credit is inferred for independent current Root. Chrome still needs equivalent
+content/start/endpoint accounting; its retained first-paint trace shows only a
+header, with repository content later. No parity or faster-than-Chrome claim is
+made. Evidence: `Build/instructions/vox-opt57-interleaved-*` and
+`Build/v/instruction-opt57-*`.
+
 ## Causes and changes
 
 - The V 0.5.2 compatibility compiler's `-prod` Boehm code repeatedly snapshots

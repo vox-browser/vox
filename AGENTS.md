@@ -1535,6 +1535,14 @@ evidence](docs/translation-audit/NATIVE_MEDIA_WHEEL_RAW_HANDLER.md).
   focused selector viewport exact. Additional observed savings: 0.
   Same frozen 4 GiB hint; independent Root memory/UI work is excluded.
   Chrome parity remains open.
+  Local cascade scratch `9ec31a78` passes 2,341 focused assertions
+  per configuration; complete public author cascades use 19.05% fewer instructions.
+  Page point saving 58,286,753.5, 30/30 wins,
+  paired interval [55,286,399, 65,388,786.5]; repeatable page credit 58,286,753.5.
+  Broad verification: 87 selected cases both GC and 19 screenshots (16 exact);
+  focused cascade viewport exact. Additional observed savings: 0.
+  Same frozen 4 GiB hint; independent Root memory/UI work is excluded.
+  Chrome parity remains open.
 - Outside instruction-count optimization, run broad regression suites once per
   ten completed fixes, not after every fix.
   Broad suites include full translation/package test batches, the full LibJS AST
