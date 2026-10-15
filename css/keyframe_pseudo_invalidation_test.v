@@ -18,7 +18,7 @@ fn test_keyframe_lookup_keeps_base_names_without_pseudo_records() {
 	mut element := keyframe_pseudo_test_element(document)
 	assert !element_or_pseudo_references_animation_name(element, 'fade')
 	element.set_computed_properties(none, keyframe_pseudo_test_style('other, "fade"'))
-	assert element.pseudo_element_data.len == 0
+	assert element.pseudo_element_record_count() == 0
 	assert element_or_pseudo_references_animation_name(element, 'fade')
 	assert element_or_pseudo_references_animation_name(element, 'other')
 	assert !element_or_pseudo_references_animation_name(element, 'Fade')
@@ -42,7 +42,7 @@ fn test_keyframe_lookup_follows_cleared_and_reused_pseudo_records() {
 	element.set_computed_properties(pseudo, keyframe_pseudo_test_style('fade'))
 	assert element_or_pseudo_references_animation_name(element, 'fade')
 	element.set_computed_properties(pseudo, none)
-	assert element.pseudo_element_data.len == 1
+	assert element.pseudo_element_record_count() == 1
 	assert !element_or_pseudo_references_animation_name(element, 'fade')
 	element.set_computed_properties(pseudo, keyframe_pseudo_test_style('replacement'))
 	gc_collect()

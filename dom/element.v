@@ -1538,6 +1538,8 @@ const valid_shadow_host_names = ['article', 'aside', 'blockquote', 'body', 'div'
 @[heap]
 pub struct Element {
 	ParentNode
+mut:
+	rare_data_ &ElementRareData = unsafe { nil }
 pub mut:
 	qualified_name                  QualifiedName
 	html_uppercased_qualified_name_ ?string
@@ -1553,10 +1555,7 @@ pub mut:
 	layout_node_with_style_ ?&LayoutNodeWithStyle_
 	custom_property_data_   ?&CSSCustomPropertyData_
 
-	pseudo_element_data map[int]&PseudoElement_
-
 	associated_shadow_host_pseudo_element_ ?int
-	element_reference_pseudo_elements_      map[int]&Element
 
 	classes []string
 	parts   []string
@@ -1585,7 +1584,6 @@ pub mut:
 	snapped_scroll_areas_x_ []ScrollSnapAreaReference_
 	snapped_scroll_areas_y_ []ScrollSnapAreaReference_
 
-	css_defined_animations_         map[int]map[string]&CSSAnimation_
 	has_css_defined_animations_flag bool
 	animations_animatable_handle_   voidptr = unsafe { nil }
 
@@ -1631,8 +1629,6 @@ pub mut:
 	is_contained_in_list_subtree                bool
 	style_element_base_                         ?&StyleElementBase
 
-	element_specific_css_random_base_value_cache map[string]f64
-
 	doc_ ?&Document
 }
 
@@ -1647,7 +1643,8 @@ pub fn (mut e Element) set_associated_shadow_host_pseudo_element(pseudo_element 
 		panic('associated shadow-host pseudo-element requires a shadow host')
 	}
 	mut mutable_host := unsafe { &Element(host) }
-	mutable_host.element_reference_pseudo_elements_[pseudo_element] = &e
+	mut data := mutable_host.ensure_rare_data()
+	data.element_reference_pseudo_elements[pseudo_element] = &e
 	e.associated_shadow_host_pseudo_element_ = pseudo_element
 }
 
@@ -1656,7 +1653,11 @@ pub fn (e &Element) associated_shadow_host_pseudo_element() ?int {
 }
 
 pub fn (e &Element) element_reference_pseudo_element(pseudo_element int) ?&Element {
-	return e.element_reference_pseudo_elements_[pseudo_element] or { return none }
+	if e.rare_data_ == unsafe { nil }
+		|| pseudo_element !in e.rare_data_.element_reference_pseudo_elements {
+		return none
+	}
+	return unsafe { e.rare_data_.element_reference_pseudo_elements[pseudo_element] }
 }
 
 pub struct StylePropertyMap_ {
@@ -1720,8 +1721,10 @@ pub fn (mut e Element) visit_edges(mut visitor CellVisitor) {
 	if asm_ := e.attribute_style_map_ {
 		visitor.visit(asm_)
 	}
-	for _, pe in e.pseudo_element_data {
-		visitor.visit(pe)
+	if e.rare_data_ != unsafe { nil } {
+		for _, pe in e.rare_data_.pseudo_element_data {
+			visitor.visit(pe)
+		}
 	}
 	if mut cs := e.counters_set_ {
 		cs.visit_edges(visitor)
@@ -2483,26 +2486,28 @@ pub fn (mut e Element) set_computed_properties(pseudo_element ?int, style ?&CSSC
 pub fn (e &Element) get_pseudo_element(typ int) ?&PseudoElement_ {
 	// Optional map lookup creates an error object on every miss in the
 	// compatibility compiler. Most elements have no requested pseudo-element.
-	if typ !in e.pseudo_element_data { return none }
-	return unsafe { e.pseudo_element_data[typ] }
+	if e.rare_data_ == unsafe { nil } || typ !in e.rare_data_.pseudo_element_data { return none }
+	return unsafe { e.rare_data_.pseudo_element_data[typ] }
 }
 
 fn (mut e Element) ensure_pseudo_element(typ int) &PseudoElement_ {
-	if existing := e.pseudo_element_data[typ] {
+	mut data := e.ensure_rare_data()
+	if existing := data.pseudo_element_data[typ] {
 		return existing
 	}
 	pe := &PseudoElement_{}
-	e.pseudo_element_data[typ] = pe
+	data.pseudo_element_data[typ] = pe
 	return pe
 }
 
 pub fn (e &Element) has_pseudo_element(typ int) bool {
-	pe := e.pseudo_element_data[typ] or { return false }
+	pe := e.get_pseudo_element(typ) or { return false }
 	return pe.layout_node() != none
 }
 
 pub fn (e &Element) has_pseudo_elements() bool {
-	for _, pe in e.pseudo_element_data {
+	if e.rare_data_ == unsafe { nil } { return false }
+	for _, pe in e.rare_data_.pseudo_element_data {
 		if pe.layout_node() != none {
 			return true
 		}
@@ -2511,7 +2516,8 @@ pub fn (e &Element) has_pseudo_elements() bool {
 }
 
 pub fn (mut e Element) clear_pseudo_element_nodes() {
-	for _, mut pe in e.pseudo_element_data {
+	if e.rare_data_ == unsafe { nil } { return }
+	for _, mut pe in e.rare_data_.pseudo_element_data {
 		pe.set_layout_node(none)
 	}
 }
@@ -5053,7 +5059,8 @@ pub fn (e &Element) affected_by_pseudo_class(pseudo_class PseudoClass) bool {
 			return true
 		}
 	}
-	for _, pseudo_element in e.pseudo_element_data {
+	if e.rare_data_ == unsafe { nil } { return false }
+	for _, pseudo_element in e.rare_data_.pseudo_element_data {
 		props := pseudo_element.computed_properties() or { continue }
 		if props.has_attempted_match_against_pseudo_class(pseudo_class) {
 			return true
@@ -5431,7 +5438,7 @@ pub fn (e &Element) document_scoped_view_transition_name() ?string {
 
 pub fn (mut e Element) play_or_cancel_animations_after_display_property_change() {
 	// OPTIMIZATION: We don't care about elements with no CSS defined animations.
-	if !e.has_css_defined_animations_flag {
+	if !e.has_css_defined_animations_flag || e.rare_data_ == unsafe { nil } {
 		return
 	}
 
@@ -5444,7 +5451,7 @@ pub fn (mut e Element) play_or_cancel_animations_after_display_property_change()
 	// origins, terminate running animations. Restoring the underlying display
 	// resumes each animation according to its last CSS animation-play-state.
 	has_display_none_inclusive_ancestor := e.as_node().has_inclusive_ancestor_with_display_none_ignoring_animations()
-	for _, animations in e.css_defined_animations_ {
+	for _, animations in e.rare_data_.css_defined_animations {
 		for _, animation in animations {
 			if has_display_none_inclusive_ancestor {
 				animation.cancel()
@@ -6123,11 +6130,12 @@ pub fn (mut e Element) computed_style_map() &StylePropertyMapReadOnly_ {
 
 // --- CSS random base value ---
 pub fn (mut e Element) ensure_css_random_base_value(key string) f64 {
-	if key in e.element_specific_css_random_base_value_cache {
-		return e.element_specific_css_random_base_value_cache[key]
+	mut data := e.ensure_rare_data()
+	if key in data.element_specific_css_random_base_values {
+		return data.element_specific_css_random_base_values[key]
 	}
 	val := rand.f64()
-	e.element_specific_css_random_base_value_cache[key] = val
+	data.element_specific_css_random_base_values[key] = val
 	return val
 }
 
@@ -6430,10 +6438,10 @@ pub fn (e &Element) serialize_children_as_json(mut sb strings.Builder) {
 
 	if has_pseudo_elements {
 		wrote_child = serialize_pseudo_element_as_json(e, .after, mut sb, wrote_child)
-		mut pseudo_element_types := e.pseudo_element_data.keys()
+		mut pseudo_element_types := e.rare_data_.pseudo_element_data.keys()
 		pseudo_element_types.sort()
 		for pseudo_element_type_int in pseudo_element_types {
-			pseudo_element := e.pseudo_element_data[pseudo_element_type_int] or { continue }
+			pseudo_element := e.rare_data_.pseudo_element_data[pseudo_element_type_int] or { continue }
 			pseudo_element_type := unsafe { PseudoElement(pseudo_element_type_int) }
 			if pseudo_element_type in [.after, .backdrop, .before, .marker]
 				|| pseudo_element.layout_node() == none {

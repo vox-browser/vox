@@ -4397,8 +4397,9 @@ pub fn (mut abstract_element AbstractElement) set_counters_set(counters_set ?&CS
 pub fn (abstract_element &AbstractElement) css_defined_animations() ?map[string]&CSSAnimation_ {
 	key := if pseudo := abstract_element.pseudo_element_ { int(pseudo) } else { -1 }
 	if abstract_element.element_.has_css_defined_animations_flag
-		&& key in abstract_element.element_.css_defined_animations_ {
-		return abstract_element.element_.css_defined_animations_[key] or { return none }
+		&& abstract_element.element_.rare_data_ != unsafe { nil }
+		&& key in abstract_element.element_.rare_data_.css_defined_animations {
+		return abstract_element.element_.rare_data_.css_defined_animations[key] or { return none }
 	}
 	return none
 }
@@ -4410,23 +4411,26 @@ pub fn (mut abstract_element AbstractElement) set_has_css_defined_animations() {
 
 pub fn (mut abstract_element AbstractElement) set_css_defined_animation(name string, animation &CSSAnimation_) {
 	mut element := unsafe { &Element(abstract_element.element_) }
+	mut data := element.ensure_rare_data()
 	key := if pseudo := abstract_element.pseudo_element_ { int(pseudo) } else { -1 }
-	if key !in element.css_defined_animations_ {
-		element.css_defined_animations_[key] = map[string]&CSSAnimation_{}
+	if key !in data.css_defined_animations {
+		data.css_defined_animations[key] = map[string]&CSSAnimation_{}
 	}
-	element.css_defined_animations_[key][name] = animation
+	data.css_defined_animations[key][name] = animation
 	element.has_css_defined_animations_flag = true
 }
 
 pub fn (mut abstract_element AbstractElement) remove_css_defined_animation(name string) {
 	mut element := unsafe { &Element(abstract_element.element_) }
+	if element.rare_data_ == unsafe { nil } { return }
+	mut data := element.rare_data_
 	key := if pseudo := abstract_element.pseudo_element_ { int(pseudo) } else { -1 }
-	mut animations := (element.css_defined_animations_[key] or { return }).clone()
+	mut animations := (data.css_defined_animations[key] or { return }).clone()
 	animations.delete(name)
 	if animations.len == 0 {
-		element.css_defined_animations_.delete(key)
+		data.css_defined_animations.delete(key)
 	} else {
-		element.css_defined_animations_[key] = animations.clone()
+		data.css_defined_animations[key] = animations.clone()
 	}
 }
 
