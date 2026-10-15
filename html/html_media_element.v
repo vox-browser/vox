@@ -2389,10 +2389,15 @@ pub fn (mut element HTMLMediaElement) add_text_track(kind TextTrackKind, label s
 	track.set_kind(kind)
 	track.set_label(label)
 	track.set_language(language)
+	track.set_readiness_state(.loaded)
 	track.set_mode(.hidden)
 	track.set_media_element(element)
 	element.text_tracks_.add_track(track)
-	element.fire_event('addtrack')
+	element_pointer := voidptr(&element)
+	element.queue_a_media_element_task(fn [element_pointer, track] () {
+		media := unsafe { &HTMLMediaElement(element_pointer) }
+		media.fire_track_add_event(&media.text_tracks_.EventTarget, TrackEventTrack.from_text(track))
+	})
 	return track
 }
 
