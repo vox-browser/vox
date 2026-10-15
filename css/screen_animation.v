@@ -1184,7 +1184,7 @@ pub mut:
 
 pub struct CSSTransitionStorage {
 pub mut:
-	registered_transition_attributes map[i64]&CSSTransitionStorageBucket
+	registered_transition_attributes map[i64]&CSSRegisteredTransitionStorageBucket
 	associated_transitions           map[i64]&CSSTransitionStorageBucket
 	transition_generation            int
 }
@@ -1194,6 +1194,17 @@ pub struct CSSTransitionStorageBucket {
 pub mut:
 	entries []CSSTransitionStorageEntry
 	indexes map[PropertyID]int
+}
+
+// One transition declaration supplies the same timing to every physical
+// longhand it expands to. Keep that timing once, rather than copying it into
+// hundreds of entries for transition-property: all on every style update.
+@[heap]
+pub struct CSSRegisteredTransitionStorageBucket {
+pub mut:
+	property_ids []PropertyID
+	attributes   []TransitionTimingAttributes
+	indexes      map[PropertyID]int
 }
 
 pub struct TransitionTimingAttributes {
@@ -1231,12 +1242,12 @@ fn abstract_element_storage_key(abstract_element dom.AbstractElement) i64 {
 	return abstract_element.element_.as_node().unique_id().value() * 16 + pseudo_key
 }
 
-fn (mut storage CSSTransitionStorage) ensure_registered_transition_bucket(abstract_element dom.AbstractElement) &CSSTransitionStorageBucket {
+fn (mut storage CSSTransitionStorage) ensure_registered_transition_bucket(abstract_element dom.AbstractElement) &CSSRegisteredTransitionStorageBucket {
 	key := abstract_element_storage_key(abstract_element)
 	if bucket := storage.registered_transition_attributes[key] {
 		return bucket
 	}
-	bucket := &CSSTransitionStorageBucket{}
+	bucket := &CSSRegisteredTransitionStorageBucket{}
 	storage.registered_transition_attributes[key] = bucket
 	return bucket
 }
@@ -1258,31 +1269,23 @@ pub fn (mut storage CSSTransitionStorage) clear_registered_transitions(abstract_
 pub fn (mut storage CSSTransitionStorage) add_transitioned_properties(abstract_element dom.AbstractElement, transitions []TransitionProperties) {
 	mut bucket := storage.ensure_registered_transition_bucket(abstract_element)
 	for transition_properties in transitions {
-		attributes := transition_attributes_from_transition_properties(transition_properties)
+		if transition_properties.properties.len == 0 { continue }
+		attributes_index := bucket.attributes.len
+		bucket.attributes << transition_attributes_from_transition_properties(transition_properties)
 		for property_id in transition_properties.properties {
-			if index := bucket.indexes[property_id] {
-				bucket.entries[index].attributes = attributes
-				continue
+			if property_id !in bucket.indexes {
+				bucket.property_ids << property_id
 			}
-			bucket.indexes[property_id] = bucket.entries.len
-			bucket.entries << CSSTransitionStorageEntry{
-				abstract_element: abstract_element
-				property_id: property_id
-				attributes: attributes
-			}
+			bucket.indexes[property_id] = attributes_index
 		}
 	}
 }
 
 pub fn (storage &CSSTransitionStorage) property_ids_with_matching_transition_property_entry(abstract_element dom.AbstractElement) []PropertyID {
-	mut property_ids := []PropertyID{}
 	bucket := storage.registered_transition_attributes[abstract_element_storage_key(abstract_element)] or {
-		return property_ids
+		return []PropertyID{}
 	}
-	for entry in bucket.entries {
-		property_ids << entry.property_id
-	}
-	return property_ids
+	return bucket.property_ids.clone()
 }
 
 pub fn (storage &CSSTransitionStorage) property_transition_attributes(abstract_element dom.AbstractElement, property_id PropertyID) ?TransitionTimingAttributes {
@@ -1290,7 +1293,7 @@ pub fn (storage &CSSTransitionStorage) property_transition_attributes(abstract_e
 		return none
 	}
 	index := bucket.indexes[property_id] or { return none }
-	return bucket.entries[index].attributes or { return none }
+	return bucket.attributes[index]
 }
 
 pub fn (storage &CSSTransitionStorage) property_ids_with_existing_transitions(abstract_element dom.AbstractElement) []PropertyID {
