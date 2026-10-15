@@ -7984,6 +7984,112 @@ regression or performance credit. Equivalent Chrome content/start/submission
 accounting remains open; faster-than-Chrome performance is unproven. Evidence:
 `Build/instructions/vox-opt82-interleaved-*` and `Build/v/instruction-opt82-*`.
 
+## Share UA selector caches across empty shadow scopes
+
+This integration imports only independently authored feature `f53aea52`
+(Alexander Medvednikov): six exact existing-source hunks and the byte-identical
+new UA-shadow cache file, trimming only unchanged patch context. An empty,
+standards-mode shadow scope with the same three built-in UA sheets shares a
+document-owned immutable selector/invalidation snapshot. Author/user sheets and
+quirks mode retain the previous path. Counter-style state and pending per-scope
+invalidations remain separate. Adoption, viewport, environment generation,
+color scheme, scripting, scale, sheet revisions, nested conditions and imports
+are checked before reuse. Four private input/cache records, two private scope
+pointers and one private stylesheet revision field are included. Contemporary
+Root, filtering, arenas and GC policy remain excluded.
+
+Before/final Boehm and final no-GC C-O2 each pass **15,387
+assertions in 19 cases**: 18 exact retained shadow-counter, part-selector and
+scope-invalidation cases plus an inactive diagnostic. Common source SHA256 is
+`a046de8249ffb0f910758ef971ee968a36c169de82f4efde604b68ea0051ee83`. The eight original candidate cases
+run byte-for-byte in both GCs, **17,422
+assertions each**, including document ownership, scope separation, author/user
+and quirks fallbacks, adoption, UA mutations, SVG/MathML, counters, nested
+media/supports/layers and import loading/replacement.
+
+Three predeclared alternating local pairs count **16 complete batches of 64
+public StyleComputer.compute_style calls**, invalidating each root's rule cache
+before every computation and checking display, color, font-size and line-height.
+Document/DOM setup, eight warmups, expected checksum and forced GC precede the
+counter; checksum assertions follow. Before: 35,826,466,743 / 35,857,673,563 / 35,709,661,938.
+Candidate by pair: 335,475,647 / 335,395,880 / 336,606,738.
+Median **35,826,466,743→335,475,647
+(-99.06%)**; checksum **2,525,184**
+in all six actual zero exits. This local result receives no page credit.
+
+Both full-process C-O1/Boehm profiles actually pass without filter/reset:
+
+| Function | Before calls | Candidate calls |
+| --- | ---: | ---: |
+| `css__opt83_complete_shadow_styles` | 25 | 25 |
+| `css__StyleComputer_compute_style` | 1,600 | 1,600 |
+| `css__StyleScope_populate_new_rule_cache` | 1,614 | 15 |
+| `css__StyleScope_shared_user_agent_only_shadow_style_cache` | 0 | 1,614 |
+
+These are call counts, not hardware instruction savings. Public style
+computations and rule-cache requests match, while full cache population falls.
+The original outputs and generated-C scope proofs are durable.
+
+Strict C audit authenticates all source edits, four existing functions with
+only exact added blocks and five new functions against independent focused C.
+The new callback and captured context remain distinct and exact. All four new
+records, three dynamic-array aliases and the three-sheet fixed-array alias and
+return wrapper match focused C. Existing scope/sheet records differ only by
+the two nil pointers and zero revision; scalar stylesheet display/equality
+metadata is authenticated independently. The unchanged Document environment
+getter becomes reachable and matches its exact old V accessor and independently
+compiled candidate C. Compiler source confirms anonymous names carry file
+indices and static guards carry byte offsets: only the one-file shift and
+99,147→99,224 guard identity are normalized, preserving distinct closures.
+All remaining C, layouts, globals, resources, filtering, arenas and GC policy
+match after established identities, unchanged assertion-line maps, 37 frozen
+includes and four byte-identical helper reorderings. All 120 native inputs and
+exact native arguments match. C SHA256:
+`a76738a1e33220f4d8080938953d865e833a117cf0652b5a8eaff1d55a4b631d`. Durable normal, focused, contract
+and profile archives appear in `instruction-opt83-artifact-archives.json`.
+Three audit-only failures remain: explicit nil spelling, added compiler identity
+and reachability findings, and an unavailable old getter selected by the draft.
+They were repaired against actual C and unchanged sources without repeating
+successful runtime checks or page observations. The passing audit script and
+compiler-source hashes are retained in instruction-opt83-compiler-identity-audit.json.
+
+The predeclared page cohort is **30 alternating pairs**, odd before/final,
+even final/before, **30,000 paired bootstrap resamples, seed 83**. Both regular
+persisted binaries use fresh copies of the same 359 cached bodies, frozen text
+and child-only placement helpers, C-O2/Boehm/one marker and unchanged 4 GiB
+hint; no prod/prealloc. Fixed document viewport is 1024×768 and endpoint is
+`navigation_to_first_document_paint[0]`; no historical or Root comparison.
+
+| Build | Median first-frame retired instructions | Median lifetime process peak, MiB |
+| --- | ---: | ---: |
+| Fresh accepted frozen82 control | 17,750,143,562.5 | 3,602.1 |
+| Shared UA-only shadow cache | 17,769,582,013 | 3,601.7 |
+
+Difference of marginal medians (before minus candidate):
+**-19,438,450.5** instructions; the candidate uses **0.110% more**, with **14/30** wins.
+Paired median saving **-3,950,050.5**, paired 95% interval
+**[-16,698,729.5, 9,769,998]**. The interval includes zero; repeatable page credit is **0**. Whole-page savings are not established.
+
+All 60 primary observations and **60 actual PNGs** remain. Recovered
+primaries: none; pre-parse retries: 0. First primaries
+retain 1 installation/2 geometry preparations/1 paint. Later completed refreshes
+remain separate: none. No completed primary is extended,
+discarded or rerun. Recoveries disclose unknown final exit and missing PNG,
+fingerprint and peak. Peaks cover capture/exit and later refreshes, not
+first-frame live memory, and are never summed. The read-only decoded capture check finds 30 before and 30 candidate RGB classes, 0 shared. All differences stay within the original skeleton bands, x45–662: y335–344 and ten 14px bands starting at380 with41px spacing. All pixels outside these bands match. No animation was disabled and no observation repeated; evidence is instruction-opt83-page-pixel-class-check.json.
+The focused retained geometry, text, grid/flex/table, Unicode and intrinsic
+viewport is pixel-exact at 1024×768.
+Prior observed carry is 3,504,193. Cumulative observed saving **3,504,193** stays below the 5M gate. Broad validation is deferred and the previous completed broad baseline remains.
+
+The isolated signed app is `/Users/alex/code/vox2/Build/v/Vox-opt83.app`; native instruction text
+matches the measured executable, with the frozen helper pinned inside the
+bundle and its actual default loaded path/hash checked. Signatures, startup
+and actual GC collections pass with default marker 1 and override 2. Canonical
+app and user GUI remain preserved. Contemporary Root receives no extra source,
+regression or performance credit. Equivalent Chrome content/start/submission
+accounting remains open; faster-than-Chrome performance is unproven. Evidence:
+`Build/instructions/vox-opt83-interleaved-*` and `Build/v/instruction-opt83-*`.
+
 ## Causes and changes
 
 - The V 0.5.2 compatibility compiler's `-prod` Boehm code repeatedly snapshots

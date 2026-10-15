@@ -1760,6 +1760,16 @@ evidence](docs/translation-audit/NATIVE_MEDIA_WHEEL_RAW_HANDLER.md).
   focused retained text/geometry viewport exact. Additional observed savings: 3,504,193.
   Same 4 GiB/placement; canonical/GUI preserved; contemporary Root excluded.
   Chrome parity remains open.
+  Shared UA-only shadow selector cache `f53aea52` (independent committed slice)
+  pass 15,387 common assertions in 19 cases per configuration,
+  plus 8 original candidate cases/17,422 assertions both GC.
+  Complete public shadow style computations use 99.06% fewer instructions.
+  Page point saving -19,438,450.5, 14/30 wins,
+  paired interval [-16,698,729.5, 9,769,998]; repeatable credit 0.
+  Broad verification: deferred below cumulative 5M gate;
+  focused retained text/geometry viewport exact. Additional observed savings: 3,504,193.
+  Same 4 GiB/placement; canonical/GUI preserved; contemporary Root excluded.
+  Chrome parity remains open.
 - Outside instruction-count optimization, run broad regression suites once per
   ten completed fixes, not after every fix.
   Broad suites include full translation/package test batches, the full LibJS AST
