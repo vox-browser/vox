@@ -4833,3 +4833,38 @@ raw observation is `Build/instructions/vox-hotspots49-diagnostic.run-1.json`.
 The canonical app and shipping verification ledger remain unchanged. Current
 Root changes are outside this frozen diagnostic. Chrome parity remains open.
 
+## Separate rule matching from the broad box-build interval
+
+A second C-O2 attribution build starts from the confirmed frozen round49
+runtime. The first `build_boxes` checkpoint interval also includes the preceding
+`Document.update_style()` work: `run_document_layout_with_current_style()` is
+called after that update and emits no separate style checkpoint. It therefore
+cannot be interpreted as self work in box construction. Adjacent checkpoint
+intervals remain useful boundaries, not function costs.
+
+| Owner-thread scope | Calls | Inclusive retired instructions |
+| --- | ---: | ---: |
+| `css__style_computer_collect_matching_rules_in_scope` | 127,328 | 2,410,580,940 |
+| `layout__create_layout_node_for_element` | 3,729 | 285,314,246 |
+| `layout__build_generated_pseudo_element` | 7,406 | 180,948,867 |
+| `layout__attach_children_maintaining_inline_invariant` | 3,449 | 112,325,511 |
+| `layout__resolve_layout_counters` | 4,041 | 69,195,695 |
+| `css__ComputedProperties_content` | 4,619 | 47,400,034 |
+
+These overlapping process-wide hardware-counter intervals include wrapper
+costs and charged work on other threads. They are never summed as self work or
+credited as page savings. Rule matching is the next investigated code path;
+this diagnostic alone establishes no saving from a change.
+
+Native compilation, signing, startup, observer and browser all actually exit
+zero, with zero counter failures. The independent audit restores all original
+C byte for byte, authenticates native arguments and 120 input hashes, verifies
+the frozen 359-body cache and helper, and checks the 1024×768 PNG. Binary SHA256:
+`919a5693f23678ac253920120096ee913b3eaf8e9bc296751d71cb87abdd7601`. C SHA256:
+`311145f3cc8d53d140b8071e67fd5673de88767b219a8b18c0bbffd818b89ffc`. Durable archive SHA256:
+`beb8dc74235aa5f94af8ef766103bb7ac2fdbbf12f1076a0118e35b06184fadc`. Receipts:
+`Build/v/instruction-hotspots50-{build-result,result,final-audit}.json`; raw
+report: `Build/instructions/vox-hotspots50-diagnostic.run-1.json`. The 4 GiB hint,
+shipping ledger, canonical app and GUI browser are preserved. Current Root is
+excluded. Page credit remains 0 and Chrome parity remains open.
+
