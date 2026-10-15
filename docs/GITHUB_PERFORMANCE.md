@@ -7884,6 +7884,106 @@ regression or performance credit. Equivalent Chrome content/start/submission
 accounting remains open; faster-than-Chrome performance is unproven. Evidence:
 `Build/instructions/vox-opt81-interleaved-*` and `Build/v/instruction-opt81-*`.
 
+## Transfer owned glyph vectors on shaping-cache hits
+
+This integration imports only independently authored feature `172a526b`
+(Alexander Medvednikov): two exact edit hunks in platform/glyph_run.v and
+platform/shaping_cache.v, trimming only unchanged context. The public glyph-run
+constructor still clones caller-owned input. A private helper accepts the
+already independent vector cloned by the cached-shape consumer, removing its
+second copy. Baseline adjustment, bounds, visible replay vectors, widths,
+trailing whitespace and cache mutation isolation retain their existing logic.
+No record, global, filtering, arena or GC policy changes are included.
+Contemporary Root and concurrent work remain preserved.
+
+Before/final Boehm and final no-GC C-O2 each pass **184
+assertions in 7 cases**: six exact retained glyph fork, decoded-face identity
+and face-retention cases, plus an inactive diagnostic. Common source SHA256 is
+`771e0064a8530ad542df47d9a05e30ecd016b1bf6fde908e61a323a67547fb6d`. The three original candidate cases
+run byte-for-byte in both GCs, **714
+assertions each**. They cover public copy independence, private transfer through
+producer exit and forced collection, empty/nonempty arrays, invisible fonts,
+faces, zero/negative/nonzero baselines, trailing state and mutation isolation.
+
+Three predeclared alternating local pairs count **256 complete batches of 64
+public cached shape_text_with_spacing calls**, with four ASCII/Unicode strings,
+zero/nonzero baselines and checksums over all glyph fields, replay vectors,
+bounds, widths and trailing whitespace. Font/input setup, cache population,
+eight warmup batches, expected checksum and forced GC precede the counter;
+checksum assertions follow it. Before: 569,655,994 / 571,097,375 / 570,732,008.
+Candidate by pair: 523,112,719 / 523,215,052 / 523,620,854.
+Median **570,732,008→523,215,052
+(-8.33%)**; checksum **3,284,410,716,090,368**
+in all six actual zero exits. This local result receives no page credit.
+
+Both full-process C-O1/Boehm profiles actually pass without filter/reset:
+
+| Function | Before calls | Candidate calls |
+| --- | ---: | ---: |
+| `platform__opt82_complete_cached_shapes` | 265 | 265 |
+| `platform__shape_text_with_spacing` | 16,960 | 16,960 |
+| `platform__shaped_text_with_baseline` | 16,960 | 16,960 |
+| `platform__GlyphRun__static__new_with_face` | 16,966 | 6 |
+| `platform__glyph_run_with_owned_glyphs` | 0 | 16,966 |
+
+These are call counts, not hardware instruction savings. The same complete
+shape batches and public shaping/cache consumer calls run. Cached results enter
+the private owned helper; other public constructor calls retain their copy.
+The original outputs and generated-C full-process scope proofs are durable.
+
+Strict C audit authenticates the two exact source hunks and byte-identical
+normal/focused targets. The new public constructor is exactly one clone passed
+to the private helper; that helper is the old constructor with only the input
+vector copy removed. The cached baseline function changes only its callee.
+All other C, records, globals, resources, filtering, arenas and GC setup match
+after established compiler identities, 37 frozen includes, four byte-identical
+helper reorderings and explicit unchanged assertion-line maps. All 120 native
+inputs and exact native arguments match. C SHA256:
+`26947823edd3f88da02ba48dacf18a677c0f0ca9698d72d477d223a44dacd607`. Durable normal, focused, contract
+and profile archives appear in `instruction-opt82-artifact-archives.json`.
+
+An initial preparation path-manifest check rejected a stale DOM feature list
+before any browser launch. Its actual preparation exit 1 and zero-observation
+record remain archived. The platform-owned path list was corrected; no
+successful runtime check or primary was repeated.
+
+The predeclared page cohort is **30 alternating pairs**, odd before/final,
+even final/before, **30,000 paired bootstrap resamples, seed 82**. Both regular
+persisted binaries use fresh copies of the same 359 cached bodies, frozen text
+and child-only placement helpers, C-O2/Boehm/one marker and unchanged 4 GiB
+hint; no prod/prealloc. Fixed document viewport is 1024×768 and endpoint is
+`navigation_to_first_document_paint[0]`; no historical or Root comparison.
+
+| Build | Median first-frame retired instructions | Median lifetime process peak, MiB |
+| --- | ---: | ---: |
+| Fresh accepted frozen81 control | 17,732,620,793 | 3,601 |
+| Owned glyph vector transfer | 17,729,116,600 | 3,601.7 |
+
+Difference of marginal medians: **3,504,193** instructions
+saved (-0.020% change), **15/30** wins.
+Paired median saving **2,633,097.5**, paired 95% interval
+**[-7,026,766, 10,674,088.5]**. The interval includes zero; repeatable page credit is **0**. Whole-page savings are not established.
+
+All 60 primary observations and **60 actual PNGs** remain. Recovered
+primaries: none; pre-parse retries: 0. First primaries
+retain 1 installation/2 geometry preparations/1 paint. Later completed refreshes
+remain separate: none. No completed primary is extended,
+discarded or rerun. Recovered records disclose unknown final exit and missing
+PNG, fingerprint and peak. Peaks cover capture/exit and later refreshes, not
+first-frame live memory, and are never summed. The read-only decoded capture check finds 30 before and 30 candidate RGB classes, 0 shared. All differences stay within the original skeleton bands, x45–662: y335–344 and ten 14px bands starting at380 with41px spacing. All pixels outside these bands match. No animation was disabled and no observation repeated; evidence is instruction-opt82-page-pixel-class-check.json.
+The focused retained geometry, text, grid/flex/table, Unicode and intrinsic
+viewport is pixel-exact at 1024×768.
+Prior observed carry is 0. Cumulative observed saving **3,504,193** stays below the 5M gate. Broad validation is deferred and the previous completed broad baseline remains.
+
+The isolated signed app is `/Users/alex/code/vox2/Build/v/Vox-opt82.app`; native instruction text
+matches the measured executable, with the frozen helper pinned inside the
+bundle and its actual default loaded path/hash checked. Signatures, startup
+and actual GC collections pass with default marker 1 and override 2. Canonical
+app and user GUI remain preserved. Contemporary Root receives no extra source,
+regression or performance credit. Equivalent Chrome content/start/submission
+accounting remains open; faster-than-Chrome performance is unproven. Evidence:
+`Build/instructions/vox-opt82-interleaved-*` and `Build/v/instruction-opt82-*`.
+
 ## Causes and changes
 
 - The V 0.5.2 compatibility compiler's `-prod` Boehm code repeatedly snapshots
