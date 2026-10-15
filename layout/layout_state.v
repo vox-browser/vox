@@ -63,6 +63,15 @@ mut:
 	derived_last_baseline_        ?CSSPixels
 }
 
+// Empty zero-capacity arrays have no writable backing storage to escape
+// through the public grid getters. Retain eager copies for every other case.
+fn (rare &UsedValuesRareData) can_share_for_measurement() bool {
+	return rare.used_grid_template_columns.cap == 0
+		&& rare.used_grid_template_rows.cap == 0
+		&& rare.used_grid_column_line_names.cap == 0
+		&& rare.used_grid_row_line_names.cap == 0
+}
+
 fn (rare &UsedValuesRareData) clone() &UsedValuesRareData {
 	return &UsedValuesRareData{
 		static_position_rect_: rare.static_position_rect_
@@ -131,6 +140,7 @@ pub mut:
 	has_scrollable_overflow_     bool
 mut:
 	rare_ ?&UsedValuesRareData
+	rare_is_shared_ bool
 }
 
 // Table layout derives row, row-group, table, and wrapper baselines. Other
@@ -156,6 +166,12 @@ fn (u &UsedValues) derived_last_baseline() ?CSSPixels {
 
 fn (mut u UsedValues) ensure_rare_data() &UsedValuesRareData {
 	if rare := u.rare_ {
+		if u.rare_is_shared_ {
+			owned := rare.clone()
+			u.rare_ = owned
+			u.rare_is_shared_ = false
+			return owned
+		}
 		return rare
 	}
 	rare := &UsedValuesRareData{}
@@ -1016,7 +1032,7 @@ pub fn (mut state LayoutState) populate_node_from(mut source LayoutState, node &
 	if state.used_values_store.get(index) != none {
 		panic('VERIFY(!m_used_values_store.get(index))')
 	}
-	source_values := source.get(node)
+	mut source_values := source.get(node)
 	mut values := state.used_values_store.allocate(index)
 	values.node_ = source_values.node_
 	values.content_width_ = source_values.content_width_
@@ -1045,7 +1061,15 @@ pub fn (mut state LayoutState) populate_node_from(mut source LayoutState, node &
 	values.line_boxes = source_values.line_boxes.clone()
 	values.containing_line_box_fragment = source_values.containing_line_box_fragment
 	if source_rare := source_values.rare_ {
-		values.rare_ = source_rare.clone()
+		if source_rare.can_share_for_measurement() {
+			// Both owners detach before a rare-field mutation, preserving the
+			// snapshot even when the committed source changes first.
+			source_values.rare_is_shared_ = true
+			values.rare_ = source_rare
+			values.rare_is_shared_ = true
+		} else {
+			values.rare_ = source_rare.clone()
+		}
 	}
 	if index in source.subgrid_data {
 		subgrid := unsafe { source.subgrid_data[index] }

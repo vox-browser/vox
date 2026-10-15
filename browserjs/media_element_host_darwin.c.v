@@ -304,7 +304,7 @@ fn (mut host MediaElementHost) loop(receiver voidptr) !voidptr {
 	element := host.bound_elements[receiver] or {
 		return error('TypeError: Not an object of type HTMLMediaElement')
 	}
-	return C.JSValueMakeBoolean(host.runtime.context, element.has_attribute('loop'))
+	return C.JSValueMakeBoolean(host.runtime.context, element.has_attribute_ns(none, 'loop'))
 }
 
 fn (mut host MediaElementHost) set_loop(receiver voidptr, value voidptr) !voidptr {
@@ -327,7 +327,7 @@ fn (mut host MediaElementHost) autoplay(receiver voidptr) !voidptr {
 	element := host.bound_elements[receiver] or {
 		return error('TypeError: Not an object of type HTMLMediaElement')
 	}
-	return C.JSValueMakeBoolean(host.runtime.context, element.has_attribute('autoplay'))
+	return C.JSValueMakeBoolean(host.runtime.context, element.has_attribute_ns(none, 'autoplay'))
 }
 
 fn (mut host MediaElementHost) set_autoplay(receiver voidptr, value voidptr) !voidptr {
