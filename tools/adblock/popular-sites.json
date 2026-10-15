@@ -11,6 +11,7 @@
     { "id": "github", "name": "GitHub", "url": "https://github.com/", "min_requests": 10 },
     { "id": "yahoo", "name": "Yahoo", "url": "https://www.yahoo.com/", "min_requests": 10 },
     { "id": "espn", "name": "ESPN", "url": "https://www.espn.com/", "min_requests": 10 },
-    { "id": "stackoverflow", "name": "Stack Overflow", "url": "https://stackoverflow.com/questions", "min_requests": 10 }
+    { "id": "stackoverflow", "name": "Stack Overflow", "url": "https://stackoverflow.com/questions", "min_requests": 10 },
+    { "id": "pikabu", "name": "Pikabu (RU AdList)", "url": "https://pikabu.ru/", "min_requests": 10 }
   ]
 }
