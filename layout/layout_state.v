@@ -35,7 +35,6 @@ mut:
 struct UsedValuesRareData {
 mut:
 	static_position_rect_         ?StaticPositionRect
-	inline_end_static_position_rect_ ?StaticPositionRect
 	relative_inset_basis_width_   ?CSSPixels
 	relative_inset_basis_height_  ?CSSPixels
 	abspos_containing_block_rect_ ?css.CSSPixelRect
@@ -75,7 +74,6 @@ fn (rare &UsedValuesRareData) can_share_for_measurement() bool {
 fn (rare &UsedValuesRareData) clone() &UsedValuesRareData {
 	return &UsedValuesRareData{
 		static_position_rect_: rare.static_position_rect_
-		inline_end_static_position_rect_: rare.inline_end_static_position_rect_
 		relative_inset_basis_width_: rare.relative_inset_basis_width_
 		relative_inset_basis_height_: rare.relative_inset_basis_height_
 		abspos_containing_block_rect_: rare.abspos_containing_block_rect_
@@ -141,6 +139,10 @@ pub mut:
 mut:
 	rare_ ?&UsedValuesRareData
 	rare_is_shared_ bool
+	// Inline formatting publishes this small immutable scalar snapshot without
+	// allocating the unrelated SVG, table, and grid state.
+	inline_end_static_position_snapshot_ &StaticPositionRect = unsafe { nil }
+	inline_end_snapshot_arena_ &MeasurementUsedValuesArena = unsafe { nil }
 }
 
 // Table layout derives row, row-group, table, and wrapper baselines. Other
@@ -180,7 +182,7 @@ fn (mut u UsedValues) ensure_rare_data() &UsedValuesRareData {
 }
 
 pub fn (u &UsedValues) has_rare_data() bool {
-	return u.rare_ != none
+	return u.rare_ != none || u.inline_end_static_position_snapshot_ != unsafe { nil }
 }
 
 pub fn (u &UsedValues) has_line_clamp_point() bool {
@@ -619,13 +621,21 @@ pub fn (mut u UsedValues) set_static_position_rect(position StaticPositionRect) 
 }
 
 pub fn (mut u UsedValues) set_inline_end_static_position_rect(position StaticPositionRect) {
-	mut rare := u.ensure_rare_data()
-	rare.inline_end_static_position_rect_ = position
+	if u.inline_end_snapshot_arena_ != unsafe { nil } {
+		mut arena := u.inline_end_snapshot_arena_
+		u.inline_end_static_position_snapshot_ = arena.allocate_inline_end_snapshot(position)
+	} else {
+		u.inline_end_static_position_snapshot_ = &StaticPositionRect{
+			rect: position.rect
+			horizontal_alignment: position.horizontal_alignment
+			vertical_alignment: position.vertical_alignment
+		}
+	}
 }
 
 pub fn (u &UsedValues) inline_end_static_position_rect() ?StaticPositionRect {
-	rare := u.rare_ or { return none }
-	return rare.inline_end_static_position_rect_
+	if u.inline_end_static_position_snapshot_ == unsafe { nil } { return none }
+	return *u.inline_end_static_position_snapshot_
 }
 
 pub fn (mut u UsedValues) set_abspos_containing_block_rect(rect css.CSSPixelRect) {
@@ -832,6 +842,16 @@ const layout_state_page_mask = layout_state_page_size - 1
 // The chunks remain scanned while live: line boxes and rare data still belong
 // to the ordinary V heap and can also be shared with the source layout state.
 const measurement_arena_chunk_size = 16
+const inline_end_snapshot_chunk_size = 64
+
+// Published positions contain only scalar geometry. Measurement snapshots can
+// be released with their probe; retained positions use ordinary GC ownership.
+@[heap]
+struct InlineEndSnapshotChunk {
+mut:
+	values [inline_end_snapshot_chunk_size]StaticPositionRect
+	used int
+}
 
 $if gcboehm ? {
 	fn C.GC_free(voidptr)
@@ -857,6 +877,7 @@ mut:
 struct MeasurementUsedValuesArena {
 mut:
 	chunks []&MeasurementUsedValuesChunk
+	inline_end_snapshots []&InlineEndSnapshotChunk
 }
 
 // Committed geometry needs the same stable, scanned slots as intrinsic probes,
@@ -883,11 +904,31 @@ fn (mut arena MeasurementUsedValuesArena) allocate() &UsedValues {
 	}
 	index := chunk.used
 	chunk.used++
-	chunk.values[index] = UsedValues{}
+	chunk.values[index] = UsedValues{inline_end_snapshot_arena_: arena}
+	return unsafe { &chunk.values[index] }
+}
+
+fn (mut arena MeasurementUsedValuesArena) allocate_inline_end_snapshot(position StaticPositionRect) &StaticPositionRect {
+	mut chunk := if arena.inline_end_snapshots.len == 0
+		|| arena.inline_end_snapshots.last().used == inline_end_snapshot_chunk_size {
+		new_chunk := unsafe { &InlineEndSnapshotChunk(vcalloc(isize(sizeof(InlineEndSnapshotChunk)))) }
+		arena.inline_end_snapshots << new_chunk
+		new_chunk
+	} else {
+		arena.inline_end_snapshots.last()
+	}
+	index := chunk.used
+	chunk.used++
+	chunk.values[index] = position
 	return unsafe { &chunk.values[index] }
 }
 
 fn (mut arena MeasurementUsedValuesArena) release() {
+	for chunk in arena.inline_end_snapshots {
+		free_measurement_allocation(chunk)
+	}
+	unsafe { arena.inline_end_snapshots.free() }
+	arena.inline_end_snapshots = []&InlineEndSnapshotChunk{}
 	for chunk in arena.chunks {
 		free_measurement_allocation(chunk)
 	}
@@ -956,7 +997,11 @@ fn (mut store UsedValuesPagedStore) allocate(index u32) &UsedValues {
 		if store.retained_arena == unsafe { nil } {
 			store.retained_arena = &RetainedUsedValuesArena{}
 		}
-		store.retained_arena.storage.allocate()
+		mut retained := store.retained_arena.storage.allocate()
+		// A retained paintable can outlive the state. Its scalar snapshot stays
+		// GC-owned without retaining every other arena chunk through a back edge.
+		retained.inline_end_snapshot_arena_ = unsafe { nil }
+		retained
 	}
 	page.entries[int(index & layout_state_page_mask)] = voidptr(entry)
 	return entry
@@ -1115,6 +1160,14 @@ pub fn (mut state LayoutState) populate_node_from(mut source LayoutState, node &
 	values.inset_bottom = source_values.inset_bottom
 	values.line_boxes = source_values.line_boxes.clone()
 	values.containing_line_box_fragment = source_values.containing_line_box_fragment
+	if source_values.inline_end_static_position_snapshot_ != unsafe { nil } {
+		if source_values.inline_end_snapshot_arena_ == unsafe { nil } {
+			values.inline_end_static_position_snapshot_ = source_values.inline_end_static_position_snapshot_
+		} else {
+			// An independently releasable source probe cannot lend arena storage.
+			values.set_inline_end_static_position_rect(*source_values.inline_end_static_position_snapshot_)
+		}
+	}
 	if source_rare := source_values.rare_ {
 		if source_rare.can_share_for_measurement() {
 			// Both owners detach before a rare-field mutation, preserving the

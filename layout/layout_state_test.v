@@ -20,7 +20,7 @@ fn test_used_edges_sum_without_clamping_before_negative_margin_cancellation() {
 }
 
 fn test_used_values_keeps_rare_state_out_of_the_common_allocation() {
-	assert sizeof(UsedValues) <= 320
+	assert sizeof(UsedValues) <= 336
 	values := UsedValues{}
 	assert !values.has_rare_data()
 	assert values.grid_template_columns().len == 0
