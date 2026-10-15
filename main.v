@@ -3127,6 +3127,8 @@ fn (mut app BrowserApp) relayout(window_width int, window_height int) {
 }
 
 fn (mut app BrowserApp) advance_document_animations(window_width int, content_viewport_height int) {
+	_ = window_width
+	_ = content_viewport_height
 	if app.document == unsafe { nil } || app.animation_epoch_ns == 0
 		|| !css.document_has_running_css_animations(app.document) {
 		return
@@ -3135,9 +3137,12 @@ fn (mut app BrowserApp) advance_document_animations(window_width int, content_vi
 	elapsed_ms := f64(now - app.animation_epoch_ns) / 1_000_000.0
 	mut document := unsafe { &dom.Document(app.document) }
 	document.update_animations_and_send_events(elapsed_ms)
-	app.relayout(window_width, content_viewport_height + app.chrome_height())
+	// Frame preparation consumes the animation's style/layout/paint invalidation.
+	// A timeline tick alone does not require another procedural-filter commit.
 	$if macos {
-		C.native_wake_browser_after(16)
+		if css.document_has_running_css_animations(document) {
+			C.native_wake_browser_after(16)
+		}
 	}
 }
 

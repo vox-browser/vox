@@ -50,6 +50,9 @@ fn (mut app BrowserApp) record_document_paint_commands() {
 		app.paint_commands = []layout.PaintCommand{}
 		app.paint_commands_have_backdrop_filter = false
 	}
+	// Recording can refresh paint-only styles in the retained transport without
+	// a layout pass. Adopt that final snapshot as well as geometry changes.
+	app.adopt_current_document_geometry()
 	app.paint_commands_pending = false
 	root_rect := app.root_box.border_box()
 	app.status = '${app.load_status} · ${app.paint_commands.len} paints · ${int(root_rect.width)}×${int(root_rect.height)} CSS px'

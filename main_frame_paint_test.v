@@ -1,5 +1,6 @@
 module main
 
+import browserjs
 import css
 import dom
 import html
@@ -131,4 +132,69 @@ fn test_frame_preparation_preserves_layout_tree_only_mode() {
 	assert app.document.layout_is_up_to_date()
 	assert app.document.cached_display_list() == none
 	assert app.paint_commands.len == 0
+}
+
+fn test_animation_ticks_keep_unchanged_paint_and_do_not_repeat_procedural_filters() {
+	$if !darwin { return }
+	for animation in [
+		'@keyframes hold{from,to{opacity:1}}#target{animation:hold 1000s linear infinite}',
+		'@keyframes wait{from{opacity:0}to{opacity:1}}#target{animation:wait 1s linear 1000s infinite}',
+	] {
+		mut document := html.parse_document('<!doctype html><style>html,body{margin:0}#target{width:20px;height:20px;background:green;opacity:1}${animation}</style><div id="target"></div>')
+		mut runtime := browserjs.Runtime.create()
+		defer { runtime.close(); document.finalize() }
+		runtime.evaluate_host('globalThis.animationFilterCommits=0;globalThis.__voxAdblockApplyProcedural=()=>{animationFilterCommits++;return ""};')!
+		mut app := BrowserApp{document: document, js_runtime: runtime}
+		app.relayout(200, 232)
+		assert css.document_has_running_css_animations(document)
+		initial := document.cached_display_list() or { panic('missing initial animation paint') }
+		layout_handle := document.layout_engine_handle()
+		runtime.evaluate_host('animationFilterCommits=0')!
+		app.animation_epoch_ns = time.sys_mono_now() - 500_000_000
+		app.begin_frame_preparation()
+		app.advance_document_animations(200, app.viewport_height)
+		app.finish_frame_preparation()
+		current := document.cached_display_list() or { panic('missing unchanged animation paint') }
+		assert voidptr(current) == voidptr(initial)
+		assert document.layout_engine_handle() == layout_handle
+		assert runtime.evaluate_host('animationFilterCommits')! == '0'
+	}
+}
+
+fn test_animation_tick_commits_sampled_width_endpoint_and_adopts_current_geometry() {
+	mut document := html.parse_document('<!doctype html><style>html,body{margin:0}@keyframes grow{from{width:20px}to{width:100px}}#target{height:20px;background:green;animation:grow 1ms linear forwards}</style><div id="target"></div>')
+	defer { document.finalize() }
+	target := document.get_element_by_id('target') or { panic('missing animated width target') }
+	mut app := BrowserApp{document: document}
+	app.relayout(200, 232)
+	assert css.document_has_running_css_animations(document)
+	initial := app.root_box.find_box(i64(target.as_node().unique_id())) or { panic('missing initial width box') }
+	assert initial.border_box().width == 20
+	app.animation_epoch_ns = time.sys_mono_now() - 1_000_000_000
+	app.begin_frame_preparation()
+	app.advance_document_animations(200, app.viewport_height)
+	app.finish_frame_preparation()
+	current := app.root_box.find_box(i64(target.as_node().unique_id())) or { panic('missing final width box') }
+	assert current.border_box().width == 100
+	assert target.get_bounding_client_rect().width == 100
+}
+
+fn test_animation_tick_commits_sampled_transform_endpoint_without_rebuilding_geometry() {
+	mut document := html.parse_document('<!doctype html><style>html,body{margin:0}@keyframes turn{from{transform:rotateY(60deg)}to{transform:rotateY(180deg)}}#target{width:20px;height:20px;background:green;animation:turn 1ms linear forwards}</style><div id="target"></div>')
+	defer { document.finalize() }
+	target := document.get_element_by_id('target') or { panic('missing animated transform target') }
+	mut app := BrowserApp{document: document}
+	app.relayout(200, 232)
+	assert css.document_has_running_css_animations(document)
+	layout_handle := document.layout_engine_handle()
+	initial := document.cached_display_list() or { panic('missing initial transform paint') }
+	app.animation_epoch_ns = time.sys_mono_now() - 1_000_000_000
+	app.begin_frame_preparation()
+	app.advance_document_animations(200, app.viewport_height)
+	app.finish_frame_preparation()
+	current := app.root_box.find_box(i64(target.as_node().unique_id())) or { panic('missing final transform box') }
+	assert current.own_paint_transform_4x4.m33 < -0.9
+	assert document.layout_engine_handle() == layout_handle
+	paint := document.cached_display_list() or { panic('missing final transform paint') }
+	assert voidptr(paint) != voidptr(initial)
 }
