@@ -729,7 +729,8 @@ fn finish_document_layout(document &dom.Document, root &Node, viewport_width f64
 	// which run during layout (notably list-item ordinal resolution) observe the
 	// same complete layout tree. Geometry is refreshed after layout below.
 	previous_query_container_geometry := snapshot_size_query_container_geometry(root)
-	initial_root_placeholder := attach_layout_nodes_before_layout(root)
+	prepared_attachment := prepare_dom_layout_attachment(root)
+	initial_root_placeholder := prepared_attachment.root
 	mut mutable_document := unsafe { &dom.Document(document) }
 	mutable_document.set_layout_viewport(&dom.LayoutViewport{
 		root_node: initial_root_placeholder
@@ -747,7 +748,7 @@ fn finish_document_layout(document &dom.Document, root &Node, viewport_width f64
 	if os.getenv('LADYBIRD_DEBUG_TIMING') != '' {
 		eprintln('Ladybird V timing:     geometry ${(timing_checkpoint - geometry_started) / 1_000_000} ms')
 	}
-	root_placeholder := attach_layout_nodes_with_state(root, state)
+	root_placeholder := commit_dom_layout_attachment(root, state, prepared_attachment)
 	mutable_document.set_layout_viewport(&dom.LayoutViewport{
 		root_node: root_placeholder
 	})

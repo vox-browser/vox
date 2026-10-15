@@ -13,22 +13,47 @@ import css
 pub fn attach_layout_nodes(root_box &Node) &dom.LayoutNode {
 	mut placeholders := map[u64]&dom.LayoutNode{}
 	mut inline_pieces := map[u64][]InlineBoxPiece{}
-	return attach_layout_node_recursive(root_box, none, none, true, mut placeholders, mut inline_pieces)
+	return attach_layout_node_recursive(root_box, none, none, true, mut placeholders, mut inline_pieces, map[u64]&dom.LayoutNode{})
 }
 
 pub fn attach_layout_nodes_with_state(root_box &Node, state &LayoutState) &dom.LayoutNode {
 	mut placeholders := map[u64]&dom.LayoutNode{}
 	mut inline_pieces := map[u64][]InlineBoxPiece{}
-	return attach_layout_node_recursive(root_box, none, state, true, mut placeholders, mut inline_pieces)
+	return attach_layout_node_recursive(root_box, none, state, true, mut placeholders, mut inline_pieces, map[u64]&dom.LayoutNode{})
 }
 
 // Formatting needs the complete DOM/layout association before geometry is
 // available. innerText first updates layout and reads the final attachment, so
 // its font/grapheme-aware text chunks need only be collected at that commit.
+// This attachment belongs to one geometry pass. Its fresh nodes are completed
+// in place after formatting; nodes retained from earlier passes remain snapshots.
+struct PreparedDOMLayoutAttachment {
+	root         &dom.LayoutNode
+	placeholders map[u64]&dom.LayoutNode
+}
+
 fn attach_layout_nodes_before_layout(root_box &Node) &dom.LayoutNode {
+	return prepare_dom_layout_attachment(root_box).root
+}
+
+fn prepare_dom_layout_attachment(root_box &Node) PreparedDOMLayoutAttachment {
 	mut placeholders := map[u64]&dom.LayoutNode{}
 	mut inline_pieces := map[u64][]InlineBoxPiece{}
-	return attach_layout_node_recursive(root_box, none, none, false, mut placeholders, mut inline_pieces)
+	root := attach_layout_node_recursive(root_box, none, none, false, mut placeholders,
+		mut inline_pieces, map[u64]&dom.LayoutNode{})
+	return PreparedDOMLayoutAttachment{
+		root: root
+		placeholders: placeholders
+	}
+}
+
+fn commit_dom_layout_attachment(root_box &Node, state &LayoutState, prepared PreparedDOMLayoutAttachment) &dom.LayoutNode {
+	// Keep a separate traversal map so continuation and containing-block links
+	// follow the same tree order as a fresh attachment.
+	mut placeholders := map[u64]&dom.LayoutNode{}
+	mut inline_pieces := map[u64][]InlineBoxPiece{}
+	return attach_layout_node_recursive(root_box, none, state, true, mut placeholders,
+		mut inline_pieces, prepared.placeholders)
 }
 
 struct VisualLineProjection {
@@ -251,7 +276,7 @@ fn collect_dom_visual_lines(box &Node, state &LayoutState) []dom.VisualLine {
 	return result
 }
 
-fn attach_layout_node_recursive(box &Node, parent_placeholder ?&dom.LayoutNode, state ?&LayoutState, collect_text_chunks bool, mut placeholders map[u64]&dom.LayoutNode, mut inline_pieces map[u64][]InlineBoxPiece) &dom.LayoutNode {
+fn attach_layout_node_recursive(box &Node, parent_placeholder ?&dom.LayoutNode, state ?&LayoutState, collect_text_chunks bool, mut placeholders map[u64]&dom.LayoutNode, mut inline_pieces map[u64][]InlineBoxPiece, prepared map[u64]&dom.LayoutNode) &dom.LayoutNode {
 	mut visibility := dom.CSSVisibility_.visible
 	mut content_visibility := dom.CSSContentVisibility_.visible
 	mut overflow_x := dom.CSSOverflow_.visible
@@ -261,36 +286,53 @@ fn attach_layout_node_recursive(box &Node, parent_placeholder ?&dom.LayoutNode, 
 		content_visibility = content_visibility_to_dom_for_layout(styled.computed_values().content_visibility())
 		overflow_x = overflow_to_dom_for_layout(styled.computed_values().overflow_x())
 	}
-	mut placeholder := &dom.LayoutNode{
-		dom_node_: box.dom_node()
-		parent_: parent_placeholder
-		is_anonymous_: box.is_anonymous()
-		is_text_node_: box.is_text_node()
-		is_atomic_inline_: box.is_atomic_inline()
-		is_replaced_box_: box.is_replaced_box()
-		display_: layout_node_display(box)
-		pseudo_element_generator_: box.pseudo_element_generator()
-		generated_for_: dom_pseudo_element_for_layout_node(box.generated_for_pseudo_element())
-		is_viewport_: box.is_viewport()
-		is_positioned_: box.is_positioned()
-		is_sticky_position_: box.is_sticky_position()
-		is_fixed_position_: box.is_fixed_position()
-		is_scroll_container_: box.is_scroll_container()
-		establishes_fixed_positioning_containing_block_: box.establishes_a_fixed_positioning_containing_block()
-		overflow_x_: overflow_x
-		visibility_: visibility
-		content_visibility_: content_visibility
-		user_select_none_: user_select_none
-		white_space_collapse_is_not_collapse_: box.computed_values().white_space_collapse() != .collapse
-		layout_handle: voidptr(box)
-		find_matching_text_callback: find_matching_layout_text
-		apply_style_callback: apply_style_to_layout_node
-		apply_animated_style_callback: apply_animated_style_to_layout_node
-		clear_image_observers_callback: clear_layout_image_observers
-		set_needs_layout_update_callback: set_layout_node_needs_layout_update
-		invalidate_text_for_rendering_callback: invalidate_layout_text_for_rendering
-		refresh_empty_text_fragment_callback: refresh_layout_empty_text_fragment
-		view_transition_properties_callback: layout_view_transition_properties
+	mut placeholder := unsafe { &dom.LayoutNode(nil) }
+	if previous := prepared[u64(voidptr(box))] {
+		placeholder = previous
+	}
+	if placeholder == unsafe { nil } {
+		placeholder = &dom.LayoutNode{}
+	}
+	// Only borrow storage from this pass's initial attachment. Clear old slots
+	// before shortening the array so removed children are not retained by GC.
+	mut retained_children := unsafe { placeholder.children_ }
+	for index in 0 .. retained_children.len {
+		retained_children[index] = unsafe { nil }
+	}
+	retained_children.clear()
+	unsafe {
+		*placeholder = dom.LayoutNode{
+			children_: retained_children
+			dom_node_: box.dom_node()
+			parent_: parent_placeholder
+			is_anonymous_: box.is_anonymous()
+			is_text_node_: box.is_text_node()
+			is_atomic_inline_: box.is_atomic_inline()
+			is_replaced_box_: box.is_replaced_box()
+			display_: layout_node_display(box)
+			pseudo_element_generator_: box.pseudo_element_generator()
+			generated_for_: dom_pseudo_element_for_layout_node(box.generated_for_pseudo_element())
+			is_viewport_: box.is_viewport()
+			is_positioned_: box.is_positioned()
+			is_sticky_position_: box.is_sticky_position()
+			is_fixed_position_: box.is_fixed_position()
+			is_scroll_container_: box.is_scroll_container()
+			establishes_fixed_positioning_containing_block_: box.establishes_a_fixed_positioning_containing_block()
+			overflow_x_: overflow_x
+			visibility_: visibility
+			content_visibility_: content_visibility
+			user_select_none_: user_select_none
+			white_space_collapse_is_not_collapse_: box.computed_values().white_space_collapse() != .collapse
+			layout_handle: voidptr(box)
+			find_matching_text_callback: find_matching_layout_text
+			apply_style_callback: apply_style_to_layout_node
+			apply_animated_style_callback: apply_animated_style_to_layout_node
+			clear_image_observers_callback: clear_layout_image_observers
+			set_needs_layout_update_callback: set_layout_node_needs_layout_update
+			invalidate_text_for_rendering_callback: invalidate_layout_text_for_rendering
+			refresh_empty_text_fragment_callback: refresh_layout_empty_text_fragment
+			view_transition_properties_callback: layout_view_transition_properties
+		}
 	}
 	if text_node := box.as_text_node() {
 		placeholder.text_has_source_range_ = text_node.source_range_length_ != none
@@ -409,7 +451,7 @@ fn attach_layout_node_recursive(box &Node, parent_placeholder ?&dom.LayoutNode, 
 		}
 	}
 	for child in box.children() {
-		attach_layout_node_recursive(child, placeholder, state, collect_text_chunks, mut placeholders, mut inline_pieces)
+		attach_layout_node_recursive(child, placeholder, state, collect_text_chunks, mut placeholders, mut inline_pieces, prepared)
 	}
 	return placeholder
 }
