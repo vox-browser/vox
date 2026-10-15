@@ -213,6 +213,33 @@ bool clipped_raster_region(SkRect const& bounds, float canvas_width,
     return region.width() > 0 && region.height() > 0;
 }
 
+// A background sprite's paths can lie within the window but outside its
+// embedding clip. Reject those leaf surfaces before allocating and painting
+// them. CGContext reports the clip in its current user space,
+// which is also the coordinate space used by composite_pixels(); Skia's rows
+// run downwards instead. Retain a conservative fringe for antialiased clips.
+// Filter/shadow inputs and grouped commands keep their existing bounds: their
+// intermediate pixels may still contribute after an effect or group replay.
+bool leaf_raster_region_intersects_destination_clip(CGContextRef destination,
+    float canvas_height, RasterRegion const& region)
+{
+    auto clip = CGContextGetClipBoundingBox(destination);
+    if (CGRectIsNull(clip) || CGRectIsEmpty(clip))
+        return false;
+    if (CGRectIsInfinite(clip) || !std::isfinite(clip.origin.x)
+        || !std::isfinite(clip.origin.y) || !std::isfinite(clip.size.width)
+        || !std::isfinite(clip.size.height))
+        return true;
+    constexpr double fringe = 2.0;
+    // Keep intersecting surfaces at their original dimensions and origin.
+    // Cropping them can change Skia's analytic antialiasing and gradient
+    // rounding even when the final CoreGraphics clip is identical.
+    return region.right > CGRectGetMinX(clip) - fringe
+        && region.left < CGRectGetMaxX(clip) + fringe
+        && region.bottom > canvas_height - CGRectGetMaxY(clip) - fringe
+        && region.top < canvas_height - CGRectGetMinY(clip) + fringe;
+}
+
 struct RasterCommandGroup {
     CGContextRef destination { nullptr };
     float canvas_height { 0.0f };
@@ -1141,7 +1168,8 @@ extern "C" int ladybird_v_skia_draw_svg_path(CGContextRef destination,
 	}
 	RasterRegion region;
 	if (!clipped_raster_region(device_bounds, canvas_width,
-            canvas_height, 2.0f, region))
+            canvas_height, 2.0f, region)
+        || !leaf_raster_region_intersects_destination_clip(destination, canvas_height, region))
         return 1;
 
     auto destination_scale = raster_scale_for_context(destination);
@@ -1249,7 +1277,8 @@ static int draw_svg_gradient_path(CGContextRef destination, float const* data,
         0.0f, 0.0f, 1.0f);
     RasterRegion region;
     if (!clipped_raster_region(matrix.mapRect(local_bounds), canvas_width,
-            canvas_height, 2.0f, region))
+            canvas_height, 2.0f, region)
+        || !leaf_raster_region_intersects_destination_clip(destination, canvas_height, region))
         return 1;
     auto destination_scale = raster_scale_for_context(destination);
     auto raster_width = raster_dimension(region.width(), destination_scale);
