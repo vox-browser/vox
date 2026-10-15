@@ -1066,6 +1066,19 @@ pub fn (mut storage CSSAnimationStorage) set(abstract_element dom.AbstractElemen
 }
 
 pub fn (mut storage CSSAnimationStorage) remove_animations_not_named(abstract_element dom.AbstractElement, defined_names map[string]bool) {
+	// Most style recomputations leave the target's animation names unchanged.
+	// Keep the global storage in place unless this target actually lost a name.
+	mut needs_removal := false
+	for entry in storage.entries {
+		if abstract_elements_equal(entry.abstract_element, abstract_element)
+			&& entry.name !in defined_names {
+			needs_removal = true
+			break
+		}
+	}
+	if !needs_removal {
+		return
+	}
 	mut kept := []CSSAnimationStorageEntry{}
 	for entry in storage.entries {
 		if !abstract_elements_equal(entry.abstract_element, abstract_element)
