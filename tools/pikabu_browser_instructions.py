@@ -205,6 +205,18 @@ def native_content_state(audit):
                 fontsStatus=audit['fonts_status'])
 
 
+def native_font_gate(audit):
+    """Require the actual retained Roboto faces used by the Pikabu viewport."""
+    verified = set()
+    for face in audit.get('font_faces', []):
+        family = face['family'].strip(' \"\'').lower()
+        weight = {'normal': '400', 'bold': '700'}.get(face['weight'], face['weight'])
+        if (family == 'roboto' and face['style'] == 'normal' and face['status'] == 'loaded'
+                and face['parsed_font_present'] and face['source_path']):
+            verified.add(weight)
+    return {'400', '500', '700'} <= verified
+
+
 def connect_brave(profile, process, counter, deadline, replay_cache=None):
     port, _ = wait_for_chrome_debugger(profile / 'DevToolsActivePort', counter, deadline, .02, profile)
     opener = urllib.request.build_opener(urllib.request.ProxyHandler({}))
@@ -423,7 +435,9 @@ def run_native(args, api):
         if audit_path.exists():
             result['native_document_audit'] = json.loads(audit_path.read_text())
             result['document'] = native_content_state(result['native_document_audit'])
-            result['content_gate_passed'] = content_ready(result['document'], args.width, args.height)
+            result['font_gate_passed'] = native_font_gate(result['native_document_audit'])
+            result['content_gate_passed'] = (content_ready(result['document'], args.width, args.height)
+                                             and result['font_gate_passed'])
         else:
             result['content_gate_passed'] = False
             result['content_gate_note'] = 'Native binary lacks opt-in capture DOM audit; capture remains a diagnostic pending content validation.'

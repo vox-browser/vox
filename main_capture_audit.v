@@ -50,6 +50,16 @@ struct CaptureAuditSelection {
 	elements []CaptureAuditElement
 }
 
+struct CaptureAuditFontFace {
+	family              string
+	style               string
+	weight              string
+	status              string
+	parsed_font_present bool
+	source_path         string
+	declared_sources    []string
+}
+
 struct CaptureAudit {
 	url                    string
 	title                  string
@@ -58,6 +68,7 @@ struct CaptureAudit {
 	viewport_height        int
 	font_set_present       bool
 	fonts_status           string
+	font_faces             []CaptureAuditFontFace
 	paint_commands         int
 	javascript_diagnostics []string
 	selections             []CaptureAuditSelection
@@ -131,11 +142,24 @@ fn (app &BrowserApp) collect_capture_audit(config CaptureAuditConfig) !CaptureAu
 	}
 	mut font_set_present := false
 	mut fonts_status := 'unmaterialized'
+	mut font_faces := []CaptureAuditFontFace{}
 	if owner := app.document.existing_font_face_set() {
 		if owner.font_face_set_record() != unsafe { nil } {
 			font_set_present = true
 			fonts := unsafe { &css.FontFaceSet(owner.font_face_set_record()) }
 			fonts_status = fonts.status().str()
+			for face in fonts.set_entries() {
+				parsed := face.parsed_font != unsafe { nil }
+				font_faces << CaptureAuditFontFace{
+					family: face.family()
+					style: face.style()
+					weight: face.weight()
+					status: face.status().str()
+					parsed_font_present: parsed
+					source_path: if parsed { face.parsed_font.source_path } else { '' }
+					declared_sources: face.urls.map(it.value)
+				}
+			}
 		}
 	}
 	return CaptureAudit{
@@ -146,6 +170,7 @@ fn (app &BrowserApp) collect_capture_audit(config CaptureAuditConfig) !CaptureAu
 		viewport_height: app.viewport_height
 		font_set_present: font_set_present
 		fonts_status: fonts_status
+		font_faces: font_faces
 		paint_commands: app.paint_commands.len
 		javascript_diagnostics: app.js_messages.clone()
 		selections: selections

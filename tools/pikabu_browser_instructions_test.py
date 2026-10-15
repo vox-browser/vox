@@ -8,7 +8,7 @@ import tempfile
 import unittest
 
 from pikabu_browser_instructions import (
-    frozen_response, content_ready, fingerprint_tree, native_content_state, URL,
+    frozen_response, content_ready, fingerprint_tree, native_content_state, native_font_gate, URL,
 )
 
 
@@ -108,6 +108,19 @@ class FrozenPikabuTests(unittest.TestCase):
         self.assertTrue(content_ready(native_content_state(audit), 1024, 656))
         audit['selections'][-1]['elements'][0]['image']['paint_decoded'] = False
         self.assertFalse(content_ready(native_content_state(audit), 1024, 656))
+
+    def test_native_font_gate_requires_each_real_loaded_retained_roboto_face(self):
+        audit = dict(fonts_status='loaded', font_faces=[])
+        self.assertFalse(native_font_gate(audit))
+        for weight in ('400', '500', '700'):
+            audit['font_faces'].append(dict(family='Roboto', style='normal', weight=weight,
+                status='loaded', parsed_font_present=True, source_path='/retained/' + weight + '.ttf'))
+        self.assertTrue(native_font_gate(audit))
+        for key, value in [('status', 'error'), ('parsed_font_present', False), ('source_path', ''),
+                           ('family', 'Fallback')]:
+            changed = json.loads(json.dumps(audit))
+            changed['font_faces'][1][key] = value
+            self.assertFalse(native_font_gate(changed), (key, value))
 
 
 if __name__ == '__main__':

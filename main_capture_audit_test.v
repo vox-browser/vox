@@ -80,3 +80,35 @@ fn test_capture_audit_rejects_invalid_config_and_retains_empty_selector_results(
 	]})!
 	assert audit.selections[0].count == 0 && audit.selections[0].elements.len == 0
 }
+
+fn test_capture_audit_reports_existing_font_faces_without_loading_or_replacing_them() {
+	mut document := html.parse_document('<!doctype html><p>Retained fonts</p>')
+	mut set := css.FontFaceSet.create()
+	mut loaded := css.FontFaceObject.construct_impl('Retained face', css.FontFaceSource.from_string('url("https://fonts.test/loaded.woff2")'), css.FontFaceDescriptors{weight: '500'})
+	loaded.status_ = .loaded
+	loaded.parsed_font = &css.PlatformTypeface{family_name: 'Retained face', source_path: '/retained/loaded.ttf'}
+	pending := css.FontFaceObject.construct_impl('Pending face', css.FontFaceSource.from_string('url("https://fonts.test/pending.woff2")'), css.FontFaceDescriptors{})
+	set.add(loaded)!
+	set.add(pending)!
+	document.set_font_face_set(set)
+	before_set := set.font_face_set_record()
+	before_font := voidptr(loaded.parsed_font)
+	before_promise := voidptr(pending.font_status_promise)
+	app := BrowserApp{document: document}
+	audit := app.collect_capture_audit(CaptureAuditConfig{})!
+	assert audit.font_set_present
+	assert audit.font_faces.len == 2
+	assert audit.font_faces[0].family == 'Retained face'
+	assert audit.font_faces[0].weight == '500'
+	assert audit.font_faces[0].status == 'loaded'
+	assert audit.font_faces[0].parsed_font_present
+	assert audit.font_faces[0].source_path == '/retained/loaded.ttf'
+	assert audit.font_faces[0].declared_sources == ['https://fonts.test/loaded.woff2']
+	assert audit.font_faces[1].status == 'unloaded'
+	assert !audit.font_faces[1].parsed_font_present
+	assert audit.font_faces[1].source_path == ''
+	assert set.font_face_set_record() == before_set
+	assert voidptr(loaded.parsed_font) == before_font
+	assert voidptr(pending.font_status_promise) == before_promise
+	assert pending.status() == .unloaded
+}
