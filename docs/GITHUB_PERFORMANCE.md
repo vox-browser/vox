@@ -3503,3 +3503,21 @@ Only this prototype's four owned runtime edits were restored; its uncommitted
 test was archived. No browser primary observations or normal browser build
 were started. The declared page cohort remains unexecuted, and the broad
 validation baseline stays at round 33. Chrome parity remains open.
+
+## Round 36: rejected explicit DOM root loop
+
+An explicit loop over Node's retained parent pointers passed nine focused cases
+in before/final Boehm and final no-GC C-O2 builds, including deep connection,
+detachment, reparenting, nested shadow roots and adoption. Native disassembly
+then showed the existing recursive implementation and the proposed loop both
+compile to the same five-instruction pointer walk. The rewrite is rejected.
+Its three alternating local pairs are retained; the control's very cheap
+optimized lookup loop makes source-call counts an unreliable description of
+completed native traversals. No local or page saving is credited.
+
+Only the proposed root-method edit was restored, and its uncommitted tests
+were archived. Initial test-harness compiler failures, generated-C comparator
+ordering mismatch, focused results and disassembly remain under
+`Build/v/instruction-opt36-*`; the frozen prototype is retained. The speculative
+normal build is independently recorded without performance credit. No browser
+primary observations started, and the declared page cohort remains unexecuted.
