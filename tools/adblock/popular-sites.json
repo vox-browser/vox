@@ -1,0 +1,16 @@
+{
+  "sites": [
+    { "id": "bbc", "name": "BBC News", "url": "https://www.bbc.com/news", "min_requests": 10 },
+    { "id": "cnn", "name": "CNN", "url": "https://www.cnn.com/", "min_requests": 10 },
+    { "id": "reuters", "name": "Reuters", "url": "https://www.reuters.com/", "min_requests": 10 },
+    { "id": "nytimes", "name": "The New York Times", "url": "https://www.nytimes.com/", "min_requests": 10 },
+    { "id": "youtube", "name": "YouTube", "url": "https://www.youtube.com/", "min_requests": 10 },
+    { "id": "reddit", "name": "Reddit", "url": "https://www.reddit.com/", "min_requests": 10 },
+    { "id": "amazon", "name": "Amazon", "url": "https://www.amazon.com/", "min_requests": 10 },
+    { "id": "wikipedia", "name": "Wikipedia", "url": "https://en.wikipedia.org/wiki/Main_Page", "min_requests": 10 },
+    { "id": "github", "name": "GitHub", "url": "https://github.com/", "min_requests": 10 },
+    { "id": "yahoo", "name": "Yahoo", "url": "https://www.yahoo.com/", "min_requests": 10 },
+    { "id": "espn", "name": "ESPN", "url": "https://www.espn.com/", "min_requests": 10 },
+    { "id": "stackoverflow", "name": "Stack Overflow", "url": "https://stackoverflow.com/questions", "min_requests": 10 }
+  ]
+}

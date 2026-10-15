@@ -7,6 +7,7 @@ import path from 'node:path';
 import crypto from 'node:crypto';
 import { spawn, execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
+import { navigationObservation } from './navigation.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const options = {
@@ -168,11 +169,16 @@ try {
         return u.selectedFilterLists;
     })()`);
     await background.evaluate(`(async()=> (await import('./js/logger.js')).default.readAll('vox-parity'))()`);
+    await page.send('Page.enable');
     await page.send('Network.enable');
+    let navigation = null;
     if (!recordedVox) {
-        await page.send('Page.navigate', { url: options.url });
+        const result = await page.send('Page.navigate', { url: options.url });
         await pause(options.settle * 1000);
+        const snapshot = await page.evaluate(`({url:location.href,title:document.title,ready_state:document.readyState,body_text_length:document.body?.innerText.length||0,body_text_sample:document.body?.innerText.slice(0,4000)||'',element_count:document.querySelectorAll('*').length})`);
+        navigation = navigationObservation(options.url, result, snapshot, page.events);
     }
+    const documentURL = navigation?.url && /^https?:/.test(navigation.url) ? navigation.url : options.url;
     const raw = await background.evaluate(`(async()=> (await import('./js/logger.js')).default.readAll('vox-parity'))()`);
     const logs = raw.map(JSON.parse).filter(entry => entry.realm === 'network' && /^https?:/.test(entry.url));
     const networkRequests = page.events.filter(event => event.method === 'Network.requestWillBeSent').map(event => event.params);
@@ -195,14 +201,11 @@ try {
         } : null }];
     }));
     const requests = [...requestMap.values()].map(({ request }) => request);
-    if (!requests.length || (!recordedVox && (requests.length < 10 || !requests.some(r => new URL(r.url).hostname === new URL(options.url).hostname)))) {
-        throw new Error(`The live page did not produce a useful request corpus (${requests.length} requests)`);
-    }
     const expected = await background.evaluate(`(async()=>{
         const engine=(await import('./js/static-net-filtering.js')).default;
         const {FilteringContext}=await import('./js/filtering-context.js');
         return ${JSON.stringify(requests)}.map(r=>{
-            const c=new FilteringContext().setURL(r.url).setDocOriginFromURL(r.source_url||r.url).setTabOriginFromURL(${JSON.stringify(options.url)}).setType(r.request_type);
+            const c=new FilteringContext().setURL(r.url).setDocOriginFromURL(r.source_url||r.url).setTabOriginFromURL(${JSON.stringify(documentURL)}).setType(r.request_type);
             c.setMethod(r.method);
             const result=engine.matchRequest(c);
             return {blocked:result===1,exception:result===2,rule:result?engine.toLogData()?.raw||'':''};
@@ -213,6 +216,12 @@ try {
         const records = logs.filter(entry => entry.url === request.url && entry.type === request.request_type
             && entry.docHostname === sourceHostname && (entry.method || 'get').toUpperCase() === request.method);
         return records.length ? records.some(entry => entry.filter?.result === 1 && !entry.filter.modifier) : null;
+    });
+    const observedFilters = requests.map(request => {
+        const sourceHostname = new URL(request.source_url || request.url).hostname;
+        return logs.filter(entry => entry.url === request.url && entry.type === request.request_type
+            && entry.docHostname === sourceHostname && (entry.method || 'get').toUpperCase() === request.method)
+            .map(entry => entry.filter ?? null);
     });
     const oracleDisagreements = requests.flatMap((request, index) => observed[index] !== null && observed[index] !== expected[index].blocked
         ? [{ request, observed_blocked: observed[index], replayed: expected[index] }] : []);
@@ -231,8 +240,8 @@ try {
             const c=(await import('./js/cosmetic-filtering.js')).default;
             const s=(await import('./js/scriptlet-filtering.js')).default;
             const {domainFromHostname}=await import('./js/uri-utils.js');
-            const hostname=${JSON.stringify(new URL(options.url).hostname)};
-            const request={hostname,domain:domainFromHostname(hostname),url:${JSON.stringify(options.url)}};
+            const hostname=${JSON.stringify(new URL(documentURL).hostname)};
+            const request={hostname,domain:domainFromHostname(hostname),url:${JSON.stringify(documentURL)}};
             c.removeFromSelectorCache(hostname,'cosmetic');
             const specific=c.retrieveSpecificSelectors(request,{dontInject:true});
             const hashToken=token=>{
@@ -244,7 +253,7 @@ try {
             const generic=c.retrieveGenericSelectors({tabId:${JSON.stringify(logs[0]?.tabId)},frameId:0,hashes:[...new Set(${JSON.stringify(tokens)}.filter(t=>t.length>1).map(hashToken))],exceptions:specific.exceptionFilters});
             return {css:(specific.injectedCSS||'')+(generic?.injectedCSS?'\\n'+generic.injectedCSS:''),procedural:specific.proceduralFilters||[],filters:s.retrieve(request)?.filters||[]};
         })()`);
-        const actualCosmetic = JSON.parse(execFileSync(options.checker, ['--document-filters', options.url, ...tokens], { cwd: root, encoding: 'utf8', maxBuffer: 32 * 1024 * 1024 }));
+        const actualCosmetic = JSON.parse(execFileSync(options.checker, ['--document-filters', documentURL, ...tokens], { cwd: root, encoding: 'utf8', maxBuffer: 32 * 1024 * 1024 }));
         // Use Chromium's CSS parser to canonicalize declaration syntax, then split
         // selector lists only at top-level commas (respect :has(), quotes and []),
         // so harmless grouping and ordering differences do not affect the result.
@@ -282,19 +291,21 @@ try {
     }
     const capture = {
         captured_at: new Date().toISOString(), url: options.url,
+        navigation,
         input: recordedVox ? { mode: 'recorded-vox-network', file: path.resolve(options['vox-log']) } : { mode: 'live-brave-network' },
         oracle: { browser: execFileSync(options.brave, ['--version'], { encoding: 'utf8' }).trim(), extension: 'uBlock Origin (full, Manifest V2)', version: extensionManifest.version, shields: 'disabled in isolated profile', settings: 'default lists; identical repository snapshots; empty user filters' },
         engine: manifest.engine,
         lists: manifest.lists.map(({ name, sha256 }) => ({ name, sha256 })),
         counts: { requests: requests.length, blocked: expected.filter(x => x.blocked).length, allowed: expected.filter(x => !x.blocked).length, mismatches: mismatches.length, oracle_disagreements: oracleDisagreements.length },
         network_observation: { request_events: networkRequests.length, ublock_network_log_entries: logs.length, failures: page.events.filter(event => event.method === 'Network.loadingFailed').map(({ params }) => ({ request_id: params.requestId, error: params.errorText, blocked_reason: params.blockedReason || '' })) },
-        requests: requests.map((request, i) => ({ ...request, observed_ublock_blocked: observed[i], expected: expected[i], actual: actual[i] })),
+        requests: requests.map((request, i) => ({ ...request, observed_ublock_blocked: observed[i], observed_ublock_filters: observedFilters[i], expected: expected[i], actual: actual[i] })),
         cosmetic: cosmeticComparison, mismatches, oracle_disagreements: oracleDisagreements,
     };
     await fs.mkdir(path.dirname(path.resolve(options.output)), { recursive: true });
     await fs.writeFile(options.output, JSON.stringify(capture, null, 2) + '\n');
-    console.log(JSON.stringify({ output: path.resolve(options.output), ...capture.counts, ...(cosmeticComparison ? { css_matches: cosmeticComparison.css_matches, procedural_matches: cosmeticComparison.procedural_matches, scriptlet_filters_match: cosmeticComparison.scriptlet_filters_match } : {}) }));
+    console.log(JSON.stringify({ output: path.resolve(options.output), ...capture.counts, ...(navigation ? {coverage: navigation.coverage, status: navigation.status, title: navigation.title} : {}), ...(cosmeticComparison ? { css_matches: cosmeticComparison.css_matches, procedural_matches: cosmeticComparison.procedural_matches, scriptlet_filters_match: cosmeticComparison.scriptlet_filters_match } : {}) }));
     if (mismatches.length || oracleDisagreements.length || (cosmeticComparison && (!cosmeticComparison.css_matches || !cosmeticComparison.procedural_matches || !cosmeticComparison.scriptlet_filters_match))) process.exitCode = 1;
+    else if (!requests.length || (navigation && navigation.coverage !== 'page')) process.exitCode = 2;
 } finally {
     background?.close();
     page?.close();
