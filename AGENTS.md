@@ -1402,6 +1402,11 @@ evidence](docs/translation-audit/NATIVE_MEDIA_WHEEL_RAW_HANDLER.md).
   917,302,664, with repeatable page credit 917,302,664.
   Broad verification: passed 87 selected cases both GC and 19 screenshots (16 exact).
   The focused viewport is exact; Chrome parity remains open.
+  Iterator-owned text context `3f660b04` passes 23,230 focused assertions
+  per configuration. Matching 30-pair observed savings are 162,205,328.5
+  instructions, with repeatable page credit 162,205,328.5.
+  Broad verification: passed 87 selected cases both GC and 19 screenshots (16 exact).
+  The focused viewport is exact; Chrome parity remains open.
 - Outside instruction-count optimization, run broad regression suites once per
   ten completed fixes, not after every fix.
   Broad suites include full translation/package test batches, the full LibJS AST

@@ -271,7 +271,7 @@ fn (mut host MediaElementHost) default_muted(receiver voidptr) !voidptr {
 	element := host.bound_elements[receiver] or {
 		return error('TypeError: Not an object of type HTMLMediaElement')
 	}
-	return C.JSValueMakeBoolean(host.runtime.context, element.has_attribute('muted'))
+	return C.JSValueMakeBoolean(host.runtime.context, element.has_attribute_ns(none, 'muted'))
 }
 
 fn (mut host MediaElementHost) set_default_muted(receiver voidptr, value voidptr) !voidptr {
@@ -285,7 +285,7 @@ fn (mut host MediaElementHost) set_default_muted(receiver voidptr, value voidptr
 	if present {
 		element.set_attribute_value('muted', '')
 	} else {
-		element.remove_attribute('muted')
+		element.remove_attribute_ns(none, 'muted')
 	}
 	// This content attribute does not change the independent runtime muted state.
 	// DOM mutation preserves its mutation records and custom-element reaction queue;
