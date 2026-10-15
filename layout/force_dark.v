@@ -104,7 +104,8 @@ fn resolve_force_dark_paint_command(mut command PaintCommand,
 	command.stroke_color = force_dark_resolved_color_string(command.stroke_color, role,
 		command.force_dark_backdrop, mut resolver)
 	if gradient := command.gradient {
-		command.gradient = force_dark_resolved_css_gradient(gradient, role, mut resolver)
+		resolved := force_dark_resolved_css_gradient(gradient, role, mut resolver)
+		command.gradient = &LinearGradient{...resolved}
 	}
 	if data := command.svg_gradient_data {
 		mut fill_linear := data.fill_linear_gradient

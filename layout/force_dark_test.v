@@ -89,7 +89,7 @@ fn test_force_dark_command_resolution_translates_css_and_svg_gradient_stops() {
 		PaintCommand{
 			force_dark_role: .background
 			force_dark_role_set: true
-			gradient: LinearGradient{
+			gradient: &LinearGradient{
 				colors: [white]
 				stops: [GradientStop{color: white, offset: 0}]
 			}

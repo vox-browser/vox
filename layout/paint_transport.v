@@ -922,8 +922,10 @@ pub mut:
 	// Ordinary commands need no box-shadow geometry. Shadow commands retain
 	// one immutable source-space snapshot across phase caches and replays.
 	box_shadow_data &PaintBoxShadowData = unsafe { nil }
-	// The gradient for a 'fill_gradient' command (a linear-gradient background).
-	gradient                  ?LinearGradient = none
+	// Only gradient commands retain a resolved background image. Share its
+	// immutable snapshot across cached phases instead of embedding it in every
+	// text, border and image command.
+	gradient                  ?&LinearGradient = none
 	gradient_background_layer bool
 	// `draw_svg_path` payload.
 	path      string
@@ -1304,7 +1306,7 @@ fn background_layer_command(layer BackgroundImageLayer, origin LayoutRect, clip 
 			opacity: opacity
 			radius: radius
 			points: points
-			gradient: gradient
+			gradient: &LinearGradient{...gradient}
 			gradient_background_layer: true
 			force_dark_role: .background
 			force_dark_role_set: true
@@ -2184,7 +2186,7 @@ fn (b &BlockBox) record_paint_commands_for_entries(entries []PaintOrderEntry, se
 						height: background_border_rect.height
 						opacity: opacity
 						radius: if box.paints_canvas_background { 0.0 } else { radius }
-						gradient: grad
+						gradient: &LinearGradient{...grad}
 						points: gradient_points
 					}
 				}
