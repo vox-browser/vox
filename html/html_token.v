@@ -291,6 +291,47 @@ pub fn (t &HTMLToken) doctype_data() &DoctypeData {
 // https://html.spec.whatwg.org/multipage/parsing.html#attribute-name-state - remove duplicate
 // attributes, keeping the first occurrence of each name.
 pub fn (mut t HTMLToken) normalize_attributes() {
+	if t.attributes.len < 2 {
+		return
+	}
+	// Most tags have only a few attributes. Check them without a hash table or
+	// replacement array, keeping the existing token storage when names are unique.
+	if t.attributes.len <= 16 {
+		for index in 1 .. t.attributes.len {
+			mut duplicate := false
+			for previous in 0 .. index {
+				if t.attributes[previous].local_name == t.attributes[index].local_name {
+					duplicate = true
+					break
+				}
+			}
+			if !duplicate {
+				continue
+			}
+			t.had_duplicate_attribute = true
+			// Preserve aliases to the original array, as the hash-based path does.
+			mut result := []Attribute{cap: t.attributes.len}
+			for previous in 0 .. index {
+				result << t.attributes[previous]
+			}
+			for remaining in index + 1 .. t.attributes.len {
+				mut seen := false
+				for attribute in result {
+					if attribute.local_name == t.attributes[remaining].local_name {
+						seen = true
+						break
+					}
+				}
+				if !seen {
+					result << t.attributes[remaining]
+				}
+			}
+			t.attributes = result
+			return
+		}
+		return
+	}
+	// Bound work for unusually large or adversarial attribute lists.
 	mut seen_attributes := map[string]bool{}
 	mut result := []Attribute{cap: t.attributes.len}
 	for attribute in t.attributes {
