@@ -3682,6 +3682,29 @@ no pass credit is assigned to it. Evidence and archive hashes are in
 `Build/v/instruction-alloc40-final-audit.json`,
 `Build/v/instruction-alloc40-instrumentation-audit.json` and the retained raw log.
 
+## Rejected glyph-capacity preparation prototype
+
+Round 40 tested a helper that detaches shared glyph storage directly into
+append-sized capacity and reserves ordinary append capacity ahead of the loop.
+Eleven functional cases plus an inactive diagnostic pass 956 assertions in
+before/final Boehm and final no-GC C-O2 builds. Three new cases retain cached
+runs and other forks across long LTR/RTL appends, end padding and collection.
+
+Three fixed alternating local pairs run 512 complete normal inline formatting
+contexts on sixteen text nodes. Median retired instructions change from
+**1,831,739,039 to 1,832,703,846 (+0.0527%)**; all three pairs are worse, and
+all six checksums are 17,694,720. This normal fixture never populates the
+intrinsic shape cache, so it does not exercise the helper's shared-storage
+branch. It nevertheless rejects the added normal-path overhead. The cohort is
+retained without extension, replacement or performance credit.
+
+The prototype remains frozen under `Build/opt40-final-source`; neither runtime
+file was promoted to Root. No normal candidate, page primary, broad suite or
+app was produced. The three new correctness cases are archived and retained
+for the subsequent bulk-append experiment. The verified broad baseline stays
+at round 39. Evidence: `Build/v/instruction-opt40-rejected-result.json` and the
+focused/local receipts.
+
 ## Causes and changes
 
 - The V 0.5.2 compatibility compiler's `-prod` Boehm code repeatedly snapshots
