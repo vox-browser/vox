@@ -1,0 +1,1173 @@
+{
+  "description": "Representative actual guest-page requests observed by full uBlock Origin in isolated Brave; identical pinned default lists. Complete live reports remain generated Build artifacts. Selection retains distinct filter/type/method blocks and allowed resource categories, including main documents.",
+  "engine": {
+    "name": "uBlock Origin",
+    "version": "1.75.0",
+    "commit": "21f0e686506bb21b514b451c8c6cb9bf8c82d232",
+    "source": "https://github.com/gorhill/uBlock/tree/21f0e686506bb21b514b451c8c6cb9bf8c82d232"
+  },
+  "lists": [
+    {
+      "name": "ublock-filters",
+      "sha256": "b6d908ab04d5ea5dc99360eb9a79531ad6470833a08fdbd39b3b3135082fe9da"
+    },
+    {
+      "name": "ublock-badware",
+      "sha256": "dbb7b3a6e20266b92fb35e940a4ace8e023259078a3d6a2f716eaebc9b653d0f"
+    },
+    {
+      "name": "ublock-privacy",
+      "sha256": "980c6860384e9158e6f51e134d710e11aef00fdea3b96be1092f8e3c73fd7637"
+    },
+    {
+      "name": "ublock-unbreak",
+      "sha256": "e9d95cbb61cc83990e75104a4103585af146c6c6e8dfda07cad6c9713ddbb632"
+    },
+    {
+      "name": "ublock-quick-fixes",
+      "sha256": "ad334cfe66a3523dd82a954a2efdfd065c99f613dc093b8ce3d5597fd0632f9b"
+    },
+    {
+      "name": "easylist",
+      "sha256": "75dad8d3b219649590427fe8c3257e10461dc403c5e8afc315d94fdeaaeb078b"
+    },
+    {
+      "name": "easyprivacy",
+      "sha256": "9fab16346701f525c0d41f340071f0d72f767df8a399c48c545643eaad4e927e"
+    },
+    {
+      "name": "urlhaus-1",
+      "sha256": "05243718a2a12f3e998487a4bced75d16d111209ebc5f2872fb531fb22019ed9"
+    },
+    {
+      "name": "plowe-0",
+      "sha256": "25e97ac24ebf04c6df613c0726d66121725af6c2a68504ee2560b66df9092a20"
+    }
+  ],
+  "sites": [
+    {
+      "id": "cnn",
+      "url": "https://www.cnn.com/",
+      "captured_at": "2026-10-15T03:42:10.357Z",
+      "selected_requests": 20,
+      "selected_blocked": 12,
+      "live_requests": 123,
+      "live_blocked": 23
+    },
+    {
+      "id": "wikipedia",
+      "url": "https://en.wikipedia.org/wiki/Main_Page",
+      "captured_at": "2026-10-15T03:45:22.418Z",
+      "selected_requests": 9,
+      "selected_blocked": 1,
+      "live_requests": 29,
+      "live_blocked": 1
+    },
+    {
+      "id": "github",
+      "url": "https://github.com/",
+      "captured_at": "2026-10-15T03:42:14.964Z",
+      "selected_requests": 10,
+      "selected_blocked": 2,
+      "live_requests": 170,
+      "live_blocked": 2
+    },
+    {
+      "id": "yahoo",
+      "url": "https://www.yahoo.com/",
+      "captured_at": "2026-10-15T06:59:26.559Z",
+      "selected_requests": 20,
+      "selected_blocked": 12,
+      "live_requests": 258,
+      "live_blocked": 83
+    },
+    {
+      "id": "espn",
+      "url": "https://www.espn.com/",
+      "captured_at": "2026-10-15T03:43:21.294Z",
+      "selected_requests": 20,
+      "selected_blocked": 12,
+      "live_requests": 173,
+      "live_blocked": 17
+    },
+    {
+      "id": "stackoverflow",
+      "url": "https://stackoverflow.com/questions",
+      "captured_at": "2026-10-15T03:43:51.206Z",
+      "selected_requests": 10,
+      "selected_blocked": 2,
+      "live_requests": 79,
+      "live_blocked": 3
+    }
+  ],
+  "requests": [
+    {
+      "url": "https://lightning.cnn.com/launch/7be62238e4c3/97fa00444124/launch-2878c87af5e3.min.js",
+      "source_url": "https://edition.cnn.com/",
+      "request_type": "script",
+      "method": "GET",
+      "expected": {
+        "blocked": true,
+        "exception": false,
+        "rule": "://lightning.*/launch/"
+      },
+      "site": "cnn"
+    },
+    {
+      "url": "https://cdn.optimizely.com/public/125375509/s/landingprod.js",
+      "source_url": "https://edition.cnn.com/",
+      "request_type": "script",
+      "method": "GET",
+      "expected": {
+        "blocked": true,
+        "exception": false,
+        "rule": "||optimizely.com/public/"
+      },
+      "site": "cnn"
+    },
+    {
+      "url": "https://z.cdp-dev.cnn.com/zion-web-client/3.0/zion-web-client.min.js",
+      "source_url": "https://edition.cnn.com/",
+      "request_type": "script",
+      "method": "GET",
+      "expected": {
+        "blocked": true,
+        "exception": false,
+        "rule": "||z.cdp-dev.cnn.com^"
+      },
+      "site": "cnn"
+    },
+    {
+      "url": "https://static.chartbeat.com/js/chartbeat_mab.js",
+      "source_url": "https://edition.cnn.com/",
+      "request_type": "script",
+      "method": "GET",
+      "expected": {
+        "blocked": true,
+        "exception": false,
+        "rule": "||chartbeat.com^$3p"
+      },
+      "site": "cnn"
+    },
+    {
+      "url": "https://tag.wknd.ai/7291/i.js",
+      "source_url": "https://edition.cnn.com/",
+      "request_type": "script",
+      "method": "GET",
+      "expected": {
+        "blocked": true,
+        "exception": false,
+        "rule": "||wknd.ai^"
+      },
+      "site": "cnn"
+    },
+    {
+      "url": "https://live.rezync.com/sync?c=16b6410431b6374e780104abb0443ca8&p=34747f0775f02a6784bb965de6833e73&k=cnn-pixel-8786&zmpID=cnn&custom1=section_homepage1&custom2=section&custom3=homepage&cache_buster=1792035711156",
+      "source_url": "https://edition.cnn.com/",
+      "request_type": "script",
+      "method": "GET",
+      "expected": {
+        "blocked": true,
+        "exception": false,
+        "rule": "||rezync.com^"
+      },
+      "site": "cnn"
+    },
+    {
+      "url": "https://imasdk.googleapis.com/js/sdkloader/ima3.js",
+      "source_url": "https://edition.cnn.com/",
+      "request_type": "script",
+      "method": "GET",
+      "expected": {
+        "blocked": true,
+        "exception": false,
+        "rule": "||imasdk.googleapis.com^"
+      },
+      "site": "cnn"
+    },
+    {
+      "url": "https://micro.rubiconproject.com/prebid/dynamic/11016.js",
+      "source_url": "https://edition.cnn.com/",
+      "request_type": "script",
+      "method": "GET",
+      "expected": {
+        "blocked": true,
+        "exception": false,
+        "rule": "||rubiconproject.com^"
+      },
+      "site": "cnn"
+    },
+    {
+      "url": "https://segment-data.zqtk.net/turner-47fcf6?url=https%3A%2F%2Fedition.cnn.com%2F",
+      "source_url": "https://edition.cnn.com/",
+      "request_type": "script",
+      "method": "GET",
+      "expected": {
+        "blocked": true,
+        "exception": false,
+        "rule": "||zqtk.net^"
+      },
+      "site": "cnn"
+    },
+    {
+      "url": "https://8512b548-2306-4976-a576-a880f2c35e4e.edge.permutive.app/6adbc4e9-beda-4b9e-9117-43ec3a80e1d0-web.js",
+      "source_url": "https://edition.cnn.com/",
+      "request_type": "script",
+      "method": "GET",
+      "expected": {
+        "blocked": true,
+        "exception": false,
+        "rule": "||permutive.app^"
+      },
+      "site": "cnn"
+    },
+    {
+      "url": "https://static.adsafeprotected.com/publisher/925660/ebfdc39c-b42a-11f0-aa09-0e6958f30139.min.js",
+      "source_url": "https://edition.cnn.com/",
+      "request_type": "script",
+      "method": "GET",
+      "expected": {
+        "blocked": true,
+        "exception": false,
+        "rule": "||adsafeprotected.com^"
+      },
+      "site": "cnn"
+    },
+    {
+      "url": "https://ads.stickyadstv.com/user-matching?id=185&_fw_gdpr=0&_fw_gdpr_consent=",
+      "source_url": "https://edition.cnn.com/",
+      "request_type": "script",
+      "method": "GET",
+      "expected": {
+        "blocked": true,
+        "exception": false,
+        "rule": "||stickyadstv.com^"
+      },
+      "site": "cnn"
+    },
+    {
+      "url": "https://www.cnn.com/",
+      "source_url": "https://www.cnn.com/",
+      "request_type": "main_frame",
+      "method": "GET",
+      "expected": {
+        "blocked": false,
+        "exception": false,
+        "rule": ""
+      },
+      "site": "cnn"
+    },
+    {
+      "url": "https://edition.cnn.com/",
+      "source_url": "https://edition.cnn.com/",
+      "request_type": "main_frame",
+      "method": "GET",
+      "expected": {
+        "blocked": false,
+        "exception": false,
+        "rule": ""
+      },
+      "site": "cnn"
+    },
+    {
+      "url": "https://edition.cnn.com/fonts/cnn/cnn_sans_display-v1.woff2",
+      "source_url": "https://edition.cnn.com/",
+      "request_type": "font",
+      "method": "GET",
+      "expected": {
+        "blocked": false,
+        "exception": false,
+        "rule": ""
+      },
+      "site": "cnn"
+    },
+    {
+      "url": "https://edition.cnn.com/media/sites/js/bundles/cnn-edition-adfuel-3149d6d8fccd699a3381ccc0c9dae703c55898453f56df74c6085a037c6be1f0.min.js",
+      "source_url": "https://edition.cnn.com/",
+      "request_type": "script",
+      "method": "GET",
+      "expected": {
+        "blocked": false,
+        "exception": false,
+        "rule": ""
+      },
+      "site": "cnn"
+    },
+    {
+      "url": "https://publicsuffix.org/list/public_suffix_list.dat",
+      "source_url": "https://jcokkipkhhgiakinbnnplhkdbjbgcgpe.chrome-extension-scheme/",
+      "request_type": "xmlhttprequest",
+      "method": "GET",
+      "expected": {
+        "blocked": false,
+        "exception": false,
+        "rule": ""
+      },
+      "site": "cnn"
+    },
+    {
+      "url": "https://registry.api.cnn.io/bundles/fave/latest-4.x/js",
+      "source_url": "https://edition.cnn.com/",
+      "request_type": "script",
+      "method": "GET",
+      "expected": {
+        "blocked": false,
+        "exception": false,
+        "rule": ""
+      },
+      "site": "cnn"
+    },
+    {
+      "url": "https://media.cnn.com/api/v1/images/stellar/prod/gettyimages-2299453626.jpg?c=16x9&q=h_270,w_480,c_fill/f_webp",
+      "source_url": "https://edition.cnn.com/",
+      "request_type": "image",
+      "method": "GET",
+      "expected": {
+        "blocked": false,
+        "exception": false,
+        "rule": ""
+      },
+      "site": "cnn"
+    },
+    {
+      "url": "https://media.cnn.com/api/v1/loops/stellar/prod/desktop-261014-6-imageslideshow-fade.mp4?c=original",
+      "source_url": "https://edition.cnn.com/",
+      "request_type": "media",
+      "method": "GET",
+      "expected": {
+        "blocked": false,
+        "exception": false,
+        "rule": ""
+      },
+      "site": "cnn"
+    },
+    {
+      "url": "https://en.wikipedia.org/ins-502b/v2/events?hasty=true",
+      "source_url": "https://en.wikipedia.org/wiki/Main_Page",
+      "request_type": "ping",
+      "method": "POST",
+      "expected": {
+        "blocked": true,
+        "exception": false,
+        "rule": "||wikipedia.org/ins-502b/v2/events"
+      },
+      "site": "wikipedia"
+    },
+    {
+      "url": "https://cdn.jsdelivr.net/gh/uBlockOrigin/uAssetsCDN@main/filters/badlists.txt",
+      "source_url": "https://jcokkipkhhgiakinbnnplhkdbjbgcgpe.chrome-extension-scheme/",
+      "request_type": "xmlhttprequest",
+      "method": "GET",
+      "expected": {
+        "blocked": false,
+        "exception": false,
+        "rule": ""
+      },
+      "site": "wikipedia"
+    },
+    {
+      "url": "https://en.wikipedia.org/wiki/Main_Page",
+      "source_url": "https://en.wikipedia.org/wiki/Main_Page",
+      "request_type": "main_frame",
+      "method": "GET",
+      "expected": {
+        "blocked": false,
+        "exception": false,
+        "rule": ""
+      },
+      "site": "wikipedia"
+    },
+    {
+      "url": "https://en.wikipedia.org/wiki/Main_Page",
+      "source_url": "https://en.wikipedia.org/wiki/Main_Page",
+      "request_type": "generichide",
+      "method": "GET",
+      "expected": {
+        "blocked": false,
+        "exception": false,
+        "rule": ""
+      },
+      "site": "wikipedia"
+    },
+    {
+      "url": "https://en.wikipedia.org/w/load.php?lang=en&modules=ext.uls.interlanguage%7Cext.visualEditor.desktopArticleTarget.noscript%7Cext.wikimediamessages.styles%7Cmediawiki.skinning.content.parsoid%7Cmediawiki.skins.legacy%7Cskins.vector.icons%2Cstyles%7Cskins.vector.search.codex.styles%7Cwikibase.client.init&only=styles&skin=vector-2022",
+      "source_url": "https://en.wikipedia.org/wiki/Main_Page",
+      "request_type": "stylesheet",
+      "method": "GET",
+      "expected": {
+        "blocked": false,
+        "exception": false,
+        "rule": ""
+      },
+      "site": "wikipedia"
+    },
+    {
+      "url": "https://en.wikipedia.org/w/load.php?lang=en&modules=startup&only=scripts&raw=1&skin=vector-2022",
+      "source_url": "https://en.wikipedia.org/wiki/Main_Page",
+      "request_type": "script",
+      "method": "GET",
+      "expected": {
+        "blocked": false,
+        "exception": false,
+        "rule": ""
+      },
+      "site": "wikipedia"
+    },
+    {
+      "url": "https://en.wikipedia.org/static/images/mobile/copyright/wikipedia-wordmark-en-25.svg",
+      "source_url": "https://en.wikipedia.org/wiki/Main_Page",
+      "request_type": "image",
+      "method": "GET",
+      "expected": {
+        "blocked": false,
+        "exception": false,
+        "rule": ""
+      },
+      "site": "wikipedia"
+    },
+    {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/0/0f/Adele_%27Adele_Live_2016%27_-_Nashville_DSC04783_%2829780962194%29_%28cropped%29.jpg/250px-Adele_%27Adele_Live_2016%27_-_Nashville_DSC04783_%2829780962194%29_%28cropped%29.jpg?utm_source=en.wikipedia.org&utm_campaign=parser&utm_content=thumbnail",
+      "source_url": "https://en.wikipedia.org/wiki/Main_Page",
+      "request_type": "image",
+      "method": "GET",
+      "expected": {
+        "blocked": false,
+        "exception": false,
+        "rule": ""
+      },
+      "site": "wikipedia"
+    },
+    {
+      "url": "https://auth.wikimedia.org/metawiki/wiki/Special:CentralAutoLogin/checkLoggedIn?useformat=desktop&wikiid=enwiki&usesul3=1&type=script",
+      "source_url": "https://en.wikipedia.org/wiki/Main_Page",
+      "request_type": "script",
+      "method": "GET",
+      "expected": {
+        "blocked": false,
+        "exception": false,
+        "rule": ""
+      },
+      "site": "wikipedia"
+    },
+    {
+      "url": "https://collector.github.com/github/collect",
+      "source_url": "https://github.com/",
+      "request_type": "ping",
+      "method": "POST",
+      "expected": {
+        "blocked": true,
+        "exception": false,
+        "rule": "||collector.github.com^"
+      },
+      "site": "github"
+    },
+    {
+      "url": "https://api.github.com/_private/browser/stats",
+      "source_url": "https://github.com/",
+      "request_type": "ping",
+      "method": "POST",
+      "expected": {
+        "blocked": true,
+        "exception": false,
+        "rule": "||github.com/_private/browser/stats"
+      },
+      "site": "github"
+    },
+    {
+      "url": "https://github.com/",
+      "source_url": "https://github.com/",
+      "request_type": "main_frame",
+      "method": "GET",
+      "expected": {
+        "blocked": false,
+        "exception": false,
+        "rule": ""
+      },
+      "site": "github"
+    },
+    {
+      "url": "https://ublockorigin.github.io/uAssetsCDN/filters/badlists.txt",
+      "source_url": "https://jcokkipkhhgiakinbnnplhkdbjbgcgpe.chrome-extension-scheme/",
+      "request_type": "xmlhttprequest",
+      "method": "GET",
+      "expected": {
+        "blocked": false,
+        "exception": false,
+        "rule": ""
+      },
+      "site": "github"
+    },
+    {
+      "url": "https://github.com/",
+      "source_url": "https://github.com/",
+      "request_type": "generichide",
+      "method": "GET",
+      "expected": {
+        "blocked": false,
+        "exception": false,
+        "rule": ""
+      },
+      "site": "github"
+    },
+    {
+      "url": "https://github.githubassets.com/assets/react-e27d1b3e03961e68.js",
+      "source_url": "https://github.com/",
+      "request_type": "script",
+      "method": "GET",
+      "expected": {
+        "blocked": false,
+        "exception": false,
+        "rule": ""
+      },
+      "site": "github"
+    },
+    {
+      "url": "https://github.githubassets.com/assets/MonaSansVF-wdth-wght-opsz-7a868ff47c93bd97.woff2",
+      "source_url": "https://github.com/",
+      "request_type": "font",
+      "method": "GET",
+      "expected": {
+        "blocked": false,
+        "exception": false,
+        "rule": ""
+      },
+      "site": "github"
+    },
+    {
+      "url": "https://github.githubassets.com/assets/light-3a3d2c708970e4e8.css",
+      "source_url": "https://github.com/",
+      "request_type": "stylesheet",
+      "method": "GET",
+      "expected": {
+        "blocked": false,
+        "exception": false,
+        "rule": ""
+      },
+      "site": "github"
+    },
+    {
+      "url": "https://github.com/manifest.json",
+      "source_url": "https://github.com/",
+      "request_type": "other",
+      "method": "GET",
+      "expected": {
+        "blocked": false,
+        "exception": false,
+        "rule": ""
+      },
+      "site": "github"
+    },
+    {
+      "url": "https://publicsuffix.org/list/public_suffix_list.dat",
+      "source_url": "https://jcokkipkhhgiakinbnnplhkdbjbgcgpe.chrome-extension-scheme/",
+      "request_type": "xmlhttprequest",
+      "method": "GET",
+      "expected": {
+        "blocked": false,
+        "exception": false,
+        "rule": ""
+      },
+      "site": "github"
+    },
+    {
+      "url": "https://s.yimg.com/ss/analytics-3.87.0.js",
+      "source_url": "https://www.yahoo.com/",
+      "request_type": "script",
+      "method": "GET",
+      "expected": {
+        "blocked": true,
+        "exception": false,
+        "rule": "||s.yimg.com/ss/analytics-$script,from=yahoo.com"
+      },
+      "site": "yahoo"
+    },
+    {
+      "url": "https://securepubads.g.doubleclick.net/tag/js/gpt.js",
+      "source_url": "https://www.yahoo.com/",
+      "request_type": "script",
+      "method": "GET",
+      "expected": {
+        "blocked": true,
+        "exception": false,
+        "rule": "||doubleclick.net^"
+      },
+      "site": "yahoo"
+    },
+    {
+      "url": "https://noa.yahoo.com/p?s=2023538075&t=1792047548007&_I=&_AO=0&_NOL=0&etrg=backgroundPost&outcm=gamDebug&src=unknown&site=fp&partner=none&lang=en-US&region=US&device=desktop&colo=unknown&bucket=frontpage-US-en-US-def&rid=unknown&limitedAds=false&NPA=false&pd=unknown&pt=unknown&abk=unknown&usercountry=RU&benjiVersion=2.3.463&prebidVersion=unknown&yahooPrebidVersion=unknown&type=PREBID_SESSION_START&sampleRate=10",
+      "source_url": "https://www.yahoo.com/",
+      "request_type": "ping",
+      "method": "POST",
+      "expected": {
+        "blocked": true,
+        "exception": false,
+        "rule": "||noa.yahoo.com^"
+      },
+      "site": "yahoo"
+    },
+    {
+      "url": "https://s.yimg.com/du/ay/wnsrvbjmeprtfrnfx.js",
+      "source_url": "https://www.yahoo.com/",
+      "request_type": "script",
+      "method": "GET",
+      "expected": {
+        "blocked": true,
+        "exception": false,
+        "rule": "||s.yimg.com/du/ay/"
+      },
+      "site": "yahoo"
+    },
+    {
+      "url": "https://s.yimg.com/aaq/prebid/prebid-current.js",
+      "source_url": "https://www.yahoo.com/",
+      "request_type": "script",
+      "method": "GET",
+      "expected": {
+        "blocked": true,
+        "exception": false,
+        "rule": "/prebid/*$script"
+      },
+      "site": "yahoo"
+    },
+    {
+      "url": "https://cdn.taboola.com/libtrc/yahooweb-network/loader.js",
+      "source_url": "https://www.yahoo.com/",
+      "request_type": "script",
+      "method": "GET",
+      "expected": {
+        "blocked": true,
+        "exception": false,
+        "rule": "||taboola.com^"
+      },
+      "site": "yahoo"
+    },
+    {
+      "url": "https://opus.analytics.yahoo.com/tag/opus.js",
+      "source_url": "https://www.yahoo.com/",
+      "request_type": "script",
+      "method": "GET",
+      "expected": {
+        "blocked": true,
+        "exception": false,
+        "rule": "||analytics.yahoo.com^"
+      },
+      "site": "yahoo"
+    },
+    {
+      "url": "https://i.clean.gg/1a",
+      "source_url": "https://www.yahoo.com/",
+      "request_type": "xmlhttprequest",
+      "method": "POST",
+      "expected": {
+        "blocked": true,
+        "exception": false,
+        "rule": "||clean.gg^"
+      },
+      "site": "yahoo"
+    },
+    {
+      "url": "https://s.yimg.com/aaq/vzm/cs_2.1.2.js",
+      "source_url": "https://www.yahoo.com/",
+      "request_type": "script",
+      "method": "GET",
+      "expected": {
+        "blocked": true,
+        "exception": false,
+        "rule": "||yimg.com/aaq/vzm/cs_*.js"
+      },
+      "site": "yahoo"
+    },
+    {
+      "url": "https://bats.video.yahoo.com/p?_V=test&_sqno=0&evt=p_init&auto=false&bckt=none&ccap=0&ccav=0&cont=0&errstate=none&expb=frontpage-US-en-US-def&expm=na&expn=homepage-dense-hv&focus=1&intl=us&lang=en-US&loc=onProp&p_sec=nebula&pbst=init&peng=Brightcove&penv=builds&pls=b51aa7c3-6b1e-46f4-80ab-f2010e8c717a&pltype=ev-desktop&preload=true&pstaid=da04bb0f-a688-3a87-8752-c3ef926aca56&psz=0x0&pt=home&pver=1.16.360&region=US&replay=0&s=1197228339&sec=strm&site=frontpage&snd=m&subsec=horizontal-video&t=0.49628833193500155&test=frontpage-US-en-US-def&tmout=10&ts=1&type=vod%20short&V_sec=pb&ver=nca&vid=da04bb0f-a688-3a87-8752-c3ef926aca56&vlng=0&vptm=10&vs=zswzyvkul9b6&_a1s=d%3DAQABBLt50GoCEFmdccDGzzAnwUKs4zqylBwFEgEBAQHL0Wraap62zyMA_eMDAA%26S%3DAQAAAoa3Qx-5qVgScdNjGpZgI04&_w=https%3A%2F%2Fwww.yahoo.com%2F&continuousPlay=0&loop=0&videoRecommendations=0&ff_ad=1&bcpVersion=7.42.5&brightcovePlayerId=VSckao7ImZ&overlayPluginVersion=3.0.0&adPluginVersion=packaged-plugin&playlistUIPluginVersion=5.1.1&percentViewable=NaN",
+      "source_url": "https://www.yahoo.com/",
+      "request_type": "ping",
+      "method": "POST",
+      "expected": {
+        "blocked": true,
+        "exception": false,
+        "rule": "||bats.video.yahoo.com^"
+      },
+      "site": "yahoo"
+    },
+    {
+      "url": "https://cdn.p-n.io/domain-settings/pqBWBv92FYKn3rp3llXRsEl2vU5OVeDdbf58/web/config",
+      "source_url": "https://www.yahoo.com/",
+      "request_type": "xmlhttprequest",
+      "method": "GET",
+      "expected": {
+        "blocked": true,
+        "exception": false,
+        "rule": "||p-n.io^"
+      },
+      "site": "yahoo"
+    },
+    {
+      "url": "https://s.yimg.com/rx/ev/lib/comscore-7-15-0-min.js",
+      "source_url": "https://www.yahoo.com/",
+      "request_type": "script",
+      "method": "GET",
+      "expected": {
+        "blocked": true,
+        "exception": false,
+        "rule": "||yimg.com/rx/ev/lib/comscore-"
+      },
+      "site": "yahoo"
+    },
+    {
+      "url": "https://www.yahoo.com/",
+      "source_url": "https://www.yahoo.com/",
+      "request_type": "main_frame",
+      "method": "GET",
+      "expected": {
+        "blocked": false,
+        "exception": false,
+        "rule": ""
+      },
+      "site": "yahoo"
+    },
+    {
+      "url": "https://ublockorigin.pages.dev/filters/badlists.txt",
+      "source_url": "https://jcokkipkhhgiakinbnnplhkdbjbgcgpe.chrome-extension-scheme/",
+      "request_type": "xmlhttprequest",
+      "method": "GET",
+      "expected": {
+        "blocked": false,
+        "exception": false,
+        "rule": ""
+      },
+      "site": "yahoo"
+    },
+    {
+      "url": "https://www.yahoo.com/_nca/_next/static/media/7553561d3efb1daf-s.p.woff2?dpl=sha-2c28255",
+      "source_url": "https://www.yahoo.com/",
+      "request_type": "font",
+      "method": "GET",
+      "expected": {
+        "blocked": false,
+        "exception": false,
+        "rule": ""
+      },
+      "site": "yahoo"
+    },
+    {
+      "url": "https://www.yahoo.com/_nca/_next/static/css/081a4fa99c60d740.css?dpl=sha-2c28255",
+      "source_url": "https://www.yahoo.com/",
+      "request_type": "stylesheet",
+      "method": "GET",
+      "expected": {
+        "blocked": false,
+        "exception": false,
+        "rule": ""
+      },
+      "site": "yahoo"
+    },
+    {
+      "url": "https://s.yimg.com/lo/mysterio/api/c65469f2474463db32cd19f2008e42eb4568cfd7bdf4916128d885f8fd1acc0d/lightyear_networkapi/smartcrop_w1104_h620%3Bquality_85%3Bformat_webp/https%3A%2F%2Fd29szjachogqwa.cloudfront.net%2Fimages%2Fuser-uploaded%2Fb4ea6185-21c1-46d7-86af-0f054e42d4e7_4639cf66c4ab66c1332ef46fdc2a94cfa0ea3418b141faf2960e71eb1d78b18b.jpg",
+      "source_url": "https://www.yahoo.com/",
+      "request_type": "image",
+      "method": "GET",
+      "expected": {
+        "blocked": false,
+        "exception": false,
+        "rule": ""
+      },
+      "site": "yahoo"
+    },
+    {
+      "url": "https://consent.cmp.oath.com/version/7.0.2/cmp.js",
+      "source_url": "https://www.yahoo.com/",
+      "request_type": "script",
+      "method": "GET",
+      "expected": {
+        "blocked": false,
+        "exception": false,
+        "rule": ""
+      },
+      "site": "yahoo"
+    },
+    {
+      "url": "https://s.yimg.com/oa/consent.js",
+      "source_url": "https://www.yahoo.com/",
+      "request_type": "script",
+      "method": "GET",
+      "expected": {
+        "blocked": false,
+        "exception": false,
+        "rule": ""
+      },
+      "site": "yahoo"
+    },
+    {
+      "url": "https://www.yahoo.com/_nca/_next/static/chunks/webpack-ec56342839d4265d.js?dpl=sha-2c28255",
+      "source_url": "https://www.yahoo.com/",
+      "request_type": "script",
+      "method": "GET",
+      "expected": {
+        "blocked": false,
+        "exception": false,
+        "rule": ""
+      },
+      "site": "yahoo"
+    },
+    {
+      "url": "https://www.googletagservices.com/tag/js/gpt.js?network-code=21783347309",
+      "source_url": "https://www.espn.com/",
+      "request_type": "script",
+      "method": "GET",
+      "expected": {
+        "blocked": true,
+        "exception": false,
+        "rule": "||googletagservices.com^"
+      },
+      "site": "espn"
+    },
+    {
+      "url": "https://a.espncdn.com/prod/scripts/prebid8.26.0.js",
+      "source_url": "https://www.espn.com/",
+      "request_type": "script",
+      "method": "GET",
+      "expected": {
+        "blocked": true,
+        "exception": false,
+        "rule": "/prebid8.$script"
+      },
+      "site": "espn"
+    },
+    {
+      "url": "https://events.launchdarkly.com/events/diagnostic/694083277d1bed098dab5ed2",
+      "source_url": "https://www.espn.com/watch/syndicatedplayer?id=50174524&autoplay=manual&autoDisplayDialog=true&placementOverride=right-rail&pageNameOverride=espn%3Afrontpage&pageUrlOverride=https%3A%2F%2Fwww.espn.com%2F&plethoraTraceId=not%20available&mobilePlaylist=true&endcard=false&instanceId=01",
+      "request_type": "xmlhttprequest",
+      "method": "POST",
+      "expected": {
+        "blocked": true,
+        "exception": false,
+        "rule": "||events.launchdarkly.com^$3p"
+      },
+      "site": "espn"
+    },
+    {
+      "url": "https://log.go.com/log?appid=DTCI-ONEID-UI&client_id=ESPN-ONESITE.WEB-PROD&sdk_version=web%204.4.285&lightbox_version=4.4.285&timestamp=1792035784532&action_name=event%3Aerror&info=payload-included(true)%2Cevent-payload(Session%20not%20established)&context=direct&source=espn&conversation_id=7e0fc821-6e4e-4d5b-9aa4-626771411182&trace=0%7CJIOWBVgQQGWAtKkDyIB8BDAdgeywTwFsBLALwFMAfUCaORFdAYwAtymBrAMRwCdkAQsnA4O5LNTCRYCJMFRpe5DABMAyuQDOm4nkpqAomrXyQAfTXgkBs1bUBpNWlbsOagC4Z35IA%3D%3D%3D&swid=C4FF320D-043E-4F0A-CFD8-00C950267765&anon=true",
+      "source_url": "https://www.espn.com/",
+      "request_type": "xmlhttprequest",
+      "method": "GET",
+      "expected": {
+        "blocked": true,
+        "exception": false,
+        "rule": "||log.go.com^"
+      },
+      "site": "espn"
+    },
+    {
+      "url": "https://sb.scorecardresearch.com/cs/3000005/beacon.js",
+      "source_url": "https://www.espn.com/",
+      "request_type": "script",
+      "method": "GET",
+      "expected": {
+        "blocked": true,
+        "exception": false,
+        "rule": "||scorecardresearch.com^"
+      },
+      "site": "espn"
+    },
+    {
+      "url": "https://d.impactradius-event.com/A1323623-ff1f-47da-bf87-01a65620c9c91.js",
+      "source_url": "https://www.espn.com/",
+      "request_type": "script",
+      "method": "GET",
+      "expected": {
+        "blocked": true,
+        "exception": false,
+        "rule": "||impactradius-event.com^"
+      },
+      "site": "espn"
+    },
+    {
+      "url": "https://cdn-gl.imrworldwide.com/conf/P07264C85-15CD-4A80-8E56-B5BFA6D93296.js#name=nlsnInstance&ns=NOLBUNDLE",
+      "source_url": "https://www.espn.com/",
+      "request_type": "script",
+      "method": "GET",
+      "expected": {
+        "blocked": true,
+        "exception": false,
+        "rule": "||imrworldwide.com^"
+      },
+      "site": "espn"
+    },
+    {
+      "url": "https://disney.demdex.net/id?d_visid_ver=5.5.0&d_fieldgroup=MC&d_rtbd=json&d_ver=2&d_verify=1&d_orgid=EE0201AC512D2BE80A490D4C%40AdobeOrg&d_nsid=0&d_coppa=true&ts=1792035786028",
+      "source_url": "https://www.espn.com/",
+      "request_type": "xmlhttprequest",
+      "method": "GET",
+      "expected": {
+        "blocked": true,
+        "exception": false,
+        "rule": "||demdex.net^"
+      },
+      "site": "espn"
+    },
+    {
+      "url": "https://sw88.espn.com/id?d_visid_ver=5.5.0&d_fieldgroup=A&mcorgid=EE0201AC512D2BE80A490D4C%40AdobeOrg&mid=23068745373755630567435948975213344478&d_coppa=true&ts=1792035786034",
+      "source_url": "https://www.espn.com/",
+      "request_type": "xmlhttprequest",
+      "method": "GET",
+      "expected": {
+        "blocked": true,
+        "exception": false,
+        "rule": "||sw88.espn.com^"
+      },
+      "site": "espn"
+    },
+    {
+      "url": "https://experiments.parsely.com/vip-experiments.js?apiKey=espn.com",
+      "source_url": "https://www.espn.com/",
+      "request_type": "script",
+      "method": "GET",
+      "expected": {
+        "blocked": true,
+        "exception": false,
+        "rule": "||experiments.parsely.com^"
+      },
+      "site": "espn"
+    },
+    {
+      "url": "https://cdn.parsely.com/keys/espn.com/p.js",
+      "source_url": "https://www.espn.com/",
+      "request_type": "script",
+      "method": "GET",
+      "expected": {
+        "blocked": true,
+        "exception": false,
+        "rule": "||parsely.com^$3p"
+      },
+      "site": "espn"
+    },
+    {
+      "url": "https://vision.fn-pz.com/v3/config/espn-web",
+      "source_url": "https://www.espn.com/",
+      "request_type": "xmlhttprequest",
+      "method": "GET",
+      "expected": {
+        "blocked": true,
+        "exception": false,
+        "rule": "||fn-pz.com^"
+      },
+      "site": "espn"
+    },
+    {
+      "url": "https://www.espn.com/",
+      "source_url": "https://www.espn.com/",
+      "request_type": "main_frame",
+      "method": "GET",
+      "expected": {
+        "blocked": false,
+        "exception": false,
+        "rule": ""
+      },
+      "site": "espn"
+    },
+    {
+      "url": "https://a.espncdn.com/fonts/1.0.74/ESPNIcons/ESPNIcons.woff2",
+      "source_url": "https://www.espn.com/",
+      "request_type": "font",
+      "method": "GET",
+      "expected": {
+        "blocked": false,
+        "exception": false,
+        "rule": ""
+      },
+      "site": "espn"
+    },
+    {
+      "url": "https://dcf.espn.com/TWDC-DTCI/prod/Bootstrap.js",
+      "source_url": "https://www.espn.com/",
+      "request_type": "script",
+      "method": "GET",
+      "expected": {
+        "blocked": false,
+        "exception": false,
+        "rule": ""
+      },
+      "site": "espn"
+    },
+    {
+      "url": "https://www.espn.com/manifest.json",
+      "source_url": "https://www.espn.com/",
+      "request_type": "other",
+      "method": "GET",
+      "expected": {
+        "blocked": false,
+        "exception": false,
+        "rule": ""
+      },
+      "site": "espn"
+    },
+    {
+      "url": "https://secure.espn.com/core/format/modules/head/i18n?edition-host=espn.com&lang=en&region=us&geo=ru&site=espn&site-type=full&type=ext&build=0.795.1.2",
+      "source_url": "https://www.espn.com/",
+      "request_type": "script",
+      "method": "GET",
+      "expected": {
+        "blocked": false,
+        "exception": false,
+        "rule": ""
+      },
+      "site": "espn"
+    },
+    {
+      "url": "https://a.espncdn.com/redesign/0.795.1/css/shell-desktop.css",
+      "source_url": "https://www.espn.com/",
+      "request_type": "stylesheet",
+      "method": "GET",
+      "expected": {
+        "blocked": false,
+        "exception": false,
+        "rule": ""
+      },
+      "site": "espn"
+    },
+    {
+      "url": "https://a.espncdn.com/redesign/0.795.1/js/espn-head.js",
+      "source_url": "https://www.espn.com/",
+      "request_type": "script",
+      "method": "GET",
+      "expected": {
+        "blocked": false,
+        "exception": false,
+        "rule": ""
+      },
+      "site": "espn"
+    },
+    {
+      "url": "https://a1.espncdn.com/combiner/i?img=%2Fi%2Fespn%2Fmisc_logos%2F500%2Fnhl.png&w=40&h=40",
+      "source_url": "https://www.espn.com/",
+      "request_type": "image",
+      "method": "GET",
+      "expected": {
+        "blocked": false,
+        "exception": false,
+        "rule": ""
+      },
+      "site": "espn"
+    },
+    {
+      "url": "https://stackoverflow.com/px.js?ch=1",
+      "source_url": "https://stackoverflow.com/questions",
+      "request_type": "script",
+      "method": "GET",
+      "expected": {
+        "blocked": true,
+        "exception": false,
+        "rule": "/px.js?ch=$script"
+      },
+      "site": "stackoverflow"
+    },
+    {
+      "url": "https://www.googletagmanager.com/gtag/js?id=G-WCZ03SZFCQ",
+      "source_url": "https://stackoverflow.com/questions",
+      "request_type": "script",
+      "method": "GET",
+      "expected": {
+        "blocked": true,
+        "exception": false,
+        "rule": "||googletagmanager.com^"
+      },
+      "site": "stackoverflow"
+    },
+    {
+      "url": "https://stackoverflow.com/questions",
+      "source_url": "https://stackoverflow.com/questions",
+      "request_type": "main_frame",
+      "method": "GET",
+      "expected": {
+        "blocked": false,
+        "exception": false,
+        "rule": ""
+      },
+      "site": "stackoverflow"
+    },
+    {
+      "url": "https://stackoverflow.com/cdn-cgi/challenge-platform/h/g/orchestrate/precursor_interstitial/v1?ray=a4abd1dec817f12a",
+      "source_url": "https://stackoverflow.com/questions?__cf_chl_rt_tk=lLVpEnb7rdOULDRDLYlNXF2I8KJfm9fGyEQPSJG8EyU-1792035809-1.0.1.1-vOOyxjPMXmGZvaC.LHoRQ0SJ.NGQyzxlnOB83efFYKs",
+      "request_type": "script",
+      "method": "GET",
+      "expected": {
+        "blocked": false,
+        "exception": false,
+        "rule": ""
+      },
+      "site": "stackoverflow"
+    },
+    {
+      "url": "https://stackoverflow.com/favicon.ico",
+      "source_url": "https://stackoverflow.com/questions",
+      "request_type": "image",
+      "method": "GET",
+      "expected": {
+        "blocked": false,
+        "exception": false,
+        "rule": ""
+      },
+      "site": "stackoverflow"
+    },
+    {
+      "url": "https://stackoverflow.com/cdn-cgi/challenge-platform/h/g/fo/834714297:1792034122:rAiCkgJNcq6lVyOrI8AeXLeIsL6i-qOr9NomIkPZiF4/a4abd1dec817f12a/MdFYitYTYyQaNH3qgm7NFfi.mlELb3k._ixEY4VLcM0-1792035809-1.2.1.1-9UtlZmalhKeKMSJr6X3rL4OKPAqpSXwcgfOdhm4JqL0wim2Z9Cjm._TZ5sEZRc79",
+      "source_url": "https://stackoverflow.com/questions",
+      "request_type": "xmlhttprequest",
+      "method": "POST",
+      "expected": {
+        "blocked": false,
+        "exception": false,
+        "rule": ""
+      },
+      "site": "stackoverflow"
+    },
+    {
+      "url": "https://publicsuffix.org/list/public_suffix_list.dat",
+      "source_url": "https://jcokkipkhhgiakinbnnplhkdbjbgcgpe.chrome-extension-scheme/",
+      "request_type": "xmlhttprequest",
+      "method": "GET",
+      "expected": {
+        "blocked": false,
+        "exception": false,
+        "rule": ""
+      },
+      "site": "stackoverflow"
+    },
+    {
+      "url": "https://stackoverflow.com/questions",
+      "source_url": "https://stackoverflow.com/questions",
+      "request_type": "main_frame",
+      "method": "POST",
+      "expected": {
+        "blocked": false,
+        "exception": false,
+        "rule": ""
+      },
+      "site": "stackoverflow"
+    },
+    {
+      "url": "https://cdn.cookielaw.org/scripttemplates/otSDKStub.js",
+      "source_url": "https://stackoverflow.com/questions",
+      "request_type": "script",
+      "method": "GET",
+      "expected": {
+        "blocked": false,
+        "exception": false,
+        "rule": ""
+      },
+      "site": "stackoverflow"
+    },
+    {
+      "url": "https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js",
+      "source_url": "https://stackoverflow.com/questions",
+      "request_type": "script",
+      "method": "GET",
+      "expected": {
+        "blocked": false,
+        "exception": false,
+        "rule": ""
+      },
+      "site": "stackoverflow"
+    }
+  ]
+}
