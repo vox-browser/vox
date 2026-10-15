@@ -1244,6 +1244,17 @@ fn (scope &StyleScope) has_featureless_sensitive_has_selectors() bool {
 }
 
 pub fn (mut scope StyleScope) record_pending_has_invalidation_mutation_features(node &dom.Node, mutation_root &dom.Node, includes_descendants bool) {
+	if mut features := scope.pending_has_invalidation_features[node.unique_id().value()] {
+		features.may_affect_sibling_relationships = features.may_affect_sibling_relationships
+			|| includes_descendants
+		features.may_affect_pseudo_classes = true
+		if includes_descendants {
+			collect_pending_has_invalidation_features_from_subtree(mut features, mutation_root)
+		} else if element := mutation_root.as_element() {
+			collect_pending_has_invalidation_features_from_element(mut features, element)
+		}
+		return
+	}
 	features := collect_pending_has_invalidation_mutation_features(mutation_root, includes_descendants)
 	scope.record_pending_has_invalidation_features(node, features)
 }
