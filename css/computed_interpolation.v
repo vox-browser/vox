@@ -13461,7 +13461,7 @@ fn compare_custom_property_maps(left map[string]dom.CSSCustomProperty_,
 			|| (require_retained_identity && (left_property.value.css_text != right_property.value.css_text
 				|| left_property.value.guaranteed_invalid != right_property.value.guaranteed_invalid))
 			|| !(if require_retained_identity {
-				custom_property_bridge_values_identical(left_property.value, right_property.value)
+				custom_property_environment_values_equivalent(left_property.value, right_property.value)
 			} else {
 				custom_property_bridge_values_equal(left_property.value, right_property.value)
 			}) {
