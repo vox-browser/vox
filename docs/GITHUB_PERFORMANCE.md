@@ -4928,6 +4928,115 @@ Evidence: `Build/v/instruction-hotspots54-*` and
 and the following numeric-token prototype are excluded; Chrome parity remains
 open.
 
+## Parse numeric tokens from their consumed spelling
+
+Feature `b138b3ff` changes only private `Tokenizer.consume_a_number`.
+Its 11 code-point consumption sites, grammar decisions, sign/type flags and
+existing floating-point converter remain the same. Numeric spelling already
+occupies one contiguous ASCII span of the filtered input. The function obtains
+that terminated spelling through existing `input_since` and passes it to the
+unchanged converter, avoiding a builder and character appends. Decoding,
+filtering, the input arena, public token spelling/storage, number types and
+conversion behavior remain unchanged. This reduces local work without adding
+retained state.
+
+Before/final Boehm and final no-GC C-O2 each pass **83,195 assertions in 16 cases**
+(15 functional plus an inactive probe), using identical common source. Four
+new cases use the previous builder algorithm as an oracle for exact binary64
+values and full tokenizer state across 2,592 sign/fraction/exponent/suffix/
+Unicode-prefix combinations, plus long numbers, overflow/underflow and private
+empty/sign-only cases. Independent expectations cover values, negative zero,
+flags, public number/percentage/dimension boundaries, positions and retained
+terminated spellings after collection. Existing arena, spelling ownership and
+number serialization cases remain in the focused harness.
+
+Preparation initially miscounts the static consumption sites as 12 instead of
+11, before any implementation mutation or job. That guard failure remains in
+`instruction-opt54-preparation-count-failure`; the existing snapshots are
+authenticated before resuming preparation. The first three focused commands
+then exit 1 with zero cases because the inactive probe creates a mutable array
+alias rejected by the compatibility compiler. That fixture and all failed
+receipts remain in `instruction-opt54-probe-array-fixture-failure`. An explicit
+setup clone fixes it, with forced collection afterward, all outside the counter.
+The diagnostic had no samples and profiles had not started; only failed or
+unstarted jobs resume. The implementation and normal native build are unchanged.
+Concurrent responsiveness edits later appear in the same Root parser file.
+Only the numeric function is staged against latest HEAD; the independent
+platform import/checkpoint remain intact and excluded from frozen comparisons.
+
+Three fixed alternating local pairs each run **512 complete tokenizations** of
+numeric Unicode CSS, including unchanged decoding/filtering and the complete
+arena lifecycle. Median retired instructions change
+**1,350,282,809→1,225,798,728**
+(-9.22%), with all three pairs improving and all six
+checksums 950,784. Setup, expected output, eight warmups and forced collection
+precede the counter; full tokenization remains inside, with assertions afterward.
+This is a confirmed local result, with no separate page credit.
+
+Full-process C-O1/Boehm/one-marker profiles cover the entire harness and active
+probe without filters or resets. Complete probe calls stay **521**
+and numeric-consumer calls **269,571**. Code-point appends fall
+**992,489→29,327**;
+input-spelling calls rise **1,116,195→1,385,766**,
+an increase exactly equal to numeric-consumer calls. Remaining append calls
+include the old test oracle and other unchanged token consumers. These are
+call counts, never substituted for retired instructions.
+
+The strict C audit permits only `css__Tokenizer_consume_a_number` to change.
+All other functions, data layouts, token/number conversion, resources and GC
+policy match after established compiler identities, exact unchanged-source
+assertion-line mapping and 37 frozen includes. Four helpers may reorder only
+with raw-identical bodies. All 120 native inputs and exact native C-O2 arguments
+match. Compiled C SHA256:
+`c171e4db6f154a07a034690e3b25ae6cadefd45a4270e87f25ef85e22d570550`.
+Durable normal/focused/profile archive hashes are in
+`instruction-opt54-artifact-archives.json`.
+
+The predeclared cohort fixes **30 alternating pairs** and **30,000 paired
+bootstrap resamples, seed 54**. Regular frozen 53 and candidate binaries use
+the same 359 cached bodies, fresh copies, frozen helper, 1024×768 viewport and
+`navigation_to_first_document_paint[0]`. Both retain the same 4 GiB document-gated
+hint, enabled Boehm and default marker 1, without prod/prealloc. Independent
+current-Root memory, UI and responsiveness changes are excluded.
+
+| Build | Median first-frame retired instructions | Median process peak, MiB |
+| --- | ---: | ---: |
+| Fresh matching frozen 53 control | 19,001,778,282.5 | 3,694.8 |
+| Consumed numeric spelling | 18,966,437,712.5 | 3,693.7 |
+
+The observed difference of marginal medians is a saving of
+**35,340,570** instructions (**0.186%**), with
+**18/30** pairs improving. Paired median saving is
+**18,043,389**, with a 95% paired percentile interval of
+**-22,803,364 to 82,329,486**. The interval includes zero, so repeatable page credit
+is **0**. A cached-page reduction is not established. The retained feature has
+a confirmed local tokenization result and reuses existing spelling/conversion
+facilities; the uncertain page point is recorded without extra credit. This
+comparison uses the fresh control, never the historical round 53 median.
+
+All **60 primaries and 60 actual viewport PNGs** remain, with no recoveries or
+startup retries. Each first primary has 1 installation/2 geometry preparations/
+1 paint. Four later refreshes remain separate: control 3/28/30 and candidate 2.
+No completed primary is discarded, rerun or used to extend the cohort. All 60
+process peaks remain, including refreshes; they are lifetime maxima through
+capture/exit, not first-frame live memory, and are never summed. The focused
+numeric viewport is pixel-exact. The observed point exceeds the 5M gate with
+prior accumulation 0 despite uncertainty. All six direct V broad jobs pass:
+CSS 31, SVG 10 and layout 46 under each GC, **174 executions**. All **19 screenshot
+comparisons pass, 16 exact**; known differences remain inline-node 13,
+text-decorations 1,341 and canvas-text 1,994. The completed broad batch resets
+additional observed savings to 0; confidence credit remains separate.
+
+The signed isolated comparison app is `/Users/alex/code/vox2/Build/v/Vox-opt54.app`. Signature,
+startup, matching native text and actual collections pass with default marker 1
+and override 2. Canonical and user GUI apps are preserved. No source pin or
+extra performance/regression credit is inferred for independent current Root.
+Chrome still needs equivalent content/start/endpoint accounting; its first
+paint in the retained trace shows only a header, with repository content later.
+No parity or faster-than-Chrome claim is made.
+Evidence: `Build/instructions/vox-opt54-interleaved-*` and
+`Build/v/instruction-opt54-*`.
+
 ## Causes and changes
 
 - The V 0.5.2 compatibility compiler's `-prod` Boehm code repeatedly snapshots

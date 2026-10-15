@@ -1506,6 +1506,14 @@ evidence](docs/translation-audit/NATIVE_MEDIA_WHEEL_RAW_HANDLER.md).
   Focused viewport is exact. Additional savings after this batch: 0.
   Frozen comparison retains 4 GiB; independent Root memory/UI work is excluded.
   Chrome parity remains open.
+  Numeric input-spelling parsing `b138b3ff` passes 83,195 focused
+  assertions per configuration; complete local tokenization uses 9.22% fewer
+  instructions. Page point saving 35,340,570, 18/30 wins,
+  paired interval [-22,803,364, 82,329,486]; repeatable page credit 0.
+  Broad verification: 87 selected cases both GC and 19 screenshots (16 exact),
+  with an exact numeric viewport. Additional observed savings after broad: 0.
+  Same frozen 4 GiB hint; concurrent Root parser/memory/UI work is excluded.
+  Chrome parity remains open.
 - Outside instruction-count optimization, run broad regression suites once per
   ten completed fixes, not after every fix.
   Broad suites include full translation/package test batches, the full LibJS AST
