@@ -983,8 +983,14 @@ pub fn add_shadow_root_author_style_sheet(shadow_root &dom.ShadowRoot, css_text 
 // Set the page-level user stylesheet used by the user cascade origin.
 pub fn set_document_user_style_sheet(document &dom.Document, css_text string) {
 	mut scope := css_style_scope_for_document(document)
+	if existing := scope.user_style_source {
+		if existing == css_text { return }
+	}
 	scope.user_style_source = css_text
 	scope.invalidate_rule_cache()
+	mut mutable_document := unsafe { &dom.Document(document) }
+	mutable_document.bump_style_environment_version()
+	mutable_document.set_needs_full_style_update(true)
 }
 
 // --- Document style-update hook ---

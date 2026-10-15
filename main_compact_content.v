@@ -127,6 +127,9 @@ fn (mut binding CompactElementQueryBinding) query(input string) !string {
 		binding.keys[voidptr(element)] = key
 		element.as_node()
 	}
+	if action == 'computedStyle' {
+		return compact_computed_style_query(root, selector)
+	}
 	if action == 'getElementById' {
 		return if element := binding.document.get_element_by_id(selector) {
 			json2.encode(binding.element_state(element))

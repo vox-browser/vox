@@ -68,7 +68,10 @@ fn install_browser_adblock_scriptlets(document &dom.Document, runtime &browserjs
 fn refresh_browser_adblock(document &dom.Document, runtime &browserjs.Runtime, mut messages []string) {
 	mut procedural_css := ''
 	if runtime != unsafe { nil } && adblock.is_enabled() {
-		procedural_css = runtime.evaluate_host('typeof __voxAdblockApplyProcedural==="function"?__voxAdblockApplyProcedural():""') or { '' }
+		procedural_css = runtime.evaluate_host('typeof __voxAdblockApplyProcedural==="function"?__voxAdblockApplyProcedural():""') or {
+			messages << 'Adblock procedural filters: ${err.msg()}'
+			''
+		}
 		// Procedural actions use the same live compact DOM mutation replay as
 		// author scripts, including attribute edits and node removals.
 		if procedural_css != '' {
