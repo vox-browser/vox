@@ -3934,7 +3934,7 @@ fn (mut app BrowserApp) request_background_resource(image_url string) {
 }
 
 fn (mut app BrowserApp) poll_background_resources() {
-	mut new_svg_resource := false
+	mut changed_svg_resources := map[string]bool{}
 	for {
 		select {
 			resource := <-app.background_resource_results {
@@ -3948,15 +3948,21 @@ fn (mut app BrowserApp) poll_background_resources() {
 				if app.resource_cache.len < max_cached_resources || resource.url in app.resource_cache {
 					app.resource_cache[resource.url] = resource
 				}
-				if publish_browser_svg_resource(resource) || failed_previous_svg { new_svg_resource = true }
+				if publish_browser_svg_resource(resource) || failed_previous_svg {
+					changed_svg_resources[resource.url.all_before('#')] = true
+				}
 			}
 			else {
 				break
 			}
 		}
 	}
-	if new_svg_resource && app.document != unsafe { nil } {
-		app.document.tear_down_layout_tree()
+	if changed_svg_resources.len > 0 && app.document != unsafe { nil } {
+		if browser_svg_resources_need_layout(app.document, changed_svg_resources) {
+			app.document.tear_down_layout_tree()
+		} else {
+			app.document.set_needs_repaint_with_invalidation(.paint_commands)
+		}
 		app.relayout(app.viewport_width, app.viewport_height + app.chrome_height())
 	}
 }
