@@ -4411,6 +4411,96 @@ credit. Chrome parity remains unestablished.
 Evidence: `Build/instructions/vox-opt48-interleaved-*` and
 `Build/v/instruction-opt48-*`.
 
+## Read typed selectors for invalidation membership
+
+Feature `45cd0e78` changes only private
+`selector_contains_pseudo_class`. It traverses retained typed compound selectors
+and nested argument lists directly, retaining the local invalidation enum
+mapping and the slotted-only pseudo-element boundary. The former predicate
+allocated invalidation groups, projected each simple selector and cloned nested
+argument lists to answer the same Boolean. Public selector metadata stays
+unchanged; this walk still observes live typed edits even when cached metadata
+is stale. Actual invalidation-group construction and plan registration remain
+unchanged.
+
+Before/final Boehm and final no-GC C-O2 harnesses each pass **6,180 assertions
+across 20 cases** (19 functional plus an inactive diagnostic). Four new cases
+cover the 67 parser pseudo-class values against all 42 local invalidation
+pseudo-class values using the old projection as an oracle plus explicit mapping
+expectations; nested lists, slotted and ignored pseudo-elements; live typed
+edits and source ownership through collection; and nested-has scope-leakage
+plans. Existing scope/membership/union checks remain in the identical common
+harness.
+
+Three fixed alternating local pairs each construct **512 complete fresh
+invalidation data sets**, each from 16 parsed complex selectors. Median retired
+instructions change from **1,404,619,431 to
+1,350,234,671** (-3.87%), with all three improving.
+The checksum is 49,664 in all six observations. Parsing, expected results, eight
+warmups and forced collection precede the interval; complete data allocation,
+selector traversal and plan construction remain inside it. Result assertions
+follow the counter. This is a local result with no separate page credit.
+
+Full-process C-O1/Boehm profiles run the entire harness and active probe with
+one marker, no filters and no resets. Complete probe calls stay
+**521** and membership calls stay
+**74,731** in both builds. Group-projection calls fall
+**188,145 to 113,414**.
+These are call counts, never substituted for hardware instructions.
+
+The strict generated-C audit permits only
+`css__selector_contains_pseudo_class` to change. Every other function, layout,
+resource and GC setting matches after established compiler identities, exact
+unchanged-source assertion-line mapping and frozen include paths. Four helpers
+may reorder only with identical raw bodies. The 120 native inputs, 37 quoted
+includes and exact C-O2 argument arrays are authenticated. Compiled C SHA256:
+`c4b8a5fd732791ec3cacbdfd0fb3b36fa88774b4fbf628319943708fff64611b`. Durable focused/normal/profile
+archive hashes are in `instruction-opt49-artifact-archives.json`.
+
+The predeclared cohort has 30 alternating pairs and 30,000 paired bootstrap
+resamples, seed 49, comparing regular frozen round47 and candidate binaries.
+Both use the same 359-body cache, fresh copies, frozen helper, 1024×768 document
+viewport and `navigation_to_first_document_paint[0]`. Both retain the 4 GiB
+document-gated hint, enabled Boehm and one marker, without prod/prealloc.
+
+| Build | Median first-frame retired instructions | Median process peak, MiB |
+| --- | ---: | ---: |
+| Frozen round47 control | 18,908,837,928.5 | 3,725.8 |
+| Direct membership traversal | 18,904,924,266.5 | 3,723.1 |
+
+Observed matching median saving is **3,913,662** instructions
+(+0.021%). **16/30** pairs improve.
+Paired median saving is **3,196,264.5**; its 95% paired
+percentile interval is **-5,142,201 to 18,615,869**. Repeatable page credit is
+**0**, requiring a strictly positive lower bound. The point saving
+is the difference of marginal medians; the interval estimates the paired median.
+Process memory is each root's lifetime maximum through capture/exit, not
+first-frame live memory. Missing peaks: before 0,
+final 0. Process peaks are never summed.
+
+All 60 completed primaries are retained, with 60 actual PNGs,
+0 recovered primaries and 0 actual startup-retry receipts.
+Every primary has one installation, two geometry preparations and one paint;
+post-primary refreshes: 0. No primary is
+rerun, discarded or added to the cohort. Before any browser launch, observer
+cache creation failed because its scratch directory was absent. All three
+observer commands exited one without launching a browser; those logs, the
+mislabeled automatic retry receipts and dependent failures are retained under
+`instruction-opt49-prelaunch-directory-failure`, with the correction explicit.
+After directory creation the same unstarted 30-pair plan proceeds. A prior
+bundle-scope script-preparation exception is also retained; no native build or
+passing test was repeated for either preparation repair.
+
+The observed matching median saving stays below the 5,000,000-instruction gate, so broad suites and the 19-case screenshot batch remain deferred.
+The focused nested-selector viewport is pixel-exact. The selected regression
+runtime is frozen separately from current Root. The isolated comparison app is
+`/Users/alex/code/vox2/Build/v/Vox-opt49.app`. Signature, startup, matching native text and actual
+collections pass with marker 1 by default and override 2. Canonical and GUI apps
+are preserved. Independent Root changes receive no performance or regression
+credit from this cohort. Chrome endpoint/content parity remains unestablished.
+Evidence: `Build/instructions/vox-opt49-interleaved-*` and
+`Build/v/instruction-opt49-*`.
+
 ## Causes and changes
 
 - The V 0.5.2 compatibility compiler's `-prod` Boehm code repeatedly snapshots

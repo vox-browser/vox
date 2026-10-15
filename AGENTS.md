@@ -1475,6 +1475,12 @@ evidence](docs/translation-audit/NATIVE_MEDIA_WHEEL_RAW_HANDLER.md).
   Its rejected candidate passes 87 selected cases both GC and 19 screenshots
   (16 exact), triggered by the positive marginal-median point. Shipping broad
   baseline stays `0c8030d5`; no completed primary is discarded or rerun.
+  Typed invalidation membership `45cd0e78` passes 6,180 focused
+  assertions per configuration. Complete invalidation data construction uses
+  3.87% fewer instructions. Matching 30-pair observed savings are
+  3,913,662, with repeatable page credit 0.
+  Broad verification: deferred below the observed 5,000,000-instruction gate.
+  The focused viewport is exact; both retain 4 GiB. Chrome parity remains open.
 - Outside instruction-count optimization, run broad regression suites once per
   ten completed fixes, not after every fix.
   Broad suites include full translation/package test batches, the full LibJS AST
