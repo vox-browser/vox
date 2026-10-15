@@ -953,6 +953,7 @@ pub fn (mut element HTMLMediaElement) set_decoder_error(message string) {
 	}
 	element.cancel_the_fetching_process()
 	element.network_state_ = .idle
+	element.finish_delaying_load_event()
 	element.fire_event('error')
 }
 
@@ -2339,6 +2340,7 @@ pub fn (mut element HTMLMediaElement) process_media_data(status MediaFetchingSta
 					message: 'Connection interrupted'
 				}
 				element.network_state_ = .idle
+				element.finish_delaying_load_event()
 				element.fire_event('error')
 			}
 		}
@@ -2357,6 +2359,7 @@ pub fn (mut element HTMLMediaElement) handle_media_source_failure(promises []&do
 	if element.error_ != none {
 		element.reject_pending_play_promises_with(promises, dom.js_webidl_value(webidl.dom_exception_value_for_record(
 			webidl.DOMException.create_record('NotSupportedError', 'Media is not supported'))))
+		element.finish_delaying_load_event()
 	}
 }
 
