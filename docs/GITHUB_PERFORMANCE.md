@@ -5760,6 +5760,103 @@ No implementation or ledger baseline changes arise from this diagnostic. Broad
 baseline stays round 60 (`89f28a48`), with additional observed savings 0. The
 canonical app and user GUI remain untouched. Chrome parity remains open.
 
+## Read retained lengths through their existing typed owner
+
+Feature `5362d3aa` adds a typed-length return to public
+`Length.from_style_value()`. When the existing owner contains a
+`LengthStyleValue`, the conversion reads that owner's scalar and unit directly.
+The old general optional StyleValue conversion and length/percentage dispatch
+remain the fallback for every other type. Percentages, calculated values,
+serialized CSS, missing/invalid values and percentage bases keep their existing
+behavior. The retained owner still takes precedence over stale serialized text.
+No state, memo, schema, parsing policy or public signature is added or changed.
+The existing private interpolation scalar reader already uses this owner/type
+guard; this change applies it to the separate public conversion.
+
+Before/final Boehm and final no-GC C-O2 configurations each pass **1,681
+assertions in 18 cases** (17 functional plus an inactive diagnostic). Three new
+cases cover all 49 length units, signed/fractional/large magnitudes, optional
+bases, typed precedence over corrupted text, wrong retained types, percentages,
+calculations, strict serialized fallback, handle replacement, in-place owner
+mutation, value snapshots and forced collection. The frozen public conversion
+is an oracle alongside independent expected scalars and units. The identical
+common harness retains prior scalar/default/optional/precision cases; SHA256:
+`3fbb075648fc582c9c067ff3148685215cb319ff6b3c9f435069bf105c7eeaf4`.
+
+Three fixed alternating local pairs execute **512 complete public
+ComputedProperties.length query batches**, each reading two properties from
+32 retained styles. Setup, expected scalar/unit results, eight warmups and
+forced collection precede the counter; checksum assertions follow. Median
+retired instructions change **6,826,667→3,501,714**
+(-48.71%), all three pairs improving; all six checksums are
+774,144. This is local evidence without separate page credit. Full-process
+C-O1/Boehm profiles have no filter/reset: complete batches stay 521, public
+ComputedProperties.length calls 33,408 and Length.from_style_value calls 33,939.
+General optional conversion calls fall 34,450→547 and typed StyleValue reads
+34,657→754, both decreasing by 33,903. Leaf LengthStyleValue.length calls remain
+34,521. Oracle/fallback tests intentionally retain general conversion calls.
+These are call counts, never instruction or timing credit.
+
+Strict C comparison permits only `css__Length__static__from_style_value`.
+The added nonnull-owner/type/getter prefix uses the tag authenticated from the
+unchanged private scalar reader; the entire old fallback tail is byte-identical
+after the exact compiler temporary shift. The V file differs only by this
+six-line prefix. All other generated functions, layouts, resources and GC match
+after established compiler identities, unchanged source-assertion mapping,
+37 frozen includes and four raw-identical helper reorderings. Exact native
+C-O2 arguments and all 120 input hashes match. Compiled C SHA256:
+`df37935968b2861bea1da8cda764ccfb8e4499b29bf6d53295c9b1bbfdbda0f9`. Durable normal/focused/profile
+archives and hashes are in `instruction-opt61-artifact-archives.json`.
+
+The predeclared cohort fixes **30 alternating pairs**, **30,000 paired bootstrap
+resamples, seed 61**. Persisted regular binaries use the same 359 cached bodies,
+fresh copies, frozen text helper, Boehm/default marker 1, native C-O2 and
+1024×768 document viewport, ending at
+`navigation_to_first_document_paint[0]`. Both retain the same 4 GiB hint,
+without prod/prealloc. Independent current-Root memory/UI/native changes are
+excluded.
+
+Both variants now use the same child-only test-window startup library, SHA256
+`1c5bee72f2b1d72967b69192fa7f920cb645d203dda1c8ef6b25656a135bdd0a`,
+built from the committed `13f8ec96` placement header. Its foreground-preserving
+placement follows the updated test-window instructions. Undoing only this
+child environment addition and the private observer's explicit repository path
+restores the entire original observer AST. Actual loaded-library receipts,
+observer/counter hashes, launch arrays and 1024×880 content-view placement logs
+are checked. The document remains 1024×768. This common startup addition may
+move initialization before the native counter begins: **only fresh matched
+round61 observations are compared; historical medians receive no subtraction
+or credit**. The same helper is used for all focused/broad window captures.
+
+| Build | Median first-frame retired instructions | Median process peak, MiB |
+| --- | ---: | ---: |
+| Fresh matching frozen60 control with common placement helper | 18,407,247,123.5 | 3,638.2 |
+| Direct retained public length conversion, same helper | 18,318,718,495.5 | 3,638.2 |
+
+Observed difference of marginal medians: **88,528,628** saved
+instructions (-0.481%), **30/30** wins.
+Paired median saving: **101,737,734.5**. Paired 95% interval:
+**88,450,463.5 to 109,407,807.5**. The positive paired interval establishes repeatable page savings of **88,528,628** instructions.
+
+All **60 primaries and 60 actual viewport PNGs** remain. Recovered primaries:
+none; pre-parse startup retries: 0. Each first primary
+has 1 installation/2 geometry preparations/1 paint. Completed later refreshes
+remain separate: none. No completed primary is rerun,
+discarded or used to extend the cohort. Recoveries disclose unavailable final
+exit, PNG, per-copy fingerprint receipt and process peak when applicable;
+missing peaks leave a complete-cohort median unavailable. Lifetime process
+peaks include capture/exit and later refreshes, are not first-frame live memory,
+and are never summed. The focused spacing viewport is pixel-exact at 1024×768.
+Prior observed carry is **0** from round60; cumulative observed savings **88,528,628** trigger the 5M gate. All six direct V jobs pass: CSS 31/SVG 10/layout 46 in both GCs, **174 executions**. All **19 screenshots pass, 16 exact**; known differences remain inline-node 13, text-decorations 1,341 and canvas-text 1,994. Completed broad verification resets additional observed savings to 0; confidence credit remains separate.
+
+The isolated signed app is `/Users/alex/code/vox2/Build/v/Vox-opt61.app`. Signature, startup, native
+text identity and actual collections pass with default marker 1 and override 2.
+Canonical and user GUI apps are preserved; contemporary Root receives no source
+pin or extra performance/regression credit. Equivalent Chrome content, start
+and endpoint accounting remain open; no faster-than-Chrome claim is made.
+Evidence: `Build/instructions/vox-opt61-interleaved-*` and
+`Build/v/instruction-opt61-*`.
+
 ## Causes and changes
 
 - The V 0.5.2 compatibility compiler's `-prod` Boehm code repeatedly snapshots

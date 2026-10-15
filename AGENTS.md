@@ -1570,6 +1570,15 @@ evidence](docs/translation-audit/NATIVE_MEDIA_WHEEL_RAW_HANDLER.md).
   focused pseudo viewport exact. Additional observed savings: 0.
   Same frozen 4 GiB hint; independent Root memory/UI work is excluded.
   Chrome parity remains open.
+  Retained public length conversion `5362d3aa` passes 1,681 focused assertions
+  per configuration; complete public length batches use 48.71% fewer instructions.
+  Page point saving 88,528,628, 30/30 wins,
+  paired interval [88,450,463.5, 109,407,807.5]; repeatable page credit 88,528,628.
+  Broad verification: 87 selected cases both GC and 19 screenshots (16 exact);
+  focused spacing viewport exact. Additional observed savings: 0.
+  Both variants use the same frozen test-window startup helper; historical
+  medians receive no subtraction. Same frozen 4 GiB hint; Root work excluded.
+  Chrome parity remains open.
 - Outside instruction-count optimization, run broad regression suites once per
   ten completed fixes, not after every fix.
   Broad suites include full translation/package test batches, the full LibJS AST
