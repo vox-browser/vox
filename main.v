@@ -316,6 +316,7 @@ mut:
 	paint_effect_depth                  int
 	status                              string
 	load_status                         string
+	memory_status                       BrowserMemoryStatus
 	js_messages                         []string
 	history                             []HistoryEntry
 	history_index                       int = -1
@@ -6145,6 +6146,7 @@ fn (mut app BrowserApp) draw() {
 			app.source_label
 		}
 		app.ctx.draw_text(12, status_y + 4, footer, color: gg.rgb(203, 213, 225), size: 12)
+		app.draw_memory_status(window.width, status_y)
 	}
 	end_browser_frame(app.ctx)
 	app.finish_scroll_profile_frame()
