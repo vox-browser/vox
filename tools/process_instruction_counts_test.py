@@ -7,9 +7,10 @@ import sys
 import time
 import tempfile
 import unittest
+from unittest.mock import patch
 
 from measure_browser_instructions import fresh_vox_cache, parse_native_counters
-from process_instruction_counts import MacCounters, ProcessTreeCounter, Reading, RusageInfoV4
+from process_instruction_counts import CounterSampler, MacCounters, ProcessTreeCounter, Reading, RusageInfoV4
 
 
 class FakeCounters:
@@ -31,6 +32,42 @@ class FakeCounters:
 
 
 class CounterAccountingTests(unittest.TestCase):
+    def test_capture_boundary_excludes_later_samples_and_does_not_read_again(self):
+        api = FakeCounters()
+        counter = ProcessTreeCounter(api, 1)
+        with patch("process_instruction_counts.time.monotonic", return_value=10):
+            counter.sample()
+        api.readings[1] = Reading(1, 100, False, 2000, 3000)
+        with patch("process_instruction_counts.time.monotonic", return_value=12):
+            counter.sample()
+        snapshot = counter.snapshot_before(11)
+        # Neither a later pass nor an extra report sample can inflate the
+        # conservative screenshot-endpoint total.
+        with patch.object(api, "read", side_effect=AssertionError("late sample")):
+            report = counter.report(snapshot=snapshot)
+        self.assertEqual(report["instructions"], 1300)
+        self.assertEqual(report["sample_completed_monotonic"], 10)
+
+    def test_capture_boundary_keeps_exited_child_and_rejects_missing_history(self):
+        api = FakeCounters()
+        counter = ProcessTreeCounter(api, 1)
+        api.readings[2] = Reading(2, 200, True, 800, 900)
+        with patch("process_instruction_counts.time.monotonic", return_value=10):
+            counter.sample()
+        del api.readings[2]
+        api.child_map.clear()
+        with patch("process_instruction_counts.time.monotonic", return_value=12):
+            counter.sample()
+        report = counter.report(snapshot=counter.snapshot_before(11))
+        self.assertEqual(report["instructions"], 1800)
+        self.assertTrue(report["processes"][1]["final_exit_sample"])
+        with self.assertRaisesRegex(RuntimeError, "No retained instruction sample"):
+            counter.snapshot_before(9)
+
+    def test_sampling_cadence_must_be_positive(self):
+        with self.assertRaises(ValueError):
+            CounterSampler(ProcessTreeCounter(FakeCounters(), 1), 0)
+
     def test_peak_memory_is_retained_and_is_not_summed_across_processes(self):
         api = FakeCounters()
         api.readings[1] = Reading(1, 100, False, 1000, 2000, 6000)

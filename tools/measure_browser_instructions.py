@@ -188,6 +188,7 @@ def run_vox(args, prefix, api, cache_dir=None):
     command = [str(binary), "--window-width", str(args.width), "--window-height", str(args.height + 112),
                "--screenshot", str(window_screenshot), args.url]
     with log_path.open("w") as log:
+        launched_at = time.monotonic()
         process = subprocess.Popen(command, cwd=REPO, env=env, stdout=log, stderr=subprocess.STDOUT,
                                    start_new_session=True)
         counter = ProcessTreeCounter(api, process.pid)
@@ -201,9 +202,10 @@ def run_vox(args, prefix, api, cache_dir=None):
                     break
                 if time.monotonic() > deadline:
                     raise RuntimeError("Vox did not finish its document capture before the watchdog")
-                time.sleep(.02)
+                time.sleep(getattr(args, "sample_interval", .02))
             # Read the exact root's zombie counters before wait() reaps it.
             code = process.wait()
+            endpoint_at = time.monotonic()
         finally:
             stop_process(process)
     if code != 0 or not window_screenshot.exists():
@@ -212,6 +214,9 @@ def run_vox(args, prefix, api, cache_dir=None):
     crop_document_viewport(window_screenshot, screenshot, args.width, args.height)
     report.update(engine="vox", binary=str(binary), endpoint="process exit after native document capture",
                   url=args.url, viewport=[args.width, args.height], exit=code,
+                  command=command,
+                  process_launch_to_capture_observed_ms=(endpoint_at - launched_at) * 1000,
+                  endpoint_note="includes native capture and process teardown; counters are read from the unreaped root zombie",
                   native=parse_native_counters(log_path.read_text()), screenshot=str(screenshot),
                   native_window_screenshot=str(window_screenshot))
     return report
@@ -226,11 +231,12 @@ def run_chrome(args, prefix, api):
                    "--disable-background-networking", "--remote-debugging-port=0",
                    f"--user-data-dir={profile}", "about:blank"]
         with log_path.open("w") as log:
+            launched_at = time.monotonic()
             process = subprocess.Popen(command, stdout=log, stderr=subprocess.STDOUT, start_new_session=True)
             counter = ProcessTreeCounter(api, process.pid)
             client = None
             try:
-                with CounterSampler(counter):
+                with CounterSampler(counter, getattr(args, "sample_interval", .02)):
                     active = Path(profile) / "DevToolsActivePort"
                     deadline = time.monotonic() + args.timeout
                     while not active.exists():
@@ -241,7 +247,9 @@ def run_chrome(args, prefix, api):
                             raise RuntimeError(f"Chrome exited before debugger startup; see {log_path}")
                         time.sleep(.02)
                     port = int(active.read_text().splitlines()[0])
-                    with urllib.request.urlopen(f"http://127.0.0.1:{port}/json/list", timeout=15) as response:
+                    # CDP loopback traffic must not use an ambient HTTP proxy.
+                    local_http = urllib.request.build_opener(urllib.request.ProxyHandler({}))
+                    with local_http.open(f"http://127.0.0.1:{port}/json/list", timeout=15) as response:
                         targets = json.load(response)
                     client = CDP(next(t["webSocketDebuggerUrl"] for t in targets if t["type"] == "page"))
                     version = client.call("Browser.getVersion")
@@ -250,9 +258,11 @@ def run_chrome(args, prefix, api):
                     client.call("Emulation.setDeviceMetricsOverride", {
                         "width": args.width, "height": args.height, "deviceScaleFactor": 1, "mobile": False})
                     baseline = counter.sample()
+                    navigation_at = time.monotonic()
                     client.call("Page.navigate", {"url": args.url})
                     expression = r'''JSON.stringify({title:document.title,url:location.href,
                         ready:document.readyState,textLength:document.body?.innerText.length||0,
+                        sprites:document.querySelectorAll('.sprite').length,
                         fileLinks:[...document.querySelectorAll('a')].filter(a=>/\/vlang\/v\/(blob|tree)\//.test(a.href)).length})'''
                     while True:
                         evaluated = client.call("Runtime.evaluate", {"expression": expression, "returnByValue": True})
@@ -260,7 +270,11 @@ def run_chrome(args, prefix, api):
                         document = json.loads(value) if value else {}
                         github = urllib.parse.urlparse(args.url).hostname == "github.com" and "/vlang/v" in args.url
                         if (document.get("ready") == "complete" and document.get("textLength", 0) > 0
-                                and (not github or document.get("fileLinks", 0) > 0)):
+                                and (not github or document.get("fileLinks", 0) > 0)
+                                and (getattr(args, "expect_sprites", None) is None
+                                     or document.get("sprites") == args.expect_sprites)
+                                and (getattr(args, "expect_text_length", None) is None
+                                     or document.get("textLength") == args.expect_text_length)):
                             break
                         if time.monotonic() > deadline:
                             raise RuntimeError("Chrome did not load document content before the watchdog")
@@ -268,13 +282,36 @@ def run_chrome(args, prefix, api):
                     client.call("Runtime.evaluate", {"expression": "document.fonts.ready.then(()=>true)",
                                                      "awaitPromise": True, "returnByValue": True})
                     data = client.call("Page.captureScreenshot", {"format": "png", "captureBeyondViewport": False})["data"]
-                    # Counters end before screenshot decoding/writing and browser shutdown.
-                    navigation_report = counter.report(baseline)
-                    report = counter.report()
+                    endpoint_at = time.monotonic()
+                    # Use only a complete polling pass BEFORE this response.
+                    # A new report() sample would charge later Chrome work and
+                    # would not be a lower bound at the stated endpoint.
+                    endpoint_snapshot = counter.snapshot_before(endpoint_at)
+                    navigation_report = counter.report(baseline, snapshot=endpoint_snapshot)
+                    report = counter.report(snapshot=endpoint_snapshot)
+                    # Asset auditing happens after the instruction boundary.
+                    audited = client.call("Runtime.evaluate", {"expression": r'''JSON.stringify({
+                        title:document.title,url:location.href,ready:document.readyState,
+                        textLength:document.body?.innerText.length||0,sprites:document.querySelectorAll('.sprite').length,
+                        bodyClass:document.body?.className,
+                        images:[...document.images].map(i=>({src:i.currentSrc||i.src,complete:i.complete,
+                            naturalWidth:i.naturalWidth,naturalHeight:i.naturalHeight,
+                            width:i.getBoundingClientRect().width,height:i.getBoundingClientRect().height})),
+                        resources:performance.getEntriesByType('resource').map(r=>r.toJSON()),
+                        navigation:performance.getEntriesByType('navigation').map(r=>r.toJSON()),
+                        paint:performance.getEntriesByType('paint').map(r=>r.toJSON())})''',
+                        "returnByValue": True})
+                    document_audit = json.loads(audited["result"]["value"])
                     screenshot.write_bytes(base64.b64decode(data))
                     report.update(engine="chrome", binary=str(binary), version=version,
                                   endpoint="completed document and first CDP screenshot response",
                                   url=args.url, viewport=[args.width, args.height],
+                                  command=command,
+                                  process_launch_to_capture_observed_ms=(endpoint_at - launched_at) * 1000,
+                                  navigation_to_capture_observed_ms=(endpoint_at - navigation_at) * 1000,
+                                  final_sample_precedes_capture_ms=(endpoint_at - endpoint_snapshot.sampled_at) * 1000,
+                                  endpoint_note="observed counters from the last complete sampling pass before screenshot response; omit subsequent audit and browser shutdown",
+                                  document_audit=document_audit,
                                   navigation_to_screenshot=navigation_report, document=document,
                                   screenshot=str(screenshot))
                     try:
@@ -299,10 +336,16 @@ def main():
     parser.add_argument("--height", type=int, default=768)
     parser.add_argument("--timeout", type=float, default=90)
     parser.add_argument("--scratch-dir", type=Path)
+    parser.add_argument("--sample-interval", type=float, default=.005,
+                        help="seconds between process-tree counter polls; observer work is excluded")
+    parser.add_argument("--expect-sprites", type=int,
+                        help="Chrome: require this many .sprite elements before capturing")
+    parser.add_argument("--expect-text-length", type=int,
+                        help="Chrome: require this exact body innerText length before capturing")
     parser.add_argument("--cache-template", type=Path,
                         help="Vox only: start every run with a fresh copy of this page/resource cache")
     args = parser.parse_args()
-    if args.repeat < 1 or args.timeout <= 0 or args.width < 1 or args.height < 1:
+    if args.repeat < 1 or args.timeout <= 0 or args.width < 1 or args.height < 1 or args.sample_interval <= 0:
         parser.error("repeat, dimensions, and watchdog must be positive")
     if args.binary:
         args.binary = args.binary.resolve()
@@ -319,12 +362,21 @@ def main():
     runs = []
     for index in range(args.repeat):
         prefix = Path(str(args.output) + f".run-{index + 1}")
+        binary = args.binary or (REPO / "Build/v/Vox.app/Contents/MacOS/Vox" if args.engine == "vox"
+                                 else Path("/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"))
+        binary_before = hashlib.sha256(binary.read_bytes()).hexdigest()
         with fresh_vox_cache(args.cache_template, args.scratch_dir) as (cache, template_hash):
             result = (run_vox(args, prefix, api, cache) if args.engine == "vox"
                       else run_chrome(args, prefix, api))
             if template_hash is not None:
                 result["cache_template_sha256"] = template_hash
         result["binary_sha256"] = hashlib.sha256(Path(result["binary"]).read_bytes()).hexdigest()
+        if result["binary_sha256"] != binary_before:
+            raise RuntimeError("Measured executable changed during capture")
+        result["measurement_driver_sha256"] = hashlib.sha256(Path(__file__).read_bytes()).hexdigest()
+        result["counter_module_sha256"] = hashlib.sha256((REPO / "tools/process_instruction_counts.py").read_bytes()).hexdigest()
+        result["sample_interval_seconds"] = args.sample_interval
+        result["screenshot_sha256"] = hashlib.sha256(Path(result["screenshot"]).read_bytes()).hexdigest()
         Path(str(prefix) + ".json").write_text(json.dumps(result, indent=2) + "\n")
         runs.append(result)
         print(json.dumps({"run": index + 1, "engine": args.engine,

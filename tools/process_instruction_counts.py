@@ -3,12 +3,16 @@
 Counts include each process's threads, including system execution charged to
 them. Children are separate tasks and must be accumulated explicitly.
 """
+from __future__ import annotations
+
 import ctypes
+from collections import deque
 from dataclasses import dataclass
 import errno
 import os
 import sys
 import threading
+import time
 
 
 class RusageInfoV4(ctypes.Structure):
@@ -40,6 +44,17 @@ class Reading:
     def identity(self):
         # ri_uuid identifies an executable, not an individual process.
         return self.pid, self.start
+
+
+@dataclass(frozen=True)
+class CounterSnapshot:
+    sampled_at: float
+    readings: dict
+    paths: dict
+    missing_final: frozenset
+    denied: dict
+    root_identity: tuple | None
+    peak_footprints: dict
 
 
 class MacCounters:
@@ -101,6 +116,10 @@ class ProcessTreeCounter:
         self.peak_footprints = {}
         self.denied = {}
         self.lock = threading.Lock()
+        # Retain recent completed passes so a CDP screenshot boundary can use
+        # only readings taken before its response, never later idle/shutdown
+        # work. This is observer memory and does not enter browser counters.
+        self.snapshots = deque(maxlen=1024)
 
     def sample(self):
         with self.lock:
@@ -136,17 +155,36 @@ class ProcessTreeCounter:
                     self.missing_final.discard(reading.identity)
                 else:
                     pending.extend(self.api.children(pid))
+            self.snapshots.append(CounterSnapshot(
+                time.monotonic(), dict(self.records), dict(self.paths),
+                frozenset(self.missing_final), dict(self.denied),
+                self.root_identity, dict(self.peak_footprints)))
             return dict(self.records)
 
-    def report(self, baseline=None):
-        readings = self.sample()
-        baseline = baseline or {}
+    def snapshot_before(self, endpoint):
+        """Last complete sampling pass no later than a monotonic endpoint.
+
+        A pass after the endpoint is deliberately excluded even if individual
+        tasks were sampled earlier. The resulting omission is conservative.
+        """
         with self.lock:
-            paths = dict(self.paths)
-            missing_final = set(self.missing_final)
-            denied = dict(self.denied)
-            root_identity = self.root_identity
-            peak_footprints = dict(self.peak_footprints)
+            for snapshot in reversed(self.snapshots):
+                if snapshot.sampled_at <= endpoint:
+                    return snapshot
+        raise RuntimeError("No retained instruction sample precedes the requested endpoint")
+
+    def report(self, baseline=None, snapshot=None):
+        if snapshot is None:
+            self.sample()
+            with self.lock:
+                snapshot = self.snapshots[-1]
+        readings = snapshot.readings
+        baseline = baseline or {}
+        paths = snapshot.paths
+        missing_final = snapshot.missing_final
+        denied = snapshot.denied
+        root_identity = snapshot.root_identity
+        peak_footprints = snapshot.peak_footprints
         processes = []
         for key, reading in sorted(readings.items()):
             old = baseline.get(key)
@@ -169,6 +207,7 @@ class ProcessTreeCounter:
                 "aggregate_is_lower_bound": True,
                 "missing_final_sample_count": sum(p["missing_final_sample"] for p in processes),
                 "processes": processes, "unreadable_pids": denied,
+                "sample_completed_monotonic": snapshot.sampled_at,
                 "descendant_coverage": "observed descendants; short-lived unsampled children may be omitted",
                 "counter": "proc_pid_rusage/RUSAGE_INFO_V4/ri_instructions",
                 "includes": "CPU instructions in all observed process threads and their charged kernel execution",
@@ -176,8 +215,11 @@ class ProcessTreeCounter:
 
 
 class CounterSampler:
-    def __init__(self, counter):
+    def __init__(self, counter, interval=.02):
+        if interval <= 0:
+            raise ValueError("Counter sampling interval must be positive")
         self.counter = counter
+        self.interval = interval
         self.stop_event = threading.Event()
         self.thread = threading.Thread(target=self.run, daemon=True)
         self.error = None
@@ -186,7 +228,7 @@ class CounterSampler:
         try:
             while not self.stop_event.is_set():
                 self.counter.sample()
-                self.stop_event.wait(.02)
+                self.stop_event.wait(self.interval)
         except Exception as error:
             self.error = error
 
