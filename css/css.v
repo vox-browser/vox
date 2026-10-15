@@ -3422,6 +3422,12 @@ pub fn LengthPercentageOrAuto.make_auto() LengthPercentageOrAuto {
 }
 
 pub fn LengthPercentageOrAuto.from_style_value(style_value &dom.StyleValue) LengthPercentageOrAuto {
+	if style_value.css_value_handle != unsafe { nil } {
+		typed := unsafe { &TypedStyleValueBox(style_value.css_value_handle) }
+		if typed.value is LengthStyleValue {
+			return LengthPercentageOrAuto.from_length(typed.value.length())
+		}
+	}
 	if keyword := computed_interpolation_style_value_keyword(style_value) {
 		if keyword == .auto {
 			return LengthPercentageOrAuto.make_auto()
