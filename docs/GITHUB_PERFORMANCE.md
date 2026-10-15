@@ -4708,3 +4708,38 @@ ordering mismatch, focused results and disassembly remain under
 `Build/v/instruction-opt36-*`; the frozen prototype is retained. The speculative
 normal build is independently recorded without performance credit. No browser
 primary observations started, and the declared page cohort remains unexecuted.
+
+## Rule-cache and style materialization hardware diagnostic
+
+A separate C-O2 diagnostic starts from the confirmed frozen round47 runtime,
+including its 4 GiB document heap hint. Six wrappers count owner-thread entries
+from the first navigation entry through the first native document-frame report,
+using the process-wide retired-instruction counter. Nested totals overlap,
+include counter overhead and charged work in other threads, and must not be
+summed as self work. This build receives **zero page credit**.
+
+| Scope | Calls | Inclusive retired instructions |
+| --- | ---: | ---: |
+| `css__StyleScope_build_rule_cache` | 2 | 1,826,281,998 |
+| `css__StyleComputer_compute_properties` | 2,910 | 833,489,847 |
+| `css__selector_groups_for_invalidation` | 57,752 | 675,275,708 |
+| `css__resolve_computed_values_for_document` | 5,379 | 528,246,519 |
+| `css__resolve_computed_values` | 5,379 | 307,560,954 |
+| `layout__NodeWithStyle_apply_style` | 8 | 1,036,796 |
+
+Native compilation, signing, startup smoke, observer and browser each actually
+exit zero. All six counters report zero failures. The independent audit restores
+the original generated C byte for byte, authenticates all 120 native inputs,
+the exact C-O2 arguments, the frozen 359-body cache and helper, and the actual
+1024×768 viewport PNG. The two rule-cache calls and 57,752 selector projections
+identify an allocation-producing path for further investigation; they do not
+prove the saving from any proposed change.
+
+Binary SHA256: `83a96f04837599d0b8493f1d5fa30394f825331a5f15975fd7713d0c7f7b56a1`. Diagnostic C SHA256:
+`02607159f3954a003cd35d45db10dbb5df8391a9fc6569e3b7b1e094179f3fb9`. Durable archive SHA256:
+`9961256b70591bfadfbc44dcb2c3b191ba034530d367cb3b8e65f94af8af9a7f`. Receipts are
+`Build/v/instruction-hotspots49-{build-result,result,final-audit}.json` and the
+raw observation is `Build/instructions/vox-hotspots49-diagnostic.run-1.json`.
+The canonical app and shipping verification ledger remain unchanged. Current
+Root changes are outside this frozen diagnostic. Chrome parity remains open.
+
