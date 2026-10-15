@@ -1831,12 +1831,15 @@ pub:
 
 pub type DocumentLayoutUpdateCallback = fn (voidptr, &Document, f64, f64, bool) voidptr
 
+pub type DocumentLayoutStyleUpdateCallback = fn (voidptr, &Document)
+
 pub type DocumentRenderedTextCallback = fn (voidptr, &Document, &Element) string
 
 pub struct DocumentLayoutUpdateHook {
 pub:
 	target   voidptr = unsafe { nil }
 	callback DocumentLayoutUpdateCallback = unsafe { nil }
+	style_did_update DocumentLayoutStyleUpdateCallback = unsafe { nil }
 }
 
 pub struct DocumentRenderedTextHook {
@@ -7238,16 +7241,29 @@ pub fn (mut d Document) update_style() {
 		d.invalidate_stacking_context_tree()
 	}
 	d.needs_full_style_update = false
+	d.notify_layout_after_style_update()
 }
 
 pub fn (mut d Document) update_animated_style_if_needed() {
 	if !d.needs_animated_style_update {
 		return
 	}
-	if d.style_computer != unsafe { nil } && d.style_computer.update_animated_style_callback != unsafe { nil } {
+	did_update := d.style_computer != unsafe { nil }
+		&& d.style_computer.update_animated_style_callback != unsafe { nil }
+	if did_update {
 		d.style_computer.update_animated_style_callback(d.style_computer.css_handle)
 	}
 	d.needs_animated_style_update = false
+	if did_update {
+		d.notify_layout_after_style_update()
+	}
+}
+
+fn (d &Document) notify_layout_after_style_update() {
+	hook := d.layout_update_hook_ or { return }
+	if hook.style_did_update != unsafe { nil } {
+		hook.style_did_update(hook.target, d)
+	}
 }
 
 pub fn (mut d Document) update_paint_and_hit_testing_properties_if_needed() {

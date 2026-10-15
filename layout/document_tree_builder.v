@@ -342,77 +342,139 @@ fn materialize_media_controls_shadow_trees(document &dom.Document) {
 	}
 }
 
-// Principal writing mode, scrollbar width, and CSS Overflow 3 viewport
-// propagation. This runs after the element layout nodes exist and before
-// formatting-context selection. The source element's used overflow becomes
-// visible, so propagating body overflow does not spuriously create a BFC.
+// Body style facts exist independently of generated layout boxes.
+fn viewport_first_body_element(root &Node) ?&dom.Element {
+	root_dom := root.dom_node() or { return none }
+	for child := root_dom.first_child(); child != none; {
+		current := child or { break }
+		if current.is_html_body_element() { return current.as_element() }
+		child = current.next_sibling()
+	}
+	return none
+}
+
+fn viewport_box_for_dom_node(root &Node, target &dom.Node) ?&Node {
+	if node := root.dom_node() {
+		if voidptr(node) == voidptr(target) { return root }
+	}
+	for child in root.children() {
+		if node := child.dom_node() {
+			if voidptr(node) == voidptr(target) { return child }
+		}
+	}
+	// Table and mixed-inline fixup can insert anonymous boxes around either
+	// the document element or its body. Keep identity tied to the DOM owner.
+	for child in root.children() {
+		if box := viewport_box_for_dom_node(child, target) { return box }
+	}
+	return none
+}
+
+fn viewport_document_element_box(viewport &Node) ?&Node {
+	element := viewport.document().document_element() or { return none }
+	return viewport_box_for_dom_node(viewport, element.as_node())
+}
+
+fn viewport_body_box(root &Node, element &dom.Element) ?&Node {
+	return viewport_box_for_dom_node(root, element.as_node())
+}
+
+fn document_layout_style_did_update(_target voidptr, document &dom.Document) {
+	previous := document_layout_result(document) or { return }
+	root_element := viewport_document_element_box(previous.root) or { return }
+	viewport_style := previous.root.as_node_with_style() or { return }
+	old_values := viewport_style.computed_values()
+	old_overflow_x := old_values.overflow_x()
+	old_overflow_y := old_values.overflow_y()
+	old_writing_mode := old_values.writing_mode()
+	old_direction := old_values.direction()
+	old_scrollbar_width := old_values.scrollbar_width()
+	mut viewport := unsafe { &Node(previous.root) }
+	propagate_root_styles_to_viewport(root_element, mut viewport)
+	new_values := viewport_style.computed_values()
+	// A styled body can affect the principal mode without owning a box. Mark
+	// geometry only when the effective viewport facts changed, not when a
+	// paint-only root/body restyle merely replaced its used-value copy.
+	if old_overflow_x != new_values.overflow_x() || old_overflow_y != new_values.overflow_y()
+		|| old_writing_mode != new_values.writing_mode() || old_direction != new_values.direction()
+		|| old_scrollbar_width != new_values.scrollbar_width() {
+		if root_dom := root_element.dom_node() {
+			mut mutable_root_dom := unsafe { &dom.Node(root_dom) }
+			mutable_root_dom.set_needs_layout_update(.style_change)
+		}
+	}
+}
+
+// Apply the principal writing mode and viewport overflow to box values only.
+// Read each element's own computed style again on retained layout passes, as
+// LayoutRustBridge::viewport_propagation_facts() does upstream.
 fn propagate_root_styles_to_viewport(root &Node, mut viewport Node) {
 	root_styled := root.as_node_with_style() or { return }
-	root_values := root_styled.computed_values()
 	root_dom := root.dom_node() or { return }
 	root_element := root_dom.as_element() or { return }
-	viewport_styled := viewport.as_node_with_style() or { return }
-	mut viewport_computed := unsafe { &css.ComputedProperties(viewport_styled.computed_values()) }
-	mut root_computed := unsafe { &css.ComputedProperties(root_values) }
-
-	// The root element's scrollbar width always applies to the viewport.
-	if value := root_values.property(.scrollbar_width, .no) {
-		viewport_computed.set_property_without_modifying_flags(.scrollbar_width, value)
-	}
-
-	body := direct_body_layout_node(root)
+	root_computed := css.computed_properties_for_element(root_element) or { return }
+	mut viewport_styled := viewport.as_node_with_style() or { return }
 	mut body_styled := ?&NodeWithStyle(none)
-	if body_node := body {
-		body_styled = body_node.as_node_with_style()
+	mut body_computed := root_computed
+	mut has_styled_body := false
+	if body_element := viewport_first_body_element(root) {
+		if properties := css.computed_properties_for_element(body_element) {
+			body_computed = properties
+			has_styled_body = true
+		}
+		if !body_computed.display().is_none() && !body_computed.display().is_contents() {
+			if body_node := viewport_body_box(root, body_element) {
+				body_styled = body_node.as_node_with_style()
+			}
+		}
 	}
-	body_values := if styled := body_styled { styled.computed_values() } else { root_values }
-	body_is_rendered := if styled := body_styled { !styled.display().is_none() } else { false }
-	body_propagation_is_disabled := !root_values.contain().is_empty()
-		|| (body_styled != none && !body_values.contain().is_empty())
+	// A display:contents body still supplies the principal writing mode, but
+	// its missing box cannot supply viewport overflow (CSS Overflow 3).
+	body_is_rendered := has_styled_body && !body_computed.display().is_none()
+	body_propagation_is_disabled := !root_computed.contain().is_empty()
+		|| (has_styled_body && !body_computed.contain().is_empty())
 	root_is_html := root_element.is_html_element() && root_element.local_name() == 'html'
-
-	// HTML takes its principal writing mode and direction from the first rendered
-	// body child unless containment disables that special case.
 	writing_mode_origin := if root_is_html && body_is_rendered && !body_propagation_is_disabled {
-		body_values
+		body_computed
 	} else {
-		root_values
+		root_computed
 	}
-	for property_id in [css.PropertyID.writing_mode, .direction] {
-		if value := writing_mode_origin.property(property_id, .no) {
-			root_computed.set_property_without_modifying_flags(property_id, value)
-			viewport_computed.set_property_without_modifying_flags(property_id, value)
-		}
+	writing_mode := writing_mode_origin.writing_mode()
+	direction := writing_mode_origin.direction()
+	use_body_overflow := root_is_html && body_is_rendered && body_styled != none
+		&& !body_propagation_is_disabled && root_computed.overflow_x() == .visible
+		&& root_computed.overflow_y() == .visible
+	overflow_origin := if use_body_overflow { body_computed } else { root_computed }
+	viewport_overflow_x := match overflow_origin.overflow_x() {
+		.visible { css.Overflow.auto_ }
+		.clip { css.Overflow.hidden }
+		else { overflow_origin.overflow_x() }
 	}
 
-	mut origin := root_styled
-	if root_is_html && body_is_rendered && !body_propagation_is_disabled
-		&& root_values.overflow_x() == .visible && root_values.overflow_y() == .visible {
-		origin = body_styled or { root_styled }
+	viewport_overflow_y := match overflow_origin.overflow_y() {
+		.visible { css.Overflow.auto_ }
+		.clip { css.Overflow.hidden }
+		else { overflow_origin.overflow_y() }
 	}
-	mut origin_computed := unsafe { &css.ComputedProperties(origin.computed_values()) }
-	for property_id in [css.PropertyID.overflow_x, .overflow_y] {
-		overflow := if property_id == .overflow_x {
-			origin_computed.overflow_x()
+
+	viewport_styled.computed_values_ = viewport_styled.computed_values().with_viewport_overrides(viewport_overflow_x,
+		viewport_overflow_y, writing_mode, direction, root_computed.scrollbar_width())
+	mut mutable_root_styled := unsafe { &NodeWithStyle(root_styled) }
+	mutable_root_styled.computed_values_ = root_styled.computed_values().with_viewport_overrides(if use_body_overflow {
+		root_computed.overflow_x()
+	} else {
+		css.Overflow.visible
+	}, if use_body_overflow { root_computed.overflow_y() } else { css.Overflow.visible },
+		writing_mode, direction, root_computed.scrollbar_width())
+	if styled := body_styled {
+		mut mutable_body_styled := unsafe { &NodeWithStyle(styled) }
+		mutable_body_styled.computed_values_ = styled.computed_values().with_viewport_overrides(if use_body_overflow {
+			css.Overflow.visible
 		} else {
-			origin_computed.overflow_y()
-		}
-		viewport_value := match overflow {
-			.visible { 'auto' }
-			.clip { 'hidden' }
-			else { overflow.str() }
-		}
-		viewport_computed.set_property_without_modifying_flags(property_id, &dom.StyleValue{
-			css_text: viewport_value
-		})
-		origin_computed.set_property_without_modifying_flags(property_id, &dom.StyleValue{
-			css_text: 'visible'
-		})
-	}
-	_ = css.resolve_computed_values_for_document(viewport_computed, root.document_)
-	_ = css.resolve_computed_values_for_document(root_computed, root.document_)
-	if voidptr(origin_computed) != voidptr(root_computed) {
-		_ = css.resolve_computed_values_for_document(origin_computed, root.document_)
+			body_computed.overflow_x()
+		}, if use_body_overflow { css.Overflow.visible } else { body_computed.overflow_y() },
+			body_computed.writing_mode(), body_computed.direction(),
+			body_computed.scrollbar_width())
 	}
 }
 
@@ -530,6 +592,7 @@ fn install_document_layout_hook_with_callback(document &dom.Document,
 	mut mutable_document := unsafe { &dom.Document(document) }
 	mutable_document.set_layout_update_hook(dom.DocumentLayoutUpdateHook{
 		callback: callback
+		style_did_update: document_layout_style_did_update
 	})
 }
 
@@ -715,6 +778,11 @@ fn invalidate_size_queries_after_geometry_commit(previous map[u64]SizeQueryConta
 fn finish_document_layout(document &dom.Document, root &Node, viewport_width f64, viewport_height f64, initial_checkpoint u64) ?DocumentLayoutResult {
 	mut timing_checkpoint := initial_checkpoint
 	viewport := root.as_viewport() or { return none }
+	// Restore current propagation facts on retained trees as well as new trees.
+	if root_element := viewport_document_element_box(root) {
+		mut mutable_viewport := unsafe { &Node(root) }
+		propagate_root_styles_to_viewport(root_element, mut mutable_viewport)
+	}
 	// ImagePaintable::reset_for_relayout() refreshes image availability and alt
 	// text before geometry consumes the replaced element's natural dimensions.
 	root.for_each_in_inclusive_subtree(fn (node &Node) dom.TraversalDecision {
