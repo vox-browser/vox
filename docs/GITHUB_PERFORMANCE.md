@@ -5607,6 +5607,105 @@ start and endpoint accounting remain open; no faster-than-Chrome claim is made.
 Evidence: `Build/instructions/vox-opt59-interleaved-*` and
 `Build/v/instruction-opt59-*`.
 
+## Inspect pseudo-element candidate buckets without a header list
+
+Feature `89f28a48` replaces the private `RuleCache` candidate predicate's
+materialized bucket list with direct inspections of the same buckets. Class,
+ID, tag, known pseudo-element, document-root, attribute and fallback buckets
+retain their keys, guards and order. A matching retained rule hint returns
+true immediately. Public bucket enumeration and callbacks, origin/layer/scope
+wrappers, selector targets, rule hints and all cache schemas remain unchanged.
+This preserves the existing coarse hint semantics, including manually edited
+hints that differ from a selector's target. No retained state is added.
+
+All three C-O2 configurations pass **4,224 assertions in 20 cases** (19 functional
+plus an inactive diagnostic): before/final Boehm and final no-GC. Three new
+cases cross every bucket and queried/abstract pseudo-element, document roots,
+HTML/SVG namespaces, quirks-folded classes/IDs, mixed-case attributes, unknown
+pseudos, empty buckets, duplicates, edits after a query, forced collection,
+shadow scope and origin/layer traversal. The unchanged public collector is an
+oracle alongside independent expected results. Prior rule/filter/shadow tests
+remain in the identical common harness. Focused source SHA256:
+`b4edb814179d37002c199854c51791873c5f1442ba60330dbd5e84fd272539b4`.
+
+Three fixed alternating local pairs each execute **512 complete public
+StyleScope candidate-query batches**, querying before and selection across
+eight retained layered caches. Setup, expected bits, eight warmups and forced
+collection precede the counter; result and checksum assertions follow. Median
+retired instructions change **7,107,251→3,914,598**
+(-44.92%), all three pairs improving; all six checksums 512.
+This is local evidence without separate page credit. Full-process C-O1/Boehm
+profiles have no filter/reset: complete batches stay 521, public scope queries
+1,046 and private cache queries 7,677. Materializing collector calls fall
+8,565→888; the new bucket predicate receives 19,623 calls. Retained collector
+calls include public-oracle tests. Counts never substitute for instructions.
+
+Strict C comparison permits only the private cache predicate and new pure
+bucket-hint helper. The direct source and generated-C lookup sequence derive
+mechanically from the unchanged public collector: remove the temporary header
+list/count/allocation, replace seven pushes with the same hint scan and early
+success, and retain the false result. Map descriptor address spelling and
+compiler temporary shifts are authenticated. The public collector C is raw-
+identical. All other functions/layouts/resources/GC match after established
+compiler identities, unchanged source-assertion mapping, 37 frozen includes and
+four raw-identical helper reorderings. Exact native C-O2 arguments and 120 input
+hashes match. Native disassembly independently confirms that the private cache
+predicate and origin/layer wrapper no longer call the materializing collector.
+Static code is not retired-instruction credit. Compiled C SHA256:
+`e48125005379a00d456d55ba97124f1fca492d2c99bb6a73c5b5f225ea084818`. Durable normal/focused/profile
+archives and hashes are in `instruction-opt60-artifact-archives.json`.
+
+The predeclared cohort fixes **30 alternating pairs**, **30,000 paired bootstrap
+resamples, seed 60**. Persisted regular binaries use the same 359 cached bodies,
+fresh copies, frozen helper, Boehm/default marker 1, native C-O2 and 1024×768
+viewport, ending at `navigation_to_first_document_paint[0]`. Both retain the
+same 4 GiB hint, without prod/prealloc. Independent current-Root memory/UI/native
+changes are excluded. All seven Vox observer routines are AST-identical to
+round 59; actual launch arrays are checked independently for completed reports.
+
+| Build | Median first-frame retired instructions | Median process peak, MiB |
+| --- | ---: | ---: |
+| Fresh matching frozen59 control | 18,828,081,777.5 | 3,654.2 |
+| Direct private candidate bucket inspections | 18,787,357,766.5 | 3,641.9 |
+
+Observed difference of marginal medians: **40,724,011** saved
+instructions (-0.216%), **24/30** wins.
+Paired median saving: **36,144,408.5**. Paired 95% interval:
+**20,205,238 to 50,963,302.5**. The positive paired interval establishes repeatable page savings of **40,724,011** instructions.
+The comparison uses fresh matching observations, never a historical median.
+
+All **60 primaries and 60 actual viewport PNGs** remain. Recovered primaries:
+none; pre-parse startup retries: 0. Each first primary
+has 1 installation/2 geometry preparations/1 paint. Completed later refreshes
+remain separate: before 3, before 10, before 11, before 13, before 14, before 15, before 17, before 25, before 26, before 28, before 30, final 10, final 17, final 22, final 25, final 27. No completed primary is rerun,
+discarded or used to extend the cohort. Recoveries disclose unavailable final
+exit, PNG, per-copy fingerprint receipt and process peak when applicable;
+missing peaks leave a complete-cohort median unavailable. Lifetime process
+peaks include capture/exit and later refreshes, are not first-frame live memory,
+and are never summed. The focused pseudo-element viewport is pixel-exact.
+Prior observed carry is **0** from 59; cumulative observed savings **40,724,011** trigger the 5M gate. All six direct V jobs pass: CSS 31/SVG 10/layout 46 in both GCs, **174 executions**. All **19 screenshots pass, 16 exact**; known differences remain inline-node 13, text-decorations 1,341 and canvas-text 1,994. Completed broad verification resets additional observed savings to 0; confidence credit remains separate.
+
+The validation controller is absent after a CLI continuation, without its last
+terminal status. All six completed test jobs and 18 completed comparisons are
+retained; only the unfinished `select-line-height-ignored` comparison resumes.
+Updated test-window instructions apply at that point. The frozen binary predates
+the placement hook, so its remaining visual captures load a child-only startup
+dylib built from the exact committed `13f8ec96` placement header. The native
+placement check passes; actual reference/input captures log valid placement,
+unchanged 800×712 content view (800×600 document), and the same foreground PID
+before/after. AppKit hooks restore after startup. This helper never participates
+in the 60 page observations and receives no performance credit. Header/source/
+library/log hashes and actual exits are in
+`instruction-opt60-visual-resume-result.json`. No completed job or primary is rerun.
+
+The isolated signed app is `/Users/alex/code/vox2/Build/v/Vox-opt60.app`. Signature, startup, native
+text identity and actual collections pass with default marker 1 and override 2.
+Canonical and user GUI apps are preserved; contemporary Root receives no source
+pin or extra performance/regression credit. Equivalent Chrome content, start
+and endpoint accounting remain open; no faster-than-Chrome claim is made.
+Evidence: `Build/instructions/vox-opt60-interleaved-*` and
+`Build/v/instruction-opt60-*`.
+
 ## Causes and changes
 
 - The V 0.5.2 compatibility compiler's `-prod` Boehm code repeatedly snapshots

@@ -1561,6 +1561,14 @@ evidence](docs/translation-audit/NATIVE_MEDIA_WHEEL_RAW_HANDLER.md).
   focused pseudo viewport exact. Additional observed savings: 0.
   Same frozen 4 GiB hint; independent Root memory/UI work is excluded.
   Chrome parity remains open.
+  Direct pseudo-candidate buckets `89f28a48` pass 4,224 focused assertions
+  per configuration; complete public candidate batches use 44.92% fewer instructions.
+  Page point saving 40,724,011, 24/30 wins,
+  paired interval [20,205,238, 50,963,302.5]; repeatable page credit 40,724,011.
+  Broad verification: 87 selected cases both GC and 19 screenshots (16 exact);
+  focused pseudo viewport exact. Additional observed savings: 0.
+  Same frozen 4 GiB hint; independent Root memory/UI work is excluded.
+  Chrome parity remains open.
 - Outside instruction-count optimization, run broad regression suites once per
   ten completed fixes, not after every fix.
   Broad suites include full translation/package test batches, the full LibJS AST
