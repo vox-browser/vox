@@ -148,39 +148,54 @@ fn table_is_proper_child(node &Node) bool {
 }
 
 fn remove_irrelevant_table_children(mut node Node) {
+	if !node.has_children() { return }
 	if node.display().is_table_column() {
 		node.replace_children([]&Node{})
+		return
 	} else if node.display().is_table_column_group() {
 		mut kept := []&Node{}
-		for child in node.children_ {
-			if child.display().is_table_column() {
+		mut removed := false
+		for index, child in node.children_ {
+			if !child.display().is_table_column() {
+				if !removed {
+					kept = node.children_[..index].clone()
+					removed = true
+				}
+			} else if removed {
 				kept << child
 			}
 		}
-		node.replace_children(kept)
+		if removed { node.replace_children(kept) }
 	}
 	// Discard whitespace between two table-internal siblings. Also discard
 	// leading/trailing whitespace of authored tabular containers when its one
 	// immediate sibling is table-internal (CSS Tables fixup step 1).
-	original := node.children_.clone()
 	mut kept := []&Node{}
-	for index, child in original {
-		previous_is_table_non_root := index > 0 && table_non_root_box(original[index - 1])
-		next_is_table_non_root := index + 1 < original.len
-			&& table_non_root_box(original[index + 1])
-		between_table_non_roots := previous_is_table_non_root && next_is_table_non_root
-		at_tabular_edge := child.is_box() && tabular_container(node) && !node.is_anonymous()
-			&& (index == 0 || index == original.len - 1)
-			&& (if index > 0 { previous_is_table_non_root } else { next_is_table_non_root })
-		if ignorable_table_whitespace(child) && (between_table_non_roots || at_tabular_edge) {
-			continue
+	mut removed := false
+	for index, child in node.children_ {
+		if ignorable_table_whitespace(child) {
+			previous_is_table_non_root := index > 0 && table_non_root_box(node.children_[index - 1])
+			next_is_table_non_root := index + 1 < node.children_.len
+				&& table_non_root_box(node.children_[index + 1])
+			between_table_non_roots := previous_is_table_non_root && next_is_table_non_root
+			at_tabular_edge := child.is_box() && tabular_container(node) && !node.is_anonymous()
+				&& (index == 0 || index == node.children_.len - 1)
+				&& (if index > 0 { previous_is_table_non_root } else { next_is_table_non_root })
+			if between_table_non_roots || at_tabular_edge {
+				if !removed {
+					kept = node.children_[..index].clone()
+					removed = true
+				}
+				continue
+			}
 		}
-		kept << child
+		if removed { kept << child }
 	}
-	if kept.len != original.len {
+	if removed {
 		node.replace_children(kept)
 	}
-	for child in node.children_.clone() {
+	// Recursion changes each child's descendants, never this child vector.
+	for child in node.children_ {
 		mut mutable_child := unsafe { &Node(child) }
 		remove_irrelevant_table_children(mut mutable_child)
 	}
