@@ -514,8 +514,8 @@ pub fn (mut element HTMLTrackElementModel) start_the_track_processing_model_para
 	}
 	element.loading_ = false
 	track.set_readiness_state(.loaded)
-	element.fire_event('load')
 	element.track_became_ready()
+	element.fire_event('load')
 }
 
 pub fn (mut element HTMLTrackElementModel) track_became_ready() {
@@ -526,8 +526,8 @@ fn (mut element HTMLTrackElementModel) track_failed_to_load() {
 	element.loading_ = false
 	mut track := element.track
 	track.set_readiness_state(.failed_to_load)
-	element.fire_event('error')
 	element.track_became_ready()
+	element.fire_event('error')
 }
 
 pub fn html_track_element_attribute_changed(element &dom.HTMLTrackElement, name string, old_value ?string, value ?string, namespace_ ?string) {
