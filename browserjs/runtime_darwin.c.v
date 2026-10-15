@@ -16,6 +16,7 @@ fn C.JSEvaluateScript(context voidptr, script voidptr, this_object voidptr, sour
 fn C.JSValueToStringCopy(context voidptr, value voidptr, exception &voidptr) voidptr
 fn C.JSValueIsObject(context voidptr, value voidptr) bool
 fn C.JSValueIsString(context voidptr, value voidptr) bool
+fn C.JSValueIsNumber(context voidptr, value voidptr) bool
 fn C.JSObjectGetProperty(context voidptr, object voidptr, property_name voidptr, exception &voidptr) voidptr
 fn C.JSStringGetMaximumUTF8CStringSize(value voidptr) usize
 fn C.JSStringGetUTF8CString(value voidptr, buffer &char, buffer_size usize) usize
@@ -84,7 +85,21 @@ fn js_source_string(source string) voidptr {
 	return C.JSStringCreateWithCharacters(characters.data, usize(characters.len))
 }
 
-fn evaluate_with_javascript_core(context voidptr, source ScriptSource, stringify_result bool) !string {
+fn javascript_core_syntax_position(context voidptr, exception voidptr, property string,
+	fallback int) int {
+	if exception == unsafe { nil } || !C.JSValueIsObject(context, exception) { return fallback }
+	name := js_source_string(property)
+	defer { C.JSStringRelease(name) }
+	mut ignored := unsafe { nil }
+	value := C.JSObjectGetProperty(context, exception, name, &ignored)
+	if ignored != unsafe { nil } || value == unsafe { nil } || !C.JSValueIsNumber(context, value) {
+		return fallback
+	}
+	number := C.JSValueToNumber(context, value, &ignored)
+	return if ignored == unsafe { nil } && number >= 1 && number <= 2147483647 { int(number) } else { fallback }
+}
+
+fn evaluate_with_javascript_core(context voidptr, source ScriptSource, stringify_result bool, positioned_syntax_errors bool) !string {
 	// Both engines must consume the entire same UTF-16 input, including NULs.
 	script := js_source_string(source.code)
 	if script == unsafe { nil } {
@@ -104,7 +119,17 @@ fn evaluate_with_javascript_core(context voidptr, source ScriptSource, stringify
 	value := C.JSEvaluateScript(context, script, unsafe { nil }, source_url, source.starting_line,
 		&exception)
 	if exception != unsafe { nil } {
-		return error(js_exception_message(context, exception))
+		message := js_exception_message(context, exception)
+		// Evaluation validates the entire program before running any statement.
+		// Format its own SyntaxError here, inside the embedding Script context,
+		// instead of parsing once more solely to obtain positioned diagnostics.
+		if positioned_syntax_errors && message.starts_with('SyntaxError:') {
+			filename := if source.url == '' { '<script>' } else { source.url }
+			line := javascript_core_syntax_position(context, exception, 'line', source.starting_line)
+			column := javascript_core_syntax_position(context, exception, 'column', 1)
+			return error('SyntaxError: ${filename}:${line}:${column}: ${message.trim_string_left('SyntaxError: ')}')
+		}
+		return error(message)
 	}
 	if value == unsafe { nil } || !stringify_result {
 		return ''

@@ -27,9 +27,28 @@ pub mut:
 	starting_line     u32 = 1
 	loaded_modules    []LoadedModuleRequest // [[LoadedModules]]
 	host_defined      voidptr               // [[HostDefined]]
-	parsed            &ParsedSource         // [[ECMAScriptCode]]
+	parsed            &ParsedSource = unsafe { nil } // Translated [[ECMAScriptCode]], when owned by this VM.
+	// An embedding backend owns its executable code. Retain the actual source
+	// without inventing a translated AST or exposing a PreparedScript for it.
+	external_source_text ?string
 	is_strict_mode    bool
 	cached_executable ?&Executable
+}
+
+// JSC-backed browser execution still needs a Script Record for realm, module
+// loading and host identity. Bytecode compilation must not consume this record
+// until a translated frontend has actually prepared its source.
+pub fn Script.create_external(source_text string, realm &Realm, filename string,
+	starting_line u32, host_defined voidptr) !&Script {
+	if starting_line == 0 { return error('Script starting line must be positive') }
+	return &Script{
+		realm: realm
+		filename: filename
+		starting_line: starting_line
+		host_defined: host_defined
+		external_source_text: source_text
+		is_strict_mode: script_source_is_strict(source_text)
+	}
 }
 
 // 16.1.5 ParseScript ( sourceText, realm, hostDefined ), https://tc39.es/ecma262/#sec-parse-script

@@ -1,0 +1,92 @@
+module libjs
+
+// Embedding backends parse and validate their own programs. They still need
+// the Script Record's strictness without building an unused translated AST.
+// A directive is an unparenthesized string-literal expression statement, so
+// a line break alone is insufficient when the next token extends it.
+pub fn script_source_is_strict(source string) bool {
+	code_units := utf16(source)
+	defer { unsafe { code_units.free() } }
+	mut lexer := Lexer.new(code_units, 1, 1)
+	mut token := lexer.next()
+	for token.token_type == .string_literal {
+		next := lexer.next()
+		terminated := next.token_type in [.semicolon, .eof, .curly_close]
+			|| (next.trivia_has_line_terminator
+				&& !script_directive_expression_continues(next.token_type))
+		if !terminated { return false }
+		if script_token_is_use_strict(code_units, token) {
+			return true
+		}
+		token = if next.token_type == .semicolon { lexer.next() } else { next }
+	}
+	return false
+}
+
+fn script_token_is_use_strict(source []u16, token Token) bool {
+	if token.value_len != 12 { return false }
+	start := int(token.value_start)
+	quote := source[start]
+	if (quote != u16(`"`) && quote != u16(`'`)) || source[start + 11] != quote { return false }
+	for index, character in 'use strict' {
+		if source[start + index + 1] != u16(character) { return false }
+	}
+	return true
+}
+
+fn script_directive_expression_continues(token TokenType) bool {
+	return token in [
+		// Calls, member access, tagged templates, and comma/conditional forms.
+		.paren_open,
+		.bracket_open,
+		.period,
+		.question_mark_period,
+		.template_literal_start,
+		.comma,
+		.question_mark,
+		// Binary operators continue an expression across a line terminator.
+		.asterisk,
+		.slash,
+		.percent,
+		.double_asterisk,
+		.plus,
+		.minus,
+		.shift_left,
+		.shift_right,
+		.unsigned_shift_right,
+		.less_than,
+		.less_than_equals,
+		.greater_than,
+		.greater_than_equals,
+		.in_kw,
+		.instanceof_kw,
+		.equals_equals,
+		.equals_equals_equals,
+		.exclamation_mark_equals,
+		.exclamation_mark_equals_equals,
+		.ampersand,
+		.caret,
+		.pipe,
+		.double_ampersand,
+		.double_pipe,
+		.double_question_mark,
+		// These are invalid assignment targets, which the executing backend
+		// diagnoses; they cannot turn the literal into a directive either.
+		.equals,
+		.plus_equals,
+		.minus_equals,
+		.asterisk_equals,
+		.slash_equals,
+		.percent_equals,
+		.double_asterisk_equals,
+		.shift_left_equals,
+		.shift_right_equals,
+		.unsigned_shift_right_equals,
+		.ampersand_equals,
+		.caret_equals,
+		.pipe_equals,
+		.double_ampersand_equals,
+		.double_pipe_equals,
+		.double_question_mark_equals,
+	]
+}

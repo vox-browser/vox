@@ -176,7 +176,7 @@ fn (runtime &Runtime) clean_up_html_callback(stored_settings ?&html.EnvironmentS
 }
 
 pub fn (runtime &Runtime) evaluate(source string) !string {
-	return runtime.evaluate_prepared(prepare_script(ScriptSource{ code: source })!)
+	return runtime.execute_source(ScriptSource{ code: source }, true)
 }
 
 pub fn (runtime &Runtime) evaluate_prepared(script &PreparedScript) !string {
@@ -192,11 +192,17 @@ fn (runtime &Runtime) check_execution_support(source_type libjs.SourceType) ! {
 	}
 }
 
-// Keep explicit preparation available for module AST consumers. Document
-// execution must reject an unsupported source type before parsing its AST.
-fn (runtime &Runtime) prepare_document_script(source ScriptSource) !&PreparedScript {
+// Each backend owns preparation of its executable source. Explicit preparation
+// above remains the complete translated AST API for frontend consumers.
+fn (runtime &Runtime) execute_source(source ScriptSource, stringify_result bool) !string {
 	runtime.check_execution_support(source.source_type)!
-	return prepare_script(source)
+	if source.starting_line < 1 { return error('Script starting line must be positive') }
+	if runtime.engine == .libjs {
+		return runtime.execute_prepared(prepare_script(source)!, stringify_result)
+	}
+	record := libjs.Script.create_external(source.code, runtime.realm, source.url,
+		u32(source.starting_line), voidptr(runtime))!
+	return runtime.execute_embedding_script(source, record, stringify_result)
 }
 
 fn (runtime &Runtime) execute_prepared(script &PreparedScript, stringify_result bool) !string {
@@ -223,6 +229,19 @@ fn (runtime &Runtime) execute_prepared(script &PreparedScript, stringify_result 
 		text := value.to_primitive_string(mut vm) or { return error(libjs_exception_message(err)) }
 		return text.str()
 	}
+	record := &libjs.Script{
+		realm: runtime.realm
+		filename: script.source.url
+		starting_line: u32(script.source.starting_line)
+		host_defined: voidptr(runtime)
+		parsed: script.frontend
+		is_strict_mode: script.frontend.is_strict_mode
+	}
+	return runtime.execute_embedding_script(script.source, record, stringify_result)
+}
+
+fn (runtime &Runtime) execute_embedding_script(source ScriptSource, record &libjs.Script,
+	stringify_result bool) !string {
 	// Associate this host execution with the translated Script/Realm records.
 	// These are embedding contexts; JavaScriptCore still owns its JS call frames,
 	// global bindings and promise reactions until the interpreter is translated.
@@ -232,15 +251,7 @@ fn (runtime &Runtime) execute_prepared(script &PreparedScript, stringify_result 
 	global_environment := runtime.realm.global_environment_record()
 	execution.lexical_environment = libjs.Environment(global_environment)
 	execution.variable_environment = libjs.Environment(global_environment)
-	if !script.frontend.has_errors() {
-		execution.script_or_module = libjs.ScriptOrModule.from_script(&libjs.Script{
-			realm:          runtime.realm
-			filename:       script.source.url
-			host_defined:   voidptr(runtime)
-			parsed:         script.frontend
-			is_strict_mode: script.frontend.is_strict_mode
-		})
-	}
+	execution.script_or_module = libjs.ScriptOrModule.from_script(record)
 	runtime.prepare_html_script()
 	vm.push_execution_context_checked(mut execution) or {
 		runtime.clean_up_html_script()
@@ -250,7 +261,7 @@ fn (runtime &Runtime) execute_prepared(script &PreparedScript, stringify_result 
 		vm.pop_execution_context()
 		runtime.clean_up_html_script()
 	}
-	return runtime.evaluate_backend(script.source, stringify_result)
+	return runtime.evaluate_backend(source, stringify_result, record.external_source_text != none)
 }
 
 // Host-generated bootstrap and DOM dispatch code has its own trusted boundary;
@@ -259,7 +270,7 @@ pub fn (runtime &Runtime) evaluate_host(source string) !string {
 	if runtime.engine == .libjs { return runtime.evaluate(source) }
 	runtime.prepare_html_script()
 	defer { runtime.clean_up_html_script() }
-	return runtime.evaluate_backend(ScriptSource{ code: source }, true)
+	return runtime.evaluate_backend(ScriptSource{ code: source }, true, false)
 }
 
 fn libjs_exception_message(err IError) string {
@@ -280,7 +291,7 @@ fn libjs_exception_message(err IError) string {
 	return err.msg()
 }
 
-fn (runtime &Runtime) evaluate_backend(source ScriptSource, stringify_result bool) !string {
+fn (runtime &Runtime) evaluate_backend(source ScriptSource, stringify_result bool, positioned_syntax_errors bool) !string {
 	if runtime.closed {
 		return error('JavaScript runtime is closed')
 	}
@@ -288,7 +299,7 @@ fn (runtime &Runtime) evaluate_backend(source ScriptSource, stringify_result boo
 		if runtime.context == unsafe { nil } {
 			return error('JavaScriptCore context creation failed')
 		}
-		return evaluate_with_javascript_core(runtime.context, source, stringify_result)
+		return evaluate_with_javascript_core(runtime.context, source, stringify_result, positioned_syntax_errors)
 	} $else {
 		return error('JavaScript evaluation is currently available on macOS only')
 	}
@@ -304,11 +315,7 @@ pub fn (runtime &Runtime) run_document_scripts(sources []ScriptSource) ! {
 		return
 	}
 	for source in sources {
-		script := runtime.prepare_document_script(source) or {
-			runtime.evaluate_host('console.error(${json2.encode(err.msg())})')!
-			continue
-		}
-		runtime.execute_prepared(script, false) or {
+		runtime.execute_source(source, false) or {
 			runtime.evaluate_host('console.error(${json2.encode(err.msg())})')!
 		}
 	}
@@ -320,11 +327,7 @@ pub fn (runtime &Runtime) run_document_scripts(sources []ScriptSource) ! {
 pub fn (runtime &Runtime) run_document_scripts_collect_errors(sources []ScriptSource) []string {
 	mut errors := []string{}
 	for source in sources {
-		script := runtime.prepare_document_script(source) or {
-			errors << err.msg()
-			continue
-		}
-		runtime.execute_prepared(script, false) or { errors << err.msg() }
+		runtime.execute_source(source, false) or { errors << err.msg() }
 	}
 	return errors
 }

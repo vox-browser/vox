@@ -753,6 +753,9 @@ fn (mut generator BytecodeGenerator) statement(mut vm VM, statement &Statement) 
 
 pub fn (mut script Script) compile(mut vm VM) !&Executable {
 	if script.starting_line == 0 { return error('Script starting line must be positive') }
+	if script.parsed == unsafe { nil } {
+		return error('Script source is owned by an external JavaScript backend; no translated AST is available')
+	}
 	if cached := script.cached_executable { return cached }
 	if script.parsed.has_errors() { return ScriptParseError{
 			diagnostics: script.parsed.diagnostics
