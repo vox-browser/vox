@@ -5037,6 +5037,98 @@ No parity or faster-than-Chrome claim is made.
 Evidence: `Build/instructions/vox-opt54-interleaved-*` and
 `Build/v/instruction-opt54-*`.
 
+## Copy ASCII HTML token runes into an owned string
+
+Feature `6b8cdbfc` changes only private `html.runes_to_string`. A read-only probe
+checks whether every rune fits ASCII, including controls and embedded NUL. That
+case fills a byte array and uses existing `bytestr()` to create an owned,
+terminated copy. All other runes, including negative and invalid internal values,
+use the original builder encoder. Its V fallback is byte-identical; the generated
+fallback differs only by one authenticated compiler temporary name. Tokenizer
+states, stream handling, character references and public token storage are
+unchanged. This adds no cache or retained state.
+
+Before/final Boehm and final no-GC C-O2 each pass **875 assertions in 30 cases**
+(29 functional plus an inactive probe), with identical common source. Four new
+cases cover all ASCII controls, empty and varying lengths, exact original- encoder
+results for non-ASCII/invalid runes, independent byte expectations, embedded NUL
+and termination, source mutation, builder reuse and collection, and streamed
+names/attributes/comments with full token/position equality. A unique standalone
+test tokenizer helper is added before any focused jobs; its exact common-source
+hash is retained separately from historical preparation.
+
+Three fixed alternating local pairs each run **512 complete HTML tokenizations**,
+including input/rune arrays, state-machine execution and retained token output.
+Median retired instructions change **2,234,132,147→2,072,580,641** (-7.23%), with
+all three pairs improving and all six checksums 66,048. Setup, expected output,
+eight warmups and forced collection precede the counter; full tokenization remains
+inside, and assertions follow. This confirms a local result, with no separate page
+credit.
+
+Full-process C-O1/Boehm/one-marker profiles have no filters or resets. Complete
+probe calls stay **521** and helper calls **150,289**. Per-rune encoder calls fall
+**3,190,837→154,847**; byte-string calls rise **316→133,896**. The unchanged
+fallback, old test oracle and other consumers still call the encoder. These are
+call counts, never substituted for hardware instructions.
+
+The strict C audit permits only `html__runes_to_string` to change. All other
+functions, data layouts, resources and GC policy match after established compiler
+identities, exact unchanged-source assertion-line mapping and 37 frozen includes.
+Four helpers may reorder only with raw-identical bodies. The initial audit rejects
+the renamed fallback loop temporary (`_t1` to `_t3`); that failed receipt/script
+remain in `instruction-opt55-audit-temporary-name-failure`. Its resumption
+authenticates exactly that substitution and the complete original fallback; no
+functional test, native build or counter sample is repeated. All 120 native inputs
+and exact native C-O2 arguments match. Compiled C SHA256:
+`26cce827c07f89d3a176976f3e783a2ca731691bb9d80963de15f6f55a4e2f86`. Durable
+normal/focused/profile archive hashes are in
+`instruction-opt55-artifact-archives.json`. Inherited descriptive labels are
+corrected before page observations with original metadata retained; the cohort,
+inputs, hashes and measurements are unchanged.
+
+The predeclared cohort fixes **30 alternating pairs**, with **30,000 paired
+bootstrap resamples, seed 55**. Regular frozen 54 and candidate binaries use the
+same 359 cached bodies, fresh copies, frozen helper, 1024×768 viewport and
+`navigation_to_first_document_paint[0]`. Both retain the same 4 GiB document-gated
+hint, enabled Boehm and default marker 1, without prod/prealloc. Independent
+current-Root memory, UI and responsiveness changes are excluded.
+
+| Build | Median first-frame retired instructions | Median process peak, MiB |
+| --- | ---: | ---: |
+| Fresh matching frozen 54 control | 19,001,401,365 | 3,690.6 |
+| ASCII token strings | 18,964,210,312.5 | 3,690.2 |
+
+The observed difference of marginal medians is **37,191,052.5** instructions saved
+(**0.196%**), with **19/30** pairs improving. Paired median saving is
+**31,725,236.5**, with a 95% paired percentile interval of **-8,743,002 to
+102,504,624**. The interval includes zero, so repeatable page credit is **0**. A
+cached-page reduction is not established. The retained small helper change has a
+confirmed local result without adding retained state. The comparison uses the fresh
+control, never the historical round54 median.
+
+All **60 primaries and 60 actual viewport PNGs** remain; recovered primaries: none,
+pre-parse startup retries: 0. Each first primary has 1 installation/2 geometry
+preparations/1 paint. Later refresh runs remain separate: none. No completed
+primary is discarded, rerun or used to extend the cohort. Process peaks include
+refreshes and are lifetime maxima through capture/exit, not first-frame live
+memory; they are never summed. The focused ASCII/ Unicode HTML viewport is
+pixel-exact. The observed point exceeds the 5M gate with prior accumulation 0. All
+six direct V broad jobs pass: CSS 31, SVG 10 and layout 46 under each GC, **174
+executions**. All **19 screenshot comparisons pass, 16 exact**; known differences
+remain inline-node 13, text-decorations 1,341 and canvas-text 1,994. The completed
+broad batch resets additional observed savings to 0; confidence credit stays
+separate.
+
+The signed isolated comparison app is
+`/Users/alex/code/vox2/Build/v/Vox-opt55.app`. Signature, startup, matching native
+text and actual collections pass with default marker 1 and override 2. Canonical
+and user GUI apps are preserved. No source pin or extra performance/regression
+credit is inferred for independent current Root. Chrome still needs equivalent
+content/start/endpoint accounting; its first paint in the retained trace shows only
+a header, with repository content later. No parity or faster-than-Chrome claim is
+made. Evidence: `Build/instructions/vox-opt55-interleaved-*` and
+`Build/v/instruction-opt55-*`.
+
 ## Causes and changes
 
 - The V 0.5.2 compatibility compiler's `-prod` Boehm code repeatedly snapshots

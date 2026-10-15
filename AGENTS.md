@@ -1519,6 +1519,14 @@ evidence](docs/translation-audit/NATIVE_MEDIA_WHEEL_RAW_HANDLER.md).
   with an exact numeric viewport. Additional observed savings after broad: 0.
   Same frozen 4 GiB hint; concurrent Root parser/memory/UI work is excluded.
   Chrome parity remains open.
+  ASCII HTML token strings `6b8cdbfc` pass 875 focused assertions
+  per configuration; complete local tokenization uses 7.23% fewer instructions.
+  Page point saving 37,191,052.5, 19/30 wins,
+  paired interval [-8,743,002, 102,504,624]; repeatable page credit 0.
+  Broad verification: 87 selected cases both GC and 19 screenshots (16 exact);
+  focused ASCII/Unicode viewport exact. Additional observed savings: 0.
+  Same frozen 4 GiB hint; independent Root memory/UI work is excluded.
+  Chrome parity remains open.
 - Outside instruction-count optimization, run broad regression suites once per
   ten completed fixes, not after every fix.
   Broad suites include full translation/package test batches, the full LibJS AST
