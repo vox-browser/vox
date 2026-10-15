@@ -1,6 +1,6 @@
 # Popular-site adblock verification
 
-The matrix exercises guest pages on 12 representative news, video, social,
+The matrix exercises guest pages on 13 representative news, video, social,
 shopping, reference, and developer sites. It compares Vox's native filtering
 engine with full Manifest V2 uBlock Origin 1.75.0 in an isolated Brave profile,
 using the repository's exact list snapshots and disabling Brave Shields.
@@ -11,6 +11,7 @@ described in [ADBLOCK.md](ADBLOCK.md):
 ```sh
 node tools/adblock/popular_sites.mjs
 node tools/adblock/popular_sites.mjs --sites cnn,wikipedia,github,yahoo,espn,stackoverflow
+node tools/adblock/popular_sites.mjs --sites pikabu
 ```
 
 Reports, browser navigation evidence, matched logger filters, and a progressive
@@ -39,6 +40,13 @@ Recorded comparisons verify request filtering; native page availability must
 also be checked through a capture or interactive visit.
 
 ## Observed coverage
+
+Pikabu was added with RU AdList enabled. Its captured site traffic has seven
+blocked resources out of 62, with identical Vox/full-uBO decisions; the native
+shared fixture hides all five ad candidates and preserves both content controls.
+See [Pikabu verification](ADBLOCK.md#pikabu-verification) for the request/header
+corpus, scriptlet checks and live native capture. The earlier 12-site results
+below retain their original list snapshots and observed counts.
 
 These are public guest-page observations from October 15, 2026. Counts vary
 with live content, timing, location, consent, and connectivity. They do not cover

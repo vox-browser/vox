@@ -7,9 +7,15 @@ This is the Manifest V2 engine, with its cosmetic filters, procedural selectors,
 scriptlets and redirect resources. It does not use uBlock Origin Lite or a
 domain-only approximation of the lists.
 
-The nine English default lists are uBlock filters (Ads, Badware risks, Privacy,
-Unbreak and Quick fixes), EasyList, EasyPrivacy, Online Malicious URL Blocklist,
-and Peter Lowe's Ad and tracking server list. Bundled snapshots work offline.
+The ten enabled lists are the nine English full-uBO defaults—uBlock filters
+(Ads, Badware risks, Privacy, Unbreak and Quick fixes), EasyList, EasyPrivacy,
+Online Malicious URL Blocklist, and Peter Lowe's Ad and tracking server list—plus
+the Russian regional **RU AdList (`RUS-0`)**. RU AdList is enabled in Vox by
+default, including on `pikabu.ru`. Its source is the full-uBO catalog's
+[`RuAdList-uBO.txt`](https://raw.githubusercontent.com/easylist/ruadlist/master/RuAdList-uBO.txt),
+which combines fourteen includes covering RU AdList, its CSS/JS fixes and the
+Adblock Warning Removal List. The separate optional RU AdList Counters
+subscription (`RUS-1`) is not enabled. Bundled snapshots work offline.
 Their source URLs, download time, expanded includes and SHA-256 hashes are in
 [`adblock/lists/manifest.json`](../adblock/lists/manifest.json). List updates are
 explicit; the browser does not currently download background updates.
@@ -17,7 +23,18 @@ explicit; the browser does not currently download background updates.
 Network filtering runs before the browser's memory and disk caches, HTTP
 preflights and native transport. Redirect destinations are filtered separately
 with the initiating document's URL and resource type. Local replacement
-resources take precedence over cached network bytes. Scriptlets run before
+resources take precedence over cached network bytes. A second full-uBO gate
+matches response-header filters before bodies reach consumers or caches,
+including native CURL streaming, Fetch preloads and cached responses. It
+preserves repeated fields and uBO's case-insensitive header-name matching.
+This includes RU AdList's Pikabu ad-payload rule,
+`||pikabu.ru/ajax/$xmlhttprequest,responseheader=llasalbbubrrl`.
+The compatibility build stages a repository-owned `net.http` header adapter
+under `Build/v/modules`; it retains fields beyond the old 50-field array,
+empty values and repeated fields without editing the V checkout. Header copies
+detach before mutation. `python3 tools/httpcompat/check.py` verifies
+the adapter and an empty Pikabu marker beyond the original limit.
+Scriptlets run before
 author scripts. Cosmetic CSS uses the user cascade origin and refreshes when
 live document IDs/classes change; procedural selectors use upstream uBO code
 and the compact browser's native DOM replay.
@@ -28,7 +45,7 @@ the installed bundle require neither Node nor a network connection for filtering
 
 ## Startup snapshots
 
-The checked-in default snapshot contains **258,456 network filters from all nine
+The checked-in default snapshot contains **276,172 network filters from all ten
 lists**, along with the cosmetic, scriptlet and public-suffix state. The build
 script compiles the raw lists with uBO and captures its native `toSelfie()`
 records. Browser startup restores those records through `fromSelfie()` instead
@@ -49,9 +66,9 @@ Both gzip assets retain native CRC and exact input/output length validation.
 The raw binary asset contains the network and public-suffix typed-array data.
 Its 16-byte `VOXSNAP1` header records the payload length and CRC32. Startup checks
 the magic, the 128 MiB bound, exact total length and CRC before copying the bytes
-into context-owned storage. The current asset is 18,455,332 bytes, adding
-12,062,639 bytes compared with its previous gzip form while avoiding inflation
-on each launch. JavaScript restoration also checks the expected byte length,
+into context-owned storage. The current binary asset is 19,286,472 bytes;
+`engine.js.gz` is 321,942 bytes and `engine.snapshot.json.gz` is 1,353,166 bytes.
+The binary avoids inflation on each launch. JavaScript restoration checks the expected byte length,
 and uBO retains its engine-version and trie-checksum validation.
 
 The native host supplies the same signed 32-bit trie checksum as uBO's JavaScript
@@ -74,7 +91,7 @@ UTF-8 byte-order marks and invalid UTF-8 retain the existing UTF-16 decoder path
 
 ## Verification
 
-For the 12-site matrix, native scriptlet regressions, and observed site limits,
+For the 13-site matrix, native scriptlet regressions, and observed site limits,
 see [Popular-site verification](ADBLOCK_POPULAR_SITES.md).
 
 Compile the native diagnostic tool and replay the checked-in real The Verge
@@ -121,8 +138,9 @@ VOX_ADBLOCK_LOG="$PWD/Build/comparisons/vox-adblock.jsonl" \
   Build/v/Vox.app/Contents/MacOS/Vox https://www.theverge.com/
 ```
 
-Each entry records URL, document URL, request type, matched rule, decision and
-replacement. A request can pass several gates, so raw log entries are not a
+Each entry records the filtering phase, URL, document URL, request type, matched
+rule, decision and replacement. Response-phase entries also retain the raw
+header pairs needed to replay their decisions. A request can pass several gates, so raw log entries are not a
 popup-style unique request count. The Verge's content, consent state, geography,
 list versions and execution timing can change its request count. The screenshot's
 `4 (9%)` is not a stable test expectation: compare individual URLs and decisions.
@@ -132,7 +150,10 @@ Focused checks:
 ```sh
 v -old-compiler -enable-globals test adblock browsernet
 v -old-compiler -enable-globals test fetch/adblock_test.v requestserver/adblock_transport_test.v
+v -old-compiler -enable-globals test fetch/adblock_response_test.v
 v -old-compiler -enable-globals test main_adblock_test.v main_adblock_storage_test.v main_adblock_network_test.v
+v -old-compiler -enable-globals test main_adblock_pikabu_test.v main_adblock_response_test.v
+v -old-compiler -enable-globals test main_compact_selector_scope_test.v main_compact_computed_style_test.v main_navigation_encoding_test.v
 v -old-compiler -enable-globals test html/adblock_navigation_type_test.v
 v -old-compiler -enable-globals test css/container_rule_test.v layout/container_query_stabilization_test.v layout/dom_layout_bridge_test.v
 ```
@@ -182,6 +203,93 @@ updated. Source licenses and third-party notices accompany the vendor files.
 `node refresh-extended.mjs` restores the pinned procedural runtime and redirect
 resources, checking their recorded source hashes.
 
+To update only RU AdList while retaining the other list snapshots and public
+suffix data, replace `node refresh.mjs` above with:
+
+```sh
+node refresh.mjs --only RUS-0
+```
+
+`--only` accepts comma-separated enabled list keys. Each refreshed entry records
+its own download timestamp; the manifest retains the original snapshot timestamp
+and records the partial update in `updated_at`. Rebuild and verify all three
+runtime assets after any list update.
+
+## Pikabu verification
+
+The October 15, 2026 live `pikabu.ru` comparison used full MV2 uBO 1.75.0 with
+Shields disabled and the same ten list snapshots in both engines. The harness
+replayed the observed Brave traffic through Vox's native checker. On the shared
+stream of **63 distinct requests**, Vox and full uBO each blocked **seven** and
+allowed 56, with zero decision differences. The report also compares 55
+response-header checks separately; those checks introduced no additional blocks
+in that visit. Filter selection agreed for **1,206 normalized cosmetic CSS
+rules, three procedural filters and six scriptlet filters**. The report is
+`Build/comparisons/adblock-pikabu-ru.json`.
+
+The checked-in [`pikabu.json`](../tools/adblock/fixtures/pikabu.json) retains
+the 62 site resources (117 request/header checks), excluding one extension
+update request from that live report. Guest cookie and CSRF values are redacted
+while retaining the header fields. All 117 decisions, including their matched
+rules, pass against the bundled engine. Seven additional synthetic checks in
+[`pikabu-response-controls.json`](../tools/adblock/fixtures/pikabu-response-controls.json)
+exercise the real full-uBO response-header matcher; they are separate from the
+observed guest traffic.
+
+The comparison counts each URL, initiating-document URL, request type and method
+tuple once. Response checks stay attached to that request rather than adding
+another request to the total. Independent live browser visits can load different
+content and issue different traffic because of timing, caches, script execution
+and browser capabilities. Their natural popup counters are therefore not a
+stable equality test. The `common_stream` report verifies equal block counts
+and individual decisions on the same traffic; matching counts alone would miss
+one engine blocking a different URL.
+
+The checked-in [`pikabu-slots.html`](../tools/adblock/fixtures/pikabu-slots.html)
+fixture contains five representative RU AdList ad slots and two ordinary
+content controls. It includes branding, a feed placeholder, a sponsored story,
+the Russian advertising disclosure matched by a procedural filter, and a
+sidebar removed procedurally. In full Brave + uBO, all five slots were hidden
+or removed and both controls remained visible, recorded in
+`Build/comparisons/adblock-pikabu-slots.json`. Vox passes the same five-slot,
+two-control fixture in `main_adblock_pikabu_test.v`, including actual JSON-prune
+and `Ya` property-abort scriptlet effects. The HTML and probe hashes match the
+full-uBO report. All 34 focused native regression functions passed together,
+covering existing sites, scoped queries, live computed styles, procedural error
+reporting, encoding, response headers and redirect cache revalidation.
+
+Run a fresh live comparison and the full-uBO slot probe with:
+
+```sh
+node tools/adblock/brave_parity.mjs --url https://pikabu.ru/ --output Build/comparisons/adblock-pikabu-ru.json
+node tools/adblock/brave_parity.mjs --url https://pikabu.ru/ --document-fixture tools/adblock/fixtures/pikabu-slots.html --visibility-probe tools/adblock/fixtures/pikabu-slots-probe.json --output Build/comparisons/adblock-pikabu-slots.json
+Build/adblock-check --verify tools/adblock/fixtures/pikabu.json
+Build/adblock-check --verify tools/adblock/fixtures/pikabu-response-controls.json
+```
+
+To compare an actual Vox visit, record it with `VOX_ADBLOCK_LOG` as above, then
+run the harness with `--url https://pikabu.ru/ --vox-log PATH --output REPORT`.
+The response-header regression tests separately cover the Pikabu custom header,
+ordinary responses, header casing and repetitions, exceptions, important rules,
+preloads and rejecting a CURL body before its receiver receives bytes.
+
+The final signed native build passed startup and loaded `https://pikabu.ru/`
+with an empty cache. Its [viewport capture](../Build/comparisons/vox-pikabu-ru.png)
+shows readable Cyrillic, the post image and ordinary page controls. Replaying
+that visit's 30 distinct resources (60 request/header checks) through full uBO
+produced zero differences and zero blocks in either engine, recorded in
+`Build/comparisons/adblock-pikabu-native-ru.json`. This native visit generated
+different traffic from the Brave visit above; its natural counter is not seven.
+The shared request corpus and shared five-slot fixture establish the blocking
+comparison on identical inputs. The final production build, signing check,
+startup, capture and native replay all exited successfully.
+
+Native Pikabu navigation decodes the HTTP `windows-1251` body before HTML
+tokenization, retaining the charset through preloading, caching and history.
+Procedural filters query the native DOM with the receiver's `:scope` and read
+live resolved styles through the owning Window's CSSOM declaration. Procedural
+evaluation errors are reported instead of silently skipping the remaining filters.
+
 ## Results and limits
 
 The initial live comparison on October 15, 2026 matched all 159 observed
@@ -208,12 +316,14 @@ container resizing, and avoiding invalidation on an unchanged queried axis.
 Page storage uses the existing native origin/traversable owners;
 its contents persist in process, rather than across browser launches.
 
-The native API exposes `adblock.check(Request{...})`, `document_filters()` and
+The native API exposes `adblock.check(Request{...})`,
+`check_response(Request{...}, []ResponseHeader)`, `document_filters()` and
 `set_enabled()`. Disabling removes cosmetic styles on the next layout; reload
 the document to remove scriptlets already installed in its JavaScript realm.
 There is currently no extension dashboard, element picker, per-site toggle UI
 or user-defined dynamic firewall. These checks establish agreement for the
 captured requests and page filters; they do not establish complete browser or
 full-extension feature parity.
-Response-header/CSP modification, HTML-response replacement, CNAME uncloaking,
+Response-header matching is supported; response-header/CSP modification,
+HTML-response replacement, CNAME uncloaking,
 and user-defined dynamic firewall behavior are not implemented by this embedding.

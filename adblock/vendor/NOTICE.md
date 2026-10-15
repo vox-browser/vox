@@ -33,5 +33,29 @@ browser. The public suffix list carries its MPL-2.0 notice in
 
 Filter list snapshots retain their upstream headers, authorship and license
 references. `adblock/lists/manifest.json` records source URLs, download time,
-preprocessor capabilities, resolved includes and content hashes. The nine lists
-are the upstream full-extension defaults; no Lite/DNR rulesets are used.
+preprocessor capabilities, resolved includes and content hashes. The ten enabled
+lists comprise the nine English full-extension defaults and the upstream
+Russian regional subscription `RUS-0`; no Lite/DNR rulesets are used.
+
+`RUS-0` comes from the full-uBO catalog's
+[`RuAdList-uBO.txt`](https://raw.githubusercontent.com/easylist/ruadlist/master/RuAdList-uBO.txt)
+and combines fourteen same-origin includes from
+[easylist/ruadlist](https://github.com/easylist/ruadlist). The expanded snapshot
+preserves each included filter's text, source comments and preprocessor
+conditions; added `Included from` comments identify the source files. Its root
+URL, expanded snapshot hash and included content hashes are recorded in the
+list manifest.
+
+RU AdList declares [CC BY 3.0](https://creativecommons.org/licenses/by/3.0/)
+in its upstream [`advblock.txt` header](https://raw.githubusercontent.com/easylist/ruadlist/master/advblock.txt).
+That header credits its creator Akuma (DemonSat), denis-ovs, MORPEH, Fanboy,
+UA-IX Banlist and Reek's Anti-Adblock Killer; it names denis-ovs, Akuma and
+Radik245 as past maintainers, and Lain_13 and dimisa as current maintainers.
+RU AdList CSS Fixes and JS Fixes retain their own upstream headers and project
+links in the combined subscription.
+
+The included `AWRL-non-sync.txt` identifies the Adblock Warning Removal List and
+links to the [EasyList repository licensing policy](https://easylist.to/pages/licence.html):
+GPL-3.0-or-later or CC-BY-SA-3.0-or-later, with attribution to
+[The EasyList authors](https://easylist.to/), unless a file states otherwise.
+These component notices remain distinct from RU AdList's CC BY attribution.
