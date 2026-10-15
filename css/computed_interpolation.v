@@ -5898,10 +5898,8 @@ pub fn (mut c ComputedProperties) computed_font_list(font_computer &FontComputer
 		families << 'sans-serif'
 	}
 	mut mutable_font_computer := unsafe { &FontComputer(font_computer) }
-	computed := mutable_font_computer.compute_font_for_style_values(families, c.font_size(), c.font_slope(), c.font_weight(), c.font_width(), c.font_optical_sizing(), c.font_variation_settings(), c.font_feature_data())
-	assert !computed.is_empty()
-	mut font_list := FontCascadeList.create()
-	font_list.extend(computed)
+	font_list := mutable_font_computer.compute_font_for_style_values(families, c.font_size(), c.font_slope(), c.font_weight(), c.font_width(), c.font_optical_sizing(), c.font_variation_settings(), c.font_feature_data())
+	assert !font_list.is_empty()
 	c.cached_computed_font_list_ = font_list
 	c.cached_computed_font_list_generation_ = font_computer.environment_generation()
 	c.cached_computed_font_list_owner_ = font_computer
