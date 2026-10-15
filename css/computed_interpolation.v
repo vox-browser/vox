@@ -9742,8 +9742,10 @@ mut:
 pub fn (mut s InvalidationSet) include_all_from(other InvalidationSet) {
 	s.needs_invalidate_self_ = s.needs_invalidate_self_ || other.needs_invalidate_self_
 	s.needs_invalidate_whole_subtree_ = s.needs_invalidate_whole_subtree_ || other.needs_invalidate_whole_subtree_
-	for _, property in other.properties_ {
-		s.add_property(property)
+	for key, property in other.properties_ {
+		if key !in s.properties_ {
+			s.properties_[key] = property
+		}
 	}
 }
 
