@@ -1,7 +1,7 @@
 module browserjs
 
 import dom
-import json2
+import x.json2
 
 // The compact facade's qualified-name view retains the first matching Attr;
 // namespace/local-name identity and attribute order remain in the record list.

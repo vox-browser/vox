@@ -1,7 +1,7 @@
 module browserjs
 
 import dom
-import json2
+import x.json2
 
 fn compact_attribute_test_state(records []json2.Any, attributes map[string]json2.Any) string {
 	return json2.encode({
