@@ -153,6 +153,11 @@ and a decoded visible story image. The generic native observer is opt-in through
 `VOX_CAPTURE_AUDIT_PATH` and `VOX_CAPTURE_AUDIT_CONFIG`; it records retained DOM
 text/counts/attributes/rectangles, existing image-model state and actual native
 paint image-cache dimensions, current font-set status and JavaScript diagnostics.
+Existing font-face entries also retain family/style/weight, load status, parsed
+typeface presence, source path and declared sources. Native acceptance requires
+the real retained normal Roboto 400, 500 and 700 faces to be loaded with parsed
+typefaces and nonempty source paths; an unrelated fallback face cannot satisfy
+that gate.
 It does not materialize image/font state, force a new layout, or run author
 script. Its snapshot occurs when capture is scheduled and is included in native
 process-exit totals.
