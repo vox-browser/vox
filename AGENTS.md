@@ -1498,6 +1498,14 @@ evidence](docs/translation-audit/NATIVE_MEDIA_WHEEL_RAW_HANDLER.md).
   interval [-33,674,456.5, 7,942,125]. All 60 primaries/PNGs remain; credit 0.
   Broad is deferred below 5M. Shipping baseline stays `24b84c6d`, additional
   applied savings 0; the next control is frozen 51. Chrome parity remains open.
+  Retained-key invalidation registration `b7ec7b3d` passes 9,047 focused
+  assertions per configuration; complete local construction uses 27.76% fewer
+  instructions. All 30 page pairs improve; observed/repeatable savings are
+  66,633,443, with paired interval [56,439,223, 79,594,921].
+  Broad verification: 87 selected cases both GC, 19 screenshots (16 exact).
+  Focused viewport is exact. Additional savings after this batch: 0.
+  Frozen comparison retains 4 GiB; independent Root memory/UI work is excluded.
+  Chrome parity remains open.
 - Outside instruction-count optimization, run broad regression suites once per
   ten completed fixes, not after every fix.
   Broad suites include full translation/package test batches, the full LibJS AST

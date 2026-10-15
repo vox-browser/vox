@@ -4733,6 +4733,117 @@ the stable work symlink and commands stay valid. No foreign files were removed.
 Evidence: `Build/instructions/vox-opt52-interleaved-*` and
 `Build/v/instruction-opt52-*`. Chrome parity remains open.
 
+## Register invalidation plans from retained property keys
+
+Feature `b7ec7b3d` changes one private function,
+`add_invalidation_plan_for_properties`. It iterates the same retained property
+map directly, avoiding a managed callback capture and repeated serialization
+of canonical keys. Private property insertion already computes those keys;
+union preserves them. Self/subtree flags still create no property dependency.
+The registration guard, insertion order, metadata and plan merging stay the
+same, including duplicate descendant/sibling payloads and whole-subtree clearing.
+Public property iteration, key construction, selector projection, invalidation
+algorithms and all data layouts remain unchanged.
+
+Before/final Boehm and final no-GC C-O2 each pass **9,047 assertions in 22 cases**
+(21 functional plus an inactive probe), using identical common source. Two new
+cases compare registration against the former callback path, including mixed
+flags and property kinds, empty/Unicode names, ordered repeated plan merges,
+whole-subtree replacement, growing overlapping sets and retained owners after
+collection. Existing scope, membership, typed-selector and union cases remain.
+A CLI interruption ended the initial unfinished compiles without terminal
+receipts. Their partial logs remain under
+`instruction-opt53-cli-interrupted-builds`, with original terminal exits unknown.
+The stored generated C and native response/argument arrays were resumed; all
+actual resumed native/test exits pass. No completed focused job was repeated.
+
+Three fixed alternating local pairs build **512 fresh complete invalidation
+data sets from 16 complex selectors**. Median retired instructions change
+**1,357,079,418→980,298,464**
+(-27.76%), with all three pairs improving and all six
+checksums 49,664. Setup, expected results, eight warmups and forced collection
+precede the counter; allocation and complete plan construction stay inside,
+with assertions afterward. This local saving receives no extra page credit.
+
+Full-process C-O1/Boehm/one-marker profiles cover the entire common harness and
+active probe without filters or resets. Complete build calls stay
+**521** and registration calls stay
+**94,422**. Key serialization calls fall
+**385,223→229,277**;
+property iteration falls **94,429→7**.
+The remaining seven iteration calls belong to the test oracle. These are call
+counts, never substituted for hardware instructions.
+
+The strict C audit permits only the registration function and exact removal of
+its two-pointer closure capture, body and declarations. The public iterator and
+callback typedef lose their last production caller and are no longer emitted.
+Its V source remains unchanged, and the candidate's focused C authenticates its
+raw body byte-for-byte because the oracle still calls it. The initial strict
+audit rejects this dead-code difference; the failure and projection diff stay
+under `instruction-opt53-audit-unused-iterator-failure`. No comparison is
+relaxed beyond those exact authenticated removals. All other functions, public
+layouts, resources and GC policy match after established compiler identities,
+unchanged-source assertion mapping, 37 frozen includes and four raw-identical
+helper reorders. All 120 native inputs and the exact native C-O2 arguments
+match. Compiled C SHA256:
+`d87c3fe7e7ef9f58f19b97c5e792232cb8aead59a1734780dc5fd36187a23e63`.
+Durable normal/focused/profile archives and hashes are in
+`instruction-opt53-artifact-archives.json`.
+
+The predeclared cohort fixes **30 alternating pairs**, **30,000 paired bootstrap
+resamples, seed 53**, comparing regular frozen 51 and candidate binaries. Both
+use the same 359 cached bodies, fresh copies, frozen helper, 1024×768 viewport
+and `navigation_to_first_document_paint[0]`. Both retain the same 4 GiB
+document-gated hint, enabled Boehm and default marker 1, without prod/prealloc.
+Independent current-Root UI and memory-policy work is outside this comparison.
+
+| Build | Median first-frame retired instructions | Median process peak, MiB |
+| --- | ---: | ---: |
+| Frozen 51 control | 19,018,055,913.5 | 3,695.4 |
+| Direct property-key registration | 18,951,422,470.5 | 3,689.4 |
+
+Observed matching median savings are **66,633,443**
+instructions (**0.350%**), with **30/30** pairs
+improving. Paired median savings are **67,899,036**, with a
+95% paired percentile interval of **56,439,223 to 79,594,921**.
+The strictly positive lower bound supports repeatable page credit of
+**66,633,443**. The point saving compares marginal medians; the interval
+estimates the paired median. No completed primary is discarded, rerun or used
+to extend the cohort.
+
+All **60 primaries and 60 actual viewport PNGs** remain, with no recoveries or
+startup retries. Each first primary has 1 installation/2 geometry preparations/
+1 paint; post-primary refreshes: **0**. Memory is
+each root's lifetime maximum through capture/exit, not first-frame live memory;
+all 60 peaks remain, and process peaks are never summed. The focused viewport
+is pixel-exact. Observed savings exceed the 5M gate with prior accumulation 0.
+All six direct V broad jobs pass: CSS 31, SVG 10 and layout 46 under each GC,
+**174 executions**. All **19 screenshot comparisons pass, 16 exact**; known
+differences remain inline-node 13, text-decorations 1,341 and canvas-text 1,994.
+This completed broad batch resets additional observed savings to 0.
+The first screenshot command exited 1 before browser launch because the copied
+capture helper lacked its execute bit. That failure and the dependent bundle
+wait failure remain in `instruction-opt53-screenshot-helper-mode-failure`.
+After correcting the mode, only the 19 pending screenshot comparisons run;
+all six broad job passes and the exact focused viewport remain retained.
+Line-clamp's reference then completes, while its input traps before an image
+on both native launches. That failure stays in
+`instruction-opt53-screenshot-launch-failure`; the first three comparisons and
+completed reference remain. The next continuation runs only unfinished input
+captures/comparisons, retaining every completed artifact byte-for-byte.
+
+The signed isolated comparison app is `/Users/alex/code/vox2/Build/v/Vox-opt53.app`. Signature,
+startup, matching native text and actual collections pass with default marker 1
+and override 2. Canonical and user GUI apps are preserved; no source pin is
+inferred for independent canonical builds. This app and the selected regression
+runtime are frozen separately from current Root and confer no extra credit on
+unrelated changes. Chrome first paint is known to show only the navigation
+header in the retained trace; repository content appears later. Equivalent
+Chrome content/start/endpoint accounting is still required before a parity or
+faster-than-Chrome claim.
+Evidence: `Build/instructions/vox-opt53-interleaved-*` and
+`Build/v/instruction-opt53-*`.
+
 ## Causes and changes
 
 - The V 0.5.2 compatibility compiler's `-prod` Boehm code repeatedly snapshots
