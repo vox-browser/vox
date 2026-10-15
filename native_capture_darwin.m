@@ -402,6 +402,42 @@ static NSView *native_browser_view(void) {
 	return native_cached_browser_view;
 }
 
+// Sokol keeps a MetalKit parent behind its native Cocoa drawing child. The
+// browser never submits a Metal pass through that view. In particular, its
+// default multisampled depth/color attachments and periodic redraws are unused.
+// Keep the parent and its event responder, but release its drawable storage.
+@protocol VoxNativeMetalDrawable <NSObject>
+- (void)setPaused:(BOOL)paused;
+- (void)setEnableSetNeedsDisplay:(BOOL)enabled;
+- (void)setSampleCount:(NSUInteger)count;
+- (void)setDepthStencilPixelFormat:(NSUInteger)format;
+- (void)releaseDrawables;
+@end
+
+static void native_configure_browser_drawable_tree(NSView *view) {
+	if (view == nil) return;
+	if ([view respondsToSelector:@selector(setPaused:)]
+		&& [view respondsToSelector:@selector(setEnableSetNeedsDisplay:)]
+		&& [view respondsToSelector:@selector(setSampleCount:)]
+		&& [view respondsToSelector:@selector(setDepthStencilPixelFormat:)]
+		&& [view respondsToSelector:@selector(releaseDrawables)]) {
+		id<VoxNativeMetalDrawable> drawable = (id<VoxNativeMetalDrawable>)view;
+		[drawable setPaused:YES];
+		[drawable setEnableSetNeedsDisplay:NO];
+		[drawable setSampleCount:1];
+		// MTLPixelFormatInvalid: no depth/stencil attachment for Cocoa drawing.
+		[drawable setDepthStencilPixelFormat:0];
+		[drawable releaseDrawables];
+	}
+	for (NSView *child in [view subviews]) {
+		native_configure_browser_drawable_tree(child);
+	}
+}
+
+void native_configure_browser_drawables(void) {
+	native_configure_browser_drawable_tree(native_browser_view());
+}
+
 static NSString *native_document_font_name;
 static CGFontRef native_document_glyph_font;
 static CGFontRef native_document_bold_glyph_font;
