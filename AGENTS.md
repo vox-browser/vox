@@ -1527,6 +1527,14 @@ evidence](docs/translation-audit/NATIVE_MEDIA_WHEEL_RAW_HANDLER.md).
   focused ASCII/Unicode viewport exact. Additional observed savings: 0.
   Same frozen 4 GiB hint; independent Root memory/UI work is excluded.
   Chrome parity remains open.
+  Private simple-selector borrowing `e00a80ba` passes 1,813 focused
+  assertions per configuration; complete local matching uses 30.56% fewer
+  instructions. Page point saving -20,357,725.5, 18/30 wins,
+  paired interval [-12,030,300.5, 40,848,714]; repeatable page credit 0.
+  Broad verification: deferred below cumulative 5M gate;
+  focused selector viewport exact. Additional observed savings: 0.
+  Same frozen 4 GiB hint; independent Root memory/UI work is excluded.
+  Chrome parity remains open.
 - Outside instruction-count optimization, run broad regression suites once per
   ten completed fixes, not after every fix.
   Broad suites include full translation/package test batches, the full LibJS AST

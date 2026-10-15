@@ -5129,6 +5129,102 @@ a header, with repository content later. No parity or faster-than-Chrome claim i
 made. Evidence: `Build/instructions/vox-opt55-interleaved-*` and
 `Build/v/instruction-opt55-*`.
 
+## Borrow simple selector records in the private fast matcher
+
+Feature `e00a80ba` changes only two private helpers. The compound loop passes a
+bounds-checked reference to its immutable simple selector, and the simple matcher
+accepts that reference. Existing shadow guards still receive the same value;
+namespace, class/ID, attribute and pseudo-class matching stay unchanged. The borrow
+lasts only for the call, does not escape or add retained state, and does not change
+public APIs, selector layout, traversal/backtracking, or metadata. The general
+selector matcher remains unchanged.
+
+Before/final Boehm and final no-GC C-O2 each pass **1,813 assertions in 17 cases**
+(16 functional plus an inactive probe). Three new cases compare full results and
+matching contexts against the frozen original value-copy algorithm, with
+independent expected outcomes. They cover supported simple types, HTML versus SVG
+case handling, quirks class/ID folding, attribute flags, structural and state
+predicates, descendant/child backtracking, metadata, shadow guards and reuse after
+collections. Existing custom-state queries, invalidation metadata, attribute-case
+and shadow-part cases stay in the identical common harness.
+
+Three fixed alternating local pairs each run **512 complete public matching
+batches** on pre-parsed selectors and a retained DOM tree. Fresh contexts, metadata
+and full matching remain inside the counter. Setup, expected output, eight warmups
+and forced collection precede it; assertions follow. Median retired instructions
+change **157,981,238→109,704,103** (-30.56%), all three pairs improving, with all
+six checksums 98,304. This is a confirmed local result, without separate page
+credit.
+
+Full-process C-O1/Boehm/one-marker profiles use no filters or resets. Complete
+batch calls stay **521**, fast matcher calls **133,645**, and simple matcher calls
+**417,119** in both variants. No matching is skipped. These are call counts, never
+substituted for hardware instructions.
+
+The strict C audit permits only the two private bodies and the simple helper's
+private parameter declaration to change. It authenticates the exact old matching
+body with reference reads, the same value argument to the shadow guard, and the
+bounds-checked compound-loop borrow. Every other function, data layout, resource
+and GC policy matches after established compiler identities, exact unchanged-source
+assertion-line mapping and 37 frozen includes. Four helpers may reorder only with
+raw-identical bodies. All 120 native inputs and exact native C-O2 arguments match.
+Compiled C SHA256:
+`d1a5d039b97d746b041e7f526d6a1b1772388c16ed675d2fc2098f9c58550629`. Durable
+normal/focused/profile archive hashes are in
+`instruction-opt56-artifact-archives.json`.
+
+Independent native disassembly verifies three `memcpy` call sites for 496-byte
+simple-selector copies become zero in the inlined compound traversal, while all
+three simple-matcher call sites remain. The listing itself grows from 272 to 277
+instructions; static length is not retired CPU work. This native evidence explains
+the removed copies and receives no page credit.
+`instruction-opt56-native-audit-result.json` authenticates both native listings.
+Only the two helper edits are staged against latest HEAD, preserving independent
+Root selector edits outside their scope.
+
+The predeclared cohort fixes **30 alternating pairs** with **30,000 paired
+bootstrap resamples, seed 56**. Regular frozen 55 and candidate binaries use the
+same 359 cached bodies, fresh copies, frozen helper, 1024×768 viewport and
+`navigation_to_first_document_paint[0]`. Both retain the same 4 GiB document-gated
+hint, Boehm and default marker 1, without prod/prealloc. Independent current-Root
+memory, UI and responsiveness changes are excluded.
+
+| Build | Median first-frame retired instructions | Median process peak, MiB |
+| --- | ---: | ---: |
+| Fresh matching frozen 55 control | 18,856,204,073 | 3,689.1 |
+| Borrowed simple selector | 18,876,561,798.5 | 3,688.6 |
+
+The observed difference of marginal medians is an increase of **20,357,725.5**
+instructions (**0.108%**), with **18/30** pairs improving. Paired median saving is
+**22,139,155**; 95% paired percentile interval: **-12,030,300.5 to 40,848,714**.
+The interval includes zero, so repeatable page credit is **0**. A cached-page
+reduction is not established. The retained small helper change has a confirmed
+local result without adding retained state. The comparison uses the fresh control,
+never the historical round55 median.
+
+All **60 primaries and 60 actual viewport PNGs** remain. Recovered primaries: none;
+pre-parse startup retries: 1. Each first primary has 1 installation/2 geometry
+preparations/1 paint. Later refresh runs remain separate: none. Candidate pair 20
+has one archived failed launch before parsing or any primary; its retry stays
+within the three-attempt limit, and no successful browser exit is invented for that
+failed launch. No completed primary is discarded, rerun or used to extend the
+cohort. Process peaks are lifetime maxima through capture/exit, including later
+refreshes, not first-frame live memory; they are never summed. The focused selector
+viewport is pixel-exact. The observed point remains below the cumulative 5M gate;
+broad suites are deferred. The last broad baseline remains ASCII token strings
+`6b8cdbfc`; observed applied savings carry forward separately from confidence
+credit.
+
+The signed isolated comparison app is
+`/Users/alex/code/vox2/Build/v/Vox-opt56.app`. Signature, startup, matching native
+text and actual collections pass with default marker 1 and override 2. Canonical
+and user GUI apps are preserved. No source pin or extra performance/regression
+credit is inferred for independent current Root. Chrome still needs equivalent
+content/start/endpoint accounting; its retained first-paint trace shows only a
+header, with repository content later. No parity or faster-than-Chrome claim is
+made. Evidence: `Build/instructions/vox-opt56-interleaved-*` and
+`Build/v/instruction-opt56-*`.
+
 ## Causes and changes
 
 - The V 0.5.2 compatibility compiler's `-prod` Boehm code repeatedly snapshots
