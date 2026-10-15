@@ -311,6 +311,7 @@ mut:
 	source_cue_generation_ u64
 	awaiting_url_change    bool
 	parent_media_          ?&HTMLMediaElement
+	dom_element_           ?&dom.HTMLTrackElement
 	fetch_hook_            ?TextTrackFetchHook
 	event_target_          &dom.EventTarget = unsafe { nil }
 	event_counts_          map[string]int
@@ -335,6 +336,7 @@ pub fn html_track_element_model_for_dom_element(element &dom.HTMLTrackElement) &
 	dom_element := unsafe { &dom.Element(element) }
 	mut model := create_track_element_model(dom_element.document().base_url(),
 		unsafe { &dom.EventTarget(element) })
+	model.dom_element_ = element
 	model.set_kind(dom_element.get_attribute_ns(none, 'kind') or { '' })
 	model.set_label(dom_element.get_attribute_ns(none, 'label') or { '' })
 	model.set_srclang(dom_element.get_attribute_ns(none, 'srclang') or { '' })
@@ -372,6 +374,17 @@ pub fn (mut element HTMLTrackElementModel) set_fetch_hook(hook ?TextTrackFetchHo
 
 pub fn (mut element HTMLTrackElementModel) set_parent_media(media ?&HTMLMediaElement) {
 	element.parent_media_ = media
+}
+
+fn (element &HTMLTrackElementModel) current_parent_media() ?&HTMLMediaElement {
+	if owner := element.dom_element_ {
+		dom_element := unsafe { &dom.Element(owner) }
+		if parent := dom_element.as_node().parent_element() {
+			return html_media_element_for_dom_element(parent)
+		}
+		return none
+	}
+	return element.parent_media_
 }
 
 fn (mut element HTMLTrackElementModel) clear_source_cues() {
@@ -484,7 +497,7 @@ fn parse_web_vtt(body string) ![]&TextTrackCue {
 }
 
 pub fn (mut element HTMLTrackElementModel) start_the_track_processing_model() {
-	if element.loading_ || element.track.mode() !in [.hidden, .showing] || element.parent_media_ == none {
+	if element.loading_ || element.track.mode() !in [.hidden, .showing] || element.current_parent_media() == none {
 		return
 	}
 	element.loading_ = true
@@ -514,7 +527,7 @@ pub fn (mut element HTMLTrackElementModel) start_the_track_processing_model_para
 		return
 	}
 
-	cors := if media := element.parent_media_ {
+	cors := if media := element.current_parent_media() {
 		media.crossorigin()
 	} else {
 		CORSSettingAttribute.no_cors
