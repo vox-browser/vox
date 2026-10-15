@@ -1,0 +1,186 @@
+# Pikabu retired-instruction benchmark
+
+The benchmark in `tools/pikabu_browser_instructions.py` compares native Vox and
+Brave with full Manifest V2 uBlock Origin on a frozen Pikabu document. Author
+JavaScript stays enabled. This is an offline rendering workload; it does not
+establish complete browser functionality or live-site parity. A row whose
+content gate fails remains a diagnostic and cannot establish the requested
+Brave instruction target.
+
+## Inputs and profiles
+
+The original address is `https://pikabu.ru/`, with a 1024 by 656 document
+viewport. The main response retains its Windows-1251 content type. Both engines
+receive the same archived body bytes. Resources require a body, recorded
+response headers, and an identical final URL; final-body-only redirect entries
+are not replayed. Missing responses and non-GET requests fail closed.
+
+The native cache's legacy format does not store HTTP status. The replay therefore
+normalizes admitted responses to status 200. Cached bodies are already decoded,
+so wire `Content-Encoding`, `Transfer-Encoding`, and `Content-Length` are removed
+and length is recomputed. Other recorded headers, including repeated fields,
+are preserved. This policy is recorded in each result; it is not an assertion
+that every archived status is known.
+
+The cache template must remain immutable between runs. Generate a new template
+from a populated native cache, with the main page copied from the archived
+response that also supplies its headers:
+
+```sh
+python3 - <<'PY'
+import hashlib, json, pathlib, shutil, sys
+sys.path.insert(0, 'tools')
+from pikabu_browser_instructions import clone_file, fingerprint_tree
+source = pathlib.Path.home() / '.cache/ladybird-v'
+target = pathlib.Path('Build/pikabu-instructions-cache-example')
+target.mkdir()  # Refuse to overwrite an existing template.
+for category in ('pages', 'resources'):
+    shutil.copytree(source / category, target / category, copy_function=clone_file)
+key = hashlib.sha256(b'https://pikabu.ru/').hexdigest()
+body = target / 'resources' / key
+headers = json.loads(body.with_name(key + '.headers.json').read_text())
+assert body.with_name(key + '.url').read_text() == 'https://pikabu.ru/'
+page = target / 'pages' / key
+page.unlink(missing_ok=True)
+page.write_bytes(body.read_bytes())
+page.with_name(key + '.content-type').write_text(next(
+    h['value'] for h in headers if h['name'].lower() == 'content-type'))
+manifest = fingerprint_tree(target)
+target.with_suffix('.manifest.json').write_text(json.dumps(manifest, indent=2))
+print(manifest['sha256'])
+PY
+```
+
+Missing allowed GET resources must be collected before the measured series and
+the manifest regenerated. Preserve the actual request's `Origin` and `Referer`
+when capturing cross-origin fonts or XHR responses. Fetching fonts without
+`Origin: https://pikabu.ru` produced bodies with no allow-origin header and caused
+Brave to reject otherwise valid WOFF2 files. Do not invent a wildcard CORS header
+to conceal this. A changed template starts a new series; earlier rows retain
+their original fingerprints.
+
+For the native font-cache handoff, write `RESOURCE_KEY.status` only from an
+actual recorded HTTP receipt whose body hash still matches the cached bytes.
+Legacy entries without status metadata remain ineligible for that handoff.
+Do not migrate them by assuming status 200. The frozen diagnostic archive with
+origin-correct headers and known-status receipts is
+`Build/pikabu-instructions-cache-final`, fingerprint
+`16d194b736f9123b26b0b9f5311514dd6904ef72a5024d1be7f8a31109157ebe`.
+Its per-file manifest and status-receipt provenance are retained alongside it
+under `Build/pikabu-instructions-cache-final-{manifest,status-provenance}.json`.
+
+Brave uses a dedicated prepared profile, never the user's personal profile.
+Preparation verifies full uBO's MV2 manifest/version against
+`adblock/lists/manifest.json`, verifies each list hash, installs the repository's
+exact ten lists including `RUS-0`, disables auto-update and Brave Shields, and
+saves compiled filtering state. Preparation happens outside measured runs.
+Graceful browser shutdown waits for profile database writes. Every measured run
+starts with a new copy of this prepared profile and verifies its list settings;
+the profile template, extension tree and list manifest are fingerprinted.
+
+```sh
+python3 tools/pikabu_browser_instructions.py --engine prepare-profile \
+  --binary '/Applications/Brave Browser.app/Contents/MacOS/Brave Browser' \
+  --extension '/path/to/full-uBlock-Origin-1.75.0' \
+  --profile Build/pikabu-instructions-brave-profile \
+  --output Build/pikabu-instructions-brave-profile
+```
+
+## Runs and boundaries
+
+Build the process-local native network guard once. It changes no system DNS,
+proxy, hosts, trust or firewall settings. It denies external DNS/connect calls,
+allows loopback for local browser services, and is fingerprinted in each native
+result. Proxy environment variables are cleared. Brave disables proxies, denies
+DNS fallback, and services page requests through the frozen CDP replay.
+
+```sh
+clang -dynamiclib -O2 -Wall -Wextra -Werror \
+  tools/pikabu_instruction_network_deny.c \
+  -o Build/pikabu-instructions-network-deny.dylib
+codesign --force --sign - Build/pikabu-instructions-network-deny.dylib
+
+python3 tools/pikabu_browser_instructions.py --engine vox \
+  --binary Build/v/Vox.app/Contents/MacOS/Vox \
+  --cache Build/pikabu-instructions-cache \
+  --output Build/pikabu-instructions-vox-1
+
+python3 tools/pikabu_browser_instructions.py --engine brave \
+  --binary '/Applications/Brave Browser.app/Contents/MacOS/Brave Browser' \
+  --extension '/path/to/full-uBlock-Origin-1.75.0' \
+  --profile Build/pikabu-instructions-brave-profile \
+  --cache Build/pikabu-instructions-cache \
+  --output Build/pikabu-instructions-brave-1
+```
+
+`--scratch-dir PATH` places disposable cache/profile copies on another volume.
+Use separate prefixes per run. Alternate control/candidate and Vox/Brave order
+in repeated series. Pin each measured executable and its non-system runtime
+libraries; do not rebuild an executable in place during a series.
+
+Retired CPU instructions come from macOS
+`proc_pid_rusage(RUSAGE_INFO_V4).ri_instructions`, through
+`tools/process_instruction_counts.py`. Counts include observed process threads
+and charged kernel execution. GPU execution and external services such as
+WindowServer are excluded. Elapsed time is a watchdog and a secondary observation,
+not an instruction estimate.
+
+Vox's total ends at process exit after native document capture and includes the
+capture audit, image encoding and teardown. The final root sample is read while
+the process is an unreaped zombie. Native first-paint scopes are retained as
+separate overlapping diagnostics; they must not be compared to Brave's completed
+capture or added together.
+
+Brave's total includes browser startup, ordinary extension startup, renderers,
+GPU and utility helpers through the last complete process-tree sampling pass
+before the first CDP screenshot response. It excludes later content auditing and
+shutdown. The result also records a separate navigation-to-capture delta after
+the prepared extension becomes ready. Polling can miss short-lived children or
+a final child sample, so the aggregate is explicitly an observed-descendant
+lower bound. Counting only Brave's main PID is not a valid comparison.
+
+The total endpoints are asymmetric: Vox includes teardown while Brave stops at
+capture. A lower Vox total would be conservative with respect to that extra
+native work, but only after content and rendering checks pass. Navigation-only
+and whole-startup counts remain separate; neither can be substituted for the
+other to cross the target.
+
+## Content checks and current limitations
+
+The shared gate requires the original URL, correct viewport, completed document,
+nonempty story titles, real story elements, substantial content, settled fonts,
+and a decoded visible story image. The generic native observer is opt-in through
+`VOX_CAPTURE_AUDIT_PATH` and `VOX_CAPTURE_AUDIT_CONFIG`; it records retained DOM
+text/counts/attributes/rectangles, existing image-model state and actual native
+paint image-cache dimensions, current font-set status and JavaScript diagnostics.
+It does not materialize image/font state, force a new layout, or run author
+script. Its snapshot occurs when capture is scheduled and is included in native
+process-exit totals.
+
+A font set that is absent or unmaterialized is unknown, not loaded. Conversely,
+`document.fonts.status == 'loaded'` can include failed faces. Inspect the saved
+Brave font audit, loading failures and used font checks before accepting font
+comparability. Confirm story counts, first title, visible image source/dimensions
+and both viewport captures independently; a loading screen or missing content
+cannot earn an instruction win.
+
+The initial frozen samples expose native JavaScript API gaps, including missing
+`self` in page bundles, and native capture before `readyState=complete` and font
+settlement. These rows are diagnostic. Offline analytics POSTs, a missing
+anti-abuse endpoint and an archived Vk API redirect remain disclosed misses.
+The request audit records each replay/failure rather than silently using live
+network data. Result tables and an instruction-target claim remain pending
+validated comparable endpoint runs.
+
+Focused checks:
+
+```sh
+python3 -m unittest discover -s tools -p pikabu_browser_instructions_test.py -v
+v -old-compiler -enable-globals test main_capture_audit_test.v
+v -old-compiler -enable-globals -gc none test main_capture_audit_test.v
+```
+
+Broad regressions follow the repository's instruction-optimization cadence:
+after cumulative measured savings of 5,000,000 instructions on the same workload
+and endpoint, with the baseline and accumulated saving recorded. Failed content
+gates do not establish a Brave parity claim.
