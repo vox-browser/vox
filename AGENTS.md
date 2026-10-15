@@ -1720,6 +1720,16 @@ evidence](docs/translation-audit/NATIVE_MEDIA_WHEEL_RAW_HANDLER.md).
   focused first-letter/geometry viewport exact. Additional observed savings: 0.
   Same 4 GiB/placement; canonical/GUI preserved; contemporary Root excluded.
   Chrome parity remains open.
+  No-wrap soft-line segmentation `d1165164` (independent committed slice)
+  pass 1,362 common assertions in 15 cases per configuration,
+  plus 2 original candidate cases/1,046 assertions both GC.
+  Complete fresh no-wrap chunk batches use 2.20% fewer instructions.
+  Page point saving 7,103,056, 24/30 wins,
+  paired interval [7,734,401.5, 25,628,850]; repeatable credit 7,103,056.
+  Broad verification: 87 selected cases both GC and 19 screenshots (16 exact);
+  focused no-wrap/geometry viewport exact. Additional observed savings: 0.
+  Same 4 GiB/placement; canonical/GUI preserved; contemporary Root excluded.
+  Chrome parity remains open.
 - Outside instruction-count optimization, run broad regression suites once per
   ten completed fixes, not after every fix.
   Broad suites include full translation/package test batches, the full LibJS AST

@@ -7557,6 +7557,107 @@ regression or performance credit. Equivalent Chrome content/start/submission
 accounting remains open; faster-than-Chrome performance is unproven. Evidence:
 `Build/instructions/vox-opt78-interleaved-*` and `Build/v/instruction-opt78-*`.
 
+## Skip unused no-wrap line segmentation
+
+This integration imports only independently authored feature `d1165164`
+(Alexander Medvednikov): one exact constructor hunk in text_node_chunks.
+No-wrap consumers retain grapheme, font, Unicode and preserved-break handling,
+but leave the unused soft-line boundary array empty. Wrapped consumers keep
+existing line segmentation. No fields, caches, public APIs, filtering, arenas
+or GC policy change. Contemporary Root is excluded.
+
+Before/final Boehm and final no-GC C-O2 each pass **1,362
+assertions in 15 cases** (14 functional and an inactive diagnostic), using
+identical common source SHA256 `7d1af830a8a4b15f93e5c0c856bbddaebdc7283f555c1c67a7d7d6ea540e7d69`.
+The twelve retained chunk cases plus two new semantic cases cover words,
+collapsed spaces, UTF16 offsets, Unicode graphemes, bidi, font fallback,
+newlines, tabs, no-wrap collection and subsequent wrapped layout.
+Exactly three absent-segmenter optimization assertions are excluded from
+the common comparison; every semantic assertion remains. The original two
+candidate cases, with their unchanged frozen helper prefix, pass byte-for-byte
+in both GCs: **1,046 assertions
+per mode**. Root sources and concurrent edits remain preserved.
+
+Three predeclared alternating local pairs count **64 complete batches of 16
+fresh TextNodes** and full no-wrap iterator construction/exhaustion. Node/owner
+creation, UTF16 and grapheme setup, fonts, boundaries, chunk offsets, views,
+newlines, tabs and checksum are counted. Document/style setup, eight warmups,
+expected result and forced GC precede the interval; assertion follows it.
+Every counted node is fresh, so warmups cannot cache away the feature.
+Before: 331,661,536 / 333,016,185 / 331,315,881. Candidate by pair: 324,938,051 / 324,355,898 / 324,106,648.
+Median **331,661,536→324,355,898
+(-2.20%)**; checksum **278,528**
+in all six actual zero exits. This local result receives no page credit.
+
+Both full-process C-O1/Boehm profiles actually pass without filter/reset:
+
+| Function | Before calls | Candidate calls |
+| --- | ---: | ---: |
+| `layout__opt79_complete_fresh_nowrap_chunks` | 73 | 73 |
+| `layout__TextNodeChunkIterator__static__new` | 1,177 | 1,177 |
+| `layout__TextNodeChunkIterator__static__new_with_direction` | 1,177 | 1,177 |
+| `layout__TextNodeChunkIterator_next` | 12,888 | 12,888 |
+| `layout__TextNode_line_segmenter` | 1,179 | 9 |
+| `layout__text_line_boundaries_from_segmenter` | 1,177 | 7 |
+
+These are call counts, not hardware instruction savings. Complete fresh-node
+batches, iterator constructors and next calls match; line-segmenter and
+soft-line-boundary helper calls decrease. Original profile output and generated-C
+full-process scope proof are durable. The same full focused harness and enabled
+diagnostic run in both profiles.
+
+Strict C audit authenticates the single exact source hunk and constructor.
+Both normal/focused target bodies match byte-for-byte. The candidate body is
+exactly the old body with one line-boundary ternary substitution. An initial
+audit selector expected an if statement; generated C uses a ternary. Its
+actual failed audit exit and logs remain under
+`instruction-opt79-c-audit-ternary-selector-failure`; only the audit was repaired,
+without repeating runtime checks. All remaining C,
+records, globals, resources, filtering, arenas and GC policy match after
+established compiler identities, unchanged assertion-line mapping, 37 frozen
+includes and four byte-identical helper reorderings. Exact native arguments
+and all 120 pinned inputs match. C SHA256
+`1f357d853058bec70e4302c9ed53f873273d4d0f456fc9cc7fa1d84ecfffc493`; durable normal, focused, contract
+and profile archives appear in `instruction-opt79-artifact-archives.json`.
+Compiler scratch is durable SSD; benchmark cache copies use the same RAM.
+
+The predeclared page cohort is **30 alternating pairs**, odd before/final,
+even final/before, **30,000 paired bootstrap resamples, seed 79**. Both regular
+persisted binaries use fresh copies of the same 359 cached bodies, frozen text
+and child-only placement helpers, C-O2/Boehm/one marker and unchanged 4 GiB
+hint; no prod/prealloc. Fixed document viewport 1024×768 and endpoint
+`navigation_to_first_document_paint[0]`; no historical or Root comparison.
+
+| Build | Median first-frame retired instructions | Median lifetime process peak, MiB |
+| --- | ---: | ---: |
+| Fresh accepted frozen78 control | 17,794,657,624 | 3,612.1 |
+| No-wrap segmentation guard | 17,787,554,568 | 3,610.6 |
+
+Difference of marginal medians: **7,103,056** instructions
+saved (-0.040% change), **24/30** wins.
+Paired median saving **14,908,128**, paired 95% interval
+**[7,734,401.5, 25,628,850]**. The positive paired interval establishes repeatable page credit of **7,103,056** instructions.
+
+All 60 primary observations and **60 actual PNGs** remain. Recovered
+primaries: none; pre-parse retries: 0. First primaries
+retain 1 installation/2 geometry preparations/1 paint. Later completed refreshes
+remain separate: none. No completed primary is extended,
+discarded or rerun. Recoveries disclose unknown final exit and missing PNG,
+fingerprint and peak. Peaks cover capture/exit and later refreshes, not
+first-frame live memory, and are never summed. The read-only decoded capture check finds 30 before and 30 candidate RGB classes, 0 shared. All differences stay within the original skeleton bands, x45–662: y335–344 and ten 14px bands starting at380 with41px spacing. All pixels outside these bands match. No animation was disabled and no observation repeated; evidence is instruction-opt79-page-pixel-class-check.json.
+The focused no-wrap/innerText, grid/flex/table, Unicode and intrinsic viewport is
+pixel-exact at 1024×768.
+Prior observed carry is 0. Cumulative observed saving **7,103,056** crosses the 5M gate. Six direct harness jobs actually pass CSS 31/SVG 10/layout 46 in both GCs (**174 executions**). All **19 screenshots pass, 16 exact**; known differences remain inline-node 13, text-decorations 1,341 and canvas-text 1,994. The completed broad batch resets additional observed savings to 0.
+
+The isolated signed app is `/Users/alex/code/vox2/Build/v/Vox-opt79.app`; native instruction text
+matches the measured executable, with the frozen helper pinned inside the
+bundle and its actual default loaded path/hash checked. Signatures, startup
+and actual GC collections pass with default marker 1 and override 2. Canonical
+app and user GUI remain preserved; contemporary Root has no extra source,
+regression or performance credit. Equivalent Chrome content/start/submission
+accounting remains open; faster-than-Chrome performance is unproven. Evidence:
+`Build/instructions/vox-opt79-interleaved-*` and `Build/v/instruction-opt79-*`.
+
 ## Causes and changes
 
 - The V 0.5.2 compatibility compiler's `-prod` Boehm code repeatedly snapshots
