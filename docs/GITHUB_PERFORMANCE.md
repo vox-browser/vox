@@ -3308,6 +3308,88 @@ Evidence: `Build/instructions/vox-opt35-interleaved-*` and
 `Build/v/instruction-opt35-*`. The completed broad batch resets the GitHub
 baseline to 31,126,229,194 instructions, with zero additional observed savings.
 
+## Keep text context inside its inline iterator
+
+Feature `3f660b04` stores the private inline text cursor in its owning
+iterator, with an explicit presence flag. Entering another text node replaces
+that cursor; exhaustion clears retained chunk references. Published items keep
+their own node and glyph references. No global pool or shared mutable cursor is
+introduced, and the public iterator and item APIs retain their behavior.
+
+Twenty functional cases and an inactive diagnostic pass **23,230 assertions**
+in before/final Boehm and final no-GC C-O2 builds. A new lifetime case retains
+items for distinct ASCII, RTL, Greek and non-BMP sources through 64 later
+iterations and forced collection. Existing wrapping, bidi, grapheme, ellipsis,
+cyclic-maximum and published-fragment lifetime checks remain in the harness.
+
+Three fixed alternating diagnostic pairs measure 512 complete inline formatting
+runs on 16 text nodes. Medians are **2,626,998,976 to
+2,626,474,454** retired instructions (-0.020%).
+Two of three pairs improve; this small mixed local result establishes no
+separate repeatable saving. All six checksums are 17,694,720. Setup, eight
+warmups, expected output and forced collection precede the counter; final
+validation follows it. Full-process C-O1/Boehm profiles, without filter/reset,
+retain **776 private formatting calls and 8,869 text-context entries** in each
+variant. Call counts receive no instruction credit.
+
+The strict C audit authenticates one private optional pointer becoming an
+embedded context and presence flag, removal of that optional wrapper, relocation
+of the byte-identical context definition and exactly four edited function
+bodies. Text entry no longer allocates a context owner. All other code, layouts,
+resources and GC initialization match after established compiler identities,
+exact unchanged-source assertion mapping and frozen include normalization.
+Two byte-identical interface helpers and two integer comparator helpers may
+reorder. All 120 native inputs, 37 frozen includes and native arguments remain
+authenticated. Compiled C SHA256:
+`ee014cc90ab9e420483ced18ac2e86986644928363d127219076adcf42487e41`.
+Durable C/profile archives: `Build/v/instruction-opt37-artifact-archives.json`.
+
+Thirty alternating pairs were fixed before observations, with 30,000 paired
+bootstrap resamples and seed 37. Both regular binaries use the unchanged 359-body
+cache, fresh copies, frozen helper, 1024×768 document viewport and
+`navigation_to_first_document_paint[0]`. C-O2/Boehm uses one marker, without
+prod/prealloc flags. The control includes round 35 custom-property inheritance.
+
+| Build | Median first-frame retired instructions |
+| --- | ---: |
+| Frozen round 35 control | 31,132,876,172 |
+| Iterator-owned text context | 30,970,670,843.5 |
+
+Observed matching median saving: **162,205,328.5** instructions
+(0.521%). 20/30 pairs improve, with paired
+median saving 995,134,439.5. The 95% paired percentile interval
+is **424,049,953 to 1,120,490,463**. Repeatable page credit is **162,205,328.5**, requiring
+a strictly positive lower confidence bound. All 60 primary observations remain,
+with 60 actual PNGs, 0 recovered post-primary counters and
+0 archived pre-parse startup retries. Completed primaries are never
+rerun, discarded or extended. First-frame preparation and later refreshes are
+separately recorded in `Build/v/instruction-opt37-capture-audit.json`. Each
+primary has one installation, two geometry passes and one paint preparation.
+Candidate pair 24 has one separately retained later installation. The interval
+resamples the median of paired savings; the observed point above is the
+difference of the two marginal medians.
+
+All six direct V jobs pass: CSS 31, SVG 10 and layout 46 in each GC mode,
+174 case executions. All 19 screenshots pass, 16 exact; the retained differences
+are inline-node 13, text-decorations 1,341 and canvas-text 1,994. The first
+empty-caret actual capture exhausted its two startup attempts after a successful
+reference capture. Its failure and blocked dependent receipts are retained;
+only that unfinished actual capture and subsequent cases were resumed. The
+reference, exact focused comparison and six successful test jobs were reused.
+The focused multi-node, preserved tab/newline, bidi, wrapping and ellipsis
+viewport is pixel-exact. Regression sources and overlays are pinned separately;
+the commands use SSD scratch despite inherited RAM-output receipt wording.
+
+The signed isolated comparison app is `/Users/alex/code/vox2/Build/v/Vox-opt37.app`. Signature,
+startup and actual GC collections pass with default marker 1 and override 2.
+Native text matches the measured image. The canonical app and GUI are preserved;
+independent current Root work is excluded from this frozen app and earns no
+extra performance credit. Chrome parity remains open.
+
+Evidence: `Build/instructions/vox-opt37-interleaved-*` and
+`Build/v/instruction-opt37-*`. The completed broad batch resets the GitHub
+baseline to 30,970,670,843.5 instructions, with zero additional observed savings.
+
 ## Causes and changes
 
 - The V 0.5.2 compatibility compiler's `-prod` Boehm code repeatedly snapshots
