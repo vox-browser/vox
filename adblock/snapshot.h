@@ -46,18 +46,22 @@ static void vox_adblock_release_snapshot(void *bytes, void *context) {
 }
 
 static int vox_adblock_install_snapshot(JSGlobalContextRef context,
-        const unsigned char *compressed, size_t compressed_size) {
-    if (!context || compressed_size < 18) return 1;
-    const unsigned char *size_bytes = compressed + compressed_size - 4;
+        const unsigned char *snapshot, size_t snapshot_size) {
+    if (!context || !snapshot || snapshot_size < 16) return 1;
+    if (memcmp(snapshot, "VOXSNAP1", 8)) return 2;
+    const unsigned char *size_bytes = snapshot + 8;
     size_t size = (size_t)size_bytes[0] | ((size_t)size_bytes[1] << 8) |
         ((size_t)size_bytes[2] << 16) | ((size_t)size_bytes[3] << 24);
-    if (!size || size > 128 * 1024 * 1024) return 2;
+    if (!size || size > 128 * 1024 * 1024 || size != snapshot_size - 16) return 2;
+    const unsigned char *crc_bytes = snapshot + 12;
+    uint32_t expected_crc = (uint32_t)crc_bytes[0] | ((uint32_t)crc_bytes[1] << 8) |
+        ((uint32_t)crc_bytes[2] << 16) | ((uint32_t)crc_bytes[3] << 24);
+    const unsigned char *payload = snapshot + 16;
+    if ((uint32_t)crc32(0, payload, (uInt)size) != expected_crc) return 4;
     void *bytes = malloc(size);
     if (!bytes) return 3;
-    if (vox_adblock_gunzip(compressed, compressed_size, bytes, size) != Z_OK) {
-        free(bytes);
-        return 4;
-    }
+    // The embedded payload remains immutable; each context owns its own copy.
+    memcpy(bytes, payload, size);
     JSValueRef exception = NULL;
     JSStringRef checksum_key = JSStringCreateWithUTF8CString("voxAdblockTrieChecksum");
     JSObjectRef checksum = JSObjectMakeFunctionWithCallback(context, checksum_key,

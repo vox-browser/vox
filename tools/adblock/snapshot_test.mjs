@@ -6,7 +6,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import { encodeSnapshot } from './snapshot.mjs';
+import { encodeSnapshot, encodeNativeSnapshot } from './snapshot.mjs';
 
 function restore(encoded, bytes = encoded.binary) {
     const context = vm.createContext({ sourceBytes: Uint8Array.from(bytes), metadata: encoded.metadata });
@@ -67,6 +67,19 @@ test('rejects cyclic or unsupported future snapshot types during generation', ()
     assert.throws(() => encodeSnapshot(new Date()), /Unsupported snapshot object/);
 });
 
+
+test('native raw envelope keeps exact payload bytes with length and standard CRC32', () => {
+    const payload = Buffer.from([1, 2, 3, 4]);
+    const native = encodeNativeSnapshot(payload);
+    assert.equal(native.subarray(0, 8).toString(), 'VOXSNAP1');
+    assert.equal(native.readUInt32LE(8), payload.length);
+    assert.equal(native.readUInt32LE(12), 0xB63CFBCD);
+    assert.deepEqual(native.subarray(16), payload);
+    payload[0] = 99;
+    assert.equal(native[16], 1);
+    assert.throws(() => encodeNativeSnapshot(Buffer.alloc(0)), RangeError);
+    assert.throws(() => encodeNativeSnapshot(Buffer.allocUnsafe(128 * 1024 * 1024 + 1)), RangeError);
+});
 
 test('native metadata owns its text, restores fresh graphs and rejects malformed input', { skip: process.platform !== 'darwin' }, () => {
     const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'vox-adblock-metadata-test-'));

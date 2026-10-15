@@ -4,7 +4,8 @@ import vm from 'node:vm';
 import { gunzipSync } from 'node:zlib';
 import test from 'node:test';
 const code = gunzipSync(await fs.readFile(new URL('../../adblock/engine.js.gz', import.meta.url))).toString();
-const bytes = gunzipSync(await fs.readFile(new URL('../../adblock/engine.snapshot.bin.gz', import.meta.url)));
+const nativeSnapshot = await fs.readFile(new URL('../../adblock/engine.snapshot.bin', import.meta.url));
+const bytes = nativeSnapshot.subarray(16);
 const metadata = gunzipSync(await fs.readFile(new URL('../../adblock/engine.snapshot.json.gz', import.meta.url))).toString();
 function engine(custom) {
     const context = vm.createContext({ sourceBytes: Uint8Array.from(bytes), metadata });

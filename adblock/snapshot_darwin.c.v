@@ -6,12 +6,12 @@ module adblock
 fn C.vox_adblock_install_snapshot(voidptr, &u8, usize) int
 fn C.vox_adblock_install_snapshot_metadata(voidptr, &u8, usize) int
 
-const compressed_snapshot_bytes = $embed_file('engine.snapshot.bin.gz')
+const native_snapshot_bytes = $embed_file('engine.snapshot.bin')
 const compressed_snapshot_metadata = $embed_file('engine.snapshot.json.gz')
 
 fn install_snapshot(context voidptr) ! {
-	compressed := compressed_snapshot_bytes.to_bytes()
-	status := C.vox_adblock_install_snapshot(context, compressed.data, usize(compressed.len))
+	snapshot := native_snapshot_bytes.to_bytes()
+	status := C.vox_adblock_install_snapshot(context, snapshot.data, usize(snapshot.len))
 	if status != 0 {
 		return error('Cannot restore bundled adblock snapshot: ${status}')
 	}

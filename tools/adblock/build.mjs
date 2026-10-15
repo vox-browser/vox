@@ -7,7 +7,7 @@ import vm from 'node:vm';
 import { gzipSync } from 'node:zlib';
 import crypto from 'node:crypto';
 import * as serializer from '../../adblock/vendor/ublock/js/s14e-serializer.js';
-import { encodeSnapshot } from './snapshot.mjs';
+import { encodeSnapshot, encodeNativeSnapshot } from './snapshot.mjs';
 const here = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(here, '../..');
 const manifest = JSON.parse(await fs.readFile(path.join(root, 'adblock/lists/manifest.json'), 'utf8'));
@@ -61,7 +61,7 @@ try {
 }
 const snapshot = encodeSnapshot(serializer.deserialize(selfie));
 await fs.writeFile(path.join(here, 'generated-defaults.js'), snapshot.source);
-await fs.writeFile(path.join(root, 'adblock/engine.snapshot.bin.gz'), gzipSync(snapshot.binary, {level: 9, mtime: 0}));
+await fs.writeFile(path.join(root, 'adblock/engine.snapshot.bin'), encodeNativeSnapshot(snapshot.binary));
 await fs.writeFile(path.join(root, 'adblock/engine.snapshot.json.gz'), gzipSync(snapshot.metadata, {level: 9, mtime: 0}));
 await fs.writeFile(path.join(here, 'snapshot-layout.json'), JSON.stringify(snapshot.layout, null, 2) + '\n');
 const output = await build(options);

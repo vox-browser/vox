@@ -55,3 +55,25 @@ export function encodeSnapshot(snapshot) {
     const source = `export default {restore(){const bytes=globalThis.voxAdblockSnapshotBytes;if(!(bytes instanceof Uint8Array)||bytes.byteLength!==${byteLength})throw new Error('Invalid bundled uBlock Origin snapshot bytes');let snapshot=globalThis.voxAdblockReadSnapshotMetadata();${fixups.join('')}return snapshot;}};\n`;
     return { source, metadata, binary: Buffer.concat(chunks), layout: { byte_length: byteLength, views } };
 }
+
+// Native startup validates this bounded lossless envelope, then copies its data
+// directly into context-owned storage. CRC32 retains corruption detection without
+// decoding a compressed stream for every browser process.
+export function encodeNativeSnapshot(binary) {
+    if (!binary.byteLength || binary.byteLength > 128 * 1024 * 1024) {
+        throw new RangeError('Native snapshot payload must contain 1..128MiB');
+    }
+    const table = new Uint32Array(256);
+    for (let value = 0; value < 256; value++) {
+        let crc = value;
+        for (let bit = 0; bit < 8; bit++) crc = (crc >>> 1) ^ ((crc & 1) ? 0xEDB88320 : 0);
+        table[value] = crc;
+    }
+    let crc = 0xFFFFFFFF;
+    for (const byte of binary) crc = table[(crc ^ byte) & 255] ^ (crc >>> 8);
+    const header = Buffer.alloc(16);
+    header.write('VOXSNAP1', 0, 'ascii');
+    header.writeUInt32LE(binary.byteLength, 8);
+    header.writeUInt32LE((crc ^ 0xFFFFFFFF) >>> 0, 12);
+    return Buffer.concat([header, binary]);
+}

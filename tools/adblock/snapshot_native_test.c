@@ -11,19 +11,28 @@ static void snapshot_test_free(void *bytes) {
 #define free snapshot_test_free
 #include "../../adblock/snapshot.h"
 #undef free
-static const unsigned char valid[] = {
-    0x1f,0x8b,0x08,0,0,0,0,0,0x02,0x03,0x63,0x64,0x62,0x66,0x01,0,0xcd,0xfb,0x3c,0xb6,0x04,0,0,0
+static unsigned char valid[] = {
+    'V','O','X','S','N','A','P','1',4,0,0,0,0xcd,0xfb,0x3c,0xb6,1,2,3,4
 };
 int main(void) {
     JSGlobalContextRef ctx = JSGlobalContextCreate(NULL);
     assert(vox_adblock_install_snapshot(NULL, valid, sizeof valid) == 1);
+    assert(vox_adblock_install_snapshot(ctx, NULL, sizeof valid) == 1);
     assert(vox_adblock_install_snapshot(ctx, valid, 0) == 1);
+    assert(vox_adblock_install_snapshot(ctx, valid, sizeof valid - 1) == 2);
     unsigned char corrupt[sizeof valid];
-    memcpy(corrupt,valid,sizeof valid);corrupt[12]^=1;
+    memcpy(corrupt,valid,sizeof valid);corrupt[16]^=1;
     assert(vox_adblock_install_snapshot(ctx, corrupt, sizeof corrupt) == 4);
-    assert(released_buffers==1);
+    assert(released_buffers==0);
+    memcpy(corrupt,valid,sizeof valid);corrupt[0]^=1;
+    assert(vox_adblock_install_snapshot(ctx, corrupt, sizeof corrupt) == 2);
+    memcpy(corrupt,valid,sizeof valid);corrupt[11]=0xff;
+    assert(vox_adblock_install_snapshot(ctx, corrupt, sizeof corrupt) == 2);
+    unsigned char trailing[sizeof valid + 1];memcpy(trailing,valid,sizeof valid);trailing[sizeof valid]=0;
+    assert(vox_adblock_install_snapshot(ctx, trailing, sizeof trailing) == 2);
     assert(vox_adblock_install_snapshot(ctx, valid, sizeof valid) == 0);
-    assert(released_buffers==1);
+    valid[16]=99; // The live array must own an independent mutable copy.
+    assert(released_buffers==0);
     JSStringRef source=JSStringCreateWithUTF8CString("voxAdblockSnapshotBytes instanceof Uint8Array && voxAdblockSnapshotBytes.length===4 && voxAdblockSnapshotBytes[0]===1 && voxAdblockSnapshotBytes[3]===4");
     JSValueRef exception=NULL;
     assert(JSValueToBoolean(ctx,JSEvaluateScript(ctx,source,NULL,NULL,1,&exception)));
@@ -37,6 +46,6 @@ int main(void) {
     assert(JSValueToBoolean(ctx,JSEvaluateScript(ctx,source,NULL,NULL,1,&exception)));
     assert(!exception);JSStringRelease(source);
     JSGlobalContextRelease(ctx);
-    assert(released_buffers==2);
-    puts("PASS native snapshot allocation, CRC rejection, content, GC retention, release ownership, and native/JS checksum equality");
+    assert(released_buffers==1);
+    puts("PASS native snapshot raw bounds/magic/CRC rejection, independent content, GC retention, release ownership, and native/JS checksum equality");
 }
