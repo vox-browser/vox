@@ -74,6 +74,9 @@ UTF-8 byte-order marks and invalid UTF-8 retain the existing UTF-16 decoder path
 
 ## Verification
 
+For the 12-site matrix, native scriptlet regressions, and observed site limits,
+see [Popular-site verification](ADBLOCK_POPULAR_SITES.md).
+
 Compile the native diagnostic tool and replay the checked-in real The Verge
 request corpus:
 

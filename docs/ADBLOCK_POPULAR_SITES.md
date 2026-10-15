@@ -1,0 +1,98 @@
+# Popular-site adblock verification
+
+The matrix exercises guest pages on 12 representative news, video, social,
+shopping, reference, and developer sites. It compares Vox's native filtering
+engine with full Manifest V2 uBlock Origin 1.75.0 in an isolated Brave profile,
+using the repository's exact list snapshots and disabling Brave Shields.
+
+Run the matrix with Node.js 22 or newer, Brave, full uBO, and the native checker
+described in [ADBLOCK.md](ADBLOCK.md):
+
+```sh
+node tools/adblock/popular_sites.mjs
+node tools/adblock/popular_sites.mjs --sites cnn,wikipedia,github,yahoo,espn,stackoverflow
+```
+
+Reports, browser navigation evidence, matched logger filters, and a progressive
+`summary.json` are written under `Build/comparisons/adblock-popular`. Each site
+retains its requested and final URLs, title, HTTP status, document text sample,
+request decisions, and cosmetic/procedural/scriptlet comparisons. Redirected
+pages use their final URL for cosmetic selection.
+
+The runner continues after an unavailable site, then exits nonzero for any
+filtering disagreement, engine error, missing comparison, insufficient traffic,
+navigation failure, access check, or consent interstitial. Matching a few
+requests to an error page never counts as successful site coverage.
+Unexpected redirects outside the requested host's domain also fail coverage.
+`--reports-only` assesses existing reports without making fresh page visits.
+
+To add comparisons of actual Vox traffic, pass a JSON map of catalog IDs to
+audit JSONL files recorded with `VOX_ADBLOCK_LOG`:
+
+```sh
+node tools/adblock/popular_sites.mjs --sites cnn --vox-logs Build/vox-audits.json
+```
+
+For example, `Build/vox-audits.json` can contain
+`{"cnn":"Build/comparisons/adblock-popular/cnn-vox.requests.jsonl"}`.
+Recorded comparisons verify request filtering; native page availability must
+also be checked through a capture or interactive visit.
+
+## Observed coverage
+
+These are public guest-page observations from October 15, 2026. Counts vary
+with live content, timing, location, consent, and connectivity. They do not cover
+logged-in flows, purchases, video playback, or every browser API.
+
+| Site | Live Brave/full-uBO comparison | Native Vox observation |
+| --- | --- | --- |
+| CNN | Matched; 23 blocked out of 123 requests | Article grid rendered; some images missing; all 118 native request decisions matched |
+| Wikipedia | Matched; 1 blocked out of 29 | Readable Main Page; image/layout gaps; all 31 native decisions matched |
+| GitHub | Matched; 2 blocked out of 170 | Homepage hero and sign-up controls rendered; all 53 native decisions matched |
+| Yahoo | Matched on follow-up; 75 blocked out of 248 | Homepage content rendered; media/feed partly incomplete; all 185 native decisions matched |
+| ESPN | Matched; 17 blocked out of 173 | Homepage and lead photograph rendered; score strip partly incomplete; all 46 native decisions matched |
+| Stack Overflow | Matched; 3 blocked out of 79 | Native transport received HTTP 403; native page coverage unavailable |
+| BBC News | DNS failure in the isolated Brave session | Native connection failure; page coverage unavailable |
+| Reuters | HTTP 401 | Native HTTP 401; page coverage unavailable |
+| The New York Times | HTTP 403 | Native HTTP 403; page coverage unavailable |
+| YouTube | DNS failure in the isolated Brave session | Native connection failure; playback coverage unavailable |
+| Reddit | Network-security access check | Native splash screen without a feed; page coverage unavailable |
+| Amazon | Continue-shopping access check with too few requests | Partial navigation/category shell; all 28 native decisions matched, including one blocked request |
+
+The six accessible live pages in that capture supplied **822 requests, 121
+blocked, zero Vox/full-uBO static decision differences**, with equal cosmetic
+CSS, procedural filters, and scriptlet selections. The other six sites remain
+explicit coverage failures in the aggregate report. Native rendering has image
+and SPA gaps; these checks do not establish complete site functionality or
+attribute each rendering gap to a particular subsystem.
+
+An initial Yahoo capture had four live-uBO-logger/replay disagreements on video
+telemetry pings, while Vox and the static oracle agreed. Its report is retained
+as `yahoo-initial-anomaly.json`. Two follow-ups retained individual logger filters and matched all 258 and 248
+decisions, respectively, without that anomaly. Its original cause is
+unresolved; any recurrence fails the matrix instead of being ignored.
+
+## Offline and native regressions
+
+The checked-in [request corpus](../tools/adblock/fixtures/popular-sites.json)
+retains 89 observed requests across the six accessible pages: 41 blocks and 48
+allowed content controls. It records the full engine/list hashes and covers
+distinct filter rules, resource types, methods, and initiating domains. Refresh
+the recorded oracle evidence after changing list snapshots; the V test rejects
+a corpus with different engine/list identities.
+
+```sh
+v -old-compiler -enable-globals test adblock
+v -old-compiler -enable-globals test main_adblock_popular_test.v
+node --test tools/adblock/navigation.test.mjs tools/adblock/popular_sites_test.mjs
+```
+
+Eight native page tests exercise actual selected scriptlets and the native
+user-origin stylesheet adapter on CNN, YouTube, Reddit, Amazon, Yahoo, GitHub,
+ESPN, and Wikipedia. They check CNN ad settings, YouTube ad-response fields,
+Reddit outbound-link JSON pruning, Amazon ad/cuepoint JSON pruning, selected
+privacy constants, domain ad-slot hiding, and preservation of article content.
+They also preserve uBO's generic-hide exceptions on YouTube, Reddit, Amazon,
+GitHub, and Wikipedia. These deterministic native effects remain testable when
+a public site is unreachable, while the live matrix continues to report the
+missing page coverage.
