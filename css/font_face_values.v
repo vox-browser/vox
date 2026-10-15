@@ -4438,14 +4438,16 @@ pub fn disconnect_font_faces_in_css_rules(rules []&CSSRule) {
 }
 
 pub fn (mut computer FontComputer) compute_font_for_style_values(font_family []string, font_size CSSPixels, font_slope int, font_weight f64, font_width Percentage, font_optical_sizing FontOpticalSizing, font_variation_settings map[string]f64, font_feature_data FontFeatureData) &FontCascadeList {
+	// id() consumes these inputs synchronously and retains only its own string.
+	// The cached cascade still owns the font data materialized on a cache miss.
 	cache_key := ComputedFontCacheKey{
-		font_family: font_family.clone()
+		font_family: font_family
 		font_optical_sizing: font_optical_sizing
 		font_size: font_size
 		font_slope: font_slope
 		font_weight: font_weight
 		font_width: font_width
-		font_variation_settings: font_variation_settings.clone()
+		font_variation_settings: font_variation_settings
 		font_feature_data: font_feature_data
 	}
 	key := cache_key.id()
