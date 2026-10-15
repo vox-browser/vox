@@ -138,11 +138,15 @@ mut:
 }
 
 pub fn (list &AudioTrackList) internal_get_own_property(property_name dom.JSValue) ?&AudioTrack {
-	if property_name.kind != .number || property_name.number_data < 0
-		|| property_name.number_data != f64(i64(property_name.number_data)) {
+	if property_name.kind != .number
+		|| !(property_name.number_data >= 0 && property_name.number_data < f64(list.length())) {
 		return none
 	}
-	return list.item(u32(property_name.number_data))
+	index := u32(property_name.number_data)
+	if f64(index) != property_name.number_data {
+		return none
+	}
+	return list.item(index)
 }
 
 pub fn (mut list AudioTrackList) set_onchange(event_handler ?&dom.CallbackType) {
@@ -298,11 +302,15 @@ mut:
 }
 
 pub fn (list &VideoTrackList) internal_get_own_property(property_name dom.JSValue) ?&VideoTrack {
-	if property_name.kind != .number || property_name.number_data < 0
-		|| property_name.number_data != f64(i64(property_name.number_data)) {
+	if property_name.kind != .number
+		|| !(property_name.number_data >= 0 && property_name.number_data < f64(list.length())) {
 		return none
 	}
-	return list.item(u32(property_name.number_data))
+	index := u32(property_name.number_data)
+	if f64(index) != property_name.number_data {
+		return none
+	}
+	return list.item(index)
 }
 
 pub fn (mut list VideoTrackList) set_onchange(event_handler ?&dom.CallbackType) {
