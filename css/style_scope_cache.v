@@ -2108,6 +2108,53 @@ fn style_scope_proximity(target &dom.Element, root &dom.Element) int {
 	return int(0x3fffffff)
 }
 
+// Consume the same ordered candidate buckets as matching_rule_buckets(),
+// without allocating a temporary array of borrowed array headers.
+fn style_scope_add_cached_rules_to_run(style_computer &StyleComputer, abstract_element dom.AbstractElement, cache &RuleCache, rule_root ?&dom.ShadowRoot, shadow_root ?&dom.ShadowRoot, element_shadow_root ?&dom.ShadowRoot, mut rules_to_run []ScopedMatchingRule) {
+	element := abstract_element.element()
+	for original_class_name in element.classes {
+		class_name := cache.selector_name_bucket_key(original_class_name)
+		if class_name in cache.rules_by_class {
+			style_scope_add_rules_to_run(style_computer, abstract_element, unsafe { cache.rules_by_class[class_name] }, rule_root, shadow_root, element_shadow_root, mut rules_to_run)
+		}
+	}
+	if original_id := element.id() {
+		id := cache.selector_name_bucket_key(original_id)
+		if id in cache.rules_by_id {
+			style_scope_add_rules_to_run(style_computer, abstract_element, unsafe { cache.rules_by_id[id] }, rule_root, shadow_root, element_shadow_root, mut rules_to_run)
+		}
+	}
+	tag_name := element.lowercased_local_name()
+	if tag_name in cache.rules_by_tag_name {
+		style_scope_add_rules_to_run(style_computer, abstract_element, unsafe { cache.rules_by_tag_name[tag_name] }, rule_root, shadow_root, element_shadow_root, mut rules_to_run)
+	}
+	if pseudo := style_scope_pseudo_element_from_abstract_element(abstract_element) {
+		if is_known_pseudo_element_type(pseudo) {
+			if pseudo in cache.rules_by_pseudo_element {
+				style_scope_add_rules_to_run(style_computer, abstract_element, unsafe { cache.rules_by_pseudo_element[pseudo] }, rule_root, shadow_root, element_shadow_root, mut rules_to_run)
+			}
+		} else {
+			// NOTE: We don't cache rules for unknown pseudo-elements. They can't
+			// match anything anyway.
+		}
+	}
+
+	if element.is_document_element() {
+		style_scope_add_rules_to_run(style_computer, abstract_element, cache.root_rules, rule_root, shadow_root, element_shadow_root, mut rules_to_run)
+	}
+
+	if attrs := element.attributes_ {
+		for attribute in attrs.attrs {
+			name := rule_cache_attribute_bucket_name(attribute.name())
+			if name in cache.rules_by_attribute_name {
+				style_scope_add_rules_to_run(style_computer, abstract_element, unsafe { cache.rules_by_attribute_name[name] }, rule_root, shadow_root, element_shadow_root, mut rules_to_run)
+			}
+		}
+	}
+
+	style_scope_add_rules_to_run(style_computer, abstract_element, cache.other_rules, rule_root, shadow_root, element_shadow_root, mut rules_to_run)
+}
+
 pub fn style_computer_collect_matching_rules_in_scope(style_computer &StyleComputer, abstract_element dom.AbstractElement, cascade_origin CascadeOrigin, mut attempted_pseudo_class_matches PseudoClassBitmap, qualified_layer_name ?string, scope &StyleScope) []ScopedMatchingRule {
 	scope.build_rule_cache_if_needed()
 
@@ -2132,9 +2179,7 @@ pub fn style_computer_collect_matching_rules_in_scope(style_computer &StyleCompu
 	subject_is_reslotted_slot := subject_node.is_html_slot_element()
 		&& subject_node.root().is_shadow_root()
 	if rule_cache := scope.rule_cache_for_cascade_origin(cascade_origin, qualified_layer_name) {
-		for bucket in rule_cache.matching_rule_buckets(abstract_element) {
-			style_scope_add_rules_to_run(style_computer, abstract_element, bucket, scope_rule_root, shadow_root, element_shadow_root, mut rules_to_run)
-		}
+		style_scope_add_cached_rules_to_run(style_computer, abstract_element, rule_cache, scope_rule_root, shadow_root, element_shadow_root, mut rules_to_run)
 	}
 	// A shadow host also participates in the author scope of its own shadow
 	// root, where :host and :host(...) rules are declared. Its ordinary tree
@@ -2145,9 +2190,7 @@ pub fn style_computer_collect_matching_rules_in_scope(style_computer &StyleCompu
 			own_scope := css_style_scope_for_shadow_root(own_root)
 			if voidptr(own_scope) != voidptr(scope) {
 				if own_cache := own_scope.rule_cache_for_cascade_origin(cascade_origin, qualified_layer_name) {
-					for bucket in own_cache.matching_rule_buckets(abstract_element) {
-						style_scope_add_rules_to_run(style_computer, abstract_element, bucket, own_root, shadow_root, element_shadow_root, mut rules_to_run)
-					}
+					style_scope_add_cached_rules_to_run(style_computer, abstract_element, own_cache, own_root, shadow_root, element_shadow_root, mut rules_to_run)
 				}
 			}
 		}
