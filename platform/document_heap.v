@@ -26,7 +26,7 @@ pub fn reserve_gc_heap_for_document(element_count int) bool {
 		if os.getenv('GC_INITIAL_HEAP_SIZE') != '' || os.getenv('GC_MAXIMUM_HEAP_SIZE') != '' {
 			return false
 		}
-		target := usize(1024 * 1024 * 1024)
+		target := usize(2048) * 1024 * 1024
 		current := C.GC_get_heap_size()
 		if current < target {
 			return C.GC_expand_hp(target - current) != 0
