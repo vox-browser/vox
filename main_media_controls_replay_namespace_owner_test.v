@@ -142,7 +142,7 @@ fn test_native_media_namespace_sync_survives_poisoned_intrinsics_and_preserves_r
 	second := mcr_owner_attr(video, mcr_owner_second, 'controls')!
 	assert runtime.evaluate_host(r'(()=>{
  globalThis.mcrPoisonCalls=0;const define=Object.defineProperty,remove=Reflect.deleteProperty;
- const saved={get:mcrVideo.getAttribute,has:mcrVideo.hasAttribute,set:mcrVideo.setAttribute,remove:mcrVideo.removeAttribute,define:define,apply:Reflect.apply,delete:remove,weakGet:WeakMap.prototype.get,weakSet:WeakMap.prototype.set,boolean:Boolean,sync:globalThis.__ladybirdMediaElementSetAttributeSync};
+ const saved={own:Object.getOwnPropertyDescriptors(mcrVideo),get:mcrVideo.getAttribute,has:mcrVideo.hasAttribute,set:mcrVideo.setAttribute,remove:mcrVideo.removeAttribute,define:define,apply:Reflect.apply,delete:remove,weakGet:WeakMap.prototype.get,weakSet:WeakMap.prototype.set,boolean:Boolean,sync:globalThis.__ladybirdMediaElementSetAttributeSync};
  const descriptor=Object.getOwnPropertyDescriptor(HTMLMediaElement.prototype,"controls"),poison=function(){mcrPoisonCalls++;throw "author poison"};
  for(const name of ["getAttribute","hasAttribute","setAttribute","removeAttribute"])define(mcrVideo,name,{get:poison,configurable:true});
  define(globalThis,"__ladybirdMediaElementSetAttributeSync",{value:poison,configurable:true});define(Object.prototype,"controls",{get:poison,set:poison,configurable:true});
@@ -153,7 +153,7 @@ fn test_native_media_namespace_sync_survives_poisoned_intrinsics_and_preserves_r
   return saved.has.call(mcrVideo,"controls")&&saved.get.call(mcrVideo,"controls")==="first foreign mcr-video"&&mcrPoisonCalls===0;
  } finally {
   saved.delete(Object.prototype,"controls");Object.defineProperty=saved.define;Reflect.apply=saved.apply;Reflect.deleteProperty=saved.delete;WeakMap.prototype.get=saved.weakGet;WeakMap.prototype.set=saved.weakSet;globalThis.Boolean=saved.boolean;
-  saved.define(globalThis,"__ladybirdMediaElementSetAttributeSync",{value:saved.sync,configurable:true});for(const name of ["getAttribute","hasAttribute","setAttribute","removeAttribute"])saved.delete(mcrVideo,name);
+  saved.define(globalThis,"__ladybirdMediaElementSetAttributeSync",{value:saved.sync,configurable:true});for(const name of ["getAttribute","hasAttribute","setAttribute","removeAttribute"])saved.define(mcrVideo,name,saved.own[name]);
  }
 })()')! == 'true'
 	assert runtime.evaluate_host('mcrVideo.setAttribute("data-dirty","after poison");document.querySelector("#mcr-video")===mcrVideo&&!mcrVideo.controls')! == 'true'
