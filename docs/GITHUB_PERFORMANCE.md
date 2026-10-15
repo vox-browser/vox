@@ -6411,6 +6411,43 @@ submission accounting remains open; faster-than-Chrome is not established.
 Evidence: `Build/instructions/vox-opt67-interleaved-*` and
 `Build/v/instruction-opt67-*`.
 
+## Coarse formatting-context diagnostic after round68
+
+A separate native C-O2/Boehm diagnostic wraps four formatting entry points in
+exact frozen68 generated C. Hardware snapshots surround outermost calls of the
+same function on the first-navigation owner; all entries are counted. The
+unchanged algorithm bodies restore byte-for-byte after removing the audited
+wrappers and globals. Exact normal native arguments, 120 pinned native inputs,
+frozen text and child-only placement libraries, the 359-body cache and observer
+adaptation are authenticated. Native build, signing, startup, frozen-library
+smoke, observer, actual browser and final-audit exits are all **0**.
+
+| Formatting function | Entries | Outermost calls | Inclusive retired instructions |
+| --- | ---: | ---: | ---: |
+| run_flex_formatting_context_with_mode | 9,116 | 452 | 5,245,874,727 |
+| run_inline_formatting_context_internal | 44,526 | 36,932 | 4,002,816,282 |
+| run_grid_formatting_context | 284 | 284 | 798,155,359 |
+| run_table_formatting_context | 392 | 392 | 635,521,752 |
+
+All four depths return to zero and no hardware counter fails. The single
+unpaired diagnostic primary and actual 1024×768 PNG remain, with no startup
+retry, recovery or later completed installation. Its first primary has the
+usual 1 install/2 geometry/1 paint preparation. The canonical app and user GUI
+remain untouched.
+
+These scopes overlap across different formatting functions and include their
+nested wrappers, counter overhead and charged worker work. Do not sum or
+subtract totals, infer self-cost, rank normal CPU cost from them or compare the
+instrumented frame with normal page medians. They guide independent complete
+local experiments only. **Performance credit is 0**; round68 remains the control
+and broad baseline, with additional observed savings 0. Chrome parity remains
+open.
+
+Diagnostic binary SHA256 `972d9b5f6988c1c05a10ddf4f1abe0c201ecc298d1a34a684d2bd14d0e17a1e7`; durable generated-C archive
+SHA256 `79ddc2bd9b444c0925d8bab7a433a08d1a5c862696636b0d529d590617bce46f`. Evidence:
+`Build/v/instruction-format69-*` and
+`Build/instructions/vox-format69-diagnostic.run-1.*`.
+
 ## Read retained length edges directly
 
 Feature `f04b5385` adds one retained-LengthStyleValue guard to public
