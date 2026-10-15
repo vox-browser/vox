@@ -11783,7 +11783,7 @@ pub fn html_br_element_adjust_computed_style(mut properties ComputedProperties) 
 pub fn html_audio_element_adjust_computed_style(mut properties ComputedProperties, element &dom.HTMLAudioElement) {
 	dom_element := unsafe { &dom.Element(element) }
 	html_media_element_adjust_computed_style(mut properties)
-	if !dom_element.has_attribute('controls') {
+	if !dom_element.has_attribute_ns(none, 'controls') {
 		properties.set_property_without_modifying_flags(.display, dom_style_value_from_value_logic(StyleValue(DisplayStyleValue.create(Display.from_short(.none_)))))
 	}
 }
@@ -11939,7 +11939,7 @@ fn adjust_element_computed_style(mut properties ComputedProperties, element &dom
 			properties.set_property_without_modifying_flags(.display, dom_style_value_from_value_logic(StyleValue(DisplayStyleValue.create(Display.from_short(.inline_block)))))
 		}
 	}
-	if local_name == 'audio' && !element.has_attribute('controls') {
+	if local_name == 'audio' && !element.has_attribute_ns(none, 'controls') {
 		html_audio_element_adjust_computed_style(mut properties, unsafe { &dom.HTMLAudioElement(element) })
 		return
 	}

@@ -324,7 +324,9 @@ fn layout_timing_checkpoint(label string, previous u64) u64 {
 fn materialize_media_controls_shadow_trees(document &dom.Document) {
 	root := unsafe { &dom.Node(document) }
 	for mut media in css.query_selector_all(root, 'audio, video') {
-		if !media.has_attribute('controls') || media.shadow_root() != none {
+		// Only HTML media own this widget; use the reflected content attribute.
+		if !media.is_html_element() || !media.has_attribute_ns(none, 'controls')
+			|| media.shadow_root() != none {
 			continue
 		}
 		mut shadow_root := media.attach_a_user_agent_shadow_root(.named)
