@@ -4101,6 +4101,78 @@ GUI apps are preserved. Chrome parity remains unestablished.
 Evidence: `Build/instructions/vox-opt45-interleaved-*` and
 `Build/v/instruction-opt45-*`.
 
+## Extend the managed-heap hint to four GiB
+
+Feature `0c8030d5` changes the existing DOM-gated Boehm capacity hint from
+2 GiB to **4 GiB**. The 1,024-element threshold, small-document behavior,
+explicit `GC_INITIAL_HEAP_SIZE`/`GC_MAXIMUM_HEAP_SIZE` precedence, refused-hint
+fallback and sufficient-capacity guard remain unchanged. GC stays enabled;
+the normal build keeps one marker and no prod/prealloc. This is a deliberate
+memory-for-instructions tradeoff, measured below rather than credited from
+allocation counts or profile timings.
+
+The focused capacity/ownership test passes **12 assertions** in both the
+before and final C-O2/Boehm configurations, and **one assertion** in final
+no-GC. It checks small documents, each explicit heap-setting override, actual
+reported capacity, no repeated expansion, and retained nested pointer-bearing
+maps/arrays across full collections. The two Boehm sources differ only in the
+expected minimum capacity. Full-process C-O1/Boehm profiles have no filter/reset
+and record the same **six policy calls**. There is no separate local hardware
+instruction probe for this policy change; hardware evidence is the full-page
+cohort only.
+
+The strict generated-C audit permits only
+`platform__reserve_gc_heap_for_document` to change and authenticates the exact
+2-to-4-GiB target expression replacement. All other executable logic, layouts,
+resources, threshold and GC setup match after established compiler identities
+and frozen include paths. Four helpers may reorder only with identical raw
+bodies. All 120 native inputs, 37 quoted includes and C-O2 native arguments
+remain authenticated. Compiled C SHA256:
+`dba556aee664d56a026c7665d894f906f972a0ecd23f280e4b918a614da7fafb`.
+Durable focused, normal and profile C archive hashes are in
+`instruction-opt46-artifact-archives.json`.
+
+This independently predeclared cohort fixes 30 alternating pairs, 30,000 paired
+bootstrap resamples and seed 46. The incomplete round 43 observations remain
+separate, with no replacement or page credit. Regular frozen round 45 and
+candidate binaries use the same 359-body cache, fresh copies, helper,
+1024×768 document viewport and `navigation_to_first_document_paint[0]`.
+
+| Build | Median first-frame retired instructions | Median peak physical footprint, MiB |
+| --- | ---: | ---: |
+| Frozen round 45, 2 GiB hint | 19,877,221,750.5 | 2,730.8 |
+| 4 GiB hint | 19,077,035,740.5 | 3,726 |
+
+Observed matching median saving: **800,186,010** instructions
+(+4.026%). 30/30 pairs improve. Paired
+median saving is 790,658,481, with a 95% paired percentile
+interval of **784,641,828 to 806,042,822**. Repeatable page credit is **800,186,010**,
+requiring a strictly positive lower confidence bound. The interval estimates
+the paired median; the point saving above is the difference of marginal medians.
+Memory is each root process's lifetime maximum physical footprint through
+capture/exit, rather than live memory or a first-frame-only interval. Missing
+peak records: before 0, final 0.
+Process peaks are never summed. The capacity hint is neither a hard limit nor
+an instruction-saving allocation arena.
+
+All 60 primaries remain, with 60 actual PNGs, 0 recovered
+post-primary counters and 0 archived pre-parse startup retries. No
+completed primary is rerun, discarded or extended. Each primary has one
+installation, two geometry preparations and one paint; 0
+post-primary refreshes remain separate. Cache/helper/binary hashes and all
+recorded launch arrays are authenticated.
+
+All six direct V harness jobs exit zero: CSS 31, SVG 10 and layout 46 in each GC mode, 174 case executions. All 19 screenshot comparisons pass, 16 exact; known differences remain inline-node 13, text-decorations 1,341 and canvas-text 1,994.
+The focused substantial hidden-DOM viewport is pixel-exact. The selected broad
+runtime includes the previously verified glyph, pending-feature and union-key changes
+plus this policy. Independent Root work remains excluded. The isolated signed
+artifact is `/Users/alex/code/vox2/Build/v/Vox-opt46.app`. Signature, startup, matching native text
+and real collections pass with default marker 1 and override 2. Canonical and
+GUI apps are preserved. Chrome parity remains unestablished.
+
+Evidence: `Build/instructions/vox-opt46-interleaved-*` and
+`Build/v/instruction-opt46-*`.
+
 ## Causes and changes
 
 - The V 0.5.2 compatibility compiler's `-prod` Boehm code repeatedly snapshots
