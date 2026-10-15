@@ -54,7 +54,7 @@ fn test_invalidation_union_owns_result_map_after_source_and_result_mutations() {
 	gc_collect()
 	assert source.to_string() == '.original, #source-only'
 	assert result.to_string() == '.original, [result-only]'
-	result.properties_.clear()
+	result.clear_properties()
 	gc_collect()
 	assert result.is_empty()
 	assert source.properties().len == 2

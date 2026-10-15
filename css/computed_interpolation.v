@@ -9771,18 +9771,23 @@ pub struct InvalidationSet {
 mut:
 	needs_invalidate_self_          bool
 	needs_invalidate_whole_subtree_ bool
-	// Stylesheets can collect thousands of distinct rightmost selector keys.
-	// A linear uniqueness scan serialized every preceding key on each insert,
-	// making stylesheet installation quadratic and allocating during each scan.
-	properties_                     map[string]InvalidationProperty
+	has_first_property_             bool
+	first_property_key_             string
+	first_property_                 InvalidationProperty
+	// Most selector match sets contain zero or one property. Keep that first
+	// property inline and allocate an ordered hash map only for overflow.
+	additional_properties_ ?map[string]InvalidationProperty
 }
 
 pub fn (mut s InvalidationSet) include_all_from(other InvalidationSet) {
 	s.needs_invalidate_self_ = s.needs_invalidate_self_ || other.needs_invalidate_self_
 	s.needs_invalidate_whole_subtree_ = s.needs_invalidate_whole_subtree_ || other.needs_invalidate_whole_subtree_
-	for key, property in other.properties_ {
-		if key !in s.properties_ {
-			s.properties_[key] = property
+	if other.has_first_property_ {
+		s.add_stored_property(other.first_property_key_, other.first_property_)
+	}
+	if properties := other.additional_properties_ {
+		for key, property in properties {
+			s.add_stored_property(key, property)
 		}
 	}
 }
@@ -9803,12 +9808,45 @@ pub fn (mut s InvalidationSet) set_needs_invalidate_whole_subtree() {
 	s.needs_invalidate_whole_subtree_ = true
 }
 
-fn (mut s InvalidationSet) add_property(property InvalidationProperty) {
-	key := property.key()
-	if key in s.properties_ {
+fn (mut s InvalidationSet) add_stored_property(key string, property InvalidationProperty) {
+	if !s.has_first_property_ {
+		s.has_first_property_ = true
+		s.first_property_key_ = key
+		s.first_property_ = property
 		return
 	}
-	s.properties_[key] = property
+	if key == s.first_property_key_ {
+		return
+	}
+	// Preserve the previous map field's shallow value-header semantics. The
+	// pinned compiler copies an optional binding's header, even with `if mut`,
+	// so this private synchronous method writes the changed header back. No
+	// callback can observe it between extraction and writeback; no map is cloned.
+	mut properties := unsafe { s.additional_properties_ or { map[string]InvalidationProperty{} } }
+	if key in properties {
+		return
+	}
+	properties[key] = property
+	s.additional_properties_ = unsafe { properties }
+}
+
+fn (mut s InvalidationSet) add_property(property InvalidationProperty) {
+	s.add_stored_property(property.key(), property)
+}
+
+fn (s &InvalidationSet) property_count() int {
+	mut count := if s.has_first_property_ { 1 } else { 0 }
+	if properties := s.additional_properties_ {
+		count += properties.len
+	}
+	return count
+}
+
+fn (mut s InvalidationSet) clear_properties() {
+	s.has_first_property_ = false
+	s.first_property_key_ = ''
+	s.first_property_ = InvalidationProperty{}
+	s.additional_properties_ = none
 }
 
 pub fn (mut s InvalidationSet) set_needs_invalidate_class(name string) {
@@ -9832,17 +9870,22 @@ pub fn (mut s InvalidationSet) set_needs_invalidate_pseudo_class(pseudo_class CS
 }
 
 pub fn (s &InvalidationSet) is_empty() bool {
-	return !s.needs_invalidate_self_ && !s.needs_invalidate_whole_subtree_ && s.properties_.len == 0
+	return !s.needs_invalidate_self_ && !s.needs_invalidate_whole_subtree_ && !s.has_properties()
 }
 
 pub fn (s &InvalidationSet) has_properties() bool {
-	return s.properties_.len != 0
+	return s.has_first_property_
 }
 
 pub fn (s &InvalidationSet) properties() ComputedInterpolationInvalidationProperties {
-	mut result := []InvalidationProperty{cap: s.properties_.len}
-	for _, property in s.properties_ {
-		result << property
+	mut result := []InvalidationProperty{cap: s.property_count()}
+	if s.has_first_property_ {
+		result << s.first_property_
+	}
+	if properties := s.additional_properties_ {
+		for _, property in properties {
+			result << property
+		}
 	}
 	return result
 }
@@ -9858,9 +9901,18 @@ pub fn (s &InvalidationSet) for_each_property(callback fn (InvalidationProperty)
 			return
 		}
 	}
-	for _, property in s.properties_ {
-		if !callback(property) {
-			return
+	// Match the old map iteration's entry snapshot: flag callbacks can still
+	// replace properties before iteration starts, while a property callback
+	// replacing this set must not replace the remaining entries being visited.
+	additional_properties := unsafe { s.additional_properties_ }
+	if s.has_first_property_ && !callback(s.first_property_) {
+		return
+	}
+	if properties := additional_properties {
+		for _, property in properties {
+			if !callback(property) {
+				return
+			}
 		}
 	}
 }
@@ -9873,8 +9925,13 @@ pub fn (s &InvalidationSet) to_string() string {
 	if s.needs_invalidate_whole_subtree_ {
 		parts << InvalidationProperty.invalidate_whole_subtree().to_string()
 	}
-	for _, property in s.properties_ {
-		parts << property.to_string()
+	if s.has_first_property_ {
+		parts << s.first_property_.to_string()
+	}
+	if properties := s.additional_properties_ {
+		for _, property in properties {
+			parts << property.to_string()
+		}
 	}
 	return parts.join(', ')
 }
@@ -9995,22 +10052,29 @@ fn copy_invalidation_plan(plan &InvalidationPlan) &InvalidationPlan {
 }
 
 fn add_invalidation_plan_for_properties(mut style_invalidation_data StyleInvalidationData, invalidation_properties InvalidationSet, plan &InvalidationPlan) {
-	// The two flags are deliberately not registered as property dependencies.
-	// Stored properties already own their canonical keys; consume that ordered
-	// map directly without creating a callback or serializing each key again.
-	for key, invalidation_property in invalidation_properties.properties_ {
-		if !should_register_invalidation_property(invalidation_property) {
-			continue
-		}
-		if key !in style_invalidation_data.invalidation_plans {
-			style_invalidation_data.invalidation_plans[key] = InvalidationPlan.create()
-			style_invalidation_data.invalidation_plan_properties[key] = invalidation_property
-		}
-		mut stored_invalidation := style_invalidation_data.invalidation_plans[key] or {
-			continue
-		}
-		stored_invalidation.include_all_from(plan)
+	// Flags are not property dependencies. Consume the stored canonical keys
+	// directly, preserving first-property order without a snapshot or callback.
+	if invalidation_properties.has_first_property_ {
+		add_invalidation_plan_for_property(mut style_invalidation_data,
+			invalidation_properties.first_property_key_, invalidation_properties.first_property_, plan)
 	}
+	if properties := invalidation_properties.additional_properties_ {
+		for key, property in properties {
+			add_invalidation_plan_for_property(mut style_invalidation_data, key, property, plan)
+		}
+	}
+}
+
+fn add_invalidation_plan_for_property(mut style_invalidation_data StyleInvalidationData, key string, invalidation_property InvalidationProperty, plan &InvalidationPlan) {
+	if !should_register_invalidation_property(invalidation_property) {
+		return
+	}
+	if key !in style_invalidation_data.invalidation_plans {
+		style_invalidation_data.invalidation_plans[key] = InvalidationPlan.create()
+		style_invalidation_data.invalidation_plan_properties[key] = invalidation_property
+	}
+	mut stored_invalidation := style_invalidation_data.invalidation_plans[key] or { return }
+	stored_invalidation.include_all_from(plan)
 }
 
 pub enum SelectorCombinator {
