@@ -45,14 +45,14 @@ fn test_computed_font_cache_miss_owns_key_and_cascade_after_input_changes_and_co
 	first := computer.compute_font_for_style_values(families, CSSPixels.new(16), 0, 400,
 		Percentage{ value_: 100 }, .auto_, variations, features)
 	assert first.last_resort_font != unsafe { nil }
-	assert first.last_resort_font.variations.axes['wdth'] == 110
+	assert (first.last_resort_font.variations.axis_value('wdth') or { panic('missing retained width axis') }) == 110
 	families[0] = 'monospace'
 	variations['wdth'] = 130
 	variations.clear()
 	$if gcboehm ? { C.GC_gcollect() }
 	assert computer.computed_font_cache.len == 1
 	assert voidptr(computer.computed_font_cache[id] or { panic('original key was lost') }) == voidptr(first)
-	assert first.last_resort_font.variations.axes['wdth'] == 110
+	assert (first.last_resort_font.variations.axis_value('wdth') or { panic('missing retained width axis') }) == 110
 	hit := computer.compute_font_for_style_values(['serif'], CSSPixels.new(16), 0, 400,
 		Percentage{ value_: 100 }, .auto_, {'wdth': 110.0}, features)
 	assert voidptr(hit) == voidptr(first)

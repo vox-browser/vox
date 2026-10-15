@@ -3532,12 +3532,7 @@ fn owned_platform_font(font &PlatformFont) PlatformFont {
 	return PlatformFont{
 		typeface:     owned_platform_typeface(font.typeface)
 		point_size:   font.point_size
-		variations:   FontVariationSettings{
-			weight: font.variations.weight
-			width:  font.variations.width
-			opsz:   font.variations.opsz
-			axes:   font.variations.axes.clone()
-		}
+		variations:   font.variations.owned_clone()
 		features:     owned_shape_features(font.features)
 		is_invisible: font.is_invisible
 		// An input mutation replaces the clone's cache on its next lookup; the
@@ -3644,7 +3639,7 @@ fn platform_font_equals(left PlatformFont, right PlatformFont) bool {
 		&& left.variations.weight == right.variations.weight
 		&& left.variations.width == right.variations.width
 		&& left.variations.opsz == right.variations.opsz
-		&& left.variations.axes == right.variations.axes && left.features == right.features
+		&& left.variations.axis_values_equal(&right.variations) && left.features == right.features
 		&& left.is_invisible == right.is_invisible
 }
 
@@ -3716,12 +3711,7 @@ fn (list &FontCascadeList) font_with_visibility(font &PlatformFont, invisible bo
 	variant := &PlatformFont{
 		typeface:     owned_platform_typeface(font.typeface)
 		point_size: font.point_size
-		variations:   FontVariationSettings{
-			weight: font.variations.weight
-			width:  font.variations.width
-			opsz:   font.variations.opsz
-			axes:   font.variations.axes.clone()
-		}
+		variations:   font.variations.owned_clone()
 		features:     owned_shape_features(font.features)
 		is_invisible: true
 	}
@@ -3778,7 +3768,8 @@ pub mut:
 	weight f64 = 400
 	width  f64 = 100
 	opsz   ?f64
-	axes   map[string]f64
+mut:
+	axis_storage_ &FontVariationAxisStorage = unsafe { nil }
 }
 
 pub struct FontFaceKey {
@@ -3938,12 +3929,7 @@ pub fn (mut loader FontLoader) font_with_point_size(point_size f32, variations F
 	return PlatformFont{
 		typeface:   loader.typeface
 		point_size: point_size
-		variations: FontVariationSettings{
-			weight: variations.weight
-			width:  variations.width
-			opsz:   variations.opsz
-			axes:   variations.axes.clone()
-		}
+		variations: variations.owned_clone()
 		features:   owned_shape_features(shape_features)
 	}
 }
@@ -4466,9 +4452,7 @@ fn (mut computer FontComputer) compute_font_for_style_values_impl(font_family []
 	// FIXME: We need to respect `font-size-adjust` once that is implemented.
 	font_size_used_value := font_size.to_double()
 
-	mut variation := FontVariationSettings{
-		axes: map[string]f64{}
-	}
+	mut variation := FontVariationSettings{}
 	variation.weight = font_weight
 	variation.width = font_width.value()
 
@@ -4484,7 +4468,7 @@ fn (mut computer FontComputer) compute_font_for_style_values_impl(font_family []
 		if tag_string.len != 4 {
 			continue
 		}
-		variation.axes[tag_string] = value
+		variation.set_axis(tag_string, value)
 	}
 
 	// FIXME: Implement the full font-matching algorithm: https://www.w3.org/TR/css-fonts-4/#font-matching-algorithm
