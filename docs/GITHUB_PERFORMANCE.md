@@ -7434,6 +7434,129 @@ regression or performance credit. Equivalent Chrome content/start/submission
 accounting remains open; faster-than-Chrome performance is unproven. Evidence:
 `Build/instructions/vox-opt77-interleaved-*` and `Build/v/instruction-opt77-*`.
 
+## Defer initial DOM bridge text chunks
+
+This integration imports only independently authored feature `eacfe0fb`
+(Alexander Medvednikov): five exact edit hunks in document_tree_builder and
+DOM/layout bridge. Initial associations retain structure, rendered text and
+list ordinals while deferring font/grapheme-aware chunks until geometry is
+committed. The ordinary public no-state and stateful APIs still collect text;
+first-letter content, innerText, search, range geometry and caret stops remain.
+Three unchanged context lines in the original patch are trimmed to match the
+frozen baseline; every added/deleted byte matches the original feature.
+The later prepared-mirror reuse feature is excluded; its missing prerequisite
+was identified in static review before any runtime work. Contemporary Root,
+filtering, arenas and GC policy are excluded.
+
+Before/final Boehm and final no-GC C-O2 each pass **18,323
+assertions in 15 cases** (14 functional and an inactive diagnostic), using
+identical common source SHA256 `b7f2d41d56957fca4ce1cb729503c57d45571270e77ae1b9cd34d62a1ffaea17`.
+Coverage includes DOM associations, visual caret lines, CSSOM geometry, live
+invalidation, container-relative sizing, first-letter content, range rectangles
+and search. The initial-only common case uses the unchanged public no-state
+API and excludes only the empty-chunk/absent-UTF16 performance contracts.
+All other original assertions remain. The original three private candidate
+tests run byte-for-byte in both GCs: **15,390
+assertions each**. Root sources and concurrent edits remain preserved.
+
+Three predeclared alternating local pairs count **32 complete public document
+layout updates over 64 retained Unicode paragraphs**. Root invalidation,
+run_document_layout, initial/final associations, geometry, paint transport and
+recursive committed-mirror checksum are counted. Setup, eight warmups, expected
+result and forced GC precede the hardware interval; assertion follows it.
+Before: 2,418,750,406 / 2,414,339,983 / 2,400,522,691. Candidate by pair: 1,893,193,388 / 1,885,147,550 / 1,884,148,406.
+Median **2,414,339,983→1,885,147,550
+(-21.92%)**; checksum **1,010,272**
+in all six actual zero exits. Eight warmups additionally verify that the public
+DOM invalidation replaces the mirror and leaves the document clean, outside
+the counter. This local result receives no page credit.
+
+An earlier retained diagnostic marked only the typed node dirty, while the
+Document reads the DOM mirror flag. Its six zero-exit observations measured
+a cached path (264,206,747→264,619,371, +0.16%), so they receive no layout
+saving credit. That error stopped the native/page controller before any native
+job or primary. Original logs and controller failure remain under
+`instruction-opt78-invalid-typed-only-invalidation`. A separate corrected
+three-pair protocol and diagnostic-only C-O2 builds follow the public mirror
+invalidation API; completed functional checks are not rerun. A single-case
+receipt parser initially expected a bracketed case count; the compiler and
+inactive diagnostic had both actually exited zero. The parser was corrected
+from retained logs without rebuilding. The profiles use
+the same functional harness with only this diagnostic replaced; both exact
+source hashes and the correction are authenticated.
+
+Both full-process C-O1/Boehm profiles actually pass without filter/reset:
+
+| Function | Before calls | Candidate calls |
+| --- | ---: | ---: |
+| `layout__opt78_complete_public_document_layout` | 41 | 41 |
+| `layout__run_document_layout` | 49 | 49 |
+| `layout__attach_layout_nodes` | 66 | 3 |
+| `layout__attach_layout_nodes_with_state` | 63 | 63 |
+| `layout__attach_layout_node_recursive` | 11,217 | 11,217 |
+| `layout__TextNodeChunkIterator__static__new` | 5,414 | 2,712 |
+| `layout__attach_layout_nodes_before_layout` | 0 | 63 |
+
+These are call counts, not hardware instruction savings. Complete public
+updates, stateful commits and recursive associations match; chunk iterator
+construction decreases. The new initial-only wrapper replaces the old initial
+public call. Original profile output and generated-C full-process scope proof
+are durable.
+
+Strict C audit authenticates the exact source edits, four changed functions,
+one new false-collection wrapper and its recursive boolean signature. Both
+normal/focused target sets match after authenticated compiler identities.
+The public wrappers continue passing true; the new initial wrapper passes
+false. Unreachable wrapper bodies, when omitted, are checked against both
+independent focused builds. All remaining C, records, globals, resources,
+filtering, arenas and GC policy match after established compiler identities,
+unchanged assertion-line mapping, 37 frozen includes and four byte-identical
+helper reorderings. Compiler closure identity findings and audit symbol,
+argument and marker-selector errors remain retained under the round78
+C-audit failure archives, with actual failed exits. Each closure body is
+authenticated independently; runtime checks are not repeated for audit repairs.
+Exact native arguments and all 120 pinned inputs match.
+C SHA256 `2bf5b2444c80782f0b159971bb0c5e5a3b0b56ec5a5620c70fef4d0404cdd434`; durable normal, focused,
+contract and profile archives appear in `instruction-opt78-artifact-archives.json`.
+Compiler scratch is durable SSD; benchmark cache copies use the same RAM.
+
+The predeclared page cohort is **30 alternating pairs**, odd before/final,
+even final/before, **30,000 paired bootstrap resamples, seed 78**. Both regular
+persisted binaries use fresh copies of the same 359 cached bodies, frozen text
+and child-only placement helpers, C-O2/Boehm/one marker and unchanged 4 GiB
+hint; no prod/prealloc. Fixed document viewport 1024×768 and endpoint
+`navigation_to_first_document_paint[0]`; no historical or Root comparison.
+
+| Build | Median first-frame retired instructions | Median lifetime process peak, MiB |
+| --- | ---: | ---: |
+| Fresh accepted frozen77 control | 17,954,634,593.5 | 3,618.2 |
+| Deferred initial text collection | 17,756,358,875.5 | 3,614.2 |
+
+Difference of marginal medians: **198,275,718** instructions
+saved (-1.104% change), **30/30** wins.
+Paired median saving **206,131,000.5**, paired 95% interval
+**[187,157,749.5, 218,683,680]**. The positive paired interval establishes repeatable page credit of **198,275,718** instructions.
+
+All 60 primary observations and **60 actual PNGs** remain. Recovered
+primaries: none; pre-parse retries: 0. First primaries
+retain 1 installation/2 geometry preparations/1 paint. Later completed refreshes
+remain separate: none. No completed primary is extended,
+discarded or rerun. Recoveries disclose unknown final exit and missing PNG,
+fingerprint and peak. Peaks cover capture/exit and later refreshes, not
+first-frame live memory, and are never summed. The read-only decoded capture check finds 30 before and 30 candidate RGB classes, 0 shared. All differences stay within the original skeleton bands, x45–662: y335–344 and ten 14px bands starting at380 with41px spacing. All pixels outside these bands match. No animation was disabled and no observation repeated; evidence is instruction-opt78-page-pixel-class-check.json.
+The focused first-letter/innerText, grid/flex/table, Unicode and intrinsic viewport is
+pixel-exact at 1024×768.
+Prior observed carry is 0. Cumulative observed saving **198,275,718** crosses the 5M gate. Six direct harness jobs actually pass CSS 31/SVG 10/layout 46 in both GCs (**174 executions**). All **19 screenshots pass, 16 exact**; known differences remain inline-node 13, text-decorations 1,341 and canvas-text 1,994. The completed broad batch resets additional observed savings to 0.
+
+The isolated signed app is `/Users/alex/code/vox2/Build/v/Vox-opt78.app`; native instruction text
+matches the measured executable, with the frozen helper pinned inside the
+bundle and its actual default loaded path/hash checked. Signatures, startup
+and actual GC collections pass with default marker 1 and override 2. Canonical
+app and user GUI remain preserved; contemporary Root has no extra source,
+regression or performance credit. Equivalent Chrome content/start/submission
+accounting remains open; faster-than-Chrome performance is unproven. Evidence:
+`Build/instructions/vox-opt78-interleaved-*` and `Build/v/instruction-opt78-*`.
+
 ## Causes and changes
 
 - The V 0.5.2 compatibility compiler's `-prod` Boehm code repeatedly snapshots
