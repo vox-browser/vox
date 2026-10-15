@@ -302,6 +302,7 @@ mut:
 	paint_commands_have_backdrop_filter bool
 	frame_preparation_depth             int
 	paint_commands_pending              bool
+	paint_effect_depth                  int
 	status                              string
 	load_status                         string
 	js_messages                         []string
@@ -4448,6 +4449,8 @@ fn (mut app BrowserApp) add_native_css_filter(filter painting.GfxFilter, transfo
 }
 
 fn (mut app BrowserApp) draw_command(source_command layout.PaintCommand, page_x f32, page_y f32, window_height int) {
+	app.paint_effect_depth = background_clip_effect_depth_after_command(app.paint_effect_depth,
+		source_command.kind)
 	mut command := source_command
 	$if macos {
 		if app.ctx.native_rendering {
@@ -5297,6 +5300,12 @@ fn (mut app BrowserApp) draw_command(source_command layout.PaintCommand, page_x 
 			}
 		}
 		'draw_background_image' {
+			if command.background_svg_document != none
+				&& !background_image_clip_intersects_viewport(&command, f64(page_x), f64(page_y),
+					f64(app.ctx.width), f64(app.page_top()), f64(window_height - app.status_height()),
+					app.paint_effect_depth > 0) {
+				return
+			}
 			mut image := &gg.Image{}
 			mut intrinsic_width := f32(command.image_intrinsic_width)
 			mut intrinsic_height := f32(command.image_intrinsic_height)
@@ -5760,6 +5769,7 @@ fn (mut app BrowserApp) draw() {
 	app.finish_frame_preparation()
 	app.portable_shadow_image_index = 0
 	begin_browser_frame(app.ctx)
+	app.paint_effect_depth = 0
 	$if macos {
 		if app.ctx.native_rendering
 			&& app.paint_commands_have_backdrop_filter {
