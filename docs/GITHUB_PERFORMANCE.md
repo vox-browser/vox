@@ -3454,6 +3454,84 @@ Binary SHA256:
 Evidence: `Build/v/instruction-hotspots38-*` and
 `Build/instructions/vox-hotspots38-diagnostic.run-1.*`.
 
+## Defer copying rare geometry snapshots without grid storage
+
+Feature `5f212342` shares a populated ancestor's private rare geometry
+record when all four grid arrays have zero capacity. Both source and snapshot
+are marked shared; either owner clones the existing record before changing a
+rare field. This preserves snapshots when the committed source changes first.
+Records with nonempty or reserved grid storage retain the original eager copy,
+so public array borrows made before population remain independent. Ordinary
+geometry, line-box copies, grid getters and all rare-data setters retain their
+existing behavior. No global pool or reference-count lifecycle is introduced.
+
+Eighteen functional cases plus an inactive diagnostic pass **17,785 assertions**
+in before/final Boehm and final no-GC C-O2 builds. Three new cases cover source
+and multiple snapshot mutations through collection, existing nonempty grid
+borrows, and empty arrays with reserved writable capacity. Existing arena,
+complete-default, copied-geometry and paged-store cases remain selected.
+
+Three fixed alternating pairs reduce **8,192 complete intrinsic width/height
+probes** from **1,621,168,300 to 1,293,526,023** retired
+instructions (-20.21%). All three pairs improve. Setup gives
+the nested containing-block chain retained rare baseline data. DOM/layout setup,
+eight warmups, expected results and forced collection precede the counter;
+checksum validation follows it. All six checksums are 180,379,648. This local
+result receives no separate page credit. Full-process C-O1/Boehm profiles have
+no filter/reset: population calls remain **123,187** in both variants, while
+rare-record clones change from **123,157 to 7**. These are diagnostic call counts.
+
+The strict C audit authenticates one private UsedValues flag and exactly four
+zero defaults inside balanced UsedValues literals, two modified functions and
+one predicate that checks all four grid capacities. All other logic, layouts,
+resources and GC setup match after established compiler identities, exact source
+assertion-line mapping and frozen include normalization. Four raw-identical
+interface/comparator helpers may reorder. All 120 native inputs, 37 quoted
+includes and native C-O2 arguments remain authenticated. Compiled C SHA256:
+`96c5b67c7bd43ce959fe97fda1d2ec6ca129c238b7787f5a7010881b20071f97`.
+Durable archives: `Build/v/instruction-opt38-artifact-archives.json`.
+
+Thirty alternating pairs were fixed before observations, with 30,000 paired
+bootstrap resamples and seed 38. Both regular binaries retain the 359-body cache,
+fresh per-run copies, frozen helper, 1024×768 viewport and
+`navigation_to_first_document_paint[0]`. Normal C-O2/Boehm uses one marker,
+without prod/prealloc flags. The control is the frozen round 37 final runtime.
+
+| Build | Median first-frame retired instructions |
+| --- | ---: |
+| Frozen round 37 control | 31,075,999,429.5 |
+| Deferred rare geometry copies | 31,062,009,877 |
+
+Observed matching median saving: **13,989,552.5** instructions
+(0.045%). 11/30 pairs improve; paired median
+saving is -127,860,906. The 95% paired percentile interval is
+**-545,839,225 to 34,650,863**. Repeatable page credit is **0**, requiring a
+strictly positive lower confidence bound. The interval resamples paired median
+savings; the point above is the difference of the marginal medians. All 60
+primaries remain, with 60 actual PNGs, 0 recovered post-primary
+counters and 0 archived pre-parse startup retries. Completed primaries
+are never rerun, discarded or extended. Preparation and later refreshes remain
+separately audited in `Build/v/instruction-opt38-capture-audit.json`. Each primary has
+one installation, two geometry passes and one paint preparation; there are no
+later installations.
+
+All six direct V jobs pass: CSS 31, SVG 10 and layout 46 in each GC mode,
+174 case executions. All 19 screenshots pass, 16 exact; the retained differences
+are inline-node 13, text-decorations 1,341 and canvas-text 1,994.
+The focused nested-flex, grid-buffer, table and baseline viewport is pixel-exact.
+Regression runtime and overlays are pinned separately from Root. Commands use
+SSD scratch despite inherited RAM-output wording in some receipts.
+
+The signed isolated comparison app is `/Users/alex/code/vox2/Build/v/Vox-opt38.app`. Signature,
+startup and actual collections pass with default marker 1 and override 2. Native
+text matches the measured image. Canonical and GUI apps are preserved; unrelated
+current Root work is excluded from this app and earns no additional performance
+credit. Chrome parity remains open.
+
+Evidence: `Build/instructions/vox-opt38-interleaved-*` and
+`Build/v/instruction-opt38-*`. The completed broad batch resets the GitHub
+baseline to 31,062,009,877 instructions, with zero additional observed savings.
+
 ## Causes and changes
 
 - The V 0.5.2 compatibility compiler's `-prod` Boehm code repeatedly snapshots

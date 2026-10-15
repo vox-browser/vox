@@ -1407,6 +1407,12 @@ evidence](docs/translation-audit/NATIVE_MEDIA_WHEEL_RAW_HANDLER.md).
   instructions, with repeatable page credit 162,205,328.5.
   Broad verification: passed 87 selected cases both GC and 19 screenshots (16 exact).
   The focused viewport is exact; Chrome parity remains open.
+  Deferred rare geometry `5f212342` passes 17,785 focused assertions per
+  configuration; its complete intrinsic probe uses 20.21% fewer instructions.
+  Matching 30-pair observed savings are 13,989,552.5, with
+  repeatable page credit 0.
+  Broad verification: passed 87 selected cases both GC and 19 screenshots (16 exact).
+  The focused viewport is exact; Chrome parity remains open.
 - Outside instruction-count optimization, run broad regression suites once per
   ten completed fixes, not after every fix.
   Broad suites include full translation/package test batches, the full LibJS AST
