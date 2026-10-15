@@ -1690,6 +1690,16 @@ evidence](docs/translation-audit/NATIVE_MEDIA_WHEEL_RAW_HANDLER.md).
   focused geometry viewport exact. Additional observed savings: 0.
   Same 4 GiB/placement; canonical/GUI preserved; contemporary Root excluded.
   Chrome parity remains open.
+  Unchanged optional layout flags `46e9bc17` (independent committed slice)
+  pass 20,151 common assertions in 21 cases per configuration,
+  plus 2 private candidate cases/87 assertions both GC.
+  Complete public flag batches use 46.94% fewer instructions.
+  Page point saving 3,959,664.5, 13/30 wins,
+  paired interval [-16,938,044, 12,288,917.5]; repeatable credit 0.
+  Broad verification: deferred below cumulative 5M gate;
+  focused geometry/flags viewport exact. Additional observed savings: 3,959,664.5.
+  Same 4 GiB/placement; canonical/GUI preserved; contemporary Root excluded.
+  Chrome parity remains open.
 - Outside instruction-count optimization, run broad regression suites once per
   ten completed fixes, not after every fix.
   Broad suites include full translation/package test batches, the full LibJS AST

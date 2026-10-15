@@ -7216,6 +7216,115 @@ regression or performance credit. Equivalent Chrome content/start/submission
 accounting remains open; faster-than-Chrome performance is unproven. Evidence:
 `Build/instructions/vox-opt75-interleaved-*` and `Build/v/instruction-opt75-*`.
 
+## Skip unchanged optional layout flags
+
+This integration imports only the seven exact source hunks of independently
+authored feature `46e9bc17` (Alexander Medvednikov). Optional layout flag
+setters return when their existing getter already matches the requested value.
+Default false writes leave rare state absent; unchanged writes preserve a
+shared rare owner. A real transition follows the original copy-on-write path.
+The two grid subgrid axes are checked together. No new record, state, cache,
+API, filtering, arena or GC policy changes. Contemporary Root is excluded.
+
+Before/final Boehm and final no-GC C-O2 each pass **20,151
+assertions in 21 cases** (20 functional and an inactive diagnostic), using the
+identical common source SHA256 `099bd04d93014b24ba627a5a24a327743709f663e0058cda197aba778536c2c5`.
+Coverage includes layout state, retained and measurement arenas, escaped
+geometry, complete defaults and all flag value transitions. The original two
+imported tests retain every semantic assertion in the common source; only
+three private absent/shared-owner representation checks are excluded because
+the old implementation materializes or detaches on unchanged writes. A separate
+immutable candidate snapshot runs those original tests byte-for-byte in both
+GC modes: **87 assertions each**.
+Root sources and concurrent edits remain preserved.
+
+Three predeclared alternating local pairs count **256 complete public flag
+batches over 256 retained nodes**. Each batch creates a LayoutState, obtains
+geometry, sets content width and all seven flag groups, and consumes all eight
+getter values and geometry in a checksum. One quarter perform true-to-false
+transitions; three quarters keep false. Setup, eight warmups, expected result
+and forced GC precede the hardware interval; assertion follows it.
+Before: 277,992,361 / 277,160,305 / 275,798,278. Candidate by pair: 147,049,014 / 147,675,389 / 146,928,421.
+Median **277,160,305→147,049,014
+(-46.94%)**; checksum **984,383,488**
+in all six actual zero exits. This local result receives no page credit.
+
+Both full-process C-O1/Boehm profiles actually pass without filter/reset:
+
+| Function | Before calls | Candidate calls |
+| --- | ---: | ---: |
+| `layout__opt76_complete_public_flag_batches` | 265 | 265 |
+| `layout__LayoutState__static__new` | 276 | 276 |
+| `layout__LayoutState_get_mutable` | 67,856 | 67,856 |
+| `layout__UsedValuesPagedStore_allocate` | 68,662 | 68,662 |
+| `layout__UsedValues_ensure_rare_data` | 950,672 | 238,338 |
+| `layout__UsedValues_set_has_line_clamp_point` | 135,687 | 135,687 |
+| `layout__UsedValues_set_invisible_for_line_clamp` | 135,687 | 135,687 |
+| `layout__UsedValues_set_use_collapsing_borders_model` | 135,687 | 135,687 |
+| `layout__UsedValues_set_is_collapsed_borders_table_box` | 135,688 | 135,688 |
+| `layout__UsedValues_set_hidden_by_collapsed_columns` | 135,687 | 135,687 |
+| `layout__UsedValues_set_grid_subgridded_axes` | 135,687 | 135,687 |
+| `layout__UsedValues_set_svg_rendering_disabled` | 135,687 | 135,687 |
+
+These are call counts, not hardware instruction savings. Complete batches,
+public state creation/get and store allocations, and all seven setter counts
+match; ensure_rare_data calls decrease. Original outputs, actual exits and
+generated-C proof of full-process scope are durable.
+
+Strict C audit authenticates the seven setter guards. Each new body equals its old
+body plus the exact getter-equality early return. All seven normal before/final
+targets match independently generated focused C byte-for-byte. The existing
+has_line_clamp_point getter becomes reachable for the first time in the normal
+browser. Its unchanged V body and new normal C match both independently
+generated focused getter bodies byte-for-byte; the old normal binary omits
+that unused getter. Only its exact prototype/body are admitted additionally.
+The first audit finding, original script and diff remain retained under
+`instruction-opt76-c-audit-reachable-getter-failure`. All remaining
+C, records, globals, resources, filtering, arenas and GC policy match after
+established compiler identities, unchanged assertion-line mapping, 37 frozen
+includes and four byte-identical helper reorderings. Exact native arguments
+and all 120 pinned inputs match. C SHA256 `400c192f0c082cbf9969129bfbf65181d2ebed0b61b44f7cd03a72c7ae5cb224`;
+durable normal, focused, contract and profile archives are listed in
+`instruction-opt76-artifact-archives.json`. Compiler scratch is durable SSD;
+fresh benchmark cache copies retain the same RAM medium.
+
+The predeclared page cohort is **30 alternating pairs**, odd before/final,
+even final/before, **30,000 paired bootstrap resamples, seed 76**. Both regular
+persisted binaries use fresh copies of the same 359 cached bodies, frozen text
+and child-only placement helpers, C-O2/Boehm/one marker and unchanged 4 GiB
+hint; no prod/prealloc. Fixed document viewport 1024×768 and endpoint
+`navigation_to_first_document_paint[0]`; no historical or Root comparison.
+
+| Build | Median first-frame retired instructions | Median lifetime process peak, MiB |
+| --- | ---: | ---: |
+| Fresh accepted frozen75 control | 18,163,518,922 | 3,626.2 |
+| Unchanged optional flag guards | 18,159,559,257.5 | 3,627.6 |
+
+Difference of marginal medians: **3,959,664.5** instructions
+saved (-0.022% change), **13/30** wins.
+Paired median saving **-854,102**, paired 95% interval
+**[-16,938,044, 12,288,917.5]**. The interval includes zero; repeatable page credit is **0**. Whole-page savings are not established.
+
+All 60 primary observations and **60 actual PNGs** remain. Recovered
+primaries: none; pre-parse retries: 0. First primaries
+retain 1 installation/2 geometry preparations/1 paint. Later completed refreshes
+remain separate: none. No completed primary is extended,
+discarded or rerun. Recoveries disclose unknown final exit and missing PNG,
+fingerprint and peak. Peaks cover capture/exit and later refreshes, not
+first-frame live memory, and are never summed. The read-only decoded capture check finds 30 before and 30 candidate RGB classes, 0 shared. All differences stay within the original skeleton bands, x45–662: y335–344 and ten 14px bands starting at380 with41px spacing. All pixels outside these bands match. No animation was disabled and no observation repeated; evidence is instruction-opt76-page-pixel-class-check.json.
+The focused grid/flex/table, Unicode and intrinsic geometry viewport is
+pixel-exact at 1024×768.
+Prior observed carry is 0. Cumulative observed saving **3,959,664.5** stays below the 5M gate. Broad validation is deferred and the previous completed broad baseline remains.
+
+The isolated signed app is `/Users/alex/code/vox2/Build/v/Vox-opt76.app`; native instruction text
+matches the measured executable, with the frozen helper pinned inside the
+bundle and its actual default loaded path/hash checked. Signatures, startup
+and actual GC collections pass with default marker 1 and override 2. Canonical
+app and user GUI remain preserved; contemporary Root has no extra source,
+regression or performance credit. Equivalent Chrome content/start/submission
+accounting remains open; faster-than-Chrome performance is unproven. Evidence:
+`Build/instructions/vox-opt76-interleaved-*` and `Build/v/instruction-opt76-*`.
+
 ## Causes and changes
 
 - The V 0.5.2 compatibility compiler's `-prod` Boehm code repeatedly snapshots
