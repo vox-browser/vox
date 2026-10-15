@@ -361,6 +361,7 @@ pub mut:
 	svg_transform              [6]f64
 	svg_points                 []f64
 	svg_fill_color             string
+	svg_solid_color_data       &PaintSVGSolidColorData = unsafe { nil }
 	svg_fill_linear_gradient   ?painting.SVGLinearGradientPaintStyle
 	svg_fill_radial_gradient   ?painting.SVGRadialGradientPaintStyle
 	svg_fill_pattern           ?&painting.SVGPatternPaintStyle
@@ -936,6 +937,7 @@ pub mut:
 	path_polygons          [][]f64
 	stroke_color           string
 	svg_gradient_data      ?&PaintSVGGradientData = none
+	svg_solid_color_data   &PaintSVGSolidColorData = unsafe { nil }
 	fill_pattern           ?&painting.SVGPatternPaintStyle = none
 	stroke_pattern         ?&painting.SVGPatternPaintStyle = none
 	stroke_width           f64
@@ -2360,6 +2362,7 @@ fn (b &BlockBox) flat_paint_commands_for_entries(entries []PaintOrderEntry, sele
 				width: box.width
 				height: box.height
 				color: box.svg_fill_color
+				svg_solid_color_data: box.svg_solid_color_data
 				force_dark_role: .svg
 				force_dark_role_set: true
 				svg_gradient_data: retained_svg_gradient_data(box.svg_fill_linear_gradient,

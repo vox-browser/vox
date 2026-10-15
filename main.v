@@ -5553,8 +5553,10 @@ fn (mut app BrowserApp) draw_command(source_command layout.PaintCommand, page_x 
 					} else {
 						[f64(0)]
 					}
-					fill := paint_color(command.color, command.opacity * command.fill_opacity)
-					stroke := paint_color(command.stroke_color, command.opacity * command.stroke_opacity)
+					fill := paint_color_with_retained(command.color, command.opacity * command.fill_opacity,
+						command.retained_svg_fill_color())
+					stroke := paint_color_with_retained(command.stroke_color, command.opacity * command.stroke_opacity,
+						command.retained_svg_stroke_color())
 					if command.svg_gradient_data == none && command.fill_pattern == none
 						&& command.stroke_pattern == none && !command.stroke_first {
 						unsafe {
@@ -5639,14 +5641,16 @@ fn (mut app BrowserApp) draw_command(source_command layout.PaintCommand, page_x 
 			if command.color.len > 0 {
 				for polygon in screen_polygons {
 					if polygon.len >= 6 {
-						draw_browser_polygon(app.ctx, polygon, paint_color(command.color, command.opacity * command.fill_opacity))
+						draw_browser_polygon(app.ctx, polygon, paint_color_with_retained(command.color,
+							command.opacity * command.fill_opacity, command.retained_svg_fill_color()))
 					}
 				}
 			}
 			if command.stroke_color.len > 0 && screen_polygons.len > 0
 				&& screen_polygons[0].len >= 4 && command.stroke_width > 0 {
 				points := screen_polygons[0]
-				stroke := paint_color(command.stroke_color, command.opacity * command.stroke_opacity)
+				stroke := paint_color_with_retained(command.stroke_color, command.opacity * command.stroke_opacity,
+					command.retained_svg_stroke_color())
 				for index := 0; index + 3 < points.len; index += 2 {
 					draw_browser_line(app.ctx, points[index], points[index + 1], points[index + 2], points[index + 3], gg.PenConfig{
 						color: stroke

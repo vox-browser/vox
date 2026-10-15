@@ -3384,6 +3384,7 @@ fn block_box_from_typed_layout_shallow(node &Node, state &LayoutState, ancestor_
 	mut svg_transform := [f64(1), 0, 0, 1, 0, 0]!
 	mut svg_points := []f64{}
 	mut svg_fill_color := ''
+	mut svg_solid_color_data := &PaintSVGSolidColorData(unsafe { nil })
 	mut svg_fill_linear_gradient := ?painting.SVGLinearGradientPaintStyle(none)
 	mut svg_fill_radial_gradient := ?painting.SVGRadialGradientPaintStyle(none)
 	mut svg_fill_pattern := ?&painting.SVGPatternPaintStyle(none)
@@ -3492,6 +3493,8 @@ fn block_box_from_typed_layout_shallow(node &Node, state &LayoutState, ancestor_
 		multiply_affine(ancestor_paint_transform, paint_transform)
 	}
 	if path := used.computed_svg_path() {
+		mut svg_fill_rgba := ?css.Color(none)
+		mut svg_stroke_rgba := ?css.Color(none)
 		has_svg_path = true
 		svg_path = path.serialize()
 		if path_bounds := svg_path_bounds(path) {
@@ -3530,14 +3533,18 @@ fn block_box_from_typed_layout_shallow(node &Node, state &LayoutState, ancestor_
 			&& svg_fill_pattern == none {
 			if fill_color := computed_svg_paint_color(computed, .fill) {
 				svg_fill_color = fill_color.serialize()
+				svg_fill_rgba = fill_color
 			}
 		}
 		if svg_stroke_linear_gradient == none && svg_stroke_radial_gradient == none
 			&& svg_stroke_pattern == none {
 			if stroke_color := computed_svg_paint_color(computed, .stroke) {
 				svg_stroke_color = stroke_color.serialize()
+				svg_stroke_rgba = stroke_color
 			}
 		}
+		svg_solid_color_data = retained_svg_solid_color_data(svg_fill_color, svg_fill_rgba,
+			svg_stroke_color, svg_stroke_rgba)
 		percentage_basis := viewport_percentage_basis(node, state)
 		svg_stroke_width = computed.length_percentage_to_px(.stroke_width, percentage_basis) or { 1.0 }
 		svg_stroke_dasharray = resolved_svg_stroke_dasharray(computed, percentage_basis)
@@ -3939,6 +3946,7 @@ fn block_box_from_typed_layout_shallow(node &Node, state &LayoutState, ancestor_
 		svg_transform: svg_transform
 		svg_points: svg_points
 		svg_fill_color: svg_fill_color
+		svg_solid_color_data: svg_solid_color_data
 		svg_fill_linear_gradient: svg_fill_linear_gradient
 		svg_fill_radial_gradient: svg_fill_radial_gradient
 		svg_fill_pattern: svg_fill_pattern
