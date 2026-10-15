@@ -8,7 +8,10 @@ $if gcboehm ? {
 }
 
 pub fn document_heap_reservation_element_threshold() int {
-	return 2048
+	// Medium-sized documents already allocate many short-lived style/layout
+	// records. Reserve before that burst rather than repeatedly growing and
+	// tracing the same live DOM while building its first layout.
+	return 1024
 }
 
 // Substantial DOMs create short-lived style/layout input. Give the collector
