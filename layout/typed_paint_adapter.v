@@ -291,10 +291,11 @@ fn paintable_box_physical_resize_axes(_node &Node, computed &css.ComputedPropert
 	if computed.display().is_inline_outside() && computed.display().is_flow_inside() {
 		return painting.PhysicalResizeAxes{}
 	}
-	horizontal_writing_mode := computed.writing_mode() == .horizontal_tb
+	values := unsafe { &css.ComputedValues(computed) }
+	horizontal_writing_mode := values.writing_mode() == .horizontal_tb
 	resize := computed.resize()
-	horizontal := computed.overflow_x() !in [.visible, .clip] && (resize in [.both, .horizontal] || (resize == .inline_ && horizontal_writing_mode) || (resize == .block && !horizontal_writing_mode))
-	vertical := computed.overflow_y() !in [.visible, .clip] && (resize in [.both, .vertical] || (resize == .inline_ && !horizontal_writing_mode) || (resize == .block && horizontal_writing_mode))
+	horizontal := values.overflow_x() !in [.visible, .clip] && (resize in [.both, .horizontal] || (resize == .inline_ && horizontal_writing_mode) || (resize == .block && !horizontal_writing_mode))
+	vertical := values.overflow_y() !in [.visible, .clip] && (resize in [.both, .vertical] || (resize == .inline_ && !horizontal_writing_mode) || (resize == .block && horizontal_writing_mode))
 	return painting.PhysicalResizeAxes{horizontal, vertical}
 }
 
@@ -309,8 +310,9 @@ fn paintable_box_has_resizer(node &Node, computed &css.ComputedProperties) bool 
 
 // Direct translation of PaintableBox::is_chrome_mirrored().
 fn paintable_box_is_chrome_mirrored(computed &css.ComputedProperties) bool {
-	writing_mode := computed.writing_mode()
-	return (writing_mode == .horizontal_tb && computed.direction() == .rtl)
+	values := unsafe { &css.ComputedValues(computed) }
+	writing_mode := values.writing_mode()
+	return (writing_mode == .horizontal_tb && values.direction() == .rtl)
 		|| writing_mode in [.vertical_rl, .sideways_rl]
 }
 
@@ -376,10 +378,13 @@ fn automatic_scrollbar_colors(node &Node) (css.Color, css.Color) {
 
 fn compatibility_overlay_data(node &Node, computed &css.ComputedProperties, used &UsedValues) ?CompatibilityOverlayData {
 	overflow := used.scrollable_overflow_rect() or { return none }
+	// Viewport propagation overrides the box values without changing the
+	// originating element's computed CSS properties.
+	values := unsafe { &css.ComputedValues(computed) }
 	padding_width := used.content_width().to_double() + used.padding_left.to_double() + used.padding_right.to_double()
 	padding_height := used.content_height().to_double() + used.padding_top.to_double() + used.padding_bottom.to_double()
-	can_scroll_horizontally := compatibility_overflow_allows_scrolling(computed.overflow_x(), node.is_viewport()) && overflow.width.to_double() > padding_width
-	can_scroll_vertically := compatibility_overflow_allows_scrolling(computed.overflow_y(), node.is_viewport()) && overflow.height.to_double() > padding_height
+	can_scroll_horizontally := compatibility_overflow_allows_scrolling(values.overflow_x(), node.is_viewport()) && overflow.width.to_double() > padding_width
+	can_scroll_vertically := compatibility_overflow_allows_scrolling(values.overflow_y(), node.is_viewport()) && overflow.height.to_double() > padding_height
 	has_resizer := paintable_box_has_resizer(node, computed)
 	if !can_scroll_horizontally && !can_scroll_vertically && !has_resizer {
 		return none
@@ -390,7 +395,7 @@ fn compatibility_overlay_data(node &Node, computed &css.ComputedProperties, used
 	mut thumb_color := css.Color{64, 64, 64, 192}
 	mut track_color := css.Color{212, 208, 200, 192}
 	mut default_colors := true
-	colors := unsafe { &css.ComputedValues(computed) }.computed_scrollbar_color()
+	colors := values.computed_scrollbar_color()
 	if colors.auto_ {
 		thumb_color, track_color = automatic_scrollbar_colors(node)
 	} else {
@@ -416,7 +421,7 @@ fn compatibility_overlay_data(node &Node, computed &css.ComputedProperties, used
 		scroll_offset_y: scroll_offset_y
 		can_scroll_horizontally: can_scroll_horizontally
 		can_scroll_vertically: can_scroll_vertically
-		scrollbar_width: computed.scrollbar_width()
+		scrollbar_width: values.scrollbar_width()
 		scrollbar_thumb_color: thumb_color
 		scrollbar_track_color: track_color
 		default_scrollbar_colors: default_colors
@@ -489,8 +494,9 @@ fn paintable_box_overflow_clip_edge_rect(node &Node, computed &css.ComputedPrope
 
 // Translation of ViewportPaintable::compute_clip_data().
 fn compatibility_overflow_clip(node &Node, computed &css.ComputedProperties, used &UsedValues, position css.CSSPixelPoint, border_radii BoxRadii) ?CompatibilityOverflowClip {
-	mut overflow_x := computed.overflow_x()
-	mut overflow_y := computed.overflow_y()
+	values := unsafe { &css.ComputedValues(computed) }
+	mut overflow_x := values.overflow_x()
+	mut overflow_y := values.overflow_y()
 	if node.has_paint_containment() {
 		if overflow_x == .visible {
 			overflow_x = .clip
