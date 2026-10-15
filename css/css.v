@@ -3031,6 +3031,12 @@ fn parsed_length_percentage_style_value_from_dom_style_value(style_value &dom.St
 }
 
 pub fn Length.from_style_value(style_value &dom.StyleValue, percentage_basis ?Length) Length {
+	if style_value.css_value_handle != unsafe { nil } {
+		typed := unsafe { &TypedStyleValueBox(style_value.css_value_handle) }
+		if typed.value is LengthStyleValue {
+			return typed.value.length()
+		}
+	}
 	if parsed_value := parsed_length_percentage_style_value_from_dom_style_value(style_value) {
 		return Length.from_style_value_logic(parsed_value, percentage_basis)
 	}
