@@ -1759,8 +1759,7 @@ fn run_column_flex_formatting_context(mut state LayoutState, container &Node, mu
 		// Repeating unchanged inside-layout at every nested column multiplies
 		// the work. Promote the used height to a definite basis in place when
 		// no descendant consumes that transition; changed sizes still rerun.
-		reuse_geometry := layout_mode != .intrinsic_sizing
-			&& current.content_height() == line.targets[index]
+		reuse_geometry := current.content_height() == line.targets[index]
 			&& (if width := forced_width { width == current.content_width() } else { true })
 			&& (current.has_definite_height()
 				|| !flex_subtree_depends_on_definite_height(mut state, item))
