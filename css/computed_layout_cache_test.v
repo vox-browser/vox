@@ -67,3 +67,41 @@ fn test_unmaterialized_layout_cache_defaults_remain_readable_after_collection() 
 		assert next.computed_layout_cache().computed_values_rotate_ == none
 	}
 }
+
+fn test_hot_content_and_marker_updates_preserve_style_copies_without_detaching_layout_cache() {
+	mut first := computed_properties_with_initial_values()
+	mut values := unsafe { &MutableComputedValues(first) }
+	values.set_content(ContentData{ type_: .list, text: 'original content' })
+	values.set_list_style_type(ListStyleType{ kind: .string, name: 'original marker' })
+	assert first.computed_layout_cache_ == unsafe { nil }
+	copied := &ComputedProperties{
+		...first
+	}
+	values.set_content(ContentData{ type_: .list, text: 'new content' })
+	values.set_list_style_type(ListStyleType{ kind: .string, name: 'new marker' })
+	assert (unsafe { &ComputedValues(copied) }.computed_content() or {
+		panic('original content lost')
+	}).text == 'original content'
+	assert unsafe { &ComputedValues(copied) }.computed_list_style_type().name == 'original marker'
+	_ = resolve_computed_values(first)
+	cache := first.computed_layout_cache()
+	published := &ComputedProperties{
+		...first
+	}
+	values.set_content(none)
+	values.set_list_style_type(ListStyleType{})
+	assert voidptr(first.computed_layout_cache()) == voidptr(cache)
+	assert unsafe { &ComputedValues(first) }.computed_content() == none
+	assert unsafe { &ComputedValues(first) }.computed_list_style_type().kind == .none_
+	for _ in 0 .. 3 {
+		$if gcboehm ? { C.GC_gcollect() }
+		assert (unsafe { &ComputedValues(published) }.computed_content() or {
+			panic('retained content lost')
+		}).text == 'new content'
+		assert unsafe { &ComputedValues(published) }.computed_list_style_type().name == 'new marker'
+		assert (unsafe { &ComputedValues(copied) }.computed_content() or {
+			panic('copied content lost')
+		}).text == 'original content'
+		assert unsafe { &ComputedValues(copied) }.computed_list_style_type().name == 'original marker'
+	}
+}

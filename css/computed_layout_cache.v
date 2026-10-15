@@ -82,9 +82,7 @@ mut:
 	computed_values_z_index_                       ?int
 	computed_values_image_rendering_               ImageRendering
 	computed_values_pointer_events_                PointerEvents
-	computed_values_list_style_type_               ListStyleType
 	computed_values_list_style_position_           ListStylePosition
-	computed_values_content_                       ?ContentData
 	computed_values_grid_column_end_               GridTrackPlacement
 	computed_values_grid_column_start_             GridTrackPlacement
 	computed_values_grid_row_end_                  GridTrackPlacement

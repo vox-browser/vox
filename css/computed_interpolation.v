@@ -1609,6 +1609,8 @@ pub mut:
 	// StyleValue objects on every layout query.
 	computed_values_resolved_                      bool
 	computed_values_line_height_                   CSSPixels
+	computed_values_list_style_type_               ListStyleType
+	computed_values_content_                       ?ContentData
 
 mut:
 	computed_layout_cache_ &ComputedLayoutCache = unsafe { nil }
