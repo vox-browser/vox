@@ -5991,6 +5991,40 @@ durable archives permit regeneration if that shared volume disappears. No
 foreign files, canonical bundle or user GUI process are changed. Chrome parity
 remains open.
 
+## Reject the initialize-once inline destination revision
+
+Round63 moves the rejected private emitter's destination initialization before
+the eager-generation loop, so every successful item fully replaces one reused
+local record. Both changed candidate C-O2 configurations pass **7,846 assertions
+in 31 cases** (30 functional plus an inactive diagnostic). The exact successful
+round62-before control job and binary are reused: its common source and frozen61
+runtime are unchanged. No successful control check is rerun. This revision has
+a distinct predeclared three-pair alternating local cohort; round62 samples
+remain intact and are not extended.
+
+All six complete public-iterator measurements exit zero, with the same checksum
+120,143,872 and 512 builds of 32 text nodes/160 items each. Setup, expected items,
+eight warmups and forced collection precede the counter; assertions follow.
+Before counts are 697,994,967 / 689,418,834 / 700,669,749; paired candidate counts
+are 912,775,528 / 910,601,575 / 704,406,817. Every pair is worse. Median retired
+instructions rise **697,994,967→910,601,575 (+30.46%)**. The spread is retained;
+no sample is removed, rerun or extended. Initializing once does not establish an
+improvement. This source variant is rejected and its two private functions are
+restored exactly; its new tests are archived. No cause is inferred from these
+instruction counts alone.
+
+The negative local gate stops normal generation before any native browser
+command. No new profile, normal-C audit, page cohort, screenshot, broad batch,
+bundle or GC-policy success is claimed. **Page credit is 0**. Broad baseline,
+additional carry and next control stay round61 (`5362d3aa`, carry0). The normal
+builder's nonzero gate receipt has no native exit and is retained. Source
+snapshots, both actual candidate focused exits, the reused control receipt,
+durable focused C archives, per-run terminal receipts and all measurements are
+in `Build/v/instruction-opt63-*` and `Build/opt63-*-source`. The common harness
+is byte-identical to the corrected compatible round62 harness, SHA256
+`c123de67f06e5e6d9a48f586a9d7e48c4512b4b630599388a98072c325248a82`.
+Canonical and user GUI apps are preserved. Chrome parity remains open.
+
 ## Causes and changes
 
 - The V 0.5.2 compatibility compiler's `-prod` Boehm code repeatedly snapshots

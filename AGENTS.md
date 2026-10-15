@@ -1586,6 +1586,10 @@ evidence](docs/translation-audit/NATIVE_MEDIA_WHEEL_RAW_HANDLER.md).
   The two private functions are restored; no normal build/C audit/page/bundle
   success or CPU credit is claimed. Broad baseline/next control stay `5362d3aa`,
   additional carry 0. Canonical and GUI preserved; Chrome parity remains open.
+  Initialize-once inline output round63 is also rejected locally: all three
+  pairs regress, median +30.46%. Candidate checks pass 7,846 assertions in
+  both GC modes; exact successful control checks are reused. Owned functions
+  are restored; no page credit or broad reset. Next control stays `5362d3aa`.
 - Outside instruction-count optimization, run broad regression suites once per
   ten completed fixes, not after every fix.
   Broad suites include full translation/package test batches, the full LibJS AST
