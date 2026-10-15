@@ -2518,54 +2518,49 @@ fn block_box_from_typed_layout(node &Node, state &LayoutState) BlockBox {
 
 struct TypedPaintBuildFrame {
 	node &Node
-mut:
-	box           BlockBox
-	child_indices []int
+	box  &BlockBox
 }
 
 // Paintable construction used to recurse through this tree while every call
 // retained the adapter's large collection of temporary paint data. Moderately
 // deep, entirely valid documents could consequently exhaust the native stack
-// before painting began. Build the shallow boxes in preorder and attach their
-// already-built children in reverse order instead.
+// before painting began. Keep the breadth-first construction order without a
+// second wide box vector: each parent installs its final child storage before
+// the compact work queue takes pointers into it. That storage never grows after
+// its children enter the queue, so later queue reallocations cannot move boxes.
 fn block_box_from_typed_layout_with_ancestor(node &Node, state &LayoutState, ancestor_paint_transform [6]f64) BlockBox {
-	root_box := block_box_from_typed_layout_shallow(node, state, ancestor_paint_transform)
+	mut root_box := block_box_from_typed_layout_shallow(node, state, ancestor_paint_transform)
 	mut frames := [TypedPaintBuildFrame{
 		node: node
-		box: root_box
+		box: &root_box
 	}]
 	mut frame_index := 0
 	for frame_index < frames.len {
 		parent_node := frames[frame_index].node
-		parent_transform := frames[frame_index].box.paint_transform
+		mut parent_box := unsafe { &BlockBox(frames[frame_index].box) }
+		parent_transform := parent_box.paint_transform
 		children := typed_paint_child_nodes(parent_node, state)
+		mut child_boxes := []BlockBox{cap: children.len}
+		mut child_nodes := []&Node{cap: children.len}
 		for child in children {
 			child_box := block_box_from_typed_layout_shallow(child, state, parent_transform)
 			if child_box.tag_name == '' && !child.is_anonymous()
 				&& !child.is_generated_for_pseudo_element() {
 				continue
 			}
-			child_index := frames.len
+			child_boxes << child_box
+			child_nodes << child
+		}
+		parent_box.children = child_boxes
+		for child_index, child in child_nodes {
 			frames << TypedPaintBuildFrame{
 				node: child
-				box: child_box
+				box: unsafe { &parent_box.children[child_index] }
 			}
-			frames[frame_index].child_indices << child_index
 		}
 		frame_index++
 	}
-
-	mut built := []BlockBox{len: frames.len}
-	mut reverse_index := frames.len
-	for reverse_index > 0 {
-		reverse_index--
-		mut box := frames[reverse_index].box
-		for child_index in frames[reverse_index].child_indices {
-			box.children << built[child_index]
-		}
-		built[reverse_index] = box
-	}
-	return built[0]
+	return root_box
 }
 
 fn painting_clip_path_segment(segment html.PathSegment) painting.ClipPathSegment {
