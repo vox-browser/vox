@@ -5239,6 +5239,8 @@ pub mut:
 	needs_full_style_update                        bool
 	needs_full_layout_tree_update                  bool
 	is_running_update_layout_                      bool
+	layout_stabilization_count_                     int = -1
+	layout_stabilization_count_tree_version_        u64
 	query_containers_needing_container_query_evaluation_after_layout []&Element
 	needs_animated_style_update                    bool
 	needs_accumulated_visual_contexts_update       bool
@@ -7276,6 +7278,19 @@ fn layout_stabilization_element_count(node &Node) int {
 	return count
 }
 
+fn (mut d Document) invalidate_layout_stabilization_count() {
+	d.layout_stabilization_count_ = -1
+}
+
+fn (mut d Document) cached_layout_stabilization_element_count() int {
+	if d.layout_stabilization_count_ < 0
+		|| d.layout_stabilization_count_tree_version_ != d.dom_tree_version {
+		d.layout_stabilization_count_ = layout_stabilization_element_count(unsafe { &Node(&d) })
+		d.layout_stabilization_count_tree_version_ = d.dom_tree_version
+	}
+	return d.layout_stabilization_count_
+}
+
 pub fn (d &Document) needs_style_update_after_layout() bool {
 	if d.needs_full_style_update
 		|| d.query_containers_needing_container_query_evaluation_after_layout.len > 0
@@ -7326,7 +7341,7 @@ pub fn (mut d Document) update_layout(reason UpdateLayoutReason) {
 	// A size-query dependency points from a descendant to an ancestor, so one
 	// pass per connected element is a conservative exact bound for nested query
 	// containers, in addition to Ladybird's ordinary stabilization allowance.
-	layout_pass_limit := 9 + layout_stabilization_element_count(document_node)
+	layout_pass_limit := 9 + d.cached_layout_stabilization_element_count()
 	for _ in 0 .. layout_pass_limit {
 		d.update_style()
 		if d.layout_is_up_to_date() {

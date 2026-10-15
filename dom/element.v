@@ -2239,6 +2239,8 @@ pub fn (mut e Element) set_shadow_root(sr ?&ShadowRoot) {
 		current_node.set_is_connected(false)
 	}
 	e.shadow_root_ = sr
+	mut document := e.document()
+	document.invalidate_layout_stabilization_count()
 	if new_shadow_root != unsafe { nil } {
 		mut new_fragment := unsafe { &DocumentFragment(new_shadow_root) }
 		new_fragment.set_host(&e)
