@@ -1561,13 +1561,66 @@ pub mut:
 }
 
 @[heap]
+struct IntrinsicHeightOverflow {
+mut:
+	values map[int]?CSSPixels
+}
+
+@[heap]
+struct IntrinsicHeightCache {
+mut:
+	first_width int
+	first_value ?CSSPixels
+	overflow    &IntrinsicHeightOverflow = unsafe { nil }
+}
+
+@[heap]
 pub struct IntrinsicSizes {
 pub mut:
 	min_content_width         ?CSSPixels
 	max_content_width         ?CSSPixels
-	min_content_height        map[int]?CSSPixels
-	max_content_height        map[int]?CSSPixels
 	table_grid_width_measures ?&TableGridIntrinsicWidths
+mut:
+	min_content_height_ &IntrinsicHeightCache = unsafe { nil }
+	max_content_height_ &IntrinsicHeightCache = unsafe { nil }
+}
+
+fn (cache &IntrinsicSizes) height_cache(minimum bool) &IntrinsicHeightCache {
+	return if minimum { cache.min_content_height_ } else { cache.max_content_height_ }
+}
+
+fn (cache &IntrinsicSizes) has_cached_content_height(minimum bool, width int) bool {
+	heights := cache.height_cache(minimum)
+	return heights != unsafe { nil } && (heights.first_width == width
+		|| (heights.overflow != unsafe { nil } && width in heights.overflow.values))
+}
+
+fn (cache &IntrinsicSizes) cached_content_height(minimum bool, width int) ?CSSPixels {
+	heights := cache.height_cache(minimum)
+	if heights == unsafe { nil } { return none }
+	if heights.first_width == width { return heights.first_value }
+	if heights.overflow == unsafe { nil } || width !in heights.overflow.values {
+		return none
+	}
+	return unsafe { heights.overflow.values[width] }
+}
+
+fn (mut cache IntrinsicSizes) cache_content_height(minimum bool, width int, value ?CSSPixels) {
+	mut heights := cache.height_cache(minimum)
+	if heights == unsafe { nil } {
+		heights = &IntrinsicHeightCache{ first_width: width, first_value: value }
+		if minimum { cache.min_content_height_ = heights }
+		else { cache.max_content_height_ = heights }
+		return
+	}
+	if heights.first_width == width {
+		heights.first_value = value
+		return
+	}
+	if heights.overflow == unsafe { nil } {
+		heights.overflow = &IntrinsicHeightOverflow{}
+	}
+	heights.overflow.values[width] = value
 }
 
 pub fn Box.new(document &dom.Document, dom_node ?&dom.Node, computed_values &css.ComputedProperties) &Box {
@@ -1602,10 +1655,7 @@ pub fn (mut n Box) cached_intrinsic_sizes() &IntrinsicSizes {
 	if cached := n.cached_intrinsic_sizes_ {
 		return cached
 	}
-	new_cache := &IntrinsicSizes{
-		min_content_height: map[int]?CSSPixels{}
-		max_content_height: map[int]?CSSPixels{}
-	}
+	new_cache := &IntrinsicSizes{}
 	n.cached_intrinsic_sizes_ = new_cache
 	return new_cache
 }

@@ -1061,12 +1061,12 @@ fn calculate_min_content_height(mut state LayoutState, box &Box, width CSSPixels
 	mut mutable_box := unsafe { &Box(box) }
 	mut cache := mutable_box.cached_intrinsic_sizes()
 	key := width.raw_value()
-	if cached := cache.min_content_height[key] {
+	if cached := cache.cached_content_height(true, key) {
 		return cached
 	}
 	result := calculate_content_height_with_constraint(mut state, box, width, .min_content)
 	cache = mutable_box.cached_intrinsic_sizes()
-	cache.min_content_height[key] = result
+	cache.cache_content_height(true, key, result)
 	return result
 }
 
@@ -1095,12 +1095,12 @@ fn calculate_max_content_height(mut state LayoutState, box &Box, width CSSPixels
 	mut mutable_box := unsafe { &Box(box) }
 	mut cache := mutable_box.cached_intrinsic_sizes()
 	key := width.raw_value()
-	if cached := cache.max_content_height[key] {
+	if cached := cache.cached_content_height(false, key) {
 		return cached
 	}
 	result := calculate_content_height_with_constraint(mut state, box, width, .max_content)
 	cache = mutable_box.cached_intrinsic_sizes()
-	cache.max_content_height[key] = result
+	cache.cache_content_height(false, key, result)
 	return result
 }
 
