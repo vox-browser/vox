@@ -69,6 +69,10 @@ fn C.native_prevent_app_nap()
 
 fn C.native_position_window_top_right()
 
+fn C.native_prepare_test_window()
+
+fn C.native_finish_test_window()
+
 fn C.native_show_cached_snapshot(path string)
 
 fn C.native_hide_cached_snapshot()
@@ -544,6 +548,7 @@ fn browser_window_size() gg.Size {
 
 fn (app &BrowserApp) initialize_native_window() {
 	$if macos {
+		C.native_finish_test_window()
 		if app.screenshot_path != '' {
 			C.native_position_window_top_right()
 		}
@@ -6552,5 +6557,10 @@ fn main() {
 		app.navigate(initial_url, true)
 	}
 	debug_timing_checkpoint('startup_navigation', main_checkpoint)
+	$if macos {
+		if options.screenshot != '' || os.getenv('VOX_TEST_WINDOW') == '1' {
+			C.native_prepare_test_window()
+		}
+	}
 	app.ctx.run()
 }

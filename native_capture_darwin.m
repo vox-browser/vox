@@ -1,4 +1,5 @@
 #include <Cocoa/Cocoa.h>
+#include "native_test_window_darwin.h"
 #include <CoreImage/CoreImage.h>
 #include <CoreText/CoreText.h>
 #include <math.h>
@@ -321,29 +322,21 @@ static NSView *native_cached_browser_view;
 static NSImageView *native_cached_snapshot_view;
 static id<NSObject> native_activity_token;
 
-// Automated pixel tests keep a real window alive while AppKit renders its
-// content view. Put that temporary window out of the center of the workspace,
-// while keeping it fully visible on whichever display Sokol selected.
+// Keep the test display selected before Sokol starts, including when the app
+// has no main or key window because the user is working in another application.
 void native_position_window_top_right(void) {
 	NSWindow *window = [NSApp mainWindow];
 	if (window == nil) {
 		window = [NSApp keyWindow];
 	}
 	if (window == nil) {
-		return;
+		window = [[NSApp windows] firstObject];
 	}
-	NSScreen *screen = [window screen];
+	NSScreen *screen = native_test_window_screen ?: [window screen];
 	if (screen == nil) {
 		screen = [NSScreen mainScreen];
 	}
-	if (screen == nil) {
-		return;
-	}
-	NSRect visible_frame = [screen visibleFrame];
-	NSRect window_frame = [window frame];
-	NSPoint origin = NSMakePoint(NSMaxX(visible_frame) - NSWidth(window_frame),
-		NSMaxY(visible_frame) - NSHeight(window_frame));
-	[window setFrameOrigin:origin];
+	native_test_window_position(window, screen);
 }
 
 // Keep the run loop lively even when the window is occluded or not frontmost.
