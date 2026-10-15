@@ -1483,12 +1483,29 @@ fn browser_fetch_video_poster(resource_url dom.URL) !&dom.Bitmap_ {
 	return browser_decode_raster_image_bytes(browser_image_resource_bytes(resource_url)!)
 }
 
+fn browser_decode_video_poster(bytes []u8) !html.DecodedImageData {
+	bitmap := browser_decode_raster_image_bytes(bytes)!
+	return html.BitmapDecodedImageData.create([
+		html.BitmapDecodedImageFrame{frame: dom.DecodedImageFrame_.create(bitmap)},
+	], 0, false)
+}
+
 fn install_video_poster_fetch_hooks(document &dom.Document) {
 	root := unsafe { &dom.Node(document) }
 	for element in css.query_selector_all(root, 'video') {
 		if !element.is_html_element() { continue }
 		video_element := unsafe { &dom.HTMLVideoElement(element) }
 		mut model := html.html_video_element_model_for_dom_element(video_element)
+		// Native documents use their actual client and networking task queue.
+		// Standalone model adapters without settings retain the URL decoder.
+		if document.relevant_settings_object() != unsafe { nil } {
+			if host := requestserver.native_resource_fetch_host() {
+				model.set_poster_fetch_transport(&html.PosterFrameFetchTransport{
+					host: host
+					decode: browser_decode_video_poster
+				})
+			}
+		}
 		model.set_poster_fetch_hook(fn [element] (resource_url dom.URL) !&dom.Bitmap_ {
 			return browser_decode_raster_image_bytes(browser_image_resource_bytes_for_document(resource_url, element.document().url.serialize())!)
 		})

@@ -92,9 +92,15 @@ pub fn (mut transport NativeFontFetchTransport) close() {
 	transport.connection.close()
 }
 
-fn native_font_fetch_host_for_document(_ &dom.Document) ?&fetch.FetchHost {
+// Share the process-owned ResourceLoader transport with other native Fetch
+// consumers. Each request still carries its own document client and policy.
+pub fn native_resource_fetch_host() ?&fetch.FetchHost {
 	if transport := native_font_fetch_transport_ { return transport.fetch_host() }
 	return none
+}
+
+fn native_font_fetch_host_for_document(_ &dom.Document) ?&fetch.FetchHost {
+	return native_resource_fetch_host()
 }
 
 pub fn install_native_font_fetch_host() ! {
