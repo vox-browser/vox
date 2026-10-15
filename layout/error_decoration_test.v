@@ -113,7 +113,10 @@ fn test_typed_document_paint_preserves_computed_background_image_layers() {
 		css_text: 'url("sprite.png")'
 		base_url: 'https://example.test/assets/site.css'
 	})
-	layers := computed_background_image_layers(sprite, computed, css.ColorResolutionContext{
+	sprite_layout := sprite.as_node().unsafe_layout_node() or { panic('missing sprite layout') }
+	assert sprite_layout.real_layout_handle() != unsafe { nil }
+	sprite_node := unsafe { &Node(sprite_layout.real_layout_handle()) }
+	layers := computed_background_image_layers(sprite_node, sprite, computed, css.ColorResolutionContext{
 		current_color: css.Color{0, 0, 0, 255}
 	})
 	assert layers.len == 1
