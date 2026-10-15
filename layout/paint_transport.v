@@ -1339,6 +1339,12 @@ fn (b &BlockBox) current_scroll_offset(fallback CompatibilityOverlayData) painti
 	// compatibility display list observes offsets changed since layout.
 	if b.node_id != 0 {
 		if node := dom.Node.from_unique_id(dom.UniqueNodeID(b.node_id)) {
+			// The transport's root element also represents the omitted viewport
+			// box. Its scrollbar follows the document, not the element's offset.
+			if b.is_viewport_scroller {
+				viewport := node.document().viewport_rect()
+				return painting.Point{viewport.x, viewport.y}
+			}
 			if paintable := node.paintable_box() {
 				offset := paintable.scroll_offset()
 				return painting.Point{offset.x(), offset.y()}
