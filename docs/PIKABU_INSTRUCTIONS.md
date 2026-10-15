@@ -194,6 +194,8 @@ Counts are whole launch through the capture boundary described above.
 | Vox candidate v8b | 89,140,646,198 | Passed |
 | Vox candidate v9 | 88,695,567,269 | Passed |
 | Vox candidate v10 | 91,187,097,317 | Passed; regression |
+| Vox candidate v11 | 106,101,297,297 | Passed; regression |
+| Vox candidate v12 | 83,818,061,906 | Passed |
 
 Candidate v6 uses executable SHA256
 `cc105727ad0e7d08d12c94336ca6cd4d26e2c1318416dfddace23c626d1338c2`.
@@ -261,10 +263,35 @@ allocation for v10; it provides no primary instruction savings credit.
 The comparison receipt is
 `Build/pikabu-instructions/v9-v10-audit-phase-memory-comparison.json`.
 
-The broad-verification baseline remains the completed v9 checkpoint,
-88,695,567,269 instructions, with zero additional measured savings credited.
-Diagnostic profiles, isolated allocation probes and failed content checks do
-not advance that baseline.
+Candidate v11 moves seldom-used computed layout values into an immutable,
+lazily copied record. Its executable SHA256 is
+`96dd767e119c6559ac0c77f3d4f87eae2fcf4c75e616cc55fde5dc84c02de1f6`.
+The completed checkpoint regresses 19.62% against v9. A separate, controlled
+cache ablation records 94,076,157,016 instructions without that cache versus
+95,249,901,586 with it, with identical pixels and the same seven tree builds
+and ten formatting passes. The cache lowers peak memory by 42.43 MB in that
+pair, but neither this ablation nor allocation traces earn primary savings
+credit. Receipts are retained under
+`Build/pikabu-instructions/v11-cache-ablation-*`.
+
+Candidate v12 keeps frequently updated content and marker values inline,
+shares immutable SVG gradient/filter payloads, reuses live DOM layout mirrors,
+and caches the exact layout-stabilization element count by tree version.
+Its executable SHA256 is
+`56934eaef478d45d732c89e635eebb4a1b9cba41c014721407e2844183ef16f7`,
+built from frozen revision `67c853d6380cb1ab4c5b015d5a17046b4a9be584`.
+The single checkpoint saves 4,877,505,363 instructions (5.50%) against v9.
+The same 15 stories, exact first title, decoded image and actual parsed Roboto
+faces pass, and decoded pixels remain identical to the native control.
+
+Candidate v12 also passed the same broad batch: 135 cases per GC mode,
+100 exact AST fixtures, production startup and all 19 screenshot comparisons.
+Sixteen screenshots are exact and three retain their existing fuzzy bounds;
+all 19 native outputs match v6 exactly. The authenticated summary and reset
+are retained under `Build/pikabu-instructions/broad-v12/`.
+The broad-verification baseline is now 83,818,061,906 instructions, with zero
+additional measured savings credited. Diagnostic profiles, isolated allocation
+probes and failed content checks do not advance that baseline.
 
 Vox remains above Brave's instruction count. A target claim still requires
 at least five alternating fresh Vox/Brave runs with all gates passing, preserved
