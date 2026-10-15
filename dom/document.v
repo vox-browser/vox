@@ -5243,7 +5243,7 @@ pub mut:
 	html_navigation_hook_                          ?DocumentHTMLNavigationHook
 	fullscreen_hook_                               ?DocumentFullscreenHook
 	media_element_state_query_                     ?MediaElementStateQuery
-	media_element_autoplay_attribute_changed_hook_ ?MediaElementAutoplayAttributeChangedHook
+	media_element_resource_attribute_changed_hook_ ?MediaElementResourceAttributeChangedHook
 	layout_engine_handle_                          voidptr = unsafe { nil }
 
 	// Layout

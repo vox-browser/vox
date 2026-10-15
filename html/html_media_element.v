@@ -281,7 +281,7 @@ pub fn HTMLMediaElement.create(element ?&dom.HTMLElement, base_url dom.URL) &HTM
 		dom_element := unsafe { &dom.Element(html_element) }
 		mut document := dom_element.document()
 		document.set_media_element_state_query(media_element_matches_pseudo_class)
-		document.set_media_element_autoplay_attribute_changed_hook(html_media_element_autoplay_attribute_changed)
+		document.set_media_element_resource_attribute_changed_hook(html_media_element_resource_attribute_changed)
 		mut observer := dom.DocumentObserver.create(mut document)
 		observer.set_document_became_inactive(fn [media] () {
 			mut mutable_media := unsafe { &HTMLMediaElement(media) }
@@ -356,7 +356,7 @@ pub fn html_media_element_for_dom_element(element &dom.Element) ?&HTMLMediaEleme
 				element.document().base_url())
 			model.set_source(element.get_attribute('src'))
 			model.set_crossorigin(element.get_attribute('crossorigin'))
-			model.set_preload(element.get_attribute('preload'))
+			model.preload_ = element.get_attribute('preload')
 			model.autoplay_ = element.has_attribute('autoplay')
 			audio.media_element_model_ = model
 		}
@@ -369,7 +369,7 @@ pub fn html_media_element_for_dom_element(element &dom.Element) ?&HTMLMediaEleme
 				element.document().base_url())
 			model.set_source(element.get_attribute('src'))
 			model.set_crossorigin(element.get_attribute('crossorigin'))
-			model.set_preload(element.get_attribute('preload'))
+			model.preload_ = element.get_attribute('preload')
 			model.autoplay_ = element.has_attribute('autoplay')
 			video.media_element_model_ = model
 		}
@@ -392,7 +392,7 @@ fn media_element_matches_pseudo_class(element &dom.Element, pseudo_class dom.Med
 	}
 }
 
-fn html_media_element_autoplay_attribute_changed(element &dom.Element) {
+fn html_media_element_resource_attribute_changed(element &dom.Element) {
 	if !element.is_html_element() { return }
 	model_pointer := match element.local_name() {
 		'audio' { unsafe { &dom.HTMLAudioElement(element) }.media_element_model_ }
@@ -403,7 +403,7 @@ fn html_media_element_autoplay_attribute_changed(element &dom.Element) {
 	// resource selection which already belongs to this actual owner can resume.
 	if model_pointer == unsafe { nil } { return }
 	mut media := unsafe { &HTMLMediaElement(model_pointer) }
-	media.autoplay_attribute_changed()
+	media.resource_attribute_changed()
 }
 
 // CSS/Invalidation/ElementStateInvalidator.cpp records typed state changes.
@@ -438,7 +438,7 @@ pub fn (mut element HTMLMediaElement) adopted_from(old_document &dom.Document) {
 	html_element := element.associated_element_ or { return }
 	mut new_document := unsafe { &dom.Element(html_element) }.document()
 	element.base_url_ = new_document.base_url()
-	new_document.set_media_element_autoplay_attribute_changed_hook(html_media_element_autoplay_attribute_changed)
+	new_document.set_media_element_resource_attribute_changed_hook(html_media_element_resource_attribute_changed)
 	if observer := element.document_observer_ {
 		mut mutable_observer := unsafe { &dom.DocumentObserver(observer) }
 		mutable_observer.retarget_for_adoption(mut new_document)
@@ -864,22 +864,44 @@ pub fn (mut element HTMLMediaElement) set_autoplay(value bool) {
 			dom_element.remove_attribute('autoplay')
 		}
 	}
-	element.autoplay_attribute_changed()
+	element.resource_attribute_changed()
 }
 
-fn (mut element HTMLMediaElement) autoplay_attribute_changed() {
+fn (mut element HTMLMediaElement) resource_attribute_changed() {
 	if element.waiting_for_an_implementation_defined_event_to_fetch_the_resource_
 		&& !element.should_wait_for_an_implementation_defined_event_before_fetching_the_resource() {
 		element.continue_fetching_the_resource_after_an_implementation_defined_event() or {}
+	}
+}
+
+fn (element &HTMLMediaElement) raw_preload() ?string {
+	if html_element := element.associated_element_ {
+		return unsafe { &dom.Element(html_element) }.get_attribute('preload')
+	}
+	return element.preload_
+}
+
+pub fn (element &HTMLMediaElement) preload() string {
+	raw := element.raw_preload() or { return 'metadata' }
+	return match ascii_lowercase_string(raw) {
+		'auto' { 'auto' }
+		'none' { 'none' }
+		'metadata' { 'metadata' }
+		else { 'metadata' }
 	}
 }
 
 pub fn (mut element HTMLMediaElement) set_preload(value ?string) {
 	element.preload_ = value
-	if element.waiting_for_an_implementation_defined_event_to_fetch_the_resource_
-		&& !element.should_wait_for_an_implementation_defined_event_before_fetching_the_resource() {
-		element.continue_fetching_the_resource_after_an_implementation_defined_event() or {}
+	if html_element := element.associated_element_ {
+		mut dom_element := unsafe { &dom.Element(html_element) }
+		if raw := value {
+			dom_element.set_attribute_value('preload', raw)
+		} else {
+			dom_element.remove_attribute('preload')
+		}
 	}
+	element.resource_attribute_changed()
 }
 
 fn (mut element HTMLMediaElement) fire_event(name string) {
@@ -1103,8 +1125,8 @@ fn (mut element HTMLMediaElement) select_resource_for_current_load() ! {
 
 // https://html.spec.whatwg.org/multipage/media.html#attr-media-preload
 fn (element &HTMLMediaElement) preload_attribute_is_in_none_state() bool {
-	preload := element.preload_ or { return false }
-	return preload.to_lower() == 'none'
+	preload := element.raw_preload() or { return false }
+	return ascii_lowercase_string(preload) == 'none'
 }
 
 fn (element &HTMLMediaElement) should_wait_for_an_implementation_defined_event_before_fetching_the_resource() bool {

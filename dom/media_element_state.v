@@ -13,14 +13,14 @@ pub enum MediaElementPseudoClass {
 
 pub type MediaElementStateQuery = fn (&Element, MediaElementPseudoClass) bool
 
-pub type MediaElementAutoplayAttributeChangedHook = fn (&Element)
+pub type MediaElementResourceAttributeChangedHook = fn (&Element)
 
 pub fn (mut document Document) set_media_element_state_query(query MediaElementStateQuery) {
 	document.media_element_state_query_ = query
 }
 
-pub fn (mut document Document) set_media_element_autoplay_attribute_changed_hook(hook MediaElementAutoplayAttributeChangedHook) {
-	document.media_element_autoplay_attribute_changed_hook_ = hook
+pub fn (mut document Document) set_media_element_resource_attribute_changed_hook(hook MediaElementResourceAttributeChangedHook) {
+	document.media_element_resource_attribute_changed_hook_ = hook
 }
 
 // HTML installs a query which resolves the concrete owner on first use. No
