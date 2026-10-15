@@ -3517,10 +3517,12 @@ fn owned_platform_typeface(typeface &PlatformTypeface) &PlatformTypeface {
 }
 
 fn owned_shape_features(features ShapeFeatures) ShapeFeatures {
+	// The new array owns its feature records. Immutable tag strings keep their
+	// backing storage reachable through each copied record without another copy.
 	mut result := ShapeFeatures{ cap: features.len }
 	for feature in features {
 		result << ShapeFeature{
-			tag:   feature.tag.clone()
+			tag:   feature.tag
 			value: feature.value
 		}
 	}
