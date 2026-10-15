@@ -17,6 +17,16 @@ mut:
 
 __global native_font_fetch_transport_ ?&NativeFontFetchTransport
 
+// The browser owns its persistent resource cache. Fetch still owns request
+// filtering, CORS checks and completion on the document's task destination.
+pub type NativeFontResponseCacheProvider = fn (&fetch.Request) ?&fetch.Response
+
+__global native_font_response_cache_provider_ ?NativeFontResponseCacheProvider
+
+pub fn install_native_font_response_cache_provider(provider ?NativeFontResponseCacheProvider) {
+	native_font_response_cache_provider_ = provider
+}
+
 pub fn NativeFontFetchTransport.create() !&NativeFontFetchTransport {
 	return &NativeFontFetchTransport{
 		connection: CurlConnection.create()!
@@ -30,6 +40,21 @@ pub fn (transport &NativeFontFetchTransport) fetch_host() &fetch.FetchHost {
 		}
 		perform_async_with_params: fn [transport] (params &fetch.FetchParams, request &fetch.Request) &fetch.PendingResponse {
 			mut connection := unsafe { &CurlConnection(transport.connection) }
+			if !transport.closed {
+				if provider := native_font_response_cache_provider_ {
+					if response := provider(request) {
+						mut mutable_request := unsafe { &fetch.Request(request) }
+						pending := fetch.PendingResponse.create(mut mutable_request, none)
+						connection.deferred_.deferred_invoke(fn [transport, pending, response] () {
+							mut output := unsafe { &fetch.PendingResponse(pending) }
+							output.resolve(if transport.closed {
+								fetch.Response.network_error('RequestServer is currently unavailable')
+							} else { response })
+						})
+						return pending
+					}
+				}
+			}
 			if request.current_url().scheme() != 'file' {
 				return connection.start_fetch(params, request)
 			}

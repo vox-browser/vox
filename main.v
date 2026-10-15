@@ -816,15 +816,21 @@ fn read_browser_cache_entry(path string) ?string {
 }
 
 fn write_browser_cache_entry(path string, contents string) {
+	_ = try_write_browser_cache_entry(path, contents)
+}
+
+fn try_write_browser_cache_entry(path string, contents string) bool {
 	if contents.len == 0 || contents.len > max_disk_cache_entry_size {
-		return
+		return false
 	}
-	os.mkdir_all(os.dir(path)) or { return }
+	os.mkdir_all(os.dir(path)) or { return false }
 	temporary_path := '${path}.${os.getpid()}.${time.sys_mono_now()}.tmp'
-	os.write_file(temporary_path, contents) or { return }
+	os.write_file(temporary_path, contents) or { return false }
 	os.mv(temporary_path, path) or {
 		os.rm(temporary_path) or {}
+		return false
 	}
+	return true
 }
 
 fn read_cached_page(resource_url string) ?LoadedPage {
@@ -866,10 +872,21 @@ fn cache_resource_response(resource_url string, final_url string, body string) {
 }
 
 fn cache_resource_response_headers(resource_url string, final_url string, body string, headers []adblock.ResponseHeader) {
+	cache_resource_response_headers_with_status(resource_url, final_url, body, headers, 0)
+}
+
+fn cache_resource_response_headers_with_status(resource_url string, final_url string, body string, headers []adblock.ResponseHeader, status_code int) {
 	path := browser_cache_entry_path(browser_cache_root(), 'resources', resource_url)
-	write_browser_cache_entry(path, body)
-	write_browser_cache_entry(path + '.url', final_url)
-	write_browser_cache_entry(path + '.headers.json', json.encode(headers))
+	// Discard old status provenance before replacing any part of the response.
+	os.rm(path + '.status') or {}
+	body_written := try_write_browser_cache_entry(path, body)
+	url_written := try_write_browser_cache_entry(path + '.url', final_url)
+	headers_written := try_write_browser_cache_entry(path + '.headers.json', json.encode(headers))
+	if status_code >= 100 && status_code <= 599 {
+		if body_written && url_written && headers_written {
+			write_browser_cache_entry(path + '.status', status_code.str())
+		}
+	}
 }
 
 fn cached_snapshot_path(resource_url string) string {
@@ -981,7 +998,7 @@ fn fetch_browser_resource(reference string, base string, source_url string, requ
 		return error('HTTP ${response.status_code}')
 	}
 	headers := browsernet.response_headers(response)
-	if !result.is_replacement { cache_resource_response_headers(filtered.url, result.url, response.body, headers) }
+	if !result.is_replacement { cache_resource_response_headers_with_status(filtered.url, result.url, response.body, headers, response.status_code) }
 	return PreloadedResource{url: resolved, body: response.body, source_url: owner_url, final_url: result.url, request_type: request_type, adblock_replacement: result.is_replacement, response_headers: headers}
 }
 
@@ -6221,6 +6238,10 @@ fn (mut app BrowserApp) draw() {
 	// delaying the window and gives cached pages an immediate first paint.
 	app.start_pending_navigation()
 	if app.screenshot_path != '' && !app.scroll_profile.enabled && !app.screenshot_scheduled && app.document != unsafe { nil } && !app.load_status.starts_with('Loading ') && app.background_resource_pending.len == 0 {
+		if !app.font_resources_ready_for_capture() {
+			$if macos { C.native_wake_browser_after(16) }
+			return
+		}
 		app.screenshot_scheduled = true
 		app.write_capture_audit_if_requested()
 		schedule_native_screenshot(app.screenshot_path)
@@ -6514,6 +6535,7 @@ fn main() {
 		eprintln('Ladybird V: failed to initialize the font RequestServer transport: ${err.msg()}')
 		exit(1)
 	}
+	install_browser_font_resource_cache()
 	defer { requestserver.close_native_font_fetch_host() }
 	xpath.install_dom_xpath_bridge()
 	options := parse_launch_options(os.args[1..]) or {
