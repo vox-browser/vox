@@ -4059,16 +4059,30 @@ fn paint_screen_point(command layout.PaintCommand, x f64, y f64, page_x f32, pag
 	return page_x + f32(mapped_x), page_y + f32(mapped_y - scroll_y)
 }
 
-fn transformed_rect_points(command layout.PaintCommand, page_x f32, page_y f32, scroll_y f64) []f32 {
-	mut points := []f32{cap: 8}
-	for point in [[command.x, command.y], [command.x + command.width, command.y],
-		[command.x + command.width, command.y + command.height],
-		[command.x, command.y + command.height]] {
-		x, y := paint_screen_point(command, point[0], point[1], page_x, page_y, scroll_y)
-		points << x
-		points << y
+// Every rectangle has four corners. Keep their screen coordinates inline so
+// ordinary command replay needs no temporary point or corner arrays.
+fn transformed_rect_points(command layout.PaintCommand, page_x f32, page_y f32, scroll_y f64) [8]f32 {
+	left_top_x, left_top_y := paint_screen_point(command, command.x, command.y, page_x, page_y, scroll_y)
+	right_top_x, right_top_y := paint_screen_point(command, command.x + command.width, command.y, page_x, page_y, scroll_y)
+	right_bottom_x, right_bottom_y := paint_screen_point(command, command.x + command.width, command.y + command.height, page_x, page_y, scroll_y)
+	left_bottom_x, left_bottom_y := paint_screen_point(command, command.x, command.y + command.height, page_x, page_y, scroll_y)
+	return [left_top_x, left_top_y, right_top_x, right_top_y,
+		right_bottom_x, right_bottom_y, left_bottom_x, left_bottom_y]!
+}
+
+// Polygon drawing consumes this read-only view synchronously in both the
+// native CGContext and GG backends. Keep the fixed buffer alive through that
+// call; normal fixed-array slicing would allocate and copy it in V.
+fn borrowed_rectangle_screen_points(points &[8]f32) []f32 {
+	return unsafe {
+		array{
+			data: &points[0]
+			len: 8
+			cap: 8
+			element_size: int(sizeof(f32))
+			flags: .nofree | .nogrow | .noshrink
+		}
 	}
-	return points
 }
 
 fn paint_commands_contain_backdrop_filter(commands []layout.PaintCommand) bool {
@@ -5081,7 +5095,7 @@ fn (mut app BrowserApp) draw_command(source_command layout.PaintCommand, page_x 
 				}
 			}
 			if non_axis_aligned {
-				draw_browser_polygon(app.ctx, rect_points, fill)
+				draw_browser_polygon(app.ctx, borrowed_rectangle_screen_points(&rect_points), fill)
 			} else if command.outer_shadow {
 				$if macos {
 					if app.ctx.native_rendering {
