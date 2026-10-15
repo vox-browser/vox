@@ -155,7 +155,8 @@ fn test_text_track_addition_uses_the_delivery_clock_and_load_cancels_only_its_ow
 		second_document.finalize()
 	}
 	assert voidptr(first_document) != voidptr(second_document)
-	assert first.media_element_event_task_source() != second.media_element_event_task_source()
+	assert first.media_element_event_task_source() == .media_element
+	assert second.media_element_event_task_source() == .media_element
 	mut first_list := first.text_tracks()
 	mut second_list := second.text_tracks()
 	ttat_silent_other_events(first, first_list)
@@ -184,6 +185,7 @@ fn test_text_track_addition_uses_the_delivery_clock_and_load_cancels_only_its_ow
 	mut observed := unsafe { &TextTrackAddTaskObservation(state) }
 	observed.expected << retained_track
 	assert canceled_ids.len == 1 && second.queued_media_task_ids_.len == 1 && state.payloads == []
+	assert second.queued_media_task_ids_[0] !in canceled_ids
 	first.load()!
 	assert first.queued_media_task_ids_.len == 0 && second.queued_media_task_ids_.len == 1
 	assert first_list.length() == 1 && voidptr(first_list.item(0) or { panic('Lost script-created track on reload') }) == voidptr(canceled_track)
