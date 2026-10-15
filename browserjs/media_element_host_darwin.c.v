@@ -3,6 +3,7 @@ module browserjs
 import dom
 import html
 import json2
+import libjs
 import math
 import webidl
 
@@ -169,6 +170,20 @@ pub fn (mut host MediaElementHost) install(mut runtime Runtime) ! {
 			return host.runtime.actual_javascript_exception(host.runtime.binding_exception_value(err))
 		}
 	})!
+	cross_origin_getter := runtime.make_native_value_host_function('get crossOrigin', 0, fn [handle] (receiver voidptr, _ []voidptr) !voidptr {
+		mut host := unsafe { &MediaElementHost(handle) }
+		return host.cross_origin(receiver) or {
+			return host.runtime.actual_javascript_exception(host.runtime.binding_exception_value(err))
+		}
+	})!
+	cross_origin_setter := runtime.make_native_value_host_function('set crossOrigin', 1, fn [handle] (receiver voidptr, args []voidptr) !voidptr {
+		mut host := unsafe { &MediaElementHost(handle) }
+		mut value := C.JSValueMakeUndefined(host.runtime.context)
+		if args.len > 0 { value = args[0] }
+		return host.set_cross_origin(receiver, value) or {
+			return host.runtime.actual_javascript_exception(host.runtime.binding_exception_value(err))
+		}
+	})!
 	bind := runtime.make_value_host_function(fn [handle] (_ voidptr, args []voidptr) !voidptr {
 		mut host := unsafe { &MediaElementHost(handle) }
 		return host.bind(args) or {
@@ -182,7 +197,8 @@ pub fn (mut host MediaElementHost) install(mut runtime Runtime) ! {
 		C.JSValueMakeUndefined(runtime.context), [array, setter_array, bind, fast_seek, start_date,
 			pause, load, play, handler_getter_array, handler_setter_array, can_play_type,
 			default_muted_getter, default_muted_setter, set_attribute_sync, loop_getter, loop_setter,
-			autoplay_getter, autoplay_setter, preload_getter, preload_setter])!)!
+			autoplay_getter, autoplay_setter, preload_getter, preload_setter,
+			cross_origin_getter, cross_origin_setter])!)!
 	runtime.add_canvas_element_provider_with_lookup(fn [handle] () map[string]&dom.Element {
 		host := unsafe { &MediaElementHost(handle) }
 		return host.elements_for_binding()
@@ -334,6 +350,35 @@ fn (mut host MediaElementHost) set_preload(receiver voidptr, value voidptr) !voi
 				host.runtime.binding_string('preload'), host.runtime.binding_utf16_string(converted)!])!
 	}
 	media.set_preload(raw)
+	return C.JSValueMakeUndefined(host.runtime.context)
+}
+
+fn (mut host MediaElementHost) cross_origin(receiver voidptr) !voidptr {
+	media := host.media_element_for_binding(receiver)!
+	if replay := host.replay { replay(host.runtime)! }
+	if keyword := media.cross_origin() { return host.runtime.binding_string(keyword) }
+	return C.JSValueMakeNull(host.runtime.context)
+}
+
+fn (mut host MediaElementHost) set_cross_origin(receiver voidptr, value voidptr) !voidptr {
+	mut media := host.media_element_for_binding(receiver)!
+	mut converted := ?libjs.Utf16String(none)
+	if !C.JSValueIsNull(host.runtime.context, value) && !C.JSValueIsUndefined(host.runtime.context, value) {
+		converted = host.runtime.binding_dom_utf16(value)!
+	}
+	if replay := host.replay { replay(host.runtime)! }
+	mut raw := ?string(none)
+	mut synchronized_value := C.JSValueMakeBoolean(host.runtime.context, false)
+	if text := converted {
+		raw = text.str()
+		synchronized_value = host.runtime.binding_utf16_string(text)!
+	}
+	if host.attribute_sync != unsafe { nil } {
+		host.runtime.call_javascript_function(host.attribute_sync,
+			C.JSValueMakeUndefined(host.runtime.context), [receiver,
+				host.runtime.binding_string('crossorigin'), synchronized_value])!
+	}
+	media.set_crossorigin(raw)
 	return C.JSValueMakeUndefined(host.runtime.context)
 }
 
@@ -515,11 +560,11 @@ fn (mut host MediaElementHost) set_property(name string, receiver voidptr, value
 
 // The compact DOM hierarchy remains partial. This base prototype exposes only
 // the completed state/range getters, rate/volume/time accessors, fastSeek,
-// getStartDate, pause, load, play, canPlayType, defaultMuted, loop, autoplay and preload reflection,
+// getStartDate, pause, load, play, canPlayType, and completed media attribute reflection,
 // selected media and input handler attributes,
 // and constants.
 // Full HTMLElement/audio/video interfaces remain open.
-const media_element_native_factory = r'(function(getters,setters,bind,fastSeek,getStartDate,pause,load,play,handlerGetters,handlerSetters,canPlayType,defaultMutedGetter,defaultMutedSetter,setAttributeSync,loopGetter,loopSetter,autoplayGetter,autoplaySetter,preloadGetter,preloadSetter){
+const media_element_native_factory = r'(function(getters,setters,bind,fastSeek,getStartDate,pause,load,play,handlerGetters,handlerSetters,canPlayType,defaultMutedGetter,defaultMutedSetter,setAttributeSync,loopGetter,loopSetter,autoplayGetter,autoplaySetter,preloadGetter,preloadSetter,crossOriginGetter,crossOriginSetter){
  "use strict";
  const define=Object.defineProperty,create=Object.create,P=Proxy,T=TypeError;
  const prototype=create(EventTarget.prototype);
@@ -542,6 +587,7 @@ const media_element_native_factory = r'(function(getters,setters,bind,fastSeek,g
  define(prototype,"loop",{get:loopGetter,set:loopSetter,enumerable:true,configurable:true});
  define(prototype,"autoplay",{get:autoplayGetter,set:autoplaySetter,enumerable:true,configurable:true});
  define(prototype,"preload",{get:preloadGetter,set:preloadSetter,enumerable:true,configurable:true});
+ define(prototype,"crossOrigin",{get:crossOriginGetter,set:crossOriginSetter,enumerable:true,configurable:true});
  define(prototype,Symbol.toStringTag,{value:"HTMLMediaElement",configurable:true});
  const constructor=new P(function HTMLMediaElement(){},{apply(){throw new T("Illegal HTMLMediaElement constructor")},construct(){throw new T("Illegal HTMLMediaElement constructor")}});
  define(constructor,"prototype",{value:prototype,writable:false});

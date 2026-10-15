@@ -355,7 +355,7 @@ pub fn html_media_element_for_dom_element(element &dom.Element) ?&HTMLMediaEleme
 			mut model := HTMLMediaElement.create(unsafe { &dom.HTMLElement(element) },
 				element.document().base_url())
 			model.set_source(element.get_attribute('src'))
-			model.set_crossorigin(element.get_attribute('crossorigin'))
+			model.crossorigin_ = cors_setting_attribute_from_keyword(element.get_attribute('crossorigin'))
 			model.preload_ = element.get_attribute('preload')
 			model.autoplay_ = element.has_attribute('autoplay')
 			audio.media_element_model_ = model
@@ -368,7 +368,7 @@ pub fn html_media_element_for_dom_element(element &dom.Element) ?&HTMLMediaEleme
 			mut model := HTMLMediaElement.create(unsafe { &dom.HTMLElement(element) },
 				element.document().base_url())
 			model.set_source(element.get_attribute('src'))
-			model.set_crossorigin(element.get_attribute('crossorigin'))
+			model.crossorigin_ = cors_setting_attribute_from_keyword(element.get_attribute('crossorigin'))
 			model.preload_ = element.get_attribute('preload')
 			model.autoplay_ = element.has_attribute('autoplay')
 			video.media_element_model_ = model
@@ -729,7 +729,18 @@ pub fn (element &HTMLMediaElement) playback_rate() f64 {
 }
 
 pub fn (element &HTMLMediaElement) crossorigin() CORSSettingAttribute {
+	if html_element := element.associated_element_ {
+		return cors_setting_attribute_from_keyword(unsafe { &dom.Element(html_element) }.get_attribute('crossorigin'))
+	}
 	return element.crossorigin_
+}
+
+pub fn (element &HTMLMediaElement) cross_origin() ?string {
+	return match element.crossorigin() {
+		.no_cors { none }
+		.anonymous { 'anonymous' }
+		.use_credentials { 'use-credentials' }
+	}
 }
 
 pub fn (element &HTMLMediaElement) audio_tracks() &AudioTrackList {
@@ -826,6 +837,14 @@ pub fn (mut element HTMLMediaElement) set_source_candidates(candidates []string)
 
 pub fn (mut element HTMLMediaElement) set_crossorigin(value ?string) {
 	element.crossorigin_ = cors_setting_attribute_from_keyword(value)
+	if html_element := element.associated_element_ {
+		mut dom_element := unsafe { &dom.Element(html_element) }
+		if raw := value {
+			dom_element.set_attribute_value('crossorigin', raw)
+		} else {
+			dom_element.remove_attribute('crossorigin')
+		}
+	}
 }
 
 pub fn (element &HTMLMediaElement) loop() bool {
