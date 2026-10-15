@@ -316,12 +316,14 @@ pub fn html_track_element_model_for_dom_element(element &dom.HTMLTrackElement) &
 	}
 	dom_element := unsafe { &dom.Element(element) }
 	mut model := HTMLTrackElementModel.create(dom_element.document().base_url())
-	model.set_kind(dom_element.get_attribute_value('kind'))
-	model.set_label(dom_element.get_attribute_value('label'))
-	model.set_srclang(dom_element.get_attribute_value('srclang'))
-	model.set_src(dom_element.get_attribute_value('src'))
+	model.set_kind(dom_element.get_attribute_ns(none, 'kind') or { '' })
+	model.set_label(dom_element.get_attribute_ns(none, 'label') or { '' })
+	model.set_srclang(dom_element.get_attribute_ns(none, 'srclang') or { '' })
+	if source := dom_element.get_attribute_ns(none, 'src') {
+		model.set_src(source)
+	}
 	mut track := model.track
-	track.set_id(dom_element.get_attribute_value('id'))
+	track.set_id(dom_element.get_attribute_ns(none, 'id') or { '' })
 	mut mutable_element := unsafe { &dom.HTMLTrackElement(element) }
 	mutable_element.track_element_model_ = model
 	return model
@@ -354,6 +356,10 @@ pub fn (mut element HTMLTrackElementModel) set_parent_media(media ?&HTMLMediaEle
 
 pub fn (mut element HTMLTrackElementModel) set_src(value string) {
 	element.src_ = value
+	if value == '' {
+		element.set_track_url('')
+		return
+	}
 	parsed := dom.dom_url_parse(value, element.base_url_, 'UTF-8') or {
 		element.set_track_url('')
 		return
@@ -465,6 +471,10 @@ pub fn (mut element HTMLTrackElementModel) start_the_track_processing_model() {
 pub fn (mut element HTMLTrackElementModel) start_the_track_processing_model_parallel_steps() {
 	mut track := element.track
 	track.set_readiness_state(.loading)
+	if element.track_url_ == '' {
+		element.track_failed_to_load()
+		return
+	}
 	url := dom.dom_url_parse(element.track_url_, element.base_url_, 'UTF-8') or {
 		element.track_failed_to_load()
 		return
