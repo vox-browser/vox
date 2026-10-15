@@ -10,6 +10,7 @@ import math
 
 const single_ascii_shape_cache_size = 128
 const max_shape_cache_fonts = 64
+const max_shaping_font_keys = 32
 const max_shape_cache_texts_per_font = 16_384
 
 struct ShapeParams {
@@ -223,7 +224,7 @@ fn (mut cache ShapingCache) store(font_key string, text string, params ShapePara
 	}
 }
 
-// Retain one complete key together with the immutable inputs that produced it.
+// Retain complete keys together with the immutable inputs that produced them.
 // Keep values rather than a Font address, since equivalent handles can be new.
 struct ShapingFontKey {
 	family          string
@@ -236,8 +237,11 @@ struct ShapingFontKey {
 }
 
 __global (
-	platform_shaping_cache &ShapingCache
-	last_shaping_font_key  &ShapingFontKey
+	platform_shaping_cache        &ShapingCache
+	last_shaping_font_key         &ShapingFontKey
+	recent_shaping_font_keys      [max_shaping_font_keys]&ShapingFontKey
+	recent_shaping_font_key_count int
+	next_shaping_font_key         int
 )
 
 fn shared_shaping_cache() &ShapingCache {
@@ -250,27 +254,58 @@ fn shared_shaping_cache() &ShapingCache {
 // Equivalent Font values select the same concrete face and may safely share
 // a shape. Include the resolved face as well as the CSS identity so changes to
 // font configuration cannot alias an older entry.
+@[inline]
+fn (entry &ShapingFontKey) matches(font &Font, point_size_bits u32) bool {
+	return entry.weight == font.weight && entry.point_size_bits == point_size_bits
+		&& entry.is_invisible == font.is_invisible && entry.family == font.family
+		&& entry.source_path == font.source_path && entry.resolved_path == font.resolved_path_
+}
+
+// Keep the last key as the common fast path, and retain a bounded ring for
+// layouts that alternate between a few concrete fonts. Entries use values,
+// rather than Font addresses, so newly created equivalent handles can share.
 fn shaping_cache_font_key(font &Font) string {
 	previous := last_shaping_font_key
 	if font.resolved_path_ != '' && !isnil(previous) && previous.family == font.family
 		&& previous.source_path == font.source_path && previous.resolved_path == font.resolved_path_
-		&& previous.weight == font.weight && previous.point_size_bits == math.f32_bits(font.point_size)
+		&& previous.weight == font.weight
+		&& previous.point_size_bits == math.f32_bits(font.point_size)
 		&& previous.is_invisible == font.is_invisible {
 		return previous.key
 	}
+	return shaping_font_key_after_last_miss(font)
+}
+
+fn shaping_font_key_after_last_miss(font &Font) string {
+	point_size_bits := math.f32_bits(font.point_size)
+	if font.resolved_path_ != '' {
+		for index in 0 .. recent_shaping_font_key_count {
+			mut entry := recent_shaping_font_keys[index]
+			if entry.matches(font, point_size_bits) {
+				last_shaping_font_key = entry
+				return entry.key
+			}
+		}
+	}
 	resolved_path := font.font_path() or { '' }
-	key := '${font.family.len}:${font.family}|${font.source_path.len}:${font.source_path}|${resolved_path.len}:${resolved_path}|${font.weight}|${font.face_index()}|${math.f32_bits(font.point_size)}|${font.is_invisible}'
+	key := '${font.family.len}:${font.family}|${font.source_path.len}:${font.source_path}|${resolved_path.len}:${resolved_path}|${font.weight}|${font.face_index()}|${point_size_bits}|${font.is_invisible}'
 	// An unavailable explicit source can appear later. Its fallback path remains
 	// unpinned, and must continue through the original resolution on each call.
 	if font.resolved_path_ != '' {
-		last_shaping_font_key = &ShapingFontKey{
+		mut entry := &ShapingFontKey{
 			family:          font.family
 			source_path:     font.source_path
 			resolved_path:   resolved_path
 			weight:          font.weight
-			point_size_bits: math.f32_bits(font.point_size)
+			point_size_bits: point_size_bits
 			is_invisible:    font.is_invisible
 			key:             key
+		}
+		last_shaping_font_key = entry
+		recent_shaping_font_keys[next_shaping_font_key] = entry
+		next_shaping_font_key = (next_shaping_font_key + 1) % max_shaping_font_keys
+		if recent_shaping_font_key_count < max_shaping_font_keys {
+			recent_shaping_font_key_count++
 		}
 	}
 	return key
