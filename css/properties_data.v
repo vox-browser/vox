@@ -324,7 +324,7 @@ fn resolve_unresolved_style_value_for_property_with_context(abstract_element dom
 pub fn (mut c CascadedProperties) set_property(property_id PropertyID, value &dom.StyleValue, important Important, origin CascadeOrigin, layer_name ?string, source voidptr, source_shadow_root ?&dom.ShadowRoot) {
 	c.contained_properties_cache_[cascaded_property_index(property_id)] = 1
 
-	mut entries := c.properties_[property_id] or { []CascadedPropertiesEntry{} }
+	mut entries := c.properties_[property_id]
 	for index := entries.len - 1; index >= 0; index-- {
 		mut entry := entries[index]
 		if entry.origin == origin && option_string_equal(entry.layer_name, layer_name) {
