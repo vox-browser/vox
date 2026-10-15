@@ -7325,6 +7325,115 @@ regression or performance credit. Equivalent Chrome content/start/submission
 accounting remains open; faster-than-Chrome performance is unproven. Evidence:
 `Build/instructions/vox-opt76-interleaved-*` and `Build/v/instruction-opt76-*`.
 
+## Share cached font cascades across computed styles
+
+This integration imports the single source hunk of independently authored
+feature `67aa5610` (Alexander Medvednikov). Computed styles retain the
+existing FontComputer-owned cached cascade rather than allocating a fresh
+owner and extending it with copied entries. Cache owner, environment generation,
+first-font refresh, pending-face behavior and old snapshot lifetimes remain.
+The frozen baseline spells its empty constructor inline; that literal exactly
+matches its own create helper. Only this old spelling is adapted before applying
+the original hunk; the final function slice matches the feature exactly.
+The feature parent's separate lazy invisible-font storage is excluded. The
+initial static constructor assumption was stopped and retained under
+`instruction-opt77-static-parent-constructor-assumption-failure`.
+No font-cascade implementation, filtering, arena, GC policy or contemporary
+Root source enters this comparison.
+
+Before/final Boehm and final no-GC C-O2 each pass **2,688
+assertions in 36 cases** (35 functional and an inactive diagnostic), using the
+identical common source SHA256 `3b8e7eb0f42ad0aed701155a0f05fd37215bf190f444de3c7604ee1ca798385f`.
+Coverage includes cascade selection, metrics caches, invalidation, environment
+and owner changes, retained features/variation axes, GC, pending display and
+local-face loading. Thirteen private pointer-sharing checks become 26
+nonloading font value checks in the common source; all other original
+assertions remain. The five original candidate tests run unchanged as an exact
+prefix in both GCs: **430
+assertions each**. Both harnesses add only a test compatibility axis accessor
+that reads the baseline's existing eager map. The initial three compile exits
+1 occurred before any cases or diagnostics; their logs remain under
+`instruction-opt77-focused-axis-fixture-failure`. No successful check was
+repeated. Two test fixture roots are relocated to their original repository
+path; the same Noto/Arial font files are hashed before and after checks.
+
+Three predeclared alternating local pairs count **256 complete public cascade
+batches over 64 retained styles with four font input groups**. Cache clearing,
+computed-font lookup/refresh, nonloading selection and checksum are inside the
+hardware interval. Setup, eight warmups, expected result and forced GC precede
+it; assertion follows. Before: 670,466,707 / 674,227,818 / 673,469,321. Candidate by pair:
+594,005,384 / 593,830,074 / 593,747,084. Median **673,469,321→593,830,074
+(-11.83%)**; checksum **34,160,640**
+in all six actual zero exits. This local result receives no page credit.
+
+Both full-process C-O1/Boehm profiles actually pass without filter/reset:
+
+| Function | Before calls | Candidate calls |
+| --- | ---: | ---: |
+| `css__opt77_complete_public_font_cascades` | 265 | 265 |
+| `css__ComputedProperties_computed_font_list` | 17,019 | 17,019 |
+| `css__FontComputer_compute_font_for_style_values` | 17,006 | 17,006 |
+| `css__FontCascadeList_extend` | 17,040 | 46 |
+| `css__ComputedProperties_clear_computed_font_list_cache` | 17,170 | 17,170 |
+
+These are call counts, not hardware instruction savings. Complete batches,
+public computed-font lookup, FontComputer lookup and clearing counts match;
+extend calls decrease. Original outputs, actual exits and generated-C proof
+of full-process scope are durable.
+
+Strict C audit authenticates the single computed_font_list source hunk,
+including the old constructor spelling. Both normal targets match independent
+focused C after authenticating exactly three named compiler type tags and the
+compiler’s test assertion reporter; the environment/owner generation and first-font refresh
+tail remains byte-exact. FontCascadeList source stays byte-identical; no helper is removed. The original focused-mode audit finding and a tail-selector audit
+script error remain retained with actual failed exits; no runtime check was
+repeated. All remaining C, records, globals, resources, filtering, arenas and GC
+policy match after established compiler identities, unchanged assertion-line
+mapping, 37 frozen includes, four byte-identical helper reorderings and one
+byte-identical Map_string_css__PlatformFont_ptr typedef relocation. That
+original typedef-order audit finding is also retained with actual exit 1. Exact
+native arguments and all 120 pinned inputs match. C SHA256
+`504d56226592f3ad4d6eb9e25b8ec9c5630973c224f58b0c2cf2218f9353292c`; durable normal, focused, contract
+and profile archives are listed in `instruction-opt77-artifact-archives.json`.
+Compiler scratch is durable SSD; fresh benchmark cache copies use the same RAM.
+
+The predeclared page cohort is **30 alternating pairs**, odd before/final,
+even final/before, **30,000 paired bootstrap resamples, seed 77**. Both regular
+persisted binaries use fresh copies of the same 359 cached bodies, frozen text
+and child-only placement helpers, C-O2/Boehm/one marker and unchanged 4 GiB
+hint; no prod/prealloc. Fixed document viewport 1024×768 and endpoint
+`navigation_to_first_document_paint[0]`; no historical or Root comparison.
+
+| Build | Median first-frame retired instructions | Median lifetime process peak, MiB |
+| --- | ---: | ---: |
+| Fresh accepted frozen76 control | 18,142,840,135 | 3,627.3 |
+| Shared cached font cascades | 17,977,371,596 | 3,617.9 |
+
+Difference of marginal medians: **165,468,539** instructions
+saved (-0.912% change), **30/30** wins.
+Paired median saving **164,251,555.5**, paired 95% interval
+**[155,341,153, 175,729,180]**. The positive paired interval establishes repeatable page credit of **165,468,539** instructions.
+
+All 60 primary observations and **60 actual PNGs** remain. Recovered
+primaries: none; pre-parse retries: 0. First primaries
+retain 1 installation/2 geometry preparations/1 paint. Later completed refreshes
+remain separate: none. No completed primary is extended,
+discarded or rerun. Recoveries disclose unknown final exit and missing PNG,
+fingerprint and peak. Peaks cover capture/exit and later refreshes, not
+first-frame live memory, and are never summed. The read-only decoded capture check finds 30 before and 30 candidate RGB classes, 0 shared. All differences stay within the original skeleton bands, x45–662: y335–344 and ten 14px bands starting at380 with41px spacing. All pixels outside these bands match. No animation was disabled and no observation repeated; evidence is instruction-opt77-page-pixel-class-check.json.
+The focused cascade/font-family, grid/flex/table, Unicode and intrinsic viewport is
+pixel-exact at 1024×768.
+Prior observed carry is 3,959,664.5. Cumulative observed saving **169,428,203.5** crosses the 5M gate. Six direct harness jobs actually pass CSS 31/SVG 10/layout 46 in both GCs (**174 executions**). All **19 screenshots pass, 16 exact**; known differences remain inline-node 13, text-decorations 1,341 and canvas-text 1,994. The completed broad batch resets additional observed savings to 0.
+
+The isolated signed app is `/Users/alex/code/vox2/Build/v/Vox-opt77.app`; native instruction text
+matches the measured executable, with the frozen helper pinned inside the
+bundle and its actual default loaded path/hash checked. Signatures, startup
+and actual GC collections pass with default marker 1 and override 2. Canonical
+app and user GUI remain preserved; contemporary Root has no extra source,
+regression or performance credit. Equivalent Chrome content/start/submission
+accounting remains open; faster-than-Chrome performance is unproven. Evidence:
+`Build/instructions/vox-opt77-interleaved-*` and `Build/v/instruction-opt77-*`.
+
 ## Causes and changes
 
 - The V 0.5.2 compatibility compiler's `-prod` Boehm code repeatedly snapshots
