@@ -2312,6 +2312,7 @@ pub fn (mut element HTMLMediaElement) process_media_data(status MediaFetchingSta
 			element.fire_event('progress')
 			element.network_state_ = .idle
 			element.fire_event('suspend')
+			element.update_ready_state()
 		}
 		.ongoing {
 			element_pointer := voidptr(&element)
