@@ -55,8 +55,9 @@ fn tme_source(owner TmeOwner, source string) {
 	}
 }
 
-fn tme_install(mut model HTMLTrackElementModel, observed &TmeObservation) {
-	model.set_fetch_hook(fn [observed] (address dom.URL, cors CORSSettingAttribute) !TextTrackResourceResponse {
+fn tme_install(model &HTMLTrackElementModel, observed &TmeObservation) {
+	mut owner := unsafe { &HTMLTrackElementModel(model) }
+	owner.set_fetch_hook(fn [observed] (address dom.URL, cors CORSSettingAttribute) !TextTrackResourceResponse {
 		mut result := unsafe { &TmeObservation(observed) }
 		result.urls << address.serialize()
 		result.cors << cors
@@ -117,7 +118,7 @@ fn test_missing_end_only_resources_load_empty_and_recover_for_dom_audio_video_an
 		mut model := owner.model
 		list := model.track.cues()
 		observed := &TmeObservation{}
-		tme_install(mut model, observed)
+		tme_install(model, observed)
 		model.start_the_track_processing_model()
 		assert model.ready_state() == .loaded && list.length() == 0
 		assert model.event_count('load') == 1 && model.event_count('error') == 0
@@ -150,7 +151,7 @@ fn test_mixed_missing_end_replacement_updates_live_cues_and_preserves_resource_f
 	mut model := owner.model
 	list := model.track.cues()
 	observed := &TmeObservation{}
-	tme_install(mut model, observed)
+	tme_install(model, observed)
 	model.start_the_track_processing_model()
 	first := list.item(0) or { panic('Missing pre-replacement cue') }
 	tme_source(owner, 'mixed.vtt')
