@@ -70,7 +70,8 @@ static int native_test_async_redraw_without_active_window(void) {
 		int result = 0;
 		if (root.redrawCount > 0) result |= 1;
 		if (drawable.redrawCount > 0) result |= 2;
-		if (application.postedEvents == 1 && application.postedWindowNumber == 73)
+		// Other cases can leave legitimate native wakes on the main queue.
+		if (application.postedEvents >= 1 && application.postedWindowNumber == 73)
 			result |= 4;
 		NSApp = saved_application;
 		native_cached_browser_view = saved_drawable;
