@@ -1,0 +1,174 @@
+module main
+
+import adblock
+import crypto.sha256
+import css
+import dom
+import html
+import json
+import os
+
+// Optional observer output for reproducible native capture benchmarks. Reading
+// this snapshot does not execute page script, materialize image/font state, or
+// force another layout. Selectors and output paths belong to the test caller.
+struct CaptureAuditSelector {
+	name       string
+	selector   string
+	limit      int = 100
+	attributes []string
+}
+
+struct CaptureAuditConfig {
+	selectors []CaptureAuditSelector
+}
+
+struct CaptureAuditImage {
+	model_present bool
+	complete      bool
+	current_src   string
+	natural_width u32
+	natural_height u32
+	paint_decoded bool
+	paint_width   int
+	paint_height  int
+}
+
+struct CaptureAuditElement {
+	tag             string
+	text            string
+	text_utf8_bytes int
+	text_sha256     string
+	rect            dom.Rect
+	attributes      map[string]string
+	image           ?CaptureAuditImage
+}
+
+struct CaptureAuditSelection {
+	name     string
+	selector string
+	count    int
+	elements []CaptureAuditElement
+}
+
+struct CaptureAudit {
+	url                    string
+	title                  string
+	ready                  string
+	viewport_width         int
+	viewport_height        int
+	font_set_present       bool
+	fonts_status           string
+	paint_commands         int
+	javascript_diagnostics []string
+	selections             []CaptureAuditSelection
+	note                   string = 'Retained DOM/layout/image snapshot when native capture is scheduled; snapshot collection is included in process-exit instruction totals.'
+}
+
+fn (app &BrowserApp) capture_audit_image(element &dom.Element) ?CaptureAuditImage {
+	if !element.is_html_element() || element.local_name() != 'img' { return none }
+	image := unsafe { &dom.HTMLImageElement(element) }
+	mut model_present := false
+	mut complete := false
+	mut current_src := ''
+	mut natural_width := u32(0)
+	mut natural_height := u32(0)
+	if image.image_element_model_ != unsafe { nil } {
+		model_present = true
+		model := unsafe { &html.HTMLImageElementModel(image.image_element_model_) }
+		complete = model.complete()
+		current_src = model.current_src()
+		natural_width = model.natural_width()
+		natural_height = model.natural_height()
+	}
+	mut paint_decoded := false
+	mut paint_width := 0
+	mut paint_height := 0
+	if app.ctx != unsafe { nil } && app.document != unsafe { nil } {
+		source := resolve_document_reference(element.get_attribute_value('src'), app.document.base_url().serialize())
+		key := app.document.url.serialize() + '\n' + adblock.is_enabled().str() + '\n' + source
+		if image_id := app.background_image_ids[key] {
+			decoded := app.ctx.get_cached_image_by_idx(image_id)
+			if decoded.ok {
+				paint_decoded = true
+				paint_width = decoded.width
+				paint_height = decoded.height
+			}
+		}
+	}
+	return CaptureAuditImage{model_present, complete, current_src, natural_width, natural_height,
+		paint_decoded, paint_width, paint_height}
+}
+
+fn (app &BrowserApp) collect_capture_audit(config CaptureAuditConfig) !CaptureAudit {
+	if app.document == unsafe { nil } { return error('Capture audit requires a document') }
+	mut selections := []CaptureAuditSelection{}
+	for query in config.selectors {
+		if query.name == '' || query.selector == '' || query.limit < 0 || query.limit > 1000 {
+			return error('Invalid capture audit selector configuration')
+		}
+		list := unsafe { &dom.ParentNode(app.document) }.query_selector_all(query.selector)!
+		mut elements := []CaptureAuditElement{}
+		limit := if list.length() < query.limit { list.length() } else { query.limit }
+		for index in 0 .. limit {
+			node := list.item(index) or { continue }
+			element := node.as_element() or { continue }
+			text := node.text_content() or { '' }
+			mut attributes := map[string]string{}
+			for name in query.attributes {
+				if value := element.get_attribute(name) { attributes[name] = value }
+			}
+			elements << CaptureAuditElement{
+				tag: element.local_name()
+				text: text
+				text_utf8_bytes: text.len
+				text_sha256: sha256.hexhash(text)
+				rect: element.bounding_client_rect_assuming_layout_clean()
+				attributes: attributes
+				image: app.capture_audit_image(element)
+			}
+		}
+		selections << CaptureAuditSelection{query.name, query.selector, list.length(), elements}
+	}
+	mut font_set_present := false
+	mut fonts_status := 'unmaterialized'
+	if owner := app.document.existing_font_face_set() {
+		if owner.font_face_set_record() != unsafe { nil } {
+			font_set_present = true
+			fonts := unsafe { &css.FontFaceSet(owner.font_face_set_record()) }
+			fonts_status = fonts.status().str()
+		}
+	}
+	return CaptureAudit{
+		url: app.document.url.serialize()
+		title: app.document.title()
+		ready: app.document.readiness().str()
+		viewport_width: app.viewport_width
+		viewport_height: app.viewport_height
+		font_set_present: font_set_present
+		fonts_status: fonts_status
+		paint_commands: app.paint_commands.len
+		javascript_diagnostics: app.js_messages.clone()
+		selections: selections
+	}
+}
+
+fn (app &BrowserApp) write_capture_audit_if_requested() {
+	path := os.getenv('VOX_CAPTURE_AUDIT_PATH')
+	if path == '' { return }
+	config_path := os.getenv('VOX_CAPTURE_AUDIT_CONFIG')
+	config := if config_path != '' {
+		encoded := os.read_file(config_path) or {
+			eprintln('Vox capture audit: ${err.msg()}')
+			return
+		}
+		json.decode(CaptureAuditConfig, encoded) or {
+			eprintln('Vox capture audit: ${err.msg()}')
+			return
+		}
+	} else { CaptureAuditConfig{} }
+	audit := app.collect_capture_audit(config) or {
+		eprintln('Vox capture audit: ${err.msg()}')
+		return
+	}
+	os.write_file(path, json.encode(audit)) or { eprintln('Vox capture audit: ${err.msg()}') }
+}

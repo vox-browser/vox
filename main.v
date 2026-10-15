@@ -6222,6 +6222,7 @@ fn (mut app BrowserApp) draw() {
 	app.start_pending_navigation()
 	if app.screenshot_path != '' && !app.scroll_profile.enabled && !app.screenshot_scheduled && app.document != unsafe { nil } && !app.load_status.starts_with('Loading ') && app.background_resource_pending.len == 0 {
 		app.screenshot_scheduled = true
+		app.write_capture_audit_if_requested()
 		schedule_native_screenshot(app.screenshot_path)
 	}
 }
