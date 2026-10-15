@@ -3730,7 +3730,8 @@ fn block_box_from_typed_layout_shallow(node &Node, state &LayoutState, ancestor_
 	if is_html_video {
 		if video_element := element {
 			video := unsafe { &dom.HTMLVideoElement(video_element) }
-			model := html.html_video_element_model_for_dom_element(video)
+			mut model := html.html_video_element_model_for_dom_element(video)
+			model.set_paint_facts_update_hook(push_video_paint_facts)
 			video_representation = match model.current_representation() {
 				.video_frame { .video_frame }
 				.first_video_frame { .first_video_frame }

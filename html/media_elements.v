@@ -21,6 +21,9 @@ pub enum VideoRepresentation {
 
 pub type PosterFrameFetchHook = fn(dom.URL) !&dom.Bitmap_
 
+// Painting installs this boundary when a video has a concrete renderer owner.
+pub type VideoPaintFactsUpdateHook = fn (&dom.HTMLVideoElement)
+
 pub struct VideoDimensions {
 pub:
 	width  u32
@@ -39,6 +42,7 @@ mut:
 	intrinsic_video_dimensions_ ?VideoDimensions
 	natural_dimensions_         ?VideoDimensions
 	poster_fetch_hook           ?PosterFrameFetchHook
+	paint_facts_update_hook     ?VideoPaintFactsUpdateHook
 }
 
 pub fn HTMLVideoElementModel.create(media &HTMLMediaElement, base_url dom.URL) &HTMLVideoElementModel {
@@ -91,6 +95,19 @@ fn html_video_element_poster_attribute_changed(element &dom.HTMLVideoElement, va
 
 pub fn (mut video HTMLVideoElementModel) set_poster_fetch_hook(hook ?PosterFrameFetchHook) {
 	video.poster_fetch_hook = hook
+}
+
+pub fn (mut video HTMLVideoElementModel) set_paint_facts_update_hook(hook ?VideoPaintFactsUpdateHook) {
+	video.paint_facts_update_hook = hook
+}
+
+fn (video &HTMLVideoElementModel) push_video_paint_facts() {
+	hook := video.paint_facts_update_hook or { return }
+	owner := video.media.associated_element_ or { return }
+	element := unsafe { &dom.Element(owner) }
+	if element.is_html_element() && element.local_name() == 'video' {
+		hook(unsafe { &dom.HTMLVideoElement(element) })
+	}
 }
 
 pub fn (mut video HTMLVideoElementModel) set_poster(value ?string) {
@@ -225,6 +242,7 @@ pub fn (mut video HTMLVideoElementModel) update_natural_dimensions() {
 		}
 	}
 	if video_dimensions_equal(video.natural_dimensions_, dimensions) {
+		video.push_video_paint_facts()
 		return
 	}
 	video.natural_dimensions_ = dimensions
@@ -232,6 +250,7 @@ pub fn (mut video HTMLVideoElementModel) update_natural_dimensions() {
 		mut node := unsafe { &dom.Element(html_element) }.as_node()
 		node.set_needs_layout_update(.html_video_element_natural_dimensions_changed)
 	}
+	video.push_video_paint_facts()
 }
 
 pub fn (video &HTMLVideoElementModel) natural_media_size() ?VideoDimensions {
