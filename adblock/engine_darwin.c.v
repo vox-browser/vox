@@ -1,11 +1,15 @@
 module adblock
 
 import json
-import compress.gzip
 
 #flag darwin -framework JavaScriptCore
+#flag darwin -framework CoreFoundation
+#flag darwin -lz
 #include <JavaScriptCore/JavaScriptCore.h>
 #include "@DIR/runtime.h"
+
+fn C.vox_adblock_utf8_string(&u8, usize) voidptr
+fn C.vox_adblock_gunzip(&u8, usize, &u8, usize) int
 
 fn C.JSGlobalContextCreate(voidptr) voidptr
 fn C.JSGlobalContextRelease(voidptr)
@@ -30,8 +34,7 @@ fn evaluate_context(context voidptr, source string) !string {
 	if context == unsafe { nil } {
 		return error('Adblock engine is closed')
 	}
-	characters := source_utf16(source)
-	script := C.JSStringCreateWithCharacters(characters.data, usize(characters.len))
+	script := script_string(source)
 	defer { C.JSStringRelease(script) }
 	mut exception := unsafe { nil }
 	value := C.JSEvaluateScript(context, script, unsafe { nil }, unsafe { nil }, 1, &exception)
@@ -62,11 +65,11 @@ fn create_context(custom_filters ?string) !voidptr {
 	if context == unsafe { nil } {
 		return error('Cannot create isolated adblock JavaScriptCore context')
 	}
-	source := gzip.decompress(compressed_engine_source.to_bytes()) or {
+	source := decompress_engine_source(compressed_engine_source.to_bytes()) or {
 		C.JSGlobalContextRelease(context)
 		return error('Cannot decompress bundled adblock engine: ${err}')
 	}
-	evaluate_context(context, source.bytestr()) or {
+	evaluate_context(context, source) or {
 		C.JSGlobalContextRelease(context)
 		return err
 	}
@@ -143,4 +146,26 @@ fn source_utf16(source string) []u16 {
 		}
 	}
 	return result
+}
+
+// CoreFoundation accepts an explicit byte length, preserving embedded NULs. Invalid
+// UTF-8 retains the existing V rune decoder behavior instead of being discarded.
+fn script_string(source string) voidptr {
+ script := C.vox_adblock_utf8_string(source.str, usize(source.len))
+ if script != unsafe { nil } { return script }
+ characters := source_utf16(source)
+ return C.JSStringCreateWithCharacters(characters.data, usize(characters.len))
+}
+
+// The bundled asset is one gzip member produced by tools/build_adblock.mjs.
+// zlib validates its CRC and exact input/output sizes before we evaluate it.
+fn decompress_engine_source(data []u8) !string {
+ if data.len < 18 { return error('Truncated gzip source') }
+ n := data.len
+ size := u32(data[n-4]) | (u32(data[n-3]) << 8) | (u32(data[n-2]) << 16) | (u32(data[n-1]) << 24)
+ if size > u32(max_int) { return error('Bundled source exceeds string capacity') }
+ mut output := []u8{len: int(size)}
+ status := C.vox_adblock_gunzip(data.data, usize(data.len), output.data, usize(output.len))
+ if status != 0 { return error('Invalid gzip source (${status})') }
+ return output.bytestr()
 }

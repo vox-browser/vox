@@ -15,4 +15,37 @@ static void *vox_adblock_get_context(void) { return vox_adblock_context_value; }
 static void vox_adblock_set_context(void *context) { vox_adblock_context_value = context; }
 static int vox_adblock_get_enabled(void) { return vox_adblock_enabled_value; }
 static void vox_adblock_set_enabled(int enabled) { vox_adblock_enabled_value = enabled; }
+#include <CoreFoundation/CoreFoundation.h>
+#include <JavaScriptCore/JSStringRefCF.h>
+#include <zlib.h>
+#include <limits.h>
+static JSStringRef vox_adblock_utf8_string(const unsigned char *bytes, size_t length) {
+    if (length > LONG_MAX) return NULL;
+    // CF strips a leading UTF-8 BOM. The existing decoder retains U+FEFF.
+    if (length >= 3 && bytes[0] == 0xef && bytes[1] == 0xbb && bytes[2] == 0xbf)
+        return NULL;
+    CFStringRef text = CFStringCreateWithBytes(kCFAllocatorDefault, bytes,
+        (CFIndex)length, kCFStringEncodingUTF8, false);
+    if (!text) return NULL;
+    JSStringRef result = JSStringCreateWithCFString(text);
+    CFRelease(text);
+    return result;
+}
+static int vox_adblock_gunzip(const unsigned char *input, size_t input_size,
+        unsigned char *output, size_t output_size) {
+    if (input_size > UINT_MAX || output_size > UINT_MAX) return Z_MEM_ERROR;
+    z_stream stream = {0};
+    unsigned char empty_output;
+    stream.next_in = (Bytef *)input;
+    stream.avail_in = (uInt)input_size;
+    stream.next_out = output_size ? output : &empty_output;
+    stream.avail_out = output_size ? (uInt)output_size : 1;
+    int status = inflateInit2(&stream, MAX_WBITS + 16);
+    if (status != Z_OK) return status;
+    status = inflate(&stream, Z_FINISH);
+    int valid = status == Z_STREAM_END && stream.total_in == input_size &&
+        stream.total_out == output_size;
+    inflateEnd(&stream);
+    return valid ? Z_OK : (status == Z_STREAM_END ? Z_DATA_ERROR : status);
+}
 #endif
