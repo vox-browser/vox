@@ -66,3 +66,39 @@ navigate are not Italian-page verification.
 Cadence: this audit records one completed browser fix from the task's initial
 `6f49c764` checkout. Focused checks and a production build are used; this entry
 does not claim a full repository or broad screenshot-suite run.
+
+## Follow-up: clicks across nested link labels
+
+The subsequent report that clicking Italiano did nothing exposed a missing
+gesture case in the earlier tests, which used the link's padding. A press and
+release on different descendants of the same anchor was discarded by Page's
+exact-target check. This can happen with only half a CSS pixel of movement
+between adjacent label boxes. Commit `541a57da` dispatches the click at their
+nearest common inclusive ancestor, following the Pointer Events behavior
+identified by the FIXME in upstream `Page/EventHandler.cpp` near line 664.
+Pointerup still targets the element under the released pointer.
+
+The compact adapter now replays at the actual dispatched click target. It also
+uses native activation's navigation request instead of independently activating
+the link under the release point. Releasing over another link therefore cannot
+activate that unrelated link, and cancellation at the shared ancestor still
+blocks navigation. Reading the target preserves the existing media click
+receipt.
+
+The isolated old handler fails two of the three new Page cases; all three pass
+with the fix. Seven browser cases, those three Page cases, five existing pointer
+cases, and two media-receipt cases pass in Boehm and no-GC builds. The initial
+no-GC browser compilation encountered a concurrent paint-layout fixed-array
+initializer error; the retry passed after that independent working-tree repair.
+No failed attempt receives whole-run pass credit.
+
+The optimized signed build passes startup and signature checks. Native Cocoa
+click injections on the live portal's Italiano word, article count, and a
+word-to-padding release each reach
+`https://it.wikipedia.org/wiki/Pagina_principale`; all three captured pages were
+visually checked. The SVG same-size image-source switch remains pixel-exact.
+Artifacts and actual exit receipts are in `Build/italian-click-target/`; the
+validated and installed executable share SHA-256
+`f63b2e494162ac8472f6d297fd226536a8758e146f7d7c3850ec12f9304280e1`.
+This is the second focused browser fix in this report's task chain. It does not
+establish that every intermittent navigation failure or crash has this cause.
