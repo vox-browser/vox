@@ -15,11 +15,16 @@ const media_element_event_handler_names = ['abort', 'canplay', 'canplaythrough',
 
 pub type MediaElementReplayHook = fn (&Runtime) !
 
+// The native shell can configure its platform inputs before the first replay
+// of attributes on a newly created, still-disconnected media owner.
+pub type MediaElementCreatedHook = fn (&dom.Element)
+
 @[heap]
 pub struct MediaElementHost {
 	document &dom.Document
 	settings &html.EnvironmentSettingsObject
 	replay   ?MediaElementReplayHook
+	created_element_hook ?MediaElementCreatedHook
 mut:
 	runtime        &Runtime = unsafe { nil }
 	prototype      voidptr
@@ -31,6 +36,11 @@ mut:
 }
 
 pub fn MediaElementHost.create(document &dom.Document, replay ?MediaElementReplayHook) !&MediaElementHost {
+	return MediaElementHost.create_with_created_element_hook(document, replay, none)
+}
+
+pub fn MediaElementHost.create_with_created_element_hook(document &dom.Document,
+	replay ?MediaElementReplayHook, created_element_hook ?MediaElementCreatedHook) !&MediaElementHost {
 	if document.relevant_settings_object() == unsafe { nil } {
 		_ = html.WindowModel.create_top_level(document, none, '')!
 	}
@@ -38,6 +48,7 @@ pub fn MediaElementHost.create(document &dom.Document, replay ?MediaElementRepla
 		document: document
 		settings: unsafe { &html.EnvironmentSettingsObject(document.relevant_settings_object()) }
 		replay:   replay
+		created_element_hook: created_element_hook
 	}
 	for index, element in css.query_selector_all(unsafe { &dom.Node(document) }, '*') {
 		host.elements['__element_${index}'] = element
@@ -73,5 +84,6 @@ fn (mut host MediaElementHost) element_for_binding(key string, tag string) !&dom
 	element := dom.create_element(host.document, tag, 'http://www.w3.org/1999/xhtml', none, none,
 		false)!
 	host.elements[key] = element
+	if hook := host.created_element_hook { hook(element) }
 	return element
 }
