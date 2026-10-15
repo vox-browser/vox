@@ -170,19 +170,20 @@ fn (t &TextTrack) media_element() ?&HTMLMediaElement {
 
 // https://html.spec.whatwg.org/multipage/media.html#attr-track-kind
 pub fn text_track_kind_from_string(value string) TextTrackKind {
-	if value.len == 0 || value.to_lower() == 'subtitles' {
+	normalized := value.to_lower_ascii()
+	if normalized.len == 0 || normalized == 'subtitles' {
 		return .subtitles
 	}
-	if value.to_lower() == 'captions' {
+	if normalized == 'captions' {
 		return .captions
 	}
-	if value.to_lower() == 'descriptions' {
+	if normalized == 'descriptions' {
 		return .descriptions
 	}
-	if value.to_lower() == 'chapters' {
+	if normalized == 'chapters' {
 		return .chapters
 	}
-	if value.to_lower() == 'metadata' {
+	if normalized == 'metadata' {
 		return .metadata
 	}
 	return .metadata
