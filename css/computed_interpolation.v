@@ -10839,45 +10839,44 @@ pub fn (mut s StyleComputer) reset_has_result_cache() {
 	s.has_result_cache_.attempted_pseudo_classes.clear()
 }
 
-fn for_each_element_hash(element &dom.Element, callback fn (u32)) {
-	callback(selector_string_hash(to_ascii_lowercase(element.local_name())))
+// Visit ancestor hashes synchronously without a managed callback retaining the
+// owning StyleComputer after a style traversal has finished.
+fn (mut filter CountingBloomFilter) update_element_hashes(element &dom.Element, adding bool) {
+	filter.update_element_hash(selector_string_hash(to_ascii_lowercase(element.local_name())), adding)
+	quirks := element.document() != unsafe { nil } && element.document().in_quirks_mode()
 	if id := element.id() {
-		name := if element.document() != unsafe { nil } && element.document().in_quirks_mode() {
-			to_ascii_lowercase(id)
-		} else {
-			id
-		}
-		callback(selector_string_hash(name))
+		name := if quirks { to_ascii_lowercase(id) } else { id }
+		filter.update_element_hash(selector_string_hash(name), adding)
 	}
 	if class_attribute := element.get_attribute('class') {
 		for class_name in class_attribute.fields() {
-			name := if element.document() != unsafe { nil } && element.document().in_quirks_mode() {
-				to_ascii_lowercase(class_name)
-			} else {
-				class_name
-			}
-			callback(selector_string_hash(name))
+			name := if quirks { to_ascii_lowercase(class_name) } else { class_name }
+			filter.update_element_hash(selector_string_hash(name), adding)
 		}
 	}
-	for attribute_name in element.get_attribute_names() {
-		callback(selector_string_hash(to_ascii_lowercase(attribute_name)))
+	if attributes := element.attribute_list() {
+		for index in 0 .. attributes.length() {
+			if attribute := attributes.item(index) {
+				filter.update_element_hash(selector_string_hash(to_ascii_lowercase(attribute.name())), adding)
+			}
+		}
+	}
+}
+
+fn (mut filter CountingBloomFilter) update_element_hash(hash u32, adding bool) {
+	if adding {
+		filter.increment(hash)
+	} else {
+		filter.decrement(hash)
 	}
 }
 
 pub fn (mut s StyleComputer) push_ancestor(element &dom.Element) {
-	filter := &s.ancestor_filter_
-	for_each_element_hash(element, fn [filter] (hash u32) {
-		mut mutable_filter := unsafe { &CountingBloomFilter(filter) }
-		mutable_filter.increment(hash)
-	})
+	s.ancestor_filter_.update_element_hashes(element, true)
 }
 
 pub fn (mut s StyleComputer) pop_ancestor(element &dom.Element) {
-	filter := &s.ancestor_filter_
-	for_each_element_hash(element, fn [filter] (hash u32) {
-		mut mutable_filter := unsafe { &CountingBloomFilter(filter) }
-		mutable_filter.decrement(hash)
-	})
+	s.ancestor_filter_.update_element_hashes(element, false)
 }
 
 pub fn (s &StyleComputer) create_document_style() &ComputedProperties {
@@ -11176,17 +11175,18 @@ fn (s &StyleComputer) compute_keyframe_values(abstract_element dom.AbstractEleme
 		specified_values[physical_property_id] = value
 	}
 
+	// The specified overlay lives for this synchronous computation only. Borrow
+	// it once instead of retaining a captured map and base style per property.
+	property_source := ComputedPropertyValueSource{
+		properties: computed_properties
+		specified_values: &specified_values
+	}
 	mut result := map[PropertyID]&dom.StyleValue{}
 	for property_id, value in specified_values {
 		mut computation_context := s.get_computation_context_for_property(property_id, computed_properties, abstract_element)
 		computation_context.reset_viewport_metric_dependency_tracking()
-		computed_value := StyleComputer.compute_value_of_property(property_id, value, fn [specified_values, computed_properties] (id PropertyID) &dom.StyleValue {
-			return specified_values[id] or {
-				computed_properties.property(id, .no) or {
-					computed_interpolation_property_initial_value(id)
-				}
-			}
-		}, computation_context, 1.0)
+		computed_value := compute_value_of_property_from_source(property_id, value,
+			property_source, computation_context, 1.0)
 		if computation_context.depends_on_viewport_metrics() {
 			mut mutable_properties := unsafe { &ComputedProperties(computed_properties) }
 			mutable_properties.set_depends_on_viewport_metrics()
@@ -12200,14 +12200,20 @@ fn repeat_style_value_list_to_n_elements(style_value &dom.StyleValue, n int) &do
 // borrow the live style instead of allocating a managed closure per property;
 // callers with a custom lookup retain the public callback boundary below.
 struct ComputedPropertyValueSource {
-	properties    &ComputedProperties = unsafe { nil }
-	callback      fn (PropertyID) &dom.StyleValue = unsafe { nil }
-	uses_callback bool
+	properties       &ComputedProperties = unsafe { nil }
+	specified_values &map[PropertyID]&dom.StyleValue = unsafe { nil }
+	callback         fn (PropertyID) &dom.StyleValue = unsafe { nil }
+	uses_callback    bool
 }
 
 fn (source ComputedPropertyValueSource) get(property_id PropertyID) &dom.StyleValue {
 	if source.uses_callback {
 		return source.callback(property_id)
+	}
+	if source.specified_values != unsafe { nil } {
+		if value := (*source.specified_values)[property_id] {
+			return value
+		}
 	}
 	return source.properties.property(property_id, .no) or {
 		computed_interpolation_property_initial_value(property_id)
