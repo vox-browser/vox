@@ -1384,6 +1384,12 @@ evidence](docs/translation-audit/NATIVE_MEDIA_WHEEL_RAW_HANDLER.md).
   repeatable page credit is 0. Broad verification: passed.
   The focused viewport is exact. Chrome parity remains open; the isolated Root
   snapshot app receives no extra page credit. See `docs/GITHUB_PERFORMANCE.md`.
+  GitHub integration of `058ba684`/`3235339f` passes five focused cases in both
+  GC modes and the selected 87-case batch in both modes, plus 19 screenshots
+  (16 exact). Its matching 30-pair observed saving is 19,881,368 instructions;
+  repeatable credit is 0 because the interval includes zero. Additional observed
+  savings after that batch are zero. The isolated performance app is frozen,
+  preserves the canonical app and does not establish Chrome parity.
 - Outside instruction-count optimization, run broad regression suites once per
   ten completed fixes, not after every fix.
   Broad suites include full translation/package test batches, the full LibJS AST
