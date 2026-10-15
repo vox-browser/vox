@@ -2,7 +2,6 @@ module main
 
 import adblock
 import browserjs
-import crypto.sha256
 import css
 import dom
 
@@ -30,11 +29,11 @@ fn install_browser_adblock_styles(document &dom.Document, procedural_css string)
 	marker := '/* vox-adblock-start */'
 	user_style := existing.all_before(marker).trim_right('\n')
 	tokens := browser_adblock_tokens(document)
-	identity := '/* vox-adblock-input:${sha256.hexhash(document.url.serialize() + '\n' + tokens.join('\n') + '\n' + procedural_css)} */'
-	if adblock.is_enabled() && existing.contains('${marker}\n${identity}\n') { return }
 	filters := adblock.document_filters(document.url.serialize(), tokens)!
 	source := if filters.css == '' && procedural_css == '' { user_style }
-		else { '${user_style}\n${marker}\n${identity}\n${filters.css}\n${procedural_css}' }
+		else { '${user_style}\n${marker}\n${filters.css}\n${procedural_css}' }
+	// A new ID/class token can leave the emitted rules unchanged. Compare the
+	// actual stylesheet, so input bookkeeping cannot invalidate every style.
 	if existing == source { return }
 	css.set_document_user_style_sheet(document, source)
 }
