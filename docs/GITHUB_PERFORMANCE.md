@@ -5360,6 +5360,105 @@ header, with repository content later. No parity or faster-than-Chrome claim is
 made. Evidence: `Build/instructions/vox-opt57-interleaved-*` and
 `Build/v/instruction-opt57-*`.
 
+## Use default empty arrays for absent cascade entries
+
+Feature `89264a65` changes one initializer in `CascadedProperties.set_property`. An
+ordinary map lookup supplies the same empty entry array for a missing property,
+replacing an optional lookup with an explicit empty fallback. In this compiler the
+optional miss also constructs a discarded missing-key error. The setter returns no
+error; source, shadow source, origins, layers, importance and existing entry order
+remain unchanged. No unsafe expression, retained cache, public signature or
+record-layout change is added.
+
+Before/final Boehm and final no-GC C-O2 each pass **5,005 assertions in 15 cases**
+(14 functional plus an inactive probe). Three new cases cover first insertion and
+replacement for all generated keys, retained values after collection, importance,
+distinct layers/origins, source and shadow-source ownership, stored empty arrays, a
+missing map key with a stale presence byte, and subsequent map growth. The 11
+functional cases retained from round57 include cascade scratch, substitution,
+shorthand and source metadata checks.
+
+Two fixture checker failures occur before any functional cases or counter samples:
+old V needs `PropertyID.height` in `Map.delete`, then an automated helper rewrite
+accidentally rewrites its own checked lookup. Both attempts, original fixtures/logs
+and actual failed receipts remain in `instruction-opt58-map-delete-fixture-failure`
+and `instruction-opt58-test-helper-rewrite-failure`. Only failed/unstarted jobs
+resume; implementation and successful normal native build are unchanged. A separate
+preflight status printer also fails on an aggregate result without an `exit` field;
+its receipt distinguishes that read-only error from the actual successful
+C-generation subprocess. No native/test pass is inferred from it.
+
+The compatibility compiler emits one additional generic warning about a map value
+containing pointers. This use deliberately consumes a valid default empty array,
+checks its length before reading entries, and appends with the correct element
+size. The generated-C audit verifies equivalent managed headers:
+length/capacity/offset zero, null data, and the same entry size; neither
+zero-capacity constructor allocates data. No unchecked pointer access is added.
+All-key, stored-empty and forced-GC tests cover the relevant ownership behavior.
+
+Three fixed alternating local pairs each run **512 complete fresh public author
+cascades**, normal and important passes over 32 retained rules, using the same
+fixture as round57. Setup, expected results, eight warmups and forced collection
+precede the counter; assertions follow. Median retired instructions change
+**71,952,454→71,760,615** (-0.27%), all three pairs improving, with all six
+checksums 3,072. Retained width/padding values are checked independently. This is a
+small local result without separate page credit. Full-process
+C-O1/Boehm/default-marker profiles have no filters or resets: complete cascade
+calls stay **521**, private application calls **22,486**, and property-set calls
+**101,793** in both variants. Call counts never substitute for hardware
+instructions.
+
+The strict C audit authenticates only the initializer replacement, the exact
+presence-cache write, and the full unchanged setter tail after one compiler
+temporary rename. All other functions, public layouts, resources and GC policy
+match after established compiler identities, unchanged source assertions and 37
+frozen includes. Four helpers may reorder only with raw-identical bodies. All 120
+native inputs and exact native C-O2 arguments match. Compiled C SHA256:
+`e688aed0769ace077a3e866af87a4e255669fe6328e4c2d603951df8991dd57c`. Durable
+normal/focused/profile hashes are in `instruction-opt58-artifact-archives.json`.
+Only the owned function is staged against latest HEAD, preserving concurrent Root
+changes.
+
+The predeclared cohort fixes **30 alternating pairs**, with **30,000 paired
+bootstrap resamples, seed 58**. Regular frozen 57 and candidate binaries use the
+same 359 cached bodies, fresh copies, frozen helper, 1024×768 viewport and
+`navigation_to_first_document_paint[0]`. Both retain the same 4 GiB document-gated
+hint, Boehm/default marker 1, without prod/prealloc. Independent current-Root
+memory, UI and responsiveness changes are excluded.
+
+| Build | Median first-frame retired instructions | Median process peak, MiB |
+| --- | ---: | ---: |
+| Fresh matching frozen 57 control | 18,605,421,888 | 3,652 |
+| Default cascade entry arrays | 18,601,892,018.5 | 3,651 |
+
+The observed difference of marginal medians is **3,529,869.5** instructions saved
+(**0.019%**), with **18/30** pairs improving. Paired median saving is
+**3,073,380**; 95% paired percentile interval: **-2,155,959 to 8,870,342.5**. The
+interval includes zero, so repeatable page credit is **0**. A cached-page reduction
+is not established. The retained small helper change has a confirmed local result
+without adding retained state. The comparison uses the fresh control, never the
+historical round57 median.
+
+All **60 primaries and 60 actual viewport PNGs** remain. Recovered primaries: none;
+pre-parse startup retries: 0. Each first primary has 1 installation/2 geometry
+preparations/1 paint. Later refresh runs remain separate: none. No completed
+primary is discarded, rerun or used to extend the cohort. Lifetime process peaks
+include later refreshes and are not first-frame live memory; they are never summed.
+The focused cascade viewport is pixel-exact. The observed point remains below the
+cumulative 5M gate; broad suites are deferred. The last broad baseline remains
+local cascade scratch `9ec31a78`; observed applied savings carry forward separately
+from confidence credit.
+
+The signed isolated comparison app is
+`/Users/alex/code/vox2/Build/v/Vox-opt58.app`. Signature, startup, matching native
+text and actual collections pass with default marker 1 and override 2. Canonical
+and user GUI apps are preserved. No source pin or extra performance/regression
+credit is inferred for independent current Root. Chrome still needs equivalent
+content/start/endpoint accounting; its retained first-paint trace shows only a
+header, with repository content later. No parity or faster-than-Chrome claim is
+made. Evidence: `Build/instructions/vox-opt58-interleaved-*` and
+`Build/v/instruction-opt58-*`.
+
 ## Causes and changes
 
 - The V 0.5.2 compatibility compiler's `-prod` Boehm code repeatedly snapshots

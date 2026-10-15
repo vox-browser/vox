@@ -1543,6 +1543,14 @@ evidence](docs/translation-audit/NATIVE_MEDIA_WHEEL_RAW_HANDLER.md).
   focused cascade viewport exact. Additional observed savings: 0.
   Same frozen 4 GiB hint; independent Root memory/UI work is excluded.
   Chrome parity remains open.
+  Default cascade entry arrays `89264a65` pass 5,005 focused assertions
+  per configuration; complete public author cascades use 0.27% fewer instructions.
+  Page point saving 3,529,869.5, 18/30 wins,
+  paired interval [-2,155,959, 8,870,342.5]; repeatable page credit 0.
+  Broad verification: deferred below cumulative 5M gate;
+  focused cascade viewport exact. Additional observed savings: 3,529,869.5.
+  Same frozen4GiB hint; independent Root memory/UI work is excluded.
+  Chrome parity remains open.
 - Outside instruction-count optimization, run broad regression suites once per
   ten completed fixes, not after every fix.
   Broad suites include full translation/package test batches, the full LibJS AST
