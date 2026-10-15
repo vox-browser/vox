@@ -2256,7 +2256,11 @@ pub fn style_computer_collect_matching_rules_in_scope(style_computer &StyleCompu
 		shadow_host = root.host()
 	}
 
-	mut rules_to_run := []ScopedMatchingRule{}
+	mut candidate_buffer := style_computer.acquire_matching_rule_candidates()
+	mut rules_to_run := unsafe { candidate_buffer.rules }
+	defer {
+		style_computer.release_matching_rule_candidates(mut candidate_buffer, rules_to_run)
+	}
 	subject_node := abstract_element.element().as_node()
 	subject_is_reslotted_slot := subject_node.is_html_slot_element()
 		&& subject_node.root().is_shadow_root()

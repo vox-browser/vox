@@ -10740,6 +10740,7 @@ pub mut:
 	viewport_rect_                                       CSSPixelRect
 	ancestor_filter_                                     CountingBloomFilter = CountingBloomFilter.new()
 	has_result_cache_                                    &HasResultCache = &HasResultCache{}
+	matching_rule_candidates_                            &MatchingRuleCandidateScratch = unsafe { nil }
 	css_animation_storage_                               &CSSAnimationStorage = unsafe { nil }
 	css_transition_storage_                              &CSSTransitionStorage = unsafe { nil }
 	document_timeline_                                   &AnimationTimeline = unsafe { nil }

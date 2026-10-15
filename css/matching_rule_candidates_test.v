@@ -1,0 +1,140 @@
+module css
+
+import dom
+
+fn candidate_scratch_element(document &dom.Document, name string, classes string) &dom.Element {
+	mut element := document.create_element_ns('http://www.w3.org/1999/xhtml', name) or {
+		panic(err)
+	}
+	element.set_attribute_value('class', classes)
+	return element
+}
+
+fn candidate_rule_snapshot(rules []ScopedMatchingRule) []string {
+	return rules.map('${it.rule.selector.serialize()}:${it.rule.rule_index}:${it.rule.specificity}:${it.scope_proximity}')
+}
+
+fn test_candidate_scratch_reuses_storage_without_retaining_rules_or_aliasing_outputs() {
+	mut document := dom.Document.create(dom.url_about_blank())
+	defer { document.finalize() }
+	computer := StyleComputer.new(document)
+	mut first := computer.acquire_matching_rule_candidates()
+	mut candidates := unsafe { first.rules }
+	rule := &MatchingRule{
+		rule_index: 73
+	}
+	candidates << ScopedMatchingRule{
+		rule:            rule
+		scope_proximity: 19
+	}
+	output := candidates.clone()
+	storage := candidates.data
+	computer.release_matching_rule_candidates(mut first, candidates)
+	assert first.rules.data == storage
+	assert first.rules.len == 0
+	assert first.rules.cap > 0
+	for byte_index in 0 .. int(sizeof(ScopedMatchingRule)) {
+		assert unsafe { (&u8(storage))[byte_index] } == 0
+	}
+	for _ in 0 .. 3 {
+		gc_collect()
+		assert output[0].rule == rule
+		assert output[0].scope_proximity == 19
+		mut next := computer.acquire_matching_rule_candidates()
+		assert voidptr(next) == voidptr(first)
+		assert next.rules.data == storage
+		computer.release_matching_rule_candidates(mut next, next.rules)
+	}
+	assert computer.matching_rule_candidates_.active_depth == 0
+}
+
+fn test_public_matching_query_uses_separate_nested_scratch_and_keeps_scoped_output_live() {
+	mut document := dom.Document.create(dom.url_about_blank())
+	defer { document.finalize() }
+	mut root := candidate_scratch_element(document, 'html', '')
+	mut feed := candidate_scratch_element(document, 'section', 'feed')
+	mut story := candidate_scratch_element(document, 'article', 'story')
+	content := candidate_scratch_element(document, 'span', 'content')
+	mut document_node := unsafe { &dom.Node(document) }
+	document_node.append_child(root.as_node())!
+	mut root_node := root.as_node()
+	root_node.append_child(feed.as_node())!
+	mut feed_node := feed.as_node()
+	feed_node.append_child(story.as_node())!
+	mut story_node := story.as_node()
+	story_node.append_child(content.as_node())!
+	add_document_author_style_sheet(document,
+		'.story{color:red}.story:has(>.content){background:blue}.story::before{content:""}@scope(.feed){.story{opacity:.5}}.story{&>.content{color:green}}')
+	mut computer := StyleComputer.new(document)
+	computer.push_ancestor(root)
+	computer.push_ancestor(feed)
+	mut outer := computer.acquire_matching_rule_candidates()
+	mut outer_candidates := unsafe { outer.rules }
+	sentinel := &MatchingRule{
+		rule_index: 911
+	}
+	outer_candidates << ScopedMatchingRule{
+		rule: sentinel
+	}
+	mut attempted := PseudoClassBitmap{}
+	scope := css_style_scope_for_document(document)
+	output := style_computer_collect_matching_rules_in_scope(computer,
+		dom.AbstractElement.new(story, none), .author, mut attempted, none, scope)
+	// The nesting parent contributes its own .story matching rule as well.
+	assert output.len == 4
+	assert output.any(it.resolved_scope_root != none)
+	assert computer.matching_rule_candidates_.active_depth == 1
+	assert computer.matching_rule_candidates_.buffers.len == 2
+	assert computer.matching_rule_candidates_.buffers[1].rules.len == 0
+	assert output.data != computer.matching_rule_candidates_.buffers[1].rules.data
+	assert outer_candidates[0].rule == sentinel
+	snapshot := candidate_rule_snapshot(output)
+	for _ in 0 .. 3 {
+		_ = style_computer_collect_matching_rules_in_scope(computer,
+			dom.AbstractElement.new(content, none), .author, mut attempted, none, scope)
+		gc_collect()
+		assert candidate_rule_snapshot(output) == snapshot
+		assert outer_candidates[0].rule == sentinel
+	}
+	computer.release_matching_rule_candidates(mut outer, outer_candidates)
+	assert computer.matching_rule_candidates_.active_depth == 0
+	computed := computer.compute_style(dom.AbstractElement.new(story, none))
+	assert computed.opacity() == f32(.5)
+	assert computed.property(.color, .no)?.css_text == 'rgb(255, 0, 0)'
+	assert candidate_rule_snapshot(output) == snapshot
+}
+
+fn test_candidate_scratch_bounds_retained_depth_and_capacity_without_limiting_queries() {
+	mut document := dom.Document.create(dom.url_about_blank())
+	defer { document.finalize() }
+	computer := StyleComputer.new(document)
+	mut active := []&MatchingRuleCandidateBuffer{}
+	for _ in 0 .. max_matching_rule_candidate_buffers + 2 {
+		active << computer.acquire_matching_rule_candidates()
+	}
+	assert computer.matching_rule_candidates_.buffers.len == max_matching_rule_candidate_buffers
+	for index := active.len - 1; index >= 0; index-- {
+		mut buffer := active[index]
+		rules := [
+			ScopedMatchingRule{
+				rule: &MatchingRule{
+					rule_index: usize(index)
+				}
+			},
+		]
+		computer.release_matching_rule_candidates(mut buffer, rules)
+		if index >= max_matching_rule_candidate_buffers {
+			assert buffer.rules.cap == 0
+		}
+	}
+	assert computer.matching_rule_candidates_.active_depth == 0
+	mut large := computer.acquire_matching_rule_candidates()
+	oversized := []ScopedMatchingRule{len: max_retained_matching_rule_candidates + 1}
+	computer.release_matching_rule_candidates(mut large, oversized)
+	assert large.rules.cap == 0
+	mut next := computer.acquire_matching_rule_candidates()
+	small := [ScopedMatchingRule{ rule: &MatchingRule{ rule_index: 314 } }]
+	computer.release_matching_rule_candidates(mut next, small)
+	assert next.rules.cap > 0
+	assert computer.matching_rule_candidates_.active_depth == 0
+}
