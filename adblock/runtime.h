@@ -20,7 +20,7 @@ static void vox_adblock_set_enabled(int enabled) { vox_adblock_enabled_value = e
 #include <zlib.h>
 #include <limits.h>
 static JSStringRef vox_adblock_utf8_string(const unsigned char *bytes, size_t length) {
-    if (length > LONG_MAX) return NULL;
+    if (!length || length > LONG_MAX) return NULL;
     // CF strips a leading UTF-8 BOM. The existing decoder retains U+FEFF.
     if (length >= 3 && bytes[0] == 0xef && bytes[1] == 0xbb && bytes[2] == 0xbf)
         return NULL;
