@@ -8090,6 +8090,137 @@ regression or performance credit. Equivalent Chrome content/start/submission
 accounting remains open; faster-than-Chrome performance is unproven. Evidence:
 `Build/instructions/vox-opt83-interleaved-*` and `Build/v/instruction-opt83-*`.
 
+## Memoize interleaved shaping font identities
+
+This integration imports only independently authored feature `7a4f5a48`
+(Alexander Medvednikov): two exact edit hunks in platform/shaping_cache.v,
+trimming only unchanged context. The existing last-key fast path remains.
+After a miss, a fixed 32-entry FIFO ring reuses resolved font identities by
+family, source/resolved path, weight, exact point-size bits and invisibility.
+Equivalent handles share by values. Original serialization, face selection,
+length prefixes and unresolved-source fallback/retry remain intact. Three
+zero-initialized globals hold the fixed pointer ring and two scalar indexes;
+no other runtime files, filtering, arenas, heap hint or GC policy change.
+Contemporary Root and concurrent work remain preserved.
+
+Before/final Boehm and final no-GC C-O2 each pass **184
+assertions in 7 cases**: six exact retained glyph fork, decoded-face identity
+and face-retention cases, plus an inactive diagnostic. Common source SHA256 is
+`762b185d29d53d416eb5227bd190e089c631a0c749d3fe9e2e7d4db87098827e`. The seven original candidate cases
+run byte-for-byte in both GCs: **4,397
+Boehm / 4,396 no-GC assertions**.
+They cover every serialized identity field, signed zero/NaN payload bits,
+public shapes/baselines, newly available explicit sources, interleaved equivalent
+handles, retained key byte identity, bounded FIFO/last-key behavior and warm-hit
+Boehm allocation stability. The extra Boehm-only assertion accounts for the
+one-assertion difference.
+
+Three predeclared alternating local pairs count **256 complete batches of 64
+public cached shape_text_with_spacing calls**, interleaving eight font sizes,
+four ASCII/Unicode strings and zero/nonzero baselines. Checksums include all
+glyph fields, replay vectors, bounds, widths and trailing whitespace. Font/input
+setup, cache population, eight warmup batches, expected checksum and forced GC
+precede the counter; checksum assertions follow it.
+Before: 575,535,199 / 573,339,440 / 574,349,624. Candidate by pair: 533,395,613 / 534,001,387 / 533,033,227.
+Median **574,349,624→533,395,613
+(-7.13%)**; checksum **3,289,642,527,158,272**
+in all six actual zero exits. This local result receives no page credit.
+
+Both full-process C-O1/Boehm profiles actually pass without filter/reset:
+
+| Function | Before calls | Candidate calls |
+| --- | ---: | ---: |
+| `platform__opt84_complete_cached_shapes` | 265 | 265 |
+| `platform__shape_text_with_spacing` | 16,960 | 16,960 |
+| `platform__shaping_cache_font_key` | 16,960 | 16,960 |
+| `platform__shaping_font_key_after_last_miss` | 0 | 16,960 |
+| `platform__ShapingFontKey_matches` | 0 | 0 |
+| `platform__Font_font_path` | 16,989 | 37 |
+
+These are call counts, not hardware instruction savings. Both run the same
+265 complete batches and 16,960 public shaping calls. Font-path calls decrease
+from 16,989 to 37. The compiler leaves the inline matches helper uninstrumented;
+its two zero table entries mean no standalone counter, not zero executions.
+An original evidence-parser assertion expected that counter; the failure is
+retained in instruction-opt84-profile-inline-helper-parser-finding. Existing
+successful outputs and generated C were reparsed without rerunning profiles.
+
+Strict C audit authenticates the two exact source hunks, byte-identical
+normal/focused targets and eight exact new declarations/initializers. The old
+last-key path is exact. The miss helper preserves the old serialization and
+fallback body after hoisting float bits and adding bounded ring search/insertion.
+All other C, records, resources, filtering, arenas and GC setup match after
+established compiler identities, 37 frozen includes, four byte-identical helper
+reorderings and unchanged assertion-line maps. All 120 native inputs and exact
+native arguments match. Two audit-only failures remain archived: a stale numeric
+round selector/inline parser and an inline definition/prototype qualifier.
+Only audit code changed; no successful runtime check or primary was repeated.
+Passing audit script SHA256 is `d5e328d16d9f967a492c17adb51c1357c4044694c963fccd304adbc609020dd4`.
+C SHA256: `026b34b9ea7b5b2eecb001fa980786af4385ba1fbd88dd307ca13d6244fb5444`. Durable normal,
+focused, contract and profile hashes appear in instruction-opt84-artifact-archives.json.
+
+The predeclared page cohort is **30 alternating pairs**, odd before/final,
+even final/before, **30,000 paired bootstrap resamples, seed 84**. Both regular
+persisted binaries use fresh copies of the same 359 cached bodies, frozen text
+and child-only placement helpers, C-O2/Boehm/one marker and unchanged 4 GiB
+hint; no prod/prealloc. Fixed document viewport is 1024×768 and endpoint is
+`navigation_to_first_document_paint[0]`; no historical or Root comparison.
+
+| Build | Median first-frame retired instructions | Median lifetime process peak, MiB |
+| --- | ---: | ---: |
+| Fresh accepted frozen83 control | 17,742,595,939.5 | 3,601.6 |
+| Interleaved font-key ring | 17,732,219,616 | 3,601.4 |
+
+Difference of marginal medians (before minus candidate):
+**10,376,323.5** instructions; candidate change
+**-0.058%**, with **19/30** wins.
+Paired median saving **8,836,656**, paired 95% interval
+**[-3,018,878, 18,820,187]**. The interval includes zero; repeatable page credit is **0**. Whole-page savings are not established.
+
+All 60 primary observations and **60 actual PNGs** remain. Recovered
+primaries: none; pre-parse retries: 0. First primaries
+retain 1 installation/2 geometry preparations/1 paint. Later completed refreshes
+remain separate: none. No completed primary is extended,
+discarded or rerun. Recovered records disclose unknown final exit and missing
+PNG, fingerprint and peak. Peaks cover capture/exit and later refreshes, not
+first-frame live memory, and are never summed. The read-only decoded capture check finds 30 before and 30 candidate RGB classes, 1 shared. All differences stay within the original skeleton bands, x45–662: y335–344 and ten 14px bands starting at380 with41px spacing. All pixels outside these bands match. No animation was disabled and no observation repeated; evidence is instruction-opt84-page-pixel-class-check.json.
+One startup placement log (before pair 3, child PID 11124) records unrelated
+foreground PIDs 682→699; neither snapshot makes the child foreground. The other
+59 retain the same foreground. This transition is disclosed rather than used
+to discard the primary. Its original failed capture audit is retained. The
+actual all-60 difference box is [65,335,663,763], contained within the existing
+[45,335,663,763] skeleton allowance; all original y bands and all pixels outside
+them remain exact. The original overly specific bounding-box audit is retained.
+Only read-only audits were corrected. The bundle prerequisite failure occurred
+before app creation and was resumed after the capture audit; no successful native
+build, profile, capture or primary was repeated.
+The original broad pass reached eight successful screenshot comparisons before
+both launch attempts for empty-caret-with-placeholder terminated with
+Trace/BPT traps. The first ordinary resumption failed similarly; both actual
+comparison exits 1 and all four failed-launch logs remain archived. Separate
+debugger runs of control and candidate exited zero; the explicitly pinned
+candidate run logged Metal drawable reuse warnings. No failed native backtrace
+was captured, so the trap cause is unconfirmed. Debugger PNGs receive no broad
+conformance credit. The later ordinary resumption supplies the actual passing
+comparison and remains distinct from diagnostics. Resumption retains all six broad
+jobs, eight completed screenshots and both focused captures/diff, and executes
+only the failed/unstarted screenshot cases. Primary observations remain untouched.
+The focused retained text/geometry viewport is pixel-exact at 1024×768.
+Prior observed carry is 3,504,193. Cumulative observed saving **13,880,516.5** crosses the 5M gate. Six direct harness jobs actually pass CSS 31/SVG 10/layout 46 in both GCs (**174 executions**). All **19 screenshots pass, 16 exact**; known differences remain inline-node 13, text-decorations 1,341 and canvas-text 1,994. The completed broad batch resets additional observed savings to 0.
+The detached startup supervisor's final terminal status was not captured and is
+explicitly unknown; its preparation child has actual exit zero. The measurement,
+summary, capture, validation, bundle and pixel controllers retain actual terminal
+receipts. No supervisor exit was invented and no preparation or primary rerun.
+
+The isolated signed app is `/Users/alex/code/vox2/Build/v/Vox-opt84.app`; native instruction text
+matches the measured executable, with the frozen helper pinned inside the
+bundle and its actual default loaded path/hash checked. Signatures, startup
+and actual GC collections pass with default marker 1 and override 2. Canonical
+app and user GUI remain preserved. Contemporary Root receives no extra source,
+regression or performance credit. Equivalent Chrome content/start/submission
+accounting remains open; faster-than-Chrome performance is unproven. Evidence:
+`Build/instructions/vox-opt84-interleaved-*` and `Build/v/instruction-opt84-*`.
+
 ## Causes and changes
 
 - The V 0.5.2 compatibility compiler's `-prod` Boehm code repeatedly snapshots
