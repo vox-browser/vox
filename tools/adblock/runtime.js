@@ -11,9 +11,11 @@ import { initializeCosmetics, documentFilters, redirectEngine, cosmeticSnapshot,
 import defaultData from './generated-defaults.js';
 import * as serializer from '../../adblock/vendor/ublock/js/s14e-serializer.js';
 import publicSuffixData from '../../adblock/lists/public_suffix_list.dat';
+import { checkResponseHeaders } from './response_headers.js';
 
 const environment = ['ublock', 'chromium', 'user_stylesheet'];
 const fctx = new FilteringContext();
+let activeListCount = 0;
 function compileNetwork(raw, name) {
     const compiler = snfe.createCompiler();
     const writer = new CompiledListWriter();
@@ -46,7 +48,8 @@ globalThis.voxAdblockInitialize = customFilters => {
             throw new Error('Invalid bundled uBlock Origin engine snapshot');
         }
         restoreCosmetics(snapshot.cosmetics);
-        return JSON.stringify({ filter_count: snfe.getFilterCount(), list_count: 9 });
+        activeListCount = snapshot.list_count;
+        return JSON.stringify({ filter_count: snfe.getFilterCount(), list_count: activeListCount });
     }
     publicSuffixList.parse(publicSuffixData, punycode.toASCII);
     const lists = customFilters === undefined ? defaultData.lists : [{ name: 'user-filters', raw: customFilters }];
@@ -57,10 +60,12 @@ globalThis.voxAdblockInitialize = customFilters => {
     snfe.freeze();
     snfe.optimize(0);
     initializeCosmetics(prepared);
+    activeListCount = lists.length;
     return JSON.stringify({ filter_count: snfe.getFilterCount(), list_count: lists.length });
 };
 
-globalThis.voxAdblockSnapshot = () => serializer.serialize({ network: snfe.toSelfie(), cosmetics: cosmeticSnapshot(), public_suffixes: publicSuffixList.toSelfie() }, { compress: false });
+globalThis.voxAdblockSnapshot = () => serializer.serialize({ list_count: activeListCount, network: snfe.toSelfie(), cosmetics: cosmeticSnapshot(), public_suffixes: publicSuffixList.toSelfie() }, { compress: false });
+globalThis.voxAdblockCheckResponse = (details, headers) => JSON.stringify(checkResponseHeaders(snfe, fctx, details, headers));
 
 globalThis.voxAdblockCheck = details => {
     const type = details.request_type === 'fetch' ? 'xmlhttprequest' : details.request_type || 'other';

@@ -733,11 +733,23 @@ pub:
 fn perform_host_fetch(params &FetchParams, request &Request, host &FetchHost) &PendingResponse {
 	mut filtered_request := unsafe { &Request(request) }
 	if response := filtered_request.apply_adblock() { return PendingResponse.create(mut filtered_request, response) }
-	if perform := host.perform_async_with_params { return perform(params, request) }
-	if perform := host.perform_async { return perform(request) }
-	mut mutable_request := unsafe { &Request(request) }
-	response := host.perform(request) or { Response.network_error(err.msg()) }
-	return PendingResponse.create(mut mutable_request, response)
+	mut pending := if perform := host.perform_async_with_params {
+		perform(params, request)
+	} else if perform := host.perform_async {
+		perform(request)
+	} else {
+		response := host.perform(request) or { Response.network_error(err.msg()) }
+		PendingResponse.create(mut filtered_request, response)
+	}
+	if response := pending.response() {
+		return PendingResponse.create(mut filtered_request, request.apply_adblock_response(response))
+	}
+	result := PendingResponse.create(mut filtered_request, none)
+	pending.when_loaded(fn [request, result] (response &Response) {
+		mut target := unsafe { &PendingResponse(result) }
+		target.resolve(request.apply_adblock_response(response))
+	})
+	return result
 }
 
 // Source Fetching.cpp:768 and 1016: these adapters retain the actual request
@@ -1104,6 +1116,7 @@ pub fn main_fetch(params &FetchParams, host &FetchHost) &PendingResponse {
 fn finish_main_fetch(params &FetchParams, response &Response, clear_preflight_cache_on_error bool) &PendingResponse {
 	mut request := params.request
 	mut resolved := if params.is_canceled() { appropriate_network_error(params) } else { response }
+	resolved = request.apply_adblock_response(resolved)
 	if clear_preflight_cache_on_error && resolved.is_network_error() {
 		mut preflight_cache := PreflightCache.the()
 		preflight_cache.clear_cache_entries(request)
@@ -1296,6 +1309,7 @@ fn finish_http_network_or_cache_fetch(params &FetchParams, http_request &Request
 	} else {
 		response
 	}
+	forward_response = http_request.apply_adblock_response(forward_response)
 	if network_response {
 		mut controller := params.controller
 		if params.has_response_body_transfer_lease {

@@ -111,3 +111,28 @@ pub fn (mut request Request) apply_adblock() ?&Response {
 	}
 	return Response.network_error('Adblock request rewrite limit exceeded')
 }
+
+// Use raw internal headers, including repeated fields, before filtering the
+// response for CORS/opaque exposure or inserting its bytes into a cache.
+pub fn (request &Request) apply_adblock_response(response &Response) &Response {
+	if response.is_network_error() { return response }
+	internal := response.unsafe_response()
+	mut headers := []adblock.ResponseHeader{}
+	for header in internal.header_list.headers() {
+		headers << adblock.ResponseHeader{name: header.name, value: header.value}
+	}
+	decision := adblock.check_response(request.adblock_context(), headers)
+	if decision.error == '' && !decision.blocked { return response }
+	if handle := internal.request_server_request() {
+		if stop := handle.stop { stop() }
+	}
+	if mut body := internal.body {
+		mut stream := body.stream()
+		if stream.is_readable() { stream.error('TypeError: Blocked by adblock') }
+	}
+	return if decision.error != '' {
+		Response.network_error('Adblock unavailable: ${decision.error}')
+	} else {
+		Response.network_error('Blocked by adblock: ${decision.rule}')
+	}
+}

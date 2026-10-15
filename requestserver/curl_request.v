@@ -23,6 +23,7 @@ mut:
 	headers_ voidptr
 	in_multi_ bool
 	sent_headers_ bool
+	adblock_blocked_ bool
 	finished_ bool
 	stop_requested_ bool
 	response_headers_ &http.HeaderList = http.HeaderList.create()
@@ -135,7 +136,11 @@ fn curl_header_received(buffer voidptr, size usize, count usize, owner voidptr) 
 	mut request := unsafe { &CurlRequest(owner) }
 	length := size * count
 	line := unsafe { (&u8(buffer)).vbytes(int(length)).bytestr() }
-	if request.reason_phrase_ == none && line.starts_with('HTTP/') {
+	if line.starts_with('HTTP/') {
+		// An informational response has its own header block. Its fields must
+		// not become response-header conditions on the final response.
+		request.response_headers_ = http.HeaderList.create()
+		request.reason_phrase_ = none
 		first := line.index(' ') or { return length }
 		if second := line[first + 1..].index(' ') {
 			reason := http.normalize_header_value(line[first + 2 + second..])
@@ -146,6 +151,9 @@ fn curl_header_received(buffer voidptr, size usize, count usize, owner voidptr) 
 				return length
 			}
 		}
+	}
+	if line.trim_space() == '' && C.vox_curl_status(request.easy_) >= 200 {
+		if !request.transfer_headers_to_client_if_needed() { return 0 }
 	}
 	if colon := line.index(':') {
 		request.response_headers_.append(http.Header{
@@ -158,26 +166,33 @@ fn curl_header_received(buffer voidptr, size usize, count usize, owner voidptr) 
 
 fn curl_data_received(buffer voidptr, size usize, count usize, owner voidptr) usize {
 	mut request := unsafe { &CurlRequest(owner) }
-	request.transfer_headers_to_client_if_needed()
+	if !request.transfer_headers_to_client_if_needed() { return 0 }
 	length := size * count
 	bytes := unsafe { (&u8(buffer)).vbytes(int(length)).clone() }
 	request.receiver_.handle_network_data(fetch.NetworkResponseData.from_bytes(bytes), .ongoing)
 	return length
 }
 
-fn (mut request CurlRequest) transfer_headers_to_client_if_needed() {
-	if request.sent_headers_ { return }
+fn (mut request CurlRequest) transfer_headers_to_client_if_needed() bool {
+	if request.sent_headers_ { return !request.adblock_blocked_ }
 	request.sent_headers_ = true
 	mut response := fetch.Response.create()
 	response.status = u16(C.vox_curl_status(request.easy_))
 	response.status_message = request.reason_phrase_ or { '' }
 	response.header_list = request.response_headers_
 	response.url_list = request.request_.url_list.clone()
+	response.body = request.body_
+	filtered := request.request_.apply_adblock_response(response)
+	if filtered.is_network_error() {
+		request.adblock_blocked_ = true
+		request.pending_.resolve(filtered)
+		return false
+	}
 	response.set_request_server_request(request.request_handle())
 	request.receiver_.set_response(response)
 	request.receiver_.set_body(request.body_)
-	response.body = request.body_
 	request.pending_.resolve(response)
+	return true
 }
 
 fn (request &CurlRequest) acquire_timing_info() fetch.RequestTimingInfo {
@@ -206,8 +221,9 @@ fn (request &CurlRequest) acquire_timing_info() fetch.RequestTimingInfo {
 
 fn (mut request CurlRequest) notify_fetch_complete(result int) {
 	if request.finished_ { return }
+	if request.adblock_blocked_ { request.stop(); return }
 	if result == C.CURLE_OK {
-		request.transfer_headers_to_client_if_needed()
+		if !request.transfer_headers_to_client_if_needed() { request.stop(); return }
 		mut timing := request.params_.timing_info
 		timing.update_final_timings(request.acquire_timing_info(), request.params_.cross_origin_isolated)
 		request.receiver_.handle_network_data(fetch.NetworkResponseData.from_bytes([]), .complete)

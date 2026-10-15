@@ -21,6 +21,28 @@ pub:
 	is_replacement bool
 }
 
+// Retain repeated values in their wire order; uBO examines the first
+// matching field rather than Fetch's comma-combined value.
+pub fn response_headers(response http.Response) []adblock.ResponseHeader {
+	mut headers := []adblock.ResponseHeader{}
+	mut seen := map[string]bool{}
+	for name in response.header.keys() {
+		lower := name.to_lower()
+		if lower in seen { continue }
+		seen[lower] = true
+		for value in response.header.custom_values(name) {
+			headers << adblock.ResponseHeader{name: name, value: value}
+		}
+	}
+	return headers
+}
+
+pub fn filter_response(input adblock.Request, response http.Response) ! {
+	decision := adblock.check_response(input, response_headers(response))
+	if decision.error != '' { return error('Adblock unavailable: ${decision.error}') }
+	if decision.blocked { return error('Blocked by adblock: ${decision.rule}') }
+}
+
 fn request_user_agent(resource_url string) string {
 	// Initial navigation may precede ResourceLoader initialization. Once the
 	// loader exists, share navigator.userAgent's configuration and site rules.
@@ -120,6 +142,12 @@ pub fn get(input adblock.Request, ca_bundle string) !HTTPResult {
 			validate:       true
 			verify:         ca_bundle
 		)!
+		filter_response(adblock.Request{
+			url: resource_url
+			source_url: input.source_url
+			request_type: input.request_type
+			method: input.method
+		}, response)!
 		if response.status_code !in [301, 302, 303, 307, 308] {
 			return HTTPResult{
 				url:      resource_url

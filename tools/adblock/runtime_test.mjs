@@ -20,7 +20,9 @@ function engine(custom) {
 test('bundled snapshot retains the recorded full-uBO Brave request decisions', async () => {
     const fixture = JSON.parse(await fs.readFile(new URL('./fixtures/theverge.json', import.meta.url)));
     const { info, check } = engine();
-    assert.equal(info.list_count, fixture.lists.length);
+    const manifest = JSON.parse(await fs.readFile(new URL('../../adblock/lists/manifest.json', import.meta.url)));
+    assert.equal(info.list_count, manifest.lists.length);
+    for (const recorded of fixture.lists) assert.ok(manifest.lists.some(list => list.name === recorded.name && list.sha256 === recorded.sha256));
     assert.ok(info.filter_count > 250000);
     for (const request of fixture.requests) {
         const result = check(request);

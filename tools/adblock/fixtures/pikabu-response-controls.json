@@ -1,0 +1,182 @@
+{
+  "description": "Synthetic response-header controls evaluated by the actual pinned full uBlock Origin extension, not observed natural Pikabu ad requests.",
+  "captured_at": "2026-10-15T12:30:21.795Z",
+  "engine": {
+    "name": "uBlock Origin",
+    "version": "1.75.0",
+    "commit": "21f0e686506bb21b514b451c8c6cb9bf8c82d232",
+    "source": "https://github.com/gorhill/uBlock/tree/21f0e686506bb21b514b451c8c6cb9bf8c82d232"
+  },
+  "oracle": {
+    "browser": "Brave Browser 155.1.97.57",
+    "extension": "uBlock Origin (full, Manifest V2)",
+    "version": "1.75.0",
+    "shields": "disabled in isolated profile",
+    "settings": "repository-selected lists; identical snapshots; empty user filters"
+  },
+  "lists": [
+    {
+      "name": "ublock-filters",
+      "sha256": "b6d908ab04d5ea5dc99360eb9a79531ad6470833a08fdbd39b3b3135082fe9da"
+    },
+    {
+      "name": "ublock-badware",
+      "sha256": "dbb7b3a6e20266b92fb35e940a4ace8e023259078a3d6a2f716eaebc9b653d0f"
+    },
+    {
+      "name": "ublock-privacy",
+      "sha256": "980c6860384e9158e6f51e134d710e11aef00fdea3b96be1092f8e3c73fd7637"
+    },
+    {
+      "name": "ublock-unbreak",
+      "sha256": "e9d95cbb61cc83990e75104a4103585af146c6c6e8dfda07cad6c9713ddbb632"
+    },
+    {
+      "name": "ublock-quick-fixes",
+      "sha256": "ad334cfe66a3523dd82a954a2efdfd065c99f613dc093b8ce3d5597fd0632f9b"
+    },
+    {
+      "name": "easylist",
+      "sha256": "75dad8d3b219649590427fe8c3257e10461dc403c5e8afc315d94fdeaaeb078b"
+    },
+    {
+      "name": "easyprivacy",
+      "sha256": "9fab16346701f525c0d41f340071f0d72f767df8a399c48c545643eaad4e927e"
+    },
+    {
+      "name": "urlhaus-1",
+      "sha256": "05243718a2a12f3e998487a4bced75d16d111209ebc5f2872fb531fb22019ed9"
+    },
+    {
+      "name": "plowe-0",
+      "sha256": "25e97ac24ebf04c6df613c0726d66121725af6c2a68504ee2560b66df9092a20"
+    },
+    {
+      "name": "RUS-0",
+      "sha256": "c131a1ca4a61e5a107dcc1cc2d5717b912dadb2e895caf42b93e162a64faa1f2"
+    }
+  ],
+  "requests": [
+    {
+      "url": "https://pikabu.ru/ajax/stories",
+      "source_url": "https://pikabu.ru/",
+      "request_type": "xmlhttprequest",
+      "method": "POST",
+      "phase": "request",
+      "expected": {
+        "blocked": false,
+        "exception": false,
+        "rule": ""
+      }
+    },
+    {
+      "url": "https://pikabu.ru/ajax/stories",
+      "source_url": "https://pikabu.ru/",
+      "request_type": "xmlhttprequest",
+      "method": "POST",
+      "phase": "response",
+      "response_headers": [
+        {
+          "name": "llasalbbubrrl",
+          "value": "1"
+        }
+      ],
+      "request_headers": [],
+      "expected": {
+        "blocked": true,
+        "exception": false,
+        "rule": "||pikabu.ru/ajax/$xhr,responseheader=llasalbbubrrl"
+      }
+    },
+    {
+      "url": "https://pikabu.ru/ajax/stories",
+      "source_url": "https://pikabu.ru/",
+      "request_type": "xmlhttprequest",
+      "method": "POST",
+      "phase": "response",
+      "response_headers": [],
+      "request_headers": [],
+      "expected": {
+        "blocked": false,
+        "exception": false,
+        "rule": ""
+      }
+    },
+    {
+      "url": "https://pikabu.ru/ajax/stories",
+      "source_url": "https://pikabu.ru/",
+      "request_type": "xmlhttprequest",
+      "method": "POST",
+      "phase": "response",
+      "response_headers": [
+        {
+          "name": "LlAsAlBbUbRrL",
+          "value": ""
+        }
+      ],
+      "request_headers": [],
+      "expected": {
+        "blocked": true,
+        "exception": false,
+        "rule": "||pikabu.ru/ajax/$xhr,responseheader=llasalbbubrrl"
+      }
+    },
+    {
+      "url": "https://pikabu.ru/story/readable_article",
+      "source_url": "https://pikabu.ru/",
+      "request_type": "xmlhttprequest",
+      "method": "POST",
+      "phase": "response",
+      "response_headers": [
+        {
+          "name": "llasalbbubrrl",
+          "value": "1"
+        }
+      ],
+      "request_headers": [],
+      "expected": {
+        "blocked": false,
+        "exception": false,
+        "rule": ""
+      }
+    },
+    {
+      "url": "https://pikabu.ru/ajax/stories",
+      "source_url": "https://pikabu.ru/",
+      "request_type": "image",
+      "method": "POST",
+      "phase": "response",
+      "response_headers": [
+        {
+          "name": "llasalbbubrrl",
+          "value": "1"
+        }
+      ],
+      "request_headers": [],
+      "expected": {
+        "blocked": false,
+        "exception": false,
+        "rule": ""
+      }
+    },
+    {
+      "url": "https://pikabu.ru/ajax/stories",
+      "source_url": "https://pikabu.ru/",
+      "request_type": "main_frame",
+      "method": "POST",
+      "phase": "response",
+      "response_headers": [
+        {
+          "name": "llasalbbubrrl",
+          "value": "1"
+        }
+      ],
+      "request_headers": [],
+      "expected": {
+        "blocked": false,
+        "exception": false,
+        "rule": ""
+      }
+    }
+  ]
+}

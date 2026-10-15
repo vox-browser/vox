@@ -19,6 +19,7 @@ import highresolutiontime
 import html
 import http
 import infra
+import json
 import layout
 import math
 import mimesniff
@@ -432,6 +433,7 @@ struct PreloadedResource {
 	final_url string
 	request_type string
 	adblock_replacement bool
+	response_headers []adblock.ResponseHeader
 }
 
 // Keep the root executable linked against the translated support modules too. The visible page
@@ -851,9 +853,14 @@ fn cache_resource(resource_url string, body string) {
 }
 
 fn cache_resource_response(resource_url string, final_url string, body string) {
+	cache_resource_response_headers(resource_url, final_url, body, []adblock.ResponseHeader{})
+}
+
+fn cache_resource_response_headers(resource_url string, final_url string, body string, headers []adblock.ResponseHeader) {
 	path := browser_cache_entry_path(browser_cache_root(), 'resources', resource_url)
 	write_browser_cache_entry(path, body)
 	write_browser_cache_entry(path + '.url', final_url)
+	write_browser_cache_entry(path + '.headers.json', json.encode(headers))
 }
 
 fn cached_snapshot_path(resource_url string) string {
@@ -944,8 +951,15 @@ fn fetch_browser_resource(reference string, base string, source_url string, requ
 				return PreloadedResource{url: resolved, body: replacement.body, source_url: owner_url, final_url: final_url, request_type: request_type, adblock_replacement: true}
 			}
 			if final_filter.url == final_url {
-				if cached := read_cached_resource(filtered.url) {
-					return PreloadedResource{url: resolved, body: cached, source_url: owner_url, final_url: final_url, request_type: request_type}
+				// Older cache entries have no header provenance. Re-fetch them;
+				// assuming an empty header list could expose a header-blocked ad.
+				if encoded_headers := read_browser_cache_entry(path + '.headers.json') {
+					if headers := json.decode([]adblock.ResponseHeader, encoded_headers) {
+						filter_browser_response_headers(final_request, headers)!
+						if cached := read_cached_resource(filtered.url) {
+							return PreloadedResource{url: resolved, body: cached, source_url: owner_url, final_url: final_url, request_type: request_type, response_headers: headers}
+						}
+					}
 				}
 			}
 		}
@@ -955,8 +969,9 @@ fn fetch_browser_resource(reference string, base string, source_url string, requ
 	if response.status_code < 200 || response.status_code >= 400 {
 		return error('HTTP ${response.status_code}')
 	}
-	if !result.is_replacement { cache_resource_response(filtered.url, result.url, response.body) }
-	return PreloadedResource{url: resolved, body: response.body, source_url: owner_url, final_url: result.url, request_type: request_type, adblock_replacement: result.is_replacement}
+	headers := browsernet.response_headers(response)
+	if !result.is_replacement { cache_resource_response_headers(filtered.url, result.url, response.body, headers) }
+	return PreloadedResource{url: resolved, body: response.body, source_url: owner_url, final_url: result.url, request_type: request_type, adblock_replacement: result.is_replacement, response_headers: headers}
 }
 
 fn fetch_resource_in_background(resource_url string, source_url string, request_type string, results chan PreloadedResource) {
@@ -993,6 +1008,11 @@ fn filter_preloaded_resource(resource PreloadedResource, source_url string, requ
 		}
 		if final_filter.url != resource.final_url { return fetch_browser_resource(resource.url, '', source_url, request_type) }
 	}
+	filter_browser_response_headers(adblock.Request{
+		url: if resource.final_url == '' { resource.url } else { resource.final_url }
+		source_url: source_url
+		request_type: request_type
+	}, resource.response_headers)!
 	return resource
 }
 

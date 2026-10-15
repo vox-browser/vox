@@ -6,6 +6,7 @@
     "source": "https://github.com/gorhill/uBlock/tree/21f0e686506bb21b514b451c8c6cb9bf8c82d232"
   },
   "downloaded_at": "2026-10-15T02:18:09.122Z",
+  "updated_at": "2026-10-15T12:26:03.472Z",
   "preprocessor_environment": [
     "ublock",
     "chromium",
@@ -129,6 +130,72 @@
       "file": "lists/plowe-0.txt",
       "sha256": "25e97ac24ebf04c6df613c0726d66121725af6c2a68504ee2560b66df9092a20",
       "includes": []
+    },
+    {
+      "name": "RUS-0",
+      "title": "🇷🇺ru 🇺🇦ua 🇺🇿uz 🇰🇿kz: RU AdList",
+      "source_url": "https://raw.githubusercontent.com/easylist/ruadlist/master/RuAdList-uBO.txt",
+      "file": "lists/RUS-0.txt",
+      "sha256": "c131a1ca4a61e5a107dcc1cc2d5717b912dadb2e895caf42b93e162a64faa1f2",
+      "downloaded_at": "2026-10-15T12:26:03.472Z",
+      "includes": [
+        {
+          "url": "https://raw.githubusercontent.com/easylist/ruadlist/master/advblock/adservers.txt",
+          "sha256": "16be9b48c68fe73b3f9b46891f976f8e9135066109809d7126e7650a8e0611e2"
+        },
+        {
+          "url": "https://raw.githubusercontent.com/easylist/ruadlist/master/advblock/first_level.txt",
+          "sha256": "ac2b34e1ba94e343ec5a3ad8b645d1f87d609372989ecdd92f25b2462bb46668"
+        },
+        {
+          "url": "https://raw.githubusercontent.com/easylist/ruadlist/master/advblock/general_block.txt",
+          "sha256": "de5c8c9e911ef6262bacb8f4ae6532e6b94f84af48f0102d28a7d69400d51241"
+        },
+        {
+          "url": "https://raw.githubusercontent.com/easylist/ruadlist/master/advblock/general_hide.txt",
+          "sha256": "8be3c13eb98f720e971e104e850da2fd79d7a8c345ef2fc2edbea4e249fa6010"
+        },
+        {
+          "url": "https://raw.githubusercontent.com/easylist/ruadlist/master/advblock/popup.txt",
+          "sha256": "d4a4178710511326560ab9cec484f6c283d191488631407afbcc4c24d0112ed3"
+        },
+        {
+          "url": "https://raw.githubusercontent.com/easylist/ruadlist/master/advblock/specific_antisocial.txt",
+          "sha256": "46fbc33deaa511f789ba2d7d6accf3930269d04ad202ca151b1b326f5c6abba9"
+        },
+        {
+          "url": "https://raw.githubusercontent.com/easylist/ruadlist/master/advblock/specific_block.txt",
+          "sha256": "772736f16410a815f58df5b200f09a29898e893218bce9aa80526b2ae364c2bb"
+        },
+        {
+          "url": "https://raw.githubusercontent.com/easylist/ruadlist/master/advblock/specific_hide.txt",
+          "sha256": "5730016000d33b307e2d91898eb31afcdd67b8ba4849bbfb1215baa6e9e151ef"
+        },
+        {
+          "url": "https://raw.githubusercontent.com/easylist/ruadlist/master/advblock/specific_special.txt",
+          "sha256": "253828f4c2b57d9c2f09d8772af59d6eef06459301f25eaedadaf41c94f221fe"
+        },
+        {
+          "url": "https://raw.githubusercontent.com/easylist/ruadlist/master/advblock/thirdparty.txt",
+          "sha256": "df8aec30680433a459a97db60a3039b6d48bf35c6219e12e1ef3bcf4d9b8ff74"
+        },
+        {
+          "url": "https://raw.githubusercontent.com/easylist/ruadlist/master/advblock/whitelist.txt",
+          "sha256": "d7c89270182a79154a59aa6975992c30df13d7024af5604462a32008b13eadb9"
+        },
+        {
+          "url": "https://raw.githubusercontent.com/easylist/ruadlist/master/css-fixes-experimental.txt",
+          "sha256": "90e00cbda1ca285bdb09b3ea0532f80225955fdbf3b8d6ba76fad064a5a3eda4"
+        },
+        {
+          "url": "https://raw.githubusercontent.com/easylist/ruadlist/master/js-fixes-experimental.txt",
+          "sha256": "35be7c52ac1da2580676b0aa559bab745f078c776ff66449417d9932c96713d2"
+        },
+        {
+          "url": "https://raw.githubusercontent.com/easylist/ruadlist/master/AWRL-non-sync.txt",
+          "sha256": "d6ef8b903aede2c80545ed7a0d5de5fe2f5abc3de2776768355cc05cc6dc83fb"
+        }
+      ]
     }
   ],
   "public_suffix_list": {

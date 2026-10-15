@@ -5,7 +5,7 @@ import json
 import os
 
 pub const engine_version = '1.75.0'
-pub const default_list_count = 9
+pub const default_list_count = 10
 
 pub struct Request {
 pub:
@@ -32,6 +32,8 @@ mut:
 }
 
 struct RequestLog {
+	phase        string = 'request'
+	response_headers []ResponseHeader
 	method       string
 	url          string
 	source_url   string
@@ -41,6 +43,26 @@ struct RequestLog {
 	rule         string
 	redirect_url string
 	error        string
+}
+
+fn record_response(request Request, headers []ResponseHeader, decision Decision) {
+	path := os.getenv('VOX_ADBLOCK_LOG')
+	if path == '' { return }
+	mut file := os.open_append(path) or { return }
+	defer { file.close() }
+	file.writeln(json.encode(RequestLog{
+		phase: 'response'
+		response_headers: headers
+		method: request.method
+		url: request.url
+		source_url: request.source_url
+		request_type: request.request_type
+		blocked: decision.blocked
+		exception: decision.exception
+		rule: decision.rule
+		redirect_url: decision.redirect_url
+		error: decision.error
+	})) or {}
 }
 
 fn record_request(request Request, decision Decision) {
