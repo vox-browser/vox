@@ -13493,7 +13493,39 @@ fn inheritable_custom_property_data(abstract_element dom.AbstractElement) ?&dom.
 	return data.inheritable(abstract_element.document())
 }
 
+fn has_cascaded_custom_property_declarations(abstract_element dom.AbstractElement, matching_rule_set MatchingRuleSet) bool {
+	for layer in matching_rule_set.author_rules {
+		for scoped_rule in layer.rules {
+			rule := scoped_rule.rule.rule or { continue }
+			declaration := rule.style() or { continue }
+			if declaration.custom_properties.len != 0 {
+				return true
+			}
+		}
+	}
+	// Inline declarations enter the existing cascade through an author layer.
+	if matching_rule_set.author_rules.len != 0 {
+		if declaration := inline_style_for_abstract_element(abstract_element) {
+			return declaration.custom_properties.len != 0
+		}
+	}
+	return false
+}
+
 fn install_custom_property_data_for_style(abstract_element dom.AbstractElement, matching_rule_set MatchingRuleSet) {
+	// With no own declarations, inheritance is the complete result. Animation
+	// overlays still use the ordinary path to retain their separate sampled layer.
+	previous_data := abstract_element.custom_property_data()
+	has_overlay := if data := previous_data { data.is_animation_overlay() } else { false }
+	if !has_overlay && !has_cascaded_custom_property_declarations(abstract_element, matching_rule_set) {
+		mut inherited := ?&dom.CSSCustomPropertyData_(none)
+		if parent := abstract_element.element_to_inherit_style_from() {
+			inherited = inheritable_custom_property_data(parent)
+		}
+		mut mutable_element := abstract_element
+		mutable_element.set_custom_property_data(inherited)
+		return
+	}
 	mut had_animation_overlay := false
 	mut animated_values := map[string]dom.CSSCustomProperty_{}
 	if existing := abstract_element.custom_property_data() {
