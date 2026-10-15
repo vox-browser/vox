@@ -428,11 +428,6 @@ pub mut:
 	// representation used by boxes which do not establish a transformed paint subtree.
 	paint_transform [6]f64
 mut:
-	// Out-of-flow descendants retain the position they would have occupied in this formatting
-	// context until their actual containing block lays them out. Absolute positions stop at the
-	// nearest positioned ancestor; fixed positions travel to the initial containing block.
-	absolute_static_positions                      map[i64]StaticPosition
-	fixed_static_positions                         map[i64]StaticPosition
 	own_scroll_frame_index                         int
 	sticky_scroll_frame_index                      int
 	accumulated_visual_context_index               int
