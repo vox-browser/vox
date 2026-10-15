@@ -4218,6 +4218,95 @@ Evidence: `Build/v/instruction-layout47-final-audit.json`,
 `Build/instructions/vox-layout47-diagnostic.run-1.*`. The generated-C archive
 SHA256 is `311e473fcf3c7945663e796d6e6ae599fc1c025806c246c923cf71736d9c49ef`.
 
+## Classify horizontal row flex bases by their actual axis
+
+Feature `115c667f` keeps percentage `flex-basis` under a known horizontal
+row or row-reverse parent out of the conservative definite-height dependency
+predicate. That basis consumes the parent's main width; promoting an unchanged
+used height does not change it. The [CSS Flexbox specification](https://www.w3.org/TR/css-flexbox-1/#flex-basis-property)
+and current upstream `Rust/src/layout/flex_formatting_context.rs` resolve the
+basis against the container's main size. Other height/min/max/inset percentages,
+column and vertical parents, percentage gaps, aspect ratios and descendant
+checks remain conservative. The existing pass scheduling and cache layout are
+unchanged; the predicate can now reuse geometry through its existing guards.
+
+The common harness passes **20,783 assertions across 19 cases** (18 functional
+plus an inactive diagnostic) in before/final Boehm and final no-GC C-O2 builds.
+It retains the column/intrinsic/rare-geometry checks and adds four cases: natural
+geometry for nested row/reverse percentage bases, real percentage-height
+promotion, column/reverse percentage bases, and a vertical row with a horizontal
+child. Retained values survive collection. The identical common source is used
+for each variant.
+
+Three fixed alternating local pairs execute **512 complete normal flex
+contexts**, each with six nested percentage-basis rows and fresh measurement
+state. Median retired instructions change from **290,679,839 to
+84,681,463** (-70.87%), with all three improving.
+All six geometry checksums are 9,175,040. Document setup, eight warmups, expected
+result and forced collection precede the counter; checksum assertions follow.
+Ancestor population, full context layout and measurement release remain inside
+each measured context. This is local evidence with no separate page credit.
+
+Full-process C-O1/Boehm profiles run the entire common harness and active probe
+without filters or resets. Complete probe calls remain **521**
+in each build. Flex-context calls fall **14,657 to
+3,693**, and independent-child calls fall
+**18,359 to 3,737**.
+Dependency-predicate calls change **3,689 to
+7,351** as the newly non-conservative paths inspect
+descendants. These are call counts, not hardware instruction measurements.
+
+The strict generated-C audit permits only
+`layout__flex_subtree_depends_on_definite_height` to change. Its remaining
+ratio/independent-height/descendant/cache tail is identical in V. All other
+executable logic, layouts, resources and GC setup match after established
+compiler identities, exact assertion-line mapping and frozen include paths.
+Four helpers may reorder only with identical raw bodies. All 120 native inputs,
+37 quoted includes and native C-O2 arguments are authenticated. Compiled C
+SHA256: `7bb356a9ba84afc95ce2f981de895cad7e120950aa8b9b62b3b7d7bd01bdeb62`.
+Durable focused, normal and profile C hashes are in
+`instruction-opt47-artifact-archives.json`.
+
+The predeclared cohort fixes 30 alternating pairs and 30,000 paired bootstrap
+resamples, seed 47. Regular frozen round 46 and candidate binaries use the same
+359-body cache, fresh copies, helper, 1024×768 document viewport and
+`navigation_to_first_document_paint[0]`. Both keep the same 4 GiB document-gated
+capacity hint, enabled Boehm, one marker and no prod/prealloc. No further heap
+capacity increase is included.
+
+| Build | Median first-frame retired instructions | Median process peak, MiB |
+| --- | ---: | ---: |
+| Frozen round 46 control | 19,029,247,565.5 | 3,723.7 |
+| Row-basis dependency refinement | 19,032,385,583.5 | 3,725.7 |
+
+Observed matching median saving: **-3,138,018** instructions
+(-0.016%). 15/30 pairs improve. Paired
+median saving is 681,999, with a 95% paired percentile
+interval of **-5,645,322.5 to 7,382,509**. Repeatable page credit is **0**,
+requiring a strictly positive lower confidence bound. The interval estimates
+the paired median; the point saving is the difference of marginal medians.
+Memory covers each root process's lifetime maximum through capture/exit, not
+just first paint. Missing peaks: before 0, final
+0; process peaks are never summed.
+
+All 60 primaries remain, with 60 actual PNGs, 0 recovered
+post-primary counters and 0 archived pre-parse startup retries. No
+completed primary is rerun, discarded or extended. Each has one installation,
+two geometry preparations and one paint; 0 later
+refreshes remain separate. Recorded launch arrays and all cache/helper/binary
+hashes are authenticated.
+
+The observed matching median saving stays below the 5,000,000-instruction gate, so broad suites and the 19-case screenshot batch remain deferred.
+The focused row/percentage-height/column viewport is pixel-exact. Selected broad
+runtime is frozen separately from Root. The signed isolated comparison app is
+`/Users/alex/code/vox2/Build/v/Vox-opt47.app`. Signature, startup, matching native text and actual
+collections pass with marker 1 by default and override 2. Canonical and GUI apps
+are preserved. Independent Root work receives no performance or regression
+credit from this cohort. Chrome parity remains unestablished.
+
+Evidence: `Build/instructions/vox-opt47-interleaved-*` and
+`Build/v/instruction-opt47-*`.
+
 ## Causes and changes
 
 - The V 0.5.2 compatibility compiler's `-prod` Boehm code repeatedly snapshots

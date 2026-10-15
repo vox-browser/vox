@@ -1463,6 +1463,12 @@ evidence](docs/translation-audit/NATIVE_MEDIA_WHEEL_RAW_HANDLER.md).
   2,730.8 to 3,726 MiB.
   Broad verification: passed 87 selected cases both GC and 19 screenshots (16 exact).
   The focused viewport is exact; Chrome parity remains open.
+  Horizontal row basis classification `115c667f` passes 20,783 focused
+  assertions per configuration. Complete nested-row contexts use 70.87% fewer
+  instructions. Matching 30-pair observed savings are -3,138,018,
+  with repeatable page credit 0. Both builds retain the 4 GiB hint.
+  Broad verification: deferred below the observed 5,000,000-instruction gate.
+  The focused viewport is exact; Chrome parity remains open.
 - Outside instruction-count optimization, run broad regression suites once per
   ten completed fixes, not after every fix.
   Broad suites include full translation/package test batches, the full LibJS AST
