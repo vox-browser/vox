@@ -8,6 +8,13 @@ fn (mut app BrowserApp) preload_initial_document_resources(base_url string) map[
 	for resource_url, resource in app.navigation_preloaded_resources {
 		cached[resource_url] = resource
 	}
+	// Script and procedural-filter style reads may perform the first layout
+	// during startup. Give them the same viewport as the eventual native frame.
+	viewport_height := if app.viewport_height > 0 { app.viewport_height } else { initial_height - app.chrome_height() }
+	app.document.set_viewport_rect(dom.Rect{
+		width: if app.viewport_width > 0 { app.viewport_width } else { initial_width }
+		height: viewport_height
+	})
 	if app.document.as_node().is_scripting_enabled() {
 		loaded := preload_document_resources(app.document, base_url, cached)
 		app.js_messages << install_external_styles(app.document, base_url, loaded)
@@ -29,11 +36,6 @@ fn (mut app BrowserApp) preload_initial_document_resources(base_url string) map[
 	app.js_messages << install_external_styles(app.document, base_url, loaded)
 	// Media queries and author overrides must participate in the same cascade
 	// used by layout before deciding whether an image has a display box.
-	viewport_height := if app.viewport_height > 0 { app.viewport_height } else { initial_height - app.chrome_height() }
-	app.document.set_viewport_rect(dom.Rect{
-		width: if app.viewport_width > 0 { app.viewport_width } else { initial_width }
-		height: viewport_height
-	})
 	css.sync_document_style_elements(app.document)
 	foreground, background := partition_nonrendered_image_preloads(app.document, base_url, image_urls)
 	for resource_url in background {
