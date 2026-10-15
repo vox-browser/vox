@@ -37,7 +37,7 @@ fn test_document_heap_hint_leaves_small_pages_and_explicit_settings_alone() {
 		}
 		original := nested['children'] or { panic('missing retained children') }
 		_ = reserve_gc_heap_for_document(threshold)
-		assert C.GC_get_heap_size() >= usize(512 * 1024 * 1024)
+		assert C.GC_get_heap_size() >= usize(1024 * 1024 * 1024)
 		assert !reserve_gc_heap_for_document(threshold)
 		C.GC_gcollect()
 		assert retained.ends_with('after expansion')
