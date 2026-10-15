@@ -1628,6 +1628,11 @@ evidence](docs/translation-audit/NATIVE_MEDIA_WHEEL_RAW_HANDLER.md).
   focused mixed-edge viewport exact. Additional observed savings: 0.
   Same 4 GiB/placement; contemporary Root excluded; isolated app pins frozen helper.
   Canonical/GUI preserved; Chrome parity remains open.
+  Direct inline-item cursor consumption round69 is rejected before page sampling.
+  All three C-O2 configurations pass 23,689 focused assertions; complete inline
+  formatting regresses 0.56% at the median, with all three pairs worse.
+  Only owned function/test edits are restored and all observations remain.
+  Page credit and additional observed savings stay 0; frozen68 remains control.
 - Outside instruction-count optimization, run broad regression suites once per
   ten completed fixes, not after every fix.
   Broad suites include full translation/package test batches, the full LibJS AST

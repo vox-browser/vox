@@ -6411,6 +6411,48 @@ submission accounting remains open; faster-than-Chrome is not established.
 Evidence: `Build/instructions/vox-opt67-interleaved-*` and
 `Build/v/instruction-opt67-*`.
 
+## Round 69: reject direct inline-item cursor consumption
+
+A narrow prototype replaces the internal formatter's optional-returning
+`iterator.next()` call with a by-value read of the existing pre-generated item
+array, incrementing the same cursor before unchanged lookahead. Public `next()`,
+eager generation, state, schemas, ownership and item-buffer release remain
+unchanged. Emitted C confirms the optional result is stack storage, not a heap
+allocation; the normal control already inlines public `next()`.
+
+Before/final Boehm and final no-GC C-O2 configurations each actually pass
+**23,689 assertions in 28 cases** (27 functional plus one inactive diagnostic).
+The common harness covers wrapping, overflow, tabs, nested inline edges, retained
+fragments, public iterator compatibility, and two new empty-input/cross-node
+lookahead cases in normal and intrinsic modes. Focused target C matches exactly
+apart from the direct cursor loop and temporary-1 renumbering; public `next()`
+is byte-identical. This is a focused target check, not a normal-browser C audit.
+
+Three fixed alternating pairs measure **512 complete public inline formatting
+runs**, each with 16 text nodes and ten words per node at 300px width. Setup,
+eight warmups, expected result and forced GC precede the hardware interval;
+the checksum assertion follows. All six checksums are **17,694,720**. Before
+counts are **2,357,269,763 / 2,363,875,347 / 2,366,771,447**; final counts by
+pair are **2,358,227,186 / 2,382,396,258 / 2,377,144,324**. Median instructions
+rise **2,363,875,347→2,377,144,324 (+0.5613%)**, with **all three pairs worse**.
+Every completed sample remains; the cohort is not extended. The complete local
+result rejects this prototype before normal C generation or page sampling.
+
+The diagnostic driver's inherited scope text initially named the prior
+length-box probe. The original receipt and driver are retained under
+`instruction-opt69-diagnostic-scope-metadata-correction`; the corrected metadata
+records the actual command, inline harness and VOX_INLINE_CURSOR counters.
+All six observations and terminal receipts are unchanged; no job was repeated.
+
+Only this attempt's owned function and uncommitted test are restored/archived.
+All three focused C files have authenticated durable gzip archives, alongside
+source snapshots, identical common harness, actual terminal receipts and local
+results under `Build/opt69-*-source` and `Build/v/instruction-opt69-*`. No normal
+build, profile, full C projection, page cohort, broad batch or app/GC artifact is
+claimed. **Page credit is 0**. Frozen68 remains the next control and broad
+baseline; additional observed savings stay 0. Canonical and user GUI browsers
+are preserved. Chrome parity remains open.
+
 ## Coarse formatting-context diagnostic after round68
 
 A separate native C-O2/Boehm diagnostic wraps four formatting entry points in
