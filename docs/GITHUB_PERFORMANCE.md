@@ -5459,6 +5459,54 @@ header, with repository content later. No parity or faster-than-Chrome claim is
 made. Evidence: `Build/instructions/vox-opt58-interleaved-*` and
 `Build/v/instruction-opt58-*`.
 
+## Matching workload counts
+
+A separate frozen 58 diagnostic adds owner-thread entry counts and array lengths
+between first navigation and the first native document frame report. It performs no
+per-call hardware reads, timer sampling or V profiling. The added code reads
+existing result sizes and selector metadata; assignments affect only diagnostic
+counters and local variables. All eight touched C functions restore byte-for-byte
+to normal frozen 58 C after removing those insertions and the two navigation/ report
+wrappers. Source, native arguments, 120 inputs, 359 cached bodies and frozen helper stay
+authenticated. Native/sign/startup/observer/browser exits are actually zero. One
+primary and a real 1024×768 PNG remain, with no retries or recoveries.
+
+| Observation | Count |
+| --- | ---: |
+| Scope collection calls | 127,328 |
+| Empty collection results | 110,169 |
+| Qualified-layer collection calls / empty | 95,492 / 82,346 |
+| Pseudo-element collection calls / empty | 95,856 / 90,384 |
+| Candidate bucket entries visited | 5,371,322 |
+| Candidate entries appended before selector matching | 219,433 |
+| Selector matching entries, including recursion | 631,983 |
+| Returned matching-rule entries | 37,412 |
+| Style-computation entries / pseudo entries | 10,613 / 7,988 |
+| Requested pseudo styles returning for no matching rule | 2,622 |
+
+Sort calls have the same 127,328 total: 110,169 of length 0, 11,058 of length 1, 5,814
+of length 2–8, 275 of length 9–32 and 12 larger. Style results retain 106,104
+author-layer entries, of which 91,343 have no rules. These are entry and array-slot
+counts, not unique elements/rules, CPU self cost, or retired-instruction savings.
+The two candidate-append totals agree; sorting and scope counts also reconcile.
+Empty results still may require work to establish, so these counts do not justify
+omitting required matching, invalidation or scope behavior.
+
+The instrumented first-frame counter is 18,764,755,917; it includes diagnostic
+effects and receives **0 performance credit**. No subtraction from a historical
+normal median is made. This diagnostic guides an unwrapped hardware probe and fixed
+paired cohort for a private typed-predicate change. Normal native inspection finds
+a 128-byte cached pseudo-selector payload copied before its presence check in rule
+filtering; that static code evidence also receives no instruction credit. Binary
+SHA256: `ea9818cd5f03971534431b471720162161a64407aa174d1dbe1bc6ad012948cd`; durable
+C archive: `ccc0287524aff6ddf373af4448452438aa27f3d4ff1e35a6e99b17db564ec148`;
+patch-record SHA256:
+`7b7b1e9cc2ef7446a7e2a76a12803073b1ab00171aefbf35901221a359aeeb0f`. Evidence:
+`Build/v/instruction-hotspots59-*` and
+`Build/instructions/vox-hotspots59-diagnostic.run-1.*`. Current Root/canonical app
+remain excluded; broad baseline stays round57 and observed carry
+remains 3,529,869.5. Chrome parity remains open.
+
 ## Causes and changes
 
 - The V 0.5.2 compatibility compiler's `-prod` Boehm code repeatedly snapshots
