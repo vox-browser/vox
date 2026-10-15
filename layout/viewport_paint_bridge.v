@@ -1864,8 +1864,7 @@ fn lower_visual_replay_steps(commands []PaintCommand, steps []CompatibilityVisua
 		for index := active.len - 1; index >= common; index-- {
 			result << PaintCommand{
 				kind: compatibility_end_visual_layer_kind(active[index])
-				mask_clip: active[index].mask_clip
-				visual_layer: active[index]
+				visual_layer_data: &PaintVisualLayer{ ...active[index] }
 			}
 		}
 		// Desired paths are immutable retained input. Reuse our private active
@@ -1874,8 +1873,7 @@ fn lower_visual_replay_steps(commands []PaintCommand, steps []CompatibilityVisua
 		for index := common; index < desired.len; index++ {
 			result << PaintCommand{
 				kind: compatibility_begin_visual_layer_kind(desired[index])
-				mask_clip: desired[index].mask_clip
-				visual_layer: desired[index]
+				visual_layer_data: &PaintVisualLayer{ ...desired[index] }
 				// Filter bounds are in document coordinates. Preserve the first
 				// enclosed command's accumulated transform so the native graph can
 				// map them through scrolling and CSS transforms exactly once.
@@ -1907,8 +1905,7 @@ fn lower_visual_replay_steps(commands []PaintCommand, steps []CompatibilityVisua
 	for index := active.len - 1; index >= 0; index-- {
 		result << PaintCommand{
 			kind: compatibility_end_visual_layer_kind(active[index])
-			mask_clip: active[index].mask_clip
-			visual_layer: active[index]
+			visual_layer_data: &PaintVisualLayer{ ...active[index] }
 		}
 	}
 	return result

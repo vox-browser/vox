@@ -4687,7 +4687,8 @@ fn (mut app BrowserApp) draw_command(source_command layout.PaintCommand, page_x 
 	if command.kind == 'begin_css_effect_layer' {
 		$if macos {
 			if app.ctx.native_rendering {
-				C.native_begin_css_effect_layer(f32(command.visual_layer.opacity), int(command.visual_layer.blend_mode))
+				layer := command.visual_layer()
+				C.native_begin_css_effect_layer(f32(layer.opacity), int(layer.blend_mode))
 			}
 		}
 		return
@@ -4789,7 +4790,7 @@ fn (mut app BrowserApp) draw_command(source_command layout.PaintCommand, page_x 
 		$if macos {
 			if app.ctx.native_rendering {
 				C.native_begin_css_filter_layer(f32(app.ctx.width), f32(app.ctx.height))
-				if filter := command.visual_layer.filter {
+				if filter := command.visual_layer().filter {
 					app.add_native_css_filter(filter, command.transform, page_x, page_y)
 				}
 			}
@@ -4807,7 +4808,7 @@ fn (mut app BrowserApp) draw_command(source_command layout.PaintCommand, page_x 
 	if command.kind == 'begin_svg_mask_layer' {
 		$if macos {
 			if app.ctx.native_rendering {
-				app.prepare_native_svg_layer_mask(command.mask_clip, page_x, page_y, 0, false)
+				app.prepare_native_svg_layer_mask(command.mask_clip(), page_x, page_y, 0, false)
 				C.native_begin_svg_mask_layer()
 			}
 		}
@@ -4816,7 +4817,8 @@ fn (mut app BrowserApp) draw_command(source_command layout.PaintCommand, page_x 
 	if command.kind == 'end_svg_mask_layer' {
 		$if macos {
 			if app.ctx.native_rendering {
-				C.native_end_svg_mask_layer(command.mask_clip.cache_key, if command.mask_clip.is_svg_content_mask {
+				clip := command.mask_clip()
+				C.native_end_svg_mask_layer(clip.cache_key, if clip.is_svg_content_mask {
 					1
 				} else {
 					0
@@ -4944,7 +4946,7 @@ fn (mut app BrowserApp) draw_command(source_command layout.PaintCommand, page_x 
 			if app.ctx.native_rendering {
 				radii := command.corner_radii
 				C.native_begin_backdrop_filter_layer(f32(app.ctx.width), f32(app.ctx.height), f32(command.x), f32(command.y), f32(command.width), f32(command.height), f32(radii.top_left.x), f32(radii.top_left.y), f32(radii.top_right.x), f32(radii.top_right.y), f32(radii.bottom_right.x), f32(radii.bottom_right.y), f32(radii.bottom_left.x), f32(radii.bottom_left.y), f32(matrix[0]), f32(matrix[1]), f32(matrix[2]), f32(matrix[3]), f32(matrix[4]), f32(matrix[5]), page_x, page_y, f32(scroll_y), int(command.backdrop_source_outside_filter))
-				if filter := command.backdrop_filter {
+				if filter := command.backdrop_filter() {
 					app.add_native_css_filter(filter, command.transform, page_x, page_y)
 				}
 				C.native_end_backdrop_filter_layer(f32(command.opacity))

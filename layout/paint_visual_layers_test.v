@@ -38,7 +38,7 @@ fn test_visual_layer_lowering_preserves_shared_prefix_and_sibling_order() {
 	assert lowered.map(it.kind) == ['begin_css_effect_layer', 'begin_css_filter_layer', 'first',
 		'end_css_filter_layer', 'begin_svg_mask_layer', 'second', 'end_svg_mask_layer',
 		'end_css_effect_layer', 'last']
-	assert lowered.filter(it.kind.starts_with('begin_') || it.kind.starts_with('end_')).map(it.visual_layer.scope_id) == [
+	assert lowered.filter(it.kind.starts_with('begin_') || it.kind.starts_with('end_')).map(it.visual_layer().scope_id) == [
 		u64(1),
 		2,
 		2,
@@ -77,8 +77,8 @@ fn test_visual_layer_lowering_keeps_the_original_open_prefix_payload() {
 		lowered := lower_visual_layers(commands)
 		assert lowered.map(it.kind) == ['begin_css_effect_layer', 'first', 'second',
 			'end_css_effect_layer']
-		assert lowered.first().visual_layer.opacity == 0.25
-		assert lowered.last().visual_layer.opacity == 0.25
+		assert lowered.first().visual_layer().opacity == 0.25
+		assert lowered.last().visual_layer().opacity == 0.25
 		assert first_path.items[0].opacity == 0.25
 		assert second_path.items[0].opacity == 0.75
 	}

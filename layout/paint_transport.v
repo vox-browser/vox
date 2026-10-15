@@ -1015,15 +1015,15 @@ pub mut:
 	// Effects and SVG masks are group operations. Retain their ancestor order so
 	// replay can emit balanced layer boundaries around the complete subtree.
 	visual_layer_list &PaintVisualLayerList = unsafe { nil }
-	visual_layer      PaintVisualLayer
+	visual_layer_data ?&PaintVisualLayer = none
 	// ApplyBackdropFilter samples the already-painted destination. If this box
 	// also has `filter`, that sample comes from outside its newly-opened filter
 	// layer while the filtered backdrop is painted into the layer with the box.
-	backdrop_filter                ?painting.GfxFilter = none
+	backdrop_filter_data           ?&painting.GfxFilter = none
 	backdrop_source_outside_filter bool
-	// Synthetic display-list controls bracket all commands belonging to one
-	// SVG mask/clip stacking scope so destination-in is applied once.
-	mask_clip PaintClip
+	// Nested viewport replay can override the mask geometry while sharing the
+	// immutable layer snapshot retained by the original recording.
+	mask_clip_data ?&PaintClip = none
 	// Fixed commands inherit the root visual context rather than the viewport
 	// scroll frame. Retain that classification for native/debug consumers.
 	fixed_to_viewport bool
@@ -1035,6 +1035,38 @@ pub mut:
 mut:
 	paint_box_index int
 	paint_phase     CompatibilityPaintPhase
+}
+
+// Synthetic layer commands retain their immutable payload separately. Ordinary
+// text, borders, and backgrounds keep these options empty instead of carrying
+// almost a kilobyte of unused layer, mask, and filter storage through every copy.
+pub fn (command &PaintCommand) visual_layer() PaintVisualLayer {
+	if layer := command.visual_layer_data {
+		return *layer
+	}
+	return PaintVisualLayer{}
+}
+
+pub fn (command &PaintCommand) mask_clip() PaintClip {
+	if clip := command.mask_clip_data {
+		return *clip
+	}
+	if layer := command.visual_layer_data {
+		return layer.mask_clip
+	}
+	return PaintClip{}
+}
+
+pub fn (command &PaintCommand) backdrop_filter() ?painting.GfxFilter {
+	filter := command.backdrop_filter_data or { return none }
+	return *filter
+}
+
+fn retained_paint_backdrop_filter(filter ?painting.GfxFilter) ?&painting.GfxFilter {
+	if value := filter {
+		return &painting.GfxFilter{ ...value }
+	}
+	return none
 }
 
 // A resolved `box-shadow`: pixel offsets from the border box, blur and spread radii, color, and
@@ -1907,7 +1939,7 @@ fn append_painting_display_command(mut commands []PaintCommand,
 				width: display_command.backdrop_region.width
 				height: display_command.backdrop_region.height
 				corner_radii: transport_radii_from_painting(display_command.corner_radii)
-				backdrop_filter: display_command.filter
+				backdrop_filter_data: retained_paint_backdrop_filter(display_command.filter)
 				opacity: opacity
 			}
 		}
@@ -4193,7 +4225,16 @@ pub fn paint_command_for_nested_viewport(command PaintCommand, outer_transform [
 			items: command.clip_list.items.map(nested_viewport_clip(it, ancestor))
 		}
 	}
-	transformed.mask_clip = nested_viewport_clip(command.mask_clip, ancestor)
+	// The retained layer snapshot can be shared by recordings. Transform only
+	// this nested replay's mask and leave the earlier recording untouched.
+	if command.mask_clip_data != none || command.visual_layer_data != none {
+		clip := nested_viewport_clip(command.mask_clip(), ancestor)
+		transformed.mask_clip_data = &PaintClip{
+			...clip
+			transform: [clip.transform[0], clip.transform[1], clip.transform[2],
+				clip.transform[3], clip.transform[4], clip.transform[5]]!
+		}
+	}
 	return transformed
 }
 

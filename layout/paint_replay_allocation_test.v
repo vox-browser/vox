@@ -80,7 +80,7 @@ fn test_visual_replay_skips_hidden_and_backface_commands_without_reserving_them(
 	actual := lower_visual_replay_steps(initial, hidden_steps)
 	assert actual.map(it.kind) == expected.map(it.kind)
 	assert actual.cap == actual.len
-	assert actual[0].visual_layer == expected[0].visual_layer
+	assert actual[0].visual_layer() == expected[0].visual_layer()
 	assert actual[0].transform == expected[0].transform
 	assert actual[1].clip_list.items == expected[1].clip_list.items
 	box.overlay = CompatibilityOverlayData{scroll_offset_x: 15, scroll_offset_y: 16}
@@ -122,8 +122,8 @@ fn test_hidden_visual_steps_preserve_guide_only_scopes_and_first_transform() {
 	assert actual.cap == actual.len
 	assert actual[0].transform == guide_transform
 	assert actual[0].fixed_to_viewport
-	assert actual[0].visual_layer.opacity == 0.25
-	assert actual.last().visual_layer.opacity == 0.25
+	assert actual[0].visual_layer().opacity == 0.25
+	assert actual.last().visual_layer().opacity == 0.25
 	assert actual[4].clip_list.items.len == 1
 	assert !actual[4].clip_list.items[0].is_svg_mask
 	assert actual.all(it.visual_layer_list == unsafe { nil })

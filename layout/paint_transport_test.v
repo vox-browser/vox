@@ -366,7 +366,7 @@ fn test_nested_viewport_commands_compose_translation_transform_clip_and_opacity(
 		clip_width: 30
 		clip_height: 40
 		clip_list: &PaintClipList{ items: [clip] }
-		mask_clip: clip
+		mask_clip_data: &PaintClip{ ...clip }
 	}
 	transformed := paint_command_for_nested_viewport(command, [f64(2), 0, 0, 2, 7, 8]!, painting.IntPoint{10, 20}, 0.5)
 	assert transformed.transform == [f64(2), 0, 0, 2, 33, 56]!
@@ -378,8 +378,8 @@ fn test_nested_viewport_commands_compose_translation_transform_clip_and_opacity(
 	assert transformed.clip_list.items[0].transform == [f64(2), 0, 0, 2, 37, 60]!
 	assert transformed.clip_list.items[0].path_components[0].transform == [f64(2), 0, 0, 2, 41,
 		64]!
-	assert transformed.mask_clip.mask_operations[0].transform == [f64(2), 0, 0, 2, 45, 68]!
-	assert transformed.mask_clip.cache_key != command.mask_clip.cache_key
+	assert transformed.mask_clip().mask_operations[0].transform == [f64(2), 0, 0, 2, 45, 68]!
+	assert transformed.mask_clip().cache_key != command.mask_clip().cache_key
 }
 
 fn test_font_smoothing_is_retained_by_text_paint_commands() {

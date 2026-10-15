@@ -203,7 +203,7 @@ fn test_css_filter_is_lowered_once_around_the_complete_subtree() {
 	filter_ends := commands.filter(it.kind == 'end_css_filter_layer')
 	assert filter_begins.len == 1
 	assert filter_ends.len == 1
-	filter := filter_begins[0].visual_layer.filter or { panic('missing retained filter') }
+	filter := filter_begins[0].visual_layer().filter or { panic('missing retained filter') }
 	assert filter.operations.len == 2
 	// Gfx::Filter composition stores the outer (later CSS) operation first.
 	assert filter.operations[0].kind == 'color'
@@ -235,7 +235,7 @@ fn test_css_opacity_is_lowered_as_one_retained_subtree_effect() {
 	effect_ends := commands.filter(it.kind == 'end_css_effect_layer')
 	assert effect_begins.len == 1
 	assert effect_ends.len == 1
-	assert math.abs(effect_begins[0].visual_layer.opacity - 0.4) < 0.0001
+	assert math.abs(effect_begins[0].visual_layer().opacity - 0.4) < 0.0001
 	mut inside_effect := false
 	mut faded_parts := 0
 	for command in commands {
@@ -287,7 +287,7 @@ fn test_backdrop_filter_records_cpp_background_phase_command() {
 	assert backdrop.corner_radii.top_left.x == math.floor(target_box.border_radii.top_left.x)
 	assert backdrop.corner_radii.bottom_left.y == math.floor(target_box.border_radii.bottom_left.y)
 	assert !backdrop.backdrop_source_outside_filter
-	filter := backdrop.backdrop_filter or { panic('missing backdrop filter') }
+	filter := backdrop.backdrop_filter() or { panic('missing backdrop filter') }
 	// Gfx::Filter stores the later CSS operation outside the earlier one.
 	assert filter.operations.len == 2
 	assert filter.operations[0].kind == 'color'
@@ -349,7 +349,7 @@ fn test_same_document_svg_backdrop_filter_retains_the_translated_graph() {
 	})
 	backdrops := commands.filter(it.kind == 'apply_backdrop_filter')
 	assert backdrops.len == 1
-	filter := backdrops[0].backdrop_filter or { panic('missing backdrop filter') }
+	filter := backdrops[0].backdrop_filter() or { panic('missing backdrop filter') }
 	assert filter.operations.len == 0
 	assert filter.nodes.len == 1
 	assert filter.root_id or { -1 } == 0
@@ -371,7 +371,7 @@ fn test_same_document_svg_filter_url_retains_the_translated_graph() {
 	display_list := mutable_document.record_display_list() or { panic('missing display list') }
 	filter_commands := display_list_commands(display_list).filter(it.kind == 'begin_css_filter_layer')
 	assert filter_commands.len == 1
-	filter := filter_commands[0].visual_layer.filter or { panic('missing retained filter') }
+	filter := filter_commands[0].visual_layer().filter or { panic('missing retained filter') }
 	assert filter.operations.len == 1
 	assert filter.operations[0].kind == 'color'
 	assert filter.nodes.len == 4
@@ -397,7 +397,7 @@ fn test_same_document_svg_filter_uses_computed_interpolation_color_space() {
 	display_list := mutable_document.record_display_list() or { panic('missing display list') }
 	filter_commands := display_list_commands(display_list).filter(it.kind == 'begin_css_filter_layer')
 	assert filter_commands.len == 1
-	filter := filter_commands[0].visual_layer.filter or { panic('missing retained filter') }
+	filter := filter_commands[0].visual_layer().filter or { panic('missing retained filter') }
 	assert filter.nodes.map(it.kind) == ['color-space-conversion', 'color-matrix',
 		'color-space-conversion']
 	assert filter.nodes[0].input_ids == [-1]
@@ -417,7 +417,7 @@ fn test_same_document_svg_filter_retains_absolute_feimage_resource() {
 	display_list := mutable_document.record_display_list() or { panic('missing display list') }
 	filter_commands := display_list_commands(display_list).filter(it.kind == 'begin_css_filter_layer')
 	assert filter_commands.len == 1
-	filter := filter_commands[0].visual_layer.filter or { panic('missing retained filter') }
+	filter := filter_commands[0].visual_layer().filter or { panic('missing retained filter') }
 	assert filter.nodes.map(it.kind) == ['image', 'offset']
 	assert filter.nodes[0].image_url == 'data:image/png;base64,AAAA'
 	assert filter.nodes[0].input_ids == [-1]
@@ -448,7 +448,7 @@ fn test_svg_filter_content_generation_records_the_cpp_transparent_bounds_trigger
 	trigger := commands[trigger_index]
 	assert trigger.width == 80
 	assert trigger.height == 40
-	filter := commands[begin_index].visual_layer.filter or { panic('missing retained filter') }
+	filter := commands[begin_index].visual_layer().filter or { panic('missing retained filter') }
 	bounds := filter.bounds or { panic('missing retained filter bounds') }
 	assert bounds.x == trigger.x
 	assert bounds.y == trigger.y
@@ -463,7 +463,7 @@ fn test_external_and_non_filter_css_urls_do_not_create_svg_graphs() {
 	display_list := mutable_document.record_display_list() or { panic('missing display list') }
 	filter_commands := display_list_commands(display_list).filter(it.kind == 'begin_css_filter_layer')
 	assert filter_commands.len == 1
-	filter := filter_commands[0].visual_layer.filter or { panic('missing retained filter') }
+	filter := filter_commands[0].visual_layer().filter or { panic('missing retained filter') }
 	assert filter.operations.len == 1
 	assert filter.operations[0].kind == 'blur'
 	assert filter.nodes.len == 0
@@ -2792,7 +2792,7 @@ fn test_svg_mask_path_retains_pattern_instead_of_url_fallback() {
 	display_list := mutable_document.record_display_list() or { panic('missing display list') }
 	mask_commands := display_list_commands(display_list).filter(it.kind == 'begin_svg_mask_layer')
 	assert mask_commands.len == 1
-	paths := mask_commands[0].mask_clip.mask_operations.filter(it.kind == .path)
+	paths := mask_commands[0].mask_clip().mask_operations.filter(it.kind == .path)
 	assert paths.len == 1
 	operation := paths[0]
 	assert operation.has_fill
@@ -2809,7 +2809,7 @@ fn test_css_mask_image_url_wraps_the_complete_box_paint_as_an_alpha_mask() {
 	display_list := mutable_document.record_display_list() or { panic('missing display list') }
 	mask_commands := display_list_commands(display_list).filter(it.kind == 'begin_svg_mask_layer')
 	assert mask_commands.len == 1
-	mask := mask_commands[0].mask_clip
+	mask := mask_commands[0].mask_clip()
 	assert !mask.mask_luminance
 	assert mask.rect == LayoutRect{0, 0, 160, 160}
 	images := mask.mask_operations.filter(it.kind == .image)
@@ -2827,7 +2827,7 @@ fn test_svg_mask_path_retains_linear_gradient_instead_of_url_fallback() {
 	display_list := mutable_document.record_display_list() or { panic('missing display list') }
 	mask_commands := display_list_commands(display_list).filter(it.kind == 'begin_svg_mask_layer')
 	assert mask_commands.len == 1
-	paths := mask_commands[0].mask_clip.mask_operations.filter(it.kind == .path)
+	paths := mask_commands[0].mask_clip().mask_operations.filter(it.kind == .path)
 	assert paths.len == 1
 	operation := paths[0]
 	assert operation.has_fill
@@ -2845,7 +2845,7 @@ fn test_svg_mask_path_retains_radial_gradient_instead_of_url_fallback() {
 	display_list := mutable_document.record_display_list() or { panic('missing display list') }
 	mask_commands := display_list_commands(display_list).filter(it.kind == 'begin_svg_mask_layer')
 	assert mask_commands.len == 1
-	paths := mask_commands[0].mask_clip.mask_operations.filter(it.kind == .path)
+	paths := mask_commands[0].mask_clip().mask_operations.filter(it.kind == .path)
 	assert paths.len == 1
 	operation := paths[0]
 	assert operation.has_fill
@@ -3137,7 +3137,7 @@ fn test_url_svg_clip_path_is_a_retained_alpha_mask_not_a_painted_child_or_hit_te
 	mask_ends := commands.filter(it.kind == 'end_svg_mask_layer')
 	assert mask_begins.len == 1
 	assert mask_ends.len == 1
-	clip := mask_begins[0].mask_clip
+	clip := mask_begins[0].mask_clip()
 	assert clip.is_svg_mask
 	assert clip.path_components.len == 1
 	// SVGMaskable::get_svg_clip_area() derives this from the transformed
@@ -3164,7 +3164,7 @@ fn test_url_svg_clip_path_prepends_target_and_resource_transforms() {
 	assert paths.len == 1
 	mask_begins := display_list_commands(display_list).filter(it.kind == 'begin_svg_mask_layer')
 	assert mask_begins.len == 1
-	clip := mask_begins[0].mask_clip
+	clip := mask_begins[0].mask_clip()
 	assert clip.is_svg_mask
 	assert clip.path_components.len == 1
 	// root viewBox scale(2) * target translate(7,8) * clipPath translate(3,4)
@@ -3180,7 +3180,7 @@ fn test_object_bounding_box_svg_clip_retains_every_component_for_union_mask() {
 	assert paths.len == 1
 	mask_begins := display_list_commands(display_list).filter(it.kind == 'begin_svg_mask_layer')
 	assert mask_begins.len == 1
-	clip := mask_begins[0].mask_clip
+	clip := mask_begins[0].mask_clip()
 	assert clip.is_svg_mask
 	assert clip.path_components.len == 2
 	assert clip.path_components.all(it.transform == [f64(200), 0, 0, 160, 20, 10]!)
@@ -3194,7 +3194,7 @@ fn test_svg_clip_path_bounds_ignore_invisible_descendant_geometry() {
 	display_list := mutable_document.record_display_list() or { panic('missing display list') }
 	mask_begins := display_list_commands(display_list).filter(it.kind == 'begin_svg_mask_layer')
 	assert mask_begins.len == 1
-	clip := mask_begins[0].mask_clip
+	clip := mask_begins[0].mask_clip()
 	assert clip.path_components.len == 1
 	assert clip.rect == LayoutRect{30, 40, 50, 60}
 }
@@ -3208,7 +3208,7 @@ fn test_empty_url_svg_clip_path_fully_clips_the_target() {
 	assert paths.len == 1
 	mask_begins := display_list_commands(display_list).filter(it.kind == 'begin_svg_mask_layer')
 	assert mask_begins.len == 1
-	assert mask_begins[0].mask_clip.path_components.len == 0
+	assert mask_begins[0].mask_clip().path_components.len == 0
 	assert paths[0].clip_width == 0
 	assert paths[0].clip_height == 0
 }
@@ -3225,8 +3225,8 @@ fn test_svg_clip_mask_wraps_the_complete_target_context_once() {
 	mask_ends := commands.filter(it.kind == 'end_svg_mask_layer')
 	assert mask_begins.len == 1
 	assert mask_ends.len == 1
-	assert mask_begins[0].mask_clip.cache_key == mask_ends[0].mask_clip.cache_key
-	assert mask_begins[0].mask_clip.path_components.len == 1
+	assert mask_begins[0].mask_clip().cache_key == mask_ends[0].mask_clip().cache_key
+	assert mask_begins[0].mask_clip().path_components.len == 1
 	mut inside_mask := false
 	mut masked_paths := 0
 	for command in commands {
@@ -3254,7 +3254,7 @@ fn test_url_svg_mask_retains_luminance_paint_and_group_opacity_layers() {
 	assert paths.len == 1
 	assert mask_begins.len == 1
 	assert mask_ends.len == 1
-	mask := mask_begins[0].mask_clip
+	mask := mask_begins[0].mask_clip()
 	assert mask.is_svg_content_mask
 	assert mask.mask_luminance
 	assert mask.mask_operations.len == 3
@@ -3297,7 +3297,7 @@ fn test_svg_mask_text_is_the_same_retained_glyph_path_as_normal_svg_painting() {
 	assert commands.all(it.kind != 'draw_text')
 	mask_begins := commands.filter(it.kind == 'begin_svg_mask_layer')
 	assert mask_begins.len == 1
-	operations := mask_begins[0].mask_clip.mask_operations.filter(it.kind == .path)
+	operations := mask_begins[0].mask_clip().mask_operations.filter(it.kind == .path)
 	assert operations.len == 1
 	assert operations[0].path_data.len > 6 * compatibility_clip_path_segment_stride
 	assert operations[0].fill_color == css.Color{255, 255, 255, 255}.serialize()
@@ -3314,7 +3314,7 @@ fn test_svg_mask_text_path_reuses_rotated_glyph_geometry_without_text_fallback()
 	assert commands.all(it.kind != 'draw_text')
 	mask_begins := commands.filter(it.kind == 'begin_svg_mask_layer')
 	assert mask_begins.len == 1
-	operations := mask_begins[0].mask_clip.mask_operations.filter(it.kind == .path)
+	operations := mask_begins[0].mask_clip().mask_operations.filter(it.kind == .path)
 	assert operations.len == 1
 	assert operations[0].path_data.len > 12 * compatibility_clip_path_segment_stride
 	assert operations[0].fill_color == css.Color{255, 255, 255, 255}.serialize()
@@ -3329,7 +3329,7 @@ fn test_svg_mask_retains_image_paintable_between_group_opacity_boundaries() {
 	assert commands.all(it.kind != 'draw_svg_image')
 	mask_begins := commands.filter(it.kind == 'begin_svg_mask_layer')
 	assert mask_begins.len == 1
-	mask := mask_begins[0].mask_clip
+	mask := mask_begins[0].mask_clip()
 	assert mask.mask_luminance
 	assert mask.mask_operations.len == 3
 	assert mask.mask_operations[0].kind == .begin_opacity
@@ -3357,7 +3357,7 @@ fn test_alpha_svg_mask_and_empty_svg_mask_keep_upstream_mask_semantics() {
 	mut mutable_document := unsafe { &dom.Document(document) }
 	display_list := mutable_document.record_display_list() or { panic('missing display list') }
 	commands := display_list_commands(display_list)
-	masks := commands.filter(it.kind == 'begin_svg_mask_layer').map(it.mask_clip)
+	masks := commands.filter(it.kind == 'begin_svg_mask_layer').map(it.mask_clip())
 	assert masks.len == 2
 	assert masks.all(!it.mask_luminance)
 	mut painted_masks := []PaintClip{}
@@ -3388,9 +3388,9 @@ fn test_svg_mask_and_clip_layers_are_nested_in_upstream_order() {
 	for command in commands {
 		if command.kind in ['begin_svg_mask_layer', 'draw_svg_path', 'end_svg_mask_layer'] {
 			significant << if command.kind == 'begin_svg_mask_layer' {
-				if command.mask_clip.is_svg_content_mask { 'begin-mask' } else { 'begin-clip' }
+				if command.mask_clip().is_svg_content_mask { 'begin-mask' } else { 'begin-clip' }
 			} else if command.kind == 'end_svg_mask_layer' {
-				if command.mask_clip.is_svg_content_mask { 'end-mask' } else { 'end-clip' }
+				if command.mask_clip().is_svg_content_mask { 'end-mask' } else { 'end-clip' }
 			} else {
 				'path'
 			}
@@ -3406,7 +3406,7 @@ fn test_object_bounding_box_svg_mask_content_uses_target_geometry() {
 	display_list := mutable_document.record_display_list() or { panic('missing display list') }
 	mask_begins := display_list_commands(display_list).filter(it.kind == 'begin_svg_mask_layer')
 	assert mask_begins.len == 1
-	mask := mask_begins[0].mask_clip
+	mask := mask_begins[0].mask_clip()
 	assert mask.is_svg_content_mask
 	paths := mask.mask_operations.filter(it.kind == .path)
 	assert paths.len == 1
@@ -3420,7 +3420,7 @@ fn test_svg_mask_areas_resolve_in_target_user_space() {
 	_ = layout_document_typed_in_viewport(document, 240, 240)
 	mut mutable_document := unsafe { &dom.Document(document) }
 	display_list := mutable_document.record_display_list() or { panic('missing display list') }
-	masks := display_list_commands(display_list).filter(it.kind == 'begin_svg_mask_layer').map(it.mask_clip)
+	masks := display_list_commands(display_list).filter(it.kind == 'begin_svg_mask_layer').map(it.mask_clip())
 	assert masks.len == 2
 	assert masks[0].rect == LayoutRect{-9, 101, 108, 108}
 	assert masks[1].rect == LayoutRect{101, -9, 108, 108}
