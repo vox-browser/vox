@@ -5507,6 +5507,106 @@ patch-record SHA256:
 remain excluded; broad baseline stays round57 and observed carry
 remains 3,529,869.5. Chrome parity remains open.
 
+## Compare cached target pseudo-element types directly
+
+Feature `12b86290` changes a private rule-filter branch to a boolean
+predicate over the same cached selector target used by the public accessor.
+An absent selector or optional target returns false. The predicate compares
+the last target pseudo-element type; it does not substitute the rule's first
+pseudo-element hint, which differs for `::part(label)::before` chaining.
+Public accessors, cached records, namespace/scope/ancestor filtering, rule order
+and the ordinary-element branch retain their behavior. The nil check uses the
+existing pointer representation; no payload is modified or retained.
+
+Three new cases exercise an empty selector, target/type cross-products,
+part/slotted chaining, intentionally inconsistent legacy hints, namespaces,
+shadow relevance, full ordered output against the old private filter, cached
+target edits, absent optionals and ownership after collection. All three C-O2
+configurations pass **1,651 assertions in 17 cases** (16 functional plus an
+inactive diagnostic): before/final Boehm and final no-GC.
+
+The first active diagnostic and both full-process profiles fail in fixture
+setup before a counter: eight named layers produce ten retained layer entries,
+including empty entries. The corrected assertion uses the existing builder's
+`scope.qualified_layer_names_in_order.len + 1` contract. Original failed logs,
+partial profiles and receipts are retained in
+`instruction-opt59-layer-count-fixture-failure`; the failed diagnostic's exact
+native exit is unavailable (nonzero is known), while both V-profile commands
+actually exit 1. No completed counter sample is discarded. All 16 functional
+bodies are byte-identical; their passing sources, binaries and C are archived
+unchanged. Separate diagnostic-only binaries avoid rerunning those passes.
+Corrected full-process profiles use the identical full corrected harness.
+
+Three fixed alternating local pairs each run **512 complete public
+MatchingRuleSet builds**, including fresh contexts, output and sorting across
+eight layered caches with ordinary, before and after selectors. Setup, expected
+output, eight warmups and forced collection precede the counter. Checksum and
+full output assertions follow. Median retired instructions change
+**20,310,697→18,255,201** (-10.12%),
+all three pairs improving; all six checksums are 5,120. This local result receives
+no separate page credit. Whole-process C-O1/Boehm profiles have no filter or
+reset: complete query calls remain 521 and private filter calls 16,308. Public
+target getter calls fall 169,602→132; the new predicate receives 169,470 calls.
+The retained getter calls include oracle tests. Counts are explanatory evidence,
+never a substitute for hardware instructions.
+
+Strict C comparison permits only the private caller/predicate and exact unused
+public alias body/prototype elision. The unchanged alias body is authenticated
+against candidate focused C. All other functions/layouts/resources/GC match
+after established compiler identities, unchanged source-assertion mapping,
+37 frozen includes and four raw-identical helper reorderings. Exact native
+C-O2 arguments and 120 native inputs match. Native disassembly shows the absent
+target is rejected before its 128-byte payload copy; a single copy remains for
+present targets instead of the prior two. Static listing length changes 213→199
+instructions, without counting that as retired instructions. Compiled C SHA256:
+`b1052f1abb24047386daeaecec36a36f6868c75806b4a2b93d6818cbe00a29af`. Durable source/C/profile lineages
+and hashes are in `instruction-opt59-{fixture-correction,artifact-archives}.json`.
+
+The predeclared cohort fixes **30 alternating pairs**, **30,000 paired
+bootstrap resamples, seed 59**. Both persisted regular binaries use the same
+359 cached bodies, fresh copies, frozen helper, Boehm/default marker 1, native
+C-O2 and 1024×768 document viewport, ending at
+`navigation_to_first_document_paint[0]`. Both retain the same 4 GiB hint, without
+prod/prealloc. Independent current-Root memory/UI/native changes are excluded.
+Concurrent Chrome-only observer additions change its full hash; all seven Vox
+execution routines, including launch/cache/counters/cropping, are AST-identical
+to authenticated round 58. A preparation SHA check and a stale failed profile receipt
+stop controllers before page startup; those wrapper failures are archived,
+and unfinished controllers resume only after corrected prerequisites pass.
+
+| Build | Median first-frame retired instructions | Median process peak, MiB |
+| --- | ---: | ---: |
+| Fresh matching frozen58 control | 18,807,206,227.5 | unavailable |
+| Private cached target-type predicate | 18,774,107,906 | 3,436.3 |
+
+Observed difference of marginal medians: **33,098,321.5** saved
+instructions (-0.176%), **24/30** wins.
+Paired median saving: **52,496,299.5**. 95% paired percentile
+interval: **26,393,968.5 to 88,757,508**. The positive paired interval establishes repeatable page savings of **33,098,321.5** instructions.
+The comparison uses fresh matching observations, not a historical median.
+
+All **60 primaries and 59 actual viewport PNGs** remain. Counter recoveries:
+before pair 4; pre-parse startup retries: 2. Each first primary
+has 1 installation/2 geometry preparations/1 paint. Later refreshes remain
+separate: final 2, final 9, final 23, final 24, final 25, final 29. No completed primary is rerun,
+discarded or used to extend the cohort. Unavailable recovered exit/PNG/cache
+receipt evidence stays explicit where applicable. Process peaks span lifetime
+through capture/exit, include later refreshes, are not first-frame live memory,
+and are never summed. Before pair 4 retains the completed first counter after
+a capture watchdog, with unknown final exit, no PNG, no per-copy fingerprint
+receipt and no process peak. The missing peak leaves the control median
+unavailable. Both startup retries occur before parsing (before 25 and final 29).
+The focused pseudo-element viewport is pixel-exact.
+Prior observed carry is **3,529,869.5** from 58; cumulative observed savings **36,628,191** trigger the 5M gate. All six direct V jobs pass: CSS 31/SVG 10/layout 46 in both GCs, **174 executions**. All **19 screenshots pass, 16 exact**; known differences remain inline-node 13, text-decorations 1,341 and canvas-text 1,994. Completed broad verification resets additional observed savings to 0; confidence credit remains separate.
+
+The isolated signed app is `/Users/alex/code/vox2/Build/v/Vox-opt59.app`. Signature, startup, native
+text identity and actual collections pass with default marker 1 and override 2.
+The canonical app and user GUI are preserved; contemporary Root receives no
+source pin or extra performance/regression credit. Equivalent Chrome content,
+start and endpoint accounting remain open; no faster-than-Chrome claim is made.
+Evidence: `Build/instructions/vox-opt59-interleaved-*` and
+`Build/v/instruction-opt59-*`.
+
 ## Causes and changes
 
 - The V 0.5.2 compatibility compiler's `-prod` Boehm code repeatedly snapshots
