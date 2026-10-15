@@ -357,7 +357,7 @@ pub fn html_media_element_for_dom_element(element &dom.Element) ?&HTMLMediaEleme
 			model.set_source(element.get_attribute('src'))
 			model.crossorigin_ = cors_setting_attribute_from_keyword(element.get_attribute('crossorigin'))
 			model.preload_ = element.get_attribute('preload')
-			model.autoplay_ = element.has_attribute('autoplay')
+			model.autoplay_ = element.has_attribute_ns(none, 'autoplay')
 			audio.media_element_model_ = model
 		}
 		return unsafe { &HTMLMediaElement(audio.media_element_model_) }
@@ -370,7 +370,7 @@ pub fn html_media_element_for_dom_element(element &dom.Element) ?&HTMLMediaEleme
 			model.set_source(element.get_attribute('src'))
 			model.crossorigin_ = cors_setting_attribute_from_keyword(element.get_attribute('crossorigin'))
 			model.preload_ = element.get_attribute('preload')
-			model.autoplay_ = element.has_attribute('autoplay')
+			model.autoplay_ = element.has_attribute_ns(none, 'autoplay')
 			video.media_element_model_ = model
 		}
 		return unsafe { &HTMLMediaElement(video.media_element_model_) }
@@ -868,7 +868,7 @@ pub fn (mut element HTMLMediaElement) set_loop(value bool) {
 
 pub fn (element &HTMLMediaElement) autoplay() bool {
 	if html_element := element.associated_element_ {
-		return unsafe { &dom.Element(html_element) }.has_attribute('autoplay')
+		return unsafe { &dom.Element(html_element) }.has_attribute_ns(none, 'autoplay')
 	}
 	return element.autoplay_
 }
@@ -880,7 +880,7 @@ pub fn (mut element HTMLMediaElement) set_autoplay(value bool) {
 		if value {
 			dom_element.set_attribute_value('autoplay', '')
 		} else {
-			dom_element.remove_attribute('autoplay')
+			dom_element.remove_attribute_ns(none, 'autoplay')
 		}
 	}
 	element.resource_attribute_changed()
