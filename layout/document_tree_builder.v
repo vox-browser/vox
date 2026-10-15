@@ -622,6 +622,72 @@ fn run_document_layout_with_current_style(document &dom.Document, viewport_width
 	return finish_document_layout(document, root, viewport_width, viewport_height, timing_checkpoint)
 }
 
+struct SizeQueryContainerGeometry {
+	container    &dom.Element
+	has_geometry bool
+	width        f64
+	height       f64
+}
+
+fn snapshot_size_query_container_geometry(root &Node) map[u64]SizeQueryContainerGeometry {
+	mut geometries := map[u64]SizeQueryContainerGeometry{}
+	mut nodes := [root]
+	for nodes.len > 0 {
+		node := nodes.pop()
+		nodes << node.children()
+		dom_node := node.dom_node() or { continue }
+		container := dom_node.as_element() or { continue }
+		if !container.is_size_query_container() {
+			continue
+		}
+		identity := u64(voidptr(container))
+		if identity in geometries {
+			continue
+		}
+		previous := dom_node.unsafe_layout_node() or {
+			geometries[identity] = SizeQueryContainerGeometry{ container: container }
+			continue
+		}
+		geometries[identity] = SizeQueryContainerGeometry{
+			container:    container
+			has_geometry: previous.has_geometry_
+			width:        previous.content_width_
+			height:       previous.content_height_
+		}
+	}
+	return geometries
+}
+
+// LayoutRustBridge's commit sink invalidates query dependents when a container's
+// relevant content size changes. Preserve the committed geometry before the
+// temporary geometry-less DOM bridge replaces it during the native V pass.
+fn invalidate_size_queries_after_geometry_commit(previous map[u64]SizeQueryContainerGeometry) {
+	for _, old in previous {
+		current := old.container.as_node().unsafe_layout_node() or { continue }
+		if !current.has_geometry_ {
+			continue
+		}
+		style := css.computed_properties_for_element(old.container) or { continue }
+		type_ := style.container_type()
+		changed := if !old.has_geometry {
+			true
+		} else if type_.is_size_container {
+			old.width != current.content_width_ || old.height != current.content_height_
+		} else if type_.is_inline_size_container {
+			if style.writing_mode() == .horizontal_tb {
+				old.width != current.content_width_
+			} else {
+				old.height != current.content_height_
+			}
+		} else {
+			false
+		}
+		if changed {
+			css.invalidate_descendant_styles_depending_on_size_container_query(old.container)
+		}
+	}
+}
+
 fn finish_document_layout(document &dom.Document, root &Node, viewport_width f64, viewport_height f64, initial_checkpoint u64) ?DocumentLayoutResult {
 	mut timing_checkpoint := initial_checkpoint
 	viewport := root.as_viewport() or { return none }
@@ -638,6 +704,7 @@ fn finish_document_layout(document &dom.Document, root &Node, viewport_width f64
 	// is created. Install the opaque bridge before layout as well, so algorithms
 	// which run during layout (notably list-item ordinal resolution) observe the
 	// same complete layout tree. Geometry is refreshed after layout below.
+	previous_query_container_geometry := snapshot_size_query_container_geometry(root)
 	initial_root_placeholder := attach_layout_nodes(root)
 	mut mutable_document := unsafe { &dom.Document(document) }
 	mutable_document.set_layout_viewport(&dom.LayoutViewport{
@@ -660,6 +727,7 @@ fn finish_document_layout(document &dom.Document, root &Node, viewport_width f64
 	mutable_document.set_layout_viewport(&dom.LayoutViewport{
 		root_node: root_placeholder
 	})
+	invalidate_size_queries_after_geometry_commit(previous_query_container_geometry)
 	root.for_each_in_inclusive_subtree(fn (node &Node) dom.TraversalDecision {
 		mut mutable_node := unsafe { &Node(node) }
 		mutable_node.reset_needs_layout_update()
