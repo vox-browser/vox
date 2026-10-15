@@ -350,11 +350,15 @@ pub fn (l &TextTrackCueList) item(index int) ?&TextTrackCue {
 }
 
 pub fn (list &TextTrackCueList) internal_get_own_property(property_name dom.JSValue) ?&TextTrackCue {
-	if property_name.kind != .number || property_name.number_data < 0
-		|| property_name.number_data != f64(i64(property_name.number_data)) {
+	if property_name.kind != .number
+		|| !(property_name.number_data >= 0 && property_name.number_data < f64(list.length())) {
 		return none
 	}
-	return list.item(int(property_name.number_data))
+	index := int(property_name.number_data)
+	if f64(index) != property_name.number_data {
+		return none
+	}
+	return list.item(index)
 }
 
 // https://html.spec.whatwg.org/multipage/media.html#dom-texttrackcuelist-length
@@ -399,11 +403,15 @@ pub fn (l &TextTrackList) item(index int) ?&TextTrack {
 }
 
 pub fn (list &TextTrackList) internal_get_own_property(property_name dom.JSValue) ?&TextTrack {
-	if property_name.kind != .number || property_name.number_data < 0
-		|| property_name.number_data != f64(i64(property_name.number_data)) {
+	if property_name.kind != .number
+		|| !(property_name.number_data >= 0 && property_name.number_data < f64(list.length())) {
 		return none
 	}
-	return list.item(int(property_name.number_data))
+	index := int(property_name.number_data)
+	if f64(index) != property_name.number_data {
+		return none
+	}
+	return list.item(index)
 }
 
 // https://html.spec.whatwg.org/multipage/media.html#dom-texttracklist-length
