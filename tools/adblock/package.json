@@ -4,7 +4,8 @@
   "scripts": {
     "build": "node build.mjs",
     "refresh-lists": "node refresh.mjs",
-    "refresh-source": "node refresh-source.mjs"
+    "refresh-source": "node refresh-source.mjs",
+    "test": "node --test snapshot_test.mjs runtime_test.mjs"
   },
   "devDependencies": {
     "esbuild": "0.25.10",

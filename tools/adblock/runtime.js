@@ -8,13 +8,12 @@ import publicSuffixList from '../../adblock/vendor/ublock/lib/publicsuffixlist/p
 import punycode from '../../adblock/vendor/ublock/lib/punycode.js';
 import snfe from '../../adblock/vendor/ublock/js/static-net-filtering.js';
 import { initializeCosmetics, documentFilters, redirectEngine, cosmeticSnapshot, restoreCosmetics } from './cosmetics.js';
-import defaultData from './generated-defaults.json';
+import defaultData from './generated-defaults.js';
 import * as serializer from '../../adblock/vendor/ublock/js/s14e-serializer.js';
 import publicSuffixData from '../../adblock/lists/public_suffix_list.dat';
 
 const environment = ['ublock', 'chromium', 'user_stylesheet'];
 const fctx = new FilteringContext();
-let networkCompiled = [];
 function compileNetwork(raw, name) {
     const compiler = snfe.createCompiler();
     const writer = new CompiledListWriter();
@@ -38,22 +37,22 @@ function compileNetwork(raw, name) {
 }
 
 globalThis.voxAdblockInitialize = customFilters => {
-    publicSuffixList.parse(publicSuffixData, punycode.toASCII);
-    if (customFilters === undefined && defaultData.selfie) {
-        const snapshot = serializer.deserialize(defaultData.selfie);
-        if (!snapshot || !Array.isArray(snapshot.network_compiled)) throw new Error('Invalid bundled uBlock Origin engine snapshot');
-        snfe.reset();
-        networkCompiled = snapshot.network_compiled;
-        for (const compiled of networkCompiled) snfe.fromCompiled(new CompiledListReader(compiled));
-        snfe.freeze();
-        snfe.optimize(0);
+    if (customFilters === undefined && defaultData.restore) {
+        const snapshot = defaultData.restore();
+        if (!publicSuffixList.fromSelfie(snapshot.public_suffixes)) {
+            throw new Error('Invalid bundled public suffix snapshot');
+        }
+        if (!snapshot || snfe.fromSelfie(snapshot.network) !== true) {
+            throw new Error('Invalid bundled uBlock Origin engine snapshot');
+        }
         restoreCosmetics(snapshot.cosmetics);
         return JSON.stringify({ filter_count: snfe.getFilterCount(), list_count: 9 });
     }
+    publicSuffixList.parse(publicSuffixData, punycode.toASCII);
     const lists = customFilters === undefined ? defaultData.lists : [{ name: 'user-filters', raw: customFilters }];
     const prepared = lists.map(list => ({ ...list, raw: sfp.utils.preparser.prune(list.raw, environment) }));
     snfe.reset();
-    networkCompiled = prepared.map(list => compileNetwork(list.raw, list.name));
+    const networkCompiled = prepared.map(list => compileNetwork(list.raw, list.name));
     for (const compiled of networkCompiled) snfe.fromCompiled(new CompiledListReader(compiled));
     snfe.freeze();
     snfe.optimize(0);
@@ -61,7 +60,7 @@ globalThis.voxAdblockInitialize = customFilters => {
     return JSON.stringify({ filter_count: snfe.getFilterCount(), list_count: lists.length });
 };
 
-globalThis.voxAdblockSnapshot = () => serializer.serialize({ network_compiled: networkCompiled, cosmetics: cosmeticSnapshot() }, { compress: false });
+globalThis.voxAdblockSnapshot = () => serializer.serialize({ network: snfe.toSelfie(), cosmetics: cosmeticSnapshot(), public_suffixes: publicSuffixList.toSelfie() }, { compress: false });
 
 globalThis.voxAdblockCheck = details => {
     const type = details.request_type === 'fetch' ? 'xmlhttprequest' : details.request_type || 'other';

@@ -65,6 +65,10 @@ fn create_context(custom_filters ?string) !voidptr {
 	if context == unsafe { nil } {
 		return error('Cannot create isolated adblock JavaScriptCore context')
 	}
+	install_snapshot(context) or {
+		C.JSGlobalContextRelease(context)
+		return err
+	}
 	source := decompress_engine_source(compressed_engine_source.to_bytes()) or {
 		C.JSGlobalContextRelease(context)
 		return error('Cannot decompress bundled adblock engine: ${err}')

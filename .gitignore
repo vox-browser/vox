@@ -6,3 +6,7 @@
 
 # Root build output
 /libweb_v
+
+# Generated full-uBO snapshot metadata (the bundled gzip assets are tracked)
+/tools/adblock/generated-defaults.js
+/tools/adblock/snapshot-layout.json
