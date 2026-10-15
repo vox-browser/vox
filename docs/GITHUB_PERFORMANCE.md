@@ -3421,6 +3421,39 @@ Evidence: `Build/instructions/chrome-frozen-probe/counter-diagnostic-2/`,
 `Build/v/instruction-chrome-counter-v{1,2}-audit.json`. The binary SHA256 remains
 `c41c446837b5888d9574dbe462a4f01f02459bffee534eb945d2418984135a92`.
 
+## Native instruction scopes for the next layout investigation
+
+A separate C-O2 diagnostic wraps six selected functions with the existing
+process-wide retired-instruction counter. Wrappers observe entries on the
+navigation's owner thread, from its first navigation entry through the first
+native document-frame report. Counter reads still include charged work in
+other process threads. This is an instrumented diagnostic with zero page credit.
+
+| Function scope | Calls | Summed inclusive retired instructions |
+| --- | ---: | ---: |
+| `layout__run_flex_formatting_context_with_mode` | 9,144 | 83,632,570,216 |
+| `layout__InlineLevelIterator_generate_all_items` | 44,580 | 3,084,922,839 |
+| `css__StyleComputer_compute_properties` | 2,910 | 1,514,022,678 |
+| `layout__populate_intrinsic_containing_block_chain` | 7,852 | 1,147,287,040 |
+| `layout__populate_intrinsic_external_containing_blocks` | 7,852 | 273,429,200 |
+| `css__install_custom_property_data_for_style` | 7,990 | 202,504,063 |
+
+Nested flex calls and the other scopes overlap; these totals cannot be added
+or interpreted as exclusive self cost. They include wrapper/counter overhead
+and compiler effects from instrumentation. They guide the next investigation,
+while normal uninstrumented paired binaries remain required for page credit.
+
+The instrumentation audit restores every edited function definition and removes
+only its wrappers/globals to reproduce the original round 37 C byte-for-byte.
+Native arguments and 120 existing inputs are retained, with the frozen helper.
+An initial misspelled C equality symbol failed compilation and is archived;
+the corrected build, signing, startup, observer and browser exits are zero.
+All six scope readings report zero counter failures, with a complete capture.
+Binary SHA256:
+`0668710d35dafac4b87e6c83e8da90ac0d52b7ceeecd7c1196bea573d431c1ac`.
+Evidence: `Build/v/instruction-hotspots38-*` and
+`Build/instructions/vox-hotspots38-diagnostic.run-1.*`.
+
 ## Causes and changes
 
 - The V 0.5.2 compatibility compiler's `-prod` Boehm code repeatedly snapshots
