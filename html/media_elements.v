@@ -534,14 +534,17 @@ pub fn html_track_element_attribute_changed(element &dom.HTMLTrackElement, name 
 
 fn html_track_element_content_attribute_changed(element &dom.HTMLTrackElement, name string, value ?string) {
 	mut model := html_track_element_model_for_dom_element(element)
+	model.content_attribute_changed(element, name, value)
+}
+
+fn (mut model HTMLTrackElementModel) content_attribute_changed(element &dom.HTMLTrackElement, name string, value ?string) {
 	match name.to_lower() {
 		'kind' { model.set_kind(value or { '' }) }
 		'label' { model.set_label(value or { '' }) }
 		'srclang' { model.set_srclang(value or { '' }) }
 		'src' {
 			if source := value {
-				mut document := unsafe { &dom.Element(element) }.document()
-				model.base_url_ = document.base_url()
+				model.base_url_ = unsafe { &dom.Element(element) }.document().base_url()
 				model.set_src(source)
 			}
 		}
