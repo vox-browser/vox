@@ -60,9 +60,12 @@ fn test_static_native_body_handler_uses_actual_page_gate_and_keeps_raw_source_wh
 	}, false)
 	mut document := app.document
 	defer {
-		app.js_runtime.close()
+		if app.js_runtime != unsafe { nil } {
+			app.js_runtime.close()
+		}
 		document.finalize()
 	}
+	assert app.js_runtime == unsafe { nil }
 	assert document.get_element_by_id('fallback') != none
 	assert document.get_element_by_id('result')?.as_node().text_content()? == 'initial'
 	window := document.get_window() or { panic('owning Window') }
