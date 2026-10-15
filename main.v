@@ -3147,6 +3147,15 @@ fn (mut app BrowserApp) install_loaded_page(loaded LoadedPage, add_history bool)
 	} else {
 		none
 	}
+	if debug_timing_enabled() {
+		mut source_bytes := 0
+		for source in sources { source_bytes += source.code.len }
+		mut preloaded_scripts := 0
+		for _, resource in preloaded_resources {
+			if resource.request_type == 'script' { preloaded_scripts++ }
+		}
+		eprintln('Ladybird V scripting: enabled=${app.document.as_node().is_scripting_enabled()} runtime=${app.js_runtime != unsafe { nil }} sources=${sources.len} source_bytes=${source_bytes} preloaded_scripts=${preloaded_scripts}')
+	}
 	checkpoint = debug_timing_checkpoint('run_javascript', checkpoint)
 	if cookie_blocker_enabled_by_default {
 		hide_cookie_banners(app.document)
