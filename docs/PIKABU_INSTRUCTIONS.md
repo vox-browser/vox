@@ -191,6 +191,9 @@ Counts are whole launch through the capture boundary described above.
 | Vox candidate v4 | 168,170,289,723 | Failed: document still interactive |
 | Vox candidate v6 | 127,377,534,003 | Passed |
 | Vox candidate v7 | 111,444,549,769 | Passed |
+| Vox candidate v8b | 89,140,646,198 | Passed |
+| Vox candidate v9 | 88,695,567,269 | Passed |
+| Vox candidate v10 | 91,187,097,317 | Passed; regression |
 
 Candidate v6 uses executable SHA256
 `cc105727ad0e7d08d12c94336ca6cd4d26e2c1318416dfddace23c626d1338c2`.
@@ -222,9 +225,46 @@ It saves another 15,932,984,234 instructions (12.51%) relative to v6, with
 identical decoded pixels and the same completed-document and actual-Roboto
 checks. Its authenticated broad summary and cadence reset are retained at
 `Build/pikabu-instructions/broad-v7/{final-broad-summary,cadence-baseline-reset}.json`.
-The measured baseline after that batch is 111,444,549,769 instructions, with
-zero additional measured savings credited. Diagnostic profiles and isolated
-allocation probes do not advance that baseline.
+Candidate v8 was stopped before C compilation when review found incomplete
+font-refresh guards. It has no measurement or savings credit. The corrected v8b
+preserves all font-relative consumers while distinguishing size-relative units
+from loaded-face metrics, and avoids recascading an unchanged adblock sheet.
+Its executable SHA256 is
+`e7f76e3d0ffebecbcfe9426016c97e19a8d6922a03efe45ba86e8b1febdc62f1`.
+It saves 22,303,903,571 instructions (20.01%) relative to v7.
+
+Candidate v9 shares immutable CSS gradient paint payloads and avoids allocating
+optional layout flags for unchanged defaults. Its executable SHA256 is
+`b9dbfede3c2702575d6d0c3784625aeb31053aad29870115d3177915687a3127`.
+Its single checkpoint saves another 445,078,929 instructions (0.50%) relative
+to v8b. Both v8b and v9 passed the same broad batch described above: 135 cases
+per GC mode, 100 exact AST fixtures, production startup and all 19 screenshots.
+Their outputs remain pixel-identical to v6 and v7. Authenticated summaries
+and cadence resets are under `Build/pikabu-instructions/broad-v8b/` and
+`Build/pikabu-instructions/broad-v9/`.
+
+Candidate v10 adds compact cascade history storage and reuses freshly prepared
+DOM layout wrappers within the same layout pass. Its executable SHA256 is
+`464c81111cb048c1c36d4bdfb7909040a8f51be5cdf6b0ca0e0e6a6fd093adf4`.
+The first completed checkpoint regresses 2.81% against v9. Two additional
+matched pairs preserve the variance rather than establishing an improvement:
+
+| Run order | v9 instructions | v10 instructions |
+| --- | ---: | ---: |
+| v9, then v10 | 92,048,685,106 | 91,919,067,499 |
+| v10, then v9 | 91,703,081,177 | 104,651,408,533 |
+
+Across all three observations of each build, medians are 91,703,081,177 for v9
+and 91,919,067,499 for v10. All six captures pass the content/font gate and have
+identical decoded pixels. A separate matched GC diagnostic records less
+allocation for v10; it provides no primary instruction savings credit.
+The comparison receipt is
+`Build/pikabu-instructions/v9-v10-audit-phase-memory-comparison.json`.
+
+The broad-verification baseline remains the completed v9 checkpoint,
+88,695,567,269 instructions, with zero additional measured savings credited.
+Diagnostic profiles, isolated allocation probes and failed content checks do
+not advance that baseline.
 
 Vox remains above Brave's instruction count. A target claim still requires
 at least five alternating fresh Vox/Brave runs with all gates passing, preserved
