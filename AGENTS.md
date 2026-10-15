@@ -1486,6 +1486,12 @@ evidence](docs/translation-audit/NATIVE_MEDIA_WHEEL_RAW_HANDLER.md).
   pairs worse; the owned function is restored. Focused checks pass 1,640
   assertions per configuration. Failed pre-counter probes/profiles are kept.
   No page credit or baseline reset; round49 remains the control.
+  Direct rule-bucket consumption `24b84c6d` passes 1,640 focused
+  assertions per configuration. Complete matching-rule-set construction uses
+  6.34% fewer instructions. Matching 30-pair observed savings are
+  47,968,135, with repeatable page credit 47,968,135.
+  Broad verification: passed 87 selected cases both GC and 19 screenshots (16 exact).
+  The focused viewport is exact; both retain 4 GiB. Chrome parity remains open.
 - Outside instruction-count optimization, run broad regression suites once per
   ten completed fixes, not after every fix.
   Broad suites include full translation/package test batches, the full LibJS AST
