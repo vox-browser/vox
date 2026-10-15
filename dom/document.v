@@ -5523,6 +5523,10 @@ pub mut:
 	onfullscreenchange_handler &CallbackType = unsafe { nil }
 	onfullscreenerror_handler  &CallbackType = unsafe { nil }
 	needs_repaint              bool
+mut:
+	// Registry entries transfer after descendant document pointers during adoption.
+	// Keep no-shadow scope shortcuts disabled until every adopting callback finishes.
+	style_scope_adoption_depth_ u32
 }
 
 // --- Constructor / Factory methods ---
@@ -7836,6 +7840,10 @@ pub fn (mut d Document) adopt_node(node &Node) {
 	// 3. If document is not oldDocument, then:
 	d_ptr := unsafe { &Document(d) }
 	if old_document != d_ptr {
+		d.style_scope_adoption_depth_++
+		defer {
+			d.style_scope_adoption_depth_--
+		}
 		// 1. For each inclusiveDescendant in node's shadow-including inclusive descendants:
 		node.for_each_shadow_including_inclusive_descendant(fn [d_ptr] (inclusive_descendant &Node) TraversalDecision {
 			// 1. Set inclusiveDescendant's node document to document.
