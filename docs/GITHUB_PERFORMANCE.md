@@ -7658,6 +7658,125 @@ regression or performance credit. Equivalent Chrome content/start/submission
 accounting remains open; faster-than-Chrome performance is unproven. Evidence:
 `Build/instructions/vox-opt79-interleaved-*` and `Build/v/instruction-opt79-*`.
 
+## Reuse prepared DOM layout mirrors
+
+This integration imports independently authored feature `57c0ace3`
+(Alexander Medvednikov) into the frozen accepted79 runtime: six adapted hunks
+in document_tree_builder and the DOM/layout bridge. A private pass-owned
+PreparedDOMLayoutAttachment retains the fresh initial mirror map. Geometry
+commit reuses those same mirrors and child-array storage; child slots are
+cleared before shortening, and nodes created during formatting receive fresh
+mirrors. Earlier geometry passes retain their independent snapshots.
+
+The feature-parent animated-style callback field is absent in the frozen
+baseline. Exactly that unrelated field is excluded from both old and replacement
+literals; all frozen fields remain. Only unchanged patch context is trimmed
+otherwise. Source proof authenticates the adapted patch against both the
+feature parent and frozen baseline. Public attachment APIs, text collection,
+DOM structure, filtering, arenas and GC policy remain. Contemporary Root is
+excluded.
+
+Before/final Boehm and final no-GC C-O2 each pass **18,323
+assertions in 15 cases** (14 functional and an inactive diagnostic), using
+identical common source SHA256 `5f49dbfa47d063bc9ebc2b062aeed111c000daed7804a5e588f4901a77eb17b8`.
+The semantic bridge harness and corrected public invalidation diagnostic are
+retained exactly from round78 except labels. It covers DOM associations, caret
+lines, CSSOM geometry, invalidation, containing blocks, first-letter text,
+range rectangles and search. All three original candidate cases run
+byte-for-byte in both GCs: **15,333
+assertions each**. They additionally verify same-pass mirror identity, retained
+child storage, committed text and geometry, earlier snapshots, and late nodes.
+Root sources and concurrent edits remain preserved.
+
+Three predeclared alternating local pairs count **32 complete public document
+layout updates over 64 retained Unicode paragraphs**. Public mirror invalidation,
+initial/final associations, full formatting, geometry, paint transport and
+recursive committed checksum are counted. Setup, eight warmups, expected result
+and forced GC precede the interval; assertion follows it. Every warmup verifies
+fresh pass identity and a clean document outside the counter.
+Before: 1,956,358,460 / 1,954,929,657 / 1,945,942,013. Candidate by pair: 1,939,431,801 / 1,942,060,471 / 1,938,553,594.
+Median **1,954,929,657→1,939,431,801
+(-0.79%)**; checksum **1,010,272**
+in all six actual zero exits. This local result receives no page credit.
+
+Both full-process C-O1/Boehm profiles actually pass without filter/reset:
+
+| Function | Before calls | Candidate calls |
+| --- | ---: | ---: |
+| `layout__opt80_complete_public_document_layout` | 41 | 41 |
+| `layout__run_document_layout` | 49 | 49 |
+| `layout__attach_layout_node_recursive` | 11,217 | 11,217 |
+| `layout__attach_layout_nodes_with_state` | 63 | 0 |
+| `layout__attach_layout_nodes_before_layout` | 63 | 0 |
+| `layout__prepare_dom_layout_attachment` | 0 | 63 |
+| `layout__commit_dom_layout_attachment` | 0 | 63 |
+
+These are call counts, not hardware instruction savings. Complete public
+updates and recursive associations match. The new preparation/commit helpers
+replace the original initial/stateful calls. Original profiles and generated-C
+full-process scope proof are durable, without a filter or counter reset.
+
+Strict C audit authenticates the six adapted source hunks, five edited functions,
+two new helpers and only the private two-field prepared descriptor. Available
+normal/focused targets match after named compiler identities and independently
+authenticated closure bodies; omitted wrappers remain authenticated as
+unreferenced. The private descriptor has no emitted interface tag. An initial
+audit expected a tag row; its actual failed exit and logs remain under
+`instruction-opt80-c-audit-record-tag-selector-failure`. Only that selector
+was corrected, with no runtime check repeated. All other C, public records, globals, resources, filtering, arenas
+and GC policy match after established identities, 37 frozen includes and four
+byte-identical helper reorderings. Exact native arguments and all 120 pinned
+inputs match. C SHA256 `0a358b927bb0fee46ae715a0679f31ece911c19f8a8955a070ddcdb857890639`; durable
+normal, focused, contract and profile archives appear in
+`instruction-opt80-artifact-archives.json`. Compiler scratch is durable SSD;
+benchmark cache copies use the same RAM.
+
+Before the first page observation, a generated pipeline retained an old round78
+control path. Its hash preflight rejected the mismatch; no browser observation
+began. Reported failure receipts and logs remain under
+`instruction-opt80-page-control-path-preflight-failure`; the original detached
+controllers have no captured terminal statuses. The control path and gate were
+corrected to accepted79 without repeating any completed check. Resumed controller
+wrappers retain actual terminal statuses. The prepared sources, native binary,
+profiles, C audit and fixed cohort were unchanged.
+
+The predeclared page cohort is **30 alternating pairs**, odd before/final,
+even final/before, **30,000 paired bootstrap resamples, seed 80**. Both regular
+persisted binaries use fresh copies of the same 359 cached bodies, frozen text
+and child-only placement helpers, C-O2/Boehm/one marker and unchanged 4 GiB
+hint; no prod/prealloc. Fixed document viewport 1024×768 and endpoint
+`navigation_to_first_document_paint[0]`; no historical or Root comparison.
+
+| Build | Median first-frame retired instructions | Median lifetime process peak, MiB |
+| --- | ---: | ---: |
+| Fresh accepted frozen79 control | 17,790,273,626.5 | 3,612.7 |
+| Prepared mirror reuse | 17,765,512,483.5 | 3,602.8 |
+
+Difference of marginal medians: **24,761,143** instructions
+saved (-0.139% change), **21/30** wins.
+Paired median saving **6,542,361**, paired 95% interval
+**[700,820, 20,786,409]**. The positive paired interval establishes repeatable page credit of **24,761,143** instructions.
+
+All 60 primary observations and **60 actual PNGs** remain. Recovered
+primaries: none; pre-parse retries: 0. First primaries
+retain 1 installation/2 geometry preparations/1 paint. Later completed refreshes
+remain separate: none. No completed primary is extended,
+discarded or rerun. Recoveries disclose unknown final exit and missing PNG,
+fingerprint and peak. Peaks cover capture/exit and later refreshes, not
+first-frame live memory, and are never summed. The read-only decoded capture check finds 30 before and 30 candidate RGB classes, 0 shared. All differences stay within the original skeleton bands, x45–662: y335–344 and ten 14px bands starting at380 with41px spacing. All pixels outside these bands match. No animation was disabled and no observation repeated; evidence is instruction-opt80-page-pixel-class-check.json.
+The focused prepared-mirror/innerText, grid/flex/table, Unicode and intrinsic viewport is
+pixel-exact at 1024×768.
+Prior observed carry is 0. Cumulative observed saving **24,761,143** crosses the 5M gate. Six direct harness jobs actually pass CSS 31/SVG 10/layout 46 in both GCs (**174 executions**). All **19 screenshots pass, 16 exact**; known differences remain inline-node 13, text-decorations 1,341 and canvas-text 1,994. The completed broad batch resets additional observed savings to 0.
+
+The isolated signed app is `/Users/alex/code/vox2/Build/v/Vox-opt80.app`; native instruction text
+matches the measured executable, with the frozen helper pinned inside the
+bundle and its actual default loaded path/hash checked. Signatures, startup
+and actual GC collections pass with default marker 1 and override 2. Canonical
+app and user GUI remain preserved; contemporary Root has no extra source,
+regression or performance credit. Equivalent Chrome content/start/submission
+accounting remains open; faster-than-Chrome performance is unproven. Evidence:
+`Build/instructions/vox-opt80-interleaved-*` and `Build/v/instruction-opt80-*`.
+
 ## Causes and changes
 
 - The V 0.5.2 compatibility compiler's `-prod` Boehm code repeatedly snapshots
