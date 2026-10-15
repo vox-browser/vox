@@ -3029,6 +3029,53 @@ requires an equivalent-workload comparison, not a timing or call-count proxy.
 Evidence is retained under `Build/instructions/vox-opt31-interleaved-*` and
 `Build/v/instruction-opt31-*`, including all actual failures and resumed work.
 
+## Frozen-cache content audit and cyclic inline maxima
+
+The isolated Chrome replay probe (`1bc4df87`) loads the exact cached GitHub
+response bodies at their original URLs, blocks every missing or non-GET request,
+and records each response's source hash. Chrome for Testing 155.0.8059.79 replays
+37 bodies and blocks 126 uncached requests. Its completed DOM contains 72
+repository file/directory anchors, and visible filenames appear without the
+missing module scripts. The filenames are already present in cached HTML;
+Vox's blank labels were a layout defect rather than proof that those labels
+required hydration.
+
+This is a content diagnostic with zero performance credit. The legacy cache has
+no response headers: the probe explicitly infers MIME and supplies wildcard
+CORS/no-store/status-200 headers. It does not recover original response metadata.
+Its later document screenshot is not Vox's first submitted-frame endpoint.
+The three focused probe tests cover binary/query-key preservation, interleaved
+CDP fetch acknowledgements, and blocking uncached/non-GET requests.
+
+Feature `9292a1aa` fixes the layout defect. Atomic inline sizing now uses the
+existing cyclic-maximum policy before clamping a percentage `max-width` during
+an intrinsic contribution. Resolving that maximum against a zero placeholder
+previously reduced the containing flex item to zero width. Definite final layout
+still applies the percentage limit, and absolute maxima, minimum precedence and
+border-box adjustments remain covered.
+
+The retained before/Boehm test fails with actual width 0 versus expected 60;
+its other two original cases pass. The final four cases pass in Boehm and no-GC,
+with 16,921 assertions per configuration. They cover percentage and calculated
+maxima, wide/narrow flex rows, definite percentage limits, absolute maxima,
+minimum precedence and a border-box minimum. No passing focused run was repeated.
+
+A normal C-O2/Boehm diagnostic image built from the frozen round32 integration
+plus this one-file fix passes signing, headless smoke and actual viewport capture.
+The 1024×768 capture now displays the repository filenames. It remains separate
+from contemporary Root work and leaves the canonical app and GUI untouched.
+The unchanged 359-file cache retains SHA256
+`0570cfa09af662a0f1fa6735a563bad9dc2d332579e75ef06d50931f6a3aae95`.
+No page instruction saving or Chrome rendering parity is credited for restoring
+previously missing visible content. Other visual differences remain, and a
+matching first-frame hardware-instruction comparison is still required.
+
+Evidence: `Build/v/inline-cyclic-max-*`,
+`Build/v/filename-correctness-*-result.json`,
+`Build/v/filename-correctness-content-evidence.json`,
+`Build/instructions/github-filename-correctness.run-1.*`, and
+`Build/instructions/chrome-frozen-probe/content-1/`.
+
 ## Causes and changes
 
 - The V 0.5.2 compatibility compiler's `-prod` Boehm code repeatedly snapshots
