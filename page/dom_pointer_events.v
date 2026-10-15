@@ -49,6 +49,30 @@ pub fn (mut handler EventHandler) handle_platform_pointer_event(name string, tar
 
 pub fn (handler &EventHandler) last_click_allowed() bool { return handler.last_click_allowed_ }
 
+// The compact adapter must replay at the dispatched click target, which may
+// be an ancestor of the release target. Do not consume the media receipt.
+pub fn (handler &EventHandler) last_click_target_node() ?&dom.Node {
+	event := handler.last_click_event_ or { return none }
+	target := event.target() or { return none }
+	// dispatch_click_events only creates a receipt for a DOM Node target.
+	return unsafe { &dom.Node(target) }
+}
+
+fn (handler &EventHandler) click_target_for_mouseup(released InputTarget) ?InputTarget {
+	if handler.mousedown_target_ == released.id { return released }
+	if released.chrome_widget_id != '' || handler.has_captured_chrome_widget() { return none }
+	pressed := handler.mousedown_node_ or { return none }
+	node := released.node or { return none }
+	// Pointer Events: a click targets the nearest common inclusive ancestor of
+	// the press and release, even when they hit different children of a link.
+	for current := ?&dom.Node(pressed); current != none; {
+		ancestor := current or { break }
+		if ancestor.is_inclusive_ancestor_of(node) { return InputTarget.from_node(ancestor) }
+		current = ancestor.parent()
+	}
+	return none
+}
+
 // One native release supplies one receipt to the compact engine replay adapter.
 pub fn (mut handler EventHandler) take_last_click_event() ?&dom.Event {
 	event := handler.last_click_event_

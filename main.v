@@ -6176,27 +6176,25 @@ fn (mut app BrowserApp) handle_click(x f32, y f32) {
 
 // The compact JavaScriptCore bridge remains the page-script backend. Its click
 // listener replay follows the actual DOM pointerup/click dispatch on release.
-fn (mut app BrowserApp) replay_compact_javascript_click(x f32, y f32) {
+fn (mut app BrowserApp) replay_compact_javascript_click() {
 	native_destination := app.pending_native_navigation
 	app.pending_native_navigation = none
 	generation := app.navigation_generation
-	if mut target := app.element_at_window_point(x, y) {
-		for {
-			if target.get_attribute_value('id') != '' {
-				if app.dispatch_javascript_event('click', target) {
-					return
+	if app.page_model != unsafe { nil } {
+		if node := app.page_model.event_handler.last_click_target_node() {
+			if mut target := node.as_element() {
+				for {
+					if target.get_attribute_value('id') != '' {
+						if app.dispatch_javascript_event('click', target) { return }
+						break
+					}
+					target = target.as_node().parent_element() or { break }
 				}
-				break
 			}
-			target = target.as_node().parent_element() or { break }
 		}
 	}
 	if app.navigation_generation != generation { return }
 	if destination := native_destination {
-		app.navigate(destination, true)
-		return
-	}
-	if destination := app.link_at_point(x, y) {
 		app.navigate(destination, true)
 	}
 }
@@ -6234,7 +6232,7 @@ fn (mut app BrowserApp) handle_event(event &gg.Event) {
 			app.platform_pointer_buttons &= ~browser_pointer_button_mask(button)
 			result := app.dispatch_chrome_pointer_event_at_viewport_point('pointerup', browser_pointer_button(event.mouse_button), f64(event.mouse_x), f64(event.mouse_y - app.page_top()))
 			if !result.handled && app.page_model != unsafe { nil } && app.page_model.event_handler.last_click_allowed() && button == 0 {
-				app.replay_compact_javascript_click(event.mouse_x, event.mouse_y)
+				app.replay_compact_javascript_click()
 			}
 		}
 		.mouse_scroll {

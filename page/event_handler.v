@@ -411,12 +411,14 @@ pub fn (mut handler EventHandler) handle_mouseup_with_button(target ?InputTarget
 	if !input_target_is_enabled(value) { return .dropped }
 	if value.node != none {
 		_ = handler.dispatch_a_pointer_event_for_a_device_that_supports_hover('pointerup', value)
-		if handler.mousedown_target_ == value.id && !middle_button_autoscrolled {
-			handler.last_click_allowed_ = handler.fire_click_events(value) == .handled
-			if handler.last_click_allowed_ && value.chrome_widget_id == '' && !handler.has_captured_chrome_widget() {
-				mut document := (value.node or { return .handled }).document()
-				document.update_layout(.event_handler_run_activation_behavior)
-				_ = handler.run_activation_behavior(value)
+		if !middle_button_autoscrolled {
+			if click_target := handler.click_target_for_mouseup(value) {
+				handler.last_click_allowed_ = handler.fire_click_events(click_target) == .handled
+				if handler.last_click_allowed_ && click_target.chrome_widget_id == '' && !handler.has_captured_chrome_widget() {
+					mut document := (click_target.node or { return .handled }).document()
+					document.update_layout(.event_handler_run_activation_behavior)
+					_ = handler.run_activation_behavior(click_target)
+				}
 			}
 		}
 		return .handled
