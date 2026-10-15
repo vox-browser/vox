@@ -7,6 +7,7 @@
 module url
 
 import strconv
+import strings
 
 enum ParserState {
 	scheme_start
@@ -238,6 +239,10 @@ pub fn basic_parse(input string, base ?&URL) ?URL {
 	mut record := URL{}
 	mut state := ParserState.scheme_start
 	mut buffer := ''
+	// Opaque paths include embedded image payloads. Retain one growing buffer
+	// rather than copying the complete path after every code point.
+	mut opaque_path := strings.new_builder(0)
+	defer { unsafe { opaque_path.free() } }
 	mut index := 0
 	mut reconsume := false
 
@@ -524,22 +529,22 @@ pub fn basic_parse(input string, base ?&URL) ?URL {
 			}
 			.opaque_path {
 				if code_point == `?` {
-					record.paths[0] = buffer
+					record.paths[0] = opaque_path.str()
 					record.query = ''
-					buffer = ''
 					state = .query
 				} else if code_point == `#` {
-					record.paths[0] = buffer
+					record.paths[0] = opaque_path.str()
 					record.fragment = ''
-					buffer = ''
 					state = .fragment
 				} else if code_point == parser_eof {
-					record.paths[0] = buffer
+					record.paths[0] = opaque_path.str()
 				} else if code_point == ` ` && index + 1 < code_points.len
 					&& code_points[index + 1] in [`?`, `#`] {
-					buffer += '%20'
+					opaque_path.write_string('%20')
+				} else if code_point >= 0x20 && code_point <= 0x7e {
+					opaque_path.write_u8(u8(code_point))
 				} else {
-					buffer = parser_append_percent_encoded(buffer, code_point, .c0_control)
+					opaque_path.write_string(percent_encode_code_point(code_point))
 				}
 			}
 			.query {
