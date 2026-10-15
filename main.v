@@ -285,6 +285,7 @@ struct PortableShadowImage {
 struct BrowserApp {
 mut:
 	paint_colors                        PaintColorCache
+	scroll_profile                      BrowserScrollProfile
 	ctx                                 &gg.Context = unsafe { nil }
 	page_model                          &page.Page = unsafe { nil }
 	js_runtime                          &browserjs.Runtime = unsafe { nil }
@@ -5951,6 +5952,7 @@ fn address_for_display(address string, cursor int, active bool, max_characters i
 }
 
 fn (mut app BrowserApp) draw() {
+	app.begin_scroll_profile_frame()
 	mut heap_scope := platform.begin_browser_activity_heap_scope()
 	defer { heap_scope.finish() }
 	app.begin_frame_preparation()
@@ -5989,6 +5991,7 @@ fn (mut app BrowserApp) draw() {
 	}
 	app.finish_frame_preparation()
 	app.portable_shadow_image_index = 0
+	app.scroll_profile_prepared()
 	begin_browser_frame(app.ctx)
 	app.paint_effect_depth = 0
 	$if macos {
@@ -6067,6 +6070,7 @@ fn (mut app BrowserApp) draw() {
 		app.ctx.draw_text(12, status_y + 4, footer, color: gg.rgb(203, 213, 225), size: 12)
 	}
 	end_browser_frame(app.ctx)
+	app.finish_scroll_profile_frame()
 	if !app.initial_window_frame_presented {
 		app.initial_window_frame_presented = true
 		if app.pending_cached_page != none {
@@ -6104,7 +6108,7 @@ fn (mut app BrowserApp) draw() {
 	// presented this first frame. This keeps TLS/framework initialization from
 	// delaying the window and gives cached pages an immediate first paint.
 	app.start_pending_navigation()
-	if app.screenshot_path != '' && !app.screenshot_scheduled && app.document != unsafe { nil } && !app.load_status.starts_with('Loading ') && app.background_resource_pending.len == 0 {
+	if app.screenshot_path != '' && !app.scroll_profile.enabled && !app.screenshot_scheduled && app.document != unsafe { nil } && !app.load_status.starts_with('Loading ') && app.background_resource_pending.len == 0 {
 		app.screenshot_scheduled = true
 		schedule_native_screenshot(app.screenshot_path)
 	}
@@ -6419,6 +6423,7 @@ fn main() {
 	main_checkpoint = debug_timing_checkpoint('startup_page_model', main_checkpoint)
 	mut app := &BrowserApp{
 		markup: markup
+		scroll_profile: scroll_profile_from_environment()
 		source_label: source_label
 		address: initial_url
 		address_cursor: initial_url.runes().len
