@@ -31,6 +31,7 @@ fn vpr_document(position f64, poster bool) (&dom.Document, &dom.Element, &html.H
 		})
 		model.set_poster('https://video-position.example/poster.png')
 	}
+	media.update_video_frame_and_timeline()
 	media.set_official_playback_position(position)
 	_ = layout_document_typed_in_viewport(document, 240, 160)
 	return document, element, model, clock
