@@ -5,8 +5,10 @@ import { gunzipSync } from 'node:zlib';
 import test from 'node:test';
 const code = gunzipSync(await fs.readFile(new URL('../../adblock/engine.js.gz', import.meta.url))).toString();
 const bytes = gunzipSync(await fs.readFile(new URL('../../adblock/engine.snapshot.bin.gz', import.meta.url)));
+const metadata = gunzipSync(await fs.readFile(new URL('../../adblock/engine.snapshot.json.gz', import.meta.url))).toString();
 function engine(custom) {
-    const context = vm.createContext({ sourceBytes: Uint8Array.from(bytes) });
+    const context = vm.createContext({ sourceBytes: Uint8Array.from(bytes), metadata });
+    vm.runInContext('globalThis.voxAdblockReadSnapshotMetadata=()=>JSON.parse(metadata);',context);
     vm.runInContext('globalThis.voxAdblockSnapshotBytes=new Uint8Array(sourceBytes);delete globalThis.sourceBytes;', context);
     // Exercise the Web API polyfills and the no-host checksum fallback.
     vm.runInContext(code, context);

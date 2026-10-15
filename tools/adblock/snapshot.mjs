@@ -47,7 +47,11 @@ export function encodeSnapshot(snapshot) {
         active.delete(value);
         return result;
     }
-    const metadata = JSON.stringify(encode(snapshot, 'snapshot'));
-    const source = `export default {restore(){const bytes=globalThis.voxAdblockSnapshotBytes;if(!(bytes instanceof Uint8Array)||bytes.byteLength!==${byteLength})throw new Error('Invalid bundled uBlock Origin snapshot bytes');let snapshot=JSON.parse(${JSON.stringify(metadata)});${fixups.join('')}return snapshot;}};\n`;
-    return { source, binary: Buffer.concat(chunks), layout: { byte_length: byteLength, views } };
+    // Match esbuild's ASCII source encoding without asking JavaScriptCore to
+    // lex a multi-megabyte string literal. JSON escapes preserve every UTF-16
+    // code unit, including supplementary characters and lone surrogates.
+    const metadata = JSON.stringify(encode(snapshot, 'snapshot')).replace(/[\u007F-\uFFFF]/g, character =>
+        `\\u${character.charCodeAt(0).toString(16).padStart(4, '0')}`);
+    const source = `export default {restore(){const bytes=globalThis.voxAdblockSnapshotBytes;if(!(bytes instanceof Uint8Array)||bytes.byteLength!==${byteLength})throw new Error('Invalid bundled uBlock Origin snapshot bytes');let snapshot=globalThis.voxAdblockReadSnapshotMetadata();${fixups.join('')}return snapshot;}};\n`;
+    return { source, metadata, binary: Buffer.concat(chunks), layout: { byte_length: byteLength, views } };
 }

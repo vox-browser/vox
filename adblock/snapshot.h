@@ -84,4 +84,88 @@ static int vox_adblock_install_snapshot(JSGlobalContextRef context,
     JSValueUnprotect(context, view);
     return exception ? 6 : 0;
 }
+// The callable owns immutable JSON text in its own context. Each invocation
+// parses fresh objects, so default/custom/default reinitialization never shares
+// a mutable restored graph with another engine or with an earlier restore.
+struct vox_adblock_snapshot_metadata {
+    JSStringRef text;
+};
+
+static void vox_adblock_release_snapshot_metadata(JSObjectRef object) {
+    struct vox_adblock_snapshot_metadata *metadata = JSObjectGetPrivate(object);
+    if (!metadata) return;
+    if (metadata->text) JSStringRelease(metadata->text);
+    free(metadata);
+}
+
+static JSValueRef vox_adblock_read_snapshot_metadata(JSContextRef context,
+        JSObjectRef function, JSObjectRef self, size_t count,
+        const JSValueRef arguments[], JSValueRef *exception) {
+    (void)self; (void)count; (void)arguments;
+    struct vox_adblock_snapshot_metadata *metadata = JSObjectGetPrivate(function);
+    if (!metadata || !metadata->text)
+        return vox_adblock_snapshot_error(context, "Missing bundled snapshot metadata", exception);
+    JSValueRef value = JSValueMakeFromJSONString(context, metadata->text);
+    if (!value)
+        return vox_adblock_snapshot_error(context, "Invalid bundled snapshot metadata JSON", exception);
+    return value;
+}
+
+static int vox_adblock_install_snapshot_metadata(JSGlobalContextRef context,
+        const unsigned char *compressed, size_t compressed_size) {
+    if (!context || !compressed || compressed_size < 18) return 1;
+    const unsigned char *size_bytes = compressed + compressed_size - 4;
+    size_t size = (size_t)size_bytes[0] | ((size_t)size_bytes[1] << 8) |
+        ((size_t)size_bytes[2] << 16) | ((size_t)size_bytes[3] << 24);
+    if (!size || size > 128 * 1024 * 1024) return 2;
+    unsigned char *bytes = malloc(size);
+    if (!bytes) return 3;
+    if (vox_adblock_gunzip(compressed, compressed_size, bytes, size) != Z_OK) {
+        free(bytes);
+        return 4;
+    }
+    // Reject non-ASCII input explicitly: CoreFoundation's ASCII conversion can
+    // accept high bytes on some system versions. Scan aligned-size chunks so
+    // validating the generated multi-megabyte metadata remains inexpensive.
+    size_t offset = 0;
+    uint64_t high_bits = 0;
+    while (size - offset >= sizeof(uint64_t)) {
+        uint64_t word;
+        memcpy(&word, bytes + offset, sizeof word);
+        high_bits |= word;
+        offset += sizeof word;
+    }
+    int ascii = !(high_bits & UINT64_C(0x8080808080808080));
+    while (offset < size) ascii &= !(bytes[offset++] & 0x80);
+    if (!ascii) { free(bytes); return 5; }
+    // The generator emits ASCII JSON escapes, retaining Unicode/NUL/BOM values
+    // while keeping CoreFoundation's conversion on its fast ASCII path.
+    CFStringRef text = CFStringCreateWithBytes(kCFAllocatorDefault, bytes,
+        (CFIndex)size, kCFStringEncodingASCII, false);
+    free(bytes);
+    if (!text) return 5;
+    JSStringRef json = JSStringCreateWithCFString(text);
+    CFRelease(text);
+    if (!json) return 5;
+    struct vox_adblock_snapshot_metadata *metadata = malloc(sizeof *metadata);
+    if (!metadata) { JSStringRelease(json); return 3; }
+    metadata->text = json;
+    JSClassDefinition definition = kJSClassDefinitionEmpty;
+    definition.className = "VoxAdblockSnapshotMetadata";
+    definition.finalize = vox_adblock_release_snapshot_metadata;
+    definition.callAsFunction = vox_adblock_read_snapshot_metadata;
+    JSClassRef klass = JSClassCreate(&definition);
+    JSObjectRef reader = JSObjectMake(context, klass, metadata);
+    JSClassRelease(klass);
+    if (!reader) { JSStringRelease(json); free(metadata); return 6; }
+    JSValueProtect(context, reader);
+    JSStringRef key = JSStringCreateWithUTF8CString("voxAdblockReadSnapshotMetadata");
+    JSValueRef exception = NULL;
+    JSObjectSetProperty(context, JSContextGetGlobalObject(context), key, reader,
+        kJSPropertyAttributeReadOnly | kJSPropertyAttributeDontEnum |
+        kJSPropertyAttributeDontDelete, &exception);
+    JSStringRelease(key);
+    JSValueUnprotect(context, reader);
+    return exception ? 6 : 0;
+}
 #endif

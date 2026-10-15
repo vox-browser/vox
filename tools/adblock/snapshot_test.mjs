@@ -9,7 +9,8 @@ import { fileURLToPath } from 'node:url';
 import { encodeSnapshot } from './snapshot.mjs';
 
 function restore(encoded, bytes = encoded.binary) {
-    const context = vm.createContext({ sourceBytes: Uint8Array.from(bytes) });
+    const context = vm.createContext({ sourceBytes: Uint8Array.from(bytes), metadata: encoded.metadata });
+    vm.runInContext('globalThis.voxAdblockReadSnapshotMetadata=()=>JSON.parse(metadata);',context);
     vm.runInContext('globalThis.voxAdblockSnapshotBytes=new Uint8Array(sourceBytes);delete globalThis.sourceBytes;', context);
     vm.runInContext(encoded.source.replace('export default ', 'globalThis.snapshot='), context);
     return { context, value: context.snapshot.restore() };
@@ -22,9 +23,11 @@ test('restores all uBO snapshot value types, including aligned typed views', () 
         signed: new Int32Array([-2147483648, -1, 2147483647]),
         map: new Map([['named', 7], [11, new Map([[13, 'nested']])]]),
         set: new Set(['first', 'second']), re: /advert\d+/gi,
-        list: [null, undefined, true, false, '\0😀𐀀'],
+        list: [null, undefined, true, false, '\0😀𐀀', '\uFEFFhi', '\uD800'],
     };
     const encoded = encodeSnapshot(snapshot);
+    assert.match(encoded.metadata, /^[\x00-\x7F]*$/);
+    assert.doesNotMatch(encoded.source, /JSON\.parse/);
     const { value } = restore(encoded);
     assert.deepEqual(Array.from(value.bytes), Array.from(snapshot.bytes));
     assert.deepEqual(Array.from(value.words), Array.from(snapshot.words));
@@ -64,6 +67,16 @@ test('rejects cyclic or unsupported future snapshot types during generation', ()
     assert.throws(() => encodeSnapshot(new Date()), /Unsupported snapshot object/);
 });
 
+
+test('native metadata owns its text, restores fresh graphs and rejects malformed input', { skip: process.platform !== 'darwin' }, () => {
+    const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'vox-adblock-metadata-test-'));
+    const binary = path.join(directory, 'metadata-test');
+    try {
+        execFileSync('cc', ['-O2', '-framework', 'JavaScriptCore', '-framework', 'CoreFoundation', '-lz',
+            fileURLToPath(new URL('./snapshot_metadata_native_test.c', import.meta.url)), '-o', binary], { stdio: 'pipe' });
+        assert.match(execFileSync(binary, { encoding: 'utf8' }), /PASS native snapshot metadata/);
+    } finally { fs.rmSync(directory, { recursive: true, force: true }); }
+});
 
 test('native snapshot bytes retain ownership and native checksums match the unchanged JS algorithm', { skip: process.platform !== 'darwin' }, () => {
     const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'vox-adblock-snapshot-test-'));
