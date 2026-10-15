@@ -587,7 +587,14 @@ fn run_document_layout_with_renderer_mode(document &dom.Document, viewport_width
 		install_document_layout_tree_hook(document)
 	}
 	if mutable_document.layout_engine_handle() == unsafe { nil } || viewport_changed {
-		mutable_document.set_needs_full_style_update(true)
+		// Image preflight can already have styled this document at the final
+		// viewport. Building its first layout tree does not invalidate that
+		// cascade. update_layout() still calls update_style(), which processes
+		// pending DOM/sheet changes and the shadow trees prepared above.
+		if viewport_changed || !document_has_computed_style_for_viewport(document,
+			viewport_width, viewport_height) {
+			mutable_document.set_needs_full_style_update(true)
+		}
 		mutable_document.set_needs_full_layout_tree_update(true)
 	}
 	css.begin_style_profile()
@@ -607,6 +614,15 @@ fn run_document_layout_with_renderer_mode(document &dom.Document, viewport_width
 		document: result.document
 		paint_tree: result.paint_tree
 	}
+}
+
+fn document_has_computed_style_for_viewport(document &dom.Document, width f64, height f64) bool {
+	root := document.document_element() or { return false }
+	computed := css.computed_properties_for_element(root) or { return false }
+	// Use the viewport retained by the computed style, rather than the mutable
+	// document rect: an embedder can install a new rect before entering layout.
+	return computed.viewport_rect_.width_value() == css.CSSPixels.nearest_value_for(width).to_double()
+		&& computed.viewport_rect_.height_value() == css.CSSPixels.nearest_value_for(height).to_double()
 }
 
 // Document::update_layout() has already run Document::update_style() before it
