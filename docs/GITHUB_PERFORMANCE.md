@@ -3147,6 +3147,83 @@ Evidence: `Build/instructions/vox-opt32-interleaved-*` and
 completed batch to 32,055,542,279.5 instructions; additional
 observed savings after this batch are zero.
 
+## Release the private inline item buffer after formatting
+
+Feature `77a59b25` releases the outer item array owned by the private
+inline-formatting iterator when that formatting run returns. Item records are
+consumed by value; published line fragments retain their own node and glyph
+references. The public iterator API and retained glyph storage are unchanged.
+
+Nineteen functional cases and an inactive diagnostic pass **23,135 assertions**
+in before/final Boehm and final no-GC C-O2 configurations. Two new lifetime cases
+retain wrapped mixed-direction/Unicode text and ellipsis glyphs through later
+formatting runs and forced collection. Existing line-box merge, wrapping,
+grapheme, ellipsis and cyclic-maximum cases remain in the focused harness.
+The original aggregate import error is retained; no test cases ran in that
+failed compilation. Corrected passing checks were not repeated for validation.
+
+Three fixed alternating controlled pairs reduce **512 complete inline formatting
+runs** from **2,643,948,073 to 2,629,170,910** retired
+instructions (-0.56%). All three pairs improve; all six
+checksums are 17,694,720. The probe uses 16 text nodes. Setup, eight warmups, the
+expected result and forced collection precede the counter; the checksum
+assertion follows it. This local result receives no separate page credit.
+
+Fresh full-process C-O1/Boehm profiles report **776 formatting runs and 776
+iterator constructions** in each variant. They include all focused cases and
+the enabled diagnostic, with profile-no-inline, no filter and no reset. Only
+call counts are interpreted. The generated-C audit permits only the private
+formatting function to change, adding one outer-array release at return.
+All other logic, layouts, resources, GC initialization and native arguments
+match after established compiler identity and authenticated include normalization.
+The two raw-identical RequestSecurityClient helpers may reorder. All 120 common
+native inputs and 37 frozen quoted includes are authenticated. Compiled C SHA256:
+`68cb24afbc3bf6cdc7c7acec423aa5bef1c7c148237a63318c6a0f03d395300a`.
+Durable C/profile archive hashes are recorded in
+`Build/v/instruction-opt33-artifact-archives.json`.
+
+Thirty alternating pairs were fixed before observations, with 30,000 paired
+bootstrap resamples and seed 33. Both variants include the filename correction
+`9292a1aa`, use the same frozen helper and fresh copies of the unchanged 359-file
+cache, and use the same predeclared SSD scratch directory. The document viewport
+is 1024×768 and the endpoint is `navigation_to_first_document_paint[0]`.
+Normal native C-O2/Boehm uses one marker, without prod/prealloc flags.
+
+| Build | Median first-frame retired instructions |
+| --- | ---: |
+| Restored filenames, ordinary item-buffer collection | 32,007,846,653 |
+| Restored filenames, release after formatting | 31,972,073,267 |
+
+Observed saving: **35,773,386 (0.112%)**.
+17/30 pairs improve; paired median saving is
+22,158,871. The 95% paired percentile interval is
+**-90,375,009.5 to 495,964,057** instructions. The interval includes zero, so
+repeatable page credit is **0**. All 60 primaries and 60 actual PNGs
+are retained. There are no startup retries, recovered counters or post-primary
+installations. Each first interval retains one installation, two geometry
+passes and one shell paint preparation. The cohort is not extended or filtered.
+
+The observed saving crosses the 5,000,000-instruction broad gate. All six direct
+V harness jobs pass: 31 CSS, 10 SVG and 46 layout cases in both GC modes, 174
+executions. All 19 screenshots pass, 16 exact; the only differences remain
+inline-node 13, text-decorations 1,341 and canvas-text 1,994. The focused wrapping,
+ellipsis, nested-inline and Unicode viewport is pixel-exact. The selected
+regression runtime and overlays remain pinned in the broad manifest; inherited
+receipt wording about RAM output is inaccurate, as the commands use SSD scratch.
+
+The isolated frozen comparison app is `/Users/alex/code/vox2/Build/v/Vox-opt33.app`. Signature,
+startup and actual GC collections pass with default marker 1 and override 2.
+Its native text matches the measured image:
+`1b1dcab38c4bc5d521c2b872af2ceef52c23477e84fb06cee8b453cf5062d4c4`.
+The newer canonical app and user's GUI remain preserved. This app excludes
+independent current Root work, including later container-query changes, and
+receives no current-Root performance credit. Chrome parity remains open.
+
+Evidence: `Build/instructions/vox-opt33-interleaved-*` and
+`Build/v/instruction-opt33-*`. The completed broad batch resets the GitHub
+baseline to 31,972,073,267 instructions; additional observed
+savings after the batch are zero.
+
 ## Causes and changes
 
 - The V 0.5.2 compatibility compiler's `-prod` Boehm code repeatedly snapshots
@@ -3408,3 +3485,39 @@ milliseconds, average nanoseconds, and the C function name.
 `LADYBIRD_V_PROFILE_FNS` overrides the default navigation/layout entry points.
 The build supplies the macOS stdio compatibility flags required by this
 compiler's profiling output.
+
+## Round 34: rejected intrinsic chunk-pool prototype
+
+A source-owned pool of at most eight returned measurement chunks passed the
+16-case baseline and 19-case candidate focused selections (17,753 baseline
+assertions; 17,795 candidate assertions in both Boehm and no-GC C-O2 builds).
+Three fixed alternating diagnostic pairs measured 8,192 complete intrinsic
+width/height probes per observation, with setup, warmups and forced GC outside
+the counter. Median retired instructions rose from 1,355,157,482 to
+1,356,832,572 (+0.12%); two of three pairs worsened. Every checksum was
+180,379,648. This design is rejected with zero performance credit.
+
+The prototype, focused logs, initial import failure and all six diagnostic
+observations remain in `Build/v/instruction-opt34-*` and the frozen snapshots.
+Only this prototype's four owned runtime edits were restored; its uncommitted
+test was archived. No browser primary observations or normal browser build
+were started. The declared page cohort remains unexecuted, and the broad
+validation baseline stays at round 33. Chrome parity remains open.
+
+## Round 36: rejected explicit DOM root loop
+
+An explicit loop over Node's retained parent pointers passed nine focused cases
+in before/final Boehm and final no-GC C-O2 builds, including deep connection,
+detachment, reparenting, nested shadow roots and adoption. Native disassembly
+then showed the existing recursive implementation and the proposed loop both
+compile to the same five-instruction pointer walk. The rewrite is rejected.
+Its three alternating local pairs are retained; the control's very cheap
+optimized lookup loop makes source-call counts an unreliable description of
+completed native traversals. No local or page saving is credited.
+
+Only the proposed root-method edit was restored, and its uncommitted tests
+were archived. Initial test-harness compiler failures, generated-C comparator
+ordering mismatch, focused results and disassembly remain under
+`Build/v/instruction-opt36-*`; the frozen prototype is retained. The speculative
+normal build is independently recorded without performance credit. No browser
+primary observations started, and the declared page cohort remains unexecuted.

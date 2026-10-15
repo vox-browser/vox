@@ -1390,6 +1390,12 @@ evidence](docs/translation-audit/NATIVE_MEDIA_WHEEL_RAW_HANDLER.md).
   repeatable credit is 0 because the interval includes zero. Additional observed
   savings after that batch are zero. The isolated performance app is frozen,
   preserves the canonical app and does not establish Chrome parity.
+  Private inline-buffer release `77a59b25` passes 23,135 focused assertions
+  per configuration and reduces its controlled formatting probe by 0.56%.
+  Matching 30-pair observed savings are 35,773,386 instructions, with repeatable
+  credit 0 because the interval includes zero. The selected 87-case batch passes
+  both GC modes; 19 screenshots pass (16 exact), and the focused viewport is exact.
+  Additional observed savings after that batch are zero; Chrome parity is open.
 - Outside instruction-count optimization, run broad regression suites once per
   ten completed fixes, not after every fix.
   Broad suites include full translation/package test batches, the full LibJS AST

@@ -68,16 +68,14 @@ fn (mut binding CompactElementQueryBinding) element_state(element &dom.Element) 
 	key := '__query_${binding.next_key}'
 	binding.keys[voidptr(element)] = key
 	binding.elements[key] = element
-	mut attributes := map[string]json2.Any{}
-	for name in element.get_attribute_names() {
-		attributes[name] = json2.Any(element.get_attribute_value(name))
-	}
+	attribute_records, attributes := browserjs.compact_attribute_state(element)
 	return json2.Any({
 		'bridgeKey':    json2.Any(key)
 		'elementIndex': json2.Any(-1)
 		'tagName':      json2.Any(element.local_name())
 		'namespaceURI': json2.Any(element.namespace_uri() or { '' })
 		'attributes':   json2.Any(attributes)
+		'attributeRecords': json2.Any(attribute_records)
 		'id':           json2.Any(element.get_attribute_value('id'))
 		'src':          json2.Any(element.get_attribute_value('src'))
 		'width':        json2.Any(element.get_attribute_value('width'))
