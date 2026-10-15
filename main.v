@@ -2594,6 +2594,10 @@ fn run_document_script_sources(document &dom.Document, current_url string, sourc
 		messages << 'JavaScript animation-frame bindings: ${err.msg()}'
 		return none
 	}
+	install_browser_page_storage(document, runtime) or {
+		messages << 'JavaScript storage bindings: ${err.msg()}'
+		return none
+	}
 	for source in sources {
 		if !compact_document_can_run_script(document) { continue }
 		runtime.run_document_scripts([source]) or {
