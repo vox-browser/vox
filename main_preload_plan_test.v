@@ -128,3 +128,16 @@ fn test_nonrendered_preload_plan_retains_barrier_for_author_shadow_consumers_but
 	assert guarded_foreground == urls
 	assert guarded_background == []string{}
 }
+
+fn test_nonrendered_preload_plan_keeps_deferred_variable_image_urls_foreground() {
+	// Cross the DOM-owned sheet's deferred-declaration threshold. The unused
+	// selector still supplies a conservative URL candidate without requiring
+	// property conversion, including a custom-property image-set fallback.
+	padding := '/*${'padding '.repeat(2200)}*/'
+	mut document := preload_plan_test_document('<!doctype html><style>${padding}.unused { --image:var(--other,image-set("shared.png" 2x)); background:var(--image) }</style><dialog><img src="shared.png"><img src="only-hidden.png"></dialog>')
+	defer { document.finalize() }
+	base := document.base_url().serialize()
+	foreground, background := partition_nonrendered_image_preloads(document, base, document_preload_resource_urls(document, base))
+	assert foreground == ['https://preload-plan.test/dir/shared.png']
+	assert background == ['https://preload-plan.test/dir/only-hidden.png']
+}

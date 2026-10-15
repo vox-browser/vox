@@ -106,8 +106,13 @@ fn preload_preserve_rule_resource_urls(rules &css.CSSRuleList, base_url string,
 		if imported := rule.loaded_style_sheet_for_bindings() {
 			preload_preserve_sheet_resource_urls(imported, base_url, mut hidden_by_url, mut seen)
 		}
-		if declaration := rule.style() {
-			preload_preserve_css_resource_urls(declaration.css_text(), base_url, mut hidden_by_url)
+		// CSSRule.style() is a CSSOM accessor that materializes deferred
+		// declarations. Resource discovery only needs the retained URL tokens.
+		if declaration := rule.declaration {
+			for candidate in declaration.resource_url_candidates(base_url) {
+				resource_url := resolve_document_reference(candidate.url, candidate.base_url)
+				if resource_url in hidden_by_url { hidden_by_url[resource_url] = false }
+			}
 		} else if rule.css_rules() == none {
 			preload_preserve_css_resource_urls(rule.css_text(), base_url, mut hidden_by_url)
 		}
