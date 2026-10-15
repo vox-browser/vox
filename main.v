@@ -3110,22 +3110,6 @@ fn document_has_window_event_handlers(document &dom.Document) bool {
 	return window.data.event_handler_map.len > 0
 }
 
-fn reserve_document_heap_for_layout(document &dom.Document) {
-	$if gcboehm ? {
-		root := unsafe { &dom.Node(document) }
-		mut current := root.first_child() or { return }
-		mut count := 0
-		threshold := platform.document_heap_reservation_element_threshold()
-		for count < threshold {
-			if current.is_element() {
-				count++
-			}
-			current = current.next_in_pre_order(none) or { break }
-		}
-		_ = platform.reserve_gc_heap_for_document(count)
-	}
-}
-
 fn (mut app BrowserApp) install_loaded_page(loaded LoadedPage, add_history bool) {
 	app.markup = loaded.markup
 	app.source_label = loaded.url
@@ -3150,7 +3134,6 @@ fn (mut app BrowserApp) install_loaded_page(loaded LoadedPage, add_history bool)
 	} else {
 		parse_browser_navigation_document_with_scripting(loaded.markup, dom.url_about_blank(), initiator_origin, previous_document, unsafe { &dom.Page(app.page_model) }, loaded.monotonic_response_time_ns, scripting_enabled)
 	}
-	reserve_document_heap_for_layout(app.document)
 	install_browser_adblock_styles(app.document, '') or { app.js_messages << 'Adblock styles: ${err.msg()}' }
 	if app.page_model != unsafe { nil } && !app.page_model.has_local_root_navigable() {
 		if navigable := app.document.navigable() {
@@ -6348,6 +6331,7 @@ fn (mut app BrowserApp) handle_key(key gg.KeyCode, modifier gg.Modifier) {
 
 fn main() {
 	main_started := time.sys_mono_now()
+	_ = platform.initialize_browser_heap_policy()
 	link_translated_modules()
 	requestserver.install_native_font_fetch_host() or {
 		eprintln('Ladybird V: failed to initialize the font RequestServer transport: ${err.msg()}')
