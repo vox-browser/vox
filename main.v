@@ -3962,6 +3962,11 @@ fn (mut app BrowserApp) poll_background_resources() {
 	if changed_svg_resources.len > 0 && app.document != unsafe { nil } {
 		if browser_svg_resources_need_layout(app.document, changed_svg_resources) {
 			app.document.tear_down_layout_tree()
+		} else if layout.refresh_document_background_resources(app.document, changed_svg_resources) {
+			app.adopt_current_document_geometry()
+			app.paint_commands_pending = true
+			if app.frame_preparation_depth == 0 { app.record_document_paint_commands() }
+			return
 		} else {
 			app.document.set_needs_repaint_with_invalidation(.paint_commands)
 		}
