@@ -202,10 +202,6 @@ pub fn (mut list AudioTrackList) add_track(track &AudioTrack) {
 	list.audio_tracks << track
 	mut mutable_track := unsafe { &AudioTrack(track) }
 	mutable_track.audio_track_list = list
-	event := TrackEvent.create('addtrack', TrackEventInit{
-		track: TrackEventTrack.from_audio(track)
-	})
-	list.dispatch_event(unsafe { &dom.Event(event) })
 }
 
 pub fn (mut list AudioTrackList) remove_all_tracks() {

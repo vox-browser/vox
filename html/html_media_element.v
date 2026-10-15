@@ -2190,6 +2190,18 @@ pub fn (mut element HTMLMediaElement) update_video_frame_and_timeline() {
 	}
 }
 
+fn (element &HTMLMediaElement) fire_track_add_event(target &dom.EventTarget, track TrackEventTrack) {
+	event := TrackEvent.create('addtrack', TrackEventInit{track: track})
+	mut base_event := unsafe { &dom.Event(event) }
+	if document := element.document() {
+		settings := document.relevant_settings_object()
+		if settings != unsafe { nil } {
+			base_event.set_time_stamp(unsafe { &EnvironmentSettingsObject(settings) }.global_relative_event_timestamp())
+		}
+	}
+	target.dispatch_event(base_event)
+}
+
 pub fn (mut element HTMLMediaElement) on_audio_track_added(metadata MediaTrackMetadata) &AudioTrack {
 	element_pointer := voidptr(&element)
 	track := AudioTrack.create(metadata, media_element_noop_change_task, fn [element_pointer] (track &AudioTrack, enabled bool) {
@@ -2220,7 +2232,7 @@ pub fn (mut element HTMLMediaElement) on_audio_track_added(metadata MediaTrackMe
 	if metadata.kind == none {
 		mutable_track.base.kind = if enable { 'main' } else { 'translation' }
 	}
-	element.fire_event('addtrack')
+	element.fire_track_add_event(&element.audio_tracks_.EventTarget, TrackEventTrack.from_audio(track))
 	element.request_paint_command_rebuild()
 	return track
 }
@@ -2255,7 +2267,7 @@ pub fn (mut element HTMLMediaElement) on_video_track_added(metadata MediaTrackMe
 	if metadata.kind == none {
 		mutable_track.base.kind = if should_select { 'main' } else { 'translation' }
 	}
-	element.fire_event('addtrack')
+	element.fire_track_add_event(&element.video_tracks_.EventTarget, TrackEventTrack.from_video(track))
 	return track
 }
 
