@@ -16,6 +16,12 @@ fn (mut maintenance BrowserMemoryMaintenance) document_changed(now_ns i64) {
 	maintenance.pending_document_work = true
 }
 
+fn (mut maintenance BrowserMemoryMaintenance) frame_finished(now_ns i64, updated_document_paint bool) {
+	// A slow recording or native replay is active document work throughout the
+	// frame. Start its idle interval only after the completed frame is presented.
+	if updated_document_paint { maintenance.document_changed(now_ns) }
+}
+
 fn (mut maintenance BrowserMemoryMaintenance) cleanup_due(now_ns i64, allocated usize) bool {
 	if now_ns < maintenance.next_check_ns {
 		return false

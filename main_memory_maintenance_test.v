@@ -2,6 +2,34 @@ module main
 
 import page
 
+fn test_slow_document_frames_are_active_until_their_native_replay_finishes() {
+	mut maintenance := BrowserMemoryMaintenance{}
+	maintenance.document_changed(1_000_000_000)
+	// Recording plus replay takes two seconds; its own completion is not idle.
+	maintenance.frame_finished(3_000_000_000, true)
+	assert !maintenance.cleanup_due(3_000_000_000, 100)
+	assert !maintenance.cleanup_due(3_499_000_000, 100)
+	assert maintenance.cleanup_due(4_000_000_000, 100)
+	// Unchanged chrome-only frames must still allow genuine idle cleanup.
+	maintenance.document_changed(5_000_000_000)
+	maintenance.frame_finished(5_100_000_000, false)
+	assert !maintenance.cleanup_due(5_100_000_000, 100)
+	maintenance.frame_finished(6_100_000_000, false)
+	assert maintenance.cleanup_due(6_100_000_000, 100)
+}
+
+fn test_successive_slow_animation_frames_defer_only_explicit_idle_cleanup() {
+	mut maintenance := BrowserMemoryMaintenance{}
+	maintenance.document_changed(1_000_000_000)
+	for finished_ns in [i64(3_000_000_000), 4_000_000_000, 5_000_000_000] {
+		maintenance.frame_finished(finished_ns, true)
+		assert !maintenance.cleanup_due(finished_ns, usize(64) * 1024 * 1024)
+	}
+	maintenance.frame_finished(5_250_000_000, false)
+	assert !maintenance.cleanup_due(5_499_000_000, usize(64) * 1024 * 1024)
+	assert maintenance.cleanup_due(6_000_000_000, usize(64) * 1024 * 1024)
+}
+
 fn test_memory_cleanup_waits_for_idle_and_new_allocations() {
 	mut maintenance := BrowserMemoryMaintenance{}
 	maintenance.document_changed(1_000_000_000)

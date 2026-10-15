@@ -6047,6 +6047,7 @@ fn address_for_display(address string, cursor int, active bool, max_characters i
 
 fn (mut app BrowserApp) draw() {
 	if app.navigation_work_depth > 0 { return }
+	paint_before_frame := app.paint_display_list
 	app.poll_deferred_navigation_input()
 	app.poll_deferred_page_input()
 	mut navigation_work := app.begin_navigation_work()
@@ -6175,7 +6176,10 @@ fn (mut app BrowserApp) draw() {
 	}
 	end_browser_frame(app.ctx)
 	app.finish_scroll_profile_frame()
-	app.release_unused_memory_if_idle(time.sys_mono_now())
+	frame_finished_ns := time.sys_mono_now()
+	app.memory_maintenance.frame_finished(frame_finished_ns,
+		voidptr(paint_before_frame) != voidptr(app.paint_display_list))
+	app.release_unused_memory_if_idle(frame_finished_ns)
 	if !app.initial_window_frame_presented {
 		app.initial_window_frame_presented = true
 		if app.pending_cached_page != none {
