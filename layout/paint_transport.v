@@ -869,6 +869,17 @@ pub:
 	resolution_context css.LengthResolutionContext
 }
 
+// Source-shaped geometry retained only by inner and outer box shadows.
+// Text shadows use their glyph run and common command rectangle instead.
+pub struct PaintBoxShadowData {
+pub:
+	content_rect  LayoutRect
+	content_radii BoxRadii
+	clip_radii    BoxRadii
+	inner_rect    LayoutRect
+	inner_radii   BoxRadii
+}
+
 // Spell out absent payloads: the compatibility compiler otherwise constructs
 // their nested defaults (including allocated lengths) before wrapping in none.
 pub struct PaintCommand {
@@ -913,20 +924,9 @@ pub mut:
 	shadow_offset_y f64
 	shadow_spread   f64
 	outer_shadow    bool // clip the shadow source out of the original border box
-	// Source-shaped PaintOuterBoxShadow/PaintInnerBoxShadow payload. Unlike the
-	// legacy scalar fields above, these retain distinct elliptical corner radii
-	// for the content clip, shadow shape, and inner cutout.
-	shadow_content_x      f64
-	shadow_content_y      f64
-	shadow_content_width  f64
-	shadow_content_height f64
-	shadow_content_radii  BoxRadii
-	shadow_clip_radii     BoxRadii
-	shadow_inner_x        f64
-	shadow_inner_y        f64
-	shadow_inner_width    f64
-	shadow_inner_height   f64
-	shadow_inner_radii    BoxRadii
+	// Ordinary commands need no box-shadow geometry. Shadow commands retain
+	// one immutable source-space snapshot across phase caches and replays.
+	box_shadow_data &PaintBoxShadowData = unsafe { nil }
 	// The gradient for a 'fill_gradient' command (a linear-gradient background).
 	gradient                  ?LinearGradient = none
 	gradient_background_layer bool
@@ -1040,6 +1040,13 @@ mut:
 	paint_phase     CompatibilityPaintPhase
 }
 
+pub fn (command &PaintCommand) box_shadow() PaintBoxShadowData {
+	if command.box_shadow_data != unsafe { nil } {
+		return *command.box_shadow_data
+	}
+	return PaintBoxShadowData{}
+}
+
 // Synthetic layer commands retain their immutable payload separately. Ordinary
 // text, borders, and backgrounds keep these options empty instead of carrying
 // almost a kilobyte of unused layer, mask, and filter storage through every copy.
@@ -1142,12 +1149,12 @@ fn paintable_box_paint_box_shadow(mut commands []PaintCommand, shadows []BoxShad
 				opacity: opacity
 				blur: shadow.blur_radius
 				corner_radii: transport_radii_from_painting(shadow.shadow_corner_radii)
-				shadow_content_x: shadow.content_rect.x
-				shadow_content_y: shadow.content_rect.y
-				shadow_content_width: shadow.content_rect.width
-				shadow_content_height: shadow.content_rect.height
-				shadow_content_radii: transport_radii_from_painting(shadow.content_corner_radii)
-				shadow_clip_radii: transport_radii_from_painting(shadow.clip_corner_radii)
+				box_shadow_data: &PaintBoxShadowData{
+					content_rect: LayoutRect{shadow.content_rect.x, shadow.content_rect.y,
+						shadow.content_rect.width, shadow.content_rect.height}
+					content_radii: transport_radii_from_painting(shadow.content_corner_radii)
+					clip_radii: transport_radii_from_painting(shadow.clip_corner_radii)
+				}
 			}
 		} else {
 			commands << PaintCommand{
@@ -1162,17 +1169,15 @@ fn paintable_box_paint_box_shadow(mut commands []PaintCommand, shadows []BoxShad
 				opacity: opacity
 				blur: shadow.blur_radius
 				corner_radii: transport_radii_from_painting(shadow.content_corner_radii)
-				shadow_content_x: shadow.content_rect.x
-				shadow_content_y: shadow.content_rect.y
-				shadow_content_width: shadow.content_rect.width
-				shadow_content_height: shadow.content_rect.height
-				shadow_content_radii: transport_radii_from_painting(shadow.content_corner_radii)
-				shadow_clip_radii: transport_radii_from_painting(shadow.clip_corner_radii)
-				shadow_inner_x: shadow.inner_shadow_rect.x
-				shadow_inner_y: shadow.inner_shadow_rect.y
-				shadow_inner_width: shadow.inner_shadow_rect.width
-				shadow_inner_height: shadow.inner_shadow_rect.height
-				shadow_inner_radii: transport_radii_from_painting(shadow.inner_corner_radii)
+				box_shadow_data: &PaintBoxShadowData{
+					content_rect: LayoutRect{shadow.content_rect.x, shadow.content_rect.y,
+						shadow.content_rect.width, shadow.content_rect.height}
+					content_radii: transport_radii_from_painting(shadow.content_corner_radii)
+					clip_radii: transport_radii_from_painting(shadow.clip_corner_radii)
+					inner_rect: LayoutRect{shadow.inner_shadow_rect.x, shadow.inner_shadow_rect.y,
+						shadow.inner_shadow_rect.width, shadow.inner_shadow_rect.height}
+					inner_radii: transport_radii_from_painting(shadow.inner_corner_radii)
+				}
 			}
 		}
 	}
@@ -5129,14 +5134,15 @@ pub fn (b &BlockBox) render_svg(width f64, height f64) string {
 			path := rounded_rect_svg_path(command.x, command.y, command.width, command.height, command.corner_radii)
 			body << '<path d="${path}" fill="${command.color}" fill-opacity="${fmt_px(command.opacity)}"/>'
 		} else if command.kind == 'paint_outer_box_shadow' {
+			geometry := command.box_shadow()
 			margin := command.blur * 2.0
-			left := math.min(command.x, command.shadow_content_x) - margin
-			top := math.min(command.y, command.shadow_content_y) - margin
-			right := math.max(command.x + command.width, command.shadow_content_x + command.shadow_content_width) + margin
-			bottom := math.max(command.y + command.height, command.shadow_content_y + command.shadow_content_height) + margin
+			left := math.min(command.x, geometry.content_rect.x) - margin
+			top := math.min(command.y, geometry.content_rect.y) - margin
+			right := math.max(command.x + command.width, geometry.content_rect.x + geometry.content_rect.width) + margin
+			bottom := math.max(command.y + command.height, geometry.content_rect.y + geometry.content_rect.height) + margin
 			clip_id := 'outer-shadow-clip${defs.len}'
 			outside_path := rounded_rect_svg_path(left, top, right - left, bottom - top, BoxRadii{})
-			content_path := rounded_rect_svg_path(command.shadow_content_x, command.shadow_content_y, command.shadow_content_width, command.shadow_content_height, command.shadow_content_radii)
+			content_path := rounded_rect_svg_path(geometry.content_rect.x, geometry.content_rect.y, geometry.content_rect.width, geometry.content_rect.height, geometry.content_radii)
 			defs << '<clipPath id="${clip_id}" clipPathUnits="userSpaceOnUse"><path d="${outside_path} ${content_path}" clip-rule="evenodd"/></clipPath>'
 			mut filter := ''
 			if command.blur > 0 {
@@ -5147,8 +5153,9 @@ pub fn (b &BlockBox) render_svg(width f64, height f64) string {
 			shadow_path := rounded_rect_svg_path(command.x, command.y, command.width, command.height, command.corner_radii)
 			body << '<path d="${shadow_path}" clip-path="url(#${clip_id})"${filter} fill="${command.color}" fill-opacity="${fmt_px(command.opacity)}"/>'
 		} else if command.kind == 'paint_inner_box_shadow' {
-			content_path := rounded_rect_svg_path(command.shadow_content_x, command.shadow_content_y, command.shadow_content_width, command.shadow_content_height, command.shadow_content_radii)
-			clip_path := rounded_rect_svg_path(command.shadow_content_x, command.shadow_content_y, command.shadow_content_width, command.shadow_content_height, command.shadow_clip_radii)
+			geometry := command.box_shadow()
+			content_path := rounded_rect_svg_path(geometry.content_rect.x, geometry.content_rect.y, geometry.content_rect.width, geometry.content_rect.height, geometry.content_radii)
+			clip_path := rounded_rect_svg_path(geometry.content_rect.x, geometry.content_rect.y, geometry.content_rect.width, geometry.content_rect.height, geometry.clip_radii)
 			content_clip_id := 'inner-shadow-content${defs.len}'
 			defs << '<clipPath id="${content_clip_id}" clipPathUnits="userSpaceOnUse"><path d="${content_path}"/></clipPath>'
 			scoped_clip_id := 'inner-shadow-scoped${defs.len}'
@@ -5157,12 +5164,12 @@ pub fn (b &BlockBox) render_svg(width f64, height f64) string {
 			if command.blur > 0 {
 				filter_id := 'inner-shadow-blur${defs.len}'
 				margin := command.blur * 2.0
-				defs << '<filter id="${filter_id}" filterUnits="userSpaceOnUse" x="${fmt_px(command.shadow_content_x - margin)}" y="${fmt_px(command.shadow_content_y - margin)}" width="${fmt_px(command.shadow_content_width + margin * 2.0)}" height="${fmt_px(command.shadow_content_height + margin * 2.0)}"><feGaussianBlur stdDeviation="${fmt_px(f64(int(command.blur) / 2))}"/></filter>'
+				defs << '<filter id="${filter_id}" filterUnits="userSpaceOnUse" x="${fmt_px(geometry.content_rect.x - margin)}" y="${fmt_px(geometry.content_rect.y - margin)}" width="${fmt_px(geometry.content_rect.width + margin * 2.0)}" height="${fmt_px(geometry.content_rect.height + margin * 2.0)}"><feGaussianBlur stdDeviation="${fmt_px(f64(int(command.blur) / 2))}"/></filter>'
 				filter = ' filter="url(#${filter_id})"'
 			}
 			outer_path := rounded_rect_svg_path(command.x, command.y, command.width, command.height, command.corner_radii)
-			inner_path := if command.shadow_inner_width > 0 && command.shadow_inner_height > 0 {
-				rounded_rect_svg_path(command.shadow_inner_x, command.shadow_inner_y, command.shadow_inner_width, command.shadow_inner_height, command.shadow_inner_radii)
+			inner_path := if geometry.inner_rect.width > 0 && geometry.inner_rect.height > 0 {
+				rounded_rect_svg_path(geometry.inner_rect.x, geometry.inner_rect.y, geometry.inner_rect.width, geometry.inner_rect.height, geometry.inner_radii)
 			} else {
 				''
 			}

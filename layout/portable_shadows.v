@@ -33,6 +33,7 @@ pub fn rasterize_portable_shadow(command PaintCommand, pixel_scale f64) !Portabl
 	if command.kind !in ['paint_outer_box_shadow', 'paint_inner_box_shadow', 'draw_text_shadow'] {
 		return error('Unsupported shadow command')
 	}
+	geometry := command.box_shadow()
 	matrix := if command.transform == [6]f64{} { [f64(1), 0, 0, 1, 0, 0]! } else { command.transform }
 	// PaintOuterBoxShadow/PaintTextShadow::bounding_rect() inflate by twice
 	// the blur radius. Inner shadows are bounded by their content clip.
@@ -41,10 +42,10 @@ pub fn rasterize_portable_shadow(command PaintCommand, pixel_scale f64) !Portabl
 	mut bounds_width := command.width
 	mut bounds_height := command.height
 	if command.kind == 'paint_inner_box_shadow' {
-		bounds_x = command.shadow_content_x
-		bounds_y = command.shadow_content_y
-		bounds_width = command.shadow_content_width
-		bounds_height = command.shadow_content_height
+		bounds_x = geometry.content_rect.x
+		bounds_y = geometry.content_rect.y
+		bounds_width = geometry.content_rect.width
+		bounds_height = geometry.content_rect.height
 	} else {
 		bounds_x -= command.blur * 2
 		bounds_y -= command.blur * 2
@@ -72,7 +73,7 @@ pub fn rasterize_portable_shadow(command PaintCommand, pixel_scale f64) !Portabl
 	if width <= 0 || height <= 0 { return error('Empty shadow bounds') }
 	color := css.parse_color_string(command.color) or { return error('Invalid shadow color') }
 	alpha := u32(math.max(f64(0), math.min(f64(255), math.floor(f64(color.a) * command.opacity + .5))))
-	content := shadow_rect(command.shadow_content_x, command.shadow_content_y, command.shadow_content_width, command.shadow_content_height, command.shadow_content_radii)
+	content := shadow_rect(geometry.content_rect.x, geometry.content_rect.y, geometry.content_rect.width, geometry.content_rect.height, geometry.content_radii)
 	mut clips := []skia.ShadowClip{}
 	if command.clip_list != unsafe { nil } {
 		for clip in command.clip_list.items {
@@ -116,8 +117,8 @@ pub fn rasterize_portable_shadow(command PaintCommand, pixel_scale f64) !Portabl
 		transform: portable_shadow_transform(command.transform, pixel_scale, left, top)
 		content: content
 		// Inner source uses content_corner_radii on the outer rectangle.
-		outer: shadow_rect(command.x, command.y, command.width, command.height, if command.kind == 'paint_inner_box_shadow' { command.shadow_content_radii } else { command.corner_radii })
-		inner: shadow_rect(command.shadow_inner_x, command.shadow_inner_y, command.shadow_inner_width, command.shadow_inner_height, command.shadow_inner_radii)
+		outer: shadow_rect(command.x, command.y, command.width, command.height, if command.kind == 'paint_inner_box_shadow' { geometry.content_radii } else { command.corner_radii })
+		inner: shadow_rect(geometry.inner_rect.x, geometry.inner_rect.y, geometry.inner_rect.width, geometry.inner_rect.height, geometry.inner_radii)
 		clips: clips
 		font_path: font_path
 		face_index: face_index

@@ -1224,13 +1224,13 @@ fn test_box_shadows_follow_source_order_rectangles_and_elliptical_radii() {
 	inner := commands[inner_index]
 	outer := commands[outer_index]
 	// Inner shadows use the padding box; outer shadows use the border box.
-	assert inner.shadow_content_width == 108
-	assert inner.shadow_content_height == 58
-	assert outer.shadow_content_width == 114
-	assert outer.shadow_content_height == 64
+	assert inner.box_shadow().content_rect.width == 108
+	assert inner.box_shadow().content_rect.height == 58
+	assert outer.box_shadow().content_rect.width == 114
+	assert outer.box_shadow().content_rect.height == 64
 	assert outer.corner_radii.top_left != outer.corner_radii.bottom_left
 	assert outer.corner_radii.top_left.x != outer.corner_radii.top_left.y
-	assert inner.shadow_inner_radii.top_right != inner.shadow_inner_radii.bottom_right
+	assert inner.box_shadow().inner_radii.top_right != inner.box_shadow().inner_radii.bottom_right
 	svg := root.render_svg(320, 200)
 	assert svg.contains('outer-shadow-clip')
 	assert svg.contains('inner-shadow-scoped')

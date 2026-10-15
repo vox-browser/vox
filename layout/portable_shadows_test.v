@@ -17,11 +17,10 @@ fn test_portable_shadow_replays_transformed_radii_clip_and_source_bounds() {
 		blur: 4
 		color: 'blue'
 		corner_radii: BoxRadii{ top_left: CornerRadius{4, 2}, top_right: CornerRadius{2, 4} }
-		shadow_content_x: 20
-		shadow_content_y: 20
-		shadow_content_width: 20
-		shadow_content_height: 12
-		shadow_content_radii: BoxRadii{ top_left: CornerRadius{4, 2}, top_right: CornerRadius{2, 4} }
+		box_shadow_data: &PaintBoxShadowData{
+			content_rect: LayoutRect{20, 20, 20, 12}
+			content_radii: BoxRadii{ top_left: CornerRadius{4, 2}, top_right: CornerRadius{2, 4} }
+		}
 		transform: [cosine, sine, negative_sine, cosine, 40, 0]!
 	}
 	bitmap := rasterize_portable_shadow(command, 2)!

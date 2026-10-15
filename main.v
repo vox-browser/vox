@@ -4973,10 +4973,11 @@ fn (mut app BrowserApp) draw_command(source_command layout.PaintCommand, page_x 
 			bounds_command.height += margin * 2.0
 		} else {
 			// PaintInnerBoxShadow::bounding_rect() is the padding-box content rect.
-			bounds_command.x = command.shadow_content_x
-			bounds_command.y = command.shadow_content_y
-			bounds_command.width = command.shadow_content_width
-			bounds_command.height = command.shadow_content_height
+			shadow_geometry := command.box_shadow()
+			bounds_command.x = shadow_geometry.content_rect.x
+			bounds_command.y = shadow_geometry.content_rect.y
+			bounds_command.width = shadow_geometry.content_rect.width
+			bounds_command.height = shadow_geometry.content_rect.height
 		}
 		bounds_points := transformed_rect_points(bounds_command, page_x, page_y, scroll_y)
 		cull_top = bounds_points[1]
@@ -5033,32 +5034,34 @@ fn (mut app BrowserApp) draw_command(source_command layout.PaintCommand, page_x 
 			app.ctx.scissor_rect(0, 0, app.ctx.width, app.ctx.height)
 		}
 		'paint_outer_box_shadow' {
+			shadow_geometry := command.box_shadow()
 			fill := app.paint_colors.color(command.color, command.opacity)
 			$if macos {
 				if app.ctx.native_rendering {
 					shadow := command.corner_radii
-					content := command.shadow_content_radii
+					content := shadow_geometry.content_radii
 					scale_x := math.sqrt(matrix[0] * matrix[0] + matrix[1] * matrix[1])
 					scale_y := math.sqrt(matrix[2] * matrix[2] + matrix[3] * matrix[3])
 					blur_scale := math.min(scale_x, scale_y)
-					C.native_draw_outer_box_shadow_corners_srgb(f32(command.x), f32(command.y), f32(command.width), f32(command.height), f32(shadow.top_left.x), f32(shadow.top_left.y), f32(shadow.top_right.x), f32(shadow.top_right.y), f32(shadow.bottom_right.x), f32(shadow.bottom_right.y), f32(shadow.bottom_left.x), f32(shadow.bottom_left.y), f32(command.shadow_content_x), f32(command.shadow_content_y), f32(command.shadow_content_width), f32(command.shadow_content_height), f32(content.top_left.x), f32(content.top_left.y), f32(content.top_right.x), f32(content.top_right.y), f32(content.bottom_right.x), f32(content.bottom_right.y), f32(content.bottom_left.x), f32(content.bottom_left.y), f32(matrix[0]), f32(matrix[1]), f32(matrix[2]), f32(matrix[3]), f32(matrix[4]), f32(matrix[5]), page_x, page_y, f32(scroll_y), f32(app.ctx.width), f32(app.ctx.height), f32(command.blur * blur_scale), fill)
+					C.native_draw_outer_box_shadow_corners_srgb(f32(command.x), f32(command.y), f32(command.width), f32(command.height), f32(shadow.top_left.x), f32(shadow.top_left.y), f32(shadow.top_right.x), f32(shadow.top_right.y), f32(shadow.bottom_right.x), f32(shadow.bottom_right.y), f32(shadow.bottom_left.x), f32(shadow.bottom_left.y), f32(shadow_geometry.content_rect.x), f32(shadow_geometry.content_rect.y), f32(shadow_geometry.content_rect.width), f32(shadow_geometry.content_rect.height), f32(content.top_left.x), f32(content.top_left.y), f32(content.top_right.x), f32(content.top_right.y), f32(content.bottom_right.x), f32(content.bottom_right.y), f32(content.bottom_left.x), f32(content.bottom_left.y), f32(matrix[0]), f32(matrix[1]), f32(matrix[2]), f32(matrix[3]), f32(matrix[4]), f32(matrix[5]), page_x, page_y, f32(scroll_y), f32(app.ctx.width), f32(app.ctx.height), f32(command.blur * blur_scale), fill)
 					return
 				}
 			}
 			app.draw_portable_shadow(command, page_x, page_y, scroll_y)
 		}
 		'paint_inner_box_shadow' {
+			shadow_geometry := command.box_shadow()
 			fill := app.paint_colors.color(command.color, command.opacity)
 			$if macos {
 				if app.ctx.native_rendering {
 					outer := command.corner_radii
-					inner := command.shadow_inner_radii
-					content := command.shadow_content_radii
-					clip := command.shadow_clip_radii
+					inner := shadow_geometry.inner_radii
+					content := shadow_geometry.content_radii
+					clip := shadow_geometry.clip_radii
 					scale_x := math.sqrt(matrix[0] * matrix[0] + matrix[1] * matrix[1])
 					scale_y := math.sqrt(matrix[2] * matrix[2] + matrix[3] * matrix[3])
 					blur_scale := math.min(scale_x, scale_y)
-					C.native_draw_inner_box_shadow_corners_srgb(f32(command.x), f32(command.y), f32(command.width), f32(command.height), f32(outer.top_left.x), f32(outer.top_left.y), f32(outer.top_right.x), f32(outer.top_right.y), f32(outer.bottom_right.x), f32(outer.bottom_right.y), f32(outer.bottom_left.x), f32(outer.bottom_left.y), f32(command.shadow_inner_x), f32(command.shadow_inner_y), f32(command.shadow_inner_width), f32(command.shadow_inner_height), f32(inner.top_left.x), f32(inner.top_left.y), f32(inner.top_right.x), f32(inner.top_right.y), f32(inner.bottom_right.x), f32(inner.bottom_right.y), f32(inner.bottom_left.x), f32(inner.bottom_left.y), f32(command.shadow_content_x), f32(command.shadow_content_y), f32(command.shadow_content_width), f32(command.shadow_content_height), f32(content.top_left.x), f32(content.top_left.y), f32(content.top_right.x), f32(content.top_right.y), f32(content.bottom_right.x), f32(content.bottom_right.y), f32(content.bottom_left.x), f32(content.bottom_left.y), f32(clip.top_left.x), f32(clip.top_left.y), f32(clip.top_right.x), f32(clip.top_right.y), f32(clip.bottom_right.x), f32(clip.bottom_right.y), f32(clip.bottom_left.x), f32(clip.bottom_left.y), f32(matrix[0]), f32(matrix[1]), f32(matrix[2]), f32(matrix[3]), f32(matrix[4]), f32(matrix[5]), page_x, page_y, f32(scroll_y), f32(app.ctx.height), f32(command.blur * blur_scale), fill)
+					C.native_draw_inner_box_shadow_corners_srgb(f32(command.x), f32(command.y), f32(command.width), f32(command.height), f32(outer.top_left.x), f32(outer.top_left.y), f32(outer.top_right.x), f32(outer.top_right.y), f32(outer.bottom_right.x), f32(outer.bottom_right.y), f32(outer.bottom_left.x), f32(outer.bottom_left.y), f32(shadow_geometry.inner_rect.x), f32(shadow_geometry.inner_rect.y), f32(shadow_geometry.inner_rect.width), f32(shadow_geometry.inner_rect.height), f32(inner.top_left.x), f32(inner.top_left.y), f32(inner.top_right.x), f32(inner.top_right.y), f32(inner.bottom_right.x), f32(inner.bottom_right.y), f32(inner.bottom_left.x), f32(inner.bottom_left.y), f32(shadow_geometry.content_rect.x), f32(shadow_geometry.content_rect.y), f32(shadow_geometry.content_rect.width), f32(shadow_geometry.content_rect.height), f32(content.top_left.x), f32(content.top_left.y), f32(content.top_right.x), f32(content.top_right.y), f32(content.bottom_right.x), f32(content.bottom_right.y), f32(content.bottom_left.x), f32(content.bottom_left.y), f32(clip.top_left.x), f32(clip.top_left.y), f32(clip.top_right.x), f32(clip.top_right.y), f32(clip.bottom_right.x), f32(clip.bottom_right.y), f32(clip.bottom_left.x), f32(clip.bottom_left.y), f32(matrix[0]), f32(matrix[1]), f32(matrix[2]), f32(matrix[3]), f32(matrix[4]), f32(matrix[5]), page_x, page_y, f32(scroll_y), f32(app.ctx.height), f32(command.blur * blur_scale), fill)
 					return
 				}
 			}
