@@ -4844,6 +4844,48 @@ faster-than-Chrome claim.
 Evidence: `Build/instructions/vox-opt53-interleaved-*` and
 `Build/v/instruction-opt53-*`.
 
+## Selector-call diagnostic and measurement overhead
+
+A separate C-O2 hardware diagnostic uses frozen **51**, with six owner-thread
+wrappers enabled from first navigation entry to the first native document
+frame. It changes no V source and receives **zero page credit**. Independent
+C/argument/input/cache/helper audits pass; native, sign, smoke, observer and
+browser exits are all zero. Removing the exact wrappers, navigation/report
+hooks and private globals restores the original compiled C byte-for-byte.
+The initial interrupted native compile has no terminal receipt; stored C and
+arguments resume successfully. One startup watchdog occurs before parsing or
+any primary, with unknown browser terminal exit. Its logs and an idle AppKit
+stack sample remain; a second startup succeeds within the three-attempt limit.
+No completed observation is discarded or repeated.
+
+| Inclusive diagnostic scope | Entries | Retired instructions |
+| --- | ---: | ---: |
+| `matches` | 631,983 | 15,396,408,625 |
+| `make_rule_cache_for_cascade_origin` | 6 | 1,987,601,584 |
+| `build_invalidation_sets_for_selector` | 25,229 | 1,622,381,549 |
+| `sort_matching_rules` | 127,328 | 1,248,432,649 |
+| Direct rule-bucket collection | 74,281 | 1,213,672,529 |
+| Invalidation-group projection | 45,111 | 496,091,021 |
+
+These **are not normal function self costs**. Scopes overlap, recursive matches
+count nested work repeatedly, and the process-wide readings include other
+threads plus counter/wrapper effects. This instrumented first-frame count is
+36,683,426,758, showing substantial perturbation relative to the separate
+normal cohorts. Frequent short scopes are especially affected. Do not sum
+these values, infer a page percentage or subtract guessed overhead. Entry
+frequency guides separate probes that count complete unwrapped operations;
+low-entry parent scopes also include their nested instrumentation effects.
+The next component diagnostic leaves high-frequency matching, bucket, sort and
+projection functions unwrapped and places counters around larger operations.
+
+Binary SHA256:
+`9caadc945c0fcd4234ddd62baf48400b4d2fc2b7ea92ed5dab9557d231202c50`.
+Durable C archive SHA256:
+`8bdfe5c41af95d7c3a4b32e162c9a1aa916bd2585cc5c6bd83eb02fc567722c2`.
+Evidence: `Build/v/instruction-hotspots53-*` and
+`Build/instructions/vox-hotspots53-diagnostic.run-1.*`. Chrome parity remains
+unestablished.
+
 ## Causes and changes
 
 - The V 0.5.2 compatibility compiler's `-prod` Boehm code repeatedly snapshots
