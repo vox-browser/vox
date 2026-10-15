@@ -6025,6 +6025,96 @@ is byte-identical to the corrected compatible round62 harness, SHA256
 `c123de67f06e5e6d9a48f586a9d7e48c4512b4b630599388a98072c325248a82`.
 Canonical and user GUI apps are preserved. Chrome parity remains open.
 
+## Return retained CSS values through one optional result
+
+Feature `0d75f899` changes only private `style_value_logic_from_dom()`.
+The general bridge reads the existing opaque typed owner directly, using the
+same nonnull guard and value expression as the unchanged
+`typed_style_value_logic_from_dom()`. It constructs its own optional result
+without unwrapping and reconstructing an intermediate optional. The typed
+getter itself, property-specific parsing when no owner exists, retained-owner
+precedence, leaf values, serialization, public APIs, filtering and arenas
+remain unchanged. No cache, state or schema is added.
+
+Before/final Boehm and final no-GC C-O2 configurations each pass **822 assertions
+in 15 cases** (14 functional plus one inactive diagnostic). Three new cases
+cover scalar kinds, different property queries and stale text, complex typed
+values, strict serialized fallback, handle replacement/in-place mutation,
+retained snapshots and forced collection. The old general bridge is an oracle
+alongside independent length/type/value expectations. Prior scalar/size/typed
+bridge checks remain in the identical common harness, SHA256:
+`a946952256d0e821b4a3a8934c67ebd5a458003285e43b5bb95e098891a0b1e4`.
+
+Three fixed alternating local pairs execute **512 complete public
+ComputedProperties.size_value query batches**, over 32 retained styles and two
+properties each. Setup, expected results, eight warmups and forced collection
+precede the counter; checksum assertions follow. Median retired instructions
+change **8,722,641→8,008,179**
+(-8.19%), all three pairs improving; all six checksums are
+335,872. This has no separate page credit. Both full-process C-O1/Boehm profiles
+pass without filter/reset: batches stay 521, public size calls 33,408, general
+bridge calls 33,682 and Size.from_style_value calls 33,418. Typed getter calls fall
+33,738→56, exactly 33,682 fewer. Remaining calls include the unchanged oracle.
+Call counts and profile timings never substitute for hardware instructions.
+
+Strict C comparison permits only `css__style_value_logic_from_dom`. The entire
+new V and C function bodies derive exactly from the unchanged typed getter,
+replacing its header and substituting the original property-specific parser
+return for the no-owner result. The parse fallback is identical. All other
+functions, schemas, resources, GC, filtering and arenas match after established
+compiler identities, 37 frozen includes and four raw-identical helper reorderings.
+Source line count is unchanged, so no assertion-line remapping is needed.
+Exact native C-O2 arguments and 120 input hashes match. Native code inspection
+before the change shows intermediate optional carriers in the general bridge
+and its size consumer; static listings receive no performance credit. Compiled
+C SHA256 `65f9f19488dd79c519475e77838e543c50a9eca7eea93db56f6e9f64eb9575e5`.
+Durable normal/focused/profile C archive hashes are in
+`instruction-opt64-artifact-archives.json`.
+
+The predeclared cohort fixes **30 alternating pairs**, **30,000 paired bootstrap
+resamples, seed 64**. Both regular persisted binaries use the same 359 cached
+bodies and fresh copies, frozen text helper, Boehm/default marker 1, native C-O2,
+4 GiB hint and 1024×768 document viewport, ending at
+`navigation_to_first_document_paint[0]`. There is no prod/prealloc. The same
+byte-identical private observer and authenticated child-only placement helper
+as round 61 are used in both variants. Runtime library receipts, launch arrays,
+observer/counter hashes and foreground-preserving 1024×880 content-view placement
+are audited. Only fresh matched observations are compared. Independent Root
+memory/UI/native work and rejected rounds 62/63 are excluded.
+
+| Build | Median first-frame retired instructions | Median process peak, MiB |
+| --- | ---: | ---: |
+| Fresh matching accepted frozen 61 control | 18,331,496,125.5 | 3,637.9 |
+| General bridge with direct retained-owner return | 18,300,080,098 | 3,638.1 |
+
+Observed difference of marginal medians: **31,416,027.5** saved
+instructions (-0.171%), **30/30** wins.
+Paired median saving: **33,196,990.5**. Paired 95% interval:
+**29,945,635 to 35,821,624.5**. The positive paired interval establishes repeatable page savings of **31,416,027.5** instructions.
+
+All **60 primaries and 60 actual viewport PNGs** remain. Recovered primaries:
+none; pre-parse startup retries: 0. Every first primary
+has 1 installation/2 geometry preparations/1 paint. Completed later refreshes
+remain separate: none. No completed primary is rerun,
+discarded or used to extend the cohort. Any recovery explicitly lacks a final
+exit, PNG, per-copy fingerprint receipt and process peak; missing peaks leave
+a complete-cohort median unavailable. Lifetime process peaks include capture/
+exit and later refreshes, are not first-frame live memory, and are never summed.
+The focused typed-size/gradient viewport is pixel-exact at 1024×768.
+Prior observed carry is **0** from round 61; cumulative observed savings **31,416,027.5** trigger the 5M gate. All six direct V jobs pass: CSS 31/SVG 10/layout 46 in both GCs, **174 executions**. All **19 screenshots pass, 16 exact**; known differences remain inline-node 13, text-decorations 1,341 and canvas-text 1,994. Completed broad verification resets additional observed savings to 0; confidence credit remains separate.
+
+The isolated signed app is `/Users/alex/code/vox2/Build/v/Vox-opt64.app`. Its copied frozen helper is
+pinned by an executable-relative load command inside that app; the default
+smoke confirms the actual installed helper path and exact helper SHA256.
+Only the isolated artifact's load command/signature changes: its native
+instruction text matches the measured regular binary. Signature, startup and
+actual collections pass with default marker 1 and override 2. The canonical and
+user GUI apps are preserved; actual before/after canonical hashes record any
+concurrent advancement. Contemporary Root receives no source pin or extra
+performance/regression credit. Equivalent Chrome content/start/submission
+accounting remains open; no faster-than-Chrome claim is made. Evidence:
+`Build/instructions/vox-opt64-interleaved-*` and `Build/v/instruction-opt64-*`.
+
 ## Causes and changes
 
 - The V 0.5.2 compatibility compiler's `-prod` Boehm code repeatedly snapshots

@@ -1590,6 +1590,14 @@ evidence](docs/translation-audit/NATIVE_MEDIA_WHEEL_RAW_HANDLER.md).
   pairs regress, median +30.46%. Candidate checks pass 7,846 assertions in
   both GC modes; exact successful control checks are reused. Owned functions
   are restored; no page credit or broad reset. Next control stays `5362d3aa`.
+  Direct general CSS retained-value bridge `0d75f899` passes 822 focused
+  assertions per configuration; complete public size batches use 8.19% fewer
+  instructions. Page point saving 31,416,027.5, 30/30 wins,
+  paired interval [29,945,635, 35,821,624.5]; repeatable page credit 31,416,027.5.
+  Broad verification: 87 selected cases both GC and 19 screenshots (16 exact);
+  focused typed-size viewport exact. Additional observed savings: 0.
+  Same frozen 4 GiB runtime/placement helper; Root work excluded; isolated helper
+  pinned inside the app. Canonical/GUI preserved; Chrome parity remains open.
 - Outside instruction-count optimization, run broad regression suites once per
   ten completed fixes, not after every fix.
   Broad suites include full translation/package test batches, the full LibJS AST
