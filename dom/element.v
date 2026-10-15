@@ -2603,6 +2603,13 @@ pub fn (mut e Element) run_attribute_change_steps(local_name string, old_value ?
 	} else {
 		e.attribute_changed(local_name, old_value, value, namespace_)
 	}
+	if namespace_ == none && e.is_html_element() && e.local_name() == 'track'
+		&& local_name.to_lower() in ['kind', 'label', 'srclang', 'src', 'id'] {
+		track := unsafe { &HTMLTrackElement(&e) }
+		if hook := track.track_attribute_changed_hook_ {
+			hook(track, local_name, value)
+		}
+	}
 	if !option_string_equal(old_value, value) {
 		e.invalidate_style_after_attribute_change(local_name, old_value, value)
 	}

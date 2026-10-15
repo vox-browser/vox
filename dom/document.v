@@ -1032,7 +1032,12 @@ pub struct HTMLTrackElement {
 	HTMLElement
 pub mut:
 	track_element_model_ voidptr = unsafe { nil }
+	track_attribute_changed_hook_ ?TrackElementAttributeChangedHook
 }
+
+// HTML installs this on the actual lazy track owner without introducing a
+// DOM-to-HTML package dependency. It travels with the element on adoption.
+pub type TrackElementAttributeChangedHook = fn (&HTMLTrackElement, string, ?string)
 
 @[heap]
 pub struct HTMLUListElement {

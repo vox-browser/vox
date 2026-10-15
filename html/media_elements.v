@@ -326,6 +326,7 @@ pub fn html_track_element_model_for_dom_element(element &dom.HTMLTrackElement) &
 	track.set_id(dom_element.get_attribute_ns(none, 'id') or { '' })
 	mut mutable_element := unsafe { &dom.HTMLTrackElement(element) }
 	mutable_element.track_element_model_ = model
+	mutable_element.track_attribute_changed_hook_ = html_track_element_content_attribute_changed
 	return model
 }
 
@@ -528,6 +529,10 @@ pub fn html_track_element_attribute_changed(element &dom.HTMLTrackElement, name 
 	if namespace_ != none {
 		return
 	}
+	html_track_element_content_attribute_changed(element, name, value)
+}
+
+fn html_track_element_content_attribute_changed(element &dom.HTMLTrackElement, name string, value ?string) {
 	mut model := html_track_element_model_for_dom_element(element)
 	match name.to_lower() {
 		'kind' { model.set_kind(value or { '' }) }
@@ -535,6 +540,7 @@ pub fn html_track_element_attribute_changed(element &dom.HTMLTrackElement, name 
 		'srclang' { model.set_srclang(value or { '' }) }
 		'src' {
 			if source := value {
+				model.base_url_ = unsafe { &dom.Element(element) }.document().base_url()
 				model.set_src(source)
 			}
 		}
