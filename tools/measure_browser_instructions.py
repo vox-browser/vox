@@ -67,6 +67,35 @@ def validate_direct_chrome_viewport(args, document):
                            "the direct mode never resizes the document.")
 
 
+def chrome_debugger_endpoint(active):
+    """Chrome may create its discovery file before either line is written."""
+    try:
+        lines = active.read_text(encoding="utf-8").splitlines()
+    except (OSError, UnicodeError):
+        return None
+    if len(lines) < 2 or not re.fullmatch(r"[0-9]+", lines[0]):
+        return None
+    port, browser_path = int(lines[0]), lines[1]
+    prefix = "/devtools/browser/"
+    if (not 0 < port < 65536 or not browser_path.startswith(prefix)
+            or len(browser_path) == len(prefix) or any(c.isspace() for c in browser_path)):
+        return None
+    return port, browser_path
+
+
+def wait_for_chrome_debugger(active, counter, deadline, interval, log_path):
+    while True:
+        endpoint = chrome_debugger_endpoint(active)
+        if endpoint is not None:
+            return endpoint
+        if time.monotonic() > deadline:
+            raise RuntimeError("Chrome debugger did not start before the watchdog")
+        root = counter.sample().get(counter.root_identity)
+        if root and root.exited:
+            raise RuntimeError(f"Chrome exited before debugger startup; see {log_path}")
+        time.sleep(interval)
+
+
 class CDP:
     def __init__(self, url):
         parsed = urllib.parse.urlparse(url)
@@ -280,14 +309,9 @@ def run_chrome(args, prefix, api):
                 with CounterSampler(counter, getattr(args, "sample_interval", .02)):
                     active = Path(profile) / "DevToolsActivePort"
                     deadline = time.monotonic() + args.timeout
-                    while not active.exists():
-                        if time.monotonic() > deadline:
-                            raise RuntimeError("Chrome debugger did not start before the watchdog")
-                        root = counter.sample().get(counter.root_identity)
-                        if root and root.exited:
-                            raise RuntimeError(f"Chrome exited before debugger startup; see {log_path}")
-                        time.sleep(getattr(args, "sample_interval", .02) if direct else .02)
-                    port = int(active.read_text().splitlines()[0])
+                    port, _ = wait_for_chrome_debugger(
+                        active, counter, deadline,
+                        getattr(args, "sample_interval", .02) if direct else .02, log_path)
                     # CDP loopback traffic must not use an ambient HTTP proxy.
                     local_http = urllib.request.build_opener(urllib.request.ProxyHandler({}))
                     with local_http.open(f"http://127.0.0.1:{port}/json/list", timeout=15) as response:

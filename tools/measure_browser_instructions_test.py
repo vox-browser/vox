@@ -12,6 +12,63 @@ import measure_browser_instructions as measurement
 from process_instruction_counts import Reading
 
 
+class ChromeDebuggerStartupTests(unittest.TestCase):
+    def counter(self, exited=False):
+        counter = Mock(root_identity=(1, 100))
+        counter.sample.return_value = {(1, 100): Reading(1, 100, exited, 100, 200)}
+        return counter
+
+    def test_waits_for_both_lines_when_discovery_file_already_exists_empty(self):
+        with tempfile.TemporaryDirectory() as directory:
+            active = Path(directory) / 'DevToolsActivePort'
+            active.write_text('')
+            stages = iter(['1234\n', '1234\n/devtools/browser/',
+                           '1234\n/devtools/browser/session-id\n'])
+            counter = self.counter()
+            with patch.object(measurement.time, 'monotonic', return_value=0), \
+                    patch.object(measurement.time, 'sleep',
+                                 side_effect=lambda _: active.write_text(next(stages))) as sleep:
+                endpoint = measurement.wait_for_chrome_debugger(active, counter, 1, .005, 'chrome.log')
+            self.assertEqual(endpoint, (1234, '/devtools/browser/session-id'))
+            self.assertEqual(sleep.call_count, 3)
+            self.assertEqual(counter.sample.call_count, 3)
+
+    def test_rejects_missing_unreadable_and_invalid_discovery_contents(self):
+        active = Mock()
+        for text in ['', '1234\n', 'invalid\n/devtools/browser/id',
+                     '0\n/devtools/browser/id', '65536\n/devtools/browser/id',
+                     '1234\n/other/id', '1234\n/devtools/browser/',
+                     '1234\n/devtools/browser/session id']:
+            with self.subTest(text=text):
+                active.read_text.return_value = text
+                self.assertIsNone(measurement.chrome_debugger_endpoint(active))
+        for error in [FileNotFoundError(), PermissionError(), UnicodeError()]:
+            with self.subTest(error=error):
+                active.read_text.side_effect = error
+                self.assertIsNone(measurement.chrome_debugger_endpoint(active))
+
+    def test_partial_file_still_observes_process_exit(self):
+        active = Mock()
+        active.read_text.return_value = '1234\n'
+        with patch.object(measurement.time, 'monotonic', return_value=0), \
+                patch.object(measurement.time, 'sleep') as sleep:
+            with self.assertRaisesRegex(RuntimeError, 'Chrome exited before debugger startup'):
+                measurement.wait_for_chrome_debugger(active, self.counter(exited=True),
+                                                     1, .005, 'chrome.log')
+        sleep.assert_not_called()
+
+    def test_empty_file_still_obeys_watchdog_without_relaunching(self):
+        active = Mock()
+        active.read_text.return_value = ''
+        counter = self.counter()
+        with patch.object(measurement.time, 'monotonic', side_effect=[0, .5, 1.1]), \
+                patch.object(measurement.time, 'sleep') as sleep:
+            with self.assertRaisesRegex(RuntimeError, 'before the watchdog'):
+                measurement.wait_for_chrome_debugger(active, counter, 1, .005, 'chrome.log')
+        self.assertEqual(counter.sample.call_count, 2)
+        self.assertEqual(sleep.call_count, 2)
+
+
 class ChromeDirectLaunchTests(unittest.TestCase):
     def args(self, directory, direct=True):
         return SimpleNamespace(binary=Path('/test/Chrome'), scratch_dir=directory,
@@ -79,7 +136,7 @@ class ChromeDirectLaunchTests(unittest.TestCase):
             def launch(command, **kwargs):
                 profile = Path(next(part.split('=', 1)[1] for part in command
                                     if part.startswith('--user-data-dir=')))
-                (profile / 'DevToolsActivePort').write_text('1234\n')
+                (profile / 'DevToolsActivePort').write_text('1234\n/devtools/browser/session-id\n')
                 return process
             response = Mock()
             response.__enter__ = Mock(return_value=response)
