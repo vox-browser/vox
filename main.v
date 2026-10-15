@@ -358,6 +358,7 @@ struct ChromePointerDispatchResult {
 	target  string
 	handled bool
 	cursor  ?painting.ResizeCursor
+	mouse_cursor sapp.MouseCursor = .arrow
 }
 
 struct LaunchOptions {
@@ -2996,6 +2997,7 @@ fn (mut app BrowserApp) dispatch_chrome_pointer_event_at_viewport_point(event_ty
 		target: target
 		handled: handled
 		cursor: cursor
+		mouse_cursor: browser_mouse_cursor_for_hit(hit, cursor)
 	}
 }
 
@@ -6245,7 +6247,7 @@ fn (mut app BrowserApp) handle_event(event &gg.Event) {
 		}
 		.mouse_move {
 			result := app.dispatch_chrome_pointer_event_at_viewport_point('pointermove', 0, f64(event.mouse_x), f64(event.mouse_y - app.page_top()))
-			sapp.set_mouse_cursor(mouse_cursor_for_resize_handle(result.cursor))
+			sapp.set_mouse_cursor(result.mouse_cursor)
 			app.hovered_link = if result.handled {
 				''
 			} else {
