@@ -208,17 +208,18 @@ bundle with:
 
 ```sh
 ./build-prod-browser.sh
-open Build/v/Ladybird.app
+open Build/v/Vox.app
 ```
 
-The production builder uses `-enable-globals -gc boehm_full -cflags -O2`, integrates the
+The production builder uses `-enable-globals -gc boehm -cflags -O2`, integrates the
 upstream Skia text bridge when its release dependencies are available, writes
-`Build/v/Ladybird.app`, and ad-hoc signs the bundle. `build_ladybird.sh` remains
-as a compatibility alias for existing tooling. Garbage collection reclaims
-temporary parsing and layout data during interactive page updates. Set
-`LADYBIRD_V_GC=none` to build without it for heap-ownership diagnostics.
+`Build/v/Vox.app` with the executable `Contents/MacOS/Vox`, and ad-hoc signs the
+bundle. `build_ladybird.sh` remains as a compatibility alias for existing tooling.
+Garbage collection reclaims temporary parsing and layout data during interactive
+page updates. Set `LADYBIRD_V_GC=none` to build without it for heap-ownership
+diagnostics.
 
-The default build uses a fully scanned Boehm heap (`-gc boehm_full`) and
+The default build uses pointer-aware Boehm collection (`-gc boehm`) and
 optimizes generated C with `-O2`. The compatibility compiler's `-prod` mode
 repeatedly walks live aggregates to keep nested pointers alive, making large
 CSS token streams quadratic. The scanned heap retains those pointers without
@@ -367,8 +368,8 @@ Pass a URL, local HTML path, or raw HTML to the bundle executable to open it. A
 small non-windowed build/startup check is available as:
 
 ```sh
-Build/v/Ladybird.app/Contents/MacOS/Ladybird --headless-smoke --js-engine=javascriptcore
-Build/v/Ladybird.app/Contents/MacOS/Ladybird --headless-smoke --js-engine=libjs
+Build/v/Vox.app/Contents/MacOS/Vox --headless-smoke --js-engine=javascriptcore
+Build/v/Vox.app/Contents/MacOS/Vox --headless-smoke --js-engine=libjs
 ```
 
 Wikipedia and its subdomains use HTML and CSS without fetching or parsing page

@@ -38,29 +38,30 @@
   builtin objects, and module linking must not be described as full LibJS
   parity.
 
-## Build and run Ladybird V
+## Build and run Vox
 
 - Build the native macOS bundle from this repository with:
 
   ```sh
   cd ~/code/vox2
-  ./build_ladybird.sh
+  sh build-prod-browser.sh
   ```
 
-- `build_ladybird.sh` uses `V_BIN` when set, then `v` from `PATH`, and finally
-  `~/code/v/v`. It writes `Build/v/Ladybird.app` and ad-hoc signs the bundle.
-- Launch the browser with `open Build/v/Ladybird.app`, or pass a URL, an HTML
+- `build-prod-browser.sh` uses `V_BIN` when set, then `v` from `PATH`, and finally
+  `~/code/v/v`. It writes `Build/v/Vox.app` and ad-hoc signs the bundle.
+  `build_ladybird.sh` is a compatibility alias for the same build.
+- Launch the browser with `open Build/v/Vox.app`, or pass a URL, an HTML
   file, or literal HTML directly to its executable:
 
   ```sh
-  Build/v/Ladybird.app/Contents/MacOS/Ladybird https://example.com
-  Build/v/Ladybird.app/Contents/MacOS/Ladybird ./page.html
+  Build/v/Vox.app/Contents/MacOS/Vox https://example.com
+  Build/v/Vox.app/Contents/MacOS/Vox ./page.html
   ```
 
 - Run the non-windowed engine/JavaScript startup check with:
 
   ```sh
-  Build/v/Ladybird.app/Contents/MacOS/Ladybird --headless-smoke
+  Build/v/Vox.app/Contents/MacOS/Vox --headless-smoke
   ```
 
 - Run all translation tests from this repository with `v test .`. When `v` is

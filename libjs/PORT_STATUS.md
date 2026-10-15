@@ -1398,8 +1398,8 @@ modules before preparation because module execution remains pending.
 The native command line selects the backend explicitly:
 
 ```sh
-Build/v/Ladybird.app/Contents/MacOS/Ladybird --js-engine=javascriptcore page.html
-Build/v/Ladybird.app/Contents/MacOS/Ladybird --js-engine=libjs page.html
+Build/v/Vox.app/Contents/MacOS/Vox --js-engine=javascriptcore page.html
+Build/v/Vox.app/Contents/MacOS/Vox --js-engine=libjs page.html
 # The separate form --js-engine libjs is also accepted.
 ```
 
