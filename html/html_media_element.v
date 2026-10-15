@@ -271,12 +271,12 @@ pub fn HTMLMediaElement.create(element ?&dom.HTMLElement, base_url dom.URL) &HTM
 		associated_element_: element
 		base_url_: base_url
 		audio_tracks_: &AudioTrackList{}
-		video_tracks_: &VideoTrackList{}
 		text_tracks_: &TextTrackList{}
 		buffered_: &TimeRanges{}
 		played_: &TimeRanges{}
 		seekable_: &TimeRanges{}
 	}
+	media.video_tracks_ = VideoTrackList.create(media)
 	if html_element := element {
 		dom_element := unsafe { &dom.Element(html_element) }
 		mut document := dom_element.document()
