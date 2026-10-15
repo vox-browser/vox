@@ -875,7 +875,9 @@ fn fetch_page(address string, base string) !LoadedPage {
 	result := browsernet.get(adblock.Request{url: resolved, source_url: resolved, request_type: 'main_frame'}, tls_ca_bundle())!
 	response := result.response
 	content_type := response.header.get(.content_type) or { 'text/html' }
-	if response.status_code < 200 || response.status_code >= 400 {
+	// HTTP error responses can contain a real document, including a site's
+	// verification or sign-in UI. Only an empty error needs our fallback page.
+	if response.status_code < 200 || (response.status_code >= 400 && response.body == '') {
 		return error('HTTP ${response.status_code} ${response.status_msg}')
 	}
 	markup := if content_type.to_lower().contains('html') {
@@ -889,7 +891,10 @@ fn fetch_page(address string, base string) !LoadedPage {
 		status: 'HTTP ${response.status_code} · ${response.body.len} bytes'
 		content_type: content_type
 	}
-	cache_loaded_page(loaded)
+	// A challenge or server error must not replace a cached successful page.
+	if response.status_code < 400 {
+		cache_loaded_page(loaded)
+	}
 	return loaded
 }
 
