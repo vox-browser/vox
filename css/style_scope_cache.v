@@ -513,6 +513,10 @@ pub fn (mut scope StyleScope) populate_new_rule_cache() &StyleCache {
 }
 
 pub fn (mut scope StyleScope) build_rule_cache() {
+	if cache := scope.shared_user_agent_only_shadow_style_cache() {
+		scope.adopt_style_cache(cache)
+		return
+	}
 	if node := scope.node {
 		if node.as_shadow_root() != none {
 			active_author_sheets := scope.stylesheets_for_cascade_origin(.author)
@@ -541,6 +545,7 @@ pub fn (mut scope StyleScope) style_sheet_list() &StyleSheetList {
 }
 
 pub fn (mut scope StyleScope) invalidate_rule_cache() {
+	scope.adopted_user_agent_only_shadow_cache_ = unsafe { nil }
 	scope.invalidate_counter_style_cache()
 	scope.rule_cache = none
 	scope.author_rule_cache = none
@@ -583,6 +588,11 @@ pub fn (mut scope StyleScope) build_user_style_sheet_if_needed() {
 }
 
 pub fn (scope &StyleScope) build_rule_cache_if_needed() {
+	if scope.adopted_user_agent_only_shadow_cache_ != unsafe { nil }
+		&& !scope.adopted_user_agent_only_shadow_cache_.environment_matches(scope) {
+		mut mutable_scope := unsafe { &StyleScope(scope) }
+		mutable_scope.invalidate_rule_cache()
+	}
 	if scope.has_valid_rule_cache() {
 		return
 	}

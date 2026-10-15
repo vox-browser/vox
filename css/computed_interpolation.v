@@ -10573,6 +10573,9 @@ pub mut:
 	needs_counter_style_cache_update    bool = true
 	is_doing_counter_style_cache_update bool
 	has_size_container_queries          bool
+mut:
+	user_agent_only_shadow_cache_ &UserAgentOnlyShadowStyleCache = unsafe { nil }
+	adopted_user_agent_only_shadow_cache_ &UserAgentOnlyShadowStyleCache = unsafe { nil }
 }
 
 // A complete set of selector and cascade caches that can be shared by style

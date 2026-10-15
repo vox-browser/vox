@@ -1790,6 +1790,8 @@ pub mut:
 	pending_image_values    []&dom.StyleValue
 	associated_font_loaders []&FontLoader
 	source_text_            ?string
+mut:
+	shared_style_cache_revision_ u64
 }
 
 pub struct CSSStyleSheetInit {
@@ -2240,6 +2242,7 @@ pub fn (mut sheet CSSStyleSheet) shared_single_constructed_sheet_style_cache(mut
 }
 
 pub fn (mut sheet CSSStyleSheet) invalidate_shared_style_cache() {
+	sheet.shared_style_cache_revision_++
 	sheet.shared_single_constructed_sheet_style_cache = none
 }
 
