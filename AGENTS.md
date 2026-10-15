@@ -1439,6 +1439,14 @@ evidence](docs/translation-audit/NATIVE_MEDIA_WHEEL_RAW_HANDLER.md).
   no page median or confidence interval is claimed, and page credit is zero.
   The focused viewport is exact. Broad verification is deferred; the last broad
   baseline remains `e4f2da02`. Chrome parity remains open.
+  The 1 GiB document heap hint `33a0fd5e` passes 12 focused assertions in
+  each Boehm configuration and one no-GC assertion. The threshold and explicit
+  heap overrides remain unchanged; GC stays enabled with one marker.
+  Matching 30-pair observed savings are 6,932,470,852, with
+  repeatable page credit 6,932,470,852. Median process peak footprints are
+  1,435.5 to 1,673 MiB.
+  Broad verification: passed 87 selected cases both GC and 19 screenshots (16 exact).
+  The focused viewport is exact; Chrome parity remains open.
 - Outside instruction-count optimization, run broad regression suites once per
   ten completed fixes, not after every fix.
   Broad suites include full translation/package test batches, the full LibJS AST
