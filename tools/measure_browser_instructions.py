@@ -36,6 +36,37 @@ def fingerprint_files(paths):
                                 "bytes": path.stat().st_size} for path in paths}
 
 
+def chrome_launch_command(args, binary, profile):
+    command = [str(binary), "--headless=new", "--no-first-run", "--no-default-browser-check",
+               "--disable-background-networking", "--remote-debugging-port=0",
+               f"--user-data-dir={profile}"]
+    if getattr(args, "chrome_launch_mode", "blank") == "direct":
+        command += [f"--window-size={args.width},{args.chrome_outer_window_height}", args.url]
+    else:
+        command.append("about:blank")
+    return command
+
+
+def prepare_chrome_target(client, args):
+    if getattr(args, "chrome_launch_mode", "blank") == "direct":
+        return None
+    version = client.call("Browser.getVersion")
+    client.call("Page.enable")
+    client.call("Runtime.enable")
+    client.call("Emulation.setDeviceMetricsOverride", {
+        "width": args.width, "height": args.height, "deviceScaleFactor": 1, "mobile": False})
+    return version
+
+
+def validate_direct_chrome_viewport(args, document):
+    actual = document.get("width"), document.get("height"), document.get("scale")
+    expected = args.width, args.height, 1
+    if actual != expected:
+        raise RuntimeError(f"Direct Chrome viewport is {actual}; expected {expected}. "
+                           "Calibrate --chrome-outer-window-height before measuring; "
+                           "the direct mode never resizes the document.")
+
+
 class CDP:
     def __init__(self, url):
         parsed = urllib.parse.urlparse(url)
@@ -232,10 +263,9 @@ def run_chrome(args, prefix, api):
     binary = args.binary or Path("/Applications/Google Chrome.app/Contents/MacOS/Google Chrome")
     screenshot = Path(str(prefix) + ".png")
     log_path = Path(str(prefix) + ".log")
+    direct = getattr(args, "chrome_launch_mode", "blank") == "direct"
     with tempfile.TemporaryDirectory(prefix="vox-chrome-instructions-", dir=args.scratch_dir) as profile:
-        command = [str(binary), "--headless=new", "--no-first-run", "--no-default-browser-check",
-                   "--disable-background-networking", "--remote-debugging-port=0",
-                   f"--user-data-dir={profile}", "about:blank"]
+        command = chrome_launch_command(args, binary, profile)
         with log_path.open("w") as log:
             launched_at = time.monotonic()
             process = subprocess.Popen(command, stdout=log, stderr=subprocess.STDOUT, start_new_session=True)
@@ -251,25 +281,32 @@ def run_chrome(args, prefix, api):
                         root = counter.sample().get(counter.root_identity)
                         if root and root.exited:
                             raise RuntimeError(f"Chrome exited before debugger startup; see {log_path}")
-                        time.sleep(.02)
+                        time.sleep(getattr(args, "sample_interval", .02) if direct else .02)
                     port = int(active.read_text().splitlines()[0])
                     # CDP loopback traffic must not use an ambient HTTP proxy.
                     local_http = urllib.request.build_opener(urllib.request.ProxyHandler({}))
                     with local_http.open(f"http://127.0.0.1:{port}/json/list", timeout=15) as response:
                         targets = json.load(response)
                     client = CDP(next(t["webSocketDebuggerUrl"] for t in targets if t["type"] == "page"))
-                    version = client.call("Browser.getVersion")
-                    client.call("Page.enable")
-                    client.call("Runtime.enable")
-                    client.call("Emulation.setDeviceMetricsOverride", {
-                        "width": args.width, "height": args.height, "deviceScaleFactor": 1, "mobile": False})
-                    baseline = counter.sample()
-                    navigation_at = time.monotonic()
-                    client.call("Page.navigate", {"url": args.url})
+                    version = prepare_chrome_target(client, args)
+                    baseline, navigation_at = None, None
+                    if not direct:
+                        baseline = counter.sample()
+                        navigation_at = time.monotonic()
+                        client.call("Page.navigate", {"url": args.url})
                     expression = r'''JSON.stringify({title:document.title,url:location.href,
                         ready:document.readyState,textLength:document.body?.innerText.length||0,
                         sprites:document.querySelectorAll('.sprite').length,
                         fileLinks:[...document.querySelectorAll('a')].filter(a=>/\/vlang\/v\/(blob|tree)\//.test(a.href)).length})'''
+                    if direct:
+                        expression = r'''JSON.stringify({ready:document.readyState,
+                            textLength:document.body?.innerText.length||0,
+                            sprites:document.querySelectorAll('.sprite').length,
+                            width:innerWidth,height:innerHeight,outerWidth:outerWidth,
+                            outerHeight:outerHeight,scale:devicePixelRatio,
+                            focused:document.hasFocus(),activeTag:document.activeElement?.tagName})'''
+                        if urllib.parse.urlparse(args.url).hostname == "github.com":
+                            expression = expression[:-2] + r''',fileLinks:[...document.querySelectorAll('a')].filter(a=>/\/vlang\/v\/(blob|tree)\//.test(a.href)).length})'''
                     while True:
                         evaluated = client.call("Runtime.evaluate", {"expression": expression, "returnByValue": True})
                         value = evaluated.get("result", {}).get("value")
@@ -281,10 +318,12 @@ def run_chrome(args, prefix, api):
                                      or document.get("sprites") == args.expect_sprites)
                                 and (getattr(args, "expect_text_length", None) is None
                                      or document.get("textLength") == args.expect_text_length)):
+                            if direct:
+                                validate_direct_chrome_viewport(args, document)
                             break
                         if time.monotonic() > deadline:
                             raise RuntimeError("Chrome did not load document content before the watchdog")
-                        time.sleep(.02)
+                        time.sleep(getattr(args, "sample_interval", .02) if direct else .02)
                     client.call("Runtime.evaluate", {"expression": "document.fonts.ready.then(()=>true)",
                                                      "awaitPromise": True, "returnByValue": True})
                     data = client.call("Page.captureScreenshot", {"format": "png", "captureBeyondViewport": False})["data"]
@@ -293,7 +332,8 @@ def run_chrome(args, prefix, api):
                     # A new report() sample would charge later Chrome work and
                     # would not be a lower bound at the stated endpoint.
                     endpoint_snapshot = counter.snapshot_before(endpoint_at)
-                    navigation_report = counter.report(baseline, snapshot=endpoint_snapshot)
+                    navigation_report = (counter.report(baseline, snapshot=endpoint_snapshot)
+                                         if baseline is not None else None)
                     report = counter.report(snapshot=endpoint_snapshot)
                     # Asset auditing happens after the instruction boundary.
                     audited = client.call("Runtime.evaluate", {"expression": r'''JSON.stringify({
@@ -308,18 +348,23 @@ def run_chrome(args, prefix, api):
                         paint:performance.getEntriesByType('paint').map(r=>r.toJSON())})''',
                         "returnByValue": True})
                     document_audit = json.loads(audited["result"]["value"])
+                    if version is None:
+                        version = client.call("Browser.getVersion")
                     screenshot.write_bytes(base64.b64decode(data))
                     report.update(engine="chrome", binary=str(binary), version=version,
                                   endpoint="completed document and first CDP screenshot response",
                                   url=args.url, viewport=[args.width, args.height],
                                   command=command,
+                                  chrome_launch_mode="direct" if direct else "blank",
                                   process_launch_to_capture_observed_ms=(endpoint_at - launched_at) * 1000,
-                                  navigation_to_capture_observed_ms=(endpoint_at - navigation_at) * 1000,
                                   final_sample_precedes_capture_ms=(endpoint_at - endpoint_snapshot.sampled_at) * 1000,
                                   endpoint_note="observed counters from the last complete sampling pass before screenshot response; omit subsequent audit and browser shutdown",
                                   document_audit=document_audit,
-                                  navigation_to_screenshot=navigation_report, document=document,
+                                  document=document,
                                   screenshot=str(screenshot))
+                    if navigation_report is not None:
+                        report["navigation_to_screenshot"] = navigation_report
+                        report["navigation_to_capture_observed_ms"] = (endpoint_at - navigation_at) * 1000
                     try:
                         client.call("Browser.close")
                     except (EOFError, OSError):
@@ -342,6 +387,10 @@ def main():
     parser.add_argument("--height", type=int, default=768)
     parser.add_argument("--timeout", type=float, default=90)
     parser.add_argument("--scratch-dir", type=Path)
+    parser.add_argument("--chrome-launch-mode", choices=["blank", "direct"], default="blank",
+                        help="blank preserves historical CDP setup/navigation; direct launches the URL without resizing or navigating")
+    parser.add_argument("--chrome-outer-window-height", type=int,
+                        help="direct mode: calibrated initial outer height yielding the requested document viewport")
     parser.add_argument("--sample-interval", type=float, default=.005,
                         help="seconds between process-tree counter polls; observer work is excluded")
     parser.add_argument("--expect-sprites", type=int,
@@ -355,6 +404,11 @@ def main():
     args = parser.parse_args()
     if args.repeat < 1 or args.timeout <= 0 or args.width < 1 or args.height < 1 or args.sample_interval <= 0:
         parser.error("repeat, dimensions, and watchdog must be positive")
+    if args.chrome_launch_mode == "direct":
+        if args.engine != "chrome" or not args.chrome_outer_window_height or args.chrome_outer_window_height <= 0:
+            parser.error("direct launch requires engine chrome and a positive --chrome-outer-window-height")
+    elif args.chrome_outer_window_height is not None:
+        parser.error("--chrome-outer-window-height requires --chrome-launch-mode direct")
     if args.binary:
         args.binary = args.binary.resolve()
     if args.cache_template:
