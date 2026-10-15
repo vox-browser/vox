@@ -1168,7 +1168,9 @@ fn (mut tokenizer Tokenizer) consume_a_number() Number {
 	// Execute the following steps in order:
 
 	// 1. Initially set type to "integer". Let repr be the empty string.
-	mut repr := strings.new_builder(16)
+	// Numeric spelling is a contiguous ASCII span of the filtered input.
+	// Keep the same consumption algorithm and parse its terminated spelling.
+	start_byte_offset := tokenizer.current_byte_offset()
 	mut type_ := NumberType.integer
 
 	// 2. If the next input code point is U+002B PLUS SIGN (+) or U+002D HYPHEN-MINUS (-),
@@ -1177,7 +1179,7 @@ fn (mut tokenizer Tokenizer) consume_a_number() Number {
 	next_input := tokenizer.peek_code_point(0)
 	if is_plus_sign(next_input) || is_hyphen_minus(next_input) {
 		has_explicit_sign = true
-		append_code_point(mut repr, tokenizer.next_code_point())
+		_ = tokenizer.next_code_point()
 	}
 
 	// 3. While the next input code point is a digit, consume it and append it to repr.
@@ -1187,7 +1189,7 @@ fn (mut tokenizer Tokenizer) consume_a_number() Number {
 			break
 		}
 
-		append_code_point(mut repr, tokenizer.next_code_point())
+		_ = tokenizer.next_code_point()
 	}
 
 	// 4. If the next 2 input code points are U+002E FULL STOP (.) followed by a digit, then:
@@ -1195,8 +1197,8 @@ fn (mut tokenizer Tokenizer) consume_a_number() Number {
 	if is_full_stop(maybe_number.first) && is_digit(maybe_number.second) {
 		// 1. Consume them.
 		// 2. Append them to repr.
-		append_code_point(mut repr, tokenizer.next_code_point())
-		append_code_point(mut repr, tokenizer.next_code_point())
+		_ = tokenizer.next_code_point()
+		_ = tokenizer.next_code_point()
 
 		// 3. Set type to "number".
 		type_ = .number
@@ -1208,7 +1210,7 @@ fn (mut tokenizer Tokenizer) consume_a_number() Number {
 				break
 			}
 
-			append_code_point(mut repr, tokenizer.next_code_point())
+			_ = tokenizer.next_code_point()
 		}
 	}
 
@@ -1223,13 +1225,13 @@ fn (mut tokenizer Tokenizer) consume_a_number() Number {
 		// 2. Append them to repr.
 		if is_plus_sign(maybe_exp.second) || is_hyphen_minus(maybe_exp.second) {
 			if is_digit(maybe_exp.third) {
-				append_code_point(mut repr, tokenizer.next_code_point())
-				append_code_point(mut repr, tokenizer.next_code_point())
-				append_code_point(mut repr, tokenizer.next_code_point())
+				_ = tokenizer.next_code_point()
+				_ = tokenizer.next_code_point()
+				_ = tokenizer.next_code_point()
 			}
 		} else if is_digit(maybe_exp.second) {
-			append_code_point(mut repr, tokenizer.next_code_point())
-			append_code_point(mut repr, tokenizer.next_code_point())
+			_ = tokenizer.next_code_point()
+			_ = tokenizer.next_code_point()
 		}
 
 		// 3. Set type to "number".
@@ -1242,12 +1244,12 @@ fn (mut tokenizer Tokenizer) consume_a_number() Number {
 				break
 			}
 
-			append_code_point(mut repr, tokenizer.next_code_point())
+			_ = tokenizer.next_code_point()
 		}
 	}
 
 	// 6. Convert repr to a number, and set the value to the returned value.
-	value := tokenizer.convert_a_string_to_a_number(repr.str())
+	value := tokenizer.convert_a_string_to_a_number(tokenizer.input_since(start_byte_offset))
 
 	// 7. Return value and type.
 	if type_ == .integer && has_explicit_sign {
