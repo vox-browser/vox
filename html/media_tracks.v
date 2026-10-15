@@ -369,8 +369,8 @@ pub fn (mut list VideoTrackList) add_track(track &VideoTrack) {
 pub fn (mut list VideoTrackList) remove_all_tracks() {
 	for track in list.video_tracks {
 		mut mutable_track := unsafe { &VideoTrack(track) }
-		mutable_track.set_video_track_list(none)
 		mutable_track.set_selected(false)
+		mutable_track.set_video_track_list(none)
 	}
 	list.video_tracks.clear()
 }

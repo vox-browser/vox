@@ -135,6 +135,6 @@ fn test_video_track_selection_and_list_algorithms() {
 	assert first.video_track_list == none
 	assert second.video_track_list == none
 	assert !first.selected
-	assert media_track_change_tasks == 4
+	assert media_track_change_tasks == 5
 	assert media_track_last_selected_video == unsafe { nil }
 }
