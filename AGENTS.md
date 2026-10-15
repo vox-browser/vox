@@ -1447,6 +1447,14 @@ evidence](docs/translation-audit/NATIVE_MEDIA_WHEEL_RAW_HANDLER.md).
   1,435.5 to 1,673 MiB.
   Broad verification: passed 87 selected cases both GC and 19 screenshots (16 exact).
   The focused viewport is exact; Chrome parity remains open.
+  The 2 GiB document heap hint `58f034be` passes 12 focused assertions in
+  each Boehm configuration and one no-GC assertion. The threshold and explicit
+  heap overrides remain unchanged; GC stays enabled with one marker.
+  Matching 30-pair observed savings are 4,270,440,396.5, with
+  repeatable page credit 4,270,440,396.5. Median process peak footprints are
+  1,681.5 to 2,731.1 MiB.
+  Broad verification: passed 87 selected cases both GC and 19 screenshots (16 exact).
+  The focused viewport is exact; Chrome parity remains open.
 - Outside instruction-count optimization, run broad regression suites once per
   ten completed fixes, not after every fix.
   Broad suites include full translation/package test batches, the full LibJS AST
