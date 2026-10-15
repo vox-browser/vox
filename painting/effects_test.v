@@ -51,11 +51,11 @@ fn test_resolved_css_filter_scales_and_composes_in_upstream_order() {
 
 fn test_svg_filter_graph_wraps_the_css_filter_chain_without_flattening() {
 	svg := GfxFilter{
-		nodes: [
+		nodes:   [
 			GfxFilterNode{
-				id: 0
-				kind: 'blur'
-				input_ids: [-1]
+				id:         0
+				kind:       'blur'
+				input_ids:  [-1]
 				parameters: {
 					'radius_x': 2.0
 					'radius_y': 3.0
@@ -64,14 +64,12 @@ fn test_svg_filter_graph_wraps_the_css_filter_chain_without_flattening() {
 		]
 		root_id: 0
 	}
-	filter := ResolvedCSSFilter{
-		operations: [ResolvedFilterOperation(ColorFilter{
+	filter := ResolvedCSSFilter.with_svg_filter([
+		ResolvedFilterOperation(ColorFilter{
 			operation: .contrast
-			amount: 1.5
-		})]
-		svg_filter: svg
-		svg_filter_bounds: Rect{10, 20, 30, 40}
-	}
+			amount:    1.5
+		}),
+	], svg, Rect{10, 20, 30, 40})
 	gfx := filter.to_gfx_filter(2) or { panic('expected composed filter') }
 	assert gfx.operations.len == 1
 	assert gfx.operations[0].kind == 'color'

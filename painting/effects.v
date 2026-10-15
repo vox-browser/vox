@@ -150,19 +150,45 @@ pub:
 	bounds ?Rect
 }
 
+// A same-document SVG graph and its target bounds have one retained lifetime.
+// Ordinary and CSS-function-only filters carry no graph payload.
+struct ResolvedSVGFilterSnapshot {
+	filter ?GfxFilter
+	bounds ?Rect
+}
+
 pub struct ResolvedCSSFilter {
+	svg_filter_data &ResolvedSVGFilterSnapshot = unsafe { nil }
 pub:
-	operations        []ResolvedFilterOperation
-	svg_filter        ?GfxFilter
-	svg_filter_bounds ?Rect
+	operations []ResolvedFilterOperation
+}
+
+pub fn ResolvedCSSFilter.with_svg_filter(operations []ResolvedFilterOperation, svg_filter ?GfxFilter, bounds ?Rect) ResolvedCSSFilter {
+	if svg_filter == none && bounds == none {
+		return ResolvedCSSFilter{
+			operations: operations
+		}
+	}
+	return ResolvedCSSFilter{
+		operations:      operations
+		svg_filter_data: &ResolvedSVGFilterSnapshot{
+			filter: svg_filter
+			bounds: bounds
+		}
+	}
+}
+
+pub fn (filter ResolvedCSSFilter) svg_filter_bounds() ?Rect {
+	if isnil(filter.svg_filter_data) { return none }
+	return filter.svg_filter_data.bounds
 }
 
 pub fn (filter ResolvedCSSFilter) has_filters() bool {
-	return filter.operations.len > 0 || filter.svg_filter != none
+	return filter.operations.len > 0 || filter.has_svg_filters()
 }
 
 pub fn (filter ResolvedCSSFilter) has_svg_filters() bool {
-	return filter.svg_filter != none
+	return !isnil(filter.svg_filter_data) && filter.svg_filter_data.filter != none
 }
 
 pub fn (filter ResolvedCSSFilter) to_gfx_filter(device_scale f64) ?GfxFilter {
@@ -203,13 +229,16 @@ pub fn (filter ResolvedCSSFilter) to_gfx_filter(device_scale f64) ?GfxFilter {
 			}
 		}
 	}
-	if svg := filter.svg_filter {
-		for operation in svg.operations.reverse() {
-			operations.prepend(operation)
+	snapshot := filter.svg_filter_data
+	if !isnil(snapshot) {
+		if svg := snapshot.filter {
+			for operation in svg.operations.reverse() {
+				operations.prepend(operation)
+			}
+			nodes = svg.nodes.clone()
+			root_id = svg.root_id
+			bounds = snapshot.bounds
 		}
-		nodes = svg.nodes.clone()
-		root_id = svg.root_id
-		bounds = filter.svg_filter_bounds
 	}
 	if operations.len == 0 && root_id == none {
 		return none
@@ -235,7 +264,7 @@ pub fn (filter ResolvedCSSFilter) dump() string {
 		}
 	}
 	mut result := if descriptions.len > 0 { 'filters=(${descriptions.join(', ')})' } else { '' }
-	if filter.svg_filter != none {
+	if filter.has_svg_filters() {
 		result += ' svg_filter'
 	}
 	return result.trim_space()

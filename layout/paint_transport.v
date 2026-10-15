@@ -2075,7 +2075,7 @@ fn (b &BlockBox) record_paint_commands_for_entries(entries []PaintOrderEntry, se
 		// transparent rectangle for an SVG filter even when the source paints no
 		// pixels. It expands the effect input to the target bounds so feFlood and
 		// feImage can generate content for otherwise-empty elements.
-		if svg_filter_bounds := box.filter.svg_filter_bounds {
+		if svg_filter_bounds := box.filter.svg_filter_bounds() {
 			if !svg_filter_bounds.is_empty() {
 				commands << PaintCommand{
 					kind: 'fill_rect_transparent'

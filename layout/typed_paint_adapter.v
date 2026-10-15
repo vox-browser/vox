@@ -1029,11 +1029,7 @@ fn resolve_css_filter(computed_filter css.Filter, computed &css.ComputedValues,
 			}
 		}
 	}
-	return painting.ResolvedCSSFilter{
-		operations: operations
-		svg_filter: svg_filter
-		svg_filter_bounds: svg_filter_bounds
-	}
+	return painting.ResolvedCSSFilter.with_svg_filter(operations, svg_filter, svg_filter_bounds)
 }
 
 fn resolved_css_filter_for_element(computed &css.ComputedValues,
