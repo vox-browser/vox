@@ -36,12 +36,22 @@ of parsing compiled network-rule strings and rebuilding the tries on every
 launch. Custom filters supplied through `adblock.new_engine()` still use the
 normal uBO parser, compiler, freeze and optimization path.
 
-The two generated runtime assets are `adblock/engine.js.gz` and
-`adblock/engine.snapshot.bin.gz`. The first contains the engine and snapshot
-metadata; `JSON.parse()` restores that metadata before its Maps, Sets and regular
-expressions are reconstructed. The second contains the network and public-suffix
-typed-array data. Native zlib inflation validates the gzip CRC and exact input
-and output lengths. The JavaScript restoration checks the expected byte length,
+The three generated runtime assets are `adblock/engine.js.gz`,
+`adblock/engine.snapshot.json.gz` and `adblock/engine.snapshot.bin`. The first
+contains the complete engine, including the custom-filter parser and compiler.
+The second contains ASCII-escaped JSON metadata. A context-owned native callable,
+`voxAdblockReadSnapshotMetadata()`, parses fresh objects through JavaScriptCore's
+JSON API before Maps, Sets and regular expressions are reconstructed. Its native
+text owner survives garbage collection and is released with the context. JSON
+escapes preserve Unicode, embedded NULs, byte-order marks and lone surrogates.
+Both gzip assets retain native CRC and exact input/output length validation.
+
+The raw binary asset contains the network and public-suffix typed-array data.
+Its 16-byte `VOXSNAP1` header records the payload length and CRC32. Startup checks
+the magic, the 128 MiB bound, exact total length and CRC before copying the bytes
+into context-owned storage. The current asset is 18,455,332 bytes, adding
+12,062,639 bytes compared with its previous gzip form while avoiding inflation
+on each launch. JavaScript restoration also checks the expected byte length,
 and uBO retains its engine-version and trie-checksum validation.
 
 The native host supplies the same signed 32-bit trie checksum as uBO's JavaScript
@@ -138,13 +148,15 @@ cd ../..
 
 `npm test` covers the recorded Brave request decisions, default cosmetics and
 scriptlet selection, custom filters, redirects and repeated default restores.
-It also checks metadata types and fresh mutable storage. On macOS it compiles a
-native ownership/checksum test, including CRC rejection, garbage collection,
-release ownership, empty arrays, offset views and signed hash boundaries.
+It also checks metadata types and fresh mutable storage. On macOS it compiles
+native ownership/checksum tests, including raw magic/length/CRC rejection,
+metadata corruption and bounds, fresh graphs, Unicode/BOM/NUL fidelity, garbage
+collection, release ownership, empty arrays, offset views and signed hash
+boundaries.
 
-Review both gzip assets together. The intermediate `generated-defaults.js` and
-`snapshot-layout.json` are generated files. Rebuilding the current pinned inputs
-produces byte-identical gzip assets; normal browser builds use the checked-in
+Review all three runtime assets together. The intermediate
+`generated-defaults.js` and `snapshot-layout.json` are generated files. Rebuilding the current pinned inputs
+produces byte-identical runtime assets; normal browser builds use the checked-in
 assets and do not invoke Node.
 
 ## Refreshing assets
@@ -159,8 +171,8 @@ cd ../..
 sh build-prod-browser.sh
 ```
 
-Review changes to the list manifest and both generated gzip assets together. Re-run the
-live Brave comparison after refreshing; the historical fixture records its own
+Review changes to the list manifest and all three runtime assets together. Re-run
+the live Brave comparison after refreshing; the historical fixture records its own
 snapshot hashes. The upstream engine source remains pinned until deliberately
 updated. Source licenses and third-party notices accompany the vendor files.
 `node refresh-source.mjs` restores the pinned engine sources;
