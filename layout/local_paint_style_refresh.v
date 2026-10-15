@@ -34,12 +34,26 @@ fn paint_style_update_can_be_local(node &Node, previous &css.ComputedValues, cur
 }
 
 fn refresh_local_paint_styles(mut result DocumentLayoutResult) {
+	compositor_changed := refresh_compositor_paint_styles_in_box(mut result.paint_tree,
+		result.state, result.paint_style_update_compositor_handles, [6]f64{})
+	mut ordinary_changes := map[u64]bool{}
+	for handle, _ in result.paint_style_update_handles {
+		if handle !in result.paint_style_update_compositor_handles { ordinary_changes[handle] = true }
+	}
 	mut changed_boxes := []&BlockBox{}
 	refresh_local_paint_styles_in_box(mut result.paint_tree, result.state,
-		result.paint_style_update_handles, mut changed_boxes)
+		ordinary_changes, mut changed_boxes)
 	for box in changed_boxes { viewport_invalidate_box_paint_cache(mut result, box) }
+	if compositor_changed {
+		// Opacity zero and singular transforms also change paint-step membership.
+		// Rebuild those plans from the retained boxes, keeping resource snapshots.
+		viewport_invalidate_stacking_context(voidptr(&result))
+		result.needs_accumulated_visual_contexts = true
+		result.scroll_state.invalidate()
+	}
 	result.paint_tree_needs_style_update = false
 	result.paint_style_update_handles.clear()
+	result.paint_style_update_compositor_handles.clear()
 	result.display_list = unsafe { nil }
 	result.needs_repaint = true
 	mut document := unsafe { &dom.Document(result.document) }
@@ -62,6 +76,7 @@ fn line_style_depends_on_changed_node(box &BlockBox, changed map[u64]bool) bool 
 
 fn refresh_local_paint_styles_in_box(mut box BlockBox, state &LayoutState,
 	changed map[u64]bool, mut changed_boxes []&BlockBox) {
+	if changed.len == 0 { return }
 	mut did_change := false
 	if box.layout_handle != unsafe { nil } {
 		node := unsafe { &Node(box.layout_handle) }

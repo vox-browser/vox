@@ -1445,6 +1445,7 @@ pub mut:
 	layout_handle                    voidptr = unsafe { nil }
 	find_matching_text_callback      fn (voidptr, string, CaseSensitivity) []&Range = unsafe { nil }
 	apply_style_callback             LayoutApplyStyleCallback = unsafe { nil }
+	apply_animated_style_callback    LayoutApplyStyleCallback = unsafe { nil }
 	clear_image_observers_callback   fn (voidptr) = unsafe { nil }
 	set_needs_layout_update_callback LayoutSetNeedsLayoutUpdateCallback = unsafe { nil }
 	invalidate_text_for_rendering_callback LayoutInvalidateTextForRenderingCallback = unsafe { nil }

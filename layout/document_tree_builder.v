@@ -467,6 +467,7 @@ mut:
 	paint_tree_needs_style_update bool
 	paint_style_update_requires_full_refresh bool
 	paint_style_update_handles map[u64]bool
+	paint_style_update_compositor_handles map[u64]bool
 }
 
 fn document_layout_update_callback_with_paint_tree(document &dom.Document, viewport_width f64,

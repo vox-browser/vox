@@ -285,6 +285,7 @@ fn attach_layout_node_recursive(box &Node, parent_placeholder ?&dom.LayoutNode, 
 		layout_handle: voidptr(box)
 		find_matching_text_callback: find_matching_layout_text
 		apply_style_callback: apply_style_to_layout_node
+		apply_animated_style_callback: apply_animated_style_to_layout_node
 		clear_image_observers_callback: clear_layout_image_observers
 		set_needs_layout_update_callback: set_layout_node_needs_layout_update
 		invalidate_text_for_rendering_callback: invalidate_layout_text_for_rendering
@@ -391,12 +392,13 @@ fn attach_layout_node_recursive(box &Node, parent_placeholder ?&dom.LayoutNode, 
 		}
 	}
 	if generated := box.generated_for_pseudo_element() {
-		if generated == .first_letter {
+		if generated in [.first_letter, .before, .after] {
 			if owner := box.pseudo_element_generator() {
+				dom_generated := dom_pseudo_element_for_layout_node(generated) or { dom.PseudoElement.first_letter }
 				mut mutable_owner := unsafe { &dom.Element(owner) }
-				mutable_owner.set_pseudo_element_node(int(dom.PseudoElement.first_letter), &dom.LayoutNodeWithStyle_{
+				mutable_owner.set_pseudo_element_node(int(dom_generated), &dom.LayoutNodeWithStyle_{
 					layout_node_:        placeholder
-					applied_properties_: dom.AbstractElement.new(owner, .first_letter).computed_properties()
+					applied_properties_: dom.AbstractElement.new(owner, dom_generated).computed_properties()
 					kind_:               if box.is_inline_node() {
 						.inline_node
 					} else {
@@ -503,6 +505,24 @@ fn apply_style_to_layout_node(layout_handle voidptr, css_computed_properties_han
 		result.paint_tree_needs_style_update = true
 		result.paint_style_update_requires_full_refresh = result.paint_style_update_requires_full_refresh || !can_refresh_locally
 		result.paint_style_update_handles[u64(layout_handle)] = true
+	}
+}
+
+fn apply_animated_style_to_layout_node(layout_handle voidptr, css_computed_properties_handle voidptr) {
+	if layout_handle == unsafe { nil } || css_computed_properties_handle == unsafe { nil } { return }
+	node := unsafe { &Node(layout_handle) }
+	if !compositor_style_refresh_supports_node(node) {
+		apply_style_to_layout_node(layout_handle, css_computed_properties_handle)
+		return
+	}
+	styled := node.as_node_with_style() or { return }
+	computed := unsafe { &css.ComputedProperties(css_computed_properties_handle) }
+	mut mutable_styled := unsafe { &NodeWithStyle(styled) }
+	mutable_styled.apply_style(computed)
+	if mut result := document_layout_result(node.document()) {
+		result.paint_tree_needs_style_update = true
+		result.paint_style_update_handles[u64(layout_handle)] = true
+		result.paint_style_update_compositor_handles[u64(layout_handle)] = true
 	}
 }
 

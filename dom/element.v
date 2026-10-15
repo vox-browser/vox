@@ -999,6 +999,14 @@ pub fn (n &LayoutNodeWithStyle_) apply_style(props &CSSComputedProperties_) {
 	}
 }
 
+pub fn (n &LayoutNodeWithStyle_) apply_animated_style(props &CSSComputedProperties_,
+	only_compositor_changes bool) {
+	unsafe { n.applied_properties_ = props }
+	if layout_node := n.layout_node_ {
+		layout_node.apply_animated_style(props.css_handle, only_compositor_changes)
+	}
+}
+
 pub fn (n &LayoutNodeWithStyle_) layout_node_kind() LayoutNodeKind {
 	return n.kind_
 }
@@ -6218,6 +6226,7 @@ pub fn (mut e Element) removed_from_with_context(is_subtree_root NodeIsSubtreeRo
 	node.in_editable_subtree_ = false
 	node.layout_node_ = unsafe { nil }
 	node.paintable_ = unsafe { nil }
+	e.clear_pseudo_element_layout_nodes()
 
 	if e.id_ != none {
 		if mut shadow_root := old_root.as_shadow_root() {

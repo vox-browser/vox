@@ -63,6 +63,7 @@ fn refresh_document_paint_tree(document &dom.Document, mut result DocumentLayout
 	result.paint_tree_needs_style_update = false
 	result.paint_style_update_requires_full_refresh = false
 	result.paint_style_update_handles.clear()
+	result.paint_style_update_compositor_handles.clear()
 	// The renderer snapshot owns the concrete command vector behind Document's
 	// cached DisplayList. Invalidating that vector must invalidate the outer
 	// Document cache too, so record_display_list enters the actual paint path.
@@ -87,6 +88,11 @@ fn refresh_document_paint_tree(document &dom.Document, mut result DocumentLayout
 
 fn refresh_document_paint_tree_if_needed(mut result DocumentLayoutResult) bool {
 	if !result.paint_tree_needs_style_update { return false }
+	if !result.paint_style_update_requires_full_refresh
+		&& !compositor_style_refresh_preserves_box_categories(&result.paint_tree,
+			result.paint_style_update_compositor_handles) {
+		result.paint_style_update_requires_full_refresh = true
+	}
 	if !result.paint_style_update_requires_full_refresh {
 		refresh_local_paint_styles(mut result)
 		return false

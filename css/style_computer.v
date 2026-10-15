@@ -1210,6 +1210,20 @@ fn animated_custom_property_maps_differ(old_values map[string]&dom.StyleValue, n
 	return false
 }
 
+fn animated_changes_are_compositor_only(old_values map[PropertyID]&dom.StyleValue,
+	new_values map[PropertyID]&dom.StyleValue) bool {
+	for property, old_value in old_values {
+		if property in [.transform, .translate, .rotate, .scale, .transform_origin, .opacity] { continue }
+		new_value := if value := new_values[property] { ?&dom.StyleValue(value) } else { ?&dom.StyleValue(none) }
+		if !compute_property_invalidation(property, old_value, new_value).is_none() { return false }
+	}
+	for property, _ in new_values {
+		if property !in old_values
+			&& property !in [.transform, .translate, .rotate, .scale, .transform_origin, .opacity] { return false }
+	}
+	return true
+}
+
 fn (s &StyleComputer) recompute_inherited_style_for_animated_descendants(node &dom.Node) RequiredInvalidationAfterStyleChange {
 	mut invalidation := RequiredInvalidationAfterStyleChange{}
 	if element := node.as_element() {
@@ -1426,7 +1440,10 @@ fn style_computer_update_animated_style_callback(target voidptr) {
 			mut mutable_target := target_element
 			mutable_target.set_computed_properties(computed_dom_mirror)
 			if layout_node := target_element.unsafe_layout_node() {
-				layout_node.apply_style(computed_dom_mirror)
+				only_compositor_changes := !custom_properties_changed
+					&& !invalidation.needs_relayout() && !invalidation.needs_layout_tree_rebuild()
+					&& animated_changes_are_compositor_only(old_animated_values, computed.animated_property_values())
+				layout_node.apply_animated_style(computed_dom_mirror, only_compositor_changes)
 			}
 		}
 

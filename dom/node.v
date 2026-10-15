@@ -5293,6 +5293,19 @@ pub fn (ln &LayoutNode) apply_style(css_computed_properties_handle voidptr) {
 	ln.apply_style_callback(ln.layout_handle, css_computed_properties_handle)
 }
 
+// The sampler knows which animated values changed before mutating the shared
+// computed style. Embedders may retain paint geometry for compositor-only
+// samples; other updates and embedders keep the ordinary style path.
+pub fn (ln &LayoutNode) apply_animated_style(css_computed_properties_handle voidptr,
+	only_compositor_changes bool) {
+	if !only_compositor_changes || ln.apply_animated_style_callback == unsafe { nil } {
+		ln.apply_style(css_computed_properties_handle)
+		return
+	}
+	if ln.layout_handle == unsafe { nil } || css_computed_properties_handle == unsafe { nil } { return }
+	ln.apply_animated_style_callback(ln.layout_handle, css_computed_properties_handle)
+}
+
 pub fn (ln &LayoutNode) paintables() []&Paintable {
 	return ln.paintables_.clone()
 }
