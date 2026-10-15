@@ -1797,12 +1797,55 @@ fn compatibility_end_visual_layer_kind(layer PaintVisualLayer) string {
 // DisplayListRecorder group effects and masks bracket the complete target
 // paint. Convert retained visual-context membership into one balanced command
 // stream, preserving the ancestor order when filters and SVG masks are nested.
+struct CompatibilityVisualReplayStep {
+	command_index     int = -1
+	layer_list        &PaintVisualLayerList = unsafe { nil }
+	transform         [6]f64
+	fixed_to_viewport bool
+}
+
 fn lower_visual_layers(commands []PaintCommand) []PaintCommand {
-	mut result := []PaintCommand{cap: commands.len}
+	mut steps := []CompatibilityVisualReplayStep{cap: commands.len}
+	for index in 0 .. commands.len {
+		command := unsafe { &commands[index] }
+		steps << CompatibilityVisualReplayStep{
+			command_index: index
+			layer_list: command.visual_layer_list
+			transform: command.transform
+			fixed_to_viewport: command.fixed_to_viewport
+		}
+	}
+	return lower_visual_replay_steps(commands, steps)
+}
+
+fn visual_replay_layer_command_count(steps []CompatibilityVisualReplayStep) int {
+	mut count := 0
+	mut previous := unsafe { &PaintVisualLayerList(nil) }
+	for step in steps {
+		desired := step.layer_list
+		previous_count := if previous != unsafe { nil } { previous.items.len } else { 0 }
+		desired_count := if desired != unsafe { nil } { desired.items.len } else { 0 }
+		mut common := 0
+		for common < previous_count && common < desired_count
+			&& previous.items[common].kind == desired.items[common].kind
+			&& previous.items[common].scope_id == desired.items[common].scope_id {
+			common++
+		}
+		count += previous_count + desired_count - common * 2
+		previous = desired
+	}
+	return count + if previous != unsafe { nil } { previous.items.len } else { 0 }
+}
+
+// Hidden guides still participate in layer transitions, which retain the
+// original layer payload and first-command transform. Their compact steps
+// preserve those transitions without copying the discarded wide commands.
+fn lower_visual_replay_steps(commands []PaintCommand, steps []CompatibilityVisualReplayStep) []PaintCommand {
+	mut result := []PaintCommand{cap: commands.len + visual_replay_layer_command_count(steps)}
 	mut active := []PaintVisualLayer{}
-	for source_command in commands {
-		desired := if source_command.visual_layer_list != unsafe { nil } {
-			source_command.visual_layer_list.items
+	for step in steps {
+		desired := if step.layer_list != unsafe { nil } {
+			step.layer_list.items
 		} else {
 			[]PaintVisualLayer{}
 		}
@@ -1830,13 +1873,14 @@ fn lower_visual_layers(commands []PaintCommand) []PaintCommand {
 				// Filter bounds are in document coordinates. Preserve the first
 				// enclosed command's accumulated transform so the native graph can
 				// map them through scrolling and CSS transforms exactly once.
-				transform: source_command.transform
-				fixed_to_viewport: source_command.fixed_to_viewport
+				transform: step.transform
+				fixed_to_viewport: step.fixed_to_viewport
 			}
 			active << desired[index]
 		}
 
-		mut command := source_command
+		if step.command_index < 0 { continue }
+		mut command := commands[step.command_index]
 		if command.clip_list != unsafe { nil }
 			&& desired.any(it.kind == .svg_mask) {
 			mut ordinary_clips := []PaintClip{}
@@ -1864,13 +1908,39 @@ fn lower_visual_layers(commands []PaintCommand) []PaintCommand {
 	return result
 }
 
-fn replay_cached_paint_commands_with_visual_context(steps []CompatibilityPaintStep, phase_commands [][]PaintCommand, command_count int, tree painting.AccumulatedVisualContextTree, snapshot painting.ScrollStateSnapshot) []PaintCommand {
-	mut commands := []PaintCommand{cap: command_count}
+fn replay_cached_paint_commands_with_visual_context(steps []CompatibilityPaintStep,
+	phase_commands [][]PaintCommand, command_count int, tree painting.AccumulatedVisualContextTree,
+	snapshot painting.ScrollStateSnapshot, show_line_box_borders bool) ([]PaintCommand, []CompatibilityVisualReplayStep) {
 	// A box contributes several paint phases, and many descendants inherit the
 	// same accumulated context. Resolve each retained context once per replay,
 	// matching DisplayListPlayer's state switching instead of walking its full
 	// ancestor chain for every phase bucket.
 	mut flattened_contexts := map[int]CompatibilityFlattenedVisualContext{}
+	mut count := 0
+	for step in steps {
+		if step.entry_index < 0 { continue }
+		default_context_index := if step.phase == .foreground && step.box.paintable_with_lines {
+			step.box.accumulated_visual_context_for_descendants_idx
+		} else {
+			step.box.accumulated_visual_context_index
+		}
+		bucket := step.entry_index * compatibility_paint_phase_count + int(step.phase)
+		for index in 0 .. phase_commands[bucket].len {
+			command := unsafe { &phase_commands[bucket][index] }
+			if command.line_box_debug && !show_line_box_borders { continue }
+			context_index := command.visual_context_index or { default_context_index }
+			context := if cached_context := flattened_contexts[context_index] {
+				cached_context
+			} else {
+				flattened := flatten_compatibility_visual_context(tree, context_index, snapshot)
+				flattened_contexts[context_index] = flattened
+				flattened
+			}
+			if !context.backface_culled { count++ }
+		}
+	}
+	mut commands := []PaintCommand{cap: count}
+	mut layer_steps := []CompatibilityVisualReplayStep{cap: command_count}
 	for step in steps {
 		if step.entry_index < 0 {
 			continue
@@ -1881,9 +1951,9 @@ fn replay_cached_paint_commands_with_visual_context(steps []CompatibilityPaintSt
 			step.box.accumulated_visual_context_index
 		}
 		bucket := step.entry_index * compatibility_paint_phase_count + int(step.phase)
-		for cached_command in phase_commands[bucket] {
-			mut command := cached_command
-			context_index := command.visual_context_index or { default_context_index }
+		for index in 0 .. phase_commands[bucket].len {
+			cached_command := unsafe { &phase_commands[bucket][index] }
+			context_index := cached_command.visual_context_index or { default_context_index }
 			context := if cached_context := flattened_contexts[context_index] {
 				cached_context
 			} else {
@@ -1894,6 +1964,15 @@ fn replay_cached_paint_commands_with_visual_context(steps []CompatibilityPaintSt
 			if context.backface_culled {
 				continue
 			}
+			hidden_guide := cached_command.line_box_debug && !show_line_box_borders
+			layer_steps << CompatibilityVisualReplayStep{
+				command_index: if hidden_guide { -1 } else { commands.len }
+				layer_list: context.layer_list
+				transform: context.transform
+				fixed_to_viewport: step.box.fixed_to_viewport
+			}
+			if hidden_guide { continue }
+			mut command := *cached_command
 			command.transform = context.transform
 			command.fixed_to_viewport = step.box.fixed_to_viewport
 			if recording_clip := command.recording_clip {
@@ -1934,7 +2013,7 @@ fn replay_cached_paint_commands_with_visual_context(steps []CompatibilityPaintSt
 			commands << command
 		}
 	}
-	return commands
+	return commands, layer_steps
 }
 
 fn viewport_record_display_list(target voidptr) &dom.DisplayList {
@@ -1953,12 +2032,14 @@ fn viewport_record_display_list(target voidptr) &dom.DisplayList {
 		result.paint_phase_command_count += result.paint_tree.refresh_paint_phase_command_cache(result.paint_order, mut result.paint_phase_commands, mut result.paint_phase_entry_valid)
 	}
 	snapshot := result.scroll_state_snapshot
-	mut commands := lower_visual_layers(replay_cached_paint_commands_with_visual_context(result.paint_steps, result.paint_phase_commands, result.paint_phase_command_count, result.visual_context_tree, snapshot))
 	mut show_line_box_borders := false
 	if model := html.NavigableModel.navigable_with_active_document(result.document) {
 		show_line_box_borders = model.should_show_line_box_borders()
 	}
-	filter_line_box_debug_commands(mut commands, show_line_box_borders)
+	replayed, layer_steps := replay_cached_paint_commands_with_visual_context(result.paint_steps,
+		result.paint_phase_commands, result.paint_phase_command_count, result.visual_context_tree,
+		snapshot, show_line_box_borders)
+	mut commands := lower_visual_replay_steps(replayed, layer_steps)
 	commands << result.paint_tree.paint_inspector_overlay(result.document, result.visual_context_tree,
 		snapshot)
 	if model := html.NavigableModel.navigable_with_active_document(result.document) {

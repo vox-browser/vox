@@ -2648,9 +2648,7 @@ pub fn (b &BlockBox) paint_commands() []PaintCommand {
 
 fn (b &BlockBox) paint_commands_from_plan(entries []PaintOrderEntry, steps []CompatibilityPaintStep) []PaintCommand {
 	phase_commands, command_count := b.build_paint_phase_command_cache(entries)
-	mut commands := replay_cached_paint_commands(steps, phase_commands, command_count)
-	filter_line_box_debug_commands(mut commands, false)
-	return commands
+	return replay_cached_paint_commands(steps, phase_commands, command_count, false)
 }
 
 // Translation of PaintableBox::m_cached_phase_commands. Each retained box has
@@ -2697,15 +2695,34 @@ fn (b &BlockBox) refresh_paint_phase_command_cache(entries []PaintOrderEntry, mu
 // StackingContext::paint_node() replays the cached phase vector at each step in
 // the retained stacking-context traversal. Keep that replay separate from cache
 // construction so repaints do not regenerate or redistribute box commands.
-fn replay_cached_paint_commands(steps []CompatibilityPaintStep, phase_commands [][]PaintCommand, command_count int) []PaintCommand {
-	mut commands := []PaintCommand{cap: command_count}
+fn cached_paint_replay_command_count(steps []CompatibilityPaintStep, phase_commands [][]PaintCommand,
+	show_line_box_borders bool) int {
+	mut count := 0
+	for step in steps {
+		if step.entry_index < 0 { continue }
+		bucket := step.entry_index * compatibility_paint_phase_count + int(step.phase)
+		for index in 0 .. phase_commands[bucket].len {
+			if show_line_box_borders || !phase_commands[bucket][index].line_box_debug {
+				count++
+			}
+		}
+	}
+	return count
+}
+
+fn replay_cached_paint_commands(steps []CompatibilityPaintStep, phase_commands [][]PaintCommand,
+	_command_count int, show_line_box_borders bool) []PaintCommand {
+	count := cached_paint_replay_command_count(steps, phase_commands, show_line_box_borders)
+	mut commands := []PaintCommand{cap: count}
 	for step in steps {
 		if step.entry_index < 0 {
 			continue
 		}
 		bucket := step.entry_index * compatibility_paint_phase_count + int(step.phase)
-		for cached_command in phase_commands[bucket] {
-			mut command := cached_command
+		for index in 0 .. phase_commands[bucket].len {
+			cached_command := unsafe { &phase_commands[bucket][index] }
+			if cached_command.line_box_debug && !show_line_box_borders { continue }
+			mut command := *cached_command
 			apply_live_scrollbar_offset(mut command, step.box)
 			apply_live_background_offsets(mut command, step.box)
 			commands << command
