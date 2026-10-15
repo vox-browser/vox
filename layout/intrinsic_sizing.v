@@ -480,7 +480,7 @@ fn populate_intrinsic_external_containing_blocks_once(mut throwaway LayoutState,
 fn calculate_content_width_with_constraint(mut source_state LayoutState, box &Box, constraint SizeConstraint) CSSPixels {
 	box_node := unsafe { &Node(box) }
 	box_styled := box_node.as_node_with_style() or { return CSSPixels.new(0) }
-	mut throwaway := LayoutState.new_for_subtree(box_styled)
+	mut throwaway := source_state.new_measurement_for_subtree(box_styled)
 	defer { throwaway.release_measurement() }
 	populate_intrinsic_containing_block_chain(mut throwaway, mut source_state, box_node)
 	populate_intrinsic_external_containing_blocks(mut throwaway, mut source_state, box_node, box_node)
@@ -1107,7 +1107,7 @@ fn calculate_max_content_height(mut state LayoutState, box &Box, width CSSPixels
 fn calculate_content_height_with_constraint(mut source_state LayoutState, box &Box, width CSSPixels, constraint SizeConstraint) CSSPixels {
 	node := unsafe { &Node(box) }
 	styled := node.as_node_with_style() or { return CSSPixels.new(0) }
-	mut throwaway := LayoutState.new_for_subtree(styled)
+	mut throwaway := source_state.new_measurement_for_subtree(styled)
 	defer { throwaway.release_measurement() }
 	populate_intrinsic_containing_block_chain(mut throwaway, mut source_state, node)
 	populate_intrinsic_external_containing_blocks(mut throwaway, mut source_state, node, node)

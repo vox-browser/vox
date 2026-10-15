@@ -711,7 +711,7 @@ fn (mut bfc BlockFormattingContext) layout_block_level_box(mut state LayoutState
 		// measured first. If the result is smaller than the minimum, its real
 		// layout receives that minimum as a definite available height.
 		if definite_content_height == none && !property_is_auto(computed, .min_height) {
-			mut measuring_state := LayoutState.new_for_subtree(box)
+			mut measuring_state := state.new_measurement_for_subtree(box)
 			defer { measuring_state.release_measurement() }
 			measuring_state.populate_node_from(mut state, box)
 			mut ancestor := box_as_node.containing_block()

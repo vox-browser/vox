@@ -842,6 +842,7 @@ const layout_state_page_mask = layout_state_page_size - 1
 // The chunks remain scanned while live: line boxes and rare data still belong
 // to the ordinary V heap and can also be shared with the source layout state.
 const measurement_arena_chunk_size = 16
+const measurement_chunk_pool_capacity = 64
 const inline_end_snapshot_chunk_size = 64
 
 // Published positions contain only scalar geometry. Measurement snapshots can
@@ -878,6 +879,56 @@ struct MeasurementUsedValuesArena {
 mut:
 	chunks []&MeasurementUsedValuesChunk
 	inline_end_snapshots []&InlineEndSnapshotChunk
+	chunk_pool_ &MeasurementUsedValuesChunkPool = unsafe { nil }
+	pool_lease_active_ bool
+}
+
+// Only inactive, fully cleared chunks can enter this bounded free list. Each
+// nested intrinsic probe keeps its own active arena until its scalar result
+// has been consumed. The document layout closes the pool before publication.
+@[heap]
+struct MeasurementUsedValuesChunkPool {
+mut:
+	chunks []&MeasurementUsedValuesChunk
+	active_arenas int
+	closed bool
+}
+
+fn (mut pool MeasurementUsedValuesChunkPool) take() &MeasurementUsedValuesChunk {
+	if !pool.closed && pool.chunks.len > 0 {
+		return pool.chunks.pop()
+	}
+	return unsafe { &MeasurementUsedValuesChunk(vcalloc(isize(sizeof(MeasurementUsedValuesChunk)))) }
+}
+
+fn (mut pool MeasurementUsedValuesChunkPool) put(chunk &MeasurementUsedValuesChunk) {
+	if pool.closed || pool.chunks.len >= measurement_chunk_pool_capacity {
+		free_measurement_allocation(chunk)
+		return
+	}
+	// This is the same zeroed, scanned storage as vcalloc on first allocation.
+	// Clear every stale GC edge before keeping the inactive chunk in the pool;
+	// allocate() constructs each UsedValues record again before exposing it.
+	unsafe { C.memset(chunk, 0, usize(sizeof(MeasurementUsedValuesChunk))) }
+	pool.chunks << chunk
+}
+
+fn (mut pool MeasurementUsedValuesChunkPool) release() {
+	assert pool.active_arenas == 0
+	pool.closed = true
+	for chunk in pool.chunks {
+		free_measurement_allocation(chunk)
+	}
+	unsafe { pool.chunks.free() }
+	pool.chunks = []&MeasurementUsedValuesChunk{}
+}
+
+fn (mut arena MeasurementUsedValuesArena) begin_pool_lease() {
+	if arena.chunk_pool_ == unsafe { nil } || arena.pool_lease_active_ { return }
+	mut pool := arena.chunk_pool_
+	if pool.closed { return }
+	pool.active_arenas++
+	arena.pool_lease_active_ = true
 }
 
 // Committed geometry needs the same stable, scanned slots as intrinsic probes,
@@ -896,7 +947,12 @@ fn (mut arena MeasurementUsedValuesArena) allocate() &UsedValues {
 		// first use below. A normal struct literal eagerly constructs all sixteen
 		// records before copying them into the chunk, including their array and
 		// optional defaults, which would be overwritten when the slot is used.
-		new_chunk := unsafe { &MeasurementUsedValuesChunk(vcalloc(isize(sizeof(MeasurementUsedValuesChunk)))) }
+		new_chunk := if arena.chunk_pool_ != unsafe { nil } {
+			arena.begin_pool_lease()
+			arena.chunk_pool_.take()
+		} else {
+			unsafe { &MeasurementUsedValuesChunk(vcalloc(isize(sizeof(MeasurementUsedValuesChunk)))) }
+		}
 		arena.chunks << new_chunk
 		new_chunk
 	} else {
@@ -930,10 +986,18 @@ fn (mut arena MeasurementUsedValuesArena) release() {
 	unsafe { arena.inline_end_snapshots.free() }
 	arena.inline_end_snapshots = []&InlineEndSnapshotChunk{}
 	for chunk in arena.chunks {
-		free_measurement_allocation(chunk)
+		if arena.chunk_pool_ != unsafe { nil } {
+			arena.chunk_pool_.put(chunk)
+		} else {
+			free_measurement_allocation(chunk)
+		}
 	}
 	unsafe { arena.chunks.free() }
 	arena.chunks = []&MeasurementUsedValuesChunk{}
+	if arena.pool_lease_active_ {
+		arena.chunk_pool_.active_arenas--
+		arena.pool_lease_active_ = false
+	}
 }
 
 @[heap]
@@ -1043,6 +1107,7 @@ pub mut:
 mut:
 	subgrid_storage_ &LayoutStateSubgridStorage = unsafe { nil }
 	height_dependency_storage_ &LayoutStateHeightDependencyStorage = unsafe { nil }
+	measurement_chunk_pool_ &MeasurementUsedValuesChunkPool = unsafe { nil }
 }
 
 pub fn LayoutState.new() &LayoutState {
@@ -1054,6 +1119,31 @@ pub fn LayoutState.new_for_subtree(subtree_root &NodeWithStyle) &LayoutState {
 		subtree_root: subtree_root
 		used_values_store: UsedValuesPagedStore{
 			measurement_arena: &MeasurementUsedValuesArena{}
+		}
+	}
+}
+
+// Document geometry opts into a pool scoped to this single layout pass.
+fn (mut state LayoutState) enable_measurement_chunk_pool() {
+	assert state.used_values_store.measurement_arena == none
+	assert state.measurement_chunk_pool_ == unsafe { nil }
+	state.measurement_chunk_pool_ = &MeasurementUsedValuesChunkPool{}
+}
+
+fn (mut state LayoutState) release_measurement_chunk_pool() {
+	if state.measurement_chunk_pool_ == unsafe { nil } { return }
+	state.measurement_chunk_pool_.release()
+	state.measurement_chunk_pool_ = unsafe { nil }
+}
+
+fn (mut source LayoutState) new_measurement_for_subtree(subtree_root &NodeWithStyle) &LayoutState {
+	return &LayoutState{
+		subtree_root: subtree_root
+		measurement_chunk_pool_: source.measurement_chunk_pool_
+		used_values_store: UsedValuesPagedStore{
+			measurement_arena: &MeasurementUsedValuesArena{
+				chunk_pool_: source.measurement_chunk_pool_
+			}
 		}
 	}
 }

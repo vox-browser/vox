@@ -804,6 +804,8 @@ fn finish_document_layout(document &dom.Document, root &Node, viewport_width f64
 		root_node: initial_root_placeholder
 	})
 	mut state := LayoutState.new()
+	state.enable_measurement_chunk_pool()
+	defer { state.release_measurement_chunk_pool() }
 	geometry_started := timing_checkpoint
 	layout_viewport(mut state, viewport, viewport_width, viewport_height)
 	timing_checkpoint = layout_timing_checkpoint('      formatting_contexts', timing_checkpoint)
