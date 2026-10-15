@@ -135,19 +135,32 @@ fn test_media_controls_coalesce_scrub_seeks_and_preempt_a_stalled_seek() {
 	assert controls.scrub_seek_preemption_timer_ == none
 }
 
-fn test_media_controls_follow_audio_track_list_additions_and_removals() {
+fn test_media_controls_follow_audio_additions_and_queued_emptied_after_resource_reset() {
 	mut media := HTMLMediaElement.create(none, dom.URL{ value: 'https://example.test/' })
 	mut controls := MediaControls.create(media)
 	assert !controls.had_audio
 
-	media.on_audio_track_added(MediaTrackMetadata{
-		identifier: 42
-		name: 'main'
+	media.set_fetch_hook(fn (_ dom.URL, _ u64) !MediaResourceResponse {
+		return MediaResourceResponse{
+			mime_type: 'audio/mpeg'
+			duration: 120
+			buffered_end: 120
+			audio_tracks: [MediaTrackMetadata{identifier: 42, name: 'main'}]
+		}
 	})
+	media.set_source('/audio.mp3')
+	media.load()!
 	assert controls.had_audio
 	assert controls.volume_percentage == 100
+	run_media_elements_test_tasks(media)
 
-	media.forget_media_resource_specific_tracks()
+	media.set_source(none)
+	media.load()!
+	assert media.audio_tracks().length() == 0
+	assert controls.had_audio && controls.volume_percentage == 100
+	assert media.event_count('emptied') == 0
+	run_media_elements_test_tasks(media)
+	assert media.event_count('emptied') == 1
 	assert !controls.had_audio
 	assert controls.volume_percentage == 0
 }

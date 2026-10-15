@@ -879,6 +879,7 @@ fn media_controls_state_handler(controls &MediaControls, event &dom.Event) bool 
 			mutable_controls.update_placeholder_visibility()
 			mutable_controls.update_timeline()
 			mutable_controls.update_timestamp()
+			mutable_controls.update_volume_and_mute_indicator()
 		}
 		else {}
 	}

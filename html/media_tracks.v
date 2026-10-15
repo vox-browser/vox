@@ -205,17 +205,12 @@ pub fn (mut list AudioTrackList) add_track(track &AudioTrack) {
 }
 
 pub fn (mut list AudioTrackList) remove_all_tracks() {
-	removed_tracks := list.audio_tracks.clone()
-	list.audio_tracks.clear()
-	for track in removed_tracks {
+	for track in list.audio_tracks {
 		mut mutable_track := unsafe { &AudioTrack(track) }
 		mutable_track.set_enabled(false)
 		mutable_track.set_audio_track_list(none)
-		event := TrackEvent.create('removetrack', TrackEventInit{
-			track: TrackEventTrack.from_audio(track)
-		})
-		list.dispatch_event(unsafe { &dom.Event(event) })
 	}
+	list.audio_tracks.clear()
 }
 
 // https://html.spec.whatwg.org/multipage/media.html#dom-audiotracklist-gettrackbyid
@@ -311,6 +306,18 @@ pub struct VideoTrackList {
 	dom.EventTarget
 mut:
 	video_tracks []&VideoTrack
+	media_element_ ?&HTMLMediaElement
+}
+
+pub fn VideoTrackList.create(media_element ?&HTMLMediaElement) &VideoTrackList {
+	return &VideoTrackList{media_element_: media_element}
+}
+
+fn (list &VideoTrackList) update_natural_dimensions() {
+	media := list.media_element_ or { return }
+	if mut video := media.video_element_model_ {
+		video.update_natural_dimensions()
+	}
 }
 
 pub fn (list &VideoTrackList) internal_get_own_property(property_name dom.JSValue) ?&VideoTrack {
@@ -376,6 +383,7 @@ pub fn (mut list VideoTrackList) add_track(track &VideoTrack) {
 	list.video_tracks << track
 	mut mutable_track := unsafe { &VideoTrack(track) }
 	mutable_track.video_track_list = list
+	list.update_natural_dimensions()
 }
 
 pub fn (mut list VideoTrackList) remove_all_tracks() {
@@ -385,6 +393,7 @@ pub fn (mut list VideoTrackList) remove_all_tracks() {
 		mutable_track.set_video_track_list(none)
 	}
 	list.video_tracks.clear()
+	list.update_natural_dimensions()
 }
 
 // https://html.spec.whatwg.org/multipage/media.html#dom-videotracklist-gettrackbyid
