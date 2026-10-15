@@ -3076,6 +3076,77 @@ Evidence: `Build/v/inline-cyclic-max-*`,
 `Build/instructions/github-filename-correctness.run-1.*`, and
 `Build/instructions/chrome-frozen-probe/content-1/`.
 
+## Existing focused-control and viewport-origin integration
+
+Round 32 integrates the already committed focused-control preparation
+`058ba684` and viewport-origin preservation `3235339f` into the frozen round 31
+runtime. It changes only `layout/document_tree_builder.v`; it does not include
+the later filename correction or independent Root/adblock/browser work.
+The five focused input/textarea, selection/caret and scrolled-viewport cases
+pass **16,596 assertions** in each C-O2 Boehm/no-GC configuration.
+
+The generated-C audit permits the two changed layout bodies and two added
+private helpers. Two compiler-emitted RequestClient/RequestSecurityClient
+helpers reorder, with their raw bodies authenticated byte for byte before
+placing them in fixed order. All remaining logic, layouts, resources and native
+arguments match. All 120 common native inputs and 37 frozen quoted includes
+are authenticated. Compiled C SHA256:
+`74b01612be5677044c3532679cbc16ca50332a7fed7cf5a904ff38b163338f12`.
+Durable raw/generated C hashes are in
+`Build/v/instruction-opt32-artifact-archives.json`.
+
+Thirty alternating pairs were fixed before observations, using 30,000 paired
+bootstrap resamples with seed 32, the same frozen helper and fresh copies of the
+unchanged 359-file cache. Both copies use the predeclared SSD scratch directory.
+The endpoint remains `navigation_to_first_document_paint[0]`, viewport 1024×768,
+native C-O2/Boehm with one marker and no prod/prealloc flags.
+
+| Build | Median first-frame retired instructions |
+| --- | ---: |
+| Frozen round 31 | 32,075,423,647.5 |
+| Existing layout fixes integrated | 32,055,542,279.5 |
+
+Observed saving: **19,881,368 (0.062%)**.
+16/30 pairs improve; paired median saving is
+13,437,089.5. The 95% paired percentile interval is
+**-132,106,848 to 762,825,416** instructions. The interval includes zero, so
+repeatable page credit is **0**. All 60 primaries and 60 actual PNGs
+remain retained, with no startup retries or recovered counters. Each first
+interval still has one installation, two geometry passes and one shell paint
+preparation. These fixes do not remove the page's second geometry pass.
+Seven observations contain a later installation, kept separate from the primary.
+
+The observed saving crosses the 5,000,000-instruction broad gate. All six direct
+V harness jobs pass: 31 CSS, 10 SVG and 46 layout cases in both GC modes, 174 executions.
+The focused viewport is exact. All 19 screenshot comparisons pass, 16 exact;
+unchanged differences remain inline-node 13, text-decorations 1,341 and
+canvas-text 1,994. The selected regression runtime and overlays are pinned in
+`Build/v/instruction-opt32-broad-manifest.json`. The inherited receipt description
+"RAM-backed output" is inaccurate; actual broad commands use SSD scratch.
+
+The first native preparation receipt retains a missing control-path error
+before compilation; generated C was retained and compiled successfully without
+regenerating it. Initial C-audit differences and the helper authentication remain
+recorded. The screenshot wrapper initially lacked executable permission, then
+a later actual-page capture exhausted its two AppKit/Metal launch retries.
+Both failed selections remain archived. Resumption retained all six successful
+harnesses, earlier screenshots and the completed reference image, and captured
+only unfinished work. No completed primary was repeated.
+
+`/Users/alex/code/vox2/Build/v/Vox-opt32.app` is an isolated **frozen performance comparison app**.
+Its signature, headless startup and actual GC collections pass with default
+marker 1 and override 2. The native text hash matches the measured executable:
+`ca8891ed26173c13aea41a55c1b2168624a2d45a492093d2c1dcddead24152ae`.
+It retains the old blank filenames and is not the contemporary Root browser.
+The canonical app and user's GUI are preserved. The separate filename-correctness
+image described above restores those labels and receives no performance credit
+from this comparison. Neither image establishes Chrome parity.
+
+Evidence: `Build/instructions/vox-opt32-interleaved-*` and
+`Build/v/instruction-opt32-*`. The GitHub broad baseline resets only after the
+completed batch to 32,055,542,279.5 instructions; additional
+observed savings after this batch are zero.
+
 ## Causes and changes
 
 - The V 0.5.2 compatibility compiler's `-prod` Boehm code repeatedly snapshots
