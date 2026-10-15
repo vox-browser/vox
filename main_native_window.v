@@ -5,6 +5,7 @@ import sokol.sapp
 import time
 
 fn C.native_configure_browser_drawables()
+fn C.native_install_browser_layer_presentation()
 
 // The macOS shell draws directly into its Cocoa view. GG's default lifecycle
 // also creates GPU shaders, pipelines and a FreeType atlas that this renderer
@@ -18,6 +19,7 @@ fn configure_native_browser_context(mut context gg.Context) {
 		// The Cocoa child paints the browser. Its MetalKit parent still starts
 		// before our init callback, so avoid allocating its unused MSAA target.
 		context.window.sample_count = 1
+		C.native_install_browser_layer_presentation()
 		context.window.init_userdata_cb = initialize_native_browser_context
 		context.window.cleanup_userdata_cb = cleanup_native_browser_context
 	}

@@ -5,6 +5,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
+#include "native_layer_presentation_darwin.h"
 
 #ifdef LADYBIRD_V_HAS_FFMPEG
 #include <libavcodec/avcodec.h>
@@ -707,7 +708,7 @@ void native_cache_browser_snapshot(string path_value) {
 				            bitsPerPixel:32];
 			[bitmap setSize:bounds.size];
 		}
-		[view cacheDisplayInRect:bounds toBitmapImageRep:bitmap];
+		native_cache_display_in_bitmap(view, bounds, bitmap);
 		NSBitmapImageRep *encoded_bitmap =
 		    [bitmap bitmapImageRepByConvertingToColorSpace:[NSColorSpace sRGBColorSpace]
 		                                  renderingIntent:NSColorRenderingIntentRelativeColorimetric];
@@ -5028,7 +5029,7 @@ void schedule_native_screenshot(string output_path) {
 			[NSApp terminate:nil];
 			return;
 		}
-		[view cacheDisplayInRect:bounds toBitmapImageRep:bitmap];
+		native_cache_display_in_bitmap(view, bounds, bitmap);
 		// The backing store follows the display profile (usually Display P3 on modern Macs).
 		// Normalize captures to sRGB so pixel comparisons do not report a page-sized color-space
 		// delta against Ladybird's untagged screenshot output.
