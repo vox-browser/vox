@@ -61,6 +61,8 @@ fn install_document_painting_bridge(document &dom.Document, result &DocumentLayo
 fn refresh_document_paint_tree(document &dom.Document, mut result DocumentLayoutResult,
 	viewport_width f64, viewport_height f64) {
 	result.paint_tree_needs_style_update = false
+	result.paint_style_update_requires_full_refresh = false
+	result.paint_style_update_handles.clear()
 	// The renderer snapshot owns the concrete command vector behind Document's
 	// cached DisplayList. Invalidating that vector must invalidate the outer
 	// Document cache too, so record_display_list enters the actual paint path.
@@ -85,6 +87,10 @@ fn refresh_document_paint_tree(document &dom.Document, mut result DocumentLayout
 
 fn refresh_document_paint_tree_if_needed(mut result DocumentLayoutResult) bool {
 	if !result.paint_tree_needs_style_update { return false }
+	if !result.paint_style_update_requires_full_refresh {
+		refresh_local_paint_styles(mut result)
+		return false
+	}
 	viewport := result.document.viewport_rect()
 	refresh_document_paint_tree(result.document, mut result, viewport.width, viewport.height)
 	viewport_refresh_scroll_state(voidptr(&result))

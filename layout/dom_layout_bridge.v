@@ -503,10 +503,13 @@ fn apply_style_to_layout_node(layout_handle voidptr, css_computed_properties_han
 	node := unsafe { &Node(layout_handle) }
 	styled := node.as_node_with_style() or { return }
 	computed := unsafe { &css.ComputedProperties(css_computed_properties_handle) }
+	can_refresh_locally := paint_style_update_can_be_local(node, styled.computed_values(), computed)
 	mut mutable_styled := unsafe { &NodeWithStyle(styled) }
 	mutable_styled.apply_style(computed)
 	if mut result := document_layout_result(node.document()) {
 		result.paint_tree_needs_style_update = true
+		result.paint_style_update_requires_full_refresh = result.paint_style_update_requires_full_refresh || !can_refresh_locally
+		result.paint_style_update_handles[u64(layout_handle)] = true
 	}
 }
 

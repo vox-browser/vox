@@ -60,3 +60,57 @@ fn test_hover_style_refreshes_hit_testing_before_the_next_paint() {
 	assert (document.element_from_point(20, 20) or { panic('missing background hit') }) != link
 	assert link.get_bounding_client_rect().x == 100
 }
+
+fn test_hover_background_and_underline_keep_unrelated_paint_caches() {
+	mut document := html.parse_document('<!doctype html><style>
+		html,body{margin:0}a{display:block;width:200px;text-decoration:none}
+		a:hover{background:#eaecf0}a:hover strong{text-decoration:underline}
+	</style><a id="link" href="#"><strong>Italiano</strong></a>'
+		+ '<svg id="unrelated" width="100" height="100"><path d="M0 0H100V100H0Z" fill="green"/></svg>')
+	_ = layout_document_typed_in_viewport(document, 320, 200)
+	link := document.get_element_by_id('link') or { panic('missing link') }
+	_ = document.record_display_list() or { panic('missing initial paint') }
+	mut result := document_layout_result(document) or { panic('missing layout') }
+	children := result.paint_tree.children.data
+	phase_storage := result.paint_phase_commands.data
+	mut unchanged_bucket := -1
+	for index, bucket in result.paint_phase_commands {
+		if bucket.any(it.kind == 'draw_svg_path') { unchanged_bucket = index; break }
+	}
+	assert unchanged_bucket >= 0
+	svg_commands := result.paint_phase_commands[unchanged_bucket].data
+	for hovered in [true, false, true] {
+		if hovered { document.set_hovered_node(link.as_node()) }
+		else { document.set_hovered_node(none) }
+		document.update_layout(.event_handler_handle_mouse_move)
+		commands := display_list_commands(document.record_display_list() or { panic('missing hover paint') })
+		assert commands.any(it.color == 'rgb(234 236 240)') == hovered
+		assert commands.any(it.kind == 'draw_line') == hovered
+		assert result.paint_tree.children.data == children
+		assert result.paint_phase_commands.data == phase_storage
+		assert result.paint_phase_commands[unchanged_bucket].data == svg_commands
+	}
+	local_dump := (document.record_display_list() or { panic('missing local recording') }).dump()
+	refresh_document_paint_tree(document, mut result, 320, 200)
+	full_dump := (document.record_display_list() or { panic('missing full recording') }).dump()
+	assert local_dump == full_dump
+}
+
+fn test_local_hover_underline_propagates_through_block_descendants() {
+	mut document := html.parse_document('<!doctype html><style>
+		a{display:block;text-decoration:none}strong{display:block}
+		a:hover{text-decoration:underline;background:#eaecf0}
+	</style><a id="link" href="#"><strong>Italiano</strong></a>')
+	_ = layout_document_typed_in_viewport(document, 320, 200)
+	link := document.get_element_by_id('link') or { panic('missing link') }
+	_ = document.record_display_list() or { panic('missing initial recording') }
+	document.set_hovered_node(link.as_node())
+	document.update_layout(.event_handler_handle_mouse_move)
+	local := document.record_display_list() or { panic('missing local recording') }
+	local_dump := local.dump()
+	assert display_list_commands(local).any(it.kind == 'draw_line')
+	mut result := document_layout_result(document) or { panic('missing layout') }
+	refresh_document_paint_tree(document, mut result, 320, 200)
+	full_dump := (document.record_display_list() or { panic('missing full recording') }).dump()
+	assert local_dump == full_dump
+}
