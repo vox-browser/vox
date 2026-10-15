@@ -1380,9 +1380,6 @@ fn (mut element HTMLMediaElement) process_media_response(response MediaResourceR
 		element.update_ready_state()
 	}
 	element.process_media_data(.complete)
-	if element.is_eligible_for_autoplay() && element.is_allowed_to_play() {
-		_ = element.play()
-	}
 }
 
 pub fn (mut element HTMLMediaElement) set_ready_state(state MediaReadyState) {
@@ -1452,6 +1449,22 @@ pub fn (mut element HTMLMediaElement) set_ready_state(state MediaReadyState) {
 			mut media := unsafe { &HTMLMediaElement(element_pointer) }
 			media.fire_event('canplaythrough')
 		})
+		if !element.is_eligible_for_autoplay() {
+			return
+		}
+		if element.is_allowed_to_play() {
+			element.set_paused(false)
+			if element.show_poster_ {
+				element.set_show_poster(false)
+				element.time_marches_on(.normal_playback)
+			}
+			element.queue_a_media_element_task(fn [element_pointer] () {
+				mut media := unsafe { &HTMLMediaElement(element_pointer) }
+				media.fire_event('play')
+			})
+			element.notify_about_playing()
+		}
+		return
 	}
 	if int(state) < int(MediaReadyState.have_future_data) && int(old_state) >= int(MediaReadyState.have_future_data) && !element.paused_ {
 		element.fire_event('waiting')
