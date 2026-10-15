@@ -174,8 +174,44 @@ The initial frozen samples expose native JavaScript API gaps, including missing
 settlement. These rows are diagnostic. Offline analytics POSTs, a missing
 anti-abuse endpoint and an archived Vk API redirect remain disclosed misses.
 The request audit records each replay/failure rather than silently using live
-network data. Result tables and an instruction-target claim remain pending
-validated comparable endpoint runs.
+network data. Completed offline captures now pass the shared content and font
+checks; complete live-site functionality remains unproven.
+
+## Completed-capture results
+
+The following single-run checkpoints use the final immutable archive above.
+They are development measurements, not a repeated-series win over Brave.
+Counts are whole launch through the capture boundary described above.
+
+| Checkpoint | Retired instructions | Content/font gate |
+| --- | ---: | --- |
+| Brave, full uBO including RU list | 46,689,653,685 | Passed |
+| Vox control v3 | 329,336,880,722 | Passed |
+| Vox candidate v3 | 358,818,177,133 | Passed; regression |
+| Vox candidate v4 | 168,170,289,723 | Failed: document still interactive |
+| Vox candidate v6 | 127,377,534,003 | Passed |
+
+Candidate v6 uses executable SHA256
+`cc105727ad0e7d08d12c94336ca6cd4d26e2c1318416dfddace23c626d1338c2`.
+Its 1024 by 656 decoded pixels match the valid native v3 control exactly;
+the same 15 stories, first title and decoded story image remain present.
+Roboto 400, 500 and 700 have parsed typefaces, with new decoded font files
+created during that launch. The uBO engine snapshot and all ten list files
+are unchanged. Source, runtime, archive and observer fingerprints are retained
+with the measurements under `Build/pikabu-instructions*`.
+
+The valid control-to-v6 reduction is 201,959,346,719 instructions (61.32%).
+Candidate v4 receives no savings credit because its document-completion check
+failed. The capture scheduling predicate now waits for actual document
+completion as well as font readiness. Candidate v5 was built with the older
+predicate and was not measured.
+
+The v6 saving triggers the repository's broad regression batch: 135 selected
+CSS/SVG/layout/native cases in each GC mode, the 100 exact upstream AST fixtures,
+production startup and 19 screenshot comparisons. That batch is pending.
+Vox remains above Brave's instruction count. A target claim still requires
+at least five alternating fresh Vox/Brave runs with all gates passing, preserved
+rows and unchanged input/runtime fingerprints.
 
 Focused checks:
 
