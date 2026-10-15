@@ -2381,9 +2381,11 @@ fn apply_decoded_javascript_state(document &dom.Document, state map[string]json2
 				mut target := element_by_bridge_key[target_key] or { continue }
 				if kind == 'compactAttribute' {
 					name := json_string_property(operation, 'name') or { continue }
-					// Replay equal-text track source writes too; the DOM hook
-					// filters content attributes by namespace.
-					if name == 'src' && target.is_html_element() && target.local_name() == 'track' {
+					// Explicit track source and video poster writes run their DOM
+					// hooks even for equal text; preserve the first qualified Attr.
+					if target.is_html_element()
+						&& ((name == 'src' && target.local_name() == 'track')
+							|| (name == 'poster' && target.local_name() == 'video')) {
 						if value := json_string_property(operation, 'value') {
 							if attribute := target.get_attribute_node(name) {
 								target.set_attribute_value_ns(attribute.local_name(), value,
