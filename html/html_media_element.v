@@ -1403,6 +1403,9 @@ pub fn (mut element HTMLMediaElement) set_ready_state(state MediaReadyState) {
 	if mut video := element.video_element_model_ {
 		video.update_natural_dimensions()
 	}
+	if element.network_state_ == .empty {
+		return
+	}
 	// Metadata notification belongs to the readiness transition, including
 	// MediaSource initialization, rather than to the synchronous fetch adapter.
 	if element.network_state_ != .empty && old_state == .have_nothing
