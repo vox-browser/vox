@@ -356,7 +356,7 @@ pub fn html_media_element_for_dom_element(element &dom.Element) ?&HTMLMediaEleme
 				element.document().base_url())
 			model.set_source(element.get_attribute('src'))
 			model.crossorigin_ = cors_setting_attribute_from_keyword(element.get_attribute('crossorigin'))
-			model.preload_ = element.get_attribute('preload')
+			model.preload_ = element.get_attribute_ns(none, 'preload')
 			model.autoplay_ = element.has_attribute_ns(none, 'autoplay')
 			audio.media_element_model_ = model
 		}
@@ -369,7 +369,7 @@ pub fn html_media_element_for_dom_element(element &dom.Element) ?&HTMLMediaEleme
 				element.document().base_url())
 			model.set_source(element.get_attribute('src'))
 			model.crossorigin_ = cors_setting_attribute_from_keyword(element.get_attribute('crossorigin'))
-			model.preload_ = element.get_attribute('preload')
+			model.preload_ = element.get_attribute_ns(none, 'preload')
 			model.autoplay_ = element.has_attribute_ns(none, 'autoplay')
 			video.media_element_model_ = model
 		}
@@ -895,7 +895,7 @@ fn (mut element HTMLMediaElement) resource_attribute_changed() {
 
 fn (element &HTMLMediaElement) raw_preload() ?string {
 	if html_element := element.associated_element_ {
-		return unsafe { &dom.Element(html_element) }.get_attribute('preload')
+		return unsafe { &dom.Element(html_element) }.get_attribute_ns(none, 'preload')
 	}
 	return element.preload_
 }
@@ -917,7 +917,7 @@ pub fn (mut element HTMLMediaElement) set_preload(value ?string) {
 		if raw := value {
 			dom_element.set_attribute_value('preload', raw)
 		} else {
-			dom_element.remove_attribute('preload')
+			dom_element.remove_attribute_ns(none, 'preload')
 		}
 	}
 	element.resource_attribute_changed()
