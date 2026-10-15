@@ -23,7 +23,7 @@ fi
 
 repo_dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
 build_dir="$repo_dir/Build/v"
-bundle_dir="$build_dir/Ladybird.app"
+bundle_dir="$build_dir/Vox.app"
 binary_dir="$bundle_dir/Contents/MacOS"
 resources_dir="$bundle_dir/Contents/Resources"
 
@@ -68,6 +68,7 @@ esac
 
 mkdir -p "$binary_dir" "$resources_dir"
 cp "$repo_dir/packaging/Info.plist" "$bundle_dir/Contents/Info.plist"
+cp "$repo_dir/packaging/Vox.icns" "$resources_dir/Vox.icns"
 snapshot_resource_tmp=$(mktemp "$resources_dir/.adblock-snapshot.XXXXXX")
 cp "$repo_dir/adblock/engine.snapshot.bin" "$snapshot_resource_tmp"
 chmod 644 "$snapshot_resource_tmp"
@@ -154,17 +155,17 @@ if [ -n "${LADYBIRD_V_PROFILE:-}" ]; then
     # that would rewrite the compatibility compiler's own C prototypes.
     extra_cflags="$extra_cflags -D_FORTIFY_SOURCE=0 -include stdio.h"
 fi
-echo "Building Ladybird V with: $* -cflags $extra_cflags"
+echo "Building Vox with: $* -cflags $extra_cflags"
 # Root browser features are split across main.v and companion module files.
 cd "$repo_dir"
 if [ -n "$extra_ldflags" ]; then
     "$v_compiler" "$@" \
         -cflags "$extra_cflags" -ldflags "$extra_ldflags" \
-        -o "$binary_dir/Ladybird" .
+        -o "$binary_dir/Vox" .
 else
     "$v_compiler" "$@" \
         -cflags "$extra_cflags" \
-        -o "$binary_dir/Ladybird" .
+        -o "$binary_dir/Vox" .
 fi
 
 if [ -n "$bridge_library" ]; then
@@ -183,5 +184,5 @@ if command -v codesign >/dev/null 2>&1; then
     codesign --force --sign - "$bundle_dir" >/dev/null
 fi
 
-echo "Built production Ladybird V app: $bundle_dir"
+echo "Built production Vox app: $bundle_dir"
 echo "Run: open '$bundle_dir'"

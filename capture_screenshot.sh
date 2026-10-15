@@ -2,7 +2,7 @@
 set -eu
 
 repo_dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
-browser="$repo_dir/Build/v/Ladybird.app/Contents/MacOS/Ladybird"
+browser="$repo_dir/Build/v/Vox.app/Contents/MacOS/Vox"
 
 if [ "$#" -lt 2 ] || [ "$#" -gt 4 ]; then
     echo "usage: capture_screenshot.sh SOURCE OUTPUT.png [WIDTH [HEIGHT]]" >&2
@@ -18,8 +18,12 @@ case "$width:$height" in
 esac
 
 if [ ! -x "$browser" ] \
-    || [ ! -f "$(dirname "$browser")/../Resources/adblock.snapshot.bin" ] \
+    || [ ! -f "$repo_dir/Build/v/Vox.app/Contents/Resources/Vox.icns" ] \
+    || [ ! -f "$repo_dir/Build/v/Vox.app/Contents/Resources/adblock.snapshot.bin" ] \
     || [ "$repo_dir/adblock/engine.snapshot.bin" -nt "$browser" ] \
+    || [ "$repo_dir/packaging/Info.plist" -nt "$browser" ] \
+    || [ "$repo_dir/packaging/Vox.icns" -nt "$browser" ] \
+    || [ "$repo_dir/build-prod-browser.sh" -nt "$browser" ] \
     || [ "$repo_dir/tools/prepare_http_compat.py" -nt "$browser" ] \
     || find "$repo_dir" \
     \( -path "$repo_dir/Build" -o -path "$repo_dir/.git" \) -prune -o \
