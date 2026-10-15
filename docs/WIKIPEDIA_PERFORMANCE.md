@@ -1,5 +1,7 @@
 # Wikipedia rendering performance
 
+The later [completed-page instruction benchmark](WIKIPEDIA_INSTRUCTIONS.md) measures **29.817% fewer launch-to-capture instructions than Chrome** with full JavaScript and filtering enabled. Its source, endpoint, memory tradeoff and verification record are separate from the historical measurements below.
+
 The fixes remove **89.52% of install-to-frame instructions** from the exact repeated-SVG workload while preserving every pixel. Observed warmed Wikipedia first-frame medians are 1,489 ms before and 831 ms after; the final page also restores the globe, wordmark, and localized text that were missing from the initial frame. These elapsed times are diagnostic under a heavily loaded machine. Whole-page native instructions are 8.24% higher across the combined builds, so this is not a demonstrated whole-page CPU reduction. Frozen-page launch through capture is 1,567 ms in Vox versus 1,444 ms in Chrome, with different endpoints. **Chrome page-rendering parity remains unproven.**
 
 ## Measurement record
