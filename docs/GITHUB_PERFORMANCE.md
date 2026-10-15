@@ -3652,6 +3652,36 @@ raw log, real exits, frozen-cache/helper identity and interval reconstruction
 are authenticated in `Build/v/instruction-gc40-final-audit.json` and
 `Build/v/instruction-gc40-instrumentation-audit.json`. Performance credit is zero.
 
+## Current allocation requests and sampled native stacks
+
+A second frozen round 39 diagnostic intercepts generated-C `GC_MALLOC`,
+`GC_MALLOC_ATOMIC` and `GC_REALLOC` requests on the navigation owner thread,
+from navigation entry through the first native frame report. It records
+**14,322,522 requests for 2,545,818,467 bytes**. Requested
+bytes include reallocations that may grow in place; they are not live memory,
+all process allocations, or retired instructions. Native libraries and other
+threads are outside request interception.
+
+A mixed allocation sequence selects approximately one in 8,192 requests for a
+native stack, retaining **1,748 raw samples** without
+extrapolation or dropped samples. The largest sampled application allocation
+site by requested bytes is glyph-array growth while merging text runs. Other
+sampled sites include initial property arrays, selectors, measurement records
+and inline item storage. Samples guide the next experiment and provide no
+performance credit. Native stacks reflect C-O2 inlining and tail calls; symbols
+are resolved against the retained native symbol table and actual image base.
+
+Native build, signing, startup, observer and browser exit zero. Removing only
+the request macros, diagnostic storage and two wrappers restores the original
+normal C byte-for-byte. All 120 native inputs and the frozen cache/helper remain
+authenticated. Two earlier preparation failures are retained: a misplaced
+header caused native frontend errors, and an overly specific include assertion
+stopped before compilation. Neither launched a measured browser. The initial
+failed native command's exact terminal code was not retained and is unknown;
+no pass credit is assigned to it. Evidence and archive hashes are in
+`Build/v/instruction-alloc40-final-audit.json`,
+`Build/v/instruction-alloc40-instrumentation-audit.json` and the retained raw log.
+
 ## Causes and changes
 
 - The V 0.5.2 compatibility compiler's `-prod` Boehm code repeatedly snapshots
