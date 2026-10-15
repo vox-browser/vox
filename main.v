@@ -950,7 +950,9 @@ fn fetch_browser_resource(reference string, base string, source_url string, requ
 			if replacement := final_filter.replacement {
 				return PreloadedResource{url: resolved, body: replacement.body, source_url: owner_url, final_url: final_url, request_type: request_type, adblock_replacement: true}
 			}
-			if final_filter.url == final_url {
+			if final_filter.url == final_url && final_url == filtered.url {
+				// Only the final response is retained. Re-fetch redirects so an
+				// intermediate response-header condition cannot bypass filtering.
 				// Older cache entries have no header provenance. Re-fetch them;
 				// assuming an empty header list could expose a header-blocked ad.
 				if encoded_headers := read_browser_cache_entry(path + '.headers.json') {
@@ -1007,6 +1009,10 @@ fn filter_preloaded_resource(resource PreloadedResource, source_url string, requ
 			return PreloadedResource{url: resource.url, body: replacement.body, source_url: source_url, final_url: resource.final_url, request_type: request_type, adblock_replacement: true}
 		}
 		if final_filter.url != resource.final_url { return fetch_browser_resource(resource.url, '', source_url, request_type) }
+	}
+	if resource.final_url != '' && resource.final_url != filtered.url {
+		// Replaying a redirect requires every hop, including its headers.
+		return fetch_browser_resource(resource.url, '', source_url, request_type)
 	}
 	filter_browser_response_headers(adblock.Request{
 		url: if resource.final_url == '' { resource.url } else { resource.final_url }

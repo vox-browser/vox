@@ -1,6 +1,7 @@
 module main
 
 import adblock
+import net
 import os
 import time
 
@@ -42,4 +43,49 @@ fn test_native_preloaded_response_headers_block_before_payload_consumption() {
 		return
 	}
 	assert false, 'Preloaded bytes bypassed RU AdList response-header filtering'
+}
+
+fn serve_adblock_redirect_provenance_refresh(mut listener net.TcpListener) []string {
+	mut requests := []string{}
+	for _ in 0 .. 2 {
+		mut socket := listener.accept() or { panic(err) }
+		socket.set_read_timeout(2 * time.second)
+		mut bytes := []u8{len: 4096}
+		length := socket.read(mut bytes) or { panic(err) }
+		requests << bytes[..length].bytestr().all_before('\r\n')
+		socket.write_string('HTTP/1.1 200 OK\r\nContent-Length: 5\r\nConnection: close\r\n\r\nfresh') or { panic(err) }
+		socket.close() or {}
+	}
+	return requests
+}
+
+fn test_native_redirected_cache_and_preload_require_the_intermediate_header_provenance() {
+	previous := os.getenv_opt('LADYBIRD_CACHE_DIR')
+	cache := os.join_path(os.temp_dir(), 'vox-redirect-headers-${os.getpid()}-${time.sys_mono_now()}')
+	os.setenv('LADYBIRD_CACHE_DIR', cache, true)
+	defer {
+		if value := previous { os.setenv('LADYBIRD_CACHE_DIR', value, true) }
+		else { os.unsetenv('LADYBIRD_CACHE_DIR') }
+		os.rmdir_all(cache) or {}
+	}
+	mut listener := net.listen_tcp(.ip, '127.0.0.1:0')!
+	listener.set_accept_timeout(5 * time.second)
+	defer { listener.close() or {} }
+	server := spawn serve_adblock_redirect_provenance_refresh(mut listener)
+	base := 'http://${listener.addr()!}'
+	source := 'https://pikabu.ru/'
+	// The final headers cannot prove that an intermediate redirect's headers
+	// would still be allowed for this consumer, even with the same URL/type.
+	cache_resource_response_headers('${base}/cached', '${base}/end', 'old redirect payload', [])
+	assert fetch_browser_resource('${base}/cached', '', source, 'xmlhttprequest')!.body == 'fresh'
+	preloaded := PreloadedResource{
+		url: '${base}/preloaded'
+		final_url: '${base}/end'
+		source_url: source
+		request_type: 'xmlhttprequest'
+		body: 'old preloaded redirect payload'
+		response_headers: []
+	}
+	assert filter_preloaded_resource(preloaded, source, 'xmlhttprequest')!.body == 'fresh'
+	assert server.wait() == ['GET /cached HTTP/1.1', 'GET /preloaded HTTP/1.1']
 }
