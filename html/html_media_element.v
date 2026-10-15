@@ -460,6 +460,9 @@ pub fn (mut element HTMLMediaElement) adopted_from(old_document &dom.Document) {
 	if was_delaying {
 		element.delaying_load_event_ = dom.DocumentLoadEventDelayer.new(mut new_document)
 	}
+	if mut video := element.video_element_model_ {
+		video.retarget_poster_load_event_delay()
+	}
 
 	// Resource-selection tasks queued against an inactive document cannot run.
 	// Drop their stale task-source entries and continue in the adopting document

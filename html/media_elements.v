@@ -44,6 +44,7 @@ mut:
 	poster_fetch_hook           ?PosterFrameFetchHook
 	paint_facts_update_hook     ?VideoPaintFactsUpdateHook
 	poster_fetch_generation_    u64
+	poster_load_event_delayer_  ?dom.DocumentLoadEventDelayer
 }
 
 pub fn HTMLVideoElementModel.create(media &HTMLMediaElement, base_url dom.URL) &HTMLVideoElementModel {
@@ -123,11 +124,28 @@ fn (video &HTMLVideoElementModel) parse_poster_url(poster string) ?dom.URL {
 	return dom.dom_url_parse(poster, video.base_url_, 'UTF-8')
 }
 
+fn (mut video HTMLVideoElementModel) finish_delaying_poster_load_event() {
+	if mut delayer := video.poster_load_event_delayer_ {
+		delayer.finish()
+		video.poster_load_event_delayer_ = none
+	}
+}
+
+fn (mut video HTMLVideoElementModel) retarget_poster_load_event_delay() {
+	if video.poster_load_event_delayer_ == none {
+		return
+	}
+	video.finish_delaying_poster_load_event()
+	mut document := video.media.document() or { return }
+	video.poster_load_event_delayer_ = dom.DocumentLoadEventDelayer.new(mut document)
+}
+
 pub fn (mut video HTMLVideoElementModel) determine_element_poster_frame() {
 	// A new invocation supersedes the previous algorithm, even for the same
 	// URL or a clearing value. The synchronous host fetch can reenter it.
 	video.poster_fetch_generation_++
 	generation := video.poster_fetch_generation_
+	video.finish_delaying_poster_load_event()
 	poster := video.poster_ or {
 		video.poster_frame_ = none
 		video.update_natural_dimensions()
@@ -149,12 +167,16 @@ pub fn (mut video HTMLVideoElementModel) determine_element_poster_frame() {
 		video.update_natural_dimensions()
 		return
 	}
+	if mut document := video.media.document() {
+		video.poster_load_event_delayer_ = dom.DocumentLoadEventDelayer.new(mut document)
+	}
 
 	frame := fetch(url) or {
 		if generation != video.poster_fetch_generation_ {
 			return
 		}
 		video.poster_frame_ = none
+		video.finish_delaying_poster_load_event()
 		video.update_natural_dimensions()
 		return
 	}
@@ -162,6 +184,7 @@ pub fn (mut video HTMLVideoElementModel) determine_element_poster_frame() {
 		return
 	}
 	video.poster_frame_ = frame
+	video.finish_delaying_poster_load_event()
 	video.update_natural_dimensions()
 }
 
