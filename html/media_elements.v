@@ -280,7 +280,7 @@ pub fn (video &HTMLVideoElementModel) current_representation() VideoRepresentati
 	if video.media.ready_state() == .have_nothing || video.media.video_tracks().length() == 0 {
 		return if video.poster_frame_ != none { .poster_frame } else { .transparent_black }
 	}
-	if video.media.paused() && video.media.current_time() == 0 && video.media.show_poster() {
+	if video.media.paused() && video.media.current_playback_position() == 0 && video.media.show_poster() {
 		return if video.poster_frame_ != none { .poster_frame } else { .first_video_frame }
 	}
 	return .video_frame
