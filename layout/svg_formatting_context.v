@@ -1126,7 +1126,7 @@ fn (mut context SVGFormattingContext) layout_container_element(container &Node) 
 			height: child_state.content_height().to_double()
 		}
 		if child_element := svg_element_for_layout_node(child) {
-			child_rect = svg.element_transform(svg_element_model(child_element)).map_rect(child_rect)
+			child_rect = svg_element_attribute_transform(child_element).map_rect(child_rect)
 		}
 		bounds = if current := bounds { union_svg_rect(current, child_rect) } else { child_rect }
 	}

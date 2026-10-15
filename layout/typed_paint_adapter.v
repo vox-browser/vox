@@ -153,7 +153,7 @@ fn svg_path_transform_to_page(node &Node, state &LayoutState) svg.AffineTransfor
 		if part_used.has_computed_svg_transforms() {
 			transform = transform.multiply(part_used.svg_local_transform())
 		} else if element := svg_element_for_layout_node(part) {
-			transform = transform.multiply(svg.element_transform(svg_element_model(element)))
+			transform = transform.multiply(svg_element_attribute_transform(element))
 		}
 		if viewport_transform := part_used.svg_viewport_transform() {
 			if index != outermost_viewport_index {
@@ -193,7 +193,7 @@ fn svg_box_visual_bounds_to_page(node &Node, state &LayoutState, used &UsedValue
 		if part_used.has_computed_svg_transforms() {
 			transform = transform.multiply(part_used.svg_local_transform())
 		} else if element := svg_element_for_layout_node(part) {
-			transform = transform.multiply(svg.element_transform(svg_element_model(element)))
+			transform = transform.multiply(svg_element_attribute_transform(element))
 		}
 		if viewport_transform := part_used.svg_viewport_transform() {
 			if index != outermost_viewport_index {
@@ -2305,7 +2305,7 @@ fn resolve_svg_pattern_paint_style(node &Node, state &LayoutState, paint css.SVG
 	inverse_target := target_affine.inverse() or { return none }
 	target_styled := node.as_node_with_style() or { return none }
 	target_used := state.try_get(target_styled) or { return none }
-	resource_transform := target_used.svg_transform().multiply(svg.element_transform(svg_element_model(content_element)))
+	resource_transform := target_used.svg_transform().multiply(svg_element_attribute_transform(content_element))
 	mut collection := SVGMaskPaintCollection{}
 	collect_svg_mask_paint_operations(resource, state, resource_transform, true, false, true,
 		mut collection)
@@ -2958,7 +2958,7 @@ fn svg_url_clip_path_for_box(node &Node, state &LayoutState,
 	}
 	clip_box := resource or { return none }
 	clip_element := svg_element_for_layout_node(clip_box) or { return none }
-	resource_transform := target_used.svg_transform().multiply(svg.element_transform(svg_element_model(clip_element)))
+	resource_transform := target_used.svg_transform().multiply(svg_element_attribute_transform(clip_element))
 	object_bounding_box_units := svg.parse_units(clip_element.get_attribute_value('clipPathUnits')) or {
 		svg.Units.user_space_on_use
 	} == .object_bounding_box
@@ -3267,7 +3267,7 @@ fn svg_url_mask_for_box(node &Node, state &LayoutState,
 	mask_styled := mask_box.as_node_with_style() or { return none }
 	_ = state.try_get(mask_styled) or { return none }
 	mask_element := svg_element_for_layout_node(mask_box) or { return none }
-	resource_transform := target_used.svg_transform().multiply(svg.element_transform(svg_element_model(mask_element)))
+	resource_transform := target_used.svg_transform().multiply(svg_element_attribute_transform(mask_element))
 	object_bounding_box_units := svg.parse_units(mask_element.get_attribute_value('maskContentUnits')) or {
 		svg.Units.user_space_on_use
 	} == .object_bounding_box
