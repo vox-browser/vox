@@ -10,3 +10,12 @@
 # Generated full-uBO snapshot metadata (the bundled gzip assets are tracked)
 /tools/adblock/generated-defaults.js
 /tools/adblock/snapshot-layout.json
+
+# Local metadata, compiled binaries, captured pages and build snapshots
+.DS_Store
+/1.tmp
+/vox2
+/tools/pixel_diff
+/march-build.app/
+/uk.html
+/pikabu_compositor*_production_snapshot.sh
