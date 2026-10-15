@@ -3632,16 +3632,13 @@ fn matches_attribute(attribute SelectorAttribute, style_sheet_for_rule ?&CSSStyl
 		}
 	}
 
-	for attr in matching_attributes(attribute, style_sheet_for_rule, element) {
-		if matches_single_attribute(attribute, attr, case_sensitivity) {
-			return true
-		}
-	}
-	return false
+	return matches_attribute_in_namespace(attribute, style_sheet_for_rule, element,
+		case_sensitivity)
 }
 
-fn matching_attributes(attribute_selector SelectorAttribute, style_sheet_for_rule ?&CSSStyleSheet, element &dom.Element) []&dom.Attr_ {
-	mut attributes := []&dom.Attr_{}
+fn matches_attribute_in_namespace(attribute_selector SelectorAttribute,
+	style_sheet_for_rule ?&CSSStyleSheet, element &dom.Element,
+	case_sensitivity SelectorCaseSensitivity) bool {
 	qualified_name := attribute_selector.qualified_name
 	attribute_name := qualified_name.name.name
 
@@ -3650,7 +3647,7 @@ fn matching_attributes(attribute_selector SelectorAttribute, style_sheet_for_rul
 			// "In keeping with the Namespaces in the XML recommendation, default namespaces do not apply to attributes,
 			//  therefore attribute selectors without a namespace component apply only to attributes that have no namespace (equivalent to "|attr")"
 			if attribute := element.get_attribute_node(attribute_name) {
-				attributes << attribute
+				return matches_single_attribute(attribute_selector, attribute, case_sensitivity)
 			}
 		}
 		.any {
@@ -3671,24 +3668,24 @@ fn matching_attributes(attribute_selector SelectorAttribute, style_sheet_for_rul
 					} else {
 						attr.local_name_ == attribute_name
 					}
-					if matches {
-						attributes << attr
+					if matches && matches_single_attribute(attribute_selector, attr, case_sensitivity) {
+						return true
 					}
 				}
 			}
 		}
 		.named {
-			sheet := style_sheet_for_rule or { return attributes }
+			sheet := style_sheet_for_rule or { return false }
 			selector_namespace := sheet.namespace_uri(qualified_name.namespace_) or {
-				return attributes
+				return false
 			}
 			if attribute := element.get_attribute_node_ns(selector_namespace, attribute_name) {
-				attributes << attribute
+				return matches_single_attribute(attribute_selector, attribute, case_sensitivity)
 			}
 		}
 	}
 
-	return attributes
+	return false
 }
 
 fn matches_single_attribute(attribute_selector SelectorAttribute, attribute &dom.Attr_, case_sensitivity SelectorCaseSensitivity) bool {
