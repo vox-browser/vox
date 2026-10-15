@@ -1432,6 +1432,13 @@ evidence](docs/translation-audit/NATIVE_MEDIA_WHEEL_RAW_HANDLER.md).
   with repeatable page credit 0.
   Broad verification: deferred below the observed 5,000,000-instruction gate.
   The focused viewport is exact; Chrome parity remains open.
+  Invalidation-union key reuse `48f50ae1` passes 498 focused assertions
+  per configuration; complete fresh unions use 11.71% fewer instructions.
+  Its page cohort is incomplete: four primaries are retained, then the unchanged
+  control exhausts three pre-parse startup attempts. No primary is rerun,
+  no page median or confidence interval is claimed, and page credit is zero.
+  The focused viewport is exact. Broad verification is deferred; the last broad
+  baseline remains `e4f2da02`. Chrome parity remains open.
 - Outside instruction-count optimization, run broad regression suites once per
   ten completed fixes, not after every fix.
   Broad suites include full translation/package test batches, the full LibJS AST

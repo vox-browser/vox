@@ -3879,6 +3879,84 @@ Chrome parity remains unestablished.
 Evidence: `Build/instructions/vox-opt42-interleaved-*` and
 `Build/v/instruction-opt42-*`.
 
+## Reuse serialized keys while unioning invalidation sets
+
+Feature `48f50ae1` unions the source's existing keyed properties directly.
+Flags still combine by OR, duplicates retain the first stored payload, and new
+properties retain their original insertion order. Each result keeps independent
+map storage. Individual property insertion, serialized key syntax, selector
+collection and invalidation-plan registration are unchanged. The generated key
+iterator still clones each string; this removes repeated key formatting rather
+than eliminating every string allocation.
+
+The common harness passes **498 assertions across 16 cases** (15 functional
+plus an inactive diagnostic) in before/final Boehm and final no-GC C-O2 builds.
+It retains ten scope-invalidation cases and the two membership cases, including
+a 1,536-feature union. Three new cases cover mixed feature ordering, both flags,
+repeated and self unions, empty input, first-payload preservation, independent
+source/result mutations and forced collection. The initial preparation looked
+for tests omitted from the runtime snapshot; it stopped before tests or browser
+observations. The unchanged Root fixtures are retained in the common harness.
+
+Three fixed alternating local pairs execute **4,096 complete fresh unions**,
+each with two partially overlapping mixed-feature inputs. Median retired
+instructions change from **348,527,144 to 307,704,284**
+(-11.71%), with all three pairs improving and checksum
+204,800 in all six observations. Input setup, eight warmups, expected result
+and forced collection precede the counter; final assertions follow it. The
+result map is freshly allocated inside each measured union. This is local
+evidence with no separate page credit.
+
+Full-process C-O1/Boehm profiles run the entire common harness and active probe
+without filters or resets. Union calls remain **10,541**
+in both builds. Serialized-key calls fall **315,111
+to 40,711**, and individual insertion calls fall
+**301,672 to 27,272**.
+These call counts are separate from hardware instruction measurements.
+
+The strict generated-C audit permits only
+`css__InvalidationSet_include_all_from` to change. All other executable logic,
+layouts, key formatting, resources and GC setup match after established compiler
+identities, exact assertion-line mapping and frozen include paths. Four helpers
+may reorder only with identical raw bodies. All 120 native inputs, 37 quoted
+includes and native C-O2 arguments remain authenticated. The first audit used
+the wrong native map-insertion spelling; its failed assertion is preserved.
+The corrected audit authenticates the exact `map_get_and_set` and existing key
+clone without widening the allowed function scope. Compiled C SHA256:
+`43c46db4d885368846b176914550de7b39f67ce61eed1bdb91b6a810f1165d62`.
+Durable focused, normal and profile C archive hashes are retained in
+`instruction-opt43-artifact-archives.json`.
+
+
+The predeclared 30-pair cohort stopped at its startup-attempt limit. Both
+variants completed pairs 1 and 2; all four original primaries and four 1024×768
+PNGs remain authenticated. The unchanged round 42 control then failed before
+parsing at pair 3 on all three allowed attempts. Each original observer reported
+actual browser exit **-5**; all three failed logs and both retry receipts remain.
+No completed primary was rerun or discarded, no fourth startup was attempted,
+and the cohort was not extended. The failed benchmark result remains exit 1.
+Dependent full-cohort driver failures are retained separately.
+
+This is **an incomplete cohort**, with no whole-page median, paired confidence
+interval or page-performance claim. Repeatable page credit is **0**. No partial
+median is used to trigger or reset broad validation. The last broad baseline
+remains round 39, and the latest completed measured attempt remains round 42.
+
+Independent validation compares the focused nested-selector viewport exactly.
+The four retained primaries each have one installation, two geometry preparations
+and one paint before the endpoint; no later refresh occurred. Both regular
+binaries use the same cache and helper hashes. Broad suites and the 19-case
+screenshot batch are deferred because there is no completed matching saving.
+The isolated signed artifact is `/Users/alex/code/vox2/Build/v/Vox-opt43.app`. Its native text matches
+the candidate, signatures and startup pass, and real collections pass with
+default marker 1 and override 2. The canonical app is preserved. This app
+contains frozen prior optimizations and the union change; independent Root
+changes receive no performance or regression credit. Chrome parity remains open.
+
+Evidence: `Build/instructions/vox-opt43-interleaved-*`,
+`Build/v/instruction-opt43-incomplete-cohort/` and
+`Build/v/instruction-opt43-*`.
+
 ## Causes and changes
 
 - The V 0.5.2 compatibility compiler's `-prod` Boehm code repeatedly snapshots
