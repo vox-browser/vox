@@ -76,7 +76,7 @@ fn refresh_browser_adblock(document &dom.Document, runtime &browserjs.Runtime, m
 		if procedural_css != '' {
 			state := runtime.evaluate_host('__ladybirdFinalize()') or { '' }
 			if state != '' {
-				apply_javascript_state(document, state, runtime.canvas_elements_for_binding(), mut messages)
+				apply_javascript_runtime_state(document, state, runtime, mut messages)
 			}
 		}
 	}
