@@ -540,7 +540,8 @@ fn html_track_element_content_attribute_changed(element &dom.HTMLTrackElement, n
 		'srclang' { model.set_srclang(value or { '' }) }
 		'src' {
 			if source := value {
-				model.base_url_ = unsafe { &dom.Element(element) }.document().base_url()
+				mut document := unsafe { &dom.Element(element) }.document()
+				model.base_url_ = document.base_url()
 				model.set_src(source)
 			}
 		}
