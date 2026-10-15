@@ -852,6 +852,15 @@ mut:
 	chunks []&MeasurementUsedValuesChunk
 }
 
+// Committed geometry needs the same stable, scanned slots as intrinsic probes,
+// but its pointers can escape into paintables. Keep these chunks GC-owned for
+// their full lifetime; only the separate measurement arena is explicitly freed.
+@[heap]
+struct RetainedUsedValuesArena {
+mut:
+	storage MeasurementUsedValuesArena
+}
+
 fn (mut arena MeasurementUsedValuesArena) allocate() &UsedValues {
 	mut chunk := if arena.chunks.len == 0
 		|| arena.chunks.last().used == measurement_arena_chunk_size {
@@ -898,6 +907,7 @@ struct UsedValuesPagedStore {
 mut:
 	pages []&UsedValuesPage
 	measurement_arena ?&MeasurementUsedValuesArena
+	retained_arena &RetainedUsedValuesArena = unsafe { nil }
 }
 
 fn (mut store UsedValuesPagedStore) ensure_capacity(count u32) {
@@ -936,7 +946,10 @@ fn (mut store UsedValuesPagedStore) allocate(index u32) &UsedValues {
 	entry := if mut arena := store.measurement_arena {
 		arena.allocate()
 	} else {
-		&UsedValues{}
+		if store.retained_arena == unsafe { nil } {
+			store.retained_arena = &RetainedUsedValuesArena{}
+		}
+		store.retained_arena.storage.allocate()
 	}
 	page.entries[int(index & layout_state_page_mask)] = voidptr(entry)
 	return entry
