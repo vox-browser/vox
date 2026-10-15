@@ -4068,11 +4068,41 @@ pub fn (mut c ComputedProperties) set_vertical_align_for_anonymous_table_cell(va
 	c.set_property_without_modifying_flags(.vertical_align, dom_style_value_from_value_logic(StyleValue(KeywordStyleValue.create(keyword))))
 }
 
+fn computed_font_setting_is_normal(value &dom.StyleValue) bool {
+	if value.css_value_handle != unsafe { nil } {
+		typed := unsafe { &TypedStyleValueBox(value.css_value_handle) }
+		return typed.value.to_keyword() == .normal
+	}
+	text := value.css_text
+	mut first := 0
+	mut end := text.len
+	for first < end && text[first] in [` `, `\n`, `\t`, `\v`, `\f`, `\r`] { first++ }
+	for end > first && text[end - 1] in [` `, `\n`, `\t`, `\v`, `\f`, `\r`] { end-- }
+	if end - first != 6 { return false }
+	for i, expected in 'normal' {
+		if (text[first + i] | u8(0x20)) != expected { return false }
+	}
+	return true
+}
+
+// Build the final u32 settings directly. The public u8 map getter remains an
+// independent snapshot, including its original narrowing conversion semantics.
+fn (c &ComputedProperties) copy_font_feature_settings_into(mut settings map[string]u32) {
+	value := c.property(.font_feature_settings, .yes) or { return }
+	if computed_font_setting_is_normal(value) { return }
+	parsed := style_value_logic_from_dom(.font_feature_settings, value) or { return }
+	if parsed is StyleValueList {
+		for entry in parsed.values() {
+			if entry is OpenTypeTaggedStyleValue {
+				settings[entry.tag()] = u32(u8(int_from_style_value(entry.value())))
+			}
+		}
+	}
+}
+
 pub fn (c &ComputedProperties) font_feature_data() FontFeatureData {
 	mut settings := map[string]u32{}
-	for tag, value in c.font_feature_settings() {
-		settings[tag] = u32(value)
-	}
+	c.copy_font_feature_settings_into(mut settings)
 	return FontFeatureData{
 		font_variant_alternates: c.font_variant_alternates()
 		font_variant_caps: c.font_variant_caps()

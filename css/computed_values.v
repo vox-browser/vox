@@ -431,6 +431,20 @@ pub fn resolve_computed_values_for_document(style &ComputedProperties, document 
 	return values
 }
 
+// The resolved property includes animation/transition and important precedence.
+// A normal value clears previous settings without creating a temporary empty map.
+fn apply_resolved_font_variation_settings(style &ComputedProperties, mut values MutableComputedValues) {
+	value := style.property(.font_variation_settings, .yes) or {
+		values.font_variation_storage_ = unsafe { nil }
+		return
+	}
+	if computed_font_setting_is_normal(value) {
+		values.font_variation_storage_ = unsafe { nil }
+		return
+	}
+	values.set_font_variation_settings(style.font_variation_settings())
+}
+
 pub fn resolve_computed_values(style &ComputedProperties) &ComputedValues {
 	// Preserve the dependency order from NodeWithStyle::apply_style(): font
 	// metrics first, followed by the remaining layout-facing values.
@@ -442,7 +456,7 @@ pub fn resolve_computed_values(style &ComputedProperties) &ComputedValues {
 	values.set_line_height(line_height)
 	values.set_font_weight(style.font_weight())
 	values.set_font_language_override(style.font_language_override())
-	values.set_font_variation_settings(style.font_variation_settings())
+	apply_resolved_font_variation_settings(style, mut values)
 	values.set_display(style.display())
 	values.set_display_before_box_type_transformation(style.display_before_box_type_transformation())
 	values.set_position(style.position())
