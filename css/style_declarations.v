@@ -1349,10 +1349,17 @@ pub fn (properties &CSSStyleProperties) get_direct_property(property PropertyNam
 		}
 
 		layout_node_with_style := owner.layout_node() or {
-			// Match the one-off upstream path for elements that do not generate a
-			// layout box. Seeding the ancestor chain is required for selectors such
-			// as `.outer .inner .target`.
-			computed := style_computer.compute_style_with_seeded_ancestors(owner)
+			// Ordinary elements retain their completed style even without a box.
+			// A flush callback can dirty that record again, and synthetic pseudos
+			// still need the one-off computation with their ancestor chain seeded.
+			computed := if owner.pseudo_element() == none
+				&& !document.element_needs_style_update(element) {
+				computed_properties_for_element(element) or {
+					style_computer.compute_style_with_seeded_ancestors(owner)
+				}
+			} else {
+				style_computer.compute_style_with_seeded_ancestors(owner)
+			}
 			value := computed.property(property_id, .yes) or { return none }
 			return StyleProperty{
 				property_id: property_id
