@@ -1358,19 +1358,26 @@ evidence](docs/translation-audit/NATIVE_MEDIA_WHEEL_RAW_HANDLER.md).
   broad verification. Compare the same benchmark endpoint and workload, record
   the measured baseline and accumulated savings, and do not run broad suites
   for every individual fix below that threshold.
-  The latest performance broad batch is CSS UTF-8 destinations `a278f7b1`:
-  22 functional cases plus one diagnostic pass 169,128 assertions in before/final
-  Boehm and final no-GC builds, all C-O2. All six jobs for 87 selected CSS/SVG/layout
-  cases pass in both GC modes; 19 screenshots complete, 16 exact, focused viewport exact.
-  The matching GitHub first-frame median is 31,304,933,831.5 instructions,
-  -1.01%; 24/30 pairs improve. Repeatable savings credited:
-  318,800,653; additional savings after this batch: zero.
-  Controlled filtering instructions improve 46.58%; decoding remains enabled.
-  V-profile call counts are separate from the normal-page result. GC remains
-  enabled with one marker; Chrome parity remains open. The separate current-source
-  app receives no extra benchmark credit; independent canonical work is preserved
-  when its pre-build identity is unavailable. See `docs/GITHUB_PERFORMANCE.md`
-  for uncertainty, native include freezing, source scope and complete evidence.
+  The latest performance broad batch covers the Wikipedia fixes through
+  `24626bff` and test corrections `3d88268d`/`12713a3b`: 135 selected
+  CSS/SVG/layout/native cases pass in both Boehm and no-GC C-O0 builds, all 100
+  upstream LibJS AST fixtures compare exactly, and production C-O2 Boehm startup
+  succeeds. All 39 screenshot comparisons complete: 29 are pixel-exact, 8 pass
+  existing fuzzy bounds, and 2 gradient reference mismatches have identical
+  decoded pixels in the original, intermediate, and final binaries. No bounds
+  changed. All eight required live SVG mutation comparisons are pixel-exact.
+  The matching 20-sprite fixture median falls from 22,560,405,990 to
+  2,364,099,677 retired instructions, saving 20,196,306,313 (89.521%) with
+  byte-identical screenshots. Additional measured savings after this batch:
+  zero. The original whole Wikipedia frame was incomplete, so no whole-page
+  CPU reduction is credited. Frozen-page startup through capture is 1,566.53 ms
+  versus Chrome's 1,443.51 ms, with different endpoints; page-rendering parity
+  remains open. See `docs/WIKIPEDIA_PERFORMANCE.md` for provenance and both
+  unchanged reference mismatches. The prior CSS UTF-8 destinations batch
+  `a278f7b1` and its separately credited GitHub savings remain recorded in
+  `docs/GITHUB_PERFORMANCE.md`. Production GC remains enabled with one
+  marker. Independent canonical work is preserved when its pre-build identity
+  is unavailable.
 - Outside instruction-count optimization, run broad regression suites once per
   ten completed fixes, not after every fix.
   Broad suites include full translation/package test batches, the full LibJS AST
