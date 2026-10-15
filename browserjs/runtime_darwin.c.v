@@ -3,7 +3,9 @@ module browserjs
 import libjs
 
 #flag darwin -framework JavaScriptCore
+#flag darwin -framework CoreFoundation
 #include <JavaScriptCore/JavaScriptCore.h>
+#include "@DIR/source_string_darwin.h"
 
 fn C.JSGlobalContextCreate(global_object_class voidptr) voidptr
 fn C.JSGlobalContextRelease(context voidptr)
@@ -17,6 +19,7 @@ fn C.JSValueIsString(context voidptr, value voidptr) bool
 fn C.JSObjectGetProperty(context voidptr, object voidptr, property_name voidptr, exception &voidptr) voidptr
 fn C.JSStringGetMaximumUTF8CStringSize(value voidptr) usize
 fn C.JSStringGetUTF8CString(value voidptr, buffer &char, buffer_size usize) usize
+fn C.vox_browserjs_source_utf8_string(bytes &u8, length usize) voidptr
 
 fn js_string_to_v(context voidptr, value voidptr) !string {
 	mut exception := unsafe { nil }
@@ -68,6 +71,12 @@ fn release_javascript_core_context(context voidptr) {
 }
 
 fn js_source_string(source string) voidptr {
+	native := C.vox_browserjs_source_utf8_string(source.str, usize(source.len))
+	if native != unsafe { nil } {
+		return native
+	}
+	// Preserve the original decoder for invalid UTF-8 and BOM-prefixed input.
+	// Empty input also retains JavaScriptCore's original null-string identity.
 	mut characters := libjs.utf16(source)
 	defer {
 		unsafe { characters.free() }
