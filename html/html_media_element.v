@@ -355,7 +355,7 @@ pub fn html_media_element_for_dom_element(element &dom.Element) ?&HTMLMediaEleme
 			mut model := HTMLMediaElement.create(unsafe { &dom.HTMLElement(element) },
 				element.document().base_url())
 			model.set_source(element.get_attribute('src'))
-			model.crossorigin_ = cors_setting_attribute_from_keyword(element.get_attribute('crossorigin'))
+			model.crossorigin_ = cors_setting_attribute_from_keyword(element.get_attribute_ns(none, 'crossorigin'))
 			model.preload_ = element.get_attribute_ns(none, 'preload')
 			model.autoplay_ = element.has_attribute_ns(none, 'autoplay')
 			audio.media_element_model_ = model
@@ -368,7 +368,7 @@ pub fn html_media_element_for_dom_element(element &dom.Element) ?&HTMLMediaEleme
 			mut model := HTMLMediaElement.create(unsafe { &dom.HTMLElement(element) },
 				element.document().base_url())
 			model.set_source(element.get_attribute('src'))
-			model.crossorigin_ = cors_setting_attribute_from_keyword(element.get_attribute('crossorigin'))
+			model.crossorigin_ = cors_setting_attribute_from_keyword(element.get_attribute_ns(none, 'crossorigin'))
 			model.preload_ = element.get_attribute_ns(none, 'preload')
 			model.autoplay_ = element.has_attribute_ns(none, 'autoplay')
 			video.media_element_model_ = model
@@ -730,7 +730,7 @@ pub fn (element &HTMLMediaElement) playback_rate() f64 {
 
 pub fn (element &HTMLMediaElement) crossorigin() CORSSettingAttribute {
 	if html_element := element.associated_element_ {
-		return cors_setting_attribute_from_keyword(unsafe { &dom.Element(html_element) }.get_attribute('crossorigin'))
+		return cors_setting_attribute_from_keyword(unsafe { &dom.Element(html_element) }.get_attribute_ns(none, 'crossorigin'))
 	}
 	return element.crossorigin_
 }
@@ -842,7 +842,7 @@ pub fn (mut element HTMLMediaElement) set_crossorigin(value ?string) {
 		if raw := value {
 			dom_element.set_attribute_value('crossorigin', raw)
 		} else {
-			dom_element.remove_attribute('crossorigin')
+			dom_element.remove_attribute_ns(none, 'crossorigin')
 		}
 	}
 }
