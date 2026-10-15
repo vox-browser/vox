@@ -26,6 +26,42 @@ The filter engine has its own serialized JavaScriptCore context, inaccessible to
 page scripts. Default lists are compiled at development time. Normal builds and
 the installed bundle require neither Node nor a network connection for filtering.
 
+## Startup snapshots
+
+The checked-in default snapshot contains **258,456 network filters from all nine
+lists**, along with the cosmetic, scriptlet and public-suffix state. The build
+script compiles the raw lists with uBO and captures its native `toSelfie()`
+records. Browser startup restores those records through `fromSelfie()` instead
+of parsing compiled network-rule strings and rebuilding the tries on every
+launch. Custom filters supplied through `adblock.new_engine()` still use the
+normal uBO parser, compiler, freeze and optimization path.
+
+The two generated runtime assets are `adblock/engine.js.gz` and
+`adblock/engine.snapshot.bin.gz`. The first contains the engine and snapshot
+metadata; `JSON.parse()` restores that metadata before its Maps, Sets and regular
+expressions are reconstructed. The second contains the network and public-suffix
+typed-array data. Native zlib inflation validates the gzip CRC and exact input
+and output lengths. The JavaScript restoration checks the expected byte length,
+and uBO retains its engine-version and trie-checksum validation.
+
+The native host supplies the same signed 32-bit trie checksum as uBO's JavaScript
+implementation. A build-time adapter selects that backend; hosts without it use
+the original JavaScript checksum. Another adapter clears cached URL tokens when
+trie storage is replaced, so repeated restores retain redirects for the same
+URL. Both adapters require exact upstream source anchors and leave the pinned
+vendor files unchanged.
+
+The snapshot backing allocation belongs to JavaScriptCore through
+`JSObjectMakeTypedArrayWithBytesNoCopy()` and a matching native deallocator. Its
+isolated global property keeps it alive across garbage collections. Each restore
+copies mutable typed arrays into engine-owned storage, preserving the bundled
+bytes when switching between custom and default filters. Page scripts cannot
+access the filtering context or its native callbacks.
+
+Bundle inflation and UTF-8 script conversion also use native APIs. Conversion
+accepts explicit byte lengths, preserving embedded NULs; empty sources, leading
+UTF-8 byte-order marks and invalid UTF-8 retain the existing UTF-16 decoder path.
+
 ## Verification
 
 Compile the native diagnostic tool and replay the checked-in real The Verge
@@ -88,6 +124,29 @@ v -old-compiler -enable-globals test html/adblock_navigation_type_test.v
 v -old-compiler -enable-globals test css/container_rule_test.v layout/container_query_stabilization_test.v layout/dom_layout_bridge_test.v
 ```
 
+## Rebuilding bundled snapshots
+
+Rebuild from the checked-in, hash-verified lists without downloading updates:
+
+```sh
+cd tools/adblock
+npm ci
+npm run build
+npm test
+cd ../..
+```
+
+`npm test` covers the recorded Brave request decisions, default cosmetics and
+scriptlet selection, custom filters, redirects and repeated default restores.
+It also checks metadata types and fresh mutable storage. On macOS it compiles a
+native ownership/checksum test, including CRC rejection, garbage collection,
+release ownership, empty arrays, offset views and signed hash boundaries.
+
+Review both gzip assets together. The intermediate `generated-defaults.js` and
+`snapshot-layout.json` are generated files. Rebuilding the current pinned inputs
+produces byte-identical gzip assets; normal browser builds use the checked-in
+assets and do not invoke Node.
+
 ## Refreshing assets
 
 ```sh
@@ -95,11 +154,12 @@ cd tools/adblock
 npm ci
 node refresh.mjs
 npm run build
+npm test
 cd ../..
 sh build-prod-browser.sh
 ```
 
-Review changes to the list manifest and generated bundle together. Re-run the
+Review changes to the list manifest and both generated gzip assets together. Re-run the
 live Brave comparison after refreshing; the historical fixture records its own
 snapshot hashes. The upstream engine source remains pinned until deliberately
 updated. Source licenses and third-party notices accompany the vendor files.
