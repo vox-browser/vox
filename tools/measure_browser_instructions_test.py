@@ -113,5 +113,64 @@ class ChromeDirectLaunchTests(unittest.TestCase):
             counter.report.assert_called_once_with(snapshot=counter.snapshot_before.return_value)
 
 
+class VoxLaunchArgumentTests(unittest.TestCase):
+    def args(self):
+        return SimpleNamespace(binary=Path('/test/Vox'), timeout=5, width=1024, height=768,
+                               url='http://127.0.0.1:49171/', sample_interval=.005)
+
+    def test_default_argv_keeps_historical_capture_options(self):
+        args = self.args()
+        self.assertEqual(measurement.vox_launch_command(args, args.binary, '/capture.png'),
+                         ['/test/Vox', '--window-width', '1024', '--window-height', '880',
+                          '--screenshot', '/capture.png', args.url])
+
+    def test_explicit_options_remain_literal_and_precede_capture_and_url(self):
+        args = self.args()
+        args.vox_arg = ['--enable-javascript', '--js-engine=javascriptcore', 'literal $(text)']
+        command = measurement.vox_launch_command(args, args.binary, '/capture.png')
+        self.assertEqual(command[1:4], args.vox_arg)
+        self.assertEqual(command[-1], args.url)
+        self.assertGreater(command.index('--window-width'), command.index('--enable-javascript'))
+
+    def test_cli_rejects_vox_launch_arguments_for_chrome(self):
+        result = subprocess.run([sys.executable, str(Path(measurement.__file__)),
+                                 '--engine', 'chrome', '--vox-arg=--enable-javascript'],
+                                capture_output=True, text=True)
+        self.assertEqual(result.returncode, 2)
+        self.assertIn('--vox-arg requires engine vox', result.stderr)
+
+    def test_full_vox_capture_passes_policy_and_samples_exit_before_reaping(self):
+        with tempfile.TemporaryDirectory() as directory:
+            args = self.args()
+            args.vox_arg = ['--enable-javascript', '--js-engine=javascriptcore']
+            prefix = Path(directory) / 'capture'
+            process = Mock(pid=1)
+            events = []
+            process.wait.side_effect = lambda: events.append('wait') or 0
+            counter = Mock(root_identity=(1, 100))
+            counter.sample.return_value = {(1, 100): Reading(1, 100, True, 100, 200)}
+            counter.report.side_effect = lambda: events.append('report') or {'instructions': 100}
+            def launch(command, **kwargs):
+                Path(command[command.index('--screenshot') + 1]).write_bytes(b'native image')
+                self.assertEqual(command[1:3], args.vox_arg)
+                self.assertEqual(command[-1], args.url)
+                self.assertEqual(kwargs['cwd'], measurement.REPO)
+                return process
+            def crop(source, target, width, height):
+                self.assertEqual((width, height), (1024, 768))
+                self.assertEqual(source.read_bytes(), b'native image')
+                target.write_bytes(b'cropped viewport')
+            with patch.object(measurement.subprocess, 'Popen', side_effect=launch), \
+                    patch.object(measurement, 'ProcessTreeCounter', return_value=counter), \
+                    patch.object(measurement, 'crop_document_viewport', side_effect=crop), \
+                    patch.object(measurement, 'stop_process'):
+                result = measurement.run_vox(args, prefix, None)
+            self.assertEqual(events, ['report', 'wait'])
+            self.assertEqual(result['command'][1:3], args.vox_arg)
+            self.assertEqual(result['exit'], 0)
+            self.assertEqual(result['instructions'], 100)
+            self.assertEqual(Path(result['screenshot']).read_bytes(), b'cropped viewport')
+
+
 if __name__ == '__main__':
     unittest.main()

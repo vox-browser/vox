@@ -211,6 +211,12 @@ def fresh_vox_cache(template, scratch_dir=None):
         yield cache, digest.hexdigest()
 
 
+def vox_launch_command(args, binary, window_screenshot):
+    return [str(binary), *getattr(args, "vox_arg", []),
+            "--window-width", str(args.width), "--window-height", str(args.height + 112),
+            "--screenshot", str(window_screenshot), args.url]
+
+
 def run_vox(args, prefix, api, cache_dir=None):
     binary = args.binary or REPO / "Build/v/Vox.app/Contents/MacOS/Vox"
     screenshot = Path(str(prefix) + ".png")
@@ -222,8 +228,7 @@ def run_vox(args, prefix, api, cache_dir=None):
         env["LADYBIRD_CACHE_DIR"] = str(cache_dir)
     env.pop("LADYBIRD_DEBUG_TIMING", None)
     env.pop("GC_PRINT_STATS", None)
-    command = [str(binary), "--window-width", str(args.width), "--window-height", str(args.height + 112),
-               "--screenshot", str(window_screenshot), args.url]
+    command = vox_launch_command(args, binary, window_screenshot)
     with log_path.open("w") as log:
         launched_at = time.monotonic()
         process = subprocess.Popen(command, cwd=REPO, env=env, stdout=log, stderr=subprocess.STDOUT,
@@ -380,6 +385,8 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--engine", choices=["vox", "chrome"], default="vox")
     parser.add_argument("--binary", type=Path)
+    parser.add_argument("--vox-arg", action="append", default=[],
+                        help="Vox only: repeat to pass literal launch arguments before capture options/URL; use --vox-arg=--enable-javascript for option values")
     parser.add_argument("--url", default="https://github.com/vlang/v")
     parser.add_argument("--output", type=Path, default=REPO / "Build/instructions/github")
     parser.add_argument("--repeat", type=int, default=1)
@@ -404,6 +411,8 @@ def main():
     args = parser.parse_args()
     if args.repeat < 1 or args.timeout <= 0 or args.width < 1 or args.height < 1 or args.sample_interval <= 0:
         parser.error("repeat, dimensions, and watchdog must be positive")
+    if args.vox_arg and args.engine != "vox":
+        parser.error("--vox-arg requires engine vox")
     if args.chrome_launch_mode == "direct":
         if args.engine != "chrome" or not args.chrome_outer_window_height or args.chrome_outer_window_height <= 0:
             parser.error("direct launch requires engine chrome and a positive --chrome-outer-window-height")
