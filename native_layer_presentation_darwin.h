@@ -205,6 +205,20 @@ static void native_layer_prepare_capture(NSView *view, BOOL render) {
     for (NSView *child in view.subviews) native_layer_prepare_capture(child, render);
 }
 
+// Cooperative document work can service main-queue timers while an old frame
+// remains presented. Capture only after that work and any layer draw finish,
+// so the logical-resolution redraw below cannot reuse a backing-scale image.
+static void native_when_document_work_idle(dispatch_block_t capture) {
+    if (native_layer_document_work_active || native_layer_presenting) {
+        dispatch_after(dispatch_time(DISPATCH_TIME_NOW, NSEC_PER_MSEC),
+            dispatch_get_main_queue(), ^{
+                native_when_document_work_idle(capture);
+            });
+        return;
+    }
+    capture();
+}
+
 // Both screenshot entry points use this scoped override. AppKit's ordinary
 // NSView capture API remains unchanged for every other application/view.
 static void native_cache_display_in_bitmap(NSView *view, NSRect bounds,

@@ -454,6 +454,7 @@ void native_cache_browser_snapshot(string path_value) {
 	// the current frame finishes, and posting a wake guarantees the run loop
 	// iterates to service it even when the app is otherwise idle.
 	dispatch_async(dispatch_get_main_queue(), ^{
+		native_when_document_work_idle(^{
 		NSView *view = native_browser_view();
 		[view displayIfNeeded];
 		NSRect bounds = [view bounds];
@@ -530,6 +531,7 @@ void native_cache_browser_snapshot(string path_value) {
 		if (debug_snapshot) {
 			fprintf(stderr, "Ladybird V: cached snapshot %s\n", saved ? "saved" : "write failed");
 		}
+		});
 	});
 	// Nudge the run loop so the queued capture is serviced promptly even if no
 	// user or timer event would otherwise wake it.
@@ -4798,6 +4800,7 @@ void schedule_native_screenshot(string output_path) {
 	}
 	dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(delay * NSEC_PER_SEC)),
 	               dispatch_get_main_queue(), ^{
+		native_when_document_work_idle(^{
 		NSView *view = native_browser_view();
 		[view displayIfNeeded];
 		NSRect bounds = [view bounds];
@@ -4860,5 +4863,6 @@ void schedule_native_screenshot(string output_path) {
 			        write_error == nil ? "unknown error" : [[write_error localizedDescription] UTF8String]);
 		}
 		[NSApp terminate:nil];
+		});
 	});
 }
