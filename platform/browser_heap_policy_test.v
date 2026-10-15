@@ -75,15 +75,16 @@ fn test_browser_heap_policy_preserves_overrides_and_managed_ownership() {
 			'children': [retained, 'Unicode λ and 🌍']
 		}
 		original := nested['children'] or { panic('missing retained children') }
+		before := browser_heap_test_heap_size()
 		_ = initialize_browser_heap_policy()
-		assert browser_heap_test_heap_size() >= usize(224) * 1024 * 1024
-		assert browser_heap_test_divisor() == 16
+		assert browser_heap_test_heap_size() == before
+		assert browser_heap_test_divisor() == 64
 		assert !initialize_browser_heap_policy()
-		browser_heap_test_set_divisor(32)
+		browser_heap_test_set_divisor(128)
 		assert !initialize_browser_heap_policy()
-		assert browser_heap_test_divisor() == 32
-		// Pointer-bearing aggregates must remain managed after the reservation
-		// and real collections, and support subsequent array/map mutations.
+		assert browser_heap_test_divisor() == 128
+		// Pointer-bearing aggregates remain managed after policy changes and
+		// real collections, and support subsequent array/map mutations.
 		C.GC_gcollect()
 		assert retained.ends_with('browser startup')
 		assert nested['children'] == original

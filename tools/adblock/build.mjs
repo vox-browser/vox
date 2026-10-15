@@ -29,7 +29,19 @@ const options = {
             const source = await fs.readFile(args.path, 'utf8');
             const anchor = 'const i32Checksum = (buf32) => {\n';
             if (source.split(anchor).length !== 2) throw new Error(`Unexpected uBO checksum source: ${args.path}`);
-            return { contents: source.replace(anchor, anchor + '    if (typeof globalThis.voxAdblockTrieChecksum === \'function\') return globalThis.voxAdblockTrieChecksum(buf32);\n'), loader: 'js', resolveDir: path.dirname(args.path) };
+            let contents = source.replace(anchor, anchor + '    if (typeof globalThis.voxAdblockTrieChecksum === \'function\') return globalThis.voxAdblockTrieChecksum(buf32);\n');
+            if (args.path.endsWith('/biditrie.js')) {
+                const copy = '        this.reallocateBuf(byteLength);\n        this.buf32.set(selfie.buf32);\n';
+                if (contents.split(copy).length !== 2) throw new Error('Unexpected uBO trie restoration');
+                contents = contents.replace(copy, `        if (this.wasmMemory === null && typeof globalThis.voxAdblockCloneSnapshotView === 'function') {
+            this.buf32 = globalThis.voxAdblockCloneSnapshotView(selfie.buf32);
+            this.buf8 = new Uint8Array(this.buf32.buffer);
+            this.haystack = this.buf8.subarray(HAYSTACK_START, HAYSTACK_START + HAYSTACK_SIZE);
+        } else {
+${copy}        }
+`);
+            }
+            return { contents, loader: 'js', resolveDir: path.dirname(args.path) };
         });
         // Replacing trie storage invalidates the tokenizer's retained URL and
         // offsets, even when a subsequent request has exactly the same URL.

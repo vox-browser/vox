@@ -7,23 +7,10 @@
 #include <stdlib.h>
 #include <string.h>
 #include "native_layer_presentation_darwin.h"
+#include "native_deferred_font_darwin.h"
 #include "native_svg_mask_layer_darwin.h"
 
-#ifdef LADYBIRD_V_HAS_FFMPEG
-#include <libavcodec/avcodec.h>
-#include <libavformat/avformat.h>
-#include <libavutil/imgutils.h>
-#include <libswscale/swscale.h>
-#include <libyuv/convert_argb.h>
-#endif
-
-#ifdef LADYBIRD_V_HAS_RUST_YUV
-extern bool ladybird_v_yuv_u8_to_rgba(const uint8_t *y_plane,
-	uint32_t y_stride, const uint8_t *u_plane, uint32_t u_stride,
-	const uint8_t *v_plane, uint32_t v_stride, uint32_t width,
-	uint32_t height, bool subsampling_x, bool subsampling_y, uint8_t *dst,
-	uint32_t dst_stride, uint8_t range, uint8_t matrix);
-#endif
+#include "native_ffmpeg_darwin.h"
 
 #ifdef LADYBIRD_V_HAS_SKIA_TEXT
 extern int ladybird_v_skia_configure_font(const char *path, int slot);
@@ -131,186 +118,6 @@ extern int ladybird_v_skia_generate_svg_turbulence(uint8_t *destination_pixels,
 	int num_octaves, float seed, int fractal_noise, int tile_width,
 	int tile_height, float origin_x, float origin_y);
 #endif
-
-// Decode the first video frame at or after `seconds` into tightly packed RGBA.
-// The caller owns the returned buffer and releases it with
-// native_free_video_frame(). LibWeb retains the copied pixels in its external
-// video content source, keeping FFmpeg entirely behind the browser host edge.
-uint8_t *native_decode_video_frame(const char *path, double seconds,
-	int *output_width, int *output_height, int *output_pitch) {
-	if (output_width != NULL)
-		*output_width = 0;
-	if (output_height != NULL)
-		*output_height = 0;
-	if (output_pitch != NULL)
-		*output_pitch = 0;
-#ifndef LADYBIRD_V_HAS_FFMPEG
-	(void)path;
-	(void)seconds;
-	return NULL;
-#else
-	if (path == NULL || output_width == NULL || output_height == NULL
-	    || output_pitch == NULL)
-		return NULL;
-	AVFormatContext *format = NULL;
-	AVCodecContext *codec = NULL;
-	AVPacket *packet = NULL;
-	AVFrame *frame = NULL;
-	struct SwsContext *converter = NULL;
-	uint8_t *pixels = NULL;
-	int video_stream = -1;
-	if (avformat_open_input(&format, path, NULL, NULL) < 0
-	    || avformat_find_stream_info(format, NULL) < 0)
-		goto cleanup;
-	video_stream = av_find_best_stream(format, AVMEDIA_TYPE_VIDEO, -1, -1,
-		NULL, 0);
-	if (video_stream < 0)
-		goto cleanup;
-	AVStream *stream = format->streams[video_stream];
-	const AVCodec *decoder = avcodec_find_decoder(stream->codecpar->codec_id);
-	if (decoder == NULL)
-		goto cleanup;
-	codec = avcodec_alloc_context3(decoder);
-	if (codec == NULL || avcodec_parameters_to_context(codec, stream->codecpar) < 0
-	    || avcodec_open2(codec, decoder, NULL) < 0)
-		goto cleanup;
-	if (seconds > 0.0) {
-		int64_t timestamp = (int64_t)floor(seconds / av_q2d(stream->time_base));
-		if (av_seek_frame(format, video_stream, timestamp, AVSEEK_FLAG_BACKWARD) >= 0)
-			avcodec_flush_buffers(codec);
-	}
-	packet = av_packet_alloc();
-	frame = av_frame_alloc();
-	if (packet == NULL || frame == NULL)
-		goto cleanup;
-	for (;;) {
-		int read_result = av_read_frame(format, packet);
-		if (read_result < 0) {
-			avcodec_send_packet(codec, NULL);
-		} else if (packet->stream_index == video_stream) {
-			avcodec_send_packet(codec, packet);
-		}
-		av_packet_unref(packet);
-		for (;;) {
-			int receive_result = avcodec_receive_frame(codec, frame);
-			if (receive_result < 0)
-				break;
-			double frame_seconds = frame->best_effort_timestamp == AV_NOPTS_VALUE
-				? seconds
-				: frame->best_effort_timestamp * av_q2d(stream->time_base);
-			if (frame_seconds + 0.000001 < seconds) {
-				av_frame_unref(frame);
-				continue;
-			}
-			int width = frame->width;
-			int height = frame->height;
-			if (width <= 0 || height <= 0)
-				goto cleanup;
-			int pitch = width * 4;
-			pixels = malloc((size_t)pitch * (size_t)height);
-			if (pixels == NULL)
-				goto cleanup;
-			// Gfx::YUVData converts unspecified VP9 matrix metadata as limited
-			// BT.709. Use the identical Rust yuv conversion entry point so the
-			// native frame has exactly the same RGBA values as upstream.
-			if (frame->format == AV_PIX_FMT_YUV420P
-			    && frame->color_range != AVCOL_RANGE_JPEG
-			    && (frame->colorspace == AVCOL_SPC_UNSPECIFIED
-			        || frame->colorspace == AVCOL_SPC_BT709)) {
-#ifdef LADYBIRD_V_HAS_RUST_YUV
-				if (ladybird_v_yuv_u8_to_rgba(frame->data[0], frame->linesize[0],
-					frame->data[1], frame->linesize[1], frame->data[2],
-					frame->linesize[2], width, height, true, true, pixels,
-					pitch, 0, 0)) {
-					*output_width = width;
-					*output_height = height;
-					*output_pitch = pitch;
-					goto cleanup;
-				}
-#else
-				if (H420ToABGR(frame->data[0], frame->linesize[0],
-					frame->data[1], frame->linesize[1], frame->data[2],
-					frame->linesize[2], pixels, pitch, width, height) == 0) {
-					*output_width = width;
-					*output_height = height;
-					*output_pitch = pitch;
-					goto cleanup;
-				}
-#endif
-			}
-			converter = sws_getContext(width, height, (enum AVPixelFormat)frame->format,
-				width, height, AV_PIX_FMT_RGBA, SWS_BILINEAR, NULL, NULL, NULL);
-			if (converter == NULL)
-				goto cleanup;
-			int colorspace = SWS_CS_DEFAULT;
-			switch (frame->colorspace) {
-			case AVCOL_SPC_BT709:
-				colorspace = SWS_CS_ITU709;
-				break;
-			case AVCOL_SPC_FCC:
-				colorspace = SWS_CS_FCC;
-				break;
-			case AVCOL_SPC_SMPTE240M:
-				colorspace = SWS_CS_SMPTE240M;
-				break;
-			case AVCOL_SPC_BT2020_NCL:
-			case AVCOL_SPC_BT2020_CL:
-				colorspace = SWS_CS_BT2020;
-				break;
-			case AVCOL_SPC_BT470BG:
-			case AVCOL_SPC_SMPTE170M:
-				colorspace = SWS_CS_ITU601;
-				break;
-			case AVCOL_SPC_UNSPECIFIED:
-			default:
-				// Gfx::YUVData uses BT.709 when CICP matrix metadata is
-				// absent, so the browser host must not use swscale's
-				// BT.601 default for an unspecified VP9 stream.
-				colorspace = SWS_CS_ITU709;
-				break;
-			}
-			const int *coefficients = sws_getCoefficients(colorspace);
-			if (coefficients != NULL) {
-				sws_setColorspaceDetails(converter, coefficients,
-					frame->color_range == AVCOL_RANGE_JPEG, coefficients, 1,
-					0, 1 << 16, 1 << 16);
-			}
-			uint8_t *destination[] = { pixels, NULL, NULL, NULL };
-			int strides[] = { pitch, 0, 0, 0 };
-			if (sws_scale(converter, (const uint8_t *const *)frame->data,
-				frame->linesize, 0, height, destination, strides) <= 0)
-				goto cleanup;
-			*output_width = width;
-			*output_height = height;
-			*output_pitch = pitch;
-			goto cleanup;
-		}
-		if (read_result < 0)
-			break;
-	}
-
-cleanup:
-	if (converter != NULL)
-		sws_freeContext(converter);
-	if (frame != NULL)
-		av_frame_free(&frame);
-	if (packet != NULL)
-		av_packet_free(&packet);
-	if (codec != NULL)
-		avcodec_free_context(&codec);
-	if (format != NULL)
-		avformat_close_input(&format);
-	if (*output_width <= 0 || *output_height <= 0) {
-		free(pixels);
-		return NULL;
-	}
-	return pixels;
-#endif
-}
-
-void native_free_video_frame(uint8_t *pixels) {
-	free(pixels);
-}
 
 static NSString *native_capture_string(string value) {
 	return [[NSString alloc] initWithBytes:value.str
@@ -436,7 +243,7 @@ void native_configure_browser_drawables(void) {
 static NSString *native_document_font_name;
 static CGFontRef native_document_glyph_font;
 static CGFontRef native_document_bold_glyph_font;
-static CGFontRef native_emoji_glyph_font;
+static VoxDeferredFont native_emoji_font;
 
 static NSFont *native_document_font(float size, int bold, int italic, int monospace) {
 	NSFont *font = nil;
@@ -513,23 +320,15 @@ void native_configure_document_bold_font(string path_value) {
 }
 
 void native_configure_emoji_font(string path_value) {
-	NSString *path = native_capture_string(path_value);
+	native_deferred_font_configure(&native_emoji_font, native_capture_string(path_value));
+}
+
+static void native_load_skia_emoji_font(const char *path) {
 #ifdef LADYBIRD_V_HAS_SKIA_TEXT
-	ladybird_v_skia_configure_font([path fileSystemRepresentation], 2);
+	ladybird_v_skia_configure_font(path, 2);
+#else
+	(void)path;
 #endif
-	CGDataProviderRef provider = CGDataProviderCreateWithFilename([path fileSystemRepresentation]);
-	if (provider == NULL) {
-		return;
-	}
-	CGFontRef font = CGFontCreateWithDataProvider(provider);
-	CGDataProviderRelease(provider);
-	if (font == NULL) {
-		return;
-	}
-	if (native_emoji_glyph_font != NULL) {
-		CGFontRelease(native_emoji_glyph_font);
-	}
-	native_emoji_glyph_font = font;
 }
 
 // Convert the embedding view's logical top-left coordinates to the same global
@@ -921,7 +720,8 @@ static int native_draw_retained_glyph_run(CGContextRef context,
 		|| glyph_count <= 0) {
 		return 0;
 	}
-	CGFontRef graphics_font = emoji_face ? native_emoji_glyph_font
+	CGFontRef graphics_font = emoji_face
+		? native_deferred_font_resolve(&native_emoji_font, native_load_skia_emoji_font)
 		: (font_weight >= 600 && native_document_bold_glyph_font != NULL
 			? native_document_bold_glyph_font : native_document_glyph_font);
 	if (graphics_font == NULL) {

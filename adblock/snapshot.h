@@ -3,6 +3,12 @@
 #include <JavaScriptCore/JavaScriptCore.h>
 #include <stdlib.h>
 #include <stdint.h>
+#include <mach/mach.h>
+#include <mach/mach_vm.h>
+#include <fcntl.h>
+#include <sys/mman.h>
+#include <sys/stat.h>
+#include <unistd.h>
 #include "runtime.h"
 
 static JSValueRef vox_adblock_snapshot_error(JSContextRef context,
@@ -39,10 +45,77 @@ static JSValueRef vox_adblock_trie_checksum(JSContextRef context,
     return JSValueMakeNumber(context, (int32_t)hash);
 }
 
-// The ArrayBuffer owns this malloc allocation until its last JS view dies.
+// The ArrayBuffer owns this private mapping or malloc allocation until its last
+// JS view dies. A non-null owner records the rounded mapping length.
 static void vox_adblock_release_snapshot(void *bytes, void *context) {
-    (void)context;
-    free(bytes);
+    if (context) {
+        mach_vm_address_t base = (mach_vm_address_t)(uintptr_t)bytes
+            & ~((mach_vm_address_t)vm_page_size - 1);
+        mach_vm_deallocate(mach_task_self(), base, (mach_vm_size_t)(uintptr_t)context);
+    } else {
+        free(bytes);
+    }
+}
+
+// Large bundled snapshots can share their original clean pages until a caller
+// writes. A private COW mapping still gives every context independent mutable
+// bytes and remains valid after the source allocation is changed or released.
+static void *vox_adblock_copy_snapshot(const void *source, size_t size, void **owner) {
+    *owner = NULL;
+    if (size >= 64 * 1024) {
+        mach_vm_address_t address = (mach_vm_address_t)(uintptr_t)source;
+        mach_vm_address_t base = address & ~((mach_vm_address_t)vm_page_size - 1);
+        mach_vm_size_t offset = address - base;
+        mach_vm_size_t length = (offset + size + vm_page_size - 1)
+            & ~((mach_vm_size_t)vm_page_size - 1);
+        mach_vm_address_t copy = 0;
+        vm_prot_t current = 0, maximum = 0;
+        kern_return_t status = mach_vm_remap(mach_task_self(), &copy, length, 0,
+            VM_FLAGS_ANYWHERE, mach_task_self(), base, TRUE, &current, &maximum,
+            VM_INHERIT_NONE);
+        if (status == KERN_SUCCESS) {
+            status = mach_vm_protect(mach_task_self(), copy, length, FALSE,
+                VM_PROT_READ | VM_PROT_WRITE | VM_PROT_COPY);
+            if (status == KERN_SUCCESS) {
+                *owner = (void *)(uintptr_t)length;
+                return (void *)(uintptr_t)(copy + offset);
+            }
+            mach_vm_deallocate(mach_task_self(), copy, length);
+        }
+    }
+    void *copy = malloc(size);
+    if (copy) memcpy(copy, source, size);
+    return copy;
+}
+
+static JSValueRef vox_adblock_clone_snapshot_view(JSContextRef context,
+        JSObjectRef function, JSObjectRef this_object, size_t count,
+        const JSValueRef arguments[], JSValueRef *exception) {
+    (void)function; (void)this_object;
+    if (count != 1 || !JSValueIsObject(context, arguments[0]))
+        return vox_adblock_snapshot_error(context, "Expected a filter snapshot typed array", exception);
+    JSTypedArrayType type = JSValueGetTypedArrayType(context, arguments[0], exception);
+    if (exception && *exception) return JSValueMakeUndefined(context);
+    if (type != kJSTypedArrayTypeUint8Array && type != kJSTypedArrayTypeUint32Array
+        && type != kJSTypedArrayTypeInt32Array)
+        return vox_adblock_snapshot_error(context, "Unsupported filter snapshot view", exception);
+    JSObjectRef source = JSValueToObject(context, arguments[0], exception);
+    size_t size = JSObjectGetTypedArrayByteLength(context, source, exception);
+    if (exception && *exception) return JSValueMakeUndefined(context);
+    if (size > 128 * 1024 * 1024)
+        return vox_adblock_snapshot_error(context, "Filter snapshot view exceeds its limit", exception);
+    if (!size) return JSObjectMakeTypedArray(context, type, 0, exception);
+    size_t offset = JSObjectGetTypedArrayByteOffset(context, source, exception);
+    if (exception && *exception) return JSValueMakeUndefined(context);
+    const unsigned char *bytes = JSObjectGetTypedArrayBytesPtr(context, source, exception);
+    if (exception && *exception) return JSValueMakeUndefined(context);
+    if (!bytes) return vox_adblock_snapshot_error(context, "Missing filter snapshot bytes", exception);
+    void *owner = NULL;
+    void *copy = vox_adblock_copy_snapshot(bytes + offset, size, &owner);
+    if (!copy) return vox_adblock_snapshot_error(context, "Cannot copy filter snapshot view", exception);
+    // The callback also releases storage when JSC rejects the typed array.
+    return JSObjectMakeTypedArrayWithBytesNoCopy(context, type, copy, size,
+        vox_adblock_release_snapshot, owner, exception);
 }
 
 static int vox_adblock_install_snapshot(JSGlobalContextRef context,
@@ -58,10 +131,9 @@ static int vox_adblock_install_snapshot(JSGlobalContextRef context,
         ((uint32_t)crc_bytes[2] << 16) | ((uint32_t)crc_bytes[3] << 24);
     const unsigned char *payload = snapshot + 16;
     if ((uint32_t)crc32(0, payload, (uInt)size) != expected_crc) return 4;
-    void *bytes = malloc(size);
+    void *owner = NULL;
+    void *bytes = vox_adblock_copy_snapshot(payload, size, &owner);
     if (!bytes) return 3;
-    // The embedded payload remains immutable; each context owns its own copy.
-    memcpy(bytes, payload, size);
     JSValueRef exception = NULL;
     JSStringRef checksum_key = JSStringCreateWithUTF8CString("voxAdblockTrieChecksum");
     JSObjectRef checksum = JSObjectMakeFunctionWithCallback(context, checksum_key,
@@ -72,11 +144,22 @@ static int vox_adblock_install_snapshot(JSGlobalContextRef context,
         kJSPropertyAttributeDontDelete, &exception);
     JSStringRelease(checksum_key);
     JSValueUnprotect(context, checksum);
-    if (exception) { free(bytes); return 5; }
+    if (exception) { vox_adblock_release_snapshot(bytes, owner); return 5; }
+
+    JSStringRef clone_key = JSStringCreateWithUTF8CString("voxAdblockCloneSnapshotView");
+    JSObjectRef clone = JSObjectMakeFunctionWithCallback(context, clone_key,
+        vox_adblock_clone_snapshot_view);
+    JSValueProtect(context, clone);
+    JSObjectSetProperty(context, JSContextGetGlobalObject(context), clone_key, clone,
+        kJSPropertyAttributeReadOnly | kJSPropertyAttributeDontEnum |
+        kJSPropertyAttributeDontDelete, &exception);
+    JSStringRelease(clone_key);
+    JSValueUnprotect(context, clone);
+    if (exception) { vox_adblock_release_snapshot(bytes, owner); return 5; }
 
     JSObjectRef view = JSObjectMakeTypedArrayWithBytesNoCopy(context,
         kJSTypedArrayTypeUint8Array, bytes, size,
-        vox_adblock_release_snapshot, NULL, &exception);
+        vox_adblock_release_snapshot, owner, &exception);
     // JSC calls the deallocator on exception as well as on normal destruction.
     if (!view || exception) return 5;
     JSValueProtect(context, view);
@@ -87,6 +170,25 @@ static int vox_adblock_install_snapshot(JSGlobalContextRef context,
     JSStringRelease(key);
     JSValueUnprotect(context, view);
     return exception ? 6 : 0;
+}
+
+static int vox_adblock_install_snapshot_file(JSGlobalContextRef context, const char *path) {
+    if (!context || !path) return 1;
+    int fd = open(path, O_RDONLY | O_CLOEXEC);
+    if (fd < 0) return 1;
+    struct stat info;
+    if (fstat(fd, &info) || info.st_size < 16 || info.st_size > 128 * 1024 * 1024 + 16) {
+        close(fd);
+        return 2;
+    }
+    size_t size = (size_t)info.st_size;
+    void *bytes = mmap(NULL, size, PROT_READ, MAP_PRIVATE, fd, 0);
+    close(fd);
+    if (bytes == MAP_FAILED) return 3;
+    int result = vox_adblock_install_snapshot(context, bytes, size);
+    // The installed private mapping owns its pages independently of this view.
+    munmap(bytes, size);
+    return result;
 }
 // The callable owns immutable JSON text in its own context. Each invocation
 // parses fresh objects, so default/custom/default reinitialization never shares

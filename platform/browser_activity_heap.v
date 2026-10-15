@@ -14,8 +14,8 @@ $if gcboehm ? {
 	fn begin_browser_activity_heap_locked(context voidptr) voidptr {
 		mut scope := unsafe { &BrowserActivityHeapScope(context) }
 		scope.previous_divisor = C.GC_get_free_space_divisor()
-		if scope.previous_divisor > 4 {
-			C.GC_set_free_space_divisor(4)
+		if scope.previous_divisor > 64 {
+			C.GC_set_free_space_divisor(64)
 			scope.active = true
 		}
 		return unsafe { nil }
@@ -25,7 +25,7 @@ $if gcboehm ? {
 		scope := unsafe { &BrowserActivityHeapScope(context) }
 		// An inner scope leaves this value alone. Preserve a subsequent explicit
 		// collector-policy change instead of overwriting it during unwinding.
-		if C.GC_get_free_space_divisor() == 4 {
+		if C.GC_get_free_space_divisor() == 64 {
 			C.GC_set_free_space_divisor(scope.previous_divisor)
 		}
 		return unsafe { nil }

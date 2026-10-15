@@ -25,6 +25,7 @@ repo_dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
 build_dir="$repo_dir/Build/v"
 bundle_dir="$build_dir/Ladybird.app"
 binary_dir="$bundle_dir/Contents/MacOS"
+resources_dir="$bundle_dir/Contents/Resources"
 
 v_compiler=${V_BIN:-}
 if [ -z "$v_compiler" ]; then
@@ -65,8 +66,12 @@ case "$(uname -m)" in
         ;;
 esac
 
-mkdir -p "$binary_dir"
+mkdir -p "$binary_dir" "$resources_dir"
 cp "$repo_dir/packaging/Info.plist" "$bundle_dir/Contents/Info.plist"
+snapshot_resource_tmp=$(mktemp "$resources_dir/.adblock-snapshot.XXXXXX")
+cp "$repo_dir/adblock/engine.snapshot.bin" "$snapshot_resource_tmp"
+chmod 644 "$snapshot_resource_tmp"
+mv -f "$snapshot_resource_tmp" "$resources_dir/adblock.snapshot.bin"
 
 extra_cflags=""
 if [ "$gc_mode" != none ]; then
@@ -95,6 +100,7 @@ if [ -n "$rust_cargo" ]; then
     extra_cflags="$extra_cflags -DLADYBIRD_V_HAS_RUST_YUV"
     extra_ldflags="$extra_ldflags -L$rust_target_dir/release -lladybird_v_yuv"
 fi
+bridge_library=""
 if [ -f "$skia_root/lib/libskia.dylib" ] && [ -d "$skia_root/include/skia/include" ]; then
     bridge_library="$build_dir/libLadybirdVSkiaText.dylib"
     clang++ -std=c++20 -O2 -fPIC -dynamiclib -x objective-c++ \
@@ -106,13 +112,14 @@ if [ -f "$skia_root/lib/libskia.dylib" ] && [ -d "$skia_root/include/skia/includ
         -Wl,-install_name,@rpath/libLadybirdVSkiaText.dylib \
         -o "$bridge_library"
     extra_cflags="$extra_cflags -DLADYBIRD_V_HAS_SKIA_TEXT"
-    extra_ldflags="$extra_ldflags -L$build_dir -lLadybirdVSkiaText -Wl,-rpath,$build_dir -Wl,-rpath,$skia_root/lib -lc++"
+    extra_ldflags="$extra_ldflags -L$build_dir -lLadybirdVSkiaText -Wl,-rpath,@executable_path -Wl,-rpath,$skia_root/lib -lc++"
 fi
 if [ -f "$skia_root/lib/libavformat.dylib" ] && [ -f "$skia_root/include/libavformat/avformat.h" ]; then
     extra_cflags="$extra_cflags -DLADYBIRD_V_HAS_FFMPEG -I$skia_root/include"
     # Adding the vcpkg include root also selects that ICU's versioned C API
     # declarations in the LibUnicode bridges, so link its matching runtime.
-    extra_ldflags="$extra_ldflags -L$skia_root/lib -lavformat -lavcodec -lswscale -lswresample -lavutil -lyuv -licuuc -Wl,-rpath,$skia_root/lib"
+    # Codec entry points load on first use through native_ffmpeg_darwin.h.
+    extra_ldflags="$extra_ldflags -L$skia_root/lib -licuuc -Wl,-rpath,$skia_root/lib"
 fi
 
 # This V checkout currently selects both the C and native `time.zoneinfo`
@@ -158,6 +165,18 @@ else
     "$v_compiler" "$@" \
         -cflags "$extra_cflags" \
         -o "$binary_dir/Ladybird" .
+fi
+
+if [ -n "$bridge_library" ]; then
+    bridge_resource_tmp=$(mktemp "$binary_dir/.skia-bridge.XXXXXX")
+    cp "$bridge_library" "$bridge_resource_tmp"
+    chmod 755 "$bridge_resource_tmp"
+    mv -f "$bridge_resource_tmp" "$binary_dir/libLadybirdVSkiaText.dylib"
+    if command -v codesign >/dev/null 2>&1; then
+        codesign --force --sign - "$binary_dir/libLadybirdVSkiaText.dylib" >/dev/null
+    fi
+else
+    rm -f "$binary_dir/libLadybirdVSkiaText.dylib"
 fi
 
 if command -v codesign >/dev/null 2>&1; then

@@ -317,6 +317,7 @@ mut:
 	status                              string
 	load_status                         string
 	memory_status                       BrowserMemoryStatus
+	memory_maintenance                  BrowserMemoryMaintenance
 	js_messages                         []string
 	history                             []HistoryEntry
 	history_index                       int = -1
@@ -6150,6 +6151,7 @@ fn (mut app BrowserApp) draw() {
 	}
 	end_browser_frame(app.ctx)
 	app.finish_scroll_profile_frame()
+	app.release_unused_memory_if_idle(time.sys_mono_now())
 	if !app.initial_window_frame_presented {
 		app.initial_window_frame_presented = true
 		if app.pending_cached_page != none {

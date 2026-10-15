@@ -18,10 +18,12 @@ case "$width:$height" in
 esac
 
 if [ ! -x "$browser" ] \
+    || [ ! -f "$(dirname "$browser")/../Resources/adblock.snapshot.bin" ] \
+    || [ "$repo_dir/adblock/engine.snapshot.bin" -nt "$browser" ] \
     || [ "$repo_dir/tools/prepare_http_compat.py" -nt "$browser" ] \
     || find "$repo_dir" \
     \( -path "$repo_dir/Build" -o -path "$repo_dir/.git" \) -prune -o \
-    -type f \( -name '*.v' -o -name '*.m' -o -name '*.cpp' \) ! -name '*_test.v' \
+    -type f \( -name '*.v' -o -name '*.m' -o -name '*.cpp' -o -name '*.h' \) ! -name '*_test.v' \
     ! -path "$repo_dir/tools/*" -newer "$browser" -print -quit | grep -q .; then
     "$repo_dir/build_ladybird.sh"
 fi

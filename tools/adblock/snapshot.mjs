@@ -25,7 +25,7 @@ export function encodeSnapshot(snapshot) {
             views.push({ path, type: name, offset, length: value.length, byte_length: value.byteLength });
             // uBO mutates restored tries; keep the bundled backing bytes intact
             // so custom/default reinitialization gets fresh engine-owned data.
-            fixups.push(`${path}=new ${name}(new ${name}(bytes.buffer,bytes.byteOffset+${offset},${value.length}));`);
+            fixups.push(`${path}=clone(${name},${offset},${value.length});`);
             result = null;
         } else if (value instanceof Map) {
             result = Array.from(value, ([key, item], index) => [encode(key, `${path}[${index}][0]`), encode(item, `${path}[${index}][1]`)]);
@@ -52,7 +52,7 @@ export function encodeSnapshot(snapshot) {
     // code unit, including supplementary characters and lone surrogates.
     const metadata = JSON.stringify(encode(snapshot, 'snapshot')).replace(/[\u007F-\uFFFF]/g, character =>
         `\\u${character.charCodeAt(0).toString(16).padStart(4, '0')}`);
-    const source = `export default {restore(){const bytes=globalThis.voxAdblockSnapshotBytes;if(!(bytes instanceof Uint8Array)||bytes.byteLength!==${byteLength})throw new Error('Invalid bundled uBlock Origin snapshot bytes');let snapshot=globalThis.voxAdblockReadSnapshotMetadata();${fixups.join('')}return snapshot;}};\n`;
+    const source = `export default {restore(){const bytes=globalThis.voxAdblockSnapshotBytes;if(!(bytes instanceof Uint8Array)||bytes.byteLength!==${byteLength})throw new Error('Invalid bundled uBlock Origin snapshot bytes');const clone=(Type,offset,length)=>{const view=new Type(bytes.buffer,bytes.byteOffset+offset,length);return typeof globalThis.voxAdblockCloneSnapshotView==='function'?globalThis.voxAdblockCloneSnapshotView(view):new Type(view);};let snapshot=globalThis.voxAdblockReadSnapshotMetadata();${fixups.join('')}return snapshot;}};\n`;
     return { source, metadata, binary: Buffer.concat(chunks), layout: { byte_length: byteLength, views } };
 }
 

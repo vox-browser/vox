@@ -7,15 +7,30 @@ const code = gunzipSync(await fs.readFile(new URL('../../adblock/engine.js.gz', 
 const nativeSnapshot = await fs.readFile(new URL('../../adblock/engine.snapshot.bin', import.meta.url));
 const bytes = nativeSnapshot.subarray(16);
 const metadata = gunzipSync(await fs.readFile(new URL('../../adblock/engine.snapshot.json.gz', import.meta.url))).toString();
-function engine(custom) {
+function engine(custom, nativeClone = false) {
     const context = vm.createContext({ sourceBytes: Uint8Array.from(bytes), metadata });
     vm.runInContext('globalThis.voxAdblockReadSnapshotMetadata=()=>JSON.parse(metadata);',context);
     vm.runInContext('globalThis.voxAdblockSnapshotBytes=new Uint8Array(sourceBytes);delete globalThis.sourceBytes;', context);
+    if (nativeClone) vm.runInContext('globalThis.cloneCalls=0;globalThis.voxAdblockCloneSnapshotView=view=>{cloneCalls++;return new view.constructor(view);};', context);
     // Exercise the Web API polyfills and the no-host checksum fallback.
     vm.runInContext(code, context);
     const info = JSON.parse(context.voxAdblockInitialize(custom));
     return { context, info, check: request => JSON.parse(context.voxAdblockCheck(request)) };
 }
+
+test('native snapshot clones preserve full request decisions and repeated default restoration', async () => {
+    const fallback = engine();
+    const native = engine(undefined, true);
+    assert.ok(native.context.cloneCalls >= 7);
+    const fixture = JSON.parse(await fs.readFile(new URL('./fixtures/theverge.json', import.meta.url)));
+    for (const request of fixture.requests) assert.deepEqual(native.check(request), fallback.check(request));
+    native.context.voxAdblockInitialize('||advert.example^');
+    assert.equal(native.check({url:'https://advert.example/ad.js',source_url:'https://example.com/',request_type:'script'}).blocked, true);
+    native.context.voxAdblockInitialize();
+    for (const request of fixture.requests) assert.deepEqual(native.check(request), fallback.check(request));
+    assert.deepEqual(JSON.parse(JSON.stringify(native.context.voxDocumentFilters(fixture.url, ['.ad-banner']))),
+        JSON.parse(JSON.stringify(fallback.context.voxDocumentFilters(fixture.url, ['.ad-banner']))));
+});
 
 test('bundled snapshot retains the recorded full-uBO Brave request decisions', async () => {
     const fixture = JSON.parse(await fs.readFile(new URL('./fixtures/theverge.json', import.meta.url)));

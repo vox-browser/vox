@@ -44,17 +44,17 @@ fn test_browser_activity_heap_scope_keeps_gc_enabled_and_restores_nested_policy(
 			activity_heap_test_set_divisor(original)
 			for name, value in saved { os.setenv(name, value, true) }
 		}
-		activity_heap_test_set_divisor(32)
+		activity_heap_test_set_divisor(128)
 		mut outer := begin_browser_activity_heap_scope()
-		assert activity_heap_test_divisor() == 4
+		assert activity_heap_test_divisor() == 64
 		assert gc_is_enabled()
 		mut inner := begin_browser_activity_heap_scope()
 		inner.finish()
-		assert activity_heap_test_divisor() == 4
+		assert activity_heap_test_divisor() == 64
 		outer.finish()
-		assert activity_heap_test_divisor() == 32
+		assert activity_heap_test_divisor() == 128
 		outer.finish()
-		assert activity_heap_test_divisor() == 32
+		assert activity_heap_test_divisor() == 128
 		mut changed := begin_browser_activity_heap_scope()
 		activity_heap_test_set_divisor(8)
 		changed.finish()
@@ -77,13 +77,13 @@ fn test_browser_activity_heap_scope_honors_all_explicit_collector_overrides() {
 			activity_heap_test_set_divisor(original)
 			for name, value in saved { os.setenv(name, value, true) }
 		}
-		activity_heap_test_set_divisor(32)
+		activity_heap_test_set_divisor(128)
 		for name in ['GC_INITIAL_HEAP_SIZE', 'GC_MAXIMUM_HEAP_SIZE', 'GC_FREE_SPACE_DIVISOR'] {
 			os.setenv(name, '8', true)
 			mut scope := begin_browser_activity_heap_scope()
-			assert activity_heap_test_divisor() == 32
+			assert activity_heap_test_divisor() == 128
 			scope.finish()
-			assert activity_heap_test_divisor() == 32
+			assert activity_heap_test_divisor() == 128
 			os.setenv(name, '', true)
 		}
 	}

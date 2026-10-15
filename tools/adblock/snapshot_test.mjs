@@ -52,6 +52,22 @@ test('each restoration owns mutable arrays and maps while bundle bytes remain re
     assert.deepEqual(Array.from(context.voxAdblockSnapshotBytes), Array.from(encoded.binary));
 });
 
+test('native clone callback receives bounded views and preserves fresh restoration ownership', () => {
+    const encoded = encodeSnapshot({ bytes: new Uint8Array([7, 8]), words: new Uint32Array([11, 12]) });
+    const { context } = restore(encoded);
+    vm.runInContext(`globalThis.cloneCalls=[];globalThis.voxAdblockCloneSnapshotView=view=>{
+        cloneCalls.push([view.constructor.name,view.byteOffset,view.length]);
+        return new view.constructor(view);
+    };`, context);
+    const first = context.snapshot.restore();
+    first.words[0] = 99;
+    const second = context.snapshot.restore();
+    assert.deepEqual(Array.from(second.words), [11, 12]);
+    assert.deepEqual(Array.from(second.bytes), [7, 8]);
+    assert.equal(context.cloneCalls.length, 4);
+    assert.equal(context.cloneCalls[1][1], 4);
+});
+
 test('requires the complete native snapshot before restoring', () => {
     const encoded = encodeSnapshot({ words: new Int32Array([1, -2, 3]) });
     const context = vm.createContext();

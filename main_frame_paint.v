@@ -41,6 +41,7 @@ fn (mut app BrowserApp) finish_frame_preparation() {
 
 fn (mut app BrowserApp) record_document_paint_commands() {
 	checkpoint := time.sys_mono_now()
+	app.memory_maintenance.document_changed(checkpoint)
 	mut document := unsafe { &dom.Document(app.document) }
 	if display_list := document.record_display_list() {
 		app.paint_commands = layout.display_list_commands(display_list)

@@ -408,6 +408,11 @@ extern "C" int ladybird_v_skia_configure_font(char const* path, int slot)
 {
     if (!path || slot < 0 || slot >= FontSlotCount)
         return 0;
+    auto key = std::string(path) + "#0";
+    if (auto found = s_path_typefaces.find(key); found != s_path_typefaces.end()) {
+        s_typefaces[slot] = found->second;
+        return 1;
+    }
     auto data = SkData::MakeFromFileName(path);
     if (!data)
         return 0;
@@ -420,7 +425,8 @@ extern "C" int ladybird_v_skia_configure_font(char const* path, int slot)
         std::make_unique<SkMemoryStream>(std::move(data)), arguments);
     if (!typeface)
         return 0;
-    s_typefaces[slot] = std::move(typeface);
+    s_typefaces[slot] = typeface;
+    s_path_typefaces.emplace(std::move(key), std::move(typeface));
     return 1;
 }
 
