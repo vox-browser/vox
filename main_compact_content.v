@@ -133,6 +133,17 @@ fn (mut binding CompactElementQueryBinding) query(input string) !string {
 			'null'
 		}
 	}
+	if action == 'getElementsByClassName' {
+		// Recreate the native filter per read: its cache currently versions tree
+		// changes, while attribute-only class edits must also be visible here.
+		mut parent := unsafe { &dom.ParentNode(root) }
+		collection := parent.get_elements_by_class_name(selector)
+		mut result := []json2.Any{}
+		for element in collection.collect_matching_elements() {
+			result << binding.element_state(element)
+		}
+		return json2.encode(result)
+	}
 	css.install_document_selector_query_hook(binding.document)
 	// Use the DOM entry point for validation, preserving its SyntaxError before
 	// queries that otherwise return no matches for an invalid selector.
@@ -163,4 +174,67 @@ fn (mut binding CompactElementQueryBinding) query(input string) !string {
 		return json2.encode(result)
 	}
 	return error('Invalid selector action')
+}
+
+// Reads flush pending compact mutations through the same native query boundary
+// as selectors. A saved collection therefore stays live without maintaining a
+// second JavaScript tree or escaping class names into a selector.
+fn compact_class_collection_bootstrap() string {
+	return r'
+function __classCollection(key, classNames) {
+ const read=()=>__queryElements(key,"getElementsByClassName",classNames);
+ function named(elements,name) {
+  if(name==="")return null;
+  for(const element of elements){
+   const state=__elementApply(__elementRecordGet,__elementRecords,[element]);
+   if(state.id===name||(state.namespaceURI==="http://www.w3.org/1999/xhtml"&&state.attributes.name===name))return element;
+  }
+  return null;
+ }
+ function isIndex(property){return typeof property==="string"&&/^(0|[1-9][0-9]*)$/.test(property)&&Number(property)<4294967295;}
+ const target={
+  item(index){if(arguments.length===0)throw new TypeError("item requires an index");index=(+index)>>>0;return read()[index]||null;},
+  namedItem(name){if(arguments.length===0)throw new TypeError("namedItem requires a name");if(typeof name==="symbol")throw new TypeError("Cannot convert a Symbol to a string");name=String(name);return named(read(),name);},
+  *[Symbol.iterator](){let index=0;for(;;){const elements=read();if(index>=elements.length)return;yield elements[index++];}}
+ };
+ for(const method of ["item","namedItem",Symbol.iterator])Object.defineProperty(target,method,{enumerable:false});
+ Object.defineProperty(target,Symbol.toStringTag,{value:"HTMLCollection",configurable:true});
+ return new Proxy(target,{
+  get(target,property,receiver){
+   if(property==="length")return read().length;
+   if(Reflect.has(target,property))return Reflect.get(target,property,receiver);
+   if(isIndex(property))return read()[Number(property)];
+   if(typeof property==="string")return named(read(),property)||undefined;
+  },
+  has(target,property){return property==="length"||Reflect.has(target,property)||(isIndex(property)?Number(property)<read().length:typeof property==="string"&&named(read(),property)!==null);},
+  ownKeys(target){
+   const elements=read(),keys=Reflect.ownKeys(target);
+   for(let index=0;index<elements.length;index++)keys.push(String(index));
+   for(const element of elements){const state=__elementApply(__elementRecordGet,__elementRecords,[element]);for(const name of [state.id,state.namespaceURI==="http://www.w3.org/1999/xhtml"?state.attributes.name:""])if(name&&name!=="length"&&!Reflect.has(target,name)&&!keys.includes(name))keys.push(name);}
+   return keys;
+  },
+  getOwnPropertyDescriptor(target,property){
+   const own=Reflect.getOwnPropertyDescriptor(target,property);if(own)return own;
+   if(property==="length")return{value:read().length,writable:false,enumerable:false,configurable:true};
+   if(isIndex(property)){const element=read()[Number(property)];if(element)return{value:element,writable:false,enumerable:true,configurable:true};}
+   else if(typeof property==="string"){const element=named(read(),property);if(element)return{value:element,writable:false,enumerable:false,configurable:true};}
+  }
+ });
+}
+Object.defineProperty(Element.prototype,"getElementsByClassName",{value:function getElementsByClassName(classNames){
+ "use strict";
+ const state=__elementApply(__elementRecordGet,__elementRecords,[this]);
+ if(!state)throw new TypeError("Illegal Element receiver");
+ if(arguments.length===0)throw new TypeError("getElementsByClassName requires class names");
+ if(typeof classNames==="symbol")throw new TypeError("Cannot convert a Symbol to a string");
+ return __classCollection(state.bridgeKey,String(classNames));
+},writable:true,enumerable:true,configurable:true});
+document.getElementsByClassName=function getElementsByClassName(classNames){
+ "use strict";
+ if(this!==document)throw new TypeError("Illegal Document receiver");
+ if(arguments.length===0)throw new TypeError("getElementsByClassName requires class names");
+ if(typeof classNames==="symbol")throw new TypeError("Cannot convert a Symbol to a string");
+ return __classCollection("",String(classNames));
+};
+'
 }
