@@ -35,6 +35,8 @@ pub fn procedural_script(filters DocumentFilters) string {
 		const procedural=new vAPI.DOMProceduralFilterer(owner);
 		vAPI.domFilterer={proceduralFilterer:procedural};
 		procedural.addProceduralSelectors(${json.encode(filters.procedural)}.map(s=>JSON.parse(s)));
-		globalThis.__voxAdblockApplyProcedural=()=>{procedural.commitNow();return "/* vox procedural filters */\\n"+styles.join("\\n")};
+		const proceduralCSS=()=>"/* vox procedural filters */\\n"+styles.join("\\n");
+		globalThis.__voxAdblockProceduralCSS=proceduralCSS;
+		globalThis.__voxAdblockApplyProcedural=()=>{procedural.commitNow();return proceduralCSS()};
 	})();'
 }

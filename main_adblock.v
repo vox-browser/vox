@@ -67,6 +67,15 @@ fn install_browser_adblock_scriptlets(document &dom.Document, runtime &browserjs
 fn refresh_browser_adblock(document &dom.Document, runtime &browserjs.Runtime, mut messages []string) {
 	mut procedural_css := ''
 	if runtime != unsafe { nil } && adblock.is_enabled() {
+		// Upstream primes action styles before evaluating selectors. Publish them
+		// before a :matches-css query can synchronously flush style and layout.
+		primed_css := runtime.evaluate_host('typeof __voxAdblockProceduralCSS==="function"?__voxAdblockProceduralCSS():""') or {
+			messages << 'Adblock procedural filters: ${err.msg()}'
+			''
+		}
+		if primed_css != '' {
+			install_browser_adblock_styles(document, primed_css) or { messages << 'Adblock styles: ${err.msg()}' }
+		}
 		procedural_css = runtime.evaluate_host('typeof __voxAdblockApplyProcedural==="function"?__voxAdblockApplyProcedural():""') or {
 			messages << 'Adblock procedural filters: ${err.msg()}'
 			''
