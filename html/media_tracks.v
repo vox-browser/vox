@@ -90,6 +90,8 @@ pub type SetAudioTrackEnabled = fn(&AudioTrack, bool)
 
 pub type SetSelectedVideoTrack = fn(?&VideoTrack)
 
+type QueueAudioTrackListChangeTask = fn(&AudioTrackList)
+
 type QueueVideoTrackListChangeTask = fn(&VideoTrackList)
 
 pub enum MediaTrackIterationDecision {
@@ -102,6 +104,8 @@ pub struct AudioTrack {
 pub:
 	queue_change_task            QueueMediaTrackChangeTask @[required]
 	set_playback_manager_enabled SetAudioTrackEnabled @[required]
+mut:
+	queue_change_task_for_list ?QueueAudioTrackListChangeTask
 pub mut:
 	base             MediaTrackBase
 	enabled          bool
@@ -121,10 +125,14 @@ pub fn (mut track AudioTrack) set_enabled(enabled bool) {
 	if track.enabled == enabled {
 		return
 	}
-	if _ := track.audio_track_list {
-		track.queue_change_task()
-	}
 	track.enabled = enabled
+	if list := track.audio_track_list {
+		if queue_change := track.queue_change_task_for_list {
+			queue_change(list)
+		} else {
+			track.queue_change_task()
+		}
+	}
 	track.set_playback_manager_enabled(track, enabled)
 }
 

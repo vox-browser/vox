@@ -2196,8 +2196,23 @@ pub fn (mut element HTMLMediaElement) on_audio_track_added(metadata MediaTrackMe
 		mut media := unsafe { &HTMLMediaElement(element_pointer) }
 		media.set_audio_track_enabled(track, enabled)
 	})
-	element.audio_tracks_.add_track(track)
 	mut mutable_track := unsafe { &AudioTrack(track) }
+	mutable_track.base.set_media_element(unsafe { &HTMLMediaElement(element_pointer) })
+	mutable_track.queue_change_task_for_list = fn [element_pointer] (list &AudioTrackList) {
+		media := unsafe { &HTMLMediaElement(element_pointer) }
+		media.queue_a_media_element_task(fn [element_pointer, list] () {
+			media := unsafe { &HTMLMediaElement(element_pointer) }
+			mut event := dom.Event.create('change', dom.EventInit{})
+			if document := media.document() {
+				settings := document.relevant_settings_object()
+				if settings != unsafe { nil } {
+					event.set_time_stamp(unsafe { &EnvironmentSettingsObject(settings) }.global_relative_event_timestamp())
+				}
+			}
+			list.dispatch_event(event)
+		})
+	}
+	element.audio_tracks_.add_track(track)
 	enable := !element.audio_tracks_.tracks().any(it != track && it.enabled)
 	if enable {
 		mutable_track.set_enabled(true)
