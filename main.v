@@ -2090,14 +2090,12 @@ fn apply_javascript_canvas_state(document &dom.Document, mut element dom.Element
 }
 
 fn apply_javascript_state(document &dom.Document, encoded string, canvas_elements map[string]&dom.Element, mut messages []string) ?string {
-	value := json2.decode[json2.Any](encoded) or {
-		messages << 'JavaScript bridge result: ${err.msg()}'
-		return none
-	}
-	if value !is map[string]json2.Any {
-		return none
-	}
-	state := value as map[string]json2.Any
+	state := javascript_replay_state(encoded, mut messages) or { return none }
+	return apply_decoded_javascript_state(document, state, canvas_elements, mut messages)
+}
+
+fn apply_decoded_javascript_state(document &dom.Document, state map[string]json2.Any,
+	canvas_elements map[string]&dom.Element, mut messages []string) ?string {
 	if model := html.NavigableModel.navigable_with_active_document(document) {
 		mut mutable_model := unsafe { &html.NavigableModel(model) }
 		mutable_model.set_force_dark_enabled(json_bool_property(state, 'forceDarkEnabled'))
@@ -2110,6 +2108,8 @@ fn apply_javascript_state(document &dom.Document, encoded string, canvas_element
 	root := unsafe { &dom.Node(document) }
 	mut initial_elements := []&dom.Element{}
 	mut has_initial_elements := false
+	mut metadata_may_have_changed := json_bool_property(state, 'bodyHTMLDirty')
+		|| json_bool_property(state, 'bodyTextDirty')
 	// Legacy unbound snapshots index the tree before a body replacement.
 	if json_bool_property(state, 'bodyHTMLDirty') || json_bool_property(state, 'bodyTextDirty') {
 		initial_elements = css.query_selector_all(root, '*')
@@ -2155,6 +2155,12 @@ fn apply_javascript_state(document &dom.Document, encoded string, canvas_element
 					initial_elements[element_index]
 				}
 				element_by_bridge_key[bridge_key] = element
+				if (element.is_html_element() && element.local_name() == 'meta'
+					&& json_bool_property(element_state, 'attributesDirty'))
+					|| json_bool_property(element_state, 'innerHTMLDirty')
+					|| json_bool_property(element_state, 'textContentDirty') {
+					metadata_may_have_changed = true
+				}
 				if json_bool_property(element_state, 'attributesDirty') {
 					if attribute_values := element_state['attributes'] {
 						if attribute_values is map[string]json2.Any {
@@ -2225,6 +2231,10 @@ fn apply_javascript_state(document &dom.Document, encoded string, canvas_element
 				}
 				operation := item as map[string]json2.Any
 				kind := json_string_property(operation, 'op') or { continue }
+				if kind in ['appendCreated', 'insertCreated', 'moveBefore', 'remove',
+					'surroundSelectedContents'] {
+					metadata_may_have_changed = true
+				}
 				if kind == 'removeAllRanges' {
 					if mut selection := document.get_selection() {
 						selection.remove_all_ranges()
@@ -2386,11 +2396,12 @@ fn apply_javascript_state(document &dom.Document, encoded string, canvas_element
 			}
 		}
 	}
-	// The compact bridge applies a script's DOM mutations as one replay pass.
-	// Refresh metadata after that pass so inserted, removed, or edited color-scheme
-	// meta elements invalidate style and retained paint just like their live hooks.
-	mut mutable_document := unsafe { &dom.Document(document) }
-	mutable_document.obtain_supported_color_schemes()
+	// Metadata depends on meta attributes and tree contents, so ordinary class,
+	// control-state and selection changes can retain its current document value.
+	if metadata_may_have_changed {
+		mut mutable_document := unsafe { &dom.Document(document) }
+		mutable_document.obtain_supported_color_schemes()
+	}
 	return json_string_property(state, 'navigate')
 }
 
@@ -2553,7 +2564,7 @@ fn run_document_script_sources(document &dom.Document, current_url string, sourc
 	mut transition_host := browserjs.ViewTransitionHost.create(document, fn [document] (callback_runtime &browserjs.Runtime) ! {
 		state := callback_runtime.evaluate_host('__ladybirdFinalize()')!
 		mut replay_messages := []string{}
-		apply_javascript_state(document, state, callback_runtime.canvas_elements_for_binding(), mut replay_messages)
+		apply_javascript_runtime_state(document, state, callback_runtime, mut replay_messages)
 		mut mutable_callback_runtime := unsafe { &browserjs.Runtime(callback_runtime) }
 		mutable_callback_runtime.mark_document_state_dirty()
 	}) or {
@@ -2567,7 +2578,7 @@ fn run_document_script_sources(document &dom.Document, current_url string, sourc
 	mut image_host := browserjs.ImageHost.create_with_request_fetch(document, browser_fetch_image_request, fn [document] (callback_runtime &browserjs.Runtime) ! {
 		state := callback_runtime.evaluate_host('__ladybirdFinalize()')!
 		mut replay_messages := []string{}
-		apply_javascript_state(document, state, callback_runtime.canvas_elements_for_binding(), mut replay_messages)
+		apply_javascript_runtime_state(document, state, callback_runtime, mut replay_messages)
 	}) or {
 		messages << 'JavaScript image bindings: ${err.msg()}'
 		return none
@@ -2579,7 +2590,7 @@ fn run_document_script_sources(document &dom.Document, current_url string, sourc
 	mut media_element_host := browserjs.MediaElementHost.create(document, fn [document] (callback_runtime &browserjs.Runtime) ! {
 		state := callback_runtime.evaluate_host('__ladybirdFinalize()')!
 		mut replay_messages := []string{}
-		apply_javascript_state(document, state, callback_runtime.canvas_elements_for_binding(), mut replay_messages)
+		apply_javascript_runtime_state(document, state, callback_runtime, mut replay_messages)
 	}) or {
 		messages << 'JavaScript media element bindings: ${err.msg()}'
 		return none
@@ -2591,7 +2602,7 @@ fn run_document_script_sources(document &dom.Document, current_url string, sourc
 	mut element_wheel_host := browserjs.ElementWheelHost.create_with_replay(document, fn [document] (callback_runtime &browserjs.Runtime) ! {
 		state := callback_runtime.evaluate_host('__ladybirdFinalize()')!
 		mut replay_messages := []string{}
-		apply_javascript_state(document, state, callback_runtime.canvas_elements_for_binding(), mut replay_messages)
+		apply_javascript_runtime_state(document, state, callback_runtime, mut replay_messages)
 	}) or {
 		messages << 'JavaScript element wheel bindings: ${err.msg()}'
 		return none
@@ -2628,7 +2639,7 @@ fn run_document_script_sources(document &dom.Document, current_url string, sourc
 	mutable_runtime.install_window_find_binding(fn [document] (callback_runtime &browserjs.Runtime) ! {
 		state := callback_runtime.evaluate_host('__ladybirdFinalize()')!
 		mut replay_messages := []string{}
-		apply_javascript_state(document, state, callback_runtime.canvas_elements_for_binding(), mut replay_messages)
+		apply_javascript_runtime_state(document, state, callback_runtime, mut replay_messages)
 	}) or {
 		messages << 'JavaScript Window.find bindings: ${err.msg()}'
 		return none
@@ -2657,7 +2668,7 @@ fn run_document_script_sources(document &dom.Document, current_url string, sourc
 	mut animation_frame_host := browserjs.AnimationFrameHost.create(document, fn [document] (callback_runtime &browserjs.Runtime) ! {
 		state := callback_runtime.evaluate_host('__ladybirdFinalize()')!
 		mut replay_messages := []string{}
-		apply_javascript_state(document, state, callback_runtime.canvas_elements_for_binding(), mut replay_messages)
+		apply_javascript_runtime_state(document, state, callback_runtime, mut replay_messages)
 		mut mutable_callback_runtime := unsafe { &browserjs.Runtime(callback_runtime) }
 		mutable_callback_runtime.mark_document_state_dirty()
 	}) or {
@@ -2694,7 +2705,7 @@ fn run_document_script_sources(document &dom.Document, current_url string, sourc
 		messages << 'JavaScript: ${err.msg()}'
 		return none
 	}
-	navigation := apply_javascript_state(document, result, runtime.canvas_elements_for_binding(), mut messages)
+	navigation := apply_javascript_runtime_state(document, result, runtime, mut messages)
 	runtime.evaluate_host('__ladybirdClearLogs()') or {}
 	mutable_runtime.take_document_state_dirty()
 	return navigation
@@ -2719,7 +2730,7 @@ fn (mut app BrowserApp) poll_javascript_tasks() {
 		app.js_messages << 'JavaScript asynchronous callback: ${err.msg()}'
 		return
 	}
-	navigation := apply_javascript_state(app.document, state, runtime.canvas_elements_for_binding(), mut app.js_messages)
+	navigation := apply_javascript_runtime_state(app.document, state, runtime, mut app.js_messages)
 	runtime.evaluate_host('__ladybirdClearLogs()') or {}
 	app.relayout(app.viewport_width, app.viewport_height + app.chrome_height())
 	if app.ctx != unsafe { nil } {
@@ -2755,7 +2766,7 @@ fn (mut app BrowserApp) media_click_replay_state(element &dom.Element) !map[stri
 	// Apply callback mutations before reading the raw slot. Finalize drains the
 	// operation queue; the later snapshot still carries pending navigation.
 	state := app.js_runtime.evaluate_host('__ladybirdFinalize()')!
-	apply_javascript_state(app.document, state, app.js_runtime.canvas_elements_for_binding(),
+	apply_javascript_runtime_state(app.document, state, app.js_runtime,
 		mut app.js_messages)
 	app.js_runtime.evaluate_host('__ladybirdClearLogs()')!
 	mut key := ''
@@ -2800,7 +2811,7 @@ fn (mut app BrowserApp) dispatch_javascript_event(name string, element &dom.Elem
 		app.js_messages << 'JavaScript event: ${err.msg()}'
 		return false
 	}
-	navigation := apply_javascript_state(app.document, result, app.js_runtime.canvas_elements_for_binding(), mut app.js_messages)
+	navigation := apply_javascript_runtime_state(app.document, result, app.js_runtime, mut app.js_messages)
 	app.js_runtime.evaluate_host('__ladybirdClearLogs()') or {}
 	app.relayout(app.viewport_width, app.viewport_height + app.chrome_height())
 	if destination := navigation {

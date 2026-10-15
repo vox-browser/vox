@@ -94,8 +94,11 @@ fn (mut binding CompactElementQueryBinding) query(input string) !string {
 	request := json2.decode[map[string]json2.Any](input)!
 	if snapshot := json_string_property(request, 'snapshot') {
 		mut messages := []string{}
-		elements := binding.runtime.canvas_elements_for_binding()
-		apply_javascript_state(binding.document, snapshot, elements, mut messages)
+		mut elements := map[string]&dom.Element{}
+		if state := javascript_replay_state(snapshot, mut messages) {
+			elements = binding.runtime.canvas_elements_for_keys(compact_replay_element_keys(state))
+			apply_decoded_javascript_state(binding.document, state, elements, mut messages)
+		}
 		// Console output stays in the script snapshot for its normal consumer;
 		// only DOM replay failures can reject this selector operation.
 		mut log_count := json_int_property(request, 'logCount') or { 0 }
