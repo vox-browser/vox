@@ -7777,6 +7777,113 @@ regression or performance credit. Equivalent Chrome content/start/submission
 accounting remains open; faster-than-Chrome performance is unproven. Evidence:
 `Build/instructions/vox-opt80-interleaved-*` and `Build/v/instruction-opt80-*`.
 
+## Cache layout stabilization element counts
+
+This integration imports only independently authored feature `e91640ae`
+(Alexander Medvednikov): four exact edit hunks in Document and Element, with
+only unchanged patch context trimmed. The existing stabilization element count
+is cached against dom_tree_version; shadow-root replacement explicitly
+invalidates it. The bound remains nine plus the connected light/shadow element
+count. Mutations, attachment/detachment and adoption retain their count behavior.
+Two Document fields default to -1 and zero. Contemporary Root, filtering,
+arenas and GC policy are excluded.
+
+Before/final Boehm and final no-GC C-O2 each pass **18,323
+assertions in 15 cases** (14 retained semantic bridge cases and an inactive
+diagnostic), using identical common source SHA256
+`4841f755f7e2f5eddfd1a09162df46b4f828a318b3290fd56a48f93fc38917d1`. The functional source remains
+byte-identical to round80 except labels; only the diagnostic changes. DOM
+associations, caret lines, CSSOM geometry, invalidation, containing blocks,
+first-letter text, range rectangles and search remain covered. The two original
+candidate DOM cases run byte-for-byte in both GCs:
+**14 assertions each**.
+They verify light/shadow counts, repeated cache queries, text-only changes,
+shadow attachment/detachment, removal, adoption and nested shadow trees.
+Root sources and concurrent edits remain preserved.
+
+Three predeclared alternating local pairs count **64 complete batches of 16
+public Document.update_layout requests on an actual completed 1,024-paragraph
+layout**, including committed viewport geometry reads. Parsing, style and real
+initial layout precede the interval. Setup verifies active navigation, a real
+engine handle and clean layout. Eight warmups confirm that the engine and
+mirror remain unchanged and clean. Expected checksum and forced GC precede
+the counter; checksum, clean status and engine identity assertions follow it.
+Before: 67,771,522 / 67,743,530 / 67,612,326. Candidate by pair: 247,511 / 258,686 / 247,511.
+Median **67,743,530→247,511
+(-99.63%)**; checksum **1,115,136**
+in all six actual zero exits. This is a clean-layout preflight result; it
+receives no page credit or full-formatting savings claim.
+
+Both full-process C-O1/Boehm profiles actually pass without filter/reset:
+
+| Function | Before calls | Candidate calls |
+| --- | ---: | ---: |
+| `layout__opt81_complete_clean_layout_requests` | 73 | 73 |
+| `dom__Document_update_layout` | 1,227 | 1,227 |
+| `dom__layout_stabilization_element_count` | 2,402,591 | 2,134 |
+| `dom__Document_cached_layout_stabilization_element_count` | 0 | 1,227 |
+
+These are call counts, not hardware instruction savings. The full public
+clean-check batch and public layout call counts match; recursive element-count
+calls decrease. The new cache lookup serves the active requests. Both original
+profile outputs and generated-C full-process scope proofs are durable; neither
+profile filters or resets counters.
+
+Strict C audit authenticates the four exact source hunks, two edited functions,
+two added methods and two Document cache fields. Independent normal/focused
+targets match after named compiler identities, independently authenticated
+closures and the exact compiler test assertion reporter. Document layout,
+-1/zero initializers, scalar display and equality metadata are authenticated
+against their old forms plus exactly the two fields. Unchanged assertion
+source lines are mapped explicitly for Document and Element. All remaining C,
+records, globals, resources, filtering, arenas and GC policy match after
+established identities, 37 frozen includes and four byte-identical helper
+reorderings. All 120 native inputs and exact native arguments match.
+Two initial audit-only failures remain retained: the assertion reporter selector
+expected one reporter instead of two, and the display-argument selector missed
+generated whitespace. Both comparisons were corrected against actual C; no
+successful runtime check or primary observation was repeated.
+C SHA256 `f082a876101f1ad363f444eb0137d783b7261e988160c86ed43499d0afa2bf74`; durable normal, focused,
+contract and profile archives appear in `instruction-opt81-artifact-archives.json`.
+Compiler scratch is durable SSD; cache copies use the same RAM.
+
+The predeclared page cohort is **30 alternating pairs**, odd before/final,
+even final/before, **30,000 paired bootstrap resamples, seed 81**. Both regular
+persisted binaries use fresh copies of the same 359 cached bodies, frozen text
+and child-only placement helpers, C-O2/Boehm/one marker and unchanged 4 GiB
+hint; no prod/prealloc. Fixed document viewport 1024×768 and endpoint
+`navigation_to_first_document_paint[0]`; no historical or Root comparison.
+
+| Build | Median first-frame retired instructions | Median lifetime process peak, MiB |
+| --- | ---: | ---: |
+| Fresh accepted frozen80 control | 17,757,272,279.5 | 3,603 |
+| Cached stabilization count | 17,750,533,094.5 | 3,602.9 |
+
+Difference of marginal medians: **6,739,185** instructions
+saved (-0.038% change), **16/30** wins.
+Paired median saving **3,469,065**, paired 95% interval
+**[-5,299,778, 14,367,559]**. The interval includes zero; repeatable page credit is **0**. Whole-page savings are not established.
+
+All 60 primary observations and **60 actual PNGs** remain. Recovered
+primaries: none; pre-parse retries: 0. First primaries
+retain 1 installation/2 geometry preparations/1 paint. Later completed refreshes
+remain separate: none. No completed primary is extended,
+discarded or rerun. Recoveries disclose unknown final exit and missing PNG,
+fingerprint and peak. Peaks cover capture/exit and later refreshes, not
+first-frame live memory, and are never summed. The read-only decoded capture check finds 30 before and 30 candidate RGB classes, 0 shared. All differences stay within the original skeleton bands, x45–662: y335–344 and ten 14px bands starting at380 with41px spacing. All pixels outside these bands match. No animation was disabled and no observation repeated; evidence is instruction-opt81-page-pixel-class-check.json.
+The focused stabilization/geometry, grid/flex/table, Unicode and intrinsic viewport is
+pixel-exact at 1024×768.
+Prior observed carry is 0. Cumulative observed saving **6,739,185** crosses the 5M gate. Six direct harness jobs actually pass CSS 31/SVG 10/layout 46 in both GCs (**174 executions**). All **19 screenshots pass, 16 exact**; known differences remain inline-node 13, text-decorations 1,341 and canvas-text 1,994. The completed broad batch resets additional observed savings to 0.
+
+The isolated signed app is `/Users/alex/code/vox2/Build/v/Vox-opt81.app`; native instruction text
+matches the measured executable, with the frozen helper pinned inside the
+bundle and its actual default loaded path/hash checked. Signatures, startup
+and actual GC collections pass with default marker 1 and override 2. Canonical
+app and user GUI remain preserved; contemporary Root has no extra source,
+regression or performance credit. Equivalent Chrome content/start/submission
+accounting remains open; faster-than-Chrome performance is unproven. Evidence:
+`Build/instructions/vox-opt81-interleaved-*` and `Build/v/instruction-opt81-*`.
+
 ## Causes and changes
 
 - The V 0.5.2 compatibility compiler's `-prod` Boehm code repeatedly snapshots

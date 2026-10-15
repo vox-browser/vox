@@ -1740,6 +1740,16 @@ evidence](docs/translation-audit/NATIVE_MEDIA_WHEEL_RAW_HANDLER.md).
   focused prepared-mirror/geometry viewport exact. Additional observed savings: 0.
   Same 4 GiB/placement; canonical/GUI preserved; contemporary Root excluded.
   Chrome parity remains open.
+  Layout stabilization count cache `e91640ae` (independent committed slice)
+  pass 18,323 common assertions in 15 cases per configuration,
+  plus 2 original candidate cases/14 assertions both GC.
+  Complete public clean-layout checks use 99.63% fewer instructions.
+  Page point saving 6,739,185, 16/30 wins,
+  paired interval [-5,299,778, 14,367,559]; repeatable credit 0.
+  Broad verification: 87 selected cases both GC and 19 screenshots (16 exact);
+  focused stabilization/geometry viewport exact. Additional observed savings: 0.
+  Same 4 GiB/placement; canonical/GUI preserved; contemporary Root excluded.
+  Chrome parity remains open.
 - Outside instruction-count optimization, run broad regression suites once per
   ten completed fixes, not after every fix.
   Broad suites include full translation/package test batches, the full LibJS AST
