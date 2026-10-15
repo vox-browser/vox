@@ -5225,6 +5225,49 @@ header, with repository content later. No parity or faster-than-Chrome claim is
 made. Evidence: `Build/instructions/vox-opt56-interleaved-*` and
 `Build/v/instruction-opt56-*`.
 
+## Coarse parsing, style and script instruction scopes
+
+A separate diagnostic uses frozen round56 generated C and the same 4 GiB hint,
+C-O2, Boehm/default marker 1, cache and helper. Six owner-thread entry wrappers
+accumulate process-wide retired-instruction intervals between the first navigation
+entry and first native document frame report. CSS-tokenizer scopes include only
+input strings of at least 32 KiB; smaller inputs forward unchanged without counter
+reads. High-frequency selector and per-token functions remain unwrapped. All other
+C restores byte-for-byte to the authenticated normal C. No Root implementation or
+canonical app changes are part of this diagnostic.
+
+| Wrapped function | Entries | Inclusive retired instructions |
+| --- | ---: | ---: |
+| `dom__Document_update_style` | 3 | 3,718,603,235 |
+| `main__run_document_script_sources` | 1 | 2,295,907,260 |
+| `css__Tokenizer__static__tokenize` | 15 | 784,514,227 |
+| `html__HTMLParser_run_with_stop_at_insertion_point` | 1 | 709,588,974 |
+| `layout__build_layout_tree_from_computed_styles` | 2 | 589,775,268 |
+| `css__sync_document_style_elements` | 2 | 243,978,305 |
+
+All native/sign/startup, observer and browser exits are actually zero. The first
+startup succeeds; one primary and a real 1024×768 viewport PNG remain. There are no
+counter failures. Instrumented first-frame count is **18,751,415,734**. This is
+diagnostic evidence, not another before/final page cohort. These intervals overlap,
+include wrapper and counter effects, and include work charged to other process
+threads. They must not be added, subtracted to infer self cost, or credited as
+normal page savings. The filtered tokenizer total does not cover all CSS parsing.
+The HTML scope covers parser execution, without claiming the surrounding document
+setup or all constructor work. The large style and script intervals guide new
+unwrapped local probes; their presence does not justify skipping required work.
+
+The independent audit authenticates exact C restoration, all 120 native inputs,
+unchanged native arguments except artifacts, the 359 cached bodies, actual
+fresh-copy receipt, loaded frozen helper, native counters, image and real exits.
+Normal source/binary identity is round56. Diagnostic binary SHA256:
+`93094c1b427901ef13bd79cdd449c3ee3b12bc0619469d410a3810d8c8f94b50`; compiled C:
+`178482dbe498c6e285ab042b9b8c1e2d97cdd6bfbc9d594a8966d370e7873035`; durable C
+archive: `2a0762884b07eee56982277a5ef8319d5a5520e286210ae3cc58dd469ccce123`.
+Evidence is in `Build/v/instruction-hotspots57-*.json` and
+`Build/instructions/vox-hotspots57-diagnostic.run-1.*`. Performance credit is
+**0**; the validation ledger and broad baseline remain unchanged. Chrome
+content/start/endpoint equivalence remains open.
+
 ## Causes and changes
 
 - The V 0.5.2 compatibility compiler's `-prod` Boehm code repeatedly snapshots
