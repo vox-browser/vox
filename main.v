@@ -1492,7 +1492,7 @@ fn install_video_poster_fetch_hooks(document &dom.Document) {
 		model.set_poster_fetch_hook(fn [element] (resource_url dom.URL) !&dom.Bitmap_ {
 			return browser_decode_raster_image_bytes(browser_image_resource_bytes_for_document(resource_url, element.document().url.serialize())!)
 		})
-		if poster := element.get_attribute('poster') {
+		if poster := element.get_attribute_ns(none, 'poster') {
 			model.set_poster(poster)
 		}
 	}
