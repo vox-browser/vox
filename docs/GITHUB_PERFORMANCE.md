@@ -6411,6 +6411,101 @@ submission accounting remains open; faster-than-Chrome is not established.
 Evidence: `Build/instructions/vox-opt67-interleaved-*` and
 `Build/v/instruction-opt67-*`.
 
+## Read retained length edges directly
+
+Feature `f04b5385` adds one retained-LengthStyleValue guard to public
+`LengthPercentageOrAuto.from_style_value()`. It reads the existing owner and
+passes the length to the unchanged public `from_length()` constructor. The
+entire former body remains after the guard, including keyword/auto handling,
+percentage and calculation conversion, strict serialized parsing and automatic
+fallback. Other retained types keep the same behavior. No cache, retained
+state, schema or public API is added; filtering, arenas and GC stay unchanged.
+
+Before/final Boehm and final no-GC C-O2 builds each actually pass **1,878
+assertions in 21 cases** (20 functional plus one inactive diagnostic). Three new
+cases compare all 49 length units and five magnitudes, conflicting serialized
+text, other retained kinds, percentage/calc and strict serialized fallbacks,
+owner mutation/replacement/clearing, old results and forced collection. An exact
+copy of the former public getter is an oracle alongside independent kind,
+unit and numeric expectations. Identical common source SHA256:
+`b8817e560da65469d7a8e9b4310ae11b292c07b79a0f7e4b84cc2b6d1adc09e6`.
+
+Three fixed alternating local pairs run 512 complete public margin-length-box
+batches over 32 retained styles with four edges each: 64 lengths, 32 percentages,
+16 calculations and 16 auto values. Setup, the old-getter expected checksum,
+eight warmups and forced GC precede the hardware interval; the final checksum
+assertion follows. Median instructions change
+**34,031,652→29,769,675 (-12.52%)**,
+all three pairs improving; checksum 2,162,688 in all six observations. This
+local result receives no extra page credit. Both whole-process C-O1/Boehm
+profiles actually pass without filter/reset; exact selected call counts are
+retained in `instruction-opt68-profile-evidence.json`. Complete batches stay 521,
+public length-box calls 16,672 and conversion calls 66,965. Keyword reads change
+67,356→33,764, parsed-length reads 58,998→25,406 and typed-helper reads 59,054→25,462.
+The newly used from_length constructor has 33,592 candidate calls and no row in
+the control profile. The first extraction incorrectly required that unused
+control constructor row. Both actual profile jobs had already exited 0; their
+original selection failure is retained under `instruction-opt68-profile-selection-failure`.
+Only extraction was resumed, with zero successful jobs repeated. Call counts
+and profile timings never substitute for hardware instructions.
+
+Strict generated-C comparison permits only
+`css__LengthPercentageOrAuto__static__from_style_value`. The owner cast, type
+guard and constructor return are authenticated exactly against the established
+retained-length representation. The entire previous C fallback matches after
+the exact temporary+1 renumber. All other functions, schemas, resources,
+filtering, arenas and GC match after established compiler identities, exact
+unchanged assertion-line mapping, 37 frozen includes and four byte-identical
+helper reorderings. Exact C-O2 arguments and 120 native input hashes match.
+Compiled C SHA256: `c7e6132cd94c5a2db213041fa25564af23270e3813473ecb3e455e9b24e238ab`. Durable
+normal/focused/profile hashes are in `instruction-opt68-artifact-archives.json`.
+
+The draft C-audit template initially expected the old Length getter's bare
+return instead of the new constructor wrapper. That failed audit is retained
+under `instruction-opt68-c-prefix-template-failure`. Inspecting the actual
+emitted body authenticated the precise wrapper; the entire fallback and all
+remaining C still match. No successful focused job or completed counter was
+repeated, and no runtime change was made to satisfy the audit.
+
+The predeclared cohort fixes **30 alternating pairs**, odd before/final and
+even final/before, with **30,000 paired bootstrap resamples, seed 68**. Both
+regular persisted binaries use fresh copies of the same 359 cached bodies,
+frozen text helper and identical child-only placement helper, Boehm/default
+marker 1, native C-O2 and the same 4 GiB hint; no prod/prealloc. Viewport 1024×768,
+fixed endpoint `navigation_to_first_document_paint[0]`. Only this fresh matched
+cohort is compared; historical medians and independent Root work are excluded.
+
+| Build | Median first-frame retired instructions | Median process peak, MiB |
+| --- | ---: | ---: |
+| Fresh accepted frozen 67 control | 18,317,548,137 | 3,638.4 |
+| Direct retained-length edge | 18,299,066,452.5 | 3,639.2 |
+
+Difference of marginal medians: **18,481,684.5** saved
+instructions (-0.101% change); **23/30**
+wins. Paired median saving **13,255,405.5**; paired 95%
+interval **[4,206,261.5, 19,450,328.5]**. The positive paired interval establishes repeatable page credit of **18,481,684.5** instructions.
+
+All 60 primary observations and **60 actual viewport PNGs** remain.
+Recovered primaries: none; pre-parse startup retries: 0.
+Each first primary retains 1 installation / 2 geometry preparations / 1 paint;
+later completed refreshes stay separate: none.
+No completed primary is extended, discarded or rerun. Any recovery explicitly
+lacks actual final exit, PNG, per-copy fingerprint receipt and process peak.
+Lifetime peaks include capture/exit/later refreshes, are not first-frame live
+memory and are never summed. The focused mixed-edge viewport is exact at
+1024×768. Prior observed carry is 694,229.5. Cumulative observed saving **19,175,914** crosses the 5M gate. Six direct harness jobs actually pass CSS 31/SVG 10/layout 46 in both GCs (**174 executions**). All **19 screenshots pass, 16 exact**; known differences remain inline-node 13, text-decorations 1,341 and canvas-text 1,994. The completed broad batch resets additional observed savings to 0.
+
+The isolated signed app is `/Users/alex/code/vox2/Build/v/Vox-opt68.app`. The executable-relative load
+command pins the frozen helper inside the bundle; default startup smoke
+verifies its actual loaded path/hash. Native instruction text matches the
+measured regular binary. Signature, startup and actual collections pass with
+default marker 1 and override 2. Canonical and user GUI apps are preserved;
+actual before/after hashes disclose concurrent advancement. Contemporary Root
+receives no extra source pin, regression or performance credit. Equivalent
+Chrome content/start/submission accounting remains open; no faster-than-Chrome
+claim is made. Evidence: `Build/instructions/vox-opt68-interleaved-*` and
+`Build/v/instruction-opt68-*`.
+
 ## Causes and changes
 
 - The V 0.5.2 compatibility compiler's `-prod` Boehm code repeatedly snapshots

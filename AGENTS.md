@@ -1620,6 +1620,14 @@ evidence](docs/translation-audit/NATIVE_MEDIA_WHEEL_RAW_HANDLER.md).
   focused custom-property viewport exact. Additional observed savings: 694,229.5.
   Same4GiB/placement; original feature attribution retained; contemporary Root
   and canonical/GUI preserved. Chrome parity remains open.
+  Direct retained-length edges `f04b5385` pass 1,878 focused assertions
+  per configuration; complete public mixed-edge batches use 12.52% fewer instructions.
+  Page point saving 18,481,684.5, 23/30 wins,
+  paired interval [4,206,261.5, 19,450,328.5]; repeatable page credit 18,481,684.5.
+  Broad verification: 87 selected cases both GC and 19 screenshots (16 exact);
+  focused mixed-edge viewport exact. Additional observed savings: 0.
+  Same 4 GiB/placement; contemporary Root excluded; isolated app pins frozen helper.
+  Canonical/GUI preserved; Chrome parity remains open.
 - Outside instruction-count optimization, run broad regression suites once per
   ten completed fixes, not after every fix.
   Broad suites include full translation/package test batches, the full LibJS AST
