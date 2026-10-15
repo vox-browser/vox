@@ -97,6 +97,7 @@ pub type MediaPlaybackBufferedRangesHook = fn () []MediaBufferedRange
 // without importing a platform decoder into the html module.
 pub struct MediaPlaybackManagerHooks {
 pub:
+	start               ?MediaPlaybackNoArgHook
 	play                ?MediaPlaybackNoArgHook
 	pause               ?MediaPlaybackNoArgHook
 	set_volume          ?MediaPlaybackSetVolumeHook
@@ -2330,6 +2331,13 @@ pub fn (mut element HTMLMediaElement) on_metadata_parsed(duration f64) {
 		if track := element.video_tracks_.item(0) {
 			mut mutable_track := unsafe { &VideoTrack(track) }
 			mutable_track.set_selected(true)
+		}
+	}
+	// Source starts the manager only after both track selections, before
+	// observing the buffering state that its start operation may change.
+	if element.playback_manager_ready_ {
+		if start := element.playback_hooks_.start {
+			start()
 		}
 	}
 	element.update_ready_state()
