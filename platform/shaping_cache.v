@@ -224,8 +224,21 @@ fn (mut cache ShapingCache) store(font_key string, text string, params ShapePara
 	}
 }
 
+// Retain one complete key together with the immutable inputs that produced it.
+// Keep values rather than a Font address, since equivalent handles can be new.
+struct ShapingFontKey {
+	family          string
+	source_path     string
+	resolved_path   string
+	weight          int
+	point_size_bits u32
+	is_invisible    bool
+	key             string
+}
+
 __global (
 	platform_shaping_cache &ShapingCache
+	last_shaping_font_key  &ShapingFontKey
 )
 
 fn shared_shaping_cache() &ShapingCache {
@@ -239,8 +252,29 @@ fn shared_shaping_cache() &ShapingCache {
 // a shape. Include the resolved face as well as the CSS identity so changes to
 // font configuration cannot alias an older entry.
 fn shaping_cache_font_key(font &Font) string {
+	previous := last_shaping_font_key
+	if font.resolved_path_ != '' && !isnil(previous) && previous.family == font.family
+		&& previous.source_path == font.source_path && previous.resolved_path == font.resolved_path_
+		&& previous.weight == font.weight && previous.point_size_bits == math.f32_bits(font.point_size)
+		&& previous.is_invisible == font.is_invisible {
+		return previous.key
+	}
 	resolved_path := font.font_path() or { '' }
-	return '${font.family.len}:${font.family}|${font.source_path.len}:${font.source_path}|${resolved_path.len}:${resolved_path}|${font.weight}|${font.face_index()}|${math.f32_bits(font.point_size)}|${font.is_invisible}'
+	key := '${font.family.len}:${font.family}|${font.source_path.len}:${font.source_path}|${resolved_path.len}:${resolved_path}|${font.weight}|${font.face_index()}|${math.f32_bits(font.point_size)}|${font.is_invisible}'
+	// An unavailable explicit source can appear later. Its fallback path remains
+	// unpinned, and must continue through the original resolution on each call.
+	if font.resolved_path_ != '' {
+		last_shaping_font_key = &ShapingFontKey{
+			family:          font.family
+			source_path:     font.source_path
+			resolved_path:   resolved_path
+			weight:          font.weight
+			point_size_bits: math.f32_bits(font.point_size)
+			is_invisible:    font.is_invisible
+			key:             key
+		}
+	}
+	return key
 }
 
 fn cached_shape_from(shaped ShapedText) CachedShape {
