@@ -294,6 +294,7 @@ mut:
 	document                            &dom.Document = unsafe { nil }
 	root_box                            layout.BlockBox
 	markup                              string
+	content_type                        string
 	source_label                        string
 	address                             string
 	address_cursor                      int
@@ -383,6 +384,7 @@ mut:
 struct HistoryEntry {
 	url    string
 	markup string
+	content_type string = 'text/html'
 }
 
 struct LoadedPage {
@@ -821,7 +823,7 @@ fn read_cached_page(resource_url string) ?LoadedPage {
 		url: resource_url
 		markup: markup
 		status: 'Cached · refreshing'
-		content_type: 'text/html'
+		content_type: read_browser_cache_entry(path + '.content-type') or { 'text/html' }
 	}
 }
 
@@ -831,6 +833,7 @@ fn cache_loaded_page(loaded LoadedPage) {
 	}
 	path := browser_cache_entry_path(browser_cache_root(), 'pages', loaded.url)
 	write_browser_cache_entry(path, loaded.markup)
+	write_browser_cache_entry(path + '.content-type', loaded.content_type)
 }
 
 fn read_cached_resource(resource_url string) ?string {
@@ -3120,6 +3123,7 @@ fn (mut app BrowserApp) update_current_history_entry(loaded LoadedPage) {
 	app.history[app.history_index] = HistoryEntry{
 		url: loaded.url
 		markup: loaded.markup
+		content_type: loaded.content_type
 	}
 }
 
@@ -3134,6 +3138,7 @@ fn (mut app BrowserApp) install_loaded_page(loaded LoadedPage, add_history bool)
 	mut heap_scope := platform.begin_browser_activity_heap_scope()
 	defer { heap_scope.finish() }
 	app.markup = loaded.markup
+	app.content_type = loaded.content_type
 	app.source_label = loaded.url
 	app.address = loaded.url
 	app.address_cursor = app.address.runes().len
@@ -3152,9 +3157,9 @@ fn (mut app BrowserApp) install_loaded_page(loaded LoadedPage, add_history bool)
 	scripting_enabled := browser_scripting_enabled(loaded.url, app.script_policy)
 	app.document = if document_url := dom.dom_url_parse(loaded.url, dom.url_about_blank(),
 		'UTF-8') {
-		parse_browser_navigation_document_with_scripting(loaded.markup, document_url, initiator_origin, previous_document, unsafe { &dom.Page(app.page_model) }, loaded.monotonic_response_time_ns, scripting_enabled)
+		parse_loaded_browser_navigation_document(loaded, document_url, initiator_origin, previous_document, unsafe { &dom.Page(app.page_model) }, scripting_enabled)
 	} else {
-		parse_browser_navigation_document_with_scripting(loaded.markup, dom.url_about_blank(), initiator_origin, previous_document, unsafe { &dom.Page(app.page_model) }, loaded.monotonic_response_time_ns, scripting_enabled)
+		parse_loaded_browser_navigation_document(loaded, dom.url_about_blank(), initiator_origin, previous_document, unsafe { &dom.Page(app.page_model) }, scripting_enabled)
 	}
 	install_browser_adblock_styles(app.document, '') or { app.js_messages << 'Adblock styles: ${err.msg()}' }
 	if app.page_model != unsafe { nil } && !app.page_model.has_local_root_navigable() {
@@ -3220,6 +3225,7 @@ fn (mut app BrowserApp) install_loaded_page(loaded LoadedPage, add_history bool)
 		app.history << HistoryEntry{
 			url: loaded.url
 			markup: loaded.markup
+			content_type: loaded.content_type
 		}
 		app.history_index = app.history.len - 1
 	}
@@ -3374,7 +3380,8 @@ fn (mut app BrowserApp) poll_navigation() {
 			app.snapshot_hold = false
 			if loaded := result.loaded {
 				if result.had_cached_page && app.pending_page_preload == none
-					&& app.address == loaded.url && app.markup == loaded.markup {
+					&& app.address == loaded.url && app.markup == loaded.markup
+					&& app.content_type == loaded.content_type {
 					app.replace_load_status(loaded.status)
 					app.update_current_history_entry(loaded)
 				} else {
@@ -3411,7 +3418,7 @@ fn (mut app BrowserApp) history_go(delta int) {
 		url: entry.url
 		markup: entry.markup
 		status: 'History'
-		content_type: 'text/html'
+		content_type: entry.content_type
 	}, false)
 }
 

@@ -47,9 +47,11 @@ fn parse_page_preload_document(loaded LoadedPage, scripting_enabled bool) &dom.D
 	mut document := dom.Document.create(document_url)
 	document.set_scripting_enabled_by_embedder(scripting_enabled)
 	document.set_allow_declarative_shadow_roots(true)
+	markup, encoding_name := loaded_browser_navigation_input(loaded)
+	if selected_encoding := encoding_name { document.set_encoding(selected_encoding) }
 	// Match noscript parsing without creating a Window, executing import maps
 	// or preparing scripts in this resource-discovery document.
-	mut parser := html.HTMLParser.create_with_scripting_mode(document, loaded.markup,
+	mut parser := html.HTMLParser.create_with_scripting_mode(document, markup,
 		if scripting_enabled {
 			dom.ParserScriptingMode.inert
 		} else {
