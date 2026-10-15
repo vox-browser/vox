@@ -1721,15 +1721,16 @@ pub fn (mut element HTMLMediaElement) upon_current_playback_position_possibly_ch
 	if !element.playback_manager_ready_ || element.seeking_ {
 		return
 	}
+	current_position := element.current_playback_position()
 	if last := element.last_known_current_playback_position_ {
-		if last == element.current_playback_position_ {
+		if last == current_position {
 			return
 		}
 	} else {
-		element.last_known_current_playback_position_ = element.current_playback_position_
+		element.last_known_current_playback_position_ = current_position
 		return
 	}
-	element.last_known_current_playback_position_ = element.current_playback_position_
+	element.last_known_current_playback_position_ = current_position
 	element.time_marches_on(.normal_playback)
 	element.upon_has_ended_playback_possibly_changed()
 	if mut video := element.video_element_model_ {
