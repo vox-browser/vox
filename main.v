@@ -305,6 +305,7 @@ mut:
 	address_cursor                      int
 	address_active                      bool
 	address_select                      bool
+	native_address_bar                  bool
 	viewport_width                      int
 	viewport_height                     int
 	scroll_y                            f64
@@ -554,12 +555,13 @@ fn browser_window_size() gg.Size {
 	}
 }
 
-fn (app &BrowserApp) initialize_native_window() {
+fn (mut app BrowserApp) initialize_native_window() {
 	$if macos {
 		C.native_finish_test_window()
 		if app.screenshot_path != '' {
 			C.native_position_window_top_right()
 		}
+		app.mount_address_bar()
 	}
 }
 
@@ -3188,6 +3190,7 @@ fn (mut app BrowserApp) install_loaded_page(loaded LoadedPage, add_history bool)
 	app.address = loaded.url
 	app.address_cursor = app.address.runes().len
 	app.address_select = false
+	app.sync_address_bar()
 	app.scroll_y = 0
 	app.load_status = loaded.status
 	app.document_presented = false
@@ -6114,20 +6117,23 @@ fn (mut app BrowserApp) draw() {
 		app.draw_chrome_button(138, '⌂', true)
 		address_x := f32(184)
 		address_width := f32(window.width - 252)
-		address_color := if app.address_active {
-			gg.rgb(255, 255, 255)
-		} else {
-			gg.rgb(241, 245, 249)
+		app.resize_address_bar(window.width)
+		if !app.native_address_bar {
+			address_color := if app.address_active {
+				gg.rgb(255, 255, 255)
+			} else {
+				gg.rgb(241, 245, 249)
+			}
+			draw_rounded_fill(app.ctx, address_x, 12, address_width, 34, 8, address_color)
+			if app.address_select {
+				draw_rounded_fill(app.ctx, address_x + 5, 16, address_width - 10, 26, 5, gg.rgb(219, 234, 254))
+			}
+			visible_address := address_for_display(app.address, app.address_cursor, app.address_active, int(address_width / 8.0) - 2)
+			app.ctx.draw_text(int(address_x) + 10, 19, visible_address,
+				color: gg.rgb(15, 23, 42)
+				size: 14
+			)
 		}
-		draw_rounded_fill(app.ctx, address_x, 12, address_width, 34, 8, address_color)
-		if app.address_select {
-			draw_rounded_fill(app.ctx, address_x + 5, 16, address_width - 10, 26, 5, gg.rgb(219, 234, 254))
-		}
-		visible_address := address_for_display(app.address, app.address_cursor, app.address_active, int(address_width / 8.0) - 2)
-		app.ctx.draw_text(int(address_x) + 10, 19, visible_address,
-			color: gg.rgb(15, 23, 42)
-			size: 14
-		)
 		draw_rounded_fill(app.ctx, f32(window.width - 60), 12, 48, 34, 8, gg.rgb(109, 40, 217))
 		app.ctx.draw_text(window.width - 48, 20, 'Go',
 			color: gg.rgb(255, 255, 255)
@@ -6259,19 +6265,15 @@ fn (mut app BrowserApp) handle_click(x f32, y f32) {
 		}
 		window := browser_window_size()
 		if x >= 184 && x < f32(window.width - 68) {
-			app.address_active = true
-			app.address_select = true
-			app.address_cursor = app.address.runes().len
+			app.focus_address_bar()
 			return
 		}
 		if x >= f32(window.width - 60) {
-			app.navigate(app.address, true)
-			app.address_active = false
+			app.submit_address_bar()
 			return
 		}
 	}
-	app.address_active = false
-	app.address_select = false
+	app.blur_address_bar()
 }
 
 // The compact JavaScriptCore bridge remains the page-script backend. Its click
@@ -6384,7 +6386,7 @@ fn (mut app BrowserApp) handle_event(event &gg.Event) {
 }
 
 fn (mut app BrowserApp) handle_character(code u32) {
-	if !app.address_active || code < 32 || code == 127 {
+	if app.native_address_bar || !app.address_active || code < 32 || code == 127 {
 		return
 	}
 	mut runes := app.address.runes()
@@ -6409,9 +6411,7 @@ fn (mut app BrowserApp) handle_key(key gg.KeyCode, modifier gg.Modifier) {
 	height := browser_window_size().height
 	command := modifier.has(.super) || modifier.has(.ctrl)
 	if command && key == .l {
-		app.address_active = true
-		app.address_select = true
-		app.address_cursor = app.address.runes().len
+		app.focus_address_bar()
 		return
 	}
 	if command && key == .r {
@@ -6422,9 +6422,7 @@ fn (mut app BrowserApp) handle_key(key gg.KeyCode, modifier gg.Modifier) {
 		mut runes := app.address.runes()
 		match key {
 			.enter {
-				app.address_active = false
-				app.address_select = false
-				app.navigate(app.address, true)
+				app.submit_address_bar()
 			}
 			.backspace {
 				if app.address_select {
@@ -6464,8 +6462,7 @@ fn (mut app BrowserApp) handle_key(key gg.KeyCode, modifier gg.Modifier) {
 				app.address_select = false
 			}
 			.escape {
-				app.address_active = false
-				app.address_select = false
+				app.cancel_address_bar()
 			}
 			else {}
 		}
@@ -6623,6 +6620,9 @@ fn main() {
 		native_rendering: true
 		init_fn: fn (mut app BrowserApp) {
 			app.initialize_native_window()
+		}
+		cleanup_fn: fn (mut app BrowserApp) {
+			app.unmount_address_bar()
 		}
 		frame_fn: fn (mut app BrowserApp) {
 			app.draw()

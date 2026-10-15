@@ -5,6 +5,7 @@ set -eu
 #
 # Environment overrides:
 #   V_BIN                     V compiler executable
+#   UI2_SOURCE_DIR            UI2 checkout (defaults to ~/.vmodules/ui2)
 #   LADYBIRD_V_GC            boehm (default), boehm_full, or none
 #   LADYBIRD_V_PROFILE       V profiling report path (unset for normal builds)
 #   LADYBIRD_V_PROFILE_FNS   comma-separated C function names to profile
@@ -138,9 +139,10 @@ zoneinfo_exclude='@vlib/time/zoneinfo.native.v'
 # leaving pointer-free buffers atomic. Optimized forced-GC tests cover nested
 # token strings, CSSOM values and arena records. boehm_full remains available
 # as an ownership diagnostic.
+ui2_modules=$(python3 "$repo_dir/tools/prepare_ui2.py" "$v_compiler")
 http_modules=$(python3 "$repo_dir/tools/prepare_http_compat.py" "$v_compiler")
 set -- -old-compiler -exclude "$zoneinfo_exclude" -enable-globals \
-    -path "$http_modules|@vmodules|@vlib"
+    -d vox_ui2 -path "$http_modules|$ui2_modules|@vmodules|@vlib"
 if [ "$gc_mode" != none ]; then
     set -- "$@" -gc "$gc_mode"
     extra_cflags="$extra_cflags -O2"

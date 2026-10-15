@@ -1,0 +1,120 @@
+module main
+
+$if vox_ui2 ? {
+	import ui2
+	import macos
+	import sokol.sapp
+
+	#include "native_address_bar_darwin.h"
+
+	fn C.native_address_bar_install_shortcuts(field voidptr, owner voidptr, callback fn (voidptr, int))
+	fn C.native_address_bar_remove_shortcuts()
+}
+
+struct AddressBarOwner {
+mut:
+	app &BrowserApp = unsafe { nil }
+}
+
+const address_bar_owner = &AddressBarOwner{}
+
+fn (mut app BrowserApp) mount_address_bar() {
+	$if vox_ui2 ? {
+		if app.chrome_height() == 0 { return }
+		window := sapp.macos_get_window()
+		parent := macos.msg_id(window, 'contentView')
+		mut owner := unsafe { address_bar_owner }
+		owner.app = app
+		field := ui2.mount_embedded_textbox(voidptr(parent), ui2.rect(184, 12,
+			browser_window_size().width - 252, 34), app.address, address_bar_event) or {
+			panic(err)
+		}
+		app.native_address_bar = true
+		C.native_address_bar_install_shortcuts(field, app, address_bar_shortcut)
+	}
+}
+
+fn (mut app BrowserApp) unmount_address_bar() {
+	$if vox_ui2 ? {
+		if !app.native_address_bar { return }
+		C.native_address_bar_remove_shortcuts()
+		ui2.unmount_embedded_textbox()
+		mut owner := unsafe { address_bar_owner }
+		owner.app = unsafe { nil }
+		app.native_address_bar = false
+	}
+}
+
+fn (app &BrowserApp) resize_address_bar(width int) {
+	$if vox_ui2 ? {
+		if app.native_address_bar {
+			ui2.resize_embedded_textbox(ui2.rect(184, 12, width - 252, 34))
+		}
+	}
+}
+
+fn (app &BrowserApp) sync_address_bar() {
+	$if vox_ui2 ? {
+		if app.native_address_bar { ui2.set_text('address', app.address) }
+	}
+}
+
+fn (mut app BrowserApp) focus_address_bar() {
+	app.address_active = true
+	app.address_select = true
+	app.address_cursor = app.address.runes().len
+	$if vox_ui2 ? {
+		if app.native_address_bar { ui2.select_embedded_textbox() }
+	}
+}
+
+fn (mut app BrowserApp) blur_address_bar() {
+	app.address_active = false
+	app.address_select = false
+	$if vox_ui2 ? {
+		if app.native_address_bar { ui2.blur_embedded_textbox() }
+	}
+}
+
+fn (mut app BrowserApp) submit_address_bar() {
+	$if vox_ui2 ? {
+		if app.native_address_bar { app.address = ui2.text('address') }
+	}
+	destination := app.address.trim_space()
+	if destination == '' { return }
+	app.blur_address_bar()
+	app.navigate(destination, true)
+	request_browser_frame()
+}
+
+fn (mut app BrowserApp) cancel_address_bar() {
+	if app.history_index >= 0 && app.history_index < app.history.len {
+		app.address = app.history[app.history_index].url
+	}
+	app.sync_address_bar()
+	app.blur_address_bar()
+}
+
+$if vox_ui2 ? {
+	fn address_bar_event(event string) {
+		mut app := address_bar_owner.app
+		if app == unsafe { nil } { return }
+		match event {
+			'address-change' { app.address = ui2.text('address') }
+			'address-submit' { app.submit_address_bar() }
+			else {}
+		}
+	}
+
+	fn address_bar_shortcut(owner voidptr, action int) {
+		mut app := unsafe { &BrowserApp(owner) }
+		match action {
+			0 { app.focus_address_bar() }
+			1 { app.reload() }
+			2 { app.cancel_address_bar() }
+			else {}
+		}
+
+		request_browser_frame()
+	}
+}
