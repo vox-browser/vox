@@ -3,7 +3,15 @@ module css
 import dom
 
 fn entry_array_test_entries(cascaded &CascadedProperties, id PropertyID) []CascadedPropertiesEntry {
- return cascaded.properties_[id] or { panic("expected entry array") }
+ mut entries := []CascadedPropertiesEntry{}
+ mut index := cascaded.entry_heads_[id] or { panic("expected entry chain") }
+ for index >= 0 {
+  node := cascaded.entry_node(index)
+  entries << node.entry
+  index = node.previous
+ }
+ entries.reverse_in_place()
+ return entries
 }
 
 fn test_cascade_entry_arrays_default_on_every_generated_key_and_replace() {
@@ -18,7 +26,7 @@ fn test_cascade_entry_arrays_default_on_every_generated_key_and_replace() {
   assert cascaded.property(id)? == initial
   assert cascaded.property_source(id) == voidptr(source)
  }
- assert cascaded.properties_.len == int(PropertyID.container)
+ assert cascaded.entry_heads_.len == int(PropertyID.container)
  for index in 1 .. int(PropertyID.container)+1 {
   id := unsafe { PropertyID(index) }
   cascaded.set_property(id,unset,.no,.author,none,unsafe{nil},none)
@@ -64,10 +72,10 @@ fn test_cascade_entry_arrays_handle_stored_empty_arrays_and_stale_presence_byte(
  value := &dom.StyleValue{css_text:'10px'}
  next := &dom.StyleValue{css_text:'20px'}
  mut cascaded := CascadedProperties.new()
- cascaded.properties_[.height] = []CascadedPropertiesEntry{}
+ cascaded.entry_heads_[.height] = -1 // An explicitly empty stored history.
  cascaded.set_property(.height,value,.no,.author,none,unsafe{nil},none)
  assert cascaded.property(.height)? == value
- cascaded.properties_.delete(PropertyID.height)
+ cascaded.entry_heads_.delete(PropertyID.height)
  assert cascaded.contained_properties_cache_[int(PropertyID.height)] == 1
  cascaded.set_property(.height,next,.no,.author,none,unsafe{nil},none)
  assert entry_array_test_entries(cascaded,PropertyID.height).len == 1

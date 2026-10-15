@@ -200,23 +200,71 @@ pub mut:
 	source_shadow_root ?&dom.ShadowRoot
 }
 
+// Each property keeps a newest-first chain through scanned entry chunks. This
+// follows the upstream Rust CascadedPropertyStore arena without allocating a
+// separate growable array for every property matched on an element.
+const cascaded_property_entry_chunk_size = 4
+
+struct CascadedPropertiesEntryNode {
+mut:
+	entry    CascadedPropertiesEntry
+	previous int = -1
+}
+
+@[heap]
+struct CascadedPropertiesEntryChunk {
+mut:
+	nodes [cascaded_property_entry_chunk_size]CascadedPropertiesEntryNode
+}
+
 @[heap]
 pub struct CascadedProperties {
 pub mut:
-	properties_                 map[PropertyID][]CascadedPropertiesEntry
 	contained_properties_cache_ []u8
+mut:
+	entry_heads_           map[PropertyID]int
+	entry_chunks_          []&CascadedPropertiesEntryChunk
+	allocated_entry_count_ int
+	free_entry_index_      int = -1
 }
 
 pub fn CascadedProperties.new() &CascadedProperties {
 	return &CascadedProperties{
-		properties_: map[PropertyID][]CascadedPropertiesEntry{}
-		// Upstream's PropertyID places shorthands before its contiguous
-		// longhands, so FixedBitmap<last_longhand + 1> also covers unresolved
-		// shorthand entries. V groups longhands first for dense computed-value
-		// storage and puts shorthands afterwards; size this cache by the complete
-		// PropertyID range to preserve the CascadedProperties contract.
+		entry_heads_: map[PropertyID]int{}
+		// V puts shorthands after the contiguous longhands. Keep presence bits
+		// for the complete PropertyID range, including unresolved shorthands.
 		contained_properties_cache_: []u8{len: int(PropertyID.container) + 1}
 	}
+}
+
+fn (c &CascadedProperties) entry_node(index int) &CascadedPropertiesEntryNode {
+	return unsafe { &c.entry_chunks_[index / cascaded_property_entry_chunk_size].nodes[index % cascaded_property_entry_chunk_size] }
+}
+
+fn (mut c CascadedProperties) allocate_entry(entry CascadedPropertiesEntry, previous int) int {
+	mut index := c.free_entry_index_
+	if index >= 0 {
+		c.free_entry_index_ = c.entry_node(index).previous
+	} else {
+		index = c.allocated_entry_count_
+		c.allocated_entry_count_++
+		if index % cascaded_property_entry_chunk_size == 0 {
+			// Allocate scanned storage without eagerly constructing unused slots.
+			// Every slot is initialized before its index enters a property chain.
+			c.entry_chunks_ << unsafe { &CascadedPropertiesEntryChunk(vcalloc(isize(sizeof(CascadedPropertiesEntryChunk)))) }
+		}
+	}
+	mut node := c.entry_node(index)
+	node.entry = entry
+	node.previous = previous
+	return index
+}
+
+fn (c &CascadedProperties) winning_entry_index(property_id PropertyID) int {
+	if c.contained_properties_cache_[cascaded_property_index(property_id)] == 0 {
+		return -1
+	}
+	return c.entry_heads_[property_id] or { -1 }
 }
 
 fn cascaded_property_index(property_id PropertyID) int {
@@ -229,48 +277,51 @@ pub fn (mut c CascadedProperties) visit_edges() {
 }
 
 pub fn (mut c CascadedProperties) revert_property(property_id PropertyID, important Important, cascade_origin CascadeOrigin) {
-	if property_id !in c.properties_ {
-		return
-	}
-	mut entries := c.properties_[property_id] or { return }
-	mut filtered := []CascadedPropertiesEntry{}
-	for entry in entries {
-		// Presentational hints cascade independently, but `revert` at the
-		// author origin also rolls them back as part of the author origin.
-		origin_matches := cascade_origin == entry.origin
-			|| (cascade_origin == .author && entry.origin == .author_presentational_hint)
-		if entry.property.property_id == property_id && entry.property.important == important
-			&& origin_matches {
-			continue
-		}
-		filtered << entry
-	}
-	if filtered.len == 0 {
-		c.contained_properties_cache_[cascaded_property_index(property_id)] = 0
-		c.properties_.delete(property_id)
-		return
-	}
-	c.properties_[property_id] = filtered
+	c.revert_entries(property_id, important, cascade_origin, none, false)
 }
 
 pub fn (mut c CascadedProperties) revert_layer_property(property_id PropertyID, important Important, layer_name ?string) {
-	if property_id !in c.properties_ {
-		return
-	}
-	mut entries := c.properties_[property_id] or { return }
-	mut filtered := []CascadedPropertiesEntry{}
-	for entry in entries {
-		if entry.property.property_id == property_id && entry.property.important == important && option_string_equal(entry.layer_name, layer_name) {
-			continue
+	c.revert_entries(property_id, important, .author, layer_name, true)
+}
+
+fn (mut c CascadedProperties) revert_entries(property_id PropertyID, important Important, origin CascadeOrigin, layer_name ?string, layer_only bool) {
+	mut index := c.entry_heads_[property_id] or { return }
+	mut first_kept := -1
+	mut last_kept := -1
+	for index >= 0 {
+		mut node := c.entry_node(index)
+		previous := node.previous
+		entry := node.entry
+		// Author revert also rolls back presentational hints, as before.
+		origin_matches := origin == entry.origin
+			|| (origin == .author && entry.origin == .author_presentational_hint)
+		remove := entry.property.property_id == property_id
+			&& entry.property.important == important
+			&& if layer_only { option_string_equal(entry.layer_name, layer_name) } else { origin_matches }
+		if remove {
+			// Clear retained values, sources and layer names before recycling the
+			// slot. Repeated revert/re-add cycles reuse the same bounded storage.
+			node.entry = CascadedPropertiesEntry{}
+			node.previous = c.free_entry_index_
+			c.free_entry_index_ = index
+		} else {
+			if first_kept < 0 { first_kept = index }
+			if last_kept >= 0 {
+				mut last := c.entry_node(last_kept)
+				last.previous = index
+			}
+			last_kept = index
 		}
-		filtered << entry
+		index = previous
 	}
-	if filtered.len == 0 {
+	if last_kept < 0 {
+		c.entry_heads_.delete(property_id)
 		c.contained_properties_cache_[cascaded_property_index(property_id)] = 0
-		c.properties_.delete(property_id)
-		return
+	} else {
+		mut last := c.entry_node(last_kept)
+		last.previous = -1
+		c.entry_heads_[property_id] = first_kept
 	}
-	c.properties_[property_id] = filtered
 }
 
 // https://drafts.csswg.org/css-values-5/#property-replacement
@@ -323,28 +374,26 @@ fn resolve_unresolved_style_value_for_property_with_context(abstract_element dom
 
 pub fn (mut c CascadedProperties) set_property(property_id PropertyID, value &dom.StyleValue, important Important, origin CascadeOrigin, layer_name ?string, source voidptr, source_shadow_root ?&dom.ShadowRoot) {
 	c.contained_properties_cache_[cascaded_property_index(property_id)] = 1
-
-	mut entries := c.properties_[property_id]
-	for index := entries.len - 1; index >= 0; index-- {
-		mut entry := entries[index]
-		if entry.origin == origin && option_string_equal(entry.layer_name, layer_name) {
-			if entry.property.important == .yes && important == .no {
+	head := c.entry_heads_[property_id] or { -1 }
+	mut index := head
+	for index >= 0 {
+		mut node := c.entry_node(index)
+		if node.entry.origin == origin && option_string_equal(node.entry.layer_name, layer_name) {
+			if node.entry.property.important == .yes && important == .no {
 				return
 			}
-			entry.property = StyleProperty{
+			node.entry.property = StyleProperty{
 				important: important
 				property_id: property_id
 				value: unsafe { value }
 			}
-			entry.source = source
-			entry.source_shadow_root = source_shadow_root
-			entries[index] = entry
-			c.properties_[property_id] = entries
+			node.entry.source = source
+			node.entry.source_shadow_root = source_shadow_root
 			return
 		}
+		index = node.previous
 	}
-
-	entries << CascadedPropertiesEntry{
+	index = c.allocate_entry(CascadedPropertiesEntry{
 		property: StyleProperty{
 			important: important
 			property_id: property_id
@@ -354,8 +403,8 @@ pub fn (mut c CascadedProperties) set_property(property_id PropertyID, value &do
 		layer_name: layer_name
 		source: source
 		source_shadow_root: source_shadow_root
-	}
-	c.properties_[property_id] = entries
+	}, head)
+	c.entry_heads_[property_id] = index
 }
 
 fn for_each_typed_property_expanding_shorthands(property_id PropertyID, value StyleValue, set_longhand_property fn(PropertyID, StyleValue)) {
@@ -406,45 +455,25 @@ fn longhands_for_shorthand_local(property_id PropertyID) []PropertyID {
 }
 
 pub fn (c &CascadedProperties) property(property_id PropertyID) ?&dom.StyleValue {
-	if c.contained_properties_cache_[cascaded_property_index(property_id)] == 0 {
-		return none
-	}
-	entries := c.properties_[property_id] or { return none }
-	if entries.len == 0 {
-		return none
-	}
-	return entries[entries.len - 1].property.value
+	index := c.winning_entry_index(property_id)
+	if index < 0 { return none }
+	return c.entry_node(index).entry.property.value
 }
 
 pub fn (c &CascadedProperties) property_source(property_id PropertyID) voidptr {
-	if c.contained_properties_cache_[cascaded_property_index(property_id)] == 0 {
-		return unsafe { nil }
-	}
-	entries := c.properties_[property_id] or { return unsafe { nil } }
-	if entries.len == 0 {
-		return unsafe { nil }
-	}
-	return entries[entries.len - 1].source
+	index := c.winning_entry_index(property_id)
+	if index < 0 { return unsafe { nil } }
+	return c.entry_node(index).entry.source
 }
 
 pub fn (c &CascadedProperties) property_source_shadow_root(property_id PropertyID) ?&dom.ShadowRoot {
-	if c.contained_properties_cache_[cascaded_property_index(property_id)] == 0 {
-		return none
-	}
-	entries := c.properties_[property_id] or { return none }
-	if entries.len == 0 {
-		return none
-	}
-	return entries[entries.len - 1].source_shadow_root
+	index := c.winning_entry_index(property_id)
+	if index < 0 { return none }
+	return c.entry_node(index).entry.source_shadow_root
 }
 
 pub fn (c &CascadedProperties) style_property(property_id PropertyID) ?StyleProperty {
-	if c.contained_properties_cache_[cascaded_property_index(property_id)] == 0 {
-		return none
-	}
-	entries := c.properties_[property_id] or { return none }
-	if entries.len == 0 {
-		return none
-	}
-	return entries[entries.len - 1].property
+	index := c.winning_entry_index(property_id)
+	if index < 0 { return none }
+	return c.entry_node(index).entry.property
 }
