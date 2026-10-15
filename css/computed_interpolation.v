@@ -1613,6 +1613,7 @@ pub mut:
 	computed_values_content_                       ?ContentData
 
 mut:
+	computed_property_graph_token_ &ComputedPropertyGraphMutationToken = unsafe { nil }
 	computed_layout_cache_ &ComputedLayoutCache = unsafe { nil }
 	animated_property_storage_     &ComputedPropertyValueMap       = unsafe { nil }
 	animated_custom_storage_       &ComputedCustomPropertyValueMap = unsafe { nil }
@@ -1660,6 +1661,7 @@ pub fn computed_values_statistics() ComputedValuesStatistics {
 pub fn ComputedProperties.new() &ComputedProperties {
 	note_computed_values_created()
 	return &ComputedProperties{
+		computed_property_graph_token_: &ComputedPropertyGraphMutationToken{}
 		property_values_: []&dom.StyleValue{len: number_of_longhand_properties, init: unsafe { nil }}
 	}
 }
@@ -1693,6 +1695,7 @@ fn computed_properties_with_initial_values() &ComputedProperties {
 	// owned by the new style, including each lazily created metadata map.
 	return &ComputedProperties{
 		...template
+		computed_property_graph_token_: &ComputedPropertyGraphMutationToken{}
 		property_values_: computed_interpolation_initial_value_cache.clone()
 	}
 }
@@ -1912,6 +1915,7 @@ pub fn (mut c ComputedProperties) set_raw_cascaded_font_size(value &dom.StyleVal
 }
 
 pub fn (mut c ComputedProperties) reset_non_inherited_animated_properties() {
+	c.note_computed_property_graph_mutation()
 	if c.animated_property_storage_ == unsafe { nil } { return }
 	mut to_remove := []PropertyID{}
 	for property_id, _ in c.animated_property_storage_.values {
@@ -1927,6 +1931,7 @@ pub fn (mut c ComputedProperties) reset_non_inherited_animated_properties() {
 }
 
 pub fn (mut c ComputedProperties) reset_animated_custom_properties() {
+	c.note_computed_property_graph_mutation()
 	if c.animated_custom_storage_ != unsafe { nil } { c.animated_custom_storage_.values.clear() }
 }
 
@@ -2007,6 +2012,7 @@ pub fn (mut c ComputedProperties) set_property(property_id PropertyID, value &do
 }
 
 pub fn (mut c ComputedProperties) set_property_without_modifying_flags(property_id PropertyID, value &dom.StyleValue) {
+	c.note_computed_property_graph_mutation()
 	computed_interpolation_verify_longhand_property(property_id)
 	index := int(property_id) - int(first_longhand_property_id())
 	c.property_values_[index] = unsafe { value }
@@ -2016,6 +2022,7 @@ pub fn (mut c ComputedProperties) set_property_without_modifying_flags(property_
 }
 
 pub fn (mut c ComputedProperties) set_animated_property(property_id PropertyID, value &dom.StyleValue, result AnimatedPropertyResultOfTransition, inherited ComputedPropertyInheritance) {
+	c.note_computed_property_graph_mutation()
 	computed_interpolation_verify_longhand_property(property_id)
 	mut storage := c.ensure_animated_property_storage()
 	storage.values[property_id] = unsafe { value }
@@ -2027,11 +2034,13 @@ pub fn (mut c ComputedProperties) set_animated_property(property_id PropertyID, 
 }
 
 pub fn (mut c ComputedProperties) set_animated_custom_property(name string, value &dom.StyleValue) {
+	c.note_computed_property_graph_mutation()
 	mut storage := c.ensure_animated_custom_storage()
 	storage.values[name] = unsafe { value }
 }
 
 pub fn (mut c ComputedProperties) remove_animated_property(property_id PropertyID) {
+	c.note_computed_property_graph_mutation()
 	computed_interpolation_verify_longhand_property(property_id)
 	if c.animated_property_storage_ != unsafe { nil } {
 		c.animated_property_storage_.values.delete(property_id)
@@ -2059,6 +2068,7 @@ pub fn (c &ComputedProperties) property(property_id PropertyID, return_animated_
 }
 
 pub fn (mut c ComputedProperties) revert_property(property_id PropertyID, style_for_revert &ComputedProperties) {
+	c.note_computed_property_graph_mutation()
 	computed_interpolation_verify_longhand_property(property_id)
 	index := int(property_id) - int(first_longhand_property_id())
 	c.property_values_[index] = style_for_revert.property_values_[index]
@@ -11449,6 +11459,7 @@ pub fn (s &StyleComputer) compute_properties(abstract_element dom.AbstractElemen
 		if can_reuse_default_computed_value {
 			cached_default := computed_interpolation_default_computed_value_cache[property_index]
 			if cached_default != unsafe { nil } {
+				properties.note_computed_property_graph_mutation()
 				properties.property_values_[property_index] = cached_default
 				continue
 			}

@@ -1752,6 +1752,10 @@ pub struct BlockContainer {
 }
 
 pub fn BlockContainer.new(document &dom.Document, dom_node ?&dom.Node, computed_values &css.ComputedProperties) &BlockContainer {
+	return BlockContainer.with_resolved_values(document, dom_node, css.resolve_computed_values_for_document(computed_values, document))
+}
+
+fn BlockContainer.with_resolved_values(document &dom.Document, dom_node ?&dom.Node, computed_values &css.ComputedValues) &BlockContainer {
 	return &BlockContainer{
 		Box: Box{
 			NodeWithStyleAndBoxModelMetrics: NodeWithStyleAndBoxModelMetrics{
@@ -1763,7 +1767,7 @@ pub fn BlockContainer.new(document &dom.Document, dom_node ?&dom.Node, computed_
 						is_box_: true
 						is_block_container_: true
 					}
-					computed_values_: css.resolve_computed_values_for_document(computed_values, document)
+					computed_values_: computed_values
 				}
 			}
 		}

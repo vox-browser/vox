@@ -197,6 +197,7 @@ mut:
 	computed_values_counter_increment_             []CounterData
 	computed_values_counter_reset_                 []CounterData
 	computed_values_counter_set_                   []CounterData
+	resolution_provenance &ComputedGeometryProvenance = unsafe { nil }
 	writable_owner_identity                        u64
 }
 
@@ -223,11 +224,13 @@ fn (mut c ComputedProperties) ensure_computed_layout_cache() &ComputedLayoutCach
 	identity := u64(voidptr(c))
 	if c.computed_layout_cache_ != unsafe { nil }
 		&& c.computed_layout_cache_.writable_owner_identity == identity {
+		c.computed_layout_cache_.resolution_provenance = unsafe { nil }
 		return c.computed_layout_cache_
 	}
 	previous := c.computed_layout_cache()
 	c.computed_layout_cache_ = &ComputedLayoutCache{
 		...previous
+		resolution_provenance: unsafe { nil }
 		writable_owner_identity: 0
 	}
 	return c.computed_layout_cache_

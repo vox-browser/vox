@@ -2885,8 +2885,8 @@ fn last_anonymous_inline_wrapper_or_new(mut parent Node, document &dom.Document,
 // NodeWithStyle::create_anonymous_wrapper — an anonymous block box with the
 // parent's inherited values and initial non-inherited values.
 fn create_anonymous_block_wrapper(document &dom.Document, parent_computed &css.ComputedProperties) &Node {
-	anonymous_style := parent_computed.clone_for_anonymous_block()
-	mut wrapper := BlockContainer.new(document, none, anonymous_style)
+	anonymous_values := css.resolve_anonymous_block_values_for_document(parent_computed, document)
+	mut wrapper := BlockContainer.with_resolved_values(document, none, anonymous_values)
 	wrapper.anonymous_ = true
 	wrapper.children_are_inline_ = true
 	return unsafe { &Node(wrapper) }

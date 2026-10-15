@@ -367,15 +367,52 @@ fn computed_values_scrollbar_color(style &ComputedProperties, context ColorResol
 // document's used color scheme, so callers which own a layout document use
 // this entry point after the geometry-only materialization above.
 pub fn resolve_computed_values_for_document(style &ComputedProperties, document &dom.Document) &ComputedValues {
+	return resolve_computed_values_for_document_impl(style, document, none)
+}
+
+// Anonymous inline-run wrappers are created immediately after their parent's
+// style is materialized. Keep font discovery and document-dependent color and
+// counter-style resolution identical to ordinary layout style application.
+pub fn resolve_anonymous_block_values_for_document(source &ComputedProperties, document &dom.Document) &ComputedValues {
+	style := source.clone_for_anonymous_block()
+	// Capture the immutable geometry snapshot while it still matches this raw
+	// clone. Font discovery below can invoke callbacks that change the parent.
+	snapshot := source.anonymous_computed_geometry_source(style)
+	return resolve_computed_values_for_document_impl(style, document, snapshot)
+}
+
+fn resolve_computed_values_for_document_impl(style &ComputedProperties, document &dom.Document, anonymous_source ?AnonymousComputedGeometrySource) &ComputedValues {
 	mut computed_style := unsafe { &ComputedProperties(style) }
+	previous_provenance := computed_style.computed_layout_cache().resolution_provenance
 	font_list := computed_style.computed_font_list(css_style_computer_for(document).font_computer())
 	// `line-height: normal` is derived from the selected font's ascent and
 	// descent, so make that face available before resolving layout-facing slots.
 	_ = computed_style.first_available_computed_font(css_style_computer_for(document).font_computer())
+	// Only a freshly materialized, nonanimated parent has the same effective
+	// inherited property graph as clone_for_anonymous_block(). Animated sources
+	// retain the ordinary resolver, which follows the raw anonymous clone.
+	mut resolved_anonymous_source := ?&ComputedLayoutCache(none)
+	if source := anonymous_source {
+		if voidptr(source.font_list) == voidptr(font_list)
+			&& source.font_computer == computed_style.cached_computed_font_list_owner_
+			&& source.font_generation == computed_style.cached_computed_font_list_generation_ {
+			resolved_anonymous_source = source.cache
+			computed_style.computed_layout_cache_ = initial_anonymous_geometry_cache()
+		}
+	}
 	// Font discovery is complete before the pure geometry/color write scope.
 	owns_cache_write := computed_style.begin_computed_layout_cache_write()
-	defer { computed_style.finish_computed_layout_cache_write(owns_cache_write) }
-	values := resolve_computed_values(style)
+	defer {
+		// No callbacks run in the pure geometry/color write scope. Publish the
+		// final raw/context provenance, then freeze before returning any values.
+		computed_style.publish_computed_geometry_provenance(previous_provenance)
+		computed_style.finish_computed_layout_cache_write(owns_cache_write)
+	}
+	values := if source := resolved_anonymous_source {
+		resolve_anonymous_computed_geometry(style, source)
+	} else {
+		resolve_computed_values(style)
+	}
 	mut mutable_values := unsafe { &MutableComputedValues(values) }
 	mutable_values.set_font_list(font_list)
 	mut context := ColorResolutionContext.for_computed_properties(style, document)
