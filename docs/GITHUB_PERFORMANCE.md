@@ -4886,6 +4886,48 @@ Evidence: `Build/v/instruction-hotspots53-*` and
 `Build/instructions/vox-hotspots53-diagnostic.run-1.*`. Chrome parity remains
 unestablished.
 
+## Measure larger CSS and layout scopes with fewer counter reads
+
+A new frozen **53** C-O2 diagnostic leaves selector matching, sorting, bucket
+collection and invalidation projection unwrapped. Six larger operations make
+13 measured entries in total. Native/sign/smoke/observer/browser and independent
+C/input/argument/cache/helper audits pass with actual zero exits. The first
+startup succeeds, producing a 1024×768 PNG and first-frame count 18,992,945,094.
+Removing all exact instrumentation restores frozen 53 C byte-for-byte. There
+is **no page credit** from this single instrumented observation.
+
+| Inclusive diagnostic scope | Entries | Retired instructions |
+| --- | ---: | ---: |
+| Document layout with current style | 2 | 6,120,581,734 |
+| External stylesheet installation | 1 | 3,010,389,901 |
+| Populate complete rule cache | 2 | 555,423,855 |
+| Build rule caches by cascade origin | 6 | 550,681,799 |
+| Public stylesheet parse-with-params entry | 1 | 63,288,127 |
+| Collect script sources | 1 | 2,130,464 |
+
+The public stylesheet entry does not cover every browser parsing path. These
+are inclusive process-wide scopes, including other-thread charges and nested
+scopes/counter effects; do not add them, treat them as self costs or subtract
+estimated overhead. Their low entry counts avoid the previous per-selector
+read frequency. Exact cache/node identities also establish that the two cache
+populations belong to **different scopes**, a document and a shadow root,
+with author/user/UA construction once each. They do not show duplicate
+construction on one scope. The document author scope uses 532,905,379
+instructions; both UA scopes use about 9M each. This guides work toward author
+stylesheet processing and layout rather than a new shared-UA cache.
+The scope metadata audit first looked for its enum in the wrong source file;
+that failed attempt is retained, and the corrected read-only audit authenticates
+`CascadeOrigin` from the frozen `properties_data.v` without rerunning a sample.
+
+Binary SHA256:
+`1627ad2aacdc7bd55e56c0da1047a1724dc9b336d8268062ecbf8869a31d0918`.
+Durable C archive SHA256:
+`cc05e5ec5891a8788958a7cfe2d33dd99ee595cfe19c52b69f90509a68bbf29d`.
+Evidence: `Build/v/instruction-hotspots54-*` and
+`Build/instructions/vox-hotspots54-diagnostic.run-1.*`. Independent current Root
+and the following numeric-token prototype are excluded; Chrome parity remains
+open.
+
 ## Causes and changes
 
 - The V 0.5.2 compatibility compiler's `-prod` Boehm code repeatedly snapshots
