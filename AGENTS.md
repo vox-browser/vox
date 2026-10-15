@@ -68,6 +68,11 @@
 
 ## Screenshot conformance workflow
 
+- Run windowed tests and visual checks on the display away from the pointer
+  when two monitors are connected. Screenshot launches select it automatically;
+  use `VOX_TEST_WINDOW=1` for other test launches. See
+  [test window placement](docs/TEST_WINDOW_PLACEMENT.md).
+
 - Capture only the rendered document viewport from the native V browser (excluding
   its toolbar, status bar, and macOS title bar) with:
 
