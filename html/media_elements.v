@@ -43,6 +43,7 @@ mut:
 	natural_dimensions_         ?VideoDimensions
 	poster_fetch_hook           ?PosterFrameFetchHook
 	paint_facts_update_hook     ?VideoPaintFactsUpdateHook
+	poster_fetch_generation_    u64
 }
 
 pub fn HTMLVideoElementModel.create(media &HTMLMediaElement, base_url dom.URL) &HTMLVideoElementModel {
@@ -123,6 +124,10 @@ fn (video &HTMLVideoElementModel) parse_poster_url(poster string) ?dom.URL {
 }
 
 pub fn (mut video HTMLVideoElementModel) determine_element_poster_frame() {
+	// A new invocation supersedes the previous algorithm, even for the same
+	// URL or a clearing value. The synchronous host fetch can reenter it.
+	video.poster_fetch_generation_++
+	generation := video.poster_fetch_generation_
 	poster := video.poster_ or {
 		video.poster_frame_ = none
 		video.update_natural_dimensions()
@@ -146,8 +151,14 @@ pub fn (mut video HTMLVideoElementModel) determine_element_poster_frame() {
 	}
 
 	frame := fetch(url) or {
+		if generation != video.poster_fetch_generation_ {
+			return
+		}
 		video.poster_frame_ = none
 		video.update_natural_dimensions()
+		return
+	}
+	if generation != video.poster_fetch_generation_ {
 		return
 	}
 	video.poster_frame_ = frame
