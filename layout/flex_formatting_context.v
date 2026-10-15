@@ -1274,7 +1274,18 @@ fn flex_subtree_depends_on_definite_height(mut state LayoutState, node &Node) bo
 			depends = true
 		}
 	}
-	if computed.flex_basis().size.contains_percentage()
+	mut basis_depends_on_height := computed.flex_basis().size.contains_percentage()
+	if basis_depends_on_height {
+		if parent := node.parent() {
+			parent_computed := parent.computed_values()
+			if parent.display().is_flex_inside()
+				&& parent_computed.writing_mode() == .horizontal_tb
+				&& parent_computed.effective_flex_direction() in [.row, .row_reverse] {
+				basis_depends_on_height = false
+			}
+		}
+	}
+	if basis_depends_on_height
 		|| computed.gap_value(.row_gap).length_percentage.contains_percentage() {
 		depends = true
 	}
