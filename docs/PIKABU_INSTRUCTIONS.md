@@ -201,6 +201,8 @@ Counts are whole launch through the capture boundary described above.
 | Vox candidate v15 | 48,894,785,438 | Passed |
 | Vox candidate v16 | 63,190,658,751 | Passed; regression |
 | Vox candidate v17 | 45,899,800,267 | Passed; single checkpoint only |
+| Vox candidate v18 | 52,605,846,249 | Passed; regression |
+| Vox candidate v19 | 57,276,228,995 | Passed; regression |
 
 Candidate v6 uses executable SHA256
 `cc105727ad0e7d08d12c94336ca6cd4d26e2c1318416dfddace23c626d1338c2`.
@@ -423,6 +425,62 @@ completed-cohort verification and actual-zero supervisor receipts. Neither
 this variation check nor the isolated shaping microbenchmarks earn a broad
 baseline reset. The faster-than-Brave target remains unachieved, and this
 isolated candidate has not replaced the canonical app bundle.
+
+### Candidate v19: regressing primary and lower variation median
+
+Candidate v19 contains two separately committed ownership changes. Cold glyph
+producers transfer their fresh vectors into the retained glyph run while public
+constructors keep copying caller-owned input. Commit `22bebff7` passed 41 focused
+cases in each GC mode on its recorded canonical base, including exact original
+producer comparisons and ownership after collection. Image paint geometry moves
+into an optional shared payload, reducing the common command from 1,928 to
+1,608 bytes. Commit `75966fb5` passed 108 focused cases per GC mode: 88 unchanged
+layout cases carried from the tested slice and 20 freshly run native cases on
+the merged source with the independent video changes. Its 42 microbenchmark rows
+retain exact comparisons of all 108 logical fields and SVG output. These focused
+checks and microbenchmarks assign no separate per-page savings to either feature.
+The evidence is retained in
+`Build/pikabu-instructions-{cold-glyph-transfer,paint-image-payload}-checks.json`.
+
+The measured source is the complete canonical committed revision
+`75966fb5f5ca6373b629fc08d336efd41d28a9f5`, with 5,866 files, including the
+concurrent Linux, JavaScriptCore, OpenSSL and native-video work. Its signed
+production build and headless startup passed. The executable SHA256 is
+`4ca1de86cb08026400f47a8f809db29ace021a5659443973628c72c5f34958c7`.
+The primary checkpoint passes completion, content, fonts, fresh font files and
+exact native pixels, but uses 57,276,228,995 instructions: 11,376,428,728 more
+than the v17 broad baseline, a 24.79% regression. The broad supervisor exits
+successfully at its insufficient-savings gate without launching suites or
+removing the four held helper guards. The baseline remains 45,899,800,267,
+with no new broad credit or reset.
+
+A separate fixed five-pair variation check records:
+
+| Pair | Vox instructions | Brave instructions |
+| --- | ---: | ---: |
+| 1 | 43,755,407,015 | 47,751,929,604 |
+| 2 | 43,459,303,543 | 47,393,137,227 |
+| 3 | 46,469,235,529 | 47,086,909,064 |
+| 4 | 53,763,857,469 | 46,942,611,331 |
+| 5 | 47,202,920,471 | 47,174,279,634 |
+
+Vox's median is 46,469,235,529 instructions versus Brave's 47,174,279,634,
+or 1.49% fewer, with three pair wins out of five. Median paired savings are
+617,673,535 instructions. This series meets its recorded median criterion;
+the two lost pairs and the regressing primary remain part of the evidence.
+All ten completed rows pass content, font and image checks. All five native
+captures retain exact control pixels and three freshly decoded Roboto font
+files per launch. The actual-zero measurement, verifier and supervisor receipts
+are retained with every row under
+`Build/pikabu-instructions-candidate-v19-variation*` and
+`Build/pikabu-instructions/candidate-v19-variation-cohort-attempt1/`.
+
+The result applies to the archived server-rendered Pikabu document with author
+JavaScript enabled and the same fail-closed resource replay. It does not establish
+live-site or complete JavaScript functionality parity. The asymmetric native
+process-exit and Brave observed-tree capture endpoints remain unchanged. The
+variation result does not replace the primary checkpoint or earn a broad reset;
+repeatability and broad validation of this complete composition remain open.
 
 Focused checks:
 
