@@ -247,6 +247,20 @@ pub fn (mut host MediaElementHost) install(mut runtime Runtime) ! {
 			return host.runtime.actual_javascript_exception(host.runtime.binding_exception_value(err))
 		}
 	})!
+	plays_inline_getter := runtime.make_native_value_host_function('get playsInline', 0, fn [handle] (receiver voidptr, _ []voidptr) !voidptr {
+		mut host := unsafe { &MediaElementHost(handle) }
+		return host.plays_inline(receiver) or {
+			return host.runtime.actual_javascript_exception(host.runtime.binding_exception_value(err))
+		}
+	})!
+	plays_inline_setter := runtime.make_native_value_host_function('set playsInline', 1, fn [handle] (receiver voidptr, args []voidptr) !voidptr {
+		mut host := unsafe { &MediaElementHost(handle) }
+		mut value := C.JSValueMakeUndefined(host.runtime.context)
+		if args.len > 0 { value = args[0] }
+		return host.set_plays_inline(receiver, value) or {
+			return host.runtime.actual_javascript_exception(host.runtime.binding_exception_value(err))
+		}
+	})!
 	bind := runtime.make_value_host_function(fn [handle] (_ voidptr, args []voidptr) !voidptr {
 		mut host := unsafe { &MediaElementHost(handle) }
 		return host.bind(args) or {
@@ -262,7 +276,8 @@ pub fn (mut host MediaElementHost) install(mut runtime Runtime) ! {
 			default_muted_getter, default_muted_setter, set_attribute_sync, loop_getter, loop_setter,
 			autoplay_getter, autoplay_setter, preload_getter, preload_setter,
 			cross_origin_getter, cross_origin_setter, controls_getter, controls_setter,
-			poster_getter, poster_setter, dimension_array, size_array])!)!
+			poster_getter, poster_setter, dimension_array, size_array,
+			plays_inline_getter, plays_inline_setter])!)!
 	defer { runtime.release_javascript_value(prototypes) }
 	host.prototype = runtime.retain_javascript_value(runtime.binding_property(prototypes, 'media')!)!
 	host.video_prototype = runtime.retain_javascript_value(runtime.binding_property(prototypes, 'video')!)!
@@ -492,6 +507,32 @@ fn (mut host MediaElementHost) set_video_size_attribute(name string, receiver vo
 				host.runtime.binding_string(name), host.runtime.binding_string(raw)])!
 	}
 	element.set_attribute_value(name, raw)
+	return C.JSValueMakeUndefined(host.runtime.context)
+}
+
+fn (mut host MediaElementHost) plays_inline(receiver voidptr) !voidptr {
+	element := host.video_element_for_binding(receiver)!
+	if replay := host.replay { replay(host.runtime)! }
+	return C.JSValueMakeBoolean(host.runtime.context, element.has_attribute('playsinline'))
+}
+
+fn (mut host MediaElementHost) set_plays_inline(receiver voidptr, value voidptr) !voidptr {
+	mut element := host.video_element_for_binding(receiver)!
+	present := C.JSValueToBoolean(host.runtime.context, value)
+	if replay := host.replay { replay(host.runtime)! }
+	if host.attribute_sync != unsafe { nil } {
+		host.runtime.call_javascript_function(host.attribute_sync,
+			C.JSValueMakeUndefined(host.runtime.context), [receiver,
+				host.runtime.binding_string('playsinline'), C.JSValueMakeBoolean(host.runtime.context, present),
+				C.JSValueMakeBoolean(host.runtime.context, true)])!
+	}
+	// Generated boolean reflection removes the first qualified Attr, while
+	// presence writes an empty value into the null-namespace slot.
+	if present {
+		element.set_attribute_value('playsinline', '')
+	} else {
+		element.remove_attribute('playsinline')
+	}
 	return C.JSValueMakeUndefined(host.runtime.context)
 }
 
@@ -734,7 +775,7 @@ fn (mut host MediaElementHost) set_property(name string, receiver voidptr, value
 // selected media and input handler attributes,
 // and constants.
 // Full HTMLElement/audio/video interfaces remain open.
-const media_element_native_factory = r'(function(getters,setters,bind,fastSeek,getStartDate,pause,load,play,handlerGetters,handlerSetters,canPlayType,defaultMutedGetter,defaultMutedSetter,setAttributeSync,loopGetter,loopSetter,autoplayGetter,autoplaySetter,preloadGetter,preloadSetter,crossOriginGetter,crossOriginSetter,controlsGetter,controlsSetter,posterGetter,posterSetter,dimensionGetters,sizeAccessors){
+const media_element_native_factory = r'(function(getters,setters,bind,fastSeek,getStartDate,pause,load,play,handlerGetters,handlerSetters,canPlayType,defaultMutedGetter,defaultMutedSetter,setAttributeSync,loopGetter,loopSetter,autoplayGetter,autoplaySetter,preloadGetter,preloadSetter,crossOriginGetter,crossOriginSetter,controlsGetter,controlsSetter,posterGetter,posterSetter,dimensionGetters,sizeAccessors,playsInlineGetter,playsInlineSetter){
  "use strict";
  const define=Object.defineProperty,create=Object.create,P=Proxy,T=TypeError;
  const prototype=create(EventTarget.prototype);
@@ -772,6 +813,7 @@ const media_element_native_factory = r'(function(getters,setters,bind,fastSeek,g
  for(const [index,name] of ["videoWidth","videoHeight"].entries())define(videoPrototype,name,{get:dimensionGetters[index],enumerable:true,configurable:true});
  for(const [index,name] of ["width","height"].entries())define(videoPrototype,name,{get:sizeAccessors[index*2],set:sizeAccessors[index*2+1],enumerable:true,configurable:true});
  define(videoPrototype,"poster",{get:posterGetter,set:posterSetter,enumerable:true,configurable:true});
+ define(videoPrototype,"playsInline",{get:playsInlineGetter,set:playsInlineSetter,enumerable:true,configurable:true});
  define(videoPrototype,Symbol.toStringTag,{value:"HTMLVideoElement",configurable:true});
  const videoConstructor=new P(function HTMLVideoElement(){},{apply(){throw new T("Illegal HTMLVideoElement constructor")},construct(){throw new T("Illegal HTMLVideoElement constructor")}});
  Object.setPrototypeOf(videoConstructor,constructor);

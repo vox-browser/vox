@@ -60,8 +60,9 @@ pub fn compact_attribute_bootstrap() string {
   for(let i=0;i<records.length;i++)if(records[i].name===name){record=records[i];apply(splice,records,[i,1]);break;}
   project(state);return record===null?null:copy(record);
  }
- function reflect(state,name,value){
+ function reflect(state,name,value,qualifiedRemoval){
   const records=state.attributeRecords,present=typeof value==="string"||!!value;
+  if(!present&&qualifiedRemoval===true){removeFirst(state,name);return;}
   let record=null,index=-1;
   for(let i=0;i<records.length;i++)if(records[i].namespaceURI===null&&records[i].localName===name){record=records[i];index=i;break;}
   if(present){
