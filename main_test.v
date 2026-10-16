@@ -530,7 +530,7 @@ fn test_javascript_bridge_removes_an_svg_pattern_referencer_before_image_load() 
 		}
 		paths := updated.paint_tree.paint_commands().filter(it.kind == 'draw_svg_path')
 		assert paths.len == 1
-		pattern := paths[0].fill_pattern or { panic('missing surviving pattern fill') }
+		pattern := paths[0].svg().fill_pattern or { panic('missing surviving pattern fill') }
 		operations := (pattern.tile_display_list or {
 			panic('missing surviving pattern display list')
 		}).operations

@@ -178,7 +178,7 @@ fn test_spelling_and_grammar_error_decorations_use_upstream_ua_styles() {
 	assert spelling[0].kind == 'draw_svg_path'
 	assert spelling[0].stroke_color == 'rgb(255 0 0)'
 	assert spelling[0].stroke_width == 1
-	assert spelling[0].path_data.len > 0
+	assert spelling[0].svg().path_data.len > 0
 
 	grammar := decoration_commands(TextFragment{
 		...base

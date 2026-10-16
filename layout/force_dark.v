@@ -105,32 +105,39 @@ fn resolve_force_dark_paint_command(mut command PaintCommand,
 		command.force_dark_backdrop, mut resolver)
 	if gradient := command.gradient {
 		resolved := force_dark_resolved_css_gradient(gradient, role, mut resolver)
-		command.gradient = &LinearGradient{...resolved}
+		command.gradient = &LinearGradient{ ...resolved }
 	}
-	if data := command.svg_gradient_data {
-		mut fill_linear := data.fill_linear_gradient
-		mut stroke_linear := data.stroke_linear_gradient
-		mut fill_radial := data.fill_radial_gradient
-		mut stroke_radial := data.stroke_radial_gradient
-		if gradient := fill_linear {
-			fill_linear = force_dark_resolved_svg_linear_gradient(gradient, role, mut resolver)
-		}
-		if gradient := stroke_linear {
-			stroke_linear = force_dark_resolved_svg_linear_gradient(gradient, role, mut resolver)
-		}
-		if gradient := fill_radial {
-			fill_radial = force_dark_resolved_svg_radial_gradient(gradient, role, mut resolver)
-		}
-		if gradient := stroke_radial {
-			stroke_radial = force_dark_resolved_svg_radial_gradient(gradient, role, mut resolver)
-		}
-		// Other commands and earlier recordings can share the author snapshot.
-		// Publish replacement colors without modifying that snapshot or its stops.
-		command.svg_gradient_data = &PaintSVGGradientData{
-			fill_linear_gradient: fill_linear
-			stroke_linear_gradient: stroke_linear
-			fill_radial_gradient: fill_radial
-			stroke_radial_gradient: stroke_radial
+	if command.svg_data != unsafe { nil } {
+		if data := command.svg_data.svg_gradient_data {
+			mut fill_linear := data.fill_linear_gradient
+			mut stroke_linear := data.stroke_linear_gradient
+			mut fill_radial := data.fill_radial_gradient
+			mut stroke_radial := data.stroke_radial_gradient
+			if gradient := fill_linear {
+				fill_linear = force_dark_resolved_svg_linear_gradient(gradient, role, mut resolver)
+			}
+			if gradient := stroke_linear {
+				stroke_linear = force_dark_resolved_svg_linear_gradient(gradient, role, mut resolver)
+			}
+			if gradient := fill_radial {
+				fill_radial = force_dark_resolved_svg_radial_gradient(gradient, role, mut resolver)
+			}
+			if gradient := stroke_radial {
+				stroke_radial = force_dark_resolved_svg_radial_gradient(gradient, role, mut resolver)
+			}
+			// Other commands and earlier recordings can share the author snapshot.
+			// Publish replacement colors without modifying that snapshot or its stops.
+			svg_data := command.svg()
+			command.svg_data = &PaintSVGPathData{
+				...svg_data
+				path_transform: svg_data.path_transform
+				svg_gradient_data: &PaintSVGGradientData{
+					fill_linear_gradient:   fill_linear
+					stroke_linear_gradient: stroke_linear
+					fill_radial_gradient:   fill_radial
+					stroke_radial_gradient: stroke_radial
+				}
+			}
 		}
 	}
 }

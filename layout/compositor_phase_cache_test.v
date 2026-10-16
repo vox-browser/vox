@@ -10,7 +10,7 @@ fn compositor_phase_bucket_with_color(result &DocumentLayoutResult, color string
 }
 
 fn compositor_command_snapshot(commands []PaintCommand) []string {
-	return commands.map('${it.kind}:${it.text}:${it.opacity}:${it.group_opacity}:${it.transform}:${it.path_data}:${it.points}:${it.clip_x}:${it.clip_y}:${it.clip_width}:${it.clip_height}')
+	return commands.map('${it.kind}:${it.text}:${it.opacity}:${it.group_opacity}:${it.transform}:${it.svg().path_data}:${it.points}:${it.clip_x}:${it.clip_y}:${it.clip_width}:${it.clip_height}')
 }
 
 fn test_compositor_frames_retain_unrelated_border_paths_and_match_full_recordings() {
@@ -26,14 +26,14 @@ fn test_compositor_frames_retain_unrelated_border_paths_and_match_full_recording
 		bucket := compositor_phase_bucket_with_color(result, 'rgb(71 72 73)')
 		phase_storage := result.paint_phase_commands.data
 		border_storage := result.paint_phase_commands[bucket].data
-		path_storage := result.paint_phase_commands[bucket][0].path_data.data
+		path_storage := result.paint_phase_commands[bucket][0].svg().path_data.data
 		cached_count := result.paint_phase_command_count
 		document.update_animations_and_send_events(timestamp)
 		document.update_layout(.html_event_loop_rendering_update)
 		local := document.record_display_list() or { panic('missing sampled recording') }
 		assert result.paint_phase_commands.data == phase_storage
 		assert result.paint_phase_commands[bucket].data == border_storage
-		assert result.paint_phase_commands[bucket][0].path_data.data == path_storage
+		assert result.paint_phase_commands[bucket][0].svg().path_data.data == path_storage
 		assert result.paint_phase_command_count == cached_count
 		assert compositor_command_snapshot(initial_commands) == initial_snapshot
 		local_dump := local.dump()

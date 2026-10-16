@@ -60,7 +60,7 @@ fn test_attribute_transform_keeps_nested_path_geometry_and_live_svg_updates() {
 	_ = layout_document_typed_in_viewport(document, 100, 80)
 	first := display_list_commands(document.record_display_list() or { panic('missing initial list') }).filter(it.kind == 'draw_svg_path')
 	assert first.len == 1
-	assert first[0].path_transform == [f64(1), 0, 0, 1, 5, 7]!
+	assert first[0].svg().path_transform == [f64(1), 0, 0, 1, 5, 7]!
 	mut group := document.get_element_by_id('group') or { panic('missing group') }
 	group.set_attribute_value('transform', 'translate(13 17)')
 	// This standalone bridge fixture has no browser mutation replay owner.
@@ -70,6 +70,6 @@ fn test_attribute_transform_keeps_nested_path_geometry_and_live_svg_updates() {
 	_ = layout_document_typed_in_viewport(document, 100, 80)
 	second := display_list_commands(document.record_display_list() or { panic('missing updated list') }).filter(it.kind == 'draw_svg_path')
 	assert second.len == 1
-	assert second[0].path_transform == [f64(1), 0, 0, 1, 13, 17]!
-	assert first[0].path_transform == [f64(1), 0, 0, 1, 5, 7]!
+	assert second[0].svg().path_transform == [f64(1), 0, 0, 1, 13, 17]!
+	assert first[0].svg().path_transform == [f64(1), 0, 0, 1, 5, 7]!
 }

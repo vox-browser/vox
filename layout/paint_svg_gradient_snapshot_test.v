@@ -46,12 +46,12 @@ fn ephemeral_svg_gradient_commands() []PaintCommand {
 
 fn test_ordinary_commands_and_solid_svg_paths_have_no_gradient_snapshot() {
 	assert sizeof(PaintCommand) < 3600
-	assert (PaintCommand{kind: 'draw_text'}).svg_gradient_data == none
-	assert (PaintCommand{kind: 'fill_rect'}).svg_gradient_data == none
+	assert (PaintCommand{kind: 'draw_text'}).svg().svg_gradient_data == none
+	assert (PaintCommand{kind: 'fill_rect'}).svg().svg_gradient_data == none
 	commands := BlockBox{svg_path: 'M0 0L10 10', svg_fill_color: 'red'}.paint_commands()
 	assert commands.any(it.kind == 'draw_svg_path')
 	for command in commands {
-		assert command.svg_gradient_data == none
+		assert command.svg().svg_gradient_data == none
 		assert command.fill_linear_gradient() == none
 		assert command.stroke_radial_gradient() == none
 	}
@@ -86,11 +86,11 @@ fn test_all_gradient_slots_retain_their_values_after_the_producer_and_collection
 
 fn test_force_dark_replaces_shared_gradient_snapshots_without_changing_recordings() {
 	command := ephemeral_svg_gradient_commands()[0]
-	original := command.svg_gradient_data or { panic('missing original snapshot') }
+	original := command.svg().svg_gradient_data or { panic('missing original snapshot') }
 	settings := painting.ForceDarkSettings.default()
 	resolved := resolve_force_dark_paint_commands([command, command], settings)
-	first := resolved[0].svg_gradient_data or { panic('missing first dark snapshot') }
-	second := resolved[1].svg_gradient_data or { panic('missing second dark snapshot') }
+	first := resolved[0].svg().svg_gradient_data or { panic('missing first dark snapshot') }
+	second := resolved[1].svg().svg_gradient_data or { panic('missing second dark snapshot') }
 	assert voidptr(original) != voidptr(first)
 	assert voidptr(first) != voidptr(second)
 	$if gcboehm ? { C.GC_gcollect() }
@@ -111,16 +111,16 @@ fn test_gradient_snapshot_is_shared_by_replays_and_replaced_after_resource_mutat
 	mut document := html.parse_document('<!doctype html><svg width="100" height="50"><defs><linearGradient id="g"><stop id="s" stop-color="red"/></linearGradient></defs><rect width="100" height="50" fill="url(#g)"/></svg>')
 	_ = layout_document_typed_in_viewport(document, 100, 50)
 	first := display_list_commands(document.record_display_list() or { panic('missing first recording') }).filter(it.kind == 'draw_svg_path')[0]
-	first_data := first.svg_gradient_data or { panic('missing first snapshot') }
+	first_data := first.svg().svg_gradient_data or { panic('missing first snapshot') }
 	document.set_needs_repaint_with_invalidation(.paint_commands)
 	second := display_list_commands(document.record_display_list() or { panic('missing replay') }).filter(it.kind == 'draw_svg_path')[0]
-	second_data := second.svg_gradient_data or { panic('missing shared snapshot') }
+	second_data := second.svg().svg_gradient_data or { panic('missing shared snapshot') }
 	assert voidptr(first_data) == voidptr(second_data)
 	mut stop := document.get_element_by_id('s') or { panic('missing stop') }
 	stop.set_attribute_value('stop-color', 'green')
 	document.update_layout(.dump_display_list)
 	third := display_list_commands(document.record_display_list() or { panic('missing updated recording') }).filter(it.kind == 'draw_svg_path')[0]
-	third_data := third.svg_gradient_data or { panic('missing new snapshot') }
+	third_data := third.svg().svg_gradient_data or { panic('missing new snapshot') }
 	assert voidptr(first_data) != voidptr(third_data)
 	$if gcboehm ? { C.GC_gcollect() }
 	old_gradient := first.fill_linear_gradient() or { panic('missing retained red gradient') }

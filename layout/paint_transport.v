@@ -901,6 +901,31 @@ pub:
 	background_blend_mode       painting.BlendMode
 }
 
+// Immutable source-space path and SVG paint parameters, shared through
+// cached phases and recordings. Common colors, stroke width and live transforms
+// stay on PaintCommand; force-dark publishes a copied payload for new gradients.
+pub struct PaintSVGPathData {
+pub:
+	path      string
+	path_data []f32
+	path_transform         [6]f64
+	path_polygons          [][]f64
+	svg_gradient_data      ?&PaintSVGGradientData = none
+	svg_solid_color_data   &PaintSVGSolidColorData = unsafe { nil }
+	fill_pattern           ?&painting.SVGPatternPaintStyle = none
+	stroke_pattern         ?&painting.SVGPatternPaintStyle = none
+	stroke_dasharray       []f64
+	stroke_dashoffset      f64
+	non_scaling_stroke     bool
+	stroke_first           bool
+	fill_even_odd          bool
+	stroke_linecap         int
+	stroke_linejoin        int
+	stroke_miterlimit      f64 = 4.0
+	fill_opacity           f64 = 1.0
+	stroke_opacity         f64 = 1.0
+}
+
 pub struct PaintCommand {
 pub mut:
 	kind      string // fill_rect/fill_rounded_rect/stroke_rounded_rect/fill_ellipse/stroke_ellipse/fill_polygon/draw_line/draw_text/draw_svg_path
@@ -951,31 +976,14 @@ pub mut:
 	// text, border and image command.
 	gradient                  ?&LinearGradient = none
 	gradient_background_layer bool
-	// `draw_svg_path` payload.
-	path      string
-	path_data []f32
+	// Immutable path parameters remain in source space across live replay.
+	svg_data &PaintSVGPathData = unsafe { nil }
 	// Cumulative CSS/SVG affine transform in `matrix(a,b,c,d,e,f)` order. All-zero means identity.
 	transform              [6]f64
-	path_transform         [6]f64
 	points                 []f64
-	path_polygons          [][]f64
 	stroke_color           string
-	svg_gradient_data      ?&PaintSVGGradientData = none
-	svg_solid_color_data   &PaintSVGSolidColorData = unsafe { nil }
-	fill_pattern           ?&painting.SVGPatternPaintStyle = none
-	stroke_pattern         ?&painting.SVGPatternPaintStyle = none
 	stroke_width           f64
-	stroke_dasharray       []f64
-	stroke_dashoffset      f64
-	non_scaling_stroke     bool
-	stroke_first           bool
-	fill_even_odd          bool
-	stroke_linecap         int
-	stroke_linejoin        int
-	stroke_miterlimit      f64 = 4.0
 	line_style             string = 'solid'
-	fill_opacity           f64 = 1.0
-	stroke_opacity         f64 = 1.0
 	// Immutable background and replaced-image parameters are retained only by
 	// commands which use them, and shared through phase caches and replay.
 	image_data &PaintImageData = unsafe { nil }
@@ -1042,6 +1050,14 @@ pub mut:
 mut:
 	paint_box_index int
 	paint_phase     CompatibilityPaintPhase
+}
+
+// Logical SVG defaults require no payload allocation for ordinary commands.
+pub fn (command &PaintCommand) svg() PaintSVGPathData {
+	if command.svg_data != unsafe { nil } {
+		return *command.svg_data
+	}
+	return PaintSVGPathData{}
 }
 
 // Logical defaults preserve commands which have no image payload. Callers in
@@ -1920,11 +1936,13 @@ fn append_painting_display_command(mut commands []PaintCommand,
 				height: display_command.path_bounding_rect.height
 				color: painting_color_string(display_command.color)
 				opacity: opacity * display_command.opacity
-				path: painting_path_svg(display_command.path)
-				path_data: compatibility_pack_clip_path_segments(display_command.path)
+				svg_data: &PaintSVGPathData{
+					path: painting_path_svg(display_command.path)
+					path_data: compatibility_pack_clip_path_segments(display_command.path)
+					path_polygons: polygons
+					fill_even_odd: display_command.winding_rule == .even_odd
+				}
 				points: if polygons.len > 0 { polygons[0] } else { []f64{} }
-				path_polygons: polygons
-				fill_even_odd: display_command.winding_rule == .even_odd
 			}
 		}
 		painting.DrawEllipse {
@@ -2446,37 +2464,39 @@ fn (b &BlockBox) record_paint_commands_for_entries(entries []PaintOrderEntry, se
 				width: box.width
 				height: box.height
 				color: box.svg_fill_color
-				svg_solid_color_data: box.svg_solid_color_data
+				svg_data: &PaintSVGPathData{
+					svg_solid_color_data: box.svg_solid_color_data
+					svg_gradient_data: if !isnil(box.svg_gradient_data)
+						&& (box.svg_gradient_data.fill_linear_gradient != none
+							|| box.svg_gradient_data.stroke_linear_gradient != none
+							|| box.svg_gradient_data.fill_radial_gradient != none
+							|| box.svg_gradient_data.stroke_radial_gradient != none) {
+						box.svg_gradient_data
+					} else {
+						none
+					}
+					fill_pattern: box.svg_fill_pattern
+					path: box.svg_path
+					path_data: box.svg_path_data
+					path_transform: box.svg_transform
+					fill_even_odd: box.svg_fill_even_odd
+					stroke_pattern: box.svg_stroke_pattern
+					stroke_dasharray: box.svg_stroke_dasharray
+					stroke_dashoffset: box.svg_stroke_dashoffset
+					non_scaling_stroke: box.svg_non_scaling_stroke
+					stroke_first: box.svg_stroke_first
+					stroke_linecap: box.svg_stroke_linecap
+					stroke_linejoin: box.svg_stroke_linejoin
+					stroke_miterlimit: box.svg_stroke_miterlimit
+					fill_opacity: box.svg_fill_opacity
+					stroke_opacity: box.svg_stroke_opacity
+				}
 				force_dark_role: .svg
 				force_dark_role_set: true
-				svg_gradient_data: if !isnil(box.svg_gradient_data)
-					&& (box.svg_gradient_data.fill_linear_gradient != none
-						|| box.svg_gradient_data.stroke_linear_gradient != none
-						|| box.svg_gradient_data.fill_radial_gradient != none
-						|| box.svg_gradient_data.stroke_radial_gradient != none) {
-					box.svg_gradient_data
-				} else {
-					none
-				}
-				fill_pattern: box.svg_fill_pattern
 				opacity: opacity
-				path: box.svg_path
-				path_data: box.svg_path_data
-				path_transform: box.svg_transform
 				points: box.svg_points
-				fill_even_odd: box.svg_fill_even_odd
 				stroke_color: box.svg_stroke_color
-				stroke_pattern: box.svg_stroke_pattern
 				stroke_width: box.svg_stroke_width
-				stroke_dasharray: box.svg_stroke_dasharray
-				stroke_dashoffset: box.svg_stroke_dashoffset
-				non_scaling_stroke: box.svg_non_scaling_stroke
-				stroke_first: box.svg_stroke_first
-				stroke_linecap: box.svg_stroke_linecap
-				stroke_linejoin: box.svg_stroke_linejoin
-				stroke_miterlimit: box.svg_stroke_miterlimit
-				fill_opacity: box.svg_fill_opacity
-				stroke_opacity: box.svg_stroke_opacity
 			}
 		}
 		if box.marker_shape.len > 0 {
@@ -3972,15 +3992,17 @@ fn append_text_decoration_style(mut commands []PaintCommand, line string, start 
 				width: math.abs(f64(line_end.x - line_start.x))
 				height: f64(thickness * 6)
 				opacity: opacity
-				path: painting_path_svg(path)
-				path_data: compatibility_pack_clip_path_segments(path)
+				svg_data: &PaintSVGPathData{
+					path: painting_path_svg(path)
+					path_data: compatibility_pack_clip_path_segments(path)
+					path_polygons: [flat_points.clone()]
+					stroke_linecap: 1
+					stroke_linejoin: 1
+					stroke_miterlimit: 0
+				}
 				points: flat_points
-				path_polygons: [flat_points.clone()]
 				stroke_color: color
 				stroke_width: thickness
-				stroke_linecap: 1
-				stroke_linejoin: 1
-				stroke_miterlimit: 0
 			}
 		}
 		else {
@@ -5416,7 +5438,8 @@ pub fn (b &BlockBox) render_svg(width f64, height f64) string {
 			direction := if command.rtl { ' direction="rtl" unicode-bidi="plaintext"' } else { '' }
 			body << '<text x="${fmt_px(text_x)}" y="${fmt_px(baseline)}" font-size="${fmt_px(command.font_size)}" textLength="${fmt_px(command.width)}" lengthAdjust="spacingAndGlyphs"${direction}${weight}${style}${family} fill="${command.color}" fill-opacity="${fmt_px(command.opacity)}">${escape_xml(command.text)}</text>'
 		} else if command.kind == 'draw_svg_path' {
-			path_matrix := normalized_affine(command.path_transform)
+			svg_data := command.svg()
+			path_matrix := normalized_affine(svg_data.path_transform)
 			mut fill := if command.color.len > 0 { command.color } else { 'none' }
 			mut stroke := if command.stroke_color.len > 0 { command.stroke_color } else { 'none' }
 			if gradient := command.fill_linear_gradient() {
@@ -5427,7 +5450,7 @@ pub fn (b &BlockBox) render_svg(width f64, height f64) string {
 				id := 'svg-paint${defs.len}'
 				defs << retained_svg_radial_gradient_definition(id, gradient)
 				fill = 'url(#${id})'
-			} else if pattern := command.fill_pattern {
+			} else if pattern := svg_data.fill_pattern {
 				id := 'svg-paint${defs.len}'
 				defs << retained_svg_pattern_definition(id, pattern, 0)
 				fill = 'url(#${id})'
@@ -5440,34 +5463,34 @@ pub fn (b &BlockBox) render_svg(width f64, height f64) string {
 				id := 'svg-paint${defs.len}'
 				defs << retained_svg_radial_gradient_definition(id, gradient)
 				stroke = 'url(#${id})'
-			} else if pattern := command.stroke_pattern {
+			} else if pattern := svg_data.stroke_pattern {
 				id := 'svg-paint${defs.len}'
 				defs << retained_svg_pattern_definition(id, pattern, 0)
 				stroke = 'url(#${id})'
 			}
-			fill_rule := if command.fill_even_odd { 'evenodd' } else { 'nonzero' }
-			paint_order := if command.stroke_first { ' paint-order="stroke fill"' } else { '' }
-			linecap := match command.stroke_linecap {
+			fill_rule := if svg_data.fill_even_odd { 'evenodd' } else { 'nonzero' }
+			paint_order := if svg_data.stroke_first { ' paint-order="stroke fill"' } else { '' }
+			linecap := match svg_data.stroke_linecap {
 				1 { 'round' }
 				2 { 'square' }
 				else { 'butt' }
 			}
-			linejoin := match command.stroke_linejoin {
+			linejoin := match svg_data.stroke_linejoin {
 				1 { 'round' }
 				2 { 'bevel' }
 				else { 'miter' }
 			}
-			vector_effect := if command.non_scaling_stroke {
+			vector_effect := if svg_data.non_scaling_stroke {
 				' vector-effect="non-scaling-stroke"'
 			} else {
 				''
 			}
-			dasharray := if command.stroke_dasharray.len > 0 {
-				' stroke-dasharray="${command.stroke_dasharray.map(fmt_px(it)).join(' ')}" stroke-dashoffset="${fmt_px(command.stroke_dashoffset)}"'
+			dasharray := if svg_data.stroke_dasharray.len > 0 {
+				' stroke-dasharray="${svg_data.stroke_dasharray.map(fmt_px(it)).join(' ')}" stroke-dashoffset="${fmt_px(svg_data.stroke_dashoffset)}"'
 			} else {
 				''
 			}
-			body << '<path d="${escape_xml(command.path)}" transform="matrix(${fmt_px(path_matrix[0])} ${fmt_px(path_matrix[1])} ${fmt_px(path_matrix[2])} ${fmt_px(path_matrix[3])} ${fmt_px(path_matrix[4])} ${fmt_px(path_matrix[5])})" fill="${fill}" fill-rule="${fill_rule}" fill-opacity="${fmt_px(command.opacity * command.fill_opacity)}" stroke="${stroke}" stroke-opacity="${fmt_px(command.opacity * command.stroke_opacity)}" stroke-width="${fmt_px(command.stroke_width)}" stroke-linecap="${linecap}" stroke-linejoin="${linejoin}" stroke-miterlimit="${fmt_px(command.stroke_miterlimit)}"${dasharray}${paint_order}${vector_effect}/>'
+			body << '<path d="${escape_xml(svg_data.path)}" transform="matrix(${fmt_px(path_matrix[0])} ${fmt_px(path_matrix[1])} ${fmt_px(path_matrix[2])} ${fmt_px(path_matrix[3])} ${fmt_px(path_matrix[4])} ${fmt_px(path_matrix[5])})" fill="${fill}" fill-rule="${fill_rule}" fill-opacity="${fmt_px(command.opacity * svg_data.fill_opacity)}" stroke="${stroke}" stroke-opacity="${fmt_px(command.opacity * svg_data.stroke_opacity)}" stroke-width="${fmt_px(command.stroke_width)}" stroke-linecap="${linecap}" stroke-linejoin="${linejoin}" stroke-miterlimit="${fmt_px(svg_data.stroke_miterlimit)}"${dasharray}${paint_order}${vector_effect}/>'
 		}
 		if body.len > body_start && !affine_is_identity(command.transform) {
 			matrix := normalized_affine(command.transform)

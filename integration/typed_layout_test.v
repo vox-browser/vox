@@ -80,11 +80,11 @@ fn test_svg_geometry_reaches_the_renderer_with_viewbox_transform_and_paint() {
 	paths := commands.filter(it.kind == 'draw_svg_path')
 	assert paths.len == 1
 	path := paths[0]
-	assert path.path.starts_with('M 20 10')
-	assert path.path_transform[0] == 2
-	assert path.path_transform[1] == 0
-	assert path.path_transform[2] == 0
-	assert path.path_transform[3] == 2
+	assert path.svg().path.starts_with('M 20 10')
+	assert path.svg().path_transform[0] == 2
+	assert path.svg().path_transform[1] == 0
+	assert path.svg().path_transform[2] == 0
+	assert path.svg().path_transform[3] == 2
 	assert path.color == 'rgb(255 0 0)'
 	assert path.stroke_color == 'rgb(0 0 255)'
 	assert path.stroke_width == 2
@@ -103,10 +103,10 @@ fn test_svg_non_scaling_stroke_is_retained_for_device_space_painting() {
 	root := layout.layout_document_typed_in_viewport(document, 400, 200)
 	paths := root.paint_commands().filter(it.kind == 'draw_svg_path')
 	assert paths.len == 1
-	assert paths[0].path_transform[0] == 400
-	assert paths[0].path_transform[3] == 200
+	assert paths[0].svg().path_transform[0] == 400
+	assert paths[0].svg().path_transform[3] == 200
 	assert paths[0].stroke_width == 1
-	assert paths[0].non_scaling_stroke
+	assert paths[0].svg().non_scaling_stroke
 	assert root.render_svg(400, 200).contains('vector-effect="non-scaling-stroke"')
 }
 

@@ -30,21 +30,25 @@ fn retained_svg_gradient_data(fill_linear ?painting.SVGLinearGradientPaintStyle,
 }
 
 pub fn (command &PaintCommand) fill_linear_gradient() ?painting.SVGLinearGradientPaintStyle {
-	data := command.svg_gradient_data or { return none }
+	if command.svg_data == unsafe { nil } { return none }
+	data := command.svg_data.svg_gradient_data or { return none }
 	return data.fill_linear_gradient
 }
 
 pub fn (command &PaintCommand) stroke_linear_gradient() ?painting.SVGLinearGradientPaintStyle {
-	data := command.svg_gradient_data or { return none }
+	if command.svg_data == unsafe { nil } { return none }
+	data := command.svg_data.svg_gradient_data or { return none }
 	return data.stroke_linear_gradient
 }
 
 pub fn (command &PaintCommand) fill_radial_gradient() ?painting.SVGRadialGradientPaintStyle {
-	data := command.svg_gradient_data or { return none }
+	if command.svg_data == unsafe { nil } { return none }
+	data := command.svg_data.svg_gradient_data or { return none }
 	return data.fill_radial_gradient
 }
 
 pub fn (command &PaintCommand) stroke_radial_gradient() ?painting.SVGRadialGradientPaintStyle {
-	data := command.svg_gradient_data or { return none }
+	if command.svg_data == unsafe { nil } { return none }
+	data := command.svg_data.svg_gradient_data or { return none }
 	return data.stroke_radial_gradient
 }

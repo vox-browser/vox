@@ -10,8 +10,8 @@ fn fused_replay_assert_matches_reference(actual []PaintCommand, expected []Paint
 		reference := expected[index]
 		assert command.kind == reference.kind
 		assert command.text == reference.text
-		assert command.path == reference.path
-		assert command.path_data == reference.path_data
+		assert command.svg().path == reference.svg().path
+		assert command.svg().path_data == reference.svg().path_data
 		assert command.x == reference.x
 		assert command.y == reference.y
 		assert command.width == reference.width
@@ -114,8 +114,10 @@ fn test_fused_visual_replay_matches_two_stage_layers_clips_backfaces_and_live_of
 	buckets[compatibility_paint_phase_count + foreground] = [
 		PaintCommand{
 			kind:           'draw_svg_path'
-			path:           'M0 0L10 10'
-			path_data:      [f32(1), 2, 3]
+			svg_data: &PaintSVGPathData{
+				path:           'M0 0L10 10'
+				path_data:      [f32(1), 2, 3]
+			}
 			recording_clip: LayoutRect{1, 2, 10, 20}
 		},
 		PaintCommand{

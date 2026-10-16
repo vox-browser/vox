@@ -29,7 +29,8 @@ fn retained_svg_solid_color_data(fill_serialized string, fill ?css.Color,
 }
 
 pub fn (command &PaintCommand) retained_svg_fill_color() ?css.Color {
-	data := command.svg_solid_color_data
+	if command.svg_data == unsafe { nil } { return none }
+	data := command.svg_data.svg_solid_color_data
 	if data == unsafe { nil } || !data.has_fill || command.color != data.fill_serialized {
 		return none
 	}
@@ -37,7 +38,8 @@ pub fn (command &PaintCommand) retained_svg_fill_color() ?css.Color {
 }
 
 pub fn (command &PaintCommand) retained_svg_stroke_color() ?css.Color {
-	data := command.svg_solid_color_data
+	if command.svg_data == unsafe { nil } { return none }
+	data := command.svg_data.svg_solid_color_data
 	if data == unsafe { nil } || !data.has_stroke || command.stroke_color != data.stroke_serialized {
 		return none
 	}

@@ -5902,23 +5902,24 @@ fn (mut app BrowserApp) draw_command(source_command layout.PaintCommand, page_x 
 			)
 		}
 		'draw_svg_path' {
+			svg_data := command.svg()
 			$if macos {
 				if app.ctx.native_rendering
-					&& command.path_data.len >= layout.compatibility_clip_path_segment_stride {
-					path_matrix := multiply_paint_transforms(command.transform, command.path_transform)
-					dash_data := if command.stroke_dasharray.len > 0 {
-						command.stroke_dasharray
+					&& svg_data.path_data.len >= layout.compatibility_clip_path_segment_stride {
+					path_matrix := multiply_paint_transforms(command.transform, svg_data.path_transform)
+					dash_data := if svg_data.stroke_dasharray.len > 0 {
+						svg_data.stroke_dasharray
 					} else {
 						[f64(0)]
 					}
-					fill := app.paint_colors.color_with_retained(command.color, command.opacity * command.fill_opacity,
+					fill := app.paint_colors.color_with_retained(command.color, command.opacity * svg_data.fill_opacity,
 						command.retained_svg_fill_color())
-					stroke := app.paint_colors.color_with_retained(command.stroke_color, command.opacity * command.stroke_opacity,
+					stroke := app.paint_colors.color_with_retained(command.stroke_color, command.opacity * svg_data.stroke_opacity,
 						command.retained_svg_stroke_color())
-					if command.svg_gradient_data == none && command.fill_pattern == none
-						&& command.stroke_pattern == none && !command.stroke_first {
+					if svg_data.svg_gradient_data == none && svg_data.fill_pattern == none
+						&& svg_data.stroke_pattern == none && !svg_data.stroke_first {
 						unsafe {
-							C.native_draw_svg_path_srgb(&command.path_data[0], command.path_data.len / layout.compatibility_clip_path_segment_stride, if command.fill_even_odd {
+							C.native_draw_svg_path_srgb(&svg_data.path_data[0], svg_data.path_data.len / layout.compatibility_clip_path_segment_stride, if svg_data.fill_even_odd {
 								1
 							} else {
 								0
@@ -5930,50 +5931,50 @@ fn (mut app BrowserApp) draw_command(source_command layout.PaintCommand, page_x 
 								1
 							} else {
 								0
-							}, f32(command.stroke_width), command.stroke_linecap, command.stroke_linejoin, f32(command.stroke_miterlimit), if command.non_scaling_stroke {
+							}, f32(command.stroke_width), svg_data.stroke_linecap, svg_data.stroke_linejoin, f32(svg_data.stroke_miterlimit), if svg_data.non_scaling_stroke {
 								1
 							} else {
 								0
-							}, &dash_data[0], command.stroke_dasharray.len, command.stroke_dashoffset)
+							}, &dash_data[0], svg_data.stroke_dasharray.len, svg_data.stroke_dashoffset)
 						}
 						return
 					}
-					order := if command.stroke_first { [1, 0] } else { [0, 1] }
+					order := if svg_data.stroke_first { [1, 0] } else { [0, 1] }
 					for part in order {
 						if part == 0 {
 							if gradient := command.fill_linear_gradient() {
-								draw_native_svg_linear_gradient_path(command.path_data, command.fill_even_odd, path_matrix, page_x, page_y, f32(scroll_y), f32(app.ctx.height), false, command.stroke_width, command.stroke_linecap, command.stroke_linejoin, command.stroke_miterlimit, gradient, command.opacity * command.fill_opacity, false)
+								draw_native_svg_linear_gradient_path(svg_data.path_data, svg_data.fill_even_odd, path_matrix, page_x, page_y, f32(scroll_y), f32(app.ctx.height), false, command.stroke_width, svg_data.stroke_linecap, svg_data.stroke_linejoin, svg_data.stroke_miterlimit, gradient, command.opacity * svg_data.fill_opacity, false)
 							} else if gradient := command.fill_radial_gradient() {
-								draw_native_svg_radial_gradient_path(command.path_data, command.fill_even_odd, path_matrix, page_x, page_y, f32(scroll_y), f32(app.ctx.height), false, command.stroke_width, command.stroke_linecap, command.stroke_linejoin, command.stroke_miterlimit, gradient, command.opacity * command.fill_opacity, false)
-							} else if pattern := command.fill_pattern {
-								app.draw_native_svg_pattern_path(command.path_data, command.fill_even_odd, path_matrix, page_x, page_y, f32(scroll_y), f32(app.ctx.height), false, command.stroke_width, command.stroke_linecap, command.stroke_linejoin, command.stroke_miterlimit, pattern, command.opacity * command.fill_opacity, false)
+								draw_native_svg_radial_gradient_path(svg_data.path_data, svg_data.fill_even_odd, path_matrix, page_x, page_y, f32(scroll_y), f32(app.ctx.height), false, command.stroke_width, svg_data.stroke_linecap, svg_data.stroke_linejoin, svg_data.stroke_miterlimit, gradient, command.opacity * svg_data.fill_opacity, false)
+							} else if pattern := svg_data.fill_pattern {
+								app.draw_native_svg_pattern_path(svg_data.path_data, svg_data.fill_even_odd, path_matrix, page_x, page_y, f32(scroll_y), f32(app.ctx.height), false, command.stroke_width, svg_data.stroke_linecap, svg_data.stroke_linejoin, svg_data.stroke_miterlimit, pattern, command.opacity * svg_data.fill_opacity, false)
 							} else if command.color.len > 0 {
 								unsafe {
-									C.native_draw_svg_path_srgb(&command.path_data[0], command.path_data.len / layout.compatibility_clip_path_segment_stride, if command.fill_even_odd {
+									C.native_draw_svg_path_srgb(&svg_data.path_data[0], svg_data.path_data.len / layout.compatibility_clip_path_segment_stride, if svg_data.fill_even_odd {
 										1
 									} else {
 										0
-									}, f32(path_matrix[0]), f32(path_matrix[1]), f32(path_matrix[2]), f32(path_matrix[3]), f32(path_matrix[4]), f32(path_matrix[5]), page_x, page_y, f32(scroll_y), f32(app.ctx.width), f32(app.ctx.height), fill, 1, stroke, 0, f32(command.stroke_width), command.stroke_linecap, command.stroke_linejoin, f32(command.stroke_miterlimit), 0, &dash_data[0], command.stroke_dasharray.len, command.stroke_dashoffset)
+									}, f32(path_matrix[0]), f32(path_matrix[1]), f32(path_matrix[2]), f32(path_matrix[3]), f32(path_matrix[4]), f32(path_matrix[5]), page_x, page_y, f32(scroll_y), f32(app.ctx.width), f32(app.ctx.height), fill, 1, stroke, 0, f32(command.stroke_width), svg_data.stroke_linecap, svg_data.stroke_linejoin, f32(svg_data.stroke_miterlimit), 0, &dash_data[0], svg_data.stroke_dasharray.len, svg_data.stroke_dashoffset)
 								}
 							}
 						} else if command.stroke_width > 0 {
 							if gradient := command.stroke_linear_gradient() {
-								draw_native_svg_linear_gradient_path(command.path_data, command.fill_even_odd, path_matrix, page_x, page_y, f32(scroll_y), f32(app.ctx.height), true, command.stroke_width, command.stroke_linecap, command.stroke_linejoin, command.stroke_miterlimit, gradient, command.opacity * command.stroke_opacity, false)
+								draw_native_svg_linear_gradient_path(svg_data.path_data, svg_data.fill_even_odd, path_matrix, page_x, page_y, f32(scroll_y), f32(app.ctx.height), true, command.stroke_width, svg_data.stroke_linecap, svg_data.stroke_linejoin, svg_data.stroke_miterlimit, gradient, command.opacity * svg_data.stroke_opacity, false)
 							} else if gradient := command.stroke_radial_gradient() {
-								draw_native_svg_radial_gradient_path(command.path_data, command.fill_even_odd, path_matrix, page_x, page_y, f32(scroll_y), f32(app.ctx.height), true, command.stroke_width, command.stroke_linecap, command.stroke_linejoin, command.stroke_miterlimit, gradient, command.opacity * command.stroke_opacity, false)
-							} else if pattern := command.stroke_pattern {
-								app.draw_native_svg_pattern_path(command.path_data, command.fill_even_odd, path_matrix, page_x, page_y, f32(scroll_y), f32(app.ctx.height), true, command.stroke_width, command.stroke_linecap, command.stroke_linejoin, command.stroke_miterlimit, pattern, command.opacity * command.stroke_opacity, false)
+								draw_native_svg_radial_gradient_path(svg_data.path_data, svg_data.fill_even_odd, path_matrix, page_x, page_y, f32(scroll_y), f32(app.ctx.height), true, command.stroke_width, svg_data.stroke_linecap, svg_data.stroke_linejoin, svg_data.stroke_miterlimit, gradient, command.opacity * svg_data.stroke_opacity, false)
+							} else if pattern := svg_data.stroke_pattern {
+								app.draw_native_svg_pattern_path(svg_data.path_data, svg_data.fill_even_odd, path_matrix, page_x, page_y, f32(scroll_y), f32(app.ctx.height), true, command.stroke_width, svg_data.stroke_linecap, svg_data.stroke_linejoin, svg_data.stroke_miterlimit, pattern, command.opacity * svg_data.stroke_opacity, false)
 							} else if command.stroke_color.len > 0 {
 								unsafe {
-									C.native_draw_svg_path_srgb(&command.path_data[0], command.path_data.len / layout.compatibility_clip_path_segment_stride, if command.fill_even_odd {
+									C.native_draw_svg_path_srgb(&svg_data.path_data[0], svg_data.path_data.len / layout.compatibility_clip_path_segment_stride, if svg_data.fill_even_odd {
 										1
 									} else {
 										0
-									}, f32(path_matrix[0]), f32(path_matrix[1]), f32(path_matrix[2]), f32(path_matrix[3]), f32(path_matrix[4]), f32(path_matrix[5]), page_x, page_y, f32(scroll_y), f32(app.ctx.width), f32(app.ctx.height), fill, 0, stroke, 1, f32(command.stroke_width), command.stroke_linecap, command.stroke_linejoin, f32(command.stroke_miterlimit), if command.non_scaling_stroke {
+									}, f32(path_matrix[0]), f32(path_matrix[1]), f32(path_matrix[2]), f32(path_matrix[3]), f32(path_matrix[4]), f32(path_matrix[5]), page_x, page_y, f32(scroll_y), f32(app.ctx.width), f32(app.ctx.height), fill, 0, stroke, 1, f32(command.stroke_width), svg_data.stroke_linecap, svg_data.stroke_linejoin, f32(svg_data.stroke_miterlimit), if svg_data.non_scaling_stroke {
 										1
 									} else {
 										0
-									}, &dash_data[0], command.stroke_dasharray.len, command.stroke_dashoffset)
+									}, &dash_data[0], svg_data.stroke_dasharray.len, svg_data.stroke_dashoffset)
 								}
 							}
 						}
@@ -5981,8 +5982,8 @@ fn (mut app BrowserApp) draw_command(source_command layout.PaintCommand, page_x 
 					return
 				}
 			}
-			input_polygons := if command.path_polygons.len > 0 {
-				command.path_polygons
+			input_polygons := if svg_data.path_polygons.len > 0 {
+				svg_data.path_polygons
 			} else {
 				[command.points]
 			}
@@ -6000,14 +6001,14 @@ fn (mut app BrowserApp) draw_command(source_command layout.PaintCommand, page_x 
 				for polygon in screen_polygons {
 					if polygon.len >= 6 {
 						draw_browser_polygon(app.ctx, polygon, app.paint_colors.color_with_retained(command.color,
-							command.opacity * command.fill_opacity, command.retained_svg_fill_color()))
+							command.opacity * svg_data.fill_opacity, command.retained_svg_fill_color()))
 					}
 				}
 			}
 			if command.stroke_color.len > 0 && screen_polygons.len > 0
 				&& screen_polygons[0].len >= 4 && command.stroke_width > 0 {
 				points := screen_polygons[0]
-				stroke := app.paint_colors.color_with_retained(command.stroke_color, command.opacity * command.stroke_opacity,
+				stroke := app.paint_colors.color_with_retained(command.stroke_color, command.opacity * svg_data.stroke_opacity,
 					command.retained_svg_stroke_color())
 				for index := 0; index + 3 < points.len; index += 2 {
 					draw_browser_line(app.ctx, points[index], points[index + 1], points[index + 2], points[index + 3], gg.PenConfig{

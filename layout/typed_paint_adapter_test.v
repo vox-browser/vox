@@ -2381,14 +2381,14 @@ fn test_svg_paths_retain_exact_geometry_and_stroke_style_for_native_replay() {
 	paths := root.paint_commands().filter(it.kind == 'draw_svg_path')
 	assert paths.len == 1
 	command := paths[0]
-	assert command.path_data.len == 3 * compatibility_clip_path_segment_stride
-	assert command.path_data[0] == 0 // move_to
-	assert command.path_data[compatibility_clip_path_segment_stride] == 3 // cubic curve
-	assert command.path_data[compatibility_clip_path_segment_stride * 2] == 4 // arc
-	assert command.fill_even_odd
-	assert command.stroke_linecap == 1
-	assert command.stroke_linejoin == 2
-	assert command.stroke_miterlimit == 7
+	assert command.svg().path_data.len == 3 * compatibility_clip_path_segment_stride
+	assert command.svg().path_data[0] == 0 // move_to
+	assert command.svg().path_data[compatibility_clip_path_segment_stride] == 3 // cubic curve
+	assert command.svg().path_data[compatibility_clip_path_segment_stride * 2] == 4 // arc
+	assert command.svg().fill_even_odd
+	assert command.svg().stroke_linecap == 1
+	assert command.svg().stroke_linejoin == 2
+	assert command.svg().stroke_miterlimit == 7
 }
 
 fn test_svg_path_hit_testing_rejects_stroke_inflation_outside_transformed_path_bounds() {
@@ -2459,8 +2459,8 @@ fn test_svg_stroke_dashes_remain_in_user_units_until_paint() {
 	root := layout_document_typed_in_viewport(document, 220, 120)
 	paths := root.paint_commands().filter(it.kind == 'draw_svg_path')
 	assert paths.len == 1
-	assert paths[0].stroke_dasharray == [f64(3), 3]
-	assert paths[0].stroke_dashoffset == 1
+	assert paths[0].svg().stroke_dasharray == [f64(3), 3]
+	assert paths[0].svg().stroke_dashoffset == 1
 	serialized := root.render_svg(220, 120)
 	assert serialized.contains('stroke-dasharray="3 3"')
 	assert serialized.contains('stroke-dashoffset="1"')
@@ -2473,8 +2473,8 @@ fn test_svg_stroke_percentages_and_stylesheets_use_scaled_viewport_basis() {
 	assert paths.len == 1
 	// The scaled viewport basis is (40 + 20) / 2 = 30 user units.
 	assert paths[0].stroke_width == 3
-	assert paths[0].stroke_dasharray == [f64(6), 2]
-	assert paths[0].stroke_dashoffset == 9
+	assert paths[0].svg().stroke_dasharray == [f64(6), 2]
+	assert paths[0].svg().stroke_dashoffset == 9
 }
 
 fn test_svg_vector_effect_uses_the_css_cascade() {
@@ -2482,8 +2482,8 @@ fn test_svg_vector_effect_uses_the_css_cascade() {
 	root := layout_document_typed_in_viewport(document, 120, 120)
 	paths := root.paint_commands().filter(it.kind == 'draw_svg_path')
 	assert paths.len == 2
-	assert paths[0].non_scaling_stroke
-	assert !paths[1].non_scaling_stroke
+	assert paths[0].svg().non_scaling_stroke
+	assert !paths[1].svg().non_scaling_stroke
 }
 
 fn test_svg_linear_gradient_paints_retain_linked_resource_algorithms() {
@@ -2494,7 +2494,7 @@ fn test_svg_linear_gradient_paints_retain_linked_resource_algorithms() {
 	command := paths[0]
 	assert command.color == ''
 	assert command.stroke_color == ''
-	assert command.stroke_first
+	assert command.svg().stroke_first
 	fill := command.fill_linear_gradient() or { panic('missing retained fill gradient') }
 	stroke := command.stroke_linear_gradient() or { panic('missing retained stroke gradient') }
 	assert math.abs(fill.start_point.x - 10.0) < 0.001
@@ -2632,7 +2632,7 @@ fn test_svg_radial_gradient_paints_retain_two_circle_linked_resource_algorithms(
 	command := paths[0]
 	assert command.color == ''
 	assert command.stroke_color == ''
-	assert command.stroke_first
+	assert command.svg().stroke_first
 	fill := command.fill_radial_gradient() or { panic('missing retained radial fill') }
 	stroke := command.stroke_radial_gradient() or { panic('missing retained radial stroke') }
 	assert command.fill_linear_gradient() == none
@@ -2679,9 +2679,9 @@ fn test_svg_pattern_paints_retain_linked_tile_display_list() {
 	command := paths[0]
 	assert command.color == ''
 	assert command.stroke_color == ''
-	assert command.stroke_first
-	fill := command.fill_pattern or { panic('missing retained pattern fill') }
-	stroke := command.stroke_pattern or { panic('missing retained pattern stroke') }
+	assert command.svg().stroke_first
+	fill := command.svg().fill_pattern or { panic('missing retained pattern fill') }
+	stroke := command.svg().stroke_pattern or { panic('missing retained pattern stroke') }
 	assert fill.tile_rect == painting.Rect{10, 5, 25, 10}
 	assert stroke.tile_rect == painting.Rect{10, 5, 20, 10}
 	assert fill.pattern_transform or { painting.Affine{} } == painting.Affine{ e: 3, f: 4 }
@@ -2707,7 +2707,7 @@ fn test_svg_pattern_tile_retains_nested_decoded_image_filter() {
 	root := layout_document_typed_in_viewport(document, 100, 100)
 	paths := root.paint_commands().filter(it.kind == 'draw_svg_path')
 	assert paths.len == 1
-	pattern := paths[0].fill_pattern or { panic('missing retained pattern fill') }
+	pattern := paths[0].svg().fill_pattern or { panic('missing retained pattern fill') }
 	operations := (pattern.tile_display_list or {
 		panic('missing pattern display list')
 	}).operations
@@ -2729,7 +2729,7 @@ fn test_svg_pattern_resolves_vector_image_after_recording() {
 	root := layout_document_typed_in_viewport(document, 100, 100)
 	paths := root.paint_commands().filter(it.kind == 'draw_svg_path')
 	assert paths.len == 1
-	pattern := paths[0].fill_pattern or { panic('missing retained pattern fill') }
+	pattern := paths[0].svg().fill_pattern or { panic('missing retained pattern fill') }
 	operations := (pattern.tile_display_list or {
 		panic('missing vector-image pattern display list')
 	}).operations
@@ -2747,7 +2747,7 @@ fn test_svg_pattern_normalizes_raster_image_coordinates_once() {
 	root := layout_document_typed_in_viewport(document, 120, 120)
 	paths := root.paint_commands().filter(it.kind == 'draw_svg_path')
 	assert paths.len == 1
-	pattern := paths[0].fill_pattern or { panic('missing retained pattern fill') }
+	pattern := paths[0].svg().fill_pattern or { panic('missing retained pattern fill') }
 	operations := (pattern.tile_display_list or {
 		panic('missing raster-image pattern display list')
 	}).operations.filter(it.kind == .image)
@@ -2760,7 +2760,7 @@ fn test_svg_pattern_viewbox_overrides_object_bounding_box_content_units() {
 	root := layout_document_typed_in_viewport(document, 220, 120)
 	paths := root.paint_commands().filter(it.kind == 'draw_svg_path')
 	assert paths.len == 1
-	pattern := paths[0].fill_pattern or { panic('missing viewBox pattern fill') }
+	pattern := paths[0].svg().fill_pattern or { panic('missing viewBox pattern fill') }
 	assert pattern.tile_rect == painting.Rect{0, 0, 40, 20}
 	operations := (pattern.tile_display_list or { panic('missing viewBox tile display list') }).operations.filter(it.kind == .path)
 	assert operations.len == 2
@@ -2775,7 +2775,7 @@ fn test_svg_pattern_object_bounding_box_geometry_is_target_relative() {
 	root := layout_document_typed_in_viewport(document, 560, 330)
 	paths := root.paint_commands().filter(it.kind == 'draw_svg_path')
 	assert paths.len == 1
-	pattern := paths[0].fill_pattern or { panic('missing object-box pattern fill') }
+	pattern := paths[0].svg().fill_pattern or { panic('missing object-box pattern fill') }
 	assert pattern.tile_rect == painting.Rect{10, 145, 40, 50}
 	operations := (pattern.tile_display_list or { panic('missing object-box display list') }).operations.filter(it.kind == .path)
 	assert operations.len == 2
@@ -2865,7 +2865,7 @@ fn test_svg_text_reuses_svg_path_painting_instead_of_generic_text_commands() {
 	assert commands.all(it.kind != 'draw_text')
 	paths := commands.filter(it.kind == 'draw_svg_path')
 	assert paths.len == 1
-	assert paths[0].path_data.len > 6 * compatibility_clip_path_segment_stride
+	assert paths[0].svg().path_data.len > 6 * compatibility_clip_path_segment_stride
 	assert paths[0].color == css.Color{10, 20, 30, 255}.serialize()
 	assert paths[0].stroke_color == css.Color{40, 50, 60, 255}.serialize()
 	assert paths[0].stroke_width == 2
@@ -4214,8 +4214,8 @@ fn test_typed_ordinary_borders_retain_cpp_line_style_dispatch() {
 	border_commands := root.paint_commands().filter(it.paint_phase == .border)
 	double_commands := border_commands.filter(it.color == 'rgb(200 0 0)')
 	assert double_commands.len == 8
-	assert double_commands.all(it.kind == 'draw_svg_path' && it.path.len > 0
-		&& it.path_data.len > 0 && it.fill_even_odd)
+	assert double_commands.all(it.kind == 'draw_svg_path' && it.svg().path.len > 0
+		&& it.svg().path_data.len > 0 && it.svg().fill_even_odd)
 	dashed_commands := border_commands.filter(it.color == 'rgb(0 100 0)')
 	assert dashed_commands.len == 4
 	assert dashed_commands.all(it.kind == 'draw_line' && it.line_style == 'dashed'
@@ -4229,10 +4229,10 @@ fn test_typed_ordinary_borders_retain_cpp_line_style_dispatch() {
 	rounded_commands := border_commands.filter(it.color == 'rgb(40 50 70)')
 	assert rounded_commands.len == 1
 	assert rounded_commands[0].kind == 'draw_svg_path'
-	assert rounded_commands[0].path.contains('A ')
-	assert rounded_commands[0].path_data.len > 0
-	assert rounded_commands[0].path_polygons.len == 4
-	assert rounded_commands[0].fill_even_odd
+	assert rounded_commands[0].svg().path.contains('A ')
+	assert rounded_commands[0].svg().path_data.len > 0
+	assert rounded_commands[0].svg().path_polygons.len == 4
+	assert rounded_commands[0].svg().fill_even_odd
 }
 
 fn test_typed_outlines_use_cpp_border_dispatch_and_auto_accent() {
@@ -4264,8 +4264,8 @@ fn test_typed_outlines_use_cpp_border_dispatch_and_auto_accent() {
 		&& it.stroke_width == 6)
 	double_commands := outline_commands.filter(it.color == 'rgb(120 20 30)')
 	assert double_commands.len == 8
-	assert double_commands.all(it.kind == 'draw_svg_path' && it.path.contains('A ')
-		&& it.fill_even_odd)
+	assert double_commands.all(it.kind == 'draw_svg_path' && it.svg().path.contains('A ')
+		&& it.svg().fill_even_odd)
 	automatic_commands := outline_commands.filter(it.color == 'rgb(61 174 233)')
 	assert automatic_commands.len == 1
 	assert automatic_commands[0].kind == 'draw_svg_path'
@@ -4302,7 +4302,7 @@ fn test_separate_table_cell_borders_are_snapped_in_the_table_phase_and_empty_cel
 	table_border_commands := commands.filter(it.paint_phase == .table_collapsed_border)
 	assert table_border_commands.len == 1
 	assert table_border_commands[0].kind == 'draw_svg_path'
-	assert table_border_commands[0].fill_even_odd
+	assert table_border_commands[0].svg().fill_even_odd
 	assert table_border_commands.all(it.color == 'rgb(10 20 30)')
 	backgrounds := commands.filter(it.color == 'rgb(40 50 60)' && it.paint_phase == .background)
 	assert backgrounds.len == 1
@@ -4383,6 +4383,6 @@ fn test_typed_table_cell_radii_reach_the_active_table_border_phase() {
 	assert commands.len == 1
 	assert commands.all(it.kind == 'draw_svg_path')
 	assert commands.all(it.color == 'rgb(70 80 90)')
-	assert commands.all(it.path.contains('A ') && it.path_data.len > 0 && it.fill_even_odd)
-	assert commands.all(it.path_polygons.len == 4)
+	assert commands.all(it.svg().path.contains('A ') && it.svg().path_data.len > 0 && it.svg().fill_even_odd)
+	assert commands.all(it.svg().path_polygons.len == 4)
 }

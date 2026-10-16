@@ -75,7 +75,7 @@ fn test_block_box_groups_rare_svg_gradient_values_below_one_heap_block() {
 	for candidate in [BlockBox{ width: 20 }, BlockBox{ svg_path: 'M0 0L10 10', svg_fill_color: 'red' }] {
 		assert candidate.svg_gradient_data == unsafe { nil }
 		for command in candidate.paint_commands() {
-			assert command.svg_gradient_data == none
+			assert command.svg().svg_gradient_data == none
 		}
 	}
 	// Explicit all-absent data keeps the old all-four-Options-absent behavior.
@@ -84,7 +84,7 @@ fn test_block_box_groups_rare_svg_gradient_values_below_one_heap_block() {
 		svg_gradient_data: &PaintSVGGradientData{}
 	}
 	for command in empty.paint_commands() {
-		assert command.svg_gradient_data == none
+		assert command.svg().svg_gradient_data == none
 	}
 }
 
@@ -93,13 +93,13 @@ fn test_block_box_commands_share_the_grouped_snapshot_after_producer_and_collect
 	assert box.svg_gradient_data != unsafe { nil }
 	first := box.paint_commands().filter(it.kind == 'draw_svg_path')
 	assert first.len == 1
-	data := first[0].svg_gradient_data or { panic('missing snapshot') }
+	data := first[0].svg().svg_gradient_data or { panic('missing snapshot') }
 	assert data == box.svg_gradient_data
 	for _ in 0 .. 3 {
 		$if gcboehm ? { C.GC_gcollect() }
 		next := box.paint_commands().filter(it.kind == 'draw_svg_path')
 		assert next.len == 1
-		next_data := next[0].svg_gradient_data or { panic('missing shared snapshot') }
+		next_data := next[0].svg().svg_gradient_data or { panic('missing shared snapshot') }
 		assert next_data == data
 		fill := next[0].fill_linear_gradient() or { panic('missing linear fill') }
 		stroke := next[0].stroke_linear_gradient() or { panic('missing linear stroke') }

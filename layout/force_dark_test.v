@@ -97,10 +97,12 @@ fn test_force_dark_command_resolution_translates_css_and_svg_gradient_stops() {
 		PaintCommand{
 			force_dark_role: .svg
 			force_dark_role_set: true
-			svg_gradient_data: &PaintSVGGradientData{
-				fill_linear_gradient: painting.SVGLinearGradientPaintStyle{
-					gradient: painting.SVGGradientPaintStyle{
-						color_stops: [painting.ColorStop{color: black, position: 0}]
+			svg_data: &PaintSVGPathData{
+				svg_gradient_data: &PaintSVGGradientData{
+					fill_linear_gradient: painting.SVGLinearGradientPaintStyle{
+						gradient: painting.SVGGradientPaintStyle{
+							color_stops: [painting.ColorStop{color: black, position: 0}]
+						}
 					}
 				}
 			}
