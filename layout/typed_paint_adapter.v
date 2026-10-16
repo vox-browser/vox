@@ -2908,9 +2908,40 @@ mut:
 	has_bounds bool
 }
 
+// The transform from a userSpaceOnUse clip child's own coordinates to the page:
+// the referencing element's user space (including every nested <svg> viewport
+// between it and the outermost root), then the clipPath's and each enclosing
+// clip descendant's transform attributes.
+fn svg_clip_child_transform_to_page(node &Node, clip_box &Node, target_to_page svg.AffineTransform) svg.AffineTransform {
+	mut chain := []&Node{}
+	mut current := ?&Node(node)
+	for current != none {
+		candidate := current or { break }
+		chain << candidate
+		if layout_nodes_same(candidate, clip_box) {
+			break
+		}
+		current = candidate.parent()
+	}
+	mut transform := target_to_page
+	for index := chain.len - 1; index >= 0; index-- {
+		if element := svg_element_for_layout_node(chain[index]) {
+			transform = transform.multiply(svg_element_attribute_transform(element))
+		}
+	}
+	return transform
+}
+
 fn collect_svg_clip_path_components(node &Node, state &LayoutState,
 	resource_transform svg.AffineTransform, object_bounding_box_units bool,
 	mut collection SVGClipPathCollection) {
+	collect_svg_clip_path_components_in(node, unsafe { nil }, state, resource_transform,
+		object_bounding_box_units, none, mut collection)
+}
+
+fn collect_svg_clip_path_components_in(node &Node, clip_box &Node, state &LayoutState,
+	resource_transform svg.AffineTransform, object_bounding_box_units bool,
+	target_to_page ?svg.AffineTransform, mut collection SVGClipPathCollection) {
 	if node.is_svg_mask_box() || node.is_svg_pattern_box() {
 		return
 	}
@@ -2929,6 +2960,8 @@ fn collect_svg_clip_path_components(node &Node, state &LayoutState,
 				mut to_page := svg.AffineTransform{}.translated(page_delta_x, page_delta_y).multiply(used.svg_viewbox_transform()).multiply(resource_transform).multiply(used.svg_transform())
 				if object_bounding_box_units {
 					to_page = outer_svg_viewport_transform_in_page_space(node, state).multiply(to_page)
+				} else if user_space := target_to_page {
+					to_page = svg_clip_child_transform_to_page(node, clip_box, user_space)
 				}
 				local_path := html.canvas_gfx_path_from_svg_path(svg_path)
 				clip_path := painting_clip_path_from_canvas_path(local_path, if styled.computed_values().clip_rule() == .evenodd {
@@ -2959,7 +2992,8 @@ fn collect_svg_clip_path_components(node &Node, state &LayoutState,
 	}
 	for child in node.children() {
 		if child.is_box() && !child.is_svg_clip_box() {
-			collect_svg_clip_path_components(child, state, resource_transform, object_bounding_box_units, mut collection)
+			collect_svg_clip_path_components_in(child, clip_box, state, resource_transform,
+				object_bounding_box_units, target_to_page, mut collection)
 		}
 	}
 }
@@ -2984,7 +3018,16 @@ fn svg_url_clip_path_for_box(node &Node, state &LayoutState,
 		svg.Units.user_space_on_use
 	} == .object_bounding_box
 	mut collection := SVGClipPathCollection{}
-	collect_svg_clip_path_components(clip_box, state, resource_transform, object_bounding_box_units, mut collection)
+	// userSpaceOnUse clip geometry lives in the referencing element's user
+	// space; map it exactly as that element's own shapes are mapped, so nested
+	// <svg> viewport offsets are applied once.
+	target_to_page := if object_bounding_box_units || !node.is_svg_box() || node.is_svg_svg_box() {
+		?svg.AffineTransform(none)
+	} else {
+		?svg.AffineTransform(svg_path_transform_to_page(node, state))
+	}
+	collect_svg_clip_path_components_in(clip_box, clip_box, state, resource_transform,
+		object_bounding_box_units, target_to_page, mut collection)
 	return painting.SVGClipVisualData{
 		bounding_rect: compatibility_enclosing_int_rect(LayoutRect{
 			x: collection.bounds.x
