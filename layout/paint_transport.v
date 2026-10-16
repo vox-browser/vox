@@ -3101,13 +3101,13 @@ fn append_unselected_text_fragment_commands(mut commands []PaintCommand,
 				retained_run.refresh_replay_data()
 				text_command.glyph_run = retained_run
 				text_command.glyph_translation_x = first.x
-				text_command.glyph_translation_y = first.y + first.baseline
+				text_command.glyph_translation_y = text_fragment_paint_top(first) + first.baseline
 				text_command.glyph_orientation = first.paintable_fragment.orientation
 			}
 		} else if combined_run := combined_text_fragment_glyph_run(fragments[i..j], run_left) {
 			text_command.glyph_run = combined_run
 			text_command.glyph_translation_x = run_left
-			text_command.glyph_translation_y = first.y + first.baseline
+			text_command.glyph_translation_y = text_fragment_paint_top(first) + first.baseline
 			text_command.glyph_orientation = first.paintable_fragment.orientation
 		}
 		commands << text_command
@@ -3351,10 +3351,25 @@ fn paint_text_shadow(mut commands []PaintCommand, fragment TextFragment,
 		if retained_run := glyph_run {
 			shadow_command.glyph_run = retained_run
 			shadow_command.glyph_translation_x = fragment.x + layer.offset_x
-			shadow_command.glyph_translation_y = fragment.y + fragment.baseline + layer.offset_y
+			shadow_command.glyph_translation_y = text_fragment_paint_top(fragment) + fragment.baseline +
+				layer.offset_y
 		}
 		commands << shadow_command
 	}
+}
+
+// Blink's TextFragmentPainter rounds a horizontal text box's block offset to
+// whole pixels, keeping line heights consistent, before it places the
+// baseline. Chromium-policy documents paint glyphs from the same rounded top.
+fn text_fragment_paint_top(fragment TextFragment) f64 {
+	if fragment.paintable_fragment.orientation == .horizontal {
+		if run := fragment.paintable_fragment.glyph_run {
+			if run.font().font_rendering_policy == .chromium {
+				return math.floor(fragment.y + 0.5)
+			}
+		}
+	}
+	return fragment.y
 }
 
 // PaintableWithLines.cpp::paint_text_fragment().
@@ -3386,7 +3401,7 @@ fn paint_text_fragment(mut commands []PaintCommand, fragment TextFragment,
 		retained_run.refresh_replay_data()
 		text_command.glyph_run = retained_run
 		text_command.glyph_translation_x = fragment.x
-		text_command.glyph_translation_y = fragment.y + fragment.baseline
+		text_command.glyph_translation_y = text_fragment_paint_top(fragment) + fragment.baseline
 		text_command.glyph_orientation = fragment.paintable_fragment.orientation
 	}
 	span_rect := text_span_rect(fragment, span)
