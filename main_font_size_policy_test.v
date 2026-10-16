@@ -26,3 +26,12 @@ fn test_old_reddit_navigation_selects_browser_font_sizes_without_changing_other_
 	assert saved.font_rendering_policy() == .chromium
 	saved.finalize()
 }
+
+fn test_wikipedia_hosts_select_chromium_rendering() {
+	for host in ['wikipedia.org', 'www.wikipedia.org', 'en.wikipedia.org', 'EN.M.WIKIPEDIA.ORG.'] {
+		assert browser_host_uses_chromium_rendering(host)
+	}
+	for host in ['wikipedia.org.evil.test', 'notwikipedia.org', 'wikimedia.org', 'example.com'] {
+		assert !browser_host_uses_chromium_rendering(host)
+	}
+}

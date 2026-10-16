@@ -1,0 +1,63 @@
+module platform
+
+#flag darwin -framework CoreText
+#flag darwin -framework CoreFoundation
+#include "coretext_macos.h"
+
+@[typedef]
+struct C.vox_ct_face {
+	path        [1024]char
+	postscript  [256]char
+	face_index  int
+	weight      int
+	italic      int
+	axis_count  int
+	axis_tags   [16]u32
+	axis_values [16]f32
+}
+
+fn C.vox_ct_match_family(family &char, weight int, italic int, size f64, face &C.vox_ct_face) int
+fn C.vox_ct_family_available(family &char) int
+fn C.vox_ct_fallback(text &u16, length int, language &char, base_family &char, weight int, italic int, size f64, face &C.vox_ct_face) int
+
+fn system_font_face_from_native(native &C.vox_ct_face) SystemFontFace {
+	mut variations := []FontVariationAxis{cap: native.axis_count}
+	for index in 0 .. native.axis_count {
+		variations << FontVariationAxis{
+			tag: native.axis_tags[index]
+			value: native.axis_values[index]
+		}
+	}
+	return SystemFontFace{
+		path: unsafe { cstring_to_vstring(&char(&native.path[0])) }
+		postscript_name: unsafe { cstring_to_vstring(&char(&native.postscript[0])) }
+		face_index: native.face_index
+		weight: native.weight
+		italic: native.italic != 0
+		variations: variations
+	}
+}
+
+fn coretext_match_family(family string, weight int, size f32) ?SystemFontFace {
+	native := C.vox_ct_face{}
+	if C.vox_ct_match_family(&char(family.str), weight, 0, f64(size), &native) == 0 {
+		return none
+	}
+	return system_font_face_from_native(&native)
+}
+
+fn coretext_family_available(family string) bool {
+	return C.vox_ct_family_available(&char(family.str)) != 0
+}
+
+fn coretext_fallback(text []u16, language string, base_family string, weight int, size f32) ?SystemFontFace {
+	if text.len == 0 {
+		return none
+	}
+	native := C.vox_ct_face{}
+	if C.vox_ct_fallback(text.data, text.len, &char(language.str), &char(base_family.str), weight, 0,
+		f64(size), &native) == 0 {
+		return none
+	}
+	return system_font_face_from_native(&native)
+}

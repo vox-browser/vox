@@ -20,6 +20,8 @@ int native_prefers_overlay_scrollbars(void) {
 #ifdef LADYBIRD_V_HAS_SKIA_TEXT
 extern void ladybird_v_skia_set_chromium_painting(int active);
 extern int ladybird_v_skia_configure_font(const char *path, int slot);
+extern int ladybird_v_skia_register_system_face(const char *key, const char *path,
+	const char *postscript_name, const uint32_t *axis_tags, const float *axis_values, int axis_count);
 extern int ladybird_v_skia_draw_glyph_run(CGContextRef destination,
 	const char *font_path, int face_index, const uint16_t *glyphs, const double *packed_positions, int glyph_count,
 	float font_size, int font_weight, int emoji_face, float baseline_x,
@@ -728,6 +730,22 @@ static CGColorRef native_srgb_color(gg__Color color) {
 		(CGFloat)color.a / 255.0,
 	};
 	return CGColorCreate(color_space, components);
+}
+
+// Register a CoreText-selected face for retained glyph replay under `key`.
+int native_register_system_face(string key, string path, string postscript_name,
+	const uint32_t *axis_tags, const float *axis_values, int axis_count) {
+#ifdef LADYBIRD_V_HAS_SKIA_TEXT
+	NSString *key_string = native_capture_string(key);
+	NSString *path_string = native_capture_string(path);
+	NSString *postscript_string = native_capture_string(postscript_name);
+	return ladybird_v_skia_register_system_face([key_string UTF8String],
+		[path_string fileSystemRepresentation], [postscript_string UTF8String],
+		axis_tags, axis_values, axis_count);
+#else
+	(void)key; (void)path; (void)postscript_name; (void)axis_tags; (void)axis_values; (void)axis_count;
+	return 0;
+#endif
 }
 
 static void native_configure_glyph_rasterization(CGContextRef context, int font_smoothing) {

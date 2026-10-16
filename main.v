@@ -111,6 +111,32 @@ fn C.native_add_background_text_clip_run(x f32, y f32, text string, size f32, bo
 
 fn C.native_add_background_glyph_clip_run(glyphs &u16, positions &f64, glyph_count int, font_size f32, font_weight int, emoji_face int, baseline_x f32, baseline_y f32, transform_a f32, transform_b f32, transform_c f32, transform_d f32, transform_e f32, transform_f f32, page_x f32, page_y f32, scroll_y f32, canvas_width f32, canvas_height f32, font_path string, face_index int, font_smoothing int) int
 
+fn C.native_register_system_face(key string, path string, postscript_name string, axis_tags &u32, axis_values &f32, axis_count int) int
+
+__global native_registered_system_faces = map[string]bool{}
+
+// Retained glyph IDs belong to the concrete face used for shaping. Faces chosen
+// by system font matching are registered with the native replay bridge under a
+// key naming the face and its variation coordinates.
+fn native_replay_font_path(font &platform.Font) string {
+	face := font.system_face() or { return font.font_path() or { '' } }
+	mut key := 'vox-system-face:${face.path}#${face.face_index}|${face.postscript_name}'
+	for axis in face.variations {
+		key += '|${axis.tag}=${axis.value}'
+	}
+	if key !in native_registered_system_faces {
+		mut registered := false
+		$if macos {
+			tags := face.variations.map(it.tag)
+			values := face.variations.map(it.value)
+			registered = C.native_register_system_face(key, face.path, face.postscript_name,
+				tags.data, values.data, tags.len) != 0
+		}
+		native_registered_system_faces[key] = registered
+	}
+	return if native_registered_system_faces[key] { key } else { face.path }
+}
+
 // HTMLSelectElement.value for a script snapshot. A single-line select
 // without a selected option reports the option the selectedness setting
 // algorithm would select, without changing the document while snapshotting.
@@ -2115,7 +2141,7 @@ fn replay_javascript_canvas_text(mut pixels []u8, width int, height int,
 					}
 				}
 			}
-			font_path := font.font_path() or { '' }
+			font_path := native_replay_font_path(font)
 			did_draw := C.native_draw_canvas_glyph_run_rgba(pixels.data, width, height, width * 4, int(pixels_are_premultiplied), glyphs.data, positions.data, glyphs.len, font.point_size, font.weight, font_path, font.face_index(), f32(x), f32(y), f32(transform[0]), f32(transform[1]), f32(transform[2]), f32(transform[3]), f32(transform[4]), f32(transform[5]), paint_color.r, paint_color.g, paint_color.b, paint_color.a, gradient_x0, gradient_y0, gradient_x1, gradient_y1, gradient_stops.data, gradient_stop_count, f32(json_number_property(operation, 'globalAlpha') or { 1 }), if kind == 'strokeText' {
 				1
 			} else {
@@ -3736,7 +3762,7 @@ fn native_draw_retained_glyph_run(command layout.PaintCommand, page_x f32, page_
 		font_path := if glyph_run.face() == .emoji {
 			platform.emoji_font_path() or { '' }
 		} else {
-			glyph_run.font().font_path() or { '' }
+			native_replay_font_path(glyph_run.font())
 		}
 		unsafe {
 			return C.native_draw_document_glyph_run_srgb(&glyphs[0], &positions[0], glyphs.len, glyph_run.font().point_size, glyph_run.font().weight, int(glyph_run.face() == .emoji), f32(command.glyph_translation_x), f32(command.glyph_translation_y), f32(matrix[0]), f32(matrix[1]), f32(matrix[2]), f32(matrix[3]), f32(matrix[4]), f32(matrix[5]), page_x, page_y, f32(scroll_y), canvas_width, canvas_height, font_path, glyph_run.font().face_index(), glyph_color, blur, int(shadow_only), native_retained_font_smoothing(command.font_smoothing, glyph_run.font())) != 0
@@ -5014,7 +5040,7 @@ fn (mut app BrowserApp) draw_command(source_command layout.PaintCommand, page_x 
 							font_path := if glyph_run.face() == .emoji {
 								platform.emoji_font_path() or { '' }
 							} else {
-								glyph_run.font().font_path() or { '' }
+								native_replay_font_path(glyph_run.font())
 							}
 							unsafe {
 								retained_run_drawn = C.native_add_background_glyph_clip_run(&glyphs[0], &positions[0], glyphs.len, glyph_run.font().point_size, glyph_run.font().weight, int(glyph_run.face() == .emoji), f32(run.glyph_translation_x), f32(run.glyph_translation_y), f32(matrix[0]), f32(matrix[1]), f32(matrix[2]), f32(matrix[3]), f32(matrix[4]), f32(matrix[5]), page_x, page_y, 0, f32(app.ctx.width), f32(app.ctx.height), font_path, glyph_run.font().face_index(), native_retained_font_smoothing(run.font_smoothing, glyph_run.font())) != 0

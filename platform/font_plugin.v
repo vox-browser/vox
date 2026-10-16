@@ -61,7 +61,11 @@ pub:
 	is_invisible bool
 	font_rendering_policy FontRenderingPolicy
 	synthesize_ascii_caps bool
+	// A character-fallback face selected by the platform cascade.
+	system_face_override ?SystemFontFace
 mut:
+	resolved_system_face_ ?SystemFontFace
+	system_face_resolved_ bool
 	resolved_path_ string
 	decoded_face_ &ttf.TTF_File = unsafe { nil }
 	pixel_metrics_ FontPixelMetrics
@@ -330,6 +334,11 @@ pub fn (font &Font) glyph_width(code_point u32) f32 {
 // .notdef glyph at index zero. Fonts without a concrete source retain the
 // synthetic fallback behavior used by standalone and unit-test configurations.
 pub fn (font &Font) contains_glyph(code_point u32) bool {
+	// Installed faces chosen by system font matching can use any cmap format;
+	// HarfBuzz is the authoritative coverage probe for them.
+	if font.system_face() != none {
+		return harfbuzz_font_contains_glyph(font, code_point) or { false }
+	}
 	face := font_face(font) or { return font.source_path == '' }
 	if code_point > 0xffff {
 		return false
@@ -466,6 +475,36 @@ fn (font &Font) kerning_for_glyph(glyph_index int) f32 {
 	return f32(kerning) * font.point_size / f32(mutable_face.units_per_em)
 }
 
+// x.ttf asserts every non-head table checksum while parsing, but some installed
+// macOS faces ship stale directory checksums. Recompute them in this private
+// copy, summing whole big-endian words exactly as x.ttf does.
+fn normalize_table_checksums(mut bytes []u8) {
+	table_count := int(font_u16_at(bytes, 4) or { return })
+	for index in 0 .. table_count {
+		record := 12 + index * 16
+		if record + 16 > bytes.len {
+			return
+		}
+		if bytes[record..record + 4].bytestr() == 'head' {
+			continue
+		}
+		offset := int(font_u32_at(bytes, record + 8) or { return })
+		length := int(font_u32_at(bytes, record + 12) or { return })
+		words := (length + 3) >> 2
+		if offset < 0 || length < 0 || offset + words * 4 > bytes.len {
+			continue
+		}
+		mut sum := u32(0)
+		for word in 0 .. words {
+			sum += font_u32_at(bytes, offset + word * 4) or { 0 }
+		}
+		bytes[record + 4] = u8(sum >> 24)
+		bytes[record + 5] = u8(sum >> 16)
+		bytes[record + 6] = u8(sum >> 8)
+		bytes[record + 7] = u8(sum)
+	}
+}
+
 fn font_face(font &Font) ?&ttf.TTF_File {
 	if font.decoded_face_ != unsafe { nil } {
 		return font.decoded_face_
@@ -485,7 +524,8 @@ fn font_face(font &Font) ?&ttf.TTF_File {
 	}
 	platform_font_face_attempted[cache_key] = true
 	raw_bytes := os.read_bytes(path) or { return none }
-	bytes := outline_bytes_for_face(raw_bytes, face_index)?
+	mut bytes := outline_bytes_for_face(raw_bytes, face_index)?
+	normalize_table_checksums(mut bytes)
 	// External construction with the current V compiler does not apply these
 	// vlib field defaults, but TTF_File.init() writes all 12 PANOSE bytes.
 	mut face := &ttf.TTF_File{

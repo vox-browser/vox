@@ -78,6 +78,7 @@ fn text_node_chunk_invisible_font(font &platform.Font) &platform.Font {
 		is_invisible: true
 		font_rendering_policy: font.font_rendering_policy
 		synthesize_ascii_caps: font.synthesize_ascii_caps
+		system_face_override: font.system_face_override
 	}
 }
 
@@ -272,6 +273,11 @@ fn (mut iterator TextNodeChunkIterator) font_for_code_point(code_point u32) &pla
 			break
 		}
 	}
+	if selected_index == iterator.font_cascade_fonts.len {
+		if fallback := iterator.system_fallback_font(code_point) {
+			return fallback
+		}
+	}
 	if iterator.font_cascade_list == unsafe { nil } {
 		return iterator.synthetic_caps_font_for(selected, code_point)
 	}
@@ -321,6 +327,25 @@ fn (mut iterator TextNodeChunkIterator) synthetic_caps_font_for(selected &platfo
 	}
 	iterator.selected_font_storage_.values[key] = font
 	return font
+}
+
+// No face in the CSS cascade covers this code point. Use the platform's
+// language-aware system fallback, based on the cascade's primary face.
+fn (iterator &TextNodeChunkIterator) system_fallback_font(code_point u32) ?&platform.Font {
+	if code_point < 0x80 {
+		return none
+	}
+	base := if iterator.font_cascade_fonts.len > 0 { iterator.font_cascade_fonts[0] } else { iterator.font }
+	if base == unsafe { nil } {
+		return none
+	}
+	mut language := ''
+	if dom_text := iterator.text_node.dom_node_ {
+		if parent_element := dom_text.parent_or_shadow_host_element() {
+			language = parent_element.lang() or { '' }
+		}
+	}
+	return platform.system_fallback_font(code_point, language, base)
 }
 
 fn (iterator &TextNodeChunkIterator) cached_invisible_font(key string) ?&platform.Font {

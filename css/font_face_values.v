@@ -4522,7 +4522,8 @@ fn (mut computer FontComputer) compute_font_for_style_values_impl(font_family []
 
 	for family in font_family {
 		other_font_list := if is_generic_font_family(family) {
-			computer.find_font(platform_generic_font_name_boundary(family), weight, slope,
+			computer.find_font(platform_generic_font_name_boundary(family,
+				computer.font_rendering_policy()), weight, slope,
 				font_size_in_pt, variation, font_feature_data)
 		} else {
 			computer.find_font(family, weight, slope, font_size_in_pt, variation,
@@ -4613,7 +4614,8 @@ fn (mut computer FontComputer) font_matching_algorithm(family_name string, weigh
 		}
 	}
 	if matching_family_fonts.len == 0 {
-		for typeface in platform_typefaces_with_family_name_boundary(family_name) {
+		for typeface in platform_typefaces_with_family_name_boundary(family_name,
+			computer.font_rendering_policy()) {
 			matching_family_fonts << MatchingFontCandidate{
 				key: FontFaceKey{
 					family_name: typeface.family_name
@@ -5848,9 +5850,22 @@ fn platform_symbol_font_names_boundary() []string {
 	return platform.symbol_font_names_for_environment()
 }
 
-fn platform_typefaces_with_family_name_boundary(family_name string) []&PlatformTypeface {
-	if !platform.system_font_family_available(family_name) {
+fn platform_typefaces_with_family_name_boundary(family_name string, policy platform.FontRenderingPolicy) []&PlatformTypeface {
+	if !platform.system_font_family_available_for_policy(family_name, policy) {
 		return []
+	}
+	if policy == .chromium && platform.system_font_matching_supported() {
+		// The platform resolves the installed face for the requested weight.
+		return [
+			&PlatformTypeface{
+				family_name: family_name.clone()
+				weight_: 400
+			},
+			&PlatformTypeface{
+				family_name: family_name.clone()
+				weight_: 700
+			},
+		]
 	}
 	regular_path := platform.font_path_for_family(family_name, 400) or { '' }
 	bold_path := platform.font_path_for_family(family_name, 700) or { regular_path }
@@ -5868,13 +5883,20 @@ fn platform_typefaces_with_family_name_boundary(family_name string) []&PlatformT
 	]
 }
 
-fn platform_generic_font_name_boundary(generic_family string) string {
+fn platform_generic_font_name_boundary(generic_family string, policy platform.FontRenderingPolicy) string {
 	return match generic_family.to_lower() {
 		'monospace', 'ui-monospace' { 'Monospace' }
 		'serif', 'ui-serif' { 'Serif' }
 		'fantasy' { 'Fantasy' }
 		'cursive' { 'Cursive' }
 		'ui-rounded' { 'UiRounded' }
+		'system-ui' {
+			if policy == .chromium && platform.system_font_matching_supported() {
+				'SystemUi'
+			} else {
+				'SansSerif'
+			}
+		}
 		else { 'SansSerif' }
 	}
 }

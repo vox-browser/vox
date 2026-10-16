@@ -114,7 +114,7 @@ if [ -f "$skia_root/lib/libskia.dylib" ] && [ -d "$skia_root/include/skia/includ
 		-I"$skia_root/include/skia" -I"$skia_root/include" \
 		"$repo_dir/native_skia_text_darwin.cpp" \
         -L"$skia_root/lib" -lskia \
-        -framework CoreFoundation -framework CoreGraphics -framework Foundation -framework Metal \
+        -framework CoreFoundation -framework CoreGraphics -framework CoreText -framework Foundation -framework Metal \
         -Wl,-rpath,"$skia_root/lib" \
         -Wl,-install_name,@rpath/libLadybirdVSkiaText.dylib \
         -o "$bridge_library"

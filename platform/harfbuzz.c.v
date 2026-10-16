@@ -39,6 +39,7 @@ struct HarfBuzzScaledFont {
 	face       voidptr
 	scale      int
 	point_size f32
+	variations []FontVariationAxis
 	font       voidptr
 }
 
@@ -59,6 +60,8 @@ fn C.hb_ot_font_set_funcs(font voidptr)
 fn C.hb_font_set_scale(font voidptr, x_scale int, y_scale int)
 
 fn C.hb_font_set_ptem(font voidptr, ptem f32)
+
+fn C.hb_font_set_variations(font voidptr, variations voidptr, variations_length u32)
 
 fn C.hb_font_get_nominal_glyph(font voidptr, unicode u32, glyph &u32) int
 
@@ -177,6 +180,8 @@ pub fn (font &Font) font_path() ?string {
 	}
 	path := if font.source_path != '' && os.is_file(font.source_path) {
 		font.source_path
+	} else if face := font.system_face() {
+		face.path
 	} else {
 		font_path_for_family(font.family, font.weight)?
 	}
@@ -194,6 +199,9 @@ pub fn (font &Font) font_path() ?string {
 pub fn (font &Font) face_index() int {
 	if font.source_path != '' {
 		return 0
+	}
+	if face := font.system_face() {
+		return face.face_index
 	}
 	$if macos {
 		if font.family.to_lower() in ['lucida grande', 'lucida sans unicode', 'lucida sans',
@@ -333,10 +341,11 @@ fn resolve_font_path_for_family(family string, weight int) ?string {
 	return regular_path
 }
 
-fn scaled_harfbuzz_font(face voidptr, point_size f32, resolution f32) ?voidptr {
+fn scaled_harfbuzz_font(face voidptr, point_size f32, resolution f32, variations []FontVariationAxis) ?voidptr {
 	scale := scale_for_harfbuzz(point_size, resolution)
 	for cached in harfbuzz_scaled_fonts {
-		if cached.face == face && cached.scale == scale && cached.point_size == point_size {
+		if cached.face == face && cached.scale == scale && cached.point_size == point_size
+			&& cached.variations == variations {
 			return cached.font
 		}
 	}
@@ -347,10 +356,15 @@ fn scaled_harfbuzz_font(face voidptr, point_size f32, resolution f32) ?voidptr {
 	C.hb_ot_font_set_funcs(font)
 	C.hb_font_set_scale(font, scale, scale)
 	C.hb_font_set_ptem(font, point_size)
+	if variations.len > 0 {
+		// FontVariationAxis has hb_variation_t's {tag, value} layout.
+		C.hb_font_set_variations(font, variations.data, u32(variations.len))
+	}
 	harfbuzz_scaled_fonts << HarfBuzzScaledFont{
 		face: face
 		scale: scale
 		point_size: point_size
+		variations: variations
 		font: font
 	}
 	return font
@@ -400,7 +414,8 @@ fn document_harfbuzz_face(font &Font) ?voidptr {
 // for BMP characters stored only in a format-12 cmap.
 fn harfbuzz_font_contains_glyph(font &Font, code_point u32) ?bool {
 	face := document_harfbuzz_face(font)?
-	hb_font := scaled_harfbuzz_font(face, font.point_size, font.shaping_resolution())?
+	hb_font := scaled_harfbuzz_font(face, font.point_size, font.shaping_resolution(),
+		font.variations())?
 	mut glyph := u32(0)
 	return C.hb_font_get_nominal_glyph(hb_font, font.shaping_code_point(code_point), &glyph) != 0 && glyph != 0
 }
@@ -509,8 +524,12 @@ fn shape_text_with_harfbuzz(initial_x f32, letter_spacing f32, word_spacing f32,
 	} else {
 		face = document_harfbuzz_face(font)?
 	}
-	resolution := font.shaping_resolution()
-	hb_font := scaled_harfbuzz_font(face, font.point_size, resolution)?
+	resolution := f64(font.shaping_resolution())
+	hb_font := scaled_harfbuzz_font(face, font.point_size, f32(resolution), if uses_emoji {
+		[]FontVariationAxis{}
+	} else {
+		font.variations()
+	})?
 	buffer := C.hb_buffer_create()
 	if buffer == unsafe { nil } {
 		return none
@@ -564,7 +583,7 @@ fn shape_text_with_harfbuzz(initial_x f32, letter_spacing f32, word_spacing f32,
 		should_paint := !font.is_invisible && !is_default_ignorable
 		mut advance := f32(0)
 		if !is_default_ignorable {
-			advance = f32(position.x_advance) / resolution + letter_spacing
+			advance = f32(f64(position.x_advance) / resolution) + letter_spacing
 			if is_word_separator(code_point) {
 				advance += word_spacing
 			}
@@ -581,8 +600,8 @@ fn shape_text_with_harfbuzz(initial_x f32, letter_spacing f32, word_spacing f32,
 			code_point: code_point
 			glyph_index: int(info.codepoint)
 			position: GlyphPosition{
-				x: point_x + f32(position.x_offset) / resolution
-				y: f32(position.y_offset) / resolution
+				x: point_x + f32(f64(position.x_offset) / resolution)
+				y: f32(f64(position.y_offset) / resolution)
 			}
 			advance: advance
 			length_in_code_units: length_in_code_units

@@ -16,7 +16,8 @@ fn cold_legacy_hb(initial_x f32, letter_spacing f32, word_spacing f32, text stri
 	} else {
 		face = document_harfbuzz_face(font)?
 	}
-	hb_font := scaled_harfbuzz_font(face, font.point_size, font.shaping_resolution())?
+	hb_font := scaled_harfbuzz_font(face, font.point_size, font.shaping_resolution(),
+		font.variations())?
 	buffer := C.hb_buffer_create()
 	if buffer == unsafe { nil } {
 		return none

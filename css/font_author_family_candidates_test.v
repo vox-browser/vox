@@ -5,7 +5,7 @@ fn test_author_family_candidates_exclude_installed_non_exact_matches() {
 	// has a different weight so this exercises candidate assembly, not the
 	// exact registration-key fast path.
 	$if macos {
-		assert platform_typefaces_with_family_name_boundary('Arial').len > 0
+		assert platform_typefaces_with_family_name_boundary('Arial', .libweb).len > 0
 		mut computer := FontComputer.create()
 		mut set := FontFaceSet.create_for_font_computer(computer)
 		mut face := FontFaceObject.construct_impl('Arial',

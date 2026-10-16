@@ -43,6 +43,8 @@
 #include "include/ports/SkFontMgr_fontconfig.h"
 #include "include/ports/SkFontScanner_FreeType.h"
 #include "include/ports/SkFontMgr_mac_ct.h"
+#include "include/ports/SkTypeface_mac.h"
+#include <CoreText/CoreText.h>
 
 #include <algorithm>
 #include <cmath>
@@ -68,6 +70,9 @@ sk_sp<SkFontMgr> s_font_manager;
 sk_sp<SkTypeface> s_typefaces[FontSlotCount];
 std::unordered_map<std::string, sk_sp<SkTypeface>> s_path_typefaces;
 bool s_chromium_painting = false;
+// Installed faces selected through CoreText, keyed by the replay identifier
+// the browser passes in place of a file path.
+std::unordered_map<std::string, sk_sp<SkTypeface>> s_system_typefaces;
 
 sk_sp<SkFontMgr> font_manager()
 {
@@ -127,6 +132,8 @@ auto graphite_shape_draw()
 SkTypeface* select_typeface(char const* path, int face_index, int font_weight, int emoji_face)
 {
     if (path && *path) {
+        if (auto found = s_system_typefaces.find(path); found != s_system_typefaces.end())
+            return found->second.get();
         auto key = std::string(path) + "#" + std::to_string(face_index);
         if (auto found = s_path_typefaces.find(key); found != s_path_typefaces.end())
             return found->second.get();
@@ -528,6 +535,65 @@ extern "C" int ladybird_v_skia_configure_font(char const* path, int slot)
         return 0;
     s_typefaces[slot] = typeface;
     s_path_typefaces.emplace(std::move(key), std::move(typeface));
+    return 1;
+}
+
+// Register an installed face for retained glyph replay. Skia's CoreText stream
+// loader cannot open non-zero collection members, so recreate the face that
+// CoreText selected from its file, PostScript name and variation coordinates,
+// as Blink does when it wraps a CTFont in an SkTypeface.
+extern "C" int ladybird_v_skia_register_system_face(char const* key, char const* path,
+    char const* postscript_name, uint32_t const* axis_tags, float const* axis_values, int axis_count)
+{
+    if (!key || !path || !postscript_name)
+        return 0;
+    if (s_system_typefaces.find(key) != s_system_typefaces.end())
+        return 1;
+    auto url = CFURLCreateFromFileSystemRepresentation(nullptr,
+        reinterpret_cast<UInt8 const*>(path), static_cast<CFIndex>(std::strlen(path)), false);
+    if (!url)
+        return 0;
+    auto descriptors = CTFontManagerCreateFontDescriptorsFromURL(url);
+    CFRelease(url);
+    if (!descriptors)
+        return 0;
+    auto wanted = CFStringCreateWithCString(nullptr, postscript_name, kCFStringEncodingUTF8);
+    CTFontDescriptorRef selected = nullptr;
+    for (CFIndex index = 0; wanted && index < CFArrayGetCount(descriptors); ++index) {
+        auto descriptor = static_cast<CTFontDescriptorRef>(CFArrayGetValueAtIndex(descriptors, index));
+        auto name = static_cast<CFStringRef>(CTFontDescriptorCopyAttribute(descriptor, kCTFontNameAttribute));
+        bool same = name && CFEqual(name, wanted);
+        if (name)
+            CFRelease(name);
+        if (same) {
+            selected = static_cast<CTFontDescriptorRef>(CFRetain(descriptor));
+            break;
+        }
+    }
+    if (wanted)
+        CFRelease(wanted);
+    CFRelease(descriptors);
+    if (!selected)
+        return 0;
+    for (int index = 0; index < axis_count; ++index) {
+        int32_t tag = static_cast<int32_t>(axis_tags[index]);
+        auto tag_number = CFNumberCreate(nullptr, kCFNumberSInt32Type, &tag);
+        auto copy = CTFontDescriptorCreateCopyWithVariation(selected, tag_number, axis_values[index]);
+        CFRelease(tag_number);
+        if (copy) {
+            CFRelease(selected);
+            selected = copy;
+        }
+    }
+    auto font = CTFontCreateWithFontDescriptor(selected, 12.0, nullptr);
+    CFRelease(selected);
+    if (!font)
+        return 0;
+    auto typeface = SkMakeTypefaceFromCTFont(font);
+    CFRelease(font);
+    if (!typeface)
+        return 0;
+    s_system_typefaces.emplace(key, std::move(typeface));
     return 1;
 }
 
