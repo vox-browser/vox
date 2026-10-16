@@ -5790,7 +5790,10 @@ fn (mut app BrowserApp) draw_command(source_command layout.PaintCommand, page_x 
 			// image command apply the retained visual-context transform. Resolving
 			// against the transformed AABB changes cover/contain and repeat counts.
 			area := painting.Rect{command.x, command.y, command.width, command.height}
-			clip := painting.Rect{image_data.image_clip_x, image_data.image_clip_y, image_data.image_clip_width, image_data.image_clip_height}
+			snap_bitmap := app.ctx.native_rendering && image_data.background_svg_document == none
+				&& app.document != unsafe { nil } && app.document.font_rendering_policy() == .chromium
+			original_clip := painting.Rect{image_data.image_clip_x, image_data.image_clip_y, image_data.image_clip_width, image_data.image_clip_height}
+			clip := if snap_bitmap { pixel_snapped_background_bitmap_rect(original_clip) } else { original_clip }
 			mut resolved_layer := ?painting.ResolvedBackgroundLayer(none)
 			if background_data := image_data.background_layer_data {
 				resolved_layer = painting.resolve_background_layer(painting.BackgroundLayerResolutionInput{
@@ -5893,7 +5896,8 @@ fn (mut app BrowserApp) draw_command(source_command layout.PaintCommand, page_x 
 			} else {
 				painting.background_tiles_from_plan_limited(plan, clip, 4096)
 			}
-			for tile in tiles {
+			for original_tile in tiles {
+				tile := if snap_bitmap { pixel_snapped_background_bitmap_rect(original_tile) } else { original_tile }
 				if svg_document := image_data.background_svg_document {
 					mut mutable_svg_document := unsafe { &dom.Document(svg_document) }
 					mutable_svg_document.set_svg_image_color_scheme(css.preferred_color_scheme_to_string(image_data.background_svg_color_scheme))
