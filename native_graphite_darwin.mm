@@ -210,3 +210,34 @@ int vox_graphite_draw_image_pixels(uint8_t* pixels, int width, int height,
         &paint, SkCanvas::kStrict_SrcRectConstraint);
     return read_pixels(gpu, recorder.get(), surface.get(), info, pixels, pitch);
 }
+
+extern "C" __attribute__((visibility("default")))
+int vox_graphite_draw_shape_pixels(uint8_t* pixels, int width, int height,
+    int pitch, int has_background, VoxGraphiteShape const* shape)
+{
+    if (!pixels || !shape || width <= 0 || height <= 0 || pitch <= 0
+        || static_cast<size_t>(pitch) < static_cast<size_t>(width) * 4) return 0;
+    std::lock_guard lock(gpu_mutex);
+    auto* gpu = context();
+    if (!gpu) return 0;
+    auto recorder = gpu->makeRecorder();
+    auto info = SkImageInfo::Make(width, height, kBGRA_8888_SkColorType,
+        kPremul_SkAlphaType, SkColorSpace::MakeSRGB());
+    auto surface = SkSurfaces::RenderTarget(recorder.get(), info);
+    if (!surface) return 0;
+    auto* canvas = surface->getCanvas();
+    if (has_background) surface->writePixels(SkPixmap(info, pixels, pitch), 0, 0);
+    else canvas->clear(SK_ColorTRANSPARENT);
+    SkMatrix matrix;
+    matrix.set9(shape->matrix);
+    canvas->setMatrix(matrix);
+    SkPaint paint;
+    paint.setAntiAlias(shape->anti_alias != 0);
+    paint.setColor(SkColorSetARGB(shape->alpha, shape->red, shape->green, shape->blue));
+    if (!shape->fill) {
+        paint.setStyle(SkPaint::kStroke_Style);
+        paint.setStrokeWidth(std::max(0.0f, shape->thickness));
+    }
+    canvas->drawRRect(rounded_rect(shape->rect), paint);
+    return read_pixels(gpu, recorder.get(), surface.get(), info, pixels, pitch);
+}

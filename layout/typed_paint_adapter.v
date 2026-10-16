@@ -3919,7 +3919,21 @@ fn block_box_from_typed_layout_shallow(node &Node, state &LayoutState, ancestor_
 		}
 	}
 
-	lines := text_lines_from_typed_layout(node, used, state, position)
+	mut lines := text_lines_from_typed_layout(node, used, state, position)
+	if marker := node.as_list_item_marker_box() {
+		if marker.chromium_symbol_marker() && marker.list_style_position() == .outside {
+			ascent := marker.chromium_symbol_ascent()
+			size := f64((ascent * 2 / 3 + 1) / 2)
+			baseline := layout_box_first_content_baseline(state, node) or { CSSPixels.new(ascent) }
+			marker_shape = marker.list_style_type_.name
+			paint_position = CSSPixelPoint.from_values(position.x().to_double() + 1,
+				position.y().to_double() + baseline.to_double() - f64(ascent)
+					+ f64(3 * (ascent - ascent * 2 / 3) / 2))
+			paint_width = size
+			paint_height = size
+			lines = []TextLine{}
+		}
+	}
 	display := computed.display()
 	uses_collapsed_borders := computed.border_collapse() == .collapse
 	mut table_cell_borders := used.override_borders_data()

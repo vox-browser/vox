@@ -941,6 +941,10 @@ fn layout_list_item_marker(mut state LayoutState, list_item &ListItemBox, mut li
 	mut mutable_marker_box := unsafe { &Box(marker_box) }
 	mutable_marker_box.reset_cached_intrinsic_sizes()
 	marker_state.set_content_width(calculate_max_content_width(mut state, marker_box))
+	if marker.chromium_symbol_marker() {
+		ascent := marker.chromium_symbol_ascent()
+		marker_state.set_content_width(CSSPixels.new((ascent * 2 / 3 + 1) / 2 + 2))
+	}
 	if marker_node.has_children() {
 		if block_container := marker_node.as_block_container() {
 			inline_result := run_inline_formatting_context(mut state, block_container, mut marker_state, bfc.layout_mode, AvailableSpace.new(AvailableSize.make_definite(marker_state.content_width()), AvailableSize.make_indefinite()))
@@ -957,12 +961,18 @@ fn layout_list_item_marker(mut state LayoutState, list_item &ListItemBox, mut li
 	right_intrusion := content_width_before_marker.minus(right_boundary)
 	marker_offset_x := if marker.list_style_position() == .inside {
 		CSSPixels.new(0)
+	} else if marker.chromium_symbol_marker() {
+		// ListMarker::InlineMarginsForOutside(): offset plus 7px padding
+		// and the symbol rectangle's additional 1px inline inset.
+		left_boundary.minus(CSSPixels.new(marker.chromium_symbol_ascent() * 2 / 3 + 8))
 	} else if direction == .ltr {
 		left_boundary.minus(marker_state.content_width())
 	} else {
 		content_width_before_marker.minus(right_intrusion)
 	}
-	offset_x := css.css_pixels_round(marker_offset_x)
+	offset_x := if marker.document().font_rendering_policy() == .chromium {
+		marker_offset_x
+	} else { css.css_pixels_round(marker_offset_x) }
 	marker_state.set_content_offset(css.CSSPixelPoint.new(offset_x, offset_y))
 }
 

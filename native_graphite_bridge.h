@@ -21,6 +21,12 @@ typedef struct {
     const uint8_t *pixels;
 } VoxGraphiteImage;
 
+typedef struct {
+    float matrix[9], rect[12], thickness;
+    uint8_t red, green, blue, alpha;
+    int fill, anti_alias;
+} VoxGraphiteShape;
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -28,6 +34,8 @@ int vox_graphite_draw_shadow_pixels(uint8_t *pixels, int width, int height,
     int pitch, int has_background, const VoxGraphiteShadow *shadow);
 int vox_graphite_draw_image_pixels(uint8_t *pixels, int width, int height,
     int pitch, int has_background, const VoxGraphiteImage *image);
+int vox_graphite_draw_shape_pixels(uint8_t *pixels, int width, int height,
+    int pitch, int has_background, const VoxGraphiteShape *shape);
 #ifdef __cplusplus
 }
 #endif

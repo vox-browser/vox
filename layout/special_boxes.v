@@ -1178,6 +1178,22 @@ pub fn (box &ListItemMarkerBox) list_style_position() css.ListStylePosition {
 	return box.list_style_position_
 }
 
+// Blink's predefined horizontal symbol markers use geometry, rather than the
+// font's Unicode bullet. Authored marker content and images keep their normal
+// layout and painting paths.
+fn (box &ListItemMarkerBox) chromium_symbol_marker() bool {
+	return box.document().font_rendering_policy() == .chromium
+		&& box.list_style_position_ == .outside
+		&& !box.has_authored_content() && box.list_style_image() == none
+		&& box.list_style_type_.name in ['disc', 'circle', 'square']
+		&& box.computed_values().writing_mode() == .horizontal_tb
+		&& box.computed_values().direction() == .ltr
+}
+
+fn (box &ListItemMarkerBox) chromium_symbol_ascent() int {
+	return int(math.round(box.first_available_font().pixel_metrics().ascent))
+}
+
 pub fn (box &ListItemMarkerBox) relative_size() CSSPixels {
 	font_size := box.computed_values().font_size()
 	if box.text() != none {

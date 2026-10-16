@@ -39,3 +39,10 @@ inside an item and rounds its outer advance upward to 1/64px. Normal fitting
 and emergency breaking use that same cumulative advance. ASCII runs with one
 font can share shaping across word chunks; other scripts and mixed-font runs
 retain the existing shaping path.
+
+`list-symbols` checks outside disc, circle and square markers and authored
+marker text. The Chromium profile derives horizontal LTR symbol geometry from
+the primary font's ascent and keeps fractional offsets for textual markers.
+Circles and rounded shapes use the isolated GPU backend when available, with
+the existing renderer as the fallback. Inside markers and other writing
+directions retain their existing layout path.

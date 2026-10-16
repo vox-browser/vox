@@ -114,6 +114,16 @@ auto graphite_image_draw()
     return draw;
 }
 
+auto graphite_shape_draw()
+{
+    static auto draw = [] {
+        void* library = dlopen("@rpath/libVoxGraphite.dylib", RTLD_LAZY | RTLD_LOCAL);
+        return library ? reinterpret_cast<decltype(&vox_graphite_draw_shape_pixels)>(
+            dlsym(library, "vox_graphite_draw_shape_pixels")) : nullptr;
+    }();
+    return draw;
+}
+
 SkTypeface* select_typeface(char const* path, int face_index, int font_weight, int emoji_face)
 {
     if (path && *path) {
@@ -1150,7 +1160,7 @@ extern "C" int ladybird_v_skia_draw_rounded_rect(CGContextRef destination,
     float transform_e, float transform_f, float page_x, float page_y,
     float scroll_y, float canvas_width, float canvas_height, uint8_t red,
     uint8_t green, uint8_t blue, uint8_t alpha, int fill, float thickness,
-    int anti_alias)
+    int anti_alias, int opaque_backdrop)
 {
     if (!destination || rect_width <= 0 || rect_height <= 0 || canvas_width <= 0
         || canvas_height <= 0 || (!fill && thickness <= 0))
@@ -1203,6 +1213,28 @@ extern "C" int ladybird_v_skia_draw_rounded_rect(CGContextRef destination,
     auto image_info = SkImageInfo::Make(raster_width, raster_height, kBGRA_8888_SkColorType,
         kPremul_SkAlphaType, SkColorSpace::MakeSRGB());
     auto row_bytes = static_cast<size_t>(raster_width) * sizeof(uint32_t);
+    bool has_background = s_chromium_painting && opaque_backdrop && copy_opaque_backdrop(destination,
+        region, destination_scale, raster_width, raster_height, pixels);
+    if (s_chromium_painting) {
+        VoxGraphiteShape descriptor {
+            .matrix = {}, .rect = {x, y, rect_width, rect_height,
+                top_left_x, top_left_y, top_right_x, top_right_y,
+                bottom_right_x, bottom_right_y, bottom_left_x, bottom_left_y},
+            .thickness = thickness, .red = red, .green = green, .blue = blue, .alpha = alpha,
+            .fill = fill, .anti_alias = anti_alias
+        };
+        raster_matrix(matrix, region, raster_scale_x, raster_scale_y).get9(descriptor.matrix);
+        if (auto draw = graphite_shape_draw(); draw && draw(reinterpret_cast<uint8_t*>(pixels.data()),
+                raster_width, raster_height, raster_width * 4, has_background, &descriptor)) {
+            CGContextSaveGState(destination);
+            if (has_background) CGContextSetBlendMode(destination, kCGBlendModeCopy);
+            int result = composite_pixels(destination, pixels, raster_width, raster_height,
+                static_cast<float>(region.left), canvas_height - static_cast<float>(region.bottom),
+                static_cast<float>(region.width()), static_cast<float>(region.height()));
+            CGContextRestoreGState(destination);
+            return result;
+        }
+    }
     auto surface = SkSurfaces::WrapPixels(image_info, pixels.data(), row_bytes);
     if (!surface)
         return 0;
