@@ -80,11 +80,22 @@ def main():
     parser.add_argument("--capture", action="store_true",
                         help="Also capture final pixels using the browser's logical-pixel screenshot mode")
     parser.add_argument("--compare-to", type=Path, help="Compare against a previous summary with identical input and scroll trace")
+    parser.add_argument("--insert-library", type=Path, action="append", default=[],
+                        help="Inject a dylib into the browser (repeatable), e.g. the offline "
+                             "network guard or tools/gc_allocation_sampler.c. macOS strips DYLD_* "
+                             "from this interpreter's own environment, so pass libraries here")
+    parser.add_argument("--env", action="append", default=[], metavar="NAME=VALUE",
+                        help="Extra browser environment variable (repeatable)")
+    parser.add_argument("--trigger-file", type=Path,
+                        help="Create this file once --trigger-frame has been logged")
+    parser.add_argument("--trigger-frame", type=int, default=5)
     args = parser.parse_args()
     if args.frames < 1:
         parser.error("--frames must be positive")
     if args.width < 1 or args.height < 1 or args.timeout <= 0 or args.sample_seconds < 0:
         parser.error("Viewport and timeout must be positive; sample duration cannot be negative")
+    if any("=" not in item for item in args.env):
+        parser.error("--env expects NAME=VALUE")
     args.output.mkdir(parents=True, exist_ok=False)
     binary = args.binary.resolve()
     cache = args.output / "cache"
@@ -111,6 +122,12 @@ def main():
     library_digest = hashlib.sha256(library.read_bytes()).hexdigest() if library.is_file() else None
     if library.is_file():
         env["DYLD_LIBRARY_PATH"] = str(library.parent)
+    env.update(item.split("=", 1) for item in args.env)
+    if args.insert_library:
+        env["DYLD_INSERT_LIBRARIES"] = ":".join(str(path.resolve()) for path in args.insert_library)
+    if args.trigger_file:
+        args.trigger_file.unlink(missing_ok=True)
+    trigger_line = f"Vox scroll frame: {args.trigger_frame} "
     command = [str(binary), "--enable-javascript", "--window-width", str(args.width),
                "--window-height", str(args.height + 112)]
     if args.capture:
@@ -127,6 +144,8 @@ def main():
             while process.poll() is None:
                 if time.monotonic() - started > args.timeout:
                     raise TimeoutError(f"Scroll benchmark timed out: {log_path}")
+                if args.trigger_file and not args.trigger_file.exists() and trigger_line in log_path.read_text():
+                    args.trigger_file.touch()
                 if args.sample_seconds and sample is None and "Vox scroll frame:" in log_path.read_text():
                     sample = subprocess.Popen(["sample", str(process.pid), str(args.sample_seconds),
                                                "1", "-file", str(args.output / "sample.txt")],

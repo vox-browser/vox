@@ -17,6 +17,14 @@ class ScrollMeasurementTests(unittest.TestCase):
         self.assertEqual(result["moving"]["total_us"]["sum"], 1010)
         self.assertEqual(result["all"]["instructions"]["sum"], 300)
 
+    def test_summarizes_collector_fields_when_frames_report_them(self):
+        log = (frame(0, 0, 42).rstrip("\n") + " allocated_kb=512 collections=0 heap_mb=300\n"
+               + frame(1, 42, 84).rstrip("\n") + " allocated_kb=1024 collections=1 heap_mb=310\n")
+        result = summarize(log, 2)
+        self.assertEqual(result["moving"]["allocated_kb"]["sum"], 1536)
+        self.assertEqual(result["moving"]["collections"]["sum"], 1)
+        self.assertNotIn("allocated_kb", summarize(frame(0, 0, 42), 1)["moving"])
+
     def test_rejects_incomplete_or_duplicated_frames(self):
         for log in (frame(0, 0, 42), frame(0, 0, 42) * 2,
                     frame(1, 0, 42) + frame(0, 42, 84)):
