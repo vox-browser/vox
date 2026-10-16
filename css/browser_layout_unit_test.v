@@ -17,9 +17,16 @@ fn test_browser_box_lengths_truncate_positive_and_negative_fractions_after_font_
 	assert style.length_percentage_to_px(.margin_left, 100)? == 6.390625
 	assert style.length_percentage_to_px(.margin_right, 100)? == -6.390625
 	assert style.length_percentage_to_px(.padding_left, 100)? == 6.390625
+	typed := resolve_computed_values(style)
+	assert typed.length_percentage_to_px(.margin_left, 100)? == 6.390625
+	assert typed.length_percentage_to_px(.margin_right, 100)? == -6.390625
+	assert typed.length_percentage_to_px(.padding_left, 100)? == 6.390625
 	document.set_font_rendering_policy(.libweb)
 	document.update_style()
 	default_style := up_to_date_computed_properties_for_element(root)
 	assert default_style.length_percentage_to_px(.margin_left, 100)? == 6.40625
 	assert default_style.length_percentage_to_px(.margin_right, 100)? == -6.40625
+	default_typed := resolve_computed_values(default_style)
+	assert default_typed.length_percentage_to_px(.margin_left, 100)? == 6.40625
+	assert default_typed.length_percentage_to_px(.margin_right, 100)? == -6.40625
 }

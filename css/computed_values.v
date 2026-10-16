@@ -979,7 +979,9 @@ pub fn (values &ComputedValues) length_percentage_to_px(property_id PropertyID, 
 	// avoiding a context and its query-cache allocation for these common cases.
 	if resolved.is_length() {
 		length := resolved.length()
-		if length.is_absolute() { return length.absolute_length_to_px().to_double() }
+		if length.is_absolute() {
+			return unsafe { &ComputedProperties(values) }.absolute_layout_length_to_px(length).to_double()
+		}
 	} else if resolved.is_percentage() {
 		return resolved.to_px(LengthResolutionContext{}, CSSPixels.nearest_value_for(percentage_basis_px)).to_double()
 	}
