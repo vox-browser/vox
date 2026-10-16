@@ -1845,6 +1845,16 @@ evidence](docs/translation-audit/NATIVE_MEDIA_WHEEL_RAW_HANDLER.md).
   Six candidate-only cases remain unrun; no normal C audit or page result.
   Frozen89 remains control/broad baseline; page credit and observed carry stay 0.
   Root implementation and canonical/GUI browsers are preserved; Chrome open.
+  Guarded font input refresh `790e3974` (independent committed slice)
+  pass 5,231 common assertions in 51 cases per configuration,
+  plus 11 candidate cases/8,104 assertions in each GC mode.
+  Complete public font-change/style batches use 66.39% fewer instructions.
+  Page point saving -9,109,847.5, 14/30 wins,
+  paired interval [-24,432,443, 16,674,537]; repeatable credit 0.
+  Broad verification: deferred below cumulative 5M gate;
+  focused retained viewport exact. Additional observed savings: 0.
+  Same 4 GiB/placement; canonical/GUI preserved; contemporary Root excluded.
+  Chrome parity remains open.
 - Outside instruction-count optimization, run broad regression suites once per
   ten completed fixes, not after every fix.
   Broad suites include full translation/package test batches, the full LibJS AST

@@ -8839,6 +8839,139 @@ credit. Equivalent Chrome content/start/submission accounting remains open;
 faster-than-Chrome performance is unproven. Evidence:
 `Build/instructions/vox-opt89-interleaved-*` and `Build/v/instruction-opt89-*`.
 
+## Refresh unchanged font inputs without repeating the cascade
+
+Round91 imports independently authored `790e3974` (Alexander Medvednikov):
+**thirteen exact hunks in eight runtime paths** on accepted frozen89.
+A referenced font-family change marks affected retained styles through the
+shadow-including tree, including pseudo styles and root-metric dependants.
+Context-independent specified values can refresh font inputs on the retained
+style and DOM bridge. Relative font sizes/lengths, changed inherited values,
+active animations/transitions and simultaneous ordinary style mutations keep
+the full cascade path. Context tracking records font-relative dependencies
+separately from viewport dependencies. A changed font or root/line metric
+requests layout and reapplies the retained style to its existing layout node.
+The rejected round90 layout cache is excluded; Root remains separate.
+
+Before/final Boehm and final no-GC C-O2 each actually pass
+**5,231 assertions in 51 cases**: 26 retained style cases,
+21 unchanged font-cascade cases, three font-cache cases and an inactive probe.
+The one font-cascade case whose expected invalidation behavior changes is
+excluded from the identical common harness and tested in its exact authored
+updated form with ten original new cases. These **11 candidate cases pass
+8,104 assertions in each GC mode**.
+They cover a real late-loaded face and selected source, normal/root metrics,
+retained style/bridge identity, nested relative lengths, independent dependency
+tracking, changed inheritance, transitions, simultaneous DOM changes,
+shadow/pseudo fanout and other-family root-relative lengths. All original
+function bodies are byte-exact after header consolidation.
+Common source SHA256: `6983bcf595d9b97f10bd28f17d0cfb02e653391bbe5ce1fe13fc138a17a21930`.
+
+Three fixed alternating local pairs count **16 complete public
+FontComputer.did_load_font notifications followed by document.update_style
+and retained-value materialization over 33 existing elements** per observation.
+The probe uses explicit context-independent sizes and an unchanged font
+family; it does not load a new face. The original contracts separately cover
+real face loading and guarded fallbacks. DOM construction, initial styles,
+eight warmup notifications, expected checksum and forced GC precede the
+hardware interval. Checksum, generation and clean-style assertions follow it.
+All six actual exits are 0 and checksums **16,954,784** match.
+Before counts: **195,616,898 / 195,474,471 / 195,377,706**;
+final counts by pair: **65,823,398 / 65,686,616 / 65,692,297**.
+Medians **195,474,471→65,692,297**
+(**-66.39341%**); all three pairs improve. This is a local
+hardware result, not page credit.
+
+Full-process C-O1/Boehm profiles actually pass, with profiling enabled from
+startup, no filter and no counter reset. These are call counts only:
+
+| Function | Before calls | Candidate calls |
+| --- | ---: | ---: |
+| `css__opt91_complete_font_notification` | 25 | 25 |
+| `css__FontComputer_did_load_font` | 51 | 51 |
+| `dom__Document_update_style` | 27 | 27 |
+| `css__StyleComputer_compute_properties` | 879 | 54 |
+| `css__StyleComputer_recompute_style_with_invalidation` | 870 | 45 |
+| `css__StyleComputer_try_refresh_font_inputs` | 0 | 825 |
+| `css__StyleComputer_can_refresh_font_inputs` | 0 | 825 |
+| `css__StyleComputer_refresh_font_inputs` | 0 | 825 |
+| `css__mark_font_family_inputs_changed` | 0 | 25 |
+| `css__retained_style_needs_font_inputs` | 0 | 25 |
+
+The same 25 complete diagnostic notifications replace 825 full recomputations
+with 825 guarded refreshes. Other retained tests remain in the process and
+are included in these counts; profile times provide no performance credit.
+
+The strict normal generated-C audit actually passes. Every emitted one of
+seven edited functions and ten new helpers matches independent C generation
+from the same immutable runtime. The new captured traversal closure and its
+two-field context are authenticated against the independent caller/body.
+Four existing records gain exactly their authored boolean/optional flag;
+two emitted record printers match independently, and the other two are absent
+from both normal programs. Only exact false/none field initializers and their
+automatic equality terms are normalized in unchanged code. The one new
+optional-result record is exact. A newly reachable unchanged font-cache getter
+matches both independent generations, and the template copies exactly its new
+flag. Actual compiler frontend tables prove a
+single new source insertion at index
+303.
+Independent probes use -no-skip-unused solely for C generation: both actual
+exits are 0, with no native compilation or runtime execution. Normal build
+arguments remain unchanged. All remaining C, globals, resources, filtering,
+arenas and GC setup match after established identities, unchanged source
+assertion-line mappings, 37 frozen includes and four byte-identical helper
+reorders. All 120 native input hashes and native arguments match.
+Four failed read-only audit receipts remain: requesting two un-emitted
+printers, looking up the closure by its normal frontend index in independent
+C, treating an existing optional Element field as a plain pointer, and the
+newly reachable getter/template copy plus initializer whitespace. Each
+correction uses exact authenticated compiler output; no successful test or primary is repeated.
+Passing audit script SHA256:
+`3d5b1ecbaf492d7d56cb79f9294b6d43c4550651cdd29a07354b4e3a5540571f`.
+Normal C SHA256: `24cc40c0b86efc7561b96c5777d72b7fc4739bedf9f7b0d1c4d094a92f0ccc56`.
+Durable normal, focused, contract, independent and profile archive hashes are
+in instruction-opt91-artifact-archives.json.
+
+The predeclared page cohort is **30 alternating pairs**, odd before/final and
+even final/before, with **30,000 paired bootstrap resamples, seed91**.
+Both persisted regular binaries use fresh copies of the same 359 cached
+bodies, frozen text and child-only placement helpers, C-O2/Boehm/default
+marker1 and the same 4GiB hint; no prod/prealloc. Document viewport remains
+1024×768 and endpoint navigation_to_first_document_paint[0].
+
+| Build | Median first-frame retired instructions | Median lifetime process peak, MiB |
+| --- | ---: | ---: |
+| Fresh accepted frozen89 control | 17,599,593,600 | 3,515.8 |
+| Guarded font-input refresh | 17,608,703,447.5 | 3,515.6 |
+
+Difference of marginal medians (before minus candidate):
+**-9,109,847.5** instructions; candidate change
+**+0.052%**, with **14/30** wins.
+Paired median saving **-4,723,957**, paired95% interval
+**[-24,432,443, 16,674,537]**. The interval includes zero; repeatable page credit is **0**. Whole-page savings are not established.
+
+All 60 primaries and **60 actual PNGs** remain. Recoveries:
+none; pre-parse retries: 0. First primaries retain
+1 installation/2 geometry preparations/1 paint. Later completed refreshes:
+none. No completed primary is extended, discarded
+or rerun. Any recovery discloses unknown final exit and missing PNG,
+fingerprint and peak. Peaks include capture/exit and later refreshes; they
+are not live first-frame memory and are never summed. The read-only decoded capture check finds 30 before and 30 candidate RGB classes, 0 shared. All differences stay within the original skeleton bands, x45–662: y335–344 and ten 14px bands starting at380 with41px spacing. All pixels outside these bands match. No animation was disabled and no observation repeated; evidence is instruction-opt91-page-pixel-class-check.json.
+External foreground transitions remain retained:
+none.
+The child is foreground in neither startup snapshot. Focused viewport is
+pixel-exact at1024×768. Prior observed carry is 0. Cumulative observed saving **0** stays below the 5M gate. Broad validation is deferred and the previous completed broad baseline remains.
+All controllers and child checks retain actual terminal evidence.
+
+The isolated signed app is `/Users/alex/code/vox2/Build/v/Vox-opt91.app`. Native instruction text
+matches the measured executable, with frozen helper pinned inside the app.
+Actual loaded helper path/hash, signatures, startup and actual collections
+pass for default marker1 and override2. Canonical and GUI browsers remain
+preserved. Contemporary Root receives no source, regression or page credit.
+Equivalent Chrome content/start/submission accounting remains open;
+**faster-than-Chrome performance is unproven**. Evidence:
+Build/instructions/vox-opt91-interleaved-* and Build/v/instruction-opt91-*.
+
 ## Causes and changes
 
 - The V 0.5.2 compatibility compiler's `-prod` Boehm code repeatedly snapshots
