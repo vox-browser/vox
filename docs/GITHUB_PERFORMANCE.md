@@ -8666,6 +8666,137 @@ credit. Equivalent Chrome content/start/submission accounting remains open;
 faster-than-Chrome performance is unproven. Evidence:
 `Build/instructions/vox-opt88-interleaved-*` and `Build/v/instruction-opt88-*`.
 
+## Allocate computed style metadata maps only on first use
+
+This integration imports independently authored feature `c3e9df79`
+(Alexander Medvednikov): fifteen exact hunks in three CSS runtime paths,
+css/computed_interpolation.v, css/computed_property_storage.v and
+css/computed_values.v. Four eagerly created maps become four independent nil
+owner pointers; the first write allocates only its scanned map owner. Public
+owning map getters still return independent snapshots, including fresh empty
+maps. Single-entry and membership queries avoid cloning. Animation importance,
+transition/reset flags, inheritance and font-variation clearing retain their
+behavior. No filtering, other arenas, heap hint or GC policy changes.
+
+The feature's fourth runtime path, layout/local_paint_style_refresh.v, and its
+entire owning function are absent from the frozen runtime. Its two guarded
+map reads are therefore inapplicable; no local-paint feature is imported.
+Contemporary Root remains separate. The new private CSS file is byte-exact.
+
+Before/final Boehm and final no-GC C-O2 each pass **3,123
+assertions in 27 cases**: 26 exact retained invalidation, animation, inheritance
+and public style-computation cases plus an inactive diagnostic.
+Common source SHA256 is `7af779aa3a2eaa5a5d1fda4afeeeb47e8968c7239a8dd4ce52c7a73fb9b07b0c`.
+Nine original candidate cases (six metadata and three updated template cases)
+pass **1,057 assertions each
+in both GCs**. All function bodies are byte-exact after header consolidation.
+They cover allocation-free absent reads/removals, four independent first-write
+owners, owning snapshots, animation importance/transitions/reset, font-variation
+input cloning/inheritance/clearing, live normal resolution and GC reachability.
+
+Three fixed alternating local pairs count **128 complete public compute_style
+calls** over 64 existing elements in two batches. The checksum covers eight
+computed property texts, property identity and importance/inheritance flags.
+Ordinary styles and font-variation declarations are included. Document, sheets,
+elements, parent style, eight warmup batches, expected checksum and forced GC
+precede the counter; checksum and absent installed child-style assertions follow.
+Before: 21,411,259 / 21,368,618 / 21,405,823. Candidate by pair: 21,221,970 / 21,218,188 / 21,219,539.
+Median **21,405,823→21,219,539
+(-0.8702%)**; checksum
+**3,337,220** in all six actual zero exits.
+This local result receives no page credit.
+
+Both full-process C-O1/Boehm profiles pass without a filter or counter reset:
+
+| Function | Before calls | Candidate calls |
+| --- | ---: | ---: |
+| `css__opt89_complete_style_batch` | 11 | 11 |
+| `css__StyleComputer_compute_style` | 713 | 713 |
+| `css__computed_properties_with_initial_values` | 730 | 730 |
+| `css__ComputedProperties__static__new` | 1 | 1 |
+| `css__ComputedProperties_ensure_animated_property_storage` | 0 | 4 |
+| `css__ComputedProperties_ensure_animated_custom_storage` | 0 | 0 |
+| `css__ComputedProperties_ensure_inheritance_specified_storage` | 0 | 3 |
+| `css__ComputedProperties_ensure_font_variation_storage` | 0 | 0 |
+
+These are call counts, not hardware instruction savings. Both run 11 complete
+probe batches, 713 public compute_style calls, 730 initial-style constructions
+and one plain constructor. Four animation-map and three inheritance-map ensure
+calls occur in the candidate. Custom-animation and font-variation ensure calls
+are zero in this workload; their behavior is covered by the original contract
+checks, with no profile-based removal claim. The first extractor used the wrong
+static constructor spelling and required unused helper counts to be positive.
+Its failure remains archived. Read-only extraction verifies both original actual
+zero exits, full-process C and retained outputs without repeating runs. No
+profile timing or instrumented instruction result receives page credit.
+
+Strict C audit authenticates all fifteen exact hunks and every emitted edited
+or new function against independent C. An extra before/candidate C-generation
+probe includes the identical common source and explicitly references public
+inheritance, the layout-facing variation getter and debug formatting. Both
+C-generation commands actually exit zero; they compile no native binary and
+run no tests. All runtime source hashes match the corresponding frozen sources.
+The variation snapshot getter is absent from both normal binaries and remains
+covered by contracts. The computed record changes only four maps to four
+pointers; three scanned private owner records and their forwards are exact.
+The changed computed-record debug printer and six new owner-printer functions
+match independently generated C. Two existing map aliases and four existing
+map printers may reorder, with byte-identical contents authenticated.
+Actual compiler-frontend tables prove one new source insertion at index
+285, with no new closure.
+All remaining C, other records, globals, resources, filtering, arenas and GC
+setup match after established identities, unchanged assertion-line mappings,
+37 frozen includes and four byte-identical helper reorderings. All 120 native
+inputs and exact native arguments match. Failed read-only audits remain in
+four findings: incorrect accessor name, missing common-harness inheritance
+reachability, newly generated record printers, and printer-extraction logic.
+No passing test or primary observation is repeated.
+Passing C-audit script SHA256:
+`d93b76921ae99a3e90cfbe85082b09a63d9657603cb277110e5a4f97239ea5f9`.
+Normal C SHA256: `59c8c41d1ddf34e130a25b628f473d12441c8cd9610770484b5a09b073ebb624`.
+Durable normal, focused, contract and profile hashes appear in
+instruction-opt89-artifact-archives.json.
+
+The predeclared page cohort is **30 alternating pairs**, odd before/final,
+even final/before, **30,000 paired bootstrap resamples, seed 89**. Both persisted
+regular binaries use fresh copies of the same 359 cached bodies, frozen text
+and child-only placement helpers, C-O2/Boehm/default marker 1 and unchanged
+4 GiB hint; no prod/prealloc. Viewport is 1024×768 and fixed endpoint is
+`navigation_to_first_document_paint[0]`; no historical or Root comparison.
+
+| Build | Median first-frame retired instructions | Median lifetime process peak, MiB |
+| --- | ---: | ---: |
+| Fresh accepted frozen88 control | 17,566,605,963.5 | 3,525.4 |
+| Lazy computed metadata maps | 17,553,422,693 | 3,515.5 |
+
+Difference of marginal medians (before minus candidate):
+**13,183,270.5** instructions; candidate change
+**-0.075%**, with **24/30** wins.
+Paired median saving **46,262,221.5**, paired 95% interval
+**[38,310,223.5, 56,465,095]**. The positive paired interval establishes repeatable page credit of **13,183,270.5** instructions.
+
+All 60 primaries and **60 actual PNGs** remain. Recoveries:
+none; pre-parse retries: 0. First primaries retain
+1 installation/2 geometry preparations/1 paint. Later completed refreshes:
+none. No completed primary was extended, discarded or
+rerun. Recovered records disclose unknown final exit and missing PNG,
+fingerprint and peak. Peaks cover capture/exit and later refreshes, not live
+first-frame memory, and are never summed. The read-only decoded capture check finds 30 before and 30 candidate RGB classes, 0 shared. All differences stay within the original skeleton bands, x45–662: y335–344 and ten 14px bands starting at380 with41px spacing. All pixels outside these bands match. No animation was disabled and no observation repeated; evidence is instruction-opt89-page-pixel-class-check.json.
+External foreground transitions remain retained: none.
+The child is foreground in neither startup snapshot. The focused viewport is
+pixel-exact at 1024×768. Prior observed carry is 0. Cumulative observed saving **13,183,270.5** crosses the 5M gate. Six direct harness jobs actually pass CSS 31/SVG 10/layout 46 in both GCs (**174 executions**). All **19 screenshots pass, 16 exact**; known differences remain inline-node 13, text-decorations 1,341 and canvas-text 1,994. The completed broad batch resets additional observed savings to 0.
+Startup, preparation and runtime controllers retain actual terminal evidence;
+controller success is distinct from each child result.
+
+The isolated signed app is `/Users/alex/code/vox2/Build/v/Vox-opt89.app`; native instruction text
+matches the measured executable, with the frozen helper pinned inside the app.
+Actual default loaded path/hash, signatures, startup and actual GC collections
+pass with default marker 1 and override 2. Canonical app and user GUI remain
+preserved. Contemporary Root receives no extra source, regression or page
+credit. Equivalent Chrome content/start/submission accounting remains open;
+faster-than-Chrome performance is unproven. Evidence:
+`Build/instructions/vox-opt89-interleaved-*` and `Build/v/instruction-opt89-*`.
+
 ## Causes and changes
 
 - The V 0.5.2 compatibility compiler's `-prod` Boehm code repeatedly snapshots

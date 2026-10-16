@@ -1828,6 +1828,16 @@ evidence](docs/translation-audit/NATIVE_MEDIA_WHEEL_RAW_HANDLER.md).
   focused retained viewport exact. Additional observed savings: 0.
   Same 4 GiB/placement; canonical/GUI preserved; contemporary Root excluded.
   Chrome parity remains open.
+  Lazy computed metadata maps `c3e9df79` (independent committed slice)
+  pass 3,123 common assertions in 27 cases per configuration,
+  plus 9 candidate cases/1,057 assertions in each GC mode.
+  Complete public style computations use 0.87% fewer instructions.
+  Page point saving 13,183,270.5, 24/30 wins,
+  paired interval [38,310,223.5, 56,465,095]; repeatable credit 13,183,270.5.
+  Broad verification: 87 selected cases both GC and 19 screenshots (16 exact);
+  focused retained viewport exact. Additional observed savings: 0.
+  Same 4 GiB/placement; canonical/GUI preserved; contemporary Root excluded.
+  Chrome parity remains open.
 - Outside instruction-count optimization, run broad regression suites once per
   ten completed fixes, not after every fix.
   Broad suites include full translation/package test batches, the full LibJS AST
