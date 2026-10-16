@@ -262,7 +262,10 @@ fn run_inline_formatting_context_internal(mut state LayoutState, containing_bloc
 					}
 					if is_whitespace && next_width.raw_value() > 0 {
 						line_builder.note_soft_wrap_opportunity()
-						sequence_width := item.border_box_width().plus(next_width)
+						sequence_width := if node.document().font_rendering_policy() == .chromium {
+							line_builder.projected_text_sequence_width(item,
+								iterator.next_non_whitespace_sequence_items())
+						} else { item.border_box_width().plus(next_width) }
 						broke_line := if iterator.next_non_whitespace_text_allows_overflow_break() {
 							line_builder.break_if_needed_before_overflow_breakable_item(sequence_width)
 						} else {
@@ -280,11 +283,12 @@ fn run_inline_formatting_context_internal(mut state LayoutState, containing_bloc
 						|| (containing_block_used_values.line_boxes.len > 0
 						&& containing_block_used_values.line_boxes.last().ends_in_preserved_whitespace())
 					if can_break_before_item && !is_whitespace {
+						projected_width := line_builder.projected_text_sequence_width(item, [])
 						line_builder.note_soft_wrap_opportunity()
 						if overflow_break_allowed {
-							line_builder.break_if_needed_before_overflow_breakable_item(item.border_box_width())
+							line_builder.break_if_needed_before_overflow_breakable_item(projected_width)
 						} else {
-							line_builder.break_if_needed(item.border_box_width())
+							line_builder.break_if_needed(projected_width)
 						}
 					}
 					if overflow_break_allowed {
@@ -405,7 +409,7 @@ fn run_inline_formatting_context_internal(mut state LayoutState, containing_bloc
 fn break_overflowing_text_item(mut line_builder LineBuilder, mut item InlineLevelItem) {
 	for {
 		remaining_width := line_builder.remaining_width_for_overflow_break() or { return }
-		if item.border_box_width().raw_value() <= remaining_width.raw_value() {
+		if line_builder.projected_text_sequence_width(item, []).raw_value() <= remaining_width.raw_value() {
 			return
 		}
 		line_is_empty := line_builder.current_line_is_empty()
@@ -705,7 +709,7 @@ fn apply_block_ellipsis(containing_block &BlockContainer, mut used UsedValues,
 	letter_spacing := resolved_text_spacing_for_node(style_source, .letter_spacing)
 	word_spacing := resolved_text_spacing_for_node(style_source, .word_spacing)
 	run := platform.shape_text_with_spacing(0, f32(letter_spacing.to_double()), f32(word_spacing.to_double()), ellipsis, font, .common).glyph_run
-	ellipsis_width := CSSPixels.nearest_value_for(f64(run.width()))
+	ellipsis_width := shaped_inline_width(run, 0)
 	available_width := if line.original_available_width().is_definite() {
 		line.original_available_width().to_px_or_zero()
 	} else {

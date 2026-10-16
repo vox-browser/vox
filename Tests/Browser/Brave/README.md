@@ -31,3 +31,11 @@ plane using Chromium's CPU mip selection, promotes scaled YUV to 4:4:4, and
 converts color in the GPU shader. `webp-yuv` separately checks the original
 4:2:0 image at natural size. Capture each fixture in a fresh Brave instance:
 its image cache can reuse an earlier upload size for the same resource.
+
+`inline-advances` checks shaped-item width rounding, kerning across ASCII
+word boundaries, fractional max-content tables with emergency wrapping, and
+font-relative inline margins. The Chromium profile keeps exact glyph advances
+inside an item and rounds its outer advance upward to 1/64px. Normal fitting
+and emergency breaking use that same cumulative advance. ASCII runs with one
+font can share shaping across word chunks; other scripts and mixed-font runs
+retain the existing shaping path.

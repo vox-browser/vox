@@ -68,7 +68,7 @@ fn (item &InlineLevelItem) allows_overflow_break(available_width AvailableSize) 
 fn trailing_whitespace_from_shaped_text(shaped platform.ShapedText) TrailingWhitespace {
 	return TrailingWhitespace{
 		length_in_code_units: shaped.trailing_whitespace.length_in_code_units
-		inline_size: CSSPixels.nearest_value_for(shaped.trailing_whitespace.advance)
+		inline_size: inline_advance_to_css_pixels(shaped.trailing_whitespace.advance, shaped.glyph_run.font())
 	}
 }
 
@@ -89,7 +89,7 @@ fn overflow_split_items(item &InlineLevelItem, node &Node, split int,
 		can_break_before: item.can_break_before
 		trailing_whitespace: prefix_trailing
 		preceded_by_unattached_inline_start_edges: item.preceded_by_unattached_inline_start_edges
-		width: CSSPixels.nearest_value_for(f64(prefix_run.width()))
+		width: shaped_inline_width(prefix_run, 0)
 		padding_start: item.padding_start
 		border_start: item.border_start
 		margin_start: item.margin_start
@@ -101,7 +101,7 @@ fn overflow_split_items(item &InlineLevelItem, node &Node, split int,
 		offset_in_node: split
 		length_in_node: item.offset_in_node + item.length_in_node - split
 		trailing_whitespace: remainder_trailing
-		width: CSSPixels.nearest_value_for(f64(remainder_run.width()))
+		width: shaped_inline_width(remainder_run, 0)
 		padding_end: item.padding_end
 		border_end: item.border_end
 		margin_end: item.margin_end
@@ -211,7 +211,7 @@ fn (item &InlineLevelItem) split_for_overflow_break(maximum_width CSSPixels, tak
 		prefix_text := utf16_substring_for_line_box(text, start, boundary - start)
 		shaped := platform.shape_text_with_spacing(0, letter_spacing, word_spacing, prefix_text,
 			run.font(), run.text_type())
-		prefix_width := CSSPixels.nearest_value_for(f64(shaped.glyph_run.width()))
+		prefix_width := shaped_inline_width(shaped.glyph_run, 0)
 		if leading_width.plus(prefix_width).raw_value() > maximum_width.raw_value() {
 			break
 		}
@@ -250,6 +250,7 @@ mut:
 @[heap]
 struct InlineTextNodeContext {
 mut:
+	chromium_context_run       ?&platform.GlyphRun
 	chunks                     []TextNodeChunk
 	next_chunk_index           int
 	should_collapse_whitespace bool
@@ -423,6 +424,19 @@ pub fn (iterator &InlineLevelIterator) next_non_whitespace_sequence_width() CSSP
 		next_width = next_width.plus(next_item.border_box_width())
 	}
 	return next_width
+}
+
+fn (iterator &InlineLevelIterator) next_non_whitespace_sequence_items() []InlineLevelItem {
+	mut end := iterator.next_item_index
+	for end < iterator.items.len {
+		item := iterator.items[end]
+		if item.type_ in [.forced_break, .block_level_box] { break }
+		node := item.node or { break }
+		if node.computed_values().text_wrap_mode() == .wrap
+			&& (item.type_ != .text || item.is_collapsible_whitespace || item.is_all_whitespace) { break }
+		end++
+	}
+	return iterator.items[iterator.next_item_index..end]
 }
 
 pub fn (iterator &InlineLevelIterator) next_non_whitespace_text_allows_overflow_break() bool {
@@ -629,9 +643,15 @@ fn (mut iterator InlineLevelIterator) generate_next_item() ?InlineLevelItem {
 			shaped_text = string_from_utf16_code_units_for_line_box(units[tab_count..])
 			x = stop_distance
 		}
-		shaped := iterator.shape_text_for_layout(text_node, f32(x), f32(letter_spacing), f32(word_spacing), shaped_text, chunk.font, text_type)
+		shaped := if run := context.chromium_context_run {
+			chromium_context_slice(run, chunk) or {
+				iterator.shape_text_for_layout(text_node, f32(x), f32(letter_spacing), f32(word_spacing), shaped_text, chunk.font, text_type)
+			}
+		} else {
+			iterator.shape_text_for_layout(text_node, f32(x), f32(letter_spacing), f32(word_spacing), shaped_text, chunk.font, text_type)
+		}
 		glyph_run := shaped.glyph_run
-		chunk_width := CSSPixels.nearest_value_for(f64(glyph_run.width()) + x)
+		chunk_width := shaped_inline_width(glyph_run, x)
 		is_empty_editable := chunk.length == 0 && text_node.produces_line_box_fragment_when_empty_
 		is_generated_empty_string := is_empty_editable
 			|| (text_node.retains_empty_generated_fragment_ && chunk.length == 0)
@@ -830,6 +850,7 @@ fn (mut iterator InlineLevelIterator) enter_text_node(text_node &TextNode) {
 	}
 	iterator.has_text_node_context = true
 	iterator.text_node_context = InlineTextNodeContext{
+		chromium_context_run: iterator.chromium_ascii_context_run(text_node, chunks)
 		chunks: chunks
 		should_collapse_whitespace: white_space_collapse in [.collapse, .preserve_breaks]
 		should_wrap_lines: should_wrap_lines

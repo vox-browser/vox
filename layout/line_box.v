@@ -70,7 +70,7 @@ pub fn LineBoxFragment.new(layout_node &Node, start int, length_in_code_units in
 		fragment.current_insert_direction = fragment.resolve_glyph_run_direction(run.text_type())
 		if direction == .ltr && fragment.current_insert_direction == .ltr
 			&& run.font().font_rendering_policy == .chromium
-			&& inline_length == CSSPixels.nearest_value_for(f64(run.width()))
+			&& inline_length == shaped_inline_width(run, 0)
 			&& run.glyphs_.len > 0 && run.glyphs_[0].position.x == 0 {
 			fragment.precise_inline_length_ = f64(run.width())
 		}
@@ -324,7 +324,7 @@ fn (mut fragment LineBoxFragment) append_glyph_run_ltr(glyph_run &platform.Glyph
 	mut inline_offset := f32(fragment.inline_length_.to_double())
 	if precise := fragment.precise_inline_length_ {
 		if fragment.current_insert_direction == .ltr && run_direction == .ltr
-			&& run_width == CSSPixels.nearest_value_for(f64(glyph_run.width()))
+			&& run_width == shaped_inline_width(glyph_run, 0)
 			&& glyph_run.glyphs_.len > 0 && glyph_run.glyphs_[0].position.x == 0 {
 			inline_offset = f32(precise)
 			fragment.precise_inline_length_ = precise + f64(glyph_run.width())
@@ -363,7 +363,7 @@ fn (mut fragment LineBoxFragment) append_glyph_run_ltr(glyph_run &platform.Glyph
 	}
 	fragment.inline_length_ = fragment.inline_length_.plus(run_width)
 	if precise := fragment.precise_inline_length_ {
-		fragment.inline_length_ = CSSPixels.nearest_value_for(precise)
+		fragment.inline_length_ = inline_advance_to_css_pixels(precise, destination.font())
 	}
 }
 
