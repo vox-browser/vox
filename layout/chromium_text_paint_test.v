@@ -33,3 +33,19 @@ fn test_chromium_text_paints_glyphs_from_a_rounded_box_top() {
 	lb := libweb.filter(it.text == 'B')[0]
 	assert la.glyph_translation_y - la.y == lb.glyph_translation_y - lb.y
 }
+
+// Fallback CJK fragments paint their own glyph runs instead of the raw string,
+// so every glyph shares the line's baseline.
+fn test_chromium_mixed_font_text_paints_glyph_runs() {
+	$if macos {
+		mut document := html.parse_document('<!doctype html><style>body{margin:0}
+			div{position:absolute;left:8px;top:10px;font:13px/16px system-ui;white-space:nowrap}</style>
+			<div lang="zh">H条目 / 條目H</div>')
+		document.set_font_rendering_policy(.chromium)
+		mut root := layout_document_typed_in_viewport(document, 300, 100)
+		commands := root.paint_commands().filter(it.kind == 'draw_text')
+		assert commands.len > 1
+		assert commands.all(it.glyph_run != none)
+		assert commands.all(it.glyph_translation_y == commands[0].glyph_translation_y)
+	}
+}

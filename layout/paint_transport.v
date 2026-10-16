@@ -2966,6 +2966,23 @@ fn text_fragments_share_run(first TextFragment, next TextFragment) bool {
 		}
 	}
 	return first.shape_as_run && next.shape_as_run && first.text_run_id != 0 && first.text_run_id == next.text_run_id && first.inline_node_id == next.inline_node_id && first.color == next.color && first.font_size == next.font_size && first.bold == next.bold && first.italic == next.italic && first.mono == next.mono && first.font_smoothing == next.font_smoothing && first.decoration == next.decoration && first.decoration_color == next.decoration_color && first.decoration_color_set == next.decoration_color_set && first.decoration_style == next.decoration_style && first.decoration_thickness == next.decoration_thickness && first.preserves_spaces == next.preserves_spaces && first.rtl == next.rtl
+		&& text_fragments_share_chromium_font(first, next)
+}
+
+// Chromium-policy text never repaints from its raw string: fragments shaped
+// with different fallback fonts each paint their own glyph run at the
+// layout baseline.
+fn text_fragments_share_chromium_font(first TextFragment, next TextFragment) bool {
+	first_run := first.paintable_fragment.glyph_run or { return true }
+	first_font := first_run.font()
+	if first_font.font_rendering_policy != .chromium {
+		return true
+	}
+	next_run := next.paintable_fragment.glyph_run or { return false }
+	next_font := next_run.font()
+	return first_run.face() == next_run.face() && first_font.family == next_font.family
+		&& first_font.source_path == next_font.source_path
+		&& first_font.point_size == next_font.point_size && first_font.weight == next_font.weight
 }
 
 fn combined_text_fragment_glyph_run(fragments []TextFragment, run_left f64) ?&platform.GlyphRun {
