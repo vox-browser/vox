@@ -97,7 +97,7 @@ uint64_t render_case(int index, DrawPath draw, DrawLinear linear, DrawRadial rad
         result = ladybird_v_skia_draw_outer_box_shadow(context,
             8, 15, 95, 62, 8, 8, 8, 8, 8, 8, 8, 8,
             18, 25, 75, 42, 8, 8, 8, 8, 8, 8, 8, 8,
-            1, 0, 0, 1, 0, 0, 0, 0, 0, 128, 96, 8, 40, 70, 120, 200);
+            1, 0, 0, 1, 0, 0, 0, 0, 0, 128, 96, 8, 40, 70, 120, 200, 0);
     } else if (index == 11) {
         result = linear(context, path, 9, 1, a, b, c, d, e, f, 0, 0, 0,
             128, 96, 0, 0, 0, 0, 4, 0, 0, 110, 70, 1, 0, 0, 1, 0, 0,

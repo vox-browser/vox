@@ -14,6 +14,6 @@ clang++ -std=c++20 -O2 -x objective-c++ \
     -I"$skia_root/include/skia" -I"$skia_root/include" \
     "$repo_dir/tools/native_skia_clip_test.cpp" \
     -L"$skia_root/lib" -lskia \
-    -framework CoreFoundation -framework CoreGraphics -framework Foundation \
+    -framework CoreFoundation -framework CoreGraphics -framework Foundation -framework Metal \
     -Wl,-rpath,"$skia_root/lib" -o "$output_dir/native_skia_clip_test"
 "$output_dir/native_skia_clip_test"
