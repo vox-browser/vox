@@ -330,6 +330,7 @@ pub fn (mut host MediaElementHost) install(mut runtime Runtime) ! {
 	host.audio_prototype = runtime.retain_javascript_value(runtime.binding_property(prototypes, 'audio')!)!
 	host.video_prototype = runtime.retain_javascript_value(runtime.binding_property(prototypes, 'video')!)!
 	host.install_media_tracks()!
+	host.install_track_elements()!
 	runtime.add_canvas_element_provider_with_lookup(fn [handle] () map[string]&dom.Element {
 		host := unsafe { &MediaElementHost(handle) }
 		return host.elements_for_binding()
@@ -358,6 +359,8 @@ pub fn (mut host MediaElementHost) install(mut runtime Runtime) ! {
 		host.text_lists.clear()
 		host.text_tracks.clear()
 		host.text_owner_wrappers.clear()
+		host.track_element_prototype = unsafe { nil }
+		host.track_elements.clear()
 		host.bound_elements.clear()
 		host.records.clear()
 		host.elements.clear()
@@ -1055,6 +1058,7 @@ fn (mut host MediaElementHost) install_media_tracks() ! {
 		create: fn [handle] (target &dom.EventTarget) !voidptr {
 			mut host := unsafe { &MediaElementHost(handle) }
 			if host.closed { return unsafe { nil } }
+			if track := host.track_element_text_track(target) { return host.wrap_text_track(track) }
 			for _, media in host.records {
 				list := media.audio_tracks()
 				if voidptr(target) == voidptr(list.event_target()) { return host.wrap_audio_track_list(list) }

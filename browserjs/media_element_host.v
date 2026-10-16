@@ -51,6 +51,8 @@ mut:
 	text_lists map[voidptr]&html.TextTrackList
 	text_tracks map[voidptr]&html.TextTrack
 	text_owner_wrappers map[voidptr]voidptr
+	track_element_prototype voidptr
+	track_elements map[voidptr]&dom.HTMLTrackElement
 	closed         bool
 }
 

@@ -81,6 +81,10 @@ fn (mut runtime Runtime) javascript_track_event_payload(event &html.TrackEvent) 
 	target := event.target() or { unsafe { nil } }
 	for mut host in runtime.media_element_hosts_ {
 		if host.closed { continue }
+		if payload.kind == .text {
+			track := payload.text or { return runtime.event_binding_type_error('Missing native text track') }
+			if _ := host.track_element_text_track(&track.EventTarget) { return host.wrap_text_track(track) }
+		}
 		for _, media in host.records {
 			match payload.kind {
 				.video {
