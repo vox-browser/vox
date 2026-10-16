@@ -8559,6 +8559,113 @@ credit. Equivalent Chrome content/start/submission accounting remains open;
 faster-than-Chrome performance is unproven. Evidence:
 `Build/instructions/vox-opt87-interleaved-*` and `Build/v/instruction-opt87-*`.
 
+## Keep the rule-cache pseudo-class list in fixed storage
+
+This integration imports only independently authored feature `7bfd4306`
+(Alexander Medvednikov): one exact helper hunk in css/style_scope_cache.v.
+Its seven pseudo-classes retain the same order and independent returned storage,
+using a fixed array instead of a new growable vector. Public rule-cache building
+and selector bucketing retain their behavior. No globals, filtering, other
+arenas, heap hint or GC policy change. Contemporary Root remains separate.
+
+Before/final Boehm and final no-GC C-O2 each pass **532
+assertions in fourteen cases**: thirteen exact retained pseudo-class matching
+and scope-invalidation cases plus an inactive diagnostic.
+Common source SHA256 is `e2948ebd9ac496afd0d6222a1578419f26d5ed486f1a6f06c1c3ab922d838f5f`.
+Two original candidate cases pass **137
+assertions each in both GCs**. The committed test file is byte-exact: it checks
+all seven values/order, independent returned storage, zero allocation, every
+dynamic pseudo bucket and retained rule reachability after collection.
+
+Three fixed alternating local pairs count **64 complete public
+populate_new_rule_cache calls**, including all author/user/UA rules and seven
+dynamic pseudo buckets over 224 two-selector author rules. The checksum
+includes class keys, ordered serialized selectors, positions, rule/sheet indices,
+cascade origin and pseudo identity. Parsed document/sheet setup, eight warmups,
+expected checksum and forced GC precede the counter; checksum assertions follow.
+Before: 4,640,908,957 / 4,643,489,253 / 4,636,675,307. Candidate by pair: 4,637,252,405 / 4,637,762,083 / 4,628,915,795.
+Median **4,640,908,957→4,637,252,405
+(-0.0788%)**; checksum
+**150,939,904** in all six actual zero exits.
+This controlled local result receives no page credit.
+
+Both full-process C-O1/Boehm profiles pass without a filter or counter reset:
+
+| Function | Before calls | Candidate calls |
+| --- | ---: | ---: |
+| `css__opt88_complete_rule_cache_build` | 73 | 73 |
+| `css__StyleScope_populate_new_rule_cache` | 87 | 87 |
+| `css__StyleScope_make_rule_cache_for_cascade_origin` | 261 | 261 |
+| `css__style_scope_pseudo_classes_with_rule_cache` | 74,312 | 520,184 |
+
+These are call counts, not hardware instruction savings. Both run 73 complete
+probe batches, 87 public cache-population calls and 261 origin-cache calls.
+The private helper count is exactly seven times higher: the old compiler emits
+a call to the fixed-array-return function for each loop iteration. Public work
+remains equal. The first extractor incorrectly required equal private counts;
+its failure remains archived. Read-only recovery verifies both original actual
+zero exits, full-process C and retained profile outputs without repeating runs.
+No profile timing or instrumented instruction result receives page credit.
+
+Strict C audit authenticates the exact helper hunk, its two emitted callers
+(the public cache builder and selector callback), and independent focused C
+after named compiler type, closure/context and temporary identities. Both new
+fixed-seven return records, their forwards and the array alias match focused C
+exactly. All other C, other records, globals, resources, filtering, arenas and
+GC setup match after established compiler identities, unchanged assertion-line
+maps, 37 frozen includes, four byte-identical helper reorderings and one exact
+existing PseudoClass array-alias reorder. All 120 native inputs and exact native
+arguments match. The failed read-only alias-order comparison remains archived.
+One failed harness preparation remains: checksum operands mixed int/usize.
+All three compile exits1 and zero completed cases/samples remain. Explicit u64
+conversions fix only the diagnostic arithmetic; production and original candidate
+tests are unchanged. Only unfinished checks were retried.
+Passing C-audit script SHA256:
+`952a9b1fdb3f9c188438dc48e2bb43db73bddab33402a4f5c64e25e33fe32ef4`.
+Normal C SHA256: `4532ae5943de8aeb3253c75930803d051f8f8f13e9726af461047b9165dae192`.
+Durable normal, focused, contract and profile hashes appear in
+instruction-opt88-artifact-archives.json.
+
+The predeclared page cohort is **30 alternating pairs**, odd before/final,
+even final/before, **30,000 paired bootstrap resamples, seed 88**. Both persisted
+regular binaries use fresh copies of the same 359 cached bodies, frozen text
+and child-only placement helpers, C-O2/Boehm/default marker 1 and unchanged
+4 GiB hint; no prod/prealloc. Viewport is 1024×768 and fixed endpoint is
+`navigation_to_first_document_paint[0]`; no historical or Root comparison.
+
+| Build | Median first-frame retired instructions | Median lifetime process peak, MiB |
+| --- | ---: | ---: |
+| Fresh accepted frozen87 control | 17,711,450,461.5 | 3,526.5 |
+| Fixed pseudo-class cache list | 17,714,564,999 | 3,525.2 |
+
+Difference of marginal medians (before minus candidate):
+**-3,114,537.5** instructions; candidate change
+**+0.018%**, with **16/30** wins.
+Paired median saving **3,565,779.5**, paired 95% interval
+**[-15,634,210, 19,344,679.5]**. The interval includes zero; repeatable page credit is **0**. Whole-page savings are not established.
+
+All 60 primaries and **60 actual PNGs** remain. Recoveries:
+none; pre-parse retries: 0. First primaries retain
+1 installation/2 geometry preparations/1 paint. Later completed refreshes:
+none. No completed primary was extended, discarded or
+rerun. Recovered records disclose unknown final exit and missing PNG,
+fingerprint and peak. Peaks cover capture/exit and later refreshes, not live
+first-frame memory, and are never summed. The read-only decoded capture check finds 30 before and 30 candidate RGB classes, 2 shared. All differences stay within the original skeleton bands, x45–662: y335–344 and ten 14px bands starting at380 with41px spacing. All pixels outside these bands match. No animation was disabled and no observation repeated; evidence is instruction-opt88-page-pixel-class-check.json.
+External foreground transitions remain retained: none.
+The child is foreground in neither startup snapshot. The focused viewport is
+pixel-exact at 1024×768. Prior observed carry is 0. Cumulative observed saving **0** stays below the 5M gate. Broad validation is deferred and the previous completed broad baseline remains.
+Startup, preparation and runtime controllers retain actual terminal evidence;
+controller success is distinct from each child result.
+
+The isolated signed app is `/Users/alex/code/vox2/Build/v/Vox-opt88.app`; native instruction text
+matches the measured executable, with the frozen helper pinned inside the app.
+Actual default loaded path/hash, signatures, startup and actual GC collections
+pass with default marker 1 and override 2. Canonical app and user GUI remain
+preserved. Contemporary Root receives no extra source, regression or page
+credit. Equivalent Chrome content/start/submission accounting remains open;
+faster-than-Chrome performance is unproven. Evidence:
+`Build/instructions/vox-opt88-interleaved-*` and `Build/v/instruction-opt88-*`.
+
 ## Causes and changes
 
 - The V 0.5.2 compatibility compiler's `-prod` Boehm code repeatedly snapshots
