@@ -9509,6 +9509,139 @@ Equivalent Chrome content/start/submission accounting remains open;
 **faster-than-Chrome performance is unproven**. Evidence:
 Build/instructions/vox-opt96-interleaved-* and Build/v/instruction-opt96-*.
 
+## Reuse valid empty inline chunk caches
+
+Round 97 imports independently authored `15c67b10` (Alexander Medvednikov)
+onto accepted frozen round 96: **two exact hunks in
+layout/inline_level_iterator.v**. An existing matching-generation cache remains
+valid when its chunk array is empty. The explicit validity flag prevents
+reconstructing that empty result. Nonempty caches, font-generation invalidation,
+text/editor invalidation and synthetic empty fragments retain their behavior.
+No item-capacity predecessor, private pool, heap hint or GC policy is added.
+
+The first C-O2 focused batch passes five original cases / **5,692 assertions**
+in each configuration, then fails the same retained-font pointer assertion
+in unchanged control and both candidates. These actual exits 1 and partial
+case results remain. Text invalidation discards chunks and the unchanged
+constructor allocates fresh Font owners. The original assertion incorrectly
+required pointer identity across that reconstruction. Separate test fix
+`2c57d7a7`
+keeps exact pointer comparisons while the cache is valid; after invalidation
+it compares every public font setting, resolved face identity and pixel metrics,
+plus all original chunk and context fields. Only the failed retention case is
+rerun, passing **1,550 assertions** in each of
+before/Boehm, final/Boehm and final/no-GC. The five passing cases are retained
+without rerunning. Total covered functional assertions per configuration:
+**7,242 in six cases**. The current
+identical two-case harness contains that retention case and an inactive
+instruction probe. Its SHA256:
+`921995e1866271fc0243717e330a9f8724bebc286e8339d92de5ecda5f37d12b`.
+
+All six original case bodies are retained except the one final comparison
+call in the repaired case. The old producer oracle is the exact frozen
+implementation with only its method renamed; the newer unrelated item-capacity
+reservation from the authored fixture is excluded. Initial failing artifacts
+and compiled C remain under instruction-opt97-retained-font-identity-finding.
+A stale gate first reread the archived failing receipt while repair compilation
+was running; its actual failure remains separately recorded. No local sample
+or native job began in either failed gate. The same repair compiler jobs
+continued. The candidate's separate byte-exact constructor-skip contract
+passes **976 assertions in each GC mode**, retaining actual zero exits. V prints
+an unnumbered OK row for a single case; the draft extractor counted zero and
+failed after both successful executions. Corrected read-only extraction
+retains those exact runtime results and repeats no test. Initial extraction
+failure and durable contract C archives remain; evidence is
+instruction-opt97-contracts-result.json.
+
+Three fixed alternating local pairs measure **128 complete public
+InlineLevelIterator.new constructions over 128 text nodes: 113 empty and
+15 shaped Unicode nodes**. Each operation includes fresh layout state/indexes,
+direction scanning, all item generation and a full emitted geometry/glyph
+checksum. Setup, eight warmups, expected result and forced GC precede the
+counter; the checksum assertion follows. No cache reset or profile filtering.
+All six actual exits are 0; checksum **33,980,160** matches. Before counts:
+**178,531,667 / 179,016,662 / 178,471,479**; final counts by pair:
+**55,785,519 / 55,805,199 / 55,844,231**. Medians
+**178,531,667→55,805,199** instructions,
+**-68.74213%**, all three pairs improve. This targeted
+empty-heavy workload is a local result and earns no page credit.
+
+Full-process C-O1/Boehm profiles pass with the corrected identical retention
+harness and enabled public iterator probe, enabled from startup without
+filtering or resets. Counts only:
+
+| Function | Before calls | Candidate calls |
+| --- | ---: | ---: |
+| `layout__opt97_complete_public_iterator` | 137 | 137 |
+| `layout__InlineLevelIterator__static__new` | 137 | 137 |
+| `layout__InlineLevelIterator_generate_all_items` | 137 | 137 |
+| `layout__InlineLevelIterator_enter_text_node` | 17,560 | 17,560 |
+| `layout__TextNodeChunkIterator__static__new_with_direction` | 15,512 | 140 |
+| `layout__TextNodeChunkIterator_next` | 15,607 | 235 |
+
+The 137 complete public probe operations and total public iterator/item-entry
+calls match. Chunk-constructor and next calls fall. Profile timings and
+C-O1 instruction counts receive no performance credit.
+
+Strict generated-C audit passes: **only
+layout__InlineLevelIterator_enter_text_node** differs, independently
+authenticated from both immutable C-only generations. Two exact authored
+source hunks are imported. All other bodies, records, globals, resources,
+filtering, arenas, heap/GC setup and native arguments match after established
+identities, 37 frozen includes and four byte-identical helper reorders. Actual
+frontend tables match and all 120 native inputs are pinned. Independent C
+probes execute no native code or tests. Passing audit SHA256:
+`baa36c56dd65d4948863be0286cdecaf32448b2da9d2cfae385f1c384308c974`.
+Normal C SHA256: `530d5eaddb0321813eb0128e17dbc56fd9832215db4332715bdfbc8c53dd3c28`.
+Durable generated-C/profile hashes: instruction-opt97-artifact-archives.json.
+
+The predeclared page cohort contains **30 alternating pairs**, odd before/final
+and even final/before, **30,000 paired bootstrap resamples, seed 97**. Regular
+binaries use fresh copies of the same 359 cached bodies and frozen text and
+child-only placement helpers, C-O2/Boehm/default marker 1 and unchanged 4 GiB
+hint. Document viewport stays 1024×768; endpoint stays
+navigation_to_first_document_paint[0].
+
+| Build | Median first-frame retired instructions | Median lifetime process peak, MiB |
+| --- | ---: | ---: |
+| Fresh accepted frozen round 96 control | 17,588,074,596.5 | 3,491.4 |
+| Valid empty inline cache reuse | 17,583,663,987 | 3,490.9 |
+
+Marginal median saving **4,410,609.5** instructions;
+candidate change **-0.025%**, **13/30** wins.
+Paired median saving **-2,294,279.5**; paired 95% interval
+**[-12,929,378.5, 10,891,495]**. The interval includes zero; repeatable page credit is **0**. Whole-page savings are not established.
+
+All 60 primaries and **60 actual PNGs** remain. Recoveries:
+none; pre-parse retries: 0. First primaries have
+1 installation/2 geometry preparations/1 paint. Later completed refreshes:
+none. No completed primary is extended, discarded
+or rerun. Missing final exit, PNG, fingerprint or peak would remain explicitly
+unknown after any recovered watchdog. Peaks cover capture/exit and refreshes;
+they are not live first-frame memory and are never summed. The read-only decoded capture check finds 30 before and 30 candidate RGB classes, 0 shared. All differences stay within the original skeleton bands, x45–662: y335–344 and ten 14px bands starting at 380 with 41px spacing. All pixels outside these bands match. No animation was disabled and no observation repeated; evidence is instruction-opt97-page-pixel-class-check.json.
+External foreground transitions retained:
+before pair 1 (child 34497, 698→699).
+The child is foreground in neither startup snapshot. Focused multilingual
+retained text/geometry viewport is pixel-exact at 1024×768. Prior observed
+carry **0**. Cumulative observed saving **4,410,609.5** stays below the 5M gate. Broad validation is deferred and the previous completed broad baseline remains.
+
+The isolated signed app is `/Users/alex/code/vox2/Build/v/Vox-opt97.app`. Native instruction text
+matches the measured binary; the frozen helper is pinned inside the app.
+Actual loaded helper path/hash, signatures, startup and actual collections
+pass for default marker 1 and override 2. Canonical/GUI browsers are preserved;
+contemporary Root receives no source, regression or page credit.
+
+A separately labeled full-process call profile of accepted frozen round 94
+completed after all round 96 primaries, retaining its initial native stdio
+include failure and successful native-only resume. It is a prioritization
+diagnostic, excludes the fixed round 96/97 cohorts, and receives no timing or
+page credit. Evidence: instruction-accepted94-page-profile-result.json.
+Native inspection also confirms Clang already compiles the DOM root walk to
+a five-instruction loop; no redundant root-walk feature was introduced.
+Equivalent Chrome content/start/submission accounting remains open;
+**faster-than-Chrome performance is unproven**. Evidence:
+Build/instructions/vox-opt97-interleaved-* and Build/v/instruction-opt97-*.
+
 ## Causes and changes
 
 - The V 0.5.2 compatibility compiler's `-prod` Boehm code repeatedly snapshots

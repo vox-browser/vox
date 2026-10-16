@@ -1902,6 +1902,16 @@ evidence](docs/translation-audit/NATIVE_MEDIA_WHEEL_RAW_HANDLER.md).
   focused retained viewport exact. Additional observed savings: 0.
   Same 4 GiB/placement; rejected 95 excluded; canonical/GUI preserved; Root excluded.
   Chrome parity remains open.
+  Valid empty inline caches `15c67b10` (independent committed slice)
+  cover 7,242 functional assertions in 6 cases/configuration:
+  5 original cases retained, corrected retention case 1,550 assertions;
+  initial pointer-identity failures kept; separate constructor-skip contract bothGC.
+  Complete mixed-empty public iterator batches use 68.74% fewer instructions.
+  Page point saving 4,410,609.5, 13/30 wins,
+  paired interval [-12,929,378.5, 10,891,495]; repeatable credit 0.
+  Broad verification: deferred below cumulative 5M gate;
+  focused retained viewport exact. Additional observed savings: 4,410,609.5.
+  Same 4 GiB/placement; canonical/GUI preserved; Root excluded; Chrome parity open.
 - Outside instruction-count optimization, run broad regression suites once per
   ten completed fixes, not after every fix.
   Broad suites include full translation/package test batches, the full LibJS AST
