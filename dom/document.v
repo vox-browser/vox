@@ -1485,6 +1485,8 @@ pub type ViewportPaintableHitTestCallback = fn (voidptr, f64, f64, HitTestType) 
 
 pub type ViewportPaintableHitTestAllCallback = fn (voidptr, f64, f64) []&Element
 
+pub type ViewportPaintableLayoutQueryCallback = fn (voidptr, voidptr) bool
+
 pub type DisplayListDumpCallback = fn (voidptr) string
 
 // Painting is downstream of DOM, so the concrete viewport paintable and
@@ -1513,6 +1515,7 @@ pub:
 	invalidate_stacking_context_callback        ViewportPaintableVoidCallback = unsafe { nil }
 	hit_test_callback                           ViewportPaintableHitTestCallback = unsafe { nil }
 	hit_test_all_callback                       ViewportPaintableHitTestAllCallback = unsafe { nil }
+	subtree_clipped_outside_viewport_callback   ViewportPaintableLayoutQueryCallback = unsafe { nil }
 mut:
 	paintable_boxes_with_auto_content_visibility_ []&PaintableBox
 }
@@ -4113,6 +4116,17 @@ pub fn (vp &ViewportPaintable) invalidate_scroll_state() {
 	if vp.target != unsafe { nil } && vp.invalidate_scroll_state_callback != unsafe { nil } {
 		vp.invalidate_scroll_state_callback(vp.target)
 	}
+}
+
+// Whether every transform of the layout node's box stays invisible: an ancestor
+// clip in the committed paint tree lies entirely outside the viewport. Returns
+// false whenever the painting bridge cannot prove that.
+pub fn (vp &ViewportPaintable) layout_subtree_is_clipped_outside_viewport(layout_handle voidptr) bool {
+	if vp.target == unsafe { nil } || vp.subtree_clipped_outside_viewport_callback == unsafe { nil }
+		|| layout_handle == unsafe { nil } {
+		return false
+	}
+	return vp.subtree_clipped_outside_viewport_callback(vp.target, layout_handle)
 }
 
 pub fn (vp &ViewportPaintable) refresh_scroll_state() {

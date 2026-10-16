@@ -1,6 +1,7 @@
 module css
 
 import dom
+import math
 import platform
 
 // Faithful translation of Ladybird's CSS/StyleComputer.cpp and the generated property metadata used
@@ -1328,6 +1329,66 @@ fn (style_computer &StyleComputer) target_has_animation_for_property(abstract_el
 // values once, sample every CSS animation/transition, diff the animated
 // property maps, update inherited descendants, and propagate the resulting
 // layout/paint invalidation.
+// INTEROP: Other engines suppress main-thread style sampling for invisible
+// transform animations (KeyframeEffect::can_skip_per_frame_style_update()).
+// This port has no off-thread compositor, so apply that rule to pseudo-element
+// targets whose infinite CSS animations only drive transform-family properties
+// while an ancestor clip keeps them outside the viewport. Pseudo-elements own no
+// observable elements, and the check is repeated for every rendering update, so
+// a target resumes sampling as soon as its clip can intersect the viewport.
+fn (s &StyleComputer) animated_target_is_offscreen_throttled(target dom.AbstractElement) bool {
+	if target.pseudo_element() == none || s.css_animation_storage_ == unsafe { nil } {
+		return false
+	}
+	document := target.document()
+	if !document.layout_is_up_to_date() {
+		return false
+	}
+	if s.css_transition_storage_ != unsafe { nil }
+		&& s.css_transition_storage_.transitions_for(target).len > 0 {
+		return false
+	}
+	if web_animation_effects_for_style(target).len > 0 {
+		return false
+	}
+	animations := s.css_animation_storage_.animations_for(target)
+	if animations.len == 0 {
+		return false
+	}
+	for animation in animations {
+		effect := animation.effect_
+		if effect == unsafe { nil } || !math.is_inf(effect.iteration_count, 1) {
+			return false
+		}
+		key_frame_set := effect.key_frame_set or { return false }
+		mut animates_property := false
+		for _, keyframe in key_frame_set.keyframes_by_key {
+			if keyframe.custom_properties.len > 0 || keyframe.use_initial_custom_properties.len > 0 {
+				return false
+			}
+			for property, _ in keyframe.properties {
+				if property !in [.transform, .translate, .rotate, .scale] {
+					return false
+				}
+				animates_property = true
+			}
+			for property, _ in keyframe.use_initial_properties {
+				if property !in [.transform, .translate, .rotate, .scale] {
+					return false
+				}
+				animates_property = true
+			}
+		}
+		if !animates_property {
+			return false
+		}
+	}
+	styled := target.unsafe_layout_node() or { return false }
+	layout_node := styled.layout_node_ or { return false }
+	paintable := document.unsafe_paintable() or { return false }
+	return paintable.layout_subtree_is_clipped_outside_viewport(layout_node.layout_handle)
+}
+
 fn style_computer_update_animated_style_callback(target voidptr) {
 	if target == unsafe { nil } {
 		return
@@ -1374,6 +1435,9 @@ fn style_computer_update_animated_style_callback(target voidptr) {
 		}
 		if is_in_display_none_subtree_ignoring_animations(target_element)
 			&& !style_computer.target_has_animation_for_property(target_element, .display) {
+			continue
+		}
+		if style_computer.animated_target_is_offscreen_throttled(target_element) {
 			continue
 		}
 		dom_computed := target_element.computed_properties() or { continue }

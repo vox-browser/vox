@@ -37,6 +37,7 @@ fn install_document_painting_bridge(document &dom.Document, result &DocumentLayo
 		invalidate_stacking_context_callback: viewport_invalidate_stacking_context
 		hit_test_callback: viewport_hit_test
 		hit_test_all_callback: viewport_hit_test_all
+		subtree_clipped_outside_viewport_callback: viewport_layout_subtree_is_clipped_outside_viewport
 	}
 	paintable.set_paintable_boxes_with_auto_content_visibility(collect_paintable_boxes_with_auto_content_visibility(result.root))
 	mut mutable_document := unsafe { &dom.Document(document) }
@@ -148,6 +149,33 @@ fn install_layout_paintable_repaint_callbacks(node &dom.LayoutNode, result &Docu
 
 fn viewport_layout_result(target voidptr) &DocumentLayoutResult {
 	return unsafe { &DocumentLayoutResult(target) }
+}
+
+// A box's own accumulated context contains its ancestors' clips before its own
+// transform and effects. When their intersection misses the viewport, no value
+// of the box's transform can make the box or its descendants visible.
+fn viewport_layout_subtree_is_clipped_outside_viewport(target voidptr, layout_handle voidptr) bool {
+	mut result := viewport_layout_result(target)
+	if result.paint_tree_needs_style_update && result.paint_style_update_requires_full_refresh {
+		return false
+	}
+	box := result.retained_box_for_layout(layout_handle) or { return false }
+	index := box.accumulated_visual_context_index
+	if index <= 0 || index >= result.visual_context_tree.nodes.len {
+		return false
+	}
+	viewport_refresh_scroll_state(target)
+	context := compatibility_visual_context_clip(&result.visual_context_tree, index,
+		result.scroll_state_snapshot)
+	if !context.has_clip {
+		return false
+	}
+	// Recorded commands are viewport-relative CSS pixels with scroll offsets
+	// already applied by their accumulated contexts.
+	viewport := result.document.viewport_rect()
+	clip := context.clip
+	return clip.width <= 0 || clip.height <= 0 || clip.x >= viewport.width
+		|| clip.y >= viewport.height || clip.x + clip.width <= 0 || clip.y + clip.height <= 0
 }
 
 fn viewport_invalidate_scroll_state(target voidptr) {
@@ -1807,6 +1835,70 @@ fn apply_compatibility_visual_context_node(tree &painting.AccumulatedVisualConte
 	if memo == unsafe { nil } {
 		matrices[index] = flattened.matrix_4x4
 	}
+}
+
+// The effective clip that flattening derives for `index`: the same affine and
+// clip-intersection rules, without building clip/layer lists or 4x4 matrices.
+struct CompatibilityVisualContextClip {
+mut:
+	transform [6]f64 = [f64(1), 0, 0, 1, 0, 0]!
+	has_clip  bool
+	clip      LayoutRect
+}
+
+fn compatibility_visual_context_clip(tree &painting.AccumulatedVisualContextTree, index int,
+	snapshot painting.ScrollStateSnapshot) CompatibilityVisualContextClip {
+	if index <= 0 || index >= tree.nodes.len {
+		return CompatibilityVisualContextClip{}
+	}
+	node := tree.node_at(index)
+	mut state := compatibility_visual_context_clip(tree, node.parent_index, snapshot)
+	mut local_clip := ?LayoutRect(none)
+	match node.data {
+		painting.TransformVisualData {
+			matrix := [node.data.matrix.a, node.data.matrix.b, node.data.matrix.c,
+				node.data.matrix.d, node.data.matrix.e, node.data.matrix.f]!
+			state.transform = multiply_affine(state.transform, affine_around_origin(matrix,
+				node.data.origin.x, node.data.origin.y))
+		}
+		painting.PerspectiveVisualData {
+			state.transform = multiply_affine(state.transform, [node.data.matrix.a,
+				node.data.matrix.b, node.data.matrix.c, node.data.matrix.d, node.data.matrix.e,
+				node.data.matrix.f]!)
+		}
+		painting.ScrollVisualData {
+			offset := snapshot.device_offset_for_index(node.data.scroll_frame_index)
+			state.transform = multiply_affine(state.transform, translated_affine(offset.x, offset.y))
+		}
+		painting.ScrollCompensationVisualData {
+			offset := snapshot.device_offset_for_index(node.data.scroll_frame_index)
+			state.transform = multiply_affine(state.transform, translated_affine(-offset.x,
+				-offset.y))
+		}
+		painting.ClipVisualData {
+			local_clip = LayoutRect{node.data.rect.x, node.data.rect.y, node.data.rect.width, node.data.rect.height}
+		}
+		painting.ClipPathVisualData {
+			local_clip = LayoutRect{node.data.bounding_rect.x, node.data.bounding_rect.y, node.data.bounding_rect.width, node.data.bounding_rect.height}
+		}
+		painting.SVGClipVisualData {
+			local_clip = LayoutRect{node.data.bounding_rect.x, node.data.bounding_rect.y, node.data.bounding_rect.width, node.data.bounding_rect.height}
+		}
+		painting.SVGMaskVisualData {
+			local_clip = LayoutRect{node.data.bounding_rect.x, node.data.bounding_rect.y, node.data.bounding_rect.width, node.data.bounding_rect.height}
+		}
+		else {}
+	}
+	if rect := local_clip {
+		clip := compatibility_affine_map_rect(state.transform, rect)
+		if state.has_clip {
+			state.clip = compatibility_intersect_rects(state.clip, clip)
+		} else {
+			state.has_clip = true
+			state.clip = clip
+		}
+	}
+	return state
 }
 
 // Every flattened context is its parent's flattened state plus one node.
