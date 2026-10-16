@@ -154,6 +154,17 @@ int composite_pixels(CGContextRef destination, std::vector<uint32_t> const& pixe
     return 1;
 }
 
+// Screenshot references normally use one device pixel per CSS pixel. A
+// LADYBIRD_SCREENSHOT_SCALE above 1 captures at that device density instead, so
+// intermediate rasters follow the destination context as in a Retina window.
+static bool screenshot_uses_logical_pixels()
+{
+    if (!std::getenv("LADYBIRD_SCREENSHOT_DELAY_SECONDS"))
+        return false;
+    auto const* scale = std::getenv("LADYBIRD_SCREENSHOT_SCALE");
+    return !scale || !(std::strtod(scale, nullptr) > 1.0);
+}
+
 float raster_scale_for_context(CGContextRef context)
 {
     // AppKit presents an NSView in point-sized user space even when its backing
@@ -366,7 +377,7 @@ extern "C" int ladybird_v_skia_begin_command_group(CGContextRef destination,
             canvas_width, canvas_height, 2.0f, region))
         return 0;
 
-    auto destination_scale = std::getenv("LADYBIRD_SCREENSHOT_DELAY_SECONDS")
+    auto destination_scale = screenshot_uses_logical_pixels()
         ? 1.0f
         : raster_scale_for_context(destination);
     auto group = std::make_unique<RasterCommandGroup>();
@@ -973,7 +984,7 @@ extern "C" int ladybird_v_skia_draw_rounded_rect(CGContextRef destination,
             canvas_height, anti_alias ? 2.0f : 0.0f, region))
         return 1;
 
-    auto destination_scale = std::getenv("LADYBIRD_SCREENSHOT_DELAY_SECONDS")
+    auto destination_scale = screenshot_uses_logical_pixels()
         ? 1.0f
         : raster_scale_for_context(destination);
     auto raster_width = raster_dimension(region.width(), destination_scale);
@@ -1053,7 +1064,7 @@ extern "C" int ladybird_v_skia_draw_outer_box_shadow(CGContextRef destination,
             canvas_height, 0.0f, region))
         return 1;
 
-    auto destination_scale = std::getenv("LADYBIRD_SCREENSHOT_DELAY_SECONDS")
+    auto destination_scale = screenshot_uses_logical_pixels()
         ? 1.0f
         : raster_scale_for_context(destination);
     auto raster_width = raster_dimension(region.width(), destination_scale);

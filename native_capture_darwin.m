@@ -443,6 +443,19 @@ void native_hide_cached_snapshot(void) {
 	}
 }
 
+// Screenshot references use one device pixel per CSS pixel unless
+// LADYBIRD_SCREENSHOT_SCALE requests a denser capture, such as 2 for the same
+// device-pixel output a Retina window presents.
+static CGFloat native_screenshot_scale(void) {
+	const char *value = getenv("LADYBIRD_SCREENSHOT_SCALE");
+	double scale = value == NULL ? 1.0 : strtod(value, NULL);
+	return isfinite(scale) && scale > 1.0 ? (CGFloat)scale : 1.0;
+}
+
+static BOOL native_screenshot_uses_logical_pixels(void) {
+	return getenv("LADYBIRD_SCREENSHOT_DELAY_SECONDS") != NULL && native_screenshot_scale() <= 1.0;
+}
+
 void native_cache_browser_snapshot(string path_value) {
 	NSString *path = native_capture_string(path_value);
 	BOOL debug_snapshot = getenv("LADYBIRD_DEBUG_SNAPSHOT") != NULL;
@@ -464,8 +477,8 @@ void native_cache_browser_snapshot(string path_value) {
 		// Skia's discrete coverage and blur kernels, so create the test surface at
 		// its final logical resolution from the outset.
 		if (getenv("LADYBIRD_SCREENSHOT_DELAY_SECONDS") != NULL) {
-			NSInteger pixels_wide = (NSInteger)llround(bounds.size.width);
-			NSInteger pixels_high = (NSInteger)llround(bounds.size.height);
+			NSInteger pixels_wide = (NSInteger)llround(bounds.size.width * native_screenshot_scale());
+			NSInteger pixels_high = (NSInteger)llround(bounds.size.height * native_screenshot_scale());
 			if (pixels_wide > 0 && pixels_high > 0) {
 				bitmap = [[NSBitmapImageRep alloc]
 					initWithBitmapDataPlanes:NULL
@@ -1812,8 +1825,11 @@ static CGFloat native_svg_mask_backing_scale(void) {
 	// shrinking the captured view applies a second sampling kernel and changes
 	// edge coverage. Keep those intermediate surfaces at the reference scale;
 	// interactive windows still use their native backing density.
-	if (getenv("LADYBIRD_SCREENSHOT_DELAY_SECONDS") != NULL) {
+	if (native_screenshot_uses_logical_pixels()) {
 		return 1.0;
+	}
+	if (getenv("LADYBIRD_SCREENSHOT_DELAY_SECONDS") != NULL) {
+		return native_screenshot_scale();
 	}
 	return native_window_backing_scale();
 }
@@ -4807,8 +4823,8 @@ void schedule_native_screenshot(string output_path) {
 		// Headless Ladybird paints one device pixel per CSS pixel. Capture the native
 		// viewer at the same scale instead of snapshotting its Retina backing store
 		// and resampling it afterwards; resampling changes every antialiased edge.
-		NSInteger pixels_wide = (NSInteger)llround(bounds.size.width);
-		NSInteger pixels_high = (NSInteger)llround(bounds.size.height);
+		NSInteger pixels_wide = (NSInteger)llround(bounds.size.width * native_screenshot_scale());
+		NSInteger pixels_high = (NSInteger)llround(bounds.size.height * native_screenshot_scale());
 		if (pixels_wide <= 0 || pixels_high <= 0) {
 			fprintf(stderr, "Ladybird V: invalid screenshot dimensions %.0fx%.0f\n",
 			        bounds.size.width, bounds.size.height);
