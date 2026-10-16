@@ -173,7 +173,7 @@ fn test_raw_media_data_parsed_and_created_callbacks_cache_native_media_scopes_an
 			assert voidptr(target.get_current_value_of_event_handler(name) or { panic('media callback cache') }) == voidptr(callback)
 			assert voidptr(slot.listener or { panic('media listener retained') }) == voidptr(listener)
 			assert runtime.javascript_event_handler(target, name)! == runtime.evaluate_host_value('${wrapper_name}.on${name}')!
-			assert runtime.evaluate_host('${wrapper_name}.on${name}.name==="on${name}"&&${wrapper_name}.on${name}.length===1&&Object.hasOwn(${wrapper_name}.on${name},"prototype")&&!Object.hasOwn(${wrapper_name},"paused")&&!Object.hasOwn(${wrapper_name},"volume")&&Object.getPrototypeOf(${wrapper_name})===(${wrapper_name} instanceof HTMLVideoElement?HTMLVideoElement.prototype:HTMLMediaElement.prototype)')! == 'true'
+			assert runtime.evaluate_host('${wrapper_name}.on${name}.name==="on${name}"&&${wrapper_name}.on${name}.length===1&&Object.hasOwn(${wrapper_name}.on${name},"prototype")&&!Object.hasOwn(${wrapper_name},"paused")&&!Object.hasOwn(${wrapper_name},"volume")&&Object.getPrototypeOf(${wrapper_name})===(${wrapper_name} instanceof HTMLVideoElement?HTMLVideoElement.prototype:HTMLAudioElement.prototype)')! == 'true'
 			assert runtime.evaluate_host('mediaDataExpected=${wrapper_name};mediaDataTrusted=false;${wrapper_name}.volume=0.5;(()=>{for(const cancelable of [true,false]){mediaDataExpectedEvent=new Event("${name}",{cancelable});if(${wrapper_name}.dispatchEvent(mediaDataExpectedEvent)!==false||!mediaDataExpectedEvent.defaultPrevented||mediaDataExpectedEvent.currentTarget!==null)return false}return true})()')! == 'true'
 			event := media_data_raw_event(name)
 			native_wrapper := runtime.javascript_event(event)!

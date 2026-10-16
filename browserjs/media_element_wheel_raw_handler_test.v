@@ -163,7 +163,7 @@ fn test_raw_media_wheel_parsed_and_created_callbacks_cache_native_media_scopes_a
 		assert voidptr(target.get_current_value_of_event_handler('wheel') or { panic('media callback cache') }) == voidptr(callback)
 		assert voidptr(slot.listener or { panic('media listener retained') }) == voidptr(listener)
 		assert runtime.javascript_event_handler(target, 'wheel')! == runtime.evaluate_host_value('${name}.onwheel')!
-		assert runtime.evaluate_host('${name}.onwheel.name==="onwheel"&&${name}.onwheel.length===1&&Object.hasOwn(${name}.onwheel,"prototype")&&!Object.hasOwn(${name},"paused")&&!Object.hasOwn(${name},"volume")&&Object.getPrototypeOf(${name})===(${name} instanceof HTMLVideoElement?HTMLVideoElement.prototype:HTMLMediaElement.prototype)')! == 'true'
+		assert runtime.evaluate_host('${name}.onwheel.name==="onwheel"&&${name}.onwheel.length===1&&Object.hasOwn(${name}.onwheel,"prototype")&&!Object.hasOwn(${name},"paused")&&!Object.hasOwn(${name},"volume")&&Object.getPrototypeOf(${name})===(${name} instanceof HTMLVideoElement?HTMLVideoElement.prototype:HTMLAudioElement.prototype)')! == 'true'
 		assert runtime.evaluate_host('mediaRawExpected=${name};mediaRawTrusted=false;${name}.volume=0.5;(()=>{for(const cancelable of [true,false]){mediaRawExpectedEvent=new WheelEvent("wheel",{cancelable,deltaY:3.5});if(${name}.dispatchEvent(mediaRawExpectedEvent)!==false||!mediaRawExpectedEvent.defaultPrevented||mediaRawExpectedEvent.currentTarget!==null)return false}return true})()')! == 'true'
 		event := media_raw_wheel_event(fixture)
 		native_wrapper := runtime.javascript_event(event)!
