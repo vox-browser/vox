@@ -12,7 +12,8 @@ fn chromium_control_font_style_sheet() &CSSStyleSheet {
 		chromium_control_font_stylesheet = parse_css_stylesheet_with_params(ParsingParams{
 			is_ua_style_sheet: .yes
 		}, 'input, select, button, textarea { font: 13.3333333333333px Arial; }
-textarea { font-family: monospace; }', none)
+textarea { font-family: monospace; }
+input::placeholder, textarea::placeholder { color:#757575; }', none)
 	}
 	return chromium_control_font_stylesheet
 }

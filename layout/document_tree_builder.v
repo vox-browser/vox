@@ -1679,6 +1679,13 @@ fn mark_ua_internal_layout_subtree(mut node Node) {
 // HTMLInputElement's UA-internal shadow-tree fallback. Normal element-model
 // lifecycle materializes the closed shadow root; this constructs the same
 // styled subtree for documents parsed without that lifecycle hook.
+fn static_control_placeholder_style(document &dom.Document, element &dom.Element,
+	host_computed &css.ComputedProperties) &css.ComputedProperties {
+	if existing := css.computed_properties_for_pseudo_element(element, .placeholder) { return existing }
+	computer := css.css_style_computer_for(document)
+	return computer.compute_pseudo_element_style_if_needed(dom.AbstractElement.new(element, .placeholder)) or { host_computed }
+}
+
 fn build_input_internal_layout_children(document &dom.Document, element &dom.Element, host_computed &css.ComputedProperties) []&Node {
 	type_ := element.get_attribute_value('type').trim_space().to_lower()
 	type_state := html.html_input_element_parse_type_attribute(type_)
@@ -1747,9 +1754,7 @@ fn build_input_internal_layout_children(document &dom.Document, element &dom.Ele
 			placeholder_element := document.create_element_ns('http://www.w3.org/1999/xhtml', 'div') or {
 				return []
 			}
-			placeholder_base := css.computed_properties_for_pseudo_element(element, .placeholder) or {
-				host_computed
-			}
+			placeholder_base := static_control_placeholder_style(document, element, host_computed)
 			mut placeholder_overrides := {
 				css.PropertyID.display:              'block'
 				css.PropertyID.width:                '100%'
@@ -2153,9 +2158,7 @@ fn build_textarea_internal_layout_children(document &dom.Document, element &dom.
 		placeholder_element := document.create_element_ns('http://www.w3.org/1999/xhtml', 'div') or {
 			return []
 		}
-		placeholder_base := css.computed_properties_for_pseudo_element(element, .placeholder) or {
-			host_computed
-		}
+		placeholder_base := static_control_placeholder_style(document, element, host_computed)
 		mut placeholder_overrides := {
 			css.PropertyID.display:    'block'
 			css.PropertyID.width:      '100%'
