@@ -12,6 +12,7 @@ import tempfile
 CASES = [
     "platform/native_timer_test.v", "platform/native_deferred_test.v",
     "platform/fontconfig_linux_test.v", "browserjs/linux_runtime_test.v",
+    "gfxfont/woff_test.v",
     "browserjs/runtime_test.v", "browserjs/host_function_test.v",
     "browserjs/event_target_binding_test.v", "adblock/engine_test.v",
     "requestserver/curl_transport_test.v", "requestserver/font_fetch_transport_test.v",

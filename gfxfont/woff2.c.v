@@ -18,7 +18,12 @@ $if darwin {
 #flag -lwoff2common
 #flag -lbrotlidec
 #flag -lbrotlicommon
-#flag @DIR/woff2.o
+#flag linux -lm
+$if linux {
+	#flag @DIR/../Build/linux/native/gfxfont.a
+} $else {
+	#flag @DIR/woff2.o
+}
 #include "woff2.h"
 
 fn C.vox_woff2_convert_to_ttf(data &u8, size usize, output_size &usize) &u8
