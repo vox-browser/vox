@@ -5,19 +5,39 @@ import platform
 // Blink shapes across soft word boundaries. In particular, Arial kerns a
 // space followed by A, so shaping "N. America" as three independent chunks
 // changes both its width and the position of the second word.
-fn (iterator &InlineLevelIterator) chromium_ascii_context_run(text_node &TextNode,
+fn (iterator &InlineLevelIterator) chromium_latin_context_run(text_node &TextNode,
 	chunks []TextNodeChunk) ?&platform.GlyphRun {
-	if !iterator.is_unidirectional_left_to_right || chunks.len < 2 { return none }
+	if chunks.len < 2 { return none }
+	if !iterator.is_unidirectional_left_to_right {
+		style := text_node.Node.computed_values()
+		// A Latin LTR isolate is independent of the containing paragraph's
+		// directional runs. Keep context when its punctuation became a chunk.
+		if style.direction() != .ltr || style.unicode_bidi() != .isolate { return none }
+	}
 	font := chunks[0].font
 	if font.font_rendering_policy != .chromium { return none }
 	text := text_node.text_for_rendering()
-	if !text.is_ascii() { return none }
+	mut units := []u16{}
+	if !text.is_ascii() {
+		// A single Latin shaping script, including combining marks and common
+		// punctuation. Other scripts keep the segmented shaping path.
+		for character in text.runes() {
+			if u32(character) > 0x036f && u32(character) !in u32(0x2000)..u32(0x2070) {
+				return none
+			}
+		}
+		units = utf16_code_units_for_line_box(text)
+	}
 	for chunk in chunks {
 		if voidptr(chunk.font) != voidptr(font) || chunk.has_breaking_newline
-			|| chunk.has_breaking_tab || chunk.start < 0 || chunk.start + chunk.length > text.len
-			|| chunk.view != text[chunk.start..chunk.start + chunk.length] {
+			|| chunk.has_breaking_tab || chunk.start < 0 {
 			return none
 		}
+		if units.len > 0 {
+			if chunk.start + chunk.length > units.len || chunk.view !=
+				string_from_utf16_code_units_for_line_box(units[chunk.start..chunk.start + chunk.length]) { return none }
+		} else if chunk.start + chunk.length > text.len
+			|| chunk.view != text[chunk.start..chunk.start + chunk.length] { return none }
 	}
 	letter_spacing :=
 		resolved_text_spacing_for_node(unsafe { &Node(text_node) }, .letter_spacing).to_double()

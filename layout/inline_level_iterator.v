@@ -850,7 +850,7 @@ fn (mut iterator InlineLevelIterator) enter_text_node(text_node &TextNode) {
 	}
 	iterator.has_text_node_context = true
 	iterator.text_node_context = InlineTextNodeContext{
-		chromium_context_run: iterator.chromium_ascii_context_run(text_node, chunks)
+		chromium_context_run: iterator.chromium_latin_context_run(text_node, chunks)
 		chunks: chunks
 		should_collapse_whitespace: white_space_collapse in [.collapse, .preserve_breaks]
 		should_wrap_lines: should_wrap_lines

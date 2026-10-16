@@ -51,3 +51,8 @@ directions retain their existing layout path.
 alignment and both culled and spaced inline ancestors. Glyph painting snaps
 the containing line or inline paint box while preserving the text's local
 vertical alignment; selection and layout geometry retain their fractions.
+
+`latin-context` extends shared shaping to Latin letters, combining marks and
+common punctuation, including LTR `unicode-bidi:isolate` text. Chunk slicing
+uses UTF-16 offsets so multibyte quotes and accents cannot shift source ranges.
+Other scripts and mixed-font text continue through segmented shaping.
