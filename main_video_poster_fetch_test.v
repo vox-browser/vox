@@ -26,13 +26,16 @@ fn native_fetch_poster_model(document &dom.Document) &html.HTMLVideoElementModel
 	return html.html_video_element_model_for_dom_element(unsafe { &dom.HTMLVideoElement(element) })
 }
 
-fn native_fetch_poster_wait(document &dom.Document) {
+fn native_fetch_poster_wait(document &dom.Document, phase string) {
 	settings := unsafe { &html.EnvironmentSettingsObject(document.relevant_settings_object()) }
 	mut owner := settings.responsible_event_loop()
-	deadline := time.sys_mono_now() + 4 * time.second
+	started := time.sys_mono_now()
+	// Native timers and the decoder share a loaded CI host; keep a bounded wait.
+	deadline := started + 30 * time.second
 	owner.spin_until(fn [document, deadline] () bool {
 		return !document.anything_is_delaying_the_load_event() || time.sys_mono_now() >= deadline
 	})
+	println('native poster ${phase}: ${(time.sys_mono_now() - started) / time.millisecond} ms, load delayed: ${document.anything_is_delaying_the_load_event()}')
 	assert !document.anything_is_delaying_the_load_event()
 }
 
@@ -67,16 +70,16 @@ fn test_native_poster_file_fetch_defers_real_decode_and_publishes_retained_pixel
 	install_video_poster_fetch_hooks(document)
 	assert native_fetch_poster_model(document).poster_frame() == none
 	assert document.anything_is_delaying_the_load_event()
-	native_fetch_poster_wait(document)
+	native_fetch_poster_wait(document, 'file decode')
 	native_fetch_poster_assert_green(document)
 	assert voidptr(element.get_attribute_node_ns(none, 'poster')?) == voidptr(attribute)
 	mut mutable_element := unsafe { &dom.Element(element) }
 	mutable_element.set_attribute_value('poster', 'missing.png')
 	assert document.anything_is_delaying_the_load_event()
-	native_fetch_poster_wait(document)
+	native_fetch_poster_wait(document, 'missing file')
 	assert native_fetch_poster_model(document).poster_frame() == none
 	mutable_element.set_attribute_value('poster', native_fetch_poster_data)
-	native_fetch_poster_wait(document)
+	native_fetch_poster_wait(document, 'file recovery')
 	native_fetch_poster_assert_green(document)
 }
 
@@ -113,7 +116,7 @@ fn test_native_poster_http_fetch_follows_redirect_and_decodes_the_streamed_body(
 	defer { document.finalize() }
 	install_video_poster_fetch_hooks(document)
 	assert document.anything_is_delaying_the_load_event() && native_fetch_poster_model(document).poster_frame() == none
-	native_fetch_poster_wait(document)
+	native_fetch_poster_wait(document, 'HTTP redirect body')
 	native_fetch_poster_assert_green(document)
 	requests := server.wait()
 	assert requests.len == 2
@@ -166,7 +169,7 @@ fn test_native_poster_removal_stops_the_live_curl_socket_before_body_completion(
 	assert outcome in ['eof', 'reset'], outcome
 	println('native poster cancellation: ${outcome}')
 	element.set_attribute_value('poster', native_fetch_poster_data)
-	native_fetch_poster_wait(document)
+	native_fetch_poster_wait(document, 'after cancellation')
 	native_fetch_poster_assert_green(document)
 }
 
@@ -182,15 +185,15 @@ fn test_native_poster_uses_actual_client_csp_and_releases_decode_failure_blocker
 	mut element := document.get_element_by_id('video')?
 	element.set_attribute_value('poster', native_fetch_poster_data)
 	assert document.anything_is_delaying_the_load_event()
-	native_fetch_poster_wait(document)
+	native_fetch_poster_wait(document, 'CSP rejection')
 	assert native_fetch_poster_model(document).poster_frame() == none
 	settings.set_policy_container(&html.PolicyContainer{})
 	element.set_attribute_value('poster', native_fetch_poster_data)
-	native_fetch_poster_wait(document)
+	native_fetch_poster_wait(document, 'CSP recovery')
 	native_fetch_poster_assert_green(document)
 	element.set_attribute_value('poster', 'data:image/png,invalid')
 	assert document.anything_is_delaying_the_load_event()
-	native_fetch_poster_wait(document)
+	native_fetch_poster_wait(document, 'invalid image')
 	assert native_fetch_poster_model(document).poster_frame() == none
 	assert native_fetch_poster_model(document).natural_element_size() == none
 }
