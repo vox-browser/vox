@@ -820,6 +820,12 @@ fn (mut iterator InlineLevelIterator) enter_text_node(text_node &TextNode) {
 		mutable_text_node.cached_font_environment_generation_ = css.css_style_computer_for(text_node.Node.document()).font_computer().environment_generation()
 		mutable_text_node.cached_intrinsic_text_shapes_.clear()
 	}
+	// Every retained chunk emits exactly one item, including whitespace and
+	// forced line breaks. Reserve their known demand once instead of growing
+	// and copying the wide item vector while emitting that text node.
+	if chunks.len > 0 && iterator.items.len <= 2_147_483_647 - chunks.len {
+		iterator.items.ensure_cap(iterator.items.len + chunks.len)
+	}
 	iterator.has_text_node_context = true
 	iterator.text_node_context = InlineTextNodeContext{
 		chunks: chunks
