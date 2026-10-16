@@ -36,6 +36,11 @@ mut:
 	attribute_sync voidptr
 	audio_factory voidptr
 	audio_factory_serial u64
+	audio_track_prototype voidptr
+	audio_list_wrap voidptr
+	audio_lists map[voidptr]&html.AudioTrackList
+	audio_tracks map[voidptr]&html.AudioTrack
+	audio_owner_wrappers map[voidptr]voidptr
 	closed         bool
 }
 
