@@ -34,8 +34,9 @@ fn paint_style_update_can_be_local(node &Node, previous &css.ComputedValues, cur
 }
 
 fn refresh_local_paint_styles(mut result DocumentLayoutResult) {
-	compositor_changed := refresh_compositor_paint_styles_in_box(mut result.paint_tree,
-		result.state, result.paint_style_update_compositor_handles, [6]f64{})
+	mut compositor := CompositorPaintStyleRefresh{}
+	refresh_compositor_paint_styles_in_box(mut result.paint_tree, result.state,
+		result.paint_style_update_compositor_handles, [6]f64{}, mut compositor)
 	mut ordinary_changes := map[u64]bool{}
 	for handle, _ in result.paint_style_update_handles {
 		if handle !in result.paint_style_update_compositor_handles { ordinary_changes[handle] = true }
@@ -44,10 +45,13 @@ fn refresh_local_paint_styles(mut result DocumentLayoutResult) {
 	refresh_local_paint_styles_in_box(mut result.paint_tree, result.state,
 		ordinary_changes, mut changed_boxes)
 	for box in changed_boxes { viewport_invalidate_box_paint_cache(mut result, box) }
-	if compositor_changed {
-		// Opacity zero and singular transforms also change paint-step membership.
-		// Rebuild those plans from the retained boxes, keeping resource snapshots.
-		viewport_invalidate_compositor_stacking_context(voidptr(&result))
+	if compositor.changed {
+		// Opacity zero and singular transforms also change paint-step membership,
+		// and cached commands carry cumulative opacity. Rebuild those plans from
+		// the retained boxes, keeping resource snapshots.
+		if compositor.invalidates_paint_plan {
+			viewport_invalidate_compositor_stacking_context(voidptr(&result))
+		}
 		result.needs_accumulated_visual_contexts = true
 		result.scroll_state.invalidate()
 	}

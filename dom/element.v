@@ -1000,11 +1000,12 @@ pub fn (n &LayoutNodeWithStyle_) apply_style(props &CSSComputedProperties_) {
 }
 
 pub fn (n &LayoutNodeWithStyle_) apply_animated_style(props &CSSComputedProperties_,
-	only_compositor_changes bool) {
+	only_compositor_changes bool) bool {
 	unsafe { n.applied_properties_ = props }
 	if layout_node := n.layout_node_ {
-		layout_node.apply_animated_style(props.css_handle, only_compositor_changes)
+		return layout_node.apply_animated_style(props.css_handle, only_compositor_changes)
 	}
+	return false
 }
 
 pub fn (n &LayoutNodeWithStyle_) layout_node_kind() LayoutNodeKind {

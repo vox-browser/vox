@@ -583,14 +583,14 @@ fn apply_style_to_layout_node(layout_handle voidptr, css_computed_properties_han
 	}
 }
 
-fn apply_animated_style_to_layout_node(layout_handle voidptr, css_computed_properties_handle voidptr) {
-	if layout_handle == unsafe { nil } || css_computed_properties_handle == unsafe { nil } { return }
+fn apply_animated_style_to_layout_node(layout_handle voidptr, css_computed_properties_handle voidptr) bool {
+	if layout_handle == unsafe { nil } || css_computed_properties_handle == unsafe { nil } { return false }
 	node := unsafe { &Node(layout_handle) }
 	if !compositor_style_refresh_supports_node(node) {
 		apply_style_to_layout_node(layout_handle, css_computed_properties_handle)
-		return
+		return false
 	}
-	styled := node.as_node_with_style() or { return }
+	styled := node.as_node_with_style() or { return false }
 	computed := unsafe { &css.ComputedProperties(css_computed_properties_handle) }
 	mut mutable_styled := unsafe { &NodeWithStyle(styled) }
 	mutable_styled.apply_style(computed)
@@ -598,7 +598,12 @@ fn apply_animated_style_to_layout_node(layout_handle voidptr, css_computed_prope
 		result.paint_tree_needs_style_update = true
 		result.paint_style_update_handles[u64(layout_handle)] = true
 		result.paint_style_update_compositor_handles[u64(layout_handle)] = true
+		// The retained compositor refresh owns this sample's paint invalidation:
+		// box phase commands keep their local geometry, and paint/hit-test plans
+		// are rebuilt only when opacity or invertibility changes their membership.
+		return true
 	}
+	return false
 }
 
 fn clear_layout_image_observers(layout_handle voidptr) {

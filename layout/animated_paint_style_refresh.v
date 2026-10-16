@@ -52,10 +52,20 @@ fn compositor_style_refresh_preserves_box_categories(box &BlockBox, changed map[
 	return true
 }
 
+// Paint-step membership and the retained paint order depend on compositor
+// values only through opacity (cumulative entry opacity and opacity zero) and
+// non-invertible cumulative transforms. Other transform samples leave both
+// plans intact; only visual contexts and the flattened display list change.
+struct CompositorPaintStyleRefresh {
+mut:
+	changed                bool
+	invalidates_paint_plan bool
+}
+
 fn refresh_compositor_paint_styles_in_box(mut box BlockBox, state &LayoutState,
-	changed map[u64]bool, ancestor_transform [6]f64) bool {
-	if changed.len == 0 { return false }
-	mut did_change := false
+	changed map[u64]bool, ancestor_transform [6]f64, mut refresh CompositorPaintStyleRefresh) {
+	if changed.len == 0 { return }
+	was_noninvertible := box.has_noninvertible_paint_transform()
 	if u64(box.layout_handle) in changed {
 		node := unsafe { &Node(box.layout_handle) }
 		if styled := node.as_node_with_style() {
@@ -71,8 +81,12 @@ fn refresh_compositor_paint_styles_in_box(mut box BlockBox, state &LayoutState,
 						reference_box.y, reference_box.width, reference_box.height)
 					transform = css.project_plane_to_affine_transform(matrix) or { [f64(0), 0, 0, 0, 0, 0]! }
 				}
-				did_change = box.opacity != f64(computed.opacity()) || box.own_paint_transform != transform
-					|| box.own_paint_transform_4x4 != matrix || box.uses_own_paint_transform_4x4 != uses_matrix
+				opacity_changed := box.opacity != f64(computed.opacity())
+				if opacity_changed || box.own_paint_transform != transform
+					|| box.own_paint_transform_4x4 != matrix || box.uses_own_paint_transform_4x4 != uses_matrix {
+					refresh.changed = true
+				}
+				if opacity_changed { refresh.invalidates_paint_plan = true }
 				box.opacity = f64(computed.opacity())
 				box.own_paint_transform = transform
 				box.own_paint_transform_4x4 = matrix
@@ -85,9 +99,10 @@ fn refresh_compositor_paint_styles_in_box(mut box BlockBox, state &LayoutState,
 	} else if affine_is_compact_identity(box.own_paint_transform) {
 		ancestor_transform
 	} else { multiply_affine(ancestor_transform, box.own_paint_transform) }
-	for mut child in box.children {
-		child_changed := refresh_compositor_paint_styles_in_box(mut child, state, changed, box.paint_transform)
-		did_change = did_change || child_changed
+	if box.has_noninvertible_paint_transform() != was_noninvertible {
+		refresh.invalidates_paint_plan = true
 	}
-	return did_change
+	for mut child in box.children {
+		refresh_compositor_paint_styles_in_box(mut child, state, changed, box.paint_transform, mut refresh)
+	}
 }

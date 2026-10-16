@@ -71,6 +71,7 @@ fn refresh_document_paint_tree(document &dom.Document, mut result DocumentLayout
 	mutable_document.invalidate_display_list()
 	had_valid_hit_test_display_list := result.hit_test_display_list_is_valid
 	result.paint_tree = renderer_box_from_document_layout_result(result, viewport_width, viewport_height)
+	result.invalidate_boxes_by_layout_cache()
 	result.display_list_commands.clear()
 	result.display_list = unsafe { nil }
 	result.needs_repaint = true
@@ -265,6 +266,31 @@ fn compatibility_live_scroll_offset(result &DocumentLayoutResult, frame &paintin
 		}
 	}
 	return painting.Point{}
+}
+
+fn (mut result DocumentLayoutResult) ensure_boxes_by_layout_cache() {
+	if result.boxes_by_layout_cache_valid { return }
+	result.boxes_by_layout_cache = map[u64]&BlockBox{}
+	collect_compatibility_boxes(mut result.paint_tree, mut result.boxes_by_layout_cache)
+	// The renderer transport omits the typed Viewport itself and puts its
+	// mandatory scroll frame on the root box. Keep its real layout identity in
+	// the lookup too: absolute descendants can have that Viewport, rather than
+	// the document element, as their containing block.
+	result.boxes_by_layout_cache[u64(voidptr(result.root))] = unsafe { &result.paint_tree }
+	result.boxes_by_layout_cache_valid = true
+}
+
+fn (mut result DocumentLayoutResult) invalidate_boxes_by_layout_cache() {
+	result.boxes_by_layout_cache_valid = false
+	result.boxes_by_layout_cache = map[u64]&BlockBox{}
+}
+
+// Retained paint box for a box-generating layout node. The Viewport has no box
+// of its own here; only visual-context assignment maps it to the root box.
+fn (mut result DocumentLayoutResult) retained_box_for_layout(layout_handle voidptr) ?&BlockBox {
+	if layout_handle == unsafe { nil } || layout_handle == voidptr(result.root) { return none }
+	result.ensure_boxes_by_layout_cache()
+	return result.boxes_by_layout_cache[u64(layout_handle)] or { return none }
 }
 
 fn collect_compatibility_boxes(mut box BlockBox, mut boxes_by_layout map[u64]&BlockBox) {
@@ -833,18 +859,12 @@ fn viewport_assign_accumulated_visual_contexts(target voidptr) {
 	mut result := viewport_layout_result(target)
 	// Refreshing the snapshot also assigns its new visual contexts.
 	if refresh_document_paint_tree_if_needed(mut result) { return }
-	mut boxes_by_layout := map[u64]&BlockBox{}
-	collect_compatibility_boxes(mut result.paint_tree, mut boxes_by_layout)
-	// The renderer transport omits the typed Viewport itself and puts its
-	// mandatory scroll frame on the root box. Keep its real layout identity in
-	// the lookup too: absolute descendants can have that Viewport, rather than
-	// the document element, as their containing block.
-	boxes_by_layout[u64(voidptr(result.root))] = unsafe { &result.paint_tree }
+	result.ensure_boxes_by_layout_cache()
 	result.scroll_state = painting.ScrollState{}
 	mut boxes_by_scroll_frame := map[int]&BlockBox{}
-	assign_compatibility_scroll_frames(mut result.paint_tree, boxes_by_layout, mut boxes_by_scroll_frame, mut result.scroll_state)
+	assign_compatibility_scroll_frames(mut result.paint_tree, result.boxes_by_layout_cache, mut boxes_by_scroll_frame, mut result.scroll_state)
 	result.visual_context_tree = painting.new_accumulated_visual_context_tree()
-	assign_compatibility_visual_contexts(mut result.paint_tree, none, boxes_by_layout, mut result.visual_context_tree)
+	assign_compatibility_visual_contexts(mut result.paint_tree, none, result.boxes_by_layout_cache, mut result.visual_context_tree)
 	result.needs_accumulated_visual_contexts = false
 }
 
@@ -1190,8 +1210,6 @@ fn layout_paintable_scroll_ancestor_to_offset_into_view(target voidptr, layout_h
 		return
 	}
 	mut result := viewport_layout_result(target)
-	mut boxes_by_layout := map[u64]&BlockBox{}
-	collect_compatibility_boxes(mut result.paint_tree, mut boxes_by_layout)
 	source_node := unsafe { &Node(layout_handle) }
 	mut form_text_control := false
 	mut input_text_control := false
@@ -1203,7 +1221,7 @@ fn layout_paintable_scroll_ancestor_to_offset_into_view(target voidptr, layout_h
 		}
 	}
 	cursor_rect := if form_text_control {
-		source_box := boxes_by_layout[u64(layout_handle)] or { return }
+		source_box := result.retained_box_for_layout(layout_handle) or { return }
 		compatibility_cursor_rect_in_box(source_box, offset) or { return }
 	} else {
 		compatibility_cursor_rect_for_layout_handle(result.paint_tree, layout_handle, offset) or {
@@ -1220,7 +1238,7 @@ fn layout_paintable_scroll_ancestor_to_offset_into_view(target voidptr, layout_h
 		mut ancestor_box := ?&BlockBox(none)
 		if ancestor.is_viewport() {
 			ancestor_box = &result.paint_tree
-		} else if box := boxes_by_layout[u64(voidptr(ancestor))] {
+		} else if box := result.retained_box_for_layout(voidptr(ancestor)) {
 			ancestor_box = box
 		}
 		if box := ancestor_box {
@@ -1248,14 +1266,12 @@ fn layout_paintable_box_type_agnostic_position(target voidptr,
 		return dom.CSSPixelPoint_{}
 	}
 	mut result := viewport_layout_result(target)
-	mut boxes_by_layout := map[u64]&BlockBox{}
-	collect_compatibility_boxes(mut result.paint_tree, mut boxes_by_layout)
-	if box := boxes_by_layout[u64(layout_handle)] {
+	if box := result.retained_box_for_layout(layout_handle) {
 		return dom.CSSPixelPoint_{ x_: box.x, y_: box.y }
 	}
 	source_node := unsafe { &Node(layout_handle) }
 	containing_block := source_node.containing_block() or { return dom.CSSPixelPoint_{} }
-	box := boxes_by_layout[u64(voidptr(containing_block))] or { return dom.CSSPixelPoint_{} }
+	box := result.retained_box_for_layout(voidptr(containing_block)) or { return dom.CSSPixelPoint_{} }
 	for line in box.lines {
 		if line.fragments.len > 0 {
 			rect := line.fragments[0].paintable_fragment.absolute_rect()
@@ -1272,11 +1288,9 @@ fn layout_paintable_inverse_transform_point(target voidptr, layout_handle voidpt
 	point dom.CSSPixelPoint_) dom.CSSPixelPoint_ {
 	if layout_handle == unsafe { nil } { return point }
 	mut result := viewport_layout_result(target)
-	mut boxes := map[u64]&BlockBox{}
-	collect_compatibility_boxes(mut result.paint_tree, mut boxes)
 	mut node := unsafe { &Node(layout_handle) }
 	for {
-		if box := boxes[u64(voidptr(node))] {
+		if box := result.retained_box_for_layout(voidptr(node)) {
 			transformed := paintable_box_inverse_transform_point(box, painting.Point{point.x(), point.y()},
 				result.document.device_pixels_per_css_pixel(), result.visual_context_tree)
 			return dom.CSSPixelPoint_{x_: transformed.x, y_: transformed.y}
@@ -2904,9 +2918,7 @@ fn compatibility_resize_reference_size(mut result DocumentLayoutResult,
 	}
 	node := unsafe { &Node(box.layout_handle) }
 	containing_block := node.containing_block() or { return none }
-	mut boxes_by_layout := map[u64]&BlockBox{}
-	collect_compatibility_boxes(mut result.paint_tree, mut boxes_by_layout)
-	containing_box := boxes_by_layout[u64(voidptr(containing_block))] or { return none }
+	containing_box := result.retained_box_for_layout(voidptr(containing_block)) or { return none }
 	padding_rect := containing_box.compatibility_absolute_padding_rect()
 	return painting.Size{padding_rect.width, padding_rect.height}
 }

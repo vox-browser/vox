@@ -1355,6 +1355,10 @@ pub fn (viewport &LayoutViewport) root_layout_node() ?&LayoutNode {
 
 pub type LayoutApplyStyleCallback = fn (voidptr, voidptr)
 
+// Reports whether the embedder's retained paint transport took ownership of
+// the compositor-only sample (instead of an ordinary style application).
+pub type LayoutApplyAnimatedStyleCallback = fn (voidptr, voidptr) bool
+
 pub type LayoutSetNeedsLayoutUpdateCallback = fn (voidptr, bool)
 
 pub type LayoutInvalidateTextForRenderingCallback = fn (voidptr)
@@ -1445,7 +1449,7 @@ pub mut:
 	layout_handle                    voidptr = unsafe { nil }
 	find_matching_text_callback      fn (voidptr, string, CaseSensitivity) []&Range = unsafe { nil }
 	apply_style_callback             LayoutApplyStyleCallback = unsafe { nil }
-	apply_animated_style_callback    LayoutApplyStyleCallback = unsafe { nil }
+	apply_animated_style_callback    LayoutApplyAnimatedStyleCallback = unsafe { nil }
 	clear_image_observers_callback   fn (voidptr) = unsafe { nil }
 	set_needs_layout_update_callback LayoutSetNeedsLayoutUpdateCallback = unsafe { nil }
 	invalidate_text_for_rendering_callback LayoutInvalidateTextForRenderingCallback = unsafe { nil }
@@ -4420,7 +4424,11 @@ pub fn (mut d Document) set_viewport_rect(rect Rect) {
 	d.viewport_rect_ = rect
 	if scroll_offset_changed {
 		d.invalidate_scroll_state()
-		d.set_needs_repaint()
+		// LocalNavigable::perform_scroll_of_viewport_scrolling_box() retains the
+		// display list upstream. Scroll snapshots are lowered into this port's
+		// commands, so re-record them while keeping the scroll-independent
+		// hit-test plan.
+		d.set_needs_repaint_with_invalidation(.paint_commands)
 	}
 }
 

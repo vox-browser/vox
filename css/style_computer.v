@@ -1436,6 +1436,7 @@ fn style_computer_update_animated_style_callback(target voidptr) {
 			child = current.next_sibling()
 		}
 
+		mut retained_compositor_paint := false
 		if !target_was_recomputed {
 			computed_dom_mirror := computed_properties_to_dom(computed)
 			mut mutable_target := target_element
@@ -1444,7 +1445,8 @@ fn style_computer_update_animated_style_callback(target voidptr) {
 				only_compositor_changes := !custom_properties_changed
 					&& !invalidation.needs_relayout() && !invalidation.needs_layout_tree_rebuild()
 					&& animated_changes_are_compositor_only(old_animated_values, computed.animated_property_values())
-				layout_node.apply_animated_style(computed_dom_mirror, only_compositor_changes)
+				retained_compositor_paint = layout_node.apply_animated_style(computed_dom_mirror,
+					only_compositor_changes)
 			}
 		}
 
@@ -1462,11 +1464,17 @@ fn style_computer_update_animated_style_callback(target voidptr) {
 		}
 		mut document := unsafe { &dom.Document(target_element.document()) }
 		if invalidation.needs_repaint() {
-			mutable_target_node.set_needs_repaint(if invalidation.invalidates_hit_test_display_list() {
-				.paint_commands_and_hit_test_list
+			if retained_compositor_paint {
+				// The retained paint transport resamples this compositor value, so
+				// only the assembled display list needs recording again.
+				document.set_needs_repaint_with_invalidation(.paint_commands)
 			} else {
-				.paint_commands
-			})
+				mutable_target_node.set_needs_repaint(if invalidation.invalidates_hit_test_display_list() {
+					.paint_commands_and_hit_test_list
+				} else {
+					.paint_commands
+				})
+			}
 			if invalidation.accumulated_visual_contexts() == .rebuild {
 				document.set_needs_accumulated_visual_contexts_update(true)
 			}

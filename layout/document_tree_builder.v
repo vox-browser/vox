@@ -530,6 +530,11 @@ mut:
 	paint_style_update_requires_full_refresh bool
 	paint_style_update_handles map[u64]bool
 	paint_style_update_compositor_handles map[u64]bool
+	// Layout handle -> retained paint box, including the Viewport's root-box
+	// mapping. The paint tree is immutable between refreshes, so wheel
+	// coordinates and visual-context rebuilds share one lazily built index.
+	boxes_by_layout_cache       map[u64]&BlockBox
+	boxes_by_layout_cache_valid bool
 }
 
 fn document_layout_update_callback_with_paint_tree(document &dom.Document, viewport_width f64,

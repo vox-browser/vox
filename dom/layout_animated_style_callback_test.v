@@ -12,9 +12,10 @@ fn ordinary_animated_style_probe(handle voidptr, _ voidptr) {
 	probe.ordinary++
 }
 
-fn compositor_animated_style_probe(handle voidptr, _ voidptr) {
+fn compositor_animated_style_probe(handle voidptr, _ voidptr) bool {
 	mut probe := unsafe { &AnimatedStyleCallbackProbe(handle) }
 	probe.compositor++
+	return probe.compositor % 2 == 1
 }
 
 fn test_sampled_style_callback_is_optional_and_uses_ordinary_fallback() {
@@ -23,14 +24,17 @@ fn test_sampled_style_callback_is_optional_and_uses_ordinary_fallback() {
 		layout_handle: voidptr(probe)
 		apply_style_callback: ordinary_animated_style_probe
 	}
-	placeholder.apply_animated_style(voidptr(probe), true)
+	assert !placeholder.apply_animated_style(voidptr(probe), true)
 	assert probe.ordinary == 1
 	assert probe.compositor == 0
 	placeholder.apply_animated_style_callback = compositor_animated_style_probe
-	placeholder.apply_animated_style(voidptr(probe), false)
+	assert !placeholder.apply_animated_style(voidptr(probe), false)
 	assert probe.ordinary == 2
 	assert probe.compositor == 0
-	placeholder.apply_animated_style(voidptr(probe), true)
+	// The embedder's own result reports whether it retained the sample.
+	assert placeholder.apply_animated_style(voidptr(probe), true)
 	assert probe.ordinary == 2
 	assert probe.compositor == 1
+	assert !placeholder.apply_animated_style(voidptr(probe), true)
+	assert probe.compositor == 2
 }
