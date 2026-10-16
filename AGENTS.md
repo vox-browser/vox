@@ -1790,6 +1790,16 @@ evidence](docs/translation-audit/NATIVE_MEDIA_WHEEL_RAW_HANDLER.md).
   focused retained viewport exact. Additional observed savings: 0.
   Same 4 GiB/placement; canonical/GUI preserved; contemporary Root excluded.
   Chrome parity remains open.
+  Scanned cascade-entry chunks `8e1bb848` (independent committed slice)
+  pass 1,107 common assertions in 9 cases per configuration,
+  plus 12 candidate cases/392,972 assertions in each GC mode.
+  Complete public author-cascade operations use 25.38% fewer instructions.
+  Page point saving 27,433,352, 23/30 wins,
+  paired interval [8,906,366.5, 38,217,787.5]; repeatable credit 27,433,352.
+  Broad verification: 87 selected cases both GC and 19 screenshots (16 exact);
+  focused retained viewport exact. Additional observed savings: 0.
+  Same 4 GiB/placement; canonical/GUI preserved; contemporary Root excluded.
+  Chrome parity remains open.
 - Outside instruction-count optimization, run broad regression suites once per
   ten completed fixes, not after every fix.
   Broad suites include full translation/package test batches, the full LibJS AST

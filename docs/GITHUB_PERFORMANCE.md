@@ -8331,6 +8331,118 @@ Equivalent Chrome content/start/submission accounting remains open;
 faster-than-Chrome performance is unproven. Evidence:
 `Build/instructions/vox-opt85-interleaved-*` and `Build/v/instruction-opt85-*`.
 
+## Store cascaded CSS entries in scanned chunks
+
+This integration imports only independently authored feature `8e1bb848`
+(Alexander Medvednikov): three exact hunks in css/properties_data.v. A map of
+newest-entry indices replaces each property's separate growable vector. Entries
+link through four-slot scanned chunks. Same-origin/layer replacement and
+importance rules retain their original order; revert operations relink survivors,
+clear removed values/source/layer references and recycle slots. Public getters
+and presence bytes retain their behavior. No globals, filtering, other arenas,
+heap hint or GC policy change. Contemporary Root remains separate.
+
+Before/final Boehm and final no-GC C-O2 each pass **1,107
+assertions in nine cases**: eight exact retained public declaration/cascade,
+shorthand, source-refresh, selection and logical-alias cases plus an inactive
+diagnostic. Common source SHA256 is `38f1032ab0e218ef52bfe393344af2133532d65f0f1dd0fafd8aa0e857a0aa78`.
+Twelve candidate cases pass **392,972
+assertions each in both GCs**: six original differential/ownership/chunk cases,
+three exact updated entry-array cases and three exact updated local-cascade
+cases. Only module/import headers are consolidated; original bodies remain.
+The retained oracle's eight function bodies exactly match the frozen previous
+vector implementation after whole-word receiver/type renaming and removal of
+pub. Checks include mixed origin/layer/important edits, all generated property
+keys, empty/stale heads, source/shadow/value ownership after GC, neighbor
+preservation and bounded slot recycling without mutating snapshots.
+
+Three fixed alternating local pairs count **128 complete public author
+cascades**, each with normal and important passes over 64 matching rules and
+public getters across all generated property IDs. Checksums include serialized
+values, priority, property identity and source/shadow presence. DOM/style and
+matching setup, eight warmups, expected checksum and forced GC precede the
+counter; checksum assertions follow it.
+Before: 191,243,143 / 190,986,476 / 190,850,066. Candidate by pair: 142,561,342 / 142,414,278 / 142,512,168.
+Median **190,986,476→142,512,168
+(-25.38%)**; checksum
+**5,243,136** in all six actual zero exits.
+This controlled local result receives no page credit.
+
+Both full-process C-O1/Boehm profiles pass without a filter or counter reset:
+
+| Function | Before calls | Candidate calls |
+| --- | ---: | ---: |
+| `css__opt86_complete_author_cascade` | 137 | 137 |
+| `css__StyleComputer_cascade_declarations` | 313 | 313 |
+| `css__CascadedProperties_set_property` | 333,201 | 333,201 |
+| `css__CascadedProperties_allocate_entry` | 0 | 5,222 |
+| `css__CascadedProperties_entry_node` | 0 | 354,041 |
+| `css__CascadedProperties_winning_entry_index` | 0 | 75,788 |
+
+These are call counts, not hardware instruction savings. Both run 137 complete
+author-cascade operations, 313 public cascade_declarations calls and 333,201
+set_property calls across the complete focused process. Candidate-only storage
+helpers account for its new implementation; workloads remain equal.
+
+Strict C audit authenticates all three source hunks, seven emitted changed
+public functions and four new helpers against independent focused C. The
+property_source getter is compiler-unreachable in both normal binaries; its
+focused-only before/final bodies remain retained. Exact CascadedProperties
+layout, three private/fixed-array records and removed/replaced array/map/option
+aliases are authenticated. Chunk allocation uses the existing scanned vcalloc,
+with four-slot index arithmetic and free-list allocation verified. All remaining
+C, globals, resources, filtering, arenas and GC setup match after established
+compiler identities, unchanged assertion-line maps, 37 frozen includes, four
+byte-identical helper reorderings and one byte-identical PropertyID/int map
+alias reorder. All 120 native inputs and exact native arguments match.
+Two failed read-only audit attempts remain archived: an expected normal getter
+that the compiler omits, and the exact existing map-alias reorder. No runtime
+check or primary was repeated. Passing C-audit script SHA256:
+`81e06fbd2cdc6bc5804975c5d8312379792232019d6994e10ee52421aec7cd14`.
+Normal C SHA256: `1c15d4f1a2fd31aaccedfc4b88e1a3cb5c6716f400f7524fe9ef6190d356327c`.
+Durable normal, focused, contract and profile hashes appear in
+instruction-opt86-artifact-archives.json.
+
+The predeclared page cohort is **30 alternating pairs**, odd before/final,
+even final/before, **30,000 paired bootstrap resamples, seed 86**. Both persisted
+regular binaries use fresh copies of the same 359 cached bodies, frozen text
+and child-only placement helpers, C-O2/Boehm/default marker 1 and unchanged
+4 GiB hint; no prod/prealloc. Viewport is 1024×768 and fixed endpoint is
+`navigation_to_first_document_paint[0]`; no historical or Root comparison.
+
+| Build | Median first-frame retired instructions | Median lifetime process peak, MiB |
+| --- | ---: | ---: |
+| Fresh accepted frozen85 control | 17,720,959,287.5 | 3,531 |
+| Scanned cascaded entry chunks | 17,693,525,935.5 | 3,526.7 |
+
+Difference of marginal medians (before minus candidate):
+**27,433,352** instructions; candidate change
+**-0.155%**, with **23/30** wins.
+Paired median saving **22,307,409**, paired 95% interval
+**[8,906,366.5, 38,217,787.5]**. The positive paired interval establishes repeatable page credit of **27,433,352** instructions.
+
+All 60 primaries and **60 actual PNGs** remain. Recoveries:
+none; pre-parse retries: 0. First primaries retain
+1 installation/2 geometry preparations/1 paint. Later completed refreshes:
+none. No completed primary was extended, discarded or
+rerun. Recovered records disclose unknown final exit and missing PNG,
+fingerprint and peak. Peaks cover capture/exit and later refreshes, not live
+first-frame memory, and are never summed. The read-only decoded capture check finds 29 before and 30 candidate RGB classes, 0 shared. All differences stay within the original skeleton bands, x45–662: y335–344 and ten 14px bands starting at380 with41px spacing. All pixels outside these bands match. No animation was disabled and no observation repeated; evidence is instruction-opt86-page-pixel-class-check.json.
+External foreground transitions remain retained: none.
+The child is foreground in neither startup snapshot. The focused viewport is
+pixel-exact at 1024×768. Prior observed carry is 0. Cumulative observed saving **27,433,352** crosses the 5M gate. Six direct harness jobs actually pass CSS 31/SVG 10/layout 46 in both GCs (**174 executions**). All **19 screenshots pass, 16 exact**; known differences remain inline-node 13, text-decorations 1,341 and canvas-text 1,994. The completed broad batch resets additional observed savings to 0.
+Startup, preparation and runtime controllers retain actual terminal evidence;
+controller success is distinct from each child result.
+
+The isolated signed app is `/Users/alex/code/vox2/Build/v/Vox-opt86.app`; native instruction text
+matches the measured executable, with the frozen helper pinned inside the app.
+Actual default loaded path/hash, signatures, startup and actual GC collections
+pass with default marker 1 and override 2. Canonical app and user GUI remain
+preserved. Contemporary Root receives no extra source, regression or page
+credit. Equivalent Chrome content/start/submission accounting remains open;
+faster-than-Chrome performance is unproven. Evidence:
+`Build/instructions/vox-opt86-interleaved-*` and `Build/v/instruction-opt86-*`.
+
 ## Causes and changes
 
 - The V 0.5.2 compatibility compiler's `-prod` Boehm code repeatedly snapshots
