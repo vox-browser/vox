@@ -41,6 +41,11 @@ mut:
 	audio_lists map[voidptr]&html.AudioTrackList
 	audio_tracks map[voidptr]&html.AudioTrack
 	audio_owner_wrappers map[voidptr]voidptr
+	video_track_prototype voidptr
+	video_list_wrap voidptr
+	video_lists map[voidptr]&html.VideoTrackList
+	video_tracks map[voidptr]&html.VideoTrack
+	video_owner_wrappers map[voidptr]voidptr
 	closed         bool
 }
 

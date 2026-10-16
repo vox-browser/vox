@@ -329,7 +329,7 @@ pub fn (mut host MediaElementHost) install(mut runtime Runtime) ! {
 	host.prototype = runtime.retain_javascript_value(runtime.binding_property(prototypes, 'media')!)!
 	host.audio_prototype = runtime.retain_javascript_value(runtime.binding_property(prototypes, 'audio')!)!
 	host.video_prototype = runtime.retain_javascript_value(runtime.binding_property(prototypes, 'video')!)!
-	host.install_audio_tracks()!
+	host.install_media_tracks()!
 	runtime.add_canvas_element_provider_with_lookup(fn [handle] () map[string]&dom.Element {
 		host := unsafe { &MediaElementHost(handle) }
 		return host.elements_for_binding()
@@ -348,6 +348,11 @@ pub fn (mut host MediaElementHost) install(mut runtime Runtime) ! {
 		host.audio_lists.clear()
 		host.audio_tracks.clear()
 		host.audio_owner_wrappers.clear()
+		host.video_track_prototype = unsafe { nil }
+		host.video_list_wrap = unsafe { nil }
+		host.video_lists.clear()
+		host.video_tracks.clear()
+		host.video_owner_wrappers.clear()
 		host.bound_elements.clear()
 		host.records.clear()
 		host.elements.clear()
@@ -1003,8 +1008,8 @@ const media_element_native_factory = r'(function(getters,setters,bind,fastSeek,g
  return {media:prototype,audio:audioPrototype,video:videoPrototype};
 })'
 
-// HTMLMediaElement.audioTracks and the native AudioTrack/List IDL owners.
-fn (mut host MediaElementHost) install_audio_tracks() ! {
+// HTMLMediaElement track interfaces share indexed-list transport and native owners.
+fn (mut host MediaElementHost) install_media_tracks() ! {
 	mut runtime := unsafe { &Runtime(host.runtime) }
 	handle := voidptr(&host)
 	mut functions := []voidptr{}
@@ -1031,13 +1036,14 @@ fn (mut host MediaElementHost) install_audio_tracks() ! {
 	if exception != unsafe { nil } { return runtime.actual_javascript_exception(exception) }
 	runtime.retain_javascript_value(array)!
 	defer { runtime.release_javascript_value(array) }
-	factory := runtime.evaluate_host_value(audio_tracks_native_factory)!
+	factory := runtime.evaluate_host_value(media_tracks_native_factory)!
 	defer { runtime.release_javascript_value(factory) }
 	installed := runtime.retain_javascript_value(runtime.call_javascript_function(factory,
-		C.JSValueMakeUndefined(runtime.context), [array, indexed, host.prototype])!)!
+		C.JSValueMakeUndefined(runtime.context), [array, indexed, host.prototype, C.JSValueMakeBoolean(runtime.context, false)])!)!
 	defer { runtime.release_javascript_value(installed) }
 	host.audio_track_prototype = runtime.retain_javascript_value(runtime.binding_property(installed, 'track')!)!
 	host.audio_list_wrap = runtime.retain_javascript_value(runtime.binding_property(installed, 'wrapList')!)!
+	host.install_video_tracks()!
 	runtime.install_event_target_wrapper_provider(EventTargetWrapperProvider{
 		owner: handle
 		create: fn [handle] (target &dom.EventTarget) !voidptr {
@@ -1046,6 +1052,8 @@ fn (mut host MediaElementHost) install_audio_tracks() ! {
 			for _, media in host.records {
 				list := media.audio_tracks()
 				if voidptr(target) == voidptr(list.event_target()) { return host.wrap_audio_track_list(list) }
+				video_list := media.video_tracks()
+				if voidptr(target) == voidptr(&video_list.EventTarget) { return host.wrap_video_track_list(video_list) }
 			}
 			return unsafe { nil }
 		}
@@ -1130,19 +1138,21 @@ fn (mut host MediaElementHost) audio_track_list_index(args []voidptr) !voidptr {
 	return host.wrap_audio_track(track)
 }
 
-const audio_tracks_native_factory = r'(function(functions,indexed,media){
+const media_tracks_native_factory = r'(function(functions,indexed,media,video){
  "use strict";
  const define=Object.defineProperty,create=Object.create,P=Proxy,T=TypeError,ET=EventTarget;
  const get=Reflect.get,set=Reflect.set,has=Reflect.has,getOwn=Reflect.getOwnPropertyDescriptor,defineOwn=Reflect.defineProperty,remove=Reflect.deleteProperty,ownKeys=Reflect.ownKeys;
  const track=create(Object.prototype),list=create(ET.prototype);
- define(media,"audioTracks",{get:functions[0],enumerable:true,configurable:true});
+ define(media,video?"videoTracks":"audioTracks",{get:functions[0],enumerable:true,configurable:true});
  define(list,"length",{get:functions[1],enumerable:true,configurable:true});
  define(list,"getTrackById",{value:functions[2],writable:true,enumerable:true,configurable:true});
- for(const [index,name] of ["id","kind","label","language","enabled"].entries())define(track,name,{get:functions[3+index],set:name==="enabled"?functions[8]:undefined,enumerable:true,configurable:true});
+ if(video)define(list,"selectedIndex",{get:functions[15],enumerable:true,configurable:true});
+ const state=video?"selected":"enabled";
+ for(const [index,name] of ["id","kind","label","language",state].entries())define(track,name,{get:functions[3+index],set:name===state?functions[8]:undefined,enumerable:true,configurable:true});
  for(const [index,name] of ["onchange","onaddtrack","onremovetrack"].entries())define(list,name,{get:functions[9+index*2],set:functions[10+index*2],enumerable:true,configurable:true});
- for(const [name,prototype,target] of [["AudioTrack",track,function AudioTrack(){}],["AudioTrackList",list,function AudioTrackList(){}]]){
+ for(const [name,prototype,target] of [[video?"VideoTrack":"AudioTrack",track,video?function VideoTrack(){}:function AudioTrack(){}],[video?"VideoTrackList":"AudioTrackList",list,video?function VideoTrackList(){}:function AudioTrackList(){}]]){
   const illegal=()=>{throw new T("Illegal constructor")},constructor=new P(target,{apply:illegal,construct:illegal});
-  if(name==="AudioTrackList")Object.setPrototypeOf(constructor,ET);
+  if(prototype===list)Object.setPrototypeOf(constructor,ET);
   define(constructor,"prototype",{value:prototype,writable:false});define(prototype,"constructor",{value:constructor,writable:true,configurable:true});
   define(prototype,Symbol.toStringTag,{value:name,configurable:true});define(globalThis,name,{value:constructor,writable:true,configurable:true});
  }
@@ -1163,3 +1173,119 @@ const audio_tracks_native_factory = r'(function(functions,indexed,media){
  }
  return {track,wrapList};
 })'
+
+// HTMLMediaElement.videoTracks and the native VideoTrack/List IDL owners.
+fn (mut host MediaElementHost) install_video_tracks() ! {
+	mut runtime := unsafe { &Runtime(host.runtime) }
+	handle := voidptr(&host)
+	mut functions := []voidptr{}
+	for name in ['videoTracks', 'length', 'getTrackById', 'id', 'kind', 'label', 'language', 'selected', 'setSelected', 'onchange', 'setOnchange', 'onaddtrack', 'setOnaddtrack', 'onremovetrack', 'setOnremovetrack', 'selectedIndex'] {
+		function_name := if name == 'setSelected' { 'set selected' } else if name.starts_with('setOn') {
+			'set ${name[3..].to_lower()}'
+		} else if name == 'getTrackById' { name } else { 'get ${name}' }
+		arity := if name == 'getTrackById' || name.starts_with('set') { 1 } else { 0 }
+		functions << runtime.make_native_value_host_function(function_name, arity, fn [handle, name] (receiver voidptr, args []voidptr) !voidptr {
+			mut host := unsafe { &MediaElementHost(handle) }
+			return host.video_track_operation(name, receiver, args) or {
+				return host.runtime.actual_javascript_exception(host.runtime.binding_exception_value(err))
+			}
+		})!
+	}
+	indexed := runtime.make_value_host_function(fn [handle] (_ voidptr, args []voidptr) !voidptr {
+		mut host := unsafe { &MediaElementHost(handle) }
+		return host.video_track_list_index(args) or {
+			return host.runtime.actual_javascript_exception(host.runtime.binding_exception_value(err))
+		}
+	})!
+	mut exception := unsafe { nil }
+	array := C.JSObjectMakeArray(runtime.context, usize(functions.len), functions.data, &exception)
+	if exception != unsafe { nil } { return runtime.actual_javascript_exception(exception) }
+	runtime.retain_javascript_value(array)!
+	defer { runtime.release_javascript_value(array) }
+	factory := runtime.evaluate_host_value(media_tracks_native_factory)!
+	defer { runtime.release_javascript_value(factory) }
+	installed := runtime.retain_javascript_value(runtime.call_javascript_function(factory,
+		C.JSValueMakeUndefined(runtime.context), [array, indexed, host.prototype, C.JSValueMakeBoolean(runtime.context, true)])!)!
+	defer { runtime.release_javascript_value(installed) }
+	host.video_track_prototype = runtime.retain_javascript_value(runtime.binding_property(installed, 'track')!)!
+	host.video_list_wrap = runtime.retain_javascript_value(runtime.binding_property(installed, 'wrapList')!)!
+}
+
+fn (mut host MediaElementHost) wrap_video_track_list(list &html.VideoTrackList) !voidptr {
+	if host.closed { return error('TypeError: Media element binding is closed') }
+	if wrapper := host.video_owner_wrappers[voidptr(list)] { return wrapper }
+	wrapper := host.runtime.call_javascript_function(host.video_list_wrap,
+		C.JSValueMakeUndefined(host.runtime.context), [])!
+	host.runtime.bind_event_target(wrapper, &list.EventTarget)!
+	host.video_lists[wrapper] = list
+	host.video_owner_wrappers[voidptr(list)] = wrapper
+	return wrapper
+}
+
+fn (mut host MediaElementHost) wrap_video_track(track &html.VideoTrack) !voidptr {
+	if host.closed { return error('TypeError: Media element binding is closed') }
+	if wrapper := host.video_owner_wrappers[voidptr(track)] { return wrapper }
+	wrapper := C.JSObjectMake(host.runtime.context, unsafe { nil }, unsafe { nil })
+	C.JSObjectSetPrototype(host.runtime.context, wrapper, host.video_track_prototype)
+	host.runtime.retain_javascript_value(wrapper)!
+	host.video_tracks[wrapper] = track
+	host.video_owner_wrappers[voidptr(track)] = wrapper
+	return wrapper
+}
+
+fn (mut host MediaElementHost) video_track_operation(name string, receiver voidptr, args []voidptr) !voidptr {
+	if host.closed { return error('TypeError: Media element binding is closed') }
+	context := host.runtime.context
+	if name == 'videoTracks' {
+		media := host.media_element_for_binding(receiver)!
+		if replay := host.replay { replay(host.runtime)! }
+		return host.wrap_video_track_list(media.video_tracks())
+	}
+	if name in ['length', 'selectedIndex', 'getTrackById'] || name.starts_with('on') || name.starts_with('setOn') {
+		list := host.video_lists[receiver] or { return error('TypeError: Not an object of type VideoTrackList') }
+		if name == 'length' { return C.JSValueMakeNumber(context, f64(list.length())) }
+		if name == 'selectedIndex' { return C.JSValueMakeNumber(context, f64(list.selected_index())) }
+		if name == 'getTrackById' {
+			if args.len == 0 { return error('TypeError: getTrackById requires at least 1 argument') }
+			id := host.runtime.binding_dom_string(args[0])!
+			track := list.get_track_by_id(id) or { return C.JSValueMakeNull(context) }
+			return host.wrap_video_track(track)
+		}
+		if name.starts_with('setOn') {
+			mut value := C.JSValueMakeUndefined(context)
+			if args.len > 0 { value = args[0] }
+			host.runtime.set_javascript_event_handler(&list.EventTarget, name[5..].to_lower(), value)!
+			return C.JSValueMakeUndefined(context)
+		}
+		return host.runtime.javascript_event_handler(&list.EventTarget, name[2..])
+	}
+	mut track := host.video_tracks[receiver] or { return error('TypeError: Not an object of type VideoTrack') }
+	if name == 'setSelected' {
+		mut value := C.JSValueMakeUndefined(context)
+		if args.len > 0 { value = args[0] }
+		track.set_selected(C.JSValueToBoolean(context, value))
+		return C.JSValueMakeUndefined(context)
+	}
+	return match name {
+		'id' { host.runtime.binding_string(track.base.id()) }
+		'kind' { host.runtime.binding_string(track.base.kind()) }
+		'label' { host.runtime.binding_string(track.base.label()) }
+		'language' { host.runtime.binding_string(track.base.language()) }
+		else { C.JSValueMakeBoolean(context, track.selected) }
+	}
+}
+
+fn (mut host MediaElementHost) video_track_list_index(args []voidptr) !voidptr {
+	if host.closed { return error('TypeError: Media element binding is closed') }
+	if args.len == 1 {
+		key := libjs.PropertyName.from_utf16(host.runtime.native_utf16_string(args[0])!)
+		if !key.is_number() { return C.JSValueMakeUndefined(host.runtime.context) }
+		return C.JSValueMakeNumber(host.runtime.context, f64(key.number))
+	}
+	list := host.video_lists[args[0]] or { return error('TypeError: Not an object of type VideoTrackList') }
+	mut exception := unsafe { nil }
+	index := u32(C.JSValueToNumber(host.runtime.context, args[1], &exception))
+	if exception != unsafe { nil } { return host.runtime.actual_javascript_exception(exception) }
+	track := list.item(index) or { return C.JSValueMakeUndefined(host.runtime.context) }
+	return host.wrap_video_track(track)
+}
