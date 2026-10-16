@@ -399,6 +399,31 @@ with two pair wins out of five. Every row is preserved under
 endpoint and runtime fingerprints stay pinned. The target remains unachieved;
 these repeated observations do not advance the broad-baseline savings carry.
 
+Candidate v18 adds the standalone U+2060 fast path and replaces encoded
+grapheme-property ranges with static numeric intervals. The focused selections
+pass 49 and 48 cases respectively in each GC mode, including complete Unicode
+property comparisons for the numeric intervals. Canonical commits `813985a1`
+and `68fcaf57` retain their focused tests. The isolated source revision is
+`a38652e3d878fe48c4d005d36b04b42365fbe6f3`, and its production executable
+SHA256 is `340cade672b955ea26a69804c5701729a56bfa839349d2336021f3b05a0281f6`.
+
+The primary checkpoint passes every completion, content, font, fresh font-file
+and native-pixel gate, but uses 52,605,846,249 instructions: 6,706,045,982 more
+than the v17 broad baseline. The broad supervisor terminates without running
+suites or removing the held helper guards. The baseline stays 45,899,800,267,
+with zero additional savings credited.
+
+A separate fixed five-pair variation check also fails the target. Vox's median
+is 49,116,308,193 versus Brave's 48,430,875,718, or 1.42% more instructions,
+with two wins out of five. All ten completed rows pass their content/font/image
+checks; all five native captures retain the exact control pixels and fresh
+font files. Every row is preserved under
+`Build/pikabu-instructions-candidate-v18-variation*`, authenticated by the
+completed-cohort verification and actual-zero supervisor receipts. Neither
+this variation check nor the isolated shaping microbenchmarks earn a broad
+baseline reset. The faster-than-Brave target remains unachieved, and this
+isolated candidate has not replaced the canonical app bundle.
+
 Focused checks:
 
 ```sh
