@@ -15,7 +15,7 @@ typedef struct {
 
 typedef struct {
     float matrix[9];
-    float source[4], destination[4], clip[4];
+    float source[4], destination[4], clip[12];
     float opacity;
     int width, height, pitch, flags, nearest;
     const uint8_t *pixels;

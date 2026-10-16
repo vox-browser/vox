@@ -56,3 +56,17 @@ vertical alignment; selection and layout geometry retain their fractions.
 common punctuation, including LTR `unicode-bidi:isolate` text. Chunk slicing
 uses UTF-16 offsets so multibyte quotes and accents cannot shift source ranges.
 Other scripts and mixed-font text continue through segmented shaping.
+
+`opaque-box-shadow` checks opaque rounded backgrounds, solid borders, fractional
+block offsets, a one-pixel shadow source, and an inline rounded border. Opaque
+shadow cutouts overlap the background by one pixel. Block backgrounds inset
+under opaque solid rounded borders; inline backgrounds retain Chromium's
+separate treatment. Uniform circular rounded borders use an analytic stroke.
+
+`background-sprite-rounding` checks an unscaled tall RGBA sprite whose offscreen
+origin lies on a negative half pixel. Both edges round toward positive infinity
+at ties, preserving the image's original size. `rounded-background-image`
+checks repeated bitmap backgrounds inside rounded inline borders, including
+a one-pixel strip before an image origin. The Chromium image player retains
+that preceding tile and clips it in the GPU image operation, avoiding a second
+Quartz antialiasing mask. Both fixtures use synthetic embedded PNGs.

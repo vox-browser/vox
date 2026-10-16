@@ -2180,6 +2180,16 @@ fn (b &BlockBox) record_paint_commands_for_entries(entries []PaintOrderEntry, se
 		if !empty_cell_hidden {
 			paintable_box_paint_backdrop_filter(mut commands, box, border_rect, box_radii, opacity)
 		}
+		if box.snaps_background_rect && box.background_color.a == 255
+			&& !box.skip_background_paint && !empty_cell_hidden
+			&& box.background_color_clip == 'border-box' && box_shadows.any(!it.inset) {
+			outer_start := commands.len
+			paintable_box_paint_box_shadow(mut commands, box_shadows.filter(!it.inset),
+				box.border, effective_border_colors(box.border_colors, box.border_color),
+				box.border_styles, box_radii, border_rect, border_rect, opacity)
+			chromium_inset_opaque_shadow_clips(mut commands, outer_start)
+			box_shadows = box_shadows.filter(it.inset)
+		}
 		background_isolated := box.background_images.any(background_image_layer_blend_mode(it) != .normal)
 		needs_background_text_clip := box.background_color_clip == 'text'
 			&& !box.paints_canvas_background && !box.skip_background_paint && !empty_cell_hidden
@@ -2196,8 +2206,13 @@ fn (b &BlockBox) record_paint_commands_for_entries(entries []PaintOrderEntry, se
 		if background_isolated && !box.skip_background_paint && !empty_cell_hidden {
 			commands << PaintCommand{ kind: 'begin_background_blend_group' }
 		}
-		color_rect := background_box_rect_from_border(box, box.background_color_clip, background_border_rect)
-		color_radii := background_box_radii(box, box.background_color_clip, box_radii, color_rect)
+		mut color_rect := background_box_rect_from_border(box, box.background_color_clip, background_border_rect)
+		mut color_radii := background_box_radii(box, box.background_color_clip, box_radii, color_rect)
+		if box.snaps_background_rect && box.background_color_clip == 'border-box'
+			&& !box.paints_canvas_background && !box_radii_are_zero(color_radii) {
+			color_rect, color_radii = chromium_background_under_opaque_border(color_rect,
+				color_radii, box.border, effective_border_colors(box.border_colors, box.border_color), box.border_styles)
+		}
 		if !box.skip_background_paint && !empty_cell_hidden && box.background_color.a > 0 && !box.paints_canvas_background && !box_radii_are_zero(color_radii) {
 			if box_radii_are_uniform_circles(color_radii) {
 				commands << PaintCommand{
@@ -2462,7 +2477,7 @@ fn (b &BlockBox) record_paint_commands_for_entries(entries []PaintOrderEntry, se
 					}
 				}
 			} else {
-				append_translated_border_commands(mut commands, box.border, border_colors, box.border_styles, box_radii, border_left, border_top, border_width, border_height, opacity)
+				append_translated_border_commands(mut commands, box.border, border_colors, box.border_styles, box_radii, border_left, border_top, border_width, border_height, opacity, box.snaps_background_rect)
 			}
 		}
 		border_end := commands.len
@@ -3821,7 +3836,13 @@ fn inline_fragment_commands(fragments []TextFragment, opacity f64) InlineFragmen
 			}
 		}
 		outer_shadows := fragment_shadows.filter(!it.inset)
+		outer_start := commands.len
 		paintable_box_paint_box_shadow(mut commands, outer_shadows, effective_border, first.border_colors, first.border_styles, fragment_radii, border_rect, border_rect, opacity)
+		if run := first.paintable_fragment.glyph_run {
+			if run.font().font_rendering_policy == .chromium && first.background_color.a == 255 {
+				chromium_inset_opaque_shadow_clips(mut commands, outer_start)
+			}
+		}
 		background_start := commands.len
 		background_isolated := first.background_images.any(background_image_layer_blend_mode(it) != .normal)
 		if background_isolated {
@@ -3877,7 +3898,8 @@ fn inline_fragment_commands(fragments []TextFragment, opacity f64) InlineFragmen
 		set_force_dark_role_for_range(mut commands, background_start, commands.len, .background)
 		append_inset_shadow_commands(mut commands, fragment_shadows, left + effective_border.left, top + effective_border.top, non_negative(width - effective_border.left - effective_border.right), non_negative(height - effective_border.top - effective_border.bottom), non_negative(radius - effective_border.top), opacity)
 		border_colors := effective_border_colors(first.border_colors, first.border_color)
-		append_translated_border_commands(mut commands, effective_border, border_colors, first.border_styles, fragment_radii, left, top, width, height, opacity)
+		chromium_border := if run := first.paintable_fragment.glyph_run { run.font().font_rendering_policy == .chromium } else { false }
+		append_translated_border_commands(mut commands, effective_border, border_colors, first.border_styles, fragment_radii, left, top, width, height, opacity, chromium_border)
 		append_translated_outline_commands(mut outlines, first.outline_width, first.outline_offset, first.outline_color, first.outline_style, first.outline_is_auto, fragment_radii, left, top, width, height, opacity)
 		set_force_dark_backdrop_for_range(mut commands, decoration_start, commands.len,
 			first.background_color)
@@ -4474,7 +4496,7 @@ fn painting_radii_from_transport(radii BoxRadii) painting.CornerRadii {
 
 fn append_translated_border_commands(mut commands []PaintCommand, border BoxEdges,
 	colors BoxColors, styles BoxBorderStyles, radii BoxRadii, x f64, y f64, width f64,
-	height f64, opacity f64) {
+	height f64, opacity f64, chromium bool) {
 	start := commands.len
 	left := int(math.round(x))
 	top := int(math.round(y))
@@ -4483,6 +4505,10 @@ fn append_translated_border_commands(mut commands []PaintCommand, border BoxEdge
 		y: top
 		width: int(math.round(x + width)) - left
 		height: int(math.round(y + height)) - top
+	}
+	if chromium && append_chromium_uniform_border(mut commands, border, colors, styles, radii, rect, opacity) {
+		set_force_dark_role_for_range(mut commands, start, commands.len, .border)
+		return
 	}
 	for display_command in painting.paint_all_borders(rect, painting_radii_from_transport(radii), painting_borders_from_transport(border, colors, styles)) {
 		append_painting_display_command(mut commands, display_command, opacity)
@@ -5321,6 +5347,9 @@ pub fn (b &BlockBox) render_svg(width f64, height f64) string {
 				pieces += '<rect x="${fmt_px(command.x)}" y="${fmt_px(command.y + command.height - bottom)}" width="${fmt_px(command.width)}" height="${fmt_px(bottom)}"/>'
 			}
 			body << '<g clip-path="url(#${clip_id})"${filter} fill="${command.color}" fill-opacity="${fmt_px(command.opacity)}">${pieces}</g>'
+		} else if command.kind == 'paint_uniform_border' {
+			path := rounded_rect_svg_path(command.x, command.y, command.width, command.height, command.corner_radii)
+			body << '<path d="${path}" fill="none" stroke="${command.color}" stroke-opacity="${fmt_px(command.opacity)}" stroke-width="${fmt_px(command.stroke_width)}"/>'
 		} else if command.kind == 'stroke_rounded_rect' {
 			if command.points.len > 0 {
 				mut points := []string{}

@@ -198,7 +198,7 @@ int vox_graphite_draw_image_pixels(uint8_t* pixels, int width, int height,
     matrix.set9(image->matrix);
     canvas->setMatrix(matrix);
     auto rect = [](float const* r) { return SkRect::MakeXYWH(r[0], r[1], r[2], r[3]); };
-    canvas->clipRect(rect(image->clip), true);
+    canvas->clipRRect(rounded_rect(image->clip), true);
     SkPaint paint;
     paint.setAntiAlias(true);
     paint.setAlphaf(std::clamp(image->opacity, 0.0f, 1.0f));

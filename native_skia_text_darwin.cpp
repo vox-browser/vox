@@ -882,7 +882,7 @@ extern "C" int ladybird_v_skia_draw_rgba_image(CGContextRef destination,
     float transform_b, float transform_c, float transform_d, float transform_e,
     float transform_f, float page_x, float page_y, float scroll_y,
     float canvas_width, float canvas_height, float opacity, int nearest_neighbor,
-    int image_flags)
+    int image_flags, float const* clip_radii)
 {
     // Flags: premultiplied RGBA (1), readable opaque page backdrop (2),
     // or a tightly packed Y/U/V 4:2:0 payload in place of RGBA (4).
@@ -953,6 +953,7 @@ extern "C" int ladybird_v_skia_draw_rgba_image(CGContextRef destination,
             .pitch = image_pitch, .flags = image_flags, .nearest = nearest_neighbor == 1,
             .pixels = source_pixels
         };
+        if (clip_radii) std::copy_n(clip_radii, 8, descriptor.clip + 4);
         raster_matrix(matrix, region, raster_scale_x, raster_scale_y).get9(descriptor.matrix);
         if (auto draw = graphite_image_draw(); draw && draw(reinterpret_cast<uint8_t*>(pixels.data()),
                 raster_width, raster_height, raster_width * 4, has_background, &descriptor)) {
@@ -988,7 +989,13 @@ extern "C" int ladybird_v_skia_draw_rgba_image(CGContextRef destination,
     if (!has_background) canvas->clear(SK_ColorTRANSPARENT);
     canvas->setMatrix(raster_matrix(matrix, region, raster_scale_x,
         raster_scale_y));
-    canvas->clipRect(local_clip, true);
+    if (clip_radii) {
+        SkVector radii[4] {{clip_radii[0], clip_radii[1]}, {clip_radii[2], clip_radii[3]},
+            {clip_radii[4], clip_radii[5]}, {clip_radii[6], clip_radii[7]}};
+        SkRRect clip;
+        clip.setRectRadii(local_clip, radii);
+        canvas->clipRRect(clip, true);
+    } else canvas->clipRect(local_clip, true);
     SkPaint paint;
     paint.setAntiAlias(true);
     paint.setAlphaf(std::clamp(opacity, 0.0f, 1.0f));
@@ -1265,7 +1272,7 @@ extern "C" int ladybird_v_skia_draw_outer_box_shadow(CGContextRef destination,
     uint8_t alpha, int opaque_backdrop)
 {
     if (!destination || shadow_width <= 0 || shadow_height <= 0
-        || content_width <= 0 || content_height <= 0 || canvas_width <= 0
+        || content_width < 0 || content_height < 0 || canvas_width <= 0
         || canvas_height <= 0)
         return 0;
 

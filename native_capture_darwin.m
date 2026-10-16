@@ -105,7 +105,7 @@ extern int ladybird_v_skia_draw_rgba_image(CGContextRef destination,
 	float clip_height, float transform_a, float transform_b, float transform_c,
 	float transform_d, float transform_e, float transform_f, float page_x,
 	float page_y, float scroll_y, float canvas_width, float canvas_height,
-	float opacity, int nearest_neighbor, int image_flags);
+	float opacity, int nearest_neighbor, int image_flags, float const *clip_radii);
 extern int ladybird_v_skia_draw_drop_shadow(CGContextRef destination,
 	CGImageRef source, float canvas_width, float canvas_height, float scale,
 	float offset_x, float offset_y, float standard_deviation, uint8_t red,
@@ -3994,8 +3994,8 @@ void native_draw_outer_box_shadow_corners_srgb(float shadow_x, float shadow_y,
 	float transform_a, float transform_b, float transform_c, float transform_d,
 	float transform_e, float transform_f, float page_x, float page_y, float scroll_y,
 	float canvas_width, float canvas_height, float blur, gg__Color color) {
-	if (shadow_width <= 0.0f || shadow_height <= 0.0f || content_width <= 0.0f
-		|| content_height <= 0.0f)
+	if (shadow_width <= 0.0f || shadow_height <= 0.0f || content_width < 0.0f
+		|| content_height < 0.0f)
 		return;
 	CGContextRef context = [[NSGraphicsContext currentContext] CGContext];
 	if (context == NULL)
@@ -4228,7 +4228,7 @@ static int native_draw_cg_image_part_with_skia(CGContextRef destination,
 	float transform_a, float transform_b, float transform_c, float transform_d,
 	float transform_e, float transform_f, float page_x, float page_y,
 	float scroll_y, float canvas_width, float canvas_height, float opacity,
-	int nearest_neighbor) {
+	int nearest_neighbor, float const *clip_radii) {
 	size_t width = CGImageGetWidth(source_image);
 	size_t height = CGImageGetHeight(source_image);
 	if (width == 0 || height == 0 || width > INT_MAX / 4 || height > SIZE_MAX / (width * 4))
@@ -4261,7 +4261,7 @@ static int native_draw_cg_image_part_with_skia(CGContextRef destination,
 		transform_d, transform_e, transform_f, page_x, page_y, scroll_y,
 		canvas_width, canvas_height, opacity, nearest_neighbor,
 		1 | ((destination == native_font_compositing_context
-			&& native_font_compositing_transparency_depth == 0) ? 2 : 0));
+			&& native_font_compositing_transparency_depth == 0) ? 2 : 0), clip_radii);
 	free(pixels);
 	return drawn;
 }
@@ -4274,7 +4274,7 @@ static void native_draw_image_part_in_context(CGContextRef context, gg__Image *i
 	float clip_height, float transform_a, float transform_b, float transform_c,
 	float transform_d, float transform_e, float transform_f, float page_x,
 	float page_y, float scroll_y, float canvas_width, float canvas_height, float opacity,
-	int nearest_neighbor) {
+	int nearest_neighbor, float const *clip_radii) {
 	if (context == NULL || image == NULL || image->data == NULL
 		|| destination_width <= 0 || destination_height <= 0
 		|| source_width <= 0 || source_height <= 0
@@ -4315,7 +4315,7 @@ static void native_draw_image_part_in_context(CGContextRef context, gg__Image *i
 			    (image->nr_channels == 5 || image->nr_channels == 7)
 			        | (image->nr_channels == 8 ? 4 : 0)
 			        | ((context == native_font_compositing_context
-			            && native_font_compositing_transparency_depth == 0) ? 2 : 0));
+			            && native_font_compositing_transparency_depth == 0) ? 2 : 0), clip_radii);
 			free(flipped_pixels);
 			if (drawn)
 				return;
@@ -4332,7 +4332,7 @@ static void native_draw_image_part_in_context(CGContextRef context, gg__Image *i
 		source_x, source_y, source_width, source_height, clip_x, clip_y,
 		clip_width, clip_height, transform_a, transform_b, transform_c,
 		transform_d, transform_e, transform_f, page_x, page_y, scroll_y,
-		canvas_width, canvas_height, opacity, nearest_neighbor)) {
+		canvas_width, canvas_height, opacity, nearest_neighbor, clip_radii)) {
 		CGImageRelease(image_copy);
 		return;
 	}
@@ -4352,7 +4352,16 @@ static void native_draw_image_part_in_context(CGContextRef context, gg__Image *i
 		canvas_height - page_y + scroll_y - transform_f);
 	CGContextSaveGState(context);
 	CGContextConcatCTM(context, to_canvas);
-	CGContextClipToRect(context, CGRectMake(clip_x, clip_y, clip_width, clip_height));
+	if (clip_radii) {
+		CGPathRef path = native_create_corner_rounded_rect_path(clip_x, clip_y, clip_width, clip_height,
+			clip_radii[0], clip_radii[1], clip_radii[2], clip_radii[3],
+			clip_radii[4], clip_radii[5], clip_radii[6], clip_radii[7]);
+		CGContextAddPath(context, path);
+		CGContextClip(context);
+		CGPathRelease(path);
+	} else {
+		CGContextClipToRect(context, CGRectMake(clip_x, clip_y, clip_width, clip_height));
+	}
 	CGContextSetAlpha(context, MIN(MAX(opacity, 0.0f), 1.0f));
 	CGContextSetInterpolationQuality(context, nearest_neighbor == 1
 		? kCGInterpolationNone
@@ -4381,7 +4390,7 @@ void native_draw_image_part(gg__Image *image, float destination_x, float destina
 			source_height, destination_x, destination_y, destination_width,
 			destination_height, 1, 0, 0, 1, 0, 0, 0, 0, 0,
 			destination_x + destination_width, canvas_height,
-			opacity, 1);
+			opacity, 1, NULL);
 		return;
 	}
 	NSImage *native_image = (__bridge NSImage *)image->data;
@@ -4406,13 +4415,13 @@ void native_draw_image_part_transformed(gg__Image *image, float destination_x,
 	float clip_x, float clip_y, float clip_width, float clip_height,
 	float transform_a, float transform_b, float transform_c, float transform_d,
 	float transform_e, float transform_f, float page_x, float page_y,
-	float scroll_y, float canvas_width, float canvas_height, float opacity, int nearest_neighbor) {
+	float scroll_y, float canvas_width, float canvas_height, float opacity, int nearest_neighbor, float const *clip_radii) {
 	CGContextRef context = [[NSGraphicsContext currentContext] CGContext];
 	native_draw_image_part_in_context(context, image, destination_x, destination_y,
 		destination_width, destination_height, source_x, source_y, source_width,
 		source_height, clip_x, clip_y, clip_width, clip_height, transform_a,
 		transform_b, transform_c, transform_d, transform_e, transform_f, page_x,
-		page_y, scroll_y, canvas_width, canvas_height, opacity, nearest_neighbor);
+		page_y, scroll_y, canvas_width, canvas_height, opacity, nearest_neighbor, clip_radii);
 }
 
 void native_draw_repeated_image_transformed(gg__Image *image,
@@ -4476,7 +4485,7 @@ void native_add_svg_content_mask_image(gg__Image *image, float destination_x,
 		clip_width, clip_height, transform_a, transform_b, transform_c,
 		transform_d, transform_e, transform_f, page_x, page_y, scroll_y,
 		(float)CGBitmapContextGetWidth(native_svg_clip_build_context),
-		canvas_height, 1.0f, nearest_neighbor ? 1 : 2);
+		canvas_height, 1.0f, nearest_neighbor ? 1 : 2, NULL);
 }
 
 #define NATIVE_SVG_PATTERN_CACHE_SIZE 8
@@ -4772,7 +4781,7 @@ void native_add_svg_pattern_image(gg__Image *image, float destination_x,
 		clip_height, transform_a, transform_b, transform_c, transform_d,
 		transform_e, transform_f, 0, 0, 0,
 		(float)CGBitmapContextGetWidth(native_svg_pattern_context()), canvas_height, opacity,
-		nearest_neighbor);
+		nearest_neighbor, NULL);
 }
 
 static void native_cache_svg_pattern_image(uint64_t key, CGImageRef image) {

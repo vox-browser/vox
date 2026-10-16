@@ -154,7 +154,7 @@ fn C.native_draw_inner_box_shadow_corners_srgb(outer_x f32, outer_y f32, outer_w
 
 fn C.native_draw_image_part(image &gg.Image, destination_x f32, destination_y f32, destination_width f32, destination_height f32, source_x f32, source_y f32, source_width f32, source_height f32, canvas_height f32, opacity f32)
 
-fn C.native_draw_image_part_transformed(image &gg.Image, destination_x f32, destination_y f32, destination_width f32, destination_height f32, source_x f32, source_y f32, source_width f32, source_height f32, clip_x f32, clip_y f32, clip_width f32, clip_height f32, transform_a f32, transform_b f32, transform_c f32, transform_d f32, transform_e f32, transform_f f32, page_x f32, page_y f32, scroll_y f32, canvas_width f32, canvas_height f32, opacity f32, nearest_neighbor int)
+fn C.native_draw_image_part_transformed(image &gg.Image, destination_x f32, destination_y f32, destination_width f32, destination_height f32, source_x f32, source_y f32, source_width f32, source_height f32, clip_x f32, clip_y f32, clip_width f32, clip_height f32, transform_a f32, transform_b f32, transform_c f32, transform_d f32, transform_e f32, transform_f f32, page_x f32, page_y f32, scroll_y f32, canvas_width f32, canvas_height f32, opacity f32, nearest_neighbor int, clip_radii &f32)
 
 fn C.native_draw_repeated_image_transformed(image &gg.Image, destination_x f32, destination_y f32, destination_width f32, destination_height f32, clip_x f32, clip_y f32, clip_width f32, clip_height f32, transform_a f32, transform_b f32, transform_c f32, transform_d f32, transform_e f32, transform_f f32, page_x f32, page_y f32, scroll_y f32, canvas_height f32, opacity f32, nearest_neighbor int, repeat_x int, repeat_y int)
 
@@ -5361,6 +5361,23 @@ fn (mut app BrowserApp) draw_command(source_command layout.PaintCommand, page_x 
 			if top > 0 { draw_srgb_rect(app.ctx, x, y, w, top, fill) }
 			if bottom > 0 { draw_srgb_rect(app.ctx, x, y + h - bottom, w, bottom, fill) }
 		}
+		'paint_uniform_border' {
+			stroke := app.paint_colors.color(command.color, command.opacity)
+			$if macos {
+				if app.ctx.native_rendering {
+					r := command.corner_radii
+					C.native_draw_rounded_rect_srgb(f32(command.x), f32(command.y), f32(command.width), f32(command.height), f32(r.top_left.x), f32(r.top_left.y), f32(r.top_right.x), f32(r.top_right.y), f32(r.bottom_right.x), f32(r.bottom_right.y), f32(r.bottom_left.x), f32(r.bottom_left.y), f32(matrix[0]), f32(matrix[1]), f32(matrix[2]), f32(matrix[3]), f32(matrix[4]), f32(matrix[5]), page_x, page_y, f32(scroll_y), f32(app.ctx.width), f32(app.ctx.height), stroke, 0, f32(command.stroke_width), 1)
+					return
+				}
+			}
+			points := layout.rounded_rect_points(command.x, command.y, command.width, command.height, command.corner_radii)
+			for index := 0; index + 1 < points.len; index += 2 {
+				next := (index + 2) % points.len
+				x1, y1 := paint_screen_point(command, points[index], points[index + 1], page_x, page_y, scroll_y)
+				x2, y2 := paint_screen_point(command, points[next], points[next + 1], page_x, page_y, scroll_y)
+				draw_browser_line(app.ctx, x1, y1, x2, y2, gg.PenConfig{color: stroke, thickness: f32(command.stroke_width)})
+			}
+		}
 		'stroke_rounded_rect' {
 			stroke := app.paint_colors.color(command.color, command.opacity)
 			$if macos {
@@ -5653,7 +5670,7 @@ fn (mut app BrowserApp) draw_command(source_command layout.PaintCommand, page_x 
 						1
 					} else {
 						0
-					})
+					}, unsafe { nil })
 					C.native_end_clip()
 					return
 				}
@@ -5708,7 +5725,7 @@ fn (mut app BrowserApp) draw_command(source_command layout.PaintCommand, page_x 
 						1
 					} else {
 						0
-					})
+					}, unsafe { nil })
 					C.native_end_clip()
 				}
 			}
@@ -5775,7 +5792,7 @@ fn (mut app BrowserApp) draw_command(source_command layout.PaintCommand, page_x 
 						1
 					} else {
 						0
-					})
+					}, unsafe { nil })
 					C.native_end_clip()
 				}
 			}
@@ -5866,7 +5883,12 @@ fn (mut app BrowserApp) draw_command(source_command layout.PaintCommand, page_x 
 				}
 			}
 			layer := resolved_layer or { return }
-			plan := painting.background_tile_plan(layer, painting.Point{command.image_scroll_offset_x, command.image_scroll_offset_y}, clip)
+			original_plan := painting.background_tile_plan(layer, painting.Point{command.image_scroll_offset_x, command.image_scroll_offset_y}, clip)
+			plan := if snap_bitmap { chromium_background_bitmap_plan(original_plan, clip) } else { original_plan }
+			// Keep the repeated primitive for tiny patterns rather than truncating
+			// their materialized tiles at the compatibility player's allocation cap.
+			gpu_bitmap_tiles := snap_bitmap && (!plan.can_use_repeated_bitmap()
+				|| chromium_background_bitmap_tiles_are_bounded(plan, clip, 4096))
 			if paint_command_image_allows_force_dark(command, plan.first_tile.width,
 				plan.first_tile.height, image) {
 				image = app.force_dark_image_for_url(image_data.image_url, image)
@@ -5876,14 +5898,17 @@ fn (mut app BrowserApp) draw_command(source_command layout.PaintCommand, page_x 
 				if app.ctx.native_rendering {
 					radii := image_data.image_clip_radii
 					C.native_begin_clip()
-					C.native_add_corner_rounded_clip(f32(clip.x), f32(clip.y), f32(clip.width), f32(clip.height), f32(radii.top_left.x), f32(radii.top_left.y), f32(radii.top_right.x), f32(radii.top_right.y), f32(radii.bottom_right.x), f32(radii.bottom_right.y), f32(radii.bottom_left.x), f32(radii.bottom_left.y), f32(matrix[0]), f32(matrix[1]), f32(matrix[2]), f32(matrix[3]), f32(matrix[4]), f32(matrix[5]), page_x, page_y, f32(scroll_y), f32(app.ctx.height))
+					if !gpu_bitmap_tiles {
+						C.native_add_corner_rounded_clip(f32(clip.x), f32(clip.y), f32(clip.width), f32(clip.height), f32(radii.top_left.x), f32(radii.top_left.y), f32(radii.top_right.x), f32(radii.top_right.y), f32(radii.bottom_right.x), f32(radii.bottom_right.y), f32(radii.bottom_left.x), f32(radii.bottom_left.y), f32(matrix[0]), f32(matrix[1]), f32(matrix[2]), f32(matrix[3]), f32(matrix[4]), f32(matrix[5]), page_x, page_y, f32(scroll_y), f32(app.ctx.height))
+					}
 					if layer.blend_mode != .normal {
 						C.native_begin_background_blend_mode(int(layer.blend_mode))
 					}
 					// BackgroundPainting records one repeated-bitmap operation when
 					// repetition has no `space` gaps. Keeping that operation intact also
 					// preserves the decoded image's native top-to-bottom orientation.
-					if plan.can_use_repeated_bitmap() && image_data.background_svg_document == none {
+					// Chromium instead clips each tile in its GPU image operation.
+					if !gpu_bitmap_tiles && plan.can_use_repeated_bitmap() && image_data.background_svg_document == none {
 						converter := painting.new_device_pixel_converter(1.0) or { return }
 						destination := converter.rounded_device_rect(plan.first_tile)
 						device_clip := converter.rounded_device_rect(clip)
@@ -5966,11 +5991,13 @@ fn (mut app BrowserApp) draw_command(source_command layout.PaintCommand, page_x 
 						}
 						scaling_mode := painting.to_gfx_scaling_mode(image_data.image_rendering, painting.IntSize{image.width, image.height}, painting.IntSize{destination_width, destination_height})
 						$if macos {
+							r := image_data.image_clip_radii
+							clip_radii := [f32(r.top_left.x), f32(r.top_left.y), f32(r.top_right.x), f32(r.top_right.y), f32(r.bottom_right.x), f32(r.bottom_right.y), f32(r.bottom_left.x), f32(r.bottom_left.y)]!
 							C.native_draw_image_part_transformed(image, f32(left), f32(top), f32(right_edge - left), f32(bottom_edge - top), source_x, source_y, source_width, source_height, f32(clip.x), f32(clip.y), f32(clip.width), f32(clip.height), f32(matrix[0]), f32(matrix[1]), f32(matrix[2]), f32(matrix[3]), f32(matrix[4]), f32(matrix[5]), page_x, page_y, f32(scroll_y), f32(app.ctx.width), f32(app.ctx.height), f32(command.opacity), if scaling_mode == .nearest_neighbor {
 								1
 							} else {
 								0
-							})
+							}, if gpu_bitmap_tiles { &clip_radii[0] } else { unsafe { &f32(nil) } })
 						}
 					} else {
 						screen_left, screen_top := paint_screen_point(command, left, top, page_x, page_y, scroll_y)
@@ -6011,7 +6038,7 @@ fn (mut app BrowserApp) draw_command(source_command layout.PaintCommand, page_x 
 						1
 					} else {
 						0
-					})
+					}, unsafe { nil })
 					return
 				}
 			}
