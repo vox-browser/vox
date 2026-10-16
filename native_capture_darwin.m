@@ -11,6 +11,7 @@
 #include "native_svg_mask_layer_darwin.h"
 
 #include "native_ffmpeg_darwin.h"
+#include "native_webp_darwin.h"
 
 #ifdef LADYBIRD_V_HAS_SKIA_TEXT
 extern int ladybird_v_skia_configure_font(const char *path, int slot);
@@ -4216,9 +4217,8 @@ static int native_draw_cg_image_part_with_skia(CGContextRef destination,
 		free(pixels);
 		return 0;
 	}
-	// A bitmap context stores its first row at the CSS top after this flip.
-	CGContextTranslateCTM(decode, 0, height);
-	CGContextScaleCTM(decode, 1, -1);
+	// CGImage scanlines are already top-down in a newly created bitmap context.
+	// A view-coordinate flip here would reflect them before Skia samples them.
 	CGContextSetBlendMode(decode, kCGBlendModeCopy);
 	CGContextDrawImage(decode, CGRectMake(0, 0, width, height), source_image);
 	CGContextRelease(decode);

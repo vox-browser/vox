@@ -57,6 +57,8 @@ fn C.schedule_native_screenshot(path string)
 fn C.native_decode_video_frame(path &char, seconds f64, output_width &int, output_height &int, output_pitch &int) &u8
 
 fn C.native_free_video_frame(pixels &u8)
+fn C.native_decode_webp_rgba(bytes &u8, length usize, width &int, height &int, pitch &int) &u8
+fn C.native_free_webp_pixels(pixels &u8)
 
 fn C.native_pointer_screen_position(x f64, y f64, screen_x &f64, screen_y &f64)
 
@@ -979,23 +981,28 @@ fn fetch_browser_resource(reference string, base string, source_url string, requ
 	if filtered.url.starts_with('http://') || filtered.url.starts_with('https://') {
 		// Legacy entries have no redirect provenance. Re-fetch those entries so
 		// an allowed URL cannot hide a redirect to a blocked tracker.
-		path := browser_cache_entry_path(browser_cache_root(), 'resources', filtered.url)
-		if final_url := read_browser_cache_entry(path + '.url') {
-			final_request := adblock.Request{url: final_url, source_url: owner_url, request_type: request_type}
-			final_filter := browsernet.filter(final_request)!
-			if replacement := final_filter.replacement {
-				return PreloadedResource{url: resolved, body: replacement.body, source_url: owner_url, final_url: final_url, request_type: request_type, adblock_replacement: true}
-			}
-			if final_filter.url == final_url && final_url == filtered.url {
-				// Only the final response is retained. Re-fetch redirects so an
-				// intermediate response-header condition cannot bypass filtering.
-				// Older cache entries have no header provenance. Re-fetch them;
-				// assuming an empty header list could expose a header-blocked ad.
-				if encoded_headers := read_browser_cache_entry(path + '.headers.json') {
-					if headers := json.decode([]adblock.ResponseHeader, encoded_headers) {
-						filter_browser_response_headers(final_request, headers)!
-						if cached := read_cached_resource(filtered.url) {
-							return PreloadedResource{url: resolved, body: cached, source_url: owner_url, final_url: final_url, request_type: request_type, response_headers: headers}
+		for cache_key in [resource_accept_cache_key(filtered.url, request_type), filtered.url] {
+			path := browser_cache_entry_path(browser_cache_root(), 'resources', cache_key)
+			if final_url := read_browser_cache_entry(path + '.url') {
+				final_request := adblock.Request{url: final_url, source_url: owner_url, request_type: request_type}
+				final_filter := browsernet.filter(final_request)!
+				if replacement := final_filter.replacement {
+					return PreloadedResource{url: resolved, body: replacement.body, source_url: owner_url, final_url: final_url, request_type: request_type, adblock_replacement: true}
+				}
+				if final_filter.url == final_url && final_url == filtered.url {
+					// Only the final response is retained. Re-fetch redirects so an
+					// intermediate response-header condition cannot bypass filtering.
+					// Older cache entries have no header provenance. Re-fetch them;
+					// assuming an empty header list could expose a header-blocked ad.
+					if encoded_headers := read_browser_cache_entry(path + '.headers.json') {
+						if headers := json.decode([]adblock.ResponseHeader, encoded_headers) {
+							filter_browser_response_headers(final_request, headers)!
+							// An old unvaried key cannot identify the Accept value that
+							// selected a negotiated image representation.
+							if cache_key == filtered.url && resource_response_varies_on_accept(headers) { continue }
+							if cached := read_cached_resource(cache_key) {
+								return PreloadedResource{url: resolved, body: cached, source_url: owner_url, final_url: final_url, request_type: request_type, response_headers: headers}
+							}
 						}
 					}
 				}
@@ -1008,7 +1015,10 @@ fn fetch_browser_resource(reference string, base string, source_url string, requ
 		return error('HTTP ${response.status_code}')
 	}
 	headers := browsernet.response_headers(response)
-	if !result.is_replacement { cache_resource_response_headers_with_status(filtered.url, result.url, response.body, headers, response.status_code) }
+	if !result.is_replacement {
+		cache_key := if resource_response_varies_on_accept(headers) { resource_accept_cache_key(filtered.url, request_type) } else { filtered.url }
+		cache_resource_response_headers_with_status(cache_key, result.url, response.body, headers, response.status_code)
+	}
 	return PreloadedResource{url: resolved, body: response.body, source_url: owner_url, final_url: result.url, request_type: request_type, adblock_replacement: result.is_replacement, response_headers: headers}
 }
 
@@ -1055,6 +1065,10 @@ fn filter_preloaded_resource(resource PreloadedResource, source_url string, requ
 		source_url: source_url
 		request_type: request_type
 	}, resource.response_headers)!
+	if resource_response_varies_on_accept(resource.response_headers)
+		&& browsernet.request_accept_header(resource.request_type) != browsernet.request_accept_header(request_type) {
+		return fetch_browser_resource(resource.url, '', source_url, request_type)
+	}
 	return resource
 }
 
@@ -1402,6 +1416,20 @@ fn browser_resource_bytes_for_document(resource_url dom.URL, source_url string, 
 fn browser_decode_raster_image_bytes(bytes []u8) !&dom.Bitmap_ {
 	if bytes.len == 0 {
 		return error('Empty image resource')
+	}
+	$if macos {
+		if image_bytes_are_webp(bytes) {
+			mut width := 0
+			mut height := 0
+			mut pitch := 0
+			decoded := C.native_decode_webp_rgba(bytes.data, usize(bytes.len), &width, &height, &pitch)
+			if decoded == unsafe { nil } { return error('Invalid or unsupported WebP image') }
+			defer { C.native_free_webp_pixels(decoded) }
+			mut pixels := []u8{len: pitch * height}
+			unsafe { vmemcpy(pixels.data, decoded, pixels.len) }
+			return &dom.Bitmap_{width: width, height: height, pitch: pitch, data: pixels,
+				native_rows_are_top_down: true}
+		}
 	}
 	image := stbi.load_from_memory(bytes.data, bytes.len)!
 	defer {
@@ -4227,11 +4255,19 @@ fn image_bytes_are_webp(bytes []u8) bool {
 
 fn (mut app BrowserApp) create_image_from_resource_bytes(image_url string, bytes []u8) !gg.Image {
 	$if macos {
-		// stb_image does not decode WebP, while AppKit's image provider does.
-		// Materialize the encoded resource in the browser cache so gg's native
-		// image path can retain the NSImage just like a file-backed resource.
 		if image_bytes_are_webp(bytes) {
-			path := browser_cache_entry_path(browser_cache_root(), 'decoded-images', image_url)
+			// Share the document decoder's pixels with native image and background
+			// painting. Animated streams keep AppKit's frame provider below.
+			if app.ctx.native_rendering {
+				if bitmap := browser_decode_raster_image_bytes(bytes) {
+					mut image := gg.Image{width: bitmap.width, height: bitmap.height,
+						nr_channels: native_bitmap_channel_marker(bitmap, false), ok: true,
+						data: bitmap.data.data}
+					image.id = app.ctx.cache_image(image)
+					return image
+				}
+			}
+			path := browser_cache_entry_path(browser_cache_root(), 'decoded-images', image_url + '\n' + sha256.hexhash(bytes.bytestr()))
 			if !os.is_file(path) {
 				write_browser_cache_entry(path, bytes.bytestr())
 			}
