@@ -130,6 +130,19 @@ def write_if_changed(path, content):
         path.write_text(content)
 
 
+def patch_request(source):
+    """Preserve an explicit Cookie header when the optional cookie map is empty."""
+    signature = 'fn (req &Request) build_request_cookies_header_with_header(header Header) string'
+    start = source.index(signature)
+    end = source.index('\n}', start) + 2
+    function = source[start:end]
+    old = "if req.cookies.len < 1 {\n\t\treturn ''\n\t}"
+    new = "if req.cookies.len < 1 {\n\t\tvalues := header.values(.cookie)\n\t\treturn if values.len == 0 { '' } else { 'Cookie: ' + values.join('; ') + '\\r\\n' }\n\t}"
+    if function.count(old) != 1:
+        raise RuntimeError('Unsupported HTTP cookie serialization source')
+    return source[:start] + function.replace(old, new, 1) + source[end:]
+
+
 def compiler_vlib(compiler, work):
     # Production builds and focused checks can stage modules concurrently.
     # Give each compiler probe its own executable so neither can overwrite a
@@ -153,6 +166,8 @@ def main():
     header = original / "header.v"
     text = header.read_text()
     patched = patch_header(text)
+    request_text = (original / 'request.v').read_text()
+    patched_request = patch_request(request_text)
     modules = repo / "Build/v/modules"
     target = modules / "net/http"
     target.mkdir(parents=True, exist_ok=True)
@@ -160,6 +175,8 @@ def main():
         output = target / entry.name
         if entry.name == "header.v":
             write_if_changed(output, patched)
+        elif entry.name == 'request.v':
+            write_if_changed(output, patched_request)
         elif not output.is_symlink() or output.resolve() != entry.resolve():
             if output.is_symlink() or output.is_file():
                 output.unlink()
@@ -168,6 +185,8 @@ def main():
         "vlib": str(vlib),
         "source_header_sha256": hashlib.sha256(text.encode()).hexdigest(),
         "staged_header_sha256": hashlib.sha256(patched.encode()).hexdigest(),
+        "source_request_sha256": hashlib.sha256(request_text.encode()).hexdigest(),
+        "staged_request_sha256": hashlib.sha256(patched_request.encode()).hexdigest(),
         "adapter": "growable fields; copy-on-write; preserve empty/repeated fields",
     }, indent=2) + "\n")
     print(modules)

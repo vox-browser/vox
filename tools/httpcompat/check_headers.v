@@ -3,13 +3,49 @@ module main
 
 import adblock
 import browsernet
+import net
 import net.http
+import time
 
 fn main() {
 	check_growth_and_wire_roundtrip()!
 	check_header_value_copy_mutations()!
 	check_late_empty_ad_response_header()!
+	check_explicit_cookie_headers()!
 	println('HTTP compatibility checks passed: 128+ fields, empty/repeated values, copy ownership, RU response filtering')
+}
+
+fn serve_cookie_header_check(mut listener net.TcpListener) []string {
+	mut requests := []string{}
+	for _ in 0 .. 3 {
+		mut socket := listener.accept() or { panic(err) }
+		socket.set_read_timeout(time.second)
+		mut buffer := []u8{len: 4096}
+		count := socket.read(mut buffer) or { panic(err) }
+		requests << buffer[..count].bytestr()
+		socket.write_string('HTTP/1.1 200 OK\r\nContent-Length: 2\r\nConnection: close\r\n\r\nok') or { panic(err) }
+		socket.close() or {}
+	}
+	return requests
+}
+
+fn check_explicit_cookie_headers() ! {
+	mut listener := net.listen_tcp(.ip, '127.0.0.1:0')!
+	listener.set_accept_timeout(2 * time.second)
+	defer { listener.close() or {} }
+	server := spawn serve_cookie_header_check(mut listener)
+	address := 'http://${listener.addr()!}/'
+	mut header := http.new_header(key: .cookie, value: 'session=fixture; duplicate=first')
+	header.add(.cookie, 'duplicate=second')
+	_ := http.fetch(url: address, header: header)!
+	_ := http.fetch(url: address, header: header, cookies: {'extra': 'map'})!
+	_ := http.fetch(url: address)!
+	requests := server.wait()
+	assert requests[0].contains('Cookie: session=fixture; duplicate=first; duplicate=second\r\n')
+	assert requests[0].count('Cookie:') == 1
+	assert requests[1].contains('Cookie: extra=map; session=fixture; duplicate=first; duplicate=second\r\n')
+	assert requests[1].count('Cookie:') == 1
+	assert !requests[2].contains('Cookie:')
 }
 
 fn check_growth_and_wire_roundtrip() ! {
