@@ -61,6 +61,20 @@ pub fn (c &ComputedProperties) length_percentage_to_px(property_id PropertyID, p
 	return computed_properties_length_percentage_to_px(c, property_id, percentage_basis_px)
 }
 
+fn (c &ComputedProperties) absolute_layout_length_to_px(length Length) CSSPixels {
+	if subject := c.subject_element_ {
+		if subject.document().font_rendering_policy() == .chromium {
+			return CSSPixels.truncated_value_for(length.absolute_length_to_px_without_rounding())
+		}
+		return length.absolute_length_to_px()
+	}
+	if c.cached_first_available_computed_font_ != unsafe { nil }
+		&& c.cached_first_available_computed_font_.font_rendering_policy == .chromium {
+		return CSSPixels.truncated_value_for(length.absolute_length_to_px_without_rounding())
+	}
+	return length.absolute_length_to_px()
+}
+
 fn computed_properties_length_percentage_to_px(c &ComputedProperties, property_id PropertyID, percentage_basis_px f64) ?f64 {
 	value := c.property(property_id, .yes) or { return none }
 	typed := style_value_logic_from_dom(property_id, value) or { return none }
@@ -78,7 +92,7 @@ fn computed_properties_length_percentage_to_px(c &ComputedProperties, property_i
 	if typed is LengthStyleValue {
 		length := typed.length()
 		if length.is_absolute() {
-			return length.absolute_length_to_px().to_double()
+			return c.absolute_layout_length_to_px(length).to_double()
 		}
 	} else if typed is PercentageStyleValue {
 		return LengthPercentage.from_style_value_logic(typed).to_px(LengthResolutionContext{},
@@ -108,7 +122,7 @@ pub fn (c &ComputedProperties) resolve_length_percentage_value_px(value StyleVal
 	if value is LengthStyleValue {
 		length := value.length()
 		if length.is_absolute() {
-			return length.absolute_length_to_px().to_double()
+			return c.absolute_layout_length_to_px(length).to_double()
 		}
 	} else if value is PercentageStyleValue {
 		return LengthPercentage.from_style_value_logic(value).to_px(LengthResolutionContext{},
