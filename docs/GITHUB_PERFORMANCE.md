@@ -9642,6 +9642,47 @@ Equivalent Chrome content/start/submission accounting remains open;
 **faster-than-Chrome performance is unproven**. Evidence:
 Build/instructions/vox-opt97-interleaved-* and Build/v/instruction-opt97-*.
 
+## Round 98: reject shared CSS gradient snapshots locally
+
+The frozen candidate imports independently authored `2cc0daac` (Alexander
+Medvednikov) onto accepted round 97: **four authored hunks in two runtime paths**.
+`PaintCommand.gradient` retains an optional pointer to an immutable gradient
+snapshot, with fresh publication from background producers and force-dark
+resolution. Changed lines are exact; only unchanged outer context belonging to
+absent box-shadow storage is trimmed. No other predecessor feature is imported.
+Root implementation is preserved.
+
+The identical **30-case C-O2 common harness** passes **21,737 assertions** in
+before/Boehm, final/Boehm and final/no-GC, all actual exits 0. It includes
+28 retained public geometry/layout cases, the unchanged original gradient
+producer/collection retention case and one inactive diagnostic. Common source
+SHA256: `23f14eb5f82f296181c6d1bb1037c0cb29ef8e8a0fe5c4a8a1663644efb255fe`. Two additional original candidate-only contracts
+remain unrun. Focused generated C archives and binary hashes are durable.
+
+Three fixed alternating local pairs measure **32 complete public document
+layout rebuilds over 64 Unicode paragraphs**, including min-content inline
+blocks and absolute children. Public invalidation, fresh mirrors, formatting,
+geometry, paint transport and recursive committed geometry/text checksums are
+counted. Setup, eight warmups, expected checksum and forced GC precede the
+hardware interval; assertions follow. All six actual exits are 0 and checksums
+are **1,829,472**. Before counts: **2,995,729,074 / 2,998,934,790 / 3,000,977,642**; candidate counts
+by pair: **3,000,772,568 / 2,999,493,000 / 3,017,004,357**. Median instructions rise
+**2,998,934,790→3,000,772,568 (+0.06128%)**,
+with **0/3 pairs improving**. The fixed cohort is retained unchanged.
+
+The negative-local-change gate retains its **actual exit 1 before launching
+any native child job**. Normal build, profiles, C-only probes, strict normal C
+audit, page observations, broad batch and app/GC-artifact checks were not
+started. Prepared scripts are not execution evidence. **Page credit is 0**;
+this local result does not establish a page regression. Frozen round 97 remains
+control. The last completed broad batch remains round 96 (`22bebff7`), and
+observed carry stays **4,410,609.5**, below 5,000,000. The 4 GiB hint and GC policy
+are unchanged. Canonical and GUI browsers are preserved; Chrome parity is open.
+
+Evidence: Build/opt98-{before,final,contracts}-source and
+Build/v/instruction-opt98-*, including actual exits, exact source audit,
+diagnostic observations and durable focused C archives.
+
 ## Causes and changes
 
 - The V 0.5.2 compatibility compiler's `-prod` Boehm code repeatedly snapshots

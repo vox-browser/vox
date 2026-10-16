@@ -1912,6 +1912,13 @@ evidence](docs/translation-audit/NATIVE_MEDIA_WHEEL_RAW_HANDLER.md).
   Broad verification: deferred below cumulative 5M gate;
   focused retained viewport exact. Additional observed savings: 4,410,609.5.
   Same 4 GiB/placement; canonical/GUI preserved; Root excluded; Chrome parity open.
+  Shared CSS gradient snapshots round 98 (`2cc0daac`) are locally rejected.
+  The 30 common cases pass 21,737 assertions per configuration.
+  Complete public layout batches increase median instructions 0.061%; 0/3 wins.
+  The native gate exits 1 before launching any child; two contracts remain unrun.
+  No normal C/page result; frozen 97 remains control, last broad batch is 96.
+  Page credit 0; observed carry 4,410,609.5; Root/canonical/GUI preserved.
+  Chrome parity remains open.
 - Outside instruction-count optimization, run broad regression suites once per
   ten completed fixes, not after every fix.
   Broad suites include full translation/package test batches, the full LibJS AST
