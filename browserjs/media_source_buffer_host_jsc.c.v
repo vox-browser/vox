@@ -183,7 +183,15 @@ fn (mut host MediaSourceHost) set_buffer_owner(kind MediaBufferHostKind, name st
 	} else {
 		mut buffer := unsafe { &mediasourceextensions.SourceBuffer(record.native) }
 		if name == 'mode' {
-			buffer.set_mode(mediasourceextensions.append_mode_from_webidl(host.dom_string(value)!)!)!
+			// Source ignores enum conversion failures before calling the setter.
+			converted := host.dom_string(value) or {
+				if err is JavaScriptValueException { host.runtime.release_javascript_value(err.value) }
+				return C.JSValueMakeUndefined(host.runtime.context)
+			}
+			mode := mediasourceextensions.append_mode_from_webidl(converted) or {
+				return C.JSValueMakeUndefined(host.runtime.context)
+			}
+			buffer.set_mode(mode)!
 		} else {
 			buffer.set_timestamp_offset(host.buffer_number(value, true)!)!
 		}
