@@ -490,14 +490,7 @@ fn text_grapheme_boundaries(text string) []int {
 		}
 		return boundaries
 	}
-	mut boundaries := []int{cap: text.runes().len + 1}
-	boundaries << 0
-	mut offset := 0
-	for grapheme in text.graphemes() {
-		offset += utf16_length_for_line_box(grapheme)
-		boundaries << offset
-	}
-	return boundaries
+	return general_text_grapheme_boundaries(code_points)
 }
 
 fn text_line_boundaries(text string) []bool {
