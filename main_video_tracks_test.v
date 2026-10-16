@@ -132,7 +132,8 @@ fn test_native_video_tracks_selection_reaches_backend_and_changes_precede_resize
 	mut runtime, host, mut document := native_video_tracks_fixture()!
 	defer { runtime.close();document.finalize() }
 	mut media := host.media_element_for_binding(runtime.evaluate_host_value('nvtVideo')!)!
-	assert runtime.evaluate_host('nvtVideo.videoWidth===0&&nvtVideo.videoHeight===0')! == 'true'
+	owner := unsafe { &dom.HTMLVideoElement(document.get_element_by_id('nvt-video')?) }
+	assert owner.video_element_model_ == unsafe { nil }
 	media.set_ready_state(.have_metadata)
 	state := &NativeVideoTracksBackend{}
 	media.set_playback_manager_hooks(html.MediaPlaybackManagerHooks{

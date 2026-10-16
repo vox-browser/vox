@@ -2183,6 +2183,16 @@ pub fn (mut element HTMLMediaElement) set_selected_video_track(track ?&VideoTrac
 		mut mutable_source := unsafe { &painting.VideoFrameSource(source) }
 		mutable_source.clear()
 	}
+	// Materialize the actual video owner before changing selection, so its
+	// intrinsic-size setter observes the first transition and queues resize.
+	if element.video_element_model_ == none {
+		if html_element := element.associated_element_ {
+			dom_element := unsafe { &dom.Element(html_element) }
+			if dom_element.is_html_element() && dom_element.local_name() == 'video' {
+				html_video_element_model_for_dom_element(unsafe { &dom.HTMLVideoElement(dom_element) })
+			}
+		}
+	}
 	element.selected_video_track_ = track
 	if mut video := element.video_element_model_ {
 		if selected := track {
