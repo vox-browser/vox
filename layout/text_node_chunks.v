@@ -459,7 +459,7 @@ fn text_grapheme_boundaries(text string) []int {
 		}
 		return boundaries
 	}
-	// Latin text with common spacing and punctuation characters has one
+	// Latin and non-combining Cyrillic text with common punctuation has one
 	// grapheme per code point. Avoid the substantially more expensive general
 	// UAX #29 tables for this common case, while retaining the full segmenter
 	// for combining marks, joiners, emoji, and complex scripts.
@@ -468,6 +468,9 @@ fn text_grapheme_boundaries(text string) []int {
 	for code_point in code_points {
 		if code_point >= 0x80
 			&& !(code_point >= 0xa0 && code_point <= 0x2ff)
+			// U+0483..0489 are combining marks and stay on the general path.
+			&& !(code_point >= 0x400 && code_point <= 0x482)
+			&& !(code_point >= 0x48a && code_point <= 0x52f)
 			&& !(code_point >= 0x2000 && code_point <= 0x200b)
 			&& !(code_point >= 0x2010 && code_point <= 0x2029) {
 			has_only_simple_graphemes = false
