@@ -179,6 +179,7 @@ pub:
 	// reconstructing it from an assumed 0.8em ascent at paint time.
 	baseline                 f64
 	baseline_set             bool
+	paint_line_top           ?f64
 	font_metrics_set         bool
 	font_ascent              f64
 	font_descent             f64
@@ -3380,13 +3381,16 @@ fn paint_text_shadow(mut commands []PaintCommand, fragment TextFragment,
 	}
 }
 
-// Blink's TextFragmentPainter rounds a horizontal text box's block offset to
-// whole pixels, keeping line heights consistent, before it places the
-// baseline. Chromium-policy documents paint glyphs from the same rounded top.
+// Blink snaps the containing paint fragment's origin, preserving each text
+// box's alignment inside it. Culled inline ancestors keep the line's origin;
+// decorated or spaced inline boxes establish an origin of their own.
 fn text_fragment_paint_top(fragment TextFragment) f64 {
 	if fragment.paintable_fragment.orientation == .horizontal {
 		if run := fragment.paintable_fragment.glyph_run {
 			if run.font().font_rendering_policy == .chromium {
+				if top := fragment.paint_line_top {
+					return fragment.y + math.floor(top + 0.5) - top
+				}
 				return math.floor(fragment.y + 0.5)
 			}
 		}

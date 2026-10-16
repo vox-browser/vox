@@ -46,3 +46,8 @@ the primary font's ascent and keeps fractional offsets for textual markers.
 Circles and rounded shapes use the isolated GPU backend when available, with
 the existing renderer as the fallback. Inside markers and other writing
 directions retain their existing layout path.
+
+`fractional-inline-lines` checks text at fractional block offsets with middle
+alignment and both culled and spaced inline ancestors. Glyph painting snaps
+the containing line or inline paint box while preserving the text's local
+vertical alignment; selection and layout geometry retain their fractions.

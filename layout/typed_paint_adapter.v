@@ -4117,6 +4117,8 @@ fn typed_paint_child_nodes(node &Node, state &LayoutState) []&Node {
 
 fn text_lines_from_typed_layout(container &Node, used &UsedValues, state &LayoutState, container_position css.CSSPixelPoint) []TextLine {
 	mut lines := []TextLine{}
+	mut paint_parent_pieces := []InlineBoxPiece{}
+	mut paint_parent_pieces_ready := false
 	for line_index, line_box in used.line_boxes {
 		mut fragments := []TextFragment{}
 		mut first_fragment_continues_previous_line := false
@@ -4223,6 +4225,32 @@ fn text_lines_from_typed_layout(container &Node, used &UsedValues, state &Layout
 			offset := css_pixel_point_add(fragment.offset(), inline_relative_offset(fragment.layout_node_, state))
 			absolute_x := container_position.x().plus(offset.x()).to_double()
 			absolute_y := container_position.y().plus(offset.y()).to_double()
+			mut paint_line_top := container_position.y().to_double() + line_box.bottom().to_double() - line_box.height().to_double()
+			if container.document().font_rendering_policy() == .chromium {
+				mut parent := fragment.layout_node_.parent()
+				for parent != none {
+					inline_parent := parent or { break }
+					if !inline_parent.is_inline_node() || inline_parent.is_atomic_inline() { break }
+					parent_style := inline_parent.as_node_with_style() or { break }
+					if parent_used := state.try_get(parent_style) {
+						if chromium_inline_needs_paint_box(inline_parent, parent_used) {
+							if !paint_parent_pieces_ready {
+								paint_parent_pieces = compute_inline_box_pieces(container, used, state)
+								paint_parent_pieces_ready = true
+								}
+							for piece in paint_parent_pieces {
+								if piece.line_index == line_index && layout_nodes_same(piece.node, inline_parent) {
+									paint_line_top = container_position.y().plus(piece.border_box_rect.y)
+										.plus(inline_relative_offset(fragment.layout_node_, state).y()).to_double()
+									break
+								}
+							}
+							break
+						}
+					}
+					parent = inline_parent.parent()
+				}
+			}
 			orientation := if fragment.writing_mode() == .horizontal_tb {
 				painting.Orientation.horizontal
 			} else {
@@ -4236,6 +4264,7 @@ fn text_lines_from_typed_layout(container &Node, used &UsedValues, state &Layout
 			transport_fragment := TextFragment{
 				x: absolute_x
 				y: absolute_y
+				paint_line_top: paint_line_top
 				width: fragment.width().to_double()
 				height: fragment.height().to_double()
 				text: text
