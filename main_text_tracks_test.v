@@ -97,8 +97,8 @@ fn test_native_text_tracks_live_indices_mode_conversion_and_native_metadata_chan
  const d=Object.getOwnPropertyDescriptor(l,"0");if(d.value!==t||d.writable||!d.enumerable||!d.configurable||Reflect.set(l,"0",null)||Reflect.set(l,"1",null)||Reflect.defineProperty(l,"3",{value:null})||Reflect.deleteProperty(l,"0")||!Reflect.deleteProperty(l,"2"))return false;
  l["01"]=7;const symbol=Symbol();l[symbol]=8;if(Reflect.ownKeys(l).map(k=>typeof k==="symbol"?"symbol":k).join(",")!=="0,01,symbol"||l["4294967294"]!==undefined||l["-0"]!==undefined||Reflect.preventExtensions(l))return false;
  let calls=0;for(const m of ["disabled","hidden","showing"]){mode.call(t,{toString(){calls++;return m}});if(t.mode!==m)return false}if(calls!==3)return false;
- for(const m of [undefined,null,"Showing","",Symbol()])try{mode.call(t,m);return false}catch(e){if(!(e instanceof TypeError)||t.mode!=="showing")return false}
- const sentinel={};try{mode.call(t,{toString(){throw sentinel}});return false}catch(e){if(e!==sentinel)return false}
+ for(const m of [undefined,null,"Showing","",Symbol()])if(mode.call(t,m)!==undefined||t.mode!=="showing")return false;
+ const sentinel={};if(mode.call(t,{toString(){throw sentinel}})!==undefined||t.mode!=="showing")return false;
  for(const fake of [Object.create(t),new Proxy(t,{}),l,nttAudio.audioTracks])try{mode.call(fake,{toString(){calls++;return "hidden"}});return false}catch(e){if(!(e instanceof TypeError)||calls!==3)return false}
  for(const fake of [Object.create(l),new Proxy(l,{}),t,nttAudio.videoTracks])try{lookup.call(fake,{toString(){calls++;return "x"}});return false}catch(e){if(!(e instanceof TypeError)||calls!==3)return false}
  return lookup.call(l,{toString(){t.mode="hidden";return "\ud800\0"}})===t&&t.mode==="hidden"&&l.getTrackById("missing")===null;

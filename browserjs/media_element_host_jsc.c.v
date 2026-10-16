@@ -1396,12 +1396,16 @@ fn (mut host MediaElementHost) text_track_operation(name string, receiver voidpt
 	if name == 'setMode' {
 		mut value := C.JSValueMakeUndefined(context)
 		if args.len > 0 { value = args[0] }
-		converted := host.runtime.binding_dom_utf16(value)!.str()
-		mode := match converted {
+		// Source's generated enum attribute setter ignores conversion errors.
+		converted := host.runtime.binding_dom_utf16(value) or {
+			if err is JavaScriptValueException { host.runtime.release_javascript_value(err.value) }
+			return C.JSValueMakeUndefined(context)
+		}
+		mode := match converted.str() {
 			'disabled' { html.TextTrackMode.disabled }
 			'hidden' { html.TextTrackMode.hidden }
 			'showing' { html.TextTrackMode.showing }
-			else { return error('TypeError: Invalid TextTrackMode') }
+			else { return C.JSValueMakeUndefined(context) }
 		}
 		track.set_mode(mode)
 		return C.JSValueMakeUndefined(context)
