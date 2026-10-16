@@ -199,6 +199,7 @@ Counts are whole launch through the capture boundary described above.
 | Vox candidate v13 | 69,618,119,569 | Failed: extra body scrollbar |
 | Vox candidate v14 | 78,965,962,830 | Passed |
 | Vox candidate v15 | 48,894,785,438 | Passed |
+| Vox candidate v16 | 63,190,658,751 | Passed; regression |
 
 Candidate v6 uses executable SHA256
 `cc105727ad0e7d08d12c94336ca6cd4d26e2c1318416dfddace23c626d1338c2`.
@@ -348,9 +349,29 @@ The broad-verification baseline is now 48,894,785,438 instructions, with zero
 additional measured savings credited. Diagnostic profiles, isolated allocation
 probes and failed content or pixel checks do not advance that baseline.
 
-Vox remains 4.72% above the single Brave reference. A target claim still requires
-at least five alternating fresh Vox/Brave runs with all gates passing, preserved
-rows and unchanged input/runtime fingerprints.
+Candidate v16 adds conservative shared-style identity checks and a fast path
+for non-combining Cyrillic graphemes, and preserves the independently committed
+live video-dimension getters. Its executable SHA256 is
+`0448d96df77877edd738eb70e6fa28636e784c9217da9bfec1754230864ad189`,
+built from committed frozen revision
+`fc35908f152ef66045819d1eb149cf0514d3f6ec`. The source was read from exact
+Git objects; concurrent uncommitted JavaScriptCore host-file changes were
+recorded and excluded. All content, font, fresh font-file and native-pixel
+checks pass. The completed primary checkpoint nevertheless uses
+14,295,873,313 more instructions than v15 and earns no savings credit, broad
+batch or baseline reset.
+
+A separate reverse-order diagnostic pair records 47,886,531,355 instructions
+for v16 and 47,257,583,987 for v15, with identical native pixels and all gates
+passing. The 1.33% regression in that pair is much smaller than the primary
+regression; the original row remains preserved. This diagnostic investigates
+run variation and earns no primary performance credit. Its receipt is
+`Build/pikabu-instructions/v16-v15-matched-pair-diagnostic.json`.
+
+The best broadly verified checkpoint, v15, remains 4.72% above the single Brave
+reference. A target claim still requires at least five alternating fresh
+Vox/Brave runs with all gates passing, preserved rows and unchanged
+input/runtime fingerprints.
 
 Focused checks:
 
