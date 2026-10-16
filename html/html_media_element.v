@@ -2183,18 +2183,10 @@ pub fn (mut element HTMLMediaElement) set_selected_video_track(track ?&VideoTrac
 		mut mutable_source := unsafe { &painting.VideoFrameSource(source) }
 		mutable_source.clear()
 	}
-	// Materialize the actual video owner before changing selection, so its
-	// intrinsic-size setter observes the first transition and queues resize.
-	if element.video_element_model_ == none {
-		if html_element := element.associated_element_ {
-			dom_element := unsafe { &dom.Element(html_element) }
-			if dom_element.is_html_element() && dom_element.local_name() == 'video' {
-				html_video_element_model_for_dom_element(unsafe { &dom.HTMLVideoElement(dom_element) })
-			}
-		}
-	}
+	// Materialize before changing selection so the first size queues resize.
+	video_owner := element.ensure_video_element_model()
 	element.selected_video_track_ = track
-	if mut video := element.video_element_model_ {
+	if mut video := video_owner {
 		if selected := track {
 			if selected.base.pixel_width > 0 && selected.base.pixel_height > 0 {
 				video.set_intrinsic_video_dimensions(VideoDimensions{
@@ -2210,6 +2202,14 @@ pub fn (mut element HTMLMediaElement) set_selected_video_track(track ?&VideoTrac
 		hook(track)
 	}
 	element.update_screen_wake_lock()
+}
+
+fn (mut element HTMLMediaElement) ensure_video_element_model() ?&HTMLVideoElementModel {
+	if video := element.video_element_model_ { return video }
+	html_element := element.associated_element_ or { return none }
+	dom_element := unsafe { &dom.Element(html_element) }
+	if !dom_element.is_html_element() || dom_element.local_name() != 'video' { return none }
+	return html_video_element_model_for_dom_element(unsafe { &dom.HTMLVideoElement(dom_element) })
 }
 
 pub fn (mut element HTMLMediaElement) ensure_video_frame_source() &painting.VideoFrameSource {
@@ -2230,7 +2230,7 @@ pub fn (mut element HTMLMediaElement) update_video_frame_and_timeline() {
 		if current_frame := frame {
 			mut source := element.ensure_video_frame_source()
 			source.update(current_frame)
-			if mut video := element.video_element_model_ {
+			if mut video := element.ensure_video_element_model() {
 				video.set_intrinsic_video_dimensions(VideoDimensions{
 					width: current_frame.width
 					height: current_frame.height

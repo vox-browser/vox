@@ -4,6 +4,7 @@ import browserjs
 import dom
 import html
 import page
+import painting
 import time
 
 fn native_video_tracks_fixture() !(&browserjs.Runtime, &browserjs.MediaElementHost, &dom.Document) {
@@ -60,6 +61,33 @@ fn test_native_video_tracks_interfaces_same_object_and_real_event_target_provide
  }
  return Object.keys(l).length===0&&Object.isExtensible(l)&&Reflect.preventExtensions(l)===false;
 })()')! == 'true'
+}
+
+fn test_native_video_dimensions_and_resize_follow_the_first_frame_without_a_prior_model_read() {
+	$if !darwin { return }
+	mut runtime, host, mut document := native_video_tracks_fixture()!
+	defer { runtime.close(); document.finalize() }
+	mut media := host.media_element_for_binding(runtime.evaluate_host_value('nvtVideo')!)!
+	owner := unsafe { &dom.HTMLVideoElement(document.get_element_by_id('nvt-video')?) }
+	media.set_ready_state(.have_metadata)
+	assert owner.video_element_model_ == unsafe { nil }
+	assert runtime.evaluate_host(r'globalThis.nvtFrameEvents=[];nvtVideo.onresize=function(e){if(this!==nvtVideo||e.target!==this||e.currentTarget!==this||!e.isTrusted)throw "frame resize owner";nvtFrameEvents.push(e.type+":"+this.videoWidth+"x"+this.videoHeight);};0')! == '0'
+	bitmap := &dom.Bitmap_{width: 2, height: 1, pitch: 8, data: [u8(255),0,0,255,0,255,0,255]}
+	frame := painting.MediaVideoFrame.from_bitmap_with_color_space(bitmap, .display_p3)
+	media.set_playback_manager_hooks(html.MediaPlaybackManagerHooks{
+		current_video_frame: fn [frame] () ?&painting.MediaVideoFrame { return frame }
+	})
+	media.update_video_frame_and_timeline()
+	assert media.ensure_video_frame_source().current_frame()? == frame
+	assert runtime.evaluate_host('nvtVideo.videoWidth===2&&nvtVideo.videoHeight===1&&nvtVideo.videoTracks.length===0&&nvtFrameEvents.length===0')! == 'true'
+	assert native_video_tracks_drain(media) == 1
+	assert runtime.evaluate_host('nvtFrameEvents.join(",")==="resize:2x1"')! == 'true'
+	media.update_video_frame_and_timeline()
+	assert native_video_tracks_drain(media) == 0 && media.event_count('resize') == 1
+	settings := unsafe { &html.EnvironmentSettingsObject(document.relevant_settings_object()) }
+	assert settings.realm().reported_exceptions.len == 0
+	assert settings.realm().script_execution_depth == 0 && settings.realm().callback_execution_depth == 0
+	assert !runtime.libjs_vm().has_running_execution_context()
 }
 
 fn test_native_video_tracks_live_index_descriptors_metadata_and_retained_tracks() {
