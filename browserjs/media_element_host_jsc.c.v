@@ -198,6 +198,27 @@ pub fn (mut host MediaElementHost) install(mut runtime Runtime) ! {
 	if exception != unsafe { nil } { return runtime.actual_javascript_exception(exception) }
 	runtime.retain_javascript_value(dimension_array)!
 	defer { runtime.release_javascript_value(dimension_array) }
+	mut size_accessors := []voidptr{}
+	for name in ['width', 'height'] {
+		size_accessors << runtime.make_native_value_host_function('get ${name}', 0, fn [handle, name] (receiver voidptr, _ []voidptr) !voidptr {
+			mut host := unsafe { &MediaElementHost(handle) }
+			return host.video_size_attribute(name, receiver) or {
+				return host.runtime.actual_javascript_exception(host.runtime.binding_exception_value(err))
+			}
+		})!
+		size_accessors << runtime.make_native_value_host_function('set ${name}', 1, fn [handle, name] (receiver voidptr, args []voidptr) !voidptr {
+			mut host := unsafe { &MediaElementHost(handle) }
+			mut value := C.JSValueMakeUndefined(host.runtime.context)
+			if args.len > 0 { value = args[0] }
+			return host.set_video_size_attribute(name, receiver, value) or {
+				return host.runtime.actual_javascript_exception(host.runtime.binding_exception_value(err))
+			}
+		})!
+	}
+	size_array := C.JSObjectMakeArray(runtime.context, usize(size_accessors.len), size_accessors.data, &exception)
+	if exception != unsafe { nil } { return runtime.actual_javascript_exception(exception) }
+	runtime.retain_javascript_value(size_array)!
+	defer { runtime.release_javascript_value(size_array) }
 	poster_getter := runtime.make_native_value_host_function('get poster', 0, fn [handle] (receiver voidptr, _ []voidptr) !voidptr {
 		mut host := unsafe { &MediaElementHost(handle) }
 		return host.poster(receiver) or {
@@ -241,7 +262,7 @@ pub fn (mut host MediaElementHost) install(mut runtime Runtime) ! {
 			default_muted_getter, default_muted_setter, set_attribute_sync, loop_getter, loop_setter,
 			autoplay_getter, autoplay_setter, preload_getter, preload_setter,
 			cross_origin_getter, cross_origin_setter, controls_getter, controls_setter,
-			poster_getter, poster_setter, dimension_array])!)!
+			poster_getter, poster_setter, dimension_array, size_array])!)!
 	defer { runtime.release_javascript_value(prototypes) }
 	host.prototype = runtime.retain_javascript_value(runtime.binding_property(prototypes, 'media')!)!
 	host.video_prototype = runtime.retain_javascript_value(runtime.binding_property(prototypes, 'video')!)!
@@ -445,6 +466,33 @@ fn (mut host MediaElementHost) video_dimension(name string, receiver voidptr) !v
 	mut pixels := video.video_width()
 	if name == 'videoHeight' { pixels = video.video_height() }
 	return C.JSValueMakeNumber(host.runtime.context, f64(pixels))
+}
+
+fn (mut host MediaElementHost) video_size_attribute(name string, receiver voidptr) !voidptr {
+	element := host.video_element_for_binding(receiver)!
+	if replay := host.replay { replay(host.runtime)! }
+	// Source's unsigned-long reflection reads the first qualified attribute.
+	raw := element.get_attribute(name) or { return C.JSValueMakeNumber(host.runtime.context, 0) }
+	value := html.parse_non_negative_integer(raw) or { return C.JSValueMakeNumber(host.runtime.context, 0) }
+	if value > 0x7fff_ffff { return C.JSValueMakeNumber(host.runtime.context, 0) }
+	return C.JSValueMakeNumber(host.runtime.context, f64(value))
+}
+
+fn (mut host MediaElementHost) set_video_size_attribute(name string, receiver voidptr, value voidptr) !voidptr {
+	mut element := host.video_element_for_binding(receiver)!
+	converted := u32(webidl.convert_to_int(host.runtime.webidl_value(value)!, 32, false, .no, .no)!)
+	if replay := host.replay { replay(host.runtime)! }
+	// The generated reflection setter applies this limit after WebIDL wrapping.
+	mut reflected := converted
+	if reflected > 0x7fff_ffff { reflected = 0 }
+	raw := reflected.str()
+	if host.attribute_sync != unsafe { nil } {
+		host.runtime.call_javascript_function(host.attribute_sync,
+			C.JSValueMakeUndefined(host.runtime.context), [receiver,
+				host.runtime.binding_string(name), host.runtime.binding_string(raw)])!
+	}
+	element.set_attribute_value(name, raw)
+	return C.JSValueMakeUndefined(host.runtime.context)
 }
 
 fn (mut host MediaElementHost) poster(receiver voidptr) !voidptr {
@@ -686,7 +734,7 @@ fn (mut host MediaElementHost) set_property(name string, receiver voidptr, value
 // selected media and input handler attributes,
 // and constants.
 // Full HTMLElement/audio/video interfaces remain open.
-const media_element_native_factory = r'(function(getters,setters,bind,fastSeek,getStartDate,pause,load,play,handlerGetters,handlerSetters,canPlayType,defaultMutedGetter,defaultMutedSetter,setAttributeSync,loopGetter,loopSetter,autoplayGetter,autoplaySetter,preloadGetter,preloadSetter,crossOriginGetter,crossOriginSetter,controlsGetter,controlsSetter,posterGetter,posterSetter,dimensionGetters){
+const media_element_native_factory = r'(function(getters,setters,bind,fastSeek,getStartDate,pause,load,play,handlerGetters,handlerSetters,canPlayType,defaultMutedGetter,defaultMutedSetter,setAttributeSync,loopGetter,loopSetter,autoplayGetter,autoplaySetter,preloadGetter,preloadSetter,crossOriginGetter,crossOriginSetter,controlsGetter,controlsSetter,posterGetter,posterSetter,dimensionGetters,sizeAccessors){
  "use strict";
  const define=Object.defineProperty,create=Object.create,P=Proxy,T=TypeError;
  const prototype=create(EventTarget.prototype);
@@ -722,6 +770,7 @@ const media_element_native_factory = r'(function(getters,setters,bind,fastSeek,g
  define(globalThis,"__ladybirdMediaElementSetAttributeSync",{value:setAttributeSync,configurable:true});
  const videoPrototype=create(prototype);
  for(const [index,name] of ["videoWidth","videoHeight"].entries())define(videoPrototype,name,{get:dimensionGetters[index],enumerable:true,configurable:true});
+ for(const [index,name] of ["width","height"].entries())define(videoPrototype,name,{get:sizeAccessors[index*2],set:sizeAccessors[index*2+1],enumerable:true,configurable:true});
  define(videoPrototype,"poster",{get:posterGetter,set:posterSetter,enumerable:true,configurable:true});
  define(videoPrototype,Symbol.toStringTag,{value:"HTMLVideoElement",configurable:true});
  const videoConstructor=new P(function HTMLVideoElement(){},{apply(){throw new T("Illegal HTMLVideoElement constructor")},construct(){throw new T("Illegal HTMLVideoElement constructor")}});
