@@ -9093,6 +9093,128 @@ Equivalent Chrome content/start/submission accounting remains open;
 **faster-than-Chrome performance is unproven**. Evidence:
 Build/instructions/vox-opt92-interleaved-* and Build/v/instruction-opt92-*.
 
+## Reuse internal normal font settings without mutable snapshots
+
+Round93 imports independently authored `30094b69` (Alexander Medvednikov):
+**four exact hunks in three CSS runtime paths**, on accepted frozen92.
+FontComputer owns two private valid empty maps. Synchronous internal font
+computation borrows them for typed or bridge `normal` settings. Non-normal
+settings keep the original owning getters; public feature and variation
+snapshots remain independently mutable. Cache matching and key generation
+only read the borrowed maps, and misses materialize owned axes/features.
+No filtering, arena, heap hint or GC policy changes.
+
+The identical common harness passes **51 cases / 5,219
+assertions in each of before/Boehm, final/Boehm and final/no-GC**, C-O2.
+Its 50 functional cases are unchanged original style/font checks; one diagnostic
+is inactive. Common source SHA256:
+`2f76673f00cc30e341f78afbee1930c6d670b4d1b67b4cfcc6963e45861de7e8`.
+All **five byte-exact original contract cases pass
+1,066 assertions each in both GC modes**.
+They cover allocation-free internal typed/bridge normal reads, independent
+public mutable snapshots, non-normal duplicate/narrowing conversion,
+typed-payload and animated/important precedence, identical cascade keys,
+and retained cascades across environment changes and forced GC. All checks
+retain actual zero exits and durable generated C archives.
+
+Three fixed alternating local pairs measure **16 complete public font-change
+notifications, document style updates and retained-value materializations
+over 33 existing elements** per observation. DOM, initial styles, eight warmups,
+expected checksum and forced GC precede the hardware interval; checksum,
+generation and clean-style assertions follow. All six actual exits are 0,
+checksums **16,954,784** match, and all three pairs improve. Before counts:
+**65,269,829 / 65,261,580 / 65,277,783**; final counts by pair:
+**64,858,300 / 64,841,896 / 64,848,941**. Medians **65,269,829→64,848,941**,
+**-0.64484%**. These complete public operations include the
+changed paths; private helper loops provide no page credit.
+
+Full-process C-O1/Boehm profiles pass, enabled from startup without filtering
+or resets. Call counts only:
+
+| Function | Before calls | Candidate calls |
+| --- | ---: | ---: |
+| `css__opt93_complete_font_notification` | 25 | 25 |
+| `css__FontComputer_did_load_font` | 51 | 51 |
+| `dom__Document_update_style` | 27 | 27 |
+| `css__resolve_computed_values_for_document` | 858 | 858 |
+| `css__resolve_computed_values` | 858 | 858 |
+| `css__ComputedProperties_computed_font_list` | 3,545 | 3,545 |
+| `css__ComputedProperties_font_feature_data` | 887 | 0 |
+| `css__ComputedProperties_font_variation_settings` | 887 | 0 |
+| `css__FontComputer_variation_settings_for_computation` | 0 | 887 |
+| `css__FontComputer_feature_data_for_computation` | 0 | 887 |
+| `css__ComputedProperties_font_feature_data_with_settings` | 0 | 887 |
+
+The complete notification and document-facing materialization counts match.
+Internal computation reaches the private helpers, reducing public snapshot
+construction. Public snapshot semantics are covered separately by contracts.
+Profile timings provide no instruction credit.
+
+The strict normal generated-C audit passes: two edited and three new function
+bodies independently match C generation from the same immutable runtimes.
+The source-unchanged FontComputer constructor differs only by exactly two
+valid empty map initializers. Its record adds exactly the two private fields;
+any emitted debug printer is independently authenticated. The one unchanged
+computed-font-list assertion has identical source metadata and condition;
+its exact normal/test-runner instrumentation is authenticated separately.
+Actual frontend tables differ by one authenticated internal_font_settings.v
+insertion. All remaining C, records, globals, resources, filtering, arenas and
+GC setup match after established identities, unchanged assertion-line maps,
+37 frozen includes, four byte-identical helper reorders and two unchanged
+u32-map printers whose order changes. Those printers match before/final
+normal C and final independent C; the before C-only probe does not emit them.
+All 120 native input hashes and exact native arguments match. Independent -no-skip-unused
+probes generate C only, with actual exits 0 and no native/runtime executions.
+Failed read-only audit evidence remains in
+instruction-opt93-c-audit-body-identity-finding, instruction-opt93-c-audit-map-printer-order-finding, instruction-opt93-c-audit-map-printer-reachability-finding.
+The page coordinator first stopped before preparation when it encountered
+the failed C-audit receipt. It resumed only after that prerequisite passed;
+no browser observation had started. No successful check or primary is repeated.
+Passing audit script SHA256:
+`7bc3668e18c186b806348aa34a72d8bcebc641917c639fd9d72778f52a910b53`.
+Normal C SHA256: `3a472c332986e73c8d97f72901e95ca9f4e732ae26d4180efeaaca69180fed80`.
+Durable archive hashes: instruction-opt93-artifact-archives.json.
+
+The predeclared page cohort is **30 alternating pairs**, odd before/final and
+even final/before, **30,000 paired bootstrap resamples, seed 93**. Persisted
+regular binaries use fresh copies of the same 359 cached bodies, frozen text
+and child-only placement helpers, C-O2/Boehm/default marker1, and the same
+4 GiB hint; no prod/prealloc. Document viewport remains 1024×768 and endpoint
+navigation_to_first_document_paint[0].
+
+| Build | Median first-frame retired instructions | Median lifetime process peak, MiB |
+| --- | ---: | ---: |
+| Fresh accepted frozen92 control | 17,548,940,378.5 | 3,512.4 |
+| Private internal normal font maps | 17,483,656,670 | 3,509.6 |
+
+Difference of marginal medians (before minus candidate):
+**65,283,708.5** instructions; candidate change
+**-0.372%**, **21/30** wins.
+Paired median saving **22,453,203.5**, paired 95% interval
+**[7,210,623.5, 43,090,181.5]**. The positive paired interval establishes repeatable page credit of **65,283,708.5** instructions.
+
+All 60 primaries and **60 actual PNGs** remain. Recoveries:
+none; pre-parse retries: 0. First primaries retain
+1 installation / 2 geometry preparations / 1 paint. Later completed refreshes:
+none. No completed primary is extended, discarded
+or rerun. Any recovery discloses unknown final exit and missing PNG,
+fingerprint and peak. Peaks include capture/exit and later refreshes; they
+are not live first-frame memory and are never summed. The read-only decoded capture check finds 29 before and 30 candidate RGB classes, 0 shared. All differences stay within the original skeleton bands, x45–662: y335–344 and ten 14px bands starting at 380 with 41px spacing. All pixels outside these bands match. No animation was disabled and no observation repeated; evidence is instruction-opt93-page-pixel-class-check.json.
+External foreground transitions remain retained:
+none.
+The child is foreground in neither startup snapshot. Focused viewport is
+pixel-exact at 1024×768. Prior observed carry is 0. Cumulative observed saving **65,283,708.5** crosses the 5M gate. Six direct harness jobs actually pass CSS 31/SVG 10/layout 46 in both GCs (**174 executions**). All **19 screenshots pass, 16 exact**; known differences remain inline-node 13, text-decorations 1,341 and canvas-text 1,994. The completed broad batch resets additional observed savings to 0.
+All controllers and child checks retain actual terminal evidence.
+
+The isolated signed app is `/Users/alex/code/vox2/Build/v/Vox-opt93.app`. Native instruction text
+matches the measured executable, with the frozen helper pinned inside the app.
+Actual loaded helper path/hash, signatures, startup and actual collections
+pass for default marker1 and override2. Canonical and GUI browsers remain
+preserved. Contemporary Root receives no source, regression or page credit.
+Equivalent Chrome content/start/submission accounting remains open;
+**faster-than-Chrome performance is unproven**. Evidence:
+Build/instructions/vox-opt93-interleaved-* and Build/v/instruction-opt93-*.
+
 ## Causes and changes
 
 - The V 0.5.2 compatibility compiler's `-prod` Boehm code repeatedly snapshots
