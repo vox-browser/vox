@@ -60,6 +60,7 @@ pub:
 	source_path string
 	is_invisible bool
 	font_rendering_policy FontRenderingPolicy
+	synthesize_ascii_caps bool
 mut:
 	resolved_path_ string
 	decoded_face_ &ttf.TTF_File = unsafe { nil }
@@ -125,6 +126,9 @@ pub fn (font &Font) has_same_identity(other &Font) bool {
 	if font.point_size != other.point_size || font.weight != other.weight
 		|| font.is_invisible != other.is_invisible
 		|| font.font_rendering_policy != other.font_rendering_policy {
+		return false
+	}
+	if font.synthesize_ascii_caps != other.synthesize_ascii_caps {
 		return false
 	}
 	if font_path := font.font_path() {
@@ -401,6 +405,10 @@ pub fn (font &Font) glyph_outline(glyph_index int) ?FontGlyphOutline {
 }
 
 fn (font &Font) glyph_metrics(code_point u32) (f32, int) {
+	return font.glyph_metrics_for_shaping(font.shaping_code_point(code_point))
+}
+
+fn (font &Font) glyph_metrics_for_shaping(code_point u32) (f32, int) {
 	face := font_face(font) or { return font.point_size * 0.5, int(code_point) }
 	units_per_em := f32(face.units_per_em)
 	// The raw advance and glyph index are point-size independent, so cache them

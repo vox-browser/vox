@@ -402,7 +402,7 @@ fn harfbuzz_font_contains_glyph(font &Font, code_point u32) ?bool {
 	face := document_harfbuzz_face(font)?
 	hb_font := scaled_harfbuzz_font(face, font.point_size, font.shaping_resolution())?
 	mut glyph := u32(0)
-	return C.hb_font_get_nominal_glyph(hb_font, code_point, &glyph) != 0 && glyph != 0
+	return C.hb_font_get_nominal_glyph(hb_font, font.shaping_code_point(code_point), &glyph) != 0 && glyph != 0
 }
 
 fn emoji_harfbuzz_face() ?voidptr {
@@ -524,9 +524,16 @@ fn shape_text_with_harfbuzz(initial_x f32, letter_spacing f32, word_spacing f32,
 		utf16_units.len
 	}
 	if is_ascii {
-		C.hb_buffer_add_utf8(buffer, text.str, text.len, 0, -1)
+		shaping_text := font.text_for_shaping(text)
+		C.hb_buffer_add_utf8(buffer, shaping_text.str, shaping_text.len, 0, -1)
 	} else if utf16_units.len > 0 {
-		C.hb_buffer_add_utf16(buffer, utf16_units.data, utf16_units.len, 0, -1)
+		if font.synthesize_ascii_caps {
+			mut shaping_units := utf16_units.clone()
+			for index, value in shaping_units { shaping_units[index] = u16(font.shaping_code_point(u32(value))) }
+			C.hb_buffer_add_utf16(buffer, shaping_units.data, shaping_units.len, 0, -1)
+		} else {
+			C.hb_buffer_add_utf16(buffer, utf16_units.data, utf16_units.len, 0, -1)
+		}
 	}
 	if is_ascii {
 		C.hb_buffer_set_script(buffer, C.hb_script_from_string(c'Latn', 4))

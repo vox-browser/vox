@@ -234,6 +234,7 @@ struct ShapingFontKey {
 	point_size_bits u32
 	is_invisible    bool
 	font_rendering_policy FontRenderingPolicy
+	synthesize_ascii_caps bool
 	key             string
 }
 
@@ -260,6 +261,7 @@ fn (entry &ShapingFontKey) matches(font &Font, point_size_bits u32) bool {
 	return entry.weight == font.weight && entry.point_size_bits == point_size_bits
 		&& entry.is_invisible == font.is_invisible && entry.family == font.family
 		&& entry.font_rendering_policy == font.font_rendering_policy
+		&& entry.synthesize_ascii_caps == font.synthesize_ascii_caps
 		&& entry.source_path == font.source_path && entry.resolved_path == font.resolved_path_
 }
 
@@ -273,7 +275,8 @@ fn shaping_cache_font_key(font &Font) string {
 		&& previous.weight == font.weight
 		&& previous.point_size_bits == math.f32_bits(font.point_size)
 		&& previous.is_invisible == font.is_invisible
-		&& previous.font_rendering_policy == font.font_rendering_policy {
+		&& previous.font_rendering_policy == font.font_rendering_policy
+		&& previous.synthesize_ascii_caps == font.synthesize_ascii_caps {
 		return previous.key
 	}
 	return shaping_font_key_after_last_miss(font)
@@ -291,7 +294,7 @@ fn shaping_font_key_after_last_miss(font &Font) string {
 		}
 	}
 	resolved_path := font.font_path() or { '' }
-	key := '${font.family.len}:${font.family}|${font.source_path.len}:${font.source_path}|${resolved_path.len}:${resolved_path}|${font.weight}|${font.face_index()}|${point_size_bits}|${font.is_invisible}|${font.font_rendering_policy}'
+	key := '${font.family.len}:${font.family}|${font.source_path.len}:${font.source_path}|${resolved_path.len}:${resolved_path}|${font.weight}|${font.face_index()}|${point_size_bits}|${font.is_invisible}|${font.font_rendering_policy}|${font.synthesize_ascii_caps}'
 	// An unavailable explicit source can appear later. Its fallback path remains
 	// unpinned, and must continue through the original resolution on each call.
 	if font.resolved_path_ != '' {
@@ -303,6 +306,7 @@ fn shaping_font_key_after_last_miss(font &Font) string {
 			point_size_bits: point_size_bits
 			is_invisible:    font.is_invisible
 			font_rendering_policy: font.font_rendering_policy
+			synthesize_ascii_caps: font.synthesize_ascii_caps
 			key:             key
 		}
 		last_shaping_font_key = entry

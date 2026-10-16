@@ -7,6 +7,7 @@ module layout
 import css
 import dom
 import platform
+import math
 
 // TextNode::Chunk and TextNode::ChunkIterator split rendered text at font,
 // bidi, whitespace, preserved-break and soft-wrap boundaries. Offsets and
@@ -29,8 +30,8 @@ enum TextDirectionMode {
 	unidirectional_left_to_right
 }
 
-// Only font-display's invisible fallback needs this per-iterator cache.
-// Ordinary text retains no empty map or map backing storage.
+// Invisible fallbacks and synthesized caps need derived fonts. Ordinary text
+// retains no empty map or map backing storage.
 @[heap]
 struct InvisibleFontSelectionStorage {
 mut:
@@ -50,6 +51,7 @@ pub struct TextNodeChunkIterator {
 	word_break             css.WordBreak
 	text_direction_mode    TextDirectionMode
 	font                   &platform.Font = unsafe { nil }
+	font_variant_caps      css.FontVariantCaps
 mut:
 	font_cascade_list      &css.FontCascadeList = unsafe { nil }
 	font_cascade_fonts     []&platform.Font
@@ -74,6 +76,8 @@ fn text_node_chunk_invisible_font(font &platform.Font) &platform.Font {
 		weight: font.weight
 		source_path:  font.source_path.clone()
 		is_invisible: true
+		font_rendering_policy: font.font_rendering_policy
+		synthesize_ascii_caps: font.synthesize_ascii_caps
 	}
 }
 
@@ -141,6 +145,7 @@ fn TextNodeChunkIterator.new_with_direction(text_node &TextNode, should_wrap_lin
 		word_break: text_node.Node.computed_values().word_break()
 		text_direction_mode: text_direction_mode
 		font: text_node.font_for_rendering()
+		font_variant_caps: text_node.Node.computed_values().font_variant_caps()
 	}
 	iterator.install_font_cascade(font_cascade)
 	return iterator
@@ -244,7 +249,7 @@ fn (iterator &TextNodeChunkIterator) is_at_line_break_opportunity() bool {
 
 fn (mut iterator TextNodeChunkIterator) font_for_code_point(code_point u32) &platform.Font {
 	if iterator.font_cascade_list == unsafe { nil } && iterator.font_cascade_fonts.len == 0 {
-		return iterator.font
+		return iterator.synthetic_caps_font_for(iterator.font, code_point)
 	}
 	mut selected := iterator.last_resort_font or { iterator.font }
 	mut selected_index := iterator.font_cascade_fonts.len
@@ -268,7 +273,7 @@ fn (mut iterator TextNodeChunkIterator) font_for_code_point(code_point u32) &pla
 		}
 	}
 	if iterator.font_cascade_list == unsafe { nil } {
-		return selected
+		return iterator.synthetic_caps_font_for(selected, code_point)
 	}
 	font_computer := css.css_style_computer_for(iterator.text_node.Node.document()).font_computer()
 	font_generation := font_computer.environment_generation()
@@ -283,9 +288,39 @@ fn (mut iterator TextNodeChunkIterator) font_for_code_point(code_point u32) &pla
 		return iterator.font_for_code_point(code_point)
 	}
 	if !fallback_is_invisible {
-		return selected
+		return iterator.synthetic_caps_font_for(selected, code_point)
 	}
-	return iterator.invisible_font_for(selected)
+	return iterator.synthetic_caps_font_for(iterator.invisible_font_for(selected), code_point)
+}
+
+fn (mut iterator TextNodeChunkIterator) synthetic_caps_font_for(selected &platform.Font, code_point u32) &platform.Font {
+	if selected.font_rendering_policy != .chromium { return selected }
+	variant := iterator.font_variant_caps
+	if variant !in [.small_caps, .all_small_caps] { return selected }
+	needs_cap := (code_point >= u32(`a`) && code_point <= u32(`z`))
+		|| (variant == .all_small_caps && code_point < 128)
+	if !needs_cap { return selected }
+	key := 'caps:${selected.family}|${selected.source_path}|${selected.point_size}|${selected.weight}|${selected.is_invisible}'
+	if iterator.selected_font_storage_ != unsafe { nil } {
+		if font := iterator.selected_font_storage_.values[key] { return font }
+	}
+	if selected.has_gsub_feature('smcp') { return selected }
+	uppercase := if code_point >= u32(`a`) && code_point <= u32(`z`) { code_point - 32 } else { code_point }
+	if !selected.contains_glyph(uppercase) { return selected }
+	font := &platform.Font{
+		family: selected.family
+		point_size: f32(math.round(f64(selected.point_size * 0.7)))
+		weight: selected.weight
+		source_path: selected.source_path
+		is_invisible: selected.is_invisible
+		font_rendering_policy: selected.font_rendering_policy
+		synthesize_ascii_caps: true
+	}
+	if iterator.selected_font_storage_ == unsafe { nil } {
+		iterator.selected_font_storage_ = &InvisibleFontSelectionStorage{values: map[string]&platform.Font{}}
+	}
+	iterator.selected_font_storage_.values[key] = font
+	return font
 }
 
 fn (iterator &TextNodeChunkIterator) cached_invisible_font(key string) ?&platform.Font {
@@ -312,7 +347,7 @@ fn (mut iterator TextNodeChunkIterator) invisible_font_for(selected &platform.Fo
 
 pub fn (mut iterator TextNodeChunkIterator) font_for_space(at_index int, space_code_point u32) &platform.Font {
 	if font := iterator.last_non_whitespace_font {
-		if !font.is_emoji_font() && font.contains_glyph(space_code_point) {
+		if !font.synthesize_ascii_caps && !font.is_emoji_font() && font.contains_glyph(space_code_point) {
 			return font
 		}
 	}
@@ -323,7 +358,7 @@ pub fn (mut iterator TextNodeChunkIterator) font_for_space(at_index int, space_c
 		if !is_interword_space(code_point) && code_point != u32(`\t`)
 			&& code_point != u32(`\n`) {
 			font := iterator.font_for_code_point(code_point)
-			if !font.is_emoji_font() && font.contains_glyph(space_code_point) {
+			if !font.synthesize_ascii_caps && !font.is_emoji_font() && font.contains_glyph(space_code_point) {
 				return font
 			}
 			break

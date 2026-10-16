@@ -8,7 +8,7 @@ import time
 // selection, length prefixes, float bits, and unresolved-path behavior.
 fn original_shaping_font_key(font &Font) string {
 	resolved_path := font.font_path() or { '' }
-	return '${font.family.len}:${font.family}|${font.source_path.len}:${font.source_path}|${resolved_path.len}:${resolved_path}|${font.weight}|${font.face_index()}|${math.f32_bits(font.point_size)}|${font.is_invisible}|${font.font_rendering_policy}'
+	return '${font.family.len}:${font.family}|${font.source_path.len}:${font.source_path}|${resolved_path.len}:${resolved_path}|${font.weight}|${font.face_index()}|${math.f32_bits(font.point_size)}|${font.is_invisible}|${font.font_rendering_policy}|${font.synthesize_ascii_caps}'
 }
 
 fn test_shaping_font_keys_preserve_every_serialized_identity_field() {

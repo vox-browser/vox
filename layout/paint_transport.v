@@ -2927,6 +2927,14 @@ fn apply_live_scrollbar_offset(mut command PaintCommand, box &BlockBox) {
 }
 
 fn text_fragments_share_run(first TextFragment, next TextFragment) bool {
+	if first_run := first.paintable_fragment.glyph_run {
+		if next_run := next.paintable_fragment.glyph_run {
+			if (first_run.face() != next_run.face() || !first_run.font().has_same_identity(next_run.font()))
+				&& next_run.glyphs().any(it.should_paint) {
+				return false
+			}
+		}
+	}
 	return first.shape_as_run && next.shape_as_run && first.text_run_id != 0 && first.text_run_id == next.text_run_id && first.inline_node_id == next.inline_node_id && first.color == next.color && first.font_size == next.font_size && first.bold == next.bold && first.italic == next.italic && first.mono == next.mono && first.font_smoothing == next.font_smoothing && first.decoration == next.decoration && first.decoration_color == next.decoration_color && first.decoration_color_set == next.decoration_color_set && first.decoration_style == next.decoration_style && first.decoration_thickness == next.decoration_thickness && first.preserves_spaces == next.preserves_spaces && first.rtl == next.rtl
 }
 
