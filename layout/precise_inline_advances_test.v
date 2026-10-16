@@ -11,8 +11,8 @@ fn test_precise_word_advances_round_once_after_merging_and_restart_on_new_lines(
 	text := document.create_text_node('abcd')
 	node := TextNode.new(document, text.as_node(), 'abcd')
 	parent.append_child(unsafe { &Node(node) })
-	for policy in [platform.TextShapingPolicy.libweb, .chromium] {
-		font := &platform.Font{family: 'Test', point_size: 10, text_shaping_policy: policy}
+	for policy in [platform.FontRenderingPolicy.libweb, .chromium] {
+		font := &platform.Font{family: 'Test', point_size: 10, font_rendering_policy: policy}
 		advance := f32(6.162109375)
 		mut line := LineBox.new(.ltr, .horizontal_tb)
 		for index in 0 .. 4 {

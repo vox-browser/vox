@@ -84,7 +84,7 @@ fn parse_loaded_browser_navigation_document(loaded LoadedPage, document_url dom.
 	// Also honor it in saved copies whose explicit base URL identifies the site.
 	if document.base_url().serialized_host().to_lower().trim_right('.') == 'old.reddit.com' {
 		document.set_font_size_keyword_policy(.chromium)
-		document.set_text_shaping_policy(.chromium)
+		document.set_font_rendering_policy(.chromium)
 	}
 	return document
 }

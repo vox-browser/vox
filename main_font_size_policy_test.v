@@ -13,9 +13,9 @@ fn test_old_reddit_navigation_selects_browser_font_sizes_without_changing_other_
 		assert document.font_size_keyword_policy() == if address.contains('evil') || address.contains('example') {
 			dom.FontSizeKeywordPolicy.libweb
 		} else { dom.FontSizeKeywordPolicy.chromium }
-		assert document.text_shaping_policy() == if address.contains('evil') || address.contains('example') {
-			dom.TextShapingPolicy.libweb
-		} else { dom.TextShapingPolicy.chromium }
+		assert document.font_rendering_policy() == if address.contains('evil') || address.contains('example') {
+			dom.FontRenderingPolicy.libweb
+		} else { dom.FontRenderingPolicy.chromium }
 		document.finalize()
 	}
 	mut saved := parse_loaded_browser_navigation_document(LoadedPage{
@@ -23,6 +23,6 @@ fn test_old_reddit_navigation_selects_browser_font_sizes_without_changing_other_
 		markup: '<!doctype html><base href="https://old.reddit.com/r/worldnews/"><p>saved page</p>'
 	}, dom.URL{value: 'file:///tmp/reddit.html'}, none, none, none, false)
 	assert saved.font_size_keyword_policy() == .chromium
-	assert saved.text_shaping_policy() == .chromium
+	assert saved.font_rendering_policy() == .chromium
 	saved.finalize()
 }

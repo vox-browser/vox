@@ -5838,8 +5838,9 @@ pub fn (c &ComputedProperties) line_height() CSSPixels {
 	if c.cached_first_available_computed_font_ != unsafe { nil } {
 		computed_font := c.cached_first_available_computed_font_
 		font := computed_font.font_for_metrics()
-		metrics := font.pixel_metrics()
-		return CSSPixels.new(int(math.round_to_even(f64(metrics.ascent))) + int(math.round_to_even(f64(metrics.descent))))
+		metrics := font.inline_metrics()
+		gap := if metrics.floor_inline_leading { int(metrics.line_gap) } else { 0 }
+		return CSSPixels.new(int(math.round_to_even(f64(metrics.ascent))) + int(math.round_to_even(f64(metrics.descent))) + gap)
 	}
 	// Geometry-only callers do not own a document font resolver. Retain the
 	// former scale as their deterministic fallback.

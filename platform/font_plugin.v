@@ -59,7 +59,7 @@ pub:
 	// through the family cascade.
 	source_path string
 	is_invisible bool
-	text_shaping_policy TextShapingPolicy
+	font_rendering_policy FontRenderingPolicy
 mut:
 	resolved_path_ string
 	decoded_face_ &ttf.TTF_File = unsafe { nil }
@@ -75,6 +75,7 @@ pub:
 	ascent                f32
 	descent               f32
 	line_gap              f32
+	floor_inline_leading   bool
 }
 
 pub struct FontGlyphBounds {
@@ -123,7 +124,7 @@ pub:
 pub fn (font &Font) has_same_identity(other &Font) bool {
 	if font.point_size != other.point_size || font.weight != other.weight
 		|| font.is_invisible != other.is_invisible
-		|| font.text_shaping_policy != other.text_shaping_policy {
+		|| font.font_rendering_policy != other.font_rendering_policy {
 		return false
 	}
 	if font_path := font.font_path() {

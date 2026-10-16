@@ -491,8 +491,11 @@ fn (builder &LineBuilder) inline_box_alignment_delta(node &Node, line_box_baseli
 	} else {
 		match computed.vertical_align() {
 			.middle {
-				x_height := CSSPixels.nearest_value_for(f64(container_font_metrics.x_height))
-				aligned = builder.current_block_offset.plus(line_box_baseline).plus(CSSPixels.from_raw(box_top.minus(box_bottom).minus(x_height).minus(computed.line_height()).raw_value() / 2))
+				parent_metrics := if parent := node.parent() {
+					layout_font_metrics_for_node(parent)
+				} else { container_font_metrics }
+				aligned = builder.current_block_offset.plus(line_box_baseline).plus(middle_alignment_offset(
+					node, box_top, box_bottom, computed.line_height(), parent_metrics.x_height))
 			}
 			.sub {
 				aligned = alphabetic.plus(CSSPixels.from_raw(container_font_size.raw_value() / 5))
@@ -669,9 +672,13 @@ pub fn (mut builder LineBuilder) update_last_line() {
 				fragment_block_offset = builder.current_block_offset.plus(effective_box_top_offset)
 			}
 			.middle {
-				x_height := CSSPixels.nearest_value_for(f64(container_font_metrics.x_height))
+				parent_metrics := if parent := alignment_style_source.parent() {
+					layout_font_metrics_for_node(parent)
+				} else { container_font_metrics }
 				fragment_block_offset =
-					builder.current_block_offset.plus(line_box_baseline).plus(CSSPixels.from_raw(effective_box_top_offset.minus(effective_box_bottom_offset).minus(x_height).minus(fragment.height()).raw_value() / 2))
+					builder.current_block_offset.plus(line_box_baseline).plus(middle_alignment_offset(
+						fragment.layout_node_, effective_box_top_offset, effective_box_bottom_offset,
+						fragment.height(), parent_metrics.x_height))
 			}
 			.sub {
 				fragment_block_offset =
@@ -732,7 +739,9 @@ pub fn (mut builder LineBuilder) update_last_line() {
 		}
 		fragment_is_unshifted := fragment_block_offset == alphabetic_baseline
 		fragment.set_inline_offset(fragment_inline_offset)
-		fragment.set_block_offset(css.css_pixels_floor(fragment_block_offset).plus(block_offset))
+		fragment.set_block_offset((if fragment.layout_node_.document().font_rendering_policy() == .chromium {
+			fragment_block_offset
+		} else { css.css_pixels_floor(fragment_block_offset) }).plus(block_offset))
 		mut top_of_inline_box := CSSPixels.new(0)
 		mut bottom_of_inline_box := CSSPixels.new(0)
 		if fragment.is_atomic_inline() {
@@ -747,13 +756,15 @@ pub fn (mut builder LineBuilder) update_last_line() {
 			font_metrics := layout_font_metrics_for_node(fragment.layout_node_)
 			typographic_height := CSSPixels.nearest_value_for(f64(font_metrics.ascent + font_metrics.descent))
 			leading := fragment_computed.line_height().minus(typographic_height)
-			half_leading := CSSPixels.from_raw(leading.raw_value() / 2)
+			mut half_leading := CSSPixels.from_raw(leading.raw_value() / 2)
+			if font_metrics.floor_inline_leading { half_leading = css.css_pixels_floor(half_leading) }
+			end_leading := if font_metrics.floor_inline_leading { leading.minus(half_leading) } else { half_leading }
 			ascent := CSSPixels.nearest_value_for(f64(font_metrics.ascent))
 			descent := CSSPixels.nearest_value_for(f64(font_metrics.descent))
 			top_of_inline_box =
 				fragment.block_offset().plus(fragment.baseline()).minus(ascent).minus(half_leading)
 			bottom_of_inline_box =
-				fragment.block_offset().plus(fragment.baseline()).plus(descent).plus(half_leading)
+				fragment.block_offset().plus(fragment.baseline()).plus(descent).plus(end_leading)
 		}
 		if !uses_container_alignment {
 			if vertical_align := fragment_computed.vertical_align_length_percentage() {
@@ -961,9 +972,21 @@ fn (builder &LineBuilder) y_for_float_to_be_inserted_here(box_state &UsedValues,
 
 fn layout_font_metrics_for_node(node &Node) platform.FontPixelMetrics {
 	if text := node.as_text_node() {
-		return text.font_for_rendering().pixel_metrics()
+		return text.font_for_rendering().inline_metrics()
 	}
-	return node.first_available_font().pixel_metrics()
+	return node.first_available_font().inline_metrics()
+}
+
+fn middle_alignment_offset(node &Node, top CSSPixels, bottom CSSPixels, height CSSPixels,
+	x_height f32) CSSPixels {
+	if node.document().font_rendering_policy() == .chromium {
+		// Blink rounds half the parent's x-height, independently of the box's
+		// half-height. Rounding the complete sum loses one CSSPixel quantum.
+		return CSSPixels.from_raw(top.minus(bottom).minus(height).raw_value() / 2)
+			.minus(CSSPixels.nearest_value_for(f64(x_height) / 2))
+	}
+	return CSSPixels.from_raw(top.minus(bottom).minus(height)
+		.minus(CSSPixels.nearest_value_for(f64(x_height))).raw_value() / 2)
 }
 
 // ComputedValues stores font-relative lengths in their typed form. Resolve
@@ -995,12 +1018,14 @@ fn font_baseline_for_line_height(font_metrics platform.FontPixelMetrics, line_he
 	ascent := CSSPixels.nearest_value_for(f64(font_metrics.ascent))
 	typographic_height :=
 		CSSPixels.nearest_value_for(f64(font_metrics.ascent + font_metrics.descent))
-	half_leading := CSSPixels.from_raw(line_height.minus(typographic_height).raw_value() / 2)
+	mut half_leading := CSSPixels.from_raw(line_height.minus(typographic_height).raw_value() / 2)
+	if font_metrics.floor_inline_leading { half_leading = css.css_pixels_floor(half_leading) }
 	return ascent.plus(half_leading)
 }
 
 fn normal_line_height_for_font_metrics(font_metrics platform.FontPixelMetrics) CSSPixels {
-	return CSSPixels.new(int(math.round_to_even(f64(font_metrics.ascent))) + int(math.round_to_even(f64(font_metrics.descent))))
+	gap := if font_metrics.floor_inline_leading { int(font_metrics.line_gap) } else { 0 }
+	return CSSPixels.new(int(math.round_to_even(f64(font_metrics.ascent))) + int(math.round_to_even(f64(font_metrics.descent))) + gap)
 }
 
 fn css_pixels_min(a CSSPixels, b CSSPixels) CSSPixels {

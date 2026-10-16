@@ -69,7 +69,7 @@ pub fn LineBoxFragment.new(layout_node &Node, start int, length_in_code_units in
 	if run := glyph_run {
 		fragment.current_insert_direction = fragment.resolve_glyph_run_direction(run.text_type())
 		if direction == .ltr && fragment.current_insert_direction == .ltr
-			&& run.font().text_shaping_policy == .chromium
+			&& run.font().font_rendering_policy == .chromium
 			&& inline_length == CSSPixels.nearest_value_for(f64(run.width()))
 			&& run.glyphs_.len > 0 && run.glyphs_[0].position.x == 0 {
 			fragment.precise_inline_length_ = f64(run.width())
