@@ -236,6 +236,9 @@ pub struct BlockBox {
 pub:
 	tag_name string
 pub mut:
+	// Blink paints a box's background and clips its background images to the
+	// pixel-snapped border box; Chromium-policy documents do the same.
+	snaps_background_rect bool
 	x                   f64
 	y                   f64
 	width               f64
@@ -1411,6 +1414,14 @@ fn background_layer_command(layer BackgroundImageLayer, origin LayoutRect, clip 
 	}
 }
 
+// Blink's ToPixelSnappedRect(): each edge rounds to the nearest whole pixel.
+fn pixel_snapped_layout_rect(rect LayoutRect) LayoutRect {
+	left := math.floor(rect.x + 0.5)
+	top := math.floor(rect.y + 0.5)
+	return LayoutRect{left, top, non_negative(math.floor(rect.x + rect.width + 0.5) - left),
+		non_negative(math.floor(rect.y + rect.height + 0.5) - top)}
+}
+
 fn rect_union(first LayoutRect, second LayoutRect) LayoutRect {
 	left := math.min(first.x, second.x)
 	top := math.min(first.y, second.y)
@@ -2120,6 +2131,8 @@ fn (b &BlockBox) record_paint_commands_for_entries(entries []PaintOrderEntry, se
 		border_rect := LayoutRect{border_left, border_top, border_width, border_height}
 		background_border_rect := if box.paints_canvas_background && box.canvas_width > 0 && box.canvas_height > 0 {
 			rect_union(border_rect, LayoutRect{box.canvas_x, box.canvas_y, box.canvas_width, box.canvas_height})
+		} else if box.snaps_background_rect {
+			pixel_snapped_layout_rect(border_rect)
 		} else {
 			border_rect
 		}

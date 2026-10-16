@@ -3929,6 +3929,7 @@ fn block_box_from_typed_layout_shallow(node &Node, state &LayoutState, ancestor_
 	paint_border := compatibility_paint_border_edges(used)
 	return BlockBox{
 		tag_name: tag_name
+		snaps_background_rect: node.document().font_rendering_policy() == .chromium
 		x: paint_position.x().to_double()
 		y: paint_position.y().to_double()
 		width: paint_width
