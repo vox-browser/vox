@@ -785,6 +785,7 @@ fn (mut iterator InlineLevelIterator) enter_text_node(text_node &TextNode) {
 	should_wrap_lines := computed.text_wrap_mode() == .wrap
 	should_respect_linebreaks := white_space_collapse in [.preserve, .preserve_breaks, .break_spaces]
 	mut chunks := []TextNodeChunk{}
+	mut cached_chunks_valid := false
 	font_generation := css.css_style_computer_for(text_node.Node.document()).font_computer().environment_generation()
 	if cached := text_node.cached_inline_chunks_ {
 		// The cached chunks are immutable after construction; sharing their
@@ -793,9 +794,10 @@ fn (mut iterator InlineLevelIterator) enter_text_node(text_node &TextNode) {
 		// fonts must be shaped again.
 		if text_node.cached_font_environment_generation_ == font_generation {
 		chunks = unsafe { cached }
+		cached_chunks_valid = true
 		}
 	}
-	if chunks.len == 0 {
+	if !cached_chunks_valid {
 		mut chunk_iterator := TextNodeChunkIterator.new_with_direction(text_node, should_wrap_lines,
 			should_respect_linebreaks, if iterator.is_unidirectional_left_to_right {
 				TextDirectionMode.unidirectional_left_to_right
