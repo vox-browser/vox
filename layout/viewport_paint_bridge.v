@@ -173,10 +173,18 @@ fn viewport_refresh_scroll_state(target voidptr) {
 fn viewport_rederive_scroll_state(mut result DocumentLayoutResult) painting.ScrollStateSnapshot {
 	// Sticky frames are refreshed before ordinary frames, in creation/tree
 	// order. A nested sticky can therefore consume its parent's current offset.
-	result.scroll_state.for_each_sticky_frame(fn [mut result] (index int, mut frame painting.ScrollFrame) {
+	// These walks run for every scroll or animation frame. They index the frames
+	// directly: the compatibility compiler never frees closures, and capturing
+	// this `mut` parameter by value would pin a copy of the whole layout result
+	// (its display list, visual contexts and scroll state) for every refresh.
+	for index := 1; index < result.scroll_state.frames.len; index++ {
+		if !result.scroll_state.frames[index].is_sticky() {
+			continue
+		}
+		mut frame := unsafe { &result.scroll_state.frames[index] }
 		nearest_scrolling_ancestor := result.scroll_state.nearest_scrolling_ancestor(index)
 		if nearest_scrolling_ancestor == 0 || !frame.has_sticky_constraints() {
-			return
+			continue
 		}
 		constraints := frame.sticky_constraints()
 
@@ -225,15 +233,19 @@ fn viewport_rederive_scroll_state(mut result DocumentLayoutResult) painting.Scro
 			}
 		}
 		frame.set_own_offset(painting.Point{sticky_offset_x, sticky_offset_y})
-	})
+	}
 
 	// ViewportPaintable::refresh_scroll_state() then snapshots the negated live
 	// PaintableBox offsets. Display-list phase commands do not change when a
 	// scroller moves; replay combines them with this state instead.
-	result.scroll_state.for_each_scroll_frame(fn [result] (_ int, mut frame painting.ScrollFrame) {
-		live := compatibility_live_scroll_offset(result, &frame)
+	for index := 1; index < result.scroll_state.frames.len; index++ {
+		if result.scroll_state.frames[index].is_sticky() {
+			continue
+		}
+		mut frame := unsafe { &result.scroll_state.frames[index] }
+		live := compatibility_live_scroll_offset(result, frame)
 		frame.set_own_offset(painting.Point{-live.x, -live.y})
-	})
+	}
 	return result.scroll_state.snapshot(1.0)
 }
 
