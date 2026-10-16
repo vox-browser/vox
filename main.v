@@ -339,6 +339,7 @@ mut:
 	viewport_width                      int
 	viewport_height                     int
 	scroll_y                            f64
+	overlay_scrollbars                  BrowserOverlayScrollbars
 	content_height                      f64
 	paint_commands                      []layout.PaintCommand
 	paint_commands_have_backdrop_filter bool
@@ -3076,6 +3077,11 @@ fn (app &BrowserApp) status_height() int {
 fn browser_chrome_widget_pointer_event_callback(target voidptr, id string, event_type string,
 	button int, position page.PixelPoint) painting.MouseAction {
 	mut app := unsafe { &BrowserApp(target) }
+	if id.starts_with('scrollbar-') {
+		if event_type == 'pointerdown' && button == 0 { app.overlay_scrollbars.dragging = true }
+		if event_type == 'pointerup' { app.overlay_scrollbars.dragging = false }
+		app.overlay_scrollbar_activity()
+	}
 	if app.document == unsafe { nil } {
 		return .none
 	}
@@ -3085,6 +3091,10 @@ fn browser_chrome_widget_pointer_event_callback(target voidptr, id string, event
 
 fn browser_chrome_widget_hover_callback(target voidptr, id string, hovered bool) {
 	mut app := unsafe { &BrowserApp(target) }
+	if id.starts_with('scrollbar-') {
+		app.overlay_scrollbars.hovered = hovered
+		app.overlay_scrollbar_activity()
+	}
 	if app.document == unsafe { nil } {
 		return
 	}
@@ -3639,7 +3649,9 @@ fn (mut app BrowserApp) scroll_by(delta f64, window_height int) {
 }
 
 fn (mut app BrowserApp) set_scroll_y(requested f64, window_height int) {
-	app.scroll_y = clamp(requested, 0.0, app.maximum_scroll(window_height))
+	used := clamp(requested, 0.0, app.maximum_scroll(window_height))
+	if used != app.scroll_y { app.overlay_scrollbar_activity() }
+	app.scroll_y = used
 	if app.document != unsafe { nil } {
 		mut document := unsafe { &dom.Document(app.document) }
 		viewport := document.viewport_rect()
@@ -4902,6 +4914,10 @@ fn (mut app BrowserApp) draw_command(source_command layout.PaintCommand, page_x 
 	app.paint_effect_depth = background_clip_effect_depth_after_command(app.paint_effect_depth,
 		source_command.kind)
 	mut command := source_command
+	if command.scrollbar_axis != '' {
+		command.opacity *= app.overlay_scrollbars.paint_opacity
+		if command.opacity == 0 { return }
+	}
 	$if macos {
 		if app.ctx.native_rendering {
 			if command.group_opacity > 0 {
@@ -6264,6 +6280,7 @@ fn (mut app BrowserApp) draw() {
 		app.set_scroll_y(f64(app.screenshot_scroll_y), window.height)
 	}
 	app.finish_frame_preparation()
+	app.prepare_overlay_scrollbars()
 	app.portable_shadow_image_index = 0
 	app.scroll_profile_prepared()
 	begin_browser_frame(app.ctx)
@@ -6550,12 +6567,17 @@ fn (mut app BrowserApp) handle_event(event &gg.Event) {
 		.mouse_up {
 			button := browser_pointer_button(event.mouse_button)
 			app.platform_pointer_buttons &= ~browser_pointer_button_mask(button)
+			if app.overlay_scrollbars.dragging {
+				app.overlay_scrollbars.dragging = false
+				app.overlay_scrollbar_activity()
+			}
 			result := app.dispatch_chrome_pointer_event_at_viewport_point('pointerup', browser_pointer_button(event.mouse_button), f64(event.mouse_x), f64(event.mouse_y - app.page_top()))
 			if !result.handled && app.page_model != unsafe { nil } && app.page_model.event_handler.last_click_allowed() && button == 0 {
 				app.replay_compact_javascript_click()
 			}
 		}
 		.mouse_scroll {
+			if event.mouse_y >= app.page_top() { app.overlay_scrollbar_activity() }
 			delta_x := -f64(event.scroll_x) * 42.0
 			delta_y := -f64(event.scroll_y) * 42.0
 			mut screen_x := f64(event.mouse_x)
@@ -6579,6 +6601,8 @@ fn (mut app BrowserApp) handle_event(event &gg.Event) {
 			}
 		}
 		.mouse_leave {
+			app.overlay_scrollbars.hovered = false
+			app.overlay_scrollbar_activity()
 			if app.page_model != unsafe { nil } {
 				app.page_model.event_handler.handle_mouseleave()
 			}

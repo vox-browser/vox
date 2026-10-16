@@ -13,6 +13,10 @@
 #include "native_ffmpeg_darwin.h"
 #include "native_webp_darwin.h"
 
+int native_prefers_overlay_scrollbars(void) {
+	return [NSScroller preferredScrollerStyle] == NSScrollerStyleOverlay;
+}
+
 #ifdef LADYBIRD_V_HAS_SKIA_TEXT
 extern void ladybird_v_skia_set_chromium_painting(int active);
 extern int ladybird_v_skia_configure_font(const char *path, int slot);

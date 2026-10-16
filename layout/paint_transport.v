@@ -1568,6 +1568,7 @@ fn append_scrollbar_overlay_command(mut commands []PaintCommand, data painting.S
 			width: gutter.width
 			height: gutter.height
 			color: overlay.scrollbar_track_color.serialize()
+			scrollbar_axis: if direction == .vertical { 'vertical' } else { 'horizontal' }
 			force_dark_role: .background
 			force_dark_role_set: true
 			opacity: opacity
