@@ -100,7 +100,7 @@ extern int ladybird_v_skia_draw_rgba_image(CGContextRef destination,
 	float clip_height, float transform_a, float transform_b, float transform_c,
 	float transform_d, float transform_e, float transform_f, float page_x,
 	float page_y, float scroll_y, float canvas_width, float canvas_height,
-	float opacity, int nearest_neighbor, int premultiplied);
+	float opacity, int nearest_neighbor, int image_flags);
 extern int ladybird_v_skia_draw_drop_shadow(CGContextRef destination,
 	CGImageRef source, float canvas_width, float canvas_height, float scale,
 	float offset_x, float offset_y, float standard_deviation, uint8_t red,
@@ -4222,15 +4222,7 @@ static int native_draw_cg_image_part_with_skia(CGContextRef destination,
 	CGContextSetBlendMode(decode, kCGBlendModeCopy);
 	CGContextDrawImage(decode, CGRectMake(0, 0, width, height), source_image);
 	CGContextRelease(decode);
-	// Skia receives unpremultiplied RGBA, matching decoded ImageBitmap storage.
-	for (size_t offset = 0; offset < height * pitch; offset += 4) {
-		uint8_t alpha = pixels[offset + 3];
-		if (alpha != 0 && alpha != 255) {
-			pixels[offset] = (uint8_t)MIN(255, (pixels[offset] * 255 + alpha / 2) / alpha);
-			pixels[offset + 1] = (uint8_t)MIN(255, (pixels[offset + 1] * 255 + alpha / 2) / alpha);
-			pixels[offset + 2] = (uint8_t)MIN(255, (pixels[offset + 2] * 255 + alpha / 2) / alpha);
-		}
-	}
+	// Keep the decoded premultiplied texels intact through image filtering.
 	float scale_x = image->width > 0 ? (float)width / image->width : 1.0f;
 	float scale_y = image->height > 0 ? (float)height / image->height : 1.0f;
 	int drawn = ladybird_v_skia_draw_rgba_image(destination, pixels, (int)width,
@@ -4239,7 +4231,9 @@ static int native_draw_cg_image_part_with_skia(CGContextRef destination,
 		source_width * scale_x, source_height * scale_y, clip_x, clip_y,
 		clip_width, clip_height, transform_a, transform_b, transform_c,
 		transform_d, transform_e, transform_f, page_x, page_y, scroll_y,
-		canvas_width, canvas_height, opacity, nearest_neighbor, 0);
+		canvas_width, canvas_height, opacity, nearest_neighbor,
+		1 | ((destination == native_font_compositing_context
+			&& native_font_compositing_transparency_depth == 0) ? 2 : 0));
 	free(pixels);
 	return drawn;
 }
@@ -4260,7 +4254,8 @@ static void native_draw_image_part_in_context(CGContextRef context, gg__Image *i
 		return;
 	}
 #ifdef LADYBIRD_V_HAS_SKIA_TEXT
-	if (image->path.len == 0 && image->nr_channels >= 4 && image->nr_channels <= 7) {
+	// Marker 8 retains planar YUV rather than packed RGBA for native sampling.
+	if (image->path.len == 0 && image->nr_channels >= 4 && image->nr_channels <= 8) {
 		size_t pitch = (size_t)image->width * 4;
 		size_t byte_count = (size_t)image->height <= SIZE_MAX / pitch
 		    ? pitch * (size_t)image->height
@@ -4289,7 +4284,10 @@ static void native_draw_image_part_in_context(CGContextRef context, gg__Image *i
 			    clip_height, transform_a, transform_b, transform_c, transform_d,
 			    transform_e, transform_f, page_x, page_y, scroll_y, canvas_width,
 			    canvas_height, opacity, nearest_neighbor,
-			    image->nr_channels == 5 || image->nr_channels == 7);
+			    (image->nr_channels == 5 || image->nr_channels == 7)
+			        | (image->nr_channels == 8 ? 4 : 0)
+			        | ((context == native_font_compositing_context
+			            && native_font_compositing_transparency_depth == 0) ? 2 : 0));
 			free(flipped_pixels);
 			if (drawn)
 				return;

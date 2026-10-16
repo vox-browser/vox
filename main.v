@@ -59,6 +59,9 @@ fn C.native_decode_video_frame(path &char, seconds f64, output_width &int, outpu
 fn C.native_free_video_frame(pixels &u8)
 fn C.native_decode_webp_rgba(bytes &u8, length usize, width &int, height &int, pitch &int) &u8
 fn C.native_free_webp_pixels(pixels &u8)
+fn C.native_decode_webp_yuv(bytes &u8, length usize, width &int, height &int, size &int) &u8
+fn C.native_webp_yuv_paint_supported() int
+fn C.native_webp_yuv_decoder_available() int
 
 fn C.native_pointer_screen_position(x f64, y f64, screen_x &f64, screen_y &f64)
 
@@ -4295,6 +4298,22 @@ fn (mut app BrowserApp) create_image_from_resource_bytes(image_url string, bytes
 			// Share the document decoder's pixels with native image and background
 			// painting. Animated streams keep AppKit's frame provider below.
 			if app.ctx.native_rendering {
+				if C.native_webp_yuv_paint_supported() != 0 && app.document != unsafe { nil }
+					&& app.document.font_rendering_policy() == .chromium {
+					mut width := 0
+					mut height := 0
+					mut size := 0
+					planes := C.native_decode_webp_yuv(bytes.data, usize(bytes.len), &width, &height, &size)
+					if planes != unsafe { nil } {
+						mut data := []u8{len: size}
+						unsafe { vmemcpy(data.data, planes, size) }
+						C.native_free_webp_pixels(planes)
+						mut image := gg.Image{width: width, height: height, nr_channels: 8,
+							ok: true, data: data.data}
+						image.id = app.ctx.cache_image(image)
+						return image
+					}
+				}
 				if bitmap := browser_decode_raster_image_bytes(bytes) {
 					mut image := gg.Image{width: bitmap.width, height: bitmap.height,
 						nr_channels: native_bitmap_channel_marker(bitmap, false), ok: true,

@@ -7,12 +7,22 @@
 typedef int (*VoxWebPGetInfo)(const uint8_t *, size_t, int *, int *);
 typedef uint8_t *(*VoxWebPDecodeRGBAInto)(const uint8_t *, size_t, uint8_t *, size_t, int);
 
-static uint8_t *native_decode_webp_rgba(const uint8_t *bytes, size_t length,
-    int *width, int *height, int *pitch)
+typedef uint8_t *(*VoxWebPDecodeYUVInto)(const uint8_t *, size_t,
+    uint8_t *, size_t, int, uint8_t *, size_t, int, uint8_t *, size_t, int);
+static VoxWebPGetInfo get_info;
+static VoxWebPDecodeRGBAInto decode_rgba;
+static VoxWebPDecodeYUVInto decode_yuv;
+
+static int native_webp_yuv_paint_supported(void) {
+#ifdef LADYBIRD_V_HAS_SKIA_TEXT
+    return 1;
+#else
+    return 0;
+#endif
+}
+static void native_load_webp_decoder(void)
 {
     static void *library;
-    static VoxWebPGetInfo get_info;
-    static VoxWebPDecodeRGBAInto decode_rgba;
     static dispatch_once_t once;
     dispatch_once(&once, ^{
         const char *names[] = { "@rpath/libwebpdecoder.dylib", "libwebpdecoder.dylib",
@@ -22,6 +32,7 @@ static uint8_t *native_decode_webp_rgba(const uint8_t *bytes, size_t length,
             if (!library) continue;
             get_info = (VoxWebPGetInfo)dlsym(library, "WebPGetInfo");
             decode_rgba = (VoxWebPDecodeRGBAInto)dlsym(library, "WebPDecodeRGBAInto");
+            decode_yuv = (VoxWebPDecodeYUVInto)dlsym(library, "WebPDecodeYUVInto");
             if (get_info && decode_rgba) break;
             dlclose(library);
             library = NULL;
@@ -29,6 +40,41 @@ static uint8_t *native_decode_webp_rgba(const uint8_t *bytes, size_t length,
             decode_rgba = NULL;
         }
     });
+}
+
+static int native_webp_yuv_decoder_available(void) {
+    native_load_webp_decoder();
+    return get_info && decode_yuv;
+}
+
+static uint8_t *native_decode_webp_yuv(const uint8_t *bytes, size_t length,
+    int *width, int *height, int *size)
+{
+    *width = *height = *size = 0;
+    // Only simple lossy, opaque, untagged images can use the YUV path.
+    if (!bytes || length < 20 || memcmp(bytes, "RIFF", 4)
+        || memcmp(bytes + 8, "WEBPVP8 ", 8)) return NULL;
+    native_load_webp_decoder();
+    int w = 0, h = 0;
+    if (!get_info || !decode_yuv || !get_info(bytes, length, &w, &h)
+        || w <= 0 || h <= 0 || (size_t)w * h > INT_MAX / 4) return NULL;
+    int uw = (w + 1) / 2, uh = (h + 1) / 2;
+    size_t y_size = (size_t)w * h, uv_size = (size_t)uw * uh;
+    uint8_t *planes = malloc(y_size + 2 * uv_size);
+    if (!planes) return NULL;
+    if (!decode_yuv(bytes, length, planes, y_size, w,
+        planes + y_size, uv_size, uw, planes + y_size + uv_size, uv_size, uw)) {
+        free(planes);
+        return NULL;
+    }
+    *width = w; *height = h; *size = (int)(y_size + 2 * uv_size);
+    return planes;
+}
+
+static uint8_t *native_decode_webp_rgba(const uint8_t *bytes, size_t length,
+    int *width, int *height, int *pitch)
+{
+    native_load_webp_decoder();
     *width = *height = *pitch = 0;
     if (!bytes || !length) return NULL;
     bool extended = length >= 21 && !memcmp(bytes + 12, "VP8X", 4);

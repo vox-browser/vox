@@ -32,6 +32,7 @@
 #include "include/effects/SkDashPathEffect.h"
 #include "include/effects/SkGradientShader.h"
 #include "include/effects/SkPerlinNoiseShader.h"
+#include "include/effects/SkRuntimeEffect.h"
 #include "include/ports/SkFontMgr_fontconfig.h"
 #include "include/ports/SkFontScanner_FreeType.h"
 #include "include/ports/SkFontMgr_mac_ct.h"
@@ -232,6 +233,37 @@ bool clipped_raster_region(SkRect const& bounds, float canvas_width,
 // run downwards instead. Retain a conservative fringe for antialiased clips.
 // Filter/shadow inputs and grouped commands keep their existing bounds: their
 // intermediate pixels may still contribute after an effect or group replay.
+bool copy_opaque_backdrop(CGContextRef destination, RasterRegion const& region,
+    float destination_scale, int raster_width, int raster_height,
+    std::vector<uint32_t>& pixels)
+{
+    if (CGBitmapContextGetBitsPerPixel(destination) != 32
+        || CGBitmapContextGetAlphaInfo(destination) != kCGImageAlphaPremultipliedLast
+        || (CGBitmapContextGetBitmapInfo(destination) & kCGBitmapByteOrderMask) != kCGBitmapByteOrder32Big)
+        return false;
+    bool has_background = false;
+    CGContextFlush(destination);
+    auto* background = static_cast<uint8_t*>(CGBitmapContextGetData(destination));
+    auto source_width = CGBitmapContextGetWidth(destination);
+    auto source_height = CGBitmapContextGetHeight(destination);
+    auto source_pitch = CGBitmapContextGetBytesPerRow(destination);
+    auto left = static_cast<size_t>(std::lround(region.left * destination_scale));
+    auto top = static_cast<size_t>(std::lround(region.top * destination_scale));
+    auto ctm = CGContextGetCTM(destination);
+    has_background = background && ctm.a > 0 && ctm.d > 0
+        && ctm.b == 0 && ctm.c == 0 && ctm.tx == 0 && ctm.ty == 0
+        && left + raster_width <= source_width && top + raster_height <= source_height;
+    for (int y = 0; has_background && y < raster_height; ++y) {
+        auto* row = background + (top + y) * source_pitch + left * 4;
+        for (int x = 0; x < raster_width; ++x) {
+            if (row[x * 4 + 3] != 255) { has_background = false; break; }
+            pixels[static_cast<size_t>(y) * raster_width + x] = 0xff000000
+                | row[x * 4] << 16 | row[x * 4 + 1] << 8 | row[x * 4 + 2];
+        }
+    }
+    return has_background;
+}
+
 bool leaf_raster_region_intersects_destination_clip(CGContextRef destination,
     float canvas_height, RasterRegion const& region)
 {
@@ -519,30 +551,8 @@ extern "C" int ladybird_v_skia_draw_glyph_run(CGContextRef destination,
     // Avoid quantizing a partially covered foreground to premultiplied 8-bit
     // color before blending it over the page. The owning native bitmap frame
     // supplies opaque pixels; nested transparency layers use the old path.
-    bool has_background = false;
-    if ((font_smoothing & 32) && CGBitmapContextGetBitsPerPixel(destination) == 32
-        && CGBitmapContextGetAlphaInfo(destination) == kCGImageAlphaPremultipliedLast
-        && (CGBitmapContextGetBitmapInfo(destination) & kCGBitmapByteOrderMask) == kCGBitmapByteOrder32Big) {
-        CGContextFlush(destination);
-        auto* background = static_cast<uint8_t*>(CGBitmapContextGetData(destination));
-        auto source_width = CGBitmapContextGetWidth(destination);
-        auto source_height = CGBitmapContextGetHeight(destination);
-        auto source_pitch = CGBitmapContextGetBytesPerRow(destination);
-        auto left = static_cast<size_t>(std::lround(region.left * destination_scale));
-        auto top = static_cast<size_t>(std::lround(region.top * destination_scale));
-        auto ctm = CGContextGetCTM(destination);
-        has_background = background && ctm.a > 0 && ctm.d > 0
-            && ctm.b == 0 && ctm.c == 0 && ctm.tx == 0 && ctm.ty == 0
-            && left + raster_width <= source_width && top + raster_height <= source_height;
-        for (int y = 0; has_background && y < raster_height; ++y) {
-            auto* row = background + (top + y) * source_pitch + left * 4;
-            for (int x = 0; x < raster_width; ++x) {
-                if (row[x * 4 + 3] != 255) { has_background = false; break; }
-                pixels[static_cast<size_t>(y) * raster_width + x] = 0xff000000
-                    | row[x * 4] << 16 | row[x * 4 + 1] << 8 | row[x * 4 + 2];
-            }
-        }
-    }
+    bool has_background = (font_smoothing & 32) && copy_opaque_backdrop(destination,
+        region, destination_scale, raster_width, raster_height, pixels);
     auto image_info = SkImageInfo::Make(raster_width, raster_height,
         kBGRA_8888_SkColorType, kPremul_SkAlphaType, SkColorSpace::MakeSRGB());
     auto row_bytes = static_cast<size_t>(raster_width) * sizeof(uint32_t);
@@ -761,6 +771,51 @@ extern "C" int ladybird_v_skia_draw_line(CGContextRef destination,
         static_cast<float>(region.width()), static_cast<float>(region.height()));
 }
 
+static sk_sp<SkShader> webp_yuv_shader(uint8_t const* planes, int width, int height,
+    SkSamplingOptions const& sampling, SkRect const& source, SkRect const& destination)
+{
+    // Sample the original 4:2:0 planes before Rec.601 conversion, as Chromium's
+    // GPU YUVA image does. Early RGB quantization changes downscaled colors.
+    static auto effect = SkRuntimeEffect::MakeForShader(SkString(R"(
+        uniform shader luma;
+        uniform shader chroma_u;
+        uniform shader chroma_v;
+        uniform int nearest;
+        uniform float4 source_bounds;
+        half4 main(float2 p) {
+            p = clamp(p, source_bounds.xy, source_bounds.zw);
+            if (nearest != 0) p = floor(p) + 0.5;
+            float y = float(luma.eval(p).r);
+            float u = float(chroma_u.eval(p * 0.5).r);
+            float v = float(chroma_v.eval(p * 0.5).r);
+            return half4(clamp(float3(
+                1.164384 * y + 1.596027 * v - 0.874202,
+                1.164384 * y - 0.391762 * u - 0.812968 * v + 0.531668,
+                1.164384 * y + 2.017232 * u - 1.085631), 0.0, 1.0), 1.0);
+        }
+    )"));
+    if (!effect.effect) return nullptr;
+    int uv_width = (width + 1) / 2, uv_height = (height + 1) / 2;
+    auto plane = [](uint8_t const* data, int w, int h) {
+        SkPixmap pixmap(SkImageInfo::Make(w, h, kGray_8_SkColorType, kOpaque_SkAlphaType), data, w);
+        return SkImages::RasterFromPixmapCopy(pixmap);
+    };
+    auto y = plane(planes, width, height);
+    auto u = plane(planes + static_cast<size_t>(width) * height, uv_width, uv_height);
+    auto v = plane(planes + static_cast<size_t>(width) * height
+        + static_cast<size_t>(uv_width) * uv_height, uv_width, uv_height);
+    if (!y || !u || !v) return nullptr;
+    SkRuntimeShaderBuilder builder(effect.effect);
+    builder.uniform("nearest") = sampling.filter == SkFilterMode::kNearest ? 1 : 0;
+    builder.uniform("source_bounds") = SkV4{source.left() + 0.5f, source.top() + 0.5f,
+        source.right() - 0.5f, source.bottom() - 0.5f};
+    builder.child("luma") = y->makeShader(SkTileMode::kClamp, SkTileMode::kClamp, SkSamplingOptions(SkFilterMode::kLinear));
+    builder.child("chroma_u") = u->makeShader(SkTileMode::kClamp, SkTileMode::kClamp, SkSamplingOptions(SkFilterMode::kLinear));
+    builder.child("chroma_v") = v->makeShader(SkTileMode::kClamp, SkTileMode::kClamp, SkSamplingOptions(SkFilterMode::kLinear));
+    auto shader = builder.makeShader();
+    return shader ? shader->makeWithLocalMatrix(SkMatrix::RectToRect(source, destination)) : nullptr;
+}
+
 extern "C" int ladybird_v_skia_draw_rgba_image(CGContextRef destination,
     uint8_t const* source_pixels, int image_width, int image_height,
     int image_pitch, float destination_x, float destination_y,
@@ -770,8 +825,10 @@ extern "C" int ladybird_v_skia_draw_rgba_image(CGContextRef destination,
     float transform_b, float transform_c, float transform_d, float transform_e,
     float transform_f, float page_x, float page_y, float scroll_y,
     float canvas_width, float canvas_height, float opacity, int nearest_neighbor,
-    int premultiplied)
+    int image_flags)
 {
+    // Flags: premultiplied RGBA (1), readable opaque page backdrop (2),
+    // or a tightly packed Y/U/V 4:2:0 payload in place of RGBA (4).
     if (!destination || !source_pixels || image_width <= 0 || image_height <= 0
         || image_pitch < image_width * 4 || destination_width <= 0
         || destination_height <= 0 || source_width <= 0 || source_height <= 0
@@ -795,16 +852,29 @@ extern "C" int ladybird_v_skia_draw_rgba_image(CGContextRef destination,
             region))
         return 1;
 
-    auto source_info = SkImageInfo::Make(image_width, image_height,
-        kRGBA_8888_SkColorType,
-        premultiplied ? kPremul_SkAlphaType : kUnpremul_SkAlphaType,
-        SkColorSpace::MakeSRGB());
-    SkPixmap source_pixmap(source_info, source_pixels,
-        static_cast<size_t>(image_pitch));
-    auto source_image = SkImages::RasterFromPixmapCopy(source_pixmap);
-    if (!source_image)
-        return 0;
+    sk_sp<SkImage> source_image;
+    if (!(image_flags & 4)) {
+        auto source_info = SkImageInfo::Make(image_width, image_height,
+            kRGBA_8888_SkColorType,
+            (image_flags & 1) ? kPremul_SkAlphaType : kUnpremul_SkAlphaType,
+            SkColorSpace::MakeSRGB());
+        SkPixmap source_pixmap(source_info, source_pixels,
+            static_cast<size_t>(image_pitch));
+        // Chromium uploads premultiplied image texels before filtering. Filtering
+        // straight-alpha colors first changes both transparent edges and gradients.
+        std::vector<uint8_t> premultiplied_source;
+        if (!(image_flags & 1)) {
+            premultiplied_source.resize(static_cast<size_t>(image_pitch) * image_height);
+            auto info = source_info.makeAlphaType(kPremul_SkAlphaType);
+            if (!source_pixmap.readPixels(info, premultiplied_source.data(), image_pitch))
+                return 0;
+            source_pixmap = SkPixmap(info, premultiplied_source.data(), image_pitch);
+        }
+        source_image = SkImages::RasterFromPixmapCopy(source_pixmap);
+        if (!source_image)
+            return 0;
 
+    }
     auto destination_scale = raster_scale_for_context(destination);
     auto raster_width = raster_dimension(region.width(), destination_scale);
     auto raster_height = raster_dimension(region.height(), destination_scale);
@@ -814,15 +884,29 @@ extern "C" int ladybird_v_skia_draw_rgba_image(CGContextRef destination,
         / static_cast<float>(region.height());
     std::vector<uint32_t> pixels(static_cast<size_t>(raster_width)
         * static_cast<size_t>(raster_height));
+    bool has_background = (image_flags & 2) && copy_opaque_backdrop(destination,
+        region, destination_scale, raster_width, raster_height, pixels);
     auto image_info = SkImageInfo::Make(raster_width, raster_height,
         kBGRA_8888_SkColorType, kPremul_SkAlphaType, SkColorSpace::MakeSRGB());
-    auto surface = SkSurfaces::WrapPixels(image_info, pixels.data(),
-        static_cast<size_t>(raster_width) * sizeof(uint32_t));
+    std::vector<float> float_pixels;
+    auto working_info = image_info;
+    void* working_pixels = pixels.data();
+    size_t working_pitch = static_cast<size_t>(raster_width) * sizeof(uint32_t);
+    if (image_flags & 2) {
+        working_info = image_info.makeColorType(kRGBA_F32_SkColorType);
+        working_pitch = static_cast<size_t>(raster_width) * 4 * sizeof(float);
+        float_pixels.resize(static_cast<size_t>(raster_width) * raster_height * 4);
+        SkPixmap background(image_info, pixels.data(), static_cast<size_t>(raster_width) * 4);
+        if (!background.readPixels(working_info, float_pixels.data(), working_pitch))
+            return 0;
+        working_pixels = float_pixels.data();
+    }
+    auto surface = SkSurfaces::WrapPixels(working_info, working_pixels, working_pitch);
     if (!surface)
         return 0;
 
     auto* canvas = surface->getCanvas();
-    canvas->clear(SK_ColorTRANSPARENT);
+    if (!has_background) canvas->clear(SK_ColorTRANSPARENT);
     canvas->setMatrix(raster_matrix(matrix, region, raster_scale_x,
         raster_scale_y));
     canvas->clipRect(local_clip, true);
@@ -834,11 +918,28 @@ extern "C" int ladybird_v_skia_draw_rgba_image(CGContextRef destination,
     auto sampling = nearest_neighbor == 1
         ? SkSamplingOptions(SkFilterMode::kNearest)
         : SkSamplingOptions(SkFilterMode::kLinear);
-    canvas->drawImageRect(source_image.get(), source_rect, local_destination,
-        sampling, &paint, SkCanvas::kStrict_SrcRectConstraint);
-    return composite_pixels(destination, pixels, raster_width, raster_height,
+    if (image_flags & 4) {
+        auto shader = webp_yuv_shader(source_pixels, image_width, image_height,
+            sampling, source_rect, local_destination);
+        if (!shader) return 0;
+        paint.setShader(std::move(shader));
+        canvas->drawRect(local_destination, paint);
+    } else {
+        canvas->drawImageRect(source_image.get(), source_rect, local_destination,
+            sampling, &paint, SkCanvas::kStrict_SrcRectConstraint);
+    }
+    if (!float_pixels.empty()) {
+        SkPixmap result(working_info, float_pixels.data(), working_pitch);
+        if (!result.readPixels(image_info, pixels.data(), static_cast<size_t>(raster_width) * 4))
+            return 0;
+    }
+    CGContextSaveGState(destination);
+    if (has_background) CGContextSetBlendMode(destination, kCGBlendModeCopy);
+    int result = composite_pixels(destination, pixels, raster_width, raster_height,
         static_cast<float>(region.left), canvas_height - static_cast<float>(region.bottom),
         static_cast<float>(region.width()), static_cast<float>(region.height()));
+    CGContextRestoreGState(destination);
+    return result;
 }
 
 extern "C" int ladybird_v_skia_draw_drop_shadow(CGContextRef destination,
