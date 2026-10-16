@@ -35,8 +35,11 @@ def main():
         if len(installed) != 1:
             raise SystemExit('Set RUSTC to a Rust compiler supporting edition 2024')
         compiler = str(installed[0])
-    version = subprocess.check_output([compiler, '--version'], text=True).strip()
-    digest.update(version.encode())
+    compiler_identity = subprocess.check_output([compiler, '--version', '--verbose'], text=True).strip()
+    version = compiler_identity.splitlines()[0]
+    # The same compiler release can produce incompatible Linux/macOS or
+    # x86-64/ARM archives in a shared checkout. Include rustc's host triple.
+    digest.update(compiler_identity.encode())
     fingerprint = digest.hexdigest()
     output = repo / 'Build/libregex'
     output.mkdir(parents=True, exist_ok=True)
