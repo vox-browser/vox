@@ -3330,6 +3330,9 @@ fn (mut app BrowserApp) install_loaded_page(loaded LoadedPage, add_history bool)
 		eprintln('Ladybird V scripting: enabled=${app.document.as_node().is_scripting_enabled()} runtime=${app.js_runtime != unsafe { nil }} sources=${sources.len} source_bytes=${source_bytes} preloaded_scripts=${preloaded_scripts}')
 	}
 	checkpoint = debug_timing_checkpoint('run_javascript', checkpoint)
+	if app.js_runtime == unsafe { nil } {
+		install_static_browser_image_fetch_hooks(app.document, app.nonrendered_image_preloads)
+	}
 	if cookie_blocker_enabled_by_default {
 		hide_cookie_banners(app.document)
 	}
@@ -4291,6 +4294,10 @@ fn (mut app BrowserApp) poll_background_resources() {
 				break
 			}
 		}
+	}
+	if app.document != unsafe { nil } && app.js_runtime == unsafe { nil }
+		&& completed_nonrendered_images.len > 0 {
+		complete_static_browser_image_requests(app.document, completed_nonrendered_images)
 	}
 	if app.document != unsafe { nil } && completed_nonrendered_images.len > 0
 		&& completed_nonrendered_images_need_layout(app.document, completed_nonrendered_images) {

@@ -6,6 +6,33 @@ import html
 import layout
 import loader
 
+// Static pages still need real HTML image requests. Installing the JavaScript
+// ImageHost must not be a prerequisite for decoding and displaying an <img>.
+fn install_static_browser_image_fetch_hooks(document &dom.Document, deferred map[string]bool) {
+	for element in css.query_selector_all(document.as_node(), 'img') {
+		if !element.is_html_element() { continue }
+		image := unsafe { &dom.HTMLImageElement(element) }
+		mut model := html.html_image_element_model_for_dom_element(image)
+		model.set_fetch_hook(fn [image, model] (address dom.URL) !html.DecodedImageData {
+			return browser_fetch_image_request(image, model, address)
+		})
+		address := resolve_document_reference(element.get_attribute_value('src'), document.base_url().serialize())
+		if address !in deferred && (element.has_attribute('src') || element.has_attribute('srcset')) {
+			model.update_the_image_data(false, false)
+		}
+	}
+}
+
+fn complete_static_browser_image_requests(document &dom.Document, completed map[string]bool) {
+	for element in css.query_selector_all(document.as_node(), 'img[src]') {
+		if !element.is_html_element() { continue }
+		address := resolve_document_reference(element.get_attribute_value('src'), document.base_url().serialize())
+		if address !in completed { continue }
+		mut model := html.html_image_element_model_for_dom_element(unsafe { &dom.HTMLImageElement(element) })
+		model.update_the_image_data(false, false)
+	}
+}
+
 // The native shell owns network I/O. Publish completed SVG resources to the
 // translated loader so layout can consume their bytes without starting I/O.
 fn publish_browser_svg_resource(resource PreloadedResource) bool {
