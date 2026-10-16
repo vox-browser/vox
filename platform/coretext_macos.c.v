@@ -8,6 +8,12 @@ module platform
 struct C.vox_ct_face {
 	path        [1024]char
 	postscript  [256]char
+	family      [256]char
+	ascent      f64
+	descent     f64
+	leading     f64
+	x_height    f64
+	cap_height  f64
 	face_index  int
 	weight      int
 	italic      int
@@ -31,6 +37,14 @@ fn system_font_face_from_native(native &C.vox_ct_face) SystemFontFace {
 	return SystemFontFace{
 		path: unsafe { cstring_to_vstring(&char(&native.path[0])) }
 		postscript_name: unsafe { cstring_to_vstring(&char(&native.postscript[0])) }
+		family_name: unsafe { cstring_to_vstring(&char(&native.family[0])) }
+		metrics: SystemFontMetrics{
+			ascent: native.ascent
+			descent: native.descent
+			leading: native.leading
+			x_height: native.x_height
+			cap_height: native.cap_height
+		}
 		face_index: native.face_index
 		weight: native.weight
 		italic: native.italic != 0

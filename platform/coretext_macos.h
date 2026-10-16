@@ -14,6 +14,12 @@
 typedef struct {
 	char path[1024];
 	char postscript[256];
+	char family[256];
+	double ascent;
+	double descent;
+	double leading;
+	double x_height;
+	double cap_height;
 	int face_index;
 	int weight;
 	int italic;
@@ -211,6 +217,26 @@ static int vox_ct_fill(CTFontRef font, vox_ct_face *face) {
 		return 0;
 	int ok = CFURLGetFileSystemRepresentation(url, true, (UInt8 *)face->path, sizeof(face->path));
 	face->face_index = ok ? vox_ct_collection_index(face->path, font) : 0;
+	face->family[0] = 0;
+	CFStringRef family = CTFontCopyFamilyName(font);
+	if (family) {
+		CFStringGetCString(family, face->family, sizeof(face->family), kCFStringEncodingUTF8);
+		CFRelease(family);
+	}
+	// The metrics Skia's CoreText scaler reports, at the matched size.
+	face->ascent = CTFontGetAscent(font);
+	face->descent = CTFontGetDescent(font);
+	face->leading = CTFontGetLeading(font);
+	face->x_height = CTFontGetXHeight(font);
+	// Blink measures the x-height from the top of the 'x' glyph's bounds,
+	// rather than CoreText's value, so `ex` excludes descending parts.
+	UniChar x_character = 'x';
+	CGGlyph x_glyph = 0;
+	if (CTFontGetGlyphsForCharacters(font, &x_character, &x_glyph, 1) && x_glyph) {
+		CGRect bounds = CTFontGetBoundingRectsForGlyphs(font, kCTFontOrientationHorizontal, &x_glyph, NULL, 1);
+		face->x_height = bounds.origin.y + bounds.size.height;
+	}
+	face->cap_height = CTFontGetCapHeight(font);
 	face->postscript[0] = 0;
 	CFStringRef postscript = CTFontCopyPostScriptName(font);
 	if (postscript) {

@@ -13,9 +13,12 @@ fn test_browser_inline_leading_puts_odd_remainder_below_the_baseline() {
 }
 
 fn test_middle_alignment_uses_the_immediate_parent_font_and_retains_fractional_offset() {
+	// A file-backed face keeps the fixture independent of installed fonts.
+	serenity := platform.document_font_path(400) or { panic('missing test font') }
 	mut document := html.parse_document('<!doctype html><style>
-		body { margin:0 } #line { font:20px/20px SerenitySans }
-		#small { font:10px/12px SerenitySans }
+		@font-face { font-family:Fixture; src:url("file://${serenity}") }
+		body { margin:0 } #line { font:20px/20px Fixture }
+		#small { font:10px/12px Fixture }
 		#middle { display:inline-block; width:20px; height:12px; vertical-align:middle }
 	</style><div id="line">X<span id="small">x<span id="middle"></span></span></div>')
 	document.set_font_rendering_policy(.chromium)

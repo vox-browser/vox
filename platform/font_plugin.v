@@ -232,7 +232,7 @@ pub fn (font &Font) pixel_metrics() FontPixelMetrics {
 	metrics := font.pixel_metrics_uncached()
 	// An unavailable explicit source can become available later. Its temporary
 	// fallback must not become the handle's permanent metrics.
-	if font.decoded_face_ != unsafe { nil } {
+	if font.decoded_face_ != unsafe { nil } || font.system_face() != none {
 		mut mutable_font := unsafe { &Font(font) }
 		mutable_font.pixel_metrics_ = metrics
 		mutable_font.has_pixel_metrics_ = true
@@ -240,7 +240,24 @@ pub fn (font &Font) pixel_metrics() FontPixelMetrics {
 	return metrics
 }
 
+// Installed faces selected for the Chromium policy use CoreText's metrics, as
+// Skia reports them to Blink, without decoding the face file for x.ttf.
+fn (font &Font) system_face_pixel_metrics(face SystemFontFace) FontPixelMetrics {
+	return FontPixelMetrics{
+		size: font.point_size
+		x_height: f32(face.metrics.x_height)
+		// Blink's `ch` is the unrounded advance of the zero glyph.
+		advance_of_ascii_zero: font.glyph_width(u32(`0`))
+		ascent: f32(face.metrics.ascent)
+		descent: f32(face.metrics.descent)
+		line_gap: f32(face.metrics.leading)
+	}
+}
+
 fn (font &Font) pixel_metrics_uncached() FontPixelMetrics {
+	if face := font.system_face() {
+		return font.system_face_pixel_metrics(face)
+	}
 	face := font_face(font) or {
 		return FontPixelMetrics{
 			size: font.point_size

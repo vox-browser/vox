@@ -587,7 +587,10 @@ pub fn (mut builder LineBuilder) update_last_line() {
 		layout_font_metrics_for_node(unsafe { &Node(builder.containing_block) })
 	strut_baseline := font_baseline_for_line_height(container_font_metrics, computed.line_height())
 	mut line_box_baseline := strut_baseline
-	mut should_align_strut_to_line_box_baseline := false
+	// Blink always places the root inline box's strut on the line's baseline, so
+	// a protruding aligned box grows the line box and the next line follows it.
+	mut should_align_strut_to_line_box_baseline :=
+		unsafe { &Node(builder.containing_block) }.document().font_rendering_policy() == .chromium
 	mut has_line_relative_aligned_subtree := false
 	for fragment in line_box.fragments_ {
 		if builder.line_relative_aligned_subtree_root(fragment_alignment_style_source(fragment)) != none {

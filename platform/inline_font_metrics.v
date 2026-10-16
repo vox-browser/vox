@@ -7,11 +7,23 @@ import math
 pub fn (font &Font) inline_metrics() FontPixelMetrics {
 	metrics := font.pixel_metrics()
 	if font.font_rendering_policy != .chromium { return metrics }
+	ascent := math.round(f64(metrics.ascent))
+	descent := math.round(f64(metrics.descent))
 	return FontPixelMetrics{
 		...metrics
-		ascent: f32(math.round(f64(metrics.ascent)))
-		descent: f32(math.round(f64(metrics.descent)))
+		ascent: f32(ascent + chromium_legacy_ascent_adjustment(font, ascent, descent))
+		descent: f32(descent)
 		line_gap: f32(math.round(f64(metrics.line_gap)))
 		floor_inline_leading: true
 	}
+}
+
+// Blink on macOS preserves Safari's ascent for Times, Helvetica and Courier
+// by adding 15% of the rounded font height.
+fn chromium_legacy_ascent_adjustment(font &Font, ascent f64, descent f64) f64 {
+	face := font.system_face() or { return 0 }
+	if face.family_name !in ['Times', 'Helvetica', 'Courier'] {
+		return 0
+	}
+	return math.floor((ascent + descent) * 0.15 + 0.5)
 }

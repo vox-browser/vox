@@ -15,10 +15,10 @@ fn test_system_font_matching_selects_chromium_macos_faces() {
 		assert times.path == '/System/Library/Fonts/Times.ttc' && times.face_index == 0
 		black := (&Font{ family: 'Hoefler Text', point_size: 32, weight: 700, font_rendering_policy: .chromium }).system_face() or { panic('hoefler') }
 		assert black.postscript_name == 'HoeflerText-Black'
-		assert system_font_family_available_for_policy('Georgia', .chromium)
-		assert !system_font_family_available_for_policy('-apple-system', .chromium)
-		assert !system_font_family_available_for_policy('Linux Libertine', .chromium)
-		assert !system_font_family_available_for_policy('.SF NS', .chromium)
+		assert chromium_system_font_family_available('Georgia')
+		assert !chromium_system_font_family_available('-apple-system')
+		assert !chromium_system_font_family_available('Linux Libertine')
+		assert !chromium_system_font_family_available('.SF NS')
 		// Documents without the Chromium policy keep the configured faces.
 		assert (&Font{ family: 'SystemUi', point_size: 16, weight: 400 }).system_face() == none
 		assert system_fallback_font(0x65e5, 'ja', &Font{ family: 'SystemUi', point_size: 16, weight: 400 }) == none

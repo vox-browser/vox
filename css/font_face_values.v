@@ -5851,10 +5851,10 @@ fn platform_symbol_font_names_boundary() []string {
 }
 
 fn platform_typefaces_with_family_name_boundary(family_name string, policy platform.FontRenderingPolicy) []&PlatformTypeface {
-	if !platform.system_font_family_available_for_policy(family_name, policy) {
-		return []
-	}
 	if policy == .chromium && platform.system_font_matching_supported() {
+		if !platform.chromium_system_font_family_available(family_name) {
+			return []
+		}
 		// The platform resolves the installed face for the requested weight.
 		return [
 			&PlatformTypeface{
@@ -5866,6 +5866,9 @@ fn platform_typefaces_with_family_name_boundary(family_name string, policy platf
 				weight_: 700
 			},
 		]
+	}
+	if !platform.system_font_family_available(family_name) {
+		return []
 	}
 	regular_path := platform.font_path_for_family(family_name, 400) or { '' }
 	bold_path := platform.font_path_for_family(family_name, 700) or { regular_path }

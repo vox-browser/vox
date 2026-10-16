@@ -10,10 +10,22 @@ pub:
 }
 
 // The concrete installed face selected for a family, weight and size.
+// CoreText's vertical metrics for a face at its matched size.
+pub struct SystemFontMetrics {
+pub:
+	ascent     f64
+	descent    f64
+	leading    f64
+	x_height   f64
+	cap_height f64
+}
+
 pub struct SystemFontFace {
 pub:
 	path            string
 	postscript_name string
+	family_name     string
+	metrics         SystemFontMetrics
 	face_index      int
 	weight     int
 	italic     bool
@@ -46,12 +58,10 @@ fn (font &Font) uses_system_font_matching() bool {
 	return font.font_rendering_policy == .chromium && system_font_matching_supported()
 }
 
-// Whether a family can be matched for a document with the given policy.
-pub fn system_font_family_available_for_policy(family string, policy FontRenderingPolicy) bool {
-	if policy == .chromium && system_font_matching_supported() {
-		return system_font_matching_family_available(family)
-	}
-	return system_font_family_available(family)
+// Whether CoreText can match a family for a document with the Chromium
+// policy. Other families continue through the configured and bundled faces.
+pub fn chromium_system_font_family_available(family string) bool {
+	return system_font_matching_supported() && system_font_matching_family_available(family)
 }
 
 // Chromium's default macOS font preferences for generic and internal names.
