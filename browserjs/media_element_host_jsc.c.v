@@ -290,6 +290,23 @@ pub fn (mut host MediaElementHost) install(mut runtime Runtime) ! {
 			return host.runtime.actual_javascript_exception(host.runtime.binding_exception_value(err))
 		}
 	})!
+	create_audio := runtime.make_value_host_function(fn [handle] (_ voidptr, _ []voidptr) !voidptr {
+		mut host := unsafe { &MediaElementHost(handle) }
+		return host.create_audio() or { return host.runtime.actual_javascript_exception(host.runtime.binding_exception_value(err)) }
+	})!
+	initialize_audio := runtime.make_value_host_function(fn [handle] (_ voidptr, args []voidptr) !voidptr {
+		mut host := unsafe { &MediaElementHost(handle) }
+		return host.initialize_audio(args) or { return host.runtime.actual_javascript_exception(host.runtime.binding_exception_value(err)) }
+	})!
+	register_audio_factory := runtime.make_value_host_function(fn [handle] (_ voidptr, args []voidptr) !voidptr {
+		mut host := unsafe { &MediaElementHost(handle) }
+		if host.closed || args.len != 1 || !C.JSValueIsObject(host.runtime.context, args[0])
+			|| !C.JSObjectIsFunction(host.runtime.context, args[0]) || host.audio_factory != unsafe { nil } {
+			return host.runtime.actual_javascript_exception(host.runtime.binding_exception_value(error('TypeError: Audio facade factory must be installed once with a callable')))
+		}
+		host.audio_factory = host.runtime.retain_javascript_value(args[0])!
+		return C.JSValueMakeUndefined(host.runtime.context)
+	})!
 	bind := runtime.make_value_host_function(fn [handle] (_ voidptr, args []voidptr) !voidptr {
 		mut host := unsafe { &MediaElementHost(handle) }
 		return host.bind(args) or {
@@ -307,7 +324,7 @@ pub fn (mut host MediaElementHost) install(mut runtime Runtime) ! {
 			cross_origin_getter, cross_origin_setter, controls_getter, controls_setter,
 			poster_getter, poster_setter, dimension_array, size_array,
 			plays_inline_getter, plays_inline_setter, src_getter, src_setter,
-			src_object_getter, src_object_setter])!)!
+			src_object_getter, src_object_setter, create_audio, initialize_audio, register_audio_factory])!)!
 	defer { runtime.release_javascript_value(prototypes) }
 	host.prototype = runtime.retain_javascript_value(runtime.binding_property(prototypes, 'media')!)!
 	host.audio_prototype = runtime.retain_javascript_value(runtime.binding_property(prototypes, 'audio')!)!
@@ -324,6 +341,7 @@ pub fn (mut host MediaElementHost) install(mut runtime Runtime) ! {
 		mut host := unsafe { &MediaElementHost(handle) }
 		host.closed = true
 		host.attribute_sync = unsafe { nil }
+		host.audio_factory = unsafe { nil }
 		host.bound_elements.clear()
 		host.records.clear()
 		host.elements.clear()
@@ -352,6 +370,53 @@ fn (mut host MediaElementHost) bind(args []voidptr) !voidptr {
 	C.JSObjectSetPrototype(host.runtime.context, wrapper, prototype)
 	host.records[wrapper] = media
 	host.bound_elements[wrapper] = element
+	return C.JSValueMakeUndefined(host.runtime.context)
+}
+
+fn (mut host MediaElementHost) create_audio() !voidptr {
+	if host.closed { return error('TypeError: Media element binding is closed') }
+	if replay := host.replay { replay(host.runtime)! }
+	if host.audio_factory != unsafe { nil } {
+		wrapper := host.runtime.call_javascript_function(host.audio_factory, C.JSValueMakeUndefined(host.runtime.context), [])!
+		host.media_element_for_binding(wrapper)!
+		element := host.bound_elements[wrapper] or { return error('TypeError: Audio factory has no native owner') }
+		if element.local_name() != 'audio' { return error('TypeError: Audio factory requires an HTML audio owner') }
+		return wrapper
+	}
+	mut key := ''
+	for {
+		host.audio_factory_serial++
+		key = '__created_native_audio_${host.audio_factory_serial}'
+		if key !in host.elements { break }
+	}
+	wrapper := C.JSObjectMake(host.runtime.context, unsafe { nil }, unsafe { nil })
+	host.runtime.retain_javascript_value(wrapper)!
+	host.bind([wrapper, host.runtime.binding_string(key), host.runtime.binding_string('audio')])!
+	return wrapper
+}
+
+fn (mut host MediaElementHost) initialize_audio(args []voidptr) !voidptr {
+	if args.len != 2 { return error('TypeError: Invalid Audio initialization') }
+	receiver := args[0]
+	host.media_element_for_binding(receiver)!
+	mut element := host.bound_elements[receiver] or { return error('TypeError: Audio factory has no native owner') }
+	if element.local_name() != 'audio' { return error('TypeError: Audio factory requires an HTML audio owner') }
+	if replay := host.replay { replay(host.runtime)! }
+	if host.attribute_sync != unsafe { nil } {
+		host.runtime.call_javascript_function(host.attribute_sync, C.JSValueMakeUndefined(host.runtime.context),
+			[receiver, host.runtime.binding_string('preload'), host.runtime.binding_string('auto')])!
+	}
+	element.set_attribute_value('preload', 'auto')
+	// AudioConstructor.cpp converts the optional DOMString only after creation,
+	// prototype resolution and the preload write. Undefined leaves src absent.
+	if !C.JSValueIsUndefined(host.runtime.context, args[1]) {
+		source := host.runtime.binding_dom_utf16(args[1])!
+		if host.attribute_sync != unsafe { nil } {
+			host.runtime.call_javascript_function(host.attribute_sync, C.JSValueMakeUndefined(host.runtime.context),
+				[receiver, host.runtime.binding_string('src'), host.runtime.binding_utf16_string(source)!])!
+		}
+		element.set_attribute_value('src', source.str())
+	}
 	return C.JSValueMakeUndefined(host.runtime.context)
 }
 
@@ -870,7 +935,7 @@ fn (mut host MediaElementHost) set_property(name string, receiver voidptr, value
 // selected media and input handler attributes,
 // and constants.
 // Full HTMLElement/audio/video interfaces remain open.
-const media_element_native_factory = r'(function(getters,setters,bind,fastSeek,getStartDate,pause,load,play,handlerGetters,handlerSetters,canPlayType,defaultMutedGetter,defaultMutedSetter,setAttributeSync,loopGetter,loopSetter,autoplayGetter,autoplaySetter,preloadGetter,preloadSetter,crossOriginGetter,crossOriginSetter,controlsGetter,controlsSetter,posterGetter,posterSetter,dimensionGetters,sizeAccessors,playsInlineGetter,playsInlineSetter,srcGetter,srcSetter,srcObjectGetter,srcObjectSetter){
+const media_element_native_factory = r'(function(getters,setters,bind,fastSeek,getStartDate,pause,load,play,handlerGetters,handlerSetters,canPlayType,defaultMutedGetter,defaultMutedSetter,setAttributeSync,loopGetter,loopSetter,autoplayGetter,autoplaySetter,preloadGetter,preloadSetter,crossOriginGetter,crossOriginSetter,controlsGetter,controlsSetter,posterGetter,posterSetter,dimensionGetters,sizeAccessors,playsInlineGetter,playsInlineSetter,srcGetter,srcSetter,srcObjectGetter,srcObjectSetter,createAudio,initializeAudio,registerAudioFactory){
  "use strict";
  const define=Object.defineProperty,create=Object.create,P=Proxy,T=TypeError;
  const prototype=create(EventTarget.prototype);
@@ -906,6 +971,7 @@ const media_element_native_factory = r'(function(getters,setters,bind,fastSeek,g
  define(globalThis,"HTMLMediaElement",{value:constructor,writable:true,configurable:true});
  define(globalThis,"__ladybirdMediaElementBind",{value:bind,configurable:true});
  define(globalThis,"__ladybirdMediaElementSetAttributeSync",{value:setAttributeSync,configurable:true});
+ define(globalThis,"__ladybirdMediaElementSetAudioFactory",{value:registerAudioFactory,configurable:true});
  const audioPrototype=create(prototype);
  define(audioPrototype,Symbol.toStringTag,{value:"HTMLAudioElement",configurable:true});
  const audioConstructor=new P(function HTMLAudioElement(){},{apply(){throw new T("Illegal HTMLAudioElement constructor")},construct(){throw new T("Illegal HTMLAudioElement constructor")}});
@@ -913,6 +979,10 @@ const media_element_native_factory = r'(function(getters,setters,bind,fastSeek,g
  define(audioConstructor,"prototype",{value:audioPrototype,writable:false});
  define(audioPrototype,"constructor",{value:audioConstructor,writable:true,configurable:true});
  define(globalThis,"HTMLAudioElement",{value:audioConstructor,writable:true,configurable:true});
+ const setPrototype=Object.setPrototypeOf;
+ const legacyAudio=new P(function Audio(){},{apply(){throw new T("Audio constructor must be called with \u0027new\u0027")},construct(target,args,newTarget){const audio=createAudio(),desired=newTarget.prototype;setPrototype(audio,desired!==null&&(typeof desired==="object"||typeof desired==="function")?desired:audioPrototype);initializeAudio(audio,args[0]);return audio;}});
+ define(legacyAudio,"prototype",{value:audioPrototype,writable:false});
+ define(globalThis,"Audio",{value:legacyAudio,writable:true,configurable:true});
  const videoPrototype=create(prototype);
  for(const [index,name] of ["videoWidth","videoHeight"].entries())define(videoPrototype,name,{get:dimensionGetters[index],enumerable:true,configurable:true});
  for(const [index,name] of ["width","height"].entries())define(videoPrototype,name,{get:sizeAccessors[index*2],set:sizeAccessors[index*2+1],enumerable:true,configurable:true});

@@ -34,6 +34,8 @@ mut:
 	records        map[voidptr]&html.HTMLMediaElement
 	bound_elements map[voidptr]&dom.Element
 	attribute_sync voidptr
+	audio_factory voidptr
+	audio_factory_serial u64
 	closed         bool
 }
 
