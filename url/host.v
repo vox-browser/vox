@@ -68,46 +68,28 @@ pub fn parse_host(input string, is_opaque bool) ?Host {
 	return Host.from_string(ascii_domain)
 }
 
-fn all_ascii_digits(input string) bool {
-	for b in input.bytes() {
-		if b < `0` || b > `9` {
-			return false
-		}
-	}
-	return true
-}
-
-fn all_ascii_hex_digits(input string) bool {
-	for b in input.bytes() {
-		if !is_ascii_hex_digit(b) {
-			return false
-		}
-	}
-	return true
-}
-
 // https://url.spec.whatwg.org/#ends-in-a-number-checker — whether a host's last label is an IPv4 number
 // (a non-empty run of ASCII digits, or "0x"/"0X" followed by zero or more ASCII hex digits).
 pub fn ends_in_a_number_checker(input string) bool {
-	// 1. Strictly split on '.', keeping empty parts.
-	mut parts := input.split('.')
-	// 2. A trailing empty part is dropped (unless it is the only part, in which case there is no number).
-	if parts[parts.len - 1] == '' {
-		if parts.len == 1 {
-			return false
+	// Strict splitting and dropping exactly one trailing empty part select the
+	// same byte interval. Inspect it in place without allocating the other
+	// labels, a substring, or a byte-array copy for every parsed host.
+	mut end := input.len
+	if end > 0 && input[end - 1] == `.` { end-- }
+	if end == 0 { return false }
+	mut start := end
+	for start > 0 && input[start - 1] != `.` {
+		start--
+	}
+	if start == end { return false }
+	if end - start >= 2 && input[start] == `0` && input[start + 1] in [`x`, `X`] {
+		for index in start + 2 .. end {
+			if !is_ascii_hex_digit(input[index]) { return false }
 		}
-		parts = parts[..parts.len - 1]
-	}
-	// 3. Consider the last part.
-	last := parts[parts.len - 1]
-	// 4. A non-empty run of ASCII digits ends in a number.
-	if last.len > 0 && all_ascii_digits(last) {
 		return true
 	}
-	// 5. "0x"/"0X" followed by zero or more ASCII hex digits also ends in a number.
-	if (last.starts_with('0x') || last.starts_with('0X')) && all_ascii_hex_digits(last[2..]) {
-		return true
+	for index in start .. end {
+		if input[index] < `0` || input[index] > `9` { return false }
 	}
-	// 6. Otherwise it does not.
-	return false
+	return true
 }
