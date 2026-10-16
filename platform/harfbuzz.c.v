@@ -590,7 +590,7 @@ fn shape_text_with_harfbuzz(initial_x f32, letter_spacing f32, word_spacing f32,
 	}
 	C.hb_buffer_destroy(buffer)
 	return ShapedText{
-		glyph_run: GlyphRun.new_with_face(font, text_type, glyphs, if uses_emoji {
+		glyph_run: glyph_run_with_owned_glyphs(font, text_type, glyphs, if uses_emoji {
 			.emoji
 		} else {
 			.document

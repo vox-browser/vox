@@ -617,7 +617,7 @@ fn shape_text_uncached(initial_x f32, letter_spacing f32, word_spacing f32, text
 		x = 0
 	}
 	return ShapedText{
-		glyph_run: GlyphRun.new(font, text_type, glyphs)
+		glyph_run: glyph_run_with_owned_glyphs(font, text_type, glyphs, .document)
 		trailing_whitespace: TrailingWhitespace{
 			length_in_code_units: trailing_length
 			advance: trailing_advance
