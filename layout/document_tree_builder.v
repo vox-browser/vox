@@ -535,6 +535,8 @@ mut:
 	// coordinates and visual-context rebuilds share one lazily built index.
 	boxes_by_layout_cache       map[u64]&BlockBox
 	boxes_by_layout_cache_valid bool
+	// Private recording storage plus command vectors returned by the shell.
+	record_scratch CompatibilityRecordScratch
 }
 
 fn document_layout_update_callback_with_paint_tree(document &dom.Document, viewport_width f64,

@@ -64,3 +64,56 @@ fn test_3d_sorting_plane_resets_ancestor_backface_culling() {
 fn math_pi() f64 {
 	return 3.141592653589793
 }
+
+fn test_inline_backface_walk_matches_the_map_walk() {
+	mut tree := AccumulatedVisualContextTree.create()
+	rotation := css.rotation_matrix(css.FloatVector3{ x: 0, y: 1, z: 0 }, math_pi())
+	tilt := css.rotation_matrix(css.FloatVector3{ x: 1, y: 0, z: 0 }, math_pi() / 3)
+	scroll := tree.append(ScrollVisualData{ scroll_frame_index: 1 }, 0)
+	turned := tree.append(TransformVisualData{
+		matrix_4x4: rotation
+		uses_matrix_4x4: true
+	}, scroll)
+	tilted := tree.append(TransformVisualData{
+		matrix_4x4: tilt
+		uses_matrix_4x4: true
+	}, turned)
+	// Plane roots: the implicit root, an ancestor, the marker itself and a node
+	// outside the chain.
+	mut markers := []int{}
+	markers << tree.append(BackfaceVisibilityVisualData{ plane_root_index: 0 }, tilted)
+	markers << tree.append(BackfaceVisibilityVisualData{ plane_root_index: turned }, tilted)
+	markers << tree.append(BackfaceVisibilityVisualData{ plane_root_index: tree.nodes.len }, tilted)
+	outside := tree.append(TransformVisualData{
+		matrix_4x4: tilt
+		uses_matrix_4x4: true
+	}, 0)
+	markers << tree.append(BackfaceVisibilityVisualData{ plane_root_index: outside }, tilted)
+	reset := tree.append(TransformVisualData{
+		matrix_4x4: rotation
+		uses_matrix_4x4: true
+		resets_backface_culling: true
+	}, markers[0])
+	markers << tree.append(BackfaceVisibilityVisualData{ plane_root_index: scroll }, reset)
+	mut deep := markers.last()
+	for _ in 0 .. inline_backface_chain_capacity + 2 {
+		deep = tree.append(TransformVisualData{
+			matrix_4x4: tilt
+			uses_matrix_4x4: true
+		}, deep)
+	}
+	markers << tree.append(BackfaceVisibilityVisualData{ plane_root_index: turned }, deep)
+	snapshot := ScrollStateSnapshot{
+		device_offsets: [Point{}, Point{0, -40}]
+	}
+	mut culled := 0
+	for marker in markers {
+		expected := tree.context_is_backface_culled_with_depth_fallback(marker, snapshot)
+		assert tree.context_is_backface_culled(marker, snapshot) == expected
+		if tree.nodes[marker].depth <= inline_backface_chain_capacity {
+			assert tree.inline_context_is_backface_culled(marker, snapshot) == expected
+		}
+		if expected { culled++ }
+	}
+	assert culled > 0 && culled < markers.len
+}

@@ -133,8 +133,10 @@ pub fn (matrix FloatMatrix4x4) at(row int, column int) f64 {
 	}
 }
 
+// Temporaries stay in fixed arrays: these run for every visual-context node
+// and hit-test candidate, where heap-allocated scratch dominated their cost.
 pub fn (left FloatMatrix4x4) multiply(right FloatMatrix4x4) FloatMatrix4x4 {
-	mut values := []f64{len: 16}
+	mut values := [16]f64{}
 	for row in 0 .. 4 {
 		for column in 0 .. 4 {
 			mut value := 0.0
@@ -151,7 +153,7 @@ pub fn translation_matrix_4x4(x f64, y f64, z f64) FloatMatrix4x4 {
 	return FloatMatrix4x4.from_values(1, 0, 0, x, 0, 1, 0, y, 0, 0, 1, z, 0, 0, 0, 1)
 }
 
-fn determinant_3x3(values []f64) f64 {
+fn determinant_3x3(values [9]f64) f64 {
 	first := values[0] * (values[4] * values[8] - values[5] * values[7])
 	second := values[1] * (values[3] * values[8] - values[5] * values[6])
 	third := values[2] * (values[3] * values[7] - values[4] * values[6])
@@ -159,14 +161,16 @@ fn determinant_3x3(values []f64) f64 {
 }
 
 pub fn (matrix FloatMatrix4x4) first_minor(excluded_row int, excluded_column int) f64 {
-	mut values := []f64{cap: 9}
+	mut values := [9]f64{}
+	mut count := 0
 	for row in 0 .. 4 {
 		if row == excluded_row {
 			continue
 		}
 		for column in 0 .. 4 {
 			if column != excluded_column {
-				values << matrix.at(row, column)
+				values[count] = matrix.at(row, column)
+				count++
 			}
 		}
 	}
@@ -187,7 +191,7 @@ pub fn (matrix FloatMatrix4x4) inverse() ?FloatMatrix4x4 {
 	if determinant == 0 {
 		return none
 	}
-	mut values := []f64{len: 16}
+	mut values := [16]f64{}
 	for row in 0 .. 4 {
 		for column in 0 .. 4 {
 			// The adjugate is the transpose of the cofactor matrix.

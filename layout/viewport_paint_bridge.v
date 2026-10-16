@@ -1423,7 +1423,6 @@ struct CompatibilityFlattenedVisualContext {
 mut:
 	transform       [6]f64 = [f64(1), 0, 0, 1, 0, 0]!
 	matrix_4x4      css.FloatMatrix4x4
-	matrices_4x4    map[int]css.FloatMatrix4x4
 	backface_culled bool
 	has_clip        bool
 	clip            LayoutRect
@@ -1436,25 +1435,25 @@ mut:
 
 fn compatibility_affine_map_rect(matrix [6]f64, rect LayoutRect) LayoutRect {
 	resolved := normalized_affine(matrix)
-	points := [
-		[resolved[0] * rect.x + resolved[2] * rect.y + resolved[4],
-			resolved[1] * rect.x + resolved[3] * rect.y + resolved[5]],
-		[resolved[0] * (rect.x + rect.width) + resolved[2] * rect.y + resolved[4],
-			resolved[1] * (rect.x + rect.width) + resolved[3] * rect.y + resolved[5]],
-		[resolved[0] * (rect.x + rect.width) + resolved[2] * (rect.y + rect.height) + resolved[4],
-			resolved[1] * (rect.x + rect.width) + resolved[3] * (rect.y + rect.height) + resolved[5]],
-		[resolved[0] * rect.x + resolved[2] * (rect.y + rect.height) + resolved[4],
-			resolved[1] * rect.x + resolved[3] * (rect.y + rect.height) + resolved[5]],
-	]
-	mut left := points[0][0]
-	mut top := points[0][1]
+	// Corner order and min/max folding match the original point list exactly;
+	// fixed arrays keep this per-clip helper off the collector.
+	xs := [resolved[0] * rect.x + resolved[2] * rect.y + resolved[4],
+		resolved[0] * (rect.x + rect.width) + resolved[2] * rect.y + resolved[4],
+		resolved[0] * (rect.x + rect.width) + resolved[2] * (rect.y + rect.height) + resolved[4],
+		resolved[0] * rect.x + resolved[2] * (rect.y + rect.height) + resolved[4]]!
+	ys := [resolved[1] * rect.x + resolved[3] * rect.y + resolved[5],
+		resolved[1] * (rect.x + rect.width) + resolved[3] * rect.y + resolved[5],
+		resolved[1] * (rect.x + rect.width) + resolved[3] * (rect.y + rect.height) + resolved[5],
+		resolved[1] * rect.x + resolved[3] * (rect.y + rect.height) + resolved[5]]!
+	mut left := xs[0]
+	mut top := ys[0]
 	mut right := left
 	mut bottom := top
-	for point in points[1..] {
-		left = math.min(left, point[0])
-		top = math.min(top, point[1])
-		right = math.max(right, point[0])
-		bottom = math.max(bottom, point[1])
+	for index in 1 .. 4 {
+		left = math.min(left, xs[index])
+		top = math.min(top, ys[index])
+		right = math.max(right, xs[index])
+		bottom = math.max(bottom, ys[index])
 	}
 	return LayoutRect{left, top, right - left, bottom - top}
 }
@@ -1544,12 +1543,25 @@ pub fn compatibility_pack_clip_path_segments(clip painting.ClipPathVisualData) [
 // native bridge without allocating an ancestor array for each distinct context.
 fn apply_compatibility_visual_context_chain(tree &painting.AccumulatedVisualContextTree,
 	index int, snapshot painting.ScrollStateSnapshot,
-	mut flattened CompatibilityFlattenedVisualContext) {
+	mut flattened CompatibilityFlattenedVisualContext, mut matrices map[int]css.FloatMatrix4x4) {
 	if index <= 0 || index >= tree.nodes.len {
 		return
 	}
 	node := tree.node_at(index)
-	apply_compatibility_visual_context_chain(tree, node.parent_index, snapshot, mut flattened)
+	apply_compatibility_visual_context_chain(tree, node.parent_index, snapshot, mut flattened, mut
+		matrices)
+	apply_compatibility_visual_context_node(tree, index, snapshot, mut flattened, unsafe { nil }, mut
+		matrices)
+}
+
+// Apply one retained node on top of its parent's flattened state. A chain walk
+// records the matrix after each processed node in `matrices`; a memo instead
+// supplies the already-flattened ancestor matrices.
+fn apply_compatibility_visual_context_node(tree &painting.AccumulatedVisualContextTree,
+	index int, snapshot painting.ScrollStateSnapshot,
+	mut flattened CompatibilityFlattenedVisualContext, memo &CompatibilityVisualContextMemo,
+	mut matrices map[int]css.FloatMatrix4x4) {
+	node := tree.node_at(index)
 	match node.data {
 		painting.TransformVisualData {
 			matrix := [node.data.matrix.a, node.data.matrix.b, node.data.matrix.c,
@@ -1573,8 +1585,10 @@ fn apply_compatibility_visual_context_chain(tree &painting.AccumulatedVisualCont
 			flattened.matrix_4x4 = flattened.matrix_4x4.multiply(resolved)
 		}
 		painting.BackfaceVisibilityVisualData {
-			plane_root := flattened.matrices_4x4[node.data.plane_root_index] or {
-				css.FloatMatrix4x4.identity()
+			plane_root := if memo != unsafe { nil } {
+				memo.ancestor_matrix_4x4(index, node.data.plane_root_index)
+			} else {
+				matrices[node.data.plane_root_index] or { css.FloatMatrix4x4.identity() }
 			}
 			if !flattened.backface_culled
 				&& painting.should_cull_back_face(flattened.matrix_4x4, plane_root) {
@@ -1790,7 +1804,122 @@ fn apply_compatibility_visual_context_chain(tree &painting.AccumulatedVisualCont
 			}
 		}
 	}
-	flattened.matrices_4x4[index] = flattened.matrix_4x4
+	if memo == unsafe { nil } {
+		matrices[index] = flattened.matrix_4x4
+	}
+}
+
+// Every flattened context is its parent's flattened state plus one node.
+// Resolve each retained node once per recording instead of re-walking the full
+// ancestor chain (and allocating a matrix map) for every distinct context.
+struct CompatibilityVisualContextMemo {
+	tree     &painting.AccumulatedVisualContextTree = unsafe { nil }
+	snapshot painting.ScrollStateSnapshot
+mut:
+	slots    []int
+	contexts []CompatibilityFlattenedVisualContext
+	// Unused by memoized application; ancestors come from `contexts`.
+	no_matrices map[int]css.FloatMatrix4x4
+}
+
+fn new_compatibility_visual_context_memo(tree &painting.AccumulatedVisualContextTree,
+	snapshot painting.ScrollStateSnapshot) CompatibilityVisualContextMemo {
+	mut scratch := CompatibilityRecordScratch{}
+	return new_compatibility_visual_context_memo_with_scratch(tree, snapshot, mut scratch)
+}
+
+// The memo lives only for the recording call that owns `tree`. Its slot and
+// context arrays are private scratch, so a retained record reuses their storage.
+fn new_compatibility_visual_context_memo_with_scratch(tree &painting.AccumulatedVisualContextTree,
+	snapshot painting.ScrollStateSnapshot, mut scratch CompatibilityRecordScratch) CompatibilityVisualContextMemo {
+	mut slots := unsafe { scratch.memo_slots }
+	mut contexts := unsafe { scratch.memo_contexts }
+	scratch.memo_slots = []int{}
+	scratch.memo_contexts = []CompatibilityFlattenedVisualContext{}
+	if slots.cap >= tree.nodes.len {
+		slots.clear()
+		for _ in 0 .. tree.nodes.len {
+			slots << -1
+		}
+	} else {
+		slots = []int{len: tree.nodes.len, init: -1}
+	}
+	if contexts.cap >= tree.nodes.len + 1 {
+		contexts.clear()
+	} else {
+		// Each node gets at most one slot, so one reservation avoids regrowth.
+		contexts = []CompatibilityFlattenedVisualContext{cap: tree.nodes.len + 1}
+	}
+	mut memo := CompatibilityVisualContextMemo{
+		tree: unsafe { tree }
+		snapshot: snapshot
+		slots: slots
+		contexts: contexts
+	}
+	memo.contexts << CompatibilityFlattenedVisualContext{}
+	return memo
+}
+
+// Slot of the flattened context for `index`; slot 0 is the empty root state.
+fn (mut memo CompatibilityVisualContextMemo) resolve(index int) int {
+	if index <= 0 || index >= memo.tree.nodes.len {
+		return 0
+	}
+	if memo.slots[index] >= 0 {
+		return memo.slots[index]
+	}
+	node := memo.tree.node_at(index)
+	parent_slot := memo.resolve(node.parent_index)
+	mut flattened := memo.contexts[parent_slot]
+	extends_lists := match node.data {
+		painting.ClipVisualData, painting.ClipPathVisualData, painting.SVGClipVisualData,
+		painting.SVGMaskVisualData, painting.EffectsVisualData {
+			true
+		}
+		else {
+			false
+		}
+	}
+	if extends_lists {
+		// The parent's arrays are shared retained state; append to copies.
+		flattened.clips = flattened.clips.clone()
+		flattened.layers = flattened.layers.clone()
+	}
+	apply_compatibility_visual_context_node(memo.tree, index, memo.snapshot, mut flattened,
+		&memo, mut memo.no_matrices)
+	if extends_lists {
+		flattened.clip_list = if flattened.clips.len > 0 {
+			&PaintClipList{
+				items: flattened.clips
+			}
+		} else {
+			unsafe { &PaintClipList(nil) }
+		}
+		flattened.layer_list = if flattened.layers.len > 0 {
+			&PaintVisualLayerList{
+				items: flattened.layers
+			}
+		} else {
+			unsafe { &PaintVisualLayerList(nil) }
+		}
+	}
+	slot := memo.contexts.len
+	memo.contexts << flattened
+	memo.slots[index] = slot
+	return slot
+}
+
+// The chain walk records the matrix after each processed ancestor (and the
+// identity for index 0); any other plane root falls back to the identity.
+fn (memo &CompatibilityVisualContextMemo) ancestor_matrix_4x4(index int, plane_root_index int) css.FloatMatrix4x4 {
+	mut ancestor := memo.tree.node_at(index).parent_index
+	for ancestor > 0 && ancestor < memo.tree.nodes.len {
+		if ancestor == plane_root_index {
+			return memo.contexts[memo.slots[ancestor]].matrix_4x4
+		}
+		ancestor = memo.tree.node_at(ancestor).parent_index
+	}
+	return css.FloatMatrix4x4.identity()
 }
 
 // Flatten the translated AccumulatedVisualContext tree for the immediate-mode
@@ -1798,8 +1927,9 @@ fn apply_compatibility_visual_context_chain(tree &painting.AccumulatedVisualCont
 // affine and effective clip are copied onto a replayed command.
 fn flatten_compatibility_visual_context(tree painting.AccumulatedVisualContextTree, index int, snapshot painting.ScrollStateSnapshot) CompatibilityFlattenedVisualContext {
 	mut flattened := CompatibilityFlattenedVisualContext{}
-	flattened.matrices_4x4[0] = css.FloatMatrix4x4.identity()
-	apply_compatibility_visual_context_chain(&tree, index, snapshot, mut flattened)
+	mut matrices := map[int]css.FloatMatrix4x4{}
+	matrices[0] = css.FloatMatrix4x4.identity()
+	apply_compatibility_visual_context_chain(&tree, index, snapshot, mut flattened, mut matrices)
 	if flattened.clips.len > 0 {
 		flattened.clip_list = &PaintClipList{
 			items: flattened.clips
@@ -2062,10 +2192,10 @@ fn replay_cached_paint_commands_with_visual_context(steps []CompatibilityPaintSt
 // list is materialized. Keeping this plan compact avoids a second full-width
 // command vector on every animation or scroll repaint.
 struct CompatibilityCachedVisualReplayStep {
-	command       &PaintCommand = unsafe { nil }
-	box           &BlockBox = unsafe { nil }
-	context_index int
-	layer_list    &PaintVisualLayerList = unsafe { nil }
+	command      &PaintCommand = unsafe { nil }
+	box          &BlockBox = unsafe { nil }
+	context_slot int
+	layer_list   &PaintVisualLayerList = unsafe { nil }
 }
 
 fn cached_visual_replay_command_count(steps []CompatibilityCachedVisualReplayStep) int {
@@ -2088,11 +2218,38 @@ fn cached_visual_replay_command_count(steps []CompatibilityCachedVisualReplaySte
 	return count + if previous != unsafe { nil } { previous.items.len } else { 0 }
 }
 
+// Storage retained between recordings of one document. Only the memo and plan
+// are private; a command vector enters `recycled_commands` solely when its
+// consumer returned it after adopting a newer list (recycle_display_list_commands).
+// A published vector which may still be read is therefore never overwritten.
+struct CompatibilityRecordScratch {
+mut:
+	recycled_commands []PaintCommand
+	memo_slots        []int
+	memo_contexts     []CompatibilityFlattenedVisualContext
+	plan              []CompatibilityCachedVisualReplayStep
+}
+
 fn record_cached_paint_commands_with_visual_context(steps []CompatibilityPaintStep,
 	phase_commands [][]PaintCommand, command_count int, tree painting.AccumulatedVisualContextTree,
 	snapshot painting.ScrollStateSnapshot, show_line_box_borders bool) []PaintCommand {
-	mut contexts := map[int]CompatibilityFlattenedVisualContext{}
-	mut plan := []CompatibilityCachedVisualReplayStep{cap: command_count}
+	mut scratch := CompatibilityRecordScratch{}
+	return record_cached_paint_commands_with_visual_context_into(steps, phase_commands,
+		command_count, &tree, snapshot, show_line_box_borders, mut scratch)
+}
+
+fn record_cached_paint_commands_with_visual_context_into(steps []CompatibilityPaintStep,
+	phase_commands [][]PaintCommand, command_count int, tree &painting.AccumulatedVisualContextTree,
+	snapshot painting.ScrollStateSnapshot, show_line_box_borders bool, mut scratch CompatibilityRecordScratch) []PaintCommand {
+	mut contexts := new_compatibility_visual_context_memo_with_scratch(tree, snapshot, mut
+		scratch)
+	mut plan := unsafe { scratch.plan }
+	scratch.plan = []CompatibilityCachedVisualReplayStep{}
+	if plan.cap >= command_count {
+		plan.clear()
+	} else {
+		plan = []CompatibilityCachedVisualReplayStep{cap: command_count}
+	}
 	for step in steps {
 		if step.entry_index < 0 { continue }
 		default_context_index := if step.phase == .foreground && step.box.paintable_with_lines {
@@ -2104,29 +2261,32 @@ fn record_cached_paint_commands_with_visual_context(steps []CompatibilityPaintSt
 		for index in 0 .. phase_commands[bucket].len {
 			cached := unsafe { &phase_commands[bucket][index] }
 			context_index := cached.visual_context_index or { default_context_index }
-			context := if existing := contexts[context_index] {
-				existing
-			} else {
-				flattened := flatten_compatibility_visual_context(tree, context_index, snapshot)
-				contexts[context_index] = flattened
-				flattened
-			}
+			context_slot := contexts.resolve(context_index)
+			context := unsafe { &contexts.contexts[context_slot] }
 			if context.backface_culled { continue }
 			plan << CompatibilityCachedVisualReplayStep{
 				command: if cached.line_box_debug && !show_line_box_borders { unsafe { &PaintCommand(nil) } } else { cached }
 				box: step.box
-				context_index: context_index
+				context_slot: context_slot
 				layer_list: context.layer_list
 			}
 		}
 	}
 
-	// The only wide vector is fresh, exact-sized output. Published display lists
-	// and cached phase commands remain immutable, including their shared clips.
-	mut result := []PaintCommand{cap: cached_visual_replay_command_count(plan)}
+	// The only wide vector is the output: fresh and exact-sized, or a returned
+	// one with enough capacity. Published display lists and cached phase
+	// commands remain immutable, including their shared clips.
+	output_count := cached_visual_replay_command_count(plan)
+	mut result := unsafe { scratch.recycled_commands }
+	scratch.recycled_commands = []PaintCommand{}
+	if result.cap >= output_count && result.cap <= output_count * 2 {
+		result.clear()
+	} else {
+		result = []PaintCommand{cap: output_count}
+	}
 	mut active := []PaintVisualLayer{}
 	for step in plan {
-		context := contexts[step.context_index] or { panic('missing replay visual context') }
+		context := unsafe { &contexts.contexts[step.context_slot] }
 		desired := if step.layer_list != unsafe { nil } {
 			step.layer_list.items
 		} else {
@@ -2213,7 +2373,25 @@ fn record_cached_paint_commands_with_visual_context(steps []CompatibilityPaintSt
 			visual_layer_data: &PaintVisualLayer{ ...active[index] }
 		}
 	}
+	scratch.memo_slots = contexts.slots
+	scratch.memo_contexts = contexts.contexts
+	scratch.plan = plan
 	return result
+}
+
+// The shell's adopted command vector, returned once it holds a newer list. The
+// next recording of the same document may overwrite it; the vector currently
+// published by the document is never accepted.
+pub fn recycle_display_list_commands(display_list &dom.DisplayList, commands []PaintCommand) {
+	if display_list == unsafe { nil } || display_list.concrete_handle == unsafe { nil }
+		|| commands.cap == 0 {
+		return
+	}
+	mut result := viewport_layout_result(display_list.concrete_handle)
+	if commands.data == result.display_list_commands.data {
+		return
+	}
+	result.record_scratch.recycled_commands = unsafe { commands }
 }
 
 fn viewport_record_display_list(target voidptr) &dom.DisplayList {
@@ -2236,9 +2414,9 @@ fn viewport_record_display_list(target voidptr) &dom.DisplayList {
 	if model := html.NavigableModel.navigable_with_active_document(result.document) {
 		show_line_box_borders = model.should_show_line_box_borders()
 	}
-	mut commands := record_cached_paint_commands_with_visual_context(result.paint_steps,
-		result.paint_phase_commands, result.paint_phase_command_count, result.visual_context_tree,
-		snapshot, show_line_box_borders)
+	mut commands := record_cached_paint_commands_with_visual_context_into(result.paint_steps,
+		result.paint_phase_commands, result.paint_phase_command_count, &result.visual_context_tree,
+		snapshot, show_line_box_borders, mut result.record_scratch)
 	commands << result.paint_tree.paint_inspector_overlay(result.document, result.visual_context_tree,
 		snapshot)
 	if model := html.NavigableModel.navigable_with_active_document(result.document) {

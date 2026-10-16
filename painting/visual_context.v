@@ -395,6 +395,62 @@ pub fn (tree &AccumulatedVisualContextTree) context_is_backface_culled(index int
 	if !tree.nodes[index].has_backface_visibility {
 		return false
 	}
+	if tree.nodes[index].depth <= inline_backface_chain_capacity {
+		return tree.inline_context_is_backface_culled(index, snapshot)
+	}
+	return tree.context_is_backface_culled_with_depth_fallback(index, snapshot)
+}
+
+const inline_backface_chain_capacity = 32
+
+// Same walk as the general path, with the chain and its accumulated matrices in
+// fixed storage. Hit testing asks this for every candidate below a hidden
+// backface, so the map and chain allocations dominated its cost.
+fn (tree &AccumulatedVisualContextTree) inline_context_is_backface_culled(index int,
+	snapshot ScrollStateSnapshot) bool {
+	mut chain := [inline_backface_chain_capacity]int{}
+	mut matrices := [inline_backface_chain_capacity]css.FloatMatrix4x4{}
+	mut count := 0
+	mut current := index
+	for current > 0 {
+		if count == inline_backface_chain_capacity {
+			return tree.context_is_backface_culled_with_depth_fallback(index, snapshot)
+		}
+		chain[count] = current
+		count++
+		current = tree.nodes[current].parent_index
+	}
+	mut accumulated := css.FloatMatrix4x4.identity()
+	mut culled := false
+	for reverse_index := count - 1; reverse_index >= 0; reverse_index-- {
+		node_index := chain[reverse_index]
+		node := tree.nodes[node_index]
+		accumulated = accumulated.multiply(visual_context_local_matrix(node, snapshot))
+		matrices[reverse_index] = accumulated
+		if node.data is TransformVisualData && node.data.resets_backface_culling {
+			culled = false
+		}
+		if node.data is BackfaceVisibilityVisualData {
+			// The general walk records index 0 and every processed node, including
+			// this one, before consulting its plane root.
+			mut plane_root := css.FloatMatrix4x4.identity()
+			for position := reverse_index; position < count; position++ {
+				if chain[position] == node.data.plane_root_index {
+					plane_root = matrices[position]
+					break
+				}
+			}
+			if !culled && should_cull_back_face(accumulated, plane_root) {
+				culled = true
+			}
+		}
+	}
+	return culled
+}
+
+// Deep chains (or inconsistent depth metadata) keep the map-based walk.
+fn (tree &AccumulatedVisualContextTree) context_is_backface_culled_with_depth_fallback(index int,
+	snapshot ScrollStateSnapshot) bool {
 	chain := tree.build_ancestor_chain(index)
 	mut accumulated := css.FloatMatrix4x4.identity()
 	mut matrices := map[int]css.FloatMatrix4x4{}
@@ -406,9 +462,6 @@ pub fn (tree &AccumulatedVisualContextTree) context_is_backface_culled(index int
 		accumulated = accumulated.multiply(visual_context_local_matrix(node, snapshot))
 		matrices[node_index] = accumulated
 		if node.data is TransformVisualData && node.data.resets_backface_culling {
-			// A transform plane participating in (or establishing) a 3D sorting
-			// context is independently culled. An ancestor's hidden back face
-			// therefore does not suppress this plane's content.
 			culled = false
 		}
 		if node.data is BackfaceVisibilityVisualData {
