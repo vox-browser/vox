@@ -286,6 +286,7 @@ pub fn HTMLMediaElement.create(element ?&dom.HTMLElement, base_url dom.URL) &HTM
 		mut document := dom_element.document()
 		document.set_media_element_state_query(media_element_matches_pseudo_class)
 		document.set_media_element_resource_attribute_changed_hook(html_media_element_resource_attribute_changed)
+		document.set_media_element_source_attribute_changed_hook(html_media_element_source_attribute_changed)
 		mut observer := dom.DocumentObserver.create(mut document)
 		observer.set_document_became_inactive(fn [media] () {
 			mut mutable_media := unsafe { &HTMLMediaElement(media) }
@@ -358,7 +359,7 @@ pub fn html_media_element_for_dom_element(element &dom.Element) ?&HTMLMediaEleme
 		if audio.media_element_model_ == unsafe { nil } {
 			mut model := HTMLMediaElement.create(unsafe { &dom.HTMLElement(element) },
 				element.document().base_url())
-			model.set_source(element.get_attribute_ns(none, 'src'))
+			model.set_source(element.get_attribute('src'))
 			model.crossorigin_ = cors_setting_attribute_from_keyword(element.get_attribute_ns(none, 'crossorigin'))
 			model.preload_ = element.get_attribute_ns(none, 'preload')
 			model.autoplay_ = element.has_attribute_ns(none, 'autoplay')
@@ -371,7 +372,7 @@ pub fn html_media_element_for_dom_element(element &dom.Element) ?&HTMLMediaEleme
 		if video.media_element_model_ == unsafe { nil } {
 			mut model := HTMLMediaElement.create(unsafe { &dom.HTMLElement(element) },
 				element.document().base_url())
-			model.set_source(element.get_attribute_ns(none, 'src'))
+			model.set_source(element.get_attribute('src'))
 			model.crossorigin_ = cors_setting_attribute_from_keyword(element.get_attribute_ns(none, 'crossorigin'))
 			model.preload_ = element.get_attribute_ns(none, 'preload')
 			model.autoplay_ = element.has_attribute_ns(none, 'autoplay')
@@ -394,6 +395,21 @@ fn media_element_matches_pseudo_class(element &dom.Element, pseudo_class dom.Med
 		.buffering { media.blocked() }
 		.stalled { media.stalled() }
 	}
+}
+
+fn html_media_element_source_attribute_changed(element &dom.Element, value ?string) {
+	model_pointer := match element.local_name() {
+		'audio' { unsafe { &dom.HTMLAudioElement(element) }.media_element_model_ }
+		'video' { unsafe { &dom.HTMLVideoElement(element) }.media_element_model_ }
+		else { return }
+	}
+	// Parsing and attribute scans do not create otherwise unused media owners.
+	if model_pointer == unsafe { nil } { return }
+	mut media := unsafe { &HTMLMediaElement(model_pointer) }
+	media.set_source(element.get_attribute('src'))
+	media.base_url_ = element.document().base_url()
+	// Removing src updates the selection input without invoking load_element().
+	if value != none { media.load_element() or {} }
 }
 
 fn html_media_element_resource_attribute_changed(element &dom.Element) {
@@ -443,6 +459,7 @@ pub fn (mut element HTMLMediaElement) adopted_from(old_document &dom.Document) {
 	mut new_document := unsafe { &dom.Element(html_element) }.document()
 	element.base_url_ = new_document.base_url()
 	new_document.set_media_element_resource_attribute_changed_hook(html_media_element_resource_attribute_changed)
+	new_document.set_media_element_source_attribute_changed_hook(html_media_element_source_attribute_changed)
 	if observer := element.document_observer_ {
 		mut mutable_observer := unsafe { &dom.DocumentObserver(observer) }
 		mutable_observer.retarget_for_adoption(mut new_document)

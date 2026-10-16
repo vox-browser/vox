@@ -5639,6 +5639,15 @@ pub fn (e &Element) is_connected() bool {
 
 // https://dom.spec.whatwg.org/#concept-element-attributes-change-ext
 pub fn (mut e Element) attribute_changed(local_name string, old_value ?string, value ?string, namespace_ ?string) {
+	// HTMLMediaElement runs its source hook after the base attribute steps.
+	// The pinned Source hook checks local name even for a foreign namespace.
+	defer {
+		if local_name == 'src' && e.is_html_element() && e.local_name() in ['audio', 'video'] {
+			if hook := e.document().media_element_source_attribute_changed_hook_ {
+				hook(&e, value)
+			}
+		}
+	}
 	// HTMLElement's base hook and body/frameset WindowEventHandlers run after
 	// Element's attribute steps, including the pinned source namespace FIXME.
 	defer {
