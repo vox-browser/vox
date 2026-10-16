@@ -111,6 +111,8 @@ fn C.native_add_background_text_clip_run(x f32, y f32, text string, size f32, bo
 
 fn C.native_add_background_glyph_clip_run(glyphs &u16, positions &f64, glyph_count int, font_size f32, font_weight int, emoji_face int, baseline_x f32, baseline_y f32, transform_a f32, transform_b f32, transform_c f32, transform_d f32, transform_e f32, transform_f f32, page_x f32, page_y f32, scroll_y f32, canvas_width f32, canvas_height f32, font_path string, face_index int, font_smoothing int) int
 
+fn C.native_display_device_pixel_ratio() f64
+
 fn C.native_register_system_face(key string, path string, postscript_name string, axis_tags &u32, axis_values &f32, axis_count int) int
 
 __global native_registered_system_faces = map[string]bool{}
@@ -6795,6 +6797,13 @@ fn main() {
 		}
 	}
 	use_document_font := configure_browser_layout_font(needs_native_font_replay)
+	$if macos {
+		// Documents see the presenting display's density (or the screenshot
+		// scale) as their device pixel ratio, e.g. for srcset selection.
+		if needs_native_font_replay {
+			html.set_display_device_pixel_ratio(C.native_display_device_pixel_ratio())
+		}
+	}
 	initial_url, markup, source_label := initial_document(options.source)
 	mut main_checkpoint := debug_timing_checkpoint('startup', main_started)
 	initial_viewport_height := if options.screenshot_viewport_height > 0 {

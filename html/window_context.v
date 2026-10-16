@@ -1600,6 +1600,7 @@ fn WindowModel.create_with_global(document &dom.Document, context &BrowsingConte
 			animation_driver_: &AnimationFrameCallbackDriver{}
 			global_scope_: WindowOrWorkerGlobalScopeMixin.create(document.origin(), false, false)
 			scripting_realm_: &ScriptingRealm{}
+			device_pixel_ratio_: html_display_device_pixel_ratio
 		}
 	}
 	mut window := unsafe { &WindowModel(window_pointer) }

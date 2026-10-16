@@ -732,6 +732,17 @@ static CGColorRef native_srgb_color(gg__Color color) {
 	return CGColorCreate(color_space, components);
 }
 
+// The display density documents see as their device pixel ratio: the screenshot
+// scale for captures (logical 1x by default), otherwise the main screen's
+// backing scale.
+double native_display_device_pixel_ratio(void) {
+	if (getenv("LADYBIRD_SCREENSHOT_DELAY_SECONDS") != NULL) {
+		return native_screenshot_scale();
+	}
+	CGFloat scale = [[NSScreen mainScreen] backingScaleFactor];
+	return isfinite(scale) && scale > 0 ? scale : 1.0;
+}
+
 // Register a CoreText-selected face for retained glyph replay under `key`.
 int native_register_system_face(string key, string path, string postscript_name,
 	const uint32_t *axis_tags, const float *axis_values, int axis_count) {

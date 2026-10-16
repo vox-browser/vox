@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: BSD-2-Clause
 
 // Translation of the source-selection algorithms in Libraries/LibWeb/HTML/SourceSet.cpp.
+@[has_globals]
 module html
 
 import css
@@ -59,8 +60,22 @@ fn image_source_pixel_density(source ImageSource) f64 {
 	panic('image source does not have a pixel density descriptor')
 }
 
+__global html_display_device_pixel_ratio = f64(1)
+
+// The density of the display presenting browser windows. Window models start
+// with it; it is 1 unless the embedder supplies its backing scale.
+pub fn set_display_device_pixel_ratio(value f64) {
+	if value > 0 && value < 64 {
+		html_display_device_pixel_ratio = value
+	}
+}
+
+pub fn display_device_pixel_ratio() f64 {
+	return html_display_device_pixel_ratio
+}
+
 // https://html.spec.whatwg.org/multipage/images.html#select-an-image-source-from-a-source-set
-pub fn (source_set &SourceSet) select_an_image_source() ImageSourceAndPixelDensity {
+pub fn (source_set &SourceSet) select_an_image_source(device_pixel_ratio f64) ImageSourceAndPixelDensity {
 	mut unique_sources := []ImageSource{}
 	for source in source_set.sources {
 		density := image_source_pixel_density(source)
@@ -86,9 +101,11 @@ pub fn (source_set &SourceSet) select_an_image_source() ImageSourceAndPixelDensi
 			0
 		}
 	})
+	// NB: Match other engines by selecting the lowest density that is at least
+	//     the display's device pixel ratio, otherwise the greatest density.
 	for source in unique_sources {
 		density := image_source_pixel_density(source)
-		if density >= 1.0 {
+		if density >= device_pixel_ratio {
 			return ImageSourceAndPixelDensity{source, density}
 		}
 	}

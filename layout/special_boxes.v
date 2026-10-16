@@ -208,7 +208,7 @@ fn image_source_selected_from_attributes(element &dom.Element) string {
 	}
 	source_set := html.create_source_set(source, srcset, source_size)
 	if !source_set.is_empty() {
-		source = source_set.select_an_image_source().source.url
+		source = source_set.select_an_image_source(html.display_device_pixel_ratio()).source.url
 	}
 	return source
 }

@@ -27,9 +27,14 @@ fn test_parse_a_srcset_attribute() {
 fn test_create_and_select_source_set() {
 	set := create_source_set('default.png', 'small.png 0.5x, large.png 2x', 100.0)
 	assert set.sources.len == 3
-	selected := set.select_an_image_source()
+	selected := set.select_an_image_source(1)
 	assert selected.source.url == 'default.png'
 	assert selected.pixel_density == 1.0
+	// The lowest density at least the display ratio, otherwise the greatest.
+	assert set.select_an_image_source(2).source.url == 'large.png'
+	assert set.select_an_image_source(1.5).source.url == 'large.png'
+	assert set.select_an_image_source(0.5).source.url == 'small.png'
+	assert set.select_an_image_source(3).source.url == 'large.png'
 
 	mut widths := parse_a_srcset_attribute('small.png 100w, large.png 200w')
 	widths.normalize_source_densities_with_source_size(100.0)

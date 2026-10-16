@@ -361,7 +361,9 @@ pub fn (mut image HTMLImageElementModel) select_an_image_source() ?ImageSourceAn
 	if image.source_set_.is_empty() {
 		return none
 	}
-	return image.source_set_.select_an_image_source()
+	// 3. Return the result of selecting an image from el's source set, using
+	//    the window's device pixel ratio.
+	return image.source_set_.select_an_image_source(html_display_device_pixel_ratio)
 }
 
 pub fn (image &HTMLImageElementModel) source_set() SourceSet {
