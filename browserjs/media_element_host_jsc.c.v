@@ -5,6 +5,7 @@ import html
 import json2
 import libjs
 import math
+import mediasourceextensions
 import webidl
 
 
@@ -275,6 +276,20 @@ pub fn (mut host MediaElementHost) install(mut runtime Runtime) ! {
 			return host.runtime.actual_javascript_exception(host.runtime.binding_exception_value(err))
 		}
 	})!
+	src_object_getter := runtime.make_native_value_host_function('get srcObject', 0, fn [handle] (receiver voidptr, _ []voidptr) !voidptr {
+		mut host := unsafe { &MediaElementHost(handle) }
+		return host.src_object(receiver) or {
+			return host.runtime.actual_javascript_exception(host.runtime.binding_exception_value(err))
+		}
+	})!
+	src_object_setter := runtime.make_native_value_host_function('set srcObject', 1, fn [handle] (receiver voidptr, args []voidptr) !voidptr {
+		mut host := unsafe { &MediaElementHost(handle) }
+		mut value := C.JSValueMakeUndefined(host.runtime.context)
+		if args.len > 0 { value = args[0] }
+		return host.set_src_object(receiver, value) or {
+			return host.runtime.actual_javascript_exception(host.runtime.binding_exception_value(err))
+		}
+	})!
 	bind := runtime.make_value_host_function(fn [handle] (_ voidptr, args []voidptr) !voidptr {
 		mut host := unsafe { &MediaElementHost(handle) }
 		return host.bind(args) or {
@@ -291,7 +306,8 @@ pub fn (mut host MediaElementHost) install(mut runtime Runtime) ! {
 			autoplay_getter, autoplay_setter, preload_getter, preload_setter,
 			cross_origin_getter, cross_origin_setter, controls_getter, controls_setter,
 			poster_getter, poster_setter, dimension_array, size_array,
-			plays_inline_getter, plays_inline_setter, src_getter, src_setter])!)!
+			plays_inline_getter, plays_inline_setter, src_getter, src_setter,
+			src_object_getter, src_object_setter])!)!
 	defer { runtime.release_javascript_value(prototypes) }
 	host.prototype = runtime.retain_javascript_value(runtime.binding_property(prototypes, 'media')!)!
 	host.audio_prototype = runtime.retain_javascript_value(runtime.binding_property(prototypes, 'audio')!)!
@@ -578,6 +594,43 @@ fn (mut host MediaElementHost) set_src(receiver voidptr, value voidptr) !voidptr
 	return C.JSValueMakeUndefined(host.runtime.context)
 }
 
+fn (mut host MediaElementHost) src_object(receiver voidptr) !voidptr {
+	media := host.media_element_for_binding(receiver)!
+	if replay := host.replay { replay(host.runtime)! }
+	provider := media.src_object() or { return C.JSValueMakeNull(host.runtime.context) }
+	if provider.kind == .blob {
+		blob := provider.blob or { return error('TypeError: Media provider has no Blob') }
+		return host.runtime.javascript_blob(blob)
+	}
+	// This typed HTML/MSE boundary carries the actual MediaSource, not a
+	// serialized handle or a JavaScript-visible property on a lookalike.
+	source := unsafe { &mediasourceextensions.MediaSource(provider.media_source_handle) }
+	return host.runtime.javascript_media_source(source)
+}
+
+fn (mut host MediaElementHost) set_src_object(receiver voidptr, value voidptr) !voidptr {
+	mut media := host.media_element_for_binding(receiver)!
+	mut provider := ?html.MediaProviderObject(none)
+	if !C.JSValueIsNull(host.runtime.context, value) && !C.JSValueIsUndefined(host.runtime.context, value) {
+		if blob := host.runtime.native_blob(value) {
+			provider = html.MediaProviderObject.from_blob(blob)
+		} else if source := host.runtime.native_media_source(value) {
+			provider = source.as_media_provider()
+		} else {
+			return error('TypeError: No union types matched')
+		}
+	}
+	if replay := host.replay { replay(host.runtime)! }
+	media.set_src_object(provider) or {
+		message := err.msg()
+		if !message.starts_with('NotSupportedError:') { return err }
+		native_exception := webidl.dom_exception_value(webidl.DOMException.create('NotSupportedError',
+			message['NotSupportedError:'.len..].trim_left(' ')))
+		return host.runtime.actual_javascript_exception(host.runtime.javascript_dom_exception(native_exception)!)
+	}
+	return C.JSValueMakeUndefined(host.runtime.context)
+}
+
 fn (mut host MediaElementHost) poster(receiver voidptr) !voidptr {
 	element := host.video_element_for_binding(receiver)!
 	if replay := host.replay { replay(host.runtime)! }
@@ -817,7 +870,7 @@ fn (mut host MediaElementHost) set_property(name string, receiver voidptr, value
 // selected media and input handler attributes,
 // and constants.
 // Full HTMLElement/audio/video interfaces remain open.
-const media_element_native_factory = r'(function(getters,setters,bind,fastSeek,getStartDate,pause,load,play,handlerGetters,handlerSetters,canPlayType,defaultMutedGetter,defaultMutedSetter,setAttributeSync,loopGetter,loopSetter,autoplayGetter,autoplaySetter,preloadGetter,preloadSetter,crossOriginGetter,crossOriginSetter,controlsGetter,controlsSetter,posterGetter,posterSetter,dimensionGetters,sizeAccessors,playsInlineGetter,playsInlineSetter,srcGetter,srcSetter){
+const media_element_native_factory = r'(function(getters,setters,bind,fastSeek,getStartDate,pause,load,play,handlerGetters,handlerSetters,canPlayType,defaultMutedGetter,defaultMutedSetter,setAttributeSync,loopGetter,loopSetter,autoplayGetter,autoplaySetter,preloadGetter,preloadSetter,crossOriginGetter,crossOriginSetter,controlsGetter,controlsSetter,posterGetter,posterSetter,dimensionGetters,sizeAccessors,playsInlineGetter,playsInlineSetter,srcGetter,srcSetter,srcObjectGetter,srcObjectSetter){
  "use strict";
  const define=Object.defineProperty,create=Object.create,P=Proxy,T=TypeError;
  const prototype=create(EventTarget.prototype);
@@ -843,6 +896,7 @@ const media_element_native_factory = r'(function(getters,setters,bind,fastSeek,g
  define(prototype,"crossOrigin",{get:crossOriginGetter,set:crossOriginSetter,enumerable:true,configurable:true});
  define(prototype,"controls",{get:controlsGetter,set:controlsSetter,enumerable:true,configurable:true});
  define(prototype,"src",{get:srcGetter,set:srcSetter,enumerable:true,configurable:true});
+ define(prototype,"srcObject",{get:srcObjectGetter,set:srcObjectSetter,enumerable:true,configurable:true});
  define(prototype,Symbol.toStringTag,{value:"HTMLMediaElement",configurable:true});
  const constructor=new P(function HTMLMediaElement(){},{apply(){throw new T("Illegal HTMLMediaElement constructor")},construct(){throw new T("Illegal HTMLMediaElement constructor")}});
  define(constructor,"prototype",{value:prototype,writable:false});
