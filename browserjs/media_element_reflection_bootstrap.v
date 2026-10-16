@@ -21,5 +21,9 @@ pub fn media_element_reflection_bootstrap() string {
   state.attributesDirty=true;
  });
  return function(receiver,state,synchronize){apply(set,records,[receiver,{state:state,synchronize:synchronize}]);};
-})(globalThis.__ladybirdMediaElementSetAttributeSync,new WeakMap(),WeakMap.prototype.get,WeakMap.prototype.set,Reflect.apply,Object.defineProperty,Reflect.deleteProperty);'
+})(globalThis.__ladybirdMediaElementSetAttributeSync,new WeakMap(),WeakMap.prototype.get,WeakMap.prototype.set,Reflect.apply,Object.defineProperty,Reflect.deleteProperty);
+function __createMediaSourceSynchronizer(reflect,sources){
+ const own=Object.prototype.hasOwnProperty,apply=Reflect.apply;
+ return function(s,name,value,qualifiedRemoval){reflect(s,name,value,qualifiedRemoval);if(name!=="src")return;s.src=s.attributes.src||"";if(s.tagName==="video"&&apply(own,sources,[s.src])){const frame=sources[s.src];if(frame){s.readyState=2;s.videoWidth=frame.width;s.videoHeight=frame.height;s.videoPixels=frame.pixels;s.__videoFrame=null;}}};
+}'
 }
