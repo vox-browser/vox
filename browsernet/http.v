@@ -134,6 +134,7 @@ pub fn get(input adblock.Request, ca_bundle string) !HTTPResult {
 		response := http.fetch(
 			url:            resource_url
 			method:         .get
+			header:         imported_cookie_headers(resource_url, input.source_url)
 			user_agent:     request_user_agent(resource_url)
 			enable_http2:   true
 			allow_redirect: false
