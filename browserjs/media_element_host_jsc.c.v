@@ -294,6 +294,7 @@ pub fn (mut host MediaElementHost) install(mut runtime Runtime) ! {
 			plays_inline_getter, plays_inline_setter, src_getter, src_setter])!)!
 	defer { runtime.release_javascript_value(prototypes) }
 	host.prototype = runtime.retain_javascript_value(runtime.binding_property(prototypes, 'media')!)!
+	host.audio_prototype = runtime.retain_javascript_value(runtime.binding_property(prototypes, 'audio')!)!
 	host.video_prototype = runtime.retain_javascript_value(runtime.binding_property(prototypes, 'video')!)!
 	runtime.add_canvas_element_provider_with_lookup(fn [handle] () map[string]&dom.Element {
 		host := unsafe { &MediaElementHost(handle) }
@@ -330,6 +331,7 @@ fn (mut host MediaElementHost) bind(args []voidptr) !voidptr {
 	}
 	host.runtime.bind_event_target(wrapper, unsafe { &dom.EventTarget(element) })!
 	mut prototype := host.prototype
+	if element.local_name() == 'audio' { prototype = host.audio_prototype }
 	if element.local_name() == 'video' { prototype = host.video_prototype }
 	C.JSObjectSetPrototype(host.runtime.context, wrapper, prototype)
 	host.records[wrapper] = media
@@ -850,6 +852,13 @@ const media_element_native_factory = r'(function(getters,setters,bind,fastSeek,g
  define(globalThis,"HTMLMediaElement",{value:constructor,writable:true,configurable:true});
  define(globalThis,"__ladybirdMediaElementBind",{value:bind,configurable:true});
  define(globalThis,"__ladybirdMediaElementSetAttributeSync",{value:setAttributeSync,configurable:true});
+ const audioPrototype=create(prototype);
+ define(audioPrototype,Symbol.toStringTag,{value:"HTMLAudioElement",configurable:true});
+ const audioConstructor=new P(function HTMLAudioElement(){},{apply(){throw new T("Illegal HTMLAudioElement constructor")},construct(){throw new T("Illegal HTMLAudioElement constructor")}});
+ Object.setPrototypeOf(audioConstructor,constructor);
+ define(audioConstructor,"prototype",{value:audioPrototype,writable:false});
+ define(audioPrototype,"constructor",{value:audioConstructor,writable:true,configurable:true});
+ define(globalThis,"HTMLAudioElement",{value:audioConstructor,writable:true,configurable:true});
  const videoPrototype=create(prototype);
  for(const [index,name] of ["videoWidth","videoHeight"].entries())define(videoPrototype,name,{get:dimensionGetters[index],enumerable:true,configurable:true});
  for(const [index,name] of ["width","height"].entries())define(videoPrototype,name,{get:sizeAccessors[index*2],set:sizeAccessors[index*2+1],enumerable:true,configurable:true});
@@ -861,5 +870,5 @@ const media_element_native_factory = r'(function(getters,setters,bind,fastSeek,g
  define(videoConstructor,"prototype",{value:videoPrototype,writable:false});
  define(videoPrototype,"constructor",{value:videoConstructor,writable:true,configurable:true});
  define(globalThis,"HTMLVideoElement",{value:videoConstructor,writable:true,configurable:true});
- return {media:prototype,video:videoPrototype};
+ return {media:prototype,audio:audioPrototype,video:videoPrototype};
 })'

@@ -74,9 +74,9 @@ ewInline.addEventListener("wheel",function(e){ewOrder.push("target");ewChecks.pu
 const duplicate=watch("bb",ewButton,false);ewButton.addEventListener("wheel",duplicate);watch("pb",ewParent,false);watch("rb",document.documentElement,false);watch("db",document,false);watch("wb",window,false);
 ewButton.addEventListener("click",function(e){ewClicks++;ewChecks.push(this===ewButton&&e.target===ewButton&&e.type==="click")});
 document.getElementById("ew-image").addEventListener("load",function(e){ewLoads++;ewChecks.push(e.target===this&&e.type==="load")});
-ewChecks.push(Object.getPrototypeOf(document.getElementById("ew-image"))===HTMLImageElement.prototype&&Object.getPrototypeOf(document.getElementById("ew-audio"))===HTMLMediaElement.prototype);
+ewChecks.push(Object.getPrototypeOf(document.getElementById("ew-image"))===HTMLImageElement.prototype&&Object.getPrototypeOf(document.getElementById("ew-audio"))===HTMLAudioElement.prototype);
 globalThis.ewAnonymousSaved=[];globalThis.ewAnonymousTag="img";
-document.getElementById("ew-anonymous").addEventListener("wheel",function(e){ewAnonymousSaved.push(e);const target=e.target;ewChecks.push(this===document.getElementById("ew-anonymous")&&e.currentTarget===this&&target===document.querySelector(ewAnonymousTag)&&Object.getPrototypeOf(target)===(ewAnonymousTag==="img"?HTMLImageElement.prototype:HTMLMediaElement.prototype));e.preventDefault();},{passive:false});0
+document.getElementById("ew-anonymous").addEventListener("wheel",function(e){ewAnonymousSaved.push(e);const target=e.target;ewChecks.push(this===document.getElementById("ew-anonymous")&&e.currentTarget===this&&target===document.querySelector(ewAnonymousTag)&&Object.getPrototypeOf(target)===(ewAnonymousTag==="img"?HTMLImageElement.prototype:HTMLVideoElement.prototype));e.preventDefault();},{passive:false});0
 ')!
 	defer {
 		runtime.close()

@@ -28,6 +28,7 @@ pub struct MediaElementHost {
 mut:
 	runtime        &Runtime = unsafe { nil }
 	prototype      voidptr
+	audio_prototype voidptr
 	video_prototype voidptr
 	elements       map[string]&dom.Element
 	records        map[voidptr]&html.HTMLMediaElement
