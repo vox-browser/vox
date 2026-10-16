@@ -6125,9 +6125,11 @@ fn (mut app BrowserApp) draw() {
 	paint_before_frame := app.paint_display_list
 	app.poll_deferred_navigation_input()
 	app.poll_deferred_page_input()
+	// Profile wheels enter like physical input, outside the frame's navigation
+	// work scope; inside it they would be deferred to the next frame untimed.
+	app.begin_scroll_profile_frame()
 	mut navigation_work := app.begin_navigation_work()
 	defer { navigation_work.finish() }
-	app.begin_scroll_profile_frame()
 	mut heap_scope := platform.begin_browser_activity_heap_scope()
 	defer { heap_scope.finish() }
 	app.begin_frame_preparation()

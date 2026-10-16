@@ -37,7 +37,9 @@ def summarize(log, expected_frames):
 
     def distribution(selected):
         result = {"frames": len(selected)}
-        for key in ("wheel_us", "prepare_us", "replay_us", "total_us", "instructions"):
+        for key in ("wheel_us", "prepare_us", "replay_us", "total_us", "instructions", "allocated_kb", "collections"):
+            if not all(key in row for row in selected):
+                continue
             values = sorted(row[key] for row in selected)
             result[key] = {"median": statistics.median(values),
                            "p95": values[min(len(values) - 1, int(len(values) * .95))],
@@ -73,6 +75,8 @@ def main():
     parser.add_argument("--height", type=int, default=768)
     parser.add_argument("--timeout", type=float, default=180)
     parser.add_argument("--sample-seconds", type=int, default=0)
+    parser.add_argument("--settle-seconds", type=float, default=1,
+                        help="Quiet period after loading settles before the first wheel event")
     parser.add_argument("--capture", action="store_true",
                         help="Also capture final pixels using the browser's logical-pixel screenshot mode")
     parser.add_argument("--compare-to", type=Path, help="Compare against a previous summary with identical input and scroll trace")
@@ -95,6 +99,7 @@ def main():
             cache_digest.update(str(path.relative_to(cache)).encode() + b"\0" + path.read_bytes())
     env = dict(os.environ, VOX_PROFILE_SCROLL="1",
                VOX_SCROLL_PROFILE_FRAMES=str(args.frames),
+               VOX_SCROLL_PROFILE_SETTLE_MS=str(max(1, int(args.settle_seconds * 1000))),
                LADYBIRD_CACHE_DIR=str(cache.resolve()), NO_PROXY="localhost,127.0.0.1")
     env.pop("LADYBIRD_ENABLE_SNAPSHOT_CACHE", None)
     env.pop("LADYBIRD_SCREENSHOT_DELAY_SECONDS", None)
