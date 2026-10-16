@@ -455,10 +455,14 @@ pub fn (scope &StyleScope) user_agent_rule_caches() ?&RuleCaches {
 }
 
 pub fn (scope &StyleScope) has_valid_rule_cache() bool {
+	if document := scope.document() {
+		if scope.rule_cache_font_policy_ != document.font_rendering_policy() { return false }
+	}
 	return scope.rule_cache != none
 }
 
 fn (mut scope StyleScope) adopt_style_cache(cache &StyleCache) {
+	if document := scope.document() { scope.rule_cache_font_policy_ = document.font_rendering_policy() }
 	scope.rule_cache = cache
 	scope.qualified_layer_names_in_order = cache.qualified_layer_names_in_order.clone()
 	scope.selector_insights = cache.selector_insights
@@ -471,6 +475,7 @@ fn (mut scope StyleScope) adopt_style_cache(cache &StyleCache) {
 }
 
 pub fn (mut scope StyleScope) populate_new_rule_cache() &StyleCache {
+	if document := scope.document() { scope.rule_cache_font_policy_ = document.font_rendering_policy() }
 	scope.has_size_container_queries = false
 	scope.author_rule_cache = RuleCaches.new()
 	scope.user_rule_cache = RuleCaches.new()
@@ -522,7 +527,8 @@ pub fn (mut scope StyleScope) build_rule_cache() {
 			active_author_sheets := scope.stylesheets_for_cascade_origin(.author)
 			document_scope := css_style_scope_for_document(node.document())
 			if active_author_sheets.len == 1 && active_author_sheets[0].constructed
-				&& document_scope.user_style_source == none && !node.document().in_quirks_mode() {
+				&& document_scope.user_style_source == none && !node.document().in_quirks_mode()
+				&& node.document().font_rendering_policy() == .libweb {
 				mut constructed_sheet := unsafe { &CSSStyleSheet(active_author_sheets[0]) }
 				cache := constructed_sheet.shared_single_constructed_sheet_style_cache(mut scope)
 				scope.adopt_style_cache(cache)
@@ -630,6 +636,9 @@ pub fn (scope &StyleScope) stylesheets_for_cascade_origin(cascade_origin Cascade
 			}
 			if sheet := style_scope_user_agent_stylesheet('SVG/Default.css') {
 				sheets << sheet
+			}
+			if document := scope.document() {
+				if document.font_rendering_policy() == .chromium { sheets << chromium_control_font_style_sheet() }
 			}
 		}
 		.user {

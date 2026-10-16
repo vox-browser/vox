@@ -3,6 +3,20 @@ module css
 import platform
 import math
 
+// Blink's -webkit-small-control system font resolves to 13 1/3px Arial.
+// Keep this at UA origin so explicit author fonts, including `inherit`, win.
+__global chromium_control_font_stylesheet &CSSStyleSheet
+
+fn chromium_control_font_style_sheet() &CSSStyleSheet {
+	if chromium_control_font_stylesheet == unsafe { nil } {
+		chromium_control_font_stylesheet = parse_css_stylesheet_with_params(ParsingParams{
+			is_ua_style_sheet: .yes
+		}, 'input, select, button, textarea { font: 13.3333333333333px Arial; }
+textarea { font-family: monospace; }', none)
+	}
+	return chromium_control_font_stylesheet
+}
+
 fn (computer &FontComputer) font_rendering_policy() platform.FontRenderingPolicy {
 	if document := computer.document_ {
 		if document.font_rendering_policy() == .chromium { return .chromium }
