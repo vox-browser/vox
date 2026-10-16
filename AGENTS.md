@@ -1800,6 +1800,16 @@ evidence](docs/translation-audit/NATIVE_MEDIA_WHEEL_RAW_HANDLER.md).
   focused retained viewport exact. Additional observed savings: 0.
   Same 4 GiB/placement; canonical/GUI preserved; contemporary Root excluded.
   Chrome parity remains open.
+  Shared style-value identity guard `d1978c4a` (independent committed slice)
+  pass 2,510 common assertions in 16 cases per configuration,
+  plus 6 candidate cases/2,343 assertions in each GC mode.
+  Complete public property-invalidation batches use 10.60% fewer instructions.
+  Page point saving -1,265,945, 16/30 wins,
+  paired interval [-7,727,310, 9,666,451]; repeatable credit 0.
+  Broad verification: deferred below cumulative 5M gate;
+  focused retained viewport exact. Additional observed savings: 0.
+  Same 4 GiB/placement; canonical/GUI preserved; contemporary Root excluded.
+  Chrome parity remains open.
 - Outside instruction-count optimization, run broad regression suites once per
   ten completed fixes, not after every fix.
   Broad suites include full translation/package test batches, the full LibJS AST

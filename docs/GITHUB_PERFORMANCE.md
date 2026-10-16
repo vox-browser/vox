@@ -8443,6 +8443,122 @@ credit. Equivalent Chrome content/start/submission accounting remains open;
 faster-than-Chrome performance is unproven. Evidence:
 `Build/instructions/vox-opt86-interleaved-*` and `Build/v/instruction-opt86-*`.
 
+## Skip reflexive deep comparisons for shared style values
+
+This integration imports only independently authored feature `d1978c4a`
+(Alexander Medvednikov): one exact hunk in css/computed_interpolation.v.
+Shared typed handles avoid deep equality only after checking that their current
+value is reflexive. The guard accepts simple immutable values, rejects NaN in
+eight numeric types, recursively checks lists and leaves complex or mutable
+values on the original equality path. Untyped identical wrapper pointers avoid
+comparing their own text. The existing typed equality and text fallback remain.
+Live handles are re-read on every call. No records, globals, filtering, arenas,
+heap hint or GC policy change. Contemporary Root remains separate.
+
+Before/final Boehm and final no-GC C-O2 each pass **2,510
+assertions in sixteen cases**: fifteen exact retained invalidation,
+animation-map and pseudo-keyframe cases plus an inactive diagnostic.
+Common source SHA256 is `ebbd08e385d68c94337a4344cec1aba50594172f513facf31c8afa6f4dd9bdfe`.
+Six original candidate cases pass **2,343
+assertions each in both GCs**. The committed test file is byte-exact. It checks
+option and distinct-value behavior against the original helper, eight numeric
+NaNs and nested/pending values, infinities and signed zero, mutated live boxes,
+legacy wrapper changes, complex calculation fallbacks, animation/transition
+precedence and all initial property handles.
+
+Three fixed alternating local pairs count **128 complete public property-
+invalidation batches** over all initial longhand values, shared and distinct
+typed wrappers, absence/replacement, legacy bridges and NaN scalars/lists.
+The checksum includes all thirteen invalidation fields plus query/property
+identity. Dataset/initial-style construction, eight warmups, expected checksum
+and forced GC precede the counter; checksum assertions follow it.
+Before: 72,402,333 / 72,417,737 / 72,305,227. Candidate by pair: 64,716,036 / 64,726,031 / 64,747,265.
+Median **72,402,333→64,726,031
+(-10.60%)**; checksum
+**5,977,974,215,680** in all six actual zero exits.
+This controlled local result receives no page credit.
+
+Both full-process C-O1/Boehm profiles pass without a filter or counter reset:
+
+| Function | Before calls | Candidate calls |
+| --- | ---: | ---: |
+| `css__opt87_complete_property_invalidations` | 137 | 137 |
+| `css__compute_property_invalidation` | 250,809 | 250,809 |
+| `css__style_value_option_changed` | 250,809 | 250,809 |
+| `css__StyleValue_equals` | 168,379 | 71,383 |
+| `css__style_value_identity_is_reflexive` | 0 | 113,710 |
+
+These are call counts, not hardware instruction savings. Both run 137 complete
+invalidation batches with equal public compute_property_invalidation and
+style_value_option_changed counts. Deep StyleValue equality calls decrease;
+the new reflexivity guard accounts for the replacement work.
+
+Strict C audit authenticates the exact source hunk, edited option helper and
+new recursive reflexivity helper against independent focused C after named
+compiler type, closure and temporary identities. Original typed-equality and
+text-fallback calls remain. All other C, records, globals, resources, filtering,
+arenas and GC setup match after established compiler identities, unchanged
+assertion-line maps, 37 frozen includes, four byte-identical helper
+reorderings and ten authenticated byte-identical existing style-value record
+reorderings. All 120 native inputs and exact native arguments match.
+Two failed harness preparations remain archived: a reserved V identifier and
+the old compiler's rejection of a pointer-array iteration variable retained
+in an option. The diagnostic now names the wrapper and appends the same two
+existing heap pointers directly. Each attempt had three actual compile exits1,
+zero functional cases and zero local samples. Original candidate tests and
+runtime sources were unchanged; only unfinished checks were retried.
+Two failed read-only C audits also remain: the compiler escapes the local
+name new as __v_new, and the new match changes discovery order for ten
+existing records. The full equality/absence fallback is exact after removing
+only the authenticated guard. All ten records match before/final and focused
+C byte for byte; only their order is canonicalized. No runtime check or
+primary was repeated for these audit corrections.
+Passing C-audit script SHA256:
+`6ba9d43083cbeb2031bdb4ea94b2ebc36e71b17e2d788af5a4dda575ba596bfe`.
+Normal C SHA256: `7af64cf0e92753afe493aff0fc7ca3ed197efb8114696c7faaeec7c7376840e4`.
+Durable normal, focused, contract and profile hashes appear in
+instruction-opt87-artifact-archives.json.
+
+The predeclared page cohort is **30 alternating pairs**, odd before/final,
+even final/before, **30,000 paired bootstrap resamples, seed 87**. Both persisted
+regular binaries use fresh copies of the same 359 cached bodies, frozen text
+and child-only placement helpers, C-O2/Boehm/default marker 1 and unchanged
+4 GiB hint; no prod/prealloc. Viewport is 1024×768 and fixed endpoint is
+`navigation_to_first_document_paint[0]`; no historical or Root comparison.
+
+| Build | Median first-frame retired instructions | Median lifetime process peak, MiB |
+| --- | ---: | ---: |
+| Fresh accepted frozen86 control | 17,680,466,931.5 | 3,525.1 |
+| Shared style-value identity guard | 17,681,732,876.5 | 3,526.4 |
+
+Difference of marginal medians (before minus candidate):
+**-1,265,945** instructions; candidate change
+**+0.007%**, with **16/30** wins.
+Paired median saving **2,042,976.5**, paired 95% interval
+**[-7,727,310, 9,666,451]**. The interval includes zero; repeatable page credit is **0**. Whole-page savings are not established.
+
+All 60 primaries and **60 actual PNGs** remain. Recoveries:
+none; pre-parse retries: 0. First primaries retain
+1 installation/2 geometry preparations/1 paint. Later completed refreshes:
+none. No completed primary was extended, discarded or
+rerun. Recovered records disclose unknown final exit and missing PNG,
+fingerprint and peak. Peaks cover capture/exit and later refreshes, not live
+first-frame memory, and are never summed. The read-only decoded capture check finds 30 before and 30 candidate RGB classes, 0 shared. All differences stay within the original skeleton bands, x45–662: y335–344 and ten 14px bands starting at380 with41px spacing. All pixels outside these bands match. No animation was disabled and no observation repeated; evidence is instruction-opt87-page-pixel-class-check.json.
+External foreground transitions remain retained: none.
+The child is foreground in neither startup snapshot. The focused viewport is
+pixel-exact at 1024×768. Prior observed carry is 0. Cumulative observed saving **0** stays below the 5M gate. Broad validation is deferred and the previous completed broad baseline remains.
+Startup, preparation and runtime controllers retain actual terminal evidence;
+controller success is distinct from each child result.
+
+The isolated signed app is `/Users/alex/code/vox2/Build/v/Vox-opt87.app`; native instruction text
+matches the measured executable, with the frozen helper pinned inside the app.
+Actual default loaded path/hash, signatures, startup and actual GC collections
+pass with default marker 1 and override 2. Canonical app and user GUI remain
+preserved. Contemporary Root receives no extra source, regression or page
+credit. Equivalent Chrome content/start/submission accounting remains open;
+faster-than-Chrome performance is unproven. Evidence:
+`Build/instructions/vox-opt87-interleaved-*` and `Build/v/instruction-opt87-*`.
+
 ## Causes and changes
 
 - The V 0.5.2 compatibility compiler's `-prod` Boehm code repeatedly snapshots
