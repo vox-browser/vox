@@ -90,6 +90,10 @@ fn emptycache_enter(text &TextNode, previous bool) InlineTextNodeContext {
 }
 
 fn emptycache_assert_same(actual InlineTextNodeContext, expected InlineTextNodeContext) {
+	emptycache_assert_context(actual, expected, false)
+}
+
+fn emptycache_assert_context(actual InlineTextNodeContext, expected InlineTextNodeContext, rebuilt_fonts bool) {
 	assert actual.should_collapse_whitespace == expected.should_collapse_whitespace
 	assert actual.should_wrap_lines == expected.should_wrap_lines
 	assert actual.should_respect_linebreaks == expected.should_respect_linebreaks
@@ -103,7 +107,20 @@ fn emptycache_assert_same(actual InlineTextNodeContext, expected InlineTextNodeC
 		assert a.has_breaking_tab == b.has_breaking_tab
 		assert a.is_all_whitespace == b.is_all_whitespace
 		assert a.can_break_after == b.can_break_after && a.text_type == b.text_type
-		assert voidptr(a.font) == voidptr(b.font)
+		if rebuilt_fonts {
+			// Rebuilding the chunk iterator constructs fresh platform Font owners.
+			// Compare their face, public settings and metrics after invalidation;
+			// a retained cache must still preserve pointer identity before it.
+			assert a.font.family == b.font.family
+			assert a.font.point_size == b.font.point_size
+			assert a.font.weight == b.font.weight
+			assert a.font.source_path == b.font.source_path
+			assert a.font.is_invisible == b.font.is_invisible
+			assert a.font.has_same_identity(b.font)
+			assert a.font.pixel_metrics() == b.font.pixel_metrics()
+		} else {
+			assert voidptr(a.font) == voidptr(b.font)
+		}
 	}
 }
 
@@ -220,6 +237,6 @@ fn test_empty_chunk_cache_retained_chunks_survive_later_generation_and_collectio
 			emptycache_assert_same(retained, emptycache_enter(text, true))
 		}
 		text.invalidate_text_for_rendering()
-		emptycache_assert_same(retained, emptycache_enter(text, false))
+		emptycache_assert_context(retained, emptycache_enter(text, false), true)
 	}
 }
