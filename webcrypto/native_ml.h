@@ -6,6 +6,7 @@
 #include <openssl/param_build.h>
 
 /* Source: LibCrypto/PK/MLKEM.cpp, MLDSA.cpp and OpenSSL.cpp. */
+#if OPENSSL_VERSION_NUMBER >= 0x30500000L
 static const char* vox_ml_read_param(EVP_PKEY* key, const char* name, unsigned char* out, size_t* capacity)
 {
     size_t size = 0;
@@ -172,4 +173,28 @@ cleanup:
     EVP_PKEY_free(key);
     return result;
 }
+#else
+static const char *vox_ml_generate(const char *name, const char *seed_name,
+    unsigned char *seed, size_t seed_size, unsigned char *public_bytes, size_t *public_size,
+    unsigned char *private_bytes, size_t *private_size, unsigned char *seed_out, size_t *seed_out_size) {
+    return "ML-KEM and ML-DSA require OpenSSL 3.5 or newer";
+}
+static const char *vox_mlkem_encapsulate(const char *name, const unsigned char *public_bytes,
+    size_t public_size, unsigned char *ciphertext, size_t *ciphertext_size,
+    unsigned char *shared, size_t *shared_size) {
+    return "ML-KEM requires OpenSSL 3.5 or newer";
+}
+static const char *vox_mlkem_decapsulate(const char *name, const unsigned char *seed, size_t seed_size,
+    const unsigned char *public_bytes, size_t public_size, const unsigned char *private_bytes, size_t private_size,
+    const unsigned char *ciphertext, size_t ciphertext_size, unsigned char *shared, size_t *shared_size) {
+    return "ML-KEM requires OpenSSL 3.5 or newer";
+}
+static int vox_mldsa_sign(const char *name, const unsigned char *seed, size_t seed_size,
+    const unsigned char *pub, size_t pub_size, const unsigned char *priv, size_t priv_size,
+    unsigned char *context, size_t context_size, const unsigned char *message, size_t message_size,
+    unsigned char *signature, size_t *signature_size) { return 0; }
+static int vox_mldsa_verify(const char *name, const unsigned char *pub, size_t pub_size,
+    unsigned char *context, size_t context_size, const unsigned char *signature, size_t signature_size,
+    const unsigned char *message, size_t message_size) { return -1; }
+#endif
 #endif

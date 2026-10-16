@@ -7,7 +7,9 @@
 #include <openssl/evp.h>
 #include <openssl/kdf.h>
 #include <openssl/params.h>
+#if OPENSSL_VERSION_NUMBER >= 0x30200000L
 #include <openssl/thread.h>
+#endif
 
 /* LibCrypto/Hash/HKDF.cpp and PBKDF2.cpp provider parameters/derivation. */
 static int vox_kdf_derive(int pbkdf2, const char* hash, const unsigned char* key, size_t key_size,
@@ -41,6 +43,7 @@ static const char* vox_argon2(const char* name, const unsigned char* password, s
     uint32_t passes, const unsigned char* secret, size_t secret_size, int has_secret,
     const unsigned char* ad, size_t ad_size, int has_ad, unsigned char* output, uint32_t tag_size)
 {
+#if OPENSSL_VERSION_NUMBER >= 0x30200000L
     EVP_KDF* kdf = EVP_KDF_fetch(NULL, name, NULL);
     EVP_KDF_CTX* ctx = kdf ? EVP_KDF_CTX_new(kdf) : NULL;
     const char* failure = NULL;
@@ -67,5 +70,8 @@ static const char* vox_argon2(const char* name, const unsigned char* password, s
 cleanup:
     EVP_KDF_CTX_free(ctx); EVP_KDF_free(kdf);
     return failure;
+#else
+    return "Argon2 requires OpenSSL 3.2 or newer";
+#endif
 }
 #endif

@@ -45,10 +45,15 @@ static int vox_edwards_sign(const char* name, const unsigned char* private_bytes
     size_t private_size, const unsigned char* message, size_t message_size,
     unsigned char* context, size_t context_size, unsigned char* signature, size_t* size)
 {
+#ifndef OSSL_SIGNATURE_PARAM_CONTEXT_STRING
+    if (context_size) return 0;
+#endif
     EVP_PKEY* key = EVP_PKEY_new_raw_private_key_ex(NULL, name, NULL, private_bytes, private_size);
     EVP_MD_CTX* ctx = EVP_MD_CTX_new();
     OSSL_PARAM params[2] = { OSSL_PARAM_END, OSSL_PARAM_END };
+#ifdef OSSL_SIGNATURE_PARAM_CONTEXT_STRING
     if (context_size) params[0] = (OSSL_PARAM)OSSL_PARAM_octet_string(OSSL_SIGNATURE_PARAM_CONTEXT_STRING, context, context_size);
+#endif
     int result = key && ctx
         && EVP_DigestSignInit_ex(ctx, NULL, NULL, NULL, NULL, key, params) == 1
         && EVP_DigestSign(ctx, NULL, size, message, message_size) == 1
@@ -62,12 +67,17 @@ static int vox_edwards_verify(const char* name, const unsigned char* public_byte
     size_t public_size, const unsigned char* signature, size_t signature_size,
     const unsigned char* message, size_t message_size, unsigned char* context, size_t context_size)
 {
+#ifndef OSSL_SIGNATURE_PARAM_CONTEXT_STRING
+    if (context_size) return -3;
+#endif
     EVP_PKEY* key = EVP_PKEY_new_raw_public_key_ex(NULL, name, NULL, public_bytes, public_size);
     if (!key) return -1;
     EVP_MD_CTX* ctx = EVP_MD_CTX_new();
     if (!ctx) { EVP_PKEY_free(key); return -2; }
     OSSL_PARAM params[2] = { OSSL_PARAM_END, OSSL_PARAM_END };
+#ifdef OSSL_SIGNATURE_PARAM_CONTEXT_STRING
     if (context_size) params[0] = (OSSL_PARAM)OSSL_PARAM_octet_string(OSSL_SIGNATURE_PARAM_CONTEXT_STRING, context, context_size);
+#endif
     int result;
     if (EVP_DigestVerifyInit_ex(ctx, NULL, NULL, NULL, NULL, key, params) != 1) result = -3;
     else {
