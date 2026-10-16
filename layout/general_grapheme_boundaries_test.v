@@ -77,12 +77,7 @@ fn test_general_grapheme_class_triples_and_state_resets_match_v13() {
 }
 
 fn test_general_grapheme_property_range_edges_match_v13() {
-	tables := [text_boundary_grapheme_control_ranges, text_boundary_grapheme_extend_ranges,
-		text_boundary_grapheme_spacing_mark_ranges, text_boundary_grapheme_prepend_ranges,
-		text_boundary_grapheme_extended_pictographic_ranges]
-	for table in tables {
-		for index in 0 .. table.len / 8 {
-			edge := text_boundary_grapheme_range_value(table, index)
+	for edge in text_boundary_grapheme_ranges {
 			for delta in [-1, 0, 1] {
 				value := i64(edge) + delta
 				if value < 0 || value > 0x10ffff || (value >= 0xd800 && value <= 0xdfff) { continue
@@ -96,7 +91,6 @@ fn test_general_grapheme_property_range_edges_match_v13() {
 					assert_general_boundary_differential(context.string())
 				}
 			}
-		}
 	}
 }
 
