@@ -1265,6 +1265,12 @@ fn (bfc &BlockFormattingContext) place_box_avoiding_float_intrusions(mut box_sta
 		constrained_by_floats := space_used_left.raw_value() > 0 || space_used_right.raw_value() > 0
 		mut remaining := right.minus(left)
 		if constrained_by_floats {
+			// Positive margins overlap the intrusion on their own side. Only
+			// the part extending past the float consumes the remaining width.
+			remaining = remaining.plus(css_pixels_min(space_used_left,
+				css_pixels_max(margin_left, CSSPixels.new(0))))
+			remaining = remaining.plus(css_pixels_min(space_used_right,
+				css_pixels_max(margin_right, CSSPixels.new(0))))
 			// Negative margins do not create additional space next to a float.
 			remaining = css_pixels_max(remaining.plus(negative_margin_sum), CSSPixels.new(0))
 		}
