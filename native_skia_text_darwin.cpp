@@ -3,6 +3,13 @@
 // this file only turns the retained glyph IDs into the final antialiased pixels.
 
 #include <CoreGraphics/CoreGraphics.h>
+#include <dlfcn.h>
+#include "native_graphite_bridge.h"
+#import <Metal/Metal.h>
+#include "include/gpu/ganesh/GrDirectContext.h"
+#include "include/gpu/ganesh/SkSurfaceGanesh.h"
+#include "include/gpu/ganesh/mtl/GrMtlDirectContext.h"
+#include "include/gpu/ganesh/mtl/GrMtlBackendContext.h"
 
 #include "include/core/SkCanvas.h"
 #include "include/core/SkBlendMode.h"
@@ -60,6 +67,7 @@ enum FontSlot {
 sk_sp<SkFontMgr> s_font_manager;
 sk_sp<SkTypeface> s_typefaces[FontSlotCount];
 std::unordered_map<std::string, sk_sp<SkTypeface>> s_path_typefaces;
+bool s_chromium_painting = false;
 
 sk_sp<SkFontMgr> font_manager()
 {
@@ -70,6 +78,30 @@ sk_sp<SkFontMgr> font_manager()
             : SkFontMgr_New_CoreText(nullptr);
     }
     return s_font_manager;
+}
+
+GrDirectContext* image_gpu_context()
+{
+    static auto context = []() -> sk_sp<GrDirectContext> {
+        id<MTLDevice> device = MTLCreateSystemDefaultDevice();
+        if (!device) return nullptr;
+        GrMtlBackendContext backend;
+        backend.fDevice.reset((GrMTLHandle)device);
+        backend.fQueue.reset((GrMTLHandle)[device newCommandQueue]);
+        if (!backend.fQueue) return nullptr;
+        return GrDirectContexts::MakeMetal(backend);
+    }();
+    return context.get();
+}
+
+auto graphite_shadow_draw()
+{
+    static auto draw = [] {
+        void* library = dlopen("@rpath/libVoxGraphite.dylib", RTLD_LAZY | RTLD_LOCAL);
+        return library ? reinterpret_cast<decltype(&vox_graphite_draw_shadow_pixels)>(
+            dlsym(library, "vox_graphite_draw_shadow_pixels")) : nullptr;
+    }();
+    return draw;
 }
 
 SkTypeface* select_typeface(char const* path, int face_index, int font_weight, int emoji_face)
@@ -348,6 +380,11 @@ SkPath path_from_serialized_segments(float const* data, int segment_count)
 }
 
 } // namespace
+
+extern "C" void ladybird_v_skia_set_chromium_painting(int active)
+{
+    s_chromium_painting = active != 0;
+}
 
 extern "C" int ladybird_v_skia_generate_svg_turbulence(
     uint8_t* destination_pixels, int width, int height,
@@ -1161,7 +1198,7 @@ extern "C" int ladybird_v_skia_draw_outer_box_shadow(CGContextRef destination,
     float transform_c, float transform_d, float transform_e, float transform_f,
     float page_x, float page_y, float scroll_y, float canvas_width,
     float canvas_height, float blur, uint8_t red, uint8_t green, uint8_t blue,
-    uint8_t alpha)
+    uint8_t alpha, int opaque_backdrop)
 {
     if (!destination || shadow_width <= 0 || shadow_height <= 0
         || content_width <= 0 || content_height <= 0 || canvas_width <= 0
@@ -1212,15 +1249,51 @@ extern "C" int ladybird_v_skia_draw_outer_box_shadow(CGContextRef destination,
     auto raster_scale_y = static_cast<float>(raster_height) / static_cast<float>(region.height());
     std::vector<uint32_t> pixels(static_cast<size_t>(raster_width)
         * static_cast<size_t>(raster_height));
+    bool has_background = opaque_backdrop && copy_opaque_backdrop(destination,
+        region, destination_scale, raster_width, raster_height, pixels);
     auto image_info = SkImageInfo::Make(raster_width, raster_height,
         kBGRA_8888_SkColorType, kPremul_SkAlphaType, SkColorSpace::MakeSRGB());
-    auto surface = SkSurfaces::WrapPixels(image_info, pixels.data(),
+    if (s_chromium_painting) {
+        VoxGraphiteShadow descriptor {
+            .matrix = {},
+            .shadow = {shadow_x, shadow_y, shadow_width, shadow_height,
+                shadow_top_left_x, shadow_top_left_y, shadow_top_right_x,
+                shadow_top_right_y, shadow_bottom_right_x, shadow_bottom_right_y,
+                shadow_bottom_left_x, shadow_bottom_left_y},
+            .content = {content_x, content_y, content_width, content_height,
+                content_top_left_x, content_top_left_y, content_top_right_x,
+                content_top_right_y, content_bottom_right_x, content_bottom_right_y,
+                content_bottom_left_x, content_bottom_left_y},
+            .blur = blur, .red = red, .green = green, .blue = blue, .alpha = alpha
+        };
+        raster_matrix(matrix, region, raster_scale_x, raster_scale_y).get9(descriptor.matrix);
+        if (auto draw = graphite_shadow_draw(); draw && draw(reinterpret_cast<uint8_t*>(pixels.data()),
+                raster_width, raster_height, raster_width * 4, has_background, &descriptor)) {
+            CGContextSaveGState(destination);
+            if (has_background) CGContextSetBlendMode(destination, kCGBlendModeCopy);
+            int result = composite_pixels(destination, pixels, raster_width, raster_height,
+                static_cast<float>(region.left), canvas_height - static_cast<float>(region.bottom),
+                static_cast<float>(region.width()), static_cast<float>(region.height()));
+            CGContextRestoreGState(destination);
+            return result;
+        }
+    }
+    auto* gpu = s_chromium_painting ? image_gpu_context() : nullptr;
+    auto surface = gpu ? SkSurfaces::RenderTarget(gpu, skgpu::Budgeted::kNo,
+        image_info, 0, kTopLeft_GrSurfaceOrigin, nullptr) : nullptr;
+    bool gpu_surface = surface != nullptr;
+    if (!surface) surface = SkSurfaces::WrapPixels(image_info, pixels.data(),
         static_cast<size_t>(raster_width) * sizeof(uint32_t));
     if (!surface)
         return 0;
 
     auto* canvas = surface->getCanvas();
-    canvas->clear(SK_ColorTRANSPARENT);
+    if (has_background) {
+        surface->writePixels(SkPixmap(image_info, pixels.data(),
+            static_cast<size_t>(raster_width) * sizeof(uint32_t)), 0, 0);
+    } else {
+        canvas->clear(SK_ColorTRANSPARENT);
+    }
     canvas->setMatrix(raster_matrix(matrix, region, raster_scale_x, raster_scale_y));
     canvas->clipRRect(content, SkClipOp::kDifference, true);
     SkPaint paint;
@@ -1229,9 +1302,15 @@ extern "C" int ladybird_v_skia_draw_outer_box_shadow(CGContextRef destination,
     paint.setMaskFilter(SkMaskFilter::MakeBlur(kNormal_SkBlurStyle,
         std::max(blur, 0.0f) / 2.0f));
     canvas->drawRRect(shadow, paint);
-    return composite_pixels(destination, pixels, raster_width, raster_height,
+    if (gpu_surface && !surface->readPixels(image_info, pixels.data(),
+        static_cast<size_t>(raster_width) * sizeof(uint32_t), 0, 0)) return 0;
+    CGContextSaveGState(destination);
+    if (has_background) CGContextSetBlendMode(destination, kCGBlendModeCopy);
+    int result = composite_pixels(destination, pixels, raster_width, raster_height,
         static_cast<float>(region.left), canvas_height - static_cast<float>(region.bottom),
         static_cast<float>(region.width()), static_cast<float>(region.height()));
+    CGContextRestoreGState(destination);
+    return result;
 }
 
 extern "C" int ladybird_v_skia_draw_svg_path(CGContextRef destination,

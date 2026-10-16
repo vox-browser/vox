@@ -14,6 +14,7 @@
 #include "native_webp_darwin.h"
 
 #ifdef LADYBIRD_V_HAS_SKIA_TEXT
+extern void ladybird_v_skia_set_chromium_painting(int active);
 extern int ladybird_v_skia_configure_font(const char *path, int slot);
 extern int ladybird_v_skia_draw_glyph_run(CGContextRef destination,
 	const char *font_path, int face_index, const uint16_t *glyphs, const double *packed_positions, int glyph_count,
@@ -61,7 +62,7 @@ extern int ladybird_v_skia_draw_outer_box_shadow(CGContextRef destination,
 	float transform_c, float transform_d, float transform_e, float transform_f,
 	float page_x, float page_y, float scroll_y, float canvas_width,
 	float canvas_height, float blur, uint8_t red, uint8_t green, uint8_t blue,
-	uint8_t alpha);
+	uint8_t alpha, int opaque_backdrop);
 extern int ladybird_v_skia_draw_svg_path(CGContextRef destination,
 	const float *data, int segment_count, int even_odd,
 	float transform_a, float transform_b, float transform_c, float transform_d,
@@ -1969,9 +1970,15 @@ void native_begin_font_compositing_layer(float width, float height) {
 	native_begin_css_filter_layer(width, height);
 	native_font_compositing_context = [[NSGraphicsContext currentContext] CGContext];
 	native_font_compositing_transparency_depth = 0;
+#ifdef LADYBIRD_V_HAS_SKIA_TEXT
+	ladybird_v_skia_set_chromium_painting(1);
+#endif
 }
 
 void native_end_font_compositing_layer(void) {
+#ifdef LADYBIRD_V_HAS_SKIA_TEXT
+	ladybird_v_skia_set_chromium_painting(0);
+#endif
 	native_font_compositing_context = NULL;
 	native_font_compositing_transparency_depth = 0;
 	native_end_css_filter_layer();
@@ -3984,7 +3991,9 @@ void native_draw_outer_box_shadow_corners_srgb(float shadow_x, float shadow_y,
 		content_bottom_right_x, content_bottom_right_y, content_bottom_left_x,
 		content_bottom_left_y, transform_a, transform_b, transform_c, transform_d,
 		transform_e, transform_f, page_x, page_y, scroll_y, canvas_width,
-		canvas_height, blur, color.r, color.g, color.b, color.a))
+		canvas_height, blur, color.r, color.g, color.b, color.a,
+		context == native_font_compositing_context
+			&& native_font_compositing_transparency_depth == 0))
 		return;
 #endif
 	CGPathRef local_shadow = native_create_corner_rounded_rect_path(shadow_x, shadow_y,

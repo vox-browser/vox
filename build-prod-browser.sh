@@ -104,13 +104,17 @@ if [ -n "$rust_cargo" ]; then
     extra_ldflags="$extra_ldflags -L$rust_target_dir/release -lladybird_v_yuv"
 fi
 bridge_library=""
+graphite_library=""
 if [ -f "$skia_root/lib/libskia.dylib" ] && [ -d "$skia_root/include/skia/include" ]; then
+    graphite_library="$build_dir/libVoxGraphite.dylib"
+    python3 "$repo_dir/tools/build_mac_graphite.py" --skia-root "$skia_root" \
+        --output "$graphite_library"
     bridge_library="$build_dir/libLadybirdVSkiaText.dylib"
     clang++ -std=c++20 -O2 -fPIC -dynamiclib -x objective-c++ \
 		-I"$skia_root/include/skia" -I"$skia_root/include" \
 		"$repo_dir/native_skia_text_darwin.cpp" \
         -L"$skia_root/lib" -lskia \
-        -framework CoreFoundation -framework CoreGraphics -framework Foundation \
+        -framework CoreFoundation -framework CoreGraphics -framework Foundation -framework Metal \
         -Wl,-rpath,"$skia_root/lib" \
         -Wl,-install_name,@rpath/libLadybirdVSkiaText.dylib \
         -o "$bridge_library"
@@ -184,6 +188,18 @@ if [ -n "$bridge_library" ]; then
     fi
 else
     rm -f "$binary_dir/libLadybirdVSkiaText.dylib"
+fi
+
+if [ -n "$graphite_library" ]; then
+    graphite_resource_tmp=$(mktemp "$binary_dir/.graphite-bridge.XXXXXX")
+    cp "$graphite_library" "$graphite_resource_tmp"
+    chmod 755 "$graphite_resource_tmp"
+    mv -f "$graphite_resource_tmp" "$binary_dir/libVoxGraphite.dylib"
+    if command -v codesign >/dev/null 2>&1; then
+        codesign --force --sign - "$binary_dir/libVoxGraphite.dylib" >/dev/null
+    fi
+else
+    rm -f "$binary_dir/libVoxGraphite.dylib"
 fi
 
 if command -v codesign >/dev/null 2>&1; then

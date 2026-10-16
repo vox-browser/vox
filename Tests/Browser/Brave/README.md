@@ -12,3 +12,15 @@ python3 tools/check_pixel_equality.py Tests/Browser/Brave/expected/font-rasteriz
 ```
 
 This comparison requires exact RGBA equality, with no excluded pixels or tolerance.
+
+`box-shadow-blur` checks square and two rounded outer shadows. The native
+Chromium profile uses an isolated Skia 155 Metal backend for these shadows,
+including Chromium's legacy rounded clip shader and full precision arithmetic.
+The dependency is pinned to Chromium 155.0.8059.80's Skia revision. Its C ABI
+exports pixels and plain values only; its hidden Skia symbols cannot interpose
+on LibWeb's existing Skia library. Builds require GN and Ninja and cache the
+verified dependency under `Build/deps/skia-brave`.
+
+The three opaque shadow cases are exact. A separate diagnostic with a shadow
+inside `opacity: .5` still differs by 1 at five pixels after the native layer
+is composited. This fixture does not establish translucent-group parity.

@@ -1,0 +1,43 @@
+--- a/src/gpu/graphite/UniformManager.h
++++ b/src/gpu/graphite/UniformManager.h
+@@ -165,7 +165,7 @@
+     static constexpr bool PadVec3Size(Layout layout) { return layout == Layout::kMetal; }
+     static constexpr bool AlignArraysTo16(Layout layout) { return layout == Layout::kStd140 ||
+                                                                   layout == Layout::kStd140_F16; }
+-    static constexpr bool UseFullPrecision(Layout layout) { return layout == Layout::kStd140 ||
++    static constexpr bool UseFullPrecision(Layout layout) { return layout == Layout::kMetal || layout == Layout::kStd140 ||
+                                                                    layout == Layout::kStd430; }
+ }
+ 
+--- a/src/sksl/SkSLMemoryLayout.h
++++ b/src/sksl/SkSLMemoryLayout.h
+@@ -159,7 +159,7 @@
+                     return this->isWGSL() ? 0 : 1;
+                 }
+                 if (this->isMetal() && !type.highPrecision() && type.isNumber()) {
+-                    return 2;
++                    return type.isFloat() ? 4 : 2;
+                 }
+                 if (this->isWGSL_F16() && !type.highPrecision() && type.isFloat()) {
+                     return 2;
+--- a/src/gpu/graphite/mtl/MtlGraphiteUtils.mm
++++ b/src/gpu/graphite/mtl/MtlGraphiteUtils.mm
+@@ -19,6 +19,7 @@
+ #include "src/gpu/mtl/MtlUtilsPriv.h"
+ 
+ #import <Metal/Metal.h>
++#include <regex>
+ 
+ namespace SkContexts {
+ // Creates a context wrapping a Graphite GPU backend using Metal
+@@ -59,6 +60,10 @@
+                                                std::string_view msl,
+                                                ShaderErrorHandler* errorHandler) {
+     TRACE_EVENT0("skia.shaders", "driver_compile_shader");
++    std::string fullPrecision = std::regex_replace(std::string(msl),
++        std::regex(R"(\bhalf([234](x[234])?)?\b)"), "float$1");
++    fullPrecision = std::regex_replace(fullPrecision, std::regex(R"(([0-9])h\b)"), "$1f");
++    msl = fullPrecision;
+     NSString* nsSource = [[NSString alloc] initWithBytesNoCopy:const_cast<char*>(msl.data())
+                                                         length:msl.size()
+                                                       encoding:NSUTF8StringEncoding
