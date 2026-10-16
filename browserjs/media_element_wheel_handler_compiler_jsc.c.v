@@ -1,4 +1,4 @@
-// Raw media wheel and lifecycle handlers share FunctionBody compilation and scopes.
+// Raw media and track handlers share FunctionBody compilation and owner resolution.
 module browserjs
 
 import dom
@@ -24,8 +24,10 @@ fn cached_raw_wheel_media(element &dom.Element) ?&html.HTMLMediaElement {
 	return unsafe { &html.HTMLMediaElement(video.media_element_model_) }
 }
 
-fn (mut host ElementWheelHost) raw_media_wheel_handler_available(target &dom.EventTarget, element &dom.Element, name string) bool {
-	if name !in ['wheel', 'play', 'pause', 'playing', 'waiting', 'canplay', 'canplaythrough', 'loadedmetadata', 'loadeddata', 'ratechange', 'volumechange', 'timeupdate', 'durationchange', 'seeking', 'seeked', 'progress', 'suspend', 'abort', 'emptied', 'loadstart', 'ended', 'resize', 'error'] { return false }
+fn (mut host ElementWheelHost) raw_media_or_track_handler_available(target &dom.EventTarget, element &dom.Element, name string) bool {
+	if element.local_name() == 'track' {
+		if name !in ['load', 'error'] { return false }
+	} else if name !in ['wheel', 'play', 'pause', 'playing', 'waiting', 'canplay', 'canplaythrough', 'loadedmetadata', 'loadeddata', 'ratechange', 'volumechange', 'timeupdate', 'durationchange', 'seeking', 'seeked', 'progress', 'suspend', 'abort', 'emptied', 'loadstart', 'ended', 'resize', 'error'] { return false }
 	if host.live_raw_media_wheel_hosts().len == 0 { return false }
 	binding := host.runtime.event_binding() or { return false }
 	mut wrapper := binding.target_wrappers[voidptr(target)] or { voidptr(0) }
@@ -56,6 +58,13 @@ fn (mut host ElementWheelHost) raw_media_wheel_handler_available(target &dom.Eve
 	if bound_wrapper != wrapper { return false }
 	actual := binding.targets[wrapper] or { return false }
 	if voidptr(actual) != voidptr(target) { return false }
+	if element.local_name() == 'track' {
+		for owner in host.live_raw_media_wheel_hosts() {
+			owned := owner.track_elements[wrapper] or { continue }
+			if voidptr(owned) == voidptr(element) { return true }
+		}
+		return false
+	}
 	model := cached_raw_wheel_media(element) or { return false }
 	if voidptr(model.event_target()) != voidptr(target) { return false }
 	model_document := model.document() or { return false }

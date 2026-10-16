@@ -1,4 +1,4 @@
-// DOM/EventTarget.cpp: lazily compile wheel and media lifecycle handlers in owner scopes.
+// DOM/EventTarget.cpp: lazily compile wheel, media and track handlers in owner scopes.
 module browserjs
 
 import dom
@@ -14,9 +14,11 @@ fn (mut host ElementWheelHost) install_raw_wheel_handler_compiler() ! {
 			if name == 'wheel' || (target.data.kind == .window
 				&& voidptr(target) == voidptr(settings.global_object())) { return true }
 			mut host := unsafe { &ElementWheelHost(owner) }
-			if name !in ['play', 'pause', 'playing', 'waiting', 'canplay', 'canplaythrough', 'loadedmetadata', 'loadeddata', 'ratechange', 'volumechange', 'timeupdate', 'durationchange', 'seeking', 'seeked', 'progress', 'suspend', 'abort', 'emptied', 'loadstart', 'ended', 'resize', 'error'] || host.closed || host.runtime.closed { return false }
+			if host.closed || host.runtime.closed { return false }
 			element := host.raw_wheel_handler_element(target) or { return false }
+			if element.local_name() == 'track' { return name in ['load', 'error'] }
 			return element.local_name() in ['audio', 'video']
+				&& name in ['play', 'pause', 'playing', 'waiting', 'canplay', 'canplaythrough', 'loadedmetadata', 'loadeddata', 'ratechange', 'volumechange', 'timeupdate', 'durationchange', 'seeking', 'seeked', 'progress', 'suspend', 'abort', 'emptied', 'loadstart', 'ended', 'resize', 'error']
 		}
 		can_compile: fn [owner, settings] (target &dom.EventTarget) bool {
 			mut host := unsafe { &ElementWheelHost(owner) }
@@ -45,8 +47,9 @@ fn (mut host ElementWheelHost) install_raw_wheel_handler_compiler() ! {
 			if target.data.kind == .window { return true }
 			mut host := unsafe { &ElementWheelHost(owner) }
 			element := host.raw_wheel_handler_element(target) or { return false }
-			if element.local_name() in ['audio', 'video'] {
-				return host.raw_media_wheel_handler_available(target, element, name)
+			if element.local_name() in ['audio', 'video']
+				|| (element.local_name() == 'track' && name in ['load', 'error']) {
+				return host.raw_media_or_track_handler_available(target, element, name)
 			}
 			return name == 'wheel'
 		}
@@ -122,7 +125,7 @@ fn (runtime &Runtime) raw_wheel_handler_body_is_valid(handler_name string, body 
 
 fn (mut host ElementWheelHost) compile_raw_wheel_handler(target &dom.EventTarget, name string, body string, source string) ?&dom.CallbackType {
 	mut runtime := host.runtime
-	if name !in ['wheel', 'play', 'pause', 'playing', 'waiting', 'canplay', 'canplaythrough', 'loadedmetadata', 'loadeddata', 'ratechange', 'volumechange', 'timeupdate', 'durationchange', 'seeking', 'seeked', 'progress', 'suspend', 'abort', 'emptied', 'loadstart', 'ended', 'resize', 'error'] || !runtime.raw_wheel_handler_body_is_valid(name, body) { return none }
+	if name !in ['wheel', 'load', 'play', 'pause', 'playing', 'waiting', 'canplay', 'canplaythrough', 'loadedmetadata', 'loadeddata', 'ratechange', 'volumechange', 'timeupdate', 'durationchange', 'seeking', 'seeked', 'progress', 'suspend', 'abort', 'emptied', 'loadstart', 'ended', 'resize', 'error'] || !runtime.raw_wheel_handler_body_is_valid(name, body) { return none }
 	element := host.raw_wheel_handler_element(target) or { return none }
 	mut vm := runtime.agent_vm
 	mut context := runtime.realm_context

@@ -143,7 +143,7 @@ fn test_compact_track_handlers_reach_actual_parsed_created_and_qualified_loader_
 	native_track_handler_run(document, runtime, r'
 globalThis.nhtTracks=[document.getElementById("nht-parsed")];globalThis.nhtRawCalls=0;globalThis.nhtLoaderOrder=[];globalThis.nhtLoaderChecks=[];globalThis.nhtSavedHandlers=[];
 for(const [i,t] of [document.createElement("track"),document.createElementNS("http://www.w3.org/1999/xhtml","q:track")].entries()){t.id="nht-created-"+i;t.src="seed-created.vtt";document.getElementById("nht-parent").appendChild(t);nhtTracks.push(t);}
-for(const t of nhtTracks){const saved={};nhtSavedHandlers.push(saved);if(t.onload!==null||t.onerror!==null||Object.hasOwn(t,"onload")||Object.hasOwn(t,"onerror"))throw "initial native handlers";
+for(const t of nhtTracks){const saved={};nhtSavedHandlers.push(saved);if((t.hasAttribute("onload")?typeof t.onload!=="function":t.onload!==null)||t.onerror!==null||Object.hasOwn(t,"onload")||Object.hasOwn(t,"onerror"))throw "initial native handlers";
  t.onload=null;t.onerror=null;
  for(const type of ["load","error"]){t.addEventListener(type,()=>nhtLoaderOrder.push(t.id+":"+type+":before"));t["on"+type]=()=>{throw "old handler"};t.addEventListener(type,()=>nhtLoaderOrder.push(t.id+":"+type+":after"));
   saved[type]=function(e){nhtLoaderOrder.push(t.id+":"+type+":handler");nhtLoaderChecks.push(arguments.length===1&&this===t&&e.target===t&&e.currentTarget===t&&e.isTrusted&&!e.bubbles&&!e.cancelable&&t.readyState===(type==="load"?HTMLTrackElement.LOADED:HTMLTrackElement.ERROR));};t["on"+type]=saved[type];
@@ -161,7 +161,7 @@ for(const t of nhtTracks){const saved={};nhtSavedHandlers.push(saved);if(t.onloa
 	}
 	assert runtime.evaluate_host('nhtRawCalls===0&&nhtLoaderChecks.length===9&&nhtLoaderChecks.every(Boolean)&&nhtLoaderOrder.length===27')! == 'true'
 	assert runtime.evaluate_host(r'(()=>{for(let i=0;i<27;i+=3){const prefix=nhtLoaderOrder[i].slice(0,-6);if(nhtLoaderOrder[i+1]!==prefix+"handler"||nhtLoaderOrder[i+2]!==prefix+"after")return false}return true})()')! == 'true'
-	assert runtime.evaluate_host(r'(()=>{const t=nhtTracks[0],raw=t.getAttribute("onload");t.setAttribute("onload",raw);if(t.onload!==null||t.getAttribute("onload")!==raw)return false;t.onload=nhtSavedHandlers[0].load;return t.onload===nhtSavedHandlers[0].load})()')! == 'true'
+	assert runtime.evaluate_host(r'(()=>{const t=nhtTracks[0],raw=t.getAttribute("onload");t.setAttribute("onload",raw);if(typeof t.onload!=="function"||t.onload===nhtSavedHandlers[0].load||t.getAttribute("onload")!==raw)return false;t.onload=nhtSavedHandlers[0].load;return t.onload===nhtSavedHandlers[0].load})()')! == 'true'
 	assert probe.urls.len == 9
 	native_track_handler_flush(document, runtime)!
 	native_track_handler_balanced(document, runtime, 0)
@@ -178,18 +178,18 @@ fn test_compact_track_handler_content_writes_replace_idl_slots_in_operation_orde
 	native_track_handler_run(document, runtime, r'
 globalThis.nhtRawRuns=0;globalThis.nhtAssignedRuns=0;globalThis.nhtRawTrack=document.getElementById("nht-raw");
 for(const type of ["load","error"]){const t=nhtRawTrack,name="on"+type,raw=t.getAttribute(name),handler=function(e){if(this!==t||arguments.length!==1||e.target!==t||e.currentTarget!==t)throw "raw replacement owner";nhtAssignedRuns++};
- if(t[name]!==null)throw "raw compiler unavailable";
+ if(typeof t[name]!=="function")throw "raw compiler unavailable";
  t[name]=handler;t.setAttribute("data-dirty",type);if(t[name]!==handler||t.getAttribute(name)!==raw)throw "unchanged snapshot replaced IDL";
  t.dispatchEvent(new Event(type));const before=nhtAssignedRuns;
- t.setAttribute(name,raw);if(t[name]!==null||t.getAttribute(name)!==raw)throw "equal raw write retained IDL";
- t.dispatchEvent(new Event(type));if(nhtAssignedRuns!==before||nhtRawRuns!==0)throw "uncompiled raw invoked";
+ t.setAttribute(name,raw);if(typeof t[name]!=="function"||t[name]===handler||t.getAttribute(name)!==raw)throw "equal raw write retained IDL";
+ t.dispatchEvent(new Event(type));if(nhtAssignedRuns!==before||nhtRawRuns!==(type==="load"?1:2))throw "raw invocation count";
  t.setAttribute(name,raw+";");t[name]=handler;if(t[name]!==handler||t.getAttribute(name)!==raw+";")throw "pending raw replay replaced new IDL";
  t.removeAttribute(name);if(t[name]!==null||t.hasAttribute(name))throw "raw removal retained IDL";
  t[name]=handler;t.removeAttribute(name);if(t[name]!==handler)throw "absent raw removal cleared IDL";
  t.setAttribute(name,raw);t[name]=handler;t.dispatchEvent(new Event(type));
-}if(nhtAssignedRuns!==4||nhtRawRuns!==0)throw "raw and IDL dispatch count";
+}if(nhtAssignedRuns!==4||nhtRawRuns!==2)throw "raw and IDL dispatch count";
 const ns=document.getElementById("nht-ns"),nsRaw=ns.getAttribute("onload"),nsHandler=()=>{};
-ns.onload=nsHandler;ns.setAttribute("onload",nsRaw);if(ns.onload!==null||ns.getAttribute("onload")!==nsRaw)throw "qualified Attr hook";ns.onload=nsHandler;
+ns.onload=nsHandler;ns.setAttribute("onload",nsRaw);if(typeof ns.onload!=="function"||ns.onload===nsHandler||ns.getAttribute("onload")!==nsRaw)throw "qualified Attr hook";ns.onload=nsHandler;
 ')
 	native_track_handler_flush(document, runtime)!
 	element := document.get_element_by_id('nht-raw')?
@@ -199,7 +199,7 @@ ns.onload=nsHandler;ns.setAttribute("onload",nsRaw);if(ns.onload!==null||ns.getA
 		handler := target.data.event_handler(name)?
 		assert handler.value.kind == .object
 	}
-	assert runtime.evaluate_host('nhtRawTrack.onload!==null&&nhtRawTrack.onerror!==null&&nhtAssignedRuns===4&&nhtRawRuns===0')! == 'true'
+	assert runtime.evaluate_host('nhtRawTrack.onload!==null&&nhtRawTrack.onerror!==null&&nhtAssignedRuns===4&&nhtRawRuns===2')! == 'true'
 	assert namespaced.get_attribute_node_ns('urn:track-handler', 'onload')? == attribute
 	assert namespaced.get_attribute_ns(none, 'onload') == none
 	native_track_handler_balanced(document, runtime, 0)
