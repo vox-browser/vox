@@ -1794,9 +1794,8 @@ fn build_input_internal_layout_children(document &dom.Document, element &dom.Ele
 		mut span := unsafe {
 			&Node(BlockContainer.new(document, span_element.as_node(), span_style))
 		}
-		mut label := element.get_attribute_value('value')
-		if label.len == 0 {
-			label = if type_ == 'submit' {
+		label := element.get_attribute('value') or {
+			if type_ == 'submit' {
 				'Submit'
 			} else if type_ == 'reset' {
 				'Reset'
