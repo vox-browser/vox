@@ -1838,6 +1838,13 @@ evidence](docs/translation-audit/NATIVE_MEDIA_WHEEL_RAW_HANDLER.md).
   focused retained viewport exact. Additional observed savings: 0.
   Same 4 GiB/placement; canonical/GUI preserved; contemporary Root excluded.
   Chrome parity remains open.
+  Deferred computed layout snapshots round90 (`5dd943ad`) are locally rejected.
+  All three C-O2 configurations pass 3,123 assertions in 27 common cases.
+  Complete public style/materialization batches regress 2.11%; all three pairs
+  are worse. The predeclared native gate exits 1 before launching any child.
+  Six candidate-only cases remain unrun; no normal C audit or page result.
+  Frozen89 remains control/broad baseline; page credit and observed carry stay 0.
+  Root implementation and canonical/GUI browsers are preserved; Chrome open.
 - Outside instruction-count optimization, run broad regression suites once per
   ten completed fixes, not after every fix.
   Broad suites include full translation/package test batches, the full LibJS AST

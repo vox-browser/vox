@@ -8666,6 +8666,48 @@ credit. Equivalent Chrome content/start/submission accounting remains open;
 faster-than-Chrome performance is unproven. Evidence:
 `Build/instructions/vox-opt88-interleaved-*` and `Build/v/instruction-opt88-*`.
 
+## Round 90: reject deferred computed layout snapshots locally
+
+The frozen candidate imports independently authored `5dd943ad` (Alexander
+Medvednikov) after accepted round89: eight exact hunks in three CSS paths.
+It moves 194 computed layout fields and their unchanged defaults behind a
+private lazy cache, with copy-on-write ownership and scoped materialization.
+The static reference audit finds no moved-field references in other frozen
+runtime paths. This attempt changes only immutable comparison snapshots;
+the independently committed Root implementation is preserved.
+
+Before/final Boehm and final no-GC C-O2 each actually pass **3,123 assertions
+in 27 cases**. These retain the 26 common public style, inheritance,
+invalidation and animation cases plus an inactive diagnostic. All three
+focused generated C files have authenticated durable gzip archives and
+binary hashes. This is source and focused-build evidence; no normal-browser
+C generation or complete C projection audit is claimed.
+
+Three fixed alternating local pairs measure **128 complete public
+compute_style calls plus 64 complete public resolve_computed_values
+materializations**, over 64 existing elements in two batches. Setup, parent
+style, eight warmup batches, expected checksum and forced GC precede the
+hardware interval; assertions follow it. All six actual exits are 0 and all
+checksums are **3,353,604**. Before counts are
+**23,425,768 / 23,365,457 / 23,413,238**; final counts by pair are
+**23,886,902 / 23,976,661 / 23,907,550**. Median instructions rise
+**23,413,238→23,907,550 (+2.11125%)**, with **all three pairs worse**.
+Every observation remains and the local cohort is not extended.
+
+The predeclared negative-local-change gate stops the native-job starter
+with its retained **actual exit 1** before any of its five child jobs launch.
+The candidate's six additional contract cases therefore remain unrun.
+There is no normal build, profile, full C audit, page primary, broad batch,
+app installation or GC-artifact result for round90. **Page credit is 0**;
+this is a local regression, not a measured page regression. Frozen89 remains
+the next control and the last completed broad baseline; additional observed
+savings stay 0. No Root implementation is reverted and canonical/GUI browsers
+remain untouched. Chrome parity remains open.
+
+Evidence: `Build/opt90-{before,final,contracts}-source` and
+`Build/v/instruction-opt90-*`, including diagnostic observations, actual
+terminal receipts, exact source audit and durable focused C archives.
+
 ## Allocate computed style metadata maps only on first use
 
 This integration imports independently authored feature `c3e9df79`
