@@ -200,6 +200,7 @@ Counts are whole launch through the capture boundary described above.
 | Vox candidate v14 | 78,965,962,830 | Passed |
 | Vox candidate v15 | 48,894,785,438 | Passed |
 | Vox candidate v16 | 63,190,658,751 | Passed; regression |
+| Vox candidate v17 | 45,899,800,267 | Passed; single checkpoint only |
 
 Candidate v6 uses executable SHA256
 `cc105727ad0e7d08d12c94336ca6cd4d26e2c1318416dfddace23c626d1338c2`.
@@ -368,10 +369,35 @@ regression; the original row remains preserved. This diagnostic investigates
 run variation and earns no primary performance credit. Its receipt is
 `Build/pikabu-instructions/v16-v15-matched-pair-diagnostic.json`.
 
-The best broadly verified checkpoint, v15, remains 4.72% above the single Brave
-reference. A target claim still requires at least five alternating fresh
-Vox/Brave runs with all gates passing, preserved rows and unchanged
-input/runtime fingerprints.
+Candidate v17 reserves inline-item capacity from retained text chunks and emits
+general grapheme boundaries directly, preserving the exact V13 tables and rule
+ordering while removing temporary cluster strings. Its executable SHA256 is
+`67f5206079ae7c00526d93b3c5f80e9c9ca8b3d4f471883eb9aa7c04c6aaf3b7`.
+The isolated committed source revision is
+`c5ca0dce5aa374730586fce1f26cf6174f5e31b5`; its two feature snapshots retain
+the exact tested blobs from canonical commits `ebeac4b8` and `17270386`.
+Concurrent OpenSSL changes, documentation and uncommitted host-file changes
+remain preserved in the canonical checkout and are excluded from this build.
+
+The valid single checkpoint saves 2,994,985,171 instructions (6.13%) against
+v15. It passes completion, all 15 stories, title, decoded image, loaded Roboto,
+fresh font-file and exact native-pixel gates. The same broad batch passed:
+135 cases in each GC mode, 100 exact AST fixtures, production startup and all
+19 screenshot comparisons (16 exact, three within unchanged fuzzy bounds).
+All 34 native captures are fresh and all 19 native outputs match v6 and v15
+exactly. The summary and reset are under
+`Build/pikabu-instructions/broad-v17/`; the new broad baseline is
+45,899,800,267 instructions with zero additional savings credited.
+
+The required five alternating fresh Vox/Brave pairs did **not** confirm a win.
+All ten rows pass their content/font/image gates, and all five Vox captures
+retain identical native pixels and fresh font files. Vox's median is
+48,646,816,544 instructions versus Brave's 47,141,548,806: Vox uses 3.19% more,
+with two pair wins out of five. Every row is preserved under
+`Build/pikabu-instructions-candidate-v17-final*`, including the Vox runs at
+59,182,518,815 and 55,595,049,138 instructions. The source, filters, archive,
+endpoint and runtime fingerprints stay pinned. The target remains unachieved;
+these repeated observations do not advance the broad-baseline savings carry.
 
 Focused checks:
 
