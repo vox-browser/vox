@@ -33,6 +33,9 @@ fn test_system_fallback_uses_language_specific_cjk_faces() {
 		assert japanese.system_face()?.postscript_name == 'HiraKakuProN-W6'
 		simplified := system_fallback_font(0x4e2d, 'zh-Hans', base) or { panic('zh') }
 		assert simplified.system_face()?.postscript_name == 'PingFangSC-Semibold'
+		// PingFang has no GPOS; its AAT 'trak' tracking still widens each glyph,
+		// as Brave measures (32.640625px for 中文 at 16px).
+		assert shaped_text_width(0, 0, '中文', simplified, .ltr) == f32(32.640015)
 		regular := &Font{ family: 'SystemUi', point_size: 13, weight: 400, font_rendering_policy: .chromium }
 		traditional := system_fallback_font(0x689d, 'nan', regular) or { panic('nan') }
 		assert traditional.system_face()?.postscript_name == 'PingFangTC-Regular'

@@ -7,7 +7,21 @@ module platform
 import math
 import os
 
-#pkgconfig harfbuzz
+// Browser shaping must match current HarfBuzz behavior (for example AAT 'trak'
+// tracking in fonts without GPOS). Ladybird's vcpkg tree ships an older
+// libharfbuzz whose -L path can precede pkg-config's, so link the installed
+// library by path on macOS.
+$if macos {
+	$if arm64 {
+		#flag -I/opt/homebrew/opt/harfbuzz/include/harfbuzz
+		#flag /opt/homebrew/opt/harfbuzz/lib/libharfbuzz.0.dylib
+	} $else {
+		#flag -I/usr/local/opt/harfbuzz/include/harfbuzz
+		#flag /usr/local/opt/harfbuzz/lib/libharfbuzz.0.dylib
+	}
+} $else {
+	#pkgconfig harfbuzz
+}
 
 #flag darwin -licucore
 
