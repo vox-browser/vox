@@ -2041,6 +2041,7 @@ fn build_select_internal_layout_children(document &dom.Document, element &dom.El
 	outer_style := computed_style_with_overrides(host_computed, {
 		css.PropertyID.display:     'flex'
 		css.PropertyID.align_items: 'center'
+		css.PropertyID.height:      '100%'
 		css.PropertyID.position:    'relative'
 	})
 	mut outer := unsafe { &Node(Box.new(document, outer_element.as_node(), outer_style)) }

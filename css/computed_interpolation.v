@@ -11686,7 +11686,7 @@ pub fn (s &StyleComputer) compute_properties(abstract_element dom.AbstractElemen
 
 // HTMLSelectElement::adjust_computed_style(). This class-specific boundary is
 // called from the central DOM/CSS dispatch below to avoid a css -> html cycle.
-pub fn html_select_element_adjust_computed_style(mut properties ComputedProperties) {
+pub fn html_select_element_adjust_computed_style(mut properties ComputedProperties, element &dom.Element) {
 	if properties.display().is_contents() {
 		properties.set_property_without_modifying_flags(.display, dom_style_value_from_value_logic(StyleValue(DisplayStyleValue.create(Display.from_short(.none_)))))
 	}
@@ -11694,7 +11694,10 @@ pub fn html_select_element_adjust_computed_style(mut properties ComputedProperti
 	if display.is_inline_outside() && display.is_flow_inside() {
 		properties.set_property_without_modifying_flags(.display, dom_style_value_from_value_logic(StyleValue(DisplayStyleValue.create(Display.from_short(.inline_block)))))
 	}
-	properties.set_property_without_modifying_flags(.line_height, dom_style_value_from_value_logic(StyleValue(KeywordStyleValue.create(.normal))))
+	// Chromium applies an author line-height to a select's label instead.
+	if element.document().font_rendering_policy() != .chromium {
+		properties.set_property_without_modifying_flags(.line_height, dom_style_value_from_value_logic(StyleValue(KeywordStyleValue.create(.normal))))
+	}
 }
 
 // HTMLTextAreaElement::adjust_computed_style(). This class-specific boundary
@@ -11871,7 +11874,7 @@ fn adjust_element_computed_style(mut properties ComputedProperties, element &dom
 	html_element_adjust_computed_style(mut properties, unsafe { &dom.HTMLElement(element) })
 	local_name := element.local_name().to_lower()
 	if local_name == 'select' {
-		html_select_element_adjust_computed_style(mut properties)
+		html_select_element_adjust_computed_style(mut properties, element)
 		return
 	}
 	if local_name == 'textarea' {
