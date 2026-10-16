@@ -618,11 +618,11 @@ fn test_typed_background_images_keep_gradient_url_layer_order_and_geometry() {
 	assert gradient_command.gradient_background_layer
 	assert gradient_command.width == 100
 	assert gradient_command.height == 60
-	assert gradient_command.image_clip_width == 120
-	assert gradient_command.image_clip_height == 80
-	assert gradient_command.image_attachment == 'local'
-	assert gradient_command.background_blend_mode == .multiply
-	gradient_data := gradient_command.background_layer_data or {
+	assert gradient_command.image().image_clip_width == 120
+	assert gradient_command.image().image_clip_height == 80
+	assert gradient_command.image().image_attachment == 'local'
+	assert gradient_command.image().background_blend_mode == .multiply
+	gradient_data := gradient_command.image().background_layer_data or {
 		panic('gradient lost its typed BackgroundLayerData')
 	}
 	gradient_layer := gradient_data.layer
@@ -639,9 +639,9 @@ fn test_typed_background_images_keep_gradient_url_layer_order_and_geometry() {
 	assert gradient_tiles[0].width == 25
 	assert gradient_tiles[0].height == 60
 
-	assert background_commands[0].background_blend_mode == .screen
-	assert background_commands[0].image_clip_width == 100
-	assert background_commands[0].image_clip_height == 60
+	assert background_commands[0].image().background_blend_mode == .screen
+	assert background_commands[0].image().image_clip_width == 100
+	assert background_commands[0].image().image_clip_height == 60
 	svg := target.render_svg(160, 120)
 	assert svg.contains('style="mix-blend-mode:multiply"')
 	assert svg.contains('style="mix-blend-mode:screen"')
@@ -758,10 +758,10 @@ fn test_svg_background_image_retains_its_isolated_document_for_nested_painting()
 	root := layout_document_typed_in_viewport(document, 80, 60)
 	backgrounds := root.paint_commands().filter(it.kind == 'draw_background_image')
 	assert backgrounds.len == 1
-	assert backgrounds[0].background_svg_document != none
-	assert backgrounds[0].image_intrinsic_width == 32
-	assert backgrounds[0].image_intrinsic_height == 16
-	assert backgrounds[0].image_size.starts_with('10px')
+	assert backgrounds[0].image().background_svg_document != none
+	assert backgrounds[0].image().image_intrinsic_width == 32
+	assert backgrounds[0].image().image_intrinsic_height == 16
+	assert backgrounds[0].image().image_size.starts_with('10px')
 }
 
 fn test_svg_background_image_uses_the_embedding_elements_color_scheme() {
@@ -770,8 +770,8 @@ fn test_svg_background_image_uses_the_embedding_elements_color_scheme() {
 	root := layout_document_typed_in_viewport(document, 40, 40)
 	backgrounds := root.paint_commands().filter(it.kind == 'draw_background_image')
 	assert backgrounds.len == 1
-	assert backgrounds[0].background_svg_color_scheme == .dark
-	isolated_document := backgrounds[0].background_svg_document or {
+	assert backgrounds[0].image().background_svg_color_scheme == .dark
+	isolated_document := backgrounds[0].image().background_svg_document or {
 		panic('missing isolated SVG document')
 	}
 	assert isolated_document.svg_image_color_scheme()? == 'dark'
@@ -2922,7 +2922,7 @@ fn test_broken_image_shadow_text_tracks_alt_and_source_changes() {
 	assert commands.all(it.kind != 'draw_text')
 	images := commands.filter(it.kind == 'draw_replaced_image')
 	assert images.len == 1
-	assert images[0].image_url == valid_png
+	assert images[0].image().image_url == valid_png
 }
 
 fn test_svg_html_image_paints_its_isolated_document_as_a_nested_display_list() {
@@ -2956,15 +2956,15 @@ fn test_svg_image_uses_image_paintable_contain_sizing_and_resolved_href() {
 	assert image.y == 18
 	assert image.width == 120
 	assert image.height == 60
-	assert image.image_url == 'https://example.test/picture.png'
-	assert image.image_size == 'contain'
-	assert image.image_position_x == '25%'
-	assert image.image_position_y == '75%'
-	assert image.image_rendering == .pixelated
+	assert image.image().image_url == 'https://example.test/picture.png'
+	assert image.image().image_size == 'contain'
+	assert image.image().image_position_x == '25%'
+	assert image.image().image_position_y == '75%'
+	assert image.image().image_rendering == .pixelated
 	paintable := image.image_paintable or { panic('missing retained ImagePaintable') }
 	assert paintable.is_svg_image
 	assert paintable.image_rect == painting.Rect{26, 18, 120, 60}
-	assert commands.all(it.kind != 'draw_background_image' || it.image_url != image.image_url)
+	assert commands.all(it.kind != 'draw_background_image' || it.image().image_url != image.image().image_url)
 }
 
 fn test_svg_image_bounding_box_uses_intrinsic_ratio_for_a_missing_dimension() {
@@ -2983,7 +2983,7 @@ fn test_svg_image_legacy_xlink_href_is_used_only_when_href_is_absent() {
 	root := layout_document_typed_in_viewport(document, 120, 70)
 	images := root.paint_commands().filter(it.kind == 'draw_replaced_image')
 	assert images.len == 1
-	assert images[0].image_url == 'https://example.test/legacy.png'
+	assert images[0].image().image_url == 'https://example.test/legacy.png'
 }
 
 fn test_canvas_uses_canvas_paintable_only_after_a_surface_exists() {
@@ -4372,8 +4372,8 @@ fn test_typed_inline_background_image_uses_padding_box_origin() {
 	// padding-box, while background-clip defaults to border-box.
 	assert commands[0].x == fragment.x - 17
 	assert commands[0].y == fragment.y - 3
-	assert commands[0].image_clip_x == fragment.x - 19
-	assert commands[0].image_clip_y == fragment.y - 5
+	assert commands[0].image().image_clip_x == fragment.x - 19
+	assert commands[0].image().image_clip_y == fragment.y - 5
 }
 
 fn test_typed_table_cell_radii_reach_the_active_table_border_phase() {

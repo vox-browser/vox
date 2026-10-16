@@ -5365,6 +5365,7 @@ fn (mut app BrowserApp) draw_command(source_command layout.PaintCommand, page_x 
 			}
 		}
 		'fill_gradient' {
+			image_data := command.image()
 			if gradient := command.gradient {
 				if gradient.colors.len == 0 {
 					return
@@ -5373,14 +5374,14 @@ fn (mut app BrowserApp) draw_command(source_command layout.PaintCommand, page_x 
 				if tiles.len == 0 {
 					return
 				}
-				gradient_clip := painting.Rect{command.image_clip_x, command.image_clip_y, command.image_clip_width, command.image_clip_height}
+				gradient_clip := painting.Rect{image_data.image_clip_x, image_data.image_clip_y, image_data.image_clip_width, image_data.image_clip_height}
 				$if macos {
 					if app.ctx.native_rendering && command.gradient_background_layer {
-						radii := command.image_clip_radii
+						radii := image_data.image_clip_radii
 						C.native_begin_clip()
 						C.native_add_corner_rounded_clip(f32(gradient_clip.x), f32(gradient_clip.y), f32(gradient_clip.width), f32(gradient_clip.height), f32(radii.top_left.x), f32(radii.top_left.y), f32(radii.top_right.x), f32(radii.top_right.y), f32(radii.bottom_right.x), f32(radii.bottom_right.y), f32(radii.bottom_left.x), f32(radii.bottom_left.y), f32(matrix[0]), f32(matrix[1]), f32(matrix[2]), f32(matrix[3]), f32(matrix[4]), f32(matrix[5]), page_x, page_y, f32(scroll_y), f32(app.ctx.height))
-						if command.background_blend_mode != .normal {
-							C.native_begin_background_blend_mode(int(command.background_blend_mode))
+						if image_data.background_blend_mode != .normal {
+							C.native_begin_background_blend_mode(int(image_data.background_blend_mode))
 						}
 					}
 				}
@@ -5483,7 +5484,7 @@ fn (mut app BrowserApp) draw_command(source_command layout.PaintCommand, page_x 
 				}
 				$if macos {
 					if app.ctx.native_rendering && command.gradient_background_layer {
-						if command.background_blend_mode != .normal {
+						if image_data.background_blend_mode != .normal {
 							C.native_end_background_blend_mode()
 						}
 						C.native_end_clip()
@@ -5492,6 +5493,7 @@ fn (mut app BrowserApp) draw_command(source_command layout.PaintCommand, page_x 
 			}
 		}
 		'draw_replaced_image' {
+			image_data := command.image()
 			mut image := &gg.Image{}
 			if bitmap := command.replaced_image_bitmap {
 				if bitmap.width <= 0 || bitmap.height <= 0 || bitmap.pitch != bitmap.width * 4
@@ -5506,11 +5508,11 @@ fn (mut app BrowserApp) draw_command(source_command layout.PaintCommand, page_x 
 					data: bitmap.data.data
 				}
 			} else {
-				image = app.background_image(command.image_url) or { return }
+				image = app.background_image(image_data.image_url) or { return }
 			}
 			converter := painting.new_device_pixel_converter(1.0) or { return }
 			paintable := command.image_paintable or { return }
-			result := paintable.paint(command.image_url, painting.IntRect{0, 0, image.width, image.height}, converter) or { return }
+			result := paintable.paint(image_data.image_url, painting.IntRect{0, 0, image.width, image.height}, converter) or { return }
 			destination := result.bitmap.destination
 			clip := result.bitmap.clip_rect
 			if destination.width <= 0 || destination.height <= 0 || clip.width <= 0
@@ -5523,7 +5525,7 @@ fn (mut app BrowserApp) draw_command(source_command layout.PaintCommand, page_x 
 					image = app.force_dark_image_from_bitmap('bitmap:${u64(voidptr(bitmap))}', bitmap,
 						image)
 				} else {
-					image = app.force_dark_image_for_url(command.image_url, image)
+					image = app.force_dark_image_for_url(image_data.image_url, image)
 				}
 			}
 			$if macos {
@@ -5663,36 +5665,37 @@ fn (mut app BrowserApp) draw_command(source_command layout.PaintCommand, page_x 
 			}
 		}
 		'draw_background_image' {
-			if command.background_svg_document != none
+			image_data := command.image()
+			if image_data.background_svg_document != none
 				&& !background_image_clip_intersects_viewport(&command, f64(page_x), f64(page_y),
 					f64(app.ctx.width), f64(app.page_top()), f64(window_height - app.status_height()),
 					app.paint_effect_depth > 0) {
 				return
 			}
 			mut image := &gg.Image{}
-			mut intrinsic_width := f32(command.image_intrinsic_width)
-			mut intrinsic_height := f32(command.image_intrinsic_height)
-			if command.background_svg_document == none || intrinsic_width <= 0
+			mut intrinsic_width := f32(image_data.image_intrinsic_width)
+			mut intrinsic_height := f32(image_data.image_intrinsic_height)
+			if image_data.background_svg_document == none || intrinsic_width <= 0
 				|| intrinsic_height <= 0 {
-				image = app.background_image(command.image_url) or { return }
+				image = app.background_image(image_data.image_url) or { return }
 				intrinsic_width = f32(image.width)
 				intrinsic_height = f32(image.height)
 			}
 			if intrinsic_width <= 0 || intrinsic_height <= 0 || command.width <= 0
-				|| command.height <= 0 || command.image_clip_width <= 0
-				|| command.image_clip_height <= 0 {
+				|| command.height <= 0 || image_data.image_clip_width <= 0
+				|| image_data.image_clip_height <= 0 {
 				return
 			}
 			// Resolve in the command's CSS coordinate space, then let the native
 			// image command apply the retained visual-context transform. Resolving
 			// against the transformed AABB changes cover/contain and repeat counts.
 			area := painting.Rect{command.x, command.y, command.width, command.height}
-			clip := painting.Rect{command.image_clip_x, command.image_clip_y, command.image_clip_width, command.image_clip_height}
+			clip := painting.Rect{image_data.image_clip_x, image_data.image_clip_y, image_data.image_clip_width, image_data.image_clip_height}
 			mut resolved_layer := ?painting.ResolvedBackgroundLayer(none)
-			if background_data := command.background_layer_data {
+			if background_data := image_data.background_layer_data {
 				resolved_layer = painting.resolve_background_layer(painting.BackgroundLayerResolutionInput{
 					layer: background_data.layer
-					image_id: command.image_url
+					image_id: image_data.image_url
 					natural_width: f64(intrinsic_width)
 					natural_height: f64(intrinsic_height)
 					background_positioning_area: area
@@ -5704,7 +5707,7 @@ fn (mut app BrowserApp) draw_command(source_command layout.PaintCommand, page_x 
 				// their legacy strings, then still use BackgroundPainting's tile walk.
 				mut tile_width := intrinsic_width
 				mut tile_height := intrinsic_height
-				size := command.image_size.trim_space().to_lower()
+				size := image_data.image_size.trim_space().to_lower()
 				if size in ['cover', 'contain', 'scale-down'] {
 					x_scale := f32(command.width) / intrinsic_width
 					y_scale := f32(command.height) / intrinsic_height
@@ -5732,27 +5735,27 @@ fn (mut app BrowserApp) draw_command(source_command layout.PaintCommand, page_x 
 					return
 				}
 				resolved_layer = painting.ResolvedBackgroundLayer{
-					image_id: command.image_url
-					attachment: painting_background_attachment(command.image_attachment)
-					position_x: f64(background_position(command.image_position_x, f32(command.width) - tile_width))
-					position_y: f64(background_position(command.image_position_y, f32(command.height) - tile_height))
+					image_id: image_data.image_url
+					attachment: painting_background_attachment(image_data.image_attachment)
+					position_x: f64(background_position(image_data.image_position_x, f32(command.width) - tile_width))
+					position_y: f64(background_position(image_data.image_position_y, f32(command.height) - tile_height))
 					background_positioning_area: area
 					image_rect: painting.Rect{0, 0, f64(tile_width), f64(tile_height)}
-					repeat_x: painting_background_repetition(command.image_repeat_x)
-					repeat_y: painting_background_repetition(command.image_repeat_y)
-					blend_mode: command.background_blend_mode
+					repeat_x: painting_background_repetition(image_data.image_repeat_x)
+					repeat_y: painting_background_repetition(image_data.image_repeat_y)
+					blend_mode: image_data.background_blend_mode
 				}
 			}
 			layer := resolved_layer or { return }
 			plan := painting.background_tile_plan(layer, painting.Point{command.image_scroll_offset_x, command.image_scroll_offset_y}, clip)
 			if paint_command_image_allows_force_dark(command, plan.first_tile.width,
 				plan.first_tile.height, image) {
-				image = app.force_dark_image_for_url(command.image_url, image)
+				image = app.force_dark_image_for_url(image_data.image_url, image)
 			}
 			mut used_native_repeated_bitmap := false
 			$if macos {
 				if app.ctx.native_rendering {
-					radii := command.image_clip_radii
+					radii := image_data.image_clip_radii
 					C.native_begin_clip()
 					C.native_add_corner_rounded_clip(f32(clip.x), f32(clip.y), f32(clip.width), f32(clip.height), f32(radii.top_left.x), f32(radii.top_left.y), f32(radii.top_right.x), f32(radii.top_right.y), f32(radii.bottom_right.x), f32(radii.bottom_right.y), f32(radii.bottom_left.x), f32(radii.bottom_left.y), f32(matrix[0]), f32(matrix[1]), f32(matrix[2]), f32(matrix[3]), f32(matrix[4]), f32(matrix[5]), page_x, page_y, f32(scroll_y), f32(app.ctx.height))
 					if layer.blend_mode != .normal {
@@ -5761,7 +5764,7 @@ fn (mut app BrowserApp) draw_command(source_command layout.PaintCommand, page_x 
 					// BackgroundPainting records one repeated-bitmap operation when
 					// repetition has no `space` gaps. Keeping that operation intact also
 					// preserves the decoded image's native top-to-bottom orientation.
-					if plan.can_use_repeated_bitmap() && command.background_svg_document == none {
+					if plan.can_use_repeated_bitmap() && image_data.background_svg_document == none {
 						converter := painting.new_device_pixel_converter(1.0) or { return }
 						destination := converter.rounded_device_rect(plan.first_tile)
 						device_clip := converter.rounded_device_rect(clip)
@@ -5775,7 +5778,7 @@ fn (mut app BrowserApp) draw_command(source_command layout.PaintCommand, page_x 
 						} else {
 							destination.height
 						}
-						scaling_mode := painting.to_gfx_scaling_mode(command.image_rendering, painting.IntSize{image.width, image.height}, painting.IntSize{destination_width, destination_height})
+						scaling_mode := painting.to_gfx_scaling_mode(image_data.image_rendering, painting.IntSize{image.width, image.height}, painting.IntSize{destination_width, destination_height})
 						C.native_draw_repeated_image_transformed(image, f32(destination.x), f32(destination.y), f32(destination_width), f32(destination_height), f32(device_clip.x), f32(device_clip.y), f32(device_clip.width), f32(device_clip.height), f32(matrix[0]), f32(matrix[1]), f32(matrix[2]), f32(matrix[3]), f32(matrix[4]), f32(matrix[5]), page_x, page_y, f32(scroll_y), f32(app.ctx.height), f32(command.opacity), if scaling_mode == .nearest_neighbor {
 							1
 						} else {
@@ -5791,9 +5794,9 @@ fn (mut app BrowserApp) draw_command(source_command layout.PaintCommand, page_x 
 				painting.background_tiles_from_plan_limited(plan, clip, 4096)
 			}
 			for tile in tiles {
-				if svg_document := command.background_svg_document {
+				if svg_document := image_data.background_svg_document {
 					mut mutable_svg_document := unsafe { &dom.Document(svg_document) }
-					mutable_svg_document.set_svg_image_color_scheme(css.preferred_color_scheme_to_string(command.background_svg_color_scheme))
+					mutable_svg_document.set_svg_image_color_scheme(css.preferred_color_scheme_to_string(image_data.background_svg_color_scheme))
 					converter := painting.new_device_pixel_converter(1.0) or { return }
 					rounded_destination := converter.rounded_device_rect(tile)
 					destination := painting.IntRect{
@@ -5841,7 +5844,7 @@ fn (mut app BrowserApp) draw_command(source_command layout.PaintCommand, page_x 
 						} else {
 							int(math.round(tile.height))
 						}
-						scaling_mode := painting.to_gfx_scaling_mode(command.image_rendering, painting.IntSize{image.width, image.height}, painting.IntSize{destination_width, destination_height})
+						scaling_mode := painting.to_gfx_scaling_mode(image_data.image_rendering, painting.IntSize{image.width, image.height}, painting.IntSize{destination_width, destination_height})
 						$if macos {
 							C.native_draw_image_part_transformed(image, f32(left), f32(top), f32(right_edge - left), f32(bottom_edge - top), source_x, source_y, source_width, source_height, f32(clip.x), f32(clip.y), f32(clip.width), f32(clip.height), f32(matrix[0]), f32(matrix[1]), f32(matrix[2]), f32(matrix[3]), f32(matrix[4]), f32(matrix[5]), page_x, page_y, f32(scroll_y), f32(app.ctx.width), f32(app.ctx.height), f32(command.opacity), if scaling_mode == .nearest_neighbor {
 								1
@@ -5871,18 +5874,19 @@ fn (mut app BrowserApp) draw_command(source_command layout.PaintCommand, page_x 
 			}
 		}
 		'draw_svg_image' {
-			mut image := app.background_image(command.image_url) or { return }
-			destination_x, destination_y, destination_width, destination_height := contained_image_destination(f32(command.x), f32(command.y), f32(command.width), f32(command.height), f32(image.width), f32(image.height), command.image_position_x, command.image_position_y)
+			image_data := command.image()
+			mut image := app.background_image(image_data.image_url) or { return }
+			destination_x, destination_y, destination_width, destination_height := contained_image_destination(f32(command.x), f32(command.y), f32(command.width), f32(command.height), f32(image.width), f32(image.height), image_data.image_position_x, image_data.image_position_y)
 			if destination_width <= 0 || destination_height <= 0 {
 				return
 			}
 			if paint_command_image_allows_force_dark(command, f64(destination_width),
 				f64(destination_height), image) {
-				image = app.force_dark_image_for_url(command.image_url, image)
+				image = app.force_dark_image_for_url(image_data.image_url, image)
 			}
 			$if macos {
 				if app.ctx.native_rendering {
-					scaling_mode := painting.to_gfx_scaling_mode(command.image_rendering, painting.IntSize{image.width, image.height}, painting.IntSize{int(math.round(command.width)), int(math.round(command.height))})
+					scaling_mode := painting.to_gfx_scaling_mode(image_data.image_rendering, painting.IntSize{image.width, image.height}, painting.IntSize{int(math.round(command.width)), int(math.round(command.height))})
 					C.native_draw_image_part_transformed(image, destination_x, destination_y, destination_width, destination_height, 0, 0, f32(image.width), f32(image.height), f32(command.x), f32(command.y), f32(command.width), f32(command.height), f32(matrix[0]), f32(matrix[1]), f32(matrix[2]), f32(matrix[3]), f32(matrix[4]), f32(matrix[5]), page_x, page_y, f32(scroll_y), f32(app.ctx.width), f32(app.ctx.height), f32(command.opacity), if scaling_mode == .nearest_neighbor {
 						1
 					} else {

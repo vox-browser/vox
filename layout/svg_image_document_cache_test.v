@@ -142,9 +142,9 @@ fn test_svg_background_cache_rechecks_local_files_and_covers_body_and_inline_lay
 	root := layout_document_typed_in_viewport(document, 100, 100)
 	layers := root.paint_commands().filter(it.kind == 'draw_background_image')
 	assert layers.len >= 3
-	before := layers[0].background_svg_document or { panic('missing first background') }
+	before := layers[0].image().background_svg_document or { panic('missing first background') }
 	for layer in layers {
-		assert voidptr(layer.background_svg_document?) == voidptr(before)
+		assert voidptr(layer.image().background_svg_document?) == voidptr(before)
 	}
 	os.write_file(file_path, cached_svg_image_source.replace('lime', 'blue'))!
 	result := document_layout_result(document) or { panic('missing layout') }

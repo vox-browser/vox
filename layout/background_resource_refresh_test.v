@@ -31,7 +31,7 @@ fn test_completed_background_refresh_retains_geometry_and_body_block_inline_owne
 	children := voidptr(before.paint_tree.children.data)
 	first_commands := resource_refresh_commands(document)
 	assert first_commands.filter(it.kind == 'draw_background_image').len >= 3
-	assert !first_commands.any(it.background_svg_document != none)
+	assert !first_commands.any(it.image().background_svg_document != none)
 	mut mutable_document := unsafe { &dom.Document(document) }
 	hit := mutable_document.element_from_point(2, 2)
 	assert before.hit_test_display_list_is_valid
@@ -54,11 +54,11 @@ fn test_completed_background_refresh_retains_geometry_and_body_block_inline_owne
 	commands := resource_refresh_commands(document)
 	layers := commands.filter(it.kind == 'draw_background_image')
 	assert layers.len == first_commands.filter(it.kind == 'draw_background_image').len
-	isolated := layers[0].background_svg_document or { panic('missing completed background') }
+	isolated := layers[0].image().background_svg_document or { panic('missing completed background') }
 	for layer in layers {
-		assert voidptr(layer.background_svg_document?) == voidptr(isolated)
-		assert layer.image_intrinsic_width == 20
-		assert layer.image_intrinsic_height == 10
+		assert voidptr(layer.image().background_svg_document?) == voidptr(isolated)
+		assert layer.image().image_intrinsic_width == 20
+		assert layer.image().image_intrinsic_height == 10
 	}
 	assert document.layout_is_up_to_date()
 }
@@ -69,19 +69,19 @@ fn test_background_refresh_replaces_same_size_bytes_and_drops_failed_resource_wi
 	document := html.parse_document('<!doctype html><div style="width:20px;height:10px;background:url(${address})"></div>')
 	_ = layout_document_typed_in_viewport(document, 100, 100)
 	old_commands := resource_refresh_commands(document)
-	old_document := old_commands.filter(it.background_svg_document != none)[0].background_svg_document?
+	old_document := old_commands.filter(it.image().background_svg_document != none)[0].image().background_svg_document?
 	resource_refresh_publish(address, resource_refresh_source.replace('lime', 'blue'))
 	assert refresh_document_background_resources(document, {address:true})
 	new_commands := resource_refresh_commands(document)
-	new_document := new_commands.filter(it.background_svg_document != none)[0].background_svg_document?
+	new_document := new_commands.filter(it.image().background_svg_document != none)[0].image().background_svg_document?
 	assert voidptr(old_document) != voidptr(new_document)
 	assert old_document.get_element_by_id('shape')?.get_attribute_value('fill') == 'lime'
 	assert new_document.get_element_by_id('shape')?.get_attribute_value('fill') == 'blue'
-	assert voidptr(old_commands.filter(it.background_svg_document != none)[0].background_svg_document?) == voidptr(old_document)
+	assert voidptr(old_commands.filter(it.image().background_svg_document != none)[0].image().background_svg_document?) == voidptr(old_document)
 	mut resource_loader := loader.ResourceLoader.the()
 	resource_loader.register_network_response(address, loader.NetworkResponse{status_code:404})
 	assert refresh_document_background_resources(document, {address:true})
-	assert !resource_refresh_commands(document).any(it.background_svg_document != none)
+	assert !resource_refresh_commands(document).any(it.image().background_svg_document != none)
 	assert new_document.get_element_by_id('shape')?.get_attribute_value('fill') == 'blue'
 }
 

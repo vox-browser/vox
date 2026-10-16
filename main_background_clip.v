@@ -12,17 +12,18 @@ fn background_image_clip_intersects_viewport(command &layout.PaintCommand, page_
 	if in_effect_group || command.visual_layer_list != unsafe { nil } {
 		return true
 	}
-	if command.image_clip_width <= 0 || command.image_clip_height <= 0 {
+	image_data := command.image()
+	if image_data.image_clip_width <= 0 || image_data.image_clip_height <= 0 {
 		return false
 	}
 	mut matrix := command.transform
 	if matrix == [6]f64{} {
 		matrix = [f64(1), 0, 0, 1, 0, 0]!
 	}
-	left := command.image_clip_x
-	top := command.image_clip_y
-	right := left + command.image_clip_width
-	bottom := top + command.image_clip_height
+	left := image_data.image_clip_x
+	top := image_data.image_clip_y
+	right := left + image_data.image_clip_width
+	bottom := top + image_data.image_clip_height
 	xs := [left, right, right, left]!
 	ys := [top, top, bottom, bottom]!
 	mut minimum_x := math.inf(1)

@@ -876,6 +876,31 @@ pub:
 
 // Spell out absent payloads: the compatibility compiler otherwise constructs
 // their nested defaults (including allocated lengths) before wrapping in none.
+// Immutable background and replaced-image parameters, shared by retained
+// phases and recordings. Live scroll offsets remain on PaintCommand.
+pub struct PaintImageData {
+pub:
+	image_url                   string
+	background_svg_document     ?&dom.Document = none
+	background_svg_color_scheme css.PreferredColorScheme = .auto_
+	image_intrinsic_width       f64
+	image_intrinsic_height      f64
+	image_repeat_x              string
+	image_repeat_y              string
+	image_size                  string
+	image_position_x            string
+	image_position_y            string
+	image_rendering             css.ImageRendering
+	image_clip_x                f64
+	image_clip_y                f64
+	image_clip_width            f64
+	image_clip_height           f64
+	image_clip_radii            BoxRadii
+	image_attachment            string
+	background_layer_data       ?&PaintBackgroundLayerData = none
+	background_blend_mode       painting.BlendMode
+}
+
 pub struct PaintCommand {
 pub mut:
 	kind      string // fill_rect/fill_rounded_rect/stroke_rounded_rect/fill_ellipse/stroke_ellipse/fill_polygon/draw_line/draw_text/draw_svg_path
@@ -951,28 +976,11 @@ pub mut:
 	line_style             string = 'solid'
 	fill_opacity           f64 = 1.0
 	stroke_opacity         f64 = 1.0
-	// `draw_background_image` payload. Intrinsic dimensions are resolved by the image renderer.
-	image_url                   string
-	background_svg_document     ?&dom.Document = none
-	background_svg_color_scheme css.PreferredColorScheme = .auto_
-	image_intrinsic_width       f64
-	image_intrinsic_height      f64
-	image_repeat_x              string
-	image_repeat_y              string
-	image_size                  string
-	image_position_x            string
-	image_position_y            string
-	image_rendering             css.ImageRendering
-	image_clip_x                f64
-	image_clip_y                f64
-	image_clip_width            f64
-	image_clip_height           f64
-	image_clip_radii            BoxRadii
-	image_attachment            string
-	background_layer_data       ?&PaintBackgroundLayerData = none
+	// Immutable background and replaced-image parameters are retained only by
+	// commands which use them, and shared through phase caches and replay.
+	image_data &PaintImageData = unsafe { nil }
 	image_scroll_offset_x       f64
 	image_scroll_offset_y       f64
-	background_blend_mode       painting.BlendMode
 	// BackgroundPainting temporarily switches only fixed layers to the visual
 	// context which compensates every ancestor scroll frame.
 	visual_context_index ?int = none
@@ -1034,6 +1042,24 @@ pub mut:
 mut:
 	paint_box_index int
 	paint_phase     CompatibilityPaintPhase
+}
+
+// Logical defaults preserve commands which have no image payload. Callers in
+// image/gradient branches take one snapshot rather than copying this per field.
+pub fn (command &PaintCommand) image() PaintImageData {
+	if command.image_data != unsafe { nil } {
+		return *command.image_data
+	}
+	return PaintImageData{}
+}
+
+// Debug recordings ask every command for its URL without materializing the
+// larger image defaults for ordinary text, border and control commands.
+pub fn (command &PaintCommand) image_url() string {
+	if command.image_data != unsafe { nil } {
+		return command.image_data.image_url
+	}
+	return ''
 }
 
 pub fn (command &PaintCommand) box_shadow() PaintBoxShadowData {
@@ -1309,16 +1335,18 @@ fn background_layer_command(layer BackgroundImageLayer, origin LayoutRect, clip 
 			gradient_background_layer: true
 			force_dark_role: .background
 			force_dark_role_set: true
-			image_clip_x: clip.x
-			image_clip_y: clip.y
-			image_clip_width: clip.width
-			image_clip_height: clip.height
-			image_clip_radii: clip_radii
-			image_attachment: layer.attachment
-			background_layer_data: retained_background_layer_data(layer)
+			image_data: &PaintImageData{
+				image_clip_x: clip.x
+				image_clip_y: clip.y
+				image_clip_width: clip.width
+				image_clip_height: clip.height
+				image_clip_radii: clip_radii
+				image_attachment: layer.attachment
+				background_layer_data: retained_background_layer_data(layer)
+				background_blend_mode: blend_mode
+			}
 			image_scroll_offset_x: background_scroll_offset.x
 			image_scroll_offset_y: background_scroll_offset.y
-			background_blend_mode: blend_mode
 			visual_context_index: visual_context_index
 		}
 	}
@@ -1334,29 +1362,31 @@ fn background_layer_command(layer BackgroundImageLayer, origin LayoutRect, clip 
 		opacity: opacity
 		radius: radius
 		points: points
-		image_url: layer.url
+		image_data: &PaintImageData{
+			image_url: layer.url
+			background_svg_document: layer.svg_document
+			background_svg_color_scheme: layer.color_scheme
+			image_intrinsic_width: layer.intrinsic_width
+			image_intrinsic_height: layer.intrinsic_height
+			image_repeat_x: layer.repeat_x
+			image_repeat_y: layer.repeat_y
+			image_size: layer.size
+			image_position_x: layer.position_x
+			image_position_y: layer.position_y
+			image_rendering: image_rendering
+			image_clip_x: clip.x
+			image_clip_y: clip.y
+			image_clip_width: clip.width
+			image_clip_height: clip.height
+			image_clip_radii: clip_radii
+			image_attachment: layer.attachment
+			background_layer_data: retained_background_layer_data(layer)
+			background_blend_mode: blend_mode
+		}
 		force_dark_role: .background
 		force_dark_role_set: true
-		background_svg_document: layer.svg_document
-		background_svg_color_scheme: layer.color_scheme
-		image_intrinsic_width: layer.intrinsic_width
-		image_intrinsic_height: layer.intrinsic_height
-		image_repeat_x: layer.repeat_x
-		image_repeat_y: layer.repeat_y
-		image_size: layer.size
-		image_position_x: layer.position_x
-		image_position_y: layer.position_y
-		image_rendering: image_rendering
-		image_clip_x: clip.x
-		image_clip_y: clip.y
-		image_clip_width: clip.width
-		image_clip_height: clip.height
-		image_clip_radii: clip_radii
-		image_attachment: layer.attachment
-		background_layer_data: retained_background_layer_data(layer)
 		image_scroll_offset_x: background_scroll_offset.x
 		image_scroll_offset_y: background_scroll_offset.y
-		background_blend_mode: blend_mode
 		visual_context_index: visual_context_index
 	}
 }
@@ -2251,18 +2281,20 @@ fn (b &BlockBox) record_paint_commands_for_entries(entries []PaintOrderEntry, se
 				width: box.width
 				height: box.height
 				opacity: opacity
-				image_url: box.replaced_image_url
-				image_repeat_x: 'no-repeat'
-				image_repeat_y: 'no-repeat'
-				image_size: box.replaced_image_size
-				image_position_x: box.replaced_image_position_x
-				image_position_y: box.replaced_image_position_y
-				image_rendering: box.replaced_image_rendering
+				image_data: &PaintImageData{
+					image_url: box.replaced_image_url
+					image_repeat_x: 'no-repeat'
+					image_repeat_y: 'no-repeat'
+					image_size: box.replaced_image_size
+					image_position_x: box.replaced_image_position_x
+					image_position_y: box.replaced_image_position_y
+					image_rendering: box.replaced_image_rendering
+					image_clip_x: box.x
+					image_clip_y: box.y
+					image_clip_width: box.width
+					image_clip_height: box.height
+				}
 				replaced_image_bitmap: box.replaced_image_bitmap
-				image_clip_x: box.x
-				image_clip_y: box.y
-				image_clip_width: box.width
-				image_clip_height: box.height
 				image_paintable: box.replaced_image_paintable
 				force_dark_role: .background
 				force_dark_role_set: true
@@ -4125,14 +4157,15 @@ pub fn resolved_background_gradient_tiles(command PaintCommand) []painting.Rect 
 	if !command.gradient_background_layer {
 		return [painting.Rect{command.x, command.y, command.width, command.height}]
 	}
-	background_data := command.background_layer_data or { return []painting.Rect{} }
+	image_data := command.image()
+	background_data := image_data.background_layer_data or { return []painting.Rect{} }
 	resolved := painting.resolve_background_layer_without_intrinsic(painting.BackgroundLayerWithoutIntrinsicResolutionInput{
 		layer: background_data.layer
 		image_id: 'gradient'
 		background_positioning_area: painting.Rect{command.x, command.y, command.width, command.height}
 		resolution_context: background_data.resolution_context
 	}) or { return []painting.Rect{} }
-	return painting.background_tiles_limited(resolved, painting.Point{command.image_scroll_offset_x, command.image_scroll_offset_y}, painting.Rect{command.image_clip_x, command.image_clip_y, command.image_clip_width, command.image_clip_height}, 4096)
+	return painting.background_tiles_limited(resolved, painting.Point{command.image_scroll_offset_x, command.image_scroll_offset_y}, painting.Rect{image_data.image_clip_x, image_data.image_clip_y, image_data.image_clip_width, image_data.image_clip_height}, 4096)
 }
 
 fn stable_sort_box_references_by_z(items []&BlockBox) []&BlockBox {
@@ -5253,6 +5286,7 @@ pub fn (b &BlockBox) render_svg(width f64, height f64) string {
 			}
 			body << '<line x1="${fmt_px(command.x)}" y1="${fmt_px(command.y)}" x2="${fmt_px(command.x + command.width)}" y2="${fmt_px(command.y + command.height)}" fill="none" stroke="${command.color}" stroke-opacity="${fmt_px(command.opacity)}" stroke-width="${fmt_px(command.stroke_width)}"${linecap}${dasharray}/>'
 		} else if command.kind == 'fill_gradient' {
+			image_data := command.image()
 			if grad := command.gradient {
 				tiles := resolved_background_gradient_tiles(command)
 				mut stops := ''
@@ -5286,19 +5320,19 @@ pub fn (b &BlockBox) render_svg(width f64, height f64) string {
 					rounded_polygon_points << '${fmt_px(command.points[index])},${fmt_px(command.points[index + 1])}'
 				}
 				clip_shape := if command.gradient_background_layer
-					&& !box_radii_are_zero(command.image_clip_radii) {
-					'<path d="${rounded_rect_svg_path(command.image_clip_x, command.image_clip_y, command.image_clip_width, command.image_clip_height, command.image_clip_radii)}"/>'
+					&& !box_radii_are_zero(image_data.image_clip_radii) {
+					'<path d="${rounded_rect_svg_path(image_data.image_clip_x, image_data.image_clip_y, image_data.image_clip_width, image_data.image_clip_height, image_data.image_clip_radii)}"/>'
 				} else if command.gradient_background_layer {
-					'<rect x="${fmt_px(command.image_clip_x)}" y="${fmt_px(command.image_clip_y)}" width="${fmt_px(command.image_clip_width)}" height="${fmt_px(command.image_clip_height)}"/>'
+					'<rect x="${fmt_px(image_data.image_clip_x)}" y="${fmt_px(image_data.image_clip_y)}" width="${fmt_px(image_data.image_clip_width)}" height="${fmt_px(image_data.image_clip_height)}"/>'
 				} else if rounded_polygon_points.len > 0 {
 					'<polygon points="${rounded_polygon_points.join(' ')}"/>'
 				} else {
 					'<rect x="${fmt_px(command.x)}" y="${fmt_px(command.y)}" width="${fmt_px(command.width)}" height="${fmt_px(command.height)}"${corner}/>'
 				}
-				blend := if command.background_blend_mode == .normal {
+				blend := if image_data.background_blend_mode == .normal {
 					''
 				} else {
-					' style="mix-blend-mode:${background_blend_mode_css(command.background_blend_mode)}"'
+					' style="mix-blend-mode:${background_blend_mode_css(image_data.background_blend_mode)}"'
 				}
 				if grad.kind == 'conic' {
 					clip_id := 'gradient-clip${defs.len}'
@@ -5351,26 +5385,27 @@ pub fn (b &BlockBox) render_svg(width f64, height f64) string {
 				}
 			}
 		} else if command.kind in ['draw_background_image', 'draw_replaced_image'] {
+			image_data := command.image()
 			clip_id := 'imageclip${defs.len}'
-			clip_shape := if !box_radii_are_zero(command.image_clip_radii) {
-				'<path d="${rounded_rect_svg_path(command.image_clip_x, command.image_clip_y, command.image_clip_width, command.image_clip_height, command.image_clip_radii)}"/>'
+			clip_shape := if !box_radii_are_zero(image_data.image_clip_radii) {
+				'<path d="${rounded_rect_svg_path(image_data.image_clip_x, image_data.image_clip_y, image_data.image_clip_width, image_data.image_clip_height, image_data.image_clip_radii)}"/>'
 			} else {
-				'<rect x="${fmt_px(command.image_clip_x)}" y="${fmt_px(command.image_clip_y)}" width="${fmt_px(command.image_clip_width)}" height="${fmt_px(command.image_clip_height)}"/>'
+				'<rect x="${fmt_px(image_data.image_clip_x)}" y="${fmt_px(image_data.image_clip_y)}" width="${fmt_px(image_data.image_clip_width)}" height="${fmt_px(image_data.image_clip_height)}"/>'
 			}
 			defs << '<clipPath id="${clip_id}">${clip_shape}</clipPath>'
-			aspect := if command.image_size.trim_space().to_lower() == 'cover' {
+			aspect := if image_data.image_size.trim_space().to_lower() == 'cover' {
 				'xMidYMid slice'
-			} else if command.image_size.trim_space().to_lower() == 'contain' {
+			} else if image_data.image_size.trim_space().to_lower() == 'contain' {
 				'xMidYMid meet'
 			} else {
 				'xMinYMin meet'
 			}
-			blend := if command.background_blend_mode == .normal {
+			blend := if image_data.background_blend_mode == .normal {
 				''
 			} else {
-				' style="mix-blend-mode:${background_blend_mode_css(command.background_blend_mode)}"'
+				' style="mix-blend-mode:${background_blend_mode_css(image_data.background_blend_mode)}"'
 			}
-			body << '<image href="${escape_xml(command.image_url)}" x="${fmt_px(command.x)}" y="${fmt_px(command.y)}" width="${fmt_px(command.width)}" height="${fmt_px(command.height)}" preserveAspectRatio="${aspect}" clip-path="url(#${clip_id})" opacity="${fmt_px(command.opacity)}"${blend} data-background-repeat="${escape_xml(command.image_repeat_x)} ${escape_xml(command.image_repeat_y)}" data-background-position="${escape_xml(command.image_position_x)} ${escape_xml(command.image_position_y)}"/>'
+			body << '<image href="${escape_xml(image_data.image_url)}" x="${fmt_px(command.x)}" y="${fmt_px(command.y)}" width="${fmt_px(command.width)}" height="${fmt_px(command.height)}" preserveAspectRatio="${aspect}" clip-path="url(#${clip_id})" opacity="${fmt_px(command.opacity)}"${blend} data-background-repeat="${escape_xml(image_data.image_repeat_x)} ${escape_xml(image_data.image_repeat_y)}" data-background-position="${escape_xml(image_data.image_position_x)} ${escape_xml(image_data.image_position_y)}"/>'
 		} else if command.kind == 'draw_text' {
 			half_leading := (command.height - command.font_size) / 2.0
 			baseline := command.y + half_leading + command.font_size * 0.8

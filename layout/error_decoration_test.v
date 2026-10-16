@@ -66,20 +66,20 @@ fn test_typed_document_paint_preserves_computed_background_image_layers() {
 	all_commands := box.paint_commands()
 	commands := all_commands.filter(it.kind == 'draw_background_image')
 	assert commands.len == 1
-	assert commands[0].image_url.ends_with('sprite.png')
-	assert commands[0].image_repeat_x == 'round'
-	assert commands[0].image_repeat_y == 'space'
-	assert commands[0].image_size == '30px auto'
-	assert commands[0].image_position_x == '25%'
-	assert commands[0].image_position_y == '50%'
-	background_data := commands[0].background_layer_data or {
+	assert commands[0].image().image_url.ends_with('sprite.png')
+	assert commands[0].image().image_repeat_x == 'round'
+	assert commands[0].image().image_repeat_y == 'space'
+	assert commands[0].image().image_size == '30px auto'
+	assert commands[0].image().image_position_x == '25%'
+	assert commands[0].image().image_position_y == '50%'
+	background_data := commands[0].image().background_layer_data or {
 		panic('typed background layer was flattened to renderer strings')
 	}
 	retained_layer := background_data.layer
 	assert retained_layer.repeat_x == .round
 	assert retained_layer.repeat_y == .space
 	assert retained_layer.blend_mode == .multiply
-	assert commands[0].background_blend_mode == .multiply
+	assert commands[0].image().background_blend_mode == .multiply
 	assert !retained_layer.size_x.is_auto()
 	assert retained_layer.size_y.is_auto()
 	assert retained_layer.position_x.to_px(background_data.resolution_context, css.CSSPixels.nearest_value_for(100)).to_double() == 25
@@ -146,10 +146,10 @@ fn test_typed_document_paints_replaced_image_content() {
 	box := layout_document_typed_in_viewport(document, 800, 600)
 	commands := box.paint_commands().filter(it.kind == 'draw_replaced_image')
 	assert commands.len == 1
-	assert commands[0].image_url.starts_with('data:image/png')
-	assert commands[0].image_size == 'contain'
-	assert commands[0].image_position_x == '25%'
-	assert commands[0].image_position_y == '75%'
+	assert commands[0].image().image_url.starts_with('data:image/png')
+	assert commands[0].image().image_size == 'contain'
+	assert commands[0].image().image_position_x == '25%'
+	assert commands[0].image().image_position_y == '75%'
 	paintable := commands[0].image_paintable or { panic('missing retained ImagePaintable') }
 	assert paintable.object_fit == .contain
 	assert paintable.object_position.offset_x.to_px(paintable.resolution_context, css.CSSPixels.new(100)).to_double() == 25
@@ -198,9 +198,9 @@ fn test_typed_document_paints_inline_backgrounds_and_native_checkboxes() {
 	box := layout_document_typed_in_viewport(document, 800, 600)
 	images := box.paint_commands().filter(it.kind == 'draw_background_image')
 	assert images.len == 1
-	assert images[0].image_url.ends_with('sprite.png')
-	assert images[0].image_position_x == '-3px'
-	assert images[0].image_position_y == '-4px'
+	assert images[0].image().image_url.ends_with('sprite.png')
+	assert images[0].image().image_position_x == '-3px'
+	assert images[0].image().image_position_y == '-4px'
 	assert box.paint_commands().any(it.kind == 'fill_rounded_rect'
 		&& it.color == 'rgb(255 255 255)' && it.width > 0 && it.height > 0)
 }

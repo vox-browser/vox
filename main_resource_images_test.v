@@ -20,7 +20,7 @@ fn test_completed_background_svg_refreshes_paint_without_rebuilding_geometry() {
 	before_result := layout.document_layout_result(document) or { panic('missing layout') }
 	before_root := before_result.root
 	before_state := before_result.state
-	assert !app.paint_commands.any(it.background_svg_document != none)
+	assert !app.paint_commands.any(it.image().background_svg_document != none)
 	app.background_resource_results <- PreloadedResource{
 		url:  address
 		body: '<svg xmlns="http://www.w3.org/2000/svg" width="30" height="20"><rect width="30" height="20" fill="red"/></svg>'
@@ -32,8 +32,8 @@ fn test_completed_background_svg_refreshes_paint_without_rebuilding_geometry() {
 	retained := layout.document_layout_result(document) or { panic('missing retained layout') }
 	assert voidptr(retained.root) == voidptr(before_root)
 	assert voidptr(retained.state) == voidptr(before_state)
-	assert app.paint_commands.any(it.background_svg_document != none)
-	first_svg := app.paint_commands.filter(it.background_svg_document != none)[0].background_svg_document or {
+	assert app.paint_commands.any(it.image().background_svg_document != none)
+	first_svg := app.paint_commands.filter(it.image().background_svg_document != none)[0].image().background_svg_document or {
 		panic('missing first SVG document')
 	}
 
@@ -46,7 +46,7 @@ fn test_completed_background_svg_refreshes_paint_without_rebuilding_geometry() {
 	}
 	app.poll_background_resources()
 	assert app.resource_cache[address].body.len == first_body.len
-	second_svg := app.paint_commands.filter(it.background_svg_document != none)[0].background_svg_document or {
+	second_svg := app.paint_commands.filter(it.image().background_svg_document != none)[0].image().background_svg_document or {
 		panic('missing replacement SVG document')
 	}
 
@@ -59,7 +59,7 @@ fn test_completed_background_svg_refreshes_paint_without_rebuilding_geometry() {
 		error: 'replacement failed'
 	}
 	app.poll_background_resources()
-	assert !app.paint_commands.any(it.background_svg_document != none)
+	assert !app.paint_commands.any(it.image().background_svg_document != none)
 	assert second_rect.as_node().first_child()?.as_element()?.get_attribute_value('fill') == 'tan'
 	after := document.layout_root
 	app.background_resource_results <- PreloadedResource{
@@ -92,7 +92,7 @@ fn test_svg_completion_keeps_body_and_inline_background_geometry() {
 	after := layout.document_layout_result(document) or { panic('missing retained layout') }
 	assert voidptr(after.root) == voidptr(root)
 	assert voidptr(after.state) == voidptr(state)
-	assert app.paint_commands.any(it.background_svg_document != none)
+	assert app.paint_commands.any(it.image().background_svg_document != none)
 	assert document.cached_display_list() != none
 }
 
@@ -115,7 +115,7 @@ fn test_svg_completion_preserves_intrinsic_image_and_marker_layout_invalidation(
 		app.background_resource_results <- PreloadedResource{url: address, body: '<svg xmlns="http://www.w3.org/2000/svg" width="48" height="32"><rect width="48" height="32" fill="red"/></svg>'}
 		app.poll_background_resources()
 		assert voidptr(document.layout_root) != voidptr(before), markup
-		assert app.paint_commands.any(it.background_svg_document != none), markup
+		assert app.paint_commands.any(it.image().background_svg_document != none), markup
 	}
 	mut document := html.parse_document_with_url('<!doctype html><base href="https://svg-cache.example.test/"><img src="globe.png" srcset="globe@2x.png 2x"><div style="background:url(shared.svg?version=2)"></div>', dom.URL{value:'https://elsewhere.example.test/page.html'})
 	mut app := BrowserApp{document: document}

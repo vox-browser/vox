@@ -81,7 +81,7 @@ fn test_hidden_initial_image_fetch_starts_without_waiting_and_is_available_after
 	assert app.background_resource_pending.len == 0
 	assert app.nonrendered_image_preloads.len == 0
 	assert voidptr(document.layout_root) != voidptr(before)
-	assert app.paint_commands.any(it.kind == 'draw_replaced_image' && it.image_url == resource.url
+	assert app.paint_commands.any(it.kind == 'draw_replaced_image' && it.image().image_url == resource.url
 		&& it.width == 1 && it.height == 1)
 	assert app.resource_cache[resource.url].body == resource.body
 	image := document.get_element_by_id('badge') or { panic('missing image') }

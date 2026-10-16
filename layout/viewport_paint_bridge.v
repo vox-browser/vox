@@ -2479,8 +2479,8 @@ fn append_display_list_command_dump(command PaintCommand, mut builder strings.Bu
 	if command.text != '' {
 		builder.write_string(' text=${command.text}')
 	}
-	if command.image_url != '' {
-		builder.write_string(' image=${command.image_url}')
+	if command.image_url() != '' {
+		builder.write_string(' image=${command.image_url()}')
 	}
 }
 

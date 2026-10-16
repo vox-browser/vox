@@ -49,9 +49,9 @@ fn test_remote_svg_background_retains_typed_document_and_intrinsic_geometry() {
 	root := layout_document_typed_in_viewport(document, 80, 60)
 	backgrounds := root.paint_commands().filter(it.kind == 'draw_background_image')
 	assert backgrounds.len == 1
-	assert backgrounds[0].background_svg_document != none
-	assert backgrounds[0].image_intrinsic_width == 32
-	assert backgrounds[0].image_intrinsic_height == 16
+	assert backgrounds[0].image().background_svg_document != none
+	assert backgrounds[0].image().image_intrinsic_width == 32
+	assert backgrounds[0].image().image_intrinsic_height == 16
 }
 
 fn test_remote_svg_rejects_declared_wrong_type_failed_responses_and_non_svg_documents() {
