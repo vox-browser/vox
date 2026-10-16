@@ -3471,6 +3471,7 @@ pub mut:
 	variations FontVariationSettings
 	features   ShapeFeatures
 	is_invisible bool
+	text_shaping_policy platform.TextShapingPolicy
 mut:
 	metrics_font_ &platform.Font = unsafe { nil }
 }
@@ -3495,6 +3496,7 @@ pub fn (font &PlatformFont) font_for_rendering() &platform.Font {
 		weight: int(font.variations.weight)
 		source_path: font.typeface.source_path.clone()
 		is_invisible: font.is_invisible
+		text_shaping_policy: font.text_shaping_policy
 	}
 	mut mutable_font := unsafe { &PlatformFont(font) }
 	mutable_font.metrics_font_ = native_font
@@ -3507,6 +3509,7 @@ fn (font &PlatformFont) matches_native_font(cached &platform.Font) bool {
 		&& cached.weight == int(font.variations.weight)
 		&& cached.source_path == font.typeface.source_path
 		&& cached.is_invisible == font.is_invisible
+		&& cached.text_shaping_policy == font.text_shaping_policy
 }
 
 fn owned_platform_typeface(typeface &PlatformTypeface) &PlatformTypeface {
@@ -3536,6 +3539,7 @@ fn owned_platform_font(font &PlatformFont) PlatformFont {
 		variations:   font.variations.owned_clone()
 		features:     owned_shape_features(font.features)
 		is_invisible: font.is_invisible
+		text_shaping_policy: font.text_shaping_policy
 		// An input mutation replaces the clone's cache on its next lookup; the
 		// immutable old handle remains valid for previously retained fragments.
 		metrics_font_: if font.matches_native_font(font.metrics_font_) { font.metrics_font_ } else { unsafe { &platform.Font(nil) } }
@@ -3718,7 +3722,7 @@ fn (mut list FontCascadeList) resolve_pending_faces(code_point u32, through_font
 }
 
 fn platform_font_cache_key(font &PlatformFont) string {
-	return '${font.typeface.family_name}|${font.typeface.source_path}|${font.typeface.weight_}|${font.typeface.width_}|${font.typeface.slope_}|${font.point_size}|${font.variations.weight}|${font.variations.width}|${font.variations.opsz}'
+	return '${font.typeface.family_name}|${font.typeface.source_path}|${font.typeface.weight_}|${font.typeface.width_}|${font.typeface.slope_}|${font.point_size}|${font.variations.weight}|${font.variations.width}|${font.variations.opsz}|${font.text_shaping_policy}'
 }
 
 fn (list &FontCascadeList) font_with_visibility(font &PlatformFont, invisible bool) &PlatformFont {
@@ -3736,6 +3740,7 @@ fn (list &FontCascadeList) font_with_visibility(font &PlatformFont, invisible bo
 		variations:   font.variations.owned_clone()
 		features:     owned_shape_features(font.features)
 		is_invisible: true
+		text_shaping_policy: font.text_shaping_policy
 	}
 	mut storage := mutable_list.ensure_invisible_font_storage()
 	storage.values[key] = variant
@@ -4458,11 +4463,13 @@ pub fn (mut computer FontComputer) compute_font_for_style_values(font_family []s
 		font_variation_settings: font_variation_settings
 		font_feature_data: font_feature_data
 	}
-	key := cache_key.id()
+	policy := computer.text_shaping_policy()
+	key := cache_key.id() + if policy == .libweb { '' } else { '|shaping:${policy}' }
 	if cached := computer.computed_font_cache[key] {
 		return cached
 	}
-	value := computer.compute_font_for_style_values_impl(font_family, font_size, font_slope, font_weight, font_width, font_optical_sizing, font_variation_settings, font_feature_data)
+	mut value := computer.compute_font_for_style_values_impl(font_family, font_size, font_slope, font_weight, font_width, font_optical_sizing, font_variation_settings, font_feature_data)
+	value.set_text_shaping_policy(policy)
 	computer.computed_font_cache[key] = value
 	return value
 }

@@ -244,9 +244,10 @@ fn test_shape_text_retains_but_does_not_paint_default_ignorables() {
 }
 
 fn test_harfbuzz_font_scale_clamps_before_integer_conversion() {
-	assert scale_for_harfbuzz(f32(100_000_000)) == 2147483647
-	assert scale_for_harfbuzz(f32(-100_000_000)) == -2147483648
-	assert scale_for_harfbuzz(f32(16)) == 1024
+	assert scale_for_harfbuzz(f32(100_000_000), 64) == 2147483647
+	assert scale_for_harfbuzz(f32(-100_000_000), 64) == -2147483648
+	assert scale_for_harfbuzz(f32(16), 64) == 1024
+	assert scale_for_harfbuzz(f32(16), 65536) == 1048576
 	font := &Font{
 		family: 'sans-serif'
 		point_size: 100_000_000

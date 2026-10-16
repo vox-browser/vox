@@ -88,7 +88,6 @@ fn C.u_hasBinaryProperty(code_point i32, property int) int
 
 const harfbuzz_direction_ltr = 4
 const harfbuzz_direction_rtl = 5
-const harfbuzz_text_shaping_resolution = f32(64)
 const icu_default_ignorable_code_point_property = 5
 
 __global (
@@ -334,8 +333,8 @@ fn resolve_font_path_for_family(family string, weight int) ?string {
 	return regular_path
 }
 
-fn scaled_harfbuzz_font(face voidptr, point_size f32) ?voidptr {
-	scale := scale_for_harfbuzz(point_size)
+fn scaled_harfbuzz_font(face voidptr, point_size f32, resolution f32) ?voidptr {
+	scale := scale_for_harfbuzz(point_size, resolution)
 	for cached in harfbuzz_scaled_fonts {
 		if cached.face == face && cached.scale == scale && cached.point_size == point_size {
 			return cached.font
@@ -357,8 +356,8 @@ fn scaled_harfbuzz_font(face voidptr, point_size f32) ?voidptr {
 	return font
 }
 
-fn scale_for_harfbuzz(point_size f32) int {
-	scaled_point_size := f64(point_size) * f64(harfbuzz_text_shaping_resolution)
+fn scale_for_harfbuzz(point_size f32, resolution f32) int {
+	scaled_point_size := f64(point_size) * f64(resolution)
 	if math.is_nan(scaled_point_size) {
 		return 0
 	}
@@ -401,7 +400,7 @@ fn document_harfbuzz_face(font &Font) ?voidptr {
 // for BMP characters stored only in a format-12 cmap.
 fn harfbuzz_font_contains_glyph(font &Font, code_point u32) ?bool {
 	face := document_harfbuzz_face(font)?
-	hb_font := scaled_harfbuzz_font(face, font.point_size)?
+	hb_font := scaled_harfbuzz_font(face, font.point_size, font.shaping_resolution())?
 	mut glyph := u32(0)
 	return C.hb_font_get_nominal_glyph(hb_font, code_point, &glyph) != 0 && glyph != 0
 }
@@ -510,7 +509,8 @@ fn shape_text_with_harfbuzz(initial_x f32, letter_spacing f32, word_spacing f32,
 	} else {
 		face = document_harfbuzz_face(font)?
 	}
-	hb_font := scaled_harfbuzz_font(face, font.point_size)?
+	resolution := font.shaping_resolution()
+	hb_font := scaled_harfbuzz_font(face, font.point_size, resolution)?
 	buffer := C.hb_buffer_create()
 	if buffer == unsafe { nil } {
 		return none
@@ -557,7 +557,7 @@ fn shape_text_with_harfbuzz(initial_x f32, letter_spacing f32, word_spacing f32,
 		should_paint := !font.is_invisible && !is_default_ignorable
 		mut advance := f32(0)
 		if !is_default_ignorable {
-			advance = f32(position.x_advance) / harfbuzz_text_shaping_resolution + letter_spacing
+			advance = f32(position.x_advance) / resolution + letter_spacing
 			if is_word_separator(code_point) {
 				advance += word_spacing
 			}
@@ -574,8 +574,8 @@ fn shape_text_with_harfbuzz(initial_x f32, letter_spacing f32, word_spacing f32,
 			code_point: code_point
 			glyph_index: int(info.codepoint)
 			position: GlyphPosition{
-				x: point_x + f32(position.x_offset) / harfbuzz_text_shaping_resolution
-				y: f32(position.y_offset) / harfbuzz_text_shaping_resolution
+				x: point_x + f32(position.x_offset) / resolution
+				y: f32(position.y_offset) / resolution
 			}
 			advance: advance
 			length_in_code_units: length_in_code_units

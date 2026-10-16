@@ -16,7 +16,7 @@ fn cold_legacy_hb(initial_x f32, letter_spacing f32, word_spacing f32, text stri
 	} else {
 		face = document_harfbuzz_face(font)?
 	}
-	hb_font := scaled_harfbuzz_font(face, font.point_size)?
+	hb_font := scaled_harfbuzz_font(face, font.point_size, font.shaping_resolution())?
 	buffer := C.hb_buffer_create()
 	if buffer == unsafe { nil } {
 		return none
@@ -63,7 +63,7 @@ fn cold_legacy_hb(initial_x f32, letter_spacing f32, word_spacing f32, text stri
 		should_paint := !font.is_invisible && !is_default_ignorable
 		mut advance := f32(0)
 		if !is_default_ignorable {
-			advance = f32(position.x_advance) / harfbuzz_text_shaping_resolution + letter_spacing
+			advance = f32(position.x_advance) / font.shaping_resolution() + letter_spacing
 			if is_word_separator(code_point) {
 				advance += word_spacing
 			}
@@ -80,8 +80,8 @@ fn cold_legacy_hb(initial_x f32, letter_spacing f32, word_spacing f32, text stri
 			code_point:           code_point
 			glyph_index:          int(info.codepoint)
 			position:             GlyphPosition{
-				x: point_x + f32(position.x_offset) / harfbuzz_text_shaping_resolution
-				y: f32(position.y_offset) / harfbuzz_text_shaping_resolution
+				x: point_x + f32(position.x_offset) / font.shaping_resolution()
+				y: f32(position.y_offset) / font.shaping_resolution()
 			}
 			advance:              advance
 			length_in_code_units: length_in_code_units

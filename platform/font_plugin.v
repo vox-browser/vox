@@ -59,6 +59,7 @@ pub:
 	// through the family cascade.
 	source_path string
 	is_invisible bool
+	text_shaping_policy TextShapingPolicy
 mut:
 	resolved_path_ string
 	decoded_face_ &ttf.TTF_File = unsafe { nil }
@@ -121,7 +122,8 @@ pub:
 // Gfx::FontHandle equality does upstream.
 pub fn (font &Font) has_same_identity(other &Font) bool {
 	if font.point_size != other.point_size || font.weight != other.weight
-		|| font.is_invisible != other.is_invisible {
+		|| font.is_invisible != other.is_invisible
+		|| font.text_shaping_policy != other.text_shaping_policy {
 		return false
 	}
 	if font_path := font.font_path() {
