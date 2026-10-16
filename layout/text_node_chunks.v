@@ -472,7 +472,8 @@ fn text_grapheme_boundaries(text string) []int {
 			&& !(code_point >= 0x400 && code_point <= 0x482)
 			&& !(code_point >= 0x48a && code_point <= 0x52f)
 			&& !(code_point >= 0x2000 && code_point <= 0x200b)
-			&& !(code_point >= 0x2010 && code_point <= 0x2029) {
+			&& !(code_point >= 0x2010 && code_point <= 0x2029)
+			&& code_point != 0x2060 {
 			has_only_simple_graphemes = false
 			break
 		}
