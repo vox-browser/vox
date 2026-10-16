@@ -198,6 +198,7 @@ Counts are whole launch through the capture boundary described above.
 | Vox candidate v12 | 83,818,061,906 | Passed |
 | Vox candidate v13 | 69,618,119,569 | Failed: extra body scrollbar |
 | Vox candidate v14 | 78,965,962,830 | Passed |
+| Vox candidate v15 | 48,894,785,438 | Passed |
 
 Candidate v6 uses executable SHA256
 `cc105727ad0e7d08d12c94336ca6cd4d26e2c1318416dfddace23c626d1338c2`.
@@ -319,11 +320,35 @@ comparisons are exact; three retain the same existing fuzzy bounds. All 34
 native captures are fresh, and all 19 outputs match both v6 and v12 exactly.
 The authenticated summary and reset are retained under
 `Build/pikabu-instructions/broad-v14/`.
-The broad-verification baseline is now 78,965,962,830 instructions, with zero
+Candidate v15 installs CSS already primed by uBO before procedural selectors
+flush styles, avoiding a second full-page style pass. It also replays adblock
+mutations through keyed lookups, borrows counter-style descriptors and internal
+normal font settings, reuses current unboxed styles for CSSOM reads, and reuses
+bounded measurement chunks within one document layout. Its executable SHA256 is
+`b77b4527d08e743a18b98290d629f25f931fe95181e2511da9f55eec4f02b196`,
+built from frozen revision `aabcd7700989bf6ee269830041fca2a81df10231`.
+The single checkpoint saves 30,071,177,392 instructions (38.08%) against v14.
+All content, font, fresh font-file and exact native-pixel checks pass without
+changing the archive, filters, observer, completion gate or production GC.
+The frozen source preserves the independently committed video-poster feature;
+this combined measurement does not isolate each change's contribution.
+
+The archived-page style diagnostic records 3,903 recomputations instead of
+7,806, with byte-identical final adblock CSS. That instrumented diagnostic and
+the separate sampling runs receive no additional performance credit.
+
+Candidate v15 passed the same 135 cases per GC mode, all 100 exact AST fixtures,
+production startup and 19 screenshot comparisons (16 exact, three within the
+unchanged fuzzy bounds). All 34 native captures are fresh; all 19 outputs match
+v6 and v14 exactly. The interrupted final native no-GC check was preserved and
+resumed; completed checks and captures were retained. The authenticated summary,
+actual-zero finalizer receipt and reset are under
+`Build/pikabu-instructions/broad-v15/`.
+The broad-verification baseline is now 48,894,785,438 instructions, with zero
 additional measured savings credited. Diagnostic profiles, isolated allocation
 probes and failed content or pixel checks do not advance that baseline.
 
-Vox remains above Brave's instruction count. A target claim still requires
+Vox remains 4.72% above the single Brave reference. A target claim still requires
 at least five alternating fresh Vox/Brave runs with all gates passing, preserved
 rows and unchanged input/runtime fingerprints.
 
