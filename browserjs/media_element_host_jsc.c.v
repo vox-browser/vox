@@ -353,6 +353,11 @@ pub fn (mut host MediaElementHost) install(mut runtime Runtime) ! {
 		host.video_lists.clear()
 		host.video_tracks.clear()
 		host.video_owner_wrappers.clear()
+		host.text_track_prototype = unsafe { nil }
+		host.text_list_wrap = unsafe { nil }
+		host.text_lists.clear()
+		host.text_tracks.clear()
+		host.text_owner_wrappers.clear()
 		host.bound_elements.clear()
 		host.records.clear()
 		host.elements.clear()
@@ -1044,6 +1049,7 @@ fn (mut host MediaElementHost) install_media_tracks() ! {
 	host.audio_track_prototype = runtime.retain_javascript_value(runtime.binding_property(installed, 'track')!)!
 	host.audio_list_wrap = runtime.retain_javascript_value(runtime.binding_property(installed, 'wrapList')!)!
 	host.install_video_tracks()!
+	host.install_text_tracks()!
 	runtime.install_event_target_wrapper_provider(EventTargetWrapperProvider{
 		owner: handle
 		create: fn [handle] (target &dom.EventTarget) !voidptr {
@@ -1054,6 +1060,12 @@ fn (mut host MediaElementHost) install_media_tracks() ! {
 				if voidptr(target) == voidptr(list.event_target()) { return host.wrap_audio_track_list(list) }
 				video_list := media.video_tracks()
 				if voidptr(target) == voidptr(&video_list.EventTarget) { return host.wrap_video_track_list(video_list) }
+				text_list := media.text_tracks()
+				if voidptr(target) == voidptr(&text_list.EventTarget) { return host.wrap_text_track_list(text_list) }
+				for index in 0 .. text_list.length() {
+					track := text_list.item(index) or { continue }
+					if voidptr(target) == voidptr(&track.EventTarget) { return host.wrap_text_track(track) }
+				}
 			}
 			return unsafe { nil }
 		}
@@ -1138,21 +1150,22 @@ fn (mut host MediaElementHost) audio_track_list_index(args []voidptr) !voidptr {
 	return host.wrap_audio_track(track)
 }
 
-const media_tracks_native_factory = r'(function(functions,indexed,media,video){
+const media_tracks_native_factory = r'(function(functions,indexed,media,video,text){
  "use strict";
  const define=Object.defineProperty,create=Object.create,P=Proxy,T=TypeError,ET=EventTarget;
  const get=Reflect.get,set=Reflect.set,has=Reflect.has,getOwn=Reflect.getOwnPropertyDescriptor,defineOwn=Reflect.defineProperty,remove=Reflect.deleteProperty,ownKeys=Reflect.ownKeys;
- const track=create(Object.prototype),list=create(ET.prototype);
- define(media,video?"videoTracks":"audioTracks",{get:functions[0],enumerable:true,configurable:true});
+ const track=create(text?ET.prototype:Object.prototype),list=create(ET.prototype);
+ define(media,text?"textTracks":video?"videoTracks":"audioTracks",{get:functions[0],enumerable:true,configurable:true});
  define(list,"length",{get:functions[1],enumerable:true,configurable:true});
  define(list,"getTrackById",{value:functions[2],writable:true,enumerable:true,configurable:true});
  if(video)define(list,"selectedIndex",{get:functions[15],enumerable:true,configurable:true});
- const state=video?"selected":"enabled";
+ const state=text?"mode":video?"selected":"enabled";
+ if(text){define(media,"addTextTrack",{value:functions[17],writable:true,enumerable:true,configurable:true});define(track,"oncuechange",{get:functions[15],set:functions[16],enumerable:true,configurable:true});}
  for(const [index,name] of ["id","kind","label","language",state].entries())define(track,name,{get:functions[3+index],set:name===state?functions[8]:undefined,enumerable:true,configurable:true});
  for(const [index,name] of ["onchange","onaddtrack","onremovetrack"].entries())define(list,name,{get:functions[9+index*2],set:functions[10+index*2],enumerable:true,configurable:true});
- for(const [name,prototype,target] of [[video?"VideoTrack":"AudioTrack",track,video?function VideoTrack(){}:function AudioTrack(){}],[video?"VideoTrackList":"AudioTrackList",list,video?function VideoTrackList(){}:function AudioTrackList(){}]]){
+ for(const [name,prototype,target] of [[text?"TextTrack":video?"VideoTrack":"AudioTrack",track,text?function TextTrack(){}:video?function VideoTrack(){}:function AudioTrack(){}],[text?"TextTrackList":video?"VideoTrackList":"AudioTrackList",list,text?function TextTrackList(){}:video?function VideoTrackList(){}:function AudioTrackList(){}]]){
   const illegal=()=>{throw new T("Illegal constructor")},constructor=new P(target,{apply:illegal,construct:illegal});
-  if(prototype===list)Object.setPrototypeOf(constructor,ET);
+  if(text||prototype===list)Object.setPrototypeOf(constructor,ET);
   define(constructor,"prototype",{value:prototype,writable:false});define(prototype,"constructor",{value:constructor,writable:true,configurable:true});
   define(prototype,Symbol.toStringTag,{value:name,configurable:true});define(globalThis,name,{value:constructor,writable:true,configurable:true});
  }
@@ -1288,4 +1301,155 @@ fn (mut host MediaElementHost) video_track_list_index(args []voidptr) !voidptr {
 	if exception != unsafe { nil } { return host.runtime.actual_javascript_exception(exception) }
 	track := list.item(index) or { return C.JSValueMakeUndefined(host.runtime.context) }
 	return host.wrap_video_track(track)
+}
+
+// Non-FIXME TextTrack IDL and the existing HTMLMediaElement.add_text_track owner.
+fn (mut host MediaElementHost) install_text_tracks() ! {
+	mut runtime := unsafe { &Runtime(host.runtime) }
+	handle := voidptr(&host)
+	mut functions := []voidptr{}
+	for name in ['textTracks', 'length', 'getTrackById', 'id', 'kind', 'label', 'language', 'mode', 'setMode', 'onchange', 'setOnchange', 'onaddtrack', 'setOnaddtrack', 'onremovetrack', 'setOnremovetrack', 'oncuechange', 'setOncuechange', 'addTextTrack'] {
+		function_name := if name == 'setMode' { 'set mode' } else if name.starts_with('setOn') {
+			'set ${name[3..].to_lower()}'
+		} else if name in ['getTrackById', 'addTextTrack'] { name } else { 'get ${name}' }
+		arity := if name in ['getTrackById', 'addTextTrack'] || name.starts_with('set') { 1 } else { 0 }
+		functions << runtime.make_native_value_host_function(function_name, arity, fn [handle, name] (receiver voidptr, args []voidptr) !voidptr {
+			mut host := unsafe { &MediaElementHost(handle) }
+			return host.text_track_operation(name, receiver, args) or {
+				return host.runtime.actual_javascript_exception(host.runtime.binding_exception_value(err))
+			}
+		})!
+	}
+	indexed := runtime.make_value_host_function(fn [handle] (_ voidptr, args []voidptr) !voidptr {
+		mut host := unsafe { &MediaElementHost(handle) }
+		return host.text_track_list_index(args) or {
+			return host.runtime.actual_javascript_exception(host.runtime.binding_exception_value(err))
+		}
+	})!
+	mut exception := unsafe { nil }
+	array := C.JSObjectMakeArray(runtime.context, usize(functions.len), functions.data, &exception)
+	if exception != unsafe { nil } { return runtime.actual_javascript_exception(exception) }
+	runtime.retain_javascript_value(array)!
+	defer { runtime.release_javascript_value(array) }
+	factory := runtime.evaluate_host_value(media_tracks_native_factory)!
+	defer { runtime.release_javascript_value(factory) }
+	installed := runtime.retain_javascript_value(runtime.call_javascript_function(factory,
+		C.JSValueMakeUndefined(runtime.context), [array, indexed, host.prototype, C.JSValueMakeBoolean(runtime.context, false), C.JSValueMakeBoolean(runtime.context, true)])!)!
+	defer { runtime.release_javascript_value(installed) }
+	host.text_track_prototype = runtime.retain_javascript_value(runtime.binding_property(installed, 'track')!)!
+	host.text_list_wrap = runtime.retain_javascript_value(runtime.binding_property(installed, 'wrapList')!)!
+}
+
+fn (mut host MediaElementHost) wrap_text_track_list(list &html.TextTrackList) !voidptr {
+	if host.closed { return error('TypeError: Media element binding is closed') }
+	if wrapper := host.text_owner_wrappers[voidptr(list)] { return wrapper }
+	wrapper := host.runtime.call_javascript_function(host.text_list_wrap,
+		C.JSValueMakeUndefined(host.runtime.context), [])!
+	host.runtime.bind_event_target(wrapper, &list.EventTarget)!
+	host.text_lists[wrapper] = list
+	host.text_owner_wrappers[voidptr(list)] = wrapper
+	return wrapper
+}
+
+fn (mut host MediaElementHost) wrap_text_track(track &html.TextTrack) !voidptr {
+	if host.closed { return error('TypeError: Media element binding is closed') }
+	if wrapper := host.text_owner_wrappers[voidptr(track)] { return wrapper }
+	wrapper := C.JSObjectMake(host.runtime.context, unsafe { nil }, unsafe { nil })
+	C.JSObjectSetPrototype(host.runtime.context, wrapper, host.text_track_prototype)
+	host.runtime.bind_event_target(wrapper, &track.EventTarget)!
+	host.text_tracks[wrapper] = track
+	host.text_owner_wrappers[voidptr(track)] = wrapper
+	return wrapper
+}
+
+fn (mut host MediaElementHost) text_track_operation(name string, receiver voidptr, args []voidptr) !voidptr {
+	if host.closed { return error('TypeError: Media element binding is closed') }
+	context := host.runtime.context
+	if name in ['textTracks', 'addTextTrack'] {
+		media := host.media_element_for_binding(receiver)!
+		if name == 'addTextTrack' { return host.add_text_track(media, args) }
+		if replay := host.replay { replay(host.runtime)! }
+		return host.wrap_text_track_list(media.text_tracks())
+	}
+	if name in ['length', 'getTrackById', 'onchange', 'setOnchange', 'onaddtrack', 'setOnaddtrack', 'onremovetrack', 'setOnremovetrack'] {
+		list := host.text_lists[receiver] or { return error('TypeError: Not an object of type TextTrackList') }
+		if name == 'length' { return C.JSValueMakeNumber(context, f64(list.length())) }
+		if name == 'getTrackById' {
+			if args.len == 0 { return error('TypeError: getTrackById requires at least 1 argument') }
+			id := host.runtime.binding_dom_utf16(args[0])!.str()
+			track := list.get_track_by_id(id) or { return C.JSValueMakeNull(context) }
+			return host.wrap_text_track(track)
+		}
+		if name.starts_with('setOn') {
+			mut value := C.JSValueMakeUndefined(context)
+			if args.len > 0 { value = args[0] }
+			host.runtime.set_javascript_event_handler(&list.EventTarget, name[5..].to_lower(), value)!
+			return C.JSValueMakeUndefined(context)
+		}
+		return host.runtime.javascript_event_handler(&list.EventTarget, name[2..])
+	}
+	mut track := host.text_tracks[receiver] or { return error('TypeError: Not an object of type TextTrack') }
+	if name == 'setMode' {
+		mut value := C.JSValueMakeUndefined(context)
+		if args.len > 0 { value = args[0] }
+		converted := host.runtime.binding_dom_utf16(value)!.str()
+		mode := match converted {
+			'disabled' { html.TextTrackMode.disabled }
+			'hidden' { html.TextTrackMode.hidden }
+			'showing' { html.TextTrackMode.showing }
+			else { return error('TypeError: Invalid TextTrackMode') }
+		}
+		track.set_mode(mode)
+		return C.JSValueMakeUndefined(context)
+	}
+	if name == 'oncuechange' { return host.runtime.javascript_event_handler(&track.EventTarget, 'cuechange') }
+	if name == 'setOncuechange' {
+		mut value := C.JSValueMakeUndefined(context)
+		if args.len > 0 { value = args[0] }
+		host.runtime.set_javascript_event_handler(&track.EventTarget, 'cuechange', value)!
+		return C.JSValueMakeUndefined(context)
+	}
+	if name == 'kind' { return host.runtime.binding_string(track.kind().str()) }
+	if name == 'mode' { return host.runtime.binding_string(track.mode().str()) }
+	value := match name { 'id' { track.id() } 'label' { track.label() } else { track.language() } }
+	return host.runtime.binding_utf16_string(libjs.utf16_string_from_utf8_without_validation(value))
+}
+
+fn (mut host MediaElementHost) text_track_list_index(args []voidptr) !voidptr {
+	if host.closed { return error('TypeError: Media element binding is closed') }
+	if args.len == 1 {
+		key := libjs.PropertyName.from_utf16(host.runtime.native_utf16_string(args[0])!)
+		if !key.is_number() { return C.JSValueMakeUndefined(host.runtime.context) }
+		return C.JSValueMakeNumber(host.runtime.context, f64(key.number))
+	}
+	list := host.text_lists[args[0]] or { return error('TypeError: Not an object of type TextTrackList') }
+	mut exception := unsafe { nil }
+	index := u32(C.JSValueToNumber(host.runtime.context, args[1], &exception))
+	if exception != unsafe { nil } { return host.runtime.actual_javascript_exception(exception) }
+	track := list.item(int(index)) or { return C.JSValueMakeUndefined(host.runtime.context) }
+	return host.wrap_text_track(track)
+}
+
+fn (mut host MediaElementHost) add_text_track(media &html.HTMLMediaElement, args []voidptr) !voidptr {
+	if args.len == 0 { return error('TypeError: addTextTrack requires at least 1 argument') }
+	converted := host.runtime.binding_dom_utf16(args[0])!.str()
+	kind := match converted {
+		'subtitles' { html.TextTrackKind.subtitles }
+		'captions' { html.TextTrackKind.captions }
+		'descriptions' { html.TextTrackKind.descriptions }
+		'chapters' { html.TextTrackKind.chapters }
+		'metadata' { html.TextTrackKind.metadata }
+		else { return error('TypeError: Invalid TextTrackKind') }
+	}
+	mut label := ''
+	mut language := ''
+	if args.len > 1 && !C.JSValueIsUndefined(host.runtime.context, args[1]) {
+		label = host.runtime.binding_dom_utf16(args[1])!.str()
+	}
+	if args.len > 2 && !C.JSValueIsUndefined(host.runtime.context, args[2]) {
+		language = host.runtime.binding_dom_utf16(args[2])!.str()
+	}
+	if replay := host.replay { replay(host.runtime)! }
+	mut actual := unsafe { &html.HTMLMediaElement(media) }
+	return host.wrap_text_track(actual.add_text_track(kind, label, language))
 }

@@ -46,6 +46,11 @@ mut:
 	video_lists map[voidptr]&html.VideoTrackList
 	video_tracks map[voidptr]&html.VideoTrack
 	video_owner_wrappers map[voidptr]voidptr
+	text_track_prototype voidptr
+	text_list_wrap voidptr
+	text_lists map[voidptr]&html.TextTrackList
+	text_tracks map[voidptr]&html.TextTrack
+	text_owner_wrappers map[voidptr]voidptr
 	closed         bool
 }
 
