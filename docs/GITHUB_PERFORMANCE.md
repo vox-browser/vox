@@ -9772,6 +9772,129 @@ Build/v/instruction-chrome-coalition-content-{result,audit}.json and actual
 controller receipts. The earlier observed-descendant lower bound remains
 historical evidence with its original limitations.
 
+## Emit line text into the retained recorder buffer
+
+Round 99 imports independently authored `6ba23375` (Alexander Medvednikov)
+onto accepted frozen round 97: **four exact grouped hunks in
+layout/paint_transport.v**. The recorder appends each line's text directly to
+its existing command array. Plain text and selection/shadow paths retain
+phase order; public standalone text callers keep their array-returning wrapper.
+Only absent cooperative-checkpoint outer context is trimmed from the authored
+patch. Rejected rounds 95 and 98, current Root changes, heap hints and GC policy
+are excluded.
+
+All **28 common functional cases plus one inactive diagnostic** pass in
+before/Boehm, final/Boehm and final/no-GC C-O2 builds: **21,719 assertions
+per configuration**. Common source SHA256:
+`d6353e94d86afc2cab23e3c3bfb4ac68c1079913d23aa25295727e9e7a67888b`.
+The one original append contract is byte-exact and passes
+**20 assertions in each GC mode**.
+It verifies an existing prefix, plain/debug ordering, reversed shadow ordering,
+opacity, empty appends and retained commands after collection. Its runtime
+receipts contain an inherited empty-cache scope sentence; the read-only
+contract archive records the correct append scope without changing those
+receipts or repeating any passing test.
+
+Inspection before any observation caught that the inherited layout-only probe
+never recorded a display list and therefore did not exercise this feature.
+Only its waiting child was terminated, with actual exit **-15**, before any
+local sample or page primary. The completed common tests remain untouched.
+A separate one-case diagnostic uses public layout and public
+Document.record_display_list. Its first two checker invocations fail before
+native compilation because the fixture used glyphs.len instead of glyphs().len.
+The original failed logs, actual checker exits 1, controller/result discrepancy,
+empty samples and failed gate remain. Only that unfinished diagnostic is repaired;
+no passing case is repeated.
+
+Three fixed alternating local pairs count **32 complete public document layout
+and display-list rebuilds over 64 Unicode paragraphs**, including nested
+intrinsic inline blocks and absolute children. Each operation invalidates layout,
+commits fresh mirrors, invalidates and records the display list, and traverses
+committed geometry and every command. The checksum weights kind/text/color
+lengths, glyph counts, coordinates and points; it does not hash full glyph
+contents. Setup, eight warmups, expected checksum, paint-presence assertions
+and forced GC remain outside the counted interval. All six actual exits are 0;
+checksum **39,226,848** matches. Before counts: **14,981,312,884 / 14,722,085,730 / 14,951,983,126**;
+final counts by pair: **14,385,068,241 / 14,338,813,887 / 14,464,620,904**. Medians
+**14,951,983,126→14,385,068,241** instructions,
+**-3.79157%**, all three pairs improve. This is local evidence
+and earns no page credit.
+
+Full-process C-O1/Boehm profiles run that same standalone public diagnostic
+from startup with no reset or filtering. Common passing functional cases are
+not repeated. Counts only:
+
+| Function | Before calls | Candidate calls |
+| --- | ---: | ---: |
+| `layout__opt99_complete_public_document_layout` | 41 | 41 |
+| `layout__run_document_layout` | 42 | 42 |
+| `dom__Document_record_display_list` | 41 | 41 |
+| `layout__BlockBox_flat_paint_commands_for_entries` | 41 | 41 |
+| `layout__text_fragment_commands` | 13,120 | 0 |
+| `layout__append_text_fragment_commands` | 0 | 13,120 |
+| `layout__unselected_text_fragment_commands_with_debug` | 13,120 | 0 |
+| `layout__append_unselected_text_fragment_commands` | 0 | 13,120 |
+
+Complete public layout, document recording and entry-recording calls match;
+old text producers are replaced by the append producers. Profile timings and
+C-O1 instruction counts receive no performance credit.
+
+Strict generated-C audit passes: two existing bodies change, two old text
+producers disappear and three append producers appear. Every affected body and
+prototype is independently authenticated from immutable C-only generations.
+All other executable C, records, globals, resources, filtering, arenas and
+heap/GC setup match, with only established compiler identities, 37 frozen
+includes and four byte-identical helper reorders normalized. Actual frontend
+file tables and exact native arguments match; all 120 native inputs are pinned.
+Independent probes perform no native compilation or test execution. Passing
+audit SHA256: `dc3cd745fecd1b703202cb1777cf4aa231075ed5a3472c499fabf4846dec7f62`.
+Normal C SHA256: `d2c0f5aaf3f96f8710cc5ca80cda27de255018a44f0a334abccab82d0748370c`.
+Durable C, contract, diagnostic and profile hashes:
+instruction-opt99-artifact-archives.json.
+
+The predeclared page cohort contains **30 alternating pairs**, odd before/final
+and even final/before, **30,000 paired bootstrap resamples, seed 99**. Both regular
+binaries use fresh copies of the same 359 cached bodies and frozen text and
+child-only placement helpers, C-O2/Boehm/default marker 1 and unchanged 4 GiB
+hint. Document viewport remains 1024×768; endpoint remains
+navigation_to_first_document_paint[0].
+
+| Build | Median first-frame retired instructions | Median lifetime process peak, MiB |
+| --- | ---: | ---: |
+| Fresh accepted frozen round 97 control | 17,486,573,983 | 3,491.1 |
+| Direct retained text-command append | 17,460,969,789.5 | 3,415.4 |
+
+Marginal median saving **25,604,193.5** instructions;
+candidate change **-0.146%**, **26/30** wins.
+Paired median saving **26,494,710**; paired 95% interval
+**[11,218,171.5, 45,875,052]**. The positive paired interval establishes repeatable page credit of **25,604,193.5** instructions.
+
+All 60 primaries and **60 actual PNGs** remain. Recoveries:
+none; pre-parse retries: 0. First primaries have
+1 installation/2 geometry preparations/1 paint. Later completed refreshes:
+none. No completed primary is extended, discarded
+or rerun. Missing final exit, PNG, fingerprint or peak would remain explicitly
+unknown for a recovered watchdog. Peaks cover process lifetime through capture
+and exit, including refreshes; they are not first-frame live memory and are
+never summed. The read-only decoded capture check finds 30 before and 30 candidate RGB classes, 0 shared. All differences stay within the original skeleton bands, x45–662: y335–344 and ten 14px bands starting at 380 with 41px spacing. All pixels outside these bands match. No animation was disabled and no observation repeated; evidence is instruction-opt99-page-pixel-class-check.json.
+External foreground transitions retained:
+none.
+The child is foreground in neither startup snapshot. Focused multilingual
+retained text/shadow/geometry viewport is pixel-exact at 1024×768.
+Prior observed carry **4,410,609.5**. Cumulative observed saving **30,014,803** crosses the 5M gate. Six direct harness jobs actually pass CSS 31/SVG 10/layout 46 in both GCs (**174 executions**). All **19 screenshots pass, 16 exact**; known differences remain inline-node 13, text-decorations 1,341 and canvas-text 1,994. The completed broad batch resets additional observed savings to 0.
+
+The isolated signed app is `/Users/alex/code/vox2/Build/v/Vox-opt99.app`. Native instruction text
+matches the measured binary and its installed frozen helper is pinned.
+Signatures, actual loaded helper path/hash, startup and actual collections pass
+for default marker 1 and override 2. Canonical/GUI browsers are preserved;
+contemporary Root receives no source, regression or page credit.
+
+The separately documented Chrome coalition capability and one frozen-content
+diagnostic improve accounting for exited tasks but retain unmatched paint
+endpoints, observer work, content and replay headers. They receive no round 99
+credit. **Faster-than-Chrome performance remains unproven.** Evidence:
+Build/instructions/vox-opt99-interleaved-* and Build/v/instruction-opt99-*.
+
 ## Causes and changes
 
 - The V 0.5.2 compatibility compiler's `-prod` Boehm code repeatedly snapshots

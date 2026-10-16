@@ -1919,6 +1919,16 @@ evidence](docs/translation-audit/NATIVE_MEDIA_WHEEL_RAW_HANDLER.md).
   No normal C/page result; frozen 97 remains control, last broad batch is 96.
   Page credit 0; observed carry 4,410,609.5; Root/canonical/GUI preserved.
   Chrome parity remains open.
+  Direct retained line-text emission `6ba23375` (independent committed slice)
+  passes 21,719 common assertions in 28 functional cases/configuration,
+  plus the byte-exact original append contract in both GC modes.
+  Corrected complete public layout/display-list batches use 3.79% fewer
+  instructions; pre-observation wait/checker failures remain preserved.
+  Page point saving 25,604,193.5, 26/30 wins,
+  paired interval [11,218,171.5, 45,875,052]; repeatable credit 25,604,193.5.
+  Broad verification: 87 selected cases both GC and 19 screenshots (16 exact);
+  focused retained viewport exact. Additional observed savings: 0.
+  Same 4 GiB/placement; canonical/GUI preserved; Root excluded; Chrome parity open.
 - Outside instruction-count optimization, run broad regression suites once per
   ten completed fixes, not after every fix.
   Broad suites include full translation/package test batches, the full LibJS AST
