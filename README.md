@@ -403,6 +403,10 @@ confirmed Example Domain, Hacker News, and old Reddit pages with:
 The fixtures, reference provenance, metric ceilings, and per-site invocation
 are documented in [`pixel_tests/README.md`](pixel_tests/README.md).
 
+Authenticated Brave session import and the current old Reddit comparison are
+documented in [`docs/OLD_REDDIT_BRAVE_PARITY.md`](docs/OLD_REDDIT_BRAVE_PARITY.md).
+Exact Brave pixel equality remains open.
+
 This bundle is distinct from `~/code/3rd/ladybird/Build/.../Ladybird.app`, which
 is the upstream C++ application. The V-native application does not yet provide
 the full generated Web-IDL JavaScript surface, multi-process isolation, tabs,
