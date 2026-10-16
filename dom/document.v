@@ -5195,6 +5195,7 @@ pub mut:
 	ready_to_run_scripts      bool
 	deferred_parser_start     ?fn ()
 	scripting_enabled_by_embedder_ bool = true
+	font_size_keyword_policy_ FontSizeKeywordPolicy
 
 	// Encoding
 	encoding                    ?string

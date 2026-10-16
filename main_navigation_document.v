@@ -78,8 +78,14 @@ fn loaded_browser_navigation_input(loaded LoadedPage) (string, ?string) {
 
 fn parse_loaded_browser_navigation_document(loaded LoadedPage, document_url dom.URL, initiator_origin ?dom.Origin, previous ?&dom.Document, page ?&dom.Page, scripting_enabled bool) &dom.Document {
 	markup, encoding_name := loaded_browser_navigation_input(loaded)
-	return parse_browser_navigation_document_input(markup, encoding_name, document_url,
+	mut document := parse_browser_navigation_document_input(markup, encoding_name, document_url,
 		initiator_origin, previous, page, loaded.monotonic_response_time_ns, scripting_enabled)
+	// Old Reddit's compact layout relies on the legacy 10px x-small mapping.
+	// Also honor it in saved copies whose explicit base URL identifies the site.
+	if document.base_url().serialized_host().to_lower().trim_right('.') == 'old.reddit.com' {
+		document.set_font_size_keyword_policy(.chromium)
+	}
+	return document
 }
 
 fn parse_browser_navigation_document_input(markup string, document_encoding ?string, document_url dom.URL, initiator_origin ?dom.Origin, previous ?&dom.Document, page ?&dom.Page, response_time_ns i64, scripting_enabled bool) &dom.Document {

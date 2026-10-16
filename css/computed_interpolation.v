@@ -10978,7 +10978,7 @@ pub fn (s &StyleComputer) recascade_font_size_if_needed(abstract_element dom.Abs
 			continue
 		}
 		if absolute_size := computed_interpolation_keyword_to_absolute_size(keyword) {
-			current_size = StyleComputer.absolute_size_mapping(absolute_size, default_monospace_font_size)
+			current_size = absolute_size_mapping_for_document(absolute_size, default_monospace_font_size, abstract_element.document())
 			current_size_depends_on_viewport_metrics = false
 			continue
 		}
@@ -12241,7 +12241,7 @@ fn compute_value_of_property_from_source(property_id PropertyID, specified_value
 					}
 				}
 			}
-			StyleComputer.compute_font_size(absolutized_value, computed_math_depth, inheritance_parent)
+			compute_font_size_with_document_policy(absolutized_value, computed_math_depth, inheritance_parent, computation_context)
 		}
 		.font_style {
 			StyleComputer.compute_font_style(absolutized_value)
