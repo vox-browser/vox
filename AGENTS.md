@@ -68,6 +68,14 @@
   not on `PATH`, use `~/code/v/v test .`.
 - The V bundle is independent of upstream Ladybird at
   `~/code/3rd/ladybird/Build/release/bin/Ladybird.app`.
+- On Linux, `sh build-prod-browser.sh` builds `Build/linux/vox`. See
+  [Linux setup](docs/LINUX.md) for system dependencies and the pinned Skia
+  bootstrap. Linux uses JavaScriptCoreGTK, GLib, Fontconfig, and the portable
+  X11 renderer; the Cocoa painter and native media adapter remain macOS-specific.
+- Run the Linux port checks with `python3 tools/test_linux_native.py` and
+  `python3 tools/test_linux_browser.py`; the latter uses Xvfb and xdotool for
+  actual window rendering and address-bar keyboard navigation. Use
+  `python3 tools/test_linux_native.py --gc none` for ownership diagnostics.
 
 ## Screenshot conformance workflow
 

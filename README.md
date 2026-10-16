@@ -9,6 +9,10 @@ translation-specific documentation belong in this repository. See
 [`PORT_STATUS.md`](PORT_STATUS.md) for the module inventory and LOC table, and
 [`ROOT_SUPPORT.md`](ROOT_SUPPORT.md) for the root support-file mapping.
 
+Vox runs on macOS and Linux. On Linux, build with `sh build-prod-browser.sh`
+and launch `Build/linux/vox`. See [Linux setup and checks](docs/LINUX.md) for
+dependencies, the Skia bootstrap, headless operation, and platform limitations.
+
 The refreshed LibJS frontend lives in [`libjs/`](libjs/PORT_STATUS.md). It exposes
 script/module parsing, positioned diagnostics, scope analysis, and retained AST
 dumps, plus the translated VM record: execution contexts, environment records,
