@@ -5,6 +5,8 @@
 The comparison uses the native V renderer. No reference image is substituted
 for the rendered page, and no existing screenshot tolerance is increased.
 
+![Brave on the left and Vox on the right](images/old-reddit-brave-vox.png)
+
 ## Authentication
 
 The account owner's existing Brave Reddit cookies were imported explicitly.
