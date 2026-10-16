@@ -110,6 +110,10 @@ static void native_layer_moved_to_window(id self, SEL command) {
     if (native_layer_original_move)
         ((void (*)(id, SEL))native_layer_original_move)(self, command);
     NSView *view = self;
+    // Frames are rasterized in sRGB. Matching the window's color space lets the
+    // window server color-match on the GPU; otherwise Core Animation converts
+    // every complete frame to the display's space on the CPU before commit.
+    if (view.window) view.window.colorSpace = NSColorSpace.sRGBColorSpace;
     view.wantsLayer = YES;
     view.layer.opaque = YES;
     view.layer.contentsGravity = kCAGravityResize;
