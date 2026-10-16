@@ -5,6 +5,7 @@ module browserjs
 import dom
 import html
 import highresolutiontime
+import libjs
 import webidl
 
 
@@ -47,6 +48,7 @@ mut:
 	pointer_event_sequence_converter voidptr
 	wheel_event_prototype voidptr
 	drag_event_prototype voidptr
+	track_event_prototype voidptr
 	data_transfer_factory voidptr
 	data_transfer_prototype voidptr
 	data_transfer_constructor voidptr
@@ -95,6 +97,9 @@ pub fn (mut runtime Runtime) install_event_target_binding() ! {
 		if binding.drag_event_prototype == unsafe { nil } && binding.mouse_event_prototype != unsafe { nil } {
 			runtime.install_drag_event_binding()!
 		}
+		if binding.track_event_prototype == unsafe { nil } && binding.ui_event_prototype != unsafe { nil } {
+			runtime.install_track_event_binding()!
+		}
 		if binding.data_transfer_constructor == unsafe { nil } && binding.ui_event_prototype != unsafe { nil } {
 			runtime.install_data_transfer_binding()!
 		}
@@ -124,6 +129,7 @@ pub fn (mut runtime Runtime) install_event_target_binding() ! {
 			runtime.install_pointer_event_binding()!
 			runtime.install_wheel_event_binding()!
 			runtime.install_drag_event_binding()!
+			runtime.install_track_event_binding()!
 			runtime.install_data_transfer_binding()!
 		}
 	}
@@ -254,6 +260,8 @@ pub fn (mut runtime Runtime) javascript_event(event &dom.Event) !voidptr {
 		prototype = binding.wheel_event_prototype
 	} else if binding.drag_event_prototype != unsafe { nil } && event.interface_ == .drag_event {
 		prototype = binding.drag_event_prototype
+	} else if binding.track_event_prototype != unsafe { nil } && event.interface_ == .track_event {
+		prototype = binding.track_event_prototype
 	} else if binding.mouse_event_prototype != unsafe { nil } && native_event_is_mouse_event(event) {
 		prototype = binding.mouse_event_prototype
 	} else if binding.ui_event_prototype != unsafe { nil } && native_event_is_ui_event(event) {
@@ -531,7 +539,11 @@ fn (mut runtime Runtime) event_binding_call(method string, receiver voidptr, arg
 		property := runtime.binding_dom_string(args[0])!
 		return match property {
 			'type' {
-				runtime.binding_string(event.type_name())
+				if event.interface_ == .track_event {
+					runtime.binding_utf16_string(libjs.utf16_string_from_utf8_without_validation(event.type_name()))!
+				} else {
+					runtime.binding_string(event.type_name())
+				}
 			}
 			'target', 'srcElement', 'currentTarget' {
 				target := if property == 'currentTarget' {
