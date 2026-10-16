@@ -1885,6 +1885,13 @@ evidence](docs/translation-audit/NATIVE_MEDIA_WHEEL_RAW_HANDLER.md).
   focused retained viewport exact. Additional observed savings: 0.
   Same 4 GiB/placement; canonical/GUI preserved; contemporary Root excluded.
   Chrome parity remains open.
+  Document-pass measurement chunk pooling round 95 (`0e1af050`) is locally rejected.
+  The 29 common cases pass 21,719 before and 21,782 candidate assertions in
+  each GC mode; 63 additional runtime invariant assertions explain the delta.
+  Complete public layout batches increase median instructions 0.143%; 1/3 wins.
+  The native gate exits 1 before launching any child; six contracts remain unrun.
+  No normal C/page result; frozen 94 remains control and broad baseline.
+  Page credit/carry 0; Root/canonical/GUI preserved; Chrome parity open.
 - Outside instruction-count optimization, run broad regression suites once per
   ten completed fixes, not after every fix.
   Broad suites include full translation/package test batches, the full LibJS AST

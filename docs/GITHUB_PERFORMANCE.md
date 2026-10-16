@@ -9342,6 +9342,50 @@ Equivalent Chrome content/start/submission accounting remains open;
 **faster-than-Chrome performance is unproven**. Evidence:
 Build/instructions/vox-opt94-interleaved-* and Build/v/instruction-opt94-*.
 
+## Round 95: reject document-pass measurement chunk pooling locally
+
+The frozen candidate imports independently authored `0e1af050` (Alexander
+Medvednikov) onto accepted round 94: **nine exact hunks in five layout paths**.
+Document geometry opts into a pool of at most 64 inactive, fully cleared scanned
+chunks. Nested probes retain separate active leases, returned slots are
+reconstructed, and the pool closes at the end of the document pass. Public
+standalone probes remain unpooled. Root implementation is preserved.
+
+The identical **29-case C-O2 common harness** passes before/Boehm **21,719**
+assertions and final/Boehm and final/no-GC **21,782 each**. Its 28 functional
+cases and inactive diagnostic are unchanged. The additional 63 assertions come
+from three new runtime pool-invariant checks across 21 completed geometry
+passes; every per-case delta is a nonnegative multiple of three and both
+candidate GC modes match. Common source SHA256:
+`8a75033faf57b16e49a5b7ee2bb41f2f4356ccfb69745f172cee129540940325`. Read-only count evidence is
+instruction-opt95-focused-assertion-counts.json. All three actual exits are 0;
+focused C archives and binary hashes are durable.
+
+Three fixed alternating local pairs measure **32 complete public document
+layout rebuilds over 64 Unicode paragraphs**, including min-content inline
+blocks and absolute children. Public invalidation, fresh mirrors, formatting,
+geometry, paint transport and recursive committed geometry/text checksums are
+counted. Setup, eight warmups, expected checksum and forced GC precede the
+hardware interval; assertions follow. All six actual exits are 0 and checksums
+are **1,829,472**. Before counts: **3,007,567,418 / 2,998,315,885 / 2,998,075,669**; candidate counts
+by pair: **2,993,763,598 / 3,002,600,494 / 3,004,597,482**. Median instructions rise
+**2,998,315,885→3,002,600,494 (+0.14290%)**,
+with **1/3 pairs improving**. The fixed local cohort is retained unchanged.
+
+The negative-local-change gate retains its **actual exit 1 before launching
+any native child job**. The six additional candidate-only pool contract cases
+remain unrun. Normal build, profiles, C-only probes, strict normal C audit,
+page observations, broad batch and app/GC-artifact checks were not started.
+Draft scripts are preparation, not execution evidence. **Page credit is 0**;
+this local result does not establish a page regression. Frozen round 94 remains
+control and the last completed broad baseline; observed carry stays 0. The
+4 GiB hint and GC policy are unchanged. Canonical and GUI browsers are
+preserved. Chrome parity remains open.
+
+Evidence: Build/opt95-{before,final,contracts}-source and
+Build/v/instruction-opt95-*, including actual exits, exact source audit,
+diagnostic observations and durable focused C archives.
+
 ## Causes and changes
 
 - The V 0.5.2 compatibility compiler's `-prod` Boehm code repeatedly snapshots
