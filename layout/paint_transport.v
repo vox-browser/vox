@@ -432,6 +432,10 @@ mut:
 	accumulated_visual_context_index               int
 	accumulated_visual_context_for_descendants_idx int
 	plane_root_for_descendants_idx                 int
+	// The box's own effects and (non-synthetic) transform nodes, or 0. Compositor
+	// samples patch these values in place while the tree keeps its shape.
+	own_effects_visual_context_idx                 int
+	own_transform_visual_context_idx               int
 	fixed_background_visual_context                ?int
 	fixed_to_viewport                              bool
 	// PaintableBox retains one Scrollbar object per axis. Their hover/grab state

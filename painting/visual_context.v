@@ -304,6 +304,29 @@ pub fn (mut tree AccumulatedVisualContextTree) append(data VisualContextData, pa
 	return index
 }
 
+// Replace the values of an existing transform or effects node. Its depth,
+// empty-clip and backface flags depend only on clips and the tree structure.
+pub fn (mut tree AccumulatedVisualContextTree) replace_compositor_values(index int,
+	data VisualContextData) bool {
+	if index <= 0 || index >= tree.nodes.len {
+		return false
+	}
+	existing := tree.nodes[index]
+	same_kind := match data {
+		TransformVisualData { existing.data is TransformVisualData }
+		EffectsVisualData { existing.data is EffectsVisualData }
+		else { false }
+	}
+	if !same_kind {
+		return false
+	}
+	tree.nodes[index] = AccumulatedVisualContextNode{
+		...existing
+		data: data
+	}
+	return true
+}
+
 pub fn (tree &AccumulatedVisualContextTree) find_common_ancestor(first int, second int) int {
 	if first <= 0 || second <= 0 || first >= tree.nodes.len || second >= tree.nodes.len {
 		return 0

@@ -22,6 +22,7 @@ fn install_document_painting_bridge(document &dom.Document, result &DocumentLayo
 		invalidate_scroll_state_callback: viewport_invalidate_scroll_state
 		refresh_scroll_state_callback: viewport_refresh_scroll_state
 		assign_accumulated_visual_contexts_callback: viewport_assign_accumulated_visual_contexts
+		refresh_compositor_visual_contexts_callback: viewport_refresh_compositor_visual_contexts
 		selection_callback: viewport_selection
 		recompute_selection_states_callback: viewport_recompute_selection_states
 		text_range_rects_callback: viewport_text_range_rects
@@ -590,6 +591,58 @@ fn compatibility_perspective_visual_data(box &BlockBox,
 	}
 }
 
+fn compatibility_box_has_own_transform_context(box &BlockBox) bool {
+	return box.uses_own_paint_transform_4x4 || !affine_is_compact_identity(box.own_paint_transform)
+}
+
+// Compositor samples change only the opacity and transform values that
+// assign_compatibility_visual_contexts() copied from these boxes. When every
+// box keeps the same node set, rewrite those values in place: the tree's shape,
+// its indices and the scroll frames stay valid. Returns false when a sample
+// would add or remove a node, so the caller rebuilds the tree.
+fn patch_compositor_visual_contexts(mut tree painting.AccumulatedVisualContextTree,
+	boxes []&BlockBox) bool {
+	for box in boxes {
+		needs_effects := box.opacity < 1.0 || box.mix_blend_mode != .normal
+			|| box.filter.to_gfx_filter(1.0) != none
+		if needs_effects != (box.own_effects_visual_context_idx > 0)
+			|| compatibility_box_has_own_transform_context(box) != (box.own_transform_visual_context_idx > 0) {
+			return false
+		}
+		if box.own_effects_visual_context_idx >= tree.nodes.len
+			|| box.own_transform_visual_context_idx >= tree.nodes.len {
+			return false
+		}
+		if box.own_effects_visual_context_idx > 0
+			&& tree.node_at(box.own_effects_visual_context_idx).data !is painting.EffectsVisualData {
+			return false
+		}
+		if box.own_transform_visual_context_idx > 0
+			&& tree.node_at(box.own_transform_visual_context_idx).data !is painting.TransformVisualData {
+			return false
+		}
+	}
+	for box in boxes {
+		if box.own_effects_visual_context_idx > 0 {
+			effects := tree.node_at(box.own_effects_visual_context_idx).data as painting.EffectsVisualData
+			tree.replace_compositor_values(box.own_effects_visual_context_idx, painting.EffectsVisualData{
+				...effects
+				opacity: box.opacity
+			})
+		}
+		if box.own_transform_visual_context_idx > 0 {
+			transform := tree.node_at(box.own_transform_visual_context_idx).data as painting.TransformVisualData
+			tree.replace_compositor_values(box.own_transform_visual_context_idx, painting.TransformVisualData{
+				...transform
+				matrix: compatibility_painting_affine(box.own_paint_transform)
+				matrix_4x4: box.own_paint_transform_4x4
+				uses_matrix_4x4: box.uses_own_paint_transform_4x4
+			})
+		}
+	}
+	return true
+}
+
 fn assign_compatibility_visual_contexts(mut box BlockBox, visual_parent ?&BlockBox, boxes_by_layout map[u64]&BlockBox, mut tree painting.AccumulatedVisualContextTree) {
 	box.fixed_background_visual_context = none
 	mut inherited_state := 0
@@ -649,6 +702,8 @@ fn assign_compatibility_visual_contexts(mut box BlockBox, visual_parent ?&BlockB
 			is_sticky: true
 		}, own_state)
 	}
+	box.own_effects_visual_context_idx = 0
+	box.own_transform_visual_context_idx = 0
 	gfx_filter := box.filter.to_gfx_filter(1.0)
 	if box.opacity < 1.0 || box.mix_blend_mode != .normal || gfx_filter != none {
 		own_state = tree.append(painting.EffectsVisualData{
@@ -656,14 +711,16 @@ fn assign_compatibility_visual_contexts(mut box BlockBox, visual_parent ?&BlockB
 			blend_mode: box.mix_blend_mode
 			filter: gfx_filter
 		}, own_state)
+		box.own_effects_visual_context_idx = own_state
 	}
-	if box.uses_own_paint_transform_4x4 || !affine_is_compact_identity(box.own_paint_transform) {
+	if compatibility_box_has_own_transform_context(box) {
 		own_state = tree.append(painting.TransformVisualData{
 			matrix: compatibility_painting_affine(box.own_paint_transform)
 			matrix_4x4: box.own_paint_transform_4x4
 			uses_matrix_4x4: box.uses_own_paint_transform_4x4
 			resets_backface_culling: enters_3d_sorting_plane
 		}, own_state)
+		box.own_transform_visual_context_idx = own_state
 	} else if needs_synthetic_3d_plane {
 		// Preserve-3d establishes a sorting plane even when the element has no
 		// transform. Keep that plane explicit so it can escape an ancestor's
@@ -887,6 +944,18 @@ fn viewport_assign_accumulated_visual_contexts(target voidptr) {
 	mut result := viewport_layout_result(target)
 	// Refreshing the snapshot also assigns its new visual contexts.
 	if refresh_document_paint_tree_if_needed(mut result) { return }
+	rebuild_compatibility_visual_contexts(mut result)
+}
+
+// Compositor-only samples ask Document for this narrower update. Applying the
+// pending paint-style refresh patches the sampled values into the existing
+// tree, or rebuilds it if a sample changed the tree's shape.
+fn viewport_refresh_compositor_visual_contexts(target voidptr) {
+	mut result := viewport_layout_result(target)
+	refresh_document_paint_tree_if_needed(mut result)
+}
+
+fn rebuild_compatibility_visual_contexts(mut result DocumentLayoutResult) {
 	result.ensure_boxes_by_layout_cache()
 	result.scroll_state = painting.ScrollState{}
 	mut boxes_by_scroll_frame := map[int]&BlockBox{}

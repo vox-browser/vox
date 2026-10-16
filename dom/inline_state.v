@@ -491,6 +491,12 @@ pub fn (d &Document) document_needs_accumulated_visual_contexts_update() bool {
 	return d.needs_accumulated_visual_contexts_update
 }
 
+// Compositor-only animation samples whose values the painting bridge retains.
+// A full visual-context update, when also requested, supersedes this one.
+pub fn (mut d Document) set_needs_compositor_visual_contexts_update() {
+	d.needs_compositor_visual_contexts_update = true
+}
+
 pub fn (d &Document) for_each_shadow_root(callback fn (&ShadowRoot)) {
 	for shadow_root in d.shadow_roots {
 		callback(shadow_root)

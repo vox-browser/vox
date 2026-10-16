@@ -60,6 +60,8 @@ struct CompositorPaintStyleRefresh {
 mut:
 	changed                bool
 	invalidates_paint_plan bool
+	// Boxes whose opacity or own transform changed.
+	boxes []&BlockBox
 }
 
 fn refresh_compositor_paint_styles_in_box(mut box BlockBox, state &LayoutState,
@@ -85,6 +87,7 @@ fn refresh_compositor_paint_styles_in_box(mut box BlockBox, state &LayoutState,
 				if opacity_changed || box.own_paint_transform != transform
 					|| box.own_paint_transform_4x4 != matrix || box.uses_own_paint_transform_4x4 != uses_matrix {
 					refresh.changed = true
+					refresh.boxes << unsafe { &box }
 				}
 				if opacity_changed { refresh.invalidates_paint_plan = true }
 				box.opacity = f64(computed.opacity())

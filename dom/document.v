@@ -1500,6 +1500,7 @@ pub:
 	invalidate_scroll_state_callback            ViewportPaintableVoidCallback = unsafe { nil }
 	refresh_scroll_state_callback               ViewportPaintableVoidCallback = unsafe { nil }
 	assign_accumulated_visual_contexts_callback ViewportPaintableVoidCallback = unsafe { nil }
+	refresh_compositor_visual_contexts_callback ViewportPaintableVoidCallback = unsafe { nil }
 	selection_callback                          ViewportPaintableSelectionCallback = unsafe { nil }
 	recompute_selection_states_callback         ViewportPaintableRangeCallback = unsafe { nil }
 	text_range_rects_callback                   ViewportPaintableTextRangeRectsCallback = unsafe { nil }
@@ -4135,6 +4136,15 @@ pub fn (vp &ViewportPaintable) refresh_scroll_state() {
 	}
 }
 
+// Without a narrower embedder hook, a full assignment covers compositor samples.
+pub fn (vp &ViewportPaintable) refresh_compositor_visual_contexts() {
+	if vp.target != unsafe { nil } && vp.refresh_compositor_visual_contexts_callback != unsafe { nil } {
+		vp.refresh_compositor_visual_contexts_callback(vp.target)
+	} else {
+		vp.assign_accumulated_visual_contexts()
+	}
+}
+
 pub fn (vp &ViewportPaintable) assign_accumulated_visual_contexts() {
 	if vp.target != unsafe { nil } && vp.assign_accumulated_visual_contexts_callback != unsafe { nil } {
 		vp.assign_accumulated_visual_contexts_callback(vp.target)
@@ -5271,6 +5281,7 @@ pub mut:
 	query_containers_needing_container_query_evaluation_after_layout []&Element
 	needs_animated_style_update                    bool
 	needs_accumulated_visual_contexts_update       bool
+	needs_compositor_visual_contexts_update        bool
 	needs_invalidation_of_elements_affected_by_has bool
 	should_invalidate_styles_on_attribute_changes  bool = true
 	style_invalidation_counters_                   StyleInvalidationCounters
@@ -7294,8 +7305,14 @@ fn (d &Document) notify_layout_after_style_update() {
 pub fn (mut d Document) update_paint_and_hit_testing_properties_if_needed() {
 	if d.needs_accumulated_visual_contexts_update {
 		d.needs_accumulated_visual_contexts_update = false
+		d.needs_compositor_visual_contexts_update = false
 		if paintable := d.unsafe_paintable() {
 			paintable.assign_accumulated_visual_contexts()
+		}
+	} else if d.needs_compositor_visual_contexts_update {
+		d.needs_compositor_visual_contexts_update = false
+		if paintable := d.unsafe_paintable() {
+			paintable.refresh_compositor_visual_contexts()
 		}
 	}
 	// Scroll nodes are (re)created by the visual-context update above. Derive

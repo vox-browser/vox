@@ -52,7 +52,10 @@ fn refresh_local_paint_styles(mut result DocumentLayoutResult) {
 		if compositor.invalidates_paint_plan {
 			viewport_invalidate_compositor_stacking_context(voidptr(&result))
 		}
-		result.needs_accumulated_visual_contexts = true
+		// The samples keep box categories, so normally only node values change.
+		if !patch_compositor_visual_contexts(mut result.visual_context_tree, compositor.boxes) {
+			rebuild_compatibility_visual_contexts(mut result)
+		}
 		result.scroll_state.invalidate()
 	}
 	result.paint_tree_needs_style_update = false

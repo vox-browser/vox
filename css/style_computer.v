@@ -1540,7 +1540,13 @@ fn style_computer_update_animated_style_callback(target voidptr) {
 				})
 			}
 			if invalidation.accumulated_visual_contexts() == .rebuild {
-				document.set_needs_accumulated_visual_contexts_update(true)
+				if retained_compositor_paint {
+					// The retained transport patches the sampled values into the
+					// existing visual-context tree when its shape is unchanged.
+					document.set_needs_compositor_visual_contexts_update()
+				} else {
+					document.set_needs_accumulated_visual_contexts_update(true)
+				}
 			}
 		}
 		if invalidation.needs_stacking_context_tree_rebuild() {
