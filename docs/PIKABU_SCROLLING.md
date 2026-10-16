@@ -64,6 +64,12 @@ the profiler fix. Values are medians of the three runs.
 | Frame preparation (median) | 13.3 ms | 4.2 ms |
 | Wheel dispatch (median) | 2.5 ms | 1.2 ms |
 
+A single live-network pair (150 frames, a copy of the user's browser cache,
+clean builds of the baseline and changed commits) gave a median frame of
+18.7 → 11.6 ms, a 95th percentile of 243 → 14.6 ms, 19 → 1 collections and an
+end heap of 1,306 → 729 MB. Live content differs between runs, so this is a
+sanity check rather than a controlled comparison.
+
 One of the three changed runs collected 13 times (p95 125 ms); a separate
 400-frame run collected 6 times with a flat in-use heap. Frame timing excludes
 Cocoa layer publication and GPU work. These are wall-clock measurements on a
