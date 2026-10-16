@@ -22,8 +22,13 @@ pub fn domain_to_ascii(domain string, be_strict bool) ?string {
 			return none
 		}
 		mut needs_idna := false
-		for part in domain.split('.') {
-			if part.to_lower().starts_with('xn--') {
+		for index in 0 .. domain.len {
+			if index != 0 && domain[index - 1] != `.` {
+				continue
+			}
+			if domain.len - index >= 4 && (domain[index] == `x` || domain[index] == `X`)
+				&& (domain[index + 1] == `n` || domain[index + 1] == `N`)
+				&& domain[index + 2] == `-` && domain[index + 3] == `-` {
 				needs_idna = true
 				break
 			}
