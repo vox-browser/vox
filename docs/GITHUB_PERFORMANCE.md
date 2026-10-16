@@ -9735,6 +9735,43 @@ pinned Apple source hashes, helper source/binary hashes, completed child
 receipts and the retained initial failure. This capability work is separate
 from every fixed 30-pair Vox cohort.
 
+## Frozen Chrome content diagnostic with coalition accounting
+
+A separate single observation uses the same 359-file cached GitHub bodies,
+author JavaScript enabled and a fresh headless Chrome 155 LaunchServices
+resource group. All **11** live members match the kernel and CDP at stable
+boundaries; the shared CLI group is excluded. The baseline immediately precedes
+`Page.navigate`. The candidate endpoint remains the earlier content diagnostic's
+first qualifying About paragraph LCP, with visible repository links and an
+eight-millisecond conservative margin. The observer script is unchanged.
+No tracing is enabled. This is separate from every 30-pair Vox cohort.
+
+The retained counter delta is **3,693,563,976 retired instructions**. Both
+snapshots contain **16 task starts/5 exits**; no task-count change occurs within
+this interval. This kernel group counter includes completed members without
+per-task first-observation truncation. All **254** retained sampling passes
+and the selected delta recompute exactly. The selected completed read precedes
+the conservative candidate boundary by **0.004143917 seconds**. That boundary
+still is not authenticated as equivalent to Vox's paint-command submission.
+The injected content observer adds browser work; its overhead is not removed.
+
+Chrome replays **37** responses and blocks **126** missing/non-GET requests,
+with no live network fallback. Status 200, inferred MIME, wildcard CORS and
+no-store remain disclosed assumptions of the body-only cache. The 1024×768
+screenshot was inspected: the repository rows, 26,399-commit label and About
+content are visible. It is not cross-browser pixel-conformance evidence.
+The diagnostic, Chrome root kernel status, controller and read-only audit all
+exit **0**. Raw snapshot archive, request/body hashes, clock calibration,
+content and screenshot are retained. **Performance credit is 0** and
+**faster-than-Chrome performance remains unproven**. These counts do not replace
+the established Vox endpoint or establish a speed ratio. Canonical and GUI
+browsers are preserved; the broad baseline and observed carry are unchanged.
+
+Evidence: Build/instructions/chrome-frozen-probe/coalition-content-1,
+Build/v/instruction-chrome-coalition-content-{result,audit}.json and actual
+controller receipts. The earlier observed-descendant lower bound remains
+historical evidence with its original limitations.
+
 ## Causes and changes
 
 - The V 0.5.2 compatibility compiler's `-prod` Boehm code repeatedly snapshots
