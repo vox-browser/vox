@@ -4162,6 +4162,7 @@ pub mut:
 	initial_paint_had_pending_fonts_ bool
 	environment_generation_ u64 = 1
 mut:
+	environment_font_rendering_policy_ platform.FontRenderingPolicy
 	// Internal font computation only reads these valid empty maps. Public
 	// snapshot getters always construct their own independently mutable maps.
 	normal_variation_settings_ map[string]f64
@@ -4259,6 +4260,12 @@ pub fn (computer &FontComputer) initial_paint_had_pending_fonts() bool {
 }
 
 pub fn (computer &FontComputer) environment_generation() u64 {
+	policy := computer.font_rendering_policy()
+	if policy != computer.environment_font_rendering_policy_ {
+		mut mutable := unsafe { &FontComputer(computer) }
+		mutable.environment_font_rendering_policy_ = policy
+		mutable.environment_generation_++
+	}
 	return computer.environment_generation_
 }
 
