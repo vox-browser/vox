@@ -482,6 +482,104 @@ process-exit and Brave observed-tree capture endpoints remain unchanged. The
 variation result does not replace the primary checkpoint or earn a broad reset;
 repeatability and broad validation of this complete composition remain open.
 
+### Candidate v20: narrow primary median margin, no broad reset
+
+Candidate v20 combines four separately committed changes. The host last-label
+scan (`75780f20`) removes split allocations; 17 URL test files containing
+89 functions pass per GC mode. The ASCII ACE-label scan (`9cf93a69`) removes
+per-label splitting and lowercase allocation inside the existing nonstrict
+ASCII IDNA branch; 94 cases and 443,077 assertions pass per GC mode. Valid
+empty inline chunks (`15c67b10`) distinguish an empty cached result from an
+absent or stale cache; the original focused runs pass 43 cases and 34,383
+assertions per GC mode. SVG path paint data (`bde1e411`) moves 18 immutable
+fields into a shared optional payload, reducing the common command from
+1,608 to 1,280 bytes. Its fresh focused checks total 159 cases and 173,552
+assertions per GC mode across three separate child runs: 134 layout, 23 native
+and two integration cases. The respective optimized micro series retain
+30, 42, 48 and 48 rows, with no per-feature page savings credited. Source,
+focused dependency scopes, ownership checks and micro regressions remain in
+the [four-component policy](../Build/pikabu-instructions/candidate-v20-components-policy.json)
+and its linked root reviews.
+
+The full committed source is
+`bde1e411783f66f45e024920aeced01be49ee065`, containing 5,874 authenticated Git
+files with exact blobs, modes and membership and no source overrides or
+fallback. The [manifest](../Build/pikabu-instructions/candidate-v20-source-manifest.json)
+and [authentication](../Build/pikabu-instructions/candidate-v20-source-auth.json)
+retain the complete concurrent committed work. The normal Boehm/O2 production
+build, signing checks and headless startup pass with actual-zero exits. The
+executable SHA256 is
+`b2ebd624744a1e9cca763e6f4454ebbeb52175dc75c92cc7fd63908213120bca`.
+The [completed helper receipt](../Build/pikabu-instructions-candidate-v20-check.state.json)
+binds that executable, its six-file signed bundle and 30-file non-system runtime
+closure, archive, prepared Brave profile, full MV2 uBO/list snapshot, driver
+and instruction counter to the series.
+
+The [primary plan](../Build/pikabu-instructions/candidate-v20-primary-aggregation-plan.json)
+was fixed before source freeze, build and measurement. Five fresh alternating
+Vox/Brave pairs replace the earlier single primary followed by a separate
+variation cohort. The order is Vox1/Brave1, Brave2/Vox2, Vox3/Brave3,
+Brave4/Vox4 and Vox5/Brave5. All ten valid rows are required; invalid rows abort
+without credit, and rows cannot be dropped, replaced or stopped for performance.
+The primary is the median of all five completed native lifetime totals;
+Brave's median and median paired savings are reported separately.
+
+| Pair | Vox instructions | Brave instructions |
+| --- | ---: | ---: |
+| 1 | 55,315,486,868 | 48,084,882,379 |
+| 2 | 58,969,044,694 | 47,248,636,486 |
+| 3 | 45,151,975,245 | 46,954,350,808 |
+| 4 | 45,032,095,512 | 47,713,891,695 |
+| 5 | 47,202,746,972 | 47,207,324,731 |
+
+Vox's median is 47,202,746,972 instructions versus Brave's 47,248,636,486,
+or 0.09712% fewer, with three pair wins. Median paired savings are 4,577,759
+instructions. This satisfies the prespecified observed-median criterion,
+but the small margin and native range of 45.032 to 58.969 billion instructions
+do not establish a repeatable speed advantage or complete the optimization goal.
+A [separate opt97 experiment overlapped part of this series](../Build/pikabu-instructions/c20-foreign-opt97-overlap-read-only-receipt-attempt1.json),
+including its early rows and later validation work. Timing alone does not
+establish a cause for any row's count. All ten rows remain included, with no
+subset or replacement series used to improve the result.
+
+All ten completed rows pass content, font and image checks, retaining the same
+15 stories, first title, completed document and decoded visible story image.
+All five native captures have exact control pixels, actual retained Roboto
+400/500/700 faces and three newly decoded TTF files created during each launch.
+The [completed-cohort verification](../Build/pikabu-instructions-candidate-v20-check.completed-cohort-verification.json)
+retains every result hash and all five pairs. Build, smoke, measurement, verifier
+and both supervisors finish with actual-zero exits, recorded in the
+[build/measurement terminal receipt](../Build/pikabu-instructions/candidate-v20-build-measure-attempt2/actual-exit.json)
+and [pipeline exit](../Build/pikabu-instructions/candidate-v20-pipeline-attempt1/actual-exit.json).
+The [initial rejected launch](../Build/pikabu-instructions/candidate-v20-root-launch-attempt1-failure.json)
+remains preserved: an authorization-key mismatch failed before any build or
+measurement child started; its actual exit code was not collected.
+
+The native median exceeds the fixed C17 broad baseline of 45,899,800,267 by
+1,302,946,705 instructions. Comparing C20's five-launch median with C17's
+existing single-launch point uses asymmetric sampling, as disclosed before
+measurement. The signed 5,000,000-saving gate fails. The broad pipeline exits
+successfully at `terminal-insufficient-valid-primary-saving-no-broad`; no broad
+suite or broad screenshot captures ran, none of the four helper holds is removed,
+and no cadence reset or app installation is credited. C17 remains the established
+broad baseline with zero new savings credited.
+
+The [freeze-time test disclosure](../Build/pikabu-instructions/candidate-v20-excluded-test-repair-disclosure.json)
+records a separate uncommitted empty-cache fixture repair that was excluded
+from C20's exact committed tree. Its post-invalidation check incorrectly required
+font pointer identity even though rebuilding can create equivalent native font
+owners. The repair compares resolved face, settings and metrics after
+invalidation while retaining pointer checks for valid caches. It subsequently
+committed as `2c57d7a7`, outside the measured source. The original focused results
+retain their exact provenance; C20 receives no validation credit for that later
+test repair and makes no claim that all current tests pass.
+
+This remains an archived server-rendered Pikabu workload with author JavaScript
+enabled and fail-closed replay. It does not establish live-site or complete
+JavaScript functionality parity. Vox's process-exit total includes audit, capture
+encoding and teardown; Brave's observed descendant-tree lower bound stops at
+its first CDP capture response. These asymmetric endpoints remain unchanged.
+
 Focused checks:
 
 ```sh
