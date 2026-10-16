@@ -64,5 +64,45 @@ static void vox_curl_socket_set_enabled(void* value, int flags) {
     if (flags) CFFileDescriptorEnableCallBacks(descriptor, flags);
 }
 static void vox_curl_socket_destroy(void* descriptor) { CFFileDescriptorInvalidate(descriptor); CFRelease(descriptor); }
+#elif defined(__linux__)
+#include <glib-unix.h>
+#include "../platform/linux_event_context.h"
+typedef struct {
+    void *owner;
+    int socket;
+    void (*activate)(void *, int, int);
+    GSource *source;
+} VoxCurlSocketContext;
+static gboolean vox_curl_socket_callback(gint fd, GIOCondition condition, gpointer context) {
+    VoxCurlSocketContext state = *(VoxCurlSocketContext *)context;
+    int flags = 0;
+    if (condition & G_IO_IN) flags |= CURL_CSELECT_IN;
+    if (condition & G_IO_OUT) flags |= CURL_CSELECT_OUT;
+    if (condition & (G_IO_ERR | G_IO_HUP | G_IO_NVAL)) flags |= CURL_CSELECT_ERR;
+    state.activate(state.owner, fd, flags);
+    return G_SOURCE_CONTINUE;
+}
+static void *vox_curl_socket_create(void *owner, int socket, void (*activate)(void *, int, int)) {
+    VoxCurlSocketContext *state = calloc(1, sizeof(*state));
+    if (!state) abort();
+    state->owner = owner; state->socket = socket; state->activate = activate;
+    return state;
+}
+static void vox_curl_socket_set_enabled(void *descriptor, int flags) {
+    VoxCurlSocketContext *state = descriptor;
+    if (state->source) { g_source_destroy(state->source); g_source_unref(state->source); state->source = NULL; }
+    if (!flags) return;
+    GIOCondition condition = G_IO_ERR | G_IO_HUP | G_IO_NVAL;
+    if (flags & CURL_POLL_IN) condition |= G_IO_IN;
+    if (flags & CURL_POLL_OUT) condition |= G_IO_OUT;
+    state->source = g_unix_fd_source_new(state->socket, condition);
+    g_source_set_callback(state->source, G_SOURCE_FUNC(vox_curl_socket_callback), state, NULL);
+    g_source_attach(state->source, libweb_v_thread_event_context());
+}
+static void vox_curl_socket_destroy(void *descriptor) {
+    VoxCurlSocketContext *state = descriptor;
+    if (state->source) { g_source_destroy(state->source); g_source_unref(state->source); }
+    free(state);
+}
 #endif
 #endif

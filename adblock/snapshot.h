@@ -1,10 +1,12 @@
 #ifndef VOX_ADBLOCK_SNAPSHOT_H
 #define VOX_ADBLOCK_SNAPSHOT_H
-#include <JavaScriptCore/JavaScriptCore.h>
+#include <JavaScriptCore/JavaScript.h>
 #include <stdlib.h>
 #include <stdint.h>
+#ifdef __APPLE__
 #include <mach/mach.h>
 #include <mach/mach_vm.h>
+#endif
 #include <fcntl.h>
 #include <sys/mman.h>
 #include <sys/stat.h>
@@ -49,9 +51,11 @@ static JSValueRef vox_adblock_trie_checksum(JSContextRef context,
 // JS view dies. A non-null owner records the rounded mapping length.
 static void vox_adblock_release_snapshot(void *bytes, void *context) {
     if (context) {
+#ifdef __APPLE__
         mach_vm_address_t base = (mach_vm_address_t)(uintptr_t)bytes
             & ~((mach_vm_address_t)vm_page_size - 1);
         mach_vm_deallocate(mach_task_self(), base, (mach_vm_size_t)(uintptr_t)context);
+#endif
     } else {
         free(bytes);
     }
@@ -62,6 +66,7 @@ static void vox_adblock_release_snapshot(void *bytes, void *context) {
 // bytes and remains valid after the source allocation is changed or released.
 static void *vox_adblock_copy_snapshot(const void *source, size_t size, void **owner) {
     *owner = NULL;
+#ifdef __APPLE__
     if (size >= 64 * 1024) {
         mach_vm_address_t address = (mach_vm_address_t)(uintptr_t)source;
         mach_vm_address_t base = address & ~((mach_vm_address_t)vm_page_size - 1);
@@ -83,6 +88,7 @@ static void *vox_adblock_copy_snapshot(const void *source, size_t size, void **o
             mach_vm_deallocate(mach_task_self(), copy, length);
         }
     }
+#endif
     void *copy = malloc(size);
     if (copy) memcpy(copy, source, size);
     return copy;
@@ -224,7 +230,7 @@ static int vox_adblock_install_snapshot_metadata(JSGlobalContextRef context,
     size_t size = (size_t)size_bytes[0] | ((size_t)size_bytes[1] << 8) |
         ((size_t)size_bytes[2] << 16) | ((size_t)size_bytes[3] << 24);
     if (!size || size > 128 * 1024 * 1024) return 2;
-    unsigned char *bytes = malloc(size);
+    unsigned char *bytes = malloc(size + 1);
     if (!bytes) return 3;
     if (vox_adblock_gunzip(compressed, compressed_size, bytes, size) != Z_OK) {
         free(bytes);
@@ -246,12 +252,18 @@ static int vox_adblock_install_snapshot_metadata(JSGlobalContextRef context,
     if (!ascii) { free(bytes); return 5; }
     // The generator emits ASCII JSON escapes, retaining Unicode/NUL/BOM values
     // while keeping CoreFoundation's conversion on its fast ASCII path.
+#ifdef __APPLE__
     CFStringRef text = CFStringCreateWithBytes(kCFAllocatorDefault, bytes,
         (CFIndex)size, kCFStringEncodingASCII, false);
     free(bytes);
     if (!text) return 5;
     JSStringRef json = JSStringCreateWithCFString(text);
     CFRelease(text);
+#else
+    bytes[size] = 0;
+    JSStringRef json = JSStringCreateWithUTF8CString((const char *)bytes);
+    free(bytes);
+#endif
     if (!json) return 5;
     struct vox_adblock_snapshot_metadata *metadata = malloc(sizeof *metadata);
     if (!metadata) { JSStringRelease(json); return 3; }

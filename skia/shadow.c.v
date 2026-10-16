@@ -1,6 +1,10 @@
 module skia
 
-#flag @DIR/shadow_raster.o
+$if linux {
+	#flag @DIR/../Build/linux/native/skia.a
+} $else {
+	#flag @DIR/shadow_raster.o
+}
 #include "shadow_raster.h"
 
 pub struct ShadowRect {

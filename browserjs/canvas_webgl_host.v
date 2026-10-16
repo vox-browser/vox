@@ -62,7 +62,7 @@ pub fn (mut host CanvasWebGLHost) install(mut runtime Runtime) ! {
 		if key !in host.elements { return none }
 		return unsafe { host.elements[key] }
 	})
-	$if darwin {
+	$if darwin || linux {
 		host.install_xr(mut runtime)!
 	}
 }

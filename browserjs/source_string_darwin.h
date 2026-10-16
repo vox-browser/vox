@@ -1,13 +1,17 @@
 #ifndef VOX_BROWSERJS_SOURCE_STRING_DARWIN_H
 #define VOX_BROWSERJS_SOURCE_STRING_DARWIN_H
 
+#include <JavaScriptCore/JavaScript.h>
+#ifdef __APPLE__
 #include <CoreFoundation/CoreFoundation.h>
 #include <JavaScriptCore/JSStringRefCF.h>
+#endif
 #include <limits.h>
 
 static JSStringRef vox_browserjs_source_utf8_string(const unsigned char *bytes,
     size_t length)
 {
+#ifdef __APPLE__
     // The old zero-unit constructor creates JSC's distinct null-string form.
     // CF also strips an initial UTF-8 BOM, unlike the existing rune decoder.
     if (length == 0 || length > LONG_MAX
@@ -22,6 +26,11 @@ static JSStringRef vox_browserjs_source_utf8_string(const unsigned char *bytes,
     JSStringRef result = JSStringCreateWithCFString(text);
     CFRelease(text);
     return result;
+#else
+    // js_source_string retains the length-aware UTF-16 conversion on Linux.
+    (void)bytes; (void)length;
+    return NULL;
+#endif
 }
 
 #endif

@@ -57,5 +57,44 @@ static void libweb_v_pump_native_events(double wait_seconds)
 {
     CFRunLoopRunInMode(kCFRunLoopDefaultMode, wait_seconds, true);
 }
+#elif defined(__linux__)
+#include "linux_event_context.h"
+#include <stdlib.h>
+typedef struct { void *context; void (*timeout)(void *); } LibWebVTimerContext;
+static gboolean libweb_v_timer_callback(gpointer context) {
+    // fire() may unregister its own source and free the callback state.
+    LibWebVTimerContext state = *(LibWebVTimerContext *)context;
+    state.timeout(state.context);
+    return G_SOURCE_CONTINUE;
+}
+static void *libweb_v_register_timer(void *context, int interval_ms, void (*timeout)(void *)) {
+    LibWebVTimerContext *state = malloc(sizeof(*state));
+    if (!state) abort();
+    *state = (LibWebVTimerContext){context, timeout};
+    GSource *source = g_timeout_source_new(interval_ms > 0 ? interval_ms : 1);
+    g_source_set_callback(source, libweb_v_timer_callback, state, free);
+    g_source_attach(source, libweb_v_thread_event_context());
+    return source;
+}
+static void libweb_v_unregister_timer(void *timer) {
+    g_source_destroy(timer);
+    g_source_unref(timer);
+}
+static gboolean libweb_v_pump_deadline(gpointer context) { (void)context; return G_SOURCE_REMOVE; }
+static void libweb_v_pump_native_events(double wait_seconds) {
+    GMainContext *context = libweb_v_thread_event_context();
+    if (wait_seconds <= 0 || g_main_context_pending(context)) {
+        // Bound each pump so a repeating ready source cannot starve painting.
+        for (int i = 0; i < 64 && g_main_context_pending(context); ++i)
+            g_main_context_iteration(context, FALSE);
+        return;
+    }
+    GSource *deadline = g_timeout_source_new((guint)(wait_seconds * 1000) + 1);
+    g_source_set_callback(deadline, libweb_v_pump_deadline, NULL, NULL);
+    g_source_attach(deadline, context);
+    g_main_context_iteration(context, TRUE);
+    g_source_destroy(deadline);
+    g_source_unref(deadline);
+}
 #endif
 #endif

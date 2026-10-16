@@ -81,7 +81,7 @@ fn test_document_execution_rejects_modules_before_frontend_preparation() {
 	assert runtime.evaluate('continued_after_module;')! == '42'
 	runtime.close()
 	assert runtime.run_document_scripts_collect_errors([module_source]) == ['JavaScript runtime is closed']
-	$if darwin {
+	$if darwin || linux {
 		mut browser_runtime := Runtime.create()
 		defer { browser_runtime.close() }
 		browser_runtime.evaluate_host('globalThis.entries = []; globalThis.console = { error: value => entries.push(String(value)) };')!
@@ -153,7 +153,7 @@ fn test_engine_selection_keeps_javascriptcore_available() {
 	} else {
 		assert err.msg().contains('javascriptcore or libjs')
 	}
-	$if darwin {
+	$if darwin || linux {
 		mut runtime := Runtime.create_with_engine(.javascriptcore)
 		defer { runtime.close() }
 		assert runtime.engine == .javascriptcore
@@ -167,7 +167,7 @@ fn test_javascript_core_evaluates_ecmascript_and_reports_exceptions() {
 	defer {
 		runtime.close()
 	}
-	$if darwin {
+	$if darwin || linux {
 		assert runtime.evaluate('JSON.stringify({ answer: 6 * 7 })')! == '{"answer":42}'
 		assert runtime.evaluate('globalThis.answer = 41; "set"')! == 'set'
 		assert runtime.evaluate('answer + 1')! == '42'
@@ -182,7 +182,7 @@ fn test_javascript_core_evaluates_ecmascript_and_reports_exceptions() {
 }
 
 fn test_javascript_core_drains_promise_jobs_between_evaluations() {
-	$if darwin {
+	$if darwin || linux {
 		mut runtime := Runtime.create()
 		defer {
 			runtime.close()
@@ -219,7 +219,7 @@ fn test_browser_preparation_retains_libjs_ast_and_positioned_early_errors() {
 }
 
 fn test_browser_backend_handles_frontend_stack_limit_and_regex_validation() {
-	$if darwin {
+	$if darwin || linux {
 		mut runtime := Runtime.create()
 		defer { runtime.close() }
 		assert runtime.evaluate('"a' + [u8(0)].bytestr() + '😀".length')! == '4'
@@ -276,7 +276,7 @@ fn test_browser_runtime_owns_distinct_libjs_realms_and_restores_embedding_contex
 	assert voidptr(first.libjs_realm()) != voidptr(second.libjs_realm())
 	assert first.libjs_vm().execution_context_stack().len == 1
 	assert voidptr(first.libjs_vm().realm()) == voidptr(first.libjs_realm())
-	$if darwin {
+	$if darwin || linux {
 		assert first.evaluate('const owned = 42; owned')! == '42'
 		if _ := first.evaluate('throw new Error("failure")') { assert false
 		 }
@@ -295,7 +295,7 @@ fn test_browser_runtime_owns_distinct_libjs_realms_and_restores_embedding_contex
 }
 
 fn test_document_programs_share_lexical_bindings_drain_jobs_and_isolate_errors() {
-	$if darwin {
+	$if darwin || linux {
 		mut runtime := Runtime.create()
 		defer { runtime.close() }
 		runtime.evaluate_host('globalThis.entries = []; globalThis.console = { error: value => entries.push(String(value)) };')!

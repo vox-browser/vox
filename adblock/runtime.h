@@ -15,11 +15,14 @@ static void *vox_adblock_get_context(void) { return vox_adblock_context_value; }
 static void vox_adblock_set_context(void *context) { vox_adblock_context_value = context; }
 static int vox_adblock_get_enabled(void) { return vox_adblock_enabled_value; }
 static void vox_adblock_set_enabled(int enabled) { vox_adblock_enabled_value = enabled; }
+#ifdef __APPLE__
 #include <CoreFoundation/CoreFoundation.h>
 #include <JavaScriptCore/JSStringRefCF.h>
+#endif
 #include <zlib.h>
 #include <limits.h>
 static JSStringRef vox_adblock_utf8_string(const unsigned char *bytes, size_t length) {
+#ifdef __APPLE__
     if (!length || length > LONG_MAX) return NULL;
     // CF strips a leading UTF-8 BOM. The existing decoder retains U+FEFF.
     if (length >= 3 && bytes[0] == 0xef && bytes[1] == 0xbb && bytes[2] == 0xbf)
@@ -30,6 +33,11 @@ static JSStringRef vox_adblock_utf8_string(const unsigned char *bytes, size_t le
     JSStringRef result = JSStringCreateWithCFString(text);
     CFRelease(text);
     return result;
+#else
+    // Use the existing length-aware UTF-16 decoder, including embedded NULs.
+    (void)bytes; (void)length;
+    return NULL;
+#endif
 }
 static int vox_adblock_gunzip(const unsigned char *input, size_t input_size,
         unsigned char *output, size_t output_size) {

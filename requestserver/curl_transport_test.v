@@ -43,7 +43,7 @@ fn native_transport_settings(address string) (&html.EnvironmentSettingsObject, &
 }
 
 fn test_actual_curl_socket_timer_transport_streams_into_owning_xhr_model() {
-	$if !darwin { return }
+	$if !darwin && !linux { return }
 	mut listener := net.listen_tcp(.ip, '127.0.0.1:0')!
 	defer { listener.close() or {} }
 	address := 'http://${listener.addr()!}/owner'
@@ -73,7 +73,7 @@ fn test_actual_curl_socket_timer_transport_streams_into_owning_xhr_model() {
 }
 
 fn test_source_stop_fetch_removes_the_real_curl_request_from_multi() {
-	$if !darwin { return }
+	$if !darwin && !linux { return }
 	settings, _ := native_transport_settings('http://127.0.0.1:54321/owner')
 	mut connection := CurlConnection.create()!
 	defer { connection.close() }
@@ -89,7 +89,7 @@ fn test_source_stop_fetch_removes_the_real_curl_request_from_multi() {
 }
 
 fn test_actual_redirect_does_not_recursively_add_or_remove_handles_in_curl_body_callback() {
-	$if !darwin { return }
+	$if !darwin && !linux { return }
 	mut listener := net.listen_tcp(.ip, '127.0.0.1:0')!
 	defer { listener.close() or {} }
 	server := spawn serve_redirect_response(mut listener)

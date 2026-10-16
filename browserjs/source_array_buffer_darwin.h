@@ -3,7 +3,7 @@
 #ifndef VOX_SOURCE_ARRAY_BUFFER_DARWIN_H
 #define VOX_SOURCE_ARRAY_BUFFER_DARWIN_H
 
-#include <JavaScriptCore/JavaScriptCore.h>
+#include <JavaScriptCore/JavaScript.h>
 #include <stdlib.h>
 #include <string.h>
 

@@ -1,5 +1,23 @@
 module main
 
+import dom
+
+fn test_portable_address_bar_ignores_shortcut_characters_and_accepts_altgr() {
+	mut app := BrowserApp{address: 'about:home'}
+	app.focus_address_bar()
+	app.platform_pointer_modifiers = dom.modifier_ctrl
+	app.handle_character(u32(`l`))
+	assert app.address == 'about:home'
+	assert app.address_select
+	app.platform_pointer_modifiers = 0
+	for code in 'https://example.test/'.runes() { app.handle_character(u32(code)) }
+	assert app.address == 'https://example.test/'
+	app.focus_address_bar()
+	app.platform_pointer_modifiers = dom.modifier_ctrl | dom.modifier_alt
+	app.handle_character(u32(`€`))
+	assert app.address == '€'
+}
+
 $if vox_ui2 ? {
 	import gg
 	import ui2

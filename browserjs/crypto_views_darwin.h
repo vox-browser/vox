@@ -1,5 +1,5 @@
 #pragma once
-#include <JavaScriptCore/JavaScriptCore.h>
+#include <JavaScriptCore/JavaScript.h>
 
 // The native engine brand is used; constructor names and JS properties cannot spoof it.
 static int vox_crypto_integer_view_kind(JSContextRef context, JSValueRef value, JSValueRef* exception)

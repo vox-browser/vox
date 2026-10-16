@@ -41,3 +41,20 @@ fn test_worker_completion_is_retained_and_delivered_on_its_actual_origin_native_
 	assert state.callback_thread == state.origin_thread
 	assert state.bytes.bytestr() == 'source worker result'
 }
+
+fn deliver_with_worker_owned_loop() bool {
+	invoker := capture_native_deferred_invoker() or { return false }
+	state := &DeferredThreadObservation{origin_thread: native_thread_identity()}
+	worker := spawn post_deferred_worker_result(invoker, state)
+	worker.wait()
+	deadline := time.sys_mono_now() + time.second
+	for !state.delivered && time.sys_mono_now() < deadline { pump_native_events(0.05) }
+	return state.delivered && state.callback_thread == state.origin_thread
+		&& state.worker_thread != state.origin_thread
+}
+
+fn test_deferred_completion_can_target_a_worker_owned_native_loop() {
+	$if !linux { return }
+	worker := spawn deliver_with_worker_owned_loop()
+	assert worker.wait()
+}

@@ -5,8 +5,18 @@ import dom
 import html
 import net
 import os
+import platform
 import time
 import webidl
+
+fn native_transport_fixture_font() string {
+	$if macos { return '/System/Library/Fonts/Supplemental/Arial.ttf' }
+	return platform.document_font_path(400) or { panic('No system font available for transport test') }
+}
+
+fn native_transport_fixture_document_url() string {
+	return 'file://' + os.join_path(os.dir(native_transport_fixture_font()), 'fixture.html')
+}
 
 fn serve_native_font(mut listener net.TcpListener, bytes []u8) {
 	mut socket := listener.accept() or { panic(err) }
@@ -37,10 +47,10 @@ fn native_font_document(address string) (&dom.Document, &html.EventLoop, &css.Fo
 }
 
 fn test_font_set_load_uses_real_curl_stream_and_owning_source_tasks() {
-	$if !darwin { return }
+	$if !darwin && !linux { return }
 	mut listener := net.listen_tcp(.ip, '127.0.0.1:0')!
 	defer { listener.close() or {} }
-	bytes := os.read_bytes('/System/Library/Fonts/Supplemental/Arial.ttf')!
+	bytes := os.read_bytes(native_transport_fixture_font())!
 	server := spawn serve_native_font(mut listener, bytes)
 	_, mut owner, mut computer, mut set := native_font_document('http://${listener.addr()!}/owner')
 	mut transport := NativeFontFetchTransport.create()!
@@ -65,14 +75,14 @@ fn test_font_set_load_uses_real_curl_stream_and_owning_source_tasks() {
 }
 
 fn test_document_font_file_transport_remains_deferred_and_uses_fetch_body_sniffing() {
-	$if !darwin { return }
+	$if !darwin && !linux { return }
 	_, mut owner, mut computer, mut set :=
-		native_font_document('file:///System/Library/Fonts/Supplemental/fixture.html')
+		native_font_document(native_transport_fixture_document_url())
 	mut transport := NativeFontFetchTransport.create()!
 	defer { transport.close() }
 	computer.set_fetch_host(transport.fetch_host())
 	mut face := css.FontFaceObject.construct_impl('Native file font',
-		css.FontFaceSource.from_string('url("Arial.ttf")'), css.FontFaceDescriptors{})
+		css.FontFaceSource.from_string('url("${os.file_name(native_transport_fixture_font())}")'), css.FontFaceDescriptors{})
 	set.add(face)!
 	promise := face.load()
 	assert face.status() == .loading
@@ -86,14 +96,14 @@ fn test_document_font_file_transport_remains_deferred_and_uses_fetch_body_sniffi
 }
 
 fn test_unavailable_native_font_transport_reports_failure_instead_of_reading_standalone_file() {
-	$if !darwin { return }
+	$if !darwin && !linux { return }
 	_, mut owner, mut computer, mut set :=
-		native_font_document('file:///System/Library/Fonts/Supplemental/fixture.html')
+		native_font_document(native_transport_fixture_document_url())
 	mut transport := NativeFontFetchTransport.create()!
 	transport.close()
 	computer.set_fetch_host(transport.fetch_host())
 	mut face := css.FontFaceObject.construct_impl('Unavailable native font',
-		css.FontFaceSource.from_string('url("Arial.ttf")'), css.FontFaceDescriptors{})
+		css.FontFaceSource.from_string('url("${os.file_name(native_transport_fixture_font())}")'), css.FontFaceDescriptors{})
 	set.add(face)!
 	promise := face.load()
 	assert face.status() == .loading

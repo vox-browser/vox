@@ -8,7 +8,7 @@ mut:
 
 fn test_host_function_executes_synchronously_and_preserves_string_data() {
 	mut engines := [Engine.libjs]
-	$if darwin {
+	$if darwin || linux {
 		engines << .javascriptcore
 	}
 	for engine in engines {
@@ -28,7 +28,7 @@ fn test_host_function_executes_synchronously_and_preserves_string_data() {
 
 fn test_host_functions_keep_context_identity_and_resume_after_exception() {
 	mut engines := [Engine.libjs]
-	$if darwin {
+	$if darwin || linux {
 		engines << .javascriptcore
 	}
 	for engine in engines {

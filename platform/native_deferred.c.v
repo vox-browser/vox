@@ -29,7 +29,7 @@ pub struct NativeDeferredInvoker {
 // Each capture is consumed by one deferred invocation, matching the source's
 // originating EventLoop handle retained for the pending worker completion.
 pub fn capture_native_deferred_invoker() ?NativeDeferredInvoker {
-	$if macos {
+	$if macos || linux {
 		return NativeDeferredInvoker{
 			loop_handle: C.vox_capture_origin_run_loop()
 		}
@@ -39,7 +39,7 @@ pub fn capture_native_deferred_invoker() ?NativeDeferredInvoker {
 }
 
 pub fn (invoker NativeDeferredInvoker) deferred_invoke(callback fn ()) {
-	$if macos {
+	$if macos || linux {
 		call := &NativeDeferredCall{
 			callback: callback
 		}
@@ -63,7 +63,7 @@ fn invoke_native_deferred_call(pointer voidptr) {
 }
 
 pub fn native_thread_identity() u64 {
-	$if macos {
+	$if macos || linux {
 		return C.vox_deferred_thread_identity()
 	} $else {
 		return 0

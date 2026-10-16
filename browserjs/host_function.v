@@ -27,7 +27,7 @@ pub fn (mut runtime Runtime) define_host_function(name string, callback HostFunc
 		mut global := vm.get_global_object()
 		global.define_direct_property(libjs.PropertyName.from_str(name), libjs.Value.from_object(native.object), 0)
 	} else {
-		$if darwin {
+		$if darwin || linux {
 			install_javascript_core_host_function(runtime.context, name, record)!
 		} $else {
 			return error('JavaScriptCore host bindings are available on macOS only')

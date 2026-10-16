@@ -13,7 +13,11 @@
 #define GL_GLEXT_PROTOTYPES 1
 #include <GLES3/gl3.h>
 #include <GLES2/gl2ext.h>
+#ifdef __linux__
+#include "angle_procedures_linux.h"
+#else
 #include <GLES2/gl2ext_angle.h>
+#endif
 
 typedef struct {
     EGLDisplay display;
@@ -26,6 +30,12 @@ typedef struct {
 
 static void* vox_egl_create(int version)
 {
+#ifdef __linux__
+    // Keep ANGLE's WebGL compatibility and robust-buffer contract. An ordinary
+    // Mesa installation reports WebGL unavailable instead of invoking missing
+    // extensions or substituting unbounded GLES functions.
+    if (!vox_angle_procedures_available()) return NULL;
+#endif
     EGLAttrib display_attributes[] = {
         EGL_PLATFORM_ANGLE_TYPE_ANGLE,
 #ifdef __APPLE__

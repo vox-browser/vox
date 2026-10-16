@@ -1,7 +1,7 @@
 #!/bin/sh
 set -eu
 
-# Build the optimized V-native browser as a macOS application bundle.
+# Build the optimized V-native browser for the current desktop platform.
 #
 # Environment overrides:
 #   V_BIN                     V compiler executable
@@ -12,10 +12,11 @@ set -eu
 #   LADYBIRD_SOURCE_DIR       upstream Ladybird checkout used for Skia
 #   LADYBIRD_VCPKG_TRIPLET    upstream vcpkg triplet directory
 
-if [ "$(uname -s)" != "Darwin" ]; then
-    echo "build-prod-browser.sh builds a macOS .app and must run on macOS" >&2
-    exit 1
-fi
+case "$(uname -s)" in
+    Linux) exec sh "$(dirname -- "$0")/build-linux-browser.sh" "$@" ;;
+    Darwin) ;;
+    *) echo "Vox supports macOS and Linux" >&2; exit 1 ;;
+esac
 
 if [ "$#" -ne 0 ]; then
     echo "usage: build-prod-browser.sh" >&2
@@ -33,7 +34,7 @@ if [ -z "$v_compiler" ]; then
     if command -v v >/dev/null 2>&1; then
         v_compiler=$(command -v v)
     else
-        v_compiler=/Users/alex/code/v/v
+        v_compiler="$HOME/code/v/v"
     fi
 fi
 

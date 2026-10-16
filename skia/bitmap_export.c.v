@@ -1,7 +1,11 @@
 // Translation of Gfx::export_bitmap_to_byte_buffer with a native Skia ABI.
 module skia
 
-#flag @DIR/bitmap_export.o
+$if linux {
+	#flag @DIR/../Build/linux/native/skia.a
+} $else {
+	#flag @DIR/bitmap_export.o
+}
 #include "bitmap_export.h"
 
 pub enum BitmapExportFormat {

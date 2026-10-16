@@ -1,6 +1,6 @@
 module browserjs
 
-$if !darwin {
+$if !darwin && !linux {
 	pub fn (mut host MediaElementHost) install(mut runtime Runtime) ! {
 		_ = host
 		_ = runtime

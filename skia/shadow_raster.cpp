@@ -13,6 +13,7 @@
 #include "include/effects/SkBlurMaskFilter.h"
 #include "include/effects/SkImageFilters.h"
 #include "include/pathops/SkPathOps.h"
+#include "include/core/SkPathBuilder.h"
 #include <cmath>
 #ifdef __APPLE__
 #include "include/ports/SkFontMgr_mac_ct.h"
@@ -47,7 +48,11 @@ static sk_sp<SkFontMgr> shadow_font_manager()
 
 static SkPath shadow_clip_path(VoxCanvasPath const& input)
 {
+#ifdef __linux__
+    SkPathBuilder path;
+#else
     SkPath path;
+#endif
     for (int i = 0; i < input.count; ++i) {
         auto const* segment = input.segments + i * 12;
         switch (int(segment[0])) {
@@ -56,14 +61,23 @@ static SkPath shadow_clip_path(VoxCanvasPath const& input)
         case 2: path.quadTo(segment[3], segment[4], segment[1], segment[2]); break;
         case 3: path.cubicTo(segment[3], segment[4], segment[5], segment[6], segment[1], segment[2]); break;
         case 4:
+#ifdef __linux__
+            path.arcTo(SkPoint{segment[7], segment[8]}, segment[9] * 180.0f / float(M_PI), segment[10] ? SkPathBuilder::kLarge_ArcSize : SkPathBuilder::kSmall_ArcSize,
+                segment[11] ? SkPathDirection::kCW : SkPathDirection::kCCW, SkPoint{segment[1], segment[2]});
+#else
             path.arcTo(segment[7], segment[8], segment[9] * 180.0f / float(M_PI), segment[10] ? SkPath::kLarge_ArcSize : SkPath::kSmall_ArcSize,
                 segment[11] ? SkPathDirection::kCW : SkPathDirection::kCCW, segment[1], segment[2]);
+#endif
             break;
         case 5: path.close(); break;
         }
     }
     path.setFillType(input.even_odd ? SkPathFillType::kEvenOdd : SkPathFillType::kWinding);
+#ifdef __linux__
+    return path.detach();
+#else
     return path;
+#endif
 }
 
 extern "C" bool vox_skia_shadow(uint8_t* pixels, int width, int height, int pitch, VoxShadowCommand const* command)

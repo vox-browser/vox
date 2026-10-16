@@ -13,6 +13,7 @@
 #include "include/core/SkMatrix.h"
 #include "include/core/SkPaint.h"
 #include "include/core/SkPath.h"
+#include "include/core/SkPathBuilder.h"
 #include "include/core/SkShader.h"
 #include "include/core/SkSurface.h"
 #include "include/effects/SkBlurMaskFilter.h"
@@ -30,7 +31,11 @@
 
 static SkPath make_path(VoxCanvasPath const& input)
 {
+#ifdef __linux__
+    SkPathBuilder path;
+#else
     SkPath path;
+#endif
     for (int i = 0; i < input.count; ++i) {
         auto const* segment = input.segments + i * 12;
         switch (int(segment[0])) {
@@ -47,8 +52,13 @@ static SkPath make_path(VoxCanvasPath const& input)
             path.cubicTo(segment[3], segment[4], segment[5], segment[6], segment[1], segment[2]);
             break;
         case 4:
+#ifdef __linux__
+            path.arcTo(SkPoint{segment[7], segment[8]}, segment[9] * 180.0f / float(M_PI), segment[10] ? SkPathBuilder::kLarge_ArcSize : SkPathBuilder::kSmall_ArcSize,
+                segment[11] ? SkPathDirection::kCW : SkPathDirection::kCCW, SkPoint{segment[1], segment[2]});
+#else
             path.arcTo(segment[7], segment[8], segment[9] * 180.0f / float(M_PI), segment[10] ? SkPath::kLarge_ArcSize : SkPath::kSmall_ArcSize,
                 segment[11] ? SkPathDirection::kCW : SkPathDirection::kCCW, segment[1], segment[2]);
+#endif
             break;
         case 5:
             path.close();
@@ -56,7 +66,11 @@ static SkPath make_path(VoxCanvasPath const& input)
         }
     }
     path.setFillType(input.even_odd ? SkPathFillType::kEvenOdd : SkPathFillType::kWinding);
+#ifdef __linux__
+    return path.detach();
+#else
     return path;
+#endif
 }
 
 static SkMatrix make_matrix(float const* v) { return SkMatrix::MakeAll(v[0], v[2], v[4], v[1], v[3], v[5], 0, 0, 1); }

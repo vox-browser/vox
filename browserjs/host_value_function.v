@@ -26,7 +26,7 @@ fn (exception JavaScriptValueException) code() int { return 0 }
 
 pub fn (mut runtime Runtime) define_value_host_function(name string, callback ValueHostFunction) ! {
 	runtime.require_javascript_value_context()!
-	$if darwin {
+	$if darwin || linux {
 		record := &ValueHostFunctionRecord{ runtime: runtime, callback: callback }
 		if !C.vox_install_js_host_function(runtime.context, name.str, record, javascript_core_value_host_function) {
 			return error('JavaScriptCore native-value host function installation failed')
@@ -38,7 +38,7 @@ pub fn (mut runtime Runtime) define_value_host_function(name string, callback Va
 fn (runtime &Runtime) require_javascript_value_context() ! {
 	if runtime.closed { return error('JavaScript runtime is closed') }
 	if runtime.engine != .javascriptcore { return error('Native JavaScriptCore values require the JavaScriptCore backend') }
-	$if !darwin { return error('Native JavaScriptCore values are available on macOS only') }
+	$if !darwin && !linux { return error('Native JavaScriptCore values are available on macOS only') }
 	if runtime.context == unsafe { nil } { return error('JavaScriptCore context creation failed') }
 }
 

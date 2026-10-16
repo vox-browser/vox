@@ -492,6 +492,7 @@ fn font_face(font &Font) ?&ttf.TTF_File {
 }
 
 pub fn system_font_family_available(family string) bool {
+	$if linux { return linux_font_path(family, 400, true) != none }
 	if family.to_lower() == 'noto emoji' {
 		return emoji_font_path() != none
 	}

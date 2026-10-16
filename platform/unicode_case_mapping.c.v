@@ -1,12 +1,19 @@
 // LibUnicode/CaseMapping.cpp: ICU case conversion and fine length-changing edits.
 module platform
 
-#flag @DIR/unicode_case_mapping.o
+$if linux {
+	#flag @DIR/../Build/linux/native/platform.a
+} $else {
+	#flag @DIR/unicode_case_mapping.o
+}
 #flag darwin -I/opt/homebrew/opt/icu4c/include
 #flag darwin -L/opt/homebrew/opt/icu4c/lib
 #flag darwin -licuuc
 #flag darwin -lc++
 #flag linux -lstdc++
+$if linux {
+	#pkgconfig icu-uc icu-i18n
+}
 #include "unicode_case_mapping.h"
 
 struct C.LibWebVCaseEdit {

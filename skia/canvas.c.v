@@ -20,7 +20,11 @@ $if macos {
 	#flag -lstdc++
 }
 
-#flag @DIR/canvas_raster.o
+$if linux {
+	#flag @DIR/../Build/linux/native/skia.a
+} $else {
+	#flag @DIR/canvas_raster.o
+}
 #include "canvas_raster.h"
 
 pub struct Path {

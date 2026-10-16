@@ -1,5 +1,5 @@
 #pragma once
-#include <JavaScriptCore/JavaScriptCore.h>
+#include <JavaScriptCore/JavaScript.h>
 
 static JSObjectRef vox_make_js_host_function(JSGlobalContextRef context, void* record, JSObjectCallAsFunctionCallback callback)
 {

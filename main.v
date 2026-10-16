@@ -48,7 +48,9 @@ import x.json2
 
 #flag darwin -framework CoreImage
 
-#include "native_capture_darwin.m"
+$if macos {
+	#include "native_capture_darwin.m"
+}
 
 fn C.schedule_native_screenshot(path string)
 
@@ -501,7 +503,12 @@ fn debug_timing_checkpoint(label string, previous u64) u64 {
 }
 
 fn schedule_native_screenshot(path string) {
-	C.schedule_native_screenshot(path)
+	$if macos {
+		C.schedule_native_screenshot(path)
+	}
+	$if linux {
+		capture_linux_screenshot(path)
+	}
 }
 
 fn configure_browser_layout_font(configure_native_replay bool) bool {
@@ -564,6 +571,7 @@ fn (mut app BrowserApp) initialize_native_window() {
 		}
 		app.mount_address_bar()
 	}
+	app.update_window_title()
 }
 
 fn positive_dimension(raw string, option string) !int {
@@ -3344,8 +3352,7 @@ fn (mut app BrowserApp) install_loaded_page(loaded LoadedPage, add_history bool)
 	checkpoint = debug_timing_checkpoint('relayout', checkpoint)
 	debug_timing_checkpoint('install_total', install_start)
 	processmetrics.report_instructions('install_total', app.paint_timing.installation_instructions, processmetrics.begin_instructions())
-	title := document_title(app.document)
-	gg.set_window_title(if title != '' { '${title} — vox' } else { 'vox' })
+	app.update_window_title()
 	if destination := javascript_navigation {
 		if destination != '' && destination != loaded.url {
 			app.navigate(resolve_document_reference(destination, loaded.url), true)
@@ -5834,11 +5841,13 @@ fn (mut app BrowserApp) draw_command(source_command layout.PaintCommand, page_x 
 							int(math.round(tile.height))
 						}
 						scaling_mode := painting.to_gfx_scaling_mode(command.image_rendering, painting.IntSize{image.width, image.height}, painting.IntSize{destination_width, destination_height})
-						C.native_draw_image_part_transformed(image, f32(left), f32(top), f32(right_edge - left), f32(bottom_edge - top), source_x, source_y, source_width, source_height, f32(clip.x), f32(clip.y), f32(clip.width), f32(clip.height), f32(matrix[0]), f32(matrix[1]), f32(matrix[2]), f32(matrix[3]), f32(matrix[4]), f32(matrix[5]), page_x, page_y, f32(scroll_y), f32(app.ctx.width), f32(app.ctx.height), f32(command.opacity), if scaling_mode == .nearest_neighbor {
-							1
-						} else {
-							0
-						})
+						$if macos {
+							C.native_draw_image_part_transformed(image, f32(left), f32(top), f32(right_edge - left), f32(bottom_edge - top), source_x, source_y, source_width, source_height, f32(clip.x), f32(clip.y), f32(clip.width), f32(clip.height), f32(matrix[0]), f32(matrix[1]), f32(matrix[2]), f32(matrix[3]), f32(matrix[4]), f32(matrix[5]), page_x, page_y, f32(scroll_y), f32(app.ctx.width), f32(app.ctx.height), f32(command.opacity), if scaling_mode == .nearest_neighbor {
+								1
+							} else {
+								0
+							})
+						}
 					} else {
 						screen_left, screen_top := paint_screen_point(command, left, top, page_x, page_y, scroll_y)
 						screen_right, screen_bottom := paint_screen_point(command, right_edge, bottom_edge, page_x, page_y, scroll_y)
@@ -6011,6 +6020,12 @@ fn (mut app BrowserApp) draw_command(source_command layout.PaintCommand, page_x 
 		}
 		'draw_text' {
 			{
+				$if linux {
+					if command.glyph_run != none {
+						app.draw_portable_shadow(layout.PaintCommand{...command, kind: 'draw_text_shadow', blur: 0}, page_x, page_y, scroll_y)
+						return
+					}
+				}
 				font_scale := math.sqrt(matrix[0] * matrix[0] + matrix[1] * matrix[1])
 				font_size := int(clamp(command.font_size * font_scale, 1.0, 256.0) + 0.5)
 				text_y := $if macos { native_text_draw_y(y, h) } $else { y }
@@ -6092,6 +6107,7 @@ fn address_for_display(address string, cursor int, active bool, max_characters i
 }
 
 fn (mut app BrowserApp) draw() {
+	$if linux { pump_linux_browser_events() }
 	if app.navigation_work_depth > 0 { return }
 	paint_before_frame := app.paint_display_list
 	app.poll_deferred_navigation_input()
@@ -6272,6 +6288,7 @@ fn (mut app BrowserApp) draw() {
 		app.write_capture_audit_if_requested()
 		schedule_native_screenshot(app.screenshot_path)
 	}
+	$if linux { finish_linux_frame() }
 }
 
 fn (app &BrowserApp) element_at_window_point(mouse_x f32, mouse_y f32) ?&dom.Element {
@@ -6455,6 +6472,14 @@ fn (mut app BrowserApp) handle_event(event &gg.Event) {
 
 fn (mut app BrowserApp) handle_character(code u32) {
 	if app.native_address_bar || !app.address_active || code < 32 || code == 127 {
+		return
+	}
+	// X11 can deliver the printable key for a Ctrl/Super shortcut as well as
+	// its key-down event. Keep Ctrl+L from inserting an "l" into the address.
+	// Ctrl+Alt remains available for AltGr character input.
+	if app.platform_pointer_modifiers & dom.modifier_super != 0
+		|| (app.platform_pointer_modifiers & dom.modifier_ctrl != 0
+			&& app.platform_pointer_modifiers & dom.modifier_alt == 0) {
 		return
 	}
 	mut runes := app.address.runes()
@@ -6686,7 +6711,7 @@ fn main() {
 		min_height: 480
 		window_title: 'vox'
 		bg_color: gg.rgb(232, 237, 243)
-		native_rendering: true
+		native_rendering: $if macos { true } $else { false }
 		init_fn: fn (mut app BrowserApp) {
 			app.initialize_native_window()
 		}

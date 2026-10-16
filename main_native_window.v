@@ -7,6 +7,14 @@ import time
 fn C.native_configure_browser_drawables()
 fn C.native_install_browser_layer_presentation()
 
+fn (app &BrowserApp) update_window_title() {
+	// Sokol's X11 title setter requires a live Display and Window. Documents
+	// are also installed before window creation and in non-windowed modes.
+	if app.ctx == unsafe { nil } || app.document == unsafe { nil } { return }
+	title := document_title(app.document)
+	gg.set_window_title(if title != '' { '${title} — vox' } else { 'vox' })
+}
+
 // The macOS shell draws directly into its Cocoa view. GG's default lifecycle
 // also creates GPU shaders, pipelines and a FreeType atlas that this renderer
 // never uses. Retain its event/frame callbacks and initialize only their shared

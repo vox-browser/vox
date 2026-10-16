@@ -303,6 +303,15 @@ fn resolve_font_path_for_family(family string, weight int) ?string {
 			return regular_path
 		}
 	}
+	$if linux {
+		family_name := match lower_family {
+			'default', 'uisansserif', 'ui-sans-serif', 'sansserif' { 'sans-serif' }
+			'uiserif', 'ui-serif' { 'serif' }
+			'uimonospace', 'ui-monospace' { 'monospace' }
+			else { family }
+		}
+		return linux_font_path(family_name, weight, false)
+	}
 	regular_path := configured_document_font_path()?
 	if weight < 600 {
 		return regular_path

@@ -18,7 +18,7 @@ fn native_event_binding_fixture() (&Runtime, &html.EnvironmentSettingsObject) {
 }
 
 fn test_native_event_target_listener_identity_flags_and_same_platform_wrappers() {
-	$if !darwin { return }
+	$if !darwin && !linux { return }
 	mut runtime, _ := native_event_binding_fixture()
 	defer { runtime.close() }
 	constructor := runtime.evaluate_host_value('EventTarget')!
@@ -41,7 +41,7 @@ fn test_native_event_target_listener_identity_flags_and_same_platform_wrappers()
 }
 
 fn test_native_event_listener_object_original_throw_and_owner_callback_context() {
-	$if !darwin { return }
+	$if !darwin && !linux { return }
 	mut runtime, settings := native_event_binding_fixture()
 	defer { runtime.close() }
 	owner := voidptr(runtime)
@@ -70,7 +70,7 @@ fn test_native_event_listener_object_original_throw_and_owner_callback_context()
 }
 
 fn test_native_handler_attribute_false_cancellation_and_closed_runtime_callbacks() {
-	$if !darwin { return }
+	$if !darwin && !linux { return }
 	mut runtime, _ := native_event_binding_fixture()
 	target := dom.EventTarget.new()
 	wrapper := runtime.javascript_event_target(target, none)!
@@ -93,7 +93,7 @@ fn test_native_handler_attribute_false_cancellation_and_closed_runtime_callbacks
 }
 
 fn test_native_event_options_convert_in_source_order_and_abort_signal_removes_listener() {
-	$if !darwin { return }
+	$if !darwin && !linux { return }
 	mut runtime, _ := native_event_binding_fixture()
 	defer { runtime.close() }
 	signal := dom.AbortSignal.new()
@@ -112,7 +112,7 @@ fn test_native_event_options_convert_in_source_order_and_abort_signal_removes_li
 }
 
 fn test_native_event_callback_respects_owning_script_execution_gate_and_time_origin() {
-	$if !darwin { return }
+	$if !darwin && !linux { return }
 	mut runtime, settings := native_event_binding_fixture()
 	defer { runtime.close() }
 	assert runtime.evaluate_host('globalThis.gatedCount=0;globalThis.gatedTarget=new EventTarget();gatedTarget.addEventListener("gate",()=>gatedCount++);globalThis.owningEvent=new Event("gate");owningEvent.timeStamp>=0&&owningEvent.timeStamp<10000')! == 'true'

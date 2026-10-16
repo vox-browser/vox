@@ -2,7 +2,7 @@ module browserjs
 
 import html
 
-$if !darwin {
+$if !darwin && !linux {
 	pub fn (mut runtime Runtime) install_time_ranges_binding() ! {
 		return error('Native TimeRanges bindings are currently available on macOS only')
 	}
