@@ -39,6 +39,22 @@ fn (mut host MediaElementHost) install_track_elements() ! {
 			}
 		})!
 	}
+	for name in ['load', 'error'] {
+		functions << runtime.make_native_value_host_function('get on${name}', 0, fn [handle, name] (receiver voidptr, _ []voidptr) !voidptr {
+			mut host := unsafe { &MediaElementHost(handle) }
+			return host.get_track_element_handler(name, receiver) or {
+				return host.runtime.actual_javascript_exception(host.runtime.binding_exception_value(err))
+			}
+		})!
+		functions << runtime.make_native_value_host_function('set on${name}', 1, fn [handle, name] (receiver voidptr, args []voidptr) !voidptr {
+			mut host := unsafe { &MediaElementHost(handle) }
+			mut value := C.JSValueMakeUndefined(host.runtime.context)
+			if args.len > 0 { value = args[0] }
+			return host.set_track_element_handler(name, receiver, value) or {
+				return host.runtime.actual_javascript_exception(host.runtime.binding_exception_value(err))
+			}
+		})!
+	}
 	factory := runtime.evaluate_host_value(r'(function(bind,getTrack,getState,...attributes){
  const define=Object.defineProperty,prototype=Object.create(EventTarget.prototype),T=TypeError;
  const illegal=()=>{throw new T("Illegal HTMLTrackElement constructor")},constructor=new Proxy(function HTMLTrackElement(){},{apply:illegal,construct:illegal});
@@ -46,6 +62,7 @@ fn (mut host MediaElementHost) install_track_elements() ! {
  define(prototype,Symbol.toStringTag,{value:"HTMLTrackElement",configurable:true});
  define(prototype,"track",{get:getTrack,enumerable:true,configurable:true});define(prototype,"readyState",{get:getState,enumerable:true,configurable:true});
  let i=0;for(const name of ["kind","src","srclang","label","default"])define(prototype,name,{get:attributes[i++],set:attributes[i++],enumerable:true,configurable:true});
+ for(const name of ["load","error"])define(prototype,"on"+name,{get:attributes[i++],set:attributes[i++],enumerable:true,configurable:true});
  for(const [name,value] of [["NONE",0],["LOADING",1],["LOADED",2],["ERROR",3]])for(const object of [constructor,prototype])define(object,name,{value,enumerable:true});
  define(globalThis,"HTMLTrackElement",{value:constructor,writable:true,configurable:true});define(globalThis,"__ladybirdTrackElementBind",{value:bind,configurable:true});return prototype;
 })')!
@@ -146,4 +163,24 @@ fn (host &MediaElementHost) track_element_text_track(target &dom.EventTarget) ?&
 		if voidptr(target) == voidptr(&model.track.EventTarget) { return model.track }
 	}
 	return none
+}
+
+fn (mut host MediaElementHost) get_track_element_handler(name string, receiver voidptr) !voidptr {
+	if host.closed { return error('TypeError: Track element binding is closed') }
+	element := host.track_elements[receiver] or { return error('TypeError: Not an object of type HTMLTrackElement') }
+	if replay := host.replay { replay(host.runtime)! }
+	return host.runtime.javascript_event_handler(unsafe { &dom.EventTarget(element) }, name)
+}
+
+fn (mut host MediaElementHost) set_track_element_handler(name string, receiver voidptr, value voidptr) !voidptr {
+	if host.closed { return error('TypeError: Track element binding is closed') }
+	element := host.track_elements[receiver] or { return error('TypeError: Not an object of type HTMLTrackElement') }
+	// Capture the callback and incumbent settings before replay can reenter.
+	callback := host.runtime.event_callback(value, true)!
+	if replay := host.replay { replay(host.runtime)! }
+	target := unsafe { &dom.EventTarget(element) }
+	target.set_event_handler_attribute(name, if callback != unsafe { nil } {
+		?&dom.CallbackType(callback)
+	} else { none })
+	return C.JSValueMakeUndefined(host.runtime.context)
 }

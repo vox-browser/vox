@@ -2391,10 +2391,10 @@ fn apply_decoded_javascript_state(document &dom.Document, state map[string]json2
 				mut target := element_by_bridge_key[target_key] or { continue }
 				if kind == 'compactAttribute' {
 					name := json_string_property(operation, 'name') or { continue }
-					// Explicit track source and video poster writes run their DOM
+					// Explicit track source/handler and video poster writes run their DOM
 					// hooks even for equal text; preserve the first qualified Attr.
 					if target.is_html_element()
-						&& ((name == 'src' && target.local_name() == 'track')
+						&& ((name in ['src', 'onload', 'onerror'] && target.local_name() == 'track')
 							|| (name == 'poster' && target.local_name() == 'video')) {
 						if value := json_string_property(operation, 'value') {
 							if attribute := target.get_attribute_node(name) {
