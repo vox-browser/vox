@@ -9683,6 +9683,58 @@ Evidence: Build/opt98-{before,final,contracts}-source and
 Build/v/instruction-opt98-*, including actual exits, exact source audit,
 diagnostic observations and durable focused C archives.
 
+## Kernel coalition accounting capability after round 98
+
+Tooling commit `7a11ff91` adds an optional, separate macOS resource-coalition
+instruction counter. It preserves exited-task accounting and rejects changed
+groups, decreasing counters, failed reads, incompatible ABI layouts and
+sampling intervals that overlap. Thirteen focused tests pass, including a live
+hardware-counter read. The existing process-tree observer is unchanged.
+[Apple's Recount documentation](https://github.com/apple-oss-distributions/xnu/blob/f6217f891ac0bb64f3d375211650a4c1ff8ca1ea/doc/observability/recount.md)
+and [resource-coalition implementation](https://github.com/apple-oss-distributions/xnu/blob/f6217f891ac0bb64f3d375211650a4c1ff8ca1ea/osfmk/kern/coalition.c)
+provide the accounting reference; the private ABI's prefix is pinned separately
+in source and authenticated against actual kernel reads.
+
+A fresh background-only LaunchServices helper receives its own resource group,
+separate from the shared CLI group. Eight owned short-lived children finish
+with actual zero wait statuses. Their self-sampled instructions total
+**20,851,918**; after all are reaped the coalition delta is **31,245,555**,
+including the parent's work. Kernel task totals advance by exactly eight starts
+and eight exits. The helper's actual zero exit is captured with a kernel process
+event. This verifies dead-child rollup without polling each child's final read.
+The initial attempt incorrectly expected one total startup task; the observed
+two starts/one completed bootstrap task and failed receipt remain retained.
+The passing capability attempt subtracts cumulative counters, including the
+same completed bootstrap task in its baseline. No successful runtime is rerun.
+
+A separate **headless Chrome 155** capability attempt uses a fresh profile and
+LaunchServices group, with only `about:blank` and a local data page. At stable
+baseline all **11** live members match the kernel's **16 starts/5 exits**;
+after creating the local target all **13** match **19 starts/6 exits**. Every
+CDP-reported live process is present, every live group member belongs to the
+owned Chrome bundle, and the CLI group is excluded. The startup scan with a
+changing task count is retained alongside both stable scans. Chrome's actual
+root exit is zero. An earlier capability attempt failed its startup count check;
+its receipt is kept and its final root status remains unknown.
+
+These are **accounting capability checks, with zero performance credit**.
+A coalition includes every member, so shared inherited groups are unsuitable.
+Conservative external boundaries select only reads completed before the chosen
+endpoint; they may precede it and must disclose that uncertainty. GPU execution
+and external services remain outside these CPU counters. Equivalent cached
+GitHub content and navigation/paint-submission endpoints still need validation.
+The old observed-descendant Chrome lower bound is not replaced by a fair
+comparison here. **Faster-than-Chrome performance remains unproven.** Frozen
+round 97 remains the control; round 96 remains the broad baseline; observed
+carry remains **4,410,609.5**. The canonical and GUI browsers are preserved.
+
+Evidence: Build/v/instruction-chrome-coalition-accounting-relative-probe.json,
+Build/v/instruction-chrome-coalition-membership-stable-result.json and their
+actual controller receipts. Build/v/coalition-accounting-research contains
+pinned Apple source hashes, helper source/binary hashes, completed child
+receipts and the retained initial failure. This capability work is separate
+from every fixed 30-pair Vox cohort.
+
 ## Causes and changes
 
 - The V 0.5.2 compatibility compiler's `-prod` Boehm code repeatedly snapshots
