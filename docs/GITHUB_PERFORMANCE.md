@@ -9215,6 +9215,133 @@ Equivalent Chrome content/start/submission accounting remains open;
 **faster-than-Chrome performance is unproven**. Evidence:
 Build/instructions/vox-opt93-interleaved-* and Build/v/instruction-opt93-*.
 
+## Separate immutable inline-end geometry snapshots
+
+Round 94 imports independently authored `67dd3b64` (Alexander Medvednikov):
+**ten exact hunks in layout/layout_state.v**, on accepted frozen round 93.
+Inline-end static positions use small immutable scalar snapshots rather than
+allocating the unrelated SVG/grid/table rare record. Measurement snapshots
+live in separately released 64-slot chunks. Retained positions remain ordinary
+GC-owned snapshots without an arena back edge. Measurement-to-measurement
+copies preserve independent release; writers publish a new snapshot.
+No measurement pool, filtering, heap hint or GC policy changes.
+
+The identical common harness passes **29 cases / 21,719
+assertions in each of before/Boehm, final/Boehm and final/no-GC**, C-O2.
+Its 28 functional cases cover used geometry, measurement lifetime/defaults and
+complete document layout; one diagnostic is inactive. Common source SHA256:
+`59818c23cddbc565de7c6f4d4738688c75d3c50606d1992d2a7e9d4ecd139631`.
+The initial combined harness hit an html-import/local-variable collision
+before any case or diagnostic observation ran. The failed checker receipts
+remain. Only three identifier occurrences in one fixture were renamed;
+assertions, namespace/tag strings, all 29 cases and runtime sources remain
+unchanged. Both variants receive the identical corrected harness.
+All **five original snapshot contract cases plus the original updated size
+case pass 1,359 assertions each in both GC modes**.
+Original function bodies are exact. Coverage includes zero presence, defaults,
+independent writer replacement, growth/producer escape, GC reachability,
+independent source release, immutable publication and the bounded record size.
+All successful checks retain actual zero exits and durable C archives.
+
+Three fixed alternating local pairs measure **32 complete public document
+layout rebuilds over 64 Unicode paragraphs**, with nested min-content inline
+blocks and absolute children. Public dirty invalidation, fresh mirrors,
+formatting, geometry, paint transport and recursive committed geometry/text
+checksums are counted. Setup, eight warmups checking fresh mirrors and clean
+documents, expected checksum and forced GC precede the hardware interval;
+checksum assertions follow. All six actual exits are 0 and checksums
+**1,829,472** match. Before counts: **3,279,794,652 / 3,268,711,101 / 3,275,892,462**;
+final counts by pair: **2,982,437,301 / 2,987,691,587 / 2,988,777,253**. Medians
+**3,275,892,462→2,987,691,587**,
+**-8.79763%**, with all three pairs improving.
+These complete public operations provide a local result, not page credit.
+
+Full-process C-O1/Boehm profiles pass, enabled from startup without filtering
+or resets. Call counts only:
+
+| Function | Before calls | Candidate calls |
+| --- | ---: | ---: |
+| `layout__opt94_complete_public_document_layout` | 41 | 41 |
+| `layout__run_document_layout` | 49 | 49 |
+| `layout__UsedValues_set_inline_end_static_position_rect` | 5,455 | 5,455 |
+| `layout__UsedValues_inline_end_static_position_rect` | 0 | 0 |
+| `layout__UsedValues_ensure_rare_data` | 8,710 | 3,255 |
+| `layout__MeasurementUsedValuesArena_allocate` | 9,208 | 9,208 |
+| `layout__MeasurementUsedValuesArena_allocate_inline_end_snapshot` | 0 | 66 |
+| `layout__LayoutState_populate_node_from` | 265 | 265 |
+| `layout__UsedValuesRareData_clone` | 3 | 3 |
+
+Public rebuilds, setter calls and geometry-slot counts match. Rare-data
+construction drops by exactly the 5,455 inline-end setter calls; measurement
+snapshot allocation uses the new helper. The getter has zero calls in both
+profiles; getter behavior is covered separately by the original contracts.
+Both original profile processes exit 0. A draft extraction incorrectly demanded
+a positive getter count, so corrected read-only extraction retains the actual
+zeros without recompiling or rerunning either profile. Timings provide no
+instruction credit.
+
+The strict normal generated-C audit passes. Eight source-edited methods and
+one new helper are scoped; the inspection-only has_rare_data method is absent
+from both normal binaries. All emitted targets independently match C-only
+generation from the same immutable runtimes. Three exact record changes move
+one optional inline-end position into two nil owner pointers and add the
+measurement snapshot list. The new scalar chunk and fixed-array declarations
+are authenticated exactly. Four source-unchanged constructor sites differ
+only by the corresponding empty/nil defaults or removal of the old optional
+snapshot default. Normal geometry record printers remain absent. Actual
+frontend tables are identical. All remaining C, globals, resources, filtering,
+and GC setup match after established identities, unchanged assertion lines,
+37 frozen includes and four byte-identical helper reorders. All 120 native
+input hashes and exact native arguments match. Independent -no-skip-unused
+probes generate C only, with actual exits 0 and no native/runtime executions.
+Failed read-only audit evidence remains in
+instruction-opt94-c-audit-fixed-array-declaration-finding, instruction-opt94-c-audit-fixed-array-wrapper-finding, instruction-opt94-c-audit-normal-reachability-finding.
+No successful check or primary is repeated. Passing audit script SHA256:
+`00c44d471f4f54bf7ed60770a2fd544dd1358e5bd4d5e1b885099549882b47cf`.
+Normal C SHA256: `37fbf0e26e33988c6fb51812f97490f971b91d03d21c7f716cab807e132042ef`.
+Durable archive hashes: instruction-opt94-artifact-archives.json.
+
+The predeclared page cohort is **30 alternating pairs**, odd before/final and
+even final/before, **30,000 paired bootstrap resamples, seed 94**. Persisted
+regular binaries use fresh copies of the same 359 cached bodies, frozen text
+and child-only placement helpers, C-O2/Boehm/default marker 1, and the same
+4 GiB hint; no prod/prealloc. Document viewport remains 1024×768 and endpoint
+navigation_to_first_document_paint[0].
+
+| Build | Median first-frame retired instructions | Median lifetime process peak, MiB |
+| --- | ---: | ---: |
+| Fresh accepted frozen round 93 control | 17,412,643,869 | 3,509.8 |
+| Immutable inline-end geometry snapshots | 17,386,266,103.5 | 3,490.6 |
+
+Difference of marginal medians (before minus candidate):
+**26,377,765.5** instructions; candidate change
+**-0.151%**, **28/30** wins.
+Paired median saving **23,978,799.5**, paired 95% interval
+**[20,272,890.5, 29,370,545]**. The positive paired interval establishes repeatable page credit of **26,377,765.5** instructions.
+
+All 60 primaries and **60 actual PNGs** remain. Recoveries:
+none; pre-parse retries: 0. First primaries retain
+1 installation/2 geometry preparations/1 paint. Later completed refreshes:
+none. No completed primary is extended, discarded
+or rerun. Any recovery discloses unknown final exit and missing PNG,
+fingerprint and peak. Peaks include capture/exit and later refreshes; they
+are not live first-frame memory and are never summed. The read-only decoded capture check finds 30 before and 30 candidate RGB classes, 0 shared. All differences stay within the original skeleton bands, x45–662: y335–344 and ten 14px bands starting at 380 with 41px spacing. All pixels outside these bands match. No animation was disabled and no observation repeated; evidence is instruction-opt94-page-pixel-class-check.json.
+External foreground transitions remain retained:
+none.
+The child is foreground in neither startup snapshot. The specific Unicode,
+min-content inline/absolute focused viewport is pixel-exact at 1024×768.
+Prior observed carry is 0. Cumulative observed saving **26,377,765.5** crosses the 5M gate. Six direct harness jobs actually pass CSS 31/SVG 10/layout 46 in both GCs (**174 executions**). All **19 screenshots pass, 16 exact**; known differences remain inline-node 13, text-decorations 1,341 and canvas-text 1,994. The completed broad batch resets additional observed savings to 0.
+All controllers and child checks retain actual terminal evidence.
+
+The isolated signed app is `/Users/alex/code/vox2/Build/v/Vox-opt94.app`. Native instruction text
+matches the measured executable, with the frozen helper pinned inside the app.
+Actual loaded helper path/hash, signatures, startup and actual collections
+pass for default marker 1 and override 2. Canonical and GUI browsers remain
+preserved. Contemporary Root receives no source, regression or page credit.
+Equivalent Chrome content/start/submission accounting remains open;
+**faster-than-Chrome performance is unproven**. Evidence:
+Build/instructions/vox-opt94-interleaved-* and Build/v/instruction-opt94-*.
+
 ## Causes and changes
 
 - The V 0.5.2 compatibility compiler's `-prod` Boehm code repeatedly snapshots
