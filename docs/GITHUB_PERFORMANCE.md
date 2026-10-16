@@ -8972,6 +8972,127 @@ Equivalent Chrome content/start/submission accounting remains open;
 **faster-than-Chrome performance is unproven**. Evidence:
 Build/instructions/vox-opt91-interleaved-* and Build/v/instruction-opt91-*.
 
+## Avoid temporary maps for resolved normal font settings
+
+Round92 imports independently authored `ee49b287` (Alexander Medvednikov):
+**two exact hunks in css/computed_interpolation.v and css/computed_values.v**
+on accepted frozen91. Resolved normal variation settings clear the private
+owner directly; non-normal values keep the original owning setter. Feature
+data fills its final u32 settings map directly, preserving duplicate order
+and the original u8 narrowing before widening. Typed values remain
+preferred over fallback CSS text. Public getters keep independent mutable
+snapshots. No record, filtering, arena, heap hint or GC policy changes.
+
+The identical common harness executes **51 cases** in all three C-O2
+configurations: **5,231 assertions before/Boehm and 5,219 each
+final/Boehm and final/no-GC**. The sole count difference is in the unchanged
+six-explicit-assert font-feature cache-mutation case, whose total falls
+72→60 when internal normal parsing is avoided. No test assertion or case is
+edited, skipped or rerun. The other fifty case totals match, with the inactive
+diagnostic included. Common source SHA256:
+`5927c354ec0199129de17d0894fe5eeb28c187e8eb576b66af8e20c9993d123b`.
+All **five original contract cases pass 996
+assertions each in both GC modes**, with byte-exact original source. They cover
+typed/bridge normal settings, allocation-free reads, clearing/restoration,
+retained snapshots and GC reachability, duplicate tags and narrowing,
+animated/transition/important precedence, typed-payload priority and invalid
+fallback text. Before/final common and candidate-only checks retain actual
+zero exits and durable generated C archives.
+
+Three fixed alternating local pairs measure **16 complete public font-change
+notifications, document style updates and retained-value materializations
+over33 existing elements** per observation. Explicit font sizes and normal
+feature/variation settings are identical. DOM, initial styles, eight warmups,
+expected checksum and forced GC precede the hardware interval; checksum,
+generation and clean-style assertions follow it. All six actual exits are0
+and checksums **16,954,784** match. Before counts:
+**65,719,135 / 65,708,222 / 65,706,622**; final counts by pair:
+**65,310,437 / 65,269,542 / 65,267,423**. Medians
+**65,708,222→65,269,542**
+(**-0.66762%**), with all three pairs improving. The complete
+public operation includes the changed paths; private helper loops provide
+no page credit.
+
+Full-process C-O1/Boehm profiles pass, enabled from startup without filtering
+or resets. Call counts only:
+
+| Function | Before calls | Candidate calls |
+| --- | ---: | ---: |
+| `css__opt92_complete_font_notification` | 25 | 25 |
+| `css__FontComputer_did_load_font` | 51 | 51 |
+| `dom__Document_update_style` | 27 | 27 |
+| `css__resolve_computed_values_for_document` | 858 | 858 |
+| `css__resolve_computed_values` | 858 | 858 |
+| `css__ComputedProperties_font_feature_data` | 887 | 887 |
+| `css__ComputedProperties_font_feature_settings` | 887 | 0 |
+| `css__computed_font_setting_is_normal` | 0 | 1,737 |
+| `css__ComputedProperties_copy_font_feature_settings_into` | 0 | 887 |
+| `css__apply_resolved_font_variation_settings` | 0 | 858 |
+
+The same25 notifications and858 document-facing materializations execute.
+The887 public narrow-map getter calls inside feature-data construction become
+zero; public getter contracts remain covered separately. Profile timings
+provide no instruction credit.
+
+The strict normal generated-C audit passes: two edited and three new function
+bodies independently match C generation from the same immutable runtimes.
+The now-unreachable unchanged public font-feature getter matches both
+independent generations before its normal-only removal is accounted for.
+Its cast type IDs are authenticated by compiler type names. One existing
+OpenTypeTaggedStyleValue record may reorder, with byte-identical contents
+independently authenticated. Actual frontend file tables are identical.
+All remaining C, records, globals, resources, filtering, arenas and GC setup
+match after established identities, unchanged assertion-line maps,37 frozen
+includes and four byte-identical helper reorders. All120 native input hashes
+and exact native arguments match. Independent -no-skip-unused probes generate
+C only: actual exits0, no native compilation or runtime execution.
+Two failed read-only audits remain: a missing cast-type ID canonicalization
+and the exact existing record reorder. No successful check is repeated.
+Passing audit script SHA256:
+`8f4f847c5daa9a4660884958763302b84628fa5ed35f8f7c9929a6276fc0b62c`.
+Normal C SHA256: `1cb5ac6e14d54c45439864e58b2e433070808b67ea8bca1420ec9e0f641314e1`.
+Durable archive hashes: instruction-opt92-artifact-archives.json.
+
+The predeclared page cohort is **30 alternating pairs**, odd before/final and
+even final/before, with **30,000 paired bootstrap resamples, seed92**.
+Both persisted regular binaries use fresh copies of the same 359 cached
+bodies, frozen text and child-only placement helpers, C-O2/Boehm/default
+marker1 and the same 4GiB hint; no prod/prealloc. Document viewport remains
+1024×768 and endpoint navigation_to_first_document_paint[0].
+
+| Build | Median first-frame retired instructions | Median lifetime process peak, MiB |
+| --- | ---: | ---: |
+| Fresh accepted frozen91 control | 17,517,592,016.5 | 3,514.2 |
+| Normal font-setting map handling | 17,535,409,899.5 | 3,512 |
+
+Difference of marginal medians (before minus candidate):
+**-17,817,883** instructions; candidate change
+**+0.102%**, with **16/30** wins.
+Paired median saving **5,185,986.5**, paired95% interval
+**[-12,510,200, 19,075,781.5]**. The interval includes zero; repeatable page credit is **0**. Whole-page savings are not established.
+
+All 60 primaries and **60 actual PNGs** remain. Recoveries:
+none; pre-parse retries: 0. First primaries retain
+1 installation/2 geometry preparations/1 paint. Later completed refreshes:
+none. No completed primary is extended, discarded
+or rerun. Any recovery discloses unknown final exit and missing PNG,
+fingerprint and peak. Peaks include capture/exit and later refreshes; they
+are not live first-frame memory and are never summed. The read-only decoded capture check finds 30 before and 30 candidate RGB classes, 0 shared. All differences stay within the original skeleton bands, x45–662: y335–344 and ten 14px bands starting at380 with41px spacing. All pixels outside these bands match. No animation was disabled and no observation repeated; evidence is instruction-opt92-page-pixel-class-check.json.
+External foreground transitions remain retained:
+none.
+The child is foreground in neither startup snapshot. Focused viewport is
+pixel-exact at1024×768. Prior observed carry is 0. Cumulative observed saving **0** stays below the 5M gate. Broad validation is deferred and the previous completed broad baseline remains.
+All controllers and child checks retain actual terminal evidence.
+
+The isolated signed app is `/Users/alex/code/vox2/Build/v/Vox-opt92.app`. Native instruction text
+matches the measured executable, with frozen helper pinned inside the app.
+Actual loaded helper path/hash, signatures, startup and actual collections
+pass for default marker1 and override2. Canonical and GUI browsers remain
+preserved. Contemporary Root receives no source, regression or page credit.
+Equivalent Chrome content/start/submission accounting remains open;
+**faster-than-Chrome performance is unproven**. Evidence:
+Build/instructions/vox-opt92-interleaved-* and Build/v/instruction-opt92-*.
+
 ## Causes and changes
 
 - The V 0.5.2 compatibility compiler's `-prod` Boehm code repeatedly snapshots

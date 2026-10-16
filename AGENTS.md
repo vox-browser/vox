@@ -1855,6 +1855,16 @@ evidence](docs/translation-audit/NATIVE_MEDIA_WHEEL_RAW_HANDLER.md).
   focused retained viewport exact. Additional observed savings: 0.
   Same 4 GiB/placement; canonical/GUI preserved; contemporary Root excluded.
   Chrome parity remains open.
+  Normal font-setting maps `ee49b287` (independent committed slice)
+  pass 5,231 before and 5,219 candidate common assertions in 51 cases,
+  plus 5 candidate cases/996 assertions in each GC mode.
+  Complete public font-change/style batches use 0.67% fewer instructions.
+  Page point saving -17,817,883, 16/30 wins,
+  paired interval [-12,510,200, 19,075,781.5]; repeatable credit 0.
+  Broad verification: deferred below cumulative 5M gate;
+  focused retained viewport exact. Additional observed savings: 0.
+  Same 4 GiB/placement; canonical/GUI preserved; contemporary Root excluded.
+  Chrome parity remains open.
 - Outside instruction-count optimization, run broad regression suites once per
   ten completed fixes, not after every fix.
   Broad suites include full translation/package test batches, the full LibJS AST
