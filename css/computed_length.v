@@ -145,7 +145,7 @@ pub fn (c &ComputedProperties) resolved_font_size_px() f64 {
 	if typed.is_length() {
 		length := typed.as_length().length()
 		if length.is_absolute() {
-			return length.absolute_length_to_px().to_double()
+			return length.absolute_length_to_px_without_rounding()
 		}
 	}
 	return 16.0

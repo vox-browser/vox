@@ -5762,7 +5762,8 @@ pub fn (mut c ComputedProperties) computed_font_list(font_computer &FontComputer
 		families << 'sans-serif'
 	}
 	mut mutable_font_computer := unsafe { &FontComputer(font_computer) }
-	font_list := mutable_font_computer.compute_font_for_style_values(families, c.font_size(), c.font_slope(), c.font_weight(), c.font_width(), c.font_optical_sizing(), font_computer.variation_settings_for_computation(c), font_computer.feature_data_for_computation(c))
+	font_size_px := if font_computer.font_rendering_policy() == .chromium { c.resolved_font_size_px() } else { c.font_size().to_double() }
+	font_list := mutable_font_computer.compute_font_for_style_values_at_size(families, font_size_px, c.font_slope(), c.font_weight(), c.font_width(), c.font_optical_sizing(), font_computer.variation_settings_for_computation(c), font_computer.feature_data_for_computation(c))
 	assert !font_list.is_empty()
 	c.cached_computed_font_list_ = font_list
 	c.cached_computed_font_list_generation_ = font_computer.environment_generation()
@@ -12764,6 +12765,7 @@ fn computed_interpolation_font_metrics_for_style(computed_properties &ComputedPr
 	metrics := font.pixel_metrics()
 	return LengthFontMetrics{
 		font_size: computed_properties.font_size()
+		font_size_unrounded: if font.font_rendering_policy == .chromium { ?f64(computed_properties.resolved_font_size_px()) } else { none }
 		x_height: CSSPixels.nearest_value_for(f64(metrics.x_height))
 		cap_height: CSSPixels.nearest_value_for(f64(metrics.ascent))
 		zero_advance: CSSPixels.nearest_value_for(f64(metrics.advance_of_ascii_zero))

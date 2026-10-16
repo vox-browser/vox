@@ -2106,6 +2106,8 @@ pub fn (f CSSPixelFraction) might_be_saturated() bool {
 pub struct LengthFontMetrics {
 pub mut:
 	font_size    CSSPixels
+	// Blink retains a float font size even when box geometry uses LayoutUnit.
+	font_size_unrounded ?f64
 	x_height     CSSPixels
 	cap_height   CSSPixels
 	zero_advance CSSPixels
@@ -2354,8 +2356,8 @@ pub fn (l Length) viewport_relative_length_to_px_without_rounding(viewport_rect 
 
 pub fn ratio_between_font_relative_unit_and_px(unit LengthUnit, font_metrics LengthFontMetrics, root_font_metrics LengthFontMetrics) f64 {
 	return match unit {
-		.em { font_metrics.font_size.to_double() }
-		.rem { root_font_metrics.font_size.to_double() }
+		.em { font_metrics.font_size_unrounded or { font_metrics.font_size.to_double() } }
+		.rem { root_font_metrics.font_size_unrounded or { root_font_metrics.font_size.to_double() } }
 		.ex { font_metrics.x_height.to_double() }
 		.rex { root_font_metrics.x_height.to_double() }
 		.cap { font_metrics.cap_height.to_double() }

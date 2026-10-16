@@ -4451,12 +4451,17 @@ pub fn disconnect_font_faces_in_css_rules(rules []&CSSRule) {
 }
 
 pub fn (mut computer FontComputer) compute_font_for_style_values(font_family []string, font_size CSSPixels, font_slope int, font_weight f64, font_width Percentage, font_optical_sizing FontOpticalSizing, font_variation_settings map[string]f64, font_feature_data FontFeatureData) &FontCascadeList {
+	return computer.compute_font_for_style_values_at_size(font_family, font_size.to_double(), font_slope,
+		font_weight, font_width, font_optical_sizing, font_variation_settings, font_feature_data)
+}
+
+fn (mut computer FontComputer) compute_font_for_style_values_at_size(font_family []string, font_size_px f64, font_slope int, font_weight f64, font_width Percentage, font_optical_sizing FontOpticalSizing, font_variation_settings map[string]f64, font_feature_data FontFeatureData) &FontCascadeList {
 	// id() consumes these inputs synchronously and retains only its own string.
 	// The cached cascade still owns the font data materialized on a cache miss.
 	cache_key := ComputedFontCacheKey{
 		font_family: font_family
 		font_optical_sizing: font_optical_sizing
-		font_size: font_size
+		font_size: CSSPixels.nearest_value_for(font_size_px)
 		font_slope: font_slope
 		font_weight: font_weight
 		font_width: font_width
@@ -4464,22 +4469,22 @@ pub fn (mut computer FontComputer) compute_font_for_style_values(font_family []s
 		font_feature_data: font_feature_data
 	}
 	policy := computer.font_rendering_policy()
-	key := cache_key.id() + if policy == .libweb { '' } else { '|shaping:${policy}' }
+	key := cache_key.id() + if policy == .libweb { '' } else { '|rendering:${policy}|size:${math.f64_bits(font_size_px)}' }
 	if cached := computer.computed_font_cache[key] {
 		return cached
 	}
-	mut value := computer.compute_font_for_style_values_impl(font_family, font_size, font_slope, font_weight, font_width, font_optical_sizing, font_variation_settings, font_feature_data)
+	mut value := computer.compute_font_for_style_values_impl(font_family, font_size_px, font_slope, font_weight, font_width, font_optical_sizing, font_variation_settings, font_feature_data)
 	value.set_font_rendering_policy(policy)
 	computer.computed_font_cache[key] = value
 	return value
 }
 
-fn (mut computer FontComputer) compute_font_for_style_values_impl(font_family []string, font_size CSSPixels, slope int, font_weight f64, font_width Percentage, font_optical_sizing FontOpticalSizing, font_variation_settings map[string]f64, font_feature_data FontFeatureData) &FontCascadeList {
+fn (mut computer FontComputer) compute_font_for_style_values_impl(font_family []string, font_size_px f64, slope int, font_weight f64, font_width Percentage, font_optical_sizing FontOpticalSizing, font_variation_settings map[string]f64, font_feature_data FontFeatureData) &FontCascadeList {
 	// FIXME: We round to int here as that is what is expected by our font infrastructure below
 	weight := int(math.round(font_weight))
 
 	// FIXME: We need to respect `font-size-adjust` once that is implemented.
-	font_size_used_value := font_size.to_double()
+	font_size_used_value := font_size_px
 
 	mut variation := FontVariationSettings{}
 	variation.weight = font_weight
