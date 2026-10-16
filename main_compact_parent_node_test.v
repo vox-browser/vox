@@ -31,3 +31,20 @@ fn test_compact_elements_expose_their_parents() {
 	assert first.as_element()?.local_name() == 'label'
 	assert messages == []
 }
+
+fn test_compact_class_list_replace_follows_dom_token_list() {
+	$if !darwin { return }
+	document := html.parse_document('<!doctype html><p id="target" class="a no-js b js-enabled"></p>')
+	mut runtime := browserjs.Runtime.create()
+	defer { runtime.close() }
+	mut messages := []string{}
+	run_document_javascript(document, 'about:blank', ['
+		const list = document.getElementById("target").classList;
+		globalThis.result = [list.replace("missing", "x"), list.replace("no-js", "js-enabled")].join(",");
+	'], runtime, mut messages)
+	assert runtime.evaluate_host('result')! == 'false,true'
+	state := runtime.evaluate_host('__ladybirdFinalize()')!
+	apply_javascript_state(document, state, runtime.canvas_elements_for_binding(), mut messages)
+	target := document.get_element_by_id('target') or { panic('missing target') }
+	assert target.get_attribute_value('class') == 'a js-enabled b'
+}
