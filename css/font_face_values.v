@@ -3474,6 +3474,7 @@ pub mut:
 	font_rendering_policy platform.FontRenderingPolicy
 mut:
 	metrics_font_ &platform.Font = unsafe { nil }
+	pixel_size_override_ ?f32
 }
 
 // CSS metrics queries must reuse the native handle: its decoded face and
@@ -3492,7 +3493,7 @@ pub fn (font &PlatformFont) font_for_rendering() &platform.Font {
 	}
 	native_font := &platform.Font{
 		family: font.typeface.family_name.clone()
-		point_size: font.point_size / 0.75
+		point_size: font.pixel_size_override_ or { font.point_size / 0.75 }
 		weight: int(font.variations.weight)
 		source_path: font.typeface.source_path.clone()
 		is_invisible: font.is_invisible
@@ -3505,7 +3506,7 @@ pub fn (font &PlatformFont) font_for_rendering() &platform.Font {
 
 fn (font &PlatformFont) matches_native_font(cached &platform.Font) bool {
 	return cached != unsafe { nil } && cached.family == font.typeface.family_name
-		&& cached.point_size == font.point_size / 0.75
+		&& cached.point_size == (font.pixel_size_override_ or { font.point_size / 0.75 })
 		&& cached.weight == int(font.variations.weight)
 		&& cached.source_path == font.typeface.source_path
 		&& cached.is_invisible == font.is_invisible
@@ -3540,6 +3541,7 @@ fn owned_platform_font(font &PlatformFont) PlatformFont {
 		features:     owned_shape_features(font.features)
 		is_invisible: font.is_invisible
 		font_rendering_policy: font.font_rendering_policy
+		pixel_size_override_: font.pixel_size_override_
 		// An input mutation replaces the clone's cache on its next lookup; the
 		// immutable old handle remains valid for previously retained fragments.
 		metrics_font_: if font.matches_native_font(font.metrics_font_) { font.metrics_font_ } else { unsafe { &platform.Font(nil) } }
@@ -3722,7 +3724,7 @@ fn (mut list FontCascadeList) resolve_pending_faces(code_point u32, through_font
 }
 
 fn platform_font_cache_key(font &PlatformFont) string {
-	return '${font.typeface.family_name}|${font.typeface.source_path}|${font.typeface.weight_}|${font.typeface.width_}|${font.typeface.slope_}|${font.point_size}|${font.variations.weight}|${font.variations.width}|${font.variations.opsz}|${font.font_rendering_policy}'
+	return '${font.typeface.family_name}|${font.typeface.source_path}|${font.typeface.weight_}|${font.typeface.width_}|${font.typeface.slope_}|${font.point_size}|${font.variations.weight}|${font.variations.width}|${font.variations.opsz}|${font.font_rendering_policy}|${font.pixel_size_override_}'
 }
 
 fn (list &FontCascadeList) font_with_visibility(font &PlatformFont, invisible bool) &PlatformFont {
@@ -3741,6 +3743,7 @@ fn (list &FontCascadeList) font_with_visibility(font &PlatformFont, invisible bo
 		features:     owned_shape_features(font.features)
 		is_invisible: true
 		font_rendering_policy: font.font_rendering_policy
+		pixel_size_override_: font.pixel_size_override_
 	}
 	mut storage := mutable_list.ensure_invisible_font_storage()
 	storage.values[key] = variant
@@ -4474,7 +4477,7 @@ fn (mut computer FontComputer) compute_font_for_style_values_at_size(font_family
 		return cached
 	}
 	mut value := computer.compute_font_for_style_values_impl(font_family, font_size_px, font_slope, font_weight, font_width, font_optical_sizing, font_variation_settings, font_feature_data)
-	value.set_font_rendering_policy(policy)
+	value.set_font_rendering_policy(policy, font_size_px)
 	computer.computed_font_cache[key] = value
 	return value
 }
