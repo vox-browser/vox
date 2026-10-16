@@ -226,9 +226,18 @@ fn run_inline_formatting_context_internal(mut state LayoutState, containing_bloc
 					line_builder.commit_pending_margin_before_float()
 					clear := node.computed_values().clear()
 					clearance := mutable_context.clearance_y(clear, node.computed_values().direction(), containing_block_used_values.cumulative_offset().y(), line_builder.current_block_offset_value())
+					mut float_block_offset := line_builder.current_block_offset_value()
 					if clearance.raw_value() > line_builder.current_block_offset_value().raw_value() {
-						vertical_float_clearance = css_pixels_max(vertical_float_clearance, clearance)
-						line_builder.did_introduce_clearance(clearance)
+						if node.document().font_rendering_policy() == .chromium {
+							// CSS 2.1 9.5.1 constrains a float by earlier line boxes only.
+							// Blink moves just the cleared float, so following inline
+							// content can still share lines beside the earlier floats.
+							float_block_offset = clearance
+						} else {
+							vertical_float_clearance = css_pixels_max(vertical_float_clearance, clearance)
+							line_builder.did_introduce_clearance(clearance)
+							float_block_offset = line_builder.current_block_offset_value()
+						}
 					}
 					containing_styled := unsafe { &Node(containing_block) }.as_node_with_style() or {
 						continue
@@ -237,7 +246,7 @@ fn run_inline_formatting_context_internal(mut state LayoutState, containing_bloc
 					if available_space.height.is_definite() {
 						container_height = available_space.height.to_px_or_zero()
 					}
-					mutable_context.layout_floating_box(mut state, node, containing_styled, available_space.width.to_px_or_zero(), container_height, line_builder.current_block_offset_value(), line_builder)
+					mutable_context.layout_floating_box(mut state, node, containing_styled, available_space.width.to_px_or_zero(), container_height, float_block_offset, line_builder)
 					line_builder.recalculate_available_space()
 				}
 			}
