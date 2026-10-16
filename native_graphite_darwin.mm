@@ -8,18 +8,23 @@
 #include "include/core/SkPaint.h"
 #include "include/core/SkRRect.h"
 #include "include/core/SkSurface.h"
+#include "include/core/SkYUVAPixmaps.h"
 #include "include/gpu/graphite/Context.h"
 #include "include/gpu/graphite/ContextOptions.h"
+#include "include/gpu/graphite/Image.h"
 #include "include/gpu/graphite/Recorder.h"
 #include "include/gpu/graphite/Recording.h"
 #include "include/gpu/graphite/Surface.h"
 #include "include/gpu/graphite/mtl/MtlBackendContext.h"
 #include <algorithm>
+#include <cmath>
 #include <cstring>
 #include <memory>
 #include <mutex>
+#include <vector>
 
 namespace {
+std::mutex gpu_mutex;
 skgpu::graphite::Context* context()
 {
     static auto instance = [] {
@@ -40,6 +45,28 @@ SkRRect rounded_rect(float const* data)
     result.setRectRadii(SkRect::MakeXYWH(data[0], data[1], data[2], data[3]), radii);
     return result;
 }
+
+int read_pixels(skgpu::graphite::Context* gpu, skgpu::graphite::Recorder* recorder,
+    SkSurface* surface, SkImageInfo const& info, uint8_t* pixels, int pitch)
+{
+    auto recording = recorder->snap();
+    skgpu::graphite::InsertRecordingInfo insertion;
+    insertion.fRecording = recording.get();
+    if (gpu->insertRecording(insertion) != skgpu::graphite::InsertStatus::kSuccess) return 0;
+    std::unique_ptr<const SkImage::AsyncReadResult> result;
+    gpu->asyncRescaleAndReadPixels(surface, info, SkIRect::MakeWH(info.width(), info.height()),
+        SkImage::RescaleGamma::kSrc, SkImage::RescaleMode::kNearest,
+        [](void* target, std::unique_ptr<const SkImage::AsyncReadResult> data) {
+            *static_cast<std::unique_ptr<const SkImage::AsyncReadResult>*>(target) = std::move(data);
+        }, &result);
+    if (!gpu->submit(skgpu::graphite::SubmitInfo(skgpu::graphite::SyncToCpu::kYes)) || !result) return 0;
+    for (int row = 0; row < info.height(); ++row) {
+        std::memcpy(pixels + static_cast<size_t>(row) * pitch,
+            static_cast<uint8_t const*>(result->data(0)) + static_cast<size_t>(row) * result->rowBytes(0),
+            static_cast<size_t>(info.width()) * 4);
+    }
+    return 1;
+}
 }
 
 extern "C" __attribute__((visibility("default")))
@@ -48,8 +75,7 @@ int vox_graphite_draw_shadow_pixels(uint8_t* pixels, int width, int height,
 {
     if (!pixels || !shadow || width <= 0 || height <= 0 || pitch <= 0
         || static_cast<size_t>(pitch) < static_cast<size_t>(width) * 4) return 0;
-    static std::mutex mutex;
-    std::lock_guard lock(mutex);
+    std::lock_guard lock(gpu_mutex);
     auto* gpu = context();
     if (!gpu) return 0;
     auto recorder = gpu->makeRecorder();
@@ -69,21 +95,118 @@ int vox_graphite_draw_shadow_pixels(uint8_t* pixels, int width, int height,
     paint.setColor(SkColorSetARGB(shadow->alpha, shadow->red, shadow->green, shadow->blue));
     paint.setMaskFilter(SkMaskFilter::MakeBlur(kNormal_SkBlurStyle, std::max(shadow->blur, 0.0f) / 2.0f));
     canvas->drawRRect(rounded_rect(shadow->shadow), paint);
-    auto recording = recorder->snap();
-    skgpu::graphite::InsertRecordingInfo insertion;
-    insertion.fRecording = recording.get();
-    if (gpu->insertRecording(insertion) != skgpu::graphite::InsertStatus::kSuccess) return 0;
-    std::unique_ptr<const SkImage::AsyncReadResult> result;
-    gpu->asyncRescaleAndReadPixels(surface.get(), info, SkIRect::MakeWH(width, height),
-        SkImage::RescaleGamma::kSrc, SkImage::RescaleMode::kNearest,
-        [](void* target, std::unique_ptr<const SkImage::AsyncReadResult> data) {
-            *static_cast<std::unique_ptr<const SkImage::AsyncReadResult>*>(target) = std::move(data);
-        }, &result);
-    if (!gpu->submit(skgpu::graphite::SubmitInfo(skgpu::graphite::SyncToCpu::kYes)) || !result) return 0;
-    for (int row = 0; row < height; ++row) {
-        std::memcpy(pixels + static_cast<size_t>(row) * pitch,
-            static_cast<uint8_t const*>(result->data(0)) + static_cast<size_t>(row) * result->rowBytes(0),
-            static_cast<size_t>(width) * 4);
+    return read_pixels(gpu, recorder.get(), surface.get(), info, pixels, pitch);
+}
+
+extern "C" __attribute__((visibility("default")))
+int vox_graphite_draw_image_pixels(uint8_t* pixels, int width, int height,
+    int pitch, int has_background, VoxGraphiteImage const* image)
+{
+    if (!pixels || !image || !image->pixels || width <= 0 || height <= 0 || pitch <= 0
+        || static_cast<size_t>(pitch) < static_cast<size_t>(width) * 4
+        || image->width <= 0 || image->height <= 0 || image->pitch <= 0
+        || !(image->source[2] > 0) || !(image->source[3] > 0)
+        || !(image->destination[2] > 0) || !(image->destination[3] > 0)) return 0;
+    std::lock_guard lock(gpu_mutex);
+    auto* gpu = context();
+    if (!gpu) return 0;
+    auto recorder = gpu->makeRecorder();
+    auto info = SkImageInfo::Make(width, height, kBGRA_8888_SkColorType,
+        kPremul_SkAlphaType, SkColorSpace::MakeSRGB());
+    auto surface = SkSurfaces::RenderTarget(recorder.get(), info);
+    if (!surface) return 0;
+    auto* canvas = surface->getCanvas();
+    if (has_background) surface->writePixels(SkPixmap(info, pixels, pitch), 0, 0);
+    else canvas->clear(SK_ColorTRANSPARENT);
+    sk_sp<SkImage> texture;
+    float source_scale_x = 1.0f, source_scale_y = 1.0f;
+    if (image->flags & 4) {
+        int uv_width = (image->width + 1) / 2, uv_height = (image->height + 1) / 2;
+        size_t y_size = static_cast<size_t>(image->width) * image->height;
+        size_t uv_size = static_cast<size_t>(uv_width) * uv_height;
+        SkPixmap planes[4] {
+            SkPixmap(SkImageInfo::Make(image->width, image->height, kGray_8_SkColorType,
+                kOpaque_SkAlphaType), image->pixels, image->width),
+            SkPixmap(SkImageInfo::Make(uv_width, uv_height, kGray_8_SkColorType,
+                kOpaque_SkAlphaType), image->pixels + y_size, uv_width),
+            SkPixmap(SkImageInfo::Make(uv_width, uv_height, kGray_8_SkColorType,
+                kOpaque_SkAlphaType), image->pixels + y_size + uv_size, uv_width), {}
+        };
+        int upload_width = image->width, upload_height = image->height;
+        if (!image->nearest && image->source[0] == 0 && image->source[1] == 0
+            && image->source[2] == image->width && image->source[3] == image->height) {
+            float sx = std::hypot(image->matrix[0], image->matrix[3])
+                * image->destination[2] / image->source[2];
+            float sy = std::hypot(image->matrix[1], image->matrix[4])
+                * image->destination[3] / image->source[3];
+            int target_width = std::max(1, static_cast<int>(std::ceil(image->width * sx)));
+            int target_height = std::max(1, static_cast<int>(std::ceil(image->height * sy)));
+            for (int level = 1; level < 31; ++level) {
+                int64_t divisor = int64_t(1) << level;
+                int next_width = static_cast<int>((image->width + divisor - 1) / divisor);
+                int next_height = static_cast<int>((image->height + divisor - 1) / divisor);
+                if (next_width < target_width || next_height < target_height
+                    || (upload_width == 1 && upload_height == 1)) break;
+                upload_width = next_width;
+                upload_height = next_height;
+            }
+        }
+        bool resized = upload_width != image->width || upload_height != image->height;
+        std::vector<uint8_t> scaled_planes;
+        if (resized) {
+            size_t plane_size = static_cast<size_t>(upload_width) * upload_height;
+            scaled_planes.resize(plane_size * 3);
+            // Chromium's GPU decode cache scales each decoded plane on the CPU
+            // and promotes the result to 4:4:4 before uploading it. Scaling the
+            // original 4:2:0 textures on the GPU produces different texels.
+            for (int index = 0; index < 3; ++index) {
+                SkPixmap scaled(SkImageInfo::Make(upload_width, upload_height,
+                    kGray_8_SkColorType, kOpaque_SkAlphaType),
+                    scaled_planes.data() + plane_size * index, upload_width);
+                if (!planes[index].scalePixels(scaled,
+                        SkSamplingOptions(SkFilterMode::kLinear, SkMipmapMode::kNearest))) return 0;
+                planes[index] = scaled;
+            }
+            source_scale_x = static_cast<float>(upload_width) / image->width;
+            source_scale_y = static_cast<float>(upload_height) / image->height;
+        }
+        SkYUVAInfo yuva(SkISize::Make(upload_width, upload_height),
+            SkYUVAInfo::PlaneConfig::kY_U_V,
+            resized ? SkYUVAInfo::Subsampling::k444 : SkYUVAInfo::Subsampling::k420,
+            kRec601_SkYUVColorSpace);
+        auto pixmaps = SkYUVAPixmaps::FromExternalPixmaps(yuva, planes);
+        texture = SkImages::TextureFromYUVAPixmaps(recorder.get(), pixmaps, {}, false,
+            SkColorSpace::MakeSRGB());
+    } else {
+        if (static_cast<size_t>(image->pitch) < static_cast<size_t>(image->width) * 4) return 0;
+        auto src_info = SkImageInfo::Make(image->width, image->height,
+            kRGBA_8888_SkColorType, (image->flags & 1) ? kPremul_SkAlphaType : kUnpremul_SkAlphaType,
+            SkColorSpace::MakeSRGB());
+        SkPixmap pixmap(src_info, image->pixels, image->pitch);
+        std::vector<uint8_t> premultiplied;
+        if (!(image->flags & 1)) {
+            premultiplied.resize(static_cast<size_t>(image->pitch) * image->height);
+            src_info = src_info.makeAlphaType(kPremul_SkAlphaType);
+            if (!pixmap.readPixels(src_info, premultiplied.data(), image->pitch)) return 0;
+            pixmap = SkPixmap(src_info, premultiplied.data(), image->pitch);
+        }
+        auto raster = SkImages::RasterFromPixmapCopy(pixmap);
+        texture = SkImages::TextureFromImage(recorder.get(), raster);
     }
-    return 1;
+    if (!texture) return 0;
+    SkMatrix matrix;
+    matrix.set9(image->matrix);
+    canvas->setMatrix(matrix);
+    auto rect = [](float const* r) { return SkRect::MakeXYWH(r[0], r[1], r[2], r[3]); };
+    canvas->clipRect(rect(image->clip), true);
+    SkPaint paint;
+    paint.setAntiAlias(true);
+    paint.setAlphaf(std::clamp(image->opacity, 0.0f, 1.0f));
+    auto sampling = SkSamplingOptions(image->nearest ? SkFilterMode::kNearest : SkFilterMode::kLinear);
+    auto source_rect = SkRect::MakeXYWH(image->source[0] * source_scale_x,
+        image->source[1] * source_scale_y, image->source[2] * source_scale_x,
+        image->source[3] * source_scale_y);
+    canvas->drawImageRect(texture, source_rect, rect(image->destination), sampling,
+        &paint, SkCanvas::kStrict_SrcRectConstraint);
+    return read_pixels(gpu, recorder.get(), surface.get(), info, pixels, pitch);
 }

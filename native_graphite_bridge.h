@@ -13,11 +13,21 @@ typedef struct {
     uint8_t red, green, blue, alpha;
 } VoxGraphiteShadow;
 
+typedef struct {
+    float matrix[9];
+    float source[4], destination[4], clip[4];
+    float opacity;
+    int width, height, pitch, flags, nearest;
+    const uint8_t *pixels;
+} VoxGraphiteImage;
+
 #ifdef __cplusplus
 extern "C" {
 #endif
 int vox_graphite_draw_shadow_pixels(uint8_t *pixels, int width, int height,
     int pitch, int has_background, const VoxGraphiteShadow *shadow);
+int vox_graphite_draw_image_pixels(uint8_t *pixels, int width, int height,
+    int pitch, int has_background, const VoxGraphiteImage *image);
 #ifdef __cplusplus
 }
 #endif

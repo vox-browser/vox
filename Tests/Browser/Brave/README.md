@@ -24,3 +24,10 @@ verified dependency under `Build/deps/skia-brave`.
 The three opaque shadow cases are exact. A separate diagnostic with a shadow
 inside `opacity: .5` still differs by 1 at five pixels after the native layer
 is composited. This fixture does not establish translucent-group parity.
+
+`webp-yuv-scaled` checks a lossy WebP at half size. The Chromium image path
+selects an upload size with rounded-up mip dimensions, scales each decoded
+plane using Chromium's CPU mip selection, promotes scaled YUV to 4:4:4, and
+converts color in the GPU shader. `webp-yuv` separately checks the original
+4:2:0 image at natural size. Capture each fixture in a fresh Brave instance:
+its image cache can reuse an earlier upload size for the same resource.

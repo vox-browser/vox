@@ -104,6 +104,16 @@ auto graphite_shadow_draw()
     return draw;
 }
 
+auto graphite_image_draw()
+{
+    static auto draw = [] {
+        void* library = dlopen("@rpath/libVoxGraphite.dylib", RTLD_LAZY | RTLD_LOCAL);
+        return library ? reinterpret_cast<decltype(&vox_graphite_draw_image_pixels)>(
+            dlsym(library, "vox_graphite_draw_image_pixels")) : nullptr;
+    }();
+    return draw;
+}
+
 SkTypeface* select_typeface(char const* path, int face_index, int font_weight, int emoji_face)
 {
     if (path && *path) {
@@ -923,6 +933,28 @@ extern "C" int ladybird_v_skia_draw_rgba_image(CGContextRef destination,
         * static_cast<size_t>(raster_height));
     bool has_background = (image_flags & 2) && copy_opaque_backdrop(destination,
         region, destination_scale, raster_width, raster_height, pixels);
+    if (s_chromium_painting) {
+        VoxGraphiteImage descriptor {
+            .matrix = {},
+            .source = {source_x, source_y, source_width, source_height},
+            .destination = {destination_x, destination_y, destination_width, destination_height},
+            .clip = {clip_x, clip_y, clip_width, clip_height},
+            .opacity = opacity, .width = image_width, .height = image_height,
+            .pitch = image_pitch, .flags = image_flags, .nearest = nearest_neighbor == 1,
+            .pixels = source_pixels
+        };
+        raster_matrix(matrix, region, raster_scale_x, raster_scale_y).get9(descriptor.matrix);
+        if (auto draw = graphite_image_draw(); draw && draw(reinterpret_cast<uint8_t*>(pixels.data()),
+                raster_width, raster_height, raster_width * 4, has_background, &descriptor)) {
+            CGContextSaveGState(destination);
+            if (has_background) CGContextSetBlendMode(destination, kCGBlendModeCopy);
+            int result = composite_pixels(destination, pixels, raster_width, raster_height,
+                static_cast<float>(region.left), canvas_height - static_cast<float>(region.bottom),
+                static_cast<float>(region.width()), static_cast<float>(region.height()));
+            CGContextRestoreGState(destination);
+            return result;
+        }
+    }
     auto image_info = SkImageInfo::Make(raster_width, raster_height,
         kBGRA_8888_SkColorType, kPremul_SkAlphaType, SkColorSpace::MakeSRGB());
     std::vector<float> float_pixels;

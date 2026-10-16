@@ -106,10 +106,11 @@ def main():
               "libjpeg_turbo_encode", "libpng_decode", "libpng_encode", "libwebp_decode",
               "libwebp_encode", "zlib", "lua", "perfetto", "fonthost_mac", "partition_alloc"]
     gn_args = ["is_official_build=true", "is_debug=false", f'target_cpu="{cpu}"',
-               'cc="clang"', 'cxx="clang++"', 'mac_deployment_target="14.0"',
+               'cc="clang"', 'cxx="clang++"',
                "skia_enable_graphite=true", "skia_use_metal=true",
                'extra_cflags=["-fPIC","-fvisibility=hidden",'
-               '"-DSK_GRAPHITE_USE_LEGACY_RRECT_CLIP_SHADER"]']
+               '"-DSK_GRAPHITE_USE_LEGACY_RRECT_CLIP_SHADER",'
+               '"-DSK_SUPPORT_LEGACY_ANISOTROPIC_MIPMAP_SCALE"]']
     gn_args += [f"skia_enable_{name}=false" for name in disabled]
     gn_args += [f"skia_use_{name}=false" for name in unused]
     subprocess.run([gn, "gen", "out/Release", "--args=" + " ".join(gn_args)],
@@ -125,6 +126,7 @@ def main():
         "-Wl,-hidden-lskia", "-Wl,-hidden-lskcms", "-framework", "Metal",
         "-framework", "CoreGraphics", "-framework", "Foundation", "-framework", "ImageIO",
         "-Wl,-exported_symbol,_vox_graphite_draw_shadow_pixels",
+        "-Wl,-exported_symbol,_vox_graphite_draw_image_pixels",
         "-Wl,-install_name,@rpath/libVoxGraphite.dylib", "-o", str(args.output)], check=True)
     print(f"Built isolated Skia Metal backend: {args.output}")
 
