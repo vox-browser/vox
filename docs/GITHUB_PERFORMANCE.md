@@ -9386,6 +9386,129 @@ Evidence: Build/opt95-{before,final,contracts}-source and
 Build/v/instruction-opt95-*, including actual exits, exact source audit,
 diagnostic observations and durable focused C archives.
 
+## Transfer private cold-shaping glyph vectors into retained runs
+
+Round 96 imports independently authored `22bebff7` (Alexander Medvednikov):
+**two exact hunks in platform/glyph_run.v and platform/harfbuzz.c.v**, onto
+accepted frozen round 94. Rejected round 95 pooling is excluded. Private
+native and synthetic cold producers transfer their freshly constructed glyph
+vectors through the existing private owning helper. Public constructor source
+and mutable snapshot semantics, shaping, cache, replay arrays, filtering,
+arenas, heap hint and GC policy remain unchanged.
+
+The identical C-O2 common harness passes **five cases / 37,736 assertions
+in each of before/Boehm, final/Boehm and final/no-GC**. Four byte-exact original
+functional cases compare the original native/fallback producers across
+Unicode, malformed UTF-8, directions, baselines, invisibility, trailing
+whitespace, geometry and replay vectors; retained results survive producer
+return, GC churn and mutation of another result. The fifth diagnostic is
+inactive. Original test bodies and assertions are unchanged; only the harness
+adds its instruction-counter import. An initial wrong module import failed
+before any case, observation or native child ran. Failed receipts remain;
+only that import was corrected identically. Common source SHA256:
+`6ee8a14fab17adcc602f59f8fd97932909b5b0b6c58a7434988387285f6b53dd`. No extra candidate-only case is
+needed; all four original contracts run in every common configuration.
+
+Three fixed alternating local pairs measure **1,024 complete public
+shape_text_with_spacing cold misses: 512 native and 512 forced synthetic
+fallback**. Cache lookup, cold producer, cache store, baseline materialization
+and complete public geometry/glyph checksums are counted. Setup, original
+producer oracle expectations, eight warmups per font (16 total) with separate
+keys and forced GC precede the interval; the checksum assertion follows. Caches are not reset
+or filtered. All six actual exits are 0 and checksum **70,088,693,374,730**
+matches. Before counts: **54,047,822 / 54,104,508 / 54,425,023**; final counts by pair:
+**52,906,065 / 52,945,925 / 52,809,963**. Medians **54,104,508→52,906,065**,
+**-2.21505%**, with all three pairs improving. This is a local
+result, not page credit.
+
+Full-process C-O1/Boehm profiles actually pass, enabled from startup without
+filtering or resets. Counts only:
+
+| Function | Before calls | Candidate calls |
+| --- | ---: | ---: |
+| `platform__opt96_complete_cold_public_shapes` | 18 | 18 |
+| `platform__shape_text_with_spacing` | 1,040 | 1,040 |
+| `platform__shape_text_cached` | 1,040 | 1,040 |
+| `platform__ShapingCache_lookup` | 1,040 | 1,040 |
+| `platform__ShapingCache_store` | 1,040 | 1,040 |
+| `platform__shape_text_uncached` | 1,523 | 1,523 |
+| `platform__shape_text_with_harfbuzz` | 3,094 | 3,094 |
+| `platform__GlyphRun__static__new` | 1,995 | 992 |
+| `platform__GlyphRun__static__new_with_face` | 4,062 | 1,984 |
+| `platform__glyph_run_with_owned_glyphs` | 5,102 | 5,102 |
+
+The 1,040 public calls, cache lookups and stores match, confirming every
+public probe request is a cold miss, including the 16 warmups. Native and
+synthetic producer counts match. Cloning wrapper calls fall; the existing
+private owning helper remains at 5,102 because the public wrappers already
+forwarded to it after copying. A draft extractor incorrectly expected more
+owning-helper calls; corrected read-only extraction preserves both original
+successful profile executions and actual counts. Timings receive no credit.
+
+Strict normal generated-C audit passes: only the two source-edited producer
+bodies differ, each independently authenticated from immutable C-only
+snapshots. One unchanged public GlyphRun.new wrapper becomes unreachable and
+is omitted from final normal C. Its exact source and before emitted body are
+authenticated against both independent generations; only that before body
+and prototype are removed from projection. Public new_with_face and private
+owning helper remain unchanged in normal C. All remaining C, records,
+globals, resources, filtering, arenas, heap and GC setup match after established
+identities, 37 frozen includes and four byte-identical helper reorders. Actual
+frontend tables are identical; all 120 native inputs and exact native arguments
+match. C-only probes have actual exits 0 and no native/runtime execution.
+The initial strict projection finding remains in
+instruction-opt96-c-audit-unused-public-wrapper-finding. Passing audit SHA256:
+`af972155e304edfcba0bc39db7268586685cc11539bf11a81dfc3d583cde7923`.
+Normal C SHA256: `435c69313ca9663fc1a4ac1f9b6f8356bbbf2c8e36af3f32f754a3661412b135`.
+Durable archive hashes: instruction-opt96-artifact-archives.json.
+
+The first builder completed C and native arguments, then referenced a stale
+control basename before invoking Clang. Its caught failure and actual
+controller exit 0 remain in instruction-opt96-candidate-control-name-finding;
+no native exit was invented. The stored native command was subsequently
+executed once, signed, persisted and smoked with actual zero exits. No source
+C regeneration or successful focused/profile repetition occurred.
+
+The predeclared page cohort is **30 alternating pairs**, odd before/final and
+even final/before, **30,000 paired bootstrap resamples, seed 96**. Persisted
+regular binaries use fresh copies of the same 359 cached bodies and frozen
+text/child-only placement helpers, C-O2/Boehm/default marker 1, unchanged
+4 GiB hint, no prod/prealloc. Document viewport stays 1024×768 and endpoint
+navigation_to_first_document_paint[0].
+
+| Build | Median first-frame retired instructions | Median lifetime process peak, MiB |
+| --- | ---: | ---: |
+| Fresh accepted frozen round 94 control | 17,611,345,043 | 3,491.6 |
+| Private cold glyph vector transfer | 17,604,233,831 | 3,491 |
+
+Marginal median saving: **7,111,212** instructions;
+candidate change **-0.040%**, **17/30** wins.
+Paired median saving **11,748,081**, paired 95% interval
+**[-10,611,202, 28,051,677.5]**. The interval includes zero; repeatable page credit is **0**. Whole-page savings are not established.
+
+All 60 primaries and **60 actual PNGs** remain. Recoveries:
+none; pre-parse retries: 0. First primaries retain
+1 installation/2 geometry preparations/1 paint. Later completed refreshes:
+none. No completed primary is extended, discarded
+or rerun. Recovery would disclose unknown final exit and missing PNG,
+fingerprint and peak. Peaks cover capture/exit and later refreshes; they are
+not live first-frame memory and are never summed. The read-only decoded capture check finds 30 before and 30 candidate RGB classes, 0 shared. All differences stay within the original skeleton bands, x45–662: y335–344 and ten 14px bands starting at 380 with 41px spacing. All pixels outside these bands match. No animation was disabled and no observation repeated; evidence is instruction-opt96-page-pixel-class-check.json.
+External foreground transitions retained:
+none.
+The child is foreground in neither startup snapshot. The multilingual retained
+text/geometry focused viewport is pixel-exact at 1024×768. Prior observed
+carry is 0. Cumulative observed saving **7,111,212** crosses the 5M gate. Six direct harness jobs actually pass CSS 31/SVG 10/layout 46 in both GCs (**174 executions**). All **19 screenshots pass, 16 exact**; known differences remain inline-node 13, text-decorations 1,341 and canvas-text 1,994. The completed broad batch resets additional observed savings to 0.
+All controllers and child checks retain actual terminal evidence.
+
+The isolated signed app is `/Users/alex/code/vox2/Build/v/Vox-opt96.app`. Native instruction text
+matches the measured binary and the frozen helper is pinned inside the app.
+Actual loaded helper path/hash, signatures, startup and actual collections
+pass for default marker 1 and override 2. Canonical/GUI browsers are preserved;
+contemporary Root receives no source, regression or page credit.
+Equivalent Chrome content/start/submission accounting remains open;
+**faster-than-Chrome performance is unproven**. Evidence:
+Build/instructions/vox-opt96-interleaved-* and Build/v/instruction-opt96-*.
+
 ## Causes and changes
 
 - The V 0.5.2 compatibility compiler's `-prod` Boehm code repeatedly snapshots

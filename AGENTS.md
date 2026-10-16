@@ -1892,6 +1892,16 @@ evidence](docs/translation-audit/NATIVE_MEDIA_WHEEL_RAW_HANDLER.md).
   The native gate exits 1 before launching any child; six contracts remain unrun.
   No normal C/page result; frozen 94 remains control and broad baseline.
   Page credit/carry 0; Root/canonical/GUI preserved; Chrome parity open.
+  Private cold glyph-vector transfer `22bebff7` (independent committed slice)
+  passes 37,736 common assertions in 5 cases per configuration,
+  including all 4 original producer/ownership contracts. Cold public shaping
+  batches use 2.22% fewer instructions.
+  Page point saving 7,111,212, 17/30 wins,
+  paired interval [-10,611,202, 28,051,677.5]; repeatable credit 0.
+  Broad verification: 87 selected cases both GC and 19 screenshots (16 exact);
+  focused retained viewport exact. Additional observed savings: 0.
+  Same 4 GiB/placement; rejected 95 excluded; canonical/GUI preserved; Root excluded.
+  Chrome parity remains open.
 - Outside instruction-count optimization, run broad regression suites once per
   ten completed fixes, not after every fix.
   Broad suites include full translation/package test batches, the full LibJS AST
