@@ -47,3 +47,14 @@ fn test_system_fallback_uses_language_specific_cjk_faces() {
 		assert system_fallback_font(u32(`A`), 'en', regular) == none
 	}
 }
+
+fn test_browser_spacing_never_makes_advances_negative() {
+	$if macos {
+		font := &Font{ family: 'SystemUi', point_size: 14, weight: 400, font_rendering_policy: .chromium }
+		// SF's 14px space is 3.787px; Brave closes a -4px word-spaced gap to zero.
+		assert shaped_text_width(0, -4, ' ', font, .ltr) == 0
+		assert shaped_text_width(0, -2, ' ', font, .ltr) == f32(1.787109375)
+		libweb := &Font{ ...font, font_rendering_policy: .libweb }
+		assert shaped_text_width(0, -40, ' ', libweb, .ltr) < 0
+	}
+}

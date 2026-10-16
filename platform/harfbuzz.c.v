@@ -601,6 +601,12 @@ fn shape_text_with_harfbuzz(initial_x f32, letter_spacing f32, word_spacing f32,
 			if is_word_separator(code_point) {
 				advance += word_spacing
 			}
+			// Blink never lets negative letter- or word-spacing make a glyph's
+			// advance negative.
+			if font.font_rendering_policy == .chromium && advance < 0
+				&& (letter_spacing < 0 || word_spacing < 0) {
+				advance = 0
+			}
 		}
 		mut length_in_code_units := text_length_in_code_units - starting_offset
 		for following_index in index + 1 .. int(glyph_count) {
