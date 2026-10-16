@@ -46,6 +46,9 @@ pub mut:
 	trailing_whitespace_             TrailingWhitespace
 	has_soft_wrap_opportunity_after_ bool
 	is_fully_truncated_              bool
+	// A Blink-compatible text run retains its fractional advance between words.
+	// The exposed box width still uses CSSPixels, rounded once for the run.
+	precise_inline_length_           ?f64
 }
 
 pub fn LineBoxFragment.new(layout_node &Node, start int, length_in_code_units int, inline_offset CSSPixels, block_offset CSSPixels, inline_length CSSPixels, block_length CSSPixels, border_box_top CSSPixels, direction css.Direction, writing_mode css.WritingMode, glyph_run ?&platform.GlyphRun) LineBoxFragment {
@@ -65,6 +68,12 @@ pub fn LineBoxFragment.new(layout_node &Node, start int, length_in_code_units in
 	}
 	if run := glyph_run {
 		fragment.current_insert_direction = fragment.resolve_glyph_run_direction(run.text_type())
+		if direction == .ltr && fragment.current_insert_direction == .ltr
+			&& run.font().text_shaping_policy == .chromium
+			&& inline_length == CSSPixels.nearest_value_for(f64(run.width()))
+			&& run.glyphs_.len > 0 && run.glyphs_[0].position.x == 0 {
+			fragment.precise_inline_length_ = f64(run.width())
+		}
 		if direction == .rtl {
 			fragment.insert_position_ = f32(inline_length.to_double())
 		}
@@ -188,6 +197,7 @@ pub fn (fragment &LineBoxFragment) block_length() CSSPixels {
 
 pub fn (mut fragment LineBoxFragment) set_inline_length(value CSSPixels) {
 	fragment.inline_length_ = value
+	fragment.precise_inline_length_ = none
 }
 
 pub fn (mut fragment LineBoxFragment) set_block_length(value CSSPixels) {
@@ -311,7 +321,17 @@ pub fn (mut fragment LineBoxFragment) append_glyph_run(glyph_run &platform.Glyph
 
 fn (mut fragment LineBoxFragment) append_glyph_run_ltr(glyph_run &platform.GlyphRun, run_width CSSPixels) {
 	run_direction := fragment.resolve_glyph_run_direction(glyph_run.text_type())
-	inline_offset := f32(fragment.inline_length_.to_double())
+	mut inline_offset := f32(fragment.inline_length_.to_double())
+	if precise := fragment.precise_inline_length_ {
+		if fragment.current_insert_direction == .ltr && run_direction == .ltr
+			&& run_width == CSSPixels.nearest_value_for(f64(glyph_run.width()))
+			&& glyph_run.glyphs_.len > 0 && glyph_run.glyphs_[0].position.x == 0 {
+			inline_offset = f32(precise)
+			fragment.precise_inline_length_ = precise + f64(glyph_run.width())
+		} else {
+			fragment.precise_inline_length_ = none
+		}
+	}
 	if fragment.current_insert_direction != run_direction {
 		if run_direction == .rtl {
 			fragment.insert_position_ = inline_offset
@@ -342,6 +362,9 @@ fn (mut fragment LineBoxFragment) append_glyph_run_ltr(glyph_run &platform.Glyph
 		}
 	}
 	fragment.inline_length_ = fragment.inline_length_.plus(run_width)
+	if precise := fragment.precise_inline_length_ {
+		fragment.inline_length_ = CSSPixels.nearest_value_for(precise)
+	}
 }
 
 fn (mut fragment LineBoxFragment) append_glyph_run_rtl(glyph_run &platform.GlyphRun, run_width CSSPixels) {
@@ -464,6 +487,7 @@ pub fn (mut line LineBox) add_fragment(layout_node &Node, start int, length int,
 pub fn (mut line LineBox) add_fragment_with_trailing_whitespace(layout_node &Node, start int, length int, leading_size CSSPixels, trailing_size CSSPixels, leading_margin CSSPixels, trailing_margin CSSPixels, content_width CSSPixels, content_height CSSPixels, border_box_top CSSPixels, border_box_bottom CSSPixels, glyph_run ?&platform.GlyphRun, trailing_whitespace TrailingWhitespace) {
 	text_align_is_justify := layout_node.computed_values().text_align() == .justify
 	mut did_merge := false
+	mut added_width := content_width
 	if run := glyph_run {
 		if !text_align_is_justify && line.fragments_.len > 0 {
 			mut last := &line.fragments_[line.fragments_.len - 1]
@@ -477,7 +501,9 @@ pub fn (mut line LineBox) add_fragment_with_trailing_whitespace(layout_node &Nod
 					if voidptr(last_run.font()) == voidptr(run.font())
 						&& last_run.face() == run.face() {
 						last.length_in_code_units_ += length
+						previous_width := last.inline_length_
 						last.append_glyph_run(run, content_width)
+						added_width = last.inline_length_.minus(previous_width)
 						if trailing_whitespace.length_in_code_units == length {
 							last.trailing_whitespace_ = TrailingWhitespace{
 								length_in_code_units: last.trailing_whitespace_.length_in_code_units + trailing_whitespace.length_in_code_units
@@ -499,7 +525,7 @@ pub fn (mut line LineBox) add_fragment_with_trailing_whitespace(layout_node &Nod
 		line.fragments_ << fragment
 	}
 	line.inline_length_ =
-		line.inline_length_.plus(leading_margin).plus(leading_size).plus(content_width).plus(trailing_size).plus(trailing_margin)
+		line.inline_length_.plus(leading_margin).plus(leading_size).plus(added_width).plus(trailing_size).plus(trailing_margin)
 	block_extent := content_height.plus(border_box_top).plus(border_box_bottom)
 	if block_extent.raw_value() > line.block_length_.raw_value() {
 		line.block_length_ = block_extent
