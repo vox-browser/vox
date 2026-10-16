@@ -9,7 +9,7 @@ if [ "$#" -ne 0 ]; then
     echo "usage: build-linux-browser.sh" >&2
     exit 2
 fi
-repo_dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+repo_dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd -P)
 build_dir="$repo_dir/Build/linux"
 v_compiler=${V_BIN:-}
 if [ -z "$v_compiler" ]; then
@@ -38,10 +38,15 @@ python3 "$repo_dir/tools/build_regex_backend.py"
 python3 "$repo_dir/tools/build_linux_native.py"
 http_modules=$(python3 "$repo_dir/tools/prepare_http_compat.py" "$v_compiler")
 linux_modules=$(python3 "$repo_dir/tools/prepare_linux_modules.py" "$v_compiler")
+# The compatibility compiler qualifies packages from the nearest `modules`,
+# `.vmodules`, `vlib` or lookup-path-named directory, or from an ancestor v.mod.
+# A checkout such as ~/.vmodules/vox2 would compile `encoding` as
+# `vox2.encoding` while its imports still name vlib's `encoding` directory.
+# Listing the repository first keeps its packages unqualified wherever it lives.
 set -- -old-compiler -enable-globals -cc "${CC:-clang}" \
     -d use_openssl \
     -exclude '@vlib/time/zoneinfo.native.v' \
-    -path "$linux_modules|$http_modules|@vmodules|@vlib" -gc "$gc_mode"
+    -path "$repo_dir|$linux_modules|$http_modules|@vmodules|@vlib" -gc "$gc_mode"
 if [ "$gc_mode" = none ]; then
     set -- "$@" -prod
 else

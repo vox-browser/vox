@@ -34,7 +34,8 @@ def main():
     bypass = "127.0.0.1,localhost,::1," + environment.get("NO_PROXY", environment.get("no_proxy", ""))
     environment.update(NO_PROXY=bypass, no_proxy=bypass)
     environment["PKG_CONFIG_PATH"] = str(repo / "Build/deps/lib/pkgconfig") + ":" + environment.get("PKG_CONFIG_PATH", "")
-    paths = f"{repo}/Build/linux/modules|{repo}/Build/v/modules|@vmodules|@vlib"
+    # The repository root anchors package names; see build-linux-browser.sh.
+    paths = f"{repo}|{repo}/Build/linux/modules|{repo}/Build/v/modules|@vmodules|@vlib"
     output = repo / "Build/linux/tests" / args.gc
     output.mkdir(parents=True, exist_ok=True)
     with tempfile.TemporaryDirectory(prefix="vox-native-") as temporary:

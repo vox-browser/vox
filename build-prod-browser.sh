@@ -23,7 +23,7 @@ if [ "$#" -ne 0 ]; then
     exit 2
 fi
 
-repo_dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+repo_dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd -P)
 build_dir="$repo_dir/Build/v"
 bundle_dir="$build_dir/Vox.app"
 binary_dir="$bundle_dir/Contents/MacOS"
@@ -142,8 +142,11 @@ zoneinfo_exclude='@vlib/time/zoneinfo.native.v'
 # as an ownership diagnostic.
 ui2_modules=$(python3 "$repo_dir/tools/prepare_ui2.py" "$v_compiler")
 http_modules=$(python3 "$repo_dir/tools/prepare_http_compat.py" "$v_compiler")
+# Anchor package names at the repository; see build-linux-browser.sh. Without
+# it, a checkout under `modules`, `.vmodules`, `vlib` or another v.mod compiles
+# `encoding` as `vox2.encoding` while imports still resolve to vlib's name.
 set -- -old-compiler -exclude "$zoneinfo_exclude" -enable-globals \
-    -d vox_ui2 -path "$http_modules|$ui2_modules|@vmodules|@vlib"
+    -d vox_ui2 -path "$repo_dir|$http_modules|$ui2_modules|@vmodules|@vlib"
 if [ "$gc_mode" != none ]; then
     set -- "$@" -gc "$gc_mode"
     extra_cflags="$extra_cflags -O2"
