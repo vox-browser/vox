@@ -1317,9 +1317,47 @@ fn computed_interpolation_empty_style_value() &dom.StyleValue {
 	return &dom.StyleValue{}
 }
 
+// Identity only replaces a deep self-comparison when that comparison is known
+// to be reflexive. In particular NaN-bearing numeric trees remain changed,
+// and complex/mutable typed bridges keep their existing equality semantics.
+fn style_value_identity_is_reflexive(value StyleValue) bool {
+	return match value {
+		KeywordStyleValue, StringStyleValue, CustomIdentStyleValue,
+		IntegerStyleValue, DisplayStyleValue, ColorStyleValue,
+		GuaranteedInvalidStyleValue { true }
+		NumberStyleValue { value.number() == value.number() }
+		LengthStyleValue { value.raw_value() == value.raw_value() }
+		AngleStyleValue { value.raw_value() == value.raw_value() }
+		PercentageStyleValue { value.raw_value() == value.raw_value() }
+		FlexStyleValue { value.raw_value() == value.raw_value() }
+		FrequencyStyleValue { value.raw_value() == value.raw_value() }
+		ResolutionStyleValue { value.raw_value() == value.raw_value() }
+		TimeStyleValue { value.raw_value() == value.raw_value() }
+		StyleValueList {
+			mut reflexive := true
+			for entry in value.values_ {
+				if !style_value_identity_is_reflexive(entry) {
+					reflexive = false
+					break
+				}
+			}
+			reflexive
+		}
+		else { false }
+	}
+}
+
 fn style_value_option_changed(old_value ?&dom.StyleValue, new_value ?&dom.StyleValue) bool {
 	if old := old_value {
 		if new := new_value {
+			if old.css_value_handle != unsafe { nil } {
+				if old.css_value_handle == new.css_value_handle {
+					box := unsafe { &TypedStyleValueBox(old.css_value_handle) }
+					if style_value_identity_is_reflexive(box.value) { return false }
+				}
+			} else if voidptr(old) == voidptr(new) {
+				return false
+			}
 			if old_typed := typed_style_value_logic_from_dom(old) {
 				if new_typed := typed_style_value_logic_from_dom(new) {
 					return !old_typed.equals(new_typed)
