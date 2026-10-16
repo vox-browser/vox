@@ -187,7 +187,7 @@ fn (item &InlineLevelItem) split_for_overflow_break(maximum_width CSSPixels, tak
 	}
 
 	mut boundaries := []int{}
-	for boundary in text_grapheme_boundaries(text) {
+	for boundary in text_node.grapheme_boundaries_for_rendered_text() {
 		if boundary > start && boundary < end {
 			boundaries << boundary
 		}

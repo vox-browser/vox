@@ -2030,6 +2030,8 @@ pub fn (mut viewport Viewport) invalidate_text_blocks_cache() {
 @[heap]
 pub struct TextNode {
 	Node
+mut:
+	cached_grapheme_boundaries_ []int
 pub mut:
 	source_text_                  string
 	text_for_rendering_           string
@@ -2145,6 +2147,8 @@ pub fn (mut n TextNode) invalidate_text_for_rendering() {
 	n.cached_inline_chunks_ = none
 	n.cached_font_environment_generation_ = 0
 	n.cached_utf16_code_units_ = none
+	// Replace the header: existing iterators retain the previous immutable vector.
+	n.cached_grapheme_boundaries_ = []int{}
 	n.cached_intrinsic_text_shapes_.clear()
 	n.line_segmenter_ = unsafe { nil }
 }

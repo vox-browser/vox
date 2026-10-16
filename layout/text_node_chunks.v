@@ -129,7 +129,7 @@ fn TextNodeChunkIterator.new_with_direction(text_node &TextNode, should_wrap_lin
 		]
 		view: view
 		code_units: code_units
-		grapheme_boundaries: text_grapheme_boundaries(view)
+		grapheme_boundaries: text_node.grapheme_boundaries_for_rendered_text()
 		// No-wrap consumers still need grapheme, font and preserved-break
 		// boundaries, but never query soft-wrap opportunities. In particular,
 		// collecting innerText must not initialize the Unicode line segmenter.
@@ -144,6 +144,20 @@ fn TextNodeChunkIterator.new_with_direction(text_node &TextNode, should_wrap_lin
 	}
 	iterator.install_font_cascade(font_cascade)
 	return iterator
+}
+
+// Cache only this node's complete rendered text. Fragment and first-letter
+// substring segmentation continues to use text_grapheme_boundaries directly.
+// Consumers only read this vector; rendered-text invalidation replaces it.
+fn (node &TextNode) grapheme_boundaries_for_rendered_text() []int {
+	text := node.text_for_rendering()
+	if node.cached_grapheme_boundaries_.len > 0 {
+		return unsafe { node.cached_grapheme_boundaries_ }
+	}
+	boundaries := text_grapheme_boundaries(text)
+	mut mutable_node := unsafe { &TextNode(node) }
+	mutable_node.cached_grapheme_boundaries_ = boundaries
+	return boundaries
 }
 
 fn (iterator &TextNodeChunkIterator) current_text_type() platform.GlyphRunTextType {
