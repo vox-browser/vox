@@ -576,6 +576,23 @@ void native_draw_rect_srgb(float x, float y, float width, float height, gg__Colo
 	CGColorRelease(cgColor);
 }
 
+static CGContextRef native_font_compositing_context;
+static int native_font_compositing_transparency_depth;
+
+static void native_begin_tracked_transparency_layer(CGContextRef context, CFDictionaryRef info) {
+	if (context == native_font_compositing_context) {
+		native_font_compositing_transparency_depth++;
+	}
+	CGContextBeginTransparencyLayer(context, info);
+}
+
+static void native_end_tracked_transparency_layer(CGContextRef context) {
+	CGContextEndTransparencyLayer(context);
+	if (context == native_font_compositing_context) {
+		native_font_compositing_transparency_depth--;
+	}
+}
+
 void native_begin_clip(void) {
 	CGContextRef context = [[NSGraphicsContext currentContext] CGContext];
 	if (context == NULL) {
@@ -620,7 +637,7 @@ void native_begin_background_blend_group(void) {
 		return;
 	}
 	CGContextSaveGState(context);
-	CGContextBeginTransparencyLayer(context, NULL);
+	native_begin_tracked_transparency_layer(context, NULL);
 }
 
 void native_end_background_blend_group(void) {
@@ -628,7 +645,7 @@ void native_end_background_blend_group(void) {
 	if (context == NULL) {
 		return;
 	}
-	CGContextEndTransparencyLayer(context);
+	native_end_tracked_transparency_layer(context);
 	CGContextRestoreGState(context);
 }
 
@@ -680,7 +697,7 @@ void native_begin_css_effect_layer(float opacity, int blend_mode) {
 	CGContextSaveGState(context);
 	CGContextSetAlpha(context, opacity);
 	CGContextSetBlendMode(context, native_compositing_operator(blend_mode));
-	CGContextBeginTransparencyLayer(context, NULL);
+	native_begin_tracked_transparency_layer(context, NULL);
 }
 
 void native_end_css_effect_layer(void) {
@@ -688,7 +705,7 @@ void native_end_css_effect_layer(void) {
 	if (context == NULL) {
 		return;
 	}
-	CGContextEndTransparencyLayer(context);
+	native_end_tracked_transparency_layer(context);
 	CGContextRestoreGState(context);
 }
 
@@ -708,6 +725,7 @@ static CGColorRef native_srgb_color(gg__Color color) {
 }
 
 static void native_configure_glyph_rasterization(CGContextRef context, int font_smoothing) {
+	font_smoothing &= 15;
 	CGContextSetShouldAntialias(context, font_smoothing != 1);
 	CGContextSetAllowsFontSmoothing(context, font_smoothing != 1 && font_smoothing != 2);
 	CGContextSetShouldSmoothFonts(context, font_smoothing != 1 && font_smoothing != 2);
@@ -754,7 +772,9 @@ static int native_draw_retained_glyph_run(CGContextRef context,
 				canvas_height, (uint8_t)lrint(components[0] * 255.0),
 				(uint8_t)lrint(components[1] * 255.0),
 				(uint8_t)lrint(components[2] * 255.0),
-				(uint8_t)lrint(components[3] * 255.0), font_smoothing)) {
+				(uint8_t)lrint(components[3] * 255.0), font_smoothing
+					| (((font_smoothing & 16) && context == native_font_compositing_context
+						&& native_font_compositing_transparency_depth == 0) ? 32 : 0))) {
 			return 1;
 		}
 	}
@@ -1940,6 +1960,20 @@ void native_begin_css_filter_layer(float canvas_width, float canvas_height) {
 		}
 	}
 	native_css_filter_stack[native_css_filter_stack_depth++] = layer;
+}
+
+void native_end_css_filter_layer(void);
+
+void native_begin_font_compositing_layer(float width, float height) {
+	native_begin_css_filter_layer(width, height);
+	native_font_compositing_context = [[NSGraphicsContext currentContext] CGContext];
+	native_font_compositing_transparency_depth = 0;
+}
+
+void native_end_font_compositing_layer(void) {
+	native_font_compositing_context = NULL;
+	native_font_compositing_transparency_depth = 0;
+	native_end_css_filter_layer();
 }
 
 void native_begin_backdrop_filter_layer(float canvas_width, float canvas_height,
@@ -3316,7 +3350,7 @@ void native_finish_background_text_clip(void) {
 	} else {
 		CGContextClipToRect(destination, CGRectZero);
 	}
-	CGContextBeginTransparencyLayer(destination, NULL);
+	native_begin_tracked_transparency_layer(destination, NULL);
 	native_background_text_clip_active = 1;
 	if (native_background_text_clip_image != NULL) {
 		CGImageRelease(native_background_text_clip_image);
@@ -3357,7 +3391,7 @@ void native_end_background_text_clip(void) {
 	}
 	CGContextRef context = [[NSGraphicsContext currentContext] CGContext];
 	if (context != NULL) {
-		CGContextEndTransparencyLayer(context);
+		native_end_tracked_transparency_layer(context);
 		CGContextRestoreGState(context);
 	}
 	native_background_text_clip_active = 0;
@@ -3477,14 +3511,14 @@ void native_begin_svg_mask_opacity(float opacity) {
 	}
 	CGContextSaveGState(native_svg_clip_build_context);
 	CGContextSetAlpha(native_svg_clip_build_context, fminf(fmaxf(opacity, 0.0f), 1.0f));
-	CGContextBeginTransparencyLayer(native_svg_clip_build_context, NULL);
+	native_begin_tracked_transparency_layer(native_svg_clip_build_context, NULL);
 }
 
 void native_end_svg_mask_opacity(void) {
 	if (native_svg_clip_image != NULL || native_svg_clip_build_context == NULL) {
 		return;
 	}
-	CGContextEndTransparencyLayer(native_svg_clip_build_context);
+	native_end_tracked_transparency_layer(native_svg_clip_build_context);
 	CGContextRestoreGState(native_svg_clip_build_context);
 }
 
@@ -3701,6 +3735,9 @@ void native_begin_svg_mask_layer(void) {
 		return;
 	}
 	native_begin_svg_mask_layer_in_context(context, native_svg_clip_rect);
+	if (context == native_font_compositing_context) {
+		native_font_compositing_transparency_depth++;
+	}
 }
 
 void native_end_svg_mask_layer(unsigned long long input_key, int content_mask,
@@ -3743,7 +3780,7 @@ void native_end_svg_mask_layer(unsigned long long input_key, int content_mask,
 		CGContextFillRect(context, canvas_rect);
 	}
 	CGContextRestoreGState(context);
-	CGContextEndTransparencyLayer(context);
+	native_end_tracked_transparency_layer(context);
 	CGContextRestoreGState(context);
 }
 
@@ -4590,7 +4627,7 @@ void native_begin_svg_pattern_opacity(float opacity) {
 	}
 	CGContextSaveGState(context);
 	CGContextSetAlpha(context, fminf(fmaxf(opacity, 0.0f), 1.0f));
-	CGContextBeginTransparencyLayer(context, NULL);
+	native_begin_tracked_transparency_layer(context, NULL);
 }
 
 void native_end_svg_pattern_opacity(void) {
@@ -4598,7 +4635,7 @@ void native_end_svg_pattern_opacity(void) {
 	if (context == NULL) {
 		return;
 	}
-	CGContextEndTransparencyLayer(context);
+	native_end_tracked_transparency_layer(context);
 	CGContextRestoreGState(context);
 }
 

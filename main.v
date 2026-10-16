@@ -205,6 +205,8 @@ fn C.native_begin_svg_mask_layer()
 fn C.native_end_svg_mask_layer(cache_key u64, content_mask int, canvas_width f32, canvas_height f32, page_x f32, page_y f32, scroll_y f32)
 
 fn C.native_begin_css_filter_layer(canvas_width f32, canvas_height f32)
+fn C.native_begin_font_compositing_layer(canvas_width f32, canvas_height f32)
+fn C.native_end_font_compositing_layer()
 
 fn C.native_begin_backdrop_filter_layer(canvas_width f32, canvas_height f32, region_x f32, region_y f32, region_width f32, region_height f32, top_left_x f32, top_left_y f32, top_right_x f32, top_right_y f32, bottom_right_x f32, bottom_right_y f32, bottom_left_x f32, bottom_left_y f32, transform_a f32, transform_b f32, transform_c f32, transform_d f32, transform_e f32, transform_f f32, page_x f32, page_y f32, scroll_y f32, source_outside_current_filter int)
 
@@ -3658,7 +3660,7 @@ fn native_draw_retained_glyph_run(command layout.PaintCommand, page_x f32, page_
 			glyph_run.font().font_path() or { '' }
 		}
 		unsafe {
-			return C.native_draw_document_glyph_run_srgb(&glyphs[0], &positions[0], glyphs.len, glyph_run.font().point_size, glyph_run.font().weight, int(glyph_run.face() == .emoji), f32(command.glyph_translation_x), f32(command.glyph_translation_y), f32(matrix[0]), f32(matrix[1]), f32(matrix[2]), f32(matrix[3]), f32(matrix[4]), f32(matrix[5]), page_x, page_y, f32(scroll_y), canvas_width, canvas_height, font_path, glyph_run.font().face_index(), glyph_color, blur, int(shadow_only), int(command.font_smoothing)) != 0
+			return C.native_draw_document_glyph_run_srgb(&glyphs[0], &positions[0], glyphs.len, glyph_run.font().point_size, glyph_run.font().weight, int(glyph_run.face() == .emoji), f32(command.glyph_translation_x), f32(command.glyph_translation_y), f32(matrix[0]), f32(matrix[1]), f32(matrix[2]), f32(matrix[3]), f32(matrix[4]), f32(matrix[5]), page_x, page_y, f32(scroll_y), canvas_width, canvas_height, font_path, glyph_run.font().face_index(), glyph_color, blur, int(shadow_only), native_retained_font_smoothing(command.font_smoothing, glyph_run.font())) != 0
 		}
 	}
 	return false
@@ -4908,7 +4910,7 @@ fn (mut app BrowserApp) draw_command(source_command layout.PaintCommand, page_x 
 								glyph_run.font().font_path() or { '' }
 							}
 							unsafe {
-								retained_run_drawn = C.native_add_background_glyph_clip_run(&glyphs[0], &positions[0], glyphs.len, glyph_run.font().point_size, glyph_run.font().weight, int(glyph_run.face() == .emoji), f32(run.glyph_translation_x), f32(run.glyph_translation_y), f32(matrix[0]), f32(matrix[1]), f32(matrix[2]), f32(matrix[3]), f32(matrix[4]), f32(matrix[5]), page_x, page_y, 0, f32(app.ctx.width), f32(app.ctx.height), font_path, glyph_run.font().face_index(), int(run.font_smoothing)) != 0
+								retained_run_drawn = C.native_add_background_glyph_clip_run(&glyphs[0], &positions[0], glyphs.len, glyph_run.font().point_size, glyph_run.font().weight, int(glyph_run.face() == .emoji), f32(run.glyph_translation_x), f32(run.glyph_translation_y), f32(matrix[0]), f32(matrix[1]), f32(matrix[2]), f32(matrix[3]), f32(matrix[4]), f32(matrix[5]), page_x, page_y, 0, f32(app.ctx.width), f32(app.ctx.height), font_path, glyph_run.font().face_index(), native_retained_font_smoothing(run.font_smoothing, glyph_run.font())) != 0
 							}
 						}
 					}
@@ -6172,7 +6174,10 @@ fn (mut app BrowserApp) draw() {
 	begin_browser_frame(app.ctx)
 	app.paint_effect_depth = 0
 	$if macos {
-		if app.ctx.native_rendering
+		if app.ctx.native_rendering && app.document != unsafe { nil }
+			&& app.document.font_rendering_policy() == .chromium {
+			C.native_begin_font_compositing_layer(f32(app.ctx.width), f32(app.ctx.height))
+		} else if app.ctx.native_rendering
 			&& app.paint_commands_have_backdrop_filter {
 			// Backdrop commands need a snapshot of pixels already painted in this
 			// frame. Keep the ordinary fast path direct-to-window.
@@ -6193,7 +6198,10 @@ fn (mut app BrowserApp) draw() {
 		paint_checkpoint = debug_timing_checkpoint('first_paint_replay (${app.paint_commands.len} commands)', paint_checkpoint)
 	}
 	$if macos {
-		if app.ctx.native_rendering
+		if app.ctx.native_rendering && app.document != unsafe { nil }
+			&& app.document.font_rendering_policy() == .chromium {
+			C.native_end_font_compositing_layer()
+		} else if app.ctx.native_rendering
 			&& app.paint_commands_have_backdrop_filter {
 			C.native_end_css_filter_layer()
 		}

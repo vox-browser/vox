@@ -23,6 +23,7 @@
 #include "include/core/SkRRect.h"
 #include "include/core/SkSize.h"
 #include "include/core/SkSurface.h"
+#include "include/core/SkSurfaceProps.h"
 #include "include/core/SkStream.h"
 #include "include/core/SkTextBlob.h"
 #include "include/core/SkTypeface.h"
@@ -457,7 +458,7 @@ extern "C" int ladybird_v_skia_draw_glyph_run(CGContextRef destination,
     SkFont font(sk_ref_sp(typeface), std::max(font_size, 0.0f));
     // This is the only non-default setting in Gfx::Font::skia_font().
     font.setSubpixel(true);
-    switch (font_smoothing) {
+    switch (font_smoothing & 15) {
     case 1:
         font.setEdging(SkFont::Edging::kAlias);
         break;
@@ -513,21 +514,58 @@ extern "C" int ladybird_v_skia_draw_glyph_run(CGContextRef destination,
     auto raster_height = raster_dimension(region.height(), destination_scale);
     auto raster_scale_x = static_cast<float>(raster_width) / static_cast<float>(region.width());
     auto raster_scale_y = static_cast<float>(raster_height) / static_cast<float>(region.height());
-    std::vector<uint32_t> pixels(static_cast<size_t>(raster_width) * static_cast<size_t>(raster_height));
-    auto image_info = SkImageInfo::Make(raster_width, raster_height, kBGRA_8888_SkColorType,
-        kPremul_SkAlphaType, SkColorSpace::MakeSRGB());
+    bool chromium = font_smoothing & 16;
+    std::vector<uint32_t> pixels(static_cast<size_t>(raster_width) * raster_height);
+    // Avoid quantizing a partially covered foreground to premultiplied 8-bit
+    // color before blending it over the page. The owning native bitmap frame
+    // supplies opaque pixels; nested transparency layers use the old path.
+    bool has_background = false;
+    if ((font_smoothing & 32) && CGBitmapContextGetBitsPerPixel(destination) == 32
+        && CGBitmapContextGetAlphaInfo(destination) == kCGImageAlphaPremultipliedLast
+        && (CGBitmapContextGetBitmapInfo(destination) & kCGBitmapByteOrderMask) == kCGBitmapByteOrder32Big) {
+        CGContextFlush(destination);
+        auto* background = static_cast<uint8_t*>(CGBitmapContextGetData(destination));
+        auto source_width = CGBitmapContextGetWidth(destination);
+        auto source_height = CGBitmapContextGetHeight(destination);
+        auto source_pitch = CGBitmapContextGetBytesPerRow(destination);
+        auto left = static_cast<size_t>(std::lround(region.left * destination_scale));
+        auto top = static_cast<size_t>(std::lround(region.top * destination_scale));
+        auto ctm = CGContextGetCTM(destination);
+        has_background = background && ctm.a > 0 && ctm.d > 0
+            && ctm.b == 0 && ctm.c == 0 && ctm.tx == 0 && ctm.ty == 0
+            && left + raster_width <= source_width && top + raster_height <= source_height;
+        for (int y = 0; has_background && y < raster_height; ++y) {
+            auto* row = background + (top + y) * source_pitch + left * 4;
+            for (int x = 0; x < raster_width; ++x) {
+                if (row[x * 4 + 3] != 255) { has_background = false; break; }
+                pixels[static_cast<size_t>(y) * raster_width + x] = 0xff000000
+                    | row[x * 4] << 16 | row[x * 4 + 1] << 8 | row[x * 4 + 2];
+            }
+        }
+    }
+    auto image_info = SkImageInfo::Make(raster_width, raster_height,
+        kBGRA_8888_SkColorType, kPremul_SkAlphaType, SkColorSpace::MakeSRGB());
     auto row_bytes = static_cast<size_t>(raster_width) * sizeof(uint32_t);
-    auto surface = SkSurfaces::WrapPixels(image_info, pixels.data(), row_bytes);
+    // Chromium omits the A8 preblend for unhinted CoreText text. Its smoothed
+    // masks use the sRGB transfer with zero contrast boost.
+    SkSurfaceProps chromium_coverage(0, kUnknown_SkPixelGeometry, 0.0f,
+        (font_smoothing & 15) == 2 ? 1.0f : 0.0f);
+    auto surface = SkSurfaces::WrapPixels(image_info, pixels.data(), row_bytes,
+        chromium ? &chromium_coverage : nullptr);
     if (!surface)
         return 0;
 
     auto* canvas = surface->getCanvas();
-    canvas->clear(SK_ColorTRANSPARENT);
+    if (!has_background) canvas->clear(SK_ColorTRANSPARENT);
     canvas->setMatrix(raster_matrix(matrix, region, raster_scale_x, raster_scale_y));
     canvas->drawTextBlob(blob, baseline_x, baseline_y, paint);
-    return composite_pixels(destination, pixels, raster_width, raster_height,
+    CGContextSaveGState(destination);
+    if (has_background) CGContextSetBlendMode(destination, kCGBlendModeCopy);
+    int result = composite_pixels(destination, pixels, raster_width, raster_height,
         static_cast<float>(region.left), canvas_height - static_cast<float>(region.bottom),
         static_cast<float>(region.width()), static_cast<float>(region.height()));
+    CGContextRestoreGState(destination);
+    return result;
 }
 
 // Canvas command streams retain shaped glyph IDs all the way to the raster
