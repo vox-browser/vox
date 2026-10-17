@@ -32,6 +32,11 @@ converts color in the GPU shader. `webp-yuv` separately checks the original
 4:2:0 image at natural size. Capture each fixture in a fresh Brave instance:
 its image cache can reuse an earlier upload size for the same resource.
 
+`webp-rgba-mip` checks a synthetic lossless 960×540 RGBA image at quarter
+size. RGBA uploads use the same rounded-up CPU mip size as YUV uploads before
+GPU sampling. This catches a full-size upload that skips the decode cache's
+resize. Fractional mip blending and rounded image clips need separate coverage.
+
 `inline-advances` checks shaped-item width rounding, kerning across ASCII
 word boundaries, fractional max-content tables with emergency wrapping, and
 font-relative inline margins. The Chromium profile keeps exact glyph advances

@@ -141,6 +141,25 @@ int vox_graphite_draw_image_pixels(uint8_t* pixels, int width, int height,
     else canvas->clear(SK_ColorTRANSPARENT);
     sk_sp<SkImage> texture;
     float source_scale_x = 1.0f, source_scale_y = 1.0f;
+    int upload_width = image->width, upload_height = image->height;
+    if (!image->nearest && image->source[0] == 0 && image->source[1] == 0
+        && image->source[2] == image->width && image->source[3] == image->height) {
+        float sx = std::hypot(image->matrix[0], image->matrix[3])
+            * image->destination[2] / image->source[2];
+        float sy = std::hypot(image->matrix[1], image->matrix[4])
+            * image->destination[3] / image->source[3];
+        int target_width = std::max(1, static_cast<int>(std::ceil(image->width * sx)));
+        int target_height = std::max(1, static_cast<int>(std::ceil(image->height * sy)));
+        for (int level = 1; level < 31; ++level) {
+            int64_t divisor = int64_t(1) << level;
+            int next_width = static_cast<int>((image->width + divisor - 1) / divisor);
+            int next_height = static_cast<int>((image->height + divisor - 1) / divisor);
+            if (next_width < target_width || next_height < target_height
+                || (upload_width == 1 && upload_height == 1)) break;
+            upload_width = next_width;
+            upload_height = next_height;
+        }
+    }
     if (image->flags & 4) {
         // Flag 16 marks full-resolution 4:4:4 chroma planes.
         bool full_chroma = image->flags & 16;
@@ -156,25 +175,6 @@ int vox_graphite_draw_image_pixels(uint8_t* pixels, int width, int height,
             SkPixmap(SkImageInfo::Make(uv_width, uv_height, kGray_8_SkColorType,
                 kOpaque_SkAlphaType), image->pixels + y_size + uv_size, uv_width), {}
         };
-        int upload_width = image->width, upload_height = image->height;
-        if (!image->nearest && image->source[0] == 0 && image->source[1] == 0
-            && image->source[2] == image->width && image->source[3] == image->height) {
-            float sx = std::hypot(image->matrix[0], image->matrix[3])
-                * image->destination[2] / image->source[2];
-            float sy = std::hypot(image->matrix[1], image->matrix[4])
-                * image->destination[3] / image->source[3];
-            int target_width = std::max(1, static_cast<int>(std::ceil(image->width * sx)));
-            int target_height = std::max(1, static_cast<int>(std::ceil(image->height * sy)));
-            for (int level = 1; level < 31; ++level) {
-                int64_t divisor = int64_t(1) << level;
-                int next_width = static_cast<int>((image->width + divisor - 1) / divisor);
-                int next_height = static_cast<int>((image->height + divisor - 1) / divisor);
-                if (next_width < target_width || next_height < target_height
-                    || (upload_width == 1 && upload_height == 1)) break;
-                upload_width = next_width;
-                upload_height = next_height;
-            }
-        }
         bool resized = upload_width != image->width || upload_height != image->height;
         std::vector<uint8_t> scaled_planes;
         if (resized) {
@@ -214,6 +214,21 @@ int vox_graphite_draw_image_pixels(uint8_t* pixels, int width, int height,
             src_info = src_info.makeAlphaType(kPremul_SkAlphaType);
             if (!pixmap.readPixels(src_info, premultiplied.data(), image->pitch)) return 0;
             pixmap = SkPixmap(src_info, premultiplied.data(), image->pitch);
+        }
+        std::vector<uint8_t> scaled_pixels;
+        if (upload_width != image->width || upload_height != image->height) {
+            size_t row_bytes = static_cast<size_t>(upload_width) * 4;
+            scaled_pixels.resize(row_bytes * upload_height);
+            SkPixmap scaled(pixmap.info().makeWH(upload_width, upload_height),
+                scaled_pixels.data(), row_bytes);
+            // Match the CPU upload resize in Chromium's GPU image decode cache.
+            // Generating only GPU mip levels can choose a smaller level and
+            // uses different rounding from this decoded-pixel resize.
+            if (!pixmap.scalePixels(scaled,
+                    SkSamplingOptions(SkFilterMode::kLinear, SkMipmapMode::kNearest))) return 0;
+            pixmap = scaled;
+            source_scale_x = static_cast<float>(upload_width) / image->width;
+            source_scale_y = static_cast<float>(upload_height) / image->height;
         }
         auto raster = SkImages::RasterFromPixmapCopy(pixmap);
         texture = SkImages::TextureFromImage(recorder.get(), raster);
