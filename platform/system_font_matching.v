@@ -149,6 +149,15 @@ fn cjk_fallback_family(code_point u32, language string) ?string {
 	return none
 }
 
+// The native replay key naming an installed face and its variation coordinates.
+pub fn (face SystemFontFace) replay_key() string {
+	mut key := 'vox-system-face:${face.path}#${face.face_index}|${face.postscript_name}'
+	for axis in face.variations {
+		key += '|${axis.tag}=${axis.value}'
+	}
+	return key
+}
+
 // Font for a code point that no face in the CSS cascade covers.
 pub fn system_fallback_font(code_point u32, language string, base &Font) ?&Font {
 	if !base.uses_system_font_matching() {

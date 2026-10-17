@@ -88,3 +88,12 @@ not wrap. Each text node is rounded as one Blink item across font changes
 and CJK break opportunities, spaces use the first covering font, and with
 `line-height: normal` the line box includes each fallback face's metrics
 and half its line gap.
+
+`color-emoji` checks emoji inside Arial text at 10.67, 13.33, 16, 19.5 and
+24px, in regular and bold text. Blink selects Apple Color Emoji through
+CoreText fallback and shapes with Skia's advances, which for its bitmap
+strikes are whole pixels rather than the font's horizontal metrics. The
+installed face is created by PostScript name, as Blink's CTFont is: a face
+re-created from the font file loses Apple Color Emoji's strike advances and
+ascent. Emoji with variation selector 16 after a text-presentation code point,
+such as ❤️, still select a monochrome face and are not covered.

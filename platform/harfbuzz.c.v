@@ -28,6 +28,7 @@ $if macos {
 #flag linux -licuuc
 
 #include <hb.h>
+#include <dlfcn.h>
 
 #include <hb-ot.h>
 
@@ -56,6 +57,8 @@ struct HarfBuzzScaledFont {
 	variations []FontVariationAxis
 	font       voidptr
 }
+
+fn C.dlsym(handle voidptr, symbol &char) voidptr
 
 fn C.hb_blob_create_from_file_or_fail(file_name &char) voidptr
 
@@ -100,6 +103,10 @@ fn C.hb_shape(font voidptr, buffer voidptr, features voidptr, feature_count u32)
 fn C.hb_buffer_get_glyph_infos(buffer voidptr, length &u32) &C.hb_glyph_info_t
 
 fn C.hb_buffer_get_glyph_positions(buffer voidptr, length &u32) &C.hb_glyph_position_t
+
+fn C.hb_face_reference_table(face voidptr, tag u32) voidptr
+
+fn C.hb_blob_get_length(blob voidptr) u32
 
 fn C.u_hasBinaryProperty(code_point i32, property int) int
 
@@ -485,6 +492,93 @@ fn text_uses_emoji_fallback(text string) bool {
 	return found_emoji
 }
 
+// Blink shapes with Skia's glyph advances. For CoreText bitmap faces, such as
+// Apple Color Emoji, they are whole pixels for the selected strike rather than
+// scaled horizontal metrics. The native Skia bridge supplies them when linked.
+type SkiaSystemFaceAdvances = fn (key &char, path &char, postscript_name &char, size f32, glyphs &u16, count int, advances &f32) int
+
+__global skia_system_face_advances_lookup = SkiaSystemFaceAdvancesLookup{}
+
+struct SkiaSystemFaceAdvancesLookup {
+mut:
+	attempted bool
+	function  voidptr
+	// HarfBuzz faces are cached for the process; remember which carry 'sbix'.
+	bitmap_faces map[u64]bool
+}
+
+fn skia_system_face_advances_function() voidptr {
+	$if macos {
+		if !skia_system_face_advances_lookup.attempted {
+			skia_system_face_advances_lookup.attempted = true
+			// RTLD_DEFAULT searches every image loaded into the process.
+			skia_system_face_advances_lookup.function = C.dlsym(unsafe { voidptr(isize(-2)) },
+				c'ladybird_v_skia_system_face_advances')
+		}
+		return skia_system_face_advances_lookup.function
+	} $else {
+		return unsafe { nil }
+	}
+}
+
+fn harfbuzz_face_has_table(face voidptr, tag u32) bool {
+	blob := C.hb_face_reference_table(face, tag)
+	if blob == unsafe { nil } {
+		return false
+	}
+	length := C.hb_blob_get_length(blob)
+	C.hb_blob_destroy(blob)
+	return length > 0
+}
+
+fn harfbuzz_face_is_bitmap_face(face voidptr) bool {
+	key := u64(face)
+	if is_bitmap := skia_system_face_advances_lookup.bitmap_faces[key] {
+		return is_bitmap
+	}
+	// 'sbix'
+	is_bitmap := harfbuzz_face_has_table(face, 0x73626978)
+	skia_system_face_advances_lookup.bitmap_faces[key] = is_bitmap
+	return is_bitmap
+}
+
+fn chromium_bitmap_face_advances(font &Font, face voidptr, infos &C.hb_glyph_info_t, count int) []f32 {
+	if font.font_rendering_policy != .chromium || count <= 0 || !harfbuzz_face_is_bitmap_face(face) {
+		return []f32{}
+	}
+	system_face := font.system_face() or { return []f32{} }
+	function := skia_system_face_advances_function()
+	if function == unsafe { nil } {
+		return []f32{}
+	}
+	mut glyph_ids := []u16{len: count}
+	for index in 0 .. count {
+		glyph_ids[index] = u16(unsafe { infos[index] }.codepoint)
+	}
+	mut advances := []f32{len: count}
+	measure := unsafe { SkiaSystemFaceAdvances(function) }
+	key := system_face.replay_key()
+	if measure(&char(key.str), &char(system_face.path.str), &char(system_face.postscript_name.str),
+		font.point_size, glyph_ids.data, count, advances.data) == 0 {
+		return []f32{}
+	}
+	return advances
+}
+
+// Chromium-policy text uses the platform's fallback face, such as Apple Color
+// Emoji, when the cascade selected one that covers the emoji.
+fn font_supplies_chromium_emoji(font &Font, text string) bool {
+	if font.font_rendering_policy != .chromium {
+		return false
+	}
+	for character in text.runes() {
+		if is_emoji_code_point(u32(character)) {
+			return font.contains_glyph(u32(character))
+		}
+	}
+	return false
+}
+
 fn utf16_code_units(text string) []u16 {
 	mut units := []u16{cap: text.len}
 	for character in text.runes() {
@@ -532,7 +626,7 @@ fn code_point_is_default_ignorable(code_point u32) bool {
 
 fn shape_text_with_harfbuzz(initial_x f32, letter_spacing f32, word_spacing f32, text string, font &Font, text_type GlyphRunTextType) ?ShapedText {
 	mut face := unsafe { nil }
-	uses_emoji := text_uses_emoji_fallback(text)
+	uses_emoji := text_uses_emoji_fallback(text) && !font_supplies_chromium_emoji(font, text)
 	if uses_emoji {
 		face = emoji_harfbuzz_face()?
 	} else {
@@ -583,6 +677,8 @@ fn shape_text_with_harfbuzz(initial_x f32, letter_spacing f32, word_spacing f32,
 	mut glyph_count := u32(0)
 	infos := C.hb_buffer_get_glyph_infos(buffer, &glyph_count)
 	positions := C.hb_buffer_get_glyph_positions(buffer, &glyph_count)
+	bitmap_advances := if uses_emoji { []f32{} } else { chromium_bitmap_face_advances(font, face,
+			infos, int(glyph_count)) }
 	mut glyphs := []Glyph{cap: int(glyph_count)}
 	mut point_x := initial_x
 	trailing_length := trailing_whitespace_length(text)
@@ -597,7 +693,12 @@ fn shape_text_with_harfbuzz(initial_x f32, letter_spacing f32, word_spacing f32,
 		should_paint := !font.is_invisible && !is_default_ignorable
 		mut advance := f32(0)
 		if !is_default_ignorable {
-			advance = f32(f64(position.x_advance) / resolution) + letter_spacing
+			design_advance := if index < bitmap_advances.len {
+				bitmap_advances[index]
+			} else {
+				f32(f64(position.x_advance) / resolution)
+			}
+			advance = design_advance + letter_spacing
 			if is_word_separator(code_point) {
 				advance += word_spacing
 			}

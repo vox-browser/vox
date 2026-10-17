@@ -563,13 +563,35 @@ extern "C" int ladybird_v_skia_register_system_face(char const* key, char const*
         reinterpret_cast<UInt8 const*>(path), static_cast<CFIndex>(std::strlen(path)), false);
     if (!url)
         return 0;
-    auto descriptors = CTFontManagerCreateFontDescriptorsFromURL(url);
-    CFRelease(url);
-    if (!descriptors)
-        return 0;
     auto wanted = CFStringCreateWithCString(nullptr, postscript_name, kCFStringEncodingUTF8);
     CTFontDescriptorRef selected = nullptr;
-    for (CFIndex index = 0; wanted && index < CFArrayGetCount(descriptors); ++index) {
+    // Prefer the installed font CoreText registered under this name. A face
+    // re-created from its file loses system behavior that Blink's CTFont keeps,
+    // such as Apple Color Emoji's strike advances and ascent. Skia caches the
+    // first typeface created for an equal font, so it must also come first.
+    if (wanted) {
+        auto named = CTFontDescriptorCreateWithNameAndSize(wanted, 12.0);
+        auto named_url = named
+            ? static_cast<CFURLRef>(CTFontDescriptorCopyAttribute(named, kCTFontURLAttribute))
+            : nullptr;
+        char named_path[PATH_MAX];
+        if (named_url && CFURLGetFileSystemRepresentation(named_url, true,
+                reinterpret_cast<UInt8*>(named_path), sizeof(named_path))
+            && !std::strcmp(named_path, path))
+            selected = named;
+        else if (named)
+            CFRelease(named);
+        if (named_url)
+            CFRelease(named_url);
+    }
+    auto descriptors = selected ? nullptr : CTFontManagerCreateFontDescriptorsFromURL(url);
+    CFRelease(url);
+    if (!selected && !descriptors) {
+        if (wanted)
+            CFRelease(wanted);
+        return 0;
+    }
+    for (CFIndex index = 0; !selected && wanted && index < CFArrayGetCount(descriptors); ++index) {
         auto descriptor = static_cast<CTFontDescriptorRef>(CFArrayGetValueAtIndex(descriptors, index));
         auto name = static_cast<CFStringRef>(CTFontDescriptorCopyAttribute(descriptor, kCTFontNameAttribute));
         bool same = name && CFEqual(name, wanted);
@@ -582,7 +604,8 @@ extern "C" int ladybird_v_skia_register_system_face(char const* key, char const*
     }
     if (wanted)
         CFRelease(wanted);
-    CFRelease(descriptors);
+    if (descriptors)
+        CFRelease(descriptors);
     if (!selected)
         return 0;
     for (int index = 0; index < axis_count; ++index) {
@@ -604,6 +627,23 @@ extern "C" int ladybird_v_skia_register_system_face(char const* key, char const*
     if (!typeface)
         return 0;
     s_system_typefaces.emplace(key, std::move(typeface));
+    return 1;
+}
+
+// Blink shapes with Skia's glyph advances. For CoreText bitmap (sbix) faces,
+// such as Apple Color Emoji, those are whole pixels for the selected strike and
+// differ from the font's horizontal metrics table.
+extern "C" int ladybird_v_skia_system_face_advances(char const* key, char const* path,
+    char const* postscript_name, float size, uint16_t const* glyphs, int count, float* advances)
+{
+    if (!key || !glyphs || !advances || count <= 0 || !(size > 0))
+        return 0;
+    if (!ladybird_v_skia_register_system_face(key, path, postscript_name, nullptr, nullptr, 0))
+        return 0;
+    SkFont font(s_system_typefaces[key], size);
+    font.setSubpixel(true);
+    font.getWidths(SkSpan<const SkGlyphID>(glyphs, static_cast<size_t>(count)),
+        SkSpan<SkScalar>(advances, static_cast<size_t>(count)));
     return 1;
 }
 
