@@ -10174,6 +10174,132 @@ Equivalent Chrome content/start/submission accounting remains open;
 **faster-than-Chrome performance is unproven**. Evidence:
 Build/instructions/vox-opt101-interleaved-* and Build/v/instruction-opt101-*.
 
+## Compose document and ordinary-parent style-scope shortcuts
+
+Round 102 composes two independently committed Alexander Medvednikov slices:
+`7a44b720` (no-shadow document shortcut) followed by dependent
+`09791cde` (reuse scope along ordinary parent edges). Both original
+commits remain separate. Their **five exact grouped hunks in two DOM files**
+are imported onto accepted frozen101; neither component receives isolated
+performance credit. Current Root and unrelated work remain excluded.
+
+A document with no registered shadow roots uses its document scope directly.
+The fallback collects scopes in original order, deduplicates them, and reuses
+the containing scope along ordinary parent edges while still inspecting hosts.
+Shadow-root/host crossings and ownership transitions force a fresh lookup.
+A private document adoption-depth guard disables shortcuts through callbacks,
+including reentrant adoption. Scope callbacks receive a complete snapshot.
+
+All **seven common public cases** pass before/Boehm, final/Boehm and
+final/no-GC C-O2: **52 assertions per configuration**. Two byte-exact original
+public cases are included there. The remaining **13 original case bodies**
+pass once in each candidate GC mode: **170 assertions per mode**. All fifteen
+original cases, their helper bodies and assertions are unchanged; only module
+wrappers are concatenated and one identical C declaration deduplicated.
+Cases cover deep/no-shadow and unrelated-root trees, nested scopes, document
+sheet mode, hostless roots, callback snapshots, registry moves, adoption,
+reentrant hooks, allocation and GC. Source/body provenance:
+instruction-opt102-imported-tests.json. Common SHA256:
+`2f7bb9a2c9e50290753cc11c5bc9d13924b8860c914807a80bce799340d274da`.
+
+The first contract extractor counts only four unpadded rows out of thirteen;
+both actual runtime exits are 0 and both summaries already show 170 passes.
+Its actual controller exit 1 and initial receipts remain in
+instruction-opt102-contract-extractor-finding. A read-only repair verifies
+all thirteen exact names, order, individual assertion totals, source and log
+hashes. No passing runtime is repeated and no test body is repaired.
+
+Three fixed alternating local pairs count **32 batches over two documents**.
+Each document has 32 ordinary parents and 64 targets; one has no shadow roots,
+the other has one disconnected unrelated root. Each batch toggles all public
+class attributes on/off, completes public Document.update_style twice per
+document and traverses actual computed color bytes: **128 complete style
+updates and 8,192 class mutations** in the counter. Setup, eight warmups,
+independent color checks, expected checksum and forced GC stay outside.
+All six actual exits are 0; checksum **988,282,880** matches.
+Before: **3,417,996,784 / 3,420,905,188 / 3,418,377,968**; candidate by pair:
+**3,386,931,569 / 3,385,783,523 / 3,387,846,956**. Medians **3,418,377,968→3,386,931,569**
+retired instructions, **-0.91992%**. This is local evidence,
+not page credit or a private-helper-loop result.
+
+Full-process C-O1/Boehm profiles retain startup, warmups, checks and teardown,
+with no filter/reset and no passing common cases repeated. Counts only:
+
+| Function | Before calls | Candidate calls |
+| --- | ---: | ---: |
+| `layout__opt102_scope_complete_public_style_batch` | 82 | 82 |
+| `dom__Document_update_style` | 170 | 170 |
+| `dom__Element_set_attribute_value` | 11,008 | 11,008 |
+| `dom__Node_invalidate_style_with_properties` | 11,008 | 11,008 |
+| `dom__Node_observing_style_scopes` | 11,340 | 11,340 |
+| `dom__Node_style_scope` | 474,555 | 82,305 |
+| `dom__Node_root` | 14,879,645 | 6,346,558 |
+| `dom__ObservingStyleScopes_add` | 0 | 0 |
+
+Public work matches. Fewer style-scope/root calls explain the mechanism;
+profile timings and call counts receive no hardware-instruction page credit.
+
+Strict C audit authenticates five edited functions, one removed free helper,
+one added collection method, the exact two-field collection record, one u32
+Document guard and **four exact zero-default constructors** against independent
+whole-app C-only output. The initial audit rejects generated Document members;
+its actual exit 1 and complete member diffs remain in
+instruction-opt102-document-generated-members-finding. Only the exact new
+printer row/count 995→999 and equality clause are canonicalized after four-way
+body authentication; every other line of those members remains exact.
+All remaining executable C, records, globals, resources, filters, arenas and
+heap/GC setup compare exactly after established compiler identities, unchanged
+assertion lines, 37 frozen includes and four byte-identical helper reorders.
+Actual frontend tables and all 120 native inputs/native arguments match.
+Passing audit SHA256: `c08dc53fa5a68da746a58a4983bff6ed5b6279d39d015909628014fb6fa5740e`.
+Normal C SHA256: `cf719208b39e4a74f5b6339c2592ab0bfacbec84042cce70af27d5472b545928`.
+Durable archive hashes: instruction-opt102-artifact-archives.json.
+
+The predeclared page cohort is **30 alternating pairs**, odd before/candidate,
+even candidate/before, **30,000 paired bootstrap resamples, seed102**. Both
+regular C-O2/Boehm binaries use fresh copies of the same 359 cached bodies,
+unchanged 4 GiB hint, default marker1 and authenticated frozen text/child-only
+placement helpers. Both cache parents are on the SSD. The endpoint remains
+navigation_to_first_document_paint[0], document viewport 1024×768.
+
+| Build | Median first-frame retired instructions | Median lifetime peak, MiB |
+| --- | ---: | ---: |
+| Fresh accepted frozen101 control | 17,546,262,339.5 | 3,345.5 |
+| Dependent style-scope composition | 17,517,127,299.5 | 3,344.6 |
+
+Difference of marginal medians (before minus candidate):
+**29,135,040** instructions; candidate change
+**-0.166%**, **26/30** wins.
+Paired median saving **19,241,879**, 95% interval
+**[15,045,962.5, 29,068,708]**. The positive paired interval qualifies for repeatable page credit of **29,135,040** instructions.
+
+All 60 primaries and **60 actual PNGs** remain. Recovered primaries:
+none; pre-parse retries: 0. First primaries have
+1 installation/2 geometry preparations/1 paint. Later completed refreshes:
+none. No completed primary is extended, filtered,
+discarded or rerun. Missing final exits, PNGs, fingerprints and peaks remain
+unknown in recovered reports. Peaks cover lifetime through capture/exit and
+refreshes; they are not first-frame live memory and are never summed.
+All differences among the 60 retained RGB captures stay in the original skeleton bands, x45–662: y335–344 and ten 14px bands starting at 380 with 41px spacing. All other pixels match. There are 30 control and 30 candidate classes, 0 shared. Animation is unchanged and no observation repeated. External foreground transitions retained:
+none.
+The child is foreground in neither startup snapshot.
+
+The focused viewport is exact, retaining Unicode/shadows/masks/backdrop effects
+plus deep ordinary ancestry, public class mutation and UA controls.
+Screenshot children retain the explicit frozen-library argv pin and loader
+path/hash receipts introduced in101; protected shell/env stripping cannot
+silently select the concurrent Root helper. Prior carry is **0**. Observed carry **29,135,040** crosses the 5M gate. Six actual zero exits pass CSS 31/SVG 10/layout 46 in both GCs (**174 executions**). All **19 comparisons pass, 16 exact**; known differences remain inline-node 13, text-decorations 1,341 and canvas-text 1,994. Completed broad verification resets carry to 0.
+All selected harness bodies and screenshot bounds remain unchanged.
+
+The isolated signed app is `/Users/alex/code/vox2/Build/v/Vox-opt102.app`; native instruction text matches
+the measured binary and the frozen helper is pinned inside it. Signatures,
+actual loaded library, startup and actual collections pass with marker1 and
+override2. Canonical/GUI browsers and concurrent Root work remain preserved;
+that unrelated work receives no extra regression or performance credit.
+Equivalent Chrome content/start/submission accounting is still open;
+**faster-than-Chrome performance remains unproven**. Evidence:
+Build/instructions/vox-opt102-interleaved-* and Build/v/instruction-opt102-*.
+
 ## Causes and changes
 
 - The V 0.5.2 compatibility compiler's `-prod` Boehm code repeatedly snapshots

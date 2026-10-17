@@ -1950,6 +1950,17 @@ evidence](docs/translation-audit/NATIVE_MEDIA_WHEEL_RAW_HANDLER.md).
   focused effect/mask viewport exact. Additional observed savings: 0.
   Same 4 GiB/placement and shared SSD cache parent; canonical/GUI preserved;
   Root excluded; Chrome parity open.
+  Dependent style scopes `7a44b720` + `09791cde` are measured together.
+  Seven common cases pass 52 assertions/configuration; 13 original candidate-only
+  cases pass 170 assertions per GC. All 15 original bodies remain unchanged.
+  Complete public class/style batches use 0.92% fewer instructions.
+  Initial extractor/C-metadata audit failures remain; no passing unit/primary repeated.
+  Page point saving 29,135,040, 26/30 wins;
+  paired interval [15,045,962.5, 29,068,708], repeatable credit 29,135,040.
+  Broad verification: 87 selected cases both GC; 19 comparisons (16 exact);
+  focused deep/UA viewport exact; additional observed savings 0.
+  Same 4 GiB, SSD and placement; frozen library loader proof retained.
+  Root/canonical/GUI preserved. Individual component credit 0; Chrome parity open.
 - Outside instruction-count optimization, run broad regression suites once per
   ten completed fixes, not after every fix.
   Broad suites include full translation/package test batches, the full LibJS AST
