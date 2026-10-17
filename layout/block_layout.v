@@ -434,8 +434,27 @@ fn layout_inside_independent_formatting_context_without_containment_override(mut
 		if block_container := box.as_block_container() {
 			mut inline_block_context := BlockFormattingContext.for_root(box, layout_mode, box_state.has_definite_width())
 			inline_block_context.layout_marker_of_list_item_root(mut state, box, mut box_state)
-			inline_result := inline_block_context.run_inline_formatting_context_with_floats(mut state, block_container, mut box_state, layout_mode, available_space)
-			mut automatic_height := if box_state.line_boxes.len > 0 {
+			// A multi-column container lays its lines out at the column width.
+			multicol := multicol_columns_for_inline_content(box, box_state, layout_mode)
+			container_width := box_state.content_width()
+			mut inline_available_space := available_space
+			if columns := multicol {
+				box_state.set_content_width(columns.width)
+				inline_available_space = AvailableSpace.new(AvailableSize.make_definite(columns.width),
+					available_space.height)
+			}
+			inline_result := inline_block_context.run_inline_formatting_context_with_floats(mut state, block_container, mut box_state, layout_mode, inline_available_space)
+			mut column_block_size := ?CSSPixels(none)
+			if columns := multicol {
+				box_state.set_content_width(container_width)
+				if inline_block_context.floating_boxes.len == 0 {
+					column_block_size = distribute_lines_into_columns(mut state, box, mut box_state,
+						columns, container_width)
+				}
+			}
+			mut automatic_height := if block_size := column_block_size {
+				block_size
+			} else if box_state.line_boxes.len > 0 {
 				box_state.line_boxes.last().bottom()
 			} else {
 				CSSPixels.new(0)
