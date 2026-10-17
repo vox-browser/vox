@@ -54,6 +54,10 @@ needs_stitching=0
 if [ "$launch_window_height" -gt 1000 ]; then
 	launch_window_height=1000
 	needs_stitching=1
+elif [ "${LADYBIRD_SCREENSHOT_STITCH:-0}" = 1 ]; then
+	# A shorter display capped an ordinary capture; the first strip below
+	# discovers the cap.
+	needs_stitching=1
 fi
 if [ "$needs_stitching" -eq 1 ]; then
     if ! command -v magick >/dev/null 2>&1; then
@@ -185,6 +189,13 @@ crop_height=$((height * scale))
 expected_window_height=$((window_height * scale))
 capture_source="$capture_tmp/window.png"
 if [ "$captured_height" -lt "$expected_window_height" ]; then
+    if [ "${LADYBIRD_SCREENSHOT_STITCH:-0}" != 1 ]; then
+        # AppKit limits the window to the visible screen. Capture the
+        # viewport in strips at that height instead.
+        trap - EXIT HUP INT TERM
+        cleanup
+        LADYBIRD_SCREENSHOT_STITCH=1 exec "$0" "$@"
+    fi
     echo "Unexpected captured window height: $captured_height (expected $expected_window_height)" >&2
     exit 1
 fi
