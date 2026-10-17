@@ -16,8 +16,26 @@ static IMP native_layer_original_parent_wants_update;
 static CGFloat native_layer_capture_scale;
 static BOOL native_layer_presenting;
 static BOOL native_layer_document_work_active;
+static BOOL native_layer_copying_capture;
 // Main-thread redraw deliveries, distinct from merely servicing the run loop.
 static uint64_t native_layer_redraw_generation;
+static uint64_t native_layer_paint_generation;
+static BOOL native_layer_paint_started;
+static char native_layer_frame_generation_key;
+static char native_layer_frame_bounds_key;
+
+static int vox_browser_has_paint_context(void) {
+    NSGraphicsContext *context = NSGraphicsContext.currentContext;
+    return context != nil && context.CGContext != NULL;
+}
+
+// Preparation consumes callbacks, resources and layout before pixels are
+// replayed. Requests serviced there belong to this frame; requests delivered
+// after this boundary still invalidate it.
+static void vox_browser_frame_prepared(void) {
+    native_layer_paint_generation = native_layer_redraw_generation;
+    native_layer_paint_started = YES;
+}
 
 static BOOL native_layer_is_browser_view(NSView *view) {
     Class browser = NSClassFromString(@"MyView2");
@@ -33,8 +51,16 @@ static BOOL native_layer_has_browser_child(NSView *view) {
 }
 
 static CGFloat native_layer_effective_scale(NSView *view) {
-    CGFloat scale = native_layer_capture_scale > 0
-        ? native_layer_capture_scale : view.window.backingScaleFactor;
+    if (native_layer_capture_scale > 0) return native_layer_capture_scale;
+    // Capture documents already expose this density as devicePixelRatio.
+    // Use it for their presented frames too, rather than supersampling at the
+    // display's Retina scale and repainting at the requested scale for capture.
+    if (getenv("LADYBIRD_SCREENSHOT_DELAY_SECONDS") != NULL) {
+        const char *value = getenv("LADYBIRD_SCREENSHOT_SCALE");
+        double requested = value ? strtod(value, NULL) : 1;
+        return isfinite(requested) && requested > 1 ? requested : 1;
+    }
+    CGFloat scale = view.window.backingScaleFactor;
     return isfinite(scale) && scale > 0 ? scale : 1;
 }
 
@@ -73,7 +99,19 @@ static CGImageRef native_layer_raster_frame(NSView *view, CGFloat scale, IMP dra
 }
 
 static void native_layer_present_frame(NSView *view, CGFloat scale, IMP draw) {
-    CGImageRef image = native_layer_raster_frame(view, scale, draw);
+    uint64_t generation = native_layer_redraw_generation;
+    NSRect bounds = view.bounds;
+    BOOL previous_started = native_layer_paint_started;
+    uint64_t previous_generation = native_layer_paint_generation;
+    native_layer_paint_started = NO;
+    CGImageRef image = NULL;
+    @try {
+        image = native_layer_raster_frame(view, scale, draw);
+        if (native_layer_paint_started) generation = native_layer_paint_generation;
+    } @finally {
+        native_layer_paint_started = previous_started;
+        native_layer_paint_generation = previous_generation;
+    }
     if (!image) return;
     // Disable implicit content/scale animations: an old frame must not be
     // retained for a cross-fade when navigation, selection or scrolling paints.
@@ -84,7 +122,57 @@ static void native_layer_present_frame(NSView *view, CGFloat scale, IMP draw) {
     view.layer.contentsScale = scale;
     view.layer.contents = (__bridge id)image;
     [CATransaction commit];
+    objc_setAssociatedObject(view, &native_layer_frame_generation_key,
+        @(generation), OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+    objc_setAssociatedObject(view, &native_layer_frame_bounds_key,
+        [NSValue valueWithRect:bounds], OBJC_ASSOCIATION_RETAIN_NONATOMIC);
     CGImageRelease(image);
+}
+
+static void native_layer_restore_frame_scale(NSView *view) {
+    // A capture at the presentation density has nothing to restore. Preserve
+    // existing invalidation, but do not schedule a redundant post-capture frame.
+    if (view.layer.contentsScale != native_layer_effective_scale(view))
+        view.needsDisplay = YES;
+}
+
+static BOOL native_layer_frame_matches_input(NSView *view, CGFloat scale) {
+    NSNumber *generation = objc_getAssociatedObject(view, &native_layer_frame_generation_key);
+    NSValue *bounds = objc_getAssociatedObject(view, &native_layer_frame_bounds_key);
+    id contents = view.layer.contents;
+    if (!generation || !bounds || !contents
+        || generation.unsignedLongLongValue != native_layer_redraw_generation
+        || !NSEqualRects(bounds.rectValue, view.bounds) || view.layer.contentsScale != scale
+        || CFGetTypeID((__bridge CFTypeRef)contents) != CGImageGetTypeID()) return NO;
+    CGImageRef image = (__bridge CGImageRef)contents;
+    return CGImageGetWidth(image) == ceil(view.bounds.size.width * scale)
+        && CGImageGetHeight(image) == ceil(view.bounds.size.height * scale);
+}
+
+static BOOL native_layer_frame_is_current(NSView *view, CGFloat scale) {
+    return !view.needsDisplay && native_layer_frame_matches_input(view, scale);
+}
+
+static void native_layer_draw(id self, SEL command, NSRect rect) {
+    NSView *view = self;
+    if (native_layer_copying_capture
+        && native_layer_frame_matches_input(view, native_layer_effective_scale(view))) {
+        CGContextRef context = NSGraphicsContext.currentContext.CGContext;
+        if (context) {
+            CGContextSaveGState(context);
+            if (view.isFlipped) {
+                CGContextTranslateCTM(context, 0, NSMinY(view.bounds) + NSMaxY(view.bounds));
+                CGContextScaleCTM(context, 1, -1);
+            }
+            CGContextSetBlendMode(context, kCGBlendModeCopy);
+            CGContextDrawImage(context, view.bounds, (__bridge CGImageRef)view.layer.contents);
+            CGContextRestoreGState(context);
+            if (getenv("VOX_PROFILE_INSTRUCTIONS")) fprintf(stderr, "Vox capture draw: copied presented raster\n");
+            return;
+        }
+    }
+    if (native_layer_original_draw)
+        ((void (*)(id, SEL, NSRect))native_layer_original_draw)(self, command, rect);
 }
 
 static BOOL native_layer_wants_update(id self, SEL command) {
@@ -95,6 +183,13 @@ static BOOL native_layer_wants_update(id self, SEL command) {
 static void native_layer_update(id self, SEL command) {
     (void)command;
     if (native_layer_presenting || native_layer_document_work_active) return;
+    // AppKit may dirty layers as part of cacheDisplayInRect:. Their document
+    // input has not changed; keep the immutable pixels prepared for this copy.
+    if (native_layer_copying_capture
+        && native_layer_frame_matches_input(self, native_layer_effective_scale(self))) {
+        if (getenv("VOX_PROFILE_INSTRUCTIONS")) fprintf(stderr, "Vox capture update: retained presented raster\n");
+        return;
+    }
     native_layer_presenting = YES;
     @try {
     @autoreleasepool {
@@ -180,8 +275,8 @@ static void native_install_browser_layer_presentation(void) {
         Class browser = NSClassFromString(@"MyView2");
         Class parent = NSClassFromString(@"_sapp_macos_view");
         if (!browser || !parent) return;
-        native_layer_original_draw = method_getImplementation(
-            class_getInstanceMethod(browser, @selector(drawRect:)));
+        native_layer_original_draw = native_layer_replace_method(browser,
+            @selector(drawRect:), (IMP)native_layer_draw, "v@:{CGRect={CGPoint=dd}{CGSize=dd}}");
         native_layer_original_move = native_layer_replace_method(browser,
             @selector(viewDidMoveToWindow), (IMP)native_layer_moved_to_window, "v@:");
         native_layer_original_backing = native_layer_replace_method(browser,
@@ -203,8 +298,25 @@ static void native_install_browser_layer_presentation(void) {
 
 static void native_layer_prepare_capture(NSView *view, BOOL render) {
     if (native_layer_is_browser_view(view)) {
-        if (render) native_layer_update(view, @selector(updateLayer));
-        else view.needsDisplay = YES;
+        if (render) {
+            // Capture the current presented pixels without delivering another
+            // V frame. Dirty, resized, superseded or differently scaled frames
+            // still take the ordinary draw path.
+            if (!native_layer_frame_is_current(view, native_layer_effective_scale(view))) {
+                if (getenv("VOX_PROFILE_INSTRUCTIONS")) {
+                    NSNumber *generation = objc_getAssociatedObject(view, &native_layer_frame_generation_key);
+                    fprintf(stderr, "Vox capture stale frame: dirty=%d generation=%llu/%llu scale=%g/%g\n",
+                        view.needsDisplay, generation.unsignedLongLongValue,
+                        (unsigned long long)native_layer_redraw_generation,
+                        (double)view.layer.contentsScale, (double)native_layer_effective_scale(view));
+                }
+                native_layer_update(view, @selector(updateLayer));
+                if (getenv("VOX_PROFILE_INSTRUCTIONS")) fprintf(stderr, "Vox capture frame: rasterized\n");
+            } else if (getenv("VOX_PROFILE_INSTRUCTIONS")) {
+                fprintf(stderr, "Vox capture frame: reused\n");
+            }
+        }
+        else native_layer_restore_frame_scale(view);
     }
     for (NSView *child in view.subviews) native_layer_prepare_capture(child, render);
 }
@@ -233,7 +345,13 @@ static void native_cache_display_in_bitmap(NSView *view, NSRect bounds,
     native_layer_capture_scale = fmax(scale_x, scale_y);
     @try {
         native_layer_prepare_capture(view, YES);
-        [view cacheDisplayInRect:bounds toBitmapImageRep:bitmap];
+        BOOL previous_copying = native_layer_copying_capture;
+        native_layer_copying_capture = YES;
+        @try {
+            [view cacheDisplayInRect:bounds toBitmapImageRep:bitmap];
+        } @finally {
+            native_layer_copying_capture = previous_copying;
+        }
     } @finally {
         native_layer_capture_scale = previous;
         native_layer_prepare_capture(view, NO);

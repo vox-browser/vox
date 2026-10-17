@@ -6,6 +6,11 @@ static void vox_set_navigation_work_active(int active) {
 	native_layer_document_work_active = active != 0;
 }
 
+static int vox_native_frame_consumed_redraws(void) {
+	return native_layer_presenting && native_layer_paint_started
+		&& native_layer_paint_generation == native_layer_redraw_generation;
+}
+
 static int vox_service_navigation_ui(void) {
 	if (!NSThread.isMainThread || !NSApp) return 0;
 	uint64_t generation = native_layer_redraw_generation;

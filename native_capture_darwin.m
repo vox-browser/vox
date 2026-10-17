@@ -413,6 +413,48 @@ void native_wake_browser_after(int milliseconds) {
 	});
 }
 
+static uint64_t native_capture_retry_generation;
+static BOOL native_capture_retry_pending;
+static int (*native_capture_retry_ready)(void *);
+static void *native_capture_retry_context;
+
+static void native_deliver_capture_retry(uint64_t generation) {
+	if (!native_capture_retry_pending || generation != native_capture_retry_generation) return;
+	// The current frame already checks resource readiness at its end. A retry
+	// delivered during it only dirties that same frame and forces another paint.
+	if (native_layer_presenting || native_layer_document_work_active) {
+		dispatch_after(dispatch_time(DISPATCH_TIME_NOW, NSEC_PER_MSEC),
+			dispatch_get_main_queue(), ^{ native_deliver_capture_retry(generation); });
+		return;
+	}
+	if (native_capture_retry_ready) {
+		int ready = native_capture_retry_ready(native_capture_retry_context);
+		if (ready < 0) { native_capture_retry_pending = NO; return; }
+		if (!ready) {
+			dispatch_after(dispatch_time(DISPATCH_TIME_NOW, 16 * NSEC_PER_MSEC),
+				dispatch_get_main_queue(), ^{ native_deliver_capture_retry(generation); });
+			return;
+		}
+	}
+	native_capture_retry_pending = NO;
+	native_request_browser_redraw();
+}
+
+void native_cancel_capture_retry(void) {
+	native_capture_retry_pending = NO;
+	++native_capture_retry_generation;
+}
+
+void native_schedule_capture_retry(int (*ready)(void *), void *context) {
+	if (native_capture_retry_pending) return;
+	native_capture_retry_pending = YES;
+	native_capture_retry_ready = ready;
+	native_capture_retry_context = context;
+	uint64_t generation = ++native_capture_retry_generation;
+	dispatch_after(dispatch_time(DISPATCH_TIME_NOW, 16 * NSEC_PER_MSEC),
+		dispatch_get_main_queue(), ^{ native_deliver_capture_retry(generation); });
+}
+
 void native_show_cached_snapshot(string path_value) {
 	NSString *path = native_capture_string(path_value);
 	void (^show_snapshot)(void) = ^{

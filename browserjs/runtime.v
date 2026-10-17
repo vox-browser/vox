@@ -366,6 +366,9 @@ pub fn (mut runtime Runtime) close() {
 
 pub fn (mut runtime Runtime) add_close_handler(handler fn ()) { runtime.close_handlers_ << handler }
 pub fn (mut runtime Runtime) mark_document_state_dirty() { runtime.document_state_dirty_ = true }
+pub fn (runtime &Runtime) has_pending_document_state() bool {
+	return runtime.document_state_dirty_
+}
 pub fn (mut runtime Runtime) take_document_state_dirty() bool {
 	dirty := runtime.document_state_dirty_
 	runtime.document_state_dirty_ = false

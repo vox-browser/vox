@@ -4,6 +4,17 @@
 
 void native_wake_browser(void);
 
+static void vox_test_begin_prepared_frame(void) {
+	[NSApplication sharedApplication];
+	for (unsigned i = 0; i < 16; ++i) vox_service_navigation_ui();
+	native_layer_presenting = YES;
+	vox_browser_frame_prepared();
+}
+static void vox_test_end_prepared_frame(void) {
+	native_layer_presenting = NO;
+	native_layer_paint_started = NO;
+}
+
 static unsigned vox_work_test_draws;
 static void vox_work_test_draw(id view, SEL selector, NSRect rect) {
 	(void)selector;

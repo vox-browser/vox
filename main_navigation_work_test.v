@@ -2,6 +2,7 @@ module main
 
 import gg
 import page
+import browserjs
 import platform
 import os
 
@@ -39,7 +40,6 @@ fn test_navigation_guard_keeps_active_heap_policy_until_all_nested_cleanup_finis
 	}
 }
 
-
 $if macos {
 	#include "native_navigation_work_test_darwin.h"
 }
@@ -49,6 +49,39 @@ fn C.vox_test_navigation_ui_pump() int
 fn C.vox_test_navigation_ui_redraw_generation() int
 fn C.vox_test_queue_navigation_redraw()
 fn C.vox_test_navigation_native_size_invalidations() int
+fn C.vox_test_begin_prepared_frame()
+fn C.vox_test_end_prepared_frame()
+
+fn test_native_frame_consumes_preparation_wakes_but_retains_pending_document_work() {
+	$if !macos { return }
+	mut owner := page.Page.create(1)!
+	mut app := &BrowserApp{page_model: owner, ctx: &gg.Context{}, viewport_width: 320, viewport_height: 200}
+	app.install_loaded_page(LoadedPage{url: 'https://frame-work.example/', content_type: 'text/html', markup: '<!doctype html><p>ready</p>'}, false)
+	mut document := app.document
+	defer { document.finalize() }
+	C.vox_test_begin_prepared_frame()
+	defer { C.vox_test_end_prepared_frame() }
+	app.begin_frame_preparation()
+	app.poll_javascript_tasks()
+	app.poll_background_resources()
+	app.finish_frame_preparation()
+	C.vox_browser_frame_prepared()
+	assert app.native_frame_consumed_work()
+	app.background_resource_pending['https://frame-work.example/image'] = true
+	assert !app.native_frame_consumed_work()
+	app.background_resource_pending.clear()
+	mut runtime := browserjs.Runtime.create()
+	defer { runtime.close() }
+	app.js_runtime = runtime
+	runtime.mark_document_state_dirty()
+	assert !app.native_frame_consumed_work()
+	assert runtime.take_document_state_dirty()
+	assert app.native_frame_consumed_work()
+	// A new invalidation delivered after the paint boundary remains pending.
+	C.vox_test_queue_navigation_redraw()
+	for _ in 0 .. 1000 { if C.vox_service_navigation_ui() != 0 { break } }
+	assert !app.native_frame_consumed_work()
+}
 
 fn test_navigation_requested_during_engine_work_waits_for_a_safe_frame() {
 	mut app := &BrowserApp{ ctx: &gg.Context{} }

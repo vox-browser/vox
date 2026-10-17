@@ -9,6 +9,7 @@ $if macos {
 
 fn C.vox_service_navigation_ui() int
 fn C.vox_set_navigation_work_active(int)
+fn C.vox_native_frame_consumed_redraws() int
 
 struct DeferredNavigationInput {
 	address       string
@@ -65,11 +66,28 @@ fn (mut scope NavigationWorkScope) finish() {
 	if app.navigation_work_depth == 0 {
 		$if macos {
 			C.vox_set_navigation_work_active(0)
-			if app.navigation_work_yielded || app.deferred_navigation_input != none || app.deferred_page_input.len > 0 {
+			if (app.navigation_work_yielded && !app.native_frame_consumed_work())
+				|| app.deferred_navigation_input != none || app.deferred_page_input.len > 0 {
 				C.native_wake_browser()
 			}
 		}
 	}
+}
+
+fn (app &BrowserApp) native_frame_consumed_work() bool {
+	$if macos {
+		if C.vox_native_frame_consumed_redraws() == 0 { return false }
+		// A wake consumed during preparation needs no duplicate frame only when
+		// all document work reached that frame. Keep unadopted asynchronous work.
+		if app.document == unsafe { nil } || app.background_resource_pending.len > 0
+			|| app.pending_navigation != none || app.paint_commands_pending { return false }
+		if app.js_runtime != unsafe { nil } && app.js_runtime.has_pending_document_state() {
+			return false
+		}
+		return !app.document.needs_style_update_after_layout()
+			&& app.document.layout_is_up_to_date() && !app.javascript_tasks_have_unadopted_paint()
+	}
+	return false
 }
 
 fn (mut app BrowserApp) defer_page_input(event &gg.Event) {

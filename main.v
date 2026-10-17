@@ -72,6 +72,8 @@ fn C.native_window_height() int
 fn C.native_wake_browser()
 
 fn C.native_wake_browser_after(milliseconds int)
+fn C.native_schedule_capture_retry(fn (voidptr) int, voidptr)
+fn C.native_cancel_capture_retry()
 
 fn C.native_prevent_app_nap()
 
@@ -6289,6 +6291,12 @@ fn address_for_display(address string, cursor int, active bool, max_characters i
 
 fn (mut app BrowserApp) draw() {
 	$if linux { pump_linux_browser_events() }
+	$if macos {
+		// Sokol's parent view also ticks with no drawing context. Only the
+		// native document view owns document preparation and pixel replay.
+		if app.ctx != unsafe { nil } && app.ctx.native_rendering
+			&& C.vox_browser_has_paint_context() == 0 { return }
+	}
 	if app.navigation_work_depth > 0 { return }
 	paint_before_frame := app.paint_display_list
 	app.poll_deferred_navigation_input()
@@ -6340,38 +6348,43 @@ fn (mut app BrowserApp) draw() {
 	app.scroll_profile_prepared()
 	begin_browser_frame(app.ctx)
 	app.paint_effect_depth = 0
-	$if macos {
-		if app.ctx.native_rendering && app.document != unsafe { nil }
-			&& app.document.font_rendering_policy() == .chromium {
-			C.native_begin_font_compositing_layer(f32(app.ctx.width), f32(app.ctx.height))
-		} else if app.ctx.native_rendering
-			&& app.paint_commands_have_backdrop_filter {
-			// Backdrop commands need a snapshot of pixels already painted in this
-			// frame. Keep the ordinary fast path direct-to-window.
-			C.native_begin_css_filter_layer(f32(app.ctx.width), f32(app.ctx.height))
+	paint_document := app.document_pixels_ready_for_frame()
+	if paint_document {
+		$if macos {
+			if app.ctx.native_rendering && app.document != unsafe { nil }
+				&& app.document.font_rendering_policy() == .chromium {
+				C.native_begin_font_compositing_layer(f32(app.ctx.width), f32(app.ctx.height))
+			} else if app.ctx.native_rendering
+				&& app.paint_commands_have_backdrop_filter {
+				// Backdrop commands need a snapshot of pixels already painted in this
+				// frame. Keep the ordinary fast path direct-to-window.
+				C.native_begin_css_filter_layer(f32(app.ctx.width), f32(app.ctx.height))
+			}
 		}
-	}
-	draw_srgb_rect(app.ctx, 0, 0, f32(window.width), f32(window.height), gg.rgb(255, 255, 255))
-	page_y := app.page_top()
-	for command in app.paint_commands {
-		platform.cooperative_work_checkpoint()
-		app.draw_command(command, 0, page_y, window.height)
-	}
-	for index in app.portable_shadow_image_index .. app.portable_shadow_images.len {
-		app.ctx.remove_cached_image_by_idx(app.portable_shadow_images[index].image_id)
-	}
-	app.portable_shadow_images = app.portable_shadow_images[..app.portable_shadow_image_index].clone()
-	if report_first_paint {
-		paint_checkpoint = debug_timing_checkpoint('first_paint_replay (${app.paint_commands.len} commands)', paint_checkpoint)
-	}
-	$if macos {
-		if app.ctx.native_rendering && app.document != unsafe { nil }
-			&& app.document.font_rendering_policy() == .chromium {
-			C.native_end_font_compositing_layer()
-		} else if app.ctx.native_rendering
-			&& app.paint_commands_have_backdrop_filter {
-			C.native_end_css_filter_layer()
+		draw_srgb_rect(app.ctx, 0, 0, f32(window.width), f32(window.height), gg.rgb(255, 255, 255))
+		page_y := app.page_top()
+		for command in app.paint_commands {
+			platform.cooperative_work_checkpoint()
+			app.draw_command(command, 0, page_y, window.height)
 		}
+		for index in app.portable_shadow_image_index .. app.portable_shadow_images.len {
+			app.ctx.remove_cached_image_by_idx(app.portable_shadow_images[index].image_id)
+		}
+		app.portable_shadow_images = app.portable_shadow_images[..app.portable_shadow_image_index].clone()
+		if report_first_paint {
+			paint_checkpoint = debug_timing_checkpoint('first_paint_replay (${app.paint_commands.len} commands)', paint_checkpoint)
+		}
+		$if macos {
+			if app.ctx.native_rendering && app.document != unsafe { nil }
+				&& app.document.font_rendering_policy() == .chromium {
+				C.native_end_font_compositing_layer()
+			} else if app.ctx.native_rendering
+				&& app.paint_commands_have_backdrop_filter {
+				C.native_end_css_filter_layer()
+			}
+		}
+	} else {
+		draw_srgb_rect(app.ctx, 0, 0, f32(window.width), f32(window.height), gg.rgb(255, 255, 255))
 	}
 
 	if app.chrome_height() > 0 {
@@ -6451,12 +6464,12 @@ fn (mut app BrowserApp) draw() {
 		app.document_presented = true
 		$if macos {
 			hold_expired := app.snapshot_hold_until != 0 && time.sys_mono_now() >= app.snapshot_hold_until
-			if app.snapshot_visible && (!app.snapshot_hold || hold_expired) {
+			if paint_document && app.snapshot_visible && (!app.snapshot_hold || hold_expired) {
 				C.native_hide_cached_snapshot()
 				app.snapshot_visible = false
 				app.snapshot_hold = false
 			}
-			if browser_snapshot_cache_enabled() && !app.snapshot_cached
+			if paint_document && browser_snapshot_cache_enabled() && !app.snapshot_cached
 				&& !app.load_status.starts_with('Cached') && !app.load_status.starts_with('Loading ') {
 				app.snapshot_cached = true
 				C.native_cache_browser_snapshot(cached_snapshot_path(app.address))
@@ -6468,10 +6481,11 @@ fn (mut app BrowserApp) draw() {
 	// delaying the window and gives cached pages an immediate first paint.
 	app.start_pending_navigation()
 	if app.screenshot_path != '' && !app.scroll_profile.enabled && !app.screenshot_scheduled && app.document != unsafe { nil } && !app.load_status.starts_with('Loading ') && app.background_resource_pending.len == 0 {
-		if !app.document_resources_ready_for_capture() {
-			$if macos { C.native_wake_browser_after(16) }
+		if !paint_document || !app.document_resources_ready_for_capture() {
+			$if macos { C.native_schedule_capture_retry(capture_retry_needs_frame, voidptr(&app)) }
 			return
 		}
+		$if macos { C.native_cancel_capture_retry() }
 		app.screenshot_scheduled = true
 		app.write_capture_audit_if_requested()
 		schedule_native_screenshot(app.screenshot_path)
