@@ -88,3 +88,48 @@ fn test_browser_activity_heap_scope_honors_all_explicit_collector_overrides() {
 		}
 	}
 }
+
+fn test_timer_callbacks_keep_nested_active_policy_and_restore_idle_after_cleanup() {
+	$if gcboehm ? {
+		settings := ['GC_INITIAL_HEAP_SIZE', 'GC_MAXIMUM_HEAP_SIZE', 'GC_FREE_SPACE_DIVISOR']
+		previous := settings.map(os.getenv(it))
+		original := activity_heap_test_divisor()
+		defer {
+			activity_heap_test_set_divisor(original)
+			for index, setting in settings { os.setenv(setting, previous[index], true) }
+		}
+		for setting in settings { os.setenv(setting, '', true) }
+		activity_heap_test_set_divisor(64)
+		mut timer := Timer.create_single_shot(100000, fn () {
+			assert activity_heap_test_divisor() == 3
+			assert gc_is_enabled()
+			mut nested := Timer.create_single_shot(100000, fn () {
+				assert activity_heap_test_divisor() == 3
+				assert gc_is_enabled()
+			})
+			nested.start()
+			nested.fire()
+			assert !nested.has_activity_root()
+			assert activity_heap_test_divisor() == 3
+		})
+		timer.start()
+		timer.fire()
+		assert !timer.has_activity_root()
+		assert activity_heap_test_divisor() == 64
+		for setting in settings {
+			os.setenv(setting, '64', true)
+			mut overridden := Timer.create_single_shot(100000, fn () {
+				assert activity_heap_test_divisor() == 64
+			})
+			overridden.start()
+			overridden.fire()
+			assert activity_heap_test_divisor() == 64
+			os.setenv(setting, '', true)
+		}
+	} $else {
+		mut timer := Timer.create_single_shot(100000, fn () { assert true })
+		timer.start()
+		timer.fire()
+		assert !timer.has_activity_root()
+	}
+}

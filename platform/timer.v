@@ -124,6 +124,10 @@ pub fn (mut timer Timer) fire() {
 		return
 	}
 	if defer_timer_during_cooperative_work(&timer) { return }
+	// Load completions, HTML tasks and script callbacks are active work too.
+	// Keep collection spacing through callback cleanup, then restore idle policy.
+	mut heap_scope := begin_browser_activity_heap_scope()
+	defer { heap_scope.finish() }
 	if timer.single_shot_ {
 		// Core::Timer stops before the handler. Platform::Timer retains its
 		// activity root until that handler returns, unless it restarts the timer.

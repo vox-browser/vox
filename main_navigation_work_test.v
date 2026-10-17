@@ -2,6 +2,43 @@ module main
 
 import gg
 import page
+import platform
+import os
+
+fn C.GC_get_free_space_divisor() usize
+fn C.GC_call_with_alloc_lock(fn (voidptr) voidptr, voidptr) voidptr
+
+$if gcboehm ? {
+	struct NavigationHeapObservation { mut: divisor usize }
+	fn navigation_heap_read(context voidptr) voidptr {
+		mut state := unsafe { &NavigationHeapObservation(context) }
+		state.divisor = C.GC_get_free_space_divisor()
+		return unsafe { nil }
+	}
+	fn navigation_heap_divisor() usize {
+		mut state := NavigationHeapObservation{}
+		C.GC_call_with_alloc_lock(navigation_heap_read, &state)
+		return state.divisor
+	}
+}
+
+fn test_navigation_guard_keeps_active_heap_policy_until_all_nested_cleanup_finishes() {
+	$if gcboehm ? {
+		_ = platform.initialize_browser_heap_policy()
+		original := navigation_heap_divisor()
+		explicit := os.getenv('GC_INITIAL_HEAP_SIZE') != '' || os.getenv('GC_MAXIMUM_HEAP_SIZE') != '' || os.getenv('GC_FREE_SPACE_DIVISOR') != ''
+		expected := if explicit || original <= 3 { original } else { usize(3) }
+		mut app := &BrowserApp{ctx: &gg.Context{}}
+		mut outer := app.begin_navigation_work()
+		assert navigation_heap_divisor() == expected
+		mut inner := app.begin_navigation_work()
+		inner.finish()
+		assert navigation_heap_divisor() == expected
+		outer.finish()
+		assert navigation_heap_divisor() == original
+	}
+}
+
 
 $if macos {
 	#include "native_navigation_work_test_darwin.h"

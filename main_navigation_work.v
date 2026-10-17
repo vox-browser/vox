@@ -21,6 +21,7 @@ struct NavigationWorkScope {
 mut:
 	app  &BrowserApp = unsafe { nil }
 	host platform.CooperativeWorkScope
+	heap platform.BrowserActivityHeapScope
 }
 
 struct DeferredPageInput {
@@ -41,6 +42,7 @@ fn service_navigation_ui(context voidptr) {
 
 fn (mut app BrowserApp) begin_navigation_work() NavigationWorkScope {
 	if app.ctx == unsafe { nil } { return NavigationWorkScope{} }
+	heap := platform.begin_browser_activity_heap_scope()
 	if app.navigation_work_depth == 0 { app.navigation_work_yielded = false }
 	app.navigation_work_depth++
 	$if macos {
@@ -49,11 +51,13 @@ fn (mut app BrowserApp) begin_navigation_work() NavigationWorkScope {
 	return NavigationWorkScope{
 		app:  &app
 		host: platform.begin_cooperative_work(voidptr(&app), service_navigation_ui)
+		heap: heap
 	}
 }
 
 fn (mut scope NavigationWorkScope) finish() {
 	if scope.app == unsafe { nil } { return }
+	defer { scope.heap.finish() }
 	mut app := scope.app
 	scope.app = unsafe { nil }
 	app.navigation_work_depth--
