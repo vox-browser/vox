@@ -482,6 +482,7 @@ struct LoadedPage {
 	markup       string
 	status       string
 	content_type string
+	javascript_url_source ?&dom.Document
 	// Compact navigation produces a response locally; this is the source
 	// Document.cpp non-Fetch timing fallback, recorded when that response exists.
 	monotonic_response_time_ns i64 = time.sys_mono_now()
@@ -3528,6 +3529,12 @@ fn (mut app BrowserApp) navigate(address string, add_history bool) {
 		''
 	}
 	resolved := resolve_url(address, base)
+	if parsed := url.parse(resolved) {
+		if parsed.scheme == 'javascript' {
+			app.navigate_javascript_url(parsed)
+			return
+		}
+	}
 	app.paint_timing.begin_navigation()
 	app.load_status = 'Loading ${resolved}'
 	app.status = app.load_status

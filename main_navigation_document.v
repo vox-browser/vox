@@ -68,6 +68,7 @@ fn decode_browser_navigation_response(body string, content_type string) (string,
 }
 
 fn loaded_browser_navigation_input(loaded LoadedPage) (string, ?string) {
+	if loaded.javascript_url_source != none { return loaded.markup, 'UTF-8' }
 	if loaded.url.starts_with('http://') || loaded.url.starts_with('https://') {
 		markup, encoding_name := decode_browser_navigation_response(loaded.markup,
 			loaded.content_type)
@@ -78,8 +79,9 @@ fn loaded_browser_navigation_input(loaded LoadedPage) (string, ?string) {
 
 fn parse_loaded_browser_navigation_document(loaded LoadedPage, document_url dom.URL, initiator_origin ?dom.Origin, previous ?&dom.Document, page ?&dom.Page, scripting_enabled bool) &dom.Document {
 	markup, encoding_name := loaded_browser_navigation_input(loaded)
-	mut document := parse_browser_navigation_document_input(markup, encoding_name, document_url,
-		initiator_origin, previous, page, loaded.monotonic_response_time_ns, scripting_enabled)
+	mut document := parse_browser_navigation_document_input_with_source(markup, encoding_name, document_url,
+		initiator_origin, previous, page, loaded.monotonic_response_time_ns, scripting_enabled,
+		loaded.javascript_url_source)
 	// Also honor the policy in saved copies whose explicit base URL identifies
 	// the site.
 	if browser_host_uses_chromium_rendering(document.base_url().serialized_host()) {
@@ -100,9 +102,21 @@ fn browser_host_uses_chromium_rendering(serialized_host string) bool {
 }
 
 fn parse_browser_navigation_document_input(markup string, document_encoding ?string, document_url dom.URL, initiator_origin ?dom.Origin, previous ?&dom.Document, page ?&dom.Page, response_time_ns i64, scripting_enabled bool) &dom.Document {
+	return parse_browser_navigation_document_input_with_source(markup, document_encoding, document_url,
+		initiator_origin, previous, page, response_time_ns, scripting_enabled, none)
+}
+
+fn parse_browser_navigation_document_input_with_source(markup string, document_encoding ?string, document_url dom.URL, initiator_origin ?dom.Origin, previous ?&dom.Document, page ?&dom.Page, response_time_ns i64, scripting_enabled bool, javascript_url_source ?&dom.Document) &dom.Document {
 	origin := html.determine_the_origin(document_url, html.SandboxingFlagSet{}, initiator_origin)
 	mut document := create_browser_navigation_document(document_url, origin, previous, page) or {
 		panic(err)
+	}
+	if source := javascript_url_source {
+		document.set_origin(source.origin())
+		policy := source.policy_container().clone()
+		document.set_policy_container(&policy)
+		document.set_active_sandboxing_flag_bits(source.active_sandboxing_flag_bits())
+		document.set_opener_policy(source.opener_policy())
 	}
 	if encoding_name := document_encoding {
 		document.set_encoding(encoding_name)
