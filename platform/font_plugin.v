@@ -95,6 +95,19 @@ pub:
 // size. Text-layout uses the face-wide box to build conservative run bounds
 // without querying every glyph while display lists are being recorded.
 pub fn (font &Font) typeface_bounds() ?FontGlyphBounds {
+	// Installed faces report CoreText's face-wide box without decoding the
+	// whole font file.
+	if system := font.system_face() {
+		bounds := system.metrics
+		if bounds.bbox_x_max > bounds.bbox_x_min && bounds.bbox_y_max > bounds.bbox_y_min {
+			return FontGlyphBounds{
+				x_min: f32(bounds.bbox_x_min)
+				x_max: f32(bounds.bbox_x_max)
+				y_min: f32(bounds.bbox_y_min)
+				y_max: f32(bounds.bbox_y_max)
+			}
+		}
+	}
 	face := font_face(font)?
 	if face.units_per_em == 0 || face.x_max <= face.x_min || face.y_max <= face.y_min {
 		return none

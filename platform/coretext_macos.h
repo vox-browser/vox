@@ -20,6 +20,7 @@ typedef struct {
 	double leading;
 	double x_height;
 	double cap_height;
+	double bbox_x_min, bbox_y_min, bbox_x_max, bbox_y_max;
 	int face_index;
 	int weight;
 	int italic;
@@ -237,6 +238,12 @@ static int vox_ct_fill(CTFontRef font, vox_ct_face *face) {
 		face->x_height = bounds.origin.y + bounds.size.height;
 	}
 	face->cap_height = CTFontGetCapHeight(font);
+	// The face-wide glyph bounds (the 'head' box) at the matched size.
+	CGRect bounds_box = CTFontGetBoundingBox(font);
+	face->bbox_x_min = bounds_box.origin.x;
+	face->bbox_y_min = bounds_box.origin.y;
+	face->bbox_x_max = bounds_box.origin.x + bounds_box.size.width;
+	face->bbox_y_max = bounds_box.origin.y + bounds_box.size.height;
 	face->postscript[0] = 0;
 	CFStringRef postscript = CTFontCopyPostScriptName(font);
 	if (postscript) {

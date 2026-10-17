@@ -18,6 +18,11 @@ pub:
 	leading    f64
 	x_height   f64
 	cap_height f64
+	// The face-wide glyph bounds at the matched size, in pixels.
+	bbox_x_min f64
+	bbox_y_min f64
+	bbox_x_max f64
+	bbox_y_max f64
 }
 
 pub struct SystemFontFace {

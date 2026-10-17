@@ -58,3 +58,22 @@ fn test_browser_spacing_never_makes_advances_negative() {
 		assert shaped_text_width(0, -40, ' ', libweb, .ltr) < 0
 	}
 }
+
+fn test_system_face_typeface_bounds_use_the_coretext_face_box() {
+	$if macos {
+		for font in [&Font{ family: 'SansSerif', point_size: 16, weight: 400, font_rendering_policy: .chromium },
+			&Font{ family: 'SystemUi', point_size: 13, weight: 700, font_rendering_policy: .chromium }] {
+			face := font.system_face() or { panic('missing system face') }
+			bounds := font.typeface_bounds() or { panic('missing typeface bounds') }
+			assert bounds.x_min == f32(face.metrics.bbox_x_min) && bounds.x_max == f32(face.metrics.bbox_x_max)
+			assert bounds.y_min == f32(face.metrics.bbox_y_min) && bounds.y_max == f32(face.metrics.bbox_y_max)
+			// The face box contains the ascent and descent at the matched size.
+			assert bounds.y_max >= f32(face.metrics.ascent) * 0.8 && bounds.y_min < 0
+			assert bounds.x_max - bounds.x_min > font.point_size * 0.5
+			_, glyph_index := font.glyph_advance_and_index(u32(`W`))
+			glyph := font.glyph_bounds(glyph_index)
+			assert bounds.x_min <= glyph.x_min && bounds.x_max >= glyph.x_max
+			assert bounds.y_min <= glyph.y_min && bounds.y_max >= glyph.y_max
+		}
+	}
+}

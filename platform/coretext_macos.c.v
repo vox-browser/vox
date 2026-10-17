@@ -14,6 +14,10 @@ struct C.vox_ct_face {
 	leading     f64
 	x_height    f64
 	cap_height  f64
+	bbox_x_min  f64
+	bbox_y_min  f64
+	bbox_x_max  f64
+	bbox_y_max  f64
 	face_index  int
 	weight      int
 	italic      int
@@ -44,6 +48,10 @@ fn system_font_face_from_native(native &C.vox_ct_face) SystemFontFace {
 			leading: native.leading
 			x_height: native.x_height
 			cap_height: native.cap_height
+			bbox_x_min: native.bbox_x_min
+			bbox_y_min: native.bbox_y_min
+			bbox_x_max: native.bbox_x_max
+			bbox_y_max: native.bbox_y_max
 		}
 		face_index: native.face_index
 		weight: native.weight
