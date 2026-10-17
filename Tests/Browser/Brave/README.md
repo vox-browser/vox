@@ -72,14 +72,15 @@ that preceding tile and clips it in the GPU image operation, avoiding a second
 Quartz antialiasing mask. Both fixtures use synthetic embedded PNGs.
 
 `svg-path-coverage` checks SVG background images: a many-vertex star, curves
-with an even-odd hole, serif letter outlines and a round-capped cubic stroke,
-each at natural size and stretched. Chromium draws these paths through its GPU
-rasterizer, whose multisampled edge coverage differs from Skia's CPU analytic
-antialiasing, so Chromium-policy fills and solid strokes use the Graphite
-backend. Paths inside SVG clip or opacity layers composite over the layer
-instead of blending against the page backdrop; Vox still applies SVG clip
-paths as Quartz masks, so clipped edges are not yet exact. Dashed strokes and
-gradient fills keep the CPU path.
+with an even-odd hole, serif letter outlines, a round-capped cubic stroke and
+bounding-box linear and radial gradients, each at natural size and stretched.
+Chromium draws these paths through its GPU rasterizer, whose multisampled edge
+coverage differs from Skia's CPU analytic antialiasing, so Chromium-policy
+fills, solid strokes and gradients use the Graphite backend. Gradients are
+dithered on the page's eight-pixel grid. Paths inside SVG clip or opacity
+layers composite over the layer instead of blending against the page
+backdrop; Vox still applies SVG clip paths as Quartz masks, so clipped edges
+are not yet exact. Dashed strokes keep the CPU path.
 
 `fallback-text-items` checks text split by fallback fonts: Simplified and
 Traditional Chinese with SF punctuation and digits, Japanese and Korean

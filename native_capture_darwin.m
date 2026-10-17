@@ -104,7 +104,7 @@ extern int ladybird_v_skia_draw_svg_linear_gradient_path(
 	float start_x, float start_y, float end_x, float end_y, float gradient_a,
 	float gradient_b, float gradient_c, float gradient_d, float gradient_e,
 	float gradient_f, int spread_method, int linear_color_space,
-	const float *stop_data, int stop_count, float opacity);
+	const float *stop_data, int stop_count, float opacity, int opaque_backdrop);
 extern int ladybird_v_skia_draw_svg_radial_gradient_path(
 	CGContextRef destination, const float *data, int segment_count, int even_odd,
 	float transform_a, float transform_b, float transform_c, float transform_d,
@@ -114,7 +114,8 @@ extern int ladybird_v_skia_draw_svg_radial_gradient_path(
 	float start_x, float start_y, float start_radius, float end_x, float end_y,
 	float end_radius, float gradient_a, float gradient_b, float gradient_c,
 	float gradient_d, float gradient_e, float gradient_f, int spread_method,
-	int linear_color_space, const float *stop_data, int stop_count, float opacity);
+	int linear_color_space, const float *stop_data, int stop_count, float opacity,
+	int opaque_backdrop);
 extern int ladybird_v_skia_draw_rgba_image(CGContextRef destination,
 	const uint8_t *pixels, int image_width, int image_height, int image_pitch,
 	float destination_x, float destination_y, float destination_width,
@@ -1733,7 +1734,9 @@ void native_draw_svg_linear_gradient_path(const float *data, int segment_count,
 		canvas_width, canvas_height, stroke, stroke_width, line_cap, line_join,
 		miter_limit, start_x, start_y, end_x, end_y, gradient_a, gradient_b,
 		gradient_c, gradient_d, gradient_e, gradient_f, spread_method,
-		linear_color_space, stop_data, stop_count, opacity)) {
+		linear_color_space, stop_data, stop_count, opacity,
+		context == native_font_compositing_context
+			&& native_font_compositing_transparency_depth == 0)) {
 		return;
 	}
 #endif
@@ -1911,7 +1914,9 @@ void native_draw_svg_radial_gradient_path(const float *data, int segment_count,
 		canvas_width, canvas_height, stroke, stroke_width, line_cap, line_join,
 		miter_limit, start_x, start_y, start_radius, end_x, end_y, end_radius,
 		gradient_a, gradient_b, gradient_c, gradient_d, gradient_e, gradient_f,
-		spread_method, linear_color_space, stop_data, stop_count, opacity)) {
+		spread_method, linear_color_space, stop_data, stop_count, opacity,
+		context == native_font_compositing_context
+			&& native_font_compositing_transparency_depth == 0)) {
 		return;
 	}
 #endif

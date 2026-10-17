@@ -101,11 +101,11 @@ uint64_t render_case(int index, DrawPath draw, DrawLinear linear, DrawRadial rad
     } else if (index == 11) {
         result = linear(context, path, 9, 1, a, b, c, d, e, f, 0, 0, 0,
             128, 96, 0, 0, 0, 0, 4, 0, 0, 110, 70, 1, 0, 0, 1, 0, 0,
-            0, 0, stops, 2, 0.8);
+            0, 0, stops, 2, 0.8, 0);
     } else if (index == 12) {
         result = radial(context, path, 9, 1, a, b, c, d, e, f, 0, 0, 0,
             128, 96, 0, 0, 0, 0, 4, 32, 40, 3, 60, 45, 55,
-            1, 0, 0, 1, 0, 0, 0, 0, stops, 2, 0.8);
+            1, 0, 0, 1, 0, 0, 0, 0, stops, 2, 0.8, 0);
     } else {
         double dash[] { 5.5, 3.25 };
         result = draw(context, path, 9, index == 4, a, b, c, d, e, f, 0, 0, 0,

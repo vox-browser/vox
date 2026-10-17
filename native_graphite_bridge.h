@@ -41,6 +41,12 @@ typedef struct {
     // A stroke instead of a fill; caps and joins use the SVG enumeration order.
     int stroke, line_cap, line_join;
     float stroke_width, miter_limit;
+    // An optional gradient paint instead of the solid color: 1 linear (start,
+    // end), 2 two-point conical (start, start radius, end, end radius). Stops
+    // hold red, green, blue, alpha and offset; the tile mode follows SkTileMode.
+    int gradient, tile_mode, linear_color_space, stop_count;
+    float gradient_points[6], gradient_matrix[9], opacity;
+    const float *stops;
 } VoxGraphitePath;
 
 #ifdef __cplusplus

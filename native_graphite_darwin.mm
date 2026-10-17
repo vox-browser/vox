@@ -7,6 +7,8 @@
 #include "include/core/SkMaskFilter.h"
 #include "include/core/SkPaint.h"
 #include "include/core/SkPath.h"
+#include "include/core/SkColorFilter.h"
+#include "include/effects/SkGradient.h"
 #include "include/core/SkRRect.h"
 #include "include/core/SkSurface.h"
 #include "include/core/SkYUVAPixmaps.h"
@@ -296,6 +298,36 @@ int vox_graphite_draw_path_pixels(uint8_t* pixels, int width, int height,
     SkPaint paint;
     paint.setAntiAlias(true);
     paint.setColor(SkColorSetARGB(path->alpha, path->red, path->green, path->blue));
+    std::vector<SkColor4f> colors;
+    std::vector<float> positions;
+    if (path->gradient) {
+        if (!path->stops || path->stop_count < 2) return 0;
+        for (int index = 0; index < path->stop_count; ++index) {
+            auto const* stop = path->stops + index * 5;
+            colors.push_back({stop[0], stop[1], stop[2], stop[3]});
+            positions.push_back(stop[4]);
+        }
+        SkMatrix local;
+        local.set9(path->gradient_matrix);
+        SkGradient gradient(SkGradient::Colors(SkSpan<const SkColor4f>(colors),
+            SkSpan<const float>(positions), static_cast<SkTileMode>(path->tile_mode)), {});
+        auto const* points = path->gradient_points;
+        sk_sp<SkShader> shader;
+        if (path->gradient == 1) {
+            SkPoint ends[] {{points[0], points[1]}, {points[2], points[3]}};
+            shader = SkShaders::LinearGradient(ends, gradient, &local);
+        } else {
+            shader = SkShaders::TwoPointConicalGradient({points[0], points[1]}, points[2],
+                {points[3], points[4]}, points[5], gradient, &local);
+        }
+        if (!shader) return 0;
+        paint.setShader(std::move(shader));
+        // Blink dithers gradient paints.
+        paint.setDither(true);
+        paint.setAlphaf(std::clamp(path->opacity, 0.0f, 1.0f));
+        if (path->linear_color_space)
+            paint.setColorFilter(SkColorFilters::LinearToSRGBGamma());
+    }
     if (path->stroke) {
         paint.setStyle(SkPaint::kStroke_Style);
         paint.setStrokeWidth(path->stroke_width);

@@ -1734,7 +1734,8 @@ static int draw_svg_gradient_path(CGContextRef destination, float const* data,
     int line_join, float miter_limit, float gradient_a, float gradient_b,
     float gradient_c, float gradient_d, float gradient_e, float gradient_f,
     int spread_method, int linear_color_space, float const* stop_data,
-    int stop_count, float opacity, MakeShader make_shader)
+    int stop_count, float opacity, int gradient_kind, float const* gradient_points,
+    int opaque_backdrop, MakeShader make_shader)
 {
     if (!destination || !data || segment_count <= 0 || !stop_data
         || stop_count <= 0 || canvas_width <= 0 || canvas_height <= 0)
@@ -1800,6 +1801,13 @@ static int draw_svg_gradient_path(CGContextRef destination, float const* data,
         || !leaf_raster_region_intersects_destination_clip(destination, canvas_height, region))
         return 1;
     auto destination_scale = raster_scale_for_context(destination);
+    if (s_chromium_painting) {
+        // Skia's ordered gradient dither repeats every eight device pixels from
+        // the surface origin; align the surface with the page's pixel grid.
+        int alignment = std::max(1, static_cast<int>(std::lround(8.0f / destination_scale)));
+        region.left -= region.left % alignment;
+        region.top -= region.top % alignment;
+    }
     auto raster_width = raster_dimension(region.width(), destination_scale);
     auto raster_height = raster_dimension(region.height(), destination_scale);
     auto raster_scale_x = static_cast<float>(raster_width)
@@ -1808,6 +1816,40 @@ static int draw_svg_gradient_path(CGContextRef destination, float const* data,
         / static_cast<float>(region.height());
     std::vector<uint32_t> pixels(static_cast<size_t>(raster_width)
         * static_cast<size_t>(raster_height));
+    if (s_chromium_painting) {
+        // Chromium fills and strokes SVG paths with its GPU rasterizer.
+        std::vector<float> stops;
+        stops.reserve(colors.size() * 5);
+        for (size_t index = 0; index < colors.size(); ++index) {
+            stops.insert(stops.end(), {colors[index].fR, colors[index].fG,
+                colors[index].fB, colors[index].fA, positions[index]});
+        }
+        bool has_background = opaque_backdrop && copy_backdrop(destination, region,
+            destination_scale, raster_width, raster_height, pixels);
+        VoxGraphitePath descriptor {
+            .matrix = {}, .segments = data, .segment_count = segment_count,
+            .even_odd = even_odd, .stroke = stroke, .line_cap = line_cap,
+            .line_join = line_join, .stroke_width = stroke_width, .miter_limit = miter_limit,
+            .gradient = gradient_kind, .tile_mode = static_cast<int>(svg_gradient_tile_mode(spread_method)),
+            .linear_color_space = linear_color_space, .stop_count = static_cast<int>(colors.size()),
+            .gradient_points = {gradient_points[0], gradient_points[1], gradient_points[2],
+                gradient_points[3], gradient_points[4], gradient_points[5]},
+            .gradient_matrix = {}, .opacity = opacity, .stops = stops.data()
+        };
+        raster_matrix(matrix, region, raster_scale_x, raster_scale_y).get9(descriptor.matrix);
+        gradient_matrix.get9(descriptor.gradient_matrix);
+        if (auto draw = graphite_path_draw(); draw && draw(reinterpret_cast<uint8_t*>(pixels.data()),
+                raster_width, raster_height, raster_width * 4, has_background, &descriptor)) {
+            CGContextSaveGState(destination);
+            if (has_background) CGContextSetBlendMode(destination, kCGBlendModeCopy);
+            int result = composite_pixels(destination, pixels, raster_width, raster_height,
+                static_cast<float>(region.left), canvas_height - static_cast<float>(region.bottom),
+                static_cast<float>(region.width()), static_cast<float>(region.height()));
+            CGContextRestoreGState(destination);
+            return result;
+        }
+        std::fill(pixels.begin(), pixels.end(), 0);
+    }
     auto image_info = SkImageInfo::Make(raster_width, raster_height,
         kBGRA_8888_SkColorType, kPremul_SkAlphaType, SkColorSpace::MakeSRGB());
     auto surface = SkSurfaces::WrapPixels(image_info, pixels.data(),
@@ -1832,14 +1874,16 @@ extern "C" int ladybird_v_skia_draw_svg_linear_gradient_path(
     float start_x, float start_y, float end_x, float end_y, float gradient_a,
     float gradient_b, float gradient_c, float gradient_d, float gradient_e,
     float gradient_f, int spread_method, int linear_color_space,
-    float const* stop_data, int stop_count, float opacity)
+    float const* stop_data, int stop_count, float opacity, int opaque_backdrop)
 {
+    float const gradient_points[] { start_x, start_y, end_x, end_y, 0.0f, 0.0f };
     return draw_svg_gradient_path(destination, data, segment_count, even_odd,
         transform_a, transform_b, transform_c, transform_d, transform_e,
         transform_f, page_x, page_y, scroll_y, canvas_width, canvas_height,
         stroke, stroke_width, line_cap, line_join, miter_limit, gradient_a,
         gradient_b, gradient_c, gradient_d, gradient_e, gradient_f,
         spread_method, linear_color_space, stop_data, stop_count, opacity,
+        1, gradient_points, opaque_backdrop,
         [=](std::vector<SkColor4f> const& colors,
             std::vector<SkScalar> const& positions, SkTileMode tile_mode,
             SkMatrix const& gradient_matrix) {
@@ -1860,14 +1904,18 @@ extern "C" int ladybird_v_skia_draw_svg_radial_gradient_path(
     float start_x, float start_y, float start_radius, float end_x, float end_y,
     float end_radius, float gradient_a, float gradient_b, float gradient_c,
     float gradient_d, float gradient_e, float gradient_f, int spread_method,
-    int linear_color_space, float const* stop_data, int stop_count, float opacity)
+    int linear_color_space, float const* stop_data, int stop_count, float opacity,
+    int opaque_backdrop)
 {
+    float const gradient_points[] { start_x, start_y, std::max(start_radius, 0.0f),
+        end_x, end_y, std::max(end_radius, 0.0f) };
     return draw_svg_gradient_path(destination, data, segment_count, even_odd,
         transform_a, transform_b, transform_c, transform_d, transform_e,
         transform_f, page_x, page_y, scroll_y, canvas_width, canvas_height,
         stroke, stroke_width, line_cap, line_join, miter_limit, gradient_a,
         gradient_b, gradient_c, gradient_d, gradient_e, gradient_f,
         spread_method, linear_color_space, stop_data, stop_count, opacity,
+        2, gradient_points, opaque_backdrop,
         [=](std::vector<SkColor4f> const& colors,
             std::vector<SkScalar> const& positions, SkTileMode tile_mode,
             SkMatrix const& gradient_matrix) {
