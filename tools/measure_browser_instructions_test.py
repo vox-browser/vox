@@ -1,5 +1,6 @@
 import base64
 import json
+import io
 from pathlib import Path
 import subprocess
 import sys
@@ -17,6 +18,29 @@ class ChromeDebuggerStartupTests(unittest.TestCase):
         counter = Mock(root_identity=(1, 100))
         counter.sample.return_value = {(1, 100): Reading(1, 100, exited, 100, 200)}
         return counter
+
+    def test_page_target_can_appear_after_debugger_without_resetting_counters(self):
+        opener = Mock()
+        opener.open.side_effect = [io.StringIO(json.dumps(targets)) for targets in
+            [[], [{'type':'browser'}], [{'type':'page','webSocketDebuggerUrl':'ws://localhost/page'}]]]
+        counter = self.counter()
+        with patch.object(measurement.time, 'monotonic', return_value=0), \
+                patch.object(measurement.time, 'sleep') as sleep:
+            result = measurement.wait_for_chrome_page_target(opener, 1234, counter, 1, .005, 'chrome.log')
+        self.assertEqual(result, 'ws://localhost/page')
+        self.assertEqual(counter.sample.call_count, 2)
+        self.assertEqual(sleep.call_count, 2)
+
+    def test_absent_page_target_obeys_exit_and_deadline(self):
+        for exited, now, message in [(True, 0, 'Chrome exited before page target'),
+                                     (False, 2, 'Chrome page target did not start')]:
+            opener = Mock()
+            opener.open.return_value = io.StringIO('[]')
+            with patch.object(measurement.time, 'monotonic', return_value=now), \
+                    patch.object(measurement.time, 'sleep') as sleep:
+                with self.assertRaisesRegex(RuntimeError, message):
+                    measurement.wait_for_chrome_page_target(opener,1234,self.counter(exited),1,.005,'chrome.log')
+            sleep.assert_not_called()
 
     def test_waits_for_both_lines_when_discovery_file_already_exists_empty(self):
         with tempfile.TemporaryDirectory() as directory:

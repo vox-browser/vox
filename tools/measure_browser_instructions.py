@@ -102,6 +102,24 @@ def wait_for_chrome_debugger(active, counter, deadline, interval, log_path):
         time.sleep(interval)
 
 
+def wait_for_chrome_page_target(opener, port, counter, deadline, interval, log_path):
+    # The debugger can publish its port before the initial page target exists.
+    # Keep counting this same process while waiting for its actual readiness.
+    while True:
+        with opener.open(f"http://127.0.0.1:{port}/json/list", timeout=15) as response:
+            targets = json.load(response)
+        for target in targets:
+            if target.get('type') == 'page' and target.get('webSocketDebuggerUrl'):
+                return target['webSocketDebuggerUrl']
+        if time.monotonic() > deadline:
+            raise RuntimeError('Chrome page target did not start before the watchdog')
+        readings = counter.sample()
+        root = readings.get(counter.root_identity)
+        if root and root.exited:
+            raise RuntimeError(f'Chrome exited before page target startup; see {log_path}')
+        time.sleep(interval)
+
+
 class CDP:
     def __init__(self, url):
         parsed = urllib.parse.urlparse(url)
@@ -320,9 +338,9 @@ def run_chrome(args, prefix, api, client_factory=None):
                         getattr(args, "sample_interval", .02) if direct else .02, log_path)
                     # CDP loopback traffic must not use an ambient HTTP proxy.
                     local_http = urllib.request.build_opener(urllib.request.ProxyHandler({}))
-                    with local_http.open(f"http://127.0.0.1:{port}/json/list", timeout=15) as response:
-                        targets = json.load(response)
-                    client = (client_factory or CDP)(next(t["webSocketDebuggerUrl"] for t in targets if t["type"] == "page"))
+                    page_url = wait_for_chrome_page_target(local_http, port, counter, deadline,
+                        getattr(args, "sample_interval", .02), log_path)
+                    client = (client_factory or CDP)(page_url)
                     version = prepare_chrome_target(client, args)
                     baseline, navigation_at = None, None
                     if not direct:
