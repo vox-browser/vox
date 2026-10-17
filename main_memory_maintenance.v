@@ -9,6 +9,7 @@ mut:
 	next_check_ns            i64
 	last_cleanup_allocated   usize
 	pending_document_work    bool
+	cleanup_timer           &platform.Timer = unsafe { nil }
 }
 
 fn (mut maintenance BrowserMemoryMaintenance) document_changed(now_ns i64) {
@@ -30,8 +31,7 @@ fn (mut maintenance BrowserMemoryMaintenance) cleanup_due(now_ns i64, allocated 
 	if now_ns - maintenance.last_document_activity_ns < 500_000_000 {
 		return false
 	}
-	if !maintenance.pending_document_work
-		&& allocated - maintenance.last_cleanup_allocated < usize(32) * 1024 * 1024 {
+	if !maintenance.has_pending_cleanup(allocated) {
 		return false
 	}
 	maintenance.pending_document_work = false
@@ -39,17 +39,50 @@ fn (mut maintenance BrowserMemoryMaintenance) cleanup_due(now_ns i64, allocated 
 	return true
 }
 
+fn (maintenance &BrowserMemoryMaintenance) has_pending_cleanup(allocated usize) bool {
+	return maintenance.pending_document_work
+		|| allocated - maintenance.last_cleanup_allocated >= usize(32) * 1024 * 1024
+}
+
 fn (mut app BrowserApp) finish_frame_memory_activity(now_ns i64, previous_paint voidptr) {
 	// Installation may build the display list before the native frame begins.
 	// Its first replay is still document work even when that pointer is stable.
 	app.memory_maintenance.frame_finished(now_ns, !app.document_presented
 		|| previous_paint != voidptr(app.paint_display_list))
+	// Every document frame replays pixels, even with an unchanged display list.
+	// Its duration is active work; garbage debt still tracks actual new data.
+	if app.document != unsafe { nil } {
+		app.memory_maintenance.last_document_activity_ns = now_ns
+	}
+	$if gcboehm ? {
+		if app.ctx != unsafe { nil } && app.document != unsafe { nil }
+			&& app.memory_maintenance.has_pending_cleanup(gc_heap_usage().total_bytes) {
+			app.arm_idle_memory_cleanup()
+		}
+	}
+}
+
+fn (mut app BrowserApp) arm_idle_memory_cleanup() {
+	$if gcboehm ? {
+		if app.memory_maintenance.cleanup_timer == unsafe { nil } {
+			owner := voidptr(&app)
+			app.memory_maintenance.cleanup_timer = platform.Timer.create_single_shot(500, fn [owner] () {
+				mut browser := unsafe { &BrowserApp(owner) }
+				browser.release_unused_memory_if_idle(time.sys_mono_now())
+				if browser.memory_maintenance.has_pending_cleanup(gc_heap_usage().total_bytes) {
+					browser.arm_idle_memory_cleanup()
+				}
+			})
+		}
+		app.memory_maintenance.cleanup_timer.restart_with_interval(500)
+	}
 }
 
 fn (mut app BrowserApp) release_unused_memory_if_idle(now_ns i64) {
 	$if gcboehm ? {
 		if app.document == unsafe { nil } || app.pending_navigation != none
-			|| app.background_resource_pending.len > 0 || app.frame_preparation_depth > 0 {
+			|| app.background_resource_pending.len > 0 || app.frame_preparation_depth > 0
+			|| app.navigation_work_depth > 0 || app.document.readiness() != .complete {
 			return
 		}
 		usage := gc_heap_usage()

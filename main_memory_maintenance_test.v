@@ -1,6 +1,8 @@
 module main
 
 import page
+import gg
+import time
 
 fn test_first_native_replay_of_an_already_recorded_document_is_active_work() {
 	mut app := BrowserApp{}
@@ -75,6 +77,7 @@ fn test_idle_memory_release_preserves_live_dom_javascript_and_later_paint_update
 		document.finalize()
 	}
 	assert app.js_runtime != unsafe { nil }
+	app.document.update_readiness(.complete)
 	app.release_unused_memory_if_idle(app.memory_maintenance.last_document_activity_ns + 2_000_000_000)
 	assert app.js_runtime.evaluate_host('document.getElementById("target").textContent')! == 'live JavaScript'
 	mut target := app.document.get_element_by_id('target') or { panic('missing retained target') }
@@ -82,4 +85,35 @@ fn test_idle_memory_release_preserves_live_dom_javascript_and_later_paint_update
 	app.relayout(320, 200 + app.chrome_height())
 	assert app.paint_commands.any(it.color == 'rgb(17 34 51)')
 	assert app.paint_commands.any(it.text.contains('live JavaScript'))
+}
+
+fn test_unchanged_document_replays_postpone_idle_cleanup_without_creating_new_debt() {
+	$if !gcboehm ? { return }
+	mut owner := page.Page.create(1)!
+	mut app := &BrowserApp{page_model: owner, viewport_width: 320, viewport_height: 200}
+	app.install_loaded_page(LoadedPage{url:'https://idle-timer.example/', content_type:'text/html', markup:'<!doctype html><p id="kept">retained</p>'}, false)
+	mut document := app.document
+	defer {
+		if app.memory_maintenance.cleanup_timer != unsafe { nil } { app.memory_maintenance.cleanup_timer.stop() }
+		document.finalize()
+	}
+	document.update_readiness(.complete)
+	app.ctx = &gg.Context{}
+	app.document_presented = true
+	app.memory_maintenance.document_changed(time.sys_mono_now() - 2_000_000_000)
+	paint := voidptr(app.paint_display_list)
+	app.finish_frame_memory_activity(time.sys_mono_now(), paint)
+	assert app.memory_maintenance.cleanup_timer.is_active()
+	assert app.memory_maintenance.pending_document_work
+	// A callback delivered before the full replay's idle interval must reschedule.
+	app.memory_maintenance.cleanup_timer.fire()
+	assert app.memory_maintenance.pending_document_work
+	assert app.memory_maintenance.cleanup_timer.is_active()
+	app.memory_maintenance.next_check_ns = 0
+	app.memory_maintenance.last_document_activity_ns = time.sys_mono_now() - 1_000_000_000
+	app.memory_maintenance.cleanup_timer.fire()
+	assert !app.memory_maintenance.pending_document_work
+	assert !app.memory_maintenance.cleanup_timer.is_active()
+	assert voidptr(app.paint_display_list) == paint
+	assert document.get_element_by_id('kept')?.text_content() or { '' } == 'retained'
 }

@@ -6430,7 +6430,6 @@ fn (mut app BrowserApp) draw() {
 	app.finish_scroll_profile_frame()
 	frame_finished_ns := time.sys_mono_now()
 	app.finish_frame_memory_activity(frame_finished_ns, voidptr(paint_before_frame))
-	app.release_unused_memory_if_idle(frame_finished_ns)
 	if !app.initial_window_frame_presented {
 		app.initial_window_frame_presented = true
 		if app.pending_cached_page != none {
