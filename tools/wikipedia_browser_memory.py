@@ -36,6 +36,74 @@ REPO = Path(__file__).resolve().parents[1]
 URL = 'https://www.wikipedia.org/'
 
 
+class ObservedReplayCDP(ReplayCDP):
+    """Retain actual command order and host receipt times for lifecycle events."""
+    def __init__(self, url, cache):
+        self.commands = []
+        super().__init__(url, cache)
+
+    def issue(self, method, params=None):
+        observed = time.monotonic()
+        identifier = super().issue(method, params)
+        self.commands.append(dict(id=identifier, method=method, issued_monotonic=observed))
+        return identifier
+
+    def pump(self):
+        before = len(self.events)
+        super().pump()
+        if len(self.events) > before:
+            self.events[-1]['observer_received_monotonic'] = time.monotonic()
+
+
+def begin_chrome_navigation(client, screen, activity, activate, started):
+    version = client.call('Browser.getVersion')
+    for method in ['Page.enable', 'Network.enable']:
+        client.call(method)
+    client.call('Page.setLifecycleEventsEnabled', {'enabled': True})
+    client.call('Network.setCacheDisabled', {'cacheDisabled': True})
+    client.call('Network.setBypassServiceWorker', {'bypass': True})
+    client.call('Emulation.setDeviceMetricsOverride', dict(width=1024, height=768,
+        deviceScaleFactor=screen['scale'], mobile=False))
+    client.call('Emulation.setScriptExecutionDisabled', {'value': True})
+    client.call('Fetch.enable', {'patterns': [{'urlPattern': 'http*', 'requestStage': 'Request'}]})
+    if activate:
+        client.call('Page.bringToFront')
+    activity.poll(time.monotonic() - started, force=True)
+    return version, client.call('Page.navigate', {'url': URL})
+
+
+def lifecycle_readiness(events, navigation):
+    frame, loader = navigation.get('frameId'), navigation.get('loaderId')
+    if not frame or not loader:
+        raise RuntimeError('Chrome navigation did not identify its frame and loader')
+    committed, milestones = None, {}
+    for event in events:
+        params = event.get('params', {})
+        if event.get('method') == 'Page.frameNavigated':
+            actual = params.get('frame', {})
+            if actual.get('id') == frame and actual.get('loaderId') == loader:
+                if actual.get('url') != URL:
+                    raise RuntimeError('Chrome committed an unexpected document URL')
+                committed = event
+        if (event.get('method') == 'Page.lifecycleEvent' and params.get('frameId') == frame
+                and params.get('loaderId') == loader):
+            milestones.setdefault(params.get('name'), event)
+    paint = milestones.get('firstContentfulPaint', milestones.get('firstPaint'))
+    if committed is None or paint is None or 'load' not in milestones or 'networkIdle' not in milestones:
+        return None
+    required = [committed, paint, milestones['load'], milestones['networkIdle']]
+    return dict(frame_id=frame, loader_id=loader, url=URL,
+        ready_monotonic=max(e['observer_received_monotonic'] for e in required),
+        frame_commit=committed, load=milestones['load'], network_idle=milestones['networkIdle'], paint=paint,
+        note='Matching frame/loader commit, paint, load and networkIdle; host receipt of last required event. No Runtime observer commands before memory endpoint. Frozen fixture contains no font-face rules or external fonts.')
+
+
+def verify_runtime_after_endpoint(commands, endpoint_monotonic):
+    if any(c['method'].startswith('Runtime.') and c['issued_monotonic'] < endpoint_monotonic
+            for c in commands):
+        raise RuntimeError('A Runtime observer command preceded the primary memory endpoint')
+
+
 def application_state(pid):
     script = f'''ObjC.import('AppKit');
     const app=$.NSRunningApplication.runningApplicationWithProcessIdentifier({pid});
@@ -276,6 +344,21 @@ def validate_chrome_targets(audit):
         raise RuntimeError('Chrome must contain exactly one Wikipedia page target')
 
 
+def validate_chrome_document(document, scale):
+    if (document['url'] != URL or document['ready'] != 'complete' or document['width'] != 1024
+            or document['height'] != 768 or document['scale'] != scale
+            or 'no-js' not in document['rootClass']
+            or any(x != 'undefined' for x in document['authorGlobals'])):
+        raise RuntimeError('Chrome viewport or no-JavaScript policy audit failed')
+    if document['fontsStatus'] != 'loaded':
+        raise RuntimeError('Chrome fonts were pending after the primary endpoint')
+    expected_src = URL + 'portal/wikipedia.org/assets/img/Wikipedia-logo-v2@2x.png'
+    if document['textLength'] < 5000 or document['sprites'] != 21 or not any(
+            image['src'] == expected_src and image['complete'] and image['width'] == 200
+            and image['height'] == 183 for image in document['images']):
+        raise RuntimeError('Chrome frozen portal content or Retina globe is incomplete')
+
+
 def drain_replay(client):
     # Service late favicon/resource Fetch pauses and acknowledgements without
     # evaluating author-observer JavaScript during the settled memory window.
@@ -315,32 +398,19 @@ def chrome_sample(args, prefix, screen):
                             raise RuntimeError('Chrome page target unavailable')
                         if target is None:
                             time.sleep(.02)
-                    client = ReplayCDP(target['webSocketDebuggerUrl'], args.cache)
-                    version = client.call('Browser.getVersion')
-                    for method in ['Page.enable', 'Runtime.enable', 'Network.enable']:
-                        client.call(method)
-                    client.call('Network.setCacheDisabled', {'cacheDisabled': True})
-                    client.call('Network.setBypassServiceWorker', {'bypass': True})
-                    client.call('Emulation.setDeviceMetricsOverride', dict(width=1024, height=768,
-                        deviceScaleFactor=screen['scale'], mobile=False))
-                    client.call('Emulation.setScriptExecutionDisabled', {'value': True})
-                    client.call('Fetch.enable', {'patterns': [{'urlPattern': 'http*', 'requestStage': 'Request'}]})
-                    if args.foreground:
-                        client.call('Page.bringToFront')
-                    foreground.poll(time.monotonic() - started, force=True)
-                    client.call('Page.navigate', {'url': URL})
+                    client = ObservedReplayCDP(target['webSocketDebuggerUrl'], args.cache)
+                    version, navigation = begin_chrome_navigation(client, screen, foreground,
+                        args.foreground, started)
                     while True:
-                        evaluated = client.call('Runtime.evaluate', {'expression':
-                            'JSON.stringify({ready:document.readyState,text:document.body?.innerText.length||0})',
-                            'returnByValue': True})
-                        ready = json.loads(evaluated.get('result', {}).get('value') or '{}')
-                        if ready.get('ready') == 'complete' and ready.get('text', 0):
+                        drain_replay(client)
+                        readiness = lifecycle_readiness(client.events, navigation)
+                        if readiness is not None:
                             break
                         if time.monotonic() - started > args.timeout:
-                            raise RuntimeError('Chrome frozen document not ready')
+                            raise RuntimeError('Chrome matching document lifecycle did not become ready')
+                        foreground.poll(time.monotonic() - started)
                         time.sleep(.02)
-                    client.call('Runtime.evaluate', {'expression': 'document.fonts.ready.then(()=>true)', 'awaitPromise': True})
-                    ready_at = time.monotonic()
+                    ready_at = readiness['ready_monotonic']
                     while time.monotonic() - ready_at < args.settle:
                         drain_replay(client)
                         foreground.poll(time.monotonic() - started)
@@ -350,21 +420,17 @@ def chrome_sample(args, prefix, screen):
                     endpoint_observed = time.monotonic() - started
                     load_at_endpoint = os.getloadavg()
                     summary = summarize(counter.samples, endpoint)
-                    audit = client.call('Runtime.evaluate', {'expression': '''JSON.stringify({url:location.href,title:document.title,ready:document.readyState,width:innerWidth,height:innerHeight,scale:devicePixelRatio,textLength:document.body.innerText.length,rootClass:document.documentElement.className,authorGlobals:[typeof window.Wikipedia,typeof window.wmf],images:[...document.images].map(i=>({src:i.currentSrc||i.src,width:i.naturalWidth,height:i.naturalHeight,complete:i.complete})),sprites:document.querySelectorAll('.sprite').length,visibility:document.visibilityState,focused:document.hasFocus()})''', 'returnByValue': True})
+                    audit = client.call('Runtime.evaluate', {'expression': '''JSON.stringify({url:location.href,title:document.title,ready:document.readyState,width:innerWidth,height:innerHeight,scale:devicePixelRatio,textLength:document.body.innerText.length,rootClass:document.documentElement.className,authorGlobals:[typeof window.Wikipedia,typeof window.wmf],fontsStatus:document.fonts.status,images:[...document.images].map(i=>({src:i.currentSrc||i.src,width:i.naturalWidth,height:i.naturalHeight,complete:i.complete})),sprites:document.querySelectorAll('.sprite').length,visibility:document.visibilityState,focused:document.hasFocus()})''', 'returnByValue': True})
+                    verify_runtime_after_endpoint(client.commands, started + endpoint)
                     document = json.loads(audit['result']['value'])
                     target_audit = client.call('Target.getTargets')
                     validate_chrome_targets(target_audit)
                     pids = ','.join(str(p['pid']) for p in summary['endpoint_processes'])
                     process_commands = subprocess.check_output(['ps', '-p', pids,
                         '-o', 'pid=,ppid=,command='], text=True)
-                    if document['width'] != 1024 or document['height'] != 768 or document['scale'] != screen['scale'] or 'no-js' not in document['rootClass'] or any(x != 'undefined' for x in document['authorGlobals']):
-                        raise RuntimeError('Chrome viewport or no-JavaScript policy audit failed')
+                    validate_chrome_document(document, screen['scale'])
                     if any(r['resource_type'] == 'Script' for r in client.requests):
                         raise RuntimeError('Chrome fetched an author script while disabled')
-                    if document['textLength'] < 5000 or document['sprites'] != 21 or not any(
-                            image['src'] == URL + 'portal/wikipedia.org/assets/img/Wikipedia-logo-v2@2x.png' and
-                            image['complete'] and image['width'] == 200 and image['height'] == 183 for image in document['images']):
-                        raise RuntimeError('Chrome frozen portal content or visible globe is incomplete')
                     png = client.call('Page.captureScreenshot', dict(format='png', captureBeyondViewport=False))
                     screenshot = prefix.with_suffix('.png')
                     screenshot.write_bytes(base64.b64decode(png['data']))
@@ -387,13 +453,17 @@ def chrome_sample(args, prefix, screen):
                     ready_timing=dict(ready_seconds=ready_at - started, endpoint_seconds=endpoint,
                         first_observed_endpoint_seconds=endpoint_observed,
                         observation_lag_seconds=endpoint_observed - endpoint),
+                    navigation=navigation, lifecycle_readiness=readiness, commands=client.commands,
+                    runtime_commands_before_endpoint=0,
                     foreground_verified_window_seconds=foreground_window, process_exit=process.returncode)
             except Exception as error:
                 prefix.with_suffix('.partial.json').write_text(json.dumps(dict(error=str(error),
                     command=command, samples=counter.samples, foreground_checks=foreground.checks,
                     requests=client.requests if client else [], memory=locals().get('summary'),
                     document=locals().get('document'), targets=locals().get('target_audit'),
-                    endpoint_process_commands=locals().get('process_commands')), indent=2) + '\n')
+                    endpoint_process_commands=locals().get('process_commands'),
+                    commands=client.commands if client else [], events=client.events if client else [],
+                    navigation=locals().get('navigation'), lifecycle_readiness=locals().get('readiness')), indent=2) + '\n')
                 raise
             finally:
                 if client:
@@ -539,6 +609,7 @@ def main():
     cache_pins = fingerprint_tree(args.cache)
     protocol = dict(windowed=True, author_javascript=False, url=URL, viewport=[1024, 768],
         machine=machine,
+        chrome_readiness='Matching Page frame/loader commit, paint, load and networkIdle; no Runtime enable/evaluate until after fixed primary endpoint. Frozen fixture has no font-face or external font resources; fonts status audited afterward.',
         device_scale=screen['scale'], window_placement=screen, foreground_controlled=args.foreground,
         background_controlled=args.background, background_anchor_pid=args.background_anchor_pid,
         diagnostic_instrumentation=bool(args.diagnostic_gc_stats or args.diagnostic_vmmap),

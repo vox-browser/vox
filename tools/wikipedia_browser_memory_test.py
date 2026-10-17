@@ -13,11 +13,91 @@ from types import SimpleNamespace
 
 from process_instruction_counts import RusageInfoV4
 from wikipedia_browser_memory import (BackgroundControl, PhysicalTree, URL, audit_timing,
+    ObservedReplayCDP, begin_chrome_navigation, lifecycle_readiness, verify_runtime_after_endpoint,
     clean_environment, drain_replay, require_png_scale, settled_reduction, summarize,
-    validate_chrome_targets, validate_vox_document, vox_environment)
+    validate_chrome_document, validate_chrome_targets, validate_vox_document, vox_environment)
 
 
 class WikipediaMemoryTests(unittest.TestCase):
+    def test_chrome_requires_complete_exact_retina_globe_and_density_adjusted_dimensions(self):
+        document = dict(url=URL, ready='complete', width=1024, height=768, scale=2,
+            rootClass='no-js', authorGlobals=['undefined', 'undefined'], fontsStatus='loaded',
+            textLength=5455, sprites=21, images=[dict(src=URL+
+                'portal/wikipedia.org/assets/img/Wikipedia-logo-v2@2x.png', complete=True, width=200, height=183)])
+        validate_chrome_document(document, 2)
+        for mutation in [lambda d: d['images'][0].update(src=URL+'portal/wikipedia.org/assets/img/Wikipedia-logo-v2.png'),
+                         lambda d: d['images'][0].update(complete=False),
+                         lambda d: d['images'][0].update(width=400, height=366),
+                         lambda d: d.update(url='about:blank'),
+                         lambda d: d.update(ready='loading'),
+                         lambda d: d.update(fontsStatus='loading')]:
+            bad = copy.deepcopy(document)
+            mutation(bad)
+            with self.assertRaises(RuntimeError):
+                validate_chrome_document(bad, 2)
+
+    def lifecycle_events(self):
+        def event(name, observed):
+            return dict(method='Page.lifecycleEvent', observer_received_monotonic=observed,
+                params=dict(frameId='frame', loaderId='loader', name=name, timestamp=999999))
+        return [dict(method='Page.frameNavigated', observer_received_monotonic=1,
+                    params=dict(frame=dict(id='frame', loaderId='loader', url=URL))),
+                event('firstContentfulPaint', 2), event('load', 3), event('networkIdle', 4)]
+
+    def test_navigation_disables_scripts_before_request_without_creating_runtime_context(self):
+        calls, events = [], []
+        def call(method, params=None):
+            calls.append((method, params))
+            if method == 'Page.navigate':
+                # A server may deliver readiness events before command ack.
+                events.extend(self.lifecycle_events())
+                return dict(frameId='frame', loaderId='loader')
+            return {}
+        client = SimpleNamespace(call=call)
+        activity = SimpleNamespace(poll=lambda *_args, **_kwargs: None)
+        _, navigation = begin_chrome_navigation(client, {'scale': 2}, activity, False, 0)
+        methods = [method for method, _ in calls]
+        self.assertFalse(any(method.startswith('Runtime.') for method in methods))
+        self.assertLess(methods.index('Emulation.setScriptExecutionDisabled'), methods.index('Page.navigate'))
+        self.assertEqual(dict(calls)['Emulation.setScriptExecutionDisabled'], {'value': True})
+        self.assertEqual(dict(calls)['Page.setLifecycleEventsEnabled'], {'enabled': True})
+        self.assertEqual(lifecycle_readiness(events, navigation)['ready_monotonic'], 4)
+
+    def test_readiness_matches_loader_and_frame_and_accepts_out_of_order_events(self):
+        navigation = dict(frameId='frame', loaderId='loader')
+        events = self.lifecycle_events()
+        self.assertEqual(lifecycle_readiness(list(reversed(events)), navigation)['ready_monotonic'], 4)
+        for key in ['frameId', 'loaderId']:
+            wrong = copy.deepcopy(events)
+            wrong[-1]['params'][key] = 'about-blank-navigation'
+            self.assertIsNone(lifecycle_readiness(wrong, navigation))
+        self.assertIsNone(lifecycle_readiness(events[:1] + events[2:], navigation))
+        fallback = copy.deepcopy(events)
+        fallback[1]['params']['name'] = 'firstPaint'
+        self.assertIsNotNone(lifecycle_readiness(fallback, navigation))
+        wrong_url = copy.deepcopy(events)
+        wrong_url[0]['params']['frame']['url'] = 'about:blank'
+        with self.assertRaisesRegex(RuntimeError, 'unexpected document URL'):
+            lifecycle_readiness(wrong_url, navigation)
+        with self.assertRaisesRegex(RuntimeError, 'frame and loader'):
+            lifecycle_readiness(events, {'frameId': 'frame'})
+
+    def test_lifecycle_receipt_is_timestamped_when_pumped_before_navigation_ack(self):
+        client = ObservedReplayCDP.__new__(ObservedReplayCDP)
+        client.events = []
+        with patch('wikipedia_browser_memory.ReplayCDP.pump',
+                   side_effect=lambda: client.events.append({'method': 'Page.lifecycleEvent'})):
+            with patch('wikipedia_browser_memory.time.monotonic', return_value=123.5):
+                client.pump()
+        self.assertEqual(client.events[0]['observer_received_monotonic'], 123.5)
+
+    def test_runtime_observation_is_rejected_until_after_fixed_memory_endpoint(self):
+        verify_runtime_after_endpoint([dict(method='Page.navigate', issued_monotonic=1),
+            dict(method='Runtime.evaluate', issued_monotonic=17)], 16)
+        for method in ['Runtime.enable', 'Runtime.evaluate']:
+            with self.assertRaisesRegex(RuntimeError, 'preceded'):
+                verify_runtime_after_endpoint([dict(method=method, issued_monotonic=15.9)], 16)
+
     def test_settling_drains_buffered_and_late_replay_events_without_evaluation(self):
         calls = []
         client = SimpleNamespace(pending=bytearray(b'event'), sock=object())
