@@ -985,29 +985,6 @@ extern "C" int ladybird_v_skia_draw_rgba_image(CGContextRef destination,
             region))
         return 1;
 
-    sk_sp<SkImage> source_image;
-    if (!(image_flags & 4)) {
-        auto source_info = SkImageInfo::Make(image_width, image_height,
-            kRGBA_8888_SkColorType,
-            (image_flags & 1) ? kPremul_SkAlphaType : kUnpremul_SkAlphaType,
-            SkColorSpace::MakeSRGB());
-        SkPixmap source_pixmap(source_info, source_pixels,
-            static_cast<size_t>(image_pitch));
-        // Chromium uploads premultiplied image texels before filtering. Filtering
-        // straight-alpha colors first changes both transparent edges and gradients.
-        std::vector<uint8_t> premultiplied_source;
-        if (!(image_flags & 1)) {
-            premultiplied_source.resize(static_cast<size_t>(image_pitch) * image_height);
-            auto info = source_info.makeAlphaType(kPremul_SkAlphaType);
-            if (!source_pixmap.readPixels(info, premultiplied_source.data(), image_pitch))
-                return 0;
-            source_pixmap = SkPixmap(info, premultiplied_source.data(), image_pitch);
-        }
-        source_image = SkImages::RasterFromPixmapCopy(source_pixmap);
-        if (!source_image)
-            return 0;
-
-    }
     auto destination_scale = raster_scale_for_context(destination);
     auto raster_width = raster_dimension(region.width(), destination_scale);
     auto raster_height = raster_dimension(region.height(), destination_scale);
@@ -1041,6 +1018,30 @@ extern "C" int ladybird_v_skia_draw_rgba_image(CGContextRef destination,
             CGContextRestoreGState(destination);
             return result;
         }
+    }
+    // Build the CPU image only if the GPU path could not draw it.
+    sk_sp<SkImage> source_image;
+    if (!(image_flags & 4)) {
+        auto source_info = SkImageInfo::Make(image_width, image_height,
+            kRGBA_8888_SkColorType,
+            (image_flags & 1) ? kPremul_SkAlphaType : kUnpremul_SkAlphaType,
+            SkColorSpace::MakeSRGB());
+        SkPixmap source_pixmap(source_info, source_pixels,
+            static_cast<size_t>(image_pitch));
+        // Chromium uploads premultiplied image texels before filtering. Filtering
+        // straight-alpha colors first changes both transparent edges and gradients.
+        std::vector<uint8_t> premultiplied_source;
+        if (!(image_flags & 1)) {
+            premultiplied_source.resize(static_cast<size_t>(image_pitch) * image_height);
+            auto info = source_info.makeAlphaType(kPremul_SkAlphaType);
+            if (!source_pixmap.readPixels(info, premultiplied_source.data(), image_pitch))
+                return 0;
+            source_pixmap = SkPixmap(info, premultiplied_source.data(), image_pitch);
+        }
+        source_image = SkImages::RasterFromPixmapCopy(source_pixmap);
+        if (!source_image)
+            return 0;
+
     }
     auto image_info = SkImageInfo::Make(raster_width, raster_height,
         kBGRA_8888_SkColorType, kPremul_SkAlphaType, SkColorSpace::MakeSRGB());
