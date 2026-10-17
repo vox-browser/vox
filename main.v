@@ -1181,8 +1181,9 @@ fn document_preload_resource_urls(document &dom.Document, base_url string) []str
 	// saved page's first layout depend on the network. Styles and scripts remain
 	// eligible below because they can affect the initial document state.
 	preload_remote_images := !base_url.starts_with('file://')
+	preferred_set_name := preferred_style_sheet_set_name(root)
 	for link in css.query_selector_all(root, 'link[rel][href]') {
-		if link.get_attribute_value('rel').to_lower().split(' ').filter(it != '').all(it != 'stylesheet') {
+		if !link_stylesheet_applies(link, preferred_set_name) {
 			continue
 		}
 		resource_url := resolve_document_reference(link.get_attribute_value('href'), base_url)
@@ -1293,50 +1294,6 @@ fn preload_document_resource_urls(document &dom.Document, base_url string, urls 
 	return loaded
 }
 
-
-fn install_external_styles(document &dom.Document, base_url string, preloaded map[string]PreloadedResource) []string {
-	root := unsafe { &dom.Node(document) }
-	mut messages := []string{}
-	for link in css.query_selector_all(root, 'link[rel][href]') {
-		if link.get_attribute_value('rel').to_lower().split(' ').filter(it != '').all(it != 'stylesheet') {
-			continue
-		}
-		href := link.get_attribute_value('href')
-		resolved_url := resolve_document_reference(href, base_url)
-		_ := browsernet.filter(adblock.Request{url: resolved_url, source_url: document.url.serialize(), request_type: 'stylesheet'}) or {
-			messages << 'Stylesheet ${href}: ${err.msg()}'
-			continue
-		}
-		if resolved_url.starts_with('file://') {
-			path := url.percent_decode(resolved_url['file://'.len..]).bytestr()
-			if path != '' && os.is_file(path) {
-				// The CSS bridge reads local link stylesheets itself and retains their URL.
-				continue
-			}
-		}
-		stylesheet := if resource := preloaded[resolved_url] {
-			filtered_resource := filter_preloaded_resource(resource, document.url.serialize(), 'stylesheet') or {
-				messages << 'Stylesheet ${href}: ${err.msg()}'
-				continue
-			}
-			filtered_resource.body
-		} else {
-			fetch_text_resource_for_request(href, base_url, document.url.serialize(), 'stylesheet') or {
-				messages << 'Stylesheet ${href}: ${err.msg()}'
-				continue
-			}
-		}
-		mut style := document.create_element('style') or { continue }
-		style.set_attribute_value('data-libweb-v-source-url', resolved_url)
-		style.set_attribute_value('media', link.get_attribute_value('media'))
-		mut style_node := unsafe { &dom.Node(style) }
-		style_node.set_text_content(stylesheet) or { continue }
-		head := css.query_selector(root, 'head') or { document.document_element() or { continue } }
-		mut head_node := unsafe { &dom.Node(head) }
-		head_node.append_child(style.as_node()) or { continue }
-	}
-	return messages
-}
 
 fn script_sources(document &dom.Document, base_url string, preloaded map[string]PreloadedResource, mut messages []string) []browserjs.ScriptSource {
 	if !browser_document_can_load_scripts(document) { return [] }
