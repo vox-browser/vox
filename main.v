@@ -406,6 +406,10 @@ mut:
 	resource_cache                      map[string]PreloadedResource
 	background_resource_results         chan PreloadedResource
 	background_resource_pending         map[string]bool
+	// Remote stylesheets requested for links that scripts inserted, and the DOM
+	// tree version last scanned for them.
+	script_stylesheet_requests          map[string]bool
+	script_stylesheet_scan_version      u64
 	nonrendered_image_preloads          map[string]bool
 	screenshot_path                     string
 	screenshot_scheduled                bool
@@ -4397,6 +4401,8 @@ fn (mut app BrowserApp) request_background_resource(image_url string) {
 }
 
 fn (mut app BrowserApp) poll_background_resources() {
+	app.request_script_inserted_stylesheets()
+	mut installed_stylesheets := false
 	mut changed_svg_resources := map[string]bool{}
 	mut completed_nonrendered_images := map[string]bool{}
 	for {
@@ -4419,11 +4425,20 @@ fn (mut app BrowserApp) poll_background_resources() {
 				if publish_browser_svg_resource(resource) || failed_previous_svg {
 					changed_svg_resources[resource.url.all_before('#')] = true
 				}
+				if app.install_script_inserted_stylesheet(resource) {
+					installed_stylesheets = true
+				}
 			}
 			else {
 				break
 			}
 		}
+	}
+	if installed_stylesheets && app.document != unsafe { nil } {
+		app.document.set_needs_full_style_update(true)
+		app.document.tear_down_layout_tree()
+		app.relayout(app.viewport_width, app.viewport_height + app.chrome_height())
+		return
 	}
 	if app.document != unsafe { nil } && app.js_runtime == unsafe { nil }
 		&& completed_nonrendered_images.len > 0 {

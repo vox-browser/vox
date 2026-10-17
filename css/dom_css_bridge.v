@@ -509,6 +509,43 @@ fn read_local_stylesheet(reference string, base_url string) ?(string, string) {
 	return os.read_file(path) or { return none }, resolved_url
 }
 
+// The text of remote stylesheets that the browser fetched for links that
+// scripts inserted after the document's initial resources, by resolved URL.
+__global remote_link_style_sheets = map[string]string{}
+
+// Record a fetched remote link stylesheet. The next style synchronization
+// installs it for each link that references it.
+pub fn set_remote_link_style_sheet(resolved_url string, css_text string) {
+	remote_link_style_sheets[resolved_url] = css_text
+}
+
+pub fn has_remote_link_style_sheet(resolved_url string) bool {
+	return resolved_url in remote_link_style_sheets
+}
+
+// The URL a link's stylesheet resolves to, as the style synchronization keys it.
+pub fn link_style_sheet_url(reference string, base_url string) ?string {
+	return resolve_stylesheet_url(reference, base_url)
+}
+
+fn read_link_stylesheet(link &dom.Element, reference string, base_url string) ?(string, string) {
+	resolved_url := resolve_stylesheet_url(reference, base_url) or { return none }
+	if path := local_path_for_stylesheet_url(resolved_url) {
+		return os.read_file(path) or { return none }, resolved_url
+	}
+	css_text := remote_link_style_sheets[resolved_url] or { return none }
+	// The browser inlines a parsed remote link's sheet as the <style> after it.
+	if inlined := link.as_node().next_sibling() {
+		if element := inlined.as_element() {
+			if element.local_name() == 'style'
+				&& element.get_attribute_value('data-libweb-v-source-url') == resolved_url {
+				return none
+			}
+		}
+	}
+	return css_text, resolved_url
+}
+
 fn load_local_imported_stylesheets(document &dom.Document, mut sheet CSSStyleSheet, location string, mut active_urls map[string]bool) {
 	for mut import_rule in sheet.import_rules {
 		if supports := import_rule.supports {
@@ -704,8 +741,9 @@ pub fn style_element_sheet(element &dom.Element) ?&CSSStyleSheet {
 // elements, then re-evaluate media rules for the current viewport. Style
 // elements maintain their own sheets through DOM::StyleElementBase.
 // Boundary: HTMLLinkElement does not yet fetch and process stylesheet
-// resources, so this bridge reads local link stylesheets on each layout and
-// adds them to the list with the link's media, title, and alternate flag.
+// resources, so this bridge reads local link stylesheets, and remote ones the
+// browser fetched, on each layout and adds them to the list with the link's
+// media, title, and alternate flag.
 pub fn sync_document_style_elements(document &dom.Document) {
 	root := unsafe { &dom.Node(document) }
 	base_url := document.base_url().to_string()
@@ -723,7 +761,7 @@ pub fn sync_document_style_elements(document &dom.Document) {
 			continue
 		}
 		href := element.get_attribute_value('href')
-		css_text, resolved_url := read_local_stylesheet(href, base_url) or { continue }
+		css_text, resolved_url := read_link_stylesheet(element, href, base_url) or { continue }
 		link_sources << DocumentStyleSource{
 			cache_key: 'link:${element.as_node().unique_id()}:${resolved_url}:${css_text}'
 			css_text:  css_text

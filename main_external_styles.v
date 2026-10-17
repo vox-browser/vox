@@ -92,3 +92,67 @@ fn install_external_styles(document &dom.Document, base_url string, preloaded ma
 	}
 	return messages
 }
+
+// Scripts can insert stylesheet links after the initial resources; 4chan's
+// catalog links its theme this way. After the DOM tree changes, request each
+// new remote one in the background. The CSS bridge installs it, in the link's
+// tree position, once its text arrives.
+fn (mut app BrowserApp) request_script_inserted_stylesheets() {
+	if app.document == unsafe { nil } {
+		return
+	}
+	version := app.document.dom_tree_version()
+	if version == app.script_stylesheet_scan_version {
+		return
+	}
+	app.script_stylesheet_scan_version = version
+	root := unsafe { &dom.Node(app.document) }
+	base_url := app.document.base_url().to_string()
+	source_url := app.document.url.serialize()
+	preferred_set_name := preferred_style_sheet_set_name(root)
+	for link in css.query_selector_all(root, 'link[rel][href]') {
+		if !link_stylesheet_applies(link, preferred_set_name) {
+			continue
+		}
+		resolved_url := css.link_style_sheet_url(link.get_attribute_value('href'), base_url) or {
+			continue
+		}
+		if (!resolved_url.starts_with('http://') && !resolved_url.starts_with('https://'))
+			|| resolved_url in app.script_stylesheet_requests
+			|| css.has_remote_link_style_sheet(resolved_url) || link_stylesheet_is_inlined(link, resolved_url) {
+			continue
+		}
+		app.script_stylesheet_requests[resolved_url] = true
+		spawn fetch_stylesheet_in_background(resolved_url, source_url, app.background_resource_results)
+	}
+}
+
+// A parsed link's remote stylesheet is inlined as the <style> after it.
+fn link_stylesheet_is_inlined(link &dom.Element, resolved_url string) bool {
+	next := link.as_node().next_sibling() or { return false }
+	style := next.as_element() or { return false }
+	return style.local_name() == 'style'
+		&& style.get_attribute_value('data-libweb-v-source-url') == resolved_url
+}
+
+fn fetch_stylesheet_in_background(resource_url string, source_url string, results chan PreloadedResource) {
+	fetch_resource_in_background(resource_url, source_url, 'stylesheet', results)
+	$if macos {
+		C.native_wake_browser()
+	}
+}
+
+// Publish a completed stylesheet request to the CSS bridge. Returns whether the
+// document's styles changed.
+fn (mut app BrowserApp) install_script_inserted_stylesheet(resource PreloadedResource) bool {
+	if resource.request_type != 'stylesheet' || resource.url !in app.script_stylesheet_requests
+		|| app.document == unsafe { nil } {
+		return false
+	}
+	filtered := filter_preloaded_resource(resource, app.document.url.serialize(), 'stylesheet') or {
+		app.js_messages << 'Stylesheet ${resource.url}: ${err.msg()}'
+		return false
+	}
+	css.set_remote_link_style_sheet(resource.url, filtered.body)
+	return true
+}
