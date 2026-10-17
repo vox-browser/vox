@@ -1030,12 +1030,24 @@ pub fn (mut controls MediaControls) set_up_event_listeners() {
 	}
 	controls.add_event_listener(controls.media.event_target(), 'keydown', .no,
 		fn [controls_pointer] (event &dom.Event) bool {
+			if event.interface_ != .keyboard_event { return false }
 			keyboard_event := unsafe { &dom.KeyboardEvent(event) }
-			if keyboard_event.key_code() != u32(dom.KeyCode.f) {
-				return false
-			}
 			mut controls := unsafe { &MediaControls(controls_pointer) }
-			controls.toggle_fullscreen()
+			match keyboard_event.key_code() {
+				u32(dom.KeyCode.space) { controls.toggle_playback() }
+				u32(dom.KeyCode.home) { controls.set_current_time(0) }
+				u32(dom.KeyCode.end) {
+					range_ := controls.timeline_range() or { return false }
+					controls.set_current_time(range_.end)
+				}
+				u32(dom.KeyCode.right) { controls.set_current_time(controls.media.current_time() + 5) }
+				u32(dom.KeyCode.left) { controls.set_current_time(controls.media.current_time() - 5) }
+				u32(dom.KeyCode.up) { controls.set_volume(controls.media.volume() + 0.1) or { panic(err) } }
+				u32(dom.KeyCode.down) { controls.set_volume(controls.media.volume() - 0.1) or { panic(err) } }
+				u32(dom.KeyCode.m) { controls.toggle_mute() }
+				u32(dom.KeyCode.f) { controls.toggle_fullscreen() }
+				else { return false }
+			}
 			return true
 		})
 }
