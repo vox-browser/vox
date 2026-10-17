@@ -192,6 +192,12 @@ fn font_table_offset(bytes []u8, wanted string) ?int {
 	return none
 }
 
+// x.ttf's outline reader requires both TrueType geometry tables. OpenType
+// faces with CFF/CFF2 outlines still provide metrics, but cannot enter it.
+fn font_face_has_truetype_outlines(face &ttf.TTF_File) bool {
+	return 'loca' in face.tables && 'glyf' in face.tables
+}
+
 // x.ttf reads a standalone sfnt directory at byte zero. A TrueType collection
 // keeps each face's directory elsewhere while its table offsets remain absolute,
 // so copying only the selected directory to byte zero makes that same reader
@@ -309,7 +315,7 @@ fn (font &Font) pixel_metrics_uncached() FontPixelMetrics {
 			has_os2_x_height = true
 		}
 	}
-	if !has_os2_x_height {
+	if !has_os2_x_height && font_face_has_truetype_outlines(face) {
 		mut mutable_face := unsafe { &ttf.TTF_File(face) }
 		x_glyph := mutable_face.map_code(int(`x`))
 		_, _, _, x_max_y := mutable_face.read_glyph_dim(x_glyph)
@@ -391,7 +397,7 @@ pub fn (font &Font) contains_glyph(code_point u32) bool {
 // the text baseline.
 pub fn (font &Font) glyph_bounds(glyph_index int) FontGlyphBounds {
 	face := font_face(font) or { return FontGlyphBounds{} }
-	if glyph_index < 0 || glyph_index > 0xffff {
+	if glyph_index < 0 || glyph_index > 0xffff || !font_face_has_truetype_outlines(face) {
 		return FontGlyphBounds{}
 	}
 	mut mutable_face := unsafe { &ttf.TTF_File(face) }
@@ -410,7 +416,7 @@ pub fn (font &Font) glyph_bounds(glyph_index int) FontGlyphBounds {
 // callers position them relative to the CSS baseline and invert Y there.
 pub fn (font &Font) glyph_outline(glyph_index int) ?FontGlyphOutline {
 	face := font_face(font)?
-	if glyph_index < 0 || glyph_index > 0xffff {
+	if glyph_index < 0 || glyph_index > 0xffff || !font_face_has_truetype_outlines(face) {
 		return none
 	}
 	mut mutable_face := unsafe { &ttf.TTF_File(face) }
