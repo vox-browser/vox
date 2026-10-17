@@ -4297,7 +4297,7 @@ fn native_gradient_stop_data(gradient layout.LinearGradient, opacity f64) []f32 
 
 fn draw_native_css_gradient_tile(command layout.PaintCommand, gradient layout.LinearGradient,
 	tile painting.Rect, stop_data []f32, matrix [6]f64, page_x f32, page_y f32,
-	scroll_y f64, canvas_height f32) bool {
+	scroll_y f64, canvas_height f32, chromium bool) bool {
 	$if macos {
 		if stop_data.len < 5 {
 			return false
@@ -4305,6 +4305,20 @@ fn draw_native_css_gradient_tile(command layout.PaintCommand, gradient layout.Li
 		path_data := native_gradient_clip_path(command, tile)
 		if path_data.len < layout.compatibility_clip_path_segment_stride {
 			return false
+		}
+		if chromium && (gradient.x1 != gradient.x2 || gradient.y1 != gradient.y2) {
+			if gpu_stops := chromium_linear_gradient_stop_data(gradient, command.opacity) {
+				unsafe {
+					C.native_draw_svg_linear_gradient_path(&path_data[0], path_data.len / layout.compatibility_clip_path_segment_stride,
+						0, f32(matrix[0]), f32(matrix[1]), f32(matrix[2]), f32(matrix[3]),
+						f32(matrix[4]), f32(matrix[5]), page_x, page_y, f32(scroll_y), canvas_height,
+						0, 0, 0, 0, 4, f32(tile.x + gradient.x1 * tile.width),
+						f32(tile.y + gradient.y1 * tile.height), f32(tile.x + gradient.x2 * tile.width),
+						f32(tile.y + gradient.y2 * tile.height), 1, 0, 0, 1, 0, 0, 0, 0,
+						gpu_stops.data, gpu_stops.len / 5, 1)
+				}
+				return true
+			}
 		}
 		kind := if gradient.kind == 'conic' {
 			2
@@ -5716,7 +5730,7 @@ fn (mut app BrowserApp) draw_command(source_command layout.PaintCommand, page_x 
 					}
 					$if macos {
 						if app.ctx.native_rendering
-							&& draw_native_css_gradient_tile(command, gradient, tile, native_stop_data, matrix, page_x, page_y, scroll_y, f32(app.ctx.height)) {
+							&& draw_native_css_gradient_tile(command, gradient, tile, native_stop_data, matrix, page_x, page_y, scroll_y, f32(app.ctx.height), app.document != unsafe { nil } && app.document.font_rendering_policy() == .chromium) {
 							continue
 						}
 					}

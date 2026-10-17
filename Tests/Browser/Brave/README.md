@@ -53,6 +53,13 @@ fixture is pixel-exact. The unchanged elliptical case in
 still differs by one channel level at one pixel from its adjacent Brave PNG.
 That diagnostic remains open and is not an exact-parity result.
 
+`css-linear-gpu` checks opaque sRGB linear gradients, black alpha gradients
+over a colored background, and coincident hard stops. Eligible Chromium-policy
+gradients retain their original stops and blend through the GPU path. The
+path requires constant alpha or constant RGB so straight and premultiplied
+interpolation agree; other color spaces and gradients retain the existing
+renderer. All three cases require exact equality.
+
 `inline-advances` checks shaped-item width rounding, kerning across ASCII
 word boundaries, fractional max-content tables with emergency wrapping, and
 font-relative inline margins. The Chromium profile keeps exact glyph advances
