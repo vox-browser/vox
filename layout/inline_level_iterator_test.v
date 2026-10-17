@@ -162,10 +162,13 @@ fn inline_isolate_test_iterator(document &dom.Document, declarations string) &In
 }
 
 // The UA style sheet isolates every div and every element with a dir
-// attribute. 4chan's inline OP post is such a div; an LTR isolate of LTR text
-// keeps its paragraph unidirectional, so " to view." still kerns its "w.".
-fn test_inline_level_iterator_keeps_ltr_isolates_unidirectional() {
-	document := dom.Document.create(dom.url_about_blank())
+// attribute. 4chan's inline OP post is such a div; under the Chromium policy an
+// LTR isolate of LTR text keeps its paragraph unidirectional, so " to view."
+// still kerns its "w.". The LibWeb policy keeps upstream's classification.
+fn test_inline_level_iterator_keeps_chromium_ltr_isolates_unidirectional() {
+	mut document := dom.Document.create(dom.url_about_blank())
+	assert !inline_isolate_test_iterator(document, 'display:inline; unicode-bidi:isolate').is_unidirectional_left_to_right
+	document.set_font_rendering_policy(.chromium)
 	assert inline_isolate_test_iterator(document, 'display:inline; unicode-bidi:isolate').is_unidirectional_left_to_right
 	assert !inline_isolate_test_iterator(document, 'display:inline; unicode-bidi:embed').is_unidirectional_left_to_right
 	assert !inline_isolate_test_iterator(document, 'display:inline; unicode-bidi:isolate; direction:rtl').is_unidirectional_left_to_right

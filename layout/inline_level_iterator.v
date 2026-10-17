@@ -345,16 +345,17 @@ fn (mut iterator InlineLevelIterator) compute_is_unidirectional_left_to_right() 
 	if iterator.containing_block.computed_values().direction() == .rtl {
 		return false
 	}
+	chromium := unsafe { &Node(iterator.containing_block) }.document().font_rendering_policy() == .chromium
 	mut node := unsafe { &Node(iterator.containing_block) }.first_child()
 	for node != none {
 		current := node or { break }
 		if styled := current.as_node_with_style() {
 			values := styled.computed_values()
-			// An LTR isolate, as the UA style sheet makes every div and every
-			// element with a dir attribute, resolves its LTR text to LTR levels.
-			// Only that text, checked below, can make the paragraph bidirectional.
-			if values.direction() == .rtl
-				|| (values.unicode_bidi() != .normal && values.unicode_bidi() != .isolate) {
+			// Blink resolves an LTR isolate, as the UA style sheet makes every div
+			// and every element with a dir attribute, of LTR text to LTR levels.
+			// Only that text, checked below, can make its paragraph bidirectional.
+			ltr_isolate := chromium && values.unicode_bidi() == .isolate
+			if values.direction() == .rtl || (values.unicode_bidi() != .normal && !ltr_isolate) {
 				return false
 			}
 		} else if text_node := current.as_text_node() {
