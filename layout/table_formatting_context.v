@@ -1824,7 +1824,18 @@ fn calculate_table_grid_intrinsic_widths(mut state LayoutState, table &Node, per
 		}
 	}
 	intrinsic_percentages, has_intrinsic_percentage, percentage_offsets, has_originating_cells := compute_table_column_intrinsic_percentages(column_count, column_definitions, placements, cell_measures, nonspanning_max_widths, maximum_span, fixed_mode)
-	compute_spanning_table_column_measures(mut min_widths, mut max_widths, placements, cell_measures, spacing, maximum_span, fixed_mode)
+	if !fixed_mode && table.document().font_rendering_policy() == .chromium {
+		compute_chromium_spanning_table_column_measures(mut min_widths, mut max_widths, placements,
+			cell_measures, spacing, ChromiumTableColumnConstraints{
+			constrained: constrained_columns
+			percent:     intrinsic_percentages
+			has_percent: has_intrinsic_percentage
+			mergeable:   has_originating_cells.map(!it)
+		})
+	} else {
+		compute_spanning_table_column_measures(mut min_widths, mut max_widths, placements,
+			cell_measures, spacing, maximum_span, fixed_mode)
+	}
 	undistributable_space := spacing.scaled(f64(column_count + 1))
 	mut grid_min := undistributable_space
 	mut grid_max := undistributable_space
