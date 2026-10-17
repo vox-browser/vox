@@ -6576,7 +6576,13 @@ fn (mut app BrowserApp) handle_click(x f32, y f32) {
 // The compact JavaScriptCore bridge remains the page-script backend. Its click
 // listener replay follows the actual DOM pointerup/click dispatch on release.
 fn (mut app BrowserApp) replay_compact_javascript_click() {
-	native_destination := app.pending_native_navigation
+	// Keep a concrete string alive while callbacks and layout allocate. The
+	// compatibility compiler does not retain pointers inside a local Option
+	// across those calls once the owning pending slot has been cleared.
+	native_destination := app.pending_native_navigation or { '' }
+	defer {
+		$if gcboehm ? { C.GC_reachable_here(native_destination.str) }
+	}
 	app.pending_native_navigation = none
 	generation := app.navigation_generation
 	if app.page_model != unsafe { nil } {
@@ -6593,8 +6599,8 @@ fn (mut app BrowserApp) replay_compact_javascript_click() {
 		}
 	}
 	if app.navigation_generation != generation { return }
-	if destination := native_destination {
-		app.navigate(destination, true)
+	if native_destination != '' {
+		app.navigate(native_destination, true)
 	}
 }
 
