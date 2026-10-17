@@ -221,16 +221,30 @@ fn available_html_image_natural_size(element &dom.Element) ?css.SizeWithAspectRa
 	if !html.html_image_element_is_image_available(image) {
 		return none
 	}
+	return natural_size_with_aspect_ratio(html.html_image_element_intrinsic_width(image),
+		html.html_image_element_intrinsic_height(image), html.html_image_element_intrinsic_aspect_ratio(image))
+}
+
+// ImageProvider::intrinsic_aspect_ratio() is the exact width/height fraction
+// when both natural dimensions exist. Rounding the ratio itself to a CSS pixel
+// quantum turned a 151x97 block image into a 151x96.625 box.
+fn natural_size_with_aspect_ratio(width ?f64, height ?f64, ratio ?f64) css.SizeWithAspectRatio {
 	mut result := css.SizeWithAspectRatio{}
-	if width := html.html_image_element_intrinsic_width(image) {
-		result.width = CSSPixels.nearest_value_for(width)
+	if natural_width := width {
+		result.width = CSSPixels.nearest_value_for(natural_width)
 	}
-	if height := html.html_image_element_intrinsic_height(image) {
-		result.height = CSSPixels.nearest_value_for(height)
+	if natural_height := height {
+		result.height = CSSPixels.nearest_value_for(natural_height)
 	}
-	if ratio := html.html_image_element_intrinsic_aspect_ratio(image) {
-		if ratio > 0 {
-			result.aspect_ratio = css.CSSPixelFraction.new(CSSPixels.nearest_value_for(ratio), CSSPixels.new(1))
+	if natural_ratio := ratio {
+		if natural_ratio > 0 {
+			natural_width := result.width or { CSSPixels.new(0) }
+			natural_height := result.height or { CSSPixels.new(0) }
+			result.aspect_ratio = if natural_width.raw_value() > 0 && natural_height.raw_value() > 0 {
+				css.CSSPixelFraction.new(natural_width, natural_height)
+			} else {
+				css.CSSPixelFraction.new(CSSPixels.nearest_value_for(natural_ratio), CSSPixels.new(1))
+			}
 		}
 	}
 	return result
@@ -245,19 +259,8 @@ fn available_object_image_natural_size(element &dom.Element) ?css.SizeWithAspect
 	if !model.is_image_available() {
 		return none
 	}
-	mut result := css.SizeWithAspectRatio{}
-	if width := model.intrinsic_width() {
-		result.width = CSSPixels.nearest_value_for(width)
-	}
-	if height := model.intrinsic_height() {
-		result.height = CSSPixels.nearest_value_for(height)
-	}
-	if ratio := model.intrinsic_aspect_ratio() {
-		if ratio > 0 {
-			result.aspect_ratio = css.CSSPixelFraction.new(CSSPixels.nearest_value_for(ratio), CSSPixels.new(1))
-		}
-	}
-	return result
+	return natural_size_with_aspect_ratio(model.intrinsic_width(), model.intrinsic_height(),
+		model.intrinsic_aspect_ratio())
 }
 
 pub fn ImageBox.new(document &dom.Document, element &dom.Element, computed_values &css.ComputedProperties) &ImageBox {
