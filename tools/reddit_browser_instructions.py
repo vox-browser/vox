@@ -169,6 +169,9 @@ def main():
         raise RuntimeError('Pinned executable, runtime or benchmark input changed')
     summary = evaluate_pairs(pairs, args.required_reduction)
     summary.update(pairs=pairs, pinned_sha256=pinned, cache_sha256=cache_hash,
+                   collector_environment={key: os.environ[key] for key in
+                       ['GC_INITIAL_HEAP_SIZE','GC_MAXIMUM_HEAP_SIZE','GC_FREE_SPACE_DIVISOR','GC_MARKERS']
+                       if key in os.environ},
                    counter='proc_pid_rusage/RUSAGE_INFO_V4/ri_instructions',
                    scope=__doc__, viewport=[1024,768], scripting_policy_enabled=True,
                    workload_note='Frozen input has executable script elements removed; preserve normal noscript semantics.')
