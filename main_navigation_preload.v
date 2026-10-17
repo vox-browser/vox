@@ -113,6 +113,7 @@ fn (mut app BrowserApp) start_page_preload(loaded LoadedPage, add_history bool) 
 	// context would deactivate that document before its replacement is ready.
 	scripting_enabled := browser_scripting_enabled(loaded.url, app.script_policy)
 		&& (app.page_model == unsafe { nil } || app.page_model.is_scripting_enabled())
+	_ = prepare_markup_render_heap(loaded.markup)
 	mut document := parse_page_preload_document(loaded, scripting_enabled)
 	base_url := document.base_url().serialize()
 	urls := document_preload_resource_urls(document, base_url)

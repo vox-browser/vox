@@ -30,3 +30,11 @@ fn test_document_heap_stops_at_the_large_document_threshold() {
 	assert document.as_node().is_scripting_enabled()
 	assert css.query_selector_all(document.as_node(), 'span').len == 1200
 }
+
+fn test_markup_start_tags_size_the_heap_before_the_first_parse() {
+	// A tag-like run inside a comment also counts; the hint only needs a bound.
+	assert markup_start_tag_count('<!doctype html><html><body><p>a < b</p><!-- <x> --></body>') == 4
+	assert markup_start_tag_count('</div> <? x ?> <1 <') == 0
+	assert markup_start_tag_count('<span></span>'.repeat(1200)) == platform.document_heap_element_threshold
+	assert !prepare_markup_render_heap('<!doctype html><p>small</p>')
+}
