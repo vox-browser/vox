@@ -514,13 +514,21 @@ fn layout_box_first_content_baseline(state &LayoutState, box &Node) ?CSSPixels {
 // table layout; in particular, an atomic inline without an in-flow baseline
 // uses the bottom margin edge rather than merely its content height.
 fn layout_box_baseline(state &LayoutState, box &Node, requested_baseline_set BaselineSet) CSSPixels {
-	return layout_box_baseline_in_text_control(state, box, requested_baseline_set, false)
+	return layout_box_baseline_in_context(state, box, requested_baseline_set, false, false)
+}
+
+// Blink's inline-block baseline propagation uses a descendant flex/grid box's
+// first baseline as the enclosing block's last baseline. Ordinary flex/grid
+// alignment still requests its own first or last set explicitly.
+fn layout_box_baseline_for_inline(state &LayoutState, box &Node) CSSPixels {
+	return layout_box_baseline_in_context(state, box, .last, false,
+		box.document().font_rendering_policy() == .chromium)
 }
 
 // Chromium's text controls ignore the overflow of their internal editor when
 // they act as inline blocks, so the editor's text supplies the control's
 // baseline instead of the editor's bottom margin edge.
-fn layout_box_baseline_in_text_control(state &LayoutState, box &Node, requested_baseline_set BaselineSet, ignores_overflow bool) CSSPixels {
+fn layout_box_baseline_in_context(state &LayoutState, box &Node, requested_baseline_set BaselineSet, ignores_overflow bool, inline_block_algorithm bool) CSSPixels {
 	styled := box.as_node_with_style() or { return CSSPixels.new(0) }
 	box_state := state.try_get(styled) or { return CSSPixels.new(0) }
 	computed := box.computed_values()
@@ -557,7 +565,7 @@ fn layout_box_baseline_in_text_control(state &LayoutState, box &Node, requested_
 	mut baseline_set := requested_baseline_set
 	display := box.display()
 	is_flex_or_grid_container := display.is_flex_inside() || display.is_grid_inside()
-	if display.is_inline_outside() && is_flex_or_grid_container {
+	if is_flex_or_grid_container && (display.is_inline_outside() || inline_block_algorithm) {
 		baseline_set = .first
 	}
 
@@ -611,8 +619,8 @@ fn layout_box_baseline_in_text_control(state &LayoutState, box &Node, requested_
 		}
 		child_offset_from_margin_edge :=
 			block_child_state.offset.y().minus(block_child_state.margin_box_top())
-		return box_state.margin_box_top().plus(child_offset_from_margin_edge).plus(layout_box_baseline_in_text_control(state,
-			block_child, baseline_set, ignores_overflow))
+		return box_state.margin_box_top().plus(child_offset_from_margin_edge).plus(layout_box_baseline_in_context(state,
+			block_child, baseline_set, ignores_overflow, inline_block_algorithm))
 	}
 
 	if child := layout_box_child_to_derive_baseline_from(state, box, baseline_set) {
@@ -629,8 +637,8 @@ fn layout_box_baseline_in_text_control(state &LayoutState, box &Node, requested_
 				child_state.offset.y().minus(child_state.margin_box_top())
 			child_ignores_overflow := ignores_overflow
 				|| (is_input && box.document().font_rendering_policy() == .chromium)
-			return box_state.margin_box_top().plus(child_offset_from_margin_edge).plus(layout_box_baseline_in_text_control(state,
-				child, baseline_set, child_ignores_overflow))
+			return box_state.margin_box_top().plus(child_offset_from_margin_edge).plus(layout_box_baseline_in_context(state,
+				child, baseline_set, child_ignores_overflow, inline_block_algorithm))
 		}
 	}
 

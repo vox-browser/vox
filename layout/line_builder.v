@@ -633,8 +633,7 @@ pub fn (mut builder LineBuilder) update_last_line() {
 				}
 			}
 		} else {
-			fragment_baseline = layout_box_baseline(builder.layout_state, fragment.layout_node_,
-				.last)
+			fragment_baseline = layout_box_baseline_for_inline(builder.layout_state, fragment.layout_node_)
 		}
 		fragment.set_baseline(fragment_baseline)
 		if builder.line_relative_aligned_subtree_root(fragment_alignment_style_source(fragment)) != none {
