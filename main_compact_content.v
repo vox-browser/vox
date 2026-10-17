@@ -13,6 +13,7 @@ struct CompactElementQueryBinding {
 	runtime  &browserjs.Runtime
 mut:
 	elements map[string]&dom.Element
+	nodes    map[string]&dom.Node
 	keys     map[voidptr]string
 	next_key int
 }
@@ -59,6 +60,16 @@ fn install_compact_element_content_binding(document &dom.Document, mut runtime b
 	})!
 }
 
+fn (mut binding CompactElementQueryBinding) node_for_key(key string) ?&dom.Node {
+	if node := binding.nodes[key] { return node }
+	element := binding.elements[key] or {
+		binding.runtime.canvas_element_for_binding(key) or { return none }
+	}
+	binding.elements[key] = element
+	binding.keys[voidptr(element)] = key
+	return element.as_node()
+}
+
 fn (mut binding CompactElementQueryBinding) element_state(element &dom.Element) json2.Any {
 	if key := binding.keys[voidptr(element)] {
 		return json2.Any({
@@ -70,22 +81,28 @@ fn (mut binding CompactElementQueryBinding) element_state(element &dom.Element) 
 	binding.keys[voidptr(element)] = key
 	binding.elements[key] = element
 	attribute_records, attributes := browserjs.compact_attribute_state(element)
+	parent_key := if parent := element.as_node().parent_element() {
+		binding.keys[voidptr(parent)] or { '' }
+	} else {
+		''
+	}
 	mut state := {
-		'bridgeKey':    json2.Any(key)
-		'elementIndex': json2.Any(-1)
-		'tagName':      json2.Any(element.local_name())
-		'namespaceURI': json2.Any(element.namespace_uri() or { '' })
-		'attributes':   json2.Any(attributes)
+		'bridgeKey':        json2.Any(key)
+		'elementIndex':     json2.Any(-1)
+		'tagName':          json2.Any(element.local_name())
+		'namespaceURI':     json2.Any(element.namespace_uri() or { '' })
+		'attributes':       json2.Any(attributes)
 		'attributeRecords': json2.Any(attribute_records)
-		'id':           json2.Any(element.get_attribute_value('id'))
-		'src':          json2.Any(element.get_attribute_value('src'))
-		'width':        json2.Any(element.get_attribute_value('width'))
-		'height':       json2.Any(element.get_attribute_value('height'))
-		'className':    json2.Any(element.get_attribute_value('class'))
-		'styleText':    json2.Any(element.get_attribute_value('style'))
-		'onclick':      json2.Any(element.get_attribute_value('onclick'))
-		'hasChildren':  json2.Any(element.as_node().has_children())
-		'disabled':     json2.Any(element.has_attribute('disabled'))
+		'id':               json2.Any(element.get_attribute_value('id'))
+		'src':              json2.Any(element.get_attribute_value('src'))
+		'width':            json2.Any(element.get_attribute_value('width'))
+		'height':           json2.Any(element.get_attribute_value('height'))
+		'className':        json2.Any(element.get_attribute_value('class'))
+		'styleText':        json2.Any(element.get_attribute_value('style'))
+		'onclick':          json2.Any(element.get_attribute_value('onclick'))
+		'hasChildren':      json2.Any(element.as_node().has_children())
+		'parentKey':        json2.Any(parent_key)
+		'disabled':         json2.Any(element.has_attribute('disabled'))
 	}
 	if element.is_html_element() && element.local_name() == 'option' {
 		state['value'] = json2.Any(html.html_option_element_value(unsafe { &dom.HTMLOptionElement(element) }))
@@ -124,14 +141,12 @@ fn (mut binding CompactElementQueryBinding) query(input string) !string {
 	root := if key == '' {
 		unsafe { &dom.Node(binding.document) }
 	} else {
-		element := binding.elements[key] or {
-			binding.runtime.canvas_element_for_binding(key) or {
-				return error('TypeError: Invalid Element receiver')
-			}
-		}
-		binding.elements[key] = element
-		binding.keys[voidptr(element)] = key
-		element.as_node()
+		binding.node_for_key(key) or { return error('TypeError: Invalid Element receiver') }
+	}
+	if action == 'lastChild' { return binding.node_relation_query(root, 'last') }
+	if action == 'nodeParent' { return binding.node_relation_query(root, 'parent') }
+	if action in ['nodeValue', 'setNodeValue'] {
+		return binding.node_value_query(root, action, selector)
 	}
 	if action == 'computedStyle' {
 		return compact_computed_style_query(root, selector)
@@ -163,10 +178,8 @@ fn (mut binding CompactElementQueryBinding) query(input string) !string {
 	if action == 'cloneNode' {
 		// Node.cloneNode() on the live element: the detached copy keeps a bridge
 		// key, so later attribute writes, queries and insertion reach it.
-		root.as_element() or { return error('TypeError: Invalid Element receiver') }
 		copy := root.clone_node_binding(selector == 'deep')!
-		element := copy.as_element() or { return 'null' }
-		return json2.encode(binding.element_state(element))
+		return json2.encode(binding.node_state(copy))
 	}
 	if action == 'getElementById' {
 		return if element := binding.document.get_element_by_id(selector) {
