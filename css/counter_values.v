@@ -1178,7 +1178,7 @@ fn counter_style_definition_is_part_of_extends_cycle(name string, definitions ma
 		if algorithm is CounterStyleAlgorithm {
 			return false
 		}
-		current_name = algorithm.name
+		current_name = (algorithm as CounterStyleSystemExtends).name
 	}
 	return false
 }

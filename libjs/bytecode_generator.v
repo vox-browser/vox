@@ -686,7 +686,7 @@ fn (mut generator BytecodeGenerator) statement(mut vm VM, statement &Statement) 
 						generator.lexical_declarations([*init.statement], false)!
 					}
 					generator.statement(mut vm, init.statement)!
-				} else {
+				} else if init is ForInitExpression {
 					generator.expression(mut vm, init.expression)!
 				}
 			}
