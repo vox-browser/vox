@@ -1885,7 +1885,7 @@ fn javascript_bootstrap(state map[string]json2.Any) string {
 		'window.__ladybirdSnapshot = function () { return JSON.stringify(__state); };',
 		'window.__ladybirdFinalize = function () { for (const key of Object.keys(__canvases)) { const c=__canvases[key],s=c.state;if(!c.context||c.kind!=="2d")continue;const snapshot=__canvasCall(s,"snapshot");s.canvasPixels=snapshot.pixels;s.canvasWidth=__canvasDimension(s,"width");s.canvasHeight=__canvasDimension(s,"height");s.canvasPixelsPremultiplied=snapshot.premultiplied;s.canvasPixelsTopDown=snapshot.topDown;s.canvasNative=true; } const snapshot=JSON.stringify(Object.assign({},__state,{elements:__pendingElementStates(true)})); __state.operations=[]; for(const s of __elementStates()){s.innerHTMLDirty=false;s.textContentDirty=false;s.attributesDirty=false;s.checkedDirty=false;s.indeterminateDirty=false;} return snapshot; };',
 		'window.__ladybirdClearLogs = function () { __state.logs = []; __state.operations=[]; __state.bodyHTMLDirty = false; __state.bodyTextDirty = false; for(const s of __elementStates()){s.innerHTMLDirty=false;s.textContentDirty=false;s.attributesDirty=false;s.checkedDirty=false;s.indeterminateDirty=false;} };',
-		'window.__ladybirdDispatch = function (name, id, mediaReplay) { const s = mediaReplay?(__state.elements[mediaReplay.key]||null):(String(id)===""?null:(__elementStates().find(function(item){return item.id===String(id);}) || null)); if(mediaReplay&&!s)return window.__ladybirdSnapshot(); const target = s ? __element(s) : document; const event = { type: name, target: target, defaultPrevented: false, preventDefault: function () { this.defaultPrevented = true; } }; for (const listener of (__listeners[__listenerKey(s, name)] || [])) { try { listener.call(target, event); } catch (e) { console.error(e); } } if (!s && typeof window["on" + name] === "function") { try { window["on" + name].call(window, event); } catch (e) { console.error(e); } } const nativeMedia=s&&s.namespaceURI==="http://www.w3.org/1999/xhtml"&&(s.tagName==="audio"||s.tagName==="video"),rawClick=mediaReplay?mediaReplay.raw:(nativeMedia?"":(s?s.onclick:"")); if (s && name === "click" && rawClick) { try { Function("event", rawClick).call(target, event); } catch (e) { console.error(e); } } __state.defaultPrevented = event.defaultPrevented; return window.__ladybirdSnapshot(); };',
+		compact_event_dispatch_bootstrap(),
 		// Initialization has no replay consumer; explicit snapshots remain available.
 		'return;',
 		'})()',
@@ -3074,20 +3074,29 @@ fn (mut app BrowserApp) dispatch_javascript_event(name string, element &dom.Elem
 		media_replay = ', ' + json2.encode(state)
 	}
 	id := element.get_attribute_value('id')
-	if id == '' && media_replay == '' {
-		return false
+	if media_replay == '' {
+		for key, candidate in app.js_runtime.canvas_elements_for_binding() {
+			if voidptr(candidate) != voidptr(element) { continue }
+			media_replay = ', ' + json2.encode({'key': json2.Any(key)})
+			break
+		}
 	}
+	if id == '' && media_replay == '' { return false }
 	result := app.js_runtime.evaluate_host('__ladybirdDispatch(${json2.encode(name)}, ${json2.encode(id)}${media_replay})') or {
 		app.js_messages << 'JavaScript event: ${err.msg()}'
 		return false
 	}
-	navigation := apply_javascript_runtime_state(app.document, result, app.js_runtime, mut app.js_messages)
+	destination := apply_javascript_runtime_state(app.document, result, app.js_runtime, mut app.js_messages) or { '' }
+	defer {
+		$if gcboehm ? { C.GC_reachable_here(destination.str) }
+	}
 	app.js_runtime.evaluate_host('__ladybirdClearLogs()') or {}
 	app.relayout(app.viewport_width, app.viewport_height + app.chrome_height())
-	if destination := navigation {
-		if destination != '' {
-			app.navigate(resolve_document_reference(destination, app.address), true)
-		}
+	if destination != '' {
+		app.navigate(resolve_document_reference(destination, app.address), true)
+		// A script navigation also consumes the pending link default action
+		// when the native input scope defers its generation change.
+		return true
 	}
 	return javascript_default_prevented(result)
 }
@@ -3504,6 +3513,11 @@ fn error_markup(address string, message string) string {
 }
 
 fn (mut app BrowserApp) navigate(address string, add_history bool) {
+	// Resolution can allocate after the caller has consumed a pending request.
+	// Keep the source bytes reachable even when trim_space returns a borrowed slice.
+	defer {
+		$if gcboehm ? { C.GC_reachable_here(address.str) }
+	}
 	if app.navigation_work_depth > 0 {
 		app.deferred_navigation_input = DeferredNavigationInput{address: address, add_history: add_history}
 		return
@@ -6696,13 +6710,7 @@ fn (mut app BrowserApp) replay_compact_javascript_click() {
 	if app.page_model != unsafe { nil } {
 		if node := app.page_model.event_handler.last_click_target_node() {
 			if mut target := node.as_element() {
-				for {
-					if target.get_attribute_value('id') != '' {
-						if app.dispatch_javascript_event('click', target) { return }
-						break
-					}
-					target = target.as_node().parent_element() or { break }
-				}
+				if app.dispatch_javascript_event('click', target) { return }
 			}
 		}
 	}

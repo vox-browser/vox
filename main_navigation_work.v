@@ -120,10 +120,14 @@ fn (mut app BrowserApp) poll_deferred_page_input() {
 fn (mut app BrowserApp) poll_deferred_navigation_input() {
 	if app.navigation_work_depth > 0 { return }
 	input := app.deferred_navigation_input or { return }
+	address := input.address
+	defer {
+		$if gcboehm ? { C.GC_reachable_here(address.str) }
+	}
 	app.deferred_navigation_input = none
 	if input.is_history {
 		app.history_go(input.history_delta)
 	} else {
-		app.navigate(input.address, input.add_history)
+		app.navigate(address, input.add_history)
 	}
 }
