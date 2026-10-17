@@ -198,46 +198,6 @@ fn font_face_has_truetype_outlines(face &ttf.TTF_File) bool {
 	return 'loca' in face.tables && 'glyf' in face.tables
 }
 
-// x.ttf reads a standalone sfnt directory at byte zero. A TrueType collection
-// keeps each face's directory elsewhere while its table offsets remain absolute,
-// so copying only the selected directory to byte zero makes that same reader
-// consume the requested collection face without touching shared table data.
-fn outline_bytes_for_face(bytes []u8, face_index int) ?[]u8 {
-	if bytes.len < 4 || bytes[..4].bytestr() != 'ttcf' {
-		if face_index != 0 {
-			return none
-		}
-		return bytes
-	}
-	face_count := int(font_u32_at(bytes, 8)?)
-	if face_index < 0 || face_index >= face_count {
-		return none
-	}
-	directory_offset := int(font_u32_at(bytes, 12 + face_index * 4)?)
-	table_count := int(font_u16_at(bytes, directory_offset + 4)?)
-	directory_length := 12 + table_count * 16
-	if directory_offset < 0 || directory_offset + directory_length > bytes.len {
-		return none
-	}
-	mut adapted := bytes.clone()
-	copy(mut adapted[..directory_length], bytes[directory_offset..directory_offset + directory_length])
-	// Apple's collection faces carry a version-1 `kern` table. x.ttf only
-	// understands the OpenType version-0 form and asserts while reading any
-	// other version. HarfBuzz remains the source of truth for shaped kerning,
-	// so hide this one unsupported table from the outline/metrics reader.
-	for index in 0 .. table_count {
-		record := 12 + index * 16
-		if adapted[record..record + 4].bytestr() != 'kern' {
-			continue
-		}
-		table_offset := int(font_u32_at(adapted, record + 8)?)
-		if font_u16_at(adapted, table_offset)? != 0 {
-			adapted[record] = `K`
-		}
-	}
-	return adapted
-}
-
 // Gfx::Font::pixel_metrics(). Skia selects the OS/2 typo metrics when the
 // USE_TYPO_METRICS bit is present, otherwise the hhea metrics. SerenitySans
 // uses typo metrics (819/-205/94 at 1024 units per em) in the deterministic
@@ -559,8 +519,7 @@ fn font_face(font &Font) ?&ttf.TTF_File {
 		return none
 	}
 	platform_font_face_attempted[cache_key] = true
-	raw_bytes := os.read_bytes(path) or { return none }
-	mut bytes := outline_bytes_for_face(raw_bytes, face_index)?
+	mut bytes := read_outline_face_bytes(path, face_index)?
 	normalize_table_checksums(mut bytes)
 	// External construction with the current V compiler does not apply these
 	// vlib field defaults, but TTF_File.init() writes all 12 PANOSE bytes.
