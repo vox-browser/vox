@@ -995,11 +995,7 @@ fn fetch_page(address string, base string) !LoadedPage {
 	if response.status_code < 200 || (response.status_code >= 400 && response.body == '') {
 		return error('HTTP ${response.status_code} ${response.status_msg}')
 	}
-	markup := if content_type.to_lower().contains('html') {
-		response.body
-	} else {
-		'<html><body><h1>${html_escape(content_type)}</h1><pre>${html_escape(response.body)}</pre></body></html>'
-	}
+	markup := browser_navigation_response_markup(response.body, content_type)
 	loaded := LoadedPage{
 		url: result.url
 		markup: markup
