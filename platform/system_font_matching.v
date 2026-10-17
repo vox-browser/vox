@@ -119,6 +119,17 @@ fn resolve_system_font_face(family string, weight int, point_size f32) ?SystemFo
 	return none
 }
 
+// Brave (Chromium 155) does not take Devanagari from the system font's
+// .SF Devanagari face: the text falls through to sans-serif, whose macOS
+// cascade begins with Kohinoor Devanagari, for Hindi and Marathi alike.
+fn devanagari_fallback_family(code_point u32) ?string {
+	if code_point in u32(0x0900) .. u32(0x0980) || code_point in u32(0xa8e0) .. u32(0xa900)
+		|| code_point in u32(0x1cd0) .. u32(0x1d00) {
+		return 'Kohinoor Devanagari'
+	}
+	return none
+}
+
 // Chromium's per-script macOS font preferences for Han, Kana and Hangul. The
 // content language selects the Han variant; untagged Han text uses CoreText.
 fn cjk_fallback_family(code_point u32, language string) ?string {
@@ -177,7 +188,12 @@ pub fn system_fallback_font(code_point u32, language string, base &Font) ?&Font 
 		return none
 	}
 	mut result := ?&Font(none)
-	if family := cjk_fallback_family(code_point, language) {
+	preferred_family := if family := cjk_fallback_family(code_point, language) {
+		?string(family)
+	} else {
+		devanagari_fallback_family(code_point)
+	}
+	if family := preferred_family {
 		candidate := &Font{
 			family: family
 			point_size: base.point_size

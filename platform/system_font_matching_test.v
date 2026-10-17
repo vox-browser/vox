@@ -78,6 +78,20 @@ fn test_system_face_typeface_bounds_use_the_coretext_face_box() {
 	}
 }
 
+fn test_chromium_devanagari_falls_back_to_kohinoor() {
+	$if macos {
+		base := &Font{ family: 'SystemUi', point_size: 14, weight: 400, font_rendering_policy: .chromium }
+		for language in ['mr', 'hi', ''] {
+			font := system_fallback_font(0x092e, language, base) or { panic('no Devanagari fallback') }
+			assert font.system_face()?.postscript_name == 'KohinoorDevanagari-Regular'
+		}
+		// Brave measures 29.421875px for मराठी at 14px.
+		font := system_fallback_font(0x092e, 'mr', base) or { panic('no fallback') }
+		width := shaped_text_width(0, 0, 'मराठी', font, .ltr)
+		assert width > 29.40 && width <= 29.421875
+	}
+}
+
 // Code points that fall back to the same face share one Font, so the chunk
 // iterator keeps them in one shaped run.
 fn test_system_fallback_fonts_are_shared_by_face() {
