@@ -263,8 +263,7 @@ pub fn (mut performance Performance) measure(name string, start_or_options ?Star
 			start_time = performance.convert_mark_to_timestamp(start)!
 		} else if duration := measure_options.duration {
 			if end := measure_options.end {
-				start_time = performance.convert_mark_to_timestamp(end)!
-				-performance.convert_mark_to_timestamp(usertiming.StringOrTimestamp(duration))!
+				start_time = performance.convert_mark_to_timestamp(end)! - performance.convert_mark_to_timestamp(usertiming.StringOrTimestamp(duration))!
 			}
 		}
 	} else if start := start_name {

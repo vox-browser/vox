@@ -68,6 +68,16 @@ fn test_measure_options_compute_start_end_and_duration() {
 	assert performance.get_entries_by_type('measure').len == 1
 }
 
+fn test_measure_options_compute_start_from_end_and_duration() {
+	mut performance := deterministic_performance()
+	entry := performance.measure('tail', StartOrMeasureOptions(usertiming.PerformanceMeasureOptions{
+		end:      usertiming.StringOrTimestamp(15.0)
+		duration: 5.0
+	}), none)!
+	assert entry.entry.start_time == 10
+	assert entry.entry.duration == 5
+}
+
 fn test_measure_rejects_inconsistent_options() {
 	mut performance := deterministic_performance()
 	if _ := performance.measure('bad', StartOrMeasureOptions(usertiming.PerformanceMeasureOptions{
