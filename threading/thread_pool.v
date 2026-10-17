@@ -12,7 +12,6 @@ fn C.vox_thread_pool_condition_create() voidptr
 fn C.vox_thread_pool_lock(state voidptr)
 fn C.vox_thread_pool_unlock(state voidptr)
 fn C.vox_thread_pool_wait(state voidptr)
-fn C.vox_thread_pool_wait_for_idle_collection(state voidptr) int
 fn C.vox_thread_pool_signal(state voidptr)
 fn C.vox_thread_pool_set_name(name &char)
 
@@ -47,30 +46,18 @@ pub fn ThreadPool.the() &ThreadPool {
 @[spawn_stack: 8388608]
 fn (mut pool ThreadPool) worker_thread_func(name string) {
 	C.vox_thread_pool_set_name(name.str)
-	mut collected_since_last_work := false
 	for {
-		mut should_collect := false
 		C.vox_thread_pool_lock(pool.condition_)
+		// Upstream's idle ak_kmalloc_collect() trims the calling worker's
+		// allocator. Boehm owns one process heap: gc_collect() here instead
+		// stops every thread and traces the live page once per idle worker.
+		// Keep automatic GC and the browser's process-idle cleanup in charge.
 		for pool.work_queue_.len == 0 {
-			if collected_since_last_work {
-				C.vox_thread_pool_wait(pool.condition_)
-			} else if C.vox_thread_pool_wait_for_idle_collection(pool.condition_) == 0
-				&& pool.work_queue_.len == 0 {
-				should_collect = true
-				break
-			}
-		}
-		if should_collect {
-			C.vox_thread_pool_unlock(pool.condition_)
-			// AK::ak_kmalloc_collect projects to V's actual allocator collection.
-			gc_collect()
-			collected_since_last_work = true
-			continue
+			C.vox_thread_pool_wait(pool.condition_)
 		}
 		work := pool.work_queue_[0]
 		pool.work_queue_.delete(0)
 		C.vox_thread_pool_unlock(pool.condition_)
-		collected_since_last_work = false
 		work()
 	}
 }
