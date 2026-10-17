@@ -618,8 +618,8 @@ fn (mut bfc BlockFormattingContext) layout_block_level_box(mut state LayoutState
 	}
 	box_state.set_containing_block_used_values(state.get_mutable(block_container))
 	if box_should_avoid_floats(box_as_node) && bfc.floating_boxes.len > 0 {
-		bfc.place_box_avoiding_float_intrusions(mut box_state, block_container, css_px(containing_block_width),
-			computed, sized_as_replaced || box_as_node.is_table_wrapper())
+		bfc.place_box_avoiding_float_intrusions(mut state, box_as_node, mut box_state, block_container,
+			css_px(containing_block_width), computed, sized_as_replaced || box_as_node.is_table_wrapper())
 	} else {
 		place_block_level_element_in_normal_flow_horizontally(mut box_state, containing_block_width)
 	}
@@ -1308,20 +1308,31 @@ fn border_box_left_of_box_avoiding_floats(computed &css.ComputedProperties, box_
 // the margin box of any float. Its width is resolved against the space next to
 // the floats in its band, reduced by negative margins, and the box is moved to
 // the next float band until it fits without overlapping a float. Replaced
-// boxes and table wrappers keep the width already resolved in normal flow (a
-// wrapper's own width is auto; its used width is the table's); only their auto
-// margins are resolved against the space beside the floats.
-fn (bfc &BlockFormattingContext) place_box_avoiding_float_intrusions(mut box_state UsedValues, block_container &NodeWithStyle, container_width CSSPixels, computed &css.ComputedProperties, width_is_resolved bool) {
+// boxes keep the width already resolved in normal flow. A table wrapper's own
+// width is auto; its used width is the table's, which is sized again against
+// the space beside the floats. Auto margins of both are resolved in that space.
+fn (bfc &BlockFormattingContext) place_box_avoiding_float_intrusions(mut state LayoutState, box &Node, mut box_state UsedValues, block_container &NodeWithStyle, container_width CSSPixels, computed &css.ComputedProperties, width_is_resolved bool) {
 	container_state := box_state.containing_block_used_values() or { return }
 	container_root_offset := container_state.cumulative_offset()
 	direction := block_container.computed_values().direction()
+	// Normal flow may already have stretched a resolved-width box's end margin
+	// to fill the line; beside floats, start again from the specified margins.
+	specified_margin_left := css_px(computed.length_percentage_to_px(.margin_left, container_width.to_double()) or {
+		0.0
+	})
+	specified_margin_right := css_px(computed.length_percentage_to_px(.margin_right,
+		container_width.to_double()) or { 0.0 })
 	margin_left := if property_is_auto(computed, .margin_left) {
 		CSSPixels.new(0)
+	} else if width_is_resolved {
+		specified_margin_left
 	} else {
 		box_state.margin_left
 	}
 	margin_right := if property_is_auto(computed, .margin_right) {
 		CSSPixels.new(0)
+	} else if width_is_resolved {
+		specified_margin_right
 	} else {
 		box_state.margin_right
 	}
@@ -1329,6 +1340,7 @@ fn (bfc &BlockFormattingContext) place_box_avoiding_float_intrusions(mut box_sta
 		CSSPixels.new(0)))
 	normal_flow_margin_left := box_state.margin_left
 	normal_flow_margin_right := box_state.margin_right
+	normal_flow_width := box_state.content_width()
 	mut border_box_y := box_state.offset.y().minus(box_state.border_box_top())
 	for {
 		left, right, next_y := bfc.float_boundaries_at(border_box_y, CSSPixels.new(1), container_width,
@@ -1350,7 +1362,14 @@ fn (bfc &BlockFormattingContext) place_box_avoiding_float_intrusions(mut box_sta
 		if width_is_resolved {
 			box_state.margin_left = normal_flow_margin_left
 			box_state.margin_right = normal_flow_margin_right
+			box_state.set_content_width(normal_flow_width)
 			if constrained_by_floats {
+				box_state.margin_left = specified_margin_left
+				box_state.margin_right = specified_margin_right
+				if box.is_table_wrapper() {
+					box_state.set_content_width(compute_table_wrapper_content_width(mut state,
+						box, mut box_state, remaining))
+				}
 				resolve_auto_margins(computed, mut box_state, remaining.to_double(),
 					box_state.content_width().to_double())
 			}
