@@ -302,7 +302,7 @@ bool clipped_raster_region(SkRect const& bounds, float canvas_width,
 // run downwards instead. Retain a conservative fringe for antialiased clips.
 // Filter/shadow inputs and grouped commands keep their existing bounds: their
 // intermediate pixels may still contribute after an effect or group replay.
-bool copy_opaque_backdrop(CGContextRef destination, RasterRegion const& region,
+bool copy_backdrop(CGContextRef destination, RasterRegion const& region,
     float destination_scale, int raster_width, int raster_height,
     std::vector<uint32_t>& pixels)
 {
@@ -322,11 +322,13 @@ bool copy_opaque_backdrop(CGContextRef destination, RasterRegion const& region,
     has_background = background && ctm.a > 0 && ctm.d > 0
         && ctm.b == 0 && ctm.c == 0 && ctm.tx == 0 && ctm.ty == 0
         && left + raster_width <= source_width && top + raster_height <= source_height;
+    // Premultiplied pixels are copied as they are, including the translucent
+    // pixels of an opacity group's own bitmap. Callers composite the result
+    // back with copy blending, so the leaf blends over the backdrop once.
     for (int y = 0; has_background && y < raster_height; ++y) {
         auto* row = background + (top + y) * source_pitch + left * 4;
         for (int x = 0; x < raster_width; ++x) {
-            if (row[x * 4 + 3] != 255) { has_background = false; break; }
-            pixels[static_cast<size_t>(y) * raster_width + x] = 0xff000000
+            pixels[static_cast<size_t>(y) * raster_width + x] = uint32_t(row[x * 4 + 3]) << 24
                 | row[x * 4] << 16 | row[x * 4 + 1] << 8 | row[x * 4 + 2];
         }
     }
@@ -723,8 +725,8 @@ extern "C" int ladybird_v_skia_draw_glyph_run(CGContextRef destination,
     std::vector<uint32_t> pixels(static_cast<size_t>(raster_width) * raster_height);
     // Avoid quantizing a partially covered foreground to premultiplied 8-bit
     // color before blending it over the page. The owning native bitmap frame
-    // supplies opaque pixels; nested transparency layers use the old path.
-    bool has_background = (font_smoothing & 32) && copy_opaque_backdrop(destination,
+    // or opacity group supplies its pixels; transparency layers use the old path.
+    bool has_background = (font_smoothing & 32) && copy_backdrop(destination,
         region, destination_scale, raster_width, raster_height, pixels);
     auto image_info = SkImageInfo::Make(raster_width, raster_height,
         kBGRA_8888_SkColorType, kPremul_SkAlphaType, SkColorSpace::MakeSRGB());
@@ -1072,7 +1074,7 @@ extern "C" int ladybird_v_skia_draw_rgba_image(CGContextRef destination,
         / static_cast<float>(region.height());
     std::vector<uint32_t> pixels(static_cast<size_t>(raster_width)
         * static_cast<size_t>(raster_height));
-    bool has_background = (image_flags & 2) && copy_opaque_backdrop(destination,
+    bool has_background = (image_flags & 2) && copy_backdrop(destination,
         region, destination_scale, raster_width, raster_height, pixels);
     if (s_chromium_painting) {
         VoxGraphiteImage descriptor {
@@ -1386,7 +1388,7 @@ extern "C" int ladybird_v_skia_draw_rounded_rect(CGContextRef destination,
     auto image_info = SkImageInfo::Make(raster_width, raster_height, kBGRA_8888_SkColorType,
         kPremul_SkAlphaType, SkColorSpace::MakeSRGB());
     auto row_bytes = static_cast<size_t>(raster_width) * sizeof(uint32_t);
-    bool has_background = s_chromium_painting && opaque_backdrop && copy_opaque_backdrop(destination,
+    bool has_background = s_chromium_painting && opaque_backdrop && copy_backdrop(destination,
         region, destination_scale, raster_width, raster_height, pixels);
     if (s_chromium_painting) {
         VoxGraphiteShape descriptor {
@@ -1486,7 +1488,7 @@ extern "C" int ladybird_v_skia_draw_outer_box_shadow(CGContextRef destination,
     auto raster_scale_y = static_cast<float>(raster_height) / static_cast<float>(region.height());
     std::vector<uint32_t> pixels(static_cast<size_t>(raster_width)
         * static_cast<size_t>(raster_height));
-    bool has_background = opaque_backdrop && copy_opaque_backdrop(destination,
+    bool has_background = opaque_backdrop && copy_backdrop(destination,
         region, destination_scale, raster_width, raster_height, pixels);
     auto image_info = SkImageInfo::Make(raster_width, raster_height,
         kBGRA_8888_SkColorType, kPremul_SkAlphaType, SkColorSpace::MakeSRGB());
@@ -1657,7 +1659,7 @@ extern "C" int ladybird_v_skia_draw_svg_path(CGContextRef destination,
         // over the fill's result, as both would on Chromium's canvas. Inside a
         // clip or opacity layer the destination bitmap lacks the layer's
         // pixels, so only a top-level opaque page is blended on the GPU.
-        bool has_background = opaque_backdrop && copy_opaque_backdrop(destination, region,
+        bool has_background = opaque_backdrop && copy_backdrop(destination, region,
             destination_scale, raster_width, raster_height, pixels);
         VoxGraphitePath descriptor {
             .matrix = {}, .segments = data, .segment_count = segment_count,

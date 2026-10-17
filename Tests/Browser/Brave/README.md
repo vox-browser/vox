@@ -127,3 +127,14 @@ drawing it. The Chromium profile tags images decoded by stb_image the same way
 and converts them in the isolated GPU backend. An RGB variant of the first
 image also matched except one pixel whose converted value lies within 1e-5 of
 a rounding tie, so it is not part of the fixture.
+
+`opacity-group` checks opacity groups: glyphs at 0.8 like 4chan's post-menu
+button, translucent buttons with a rounded background and text, nested
+groups, a blurred box shadow at 0.5, and faded text. Brave paints each group
+into an 8-bit premultiplied layer and draws it over the backdrop in float32
+GPU arithmetic, with the blend as one fused multiply-add. The Chromium profile
+paints a normal-blending group into its own bitmap with the canvas's format,
+where text, shadows and images still blend over the group's own pixels, then
+composites it with the same arithmetic. Core Graphics transparency layers
+rounded antialiased edges inside a group differently. Groups with another
+blend mode keep the Core Graphics layer.

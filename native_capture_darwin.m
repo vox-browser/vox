@@ -26,6 +26,7 @@ static void native_capture_instruction_checkpoint(const char *label) {
 #include "native_webp_darwin.h"
 #include "native_jpeg_darwin.h"
 #include "native_png_color_darwin.h"
+#include "native_opacity_group_darwin.h"
 
 int native_prefers_overlay_scrollbars(void) {
 	return [NSScroller preferredScrollerStyle] == NSScrollerStyleOverlay;
@@ -768,18 +769,163 @@ static CGBlendMode native_compositing_operator(int mode) {
 	}
 }
 
+// A Chromium-profile opacity group with normal blending paints into its own
+// bitmap, which shares the compositing canvas's format and device space. Its
+// leaves therefore keep their exact Skia compositing, and the group is drawn
+// over the backdrop with Chromium's floating-point layer composite.
+typedef struct {
+	int offscreen;
+	CGContextRef parent;
+	CGContextRef context;
+	uint8_t *pixels;
+	float opacity;
+	int left, top, right, bottom;
+} NativeOpacityGroup;
+
+#define NATIVE_OPACITY_GROUP_MAX_DEPTH 64
+static NativeOpacityGroup native_opacity_groups[NATIVE_OPACITY_GROUP_MAX_DEPTH];
+static int native_opacity_group_depth;
+static int native_opacity_group_overflow_depth;
+
+static int native_compositing_canvas_is_readable(CGContextRef context) {
+	CGAffineTransform ctm = CGContextGetCTM(context);
+	return context != NULL && context == native_font_compositing_context
+		&& native_font_compositing_transparency_depth == 0
+		&& CGBitmapContextGetData(context) != NULL
+		&& CGBitmapContextGetBitsPerPixel(context) == 32
+		&& CGBitmapContextGetAlphaInfo(context) == kCGImageAlphaPremultipliedLast
+		&& (CGBitmapContextGetBitmapInfo(context) & kCGBitmapByteOrderMask) == kCGBitmapByteOrder32Big
+		&& ctm.a > 0 && ctm.d > 0 && ctm.b == 0 && ctm.c == 0 && ctm.tx == 0 && ctm.ty == 0;
+}
+
+static int native_begin_offscreen_opacity_group(NativeOpacityGroup *group, CGContextRef parent,
+	float opacity) {
+	if (!native_compositing_canvas_is_readable(parent)) {
+		return 0;
+	}
+	size_t width = CGBitmapContextGetWidth(parent), height = CGBitmapContextGetHeight(parent);
+	CGRect clip = CGContextGetClipBoundingBox(parent);
+	if (CGRectIsNull(clip) || CGRectIsEmpty(clip)) {
+		return 0;
+	}
+	CGRect device = CGRectIsInfinite(clip)
+		? CGRectMake(0, 0, (CGFloat)width, (CGFloat)height)
+		: CGContextConvertRectToDeviceSpace(parent, clip);
+	// A bitmap context's device space runs downwards, like its rows.
+	int left = (int)MAX(0.0, floor(CGRectGetMinX(device)));
+	int right = (int)MIN((double)width, ceil(CGRectGetMaxX(device)));
+	int top = (int)MAX(0.0, floor(CGRectGetMinY(device)));
+	int bottom = (int)MIN((double)height, ceil(CGRectGetMaxY(device)));
+	if (left >= right || top >= bottom) {
+		return 0;
+	}
+	uint8_t *pixels = calloc(height, width * 4);
+	if (pixels == NULL) {
+		return 0;
+	}
+	CGContextRef context = CGBitmapContextCreate(pixels, width, height, 8, width * 4,
+		CGBitmapContextGetColorSpace(parent),
+		kCGImageAlphaPremultipliedLast | kCGBitmapByteOrder32Big);
+	if (context == NULL) {
+		free(pixels);
+		return 0;
+	}
+	CGContextConcatCTM(context, CGContextGetCTM(parent));
+	CGContextClipToRect(context, clip);
+	CGContextSetShouldAntialias(context, true);
+	CGContextSetInterpolationQuality(context, CGContextGetInterpolationQuality(parent));
+	BOOL flipped = [[NSGraphicsContext currentContext] isFlipped];
+	[NSGraphicsContext saveGraphicsState];
+	[NSGraphicsContext setCurrentContext:
+		[NSGraphicsContext graphicsContextWithCGContext:context flipped:flipped]];
+	*group = (NativeOpacityGroup){
+		.offscreen = 1, .parent = parent, .context = context, .pixels = pixels,
+		.opacity = MIN(MAX(opacity, 0.0f), 1.0f),
+		.left = left, .top = top, .right = right, .bottom = bottom,
+	};
+	native_font_compositing_context = context;
+	return 1;
+}
+
+static void native_end_offscreen_opacity_group(NativeOpacityGroup *group) {
+	[NSGraphicsContext restoreGraphicsState];
+	native_font_compositing_context = group->parent;
+	native_font_compositing_transparency_depth = 0;
+	CGContextFlush(group->context);
+	CGContextFlush(group->parent);
+	size_t width = CGBitmapContextGetWidth(group->parent);
+	size_t height = CGBitmapContextGetHeight(group->parent);
+	size_t layer_pitch = width * 4;
+	size_t parent_pitch = CGBitmapContextGetBytesPerRow(group->parent);
+	const uint8_t *backdrop = CGBitmapContextGetData(group->parent);
+	int left, top, right, bottom;
+	if (native_opacity_layer_ink_bounds(group->pixels, layer_pitch, group->left, group->top,
+			group->right, group->bottom, &left, &top, &right, &bottom)) {
+		size_t ink_width = (size_t)(right - left), ink_height = (size_t)(bottom - top);
+		uint8_t *result = malloc(ink_width * ink_height * 4);
+		CGColorSpaceRef color_space = CGBitmapContextGetColorSpace(group->parent);
+		CGContextRef result_context = result == NULL ? NULL
+			: CGBitmapContextCreate(result, ink_width, ink_height, 8, ink_width * 4, color_space,
+				kCGImageAlphaPremultipliedLast | kCGBitmapByteOrder32Big);
+		if (result_context != NULL) {
+			for (size_t row = 0; row < ink_height; ++row) {
+				native_composite_opacity_pixels(
+					group->pixels + (top + row) * layer_pitch + (size_t)left * 4,
+					backdrop + (top + row) * parent_pitch + (size_t)left * 4,
+					result + row * ink_width * 4, ink_width, group->opacity);
+			}
+			CGImageRef image = CGBitmapContextCreateImage(result_context);
+			if (image != NULL) {
+				// Copy the composite into place under the backdrop's clip.
+				CGRect target = CGContextConvertRectToUserSpace(group->parent,
+					CGRectMake(left, top, ink_width, ink_height));
+				CGContextSaveGState(group->parent);
+				CGContextSetBlendMode(group->parent, kCGBlendModeCopy);
+				CGContextSetInterpolationQuality(group->parent, kCGInterpolationNone);
+				CGContextDrawImage(group->parent, target, image);
+				CGContextRestoreGState(group->parent);
+				CGImageRelease(image);
+			}
+			CGContextRelease(result_context);
+		}
+		free(result);
+	}
+	CGContextRelease(group->context);
+	free(group->pixels);
+}
+
 void native_begin_css_effect_layer(float opacity, int blend_mode) {
 	CGContextRef context = [[NSGraphicsContext currentContext] CGContext];
 	if (context == NULL) {
 		return;
 	}
 	CGContextSaveGState(context);
+	if (native_opacity_group_depth < NATIVE_OPACITY_GROUP_MAX_DEPTH) {
+		NativeOpacityGroup *group = &native_opacity_groups[native_opacity_group_depth++];
+		*group = (NativeOpacityGroup){ .parent = context };
+		if (blend_mode == 0 && native_begin_offscreen_opacity_group(group, context, opacity)) {
+			return;
+		}
+
+	} else {
+		native_opacity_group_overflow_depth++;
+	}
 	CGContextSetAlpha(context, opacity);
 	CGContextSetBlendMode(context, native_compositing_operator(blend_mode));
 	native_begin_tracked_transparency_layer(context, NULL);
 }
 
 void native_end_css_effect_layer(void) {
+	if (native_opacity_group_overflow_depth > 0) {
+		native_opacity_group_overflow_depth--;
+	} else if (native_opacity_group_depth > 0) {
+		NativeOpacityGroup group = native_opacity_groups[--native_opacity_group_depth];
+		if (group.offscreen) {
+			native_end_offscreen_opacity_group(&group);
+			CGContextRestoreGState(group.parent);
+			return;
+		}
+	}
 	CGContextRef context = [[NSGraphicsContext currentContext] CGContext];
 	if (context == NULL) {
 		return;
