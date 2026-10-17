@@ -105,3 +105,12 @@ by 0.2px and a 1px #767676 border stroked half a pixel inside, both with a
 2px radius. Each shape is rasterized by the isolated GPU backend over the
 page, as in Brave. Checked, indeterminate, disabled and dark-scheme controls
 keep the existing LibWeb painting.
+
+`jpeg-yuv` checks baseline and progressive 4:2:0 JPEG images and a
+progressive 4:4:4 image at natural size. Brave decodes YCbCr JPEGs to Y, Cb
+and Cr planes with libjpeg-turbo and converts them in the GPU shader with
+full-range BT.601 while sampling chroma bilinearly; the Chromium profile
+uploads the same planes to the isolated GPU backend. TurboJPEG pads 4:2:0
+luma planes to even dimensions, so the decoder packs them before upload.
+Images with an embedded ICC profile and other subsamplings keep the RGB
+decoder.

@@ -945,22 +945,32 @@ extern "C" int ladybird_v_skia_draw_line(CGContextRef destination,
 }
 
 static sk_sp<SkShader> webp_yuv_shader(uint8_t const* planes, int width, int height,
-    SkSamplingOptions const& sampling, SkRect const& source, SkRect const& destination)
+    SkSamplingOptions const& sampling, SkRect const& source, SkRect const& destination,
+    bool full_range, bool full_chroma)
 {
     // Sample the original 4:2:0 planes before Rec.601 conversion, as Chromium's
     // GPU YUVA image does. Early RGB quantization changes downscaled colors.
+    // WebP planes use the limited BT.601 range and JPEG planes the full range.
     static auto effect = SkRuntimeEffect::MakeForShader(SkString(R"(
         uniform shader luma;
         uniform shader chroma_u;
         uniform shader chroma_v;
         uniform int nearest;
+        uniform int full_range;
+        uniform float chroma_scale;
         uniform float4 source_bounds;
         half4 main(float2 p) {
             p = clamp(p, source_bounds.xy, source_bounds.zw);
             if (nearest != 0) p = floor(p) + 0.5;
             float y = float(luma.eval(p).r);
-            float u = float(chroma_u.eval(p * 0.5).r);
-            float v = float(chroma_v.eval(p * 0.5).r);
+            float u = float(chroma_u.eval(p * chroma_scale).r);
+            float v = float(chroma_v.eval(p * chroma_scale).r);
+            if (full_range != 0) {
+                return half4(clamp(float3(
+                    y + 1.402 * (v - 0.501961),
+                    y - 0.344136 * (u - 0.501961) - 0.714136 * (v - 0.501961),
+                    y + 1.772 * (u - 0.501961)), 0.0, 1.0), 1.0);
+            }
             return half4(clamp(float3(
                 1.164384 * y + 1.596027 * v - 0.874202,
                 1.164384 * y - 0.391762 * u - 0.812968 * v + 0.531668,
@@ -968,7 +978,8 @@ static sk_sp<SkShader> webp_yuv_shader(uint8_t const* planes, int width, int hei
         }
     )"));
     if (!effect.effect) return nullptr;
-    int uv_width = (width + 1) / 2, uv_height = (height + 1) / 2;
+    int uv_width = full_chroma ? width : (width + 1) / 2;
+    int uv_height = full_chroma ? height : (height + 1) / 2;
     auto plane = [](uint8_t const* data, int w, int h) {
         SkPixmap pixmap(SkImageInfo::Make(w, h, kGray_8_SkColorType, kOpaque_SkAlphaType), data, w);
         return SkImages::RasterFromPixmapCopy(pixmap);
@@ -980,6 +991,8 @@ static sk_sp<SkShader> webp_yuv_shader(uint8_t const* planes, int width, int hei
     if (!y || !u || !v) return nullptr;
     SkRuntimeShaderBuilder builder(effect.effect);
     builder.uniform("nearest") = sampling.filter == SkFilterMode::kNearest ? 1 : 0;
+    builder.uniform("full_range") = full_range ? 1 : 0;
+    builder.uniform("chroma_scale") = full_chroma ? 1.0f : 0.5f;
     builder.uniform("source_bounds") = SkV4{source.left() + 0.5f, source.top() + 0.5f,
         source.right() - 0.5f, source.bottom() - 0.5f};
     builder.child("luma") = y->makeShader(SkTileMode::kClamp, SkTileMode::kClamp, SkSamplingOptions(SkFilterMode::kLinear));
@@ -1123,7 +1136,8 @@ extern "C" int ladybird_v_skia_draw_rgba_image(CGContextRef destination,
         : SkSamplingOptions(SkFilterMode::kLinear);
     if (image_flags & 4) {
         auto shader = webp_yuv_shader(source_pixels, image_width, image_height,
-            sampling, source_rect, local_destination);
+            sampling, source_rect, local_destination, (image_flags & 8) != 0,
+            (image_flags & 16) != 0);
         if (!shader) return 0;
         paint.setShader(std::move(shader));
         canvas->drawRect(local_destination, paint);

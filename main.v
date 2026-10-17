@@ -4339,6 +4339,9 @@ fn (mut app BrowserApp) create_image_from_resource_bytes(image_url string, bytes
 	}
 	$if macos {
 		if app.ctx.native_rendering {
+			if image := app.chromium_jpeg_yuv_image(bytes) {
+				return image
+			}
 			if bitmap := native_jpeg_bitmap(bytes) {
 				mut image := gg.Image{width: bitmap.width, height: bitmap.height,
 					nr_channels: native_bitmap_channel_marker(bitmap, false), ok: true,

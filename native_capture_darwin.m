@@ -4382,8 +4382,9 @@ static void native_draw_image_part_in_context(CGContextRef context, gg__Image *i
 		return;
 	}
 #ifdef LADYBIRD_V_HAS_SKIA_TEXT
-	// Marker 8 retains planar YUV rather than packed RGBA for native sampling.
-	if (image->path.len == 0 && image->nr_channels >= 4 && image->nr_channels <= 8) {
+	// Markers 8 to 10 retain planar YUV rather than packed RGBA for native
+	// sampling: limited-range 4:2:0, full-range 4:2:0 and full-range 4:4:4.
+	if (image->path.len == 0 && image->nr_channels >= 4 && image->nr_channels <= 10) {
 		size_t pitch = (size_t)image->width * 4;
 		size_t byte_count = (size_t)image->height <= SIZE_MAX / pitch
 		    ? pitch * (size_t)image->height
@@ -4414,6 +4415,8 @@ static void native_draw_image_part_in_context(CGContextRef context, gg__Image *i
 			    canvas_height, opacity, nearest_neighbor,
 			    (image->nr_channels == 5 || image->nr_channels == 7)
 			        | (image->nr_channels == 8 ? 4 : 0)
+			        | (image->nr_channels == 9 ? 12 : 0)
+			        | (image->nr_channels == 10 ? 28 : 0)
 			        | ((context == native_font_compositing_context
 			            && native_font_compositing_transparency_depth == 0) ? 2 : 0), clip_radii);
 			free(flipped_pixels);

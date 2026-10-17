@@ -123,7 +123,10 @@ int vox_graphite_draw_image_pixels(uint8_t* pixels, int width, int height,
     sk_sp<SkImage> texture;
     float source_scale_x = 1.0f, source_scale_y = 1.0f;
     if (image->flags & 4) {
-        int uv_width = (image->width + 1) / 2, uv_height = (image->height + 1) / 2;
+        // Flag 16 marks full-resolution 4:4:4 chroma planes.
+        bool full_chroma = image->flags & 16;
+        int uv_width = full_chroma ? image->width : (image->width + 1) / 2;
+        int uv_height = full_chroma ? image->height : (image->height + 1) / 2;
         size_t y_size = static_cast<size_t>(image->width) * image->height;
         size_t uv_size = static_cast<size_t>(uv_width) * uv_height;
         SkPixmap planes[4] {
@@ -174,8 +177,9 @@ int vox_graphite_draw_image_pixels(uint8_t* pixels, int width, int height,
         }
         SkYUVAInfo yuva(SkISize::Make(upload_width, upload_height),
             SkYUVAInfo::PlaneConfig::kY_U_V,
-            resized ? SkYUVAInfo::Subsampling::k444 : SkYUVAInfo::Subsampling::k420,
-            kRec601_SkYUVColorSpace);
+            resized || full_chroma ? SkYUVAInfo::Subsampling::k444 : SkYUVAInfo::Subsampling::k420,
+            // JPEG planes use the full BT.601 range; WebP planes are limited.
+            (image->flags & 8) ? kJPEG_Full_SkYUVColorSpace : kRec601_SkYUVColorSpace);
         auto pixmaps = SkYUVAPixmaps::FromExternalPixmaps(yuva, planes);
         texture = SkImages::TextureFromYUVAPixmaps(recorder.get(), pixmaps, {}, false,
             SkColorSpace::MakeSRGB());
