@@ -34,6 +34,11 @@ pub fn compact_attribute_bootstrap() string {
 	return r'const __compactAttributes=(function(create,define,remove,keys,push,splice,apply){
  "use strict";
  function copy(record){return {name:record.name,localName:record.localName,prefix:record.prefix,namespaceURI:record.namespaceURI,value:record.value};}
+ function names(state){
+  const result=[],records=state.attributeRecords;
+  for(let i=0;i<records.length;i++)apply(push,result,[records[i].name]);
+  return result;
+ }
  function project(state){
   const attributes=state.attributes||create(null),names=keys(attributes),records=state.attributeRecords,seen=create(null);
   for(let i=0;i<names.length;i++)remove(attributes,names[i]);
@@ -71,6 +76,6 @@ pub fn compact_attribute_bootstrap() string {
   }else if(index!==-1)apply(splice,records,[index,1]);
   project(state);
  }
- return {set:set,remove:removeFirst,reflect:reflect};
+ return {names:names,set:set,remove:removeFirst,reflect:reflect};
 })(Object.create,Object.defineProperty,Reflect.deleteProperty,Object.keys,Array.prototype.push,Array.prototype.splice,Reflect.apply);'
 }
