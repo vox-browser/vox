@@ -15,12 +15,14 @@ fn (mut app BrowserApp) preload_initial_document_resources(base_url string) map[
 		width: if app.viewport_width > 0 { app.viewport_width } else { initial_width }
 		height: viewport_height
 	})
+	// Initial DOM/style construction has the same allocation wave when
+	// scripting is enabled. Keep the bounded capacity hint independent of policy.
+	_ = prepare_document_render_heap(app.document)
 	if app.document.as_node().is_scripting_enabled() {
 		loaded := preload_document_resources(app.document, base_url, cached)
 		app.js_messages << install_external_styles(app.document, base_url, loaded)
 		return loaded
 	}
-	_ = prepare_static_document_render_heap(app.document)
 	urls := document_preload_resource_urls(app.document, base_url)
 	types := document_preload_resource_types(app.document, base_url)
 	mut style_urls := []string{}
