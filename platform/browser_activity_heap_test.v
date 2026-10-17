@@ -46,11 +46,11 @@ fn test_browser_activity_heap_scope_keeps_gc_enabled_and_restores_nested_policy(
 		}
 		activity_heap_test_set_divisor(128)
 		mut outer := begin_browser_activity_heap_scope()
-		assert activity_heap_test_divisor() == 64
+		assert activity_heap_test_divisor() == 3
 		assert gc_is_enabled()
 		mut inner := begin_browser_activity_heap_scope()
 		inner.finish()
-		assert activity_heap_test_divisor() == 64
+		assert activity_heap_test_divisor() == 3
 		outer.finish()
 		assert activity_heap_test_divisor() == 128
 		outer.finish()

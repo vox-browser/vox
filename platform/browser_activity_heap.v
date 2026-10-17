@@ -2,6 +2,10 @@ module platform
 
 import os
 
+// Boehm's normal divisor allows one allocation wave between full-heap traces.
+// The tighter idle policy is restored when the outermost activity finishes.
+const browser_activity_heap_divisor = usize(3)
+
 // Keep the collector enabled while allowing bulk DOM/style construction to
 // make progress between collections. Restore the idle policy on every exit.
 pub struct BrowserActivityHeapScope {
@@ -14,8 +18,8 @@ $if gcboehm ? {
 	fn begin_browser_activity_heap_locked(context voidptr) voidptr {
 		mut scope := unsafe { &BrowserActivityHeapScope(context) }
 		scope.previous_divisor = C.GC_get_free_space_divisor()
-		if scope.previous_divisor > 64 {
-			C.GC_set_free_space_divisor(64)
+		if scope.previous_divisor > browser_activity_heap_divisor {
+			C.GC_set_free_space_divisor(browser_activity_heap_divisor)
 			scope.active = true
 		}
 		return unsafe { nil }
@@ -25,7 +29,7 @@ $if gcboehm ? {
 		scope := unsafe { &BrowserActivityHeapScope(context) }
 		// An inner scope leaves this value alone. Preserve a subsequent explicit
 		// collector-policy change instead of overwriting it during unwinding.
-		if C.GC_get_free_space_divisor() == 64 {
+		if C.GC_get_free_space_divisor() == browser_activity_heap_divisor {
 			C.GC_set_free_space_divisor(scope.previous_divisor)
 		}
 		return unsafe { nil }
