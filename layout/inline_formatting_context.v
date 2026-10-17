@@ -109,6 +109,10 @@ fn (mut bfc BlockFormattingContext) run_inline_formatting_context_with_floats(mu
 
 fn run_inline_formatting_context_internal(mut state LayoutState, containing_block &BlockContainer, mut containing_block_used_values UsedValues, layout_mode LayoutMode, available_space AvailableSpace, parent_block_context ?&BlockFormattingContext) InlineFormattingResult {
 	containing_block_used_values.line_boxes.clear()
+	if inline_context_has_only_discarded_text(containing_block) {
+		containing_block_used_values.set_inline_end_static_position_rect(StaticPositionRect{})
+		return InlineFormattingResult{}
+	}
 	direction := containing_block.computed_values().direction()
 	writing_mode := containing_block.computed_values().writing_mode()
 	mut iterator := InlineLevelIterator.new(mut state, containing_block, containing_block_used_values, layout_mode, available_space, parent_block_context)
