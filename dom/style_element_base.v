@@ -98,6 +98,13 @@ pub fn (mut base StyleElementBase) set_parser_document(document &Document) {
 	base.is_on_parser_stack_of_open_elements_ = true
 }
 
+// The embedder's discarded resource-discovery tree preserves style text but
+// does not create unused CSSOM owners. Actual document parsers use the normal
+// pop hook below; non-scripted discovery also needs styles for image planning.
+pub fn (mut base StyleElementBase) finish_resource_discovery_parsing() {
+	base.is_on_parser_stack_of_open_elements_ = false
+}
+
 pub fn (mut base StyleElementBase) did_pop_off_parser_stack_of_open_elements() {
 	base.is_on_parser_stack_of_open_elements_ = false
 	base.update_a_style_block(.parser_pop)

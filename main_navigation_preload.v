@@ -57,6 +57,7 @@ fn parse_page_preload_document(loaded LoadedPage, scripting_enabled bool) &dom.D
 		} else {
 			dom.ParserScriptingMode.disabled
 		})
+	parser.resource_discovery_only = scripting_enabled
 	parser.run()
 	return document
 }

@@ -107,6 +107,9 @@ pub mut:
 	form_element                       ?&dom.Element
 	frameset_ok                        bool = true
 	parsing_fragment                   bool
+	// Embedder-owned, discarded resource-discovery trees need DOM/namespace
+	// parsing but never expose CSSOM or render their style sheets.
+	resource_discovery_only            bool
 	scripting_mode                     dom.ParserScriptingMode
 	script_created                     bool
 	next_line_feed_can_be_ignored      bool
@@ -1179,7 +1182,12 @@ fn (mut p HTMLParser) handle_element_popped(element &dom.Element) {
 	//     complete text.
 	if mut style_element := element.style_element_base() {
 		p.flush_character_insertions()
-		style_element.did_pop_off_parser_stack_of_open_elements()
+		if p.resource_discovery_only {
+			assert p.scripting_mode == .inert
+			style_element.finish_resource_discovery_parsing()
+		} else {
+			style_element.did_pop_off_parser_stack_of_open_elements()
+		}
 	}
 
 	// https://html.spec.whatwg.org/multipage/form-elements.html#the-option-element
