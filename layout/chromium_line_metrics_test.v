@@ -117,3 +117,24 @@ fn test_browser_fallback_split_text_nodes_round_once() {
 	}
 }
 
+// With line-height: normal, fallback faces grow the line box with their own
+// metrics and half line gaps, as measured in Brave: Hiragino's 8px gap makes a
+// 16px Japanese line 24px tall, and PingFang's deeper descent makes 18px lines.
+fn test_browser_normal_line_height_includes_fallback_fonts() {
+	$if macos {
+		mut document := html.parse_document('<!doctype html><style>body { margin:0; font-family:system-ui }</style>
+			<div id="ja" lang="ja" style="font-size:16px">日本語の記事 / Japanese</div>
+			<div id="zh" lang="zh" style="font-size:13px">1,559,000+ 条目 / 條目</div>
+			<div id="ko" lang="ko" style="font-size:14px">한국어 위키백과 Korean</div>
+			<div id="latin" style="font-size:16px">Latin only</div>')
+		document.set_font_rendering_policy(.chromium)
+		result := run_document_layout(document, 800, 600) or { panic('layout failed') }
+		ja := chromium_used_for_id(result, 'ja')
+		assert ja.content_height().to_double() == 24
+		// The SF fragment keeps its 18px box, three pixels below the line top.
+		assert ja.line_boxes[0].fragments()[0].block_offset().to_double() == 3
+		assert chromium_used_for_id(result, 'zh').content_height().to_double() == 18
+		assert chromium_used_for_id(result, 'ko').content_height().to_double() == 18
+		assert chromium_used_for_id(result, 'latin').content_height().to_double() == 18
+	}
+}

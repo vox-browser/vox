@@ -80,3 +80,11 @@ backend. Paths inside SVG clip or opacity layers composite over the layer
 instead of blending against the page backdrop; Vox still applies SVG clip
 paths as Quartz masks, so clipped edges are not yet exact. Dashed strokes and
 gradient fills keep the CPU path.
+
+`fallback-text-items` checks text split by fallback fonts: Simplified and
+Traditional Chinese with SF punctuation and digits, Japanese and Korean
+lines, fractional line offsets, and an inline-block whose text nodes must
+not wrap. Each text node is rounded as one Blink item across font changes
+and CJK break opportunities, spaces use the first covering font, and with
+`line-height: normal` the line box includes each fallback face's metrics
+and half its line gap.

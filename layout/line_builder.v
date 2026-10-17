@@ -603,8 +603,18 @@ pub fn (mut builder LineBuilder) update_last_line() {
 		fragment_computed := fragment.layout_node_.computed_values()
 		uses_container_alignment := builder.fragment_uses_container_alignment(fragment)
 		mut fragment_baseline := CSSPixels.new(0)
+		// The fragment's own box keeps its primary-font baseline; a fallback face
+		// with line-height: normal can raise the line's baseline above it.
+		mut used_font_baseline := CSSPixels.new(0)
 		if fragment.layout_node_.is_text_node() {
-			fragment_baseline = font_baseline_for_line_height(layout_font_metrics_for_node(fragment.layout_node_), fragment_computed.line_height())
+			primary_metrics := layout_font_metrics_for_node(fragment.layout_node_)
+			fragment_baseline = font_baseline_for_line_height(primary_metrics, fragment_computed.line_height())
+			if primary_metrics.floor_inline_leading && fragment_computed.line_height_is_normal() {
+				if run := fragment.glyph_run() {
+					used := run.font().inline_metrics()
+					used_font_baseline = CSSPixels.nearest_value_for(f64(used.ascent)).plus(CSSPixels.new(int(math.floor(f64(used.line_gap) / 2))))
+				}
+			}
 		} else {
 			fragment_baseline = layout_box_baseline(builder.layout_state, fragment.layout_node_,
 				.last)
@@ -628,7 +638,11 @@ pub fn (mut builder LineBuilder) update_last_line() {
 					|| (display.is_inline_outside() && display.is_flex_inside()))
 					&& fragment_computed.vertical_align() == .baseline)
 		}
-		line_box_baseline = css_pixels_max(line_box_baseline, fragment_baseline)
+		if used_font_baseline.raw_value() > 0 {
+			used_font_baseline = used_font_baseline.plus(fragment_baseline.minus(fragment.baseline()))
+		}
+		line_box_baseline = css_pixels_max(css_pixels_max(line_box_baseline, fragment_baseline),
+			used_font_baseline)
 	}
 
 	strut_top := builder.current_block_offset
@@ -768,6 +782,21 @@ pub fn (mut builder LineBuilder) update_last_line() {
 				fragment.block_offset().plus(fragment.baseline()).minus(ascent).minus(half_leading)
 			bottom_of_inline_box =
 				fragment.block_offset().plus(fragment.baseline()).plus(descent).plus(end_leading)
+			// With line-height: normal, Blink's inline box also includes the
+			// fonts its text actually uses, each with half its line gap on
+			// either side, so a taller fallback face grows the line.
+			if font_metrics.floor_inline_leading && fragment_computed.line_height_is_normal() {
+				if run := fragment.glyph_run() {
+					used := run.font().inline_metrics()
+					used_half_gap := CSSPixels.new(int(math.floor(f64(used.line_gap) / 2)))
+					used_end_gap := CSSPixels.nearest_value_for(f64(used.line_gap)).minus(used_half_gap)
+					baseline := fragment.block_offset().plus(fragment.baseline())
+					top_of_inline_box = css_pixels_min(top_of_inline_box,
+						baseline.minus(CSSPixels.nearest_value_for(f64(used.ascent))).minus(used_half_gap))
+					bottom_of_inline_box = css_pixels_max(bottom_of_inline_box,
+						baseline.plus(CSSPixels.nearest_value_for(f64(used.descent))).plus(used_end_gap))
+				}
+			}
 		}
 		if !uses_container_alignment {
 			if vertical_align := fragment_computed.vertical_align_length_percentage() {

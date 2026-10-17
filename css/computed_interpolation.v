@@ -5819,6 +5819,15 @@ pub fn (c &ComputedProperties) math_depth() int {
 	return 0
 }
 
+// Whether line-height resolves to `normal`, as line_height() decides it.
+pub fn (c &ComputedProperties) line_height_is_normal() bool {
+	value := c.property(.line_height, .yes) or { return true }
+	if length := computed_interpolation_length_from_dom_style_value(value) {
+		return !length.is_absolute()
+	}
+	return computed_interpolation_number_from_dom_style_value(value) == none
+}
+
 pub fn (c &ComputedProperties) line_height() CSSPixels {
 	if line_height := c.line_height_ {
 		return line_height
