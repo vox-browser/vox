@@ -20,6 +20,8 @@ mut:
 	// it to, and re-runs the placement in update_block_waiting_for_final_y_position.
 	waiting_box        ?&UsedValues
 	waiting_box_base_y f64
+	// A waiting box with clearance never moves above its clearance position.
+	waiting_box_min_y ?f64
 	// Whether the last in-flow child's bottom margin has already been collapsed into the running state (so
 	// the parent must not reset it when finishing that child).
 	box_last_in_flow_child_margin_bottom_collapsed bool
@@ -62,6 +64,18 @@ fn (m &BlockMarginState) has_block_container_waiting_for_final_y_position() bool
 fn (mut m BlockMarginState) register_block_container_y_position_update(box &UsedValues, base_y f64) {
 	m.waiting_box = box
 	m.waiting_box_base_y = base_y
+	m.waiting_box_min_y = none
+}
+
+// CSS 2.1 §9.5.2: a box with clearance keeps its top margin collapsing with its
+// first in-flow children, but its top border edge is the greater of the
+// clearance position and its hypothetical position after those margins.
+fn (mut m BlockMarginState) register_cleared_block_container_y_position_update(box &UsedValues, clearance ClearanceIntroduction) {
+	m.waiting_box = box
+	m.waiting_box_base_y = clearance.hypothetical_base_y
+	m.waiting_box_min_y = clearance.y
+	m.current_positive_collapsible_margin = clearance.positive_margin
+	m.current_negative_collapsible_margin = clearance.negative_margin
 }
 
 // BlockMarginState::unregister_block_container_y_position_update_callback.
@@ -74,12 +88,19 @@ fn (mut m BlockMarginState) unregister_block_container_y_position_update() {
 // place_block_level_element_in_normal_flow_vertically(box, base_y + collapsed_margin)).
 fn (m &BlockMarginState) update_block_waiting_for_final_y_position() {
 	mut box := m.waiting_box or { return }
-	place_block_level_element_in_normal_flow_vertically(mut box, m.waiting_box_base_y + m.current_collapsed_margin())
+	mut y := m.waiting_box_base_y + m.current_collapsed_margin()
+	if min_y := m.waiting_box_min_y {
+		if y < min_y {
+			y = min_y
+		}
+	}
+	place_block_level_element_in_normal_flow_vertically(mut box, y)
 }
 
 // BlockMarginState::reset.
 fn (mut m BlockMarginState) reset() {
 	m.waiting_box = none
+	m.waiting_box_min_y = none
 	m.current_positive_collapsible_margin = 0
 	m.current_negative_collapsible_margin = 0
 }
@@ -535,7 +556,8 @@ fn (mut bfc BlockFormattingContext) layout_block_level_box(mut state LayoutState
 	// Fold this box's top margin into the collapsible state, then reposition any waiting block container.
 	bfc.margin_state.add_margin(box_state.margin_top.to_double())
 	container_origin := state.get(block_container).cumulative_offset()
-	bfc.apply_clearance(computed.clear(), block_container.computed_values().direction(), container_origin.y())
+	clearance := bfc.introduce_clearance(computed.clear(), block_container.computed_values().direction(),
+		container_origin.y(), box.document().font_rendering_policy() == .chromium)
 	bfc.update_block_waiting_for_final_y_position()
 
 	y := bfc.y_offset_of_current_block_container
@@ -761,6 +783,14 @@ fn (mut bfc BlockFormattingContext) layout_block_level_box(mut state LayoutState
 		if box_state.border_top.to_double() > 0 || box_state.padding_top.to_double() > 0 {
 			// A block container's top margin can't collapse with its children if it has top border/padding.
 			bfc.margin_state.reset()
+		} else if introduced := clearance {
+			if introduced.collapses_with_children {
+				bfc.margin_state.register_cleared_block_container_y_position_update(box_state,
+					introduced)
+			} else {
+				bfc.margin_state.register_block_container_y_position_update(box_state, y)
+			}
+			registered = true
 		} else if !bfc.margin_state.has_block_container_waiting_for_final_y_position() {
 			// Otherwise the container's final Y is not yet known: register it so the first child's top margin
 			// (and any deeper collapse) repositions it.
@@ -1107,18 +1137,44 @@ fn (bfc &BlockFormattingContext) clearance_y(clear css.Clear, direction css.Dire
 	return y
 }
 
-fn (mut bfc BlockFormattingContext) apply_clearance(clear css.Clear, direction css.Direction, container_root_y CSSPixels) bool {
+struct ClearanceIntroduction {
+	y                       f64
+	hypothetical_base_y     f64
+	positive_margin         f64
+	negative_margin         f64
+	collapses_with_children bool
+}
+
+// Chromium follows CSS 2.1 §9.5.2: clearance is introduced only when the box's
+// hypothetical top border edge, after its collapsed top margin, is not past the
+// relevant floats. The box is then placed at the clearance position and stops
+// collapsing with preceding margins; margins of its first in-flow children can
+// lower it only beyond that position. LibWeb compares the floats with the flow
+// position before margins and lets those child margins lower the cleared box.
+fn (mut bfc BlockFormattingContext) introduce_clearance(clear css.Clear, direction css.Direction, container_root_y CSSPixels, chromium bool) ?ClearanceIntroduction {
 	if clear == .none_ {
-		return false
+		return none
 	}
 	current_y := css_px(bfc.y_offset_of_current_block_container)
-	y := bfc.clearance_y(clear, direction, container_root_y, current_y)
-	if y.raw_value() <= current_y.raw_value() {
-		return false
+	hypothetical_y := if chromium {
+		current_y.plus(css_px(bfc.margin_state.current_collapsed_margin()))
+	} else {
+		current_y
+	}
+	y := bfc.clearance_y(clear, direction, container_root_y, hypothetical_y)
+	if y.raw_value() <= hypothetical_y.raw_value() {
+		return none
+	}
+	introduced := ClearanceIntroduction{
+		y:                       y.to_double()
+		hypothetical_base_y:     current_y.to_double()
+		positive_margin:         bfc.margin_state.current_positive_collapsible_margin
+		negative_margin:         bfc.margin_state.current_negative_collapsible_margin
+		collapses_with_children: chromium
 	}
 	bfc.y_offset_of_current_block_container = y.to_double()
 	bfc.margin_state.reset()
-	return true
+	return introduced
 }
 
 fn (bfc &BlockFormattingContext) float_band_index_at(y CSSPixels) int {
