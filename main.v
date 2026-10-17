@@ -3383,6 +3383,9 @@ fn (mut app BrowserApp) install_loaded_page(loaded LoadedPage, add_history bool)
 	app.address_select = false
 	app.sync_address_bar()
 	app.scroll_y = 0
+	// A screenshot strip scrolls the replacement document, such as a cached
+	// page's network refresh, to its offset again.
+	app.screenshot_scroll_applied = false
 	app.load_status = loaded.status
 	app.document_presented = false
 	app.snapshot_cached = false

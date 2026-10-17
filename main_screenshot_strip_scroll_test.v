@@ -26,3 +26,27 @@ fn test_screenshot_strips_scroll_to_their_offset_past_short_content() {
 	}
 	assert browsing.maximum_scroll(576 + browsing.chrome_height()) == 0
 }
+
+// A cached page shows first and its network refresh then replaces it. The
+// replacement scrolls to the strip's offset again instead of the top.
+fn test_screenshot_strips_scroll_a_replacement_document_again() {
+	mut app := BrowserApp{
+		viewport_width:             320
+		viewport_height:            200
+		screenshot_path:            '/tmp/strip.png'
+		screenshot_viewport_height: 200
+		screenshot_scroll_y:        40
+		screenshot_scroll_applied:  true
+		scroll_y:                   40
+	}
+	app.install_loaded_page(LoadedPage{
+		url:          'https://strip.example/'
+		markup:       '<!doctype html><p>Refreshed</p>'
+		content_type: 'text/html'
+	}, false)
+	mut document := app.document
+	defer { document.finalize() }
+	assert app.scroll_y == 0
+	assert !app.screenshot_scroll_applied
+}
+
