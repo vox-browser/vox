@@ -110,6 +110,23 @@ pub fn evaluate_engine(source string) !string {
 	return evaluate_context(context, source)
 }
 
+// Idle static pages keep their filtering results in the document, so the
+// isolated default engine need not retain its JavaScriptCore VM between
+// requests. A later check restores the complete bundled engine on demand.
+// The lock also covers result conversion in evaluate_engine(), so no borrowed
+// JavaScript value can outlive the context being released here.
+pub fn release_unused_engine() bool {
+	C.vox_adblock_lock()
+	defer { C.vox_adblock_unlock() }
+	context := C.vox_adblock_get_context()
+	if context == unsafe { nil } {
+		return false
+	}
+	C.vox_adblock_set_context(unsafe { nil })
+	C.JSGlobalContextRelease(context)
+	return true
+}
+
 fn evaluate_custom_engine(context voidptr, source string) !string {
 	C.vox_adblock_lock()
 	defer { C.vox_adblock_unlock() }

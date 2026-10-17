@@ -2,6 +2,7 @@ module main
 
 import platform
 import time
+import adblock
 
 struct BrowserMemoryMaintenance {
 mut:
@@ -87,6 +88,13 @@ fn (mut app BrowserApp) release_unused_memory_if_idle(now_ns i64) {
 		}
 		usage := gc_heap_usage()
 		if app.memory_maintenance.cleanup_due(now_ns, usage.total_bytes) {
+			// Static pages retain their installed cosmetic rules, but need no
+			// filter VM between requests. A later request restores the full
+			// default engine under its own lock.
+			if !app.document.as_node().is_scripting_enabled()
+				&& app.js_runtime == unsafe { nil } {
+				adblock.release_unused_engine()
+			}
 			platform.release_unused_browser_memory()
 		}
 	}
