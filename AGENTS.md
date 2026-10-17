@@ -1929,6 +1929,17 @@ evidence](docs/translation-audit/NATIVE_MEDIA_WHEEL_RAW_HANDLER.md).
   Broad verification: 87 selected cases both GC and 19 screenshots (16 exact);
   focused retained viewport exact. Additional observed savings: 0.
   Same 4 GiB/placement; canonical/GUI preserved; Root excluded; Chrome parity open.
+  Immutable box-shadow payloads `2c208bc9` (independent committed slice)
+  pass 22,107 common assertions in 29 functional cases/configuration.
+  Two original contracts retained; only failed newer-source size bound repaired
+  against exact frozen record. Initial checker/contract failures remain.
+  Complete public layout/display-list batches use 7.63% fewer instructions.
+  Page point saving 2,371,587, 19/30 wins,
+  paired interval [-3,425,231.5, 20,221,579]; repeatable credit 0.
+  Broad verification: deferred below the cumulative 5M gate;
+  focused shadow viewport exact. Additional observed savings: 2,371,587.
+  Same 4 GiB/placement; shared SSD cache parent; canonical/GUI preserved;
+  Root excluded; Chrome parity open.
 - Outside instruction-count optimization, run broad regression suites once per
   ten completed fixes, not after every fix.
   Broad suites include full translation/package test batches, the full LibJS AST

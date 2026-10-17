@@ -9895,6 +9895,133 @@ endpoints, observer work, content and replay headers. They receive no round 99
 credit. **Faster-than-Chrome performance remains unproven.** Evidence:
 Build/instructions/vox-opt99-interleaved-* and Build/v/instruction-opt99-*.
 
+## Retain box-shadow geometry only in shadow commands
+
+Round 100 imports independently authored `2c208bc9` (Alexander Medvednikov)
+onto accepted frozen round 99: **15 exact hunks in paint_transport.v,
+portable_shadows.v and main.v**. Ordinary commands retain a nil pointer;
+inner and outer box shadows own immutable source geometry. The 256-byte
+geometry is replaced by an 8-byte pointer, reducing the frozen command record
+from **3,240 to 2,992 bytes**. Native, portable and SVG consumers read that
+snapshot. Unrelated rare-payload predecessors and current Root are excluded.
+
+All **29 common functional cases plus one inactive diagnostic** pass in
+before/Boehm, final/Boehm and final/no-GC C-O2 builds: **22,107 assertions
+per configuration**, including public shadow recording, SVG and portable ink.
+Common SHA256: `c77eeb9aa5054d4ce354900f0f8ca2d7e38917c9c4f8bda8ae7593febf62dbe3`.
+The initial new test named a local variable svg, conflicting with the common
+harness import. All three actual checker exits 1/zero executed cases remain
+archived. Only that test binding is renamed; no runtime source changes.
+
+The original three-case contract batches exit **1** in both GC modes. The two passing cases together cover **15,044 assertions per GC mode**
+and are retained without rerunning.
+The first case fails only its newer-source sizeof(PaintCommand)<=2140 bound,
+observing 2,992. The authored parent already shares rare visual-layer,
+backdrop-filter and mask payloads, while frozen 99 retains inline versions;
+the exact record diff remains. A separate one-case repair substitutes an
+exact copy of the frozen old record, renamed only, and checks its size 3,240
+plus the structural 256-byte-to-pointer reduction. Every remaining original
+case assertion is unchanged. The repaired case passes
+**9 assertions in each GC mode**;
+covered contract assertions total **15,053 per GC**
+in three cases. Original failure exits remain distinct from repaired actual
+zero exits; no successful case, profile, local sample or browser build repeats.
+One early page launcher exits 1 after reading that retained failed receipt
+while repair compilation is still active. It starts no preparation or browser.
+Its failure remains archived; the replacement waits for the repaired aggregate.
+
+Three fixed alternating local pairs count **32 complete public document
+layout and display-list rebuilds over 64 Unicode paragraphs, four with inner
+and outer shadows**, nested intrinsic inline blocks and absolute children.
+Public invalidation, fresh mirrors, formatting, geometry, recording and command
+traversal are counted. The checksum weights kind/text/color lengths, glyph
+counts, coordinates and points; it does not hash complete glyph contents.
+Setup, eight warmups, expected checksum, paint-presence assertions and forced
+GC remain outside the counter. All six actual exits are 0; checksum
+**39,932,256** matches. Before counts: **15,153,393,195 / 14,897,453,582 / 15,163,696,016**; final
+counts by pair: **13,365,729,674 / 14,056,001,003 / 13,997,741,222**. Medians
+**15,153,393,195→13,997,741,222** instructions,
+**-7.62636%**, all three pairs improve. This local result
+receives no page credit.
+
+Full-process C-O1/Boehm standalone profiles have no reset or filtering.
+Common functional cases are not repeated. Counts only:
+
+| Function | Before calls | Candidate calls |
+| --- | ---: | ---: |
+| `layout__opt100_complete_public_document_layout` | 41 | 41 |
+| `layout__run_document_layout` | 42 | 42 |
+| `dom__Document_record_display_list` | 41 | 41 |
+| `layout__BlockBox_flat_paint_commands_for_entries` | 41 | 41 |
+| `layout__paintable_box_paint_box_shadow` | 7,954 | 7,954 |
+| `layout__append_text_fragment_commands` | 13,120 | 13,120 |
+| `layout__PaintCommand_box_shadow` | 0 | 0 |
+
+Public layout, recording and producer counts match. This diagnostic records
+the list without rendering its shadows, so the new accessor has zero calls;
+common/contract checks and native/portable consumers cover its use. Profile
+timings and C-O1 instruction counts receive no page credit.
+
+Strict generated-C audit passes on its first run: three existing normal
+producer/consumer bodies and the new accessor are independently authenticated
+from whole-app C-only generations. SVG rendering is absent from both normal
+binaries; its source hunk is exact and its behavior passes focused checks.
+The record change is exactly 11 shadow fields to one pointer plus the new
+five-field immutable payload. All **57 default-initializer substitutions** are
+exact zero geometry to nil pointer replacements. Every remaining executable
+body, record, global, resource, filter, arena and heap/GC setup matches after
+established identities, unchanged source assertion lines, 37 frozen includes
+and four byte-identical helper reorders. Actual frontend tables match and all
+120 native inputs/native arguments are pinned. Independent probes generate C
+only and run no native code or tests. Passing audit SHA256:
+`25e84c27f9ee74a1ce1e7f70ecf8777179ed1c61e947e66280b43796e7d8e5e7`.
+Normal C SHA256: `8daebe7f01228e9e26ee05aace0ca00160785d7a768712916e6ecad10fbc49f2`.
+Durable C/profile/contract/diagnostic hashes:
+instruction-opt100-artifact-archives.json.
+
+The predeclared cohort contains **30 alternating pairs**, odd before/final and
+even final/before, **30,000 paired bootstrap resamples, seed 100**. Both regular
+binaries use fresh copies of the same 359 cached bodies and frozen text and
+child-only placement helpers, C-O2/Boehm/default marker 1 and unchanged 4 GiB
+hint. After the owned RAM67 volume disappeared, its broken cache-parent link
+was replaced by an SSD directory **before any page primary**. Both variants
+use that identical fresh-copy policy; no historical median is subtracted.
+Viewport remains 1024×768; endpoint remains
+navigation_to_first_document_paint[0].
+
+| Build | Median first-frame retired instructions | Median lifetime process peak, MiB |
+| --- | ---: | ---: |
+| Fresh accepted frozen round 99 control | 17,589,065,467 | 3,417.6 |
+| Immutable box-shadow payload | 17,586,693,880 | 3,396.9 |
+
+Marginal median saving **2,371,587** instructions;
+candidate change **-0.013%**, **19/30** wins.
+Paired median saving **15,639,186**; 95% interval
+**[-3,425,231.5, 20,221,579]**. The interval includes zero; repeatable page credit is **0**. Whole-page savings are not established.
+
+All 60 primaries and **60 actual PNGs** remain. Recoveries:
+none; pre-parse retries: 0. First primaries have
+1 installation/2 geometry preparations/1 paint. Later completed refreshes:
+none. No completed primary is extended, discarded or
+rerun. Missing final exit, PNG, fingerprint or peak would remain explicitly
+unknown for a recovered watchdog. Peaks cover lifetime through capture/exit,
+including refreshes; they are not first-frame live memory and are never summed.
+The read-only decoded capture check finds 30 before and 30 candidate RGB classes, 4 shared. All differences stay within the original skeleton bands, x45–662: y335–344 and ten 14px bands starting at 380 with 41px spacing. All pixels outside these bands match. No animation was disabled and no observation repeated; evidence is instruction-opt100-page-pixel-class-check.json.
+External foreground transitions retained:
+before pair 10 (child 20853, 655→20807), final pair 21 (child 28617, 680→655).
+The child is foreground in neither startup snapshot. Focused multilingual
+text, elliptical inner/outer shadows and geometry compare exactly at 1024×768.
+Prior observed carry **0**. Cumulative observed saving **2,371,587** stays below the 5M gate. Broad validation is deferred and the previous completed broad baseline remains.
+
+The isolated signed app is `/Users/alex/code/vox2/Build/v/Vox-opt100.app`. Its native instruction text
+matches the measured binary and its installed frozen helper is pinned.
+Signatures, actual loaded helper path/hash, startup and actual collections
+pass for default marker 1 and override 2. Canonical/GUI browsers and current
+Root work are preserved; Root receives no source, regression or page credit.
+Equivalent Chrome content/start/submission accounting remains open;
+**faster-than-Chrome performance is unproven**. Evidence:
+Build/instructions/vox-opt100-interleaved-* and Build/v/instruction-opt100-*.
+
 ## Causes and changes
 
 - The V 0.5.2 compatibility compiler's `-prod` Boehm code repeatedly snapshots
