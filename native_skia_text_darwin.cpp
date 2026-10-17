@@ -439,6 +439,13 @@ extern "C" void ladybird_v_skia_release_unused_graphics_memory()
         gpu->checkAsyncWorkCompletion();
         gpu->freeGpuResources();
         gpu->purgeUnlockedResources(GrPurgeResourceOptions::kAllResources);
+        // A GPU image or surface holds its own Context reference. Keep that
+        // Context alive while such a caller exists; otherwise only this cache
+        // owns it and idle cleanup can release Metal's per-context storage.
+        if (gpu->unique()) {
+            s_image_gpu_context.reset();
+            s_image_gpu_context_attempted = false;
+        }
     }
     // Looking up an optional backend must not load it or create its Metal
     // context on a page that has never needed its drawing functions.

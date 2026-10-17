@@ -110,6 +110,7 @@ static void check_live_ganesh_image_and_font(int scale)
     assert(image->readPixels(gpu, info, before.data(), info.minRowBytes(), 0, 0));
     ladybird_v_skia_release_unused_graphics_memory();
     ladybird_v_skia_release_unused_graphics_memory();
+    assert(s_image_gpu_context.get() == gpu && !gpu->unique());
     assert(image->readPixels(gpu, info, after.data(), info.minRowBytes(), 0, 0));
     assert(before == after);
     // The live font/typeface and surface remain usable after global cache eviction.
@@ -120,6 +121,42 @@ static void check_live_ganesh_image_and_font(int scale)
     canvas->drawSimpleText("Held", 4, SkTextEncoding::kUTF8, 6 * scale, 30 * scale, font, paint);
     assert(surface->readPixels(info, after.data(), info.minRowBytes(), 0, 0));
     assert(before == after);
+}
+
+static void check_idle_ganesh_context_and_cpu_inputs(int scale)
+{
+    auto typeface = font_manager()->matchFamilyStyle("Arial", SkFontStyle());
+    assert(typeface);
+    uint32_t source_pixels[64];
+    for (int index = 0; index != 64; ++index)
+        source_pixels[index] = 0xff000000u | uint32_t(index * 16387);
+    auto source = SkImages::RasterFromPixmapCopy(
+        SkPixmap(SkImageInfo::MakeN32Premul(8, 8), source_pixels, 32));
+    assert(source && !source->isTextureBacked());
+    auto draw = [&] {
+        auto info = SkImageInfo::MakeN32Premul(64 * scale, 48 * scale);
+        auto surface = SkSurfaces::RenderTarget(image_gpu_context(), skgpu::Budgeted::kYes, info);
+        assert(surface);
+        auto* canvas = surface->getCanvas();
+        canvas->clear(SK_ColorWHITE);
+        canvas->drawImage(source, 7 * scale, 6 * scale);
+        SkPaint paint;
+        paint.setColor(SK_ColorBLACK);
+        SkFont font(typeface, 12 * scale);
+        canvas->drawSimpleText("Held", 4, SkTextEncoding::kUTF8, 6 * scale, 30 * scale, font, paint);
+        std::vector<uint8_t> pixels(info.computeMinByteSize());
+        assert(surface->readPixels(info, pixels.data(), info.minRowBytes(), 0, 0));
+        return pixels;
+    };
+    auto before = draw();
+    ladybird_v_skia_release_unused_graphics_memory();
+    assert(!s_image_gpu_context && !s_image_gpu_context_attempted);
+    ladybird_v_skia_release_unused_graphics_memory();
+    assert(!s_image_gpu_context && !s_image_gpu_context_attempted);
+    assert(before == draw());
+    assert(source && !source->isTextureBacked() && typeface);
+    ladybird_v_skia_release_unused_graphics_memory();
+    assert(!s_image_gpu_context && !s_image_gpu_context_attempted);
 }
 
 int main(int argc, char** argv)
@@ -147,16 +184,23 @@ int main(int argc, char** argv)
         }
         check_live_ganesh_image_and_font(scale);
         std::printf("Ganesh held Metal image/font scale %d: identical pixels and redraw\n", scale);
+        check_idle_ganesh_context_and_cpu_inputs(scale);
+        std::printf("Ganesh idle Context scale %d: released and recreated with retained CPU inputs\n", scale);
     }
     // Reject non-owner use without touching either context.
     auto retained_cpu_pixels = graphite_case(library, 3, 1);
+    auto* retained_gpu = image_gpu_context();
+    assert(retained_gpu);
     std::thread worker([graphite_purge] {
         ladybird_v_skia_release_unused_graphics_memory();
         graphite_purge();
     });
     worker.join();
+    assert(s_image_gpu_context.get() == retained_gpu && s_image_gpu_context_attempted);
     assert(retained_cpu_pixels == graphite_case(library, 3, 1));
     graphite_purge();
+    ladybird_v_skia_release_unused_graphics_memory();
+    assert(!s_image_gpu_context && !s_image_gpu_context_attempted);
     dlclose(library);
     puts("Native graphics cache lifetime checks passed.");
     return 0;
