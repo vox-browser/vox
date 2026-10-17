@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Stage growable HTTP headers for V's compatibility compiler, without editing V."""
+"""Stage HTTP header, cookie and verified-proxy fixes without editing V."""
 
 from pathlib import Path
 import hashlib
@@ -143,6 +143,44 @@ def patch_request(source):
     return source[:start] + function.replace(old, new, 1) + source[end:]
 
 
+def patch_proxy(source):
+    """Keep request TLS verification and origin-form targets inside proxy tunnels."""
+    old = "pr.ssl_dial('${host_name}:${port}')"
+    if source.count(old) != 1:
+        raise RuntimeError('Unsupported HTTP proxy TLS call')
+    source = source.replace(old, "pr.ssl_dial('${host_name}:${port}', req)", 1)
+    old = "'${host.scheme}://${host_name}${port_part}${path}', data, header)"
+    if source.count(old) != 1:
+        raise RuntimeError('Unsupported HTTP proxy request target')
+    # Both HTTP CONNECT and SOCKS establish an end-to-end tunnel. The request
+    # inside it is addressed to the origin, not to a forward HTTP proxy.
+    source = source.replace(old, 'path, data, header)', 1)
+    start = source.index('\tport_part :=')
+    end = source.index('\n\ts :=', start)
+    source = source[:start] + source[end:]
+    return replace_function(source, 'fn (pr &HttpProxy) ssl_dial(host string) !&ssl.SSLConn', r'''
+fn (pr &HttpProxy) ssl_dial(host string, req &Request) !&ssl.SSLConn {
+    mut ssl_conn := ssl.new_ssl_conn(
+        verify: req.verify
+        cert: req.cert
+        cert_key: req.cert_key
+        validate: req.validate
+        in_memory_verification: req.in_memory_verification
+    )!
+    mut tcp := pr.connect_tcp(host)!
+    tcp.set_read_timeout(req.read_timeout)
+    tcp.set_write_timeout(req.write_timeout)
+    ssl_conn.connect(mut tcp, host.all_before_last(':')) or {
+        tcp.close() or {}
+        ssl_conn.shutdown() or {}
+        return err
+    }
+    ssl_conn.owns_socket = true
+    ssl_conn.set_read_timeout(req.read_timeout)
+    return ssl_conn
+}''')
+
+
 def compiler_vlib(compiler, work):
     # Production builds and focused checks can stage modules concurrently.
     # Give each compiler probe its own executable so neither can overwrite a
@@ -168,6 +206,8 @@ def main():
     patched = patch_header(text)
     request_text = (original / 'request.v').read_text()
     patched_request = patch_request(request_text)
+    proxy_text = (original / 'http_proxy.v').read_text()
+    patched_proxy = patch_proxy(proxy_text)
     modules = repo / "Build/v/modules"
     target = modules / "net/http"
     target.mkdir(parents=True, exist_ok=True)
@@ -177,6 +217,8 @@ def main():
             write_if_changed(output, patched)
         elif entry.name == 'request.v':
             write_if_changed(output, patched_request)
+        elif entry.name == 'http_proxy.v':
+            write_if_changed(output, patched_proxy)
         elif not output.is_symlink() or output.resolve() != entry.resolve():
             if output.is_symlink() or output.is_file():
                 output.unlink()
@@ -187,7 +229,9 @@ def main():
         "staged_header_sha256": hashlib.sha256(patched.encode()).hexdigest(),
         "source_request_sha256": hashlib.sha256(request_text.encode()).hexdigest(),
         "staged_request_sha256": hashlib.sha256(patched_request.encode()).hexdigest(),
-        "adapter": "growable fields; copy-on-write; preserve empty/repeated fields",
+        "source_proxy_sha256": hashlib.sha256(proxy_text.encode()).hexdigest(),
+        "staged_proxy_sha256": hashlib.sha256(patched_proxy.encode()).hexdigest(),
+        "adapter": "growable fields; copy-on-write; preserve empty/repeated fields; verified proxy TLS",
     }, indent=2) + "\n")
     print(modules)
 

@@ -131,8 +131,10 @@ pub fn get(input adblock.Request, ca_bundle string) !HTTPResult {
 		}
 		// Share ALPN-negotiated HTTP/2 connections across concurrent resources.
 		// HTTP/1 servers keep the same fallback and per-hop filtering above.
+		proxy := request_proxy(resource_url)!
 		response := http.fetch(
 			url:            resource_url
+			proxy:          if proxy == '' { unsafe { nil } } else { http.new_http_proxy(proxy)! }
 			method:         .get
 			header:         resource_request_headers(resource_url, input.source_url, input.request_type)
 			user_agent:     request_user_agent(resource_url)

@@ -3,6 +3,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 import http2 from 'node:http2';
 import https from 'node:https';
+import http from 'node:http';
+import net from 'node:net';
 import { gzipSync } from 'node:zlib';
 import { execFileSync } from 'node:child_process';
 
@@ -52,6 +54,41 @@ const credentials = { key: fs.readFileSync('server.key'), cert: fs.readFileSync(
 const h2 = http2.createSecureServer({ ...credentials, allowHTTP1: true }, request);
 const h1 = https.createServer(credentials, request);
 const wrong = https.createServer({ key: fs.readFileSync('wrong-host.key'), cert: fs.readFileSync('wrong-host.pem') }, request);
-const [h2_port, h1_port, wrong_host_port] = await Promise.all([configure(h2, 'h2'), configure(h1, 'h1'), configure(wrong, 'wrong_host')]);
+const plain = http.createServer(request);
+const proxy = net.createServer(client => {
+    let buffer = Buffer.alloc(0), stage = 'greeting';
+    client.on('error', () => {});
+    function receive(chunk) {
+        buffer = Buffer.concat([buffer, chunk]);
+        if (stage === 'greeting') {
+            if (buffer.length < 2 || buffer.length < 2 + buffer[1]) return;
+            buffer = buffer.subarray(2 + buffer[1]);
+            client.write(Buffer.from([5, 0]));
+            stage = 'connect';
+        }
+        if (stage !== 'connect' || buffer.length < 5) return;
+        const type = buffer[3];
+        const length = type === 1 ? 4 : type === 3 ? buffer[4] + 1 : 0;
+        if (!length) { client.destroy(); return; }
+        if (buffer.length < 4 + length + 2) return;
+        const host = type === 1 ? [...buffer.subarray(4, 8)].join('.') : buffer.subarray(5, 4 + length).toString();
+        const port = buffer.readUInt16BE(4 + length);
+        const pending = buffer.subarray(6 + length);
+        stage = 'connected';
+        // Resolve the synthetic name here, proving the browser did not use DNS.
+        const upstream = net.connect(port, host === 'remote-dns.invalid' ? '127.0.0.1' : host, () => {
+            client.write(Buffer.from([5, 0, 0, 1, 127, 0, 0, 1, 0, 0]));
+            client.off('data', receive);
+            if (pending.length) upstream.write(pending);
+            client.pipe(upstream).pipe(client);
+        });
+        upstream.on('error', () => client.destroy());
+        client.on('close', () => upstream.destroy());
+    }
+    client.on('data', receive);
+});
+const listen = server => new Promise(resolve => server.listen(0, '127.0.0.1', () => resolve(server.address().port)));
+const [h2_port, h1_port, wrong_host_port, http_port, proxy_port] = await Promise.all([
+    configure(h2, 'h2'), configure(h1, 'h1'), configure(wrong, 'wrong_host'), listen(plain), listen(proxy)]);
 save();
-fs.writeFileSync('ready.json', JSON.stringify({ h2_port, h1_port, wrong_host_port, node_version: process.version, ca: path.join(directory, 'ca.pem') }));
+fs.writeFileSync('ready.json', JSON.stringify({ h2_port, h1_port, wrong_host_port, http_port, proxy_port, node_version: process.version, ca: path.join(directory, 'ca.pem') }));
