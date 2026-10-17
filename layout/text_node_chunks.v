@@ -44,6 +44,9 @@ pub struct TextNodeChunkIterator {
 	should_wrap_lines_     bool
 	should_respect_breaks_ bool
 	should_collapse_space_ bool
+	// Blink collapses spaces across element boundaries and removes them at
+	// line starts in non-wrapping text too, which needs separate space items.
+	splits_unwrapped_spaces_ bool
 	view                   string
 	code_units             []u16
 	grapheme_boundaries    []int
@@ -132,6 +135,8 @@ fn TextNodeChunkIterator.new_with_direction(text_node &TextNode, should_wrap_lin
 			.collapse,
 			.preserve_breaks,
 		]
+		splits_unwrapped_spaces_: !should_wrap_lines
+			&& text_node.Node.document().font_rendering_policy() == .chromium
 		view: view
 		code_units: code_units
 		grapheme_boundaries: text_node.grapheme_boundaries_for_rendered_text()
@@ -487,6 +492,16 @@ fn (mut iterator TextNodeChunkIterator) next_without_peek() ?TextNodeChunk {
 					return chunk
 				}
 			}
+		} else if iterator.splits_unwrapped_spaces_ && iterator.is_collapsible(code_point) {
+			if chunk := iterator.try_commit_chunk(start_of_chunk, iterator.current_index, false, broken_on_tab, false, font, text_type) {
+				return chunk
+			}
+			iterator.current_index = iterator.next_grapheme_boundary()
+			space_font := iterator.font_for_space(iterator.current_index, code_point)
+			if chunk := iterator.try_commit_chunk(start_of_chunk, iterator.current_index, false, broken_on_tab, false, space_font, text_type) {
+				return chunk
+			}
+			continue
 		}
 
 		iterator.current_index = iterator.next_grapheme_boundary()

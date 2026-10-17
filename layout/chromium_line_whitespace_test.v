@@ -22,3 +22,18 @@ fn test_chromium_centered_line_excludes_its_trailing_space() {
 	defer { document.finalize() }
 	assert chromium_whitespace_rect(document, 'a').x == 25
 }
+
+// Non-wrapping text still removes spaces at the line start and collapses a
+// space sequence across element boundaries into its first space.
+fn test_chromium_nowrap_spaces_collapse_across_elements() {
+	mut collapsed := chromium_whitespace_document('<div style="white-space:nowrap"><span>\n<bdi id="n" dir="ltr">\n1,000,000+\n</bdi>\n<span id="t">\narticles\n</span>\n</span></div>')
+	defer { collapsed.finalize() }
+	mut reference := chromium_whitespace_document('<div style="white-space:nowrap"><span><bdi id="n" dir="ltr">1,000,000+ </bdi><span id="t">articles</span></span></div>')
+	defer { reference.finalize() }
+	assert chromium_whitespace_rect(collapsed, 'n').x == 0
+	assert chromium_whitespace_rect(collapsed, 'n').width == chromium_whitespace_rect(reference, 'n').width
+	assert chromium_whitespace_rect(collapsed, 't').x == chromium_whitespace_rect(reference, 't').x
+	// Trimming the trailing space can move the text item's rounded end by 1/64.
+	width_delta := chromium_whitespace_rect(collapsed, 't').width - chromium_whitespace_rect(reference, 't').width
+	assert width_delta < 0.02 && width_delta > -0.02
+}
