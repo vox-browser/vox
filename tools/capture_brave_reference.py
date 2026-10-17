@@ -118,6 +118,20 @@ def launch_command(binary, profile, proxy_server=None):
     return command + ['about:blank']
 
 
+def wait_for_page_debugger(opener, port, deadline):
+    # The debugging socket can be ready before the initial page target exists.
+    while True:
+        remaining = deadline - time.monotonic()
+        if remaining <= 0:
+            raise RuntimeError('Brave did not create a page target before the watchdog')
+        with opener.open(f'http://127.0.0.1:{port}/json/list', timeout=min(15, remaining)) as response:
+            targets = json.load(response)
+        page = next((target for target in targets if target['type'] == 'page'), None)
+        if page is not None:
+            return page['webSocketDebuggerUrl']
+        time.sleep(min(.05, remaining))
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--binary", default=BRAVE)
@@ -150,8 +164,7 @@ def main() -> None:
                 time.sleep(0.05)
             port, _ = endpoint
             opener = urllib.request.build_opener(urllib.request.ProxyHandler({}))
-            targets = json.load(opener.open(f"http://127.0.0.1:{port}/json/list", timeout=15))
-            cdp = CDP(next(t["webSocketDebuggerUrl"] for t in targets if t["type"] == "page"))
+            cdp = CDP(wait_for_page_debugger(opener, port, deadline))
             cdp.call("Page.enable")
             cdp.call("Runtime.enable")
             if args.cookie_file:
