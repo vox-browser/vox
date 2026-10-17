@@ -3159,15 +3159,28 @@ fn (app &BrowserApp) hit_test_at_viewport_point(x f64, y f64) ?dom.HitTestResult
 	return viewport.hit_test(x, y, .exact)
 }
 
+fn (app &BrowserApp) document_content_height(viewport_height int) f64 {
+	// A constrained document element (e.g. html { height:100% }) can be much
+	// shorter than its descendants. Window::scroll() clamps against the typed
+	// viewport's scrolling area, which also accounts for positioned content
+	// and excludes overflow trapped inside another scrollport.
+	if result := layout.document_layout_result(app.document) {
+		if viewport := result.root.as_node_with_style() {
+			if used := result.state.try_get(viewport) {
+				if overflow := used.scrollable_overflow_rect() {
+					return math.max(f64(viewport_height), overflow.height.to_double())
+				}
+			}
+		}
+	}
+	root_rect := app.root_box.border_box()
+	return math.max(f64(viewport_height), root_rect.y + root_rect.height)
+}
+
 fn (mut app BrowserApp) adopt_current_document_geometry() {
 	result := layout.document_layout_result(app.document) or { return }
 	app.root_box = result.paint_tree
-	root_rect := app.root_box.border_box()
-	app.content_height = if root_rect.y + root_rect.height > f64(app.viewport_height) {
-		root_rect.y + root_rect.height
-	} else {
-		f64(app.viewport_height)
-	}
+	app.content_height = app.document_content_height(app.viewport_height)
 	app.set_scroll_y(app.scroll_y, app.viewport_height + app.chrome_height())
 }
 
@@ -3289,13 +3302,7 @@ fn (mut app BrowserApp) relayout(window_width int, window_height int) {
 	// recording so focus-gated painting such as editable carets is visible.
 	focus_compact_browser_navigable(app.document)
 	app.install_compact_navigation_handler()
-	root_rect := app.root_box.border_box()
-	document_height := root_rect.y + root_rect.height
-	app.content_height = if document_height > f64(viewport_height) {
-		document_height
-	} else {
-		f64(viewport_height)
-	}
+	app.content_height = app.document_content_height(viewport_height)
 	app.viewport_width = viewport_width
 	app.viewport_height = viewport_height
 	app.set_scroll_y(app.scroll_y, window_height)
