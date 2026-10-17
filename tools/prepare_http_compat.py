@@ -10,6 +10,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+from http_tls_dial import patch_transport_tls, tls_dial_helper
 
 
 def replace_function(source, signature, replacement):
@@ -209,6 +210,10 @@ def main():
     patched_request = patch_request(request_text)
     proxy_text = (original / 'http_proxy.v').read_text()
     patched_proxy = patch_proxy(proxy_text)
+    transport_text = (original / 'transport.v').read_text()
+    patched_transport = patch_transport_tls(transport_text) + '\n' + tls_dial_helper()
+    h2_text = (original / 'transport_h2.v').read_text()
+    patched_h2 = patch_transport_tls(h2_text, http2=True)
     modules = repo / "Build/v/modules"
     target = modules / "net/http"
     target.mkdir(parents=True, exist_ok=True)
@@ -220,6 +225,10 @@ def main():
             write_if_changed(output, patched_request)
         elif entry.name == 'http_proxy.v':
             write_if_changed(output, patched_proxy)
+        elif entry.name == 'transport.v':
+            write_if_changed(output, patched_transport)
+        elif entry.name == 'transport_h2.v':
+            write_if_changed(output, patched_h2)
         elif not output.is_symlink() or output.resolve() != entry.resolve():
             if output.is_symlink() or output.is_file():
                 output.unlink()
@@ -232,7 +241,11 @@ def main():
         "staged_request_sha256": hashlib.sha256(patched_request.encode()).hexdigest(),
         "source_proxy_sha256": hashlib.sha256(proxy_text.encode()).hexdigest(),
         "staged_proxy_sha256": hashlib.sha256(patched_proxy.encode()).hexdigest(),
-        "adapter": "growable fields; copy-on-write; preserve empty/repeated fields; verified proxy TLS",
+        "source_transport_sha256": hashlib.sha256(transport_text.encode()).hexdigest(),
+        "staged_transport_sha256": hashlib.sha256(patched_transport.encode()).hexdigest(),
+        "source_h2_sha256": hashlib.sha256(h2_text.encode()).hexdigest(),
+        "staged_h2_sha256": hashlib.sha256(patched_h2.encode()).hexdigest(),
+        "adapter": "growable fields; copy-on-write; preserve empty/repeated fields; verified proxy TLS; TCP before TLS setup",
     }, indent=2) + "\n")
     print(modules)
 
