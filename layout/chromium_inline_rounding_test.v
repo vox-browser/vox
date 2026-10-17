@@ -33,3 +33,13 @@ fn test_chromium_relative_offsets_truncate_toward_zero() {
 	assert chromium_rounding_rect(chromium, 'r').y - base == -11.1875
 	assert chromium_rounding_rect(libweb, 'r').y - base == -11.203125
 }
+
+// After removing a trailing space, Blink snaps the remaining text item up to
+// a LayoutUnit again, so the item is as wide as the same text without it.
+fn test_chromium_trimmed_text_item_keeps_its_snapped_width() {
+	mut trimmed := chromium_rounding_document('<div style="width:200px"><span id="t">articles </span></div>', true)
+	defer { trimmed.finalize() }
+	mut plain := chromium_rounding_document('<div style="width:200px"><span id="t">articles</span></div>', true)
+	defer { plain.finalize() }
+	assert chromium_rounding_rect(trimmed, 't').width == chromium_rounding_rect(plain, 't').width
+}

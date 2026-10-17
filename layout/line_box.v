@@ -668,13 +668,26 @@ fn (mut line LineBox) calculate_or_trim_trailing_whitespace(should_remove Remove
 	// Subtract exactly the advance retained by shaping, including letter- and
 	// word-spacing and any shaping-specific adjustment.
 	fragment_trailing_whitespace := last_fragment.trailing_whitespace_
-	whitespace_width = whitespace_width.plus(fragment_trailing_whitespace.inline_size)
-	trailing_whitespace_width = trailing_whitespace_width.plus(fragment_trailing_whitespace.inline_size)
+	mut trailing_size := fragment_trailing_whitespace.inline_size
+	trimmed_advance := last_fragment.trailing_whitespace_advance(fragment_trailing_whitespace)
+	if trimmed_width := last_fragment.chromium_width_without_trailing_advance(trimmed_advance) {
+		trailing_size = last_fragment.inline_length_.minus(trimmed_width)
+	}
+	whitespace_width = whitespace_width.plus(trailing_size)
+	trailing_whitespace_width = trailing_whitespace_width.plus(trailing_size)
 	if should_remove == .yes {
 		last_fragment.length_in_code_units_ -= fragment_trailing_whitespace.length_in_code_units
-		last_fragment.inline_length_ = last_fragment.inline_length_.minus(fragment_trailing_whitespace.inline_size)
+		last_fragment.inline_length_ = last_fragment.inline_length_.minus(trailing_size)
+		if advance := trimmed_advance {
+			if precise := last_fragment.precise_inline_length_ {
+				last_fragment.precise_inline_length_ = precise - advance
+			}
+			if last_fragment.chains_item_ {
+				last_fragment.item_width_ -= advance
+			}
+		}
 		last_fragment.trailing_whitespace_ = TrailingWhitespace{}
-		line.inline_length_ = line.inline_length_.minus(fragment_trailing_whitespace.inline_size)
+		line.inline_length_ = line.inline_length_.minus(trailing_size)
 		line.clamp_static_position_markers_to_inline_length()
 	}
 	if should_remove == .yes
@@ -682,6 +695,43 @@ fn (mut line LineBox) calculate_or_trim_trailing_whitespace(should_remove Remove
 		last_fragment.has_trailing_whitespace_ = trailing_whitespace_width.raw_value() > 0
 	}
 	return whitespace_width
+}
+
+// The unsnapped advance of the glyphs that shape the fragment's trailing
+// whitespace, when its glyph run ends with exactly those code units.
+fn (fragment &LineBoxFragment) trailing_whitespace_advance(trailing TrailingWhitespace) ?f64 {
+	run := fragment.glyph_run_ or { return none }
+	if trailing.length_in_code_units <= 0 {
+		return none
+	}
+	mut remaining := trailing.length_in_code_units
+	mut advance := 0.0
+	mut index := run.glyphs_.len - 1
+	for remaining > 0 && index >= 0 {
+		advance += f64(run.glyphs_[index].advance)
+		remaining -= run.glyphs_[index].length_in_code_units
+		index--
+	}
+	return if remaining == 0 { advance } else { none }
+}
+
+// Blink removes trailing spaces from a text item's shape result and snaps the
+// remaining advance up to a LayoutUnit again, instead of subtracting the
+// separately snapped width of the spaces.
+fn (fragment &LineBoxFragment) chromium_width_without_trailing_advance(advance ?f64) ?CSSPixels {
+	trimmed := advance or { return none }
+	run := fragment.glyph_run_ or { return none }
+	if run.font().font_rendering_policy != .chromium || fragment.direction_ != .ltr {
+		return none
+	}
+	precise := fragment.precise_inline_length_ or { return none }
+	if fragment.chains_item_ {
+		origin := fragment.inline_offset_.minus(fragment.item_offset_)
+		end := origin.plus(inline_advance_to_css_pixels(fragment.item_prefix_ +
+			fragment.item_width_ - trimmed, run.font()))
+		return end.minus(fragment.inline_offset_)
+	}
+	return inline_advance_to_css_pixels(precise - trimmed, run.font())
 }
 
 pub fn (line &LineBox) get_trailing_whitespace_width() CSSPixels {
