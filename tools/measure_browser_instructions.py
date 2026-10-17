@@ -43,6 +43,7 @@ def chrome_launch_command(args, binary, profile):
     command = [str(binary), "--headless=new", "--no-first-run", "--no-default-browser-check",
                "--disable-background-networking", "--remote-debugging-port=0",
                f"--user-data-dir={profile}"]
+    command.extend(getattr(args, "chrome_extra_arg", []))
     if getattr(args, "chrome_launch_mode", "blank") == "direct":
         command += [f"--window-size={args.width},{args.chrome_outer_window_height}", args.url]
     else:
@@ -298,7 +299,7 @@ def run_vox(args, prefix, api, cache_dir=None):
     return report
 
 
-def run_chrome(args, prefix, api):
+def run_chrome(args, prefix, api, client_factory=None):
     binary = args.binary or Path("/Applications/Google Chrome.app/Contents/MacOS/Google Chrome")
     screenshot = Path(str(prefix) + ".png")
     log_path = Path(str(prefix) + ".log")
@@ -321,7 +322,7 @@ def run_chrome(args, prefix, api):
                     local_http = urllib.request.build_opener(urllib.request.ProxyHandler({}))
                     with local_http.open(f"http://127.0.0.1:{port}/json/list", timeout=15) as response:
                         targets = json.load(response)
-                    client = CDP(next(t["webSocketDebuggerUrl"] for t in targets if t["type"] == "page"))
+                    client = (client_factory or CDP)(next(t["webSocketDebuggerUrl"] for t in targets if t["type"] == "page"))
                     version = prepare_chrome_target(client, args)
                     baseline, navigation_at = None, None
                     if not direct:

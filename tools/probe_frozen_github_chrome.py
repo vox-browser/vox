@@ -58,6 +58,15 @@ class ReplayCDP(CDP):
         self.send(json.dumps(dict(id=identifier, method=method, params=params or {})).encode())
         return identifier
 
+    def lookup_response(self, url, resource_type):
+        return cache_response(self.cache, url, resource_type)
+
+    def replay_headers(self, body, mime, path):
+        return [{'name': 'Content-Type', 'value': mime},
+                {'name': 'Content-Length', 'value': str(len(body))},
+                {'name': 'Access-Control-Allow-Origin', 'value': '*'},
+                {'name': 'Cache-Control', 'value': 'no-store'}]
+
     def pump(self):
         response = self.receive()
         identifier = response.get('id')
@@ -76,7 +85,7 @@ class ReplayCDP(CDP):
             return
         url = params['request']['url']
         resource_type = params['resourceType']
-        cached = cache_response(self.cache, url, resource_type)
+        cached = self.lookup_response(url, resource_type)
         row = dict(url=url, resource_type=resource_type, method=params['request']['method'])
         if cached is None or params['request']['method'] != 'GET':
             row['action'] = 'blocked-missing-or-non-get'
@@ -85,10 +94,7 @@ class ReplayCDP(CDP):
             body, mime, path = cached
             row.update(action='replayed', cache_path=str(path), bytes=len(body), mime=mime,
                        sha256=hashlib.sha256(body).hexdigest())
-            headers = [{'name': 'Content-Type', 'value': mime},
-                       {'name': 'Content-Length', 'value': str(len(body))},
-                       {'name': 'Access-Control-Allow-Origin', 'value': '*'},
-                       {'name': 'Cache-Control', 'value': 'no-store'}]
+            headers = self.replay_headers(body, mime, path)
             command = self.issue('Fetch.fulfillRequest', dict(requestId=params['requestId'],
                                  responseCode=200, responseHeaders=headers,
                                  body=base64.b64encode(body).decode()))
