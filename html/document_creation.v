@@ -68,6 +68,12 @@ fn construct_document_in_global(window &WindowModel, context &BrowsingContextMod
 			document.set_cached_navigable(host)
 			mut mutable_host := unsafe { &dom.Navigable(host) }
 			mutable_host.set_active_document(document)
+			// The replacement becomes active here rather than through activate
+			// history entry, so take that algorithm's initial visibility from
+			// the navigable's traversable.
+			if model := navigable_model_for_host(host) {
+				document.set_initial_visibility_state(model.system_visibility_state())
+			}
 		}
 	}
 	_ = WindowModel.create_with_global(document, context, window)!
