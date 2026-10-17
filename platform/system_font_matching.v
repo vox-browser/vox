@@ -42,6 +42,7 @@ __global (
 	platform_system_font_misses   map[string]bool
 	platform_system_font_families map[string]bool
 	platform_system_fallbacks     map[string]&Font
+	platform_system_fallback_faces map[string]&Font
 	platform_system_fallback_miss map[string]bool
 )
 
@@ -203,11 +204,29 @@ pub fn system_fallback_font(code_point u32, language string, base &Font) ?&Font 
 		}
 	}
 	if font := result {
-		platform_system_fallbacks[key] = font
-		return font
+		canonical := canonical_system_fallback_font(font)
+		platform_system_fallbacks[key] = canonical
+		return canonical
 	}
 	platform_system_fallback_miss[key] = true
 	return none
+}
+
+// Code points that fall back to the same face share one Font, so text runs
+// split only where the used face changes, as Blink's fallback segmentation
+// does, and are shaped together.
+fn canonical_system_fallback_font(font &Font) &Font {
+	face_key := if face := font.system_face() {
+		'${face.path}#${face.face_index}|${face.postscript_name}|${face.variations}'
+	} else {
+		font.family
+	}
+	key := '${face_key}|${font.point_size}|${font.weight}|${font.font_rendering_policy}'
+	if existing := platform_system_fallback_faces[key] {
+		return existing
+	}
+	platform_system_fallback_faces[key] = font
+	return font
 }
 
 // The concrete installed face for this handle under the Chromium font

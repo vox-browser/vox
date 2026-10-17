@@ -77,3 +77,14 @@ fn test_system_face_typeface_bounds_use_the_coretext_face_box() {
 		}
 	}
 }
+
+// Code points that fall back to the same face share one Font, so the chunk
+// iterator keeps them in one shaped run.
+fn test_system_fallback_fonts_are_shared_by_face() {
+	$if macos {
+		base := &Font{ family: 'SystemUi', point_size: 13, weight: 400, font_rendering_policy: .chromium }
+		first := system_fallback_font(0x0b95, 'ta', base) or { panic('no Tamil fallback') }
+		second := system_fallback_font(0x0bae, 'ta', base) or { panic('no Tamil fallback') }
+		assert voidptr(first) == voidptr(second)
+	}
+}
