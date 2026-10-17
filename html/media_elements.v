@@ -920,6 +920,7 @@ pub fn (mut controls MediaControls) create_shadow_tree() {
 	if html_element := controls.media.associated_element_ {
 		mut media_element := unsafe { &dom.Element(html_element) }
 		if media_element.shadow_root() == none {
+			is_video := media_element.is_html_element() && media_element.local_name() == 'video'
 			shadow := media_element.attach_a_user_agent_shadow_root(.named)
 			document := media_element.document()
 			mut container := dom.create_element(document, 'div', ns_html, none, none, false) or {
@@ -927,10 +928,11 @@ pub fn (mut controls MediaControls) create_shadow_tree() {
 				controls.show_controls()
 				return
 			}
-			container.set_attribute_value('class', if media_element.local_name() == 'video' { 'media-controls video' } else { 'media-controls audio' })
+			container.set_attribute_value('class', if is_video { 'media-controls video' } else { 'media-controls audio' })
 			mut created := []&dom.Element{}
 			for class_name in ['play-pause-icon', 'timeline-fill', 'timestamp', 'volume-area',
 				'volume-fill', 'mute-button', 'fullscreen-icon', 'placeholder-circle'] {
+				if class_name == 'placeholder-circle' && !is_video { continue }
 				tag_name := if class_name == 'fullscreen-icon' { 'button' } else { 'div' }
 				mut child := dom.create_element(document, tag_name, ns_html, none, none, false) or { continue }
 				child.set_attribute_value('class', class_name)
@@ -950,7 +952,8 @@ pub fn (mut controls MediaControls) create_shadow_tree() {
 			mut shadow_node := unsafe { &dom.Node(shadow) }
 			shadow_node.append_child(container.as_node()) or {}
 			controls.dom_.container = container
-			if created.len == 8 {
+			expected_children := if is_video { 8 } else { 7 }
+			if created.len == expected_children {
 				controls.dom_.play_pause_icon = created[0]
 				controls.dom_.timeline_fill = created[1]
 				controls.dom_.timestamp_element = created[2]
@@ -958,7 +961,9 @@ pub fn (mut controls MediaControls) create_shadow_tree() {
 				controls.dom_.volume_fill = created[4]
 				controls.dom_.mute_button = created[5]
 				controls.dom_.fullscreen_icon = created[6]
-				controls.dom_.placeholder_circle = created[7]
+				if is_video && created.len == 8 {
+					controls.dom_.placeholder_circle = created[7]
+				}
 			}
 		}
 	}
@@ -1307,12 +1312,23 @@ pub fn (mut controls MediaControls) update_fullscreen_icon() {
 
 pub fn (mut controls MediaControls) update_placeholder_visibility() {
 	controls.placeholder_visible = controls.should_show_placeholder()
-	if mut placeholder := controls.dom_.placeholder_circle {
-		placeholder.set_attribute_value('style', if controls.placeholder_visible { 'display:flex;' } else { 'display:none;' })
+	if placeholder := controls.dom_.placeholder_circle {
+		mut style := css.element_style(placeholder)
+		style.set_property('display', if controls.placeholder_visible { 'flex' } else { 'none' }, '') or { panic(err) }
 	}
 }
 
 pub fn (controls &MediaControls) should_show_placeholder() bool {
+	if html_element := controls.media.associated_element_ {
+		element := unsafe { &dom.Element(html_element) }
+		if !element.is_html_element() || element.local_name() != 'video' { return false }
+		video := html_video_element_model_for_dom_element(unsafe { &dom.HTMLVideoElement(element) })
+		return video.current_representation() != .video_frame
+	}
+	if video := controls.media.video_element_model_ {
+		return video.current_representation() != .video_frame
+	}
+	// Ownerless media without a video model retains its compatibility state query.
 	return controls.media.ready_state() == .have_nothing || controls.media.show_poster()
 }
 
@@ -1322,6 +1338,7 @@ pub fn (mut controls MediaControls) show_controls() {
 
 pub fn (mut controls MediaControls) hide_controls() {
 	if controls.scrubbing_timeline == .no && !controls.scrubbing_volume && !controls.hovering_controls {
+		if controls.dom_.placeholder_circle != none && controls.should_show_placeholder() { return }
 		controls.visible = false
 	}
 }
