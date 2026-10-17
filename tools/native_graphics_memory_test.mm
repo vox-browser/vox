@@ -2,6 +2,7 @@
 // Build against the same two private Skia bridges as the browser.
 #include "../native_skia_text_darwin.cpp"
 #include <cassert>
+#include <array>
 #include <cstdio>
 #include <thread>
 
@@ -33,11 +34,16 @@ static std::vector<uint8_t> graphite_case(void* library, int kind, int scale)
         result = symbol<decltype(&vox_graphite_draw_shadow_pixels)>(library,
             "vox_graphite_draw_shadow_pixels")(pixels.data(), width, height, pitch, 1, &shadow);
     } else if (kind == 1) {
-        uint8_t source[8 * 8 * 4];
-        for (size_t index = 0; index < sizeof(source); index += 4) {
-            source[index] = uint8_t(index * 13); source[index + 1] = uint8_t(index * 7);
-            source[index + 2] = uint8_t(index * 3); source[index + 3] = 255;
-        }
+        // The caller's immutable CPU image stays alive across backend teardown
+        // and recreation, as retained browser image pixels do.
+        static const auto source = [] {
+            std::array<uint8_t, 8 * 8 * 4> data {};
+            for (size_t index = 0; index < data.size(); index += 4) {
+                data[index] = uint8_t(index * 13); data[index + 1] = uint8_t(index * 7);
+                data[index + 2] = uint8_t(index * 3); data[index + 3] = 255;
+            }
+            return data;
+        }();
         VoxGraphiteImage image {};
         float matrix[] {float(scale), 0, 0, 0, float(scale), 0, 0, 0, 1};
         std::copy_n(matrix, 9, image.matrix);
@@ -45,7 +51,7 @@ static std::vector<uint8_t> graphite_case(void* library, int kind, int scale)
         float clip[] {1, 1, 62, 46, 3, 3, 3, 3, 3, 3, 3, 3};
         std::copy_n(src, 4, image.source); std::copy_n(dst, 4, image.destination);
         std::copy_n(clip, 12, image.clip);
-        image.opacity = .8f; image.width = 8; image.height = 8; image.pitch = 32; image.pixels = source;
+        image.opacity = .8f; image.width = 8; image.height = 8; image.pitch = 32; image.pixels = source.data();
         result = symbol<decltype(&vox_graphite_draw_image_pixels)>(library,
             "vox_graphite_draw_image_pixels")(pixels.data(), width, height, pitch, 1, &image);
     } else if (kind == 2) {
@@ -143,8 +149,13 @@ int main(int argc, char** argv)
         std::printf("Ganesh held Metal image/font scale %d: identical pixels and redraw\n", scale);
     }
     // Reject non-owner use without touching either context.
-    std::thread worker([] { ladybird_v_skia_release_unused_graphics_memory(); });
+    auto retained_cpu_pixels = graphite_case(library, 3, 1);
+    std::thread worker([graphite_purge] {
+        ladybird_v_skia_release_unused_graphics_memory();
+        graphite_purge();
+    });
     worker.join();
+    assert(retained_cpu_pixels == graphite_case(library, 3, 1));
     graphite_purge();
     dlclose(library);
     puts("Native graphics cache lifetime checks passed.");

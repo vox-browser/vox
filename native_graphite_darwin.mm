@@ -16,7 +16,6 @@
 #include "include/core/SkYUVAPixmaps.h"
 #include "include/gpu/graphite/Context.h"
 #include "include/gpu/graphite/ContextOptions.h"
-#include "include/gpu/graphite/PrecompileContext.h"
 #include "include/gpu/graphite/Image.h"
 #include "include/gpu/graphite/Recorder.h"
 #include "include/gpu/graphite/Recording.h"
@@ -92,9 +91,13 @@ void vox_graphite_release_unused_graphics_memory()
     // covers a previous early-return path before dropping unused cache refs.
     gpu_context->submit(skgpu::graphite::SubmitInfo(skgpu::graphite::SyncToCpu::kYes));
     gpu_context->checkAsyncWorkCompletion();
-    gpu_context->freeGpuResources();
-    if (auto precompile = gpu_context->makePrecompileContext())
-        precompile->purgePipelinesNotUsedInMs(std::chrono::milliseconds(0));
+    // Only owned CPU pixels cross this backend's public boundary. All draw
+    // wrappers have destroyed their recorders, surfaces and readbacks before
+    // this idle call, so no external GPU resource depends on this Context.
+    // Dropping cache entries alone leaves Metal's per-context driver storage
+    // resident. Release the Context and queue; the next draw recreates them.
+    gpu_context.reset();
+    gpu_context_attempted = false;
 }
 
 extern "C" __attribute__((visibility("default")))
