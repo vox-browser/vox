@@ -1598,6 +1598,14 @@ fn css_mask_image_for_box(element &dom.Element, computed &css.ComputedProperties
 		if resolved_url == '' {
 			continue
 		}
+		// SVG mask images are vector image documents, just like SVG images
+		// inside a mask resource. The bitmap-only replay cannot decode them.
+		mut vector := SVGMaskPaintCollection{}
+		if collect_svg_vector_image_paint_operations(element, resolved_url, border_rect,
+			image_color_scheme(element.document(), computed), mut vector) {
+			operations << vector.operations
+			continue
+		}
 		operations << painting.SVGMaskPaintOperation{
 			kind: .image
 			image_url: resolved_url
