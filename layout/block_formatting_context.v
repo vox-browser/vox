@@ -578,7 +578,8 @@ fn (mut bfc BlockFormattingContext) layout_block_level_box(mut state LayoutState
 	// box_is_sized_as_replaced_element() selects - which includes a non-replaced
 	// box with a preferred aspect ratio and one specified axis - through the
 	// replaced-element algorithm.
-	if box_is_sized_as_replaced_element(state, box_as_node, available_space) {
+	sized_as_replaced := box_is_sized_as_replaced_element(state, box_as_node, available_space)
+	if sized_as_replaced {
 		replaced_box := box_as_node.as_box() or { panic('replaced node must be a box') }
 		replaced_size := compute_size_for_block_level_replaced_element_in_normal_flow(replaced_box, box_state, available_space)
 		box_state.set_content_width(replaced_size.width())
@@ -617,7 +618,8 @@ fn (mut bfc BlockFormattingContext) layout_block_level_box(mut state LayoutState
 	}
 	box_state.set_containing_block_used_values(state.get_mutable(block_container))
 	if box_should_avoid_floats(box_as_node) && bfc.floating_boxes.len > 0 {
-		bfc.place_box_avoiding_float_intrusions(mut box_state, block_container, css_px(containing_block_width), computed)
+		bfc.place_box_avoiding_float_intrusions(mut box_state, block_container, css_px(containing_block_width),
+			computed, sized_as_replaced || box_as_node.is_table_wrapper())
 	} else {
 		place_block_level_element_in_normal_flow_horizontally(mut box_state, containing_block_width)
 	}
@@ -1305,8 +1307,11 @@ fn border_box_left_of_box_avoiding_floats(computed &css.ComputedProperties, box_
 // box that establishes a formatting context: its border box must not overlap
 // the margin box of any float. Its width is resolved against the space next to
 // the floats in its band, reduced by negative margins, and the box is moved to
-// the next float band until it fits without overlapping a float.
-fn (bfc &BlockFormattingContext) place_box_avoiding_float_intrusions(mut box_state UsedValues, block_container &NodeWithStyle, container_width CSSPixels, computed &css.ComputedProperties) {
+// the next float band until it fits without overlapping a float. Replaced
+// boxes and table wrappers keep the width already resolved in normal flow (a
+// wrapper's own width is auto; its used width is the table's); only their auto
+// margins are resolved against the space beside the floats.
+fn (bfc &BlockFormattingContext) place_box_avoiding_float_intrusions(mut box_state UsedValues, block_container &NodeWithStyle, container_width CSSPixels, computed &css.ComputedProperties, width_is_resolved bool) {
 	container_state := box_state.containing_block_used_values() or { return }
 	container_root_offset := container_state.cumulative_offset()
 	direction := block_container.computed_values().direction()
@@ -1322,6 +1327,8 @@ fn (bfc &BlockFormattingContext) place_box_avoiding_float_intrusions(mut box_sta
 	}
 	negative_margin_sum := css_pixels_min(margin_left, CSSPixels.new(0)).plus(css_pixels_min(margin_right,
 		CSSPixels.new(0)))
+	normal_flow_margin_left := box_state.margin_left
+	normal_flow_margin_right := box_state.margin_right
 	mut border_box_y := box_state.offset.y().minus(box_state.border_box_top())
 	for {
 		left, right, next_y := bfc.float_boundaries_at(border_box_y, CSSPixels.new(1), container_width,
@@ -1340,7 +1347,14 @@ fn (bfc &BlockFormattingContext) place_box_avoiding_float_intrusions(mut box_sta
 			// Negative margins do not create additional space next to a float.
 			remaining = css_pixels_max(remaining.plus(negative_margin_sum), CSSPixels.new(0))
 		}
-		if property_is_auto(computed, .width) {
+		if width_is_resolved {
+			box_state.margin_left = normal_flow_margin_left
+			box_state.margin_right = normal_flow_margin_right
+			if constrained_by_floats {
+				resolve_auto_margins(computed, mut box_state, remaining.to_double(),
+					box_state.content_width().to_double())
+			}
+		} else if property_is_auto(computed, .width) {
 			compute_block_used_width(computed, mut box_state, remaining.to_double())
 		} else {
 			node := box_state.node()
