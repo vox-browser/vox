@@ -410,6 +410,8 @@ mut:
 	// tree version last scanned for them.
 	script_stylesheet_requests          map[string]bool
 	script_stylesheet_scan_version      u64
+	script_image_requests               map[string]bool
+	script_image_scan_version           u64
 	nonrendered_image_preloads          map[string]bool
 	screenshot_path                     string
 	screenshot_scheduled                bool
@@ -1476,7 +1478,11 @@ fn browser_fetch_image_resource(resource_url dom.URL) !html.DecodedImageData {
 }
 
 fn browser_fetch_image_resource_for_document(resource_url dom.URL, source_url string) !html.DecodedImageData {
-	bitmap := browser_decode_raster_image_bytes(browser_image_resource_bytes_for_document(resource_url, source_url)!)!
+	return browser_decoded_image_data(resource_url, browser_image_resource_bytes_for_document(resource_url, source_url)!)
+}
+
+fn browser_decoded_image_data(resource_url dom.URL, bytes []u8) !html.DecodedImageData {
+	bitmap := browser_decode_raster_image_bytes(bytes)!
 	decoded := html.BitmapDecodedImageData.create([html.BitmapDecodedImageFrame{frame: dom.DecodedImageFrame_.create(bitmap)}], 0, false)
 	// Legacy cache entries contain only encoded bytes, without final redirect
 	// origins or response headers. Keep those remote pixels opaque to readback.
@@ -1486,17 +1492,21 @@ fn browser_fetch_image_resource_for_document(resource_url dom.URL, source_url st
 
 fn browser_fetch_image_request(element &dom.HTMLImageElement, model &html.HTMLImageElementModel,
 	resource_url dom.URL) !html.DecodedImageData {
-	if resource_url.scheme() in ['http', 'https'] && model.crossorigin() != .no_cors {
-		native_element := unsafe { &dom.Element(element) }
-		owner := native_element.document()
-		origin := if owner.origin().value == '' { owner.url.origin() } else { owner.origin() }
-		if !resource_url.origin().is_same_origin(origin) {
-			// The compact byte cache does not retain CORS response headers. A
-			// CORS-mode request cannot approve an unverified cross-origin response.
-			return error('Cross-origin image CORS responses are not supported by the native cache')
-		}
+	if !browser_image_request_allows_cached_bytes(element, model, resource_url) {
+		// The compact byte cache does not retain CORS response headers. A
+		// CORS-mode request cannot approve an unverified cross-origin response.
+		return error('Cross-origin image CORS responses are not supported by the native cache')
 	}
 	return browser_fetch_image_resource_for_document(resource_url, unsafe { &dom.Element(element) }.document().url.serialize())
+}
+
+fn browser_image_request_allows_cached_bytes(element &dom.HTMLImageElement, model &html.HTMLImageElementModel, resource_url dom.URL) bool {
+	if resource_url.scheme() !in ['http', 'https'] || model.crossorigin() == .no_cors {
+		return true
+	}
+	owner := unsafe { &dom.Element(element) }.document()
+	origin := if owner.origin().value == '' { owner.url.origin() } else { owner.origin() }
+	return resource_url.origin().is_same_origin(origin)
 }
 
 fn browser_fetch_object_resource(resource_url dom.URL) !html.ObjectResourceResponse {
@@ -4413,6 +4423,7 @@ fn (mut app BrowserApp) request_background_resource(image_url string) {
 fn (mut app BrowserApp) poll_background_resources() {
 	app.request_script_inserted_stylesheets()
 	mut installed_stylesheets := false
+	mut completed_script_images := app.request_script_inserted_images()
 	mut changed_svg_resources := map[string]bool{}
 	mut completed_nonrendered_images := map[string]bool{}
 	for {
@@ -4422,6 +4433,10 @@ fn (mut app BrowserApp) poll_background_resources() {
 				if resource.url in app.nonrendered_image_preloads {
 					app.nonrendered_image_preloads.delete(resource.url)
 					completed_nonrendered_images[resource.url] = true
+				}
+				if resource.url in app.script_image_requests {
+					app.script_image_requests.delete(resource.url)
+					completed_script_images[resource.url] = true
 				}
 				previous_svg_available := if previous := app.resource_cache[resource.url] {
 					previous.error == '' && previous.body != ''
@@ -4444,6 +4459,8 @@ fn (mut app BrowserApp) poll_background_resources() {
 			}
 		}
 	}
+	script_images_updated := completed_script_images.len > 0 && app.document != unsafe { nil }
+		&& app.complete_script_inserted_images(completed_script_images)
 	if installed_stylesheets && app.document != unsafe { nil } {
 		app.document.set_needs_full_style_update(true)
 		app.document.tear_down_layout_tree()
@@ -4456,6 +4473,11 @@ fn (mut app BrowserApp) poll_background_resources() {
 	}
 	if app.document != unsafe { nil } && completed_nonrendered_images.len > 0
 		&& completed_nonrendered_images_need_layout(app.document, completed_nonrendered_images) {
+		app.document.tear_down_layout_tree()
+		app.relayout(app.viewport_width, app.viewport_height + app.chrome_height())
+		return
+	}
+	if script_images_updated {
 		app.document.tear_down_layout_tree()
 		app.relayout(app.viewport_width, app.viewport_height + app.chrome_height())
 		return

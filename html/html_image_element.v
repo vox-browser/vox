@@ -212,6 +212,10 @@ pub fn (mut image HTMLImageElementModel) set_fetch_hook(hook ?HTMLImageFetchHook
 	image.fetch_hook_ = hook
 }
 
+pub fn (image &HTMLImageElementModel) has_fetch_hook() bool {
+	return image.fetch_hook_ != none
+}
+
 pub fn (mut image HTMLImageElementModel) set_src(value ?string) {
 	image.src_ = value
 }
