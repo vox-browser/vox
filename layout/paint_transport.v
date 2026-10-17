@@ -2424,42 +2424,50 @@ fn (b &BlockBox) record_paint_commands_for_entries(entries []PaintOrderEntry, se
 				width: box.width
 				height: box.height
 			}, converter)
-			input_colors := painting.compute_input_colors(box.form_control_color_scheme, box.form_control_accent_color)
-			display_commands := if box.form_control_kind == 'checkbox' {
-				painting.checkbox_commands(control_rect, form_control_state.checked, form_control_state.indeterminate, form_control_state.enabled, form_control_state.activated, box.form_control_color_scheme, input_colors)
+			if box.snaps_background_rect && box.form_control_kind == 'checkbox'
+				&& !form_control_state.checked && !form_control_state.indeterminate
+				&& form_control_state.enabled && !form_control_state.activated
+				&& box.form_control_color_scheme != .dark {
+				append_chromium_unchecked_checkbox(mut commands, chromium_snapped_control_rect(box.x,
+					box.y, box.width, box.height), opacity)
 			} else {
-				painting.radio_button_commands(control_rect, form_control_state.checked, form_control_state.enabled, form_control_state.activated, box.form_control_color_scheme, input_colors)
-			}
-			// A control is one upstream display-list replay unit. Keep its overlapping
-			// antialiased primitives on one Skia surface so intermediate 8-bit Cocoa
-			// composites cannot round the shared edges independently.
-			control_start := commands.len
-			commands << PaintCommand{
-				kind: 'begin_skia_command_group'
-				x: control_rect.x
-				y: control_rect.y
-				width: control_rect.width
-				height: control_rect.height
-			}
-			for display_command in display_commands {
-				append_painting_display_command(mut commands, display_command, opacity)
-			}
-			commands << PaintCommand{ kind: 'end_skia_command_group' }
-			if box.form_control_kind == 'checkbox' && form_control_state.checked
-				&& !form_control_state.indeterminate {
-				set_force_dark_role_for_range(mut commands, control_start + 1, control_start + 2,
-					.background)
-				set_force_dark_role_for_range(mut commands, control_start + 2, control_start + 3,
-					.foreground)
-			} else {
-				set_force_dark_role_for_range(mut commands, control_start + 1, control_start + 2,
-					.border)
-				set_force_dark_role_for_range(mut commands, control_start + 2, control_start + 3,
-					.background)
-				if (box.form_control_kind == 'checkbox' && form_control_state.indeterminate)
-					|| (box.form_control_kind == 'radio' && form_control_state.checked) {
-					set_force_dark_role_for_range(mut commands, control_start + 3, control_start + 4,
+				input_colors := painting.compute_input_colors(box.form_control_color_scheme, box.form_control_accent_color)
+				display_commands := if box.form_control_kind == 'checkbox' {
+					painting.checkbox_commands(control_rect, form_control_state.checked, form_control_state.indeterminate, form_control_state.enabled, form_control_state.activated, box.form_control_color_scheme, input_colors)
+				} else {
+					painting.radio_button_commands(control_rect, form_control_state.checked, form_control_state.enabled, form_control_state.activated, box.form_control_color_scheme, input_colors)
+				}
+				// A control is one upstream display-list replay unit. Keep its overlapping
+				// antialiased primitives on one Skia surface so intermediate 8-bit Cocoa
+				// composites cannot round the shared edges independently.
+				control_start := commands.len
+				commands << PaintCommand{
+					kind: 'begin_skia_command_group'
+					x: control_rect.x
+					y: control_rect.y
+					width: control_rect.width
+					height: control_rect.height
+				}
+				for display_command in display_commands {
+					append_painting_display_command(mut commands, display_command, opacity)
+				}
+				commands << PaintCommand{ kind: 'end_skia_command_group' }
+				if box.form_control_kind == 'checkbox' && form_control_state.checked
+					&& !form_control_state.indeterminate {
+					set_force_dark_role_for_range(mut commands, control_start + 1, control_start + 2,
+						.background)
+					set_force_dark_role_for_range(mut commands, control_start + 2, control_start + 3,
 						.foreground)
+				} else {
+					set_force_dark_role_for_range(mut commands, control_start + 1, control_start + 2,
+						.border)
+					set_force_dark_role_for_range(mut commands, control_start + 2, control_start + 3,
+						.background)
+					if (box.form_control_kind == 'checkbox' && form_control_state.indeterminate)
+						|| (box.form_control_kind == 'radio' && form_control_state.checked) {
+						set_force_dark_role_for_range(mut commands, control_start + 3, control_start + 4,
+							.foreground)
+					}
 				}
 			}
 		}
@@ -4265,6 +4273,55 @@ fn paint_text_decoration(fragment TextFragment, opacity f64) []PaintCommand {
 		}
 	}
 	return commands
+}
+
+// Blink paints a themed control into its pixel-snapped box, rounding each edge,
+// and then uses the largest centered square.
+fn chromium_snapped_control_rect(x f64, y f64, width f64, height f64) painting.IntRect {
+	left := int(math.floor(x + 0.5))
+	top := int(math.floor(y + 0.5))
+	snapped_width := int(math.floor(x + width + 0.5)) - left
+	snapped_height := int(math.floor(y + height + 0.5)) - top
+	side := if snapped_width < snapped_height { snapped_width } else { snapped_height }
+	return painting.IntRect{
+		x:      left + (snapped_width - side) / 2
+		y:      top + (snapped_height - side) / 2
+		width:  side
+		height: side
+	}
+}
+
+// Blink's NativeThemeBase::PaintCheckboxRadioCommon() for an enabled, unchecked
+// check box: a white background inset by a fifth of the 1px border, then the
+// #767676 border stroked half a pixel inside the control, both with a 2px
+// radius. Each shape blends over the page through the isolated GPU backend,
+// as Brave's GPU rasterization does, rather than through a CPU command group.
+fn append_chromium_unchecked_checkbox(mut commands []PaintCommand, rect painting.IntRect, opacity f64) {
+	commands << PaintCommand{
+		kind:                'fill_rect'
+		x:                   f64(rect.x) + 0.2
+		y:                   f64(rect.y) + 0.2
+		width:               f64(rect.width) - 0.4
+		height:              f64(rect.height) - 0.4
+		radius:              2
+		color:               'rgb(255 255 255)'
+		opacity:             opacity
+		force_dark_role:     .background
+		force_dark_role_set: true
+	}
+	commands << PaintCommand{
+		kind:                'stroke_rounded_rect'
+		x:                   f64(rect.x) + 0.5
+		y:                   f64(rect.y) + 0.5
+		width:               f64(rect.width) - 1
+		height:              f64(rect.height) - 1
+		radius:              2
+		stroke_width:        1
+		color:               'rgb(118 118 118)'
+		opacity:             opacity
+		force_dark_role:     .border
+		force_dark_role_set: true
+	}
 }
 
 // Blink's TextDecorationInfo::ComputeUnderlineLineData() for a solid auto or

@@ -97,3 +97,11 @@ installed face is created by PostScript name, as Blink's CTFont is: a face
 re-created from the font file loses Apple Color Emoji's strike advances and
 ascent. Emoji with variation selector 16 after a text-presentation code point,
 such as ❤️, still select a monochrome face and are not covered.
+
+`checkbox` checks enabled, unchecked check boxes beside text, at a
+half-pixel offset and over a tinted background. Blink paints them with
+NativeThemeBase into the pixel-snapped control box: a white background inset
+by 0.2px and a 1px #767676 border stroked half a pixel inside, both with a
+2px radius. Each shape is rasterized by the isolated GPU backend over the
+page, as in Brave. Checked, indeterminate, disabled and dark-scheme controls
+keep the existing LibWeb painting.
