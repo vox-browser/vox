@@ -131,6 +131,18 @@ fn (mut binding CompactElementQueryBinding) query(input string) !string {
 	if action == 'computedStyle' {
 		return compact_computed_style_query(root, selector)
 	}
+	if action == 'elementRelative' {
+		// NonDocumentTypeChildNode and ParentNode element navigation.
+		parent := unsafe { &dom.ParentNode(root) }
+		found := match selector {
+			'next' { root.next_element_sibling() }
+			'previous' { root.previous_element_sibling() }
+			'first' { parent.first_element_child() }
+			'last' { parent.last_element_child() }
+			else { return error('Invalid element relation') }
+		}
+		return if element := found { json2.encode(binding.element_state(element)) } else { 'null' }
+	}
 	if action == 'getElementById' {
 		return if element := binding.document.get_element_by_id(selector) {
 			json2.encode(binding.element_state(element))
@@ -190,8 +202,8 @@ fn (mut binding CompactElementQueryBinding) query(input string) !string {
 // second JavaScript tree or escaping class names into a selector.
 fn compact_class_collection_bootstrap() string {
 	return r'
-function __classCollection(key, classNames) {
- const read=()=>__queryElements(key,"getElementsByClassName",classNames);
+function __classCollection(key, classNames, reader) {
+ const read=reader||(()=>__queryElements(key,"getElementsByClassName",classNames));
  function named(elements,name) {
   if(name==="")return null;
   for(const element of elements){
@@ -238,6 +250,42 @@ Object.defineProperty(Element.prototype,"getElementsByClassName",{value:function
  if(typeof classNames==="symbol")throw new TypeError("Cannot convert a Symbol to a string");
  return __classCollection(state.bridgeKey,String(classNames));
 },writable:true,enumerable:true,configurable:true});
+// ParentNode.children: the child elements, read from the live document. An
+// element that exists only in the script has none there yet.
+Object.defineProperty(Element.prototype,"children",{get:function(){
+ const state=__elementApply(__elementRecordGet,__elementRecords,[this]);
+ if(!state)throw new TypeError("Illegal Element receiver");
+ if(!state.__children)state.__children=__classCollection(state.bridgeKey,"",function(){
+  if(state.created&&!state.parentKey)return [];
+  return __queryElements(state.bridgeKey,"querySelectorAll",":scope > *");
+ });
+ return state.__children;
+},enumerable:true,configurable:true});
+// Element navigation read from the live document. An element that exists only
+// in the script has no document relatives yet.
+for(const [name,relation] of [["nextElementSibling","next"],["previousElementSibling","previous"],["firstElementChild","first"],["lastElementChild","last"]]){
+ Object.defineProperty(Element.prototype,name,{get:function(){
+  const state=__elementApply(__elementRecordGet,__elementRecords,[this]);
+  if(!state)throw new TypeError("Illegal Element receiver");
+  if(state.created&&!state.parentKey)return null;
+  return __queryElements(state.bridgeKey,"elementRelative",relation);
+ },enumerable:true,configurable:true});
+}
+Object.defineProperty(Element.prototype,"childElementCount",{get:function(){return this.children.length;},enumerable:true,configurable:true});
+// Node.hasChildNodes(): pending content writes from the script take precedence
+// over the children the document reported.
+Object.defineProperty(Element.prototype,"hasChildNodes",{value:function hasChildNodes(){
+ const state=__elementApply(__elementRecordGet,__elementRecords,[this]);
+ if(!state)throw new TypeError("Illegal Element receiver");
+ if(state.innerHTMLDirty)return state.innerHTML!=="";
+ if(state.textContentDirty)return state.textContent!=="";
+ return !!state.hasChildren;
+},writable:true,enumerable:true,configurable:true});
+// Document.forms: the form elements of the document, named by id or name.
+{
+ const forms=__classCollection("","",()=>__queryElements("","querySelectorAll","form"));
+ Object.defineProperty(document,"forms",{get:function(){return forms;},enumerable:true,configurable:true});
+}
 document.getElementsByClassName=function getElementsByClassName(classNames){
  "use strict";
  if(this!==document)throw new TypeError("Illegal Document receiver");
