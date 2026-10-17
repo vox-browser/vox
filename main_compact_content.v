@@ -3,6 +3,7 @@ module main
 import browserjs
 import dom
 import css
+import html
 import strconv
 import x.json2
 
@@ -69,7 +70,7 @@ fn (mut binding CompactElementQueryBinding) element_state(element &dom.Element) 
 	binding.keys[voidptr(element)] = key
 	binding.elements[key] = element
 	attribute_records, attributes := browserjs.compact_attribute_state(element)
-	return json2.Any({
+	mut state := {
 		'bridgeKey':    json2.Any(key)
 		'elementIndex': json2.Any(-1)
 		'tagName':      json2.Any(element.local_name())
@@ -85,7 +86,11 @@ fn (mut binding CompactElementQueryBinding) element_state(element &dom.Element) 
 		'onclick':      json2.Any(element.get_attribute_value('onclick'))
 		'hasChildren':  json2.Any(element.as_node().has_children())
 		'disabled':     json2.Any(element.has_attribute('disabled'))
-	})
+	}
+	if element.is_html_element() && element.local_name() == 'option' {
+		state['value'] = json2.Any(html.html_option_element_value(unsafe { &dom.HTMLOptionElement(element) }))
+	}
+	return json2.Any(state)
 }
 
 fn (mut binding CompactElementQueryBinding) query(input string) !string {
@@ -142,6 +147,18 @@ fn (mut binding CompactElementQueryBinding) query(input string) !string {
 			else { return error('Invalid element relation') }
 		}
 		return if element := found { json2.encode(binding.element_state(element)) } else { 'null' }
+	}
+	if action == 'selectedIndex' || action == 'setSelectedIndex' {
+		// HTMLSelectElement.selectedIndex over the live select's options.
+		element := root.as_element() or { return error('TypeError: Invalid Element receiver') }
+		if !element.is_html_element() || element.local_name() != 'select' {
+			return error('TypeError: Illegal HTMLSelectElement receiver')
+		}
+		select_element := unsafe { &dom.HTMLSelectElement(element) }
+		if action == 'setSelectedIndex' {
+			html.set_html_select_element_selected_index(select_element, i32(selector.int()))
+		}
+		return json2.encode(compact_select_selected_index(select_element))
 	}
 	if action == 'cloneNode' {
 		// Node.cloneNode() on the live element: the detached copy keeps a bridge
