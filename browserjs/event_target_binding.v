@@ -25,6 +25,15 @@ pub fn event_target_bootstrap() string {
  define(Event.prototype,Symbol.toStringTag,{value:"Event",configurable:true});define(EventTarget.prototype,Symbol.toStringTag,{value:"EventTarget",configurable:true});
  define(globalThis,"Event",{value:Event,writable:true,configurable:true});define(globalThis,"EventTarget",{value:EventTarget,writable:true,configurable:true});
  define(globalThis,"BeforeUnloadEvent",{value:BeforeUnloadEvent,writable:true,configurable:true});
+ // DOM/CustomEvent.idl: a native Event that carries the script value detail.
+ const customDetails=new WeakMap();
+ function CustomEvent(type,eventInitDict={}){if(!new.target)throw new TypeError("CustomEvent constructor requires new");if(arguments.length<1)throw new TypeError("CustomEvent constructor requires one argument");call("constructEvent",this,[type,eventInitDict]);const detail=eventInitDict===null||eventInitDict===undefined?undefined:eventInitDict.detail;customDetails.set(this,detail===undefined?null:detail);}
+ Object.setPrototypeOf(CustomEvent,Event);CustomEvent.prototype=create(Event.prototype);define(CustomEvent.prototype,"constructor",{value:CustomEvent,writable:true,configurable:true});
+ define(CustomEvent,"prototype",{writable:false});
+ define(CustomEvent.prototype,"detail",{get:function(){if(!customDetails.has(this))throw new TypeError("Illegal invocation");return customDetails.get(this);},enumerable:true,configurable:true});
+ define(CustomEvent.prototype,"initCustomEvent",{value:function initCustomEvent(type,bubbles=false,cancelable=false,detail=null){if(!customDetails.has(this))throw new TypeError("Illegal invocation");if(arguments.length<1)throw new TypeError("initCustomEvent requires one argument");if(call("getEvent",this,["eventPhase"])!==0)return;call("initEvent",this,[type,bubbles,cancelable]);customDetails.set(this,detail);},writable:true,enumerable:true,configurable:true});
+ define(CustomEvent.prototype,Symbol.toStringTag,{value:"CustomEvent",configurable:true});
+ define(globalThis,"CustomEvent",{value:CustomEvent,writable:true,configurable:true});
  const eventPrototype=Event.prototype,targetPrototype=EventTarget.prototype;
  const beforeUnloadPrototype=BeforeUnloadEvent.prototype;
  globalThis.__ladybirdEventFactory=function(kind,prototype){return create(prototype|| (kind==="beforeunload"?beforeUnloadPrototype:kind==="event"?eventPrototype:targetPrototype));};
