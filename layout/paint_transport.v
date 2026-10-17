@@ -150,6 +150,9 @@ pub:
 	// Paint style of the inline element that generated this word. Words with the same non-zero node
 	// id are joined into one inline box on each line before their text is painted.
 	inline_node_id           i64
+	// The inline box's decorations come from its line piece in the line's
+	// box_decorations instead of the words it directly parents.
+	decorations_from_piece   bool
 	fragment_left_edge_away  bool
 	fragment_right_edge_away bool
 	background_color         css.Color
@@ -212,6 +215,9 @@ pub mut:
 	width     f64
 	height    f64
 	fragments []TextFragment
+	// Chromium-policy inline box decorations painted from whole line pieces,
+	// outermost box first.
+	box_decorations []TextFragment
 }
 
 // A laid-out block box: `x`/`y`/`width`/`height` are the *content box* geometry in CSS px, relative
@@ -2565,7 +2571,13 @@ fn (b &BlockBox) record_paint_commands_for_entries(entries []PaintOrderEntry, se
 		}
 		mut inline_outlines := [][]PaintCommand{cap: box.lines.len}
 		for line in box.lines {
-			fragment_commands := inline_fragment_commands(line.fragments, opacity)
+			fragment_commands := if line.box_decorations.len > 0 {
+				mut decorated := line.box_decorations.clone()
+				decorated << line.fragments
+				inline_fragment_commands(decorated, opacity)
+			} else {
+				inline_fragment_commands(line.fragments, opacity)
+			}
 			commands << fragment_commands.decorations
 			inline_outlines << fragment_commands.outlines
 		}
@@ -3799,12 +3811,13 @@ fn inline_fragment_commands(fragments []TextFragment, opacity f64) InlineFragmen
 		decoration_start := commands.len
 		outline_start := outlines.len
 		first := fragments[i]
-		if first.inline_node_id == 0 {
+		if first.inline_node_id == 0 || first.decorations_from_piece {
 			i++
 			continue
 		}
 		mut j := i + 1
-		for j < fragments.len && fragments[j].inline_node_id == first.inline_node_id {
+		for j < fragments.len && fragments[j].inline_node_id == first.inline_node_id
+			&& !fragments[j].decorations_from_piece {
 			j++
 		}
 		last := fragments[j - 1]
@@ -3870,10 +3883,14 @@ fn inline_fragment_commands(fragments []TextFragment, opacity f64) InlineFragmen
 		outer_shadows := fragment_shadows.filter(!it.inset)
 		outer_start := commands.len
 		paintable_box_paint_box_shadow(mut commands, outer_shadows, effective_border, first.border_colors, first.border_styles, fragment_radii, border_rect, border_rect, opacity)
-		if run := first.paintable_fragment.glyph_run {
-			if run.font().font_rendering_policy == .chromium && first.background_color.a == 255 {
-				chromium_inset_opaque_shadow_clips(mut commands, outer_start)
-			}
+		first_is_chromium := if run := first.paintable_fragment.glyph_run {
+			run.font().font_rendering_policy == .chromium
+		} else {
+			first.chromium_decorations && first.paintable_fragment.glyph_run == none
+				&& first.text == ''
+		}
+		if first_is_chromium && first.background_color.a == 255 {
+			chromium_inset_opaque_shadow_clips(mut commands, outer_start)
 		}
 		background_start := commands.len
 		background_isolated := first.background_images.any(background_image_layer_blend_mode(it) != .normal)
@@ -3930,7 +3947,7 @@ fn inline_fragment_commands(fragments []TextFragment, opacity f64) InlineFragmen
 		set_force_dark_role_for_range(mut commands, background_start, commands.len, .background)
 		append_inset_shadow_commands(mut commands, fragment_shadows, left + effective_border.left, top + effective_border.top, non_negative(width - effective_border.left - effective_border.right), non_negative(height - effective_border.top - effective_border.bottom), non_negative(radius - effective_border.top), opacity)
 		border_colors := effective_border_colors(first.border_colors, first.border_color)
-		chromium_border := if run := first.paintable_fragment.glyph_run { run.font().font_rendering_policy == .chromium } else { false }
+		chromium_border := first_is_chromium
 		append_translated_border_commands(mut commands, effective_border, border_colors, first.border_styles, fragment_radii, left, top, width, height, opacity, chromium_border)
 		append_translated_outline_commands(mut outlines, first.outline_width, first.outline_offset, first.outline_color, first.outline_style, first.outline_is_auto, fragment_radii, left, top, width, height, opacity)
 		set_force_dark_backdrop_for_range(mut commands, decoration_start, commands.len,

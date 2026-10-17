@@ -4392,6 +4392,40 @@ fn text_lines_from_typed_layout(container &Node, used &UsedValues, state &Layout
 			// into words and making paint_commands() concatenate it again.
 			fragments << transport_fragment
 		}
+		mut box_decorations := []TextFragment{}
+		if container.document().font_rendering_policy() == .chromium {
+			mut nested_owners := map[u64]bool{}
+			for fragment in line_box.fragments_ {
+				for ancestor in nested_decorated_inline_ancestors(fragment.layout_node_, state) {
+					nested_owners[u64(voidptr(ancestor))] = true
+				}
+			}
+			if nested_owners.len > 0 {
+				if !paint_parent_pieces_ready {
+					paint_parent_pieces = compute_inline_box_pieces(container, used, state)
+					paint_parent_pieces_ready = true
+				}
+				mut owner_ids := map[i64]bool{}
+				for piece in paint_parent_pieces {
+					if piece.line_index != line_index || piece.is_geometry_only_placeholder
+						|| u64(voidptr(piece.node)) !in nested_owners {
+						continue
+					}
+					if decoration := inline_piece_decoration_fragment(piece, container_position, state) {
+						box_decorations << decoration
+						owner_ids[decoration.inline_node_id] = true
+					}
+				}
+				for index in 0 .. fragments.len {
+					if fragments[index].inline_node_id in owner_ids {
+						fragments[index] = TextFragment{
+							...fragments[index]
+							decorations_from_piece: true
+						}
+					}
+				}
+			}
+		}
 		mut line_x := container_position.x().to_double()
 		mut line_y := container_position.y().plus(CSSPixels.nearest_value_for(line_box.bottom().to_double() - line_box.height().to_double())).to_double()
 		if fragments.len > 0 {
@@ -4404,6 +4438,7 @@ fn text_lines_from_typed_layout(container &Node, used &UsedValues, state &Layout
 			width: line_box.width().to_double()
 			height: line_box.height().to_double()
 			fragments: fragments
+			box_decorations: box_decorations
 		}
 	}
 	_ = container
