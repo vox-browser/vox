@@ -283,7 +283,12 @@ fn run_inline_formatting_context_internal(mut state LayoutState, containing_bloc
 						|| (containing_block_used_values.line_boxes.len > 0
 						&& containing_block_used_values.line_boxes.last().ends_in_preserved_whitespace())
 					if can_break_before_item && !is_whitespace {
-						projected_width := line_builder.projected_text_sequence_width(item, [])
+						glued := if node.document().font_rendering_policy() == .chromium {
+							iterator.next_glued_text_items()
+						} else {
+							[]InlineLevelItem{}
+						}
+						projected_width := line_builder.projected_text_sequence_width(item, glued)
 						line_builder.note_soft_wrap_opportunity()
 						if overflow_break_allowed {
 							line_builder.break_if_needed_before_overflow_breakable_item(projected_width)
@@ -967,4 +972,19 @@ fn apply_justification_to_line(text_justify css.TextJustify, mut line_box LineBo
 			fragment.set_inline_length(justified_space_width)
 		}
 	}
+}
+
+// Blink measures the whole unbreakable sequence at a soft wrap opportunity,
+// including following text items that begin without one, such as the
+// `&nbsp;` and `[Reply]` text nodes after 4chan's thread status icon.
+fn (iterator &InlineLevelIterator) next_glued_text_items() []InlineLevelItem {
+	mut end := iterator.next_item_index
+	for end < iterator.items.len {
+		item := iterator.items[end]
+		if item.type_ != .text || item.can_break_before || item.is_all_whitespace {
+			break
+		}
+		end++
+	}
+	return iterator.items[iterator.next_item_index..end]
 }

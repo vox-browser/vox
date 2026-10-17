@@ -761,6 +761,10 @@ fn (mut iterator InlineLevelIterator) generate_next_item() ?InlineLevelItem {
 		// was already laid out by layout_list_item_marker().
 		iterator.next_node = current.next_sibling()
 	}
+	// Blink's line breaker always offers a soft wrap opportunity after an
+	// atomic inline, whatever character follows it, such as 4chan's thread
+	// status icon followed by `&nbsp;[Reply]`.
+	iterator.previous_chunk_can_break_after = current.document().font_rendering_policy() == .chromium
 	iterator.skip_to_next()
 	return item
 }
