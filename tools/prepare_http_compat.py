@@ -145,6 +145,7 @@ def patch_request(source):
 
 def patch_proxy(source):
     """Keep request TLS verification and origin-form targets inside proxy tunnels."""
+    source = source.replace('struct HttpProxy {', 'pub struct HttpProxy {', 1)
     old = "pr.ssl_dial('${host_name}:${port}')"
     if source.count(old) != 1:
         raise RuntimeError('Unsupported HTTP proxy TLS call')
