@@ -34,6 +34,7 @@ int native_prefers_overlay_scrollbars(void) {
 
 #ifdef LADYBIRD_V_HAS_SKIA_TEXT
 extern void ladybird_v_skia_set_chromium_painting(int active);
+extern void ladybird_v_skia_release_unused_graphics_memory(void);
 extern int ladybird_v_skia_configure_font(const char *path, int slot);
 extern void ladybird_v_skia_set_image_color_profile(const float *profile);
 extern void ladybird_v_skia_set_msaa_tiles(const int *tiles, int count, int tile_rows);
@@ -2213,6 +2214,46 @@ static int native_css_filter_stack_depth;
 static int native_css_filter_overflow_depth;
 static CIContext *native_css_filter_ci_context;
 static CGColorSpaceRef native_css_filter_color_space;
+
+// Run after the native draw has unwound. Managed references held by a paint
+// callback's C stack must not keep its temporary construction data alive during
+// the idle collection.
+void native_dispatch_browser_memory_cleanup(void *owner, void (*callback)(void *)) {
+	if (callback == NULL) return;
+	dispatch_async(dispatch_get_main_queue(), ^{
+		native_when_document_work_idle(^{ callback(owner); });
+	});
+}
+
+static uint64_t native_graphics_cleanup_generation;
+
+static void native_release_unused_graphics_memory(void) {
+	if (![NSThread isMainThread]) return;
+#ifdef LADYBIRD_V_HAS_SKIA_TEXT
+	ladybird_v_skia_release_unused_graphics_memory();
+#endif
+	// A page without filters never creates this renderer. Preserve that lazy
+	// behavior while returning unused textures from existing filter contexts.
+	if (native_css_filter_ci_context != nil) {
+		[native_css_filter_ci_context reclaimResources];
+		[native_css_filter_ci_context clearCaches];
+	}
+}
+
+// Native allocations are independent of managed allocation debt. A static
+// document replayed for a toolbar update can refill GPU caches without creating
+// enough V garbage to trigger another collection.
+void native_schedule_static_graphics_cleanup(void) {
+	uint64_t generation = ++native_graphics_cleanup_generation;
+	dispatch_after(dispatch_time(DISPATCH_TIME_NOW, 250 * NSEC_PER_MSEC),
+		dispatch_get_main_queue(), ^{
+			if (generation != native_graphics_cleanup_generation) return;
+			native_when_document_work_idle(^{
+				if (generation == native_graphics_cleanup_generation)
+					native_release_unused_graphics_memory();
+			});
+		});
+}
 
 static void native_initialize_css_filter_renderer(void) {
 	static dispatch_once_t once_token;

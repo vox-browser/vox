@@ -59,6 +59,7 @@ fn (mut app BrowserApp) finish_frame_memory_activity(now_ns i64, previous_paint 
 	updated_document := app.memory_maintenance.presentation_pending || !app.document_presented
 		|| previous_paint != voidptr(app.paint_display_list)
 	app.memory_maintenance.frame_finished(now_ns, updated_document)
+	app.schedule_static_graphics_cleanup()
 	$if gcboehm ? {
 		if app.ctx != unsafe { nil }
 			&& app.memory_maintenance.has_pending_cleanup(gc_heap_usage().total_bytes)
@@ -95,6 +96,8 @@ fn (mut app BrowserApp) release_unused_memory_if_idle(now_ns i64) {
 			return
 		}
 		usage := gc_heap_usage()
+		if app.memory_maintenance.has_pending_cleanup(usage.total_bytes)
+			&& app.defer_memory_cleanup_to_native_idle() { return }
 		if app.memory_maintenance.cleanup_due(now_ns, usage.total_bytes) {
 			// Static pages retain their installed cosmetic rules, but need no
 			// filter VM between requests. A later request restores the full
