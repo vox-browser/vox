@@ -143,6 +143,14 @@ fn (mut binding CompactElementQueryBinding) query(input string) !string {
 		}
 		return if element := found { json2.encode(binding.element_state(element)) } else { 'null' }
 	}
+	if action == 'cloneNode' {
+		// Node.cloneNode() on the live element: the detached copy keeps a bridge
+		// key, so later attribute writes, queries and insertion reach it.
+		root.as_element() or { return error('TypeError: Invalid Element receiver') }
+		copy := root.clone_node_binding(selector == 'deep')!
+		element := copy.as_element() or { return 'null' }
+		return json2.encode(binding.element_state(element))
+	}
 	if action == 'getElementById' {
 		return if element := binding.document.get_element_by_id(selector) {
 			json2.encode(binding.element_state(element))
