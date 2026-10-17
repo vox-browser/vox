@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Windowed, offline, author-JavaScript-disabled Wikipedia memory comparison.
+"""Windowed, offline Wikipedia memory comparison with explicit Chrome scripting.
 
 Primary memory is the simultaneous sum of macOS task physical footprints,
 never summed RSS. Each fresh browser is measured from launch until a settled
@@ -34,6 +34,18 @@ from process_instruction_counts import CounterSampler, MacCounters, RusageInfoV4
 
 REPO = Path(__file__).resolve().parents[1]
 URL = 'https://www.wikipedia.org/'
+PORTAL_SCRIPTS = {
+    URL + 'portal/wikipedia.org/assets/js/index-43aa8c7b47.js':
+        'c406c48ae80988a75fbfa2993f8b6faa18853e175cd602c8cbf474cf68c4dfc7',
+    URL + 'portal/wikipedia.org/assets/js/gt-ie9-507b16b6be.js':
+        'b6095c067391ecb2841c3bdb11534507ed219c958bba2a20720ae876b6f2cb31',
+}
+
+
+def chrome_scripting_enabled(policy):
+    if policy not in ('disabled', 'enabled'):
+        raise ValueError('Chrome script policy must be disabled or enabled')
+    return policy == 'enabled'
 
 
 class ObservedReplayCDP(ReplayCDP):
@@ -55,7 +67,8 @@ class ObservedReplayCDP(ReplayCDP):
             self.events[-1]['observer_received_monotonic'] = time.monotonic()
 
 
-def begin_chrome_navigation(client, screen, activity, activate, started):
+def begin_chrome_navigation(client, screen, activity, activate, started, script_policy='disabled'):
+    scripting = chrome_scripting_enabled(script_policy)
     version = client.call('Browser.getVersion')
     for method in ['Page.enable', 'Network.enable']:
         client.call(method)
@@ -64,7 +77,7 @@ def begin_chrome_navigation(client, screen, activity, activate, started):
     client.call('Network.setBypassServiceWorker', {'bypass': True})
     client.call('Emulation.setDeviceMetricsOverride', dict(width=1024, height=768,
         deviceScaleFactor=screen['scale'], mobile=False))
-    client.call('Emulation.setScriptExecutionDisabled', {'value': True})
+    client.call('Emulation.setScriptExecutionDisabled', {'value': not scripting})
     client.call('Fetch.enable', {'patterns': [{'urlPattern': 'http*', 'requestStage': 'Request'}]})
     if activate:
         client.call('Page.bringToFront')
@@ -344,19 +357,48 @@ def validate_chrome_targets(audit):
         raise RuntimeError('Chrome must contain exactly one Wikipedia page target')
 
 
-def validate_chrome_document(document, scale):
+def validate_chrome_document(document, scale, script_policy='disabled'):
+    scripting = chrome_scripting_enabled(script_policy)
     if (document['url'] != URL or document['ready'] != 'complete' or document['width'] != 1024
-            or document['height'] != 768 or document['scale'] != scale
-            or 'no-js' not in document['rootClass']
-            or any(x != 'undefined' for x in document['authorGlobals'])):
-        raise RuntimeError('Chrome viewport or no-JavaScript policy audit failed')
+            or document['height'] != 768 or document['scale'] != scale):
+        raise RuntimeError('Chrome viewport or document readiness audit failed')
+    classes = document['rootClass'].split()
+    if scripting:
+        if ('js-enabled' not in classes or 'no-js' in classes
+                or document.get('portalGlobals') != ['object', 'object', 'object', 'string']
+                or document.get('portalDomain') != 'wikipedia.org'
+                or not document.get('localizedVisible') or not document.get('languageLabelPresent')
+                or 'jsl10n-visible' not in document.get('bodyClass', '').split()):
+            raise RuntimeError('Chrome author JavaScript execution audit failed')
+    elif 'no-js' not in classes or any(x != 'undefined' for x in document['authorGlobals']):
+        raise RuntimeError('Chrome no-JavaScript policy audit failed')
     if document['fontsStatus'] != 'loaded':
         raise RuntimeError('Chrome fonts were pending after the primary endpoint')
     expected_src = URL + 'portal/wikipedia.org/assets/img/Wikipedia-logo-v2@2x.png'
-    if document['textLength'] < 5000 or document['sprites'] != 21 or not any(
+    # Author JS collapses language lists in normal Chrome. Audit the complete
+    # parsed body separately from its smaller, normally visible text.
+    content_ready = (document['textLength'] >= 500 and document.get('textContentLength', 0) >= 5000
+        if scripting else document['textLength'] >= 5000)
+    if not content_ready or document['sprites'] != 21 or not any(
             image['src'] == expected_src and image['complete'] and image['width'] == 200
             and image['height'] == 183 for image in document['images']):
         raise RuntimeError('Chrome frozen portal content or Retina globe is incomplete')
+
+
+def validate_chrome_requests(requests, script_policy='disabled'):
+    scripting = chrome_scripting_enabled(script_policy)
+    scripts = [r for r in requests if r['resource_type'] == 'Script']
+    if not scripting:
+        if scripts:
+            raise RuntimeError('Chrome fetched an author script while disabled')
+        return
+    if {r['url'] for r in scripts} != set(PORTAL_SCRIPTS) or any(
+            r.get('action') != 'replayed' or r.get('method') != 'GET'
+            or r.get('sha256') != PORTAL_SCRIPTS[r['url']] for r in scripts):
+        raise RuntimeError('Chrome author scripts did not replay the exact frozen assets')
+    if any(r.get('action') != 'replayed' for r in requests if r['resource_type'] in
+            ('XHR', 'Fetch', 'Stylesheet', 'Font')):
+        raise RuntimeError('Chrome author JavaScript required an uncached rendering resource')
 
 
 def drain_replay(client):
@@ -429,7 +471,7 @@ def chrome_sample(args, prefix, screen):
                             time.sleep(.02)
                     client = ObservedReplayCDP(target['webSocketDebuggerUrl'], args.cache)
                     version, navigation = begin_chrome_navigation(client, screen, foreground,
-                        args.foreground, started)
+                        args.foreground, started, args.chrome_script_policy)
                     while True:
                         drain_replay(client)
                         readiness = lifecycle_readiness(client.events, navigation)
@@ -449,7 +491,7 @@ def chrome_sample(args, prefix, screen):
                     endpoint_observed = time.monotonic() - started
                     load_at_endpoint = os.getloadavg()
                     summary = summarize(counter.samples, endpoint)
-                    audit = client.call('Runtime.evaluate', {'expression': '''JSON.stringify({url:location.href,title:document.title,ready:document.readyState,width:innerWidth,height:innerHeight,scale:devicePixelRatio,textLength:document.body.innerText.length,rootClass:document.documentElement.className,authorGlobals:[typeof window.Wikipedia,typeof window.wmf],fontsStatus:document.fonts.status,images:[...document.images].map(i=>({src:i.currentSrc||i.src,width:i.naturalWidth,height:i.naturalHeight,complete:i.complete})),sprites:document.querySelectorAll('.sprite').length,visibility:document.visibilityState,focused:document.hasFocus()})''', 'returnByValue': True})
+                    audit = client.call('Runtime.evaluate', {'expression': '''JSON.stringify({url:location.href,title:document.title,ready:document.readyState,width:innerWidth,height:innerHeight,scale:devicePixelRatio,textLength:document.body.innerText.length,rootClass:document.documentElement.className,authorGlobals:[typeof window.Wikipedia,typeof window.wmf],portalGlobals:[typeof window.mw,typeof window.wmTest,typeof window.wmL10nVisible,typeof window.portalSearchDomain],portalDomain:window.portalSearchDomain,localizedVisible:!!(window.wmL10nVisible&&window.wmL10nVisible.ready),languageLabelPresent:!!document.getElementById('jsLangLabel'),bodyClass:document.body.className,textContentLength:document.body.textContent.length,navigatorLanguage:navigator.language,navigatorLanguages:navigator.languages,fontsStatus:document.fonts.status,images:[...document.images].map(i=>({src:i.currentSrc||i.src,width:i.naturalWidth,height:i.naturalHeight,complete:i.complete})),sprites:document.querySelectorAll('.sprite').length,visibility:document.visibilityState,focused:document.hasFocus()})''', 'returnByValue': True})
                     verify_runtime_after_endpoint(client.commands, started + endpoint)
                     document = json.loads(audit['result']['value'])
                     target_audit = client.call('Target.getTargets')
@@ -457,9 +499,8 @@ def chrome_sample(args, prefix, screen):
                     pids = ','.join(str(p['pid']) for p in summary['endpoint_processes'])
                     process_commands = subprocess.check_output(['ps', '-p', pids,
                         '-o', 'pid=,ppid=,command='], text=True)
-                    validate_chrome_document(document, screen['scale'])
-                    if any(r['resource_type'] == 'Script' for r in client.requests):
-                        raise RuntimeError('Chrome fetched an author script while disabled')
+                    validate_chrome_document(document, screen['scale'], args.chrome_script_policy)
+                    validate_chrome_requests(client.requests, args.chrome_script_policy)
                     png = client.call('Page.captureScreenshot', dict(format='png', captureBeyondViewport=False))
                     screenshot = prefix.with_suffix('.png')
                     screenshot.write_bytes(base64.b64decode(png['data']))
@@ -473,7 +514,7 @@ def chrome_sample(args, prefix, screen):
                     process.wait(timeout=15)
                     if process.returncode:
                         raise RuntimeError(f'Chrome exited {process.returncode}')
-                return dict(engine='chrome', command=command, version=version, memory=summary,
+                return dict(engine='chrome', chrome_script_policy=args.chrome_script_policy, command=command, version=version, memory=summary,
                     samples=counter.samples, screenshot=str(screenshot), screenshot_sha256=digest(screenshot),
                     document=document, requests=client.requests, foreground_checks=foreground.checks,
                     targets=target_audit, endpoint_process_commands=process_commands,
@@ -601,6 +642,8 @@ def main():
     parser.add_argument('--engine', choices=['chrome', 'vox', 'paired'], required=True)
     parser.add_argument('--vox', type=Path)
     parser.add_argument('--chrome', type=Path, required=True)
+    parser.add_argument('--chrome-script-policy', choices=['disabled', 'enabled'], default='disabled',
+        help='Chrome author scripting; Vox remains disabled. Enabled is a separate normal-Chrome comparison.')
     parser.add_argument('--cache', type=Path, required=True)
     parser.add_argument('--network-deny', type=Path)
     parser.add_argument('--output', type=Path, required=True)
@@ -644,7 +687,8 @@ def main():
         files.extend(p for p in args.vox.parents[2].rglob('*') if p.is_file())
     pins = {str(p): digest(p) for p in files}
     cache_pins = fingerprint_tree(args.cache)
-    protocol = dict(windowed=True, author_javascript=False, url=URL, viewport=[1024, 768],
+    protocol = dict(windowed=True, author_javascript=dict(vox=False, chrome=chrome_scripting_enabled(args.chrome_script_policy)),
+        chrome_script_policy=args.chrome_script_policy, url=URL, viewport=[1024, 768],
         machine=machine,
         chrome_readiness='Matching Page frame/loader commit, paint, load and networkIdle; no Runtime enable/evaluate until after fixed primary endpoint. Frozen fixture has no font-face or external font resources; fonts status audited afterward.',
         device_scale=screen['scale'], window_placement=screen, foreground_controlled=args.foreground,

@@ -14,13 +14,62 @@ from types import SimpleNamespace
 
 from process_instruction_counts import RusageInfoV4
 from wikipedia_browser_memory import (BackgroundControl, PhysicalTree, URL, audit_timing,
-    ObservedReplayCDP, begin_chrome_navigation, lifecycle_readiness, verify_runtime_after_endpoint,
+    ObservedReplayCDP, PORTAL_SCRIPTS, begin_chrome_navigation, chrome_scripting_enabled,
+    lifecycle_readiness, verify_runtime_after_endpoint, validate_chrome_requests,
     launch_external_diagnostic, finish_external_diagnostics,
     clean_environment, drain_replay, require_png_scale, settled_reduction, summarize,
     validate_chrome_document, validate_chrome_targets, validate_vox_document, vox_environment)
 
 
 class WikipediaMemoryTests(unittest.TestCase):
+    def test_enabled_chrome_policy_is_explicit_before_navigation_without_runtime_observers(self):
+        calls = []
+        client = SimpleNamespace(call=lambda method, params=None: calls.append((method, params)) or {})
+        activity = SimpleNamespace(poll=lambda *_args, **_kwargs: None)
+        begin_chrome_navigation(client, {'scale': 2}, activity, False, 0, 'enabled')
+        methods = [m for m, _ in calls]
+        self.assertEqual(dict(calls)['Emulation.setScriptExecutionDisabled'], {'value': False})
+        self.assertLess(methods.index('Emulation.setScriptExecutionDisabled'), methods.index('Page.navigate'))
+        self.assertFalse(any(m.startswith('Runtime.') for m in methods))
+        self.assertFalse(chrome_scripting_enabled('disabled'))
+        with self.assertRaises(ValueError):
+            chrome_scripting_enabled('implicit')
+
+    def test_enabled_chrome_requires_executed_portal_scripts_and_complete_collapsed_content(self):
+        document = dict(url=URL, ready='complete', width=1024, height=768, scale=2,
+            rootClass='js-enabled', authorGlobals=['undefined', 'undefined'], fontsStatus='loaded',
+            portalGlobals=['object', 'object', 'object', 'string'], portalDomain='wikipedia.org',
+            localizedVisible=True, languageLabelPresent=True, bodyClass='jsl10n-visible',
+            textLength=1700, textContentLength=20000, sprites=21, images=[dict(src=URL+
+                'portal/wikipedia.org/assets/img/Wikipedia-logo-v2@2x.png', complete=True, width=200, height=183)])
+        validate_chrome_document(document, 2, 'enabled')
+        with self.assertRaises(RuntimeError):
+            validate_chrome_document(document, 2)
+        for mutation in [lambda d: d.update(rootClass='no-js'),
+                         lambda d: d.update(portalGlobals=['undefined'] * 4),
+                         lambda d: d.update(languageLabelPresent=False),
+                         lambda d: d.update(localizedVisible=False),
+                         lambda d: d.update(textContentLength=0),
+                         lambda d: d.update(textLength=0),
+                         lambda d: d['images'][0].update(complete=False)]:
+            bad = copy.deepcopy(document)
+            mutation(bad)
+            with self.assertRaises(RuntimeError):
+                validate_chrome_document(bad, 2, 'enabled')
+
+    def test_enabled_chrome_requires_exact_replayed_script_bytes_and_no_missing_translation(self):
+        requests = [dict(url=url, resource_type='Script', method='GET', action='replayed', sha256=sha)
+                    for url, sha in PORTAL_SCRIPTS.items()]
+        validate_chrome_requests(requests, 'enabled')
+        with self.assertRaises(RuntimeError):
+            validate_chrome_requests(requests)
+        for bad in [requests[:1], requests + [dict(url=URL+'l10n/en.json', resource_type='XHR', action='blocked-missing-or-non-get')],
+                    [dict(r, sha256='wrong') for r in requests],
+                    [dict(r, action='blocked-missing-or-non-get') for r in requests]]:
+            with self.assertRaises(RuntimeError):
+                validate_chrome_requests(bad, 'enabled')
+        validate_chrome_requests([], 'disabled')
+
     def test_external_diagnostic_launch_does_not_wait_and_records_actual_exit_once(self):
         waits = []
         process = SimpleNamespace(pid=321, wait=lambda **kwargs: waits.append(kwargs) or 7)
