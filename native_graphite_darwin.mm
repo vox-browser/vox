@@ -6,6 +6,7 @@
 #include "include/core/SkImageInfo.h"
 #include "include/core/SkMaskFilter.h"
 #include "include/core/SkPaint.h"
+#include "include/core/SkPath.h"
 #include "include/core/SkRRect.h"
 #include "include/core/SkSurface.h"
 #include "include/core/SkYUVAPixmaps.h"
@@ -16,6 +17,7 @@
 #include "include/gpu/graphite/Recording.h"
 #include "include/gpu/graphite/Surface.h"
 #include "include/gpu/graphite/mtl/MtlBackendContext.h"
+#include "native_svg_path_segments.h"
 #include <algorithm>
 #include <cmath>
 #include <cstring>
@@ -239,5 +241,37 @@ int vox_graphite_draw_shape_pixels(uint8_t* pixels, int width, int height,
         paint.setStrokeWidth(std::max(0.0f, shape->thickness));
     }
     canvas->drawRRect(rounded_rect(shape->rect), paint);
+    return read_pixels(gpu, recorder.get(), surface.get(), info, pixels, pitch);
+}
+
+// Chromium fills SVG paths through its GPU rasterizer, whose multisampled
+// coverage differs from Skia's CPU analytic antialiasing on complex outlines.
+extern "C" __attribute__((visibility("default")))
+int vox_graphite_draw_path_pixels(uint8_t* pixels, int width, int height,
+    int pitch, int has_background, VoxGraphitePath const* path)
+{
+    if (!pixels || !path || !path->segments || path->segment_count <= 0 || width <= 0
+        || height <= 0 || pitch <= 0
+        || static_cast<size_t>(pitch) < static_cast<size_t>(width) * 4) return 0;
+    std::lock_guard lock(gpu_mutex);
+    auto* gpu = context();
+    if (!gpu) return 0;
+    auto recorder = gpu->makeRecorder();
+    auto info = SkImageInfo::Make(width, height, kBGRA_8888_SkColorType,
+        kPremul_SkAlphaType, SkColorSpace::MakeSRGB());
+    auto surface = SkSurfaces::RenderTarget(recorder.get(), info);
+    if (!surface) return 0;
+    auto* canvas = surface->getCanvas();
+    if (has_background) surface->writePixels(SkPixmap(info, pixels, pitch), 0, 0);
+    else canvas->clear(SK_ColorTRANSPARENT);
+    SkMatrix matrix;
+    matrix.set9(path->matrix);
+    canvas->setMatrix(matrix);
+    auto geometry = vox_path_from_serialized_segments(path->segments, path->segment_count);
+    geometry.setFillType(path->even_odd ? SkPathFillType::kEvenOdd : SkPathFillType::kWinding);
+    SkPaint paint;
+    paint.setAntiAlias(true);
+    paint.setColor(SkColorSetARGB(path->alpha, path->red, path->green, path->blue));
+    canvas->drawPath(geometry, paint);
     return read_pixels(gpu, recorder.get(), surface.get(), info, pixels, pitch);
 }

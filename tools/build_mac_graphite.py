@@ -128,6 +128,7 @@ def main():
         "-Wl,-exported_symbol,_vox_graphite_draw_shadow_pixels",
         "-Wl,-exported_symbol,_vox_graphite_draw_image_pixels",
         "-Wl,-exported_symbol,_vox_graphite_draw_shape_pixels",
+        "-Wl,-exported_symbol,_vox_graphite_draw_path_pixels",
         "-Wl,-install_name,@rpath/libVoxGraphite.dylib", "-o", str(args.output)], check=True)
     print(f"Built isolated Skia Metal backend: {args.output}")
 

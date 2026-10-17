@@ -27,6 +27,15 @@ typedef struct {
     int fill, anti_alias;
 } VoxGraphiteShape;
 
+// An SVG path in the browser's serialized segment format: twelve floats per
+// segment, beginning with the segment kind.
+typedef struct {
+    float matrix[9];
+    const float *segments;
+    int segment_count, even_odd;
+    uint8_t red, green, blue, alpha;
+} VoxGraphitePath;
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -36,6 +45,8 @@ int vox_graphite_draw_image_pixels(uint8_t *pixels, int width, int height,
     int pitch, int has_background, const VoxGraphiteImage *image);
 int vox_graphite_draw_shape_pixels(uint8_t *pixels, int width, int height,
     int pitch, int has_background, const VoxGraphiteShape *shape);
+int vox_graphite_draw_path_pixels(uint8_t *pixels, int width, int height,
+    int pitch, int has_background, const VoxGraphitePath *path);
 #ifdef __cplusplus
 }
 #endif

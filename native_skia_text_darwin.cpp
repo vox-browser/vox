@@ -129,6 +129,16 @@ auto graphite_shape_draw()
     return draw;
 }
 
+auto graphite_path_draw()
+{
+    static auto draw = [] {
+        void* library = dlopen("@rpath/libVoxGraphite.dylib", RTLD_LAZY | RTLD_LOCAL);
+        return library ? reinterpret_cast<decltype(&vox_graphite_draw_path_pixels)>(
+            dlsym(library, "vox_graphite_draw_path_pixels")) : nullptr;
+    }();
+    return draw;
+}
+
 SkTypeface* select_typeface(char const* path, int face_index, int font_weight, int emoji_face)
 {
     if (path && *path) {
@@ -1550,6 +1560,28 @@ extern "C" int ladybird_v_skia_draw_svg_path(CGContextRef destination,
     auto raster_scale_x = static_cast<float>(raster_width) / static_cast<float>(region.width());
     auto raster_scale_y = static_cast<float>(raster_height) / static_cast<float>(region.height());
     std::vector<uint32_t> pixels(static_cast<size_t>(raster_width) * static_cast<size_t>(raster_height));
+    if (s_chromium_painting && has_fill && !(has_stroke && stroke_width > 0.0f)) {
+        // Chromium fills SVG paths with its GPU rasterizer.
+        bool has_background = copy_opaque_backdrop(destination, region, destination_scale,
+            raster_width, raster_height, pixels);
+        VoxGraphitePath descriptor {
+            .matrix = {}, .segments = data, .segment_count = segment_count,
+            .even_odd = even_odd, .red = fill_red, .green = fill_green, .blue = fill_blue,
+            .alpha = fill_alpha
+        };
+        raster_matrix(matrix, region, raster_scale_x, raster_scale_y).get9(descriptor.matrix);
+        if (auto draw = graphite_path_draw(); draw && draw(reinterpret_cast<uint8_t*>(pixels.data()),
+                raster_width, raster_height, raster_width * 4, has_background, &descriptor)) {
+            CGContextSaveGState(destination);
+            if (has_background) CGContextSetBlendMode(destination, kCGBlendModeCopy);
+            int result = composite_pixels(destination, pixels, raster_width, raster_height,
+                static_cast<float>(region.left), canvas_height - static_cast<float>(region.bottom),
+                static_cast<float>(region.width()), static_cast<float>(region.height()));
+            CGContextRestoreGState(destination);
+            return result;
+        }
+        std::fill(pixels.begin(), pixels.end(), 0);
+    }
     auto image_info = SkImageInfo::Make(raster_width, raster_height, kBGRA_8888_SkColorType,
         kPremul_SkAlphaType, SkColorSpace::MakeSRGB());
     auto surface = SkSurfaces::WrapPixels(image_info, pixels.data(),

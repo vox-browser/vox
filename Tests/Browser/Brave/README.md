@@ -70,3 +70,10 @@ checks repeated bitmap backgrounds inside rounded inline borders, including
 a one-pixel strip before an image origin. The Chromium image player retains
 that preceding tile and clips it in the GPU image operation, avoiding a second
 Quartz antialiasing mask. Both fixtures use synthetic embedded PNGs.
+
+`svg-path-coverage` checks filled SVG background images: a many-vertex star,
+curves with an even-odd hole, and serif letter outlines, each at natural size
+and stretched. Chromium fills these paths through its GPU rasterizer, whose
+multisampled edge coverage differs from Skia's CPU analytic antialiasing, so
+Chromium-policy fills use the Graphite backend. Strokes and gradient fills
+keep the CPU path.
