@@ -1,0 +1,71 @@
+import assert from 'node:assert/strict';
+import {test} from 'node:test';
+import fs from 'node:fs/promises';
+import os from 'node:os';
+import path from 'node:path';
+import crypto from 'node:crypto';
+import {archiveHeaders, captureArchive, imageAccept} from './capture_archive.mjs';
+
+test('decoded body keeps response policy and repeated values, replacing only wire framing', () => {
+    const headers = archiveHeaders({headers:{'Content-Encoding':'br','Transfer-Encoding':'chunked',
+        'Content-Length':'400','Content-Type':'image/webp','Vary':'Accept',
+        'Access-Control-Allow-Origin':'https://edition.cnn.com','X-Repeat':'one\ntwo'}},123);
+    assert.deepEqual(headers,[{name:'Content-Type',value:'image/webp'},
+        {name:'Vary',value:'Accept'},{name:'Access-Control-Allow-Origin',value:'https://edition.cnn.com'},
+        {name:'X-Repeat',value:'one'},{name:'X-Repeat',value:'two'},
+        {name:'content-length',value:'123'}]);
+});
+test('empty header values survive archive serialization', () => {
+    assert.deepEqual(archiveHeaders({headers:{'X-Empty':''}},0),[
+        {name:'X-Empty',value:''},{name:'content-length',value:'0'}]);
+});
+
+test('archive replays encoded images and the frozen main body with original response policy', async t => {
+    const root = await fs.mkdtemp(path.join(os.tmpdir(), 'vox-archive-test-'));
+    t.after(() => fs.rm(root, {recursive:true, force:true}));
+    const directory = path.join(root, 'capture');
+    const url = 'https://edition.example.com/';
+    const imageURL = 'https://media.example.com/photo.webp';
+    const html = '<!doctype html><html><head><base href="' + url + '"></head><body>frozen</body></html>';
+    const encoded = Buffer.from([0, 255, 127, 128, 4]);
+    const entries = [
+        {id:'document', url, type:'Document', body:'original scripted document',
+            headers:{'Content-Type':'text/html', 'Content-Security-Policy':"default-src 'self'"}},
+        {id:'image', url:imageURL, type:'Image', body:encoded.toString('base64'),
+            headers:{'Content-Type':'image/webp', 'Access-Control-Allow-Origin':url, 'Content-Encoding':'br'}},
+        {id:'failed', url:url+'missing', type:'Image', body:'missing', headers:{}, status:404},
+        {id:'unfinished', url:url+'pending', type:'Image', body:'not finished', headers:{}},
+    ];
+    const page = {
+        events:entries.flatMap(e => [
+            {method:'Network.requestWillBeSent', params:{requestId:e.id, request:{url:e.url, method:'GET'}}},
+            {method:'Network.responseReceived', params:{requestId:e.id, type:e.type,
+                response:{url:e.url, status:e.status||200, headers:e.headers}}},
+            ...(e.id === 'unfinished' ? [] : [{method:'Network.loadingFinished', params:{requestId:e.id}}]),
+        ]),
+        async evaluate() { return {html, url, base:url, text:'text '.repeat(300),
+            width:1024, height:768, scale:1, removed_scripts:3}; },
+        async send(method, args) {
+            if (method === 'Page.captureScreenshot') return {data:encoded.toString('base64')};
+            assert.equal(method, 'Network.getResponseBody');
+            const entry = entries.find(e => e.id === args.requestId);
+            return {body:entry.body, base64Encoded:entry.id === 'image'};
+        },
+    };
+    const result = await captureArchive(page, directory, 'https://example.com/');
+    assert.equal(result.resources, 2);
+    assert.equal(result.failed_body_captures, 0);
+    const key = value => crypto.createHash('sha256').update(value).digest('hex');
+    const resource = value => path.join(directory, 'cache/resources', key(value));
+    assert.deepEqual(await fs.readFile(resource(imageURL)), encoded);
+    assert.deepEqual(await fs.readFile(resource(imageURL+'\nAccept: '+imageAccept)), encoded);
+    assert.equal(await fs.readFile(resource(url), 'utf8'), html);
+    assert.equal(await fs.readFile(path.join(directory, 'cache/pages', key(url)), 'utf8'), html);
+    const headers = JSON.parse(await fs.readFile(resource(url)+'.headers.json'));
+    assert(headers.some(h => h.name === 'Content-Security-Policy' && h.value === "default-src 'self'"));
+    assert(headers.some(h => h.name === 'content-length' && h.value === String(Buffer.byteLength(html))));
+    const manifest = JSON.parse(await fs.readFile(path.join(directory, 'archive.json')));
+    assert.equal(manifest.resources[0].sha256, key('original scripted document'));
+    assert.equal(manifest.frozen_html_sha256, key(html));
+    await assert.rejects(captureArchive(page, directory, url), /EEXIST/);
+});

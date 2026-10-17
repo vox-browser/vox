@@ -109,6 +109,16 @@ uBlock Origin 1.75.0 (Manifest V2), then run:
 node tools/adblock/brave_parity.mjs
 ```
 
+Add `--url https://edition.cnn.com/ --capture-dir Build/cnn-parity/new-capture`
+to archive the successfully loaded page at 1024×768 and device scale 1. The
+directory must be new. This optional archive keeps a script-free DOM, a live
+viewport PNG, and successful GET response bodies in the native browser's cache
+format. It preserves response security and CORS headers, removes decoded
+transport framing, and records body hashes. The main replay body is the frozen
+DOM; its original response hash remains in the manifest. No computed layout or
+saved page raster replaces rendering. Missing or failed response bodies are
+not synthesized. Treat captured pages as private browsing data.
+
 This uses an isolated temporary Brave profile, disables its built-in Shields,
 and loads only the full MV2 extension. It installs the repository's exact list
 snapshots in the isolated extension before visiting `https://www.theverge.com/`.

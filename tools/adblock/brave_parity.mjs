@@ -7,6 +7,7 @@ import path from 'node:path';
 import crypto from 'node:crypto';
 import { spawn, execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
+import { captureArchive } from './capture_archive.mjs';
 import { navigationObservation } from './navigation.mjs';
 import { hasHeaderFilter, requestIdentity, summarizeRequestParity } from './request_stream.mjs';
 import { collectVisibility, validateVisibilityProbe } from './visibility_probe.mjs';
@@ -21,6 +22,7 @@ const options = {
     requests: '',
     'document-fixture': '',
     'visibility-probe': '',
+    'capture-dir': '',
     settle: 15,
 };
 for (let i = 2; i < process.argv.length; i += 2) {
@@ -214,7 +216,8 @@ try {
         };
     })()`);
     await page.send('Page.enable');
-    await page.send('Network.enable');
+    await page.send('Network.enable', options['capture-dir'] ? {maxTotalBufferSize: 128 * 1024 * 1024, maxResourceBufferSize: 16 * 1024 * 1024} : {});
+    if (options['capture-dir']) await page.send('Emulation.setDeviceMetricsOverride', {width:1024,height:768,deviceScaleFactor:1,mobile:false});
     let navigation = null;
     let documentFixture = null;
     let visibility = null;
@@ -252,6 +255,8 @@ try {
             observer_settle_ms: 2000,
         };
     }
+    if (options['capture-dir'] && navigation?.coverage !== 'page') throw new Error('Archive requires successful page coverage');
+    const archive = options['capture-dir'] ? await captureArchive(page, path.resolve(options['capture-dir']), options.url) : null;
     const documentURL = navigation?.url && /^https?:/.test(navigation.url) ? navigation.url : options.url;
     const raw = await background.evaluate(`(async()=> (await import('./js/logger.js')).default.readAll('vox-parity'))()`);
     const logs = raw.map(JSON.parse).filter(entry => entry.realm === 'network' && /^https?:/.test(entry.url));
@@ -375,6 +380,7 @@ try {
         captured_at: new Date().toISOString(), url: options.url,
         navigation,
         document_fixture: documentFixture,
+        ...(archive ? {archive} : {}),
         visibility,
         input: recordedVox ? { mode: 'recorded-vox-network', file: path.resolve(options['vox-log']) } : requestedCorpus ? { mode: 'fixture-request-stream', file: path.resolve(options.requests) } : { mode: 'live-brave-network' },
         oracle: { browser: execFileSync(options.brave, ['--version'], { encoding: 'utf8' }).trim(), extension: 'uBlock Origin (full, Manifest V2)', version: extensionManifest.version, shields: 'disabled in isolated profile', settings: 'repository-selected lists; identical snapshots; empty user filters' },
