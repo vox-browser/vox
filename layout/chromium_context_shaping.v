@@ -62,14 +62,22 @@ fn chromium_context_slice(run &platform.GlyphRun, chunk TextNodeChunk) ?platform
 	if offset == chunk.start + chunk.length && end < 0 { end = run.glyphs_.len }
 	// Never cut a ligature or a cluster at a line-break chunk boundary.
 	if first < 0 || end <= first { return none }
-	origin := run.glyphs_[first].position.x
-	limit := if end < run.glyphs_.len { run.glyphs_[end].position.x } else { run.width() }
+	// Blink sums the 16.16 advances of a line's part of an item exactly from
+	// its first glyph, then converts each sum to float. Subtracting the float
+	// pens of a paragraph-long run instead moves glyphs hundreds of pixels in
+	// by a few ULPs, enough to change their quarter-pixel raster position.
+	// The slice starts at its first glyph's placement, which HarfBuzz's split
+	// 'kern' adjustments can move, and ends at the next glyph's.
 	mut glyphs := run.glyphs_[first..end].clone()
+	origin := f64(glyphs[0].offset_x)
+	mut local := f64(0)
 	for mut glyph in glyphs {
-		glyph.position.translate_by(-origin, 0)
+		glyph.position.x = f32(local + f64(glyph.offset_x) - origin)
+		local += f64(glyph.advance)
 	}
+	next_offset := if end < run.glyphs_.len { f64(run.glyphs_[end].offset_x) } else { f64(0) }
 	mut sliced := platform.GlyphRun.new_with_face(run.font(), .ltr, glyphs, run.face())
-	sliced.width_ = limit - origin
+	sliced.width_ = f32(local + next_offset - origin)
 	sliced.space_width = run.space_width
 	mut trailing_length := 0
 	mut trailing_advance := f32(0)

@@ -82,6 +82,8 @@ fn C.hb_font_set_variations(font voidptr, variations voidptr, variations_length 
 
 fn C.hb_font_get_nominal_glyph(font voidptr, unicode u32, glyph &u32) int
 
+fn C.hb_font_get_glyph_h_advance(font voidptr, glyph u32) int
+
 fn C.hb_buffer_create() voidptr
 
 fn C.hb_buffer_destroy(buffer voidptr)
@@ -497,12 +499,15 @@ fn text_uses_emoji_fallback(text string) bool {
 // scaled horizontal metrics. The native Skia bridge supplies them when linked.
 type SkiaSystemFaceAdvances = fn (key &char, path &char, postscript_name &char, size f32, glyphs &u16, count int, advances &f32) int
 
+type SkiaFaceAdvances = fn (path &char, face_index int, weight int, size f32, glyphs &u16, count int, advances &f32) int
+
 __global skia_system_face_advances_lookup = SkiaSystemFaceAdvancesLookup{}
 
 struct SkiaSystemFaceAdvancesLookup {
 mut:
-	attempted bool
-	function  voidptr
+	attempted     bool
+	function      voidptr
+	face_function voidptr
 	// HarfBuzz faces are cached for the process; remember which carry 'sbix'.
 	bitmap_faces map[u64]bool
 }
@@ -514,6 +519,8 @@ fn skia_system_face_advances_function() voidptr {
 			// RTLD_DEFAULT searches every image loaded into the process.
 			skia_system_face_advances_lookup.function = C.dlsym(unsafe { voidptr(isize(-2)) },
 				c'ladybird_v_skia_system_face_advances')
+			skia_system_face_advances_lookup.face_function = C.dlsym(unsafe { voidptr(isize(-2)) },
+				c'ladybird_v_skia_face_advances')
 		}
 		return skia_system_face_advances_lookup.function
 	} $else {
@@ -542,10 +549,73 @@ fn harfbuzz_face_is_bitmap_face(face voidptr) bool {
 	return is_bitmap
 }
 
+// Blink's HarfBuzz font functions also take an outline face's advances from
+// its Skia strike, truncated to 16.16 fixed point, and HarfBuzz adds its GPOS
+// adjustments at the same scale. HarfBuzz's own scaling rounds the design
+// advance instead, which differs by 1/65536px for about half the glyphs and
+// moves glyphs late in a line across a quarter-pixel raster position.
+fn chromium_outline_face_advances(font &Font, face voidptr, hb_font voidptr, infos &C.hb_glyph_info_t,
+	positions &C.hb_glyph_position_t, count int) []f32 {
+	if font.font_rendering_policy != .chromium || count <= 0 || harfbuzz_face_is_bitmap_face(face)
+		|| font.variations().len > 0 {
+		return []f32{}
+	}
+	widths := if font.system_face() != none {
+		skia_system_face_widths(font, infos, count)
+	} else {
+		skia_document_face_widths(font, infos, count)
+	}
+	if widths.len != count {
+		return []f32{}
+	}
+	mut advances := []f32{len: count}
+	for index in 0 .. count {
+		position := unsafe { positions[index] }
+		if position.x_advance == 0 {
+			continue
+		}
+		nominal := C.hb_font_get_glyph_h_advance(hb_font, unsafe { infos[index] }.codepoint)
+		advances[index] = chromium_harfbuzz_advance(widths[index], position.x_advance, nominal)
+	}
+	return advances
+}
+
+// Blink's SkiaScalarToHarfBuzzPosition() truncates a strike width to 16.16
+// fixed point. HarfBuzz's positioning adjustments, the difference between its
+// shaped and nominal advances, are added at the same scale.
+fn chromium_harfbuzz_advance(skia_width f32, x_advance int, nominal_advance int) f32 {
+	width := i64(skia_width * f32(65536))
+	return f32(f64(width + i64(x_advance) - i64(nominal_advance)) / 65536)
+}
+
 fn chromium_bitmap_face_advances(font &Font, face voidptr, infos &C.hb_glyph_info_t, count int) []f32 {
 	if font.font_rendering_policy != .chromium || count <= 0 || !harfbuzz_face_is_bitmap_face(face) {
 		return []f32{}
 	}
+	return skia_system_face_widths(font, infos, count)
+}
+
+fn skia_document_face_widths(font &Font, infos &C.hb_glyph_info_t, count int) []f32 {
+	path := font.font_path() or { return []f32{} }
+	skia_system_face_advances_function()
+	function := skia_system_face_advances_lookup.face_function
+	if function == unsafe { nil } {
+		return []f32{}
+	}
+	mut glyph_ids := []u16{len: count}
+	for index in 0 .. count {
+		glyph_ids[index] = u16(unsafe { infos[index] }.codepoint)
+	}
+	mut widths := []f32{len: count}
+	measure := unsafe { SkiaFaceAdvances(function) }
+	if measure(&char(path.str), font.face_index(), font.weight, font.point_size, glyph_ids.data,
+		count, widths.data) == 0 {
+		return []f32{}
+	}
+	return widths
+}
+
+fn skia_system_face_widths(font &Font, infos &C.hb_glyph_info_t, count int) []f32 {
 	system_face := font.system_face() or { return []f32{} }
 	function := skia_system_face_advances_function()
 	if function == unsafe { nil } {
@@ -677,8 +747,12 @@ fn shape_text_with_harfbuzz(initial_x f32, letter_spacing f32, word_spacing f32,
 	mut glyph_count := u32(0)
 	infos := C.hb_buffer_get_glyph_infos(buffer, &glyph_count)
 	positions := C.hb_buffer_get_glyph_positions(buffer, &glyph_count)
-	bitmap_advances := if uses_emoji { []f32{} } else { chromium_bitmap_face_advances(font, face,
+	mut skia_advances := if uses_emoji { []f32{} } else { chromium_bitmap_face_advances(font, face,
 			infos, int(glyph_count)) }
+	if !uses_emoji && skia_advances.len == 0 {
+		skia_advances = chromium_outline_face_advances(font, face, hb_font, infos, positions,
+			int(glyph_count))
+	}
 	mut glyphs := []Glyph{cap: int(glyph_count)}
 	mut point_x := initial_x
 	trailing_length := trailing_whitespace_length(text)
@@ -693,8 +767,8 @@ fn shape_text_with_harfbuzz(initial_x f32, letter_spacing f32, word_spacing f32,
 		should_paint := !font.is_invisible && !is_default_ignorable
 		mut advance := f32(0)
 		if !is_default_ignorable {
-			design_advance := if index < bitmap_advances.len {
-				bitmap_advances[index]
+			design_advance := if index < skia_advances.len {
+				skia_advances[index]
 			} else {
 				f32(f64(position.x_advance) / resolution)
 			}
@@ -717,14 +791,16 @@ fn shape_text_with_harfbuzz(initial_x f32, letter_spacing f32, word_spacing f32,
 				break
 			}
 		}
+		offset_x := f32(f64(position.x_offset) / resolution)
 		glyphs << Glyph{
 			code_point: code_point
 			glyph_index: int(info.codepoint)
 			position: GlyphPosition{
-				x: point_x + f32(f64(position.x_offset) / resolution)
+				x: point_x + offset_x
 				y: f32(f64(position.y_offset) / resolution)
 			}
 			advance: advance
+			offset_x: offset_x
 			length_in_code_units: length_in_code_units
 			should_paint: should_paint
 		}

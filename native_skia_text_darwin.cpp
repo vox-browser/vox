@@ -649,6 +649,24 @@ extern "C" int ladybird_v_skia_system_face_advances(char const* key, char const*
     return 1;
 }
 
+// The advances of a document face's Skia strike, which Blink's HarfBuzz font
+// functions supply in place of HarfBuzz's own scaled design advances.
+extern "C" int ladybird_v_skia_face_advances(char const* font_path, int face_index,
+    int font_weight, float size, uint16_t const* glyphs, int count, float* advances)
+{
+    if (!glyphs || !advances || count <= 0 || !(size > 0))
+        return 0;
+    auto* typeface = select_typeface(font_path, face_index, font_weight, 0);
+    if (!typeface)
+        return 0;
+    SkFont font(sk_ref_sp(typeface), size);
+    font.setSubpixel(true);
+    font.setHinting(SkFontHinting::kNone);
+    font.getWidths(SkSpan<const SkGlyphID>(glyphs, static_cast<size_t>(count)),
+        SkSpan<SkScalar>(advances, static_cast<size_t>(count)));
+    return 1;
+}
+
 extern "C" int ladybird_v_skia_draw_glyph_run(CGContextRef destination,
     char const* font_path, int face_index, uint16_t const* glyphs, double const* packed_positions, int glyph_count,
     float font_size, int font_weight, int emoji_face, float baseline_x,

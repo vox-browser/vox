@@ -43,6 +43,8 @@ pub mut:
 	glyph_index          int
 	position             GlyphPosition
 	advance              f32
+	// HarfBuzz's horizontal placement, which position.x already includes.
+	offset_x             f32
 	length_in_code_units int = 1
 	should_paint         bool = true
 }

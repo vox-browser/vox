@@ -85,6 +85,7 @@ fn cold_legacy_hb(initial_x f32, letter_spacing f32, word_spacing f32, text stri
 				y: f32(position.y_offset) / font.shaping_resolution()
 			}
 			advance:              advance
+			offset_x:             f32(position.x_offset) / font.shaping_resolution()
 			length_in_code_units: length_in_code_units
 			should_paint:         should_paint
 		}

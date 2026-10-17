@@ -48,6 +48,35 @@ fn test_context_slices_keep_space_kerning_and_own_their_glyph_arrays() {
 	assert chromium_context_slice(ligature, TextNodeChunk{ start: 1, length: 1 }) == none
 }
 
+// Blink sums a line's 16.16 advances exactly from its first glyph. A slice
+// late in a paragraph-long run must not subtract its float pens, and keeps the
+// placement HarfBuzz's split 'kern' adjustment gave its following glyph.
+fn test_context_slices_sum_advances_exactly_from_their_first_glyph() {
+	font := &platform.Font{family: 'Test', point_size: 13.333333, font_rendering_policy: .chromium}
+	advance := f32(485851.0 / 65536.0)
+	mut glyphs := []platform.Glyph{}
+	mut pen := f32(0)
+	for index in 0 .. 400 {
+		// The second glyph of each kern pair carries half the adjustment as its
+		// placement, as HarfBuzz applies legacy 'kern' tables.
+		offset := if index % 2 == 1 { f32(-3.0 / 65536.0) } else { f32(0) }
+		glyphs << platform.Glyph{code_point: u32(`e`), position: platform.GlyphPosition{x: pen + offset},
+			advance: advance, offset_x: offset, length_in_code_units: 1}
+		pen += advance
+	}
+	run := platform.GlyphRun.new(font, .ltr, glyphs)
+	word := chromium_context_slice(run, TextNodeChunk{start: 300, length: 4}) or { panic('word missing') }
+	// The slice starts at its first glyph's placement and ends at the next
+	// glyph's, so a following slice continues exactly where this one ends.
+	assert word.glyph_run.glyphs_[0].position.x == 0
+	assert word.glyph_run.glyphs_[1].position.x == f32(f64(advance) - 3.0 / 65536.0)
+	assert word.glyph_run.glyphs_[3].position.x == f32(3 * f64(advance) - 3.0 / 65536.0)
+	assert word.glyph_run.width() == f32(4 * f64(advance) - 0.0)
+	odd := chromium_context_slice(run, TextNodeChunk{start: 301, length: 2}) or { panic('odd missing') }
+	assert odd.glyph_run.glyphs_[1].position.x == f32(f64(advance) + 3.0 / 65536.0)
+	assert odd.glyph_run.width() == f32(2 * f64(advance) - 3.0 / 65536.0 + 3.0 / 65536.0)
+}
+
 fn test_latin_context_slices_use_utf16_offsets_after_multibyte_punctuation() {
 	font := &platform.Font{family: 'Test', point_size: 16, font_rendering_policy: .chromium}
 	run := platform.GlyphRun.new(font, .ltr, [

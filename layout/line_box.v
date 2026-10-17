@@ -339,11 +339,15 @@ pub fn (mut fragment LineBoxFragment) append_glyph_run(glyph_run &platform.Glyph
 fn (mut fragment LineBoxFragment) append_glyph_run_ltr(glyph_run &platform.GlyphRun, run_width CSSPixels) {
 	run_direction := fragment.resolve_glyph_run_direction(glyph_run.text_type())
 	mut inline_offset := f32(fragment.inline_length_.to_double())
+	// The unsnapped offset of a continued item: each glyph position is the
+	// exact sum converted to float once, as Blink converts its 16.16 sums.
+	mut precise_offset := ?f64(none)
 	if precise := fragment.precise_inline_length_ {
 		if fragment.current_insert_direction == .ltr && run_direction == .ltr
 			&& run_width == shaped_inline_width(glyph_run, 0)
 			&& glyph_run.glyphs_.len > 0 && glyph_run.glyphs_[0].position.x == 0 {
 			inline_offset = f32(precise) + fragment.glyph_remainder_
+			precise_offset = precise + f64(fragment.glyph_remainder_)
 			fragment.precise_inline_length_ = precise + f64(glyph_run.width())
 		} else {
 			fragment.precise_inline_length_ = none
@@ -369,7 +373,11 @@ fn (mut fragment LineBoxFragment) append_glyph_run_ltr(glyph_run &platform.Glyph
 			start := destination.glyphs_.len
 			destination.glyphs_ << glyph_run.glyphs_
 			for i in start .. destination.glyphs_.len {
-				destination.glyphs_[i].position.translate_by(inline_offset, 0)
+				if offset := precise_offset {
+					destination.glyphs_[i].position.x = f32(offset + f64(destination.glyphs_[i].position.x))
+				} else {
+					destination.glyphs_[i].position.translate_by(inline_offset, 0)
+				}
 			}
 		}
 		.rtl {

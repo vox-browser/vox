@@ -139,3 +139,14 @@ where text, shadows and images still blend over the group's own pixels, then
 composites it with the same arithmetic. Core Graphics transparency layers
 rounded antialiased edges inside a group differently. Groups with another
 blend mode keep the Core Graphics layer.
+
+`paragraph-advances` checks 4chan's /pol/ rules post: 13.33px Arial paragraphs
+whose text nodes wrap across several lines. Blink's HarfBuzz font functions
+take each glyph's advance from its Skia strike, truncated to 16.16 fixed
+point, and HarfBuzz adds its kerning at the same scale. Each line's glyph
+positions are then exact 16.16 sums from the line's first glyph, converted to
+float once. The Chromium profile uses the same strike widths and recomputes
+each word's positions from those advances, rather than subtracting float pens
+of a paragraph-long shaping run, so no glyph moves into a neighbouring
+quarter-pixel raster position. Legacy `kern` adjustments keep the placement
+HarfBuzz gives their second glyph.
