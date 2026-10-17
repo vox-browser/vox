@@ -43,3 +43,26 @@ globalThis.iterationPassed=true;
 	assert runtime.evaluate_host('iterationPassed')! == 'true'
 	assert messages == []string{}
 }
+
+fn test_collection_reads_flush_all_pending_attribute_and_content_edits() {
+	mut document := html.parse_document('<!doctype html><div id="host"><i id="first"></i></div>')
+	mut runtime := browserjs.Runtime.create()
+	defer { runtime.close() }
+	mut messages := []string{}
+	run_document_javascript(document, 'https://old.reddit.com/', [
+		r'
+const saved=host.getElementsByTagName("i");
+first.setAttribute("data-pending","one");
+saved.length;
+host.textContent="text only";
+if(saved.length!==0)throw new Error("text replacement not flushed");
+host.innerHTML="<i id=replacement></i>";
+if(saved.length!==1)throw new Error("markup replacement not flushed");
+saved[0].setAttribute("data-pending","two");
+saved.length;
+',
+	], runtime, mut messages)
+	replacement := document.get_element_by_id('replacement')?
+	assert replacement.get_attribute_value('data-pending') == 'two'
+	assert messages == []string{}
+}
