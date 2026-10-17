@@ -1469,7 +1469,7 @@ extern "C" int ladybird_v_skia_draw_svg_path(CGContextRef destination,
     int has_fill, uint8_t stroke_red, uint8_t stroke_green, uint8_t stroke_blue,
 	uint8_t stroke_alpha, int has_stroke, float stroke_width, int line_cap,
 	int line_join, float miter_limit, int non_scaling_stroke,
-	double const* dash_data, int dash_count, double dash_offset)
+	double const* dash_data, int dash_count, double dash_offset, int opaque_backdrop)
 {
     if (!destination || !data || segment_count <= 0 || (!has_fill && !has_stroke)
         || canvas_width <= 0 || canvas_height <= 0)
@@ -1560,18 +1560,41 @@ extern "C" int ladybird_v_skia_draw_svg_path(CGContextRef destination,
     auto raster_scale_x = static_cast<float>(raster_width) / static_cast<float>(region.width());
     auto raster_scale_y = static_cast<float>(raster_height) / static_cast<float>(region.height());
     std::vector<uint32_t> pixels(static_cast<size_t>(raster_width) * static_cast<size_t>(raster_height));
-    if (s_chromium_painting && has_fill && !(has_stroke && stroke_width > 0.0f)) {
-        // Chromium fills SVG paths with its GPU rasterizer.
-        bool has_background = copy_opaque_backdrop(destination, region, destination_scale,
-            raster_width, raster_height, pixels);
+    bool strokes = has_stroke && stroke_width > 0.0f;
+    if (s_chromium_painting && (has_fill || strokes) && !non_scaling_stroke
+        && !(strokes && dash_data && dash_count > 0)) {
+        // Chromium draws SVG paths with its GPU rasterizer. The stroke draws
+        // over the fill's result, as both would on Chromium's canvas. Inside a
+        // clip or opacity layer the destination bitmap lacks the layer's
+        // pixels, so only a top-level opaque page is blended on the GPU.
+        bool has_background = opaque_backdrop && copy_opaque_backdrop(destination, region,
+            destination_scale, raster_width, raster_height, pixels);
         VoxGraphitePath descriptor {
             .matrix = {}, .segments = data, .segment_count = segment_count,
-            .even_odd = even_odd, .red = fill_red, .green = fill_green, .blue = fill_blue,
-            .alpha = fill_alpha
+            .even_odd = even_odd, .line_cap = line_cap, .line_join = line_join,
+            .stroke_width = stroke_width, .miter_limit = miter_limit
         };
         raster_matrix(matrix, region, raster_scale_x, raster_scale_y).get9(descriptor.matrix);
-        if (auto draw = graphite_path_draw(); draw && draw(reinterpret_cast<uint8_t*>(pixels.data()),
-                raster_width, raster_height, raster_width * 4, has_background, &descriptor)) {
+        auto draw = graphite_path_draw();
+        bool drawn = draw != nullptr;
+        if (drawn && has_fill) {
+            descriptor.red = fill_red;
+            descriptor.green = fill_green;
+            descriptor.blue = fill_blue;
+            descriptor.alpha = fill_alpha;
+            drawn = draw(reinterpret_cast<uint8_t*>(pixels.data()), raster_width, raster_height,
+                raster_width * 4, has_background, &descriptor);
+        }
+        if (drawn && strokes) {
+            descriptor.stroke = 1;
+            descriptor.red = stroke_red;
+            descriptor.green = stroke_green;
+            descriptor.blue = stroke_blue;
+            descriptor.alpha = stroke_alpha;
+            drawn = draw(reinterpret_cast<uint8_t*>(pixels.data()), raster_width, raster_height,
+                raster_width * 4, has_background || has_fill, &descriptor);
+        }
+        if (drawn) {
             CGContextSaveGState(destination);
             if (has_background) CGContextSetBlendMode(destination, kCGBlendModeCopy);
             int result = composite_pixels(destination, pixels, raster_width, raster_height,

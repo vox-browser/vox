@@ -111,7 +111,7 @@ uint64_t render_case(int index, DrawPath draw, DrawLinear linear, DrawRadial rad
         result = draw(context, path, 9, index == 4, a, b, c, d, e, f, 0, 0, 0,
             128, 96, 190, 37, 83, 201, 1, 23, 149, 215, 187,
             index == 3 || index == 5, 6.25, 1, 0, 4, index == 3,
-            dash, index == 5 ? 2 : 0, 1.25);
+            dash, index == 5 ? 2 : 0, 1.25, 0);
     }
     assert(result == 1);
     CGContextFlush(context);

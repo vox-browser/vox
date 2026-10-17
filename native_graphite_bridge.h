@@ -34,6 +34,9 @@ typedef struct {
     const float *segments;
     int segment_count, even_odd;
     uint8_t red, green, blue, alpha;
+    // A stroke instead of a fill; caps and joins use the SVG enumeration order.
+    int stroke, line_cap, line_join;
+    float stroke_width, miter_limit;
 } VoxGraphitePath;
 
 #ifdef __cplusplus

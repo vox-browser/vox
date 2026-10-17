@@ -78,7 +78,7 @@ extern int ladybird_v_skia_draw_svg_path(CGContextRef destination,
 	int has_fill, uint8_t stroke_red, uint8_t stroke_green, uint8_t stroke_blue,
 	uint8_t stroke_alpha, int has_stroke, float stroke_width, int line_cap,
 	int line_join, float miter_limit, int non_scaling_stroke,
-	const double *dash_data, int dash_count, double dash_offset);
+	const double *dash_data, int dash_count, double dash_offset, int opaque_backdrop);
 extern int ladybird_v_skia_draw_svg_linear_gradient_path(
 	CGContextRef destination, const float *data, int segment_count, int even_odd,
 	float transform_a, float transform_b, float transform_c, float transform_d,
@@ -1291,7 +1291,9 @@ void native_draw_svg_path_srgb(const float *data, int segment_count, int even_od
 		fill_color.r, fill_color.g, fill_color.b, fill_color.a, has_fill,
 		stroke_color.r, stroke_color.g, stroke_color.b, stroke_color.a, has_stroke,
 		resolved_stroke_width, line_cap, line_join, miter_limit, non_scaling_stroke,
-		dash_data, dash_count, dash_offset)) {
+		dash_data, dash_count, dash_offset,
+		context == native_font_compositing_context
+			&& native_font_compositing_transparency_depth == 0)) {
 		return;
 	}
 #endif
@@ -3540,7 +3542,7 @@ void native_add_svg_clip_mask_path(const float *data, int segment_count, int eve
 		segment_count, even_odd, transform_a, transform_b, transform_c,
 		transform_d, transform_e, transform_f, page_x, page_y, scroll_y,
 		canvas_width, canvas_height, 255, 255, 255, 255, 1,
-		0, 0, 0, 0, 0, 0.0f, 0, 0, 4.0f, 0, NULL, 0, 0.0)) {
+		0, 0, 0, 0, 0, 0.0f, 0, 0, 4.0f, 0, NULL, 0, 0.0, 0)) {
 		return;
 	}
 #endif
@@ -3612,7 +3614,7 @@ void native_add_svg_content_mask_path(const float *data, int segment_count,
 			canvas_width, canvas_height,
 			color.r, color.g, color.b, color.a, draw_stroke ? 0 : 1,
 			color.r, color.g, color.b, color.a, draw_stroke ? 1 : 0,
-			stroke_width, line_cap, line_join, miter_limit, 0, NULL, 0, 0.0)) {
+			stroke_width, line_cap, line_join, miter_limit, 0, NULL, 0, 0.0, 0)) {
 			used_skia = 0;
 			break;
 		}
@@ -4722,7 +4724,7 @@ void native_add_svg_pattern_path(const float *data, int segment_count,
 		transform_f, 0, 0, 0, build->width, canvas_height, fill_color.r,
 		fill_color.g, fill_color.b, fill_color.a, has_fill, stroke_color.r,
 		stroke_color.g, stroke_color.b, stroke_color.a, has_stroke, stroke_width,
-		line_cap, line_join, miter_limit, 0, NULL, 0, 0)) {
+		line_cap, line_join, miter_limit, 0, NULL, 0, 0, 0)) {
 		return;
 	}
 #endif

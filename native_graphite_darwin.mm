@@ -244,7 +244,7 @@ int vox_graphite_draw_shape_pixels(uint8_t* pixels, int width, int height,
     return read_pixels(gpu, recorder.get(), surface.get(), info, pixels, pitch);
 }
 
-// Chromium fills SVG paths through its GPU rasterizer, whose multisampled
+// Chromium draws SVG paths through its GPU rasterizer, whose multisampled
 // coverage differs from Skia's CPU analytic antialiasing on complex outlines.
 extern "C" __attribute__((visibility("default")))
 int vox_graphite_draw_path_pixels(uint8_t* pixels, int width, int height,
@@ -272,6 +272,15 @@ int vox_graphite_draw_path_pixels(uint8_t* pixels, int width, int height,
     SkPaint paint;
     paint.setAntiAlias(true);
     paint.setColor(SkColorSetARGB(path->alpha, path->red, path->green, path->blue));
+    if (path->stroke) {
+        paint.setStyle(SkPaint::kStroke_Style);
+        paint.setStrokeWidth(path->stroke_width);
+        paint.setStrokeCap(path->line_cap == 1 ? SkPaint::kRound_Cap
+            : path->line_cap == 2 ? SkPaint::kSquare_Cap : SkPaint::kButt_Cap);
+        paint.setStrokeJoin(path->line_join == 1 ? SkPaint::kRound_Join
+            : path->line_join == 2 ? SkPaint::kBevel_Join : SkPaint::kMiter_Join);
+        paint.setStrokeMiter(std::max(path->miter_limit, 1.0f));
+    }
     canvas->drawPath(geometry, paint);
     return read_pixels(gpu, recorder.get(), surface.get(), info, pixels, pitch);
 }
