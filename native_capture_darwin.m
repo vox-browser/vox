@@ -36,6 +36,8 @@ int native_prefers_overlay_scrollbars(void) {
 extern void ladybird_v_skia_set_chromium_painting(int active);
 extern int ladybird_v_skia_configure_font(const char *path, int slot);
 extern void ladybird_v_skia_set_image_color_profile(const float *profile);
+extern void ladybird_v_skia_set_msaa_tiles(const int *tiles, int count, int tile_rows);
+extern void ladybird_v_skia_set_rect_clip_outs(const float *rects, int count);
 extern int ladybird_v_skia_register_system_face(const char *key, const char *path,
 	const char *postscript_name, const uint32_t *axis_tags, const float *axis_values, int axis_count);
 extern int ladybird_v_skia_draw_glyph_run(CGContextRef destination,
@@ -2255,6 +2257,35 @@ void native_begin_css_filter_layer(float canvas_width, float canvas_height) {
 }
 
 void native_end_css_filter_layer(void);
+
+// The Chromium raster tiles whose GPU render pass is multisampled in this
+// frame; their anti-aliased shapes take multisampled coverage.
+void native_set_chromium_msaa_tiles(const int *tiles, int count, int tile_rows) {
+#ifdef LADYBIRD_V_HAS_SKIA_TEXT
+	ladybird_v_skia_set_msaa_tiles(tiles, count, tile_rows);
+#else
+	(void)tiles; (void)count; (void)tile_rows;
+#endif
+}
+
+// Rectangles clipped out of the next anti-aliased rectangle, as left, top,
+// right and bottom; a count of zero clears them.
+void native_set_rect_clip_outs(const double *rects, int count) {
+#ifdef LADYBIRD_V_HAS_SKIA_TEXT
+	int used = rects != NULL && count > 0 ? count : 0;
+	float *values = used > 0 ? malloc(sizeof(float) * 4 * (size_t)used) : NULL;
+	if (used > 0 && values == NULL) {
+		used = 0;
+	}
+	for (int index = 0; index < used * 4; ++index) {
+		values[index] = (float)rects[index];
+	}
+	ladybird_v_skia_set_rect_clip_outs(values, used);
+	free(values);
+#else
+	(void)rects; (void)count;
+#endif
+}
 
 void native_begin_font_compositing_layer(float width, float height) {
 	native_begin_css_filter_layer(width, height);

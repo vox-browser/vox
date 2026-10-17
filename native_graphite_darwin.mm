@@ -7,6 +7,8 @@
 #include "include/core/SkMaskFilter.h"
 #include "include/core/SkPaint.h"
 #include "include/core/SkPath.h"
+#include "include/core/SkPathBuilder.h"
+#include "include/core/SkShader.h"
 #include "include/core/SkColorFilter.h"
 #include "include/effects/SkGradient.h"
 #include "include/core/SkRRect.h"
@@ -256,9 +258,27 @@ int vox_graphite_draw_shape_pixels(uint8_t* pixels, int width, int height,
     auto* canvas = surface->getCanvas();
     if (has_background) surface->writePixels(SkPixmap(info, pixels, pitch), 0, 0);
     else canvas->clear(SK_ColorTRANSPARENT);
+    if (shape->force_msaa) {
+        // Graphite multisamples a render pass that contains a path. A
+        // transparent one changes no pixel.
+        SkPaint noop;
+        noop.setAntiAlias(true);
+        noop.setShader(SkShaders::Color(SK_ColorTRANSPARENT));
+        SkPathBuilder path;
+        path.moveTo(0, 0);
+        path.cubicTo(width, height * 0.1f, 0, height, width, height);
+        path.lineTo(width * 0.5f, height * 0.2f);
+        path.close();
+        canvas->drawPath(path.detach(), noop);
+    }
     SkMatrix matrix;
     matrix.set9(shape->matrix);
     canvas->setMatrix(matrix);
+    for (int index = 0; shape->clip_outs && index < shape->clip_out_count; ++index) {
+        float const* clip = shape->clip_outs + index * 4;
+        canvas->clipRect(SkRect::MakeLTRB(clip[0], clip[1], clip[2], clip[3]),
+            SkClipOp::kDifference, false);
+    }
     SkPaint paint;
     paint.setAntiAlias(shape->anti_alias != 0);
     paint.setColor(SkColorSetARGB(shape->alpha, shape->red, shape->green, shape->blue));

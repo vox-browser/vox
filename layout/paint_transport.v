@@ -981,6 +981,9 @@ pub mut:
 	// A square 'fill_rect' with fractional edges that Blink rasterizes as an
 	// antialiased GPU rectangle, such as a text decoration with fractional ends.
 	antialiased_rect bool
+	// Rectangles clipped out of an antialiased 'fill_rect' without
+	// antialiasing, as left, top, right and bottom: skip-ink decoration gaps.
+	clip_outs []f64
 	// Retained used corner radii for `fill_rounded_rect`. This mirrors Painting's
 	// FillRoundedRect command instead of discarding elliptical/per-corner radii into vertices.
 	corner_radii    BoxRadii
@@ -4366,59 +4369,42 @@ fn append_chromium_solid_underline(mut commands []PaintCommand, fragment TextFra
 	line_offset := math.round(font_ascent) + gap + offset
 	top := math.floor(fragment.y + line_offset + 0.5)
 	height := math.max(math.floor(thickness), 1.0)
-	start_x := fragment.x
-	end_x := fragment.x + fragment.width
-	mut segment_start := start_x
-	for clip in chromium_skip_ink_clips(fragment, font_ascent, line_offset, thickness) {
-		if clip[0] > segment_start {
-			append_chromium_underline_segment(mut commands, segment_start, math.min(clip[0], end_x),
-				top, height, color, opacity)
-		}
-		segment_start = math.max(segment_start, clip[1])
-	}
-	append_chromium_underline_segment(mut commands, segment_start, end_x, top, height, color,
-		opacity)
-}
-
-// TextPainter::ClipDecorationLine(): glyph outlines crossing the decoration,
-// inset by half a pixel vertically, clip it out over their extent dilated by
-// its thickness. The clip is not antialiased, so each edge rounds to a pixel.
-fn chromium_skip_ink_clips(fragment TextFragment, font_ascent f64, line_offset f64, thickness f64) [][]f64 {
-	if !fragment.decoration_skip_ink {
-		return [][]f64{}
-	}
-	glyph_run := fragment.paintable_fragment.glyph_run or { return [][]f64{} }
-	upper := line_offset + 0.5 - math.round(font_ascent)
-	stripe := math.max(thickness - 1.0, 0.0)
-	intervals := glyph_run.glyph_intercepts(1, f32(upper), f32(upper + stripe))
-	dilation := math.min(thickness, 13.0)
-	mut clips := [][]f64{}
-	for index := 0; index + 1 < intervals.len; index += 2 {
-		clips << [math.round(fragment.x + f64(intervals[index]) - dilation),
-			math.round(fragment.x + f64(intervals[index + 1]) + dilation)]
-	}
-	clips.sort_with_compare(fn (a &[]f64, b &[]f64) int {
-		first := unsafe { a[0] }
-		second := unsafe { b[0] }
-		return if first < second { -1 } else if first > second { 1 } else { 0 }
-	})
-	return clips
-}
-
-fn append_chromium_underline_segment(mut commands []PaintCommand, start_x f64, end_x f64, top f64, height f64, color string, opacity f64) {
-	if end_x <= start_x {
+	if fragment.width <= 0 {
 		return
 	}
 	commands << PaintCommand{
 		kind:             'fill_rect'
-		x:                start_x
+		x:                fragment.x
 		y:                top
-		width:            end_x - start_x
+		width:            fragment.width
 		height:           height
 		color:            color
 		opacity:          opacity
 		antialiased_rect: true
+		clip_outs:        chromium_skip_ink_clips(fragment, font_ascent, line_offset, thickness,
+			top, height)
 	}
+}
+
+// TextPainter::ClipDecorationLine(): glyph outlines crossing the decoration,
+// inset by half a pixel vertically, are clipped out without antialiasing over
+// their extent, dilated horizontally by the thickness and vertically by a
+// pixel. Returns left, top, right and bottom for each clip in paint order.
+fn chromium_skip_ink_clips(fragment TextFragment, font_ascent f64, line_offset f64, thickness f64, top f64, height f64) []f64 {
+	if !fragment.decoration_skip_ink {
+		return []f64{}
+	}
+	glyph_run := fragment.paintable_fragment.glyph_run or { return []f64{} }
+	upper := line_offset + 0.5 - math.round(font_ascent)
+	stripe := math.max(thickness - 1.0, 0.0)
+	intervals := glyph_run.glyph_intercepts(1, f32(upper), f32(upper + stripe))
+	dilation := math.min(thickness, 13.0)
+	mut clips := []f64{}
+	for index := 0; index + 1 < intervals.len; index += 2 {
+		clips << [fragment.x + f64(intervals[index]) - dilation, top - 0.5,
+			fragment.x + f64(intervals[index + 1]) + dilation, top + height + 0.5]
+	}
+	return clips
 }
 
 fn decoration_commands(fragment TextFragment, opacity f64) []PaintCommand {

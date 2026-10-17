@@ -264,6 +264,8 @@ fn C.native_end_svg_mask_layer(cache_key u64, content_mask int, canvas_width f32
 
 fn C.native_begin_css_filter_layer(canvas_width f32, canvas_height f32)
 fn C.native_begin_font_compositing_layer(canvas_width f32, canvas_height f32)
+fn C.native_set_chromium_msaa_tiles(tiles &int, count int, tile_rows int)
+fn C.native_set_rect_clip_outs(rects &f64, count int)
 fn C.native_end_font_compositing_layer()
 
 fn C.native_begin_backdrop_filter_layer(canvas_width f32, canvas_height f32, region_x f32, region_y f32, region_width f32, region_height f32, top_left_x f32, top_left_y f32, top_right_x f32, top_right_y f32, bottom_right_x f32, bottom_right_y f32, bottom_left_x f32, bottom_left_y f32, transform_a f32, transform_b f32, transform_c f32, transform_d f32, transform_e f32, transform_f f32, page_x f32, page_y f32, scroll_y f32, source_outside_current_filter int)
@@ -5372,13 +5374,30 @@ fn (mut app BrowserApp) draw_command(source_command layout.PaintCommand, page_x 
 				if app.ctx.native_rendering && !command.outer_shadow
 					&& (command.radius > 0 || command.antialiased_rect) {
 					used_radius := f32(clamp(command.radius, 0.0, math.min(command.width, command.height) / 2.0))
+					if command.clip_outs.len >= 4 {
+						C.native_set_rect_clip_outs(&command.clip_outs[0], command.clip_outs.len / 4)
+					}
 					C.native_draw_rounded_rect_srgb(f32(command.x), f32(command.y), f32(command.width), f32(command.height), used_radius, used_radius, used_radius, used_radius, used_radius, used_radius, used_radius, used_radius, f32(matrix[0]), f32(matrix[1]), f32(matrix[2]), f32(matrix[3]), f32(matrix[4]), f32(matrix[5]), page_x, page_y, f32(scroll_y), f32(app.ctx.width), f32(app.ctx.height), fill, 1, 0, if command.scrollbar_axis == '' {
 						1
 					} else {
 						0
 					})
+					if command.clip_outs.len >= 4 {
+						C.native_set_rect_clip_outs(unsafe { nil }, 0)
+					}
 					return
 				}
+			}
+			if command.clip_outs.len >= 4 {
+				for segment in clipped_out_rect_segments(command) {
+					app.draw_command(layout.PaintCommand{
+						...command
+						x:         segment[0]
+						width:     segment[1] - segment[0]
+						clip_outs: []f64{}
+					}, page_x, page_y, window_height)
+				}
+				return
 			}
 			if non_axis_aligned {
 				draw_browser_polygon(app.ctx, borrowed_rectangle_screen_points(&rect_points), fill)
@@ -6404,6 +6423,7 @@ fn (mut app BrowserApp) draw() {
 			if app.ctx.native_rendering && app.document != unsafe { nil }
 				&& app.document.font_rendering_policy() == .chromium {
 				C.native_begin_font_compositing_layer(f32(app.ctx.width), f32(app.ctx.height))
+				app.set_chromium_msaa_tiles()
 			} else if app.ctx.native_rendering
 				&& app.paint_commands_have_backdrop_filter {
 				// Backdrop commands need a snapshot of pixels already painted in this
@@ -6427,6 +6447,7 @@ fn (mut app BrowserApp) draw() {
 		$if macos {
 			if app.ctx.native_rendering && app.document != unsafe { nil }
 				&& app.document.font_rendering_policy() == .chromium {
+				C.native_set_chromium_msaa_tiles(unsafe { nil }, 0, chromium_min_gpu_raster_tile_rows)
 				C.native_end_font_compositing_layer()
 			} else if app.ctx.native_rendering
 				&& app.paint_commands_have_backdrop_filter {

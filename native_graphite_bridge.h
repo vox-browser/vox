@@ -29,6 +29,13 @@ typedef struct {
     float matrix[9], rect[12], thickness;
     uint8_t red, green, blue, alpha;
     int fill, anti_alias;
+    // Multisample the render pass, as Chromium does for a raster tile once any
+    // draw in it needs MSAA.
+    int force_msaa;
+    // Rectangles clipped out without antialiasing, as left, top, right and
+    // bottom in the shape's local coordinates.
+    const float *clip_outs;
+    int clip_out_count;
 } VoxGraphiteShape;
 
 // An SVG path in the browser's serialized segment format: twelve floats per

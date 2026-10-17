@@ -1345,6 +1345,45 @@ extern "C" int ladybird_v_skia_draw_masked_image(CGContextRef destination,
         destination_x, destination_y, destination_width, destination_height);
 }
 
+// The Chromium raster tiles whose render pass is multisampled in this frame,
+// by index, with their height in device rows including both border texels.
+static std::vector<int> s_msaa_tiles;
+static int s_msaa_tile_rows = 256;
+// Rectangles clipped out of the next rectangle drawn, as left, top, right and
+// bottom in its local coordinates.
+static std::vector<float> s_rect_clip_outs;
+
+extern "C" void ladybird_v_skia_set_msaa_tiles(int const* tiles, int count, int tile_rows)
+{
+    s_msaa_tiles.assign(tiles, tiles + (tiles && count > 0 ? count : 0));
+    std::sort(s_msaa_tiles.begin(), s_msaa_tiles.end());
+    s_msaa_tile_rows = std::max(tile_rows, 3);
+}
+
+extern "C" void ladybird_v_skia_set_rect_clip_outs(float const* rects, int count)
+{
+    s_rect_clip_outs.assign(rects, rects + (rects && count > 0 ? count * 4 : 0));
+}
+
+// Tiles overlap by their border texels. Tile 0 shows content rows
+// [0, spacing + 1) and tile k after it [k * spacing + 1, (k + 1) * spacing + 1).
+static bool row_in_msaa_tile(long row)
+{
+    if (s_msaa_tiles.empty() || row < 0)
+        return false;
+    long spacing = s_msaa_tile_rows - 2;
+    long tile = row <= spacing ? 0 : (row - 1) / spacing;
+    return std::binary_search(s_msaa_tiles.begin(), s_msaa_tiles.end(), static_cast<int>(tile));
+}
+
+static void clip_out_rects(SkCanvas* canvas)
+{
+    for (size_t index = 0; index + 3 < s_rect_clip_outs.size(); index += 4) {
+        canvas->clipRect(SkRect::MakeLTRB(s_rect_clip_outs[index], s_rect_clip_outs[index + 1],
+            s_rect_clip_outs[index + 2], s_rect_clip_outs[index + 3]), SkClipOp::kDifference, false);
+    }
+}
+
 extern "C" int ladybird_v_skia_draw_rounded_rect(CGContextRef destination,
     float x, float y, float rect_width, float rect_height, float top_left_x,
     float top_left_y, float top_right_x, float top_right_y, float bottom_right_x,
@@ -1381,9 +1420,12 @@ extern "C" int ladybird_v_skia_draw_rounded_rect(CGContextRef destination,
         && s_raster_command_group->destination == destination) {
         auto& group = *s_raster_command_group;
         auto* canvas = group.surface->getCanvas();
+        canvas->save();
         canvas->setMatrix(raster_matrix(matrix, group.region, group.scale_x,
             group.scale_y));
+        clip_out_rects(canvas);
         canvas->drawRRect(rounded_rect, paint);
+        canvas->restore();
         return 1;
     }
     SkRect paint_bounds_storage;
@@ -1414,11 +1456,40 @@ extern "C" int ladybird_v_skia_draw_rounded_rect(CGContextRef destination,
                 top_left_x, top_left_y, top_right_x, top_right_y,
                 bottom_right_x, bottom_right_y, bottom_left_x, bottom_left_y},
             .thickness = thickness, .red = red, .green = green, .blue = blue, .alpha = alpha,
-            .fill = fill, .anti_alias = anti_alias
+            .fill = fill, .anti_alias = anti_alias, .force_msaa = 0,
+            .clip_outs = s_rect_clip_outs.empty() ? nullptr : s_rect_clip_outs.data(),
+            .clip_out_count = static_cast<int>(s_rect_clip_outs.size() / 4)
         };
         raster_matrix(matrix, region, raster_scale_x, raster_scale_y).get9(descriptor.matrix);
-        if (auto draw = graphite_shape_draw(); draw && draw(reinterpret_cast<uint8_t*>(pixels.data()),
-                raster_width, raster_height, raster_width * 4, has_background, &descriptor)) {
+        // Each raster row takes the mode of the Chromium tile that shows it,
+        // in device rows of the root layer's content.
+        long first_row = std::lround((static_cast<float>(region.top) - page_y + scroll_y)
+            * destination_scale);
+        std::vector<char> msaa_rows(static_cast<size_t>(raster_height));
+        int msaa_row_count = 0;
+        for (int row = 0; row < raster_height; ++row)
+            msaa_row_count += msaa_rows[row] = row_in_msaa_tile(first_row + row);
+        auto draw = graphite_shape_draw();
+        bool drawn = draw != nullptr;
+        if (drawn && msaa_row_count > 0 && msaa_row_count < raster_height) {
+            auto multisampled = pixels;
+            descriptor.force_msaa = 1;
+            drawn = draw(reinterpret_cast<uint8_t*>(multisampled.data()), raster_width,
+                raster_height, raster_width * 4, has_background, &descriptor);
+            descriptor.force_msaa = 0;
+            drawn = drawn && draw(reinterpret_cast<uint8_t*>(pixels.data()), raster_width,
+                raster_height, raster_width * 4, has_background, &descriptor);
+            for (int row = 0; drawn && row < raster_height; ++row) {
+                if (msaa_rows[row])
+                    std::copy_n(multisampled.begin() + static_cast<long>(row) * raster_width,
+                        raster_width, pixels.begin() + static_cast<long>(row) * raster_width);
+            }
+        } else if (drawn) {
+            descriptor.force_msaa = msaa_row_count > 0;
+            drawn = draw(reinterpret_cast<uint8_t*>(pixels.data()), raster_width, raster_height,
+                raster_width * 4, has_background, &descriptor);
+        }
+        if (drawn) {
             CGContextSaveGState(destination);
             if (has_background) CGContextSetBlendMode(destination, kCGBlendModeCopy);
             int result = composite_pixels(destination, pixels, raster_width, raster_height,
@@ -1435,6 +1506,7 @@ extern "C" int ladybird_v_skia_draw_rounded_rect(CGContextRef destination,
     auto* canvas = surface->getCanvas();
     canvas->clear(SK_ColorTRANSPARENT);
     canvas->setMatrix(raster_matrix(matrix, region, raster_scale_x, raster_scale_y));
+    clip_out_rects(canvas);
     canvas->drawRRect(rounded_rect, paint);
     return composite_pixels(destination, pixels, raster_width, raster_height,
         static_cast<float>(region.left), canvas_height - static_cast<float>(region.bottom),
