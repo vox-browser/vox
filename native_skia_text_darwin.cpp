@@ -21,6 +21,7 @@
 #include "include/core/SkFont.h"
 #include "include/core/SkFontArguments.h"
 #include "include/core/SkFontMgr.h"
+#include "include/core/SkGraphics.h"
 #include "include/core/SkImageInfo.h"
 #include "include/core/SkImage.h"
 #include "include/core/SkMaskFilter.h"
@@ -52,6 +53,7 @@
 #include <cstdint>
 #include <cstring>
 #include <memory>
+#include <pthread.h>
 #include <string>
 #include <unordered_map>
 #include <utility>
@@ -85,9 +87,14 @@ sk_sp<SkFontMgr> font_manager()
     return s_font_manager;
 }
 
+sk_sp<GrDirectContext> s_image_gpu_context;
+bool s_image_gpu_context_attempted = false;
+
 GrDirectContext* image_gpu_context()
 {
-    static auto context = []() -> sk_sp<GrDirectContext> {
+    if (!s_image_gpu_context_attempted) {
+        s_image_gpu_context_attempted = true;
+        s_image_gpu_context = []() -> sk_sp<GrDirectContext> {
         id<MTLDevice> device = MTLCreateSystemDefaultDevice();
         if (!device) return nullptr;
         GrMtlBackendContext backend;
@@ -95,8 +102,9 @@ GrDirectContext* image_gpu_context()
         backend.fQueue.reset((GrMTLHandle)[device newCommandQueue]);
         if (!backend.fQueue) return nullptr;
         return GrDirectContexts::MakeMetal(backend);
-    }();
-    return context.get();
+        }();
+    }
+    return s_image_gpu_context.get();
 }
 
 auto graphite_shadow_draw()
@@ -419,6 +427,29 @@ SkPath path_from_serialized_segments(float const* data, int segment_count)
 }
 
 } // namespace
+
+// The native owner calls this between frames after document work is idle.
+// Cache eviction preserves live images, fonts and retained CPU paint inputs;
+// subsequent painting can rebuild purged shaders and other temporary data.
+extern "C" void ladybird_v_skia_release_unused_graphics_memory()
+{
+    if (!pthread_main_np()) return;
+    if (auto* gpu = s_image_gpu_context.get()) {
+        gpu->flushAndSubmit(GrSyncCpu::kYes);
+        gpu->checkAsyncWorkCompletion();
+        gpu->freeGpuResources();
+        gpu->purgeUnlockedResources(GrPurgeResourceOptions::kAllResources);
+    }
+    // Looking up an optional backend must not load it or create its Metal
+    // context on a page that has never needed its drawing functions.
+    if (void* library = dlopen("@rpath/libVoxGraphite.dylib", RTLD_LAZY | RTLD_LOCAL | RTLD_NOLOAD)) {
+        auto purge = reinterpret_cast<decltype(&vox_graphite_release_unused_graphics_memory)>(
+            dlsym(library, "vox_graphite_release_unused_graphics_memory"));
+        if (purge) purge();
+        dlclose(library);
+    }
+    SkGraphics::PurgeAllCaches();
+}
 
 extern "C" void ladybird_v_skia_set_chromium_painting(int active)
 {

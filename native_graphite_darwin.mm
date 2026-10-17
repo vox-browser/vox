@@ -16,6 +16,7 @@
 #include "include/core/SkYUVAPixmaps.h"
 #include "include/gpu/graphite/Context.h"
 #include "include/gpu/graphite/ContextOptions.h"
+#include "include/gpu/graphite/PrecompileContext.h"
 #include "include/gpu/graphite/Image.h"
 #include "include/gpu/graphite/Recorder.h"
 #include "include/gpu/graphite/Recording.h"
@@ -27,20 +28,26 @@
 #include <cstring>
 #include <memory>
 #include <mutex>
+#include <pthread.h>
 #include <vector>
 
 namespace {
 std::mutex gpu_mutex;
+std::unique_ptr<skgpu::graphite::Context> gpu_context;
+bool gpu_context_attempted = false;
 skgpu::graphite::Context* context()
 {
-    static auto instance = [] {
+    if (!gpu_context_attempted) {
+        gpu_context_attempted = true;
+        gpu_context = [] {
         skgpu::graphite::MtlBackendContext backend;
         backend.fDevice.reset((CFTypeRef)MTLCreateSystemDefaultDevice());
         if (!backend.fDevice) return std::unique_ptr<skgpu::graphite::Context>();
         backend.fQueue.reset((CFTypeRef)[(id<MTLDevice>)backend.fDevice.get() newCommandQueue]);
         return skgpu::graphite::ContextFactory::MakeMetal(backend, {});
-    }();
-    return instance.get();
+        }();
+    }
+    return gpu_context.get();
 }
 
 SkRRect rounded_rect(float const* data)
@@ -73,6 +80,21 @@ int read_pixels(skgpu::graphite::Context* gpu, skgpu::graphite::Recorder* record
     }
     return 1;
 }
+}
+
+extern "C" __attribute__((visibility("default")))
+void vox_graphite_release_unused_graphics_memory()
+{
+    if (!pthread_main_np()) return;
+    std::lock_guard lock(gpu_mutex);
+    if (!gpu_context) return;
+    // Draw wrappers already synchronously read their pixels. Submit/wait also
+    // covers a previous early-return path before dropping unused cache refs.
+    gpu_context->submit(skgpu::graphite::SubmitInfo(skgpu::graphite::SyncToCpu::kYes));
+    gpu_context->checkAsyncWorkCompletion();
+    gpu_context->freeGpuResources();
+    if (auto precompile = gpu_context->makePrecompileContext())
+        precompile->purgePipelinesNotUsedInMs(std::chrono::milliseconds(0));
 }
 
 extern "C" __attribute__((visibility("default")))
