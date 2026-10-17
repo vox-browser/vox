@@ -1,6 +1,6 @@
 module adblock
 
-import json
+import json2
 
 
 #flag darwin -framework JavaScriptCore
@@ -82,7 +82,7 @@ fn create_context(custom_filters ?string) !voidptr {
 		C.JSGlobalContextRelease(context)
 		return err
 	}
-	argument := if raw := custom_filters { json.encode(raw) } else { '' }
+	argument := if raw := custom_filters { json2.encode(raw, escape_unicode: true) } else { '' }
 	evaluate_context(context, 'voxAdblockInitialize(${argument})') or {
 		C.JSGlobalContextRelease(context)
 		return err

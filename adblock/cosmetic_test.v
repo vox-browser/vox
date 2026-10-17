@@ -1,6 +1,6 @@
 module adblock
 
-import json
+import json2
 
 fn test_full_ubo_cosmetic_filters_keep_domain_and_generic_exceptions() {
 	$if !darwin { return }
@@ -8,7 +8,7 @@ fn test_full_ubo_cosmetic_filters_keep_domain_and_generic_exceptions() {
 	defer { engine.close() }
 	result := evaluate_custom_engine(engine.context,
 		'JSON.stringify(voxDocumentFilters("https://example.test/", [".advert", ".allowed"]))')!
-	filters := json.decode(DocumentFilters, result)!
+	filters := json2.decode[DocumentFilters](result)!
 	assert filters.css.contains('.advert')
 	assert filters.css.contains('.specific')
 	assert !filters.css.contains('.allowed')
@@ -32,7 +32,7 @@ fn test_cosmetic_filtering_respects_network_generichide_exception() {
 	defer { engine.close() }
 	result := evaluate_custom_engine(engine.context,
 		'JSON.stringify(voxDocumentFilters("https://example.test/", [".advert"]))')!
-	filters := json.decode(DocumentFilters, result)!
+	filters := json2.decode[DocumentFilters](result)!
 	assert !filters.css.contains('.advert')
 	assert filters.css.contains('.specific')
 }

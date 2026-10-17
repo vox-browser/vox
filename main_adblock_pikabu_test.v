@@ -4,7 +4,7 @@ import adblock
 import browserjs
 import css
 import dom
-import json
+import json2
 import os
 
 struct PikabuSlotProbeExpected {
@@ -33,7 +33,7 @@ fn test_pikabu_ru_filters_block_five_ad_slots_and_preserve_organic_content() {
 	$if !darwin { return }
 	fixture := os.read_file(os.join_path(@VMODROOT, 'tools', 'adblock', 'fixtures',
 		'pikabu-slots.html'))!
-	probe := json.decode(PikabuSlotProbe, os.read_file(os.join_path(@VMODROOT, 'tools', 'adblock',
+	probe := json2.decode[PikabuSlotProbe](os.read_file(os.join_path(@VMODROOT, 'tools', 'adblock',
 		'fixtures', 'pikabu-slots-probe.json'))!)!
 	address := dom.URL{
 		value: probe.url

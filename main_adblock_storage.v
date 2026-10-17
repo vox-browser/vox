@@ -3,7 +3,7 @@ module main
 import browserjs
 import dom
 import html
-import json
+import json2
 
 struct BrowserStorageOperation {
 	area  string
@@ -34,9 +34,9 @@ fn install_browser_page_storage(document &dom.Document, runtime &browserjs.Runti
 	window := unsafe { &html.WindowModel(window_pointer) }
 	mut mutable_runtime := unsafe { &browserjs.Runtime(runtime) }
 	mutable_runtime.define_host_function('__voxNativePageStorage', fn [window, document] (input string) !string {
-		operation := json.decode(BrowserStorageOperation, input)!
+		operation := json2.decode[BrowserStorageOperation](input)!
 		if document.origin().is_opaque() {
-			return json.encode(BrowserStorageResult{error: 'SecurityError: Storage is unavailable for an opaque origin'})
+			return json2.encode(BrowserStorageResult{error: 'SecurityError: Storage is unavailable for an opaque origin'}, escape_unicode: true)
 		}
 		mut mutable_window := unsafe { &html.WindowModel(window) }
 		mut storage := if operation.area == 'session' {
@@ -45,27 +45,27 @@ fn install_browser_page_storage(document &dom.Document, runtime &browserjs.Runti
 			mutable_window.local_storage()!
 		}
 		match operation.op {
-			'access' { return json.encode(BrowserStorageResult{}) }
+			'access' { return json2.encode(BrowserStorageResult{}, escape_unicode: true) }
 			'get' {
 				// Keep absent native entries distinct from stored empty strings.
 				if operation.key !in storage.storage_bottle.entries {
-					return json.encode(BrowserStorageResult{})
+					return json2.encode(BrowserStorageResult{}, escape_unicode: true)
 				}
-				return json.encode(BrowserStorageResult{value: storage.get_item(operation.key)})
+				return json2.encode(BrowserStorageResult{value: storage.get_item(operation.key)}, escape_unicode: true)
 			}
-			'key' { return json.encode(BrowserStorageResult{value: storage.key(usize(operation.index))}) }
-			'keys' { return json.encode(BrowserStorageResult{keys: storage.supported_property_names()}) }
-			'length' { return json.encode(BrowserStorageResult{length: int(storage.length())}) }
+			'key' { return json2.encode(BrowserStorageResult{value: storage.key(usize(operation.index))}, escape_unicode: true) }
+			'keys' { return json2.encode(BrowserStorageResult{keys: storage.supported_property_names()}, escape_unicode: true) }
+			'length' { return json2.encode(BrowserStorageResult{length: int(storage.length())}, escape_unicode: true) }
 			'set' {
 				storage.set_item(operation.key, operation.value) or {
-					return json.encode(BrowserStorageResult{error: err.msg()})
+					return json2.encode(BrowserStorageResult{error: err.msg()}, escape_unicode: true)
 				}
 			}
 			'remove' { storage.remove_item(operation.key) }
 			'clear' { storage.clear() }
 			else { return error('Unknown native Storage operation') }
 		}
-		return json.encode(BrowserStorageResult{})
+		return json2.encode(BrowserStorageResult{}, escape_unicode: true)
 	})!
 	runtime.evaluate_host(browser_page_storage_binding)!
 }

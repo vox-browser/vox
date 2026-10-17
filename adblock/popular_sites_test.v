@@ -1,6 +1,6 @@
 module adblock
 
-import json
+import json2
 
 struct PopularRequestCorpus {
 	engine PopularCorpusEngine
@@ -36,8 +36,8 @@ struct PopularCorpusRequest {
 
 fn test_popular_site_requests_match_recorded_full_ubo_decisions() {
 	$if !darwin { return }
-	corpus := json.decode(PopularRequestCorpus, $embed_file('../tools/adblock/fixtures/popular-sites.json').to_string())!
-	manifest := json.decode(PopularRequestCorpus, $embed_file('lists/manifest.json').to_string())!
+	corpus := json2.decode[PopularRequestCorpus]($embed_file('../tools/adblock/fixtures/popular-sites.json').to_string())!
+	manifest := json2.decode[PopularRequestCorpus]($embed_file('lists/manifest.json').to_string())!
 	assert corpus.engine == manifest.engine, 'Re-record the corpus with the current full uBO engine'
 	for recorded in corpus.lists {
 		assert manifest.lists.any(it == recorded), 'Re-record the corpus after refreshing its recorded lists'

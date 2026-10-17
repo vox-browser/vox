@@ -1,6 +1,6 @@
 module adblock
 
-import json
+import json2
 
 struct PikabuListManifest {
 	lists []PikabuManifestList
@@ -31,7 +31,7 @@ struct PikabuCorpusRequest {
 
 fn test_russian_default_list_retains_pikabu_ad_and_content_decisions() {
 	$if !darwin { return }
-	manifest := json.decode(PikabuListManifest, $embed_file('lists/manifest.json').to_string())!
+	manifest := json2.decode[PikabuListManifest]($embed_file('lists/manifest.json').to_string())!
 	assert manifest.lists.len == default_list_count
 	assert manifest.lists.any(it.name == 'RUS-0')
 	for url in ['https://cs45.pikabu.ru/v2/event/j/3/ad_request', 'https://pikabu.ru/ajax//advert'] {
@@ -52,10 +52,10 @@ fn test_russian_default_list_retains_pikabu_ad_and_content_decisions() {
 
 fn test_recorded_pikabu_request_and_header_decisions_match_full_ublock_origin() {
 	$if !darwin { return }
-	manifest := json.decode(PikabuListManifest, $embed_file('lists/manifest.json').to_string())!
+	manifest := json2.decode[PikabuListManifest]($embed_file('lists/manifest.json').to_string())!
 	for raw in [$embed_file('../tools/adblock/fixtures/pikabu.json').to_string(),
 		$embed_file('../tools/adblock/fixtures/pikabu-response-controls.json').to_string()] {
-		corpus := json.decode(PikabuListManifest, raw)!
+		corpus := json2.decode[PikabuListManifest](raw)!
 		assert corpus.engine == manifest.engine
 		assert corpus.lists == manifest.lists
 		assert corpus.requests.len > 0

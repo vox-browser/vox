@@ -19,7 +19,6 @@ import highresolutiontime
 import html
 import http
 import infra
-import json
 import layout
 import math
 import mimesniff
@@ -951,7 +950,7 @@ fn cache_resource_response_headers_with_status(resource_url string, final_url st
 	os.rm(path + '.status') or {}
 	body_written := try_write_browser_cache_entry(path, body)
 	url_written := try_write_browser_cache_entry(path + '.url', final_url)
-	headers_written := try_write_browser_cache_entry(path + '.headers.json', json.encode(headers))
+	headers_written := try_write_browser_cache_entry(path + '.headers.json', json2.encode(headers, escape_unicode: true))
 	if status_code >= 100 && status_code <= 599 {
 		if body_written && url_written && headers_written {
 			write_browser_cache_entry(path + '.status', status_code.str())
@@ -1049,7 +1048,7 @@ fn fetch_browser_resource(reference string, base string, source_url string, requ
 					// Older cache entries have no header provenance. Re-fetch them;
 					// assuming an empty header list could expose a header-blocked ad.
 					if encoded_headers := read_browser_cache_entry(path + '.headers.json') {
-						if headers := json.decode([]adblock.ResponseHeader, encoded_headers) {
+						if headers := json2.decode[[]adblock.ResponseHeader](encoded_headers) {
 							filter_browser_response_headers(final_request, headers)!
 							// An old unvaried key cannot identify the Accept value that
 							// selected a negotiated image representation.

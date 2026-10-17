@@ -4,7 +4,7 @@ import crypto.sha256
 import css
 import dom
 import html
-import json
+import json2
 
 fn test_capture_audit_reads_retained_text_attributes_counts_and_geometry() {
 	mut document := html.parse_document('<!doctype html><title>Capture</title><style>body{margin:0}.row{width:70px;height:20px}</style><div class="row" data-key="one">Первый</div><div class="row" data-key="two">Second</div>')
@@ -30,7 +30,7 @@ fn test_capture_audit_reads_retained_text_attributes_counts_and_geometry() {
 	assert row.image == none
 	assert audit.selections[1].count == 2 && audit.selections[1].elements.len == 0
 	assert voidptr(document.cached_display_list() or { panic('missing retained list') }) == voidptr(before_list)
-	decoded := json.decode(CaptureAudit, json.encode(audit))!
+	decoded := json2.decode[CaptureAudit](json2.encode(audit, escape_unicode: true))!
 	assert decoded.selections[0].elements[0].text == 'Первый'
 }
 

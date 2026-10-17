@@ -1,7 +1,7 @@
 module main
 
 import adblock
-import json
+import json2
 import os
 
 struct Corpus {
@@ -38,7 +38,7 @@ fn main() {
 			eprintln(err)
 			exit(1)
 		}
-		println(json.encode(filters))
+		println(json2.encode(filters, escape_unicode: true))
 		return
 	}
 	if os.args.len == 3 && os.args[1] == '--verify' {
@@ -53,7 +53,7 @@ fn main() {
 		eprintln(err)
 		exit(1)
 	}
-	requests := json.decode([]CorpusCase, content) or {
+	requests := json2.decode[[]CorpusCase](content) or {
 		eprintln(err)
 		exit(1)
 	}
@@ -66,7 +66,7 @@ fn main() {
 		}
 		decisions << decision
 	}
-	println(json.encode(decisions))
+	println(json2.encode(decisions, escape_unicode: true))
 }
 
 fn verify(path string) {
@@ -74,7 +74,7 @@ fn verify(path string) {
 		eprintln(err)
 		exit(1)
 	}
-	corpus := json.decode(Corpus, content) or {
+	corpus := json2.decode[Corpus](content) or {
 		eprintln(err)
 		exit(1)
 	}
@@ -96,7 +96,7 @@ fn verify(path string) {
 		if actual.error != '' || actual.blocked != entry.expected.blocked
 			|| actual.exception != entry.expected.exception {
 			failures++
-			eprintln('${entry.request_type} ${entry.url}: expected ${json.encode(entry.expected)}, got ${json.encode(actual)}')
+			eprintln('${entry.request_type} ${entry.url}: expected ${json2.encode(entry.expected, escape_unicode: true)}, got ${json2.encode(actual, escape_unicode: true)}')
 		}
 	}
 	println('Compared ${corpus.requests.len} requests: ${blocked} blocked, ${corpus.requests.len - blocked} allowed, ${failures} mismatches')

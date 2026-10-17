@@ -5,7 +5,7 @@ import crypto.sha256
 import css
 import dom
 import html
-import json
+import json2
 import os
 
 // Optional observer output for reproducible native capture benchmarks. Reading
@@ -186,7 +186,7 @@ fn (app &BrowserApp) write_capture_audit_if_requested() {
 			eprintln('Vox capture audit: ${err.msg()}')
 			return
 		}
-		json.decode(CaptureAuditConfig, encoded) or {
+		json2.decode[CaptureAuditConfig](encoded) or {
 			eprintln('Vox capture audit: ${err.msg()}')
 			return
 		}
@@ -195,5 +195,5 @@ fn (app &BrowserApp) write_capture_audit_if_requested() {
 		eprintln('Vox capture audit: ${err.msg()}')
 		return
 	}
-	os.write_file(path, json.encode(audit)) or { eprintln('Vox capture audit: ${err.msg()}') }
+	os.write_file(path, json2.encode(audit, escape_unicode: true)) or { eprintln('Vox capture audit: ${err.msg()}') }
 }

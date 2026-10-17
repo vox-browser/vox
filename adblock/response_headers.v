@@ -1,6 +1,6 @@
 module adblock
 
-import json
+import json2
 
 // Preserve separate repeated fields. Full uBO's response-header matcher uses
 // the first matching field, with case-insensitive names.
@@ -18,14 +18,14 @@ pub fn check_response(request Request, headers []ResponseHeader) Decision {
 		|| request.url.starts_with('ws://') || request.url.starts_with('wss://')) {
 		return Decision{}
 	}
-	result := evaluate_engine('voxAdblockCheckResponse(${json.encode(request)},${json.encode(headers)})') or {
+	result := evaluate_engine('voxAdblockCheckResponse(${json2.encode(request, escape_unicode: true)},${json2.encode(headers, escape_unicode: true)})') or {
 		decision := Decision{
 			error: err.msg()
 		}
 		record_response(request, headers, decision)
 		return decision
 	}
-	decision := json.decode(Decision, result) or {
+	decision := json2.decode[Decision](result) or {
 		Decision{
 			error: err.msg()
 		}
@@ -36,12 +36,12 @@ pub fn check_response(request Request, headers []ResponseHeader) Decision {
 
 pub fn (mut engine Engine) check_response(request Request, headers []ResponseHeader) Decision {
 	result := evaluate_custom_engine(engine.context,
-		'voxAdblockCheckResponse(${json.encode(request)},${json.encode(headers)})') or {
+		'voxAdblockCheckResponse(${json2.encode(request, escape_unicode: true)},${json2.encode(headers, escape_unicode: true)})') or {
 		return Decision{
 			error: err.msg()
 		}
 	}
-	return json.decode(Decision, result) or {
+	return json2.decode[Decision](result) or {
 		Decision{
 			error: err.msg()
 		}

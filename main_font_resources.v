@@ -4,7 +4,7 @@ import adblock
 import css
 import fetch
 import http
-import json
+import json2
 import requestserver
 import strconv
 import platform
@@ -53,7 +53,7 @@ fn browser_cached_font_response(request &fetch.Request) ?&fetch.Response {
 	status := strconv.atoi(read_browser_cache_entry(path + '.status') or { return none }) or { return none }
 	if status < 200 || status >= 300 { return none }
 	if (read_browser_cache_entry(path + '.url') or { return none }) != address { return none }
-	headers := json.decode([]adblock.ResponseHeader,
+	headers := json2.decode[[]adblock.ResponseHeader](
 		read_browser_cache_entry(path + '.headers.json') or { return none }) or { return none }
 	body := read_browser_cache_entry(path) or { return none }
 	mut response := fetch.Response.create()
