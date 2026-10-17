@@ -87,7 +87,7 @@ fn test_video_representation_dimensions_poster_and_controls() {
 	assert controls.mute_icon == .low
 	assert controls.was_muted
 	assert controls.shadow_tree_created
-	assert controls.registered_event_listeners_.len == 12
+	assert controls.registered_event_listeners_.len == 13
 	controls.remove_event_listeners()
 	assert controls.registered_event_listeners_.len == 0
 }

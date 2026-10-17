@@ -8,6 +8,7 @@
 module html
 
 import dom
+import css
 import fetch as webfetch
 import math
 import painting
@@ -842,6 +843,7 @@ struct MediaControlsDOM {
 mut:
 	container          ?&dom.Element
 	play_pause_icon    ?&dom.Element
+	timeline_track     ?&dom.Element
 	timeline_fill      ?&dom.Element
 	timestamp_element  ?&dom.Element
 	volume_area        ?&dom.Element
@@ -849,6 +851,13 @@ mut:
 	mute_button        ?&dom.Element
 	fullscreen_icon    ?&dom.Element
 	placeholder_circle ?&dom.Element
+}
+
+struct MediaControlsBufferedRange {
+	element &dom.Element @[required]
+mut:
+	left f64
+	width f64
 }
 
 @[heap]
@@ -873,6 +882,7 @@ pub mut:
 mut:
 	dom_                        MediaControlsDOM
 	registered_event_listeners_ []MediaControlsRegisteredEventListener
+	buffered_ranges_            []MediaControlsBufferedRange
 	pending_scrub_seek_time_     ?f64
 	scrub_seek_preemption_timer_ ?&platform.Timer
 }
@@ -925,7 +935,16 @@ pub fn (mut controls MediaControls) create_shadow_tree() {
 				mut child := dom.create_element(document, tag_name, ns_html, none, none, false) or { continue }
 				child.set_attribute_value('class', class_name)
 				mut container_node := container.as_node()
-				container_node.append_child(child.as_node()) or { continue }
+				if class_name == 'timeline-fill' {
+					mut track := dom.create_element(document, 'div', ns_html, none, none, false) or { panic(err) }
+					track.set_attribute_value('class', 'timeline-track')
+					mut track_node := track.as_node()
+					track_node.append_child(child.as_node()) or { panic(err) }
+					container_node.append_child(track_node) or { panic(err) }
+					controls.dom_.timeline_track = track
+				} else {
+					container_node.append_child(child.as_node()) or { continue }
+				}
 				created << child
 			}
 			mut shadow_node := unsafe { &dom.Node(shadow) }
@@ -995,6 +1014,7 @@ fn media_controls_state_handler(controls &MediaControls, event &dom.Event) bool 
 			mutable_controls.update_timeline()
 			mutable_controls.update_timestamp()
 		}
+		'progress' { mutable_controls.update_timeline() }
 		'volumechange', 'addtrack', 'removetrack' { mutable_controls.update_volume_and_mute_indicator() }
 		'loadedmetadata' {
 			mutable_controls.update_timestamp()
@@ -1013,7 +1033,7 @@ fn media_controls_state_handler(controls &MediaControls, event &dom.Event) bool 
 
 pub fn (mut controls MediaControls) set_up_event_listeners() {
 	controls_pointer := voidptr(&controls)
-	for event_name in ['play', 'pause', 'playing', 'seeked', 'timeupdate', 'durationchange',
+	for event_name in ['play', 'pause', 'playing', 'seeked', 'timeupdate', 'durationchange', 'progress',
 		'volumechange', 'loadedmetadata', 'emptied'] {
 		controls.add_event_listener(controls.media.event_target(), event_name, .no,
 			fn [controls_pointer] (event &dom.Event) bool {
@@ -1177,17 +1197,50 @@ fn (controls &MediaControls) timeline_range() ?MediaControlsTimelineRange {
 
 pub fn (mut controls MediaControls) update_timeline() {
 	range_ := controls.timeline_range()
-	percentage := if value := range_ {
-		math.max(0.0, math.min(1.0, value.progress_at(controls.media.current_time()))) * 100.0
-	} else {
-		0.0
+	if controls.scrubbing_timeline == .no {
+		percentage := if value := range_ {
+			math.max(0.0, math.min(1.0, value.progress_at(controls.media.current_time()))) * 100.0
+		} else {
+			0.0
+		}
+		if controls.timeline_percentage != percentage {
+			controls.timeline_percentage = percentage
+			if mut fill := controls.dom_.timeline_fill {
+				fill.set_attribute_value('style', 'width:${percentage}%;')
+			}
+		}
 	}
-	if controls.timeline_percentage == percentage {
-		return
+	buffered := controls.media.buffered()
+	range_count := if range_ != none { int(buffered.length()) } else { 0 }
+	track := controls.dom_.timeline_track or { return }
+	for controls.buffered_ranges_.len > range_count {
+		last := controls.buffered_ranges_.pop()
+		mut node := last.element.as_node()
+		node.remove(false)
 	}
-	controls.timeline_percentage = percentage
-	if mut fill := controls.dom_.timeline_fill {
-		fill.set_attribute_value('style', 'width:${percentage}%;')
+	for controls.buffered_ranges_.len < range_count {
+		mut element := dom.create_element(controls.media.document() or { panic('Missing buffered timeline document') },
+			'div', ns_html, none, none, false) or { panic(err) }
+		element.set_attribute_value('class', 'timeline-buffered')
+		mut style := css.element_style(element)
+		style.set_property('display', 'block', '') or { panic(err) }
+		mut track_node := track.as_node()
+		track_node.append_child(element.as_node()) or { panic(err) }
+		controls.buffered_ranges_ << MediaControlsBufferedRange{element: element}
+	}
+	value := range_ or { return }
+	for i in 0 .. range_count {
+		start := buffered.start(u32(i)) or { panic(err) }
+		end := buffered.end(u32(i)) or { panic(err) }
+		left := value.progress_at(start)
+		width := (end - start) / value.span()
+		mut cached := &controls.buffered_ranges_[i]
+		if cached.left == left && cached.width == width { continue }
+		cached.left = left
+		cached.width = width
+		mut style := css.element_style(cached.element)
+		style.set_property('left', '${left * 100}%', '') or { panic(err) }
+		style.set_property('width', '${width * 100}%', '') or { panic(err) }
 	}
 }
 
