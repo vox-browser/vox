@@ -32,3 +32,11 @@ pub fn prepare_document_heap(element_count int) bool {
 	}
 	return false
 }
+
+// Scripting-disabled documents favor natural managed-heap growth over reserving
+// capacity for the script/style allocation wave. Explicit settings remain owned
+// by the collector and the script-enabled path keeps its existing policy.
+pub fn prepare_document_heap_for_scripting(element_count int, scripting_enabled bool) bool {
+	if !scripting_enabled { return false }
+	return prepare_document_heap(element_count)
+}

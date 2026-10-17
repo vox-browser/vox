@@ -16,6 +16,7 @@ mut:
 	heap_adjustment_allowed bool
 	heap_policy_changed     bool
 	previous_heap_divisor   usize
+	applied_heap_divisor    usize
 }
 
 struct DeferredWorkTimer {
@@ -84,17 +85,20 @@ $if gcboehm ? {
 	fn adjust_cooperative_heap_locked(context voidptr) voidptr {
 		mut state := unsafe { &CooperativeWorkState(context) }
 		previous := C.GC_get_free_space_divisor()
-		if previous > 8 {
+		minimum := browser_activity_heap_minimum_divisor_locked()
+		divisor := if minimum > 8 { minimum } else { usize(8) }
+		if previous > divisor {
 			state.previous_heap_divisor = previous
+			state.applied_heap_divisor = divisor
 			state.heap_policy_changed = true
-			C.GC_set_free_space_divisor(8)
+			C.GC_set_free_space_divisor(divisor)
 		}
 		return unsafe { nil }
 	}
 
 	fn restore_cooperative_heap_locked(context voidptr) voidptr {
 		state := unsafe { &CooperativeWorkState(context) }
-		if C.GC_get_free_space_divisor() == 8 {
+		if C.GC_get_free_space_divisor() == state.applied_heap_divisor {
 			C.GC_set_free_space_divisor(state.previous_heap_divisor)
 		}
 		return unsafe { nil }

@@ -19,7 +19,8 @@ fn document_heap_element_count(document &dom.Document) int {
 }
 
 fn prepare_document_render_heap(document &dom.Document) bool {
-	return platform.prepare_document_heap(document_heap_element_count(document))
+	if !document.as_node().is_scripting_enabled() { return false }
+	return platform.prepare_document_heap_for_scripting(document_heap_element_count(document), true)
 }
 
 // Each element of a parsed document comes from a start tag or is implied by
@@ -36,6 +37,11 @@ fn markup_start_tag_count(markup string) int {
 	return count
 }
 
-fn prepare_markup_render_heap(markup string) bool {
-	return platform.prepare_document_heap(markup_start_tag_count(markup))
+fn prepare_markup_render_heap(markup string, scripting_enabled bool) bool {
+	if !scripting_enabled { return false }
+	return platform.prepare_document_heap_for_scripting(markup_start_tag_count(markup), true)
+}
+
+fn (app &BrowserApp) document_scripting_enabled_for_heap() bool {
+	return app.document == unsafe { nil } || app.document.as_node().is_scripting_enabled()
 }

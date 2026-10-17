@@ -3280,6 +3280,8 @@ fn (mut app BrowserApp) relayout(window_width int, window_height int) {
 	if app.document == unsafe { nil } {
 		return
 	}
+	mut heap_scope := platform.begin_browser_activity_heap_scope_for_scripting(app.document_scripting_enabled_for_heap())
+	defer { heap_scope.finish() }
 	refresh_browser_adblock(app.document, app.js_runtime, mut app.js_messages)
 	// Cosmetic filtering consumes facade effects; ordinary paint recording can
 	// happen later in a frame after another callback has queued new effects.
@@ -3385,7 +3387,9 @@ fn document_has_window_event_handlers(document &dom.Document) bool {
 fn (mut app BrowserApp) install_loaded_page(loaded LoadedPage, add_history bool) {
 	mut navigation_work := app.begin_navigation_work()
 	defer { navigation_work.finish() }
-	mut heap_scope := platform.begin_browser_activity_heap_scope()
+	heap_scripting_enabled := browser_scripting_enabled(loaded.url, app.script_policy)
+		&& (app.page_model == unsafe { nil } || app.page_model.is_scripting_enabled())
+	mut heap_scope := platform.begin_browser_activity_heap_scope_for_scripting(heap_scripting_enabled)
 	defer { heap_scope.finish() }
 	app.markup = loaded.markup
 	app.content_type = loaded.content_type

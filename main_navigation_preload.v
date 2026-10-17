@@ -106,14 +106,14 @@ fn (mut app BrowserApp) prepare_loaded_page(loaded LoadedPage, add_history bool)
 fn (mut app BrowserApp) start_page_preload(loaded LoadedPage, add_history bool) {
 	mut navigation_work := app.begin_navigation_work()
 	defer { navigation_work.finish() }
-	mut heap_scope := platform.begin_browser_activity_heap_scope()
+	scripting_enabled := browser_scripting_enabled(loaded.url, app.script_policy)
+		&& (app.page_model == unsafe { nil } || app.page_model.is_scripting_enabled())
+	mut heap_scope := platform.begin_browser_activity_heap_scope_for_scripting(scripting_enabled)
 	defer { heap_scope.finish() }
 	app.cancel_page_preload()
 	// Discovery owns a detached context. Creating it with the displayed page's
 	// context would deactivate that document before its replacement is ready.
-	scripting_enabled := browser_scripting_enabled(loaded.url, app.script_policy)
-		&& (app.page_model == unsafe { nil } || app.page_model.is_scripting_enabled())
-	_ = prepare_markup_render_heap(loaded.markup)
+	_ = prepare_markup_render_heap(loaded.markup, scripting_enabled)
 	mut document := parse_page_preload_document(loaded, scripting_enabled)
 	base_url := document.base_url().serialize()
 	urls := document_preload_resource_urls(document, base_url)
@@ -173,6 +173,8 @@ fn (mut app BrowserApp) poll_page_preload() {
 	defer { navigation_work.finish() }
 	if pending.discovery_document != unsafe { nil } {
 		mut document := pending.discovery_document
+		mut heap_scope := platform.begin_browser_activity_heap_scope_for_scripting(document.as_node().is_scripting_enabled())
+		defer { heap_scope.finish() }
 		base_url := document.base_url().serialize()
 		_ = install_external_styles(document, base_url, pending.resources)
 		document.set_viewport_rect(dom.Rect{

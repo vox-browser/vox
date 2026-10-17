@@ -15,8 +15,8 @@ fn (mut app BrowserApp) preload_initial_document_resources(base_url string) map[
 		width: if app.viewport_width > 0 { app.viewport_width } else { initial_width }
 		height: viewport_height
 	})
-	// Initial DOM/style construction has the same allocation wave when
-	// scripting is enabled. Keep the bounded capacity hint independent of policy.
+	// Script-enabled documents retain the existing capacity hint; HTML/CSS-only
+	// documents let their managed heap grow with actual live state.
 	_ = prepare_document_render_heap(app.document)
 	if app.document.as_node().is_scripting_enabled() {
 		loaded := preload_document_resources(app.document, base_url, cached)

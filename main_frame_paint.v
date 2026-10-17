@@ -3,6 +3,7 @@ module main
 import dom
 import layout
 import time
+import platform
 
 // Native frame preparation can install a document, run callbacks, relayout and
 // sample animations before presenting any pixels. Keep layout synchronous, but
@@ -14,6 +15,8 @@ fn (mut app BrowserApp) begin_frame_preparation() {
 
 fn (mut app BrowserApp) finish_frame_preparation() {
 	if app.frame_preparation_depth == 0 { return }
+	mut heap_scope := platform.begin_browser_activity_heap_scope_for_scripting(app.document_scripting_enabled_for_heap())
+	defer { heap_scope.finish() }
 	app.frame_preparation_depth--
 	if app.layout_tree_only { return }
 	if app.document == unsafe { nil } {
@@ -41,6 +44,8 @@ fn (mut app BrowserApp) finish_frame_preparation() {
 }
 
 fn (mut app BrowserApp) record_document_paint_commands() {
+	mut heap_scope := platform.begin_browser_activity_heap_scope_for_scripting(app.document_scripting_enabled_for_heap())
+	defer { heap_scope.finish() }
 	checkpoint := time.sys_mono_now()
 	app.memory_maintenance.document_changed(checkpoint)
 	mut document := unsafe { &dom.Document(app.document) }
