@@ -1365,6 +1365,39 @@ extern "C" void ladybird_v_skia_set_rect_clip_outs(float const* rects, int count
     s_rect_clip_outs.assign(rects, rects + (rects && count > 0 ? count * 4 : 0));
 }
 
+// A filled rounded rectangle that the next rounded rectangle draws first, in
+// the same pass and local coordinates: x, y, width, height and four corner
+// radius pairs. A multisampled Chromium tile resolves the two shapes together,
+// so drawing them separately would round their shared edge pixels differently.
+static bool s_has_rounded_rect_underlay = false;
+static float s_rounded_rect_underlay[12];
+static uint8_t s_rounded_rect_underlay_rgba[4];
+
+extern "C" void ladybird_v_skia_set_rounded_rect_underlay(float const* rect, uint8_t red,
+    uint8_t green, uint8_t blue, uint8_t alpha)
+{
+    s_has_rounded_rect_underlay = rect != nullptr;
+    if (rect)
+        std::copy(rect, rect + 12, s_rounded_rect_underlay);
+    s_rounded_rect_underlay_rgba[0] = red;
+    s_rounded_rect_underlay_rgba[1] = green;
+    s_rounded_rect_underlay_rgba[2] = blue;
+    s_rounded_rect_underlay_rgba[3] = alpha;
+}
+
+static SkRRect rounded_rect_from_data(float const* data)
+{
+    SkVector radii[4] {
+        { std::max(data[4], 0.0f), std::max(data[5], 0.0f) },
+        { std::max(data[6], 0.0f), std::max(data[7], 0.0f) },
+        { std::max(data[8], 0.0f), std::max(data[9], 0.0f) },
+        { std::max(data[10], 0.0f), std::max(data[11], 0.0f) },
+    };
+    SkRRect result;
+    result.setRectRadii(SkRect::MakeXYWH(data[0], data[1], data[2], data[3]), radii);
+    return result;
+}
+
 // Tiles overlap by their border texels. Tile 0 shows content rows
 // [0, spacing + 1) and tile k after it [k * spacing + 1, (k + 1) * spacing + 1).
 static bool row_in_msaa_tile(long row)
@@ -1394,6 +1427,8 @@ extern "C" int ladybird_v_skia_draw_rounded_rect(CGContextRef destination,
     uint8_t green, uint8_t blue, uint8_t alpha, int fill, float thickness,
     int anti_alias, int opaque_backdrop)
 {
+    bool const has_underlay = s_has_rounded_rect_underlay;
+    s_has_rounded_rect_underlay = false;
     if (!destination || rect_width <= 0 || rect_height <= 0 || canvas_width <= 0
         || canvas_height <= 0 || (!fill && thickness <= 0))
         return 0;
@@ -1401,6 +1436,15 @@ extern "C" int ladybird_v_skia_draw_rounded_rect(CGContextRef destination,
         transform_a, transform_c, page_x + transform_e,
         transform_b, transform_d, page_y - scroll_y + transform_f,
         0.0f, 0.0f, 1.0f);
+    SkRRect underlay_rect;
+    SkPaint underlay_paint;
+    if (has_underlay) {
+        underlay_rect = rounded_rect_from_data(s_rounded_rect_underlay);
+        underlay_paint.setAntiAlias(true);
+        underlay_paint.setColor(SkColorSetARGB(s_rounded_rect_underlay_rgba[3],
+            s_rounded_rect_underlay_rgba[0], s_rounded_rect_underlay_rgba[1],
+            s_rounded_rect_underlay_rgba[2]));
+    }
     SkVector radii[4] {
         { std::max(top_left_x, 0.0f), std::max(top_left_y, 0.0f) },
         { std::max(top_right_x, 0.0f), std::max(top_right_y, 0.0f) },
@@ -1423,6 +1467,8 @@ extern "C" int ladybird_v_skia_draw_rounded_rect(CGContextRef destination,
         canvas->save();
         canvas->setMatrix(raster_matrix(matrix, group.region, group.scale_x,
             group.scale_y));
+        if (has_underlay)
+            canvas->drawRRect(underlay_rect, underlay_paint);
         clip_out_rects(canvas);
         canvas->drawRRect(rounded_rect, paint);
         canvas->restore();
@@ -1432,6 +1478,8 @@ extern "C" int ladybird_v_skia_draw_rounded_rect(CGContextRef destination,
     auto local_bounds = paint.canComputeFastBounds()
         ? paint.computeFastBounds(rounded_rect.rect(), &paint_bounds_storage)
         : rounded_rect.rect();
+    if (has_underlay)
+        local_bounds.join(underlay_rect.rect());
     RasterRegion region;
     if (!clipped_raster_region(matrix.mapRect(local_bounds), canvas_width,
             canvas_height, anti_alias ? 2.0f : 0.0f, region))
@@ -1458,9 +1506,15 @@ extern "C" int ladybird_v_skia_draw_rounded_rect(CGContextRef destination,
             .thickness = thickness, .red = red, .green = green, .blue = blue, .alpha = alpha,
             .fill = fill, .anti_alias = anti_alias, .force_msaa = 0,
             .clip_outs = s_rect_clip_outs.empty() ? nullptr : s_rect_clip_outs.data(),
-            .clip_out_count = static_cast<int>(s_rect_clip_outs.size() / 4)
+            .clip_out_count = static_cast<int>(s_rect_clip_outs.size() / 4),
+            .has_underlay = has_underlay ? 1 : 0
         };
         raster_matrix(matrix, region, raster_scale_x, raster_scale_y).get9(descriptor.matrix);
+        if (has_underlay) {
+            std::copy(s_rounded_rect_underlay, s_rounded_rect_underlay + 12, descriptor.underlay_rect);
+            std::copy(s_rounded_rect_underlay_rgba, s_rounded_rect_underlay_rgba + 4,
+                descriptor.underlay_rgba);
+        }
         // Each raster row takes the mode of the Chromium tile that shows it,
         // in device rows of the root layer's content.
         long first_row = std::lround((static_cast<float>(region.top) - page_y + scroll_y)
@@ -1506,6 +1560,8 @@ extern "C" int ladybird_v_skia_draw_rounded_rect(CGContextRef destination,
     auto* canvas = surface->getCanvas();
     canvas->clear(SK_ColorTRANSPARENT);
     canvas->setMatrix(raster_matrix(matrix, region, raster_scale_x, raster_scale_y));
+    if (has_underlay)
+        canvas->drawRRect(underlay_rect, underlay_paint);
     clip_out_rects(canvas);
     canvas->drawRRect(rounded_rect, paint);
     return composite_pixels(destination, pixels, raster_width, raster_height,

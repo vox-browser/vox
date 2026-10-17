@@ -38,6 +38,7 @@ extern int ladybird_v_skia_configure_font(const char *path, int slot);
 extern void ladybird_v_skia_set_image_color_profile(const float *profile);
 extern void ladybird_v_skia_set_msaa_tiles(const int *tiles, int count, int tile_rows);
 extern void ladybird_v_skia_set_rect_clip_outs(const float *rects, int count);
+extern void ladybird_v_skia_set_rounded_rect_underlay(const float *rect, uint8_t red, uint8_t green, uint8_t blue, uint8_t alpha);
 extern int ladybird_v_skia_register_system_face(const char *key, const char *path,
 	const char *postscript_name, const uint32_t *axis_tags, const float *axis_values, int axis_count);
 extern int ladybird_v_skia_draw_glyph_run(CGContextRef destination,
@@ -2265,6 +2266,25 @@ void native_set_chromium_msaa_tiles(const int *tiles, int count, int tile_rows) 
 	ladybird_v_skia_set_msaa_tiles(tiles, count, tile_rows);
 #else
 	(void)tiles; (void)count; (void)tile_rows;
+#endif
+}
+
+// Whether the next native rounded rectangle can draw an underlay in its pass.
+int native_rounded_rect_underlay_supported(void) {
+#ifdef LADYBIRD_V_HAS_SKIA_TEXT
+	return 1;
+#else
+	return 0;
+#endif
+}
+
+// The filled rounded rectangle, as x, y, width, height and four corner radius
+// pairs, that the next native rounded rectangle draws first in its own pass.
+void native_set_rounded_rect_underlay(const float *rect, gg__Color color) {
+#ifdef LADYBIRD_V_HAS_SKIA_TEXT
+	ladybird_v_skia_set_rounded_rect_underlay(rect, color.r, color.g, color.b, color.a);
+#else
+	(void)rect; (void)color;
 #endif
 }
 

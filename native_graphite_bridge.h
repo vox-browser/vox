@@ -36,6 +36,12 @@ typedef struct {
     // bottom in the shape's local coordinates.
     const float *clip_outs;
     int clip_out_count;
+    // A filled, anti-aliased rounded rectangle drawn first in the same render
+    // pass, as Chromium draws consecutive shapes into one raster tile: x, y,
+    // width, height and four corner radius pairs, then its RGBA color.
+    int has_underlay;
+    float underlay_rect[12];
+    uint8_t underlay_rgba[4];
 } VoxGraphiteShape;
 
 // An SVG path in the browser's serialized segment format: twelve floats per

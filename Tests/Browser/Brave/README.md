@@ -103,9 +103,15 @@ such as ❤️, still select a monochrome face and are not covered.
 half-pixel offset and over a tinted background. Blink paints them with
 NativeThemeBase into the pixel-snapped control box: a white background inset
 by 0.2px and a 1px #767676 border stroked half a pixel inside, both with a
-2px radius. Each shape is rasterized by the isolated GPU backend over the
-page, as in Brave. Checked, indeterminate, disabled and dark-scheme controls
-keep the existing LibWeb painting.
+2px radius. Both shapes are rasterized by the isolated GPU backend over the
+page in one pass, as in Brave. Checked, indeterminate, disabled and
+dark-scheme controls keep the existing LibWeb painting.
+
+`checkbox-multisampled-tile` places such check boxes, at whole and fractional
+offsets, in the raster tile of a skip-ink underline crossing two descenders,
+as in each 4chan post header. That tile is multisampled, and Brave resolves
+the background and border of each check box together; drawing and resolving
+them separately leaves their corner pixels one level apart.
 
 `jpeg-yuv` checks baseline and progressive 4:2:0 JPEG images and a
 progressive 4:4:4 image at natural size. Brave decodes YCbCr JPEGs to Y, Cb

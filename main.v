@@ -266,6 +266,8 @@ fn C.native_begin_css_filter_layer(canvas_width f32, canvas_height f32)
 fn C.native_begin_font_compositing_layer(canvas_width f32, canvas_height f32)
 fn C.native_set_chromium_msaa_tiles(tiles &int, count int, tile_rows int)
 fn C.native_set_rect_clip_outs(rects &f64, count int)
+fn C.native_rounded_rect_underlay_supported() int
+fn C.native_set_rounded_rect_underlay(rect &f32, color gg.Color)
 fn C.native_end_font_compositing_layer()
 
 fn C.native_begin_backdrop_filter_layer(canvas_width f32, canvas_height f32, region_x f32, region_y f32, region_width f32, region_height f32, top_left_x f32, top_left_y f32, top_right_x f32, top_right_y f32, bottom_right_x f32, bottom_right_y f32, bottom_left_x f32, bottom_left_y f32, transform_a f32, transform_b f32, transform_c f32, transform_d f32, transform_e f32, transform_f f32, page_x f32, page_y f32, scroll_y f32, source_outside_current_filter int)
@@ -414,6 +416,10 @@ mut:
 	script_stylesheet_scan_version      u64
 	script_image_requests               map[string]bool
 	script_image_scan_version           u64
+	// A check box background deferred to its border's native GPU pass, with
+	// the command as drawn and as it was submitted.
+	rounded_rect_underlay               ?layout.PaintCommand
+	rounded_rect_underlay_source        ?layout.PaintCommand
 	nonrendered_image_preloads          map[string]bool
 	screenshot_path                     string
 	screenshot_scheduled                bool
@@ -4992,7 +4998,23 @@ fn (mut app BrowserApp) add_native_css_filter(filter painting.GfxFilter, transfo
 	app.add_native_svg_filter_graph(filter, transform, page_x, page_y)
 }
 
+// Draws a check box background deferred to a border that did not follow it.
+fn (mut app BrowserApp) flush_rounded_rect_underlay(page_x f32, page_y f32, window_height int) {
+	source := app.rounded_rect_underlay_source or { return }
+	app.rounded_rect_underlay = none
+	app.rounded_rect_underlay_source = none
+	app.draw_command(layout.PaintCommand{
+		...source
+		underlays_next: false
+	}, page_x, page_y, window_height)
+}
+
 fn (mut app BrowserApp) draw_command(source_command layout.PaintCommand, page_x f32, page_y f32, window_height int) {
+	// Only the border that draws natively can take a deferred background.
+	if app.rounded_rect_underlay != none
+		&& (source_command.kind != 'stroke_rounded_rect' || source_command.points.len >= 4) {
+		app.flush_rounded_rect_underlay(page_x, page_y, window_height)
+	}
 	app.paint_effect_depth = background_clip_effect_depth_after_command(app.paint_effect_depth,
 		source_command.kind)
 	mut command := source_command
@@ -5322,6 +5344,7 @@ fn (mut app BrowserApp) draw_command(source_command layout.PaintCommand, page_x 
 						transformed := layout.paint_command_for_nested_viewport(nested_command, command.transform, painting.IntPoint{result.nested_rect.x, result.nested_rect.y}, command.opacity)
 						app.draw_command(transformed, page_x, page_y, window_height)
 					}
+					app.flush_rounded_rect_underlay(page_x, page_y, window_height)
 					C.native_end_clip()
 					return
 				}
@@ -5335,6 +5358,7 @@ fn (mut app BrowserApp) draw_command(source_command layout.PaintCommand, page_x 
 				transformed := layout.paint_command_for_nested_viewport(nested_command, command.transform, painting.IntPoint{result.nested_rect.x, result.nested_rect.y}, command.opacity)
 				app.draw_command(transformed, page_x, page_y, window_height)
 			}
+			app.flush_rounded_rect_underlay(page_x, page_y, window_height)
 			app.ctx.scissor_rect(0, 0, app.ctx.width, app.ctx.height)
 		}
 		'paint_outer_box_shadow' {
@@ -5376,6 +5400,11 @@ fn (mut app BrowserApp) draw_command(source_command layout.PaintCommand, page_x 
 			$if macos {
 				if app.ctx.native_rendering && !command.outer_shadow
 					&& (command.radius > 0 || command.antialiased_rect) {
+					if command.underlays_next && C.native_rounded_rect_underlay_supported() != 0 {
+						app.rounded_rect_underlay = command
+						app.rounded_rect_underlay_source = source_command
+						return
+					}
 					used_radius := f32(clamp(command.radius, 0.0, math.min(command.width, command.height) / 2.0))
 					if command.clip_outs.len >= 4 {
 						C.native_set_rect_clip_outs(&command.clip_outs[0], command.clip_outs.len / 4)
@@ -5483,7 +5512,16 @@ fn (mut app BrowserApp) draw_command(source_command layout.PaintCommand, page_x 
 			$if macos {
 				if app.ctx.native_rendering && command.points.len < 4 {
 					used_radius := f32(command.radius)
+					if underlay := app.rounded_rect_underlay {
+						app.rounded_rect_underlay = none
+						app.rounded_rect_underlay_source = none
+						radius := f32(clamp(underlay.radius, 0.0, math.min(underlay.width, underlay.height) / 2.0))
+						rect := [f32(underlay.x), f32(underlay.y), f32(underlay.width), f32(underlay.height),
+							radius, radius, radius, radius, radius, radius, radius, radius]!
+						C.native_set_rounded_rect_underlay(&rect[0], app.paint_colors.color(underlay.color, underlay.opacity))
+					}
 					C.native_draw_rounded_rect_srgb(f32(command.x), f32(command.y), f32(command.width), f32(command.height), used_radius, used_radius, used_radius, used_radius, used_radius, used_radius, used_radius, used_radius, f32(matrix[0]), f32(matrix[1]), f32(matrix[2]), f32(matrix[3]), f32(matrix[4]), f32(matrix[5]), page_x, page_y, f32(scroll_y), f32(app.ctx.width), f32(app.ctx.height), stroke, 0, f32(command.stroke_width), 1)
+					C.native_set_rounded_rect_underlay(unsafe { nil }, gg.Color{})
 					return
 				}
 			}
@@ -6065,6 +6103,7 @@ fn (mut app BrowserApp) draw_command(source_command layout.PaintCommand, page_x 
 								transformed := layout.paint_command_for_nested_viewport(nested_command, command.transform, painting.IntPoint{destination.x, destination.y}, command.opacity)
 								app.draw_command(transformed, page_x, page_y, window_height)
 							}
+							app.flush_rounded_rect_underlay(page_x, page_y, window_height)
 						}
 					}
 					continue
@@ -6440,6 +6479,7 @@ fn (mut app BrowserApp) draw() {
 			platform.cooperative_work_checkpoint()
 			app.draw_command(command, 0, page_y, window.height)
 		}
+		app.flush_rounded_rect_underlay(0, page_y, window.height)
 		for index in app.portable_shadow_image_index .. app.portable_shadow_images.len {
 			app.ctx.remove_cached_image_by_idx(app.portable_shadow_images[index].image_id)
 		}

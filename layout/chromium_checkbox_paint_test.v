@@ -16,6 +16,8 @@ fn test_chromium_unchecked_checkbox_uses_blink_theme_geometry() {
 	assert commands[0].color == 'rgb(255 255 255)'
 	assert [commands[0].x, commands[0].y, commands[0].width, commands[0].height] == [299.2, 625.2,
 		12.6, 12.6]
+	// The border draws the background first in its own GPU pass.
+	assert commands[0].underlays_next && !commands[1].underlays_next
 	assert commands[1].kind == 'stroke_rounded_rect' && commands[1].radius == 2
 	assert commands[1].stroke_width == 1 && commands[1].color == 'rgb(118 118 118)'
 	assert [commands[1].x, commands[1].y, commands[1].width, commands[1].height] == [299.5, 625.5,

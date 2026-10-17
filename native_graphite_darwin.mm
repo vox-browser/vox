@@ -274,6 +274,13 @@ int vox_graphite_draw_shape_pixels(uint8_t* pixels, int width, int height,
     SkMatrix matrix;
     matrix.set9(shape->matrix);
     canvas->setMatrix(matrix);
+    if (shape->has_underlay) {
+        SkPaint underlay;
+        underlay.setAntiAlias(true);
+        underlay.setColor(SkColorSetARGB(shape->underlay_rgba[3], shape->underlay_rgba[0],
+            shape->underlay_rgba[1], shape->underlay_rgba[2]));
+        canvas->drawRRect(rounded_rect(shape->underlay_rect), underlay);
+    }
     for (int index = 0; shape->clip_outs && index < shape->clip_out_count; ++index) {
         float const* clip = shape->clip_outs + index * 4;
         canvas->clipRect(SkRect::MakeLTRB(clip[0], clip[1], clip[2], clip[3]),

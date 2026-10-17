@@ -981,6 +981,9 @@ pub mut:
 	// A square 'fill_rect' with fractional edges that Blink rasterizes as an
 	// antialiased GPU rectangle, such as a text decoration with fractional ends.
 	antialiased_rect bool
+	// A rounded 'fill_rect' that the following rounded border draws first in
+	// its own GPU pass, as a check box's background and border share a tile.
+	underlays_next bool
 	// Rectangles clipped out of an antialiased 'fill_rect' without
 	// antialiasing, as left, top, right and bottom: skip-ink decoration gaps.
 	clip_outs []f64
@@ -4314,8 +4317,9 @@ fn chromium_snapped_control_rect(x f64, y f64, width f64, height f64) painting.I
 // Blink's NativeThemeBase::PaintCheckboxRadioCommon() for an enabled, unchecked
 // check box: a white background inset by a fifth of the 1px border, then the
 // #767676 border stroked half a pixel inside the control, both with a 2px
-// radius. Each shape blends over the page through the isolated GPU backend,
-// as Brave's GPU rasterization does, rather than through a CPU command group.
+// radius. Both shapes blend over the page through the isolated GPU backend in
+// one pass, as Brave's GPU rasterization draws them into one raster tile: a
+// multisampled tile resolves their shared edge pixels together.
 fn append_chromium_unchecked_checkbox(mut commands []PaintCommand, rect painting.IntRect, opacity f64) {
 	commands << PaintCommand{
 		kind:                'fill_rect'
@@ -4324,6 +4328,7 @@ fn append_chromium_unchecked_checkbox(mut commands []PaintCommand, rect painting
 		width:               f64(rect.width) - 0.4
 		height:              f64(rect.height) - 0.4
 		radius:              2
+		underlays_next:      true
 		color:               'rgb(255 255 255)'
 		opacity:             opacity
 		force_dark_role:     .background
