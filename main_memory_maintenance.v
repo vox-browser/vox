@@ -39,6 +39,13 @@ fn (mut maintenance BrowserMemoryMaintenance) cleanup_due(now_ns i64, allocated 
 	return true
 }
 
+fn (mut app BrowserApp) finish_frame_memory_activity(now_ns i64, previous_paint voidptr) {
+	// Installation may build the display list before the native frame begins.
+	// Its first replay is still document work even when that pointer is stable.
+	app.memory_maintenance.frame_finished(now_ns, !app.document_presented
+		|| previous_paint != voidptr(app.paint_display_list))
+}
+
 fn (mut app BrowserApp) release_unused_memory_if_idle(now_ns i64) {
 	$if gcboehm ? {
 		if app.document == unsafe { nil } || app.pending_navigation != none

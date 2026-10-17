@@ -2,6 +2,18 @@ module main
 
 import page
 
+fn test_first_native_replay_of_an_already_recorded_document_is_active_work() {
+	mut app := BrowserApp{}
+	app.memory_maintenance.document_changed(1_000_000_000)
+	// The display list was adopted before draw(), so its identity is unchanged.
+	app.finish_frame_memory_activity(3_000_000_000, voidptr(app.paint_display_list))
+	assert !app.memory_maintenance.cleanup_due(3_000_000_000, 100)
+	assert !app.memory_maintenance.cleanup_due(3_499_000_000, 100)
+	app.document_presented = true
+	app.finish_frame_memory_activity(4_000_000_000, voidptr(app.paint_display_list))
+	assert app.memory_maintenance.cleanup_due(4_000_000_000, 100)
+}
+
 fn test_slow_document_frames_are_active_until_their_native_replay_finishes() {
 	mut maintenance := BrowserMemoryMaintenance{}
 	maintenance.document_changed(1_000_000_000)
