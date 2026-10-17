@@ -477,6 +477,11 @@ fn (mut p HTMLParser) run_with_stop_at_insertion_point(stop_at_insertion_point S
 		if p.parser_pause_flag {
 			break
 		}
+		if p.insert_text_run_if_available(stop_at_insertion_point) {
+			platform.cooperative_work_checkpoint()
+			if p.stop_parsing { break }
+			continue
+		}
 		mut token := p.tokenizer.next_token_impl(stop_at_insertion_point) or { break }
 
 		if p.next_line_feed_can_be_ignored {
