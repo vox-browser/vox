@@ -349,8 +349,12 @@ fn (mut iterator InlineLevelIterator) compute_is_unidirectional_left_to_right() 
 	for node != none {
 		current := node or { break }
 		if styled := current.as_node_with_style() {
-			if styled.computed_values().direction() == .rtl
-				|| styled.computed_values().unicode_bidi() != .normal {
+			values := styled.computed_values()
+			// An LTR isolate, as the UA style sheet makes every div and every
+			// element with a dir attribute, resolves its LTR text to LTR levels.
+			// Only that text, checked below, can make the paragraph bidirectional.
+			if values.direction() == .rtl
+				|| (values.unicode_bidi() != .normal && values.unicode_bidi() != .isolate) {
 				return false
 			}
 		} else if text_node := current.as_text_node() {

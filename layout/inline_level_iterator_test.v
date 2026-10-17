@@ -145,3 +145,28 @@ fn test_inline_level_iterator_preserves_ltr_shaping_across_neutral_punctuation()
 	_, mixed_iterator := make_inline_iterator(document, mixed_container, 300)
 	assert !mixed_iterator.is_unidirectional_left_to_right
 }
+
+fn inline_isolate_test_iterator(document &dom.Document, declarations string) &InlineLevelIterator {
+	style := inline_iterator_test_style(document, 'div', 'display:block; font:20px SerenitySans')
+	mut container := BlockContainer.new(document, none, style)
+	container.set_children_are_inline(true)
+	mut inline_node := InlineNode.new(document, none, inline_iterator_test_style(document, 'div',
+		declarations))
+	dom_text := document.create_text_node('x')
+	inline_node.append_child(unsafe { &Node(TextNode.new(document, dom_text.as_node(), 'x')) })
+	container.append_child(unsafe { &Node(inline_node) })
+	dom_after := document.create_text_node(' to view.')
+	container.append_child(unsafe { &Node(TextNode.new(document, dom_after.as_node(), ' to view.')) })
+	_, iterator := make_inline_iterator(document, container, 400)
+	return iterator
+}
+
+// The UA style sheet isolates every div and every element with a dir
+// attribute. 4chan's inline OP post is such a div; an LTR isolate of LTR text
+// keeps its paragraph unidirectional, so " to view." still kerns its "w.".
+fn test_inline_level_iterator_keeps_ltr_isolates_unidirectional() {
+	document := dom.Document.create(dom.url_about_blank())
+	assert inline_isolate_test_iterator(document, 'display:inline; unicode-bidi:isolate').is_unidirectional_left_to_right
+	assert !inline_isolate_test_iterator(document, 'display:inline; unicode-bidi:embed').is_unidirectional_left_to_right
+	assert !inline_isolate_test_iterator(document, 'display:inline; unicode-bidi:isolate; direction:rtl').is_unidirectional_left_to_right
+}

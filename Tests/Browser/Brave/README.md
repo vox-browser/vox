@@ -164,3 +164,10 @@ whole pixel but measures the ink-skip stripe from the unrounded decoration, so
 the glyph intercepts, and the clip-outs around descenders, follow that
 fraction. The underline crosses two descenders on every line, so each line's
 GPU raster tile is multisampled.
+
+`inline-isolate-kerning` checks text after and inside left-to-right
+isolates: 4chan's inline OP post `div`, a `span dir="ltr"` and a `bdi`. The UA
+style sheet isolates each of them, but an LTR isolate of LTR text resolves to
+LTR bidi levels, so Blink keeps its paragraph in one LTR shaping run and kerns
+pairs such as `w.` and `Ty`. Splitting neutral punctuation into separate runs
+drops those kerns.
