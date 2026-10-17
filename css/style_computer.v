@@ -1113,6 +1113,7 @@ fn (s &StyleComputer) recompute_inherited_style_with_invalidation(mut abstract_e
 	document.record_element_inherited_style_recomputation()
 
 	mut invalidation := RequiredInvalidationAfterStyleChange{}
+	mut only_color_changes := true
 	mut values_affected_by_inherited_style := map[PropertyID]&dom.StyleValue{}
 	for property_id, specified_value in computed.inheritance_dependent_specified_values() {
 		if old_value := computed.property(property_id, .no) {
@@ -1138,7 +1139,9 @@ fn (s &StyleComputer) recompute_inherited_style_with_invalidation(mut abstract_e
 
 		new_value := StyleComputer.get_non_animated_inherit_value(property_id, abstract_element)
 		computed.set_property(property_id, new_value, .yes, .no)
-		invalidation = required_invalidation_after_style_change_or(invalidation, compute_property_invalidation(property_id, old_value, computed.property(property_id, .no)))
+		property_invalidation := compute_property_invalidation(property_id, old_value, computed.property(property_id, .no))
+		only_color_changes = only_color_changes && (property_id == .color || property_invalidation.is_none())
+		invalidation = required_invalidation_after_style_change_or(invalidation, property_invalidation)
 	}
 
 	if invalidation.is_none() && values_affected_by_inherited_style.len == 0 {
@@ -1148,7 +1151,9 @@ fn (s &StyleComputer) recompute_inherited_style_with_invalidation(mut abstract_e
 
 	s.compute_property_values(mut computed, *abstract_element)
 	for property_id, old_value in values_affected_by_inherited_style {
-		invalidation = required_invalidation_after_style_change_or(invalidation, compute_property_invalidation(property_id, old_value, computed.property(property_id, .no)))
+		property_invalidation := compute_property_invalidation(property_id, old_value, computed.property(property_id, .no))
+		only_color_changes = only_color_changes && (property_id == .color || property_invalidation.is_none())
+		invalidation = required_invalidation_after_style_change_or(invalidation, property_invalidation)
 	}
 	if !invalidation.is_none() {
 		mut element := unsafe { &dom.Element(abstract_element.element()) }
@@ -1164,7 +1169,11 @@ fn (s &StyleComputer) recompute_inherited_style_with_invalidation(mut abstract_e
 	computed_dom_mirror := computed_properties_to_dom(computed)
 	abstract_element.set_computed_properties(computed_dom_mirror)
 	if layout_node := abstract_element.unsafe_layout_node() {
-		layout_node.apply_style(computed_dom_mirror)
+		if only_color_changes {
+			layout_node.apply_inherited_color_style(computed_dom_mirror)
+		} else {
+			layout_node.apply_style(computed_dom_mirror)
+		}
 	}
 	return invalidation
 }

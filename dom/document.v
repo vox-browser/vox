@@ -1359,6 +1359,8 @@ pub type LayoutApplyStyleCallback = fn (voidptr, voidptr)
 // the compositor-only sample (instead of an ordinary style application).
 pub type LayoutApplyAnimatedStyleCallback = fn (voidptr, voidptr) bool
 
+pub type LayoutApplyColorStyleCallback = fn (voidptr, voidptr) bool
+
 pub type LayoutSetNeedsLayoutUpdateCallback = fn (voidptr, bool)
 
 pub type LayoutInvalidateTextForRenderingCallback = fn (voidptr)
@@ -1450,6 +1452,7 @@ pub mut:
 	find_matching_text_callback      fn (voidptr, string, CaseSensitivity) []&Range = unsafe { nil }
 	apply_style_callback             LayoutApplyStyleCallback = unsafe { nil }
 	apply_animated_style_callback    LayoutApplyAnimatedStyleCallback = unsafe { nil }
+	apply_color_style_callback       LayoutApplyColorStyleCallback = unsafe { nil }
 	clear_image_observers_callback   fn (voidptr) = unsafe { nil }
 	set_needs_layout_update_callback LayoutSetNeedsLayoutUpdateCallback = unsafe { nil }
 	invalidate_text_for_rendering_callback LayoutInvalidateTextForRenderingCallback = unsafe { nil }

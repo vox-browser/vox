@@ -329,6 +329,7 @@ fn attach_layout_node_recursive(box &Node, parent_placeholder ?&dom.LayoutNode, 
 			find_matching_text_callback: find_matching_layout_text
 			apply_style_callback: apply_style_to_layout_node
 			apply_animated_style_callback: apply_animated_style_to_layout_node
+			apply_color_style_callback: apply_inherited_color_style_to_layout_node
 			clear_image_observers_callback: clear_layout_image_observers
 			set_needs_layout_update_callback: set_layout_node_needs_layout_update
 			invalidate_text_for_rendering_callback: invalidate_layout_text_for_rendering
@@ -604,6 +605,24 @@ fn apply_animated_style_to_layout_node(layout_handle voidptr, css_computed_prope
 		return true
 	}
 	return false
+}
+
+fn apply_inherited_color_style_to_layout_node(layout_handle voidptr, style voidptr) bool {
+	if layout_handle == unsafe { nil } || style == unsafe { nil } { return false }
+	node := unsafe { &Node(layout_handle) }
+	styled := node.as_node_with_style() or { return false }
+	computed := unsafe { &css.ComputedProperties(style) }
+	if !local_paint_style_refresh_supports_node(node, computed)
+		|| !computed.filter().is_none() || !computed.backdrop_filter().is_none() {
+		return false
+	}
+	mut mutable_styled := unsafe { &NodeWithStyle(styled) }
+	mutable_styled.apply_style(computed)
+	if mut result := document_layout_result(node.document()) {
+		result.paint_tree_needs_style_update = true
+		result.paint_style_update_handles[u64(layout_handle)] = true
+	}
+	return true
 }
 
 fn clear_layout_image_observers(layout_handle voidptr) {

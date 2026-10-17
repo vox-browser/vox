@@ -999,6 +999,14 @@ pub fn (n &LayoutNodeWithStyle_) apply_style(props &CSSComputedProperties_) {
 	}
 }
 
+pub fn (n &LayoutNodeWithStyle_) apply_inherited_color_style(props &CSSComputedProperties_) bool {
+	unsafe { n.applied_properties_ = props }
+	if layout_node := n.layout_node_ {
+		return layout_node.apply_inherited_color_style(props.css_handle)
+	}
+	return false
+}
+
 pub fn (n &LayoutNodeWithStyle_) apply_animated_style(props &CSSComputedProperties_,
 	only_compositor_changes bool) bool {
 	unsafe { n.applied_properties_ = props }

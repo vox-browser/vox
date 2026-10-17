@@ -5327,6 +5327,16 @@ pub fn (ln &LayoutNode) apply_style(css_computed_properties_handle voidptr) {
 	ln.apply_style_callback(ln.layout_handle, css_computed_properties_handle)
 }
 
+pub fn (ln &LayoutNode) apply_inherited_color_style(style voidptr) bool {
+	if ln.layout_handle != unsafe { nil } && style != unsafe { nil }
+		&& ln.apply_color_style_callback != unsafe { nil }
+		&& ln.apply_color_style_callback(ln.layout_handle, style) {
+		return true
+	}
+	ln.apply_style(style)
+	return false
+}
+
 // The sampler knows which animated values changed before mutating the shared
 // computed style. Embedders may retain paint geometry for compositor-only
 // samples; other updates and embedders keep the ordinary style path. Returns
