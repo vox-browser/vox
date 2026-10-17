@@ -114,3 +114,16 @@ uploads the same planes to the isolated GPU backend. TurboJPEG pads 4:2:0
 luma planes to even dimensions, so the decoder packs them before upload.
 Images with an embedded ICC profile and other subsamplings keep the RGB
 decoder.
+
+`png-gamma` checks PNGs with `gAMA` and `cHRM` chunks: a palette sprite with
+gamma 1/2.2 and sRGB primaries, drawn as an image and as background
+positions, a linear-gamma image, an untagged gamma 1/2.2 image, and a
+translucent image with gamma 1/1.8 and a wide green primary. Brave's PNG
+codec tags these images with the color space built from the chunks, except
+that gamma within 5% of 1/2.2 without `cHRM` is untagged, and `sRGB`, `iCCP`
+and `cICP` chunks take precedence. Its GPU image cache premultiplies the
+decoded texels, then converts the texture to an 8-bit sRGB copy before
+drawing it. The Chromium profile tags images decoded by stb_image the same way
+and converts them in the isolated GPU backend. An RGB variant of the first
+image also matched except one pixel whose converted value lies within 1e-5 of
+a rounding tie, so it is not part of the fixture.

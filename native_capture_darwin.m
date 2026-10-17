@@ -25,6 +25,7 @@ static void native_capture_instruction_checkpoint(const char *label) {
 #include "native_ffmpeg_darwin.h"
 #include "native_webp_darwin.h"
 #include "native_jpeg_darwin.h"
+#include "native_png_color_darwin.h"
 
 int native_prefers_overlay_scrollbars(void) {
 	return [NSScroller preferredScrollerStyle] == NSScrollerStyleOverlay;
@@ -33,6 +34,7 @@ int native_prefers_overlay_scrollbars(void) {
 #ifdef LADYBIRD_V_HAS_SKIA_TEXT
 extern void ladybird_v_skia_set_chromium_painting(int active);
 extern int ladybird_v_skia_configure_font(const char *path, int slot);
+extern void ladybird_v_skia_set_image_color_profile(const float *profile);
 extern int ladybird_v_skia_register_system_face(const char *key, const char *path,
 	const char *postscript_name, const uint32_t *axis_tags, const float *axis_values, int axis_count);
 extern int ladybird_v_skia_draw_glyph_run(CGContextRef destination,
@@ -4406,6 +4408,10 @@ static void native_draw_image_part_in_context(CGContextRef context, gg__Image *i
 					    pitch);
 				}
 			}
+			VoxPngColorProfile color_profile;
+			ladybird_v_skia_set_image_color_profile(
+			    native_image_color_profile(image->data, image->width, image->height,
+			        &color_profile) ? color_profile.values : NULL);
 			int drawn = ladybird_v_skia_draw_rgba_image(context, source_pixels,
 			    image->width, image->height, (int)pitch, destination_x,
 			    destination_y, destination_width, destination_height, source_x,
@@ -4419,6 +4425,7 @@ static void native_draw_image_part_in_context(CGContextRef context, gg__Image *i
 			        | (image->nr_channels == 10 ? 28 : 0)
 			        | ((context == native_font_compositing_context
 			            && native_font_compositing_transparency_depth == 0) ? 2 : 0), clip_radii);
+			ladybird_v_skia_set_image_color_profile(NULL);
 			free(flipped_pixels);
 			if (drawn)
 				return;

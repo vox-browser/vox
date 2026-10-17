@@ -944,6 +944,31 @@ extern "C" int ladybird_v_skia_draw_line(CGContextRef destination,
         static_cast<float>(region.width()), static_cast<float>(region.height()));
 }
 
+// The PNG color profile of the next image drawn, set around each draw by the
+// native image player: inverse gamma, whether primaries follow, then red,
+// green, blue and white chromaticities.
+static bool s_has_image_color_profile = false;
+static float s_image_color_profile[10] {};
+
+extern "C" void ladybird_v_skia_set_image_color_profile(float const* profile)
+{
+    s_has_image_color_profile = profile != nullptr;
+    if (profile)
+        std::copy_n(profile, 10, s_image_color_profile);
+}
+
+static sk_sp<SkColorSpace> image_color_space()
+{
+    if (!s_has_image_color_profile) return SkColorSpace::MakeSRGB();
+    skcms_TransferFunction transfer { s_image_color_profile[0], 1, 0, 0, 0, 0, 0 };
+    skcms_Matrix3x3 gamut = SkNamedGamut::kSRGB;
+    float const* p = s_image_color_profile;
+    if (p[1] != 0 && !skcms_PrimariesToXYZD50(p[2], p[3], p[4], p[5], p[6], p[7], p[8], p[9], &gamut))
+        return SkColorSpace::MakeSRGB();
+    auto space = SkColorSpace::MakeRGB(transfer, gamut);
+    return space ? space : SkColorSpace::MakeSRGB();
+}
+
 static sk_sp<SkShader> webp_yuv_shader(uint8_t const* planes, int width, int height,
     SkSamplingOptions const& sampling, SkRect const& source, SkRect const& destination,
     bool full_range, bool full_chroma)
@@ -1057,8 +1082,9 @@ extern "C" int ladybird_v_skia_draw_rgba_image(CGContextRef destination,
             .clip = {clip_x, clip_y, clip_width, clip_height},
             .opacity = opacity, .width = image_width, .height = image_height,
             .pitch = image_pitch, .flags = image_flags, .nearest = nearest_neighbor == 1,
-            .pixels = source_pixels
+            .pixels = source_pixels, .has_color_profile = s_has_image_color_profile
         };
+        std::copy_n(s_image_color_profile, 10, descriptor.color_profile);
         if (clip_radii) std::copy_n(clip_radii, 8, descriptor.clip + 4);
         raster_matrix(matrix, region, raster_scale_x, raster_scale_y).get9(descriptor.matrix);
         if (auto draw = graphite_image_draw(); draw && draw(reinterpret_cast<uint8_t*>(pixels.data()),
@@ -1078,7 +1104,7 @@ extern "C" int ladybird_v_skia_draw_rgba_image(CGContextRef destination,
         auto source_info = SkImageInfo::Make(image_width, image_height,
             kRGBA_8888_SkColorType,
             (image_flags & 1) ? kPremul_SkAlphaType : kUnpremul_SkAlphaType,
-            SkColorSpace::MakeSRGB());
+            image_color_space());
         SkPixmap source_pixmap(source_info, source_pixels,
             static_cast<size_t>(image_pitch));
         // Chromium uploads premultiplied image texels before filtering. Filtering
@@ -1090,6 +1116,15 @@ extern "C" int ladybird_v_skia_draw_rgba_image(CGContextRef destination,
             if (!source_pixmap.readPixels(info, premultiplied_source.data(), image_pitch))
                 return 0;
             source_pixmap = SkPixmap(info, premultiplied_source.data(), image_pitch);
+        }
+        // Like the GPU path, convert a tagged image to an 8-bit sRGB copy first.
+        std::vector<uint8_t> converted_source;
+        if (s_has_image_color_profile) {
+            converted_source.resize(static_cast<size_t>(image_pitch) * image_height);
+            auto info = source_pixmap.info().makeColorSpace(SkColorSpace::MakeSRGB());
+            if (!source_pixmap.readPixels(info, converted_source.data(), image_pitch))
+                return 0;
+            source_pixmap = SkPixmap(info, converted_source.data(), image_pitch);
         }
         source_image = SkImages::RasterFromPixmapCopy(source_pixmap);
         if (!source_image)

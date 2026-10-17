@@ -100,6 +100,21 @@ int vox_graphite_draw_shadow_pixels(uint8_t* pixels, int width, int height,
     return read_pixels(gpu, recorder.get(), surface.get(), info, pixels, pitch);
 }
 
+// A PNG tagged by its gAMA and cHRM chunks keeps that color space until the
+// GPU converts it to sRGB, as Chromium's raster does.
+static sk_sp<SkColorSpace> vox_image_color_space(VoxGraphiteImage const* image)
+{
+    if (!image->has_color_profile) return SkColorSpace::MakeSRGB();
+    float const* profile = image->color_profile;
+    skcms_TransferFunction transfer { profile[0], 1, 0, 0, 0, 0, 0 };
+    skcms_Matrix3x3 gamut = SkNamedGamut::kSRGB;
+    if (profile[1] != 0 && !skcms_PrimariesToXYZD50(profile[2], profile[3], profile[4],
+            profile[5], profile[6], profile[7], profile[8], profile[9], &gamut))
+        return SkColorSpace::MakeSRGB();
+    auto space = SkColorSpace::MakeRGB(transfer, gamut);
+    return space ? space : SkColorSpace::MakeSRGB();
+}
+
 extern "C" __attribute__((visibility("default")))
 int vox_graphite_draw_image_pixels(uint8_t* pixels, int width, int height,
     int pitch, int has_background, VoxGraphiteImage const* image)
@@ -187,7 +202,7 @@ int vox_graphite_draw_image_pixels(uint8_t* pixels, int width, int height,
         if (static_cast<size_t>(image->pitch) < static_cast<size_t>(image->width) * 4) return 0;
         auto src_info = SkImageInfo::Make(image->width, image->height,
             kRGBA_8888_SkColorType, (image->flags & 1) ? kPremul_SkAlphaType : kUnpremul_SkAlphaType,
-            SkColorSpace::MakeSRGB());
+            vox_image_color_space(image));
         SkPixmap pixmap(src_info, image->pixels, image->pitch);
         std::vector<uint8_t> premultiplied;
         if (!(image->flags & 1)) {
@@ -198,6 +213,11 @@ int vox_graphite_draw_image_pixels(uint8_t* pixels, int width, int height,
         }
         auto raster = SkImages::RasterFromPixmapCopy(pixmap);
         texture = SkImages::TextureFromImage(recorder.get(), raster);
+        // Chromium's GPU image cache converts a tagged upload into an 8-bit
+        // sRGB texture before drawing it, so premultiplied texels are quantized
+        // before they are filtered and blended.
+        if (texture && image->has_color_profile)
+            texture = texture->makeColorSpace(recorder.get(), SkColorSpace::MakeSRGB(), {});
     }
     if (!texture) return 0;
     SkMatrix matrix;

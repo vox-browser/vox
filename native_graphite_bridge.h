@@ -19,6 +19,10 @@ typedef struct {
     float opacity;
     int width, height, pitch, flags, nearest;
     const uint8_t *pixels;
+    // A PNG gAMA/cHRM profile: inverse gamma, whether primaries follow, then
+    // red, green, blue and white chromaticities. Untagged images are sRGB.
+    int has_color_profile;
+    float color_profile[10];
 } VoxGraphiteImage;
 
 typedef struct {

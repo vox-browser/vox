@@ -63,6 +63,7 @@ fn C.native_decode_webp_yuv(bytes &u8, length usize, width &int, height &int, si
 fn C.native_webp_yuv_paint_supported() int
 fn C.native_webp_yuv_decoder_available() int
 fn C.native_decode_jpeg_rgba(bytes &u8, length usize, width &int, height &int, pitch &int) &u8
+fn C.native_tag_image_color_profile(pixels voidptr, width int, height int, bytes &u8, length usize, enabled int)
 fn C.native_free_jpeg_pixels(pixels &u8)
 
 fn C.native_pointer_screen_position(x f64, y f64, screen_x &f64, screen_y &f64)
@@ -4359,6 +4360,10 @@ fn (mut app BrowserApp) create_image_from_resource_bytes(image_url string, bytes
 			image.nr_channels = 6
 			mut cached := app.ctx.get_cached_image_by_idx(image.id)
 			cached.nr_channels = 6
+			// Chromium draws PNGs in the color space of their gAMA and cHRM chunks.
+			chromium := app.document != unsafe { nil } && app.document.font_rendering_policy() == .chromium
+			C.native_tag_image_color_profile(image.data, image.width, image.height, bytes.data,
+				usize(bytes.len), int(chromium))
 		}
 	}
 	return image
