@@ -1798,7 +1798,9 @@ fn javascript_bootstrap(state map[string]json2.Any) string {
 	state_json := json2.encode(state)
 	return [
 		'(function () {',
-		'const __state = ${state_json};',
+		// Initial DOM records are data. Keep thousands of properties out of the
+		// JavaScript compiler and preserve JSON keys such as __proto__ verbatim.
+		'const __state = JSON.parse(${json2.encode(state_json)});',
 		'const __bindMediaElement = globalThis.__ladybirdMediaElementBind;',
 		'const __bindTrackElement = globalThis.__ladybirdTrackElementBind;',
 		'const __trackEndsWith=String.prototype.endsWith,__trackApply=Reflect.apply;',
