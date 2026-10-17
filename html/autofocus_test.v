@@ -65,3 +65,17 @@ fn test_sandboxed_automatic_features_prevent_autofocus_candidates() {
 	assert document.autofocus_candidates().len == 0
 	assert !document.autofocus_processed_flag()
 }
+
+// The browser shell's first layout stands in for the first rendering update,
+// so it flushes the same candidate without an event loop.
+fn test_flush_autofocus_candidates_focuses_before_the_first_rendering_update() {
+	document, _ := autofocus_test_document()
+	input := autofocus_test_insert_input(document)
+	flush_autofocus_candidates(document)
+	assert document.autofocus_processed_flag()
+	assert document.autofocus_candidates().len == 0
+	assert document.focused_area()? == input.as_node()
+	// A later rendering update has nothing left to flush.
+	flush_autofocus_candidates(document)
+	assert document.focused_area()? == input.as_node()
+}

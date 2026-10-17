@@ -659,6 +659,16 @@ pub fn (event_loop &EventLoop) process_input_events() {
 }
 
 // https://html.spec.whatwg.org/multipage/webappapis.html#update-the-rendering
+// https://html.spec.whatwg.org/multipage/interaction.html#flush-autofocus-candidates
+pub fn flush_autofocus_candidates(document &dom.Document) {
+	mut mutable_document := unsafe { &dom.Document(document) }
+	if target := mutable_document.take_autofocus_candidate_to_focus() {
+		mut manager := FocusManager.create()
+		manager.currently_focused_area = document.focused_area()
+		run_focusing_steps(mut manager, target.as_node(), none, .focus)
+	}
+}
+
 pub fn (mut event_loop EventLoop) update_the_rendering() {
 	assert !event_loop.running_rendering_task
 	event_loop.rendering_task_queued_ = false
@@ -693,12 +703,7 @@ pub fn (mut event_loop EventLoop) update_the_rendering() {
 		if !navigable.is_top_level_traversable() {
 			continue
 		}
-		mut mutable_document := unsafe { &dom.Document(document) }
-		if target := mutable_document.take_autofocus_candidate_to_focus() {
-			mut manager := FocusManager.create()
-			manager.currently_focused_area = document.focused_area()
-			run_focusing_steps(mut manager, target.as_node(), none, .focus)
-		}
+		flush_autofocus_candidates(document)
 	}
 	for document in documents {
 		mut mutable_document := unsafe { &dom.Document(document) }

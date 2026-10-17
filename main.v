@@ -3255,6 +3255,12 @@ fn (mut app BrowserApp) relayout(window_width int, window_height int) {
 		app.viewport_height = viewport_height
 		return
 	}
+	// The shell's layout is the document's first rendering update, whose
+	// autofocus flush precedes style and layout. Deferring it to the event
+	// loop's next update would lay out and paint the document a second time.
+	if app.document.navigable() != none {
+		html.flush_autofocus_candidates(app.document)
+	}
 	app.root_box = layout.layout_document_typed_in_viewport(app.document, f64(viewport_width), f64(viewport_height))
 	debug_timing_checkpoint('  layout_tree', layout_checkpoint)
 	// The compact native shell owns one visible top-level document. Layout
