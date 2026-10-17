@@ -60,6 +60,15 @@ path requires constant alpha or constant RGB so straight and premultiplied
 interpolation agree; other color spaces and gradients retain the existing
 renderer. All three cases require exact equality.
 
+Outer CSS SVG roots in the Chromium profile snap their border-box paint
+origin while layout, padding, nested viewports and transforms keep their
+fractions. The two CNN header icons are exact after this change. The unchanged
+[`diagnostic/svg-root-paint-offset.html`](diagnostic/svg-root-paint-offset.html)
+and adjacent original Brave reference retain seven differing pixels, two by
+ten levels, where a rectangular path shares a raster tile with complex paths.
+A private multisampling probe removes those differences; tile-wide native
+multisampling remains open. This diagnostic is not an exact-parity fixture.
+
 `inline-advances` checks shaped-item width rounding, kerning across ASCII
 word boundaries, fractional max-content tables with emergency wrapping, and
 font-relative inline margins. The Chromium profile keeps exact glyph advances

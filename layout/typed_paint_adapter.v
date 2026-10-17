@@ -144,7 +144,7 @@ fn svg_path_transform_to_page(node &Node, state &LayoutState) svg.AffineTransfor
 	root := chain[outermost_viewport_index]
 	root_styled := root.as_node_with_style() or { return svg.AffineTransform{} }
 	root_used := state.try_get(root_styled) or { return svg.AffineTransform{} }
-	root_position := paint_cumulative_offset(root, state, root_used)
+	root_position := svg_root_position_for_paint(root, state, root_used)
 	mut transform := svg.AffineTransform{}.translated(root_position.x().to_double(), root_position.y().to_double())
 	for index := outermost_viewport_index; index >= 0; index-- {
 		part := chain[index]
@@ -184,7 +184,7 @@ fn svg_box_visual_bounds_to_page(node &Node, state &LayoutState, used &UsedValue
 	root := chain[outermost_viewport_index]
 	root_styled := root.as_node_with_style() or { return svg.Rect{} }
 	root_used := state.try_get(root_styled) or { return svg.Rect{} }
-	root_position := paint_cumulative_offset(root, state, root_used)
+	root_position := svg_root_position_for_paint(root, state, root_used)
 	mut transform := svg.AffineTransform{}.translated(root_position.x().to_double(), root_position.y().to_double())
 	for index := outermost_viewport_index; index >= 0; index-- {
 		part := chain[index]
@@ -237,7 +237,8 @@ fn outer_svg_viewport_transform_in_page_space(node &Node, state &LayoutState) sv
 	root_used := state.try_get(root_styled) or { return svg.AffineTransform{} }
 	viewport_transform := root_used.svg_viewport_transform() or { return svg.AffineTransform{} }
 	position := paint_cumulative_offset(root_node, state, root_used)
-	return svg.AffineTransform{}.translated(position.x().to_double(), position.y().to_double()).multiply(viewport_transform).translated(-position.x().to_double(), -position.y().to_double())
+	paint_position := svg_root_position_for_paint(root_node, state, root_used)
+	return svg.AffineTransform{}.translated(paint_position.x().to_double(), paint_position.y().to_double()).multiply(viewport_transform).translated(-position.x().to_double(), -position.y().to_double())
 }
 
 fn color_resolution_context_for_typed_node(node &Node, current_color css.Color) css.ColorResolutionContext {
