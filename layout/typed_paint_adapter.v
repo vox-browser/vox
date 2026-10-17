@@ -1989,6 +1989,23 @@ fn painting_clip_path_bounds(path painting.ClipPathVisualData) ?painting.Rect {
 	return painting.Rect{min_x, min_y, max_x - min_x, max_y - min_y}
 }
 
+// SVG maps objectBoundingBox gradient coordinates through the bounding-box
+// transform, so a non-square box skews linear isolines and makes radial
+// gradients elliptical, as in Chromium. LibWeb maps only the endpoints into
+// user space; Chromium-policy documents follow the specification.
+fn svg_gradient_uses_bounding_box_space(node &Node) bool {
+	return node.document().font_rendering_policy() == .chromium
+}
+
+fn svg_bounding_box_gradient_transform(gradient_transform svg.AffineTransform, bounds painting.Rect,
+	unit_space bool) svg.AffineTransform {
+	if !unit_space {
+		return gradient_transform
+	}
+	return svg.AffineTransform{}.translated(bounds.x, bounds.y).scaled(bounds.width,
+		bounds.height).multiply(gradient_transform)
+}
+
 fn resolve_svg_linear_gradient_paint_style(node &Node, state &LayoutState,
 	paint css.SVGPaint, path painting.ClipPathVisualData) ?painting.SVGLinearGradientPaintStyle {
 	if !paint.is_url() {
@@ -2015,22 +2032,28 @@ fn resolve_svg_linear_gradient_paint_style(node &Node, state &LayoutState,
 	x2 := svg_linear_gradient_coordinate(element, 'x2', svg.percentage(100), mut seen)
 	seen.clear()
 	y2 := svg_linear_gradient_coordinate(element, 'y2', svg.percentage(0), mut seen)
-	resolve_x := fn [units, bounds, viewport] (value svg.NumberPercentage) f64 {
-		return if units == .object_bounding_box {
+	unit_space := units == .object_bounding_box && svg_gradient_uses_bounding_box_space(node)
+	resolve_x := fn [units, bounds, viewport, unit_space] (value svg.NumberPercentage) f64 {
+		return if unit_space {
+			value.value
+		} else if units == .object_bounding_box {
 			bounds.x + value.value * bounds.width
 		} else {
 			value.resolve_relative_to(viewport.width)
 		}
 	}
-	resolve_y := fn [units, bounds, viewport] (value svg.NumberPercentage) f64 {
-		return if units == .object_bounding_box {
+	resolve_y := fn [units, bounds, viewport, unit_space] (value svg.NumberPercentage) f64 {
+		return if unit_space {
+			value.value
+		} else if units == .object_bounding_box {
 			bounds.y + value.value * bounds.height
 		} else {
 			value.resolve_relative_to(viewport.height)
 		}
 	}
 	seen.clear()
-	gradient_transform := svg_gradient_transform(element, mut seen)
+	gradient_transform := svg_bounding_box_gradient_transform(svg_gradient_transform(element, mut seen),
+		bounds, unit_space)
 	seen.clear()
 	spread := svg_gradient_spread(element, mut seen)
 	seen.clear()
@@ -2079,31 +2102,39 @@ fn resolve_svg_radial_gradient_paint_style(node &Node, state &LayoutState,
 	end_y := svg_radial_gradient_coordinate(element, 'cy', svg.percentage(50), false, mut seen)
 	seen.clear()
 	end_radius := svg_radial_gradient_coordinate(element, 'r', svg.percentage(50), true, mut seen)
-	resolve_x := fn [units, bounds, viewport] (value svg.NumberPercentage) f64 {
-		return if units == .object_bounding_box {
+	unit_space := units == .object_bounding_box && svg_gradient_uses_bounding_box_space(node)
+	resolve_x := fn [units, bounds, viewport, unit_space] (value svg.NumberPercentage) f64 {
+		return if unit_space {
+			value.value
+		} else if units == .object_bounding_box {
 			bounds.x + value.value * bounds.width
 		} else {
 			value.resolve_relative_to(viewport.width)
 		}
 	}
-	resolve_y := fn [units, bounds, viewport] (value svg.NumberPercentage) f64 {
-		return if units == .object_bounding_box {
+	resolve_y := fn [units, bounds, viewport, unit_space] (value svg.NumberPercentage) f64 {
+		return if unit_space {
+			value.value
+		} else if units == .object_bounding_box {
 			bounds.y + value.value * bounds.height
 		} else {
 			value.resolve_relative_to(viewport.height)
 		}
 	}
-	resolve_radius := fn [units, bounds, viewport] (value svg.NumberPercentage) f64 {
+	resolve_radius := fn [units, bounds, viewport, unit_space] (value svg.NumberPercentage) f64 {
 		// This deliberately follows SVGRadialGradientElement.cpp: both object-box
 		// and user-space radial lengths use the applicable width.
-		return if units == .object_bounding_box {
+		return if unit_space {
+			value.value
+		} else if units == .object_bounding_box {
 			value.value * bounds.width
 		} else {
 			value.resolve_relative_to(viewport.width)
 		}
 	}
 	seen.clear()
-	gradient_transform := svg_gradient_transform(element, mut seen)
+	gradient_transform := svg_bounding_box_gradient_transform(svg_gradient_transform(element, mut seen),
+		bounds, unit_space)
 	seen.clear()
 	spread := svg_gradient_spread(element, mut seen)
 	seen.clear()

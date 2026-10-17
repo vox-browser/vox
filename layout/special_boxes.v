@@ -474,7 +474,7 @@ fn svg_image_source_for_source(document &dom.Document, source string) ?SVGImageS
 
 fn svg_image_document_for_source(document &dom.Document, source string) ?&dom.Document {
 	image_source := svg_image_source_for_source(document, source) or { return none }
-	return parse_svg_image_document(image_source, document.preferred_color_scheme())
+	return parse_svg_image_document(image_source, document.preferred_color_scheme(), document)
 }
 
 // Background layers within one layout tree use the same decoded image. Keep
@@ -485,14 +485,16 @@ fn svg_image_document_for_source_in_viewport(node &Node, source string,
 	color_scheme css.PreferredColorScheme) ?&dom.Document {
 	image_source := svg_image_source_for_source(node.document(), source) or { return none }
 	scheme := css.preferred_color_scheme_to_string(color_scheme)
-	viewport := node.root_viewport() or { return parse_svg_image_document(image_source, scheme) }
+	viewport := node.root_viewport() or {
+		return parse_svg_image_document(image_source, scheme, node.document())
+	}
 	cache_key := scheme + '\n' + image_source.url.serialize()
 	if existing := viewport.svg_image_documents_[cache_key] {
 		if existing.source == image_source.source {
 			return existing.document
 		}
 	}
-	isolated := parse_svg_image_document(image_source, scheme) or { return none }
+	isolated := parse_svg_image_document(image_source, scheme, node.document()) or { return none }
 	mut mutable_viewport := unsafe { &Viewport(viewport) }
 	mutable_viewport.svg_image_documents_[cache_key] = SVGImageDocumentCacheEntry{
 		source:   image_source.source
@@ -501,12 +503,14 @@ fn svg_image_document_for_source_in_viewport(node &Node, source string,
 	return isolated
 }
 
-fn parse_svg_image_document(image_source SVGImageSource, color_scheme string) ?&dom.Document {
+fn parse_svg_image_document(image_source SVGImageSource, color_scheme string, embedder &dom.Document) ?&dom.Document {
 	mut svg_document := dom.Document.create(image_source.url)
 	svg_document.set_content_type('image/svg+xml')
 	svg_document.set_document_type(.xml)
 	svg_document.set_is_svg_image_document(true)
 	svg_document.set_svg_image_color_scheme(color_scheme)
+	// An SVG image renders with its embedding document's compatibility policy.
+	svg_document.set_font_rendering_policy(embedder.font_rendering_policy())
 	html.parse_xml_document_source(svg_document, image_source.source) or { return none }
 	if image_source.url.scheme() in ['http', 'https'] {
 		root := svg_document.document_element() or { return none }
