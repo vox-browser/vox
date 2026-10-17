@@ -3675,11 +3675,14 @@ fn (mut app BrowserApp) reload() {
 
 fn (app &BrowserApp) maximum_scroll(window_height int) f64 {
 	chrome_height := f64(app.chrome_height())
-	return if app.content_height + chrome_height > f64(window_height) {
+	maximum := if app.content_height + chrome_height > f64(window_height) {
 		app.content_height + chrome_height - f64(window_height)
 	} else {
 		0.0
 	}
+	// A screenshot strip shows part of a taller screenshot viewport from its
+	// requested offset, even where the document's content ends sooner.
+	return math.max(maximum, f64(app.screenshot_scroll_y))
 }
 
 fn (mut app BrowserApp) scroll_by(delta f64, window_height int) {
