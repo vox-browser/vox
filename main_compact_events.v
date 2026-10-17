@@ -7,7 +7,7 @@ fn compact_event_dispatch_bootstrap() string {
 window.__ladybirdDispatch = function (name, id, replay) {
  const s = replay ? (__state.elements[replay.key] || null) :
   (String(id) === "" ? null : (__elementStates().find(item => item.id === String(id)) || null));
- if (replay && !s) return window.__ladybirdSnapshot();
+ if (replay && !s) return window.__ladybirdFinalize();
  const target = s ? __element(s) : document;
  const path = [s];
  if (s && name === "click") {
@@ -43,6 +43,6 @@ window.__ladybirdDispatch = function (name, id, replay) {
  }
  event.currentTarget = null;
  __state.defaultPrevented = event.defaultPrevented;
- return window.__ladybirdSnapshot();
+ return window.__ladybirdFinalize();
 };'
 }
