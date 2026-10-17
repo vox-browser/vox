@@ -504,6 +504,13 @@ fn layout_box_first_content_baseline(state &LayoutState, box &Node) ?CSSPixels {
 // table layout; in particular, an atomic inline without an in-flow baseline
 // uses the bottom margin edge rather than merely its content height.
 fn layout_box_baseline(state &LayoutState, box &Node, requested_baseline_set BaselineSet) CSSPixels {
+	return layout_box_baseline_in_text_control(state, box, requested_baseline_set, false)
+}
+
+// Chromium's text controls ignore the overflow of their internal editor when
+// they act as inline blocks, so the editor's text supplies the control's
+// baseline instead of the editor's bottom margin edge.
+fn layout_box_baseline_in_text_control(state &LayoutState, box &Node, requested_baseline_set BaselineSet, ignores_overflow bool) CSSPixels {
 	styled := box.as_node_with_style() or { return CSSPixels.new(0) }
 	box_state := state.try_get(styled) or { return CSSPixels.new(0) }
 	computed := box.computed_values()
@@ -565,7 +572,7 @@ fn layout_box_baseline(state &LayoutState, box &Node, requested_baseline_set Bas
 	// `overflow: clip` is non-visible but does not establish one, so it keeps
 	// the same content-derived baseline as visible overflow.
 	derive_from_content := baseline_set == .first || is_flex_or_grid_container
-		|| !box.is_scroll_container()
+		|| ignores_overflow || !box.is_scroll_container()
 	if derive_from_content && box_state.line_boxes.len > 0 {
 		mut line_index := if baseline_set == .first { 0 } else { box_state.line_boxes.len - 1 }
 		for index in 0 .. box_state.line_boxes.len {
@@ -594,8 +601,8 @@ fn layout_box_baseline(state &LayoutState, box &Node, requested_baseline_set Bas
 		}
 		child_offset_from_margin_edge :=
 			block_child_state.offset.y().minus(block_child_state.margin_box_top())
-		return box_state.margin_box_top().plus(child_offset_from_margin_edge).plus(layout_box_baseline(state,
-			block_child, baseline_set))
+		return box_state.margin_box_top().plus(child_offset_from_margin_edge).plus(layout_box_baseline_in_text_control(state,
+			block_child, baseline_set, ignores_overflow))
 	}
 
 	if child := layout_box_child_to_derive_baseline_from(state, box, baseline_set) {
@@ -610,10 +617,28 @@ fn layout_box_baseline(state &LayoutState, box &Node, requested_baseline_set Bas
 			child_state := state.try_get(child_styled) or { return box_state.margin_box_height() }
 			child_offset_from_margin_edge :=
 				child_state.offset.y().minus(child_state.margin_box_top())
-			return box_state.margin_box_top().plus(child_offset_from_margin_edge).plus(layout_box_baseline(state,
-				child, baseline_set))
+			child_ignores_overflow := ignores_overflow
+				|| (is_input && box.document().font_rendering_policy() == .chromium)
+			return box_state.margin_box_top().plus(child_offset_from_margin_edge).plus(layout_box_baseline_in_text_control(state,
+				child, baseline_set, child_ignores_overflow))
 		}
 	}
 
+	// Blink's themed check boxes and radio buttons sit on the baseline with
+	// their border box; only their bottom margin hangs below it.
+	if layout_box_is_chromium_toggle_control(box) {
+		return box_state.margin_top.plus(box_state.border_box_height())
+	}
 	return box_state.margin_box_height()
+}
+
+fn layout_box_is_chromium_toggle_control(box &Node) bool {
+	dom_node := box.dom_node() or { return false }
+	element := dom_node.as_element() or { return false }
+	if !element.is_html_element() || element.local_name() != 'input'
+		|| box.document().font_rendering_policy() != .chromium
+		|| box.computed_values().appearance() == .none_ {
+		return false
+	}
+	return element.get_attribute_value('type').to_lower() in ['checkbox', 'radio']
 }

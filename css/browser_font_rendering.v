@@ -5,6 +5,7 @@ import math
 
 // Blink's -webkit-small-control system font resolves to 13 1/3px Arial.
 // Keep this at UA origin so explicit author fonts, including `inherit`, win.
+// Blink's html.css also gives check boxes and radio buttons asymmetric margins.
 __global chromium_control_font_stylesheet &CSSStyleSheet
 
 fn chromium_control_font_style_sheet() &CSSStyleSheet {
@@ -13,7 +14,9 @@ fn chromium_control_font_style_sheet() &CSSStyleSheet {
 			is_ua_style_sheet: .yes
 		}, 'input, select, button, textarea { font: 13.3333333333333px Arial; }
 textarea { font-family: monospace; }
-input::placeholder, textarea::placeholder { color:#757575; }', none)
+input::placeholder, textarea::placeholder { color:#757575; }
+input[type=checkbox i] { margin: 3px 3px 3px 4px; }
+input[type=radio i] { margin: 3px 3px 0px 5px; }', none)
 	}
 	return chromium_control_font_stylesheet
 }
