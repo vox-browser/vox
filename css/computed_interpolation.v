@@ -1876,6 +1876,20 @@ pub fn (mut c ComputedProperties) take_properties_for_table_wrapper() &ComputedP
 	return wrapper
 }
 
+// NodeWithStyle::transfer_table_box_computed_values_to_wrapper_computed_values()
+// edits the table box's own computed values. A V layout box shares its
+// element's ComputedProperties, so the transfer applies to a copy for the
+// table box: the element keeps its margins for every later layout tree build.
+pub fn (c &ComputedProperties) table_box_and_wrapper_properties() (&ComputedProperties, &ComputedProperties) {
+	mut table := &ComputedProperties{
+		...c
+		property_values_:               c.property_values_.clone()
+		computed_property_graph_token_: unsafe { nil }
+	}
+	wrapper := table.take_properties_for_table_wrapper()
+	return table, wrapper
+}
+
 pub fn (c &ComputedProperties) for_each_property(callback fn (PropertyID, &dom.StyleValue)) {
 	for index, value in c.property_values_ {
 		if value != unsafe { nil } {

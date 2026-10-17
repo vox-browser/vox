@@ -247,8 +247,8 @@ fn wrap_table_roots(mut node Node, document &dom.Document) {
 				rebuilt << child
 				continue
 			}
-			mut table_style := unsafe { &css.ComputedProperties(child_styled.computed_values()) }
-			style := table_style.take_properties_for_table_wrapper()
+			element_style := unsafe { &css.ComputedProperties(child_styled.computed_values()) }
+			table_style, style := element_style.table_box_and_wrapper_properties()
 			mut mutable_child_style := unsafe { &NodeWithStyle(child_styled) }
 			mutable_child_style.computed_values_ = css.resolve_computed_values_for_document(table_style, document)
 			mut wrapper := unsafe { &Node(TableWrapper.new(document, none, style)) }

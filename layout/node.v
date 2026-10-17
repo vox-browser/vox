@@ -1313,8 +1313,8 @@ fn (mut n NodeWithStyle) propagate_style_to_anonymous_wrappers() {
 	// A table wrapper inherits from its table root, not the other way around.
 	if parent := node.parent() {
 		if parent.is_table_wrapper() && node.display().is_table_inside() {
-			mut table_style := unsafe { &css.ComputedProperties(n.computed_values_) }
-			wrapper_style := table_style.take_properties_for_table_wrapper()
+			element_style := unsafe { &css.ComputedProperties(n.computed_values_) }
+			table_style, wrapper_style := element_style.table_box_and_wrapper_properties()
 			n.computed_values_ = css.resolve_computed_values_for_document(table_style, n.document_)
 			if wrapper_styled := parent.as_node_with_style() {
 				mut mutable_wrapper := unsafe { &NodeWithStyle(wrapper_styled) }
