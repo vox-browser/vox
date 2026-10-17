@@ -52,3 +52,19 @@ fn test_cnn_hosts_and_saved_documents_select_chromium_rendering() {
 	assert saved.font_rendering_policy() == .chromium
 	assert saved.as_node().is_scripting_enabled()
 }
+
+fn test_4chan_hosts_and_saved_boards_select_chromium_rendering() {
+	for host in ['4chan.org', 'boards.4chan.org', 'BOARDS.4CHAN.ORG.'] {
+		assert browser_host_uses_chromium_rendering(host)
+	}
+	for host in ['4chan.org.example.test', 'not4chan.org', '4channel.example'] {
+		assert !browser_host_uses_chromium_rendering(host)
+	}
+	mut saved := parse_loaded_browser_navigation_document(LoadedPage{
+		url: 'file:///tmp/pol.html'
+		markup: '<!doctype html><base href="https://boards.4chan.org/pol/"><p>board capture</p>'
+	}, dom.URL{value: 'file:///tmp/pol.html'}, none, none, none, true)
+	defer { saved.finalize() }
+	assert saved.font_size_keyword_policy() == .chromium
+	assert saved.font_rendering_policy() == .chromium
+}
