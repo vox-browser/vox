@@ -366,6 +366,35 @@ def drain_replay(client):
         client.pump()
 
 
+def launch_external_diagnostic(command, output, receipt, metadata):
+    # The observer must keep polling activity while vmmap analyzes its target.
+    # This child belongs to the observer, not the browser's measured task tree.
+    with output.open('w') as log:
+        process = subprocess.Popen(command, stdout=log, stderr=subprocess.STDOUT)
+    return dict(process=process, output=output, receipt=receipt,
+        record=dict(command=command, diagnostic_pid=process.pid,
+                    launched_monotonic=time.monotonic(), **metadata))
+
+
+def finish_external_diagnostics(jobs):
+    records = []
+    for job in jobs:
+        row = job['record']
+        if 'actual_exit_code' not in row:
+            try:
+                row['actual_exit_code'] = job['process'].wait(timeout=30)
+                row['timed_out'] = False
+            except subprocess.TimeoutExpired:
+                job['process'].kill()
+                row['actual_exit_code'] = job['process'].wait()
+                row['timed_out'] = True
+            row.update(completed_monotonic=time.monotonic(), output=str(job['output']),
+                       output_sha256=digest(job['output']))
+            job['receipt'].write_text(json.dumps(row, indent=2) + '\n')
+        records.append(dict(row))
+    return records
+
+
 def chrome_sample(args, prefix, screen):
     log_path = prefix.with_suffix('.log')
     client = process = None
@@ -497,6 +526,7 @@ def vox_sample(args, prefix, screen):
             saved_at = None
             timing = document = None
             load_at_endpoint = None
+            external_jobs = []
             vmmap_pending = sorted(set([args.diagnostic_vmmap_after, args.settle])) if args.diagnostic_vmmap else []
             try:
                 with CounterSampler(counter, args.interval):
@@ -517,9 +547,11 @@ def vox_sample(args, prefix, screen):
                         foreground.poll(elapsed)
                         if vmmap_pending and elapsed >= vmmap_pending[0]:
                             checkpoint = vmmap_pending.pop(0)
-                            with prefix.with_suffix(f'.vmmap-{checkpoint:g}s.txt').open('w') as output:
-                                subprocess.run(['vmmap', '-summary', str(process.pid)],
-                                    stdout=output, stderr=subprocess.STDOUT, timeout=20)
+                            external_jobs.append(launch_external_diagnostic(
+                                ['vmmap', '-summary', str(process.pid)],
+                                prefix.with_suffix(f'.vmmap-{checkpoint:g}s.txt'),
+                                prefix.with_suffix(f'.vmmap-{checkpoint:g}s.result.json'),
+                                dict(checkpoint_seconds=checkpoint, observed_launch_seconds=elapsed)))
                         if saved_at is None and 'Saved Ladybird V window screenshot:' in log_path.read_text():
                             saved_at = time.monotonic() - started
                         if elapsed > args.timeout:
@@ -534,6 +566,9 @@ def vox_sample(args, prefix, screen):
                     raise RuntimeError('Vox screenshot marker precedes the declared capture guard')
                 summary = summarize(counter.samples, endpoint)
                 foreground_window = foreground.verify_steady(endpoint)
+                external_diagnostics = finish_external_diagnostics(external_jobs)
+                if any(row['actual_exit_code'] != 0 or row['timed_out'] for row in external_diagnostics):
+                    raise RuntimeError('External diagnostic failed; actual exits and outputs retained')
                 scripting = scripting_summary(log_path.read_text())
                 if scripting is None or any(scripting[key] for key in ('enabled', 'runtime', 'sources', 'source_bytes', 'preloaded_scripts')):
                     raise RuntimeError('Vox scripting disabled audit failed')
@@ -546,6 +581,7 @@ def vox_sample(args, prefix, screen):
                     cache_digest=cache_digest, process_exit=process.returncode,
                     document=document, ready_timing=timing, raster_dimensions=raster_dimensions,
                     screenshot_scale_environment=env['LADYBIRD_SCREENSHOT_SCALE'],
+                    external_diagnostics=external_diagnostics,
                     load_average_at_launch=load_at_launch, load_average_at_endpoint=load_at_endpoint,
                     foreground_checks=foreground.checks, foreground_verified_window_seconds=foreground_window,
                     endpoint_note='Ready audit mtime plus fixed settle interval; PNG is scheduled two seconds later. Settled window is the preceding second; capture allocations excluded.')
@@ -557,6 +593,7 @@ def vox_sample(args, prefix, screen):
                 raise
             finally:
                 stop_process(process)
+                finish_external_diagnostics(external_jobs)
 
 
 def main():

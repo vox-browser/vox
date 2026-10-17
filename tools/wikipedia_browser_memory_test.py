@@ -1,4 +1,5 @@
 import ctypes
+import json
 import errno
 import threading
 import time
@@ -14,11 +15,30 @@ from types import SimpleNamespace
 from process_instruction_counts import RusageInfoV4
 from wikipedia_browser_memory import (BackgroundControl, PhysicalTree, URL, audit_timing,
     ObservedReplayCDP, begin_chrome_navigation, lifecycle_readiness, verify_runtime_after_endpoint,
+    launch_external_diagnostic, finish_external_diagnostics,
     clean_environment, drain_replay, require_png_scale, settled_reduction, summarize,
     validate_chrome_document, validate_chrome_targets, validate_vox_document, vox_environment)
 
 
 class WikipediaMemoryTests(unittest.TestCase):
+    def test_external_diagnostic_launch_does_not_wait_and_records_actual_exit_once(self):
+        waits = []
+        process = SimpleNamespace(pid=321, wait=lambda **kwargs: waits.append(kwargs) or 7)
+        with tempfile.TemporaryDirectory() as temporary:
+            output, receipt = Path(temporary)/'vmmap.txt', Path(temporary)/'vmmap.result.json'
+            with patch('wikipedia_browser_memory.subprocess.Popen', return_value=process) as launch:
+                job = launch_external_diagnostic(['vmmap', '-summary', '123'], output, receipt,
+                    dict(checkpoint_seconds=3, observed_launch_seconds=3.01))
+            self.assertEqual(waits, [])
+            self.assertEqual(launch.call_args.args[0], ['vmmap', '-summary', '123'])
+            rows = finish_external_diagnostics([job])
+            self.assertEqual(rows[0]['actual_exit_code'], 7)
+            self.assertEqual(rows[0]['diagnostic_pid'], 321)
+            self.assertFalse(rows[0]['timed_out'])
+            self.assertEqual(json.loads(receipt.read_text())['actual_exit_code'], 7)
+            self.assertEqual(finish_external_diagnostics([job]), rows)
+            self.assertEqual(len(waits), 1)
+
     def test_chrome_requires_complete_exact_retina_globe_and_density_adjusted_dimensions(self):
         document = dict(url=URL, ready='complete', width=1024, height=768, scale=2,
             rootClass='no-js', authorGlobals=['undefined', 'undefined'], fontsStatus='loaded',
