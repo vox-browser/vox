@@ -140,6 +140,16 @@ fn resolve_layout_gap(node &Node, property_id css.PropertyID, percentage_basis C
 	return gap.length_percentage.to_px(layout_length_resolution_context(node), percentage_basis)
 }
 
+// LayoutNG converts a fixed relative offset with LayoutUnit(float), which
+// truncates toward zero instead of rounding to the nearest unit.
+fn relative_inset_to_px(node &NodeWithStyle, size css.Size, percentage_basis CSSPixels) CSSPixels {
+	context := layout_length_resolution_context(unsafe { &Node(node) })
+	if size.is_length() && unsafe { &Node(node) }.document().font_rendering_policy() == .chromium {
+		return CSSPixels.truncated_value_for(size.length().to_px_without_rounding(context))
+	}
+	return size.to_px(context, percentage_basis)
+}
+
 fn resolve_relative_inset_axis(node &NodeWithStyle, start_property css.PropertyID, end_property css.PropertyID, percentage_basis CSSPixels, percentages_are_auto bool) (CSSPixels, CSSPixels) {
 	computed := node.computed_values()
 	start_size := computed.size_value(start_property)
@@ -151,12 +161,12 @@ fn resolve_relative_inset_axis(node &NodeWithStyle, start_property css.PropertyI
 	start := if start_auto {
 		CSSPixels.new(0)
 	} else {
-		start_size.to_px(layout_length_resolution_context(unsafe { &Node(node) }), percentage_basis)
+		relative_inset_to_px(node, start_size, percentage_basis)
 	}
 	end := if end_auto {
 		CSSPixels.new(0)
 	} else {
-		end_size.to_px(layout_length_resolution_context(unsafe { &Node(node) }), percentage_basis)
+		relative_inset_to_px(node, end_size, percentage_basis)
 	}
 	if start_auto && end_auto {
 		return CSSPixels.new(0), CSSPixels.new(0)
