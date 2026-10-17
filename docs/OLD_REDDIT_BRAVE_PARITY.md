@@ -7,6 +7,9 @@ with exact RGBA equality and no tolerance or excluded regions.
 
 ![Brave on the left and Vox on the right](images/old-reddit-brave-vox.png)
 
+[CPU instruction measurements](OLD_REDDIT_INSTRUCTIONS.md) record the
+launch-through-capture comparison against Brave.
+
 ## Scope and reproduction
 
 The reference is Brave 155.1.97.57 on macOS. The authenticated Brave DOM was
@@ -106,7 +109,7 @@ persistent cookie store or replace DOM cookie APIs.
 
 ## Validation
 
-The signed production capture passes the exact-pixel gate. All twelve public
+The signed production capture passes the exact-pixel gate. All thirteen public
 Brave fixtures also pass exact RGBA comparisons, including fonts, backgrounds,
 WebP images, shadows, text shaping, markers, and bitmap sprites. Relevant
 layout and geometry checks pass, including focused ownership runs with
