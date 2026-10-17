@@ -6346,6 +6346,7 @@ fn (mut app BrowserApp) draw() {
 	app.prepare_overlay_scrollbars()
 	app.portable_shadow_image_index = 0
 	app.scroll_profile_prepared()
+	processmetrics.instruction_checkpoint('frame_prepared')
 	begin_browser_frame(app.ctx)
 	app.paint_effect_depth = 0
 	paint_document := app.document_pixels_ready_for_frame()
@@ -6441,6 +6442,7 @@ fn (mut app BrowserApp) draw() {
 	}
 	end_browser_frame(app.ctx)
 	app.finish_scroll_profile_frame()
+	processmetrics.instruction_checkpoint('frame_complete')
 	frame_finished_ns := time.sys_mono_now()
 	app.finish_frame_memory_activity(frame_finished_ns, voidptr(paint_before_frame))
 	if !app.initial_window_frame_presented {

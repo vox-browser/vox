@@ -2,6 +2,7 @@ module main
 
 import platform
 import gg
+import os
 
 $if macos {
 	#include "native_navigation_work_darwin.h"
@@ -76,6 +77,9 @@ fn (mut scope NavigationWorkScope) finish() {
 
 fn (app &BrowserApp) native_frame_consumed_work() bool {
 	$if macos {
+		if os.getenv('VOX_TRACE_REDRAWS') != '' {
+			eprintln('Vox frame work: checkpoint=${C.vox_native_frame_consumed_redraws()} resources=${app.background_resource_pending.len} navigation=${app.pending_navigation != none} paint=${app.paint_commands_pending} script=${app.js_runtime != unsafe { nil } && app.js_runtime.has_pending_document_state()}')
+		}
 		if C.vox_native_frame_consumed_redraws() == 0 { return false }
 		// A wake consumed during preparation needs no duplicate frame only when
 		// all document work reached that frame. Keep unadopted asynchronous work.

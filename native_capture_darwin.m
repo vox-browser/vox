@@ -6,6 +6,18 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
+#include <execinfo.h>
+#include <unistd.h>
+#include "processmetrics/instruction_counter_darwin.h"
+
+static void native_capture_instruction_checkpoint(const char *label) {
+    if (!getenv("VOX_PROFILE_INSTRUCTIONS")) return;
+    uint64_t instructions = 0;
+    if (vox_process_instructions(&instructions) == 0)
+        fprintf(stderr, "Vox instructions cumulative: %s %llu\n", label,
+            (unsigned long long)instructions);
+}
+
 #include "native_layer_presentation_darwin.h"
 #include "native_deferred_font_darwin.h"
 #include "native_svg_mask_layer_darwin.h"
@@ -361,8 +373,20 @@ int native_window_height(void) {
 	return (int)llround([native_browser_view() bounds].size.height);
 }
 
+static void native_trace_browser_redraw(const char *point) {
+	if (!getenv("VOX_TRACE_REDRAWS")) return;
+	fprintf(stderr, "Vox redraw %s: generation=%llu paint=%llu presenting=%d work=%d\n",
+		point, (unsigned long long)native_layer_redraw_generation,
+		(unsigned long long)native_layer_paint_generation,
+		native_layer_presenting, native_layer_document_work_active);
+	void *frames[12];
+	int count = backtrace(frames, 12);
+	backtrace_symbols_fd(frames, count, STDERR_FILENO);
+}
+
 static void native_request_browser_redraw(void) {
 	++native_layer_redraw_generation;
+	native_trace_browser_redraw("deliver");
 	// An asynchronous resource can complete while the application has no main
 	// or key window. Keep redrawing the window that owns our retained drawable.
 	NSWindow *window = [native_browser_view() window];
@@ -395,6 +419,7 @@ static void native_request_browser_redraw(void) {
 }
 
 void native_wake_browser(void) {
+	native_trace_browser_redraw("request");
 	// Style and layout can request thousands of frames before the main queue
 	// runs. One wake covers all work already queued; keep later requests able
 	// to schedule another wake once this delivery begins.
@@ -407,6 +432,7 @@ void native_wake_browser(void) {
 }
 
 void native_wake_browser_after(int milliseconds) {
+	native_trace_browser_redraw("schedule timer");
 	dispatch_after(dispatch_time(DISPATCH_TIME_NOW,
 		(int64_t)MAX(milliseconds, 0) * NSEC_PER_MSEC), dispatch_get_main_queue(), ^{
 		native_request_browser_redraw();
@@ -4962,6 +4988,7 @@ void schedule_native_screenshot(string output_path) {
 	dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(delay * NSEC_PER_SEC)),
 	               dispatch_get_main_queue(), ^{
 		native_when_document_work_idle(^{
+		native_capture_instruction_checkpoint("capture_started");
 		NSView *view = native_browser_view();
 		[view displayIfNeeded];
 		NSRect bounds = [view bounds];
@@ -4994,6 +5021,7 @@ void schedule_native_screenshot(string output_path) {
 			return;
 		}
 		native_cache_display_in_bitmap(view, bounds, bitmap);
+		native_capture_instruction_checkpoint("capture_cached");
 		// The backing store follows the display profile (usually Display P3 on modern Macs).
 		// Normalize captures to sRGB so pixel comparisons do not report a page-sized color-space
 		// delta against Ladybird's untagged screenshot output.
@@ -5003,7 +5031,9 @@ void schedule_native_screenshot(string output_path) {
 		if (encodedBitmap == nil) {
 			encodedBitmap = bitmap;
 		}
+		native_capture_instruction_checkpoint("capture_converted");
 		NSData *png = [encodedBitmap representationUsingType:NSBitmapImageFileTypePNG properties:@{}];
+		native_capture_instruction_checkpoint("capture_encoded");
 		if (png == nil) {
 			fprintf(stderr, "Ladybird V: could not encode the window screenshot as PNG\n");
 			[NSApp terminate:nil];
