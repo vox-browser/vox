@@ -1,113 +1,98 @@
 # Wikipedia rendering against Brave
 
-**Exact Brave pixel equality has not been reached.** At a 1024×768 viewport
-and device scale 2 (2048×1536 pixels), Vox with JavaScript enabled differs from
-Brave at 1,916 pixels (0.061%). The remainder is SVG anti-aliasing in three
-sister-project logos (thin strokes and clip paths) and a few isolated pixels.
+Vox renders https://www.wikipedia.org/ as HTML and CSS only (`wikipedia.org`
+is in `html_css_only_sites` in `main_script_policy.v`). The comparison target
+is Brave with page JavaScript disabled.
 
-Vox normally loads wikipedia.org without page JavaScript (`html_css_only_sites`
-in `main_script_policy.v`), but Brave runs Wikipedia's portal script. The
-default launch therefore shows the full language list where Brave shows the
-collapsed "Read Wikipedia in your language" button. It differs from Brave at
-736,583 pixels (23.415%). Pass `--enable-javascript`, or remove wikipedia.org
-from that list, to get the script-driven layout.
+**Exact equality has not been reached.** From the frozen benchmark cache, at a
+1024×768 viewport and device scale 1, Vox differs from Brave at 12 of 786,432
+pixels (0.0015%). The difference is the same in every run.
+
+Vox retires 5.85–5.92 billion instructions from launch to the finished
+capture; Brave retires 8.02–8.13 billion. The worst Vox run is 26% below the
+best Brave run (five Vox runs and three Brave runs on 2026-10-17). The
+benchmark gives credit only to pixel-exact samples, so it does not pass until
+the last 12 pixels match.
 
 ## Method
 
-- **Reference:** Brave 155.1.97.57 (Chromium 155) on macOS, captured on
-  2026-10-16 from https://www.wikipedia.org/ in a fresh headless profile, with
-  and without page JavaScript:
+- **Browsers:** Brave 155.1.97.57 (Chromium 155) and Vox on macOS. Both load
+  the same frozen copy of the page and its images; missing responses fail
+  offline.
+- **Reference:** Brave runs headless with author JavaScript disabled through
+  CDP before navigation:
 
   ```sh
-  python3 tools/capture_brave_reference.py --url https://www.wikipedia.org/ --out brave.png
-  python3 tools/capture_brave_reference.py --url https://www.wikipedia.org/ --no-js --out brave-nojs.png
+  python3 tools/wikipedia_browser_instructions.py --cache Build/wikipedia-instructions-cache \
+    --output Build/wikipedia-ref --capture-reference
   ```
 
-- **Vox:** the native window was captured at device scale 2, and the 88px
-  toolbar (176 device pixels) was cropped:
+- **Benchmark:** alternating Vox and Brave samples, counting retired
+  instructions (`proc_pid_rusage`) for each browser's process tree. Every
+  sample must match the reference exactly; the run passes when the worst Vox
+  sample is at least 20% below the best Brave sample:
 
   ```sh
-  LADYBIRD_SCREENSHOT_SCALE=2 LADYBIRD_SCREENSHOT_DELAY_SECONDS=4 \
-    Build/v/Vox.app/Contents/MacOS/Vox --enable-javascript \
-    --window-width 1024 --window-height 880 --screenshot window.png https://www.wikipedia.org/
-  sips --cropToHeightWidth 1536 2048 --cropOffset 176 0 window.png --out vox.png
+  python3 tools/wikipedia_browser_instructions.py --cache Build/wikipedia-instructions-cache \
+    --output Build/wikipedia-bench --expected Build/wikipedia-ref/brave-reference.png
   ```
 
 - **Comparison:** every channel difference counts. No tolerance or masked
   region is used.
 
-| Capture | Differing pixels | Percentage |
-| --- | ---: | ---: |
-| JavaScript enabled, before | about 236,000 | 7.5% |
-| JavaScript enabled, now | 1,916 | 0.061% |
-| JavaScript disabled in both, before | about 297,000 | 9.44% |
-| JavaScript disabled in both, now | 113,567 | 3.610% |
-| Default Vox (no JavaScript) against Brave | 736,583 | 23.415% |
+## Rendering changes
 
-## Chromium compatibility policy
+All of them apply only to documents under the Chromium compatibility policy
+(`font_rendering_policy`), which navigation selects for wikipedia.org and
+old.reddit.com. Other documents keep LibWeb's behavior.
 
-The work shares the Chromium compatibility policy (`font_rendering_policy`)
-introduced for old Reddit. Navigation selects it for old.reddit.com and for
-wikipedia.org and its subdomains, and SVG image documents inherit it from the
-page that embeds them. Other documents and the layout test suites keep
-LibWeb's behavior.
+- **Focus:** Chromium matches `:focus` and paints the caret only in a focused,
+  active window. A screenshot run captures like headless Chromium, so the
+  autofocused search box is drawn unfocused.
+- **Multi-column layout:** the no-script language lists use `column-width`.
+  A multi-column container whose content is inline is laid out at the column
+  width and balanced into columns: greedy fill with orphans and widows of 2,
+  grown by the smallest space shortage, as LayoutNG does.
+- **Whitespace:**
+  - A line is aligned without its trailing collapsible spaces.
+  - Spaces in non-wrapping text collapse across element boundaries.
+  - A dropped space keeps the end padding of the inline boxes it closes.
+  - After trimming a trailing space, the text item is snapped up again from
+    its unsnapped advance.
+- **Fonts:**
+  - Devanagari uses Kohinoor Devanagari, as Brave falls through to
+    `sans-serif` instead of the system font's `.SF Devanagari`.
+  - Characters that fall back to the same face share one font, so they are
+    shaped as one run.
+  - Installed faces take their bounds from CoreText.
+- **Geometry and painting:**
+  - Relative offsets are truncated toward zero, as `LayoutUnit(float)` does.
+  - An inline box paints its background, borders and shadow across its nested
+    inline boxes.
 
-## Wikipedia-specific changes
+## Performance changes
 
-- **Font matching:** installed faces are matched through CoreText as Chromium
-  does on macOS:
-  - system-ui uses SF with its optical-size and weight axes.
-  - The default, serif, sans-serif and monospace families use Times, Helvetica
-    and Courier.
-  - Han, Kana and Hangul use the per-language Chromium preferences, and other
-    scripts use CoreText fallback.
-  - HarfBuzz shapes with the selected face's variation coordinates. The
-    installed HarfBuzz 14.5 replaces vcpkg's 10.2, which lacked PingFang's
-    `trak` tracking.
-- **Line metrics:**
-  - Ascent, descent and leading come from CoreText, as Skia passes them to Blink.
-  - Times, Helvetica and Courier receive Blink's legacy 15% ascent adjustment.
-  - The x-height is the top of the `x` glyph's bounds.
-  - The root strut sits on the line's baseline.
-  - With `line-height: normal`, the line box grows to include the fallback
-    faces the text uses.
-- **Text items:**
-  - A text node is rounded as one Blink item across fallback fonts and CJK
-    break opportunities, and its glyphs keep unsnapped offsets.
-  - Spaces are shaped with the first font that covers them.
-  - Mixed-font text paints its own shaped glyph runs.
-- **SVG:**
-  - Filled and stroked paths and gradients are drawn through the Graphite
-    backend, matching Chromium's GPU coverage.
-  - Gradients are dithered on the page's pixel grid.
-  - `objectBoundingBox` gradients use the bounding-box transform.
-  - A clip path inside a nested `<svg>` viewport is no longer offset twice.
-- **Painting:**
-  - Text paints from a whole-pixel box top.
-  - Backgrounds and background-image clips use the pixel-snapped border box.
-- **Layout:**
-  - A later float that clears leaves inline content beside the earlier floats.
-  - Select labels fill the select's used height.
-  - srcset candidates are chosen for the display's device pixel ratio.
-- **Script bridge:** it exposes `parentNode`, `parentElement`,
-  `classList.replace` and `select.value`, so the portal script inserts the
-  "EN" language label.
+- The document heap is sized from the markup before the first parse, which
+  avoids about ten collections while the heap grows.
+- The autofocus flush runs before the first layout, so the input's shadow tree
+  is built once instead of forcing a second layout and paint.
+- The document walk that sizes the heap compares nodes by identity, avoiding
+  heap copies in `Node`'s `==` operator.
 
-The public Brave fixtures `svg-path-coverage` and `fallback-text-items` in
-`Tests/Browser/Brave` reproduce these cases and are pixel-identical. The old
-Reddit gate and every other Brave fixture remain exact.
+Capture frames at the screenshot scale, reuse of the presented frame for the
+capture, and readiness polling without repainting were landed separately on
+master.
 
 ## Remaining differences
 
-- **Thin SVG strokes and clip paths:** the Wiktionary logo's strokes are about
-  0.5 device pixels wide, and Vox applies SVG clip paths (the Commons and
-  Wikimedia logos) as Quartz masks. Chromium's GPU coverage differs slightly
-  at those edges.
-- **No-JavaScript language list:** Vox does not implement CSS multi-column
-  layout (`column-width`), which accounts for most of the no-JavaScript
-  comparison.
-- **Live content:** Wikipedia's article counts change. Compare references and
-  captures taken from the same page version.
+- **Search box corners (7 pixels):** the input's border has no right side and
+  rounded left corners. Blink clips to the outer rounded rectangle, clips out
+  the inner one, and fills the sides, with analytic edge coverage. Vox fills a
+  polygonal border path.
+- **Wordmark (5 pixels):** a few edge pixels of the "Wikipedia" wordmark,
+  which is drawn from the SVG sprite, differ in GPU coverage.
+- **Live content:** article counts change. Compare a reference and a capture
+  taken from the same page version.
 
 ## Validation
 
@@ -116,5 +101,4 @@ Each also passed:
 
 - every `Tests/Browser/Brave` fixture and the old-Reddit exact gate;
 - the eleven default screenshot smoke cases;
-- the eight pixel-exact SVG regression reftests;
-- the native Skia clip test.
+- the native capture fixture tests.
