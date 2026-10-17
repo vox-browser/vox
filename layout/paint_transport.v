@@ -3665,7 +3665,7 @@ fn paint_cursor(box &BlockBox, opacity f64) ?PaintCommand {
 		return none
 	}
 	navigable := document.navigable() or { return none }
-	if !navigable.is_focused() {
+	if !navigable.is_focused() || !document.shows_focus_state() {
 		return none
 	}
 	position := document.cursor_position() or { return none }

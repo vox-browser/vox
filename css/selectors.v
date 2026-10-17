@@ -1808,14 +1808,16 @@ fn matches_pseudo_class(pseudo_class PseudoClassSelector, element &dom.Element, 
 			return matches_hover_pseudo_class(element)
 		}
 		.focus {
-			return element.is_focused()
+			return element.is_focused() && element.document().shows_focus_state()
 		}
 		.focus_visible {
 			return element.is_focused() && element.should_indicate_focus()
+				&& element.document().shows_focus_state()
 		}
 		.focus_within {
 			focused_area := element.document().focused_area() or { return false }
 			return element.as_node().is_inclusive_ancestor_of(focused_area)
+				&& element.document().shows_focus_state()
 		}
 		.fullscreen {
 			return element.is_fullscreen_element()

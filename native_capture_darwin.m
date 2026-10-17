@@ -423,6 +423,26 @@ static void native_request_browser_redraw(void) {
 	[NSApp postEvent:event atStart:NO];
 }
 
+// Documents under the Chromium policy show focus only while the window is
+// focused and active. Screenshot test windows keep the application inactive.
+int native_browser_window_is_active(void) {
+	static dispatch_once_t observing;
+	dispatch_once(&observing, ^{
+		NSNotificationCenter *center = NSNotificationCenter.defaultCenter;
+		for (NSNotificationName name in @[NSApplicationDidBecomeActiveNotification,
+				NSApplicationDidResignActiveNotification, NSWindowDidBecomeKeyNotification,
+				NSWindowDidResignKeyNotification]) {
+			[center addObserverForName:name object:nil queue:NSOperationQueue.mainQueue
+				usingBlock:^(NSNotification *notification) {
+					(void)notification;
+					native_request_browser_redraw();
+				}];
+		}
+	});
+	NSWindow *window = [native_browser_view() window];
+	return NSApp.isActive && window.isKeyWindow ? 1 : 0;
+}
+
 void native_wake_browser(void) {
 	native_trace_browser_redraw("request");
 	// Style and layout can request thousands of frames before the main queue

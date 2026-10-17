@@ -3255,6 +3255,7 @@ fn (mut app BrowserApp) relayout(window_width int, window_height int) {
 		app.viewport_height = viewport_height
 		return
 	}
+	app.sync_window_activity()
 	// The shell's layout is the document's first rendering update, whose
 	// autofocus flush precedes style and layout. Deferring it to the event
 	// loop's next update would lay out and paint the document a second time.
@@ -6301,6 +6302,7 @@ fn (mut app BrowserApp) draw() {
 	mut heap_scope := platform.begin_browser_activity_heap_scope()
 	defer { heap_scope.finish() }
 	app.begin_frame_preparation()
+	app.sync_window_activity()
 	app.poll_native_navigation()
 	// The local native display callback supplies the opportunity. HTML queues
 	// its rendering task and owns eligibility, timestamps and callback ordering.

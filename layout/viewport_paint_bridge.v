@@ -1427,7 +1427,8 @@ fn viewport_sync_cursor_paint_cache(mut result DocumentLayoutResult) {
 				layout_handle = paintable.layout_handle
 				offset = position.offset()
 				if navigable := result.document.navigable() {
-					visible = navigable.is_focused() && result.document.get_cursor_blink_state()
+					visible = navigable.is_focused() && result.document.shows_focus_state()
+						&& result.document.get_cursor_blink_state()
 				}
 			}
 		}
