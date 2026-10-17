@@ -1794,13 +1794,9 @@ fn javascript_initial_state(document &dom.Document, current_url string, scripts 
 	}
 }
 
-fn javascript_bootstrap(state map[string]json2.Any) string {
-	state_json := json2.encode(state)
+fn javascript_bootstrap() string {
 	return [
-		'(function () {',
-		// Initial DOM records are data. Keep thousands of properties out of the
-		// JavaScript compiler and preserve JSON keys such as __proto__ verbatim.
-		'const __state = JSON.parse(${json2.encode(state_json)});',
+		'(function (__state) {',
 		'const __bindMediaElement = globalThis.__ladybirdMediaElementBind;',
 		'const __bindTrackElement = globalThis.__ladybirdTrackElementBind;',
 		'const __trackEndsWith=String.prototype.endsWith,__trackApply=Reflect.apply;',
@@ -1894,7 +1890,7 @@ fn javascript_bootstrap(state map[string]json2.Any) string {
 		compact_event_dispatch_bootstrap(),
 		// Initialization has no replay consumer; explicit snapshots remain available.
 		'return;',
-		'})()',
+		'})',
 	].join('\n')
 }
 
@@ -2894,9 +2890,10 @@ fn run_document_script_sources(document &dom.Document, current_url string, sourc
 	processmetrics.instruction_checkpoint('javascript_native_bindings')
 	initial_state := javascript_initial_state(document, current_url, sources.map(it.code))
 	processmetrics.instruction_checkpoint('javascript_initial_state')
-	bootstrap := javascript_bootstrap(initial_state)
+	bootstrap := javascript_bootstrap()
+	initial_state_json := json2.encode(initial_state)
 	processmetrics.instruction_checkpoint('javascript_bootstrap_source')
-	runtime.evaluate_host(bootstrap) or {
+	mutable_runtime.initialize_host_from_json(bootstrap, initial_state_json) or {
 		messages << 'JavaScript: ${err.msg()}'
 		return none
 	}
