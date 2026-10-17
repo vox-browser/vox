@@ -275,7 +275,8 @@ pub fn (n &Node) next_in_pre_order(root ?&Node) ?&Node {
 	mut current := unsafe { &Node(n) }
 	for {
 		if root_node := root {
-			if current == root_node {
+			// Identity, without copying both nodes through Node's == operator.
+			if voidptr(current) == voidptr(root_node) {
 				return none
 			}
 		}
