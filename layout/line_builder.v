@@ -548,8 +548,14 @@ pub fn (mut builder LineBuilder) update_last_line() {
 	}
 	mut inline_offset := start_inline_offset
 	mut block_offset := CSSPixels.new(0)
+	// Blink removes a line's trailing collapsible spaces before aligning it
+	// (CSS Text 3 §4.1.3); the inline formatting context trims them later.
+	mut aligned_inline_length := line_box.inline_length()
+	if unsafe { &Node(builder.containing_block) }.document().font_rendering_policy() == .chromium {
+		aligned_inline_length = aligned_inline_length.minus(line_box.get_trailing_whitespace_width())
+	}
 	excess_inline_space :=
-		builder.available_width_for_current_line.to_px_or_zero().minus(line_box.inline_length())
+		builder.available_width_for_current_line.to_px_or_zero().minus(aligned_inline_length)
 	if builder.writing_mode != .horizontal_tb {
 		block_offset =
 			builder.available_width_for_current_line.to_px_or_zero().minus(line_box.block_length())
