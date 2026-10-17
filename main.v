@@ -6475,6 +6475,11 @@ fn address_for_display(address string, cursor int, active bool, max_characters i
 	return runes[start..end].string()
 }
 
+fn (app &BrowserApp) retarget_document_frame_heap_scope(mut scope platform.BrowserActivityHeapScope) {
+	scope.finish()
+	scope = platform.begin_browser_activity_heap_scope_for_scripting(app.document_scripting_enabled_for_heap())
+}
+
 fn (mut app BrowserApp) draw() {
 	$if linux { pump_linux_browser_events() }
 	$if macos {
@@ -6492,7 +6497,7 @@ fn (mut app BrowserApp) draw() {
 	app.begin_scroll_profile_frame()
 	mut navigation_work := app.begin_navigation_work()
 	defer { navigation_work.finish() }
-	mut heap_scope := platform.begin_browser_activity_heap_scope()
+	mut heap_scope := platform.begin_browser_activity_heap_scope_for_scripting(app.document_scripting_enabled_for_heap())
 	defer { heap_scope.finish() }
 	app.begin_frame_preparation()
 	app.sync_window_activity()
@@ -6530,6 +6535,9 @@ fn (mut app BrowserApp) draw() {
 		app.set_scroll_y(f64(app.screenshot_scroll_y), window.height)
 	}
 	app.finish_frame_preparation()
+	// Preparation can replace a scripted or absent document with an HTML/CSS
+	// page. Keep its compact policy through native replay and chrome drawing.
+	app.retarget_document_frame_heap_scope(mut heap_scope)
 	app.prepare_overlay_scrollbars()
 	app.portable_shadow_image_index = 0
 	app.scroll_profile_prepared()

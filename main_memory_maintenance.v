@@ -10,18 +10,23 @@ mut:
 	next_check_ns            i64
 	last_cleanup_allocated   usize
 	pending_document_work    bool
+	presentation_pending     bool
 	cleanup_timer           &platform.Timer = unsafe { nil }
 }
 
 fn (mut maintenance BrowserMemoryMaintenance) document_changed(now_ns i64) {
 	maintenance.last_document_activity_ns = now_ns
 	maintenance.pending_document_work = true
+	maintenance.presentation_pending = true
 }
 
 fn (mut maintenance BrowserMemoryMaintenance) frame_finished(now_ns i64, updated_document_paint bool) {
 	// A slow recording or native replay is active document work throughout the
 	// frame. Start its idle interval only after the completed frame is presented.
-	if updated_document_paint { maintenance.document_changed(now_ns) }
+	if updated_document_paint || maintenance.presentation_pending {
+		maintenance.document_changed(now_ns)
+		maintenance.presentation_pending = false
+	}
 }
 
 fn (mut maintenance BrowserMemoryMaintenance) cleanup_due(now_ns i64, allocated usize) bool {
@@ -29,7 +34,8 @@ fn (mut maintenance BrowserMemoryMaintenance) cleanup_due(now_ns i64, allocated 
 		return false
 	}
 	maintenance.next_check_ns = now_ns + i64(time.second)
-	if now_ns - maintenance.last_document_activity_ns < 500_000_000 {
+	if now_ns < maintenance.last_document_activity_ns
+		|| now_ns - maintenance.last_document_activity_ns < 500_000_000 {
 		return false
 	}
 	if !maintenance.has_pending_cleanup(allocated) {
@@ -42,22 +48,24 @@ fn (mut maintenance BrowserMemoryMaintenance) cleanup_due(now_ns i64, allocated 
 
 fn (maintenance &BrowserMemoryMaintenance) has_pending_cleanup(allocated usize) bool {
 	return maintenance.pending_document_work
-		|| allocated - maintenance.last_cleanup_allocated >= usize(32) * 1024 * 1024
+		|| (allocated >= maintenance.last_cleanup_allocated
+			&& allocated - maintenance.last_cleanup_allocated >= usize(32) * 1024 * 1024)
 }
 
 fn (mut app BrowserApp) finish_frame_memory_activity(now_ns i64, previous_paint voidptr) {
+	if app.document == unsafe { nil } { return }
 	// Installation may build the display list before the native frame begins.
 	// Its first replay is still document work even when that pointer is stable.
-	app.memory_maintenance.frame_finished(now_ns, !app.document_presented
-		|| previous_paint != voidptr(app.paint_display_list))
-	// Every document frame replays pixels, even with an unchanged display list.
-	// Its duration is active work; garbage debt still tracks actual new data.
-	if app.document != unsafe { nil } {
-		app.memory_maintenance.last_document_activity_ns = now_ns
-	}
+	updated_document := app.memory_maintenance.presentation_pending || !app.document_presented
+		|| previous_paint != voidptr(app.paint_display_list)
+	app.memory_maintenance.frame_finished(now_ns, updated_document)
 	$if gcboehm ? {
-		if app.ctx != unsafe { nil } && app.document != unsafe { nil }
-			&& app.memory_maintenance.has_pending_cleanup(gc_heap_usage().total_bytes) {
+		if app.ctx != unsafe { nil }
+			&& app.memory_maintenance.has_pending_cleanup(gc_heap_usage().total_bytes)
+			&& (updated_document || app.memory_maintenance.cleanup_timer == unsafe { nil }
+				|| !app.memory_maintenance.cleanup_timer.is_active()) {
+			// Chrome can replay an unchanged document every frame. Preserve the
+			// existing idle deadline until new document input is presented.
 			app.arm_idle_memory_cleanup()
 		}
 	}
