@@ -60,3 +60,37 @@ does not upgrade every HTMLElement listener/IDL attribute or raw content compile
 Visual-viewport zoom, nested navigable wheel forwarding, snapped gesture selection,
 compositor async orchestration and physical Cocoa/device automation remain open.
 The browser continues to use JavaScriptCore; full LibJS/input parity is not claimed.
+
+## Viewport scroll range correction (2026-10-17)
+
+Implementation and focused regressions: `473052a1`.
+
+The native shell now derives its document height from the typed viewport's
+measured scrollable overflow, as upstream `Window::scroll()` does. A root with
+`height:100%` can remain viewport-sized while its content extends below it;
+using the root's border box previously clamped scrolling to zero on old.reddit.com.
+Both full layout and post-event geometry adoption now use the same scrolling area.
+
+Three cases in `main_scrollbar_test.v` pass with default GC and `-gc none`:
+the existing wheel/scrollbar check, constrained roots with normal or positioned
+content, and exclusion of clipped/fixed descendants. The constrained-root case
+also checks retained frames, scrollbar position, resize clamping and live content
+shrinkage. All three existing `main_wheel_input_routing_test.v` cases pass with
+default GC, preserving cancellation, fresh-hit defaults and runtime ownership.
+The original regression failed with a 200px reported content height for 1200px
+of content; both original Reddit scroll-profile launches reported no scrollable
+overflow.
+
+The optimized Boehm bundle rebuild, strict/deep signature verification and
+`--headless-smoke` pass. Native window captures confirm live
+`https://old.reddit.com` scrolls from 0 to 252 CSS px across six wheel events;
+the frozen `old-reddit-worldnews` fixture scrolls from 0 to 168 CSS px across
+four. Every event advances 42px. Logs and captured pixels are under
+`Build/reddit-scroll-after/` and `Build/reddit-frozen-scroll-after/`; focused
+results are in `Build/reddit-scroll-tests-default-v2.log`,
+`Build/reddit-scroll-tests-no-gc-v2.log` and `Build/reddit-wheel-routing-tests-v2.log`.
+Verification covers this task's source; later concurrent edits are outside it.
+
+This is one additional non-optimization fix after task base
+`e8e7d0ef4ddb16b68c75e55aab6905aa83d448ea`. Focused checks do not reset the broad
+verification cadence; historical evidence and inventory counts above are unchanged.
