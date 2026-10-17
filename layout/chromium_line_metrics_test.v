@@ -1,6 +1,7 @@
 module layout
 
 import html
+import math
 
 // Expected values were measured in Brave 1.97 (Chromium 155) on macOS.
 
@@ -75,3 +76,44 @@ fn test_browser_spaces_after_fallback_text_use_the_primary_font() {
 		assert spaces == 2
 	}
 }
+
+// Blink sizes a text node as one item even where fallback fonts and CJK
+// break opportunities split it, rounding the item up to 1/64 px once.
+// Widths were measured in Brave 1.97 (Chromium 155).
+fn test_browser_fallback_split_text_nodes_round_once() {
+	$if macos {
+		mut document := html.parse_document('<!doctype html><style>body { margin:0; font:13px system-ui }</style>
+			<div lang="zh"><span id="pair" style="display:inline-block">条目 / 條目</span></div>
+			<div lang="zh"><span id="count" style="display:inline-block">1,559,000+ 条目 / 條目</span></div>
+			<div lang="zh"><small id="portal" style="display:inline-block;font-size:13px">1,559,000+ <span>条目 / 條目</span></small></div>')
+		document.set_font_rendering_policy(.chromium)
+		result := run_document_layout(document, 800, 600) or { panic('layout failed') }
+		assert chromium_used_for_id(result, 'pair').content_width().to_double() == 64.09375
+		assert chromium_used_for_id(result, 'count').content_width().to_double() == 136.015625
+		// Wikipedia's portal: each text node is its own item, and the line that
+		// shrink-to-fit sized must not wrap when measured chunk by chunk.
+		portal := chromium_used_for_id(result, 'portal')
+		assert portal.content_width().to_double() == 136.03125
+		assert portal.line_boxes.len == 1
+		// Glyphs after a font change keep the item's unsnapped pen positions.
+		fragments := chromium_used_for_id(result, 'pair').line_boxes[0].fragments()
+		origin := fragments[0].inline_offset_.to_double()
+		mut checked := 0
+		for fragment in fragments[1..] {
+			run := fragment.glyph_run() or { continue }
+			// SF runs start at their pen origin; PingFang's tracking offsets its first glyph.
+			if run.font().family != 'SystemUi' {
+				continue
+			}
+			mut pen := fragment.item_prefix_
+			for glyph in run.glyphs() {
+				x := fragment.inline_offset_.to_double() + f64(glyph.position.x)
+				assert math.abs(x - origin - pen) < 0.0001
+				pen += f64(glyph.advance)
+			}
+			checked++
+		}
+		assert checked == 1
+	}
+}
+

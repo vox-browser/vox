@@ -49,6 +49,16 @@ pub mut:
 	// A Blink-compatible text run retains its fractional advance between words.
 	// The exposed box width still uses CSSPixels, rounded once for the run.
 	precise_inline_length_           ?f64
+	// Contiguous fragments of one text node form a single Blink text item even
+	// where fallback fonts or line-break opportunities split them, and the item
+	// is rounded up once. A fragment records its unsnapped width, the item's
+	// unsnapped width before it, its snapped offset from the item's start, and
+	// the part of that offset finer than 1/64 px, which its glyphs carry.
+	chains_item_     bool
+	item_width_      f64
+	item_prefix_     f64
+	item_offset_     CSSPixels
+	glyph_remainder_ f32
 }
 
 pub fn LineBoxFragment.new(layout_node &Node, start int, length_in_code_units int, inline_offset CSSPixels, block_offset CSSPixels, inline_length CSSPixels, block_length CSSPixels, border_box_top CSSPixels, direction css.Direction, writing_mode css.WritingMode, glyph_run ?&platform.GlyphRun) LineBoxFragment {
@@ -73,6 +83,12 @@ pub fn LineBoxFragment.new(layout_node &Node, start int, length_in_code_units in
 			&& inline_length == shaped_inline_width(run, 0)
 			&& run.glyphs_.len > 0 && run.glyphs_[0].position.x == 0 {
 			fragment.precise_inline_length_ = f64(run.width())
+		}
+		if direction == .ltr && fragment.current_insert_direction == .ltr
+			&& run.font().font_rendering_policy == .chromium
+			&& inline_length == shaped_inline_width(run, 0) {
+			fragment.chains_item_ = true
+			fragment.item_width_ = f64(run.width())
 		}
 		if direction == .rtl {
 			fragment.insert_position_ = f32(inline_length.to_double())
@@ -198,6 +214,7 @@ pub fn (fragment &LineBoxFragment) block_length() CSSPixels {
 pub fn (mut fragment LineBoxFragment) set_inline_length(value CSSPixels) {
 	fragment.inline_length_ = value
 	fragment.precise_inline_length_ = none
+	fragment.chains_item_ = false
 }
 
 pub fn (mut fragment LineBoxFragment) set_block_length(value CSSPixels) {
@@ -326,10 +343,17 @@ fn (mut fragment LineBoxFragment) append_glyph_run_ltr(glyph_run &platform.Glyph
 		if fragment.current_insert_direction == .ltr && run_direction == .ltr
 			&& run_width == shaped_inline_width(glyph_run, 0)
 			&& glyph_run.glyphs_.len > 0 && glyph_run.glyphs_[0].position.x == 0 {
-			inline_offset = f32(precise)
+			inline_offset = f32(precise) + fragment.glyph_remainder_
 			fragment.precise_inline_length_ = precise + f64(glyph_run.width())
 		} else {
 			fragment.precise_inline_length_ = none
+		}
+	}
+	if fragment.chains_item_ {
+		if fragment.precise_inline_length_ != none {
+			fragment.item_width_ += f64(glyph_run.width())
+		} else {
+			fragment.chains_item_ = false
 		}
 	}
 	if fragment.current_insert_direction != run_direction {
@@ -363,7 +387,8 @@ fn (mut fragment LineBoxFragment) append_glyph_run_ltr(glyph_run &platform.Glyph
 	}
 	fragment.inline_length_ = fragment.inline_length_.plus(run_width)
 	if precise := fragment.precise_inline_length_ {
-		fragment.inline_length_ = inline_advance_to_css_pixels(precise, destination.font())
+		fragment.inline_length_ = inline_advance_to_css_pixels(fragment.item_prefix_ + precise,
+			destination.font()).minus(fragment.item_offset_)
 	}
 }
 
@@ -519,8 +544,49 @@ pub fn (mut line LineBox) add_fragment_with_trailing_whitespace(layout_node &Nod
 		}
 	}
 	if !did_merge {
-		inline_offset := line.inline_length_.plus(leading_margin).plus(leading_size)
-		mut fragment := LineBoxFragment.new(layout_node, start, length, inline_offset, CSSPixels.new(0), content_width, content_height, border_box_top, line.direction_, line.writing_mode_, glyph_run)
+		mut inline_offset := line.inline_length_.plus(leading_margin).plus(leading_size)
+		mut fragment_width := content_width
+		mut fragment_run := glyph_run
+		mut item_prefix := 0.0
+		mut item_offset := CSSPixels.new(0)
+		mut remainder := f32(0)
+		if run := glyph_run {
+			if leading_margin.raw_value() == 0 && leading_size.raw_value() == 0
+				&& !text_align_is_justify && content_width == shaped_inline_width(run, 0) {
+				if last := line.chained_text_item(layout_node, start, run) {
+					// Continue the previous fragment's text item at its unsnapped end.
+					origin := last.inline_offset_.minus(last.item_offset_)
+					item_prefix = last.item_prefix_ + last.item_width_
+					item_offset = CSSPixels.nearest_value_for(item_prefix)
+					inline_offset = origin.plus(item_offset)
+					end := origin.plus(inline_advance_to_css_pixels(item_prefix + f64(run.width()),
+						run.font()))
+					fragment_width = end.minus(inline_offset)
+					added_width = end.minus(line.inline_length_)
+					remainder = f32(item_prefix - item_offset.to_double())
+					if remainder != 0 {
+						mut glyphs := run.glyphs().clone()
+						for mut glyph in glyphs {
+							glyph.position.translate_by(remainder, 0)
+						}
+						fragment_run = platform.GlyphRun.new_with_face(run.font(), run.text_type(),
+							glyphs, run.face())
+					}
+				}
+			}
+		}
+		mut fragment := LineBoxFragment.new(layout_node, start, length, inline_offset, CSSPixels.new(0), fragment_width, content_height, border_box_top, line.direction_, line.writing_mode_, fragment_run)
+		if item_offset.raw_value() != 0 || item_prefix != 0 {
+			if run := glyph_run {
+				fragment.chains_item_ = true
+				fragment.item_width_ = f64(run.width())
+				fragment.item_prefix_ = item_prefix
+				fragment.item_offset_ = item_offset
+				fragment.glyph_remainder_ = remainder
+				fragment.precise_inline_length_ = if run.glyphs_.len > 0
+					&& run.glyphs_[0].position.x == 0 { ?f64(f64(run.width())) } else { none }
+			}
+		}
 		fragment.trailing_whitespace_ = trailing_whitespace
 		line.fragments_ << fragment
 	}
@@ -530,6 +596,22 @@ pub fn (mut line LineBox) add_fragment_with_trailing_whitespace(layout_node &Nod
 	if block_extent.raw_value() > line.block_length_.raw_value() {
 		line.block_length_ = block_extent
 	}
+}
+
+// The previous fragment whose Blink text item a Chromium-policy chunk of
+// `layout_node` starting at `start` continues, if any.
+fn (line &LineBox) chained_text_item(layout_node &Node, start int, run &platform.GlyphRun) ?LineBoxFragment {
+	if line.direction_ != .ltr || line.fragments_.len == 0 || run.text_type() == .rtl
+		|| run.font().font_rendering_policy != .chromium {
+		return none
+	}
+	last := line.fragments_[line.fragments_.len - 1]
+	if last.chains_item_ && layout_nodes_same(last.layout_node_, layout_node)
+		&& last.start_ + last.length_in_code_units_ == start
+		&& last.inline_offset_.plus(last.inline_length_) == line.inline_length_ {
+		return last
+	}
+	return none
 }
 
 pub fn (line &LineBox) fragments() []LineBoxFragment {

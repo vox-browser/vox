@@ -39,14 +39,19 @@ fn (mut projection ProjectedTextAdvance) append(item &InlineLevelItem) CSSPixels
 	}
 	if run.font().font_rendering_policy != .chromium || run.text_type() == .rtl
 		|| item.width != shaped_inline_width(run, 0) || run.glyphs_.len == 0
-		|| run.glyphs_[0].position.x != 0 || node.computed_values().text_align() == .justify {
+		|| node.computed_values().text_align() == .justify {
 		projection.node = unsafe { nil }
 		return item.border_box_width()
 	}
-	if projection.node != unsafe { nil } && layout_nodes_same(projection.node, node)
+	// A chunk continuing the same text node joins its text item, even across a
+	// fallback font or a line-break opportunity, as append_text_item() does.
+	continues_item := projection.node != unsafe { nil } && layout_nodes_same(projection.node, node)
 		&& projection.end == item.offset_in_node
-		&& voidptr(projection.run.font()) == voidptr(run.font())
-		&& projection.run.face() == run.face() {
+	if !continues_item && run.glyphs_[0].position.x != 0 {
+		projection.node = unsafe { nil }
+		return item.border_box_width()
+	}
+	if continues_item && item.border_box_width() == item.width && item.margin_start.raw_value() == 0 {
 		projection.precise += f64(run.width())
 		width := inline_advance_to_css_pixels(projection.precise, run.font())
 		contribution = width.minus(projection.rounded)
@@ -70,16 +75,14 @@ fn (mut builder LineBuilder) projected_text_sequence_width(item &InlineLevelItem
 	mut projection := ProjectedTextAdvance{}
 	if line.direction_ == .ltr && line.fragments_.len > 0 {
 		last := line.fragments_.last()
-		if precise := last.precise_inline_length_ {
+		if last.chains_item_ && last.inline_offset_.plus(last.inline_length_) == line.inline_length_ {
 			if run := last.glyph_run_ {
-				if !last.has_soft_wrap_opportunity_after() {
-					projection = ProjectedTextAdvance{
-						node:    last.layout_node_
-						run:     unsafe { run }
-						end:     last.start_ + last.length_in_code_units_
-						precise: precise
-						rounded: last.inline_length_
-					}
+				projection = ProjectedTextAdvance{
+					node:    last.layout_node_
+					run:     unsafe { run }
+					end:     last.start_ + last.length_in_code_units_
+					precise: last.item_prefix_ + last.item_width_
+					rounded: last.item_offset_.plus(last.inline_length_)
 				}
 			}
 		}
