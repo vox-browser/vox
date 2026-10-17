@@ -143,6 +143,7 @@ fn (mut binding CompactElementQueryBinding) query(input string) !string {
 	} else {
 		binding.node_for_key(key) or { return error('TypeError: Invalid Element receiver') }
 	}
+	if action == 'removeChild' { return binding.remove_child_query(root, selector) }
 	if action == 'lastChild' { return binding.node_relation_query(root, 'last') }
 	if action == 'nodeParent' { return binding.node_relation_query(root, 'parent') }
 	if action in ['nodeValue', 'setNodeValue'] {
