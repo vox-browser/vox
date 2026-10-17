@@ -63,6 +63,31 @@ fn test_native_video_tracks_interfaces_same_object_and_real_event_target_provide
 })()')! == 'true'
 }
 
+fn test_native_selected_video_track_zero_axes_replace_previous_dimensions_and_keep_event_order() {
+	$if !darwin { return }
+	mut runtime, host, mut document := native_video_tracks_fixture()!
+	defer { runtime.close(); document.finalize() }
+	mut media := host.media_element_for_binding(runtime.evaluate_host_value('nvtVideo')!)!
+	media.set_ready_state(.have_metadata)
+	assert runtime.evaluate_host(r'globalThis.nvtZeroEvents=[];globalThis.nvtZeroList=nvtVideo.videoTracks;const zeroHandler=function(e){const target=e.type==="change"?nvtZeroList:nvtVideo;if(this!==target||e.target!==target||e.currentTarget!==target||!e.isTrusted)throw "zero-size owner";nvtZeroEvents.push(e.type+":"+nvtVideo.videoWidth+"x"+nvtVideo.videoHeight);};nvtZeroList.onchange=zeroHandler;nvtVideo.onresize=zeroHandler;0')! == '0'
+	media.on_video_track_added(html.MediaTrackMetadata{identifier: 1, pixel_width: 320, pixel_height: 180})
+	dimensions := [html.VideoDimensions{0,180}, html.VideoDimensions{640,0}, html.VideoDimensions{0,0}]
+	for i, size in dimensions { media.on_video_track_added(html.MediaTrackMetadata{identifier: i64(i+2), pixel_width: size.width, pixel_height: size.height}) }
+	assert native_video_tracks_drain(media) == 2
+	assert runtime.evaluate_host('nvtZeroEvents.join(",")==="change:320x180,resize:320x180"')! == 'true'
+	for i, size in dimensions {
+		assert runtime.evaluate_host('nvtZeroEvents.length=0;nvtZeroList[${i+1}].selected=true;nvtVideo.videoWidth===${size.width}&&nvtVideo.videoHeight===${size.height}&&nvtZeroEvents.length===0')! == 'true'
+		assert native_video_tracks_drain(media) == 2
+		assert runtime.evaluate_host('nvtZeroEvents.join(",")==="change:${size.width}x${size.height},resize:${size.width}x${size.height}"')! == 'true'
+	}
+	assert runtime.evaluate_host('nvtZeroEvents.length=0;nvtZeroList[3].selected=false;nvtZeroList.selectedIndex===-1&&nvtVideo.videoWidth===0&&nvtVideo.videoHeight===0')! == 'true'
+	assert native_video_tracks_drain(media) == 1
+	assert runtime.evaluate_host('nvtZeroEvents.join(",")==="change:0x0"')! == 'true'
+	settings := unsafe { &html.EnvironmentSettingsObject(document.relevant_settings_object()) }
+	assert settings.realm().reported_exceptions.len == 0 && settings.realm().script_execution_depth == 0 && settings.realm().callback_execution_depth == 0
+	assert !runtime.libjs_vm().has_running_execution_context()
+}
+
 fn test_native_video_dimensions_and_resize_follow_the_first_frame_without_a_prior_model_read() {
 	$if !darwin { return }
 	mut runtime, host, mut document := native_video_tracks_fixture()!

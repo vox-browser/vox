@@ -42,8 +42,8 @@ fn mta_common_listeners(media &HTMLMediaElement, target &dom.EventTarget, state 
 	})
 }
 
-fn mta_deliver_change(media &HTMLMediaElement) {
-	assert media.queued_media_task_ids_.len == 1
+fn mta_deliver_change(media &HTMLMediaElement, with_resize bool) {
+	assert media.queued_media_task_ids_.len == if with_resize { 2 } else { 1 }
 	mut queue := main_thread_event_loop().task_queue()
 	task := queue.take_first_runnable_matching(fn [media] (task &Task) bool {
 		return task.id() in media.queued_media_task_ids_
@@ -51,6 +51,15 @@ fn mta_deliver_change(media &HTMLMediaElement) {
 	assert task.source() == media.media_element_event_task_source()
 	assert voidptr(task.document() or { panic('Missing task document') }) == voidptr(media.document() or { panic('Missing media document') })
 	task.execute()
+	if with_resize {
+		assert media.queued_media_task_ids_.len == 1
+		resize := queue.take_first_runnable_matching(fn [media] (task &Task) bool {
+			return task.id() in media.queued_media_task_ids_
+		}) or { panic('Missing zero-size resize after list change') }
+		assert resize.source() == .media_element && resize.document() == media.document()
+		resize.execute()
+		assert media.event_count('resize') == 1
+	}
 	assert media.queued_media_task_ids_.len == 0
 }
 
@@ -106,7 +115,7 @@ fn test_audio_factory_addtrack_targets_the_list_once_after_enable_backend_and_ki
 	assert state.payloads == [voidptr(first), voidptr(second)] && state.timestamps[1] >= before_second
 	assert state.timestamps[1] <= settings.global_relative_event_timestamp() && state.timestamps.all(it >= 30000)
 	assert state.steps == ['backend', 'add:11', 'add:12'] && media.event_count('addtrack') == 0
-	mta_deliver_change(media)
+	mta_deliver_change(media, false)
 	assert state.steps == ['backend', 'add:11', 'add:12', 'change']
 	assert first.enabled && !second.enabled && list.length() == 2
 }
@@ -165,7 +174,7 @@ fn test_video_factory_addtrack_targets_the_list_once_after_selection_backend_and
 	assert state.payloads == [voidptr(first), voidptr(second)] && state.timestamps[1] >= before_second
 	assert state.timestamps[1] <= settings.global_relative_event_timestamp() && state.timestamps.all(it >= 30000)
 	assert state.steps == ['backend', 'add:21', 'add:22'] && media.event_count('addtrack') == 0
-	mta_deliver_change(media)
+	mta_deliver_change(media, true)
 	assert state.steps == ['backend', 'add:21', 'add:22', 'change']
 	assert first.selected && !second.selected && list.selected_index() == 0 && list.length() == 2
 }

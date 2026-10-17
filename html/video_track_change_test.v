@@ -152,35 +152,42 @@ fn test_factory_video_track_changes_capture_each_current_list_and_retain_the_cre
 	state := &VideoTrackChangeObservation{}
 	vtc_listen(origin, 'origin', state)
 	vtc_listen(destination, 'destination', state)
+	media.set_on_event('resize', &dom.CallbackType{
+		handle_event: fn [state] (_ &dom.Event, _ ?&dom.EventTarget) dom.JSValue {
+			mut result := unsafe { &VideoTrackChangeObservation(state) }
+			result.events << 'resize'
+			return dom.js_undefined()
+		}
+	})
 	mut track := media.on_video_track_added(MediaTrackMetadata{identifier: 7, name: 'Retained'})
-	assert track.selected && media.queued_media_task_ids_.len == 1
+	assert track.selected && media.queued_media_task_ids_.len == 2
 	origin.remove_all_tracks()
-	assert track.video_track_list == none && !track.selected && media.queued_media_task_ids_.len == 2
+	assert track.video_track_list == none && !track.selected && media.queued_media_task_ids_.len == 3
 	track.set_selected(true)
 	track.set_selected(false)
-	assert media.queued_media_task_ids_.len == 2
+	assert media.queued_media_task_ids_.len == 4
 	destination.add_track(track)
 	track.set_selected(true)
-	assert destination.selected_index() == 0 && media.queued_media_task_ids_.len == 3
+	assert destination.selected_index() == 0 && media.queued_media_task_ids_.len == 6
 	assert voidptr(track.video_track_list or { panic('Missing destination list') }) == voidptr(destination)
 	destination.remove_all_tracks()
 	destination.remove_all_tracks()
-	assert track.video_track_list == none && !track.selected && media.queued_media_task_ids_.len == 4
+	assert track.video_track_list == none && !track.selected && media.queued_media_task_ids_.len == 7
 	track.set_selected(true)
 	track.set_selected(false)
-	assert media.queued_media_task_ids_.len == 4 && other.queued_media_task_ids_.len == 0
+	assert media.queued_media_task_ids_.len == 8 && other.queued_media_task_ids_.len == 0
 	assert state.events == [] && origin.length() == 0 && destination.length() == 0
 	document.load_timing_info.navigation_start_time = highresolutiontime.coarsened_shared_current_time(false) - 30000
 	other_document.load_timing_info.navigation_start_time = highresolutiontime.coarsened_shared_current_time(false) - 90000
-	for expected in ['origin', 'origin', 'destination', 'destination'] {
+	for expected in ['origin', 'resize', 'origin', 'resize', 'destination', 'resize', 'destination', 'resize'] {
 		vtc_run_next(media, state)
 		assert state.events.last() == expected
 	}
-	assert state.events == ['origin', 'origin', 'destination', 'destination']
+	assert state.events == ['origin', 'resize', 'origin', 'resize', 'destination', 'resize', 'destination', 'resize']
 	assert state.indices == [i32(-1), -1, -1, -1] && state.lengths == [0, 0, 0, 0]
 	assert state.timestamps.all(it >= 30000) && media.queued_media_task_ids_.len == 0
 	assert other.queued_media_task_ids_.len == 0 && media.selected_video_track_ == none
-	assert other.selected_video_track_ == none && media.event_count('resize') == 0
+	assert other.selected_video_track_ == none && media.event_count('resize') == 4
 	assert voidptr(track.base.media_element() or { panic('Lost creation media owner') }) == voidptr(media)
 	assert track.base.id == '7' && track.base.label == 'Retained' && track.video_track_list == none
 	assert voidptr(media.video_tracks()) == voidptr(origin) && voidptr(other.video_tracks()) == voidptr(destination)

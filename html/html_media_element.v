@@ -2188,12 +2188,10 @@ pub fn (mut element HTMLMediaElement) set_selected_video_track(track ?&VideoTrac
 	element.selected_video_track_ = track
 	if mut video := video_owner {
 		if selected := track {
-			if selected.base.pixel_width > 0 && selected.base.pixel_height > 0 {
-				video.set_intrinsic_video_dimensions(VideoDimensions{
-					width: selected.base.pixel_width
-					height: selected.base.pixel_height
-				})
-			}
+			video.set_intrinsic_video_dimensions(VideoDimensions{
+				width: selected.base.pixel_width
+				height: selected.base.pixel_height
+			})
 		} else {
 			video.set_intrinsic_video_dimensions(none)
 		}

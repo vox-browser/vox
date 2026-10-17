@@ -74,11 +74,9 @@ pub fn HTMLVideoElementModel.create(media &HTMLMediaElement, base_url dom.URL) &
 	mut mutable_media := unsafe { &HTMLMediaElement(media) }
 	mutable_media.video_element_model_ = model
 	if track := media.selected_video_track_ {
-		if track.base.pixel_width > 0 && track.base.pixel_height > 0 {
-			model.intrinsic_video_dimensions_ = VideoDimensions{
-				width: track.base.pixel_width
-				height: track.base.pixel_height
-			}
+		model.intrinsic_video_dimensions_ = VideoDimensions{
+			width: track.base.pixel_width
+			height: track.base.pixel_height
 		}
 	}
 	model.update_natural_dimensions()

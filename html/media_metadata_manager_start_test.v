@@ -90,7 +90,7 @@ fn test_metadata_starts_the_manager_after_track_selection_before_readiness_witho
 		probe.steps.clear()
 		media.network_state_ = .loading
 		media.on_metadata_parsed(12)
-		expected := if kind == 'video' { ['clock', 'enable-audio', 'select-video', 'start', 'clock', 'ranges', 'clock'] } else { ['enable-audio', 'select-video', 'start', 'clock', 'ranges'] }
+		expected := if kind == 'video' { ['clock', 'enable-audio', 'clock', 'select-video', 'start', 'clock', 'ranges', 'clock'] } else { ['enable-audio', 'select-video', 'start', 'clock', 'ranges'] }
 		assert probe.steps == expected
 		assert probe.starts == 1 && probe.plays == 0 && media.paused()
 		assert media.ready_state() == .have_enough_data && media.event_count('loadedmetadata') == 0
