@@ -43,6 +43,16 @@ exact equality. A separate 269×151 diagnostic still differs by one channel
 level at 86 pixels; arbitrary fractional sampling and rounded image clips
 remain open.
 
+`replaced-image-overflow` checks an image's own circular rounded clip and a
+rounded overflow clip on its parent. The Chromium image draw applies its own
+clip in Skia; a rectangular image can also carry one ancestor rounded clip
+with the same transform. Other ancestor clips retain their order on the native
+context, including paths, masks, and clips with different transforms. This
+fixture is pixel-exact. The unchanged elliptical case in
+[`diagnostic/replaced-image-rounded.html`](diagnostic/replaced-image-rounded.html)
+still differs by one channel level at one pixel from its adjacent Brave PNG.
+That diagnostic remains open and is not an exact-parity result.
+
 `inline-advances` checks shaped-item width rounding, kerning across ASCII
 word boundaries, fractional max-content tables with emergency wrapping, and
 font-relative inline margins. The Chromium profile keeps exact glyph advances
