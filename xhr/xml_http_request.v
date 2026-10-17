@@ -879,7 +879,7 @@ pub fn (request &XMLHttpRequest) get_response_mime_type() mimesniff.MimeType {
 			}
 		}
 	}
-	return result or { mimesniff.MimeType.parse('text/xml') or { panic(err) } }
+	return result or { mimesniff.MimeType.parse('text/xml') or { panic('invalid MIME type: text/xml') } }
 }
 
 fn (request &XMLHttpRequest) final_mime_type_record() ?mimesniff.MimeType {
@@ -888,7 +888,7 @@ fn (request &XMLHttpRequest) final_mime_type_record() ?mimesniff.MimeType {
 
 pub fn (request &XMLHttpRequest) get_final_mime_type() mimesniff.MimeType {
 	if override := request.override_mime_type_ {
-		return mimesniff.MimeType.parse(override) or { panic(err) }
+		return mimesniff.MimeType.parse(override) or { panic('invalid MIME type: ${override}') }
 	}
 	return request.get_response_mime_type()
 }

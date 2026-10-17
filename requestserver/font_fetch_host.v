@@ -69,7 +69,7 @@ pub fn (transport &NativeFontFetchTransport) fetch_host() &fetch.FetchHost {
 					return
 				}
 				parsed := liburl.parse(request.current_url().serialize()) or {
-					output.resolve(fetch.Response.network_error(err.msg()))
+					output.resolve(fetch.Response.network_error('Failed to parse the file URL'))
 					return
 				}
 				bytes := os.read_bytes(liburl.percent_decode(parsed.serialize_path()).bytestr()) or {

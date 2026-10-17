@@ -113,7 +113,7 @@ fn dom_loaded_html_parse_callback(_ voidptr, document &dom.Document, data []u8, 
 		'text/html;charset=${charset}'
 	} else {
 		'text/html'
-	}) or { return err }
+	}) or { return error('invalid MIME type') }
 	body := fetch.Body.from_bytes(data, .bytes)
 	mut parser := IncrementalDocumentParser.create(document, body, url, mime_type)
 	parser.start()
