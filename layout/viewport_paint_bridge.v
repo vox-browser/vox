@@ -2239,6 +2239,7 @@ fn lower_visual_replay_steps(commands []PaintCommand, steps []CompatibilityVisua
 			visual_layer_data: &PaintVisualLayer{ ...active[index] }
 		}
 	}
+	bound_visual_effect_contents(mut result)
 	return result
 }
 
@@ -2538,6 +2539,7 @@ fn record_cached_paint_commands_with_visual_context_into(steps []CompatibilityPa
 	scratch.memo_slots = contexts.slots
 	scratch.memo_contexts = contexts.contexts
 	scratch.plan = plan
+	bound_visual_effect_contents(mut result)
 	return result
 }
 

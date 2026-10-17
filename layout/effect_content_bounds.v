@@ -1,0 +1,126 @@
+module layout
+
+import math
+
+// The ancestor clip can cover the entire viewport even for a tiny opacity
+// group. Bound its surface by the union of its painted children instead.
+// Unknown operations and filter inputs retain the original ancestor bounds.
+struct EffectContentBounds {
+mut:
+	begin   int
+	bounded bool = true
+	has_ink bool
+	ink     LayoutRect
+}
+
+fn (mut bounds EffectContentBounds) include(rect LayoutRect) {
+	if rect.width <= 0 || rect.height <= 0 { return }
+	bounds.ink = if bounds.has_ink { rect_union(bounds.ink, rect) } else { rect }
+	bounds.has_ink = true
+}
+
+fn effect_leaf_ink_bounds(command &PaintCommand) ?LayoutRect {
+	mut rect := LayoutRect{command.x, command.y, command.width, command.height}
+	mut outset := f64(0)
+	match command.kind {
+		'fill_rect', 'fill_rounded_rect', 'fill_ellipse',
+		'draw_replaced_image', 'draw_svg_image' {
+			if command.outer_shadow || command.blur != 0 { return none }
+		}
+		'draw_background_image' {
+			// Background origin and clip may differ (for example padding-box
+			// positioning with border-box painting). The clip owns the output.
+			image := command.image_data
+			if image == unsafe { nil } { return none }
+			rect = LayoutRect{image.image_clip_x, image.image_clip_y, image.image_clip_width, image.image_clip_height}
+			// Bitmap background edges are snapped in source space before the
+			// transform. Retain that fringe even with large CSS scales.
+			outset = 1
+		}
+		'fill_gradient' {
+			if command.gradient_background_layer {
+				image := command.image_data
+				if image == unsafe { nil } { return none }
+				rect = LayoutRect{image.image_clip_x, image.image_clip_y, image.image_clip_width, image.image_clip_height}
+			}
+		}
+		'stroke_rounded_rect', 'stroke_ellipse' {
+			if command.points.len > 0 { return none }
+			outset = math.max(f64(0), command.stroke_width)
+		}
+		'draw_line', 'fill_polygon' {
+			if command.points.len < 4 || command.points.len % 2 != 0 { return none }
+			mut left := command.points[0]
+			mut right := left
+			mut top := command.points[1]
+			mut bottom := top
+			for index := 2; index < command.points.len; index += 2 {
+				left = math.min(left, command.points[index])
+				right = math.max(right, command.points[index])
+				top = math.min(top, command.points[index + 1])
+				bottom = math.max(bottom, command.points[index + 1])
+			}
+			rect = LayoutRect{left, top, right - left, bottom - top}
+			outset = math.max(f64(0), command.stroke_width)
+		}
+		'draw_text' {
+			if command.glyph_orientation != .horizontal { return none }
+			run := command.glyph_run or { return none }
+			ink := run.bounding_box()
+			rect = LayoutRect{command.glyph_translation_x + f64(ink.x), command.glyph_translation_y + f64(ink.y), f64(ink.width), f64(ink.height)}
+		}
+		else { return none }
+	}
+	rect = LayoutRect{rect.x - outset, rect.y - outset, rect.width + outset * 2, rect.height + outset * 2}
+	mapped := compatibility_affine_map_rect(command.transform, rect)
+	for value in [mapped.x, mapped.y, mapped.width, mapped.height]! {
+		if math.is_nan(value) || math.is_inf(value, 0) { return none }
+	}
+	return mapped
+}
+
+fn bound_visual_effect_contents(mut commands []PaintCommand) {
+	mut stack := []EffectContentBounds{}
+	for index in 0 .. commands.len {
+		command := unsafe { &commands[index] }
+		if command.kind == 'begin_css_effect_layer' {
+			stack << EffectContentBounds{
+				begin:   index
+				bounded: command.visual_layer().blend_mode == .normal
+			}
+			continue
+		}
+		if stack.len == 0 { continue }
+		if command.kind == 'end_css_effect_layer' {
+			bounds := stack.pop()
+			if bounds.bounded {
+				mut begin := unsafe { &commands[bounds.begin] }
+				mut ink := bounds.ink
+				if begin.has_clip {
+					ink = compatibility_intersect_rects(ink, LayoutRect{begin.clip_x, begin.clip_y, begin.clip_width, begin.clip_height})
+				}
+				begin.has_clip = true
+				begin.clip_x = ink.x
+				begin.clip_y = ink.y
+				begin.clip_width = ink.width
+				begin.clip_height = ink.height
+			}
+			if stack.len > 0 {
+				if bounds.bounded {
+					stack[stack.len - 1].include(bounds.ink)
+				} else {
+					stack[stack.len - 1].bounded = false
+				}
+			}
+			continue
+		}
+		if !stack[stack.len - 1].bounded { continue }
+		if ink := effect_leaf_ink_bounds(command) {
+			stack[stack.len - 1].include(ink)
+		} else {
+			// In particular, a nested filter may move or generate pixels beyond
+			// all its input commands. Do not constrain that enclosing surface.
+			stack[stack.len - 1].bounded = false
+		}
+	}
+}
