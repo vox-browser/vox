@@ -4351,6 +4351,8 @@ fn text_lines_from_typed_layout(container &Node, used &UsedValues, state &Layout
 				decoration_thickness_set: decoration_thickness_set
 				text_underline_offset: text_underline_offset
 				text_underline_position: text_underline_position
+				chromium_decorations: fragment.layout_node_.document().font_rendering_policy() == .chromium
+				text_underline_offset_auto: property_is_auto(computed, .text_underline_offset)
 				layout_handle: voidptr(fragment.layout_node_)
 				paintable_fragment: painting.PaintableFragment{
 					text_value: fragment_text_for_rendering

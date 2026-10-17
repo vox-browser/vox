@@ -5283,7 +5283,8 @@ fn (mut app BrowserApp) draw_command(source_command layout.PaintCommand, page_x 
 		'fill_rect' {
 			fill := app.paint_colors.color(command.color, command.opacity)
 			$if macos {
-				if app.ctx.native_rendering && !command.outer_shadow && command.radius > 0 {
+				if app.ctx.native_rendering && !command.outer_shadow
+					&& (command.radius > 0 || command.antialiased_rect) {
 					used_radius := f32(clamp(command.radius, 0.0, math.min(command.width, command.height) / 2.0))
 					C.native_draw_rounded_rect_srgb(f32(command.x), f32(command.y), f32(command.width), f32(command.height), used_radius, used_radius, used_radius, used_radius, used_radius, used_radius, used_radius, used_radius, f32(matrix[0]), f32(matrix[1]), f32(matrix[2]), f32(matrix[3]), f32(matrix[4]), f32(matrix[5]), page_x, page_y, f32(scroll_y), f32(app.ctx.width), f32(app.ctx.height), fill, 1, 0, if command.scrollbar_axis == '' {
 						1

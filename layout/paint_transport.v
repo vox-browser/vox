@@ -188,6 +188,10 @@ pub:
 	decoration_thickness_set bool
 	text_underline_offset    f64
 	text_underline_position  string = 'auto'
+	// Chromium-policy documents snap decorations with Blink's geometry, which
+	// distinguishes an automatic text-underline-offset from an explicit length.
+	chromium_decorations       bool
+	text_underline_offset_auto bool
 	// PaintableFragment retains the source layout node, offsets, and glyph run.
 	// These are live paint inputs: selection state/range can change without a
 	// relayout, while the shaped glyph advances remain owned by the line box.
@@ -968,6 +972,9 @@ pub mut:
 	// flattened-alpha fallback until they gain offscreen effect surfaces.
 	group_opacity f64 = 1.0
 	radius        f64 // corner radius for a rounded 'fill_rect' (0 = square)
+	// A square 'fill_rect' with fractional edges that Blink rasterizes as an
+	// antialiased GPU rectangle, such as a text decoration with fractional ends.
+	antialiased_rect bool
 	// Retained used corner radii for `fill_rounded_rect`. This mirrors Painting's
 	// FillRoundedRect command instead of discarding elliptical/per-corner radii into vertices.
 	corner_radii    BoxRadii
@@ -4222,6 +4229,11 @@ fn paint_text_decoration(fragment TextFragment, opacity f64) []PaintCommand {
 		if line == 'none' || line == 'blink' {
 			return commands
 		}
+		if fragment.chromium_decorations && line == 'underline' && style == 'solid'
+			&& fragment.text_underline_position != 'under' {
+			append_chromium_solid_underline(mut commands, fragment, font_ascent, color, opacity)
+			continue
+		}
 		mut line_y := 0.0
 		match line {
 			'underline' {
@@ -4253,6 +4265,86 @@ fn paint_text_decoration(fragment TextFragment, opacity f64) []PaintCommand {
 		}
 	}
 	return commands
+}
+
+// Blink's TextDecorationInfo::ComputeUnderlineLineData() for a solid auto or
+// from-font underline: the line starts below the rounded ascent by a gap of
+// half its thickness (none for an explicit offset), and DecorationLinePainter
+// snaps its top to the pixel grid and floors its thickness. Only the inline
+// ends remain fractional and antialiased.
+fn append_chromium_solid_underline(mut commands []PaintCommand, fragment TextFragment, font_ascent f64, color string, opacity f64) {
+	specified_thickness := if fragment.decoration_thickness_set {
+		math.round(fragment.decoration_thickness)
+	} else {
+		fragment.font_size / 10.0
+	}
+	thickness := math.max(specified_thickness, 1.0)
+	gap := if fragment.text_underline_offset_auto {
+		math.max(1.0, math.ceil(thickness / 2.0))
+	} else {
+		0.0
+	}
+	offset := if fragment.text_underline_offset_auto {
+		0.0
+	} else {
+		math.round(fragment.text_underline_offset)
+	}
+	line_offset := math.round(font_ascent) + gap + offset
+	top := math.floor(fragment.y + line_offset + 0.5)
+	height := math.max(math.floor(thickness), 1.0)
+	start_x := fragment.x
+	end_x := fragment.x + fragment.width
+	mut segment_start := start_x
+	for clip in chromium_skip_ink_clips(fragment, font_ascent, line_offset, thickness) {
+		if clip[0] > segment_start {
+			append_chromium_underline_segment(mut commands, segment_start, math.min(clip[0], end_x),
+				top, height, color, opacity)
+		}
+		segment_start = math.max(segment_start, clip[1])
+	}
+	append_chromium_underline_segment(mut commands, segment_start, end_x, top, height, color,
+		opacity)
+}
+
+// TextPainter::ClipDecorationLine(): glyph outlines crossing the decoration,
+// inset by half a pixel vertically, clip it out over their extent dilated by
+// its thickness. The clip is not antialiased, so each edge rounds to a pixel.
+fn chromium_skip_ink_clips(fragment TextFragment, font_ascent f64, line_offset f64, thickness f64) [][]f64 {
+	if !fragment.decoration_skip_ink {
+		return [][]f64{}
+	}
+	glyph_run := fragment.paintable_fragment.glyph_run or { return [][]f64{} }
+	upper := line_offset + 0.5 - math.round(font_ascent)
+	stripe := math.max(thickness - 1.0, 0.0)
+	intervals := glyph_run.glyph_intercepts(1, f32(upper), f32(upper + stripe))
+	dilation := math.min(thickness, 13.0)
+	mut clips := [][]f64{}
+	for index := 0; index + 1 < intervals.len; index += 2 {
+		clips << [math.round(fragment.x + f64(intervals[index]) - dilation),
+			math.round(fragment.x + f64(intervals[index + 1]) + dilation)]
+	}
+	clips.sort_with_compare(fn (a &[]f64, b &[]f64) int {
+		first := unsafe { a[0] }
+		second := unsafe { b[0] }
+		return if first < second { -1 } else if first > second { 1 } else { 0 }
+	})
+	return clips
+}
+
+fn append_chromium_underline_segment(mut commands []PaintCommand, start_x f64, end_x f64, top f64, height f64, color string, opacity f64) {
+	if end_x <= start_x {
+		return
+	}
+	commands << PaintCommand{
+		kind:             'fill_rect'
+		x:                start_x
+		y:                top
+		width:            end_x - start_x
+		height:           height
+		color:            color
+		opacity:          opacity
+		antialiased_rect: true
+	}
 }
 
 fn decoration_commands(fragment TextFragment, opacity f64) []PaintCommand {
