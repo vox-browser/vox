@@ -24,6 +24,7 @@ static void native_capture_instruction_checkpoint(const char *label) {
 
 #include "native_ffmpeg_darwin.h"
 #include "native_webp_darwin.h"
+#include "native_jpeg_darwin.h"
 
 int native_prefers_overlay_scrollbars(void) {
 	return [NSScroller preferredScrollerStyle] == NSScrollerStyleOverlay;

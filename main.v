@@ -62,6 +62,8 @@ fn C.native_free_webp_pixels(pixels &u8)
 fn C.native_decode_webp_yuv(bytes &u8, length usize, width &int, height &int, size &int) &u8
 fn C.native_webp_yuv_paint_supported() int
 fn C.native_webp_yuv_decoder_available() int
+fn C.native_decode_jpeg_rgba(bytes &u8, length usize, width &int, height &int, pitch &int) &u8
+fn C.native_free_jpeg_pixels(pixels &u8)
 
 fn C.native_pointer_screen_position(x f64, y f64, screen_x &f64, screen_y &f64)
 
@@ -1437,6 +1439,9 @@ fn browser_decode_raster_image_bytes(bytes []u8) !&dom.Bitmap_ {
 			unsafe { vmemcpy(pixels.data, decoded, pixels.len) }
 			return &dom.Bitmap_{width: width, height: height, pitch: pitch, data: pixels,
 				native_rows_are_top_down: true}
+		}
+		if bitmap := native_jpeg_bitmap(bytes) {
+			return bitmap
 		}
 	}
 	image := stbi.load_from_memory(bytes.data, bytes.len)!
@@ -4330,6 +4335,17 @@ fn (mut app BrowserApp) create_image_from_resource_bytes(image_url string, bytes
 				write_browser_cache_entry(path, bytes.bytestr())
 			}
 			return app.ctx.create_image(path)
+		}
+	}
+	$if macos {
+		if app.ctx.native_rendering {
+			if bitmap := native_jpeg_bitmap(bytes) {
+				mut image := gg.Image{width: bitmap.width, height: bitmap.height,
+					nr_channels: native_bitmap_channel_marker(bitmap, false), ok: true,
+					data: bitmap.data.data}
+				image.id = app.ctx.cache_image(image)
+				return image
+			}
 		}
 	}
 	mut image := app.ctx.create_image_from_byte_array(bytes)!
