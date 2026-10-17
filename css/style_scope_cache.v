@@ -1366,8 +1366,10 @@ pub fn (mut scope StyleScope) schedule_ancestors_style_invalidation_due_to_prese
 }
 
 fn (mut scope StyleScope) clear_pending_has_invalidations() {
-	scope.pending_nodes_for_style_invalidation_due_to_presence_of_has.clear()
-	scope.pending_has_invalidation_features.clear()
+	// Cleared arrays and maps keep their scanned backing storage. Detach the
+	// completed generation so stale nodes cannot keep its document alive.
+	scope.pending_nodes_for_style_invalidation_due_to_presence_of_has = []&dom.Node{}
+	scope.pending_has_invalidation_features = map[i64]&PendingHasInvalidationMutationFeatures{}
 }
 
 fn selector_may_match_pending_has_mutation_features(selector Selector, features &PendingHasInvalidationMutationFeatures) bool {
