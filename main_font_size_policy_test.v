@@ -35,3 +35,20 @@ fn test_wikipedia_hosts_select_chromium_rendering() {
 		assert !browser_host_uses_chromium_rendering(host)
 	}
 }
+
+fn test_cnn_hosts_and_saved_documents_select_chromium_rendering() {
+	for host in ['cnn.com', 'www.cnn.com', 'edition.cnn.com', 'EDITION.CNN.COM.'] {
+		assert browser_host_uses_chromium_rendering(host)
+	}
+	for host in ['cnn.com.example.test', 'notcnn.com', 'cnn.test'] {
+		assert !browser_host_uses_chromium_rendering(host)
+	}
+	mut saved := parse_loaded_browser_navigation_document(LoadedPage{
+		url: 'file:///tmp/cnn.html'
+		markup: '<!doctype html><base href="https://edition.cnn.com/"><p>CNN capture</p>'
+	}, dom.URL{value: 'file:///tmp/cnn.html'}, none, none, none, true)
+	defer { saved.finalize() }
+	assert saved.font_size_keyword_policy() == .chromium
+	assert saved.font_rendering_policy() == .chromium
+	assert saved.as_node().is_scripting_enabled()
+}
