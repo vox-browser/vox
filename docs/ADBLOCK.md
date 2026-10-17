@@ -131,6 +131,15 @@ effect in both DOM implementations. Use `--extension PATH` if automatic
 discovery cannot find the extension, and `--checker PATH` for a separately built
 native checker.
 
+For repeated audits, `--profile-template PATH` copies an explicitly supplied,
+closed prepared uBO profile into the temporary directory. It omits process
+locks and the old debugging endpoint, disables Shields, clears user filters,
+and reloads the repository list snapshots before checking requests. The source
+profile stays unchanged. This avoids a fresh extension's initial list bootstrap
+on every audit; startup still has a bounded watchdog. The CNN instruction driver
+uses the same pinned prepared profile for its measured Brave runs and its
+post-measurement filter audits.
+
 To compare the requests actually recorded by Vox, use:
 
 ```sh

@@ -101,6 +101,7 @@ def audit_native_filters(args, prefix):
     output = Path(str(prefix)+'.ubo.json')
     command = ['node', str(REPO/'tools/adblock/brave_parity.mjs'), '--url', args.url,
         '--brave', str(args.brave), '--extension', str(args.extension),
+        '--profile-template', str(args.profile),
         '--checker', str(args.checker), '--vox-log', str(prefix)+'.requests.jsonl',
         '--output', str(output)]
     with Path(str(prefix)+'.ubo.log').open('w') as log:

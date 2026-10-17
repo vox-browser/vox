@@ -8,6 +8,7 @@ import crypto from 'node:crypto';
 import { spawn, execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { captureArchive } from './capture_archive.mjs';
+import { createOracleProfile } from './oracle_profile.mjs';
 import { navigationObservation } from './navigation.mjs';
 import { hasHeaderFilter, requestIdentity, summarizeRequestParity } from './request_stream.mjs';
 import { collectVisibility, validateVisibilityProbe } from './visibility_probe.mjs';
@@ -23,6 +24,7 @@ const options = {
     'document-fixture': '',
     'visibility-probe': '',
     'capture-dir': '',
+    'profile-template': '',
     settle: 15,
 };
 for (let i = 2; i < process.argv.length; i += 2) {
@@ -137,13 +139,9 @@ const lists = await Promise.all(manifest.lists.map(async entry => {
     if (crypto.createHash('sha256').update(content).digest('hex') !== entry.sha256) throw new Error(`List hash mismatch: ${entry.name}`);
     return { name: entry.name, content };
 }));
-const profile = await fs.mkdtemp(path.join(os.tmpdir(), 'vox-adblock-parity-'));
-await fs.mkdir(path.join(profile, 'Default'));
-// Disable Brave's separate blocker in this temporary profile, so the oracle is
-// full uBlock Origin. No settings, history, cookies or logins are copied.
-await fs.writeFile(path.join(profile, 'Default/Preferences'), JSON.stringify({
-    profile: { default_content_setting_values: { braveShields: 2 } },
-}));
+// Default to a clean profile; an explicit prepared template is copied into a
+// temporary directory. Neither mode launches against the source profile.
+const profile = await createOracleProfile(options['profile-template']);
 const browser = spawn(options.brave, [
     '--headless=new', '--no-first-run', '--no-default-browser-check', '--disable-sync',
     '--disable-background-networking', '--remote-debugging-port=0', '--remote-allow-origins=*',
@@ -176,9 +174,12 @@ try {
         if (attempt === 299) throw new Error('Full uBO bootstrap did not start');
         await pause(100);
     }
-    for (let attempt = 0; attempt < 300; attempt++) {
+    // A fresh full-uBO profile may compile its bundled lists under heavy host
+    // load. Keep a bounded startup watchdog without changing filter inputs.
+    const readyAttempts = 1200;
+    for (let attempt = 0; attempt < readyAttempts; attempt++) {
         if (await background.evaluate(`(async()=> (await import('./js/background.js')).default.readyToFilter)()`)) break;
-        if (attempt === 299) throw new Error('Full uBO did not become ready');
+        if (attempt + 1 === readyAttempts) throw new Error('Full uBO did not become ready');
         await pause(100);
     }
     // Use identical recorded list bytes in both engines. Updating the extension
@@ -187,6 +188,7 @@ try {
         const u=(await import('./js/background.js')).default;
         const a=(await import('./js/assets.js')).default;
         u.userSettings.autoUpdate=false;
+        await u.saveUserFilters('');
         const lists=${JSON.stringify(lists)};
         await u.saveSelectedFilterLists(lists.map(x=>x.name));
         for(const list of lists) await a.put(list.name,list.content);
@@ -383,7 +385,7 @@ try {
         ...(archive ? {archive} : {}),
         visibility,
         input: recordedVox ? { mode: 'recorded-vox-network', file: path.resolve(options['vox-log']) } : requestedCorpus ? { mode: 'fixture-request-stream', file: path.resolve(options.requests) } : { mode: 'live-brave-network' },
-        oracle: { browser: execFileSync(options.brave, ['--version'], { encoding: 'utf8' }).trim(), extension: 'uBlock Origin (full, Manifest V2)', version: extensionManifest.version, shields: 'disabled in isolated profile', settings: 'repository-selected lists; identical snapshots; empty user filters' },
+        oracle: { browser: execFileSync(options.brave, ['--version'], { encoding: 'utf8' }).trim(), extension: 'uBlock Origin (full, Manifest V2)', version: extensionManifest.version, shields: 'disabled in isolated profile', settings: 'repository-selected lists; identical snapshots; empty user filters', profile: options['profile-template'] ? { kind: 'temporary-copy', template: path.resolve(options['profile-template']) } : { kind: 'fresh-temporary' } },
         engine: manifest.engine,
         lists: manifest.lists.map(({ name, sha256 }) => ({ name, sha256 })),
         counts: { requests: requests.length, blocked: expected.filter(x => x.blocked).length, allowed: expected.filter(x => !x.blocked).length, mismatches: mismatches.length, oracle_disagreements: oracleDisagreements.length },

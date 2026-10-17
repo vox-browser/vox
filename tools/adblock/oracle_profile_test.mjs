@@ -1,0 +1,54 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs/promises';
+import os from 'node:os';
+import path from 'node:path';
+import test from 'node:test';
+import { createOracleProfile } from './oracle_profile.mjs';
+
+test('fresh oracle disables the separate Brave blocker', async () => {
+    const profile = await createOracleProfile();
+    try {
+        const preferences = JSON.parse(await fs.readFile(path.join(profile, 'Default/Preferences')));
+        assert.equal(preferences.profile.default_content_setting_values.braveShields, 2);
+    } finally { await fs.rm(profile, { recursive: true, force: true }); }
+});
+
+test('prepared full-uBO state is copied independently without process locks', async () => {
+    const template = await fs.mkdtemp(path.join(os.tmpdir(), 'vox-oracle-template-'));
+    let profile;
+    try {
+        await fs.mkdir(path.join(template, 'Default/Local Extension Settings/ubo'), { recursive: true });
+        const preferences = { profile: { name: 'fixture', default_content_setting_values: { braveShields: 1 } }, extensions: { fixture: true } };
+        const original = JSON.stringify(preferences);
+        await fs.writeFile(path.join(template, 'Default/Preferences'), original);
+        await fs.writeFile(path.join(template, 'Default/Local Extension Settings/ubo/data'), 'compiled pinned filters');
+        await fs.writeFile(path.join(template, 'DevToolsActivePort'), 'obsolete endpoint');
+        await fs.symlink('/nonexistent-process-lock', path.join(template, 'SingletonLock'));
+        profile = await createOracleProfile(template);
+        assert.notEqual(profile, template);
+        const copied = JSON.parse(await fs.readFile(path.join(profile, 'Default/Preferences')));
+        assert.equal(copied.profile.name, 'fixture');
+        assert.equal(copied.extensions.fixture, true);
+        assert.equal(copied.profile.default_content_setting_values.braveShields, 2);
+        assert.equal(await fs.readFile(path.join(profile, 'Default/Local Extension Settings/ubo/data'), 'utf8'), 'compiled pinned filters');
+        for (const name of ['DevToolsActivePort', 'SingletonLock']) {
+            await assert.rejects(fs.lstat(path.join(profile, name)), { code: 'ENOENT' });
+        }
+        await fs.writeFile(path.join(profile, 'Default/Local Extension Settings/ubo/data'), 'changed clone');
+        assert.equal(await fs.readFile(path.join(template, 'Default/Local Extension Settings/ubo/data'), 'utf8'), 'compiled pinned filters');
+        assert.equal(await fs.readFile(path.join(template, 'Default/Preferences'), 'utf8'), original);
+    } finally {
+        if (profile) await fs.rm(profile, { recursive: true, force: true });
+        await fs.rm(template, { recursive: true, force: true });
+    }
+});
+
+test('invalid prepared preferences fail instead of silently replacing them', async () => {
+    const template = await fs.mkdtemp(path.join(os.tmpdir(), 'vox-oracle-invalid-'));
+    try {
+        await fs.mkdir(path.join(template, 'Default'));
+        await fs.writeFile(path.join(template, 'Default/Preferences'), 'invalid JSON');
+        await assert.rejects(createOracleProfile(template), SyntaxError);
+        assert.equal(await fs.readFile(path.join(template, 'Default/Preferences'), 'utf8'), 'invalid JSON');
+    } finally { await fs.rm(template, { recursive: true, force: true }); }
+});

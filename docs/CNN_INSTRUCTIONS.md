@@ -64,6 +64,11 @@ fonts and decoded visible images. Each measured Vox request log is checked
 against the full extension outside the counted interval. Collector environment
 overrides are rejected for production comparisons.
 
+Filter audits also receive a fresh copy of the pinned prepared profile through
+`brave_parity.mjs --profile-template`. Process locks and the old debugging
+endpoint are omitted. The audit reloads the identical list bytes and clears
+user filters; it never launches against or writes to the prepared source.
+
 Counts use macOS `proc_pid_rusage(RUSAGE_INFO_V4).ri_instructions`. Vox includes
 the exact root's final unreaped counter and teardown. Brave includes the
 observed descendant tree through the last complete sampler pass before the
