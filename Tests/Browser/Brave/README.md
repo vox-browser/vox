@@ -35,7 +35,13 @@ its image cache can reuse an earlier upload size for the same resource.
 `webp-rgba-mip` checks a synthetic lossless 960×540 RGBA image at quarter
 size. RGBA uploads use the same rounded-up CPU mip size as YUV uploads before
 GPU sampling. This catches a full-size upload that skips the decode cache's
-resize. Fractional mip blending and rounded image clips need separate coverage.
+resize. `webp-rgba-mip-blend` draws the same image at 320×180, between
+the decoded upload's GPU mip levels. Full-source minification generates and
+linearly blends those levels; cropped sources retain strict sampling bounds,
+and nearest-neighbor draws keep their original sampling. Both fixtures require
+exact equality. A separate 269×151 diagnostic still differs by one channel
+level at 86 pixels; arbitrary fractional sampling and rounded image clips
+remain open.
 
 `inline-advances` checks shaped-item width rounding, kerning across ASCII
 word boundaries, fractional max-content tables with emergency wrapping, and

@@ -142,12 +142,13 @@ int vox_graphite_draw_image_pixels(uint8_t* pixels, int width, int height,
     sk_sp<SkImage> texture;
     float source_scale_x = 1.0f, source_scale_y = 1.0f;
     int upload_width = image->width, upload_height = image->height;
-    if (!image->nearest && image->source[0] == 0 && image->source[1] == 0
-        && image->source[2] == image->width && image->source[3] == image->height) {
-        float sx = std::hypot(image->matrix[0], image->matrix[3])
-            * image->destination[2] / image->source[2];
-        float sy = std::hypot(image->matrix[1], image->matrix[4])
-            * image->destination[3] / image->source[3];
+    bool whole_source = image->source[0] == 0 && image->source[1] == 0
+        && image->source[2] == image->width && image->source[3] == image->height;
+    float sx = std::hypot(image->matrix[0], image->matrix[3])
+        * image->destination[2] / image->source[2];
+    float sy = std::hypot(image->matrix[1], image->matrix[4])
+        * image->destination[3] / image->source[3];
+    if (!image->nearest && whole_source) {
         int target_width = std::max(1, static_cast<int>(std::ceil(image->width * sx)));
         int target_height = std::max(1, static_cast<int>(std::ceil(image->height * sy)));
         for (int level = 1; level < 31; ++level) {
@@ -160,6 +161,12 @@ int vox_graphite_draw_image_pixels(uint8_t* pixels, int width, int height,
             upload_height = next_height;
         }
     }
+    // Chromium generates mips when the draw is smaller than its decoded
+    // upload in both axes. Exact mip-sized and nearest-neighbor draws do not
+    // need them. Cropped draws retain strict source bounds below.
+    bool needs_mips = !image->nearest && whole_source
+        && image->width * sx < upload_width && image->height * sy < upload_height;
+    SkImage::RequiredProperties properties{.fMipmapped = needs_mips};
     if (image->flags & 4) {
         // Flag 16 marks full-resolution 4:4:4 chroma planes.
         bool full_chroma = image->flags & 16;
@@ -200,7 +207,7 @@ int vox_graphite_draw_image_pixels(uint8_t* pixels, int width, int height,
             // JPEG planes use the full BT.601 range; WebP planes are limited.
             (image->flags & 8) ? kJPEG_Full_SkYUVColorSpace : kRec601_SkYUVColorSpace);
         auto pixmaps = SkYUVAPixmaps::FromExternalPixmaps(yuva, planes);
-        texture = SkImages::TextureFromYUVAPixmaps(recorder.get(), pixmaps, {}, false,
+        texture = SkImages::TextureFromYUVAPixmaps(recorder.get(), pixmaps, properties, false,
             SkColorSpace::MakeSRGB());
     } else {
         if (static_cast<size_t>(image->pitch) < static_cast<size_t>(image->width) * 4) return 0;
@@ -231,12 +238,12 @@ int vox_graphite_draw_image_pixels(uint8_t* pixels, int width, int height,
             source_scale_y = static_cast<float>(upload_height) / image->height;
         }
         auto raster = SkImages::RasterFromPixmapCopy(pixmap);
-        texture = SkImages::TextureFromImage(recorder.get(), raster);
+        texture = SkImages::TextureFromImage(recorder.get(), raster, properties);
         // Chromium's GPU image cache converts a tagged upload into an 8-bit
         // sRGB texture before drawing it, so premultiplied texels are quantized
         // before they are filtered and blended.
         if (texture && image->has_color_profile)
-            texture = texture->makeColorSpace(recorder.get(), SkColorSpace::MakeSRGB(), {});
+            texture = texture->makeColorSpace(recorder.get(), SkColorSpace::MakeSRGB(), properties);
     }
     if (!texture) return 0;
     SkMatrix matrix;
@@ -247,12 +254,14 @@ int vox_graphite_draw_image_pixels(uint8_t* pixels, int width, int height,
     SkPaint paint;
     paint.setAntiAlias(true);
     paint.setAlphaf(std::clamp(image->opacity, 0.0f, 1.0f));
-    auto sampling = SkSamplingOptions(image->nearest ? SkFilterMode::kNearest : SkFilterMode::kLinear);
+    auto sampling = SkSamplingOptions(image->nearest ? SkFilterMode::kNearest : SkFilterMode::kLinear,
+        needs_mips ? SkMipmapMode::kLinear : SkMipmapMode::kNone);
     auto source_rect = SkRect::MakeXYWH(image->source[0] * source_scale_x,
         image->source[1] * source_scale_y, image->source[2] * source_scale_x,
         image->source[3] * source_scale_y);
     canvas->drawImageRect(texture, source_rect, rect(image->destination), sampling,
-        &paint, SkCanvas::kStrict_SrcRectConstraint);
+        &paint, whole_source && !image->nearest ? SkCanvas::kFast_SrcRectConstraint
+                                               : SkCanvas::kStrict_SrcRectConstraint);
     return read_pixels(gpu, recorder.get(), surface.get(), info, pixels, pitch);
 }
 
