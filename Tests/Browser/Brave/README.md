@@ -150,3 +150,11 @@ each word's positions from those advances, rather than subtracting float pens
 of a paragraph-long shaping run, so no glyph moves into a neighbouring
 quarter-pixel raster position. Legacy `kern` adjustments keep the placement
 HarfBuzz gives their second glyph.
+
+`skip-ink-fractional-line` checks a 4chan file link's skip-ink underline on
+lines whose top lies 0.09375px below a pixel boundary, with the link start
+shifted in 1/64px steps. Blink draws the glyphs from the line top rounded to a
+whole pixel but measures the ink-skip stripe from the unrounded decoration, so
+the glyph intercepts, and the clip-outs around descenders, follow that
+fraction. The underline crosses two descenders on every line, so each line's
+GPU raster tile is multisampled.

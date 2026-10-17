@@ -4390,12 +4390,20 @@ fn append_chromium_solid_underline(mut commands []PaintCommand, fragment TextFra
 // inset by half a pixel vertically, are clipped out without antialiasing over
 // their extent, dilated horizontally by the thickness and vertically by a
 // pixel. Returns left, top, right and bottom for each clip in paint order.
+// The top of the skip-ink stripe below the baseline. Blink rounds a text line's
+// top to a whole pixel before it draws the glyphs, but places decorations from
+// the unrounded top, so the stripe moves against the glyphs by the fraction the
+// line top was rounded by.
+fn chromium_skip_ink_stripe_upper(line_offset f64, font_ascent f64, fragment_y f64) f64 {
+	return line_offset + 0.5 - math.round(font_ascent) + (fragment_y - math.round(fragment_y))
+}
+
 fn chromium_skip_ink_clips(fragment TextFragment, font_ascent f64, line_offset f64, thickness f64, top f64, height f64) []f64 {
 	if !fragment.decoration_skip_ink {
 		return []f64{}
 	}
 	glyph_run := fragment.paintable_fragment.glyph_run or { return []f64{} }
-	upper := line_offset + 0.5 - math.round(font_ascent)
+	upper := chromium_skip_ink_stripe_upper(line_offset, font_ascent, fragment.y)
 	stripe := math.max(thickness - 1.0, 0.0)
 	intervals := glyph_run.glyph_intercepts(1, f32(upper), f32(upper + stripe))
 	dilation := math.min(thickness, 13.0)

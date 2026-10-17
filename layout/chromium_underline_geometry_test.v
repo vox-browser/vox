@@ -50,3 +50,13 @@ fn test_chromium_underline_offset_and_thickness_follow_blink_rounding() {
 	assert [commands[0].x, commands[0].y, commands[0].width, commands[0].height] == [10.0, 17.0,
 		20.0, 3.0]
 }
+
+// 4chan's file links sit on lines whose top is 607.09375px. Blink draws their
+// glyphs from the line top rounded to 607px, but measures the skip-ink stripe
+// from the unrounded decoration, 0.09375px lower against the glyphs.
+fn test_chromium_skip_ink_stripe_follows_the_unrounded_line_top() {
+	assert chromium_skip_ink_stripe_upper(13, 12.066, 607) == 1.5
+	assert chromium_skip_ink_stripe_upper(13, 12.066, 607.09375) == 1.59375
+	assert chromium_skip_ink_stripe_upper(13, 12.066, 607.703125) == 1.203125
+	assert chromium_skip_ink_stripe_upper(13, 12.066, 607.5) == 1.0
+}
