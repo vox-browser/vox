@@ -29,6 +29,45 @@ RECTS = r"""JSON.stringify([...document.querySelectorAll('*')].map((e, i) => {
   return [i, e.tagName, e.id, name, +r.x.toFixed(4), +(r.y + scrollY).toFixed(4),
     +r.width.toFixed(4), +r.height.toFixed(4)];
 }))"""
+# Serialize the scripted DOM as a static document that every browser renders
+# identically: scripts are removed (noscript stays inert because scripting is
+# still enabled), the original base URL is installed ahead of all URL-bearing
+# head elements, live form state becomes markup, and nested browsing contexts
+# become blank frames of the same box so third-party ads cannot vary per load.
+FREEZE = r"""(() => {
+  const root = document.documentElement.cloneNode(true);
+  const live = [...document.documentElement.querySelectorAll('*')];
+  const copy = [...root.querySelectorAll('*')];
+  copy.forEach((node, i) => {
+    const source = live[i];
+    if (source instanceof HTMLInputElement) {
+      if (source.type === 'checkbox' || source.type === 'radio')
+        source.checked ? node.setAttribute('checked', '') : node.removeAttribute('checked');
+      else if (source.type !== 'file' && source.type !== 'password')
+        node.setAttribute('value', source.value);
+    } else if (source instanceof HTMLTextAreaElement) {
+      node.textContent = source.value;
+    } else if (source instanceof HTMLOptionElement) {
+      source.selected ? node.setAttribute('selected', '') : node.removeAttribute('selected');
+    }
+  });
+  root.querySelectorAll('script, link[rel~="modulepreload"], link[rel~="preload"][as="script"], base')
+    .forEach(node => node.remove());
+  root.querySelectorAll('iframe, frame').forEach(node => {
+    node.removeAttribute('srcdoc');
+    node.setAttribute('src', 'about:blank');
+  });
+  const head = root.querySelector('head');
+  const base = document.createElement('base');
+  base.setAttribute('href', document.baseURI);
+  const charset = head.querySelector('meta[charset]');
+  charset ? charset.after(base) : head.prepend(base);
+  const type = document.doctype;
+  const doctype = !type ? '' : '<!DOCTYPE ' + type.name +
+    (type.publicId ? ' PUBLIC "' + type.publicId + '"' : '') +
+    (type.systemId ? (type.publicId ? '' : ' SYSTEM') + ' "' + type.systemId + '"' : '') + '>';
+  return doctype + root.outerHTML;
+})()"""
 
 
 def imported_cookies(path):
@@ -89,6 +128,7 @@ def main() -> None:
     parser.add_argument("--scale", type=float, default=2)
     parser.add_argument("--no-js", action="store_true", help="disable page JavaScript")
     parser.add_argument("--rects", help="write element rectangles as JSON")
+    parser.add_argument("--freeze", type=Path, help="write the scripted DOM as static HTML")
     parser.add_argument("--settle", type=float, default=2, help="seconds to wait after load")
     parser.add_argument("--proxy-server", help="HTTP or SOCKS5 proxy for this isolated Brave process")
     parser.add_argument("--cookie-file", type=Path, help="private Netscape cookie jar to import")
@@ -147,6 +187,11 @@ def main() -> None:
             if args.rects:
                 rects = cdp.call("Runtime.evaluate", {"expression": RECTS, "returnByValue": True})
                 Path(args.rects).write_text(rects["result"]["value"])
+            if args.freeze:
+                frozen = cdp.call("Runtime.evaluate", {"expression": FREEZE, "returnByValue": True})
+                if 'exceptionDetails' in frozen:
+                    raise RuntimeError('Brave could not serialize the document')
+                args.freeze.write_text(frozen["result"]["value"], encoding='utf-8')
             try:
                 cdp.call("Browser.close")
             except Exception:
