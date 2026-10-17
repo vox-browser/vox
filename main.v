@@ -6655,8 +6655,9 @@ fn (mut app BrowserApp) handle_event(event &gg.Event) {
 			}
 		}
 		.mouse_leave {
+			was_hovered := app.overlay_scrollbars.hovered
 			app.overlay_scrollbars.hovered = false
-			app.overlay_scrollbar_activity()
+			if was_hovered { app.overlay_scrollbar_activity() }
 			if app.page_model != unsafe { nil } {
 				app.page_model.event_handler.handle_mouseleave()
 			}

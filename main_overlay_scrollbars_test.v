@@ -39,13 +39,28 @@ fn test_persistent_scrollbars_ignore_overlay_idle_state() {
 	assert bars.opacity_at(5_000_000_000) == 1
 }
 
+fn test_leaving_an_idle_document_does_not_reveal_its_overlay_scrollbars() {
+	mut app := BrowserApp{}
+	app.overlay_scrollbars.enabled = true
+	app.handle_event(&gg.Event{ typ: .mouse_leave })
+	assert !app.overlay_scrollbars.active
+	assert app.overlay_scrollbars.opacity_at(time.sys_mono_now()) == 0
+	// Leaving a visible hovered thumb retains the normal hold/fade interval.
+	app.overlay_scrollbars.hovered = true
+	app.handle_event(&gg.Event{ typ: .mouse_leave })
+	assert !app.overlay_scrollbars.hovered
+	assert app.overlay_scrollbars.opacity_at(time.sys_mono_now()) == 1
+	assert app.overlay_scrollbars.opacity_at(app.overlay_scrollbars.last_activity_ns + 900_000_000) == 0
+}
+
 fn test_overlay_scrollbar_input_reveals_and_releases_the_live_thumb() {
 	mut owner := page.Page.create(1)!
 	owner.set_enable_autoscroll(false)
 	mut document := parse_browser_navigation_document_for_page_with_response_time('<!doctype html><style>html,body{margin:0}div{height:1200px}</style><div></div>', dom.URL{
 		value: 'https://old.reddit.com/'
 	}, none, none, unsafe { &dom.Page(owner) }, time.sys_mono_now())
-	mut app := BrowserApp{
+	// The native callbacks retain this owner's address, as in the browser.
+	mut app := &BrowserApp{
 		document:   document
 		page_model: owner
 	}
