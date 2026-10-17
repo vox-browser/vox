@@ -2891,10 +2891,16 @@ fn run_document_script_sources(document &dom.Document, current_url string, sourc
 		messages << 'JavaScript document state bindings: ${err.msg()}'
 		return none
 	}
-	runtime.evaluate_host(javascript_bootstrap(javascript_initial_state(document, current_url, sources.map(it.code)))) or {
+	processmetrics.instruction_checkpoint('javascript_native_bindings')
+	initial_state := javascript_initial_state(document, current_url, sources.map(it.code))
+	processmetrics.instruction_checkpoint('javascript_initial_state')
+	bootstrap := javascript_bootstrap(initial_state)
+	processmetrics.instruction_checkpoint('javascript_bootstrap_source')
+	runtime.evaluate_host(bootstrap) or {
 		messages << 'JavaScript: ${err.msg()}'
 		return none
 	}
+	processmetrics.instruction_checkpoint('javascript_bootstrap_evaluated')
 	document_wrapper := runtime.evaluate_host_value('document') or {
 		messages << 'JavaScript Document event bindings: ${err.msg()}'
 		return none
@@ -2955,7 +2961,9 @@ fn run_document_script_sources(document &dom.Document, current_url string, sourc
 		messages << 'JavaScript storage bindings: ${err.msg()}'
 		return none
 	}
+	processmetrics.instruction_checkpoint('javascript_document_bindings')
 	install_browser_adblock_scriptlets(document, runtime, mut messages)
+	processmetrics.instruction_checkpoint('javascript_adblock_scriptlets')
 	for source in sources {
 		if !compact_document_can_run_script(document) { continue }
 		runtime.run_document_scripts([source]) or {
@@ -2970,6 +2978,7 @@ fn run_document_script_sources(document &dom.Document, current_url string, sourc
 			return none
 		}
 	}
+	processmetrics.instruction_checkpoint('javascript_readiness_events')
 	// JavaScriptCore drains queued Promise jobs between evaluations. This initial
 	// snapshot captures current script effects; later timer/Promise effects reach
 	// the live document through poll_javascript_tasks().
@@ -2977,6 +2986,7 @@ fn run_document_script_sources(document &dom.Document, current_url string, sourc
 		messages << 'JavaScript: ${err.msg()}'
 		return none
 	}
+	processmetrics.instruction_checkpoint('javascript_finalized')
 	navigation := apply_javascript_runtime_state(document, result, runtime, mut messages)
 	runtime.evaluate_host('__ladybirdClearLogs()') or {}
 	mutable_runtime.take_document_state_dirty()
