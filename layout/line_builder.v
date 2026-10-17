@@ -254,6 +254,17 @@ fn (mut builder LineBuilder) ensure_last_line_box() &LineBox {
 	return &builder.containing_block_used_values.line_boxes[last_index]
 }
 
+// A dropped collapsible space can carry the end edges of the inline boxes it
+// closes; those edges still occupy the line.
+fn (mut builder LineBuilder) append_inline_end_edges(trailing_size CSSPixels, trailing_margin CSSPixels) {
+	if trailing_size.raw_value() == 0 && trailing_margin.raw_value() == 0 {
+		return
+	}
+	mut line_box := builder.ensure_last_line_box()
+	line_box.inline_length_ = line_box.inline_length_.plus(trailing_size).plus(trailing_margin)
+	builder.last_line_needs_update = true
+}
+
 pub fn (mut builder LineBuilder) append_box(box &Box, leading_size CSSPixels, trailing_size CSSPixels, leading_margin CSSPixels, trailing_margin CSSPixels) {
 	builder.prepare_to_append_inline_content()
 	styled := unsafe { &NodeWithStyle(box) }

@@ -37,3 +37,18 @@ fn test_chromium_nowrap_spaces_collapse_across_elements() {
 	width_delta := chromium_whitespace_rect(collapsed, 't').width - chromium_whitespace_rect(reference, 't').width
 	assert width_delta < 0.02 && width_delta > -0.02
 }
+
+// A collapsible space dropped after another space can close inline boxes;
+// their end padding still occupies the centered line.
+fn test_chromium_dropped_space_keeps_the_inline_end_padding() {
+	mut spaced := chromium_whitespace_document('<div style="width:300px;text-align:center;white-space:nowrap"><span id="o" style="padding:0 8px">\n<span>\nH\n</span>\n</span>\n</div>')
+	defer { spaced.finalize() }
+	mut compact := chromium_whitespace_document('<div style="width:300px;text-align:center;white-space:nowrap"><span id="o" style="padding:0 8px"><span>H</span></span></div>')
+	defer { compact.finalize() }
+	// The trimmed trailing space may move the rounded text item end by 1/64;
+	// losing the end padding would shift the box by 4px.
+	x_delta := chromium_whitespace_rect(spaced, 'o').x - chromium_whitespace_rect(compact, 'o').x
+	assert x_delta < 0.02 && x_delta > -0.02
+	width_delta := chromium_whitespace_rect(spaced, 'o').width - chromium_whitespace_rect(compact, 'o').width
+	assert width_delta < 0.04 && width_delta > -0.04
+}

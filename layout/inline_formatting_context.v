@@ -146,6 +146,12 @@ fn run_inline_formatting_context_internal(mut state LayoutState, containing_bloc
 				leading_border_from_collapsible_whitespace.plus(item.border_start)
 			leading_padding_from_collapsible_whitespace =
 				leading_padding_from_collapsible_whitespace.plus(item.padding_start)
+			if node := item.node {
+				if node.document().font_rendering_policy() == .chromium {
+					line_builder.append_inline_end_edges(item.border_end.plus(item.padding_end),
+						item.margin_end)
+				}
+			}
 			continue
 		}
 
