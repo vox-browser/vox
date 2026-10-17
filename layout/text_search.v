@@ -130,7 +130,8 @@ fn search_text_index(text []u16, query []u16, offset int, case_sensitive bool) ?
 	for index <= end {
 		mut matches := true
 		for i, unit in query {
-			if if case_sensitive { text[index + i] != unit } else { search_ascii_fold(text[index + i]) != search_ascii_fold(unit) } {
+			mismatch := if case_sensitive { text[index + i] != unit } else { search_ascii_fold(text[index + i]) != search_ascii_fold(unit) }
+			if mismatch {
 				matches = false
 				break
 			}
