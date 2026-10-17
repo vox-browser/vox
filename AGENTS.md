@@ -1940,6 +1940,16 @@ evidence](docs/translation-audit/NATIVE_MEDIA_WHEEL_RAW_HANDLER.md).
   focused shadow viewport exact. Additional observed savings: 2,371,587.
   Same 4 GiB/placement; shared SSD cache parent; canonical/GUI preserved;
   Root excluded; Chrome parity open.
+  Immutable rare paint payloads `811552fc` (independent committed slice)
+  pass 22,107 common assertions in 29 functional cases/configuration,
+  plus three byte-exact original contracts in both GC modes.
+  Complete public layout/display-list batches use 28.89% fewer instructions.
+  Page point saving 36,304,458, 20/30 wins,
+  paired interval [975,500, 30,389,723]; repeatable credit 36,304,458.
+  Broad verification: 87 selected cases both GC and 19 screenshots (16 exact);
+  focused effect/mask viewport exact. Additional observed savings: 0.
+  Same 4 GiB/placement and shared SSD cache parent; canonical/GUI preserved;
+  Root excluded; Chrome parity open.
 - Outside instruction-count optimization, run broad regression suites once per
   ten completed fixes, not after every fix.
   Broad suites include full translation/package test batches, the full LibJS AST

@@ -10022,6 +10022,158 @@ Equivalent Chrome content/start/submission accounting remains open;
 **faster-than-Chrome performance is unproven**. Evidence:
 Build/instructions/vox-opt100-interleaved-* and Build/v/instruction-opt100-*.
 
+## Share immutable rare paint payloads
+
+Round 101 imports independently authored `811552fc` (Alexander Medvednikov)
+onto accepted frozen round 100: **eight exact hunks in paint_transport.v,
+viewport_paint_bridge.v and main.v**. Ordinary commands retain absent optional
+pointers for visual-layer, mask and backdrop-filter data. Synthetic commands
+own immutable snapshots; nested replay retains a private transformed mask
+override. The frozen lower_visual_layers entrypoint keeps its existing
+signature; the authored parent names that loop lower_visual_replay_steps.
+Only unchanged outer context is trimmed. Current Root and unrelated
+predecessors remain outside the comparison.
+
+All **29 common functional cases plus one inactive diagnostic** pass in
+before/Boehm, final/Boehm and final/no-GC C-O2 builds:
+**22,107 assertions per configuration**.
+Common SHA256: `3ac7293660801ffde00930cc416fcc128bd0c738752f2e9d64270641938efb44`.
+All **three byte-exact original contracts** pass in both GC modes:
+**61 assertions per mode**.
+They cover absent storage and logical defaults, retained mask snapshots and
+nested overrides after collection, and optional backdrop-filter ownership.
+No passing unit case or completed page primary is repeated.
+
+Three fixed alternating local pairs count **32 complete public document
+layout and display-list rebuilds over 64 Unicode paragraphs**, including
+four with inner/outer shadows and two with opacity/filter layers. Invalidation,
+fresh mirrors, formatting, geometry, recording and command traversal are
+counted. The checksum weights kind/text/color lengths, glyph counts,
+coordinates and points; it does not hash full glyph contents. Setup, eight
+warmups, expected checksum, paint-presence checks and forced GC are outside
+the counted interval. All six actual exits are 0; checksum
+**40,031,584** matches. Before counts:
+**19,203,186,417 / 19,040,880,719 / 19,542,180,368**; final counts by pair: **13,535,663,957 / 14,549,720,504 / 13,655,908,567**.
+Medians **19,203,186,417→13,655,908,567** instructions,
+**-28.88728%**. This is local evidence and earns no page credit.
+
+Full-process C-O1/Boehm profiles have no reset or filtering and repeat no
+passing common case. Counts only:
+
+| Function | Before calls | Candidate calls |
+| --- | ---: | ---: |
+| `layout__opt101_complete_public_document_layout` | 41 | 41 |
+| `layout__run_document_layout` | 42 | 42 |
+| `dom__Document_record_display_list` | 41 | 41 |
+| `layout__BlockBox_flat_paint_commands_for_entries` | 41 | 41 |
+| `layout__lower_visual_layers` | 41 | 41 |
+| `layout__append_text_fragment_commands` | 13,120 | 13,120 |
+| `layout__PaintCommand_visual_layer` | 0 | 0 |
+| `layout__PaintCommand_mask_clip` | 0 | 0 |
+| `layout__PaintCommand_backdrop_filter` | 0 | 0 |
+| `layout__retained_paint_backdrop_filter` | 0 | 0 |
+
+Complete public layout and recording work match. New accessors are read when
+the retained data is consumed; original contracts and native rendering cover
+those consumers. Profile timings and C-O1 instruction counts earn no credit.
+
+Strict generated-C audit passes with independent whole-app C-only generations.
+The authenticated scope is four edited and four added functions, three command
+fields replaced by optional pointers, and three exact pointer-option wrappers.
+Ordinary payload defaults are authenticated against accessor fallback values
+and exact absent-pointer initializers; all remaining executable C, records,
+globals, resources, filters, arenas and heap/GC setup compare exactly after
+recorded compiler identities, unchanged assertion lines, 37 frozen includes
+and four byte-identical helper reorders. The initial strict audit rejected
+declaration reordering; its actual exit 1, complete projections and diff remain
+in instruction-opt101-c-record-order-finding. Only PaintCommand position and
+eleven explicit byte-identical option aliases/definitions are canonicalized
+after four-way authentication against both normal and independent C outputs.
+Actual frontend tables and all 120
+native inputs/native arguments match. A preliminary read-only parser check
+first assumed the newer loop name and exited 1 before strict auditing; that
+finding remains. Its corrected check authenticates all 48 ordinary constructors.
+Passing audit SHA256: `0c4e9501d7d7bffc3e2acc5e730af04d3c1ae4248d47ce28dde2bcb361b2cd7d`.
+Normal C SHA256: `53d10add29af7f03f48edeec5c38e6b751341cef62f626f72b7501abe9cc9077`.
+Durable generated-C/profile/contract/diagnostic hashes:
+instruction-opt101-artifact-archives.json.
+
+The initial visual chain retained four passing comparisons and an exact focused
+pair without loader proof, then both canvas-text launches crashed in native
+image drawing. The unchanged frozen100 control crashed at the same call.
+A read-only probe confirms protected sh/env remove inherited DYLD variables;
+the concurrent Root helper source has an extra clip_radii argument. This explains
+the failure by inference; the initially loaded helper path is **unknown**.
+Initial captures, crashes and controller receipts remain in
+instruction-opt101-canvas-native-draw-finding. The validation and waiting
+bundle controllers actually exited 0 while their logical results were 1;
+neither result is presented as a pass.
+
+Only screenshot tooling changes: both child argument lists now explicitly set
+the frozen library directory after env, verify the 4e hash, and retain/verify
+each child's actual loader log and successful exit. The old four comparisons
+and focused pair remain supplementary, without frozen-configuration credit.
+The required 19 comparisons and focused pair use the corrected, verified
+configuration. All six passing broad jobs are retained and no page primary
+is repeated. A separate correctly pinned frozen100 canvas control exactly
+matches the candidate's decoded pixels. Evidence:
+instruction-opt101-screenshot-library-pin.json and
+instruction-opt101-canvas-pinned-control-result.json.
+
+Two text-decorations launches in the corrected configuration then trap before
+producing a PNG. Their loader logs prove the frozen helper; the unfinished
+case passes on resumption with its known 1,341-pixel difference. Cause of the
+launch traps is not established. Both failures remain in
+instruction-opt101-pinned-text-decorations-launch-finding; the two valid
+comparisons, focused pair and six broad jobs are retained. A supplementary
+canvas-control gate exits 1 before launching a child while validation is
+incomplete. An optional debugger stalls with its inferior stopped and no PNG, then is
+stopped after command/PID verification; debugger/inferior final exits remain
+**unknown**, with no pass credit. The user's GUI browser is untouched.
+
+The predeclared page cohort contains **30 alternating pairs**, odd before/final
+and even final/before, **30,000 paired bootstrap resamples, seed 101**.
+Regular binaries use fresh copies of the same 359 cached bodies and frozen
+text/child-only placement helpers, C-O2/Boehm/default marker 1 and unchanged
+4 GiB hint. Both variants use the same SSD cache parent. Viewport remains
+1024×768; endpoint remains navigation_to_first_document_paint[0].
+
+| Build | Median first-frame retired instructions | Median lifetime process peak, MiB |
+| --- | ---: | ---: |
+| Fresh accepted frozen round 100 control | 17,465,202,086.5 | 3,397 |
+| Immutable rare payloads | 17,428,897,628.5 | 3,345.1 |
+
+Marginal median saving **36,304,458** instructions;
+candidate change **-0.208%**, **20/30** wins.
+Paired median saving **13,912,860.5**; 95% interval
+**[975,500, 30,389,723]**. The positive paired interval establishes repeatable page credit of **36,304,458** instructions.
+
+All 60 primaries and **60 actual PNGs** remain. Recoveries:
+none; pre-parse retries: 0. First primaries have
+1 installation/2 geometry preparations/1 paint. Later completed refreshes:
+none. No completed primary is extended, discarded or
+rerun. Missing final exit, PNG, fingerprint or peak remains explicitly unknown
+for a recovered watchdog. Peaks cover lifetime through capture/exit and
+refreshes, are not first-frame live memory and are never summed. The read-only decoded capture check finds 30 before and 30 candidate RGB classes, 0 shared. All differences stay within the original skeleton bands, x45–662: y335–344 and ten 14px bands starting at 380 with 41px spacing. All pixels outside these bands match. No animation was disabled and no observation repeated; evidence is instruction-opt101-page-pixel-class-check.json.
+External foreground transitions retained:
+none.
+The child is foreground in neither startup snapshot. The focused multilingual
+shadow/effect/backdrop/SVG-mask viewport is exact at 1024×768. Prior observed carry:
+**2,371,587**. Cumulative observed saving **38,676,045** crosses the 5M gate. Six direct harness jobs actually pass CSS 31/SVG 10/layout 46 in both GCs (**174 executions**). All **19 screenshots pass, 16 exact**; known differences remain inline-node 13, text-decorations 1,341 and canvas-text 1,994. The completed broad batch resets additional observed savings to 0.
+Two selected broad mask cases adopt exactly the authored mask_clip accessor
+calls, with only the established html→fixture_html import alias. All assertions,
+expected values, 87 selected cases and screenshot bounds remain unchanged.
+Evidence: instruction-opt101-broad-test-port.json.
+
+The isolated signed app is `/Users/alex/code/vox2/Build/v/Vox-opt101.app`. Its native instruction text
+matches the measured binary, with the frozen helper pinned inside the app.
+Signatures, actual loaded helper path/hash, startup and actual collections
+pass for default marker 1 and override 2. Canonical/GUI browsers and independent
+Root work remain preserved and receive no extra regression or page credit.
+Equivalent Chrome content/start/submission accounting remains open;
+**faster-than-Chrome performance is unproven**. Evidence:
+Build/instructions/vox-opt101-interleaved-* and Build/v/instruction-opt101-*.
+
 ## Causes and changes
 
 - The V 0.5.2 compatibility compiler's `-prod` Boehm code repeatedly snapshots
