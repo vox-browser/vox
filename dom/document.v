@@ -5353,6 +5353,8 @@ pub mut:
 	design_mode_enabled                        bool
 	needs_to_call_page_did_load                bool
 	cursor_blink_state                         bool
+	fired_dom_content_loaded                   bool
+	fired_load_event                           bool
 	inside_exec_command                        bool
 	running_editing_command_action             bool
 	preserve_selection_offsets_during_identical_character_data_replacement_ bool
@@ -8816,6 +8818,27 @@ pub fn (d &Document) is_completely_loaded() bool {
 
 pub fn (d &Document) document_completely_loaded_deferred() bool {
 	return d.completely_loaded_deferred
+}
+
+// DOMContentLoaded and load fire once per document. The compact embedder fires
+// them itself once its scripts have run, while the parser's end steps queue
+// their own tasks; whichever runs first claims the event and the other skips it.
+pub fn (mut d Document) claim_readiness_event(name string) bool {
+	if name == 'DOMContentLoaded' {
+		if d.fired_dom_content_loaded {
+			return false
+		}
+		d.fired_dom_content_loaded = true
+		return true
+	}
+	if name == 'load' {
+		if d.fired_load_event {
+			return false
+		}
+		d.fired_load_event = true
+		return true
+	}
+	return true
 }
 
 // --- Page showing / visibility ---

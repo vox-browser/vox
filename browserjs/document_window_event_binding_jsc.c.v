@@ -24,6 +24,8 @@ pub fn (runtime &Runtime) dispatch_document_readiness_event(name string) ! {
 	settings := runtime.scripting_settings_ or { return error('Readiness event requires actual owning settings') }
 	document := settings.responsible_document() or { return error('Readiness event requires an actual Document') }
 	if name !in ['DOMContentLoaded', 'load'] { return error('Unknown document readiness event') }
+	mut owner := unsafe { &dom.Document(document) }
+	if !owner.claim_readiness_event(name) { return }
 	event := dom.Event.create(name, dom.EventInit{ bubbles: name == 'DOMContentLoaded' })
 	mut mutable_event := unsafe { &dom.Event(event) }
 	mutable_event.set_time_stamp(highresolutiontime.current_high_resolution_time(highresolutiontime.TimeOriginContext{

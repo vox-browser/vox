@@ -704,6 +704,9 @@ fn (mut state HTMLParserEndState) advance_to_asap_scripts_phase() {
 	document := state.document
 	queue_a_task(.dom_manipulation, main_thread_event_loop(), document, fn [document] () {
 		mut mutable_document := unsafe { &dom.Document(document) }
+		if !mutable_document.claim_readiness_event('DOMContentLoaded') {
+			return
+		}
 		mutable_document.mark_dom_content_loaded_event_start()
 		mutable_document.dispatch_event_simple('DOMContentLoaded', true)
 		mutable_document.mark_dom_content_loaded_event_end()
@@ -729,7 +732,9 @@ fn (mut state HTMLParserEndState) complete() {
 		if mutable_document.get_browsing_context() == none {
 			return
 		}
-		mutable_document.dispatch_event_simple('load', false)
+		if mutable_document.claim_readiness_event('load') {
+			mutable_document.dispatch_event_simple('load', false)
+		}
 		mutable_document.set_page_showing(true)
 		mutable_document.completely_finish_loading()
 	})
