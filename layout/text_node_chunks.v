@@ -329,6 +329,11 @@ fn (mut iterator TextNodeChunkIterator) synthetic_caps_font_for(selected &platfo
 	return font
 }
 
+fn (iterator &TextNodeChunkIterator) uses_chromium_font_rendering() bool {
+	base := if iterator.font_cascade_fonts.len > 0 { iterator.font_cascade_fonts[0] } else { iterator.font }
+	return base != unsafe { nil } && base.font_rendering_policy == .chromium
+}
+
 // No face in the CSS cascade covers this code point. Use the platform's
 // language-aware system fallback, based on the cascade's primary face.
 fn (iterator &TextNodeChunkIterator) system_fallback_font(code_point u32) ?&platform.Font {
@@ -371,6 +376,11 @@ fn (mut iterator TextNodeChunkIterator) invisible_font_for(selected &platform.Fo
 }
 
 pub fn (mut iterator TextNodeChunkIterator) font_for_space(at_index int, space_code_point u32) &platform.Font {
+	// Blink selects a space's font by coverage like any other character, so a
+	// space after fallback CJK text uses the primary font.
+	if iterator.uses_chromium_font_rendering() {
+		return iterator.font_for_code_point(space_code_point)
+	}
 	if font := iterator.last_non_whitespace_font {
 		if !font.synthesize_ascii_caps && !font.is_emoji_font() && font.contains_glyph(space_code_point) {
 			return font

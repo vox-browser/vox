@@ -53,3 +53,25 @@ fn test_browser_line_boxes_follow_blink_metrics_and_leading() {
 		assert chromium_used_for_id(result, 'hiragino').content_height().to_double() == 24
 	}
 }
+
+// A space after fallback CJK text is shaped with the primary font, as in
+// Brave: SF's 3.58px space rather than PingFang's tracked 4.6px one.
+fn test_browser_spaces_after_fallback_text_use_the_primary_font() {
+	$if macos {
+		mut document := html.parse_document('<!doctype html><style>body { margin:0; font:13px system-ui }</style>
+			<div lang="zh"><span id="pair" style="display:inline-block">条目 / 條目</span></div>')
+		document.set_font_rendering_policy(.chromium)
+		result := run_document_layout(document, 800, 600) or { panic('layout failed') }
+		mut spaces := 0
+		for fragment in chromium_used_for_id(result, 'pair').line_boxes[0].fragments() {
+			run := fragment.glyph_run() or { continue }
+			for glyph in run.glyphs() {
+				if glyph.code_point == u32(` `) {
+					assert run.font().family == 'SystemUi'
+					spaces++
+				}
+			}
+		}
+		assert spaces == 2
+	}
+}
