@@ -230,7 +230,7 @@ class VoxLaunchArgumentTests(unittest.TestCase):
     def test_default_argv_reserves_the_compact_browser_chrome(self):
         args = self.args()
         self.assertEqual(measurement.vox_launch_command(args, args.binary, '/capture.png'),
-                         ['/test/Vox', '--window-width', '1024', '--window-height', '848',
+                         ['/test/Vox', '--window-width', '1024', '--window-height', '880',
                           '--screenshot', '/capture.png', args.url])
 
     def test_explicit_options_remain_literal_and_precede_capture_and_url(self):
