@@ -2047,6 +2047,17 @@ evidence](docs/translation-audit/NATIVE_MEDIA_WHEEL_RAW_HANDLER.md).
   focused selector/Unicode viewport exact; observed carry 0.
   Same 4 GiB, frozen helper, GC policy; Root/canonical/GUI preserved.
   Chrome parity remains open.
+  Borrowed short attribute ranges `45398f48` use one authored hunk/three helpers.
+  All 12 common cases pass 1,418 assertions/configuration; two exact contracts
+  pass 57,117/GC, including byte slices and ASCII-only case-fold behavior.
+  Complete public parse/serialize/specificity/matching batches use 0.61% fewer instructions.
+  Page point saving 4,867,127.5, 15/30 wins;
+  paired interval [-9,093,655.5, 7,375,459.5], repeatable credit 0.
+  Broad verification: deferred below cumulative 5M gate;
+  focused attribute/Unicode viewport exact; observed carry 4,867,127.5.
+  Diagnostic fixture-check failures retained; no completed samples repeated.
+  Same 4 GiB, frozen helper, GC policy; Root/canonical/GUI preserved.
+  Chrome parity remains open.
 - Outside instruction-count optimization, run broad regression suites once per
   ten completed fixes, not after every fix.
   Broad suites include full translation/package test batches, the full LibJS AST

@@ -11343,6 +11343,128 @@ Equivalent Chrome content/start/submission accounting remains open;
 **faster-than-Chrome performance is unproven**. Evidence: Build/v/instruction-opt110-*
 and Build/instructions/vox-opt110-interleaved-*.
 
+## Borrow short attribute substring comparisons
+
+Round 111 ports the already committed `45398f48` onto accepted frozen 110.
+One exact authored hunk changes three private helpers in css/selectors.v.
+Contains searches with patterns up to 32 bytes borrow checked string ranges,
+avoiding KMP prefix setup and lowercase copies. Longer patterns retain the linear
+KMP search. Prefix and suffix checks borrow only their checked comparison range.
+Case-insensitive comparisons fold ASCII only, correcting the old Unicode-wide
+lowercase behavior. No borrowed range escapes its comparison.
+
+All **12 common functional cases plus one inactive diagnostic** pass C-O2 in
+before/Boehm, final/Boehm and final/no-GC: **1,418 assertions each**. No common
+case body or assertion is removed. Common source SHA256
+`76d5fc38ab87d0b0947be9b4f9bf3ee8655b7d2586918ebd81c7bca19b1ea919`.
+The **two exact authored candidate contracts** pass **57,117 assertions in each
+GC mode**. They check every byte slice of ASCII/Unicode/NUL-backed inputs,
+short/long boundaries, absent patterns, prefix/suffix/contains flags and public
+fast/general matching. Candidate-only checks include the intentional correction
+of non-ASCII case-fold false positives. Contract SHA256
+`271c657c3c09bb92cb6c980bf27d99540b50fd2bcf11a5cd9e0c9d787fbd2211`.
+
+Three fixed alternating local pairs count **128 complete public parse,
+serialize, specificity and matching batches over 184 inputs**. Contains, prefix
+and suffix patterns have lengths 1, 4, 20, 31, 32, 33 and 64; each includes hits,
+misses, ASCII case flags and both fast/general paths. Exact Unicode matches and
+absent punctuation retain the same expected behavior in both versions. Attribute
+values are installed before counting. Independent canonical strings, expected
+booleans/specificities, eight warmups, assertions and forced GC stay outside the
+counter. All six actual exits are 0; checksum **12,295,136,256** matches. The
+intentional Unicode correction receives no local hardware credit.
+
+| Pair | Before retired instructions | Candidate retired instructions |
+| --- | ---: | ---: |
+| 1 | 1,633,532,765 | 1,622,355,916 |
+| 2 | 1,631,998,554 | 1,623,149,495 |
+| 3 | 1,632,775,739 | 1,622,853,118 |
+
+Local medians **1,632,775,739 → 1,622,853,118**, change
+**-0.607715%**, **3/3 wins**. No private helper loop or
+profile time substitutes for retired hardware instructions.
+
+The initial diagnostic fixture fails V checking in both versions before native
+execution because its immutable parameter cannot initialize a mutable context
+subject. Those actual exit-1 logs, source hashes, controller status and dependent
+gate failures are retained. One explicit mutable pointer alias outside the batch
+loop repairs the fixture without changing the target, inputs or checksum. Only
+unfinished diagnostic builds resume. All completed functional/contract cases stay
+retained; no hardware sample or primary is repeated.
+
+The strict C audit permits only selector_string_contains, selector_string_starts_with
+and selector_string_ends_with. Each body is authenticated against independent
+whole-app C-only output. Checked bounds, borrowed ranges, the 32-byte threshold,
+long-pattern KMP and ASCII-only folding are verified. The actual compiler file
+table is unchanged. Four byte-identical helper reorderings and one unchanged
+static-local compiler ordinal remain authenticated. All other executable C,
+records, globals, resources, DOM/Unicode code, public decoder/filtering/tokenizer
+arenas and heap/GC policy match after established compiler identities and exact
+unchanged assertion maps. All 120 native inputs, 37 frozen includes and native
+arguments match except artifact paths. Rest-of-C SHA256
+`cc9e29815190e27fa4afdc1544d07238544c38aa8f5a14ecc0d9034a1ca1d945`.
+
+Both C-O1/Boehm/default-marker-1 -profile-no-inline diagnostics exit 0. Full-process
+instrumentation has no filter/reset. Public workload and three comparison-helper
+counts match, including 136 complete batch calls. Unicode-wide lowercase calls
+fall. Profile counts explain coverage; profile times receive no hardware/page credit.
+
+| Full-process diagnostic function | Before calls | Candidate calls |
+| --- | ---: | ---: |
+| `css__opt111_complete_public_selector_batch` | 136 | 136 |
+| `css__parse_selector_with_parser` | 25,208 | 25,208 |
+| `css__Selector_serialize` | 37,812 | 37,812 |
+| `css__Selector_specificity` | 37,812 | 37,812 |
+| `css__matches` | 37,812 | 37,812 |
+| `css__fast_matches` | 25,208 | 25,208 |
+| `css__matches_selector_at` | 12,604 | 12,604 |
+| `css__matches_simple` | 31,784 | 31,784 |
+| `css__decode_css_input` | 25,253 | 25,253 |
+| `css__selector_string_contains` | 8,768 | 8,768 |
+| `css__selector_string_starts_with` | 8,220 | 8,220 |
+| `css__selector_string_ends_with` | 8,220 | 8,220 |
+| `builtin__string_to_lower` | 152,861 | 127,653 |
+| `css__to_ascii_lowercase` | 1,435 | 3,627 |
+| `builtin__string_substr_unsafe` | 0 | 23,838 |
+
+Normal candidate Build/v/Vox-opt111-borrowed-substring-bin SHA256
+`2ccfb3a9c3d979c722e47c524ca08bb6270c8c4bbe7e54da0cb0992c0fc56024`;
+compiled C SHA256 `f8c99f1a65a61b0d07f92e03a6d62888ac7ded625145cb0e8a45326f5b7c5d01`.
+Both persisted regular binaries load the frozen 4e helper with actual loader
+proof. SSD cache parent, 4 GiB hint, default marker 1, child-only placement and
+1024×768 document viewport match. No prod/prealloc or heap increase.
+
+The predeclared **30 alternating pairs**, seed 111 and **30,000 paired bootstrap
+resamples**, retain all 60 first navigation_to_first_document_paint[0]
+observations: **16,950,329,063.5 → 16,945,461,936**
+retired instructions. Point saving **4,867,127.5**
+(**-0.028714%**), **15/30 wins**;
+paired median saving **926,314**, 95% paired interval
+**[-9,093,655.5, 7,375,459.5]**, repeatable credit **0**.
+The interval does not establish repeatable whole-page savings; repeatable credit is 0.
+
+There are **60 real PNGs**, **0** startup retry records, recovered
+primaries `[]`, post-primary refreshes `[]`, and
+**0** external foreground
+transitions. No completed primary is discarded or repeated. First preparations
+retain 1 install/2 geometry/1 paint; later work stays separate. Memory peaks cover
+process lifetime through capture/exit, rather than first-frame live memory;
+overlapping counters are not summed. All 60 decoded RGB captures differ only in the original skeleton bands, x45–662/y335–344 and ten 14px bands starting at 380 with 41px spacing. All other pixels match; 30 control and 30 candidate classes, 0 shared. No bounds change.
+
+The focused attribute/Unicode viewport is **pixel-exact**. Explicit child argv
+pins the frozen helper after protected env/sh launch sites; actual loader
+path/hash receipts remain. The cumulative observed gate value **4,867,127.5** stays below 5M; broad tests are deferred and the completed 110 baseline remains. Selected harness bodies, assertions and
+expected values retain the completed 110 baseline.
+
+The isolated app is `/Users/alex/code/vox2/Build/v/Vox-opt111.app`. Signing, startup, installed helper
+and native instruction-text identity pass. GC checks observe actual collections
+at default marker 1 and override 2. Accepted 111 becomes the next frozen performance control. Independently advancing Root,
+the canonical bundle and the user's GUI remain preserved and receive no additional
+performance credit. Durable hashes are in instruction-opt111-artifact-archives.json.
+Equivalent Chrome content/start/submission accounting remains open;
+**faster-than-Chrome performance is unproven**. Evidence: Build/v/instruction-opt111-*
+and Build/instructions/vox-opt111-interleaved-*.
+
 ## Causes and changes
 
 - The V 0.5.2 compatibility compiler's `-prod` Boehm code repeatedly snapshots
