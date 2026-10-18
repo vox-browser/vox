@@ -41,8 +41,10 @@ int main()
     for (int i = 0; i < image_pitch * image_height; ++i)
         image[i] = i % 4 == 3 ? uint8_t(90 + i * 11 % 160) : uint8_t(i * 37 % 256);
     int comparisons = 0, batched = 0;
-    for (int scale : {1, 2}) for (int backdrop : {0, 2}) for (int rounded : {0, 1})
+    for (int msaa : {0, 1, 2}) for (int scale : {1, 2}) for (int backdrop : {0, 2}) for (int rounded : {0, 1})
     for (int transform : {0, 1, 2}) for (int nearest : {0, 1}) for (int overlap : {0, 1}) {
+        int tile = 0;
+        ladybird_v_skia_set_msaa_tiles(msaa ? &tile : nullptr, msaa ? 1 : 0, msaa == 2 ? 32 : 256);
         // Integral repeat-x tiles across a clip whose right edge cuts the last;
         // overlapping tiles share a column with their neighbor.
         std::vector<float> tiles;
@@ -74,7 +76,7 @@ int main()
         // Scaled or rounded clips, and tiles sharing pixels without a backdrop,
         // are left to the native caller, which draws them one tile at a time.
         // A fractional translation makes neighboring tiles share a column.
-        int expected_drawn = !rounded && transform != 1 && (backdrop || (!transform && !overlap));
+        int expected_drawn = !rounded && transform != 1 && (backdrop || (!transform && !overlap)) && !(msaa && transform == 2);
         if (drawn != expected_drawn) {
             std::printf("scale %d backdrop %d rounded %d transform %d nearest %d overlap %d: batched %d\n",
                 scale, backdrop, rounded, transform, nearest, overlap, drawn);

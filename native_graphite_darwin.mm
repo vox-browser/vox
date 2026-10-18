@@ -179,6 +179,21 @@ static sk_sp<SkColorSpace> vox_image_color_space(VoxGraphiteImage const* image)
     return space ? space : SkColorSpace::MakeSRGB();
 }
 
+static void force_msaa_render_pass(SkCanvas* canvas, int width, int height)
+{
+    // Graphite multisamples a render pass that contains a path. A
+    // transparent one changes no pixel.
+    SkPaint noop;
+    noop.setAntiAlias(true);
+    noop.setShader(SkShaders::Color(SK_ColorTRANSPARENT));
+    SkPathBuilder path;
+    path.moveTo(0, 0);
+    path.cubicTo(width, height * 0.1f, 0, height, width, height);
+    path.lineTo(width * 0.5f, height * 0.2f);
+    path.close();
+    canvas->drawPath(path.detach(), noop);
+}
+
 namespace {
 // The upload, sampling and source scale of one image draw, and the texture it
 // samples once prepared.
@@ -242,7 +257,9 @@ static bool prepare_image_texture(skgpu::graphite::Recorder* recorder,
 {
     int upload_width = prepared.upload_width, upload_height = prepared.upload_height;
     SkImage::RequiredProperties properties{.fMipmapped = prepared.needs_mips};
-    auto upload = image_upload_cache.prepare(*image, upload_width, upload_height, prepared.needs_mips);
+    auto content_image = *image;
+    content_image.flags &= ~VOX_GRAPHITE_IMAGE_FORCE_MSAA;
+    auto upload = image_upload_cache.prepare(content_image, upload_width, upload_height, prepared.needs_mips);
     sk_sp<SkImage> texture = upload.texture;
     if (!texture && (image->flags & 4)) {
         // Flag 16 marks full-resolution 4:4:4 chroma planes.
@@ -384,6 +401,7 @@ int vox_graphite_draw_image_pixels(uint8_t* pixels, int width, int height,
     PreparedImageDraw prepared;
     plan_image_draw(image, prepared);
     if (!prepare_image_texture(recorder.get(), image, prepared)) return 0;
+    if (image->flags & VOX_GRAPHITE_IMAGE_FORCE_MSAA) force_msaa_render_pass(canvas, width, height);
     draw_prepared_image(canvas, image, prepared);
     int result = read_pixels(gpu, recorder.get(), surface.get(), info, pixels, pitch);
     if (result) {
@@ -434,8 +452,12 @@ int vox_graphite_draw_image_tiles(uint8_t* pixels, int width, int height,
                 draw.texture = earlier.texture;
         }
         if (!draw.texture && !prepare_image_texture(recorder.get(), image, draw)) return 0;
+    }
+    if (std::any_of(images, images + count, [](auto const& image) { return image.flags & VOX_GRAPHITE_IMAGE_FORCE_MSAA; }))
+        force_msaa_render_pass(canvas, width, height);
+    for (int index = 0; index < count; ++index) {
         canvas->save();
-        draw_prepared_image(canvas, image, draw);
+        draw_prepared_image(canvas, &images[index], prepared[static_cast<size_t>(index)]);
         canvas->restore();
     }
     int result = read_pixels(gpu, recorder.get(), surface.get(), info, pixels, pitch);
@@ -448,19 +470,7 @@ int vox_graphite_draw_image_tiles(uint8_t* pixels, int width, int height,
 
 static void draw_shape_on_canvas(SkCanvas* canvas, VoxGraphiteShape const& shape, int width, int height)
 {
-    if (shape.force_msaa) {
-        // Graphite multisamples a render pass that contains a path. A
-        // transparent one changes no pixel.
-        SkPaint noop;
-        noop.setAntiAlias(true);
-        noop.setShader(SkShaders::Color(SK_ColorTRANSPARENT));
-        SkPathBuilder path;
-        path.moveTo(0, 0);
-        path.cubicTo(width, height * 0.1f, 0, height, width, height);
-        path.lineTo(width * 0.5f, height * 0.2f);
-        path.close();
-        canvas->drawPath(path.detach(), noop);
-    }
+    if (shape.force_msaa) force_msaa_render_pass(canvas, width, height);
     SkMatrix matrix;
     matrix.set9(shape.matrix);
     canvas->setMatrix(matrix);

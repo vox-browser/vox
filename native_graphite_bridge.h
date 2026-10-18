@@ -3,6 +3,8 @@
 
 #include <stdint.h>
 
+enum { VOX_GRAPHITE_IMAGE_FORCE_MSAA = 32 };
+
 // Only pixels and plain values cross this boundary. The compatibility GPU
 // backend owns its Skia objects independently of the translated engine's Skia.
 typedef struct {

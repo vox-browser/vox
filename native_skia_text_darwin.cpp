@@ -6,6 +6,7 @@
 #include <dlfcn.h>
 #include "native_graphite_bridge.h"
 #include "native_chromium_raster_phase.h"
+#include "native_chromium_raster_rows.h"
 #import <Metal/Metal.h>
 #include "include/gpu/ganesh/GrDirectContext.h"
 #include "include/gpu/ganesh/SkSurfaceGanesh.h"
@@ -1397,6 +1398,9 @@ static bool tiles_touch_disjoint_pixels(SkMatrix const& matrix, float const* til
 // GPU painter draws them in turn over one raster spanning the regions that
 // path would rasterize, so the tiles share one backdrop upload and readback.
 // Returns 0 when it cannot, and the caller draws the tiles one at a time.
+static std::vector<char> chromium_layer_msaa_rows(long top, int height,
+    float page_y, float scroll_y, float scale);
+
 extern "C" int ladybird_v_skia_draw_rgba_image_tiles(CGContextRef destination,
     uint8_t const* source_pixels, int image_width, int image_height,
     int image_pitch, float const* tiles, int tile_count, float clip_x,
@@ -1461,6 +1465,12 @@ extern "C" int ladybird_v_skia_draw_rgba_image_tiles(CGContextRef destination,
         / static_cast<float>(region.width());
     auto raster_scale_y = static_cast<float>(raster_height)
         / static_cast<float>(region.height());
+    auto rows = chromium_layer_msaa_rows(region.top, raster_height, page_y, scroll_y, destination_scale);
+    // Multisampling exposes raster-extent rounding for fractional translations.
+    // Preserve each tile's existing raster in that case.
+    bool fractional_translation = matrix.getTranslateX() * destination_scale != std::floor(matrix.getTranslateX() * destination_scale)
+        || matrix.getTranslateY() * destination_scale != std::floor(matrix.getTranslateY() * destination_scale);
+    if (fractional_translation && std::find(rows.begin(), rows.end(), char(1)) != rows.end()) return 0;
     std::vector<uint32_t> pixels(static_cast<size_t>(raster_width)
         * static_cast<size_t>(raster_height));
     bool has_background = (image_flags & 2) && copy_backdrop(destination,
@@ -1490,9 +1500,14 @@ extern "C" int ladybird_v_skia_draw_rgba_image_tiles(CGContextRef destination,
         std::copy_n(raster_transform, 9, descriptor.matrix);
         descriptors.push_back(descriptor);
     }
-    if (!draw(reinterpret_cast<uint8_t*>(pixels.data()), raster_width, raster_height,
-            raster_width * 4, has_background, descriptors.data(), static_cast<int>(descriptors.size())))
-        return 0;
+
+    if (!vox_draw_with_msaa_rows(pixels, raster_width, rows, [&](auto& target, bool msaa) {
+            for (auto& descriptor : descriptors)
+                descriptor.flags = (descriptor.flags & ~VOX_GRAPHITE_IMAGE_FORCE_MSAA)
+                    | (msaa ? VOX_GRAPHITE_IMAGE_FORCE_MSAA : 0);
+            return draw(reinterpret_cast<uint8_t*>(target.data()), raster_width, raster_height,
+                raster_width * 4, has_background, descriptors.data(), static_cast<int>(descriptors.size())) != 0;
+        })) return 0;
     return composite_pixels(destination, std::move(pixels), raster_width, raster_height,
         static_cast<float>(region.left), canvas_height - static_cast<float>(region.bottom),
         static_cast<float>(region.width()), static_cast<float>(region.height()), has_background);
@@ -1560,8 +1575,14 @@ extern "C" int ladybird_v_skia_draw_rgba_image(CGContextRef destination,
         std::copy_n(s_image_color_profile, 10, descriptor.color_profile);
         if (clip_radii) std::copy_n(clip_radii, 8, descriptor.clip + 4);
         raster_matrix(matrix, region, raster_scale_x, raster_scale_y).get9(descriptor.matrix);
-        if (auto draw = graphite_image_draw(); draw && draw(reinterpret_cast<uint8_t*>(pixels.data()),
-                raster_width, raster_height, raster_width * 4, has_background, &descriptor)) {
+        auto rows = chromium_layer_msaa_rows(region.top, raster_height, page_y, scroll_y, destination_scale);
+        auto draw = graphite_image_draw();
+        if (draw && vox_draw_with_msaa_rows(pixels, raster_width, rows, [&](auto& target, bool msaa) {
+                descriptor.flags = (descriptor.flags & ~VOX_GRAPHITE_IMAGE_FORCE_MSAA)
+                    | (msaa ? VOX_GRAPHITE_IMAGE_FORCE_MSAA : 0);
+                return draw(reinterpret_cast<uint8_t*>(target.data()), raster_width, raster_height,
+                    raster_width * 4, has_background, &descriptor) != 0;
+            })) {
             return composite_pixels(destination, std::move(pixels), raster_width, raster_height,
                 static_cast<float>(region.left), canvas_height - static_cast<float>(region.bottom),
                 static_cast<float>(region.width()), static_cast<float>(region.height()), has_background);
@@ -1873,11 +1894,17 @@ static SkRRect rounded_rect_from_data(float const* data)
 // [0, spacing + 1) and tile k after it [k * spacing + 1, (k + 1) * spacing + 1).
 static bool row_in_msaa_tile(long row)
 {
-    if (s_msaa_tiles.empty() || row < 0)
-        return false;
-    long spacing = s_msaa_tile_rows - 2;
-    long tile = row <= spacing ? 0 : (row - 1) / spacing;
-    return std::binary_search(s_msaa_tiles.begin(), s_msaa_tiles.end(), static_cast<int>(tile));
+    return vox_chromium_row_uses_msaa(row, s_msaa_tiles, s_msaa_tile_rows);
+}
+
+static std::vector<char> chromium_layer_msaa_rows(long top, int height,
+    float page_y, float scroll_y, float scale)
+{
+    if (s_msaa_tiles.empty()) return {};
+    long first_row = std::lround((top - page_y + scroll_y - s_raster_origin_y) * scale);
+    std::vector<char> rows(static_cast<size_t>(height));
+    for (int row = 0; row < height; ++row) rows[row] = row_in_msaa_tile(first_row + row);
+    return rows;
 }
 
 static void clip_out_rects(SkCanvas* canvas)
