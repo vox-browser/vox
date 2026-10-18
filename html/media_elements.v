@@ -940,9 +940,9 @@ pub fn (mut controls MediaControls) create_shadow_tree() {
 			for class_name in ['play-pause-icon', 'timeline-fill', 'timestamp', 'volume-area',
 				'volume-fill', 'mute-button', 'fullscreen-icon', 'placeholder-circle'] {
 				if class_name in ['fullscreen-icon', 'placeholder-circle'] && !is_video { continue }
-				tag_name := if class_name == 'fullscreen-icon' { 'button' } else { 'div' }
+				tag_name := if class_name in ['mute-button', 'fullscreen-icon'] { 'button' } else { 'div' }
 				mut child := dom.create_element(document, tag_name, ns_html, none, none, false) or { continue }
-				child.set_attribute_value('class', class_name)
+				child.set_attribute_value('class', if class_name == 'mute-button' { 'control-button mute-button' } else { class_name })
 				mut parent_node := if class_name == 'placeholder-circle' { container.as_node() } else { bar.as_node() }
 				if class_name == 'timeline-fill' {
 					mut track := dom.create_element(document, 'div', ns_html, none, none, false) or { panic(err) }
@@ -1062,6 +1062,15 @@ pub fn (mut controls MediaControls) set_up_event_listeners() {
 			fn [controls_pointer] (event &dom.Event) bool {
 				controls := unsafe { &MediaControls(controls_pointer) }
 				return media_controls_state_handler(controls, event)
+			})
+	}
+	if button := controls.dom_.mute_button {
+		controls.add_event_listener(unsafe { &dom.EventTarget(button.as_node()) }, 'click', .no,
+			fn [controls_pointer] (_ &dom.Event) bool {
+				controls := unsafe { &MediaControls(controls_pointer) }
+				mut media := controls.media
+				media.set_muted(!media.muted())
+				return true
 			})
 	}
 	if controls.dom_.fullscreen_icon != none {

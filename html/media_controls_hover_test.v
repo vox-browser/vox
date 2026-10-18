@@ -86,7 +86,7 @@ fn test_video_hover_events_follow_media_and_bar_targets_without_hiding_on_bar_ex
 	defer { controls.remove_event_listeners(); document.finalize() }
 	bar := controls.dom_.control_bar or { panic('Missing bar') }
 	bar_target := unsafe { &dom.EventTarget(bar.as_node()) }
-	assert controls.registered_event_listeners_.len == 19
+	assert controls.registered_event_listeners_.len == 20
 	for name in ['mouseenter', 'mousemove', 'mouseleave'] {
 		assert controls.registered_event_listeners_.filter(it.target == media.event_target() && it.event_name == name).len == 1
 	}
@@ -165,7 +165,7 @@ fn test_hover_cleanup_preserves_other_listeners_and_skips_audio_or_missing_contr
 	assert probe.outside_events == 1 && !controls.hovering_controls
 	mut audio_document, audio, mut audio_controls := hover_controls_owner('audio')!
 	defer { audio_controls.remove_event_listeners(); audio_document.finalize() }
-	assert audio_controls.registered_event_listeners_.len == 13
+	assert audio_controls.registered_event_listeners_.len == 14
 	hover_controls_send(audio.event_target(), 'mouseleave', false)
 	hover_controls_assert_visible(audio_controls, true)
 	mut ownerless := HTMLMediaElement.create(none, dom.URL{value: 'https://ownerless-hover.example/'})
