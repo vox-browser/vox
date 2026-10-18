@@ -24,8 +24,8 @@ fn test_chromium_partial_border_uses_overlapping_local_rectangles_and_keeps_layo
 	assert append_chromium_partial_border(mut commands, &box, box.border_colors, BoxRadii{}, LayoutRect{80, 40.5, 12, 12}, 1)
 	assert commands.len == 2
 	assert commands[0].kind == 'fill_rect' && commands[0].antialiased_rect
-	assert [commands[0].x, commands[0].y, commands[0].width, commands[0].height] == [f64(10), 0, 2, 12]
-	assert [commands[1].x, commands[1].y, commands[1].width, commands[1].height] == [f64(0), 10, 12, 2]
+	assert [commands[0].x, commands[0].y, commands[0].width, commands[0].height] == [f64(0), 10, 12, 2]
+	assert [commands[1].x, commands[1].y, commands[1].width, commands[1].height] == [f64(10), 0, 2, 12]
 	assert commands[0].opacity == 1 && commands[0].force_dark_role == .border
 	assert commands[0].local_border_data == commands[1].local_border_data
 	assert commands[0].local_border_data.origin_y == 40.5
@@ -96,4 +96,20 @@ fn test_chromium_partial_border_replay_reads_live_own_and_ancestor_transforms() 
 		partial_border_assert_close(old[0].transform, expected)
 		assert source[0].transform == [6]f64{}
 	}
+}
+
+fn test_chromium_partial_border_paints_horizontal_sides_before_vertical_sides() {
+ base:=partial_border_box()
+ for edges in [BoxEdges{2,2,2,0},BoxEdges{0,2,2,2},BoxEdges{2,0,2,0}] {
+  box:=BlockBox{...base,border:edges}
+  mut commands:=[]PaintCommand{}
+  assert append_chromium_partial_border(mut commands,&box,box.border_colors,BoxRadii{},LayoutRect{80,40.5,12,12},1)
+  mut sides:=[]string{}
+  for command in commands {
+   sides<<if command.width==12 {if command.y==0 {'top'} else {'bottom'}} else {if command.x==0 {'left'} else {'right'}}
+  }
+  if edges.top>0 && edges.right>0 {assert sides==['top','bottom','right']}
+  else if edges.left>0 {assert sides==['bottom','right','left']}
+  else {assert sides==['top','bottom']}
+ }
 }

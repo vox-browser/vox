@@ -102,7 +102,9 @@ fn append_chromium_partial_border(mut commands []PaintCommand, box &BlockBox,
 	}
 	w := math.round(rect.width)
 	h := math.round(rect.height)
-	for index, width in widths {
+	// Equal opaque solid sides use Blink's non-adjacent paint priority.
+	for index in [0, 2, 1, 3]! {
+		width := widths[index]
 		if width <= 0 { continue }
 		side := match index {
 			0 { LayoutRect{0, 0, w, width} }
