@@ -20,7 +20,7 @@ import statistics
 import subprocess
 import time
 
-from measure_browser_instructions import crop_document_viewport, fresh_vox_cache, stop_process
+from measure_browser_instructions import VOX_CHROME_HEIGHT, crop_document_viewport, fresh_vox_cache, stop_process
 from measure_browser_render import REPO, native_summary, scripting_summary, sha256
 from process_instruction_counts import MacCounters, RusageInfoV4
 
@@ -131,7 +131,7 @@ def run_memory_sample(args, label, index, binary, extra, api=None):
         if library.is_file():
             env["DYLD_LIBRARY_PATH"] = str(library.parent)
         command = [str(binary), *extra, "--window-width", str(args.width),
-                   "--window-height", str(args.height + 112),
+                   "--window-height", str(args.height + VOX_CHROME_HEIGHT),
                    "--screenshot", str(window), args.url]
         with log_path.open("w") as log:
             launched_at = time.monotonic()

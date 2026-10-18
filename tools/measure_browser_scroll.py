@@ -129,7 +129,7 @@ def main():
         args.trigger_file.unlink(missing_ok=True)
     trigger_line = f"Vox scroll frame: {args.trigger_frame} "
     command = [str(binary), "--enable-javascript", "--window-width", str(args.width),
-               "--window-height", str(args.height + 112)]
+               "--window-height", str(args.height + 80)]
     if args.capture:
         command += ["--screenshot", str((args.output / "window.png").resolve())]
     command.append(args.url)

@@ -28,6 +28,8 @@ import urllib.request
 from process_instruction_counts import MacCounters, ProcessTreeCounter, CounterSampler
 
 REPO = Path(__file__).resolve().parents[1]
+VOX_TOOLBAR_HEIGHT = 56
+VOX_CHROME_HEIGHT = VOX_TOOLBAR_HEIGHT + 24
 
 
 def fingerprint_files(paths):
@@ -232,16 +234,16 @@ def stop_process(process):
 
 
 def crop_document_viewport(window, screenshot, width, height):
-    # Match capture_screenshot.sh: 88px toolbar, 24px status bar, Retina scale.
+    # Match capture_screenshot.sh: 56px toolbar (diagnostics hidden), 24px status bar, Retina scale.
     header = window.read_bytes()[:24]
     if header[:8] != b"\x89PNG\r\n\x1a\n" or len(header) != 24:
         raise RuntimeError(f"Invalid native PNG: {window}")
     pixels_wide, pixels_high = struct.unpack("!II", header[16:24])
     scale = pixels_wide // width
-    if scale < 1 or pixels_wide % width or (88 + height) * scale > pixels_high:
+    if scale < 1 or pixels_wide % width or (VOX_TOOLBAR_HEIGHT + height) * scale > pixels_high:
         raise RuntimeError("Native capture does not contain the requested document viewport")
     subprocess.run(["sips", "--cropToHeightWidth", str(height * scale), str(width * scale),
-                    "--cropOffset", str(88 * scale), "0", str(window), "--out", str(screenshot)],
+                    "--cropOffset", str(VOX_TOOLBAR_HEIGHT * scale), "0", str(window), "--out", str(screenshot)],
                    check=True, stdout=subprocess.DEVNULL)
     if scale != 1:
         subprocess.run(["sips", "--resampleHeightWidth", str(height), str(width), str(screenshot)],
@@ -266,7 +268,7 @@ def fresh_vox_cache(template, scratch_dir=None):
 
 def vox_launch_command(args, binary, window_screenshot):
     return [str(binary), *getattr(args, "vox_arg", []),
-            "--window-width", str(args.width), "--window-height", str(args.height + 112),
+            "--window-width", str(args.width), "--window-height", str(args.height + VOX_CHROME_HEIGHT),
             "--screenshot", str(window_screenshot), args.url]
 
 

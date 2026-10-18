@@ -41,10 +41,12 @@ cleanup() {
 }
 trap cleanup EXIT HUP INT TERM
 
-# The native window includes 88px of toolbar and 24px of status chrome around the requested
+# The native window includes an 88px tab strip and toolbar (diagnostics hidden) and 24px status bar around the requested
 # document viewport. The browser snapshots its Cocoa content view directly, avoiding macOS Screen
 # Recording permission and excluding the title bar by construction.
-window_height=$((height + 112))
+toolbar_height=88
+chrome_height=$((toolbar_height + 24))
+window_height=$((height + chrome_height))
 launch_window_height=$window_height
 needs_stitching=0
 # Start stitching conservatively before an AppKit window can hit the visible
@@ -70,7 +72,7 @@ if [ "$needs_stitching" -eq 1 ]; then
 	# strip). Keep the window at 1000px, below the display-dependent AppKit cap,
 	# and stitch only non-overlapping document ranges. The final strip starts at
 	# the maximum scroll offset, so the bottom of the logical viewport is retained.
-    segment_height=$((launch_window_height - 112))
+    segment_height=$((launch_window_height - chrome_height))
     max_scroll=$((height - segment_height))
     if [ "$max_scroll" -lt 0 ]; then
         max_scroll=0
@@ -120,7 +122,7 @@ if [ "$needs_stitching" -eq 1 ]; then
                 # Relaunch at the discovered cap; otherwise both Y coordinates
                 # and the browser status bar would be compressed in every strip.
                 launch_window_height=$captured_logical_height
-                segment_height=$((captured_logical_height - 112))
+                segment_height=$((captured_logical_height - chrome_height))
                 if [ "$segment_height" -le 0 ]; then
                     echo "Captured window leaves no document viewport" >&2
                     exit 1
@@ -133,13 +135,13 @@ if [ "$needs_stitching" -eq 1 ]; then
                 continue
             fi
         fi
-        required_height=$(((88 + local_y + take) * scale))
+        required_height=$(((toolbar_height + local_y + take) * scale))
         if [ "$captured_height" -lt "$required_height" ]; then
             echo "Unexpected tall screenshot strip geometry: ${captured_width}x${captured_height}" >&2
             exit 1
         fi
         chunk="$capture_tmp/chunk-$segment_index.png"
-        magick "$window_png" -crop "$((width * scale))x$((take * scale))+0+$(((88 + local_y) * scale))" \
+        magick "$window_png" -crop "$((width * scale))x$((take * scale))+0+$(((toolbar_height + local_y) * scale))" \
             +repage -resize "${width}x${take}!" "$chunk"
         if [ "$segment_index" -eq 0 ]; then
             cp "$chunk" "$assembled"
@@ -183,7 +185,7 @@ if [ "$scale" -le 0 ] || [ $((width * scale)) -ne "$captured_width" ]; then
     exit 1
 fi
 
-crop_top=$((88 * scale))
+crop_top=$((toolbar_height * scale))
 crop_width=$((width * scale))
 crop_height=$((height * scale))
 expected_window_height=$((window_height * scale))

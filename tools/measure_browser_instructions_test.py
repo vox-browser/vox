@@ -227,10 +227,10 @@ class VoxLaunchArgumentTests(unittest.TestCase):
         return SimpleNamespace(binary=Path('/test/Vox'), timeout=5, width=1024, height=768,
                                url='http://127.0.0.1:49171/', sample_interval=.005)
 
-    def test_default_argv_keeps_historical_capture_options(self):
+    def test_default_argv_reserves_the_compact_browser_chrome(self):
         args = self.args()
         self.assertEqual(measurement.vox_launch_command(args, args.binary, '/capture.png'),
-                         ['/test/Vox', '--window-width', '1024', '--window-height', '880',
+                         ['/test/Vox', '--window-width', '1024', '--window-height', '848',
                           '--screenshot', '/capture.png', args.url])
 
     def test_explicit_options_remain_literal_and_precede_capture_and_url(self):

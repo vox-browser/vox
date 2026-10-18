@@ -27,7 +27,10 @@ import time
 import urllib.request
 
 from compare_browser_memory import ForegroundControl, activate_browser
-from measure_browser_instructions import chrome_debugger_endpoint, crop_document_viewport, fresh_vox_cache, stop_process
+from measure_browser_instructions import (
+    VOX_CHROME_HEIGHT, VOX_TOOLBAR_HEIGHT, chrome_debugger_endpoint,
+    crop_document_viewport, fresh_vox_cache, stop_process,
+)
 from measure_browser_render import scripting_summary
 from probe_frozen_github_chrome import ReplayCDP
 from process_instruction_counts import CounterSampler, MacCounters, RusageInfoV4
@@ -309,7 +312,7 @@ def require_png_scale(path, width, height, scale):
 
 def crop_native_viewport(window, raw, logical, scale):
     subprocess.run(['sips', '--cropToHeightWidth', str(round(768 * scale)), str(round(1024 * scale)),
-        '--cropOffset', str(round(88 * scale)), '0', str(window), '--out', str(raw)],
+        '--cropOffset', str(round(VOX_TOOLBAR_HEIGHT * scale)), '0', str(window), '--out', str(raw)],
         check=True, stdout=subprocess.DEVNULL)
     require_png_scale(raw, 1024, 768, scale)
     shutil.copyfile(raw, logical)
@@ -554,7 +557,7 @@ def vox_sample(args, prefix, screen):
             dict(name='globe', selector='img.central-featured-logo', limit=1, attributes=['src', 'srcset'])
         ]), indent=2) + '\n')
         env = vox_environment(args, cache, screen, prefix)
-        command = [str(args.vox), '--window-width', '1024', '--window-height', '880',
+        command = [str(args.vox), '--window-width', '1024', '--window-height', str(768 + VOX_CHROME_HEIGHT),
             '--screenshot', str(window), URL]
         with log_path.open('w') as log:
             started = time.monotonic()
@@ -613,7 +616,7 @@ def vox_sample(args, prefix, screen):
                 scripting = scripting_summary(log_path.read_text())
                 if scripting is None or any(scripting[key] for key in ('enabled', 'runtime', 'sources', 'source_bytes', 'preloaded_scripts')):
                     raise RuntimeError('Vox scripting disabled audit failed')
-                raster_dimensions = require_png_scale(window, 1024, 880, screen['scale'])
+                raster_dimensions = require_png_scale(window, 1024, 768 + VOX_CHROME_HEIGHT, screen['scale'])
                 raw_viewport = prefix.with_suffix('.viewport-2x.png')
                 crop_native_viewport(window, raw_viewport, screenshot, screen['scale'])
                 return dict(engine='vox', command=command, memory=summary, samples=counter.samples,

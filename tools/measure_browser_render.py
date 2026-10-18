@@ -21,6 +21,7 @@ import subprocess
 import time
 
 from measure_browser_instructions import (
+    VOX_CHROME_HEIGHT,
     crop_document_viewport,
     fresh_vox_cache,
     parse_native_counters,
@@ -83,7 +84,7 @@ def run_sample(args, label, index, binary, extra):
             env["DYLD_LIBRARY_PATH"] = str(library.parent)
         library_hash = sha256(library) if library.is_file() else None
         command = [str(binary), *extra, "--window-width", str(args.width),
-                   "--window-height", str(args.height + 112),
+                   "--window-height", str(args.height + VOX_CHROME_HEIGHT),
                    "--screenshot", str(window), args.url]
         with log_path.open("w") as log:
             started = time.monotonic()

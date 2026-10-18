@@ -18,6 +18,7 @@ import time
 import urllib.request
 
 from measure_browser_instructions import (
+    VOX_CHROME_HEIGHT,
     CDP, chrome_debugger_endpoint, crop_document_viewport, fresh_vox_cache, stop_process,
 )
 from process_instruction_counts import CounterSampler, MacCounters, RusageInfoV4
@@ -138,7 +139,7 @@ def measure_vox(args, prefix):
         if args.diagnostic_library:
             env['DYLD_INSERT_LIBRARIES'] = str(args.diagnostic_library.resolve())
         command = [str(args.binary), *args.vox_arg, '--window-width', str(args.width),
-                   '--window-height', str(args.height + 112), '--screenshot', str(window), args.url]
+                   '--window-height', str(args.height + VOX_CHROME_HEIGHT), '--screenshot', str(window), args.url]
         with log_path.open('w') as log:
             started = time.monotonic()
             process = subprocess.Popen(command, cwd=REPO, env=env, stdout=log,
