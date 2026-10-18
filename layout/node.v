@@ -665,6 +665,25 @@ fn layout_form_text_control_is_mutable(element &dom.Element) bool {
 // https://drafts.csswg.org/css-ui/#propdef-user-select
 // Node::user_select_used_value().
 pub fn (n &Node) user_select_used_value() css.UserSelect {
+	if value := n.user_select_local_used_value() { return value }
+	if parent := n.parent() {
+		return inherited_user_select_used_value(parent.user_select_used_value())
+	}
+	return .text
+}
+
+// Preorder attachment already resolved the parent's value. Reuse that result
+// rather than rechecking editing hosts and form controls along every ancestor.
+fn (n &Node) user_select_used_value_with_parent(parent_used css.UserSelect) css.UserSelect {
+	if value := n.user_select_local_used_value() { return value }
+	return inherited_user_select_used_value(parent_used)
+}
+
+fn inherited_user_select_used_value(parent_used css.UserSelect) css.UserSelect {
+	return if parent_used in [.all, .none_] { parent_used } else { .text }
+}
+
+fn (n &Node) user_select_local_used_value() ?css.UserSelect {
 	computed_value := n.computed_values().user_select()
 	if dom_node := n.dom_node() {
 		if dom_node.is_editing_host() {
@@ -682,16 +701,7 @@ pub fn (n &Node) user_select_used_value() css.UserSelect {
 	if n.is_generated_for_before_pseudo_element() || n.is_generated_for_after_pseudo_element() {
 		return .none_
 	}
-	if parent := n.parent() {
-		parent_used_value := parent.user_select_used_value()
-		if parent_used_value == .all {
-			return .all
-		}
-		if parent_used_value == .none_ {
-			return .none_
-		}
-	}
-	return .text
+	return none
 }
 
 pub fn (n &Node) containing_block() ?&Box {

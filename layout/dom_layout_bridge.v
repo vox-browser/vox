@@ -9,17 +9,22 @@ import css
 // layout node's data (dom_node / parent / is_anonymous / is_text_node / display) and stashing an opaque
 // handle to the real layout.Node. This retires the DOM's Layout::Node boundary stubs.
 
+fn attachment_parent_user_select(root &Node) css.UserSelect {
+ if parent := root.parent() { return parent.user_select_used_value() }
+ return .text
+}
+
 // Attach populated LayoutNode placeholders onto the DOM for the laid-out tree rooted at `root_box`.
 pub fn attach_layout_nodes(root_box &Node) &dom.LayoutNode {
 	mut placeholders := map[u64]&dom.LayoutNode{}
 	mut inline_pieces := map[u64][]InlineBoxPiece{}
-	return attach_layout_node_recursive(root_box, none, none, true, mut placeholders, mut inline_pieces, false)
+	return attach_layout_node_recursive(root_box, none, none, attachment_parent_user_select(root_box), true, mut placeholders, mut inline_pieces, false)
 }
 
 pub fn attach_layout_nodes_with_state(root_box &Node, state &LayoutState) &dom.LayoutNode {
 	mut placeholders := map[u64]&dom.LayoutNode{}
 	mut inline_pieces := map[u64][]InlineBoxPiece{}
-	return attach_layout_node_recursive(root_box, none, state, true, mut placeholders, mut inline_pieces, false)
+	return attach_layout_node_recursive(root_box, none, state, attachment_parent_user_select(root_box), true, mut placeholders, mut inline_pieces, false)
 }
 
 // Formatting needs the complete DOM/layout association before geometry is
@@ -38,7 +43,7 @@ fn attach_layout_nodes_before_layout(root_box &Node) &dom.LayoutNode {
 fn prepare_dom_layout_attachment(root_box &Node) PreparedDOMLayoutAttachment {
 	mut placeholders := map[u64]&dom.LayoutNode{}
 	mut inline_pieces := map[u64][]InlineBoxPiece{}
-	root := attach_layout_node_recursive(root_box, none, none, false, mut placeholders,
+	root := attach_layout_node_recursive(root_box, none, none, attachment_parent_user_select(root_box), false, mut placeholders,
 		mut inline_pieces, true)
 	return PreparedDOMLayoutAttachment{
 		root: root
@@ -51,7 +56,7 @@ fn commit_dom_layout_attachment(root_box &Node, state &LayoutState, prepared Pre
 	// follow the same tree order as a fresh attachment.
 	mut placeholders := map[u64]&dom.LayoutNode{}
 	mut inline_pieces := map[u64][]InlineBoxPiece{}
-	return attach_layout_node_recursive(root_box, none, state, true, mut placeholders,
+	return attach_layout_node_recursive(root_box, none, state, attachment_parent_user_select(root_box), true, mut placeholders,
 		mut inline_pieces, true)
 }
 
@@ -298,11 +303,11 @@ fn collect_uncached_dom_visual_lines(box &Node, state &LayoutState) []dom.Visual
 	return result
 }
 
-fn attach_layout_node_recursive(box &Node, parent_placeholder ?&dom.LayoutNode, state ?&LayoutState, collect_text_chunks bool, mut placeholders map[u64]&dom.LayoutNode, mut inline_pieces map[u64][]InlineBoxPiece, retain_live_nodes bool) &dom.LayoutNode {
+fn attach_layout_node_recursive(box &Node, parent_placeholder ?&dom.LayoutNode, state ?&LayoutState, parent_user_select css.UserSelect, collect_text_chunks bool, mut placeholders map[u64]&dom.LayoutNode, mut inline_pieces map[u64][]InlineBoxPiece, retain_live_nodes bool) &dom.LayoutNode {
 	mut visibility := dom.CSSVisibility_.visible
 	mut content_visibility := dom.CSSContentVisibility_.visible
 	mut overflow_x := dom.CSSOverflow_.visible
-	user_select_none := box.user_select_used_value() == .none_
+	user_select := box.user_select_used_value_with_parent(parent_user_select)
 	if styled := box.as_node_with_style() {
 		visibility = visibility_to_dom_for_layout(styled.computed_values().visibility())
 		content_visibility = content_visibility_to_dom_for_layout(styled.computed_values().content_visibility())
@@ -346,7 +351,7 @@ fn attach_layout_node_recursive(box &Node, parent_placeholder ?&dom.LayoutNode, 
 			overflow_x_: overflow_x
 			visibility_: visibility
 			content_visibility_: content_visibility
-			user_select_none_: user_select_none
+			user_select_none_: user_select == .none_
 			white_space_collapse_is_not_collapse_: box.computed_values().white_space_collapse() != .collapse
 			layout_handle: voidptr(box)
 			find_matching_text_callback: find_matching_layout_text
@@ -481,7 +486,7 @@ fn attach_layout_node_recursive(box &Node, parent_placeholder ?&dom.LayoutNode, 
 		}
 	}
 	for child in box.children() {
-		attach_layout_node_recursive(child, placeholder, state, collect_text_chunks, mut placeholders, mut inline_pieces, retain_live_nodes)
+		attach_layout_node_recursive(child, placeholder, state, user_select, collect_text_chunks, mut placeholders, mut inline_pieces, retain_live_nodes)
 	}
 	return placeholder
 }
