@@ -2208,6 +2208,15 @@ evidence](docs/translation-audit/NATIVE_MEDIA_WHEEL_RAW_HANDLER.md).
   Strict preparation rejects control1/2/1 vs candidate1/3/1; reader result1/actualexit0 retained.
   Pixel bands exact outside skeleton; focused viewport exact. No broad/bundle/GC pass or carry.
   Frozen124/control/broad/carry0/app and canonical/GUI preserved; isolate lifetime-only next; Chrome open.
+  Callback-lifetime round133:10complete features/57authoredhunks/22runtimepaths/onehelper.
+  All46 originalcases eachGC/20941Boehm/20914none;common60/config;weak-owner assertions unchanged.
+  Local16 full pipelines -0.694940%/2wins;all6actual0,slower third candidate retained.
+  Page 16,692,671,695→16,628,638,052;30/30wins;point/credit64,033,643.
+  PairedCI[49,095,577,70,017,207.5];all60real0/PNGs;same1/2/1prep;fixed skeleton bands only.
+  Broad87bothGC/174executions;19screens16exact;focused viewport exact;36actual4e loader proofs.
+  Initial screenshot permission/validation/bundle failures retained;unfinished screenshots only resumed.
+  Entire-program independent C/source audit;120inputs/37includes;profiles diagnostic only.
+  Frozen133 control/broad/app;carry0;GC1+override2;Root/canonical/GUI preserved;Chrome parity open.
 - Outside instruction-count optimization, run broad regression suites once per
   ten completed fixes, not after every fix.
   Broad suites include full translation/package test batches, the full LibJS AST

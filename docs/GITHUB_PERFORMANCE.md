@@ -12893,6 +12893,123 @@ cohort remains to declare and run. Completed132 checks/primaries will not be
 repeated. Chrome parity remains unestablished: the older Chrome count has a
 different endpoint and hydrated content.
 
+## Keep temporary callback ownership outside retained document graphs
+
+Round133 isolates ten complete authored callback-lifetime/embedder-policy features
+from the rejected132 geometry/compositor/paged-store composition. Against accepted
+frozen124, **57 exact authored hunks change22 runtime paths and add one helper**:
+`8c026300`, `42dce2c9`, `fe105d39`, `48e22bd2`, `6f2bb573`, `16cf161b`,
+`582e160c`, `1080623f`, `632080ca` and `30437cd9`. The changes cover embedder
+scripting policy, cursor timers, insertion/parser stacks, rule-cache and custom
+function scopes, invalidation visitors/collectors, media-rule traversal and style
+completion/longhand callbacks. Every original authored before/after file is
+reconstructed. The exact accepted110 selector and116 event-count accessor
+migrations preserve their existing storage semantics. No Root runtime edit or
+individual component performance credit is claimed; the features/tests were
+already committed separately.
+
+All **46 original cases pass per GC mode**, with **20,941 Boehm assertions** and
+**20,914 no-GC assertions** including internal checks. The original zero-owner
+expectations, weak-owner headers and expected values stay intact. Groups are
+HTML19 (688/679 assertions), DOM11 (74/67) and CSS16 (20,179/20,168). Common12
+cases including the inactive diagnostic pass60 assertions per configuration;
+control reuses identical124-final successful evidence. The local gate verifies
+all original contracts before any local build/sample.
+
+Three fixed alternating local pairs each measure16 complete fresh public HTML
+parse/layout/display-list/paint-command/hit-phase/finalize pipelines, using the
+unchanged64 Unicode paragraphs plus128 discarded-indentation blocks. All six
+actual exits are0 and checksums are7,963,486,608. Setup, eight warmups, forced GC,
+192 independent DOM text checks and final assertions stay outside the counter.
+Local medians are **32,146,968,480 → 31,923,566,278** instructions,
+**0.69494018% fewer**, **2/3 wins**. All six samples remain,
+including the slower third candidate. Local counts receive no page credit.
+Normal C-O2/Boehm/default marker1 and the automatic4GiB hint at2,048 elements
+remain unchanged; the smaller local scene does not force expansion. Standalone
+local/focused/profile binaries do not link the native browser helper.
+
+Native compilation, signing, persistence and headless startup actually pass0;
+the browser loads the frozen4e helper. The regular candidate SHA256 is
+`58431bb58730059f3d64110476abd8b57b5f2286d7f100faf7a12f5d009122da`. The complete normal compiled
+C matches independent whole-app generation after established compiler/source/embed
+identities and four byte-identical helper reorderings. No body, type or global
+is excluded. All493 builtin and176 protected encoder/filter/arena bodies match
+control;120 native inputs,37 frozen includes and exact native arguments are
+verified. Compiled C SHA256 is
+`241ff0d41471ea0783ab50a6bb7615f612ac827308ea75ade227be906098289e`; normalized whole-program SHA256
+is `d5b99f51c4e9bf3473503215040e3eea6f53e43c3f5e7012b9634e71e95acad1`. Changed Timer layouts
+may change compiler-generated defaults; this audit authenticates the complete
+source composition instead of claiming every control declaration is identical.
+The public decoder, filtering and tokenizer arenas remain unchanged.
+
+Both full-process C-O1/Boehm/one-marker profiles exit0 with `-profile-no-inline`.
+Main remains enabled without filter/reset. Mechanism call counts are diagnostic
+only, without timing or hardware instruction credit:
+
+| Profile calls | Before | Candidate |
+| --- | ---: | ---: |
+| `layout__opt133_complete_public_document_layout` | 25 | 25 |
+| `html__parse_document` | 26 | 26 |
+| `layout__run_document_layout` | 26 | 26 |
+| `dom__Document_record_display_list` | 26 | 26 |
+| `css__StyleScope_make_rule_cache_for_cascade_origin` | 78 | 78 |
+| `css__style_scope_cache_style_rule` | 0 | 5,278 |
+| `builtin__array_ensure_cap` | 657,077 | 657,077 |
+
+The predeclared page cohort retains30 alternating pairs, odd before/final and
+even final/before, seed133 and30,000 paired bootstrap resamples. Both persisted
+regular binaries use the same359-file cache, frozen4e browser helper and child-only
+placement library, document1024×768/window1024×880, and
+`native.scopes.navigation_to_first_document_paint[0]`.
+
+| First-frame retired instructions | Value |
+| --- | ---: |
+| Before median | 16,692,671,695 |
+| Candidate median | 16,628,638,052 |
+| Observed marginal-median saving | 64,033,643 |
+| Change | -0.38360332% |
+| Improved pairs | 30/30 |
+| Paired median saving | 61,649,105 |
+| Paired 95% interval | [49,095,577, 70,017,207.5] |
+| Repeatable page credit | 64,033,643 |
+
+The positive paired interval establishes repeatable whole-page savings. All60
+actual process exits are0 and all60 real PNGs remain. No completed primary is
+replaced, filtered, extended or repeated. Startup retries:0; recovered
+primaries:0; later installation refreshes:0; unrelated foreground
+transitions:[]. Every first primary has the same1 installation/2
+formatting passes/1 paint preparation. All other decoded RGB pixels match outside
+the original fixed skeleton bands; classes30 before/30 final/0 shared. Root
+memory medians are3,382,152,372→3,377,384,628
+bytes, measured as per-process lifetime maximum through capture/exit, not live
+first-frame memory.
+
+Observed carry0 plus64,033,643 crosses the5M broad gate.
+**Six actual zero exits pass87 selected CSS31/SVG10/layout46 cases in both GC
+modes (174 executions)**. All **19 screenshot comparisons pass,16 pixel-exact**;
+known differences remain inline-node13, text-decorations1,341 and canvas-text1,994.
+The focused1024×768 viewport is exact. The initial screenshot comparator exits1
+before launching a browser because the copied capture script lacks execute
+permission. Its log/receipt and validation/bundle gate exits1 remain archived.
+After correcting mode only, the screenshot-only resume retains all six completed
+broad jobs and focused captures, then executes only the unfinished comparisons.
+An early bundle resume also sees the still-failed validation receipt and exits1
+without creating an app; its real receipt is retained. Inherited broad-manifest
+text mentioning130/full30/245hunks is corrected with original metadata preserved;
+actual runtime hashes and87 selected bodies already matched133 and never change.
+No completed checks or observations are repeated.
+
+The isolated `/Users/alex/code/vox2/Build/v/Vox-opt133.app` passes library pinning, signing,
+verification, headless startup and actual collections with default marker1 and
+override2. Its native instruction text matches the measured binary and startup
+loads its installed frozen helper. Canonical app/GUI and foreign Root work remain
+preserved, with no current-Root performance credit. Next frozen control and broad
+baseline become133 only after these passes; observed carry resets to0.
+All exact durable C/profile/test/binary/report hashes are retained in
+`Build/v/instruction-opt133-durable-archives.json`.
+Chrome parity remains unestablished: the earlier Chrome count uses a different
+endpoint and hydrated page content. This result establishes a Vox improvement.
+
 ## Causes and changes
 
 - The V 0.5.2 compatibility compiler's `-prod` Boehm code repeatedly snapshots
