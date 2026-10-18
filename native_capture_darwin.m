@@ -27,6 +27,7 @@ static void native_capture_instruction_checkpoint(const char *label) {
 #include "native_jpeg_darwin.h"
 #include "native_png_color_darwin.h"
 #include "native_opacity_group_darwin.h"
+#include "native_bitmap_snapshot_darwin.h"
 
 int native_prefers_overlay_scrollbars(void) {
 	return [NSScroller preferredScrollerStyle] == NSScrollerStyleOverlay;
@@ -898,19 +899,18 @@ static void native_end_offscreen_opacity_group(NativeOpacityGroup *group) {
 	if (native_opacity_layer_ink_bounds(group->pixels, layer_pitch, group->left, group->top,
 			group->right, group->bottom, &left, &top, &right, &bottom)) {
 		size_t ink_width = (size_t)(right - left), ink_height = (size_t)(bottom - top);
-		uint8_t *result = malloc(ink_width * ink_height * 4);
 		CGColorSpaceRef color_space = CGBitmapContextGetColorSpace(group->parent);
-		CGContextRef result_context = result == NULL ? NULL
-			: CGBitmapContextCreate(result, ink_width, ink_height, 8, ink_width * 4, color_space,
-				kCGImageAlphaPremultipliedLast | kCGBitmapByteOrder32Big);
-		if (result_context != NULL) {
+		CGContextRef result_context = CGBitmapContextCreate(NULL, ink_width, ink_height,
+			8, ink_width * 4, color_space, kCGImageAlphaPremultipliedLast | kCGBitmapByteOrder32Big);
+		uint8_t *result = result_context == NULL ? NULL : CGBitmapContextGetData(result_context);
+		if (result != NULL) {
 			for (size_t row = 0; row < ink_height; ++row) {
 				native_composite_opacity_pixels(
 					group->pixels + (top + row) * layer_pitch + (size_t)left * 4,
 					backdrop + (top + row) * parent_pitch + (size_t)left * 4,
 					result + row * ink_width * 4, ink_width, group->opacity);
 			}
-			CGImageRef image = CGBitmapContextCreateImage(result_context);
+			CGImageRef image = native_take_bitmap_image_for_destination(result_context, group->parent);
 			if (image != NULL) {
 				// Copy the composite into place under the backdrop's clip.
 				CGRect target = CGContextConvertRectToUserSpace(group->parent,
@@ -922,9 +922,9 @@ static void native_end_offscreen_opacity_group(NativeOpacityGroup *group) {
 				CGContextRestoreGState(group->parent);
 				CGImageRelease(image);
 			}
+		} else if (result_context != NULL) {
 			CGContextRelease(result_context);
 		}
-		free(result);
 	}
 	CGContextRelease(group->context);
 	free(group->pixels);
@@ -3522,9 +3522,9 @@ void native_end_css_filter_layer(void) {
 		native_free_svg_filter_graph(&layer);
 		return;
 	}
-	CGContextFlush(layer.context);
-	CGImageRef source_image = CGBitmapContextCreateImage(layer.context);
-	CGContextRelease(layer.context);
+	CGImageRef source_image = layer.operation_count == 0 && layer.graph_node_count == 0
+		? native_take_bitmap_image_for_destination(layer.context, layer.destination)
+		: native_take_bitmap_image(layer.context);
 	[NSGraphicsContext restoreGraphicsState];
 	if (source_image == NULL) {
 		free(layer.operations);
