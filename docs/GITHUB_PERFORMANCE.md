@@ -12016,6 +12016,34 @@ preserved. Exact focused/local C and binary archives, including all three Root
 configurations, are durable in `Build/v/instruction-opt119-durable-archives.json`.
 **Faster-than-Chrome performance remains unproven.**
 
+## Retain the raw-text parser prerequisite failure
+
+Round 120 assesses already committed `344144ba` against frozen 117. The full
+authored batching change fits textually: one parser-loop hook and a new 39-line
+helper file. Three exact authored tests and a larger inert raw-script diagnostic
+are prepared. Decoding, CSS filtering and tokenizer arenas are untouched.
+
+Both candidate common configurations fail V checking with actual exit 1 before
+any case executes: `html/html_parser.v` cannot resolve `platform`. The authored
+parent imports platform and uses `cooperative_work_checkpoint`, supplied by
+`3f5d7e1e`. That earlier feature spans 22 files, including
+native capture/presentation/navigation and timer integration; the API is absent
+from frozen 117. A textual hunk match does not establish a complete runtime port.
+
+Before/Boehm safely retains the identical successful 117-final common batch
+(12 cases/60 assertions), without reexecution. Candidate cases executed: **0**.
+Dependent contract, diagnostic, archive and gate controllers retain their actual
+exit 1 receipts. **No local hardware sample, normal browser build, profile,
+browser C audit, page primary, broad batch, bundle or GC check runs. Credit is 0.**
+Prepared inputs and failed logs remain intact. No shim, checkpoint removal,
+partial prerequisite import or change to the 120 pinned native inputs is made.
+Root's complete parser implementation remains unchanged.
+
+Frozen 117 performance control, broad baseline, observed carry 0 and verified
+isolated 117 app remain unchanged. The canonical app, user's GUI and concurrent
+work are preserved. Evidence: `Build/v/instruction-opt120-prerequisite-finding.json`.
+**Chrome parity remains unestablished.**
+
 ## Causes and changes
 
 - The V 0.5.2 compatibility compiler's `-prod` Boehm code repeatedly snapshots

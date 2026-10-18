@@ -2121,6 +2121,11 @@ evidence](docs/translation-audit/NATIVE_MEDIA_WHEEL_RAW_HANDLER.md).
   No normal/profile/C-audit/page/broad run; page credit0; body/guard unchanged.
   Own revert `32525034` restores exact pre119 Root implementation/tests.
   Frozen117 control/broad baseline, carry0 and isolated117 app preserved; Chrome parity open.
+  Parser raw-text round120 (`344144ba`) fails preflight: platform prerequisite absent.
+  Before common117-final reused/60 asserts; candidate exits1 bothGC before any cases.
+  No local/native/profile/C-audit/page/broad/app work or credit; failures retained.
+  Full prerequisite `3f5d7e1e` changes native integration; no shim/partial port.
+  Frozen117 control/broad baseline, carry0 and existing app/Root/canonical/GUI preserved.
 - Outside instruction-count optimization, run broad regression suites once per
   ten completed fixes, not after every fix.
   Broad suites include full translation/package test batches, the full LibJS AST
