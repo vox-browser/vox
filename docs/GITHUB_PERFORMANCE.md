@@ -12755,6 +12755,54 @@ foreign work, canonical app/GUI, accepted frozen124 control/broad baseline and
 verified isolated124 app remain untouched. Chrome parity remains unestablished:
 the earlier Chrome count uses a different endpoint and hydrated content.
 
+## Retain the remaining inline-style ownership failure before page sampling
+
+Round131 adds the complete cursor-timer (`42dce2c9`), DOM insertion (`fe105d39`),
+parser-stack (`48e22bd2`) and style-completion (`632080ca`) lifetime prerequisites.
+The29-feature composition reconstructs245 authored hunks exactly;42 runtime paths
+change, including nine new files. Whole-app old-compiler C-only frontend exits0;
+its generated C/gzip are durably hashed. All original source reconstruction,
+accepted89 post-hunks and exact accepted104/110/116 getter migrations remain
+strict. Root runtime and foreign work are untouched.
+
+The common12 cases pass60 assertions per configuration, with matching124 control
+success safely reused. Of132 original cases per GC mode, every no-GC case passes.
+Boehm passes131 and retains one failure:
+
+- Layout36/97,315 assertions and main7/57,578 assertions pass in both modes.
+  Main generation, Clang, signing and actual frozen-helper runs all exit0.
+- CSS57 cases pass **58,010 assertions under Boehm** and57,997 without GC. The
+  paged-property document owner mask is now **0**, and the live-document discarded
+  image check also reports0. Every rule-cache, invalidation, shorthand and
+  paged-store ownership assertion remains unchanged; round130's fatal weak-slot
+  registration failure is resolved on this new runtime, with its old evidence kept.
+- DOM13 cases pass93 Boehm/86 no-GC assertions, including all new timer, insertion
+  and task-queue contracts.
+- HTML/no-GC19 cases pass679 assertions. Boehm passes18 cases, including all
+  parser-stack and both previously retained media/CSS-sync document graphs.
+  Only `test_disabled_inline_style_discovery_document_and_parser_are_collectible`
+  fails: owner mask3, with687 successful and one failed assertion. The original
+  zero-mask expectation and all nine weak-owner headers remain intact.
+
+The repaired local gate actually exits1 before any local build or sample after
+the contract aggregate exits1. Native gate and launcher also exit1, starting zero
+normal/profile/audit jobs. There is no normal candidate, V profile, strict browser
+C audit result, browser primary, app/GC verification or broad batch. The fixed30
+alternating page pairs/30,000 resamples/seed131 remain unstarted. Local samples,
+whole-page savings, page credit and observed carry are0. No completed round130
+sample or round131 success is rerun. Durable archives retain every outcome in
+`Build/v/instruction-opt131-durable-archives.json`.
+
+A further full authored fix, `582e160c`, releases temporary stylesheet
+invalidation rule collections. Its stack-scoped collector preserves traversal
+and rule ordering while removing a captured rule-array owner. The next complete
+30-feature source review passes246 authored hunks with no omitted change or
+runtime shim; its additional original collection test remains to run. This is
+source compatibility, with no runtime or performance credit yet. Frozen124
+control/broad baseline and verified isolated124 app remain. Canonical app/GUI
+are preserved; Chrome parity remains unestablished because the earlier Chrome
+count uses a different endpoint and hydrated content.
+
 ## Causes and changes
 
 - The V 0.5.2 compatibility compiler's `-prod` Boehm code repeatedly snapshots

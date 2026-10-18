@@ -2193,6 +2193,13 @@ evidence](docs/translation-audit/NATIVE_MEDIA_WHEEL_RAW_HANDLER.md).
   Local template missed contract gate: all6 samples retained, -13.72086%/3wins; no page credit.
   Future generator fixed; original drivers/results retained. Native gate1 starts zero normal jobs.
   Zero browser primaries/broad work; frozen124/control/broad/carry0/app preserved; Chrome open.
+  Property-sharing closure round131:29 features/245authoredhunks/42changed runtime paths.
+  C-only preflight0; common60/config; layout36/97315 and main7/57578 eachGC pass.
+  CSS57/58010 Boehm and57/57997 none pass; paged-store/discarded-image owner masks0.
+  DOM13 passes93/86 asserts. HTML none19/679 passes; Boehm18 passes, inline-style mask3 fails.
+  Corrected local gate1 before builds/samples; native gate1 starts zero normal jobs.
+  Zero browser primaries/broad work/credit; full582e160c collector prerequisite reviewed.
+  Frozen124/control/broad/carry0/app and canonical/GUI preserved; Chrome parity open.
 - Outside instruction-count optimization, run broad regression suites once per
   ten completed fixes, not after every fix.
   Broad suites include full translation/package test batches, the full LibJS AST
