@@ -86,6 +86,20 @@ fn abstract_element_counter_parent(abstract_element &dom.AbstractElement) ?dom.A
 	return dom.AbstractElement.new(parent, none)
 }
 
+// Only counter creators retain their origin's diagnostic label. Inherited
+// counters keep their existing creator, and a box with no counter operations
+// cannot publish this origin. Avoid formatting every ordinary DOM node merely
+// to discard its description during inheritance.
+fn counter_origin_description(abstract_element &dom.AbstractElement, computed &css.ComputedProperties) string {
+	values := unsafe { &css.ComputedValues(computed) }
+	if computed.display().is_none() || (!computed.display().is_list_item()
+		&& values.counter_reset().len == 0 && values.counter_increment().len == 0
+		&& values.counter_set().len == 0) {
+		return ''
+	}
+	return abstract_element.debug_description()
+}
+
 fn resolve_layout_counters(mut builder_state TreeBuilderState, abstract_element dom.AbstractElement, computed &css.ComputedProperties) {
 	parent := abstract_element_counter_parent(&abstract_element)
 	parent_key := if parent_element := parent {
@@ -117,7 +131,7 @@ fn resolve_layout_counters(mut builder_state TreeBuilderState, abstract_element 
 			none
 		}
 		tree_order_index: builder_state.counter_tree_order_index
-		debug_description: abstract_element.debug_description()
+		debug_description: counter_origin_description(&abstract_element, computed)
 	}
 	mut mutable_abstract_element := abstract_element
 	resolved := css.resolve_counters_for_layout(mut mutable_abstract_element, computed, origin, parent != none, parent_counters, previous_sibling_counters, previous_element_counters)
@@ -142,7 +156,7 @@ fn resolve_marker_layout_counters(mut builder_state TreeBuilderState, abstract_e
 		id: abstract_element_counter_id(&abstract_element)
 		parent_id: abstract_element_counter_id(&host)
 		tree_order_index: builder_state.counter_tree_order_index
-		debug_description: abstract_element.debug_description()
+		debug_description: counter_origin_description(&abstract_element, computed)
 	}
 	mut mutable_abstract_element := abstract_element
 	resolved := css.resolve_counters_for_layout(mut mutable_abstract_element, computed, origin, true, host_counters, none, host_counters)
