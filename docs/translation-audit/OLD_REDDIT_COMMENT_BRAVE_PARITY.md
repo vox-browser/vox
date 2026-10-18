@@ -297,7 +297,71 @@ after, under substantial concurrent host load. The cold actions remain more
 variable. This does not establish Brave parity or physical scanout timing.
 
 The repository's current cadence uses cumulative retired-instruction savings.
-The observed reduction exceeds its 5,000,000-instruction threshold, so a new
-broad batch is running against source-45, including block caret reuse. That
-batch, its native measurements, current canonical integration and installation
-remain open. Further work is required to match Brave's response time.
+The observed reduction exceeds its 5,000,000-instruction threshold. The resulting
+source-45 broad batch is complete: 1,083 files and 4,196 functions run in each
+mode, with 4,170 passing/26 failing under default GC and 4,169 passing/27 failing
+under no-GC. No files remain unrun. All earlier named failures persist unchanged;
+the additional CSS allocation-budget failure reproduces in the original compiled
+source-40 binary, and the additional no-GC native-poster HTTP timeout also
+reproduces there. The candidate poster file subsequently passes all five cases
+without a code change. Original nonzero receipts remain authoritative.
+`parity-v45-checkpoint.json` accepts coverage, explicitly with
+`all_tests_passed: false`. LibJS is unchanged and was not rerun in this batch.
+All eight SVG guards are exact; all eleven document screenshots match source-40,
+including the four existing reference mismatches.
+
+## Lazy projection and passive counters
+
+`0a335ab5` passes resolved incoming counter scopes through unchanged ordinary
+flow branches when every retained element has no counter operation or list-item
+display. Each DOM owner still receives an independent snapshot, and subsequent
+creator ordering matches a full rebuild. An empty-only prototype provided no
+meaningful native instruction improvement and is not credited separately.
+The first counter fixture needed optional-value unwrapping. A later assertion
+exposed an existing counter-only style invalidation limitation: the same assertion
+fails on source-45. Its correction triggers the TreeBuilder with an unrelated
+preceding child edit and retains the expected counter value; counter-only CSS
+invalidation is not claimed fixed.
+
+`76ee6f7d` defers DOM caret-line projections until selection, caret navigation or
+another consumer requests them. A constant provider uses the viewport's committed
+geometry state, avoiding per-text closures that retain old result records. The
+explicit public attachment API remains eager. Old mirrors can still project their
+old geometry after a rebuild and collection; live reused mirrors reset to current
+geometry. Source-52 passes 111 focused layout cases in fourteen files per mode.
+Both DOM visual-line/selection files pass on source-49, whose DOM implementation
+is identical. The original layout build failed on a compatibility-compiler array
+assignment; an early return fixes it without an extra array clone. All failed
+attempts remain retained.
+
+The signed source-52 production build passes signature/startup checks and eight
+exact SVG guards. All eleven document screenshots are decoded-pixel-identical to
+source-44. The weak probe collects seven superseded paint arenas and retains only
+the current one; it does not claim an inventory of every retained geometry chunk.
+The source-44/source-52 ABBA sequence observes 363,381,392 versus 359,761,683.5
+median warm instructions, a reduction of 3,619,708.5 (about 1%). This remains below
+the next broad threshold. Elapsed warm medians vary substantially with host load:
+79.860/59.610 ms for the controls and 55.974/65.114 ms for the candidate. A fresh
+Brave comparison reports 2.4 ms for handler plus layout and 25 ms through two
+animation frames. Endpoint differences remain, and Brave parity is not achieved.
+See `parity-v52-instruction-abba.json`, `native-parity-v52-verified.json`,
+`parity-v52-document-pixels.json`, and `styled-v52-current-brave.json`.
+
+The scripted app diagnostic confirms retained layout-node identities for 3,113
+unchanged DOM elements across toggles. Chromium font policies and standards mode
+do not disable the retained inline/block caches. The phase/sample diagnostic
+shows repeated selector traversals and containing-block position walks around the
+remaining whole-document geometry and paint projections.
+
+`6d7dc085` establishes a matching context once for queries made only of type,
+universal, ID, class and attribute compounds. Combinators and pseudo-classes keep
+the existing general matcher. Namespace/attribute/case behavior uses the same
+simple-selector engine. Fourteen distinct cases in three files pass in each GC
+mode: two existing files retain their passing source-55 results and all three new
+cases pass after the source-56 shadow fixture correction. The original fixtures
+used a nonexistent attribute setter and an XML-created shadow host; failed
+receipts remain. The production implementation is byte-identical to source-53.
+Its first native observation is 347,903,971 warm instructions, with 64.738 ms warm
+median and 245.187 ms cold action; this single run does not establish repeatable
+savings or a latency bound. Position-cache work and combined canonical validation
+are still in progress. No new application has been installed.
