@@ -503,7 +503,7 @@ fn svg_image_document_for_source(document &dom.Document, source string) ?&dom.Do
 // response or local-file replacement. Failed loads never reuse a cached image.
 fn svg_image_document_for_source_in_viewport(node &Node, source string,
 	color_scheme css.PreferredColorScheme) ?&dom.Document {
-	image_source := svg_image_source_for_source(node.document(), source) or { return none }
+	image_source := svg_image_source_for_paint(node, source) or { return none }
 	scheme := css.preferred_color_scheme_to_string(color_scheme)
 	viewport := node.root_viewport() or {
 		return parse_svg_image_document(image_source, scheme, node.document())

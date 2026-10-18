@@ -1930,6 +1930,7 @@ mut:
 	// layers which consume them. Equal resources can share their isolated
 	// document and retained layout without keeping documents in a global cache.
 	svg_image_documents_ map[string]SVGImageDocumentCacheEntry
+	paint_svg_sources_ &PaintSVGSourceSession = unsafe { nil }
 }
 
 // Viewport(DOM::Document&, ComputedProperties) — its DOM node is the document, per Viewport.cpp.

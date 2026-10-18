@@ -2637,6 +2637,8 @@ fn paintable_box_paint_background(mut root_box BlockBox, root_layout_node &Node,
 fn renderer_box_from_document_layout_result(result &DocumentLayoutResult, viewport_width f64, viewport_height f64) BlockBox {
 	layout_completed := time.sys_mono_now()
 	root_layout_node := result.root.first_child() or { return BlockBox{} }
+	svg_sources := begin_paint_svg_source_session(root_layout_node)
+	defer { svg_sources.finish() }
 	mut root_box := block_box_from_typed_layout(root_layout_node, result.state)
 	paintable_box_paint_background(mut root_box, root_layout_node, result.state, viewport_width, viewport_height)
 
