@@ -11664,6 +11664,134 @@ including the event-storage prerequisite behind round 114's ABI failure.
 Root, the canonical app and the user's GUI remain preserved. Evidence:
 Build/v/instruction-opt115-*. **Faster-than-Chrome performance remains unproven.**
 
+## Keep complete DOM state behind its required owners
+
+Round 116 evaluates the complete already-committed `ddfefde3+b487c142+722f9bcb` family against
+frozen 111: **58 exact authored hunks across 17 runtime paths**, with three new V
+files. EventTargetData's handler map, four Element metadata maps, interactive
+snapshots and HTML state acquire their managed owners when needed. Immutable
+interactive/HTML snapshots preserve ordinary value copies. Three concrete HTML
+bases now derive from HTMLElement. Public TextDecoder, CSS filtering, tokenizer
+arenas, normal GC policy and the 4 GiB hint stay unchanged.
+
+The failed standalone attempts remain retained: round 113's local regression,
+round 114's original allocation failure and round 115's local median rejection.
+The complete family adds the missing event-storage prerequisite. Its **original
+1960-byte Element / 1968-byte HTMLElement allocation-class assertions and weak-owner
+test now pass**, without changing a size expectation.
+
+The 11 common HTML cases plus one inactive diagnostic pass **60 assertions in
+each configuration**. Before/Boehm safely reuses round 112's verified successful
+individual batch with identical frozen 111 runtime, input bytes, flags and binary;
+round 112's failed candidate/controller receipts stay disclosed. No new before
+process exit is claimed. Candidate/Boehm and candidate/no-GC are actual zero exits.
+All **23 exact authored candidate cases pass per GC mode**: DOM 16 with
+**2,725 / 2,702 assertions** under Boehm / no-GC, CSS three with **952 each**,
+and HTML four with **76 each**. These retain handler publication/reentry,
+callback and pseudo identity, immutable snapshots, allocation classes, weak
+owners, nonce cloning and modulepreload coverage.
+
+Three predeclared alternating local pairs each perform **16 complete fresh public
+document pipelines** over the same 64-paragraph Unicode scene. Parsing, initial
+layout, recording, command consumption and finalization stay inside the counter.
+Setup, eight warmups, independent text/display checks and forced GC are outside.
+Full paint expectations come from uncounted setup. All six exits are 0 and
+checksum **54,286,416** matches.
+
+| Pair | Before retired instructions | Candidate retired instructions |
+| --- | ---: | ---: |
+| 1 | 24,670,499,283 | 23,604,215,390 |
+| 2 | 24,686,714,893 | 24,144,186,219 |
+| 3 | 24,725,714,469 | 23,776,973,134 |
+
+Local medians **24,686,714,893 → 23,776,973,134**, change
+**-3.685147%**, all three pairs improve. This local result is
+separate from page credit.
+
+The strict C audit authenticates every changed/added source function against
+independent whole-app C-only output. An additional actual compiler AST/scanner
+check verifies **43 changed, 17 added and 56 unchanged-source automatic
+functions**. The latter permit only authenticated default-record/None-local
+changes or promoted member paths. Exact field comparisons prove the three
+changed generated equality helpers; precisely five unused map-equality helpers
+are removed. The one edited popover callback is authenticated through its parent.
+Byte-identical movements are pinned explicitly: 31 functions, 71 record
+definitions and four typedefs. The three concrete HTML bases and new owner records
+are checked independently. Actual frontend insertions are 88, 89 and 93;
+all existing file order remains unchanged, with exact index mapping.
+All remaining executable C, other layouts, globals and resources match after
+established compiler identities and unchanged assertion-line maps. The 120 native
+inputs, 37 frozen includes and native arguments match except artifact paths.
+Rest-of-C SHA256 `29027a21413d55e70a8a1d5fc70092377e642db80bb983d92ec184936515368b`.
+
+Initial read-only audit, source-span and preparation-reader failures are retained
+under instruction-opt116-*-finding/. Corrections recognize generated enum methods,
+relative main-package paths, exact declared record changes, generated helpers and
+byte-identical reorders. A stale bootstrap/converter round number is corrected
+**before any primary observation**. No successful focused check, native build,
+profile or primary is repeated. One bundle description's stale round number is
+corrected without rerunning signing, startup or GC checks; its actual binary and
+source manifest already identify 116.
+
+Both C-O1/Boehm/default-marker-1 full-process profiles exit 0 with
+-profile-no-inline and no filter/reset. Public workload counts match. Ordinary
+map creation falls; call counts explain coverage and receive no timing credit.
+
+| Full-process diagnostic function | Before calls | Candidate calls |
+| --- | ---: | ---: |
+| `layout__opt116_complete_public_document_layout` | 25 | 25 |
+| `html__parse_document` | 26 | 26 |
+| `layout__run_document_layout` | 26 | 26 |
+| `dom__Document_record_display_list` | 26 | 26 |
+| `layout__append_text_fragment_commands` | 11,648 | 11,648 |
+| `dom__Element_get_pseudo_element` | 89,180 | 89,180 |
+| `builtin__new_map` | 77,779 | 62,543 |
+| `builtin__new_map_noscan_key` | 23,440 | 23,362 |
+| `builtin__new_map_noscan_value` | 56,068 | 56,042 |
+
+The persisted normal binary is Build/v/Vox-opt116-complete-dom-state-bin,
+SHA256 `4346d8f29056286961065ef36227de45bd5df54920000fd6c45ca614e843843b`.
+Its regular durable C SHA256 is `fd674688fdeabfb856c513746aa78799352b1db18ad6453f9267629297c0a8b5`.
+Both variants load the frozen 4e helper with actual loader proof. Native C-O2,
+Boehm/default marker 1, SSD cache, 4 GiB hint, child-only placement and 1024×768
+document viewport match. No prod/prealloc or heap increase is used.
+
+The fixed **30 alternating pairs**, seed **116** and **30,000 paired bootstrap
+resamples**, retain all 60 navigation_to_first_document_paint[0] observations:
+**16,947,798,319.5 → 16,849,777,268 retired instructions**.
+The observed median saving is **98,021,051.5 (0.578370%)**,
+**30/30 wins**. Paired median saving is **104,755,008.5**;
+95% paired interval **[95,869,894, 116,306,577]**. The positive interval permits
+repeatable whole-page credit **98,021,051.5**.
+
+There are **60 real PNGs**, zero startup retries, zero recovered primaries,
+zero post-primary refreshes and zero foreground transitions. Every first
+preparation has one installation, two geometry passes and one paint. All decoded
+RGB differences stay inside the original skeleton bands x45–662/y335–344 and
+ten 14px bands starting at 380 with 41px spacing; all other pixels match.
+There are 29 control and 30 candidate RGB classes, no shared class,
+and no bounds change. Lifetime memory peaks through capture/exit are not
+first-frame live memory, and overlapping counters are not summed.
+
+The focused viewport is **pixel-exact**. Prior observed carry **4,867,127.5** plus
+the fresh page saving crosses the 5M gate at **102,888,179**. Six actual
+zero exits pass **87 selected cases in each GC mode, 174 executions total**
+(CSS31/SVG10/layout46). All **19 screenshots pass, 16 exact**; known differences
+remain inline-node 13, text-decorations 1,341 and canvas-text 1,994. The harnesses
+retain their bodies, assertions and expected values. Actual child loader receipts
+pin the frozen helper after protected env/sh launches.
+
+The isolated app is `/Users/alex/code/vox2/Build/v/Vox-opt116.app`. Signing, startup, installed helper
+and measured native instruction-text identity pass. GC checks observe eight
+collections with default marker 1 and override 2. The canonical app and user's
+GUI remain preserved. **Frozen 116 becomes the next performance control**;
+completed broad validation resets observed carry to **0**. Independently advancing
+Root receives no additional performance credit. Durable C and compressed test
+binary hashes are in instruction-opt116-durable-archives.json.
+Equivalent Chrome content/start/submission accounting remains open;
+**faster-than-Chrome performance is unproven**. Evidence: Build/v/instruction-opt116-*
+and Build/instructions/vox-opt116-interleaved-*.
+
 ## Causes and changes
 
 - The V 0.5.2 compatibility compiler's `-prod` Boehm code repeatedly snapshots

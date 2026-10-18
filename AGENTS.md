@@ -2089,6 +2089,16 @@ evidence](docs/translation-audit/NATIVE_MEDIA_WHEEL_RAW_HANDLER.md).
   Local 16 complete public pipelines: +0.094862% median instructions,
   2/3 wins; fixed samples retained. No normal/profile/page work; credit 0.
   Frozen 111/control, 110/broad baseline, carry 4,867,127.5 preserved; Chrome parity open.
+  Complete DOM state round 116 (`ddfefde3+b487c142+722f9bcb`) passes its original ABI/owner checks.
+  All 58 authored hunks/17 paths; common60/config; 23 exact candidate cases per GC.
+  Local 16 complete public pipelines use 3.69% fewer instructions.
+  Page 16,947,798,319.5 → 16,849,777,268; 30/30 wins.
+  Saving/credit 98,021,051.5; paired interval [95,869,894, 116,306,577] positive.
+  Broad 87 selected both GC/174 executions; 19 screenshots/16 exact; focused exact.
+  Strict C/actual AST ownership audits pass; 60 real PNGs, no retries/recoveries/refreshes.
+  Frozen116/control and broad baseline; observed carry resets to 0 after actual passes.
+  Same 4 GiB/frozen helper/GC1+override2; isolated app; Root/canonical/GUI preserved.
+  Failed standalone/reader/preparation receipts retained; Chrome parity remains open.
 - Outside instruction-count optimization, run broad regression suites once per
   ten completed fixes, not after every fix.
   Broad suites include full translation/package test batches, the full LibJS AST
