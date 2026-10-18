@@ -72,6 +72,8 @@ int vox_graphite_draw_shadow_pixels(uint8_t *pixels, int width, int height,
     int pitch, int has_background, const VoxGraphiteShadow *shadow);
 int vox_graphite_draw_image_pixels(uint8_t *pixels, int width, int height,
     int pitch, int has_background, const VoxGraphiteImage *image);
+int vox_graphite_draw_image_tiles(uint8_t *pixels, int width, int height,
+    int pitch, int has_background, const VoxGraphiteImage *images, int count);
 int vox_graphite_draw_shape_pixels(uint8_t *pixels, int width, int height,
     int pitch, int has_background, const VoxGraphiteShape *shape);
 int vox_graphite_draw_path_pixels(uint8_t *pixels, int width, int height,

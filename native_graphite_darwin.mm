@@ -156,30 +156,27 @@ static sk_sp<SkColorSpace> vox_image_color_space(VoxGraphiteImage const* image)
     return space ? space : SkColorSpace::MakeSRGB();
 }
 
-extern "C" __attribute__((visibility("default")))
-int vox_graphite_draw_image_pixels(uint8_t* pixels, int width, int height,
-    int pitch, int has_background, VoxGraphiteImage const* image)
-{
-    if (!pixels || !image || !image->pixels || width <= 0 || height <= 0 || pitch <= 0
-        || static_cast<size_t>(pitch) < static_cast<size_t>(width) * 4
-        || image->width <= 0 || image->height <= 0 || image->pitch <= 0
-        || !(image->source[2] > 0) || !(image->source[3] > 0)
-        || !(image->destination[2] > 0) || !(image->destination[3] > 0)) return 0;
-    std::lock_guard lock(gpu_mutex);
-    auto cached = image_cache.prepare(*image, width, height, pitch, has_background != 0, pixels);
-    if (cached.hit) return 1;
-    auto* gpu = context();
-    if (!gpu) return 0;
-    auto recorder = gpu->makeRecorder();
-    auto info = SkImageInfo::Make(width, height, kBGRA_8888_SkColorType,
-        kPremul_SkAlphaType, SkColorSpace::MakeSRGB());
-    auto surface = SkSurfaces::RenderTarget(recorder.get(), info);
-    if (!surface) return 0;
-    auto* canvas = surface->getCanvas();
-    if (has_background) surface->writePixels(SkPixmap(info, pixels, pitch), 0, 0);
-    else canvas->clear(SK_ColorTRANSPARENT);
-    sk_sp<SkImage> texture;
+namespace {
+// The upload, sampling and source scale of one image draw, and the texture it
+// samples once prepared.
+struct PreparedImageDraw {
+    int upload_width = 0, upload_height = 0;
     float source_scale_x = 1.0f, source_scale_y = 1.0f;
+    bool whole_source = false, needs_mips = false;
+    sk_sp<SkImage> texture;
+    decltype(image_upload_cache)::Request upload;
+};
+}
+
+static bool image_draw_is_valid(VoxGraphiteImage const* image)
+{
+    return image && image->pixels && image->width > 0 && image->height > 0 && image->pitch > 0
+        && image->source[2] > 0 && image->source[3] > 0
+        && image->destination[2] > 0 && image->destination[3] > 0;
+}
+
+static void plan_image_draw(VoxGraphiteImage const* image, PreparedImageDraw& prepared)
+{
     int upload_width = image->width, upload_height = image->height;
     bool whole_source = image->source[0] == 0 && image->source[1] == 0
         && image->source[2] == image->width && image->source[3] == image->height;
@@ -205,13 +202,25 @@ int vox_graphite_draw_image_pixels(uint8_t* pixels, int width, int height,
     // need them. Cropped draws retain strict source bounds below.
     bool needs_mips = !image->nearest && whole_source
         && image->width * sx < upload_width && image->height * sy < upload_height;
-    SkImage::RequiredProperties properties{.fMipmapped = needs_mips};
-    auto upload = image_upload_cache.prepare(*image, upload_width, upload_height, needs_mips);
-    texture = upload.texture;
+    prepared.upload_width = upload_width;
+    prepared.upload_height = upload_height;
+    prepared.whole_source = whole_source;
+    prepared.needs_mips = needs_mips;
     if (upload_width != image->width || upload_height != image->height) {
-        source_scale_x = static_cast<float>(upload_width) / image->width;
-        source_scale_y = static_cast<float>(upload_height) / image->height;
+        prepared.source_scale_x = static_cast<float>(upload_width) / image->width;
+        prepared.source_scale_y = static_cast<float>(upload_height) / image->height;
     }
+}
+
+// The texture a planned draw samples, from the upload cache or a new upload.
+// The caller finishes the upload once its draw has been read back.
+static bool prepare_image_texture(skgpu::graphite::Recorder* recorder,
+    VoxGraphiteImage const* image, PreparedImageDraw& prepared)
+{
+    int upload_width = prepared.upload_width, upload_height = prepared.upload_height;
+    SkImage::RequiredProperties properties{.fMipmapped = prepared.needs_mips};
+    auto upload = image_upload_cache.prepare(*image, upload_width, upload_height, prepared.needs_mips);
+    sk_sp<SkImage> texture = upload.texture;
     if (!texture && (image->flags & 4)) {
         // Flag 16 marks full-resolution 4:4:4 chroma planes.
         bool full_chroma = image->flags & 16;
@@ -240,11 +249,11 @@ int vox_graphite_draw_image_pixels(uint8_t* pixels, int width, int height,
                     kGray_8_SkColorType, kOpaque_SkAlphaType),
                     scaled_planes.data() + plane_size * index, upload_width);
                 if (!planes[index].scalePixels(scaled,
-                        SkSamplingOptions(SkFilterMode::kLinear, SkMipmapMode::kNearest))) return 0;
+                        SkSamplingOptions(SkFilterMode::kLinear, SkMipmapMode::kNearest))) return false;
                 planes[index] = scaled;
             }
-            source_scale_x = static_cast<float>(upload_width) / image->width;
-            source_scale_y = static_cast<float>(upload_height) / image->height;
+            prepared.source_scale_x = static_cast<float>(upload_width) / image->width;
+            prepared.source_scale_y = static_cast<float>(upload_height) / image->height;
         }
         SkYUVAInfo yuva(SkISize::Make(upload_width, upload_height),
             SkYUVAInfo::PlaneConfig::kY_U_V,
@@ -252,10 +261,10 @@ int vox_graphite_draw_image_pixels(uint8_t* pixels, int width, int height,
             // JPEG planes use the full BT.601 range; WebP planes are limited.
             (image->flags & 8) ? kJPEG_Full_SkYUVColorSpace : kRec601_SkYUVColorSpace);
         auto pixmaps = SkYUVAPixmaps::FromExternalPixmaps(yuva, planes);
-        texture = SkImages::TextureFromYUVAPixmaps(recorder.get(), pixmaps, properties, false,
+        texture = SkImages::TextureFromYUVAPixmaps(recorder, pixmaps, properties, false,
             SkColorSpace::MakeSRGB());
     } else if (!texture) {
-        if (static_cast<size_t>(image->pitch) < static_cast<size_t>(image->width) * 4) return 0;
+        if (static_cast<size_t>(image->pitch) < static_cast<size_t>(image->width) * 4) return false;
         auto src_info = SkImageInfo::Make(image->width, image->height,
             kRGBA_8888_SkColorType, (image->flags & 1) ? kPremul_SkAlphaType : kUnpremul_SkAlphaType,
             vox_image_color_space(image));
@@ -264,7 +273,7 @@ int vox_graphite_draw_image_pixels(uint8_t* pixels, int width, int height,
         if (!(image->flags & 1)) {
             premultiplied.resize(static_cast<size_t>(image->pitch) * image->height);
             src_info = src_info.makeAlphaType(kPremul_SkAlphaType);
-            if (!pixmap.readPixels(src_info, premultiplied.data(), image->pitch)) return 0;
+            if (!pixmap.readPixels(src_info, premultiplied.data(), image->pitch)) return false;
             pixmap = SkPixmap(src_info, premultiplied.data(), image->pitch);
         }
         std::vector<uint8_t> scaled_pixels;
@@ -277,20 +286,31 @@ int vox_graphite_draw_image_pixels(uint8_t* pixels, int width, int height,
             // Generating only GPU mip levels can choose a smaller level and
             // uses different rounding from this decoded-pixel resize.
             if (!pixmap.scalePixels(scaled,
-                    SkSamplingOptions(SkFilterMode::kLinear, SkMipmapMode::kNearest))) return 0;
+                    SkSamplingOptions(SkFilterMode::kLinear, SkMipmapMode::kNearest))) return false;
             pixmap = scaled;
-            source_scale_x = static_cast<float>(upload_width) / image->width;
-            source_scale_y = static_cast<float>(upload_height) / image->height;
+            prepared.source_scale_x = static_cast<float>(upload_width) / image->width;
+            prepared.source_scale_y = static_cast<float>(upload_height) / image->height;
         }
         auto raster = SkImages::RasterFromPixmapCopy(pixmap);
-        texture = SkImages::TextureFromImage(recorder.get(), raster, properties);
+        texture = SkImages::TextureFromImage(recorder, raster, properties);
         // Chromium's GPU image cache converts a tagged upload into an 8-bit
         // sRGB texture before drawing it, so premultiplied texels are quantized
         // before they are filtered and blended.
         if (texture && image->has_color_profile)
-            texture = texture->makeColorSpace(recorder.get(), SkColorSpace::MakeSRGB(), properties);
+            texture = texture->makeColorSpace(recorder, SkColorSpace::MakeSRGB(), properties);
     }
-    if (!texture) return 0;
+    if (!texture) return false;
+    prepared.texture = std::move(texture);
+    prepared.upload = std::move(upload);
+    return true;
+}
+
+static void draw_prepared_image(SkCanvas* canvas, VoxGraphiteImage const* image,
+    PreparedImageDraw const& prepared)
+{
+    auto const& texture = prepared.texture;
+    float source_scale_x = prepared.source_scale_x, source_scale_y = prepared.source_scale_y;
+    bool whole_source = prepared.whole_source, needs_mips = prepared.needs_mips;
     SkMatrix matrix;
     matrix.set9(image->matrix);
     canvas->setMatrix(matrix);
@@ -316,10 +336,89 @@ int vox_graphite_draw_image_pixels(uint8_t* pixels, int width, int height,
         canvas->drawImageRect(texture, source_rect, rect(image->destination), sampling,
             &paint, SkCanvas::kStrict_SrcRectConstraint);
     }
+}
+
+extern "C" __attribute__((visibility("default")))
+int vox_graphite_draw_image_pixels(uint8_t* pixels, int width, int height,
+    int pitch, int has_background, VoxGraphiteImage const* image)
+{
+    if (!pixels || width <= 0 || height <= 0 || pitch <= 0
+        || static_cast<size_t>(pitch) < static_cast<size_t>(width) * 4
+        || !image_draw_is_valid(image)) return 0;
+    std::lock_guard lock(gpu_mutex);
+    auto cached = image_cache.prepare(*image, width, height, pitch, has_background != 0, pixels);
+    if (cached.hit) return 1;
+    auto* gpu = context();
+    if (!gpu) return 0;
+    auto recorder = gpu->makeRecorder();
+    auto info = SkImageInfo::Make(width, height, kBGRA_8888_SkColorType,
+        kPremul_SkAlphaType, SkColorSpace::MakeSRGB());
+    auto surface = SkSurfaces::RenderTarget(recorder.get(), info);
+    if (!surface) return 0;
+    auto* canvas = surface->getCanvas();
+    if (has_background) surface->writePixels(SkPixmap(info, pixels, pitch), 0, 0);
+    else canvas->clear(SK_ColorTRANSPARENT);
+    PreparedImageDraw prepared;
+    plan_image_draw(image, prepared);
+    if (!prepare_image_texture(recorder.get(), image, prepared)) return 0;
+    draw_prepared_image(canvas, image, prepared);
     int result = read_pixels(gpu, recorder.get(), surface.get(), info, pixels, pitch);
     if (result) {
-        image_upload_cache.finish(std::move(upload), texture);
+        image_upload_cache.finish(std::move(prepared.upload), prepared.texture);
         image_cache.finish(std::move(cached), pixels, pitch);
+    }
+    return result;
+}
+
+// Placements of images drawn in turn over one raster, as Chromium draws a
+// background's tiles in one GPU pass: one backdrop upload and one readback
+// replace one of each per placement. Each placement draws exactly as
+// vox_graphite_draw_image_pixels() would over the pixels before it.
+extern "C" __attribute__((visibility("default")))
+int vox_graphite_draw_image_tiles(uint8_t* pixels, int width, int height,
+    int pitch, int has_background, VoxGraphiteImage const* images, int count)
+{
+    if (!pixels || !images || count <= 0 || width <= 0 || height <= 0 || pitch <= 0
+        || static_cast<size_t>(pitch) < static_cast<size_t>(width) * 4) return 0;
+    for (int index = 0; index < count; ++index)
+        if (!image_draw_is_valid(&images[index])) return 0;
+    std::lock_guard lock(gpu_mutex);
+    auto* gpu = context();
+    if (!gpu) return 0;
+    auto recorder = gpu->makeRecorder();
+    auto info = SkImageInfo::Make(width, height, kBGRA_8888_SkColorType,
+        kPremul_SkAlphaType, SkColorSpace::MakeSRGB());
+    auto surface = SkSurfaces::RenderTarget(recorder.get(), info);
+    if (!surface) return 0;
+    auto* canvas = surface->getCanvas();
+    if (has_background) surface->writePixels(SkPixmap(info, pixels, pitch), 0, 0);
+    else canvas->clear(SK_ColorTRANSPARENT);
+    std::vector<PreparedImageDraw> prepared(static_cast<size_t>(count));
+    for (int index = 0; index < count; ++index) {
+        auto const* image = &images[index];
+        auto& draw = prepared[static_cast<size_t>(index)];
+        plan_image_draw(image, draw);
+        // Placements of one source share its upload.
+        for (int prior = 0; prior < index && !draw.texture; ++prior) {
+            auto const& earlier = prepared[static_cast<size_t>(prior)];
+            auto const* source = &images[prior];
+            if (source->pixels == image->pixels && source->width == image->width
+                && source->height == image->height && source->pitch == image->pitch
+                && source->flags == image->flags && source->has_color_profile == image->has_color_profile
+                && !std::memcmp(source->color_profile, image->color_profile, sizeof(image->color_profile))
+                && earlier.upload_width == draw.upload_width && earlier.upload_height == draw.upload_height
+                && earlier.needs_mips == draw.needs_mips)
+                draw.texture = earlier.texture;
+        }
+        if (!draw.texture && !prepare_image_texture(recorder.get(), image, draw)) return 0;
+        canvas->save();
+        draw_prepared_image(canvas, image, draw);
+        canvas->restore();
+    }
+    int result = read_pixels(gpu, recorder.get(), surface.get(), info, pixels, pitch);
+    if (result) {
+        for (auto& draw : prepared)
+            image_upload_cache.finish(std::move(draw.upload), draw.texture);
     }
     return result;
 }

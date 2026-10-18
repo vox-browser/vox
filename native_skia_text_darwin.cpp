@@ -132,6 +132,16 @@ auto graphite_image_draw()
     return draw;
 }
 
+auto graphite_image_tiles_draw()
+{
+    static auto draw = [] {
+        void* library = dlopen("@rpath/libVoxGraphite.dylib", RTLD_LAZY | RTLD_LOCAL);
+        return library ? reinterpret_cast<decltype(&vox_graphite_draw_image_tiles)>(
+            dlsym(library, "vox_graphite_draw_image_tiles")) : nullptr;
+    }();
+    return draw;
+}
+
 auto graphite_shape_draw()
 {
     static auto draw = [] {
@@ -1357,6 +1367,134 @@ static sk_sp<SkShader> webp_yuv_shader(uint8_t const* planes, int width, int hei
     builder.child("chroma_v") = v->makeShader(SkTileMode::kClamp, SkTileMode::kClamp, SkSamplingOptions(SkFilterMode::kLinear));
     auto shader = builder.makeShader();
     return shader ? shader->makeWithLocalMatrix(SkMatrix::RectToRect(source, destination)) : nullptr;
+}
+
+// Whether no two tiles touch the same pixel.
+static bool tiles_touch_disjoint_pixels(SkMatrix const& matrix, float const* tiles,
+    std::vector<int> const& drawn)
+{
+    std::vector<SkIRect> rects;
+    rects.reserve(drawn.size());
+    for (int index : drawn) {
+        float const* tile = tiles + static_cast<size_t>(index) * 8;
+        rects.push_back(matrix.mapRect(SkRect::MakeXYWH(tile[0], tile[1], tile[2], tile[3])).roundOut());
+    }
+    std::sort(rects.begin(), rects.end(), [](SkIRect const& a, SkIRect const& b) {
+        return a.fTop != b.fTop ? a.fTop < b.fTop : a.fLeft < b.fLeft;
+    });
+    for (size_t index = 0; index < rects.size(); ++index) {
+        for (size_t next = index + 1; next < rects.size() && rects[next].fTop < rects[index].fBottom; ++next) {
+            if (SkIRect::Intersects(rects[index], rects[next]))
+                return false;
+        }
+    }
+    return true;
+}
+
+// A background's tiles, eight floats each: the destination and the source
+// rectangle that ladybird_v_skia_draw_rgba_image() would receive for it. The
+// GPU painter draws them in turn over one raster spanning the regions that
+// path would rasterize, so the tiles share one backdrop upload and readback.
+// Returns 0 when it cannot, and the caller draws the tiles one at a time.
+extern "C" int ladybird_v_skia_draw_rgba_image_tiles(CGContextRef destination,
+    uint8_t const* source_pixels, int image_width, int image_height,
+    int image_pitch, float const* tiles, int tile_count, float clip_x,
+    float clip_y, float clip_width, float clip_height, float transform_a,
+    float transform_b, float transform_c, float transform_d, float transform_e,
+    float transform_f, float page_x, float page_y, float scroll_y,
+    float canvas_width, float canvas_height, float opacity, int nearest_neighbor,
+    int image_flags, float const* clip_radii)
+{
+    if (!s_chromium_painting || !destination || !source_pixels || !tiles || tile_count <= 0
+        || image_width <= 0 || image_height <= 0 || image_pitch < image_width * 4
+        || clip_width <= 0 || clip_height <= 0 || canvas_width <= 0
+        || canvas_height <= 0)
+        return 0;
+    // Graphite's rounded clip coverage depends on the raster it is drawn in,
+    // so tiles under rounded corners keep their own rasters.
+    if (clip_radii && std::any_of(clip_radii, clip_radii + 8, [](float radius) { return radius != 0; }))
+        return 0;
+    auto draw = graphite_image_tiles_draw();
+    if (!draw)
+        return 0;
+    auto matrix = SkMatrix::MakeAll(
+        transform_a, transform_c, page_x + transform_e,
+        transform_b, transform_d, page_y - scroll_y + transform_f,
+        0.0f, 0.0f, 1.0f);
+    // A scaled draw samples at raster coordinates whose float rounding depends
+    // on the raster's extent; only translated tiles sample identically in one.
+    if (!matrix.isTranslate())
+        return 0;
+    auto local_clip = SkRect::MakeXYWH(clip_x, clip_y, clip_width, clip_height);
+    auto device_clip = matrix.mapRect(local_clip);
+    std::vector<int> drawn;
+    drawn.reserve(static_cast<size_t>(tile_count));
+    RasterRegion region;
+    for (int index = 0; index < tile_count; ++index) {
+        float const* tile = tiles + static_cast<size_t>(index) * 8;
+        if (!(tile[2] > 0) || !(tile[3] > 0) || !(tile[6] > 0) || !(tile[7] > 0))
+            continue;
+        auto device_bounds = matrix.mapRect(SkRect::MakeXYWH(tile[0], tile[1], tile[2], tile[3]));
+        RasterRegion tile_region;
+        if (!device_bounds.intersect(device_clip)
+            || !clipped_raster_region(device_bounds, canvas_width, canvas_height, 0.0f, tile_region)
+            || !leaf_raster_region_intersects_destination_clip(destination, canvas_height, tile_region))
+            continue;
+        if (drawn.empty()) {
+            region = tile_region;
+        } else {
+            region.left = std::min(region.left, tile_region.left);
+            region.top = std::min(region.top, tile_region.top);
+            region.right = std::max(region.right, tile_region.right);
+            region.bottom = std::max(region.bottom, tile_region.bottom);
+        }
+        drawn.push_back(index);
+    }
+    if (drawn.empty())
+        return 1;
+
+    auto destination_scale = raster_scale_for_context(destination);
+    auto raster_width = raster_dimension(region.width(), destination_scale);
+    auto raster_height = raster_dimension(region.height(), destination_scale);
+    auto raster_scale_x = static_cast<float>(raster_width)
+        / static_cast<float>(region.width());
+    auto raster_scale_y = static_cast<float>(raster_height)
+        / static_cast<float>(region.height());
+    std::vector<uint32_t> pixels(static_cast<size_t>(raster_width)
+        * static_cast<size_t>(raster_height));
+    bool has_background = (image_flags & 2) && copy_backdrop(destination,
+        region, destination_scale, raster_width, raster_height, pixels);
+    // Over the copied backdrop, each tile blends onto the same 8-bit pixels
+    // either way. Composited separately instead, two tiles touching one pixel
+    // round their blends in a different order, so none may share a pixel.
+    if (!has_background && !tiles_touch_disjoint_pixels(matrix, tiles, drawn))
+        return 0;
+    float raster_transform[9];
+    raster_matrix(matrix, region, raster_scale_x, raster_scale_y).get9(raster_transform);
+    std::vector<VoxGraphiteImage> descriptors;
+    descriptors.reserve(drawn.size());
+    for (int index : drawn) {
+        float const* tile = tiles + static_cast<size_t>(index) * 8;
+        VoxGraphiteImage descriptor {
+            .matrix = {},
+            .source = {tile[4], tile[5], tile[6], tile[7]},
+            .destination = {tile[0], tile[1], tile[2], tile[3]},
+            .clip = {clip_x, clip_y, clip_width, clip_height},
+            .opacity = opacity, .width = image_width, .height = image_height,
+            .pitch = image_pitch, .flags = image_flags, .nearest = nearest_neighbor == 1,
+            .pixels = source_pixels, .has_color_profile = s_has_image_color_profile
+        };
+        std::copy_n(s_image_color_profile, 10, descriptor.color_profile);
+        if (clip_radii) std::copy_n(clip_radii, 8, descriptor.clip + 4);
+        std::copy_n(raster_transform, 9, descriptor.matrix);
+        descriptors.push_back(descriptor);
+    }
+    if (!draw(reinterpret_cast<uint8_t*>(pixels.data()), raster_width, raster_height,
+            raster_width * 4, has_background, descriptors.data(), static_cast<int>(descriptors.size())))
+        return 0;
+    return composite_pixels(destination, std::move(pixels), raster_width, raster_height,
+        static_cast<float>(region.left), canvas_height - static_cast<float>(region.bottom),
+        static_cast<float>(region.width()), static_cast<float>(region.height()), has_background);
 }
 
 extern "C" int ladybird_v_skia_draw_rgba_image(CGContextRef destination,

@@ -138,6 +138,13 @@ extern int ladybird_v_skia_draw_rgba_image(CGContextRef destination,
 	float transform_d, float transform_e, float transform_f, float page_x,
 	float page_y, float scroll_y, float canvas_width, float canvas_height,
 	float opacity, int nearest_neighbor, int image_flags, float const *clip_radii);
+extern int ladybird_v_skia_draw_rgba_image_tiles(CGContextRef destination,
+	const uint8_t *pixels, int image_width, int image_height, int image_pitch,
+	float const *tiles, int tile_count, float clip_x, float clip_y, float clip_width,
+	float clip_height, float transform_a, float transform_b, float transform_c,
+	float transform_d, float transform_e, float transform_f, float page_x,
+	float page_y, float scroll_y, float canvas_width, float canvas_height,
+	float opacity, int nearest_neighbor, int image_flags, float const *clip_radii);
 extern int ladybird_v_skia_draw_drop_shadow(CGContextRef destination,
 	CGImageRef source, float canvas_width, float canvas_height, float scale,
 	float offset_x, float offset_y, float standard_deviation, uint8_t red,
@@ -4665,6 +4672,70 @@ static int native_draw_cg_image_part_with_skia(CGContextRef destination,
 }
 #endif
 
+#ifdef LADYBIRD_V_HAS_SKIA_TEXT
+// The pixels, row pitch and image flags the Skia bridge draws a gg image from.
+typedef struct {
+	uint8_t const *pixels;
+	uint8_t *flipped_pixels;
+	int pitch;
+	int flags;
+} NativeSkiaImageSource;
+
+static int native_begin_skia_image_source(CGContextRef context, gg__Image *image,
+	NativeSkiaImageSource *source) {
+	// Markers 8 to 10 retain planar YUV rather than packed RGBA for native
+	// sampling: limited-range 4:2:0, full-range 4:2:0 and full-range 4:4:4.
+	if (image->path.len != 0 || image->nr_channels < 4 || image->nr_channels > 10) {
+		return 0;
+	}
+	size_t pitch = (size_t)image->width * 4;
+	size_t byte_count = (size_t)image->height <= SIZE_MAX / pitch
+	    ? pitch * (size_t)image->height
+	    : 0;
+	int needs_vertical_flip = image->nr_channels == 4 || image->nr_channels == 5;
+	uint8_t *flipped_pixels = needs_vertical_flip && byte_count > 0
+	    ? malloc(byte_count) : NULL;
+	uint8_t const *source_pixels = needs_vertical_flip ? flipped_pixels
+	    : (uint8_t const *)image->data;
+	if (source_pixels == NULL) {
+		return 0;
+	}
+	// composite_pixels() publishes its first row through a Quartz image in
+	// bottom-up view coordinates. Reflect Quartz-ordered bitmap rows once;
+	// FFmpeg and copied video-canvas rows are already top-down.
+	if (needs_vertical_flip) {
+		for (int row = 0; row < image->height; ++row) {
+			memcpy(flipped_pixels + (size_t)row * pitch,
+			    (uint8_t const *)image->data
+			        + (size_t)(image->height - row - 1) * pitch,
+			    pitch);
+		}
+	}
+	VoxPngColorProfile color_profile;
+	ladybird_v_skia_set_image_color_profile(
+	    native_image_color_profile(image->data, image->width, image->height,
+	        &color_profile) ? color_profile.values : NULL);
+	*source = (NativeSkiaImageSource){
+		.pixels = source_pixels,
+		.flipped_pixels = flipped_pixels,
+		.pitch = (int)pitch,
+		.flags = (image->nr_channels == 5 || image->nr_channels == 7)
+		    | (image->nr_channels == 8 ? 4 : 0)
+		    | (image->nr_channels == 9 ? 12 : 0)
+		    | (image->nr_channels == 10 ? 28 : 0)
+		    | ((context == native_font_compositing_context
+		        && native_font_compositing_transparency_depth == 0) ? 2 : 0),
+	};
+	return 1;
+}
+
+static void native_end_skia_image_source(NativeSkiaImageSource *source) {
+	ladybird_v_skia_set_image_color_profile(NULL);
+	free(source->flipped_pixels);
+	source->flipped_pixels = NULL;
+}
+#endif
+
 static void native_draw_image_part_in_context(CGContextRef context, gg__Image *image,
 	float destination_x, float destination_y, float destination_width,
 	float destination_height, float source_x, float source_y, float source_width,
@@ -4680,52 +4751,18 @@ static void native_draw_image_part_in_context(CGContextRef context, gg__Image *i
 		return;
 	}
 #ifdef LADYBIRD_V_HAS_SKIA_TEXT
-	// Markers 8 to 10 retain planar YUV rather than packed RGBA for native
-	// sampling: limited-range 4:2:0, full-range 4:2:0 and full-range 4:4:4.
-	if (image->path.len == 0 && image->nr_channels >= 4 && image->nr_channels <= 10) {
-		size_t pitch = (size_t)image->width * 4;
-		size_t byte_count = (size_t)image->height <= SIZE_MAX / pitch
-		    ? pitch * (size_t)image->height
-		    : 0;
-		int needs_vertical_flip = image->nr_channels == 4 || image->nr_channels == 5;
-		uint8_t *flipped_pixels = needs_vertical_flip && byte_count > 0
-		    ? malloc(byte_count) : NULL;
-		uint8_t const *source_pixels = needs_vertical_flip ? flipped_pixels
-		    : (uint8_t const *)image->data;
-		if (source_pixels != NULL) {
-			// composite_pixels() publishes its first row through a Quartz image in
-			// bottom-up view coordinates. Reflect Quartz-ordered bitmap rows once;
-			// FFmpeg and copied video-canvas rows are already top-down.
-			if (needs_vertical_flip) {
-				for (int row = 0; row < image->height; ++row) {
-					memcpy(flipped_pixels + (size_t)row * pitch,
-					    (uint8_t const *)image->data
-					        + (size_t)(image->height - row - 1) * pitch,
-					    pitch);
-				}
-			}
-			VoxPngColorProfile color_profile;
-			ladybird_v_skia_set_image_color_profile(
-			    native_image_color_profile(image->data, image->width, image->height,
-			        &color_profile) ? color_profile.values : NULL);
-			int drawn = ladybird_v_skia_draw_rgba_image(context, source_pixels,
-			    image->width, image->height, (int)pitch, destination_x,
-			    destination_y, destination_width, destination_height, source_x,
-			    source_y, source_width, source_height, clip_x, clip_y, clip_width,
-			    clip_height, transform_a, transform_b, transform_c, transform_d,
-			    transform_e, transform_f, page_x, page_y, scroll_y, canvas_width,
-			    canvas_height, opacity, nearest_neighbor,
-			    (image->nr_channels == 5 || image->nr_channels == 7)
-			        | (image->nr_channels == 8 ? 4 : 0)
-			        | (image->nr_channels == 9 ? 12 : 0)
-			        | (image->nr_channels == 10 ? 28 : 0)
-			        | ((context == native_font_compositing_context
-			            && native_font_compositing_transparency_depth == 0) ? 2 : 0), clip_radii);
-			ladybird_v_skia_set_image_color_profile(NULL);
-			free(flipped_pixels);
-			if (drawn)
-				return;
-		}
+	NativeSkiaImageSource source;
+	if (native_begin_skia_image_source(context, image, &source)) {
+		int drawn = ladybird_v_skia_draw_rgba_image(context, source.pixels,
+		    image->width, image->height, source.pitch, destination_x,
+		    destination_y, destination_width, destination_height, source_x,
+		    source_y, source_width, source_height, clip_x, clip_y, clip_width,
+		    clip_height, transform_a, transform_b, transform_c, transform_d,
+		    transform_e, transform_f, page_x, page_y, scroll_y, canvas_width,
+		    canvas_height, opacity, nearest_neighbor, source.flags, clip_radii);
+		native_end_skia_image_source(&source);
+		if (drawn)
+			return;
 	}
 #endif
 	CGImageRef image_copy = native_copy_cg_image(image);
@@ -4828,6 +4865,44 @@ void native_draw_image_part_transformed(gg__Image *image, float destination_x,
 		source_height, clip_x, clip_y, clip_width, clip_height, transform_a,
 		transform_b, transform_c, transform_d, transform_e, transform_f, page_x,
 		page_y, scroll_y, canvas_width, canvas_height, opacity, nearest_neighbor, clip_radii);
+}
+
+// A background's tiles, eight floats each: the destination and source
+// rectangles native_draw_image_part_transformed() would receive. The GPU
+// painter draws them in one pass; otherwise each tile is drawn on its own.
+void native_draw_image_tiles_transformed(gg__Image *image, float const *tiles,
+	int tile_count, float clip_x, float clip_y, float clip_width, float clip_height,
+	float transform_a, float transform_b, float transform_c, float transform_d,
+	float transform_e, float transform_f, float page_x, float page_y,
+	float scroll_y, float canvas_width, float canvas_height, float opacity,
+	int nearest_neighbor, float const *clip_radii) {
+	CGContextRef context = [[NSGraphicsContext currentContext] CGContext];
+	if (context == NULL || image == NULL || image->data == NULL || tiles == NULL
+		|| tile_count <= 0) {
+		return;
+	}
+#ifdef LADYBIRD_V_HAS_SKIA_TEXT
+	NativeSkiaImageSource source;
+	if (native_begin_skia_image_source(context, image, &source)) {
+		int drawn = ladybird_v_skia_draw_rgba_image_tiles(context, source.pixels,
+		    image->width, image->height, source.pitch, tiles, tile_count, clip_x,
+		    clip_y, clip_width, clip_height, transform_a, transform_b, transform_c,
+		    transform_d, transform_e, transform_f, page_x, page_y, scroll_y,
+		    canvas_width, canvas_height, opacity, nearest_neighbor, source.flags,
+		    clip_radii);
+		native_end_skia_image_source(&source);
+		if (drawn)
+			return;
+	}
+#endif
+	for (int index = 0; index < tile_count; ++index) {
+		float const *tile = tiles + (size_t)index * 8;
+		native_draw_image_part_in_context(context, image, tile[0], tile[1], tile[2],
+			tile[3], tile[4], tile[5], tile[6], tile[7], clip_x, clip_y, clip_width,
+			clip_height, transform_a, transform_b, transform_c, transform_d,
+			transform_e, transform_f, page_x, page_y, scroll_y, canvas_width,
+			canvas_height, opacity, nearest_neighbor, clip_radii);
+	}
 }
 
 void native_draw_repeated_image_transformed(gg__Image *image,

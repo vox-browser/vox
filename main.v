@@ -186,6 +186,7 @@ fn C.native_draw_inner_box_shadow_corners_srgb(outer_x f32, outer_y f32, outer_w
 
 fn C.native_draw_image_part(image &gg.Image, destination_x f32, destination_y f32, destination_width f32, destination_height f32, source_x f32, source_y f32, source_width f32, source_height f32, canvas_height f32, opacity f32)
 
+fn C.native_draw_image_tiles_transformed(image &gg.Image, tiles &f32, tile_count int, clip_x f32, clip_y f32, clip_width f32, clip_height f32, transform_a f32, transform_b f32, transform_c f32, transform_d f32, transform_e f32, transform_f f32, page_x f32, page_y f32, scroll_y f32, canvas_width f32, canvas_height f32, opacity f32, nearest_neighbor int, clip_radii &f32)
 fn C.native_draw_image_part_transformed(image &gg.Image, destination_x f32, destination_y f32, destination_width f32, destination_height f32, source_x f32, source_y f32, source_width f32, source_height f32, clip_x f32, clip_y f32, clip_width f32, clip_height f32, transform_a f32, transform_b f32, transform_c f32, transform_d f32, transform_e f32, transform_f f32, page_x f32, page_y f32, scroll_y f32, canvas_width f32, canvas_height f32, opacity f32, nearest_neighbor int, clip_radii &f32)
 
 fn C.native_draw_repeated_image_transformed(image &gg.Image, destination_x f32, destination_y f32, destination_width f32, destination_height f32, clip_x f32, clip_y f32, clip_width f32, clip_height f32, transform_a f32, transform_b f32, transform_c f32, transform_d f32, transform_e f32, transform_f f32, page_x f32, page_y f32, scroll_y f32, canvas_height f32, opacity f32, nearest_neighbor int, repeat_x int, repeat_y int)
@@ -6262,6 +6263,11 @@ fn (mut app BrowserApp) draw_command(source_command layout.PaintCommand, page_x 
 			} else {
 				painting.background_tiles_from_plan_limited(plan, clip, 4096)
 			}
+			// GPU bitmap tiles draw in one native pass rather than one per tile.
+			mut native_tiles := []f32{}
+			mut native_tiles_nearest := 0
+			r := image_data.image_clip_radii
+			tile_clip_radii := [f32(r.top_left.x), f32(r.top_left.y), f32(r.top_right.x), f32(r.top_right.y), f32(r.bottom_right.x), f32(r.bottom_right.y), f32(r.bottom_left.x), f32(r.bottom_left.y)]!
 			for original_tile in tiles {
 				tile := if snap_bitmap { pixel_snapped_background_bitmap_rect(original_tile) } else { original_tile }
 				if svg_document := image_data.background_svg_document {
@@ -6337,14 +6343,18 @@ fn (mut app BrowserApp) draw_command(source_command layout.PaintCommand, page_x 
 							int(math.round(tile.height))
 						}
 						scaling_mode := painting.to_gfx_scaling_mode(image_data.image_rendering, painting.IntSize{image.width, image.height}, painting.IntSize{destination_width, destination_height})
+						nearest := if scaling_mode == .nearest_neighbor { 1 } else { 0 }
 						$if macos {
-							r := image_data.image_clip_radii
-							clip_radii := [f32(r.top_left.x), f32(r.top_left.y), f32(r.top_right.x), f32(r.top_right.y), f32(r.bottom_right.x), f32(r.bottom_right.y), f32(r.bottom_left.x), f32(r.bottom_left.y)]!
-							C.native_draw_image_part_transformed(image, f32(left), f32(top), f32(right_edge - left), f32(bottom_edge - top), source_x, source_y, source_width, source_height, f32(clip.x), f32(clip.y), f32(clip.width), f32(clip.height), f32(matrix[0]), f32(matrix[1]), f32(matrix[2]), f32(matrix[3]), f32(matrix[4]), f32(matrix[5]), page_x, page_y, f32(scroll_y), f32(app.ctx.width), f32(app.ctx.height), f32(command.opacity), if scaling_mode == .nearest_neighbor {
-								1
+							if gpu_bitmap_tiles {
+								if native_tiles.len > 0 && nearest != native_tiles_nearest {
+									C.native_draw_image_tiles_transformed(image, unsafe { &native_tiles[0] }, native_tiles.len / 8, f32(clip.x), f32(clip.y), f32(clip.width), f32(clip.height), f32(matrix[0]), f32(matrix[1]), f32(matrix[2]), f32(matrix[3]), f32(matrix[4]), f32(matrix[5]), page_x, page_y, f32(scroll_y), f32(app.ctx.width), f32(app.ctx.height), f32(command.opacity), native_tiles_nearest, &tile_clip_radii[0])
+									native_tiles.clear()
+								}
+								native_tiles_nearest = nearest
+								native_tiles << [f32(left), f32(top), f32(right_edge - left), f32(bottom_edge - top), source_x, source_y, source_width, source_height]
 							} else {
-								0
-							}, if gpu_bitmap_tiles { &clip_radii[0] } else { unsafe { &f32(nil) } })
+								C.native_draw_image_part_transformed(image, f32(left), f32(top), f32(right_edge - left), f32(bottom_edge - top), source_x, source_y, source_width, source_height, f32(clip.x), f32(clip.y), f32(clip.width), f32(clip.height), f32(matrix[0]), f32(matrix[1]), f32(matrix[2]), f32(matrix[3]), f32(matrix[4]), f32(matrix[5]), page_x, page_y, f32(scroll_y), f32(app.ctx.width), f32(app.ctx.height), f32(command.opacity), nearest, unsafe { &f32(nil) })
+							}
 						}
 					} else {
 						screen_left, screen_top := paint_screen_point(command, left, top, page_x, page_y, scroll_y)
@@ -6359,6 +6369,9 @@ fn (mut app BrowserApp) draw_command(source_command layout.PaintCommand, page_x 
 				}
 			}
 			$if macos {
+				if native_tiles.len > 0 {
+					C.native_draw_image_tiles_transformed(image, unsafe { &native_tiles[0] }, native_tiles.len / 8, f32(clip.x), f32(clip.y), f32(clip.width), f32(clip.height), f32(matrix[0]), f32(matrix[1]), f32(matrix[2]), f32(matrix[3]), f32(matrix[4]), f32(matrix[5]), page_x, page_y, f32(scroll_y), f32(app.ctx.width), f32(app.ctx.height), f32(command.opacity), native_tiles_nearest, &tile_clip_radii[0])
+				}
 				if app.ctx.native_rendering {
 					if layer.blend_mode != .normal {
 						C.native_end_background_blend_mode()
