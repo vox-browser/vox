@@ -7304,6 +7304,12 @@ pub fn (mut d Document) update_style() {
 	}
 	if d.style_invalidator_ != unsafe { nil } {
 		mut invalidator := unsafe { &StyleInvalidator(d.style_invalidator_) }
+		// A full cascade already visits every connected element and shadow tree.
+		// Reuse subtree invalidation to drain pending plans and removed-attribute
+		// state without matching selective rules that cannot enlarge that set.
+		if d.needs_full_style_update {
+			document_node.set_entire_subtree_needs_style_update(true)
+		}
 		invalidator.invalidate(mut document_node)
 	}
 

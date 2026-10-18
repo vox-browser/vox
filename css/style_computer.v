@@ -1761,6 +1761,11 @@ fn update_style_for_document_from_upstream(document &dom.Document) RequiredInval
 		mut invalidator := mutable_document.style_invalidator()
 		if invalidator.has_pending_invalidations() {
 			mut document_node := unsafe { &dom.Node(document) }
+			// :has() can enqueue another fanout after the document's first
+			// drain. A pending full cascade covers this fanout as well.
+			if document.needs_full_style_update() {
+				document_node.set_entire_subtree_needs_style_update(true)
+			}
 			invalidator.invalidate(mut document_node)
 		}
 	}
