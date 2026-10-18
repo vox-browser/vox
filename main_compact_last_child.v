@@ -18,7 +18,13 @@ fn (mut binding CompactElementQueryBinding) node_state(node &dom.Node) json2.Any
 }
 
 fn (mut binding CompactElementQueryBinding) node_relation_query(root &dom.Node, relation string) string {
-	node := if relation == 'last' { root.last_child() } else { root.parent() }
+	node := match relation {
+		'first' { root.first_child() }
+		'last' { root.last_child() }
+		'next' { root.next_sibling() }
+		'previous' { root.previous_sibling() }
+		else { root.parent() }
+	}
 	return if found := node { json2.encode(binding.node_state(found)) } else { 'null' }
 }
 
@@ -49,6 +55,9 @@ function __compactNodeWrapper(state){
   parentNode:{get(){return __queryElements(record(this).bridgeKey,"nodeParent","");}},
   parentElement:{get(){const parent=this.parentNode;return parent&&parent.nodeType===1?parent:null;}},
   firstChild:{value:null},lastChild:{value:null},
+  nextSibling:{get(){return __queryElements(record(this).bridgeKey,"nextSibling","");}},
+  previousSibling:{get(){return __queryElements(record(this).bridgeKey,"previousSibling","");}},
+  __firstChildOf:{get(){const parent=this.parentNode;return parent&&parent.nodeType===1&&parent.firstChild===this?parent.__state.bridgeKey:undefined;}},
   nodeValue:{get:read,set(value){write(this,value,true);}},textContent:{get:read,set(value){write(this,value,true);}},
   data:{get:read,set(value){write(this,value,false);}},length:{get(){return __elementApply(read,this,[]).length;}},
   cloneNode:{value:function cloneNode(deep){return __queryElements(record(this).bridgeKey,"cloneNode",deep?"deep":"shallow");}}
@@ -57,9 +66,11 @@ function __compactNodeWrapper(state){
  Object.defineProperty(state,"__object",{value:node});
  return node;
 }
-Object.defineProperty(Element.prototype,"lastChild",{get:function(){
+for(const name of ["firstChild","lastChild","nextSibling","previousSibling"]){
+Object.defineProperty(Element.prototype,name,{get:function(){
  const state=__elementApply(__elementRecordGet,__elementRecords,[this]);
  if(!state)throw new TypeError("Illegal Node receiver");
- return __queryElements(state.bridgeKey,"lastChild","");
-},enumerable:true,configurable:true});'
+ return __queryElements(state.bridgeKey,name,"");
+},enumerable:true,configurable:true});
+}'
 }

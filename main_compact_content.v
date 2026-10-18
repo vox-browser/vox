@@ -156,7 +156,17 @@ fn (mut binding CompactElementQueryBinding) query(input string) !string {
 	if action == 'removeChild' { return binding.remove_child_query(root, selector) }
 	if action == 'getElementsByTagName' { return binding.tag_collection_query(root, selector) }
 	if action == 'lastChild' { return binding.node_relation_query(root, 'last') }
+	if action == 'firstChild' { return binding.node_relation_query(root, 'first') }
+	if action == 'nextSibling' { return binding.node_relation_query(root, 'next') }
+	if action == 'previousSibling' { return binding.node_relation_query(root, 'previous') }
 	if action == 'nodeParent' { return binding.node_relation_query(root, 'parent') }
+	if action == 'geometry' { return compact_element_geometry_query(root, selector) }
+	if action == 'offsetParent' {
+		element := root.as_element() or { return error('TypeError: Invalid Element receiver') }
+		if !element.is_html_element() { return 'null' }
+		parent := html.html_element_offset_parent(unsafe { &dom.HTMLElement(element) }) or { return 'null' }
+		return json2.encode(binding.element_state(parent))
+	}
 	if action in ['nodeValue', 'setNodeValue'] {
 		return binding.node_value_query(root, action, selector)
 	}
