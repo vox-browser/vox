@@ -24,7 +24,7 @@ fn vox_credit_frames(transport &VoxCreditTransport) []H2WindowUpdateFrame {
     return frames
 }
 
-fn test_small_chunks_wait_for_completion_and_credit_every_consumed_byte_once() {
+fn test_small_complete_response_returns_without_a_redundant_tls_write() {
     mut transport := &VoxCreditTransport{}
     mut stream := new_h2_mux_stream()
     mut conn := &H2MuxConn{transport: transport, streams: {u32(1): stream}}
@@ -39,14 +39,18 @@ fn test_small_chunks_wait_for_completion_and_credit_every_consumed_byte_once() {
     stream.recv_window -= 100
     conn.conn_recv_window -= 100
     conn.send_window_updates(1, 100)!
-    assert transport.writes.len == 1
+    assert transport.writes.len == 0
+    assert conn.vox_pending_conn_credit == 12388
+    assert conn.conn_recv_window == i64(h2_default_initial_window) - 12388
+    assert stream.vox_pending_recv_credit == 0
+    // A later discard/cancel restores all pending connection credit, without
+    // generating a WINDOW_UPDATE for the completed stream.
+    conn.conn_recv_window--
+    conn.send_conn_window_update(1)!
     frames := vox_credit_frames(transport)
-    assert frames.len == 2
-    assert frames[0].stream_id == 0 && frames[1].stream_id == 1
-    assert frames.all(it.window_size_increment == 12388)
+    assert frames.len == 1 && frames[0].stream_id == 0
+    assert frames[0].window_size_increment == 12389
     assert conn.conn_recv_window == i64(h2_default_initial_window)
-    assert stream.recv_window == i64(h2_default_initial_window)
-    assert conn.vox_pending_conn_credit == 0 && stream.vox_pending_recv_credit == 0
 }
 
 fn test_large_active_response_replenishes_before_either_window_runs_out() {
@@ -106,4 +110,43 @@ fn test_cancellation_restores_pending_credit_and_leaves_other_streams_usable() {
     assert frames[0].window_size_increment == 120
     assert conn.vox_pending_conn_credit == 0
     assert conn.conn_recv_window == i64(h2_default_initial_window)
+}
+
+fn test_completed_padded_response_preserves_immediate_padding_and_data_credit() {
+    mut transport := &VoxCreditTransport{}
+    mut stream := new_h2_mux_stream()
+    stream.vox_force_recv_credit = true
+    stream.ended = true
+    stream.recv_window -= 103
+    mut conn := &H2MuxConn{transport: transport, streams: {u32(1): stream}}
+    conn.conn_recv_window -= 103
+    conn.send_window_updates(1, 101)!
+    conn.send_window_updates(1, 2)!
+    frames := vox_credit_frames(transport)
+    assert frames.len == 4
+    assert frames[0].window_size_increment == 101
+    assert frames[2].window_size_increment == 2
+    assert conn.vox_pending_conn_credit == 0 && stream.vox_pending_recv_credit == 0
+    assert conn.conn_recv_window == i64(h2_default_initial_window)
+}
+
+fn test_many_small_completed_streams_restore_shared_credit_before_it_is_exhausted() {
+    mut transport := &VoxCreditTransport{}
+    mut conn := &H2MuxConn{transport: transport}
+    for index in 0 .. 20 {
+        id := u32(index*2+1)
+        mut stream := new_h2_mux_stream()
+        stream.ended = true
+        stream.recv_window -= 2048
+        conn.streams[id] = stream
+        conn.conn_recv_window -= 2048
+        conn.send_window_updates(id, 2048)!
+        conn.streams.delete(id)
+        assert conn.conn_recv_window > 0
+    }
+    frames := vox_credit_frames(transport)
+    assert frames.len == 1 && frames[0].stream_id == 0
+    assert frames[0].window_size_increment == 32768
+    assert conn.vox_pending_conn_credit == 8192
+    assert conn.conn_recv_window == i64(h2_default_initial_window) - 8192
 }

@@ -7,27 +7,40 @@ def patch_h2_mux_receive_credit(source):
     for field in (stream, connection):
         if source.count(field) != 1:
             raise RuntimeError('Unsupported V HTTP/2 receive-window layout')
-    source = source.replace(stream, '\tvox_pending_recv_credit u32\n' + stream, 1)
+    source = source.replace(stream, '\tvox_pending_recv_credit u32\n'
+                            '\tvox_force_recv_credit bool\n' + stream, 1)
     source = source.replace(connection, connection + '\n\tvox_pending_conn_credit u32', 1)
+    # Padding keeps its existing immediate accounting, including the race
+    # between the reader crediting padding and the consumer draining data.
+    padding_anchor = '\tif frame.data.len > 0 {\n\t\ts.chunks << frame.data.clone()'
+    if source.count(padding_anchor) != 1:
+        raise RuntimeError('Unsupported V HTTP/2 DATA delivery layout')
+    source = source.replace(padding_anchor,
+                            '\tif pad_overhead > 0 { s.vox_force_recv_credit = true }\n'
+                            + padding_anchor, 1)
     start = source.index('fn (mut c H2MuxConn) send_window_updates(')
     end = source.index('\n}\n', start) + 2
     source = source[:start] + r'''
 fn (mut c H2MuxConn) send_window_updates(stream_id u32, n u32) ! {
     if n == 0 { return }
     // A consumer need not write credit for every small DATA chunk. Keep
-    // consumed credit until about half a window has been consumed, or the
-    // response ends. Low remaining windows force a flush independently at
+    // consumed credit until about half a window has been consumed.
+    // Low remaining windows force a flush independently at
     // each level, so many small concurrent streams cannot exhaust the shared
     // connection window while waiting for their individual thresholds.
     threshold := u32(h2_default_initial_window / 2)
     mut stream_increment := u32(0)
-    mut completed := true
+    mut force_credit := true
     c.smu.lock()
     if mut s := c.streams[stream_id] {
         s.mu.lock()
-        completed = s.ended
+        force_credit = s.vox_force_recv_credit || s.err != '' || s.cancelled
         s.vox_pending_recv_credit += n
-        if completed || s.recv_window <= i64(threshold)
+        if s.ended && !force_credit {
+            // A normally completed stream will receive no more DATA. Keep
+            // its connection credit, but discard the unnecessary stream ACK.
+            s.vox_pending_recv_credit = 0
+        } else if force_credit || s.recv_window <= i64(threshold)
             || s.vox_pending_recv_credit >= threshold {
             stream_increment = s.vox_pending_recv_credit
             s.vox_pending_recv_credit = 0
@@ -39,7 +52,7 @@ fn (mut c H2MuxConn) send_window_updates(stream_id u32, n u32) ! {
     mut connection_increment := u32(0)
     c.recv_wmu.lock()
     c.vox_pending_conn_credit += n
-    if completed || c.conn_recv_window <= i64(threshold)
+    if force_credit || c.conn_recv_window <= i64(threshold)
         || c.vox_pending_conn_credit >= threshold {
         connection_increment = c.vox_pending_conn_credit
         c.vox_pending_conn_credit = 0
