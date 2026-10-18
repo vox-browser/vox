@@ -2425,10 +2425,11 @@ fn replay_cached_paint_commands_with_visual_context(steps []CompatibilityPaintSt
 // list is materialized. Keeping this plan compact avoids a second full-width
 // command vector on every animation or scroll repaint.
 struct CompatibilityCachedVisualReplayStep {
-	command      &PaintCommand = unsafe { nil }
-	box          &BlockBox = unsafe { nil }
-	context_slot int
-	layer_list   &PaintVisualLayerList = unsafe { nil }
+	command       &PaintCommand = unsafe { nil }
+	box           &BlockBox = unsafe { nil }
+	context_slot  int
+	layer_list    &PaintVisualLayerList = unsafe { nil }
+	opacity_scale f64 = 1.0
 }
 
 fn cached_visual_replay_command_count(steps []CompatibilityCachedVisualReplayStep) int {
@@ -2461,6 +2462,9 @@ mut:
 	memo_slots        []int
 	memo_contexts     []CompatibilityFlattenedVisualContext
 	plan              []CompatibilityCachedVisualReplayStep
+	// Per paint-order entry, current over recorded cumulative opacity; empty
+	// when no entry's opacity changed since its commands were recorded.
+	entry_opacity_scales []f64
 }
 
 // Grow the retained buffers before recording enters its scene arena, so the
@@ -2505,6 +2509,11 @@ fn record_cached_paint_commands_with_visual_context_into(steps []CompatibilityPa
 			step.box.accumulated_visual_context_index
 		}
 		bucket := step.entry_index * compatibility_paint_phase_count + int(step.phase)
+		opacity_scale := if step.entry_index < scratch.entry_opacity_scales.len {
+			scratch.entry_opacity_scales[step.entry_index]
+		} else {
+			1.0
+		}
 		for index in 0 .. phase_commands[bucket].len {
 			cached := unsafe { &phase_commands[bucket][index] }
 			context_index := cached.visual_context_index or { default_context_index }
@@ -2516,6 +2525,7 @@ fn record_cached_paint_commands_with_visual_context_into(steps []CompatibilityPa
 				box: step.box
 				context_slot: context_slot
 				layer_list: context.layer_list
+				opacity_scale: opacity_scale
 			}
 		}
 	}
@@ -2598,6 +2608,9 @@ fn record_cached_paint_commands_with_visual_context_into(steps []CompatibilityPa
 			}
 		}
 		command.group_opacity = context.group_opacity
+		if step.opacity_scale != 1.0 {
+			command.opacity *= step.opacity_scale
+		}
 		apply_live_scrollbar_offset(mut command, step.box)
 		apply_live_background_offsets(mut command, step.box)
 		if command.clip_list != unsafe { nil } && desired.any(it.kind == .svg_mask) {
@@ -2646,6 +2659,57 @@ pub fn recycle_display_list_commands(display_list &dom.DisplayList, commands []P
 	result.record_scratch.recycled_commands = unsafe { commands }
 }
 
+// Entries (re)recorded by this recording carry the paint order's current
+// cumulative opacity. Valid entries keep the opacity they were recorded with.
+fn note_recorded_entry_opacities(mut result DocumentLayoutResult) {
+	count := result.paint_order.len
+	if result.paint_phase_entry_opacity.len != count {
+		result.paint_phase_entry_opacity = []f64{len: count}
+		for index in 0 .. count {
+			result.paint_phase_entry_opacity[index] = result.paint_order[index].opacity
+		}
+		return
+	}
+	for index in 0 .. count {
+		if !result.paint_phase_cache_valid || index >= result.paint_phase_entry_valid.len
+			|| !result.paint_phase_entry_valid[index] {
+			result.paint_phase_entry_opacity[index] = result.paint_order[index].opacity
+		}
+	}
+}
+
+// An opacity sample that leaves paint-step membership alone updates the
+// paint order's cumulative opacities in place (refresh_paint_order_opacities)
+// instead of re-recording every command below the animated box. Replay
+// scales those commands by current over recorded opacity, so their cached
+// payloads are reused on every frame.
+fn viewport_entry_opacity_scales(mut result DocumentLayoutResult) {
+	mut scales := unsafe { result.record_scratch.entry_opacity_scales }
+	result.record_scratch.entry_opacity_scales = []f64{}
+	scales.clear()
+	count := result.paint_order.len
+	mut changed := false
+	if result.paint_phase_entry_opacity.len == count {
+		for index in 0 .. count {
+			if result.paint_order[index].opacity != result.paint_phase_entry_opacity[index] {
+				changed = true
+				break
+			}
+		}
+	}
+	if changed {
+		if scales.cap < count {
+			scales = []f64{cap: count}
+		}
+		for index in 0 .. count {
+			recorded := result.paint_phase_entry_opacity[index]
+			current := result.paint_order[index].opacity
+			scales << if recorded > 0 && current != recorded { current / recorded } else { 1.0 }
+		}
+	}
+	result.record_scratch.entry_opacity_scales = scales
+}
+
 fn viewport_record_display_list(target voidptr) &dom.DisplayList {
 	mut result := viewport_layout_result(target)
 	viewport_only := result.document.recording_viewport_only()
@@ -2671,6 +2735,7 @@ fn viewport_record_display_list(target voidptr) &dom.DisplayList {
 		result.paint_phase_command_count = 0
 		result.paint_phase_line_box_debug = show_line_box_borders
 	}
+	note_recorded_entry_opacities(mut result)
 	if !result.paint_phase_cache_valid {
 		result.paint_phase_commands, result.paint_phase_command_count = result.paint_tree.build_selected_paint_phase_command_cache_with_debug(result.paint_order, result.paint_phase_commands, selected, show_line_box_borders)
 		result.paint_phase_entry_valid = if selected.len > 0 { selected.clone() } else { []bool{len: result.paint_order.len, init: true} }
@@ -2678,6 +2743,7 @@ fn viewport_record_display_list(target voidptr) &dom.DisplayList {
 	} else {
 		result.paint_phase_command_count += result.paint_tree.refresh_selected_paint_phase_command_cache_with_debug(result.paint_order, selected, mut result.paint_phase_commands, mut result.paint_phase_entry_valid, show_line_box_borders)
 	}
+	viewport_entry_opacity_scales(mut result)
 	snapshot := result.scroll_state_snapshot
 	mut force_dark := ?painting.ForceDarkSettings(none)
 	if model := html.NavigableModel.navigable_with_active_document(result.document) {

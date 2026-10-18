@@ -476,6 +476,8 @@ mut:
 	paint_phase_cache_valid   bool
 	paint_phase_line_box_debug bool
 	paint_phase_entry_valid   []bool
+	// Each entry's cumulative opacity when its phase commands were recorded.
+	paint_phase_entry_opacity []f64
 	paint_recording_viewport_only bool
 	// The caret is emitted by its containing block's retained foreground phase.
 	// Remember the dynamic inputs which selected that command so cursor moves and

@@ -63,6 +63,11 @@ struct CompositorPaintStyleRefresh {
 mut:
 	changed                bool
 	invalidates_paint_plan bool
+	// A nonzero opacity changed to another nonzero value. Paint-step
+	// membership is unchanged; only the paint order's cumulative opacities
+	// are stale, and replay scales the cached commands (see
+	// viewport_entry_opacity_scales).
+	entry_opacities_changed bool
 	// Boxes whose opacity or own transform changed.
 	boxes []&BlockBox
 }
@@ -92,7 +97,14 @@ fn refresh_compositor_paint_styles_in_box(mut box BlockBox, state &LayoutState,
 					refresh.changed = true
 					refresh.boxes << unsafe { &box }
 				}
-				if opacity_changed { refresh.invalidates_paint_plan = true }
+				if opacity_changed {
+					// Opacity zero removes a context from the paint plan.
+					if (box.opacity == 0) != (computed.opacity() == 0) {
+						refresh.invalidates_paint_plan = true
+					} else {
+						refresh.entry_opacities_changed = true
+					}
+				}
 				box.opacity = f64(computed.opacity())
 				box.own_paint_transform = transform
 				box.own_paint_transform_4x4 = matrix

@@ -106,7 +106,8 @@ fn refresh_local_paint_styles(mut result DocumentLayoutResult) {
 		// Opacity zero and singular transforms also change paint-step membership,
 		// and cached commands carry cumulative opacity. Rebuild those plans from
 		// the retained boxes, keeping resource snapshots.
-		if compositor.invalidates_paint_plan {
+		if compositor.invalidates_paint_plan
+			|| (compositor.entry_opacities_changed && !refresh_paint_order_opacities(mut result, use_scratch)) {
 			viewport_invalidate_compositor_stacking_context(voidptr(&result))
 		}
 		// The samples keep box categories, so normally only node values change.
@@ -126,6 +127,39 @@ fn refresh_local_paint_styles(mut result DocumentLayoutResult) {
 	result.needs_repaint = true
 	mut document := unsafe { &dom.Document(result.document) }
 	document.invalidate_display_list()
+}
+
+// Update the retained paint order's cumulative opacities after opacity
+// samples that leave paint-step membership unchanged. Returns false when the
+// order itself differs, so the plan has to be rebuilt.
+fn refresh_paint_order_opacities(mut result DocumentLayoutResult, in_scratch bool) bool {
+	if !result.stacking_context_tree_is_valid {
+		return true
+	}
+	mut scratch := paint_style_refresh_scratch_
+	mut entry := platform.ArenaEntry{}
+	if in_scratch {
+		entry = scratch.enter()
+	}
+	fresh := result.paint_tree.paint_order_entries()
+	mut same_order := fresh.len == result.paint_order.len
+	if same_order {
+		for index, current in fresh {
+			if voidptr(current.box) != voidptr(result.paint_order[index].box) {
+				same_order = false
+				break
+			}
+		}
+	}
+	if same_order {
+		for index, current in fresh {
+			result.paint_order[index] = current
+		}
+	}
+	if in_scratch {
+		scratch.leave(entry)
+	}
+	return same_order
 }
 
 fn line_style_depends_on_changed_node(box &BlockBox, changed &HandleSet) bool {

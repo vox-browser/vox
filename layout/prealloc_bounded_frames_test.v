@@ -5,12 +5,15 @@ import platform
 
 // Under -prealloc nothing allocated from a thread's base arena is ever freed,
 // so per-frame work must use arenas or reuse retained storage. After warm-up,
-// compositor-only animations (an element's transform and a pseudo-element's
-// transform) may only add a small amount of persistent storage per frame.
+// compositor-only animations (an element's transform or opacity, and a
+// pseudo-element's transform) may only add a small amount of persistent
+// storage per frame.
 // Without -prealloc the frames still run; the base arena is not measured.
 const bounded_frames_styles = '<!doctype html><style>html,body{margin:0}
 @keyframes move{from{transform:translateX(0)}to{transform:translateX(100px)}}
+@keyframes fade{from{opacity:0.2}to{opacity:0.9}}
 .t{width:20px;height:20px;background:green;animation:move 1s linear infinite}
+.o{width:20px;height:20px;background:green;animation:fade 1s linear infinite}
 .p{position:relative;overflow:hidden;width:60px;height:20px}.p::before{content:"";position:absolute;inset:0;background:linear-gradient(90deg,transparent,#fff,transparent);animation:move 1s linear infinite}
 </style>'
 
@@ -54,7 +57,7 @@ fn run_bounded_frames(class string) BoundedFramesResult {
 }
 
 fn test_compositor_animation_frames_reuse_bounded_storage() {
-	for class in ['t', 'p'] {
+	for class in ['t', 'o', 'p'] {
 		result := run_bounded_frames(class)
 		$if prealloc {
 			// Poisoned arenas are never reused, by design.
