@@ -12588,6 +12588,47 @@ baseline124, its verified isolated app, canonical app and GUI remain preserved.
 Chrome parity stays unestablished because the earlier Chrome count uses a
 different endpoint and hydrated content.
 
+## Reject the seventeen-feature composition at the original-contract gate
+
+Round128 adds complete isolated-network-SVG (`070f4adc`) and viewport-SVG-cache
+(`dfc0992d`) prerequisites to the prior composition. Seventeen authored features
+reconstruct183 exact hunks. Twenty-three runtime paths change, with eight new
+helper files and previously accepted89 post-hunks authenticated. Old-compiler
+whole-app C-only preflight actually exits0; its exact generated C and gzip hashes
+are retained. This is no native browser build or performance result.
+
+The common11 functional cases plus one inactive diagnostic pass60 assertions
+in fresh candidate/Boehm and no-GC builds. Before safely reuses identical successful
+124-final evidence. Both original DOM callback cases pass in each GC mode,
+**19 assertions each**, with real driver exits0. These passes remain retained.
+
+The remaining original contract groups fail during compilation in both GC modes:
+layout34, CSS42 and main6 have zero executed-case pass credit. Legacy SVG tests
+refer to PaintCommand's old image fields, moved by the already accepted
+`75966fb5` feature behind `image()`. That commit contains their exact authored
+accessor migrations. The CSS and main contracts also require
+`Document.set_scripting_enabled_by_embedder()` from full feature `8c026300`;
+CSS's document-reuse case requires `ComputedLayoutCache.document_resolution_owner`
+from `260cdb08`, with its pointer-identity correction `26b07c0f`. No assertion,
+expected value, weak-owner header or test body is weakened in this round.
+Main C generation exits1 before Clang, signing or harness execution. Layout/CSS
+direct V drivers exit1; the aggregate contract controller actually exits1.
+
+The local diagnostic gate exits1 with an empty sample list before any local
+build. All three fixed alternating local pairs and30 alternating browser pairs
+remain unstarted (seed128,30,000 paired bootstrap resamples). No V profile,
+normal native binary, browser C audit, primary, bundle/GC or broad batch occurs.
+No instruction reduction is credited. Archive-only exit0 preserves all passing
+and failed outcomes, including the DOM binaries and whole-app C-only output,
+in `Build/v/instruction-opt128-durable-archives.json`.
+
+The next dependency review includes the complete scripting and document-reuse
+features and verifies the committed image-accessor test migrations. Existing
+Root code, foreign edits, canonical app/GUI and immutable failed evidence stay
+untouched. Frozen control/broad baseline124, verified isolated124 app and observed
+carry0 remain. Chrome parity remains unestablished: the earlier Chrome count has
+a different endpoint and hydrated content.
+
 ## Causes and changes
 
 - The V 0.5.2 compatibility compiler's `-prod` Boehm code repeatedly snapshots

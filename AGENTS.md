@@ -2174,6 +2174,11 @@ evidence](docs/translation-audit/NATIVE_MEDIA_WHEEL_RAW_HANDLER.md).
   Prepared76 original cases remain unexecuted; no native/runtime/local/profile/page work or credit.
   Complete SVG prerequisites required; no wrapper/shim or dropped call.
   Frozen124 control/broad baseline, carry0 and verified124 app preserved; Chrome parity open.
+  Property-sharing closure round128:17 authored features/183hunks/23changed paths.
+  C-only preflight0; common60/config and original2 DOM cases/19asserts eachGC pass.
+  Other contract groups stop at compilation: scripting/cache APIs and legacy image-field accessors.
+  Aggregate actual1; zero local samples/primaries/credit; all passes/failures retained.
+  Frozen124 control/broad baseline, carry0 and verified124 app preserved; Chrome parity open.
 - Outside instruction-count optimization, run broad regression suites once per
   ten completed fixes, not after every fix.
   Broad suites include full translation/package test batches, the full LibJS AST
