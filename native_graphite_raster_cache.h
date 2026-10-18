@@ -85,6 +85,8 @@ class VoxGraphiteRasterCache {
             && a.segment_count == b.segment_count && a.even_odd == b.even_odd
             && a.red == b.red && a.green == b.green && a.blue == b.blue && a.alpha == b.alpha
             && a.stroke == b.stroke && a.line_cap == b.line_cap && a.line_join == b.line_join
+            && a.non_scaling_stroke == b.non_scaling_stroke
+            && a.has_float_alpha == b.has_float_alpha
             && !std::memcmp(&a.stroke_width, &b.stroke_width, sizeof(a.stroke_width))
             && !std::memcmp(&a.miter_limit, &b.miter_limit, sizeof(a.miter_limit))
             && a.gradient == b.gradient && a.tile_mode == b.tile_mode

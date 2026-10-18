@@ -660,6 +660,64 @@ int vox_graphite_draw_shape_pixels(uint8_t* pixels, int width, int height,
     return result;
 }
 
+static bool draw_path_on_canvas(SkCanvas* canvas, VoxGraphitePath const* path)
+{
+    SkMatrix matrix;
+    matrix.set9(path->matrix);
+    canvas->setMatrix(matrix);
+    auto geometry = vox_path_from_serialized_segments(path->segments, path->segment_count);
+    geometry.setFillType(path->even_odd ? SkPathFillType::kEvenOdd : SkPathFillType::kWinding);
+    SkPaint paint;
+    paint.setAntiAlias(true);
+    paint.setColor(SkColorSetARGB(path->alpha, path->red, path->green, path->blue));
+    if (path->has_float_alpha) paint.setAlphaf(path->opacity);
+    std::vector<SkColor4f> colors;
+    std::vector<float> positions;
+    if (path->gradient) {
+        if (!path->stops || path->stop_count < 2) return false;
+        for (int index = 0; index < path->stop_count; ++index) {
+            auto const* stop = path->stops + index * 5;
+            colors.push_back({stop[0], stop[1], stop[2], stop[3]});
+            positions.push_back(stop[4]);
+        }
+        SkMatrix local;
+        local.set9(path->gradient_matrix);
+        SkGradient gradient(SkGradient::Colors(SkSpan<const SkColor4f>(colors),
+            SkSpan<const float>(positions), static_cast<SkTileMode>(path->tile_mode)), {});
+        auto const* points = path->gradient_points;
+        sk_sp<SkShader> shader;
+        if (path->gradient == 1) {
+            SkPoint ends[] {{points[0], points[1]}, {points[2], points[3]}};
+            shader = SkShaders::LinearGradient(ends, gradient, &local);
+        } else {
+            shader = SkShaders::TwoPointConicalGradient({points[0], points[1]}, points[2],
+                {points[3], points[4]}, points[5], gradient, &local);
+        }
+        if (!shader) return false;
+        paint.setShader(std::move(shader));
+        // Blink dithers gradient paints.
+        paint.setDither(true);
+        paint.setAlphaf(std::clamp(path->opacity, 0.0f, 1.0f));
+        if (path->linear_color_space)
+            paint.setColorFilter(SkColorFilters::LinearToSRGBGamma());
+    }
+    if (path->stroke) {
+        if (path->non_scaling_stroke) {
+            geometry = geometry.makeTransform(matrix);
+            canvas->resetMatrix();
+        }
+        paint.setStyle(SkPaint::kStroke_Style);
+        paint.setStrokeWidth(path->stroke_width);
+        paint.setStrokeCap(path->line_cap == 1 ? SkPaint::kRound_Cap
+            : path->line_cap == 2 ? SkPaint::kSquare_Cap : SkPaint::kButt_Cap);
+        paint.setStrokeJoin(path->line_join == 1 ? SkPaint::kRound_Join
+            : path->line_join == 2 ? SkPaint::kBevel_Join : SkPaint::kMiter_Join);
+        paint.setStrokeMiter(std::max(path->miter_limit, 1.0f));
+    }
+    canvas->drawPath(geometry, paint);
+    return true;
+}
+
 // Chromium draws SVG paths through its GPU rasterizer, whose multisampled
 // coverage differs from Skia's CPU analytic antialiasing on complex outlines.
 extern "C" __attribute__((visibility("default")))
@@ -682,55 +740,35 @@ int vox_graphite_draw_path_pixels(uint8_t* pixels, int width, int height,
     auto* canvas = surface->getCanvas();
     if (has_background) surface->writePixels(SkPixmap(info, pixels, pitch), 0, 0);
     else canvas->clear(SK_ColorTRANSPARENT);
-    SkMatrix matrix;
-    matrix.set9(path->matrix);
-    canvas->setMatrix(matrix);
-    auto geometry = vox_path_from_serialized_segments(path->segments, path->segment_count);
-    geometry.setFillType(path->even_odd ? SkPathFillType::kEvenOdd : SkPathFillType::kWinding);
-    SkPaint paint;
-    paint.setAntiAlias(true);
-    paint.setColor(SkColorSetARGB(path->alpha, path->red, path->green, path->blue));
-    std::vector<SkColor4f> colors;
-    std::vector<float> positions;
-    if (path->gradient) {
-        if (!path->stops || path->stop_count < 2) return 0;
-        for (int index = 0; index < path->stop_count; ++index) {
-            auto const* stop = path->stops + index * 5;
-            colors.push_back({stop[0], stop[1], stop[2], stop[3]});
-            positions.push_back(stop[4]);
-        }
-        SkMatrix local;
-        local.set9(path->gradient_matrix);
-        SkGradient gradient(SkGradient::Colors(SkSpan<const SkColor4f>(colors),
-            SkSpan<const float>(positions), static_cast<SkTileMode>(path->tile_mode)), {});
-        auto const* points = path->gradient_points;
-        sk_sp<SkShader> shader;
-        if (path->gradient == 1) {
-            SkPoint ends[] {{points[0], points[1]}, {points[2], points[3]}};
-            shader = SkShaders::LinearGradient(ends, gradient, &local);
-        } else {
-            shader = SkShaders::TwoPointConicalGradient({points[0], points[1]}, points[2],
-                {points[3], points[4]}, points[5], gradient, &local);
-        }
-        if (!shader) return 0;
-        paint.setShader(std::move(shader));
-        // Blink dithers gradient paints.
-        paint.setDither(true);
-        paint.setAlphaf(std::clamp(path->opacity, 0.0f, 1.0f));
-        if (path->linear_color_space)
-            paint.setColorFilter(SkColorFilters::LinearToSRGBGamma());
-    }
-    if (path->stroke) {
-        paint.setStyle(SkPaint::kStroke_Style);
-        paint.setStrokeWidth(path->stroke_width);
-        paint.setStrokeCap(path->line_cap == 1 ? SkPaint::kRound_Cap
-            : path->line_cap == 2 ? SkPaint::kSquare_Cap : SkPaint::kButt_Cap);
-        paint.setStrokeJoin(path->line_join == 1 ? SkPaint::kRound_Join
-            : path->line_join == 2 ? SkPaint::kBevel_Join : SkPaint::kMiter_Join);
-        paint.setStrokeMiter(std::max(path->miter_limit, 1.0f));
-    }
-    canvas->drawPath(geometry, paint);
+    if (!draw_path_on_canvas(canvas, path)) return 0;
     int result = read_pixels(gpu, recorder.get(), surface.get(), info, pixels, pitch);
     if (result) path_cache.finish(std::move(cached), pixels, pitch);
     return result;
+}
+
+// An SVG image is one recording. Resolve multisample coverage after its last
+// path, so adjacent fills and non-scaling strokes share the same samples.
+extern "C" __attribute__((visibility("default")))
+int vox_graphite_draw_path_batch_pixels(uint8_t* pixels, int width, int height,
+    int pitch, int has_background, VoxGraphitePath const* paths, int count)
+{
+    if (!pixels || !paths || count <= 0 || count > 65536 || width <= 0 || height <= 0
+        || pitch <= 0 || static_cast<size_t>(pitch) < static_cast<size_t>(width) * 4)
+        return 0;
+    for (int index = 0; index < count; ++index)
+        if (!paths[index].segments || paths[index].segment_count <= 0) return 0;
+    std::lock_guard lock(gpu_mutex);
+    auto* gpu = context();
+    if (!gpu) return 0;
+    auto recorder = gpu->makeRecorder();
+    auto info = SkImageInfo::Make(width, height, kBGRA_8888_SkColorType,
+        kPremul_SkAlphaType, SkColorSpace::MakeSRGB());
+    auto surface = SkSurfaces::RenderTarget(recorder.get(), info);
+    if (!surface) return 0;
+    auto* canvas = surface->getCanvas();
+    if (has_background) surface->writePixels(SkPixmap(info, pixels, pitch), 0, 0);
+    else canvas->clear(SK_ColorTRANSPARENT);
+    for (int index = 0; index < count; ++index)
+        if (!draw_path_on_canvas(canvas, paths + index)) return 0;
+    return read_pixels(gpu, recorder.get(), surface.get(), info, pixels, pitch);
 }

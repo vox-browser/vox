@@ -164,6 +164,16 @@ auto graphite_path_draw()
     return draw;
 }
 
+auto graphite_path_batch_draw()
+{
+    static auto draw = [] {
+        void* library = dlopen("@rpath/libVoxGraphite.dylib", RTLD_LAZY | RTLD_LOCAL);
+        return library ? reinterpret_cast<decltype(&vox_graphite_draw_path_batch_pixels)>(
+            dlsym(library, "vox_graphite_draw_path_batch_pixels")) : nullptr;
+    }();
+    return draw;
+}
+
 SkTypeface* select_typeface(char const* path, int face_index, int font_weight, int emoji_face)
 {
     if (path && *path) {
@@ -2223,6 +2233,43 @@ extern "C" int ladybird_v_skia_draw_outer_box_shadow(CGContextRef destination,
         static_cast<float>(region.width()), static_cast<float>(region.height()), has_background);
 }
 
+extern "C" int ladybird_v_skia_draw_svg_path_batch(CGContextRef destination,
+    VoxGraphitePath const* paths, int count, float const* outer, float x, float y,
+    float width, float height, float page_x, float page_y, float scroll_y,
+    float canvas_width, float canvas_height, int opaque_backdrop)
+{
+    auto draw = graphite_path_batch_draw();
+    if (!s_chromium_painting || !destination || !draw || !paths || !outer
+        || count <= 0 || count > 65536 || width <= 0 || height <= 0) return 0;
+    auto matrix = SkMatrix::MakeAll(outer[0], outer[2], page_x + outer[4],
+        outer[1], outer[3], page_y - scroll_y + outer[5], 0, 0, 1);
+    RasterRegion region;
+    if (!clipped_raster_region(matrix.mapRect(SkRect::MakeXYWH(x, y, width, height)),
+            canvas_width, canvas_height, 0, region)) return 1;
+    auto scale = raster_scale_for_context(destination);
+    int raster_width = raster_dimension(region.width(), scale);
+    int raster_height = raster_dimension(region.height(), scale);
+    if (static_cast<size_t>(raster_width) * raster_height > 8 * 1024 * 1024) return 0;
+    float sx = static_cast<float>(raster_width) / region.width();
+    float sy = static_cast<float>(raster_height) / region.height();
+    std::vector<uint32_t> pixels(static_cast<size_t>(raster_width) * raster_height);
+    bool has_background = s_raster_layer_is_root && opaque_backdrop && copy_backdrop(destination, region,
+        scale, raster_width, raster_height, pixels);
+    std::vector<VoxGraphitePath> local(paths, paths + count);
+    auto image_to_raster = raster_matrix(matrix, region, sx, sy);
+    for (auto& path : local) {
+        SkMatrix transform;
+        transform.set9(path.matrix);
+        transform.postConcat(image_to_raster);
+        transform.get9(path.matrix);
+        if (path.non_scaling_stroke) path.stroke_width *= sx;
+    }
+    if (!draw(reinterpret_cast<uint8_t*>(pixels.data()), raster_width, raster_height,
+            raster_width * 4, has_background, local.data(), count)) return 0;
+    return composite_pixels(destination, std::move(pixels), raster_width, raster_height,
+        region.left, canvas_height - region.bottom, region.width(), region.height(), has_background);
+}
+
 extern "C" int ladybird_v_skia_draw_svg_path(CGContextRef destination,
     float const* data, int segment_count, int even_odd,
     float transform_a, float transform_b, float transform_c, float transform_d,
@@ -2324,7 +2371,7 @@ extern "C" int ladybird_v_skia_draw_svg_path(CGContextRef destination,
     auto raster_scale_y = static_cast<float>(raster_height) / static_cast<float>(region.height());
     std::vector<uint32_t> pixels(static_cast<size_t>(raster_width) * static_cast<size_t>(raster_height));
     bool strokes = has_stroke && stroke_width > 0.0f;
-    if (s_chromium_painting && (has_fill || strokes) && !non_scaling_stroke
+    if (s_chromium_painting && (has_fill || strokes)
         && !(strokes && dash_data && dash_count > 0)) {
         // Chromium draws SVG paths with its GPU rasterizer. The stroke draws
         // over the fill's result, as both would on Chromium's canvas. Inside a
@@ -2335,7 +2382,9 @@ extern "C" int ladybird_v_skia_draw_svg_path(CGContextRef destination,
         VoxGraphitePath descriptor {
             .matrix = {}, .segments = data, .segment_count = segment_count,
             .even_odd = even_odd, .line_cap = line_cap, .line_join = line_join,
-            .stroke_width = stroke_width, .miter_limit = miter_limit
+            .non_scaling_stroke = non_scaling_stroke,
+            .stroke_width = non_scaling_stroke ? stroke_width * raster_scale_x : stroke_width,
+            .miter_limit = miter_limit
         };
         raster_matrix(matrix, region, raster_scale_x, raster_scale_y).get9(descriptor.matrix);
         auto draw = graphite_path_draw();

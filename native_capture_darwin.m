@@ -1531,6 +1531,25 @@ void native_add_path_clip(const float *data, int segment_count, int even_odd,
 	CGPathRelease(local_path);
 }
 
+#include "native_graphite_bridge.h"
+#ifdef LADYBIRD_V_HAS_SKIA_TEXT
+extern int ladybird_v_skia_draw_svg_path_batch(CGContextRef, const VoxGraphitePath*, int,
+    const float*, float, float, float, float, float, float, float, float, float, int);
+#endif
+
+int native_draw_svg_path_batch(const VoxGraphitePath *paths, int count,
+    const float *outer, float x, float y, float width, float height,
+    float page_x, float page_y, float scroll_y, float canvas_width, float canvas_height) {
+#ifdef LADYBIRD_V_HAS_SKIA_TEXT
+    CGContextRef context = [[NSGraphicsContext currentContext] CGContext];
+    return ladybird_v_skia_draw_svg_path_batch(context, paths, count, outer,
+        x, y, width, height, page_x, page_y, scroll_y, canvas_width, canvas_height,
+        context == native_font_compositing_context && native_font_compositing_transparency_depth == 0);
+#else
+    return 0;
+#endif
+}
+
 void native_draw_svg_path_srgb(const float *data, int segment_count, int even_odd,
 	float transform_a, float transform_b, float transform_c, float transform_d,
 	float transform_e, float transform_f, float page_x, float page_y,
@@ -1551,7 +1570,8 @@ void native_draw_svg_path_srgb(const float *data, int segment_count, int even_od
 	// Skia and CoreGraphics place a half-device-pixel host-space stroke on
 	// opposite sides of the coverage tie. A tiny device-space bias matches the
 	// recorder's inclusive edge without changing a visible stroke dimension.
-	float resolved_stroke_width = non_scaling_stroke ? stroke_width / host_scale + 2.0f / 512.0f : stroke_width;
+	float resolved_stroke_width = non_scaling_stroke && native_font_compositing_context == NULL
+		? stroke_width / host_scale + 2.0f / 512.0f : stroke_width;
 #ifdef LADYBIRD_V_HAS_SKIA_TEXT
 	if (ladybird_v_skia_draw_svg_path(context, data, segment_count, even_odd,
 		transform_a, transform_b, transform_c, transform_d, transform_e,

@@ -57,6 +57,7 @@ typedef struct {
     uint8_t red, green, blue, alpha;
     // A stroke instead of a fill; caps and joins use the SVG enumeration order.
     int stroke, line_cap, line_join;
+    int non_scaling_stroke;
     float stroke_width, miter_limit;
     // An optional gradient paint instead of the solid color: 1 linear (start,
     // end), 2 two-point conical (start, start radius, end, end radius). Stops
@@ -64,6 +65,7 @@ typedef struct {
     int gradient, tile_mode, linear_color_space, stop_count;
     float gradient_points[6], gradient_matrix[9], opacity;
     const float *stops;
+    int has_float_alpha;
 } VoxGraphitePath;
 
 #ifdef __cplusplus
@@ -82,6 +84,8 @@ int vox_graphite_draw_shape_pixels(uint8_t *pixels, int width, int height,
     int pitch, int has_background, const VoxGraphiteShape *shape);
 int vox_graphite_draw_path_pixels(uint8_t *pixels, int width, int height,
     int pitch, int has_background, const VoxGraphitePath *path);
+int vox_graphite_draw_path_batch_pixels(uint8_t *pixels, int width, int height,
+    int pitch, int has_background, const VoxGraphitePath *paths, int count);
 int vox_graphite_convert_icc_rgba(uint8_t *pixels, int count,
     const uint8_t *profile, int profile_size);
 #ifdef __cplusplus

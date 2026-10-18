@@ -5548,6 +5548,10 @@ fn (mut app BrowserApp) draw_command(source_command layout.PaintCommand, page_x 
 					C.native_begin_clip()
 					C.native_add_corner_rounded_clip(f32(result.clip_rect.x), f32(result.clip_rect.y), f32(result.clip_rect.width), f32(result.clip_rect.height), f32(radii.top_left.horizontal), f32(radii.top_left.vertical), f32(radii.top_right.horizontal), f32(radii.top_right.vertical), f32(radii.bottom_right.horizontal), f32(radii.bottom_right.vertical), f32(radii.bottom_left.horizontal), f32(radii.bottom_left.vertical), f32(matrix[0]), f32(matrix[1]), f32(matrix[2]), f32(matrix[3]), f32(matrix[4]), f32(matrix[5]), page_x, page_y, f32(scroll_y), f32(app.ctx.height))
 					C.native_add_corner_rounded_clip(f32(result.clip_rect.x), f32(result.clip_rect.y), f32(result.clip_rect.width), f32(result.clip_rect.height), 0, 0, 0, 0, 0, 0, 0, 0, f32(matrix[0]), f32(matrix[1]), f32(matrix[2]), f32(matrix[3]), f32(matrix[4]), f32(matrix[5]), page_x, page_y, f32(scroll_y), f32(app.ctx.height))
+					if app.draw_chromium_svg_image_group(command, result, page_x, page_y, scroll_y) {
+						C.native_end_clip()
+						return
+					}
 					for nested_command in command.nested_viewport_commands {
 						transformed := layout.paint_command_for_nested_viewport(nested_command, command.transform, painting.IntPoint{result.nested_rect.x, result.nested_rect.y}, command.opacity)
 						app.draw_command(transformed, page_x, page_y, window_height)

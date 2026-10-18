@@ -218,8 +218,8 @@ int main()
         assert(!cache.prepare(changed_path, 2, 2, 8, true, pixels.data()).hit);
     };
     for (auto field : {&VoxGraphitePath::even_odd, &VoxGraphitePath::stroke,
-        &VoxGraphitePath::line_cap, &VoxGraphitePath::line_join, &VoxGraphitePath::gradient,
-        &VoxGraphitePath::tile_mode, &VoxGraphitePath::linear_color_space}) {
+        &VoxGraphitePath::line_cap, &VoxGraphitePath::line_join, &VoxGraphitePath::non_scaling_stroke, &VoxGraphitePath::gradient,
+        &VoxGraphitePath::tile_mode, &VoxGraphitePath::linear_color_space, &VoxGraphitePath::has_float_alpha}) {
         auto v = path; ++(v.*field); path_misses(v);
     }
     for (auto field : {&VoxGraphitePath::red, &VoxGraphitePath::green,

@@ -4,6 +4,24 @@ import layout
 import css
 import dom
 import html
+import painting
+
+fn test_nested_svg_paths_trigger_msaa_in_the_owning_document_tile() {
+	commands := [layout.PaintCommand{
+		kind: 'paint_nested_display_list'
+		transform: [f64(1), 0, 0, 1, 0, 10]!
+		nested_viewport_paintable: &painting.NavigableContainerViewportPaintable{
+			viewport_rect: painting.Rect{10, 500, 80, 80}
+		}
+		nested_viewport_commands: [msaa_test_svg_path(10, 30, 'svg')]
+	}]
+	triggers := chromium_msaa_triggers(commands)
+	assert triggers.len == 1
+	assert triggers[0].command_index == 0
+	assert triggers[0].top == 519
+	assert triggers[0].bottom == 541
+	assert chromium_msaa_tiles(commands, 1, 256) == [2]
+}
 
 fn msaa_test_svg_path(top f64, bottom f64, role string) layout.PaintCommand {
 	mut path_data := []f32{}

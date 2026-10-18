@@ -2,6 +2,7 @@ module main
 
 import layout
 import math
+import painting
 
 // Chromium rasterizes the root layer on the GPU in tiles as wide as the
 // viewport. CalculateGpuTileSize() covers the viewport height with four
@@ -48,6 +49,18 @@ fn chromium_msaa_triggers_for_viewport(commands []layout.PaintCommand, viewport 
 			}
 			for bounds in chromium_svg_background_msaa_ranges(command) {
 				triggers << ChromiumMSAATrigger{index, bounds[0], bounds[1]}
+			}
+		} else if command.kind == 'paint_nested_display_list' {
+			paintable := command.nested_viewport_paintable or { continue }
+			converter := painting.new_device_pixel_converter(1) or { continue }
+			result := paintable.paint(converter) or { continue }
+			mut nested := []layout.PaintCommand{cap: command.nested_viewport_commands.len}
+			for path in command.nested_viewport_commands {
+				nested << layout.paint_command_for_nested_viewport(path, command.transform,
+					painting.IntPoint{result.nested_rect.x, result.nested_rect.y}, command.opacity)
+			}
+			for trigger in chromium_msaa_triggers_for_viewport(nested, viewport) {
+				triggers << ChromiumMSAATrigger{index, trigger.top, trigger.bottom}
 			}
 		}
 	}
