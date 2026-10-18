@@ -3693,6 +3693,13 @@ fn (mut app BrowserApp) install_pending_cached_page() {
 	app.prepare_loaded_page(pending.loaded, pending.add_history)
 }
 
+// The chrome-only first frame leaves the cached page's DOM, style and layout
+// work to the next frame. The window exists now, so the page's network
+// refresh starts alongside that work instead of after its first paint.
+fn (mut app BrowserApp) begin_deferred_cached_page() {
+	app.start_pending_navigation()
+}
+
 fn (mut app BrowserApp) start_pending_navigation() {
 	pending := app.pending_navigation or { return }
 	app.pending_navigation = none
@@ -6761,6 +6768,7 @@ fn (mut app BrowserApp) draw() {
 		if app.pending_cached_page != none {
 			// Let AppKit commit the inexpensive chrome-only frame before doing the
 			// cached DOM/style/layout work on the next browser frame.
+			app.begin_deferred_cached_page()
 			$if macos {
 				C.native_wake_browser_after(16)
 			}
