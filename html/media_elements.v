@@ -1228,7 +1228,8 @@ pub fn (mut controls MediaControls) update_play_pause_icon() {
 	}
 	controls.play_icon_is_pause = !paused
 	if mut icon := controls.dom_.play_pause_icon {
-		icon.set_attribute_value('class', if paused { 'play-pause-icon' } else { 'play-pause-icon playing' })
+		mut classes := icon.class_list()
+		classes.toggle('playing', !paused) or { panic(err) }
 	}
 }
 
