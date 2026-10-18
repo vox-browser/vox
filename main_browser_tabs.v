@@ -5,7 +5,8 @@ import layout
 import math
 import page
 
-const tab_strip_height = 32.0
+const tab_strip_height = 29.0
+const tab_strip_leading_width = 62.0
 
 // Each tab keeps a stable BrowserApp address: document and platform callbacks
 // retain that owner. Only the window and its chrome are shared.
@@ -51,13 +52,13 @@ fn (app &BrowserApp) browser_tab_title() string {
 }
 
 fn browser_tab_width(width int, count int) f64 {
-	return math.min(220.0, math.max(72.0, (f64(width) - 52) / f64(math.max(1, count))))
+	return math.min(184.0, math.max(72.0, (f64(width) - tab_strip_leading_width - 44) / f64(math.max(1, count))))
 }
 
 // At high tab counts show a sliding range containing the active tab. The
 // new-tab control remains reachable; keyboard cycling reaches every tab.
 fn browser_visible_tabs(width int, count int, selected int) (int, int) {
-	capacity := math.max(1, int((f64(width) - 52) / 72))
+	capacity := math.max(1, int((f64(width) - tab_strip_leading_width - 44) / 72))
 	visible := math.min(count, capacity)
 	first := math.max(0, selected - visible + 1)
 	return first, math.min(count, first + visible)
@@ -220,7 +221,9 @@ fn (mut app BrowserApp) draw_browser_tabs() {
 	if app.browser_tabs_busy() {
 		// Cooperative navigation can consume a redraw while servicing AppKit.
 		// Keep queued tab actions scheduled until the owning work scope unwinds.
-		$if macos { C.native_wake_browser_after(16) }
+		$if macos {
+			C.native_wake_browser_after(16)
+		}
 		return
 	}
 	if !app.browser_tabs_busy() && app.tabs != unsafe { nil } {

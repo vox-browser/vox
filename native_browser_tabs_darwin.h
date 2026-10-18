@@ -56,14 +56,20 @@ static NSBezierPath *vox_tab_path(NSRect r) {
 	NSMutableParagraphStyle *style = [NSMutableParagraphStyle new];
 	style.lineBreakMode = NSLineBreakByTruncatingTail;
 	style.alignment = self.smallButton ? NSTextAlignmentCenter : NSTextAlignmentLeft;
-	NSDictionary *attrs = @{NSFontAttributeName:[NSFont systemFontOfSize:self.smallButton ? 14 : 12],
+	NSDictionary *attrs = @{NSFontAttributeName:[NSFont systemFontOfSize:11],
 		NSForegroundColorAttributeName:[NSColor colorWithWhite:.22 alpha:1], NSParagraphStyleAttributeName:style};
-	NSRect text = NSMakeRect(self.smallButton ? 4 : 28, self.smallButton ? 1 : 6,
+	NSRect text = NSMakeRect(self.smallButton ? 4 : 30, 3,
 		self.bounds.size.width-(self.smallButton ? 8 : 56), 18);
 	[self.title drawInRect:text withAttributes:attrs];
-	if (!self.smallButton && self.bounds.size.width > 80) {
+	if (!self.smallButton && [self.title isEqualToString:@"Apps"]) {
+		NSArray<NSColor *> *colors = @[[NSColor colorWithSRGBRed:.91 green:.33 blue:.28 alpha:1],
+			[NSColor colorWithSRGBRed:.96 green:.72 blue:.22 alpha:1], [NSColor colorWithSRGBRed:.28 green:.66 blue:.45 alpha:1]];
+		for (int row=0; row<3; ++row) for (int col=0; col<3; ++col) {
+			[colors[(row+col)%3] setFill]; NSRectFill(NSMakeRect(14+col*4, 7+row*4, 3, 3));
+		}
+	} else if (!self.smallButton && self.bounds.size.width > 80) {
 		[[NSColor colorWithWhite:.50 alpha:1] setStroke];
-		NSBezierPath *icon = [NSBezierPath bezierPathWithRect:NSMakeRect(14, 9, 9, 11)];
+		NSBezierPath *icon = [NSBezierPath bezierPathWithRect:NSMakeRect(14, 7, 9, 11)];
 		[icon stroke];
 	}
 }
@@ -79,8 +85,26 @@ static NSBezierPath *vox_tab_path(NSRect r) {
 	}
 	[[NSColor colorWithWhite:.4 alpha:1] setStroke];
 	NSBezierPath *p = [NSBezierPath bezierPath]; p.lineWidth = 1.2;
-	[p moveToPoint:NSMakePoint(6, 6)]; [p lineToPoint:NSMakePoint(12, 12)];
-	[p moveToPoint:NSMakePoint(12, 6)]; [p lineToPoint:NSMakePoint(6, 12)]; [p stroke];
+	[p moveToPoint:NSMakePoint(5, 5)]; [p lineToPoint:NSMakePoint(10, 10)];
+	[p moveToPoint:NSMakePoint(10, 5)]; [p lineToPoint:NSMakePoint(5, 10)]; [p stroke];
+}
+@end
+
+@interface VoxBrowserWindowButton : NSButton
+@property int windowAction;
+@end
+@implementation VoxBrowserWindowButton
+- (BOOL)isFlipped { return YES; }
+- (void)drawRect:(NSRect)dirty {
+	NSColor *colors[] = {[NSColor colorWithSRGBRed:1 green:.37 blue:.34 alpha:1],
+		[NSColor colorWithSRGBRed:1 green:.74 blue:.18 alpha:1],
+		[NSColor colorWithSRGBRed:.16 green:.78 blue:.25 alpha:1]};
+	[colors[self.windowAction] setFill];
+	[[NSBezierPath bezierPathWithOvalInRect:NSMakeRect(1,1,10,10)] fill];
+	if (self.highlighted) {
+		[[NSColor colorWithWhite:0 alpha:.2] setFill];
+		[[NSBezierPath bezierPathWithOvalInRect:NSMakeRect(1,1,10,10)] fill];
+	}
 }
 @end
 
@@ -97,6 +121,11 @@ static NSBezierPath *vox_tab_path(NSRect r) {
 	[[NSColor colorWithWhite:.86 alpha:1] setFill]; NSRectFill(self.bounds);
 	[[NSColor colorWithWhite:.68 alpha:1] setFill];
 	NSRectFill(NSMakeRect(0, self.bounds.size.height-1, self.bounds.size.width, 1));
+}
+- (BOOL)mouseDownCanMoveWindow { return NO; }
+- (void)mouseDown:(NSEvent *)event {
+	if (event.clickCount == 2) [self.window zoom:self];
+	else [self.window performWindowDragWithEvent:event];
 }
 - (void)selectTab:(NSButton *)sender { self.callback(self.owner, 0, (int)sender.tag); }
 - (void)closeTab:(NSButton *)sender { self.callback(self.owner, 1, (int)sender.tag); }
@@ -122,25 +151,35 @@ static void native_browser_tabs_update(void *toolbar_pointer, void *owner, VoxTa
 	}
 	VoxBrowserTabStrip *strip = vox_browser_tab_strip;
 	strip.owner = owner; strip.callback = callback;
-	strip.frame = NSMakeRect(0, toolbar.isFlipped ? 0 : toolbar.bounds.size.height-32, toolbar.bounds.size.width, 32);
+	strip.frame = NSMakeRect(0, toolbar.isFlipped ? 0 : toolbar.bounds.size.height-29, toolbar.bounds.size.width, 29);
 	for (NSView *child in strip.subviews.copy) [child removeFromSuperview];
 	for (int i = first; i < end; ++i) {
-		VoxTabButton *button = [[VoxTabButton alloc] initWithFrame:NSMakeRect(8+(i-first)*width, 5, width+8, 28)];
+		VoxTabButton *button = [[VoxTabButton alloc] initWithFrame:NSMakeRect(62+(i-first)*width, 5, width+10, 24)];
 		button.title = @"New Tab";
 		button.selectedTab = i == selected; button.bordered = NO;
 		button.target = strip; button.action = @selector(selectTab:); button.tag = i;
 		button.toolTip = button.title; button.accessibilityLabel = button.title;
 		button.accessibilityValue = @(i == selected);
 		[strip addSubview:button positioned:button.selectedTab ? NSWindowAbove : NSWindowBelow relativeTo:nil];
-		VoxCloseTabButton *close = [[VoxCloseTabButton alloc] initWithFrame:NSMakeRect(width-24, 5, 18, 18)];
+		VoxCloseTabButton *close = [[VoxCloseTabButton alloc] initWithFrame:NSMakeRect(width-16, 3, 16, 16)];
 		close.bordered = NO; close.title = @""; close.target = strip; close.action = @selector(closeTab:);
 		close.tag = i; close.toolTip = @"Close tab"; close.accessibilityLabel = [@"Close " stringByAppendingString:button.title];
 		[button addSubview:close];
 	}
-	VoxTabButton *add = [[VoxTabButton alloc] initWithFrame:NSMakeRect(20+(end-first)*width, 10, 32, 20)];
-	add.smallButton = YES; add.title = @"+"; add.bordered = NO;
+	VoxTabButton *add = [[VoxTabButton alloc] initWithFrame:NSMakeRect(74+(end-first)*width, 11, 28, 14)];
+	add.smallButton = YES; add.title = @""; add.bordered = NO;
 	add.target = strip; add.action = @selector(newTab:); add.toolTip = @"New tab (⌘T)"; add.accessibilityLabel = @"New tab";
-	[strip addSubview:add]; strip.needsDisplay = YES;
+	[strip addSubview:add];
+	SEL actions[] = {@selector(performClose:), @selector(performMiniaturize:), @selector(zoom:)};
+	NSArray<NSString *> *labels = @[@"Close window", @"Minimize window", @"Zoom window"];
+	for (int i=0; i<3; ++i) {
+		VoxBrowserWindowButton *control = [[VoxBrowserWindowButton alloc] initWithFrame:NSMakeRect(10+i*16,8,12,12)];
+		control.windowAction = i; control.title = @""; control.bordered = NO;
+		control.target = strip.window; control.action = actions[i];
+		control.accessibilityLabel = labels[i]; control.toolTip = labels[i];
+		[strip addSubview:control];
+	}
+	strip.needsDisplay = YES;
 }
 
 static void native_browser_tab_title(int index, const unsigned char *bytes, int length) {

@@ -303,7 +303,7 @@ fn request_browser_frame() {
 
 const initial_width = 1024
 const initial_height = 768
-const toolbar_height = 56.0
+const toolbar_height = 31.0
 const debug_status_height = 32.0
 const status_bar_height = 24.0
 const max_preloaded_resources = 32
@@ -6907,25 +6907,21 @@ fn (mut app BrowserApp) handle_click(x f32, y f32) {
 	}
 	$if !vox_ui2 ? {
 		if app.handle_portable_tab_click(x, y) { return }
-		if y >= tab_strip_height + 12 && y <= tab_strip_height + 46 {
-			if x >= 12 && x < 48 {
+		if y >= tab_strip_height + 4 && y <= tab_strip_height + 26 {
+			if x >= 5 && x < 27 {
 				app.history_go(-1)
 				return
 			}
-			if x >= 54 && x < 90 {
+			if x >= 27 && x < 49 {
 				app.history_go(1)
 				return
 			}
-			if x >= 96 && x < 132 {
+			if x >= 49 && x < 71 {
 				app.reload()
 				return
 			}
-			if x >= 138 && x < 174 {
-				app.navigate('about:home', true)
-				return
-			}
 			window := browser_window_size()
-			if x >= 184 && x < f32(window.width - 12) {
+			if x >= 78 && x < f32(window.width - 6) {
 				app.focus_address_bar()
 				return
 			}

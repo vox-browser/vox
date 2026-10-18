@@ -13,7 +13,7 @@ fn browser_tabs_test_app() &BrowserApp {
 		page_model:                  owner
 		script_policy:               .enabled
 		viewport_width:              800
-		viewport_height:             488
+		viewport_height:             516
 		navigation_results:          chan NavigationResult{cap: 4}
 		background_resource_results: chan PreloadedResource{cap: max_cached_resources}
 	}
@@ -152,7 +152,7 @@ fn test_tab_shortcuts_and_overflow_keep_all_tabs_reachable() {
 	for selected in 0 .. 50 {
 		first, end := browser_visible_tabs(640, 50, selected)
 		assert selected >= first && selected < end
-		assert 20 + (end - first) * browser_tab_width(640, end - first) + 32 <= 640
+		assert tab_strip_leading_width + 12 + (end - first) * browser_tab_width(640, end - first) + 28 <= 640
 	}
 	mut app := browser_tabs_test_app()
 	defer { browser_tabs_test_cleanup(mut app) }

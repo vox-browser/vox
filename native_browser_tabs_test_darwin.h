@@ -23,7 +23,7 @@ static void native_test_tabs_click(int index, int close) {
 }
 static int native_test_tabs_geometry(void) {
 	NSView *strip = vox_browser_tab_strip;
-	if (!strip || strip.bounds.size.height != 32) return 0;
+	if (!strip || strip.bounds.size.height != 29) return 0;
 	for (NSView *view in strip.subviews) {
 		if (NSMaxX(view.frame) > strip.bounds.size.width || NSMinX(view.frame) < 0) return 0;
 	}

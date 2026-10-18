@@ -6,22 +6,19 @@ import gg
 // in its X11 window. Production macOS builds compile only the UI2 chrome.
 $if !vox_ui2 ? {
 	fn (mut app BrowserApp) draw_chrome_button(x f32, label string, enabled bool) {
-		background := if enabled { gg.rgb(235, 235, 235) } else { gg.rgb(230, 230, 230) }
-		foreground := if enabled { gg.rgb(70, 70, 70) } else { gg.rgb(170, 170, 170) }
-		draw_rounded_fill(app.ctx, x, f32(tab_strip_height + 12), 36, 34, 7, background)
-		app.ctx.draw_text(int(x) + 11, int(tab_strip_height + 18), label, color: foreground, size: 17)
+		foreground := if enabled { gg.rgb(125, 125, 125) } else { gg.rgb(205, 205, 205) }
+		app.ctx.draw_text(int(x) + 6, int(tab_strip_height + 5), label, color: foreground, size: 17)
 	}
 
 	fn (mut app BrowserApp) draw_portable_browser_chrome(window gg.Size) {
 		// Draw chrome last so scrolled page content cannot paint over it.
 		draw_srgb_rect(app.ctx, 0, 0, f32(window.width), app.page_top(), gg.rgb(247, 247, 247))
 		app.draw_portable_browser_tabs(window.width)
-		app.draw_chrome_button(12, '‹', app.history_index > 0)
-		app.draw_chrome_button(54, '›', app.history_index + 1 < app.history.len)
-		app.draw_chrome_button(96, '↻', app.history_index >= 0)
-		app.draw_chrome_button(138, '⌂', true)
-		address_x := f32(184)
-		address_width := f32(window.width - 196)
+		app.draw_chrome_button(5, '‹', app.history_index > 0)
+		app.draw_chrome_button(27, '›', app.history_index + 1 < app.history.len)
+		app.draw_chrome_button(49, '↻', app.history_index >= 0)
+		address_x := f32(78)
+		address_width := f32(window.width - 84)
 		app.resize_address_bar(window.width)
 		if !app.native_address_bar {
 			address_color := if app.address_active {
@@ -29,18 +26,18 @@ $if !vox_ui2 ? {
 			} else {
 				gg.rgb(247, 247, 247)
 			}
-			draw_rounded_fill(app.ctx, address_x, f32(tab_strip_height + 12), address_width, 34, 8, address_color)
+			draw_rounded_fill(app.ctx, address_x, f32(tab_strip_height + 3), address_width, 23, 2, address_color)
 			if app.address_select {
-				draw_rounded_fill(app.ctx, address_x + 5, f32(tab_strip_height + 16), address_width - 10, 26, 5, gg.rgb(219, 234, 254))
+				draw_rounded_fill(app.ctx, address_x + 5, f32(tab_strip_height + 5), address_width - 10, 19, 1, gg.rgb(219, 234, 254))
 			}
 			visible_address := address_for_display(app.address, app.address_cursor, app.address_active, int(address_width / 8.0) - 2)
-			app.ctx.draw_text(int(address_x) + 10, int(tab_strip_height + 19), visible_address,
+			app.ctx.draw_text(int(address_x) + 22, int(tab_strip_height + 8), visible_address,
 				color: gg.rgb(15, 23, 42)
-				size:  14
+				size:  12
 			)
 		}
 		if app.chrome_debug {
-			app.ctx.draw_text(14, int(tab_strip_height + 64), app.status, color: gg.rgb(148, 163, 184), size: 12)
+			app.ctx.draw_text(14, int(tab_strip_height + toolbar_height + 8), app.status, color: gg.rgb(148, 163, 184), size: 12)
 		}
 
 		status_y := window.height - int(status_bar_height)

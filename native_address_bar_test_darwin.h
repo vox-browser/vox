@@ -52,8 +52,8 @@ static void native_test_address_shortcut(void *field, void *owner, VoxAddressSho
 
 static int native_test_address_geometry(void *field, int width) {
 	NSRect frame = [(__bridge NSTextField *)field frame];
-	return frame.origin.x == 184 && frame.origin.y == 44 && frame.size.width == width
-		&& frame.size.height == 34;
+	return frame.origin.x == 98 && frame.origin.y == 34 && frame.size.width == width
+		&& frame.size.height == 20;
 }
 
 static void native_test_chrome_click(void *control) {
@@ -66,7 +66,8 @@ static int native_test_chrome_enabled(void *control) {
 
 static int native_test_chrome_button(void *control) {
 	return [(__bridge id)control isKindOfClass:NSButton.class]
-		&& [(__bridge NSButton *)control isBordered];
+		&& ![(__bridge NSButton *)control isBordered]
+		&& [(__bridge NSButton *)control image] != nil;
 }
 
 static int native_test_chrome_geometry(void *toolbar, void *status, int width, int height, int toolbar_height) {

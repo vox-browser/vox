@@ -6,6 +6,10 @@ $if vox_ui2 ? {
 	import ui2
 
 	#include "native_browser_chrome_darwin.h"
+	#include "native_browser_chrome_style_darwin.h"
+	fn C.native_browser_chrome_prepare_window(parent voidptr)
+	fn C.native_browser_chrome_restore_window()
+	fn C.native_browser_chrome_style_controls(toolbar voidptr, back voidptr, forward voidptr, reload voidptr, address voidptr)
 	fn C.native_browser_chrome_start_memory(control voidptr)
 	fn C.native_browser_chrome_stop_memory()
 }
@@ -60,7 +64,7 @@ fn (mut app BrowserApp) toggle_browser_debug() {
 fn (app &BrowserApp) browser_chrome_snapshot_path(resource_url string) string {
 	// Keep previous chrome layouts and debug-only diagnostics out of normal
 	// startup snapshots, while retaining the shared snapshots cache directory.
-	return cached_snapshot_path('${resource_url}\ntabbed-chrome-v2:${app.chrome_debug}:${app.browser_tab_snapshot_key()}')
+	return cached_snapshot_path('${resource_url}\nclassic-chrome-v3:${app.chrome_debug}:${app.browser_tab_snapshot_key()}')
 }
 
 fn (app &BrowserApp) chrome_footer() string {
@@ -95,7 +99,7 @@ fn (app &BrowserApp) browser_chrome_state(width int, height int) BrowserChromeSt
 $if vox_ui2 ? {
 	fn chrome_navigation_button(id string, title string, x f64, enabled bool) ui2.Element {
 		return ui2.Element{
-			...ui2.with_native_style(ui2.button(id, title, ui2.rect(x, tab_strip_height + 12, 36, 34),
+			...ui2.with_native_style(ui2.button(id, title, ui2.rect(x, tab_strip_height + 4, 22, 22),
 				ui2.BoxStyle{}, ui2.TextStyle{}))
 			enabled:             enabled
 			tooltip:             title
@@ -105,15 +109,14 @@ $if vox_ui2 ? {
 
 	fn browser_chrome_elements(chrome BrowserChromeState) []ui2.Element {
 		width := f64(chrome.width)
-		address_width := if width > 220 { width - 196 } else { 24.0 }
+		address_width := if width > 128 { width - 104 } else { 24.0 }
 		footer_width := if width > 224 { width - 224 } else { 0.0 }
 		memory := ui2.text('memory')
 		return [
 			ui2.view('toolbar', ui2.rect(0, 0, width, tab_strip_height + browser_toolbar_height(chrome.debug)), ui2.BoxStyle{ bg: 0xf7f7f7 }, [
-				ui2.Element{ ...chrome_navigation_button('back', '‹', 12, chrome.back), tooltip: 'Back', accessibility_label: 'Back' },
-				ui2.Element{ ...chrome_navigation_button('forward', '›', 54, chrome.forward), tooltip: 'Forward', accessibility_label: 'Forward' },
-				ui2.Element{ ...chrome_navigation_button('reload', '↻', 96, chrome.reload), tooltip: 'Reload', accessibility_label: 'Reload' },
-				ui2.Element{ ...chrome_navigation_button('home', '⌂', 138, true), tooltip: 'Home', accessibility_label: 'Home' },
+				ui2.Element{ ...chrome_navigation_button('back', '‹', 5, chrome.back), tooltip: 'Back', accessibility_label: 'Back' },
+				ui2.Element{ ...chrome_navigation_button('forward', '›', 27, chrome.forward), tooltip: 'Forward', accessibility_label: 'Forward' },
+				ui2.Element{ ...chrome_navigation_button('reload', '↻', 49, chrome.reload), tooltip: 'Reload', accessibility_label: 'Reload' },
 				ui2.text_input(
 					id:          'address'
 					action_id:   'address-change'
@@ -122,11 +125,11 @@ $if vox_ui2 ? {
 					hint_text:   'Enter a URL'
 					multiline:   false
 					autocorrect: false
-					frame:       ui2.rect(184, tab_strip_height + 12, address_width, 34)
-					text_style:  ui2.TextStyle{ size: 14 }
+					frame:       ui2.rect(98, tab_strip_height + 5, address_width, 20)
+					text_style:  ui2.TextStyle{ size: 12 }
 				) or { panic(err) },
 				ui2.Element{
-					...ui2.label('load-status', chrome.status, ui2.rect(12, tab_strip_height + 56, width - 24, debug_status_height), ui2.TextStyle{ color: 0x555555, size: 12 })
+					...ui2.label('load-status', chrome.status, ui2.rect(12, tab_strip_height + toolbar_height, width - 24, debug_status_height), ui2.TextStyle{ color: 0x555555, size: 12 })
 					hidden: !chrome.debug
 				},
 			]),
@@ -137,11 +140,19 @@ $if vox_ui2 ? {
 		]
 	}
 
+	fn (app &BrowserApp) style_native_browser_chrome() {
+		C.native_browser_chrome_style_controls(ui2.embedded_browser_control('toolbar'),
+			ui2.embedded_browser_control('back'), ui2.embedded_browser_control('forward'),
+			ui2.embedded_browser_control('reload'), ui2.embedded_browser_control('address'))
+	}
+
 	fn (mut app BrowserApp) mount_ui2_chrome(parent voidptr, width int, height int) !voidptr {
+		C.native_browser_chrome_prepare_window(parent)
 		chrome := app.browser_chrome_state(width, height)
 		ui2.mount_embedded_browser(parent, browser_chrome_elements(chrome), address_bar_event)!
 		app.browser_chrome = chrome
 		app.native_address_bar = true
+		app.style_native_browser_chrome()
 		app.update_native_browser_tabs(chrome)
 		C.native_browser_chrome_start_memory(ui2.embedded_browser_control('memory'))
 		return ui2.embedded_browser_control('address')
@@ -155,6 +166,7 @@ fn (mut app BrowserApp) update_browser_chrome(width int, height int) {
 		if app.browser_chrome == chrome { return }
 		ui2.update_embedded_browser(browser_chrome_elements(chrome))
 		app.browser_chrome = chrome
+		app.style_native_browser_chrome()
 		app.update_native_browser_tabs(chrome)
 	}
 }
