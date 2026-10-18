@@ -20,7 +20,7 @@ fn test_chromium_linear_gradient_keeps_original_alpha_and_hard_stops() {
 }
 
 fn test_chromium_linear_gradient_falls_back_for_other_interpolation_semantics() {
-	gradient := layout.LinearGradient{stops: [layout.GradientStop{css.Color{255,0,0,0}, 0},
+	gradient := layout.LinearGradient{stops: [layout.GradientStop{css.Color{255,0,0,64}, 0},
 		layout.GradientStop{css.Color{0,0,255,255}, 1}]}
 	assert chromium_linear_gradient_stop_data(gradient, 1) == none
 	opaque := layout.LinearGradient{colors: [css.Color{255,0,0,255}, css.Color{0,0,255,255}]}
@@ -32,4 +32,16 @@ fn test_chromium_linear_gradient_falls_back_for_other_interpolation_semantics() 
 	out_of_range := layout.LinearGradient{stops: [layout.GradientStop{css.Color{0,0,0,0}, -.5},
 		layout.GradientStop{css.Color{0,0,0,255}, 1}]}
 	assert chromium_linear_gradient_stop_data(out_of_range, 1) == none
+}
+
+fn test_chromium_linear_gradient_discards_invisible_rgb_before_constant_color_interpolation() {
+ gradient := layout.LinearGradient{stops: [layout.GradientStop{css.Color{102,102,102,0}, .7203},
+  layout.GradientStop{css.Color{0,0,0,255}, .9108}]}
+ data := chromium_linear_gradient_stop_data(gradient, 1) or { panic('transparent RGB is not premultiplied color') }
+ assert data == [f32(0),0,0,0,.7203,0,0,0,1,.9108]
+ assert gradient.stops[0].color.r == 102
+ // A second visible color still requires general premultiplied interpolation.
+ varying := layout.LinearGradient{stops: [layout.GradientStop{css.Color{102,102,102,0},0},
+  layout.GradientStop{css.Color{255,0,0,128},.5},layout.GradientStop{css.Color{0,0,0,255},1}]}
+ assert chromium_linear_gradient_stop_data(varying, 1) == none
 }

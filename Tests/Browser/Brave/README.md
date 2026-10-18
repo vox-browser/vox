@@ -60,6 +60,14 @@ path requires constant alpha or constant RGB so straight and premultiplied
 interpolation agree; other color spaces and gradients retain the existing
 renderer. All three cases require exact equality.
 
+A fully transparent gradient stop contributes no premultiplied RGB. The
+constant-color GPU path therefore normalizes its invisible RGB to the visible
+color before interpolating. The unchanged
+[`diagnostic/css-linear-premult-transparent.html`](diagnostic/css-linear-premult-transparent.html)
+retains an angled case, a vertical fade and a hard stop. The latter two are
+exact; the angled case still differs by one level at one pixel from its
+adjacent original Brave reference. The complete diagnostic remains open.
+
 Outer CSS SVG roots in the Chromium profile snap their border-box paint
 origin while layout, padding, nested viewports and transforms keep their
 fractions. The two CNN header icons are exact after this change. The unchanged
