@@ -12332,6 +12332,136 @@ preserved. No normal-binary/C/profile/page/app success is claimed for round 123.
 **Chrome parity remains unestablished** because its earlier count uses a different
 endpoint and hydrated content.
 
+## Compute general grapheme offsets without cluster allocations
+
+Round 124 compares accepted frozen122 with the complete authored composition
+`17270386` + `68fcaf57`: five authored chain steps reduce to two final runtime
+hunks in two layout paths, including one complete new helper. The general text
+boundary fallback now walks the already-decoded runes and produces owned UTF-16
+offsets directly. It preserves the exact pinned V 0.5.2 Unicode 13 state machine,
+including malformed UTF-8 replacement and its three existing Prepend/control
+quirks. Existing ASCII and simple-Latin fast paths are byte-identical. The range
+table is 2,094 static numeric C entries, with no runtime table decoding or new
+GC roots. Compiler policy stays C-O2/Boehm, marker1 and the same 4 GiB heap hint.
+The Root features and original tests were already committed; this round changes
+no Root runtime source and gives unrelated current work no performance credit.
+
+All **nine authored cases pass in both GC modes, 2,306,314 assertions each**,
+including internal assertions. Six general-boundary cases cover all602 Unicode
+13 corpus entries (retaining the exact three baseline deviations), property/state
+triples and reset behavior, range edges, every Unicode property's oracle result,
+malformed input, owned-result storage, GC and input mutation. Three numeric-table
+cases cover every original interval endpoint, round trips, exhaustive lookup,
+negative/out-of-range/surrogate values and extended pictographs. The original
+function bodies are combined into one harness by removing only its second
+module declaration. The corpus remains test-only. The common11 functional cases
+plus one inactive diagnostic pass60 assertions per configuration; before/Boehm
+reuses identical accepted122-final inputs/binary/actual0, without execution.
+
+Three fixed alternating local pairs count16 complete fresh public HTML parse,
+layout, recording/paint-command/hit-phase consumption and finalize pipelines.
+The scene and checks are unchanged from122 (only round symbols/markers are
+renamed):64 Unicode paragraphs and128 blocks of
+collapsed indentation, independently checking192 DOM text nodes. Setup, eight
+warmups, full output checks/assertions and forced GC are outside the counter.
+The negative local-median gate was predeclared. All six actual exits are0 with
+checksum 7,963,486,608.
+
+| Local pair | Before instructions | Candidate instructions |
+| --- | ---: | ---: |
+| 1 | 32,458,760,902 | 32,257,380,326 |
+| 2 | 32,609,816,361 | 32,187,799,010 |
+| 3 | 32,550,495,922 | 32,332,949,768 |
+
+Local medians **32,550,495,922 → 32,257,380,326**,
+**-0.900495%**, 3/3 wins. These are complete local pipeline
+counts, with no hardware page credit. Standalone local binaries do not link the
+native browser helper library.
+
+The strict C audit authenticates the single changed fallback and all seven
+new helpers/prototypes against independent whole-app C-only outputs. The enum,
+three-scalar state, fixed-array declarations and all2,094 static values also match
+that independent output; every value matches its exact authored V literal.
+All remaining executable C, records, globals, resources, public decoder/filtering,
+tokenizer arenas and GC are byte-identical after established compiler identities,
+embed keys, unchanged source assertion maps, four byte-identical helper reorders
+and one static ordinal. Actual compiler file tables add only the new helper at
+index655, preserve existing order and supply exact anonymous index mapping.
+All120 native inputs,37 frozen includes and native arguments match. Remaining C
+SHA256 `aa60c9fdf5c087d1124a453cbae1a165c4d69a1ad820352eae7220772dbeb258`.
+Independent `-no-skip-unused -o.c` generation has zero native/runtime executions.
+The first audit reader exits1 because its static-array regex omitted the existing
+same-line `// fixed array const` comment and consumed following declarations.
+That reader, failure receipt and actual exit remain archived. Corrected extraction
+covers exactly that constant; no source/binary/check/profile/sample is repeated.
+Normal compilation, signing and startup all exit0; normal C is a regular SSD file.
+Two aggregate archive rows inherited an obsolete117 reuse label/path. The actual
+reuse receipt and hashes already identified122-final; retained metadata is corrected
+to122 and its verified durable binary archive, with original records preserved.
+No artifact bytes, exit values or executions change.
+
+Both full-process C-O1/Boehm/marker1 profiles exit0 with `-profile-no-inline`.
+Main stays enabled with no filter/reset. Pipeline and paint/hit work counts remain
+equal; the allocating V grapheme path gives way to the offset helper. Inline
+helper attribution is not used as evidence of physical call removal. These are
+call counts only, with no timing or hardware page credit.
+
+| Profile calls | Before | Candidate |
+| --- | ---: | ---: |
+| `layout__opt124_complete_public_document_layout` | 25 | 25 |
+| `html__parse_document` | 26 | 26 |
+| `layout__run_document_layout` | 26 | 26 |
+| `dom__Document_record_display_list` | 26 | 26 |
+| `layout__BlockBox_compatibility_hit_test_steps` | 26 | 26 |
+| `layout__BlockBox_collect_compatibility_stacking_context_paint_steps` | 156 | 156 |
+| `layout__viewport_build_hit_test_display_list` | 26 | 26 |
+| `layout__text_grapheme_boundaries` | 24,960 | 24,960 |
+| `layout__general_text_grapheme_boundaries` | 0 | 13,312 |
+| `builtin__string_graphemes_impl` | 13,312 | 0 |
+| `builtin__array_ensure_cap` | 693,685 | 657,077 |
+
+The page plan fixes30 alternating pairs, odd before/final and even final/before,
+30,000 paired bootstrap resamples and seed124. Both regular binaries use the
+same359-file cached GitHub input, frozen4e library, child-only placement helper,
+document1024×768/window1024×880 and
+`native.scopes.navigation_to_first_document_paint[0]`. No completed primary is
+replaced, filtered or repeated.
+
+| First-frame retired instructions | Value |
+| --- | ---: |
+| Before median | 16,720,940,717.5 |
+| Candidate median | 16,713,891,904 |
+| Observed marginal-median saving | 7,048,813.5 |
+| Change | -0.042156% |
+| Improved pairs | 20/30 |
+| Paired median saving | 5,902,626 |
+| Paired 95% interval | [389,718.5, 18,571,488.5] |
+| Repeatable page credit | 7,048,813.5 |
+
+The positive paired interval permits repeatable page credit.
+All60 primaries remain. Real PNGs:60; recovered primaries:[]; archived
+preparse retries:0; post-primary refreshes:0;
+external foreground transitions:[{'variant': 'final', 'pair': 10, 'placement_log_sha256': 'af4e95529f7842e54d497b46783458f643e0fe72eab3584107535a47aa267d86', 'pid': 72040, 'foreground_before': 50220, 'foreground_after': 48085, 'foreground_unchanged': False, 'positioned': 1, 'content_view': [1024, 880], 'displays': 1, 'full_runtime_receipt': True}].
+Recovered counters retain unknown exit/missing PNG explicitly. All 60 decoded RGB captures differ only within the original skeleton bands x45–662/y335–344 and ten 14px bands at y380+41i. All other pixels match. RGB classes 30 before / 30 final; 0 shared.
+Root memory is the process lifetime maximum through capture/exit, not first-frame
+live memory. The focused1024×768 comparison is pixel-exact. Prior observed carry0
+plus fresh positive observed saving gives **7,048,813.5** for the5M gate.
+Six actual zero exits pass CSS31/SVG10/layout46 in both GC modes: **174 executions**. All **19 screenshot comparisons pass, 16 exact**. Known differences remain inline-node13, text-decorations1,341 and canvas-text1,994. Next control:124; broad baseline resets only
+after actual broad passes for an accepted candidate.
+
+The isolated app `/Users/alex/code/vox2/Build/v/Vox-opt124.app` passes library pinning, signing,
+verification, startup and actual collections with default marker1/override2.
+Its native instruction text matches the measured binary. Canonical app and GUI
+are preserved; unrelated current-Root work receives no frozen performance credit.
+Normal binary SHA256 `b06835eb9888875bf6292fe9b745ed536267eddefbe9edc7aa788388a645cda6`;
+normal C SHA256 `07382f6549e858b8b7fd93634e0ebbbc42104f525a7c5ae7f0413ab37ba1e05c`.
+All exact compressed C/profile/test/binary hashes are retained in
+`Build/v/instruction-opt124-durable-archives.json`.
+**Chrome parity remains unestablished**: the old observed-descendant Chrome
+endpoint uses ready-complete hydrated content and a screenshot, whereas this
+native endpoint is the first submitted document frame. Its old count is not a
+matching-workload parity result.
+
 ## Causes and changes
 
 - The V 0.5.2 compatibility compiler's `-prod` Boehm code repeatedly snapshots

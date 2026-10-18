@@ -2150,6 +2150,15 @@ evidence](docs/translation-audit/NATIVE_MEDIA_WHEEL_RAW_HANDLER.md).
   Local16 public pipelines +1.033810%/2wins; all6 samples/actual0 retained.
   No normal/profile/C-audit/page/broad work or page credit; Root feature remains untouched.
   Frozen122 control/broad baseline, carry0 and verified122 app preserved; Chrome parity open.
+  Direct general grapheme round124 (`17270386` + `68fcaf57`): complete two-feature composition.
+  Two final hunks/two runtime paths; all9 authored cases/2306314asserts eachGC pass.
+  Common60/config; local16 public pipelines -0.900495%/3wins; all6 actual0 retained.
+  Page 16,720,940,717.5 → 16,713,891,904; 20/30wins.
+  Point saving 7,048,813.5; paired interval [389,718.5, 18,571,488.5]; credit 7,048,813.5.
+  Broad: 87bothGC/174executions,19screens16exact; focused viewport exact.
+  Strict C/source/filetable audit; static2094u32 table/no new GC roots; all60 primaries retained.
+  Next control 124; observed carry 0.
+  Same4GiB/frozenhelpers/GC1+override2; isolated app; Root/canonical/GUI preserved; Chrome open.
 - Outside instruction-count optimization, run broad regression suites once per
   ten completed fixes, not after every fix.
   Broad suites include full translation/package test batches, the full LibJS AST
