@@ -1999,6 +1999,42 @@ fn resolved_svg_stroke_dasharray(computed &css.ComputedProperties, percentage_ba
 	return dasharray
 }
 
+// The native twelve-float SVG protocol reserves kind 6 for an explicit
+// ellipse's LTRB rectangle. Keep source identity: an authored four-arc <path>
+// must still reach Skia as arcs, even when it has the same outline.
+fn retained_svg_ellipse_data(node &Node, path svg.Path) ?[]f32 {
+	if node.document().font_rendering_policy() != .chromium || !node.is_svg_geometry_box() {
+		return none
+	}
+	element := svg_element_for_layout_node(node) or { return none }
+	if element.local_name() !in ['circle', 'ellipse'] || path.instructions.len != 5 {
+		return none
+	}
+	move := path.instructions[0]
+	arc := path.instructions[1]
+	if move.type_ != .move || move.data.len != 2 || arc.type_ != .elliptical_arc
+		|| arc.data.len != 7 {
+		return none
+	}
+	cx := arc.data[5]
+	cy := move.data[1]
+	rx := arc.data[0]
+	ry := arc.data[1]
+	if rx <= 0 || ry <= 0 {
+		return none
+	}
+	mut packed := []f32{len: 12}
+	packed[0] = 6
+	for index, coordinate in [cx - rx, cy - ry, cx + rx, cy + ry] {
+		// Comparisons also reject NaN; don't publish an infinite float rectangle.
+		if !(coordinate >= -3.4028234663852886e38 && coordinate <= 3.4028234663852886e38) {
+			return none
+		}
+		packed[index + 1] = f32(coordinate)
+	}
+	return packed
+}
+
 fn painting_clip_path_bounds(path painting.ClipPathVisualData) ?painting.Rect {
 	mut has_point := false
 	mut min_x := 0.0
@@ -3602,7 +3638,9 @@ fn block_box_from_typed_layout_shallow(node &Node, state &LayoutState, ancestor_
 		} else {
 			painting.WindingRule.nonzero
 		})
-		svg_path_data = compatibility_pack_clip_path_segments(exact_visual_path)
+		svg_path_data = retained_svg_ellipse_data(node, path) or {
+			compatibility_pack_clip_path_segments(exact_visual_path)
+		}
 		svg_fill_even_odd = computed.fill_rule() == .evenodd
 		to_page := svg_path_transform_to_page(node, state)
 		svg_transform = [to_page.a, to_page.b, to_page.c, to_page.d, to_page.e, to_page.f]!

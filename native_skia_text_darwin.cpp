@@ -601,6 +601,14 @@ SkPath path_from_serialized_segments(float const* data, int segment_count)
             if (has_move)
                 path.moveTo(last_move_x, last_move_y);
             break;
+        case 6:
+            // Explicit SVG ellipse (LTRB); keep authored arc paths unchanged.
+            if (std::isfinite(segment[1]) && std::isfinite(segment[2])
+                && std::isfinite(segment[3]) && std::isfinite(segment[4])
+                && segment[3] > segment[1] && segment[4] > segment[2])
+                path.addOval(SkRect::MakeLTRB(segment[1], segment[2], segment[3], segment[4]),
+                    SkPathDirection::kCW, 1);
+            break;
         default:
             break;
         }

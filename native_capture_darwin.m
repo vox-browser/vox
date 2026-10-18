@@ -1486,6 +1486,15 @@ static CGMutablePathRef native_create_path_from_data(const float *data,
 		case 5:
 			CGPathCloseSubpath(path);
 			break;
+		case 6:
+			// Explicit SVG ellipse bounds, using the native segment stride.
+			if (isfinite(segment[1]) && isfinite(segment[2])
+				&& isfinite(segment[3]) && isfinite(segment[4])
+				&& segment[3] > segment[1] && segment[4] > segment[2]) {
+				CGPathAddEllipseInRect(path, NULL, CGRectMake(segment[1], segment[2],
+					segment[3] - segment[1], segment[4] - segment[2]));
+			}
+			break;
 		default:
 			break;
 		}
