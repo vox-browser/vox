@@ -135,3 +135,21 @@ fn test_forms_with_rendered_controls_keep_the_complete_builder_path() {
 	assert retained_flow_handle(stable) != before
 	retained_flow_check_full_rebuild(mut document)
 }
+
+fn test_clean_flow_roots_and_inline_block_action_menus_retain_their_tree_roles() {
+	for style in ['display:inline-block', 'display:flow-root', 'display:block;overflow:hidden'] {
+		mut document := html.parse_document('<!doctype html><div id="changed"></div><section id="stable"><p>Comment</p><ul style="padding:0"><li style="display:inline"><form style="display:inline"><span id="action" style="' + style + '"><a>save</a></span></form></li></ul></section>')
+		defer { document.finalize() }
+		_ = layout_document_typed_in_viewport(document, 400, 300)
+		stable := document.get_element_by_id('stable')?
+		action := document.get_element_by_id('action')?
+		before := retained_flow_handle(stable)
+		action_before := retained_flow_handle(action)
+		mut changed := document.get_element_by_id('changed')?
+		changed.set_inner_html('<p>Expanded preceding comment</p>')!
+		document.update_layout(.debugging)
+		assert retained_flow_handle(stable) == before
+		assert retained_flow_handle(action) == action_before
+		retained_flow_check_full_rebuild(mut document)
+	}
+}

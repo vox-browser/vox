@@ -31,7 +31,7 @@ fn reusable_clean_flow_subtree(element &dom.Element, mut rejected map[u64]bool) 
 	computed := css.computed_properties_for_element(element) or { return none }
 	// Display changes invalidate the parent which owns this insertion. A node
 	// which just became unboxed can still have its previous principal box here.
-	if !computed.display().is_flow_inside() {
+	if !computed.display().is_flow_inside() && !computed.display().is_flow_root_inside() {
 		return none
 	}
 	mirror := dom_root.unsafe_layout_node() or { return none }
@@ -83,7 +83,8 @@ fn collect_retained_flow_elements(element &dom.Element, mut elements []&dom.Elem
 		return false
 	}
 	if !retained_flow_layout_node_is_ordinary(typed) { return false }
-	if !typed.is_break_node() && typed.is_inline_node() != computed.display().is_inline_outside() { return false }
+	expects_inline_node := computed.display().is_inline_outside() && computed.display().is_flow_inside()
+	if !typed.is_break_node() && typed.is_inline_node() != expects_inline_node { return false }
 	for child in typed.children() {
 		if !retained_flow_anonymous_layout_is_ordinary(child) { return false }
 	}
@@ -121,7 +122,8 @@ fn retained_flow_layout_node_is_ordinary(node &Node) bool {
 		|| node.is_floating() || node.is_out_of_flow() || node.is_flex_item() || node.is_grid_item_ {
 		return false
 	}
-	if !node.is_text_node() && !node.display().is_flow_inside() { return false }
+	if !node.is_text_node() && !node.display().is_flow_inside()
+		&& !node.display().is_flow_root_inside() { return false }
 	if metrics := node.as_node_with_style_and_box_model_metrics() {
 		if metrics.continuation_of_node() != none { return false }
 	}
