@@ -5162,7 +5162,7 @@ fn (e &Element) matches_invalidation_pseudo_class(name string) bool {
 		'host' { e.is_shadow_host() }
 		'hover' {
 			hovered := e.document().get_hovered_node() or { return false }
-			e.as_node() == hovered || e.as_node().is_shadow_including_ancestor_of(hovered)
+			e.as_node().is_same_node(hovered) || e.as_node().is_shadow_including_ancestor_of(hovered)
 		}
 		'focus' { e.is_focused() }
 		'focus-visible' { e.is_focused() && e.should_indicate_focus() }
