@@ -1723,7 +1723,6 @@ pub fn (mut controls MediaControls) update_volume_and_mute_indicator() {
 	} else {
 		.empty
 	}
-	controls.had_audio = has_audio
 	if fill := controls.dom_.volume_fill {
 		mut style := css.element_style(fill)
 		style.set_property('width', if muted { '0' } else { '${controls.volume_percentage}%' }, '') or { panic(err) }
@@ -1745,8 +1744,12 @@ pub fn (mut controls MediaControls) update_volume_and_mute_indicator() {
 		}
 		controls.was_muted = muted
 	}
-	if mut area := controls.dom_.volume_area {
-		area.set_attribute_value('style', if has_audio { '' } else { 'display:none;' })
+	if has_audio != controls.had_audio {
+		if mut area := controls.dom_.volume_area {
+			mut classes := area.class_list()
+			classes.toggle('hidden', !has_audio) or { panic(err) }
+		}
+		controls.had_audio = has_audio
 	}
 }
 
