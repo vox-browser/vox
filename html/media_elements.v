@@ -938,7 +938,7 @@ pub fn (mut controls MediaControls) create_shadow_tree() {
 			mut created := []&dom.Element{}
 			for class_name in ['play-pause-icon', 'timeline-fill', 'timestamp', 'volume-area',
 				'volume-fill', 'mute-button', 'fullscreen-icon', 'placeholder-circle'] {
-				if class_name == 'placeholder-circle' && !is_video { continue }
+				if class_name in ['fullscreen-icon', 'placeholder-circle'] && !is_video { continue }
 				tag_name := if class_name == 'fullscreen-icon' { 'button' } else { 'div' }
 				mut child := dom.create_element(document, tag_name, ns_html, none, none, false) or { continue }
 				child.set_attribute_value('class', class_name)
@@ -958,7 +958,7 @@ pub fn (mut controls MediaControls) create_shadow_tree() {
 			mut shadow_node := unsafe { &dom.Node(shadow) }
 			shadow_node.append_child(container.as_node()) or {}
 			controls.dom_.container = container
-			expected_children := if is_video { 8 } else { 7 }
+			expected_children := if is_video { 8 } else { 6 }
 			if created.len == expected_children {
 				controls.dom_.play_pause_icon = created[0]
 				controls.dom_.timeline_fill = created[1]
@@ -966,8 +966,8 @@ pub fn (mut controls MediaControls) create_shadow_tree() {
 				controls.dom_.volume_area = created[3]
 				controls.dom_.volume_fill = created[4]
 				controls.dom_.mute_button = created[5]
-				controls.dom_.fullscreen_icon = created[6]
-				if is_video && created.len == 8 {
+				if is_video {
+					controls.dom_.fullscreen_icon = created[6]
 					controls.dom_.placeholder_circle = created[7]
 				}
 			}
@@ -1058,6 +1058,17 @@ pub fn (mut controls MediaControls) set_up_event_listeners() {
 				controls := unsafe { &MediaControls(controls_pointer) }
 				return media_controls_state_handler(controls, event)
 			})
+	}
+	if controls.dom_.fullscreen_icon != none {
+		if html_element := controls.media.associated_element_ {
+			element := unsafe { &dom.Element(html_element) }
+			controls.add_event_listener(unsafe { &dom.EventTarget(element.document()) }, 'fullscreenchange', .no,
+				fn [controls_pointer] (_ &dom.Event) bool {
+					mut controls := unsafe { &MediaControls(controls_pointer) }
+					controls.update_fullscreen_icon()
+					return true
+				})
+		}
 	}
 	controls.set_up_hover_event_listeners()
 	controls.add_event_listener(controls.media.event_target(), 'keydown', .no,
@@ -1355,7 +1366,8 @@ pub fn (mut controls MediaControls) update_fullscreen_icon() {
 	}
 	controls.fullscreen = is_fullscreen
 	if mut icon := controls.dom_.fullscreen_icon {
-		icon.set_attribute_value('class', if is_fullscreen { 'fullscreen-icon fullscreen' } else { 'fullscreen-icon' })
+		mut classes := icon.class_list()
+		classes.toggle('fullscreen', is_fullscreen) or { panic(err) }
 	}
 }
 

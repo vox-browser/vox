@@ -59,10 +59,14 @@ fn test_media_controls_bar_groups_widgets_and_preserves_unrelated_visibility_cla
 		assert bar.is_html_element() && bar.local_name() == 'div' && bar.document() == document
 		assert (bar.as_node().parent() or { panic('Missing control bar parent') }) == container.as_node()
 		for widget in [controls.dom_.play_pause_icon, controls.dom_.timeline_track, controls.dom_.timestamp_element,
-			controls.dom_.volume_area, controls.dom_.volume_fill, controls.dom_.mute_button, controls.dom_.fullscreen_icon] {
+			controls.dom_.volume_area, controls.dom_.volume_fill, controls.dom_.mute_button] {
 			element := widget or { panic('Missing bar widget') }
 			assert (element.as_node().parent() or { panic('Missing widget parent') }) == bar.as_node()
 		}
+		if icon := controls.dom_.fullscreen_icon {
+			assert kind == 'video'
+			assert (icon.as_node().parent() or { panic('Missing fullscreen icon parent') }) == bar.as_node()
+		} else { assert kind == 'audio' }
 		if placeholder := controls.dom_.placeholder_circle {
 			assert (placeholder.as_node().parent() or { panic('Missing placeholder parent') }) == container.as_node()
 		}
@@ -82,7 +86,7 @@ fn test_video_hover_events_follow_media_and_bar_targets_without_hiding_on_bar_ex
 	defer { controls.remove_event_listeners(); document.finalize() }
 	bar := controls.dom_.control_bar or { panic('Missing bar') }
 	bar_target := unsafe { &dom.EventTarget(bar.as_node()) }
-	assert controls.registered_event_listeners_.len == 18
+	assert controls.registered_event_listeners_.len == 19
 	for name in ['mouseenter', 'mousemove', 'mouseleave'] {
 		assert controls.registered_event_listeners_.filter(it.target == media.event_target() && it.event_name == name).len == 1
 	}
