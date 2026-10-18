@@ -12278,6 +12278,60 @@ finding and correction are preserved before all runtime execution.
 **Chrome parity remains unestablished**: its earlier count used a different
 endpoint and hydrated content.
 
+## Reject scalar inline-piece sorting at the ownership gate
+
+Round 123 (`7fab2d3a`) imports the complete existing Root feature into frozen
+122: **three authored hunks in one layout path**. It sorts scalar depth/emission
+keys instead of closing over temporary arrays that contain layout nodes. The five
+original comparator, geometry and lifetime cases and their original C weak-owner
+worker header are copied byte for byte. No Root runtime or test files are edited.
+
+The common 11 functional cases plus one inactive diagnostic pass **60 assertions
+per configuration**. Before/Boehm safely reuses identical successful 122-final
+inputs/binary/actual zero exit; candidate/Boehm and no-GC are fresh actual zeros.
+All five original no-GC cases pass **360 assertions**, covering comparator ties,
+outer/inner and line order, geometry in all three writing modes and both directions,
+and live returned fragments.
+
+The Boehm process has **actual exit 134 (SIGABRT)**. Its first case fails the
+unchanged `owners_alive() == 0` assertion: the mask is **1**, indicating that the
+document remains reachable although the container is released. The next case
+aborts on the unchanged C weak-link registration assertion. The process has no
+completed-case pass credit. No assertion, expected mask or collection policy is
+weakened, and no replacement lifetime test is used. A textually portable feature
+has not established its required ownership behavior on this frozen runtime.
+
+The already started three-pair local cohort finishes intact. Each sample counts
+16 complete fresh public parse/layout/record/paint-command/hit-phase consumption
+and finalize pipelines over the unchanged 122 scene: 64 Unicode paragraphs and
+128 discarded-indentation blocks. Setup independently checks 192 text nodes;
+eight warmups, assertions, output expectations and forced GC remain outside the
+counter. All six actual exits are zero and checksums match 7,963,486,608.
+
+| Pair | Before instructions | Candidate instructions |
+| --- | ---: | ---: |
+| 1 | 34,334,292,536 | 32,986,355,064 |
+| 2 | 32,576,469,233 | 32,529,805,822 |
+| 3 | 32,525,673,842 | 32,913,248,140 |
+
+Local medians **32,576,469,233 → 32,913,248,140**,
+**+1.033810%**, 2/3 wins. This also fails the predeclared
+negative-local-median requirement. Every completed sample remains; these local
+counts receive no page credit and do not override the failed ownership contract.
+
+The functional gate and native-job launcher exit 1 before any normal-browser
+build, V profile, generated-C audit or page run. The predeclared 30-pair page
+cohort, seed 123 and 30,000 paired bootstrap resamples remain unstarted. Broad
+tests and screenshots stay deferred at observed carry zero. Completed common,
+contract and local C/binary archives retain their actual outcomes and hashes in
+`Build/v/instruction-opt123-durable-archives.json`.
+
+The current Root feature remains untouched. Frozen control and broad baseline
+**122**, carry **0**, the verified isolated 122 app and the canonical app/GUI are
+preserved. No normal-binary/C/profile/page/app success is claimed for round 123.
+**Chrome parity remains unestablished** because its earlier count uses a different
+endpoint and hydrated content.
+
 ## Causes and changes
 
 - The V 0.5.2 compatibility compiler's `-prod` Boehm code repeatedly snapshots

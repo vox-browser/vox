@@ -2144,6 +2144,12 @@ evidence](docs/translation-audit/NATIVE_MEDIA_WHEEL_RAW_HANDLER.md).
   Strict C/source/filetable audit; all 60 primaries retained; next control 122.
   Observed carry 0; same4GiB/frozenhelpers/GC1+override2.
   Isolated app; Root/canonical/GUI preserved; ENOSPC receipts retained; Chrome parity open.
+  Inline-piece scalar sorting round 123 (`7fab2d3a`) fails the Boehm ownership gate.
+  Common60/config; original5 no-GC cases/360asserts pass; Boehm actual134/SIGABRT.
+  First weak-owner mask1 retains document; next weak-link registration aborts; no weakened test.
+  Local16 public pipelines +1.033810%/2wins; all6 samples/actual0 retained.
+  No normal/profile/C-audit/page/broad work or page credit; Root feature remains untouched.
+  Frozen122 control/broad baseline, carry0 and verified122 app preserved; Chrome parity open.
 - Outside instruction-count optimization, run broad regression suites once per
   ten completed fixes, not after every fix.
   Broad suites include full translation/package test batches, the full LibJS AST
