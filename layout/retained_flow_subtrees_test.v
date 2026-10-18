@@ -98,3 +98,40 @@ fn test_retained_flow_keeps_special_subtrees_on_the_complete_builder_path() {
 		retained_flow_check_full_rebuild(mut document)
 	}
 }
+
+fn test_clean_action_forms_retain_flow_boxes_and_rebuild_when_their_content_changes() {
+	mut document := html.parse_document('<!doctype html><style>.closed p{display:none}form{display:inline}li{display:inline}</style><div id="changed" class="closed"><p>expanded</p></div><section id="stable"><ul><li><form id="action"><input type="hidden" value="token"><span><a>save</a></span></form></li><li><a>reply</a></li></ul><p>comment body</p></section>')
+	defer { document.finalize() }
+	_ = layout_document_typed_in_viewport(document, 400, 300)
+	stable := document.get_element_by_id('stable')?
+	mut action := document.get_element_by_id('action')?
+	mut changed := document.get_element_by_id('changed')?
+	for class_name in ['', 'closed', ''] {
+		before := retained_flow_handle(stable)
+		form_before := retained_flow_handle(action)
+		changed.set_attribute_value('class', class_name)
+		document.update_layout(.debugging)
+		assert retained_flow_handle(stable) == before
+		assert retained_flow_handle(action) == form_before
+		retained_flow_check_full_rebuild(mut document)
+	}
+	before := retained_flow_handle(stable)
+	action.set_inner_html('<span>updated action</span>')!
+	document.update_layout(.debugging)
+	assert retained_flow_handle(stable) != before
+	assert display_list_commands(document.record_display_list()?).any(it.text == 'updated action')
+	retained_flow_check_full_rebuild(mut document)
+}
+
+fn test_forms_with_rendered_controls_keep_the_complete_builder_path() {
+	mut document := html.parse_document('<!doctype html><div id="changed"></div><section id="stable"><form><input value="editable"><button>submit</button></form></section>')
+	defer { document.finalize() }
+	_ = layout_document_typed_in_viewport(document, 400, 300)
+	stable := document.get_element_by_id('stable')?
+	before := retained_flow_handle(stable)
+	mut changed := document.get_element_by_id('changed')?
+	changed.set_inner_html('<p>new preceding content</p>')!
+	document.update_layout(.debugging)
+	assert retained_flow_handle(stable) != before
+	retained_flow_check_full_rebuild(mut document)
+}
