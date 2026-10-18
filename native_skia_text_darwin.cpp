@@ -1410,6 +1410,10 @@ static bool tiles_touch_disjoint_pixels(SkMatrix const& matrix, float const* til
 // Returns 0 when it cannot, and the caller draws the tiles one at a time.
 static std::vector<char> chromium_layer_msaa_rows(long top, int height,
     float page_y, float scroll_y, float scale);
+static bool draw_chromium_root_image_tiles(std::vector<uint32_t>& pixels,
+    int raster_width, int raster_height, RasterRegion const& region,
+    float scale, float page_x, float page_y, float scroll_y,
+    float canvas_width, bool has_background, VoxGraphiteImage const& descriptor);
 
 extern "C" int ladybird_v_skia_draw_rgba_image_tiles(CGContextRef destination,
     uint8_t const* source_pixels, int image_width, int image_height,
@@ -1587,12 +1591,16 @@ extern "C" int ladybird_v_skia_draw_rgba_image(CGContextRef destination,
         raster_matrix(matrix, region, raster_scale_x, raster_scale_y).get9(descriptor.matrix);
         auto rows = chromium_layer_msaa_rows(region.top, raster_height, page_y, scroll_y, destination_scale);
         auto draw = graphite_image_draw();
-        if (draw && vox_draw_with_msaa_rows(pixels, raster_width, rows, [&](auto& target, bool msaa) {
+        bool drawn = draw && draw_chromium_root_image_tiles(pixels, raster_width,
+            raster_height, region, destination_scale, page_x, page_y, scroll_y,
+            canvas_width, has_background, descriptor);
+        if (!drawn && draw) drawn = vox_draw_with_msaa_rows(pixels, raster_width, rows, [&](auto& target, bool msaa) {
                 descriptor.flags = (descriptor.flags & ~VOX_GRAPHITE_IMAGE_FORCE_MSAA)
                     | (msaa ? VOX_GRAPHITE_IMAGE_FORCE_MSAA : 0);
                 return draw(reinterpret_cast<uint8_t*>(target.data()), raster_width, raster_height,
                     raster_width * 4, has_background, &descriptor) != 0;
-            })) {
+            });
+        if (drawn) {
             return composite_pixels(destination, std::move(pixels), raster_width, raster_height,
                 static_cast<float>(region.left), canvas_height - static_cast<float>(region.bottom),
                 static_cast<float>(region.width()), static_cast<float>(region.height()), has_background);
@@ -2449,6 +2457,63 @@ static long chromium_raster_tile_for_row(long row)
 {
     long spacing = s_msaa_tile_rows - 2;
     return row <= spacing ? 0 : (row - 1) / spacing;
+}
+
+static bool draw_chromium_root_image_tiles(std::vector<uint32_t>& pixels,
+    int raster_width, int raster_height, RasterRegion const& region,
+    float scale, float page_x, float page_y, float scroll_y,
+    float canvas_width, bool has_background, VoxGraphiteImage const& descriptor)
+{
+    auto draw = graphite_image_draw();
+    int tile_width = raster_dimension(canvas_width, scale);
+    int offset_x = std::lround(region.left * scale);
+    constexpr size_t maximum_tile_pixels = 8 * 1024 * 1024;
+    if (!draw || !s_raster_layer_is_root || !has_background || page_x != 0
+        || scale <= 0 || tile_width <= 0 || offset_x < 0
+        || offset_x + raster_width > tile_width
+        || static_cast<size_t>(tile_width) * s_msaa_tile_rows > maximum_tile_pixels)
+        return false;
+
+    // Graphite's image coordinates are normalized against the raster extent.
+    // Keep the root tile's width, height and origin even for a small visible
+    // part of an image. A tight leaf raster changes interpolated texels.
+    long first_row = std::lround((region.top - page_y + scroll_y
+        + s_root_raster_scroll_y) * scale);
+    long spacing = s_msaa_tile_rows - 2;
+    long first_tile = chromium_raster_tile_for_row(first_row);
+    long last_tile = chromium_raster_tile_for_row(first_row + raster_height - 1);
+    auto backdrop = pixels;
+    auto result = pixels;
+    std::vector<uint32_t> tile_pixels(static_cast<size_t>(tile_width) * s_msaa_tile_rows);
+    for (long tile = first_tile; tile <= last_tile; ++tile) {
+        long origin = tile * spacing;
+        std::fill(tile_pixels.begin(), tile_pixels.end(), 0);
+        for (int row = 0; row < raster_height; ++row) {
+            long tile_row = first_row + row - origin;
+            if (tile_row < 0 || tile_row >= s_msaa_tile_rows) continue;
+            std::copy_n(backdrop.begin() + static_cast<size_t>(row) * raster_width,
+                raster_width, tile_pixels.begin() + tile_row * tile_width + offset_x);
+        }
+        auto image = descriptor;
+        image.matrix[2] += offset_x;
+        image.matrix[5] += first_row - origin;
+        // MSAA bookkeeping follows the projected command coordinates, while
+        // the root raster itself retains the document's unscrolled origin.
+        long projected_row = origin - std::lround(s_root_raster_scroll_y * scale);
+        image.flags = (image.flags & ~VOX_GRAPHITE_IMAGE_FORCE_MSAA)
+            | (row_in_msaa_tile(projected_row + 1) ? VOX_GRAPHITE_IMAGE_FORCE_MSAA : 0);
+        if (!draw(reinterpret_cast<uint8_t*>(tile_pixels.data()), tile_width,
+                s_msaa_tile_rows, tile_width * 4, 1, &image)) return false;
+        for (int row = 0; row < raster_height; ++row) {
+            long document_row = first_row + row;
+            if (chromium_raster_tile_for_row(document_row) != tile) continue;
+            long tile_row = document_row - origin;
+            std::copy_n(tile_pixels.begin() + tile_row * tile_width + offset_x,
+                raster_width, result.begin() + static_cast<size_t>(row) * raster_width);
+        }
+    }
+    pixels = std::move(result);
+    return true;
 }
 
 static bool chromium_root_gradient_tiles_eligible(float scale, float page_x,

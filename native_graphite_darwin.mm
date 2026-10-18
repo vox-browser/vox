@@ -355,7 +355,14 @@ static void draw_prepared_image(SkCanvas* canvas, VoxGraphiteImage const* image,
     matrix.set9(image->matrix);
     canvas->setMatrix(matrix);
     auto rect = [](float const* r) { return SkRect::MakeXYWH(r[0], r[1], r[2], r[3]); };
-    canvas->clipRRect(rounded_rect(image->clip), true);
+    // An image already covers its destination rectangle. An identical square
+    // clip is redundant, and changes Graphite's image shader interpolation.
+    // Retain actual cropping and rounded corners.
+    bool clips_destination = std::memcmp(image->clip, image->destination,
+        sizeof(image->destination)) != 0
+        || std::any_of(image->clip + 4, image->clip + 12,
+            [](float radius) { return radius != 0; });
+    if (clips_destination) canvas->clipRRect(rounded_rect(image->clip), true);
     SkPaint paint;
     paint.setAntiAlias(true);
     paint.setAlphaf(std::clamp(image->opacity, 0.0f, 1.0f));
