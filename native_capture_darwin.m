@@ -220,12 +220,6 @@ static void native_consider_largest_view(NSView *view, NSView **largest_view, CG
 }
 
 static NSView *native_browser_view(void) {
-	if (native_cached_browser_view != nil) {
-		NSSize cached_size = [native_cached_browser_view bounds].size;
-		if (cached_size.width > 0.0 && cached_size.height > 0.0) {
-			return native_cached_browser_view;
-		}
-	}
 	NSWindow *window = [NSApp mainWindow];
 	if (window == nil) {
 		window = [NSApp keyWindow];
@@ -244,10 +238,10 @@ static NSView *native_browser_view(void) {
 	NSView *largest_view = nil;
 	CGFloat largest_area = 0.0;
 	native_consider_largest_view([window contentView], &largest_view, &largest_area);
-	if (largest_view != nil) {
-		native_cached_browser_view = largest_view;
-	}
-	return native_cached_browser_view;
+    // Startup and native controls can replace the content view while the old
+    // view still has positive bounds. Resolve against the live window tree.
+    native_cached_browser_view = largest_view;
+    return largest_view;
 }
 
 // Sokol keeps a MetalKit parent behind its native Cocoa drawing child. The
