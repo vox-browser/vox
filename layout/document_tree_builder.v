@@ -563,6 +563,7 @@ fn document_layout_update_callback_with_paint_tree(document &dom.Document, viewp
 		document: document
 		paint_tree: paint_tree
 		resize_handle_states: resize_handle_states
+		record_scratch: take_document_recording_scratch(document)
 	}
 	if build_paint_tree {
 		install_document_painting_bridge(document, result_ptr)
