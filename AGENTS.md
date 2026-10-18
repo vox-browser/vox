@@ -2115,6 +2115,12 @@ evidence](docs/translation-audit/NATIVE_MEDIA_WHEEL_RAW_HANDLER.md).
   No normal/profile/C-audit/page/broad run; page credit0; original stale descriptions retained.
   Own revert `9a16b193` restores exact pre118 Root implementation/tests.
   Frozen117 control/broad baseline, carry0 and isolated117 app preserved; Chrome parity open.
+  Computed-property inline round119 (`e51993f1`) fails its local median gate.
+  Root2 cases/3289 asserts each: C-O2 bothGC and C-O0Boehm; frozen2/2931 perGC pass.
+  Common60/config; local16 complete public pipelines +1.971223%, 1/3wins; all6 retained.
+  No normal/profile/C-audit/page/broad run; page credit0; body/guard unchanged.
+  Own revert `32525034` restores exact pre119 Root implementation/tests.
+  Frozen117 control/broad baseline, carry0 and isolated117 app preserved; Chrome parity open.
 - Outside instruction-count optimization, run broad regression suites once per
   ten completed fixes, not after every fix.
   Broad suites include full translation/package test batches, the full LibJS AST

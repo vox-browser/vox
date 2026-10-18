@@ -11967,6 +11967,55 @@ app and the user's GUI are preserved. Exact focused/local C and binary archives
 are durable under `Build/v/instruction-opt118-durable-archives.json`.
 **Faster-than-Chrome performance remains unproven.**
 
+## Reject a computed-property inline hint after its local gate
+
+Round 119 (`e51993f1`) adds only `@[inline]` to
+`ComputedProperties.property`: **one exact attribute hunk in one runtime file**.
+Its V body, validation guard, animation/importance/transition behavior and
+public signature stay unchanged. The frozen 117 candidate keeps its original
+dense array body; Root's separate property-store/COW changes are excluded.
+
+Two focused current-Root cases pass **3,289 assertions each** under C-O2/Boehm,
+C-O2/no-GC and C-O0/Boehm. The original precedence/missing case is unchanged.
+One added case checks all 355 property slots with constant and dynamic IDs,
+independent expected pointer identities, importance/animation/transition flags,
+collection and animation removal. The feature and tests are committed together.
+Both frozen candidate C-O2 configurations pass the identical two case bodies,
+**2,931 assertions each**. Root executes additional existing internal assertions;
+its unrelated storage implementation receives no performance credit.
+Common 11 functional cases plus one inactive diagnostic pass **60 assertions per
+configuration**. Before/Boehm reuses the identical successful 117-final batch,
+input bytes, flags, binary and actual zero exit without reexecution.
+
+Three predeclared alternating local pairs each run **16 complete fresh public
+parse/layout/record/command-consumption/finalize pipelines** over the unchanged
+64-paragraph Unicode scene. Setup, eight warmups, independent DOM-text checks,
+assertions and forced GC remain outside the hardware counter. The full paint
+expectation comes from uncounted setup. All six actual exits are 0;
+checksum 54,286,416 matches.
+
+| Pair | Before retired instructions | Candidate retired instructions |
+| --- | ---: | ---: |
+| 1 | 22,980,535,285 | 22,448,018,991 |
+| 2 | 22,440,100,838 | 22,882,445,184 |
+| 3 | 22,391,664,399 | 22,923,959,650 |
+
+Local medians **22,440,100,838 → 22,882,445,184**, change
+**+1.971223%**, **1/3 wins**. All completed observations
+remain. The declared local median gate rejects the candidate; this does not
+establish a repeatable whole-page regression. **No normal browser build,
+full-process profile, browser C audit, page primary or broad batch runs; page
+credit is 0.** Prepared downstream scripts remain unexecuted.
+
+Own revert `32525034` restores exactly the two pre119 Root files, including
+the earlier test source. This reversal is authenticated byte for byte against
+the feature parent and saved pre119 copies; no new test exit is claimed for it.
+Frozen 117 performance control, broad baseline, observed carry 0 and isolated 117
+app remain unchanged. Foreign edits, the canonical app and the user's GUI are
+preserved. Exact focused/local C and binary archives, including all three Root
+configurations, are durable in `Build/v/instruction-opt119-durable-archives.json`.
+**Faster-than-Chrome performance remains unproven.**
+
 ## Causes and changes
 
 - The V 0.5.2 compatibility compiler's `-prod` Boehm code repeatedly snapshots
