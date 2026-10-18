@@ -2081,6 +2081,14 @@ evidence](docs/translation-audit/NATIVE_MEDIA_WHEEL_RAW_HANDLER.md).
   Fresh public pipelines use 0.77% fewer local instructions (16 batches),
   but contract failure blocks normal/profile/page work; credit 0; all samples retained.
   Frozen 111/control, 110/broad baseline, carry 4,867,127.5 preserved; Chrome parity open.
+  Event-handler storage round 115 (`ddfefde3`) misses the local median gate.
+  Common 12 cases/69 assertions each; before safely reused from 113.
+  Focused composite: 56 exact cases per GC (DOM36/browser19/HTML1); all pass.
+  Original HTML batches fail before cases: six separate embedder-API tests unavailable,
+  receive zero credit. DOM singular-assert row authenticated; successful cases not rerun.
+  Local 16 complete public pipelines: +0.094862% median instructions,
+  2/3 wins; fixed samples retained. No normal/profile/page work; credit 0.
+  Frozen 111/control, 110/broad baseline, carry 4,867,127.5 preserved; Chrome parity open.
 - Outside instruction-count optimization, run broad regression suites once per
   ten completed fixes, not after every fix.
   Broad suites include full translation/package test batches, the full LibJS AST

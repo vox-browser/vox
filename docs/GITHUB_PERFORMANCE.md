@@ -11605,6 +11605,65 @@ the event-handler storage prerequisite separately. Root, the canonical app and
 the user's GUI remain preserved. Evidence: Build/v/instruction-opt114-*.
 **Faster-than-Chrome performance remains unproven.**
 
+## Retain the isolated event-handler storage result
+
+Round 115 ports the complete authored `ddfefde3` event-handler storage change
+onto frozen 111: **13 exact hunks across four runtime paths**, including the
+native raw-wheel compiler and two BrowserApp readers. Ordinary EventTargetData
+keeps one managed pointer; an ordinary V map is allocated when the first handler
+is published, after activation. Missing reads, removals and visitation leave it
+unallocated. Root already contains this separately committed source feature.
+
+All 12 original common HTML cases plus one inactive diagnostic pass **69
+assertions per configuration**. Before/Boehm safely reuses round 113's actual
+successful batch: identical 111 runtime, test bytes, flags and binary hash, with
+no new process exit or reexecution claimed. Both candidate configurations are
+new actual zero exits.
+
+The focused composite passes **56 exact authored cases per GC mode**: DOM 36,
+browser bridge 19 and HTML owner one. DOM passes **401 / 398 assertions** under
+Boehm / no-GC; browser bridge passes **17,162 each**, and HTML owner passes
+**22 each**. All four new storage cases remain exact, including lazy
+reads, collection/identity/reinsertion, reentrant publication, and raw handler
+compilation without replacing its slot.
+
+The initial wider selection remains failed. Its DOM processes actually exit 0
+with all 36 cases; a plural-only reader initially counts 35 because one row says
+`1 assert`. A fresh reader authenticates all original rows without rerunning
+them. Both initial HTML processes exit 1 before any case runs: six selected
+embedder-scripting tests require a separate Document API absent from frozen 111.
+They receive **zero pass credit**. The one applicable raw-handler owner case
+then runs from its exact authored file in each GC mode. Successful common,
+DOM and browser tests are retained. No runtime prerequisite is silently added,
+and no assertion is weakened. Original inputs, logs and receipts are archived
+under Build/v/instruction-opt115-contract-fixture-finding/.
+
+The predeclared local diagnostic performs **16 complete fresh public document
+pipelines** per observation, with the normal 4 GiB policy. Parsing, initial
+layout, record/command consumption and finalization stay inside the counter;
+setup, eight warmups, independent text/display checks and forced GC are outside.
+Full paint expectations come from uncounted setup. All six actual exits are 0
+with matching checksum **54,286,416**.
+
+| Pair | Before retired instructions | Candidate retired instructions |
+| --- | ---: | ---: |
+| 1 | 24,928,201,223 | 24,851,274,686 |
+| 2 | 24,701,874,434 | 24,761,802,879 |
+| 3 | 24,738,335,514 | 24,730,558,030 |
+
+Local medians **24,738,335,514 → 24,761,802,879**, change
+**+0.094862%**, **2/3 wins**. The local median gate rejects
+this isolated candidate. This small observed regression does not establish a
+repeatable page regression. No normal browser build, profile, browser C audit
+or page primary runs; **page credit is 0**. Prepared downstream tools remain
+unexecuted. All completed samples and failures are retained.
+
+Frozen 111/control, 110/broad baseline and observed carry **4,867,127.5** remain
+unchanged. The next candidate assesses the complete three-feature DOM family,
+including the event-storage prerequisite behind round 114's ABI failure.
+Root, the canonical app and the user's GUI remain preserved. Evidence:
+Build/v/instruction-opt115-*. **Faster-than-Chrome performance remains unproven.**
+
 ## Causes and changes
 
 - The V 0.5.2 compatibility compiler's `-prod` Boehm code repeatedly snapshots
