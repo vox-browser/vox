@@ -2058,6 +2058,13 @@ evidence](docs/translation-audit/NATIVE_MEDIA_WHEEL_RAW_HANDLER.md).
   Diagnostic fixture-check failures retained; no completed samples repeated.
   Same 4 GiB, frozen helper, GC policy; Root/canonical/GUI preserved.
   Chrome parity remains open.
+  DOM interactive-state round 112 (`722f9bcb`) is inapplicable to frozen 111:
+  prerequisite `b487c142` supplies ElementRareData and its private mutable block.
+  Before C-O2 passes 11 cases/60 assertions plus inactive; both candidates fail
+  V checking before runtime. Ten contracts and fresh-document diagnostic unrun.
+  All failures retained; no partial prerequisite repair, hardware samples or page credit.
+  Frozen 111/control, 110/broad baseline, observed carry 4,867,127.5 preserved.
+  Root/canonical/GUI preserved; Chrome parity open.
 - Outside instruction-count optimization, run broad regression suites once per
   ten completed fixes, not after every fix.
   Broad suites include full translation/package test batches, the full LibJS AST

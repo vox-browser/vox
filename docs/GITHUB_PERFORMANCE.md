@@ -11465,6 +11465,37 @@ Equivalent Chrome content/start/submission accounting remains open;
 **faster-than-Chrome performance is unproven**. Evidence: Build/v/instruction-opt111-*
 and Build/instructions/vox-opt111-interleaved-*.
 
+## Defer the DOM interactive-state port until its prerequisite
+
+Round 112 attempts the already committed `722f9bcb` against frozen 111.
+The exact-string review fits 27 authored hunks across 11 runtime paths, but misses
+a prerequisite: `b487c142` introduced ElementRareData and its private mutable
+field block. Frozen 111 has neither. Trimming three unchanged context lines from
+the first Element hunk inserts interactive_data_ into an immutable section.
+
+The before/Boehm C-O2 check actually exits 0: **11 functional cases plus one
+inactive diagnostic, 60 assertions**. Candidate/Boehm and candidate/no-GC each
+actually exit 1 during V checking, before any candidate test runs. All three
+reported errors are assignments to the immutable interactive_data_ field. Their
+logs, source snapshots, commands and real controller exits remain retained.
+The sole old private-nonce test was prepared as the exact authored updated
+candidate case; it was not executed. All ten prepared candidate contract bodies
+and the fresh-document diagnostic remain unrun after the focused gate fails.
+
+The original positive string-fit review is retained and corrected to
+**inapplicable pending the prerequisite**. Adding a mutable marker alone would
+still omit ElementRareData and its ownership behavior, so no partial repair is
+imported. This says nothing about the independently committed feature under its
+actual prerequisite chain. There are **zero local hardware samples, zero normal
+native/profile builds and zero page primaries**; no completed check or primary
+is repeated and no performance credit is claimed.
+
+Frozen 111 remains control. The last completed broad baseline remains 110 and
+observed carry stays **4,867,127.5**. Root, the canonical app and the user's GUI
+remain preserved. Evidence: Build/v/instruction-opt112-preflight-closure.json and
+instruction-opt112-prerequisite-finding/. The prerequisite will be assessed as a
+separate feature. **Faster-than-Chrome performance remains unproven.**
+
 ## Causes and changes
 
 - The V 0.5.2 compatibility compiler's `-prod` Boehm code repeatedly snapshots
