@@ -13175,6 +13175,108 @@ has its own focused commit and receives no135 performance credit. Chrome parity
 remains unestablished because the earlier Chrome observation uses a different
 endpoint and hydrated content.
 
+## Initialize absent URL blob entries without temporary owners
+
+Round136 applies the complete committed `ffceca4b` feature to accepted frozen133:
+one exact authored hunk in `url/url_record.v` explicitly initializes the optional
+blob entry to none. In the old compiler, the implicit absent payload constructs
+an unused Blob and environment-origin tuple. Present entries retain the existing
+owned byte-copy and origin behavior. Runtime inputs outside that hunk are exact
+control; source manifests, original authored before/after and all tests are
+retained. Implementation and the three new focused cases share the same feature
+commit. Root, foreign work and the canonical app are not replaced by this frozen
+measurement candidate.
+
+The three authored cases pass under the frozen C-O2/LARGE_CONFIG/marker1 flags
+in both GC modes, **25 assertions each**. They cover empty URL records against an
+explicit-none reference, Blob bytes/origins through copy/clear/GC and MediaSource
+origins through value/owned copies. Their bodies/expectations are unchanged from
+the committed feature. The separate Root focused coverage remains seven targeted
+cases/55 assertions per GC; its original budget/setup/reader failures and exact
+successful case provenance remain retained as recorded in135. Common12 cases,
+including the inactive diagnostic, pass60 assertions per configuration, reusing
+identical successful133-final control evidence.
+
+Three fixed alternating local pairs count16 complete public HTML parse/layout,
+display-list/paint-command/hit-phase and finalize pipelines. The accepted133 scene
+has64 Unicode paragraphs and128 indentation blocks with192 independent text
+checks. Setup, eight warmups, forced GC and final checksum assertions stay outside
+the counter. All six actual exits are0 with checksum7,963,486,608; medians are
+**32,545,297,947 → 31,997,598,243** retired instructions,
+**-1.68288428%**, 2/3 wins. Every sample remains; no local result
+substitutes for page credit. Normal C-O2/Boehm/default marker1 and the automatic
+4GiB hint at2,048 elements stay unchanged. This smaller local fixture does not
+force expansion; standalone probes do not link the native browser helper.
+
+Native compilation, signing, persistence and headless startup actually pass0
+with frozen4e loaded. Independent complete normal C generation authenticates the
+entire compiled program after established compiler/source/embed identities and
+four byte-identical helper reorderings. No function/type/global is excluded;
+URL factories can change their emitted absent-payload initializers. All493 builtin
+and176 protected encoder/filter/arena bodies,120 native inputs,37 frozen includes
+and exact native arguments are verified. The public decoder, filtering and
+tokenizer arenas remain unchanged. Normal binary SHA256 is
+`d578f20b584a7c0da32baddaeaac81b98531754fcb0a07153466d206c74e6025`; compiled C SHA256 is
+`2b87647e39891961925def0aadabd80967b3d32743093ef78998eb6c9acf795d`; normalized program SHA256 is
+`35e21c22c07dc45d3ee9333fb6afa58e84f6f1cea8138025cde8cd4c00bbd57d`.
+
+Both full-process C-O1/Boehm/marker1 profiles actually exit0 with
+`-profile-no-inline`, main enabled throughout, and no filter/reset. These are
+mechanism call counts only, without timing or hardware instruction credit:
+
+| Profile calls | Before | Candidate |
+| --- | ---: | ---: |
+| `layout__opt136_complete_public_document_layout` | 25 | 25 |
+| `html__parse_document` | 26 | 26 |
+| `layout__run_document_layout` | 26 | 26 |
+| `dom__Document_record_display_list` | 26 | 26 |
+| `builtin__memdup` | 1,780,365 | 1,780,051 |
+| `builtin__memdup_noscan` | 112,404 | 112,404 |
+| `url__URL_blob_url_entry` | 78 | 78 |
+| `url__basic_parse` | 1 | 1 |
+
+The predeclared cohort fixes30 alternating pairs, odd before/final and even
+final/before,30,000 paired bootstrap resamples and seed136. Both regular binaries
+use the same359-file cache,4e helper and child-only placement library,
+document1024×768/window1024×880 and
+`native.scopes.navigation_to_first_document_paint[0]`.
+
+| First-frame retired instructions | Value |
+| --- | ---: |
+| Before median | 16,636,990,294.5 |
+| Candidate median | 16,619,034,452 |
+| Observed marginal-median saving | 17,955,842.5 |
+| Change | -0.10792723% |
+| Improved pairs | 18/30 |
+| Paired median saving | 3,745,701 |
+| Paired 95% interval | [-7,745,377, 12,856,654.5] |
+| Repeatable page credit | 0 |
+
+The paired interval does not establish repeatable savings; page credit is0.
+All60 primaries remain: actual exits0:60; real PNGs:60;
+recovered primaries:[]; preparse retries:0; later installation
+refreshes:0; unrelated foreground transitions:
+[].
+Both first-primary preparations have1 installation/2 formatting passes/1 paint.
+All retained RGB pixels match outside the original fixed skeleton bands; missing
+images receive no capture credit. Focused1024×768 pixels are exact. Prior carry0
+plus max(0,fresh observed saving) gives17,955,842.5 for the5M broad gate.
+Six actual zero exits pass CSS31/SVG10/layout46 both GC modes (174 executions). All19 screenshot comparisons pass,16 exact; known differences remain inline-node13, text-decorations1,341 and canvas-text1,994.
+
+The isolated `/Users/alex/code/vox2/Build/v/Vox-opt136.app` passes library pinning, signing,
+verification, startup and actual collections with default marker1/override2.
+Its instruction text matches the measured binary and startup loads the installed
+4e helper. Frozen control advances to136.
+Actual broad passes reset observed carry to0.
+All exact durable C/profile/test/binary/report hashes are in
+`Build/v/instruction-opt136-durable-archives.json`. Transparent filesystem
+compression reclaimed937,385,984 bytes from owned completed133–135 C; every file
+remains a regular file with identical SHA and verified durable archive. No active
+136 artifact, measured binary, foreign work, canonical bundle or completed check
+changed. Its receipt is `Build/v/instruction-opt136-completed-c-compression.json`.
+Chrome parity remains unestablished: its earlier lower-bound count has a different
+endpoint and hydrated content. This cohort credits only matching Vox work.
+
 ## Causes and changes
 
 - The V 0.5.2 compatibility compiler's `-prod` Boehm code repeatedly snapshots

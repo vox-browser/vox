@@ -2230,6 +2230,13 @@ evidence](docs/translation-audit/NATIVE_MEDIA_WHEEL_RAW_HANDLER.md).
   Separate URL absent-entry feature ffceca4b+3focusedtests committed;7targetedcases/55asserts eachGC.
   Required-record budget and single-case reader corrections retain original failures;no ownership reruns.
   URL hardware/page result pending;canonical/GUI/foreign work preserved;Chrome parity open.
+  Empty URL blob-entry round136 (`ffceca4b`):one authoredhunk/one URL path;3cases/25asserts eachGC.
+  Common60/config;local16full pipelines -1.682884%/2wins/all6actual0 retained.
+  Page16,636,990,294.5→16,619,034,452;18/30wins;point17,955,842.5.
+  PairedCI[-7,745,377,12,856,654.5];repeatablecredit0;all60 retained;same1/2/1prep.
+  Broad:87bothGC/174executions;19screens16exact;focused viewport exact;entire-program independent C audit.
+  Frozen136control;carry0;isolated app/GC1+override2.
+  Completed C compressed transparently with identical hashes;Root/canonical/GUI/foreign work preserved;Chrome open.
 - Outside instruction-count optimization, run broad regression suites once per
   ten completed fixes, not after every fix.
   Broad suites include full translation/package test batches, the full LibJS AST
