@@ -1073,7 +1073,7 @@ fn cached_browser_resource_response(resolved string, filtered_url string, owner_
 				// Older cache entries have no header provenance. Re-fetch them;
 				// assuming an empty header list could expose a header-blocked ad.
 				if encoded_headers := read_browser_cache_entry(path + '.headers.json') {
-					if headers := json2.decode[[]adblock.ResponseHeader](encoded_headers) {
+					if headers := decode_browser_cached_response_headers(encoded_headers) {
 						filter_browser_response_headers(final_request, headers)!
 						// An old unvaried key cannot identify the Accept value that
 						// selected a negotiated image representation.
