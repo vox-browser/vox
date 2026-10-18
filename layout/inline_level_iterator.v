@@ -809,6 +809,7 @@ fn (iterator &InlineLevelIterator) shape_text_for_layout(text_node &TextNode, in
 }
 
 fn (mut iterator InlineLevelIterator) enter_text_node(text_node &TextNode) {
+	refresh_inline_chunk_font_owner(text_node)
 	computed := text_node.Node.computed_values()
 	white_space_collapse := computed.white_space_collapse()
 	should_wrap_lines := computed.text_wrap_mode() == .wrap
