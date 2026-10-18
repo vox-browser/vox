@@ -12152,6 +12152,132 @@ Counts, exits and the original receipt remain unchanged.
 **Chrome parity remains unestablished**: its earlier count used a different
 endpoint and hydrated content.
 
+## Skip shaping fully discarded block indentation
+
+Round 122 (`0ad51d75`) compares accepted frozen117 with exactly **two authored
+hunks in two layout paths**, including one complete new helper source. A block
+whose complete inline context is discarded collapsible text can return before
+creating its chunk iterator and resolving a font. List markers, generated empty
+fragments, empty editable text, preserved whitespace and mixed boxes/text retain
+the complete normal path. This also avoids starting a font download for discarded
+indentation. Compiler policy remains C-O2/Boehm, marker 1 and the 4 GiB heap hint.
+Public decoder/filtering, tokenizer arenas and all other runtime work match.
+The existing Root feature and its tests were already committed together; this
+round adds no runtime edits and excludes unrelated current-Root work.
+
+All three exact authored font-loading tests pass C-O2 in Boehm and no-GC,
+**16,971 assertions each** including internal assertions. Collapsed/nowrap text
+leaves the unused font unloaded after readiness checks; preserved whitespace and
+real text load their font, and spaces between elements remain intact.
+The common 11 functional cases plus one inactive diagnostic pass **60 assertions
+per configuration**. Before/Boehm safely reuses identical successful 117-final
+inputs/binary/actual zero exit; candidate/Boehm and no-GC are fresh actual zeros.
+
+Three fixed alternating local pairs each count 16 complete fresh public parse,
+layout, display-list/paint-command/hit-phase consumption and finalize pipelines.
+This round fixes 64 Unicode paragraphs plus 128 blocks containing only indentation.
+Setup independently checks all 192 DOM text nodes; eight warmups, full output
+expectations, assertions and forced GC stay outside the counter. The negative
+local median gate was predeclared. All six actual exits are 0; checksum
+7,963,486,608 matches every sample.
+
+| Pair | Before instructions | Candidate instructions |
+| --- | ---: | ---: |
+| 1 | 34,067,377,466 | 32,412,486,788 |
+| 2 | 32,651,061,848 | 34,406,744,492 |
+| 3 | 32,845,961,060 | 32,409,132,086 |
+
+Local medians **32,845,961,060 → 32,412,486,788**,
+**-1.319719%**, 2/3 wins. Every completed sample remains;
+no local result receives page credit. Standalone local binaries do not link the
+browser helper library.
+
+The strict C audit authenticates the complete new helper and changed inline-context
+function against independent whole-app C-only outputs. All remaining executable
+C, records, globals, resources, decoder/filtering/arenas and GC settings match
+under established compiler identity/embed-key/assert-line normalization, four
+byte-identical helper reorders and one static ordinal. The actual compiler file
+table adds only the authored helper and preserves all existing file order;
+anonymous indices follow that exact table. All 120 native input hashes, 37 frozen
+includes and native arguments match. Rest C SHA256
+`6102ce60e7390eddce9c6a6e8364c66dff83ddd9145345b0fb59f338ffe87530`.
+Independent `-no-skip-unused -o.c` generation performs zero native/runtime executions.
+
+The first normal builder and independent archive controllers hit ENOSPC while
+writing gzip files after their C generation succeeded. Normal Clang had not
+started; both independent generation exits were already 0. Original failures,
+logs and partial archives remain. Five completed owned C files were reversibly
+moved to owned RAM with byte-identical source-path links and verified durable gzip
+copies, leaving the accepted117 control regular on SSD. Archive-only resumption
+uses the exact existing C, and only unfinished native compilation/signing/smoke
+runs afterward. No completed check/profile/local sample is repeated. The resumed
+normal build, signing and frozen-library smoke exit 0. Initial preparation and
+persistence gate failures occur before mutation and remain alongside corrections.
+
+Both full-process C-O1/Boehm/marker 1 profiles exit 0 with `-profile-no-inline`;
+main remains enabled with no custom filter/reset. Public pipeline and collector
+counts remain equal. The new guard is exercised and fewer inline iterators are
+created. These are profile call counts, not hardware page savings or timing credit.
+
+| Profile calls | Before | Candidate |
+| --- | ---: | ---: |
+| `layout__opt122_complete_public_document_layout` | 25 | 25 |
+| `html__parse_document` | 26 | 26 |
+| `layout__run_document_layout` | 26 | 26 |
+| `dom__Document_record_display_list` | 26 | 26 |
+| `layout__BlockBox_compatibility_hit_test_steps` | 26 | 26 |
+| `layout__BlockBox_collect_compatibility_stacking_context_paint_steps` | 156 | 156 |
+| `layout__viewport_build_hit_test_display_list` | 26 | 26 |
+| `layout__inline_context_has_only_discarded_text` | 0 | 8,320 |
+| `layout__InlineLevelIterator__static__new` | 8,320 | 4,992 |
+
+The page plan is **30 alternating pairs**, odd before/final and even final/before,
+**30,000 paired bootstrap resamples, seed122**. Both regular binaries use the same
+359-file cached GitHub input, frozen4e helper, child-only placement helper, document
+1024×768/window1024×880 and `native.scopes.navigation_to_first_document_paint[0]`.
+
+| First-frame retired instructions | Value |
+| --- | ---: |
+| Before median | 16,633,943,164.5 |
+| Candidate median | 16,518,669,818.5 |
+| Observed marginal-median saving | 115,273,346 |
+| Change | -0.693001% |
+| Improved pairs | 30/30 |
+| Paired median saving | 113,457,258.5 |
+| Paired 95% interval | [110,306,565, 119,965,236] |
+| Repeatable page credit | 115,273,346 |
+
+The positive paired interval permits repeatable page credit.
+All 60 primaries remain. Real PNGs:60; recovered primaries:[]; archived
+preparse retries:0; post-primary refreshes:0;
+external foreground transitions:[].
+Any recovered counter retains unknown exit/missing PNG explicitly. All 60 decoded RGB captures differ only within the original skeleton bands x45–662/y335–344 and ten 14px bands at y380+41i. All other pixels match. RGB classes 30 before / 30 final; 1 shared.
+Memory is the root process lifetime maximum through capture/exit, not first-frame
+live memory. The focused1024×768 comparison is pixel-exact. Prior observed carry0
+plus fresh positive observed saving gives **115,273,346** for the5M gate.
+Six actual zero exits pass CSS31/SVG10/layout46 in both GC modes: **174 executions**. All **19 screenshot comparisons pass, 16 exact**. Known differences remain inline-node13, text-decorations1,341 and canvas-text1,994. Next control:122; broad baseline resets only
+after actual broad passes for an accepted candidate.
+
+The isolated app `/Users/alex/code/vox2/Build/v/Vox-opt122.app` passes library pinning, signing,
+verification, startup and actual collections with default marker1/override2. Its
+native instruction text matches the measured binary. Canonical app and GUI are
+preserved; independent current-Root work receives no performance credit.
+Normal binary SHA256 `8198959439611d665412cd87b5d4988c160880de421709a858f70aa351a0b2f0`;
+normal C SHA256 `1d08e63bf27683a40106fdbe6980cb9d11a6c80f1b76fae8b734fa86dd1e512d`.
+Exact compressed C/profile/test/binary hashes are in
+`Build/v/instruction-opt122-durable-archives.json`.
+The first visual controller ended without a final terminal receipt after six
+actual-zero screenshot comparisons. Its actual final exit remains unknown. The
+unfinished seventh case retains an AppKit launch trap and image-write error. All
+six broad jobs, the focused viewport and six completed screenshot comparisons
+are reused by hash; only the remaining 13 screenshot cases resume. No browser
+primary, completed broad/focused test or completed screenshot is repeated.
+The initial static API reader mistakenly required the receiver variable name
+`uv`; the existing setter uses `u` with the same type/signature. That read-only
+finding and correction are preserved before all runtime execution.
+**Chrome parity remains unestablished**: its earlier count used a different
+endpoint and hydrated content.
+
 ## Causes and changes
 
 - The V 0.5.2 compatibility compiler's `-prod` Boehm code repeatedly snapshots
