@@ -456,3 +456,37 @@ Native completion returns from `updateLayer`; Brave uses two animation frames,
 so these are different endpoints and do not establish physical presentation
 parity. Earlier incomplete-handler instruction reductions are not used as a
 before/after comparison with this new complete workload. No app is installed.
+
+
+`00330be4` lets restored immutable line buffers remain shared until public
+mutable geometry access, overflow updates remain scalar-only, and relative
+insets skip static boxes. Measurement copies detach private cache fragments.
+Forty-four focused cases in twelve files pass in each GC mode, including
+old-geometry isolation, repeated replay, clamping, ellipsis, columns, and the
+unchanged 336-byte common-geometry limit. The first source-68 attempt retains
+one failed sharing assertion per mode: the later relative-inset pass was
+requesting mutable lines for static boxes. Source-69 corrects that path.
+
+`31e728a1` uses the document's existing shadow-root registry for media evaluation
+while preserving exclusion of disconnected hosts. Nested, connected, detached,
+and adopted scopes have focused coverage. Source-70 retains the 83 passing
+existing cases in three original files per mode; the corrected source-72
+three-case new file passes per mode, for an 86-case/four-file composite. Failed
+source-70/71 fixture attempts remain: the detached test had not first evaluated
+its initially default-true media condition. The final fixture explicitly primes
+it at 500px and checks the actual conditions before and after connection and
+viewport changes. Its production implementation is byte-identical to source-70.
+
+The complete-handler source-67/source-70 ABBA comparison observes median warm
+instructions of 366,694,848.5 versus 363,714,974.5, saving 2,979,874 (0.81%).
+Warm elapsed medians are 56.090 versus 53.548 ms; first-action observations range
+from 91.961 to 196.568 ms for the candidate. The same original handler, normalized
+fixture, native endpoint and unmodified instruction probe are used throughout.
+Eight additional native diagnostic clicks retain the correct alternating labels
+and no dispatch errors. Savings on this complete workload remain below the
+5,000,000-instruction broad-suite gate. Earlier incomplete-handler savings are
+not added across that workload change. A twelve-click timing/sample diagnostic
+shows roughly 39-40 MB allocated per warm action and substantial tree, geometry,
+and renderer preparation; its intrusive elapsed times receive no speed credit.
+Brave parity remains open. These commits are integrated into the canonical
+checkout with unrelated working changes preserved; no app is installed.
