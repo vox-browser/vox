@@ -172,7 +172,7 @@ def main():
               "cache_sha256": cache_digest.hexdigest(),
               "url": args.url, "viewport": [args.width, args.height],
               "raster_mode": "logical-pixel screenshot" if args.capture else "interactive window backing scale",
-              "endpoint": "native wheel dispatch and browser frame callback; excludes Cocoa layer publication, vsync and GPU execution",
+              "endpoint": "native wheel dispatch through replay, including synchronous GPU waits; excludes Cocoa layer publication, vsync and idle work",
               **summarize(log_path.read_text(), args.frames)}
     (args.output / "summary.json").write_text(json.dumps(result, indent=2) + "\n")
     if args.compare_to:
