@@ -1089,9 +1089,33 @@ pub fn recompute_containing_blocks(root &Node) {
 }
 
 fn recompute_containing_blocks_with_inline_lookup(root &Node, lookup &InlineContainingBlockLookup) {
+	recompute_containing_blocks_preorder(root, lookup,
+		nearest_ancestor_capable_of_forming_a_containing_block(root))
+}
+
+fn recompute_containing_blocks_preorder(root &Node, lookup &InlineContainingBlockLookup,
+	nearest ?&Box) {
 	mut mutable_root := unsafe { &Node(root) }
-	mutable_root.recompute_containing_block_with_inline_lookup(lookup)
+	if root.is_text_node() || root.computed_values().position() !in [.absolute, .fixed] {
+		mutable_root.inline_containing_block_ = none
+		mutable_root.containing_block_ = nearest
+	} else {
+		mutable_root.recompute_containing_block_with_inline_lookup(lookup)
+	}
+	mut child_nearest := nearest
+	if root.is_block_container() || root.display().is_flex_inside()
+		|| root.display().is_grid_inside() || root.is_replaced_box_with_children() {
+		child_nearest = root.as_box() or { panic('containing-block candidate must be a Box') }
+	}
 	for child in root.children() {
+		if parent := child.parent() {
+			if voidptr(parent) == voidptr(root) {
+				recompute_containing_blocks_preorder(child, lookup, child_nearest)
+				continue
+			}
+		}
+		// Preserve the standalone API for a staged move whose old child vector
+		// still contains the node: its actual parent determines its containing box.
 		recompute_containing_blocks_with_inline_lookup(child, lookup)
 	}
 }
