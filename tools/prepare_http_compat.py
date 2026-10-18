@@ -11,6 +11,7 @@ import subprocess
 import sys
 import tempfile
 from http_tls_dial import patch_transport_tls, tls_dial_helper
+from http_h2_fairness import patch_h2_pooled_transport
 
 
 def replace_function(source, signature, replacement):
@@ -214,6 +215,8 @@ def main():
     patched_transport = patch_transport_tls(transport_text) + '\n' + tls_dial_helper()
     h2_text = (original / 'transport_h2.v').read_text()
     patched_h2 = patch_transport_tls(h2_text, http2=True)
+    h2_pooled_text = (original / 'h2_pooled_transport.v').read_text()
+    patched_h2_pooled = patch_h2_pooled_transport(h2_pooled_text)
     modules = repo / "Build/v/modules"
     target = modules / "net/http"
     target.mkdir(parents=True, exist_ok=True)
@@ -229,6 +232,8 @@ def main():
             write_if_changed(output, patched_transport)
         elif entry.name == 'transport_h2.v':
             write_if_changed(output, patched_h2)
+        elif entry.name == 'h2_pooled_transport.v':
+            write_if_changed(output, patched_h2_pooled)
         elif not output.is_symlink() or output.resolve() != entry.resolve():
             if output.is_symlink() or output.is_file():
                 output.unlink()
@@ -245,6 +250,8 @@ def main():
         "staged_transport_sha256": hashlib.sha256(patched_transport.encode()).hexdigest(),
         "source_h2_sha256": hashlib.sha256(h2_text.encode()).hexdigest(),
         "staged_h2_sha256": hashlib.sha256(patched_h2.encode()).hexdigest(),
+        "source_h2_pooled_sha256": hashlib.sha256(h2_pooled_text.encode()).hexdigest(),
+        "staged_h2_pooled_sha256": hashlib.sha256(patched_h2_pooled.encode()).hexdigest(),
         "adapter": "growable fields; copy-on-write; preserve empty/repeated fields; verified proxy TLS; TCP before TLS setup",
     }, indent=2) + "\n")
     print(modules)
