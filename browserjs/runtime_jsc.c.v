@@ -10,6 +10,7 @@ $if linux {
 }
 #include <JavaScriptCore/JavaScript.h>
 #include "@DIR/source_string_darwin.h"
+#include "@DIR/runtime_agent_context.h"
 
 fn C.JSGlobalContextCreate(global_object_class voidptr) voidptr
 fn C.JSGlobalContextRelease(context voidptr)
@@ -25,6 +26,7 @@ fn C.JSObjectGetProperty(context voidptr, object voidptr, property_name voidptr,
 fn C.JSStringGetMaximumUTF8CStringSize(value voidptr) usize
 fn C.JSStringGetUTF8CString(value voidptr, buffer &char, buffer_size usize) usize
 fn C.vox_browserjs_source_utf8_string(bytes &u8, length usize) voidptr
+fn C.vox_browserjs_create_agent_context() voidptr
 
 fn js_string_to_v(context voidptr, value voidptr) !string {
 	mut exception := unsafe { nil }
@@ -68,7 +70,7 @@ fn js_exception_message(context voidptr, exception voidptr) string {
 }
 
 fn create_javascript_core_context() voidptr {
-	return C.JSGlobalContextCreate(unsafe { nil })
+	return C.vox_browserjs_create_agent_context()
 }
 
 fn release_javascript_core_context(context voidptr) {
