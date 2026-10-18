@@ -30,9 +30,9 @@ results, not a claim of complete uBlock extension parity.
 
 ## Current diagnostic progress
 
-The signed partial-border diagnostic has **2,862 differing pixels**, with a
-maximum channel error of 71, against the unchanged Brave reference. Its single
-diagnostic records **60,885,950,739 instructions** and receives no performance
+The signed SVG-background diagnostic has **2,865 differing pixels**, with a
+maximum channel error of 61, against the unchanged Brave reference. Its single
+diagnostic records **56,784,758,209 instructions** and receives no performance
 credit while the pixels differ. A fresh Brave
 diagnostic remains pixel-exact and records 42,262,584,954 instructions, whose
 15% threshold is approximately 35.923 billion. These are diagnostic runs, not
@@ -47,9 +47,11 @@ background containers independently of tile edges. Linear gradients preserve
 Chromium's float endpoints, snap eligible default tile geometry before
 resolving stops, and use root raster-tile coordinates for dithering. Opaque
 transformed partial borders now use snapped local origins and antialiased
-rectangles, fixing the carousel arrow's large coverage error. Remaining
-fractional SVG, text-shadow
-and image-sampling diagnostics keep their unchanged inputs and original Brave
+rectangles, fixing the carousel arrow's large coverage error. SVG backgrounds
+now preserve absent natural dimensions through default sizing and clip their
+contents to the image viewport. This removes the thumbnail placeholder's large
+corner error; small image-sampling differences remain there. Fractional SVG,
+text-shadow and image-sampling diagnostics keep their unchanged inputs and original Brave
 references under `Tests/Browser/Brave/diagnostic/`.
 
 Cold parallel filtering also exposed incomplete JSON metadata and interleaved
@@ -57,6 +59,21 @@ audit writes. Separate conversion and log locks preserve engine serialization
 and complete request/header records. The latest actual native stream matches
 full uBO across 173 checks, 118 distinct requests and four blocked requests,
 with zero disagreements.
+
+The SVG-background slice passes two focused cases in each GC mode, with
+14,980 assertions per mode. Its eleven-case Brave fixture and the existing
+font, raster-gradient and transformed-border controls are pixel-exact in both
+the diagnostic and normal optimized builds. The integrated regression union
+covers 25 files in both GC modes (50 logical checks). An initial grouped layout
+compile had an import/local-name collision; recovery checks preserve every
+source body and run the affected file separately. The failed invocations are
+retained without pass credit. Receipts are
+`svg-natural-size-broad/combined-results.json`,
+`svg-background-natural-size.clipped-production.json`,
+`production-svg-natural-size-clipped/controls/results.json`, and
+`production-svg-natural-size-clipped-instructions/pair-1.vox.{json,ubo.json}`.
+The normal bundle and source/binary pins are under
+`production-svg-natural-size-clipped/`.
 
 The preceding isolated gradient-tile baseline passes a 24-file CSS/layout/HTML/
 network selection in both default and no-GC builds, all 30 exact Brave
@@ -69,17 +86,18 @@ retained without pass credit. The private receipts are
 `gradient-tiles-broad-pinned-recovery/combined-results.json`,
 `gradient-tiles-broad-images/results.json`, `gradient-tiles-svg-guards.log`,
 `gradient-tiles-ast.log`, and
-`production-gradient-tiles-instructions/pair-1.vox.{json,ubo.json}`. The current
+`production-gradient-tiles-instructions/pair-1.vox.{json,ubo.json}`. The preceding
 border slice passes 90 focused assertions per GC mode and the unchanged paint
 record size/lifetime contracts (16,004 assertions per mode). Its new three-case
 Brave fixture is exact, as are the existing opaque-shadow and raster-gradient
 controls. The colored-border diagnostic retains five one-level differences.
-The final opacity fallback guard is covered by the focused checks; the signed
-diagnostic predates that guard and its CNN borders are opaque. Its native
+The final opacity fallback guard is covered by the focused checks; that older
+partial-border diagnostic predates the guard and its CNN borders are opaque.
+The current SVG-background bundle includes the guard. Its native
 traffic again matches full uBO across 173 checks and four blocked requests.
 Receipts are under `partial-border-focused/`,
 `partial-border-and-fma-native-results.json`, and
-`production-partial-border-instructions/pair-1.vox.{json,ubo.json}`. The saved side-by-side
+`production-partial-border-instructions/pair-1.vox.{json,ubo.json}`. The current side-by-side
 image is saved to `Build/cnn-parity/cnn-brave-vox-progress.png`.
 
 ## Reproduction
