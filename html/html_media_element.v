@@ -228,6 +228,7 @@ mut:
 	autoplay_                   bool
 	preload_                    ?string
 	controls_                   ?&MediaControls
+	destroying_controls_        bool
 	fetch_hook_                 ?MediaResourceFetchHook
 	fetch_generation_           u32
 	buffered_                   &TimeRanges = unsafe { nil }
@@ -2508,9 +2509,14 @@ pub fn (mut element HTMLMediaElement) create_controls() {
 }
 
 pub fn (mut element HTMLMediaElement) destroy_controls() {
+	if element.destroying_controls_ { return }
 	if mut controls := element.controls_ {
-		element.controls_ = none
+		// Optional::clear keeps its value occupied throughout the destructor.
+		// Shadow removal callbacks must not publish another controller mid-detach.
+		element.destroying_controls_ = true
 		controls.destroy()
+		element.controls_ = none
+		element.destroying_controls_ = false
 	}
 }
 
