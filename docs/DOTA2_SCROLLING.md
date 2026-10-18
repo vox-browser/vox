@@ -498,3 +498,82 @@ The final recovery preserves that intervening bundle under
 startup and section checks after an eight-second live launch. The initial
 receipt remains in `installed-verification-initial.json`; the final receipt is
 `installed-verification.json`. Flat development libraries remain untouched.
+
+The next follow-up reduces redundant blending at final document publication.
+`07ab3cc2` identifies the fresh sRGB bitmap allocated for each native frame and
+lets its enclosing font-compositing canvas claim that destination once, before
+any frame pixels are painted. Publishing onto this transparent bitmap uses
+`kCGBlendModeCopy`; later and nested canvases retain source-over compositing.
+A save/restore pair preserves the parent's graphics state for chrome and later
+painting. The frame marker restores its previous value through nested raster
+callbacks and exception unwinding. Image formats, color profiles, filter input,
+and pixel arithmetic remain unchanged.
+
+A focused 2,048×1,760 bitmap benchmark reduces publication CPU time from a
+median 2.696 ms to 1.290 ms. The full-browser improvement is smaller and varies
+across runs. Three alternating matched pairs retain all 120 moving frames per
+run, 360 per variant, on the same frozen page and cache. Both signed executables
+use identical retained production-generated C with only this native publication
+change; both rendering libraries are byte-identical. The 1,024×768 interactive
+viewport, scroll trace and 2,355 retained commands per frame match. Production
+Boehm GC, one marker thread and JavaScriptCore remain enabled; both variants
+receive four seconds to settle.
+
+| Per moving frame, median of run medians | Control | Optimized | Reduction |
+| --- | ---: | ---: | ---: |
+| Wheel dispatch through native replay | 13.682 ms | 13.386 ms | 2.2% |
+| Native replay | 11.618 ms | 11.261 ms | 3.1% |
+| Retired instructions | 101.135 million | 93.460 million | 7.6% |
+
+Control run medians are 13.6575, 13.7920, 13.6820 ms; candidate
+medians are 11.1625, 13.3860, 13.6045 ms. Every pair improves, with
+substantial wall-time variation. The median run p95 is 22.862 ms for control
+and 22.913 ms for the candidate, so tail timing does not improve in this series.
+The candidate maximum is 69.579 ms. All slow frames and three collections per
+variant remain included. The endpoint includes synchronous GPU waits and
+excludes Cocoa presentation, vsync and idle work.
+
+The focused native test passes 1,728 exact pixel comparisons across source and
+destination color spaces, RGBA/BGRA, transparent/translucent/opaque images,
+1×/2× scale, clipping, fractional placement and later translucent painting.
+It checks blend-state restoration, foreign-context rejection, one claim per
+frame, nested scopes and exception cleanup. Address and undefined-behavior
+sanitizers pass. Four full Reddit viewports are exact at 1× and 2×. The eleven
+screenshot smoke cases pass under their existing rules; eight SVG mutation
+guards and both turbulence references are exact. Six opacity visuals pass
+under their existing rules, and six filter/backdrop-filter pages match the
+control byte for byte.
+
+The additional 7,675,256.5 retired instructions saved per moving frame cross
+the broad-check gate. The current selection contains 219 functions in 52 test
+files per GC configuration: layout 44, painting 88, platform 85 and root opacity
+2. Both GC configurations and all 100 exact upstream LibJS AST fixtures pass.
+A stale aggregate-input guard first stops before running tests because a
+concurrent debug-guide test changed and gained a second case. The refreshed
+aggregate copies that current test body without editing assertions; all other
+selected bodies remain pinned. The root opacity test uses the same original
+body in an isolated main package instead of letting a symlink pull in the
+whole browser. The incremental broad-check count resets to zero.
+
+Evidence is retained privately under `Build/dota2-scroll/copy-publication/`:
+`comparison.json` and its referenced raw runs, `accepted-result.json`,
+`compiler-source-pins.json`, `focused-complete.json`, `validation.json`,
+`pixels-settled/`, `rendering.json`, `broad-gate.json`, the refreshed regression
+manifest, and their logs. An initial candidate launch hits the pre-existing
+cache-header JSON decoder panic before scrolling. The whole incomplete pair
+is retried once; its successful unpaired control and failed candidate remain
+retained. All completed matched pairs are kept, with no timing-based retries.
+
+Earlier prototypes remain under `Build/dota2-scroll/followup/`. An opaque RGBX
+image declaration preserved pixels but increased instructions and wall time;
+it was reverted. The accepted change keeps the premultiplied format and avoids
+blending only where the destination is known to be empty. Rejected prototypes
+receive no optimization or broad-cadence credit.
+
+The measured executable and native libraries are installed through a signed
+staged bundle and rename, preserving the prior bundle and existing mapped
+files. Installed file-backed Mach-O sections match the measured candidate;
+deep signature verification and headless startup pass. The Reddit URL is
+reopened without test environment overrides. `installed-verification.json`
+records the running process and checks. Concurrent source, staged work and flat
+development libraries remain preserved.
