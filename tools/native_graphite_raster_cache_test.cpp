@@ -134,6 +134,11 @@ int main()
     shape.clip_outs = clips;
     shape.clip_out_count = 1;
     shape.has_underlay = 1;
+    shape.has_float_color = 1;
+    shape.float_color[0] = .0602f;
+    shape.float_color[1] = .06608f;
+    shape.float_color[2] = .0798f;
+    shape.float_color[3] = 1;
     auto request = cache.prepare(shape, 2, 2, 8, false, pixels.data());
     assert(!request.hit && request.pending);
     cache.finish(std::move(request), pixels.data(), 8);
@@ -157,9 +162,11 @@ int main()
     value = shape; value.anti_alias = 0; shape_misses(value);
     value = shape; value.force_msaa = 1; shape_misses(value);
     value = shape; value.has_underlay = 0; shape_misses(value);
+    value = shape; value.has_float_color = 0; shape_misses(value);
     value = shape; value.clip_out_count = 0; shape_misses(value);
     for (int i = 0; i < 4; ++i) {
         value = shape; value.underlay_rgba[i]++; shape_misses(value);
+        value = shape; value.float_color[i] += .001f; shape_misses(value);
         clips[i]++; shape_misses(shape); clips[i]--;
     }
     assert(!cache.prepare(shape, 2, 2, 8, true, pixels.data()).hit);

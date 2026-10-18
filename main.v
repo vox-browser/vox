@@ -5602,6 +5602,7 @@ fn (mut app BrowserApp) draw_command(source_command layout.PaintCommand, page_x 
 					if command.clip_outs.len >= 4 {
 						C.native_set_rect_clip_outs(&command.clip_outs[0], command.clip_outs.len / 4)
 					}
+					set_native_chromium_paint_color(command)
 					C.native_draw_rounded_rect_srgb(f32(command.x), f32(command.y), f32(command.width), f32(command.height), used_radius, used_radius, used_radius, used_radius, used_radius, used_radius, used_radius, used_radius, f32(matrix[0]), f32(matrix[1]), f32(matrix[2]), f32(matrix[3]), f32(matrix[4]), f32(matrix[5]), page_x, page_y, f32(scroll_y), f32(app.ctx.width), f32(app.ctx.height), fill, 1, 0, if command.scrollbar_axis == '' {
 						1
 					} else {
@@ -5652,6 +5653,7 @@ fn (mut app BrowserApp) draw_command(source_command layout.PaintCommand, page_x 
 			$if macos {
 				if app.ctx.native_rendering {
 					radii := command.corner_radii
+					set_native_chromium_paint_color(command)
 					C.native_draw_rounded_rect_srgb(f32(command.x), f32(command.y), f32(command.width), f32(command.height), f32(radii.top_left.x), f32(radii.top_left.y), f32(radii.top_right.x), f32(radii.top_right.y), f32(radii.bottom_right.x), f32(radii.bottom_right.y), f32(radii.bottom_left.x), f32(radii.bottom_left.y), f32(matrix[0]), f32(matrix[1]), f32(matrix[2]), f32(matrix[3]), f32(matrix[4]), f32(matrix[5]), page_x, page_y, f32(scroll_y), f32(app.ctx.width), f32(app.ctx.height), fill, 1, 0, if command.scrollbar_axis == '' {
 						1
 					} else {

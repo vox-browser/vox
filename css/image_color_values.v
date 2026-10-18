@@ -455,6 +455,16 @@ pub fn (style_value HSLColorStyleValue) absolutized(context ComputationContext) 
 	resolved_alpha := resolve_alpha(absolutized_alpha, CalculationResolutionContext{}) or { 1.0 }
 
 	color := Color.from_hsla(resolved_h, resolved_s / 100.0, resolved_l / 100.0, resolved_alpha)
+	if element := context.abstract_element {
+		if element.document().font_rendering_policy() == .chromium {
+			components := ci_hsl_to_srgb(interpolation_color_components(resolved_h,
+				image_color_clamp(resolved_s / 100, 0, 1), image_color_clamp(resolved_l / 100, 0, 1), resolved_alpha))
+			return RGBColorStyleValue.create(StyleValue(NumberStyleValue.create(components.values[0] * 255)),
+				StyleValue(NumberStyleValue.create(components.values[1] * 255)),
+				StyleValue(NumberStyleValue.create(components.values[2] * 255)),
+				StyleValue(NumberStyleValue.create(resolved_alpha)), .legacy, none)
+		}
+	}
 	return RGBColorStyleValue.create(StyleValue(NumberStyleValue.create(color.red())), StyleValue(NumberStyleValue.create(color.green())), StyleValue(NumberStyleValue.create(color.blue())), StyleValue(NumberStyleValue.create(f64(color.alpha()) / 255.0)), .legacy, none)
 }
 

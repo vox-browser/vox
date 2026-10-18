@@ -4278,6 +4278,15 @@ void native_end_skia_command_group(void) {
 #endif
 }
 
+#ifdef LADYBIRD_V_HAS_SKIA_TEXT
+extern void ladybird_v_skia_set_unrounded_paint_color(const float *color);
+#endif
+void native_set_unrounded_paint_color(const float *color) {
+#ifdef LADYBIRD_V_HAS_SKIA_TEXT
+    ladybird_v_skia_set_unrounded_paint_color(color);
+#endif
+}
+
 void native_draw_rounded_rect_srgb(float x, float y, float width, float height,
 	float top_left_x, float top_left_y, float top_right_x, float top_right_y,
 	float bottom_right_x, float bottom_right_y, float bottom_left_x, float bottom_left_y,

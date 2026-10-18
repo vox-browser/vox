@@ -4052,6 +4052,7 @@ fn uncached_block_box_from_typed_layout_shallow(node &Node, state &LayoutState, 
 		empty_cells_hide: computed.empty_cells() == .hide
 		has_layout_children: node.has_children()
 		background_color: background_color
+		background_srgb_color: chromium_background_srgb_color(node, computed, background_color)
 		text_color: text_color
 		border_color: border_color
 		border_colors: border_colors

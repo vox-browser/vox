@@ -478,7 +478,10 @@ static void draw_shape_on_canvas(SkCanvas* canvas, VoxGraphiteShape const& shape
     }
     SkPaint paint;
     paint.setAntiAlias(shape.anti_alias != 0);
-    paint.setColor(SkColorSetARGB(shape.alpha, shape.red, shape.green, shape.blue));
+    if (shape.has_float_color)
+        paint.setColor4f({shape.float_color[0], shape.float_color[1], shape.float_color[2], shape.float_color[3]});
+    else
+        paint.setColor(SkColorSetARGB(shape.alpha, shape.red, shape.green, shape.blue));
     if (!shape.fill) {
         paint.setStyle(SkPaint::kStroke_Style);
         paint.setStrokeWidth(std::max(0.0f, shape.thickness));
@@ -623,9 +626,11 @@ int vox_graphite_draw_shape_pixels(uint8_t* pixels, int width, int height,
 {
     if (!pixels || !shape || width <= 0 || height <= 0 || pitch <= 0
         || static_cast<size_t>(pitch) < static_cast<size_t>(width) * 4) return 0;
-    if (vox_draw_solid_rect(pixels, width, height, pitch, has_background != 0, *shape)) return 1;
-    if (vox_draw_solid_stroke(pixels, width, height, pitch, has_background != 0, *shape)) return 1;
-    if (draw_large_rounded_shape(pixels, width, height, pitch, has_background != 0, *shape)) return 1;
+    if (!shape->has_float_color) {
+        if (vox_draw_solid_rect(pixels, width, height, pitch, has_background != 0, *shape)) return 1;
+        if (vox_draw_solid_stroke(pixels, width, height, pitch, has_background != 0, *shape)) return 1;
+        if (draw_large_rounded_shape(pixels, width, height, pitch, has_background != 0, *shape)) return 1;
+    }
     std::lock_guard lock(gpu_mutex);
     auto cached = shape_cache.prepare(*shape, width, height, pitch, has_background != 0, pixels);
     if (cached.hit) return 1;

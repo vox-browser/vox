@@ -1833,6 +1833,14 @@ extern "C" void ladybird_v_skia_set_rect_clip_outs(float const* rects, int count
 // radius pairs. A multisampled Chromium tile resolves the two shapes together,
 // so drawing them separately would round their shared edge pixels differently.
 static bool s_has_rounded_rect_underlay = false;
+static bool s_has_unrounded_paint_color = false;
+static float s_unrounded_paint_color[4];
+
+extern "C" void ladybird_v_skia_set_unrounded_paint_color(float const* color)
+{
+    s_has_unrounded_paint_color = color != nullptr;
+    if (color) std::copy_n(color, 4, s_unrounded_paint_color);
+}
 static float s_rounded_rect_underlay[12];
 static uint8_t s_rounded_rect_underlay_rgba[4];
 
@@ -1892,6 +1900,8 @@ extern "C" int ladybird_v_skia_draw_rounded_rect(CGContextRef destination,
 {
     bool const has_underlay = s_has_rounded_rect_underlay;
     s_has_rounded_rect_underlay = false;
+    bool const has_float_color = s_has_unrounded_paint_color;
+    s_has_unrounded_paint_color = false;
     if (!destination || rect_width <= 0 || rect_height <= 0 || canvas_width <= 0
         || canvas_height <= 0 || (!fill && thickness <= 0))
         return 0;
@@ -1917,7 +1927,11 @@ extern "C" int ladybird_v_skia_draw_rounded_rect(CGContextRef destination,
     SkRRect rounded_rect;
     rounded_rect.setRectRadii(SkRect::MakeXYWH(x, y, rect_width, rect_height), radii);
     SkPaint paint;
-    paint.setColor(SkColorSetARGB(alpha, red, green, blue));
+    if (has_float_color)
+        paint.setColor4f({s_unrounded_paint_color[0], s_unrounded_paint_color[1],
+            s_unrounded_paint_color[2], s_unrounded_paint_color[3]});
+    else
+        paint.setColor(SkColorSetARGB(alpha, red, green, blue));
     paint.setAntiAlias(anti_alias != 0);
     if (!fill) {
         paint.setStyle(SkPaint::kStroke_Style);
@@ -1999,8 +2013,10 @@ extern "C" int ladybird_v_skia_draw_rounded_rect(CGContextRef destination,
             .fill = fill, .anti_alias = anti_alias, .force_msaa = 0,
             .clip_outs = s_rect_clip_outs.empty() ? nullptr : s_rect_clip_outs.data(),
             .clip_out_count = static_cast<int>(s_rect_clip_outs.size() / 4),
-            .has_underlay = has_underlay ? 1 : 0
+            .has_underlay = has_underlay ? 1 : 0,
+            .has_float_color = has_float_color ? 1 : 0
         };
+        if (has_float_color) std::copy_n(s_unrounded_paint_color, 4, descriptor.float_color);
         raster_matrix(matrix, region, raster_scale_x, raster_scale_y).get9(descriptor.matrix);
         if (has_underlay) {
             std::copy(s_rounded_rect_underlay, s_rounded_rect_underlay + 12, descriptor.underlay_rect);

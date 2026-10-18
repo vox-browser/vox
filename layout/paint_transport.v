@@ -281,6 +281,7 @@ pub mut:
 	has_layout_children    bool
 	// The computed background-color, text color, and border color, used to build the display list.
 	background_color css.Color
+	background_srgb_color &PaintSRGBColor = unsafe { nil }
 	text_color       css.Color
 	border_color     css.Color
 	border_colors    BoxColors
@@ -952,6 +953,7 @@ pub mut:
 	width     f64
 	height    f64
 	color     string
+	srgb_color_data &PaintSRGBColor = unsafe { nil }
 	force_dark_role           painting.ForceDarkRole
 	force_dark_role_set       bool
 	force_dark_backdrop       ?painting.Color = none
@@ -2251,6 +2253,7 @@ fn (b &BlockBox) record_paint_commands_for_entries(entries []PaintOrderEntry, se
 					width: color_rect.width
 					height: color_rect.height
 					color: box.background_color.serialize()
+					srgb_color_data: box.background_srgb_color
 					opacity: opacity
 					radius: color_radii.top_left.x
 				}
@@ -2262,6 +2265,7 @@ fn (b &BlockBox) record_paint_commands_for_entries(entries []PaintOrderEntry, se
 					width: color_rect.width
 					height: color_rect.height
 					color: box.background_color.serialize()
+					srgb_color_data: box.background_srgb_color
 					opacity: opacity
 					corner_radii: color_radii
 				}
@@ -2274,6 +2278,7 @@ fn (b &BlockBox) record_paint_commands_for_entries(entries []PaintOrderEntry, se
 				width: color_rect.width
 				height: color_rect.height
 				color: box.background_color.serialize()
+					srgb_color_data: box.background_srgb_color
 				opacity: opacity
 			}
 		}

@@ -42,6 +42,8 @@ typedef struct {
     int has_underlay;
     float underlay_rect[12];
     uint8_t underlay_rgba[4];
+    int has_float_color;
+    float float_color[4];
 } VoxGraphiteShape;
 
 // An SVG path in the browser's serialized segment format: twelve floats per
