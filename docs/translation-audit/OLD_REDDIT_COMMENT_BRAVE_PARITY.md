@@ -235,3 +235,69 @@ heavier host load during the paired source-35 replay, warm native medians are
 71.527/76.268 ms against source-33's 78.595 ms. These observations show a modest
 table-pass improvement but do not establish a stable latency bound or Brave
 parity. Final combined-source measurement and installation remain open.
+
+## Source-40 integration and later measurements
+
+The ten completed fixes through `c48ef6a7` are integrated into canonical master
+by `e8ef1568`, preserving the then-current foreign working changes. The frozen
+combined source-40 build succeeds, passes strict signing and headless startup,
+and handles all eight original scripted comment actions correctly. It is a
+verified private production bundle; no installation or Brave parity is claimed.
+
+The source-40 broad selection runs all 4,189 functions in 1,080 original files
+in each GC mode. Default GC passes 4,164 and fails 25; no-GC passes 4,163 and
+fails 26. No test bodies are skipped after a panic. All named failures either
+belong to the previously reproduced source-28 set or reproduce against the
+exact pre-integration working files, with identical test bytes. This includes
+the additional no-GC media-error-handler failure. Raw package exits stay
+nonzero, and the checkpoint is explicitly not an all-pass claim.
+
+LibJS again passes 233 ordinary files/769 functions plus three separately
+launched files/13 functions in each GC mode. The official AST driver matches
+100 inputs exactly. All eight SVG mutation guards remain pixel-exact. Seven
+default screenshot cases pass; four reference comparisons fail. Those four
+rendered document images are decoded-pixel-identical to the pre-integration
+production build. The original nonzero screenshot receipt is retained. See
+`parity-v40-checkpoint.json`, `parity-v40-preintegration-*-*.json`,
+`native-parity-v40-verified.json`, and `parity-v40-baseline-pixels.json` under
+the ignored evidence directory.
+
+Further completed changes are committed separately:
+
+| Commit | Change and focused verification in each GC mode |
+| --- | --- |
+| `b4d926cd` | Keep provider order when an element has both legacy and indexed aliases. The new ordering case fails before the correction; all seven identity cases then pass. |
+| `633266ae` | Avoid heap arrays for common scroll-container, position, stacking and inherited selection checks. The allocation case and surrounding attachment, float, containing-block and scroll cases pass. |
+| `34482bcd` | Read the already resolved background lists during painting, retaining the raw-property fallback. Live style changes, old recordings, resource replacement and SVG natural dimensions remain covered. |
+| `8fff73f9` | Reuse local caret/selection line projections owned by retained independent blocks, including contexts with atomic inlines. Copies rebind their owner index and keep independent caret arrays. Twenty cases in eight files pass. |
+
+The original background fixture supplied only `background-image` to an otherwise
+empty raw property set. Its required coordinating longhands were missing. The
+corrected fixture supplies all nine longhands and retains both fallback and
+live-update assertions; both cases pass in each mode. The original block-caret
+fixture used the base layout node's nonexistent index accessor and attempted
+to mutate an immutable record field. Its correction uses the styled-node
+accessor and an explicit array alias; all original isolation assertions remain.
+These fixture repairs add no implementation credit. Failed receipts remain.
+
+A standards-mode diagnostic over the current thread finds 1,731 text nodes:
+718 covered by the closed-inline cache and 779 additional text nodes covered
+by retained independent blocks. Its 87 block caches explain the additional
+caret reuse opportunity. The earlier source-38 private coverage diagnostic
+read the older fixture and reported zero block caches; it is not evidence for
+the standards-mode benchmark's block coverage.
+
+The source-40/source-42 ABBA sequence uses byte-identical probe code and a
+matching normalized scripted fixture, with no GC environment overrides. It
+adds process-wide `RUSAGE_INFO_V4.ri_instructions` readings at the existing
+native-action-to-returning-`updateLayer` endpoint. Median warm instruction
+counts fall from 381,795,150 to 367,158,840, an observed reduction of 14,636,310
+(3.83%). Warm elapsed medians are 77.665/76.995 ms before and 76.071/76.776 ms
+after, under substantial concurrent host load. The cold actions remain more
+variable. This does not establish Brave parity or physical scanout timing.
+
+The repository's current cadence uses cumulative retired-instruction savings.
+The observed reduction exceeds its 5,000,000-instruction threshold, so a new
+broad batch is running against source-45, including block caret reuse. That
+batch, its native measurements, current canonical integration and installation
+remain open. Further work is required to match Brave's response time.
