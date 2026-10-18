@@ -403,6 +403,7 @@ mut:
 	hovered_link                        string
 	navigation_results                  chan NavigationResult
 	navigation_generation               int
+	navigation_fetch_generation         int
 	pending_navigation                  ?PendingNavigation
 	pending_cached_page                 ?PendingCachedPage
 	pending_page_preload                ?PendingPagePreload
@@ -3735,7 +3736,7 @@ fn (mut app BrowserApp) navigate(address string, add_history bool) {
 			// cached content or the loading chrome first, then refresh in parallel.
 			app.pending_navigation = pending
 		} else {
-			spawn fetch_page_in_background(pending.resolved, pending.base, pending.generation, pending.add_history, pending.had_cached_page, app.navigation_results)
+			app.start_navigation_fetch(pending)
 		}
 		return
 	}
@@ -3773,7 +3774,7 @@ fn (mut app BrowserApp) start_pending_navigation() {
 	if pending.generation != app.navigation_generation {
 		return
 	}
-	spawn fetch_page_in_background(pending.resolved, pending.base, pending.generation, pending.add_history, pending.had_cached_page, app.navigation_results)
+	app.start_navigation_fetch(pending)
 }
 
 // A page that replaces the document is installed before background resources
@@ -3809,6 +3810,7 @@ fn (mut app BrowserApp) poll_navigation() {
 			if result.generation != app.navigation_generation {
 				return
 			}
+			app.navigation_fetch_generation = 0
 			// The live document (or a definitive failure) has arrived; stop
 			// pinning the cached raster so the next frame reveals the real page.
 			app.snapshot_hold = false

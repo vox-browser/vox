@@ -92,6 +92,7 @@ fn (mut app BrowserApp) arm_idle_memory_cleanup() {
 fn (mut app BrowserApp) release_unused_memory_if_idle(now_ns i64) {
 	$if gcboehm ? {
 		if app.document == unsafe { nil } || app.pending_navigation != none
+			|| app.has_navigation_fetch_in_flight() || app.pending_page_preload != none
 			|| app.background_resource_pending.len > 0 || app.frame_preparation_depth > 0
 			|| app.navigation_work_depth > 0 || app.document.readiness() != .complete {
 			return
