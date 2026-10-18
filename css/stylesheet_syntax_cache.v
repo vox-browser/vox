@@ -1,0 +1,107 @@
+module css
+
+import sync
+
+const stylesheet_syntax_minimum_bytes = 4096
+
+// Only context-free tokenizer input is shared. CSSRule, declarations, sheet
+// owners, namespace state, URL resolution and media evaluation remain fresh.
+@[heap]
+struct StylesheetSyntaxEntry {
+	input string
+	values []ComponentValue
+	nodes int
+mut:
+	last_used u64
+}
+
+@[heap]
+struct StylesheetSyntaxCache {
+	max_entries int = 16
+	max_source_bytes int = 1_048_576
+	max_nodes int = 131_072
+mut:
+	mutex &sync.Mutex = sync.new_mutex()
+	entries []&StylesheetSyntaxEntry
+	source_bytes int
+	nodes int
+	serial u64
+}
+
+__global stylesheet_syntax_cache_ = StylesheetSyntaxCache{}
+
+fn stylesheet_syntax_node_count(values []ComponentValue) int {
+	mut count := values.len
+	for value in values {
+		if value.is_block() { count += stylesheet_syntax_node_count(value.block().value) }
+		else if value.is_function() { count += stylesheet_syntax_node_count(value.function().value) }
+	}
+	return count
+}
+
+// Caller holds mutex; the returned component arrays are immutable parser input.
+fn (mut cache StylesheetSyntaxCache) find(input string) ?[]ComponentValue {
+	for mut entry in cache.entries {
+		if entry.input == input {
+			cache.serial++
+			entry.last_used = cache.serial
+			return entry.values
+		}
+	}
+	return none
+}
+
+fn (mut cache StylesheetSyntaxCache) evict_oldest() {
+	mut oldest := 0
+	for index, entry in cache.entries {
+		if entry.last_used < cache.entries[oldest].last_used { oldest = index }
+	}
+	cache.source_bytes -= cache.entries[oldest].input.len
+	cache.nodes -= cache.entries[oldest].nodes
+	last := cache.entries.len - 1
+	cache.entries[oldest] = cache.entries[last]
+	// A shortened V array still scans its backing allocation. Clear the old
+	// slot so eviction really releases the tree when no sheet still uses it.
+	cache.entries[last] = unsafe { nil }
+	cache.entries = cache.entries[..last]
+}
+
+fn (mut cache StylesheetSyntaxCache) parse(input string) []ComponentValue {
+	if input.len < stylesheet_syntax_minimum_bytes || input.len > cache.max_source_bytes {
+		return ParserTokenStream.from_source(input, 'utf-8').values
+	}
+	cache.mutex.lock()
+	if values := cache.find(input) {
+		cache.mutex.unlock()
+		return values
+	}
+	cache.mutex.unlock()
+	// Tokenization can service a cooperative UI checkpoint. Never hold the
+	// cache lock across parsing or author/native reentry, or wait for another
+	// thread's parse to finish while holding it.
+	values := ParserTokenStream.from_source(input, 'utf-8').values
+	nodes := stylesheet_syntax_node_count(values)
+	if nodes > cache.max_nodes || cache.max_entries <= 0 { return values }
+	cache.mutex.lock()
+	defer { cache.mutex.unlock() }
+	if existing := cache.find(input) { return existing }
+	for cache.entries.len > 0 && (cache.entries.len >= cache.max_entries
+		|| cache.source_bytes + input.len > cache.max_source_bytes
+		|| cache.nodes + nodes > cache.max_nodes) {
+		cache.evict_oldest()
+	}
+	cache.serial++
+	cache.entries << &StylesheetSyntaxEntry{
+		input: input
+		values: values
+		nodes: nodes
+		last_used: cache.serial
+	}
+	cache.source_bytes += input.len
+	cache.nodes += nodes
+	return values
+}
+
+fn stylesheet_parser_input(input string) ParserTokenStream {
+	return ParserTokenStream{values: stylesheet_syntax_cache_.parse(input)}
+}

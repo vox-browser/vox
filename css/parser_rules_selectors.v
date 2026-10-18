@@ -91,7 +91,7 @@ pub fn RuleSelectorParser.create(params ParsingParams, input string, encoding st
 // array. Build that tree directly, keeping only one raw token at a time.
 fn RuleSelectorParser.create_for_stylesheet(params ParsingParams, input string) RuleSelectorParser {
 	return RuleSelectorParser{
-		token_stream: ParserTokenStream.from_source(input, 'utf-8')
+		token_stream: stylesheet_parser_input(input)
 		document: params.document
 		mode: params.mode
 		value_context: params.value_context.clone()
