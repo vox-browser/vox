@@ -12044,6 +12044,114 @@ isolated 117 app remain unchanged. The canonical app, user's GUI and concurrent
 work are preserved. Evidence: `Build/v/instruction-opt120-prerequisite-finding.json`.
 **Chrome parity remains unestablished.**
 
+## Reserve hit-test phase capacity from the retained box count
+
+Round121 (`f0e55dc7`) compares accepted frozen117 with exactly **two authored
+hunks in two layout paths**. The hit-test phase array reserves the already known
+retained-box count times six. The complete collector, transparent-context behavior,
+phase order and box identities remain intact. This is an ordinary GC-managed array
+capacity reservation; compiler policy remains C-O2/Boehm, marker1 and a 4GiB heap
+hint. Public decoder/filtering, tokenizer arenas and all other runtime work match.
+The existing Root feature and its tests were already committed together; this
+round adds no runtime edits and excludes unrelated current-Root work.
+
+Both exact authored capacity tests pass C-O2 in Boehm and no-GC, **20,738 assertions
+each**. They compare every phase and box identity against the original complete
+collector, including transparent and singular contexts, floats, inline boxes,
+negative/positive z-order and a 300-row document with over 1,000 steps.
+The common 11 functional cases plus one inactive diagnostic pass **60 assertions
+per configuration**. Before/Boehm safely reuses the identical successful117-final
+batch with actual zero exit; candidate/Boehm and no-GC are fresh actual zeros.
+
+Before any round121 execution, the local median was declared **informational**
+for this bounded reservation experiment; actual zero exits and matching output
+remain mandatory. The fixed page cohort decides page savings regardless of local
+sign. Three fixed alternating local pairs each count16 complete fresh public
+parse/layout/record/command-consumption/finalize pipelines over64 Unicode paragraphs.
+The entire hit-test phase vector also contributes to a stable checksum. Setup,
+eight warmups, independent DOM checks, assertions and forced GC stay outside the
+counter. All six actual exits are0; checksum14,028,478,928 matches in every sample.
+
+| Pair | Before instructions | Candidate instructions |
+| --- | ---: | ---: |
+| 1 | 22,480,026,775 | 22,399,782,241 |
+| 2 | 22,937,577,314 | 22,497,005,971 |
+| 3 | 22,368,234,121 | 22,399,785,259 |
+
+Local medians **22,480,026,775 → 22,399,785,259**,
+**-0.356946%**, 2/3 wins. No local result receives page credit.
+Standalone local binaries do not link the browser helper library.
+
+Normal native compilation, signing and frozen-library smoke exit0. The strict C
+audit authenticates both functions against independent whole-app C-only outputs:
+only the capacity expression/formal parameter and one caller argument differ.
+The collector and return tail are byte-identical. All remaining executable C,
+records, globals, resources, decoder/filtering/arenas and GC settings match after
+established compiler identity/embed-key/assert-line normalization, four authenticated
+byte-identical helper reorders and one static ordinal. Entire compiler file tables,
+all120 native input hashes,37 frozen includes and native arguments match.
+Rest C SHA256 `47c087c06e1c099490cdd55262347745dd01d958f2ad4bf275a1902b3b67349b`.
+Independent `-no-skip-unused -o.c` generation performs zero native/runtime executions.
+
+Both full-process C-O1/Boehm/marker1 profiles exit0 with `-profile-no-inline`;
+main remains enabled with no custom filter/reset. Public pipeline and collector
+counts remain equal. Array-capacity checks fall by286 across this complete run.
+These are profile call counts, not hardware page savings or timing credit.
+
+| Profile calls | Before | Candidate |
+| --- | ---: | ---: |
+| `layout__opt121_complete_public_document_layout` | 25 | 25 |
+| `html__parse_document` | 26 | 26 |
+| `layout__run_document_layout` | 26 | 26 |
+| `dom__Document_record_display_list` | 26 | 26 |
+| `layout__BlockBox_compatibility_hit_test_steps` | 26 | 26 |
+| `layout__BlockBox_collect_compatibility_stacking_context_paint_steps` | 156 | 156 |
+| `layout__viewport_build_hit_test_display_list` | 26 | 26 |
+| `builtin__array_ensure_cap` | 566,157 | 565,871 |
+
+The page plan is **30 alternating pairs**, odd before/final and even final/before,
+**30,000 paired bootstrap resamples, seed121**. Both regular binaries use the same
+359-file cached GitHub input, frozen4e helper, child-only placement helper, document
+1024×768/window1024×880 and `native.scopes.navigation_to_first_document_paint[0]`.
+
+| First-frame retired instructions | Value |
+| --- | ---: |
+| Before median | 16,624,628,941 |
+| Candidate median | 16,627,497,589 |
+| Observed marginal-median saving | -2,868,648 |
+| Change | 0.017255% |
+| Improved pairs | 15/30 |
+| Paired median saving | 73,802 |
+| Paired 95% interval | [-5,169,549, 4,928,997.5] |
+| Repeatable page credit | 0 |
+
+The paired interval does not establish repeatable page savings; repeatable credit is zero.
+All60 primaries remain. Real PNGs:60; recovered primaries:[]; archived
+preparse retries:0; post-primary refreshes:0;
+external foreground transitions:[].
+Any recovered counter retains unknown exit/missing PNG explicitly. All 60 decoded RGB captures differ only within the original skeleton bands x45–662/y335–344 and ten 14px bands at y380+41i. All other pixels match. RGB classes 30 before / 30 final; 0 shared.
+Memory is the root process lifetime maximum through capture/exit, not first-frame
+live memory. The focused1024×768 comparison is pixel-exact. Prior observed carry0
+plus fresh positive observed saving gives **0** for the5M gate.
+The observed gate remains below 5M, so broad tests are deferred and the completed117 broad baseline remains. Next control:117; broad baseline resets only
+after actual broad passes for an accepted candidate.
+
+The isolated app `/Users/alex/code/vox2/Build/v/Vox-opt121.app` passes library pinning, signing,
+verification, startup and actual collections with default marker1/override2. Its
+native instruction text matches the measured binary. Canonical app and GUI are
+preserved; independent current-Root work receives no performance credit.
+Normal binary SHA256 `61600c8d9dfb20bfda437978c76f0d75cb9ee83f826aa2fad759b2bdbcb14df9`;
+normal C SHA256 `4817a9415f4d5056360eb6749b4a6fc6bab0b1522a7c4b6bc7d72ff32525ad1b`.
+Exact compressed C/profile/test/binary hashes are in
+`Build/v/instruction-opt121-durable-archives.json`.
+The inherited probe/module-wrapper mismatch and stale preparer assertion failed
+before page observations; original inputs, scripts, logs and real exits remain.
+An inherited native-starter description mentions the old negative-local gate;
+the executed gate and predeclared plan explicitly make the local median informational.
+Counts, exits and the original receipt remain unchanged.
+**Chrome parity remains unestablished**: its earlier count used a different
+endpoint and hydrated content.
+
 ## Causes and changes
 
 - The V 0.5.2 compatibility compiler's `-prod` Boehm code repeatedly snapshots

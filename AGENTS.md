@@ -2126,6 +2126,15 @@ evidence](docs/translation-audit/NATIVE_MEDIA_WHEEL_RAW_HANDLER.md).
   No local/native/profile/C-audit/page/broad/app work or credit; failures retained.
   Full prerequisite `3f5d7e1e` changes native integration; no shim/partial port.
   Frozen117 control/broad baseline, carry0 and existing app/Root/canonical/GUI preserved.
+  Hit-test capacity round 121 (`f0e55dc7`): two authored hunks/two layout paths.
+  Common60/config; exact2 layout cases/20738asserts eachGC pass; phase/identity preserved.
+  Local16 public pipelines -0.356946%/2wins; informational sign predeclared.
+  Page 16,624,628,941 → 16,627,497,589; 15/30wins.
+  Point saving -2,868,648; paired interval [-5,169,549, 4,928,997.5]; credit 0.
+  Broad: deferred below5M gate; focused viewport exact.
+  Strict C/source/filetable audit; all60 primaries retained; next control 117.
+  Observed carry 0; same4GiB/frozenhelpers/GC1+override2.
+  Isolated app; Root/canonical/GUI preserved; setup failures retained; Chrome parity open.
 - Outside instruction-count optimization, run broad regression suites once per
   ten completed fixes, not after every fix.
   Broad suites include full translation/package test batches, the full LibJS AST
