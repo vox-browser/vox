@@ -1022,7 +1022,9 @@ fn (mut m BlockMarginState) set_box_last_in_flow_child_margin_bottom_collapsed(v
 struct BlockFormattingContext {
 mut:
 	margin_state                         BlockMarginState
-	trailing_collapsed_margin            ?TrailingCollapsedMargin
+	// Explicit none avoids constructing the absent record's child/style in the
+	// compatibility compiler. A real trailing margin still owns its child.
+	trailing_collapsed_margin            ?TrailingCollapsedMargin = none
 	y_offset_of_current_block_container  f64
 	floating_boxes                       []FloatingBoxRecord
 	float_bands                          []BFCFloatBand = [BFCFloatBand{}]
