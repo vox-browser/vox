@@ -1344,7 +1344,8 @@ fn retained_background_layer_data(layer BackgroundImageLayer) ?&PaintBackgroundL
 fn background_layer_command(layer BackgroundImageLayer, origin LayoutRect, clip LayoutRect,
 	clip_radii BoxRadii, opacity f64, radius f64, points []f64,
 	background_scroll_offset painting.Point, image_rendering css.ImageRendering,
-	fixed_background_visual_context ?int, initial_containing_block LayoutRect) ?PaintCommand {
+	fixed_background_visual_context ?int, initial_containing_block LayoutRect,
+	snap_generated_image bool) ?PaintCommand {
 	blend_mode := background_image_layer_blend_mode(layer)
 	mut positioning_area := origin
 	mut visual_context_index := ?int(none)
@@ -1356,6 +1357,11 @@ fn background_layer_command(layer BackgroundImageLayer, origin LayoutRect, clip 
 	}
 	if source := layer.gradient_source {
 		computed_layer := layer.computed_layer or { return none }
+		// The default auto-size, zero-position gradient fills the snapped
+		// positioning area. Other sizes retain their separate positioning phase.
+		if snap_generated_image && chromium_default_gradient_geometry(computed_layer) {
+			positioning_area = pixel_snapped_layout_rect(positioning_area)
+		}
 		resolved_layer := painting.resolve_background_layer_without_intrinsic(painting.BackgroundLayerWithoutIntrinsicResolutionInput{
 			layer: computed_layer
 			image_id: source.serialize(.normal)
@@ -2315,7 +2321,7 @@ fn (b &BlockBox) record_paint_commands_for_entries(entries []PaintOrderEntry, se
 					y: 0
 					width: b.viewport_width
 					height: b.viewport_height
-				}) {
+				}, box.snaps_background_rect) {
 					commands << command
 				}
 			}
@@ -3943,7 +3949,7 @@ fn inline_fragment_commands(fragments []TextFragment, opacity f64) InlineFragmen
 			layer := first.background_images[layer_index]
 			origin := inline_background_box_rect(decorating_fragment, layer.origin, border_rect)
 			clip := inline_background_box_rect(decorating_fragment, layer.clip, border_rect)
-			if command := background_layer_command(layer, origin, clip, fragment_radii, opacity, radius, []f64{}, painting.Point{}, .auto_, none, LayoutRect{}) {
+			if command := background_layer_command(layer, origin, clip, fragment_radii, opacity, radius, []f64{}, painting.Point{}, .auto_, none, LayoutRect{}, first_is_chromium) {
 				commands << command
 			}
 		}

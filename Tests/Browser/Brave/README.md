@@ -68,6 +68,15 @@ reference. All three are pixel-exact. The Chromium path retains the CSS angle
 and computes tile-local endpoints with Blink's float intermediates before
 translating the shader to the tile origin.
 
+`background-gradient-snapping` checks fractional auto-sized gradient backgrounds
+at the default zero position, including hard stops expressed in pixels. Their
+tile dimensions and stop positions use the snapped positioning area in the
+Chromium profile. All three cases are exact. Explicit background sizes and
+positions retain their existing path. The unchanged four-case
+[`diagnostic/fractional-generated-gradient.html`](diagnostic/fractional-generated-gradient.html)
+and adjacent original Brave PNG preserve remaining dither, rounded-clip and
+explicit-size differences.
+
 Outer CSS SVG roots in the Chromium profile snap their border-box paint
 origin while layout, padding, nested viewports and transforms keep their
 fractions. The two CNN header icons are exact after this change. The unchanged
