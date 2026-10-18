@@ -886,8 +886,11 @@ pub mut:
 	was_muted           bool
 mut:
 	dom_                        MediaControlsDOM
+	owned_shadow_root_          ?&dom.ShadowRoot
+	destroyed_                  bool
 	registered_event_listeners_ []MediaControlsRegisteredEventListener
 	request_animation_frame_id_ u32
+	animation_frame_window_     ?&WindowModel
 	buffered_ranges_            []MediaControlsBufferedRange
 	pending_scrub_seek_time_     ?f64
 	scrub_seek_preemption_timer_ ?&platform.Timer
@@ -923,11 +926,13 @@ pub fn (mut controls MediaControls) update() {
 }
 
 pub fn (mut controls MediaControls) create_shadow_tree() {
+	if controls.destroyed_ { return }
 	if html_element := controls.media.associated_element_ {
 		mut media_element := unsafe { &dom.Element(html_element) }
 		if media_element.shadow_root() == none {
 			is_video := media_element.is_html_element() && media_element.local_name() == 'video'
 			shadow := media_element.attach_a_user_agent_shadow_root(.named)
+			controls.owned_shadow_root_ = shadow
 			document := media_element.document()
 			mut container := dom.create_element(document, 'div', ns_html, none, none, false) or {
 				controls.update()
@@ -1021,8 +1026,11 @@ pub fn (mut controls MediaControls) create_shadow_tree() {
 }
 
 pub fn (mut controls MediaControls) add_event_listener(target &dom.EventTarget, event_name string, listen_once MediaControlsListenOnce, handler MediaControlsEventHandler) &dom.IDLEventListener {
+	controls_pointer := voidptr(&controls)
 	callback := &dom.CallbackType{
-		handle_event: fn [handler] (event &dom.Event, _ ?&dom.EventTarget) dom.JSValue {
+		handle_event: fn [handler, controls_pointer] (event &dom.Event, _ ?&dom.EventTarget) dom.JSValue {
+			controls := unsafe { &MediaControls(controls_pointer) }
+			if controls.destroyed_ { return dom.js_undefined() }
 			if handler(event) {
 				mut mutable_event := unsafe { &dom.Event(event) }
 				mutable_event.prevent_default()
@@ -1048,9 +1056,44 @@ pub fn (mut controls MediaControls) remove_event_listeners() {
 			registration.listener)
 	}
 	controls.registered_event_listeners_.clear()
-	if mut window := controls.relevant_window() {
+	if mut window := controls.animation_frame_window_ {
 		window.cancel_animation_frame(controls.request_animation_frame_id_)
 	}
+	controls.request_animation_frame_id_ = 0
+	controls.animation_frame_window_ = none
+}
+
+// V has no automatic Optional<MediaControls> destructor. Release the Source
+// destructor's listeners, shadow tree and timer members explicitly.
+pub fn (mut controls MediaControls) destroy() {
+	if controls.destroyed_ { return }
+	controls.destroyed_ = true
+	controls.remove_event_listeners()
+	if mut timer := controls.hover_timer_ {
+		timer.stop()
+		timer.on_timeout = unsafe { nil }
+	}
+	if mut timer := controls.scrub_seek_preemption_timer_ {
+		timer.stop()
+		timer.on_timeout = unsafe { nil }
+	}
+	controls.hover_timer_ = none
+	controls.scrub_seek_preemption_timer_ = none
+	controls.pending_scrub_seek_time_ = none
+	controls.scrubbing_timeline = .no
+	controls.scrubbing_volume = false
+	if shadow := controls.owned_shadow_root_ {
+		if html_element := controls.media.associated_element_ {
+			mut element := unsafe { &dom.Element(html_element) }
+			if current := element.shadow_root() {
+				if current == shadow { element.set_shadow_root(none) }
+			}
+		}
+	}
+	controls.owned_shadow_root_ = none
+	controls.dom_ = MediaControlsDOM{}
+	controls.buffered_ranges_.clear()
+	controls.shadow_tree_created = false
 }
 
 fn media_controls_state_handler(controls &MediaControls, event &dom.Event) bool {
@@ -1089,6 +1132,7 @@ fn media_controls_state_handler(controls &MediaControls, event &dom.Event) bool 
 }
 
 pub fn (mut controls MediaControls) set_up_event_listeners() {
+	if controls.destroyed_ { return }
 	controls_pointer := voidptr(&controls)
 	for event_name in ['play', 'pause', 'playing', 'seeked', 'timeupdate', 'durationchange', 'progress',
 		'volumechange', 'loadedmetadata', 'emptied'] {
@@ -1352,6 +1396,7 @@ pub fn (mut controls MediaControls) seek_while_scrubbing(time f64) {
 }
 
 fn (mut controls MediaControls) submit_pending_scrub_seek() {
+	if controls.destroyed_ { return }
 	time := controls.pending_scrub_seek_time_ or { return }
 	controls.pending_scrub_seek_time_ = none
 	if mut timer := controls.scrub_seek_preemption_timer_ {
@@ -1507,12 +1552,15 @@ fn (controls &MediaControls) relevant_window() ?&WindowModel {
 }
 
 fn (mut controls MediaControls) request_timeline_update() {
-	if controls.request_animation_frame_id_ != 0 || !controls.media.potentially_playing() { return }
+	if controls.destroyed_ || controls.request_animation_frame_id_ != 0 || !controls.media.potentially_playing() { return }
 	mut window := controls.relevant_window() or { return }
+	controls.animation_frame_window_ = window
 	controls_pointer := voidptr(&controls)
 	controls.request_animation_frame_id_ = window.request_animation_frame(fn [controls_pointer] (_ f64) {
 		mut controls := unsafe { &MediaControls(controls_pointer) }
+		if controls.destroyed_ { return }
 		controls.request_animation_frame_id_ = 0
+		controls.animation_frame_window_ = none
 		controls.update_timeline()
 		controls.request_timeline_update()
 	})
@@ -1631,6 +1679,7 @@ pub fn (controls &MediaControls) should_show_placeholder() bool {
 }
 
 pub fn (mut controls MediaControls) show_controls() {
+	if controls.destroyed_ { return }
 	if mut bar := controls.dom_.control_bar {
 		mut classes := bar.class_list()
 		classes.add(['visible']) or { panic(err) }
@@ -1650,6 +1699,7 @@ pub fn (mut controls MediaControls) show_controls() {
 }
 
 pub fn (mut controls MediaControls) hide_controls() {
+	if controls.destroyed_ { return }
 	if controls.scrubbing_timeline == .no && !controls.scrubbing_volume && !controls.hovering_controls {
 		if controls.dom_.placeholder_circle != none && controls.should_show_placeholder() { return }
 		if mut bar := controls.dom_.control_bar {

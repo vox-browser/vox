@@ -227,7 +227,7 @@ mut:
 	loop_                       bool
 	autoplay_                   bool
 	preload_                    ?string
-	controls_                   bool
+	controls_                   ?&MediaControls
 	fetch_hook_                 ?MediaResourceFetchHook
 	fetch_generation_           u32
 	buffered_                   &TimeRanges = unsafe { nil }
@@ -696,9 +696,12 @@ fn (mut element HTMLMediaElement) release_screen_wake_lock() {
 }
 
 // Selected Source finalize responsibilities. Physical GC and the remaining
-// manager/timer/control finalization are separate integration boundaries.
+// manager/timer finalization are separate integration boundaries.
 pub fn (mut element HTMLMediaElement) finalize() {
 	element.release_screen_wake_lock()
+	// Source clears controls eagerly: native timer closures must not survive
+	// the media owner's finalization and touch its shadow nodes later.
+	element.destroy_controls()
 	if html_element := element.associated_element_ {
 		dom_element := unsafe { &dom.Element(html_element) }
 		document := dom_element.document()
@@ -2477,15 +2480,20 @@ pub fn (mut element HTMLMediaElement) add_text_track(kind TextTrackKind, label s
 }
 
 pub fn (mut element HTMLMediaElement) create_controls() {
-	element.controls_ = true
+	if element.controls_ == none {
+		element.controls_ = MediaControls.create(&element)
+	}
 }
 
 pub fn (mut element HTMLMediaElement) destroy_controls() {
-	element.controls_ = false
+	if mut controls := element.controls_ {
+		element.controls_ = none
+		controls.destroy()
+	}
 }
 
 pub fn (element &HTMLMediaElement) has_controls() bool {
-	return element.controls_
+	return element.controls_ != none
 }
 
 pub fn (element &HTMLMediaElement) set_on_event(name string, handler ?&dom.CallbackType) {
