@@ -2712,19 +2712,23 @@ pub fn (list &StyleSheetList) document() &dom.Document {
 	return list.document_or_shadow_root.document()
 }
 
+struct StyleSheetInvalidationRuleCollection {
+mut:
+	rules []&CSSRule
+}
+
+fn collect_style_sheet_invalidation_rules(context voidptr, rule &CSSRule) {
+	if rule.type_ !in [.style, .nested_declarations] { return }
+	mut collection := unsafe { &StyleSheetInvalidationRuleCollection(context) }
+	collection.rules << rule
+}
+
 fn build_invalidation_set_for_stylesheet(sheet &CSSStyleSheet) StyleSheetInvalidationSet {
 	mut result := StyleSheetInvalidationSet{}
-	mut rules := []&CSSRule{}
-	rules_ptr := &rules
-	sheet.for_each_effective_style_producing_rule(fn [rules_ptr] (rule &CSSRule) {
-		unsafe {
-			mut collected := *rules_ptr
-			collected << rule
-			*rules_ptr = collected
-		}
-	})
+	mut collection := StyleSheetInvalidationRuleCollection{}
+	sheet.for_each_effective_rule_with_context(.preorder, voidptr(&collection), collect_style_sheet_invalidation_rules)
 
-	for rule in rules {
+	for rule in collection.rules {
 		if result.invalidation_set.needs_invalidate_whole_subtree() {
 			break
 		}
