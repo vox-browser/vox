@@ -1136,11 +1136,12 @@ fn (s &StyleComputer) recompute_inherited_style_with_invalidation(mut abstract_e
 		}
 	}
 	for property_id in computed_interpolation_longhand_property_ids() {
-		old_value := computed.property(property_id, .no)
-
 		if !computed.is_property_inherited(property_id) {
 			continue
 		}
+		// Compare the values the element uses, animations applied: an
+		// inherited animated value can change while the base value stays.
+		old_value := computed.property(property_id, .yes)
 
 		// Each iteration changes only its own property's animated value, so the
 		// live map answers what a snapshot taken before the loop would.
@@ -1155,7 +1156,7 @@ fn (s &StyleComputer) recompute_inherited_style_with_invalidation(mut abstract_e
 
 		new_value := StyleComputer.get_non_animated_inherit_value(property_id, abstract_element)
 		computed.set_property(property_id, new_value, .yes, .no)
-		property_invalidation := compute_property_invalidation(property_id, old_value, computed.property(property_id, .no))
+		property_invalidation := compute_property_invalidation(property_id, old_value, computed.property(property_id, .yes))
 		only_color_changes = only_color_changes && (property_id == .color || property_invalidation.is_none())
 		invalidation = required_invalidation_after_style_change_or(invalidation, property_invalidation)
 	}
