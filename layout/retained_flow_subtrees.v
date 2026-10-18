@@ -182,7 +182,7 @@ fn collect_retained_flow_elements(element &dom.Element, mut elements []&dom.Elem
 fn retained_flow_layout_node_is_ordinary(node &Node) bool {
 	if node.is_generated_for_pseudo_element() || node.is_generated_text_node()
 		|| node.is_replaced_element() || node.is_svg_box() || node.is_list_item_box()
-		|| node.is_floating() || node.is_out_of_flow() || node.is_flex_item() || node.is_grid_item_ {
+		|| node.is_absolutely_positioned() || node.is_flex_item() || node.is_grid_item_ {
 		return false
 	}
 	if !node.is_text_node() && !node.display().is_flow_inside()
