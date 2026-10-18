@@ -462,5 +462,37 @@ setup failed before launch; subsequent successful captures initially lacked the
 pixel-diff executable in the isolated checkout. Exact metrics were recovered
 from those unchanged PNGs using the pinned executable, without recapture.
 The archived failures receive no pass credit. The side-by-side image on disk
-contains the original Brave viewport and this 112-pixel Vox result, with every
+at that checkpoint contained the original Brave viewport and the 112-pixel Vox result, with every
 viewport byte preserved. Both final gates and the seven-pair cohort remain open.
+
+
+Bitmap raster mode replay (`0f3938ae`) applies the owning layer's path-triggered
+MSAA mode to image rows, including overlapping tile borders. Mixed rows draw
+both passes against the same immutable backdrop; fractional translated MSAA
+batches retain individual draws. Portable row/failure tests and the raster-cache
+checks pass. The native image comparison covers 288 configurations, with 44
+batched paths, and all 36 Brave fixtures remain pixel-exact. The frozen CNN
+viewport improves from 112 to 95 differing pixels, maximum channel error 12.
+Content, fonts and all 173 full-uBO checks pass with zero disagreement. A fresh
+normal build records 48,951,064,933 instructions; this single observation does
+not establish a CPU improvement or meet the 36,171,408,491.25 ceiling.
+
+Private evidence is `image-layer-msaa-final-focused/results.json`,
+`image-layer-msaa-final-controls/results.json`,
+`image-layer-msaa-final-normal/conformance-summary.json`,
+`image-layer-msaa-final-normal-instructions/pair-1.vox.{json,ubo.json}` and
+`image-layer-msaa-commit/receipt.json`. The updated
+`Build/cnn-parity/cnn-brave-vox-progress.png` preserves the exact raw Brave and
+95-pixel Vox viewports. The earlier composite remains archived separately.
+
+The equal opaque border ordering fix (`836f8222`) passes five focused cases per
+GC mode but leaves the private four-pixel chevron difference unchanged. SVG
+raster preparation culling (`e8ac8892`) preserves the full visible tile fringe;
+seven focused cases pass per GC mode, while its normal CNN capture remains at
+112 pixels and establishes no CPU saving. Native view ownership (`0cf6956f`)
+passes the replacement-view regression in both modes; the extracted old getter
+fails that regression. This is independent of a diagnostic viewport mismatch:
+a changed measurement driver requested compact chrome from an older bundle.
+The pinned matching driver restores the required 768-pixel document viewport.
+The failed diagnostic captures retain no benchmark credit. Both final gates
+and the seven-pair cohort remain open.
