@@ -18,16 +18,26 @@ fn reusable_clean_flow_subtree(element &dom.Element, mut rejected map[u64]bool) 
 	if dom_root.needs_layout_tree_update_() || dom_root.child_needs_layout_tree_update_() {
 		return none
 	}
+	// SVG references can instantiate one DOM subtree at several positions.
+	// Namespace-bridging descendants keep independent boxes in the full builder.
+	mut ancestor := dom_root.parent_or_shadow_host()
+	for ancestor != none {
+		current := ancestor or { break }
+		if parent_element := current.as_element() {
+			if !parent_element.is_html_element() { return none }
+		}
+		ancestor = current.parent_or_shadow_host()
+	}
 	computed := css.computed_properties_for_element(element) or { return none }
 	// Display changes invalidate the parent which owns this insertion. A node
 	// which just became unboxed can still have its previous principal box here.
-	if !computed.display().is_block_outside() || !computed.display().is_flow_inside() {
+	if !computed.display().is_flow_inside() {
 		return none
 	}
 	mirror := dom_root.unsafe_layout_node() or { return none }
 	if mirror.real_layout_handle() == unsafe { nil } { return none }
 	root := unsafe { &Node(mirror.real_layout_handle()) }
-	if !root.is_block_container() || root.is_anonymous() { return none }
+	if (!root.is_block_container() && !root.is_inline_node()) || root.is_anonymous() { return none }
 	parent := root.parent() or { return none }
 	if parent.is_anonymous() { return none }
 	parent_dom := parent.dom_node() or { return none }
@@ -58,7 +68,7 @@ fn collect_retained_flow_elements(element &dom.Element, mut elements []&dom.Elem
 	if !element.is_html_element() || element.shadow_root() != none
 		|| element.rendered_in_top_layer() || computed.content_visibility() != .visible
 		|| computed.position() !in [.static_, .relative]
-		|| element.local_name() !in ['div', 'section', 'article', 'aside', 'header', 'footer', 'main', 'nav', 'p', 'span', 'a', 'strong', 'b', 'em', 'i', 's', 'del', 'small', 'code', 'pre', 'blockquote', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6'] {
+		|| element.local_name() !in ['div', 'section', 'article', 'aside', 'header', 'footer', 'main', 'nav', 'p', 'span', 'a', 'strong', 'b', 'em', 'i', 's', 'del', 'small', 'code', 'pre', 'blockquote', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'ul', 'ol', 'li', 'time', 'br'] {
 		return false
 	}
 	if value := computed.typed_property_value(.content) {
@@ -73,7 +83,7 @@ fn collect_retained_flow_elements(element &dom.Element, mut elements []&dom.Elem
 		return false
 	}
 	if !retained_flow_layout_node_is_ordinary(typed) { return false }
-	if typed.is_inline_node() != computed.display().is_inline_outside() { return false }
+	if !typed.is_break_node() && typed.is_inline_node() != computed.display().is_inline_outside() { return false }
 	for child in typed.children() {
 		if !retained_flow_anonymous_layout_is_ordinary(child) { return false }
 	}
