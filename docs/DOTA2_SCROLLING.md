@@ -406,3 +406,88 @@ bundle and rename, with the previous bundle preserved. Installed sections,
 deep signature verification and headless startup are checked against the
 measured candidate, then the live Reddit URL is reopened. The resulting
 process and component checks are recorded in `installed-verification.json`.
+
+The next follow-up targets another 10% reduction. Sampling the installed
+control identifies final Quartz image publication as a substantial remaining
+cost: 147 sampled stacks pass through `native_end_css_filter_layer`, including
+protected snapshot reads, copying and pixel-layout conversion.
+
+`24c82057` makes completed effect layers transfer their bitmap context into the published
+image's data provider. The last provider release releases the context, keeping
+its allocation alive through deferred Quartz drawing. Opacity results likewise
+use context-owned storage rather than a separate allocation and snapshot.
+For an unfiltered RGBA image going to an 8-bit BGRA bitmap, publication swaps
+red and blue in place, using ARM64 NEON with scalar tails. Other destinations
+retain their source layout, and filter inputs retain their original layout.
+Color-space metadata, interpolation and rendering intent are preserved;
+unsupported bitmap formats retain the existing snapshot fallback. The context
+is consumed only after its final drawing operation.
+
+Three alternating matched pairs contain all 120 moving frames per run, 360 per
+variant. Both signed executables use the same retained production-generated C,
+with only these native bitmap-publication changes; both rendering libraries are
+byte-identical. Concurrent repository changes are excluded from the measured
+difference. The frozen 85-comment page, initial cache, 1,024×768 interactive 2×
+viewport, 0–1,260 scroll trace and 2,355 commands per frame match exactly.
+JavaScriptCore, production Boehm GC and one marker thread remain enabled. Both
+variants receive a four-second settling interval.
+
+| Per moving frame, median of run medians | Control | Optimized | Reduction |
+| --- | ---: | ---: | ---: |
+| Wheel dispatch through native replay | 19.116 ms | 14.852 ms | 22.3% |
+| Native replay | 16.599 ms | 12.379 ms | 25.4% |
+| Retired instructions | 127.642 million | 105.156 million | 17.6% |
+
+Control run medians are 17.7740, 19.1165, 19.3730 ms; candidate
+medians are 14.3300, 14.8520, 15.3515 ms. Every pair improves.
+The candidate's median run p95 is 24.534 ms and maximum is
+75.417 ms. All slow frames and three collections per variant remain included.
+The endpoint includes synchronous GPU waits and excludes Cocoa presentation,
+vsync and idle work; this is a median improvement rather than a frame-time cap.
+
+The bitmap oracle passes 13,824 exact comparisons across RGBA/BGRA, sRGB,
+Display P3 and linear RGB, padded rows, 1×/2× scale, fractional/rotated drawing,
+clipping, alpha and blend modes. Another 216 opacity results match exactly.
+Metadata, last-owner release, retained snapshot immutability, null input and
+monochrome fallback are covered. Address and undefined-behavior sanitizers pass.
+
+All four final Reddit viewports are pixel-exact after both variants receive
+three seconds to settle: 1× at scroll 0 and 630, and 2× at 630 and 1,260.
+The eleven screenshot smoke comparisons pass under their existing rules;
+eight SVG mutation guards and both turbulence references are exact. Six opacity
+visuals pass under their existing rules, and six filter/backdrop-filter pages
+are byte-identical between control and candidate.
+
+Selected V regression checks cover 218 functions in 52 original test files per
+GC configuration, with unchanged aggregate test bodies. The default-GC result
+combines retained painting/platform passes, the completed root opacity check,
+and a fresh layout pass. A stopped verification run and the later layout
+harness's missing links to two new implementation files remain retained without
+whole-batch passing credit. Refreshing those links changes no production code
+or test assertions. The complete no-GC selection passes, and all 100 upstream
+LibJS AST fixtures match exactly. This broad verification covers 22,485,954
+saved retired instructions per moving frame, including the 6,464,936 already
+covered by the earlier checkpoint and 16,021,018 additional instructions.
+The incremental broad-check count resets to zero for this endpoint.
+
+Evidence is retained privately under `Build/dota2-scroll/target10percent/`:
+`packed-comparison.json` and its six `isolated-packed-*` run directories,
+`accepted-result.json`, `packed-source-pins.json`, the retained generated C and
+native source snapshots, `packed-validation.json`, `pixels-settled/`,
+`packed-cow-results.json`, `packed-rendering.json`, `filter-pixels.json`,
+`packed-broad-gate.json`, the regression input manifest and their logs.
+Earlier prototypes below the target, an invalid paint-command trace, the
+one-second scrollbar-fade capture mismatch and two SIGTERM-interrupted control
+runs remain retained without passing credit. The final timing series uses
+byte-identical copies of the signed binaries named `ScrollBench`; both
+variants receive the same process-name change and no successful timing run is
+retried. Fresh three-second captures verify full viewports without masking
+scrollbars or changing rendering behavior.
+
+The measured executable and both native libraries are installed through a
+separately signed staged bundle and rename. The previous bundle is preserved,
+and existing processes keep their mapped files. All file-backed Mach-O sections
+match the measured candidate after signing; deep signature verification and
+installed headless startup pass. The live Reddit URL is reopened without the
+test network gate. `installed-verification.json` records the new process and
+component checks. Concurrent source, staged work and flat development libraries remain preserved.
