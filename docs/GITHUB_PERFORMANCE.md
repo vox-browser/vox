@@ -11792,6 +11792,125 @@ Equivalent Chrome content/start/submission accounting remains open;
 **faster-than-Chrome performance is unproven**. Evidence: Build/v/instruction-opt116-*
 and Build/instructions/vox-opt116-interleaved-*.
 
+## Defer cold element style maps until first use
+
+Round 117 (`82ca20c6`) compares accepted frozen 116 with exactly **10 authored
+hunks in three runtime paths**. A pseudo-element owner initializes its own map.
+Element-reference pseudos, CSS-defined animations and CSS random values now live
+in a separate managed owner created on actual use. ElementRareData shrinks from
+480 to 128 bytes; its optional cold payload holds the same three ordinary maps.
+Element and HTMLElement sizes, public decoder/filtering, tokenizer arenas, layout,
+normal GC policy and the unchanged 4 GiB hint stay unchanged.
+
+Seven focused current-Root storage cases pass **112 / 106 assertions** in
+Boehm / no-GC. Two added cases check nonallocating reads/clears after a pseudo
+owner exists, all three namespaces, independent removal/reinsertion, collection
+and adoption. The original five cases retain identity, shadow references,
+CSS animation published-map snapshots and stable random values. Only one old
+assertion's private storage path changes. The feature and focused tests are
+committed together; unrelated Root work is excluded from the frozen comparison.
+
+The 11 common functional cases plus one inactive diagnostic pass **60 assertions
+per configuration**. Before/Boehm reuses the identical successful 116-final batch
+and its binary, input bytes, flags and actual zero exit; no new execution is
+claimed. Candidate/Boehm and candidate/no-GC are fresh actual zero exits.
+All **25 candidate cases pass per GC**: DOM 18 with **2,757 / 2,731 assertions**,
+CSS 3 with **952 each**, HTML 4 with **76 each**. Existing allocation-class,
+weak-owner, handler, nonce-cloning and modulepreload checks remain intact.
+
+Three fixed alternating local pairs count 16 complete fresh public document
+pipelines each: parse, initial layout, display-list recording, command consumption
+and finalize. The 64-paragraph Unicode scene is unchanged from 116. Setup, eight
+warmups, independent 64 DOM-text checks, assertions and forced GC stay outside the
+counter. The full paint expectation is derived in uncounted setup. All six actual
+exits are 0 and checksums match 54,286,416.
+
+| Pair | Before retired instructions | Candidate retired instructions |
+| --- | ---: | ---: |
+| 1 | 23,615,799,140 | 23,046,425,533 |
+| 2 | 23,547,779,203 | 23,606,149,954 |
+| 3 | 23,494,710,369 | 22,992,473,535 |
+
+Local medians **23,547,779,203 → 23,046,425,533**, change
+**-2.129091%**, **2/3 wins**. All completed samples remain;
+this result is separate from page credit.
+
+The normal native C-O2 build, signing and frozen-library smoke exit 0. Independent
+whole-app C generation uses `-no-skip-unused -o.c`; it performs zero native or
+browser executions. Actual frontend file tables are identical. The strict C
+audit authenticates seven changed source functions, one unchanged-source default
+constructor, one new lazy-owner function, the split record and three derived
+printers. Two getters omitted as unused in normal C are proved in the independent
+outputs to differ only in the exact cold-owner guard and member path. Their
+behavior is covered by the focused tests. The constructor's pseudo map is exact;
+all three other map initializer expressions move intact into the cold owner.
+Explicit byte-identical movement lists authenticate 10 functions,
+0 records and 0 typedefs against both
+independent outputs. Established compiler identities, unchanged assertion-line
+maps, four known helpers and one unchanged static ordinal are projected. All
+remaining executable C, records, resources, globals and GC configuration match;
+all 120 native hashes, 37 frozen includes and native arguments match.
+Rest SHA256 `e5bcd2a2b4f999c1eea7bc22ef8cebaf867d76519f35bd90c6781a192ce44bd8`.
+The initial audit-reader failures remain retained; completed tests, profiles and
+hardware samples were not rerun to fix those readers.
+
+Full-process C-O1 profiles use Boehm, one marker and `-profile-no-inline`, with
+profiling enabled through main and no filter or reset. They confirm the same public
+work and fewer map allocations. Counts and timings do not establish page credit.
+
+| Profile calls | Before | Candidate |
+| --- | ---: | ---: |
+| `layout__opt117_complete_public_document_layout` | 25 | 25 |
+| `html__parse_document` | 26 | 26 |
+| `layout__run_document_layout` | 26 | 26 |
+| `dom__Document_record_display_list` | 26 | 26 |
+| `layout__append_text_fragment_commands` | 11,648 | 11,648 |
+| `dom__Element_get_pseudo_element` | 89,180 | 89,180 |
+| `dom__Element_ensure_rare_data` | 6,734 | 6,734 |
+| `dom__Element_ensure_rare_style_data` | 0 | 0 |
+| `builtin__new_map` | 62,543 | 62,543 |
+| `builtin__new_map_noscan_key` | 23,362 | 9,894 |
+| `builtin__new_map_noscan_value` | 56,042 | 49,308 |
+
+The predeclared page cohort remains **30 alternating pairs**, odd before/final,
+even final/before, with **30,000 paired bootstrap resamples, seed 117**. The endpoint
+is `native.scopes.navigation_to_first_document_paint[0]`, document 1024×768,
+window 1024×880, same 359-file cache and frozen helper/placement libraries.
+
+| First-frame retired instructions | Value |
+| --- | ---: |
+| Before median | 16,795,334,683 |
+| Candidate median | 16,781,463,328 |
+| Observed marginal-median saving | 13,871,355 |
+| Change | -0.082591% |
+| Improved pairs | 26/30 |
+| Paired median saving | 14,857,695.5 |
+| Paired 95% bootstrap interval | [10,826,526.5, 19,776,099] |
+| Repeatable page credit | 13,871,355 |
+
+The positive paired interval permits repeatable credit. All 60 retained primaries stay in the cohort. Real PNGs: 60;
+recovered primaries: []; archived preparse startup retries: 0;
+post-primary refreshes: 0; external foreground transitions: [].
+Recovered counters, if any, retain unknown exits/missing PNGs explicitly.
+All 60 decoded RGB captures differ only in the original skeleton bands x45–662/y335–344 and ten 14px bands at y380+41i. All other pixels match; RGB classes 30 before / 30 final, 0 shared. No bounds change. Memory reports are per-process root-lifetime peak through capture
+and exit, rather than first-frame live memory.
+
+The focused 1024×768 viewport is exact. Fresh observed saving plus prior carry 0
+is **13,871,355** for the 5M gate. Six actual zero exits pass CSS 31/SVG 10/layout 46 in both GC modes: **174 executions**. All **19 screenshot comparisons pass, 16 exact**. Known differences remain inline-node 13, text-decorations 1,341 and canvas-text 1,994.
+The next frozen control is **117**. Only an accepted
+candidate with actual broad passes resets the broad baseline and observed carry.
+
+The isolated app `/Users/alex/code/vox2/Build/v/Vox-opt117.app` passes library pinning, signing,
+signature verification, startup and actual collections with default marker 1 and
+override 2. Its native instruction text matches the measured binary. The canonical
+app is preserved; independent Root work and the GUI receive no performance credit.
+Normal binary SHA256 `be1dd6a39b7c627cf88282ca345e02ef216eca0c6b22567437f75c64fd16d52a`;
+normal C SHA256 `551413253fbbe61ea1bee94bfccfaf460ed6a7bde3c4daed7928337419ce4bcd`.
+Exact compressed C/profile/test/binary archives and hashes are recorded in
+`Build/v/instruction-opt117-durable-archives.json`. Failed audit/preparation
+receipts remain alongside corrections. **Chrome parity remains unestablished**:
+the earlier Chrome count uses a different endpoint and hydrated content.
+
 ## Causes and changes
 
 - The V 0.5.2 compatibility compiler's `-prod` Boehm code repeatedly snapshots

@@ -2099,6 +2099,16 @@ evidence](docs/translation-audit/NATIVE_MEDIA_WHEEL_RAW_HANDLER.md).
   Frozen116/control and broad baseline; observed carry resets to 0 after actual passes.
   Same 4 GiB/frozen helper/GC1+override2; isolated app; Root/canonical/GUI preserved.
   Failed standalone/reader/preparation receipts retained; Chrome parity remains open.
+  Lazy cold style maps round 117 (`82ca20c6`) retain the pseudo map and defer three others.
+  Root 7 cases: 112/106 asserts; common 60/config; 25 DOM18/CSS3/HTML4 contracts per GC pass.
+  Local 16 complete public pipelines: -2.13%, 2/3 wins; all six samples retained.
+  Page 16,795,334,683 → 16,781,463,328; 26/30 wins.
+  Point saving 13,871,355; paired interval [10,826,526.5, 19,776,099]; credit 13,871,355.
+  Broad: 87 both GC/174 executions, 19 screenshots/16 exact; focused viewport exact.
+  Strict C/source/file-table audit; independent-only getters authenticated; 60 primaries retained.
+  Next control 117; observed carry 0 after completed broad checks.
+  Same 4 GiB/frozen helpers/GC1+override2; isolated app; Root/canonical/GUI preserved.
+  Initial audit/preparation failures retained; Chrome parity remains open.
 - Outside instruction-count optimization, run broad regression suites once per
   ten completed fixes, not after every fix.
   Broad suites include full translation/package test batches, the full LibJS AST
