@@ -993,8 +993,12 @@ pub fn (n &Node) next_sibling() ?&Node {
 }
 
 pub fn (n &Node) root() &Node {
-	parent := n.parent() or { return n }
-	return parent.root()
+	// Follow the live parent links without recursive frames or temporary options.
+	mut current := n
+	for current.parent_ != unsafe { nil } {
+		current = current.parent_
+	}
+	return current
 }
 
 // ===== NonDocumentTypeChildNode mixin (https://dom.spec.whatwg.org/#nondocumenttypechildnode) =====
