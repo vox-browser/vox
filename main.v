@@ -1003,6 +1003,7 @@ fn cached_snapshot_path(resource_url string) string {
 }
 
 fn fetch_page(address string, base string) !LoadedPage {
+	fetch_start := time.sys_mono_now()
 	resolved := resolve_url(address, base)
 	if resolved == 'about:home' || resolved == 'about:blank' {
 		return LoadedPage{
@@ -1030,6 +1031,7 @@ fn fetch_page(address string, base string) !LoadedPage {
 		return error('Unsupported URL scheme')
 	}
 	result := browsernet.get(adblock.Request{url: resolved, source_url: resolved, request_type: 'main_frame'}, tls_ca_bundle())!
+	cache_start := debug_timing_checkpoint('main_resource_fetch', fetch_start)
 	response := result.response
 	content_type := response.header.get(.content_type) or { 'text/html' }
 	// HTTP error responses can contain a real document, including a site's
@@ -1048,6 +1050,7 @@ fn fetch_page(address string, base string) !LoadedPage {
 	if response.status_code < 400 {
 		cache_loaded_page(loaded)
 	}
+	debug_timing_checkpoint('main_resource_cache', cache_start)
 	return loaded
 }
 
