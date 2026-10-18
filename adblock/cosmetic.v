@@ -1,7 +1,5 @@
 module adblock
 
-import json2
-
 pub struct DocumentFilters {
 pub:
 	css        string
@@ -17,8 +15,8 @@ pub fn document_filters(document_url string, tokens []string) !DocumentFilters {
 		&& !document_url.starts_with('http://')) {
 		return DocumentFilters{}
 	}
-	result := evaluate_engine('JSON.stringify(voxDocumentFilters(${json2.encode(document_url, escape_unicode: true)}, ${json2.encode(tokens, escape_unicode: true)}))')!
-	return json2.decode[DocumentFilters](result)
+	result := evaluate_engine('JSON.stringify(voxDocumentFilters(${encode_transport_json(document_url)}, ${encode_transport_json(tokens)}))')!
+	return decode_transport_json[DocumentFilters](result)
 }
 
 // Run the publisher's procedural-selector implementation against the browser's
@@ -34,7 +32,7 @@ pub fn procedural_script(filters DocumentFilters) string {
 		const owner={addCSS:code=>styles.push(code),commit(){},hasListeners:()=>false};
 		const procedural=new vAPI.DOMProceduralFilterer(owner);
 		vAPI.domFilterer={proceduralFilterer:procedural};
-		procedural.addProceduralSelectors(${json2.encode(filters.procedural, escape_unicode: true)}.map(s=>JSON.parse(s)));
+		procedural.addProceduralSelectors(${encode_transport_json(filters.procedural)}.map(s=>JSON.parse(s)));
 		const proceduralCSS=()=>"/* vox procedural filters */\\n"+styles.join("\\n");
 		globalThis.__voxAdblockProceduralCSS=proceduralCSS;
 		globalThis.__voxAdblockApplyProcedural=()=>{procedural.commitNow();return proceduralCSS()};
