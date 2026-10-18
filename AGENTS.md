@@ -1993,6 +1993,17 @@ evidence](docs/translation-audit/NATIVE_MEDIA_WHEEL_RAW_HANDLER.md).
   Page credit0; retain104 control/broad baseline and observed carry0.
   Completed artifact bytes remain in verified archives; no passing case repeated.
   Same4GiB; Root/canonical/GUI preserved; Chrome parity remains open.
+  Full rendered-text grapheme cache `779b8408` uses five authored hunks/three paths.
+  29 common functional cases pass 22,107 assertions/configuration; six contracts
+  pass 25,011/GC. Five original bodies remain exact; one absent innerText setup
+  call is omitted, all assertions retained. Initial compiler/gate exits1 archived.
+  Complete public Unicode layout/recording batches use 2.02% fewer instructions.
+  Page point saving 15,827,270, 25/30 wins;
+  paired interval [5,067,656, 35,767,997.5], repeatable credit 15,827,270.
+  Broad verification: 87 selected cases both GC; 19 screenshots/16 exact;
+  focused Unicode/overflow viewport exact; observed carry 0.
+  Segmentation, Unicode tables, substring context, 4 GiB and GC unchanged.
+  Root/canonical/GUI preserved; Chrome parity remains open.
 - Outside instruction-count optimization, run broad regression suites once per
   ten completed fixes, not after every fix.
   Broad suites include full translation/package test batches, the full LibJS AST

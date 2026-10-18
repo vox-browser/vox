@@ -10669,6 +10669,149 @@ foreign working edits/commits remain preserved. Durable test/local C hashes are
 in instruction-opt105-artifact-archives.json. Equivalent-workload Chrome
 accounting is still open; **faster-than-Chrome performance remains unproven**.
 
+## Cache complete rendered-node grapheme boundaries
+
+Round 106 ports Alexander Medvednikov's already committed `779b8408` onto
+accepted frozen 104. Five exact authored hunks touch only layout/node.v,
+layout/inline_level_iterator.v and layout/text_node_chunks.v. A TextNode lazily
+owns the complete rendered-text boundary vector; chunk iterators and overflow
+splitting read it. Rendered-text invalidation replaces its header so retained
+iterators keep their immutable earlier vector. Font-generation changes retain
+the boundaries while rebuilding font/context data. Fragment/first-letter
+substring segmentation, the Unicode algorithm and tables remain unchanged;
+the numeric-interval feature `68fcaf57` and unrelated newer Root work are excluded.
+
+All **29 common functional cases**, plus one inactive diagnostic, pass three
+C-O2 configurations: before/Boehm, final/Boehm and final/no-GC, **22,107 assertions
+each**. Common SHA256 `767b338aad8266910389a68a6553f46ded0c109b428090d792f495402b72a821`.
+The original six-contract harness initially fails V checking in both modes:
+`collect_dom_rendered_text` belongs to a newer, absent innerText feature. Both
+actual exits 1 occur before any case runs; the failed gate/start/archive receipts
+remain in instruction-opt106-unavailable-innertext-helper-finding. Only that
+one unavailable setup call is omitted. **Five original case bodies remain
+byte-exact; the sixth retains every assertion/expected value**, with only that
+call removed. Two oracle helpers use exact frozen 104 iterator/overflow bodies,
+renamed. Both modes then pass **six cases/25,011 assertions**. Cache
+laziness/empty validity, wrap modes/direction, ownership/GC/invalidation, DOM
+replacement, transforms/language/password/generated/source ranges, font changes
+and overflow glyph context are covered. The absent innerText fast collection
+path is explicitly **not covered**. No performance runtime or Root file changes
+for this harness repair; no passing case is repeated.
+
+Three fixed alternating local pairs count **32 complete public layout and
+recording rebuilds** over 64 Unicode paragraphs with combining marks, ZWJ families,
+flags, RTL/CJK, intrinsic inline blocks, absolute children, 4 shadows and 2 effect
+groups. Public invalidation, fresh mirrors, style/formatting/geometry, recording
+and command checksums are counted. Setup, eight warmups, expected checksum/text-presence
+assertions and forced GC are outside the counter. All six actual exits 0 share
+checksum **74,728,352**. The checksum traverses command
+kinds/text/color lengths, coordinates, points and glyph counts; it does not hash
+full glyph contents. No private helper loop or profile time substitutes for
+hardware instructions.
+
+| Pair | Before retired instructions | Candidate retired instructions |
+| --- | ---: | ---: |
+| 1 | 18,549,648,019 | 18,204,866,895 |
+| 2 | 18,609,899,210 | 18,234,776,372 |
+| 3 | 18,654,245,507 | 18,240,734,696 |
+
+Local medians **18,609,899,210 → 18,234,776,372**, change
+**-2.015717%**, **3/3 wins**. This is a local result with
+no independent page credit.
+
+The strict generated-C audit authenticates all five authored hunks, the three
+edited functions and one new getter against independent whole-app C generation
+with no native/runtime execution. The TextNode record gains exactly one `Array_int`;
+automatic empty-array defaults/equality are projected back to their originals.
+All other executable C, records/globals/resources, Unicode segmentation/tables,
+CSS decoder/filtering/arenas and heap/GC policy match after established compiler
+identities, exact unchanged assertion-line mapping, 37 frozen includes and four
+byte-identical helper reorderings. Actual frontend file tables and 120 native
+input hashes match; native arguments differ only in artifact paths. Audit and
+archive hashes remain in instruction-opt106-c-audit-result.json and provenance.
+
+C-O1/Boehm/default marker 1 `-profile-no-inline` runs actually exit 0 with full
+process instrumentation, no filter/reset. These call counts are selection and
+mechanism evidence; profile timings receive no hardware/page credit.
+
+| Full-process diagnostic function | Before calls | Candidate calls |
+| --- | ---: | ---: |
+| `layout__opt106_complete_public_document_layout` | 41 | 41 |
+| `layout__run_document_layout` | 42 | 42 |
+| `dom__Document_record_display_list` | 41 | 41 |
+| `layout__BlockBox_flat_paint_commands_for_entries` | 41 | 41 |
+| `layout__lower_visual_layers` | 41 | 41 |
+| `layout__append_text_fragment_commands` | 18,368 | 18,368 |
+| `layout__text_grapheme_boundaries` | 35,200 | 24,448 |
+| `layout__TextNodeChunkIterator__static__new_with_direction` | 11,008 | 11,008 |
+| `layout__InlineLevelItem_split_for_overflow_break` | 0 | 0 |
+| `layout__TextNode_grapheme_boundaries_for_rendered_text` | 0 | 11,008 |
+
+The local profile records no overflow-splitting calls; the focused contracts
+exercise that consumer separately.
+
+The normal candidate is `Build/v/Vox-opt106-grapheme-cache-bin`,
+SHA256 `71728dae0dae1743f0d3dcb95a5d406ec2afd0a849bfaaf777d4bfa9ecb11dd7`;
+compiled C SHA256 `0b9bb1a47bfef3e5fe3618ab4d0832abe12a9b2c6c19f19dd5d184dfd9496b1d`.
+Both persisted regular binaries use the same frozen 4e helper, confirmed by
+actual loader logs. SSD caches, 4 GiB heap hint, one default GC marker, child-only
+placement and 1024×768 document viewport match. No prod/prealloc or heap increase.
+
+The predeclared **30 alternating pairs**, seed 106/**30,000 bootstrap resamples**,
+retain all 60 first `navigation_to_first_document_paint[0]` observations:
+**17,328,706,568.5 → 17,312,879,298.5** retired
+instructions, point saving **15,827,270**
+(**-0.091336%**), **25/30 wins**.
+Paired median saving **18,229,091**; 95% paired interval
+**[5,067,656, 35,767,997.5]**; repeatable credit **15,827,270**. The positive paired interval permits this credit.
+There are **60 real PNGs**, startup retry records **0**,
+recovered primary records `[]`, post-primary refreshes `[]`,
+and **0** external foreground transitions. Completed primaries are neither discarded nor repeated.
+Each primary has 1 install/2 geometry/1 paint preparation; later work stays separate.
+Lifetime memory peaks through capture/exit are recorded, not first-frame/live
+memory, and overlapping checkpoint counters are never summed. All 60 decoded RGB
+captures differ only in the original skeleton bands, x45–662/y335–344 and ten
+14px bands starting at 380 with 41px spacing. All other pixels match; 30 control
+and 30 candidate classes, 1 shared. No bounds change.
+
+The Unicode/ZWJ/flag/RTL/CJK/overflow/transform viewport is **pixel-exact**.
+Explicit child argv pins the frozen helper after protected env/sh launch sites;
+actual loader path/hash receipts are retained. Six actual zero exits pass CSS 31,
+SVG 10 and layout 46 in both GC modes: **174 executions**. All **19 screenshot
+comparisons pass, 16 exact**. Known differences remain inline-node 13,
+text-decorations 1,341 and canvas-text 1,994. Actual broad completion resets
+observed carry to 0. The 87 selected
+harness bodies/assertions/expected values are unchanged from 104; its earlier
+image-accessor representation port remains separately authenticated.
+
+The isolated app is `Build/v/Vox-opt106.app`. Signatures, startup, installed
+frozen helper and native instruction-text identity pass. GC checks observe
+actual collections at default marker 1 and override 2. Canonical/GUI browsers
+remain preserved. The next frozen performance control is 106.
+
+Target selection also uses a fresh accepted 104 C-O1 call report, extracted
+read-only after a **post-primary capture watchdog**. The original observer and
+controller actually exit1; one genuine primary is retained, without PNG.
+Final browser exit, full lifecycle completion and per-copy runtime fingerprint
+remain **unknown**. Call-report extraction exits0 without rerunning that primary;
+counts may include later lifecycle work and are not first-frame-only. Its
+122,562,131,653 instrumented instructions and profile timings receive **zero**
+page or Chrome credit. The selected grapheme call count is 10,874. A separate
+native inspection rules out a raw-loop rewrite of Node.root: C-O2 already emits
+a compact five-instruction tail loop; static instructions are not multiplied by
+C-O1 call counts to invent savings.
+
+After 105, **76** additional completed 70–104 raw-C duplicates were removed only
+after byte-exact durable gzip verification. Receipt
+instruction-post105-small-c-cleanup.json retains original paths/hashes/archive
+hashes; the 104 candidate C, normal binaries, sources, bundles, libraries,
+logs/results and all current work remain. No runtime was repeated to recover an
+artifact. Generated-C/profile evidence is durable and hash-indexed under Build/v.
+Independent Root work, newer app bundles and the user's GUI remain preserved.
+Equivalent-workload Chrome content/start/submission accounting remains open;
+**faster-than-Chrome performance is unproven**. Round 106 evidence is in
+Build/v/instruction-opt106-* and Build/instructions/vox-opt106-interleaved-*.
+
 ## Causes and changes
 
 - The V 0.5.2 compatibility compiler's `-prod` Boehm code repeatedly snapshots
