@@ -1189,6 +1189,9 @@ fn (mut tokenizer Tokenizer) consume_a_number() Number {
 	// Keep the same consumption algorithm and parse its terminated spelling.
 	start_byte_offset := tokenizer.current_byte_offset()
 	mut type_ := NumberType.integer
+	mut integer_value := u64(0)
+	mut integer_is_exact := true
+	mut has_integer_digit := false
 
 	// 2. If the next input code point is U+002B PLUS SIGN (+) or U+002D HYPHEN-MINUS (-),
 	// consume it and append it to repr.
@@ -1207,6 +1210,12 @@ fn (mut tokenizer Tokenizer) consume_a_number() Number {
 		}
 
 		_ = tokenizer.next_code_point()
+		has_integer_digit = true
+		if integer_is_exact {
+			// The previous value is at most 2^53, so this step cannot overflow u64.
+			integer_value = integer_value * 10 + u64(digits - `0`)
+			integer_is_exact = integer_value <= u64(9007199254740992)
+		}
 	}
 
 	// 4. If the next 2 input code points are U+002E FULL STOP (.) followed by a digit, then:
@@ -1266,7 +1275,13 @@ fn (mut tokenizer Tokenizer) consume_a_number() Number {
 	}
 
 	// 6. Convert repr to a number, and set the value to the returned value.
-	value := tokenizer.convert_a_string_to_a_number(tokenizer.input_since(start_byte_offset))
+	// Integers through 2^53 convert exactly. Preserve the sign of zero; fractions,
+	// exponents, larger integers and the private empty consumer keep the converter.
+	value := if type_ == .integer && has_integer_digit && integer_is_exact {
+		if is_hyphen_minus(next_input) { -f64(integer_value) } else { f64(integer_value) }
+	} else {
+		tokenizer.convert_a_string_to_a_number(tokenizer.input_since(start_byte_offset))
+	}
 
 	// 7. Return value and type.
 	if type_ == .integer && has_explicit_sign {
