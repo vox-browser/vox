@@ -18,11 +18,21 @@ function __trackElementEdits(state){
 for(const state of Object.values(__state.elements))__trackElementEdits(state);
 __state.elements=new Proxy(__state.elements,{set(target,key,state){return Reflect.set(target,key,__trackElementEdits(state));}});
 function __pendingElementStates(includeCanvases){
- const pending=Object.create(null),candidates=includeCanvases?Object.values(__state.elements):__dirtyElementStates;
- for(const state of candidates){
-  if(state.attributesDirty||state.textContentDirty||state.innerHTMLDirty||state.checkedDirty||state.indeterminateDirty||(includeCanvases&&state.canvasNative))pending[state.bridgeKey]=state;
+ const pending=Object.create(null);
+ for(const state of __dirtyElementStates){
+  if(state.attributesDirty||state.textContentDirty||state.innerHTMLDirty||state.checkedDirty||state.indeterminateDirty)pending[state.bridgeKey]=state;
   else __dirtyElementStates.delete(state);
  }
+ if(includeCanvases)for(const key of Object.keys(__canvases)){
+  const state=__canvases[key].state;
+  if(state.canvasNative&&__state.elements[state.bridgeKey]===state)pending[state.bridgeKey]=state;
+ }
  return pending;
+}
+function __clearPendingElementEdits(){
+ for(const state of __dirtyElementStates){
+  state.innerHTMLDirty=false;state.textContentDirty=false;state.attributesDirty=false;state.checkedDirty=false;state.indeterminateDirty=false;
+  __dirtyElementStates.delete(state);
+ }
 }'
 }
