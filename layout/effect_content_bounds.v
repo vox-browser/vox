@@ -20,6 +20,10 @@ fn (mut bounds EffectContentBounds) include(rect LayoutRect) {
 }
 
 fn effect_leaf_ink_bounds(command &PaintCommand) ?LayoutRect {
+	return effect_leaf_ink_bounds_with_precision_guard(command, false)
+}
+
+fn effect_leaf_ink_bounds_with_precision_guard(command &PaintCommand, native_precision bool) ?LayoutRect {
 	mut rect := LayoutRect{command.x, command.y, command.width, command.height}
 	mut outset := f64(0)
 	match command.kind {
@@ -66,17 +70,50 @@ fn effect_leaf_ink_bounds(command &PaintCommand) ?LayoutRect {
 		'draw_text' {
 			if command.glyph_orientation != .horizontal { return none }
 			run := command.glyph_run or { return none }
+			if native_precision && (math.abs(command.glyph_translation_x) > 1_000_000
+				|| math.abs(command.glyph_translation_y) > 1_000_000) { return none }
 			ink := run.bounding_box()
 			rect = LayoutRect{command.glyph_translation_x + f64(ink.x), command.glyph_translation_y + f64(ink.y), f64(ink.width), f64(ink.height)}
 		}
 		else { return none }
 	}
 	rect = LayoutRect{rect.x - outset, rect.y - outset, rect.width + outset * 2, rect.height + outset * 2}
+	if native_precision {
+		// Native drawing rounds its geometry and matrix to float32. Large
+		// cancelling coordinates can move ink across the canvas edge; retain
+		// those draws rather than relying on the float64 replay bounds.
+		matrix := normalized_affine(command.transform)
+		mut scale := f64(1)
+		for index in 0 .. 6 {
+			if math.is_nan(matrix[index]) || math.is_inf(matrix[index], 0) { return none }
+			if index < 4 { scale = math.max(scale, math.abs(matrix[index])) }
+		}
+		if math.abs(matrix[4]) > 1_000_000 || math.abs(matrix[5]) > 1_000_000 { return none }
+		for value in [rect.x, rect.y, rect.x + rect.width, rect.y + rect.height]! {
+			if math.abs(value) * scale > 1_000_000 { return none }
+		}
+	}
 	mapped := compatibility_affine_map_rect(command.transform, rect)
 	for value in [mapped.x, mapped.y, mapped.width, mapped.height]! {
 		if math.is_nan(value) || math.is_inf(value, 0) { return none }
 	}
 	return mapped
+}
+
+// Only ordinary leaves are eligible. Callers keep resource/effect command
+// groups intact: offscreen source pixels can still feed a filter or mask.
+pub fn paint_leaf_is_outside_canvas(command &PaintCommand, page_x f64, page_y f64,
+    width f64, height f64) bool {
+    if command.outer_shadow || command.blur != 0 || width <= 0 || height <= 0 { return false }
+    for value in [page_x, page_y, width, height]! {
+        if math.is_nan(value) || math.is_inf(value, 0) || math.abs(value) > 1_000_000 { return false }
+    }
+    bounds := effect_leaf_ink_bounds_with_precision_guard(command, true) or { return false }
+    if bounds.width <= 0 || bounds.height <= 0 { return false }
+    // Keep an extra CSS-pixel fringe beyond the native raster guards, including
+    // fractional transforms and antialiased clips at either backing density.
+    return bounds.x + page_x > width + 3 || bounds.y + page_y > height + 3
+        || bounds.x + bounds.width + page_x < -3 || bounds.y + bounds.height + page_y < -3
 }
 
 fn bound_visual_effect_contents(mut commands []PaintCommand) {

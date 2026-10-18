@@ -358,6 +358,7 @@ struct BrowserApp {
 mut:
 	paint_colors                        PaintColorCache
 	scroll_profile                      BrowserScrollProfile
+	paint_canvas_culling_disabled       bool
 	ctx                                 &gg.Context = unsafe { nil }
 	page_model                          &page.Page = unsafe { nil }
 	js_runtime                          &browserjs.Runtime = unsafe { nil }
@@ -6614,9 +6615,17 @@ fn (mut app BrowserApp) draw() {
 		}
 		draw_srgb_rect(app.ctx, 0, 0, f32(window.width), f32(window.height), gg.rgb(255, 255, 255))
 		page_y := app.page_top()
-		for command in app.paint_commands {
+		mut culling := PaintCanvasCulling{}
+		$if macos {
+			culling.enabled = app.ctx.native_rendering && !app.paint_canvas_culling_disabled
+		}
+		for command_index in 0 .. app.paint_commands.len {
 			platform.cooperative_work_checkpoint()
-			app.draw_command(command, 0, page_y, window.height)
+			command := unsafe { &app.paint_commands[command_index] }
+			if culling.skip(command, 0, f64(page_y), f64(window.width), f64(window.height)) {
+				continue
+			}
+			app.draw_command(*command, 0, page_y, window.height)
 		}
 		app.flush_rounded_rect_underlay(0, page_y, window.height)
 		for index in app.portable_shadow_image_index .. app.portable_shadow_images.len {
@@ -7096,6 +7105,7 @@ fn main() {
 	mut app := &BrowserApp{
 		markup: markup
 		scroll_profile: scroll_profile_from_environment()
+		paint_canvas_culling_disabled: os.getenv('VOX_DISABLE_CANVAS_CULLING') == '1'
 		source_label: source_label
 		address: initial_url
 		address_cursor: initial_url.runes().len
