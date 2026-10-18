@@ -12,6 +12,7 @@ from contextlib import contextmanager
 import json
 import os
 from pathlib import Path
+import re
 import subprocess
 import time
 from types import SimpleNamespace
@@ -26,6 +27,40 @@ from process_instruction_counts import MacCounters, ProcessTreeCounter, CounterS
 from reddit_browser_instructions import FrozenAssetsCDP, evaluate_pairs, native_environment
 
 REPO = Path(__file__).resolve().parents[1]
+
+
+def runtime_overrides():
+    # Boehm reads more than the four common heap/marker controls. In
+    # particular GC_DONT_GC and GC_ENABLE_INCREMENTAL change the workload.
+    # dyld search overrides can silently replace the linked collector too.
+    return {k: v for k, v in os.environ.items()
+            if k.startswith(('GC_', 'DYLD_'))}
+
+
+def linked_collector(binary):
+    """Resolve the macOS collector with the default dyld search environment."""
+    dependencies = subprocess.check_output(['otool', '-L', str(binary)], text=True)
+    library = next((line.strip().split(' (', 1)[0] for line in dependencies.splitlines()[1:]
+                    if re.search(r'(^|/)libgc(?:\.\d+)*\.dylib \(', line.strip())), None)
+    if library is None:
+        raise RuntimeError('Production comparison requires a linked Boehm collector')
+
+    def expand(path):
+        for token in ['@executable_path', '@loader_path']:
+            if path == token or path.startswith(token + '/'):
+                return binary.parent / path[len(token):].lstrip('/')
+        return Path(path)
+
+    if library.startswith('@rpath/'):
+        commands = subprocess.check_output(['otool', '-l', str(binary)], text=True)
+        paths = re.findall(r'cmd LC_RPATH\s+cmdsize \d+\s+path (.*?) \(offset \d+\)', commands)
+        candidates = [expand(p) / library[len('@rpath/'):] for p in paths]
+    else:
+        candidates = [expand(library)]
+    for path in candidates:
+        if path.is_file(): return path.resolve()
+    raise RuntimeError('Cannot resolve the linked Boehm collector')
+
 STATE = r'''JSON.stringify({url:location.href,title:document.title,ready:document.readyState,
  width:innerWidth,height:innerHeight,scale:devicePixelRatio,text:document.body?.innerText||'',
  fonts:document.fonts.status,images:[...document.images].map(i=>{const r=i.getBoundingClientRect();
@@ -232,10 +267,9 @@ def main():
     if args.mode=='compare' and args.expected is None:p.error('Comparison requires an immutable expected image')
     if args.mode=='compare' and (args.repeat != 7 or args.adblock_reference is None):
         p.error('Comparison requires seven pairs and a live full-uBO reference receipt')
-    collector_environment = {k:os.environ[k] for k in ['GC_INITIAL_HEAP_SIZE',
-        'GC_MAXIMUM_HEAP_SIZE','GC_FREE_SPACE_DIVISOR','GC_MARKERS'] if k in os.environ}
+    collector_environment = runtime_overrides()
     if args.mode=='compare' and collector_environment:
-        p.error('Production comparison requires the default collector environment')
+        p.error('Production comparison requires the default collector and loader environment')
     metadata = profile_metadata(args)
     if args.adblock_reference:
         reference = json.loads(args.adblock_reference.read_text())
@@ -253,6 +287,8 @@ def main():
         *[REPO/'tools'/name for name in ['measure_browser_instructions.py','process_instruction_counts.py',
             'pikabu_browser_instructions.py','reddit_browser_instructions.py','probe_frozen_github_chrome.py']]]
     inputs += [f for f in [args.expected,args.adblock_reference,args.profile.with_suffix('.json')] if f]
+    if args.mode == 'compare':
+        inputs.append(linked_collector(args.vox))
     pinned={str(f):digest(f) for f in inputs}
     cache_hash=fingerprint_tree(args.cache)['sha256']
     api=MacCounters();pairs=[]
@@ -263,7 +299,7 @@ def main():
             prefix=args.output/f'pair-{index+1}.{engine}'
             report=(run_vox if engine=='vox' else run_brave)(args,prefix,api)
             if report['unreadable_pids']:raise RuntimeError('Unreadable process counters')
-            report['collector_environment']={k:os.environ[k] for k in ['GC_INITIAL_HEAP_SIZE','GC_MAXIMUM_HEAP_SIZE','GC_FREE_SPACE_DIVISOR','GC_MARKERS'] if k in os.environ}
+            report['collector_environment']=runtime_overrides()
             if args.expected:
                 verdict=compare(args.expected,Path(report['screenshot']),Path(str(prefix)+'.diff.png'),REPO/'Build/pixel-equality/pixel_diff')
                 report['pixel_comparison']=verdict;report['pixels_exact']=verdict['exact']
@@ -285,7 +321,7 @@ def main():
     if args.mode=='compare':
         summary=evaluate_pairs(pairs)
         summary.update(pairs=pairs,pinned_sha256=pinned,cache_sha256=cache_hash,scope=__doc__,
-            collector_environment={k:os.environ[k] for k in ['GC_INITIAL_HEAP_SIZE','GC_MAXIMUM_HEAP_SIZE','GC_FREE_SPACE_DIVISOR','GC_MARKERS'] if k in os.environ})
+            collector_environment=runtime_overrides())
         (args.output/'summary.json').write_text(json.dumps(summary,indent=2)+'\n')
         print(json.dumps({k:v for k,v in summary.items() if k not in ['pairs','pinned_sha256','scope']}),flush=True)
         return 0 if summary['passed'] else 1

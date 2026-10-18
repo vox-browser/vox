@@ -93,11 +93,11 @@ be new. `--mode vox` and `--mode brave` capture one diagnostic run each.
 
 The comparison pins the native executable and colocated dylibs, Brave,
 extension, prepared profile, filter assets, expected image, archive, offline
-guard, checker, driver and audit sources. Each launch receives a fresh cache
+guard, checker, driver, audit sources and the resolved Boehm runtime. Each launch receives a fresh cache
 or profile clone. The native capture must contain the loaded CNN display
 fonts and decoded visible images. Each measured Vox request log is checked
 against the full extension outside the counted interval. Collector environment
-overrides are rejected for production comparisons.
+and dyld loader overrides are rejected for production comparisons.
 
 Filter audits also receive a fresh copy of the pinned prepared profile through
 `brave_parity.mjs --profile-template`. Process locks and the old debugging
