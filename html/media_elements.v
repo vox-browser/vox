@@ -14,6 +14,9 @@ import math
 import painting
 import platform
 
+// MediaControlsDOM embeds the linked stylesheet as a shadow-root style element.
+const media_controls_stylesheet_source = $embed_file('media_controls.css').to_string()
+
 pub enum VideoRepresentation {
 	video_frame
 	first_video_frame
@@ -940,6 +943,11 @@ pub fn (mut controls MediaControls) create_shadow_tree() {
 			shadow := media_element.attach_a_user_agent_shadow_root(.named)
 			controls.owned_shadow_root_ = shadow
 			document := media_element.document()
+			mut style := dom.create_element(document, 'style', ns_html, none, none, false) or { panic(err) }
+			mut style_node := style.as_node()
+			style_node.set_text_content(media_controls_stylesheet_source) or { panic(err) }
+			mut root_node := unsafe { &dom.Node(shadow) }
+			root_node.append_child(style_node) or { panic(err) }
 			mut container := dom.create_element(document, 'div', ns_html, none, none, false) or {
 				controls.update()
 				controls.show_controls()
