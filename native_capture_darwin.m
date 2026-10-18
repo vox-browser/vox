@@ -2253,6 +2253,7 @@ typedef struct {
 	int has_graph_bounds;
 	int routes_pattern_paint;
 	int active;
+	int copies_to_fresh_frame;
 } NativeCSSFilterLayer;
 
 static NativeCSSFilterLayer native_css_filter_stack[NATIVE_CSS_FILTER_MAX_DEPTH];
@@ -2412,7 +2413,15 @@ void native_set_rect_clip_outs(const double *rects, int count) {
 }
 
 void native_begin_font_compositing_layer(float width, float height) {
+	CGContextRef destination = [[NSGraphicsContext currentContext] CGContext];
+	int fresh_destination = native_layer_claim_document_bitmap(destination);
+	int previous_depth = native_css_filter_stack_depth;
 	native_begin_css_filter_layer(width, height);
+	if (fresh_destination && native_css_filter_stack_depth == previous_depth + 1) {
+		NativeCSSFilterLayer *layer = &native_css_filter_stack[previous_depth];
+		if (layer->active && layer->destination == destination)
+			layer->copies_to_fresh_frame = 1;
+	}
 	native_font_compositing_context = [[NSGraphicsContext currentContext] CGContext];
 	native_font_compositing_transparency_depth = 0;
 #ifdef LADYBIRD_V_HAS_SKIA_TEXT
@@ -3581,9 +3590,9 @@ void native_end_css_filter_layer(void) {
 				colorSpace:native_css_filter_color_space];
 		}
 		if (filtered_image != NULL && layer.destination != NULL) {
-			CGContextDrawImage(layer.destination,
+			native_layer_draw_document_image(layer.destination,
 				CGRectMake(0, 0, layer.canvas_width, layer.canvas_height),
-				filtered_image);
+				filtered_image, layer.copies_to_fresh_frame);
 			CGImageRelease(filtered_image);
 		}
 	}

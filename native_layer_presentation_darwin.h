@@ -24,6 +24,30 @@ static BOOL native_layer_paint_started;
 static char native_layer_frame_generation_key;
 static char native_layer_frame_bounds_key;
 
+// This surface exists only during one native frame callback. The enclosing
+// document canvas claims it before any pixels are painted; nested canvases
+// and later layers retain ordinary source-over compositing.
+static CGContextRef native_layer_document_bitmap;
+static BOOL native_layer_document_bitmap_claimed;
+
+static BOOL native_layer_claim_document_bitmap(CGContextRef context) {
+    if (!context || context != native_layer_document_bitmap
+        || native_layer_document_bitmap_claimed) return NO;
+    native_layer_document_bitmap_claimed = YES;
+    return YES;
+}
+
+static void native_layer_draw_document_image(CGContextRef context, CGRect rect,
+    CGImageRef image, int fresh_destination) {
+    if (fresh_destination) {
+        CGContextSaveGState(context);
+        CGContextSetBlendMode(context, kCGBlendModeCopy);
+    }
+    CGContextDrawImage(context, rect, image);
+    if (fresh_destination) CGContextRestoreGState(context);
+}
+
+
 static int vox_browser_has_paint_context(void) {
     NSGraphicsContext *context = NSGraphicsContext.currentContext;
     return context != nil && context.CGContext != NULL;
@@ -86,12 +110,18 @@ static CGImageRef native_layer_raster_frame(NSView *view, CGFloat scale, IMP dra
     CGContextTranslateCTM(bitmap, -bounds.origin.x, -bounds.origin.y);
     NSGraphicsContext *previous = NSGraphicsContext.currentContext;
     CGImageRef image = NULL;
+    CGContextRef previous_bitmap = native_layer_document_bitmap;
+    BOOL previous_claimed = native_layer_document_bitmap_claimed;
     @try {
+        native_layer_document_bitmap = bitmap;
+        native_layer_document_bitmap_claimed = NO;
         NSGraphicsContext.currentContext = [NSGraphicsContext
             graphicsContextWithCGContext:bitmap flipped:view.isFlipped];
         ((void (*)(id, SEL, NSRect))draw)(view, @selector(drawRect:), bounds);
         image = CGBitmapContextCreateImage(bitmap);
     } @finally {
+        native_layer_document_bitmap = previous_bitmap;
+        native_layer_document_bitmap_claimed = previous_claimed;
         NSGraphicsContext.currentContext = previous;
         CGContextRelease(bitmap);
     }
