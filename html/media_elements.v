@@ -945,7 +945,7 @@ pub fn (mut controls MediaControls) create_shadow_tree() {
 				controls.show_controls()
 				return
 			}
-			container.set_attribute_value('class', if is_video { 'media-controls video' } else { 'media-controls audio' })
+			container.set_attribute_value('class', if is_video { 'container video' } else { 'container audio' })
 			if is_video {
 				mut overlay := dom.create_element(document, 'div', ns_html, none, none, false) or { panic(err) }
 				overlay.set_attribute_value('class', 'video-overlay')
@@ -958,11 +958,13 @@ pub fn (mut controls MediaControls) create_shadow_tree() {
 			mut container_node := container.as_node()
 			container_node.append_child(bar.as_node()) or { panic(err) }
 			controls.dom_.control_bar = bar
+			mut button_bar := dom.create_element(document, 'div', ns_html, none, none, false) or { panic(err) }
+			button_bar.set_attribute_value('class', 'button-bar')
 			mut created := []&dom.Element{}
-			for class_name in ['play-pause-icon', 'timeline-fill', 'timestamp', 'volume-area',
-				'volume-fill', 'mute-button', 'fullscreen-button', 'placeholder-circle'] {
+			for class_name in ['timeline-fill', 'play-pause-icon', 'timestamp', 'mute-button',
+				'volume-area', 'volume-fill', 'fullscreen-button', 'placeholder-circle'] {
 				if class_name in ['fullscreen-button', 'placeholder-circle'] && !is_video { continue }
-				tag_name := if class_name == 'play-pause-icon' { 'svg' } else if class_name in ['mute-button', 'fullscreen-button'] { 'button' } else { 'div' }
+				tag_name := if class_name == 'play-pause-icon' { 'svg' } else if class_name == 'timestamp' { 'span' } else if class_name in ['mute-button', 'fullscreen-button'] { 'button' } else { 'div' }
 				namespace := if class_name == 'play-pause-icon' { 'http://www.w3.org/2000/svg' } else { ns_html }
 				mut child := dom.create_element(document, tag_name, namespace, none, none, false) or { continue }
 				child.set_attribute_value('class', match class_name {
@@ -973,7 +975,7 @@ pub fn (mut controls MediaControls) create_shadow_tree() {
 				})
 				mut parent_node := if class_name == 'placeholder-circle' {
 					(controls.dom_.video_overlay or { panic('Missing video overlay') }).as_node()
-				} else { bar.as_node() }
+				} else if class_name == 'timeline-fill' { bar.as_node() } else { button_bar.as_node() }
 				if class_name == 'play-pause-icon' {
 					child.set_attribute_value('viewBox', '0 0 24 24')
 					for index, geometry in ['m6 5 13 7-13 7Z', 'M14 5h4v14h-4Zm-4 0H6v14h4z'] {
@@ -1079,17 +1081,19 @@ pub fn (mut controls MediaControls) create_shadow_tree() {
 				}
 				created << child
 			}
+			mut bar_node := bar.as_node()
+			bar_node.append_child(button_bar.as_node()) or { panic(err) }
 			mut shadow_node := unsafe { &dom.Node(shadow) }
 			shadow_node.append_child(container.as_node()) or {}
 			controls.dom_.container = container
 			expected_children := if is_video { 8 } else { 6 }
 			if created.len == expected_children {
-				controls.dom_.play_pause_icon = created[0]
-				controls.dom_.timeline_fill = created[1]
+				controls.dom_.timeline_fill = created[0]
+				controls.dom_.play_pause_icon = created[1]
 				controls.dom_.timestamp_element = created[2]
-				controls.dom_.volume_area = created[3]
-				controls.dom_.volume_fill = created[4]
-				controls.dom_.mute_button = created[5]
+				controls.dom_.mute_button = created[3]
+				controls.dom_.volume_area = created[4]
+				controls.dom_.volume_fill = created[5]
 				if is_video {
 					controls.dom_.fullscreen_button = created[6]
 					controls.dom_.placeholder_circle = created[7]

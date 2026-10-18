@@ -58,12 +58,15 @@ fn test_media_controls_bar_groups_widgets_and_preserves_unrelated_visibility_cla
 		mut bar := controls.dom_.control_bar or { panic('Missing control bar') }
 		assert bar.is_html_element() && bar.local_name() == 'div' && bar.document() == document
 		assert (bar.as_node().parent() or { panic('Missing control bar parent') }) == container.as_node()
-		for widget in [controls.dom_.play_button, controls.dom_.timeline_element, controls.dom_.timestamp_element,
+		button_bar := bar.as_node().children_as_vector()[1].as_element() or { panic('Missing button bar') }
+		assert button_bar.get_attribute_value('class') == 'button-bar'
+		for widget in [controls.dom_.play_button, controls.dom_.timestamp_element,
 			controls.dom_.volume_area, controls.dom_.mute_button] {
 			element := widget or { panic('Missing bar widget') }
-			assert (element.as_node().parent() or { panic('Missing widget parent') }) == bar.as_node()
+			assert (element.as_node().parent() or { panic('Missing widget parent') }) == button_bar.as_node()
 		}
 		timeline := controls.dom_.timeline_element or { panic('Missing timeline') }
+		assert (timeline.as_node().parent() or { panic('Missing timeline parent') }) == bar.as_node()
 		track := controls.dom_.timeline_track or { panic('Missing timeline track') }
 		assert (track.as_node().parent() or { panic('Missing timeline track parent') }) == timeline.as_node()
 		area := controls.dom_.volume_area or { panic('Missing volume area') }
@@ -78,7 +81,7 @@ fn test_media_controls_bar_groups_widgets_and_preserves_unrelated_visibility_cla
 			assert kind == 'video'
 			fullscreen_button := controls.dom_.fullscreen_button or { panic('Missing fullscreen button') }
 			assert (icon.as_node().parent() or { panic('Missing fullscreen icon parent') }) == fullscreen_button.as_node()
-			assert (fullscreen_button.as_node().parent() or { panic('Missing fullscreen button parent') }) == bar.as_node()
+			assert (fullscreen_button.as_node().parent() or { panic('Missing fullscreen button parent') }) == button_bar.as_node()
 		} else { assert kind == 'audio' }
 		if placeholder := controls.dom_.placeholder_circle {
 			overlay := controls.dom_.video_overlay or { panic('Missing video overlay') }
