@@ -491,3 +491,10 @@ match the measured candidate after signing; deep signature verification and
 installed headless startup pass. The live Reddit URL is reopened without the
 test network gate. `installed-verification.json` records the new process and
 component checks. Concurrent source, staged work and flat development libraries remain preserved.
+
+A concurrent build replaced the executable immediately after the first install.
+The final recovery preserves that intervening bundle under
+`pre-install-recovery/`, restores the measured components, and repeats signing,
+startup and section checks after an eight-second live launch. The initial
+receipt remains in `installed-verification-initial.json`; the final receipt is
+`installed-verification.json`. Flat development libraries remain untouched.
