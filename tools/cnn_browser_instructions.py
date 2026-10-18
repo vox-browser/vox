@@ -287,8 +287,9 @@ def main():
         *[REPO/'tools'/name for name in ['measure_browser_instructions.py','process_instruction_counts.py',
             'pikabu_browser_instructions.py','reddit_browser_instructions.py','probe_frozen_github_chrome.py']]]
     inputs += [f for f in [args.expected,args.adblock_reference,args.profile.with_suffix('.json')] if f]
-    if args.mode == 'compare':
-        inputs.append(linked_collector(args.vox))
+    collector_path = linked_collector(args.vox) if args.mode == 'compare' else None
+    if collector_path:
+        inputs.append(collector_path)
     pinned={str(f):digest(f) for f in inputs}
     cache_hash=fingerprint_tree(args.cache)['sha256']
     api=MacCounters();pairs=[]
@@ -316,6 +317,8 @@ def main():
         pairs.append(pair)
     if pinned!={f:digest(f) for f in pinned} or cache_hash!=fingerprint_tree(args.cache)['sha256']:
         raise RuntimeError('Pinned binaries or cache changed')
+    if collector_path and linked_collector(args.vox) != collector_path:
+        raise RuntimeError('Collector library resolution changed during the cohort')
     if profile_metadata(args) != metadata:
         raise RuntimeError('Pinned extension/profile changed during the cohort')
     if args.mode=='compare':
