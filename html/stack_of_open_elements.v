@@ -16,6 +16,8 @@ pub struct StackOfOpenElements {
 mut:
 	elements          []&dom.Element
 	on_element_popped ?fn (&dom.Element)
+	on_element_popped_context voidptr
+	on_element_popped_with_context fn (voidptr, &dom.Element) = unsafe { nil }
 }
 
 pub struct LastElementResult {
@@ -46,14 +48,26 @@ pub fn (mut s StackOfOpenElements) push(element &dom.Element) {
 
 pub fn (mut s StackOfOpenElements) pop() &dom.Element {
 	element := s.elements.pop()
-	if cb := s.on_element_popped {
+	if s.on_element_popped_with_context != unsafe { nil } {
+		s.on_element_popped_with_context(s.on_element_popped_context, element)
+	} else if cb := s.on_element_popped {
 		cb(element)
 	}
 	return element
 }
 
 pub fn (mut s StackOfOpenElements) set_on_element_popped(on_element_popped fn (&dom.Element)) {
+	s.on_element_popped_context = unsafe { nil }
+	s.on_element_popped_with_context = unsafe { nil }
 	s.on_element_popped = on_element_popped
+}
+
+// The stack traces its receiver as ordinary managed data. A static callback
+// avoids a captured function whose executable registry independently owns it.
+pub fn (mut s StackOfOpenElements) set_on_element_popped_with_context(context voidptr, callback fn (voidptr, &dom.Element)) {
+	s.on_element_popped = none
+	s.on_element_popped_context = context
+	s.on_element_popped_with_context = callback
 }
 
 pub fn (s &StackOfOpenElements) elements() []&dom.Element {

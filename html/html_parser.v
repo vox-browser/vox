@@ -153,6 +153,11 @@ pub fn HTMLParser.create_with_scripting_mode(document &dom.Document, input strin
 	return HTMLParser.create_with_tokenizer(document, HTMLTokenizer.new(input), scripting_mode)
 }
 
+fn parser_element_popped_callback(context voidptr, element &dom.Element) {
+	mut parser := unsafe { &HTMLParser(context) }
+	parser.handle_element_popped(element)
+}
+
 fn HTMLParser.create_with_tokenizer(document &dom.Document, tokenizer HTMLTokenizer,
 	scripting_mode dom.ParserScriptingMode) &HTMLParser {
 	mut doc := document
@@ -170,10 +175,7 @@ fn HTMLParser.create_with_tokenizer(document &dom.Document, tokenizer HTMLTokeni
 	if scripting_mode != .fragment {
 		doc.set_parser(make_dom_html_parser_handle(parser))
 	}
-	parser.stack_of_open_elements.set_on_element_popped(fn [parser] (element &dom.Element) {
-		mut mutable_parser := unsafe { &HTMLParser(parser) }
-		mutable_parser.handle_element_popped(element)
-	})
+	parser.stack_of_open_elements.set_on_element_popped_with_context(voidptr(parser), parser_element_popped_callback)
 	return parser
 }
 
