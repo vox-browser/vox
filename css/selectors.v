@@ -1513,7 +1513,8 @@ fn matches_selector_at(selector Selector, component_list_index int, initial_elem
 	}
 	mut element_for_compound_matching := initial_element
 	for i := compound_selector.simple_selectors.len - 1; i >= 0; i-- {
-		simple_selector := compound_selector.simple_selectors[i]
+		// The immutable selector owns this array throughout the bounded reverse loop.
+		simple_selector := unsafe { &SimpleSelector(compound_selector.simple_selectors.data) + i }
 		if !matches_simple(simple_selector, element_for_compound_matching, shadow_host, mut context, scope, selector_kind, anchor) {
 			return false
 		}
@@ -1674,7 +1675,7 @@ fn part_element_map_contains(part_map map[string][]dom.AbstractElement, name str
 	return false
 }
 
-fn matches_simple(component SimpleSelector, element &dom.Element, shadow_host ?&dom.Element, mut context MatchContext, scope ?&dom.ParentNode, selector_kind SelectorKind, anchor ?&dom.Element) bool {
+fn matches_simple(component &SimpleSelector, element &dom.Element, shadow_host ?&dom.Element, mut context MatchContext, scope ?&dom.ParentNode, selector_kind SelectorKind, anchor ?&dom.Element) bool {
 	_ = anchor
 	if should_block_shadow_host_matching(component, shadow_host, element) {
 		return false
