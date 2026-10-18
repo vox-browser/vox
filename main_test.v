@@ -823,7 +823,9 @@ fn test_browser_animation_frame_refreshes_paint_only_transforms() {
 	}
 	app.relayout(200, 232)
 	assert css.document_has_running_css_animations(document)
+	app.begin_frame_preparation()
 	app.advance_document_animations(200, 120)
+	app.finish_frame_preparation()
 	scene_element := document.get_element_by_id('scene') or { panic('missing scene') }
 	scene := app.root_box.find_box(i64(scene_element.as_node().unique_id())) or {
 		panic('missing scene paint box')
@@ -832,7 +834,9 @@ fn test_browser_animation_frame_refreshes_paint_only_transforms() {
 	assert app.paint_commands.any(it.color.contains('173') || it.color.to_lower().contains('add8e6')), app.paint_commands.map('${it.kind}:${it.color}').join(', ')
 	// An unchanged sampled value reuses the retained paint snapshot rather than
 	// replacing it with an empty cache on every browser frame.
+	app.begin_frame_preparation()
 	app.advance_document_animations(200, 120)
+	app.finish_frame_preparation()
 	assert app.paint_commands.any(it.color.contains('173') || it.color.to_lower().contains('add8e6')), app.paint_commands.map('${it.kind}:${it.color}').join(', ')
 }
 
@@ -1153,7 +1157,7 @@ fn test_successful_page_cache_round_trip() {
 	}
 	assert cached.markup == '<html><title>Cached HN</title></html>'
 	assert cached.status == 'Cached · refreshing'
-	assert cached.content_type == 'text/html'
+	assert cached.content_type == 'text/html; charset=utf-8'
 }
 
 fn test_cached_status_is_replaced_without_relayout() {
