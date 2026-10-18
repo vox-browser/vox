@@ -5,6 +5,15 @@ module libjs
 // A directive is an unparenthesized string-literal expression statement, so
 // a line break alone is insufficient when the next token extends it.
 pub fn script_source_is_strict(source string) bool {
+	// Most bundled programs start with a keyword or punctuation, so they
+	// cannot have a directive prologue. Avoid copying their entire source to
+	// UTF-16 just to lex that first token. Comments, hashbangs, HTML comments,
+	// quotes and non-ASCII trivia still use the complete lexer below.
+	mut start := 0
+	for start < source.len && source[start] in [u8(9), 10, 11, 12, 13, 32] { start++ }
+	if start == source.len { return false }
+	first := source[start]
+	if first < 128 && first !in [u8(`"`), `'`, `/`, `<`, `-`, `#`] { return false }
 	code_units := utf16(source)
 	defer { unsafe { code_units.free() } }
 	mut lexer := Lexer.new(code_units, 1, 1)

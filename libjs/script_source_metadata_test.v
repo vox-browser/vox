@@ -87,3 +87,24 @@ fn test_script_source_metadata_stops_before_parsing_a_large_non_directive_progra
 	assert !script_source_is_strict(large)
 	assert script_source_is_strict('"use strict";' + large)
 }
+
+fn test_non_directive_ascii_starts_do_not_copy_a_large_program_for_metadata() {
+	source := '\t\n\r\v\f const first=1;' + ' /* large bundle */ '.repeat(100000)
+	$if gcboehm ? {
+		before := gc_heap_usage().total_bytes
+		assert !script_source_is_strict(source)
+		allocated := gc_heap_usage().total_bytes - before
+		assert allocated < usize(source.len / 10), 'Strictness metadata copied ${allocated} bytes for a non-directive program'
+	} $else {
+		assert !script_source_is_strict(source)
+	}
+}
+
+fn test_metadata_fast_start_preserves_comment_and_unicode_directive_prefixes() {
+	for prefix in [' \t\n/* header */', '<!-- header\n', '\n--> header\n', '#!/bin/js\n', '\ufeff\u00a0\u2003'] {
+		assert script_source_is_strict(prefix + '"use strict"; var x=1;')
+	}
+	for prefix in ['var', 'const', 'let', 'function', '(', '{', '!', '+', ';', '`'] {
+		assert !script_source_is_strict(prefix + ' first; "use strict";')
+	}
+}
