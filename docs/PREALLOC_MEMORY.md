@@ -98,10 +98,19 @@ temporaries, CSS animation events and the hidden-target animation query.
 
 ## Remaining work before `-prealloc` becomes the default
 
-- Repaint animations (opacity, colors, gradients) still re-record retained
-  phase-cache entries and rebuild paint plans; their payloads need
-  generation-retired storage like samples and scenes. Opacity changes that do
-  not cross zero can scale cached commands at replay instead.
+- Opacity samples that stay nonzero keep the paint plan and phase cache;
+  replay scales the cached commands. Background-color, color and
+  outline-color samples refresh only their boxes in the retained paint tree,
+  and only animated values a descendant can observe (inherited properties,
+  or explicit `inherit`) revisit descendants. Each sample still re-records
+  the animated box's phase commands (about 2.5 KB per animated box per frame
+  for a background-color sample); those payloads need generation-retired
+  storage like samples and scenes.
+- Inherited samples rerun the full property computation for descendants
+  with inheritance-dependent values such as `bolder` or `em` lengths (about
+  48 KB per animated element per frame with one such child).
+- Other paint-only animations (gradients, background-position, shadows)
+  still rebuild the whole paint tree on every sample.
 - Layout-affecting animations rebuild layout state every frame.
 - Shell replay (`draw_command`) still allocates small per-frame temporaries.
 - Document teardown: navigation, reload and tab close do not reclaim the old
