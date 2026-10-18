@@ -11210,6 +11210,139 @@ submission accounting remains open; **faster-than-Chrome performance is
 unproven**. Evidence: Build/v/instruction-opt109-* and
 Build/instructions/vox-opt109-interleaved-*.
 
+## Compact CSS selector payload storage
+
+Round 110 ports the already committed `201f3f90` onto accepted frozen 109:
+60 authored hunks across eight runtime paths, including the exact new
+css/simple_selector_storage.v. One cache hunk receives a uniform two-tab
+indentation adjustment because frozen traversal remains inline. Its four getter
+changes preserve that existing loop; no callback refactor is imported.
+
+SimpleSelector shrinks from **496 to 176 bytes**. A by-value tagged union keeps
+one ordinary payload without an additional owner allocation. Multi-field
+construction retains an immutable SimpleSelectorInit compatibility snapshot;
+copying and setters preserve inactive fields and the previous nested-array alias
+depth. Changing arms clears the full union to avoid stale conservative GC roots.
+Public CSS parsing, serialization, specificity and matching retain their behavior.
+The public decoder, CSS filtering, tokenizer arenas and GC policy are unchanged.
+
+All **12 common functional cases plus one inactive diagnostic** pass C-O2 in
+before/Boehm, final/Boehm and final/no-GC: **1,418 assertions each**. Common source
+SHA256 `82ca6440351c8c2eee5ac819da2d156633b528a845b117396c2ec3083ff629d8`.
+All **11 exact original candidate contract bodies** pass **825 assertions under
+Boehm and 811 without GC**. Six storage cases check defaults, all variants,
+multi-field copying, cross-arm mutation, nested aliases, namespace/nesting,
+serialization/specificity, size, traced arrays and weak-owner retention/release.
+Five attribute-visitor cases retain their original assertions. The authored
+native header also checks real GC liveness and release after three overwrites;
+those native assertions are additional to the V assertion totals. Contract
+SHA256 `d4c0517c5620ed094d3d1b82a666956c802c5a8446773515c559ef496e16aeea`.
+
+Three fixed alternating local pairs count **128 complete public parse,
+serialize, specificity and matching batches over 576 inputs**. Each batch parses
+fresh selectors covering HTML/SVG namespaces, Unicode, attributes, :is/:not/:has,
+nth selectors and siblings. Setup, independent expected booleans/canonical
+strings/specificities, eight warmups, assertions and forced GC are outside the
+counter. All six actual exits are 0; checksum **45,085,693,440** matches.
+
+| Pair | Before retired instructions | Candidate retired instructions |
+| --- | ---: | ---: |
+| 1 | 3,542,451,553 | 3,228,452,195 |
+| 2 | 3,542,908,969 | 3,212,785,158 |
+| 3 | 3,537,043,715 | 3,220,365,294 |
+
+Local medians **3,542,451,553 → 3,220,365,294**, change
+**-9.092185%**, **3/3 wins**. This local result receives no
+independent whole-page credit.
+
+The strict C audit authenticates the exact source hunks, changed functions,
+contained cache callback, new factories/getters, equality helpers and generated
+selector printers against independent whole-app C-only outputs. It verifies the
+smaller record and by-value union, with the old record exactly preserved as Init.
+Eleven generated equality helpers are explicit. Twenty existing selector printers
+reorder byte-identically, as does ParsedSimpleSelector; four older helper
+reorderings remain authenticated. One unchanged static-local initializer differs
+only in its compiler ordinal. An unchanged nesting constructor changes one empty
+selector initializer and its two obsolete default-option initializations; the
+remaining function core matches exactly. The actual frontend adds one CSS file at index
+332 while preserving all existing file order. Anonymous identities are projected
+only at that observed insertion. All remaining executable C, records, globals,
+resources, DOM-text/Unicode code, public decoder/filtering/arenas and heap/GC
+match after established compiler identities and exact unchanged assertion maps.
+All 120 native inputs, 37 frozen includes and native arguments match except
+artifact paths. Rest-of-C SHA256
+`d4a77d50ec3441335754f4fd3d3e34474e2867b0521084dc8eab8a9207741e56`.
+
+Initial read-only readers and their actual failures remain retained. Repairs
+handle conditional native atomic definitions, declaration/definition specifiers,
+anonymous prototype identities and definition-only native helpers. A slow reader
+was explicitly terminated; its actual negative signal status is retained. These
+reader repairs do not alter runtime code or repeat tests, profiles or primaries.
+The earlier helper-location and evidence-archive fixture-path errors are also
+retained; only unfinished preparation/archive work resumes.
+
+Both C-O1/Boehm/default-marker-1 -profile-no-inline diagnostics exit 0. Full-process
+instrumentation has no filter/reset. All public workload counts match, including
+136 complete batch calls. New storage factories and union clearing are exercised.
+Profile counts explain coverage; profile times receive no hardware/page credit.
+
+| Full-process diagnostic function | Before calls | Candidate calls |
+| --- | ---: | ---: |
+| `css__opt110_complete_public_selector_batch` | 136 | 136 |
+| `css__parse_selector_with_parser` | 78,912 | 78,912 |
+| `css__Selector_serialize` | 105,216 | 105,216 |
+| `css__Selector_specificity` | 96,448 | 96,448 |
+| `css__matches` | 100,832 | 100,832 |
+| `css__fast_matches` | 56,992 | 56,992 |
+| `css__matches_selector_at` | 56,992 | 56,992 |
+| `css__matches_simple` | 87,680 | 87,680 |
+| `css__decode_css_input` | 78,958 | 78,958 |
+| `css__SimpleSelector__static__with_name` | 0 | 109,600 |
+| `css__SimpleSelector__static__with_qualified_name` | 0 | 70,763 |
+| `css__SimpleSelector__static__with_attribute` | 0 | 17,749 |
+| `css__SimpleSelector__static__with_pseudo_class` | 0 | 39,584 |
+| `css__SimpleSelector__static__with_pseudo_element` | 0 | 30 |
+| `css__SimpleSelector_clear_payload` | 0 | 237,726 |
+
+Normal candidate Build/v/Vox-opt110-compact-selector-bin SHA256
+`241b2af130d0a0935e3e797e56db674579eda26b91a1181735b55ab32a66433d`;
+compiled C SHA256 `87f321b8a3a0ed7ae810b2717aa614ae04ee5a8b72dfb1c2c25fa7c07b2cf9f5`.
+Both persisted regular binaries load the frozen 4e helper with actual loader
+proof. SSD cache parent, 4 GiB hint, default marker 1, child-only placement and
+1024×768 document viewport match. No prod/prealloc or heap increase.
+
+The predeclared **30 alternating pairs**, seed 110 and **30,000 paired bootstrap
+resamples**, retain all 60 first navigation_to_first_document_paint[0]
+observations: **17,018,019,637.5 → 16,916,010,267**
+retired instructions. Point saving **102,009,370.5**
+(**-0.599420%**), **30/30 wins**;
+paired median saving **98,375,687.5**, 95% paired interval
+**[87,547,656, 107,348,072.5]**, repeatable credit **102,009,370.5**.
+The positive paired interval permits this repeatable credit.
+
+There are **60 real PNGs**, **0** startup retry records, recovered
+primaries `[]`, post-primary refreshes `[]`, and
+**0** external foreground
+transitions. No completed primary is discarded or repeated. First preparations
+retain 1 install/2 geometry/1 paint; later work stays separate. Memory peaks cover
+process lifetime through capture/exit, rather than first-frame live memory;
+overlapping counters are not summed. All 60 decoded RGB captures differ only in the original skeleton bands, x45–662/y335–344 and ten 14px bands starting at 380 with 41px spacing. All other pixels match; 30 control and 30 candidate classes, 0 shared. No bounds change.
+
+The focused selector/first-letter/whitespace/Unicode viewport is **pixel-exact**.
+Explicit child argv pins the frozen helper after protected env/sh launch sites;
+actual loader path/hash receipts remain. Six actual zero exits pass CSS 31/SVG 10/layout 46 in both GC modes: **174 executions**. All **19 screenshot comparisons pass, 16 exact**. Known differences remain inline-node 13, text-decorations 1,341 and canvas-text 1,994. Completed broad validation resets observed carry to 0. The selected 87 harness
+bodies, assertions and expected values are unchanged from 109; no test API
+adaptation is needed for the smaller selector record.
+
+The isolated app is `/Users/alex/code/vox2/Build/v/Vox-opt110.app`. Signing, startup, installed helper
+and native instruction-text identity pass. GC checks observe actual collections
+at default marker 1 and override 2. Accepted 110 becomes the next frozen performance control. Independently advancing Root,
+the canonical bundle and the user's GUI remain preserved and receive no additional
+performance credit. Durable hashes are in instruction-opt110-artifact-archives.json.
+Equivalent Chrome content/start/submission accounting remains open;
+**faster-than-Chrome performance is unproven**. Evidence: Build/v/instruction-opt110-*
+and Build/instructions/vox-opt110-interleaved-*.
+
 ## Causes and changes
 
 - The V 0.5.2 compatibility compiler's `-prod` Boehm code repeatedly snapshots

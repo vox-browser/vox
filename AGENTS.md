@@ -2036,6 +2036,17 @@ evidence](docs/translation-audit/NATIVE_MEDIA_WHEEL_RAW_HANDLER.md).
   UTF-8 validated; malformed/grapheme fallback retains the unchanged iterator.
   Same 4 GiB, frozen helper, GC policy; Root/canonical/GUI preserved.
   Chrome parity remains open.
+  Compact CSS selector payloads `201f3f90` use 60 authored hunks/eight paths;
+  one cache hunk changes only indentation plus getters. SimpleSelector 496→176B.
+  All 12 common cases pass 1,418 assertions/configuration; 11 exact contracts
+  pass 825 Boehm/811 no-GC, including real weak-owner retention and release.
+  Complete public parse/serialize/specificity/matching batches use 9.09% fewer instructions.
+  Page point saving 102,009,370.5, 30/30 wins;
+  paired interval [87,547,656, 107,348,072.5], repeatable credit 102,009,370.5.
+  Broad verification: 87 selected cases both GC; 19 screenshots/16 exact;
+  focused selector/Unicode viewport exact; observed carry 0.
+  Same 4 GiB, frozen helper, GC policy; Root/canonical/GUI preserved.
+  Chrome parity remains open.
 - Outside instruction-count optimization, run broad regression suites once per
   ten completed fixes, not after every fix.
   Broad suites include full translation/package test batches, the full LibJS AST
