@@ -172,7 +172,30 @@ fn collect_dom_visual_lines(box &Node, state &LayoutState) []dom.VisualLine {
 		cached.visual_lines_[key] = copy_dom_visual_lines(lines, owner)
 		return lines
 	}
+	// A retained independent block also proves its descendants' local line
+	// geometry. Atomic inlines prevent the closed-inline cache from covering
+	// these contexts, but do not require rebuilding grapheme stops each pass.
+	if mut cached := retained_block_visual_line_owner(unsafe { &Node(containing_block) }, state) {
+		owner := containing_block.layout_index()
+		key := u64(voidptr(box))
+		if lines := cached.visual_lines_[key] {
+			return copy_dom_visual_lines(lines, owner)
+		}
+		lines := collect_uncached_dom_visual_lines(box, state)
+		cached.visual_lines_[key] = copy_dom_visual_lines(lines, owner)
+		return lines
+	}
 	return collect_uncached_dom_visual_lines(box, state)
+}
+
+fn retained_block_visual_line_owner(containing_block &Node, state &LayoutState) ?&RetainedBlockLayout {
+	mut current := ?&Node(containing_block)
+	for current != none {
+		node := current or { break }
+		if cached := state.block_layouts_[u64(voidptr(node))] { return cached }
+		current = node.parent()
+	}
+	return none
 }
 
 fn copy_dom_visual_lines(lines []dom.VisualLine, owner u32) []dom.VisualLine {

@@ -29,6 +29,7 @@ struct RetainedBlockLayout {
 mut:
 	paint_lines_ map[u64]&RetainedBlockPaintLines
 	paint_boxes_ map[u64]&RetainedBlockPaintBox
+	visual_lines_ map[u64][]dom.VisualLine
 }
 
 // Independent ordinary flow cannot exchange floats or collapsed margins with
