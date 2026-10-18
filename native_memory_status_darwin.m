@@ -14,8 +14,23 @@ static NSView *native_browser_view(void);
 static CGFloat native_layer_effective_scale(NSView *view);
 
 #ifndef VOX_MEMORY_STATUS_READ_BYTES
+#ifndef VOX_MEMORY_STATUS_PARENT_BYTES
 #include "processmetrics/memory_darwin.h"
-#define VOX_MEMORY_STATUS_READ_BYTES vox_process_memory_bytes
+#define VOX_MEMORY_STATUS_PARENT_BYTES vox_process_memory_bytes
+#endif
+#ifndef VOX_MEMORY_STATUS_WORKER_BYTES
+#include "adblock/worker_transport_api.h"
+#define VOX_MEMORY_STATUS_WORKER_BYTES vox_adblock_worker_memory_bytes
+#endif
+static int native_browser_memory_bytes(uint64_t *bytes) {
+    uint64_t browser = 0, worker = 0;
+    if (VOX_MEMORY_STATUS_PARENT_BYTES(&browser) != 0
+        || VOX_MEMORY_STATUS_WORKER_BYTES(&worker) != 0
+        || UINT64_MAX - browser < worker) return -1;
+    *bytes = browser + worker;
+    return 0;
+}
+#define VOX_MEMORY_STATUS_READ_BYTES native_browser_memory_bytes
 #endif
 #ifndef VOX_MEMORY_STATUS_OWNER_WINDOW
 #define VOX_MEMORY_STATUS_OWNER_WINDOW(view) ((view).window)

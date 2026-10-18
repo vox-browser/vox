@@ -1,5 +1,6 @@
 module main
 
+import adblock
 import gg
 import processmetrics
 import time
@@ -25,7 +26,7 @@ fn (mut status BrowserMemoryStatus) refresh_if_due(now_ns i64) bool {
 	}
 	status.sampled = true
 	status.next_sample_ns = now_ns + i64(time.second)
-	status.label = processmetrics.memory_snapshot().ram_label()
+	status.label = browser_memory_snapshot().ram_label()
 	return true
 }
 
@@ -57,4 +58,19 @@ fn (mut app BrowserApp) draw_memory_status(window_width int, status_y int) {
 		size:  12
 		align: .right
 	)
+}
+
+// Include the live default-filter helper in both native and legacy RAM chrome.
+// An unavailable child sample must not silently under-report an active worker.
+fn browser_memory_snapshot() processmetrics.MemorySnapshot {
+	snapshot := processmetrics.memory_snapshot()
+	worker := adblock.default_worker_memory_bytes() or { return processmetrics.MemorySnapshot{} }
+	return browser_memory_snapshot_including_worker(snapshot, worker, true)
+}
+
+fn browser_memory_snapshot_including_worker(snapshot processmetrics.MemorySnapshot, worker u64, worker_available bool) processmetrics.MemorySnapshot {
+	if !snapshot.available || !worker_available || worker > ~u64(0) - snapshot.bytes {
+		return processmetrics.MemorySnapshot{}
+	}
+	return processmetrics.MemorySnapshot{bytes: snapshot.bytes + worker, available: true}
 }

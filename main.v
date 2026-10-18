@@ -7010,6 +7010,14 @@ fn (mut app BrowserApp) handle_key(key gg.KeyCode, modifier gg.Modifier) {
 }
 
 fn main() {
+	// Dispatch the signed self-helper before browser heap/font/GUI setup.
+	if status := adblock.run_default_worker_role(os.args) { exit(status) }
+	$if macos {
+		adblock.configure_default_worker(os.executable()) or {
+			eprintln('Ladybird V: cannot configure the default filter worker: ${err.msg()}')
+			exit(1)
+		}
+	}
 	main_started := time.sys_mono_now()
 	_ = platform.initialize_browser_heap_policy()
 	link_translated_modules()

@@ -8,6 +8,11 @@ static BOOL test_available = YES;
 static id test_notification_window;
 static uint64_t test_bytes = 123450000;
 static int test_read_result, test_reads, test_document_draws;
+static uint64_t test_worker_bytes;
+static int test_worker_result, test_worker_reads;
+static int test_worker_memory_bytes(uint64_t *bytes) {
+    test_worker_reads++; *bytes = test_worker_bytes; return test_worker_result;
+}
 static int test_memory_bytes(uint64_t *bytes) {
     test_reads++;
     *bytes = test_bytes;
@@ -15,7 +20,8 @@ static int test_memory_bytes(uint64_t *bytes) {
 }
 static NSView *native_browser_view(void) { return test_view; }
 static CGFloat native_layer_effective_scale(NSView *view) { return view.layer.contentsScale; }
-#define VOX_MEMORY_STATUS_READ_BYTES test_memory_bytes
+#define VOX_MEMORY_STATUS_PARENT_BYTES test_memory_bytes
+#define VOX_MEMORY_STATUS_WORKER_BYTES test_worker_memory_bytes
 #define VOX_MEMORY_STATUS_VIEW_AVAILABLE(view) ((view) != nil && test_available)
 #define VOX_MEMORY_STATUS_OWNER_WINDOW(view) ((NSWindow *)test_notification_window)
 #include "../native_memory_status_darwin.m"
@@ -187,8 +193,24 @@ static void check_software_layer_capture(VoxStaticMemoryStatusLayer *label) {
     }
 }
 
+static void check_owned_child_accounting(void) {
+    uint64_t bytes=0;
+    test_read_result=test_worker_result=0;test_bytes=100000000;test_worker_bytes=0;
+    CHECK(native_browser_memory_bytes(&bytes)==0&&bytes==100000000);
+    test_worker_bytes=25000000;
+    CHECK(native_browser_memory_bytes(&bytes)==0&&bytes==125000000);
+    test_worker_bytes=0;
+    CHECK(native_browser_memory_bytes(&bytes)==0&&bytes==100000000);
+    test_worker_result=-1;CHECK(native_browser_memory_bytes(&bytes)!=0);
+    test_worker_result=0;test_read_result=-1;CHECK(native_browser_memory_bytes(&bytes)!=0);
+    test_read_result=0;test_bytes=UINT64_MAX;test_worker_bytes=1;
+    CHECK(native_browser_memory_bytes(&bytes)!=0);
+    test_worker_bytes=0;CHECK(native_browser_memory_bytes(&bytes)==0&&bytes==UINT64_MAX);
+    test_bytes=123450000;
+}
 int main(void) {
     @autoreleasepool {
+        check_owned_child_accounting();
         check_lifetimes();
         test_bytes = 123450000;
         test_view = make_view();

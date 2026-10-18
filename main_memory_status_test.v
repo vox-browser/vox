@@ -3,6 +3,7 @@ module main
 import browserjs
 import dom
 import gg
+import processmetrics
 
 $if macos {
 	#flag darwin -DVOX_STATIC_MEMORY_STATUS_TEST_STUB
@@ -103,4 +104,20 @@ fn test_memory_status_refreshes_once_per_second_across_idle_and_busy_frames() {
 	// A delayed frame schedules from the current time without catching up.
 	assert status.refresh_if_due(5_000_000_000)
 	assert status.next_sample_ns == 6_000_000_000
+}
+
+fn test_memory_status_counts_live_worker_and_returns_to_browser_only_after_stop() {
+	browser := processmetrics.MemorySnapshot{bytes: 100_000_000, available: true}
+	assert browser_memory_snapshot_including_worker(browser, 0, true).ram_label() == 'RAM: 100.0 MB'
+	assert browser_memory_snapshot_including_worker(browser, 25_000_000, true).ram_label() == 'RAM: 125.0 MB'
+	assert browser_memory_snapshot_including_worker(browser, 0, true) == browser
+}
+
+fn test_memory_status_does_not_hide_child_failure_or_overflow() {
+	browser := processmetrics.MemorySnapshot{bytes: 100_000_000, available: true}
+	assert !browser_memory_snapshot_including_worker(browser, 0, false).available
+	assert !browser_memory_snapshot_including_worker(processmetrics.MemorySnapshot{}, 1, true).available
+	maximum := processmetrics.MemorySnapshot{bytes: ~u64(0), available: true}
+	assert browser_memory_snapshot_including_worker(maximum, 0, true) == maximum
+	assert !browser_memory_snapshot_including_worker(maximum, 1, true).available
 }

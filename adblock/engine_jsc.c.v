@@ -95,6 +95,15 @@ fn create_context(custom_filters ?string) !voidptr {
 pub fn evaluate_engine(source string) !string {
 	C.vox_adblock_lock()
 	defer { C.vox_adblock_unlock() }
+	$if macos {
+		if C.vox_adblock_worker_is_configured() != 0 {
+			previous_error := C.vox_adblock_get_error()
+			if previous_error != unsafe { nil } {
+				return error(unsafe { cstring_to_vstring(previous_error) })
+			}
+			return evaluate_default_worker(source)
+		}
+	}
 	mut context := C.vox_adblock_get_context()
 	if context == unsafe { nil } {
 		previous_error := C.vox_adblock_get_error()
@@ -118,6 +127,11 @@ pub fn evaluate_engine(source string) !string {
 pub fn release_unused_engine() bool {
 	C.vox_adblock_lock()
 	defer { C.vox_adblock_unlock() }
+	$if macos {
+		if C.vox_adblock_worker_is_configured() != 0 {
+			return C.vox_adblock_worker_release() != 0
+		}
+	}
 	context := C.vox_adblock_get_context()
 	if context == unsafe { nil } {
 		return false
