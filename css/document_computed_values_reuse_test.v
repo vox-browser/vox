@@ -65,7 +65,28 @@ fn test_document_materialization_rechecks_theme_and_document_identity() {
 	other.set_svg_image_color_scheme('dark')
 	_ = resolve_computed_values_for_document(style, other)
 	assert voidptr(style.computed_layout_cache()) != voidptr(dark)
-	assert style.computed_layout_cache().document_resolution_owner == other
+	assert voidptr(style.computed_layout_cache().document_resolution_owner) == voidptr(other)
+}
+
+fn test_document_materialization_requires_property_graph_identity_not_equal_token_fields() {
+	document := dom.Document.create(dom.url_about_blank())
+	mut first := computed_properties_with_initial_values()
+	mut second := computed_properties_with_initial_values()
+	document_reuse_set(mut first, .width, '10px')
+	document_reuse_set(mut second, .width, '90px')
+	_ = resolve_computed_values_for_document(first, document)
+	_ = resolve_computed_values_for_document(second, document)
+	mut copied := &ComputedProperties{
+		...first
+		property_values_: second.property_values_
+		computed_property_graph_token_: second.computed_property_graph_token_
+	}
+	assert voidptr(copied.computed_property_graph_token_) != voidptr(first.computed_property_graph_token_)
+	assert copied.computed_property_graph_token_.generation == first.computed_property_graph_token_.generation
+	previous := copied.computed_layout_cache()
+	_ = resolve_computed_values_for_document(copied, document)
+	assert voidptr(copied.computed_layout_cache()) != voidptr(previous)
+	assert copied.computed_layout_cache().computed_values_width_ == second.computed_layout_cache().computed_values_width_
 }
 
 fn test_document_materialization_keeps_animated_and_manual_cache_writes_conservative() {

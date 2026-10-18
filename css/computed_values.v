@@ -390,8 +390,11 @@ fn resolve_computed_values_for_document_impl(style &ComputedProperties, document
 	_ = computed_style.first_available_computed_font(css_style_computer_for(document).font_computer())
 	cache := computed_style.computed_layout_cache()
 	if anonymous_source == none && computed_style.computed_values_resolved_
-		&& cache.document_resolution_owner == document
-		&& previous_provenance != unsafe { nil } && previous_provenance.matches(computed_style)
+		&& voidptr(cache.document_resolution_owner) == voidptr(document)
+		&& previous_provenance != unsafe { nil }
+		&& voidptr(previous_provenance.token) == voidptr(computed_style.computed_property_graph_token_)
+		&& voidptr(previous_provenance.font_computer) == voidptr(computed_style.cached_computed_font_list_owner_)
+		&& previous_provenance.matches(computed_style)
 		&& !computed_style.has_animated_properties() && !computed_style.has_animated_custom_properties()
 		&& computed_style.line_height_ == none {
 		context := ColorResolutionContext.for_computed_properties(style, document)
