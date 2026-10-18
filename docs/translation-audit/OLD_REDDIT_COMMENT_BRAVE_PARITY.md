@@ -91,6 +91,7 @@ does not cover later candidates automatically.
 | 7/10 | `48242367` | Reuse validated flow-subtree shapes while rechecking live DOM, text, topology and computed-style identity; two new cases. |
 | 8/10 | `ed456c22` | Increase the bounded large-scripted-document heap capacity hint from 160 to 320 MB, preserving explicit environment overrides, collection and idle unmapping. Existing platform heap tests pass in both modes. |
 | 9/10 | `a06ffa59` | Reuse a DOM layout-style wrapper only while its exact layout mirror remains attached; reset its contents on every attachment. Three focused DOM cases and 80 repository layout cases pass per GC mode. |
+| 10/10 | `5523b555` | Retain immutable paint projections inside validated independent flow subtrees, rebase coordinates, refresh live overflow and selection, and keep templates free of paint-arena links. Three new cases and 80 other layout cases pass per GC mode. |
 
 `cd6054ed` separately repairs test isolation: the BFC fixture owns its helper
 functions and compiles independently. Test-helper corrections do not advance
@@ -128,3 +129,56 @@ fixture runs, baseline reproductions, native logs and screenshots. Builds use
 isolated source snapshots so concurrent work cannot silently change a measured
 candidate. Integration with current canonical work and final application
 verification remain pending.
+
+## Source-28 checkpoint and subsequent work
+
+The source-28 checkpoint combines the ten fixes above with canonical commits
+through `ac7bb271`. Its recorded source HEAD is merge `e7dea9cd`. Each GC mode
+selects 1,052 original files and 4,118 functions: 4,095 pass, 17 fail, and six
+bodies do not run after existing media-control panics. Raw package exits remain
+nonzero. Every failing file is byte-identical to source-15. The additional CSS
+registration-key failure reproduces at clean canonical `ac7bb271` in both GC
+modes, without the owned optimizations. The remaining failures have the prior
+source-15 baseline evidence. The earlier XHR and preload failures now pass.
+This is completed coverage with reproduced existing failures, not an all-pass
+claim. The receipt is `parity-v28-checkpoint.json`; cadence resets after the
+covered owned fix `5523b555`.
+
+LibJS passes all 233 ordinary files/769 functions in both modes, plus three
+self-spawning files/13 functions. Default-GC linking first failed with
+`No space left on device`; that attempt earns no pass credit. Its fresh retry
+passes. The official AST driver again matches all 100 inputs exactly. The
+source-28 bundle passes signing, startup and native comment interaction. An
+old review parser then mistook new UI2 status labels for navigation URLs.
+The corrected reader verifies the same executable and actual document URL,
+retains those successful checks, and resumes only unfinished screenshots:
+eight exact SVG guards and eleven default cases (eight exact, three under
+unchanged existing allowances). The composite receipt is
+`native-parity-v28-recovered.json`; the original failed receipt remains.
+
+Paint reuse was measured in an ABBA sequence against source-25 under heavier
+host load. Warm medians are 106.298/102.328 ms for the old candidate and
+95.713/96.479 ms for the new one. All 32 native and facade states agree.
+The source-27 weak-reference probe collects all seven superseded arenas and
+retains only the eighth/current arena. Sampling and forced collection are
+diagnostic and do not earn normal latency credit.
+
+| New cadence | Commit | Completed change |
+| --- | --- | --- |
+| 1/10 | `a2e73994` | Finalization and log clearing drain tracked dirty facades and registered canvases without enumerating every unchanged element. Twenty cases in nine files pass in each GC mode, including two new cases. |
+| 2/10 | `0111dad1` | DOM attachment resolves selection inheritance in preorder instead of repeatedly walking ancestors. Twenty-three distinct layout cases pass per GC mode, including two new attachment cases. |
+
+The first selection fixture expected paint-only style changes to rebuild the
+DOM geometry attachment. Its failed attempt remains. The corrected fixture
+explicitly requests attachment after each change; its two cases pass in both
+modes, combined with the already passing 21 other cases. Only the fixture
+changes after the source-30 production build; its runtime implementation is
+the tested implementation. Fixture repair adds no fix count.
+
+Normal source-28 and source-29 integrated replays record warm medians of
+79.553 ms and 62.436 ms. Normal source-30 records first action 148.865 ms and
+seven warm actions from 47.941 to 53.809 ms (median 51.508 ms). These fresh
+observations remain slower than Brave; host load and first-action variability
+remain material. No collector environment overrides are used. These candidates
+are still private; the installed application and canonical working changes
+remain preserved pending final integration.
