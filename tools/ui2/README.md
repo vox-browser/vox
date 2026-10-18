@@ -1,8 +1,16 @@
-The production macOS browser chrome uses UI2 throughout: native navigation and
-Go buttons, a single-line `text_input`, and loading, link/console and RAM labels.
+The production macOS browser chrome uses UI2 throughout: native navigation
+buttons, a single-line `text_input`, and diagnostic, link/console and RAM labels.
 Buttons use UI2's `native_style`, so AppKit supplies their bezels, pressed and
 disabled states. The hand-drawn dark chrome and implementation subtitle are
 excluded from this build.
+
+Enter submits the address; there is no Go button. The diagnostic row (HTTP
+status, response bytes, paint count and document dimensions) is hidden by
+default. Cmd+D on macOS or Ctrl+D on Windows/Linux toggles it, including during
+address editing. The toolbar is 56px high normally and 88px with diagnostics;
+the document viewport and pointer coordinates follow that height. Cached
+full-window images are keyed by visibility and discarded on a toggle, so a
+debug image cannot reintroduce diagnostics into normal browsing.
 
 UI2 mounts two keyed view subtrees in the existing GG content view. No overlay
 covers the document. Vox owns the window, document renderer, navigation and
@@ -21,8 +29,9 @@ Linux and ordinary builds without that define retain the portable GG chrome;
 the embedding adapter currently uses AppKit.
 
 To exercise native navigation-button actions and enabled states, field editing,
-Enter/Go navigation, Cmd+L, clipboard operations, Unicode deletion, Escape,
-resizing, status refresh, committed-URL synchronization and cleanup:
+Enter navigation, Cmd+L, clipboard operations, Unicode deletion, Escape,
+resizing, diagnostic shortcuts, viewport sizing, status refresh, committed-URL
+synchronization and cleanup:
 
 ```sh
 sh tools/test_address_bar.sh
@@ -33,8 +42,11 @@ They also check that the document remains available for hit testing and that
 unmount removes both controls and RAM sampling. They do not require Accessibility
 or Screen Recording permission, and restore the clipboard after testing.
 
-Validation on 2026-10-18: all ten focused cases and all three portable address
+Validation on 2026-10-18: all thirteen focused cases and all five portable address
 cases pass. The signed production build passes `--headless-smoke`, and the
 `inline-node` document screenshot comparison passes with maximum channel error 1
-(13 differing pixels). A full content-view capture confirms native buttons,
-address editing and both status strips.
+(13 differing pixels). A full content-view capture confirms the compact toolbar
+without Go or diagnostics. The shortcut case checks diagnostic visibility from
+both address and page focus while preserving edits and selection. All 57 focused
+capture/measurement tool tests pass, and a 320×1300 document capture stitches two
+strips into one uniform image without including browser chrome.
