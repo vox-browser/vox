@@ -642,3 +642,22 @@ Installation used an atomic bundle exchange and did not restart a running
 browser. `parity-v92-install.json` records the installation. The browser must
 be reopened to load the new executable. Brave parity remains open, and further
 optimization continues beyond this checkpoint.
+
+
+The prepared DOM-attachment experiment (source-93) is rejected. Its first ABBA
+saves only 533,496 warm instructions (0.166%) while measuring 37.4085 versus
+41.5185 ms. A reversed repeat measures 42.488 versus 40.975 ms, with only
+1,016,837.5 fewer instructions. The elapsed improvement does not repeat, so the
+extra witness/cache machinery is removed and receives no performance or broad-gate
+credit. Its patch, fixtures, failed fixture receipts, 32-case-per-mode successful
+composite, exact document captures and complete-handler checks remain artifacts.
+Source-92 remains the installed production build.
+
+A fresh Brave run on the complete original-handler fixture measures 1.65 ms for
+the handler plus forced layout and 20.45 ms through two animation frames, with
+six correct labels and no dispatch errors. These remain different endpoints
+from Vox's native action through return from the layer update. Native warm
+medians around 41 ms do not establish Brave parity. A new normal-build sample
+still identifies tree preparation, geometry, DOM attachment, paint projection
+and whole-DOM queries; optimization continues without a broad regression run
+below the next 5,000,000-instruction gate.
