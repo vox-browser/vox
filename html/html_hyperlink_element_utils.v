@@ -18,11 +18,10 @@ fn hyperlink_html_element(element &dom.Element) &dom.HTMLElement {
 // https://html.spec.whatwg.org/multipage/links.html#concept-hyperlink-url-set
 pub fn html_hyperlink_element_utils_set_the_url(element &dom.Element) {
 	mut html_element := unsafe { &dom.HTMLElement(hyperlink_html_element(element)) }
-	html_element.hyperlink_url_ = none
-	html_element.hyperlink_url_initialized = true
+	html_element.initialize_null_hyperlink_url_cache()
 	href := element.get_attribute(attr_href) or { return }
 	if url := element.document().encoding_parse_url(href) {
-		html_element.hyperlink_url_ = url
+		html_element.set_hyperlink_url_cache(url)
 	}
 }
 
@@ -50,8 +49,7 @@ pub fn html_hyperlink_element_utils_update_href(element &dom.Element) {
 
 fn hyperlink_update_href(mut element dom.Element, url dom.URL) {
 	mut html_element := unsafe { &dom.HTMLElement(hyperlink_html_element(&element)) }
-	html_element.hyperlink_url_ = url
-	html_element.hyperlink_url_initialized = true
+	html_element.set_hyperlink_url_cache(url)
 	element.set_attribute_value(attr_href, url.serialize())
 }
 
@@ -318,7 +316,7 @@ pub fn html_hyperlink_element_utils_set_hash(element &dom.Element, hash string) 
 }
 
 pub fn html_hyperlink_element_utils_extract_an_origin(element &dom.Element) ?dom.Origin {
-	url := hyperlink_html_element(element).hyperlink_url_ or { return none }
+	url := hyperlink_html_element(element).cached_hyperlink_url() or { return none }
 	return url.origin()
 }
 

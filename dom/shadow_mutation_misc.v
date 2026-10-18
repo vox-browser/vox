@@ -2032,7 +2032,7 @@ fn create_html_element(document &Document, qualified_name QualifiedName) &Elemen
 		'head' {
 			return unsafe {
 				&Element(&HTMLHeadElement{
-					Element: new_element_storage(document, qualified_name)
+					HTMLElement: new_html_element_storage(document, qualified_name)
 				})
 			}
 		}
@@ -2053,7 +2053,7 @@ fn create_html_element(document &Document, qualified_name QualifiedName) &Elemen
 		'html' {
 			return unsafe {
 				&Element(&HTMLHtmlElement{
-					Element: new_element_storage(document, qualified_name)
+					HTMLElement: new_html_element_storage(document, qualified_name)
 				})
 			}
 		}
@@ -2347,7 +2347,7 @@ fn create_html_element(document &Document, qualified_name QualifiedName) &Elemen
 		'title' {
 			return unsafe {
 				&Element(&HTMLTitleElement{
-					Element: new_element_storage(document, qualified_name)
+					HTMLElement: new_html_element_storage(document, qualified_name)
 				})
 			}
 		}

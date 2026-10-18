@@ -583,23 +583,23 @@ pub fn html_element_nearest_inclusive_target_popover(element &dom.HTMLElement) ?
 pub fn html_element_queue_a_popover_toggle_event_task(element &dom.HTMLElement, requested_old_state string, new_state string, source ?&dom.HTMLElement) {
 	mut mutable_element := unsafe { &dom.HTMLElement(element) }
 	mut old_state := requested_old_state
-	if element.popover_toggle_task_id_ != 0 {
-		old_state = element.popover_toggle_old_state_
-		task_id := element.popover_toggle_task_id_
+	if element.popover_toggle_task_id() != 0 {
+		old_state = element.popover_toggle_old_state()
+		task_id := element.popover_toggle_task_id()
 		mut queue := main_thread_event_loop().task_queue()
 		queue.remove_tasks_matching(fn [task_id] (task &Task) bool {
 			return task.id == task_id
 		})
-		mutable_element.popover_toggle_task_id_ = 0
+		mutable_element.set_popover_toggle_task_id(0)
 	}
 	task_id := queue_a_task(.dom_manipulation, main_thread_event_loop(), popover_element(element).document(), fn [element, old_state, new_state, source] () {
 		dispatch_popover_toggle_event(element, 'toggle', old_state, new_state, false, source)
 		mut task_element := unsafe { &dom.HTMLElement(element) }
-		task_element.popover_toggle_task_id_ = 0
-		task_element.popover_toggle_old_state_ = ''
+		task_element.set_popover_toggle_task_id(0)
+		task_element.set_popover_toggle_old_state('')
 	})
-	mutable_element.popover_toggle_task_id_ = task_id
-	mutable_element.popover_toggle_old_state_ = old_state
+	mutable_element.set_popover_toggle_task_id(task_id)
+	mutable_element.set_popover_toggle_old_state(old_state)
 }
 
 pub fn html_element_popover_stack_position(element &dom.HTMLElement) usize {

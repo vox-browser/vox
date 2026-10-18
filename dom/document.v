@@ -529,37 +529,24 @@ pub mut:
 // Concrete HTML element storage shared with the HTML-side behavioral models.
 @[heap]
 pub struct HTMLHtmlElement {
-	Element
+	HTMLElement
 }
 
 @[heap]
 pub struct HTMLHeadElement {
-	Element
+	HTMLElement
 }
 
 @[heap]
 pub struct HTMLTitleElement {
-	Element
+	HTMLElement
 }
 
 @[heap]
 pub struct HTMLElement {
 	Element
-pub mut:
-	popover_visibility_state_ PopoverVisibilityState
-	popover_showing_or_hiding bool
-	popover_trigger_          ?&HTMLElement
-	opened_in_popover_mode_   ?string
-	popover_close_watcher_    voidptr = unsafe { nil }
-	popover_toggle_task_id_   u64
-	popover_toggle_old_state_ string
-	attached_internals_       voidptr = unsafe { nil }
-	click_in_progress_        bool
-	inert_                    bool
-	cryptographic_nonce_      string
-	labels_                   ?&NodeList
-	hyperlink_url_            ?URL
-	hyperlink_url_initialized bool
+mut:
+	html_rare_data_ &HTMLElementRareData = unsafe { nil }
 }
 
 pub enum PopoverVisibilityState {

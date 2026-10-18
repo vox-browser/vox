@@ -1557,6 +1557,7 @@ pub struct Element {
 	ParentNode
 mut:
 	rare_data_ &ElementRareData = unsafe { nil }
+	interactive_data_ &ElementInteractiveData = unsafe { nil }
 pub mut:
 	qualified_name                  QualifiedName
 	html_uppercased_qualified_name_ ?string
@@ -1590,7 +1591,6 @@ pub mut:
 	custom_element_definition_    ?&CustomElementDefinition
 	is_value                      ?string
 	custom_state_set_             ?&CustomStateSet
-	popover_target_element_       ?&Element
 
 	registered_intersection_observers         []voidptr
 	computed_style_map_cache_                 ?&StylePropertyMapReadOnly_
@@ -1598,9 +1598,6 @@ pub mut:
 	svg_resource_box_referencing_elements_    []&Element
 	svg_paint_resource_referencing_elements_  []&Element
 
-	scroll_offset_          CSSPixelPoint_
-	snapped_scroll_areas_x_ []ScrollSnapAreaReference_
-	snapped_scroll_areas_y_ []ScrollSnapAreaReference_
 
 	has_css_defined_animations_flag bool
 	animations_animatable_handle_   voidptr = unsafe { nil }
@@ -3971,21 +3968,27 @@ pub fn (mut e Element) scroll_by_with_options(options ScrollToOptions_) &Promise
 }
 
 pub fn (e &Element) el_scroll_offset() CSSPixelPoint_ {
-	return e.scroll_offset_
+	return e.interactive_scroll_offset()
 }
 
 pub fn (e &Element) snapped_scroll_areas_x() []ScrollSnapAreaReference_ {
-	return e.snapped_scroll_areas_x_.clone()
+	if e.interactive_data_ == unsafe { nil } { return []ScrollSnapAreaReference_{} }
+	return e.interactive_data_.snapped_scroll_areas_x_.clone()
 }
 
 pub fn (e &Element) snapped_scroll_areas_y() []ScrollSnapAreaReference_ {
-	return e.snapped_scroll_areas_y_.clone()
+	if e.interactive_data_ == unsafe { nil } { return []ScrollSnapAreaReference_{} }
+	return e.interactive_data_.snapped_scroll_areas_y_.clone()
 }
 
 pub fn (mut e Element) set_snapped_scroll_areas(x []ScrollSnapAreaReference_,
 	y []ScrollSnapAreaReference_) {
-	e.snapped_scroll_areas_x_ = x.clone()
-	e.snapped_scroll_areas_y_ = y.clone()
+	if x.len == 0 && y.len == 0 && (e.interactive_data_ == unsafe { nil }
+		|| (e.interactive_data_.snapped_scroll_areas_x_.len == 0 && e.interactive_data_.snapped_scroll_areas_y_.len == 0)) { return }
+	mut state := e.copy_interactive_data()
+	state.snapped_scroll_areas_x_ = x.clone()
+	state.snapped_scroll_areas_y_ = y.clone()
+	e.interactive_data_ = state
 }
 
 // https://w3c.github.io/csswg-drafts/cssom-view-1/#dom-element-scrollintoview
@@ -4457,52 +4460,31 @@ pub fn (e &Element) is_form_associated_custom_element() bool {
 }
 
 pub fn (e &Element) popover_target_element() ?&Element {
-	return e.popover_target_element_
+	if e.interactive_data_ == unsafe { nil } { return none }
+	return e.interactive_data_.popover_target_element_
 }
 
 pub fn (mut e Element) set_popover_target_element(value ?&Element) {
-	e.popover_target_element_ = value
+	if value == none && e.popover_target_element() == none { return }
+	if target := value {
+		if previous := e.popover_target_element() {
+			if voidptr(target) == voidptr(previous) { return }
+		}
+	}
+	mut state := e.copy_interactive_data()
+	state.popover_target_element_ = value
+	e.interactive_data_ = state
 }
 
-pub fn (element &HTMLElement) popover_visibility_state() PopoverVisibilityState {
-	return element.popover_visibility_state_
-}
 
-pub fn (mut element HTMLElement) set_popover_visibility_state(state PopoverVisibilityState) {
-	element.popover_visibility_state_ = state
-}
 
-pub fn (element &HTMLElement) popover_showing_or_hiding() bool {
-	return element.popover_showing_or_hiding
-}
 
-pub fn (mut element HTMLElement) set_popover_showing_or_hiding(value bool) {
-	element.popover_showing_or_hiding = value
-}
 
-pub fn (element &HTMLElement) popover_trigger() ?&HTMLElement {
-	return element.popover_trigger_
-}
 
-pub fn (mut element HTMLElement) set_popover_trigger(value ?&HTMLElement) {
-	element.popover_trigger_ = value
-}
 
-pub fn (element &HTMLElement) opened_in_popover_mode() ?string {
-	return element.opened_in_popover_mode_
-}
 
-pub fn (mut element HTMLElement) set_opened_in_popover_mode(value ?string) {
-	element.opened_in_popover_mode_ = value
-}
 
-pub fn (element &HTMLElement) inert() bool {
-	return element.inert_
-}
 
-pub fn (mut element HTMLElement) set_inert(value bool) {
-	element.inert_ = value
-}
 
 pub fn (mut element HTMLElement) set_subtree_inertness(is_inert bool) {
 	element.set_inert(is_inert)
@@ -4521,29 +4503,11 @@ pub fn (mut element HTMLElement) set_subtree_inertness(is_inert bool) {
 	})
 }
 
-pub fn (element &HTMLElement) click_in_progress() bool {
-	return element.click_in_progress_
-}
 
-pub fn (mut element HTMLElement) set_click_in_progress(value bool) {
-	element.click_in_progress_ = value
-}
 
-pub fn (element &HTMLElement) attached_internals_handle() voidptr {
-	return element.attached_internals_
-}
 
-pub fn (mut element HTMLElement) set_attached_internals_handle(value voidptr) {
-	element.attached_internals_ = value
-}
 
-pub fn (element &HTMLElement) popover_close_watcher_handle() voidptr {
-	return element.popover_close_watcher_
-}
 
-pub fn (mut element HTMLElement) set_popover_close_watcher_handle(value voidptr) {
-	element.popover_close_watcher_ = value
-}
 
 pub fn (element &HTMLElement) popover() ?string {
 	return unsafe { &Element(element) }.get_attribute('popover')
@@ -4553,14 +4517,14 @@ pub fn (mut element HTMLElement) show_popover() ! {
 	if element.popover() == none {
 		return error('NotSupportedError: element does not have a popover attribute')
 	}
-	element.popover_visibility_state_ = .showing
+	element.set_popover_visibility_state(.showing)
 	mut base := unsafe { &Element(&element) }
 	mut document := unsafe { &Document(base.document()) }
 	document.add_an_element_to_the_top_layer(base)
 }
 
 pub fn (mut element HTMLElement) hide_popover() {
-	element.popover_visibility_state_ = .hidden
+	element.set_popover_visibility_state(.hidden)
 	mut base := unsafe { &Element(&element) }
 	mut document := unsafe { &Document(base.document()) }
 	document.remove_an_element_from_the_top_layer_immediately(base)

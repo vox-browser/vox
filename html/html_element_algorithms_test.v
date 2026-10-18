@@ -238,10 +238,10 @@ fn test_html_element_base_lifecycle_labels_roles_and_editing_focus() {
 	assert !document.editing_host_manager().is_within_active_contenteditable(editable_element.as_node())
 
 	mut editable_html := unsafe { &dom.HTMLElement(editable_element) }
-	editable_html.cryptographic_nonce_ = 'secret'
+	editable_html.set_cryptographic_nonce('secret')
 	copy := editable_element.as_node().clone_single_node(document)!
 	html_element_cloned(editable_html, copy, false)!
-	assert unsafe { &dom.HTMLElement(copy.as_element()?) }.cryptographic_nonce_ == 'secret'
+	assert unsafe { &dom.HTMLElement(copy.as_element()?) }.cryptographic_nonce() == 'secret'
 }
 
 fn test_canvas_gradient_and_navigator_information() {

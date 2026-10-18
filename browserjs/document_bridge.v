@@ -584,7 +584,7 @@ fn apply_bridge_state(document &dom.Document, encoded string) ! {
 						if target_id.len > 0 {
 							if mut popover := document.get_element_by_id(target_id) {
 								mut html_popover := unsafe { &dom.HTMLElement(popover) }
-								html_popover.popover_visibility_state_ = .showing
+								html_popover.set_popover_visibility_state(.showing)
 								mut mutable_document := unsafe { &dom.Document(document) }
 								mutable_document.add_an_element_to_the_top_layer(popover)
 							}

@@ -182,13 +182,16 @@ pub fn (mut e Element) set_scroll_offset(pseudo_element_type ?PseudoElement, off
 		}
 		return
 	}
-	if e.scroll_offset_ != offset {
+	if e.interactive_scroll_offset() == offset { return }
+	if e.interactive_scroll_offset() != offset {
 		mut document := unsafe { &Document(e.document()) }
 		if document != unsafe { nil } {
 			document.invalidate_scroll_state()
 		}
 	}
-	e.scroll_offset_ = offset
+	mut state := e.copy_interactive_data()
+	state.scroll_offset_ = offset
+	e.interactive_data_ = state
 }
 
 // --- Small value/object surfaces -------------------------------------------

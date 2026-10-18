@@ -207,7 +207,7 @@ pub fn html_link_element_model_for_dom_element(element &dom.HTMLLinkElement) &HT
 	model.as_ = ascii_lowercase_string(dom_element.get_attribute_value('as'))
 	model.referrer_policy_ = ascii_lowercase_string(dom_element.get_attribute_value('referrerpolicy'))
 	model.fetch_priority_ = ascii_lowercase_string(dom_element.get_attribute_value('fetchpriority'))
-	model.cryptographic_nonce_ = unsafe { &dom.HTMLElement(element) }.cryptographic_nonce_
+	model.cryptographic_nonce_ = unsafe { &dom.HTMLElement(element) }.cryptographic_nonce()
 	model.connected_ = dom_element.as_node().is_browsing_context_connected()
 	attach_html_link_element_model(element, model)
 	return model
@@ -580,7 +580,7 @@ pub fn (mut link HTMLLinkElementModel) fetch_and_process_linked_modulepreload_re
 		integrity_metadata = resolve_a_module_integrity_metadata(url, settings)
 	}
 	nonce := if element := link.element_ {
-		unsafe { &dom.HTMLElement(element) }.cryptographic_nonce_
+		unsafe { &dom.HTMLElement(element) }.cryptographic_nonce()
 	} else {
 		link.cryptographic_nonce_
 	}

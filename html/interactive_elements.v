@@ -278,7 +278,7 @@ pub fn html_dialog_element_show_a_modal_dialog(dialog &dom.HTMLDialogElement, so
 	if !element.as_node().is_connected() {
 		return error('InvalidStateError: modal dialog must be connected to a fully active document')
 	}
-	if unsafe { &dom.HTMLElement(element) }.popover_visibility_state_ == .showing {
+	if unsafe { &dom.HTMLElement(element) }.popover_visibility_state() == .showing {
 		return error('InvalidStateError: dialog is already open as a popover')
 	}
 	if !dispatch_toggle(element, 'beforetoggle', 'closed', 'open', true, source) {
@@ -287,7 +287,7 @@ pub fn html_dialog_element_show_a_modal_dialog(dialog &dom.HTMLDialogElement, so
 	if element.has_attribute('open') || !element.as_node().is_connected() {
 		return
 	}
-	if unsafe { &dom.HTMLElement(element) }.popover_visibility_state_ == .showing {
+	if unsafe { &dom.HTMLElement(element) }.popover_visibility_state() == .showing {
 		return
 	}
 	html_dialog_element_queue_a_dialog_toggle_event_task(dialog, 'closed', 'open', source)
@@ -388,7 +388,7 @@ pub fn html_dialog_element_is_valid_command(command string) bool {
 }
 
 pub fn html_dialog_element_command_steps(dialog &dom.HTMLDialogElement, source &dom.Element, command string) ! {
-	if unsafe { &dom.HTMLElement(dialog_dom_element(dialog)) }.popover_visibility_state_ == .showing {
+	if unsafe { &dom.HTMLElement(dialog_dom_element(dialog)) }.popover_visibility_state() == .showing {
 		return
 	}
 	if command == 'close' && dialog_dom_element(dialog).has_attribute('open') {

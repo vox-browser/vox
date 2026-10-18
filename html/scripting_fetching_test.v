@@ -697,7 +697,7 @@ fn test_link_modulepreload_dispatches_events_and_preserves_fetch_options() {
 	model.referrer_policy_ = 'origin'
 	model.fetch_priority_ = 'high'
 	mut html_element := unsafe { &dom.HTMLElement(element) }
-	html_element.cryptographic_nonce_ = 'link-nonce'
+	html_element.set_cryptographic_nonce('link-nonce')
 	model.fetch_and_process_linked_resource()
 	assert model.event_count('load') == 1
 	assert model.event_count('error') == 0

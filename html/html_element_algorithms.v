@@ -52,7 +52,7 @@ pub fn html_element_attribute_changed(element &dom.HTMLElement, name string, old
 	dom_element.attribute_changed(name, old_value, value, namespace_)
 	mut mutable_element := unsafe { &dom.HTMLElement(element) }
 	if name == 'nonce' && namespace_ == none {
-		mutable_element.cryptographic_nonce_ = value or { '' }
+		mutable_element.set_cryptographic_nonce(value or { '' })
 	}
 	if name == 'inert' {
 		mutable_element.set_subtree_inertness(value != none)
@@ -69,7 +69,7 @@ pub fn html_element_cloned(element &dom.HTMLElement, copy &dom.Node, clone_child
 		return
 	}
 	mut copy_html_element := unsafe { &dom.HTMLElement(copy_element) }
-	copy_html_element.cryptographic_nonce_ = element.cryptographic_nonce_
+	copy_html_element.set_cryptographic_nonce(element.cryptographic_nonce())
 }
 
 pub fn html_element_inserted(element &dom.HTMLElement) {
@@ -622,7 +622,7 @@ pub fn html_element_labels(element &dom.HTMLElement) ?&dom.NodeList {
 	if !is_labelable_element(dom_element) && !html_element_is_form_associated_custom_element(element) {
 		return none
 	}
-	if labels := element.labels_ {
+	if labels := element.labels_list() {
 		return labels
 	}
 	labels := dom.LiveNodeList.create(dom_element.as_node().root(), .descendants, fn [element] (node &dom.Node) bool {
@@ -636,7 +636,7 @@ pub fn html_element_labels(element &dom.HTMLElement) ?&dom.NodeList {
 		return voidptr(control) == voidptr(dom_element_from_html_element(element))
 	})
 	mut mutable_element := unsafe { &dom.HTMLElement(element) }
-	mutable_element.labels_ = labels
+	mutable_element.set_labels_list(labels)
 	return labels
 }
 
