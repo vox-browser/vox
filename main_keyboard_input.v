@@ -79,6 +79,23 @@ fn (mut app BrowserApp) handle_page_editing_key(key gg.KeyCode, modifier gg.Modi
 	return true
 }
 
+fn (mut app BrowserApp) scroll_page_with_space(modifier gg.Modifier, window_height int) {
+	if modifier.has(.ctrl) || modifier.has(.super) || modifier.has(.alt) { return }
+	if app.document != unsafe { nil } {
+		if focused := app.document.focused_area() {
+			if element := focused.as_element() {
+				// Match EventHandler's controls that reserve Space for activation.
+				if element.is_html_element()
+					&& element.local_name() in ['button', 'input', 'select', 'summary'] {
+					return
+				}
+			}
+		}
+	}
+	direction := if modifier.has(.shift) { -1.0 } else { 1.0 }
+	app.scroll_by(direction * f64(window_height) * 0.8, window_height)
+}
+
 fn (mut app BrowserApp) finish_page_editing_input() {
 	request_browser_frame()
 }

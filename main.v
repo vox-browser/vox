@@ -7105,7 +7105,8 @@ fn (mut app BrowserApp) handle_character(code u32) {
 }
 
 fn (mut app BrowserApp) handle_key(key gg.KeyCode, modifier gg.Modifier) {
-	height := browser_window_size().height
+	window_height := browser_window_size().height
+	height := if window_height > 0 { window_height } else { app.viewport_height + app.chrome_height() }
 	command := modifier.has(.super) || modifier.has(.ctrl)
 	if command && key == .l {
 		app.focus_address_bar()
@@ -7172,6 +7173,7 @@ fn (mut app BrowserApp) handle_key(key gg.KeyCode, modifier gg.Modifier) {
 		.down { app.scroll_by(42.0, height) }
 		.page_up { app.scroll_by(-f64(height) * 0.8, height) }
 		.page_down { app.scroll_by(f64(height) * 0.8, height) }
+		.space { app.scroll_page_with_space(modifier, height) }
 		.home {
 			app.set_scroll_y(0.0, height)
 		}

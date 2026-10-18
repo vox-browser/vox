@@ -44,6 +44,86 @@ fn keyboard_input_test_type(mut app BrowserApp, text string) {
 	}
 }
 
+fn test_native_page_space_scrolls_like_page_down_and_shift_space_like_page_up() {
+	mut app, _ := keyboard_input_test_app()
+	defer { app.document.finalize() }
+	no_modifiers := unsafe { gg.Modifier(0) }
+	height := app.viewport_height + app.chrome_height()
+	app.handle_key(.page_down, no_modifiers)
+	page_step := app.scroll_y
+	assert page_step > 0
+	app.set_scroll_y(0, height)
+	app.handle_key(.space, no_modifiers)
+	app.handle_character(u32(` `))
+	assert app.scroll_y == page_step
+	assert app.document.viewport_rect().y == page_step
+	app.handle_key(.space, .shift)
+	assert app.scroll_y == 0
+	app.handle_key(.space, .shift)
+	assert app.scroll_y == 0
+	app.set_scroll_y(app.maximum_scroll(height), height)
+	app.handle_key(.page_up, no_modifiers)
+	previous_page := app.scroll_y
+	app.set_scroll_y(app.maximum_scroll(height), height)
+	app.handle_key(.space, no_modifiers)
+	assert app.scroll_y == app.maximum_scroll(height)
+	app.handle_key(.space, .shift)
+	assert app.scroll_y == previous_page
+}
+
+fn test_native_page_space_preserves_text_entry_and_address_bar_typing() {
+	mut app, model := keyboard_input_test_app_with_markup(keyboard_input_test_markup +
+		'<div id="editable" contenteditable="true">hello</div>')
+	defer { app.document.finalize() }
+	no_modifiers := unsafe { gg.Modifier(0) }
+	dom.run_focusing_steps_for_node(model.control.element.as_node(), none, .click)
+	app.handle_key(.space, no_modifiers)
+	app.handle_character(u32(` `))
+	assert model.value() == ' '
+	assert app.scroll_y == 0
+	textarea := app.document.get_element_by_id('multiline')?
+	dom.run_focusing_steps_for_node(textarea.as_node(), none, .click)
+	app.handle_key(.space, .shift)
+	app.handle_character(u32(` `))
+	textarea_model := html.html_text_area_element_model_for_dom_element(unsafe { &dom.HTMLTextAreaElement(textarea) })
+	assert textarea_model.value() == ' '
+	assert app.scroll_y == 0
+	editable := app.document.get_element_by_id('editable')?
+	dom.run_focusing_steps_for_node(editable.as_node(), none, .click)
+	mut selection := app.document.get_selection()?
+	selection.collapse(editable.as_node().first_child()?, 5) or { panic(err) }
+	assert app.prepare_page_editing_target() != none
+	app.handle_key(.space, no_modifiers)
+	app.handle_character(u32(` `))
+	assert editable.text_content()? == 'hello\u00a0'
+	assert app.scroll_y == 0
+	app.focus_address_bar()
+	app.handle_key(.space, no_modifiers)
+	app.handle_character(u32(` `))
+	assert app.address == ' '
+	assert app.scroll_y == 0
+}
+
+fn test_native_page_space_does_not_scroll_with_shortcut_modifiers_or_focused_controls() {
+	mut app, _ := keyboard_input_test_app_with_markup(keyboard_input_test_markup +
+		'<button id="button">button</button><input id="checkbox" type="checkbox">' +
+		'<select id="select"><option>option</option></select>' +
+		'<details><summary id="summary">summary</summary></details>')
+	defer { app.document.finalize() }
+	for modifier in [gg.Modifier.ctrl, .super, .alt, .ctrl | .shift, .super | .shift, .alt | .shift] {
+		app.handle_key(.space, modifier)
+		assert app.scroll_y == 0
+	}
+	for id in ['button', 'checkbox', 'select', 'summary', 'readonly', 'disabled'] {
+		element := app.document.get_element_by_id(id)?
+		mut document := unsafe { &dom.Document(app.document) }
+		document.set_focused_area(element.as_node())
+		app.handle_key(.space, unsafe { gg.Modifier(0) })
+		app.handle_key(.space, .shift)
+		assert app.scroll_y == 0
+	}
+}
+
 fn test_native_page_search_accepts_typing_after_pointer_focus_with_native_address_bar() {
 	mut app, model := keyboard_input_test_app()
 	defer { app.document.finalize() }
