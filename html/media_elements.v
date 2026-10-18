@@ -888,6 +888,7 @@ mut:
 	scrub_seek_preemption_timer_ ?&platform.Timer
 	last_timestamp_time_        i64 = -1
 	last_timestamp_duration_    ?i64
+	last_timeline_progress_     f64
 }
 
 pub fn MediaControls.create(media &HTMLMediaElement) &MediaControls {
@@ -1145,6 +1146,9 @@ pub fn (mut controls MediaControls) begin_timeline_scrubbing(time f64) {
 	}
 	controls.pending_scrub_seek_time_ = time
 	controls.submit_pending_scrub_seek()
+	if range_ := controls.timeline_range() {
+		controls.set_timeline_progress(math.max(0.0, math.min(1.0, range_.progress_at(time))))
+	}
 	controls.set_timestamp(time, controls.media.duration())
 }
 
@@ -1152,6 +1156,9 @@ pub fn (mut controls MediaControls) seek_while_scrubbing(time f64) {
 	controls.pending_scrub_seek_time_ = time
 	if !controls.media.seeking() {
 		controls.submit_pending_scrub_seek()
+	}
+	if range_ := controls.timeline_range() {
+		controls.set_timeline_progress(math.max(0.0, math.min(1.0, range_.progress_at(time))))
 	}
 	controls.set_timestamp(time, controls.media.duration())
 }
@@ -1245,17 +1252,12 @@ fn (controls &MediaControls) timeline_range() ?MediaControlsTimelineRange {
 pub fn (mut controls MediaControls) update_timeline() {
 	range_ := controls.timeline_range()
 	if controls.scrubbing_timeline == .no {
-		percentage := if value := range_ {
-			math.max(0.0, math.min(1.0, value.progress_at(controls.media.current_time()))) * 100.0
+		progress := if value := range_ {
+			math.max(0.0, math.min(1.0, value.progress_at(controls.media.current_time())))
 		} else {
 			0.0
 		}
-		if controls.timeline_percentage != percentage {
-			controls.timeline_percentage = percentage
-			if mut fill := controls.dom_.timeline_fill {
-				fill.set_attribute_value('style', 'width:${percentage}%;')
-			}
-		}
+		controls.set_timeline_progress(progress)
 	}
 	buffered := controls.media.buffered()
 	range_count := if range_ != none { int(buffered.length()) } else { 0 }
@@ -1289,6 +1291,16 @@ pub fn (mut controls MediaControls) update_timeline() {
 		style.set_property('left', '${left * 100}%', '') or { panic(err) }
 		style.set_property('width', '${width * 100}%', '') or { panic(err) }
 	}
+}
+
+fn (mut controls MediaControls) set_timeline_progress(progress f64) {
+	if controls.last_timeline_progress_ == progress { return }
+	if fill := controls.dom_.timeline_fill {
+		mut style := css.element_style(fill)
+		style.set_property('width', '${progress * 100}%', '') or { panic(err) }
+	}
+	controls.last_timeline_progress_ = progress
+	controls.timeline_percentage = progress * 100
 }
 
 pub fn (mut controls MediaControls) update_timestamp() {
