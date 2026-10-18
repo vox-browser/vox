@@ -1307,9 +1307,12 @@ fn (mut invalidator StyleInvalidator) add_pending_invalidation(node &Node, reaso
 	key := node.unique_id()
 	mut pending := invalidator.pending_invalidations[key]
 	for descendant_rule in plan.descendant_rules {
-		pending << PendingDescendantInvalidation{
+		invalidation := PendingDescendantInvalidation{
 			reason: reason
 			rule:   descendant_rule
+		}
+		if invalidation !in pending {
+			pending << invalidation
 		}
 	}
 	invalidator.pending_invalidations[key] = pending
@@ -1336,9 +1339,12 @@ fn (mut invalidator StyleInvalidator) apply_invalidation_plan(mut element Elemen
 	}
 
 	for descendant_rule in invalidation_plan_descendant_rules(plan) {
-		invalidator.active_descendant_invalidations << PendingDescendantInvalidation{
+		invalidation := PendingDescendantInvalidation{
 			reason: reason
 			rule:   descendant_rule
+		}
+		if invalidation !in invalidator.active_descendant_invalidations {
+			invalidator.active_descendant_invalidations << invalidation
 		}
 	}
 
