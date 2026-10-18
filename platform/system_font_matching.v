@@ -75,7 +75,8 @@ fn system_font_matching_family(family string) string {
 	return match family.to_lower() {
 		'default', 'serif', 'uiserif' { 'Times' }
 		'sansserif', 'uisansserif' { 'Helvetica' }
-		'monospace', 'uimonospace' { 'Courier' }
+		'monospace' { 'Menlo' }
+		'uimonospace' { 'Courier' }
 		'cursive' { 'Apple Chancery' }
 		'fantasy' { 'Papyrus' }
 		'systemui', 'uirounded' { 'system-ui' }
