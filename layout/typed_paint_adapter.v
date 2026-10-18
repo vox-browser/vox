@@ -1631,7 +1631,7 @@ fn css_mask_image_for_box(element &dom.Element, computed &css.ComputedProperties
 			painting.Rect{math.floor(border_rect.x + .5), math.floor(border_rect.y + .5),
 				border_rect.width, border_rect.height}
 		} else { border_rect }
-		if collect_svg_vector_image_paint_operations(element, resolved_url, vector_rect,
+		if collect_svg_vector_image_paint_operations(node, resolved_url, vector_rect,
 			image_color_scheme(element.document(), computed), mut vector) {
 			operations << vector.operations
 			continue
@@ -3110,12 +3110,15 @@ fn resolved_svg_image_url(element &dom.Element) string {
 	return element.document().encoding_parse_and_serialize_url(source) or { source }
 }
 
-fn collect_svg_vector_image_paint_operations(element &dom.Element, image_url string,
+fn collect_svg_vector_image_paint_operations(node &Node, image_url string,
 	image_rect painting.Rect, color_scheme css.PreferredColorScheme,
 	mut collection SVGMaskPaintCollection) bool {
-	svg_document := svg_image_document_for_source(element.document(), image_url) or { return false }
-	mut mutable_svg_document := unsafe { &dom.Document(svg_document) }
-	mutable_svg_document.set_svg_image_color_scheme(css.preferred_color_scheme_to_string(color_scheme))
+	// Masks share decoded SVG documents with backgrounds in this layout tree.
+	// Recheck response bytes and color scheme before reuse; layout below still
+	// resolves each consumer's own image size.
+	svg_document := svg_image_document_for_source_in_viewport(node, image_url, color_scheme) or {
+		return false
+	}
 	nested_layout := run_document_layout(svg_document, image_rect.width, image_rect.height) or {
 		return false
 	}
@@ -3191,7 +3194,7 @@ fn collect_svg_mask_paint_operations(node &Node, state &LayoutState,
 						width: used.content_width().to_double()
 						height: used.content_height().to_double()
 					}
-					if !collect_svg_vector_image_paint_operations(element, image_url, image_rect,
+					if !collect_svg_vector_image_paint_operations(node, image_url, image_rect,
 						image_color_scheme(element.document(), computed), mut collection) {
 						collection.operations << painting.SVGMaskPaintOperation{
 							kind: .image
