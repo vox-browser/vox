@@ -144,6 +144,10 @@ fn query_selector_all_in(node &dom.Node, selectors SelectorList, mut results []&
 pub fn query_selector(root &dom.Node, selector_text string) ?&dom.Element {
 	install_document_selector_query_hook(root.document())
 	selectors := parse_query_selector_list(selector_text) or { return none }
+	if compounds := independent_query_compounds(selectors) {
+		mut context := MatchContext{has_result_cache: unsafe { nil }}
+		return independent_query_first_in(root, compounds, mut context)
+	}
 	return query_selector_first_in(root, selectors)
 }
 
@@ -152,6 +156,11 @@ pub fn query_selector_all(root &dom.Node, selector_text string) []&dom.Element {
 	mut results := []&dom.Element{}
 	install_document_selector_query_hook(root.document())
 	selectors := parse_query_selector_list(selector_text) or { return results }
+	if compounds := independent_query_compounds(selectors) {
+		mut context := MatchContext{has_result_cache: unsafe { nil }}
+		independent_query_all_in(root, compounds, mut context, mut results)
+		return results
+	}
 	query_selector_all_in(root, selectors, mut results)
 	return results
 }
