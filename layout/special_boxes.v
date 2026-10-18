@@ -1230,7 +1230,7 @@ fn (box &ListItemMarkerBox) chromium_symbol_marker() bool {
 }
 
 fn (box &ListItemMarkerBox) chromium_symbol_ascent() int {
-	return int(math.round(box.first_available_font().pixel_metrics().ascent))
+	return int(box.first_available_font().inline_metrics().ascent)
 }
 
 pub fn (box &ListItemMarkerBox) relative_size() CSSPixels {
