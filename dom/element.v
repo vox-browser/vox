@@ -1114,6 +1114,20 @@ fn layout_node_with_style(node &LayoutNode) &LayoutNodeWithStyle_ {
 	}
 }
 
+fn layout_style_wrapper_for_attachment(element &Element, node &LayoutNode) &LayoutNodeWithStyle_ {
+	if previous := element.layout_node_with_style_ {
+		if previous_node := previous.layout_node_ {
+			if voidptr(previous_node) == voidptr(node) {
+				// The DOM/layout boundary is live. Keep its wrapper when the same
+				// boundary receives geometry again, while resetting attachment data.
+				unsafe { *previous = LayoutNodeWithStyle_{layout_node_: node} }
+				return previous
+			}
+		}
+	}
+	return layout_node_with_style(node)
+}
+
 fn layout_node_ancestor_path(node &LayoutNode) []&LayoutNode {
 	mut result := []&LayoutNode{}
 	mut current := ?&LayoutNode(node)

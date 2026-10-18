@@ -3148,7 +3148,7 @@ pub fn (mut n Node) set_layout_node(layout_node &LayoutNode) {
 	mutable_layout.is_editable_or_editing_host_ = n.is_editable_or_editing_host()
 	if element := n.as_element() {
 		unsafe {
-			mut styled_node := layout_node_with_style(layout_node)
+			mut styled_node := layout_style_wrapper_for_attachment(element, layout_node)
 			styled_node.applied_properties_ = element.el_computed_properties()
 			element.layout_node_with_style_ = styled_node
 		}
