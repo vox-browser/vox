@@ -43,6 +43,13 @@ exact equality. A separate 269×151 diagnostic still differs by one channel
 level at 86 pixels; arbitrary fractional sampling and rounded image clips
 remain open.
 
+`translated-image-minification` checks a synthetic RGB image drawn away from
+the viewport origin at a nonintegral minification scale. Full-source image draws
+retain natural coordinates and place their scale on the canvas, matching
+Brave's recorded operation order. Cropped sources keep strict source bounds.
+This fixture is exact; the separate 269-by-151 RGBA diagnostic above remains
+open.
+
 `replaced-image-overflow` checks an image's own circular rounded clip and a
 rounded overflow clip on its parent. The Chromium image draw applies its own
 clip in Skia; a rectangular image can also carry one ancestor rounded clip
@@ -94,14 +101,14 @@ A private multisampling probe removes those differences; tile-wide native
 multisampling remains open. This diagnostic is not an exact-parity fixture.
 
 Non-repeating SVG backgrounds in the Chromium profile lay out in an
-independently rounded container and scale the retained vector picture to the
-fractional CSS tile size. This avoids changing the viewBox scale when rounding
-the two tile edges produces a different width. All 27 existing Brave fixtures
-remain exact. The unchanged
+independently rounded container and replay into the snapped destination.
+`svg-background-snapped-container` checks three fractional background sizes;
+it improves from 27 differing pixels to zero. Brave's exported paint record
+confirms that the rounded viewport supplies the final viewBox scale.
+The unchanged
 [`diagnostic/svg-background-fractional.html`](diagnostic/svg-background-fractional.html)
-and adjacent original Brave reference preserve three fractional-size icons;
-they improve from 204 to 123 differing pixels, with multisampling and vector
-background shader behavior still open.
+and adjacent original Brave reference retain translucent circle borders;
+they improve from 123 to 96 differing pixels, with maximum channel error 12.
 
 `inline-advances` checks shaped-item width rounding, kerning across ASCII
 word boundaries, fractional max-content tables with emergency wrapping, and

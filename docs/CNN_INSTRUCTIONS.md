@@ -30,14 +30,34 @@ results, not a claim of complete uBlock extension parity.
 
 ## Current diagnostic progress
 
-The signed SVG-background, mask, selector, text-shadow, offset, ellipse and video-scan diagnostic has **2,470 differing pixels**, with a
-maximum channel error of 59, against the unchanged Brave reference. Its single
-diagnostic records **49,967,109,139 instructions** and receives no performance
-credit while the pixels differ. A fresh Brave
-diagnostic remains pixel-exact and records 42,554,598,225 instructions, whose
-15% threshold is approximately 36.171 billion. These are diagnostic runs, not
-the required seven-pair cohort, and no CNN performance success is credited.
+The latest signed normal build includes natural image-coordinate sampling,
+snapped SVG background replay, full-style invalidation draining and allocation-free
+hover matching. It records **50,905,193,102 instructions** and **868 differing
+pixels**, including a newly reproduced scrollbar-policy mismatch; maximum channel
+error is 162. Content, fonts and all 173 full-uBO request/header checks pass.
+The earlier immutable baseline also reproduces the scrollbar mismatch in the
+gradient fixture. AppKit reports legacy scrollbars inside Vox while a standalone
+Cocoa probe reports overlay scrollbars; the environment difference remains open.
+No pixels are excluded, and none of these results receives performance credit.
 
+Before that scrollbar difference appeared, the isolated natural-image change
+reduced the original CNN difference from 2,470 to **209 pixels**. Brave's exported
+paint records show full images drawn in natural coordinates under a canvas scale;
+Vox now retains that operation order. The export's own screenshot is byte-exact
+against the original Brave reference. The separate 269-by-151 RGBA diagnostic
+still differs at 86 pixels. Image controls pass 34 of the 35 pre-existing Brave
+fixtures; the gradient fixture's scrollbar mismatch is also present in the old
+immutable binary. The new translated-image fixture is exact.
+
+Brave's paint record also shows the play icon at 17/64 scale. Replaying the
+independently rounded SVG container into its snapped destination removes the
+extra fractional scale. A three-size SVG background fixture improves from 27
+pixels to zero. The original circle-background diagnostic improves from 123 to
+96 pixels; its translucent circle-border differences remain open.
+
+A fresh Brave diagnostic remains pixel-exact and records 42,554,598,225
+instructions, whose 15% threshold is approximately 36.171 billion. No qualifying
+seven-pair CNN cohort has completed.
 The implementation now skips unused fonts in collapsed whitespace contexts,
 connects TCP before allocating TLS state, initializes DOM JSON through the
 native engine API, and batches raw parser text without bypassing delimiters or
@@ -329,3 +349,24 @@ first screenshot response; this is a polling lower bound. Brave audit and
 shutdown work are excluded. GPU instructions, WindowServer and external
 services are outside both CPU counters. A mismatched or incomplete capture
 cannot pass the performance gate.
+
+The hover invalidation fix preserves DOM identity without copying Node records:
+its 10,000-iteration regression allocates 34.56 MB before the fix and less than
+4 KiB afterward. Both GC configurations pass. Three alternating native pairs
+increase mean whole-page instructions from 49,519,917,196.67 to
+50,863,284,679.33 (+2.713%); this is not credited as a page optimization.
+Full-style invalidation uses the existing whole-subtree drain for both the
+initial mutation plans and subsequent `:has()` fanout. Three focused cases pass
+5,192 assertions in each GC mode, preserving removed attributes, shadow scopes,
+and later selective updates. Its standalone page counts do not establish a
+whole-page reduction. No new broad instruction-saving threshold is credited.
+
+Private receipts: `hover-identity-controlled/assessment.json`,
+`full-style-final-focused/`, `brave-skp-investigation/`,
+`image-natural-coordinates-brave-controls/`, `gradient-controls-recovery/`,
+`svg-snapped-picture-focused/`, and
+`natural-image-final-normal-instructions/pair-1.vox.{json,ubo.json}`.
+The latter bundle is pinned in `natural-image-final-normal/`; it includes the
+four fixes above, based on the earlier isolated source, rather than unrelated
+concurrent canonical work. The first SVG no-GC compile failed with ENOSPC before
+running tests; the unchanged retry passes. Failed receipts remain retained.
