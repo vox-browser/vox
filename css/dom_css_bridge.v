@@ -832,6 +832,46 @@ pub fn style_sheet_for_owner_node(document &dom.Document, owner &dom.Element) ?&
 	return none
 }
 
+fn evaluate_media_rules_for_shadow_root(shadow_root &dom.ShadowRoot, document &dom.Document) {
+	mut scope := css_style_scope_for_shadow_root(shadow_root)
+	mut media_queries_changed_match_state := false
+	for sheet in scope.stylesheets_for_cascade_origin(.author) {
+		mut mutable_sheet := unsafe { &CSSStyleSheet(sheet) }
+		if mutable_sheet.evaluate_media_queries(document) {
+			media_queries_changed_match_state = true
+		}
+	}
+	if !media_queries_changed_match_state {
+		return
+	}
+	scope.invalidate_rule_cache()
+	mut shadow_node := unsafe { &dom.Node(shadow_root) }
+	shadow_node.invalidate_style(.media_query_changed_match_state)
+	invalidate_assigned_elements_for_dirty_style_sheet_slots(shadow_root)
+	if host := shadow_root.host() {
+		mut host_root := unsafe { &dom.Node(host.as_node().root()) }
+		host_root.invalidate_style(.media_query_changed_match_state)
+	}
+}
+
+
+// Match the DOM shadow-including pre-order: current node, attached shadow tree,
+// then light children. Keep the document on the stack rather than in a stored
+// executable closure, whose registry otherwise outlives this traversal.
+fn evaluate_shadow_media_rules_in_subtree(node &dom.Node, document &dom.Document) {
+	if shadow_root := node.as_shadow_root() {
+		evaluate_media_rules_for_shadow_root(shadow_root, document)
+	}
+	if element := node.as_element() {
+		if shadow_root := element.shadow_root() {
+			evaluate_shadow_media_rules_in_subtree(unsafe { &dom.Node(shadow_root) }, document)
+		}
+	}
+	for child in node.children {
+		evaluate_shadow_media_rules_in_subtree(child, document)
+	}
+}
+
 // DOM::Document::evaluate_media_rules(). CSSStyleSheet is CSS-owned in the V
 // module graph, so the translated algorithm lives at this bridge rather than
 // in dom.Document.
@@ -844,32 +884,7 @@ fn evaluate_media_rules_for_document(document &dom.Document) {
 			document_media_queries_changed_match_state = true
 		}
 	}
-
-	root := unsafe { &dom.Node(document) }
-	root.for_each_shadow_including_inclusive_descendant(fn [document] (node &dom.Node) dom.TraversalDecision {
-		if shadow_root := node.as_shadow_root() {
-			mut scope := css_style_scope_for_shadow_root(shadow_root)
-			mut media_queries_changed_match_state := false
-			for sheet in scope.stylesheets_for_cascade_origin(.author) {
-				mut mutable_sheet := unsafe { &CSSStyleSheet(sheet) }
-				if mutable_sheet.evaluate_media_queries(document) {
-					media_queries_changed_match_state = true
-				}
-			}
-			if !media_queries_changed_match_state {
-				return .@continue
-			}
-			scope.invalidate_rule_cache()
-			mut shadow_node := unsafe { &dom.Node(shadow_root) }
-			shadow_node.invalidate_style(.media_query_changed_match_state)
-			invalidate_assigned_elements_for_dirty_style_sheet_slots(shadow_root)
-			if host := shadow_root.host() {
-				mut host_root := unsafe { &dom.Node(host.as_node().root()) }
-				host_root.invalidate_style(.media_query_changed_match_state)
-			}
-		}
-		return .@continue
-	})
+	evaluate_shadow_media_rules_in_subtree(unsafe { &dom.Node(document) }, document)
 
 	if document_media_queries_changed_match_state {
 		document_scope.invalidate_rule_cache()
