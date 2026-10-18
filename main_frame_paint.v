@@ -18,6 +18,7 @@ fn (mut app BrowserApp) finish_frame_preparation() {
 	mut heap_scope := platform.begin_browser_activity_heap_scope_for_scripting(app.document_scripting_enabled_for_heap())
 	defer { heap_scope.finish() }
 	app.frame_preparation_depth--
+	app.flush_page_editing_scroll()
 	if app.layout_tree_only { return }
 	if app.document == unsafe { nil } {
 		app.paint_commands = []layout.PaintCommand{}

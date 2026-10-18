@@ -28,7 +28,10 @@ fn (mut app BrowserApp) handle_page_character(code u32) {
 	mut navigation_work := app.begin_navigation_work()
 	defer { navigation_work.finish() }
 	target := app.prepare_page_editing_target() or { return }
+	target.defer_cursor_scroll(true)
 	target.handle_insert(dom.input_type_insert_text, rune(code).str())
+	target.defer_cursor_scroll(false)
+	app.queue_page_editing_scroll(target)
 	app.finish_page_editing_input()
 }
 
@@ -57,7 +60,7 @@ fn (mut app BrowserApp) handle_page_editing_key(key gg.KeyCode, modifier gg.Modi
 		|| !app.document.is_fully_active() {
 		return false
 	}
-	if app.prepare_page_editing_target() == none { return false }
+	target := app.prepare_page_editing_target() or { return false }
 	page_key := browser_editing_key(key)
 	if page_key == 0 { return true }
 	mut heap_scope :=
@@ -65,17 +68,40 @@ fn (mut app BrowserApp) handle_page_editing_key(key gg.KeyCode, modifier gg.Modi
 	defer { heap_scope.finish() }
 	mut navigation_work := app.begin_navigation_work()
 	defer { navigation_work.finish() }
+	target.defer_cursor_scroll(true)
 	mut handler := app.page_model.event_handler
 	handler.set_document_state(true, app.document.layout_node() != none)
 	result := app.page_model.handle_keydown(page_key, browser_pointer_modifiers(u32(modifier)), 0,
 		false)
+	target.defer_cursor_scroll(false)
+	app.queue_page_editing_scroll(target)
 	if result != .accepted { app.finish_page_editing_input() }
 	return true
 }
 
 fn (mut app BrowserApp) finish_page_editing_input() {
-	app.poll_javascript_tasks()
-	app.begin_frame_preparation()
-	app.finish_frame_preparation()
 	request_browser_frame()
+}
+
+fn (mut app BrowserApp) queue_page_editing_scroll(target &dom.InputEventsTarget) {
+	if previous := app.pending_editing_scroll {
+		if voidptr(previous) != voidptr(target) {
+			previous.flush_deferred_cursor_scroll(false)
+		}
+	}
+	app.pending_editing_scroll = target
+}
+
+// Native text edits can arrive in a burst before AppKit presents a frame.
+// Reveal only the final caret, after the document has consumed those edits.
+fn (mut app BrowserApp) flush_page_editing_scroll() {
+	target := app.pending_editing_scroll or { return }
+	app.pending_editing_scroll = none
+	mut allow_scroll := false
+	if app.document != unsafe { nil } {
+		if current := app.document.active_input_events_target(none) {
+			allow_scroll = voidptr(current) == voidptr(target) && app.document.is_fully_active()
+		}
+	}
+	target.flush_deferred_cursor_scroll(allow_scroll)
 }

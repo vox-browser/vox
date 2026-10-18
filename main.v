@@ -383,6 +383,7 @@ mut:
 	paint_commands_have_backdrop_filter bool
 	frame_preparation_depth             int
 	paint_commands_pending              bool
+	pending_editing_scroll              ?&dom.InputEventsTarget
 	paint_effect_depth                  int
 	status                              string
 	load_status                         string
@@ -6946,6 +6947,12 @@ fn (mut app BrowserApp) handle_event(event &gg.Event) {
 		}
 		if event.typ in [.mouse_up, .mouse_leave] || (event.typ in [.mouse_down, .mouse_move, .mouse_scroll] && event.mouse_y >= app.page_top()) {
 			app.defer_page_input(event)
+		}
+		if !app.address_active && event.typ in [.key_down, .char] {
+			chrome_shortcut := event.typ == .key_down
+				&& app.platform_pointer_modifiers & (dom.modifier_ctrl | dom.modifier_super) != 0
+				&& event.key_code in [.l, .r]
+			if !chrome_shortcut { app.defer_page_input(event) }
 		}
 		return
 	}

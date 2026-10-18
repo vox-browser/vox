@@ -113,7 +113,13 @@ fn (mut app BrowserApp) poll_deferred_page_input() {
 		if input.document != voidptr(app.document) || input.generation != app.navigation_generation {
 			continue
 		}
+		if input.event.typ in [.key_down, .char] && app.address_active { continue }
 		app.handle_event(&input.event)
+		match input.event.typ {
+			.key_down { app.handle_key(input.event.key_code, unsafe { gg.Modifier(input.event.modifiers) }) }
+			.char { app.handle_character(input.event.char_code) }
+			else {}
+		}
 	}
 }
 

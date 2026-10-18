@@ -616,6 +616,25 @@ pub mut:
 	text_node_                          ?&dom.Text
 	did_edit_target_                    voidptr
 	did_edit_callback_                  ?fn (voidptr, string, ?string)
+	deferred_cursor_scroll_depth_       int
+	has_deferred_cursor_scroll_         bool
+}
+
+fn form_associated_text_control_defer_cursor_scroll(target voidptr, defer_scroll bool) {
+	mut text := unsafe { &FormAssociatedTextControlElement(target) }
+	if defer_scroll {
+		text.deferred_cursor_scroll_depth_++
+	} else {
+		assert text.deferred_cursor_scroll_depth_ > 0
+		text.deferred_cursor_scroll_depth_--
+	}
+}
+
+fn form_associated_text_control_flush_deferred_cursor_scroll(target voidptr, allow_scroll bool) {
+	mut text := unsafe { &FormAssociatedTextControlElement(target) }
+	if !text.has_deferred_cursor_scroll_ { return }
+	text.has_deferred_cursor_scroll_ = false
+	if allow_scroll { text.scroll_cursor_into_view() }
 }
 
 fn form_associated_text_control_cursor_position(target voidptr) ?&dom.Position {
@@ -750,6 +769,8 @@ pub fn FormAssociatedTextControlElement.create(control &FormAssociatedElement, v
 		set_selection_callback: form_associated_text_control_set_selection
 		relevant_value_callback: form_associated_text_control_relevant_value
 		replace_range_callback: form_associated_text_control_replace_range
+		defer_cursor_scroll_callback: form_associated_text_control_defer_cursor_scroll
+		flush_deferred_cursor_scroll_callback: form_associated_text_control_flush_deferred_cursor_scroll
 	}
 	return text
 }
@@ -1135,6 +1156,11 @@ fn (mut text FormAssociatedTextControlElement) move_selection_end_to(offset usiz
 
 pub fn (text &FormAssociatedTextControlElement) scroll_cursor_into_view() {
 	if text.text_node_ == none {
+		return
+	}
+	if text.deferred_cursor_scroll_depth_ > 0 {
+		mut mutable_text := unsafe { &FormAssociatedTextControlElement(text) }
+		mutable_text.has_deferred_cursor_scroll_ = true
 		return
 	}
 	mut document := text.control.element.document()

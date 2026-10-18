@@ -2972,6 +2972,20 @@ pub:
 	set_selection_callback   InputEventsTargetSetSelectionCallback = unsafe { nil }
 	relevant_value_callback  InputEventsTargetRelevantValueCallback = unsafe { nil }
 	replace_range_callback   InputEventsTargetReplaceRangeCallback = unsafe { nil }
+	defer_cursor_scroll_callback fn (voidptr, bool) = unsafe { nil }
+	flush_deferred_cursor_scroll_callback fn (voidptr, bool) = unsafe { nil }
+}
+
+pub fn (target &InputEventsTarget) defer_cursor_scroll(defer_scroll bool) {
+	if target.target != unsafe { nil } && target.defer_cursor_scroll_callback != unsafe { nil } {
+		target.defer_cursor_scroll_callback(target.target, defer_scroll)
+	}
+}
+
+pub fn (target &InputEventsTarget) flush_deferred_cursor_scroll(allow_scroll bool) {
+	if target.target != unsafe { nil } && target.flush_deferred_cursor_scroll_callback != unsafe { nil } {
+		target.flush_deferred_cursor_scroll_callback(target.target, allow_scroll)
+	}
 }
 
 pub fn (target &InputEventsTarget) cursor_position() ?&Position {

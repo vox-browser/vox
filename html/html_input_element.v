@@ -1222,11 +1222,13 @@ pub fn (mut model HTMLInputElementModel) update_text_input_shadow_tree() {
 
 pub fn (mut model HTMLInputElementModel) update_placeholder_visibility() {
 	mut placeholder := model.placeholder_element_ or { return }
-	if model.placeholder_value() != none {
-		placeholder.set_attribute_value('style', placeholder_style_when_visible())
+	style := if model.placeholder_value() != none {
+		placeholder_style_when_visible()
 	} else {
-		placeholder.set_attribute_value('style', placeholder_style_when_hidden())
+		placeholder_style_when_hidden()
 	}
+	if placeholder.get_attribute_value('style') == style { return }
+	placeholder.set_attribute_value('style', style)
 }
 
 pub fn (mut model HTMLInputElementModel) handle_maxlength_attribute() {
