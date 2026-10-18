@@ -1,5 +1,10 @@
 # Wikipedia memory usage
 
+The [2026-10-18 no-JavaScript comparison](WIKIPEDIA_NOJS_MEMORY.md) measures
+**71.1% less settled RAM than Chrome**, with page scripts disabled in both.
+It identifies its validated production bundle. The October 15 app measurements
+below describe earlier builds and conditions.
+
 The core memory fix is commit `4606e121fe1227f845c25f09210cd821d4386ce4`.
 The RAM status-bar feature is commit `4eb6a162935708f6aa0db73d8c7a353652ee857f`.
 
