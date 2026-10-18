@@ -335,5 +335,47 @@ int main()
     changed = descriptor; changed.width = std::numeric_limits<int>::max();
     assert(!uploads.prepare(changed, 2, 2, false).pending);
     assert(!uploads.prepare(descriptor, std::numeric_limits<int>::max(), 2, false).pending);
+    // Packed and strided sheets/output have identical active pixels. Exercise
+    // long rows and tails, keeping source and destination padding unobservable.
+    {
+        VoxGraphiteRasterCache rows;
+        std::vector<uint8_t> packed(17 * 33 * 4, 83), strided(80 * 33, 201);
+        std::vector<uint8_t> input(7 * 19 * 4, 29), padded(44 * 19, 202);
+        auto sheet = image(packed.data());
+        sheet.width = 17; sheet.height = 33; sheet.pitch = 68;
+        auto draw = rows.prepare(sheet, 7, 19, 28, true, input.data());
+        assert(draw.pending && !draw.hit);
+        std::fill(input.begin(), input.end(), 107);
+        rows.finish(std::move(draw), input.data(), 28);
+        for (int y = 0; y < 33; ++y)
+            std::memcpy(strided.data() + y * 80, packed.data() + y * 68, 68);
+        auto padded_sheet = sheet;
+        padded_sheet.pixels = strided.data(); padded_sheet.pitch = 80;
+        auto reset = [&] {
+            std::fill(input.begin(), input.end(), 29);
+            for (int y = 0; y < 19; ++y) std::fill_n(padded.data() + y * 44, 28, 29);
+        };
+        reset();
+        assert(rows.prepare(padded_sheet, 7, 19, 44, true, padded.data()).hit);
+        for (int y = 0; y < 19; ++y) {
+            for (int x = 0; x < 28; ++x) assert(padded[y * 44 + x] == 107);
+            for (int x = 28; x < 44; ++x) assert(padded[y * 44 + x] == 202);
+        }
+        reset();
+        assert(rows.prepare(sheet, 7, 19, 28, true, input.data()).hit);
+        assert(input == std::vector<uint8_t>(input.size(), 107));
+        reset(); packed.back()++;
+        assert(!rows.prepare(sheet, 7, 19, 28, true, input.data()).hit);
+        packed.back()--;
+        strided[32 * 80 + 67]++;
+        assert(!rows.prepare(padded_sheet, 7, 19, 44, true, padded.data()).hit);
+        strided[32 * 80 + 67]--;
+        for (int row : {0, 9, 18}) {
+            reset(); input[row * 28 + 27]++;
+            assert(!rows.prepare(sheet, 7, 19, 28, true, input.data()).hit);
+            padded[row * 44 + 27]++;
+            assert(!rows.prepare(padded_sheet, 7, 19, 44, true, padded.data()).hit);
+        }
+    }
     std::cout << "Graphite raster cache: source/backdrop mutation, geometry, profiles, strides, YUV, LRU and bounds passed\n";
 }

@@ -35,6 +35,8 @@ class VoxGraphiteRasterCache {
         {
             if (copy.size() != bytes * height) return false;
             if (!bytes) return true;
+            if (pitch == bytes || height == 1)
+                return !std::memcmp(pixels, copy.data(), copy.size());
             for (size_t y = 0; y < height; ++y)
                 if (std::memcmp(pixels + y * pitch, copy.data() + y * bytes, bytes)) return false;
             return true;
@@ -43,6 +45,10 @@ class VoxGraphiteRasterCache {
         {
             std::vector<uint8_t> result(bytes * height);
             if (!bytes) return result;
+            if (pitch == bytes || height == 1) {
+                std::memcpy(result.data(), pixels, result.size());
+                return result;
+            }
             for (size_t y = 0; y < height; ++y)
                 std::memcpy(result.data() + y * bytes, pixels + y * pitch, bytes);
             return result;
@@ -213,11 +219,13 @@ private:
                 || (entry.is_shape ? !same_shape(entry.shape, parameters.shape)
                     : entry.is_path ? !same_path(entry.path, parameters.path)
                                     : !same_image(entry.image, parameters.image))
-                || !source.equal(*entry.source) || !extra.equal(entry.extra)
-                || (has_background && !backdrop.equal(entry.background))) continue;
-            for (size_t y = 0; y < backdrop.height; ++y)
-                std::memcpy(pixels + y * backdrop.pitch,
-                    entry.output.data() + y * backdrop.bytes, backdrop.bytes);
+                || (has_background && !backdrop.equal(entry.background))
+                || !extra.equal(entry.extra) || !source.equal(*entry.source)) continue;
+            if (backdrop.pitch == backdrop.bytes || backdrop.height == 1)
+                std::memcpy(pixels, entry.output.data(), entry.output.size());
+            else for (size_t y = 0; y < backdrop.height; ++y)
+                    std::memcpy(pixels + y * backdrop.pitch,
+                        entry.output.data() + y * backdrop.bytes, backdrop.bytes);
             entries.splice(entries.begin(), entries, it);
             request.hit = true;
             return request;
