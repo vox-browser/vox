@@ -13114,6 +13114,67 @@ reader to inspect the actual diff0/final validation0 completed its audit without
 runtime reexecution. Chrome parity still requires an equivalent endpoint and
 page state; the old hydrated Chrome lower-bound count does not establish it.
 
+## Retain the block-margin allocation change as a rejected local attempt
+
+Round135 tests the complete authored `b994ddfa` feature against accepted133:
+one exact hunk in `layout/block_formatting_context.v` explicitly initializes
+`?TrailingCollapsedMargin` to none. The old compiler otherwise constructs an
+unused heap Node before marking the option absent. The generated normal C-only
+preflight confirms removal of that constructor in
+`layout__BlockFormattingContext__static__for_root`; no native/profile/page pass
+is inferred from this inspection.
+
+Both original cases pass in both C-O2 GC modes, **32 assertions each** including
+internal layout checks. They check512 empty contexts and retain a present real
+child through a context copy and collection. Original bodies/expected values
+remain exact. Common12 cases including the inactive diagnostic pass60 assertions
+per configuration, with identical accepted133-final control evidence reused.
+Normal C-only frontend/typechecking exits0; source/runtime manifests change only
+the one authored hunk. Root's pre-existing feature is not reverted or rewritten.
+
+Three predeclared alternating local pairs each count16 complete public HTML
+parse/layout/display-list/paint-command/hit-phase/finalize pipelines. The unchanged
+64 Unicode paragraphs/128 indentation blocks have192 independent text checks;
+setup, eight warmups, forced GC and final assertions stay outside the counter.
+All six actual exits are0 and checksums are7,963,486,608. Medians are
+**32,110,025,521 → 32,611,360,202 retired instructions**,
+**1.56130266% more**, with **1/3 wins**. All six measurements stay,
+including the unusually low first control. No sample is replaced or extended.
+The smaller local fixture does not force the normal automatic4GiB heap hint,
+which still starts at2,048 elements. Local allocations and call counts are not
+substituted for hardware instructions.
+
+The negative-local-median gate actually exits1 and the native-job launcher
+actually exits1, starting zero jobs. No normal native build, independent whole-C
+audit, profile, browser primary, focused screenshot, broad batch, bundle or GC
+pass is claimed for135. The declared30-pair seed135 cohort never starts. Page
+credit and observed carry remain0. Accepted133 stays the frozen control/broad
+baseline and verified app. All focused/local/preflight C and binary archives
+remain durable in `Build/v/instruction-opt135-durable-archives.json`.
+
+Read-only generated-C review also identifies absent blob-entry payloads in empty
+URL constructors. A separate feature, **`ffceca4b`**, changes only
+`url/url_record.v` and adds three focused cases in the same commit. The tests
+cover absence, owned Blob byte copies, MediaSource/environment origins, clearing,
+record copying and GC. Final coverage combines seven targeted cases and55
+assertions per GC mode: six unchanged ownership cases are retained from the
+original run; only the corrected allocation case executes again. The original
+Boehm batch1/no-GC batch0 remain retained. Its allocation budget initially counted
+the required heap URL record; the corrected test compares the same record work
+against an explicit-none reference. That corrected test passes0/11 assertions
+per GC, and the real before implementation fails with actual1 as expected.
+The first single-case reader omitted V's unnumbered success row, so its aggregate1
+is also retained; derived evidence verifies both genuine driver exits0 without
+runtime reexecution. The earlier setup's missing-v.mod failure is retained.
+Exact sources/C/logs and coverage are in
+`Build/v/url-empty-blob-focused-final-audit.json`. No instruction/page saving is
+yet claimed for this separate feature; its frozen candidate remains to measure.
+
+Canonical app/GUI and foreign edits remain preserved. The new URL runtime change
+has its own focused commit and receives no135 performance credit. Chrome parity
+remains unestablished because the earlier Chrome observation uses a different
+endpoint and hydrated content.
+
 ## Causes and changes
 
 - The V 0.5.2 compatibility compiler's `-prod` Boehm code repeatedly snapshots
