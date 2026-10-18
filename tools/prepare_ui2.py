@@ -28,8 +28,29 @@ def main():
         raise SystemExit("UI2 not found. Set UI2_SOURCE_DIR to your UI2 checkout.")
     target = repo / "Build/v/modules/ui2"
     target.mkdir(parents=True, exist_ok=True)
-    for name in ("appkit", "uikit", "windows", "linux"):
+    for name in ("uikit", "windows", "linux"):
         link_to(target / name, source / name)
+    appkit = target / "appkit"
+    if appkit.is_symlink():
+        appkit.unlink()
+    appkit.mkdir(exist_ok=True)
+    for entry in (source / "appkit").iterdir():
+        output = appkit / entry.name
+        if entry.name == "ui_macos_darwin.v":
+            if output.is_symlink():
+                output.unlink()
+            # Modern AppKit may give an NSTextField its own private subviews.
+            # Those are not UI2's optional label container; keep the field as
+            # the text owner rather than messaging its private drawing view.
+            text = entry.read_text().replace(
+                "fn label_text_field(view NativeView) NativeView {\n",
+                "fn label_text_field(view NativeView) NativeView {\n"
+                "\tif macos.msg_bool_id(view, 'isKindOfClass:', macos.get_class('NSTextField')) {\n"
+                "\t\treturn view\n\t}\n",
+            )
+            write_if_changed(output, text)
+        else:
+            link_to(output, entry)
     # UI2 follows current V. The browser uses V's compatibility frontend;
     # make the three floating-point generic calls explicit in the staged copy.
     ui = target / "ui"
@@ -68,9 +89,11 @@ def main():
     if adapter.is_symlink():
         adapter.unlink()
     adapter.mkdir(exist_ok=True)
+    # Remove the previous single-control adapter when refreshing an old stage.
+    (adapter / "embedded_textbox_darwin.v").unlink(missing_ok=True)
     write_if_changed(
-        adapter / "embedded_textbox_darwin.v",
-        (repo / "tools/ui2/embedded_textbox_darwin.v").read_text(),
+        adapter / "embedded_browser_darwin.v",
+        (repo / "tools/ui2/embedded_browser_darwin.v").read_text(),
     )
     write_if_changed(
         target / "v.mod",

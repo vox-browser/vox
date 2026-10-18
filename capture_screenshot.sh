@@ -26,7 +26,7 @@ if [ ! -x "$browser" ] \
     || [ "$repo_dir/build-prod-browser.sh" -nt "$browser" ] \
     || [ "$repo_dir/tools/prepare_http_compat.py" -nt "$browser" ] \
     || [ "$repo_dir/tools/prepare_ui2.py" -nt "$browser" ] \
-    || [ "$repo_dir/tools/ui2/embedded_textbox_darwin.v" -nt "$browser" ] \
+    || [ "$repo_dir/tools/ui2/embedded_browser_darwin.v" -nt "$browser" ] \
     || [ "$repo_dir/native_address_bar_darwin.h" -nt "$browser" ] \
     || find "$repo_dir" \
     \( -path "$repo_dir/Build" -o -path "$repo_dir/.git" \) -prune -o \

@@ -1,5 +1,6 @@
 #pragma once
 #include "native_address_bar_darwin.h"
+#include "native_browser_chrome_darwin.h"
 
 @interface VoxAddressBarTestView : NSView
 @end
@@ -51,8 +52,44 @@ static void native_test_address_shortcut(void *field, void *owner, VoxAddressSho
 
 static int native_test_address_geometry(void *field, int width) {
 	NSRect frame = [(__bridge NSTextField *)field frame];
-	return frame.origin.x == 184 && frame.origin.y == 554 && frame.size.width == width
+	return frame.origin.x == 184 && frame.origin.y == 12 && frame.size.width == width
 		&& frame.size.height == 34;
+}
+
+static void native_test_chrome_click(void *control) {
+	[(__bridge NSButton *)control performClick:nil];
+}
+
+static int native_test_chrome_enabled(void *control) {
+	return [(__bridge NSButton *)control isEnabled];
+}
+
+static int native_test_chrome_button(void *control) {
+	return [(__bridge id)control isKindOfClass:NSButton.class]
+		&& [(__bridge NSButton *)control isBordered];
+}
+
+static int native_test_chrome_geometry(void *toolbar, void *status, int width, int height) {
+	NSRect top = [(__bridge NSView *)toolbar frame];
+	NSRect bottom = [(__bridge NSView *)status frame];
+	return NSEqualRects(top, NSMakeRect(0, height - 88, width, 88))
+		&& NSEqualRects(bottom, NSMakeRect(0, 0, width, 24));
+}
+
+static void native_test_chrome_resize(void *window, int width, int height) {
+	[(__bridge NSWindow *)window setContentSize:NSMakeSize(width, height)];
+}
+
+static int native_test_chrome_document_hit(void *window, void *toolbar, void *status) {
+	NSView *root = [(__bridge NSWindow *)window contentView];
+	NSView *hit = [root hitTest:NSMakePoint(50, 100)];
+	return hit == root && [root.subviews containsObject:(__bridge NSView *)toolbar]
+		&& [root.subviews containsObject:(__bridge NSView *)status];
+}
+
+static int native_test_chrome_unmounted(void *window) {
+	return [(__bridge NSWindow *)window contentView].subviews.count == 0
+		&& vox_chrome_memory_timer == nil && vox_chrome_memory_close_observer == nil;
 }
 
 static unsigned long native_test_address_selection(void *field) {

@@ -25,11 +25,10 @@ fn (mut app BrowserApp) mount_address_bar() {
 		parent := macos.msg_id(window, 'contentView')
 		mut owner := unsafe { address_bar_owner }
 		owner.app = app
-		field := ui2.mount_embedded_textbox(voidptr(parent), ui2.rect(184, 12,
-			browser_window_size().width - 252, 34), app.address, address_bar_event) or {
+		size := browser_window_size()
+		field := app.mount_ui2_chrome(voidptr(parent), size.width, size.height) or {
 			panic(err)
 		}
-		app.native_address_bar = true
 		C.native_address_bar_install_shortcuts(field, app, address_bar_shortcut)
 	}
 }
@@ -38,17 +37,18 @@ fn (mut app BrowserApp) unmount_address_bar() {
 	$if vox_ui2 ? {
 		if !app.native_address_bar { return }
 		C.native_address_bar_remove_shortcuts()
-		ui2.unmount_embedded_textbox()
+		C.native_browser_chrome_stop_memory()
+		ui2.unmount_embedded_browser()
 		mut owner := unsafe { address_bar_owner }
 		owner.app = unsafe { nil }
 		app.native_address_bar = false
 	}
 }
 
-fn (app &BrowserApp) resize_address_bar(width int) {
+fn (mut app BrowserApp) resize_address_bar(width int) {
 	$if vox_ui2 ? {
 		if app.native_address_bar {
-			ui2.resize_embedded_textbox(ui2.rect(184, 12, width - 252, 34))
+			app.update_browser_chrome(width, app.browser_chrome.height)
 		}
 	}
 }
@@ -101,8 +101,7 @@ $if vox_ui2 ? {
 		if app == unsafe { nil } { return }
 		match event {
 			'address-change' { app.address = ui2.text('address') }
-			'address-submit' { app.submit_address_bar() }
-			else {}
+			else { app.activate_browser_chrome(event) }
 		}
 	}
 

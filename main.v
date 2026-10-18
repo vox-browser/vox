@@ -376,6 +376,7 @@ mut:
 	address_active                      bool
 	address_select                      bool
 	native_address_bar                  bool
+	browser_chrome                      BrowserChromeState
 	viewport_width                      int
 	viewport_height                     int
 	scroll_y                            f64
@@ -6612,13 +6613,6 @@ fn (mut app BrowserApp) draw_command(source_command layout.PaintCommand, page_x 
 	}
 }
 
-fn (mut app BrowserApp) draw_chrome_button(x f32, label string, enabled bool) {
-	background := if enabled { gg.rgb(51, 65, 85) } else { gg.rgb(30, 41, 59) }
-	foreground := if enabled { gg.rgb(241, 245, 249) } else { gg.rgb(100, 116, 139) }
-	draw_rounded_fill(app.ctx, x, 12, 36, 34, 7, background)
-	app.ctx.draw_text(int(x) + 11, 18, label, color: foreground, size: 17)
-}
-
 fn address_for_display(address string, cursor int, active bool, max_characters int) string {
 	if max_characters <= 0 {
 		return ''
@@ -6769,56 +6763,11 @@ fn (mut app BrowserApp) draw() {
 	}
 
 	if app.chrome_height() > 0 {
-		// Draw chrome last so scrolled page content cannot paint over it.
-		draw_srgb_rect(app.ctx, 0, 0, f32(window.width), f32(toolbar_height), gg.rgb(23, 32, 51))
-		app.draw_chrome_button(12, '‹', app.history_index > 0)
-		app.draw_chrome_button(54, '›', app.history_index + 1 < app.history.len)
-		app.draw_chrome_button(96, '↻', app.history_index >= 0)
-		app.draw_chrome_button(138, '⌂', true)
-		address_x := f32(184)
-		address_width := f32(window.width - 252)
-		app.resize_address_bar(window.width)
-		if !app.native_address_bar {
-			address_color := if app.address_active {
-				gg.rgb(255, 255, 255)
-			} else {
-				gg.rgb(241, 245, 249)
-			}
-			draw_rounded_fill(app.ctx, address_x, 12, address_width, 34, 8, address_color)
-			if app.address_select {
-				draw_rounded_fill(app.ctx, address_x + 5, 16, address_width - 10, 26, 5, gg.rgb(219, 234, 254))
-			}
-			visible_address := address_for_display(app.address, app.address_cursor, app.address_active, int(address_width / 8.0) - 2)
-			app.ctx.draw_text(int(address_x) + 10, 19, visible_address,
-				color: gg.rgb(15, 23, 42)
-				size: 14
-			)
+		$if vox_ui2 ? {
+			app.update_browser_chrome(window.width, window.height)
+		} $else {
+			app.draw_portable_browser_chrome(window)
 		}
-		draw_rounded_fill(app.ctx, f32(window.width - 60), 12, 48, 34, 8, gg.rgb(109, 40, 217))
-		app.ctx.draw_text(window.width - 48, 20, 'Go',
-			color: gg.rgb(255, 255, 255)
-			size: 14
-		)
-		app.ctx.draw_text(14, 58, 'V · HTML/DOM/CSS/Layout · LibJS + JavaScriptCore',
-			color: gg.rgb(196, 181, 253)
-			size: 13
-		)
-		app.ctx.draw_text(348, 58, app.status, color: gg.rgb(148, 163, 184), size: 12)
-
-		status_y := window.height - int(status_bar_height)
-		draw_srgb_rect(app.ctx, 0, f32(status_y), f32(window.width), f32(status_bar_height), gg.rgb(30, 41, 59))
-		footer := if app.hovered_link != '' {
-			app.hovered_link
-		} else if app.js_messages.len > 0 {
-			// Console stacks can contain embedded newlines. The status bar is a
-			// single-line chrome surface; allowing those newlines to paint upward
-			// leaks browser diagnostics into document screenshots.
-			'Console: ${app.js_messages.last().split_into_lines()[0]}'
-		} else {
-			app.source_label
-		}
-		app.ctx.draw_text(12, status_y + 4, footer, color: gg.rgb(203, 213, 225), size: 12)
-		app.draw_memory_status(window.width, status_y)
 	}
 	end_browser_frame(app.ctx)
 	app.finish_scroll_profile_frame()
@@ -6916,31 +6865,33 @@ fn (mut app BrowserApp) handle_click(x f32, y f32) {
 		app.suppress_next_click_for_chrome = false
 		return
 	}
-	if y >= 12 && y <= 46 {
-		if x >= 12 && x < 48 {
-			app.history_go(-1)
-			return
-		}
-		if x >= 54 && x < 90 {
-			app.history_go(1)
-			return
-		}
-		if x >= 96 && x < 132 {
-			app.reload()
-			return
-		}
-		if x >= 138 && x < 174 {
-			app.navigate('about:home', true)
-			return
-		}
-		window := browser_window_size()
-		if x >= 184 && x < f32(window.width - 68) {
-			app.focus_address_bar()
-			return
-		}
-		if x >= f32(window.width - 60) {
-			app.submit_address_bar()
-			return
+	$if !vox_ui2 ? {
+		if y >= 12 && y <= 46 {
+			if x >= 12 && x < 48 {
+				app.history_go(-1)
+				return
+			}
+			if x >= 54 && x < 90 {
+				app.history_go(1)
+				return
+			}
+			if x >= 96 && x < 132 {
+				app.reload()
+				return
+			}
+			if x >= 138 && x < 174 {
+				app.navigate('about:home', true)
+				return
+			}
+			window := browser_window_size()
+			if x >= 184 && x < f32(window.width - 68) {
+				app.focus_address_bar()
+				return
+			}
+			if x >= f32(window.width - 60) {
+				app.submit_address_bar()
+				return
+			}
 		}
 	}
 	app.blur_address_bar()
@@ -7117,6 +7068,7 @@ fn (mut app BrowserApp) handle_key(key gg.KeyCode, modifier gg.Modifier) {
 		return
 	}
 	if app.address_active {
+		if app.native_address_bar { return }
 		mut runes := app.address.runes()
 		match key {
 			.enter {

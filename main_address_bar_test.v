@@ -2,8 +2,13 @@ module main
 
 import dom
 
+$if vox_ui2 ? {
+	import gg
+	import ui2
+}
+
 fn test_portable_address_bar_ignores_shortcut_characters_and_accepts_altgr() {
-	mut app := BrowserApp{address: 'about:home'}
+	mut app := BrowserApp{ address: 'about:home' }
 	app.focus_address_bar()
 	app.platform_pointer_modifiers = dom.modifier_ctrl
 	app.handle_character(u32(`l`))
@@ -16,11 +21,6 @@ fn test_portable_address_bar_ignores_shortcut_characters_and_accepts_altgr() {
 	app.platform_pointer_modifiers = dom.modifier_ctrl | dom.modifier_alt
 	app.handle_character(u32(`€`))
 	assert app.address == '€'
-}
-
-$if vox_ui2 ? {
-	import gg
-	import ui2
 }
 
 fn test_address_bar_empty_submission_keeps_focus_and_does_not_navigate() {
@@ -65,6 +65,14 @@ $if vox_ui2 ? {
 	fn C.native_test_address_clipboard_begin()
 	fn C.native_test_address_clipboard_matches() int
 	fn C.native_test_address_clipboard_end()
+	fn C.native_test_chrome_click(control voidptr)
+	fn C.native_test_chrome_enabled(control voidptr) int
+	fn C.native_test_chrome_button(control voidptr) int
+	fn C.native_test_chrome_geometry(toolbar voidptr, status voidptr, width int, height int) int
+	fn C.native_test_chrome_resize(window voidptr, width int, height int)
+	fn C.native_test_chrome_document_hit(window voidptr, toolbar voidptr, status voidptr) int
+	fn C.native_test_chrome_unmounted(window voidptr) int
+	fn C.native_browser_chrome_sample_memory()
 
 	fn address_bar_test_insert(field voidptr, text string) {
 		C.native_test_address_insert(field, text.str, text.len)
@@ -79,9 +87,7 @@ $if vox_ui2 ? {
 		}
 		mut owner := unsafe { address_bar_owner }
 		owner.app = app
-		field := ui2.mount_embedded_textbox(parent, ui2.rect(184, 12, 548, 34), app.address,
-			address_bar_event) or { panic(err) }
-		app.native_address_bar = true
+		field := app.mount_ui2_chrome(parent, 800, 600) or { panic(err) }
 		return app, field
 	}
 
@@ -121,7 +127,7 @@ $if vox_ui2 ? {
 		assert ui2.text('address') == app.address
 		// Imperative native replacement need not deliver a change notification.
 		ui2.set_text('address', 'https://ui2-address-bar.invalid/live')
-		app.handle_click(f32(browser_window_size().width - 36), 24)
+		C.native_test_chrome_click(ui2.embedded_browser_control('go'))
 		pending := app.pending_navigation or { panic('Go did not navigate') }
 		assert pending.resolved == 'https://ui2-address-bar.invalid/live'
 		assert pending.add_history
@@ -174,5 +180,95 @@ $if vox_ui2 ? {
 		assert app.address == ''
 		C.native_test_address_shortcut(field, app, address_bar_shortcut, 9, 0)
 		assert app.address == 'https://ui2-address-bar.invalid/pasted'
+	}
+
+	fn test_ui2_chrome_uses_native_buttons_with_history_enabled_states_and_actions() {
+		window := C.native_test_address_window()
+		mut app, _ := address_bar_test_app(C.native_test_address_parent(window))
+		defer {
+			app.unmount_address_bar()
+			C.native_test_address_close(window)
+		}
+		for id in ['back', 'forward', 'reload', 'home', 'go'] {
+			assert C.native_test_chrome_button(ui2.embedded_browser_control(id)) == 1
+		}
+		assert C.native_test_chrome_enabled(ui2.embedded_browser_control('back')) == 0
+		assert C.native_test_chrome_enabled(ui2.embedded_browser_control('forward')) == 0
+		assert C.native_test_chrome_enabled(ui2.embedded_browser_control('reload')) == 1
+		C.native_test_chrome_click(ui2.embedded_browser_control('back'))
+		assert app.navigation_generation == 0
+		app.history << HistoryEntry{ url: 'https://next.example/page' }
+		app.update_browser_chrome(800, 600)
+		assert C.native_test_chrome_enabled(ui2.embedded_browser_control('forward')) == 1
+		// Native actions use the same navigation guard as pointer/keyboard input.
+		app.navigation_work_depth = 1
+		C.native_test_chrome_click(ui2.embedded_browser_control('forward'))
+		forward := app.deferred_navigation_input or { panic('Forward did not dispatch') }
+		assert forward.is_history && forward.history_delta == 1
+		app.deferred_navigation_input = none
+		app.history_index = 1
+		app.update_browser_chrome(800, 600)
+		assert C.native_test_chrome_enabled(ui2.embedded_browser_control('back')) == 1
+		assert C.native_test_chrome_enabled(ui2.embedded_browser_control('forward')) == 0
+		C.native_test_chrome_click(ui2.embedded_browser_control('back'))
+		back := app.deferred_navigation_input or { panic('Back did not dispatch') }
+		assert back.is_history && back.history_delta == -1
+		app.deferred_navigation_input = none
+		C.native_test_chrome_click(ui2.embedded_browser_control('reload'))
+		reload := app.deferred_navigation_input or { panic('Reload did not dispatch') }
+		assert reload.address == 'https://next.example/page'
+		assert !reload.add_history
+		app.deferred_navigation_input = none
+		C.native_test_chrome_click(ui2.embedded_browser_control('home'))
+		home := app.deferred_navigation_input or { panic('Home did not dispatch') }
+		assert home.address == 'about:home'
+		assert home.add_history
+	}
+
+	fn test_ui2_chrome_resize_and_status_refresh_preserve_editing_and_document_input() {
+		window := C.native_test_address_window()
+		mut app, field := address_bar_test_app(C.native_test_address_parent(window))
+		defer {
+			app.unmount_address_bar()
+			C.native_test_address_close(window)
+		}
+		app.focus_address_bar()
+		address_bar_test_insert(field, 'https://editing.example/привет')
+		C.native_test_address_shortcut(field, app, address_bar_shortcut, 0, 0)
+		selection := C.native_test_address_selection(field)
+		app.status = 'Loaded'
+		app.hovered_link = 'https://hover.example/'
+		C.native_test_chrome_resize(window, 1000, 700)
+		app.update_browser_chrome(1000, 700)
+		assert ui2.embedded_browser_control('address') == field
+		assert C.native_test_address_geometry(field, 748) == 1
+		assert ui2.focused_id() == 'address'
+		assert ui2.text('address') == 'https://editing.example/привет'
+		assert C.native_test_address_selection(field) == selection
+		assert ui2.text('load-status') == 'Loaded'
+		assert ui2.text('footer') == 'https://hover.example/'
+		assert C.native_test_chrome_geometry(ui2.embedded_browser_control('toolbar'), ui2.embedded_browser_control('status-bar'), 1000, 700) == 1
+		assert C.native_test_chrome_document_hit(window, ui2.embedded_browser_control('toolbar'), ui2.embedded_browser_control('status-bar')) == 1
+		app.hovered_link = ''
+		app.js_messages << 'first line\nstack line'
+		app.update_browser_chrome(1000, 700)
+		assert ui2.text('footer') == 'Console: first line'
+		C.native_browser_chrome_sample_memory()
+		assert ui2.text('memory').starts_with('RAM: ')
+		assert !app.memory_status.sampled
+	}
+
+	fn test_ui2_chrome_unmount_clears_controls_and_sampling_and_can_mount_again() {
+		window := C.native_test_address_window()
+		mut app, _ := address_bar_test_app(C.native_test_address_parent(window))
+		app.unmount_address_bar()
+		assert C.native_test_chrome_unmounted(window) == 1
+		assert ui2.embedded_browser_control('address') == unsafe { nil }
+		assert ui2.embedded_browser_control('go') == unsafe { nil }
+		mut next, _ := address_bar_test_app(C.native_test_address_parent(window))
+		assert ui2.embedded_browser_control('go') != unsafe { nil }
+		next.unmount_address_bar()
+		assert C.native_test_chrome_unmounted(window) == 1
+		C.native_test_address_close(window)
 	}
 }
