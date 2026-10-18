@@ -329,3 +329,80 @@ the measured candidate after signing. Deep signature verification and installed
 headless startup pass, and the reported live URL is reopened without the test
 network gate. `installed-verification.json` records the new running process and
 the installed-component checks.
+
+The next follow-up targets another 15% reduction. `4cd28888` compares and copies
+tightly packed raster-cache rows as one contiguous block, retaining row-wise
+handling for padded inputs and outputs. A changed backdrop is rejected before
+comparing a potentially much larger sprite sheet. Owned snapshots, exact byte
+comparisons, mutation detection and the cache budgets remain unchanged.
+
+`c847a14d` processes eight opacity-layer pixels at a time with ARM64 NEON.
+It preserves the original float32 divisions, separate opacity multiplications,
+fused blend and double-precision scaling before ties-to-even quantization.
+Empty spans copy the backdrop; opaque spans at unit opacity copy the source.
+Other rounding modes and out-of-range opacities retain the original scalar
+arithmetic, as do vector tails and non-ARM64 builds. Ink-bound discovery finds
+the first and last painted pixels of each row, skipping empty blocks without
+walking the painted interior. Any nonzero channel still counts as ink.
+
+Three alternating matched pairs retain all 120 moving frames per run, 360 per
+variant. Both executables come from identical generated production C, with the
+original versus optimized opacity header as their sole source difference.
+The Skia bridge is identical; the Graphite library differs only by the cache
+change. This includes concurrent repository work in both variants without
+attributing its savings to these fixes. The frozen page, initial cache,
+1,024×768 interactive 2× viewport, scroll trace and 2,355 retained commands per
+frame match. Production pointer-tracing Boehm GC and one marker thread remain
+enabled.
+
+| Per moving frame, median of run medians | Control | Optimized | Reduction |
+| --- | ---: | ---: | ---: |
+| Wheel dispatch through native replay | 18.765 ms | 15.143 ms | 19.3% |
+| Native replay | 16.461 ms | 13.043 ms | 20.8% |
+| Retired instructions | 134.342 million | 126.876 million | 5.6% |
+
+Candidate run medians are 12.7015, 15.2480 and 15.1430 ms; controls are 13.6325,
+18.7650 and 21.7245 ms. Each pair improves, with variation in wall time across
+runs. The result exceeds the requested 15% median reduction on this fresh
+matched control. Candidate p95, taken as the median of run p95 values, is
+23.745 ms, and the largest callback is 62.540 ms. All slow frames and all three
+collections in each variant remain included. The endpoint still includes
+synchronous GPU waits and excludes Cocoa presentation, vsync and idle work.
+
+The opacity oracle checks 134,217,728 source/destination/coverage combinations
+at eight opacities, plus arbitrary opacities, rounding modes, unaligned buffers,
+tails and in-place output. Another 33,280 exact bounds comparisons cover dense,
+sparse and empty regions, padding and all ink channels. Both the vector and
+forced scalar paths pass; address and undefined-behavior sanitizers pass.
+Cache checks additionally cover packed/strided equivalence, row tails, padding,
+and source/backdrop mutations. All 2,920 GPU replay comparisons are exact.
+
+The four matched page viewports remain exact at 1× and 2× scale. The 11 default
+screenshot cases pass under their existing rules, and the eight SVG mutation
+guards plus both turbulence references are exact. Six focused opacity visuals
+pass: five exactly and the rotated SVG case under its existing one-channel
+allowance. Native broad checks pass the 15 original Skia scenes, 720 compositor
+comparisons, 4,800 glyph comparisons and 864 shape-backdrop comparisons.
+Selected V regression checks cover 218 functions in 52 original test files per
+GC configuration; all 100 upstream LibJS AST fixtures match exactly. This
+covers the additional 7,465,984 retired instructions saved per moving frame
+and resets this endpoint's incremental broad-check count.
+
+Evidence is retained under the private, ignored
+`Build/dota2-scroll/target15percent/`: `comparison.json` and its six raw runs,
+`compiler-source-pins.json`, the matched generated C and native-header
+snapshots, `validation.json`, `pixels/`, `visual-validation.json`,
+`opacity-visual-validation.json`, `opacity-validation-final.json`,
+`regression-composite.json` and their referenced logs. An initial isolated
+compiler snapshot omitted a nested instruction-counter header; the retained
+generated C was recovered after copying that unchanged header into both
+snapshots. The initial broad default-GC batch omitted a new C++ support source:
+its layout/opacity groups pass, and only painting/platform are rerun after the
+harness repair. The complete no-GC batch passes all four groups. Original
+failed attempts remain retained without whole-batch passing credit.
+
+The measured production components are installed through a signed staged
+bundle and rename, with the previous bundle preserved. Installed sections,
+deep signature verification and headless startup are checked against the
+measured candidate, then the live Reddit URL is reopened. The resulting
+process and component checks are recorded in `installed-verification.json`.
