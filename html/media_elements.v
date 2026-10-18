@@ -1156,6 +1156,17 @@ pub fn (mut controls MediaControls) remove_event_listeners() {
 // destructor's listeners, shadow tree and timer members explicitly.
 pub fn (mut controls MediaControls) destroy() {
 	if controls.destroyed_ { return }
+	mut media := controls.media
+	if owned := media.controls_ {
+		if owned == &controls && !media.destroying_controls_ {
+			media.destroy_controls()
+			return
+		}
+	}
+	// Direct adapters have no occupied Optional slot. Hold the same media-owner
+	// barrier while their removal callbacks run, without clearing another owner.
+	was_destroying := media.destroying_controls_
+	media.destroying_controls_ = true
 	controls.destroyed_ = true
 	controls.remove_event_listeners()
 	if mut timer := controls.hover_timer_ {
@@ -1183,6 +1194,7 @@ pub fn (mut controls MediaControls) destroy() {
 	controls.dom_ = MediaControlsDOM{}
 	controls.buffered_ranges_.clear()
 	controls.shadow_tree_created = false
+	media.destroying_controls_ = was_destroying
 }
 
 fn media_controls_state_handler(controls &MediaControls, event &dom.Event) bool {

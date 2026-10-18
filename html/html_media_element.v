@@ -2503,6 +2503,7 @@ pub fn (mut element HTMLMediaElement) add_text_track(kind TextTrackKind, label s
 }
 
 pub fn (mut element HTMLMediaElement) create_controls() {
+	if element.destroying_controls_ { return }
 	if element.controls_ == none {
 		element.controls_ = MediaControls.create(&element)
 	}
