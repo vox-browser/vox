@@ -5511,6 +5511,8 @@ pub mut:
 
 	// Display list cache
 	cached_display_list_ &DisplayList = unsafe { nil }
+	cached_display_list_viewport_only_ bool
+	recording_viewport_only_ bool
 
 	// Segmenters (lazy)
 	grapheme_segmenter_ &Segmenter = unsafe { nil }
@@ -13359,15 +13361,33 @@ pub fn (d &Document) collect_documents_to_unfullscreen() []&Document {
 
 // C++: RefPtr<Painting::DisplayList> Document::record_display_list(HTML::PaintConfig config)
 pub fn (mut d Document) record_display_list() ?&DisplayList {
-	if d.cached_display_list_ != unsafe { nil } {
+	return d.record_display_list_for_viewport(false)
+}
+
+// Native windows consume only their current viewport. Ordinary callers keep
+// the complete display list, including when they record after a native frame.
+pub fn (mut d Document) record_viewport_display_list() ?&DisplayList {
+	return d.record_display_list_for_viewport(true)
+}
+
+pub fn (d &Document) recording_viewport_only() bool {
+	return d.recording_viewport_only_
+}
+
+fn (mut d Document) record_display_list_for_viewport(viewport_only bool) ?&DisplayList {
+	if d.cached_display_list_ != unsafe { nil }
+		&& d.cached_display_list_viewport_only_ == viewport_only {
 		return d.cached_display_list_
 	}
 
 	d.update_paint_and_hit_testing_properties_if_needed()
 
 	paintable := d.paintable_box() or { return none }
+	d.recording_viewport_only_ = viewport_only
+	defer { d.recording_viewport_only_ = false }
 	display_list := paintable.record_display_list() or { return none }
 	d.cached_display_list_ = display_list
+	d.cached_display_list_viewport_only_ = viewport_only
 	return display_list
 }
 

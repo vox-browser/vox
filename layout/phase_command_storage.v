@@ -63,7 +63,11 @@ fn (mut recorder PaintPhaseCommandRecorder) reserve_phase_bucket(bucket int, add
 }
 
 fn (box &BlockBox) build_reusing_paint_phase_command_cache(entries []PaintOrderEntry, storage [][]PaintCommand) ([][]PaintCommand, int) {
+	return box.build_selected_paint_phase_command_cache(entries, storage, []bool{})
+}
+
+fn (box &BlockBox) build_selected_paint_phase_command_cache(entries []PaintOrderEntry, storage [][]PaintCommand, selected []bool) ([][]PaintCommand, int) {
 	mut recorder := new_reusing_paint_phase_command_recorder(entries.len, storage)
-	box.record_paint_commands_for_entries(entries, []bool{}, mut recorder)
+	box.record_paint_commands_for_entries(entries, selected, mut recorder)
 	return recorder.phase_commands, recorder.command_count
 }

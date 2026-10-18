@@ -2908,10 +2908,14 @@ fn (mut recorder PaintPhaseCommandRecorder) publish_commands(mut commands []Pain
 // path used after a box-level repaint request; document-level repaint requests
 // can replay every existing bucket without calling paint again.
 fn (b &BlockBox) refresh_paint_phase_command_cache(entries []PaintOrderEntry, mut phase_commands [][]PaintCommand, mut entry_valid []bool) int {
+	return b.refresh_selected_paint_phase_command_cache(entries, []bool{}, mut phase_commands, mut entry_valid)
+}
+
+fn (b &BlockBox) refresh_selected_paint_phase_command_cache(entries []PaintOrderEntry, visible []bool, mut phase_commands [][]PaintCommand, mut entry_valid []bool) int {
 	mut selected := []bool{len: entries.len}
 	mut has_invalid_entry := false
 	for index in 0 .. entries.len {
-		if !entry_valid[index] {
+		if !entry_valid[index] && (visible.len == 0 || visible[index]) {
 			selected[index] = true
 			has_invalid_entry = true
 		}

@@ -49,15 +49,18 @@ fn (mut app BrowserApp) record_document_paint_commands() {
 	checkpoint := time.sys_mono_now()
 	app.memory_maintenance.document_changed(checkpoint)
 	mut document := unsafe { &dom.Document(app.document) }
-	if display_list := document.record_display_list() {
+	display_list := if app.ctx != unsafe { nil } && app.ctx.native_rendering {
+		document.record_viewport_display_list()
+	} else { document.record_display_list() }
+	if list := display_list {
 		previous_commands := app.paint_commands
-		app.paint_display_list = display_list
-		app.paint_commands = layout.display_list_commands(display_list)
+		app.paint_display_list = list
+		app.paint_commands = layout.display_list_commands(list)
 		// The shell is the only reader of its adopted vector. Return the previous
 		// one so the next recording can reuse its capacity instead of
 		// allocating a fresh frame-sized vector.
 		if previous_commands.data != app.paint_commands.data {
-			layout.recycle_display_list_commands(display_list, previous_commands)
+			layout.recycle_display_list_commands(list, previous_commands)
 		}
 		app.paint_commands_have_backdrop_filter = paint_commands_contain_backdrop_filter(app.paint_commands)
 	} else {
