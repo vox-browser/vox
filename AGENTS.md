@@ -2164,6 +2164,11 @@ evidence](docs/translation-audit/NATIVE_MEDIA_WHEEL_RAW_HANDLER.md).
   Local16 public pipelines +0.081623%/1wins; all6 actual0 retained.
   No normal/profile/C-audit/page/broad work or page credit; waiting audit stopped actual-15.
   Frozen124 control/broad baseline, carry0 and verified124 app preserved; Chrome parity open.
+  Property-sharing closure round126:12 authored features/156hunks/18changed paths.
+  C-only preflight actual1: required Document layout-readiness query remains private.
+  Prepared69 original cases remain unexecuted; no native/runtime/local/profile/page work or credit.
+  Duplicate replay/prelaunch failures retained; no visibility shim or omitted native hook.
+  Frozen124 control/broad baseline, carry0 and verified124 app preserved; Chrome parity open.
 - Outside instruction-count optimization, run broad regression suites once per
   ten completed fixes, not after every fix.
   Broad suites include full translation/package test batches, the full LibJS AST

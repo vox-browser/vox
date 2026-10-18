@@ -12515,6 +12515,49 @@ page, bundle or GC result is claimed. Root's independently committed offset
 feature and concurrent edits remain untouched. **Chrome parity remains open**:
 the earlier Chrome count uses a different endpoint and hydrated content.
 
+## Reject the twelve-feature property-sharing closure at preflight
+
+Round126 composes twelve complete authored features against accepted frozen124:
+retained hover and animated/compositor paint prerequisites, anonymous computed
+geometry, table-wrapper margins, local text-color refresh and computed-property
+pages. The already accepted round89 metadata feature is authenticated through its
+exact post-hunks, with its newly applicable local-paint guards replayed. All156
+authored hunk reconstructions match. Eighteen runtime paths change, including six
+new helper files; the existing metadata helper remains byte-identical. The
+composition has no individual-component performance credit.
+
+The first static reader reinserted metadata fields already accepted in89 because
+the unchanged insertion context also exists inside the complete final fragment.
+C-only compiler preflight actually exits1 on duplicate `mut` sections. The reader
+now prioritizes exact unique authored final fragments for this already accepted
+feature. Original snapshots, manifests, reader and actual1 are retained in
+`Build/v/instruction-opt126-preapplied-replay-finding/`. No handwritten runtime
+repair is used. A dependent launch made before snapshot preparation finished also
+exits1 at the Python controller, before starting any compiler; it has no compiler
+exit. Its original receipts remain in `instruction-opt126-preflight-launch-finding/`.
+
+Corrected C-only preflight again actually exits1: the full hover paint hook calls
+`Document.needs_style_update_after_layout()`, which is private in frozen124.
+The complete existing authored prerequisite `48e678c3` makes it public alongside
+its retained CSS-background refresh implementation and focused tests. This round
+does not add a visibility shim or omit the native hook. The thirteen-feature
+extension receives a separate static review and later declaration.
+
+No126 test case, local hardware sample, native compilation, V profile, normal
+browser C audit, page primary or bundle/GC check runs. The prepared original
+contract inventory is69 cases (CSS42/layout22/DOM2/main3); all remain unexecuted.
+Its function bodies and weak-owner header are preserved verbatim after only
+module/import consolidation. Before/common safely reuses actual accepted124-final
+results without execution; it receives no candidate pass credit.
+
+The predeclared30 alternating page pairs, seed126 and30,000 paired bootstrap
+resamples remain unstarted; so do the three fixed complete-public-pipeline local
+pairs and their negative median gate. Broad checks stay deferred with observed
+carry0. Frozen control/broad baseline124 and verified isolated124 app remain.
+Current Root implementation, foreign edits, canonical app and GUI are untouched.
+No126 instruction saving is claimed. Chrome parity remains unestablished because
+the earlier Chrome count uses a different endpoint and hydrated content.
+
 ## Causes and changes
 
 - The V 0.5.2 compatibility compiler's `-prod` Boehm code repeatedly snapshots
