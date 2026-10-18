@@ -7,6 +7,7 @@
 #include <list>
 #include <memory>
 #include <vector>
+#include <unordered_map>
 
 // Memoize complete GPU image, shape and path draws, including their input backdrop.
 // Sources can be canvas/video buffers, animated frames or recycled allocations: addresses
@@ -23,8 +24,9 @@ class VoxGraphiteRasterCache {
         int surface_width = 0, surface_height = 0;
         int width = 0, height = 0;
         bool has_background = false;
-        std::vector<uint8_t> source, extra, background, output;
-        size_t bytes() const { return source.size() + extra.size() + background.size() + output.size(); }
+        std::shared_ptr<std::vector<uint8_t> const> source;
+        std::vector<uint8_t> extra, background, output;
+        size_t bytes() const { return extra.size() + background.size() + output.size(); }
     };
     struct Rows {
         uint8_t const* pixels;
@@ -84,6 +86,34 @@ class VoxGraphiteRasterCache {
             && !std::memcmp(&a.opacity, &b.opacity, sizeof(a.opacity));
     }
     std::list<std::unique_ptr<Entry>> entries;
+    // Small sprite draws share a large decoded sheet. Retain one immutable
+    // source snapshot, rather than charging and copying the sheet per draw.
+    // Pool membership is by value, never by the caller's address.
+    std::vector<std::weak_ptr<std::vector<uint8_t> const>> sources;
+    std::unordered_map<void const*, size_t> source_entries;
+    std::shared_ptr<std::vector<uint8_t> const> intern_source(Rows rows)
+    {
+        for (auto it = sources.begin(); it != sources.end();) {
+            auto source = it->lock();
+            if (!source) { it = sources.erase(it); continue; }
+            if (rows.equal(*source)) return source;
+            ++it;
+        }
+        auto source = std::make_shared<std::vector<uint8_t> const>(rows.copy());
+        sources.push_back(source);
+        return source;
+    }
+    void evict_back()
+    {
+        auto const& entry = *entries.back();
+        retained_bytes -= entry.bytes();
+        auto it = source_entries.find(entry.source.get());
+        if (--it->second == 0) {
+            retained_bytes -= entry.source->size();
+            source_entries.erase(it);
+        }
+        entries.pop_back();
+    }
     size_t retained_bytes = 0;
     size_t byte_limit, entry_limit;
     static constexpr size_t max_entry_bytes = 8 * 1024 * 1024;
@@ -183,7 +213,7 @@ private:
                 || (entry.is_shape ? !same_shape(entry.shape, parameters.shape)
                     : entry.is_path ? !same_path(entry.path, parameters.path)
                                     : !same_image(entry.image, parameters.image))
-                || !source.equal(entry.source) || !extra.equal(entry.extra)
+                || !source.equal(*entry.source) || !extra.equal(entry.extra)
                 || (has_background && !backdrop.equal(entry.background))) continue;
             for (size_t y = 0; y < backdrop.height; ++y)
                 std::memcpy(pixels + y * backdrop.pitch,
@@ -194,8 +224,7 @@ private:
         }
         while (!entries.empty() && (retained_bytes + cost > byte_limit
                 || entries.size() >= entry_limit)) {
-            retained_bytes -= entries.back()->bytes();
-            entries.pop_back();
+            evict_back();
         }
         auto entry = std::make_unique<Entry>(parameters);
         entry->shape.clip_outs = nullptr;
@@ -205,7 +234,7 @@ private:
         entry->width = width;
         entry->height = height;
         entry->has_background = has_background;
-        entry->source = source.copy();
+        entry->source = intern_source(source);
         entry->extra = extra.copy();
         if (has_background) entry->background = backdrop.copy();
         request.pending = std::move(entry);
@@ -217,12 +246,21 @@ public:
         if (!request.pending) return;
         auto& entry = *request.pending;
         entry.output = Rows {pixels, size_t(entry.width) * 4, size_t(pitch), size_t(entry.height)}.copy();
+        // A source may have lost its final retained entry while this request
+        // was rendering. Charge it once again if necessary, including when
+        // multiple pending requests finish after a clear or eviction.
+        auto cost = [&] { return entry.bytes() + (source_entries.count(entry.source.get()) ? 0 : entry.source->size()); };
+        while (!entries.empty() && (retained_bytes + cost() > byte_limit || entries.size() >= entry_limit))
+            evict_back();
         retained_bytes += entry.bytes();
+        if (++source_entries[entry.source.get()] == 1) retained_bytes += entry.source->size();
         entries.push_front(std::move(request.pending));
     }
     void clear()
     {
         entries.clear();
+        source_entries.clear();
+        sources.clear();
         retained_bytes = 0;
     }
 };

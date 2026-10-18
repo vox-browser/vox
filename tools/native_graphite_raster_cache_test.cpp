@@ -252,6 +252,35 @@ int main()
     assert(!cache.prepare(v, 2, 2, 8, false, pixels.data()).pending);
     cache.clear();
     assert(!cache.prepare(path, 2, 2, 8, true, pixels.data()).hit);
+    // Several small draws from one sheet must fit a bounded cache without
+    // retaining the whole sheet separately for each destination geometry.
+    VoxGraphiteRasterCache sprites(256, 16);
+    descriptor = image(source.data());
+    for (int i = 0; i < 6; ++i) {
+        changed = descriptor; changed.matrix[2] = float(i);
+        std::fill(pixels.begin(), pixels.end(), 19);
+        auto sprite = sprites.prepare(changed, 2, 2, 8, true, pixels.data());
+        assert(sprite.pending && !sprite.hit);
+        std::fill(pixels.begin(), pixels.end(), uint8_t(71 + i));
+        sprites.finish(std::move(sprite), pixels.data(), 8);
+    }
+    for (int i = 0; i < 6; ++i) {
+        changed = descriptor; changed.matrix[2] = float(i);
+        std::fill(pixels.begin(), pixels.end(), 19);
+        assert(sprites.prepare(changed, 2, 2, 8, true, pixels.data()).hit);
+        assert(pixels == std::vector<uint8_t>(16, uint8_t(71 + i)));
+    }
+    source[15]++;
+    std::fill(pixels.begin(), pixels.end(), 19);
+    assert(!sprites.prepare(descriptor, 2, 2, 8, true, pixels.data()).hit);
+    source[15]--;
+    // Pending source owners survive a clear, then re-enter the byte accounting.
+    auto pending1 = sprites.prepare(descriptor, 2, 2, 8, false, pixels.data());
+    auto pending2 = sprites.prepare(descriptor, 2, 2, 8, false, pixels.data());
+    sprites.clear();
+    sprites.finish(std::move(pending1), pixels.data(), 8);
+    sprites.finish(std::move(pending2), pixels.data(), 8);
+    assert(sprites.prepare(descriptor, 2, 2, 8, false, pixels.data()).hit);
     // Upload reuse crosses destination/backdrop changes, but retains every
     // decoded byte and interpretation parameter, including odd YUV planes.
     VoxGraphiteImageUploadCache<std::shared_ptr<int>> uploads(8192, 1);

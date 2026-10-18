@@ -35,7 +35,8 @@
 
 namespace {
 std::mutex gpu_mutex;
-VoxGraphiteRasterCache image_cache;
+// Shared sprite sources leave room for many small, distinct draw results.
+VoxGraphiteRasterCache image_cache(32 * 1024 * 1024, 2048);
 VoxGraphiteImageUploadCache<sk_sp<SkImage>> image_upload_cache;
 VoxGraphiteRasterCache path_cache(8 * 1024 * 1024);
 VoxGraphiteRasterCache shape_cache(16 * 1024 * 1024);
