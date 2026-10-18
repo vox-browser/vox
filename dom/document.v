@@ -5503,6 +5503,9 @@ pub mut:
 	associated_animation_timelines []AnimationTimelineHandle
 	last_animation_frame_timestamp ?f64
 	pending_animation_event_queue  []PendingAnimationEvent
+	// Reused copies of the two lists above for update_animations_and_send_events().
+	animation_timeline_scratch_ []AnimationTimelineHandle
+	animation_event_scratch_    []PendingAnimationEvent
 	transition_generation          int
 
 	// Images
@@ -10678,13 +10681,18 @@ pub fn (mut d Document) append_pending_animation_event(event PendingAnimationEve
 pub fn (mut d Document) update_animations_and_send_events(timestamp f64) {
 	d.last_animation_frame_timestamp = timestamp
 	// Snapshot the set because updating a timeline can run animation logic that
-	// changes timeline association.
-	timelines_to_update := d.associated_animation_timelines.clone()
+	// changes timeline association. The copy reuses one buffer every frame; a
+	// nested update finds it taken and makes its own.
+	mut timelines_to_update := unsafe { d.animation_timeline_scratch_ }
+	d.animation_timeline_scratch_ = []AnimationTimelineHandle{}
+	timelines_to_update.clear()
+	timelines_to_update << d.associated_animation_timelines
 	for timeline in timelines_to_update {
 		if timeline.target != unsafe { nil } && timeline.update_current_time != unsafe { nil } {
 			timeline.update_current_time(timeline.target, timestamp)
 		}
 	}
+	d.animation_timeline_scratch_ = timelines_to_update
 	if hook := d.css_animation_timeline_update_hook_ {
 		if hook.callback != unsafe { nil } {
 			hook.callback(hook.target, timestamp)
@@ -10700,10 +10708,20 @@ pub fn (mut d Document) update_animations_and_send_events(timestamp f64) {
 	// 2. Remove replaced animations for doc.
 	d.remove_replaced_animations()
 
+	if d.pending_animation_event_queue.len == 0 {
+		return
+	}
 	// 4. Let events to dispatch be a copy of doc's pending animation event queue.
-	mut events_to_dispatch := d.pending_animation_event_queue.clone()
+	mut events_to_dispatch := unsafe { d.animation_event_scratch_ }
+	d.animation_event_scratch_ = []PendingAnimationEvent{}
+	events_to_dispatch.clear()
+	events_to_dispatch << d.pending_animation_event_queue
 	// 5. Clear doc's pending animation event queue.
 	d.pending_animation_event_queue.clear()
+	defer {
+		events_to_dispatch.clear()
+		d.animation_event_scratch_ = events_to_dispatch
+	}
 
 	// 6. Stable-sort by scheduled event time, then by animation composite
 	// order. Unresolved scheduled times sort before resolved times.

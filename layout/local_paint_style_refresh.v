@@ -2,6 +2,7 @@ module layout
 
 import css
 import dom
+import platform
 
 // Background, text color and underline changes leave geometry, visual contexts and
 // paint order intact. Retain those plans and unrelated PaintableBox phase
@@ -15,8 +16,8 @@ fn paint_style_update_can_be_local(node &Node, previous &css.ComputedValues, cur
 	for index in 0 .. previous.raw_property_count() {
 		before := previous.raw_property_at_index(index)
 		property := unsafe { css.PropertyID(int(css.first_longhand_property_id()) + index) }
-		if property in [.background_color, .text_decoration_line, .cursor] { continue
-		 }
+		if property == .background_color || property == .text_decoration_line
+			|| property == .cursor { continue }
 		after := current.raw_property_at_index(index)
 		if before == after { continue
 		 }
@@ -59,28 +60,48 @@ fn local_paint_style_refresh_supports_node(node &Node, current &css.ComputedProp
 	}
 	if element := node.dom_node() {
 		if value := element.as_element() {
-			if value.local_name() in ['html', 'body'] { return false }
+			name := value.local_name()
+			if name == 'html' || name == 'body' { return false }
 		}
 	}
 	return true
 }
 
+// Transform resolution allocates temporaries for every animated box on every
+// frame. They and the changed-box list live in this arena, which is reset once
+// the refresh has used them; the boxes keep only plain values.
+__global paint_style_refresh_scratch_ = &platform.Arena(unsafe { nil })
+
 fn refresh_local_paint_styles(mut result DocumentLayoutResult) {
+	if paint_style_refresh_scratch_ == unsafe { nil } {
+		persistent := platform.enter_persistent()
+		paint_style_refresh_scratch_ = platform.new_arena('paint style refresh')
+		platform.leave_persistent(persistent)
+	}
+	mut scratch := paint_style_refresh_scratch_
+	// Nested documents refresh from their own update; only the outermost
+	// refresh uses the arena.
+	use_scratch := !platform.arena_entered()
 	mut compositor := CompositorPaintStyleRefresh{}
-	refresh_compositor_paint_styles_in_box(mut result.paint_tree, result.state,
-		result.paint_style_update_compositor_handles, [6]f64{}, mut compositor)
-	mut ordinary_changes := map[u64]bool{}
-	for handle, _ in result.paint_style_update_handles {
-		if handle !in result.paint_style_update_compositor_handles {
-			ordinary_changes[handle] = true
-		}
+	if use_scratch {
+		entry := scratch.enter()
+		refresh_compositor_paint_styles_in_box(mut result.paint_tree, result.state,
+			&result.paint_style_update_compositor_handles, [6]f64{}, mut compositor)
+		scratch.leave(entry)
+	} else {
+		refresh_compositor_paint_styles_in_box(mut result.paint_tree, result.state,
+			&result.paint_style_update_compositor_handles, [6]f64{}, mut compositor)
+	}
+	mut ordinary_changes := &result.paint_style_update_ordinary_handles
+	ordinary_changes.clear()
+	for handle in result.paint_style_update_handles.items {
+		if !result.paint_style_update_compositor_handles.contains(handle) { ordinary_changes.add(handle) }
 	}
 	mut changed_boxes := []&BlockBox{}
-	refresh_local_paint_styles_in_box(mut result.paint_tree, result.state, ordinary_changes, mut
-		changed_boxes)
-	for box in changed_boxes {
-		viewport_invalidate_box_paint_cache(mut result, box)
-	}
+	refresh_local_paint_styles_in_box(mut result.paint_tree, result.state,
+		ordinary_changes, mut changed_boxes)
+	ordinary_changes.clear()
+	for box in changed_boxes { viewport_invalidate_box_paint_cache(mut result, box) }
 	if compositor.changed {
 		// Opacity zero and singular transforms also change paint-step membership,
 		// and cached commands carry cumulative opacity. Rebuild those plans from
@@ -94,6 +115,10 @@ fn refresh_local_paint_styles(mut result DocumentLayoutResult) {
 		}
 		result.scroll_state.invalidate()
 	}
+	if use_scratch {
+		compositor = CompositorPaintStyleRefresh{}
+		scratch.reset()
+	}
 	result.paint_tree_needs_style_update = false
 	result.paint_style_update_handles.clear()
 	result.paint_style_update_compositor_handles.clear()
@@ -103,14 +128,14 @@ fn refresh_local_paint_styles(mut result DocumentLayoutResult) {
 	document.invalidate_display_list()
 }
 
-fn line_style_depends_on_changed_node(box &BlockBox, changed map[u64]bool) bool {
+fn line_style_depends_on_changed_node(box &BlockBox, changed &HandleSet) bool {
 	for line in box.lines {
 		for fragment in line.fragments {
 			if fragment.layout_handle == unsafe { nil } { continue
 			 }
 			mut node := unsafe { &Node(fragment.layout_handle) }
 			for {
-				if u64(voidptr(node)) in changed { return true }
+				if changed.contains(u64(voidptr(node))) { return true }
 				node = node.parent() or { break }
 			}
 		}
@@ -119,12 +144,12 @@ fn line_style_depends_on_changed_node(box &BlockBox, changed map[u64]bool) bool 
 }
 
 fn refresh_local_paint_styles_in_box(mut box BlockBox, state &LayoutState,
-	changed map[u64]bool, mut changed_boxes []&BlockBox) {
-	if changed.len == 0 { return }
+	changed &HandleSet, mut changed_boxes []&BlockBox) {
+	if changed.len() == 0 { return }
 	mut did_change := false
 	if box.layout_handle != unsafe { nil } {
 		node := unsafe { &Node(box.layout_handle) }
-		if u64(box.layout_handle) in changed {
+		if changed.contains(u64(box.layout_handle)) {
 			// Resolve currentColor in borders, shadows, outlines and image layers
 			// exactly as a full transport rebuild does. Retain box addresses,
 			// children, geometry and accumulated visual/scroll context indices.

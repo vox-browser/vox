@@ -661,7 +661,7 @@ fn apply_style_to_layout_node(layout_handle voidptr, css_computed_properties_han
 	if mut result := document_layout_result(node.document()) {
 		result.paint_tree_needs_style_update = true
 		result.paint_style_update_requires_full_refresh = result.paint_style_update_requires_full_refresh || !can_refresh_locally
-		result.paint_style_update_handles[u64(layout_handle)] = true
+		result.paint_style_update_handles.add(u64(layout_handle))
 	}
 }
 
@@ -678,8 +678,8 @@ fn apply_animated_style_to_layout_node(layout_handle voidptr, css_computed_prope
 	mutable_styled.apply_style(computed)
 	if mut result := document_layout_result(node.document()) {
 		result.paint_tree_needs_style_update = true
-		result.paint_style_update_handles[u64(layout_handle)] = true
-		result.paint_style_update_compositor_handles[u64(layout_handle)] = true
+		result.paint_style_update_handles.add(u64(layout_handle))
+		result.paint_style_update_compositor_handles.add(u64(layout_handle))
 		// The retained compositor refresh owns this sample's paint invalidation:
 		// box phase commands keep their local geometry, and paint/hit-test plans
 		// are rebuilt only when opacity or invertibility changes their membership.
@@ -701,7 +701,7 @@ fn apply_inherited_color_style_to_layout_node(layout_handle voidptr, style voidp
 	mutable_styled.apply_style(computed)
 	if mut result := document_layout_result(node.document()) {
 		result.paint_tree_needs_style_update = true
-		result.paint_style_update_handles[u64(layout_handle)] = true
+		result.paint_style_update_handles.add(u64(layout_handle))
 	}
 	return true
 }

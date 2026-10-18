@@ -30,15 +30,18 @@ fn compositor_style_refresh_supports_node(node &Node) bool {
 	}
 	if dom_node := node.dom_node() {
 		if element := dom_node.as_element() {
-			if element.local_name() in ['html', 'body'] { return false }
+			// Not `in` with an array literal, which allocates on every call;
+			// this runs for each animated box on every frame.
+			name := element.local_name()
+			if name == 'html' || name == 'body' { return false }
 		}
 	}
 	return true
 }
 
-fn compositor_style_refresh_preserves_box_categories(box &BlockBox, changed map[u64]bool) bool {
-	if changed.len == 0 { return true }
-	if u64(box.layout_handle) in changed {
+fn compositor_style_refresh_preserves_box_categories(box &BlockBox, changed &HandleSet) bool {
+	if changed.len() == 0 { return true }
+	if changed.contains(u64(box.layout_handle)) {
 		node := unsafe { &Node(box.layout_handle) }
 		computed := node.computed_values()
 		if !compositor_style_refresh_supports_node(node)
@@ -65,10 +68,10 @@ mut:
 }
 
 fn refresh_compositor_paint_styles_in_box(mut box BlockBox, state &LayoutState,
-	changed map[u64]bool, ancestor_transform [6]f64, mut refresh CompositorPaintStyleRefresh) {
-	if changed.len == 0 { return }
+	changed &HandleSet, ancestor_transform [6]f64, mut refresh CompositorPaintStyleRefresh) {
+	if changed.len() == 0 { return }
 	was_noninvertible := box.has_noninvertible_paint_transform()
-	if u64(box.layout_handle) in changed {
+	if changed.contains(u64(box.layout_handle)) {
 		node := unsafe { &Node(box.layout_handle) }
 		if styled := node.as_node_with_style() {
 			if used := state.try_get(styled) {

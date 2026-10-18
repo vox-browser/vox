@@ -97,7 +97,7 @@ fn refresh_document_paint_tree_if_needed(mut result DocumentLayoutResult) bool {
 	if !result.paint_tree_needs_style_update { return false }
 	if !result.paint_style_update_requires_full_refresh
 		&& !compositor_style_refresh_preserves_box_categories(&result.paint_tree,
-			result.paint_style_update_compositor_handles) {
+			&result.paint_style_update_compositor_handles) {
 		result.paint_style_update_requires_full_refresh = true
 	}
 	if !result.paint_style_update_requires_full_refresh {
@@ -216,6 +216,16 @@ fn viewport_invalidate_scroll_state(target voidptr) {
 	result.scroll_state.invalidate()
 }
 
+__global verify_scroll_state_setting = 0
+
+// Read once: every frame skips most scroll-state refreshes.
+fn verify_scroll_state_requested() bool {
+	if verify_scroll_state_setting == 0 {
+		verify_scroll_state_setting = if os.getenv('LIBWEB_VERIFY_SCROLL_STATE') == '' { 1 } else { 2 }
+	}
+	return verify_scroll_state_setting == 2
+}
+
 fn viewport_refresh_scroll_state(target voidptr) {
 	mut result := viewport_layout_result(target)
 	if result.scroll_state.begin_refresh(false) {
@@ -224,7 +234,7 @@ fn viewport_refresh_scroll_state(target voidptr) {
 	}
 	// LIBWEB_VERIFY_SCROLL_STATE: a skipped refresh must have been skippable.
 	// Re-derive through the same path and compare against the retained snapshot.
-	if os.getenv('LIBWEB_VERIFY_SCROLL_STATE') == '' {
+	if !verify_scroll_state_requested() {
 		return
 	}
 	assert result.scroll_state.begin_refresh(true)
@@ -307,6 +317,9 @@ fn viewport_rederive_scroll_state(mut result DocumentLayoutResult) painting.Scro
 		mut frame := unsafe { &result.scroll_state.frames[index] }
 		live := compatibility_live_scroll_offset(result, frame)
 		frame.set_own_offset(painting.Point{-live.x, -live.y})
+	}
+	if result.scroll_state.snapshot_matches(result.scroll_state_snapshot, 1.0) {
+		return result.scroll_state_snapshot
 	}
 	return result.scroll_state.snapshot(1.0)
 }

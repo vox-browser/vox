@@ -1976,16 +1976,28 @@ pub fn (mut c ComputedProperties) set_raw_cascaded_font_size(value &dom.StyleVal
 pub fn (mut c ComputedProperties) reset_non_inherited_animated_properties() {
 	c.note_computed_property_graph_mutation()
 	if c.animated_property_storage_ == unsafe { nil } { return }
-	mut to_remove := []PropertyID{}
+	// Every animation sample resets and reinstalls these values. Removing the
+	// most recently inserted entries first lets the map drop them from the end
+	// of its storage instead of recording holes, so the reinstalled values
+	// reuse that storage.
+	mut removed := [32]PropertyID{}
+	mut removed_count := 0
+	mut overflow := []PropertyID{}
 	for property_id, _ in c.animated_property_storage_.values {
 		if !c.is_animated_property_inherited(property_id) {
-			to_remove << property_id
+			if removed_count < removed.len {
+				removed[removed_count] = property_id
+				removed_count++
+			} else {
+				overflow << property_id
+			}
 		}
 	}
-	for property_id in to_remove {
-		if c.animated_property_storage_ != unsafe { nil } {
-			c.animated_property_storage_.values.delete(property_id)
-		}
+	for index := overflow.len - 1; index >= 0; index-- {
+		c.animated_property_storage_.values.delete(overflow[index])
+	}
+	for index := removed_count - 1; index >= 0; index-- {
+		c.animated_property_storage_.values.delete(removed[index])
 	}
 }
 
@@ -3448,19 +3460,41 @@ pub fn (c &ComputedProperties) text_wrap_style() TextWrapStyle {
 	}
 }
 
+// Layout reapplies list-style-type on every style update, including each
+// animation sample; share the predefined styles instead of rebuilding their
+// symbol lists. Nothing mutates a resolved counter style.
+struct BuiltinCounterStyles {
+	disc    CounterStyle
+	decimal CounterStyle
+}
+
+__global css_builtin_counter_styles_ = &BuiltinCounterStyles(unsafe { nil })
+
+fn builtin_counter_styles() &BuiltinCounterStyles {
+	if css_builtin_counter_styles_ == unsafe { nil } {
+		persistent := platform.enter_persistent()
+		css_builtin_counter_styles_ = &BuiltinCounterStyles{
+			disc:    CounterStyle.disc()
+			decimal: CounterStyle.decimal()
+		}
+		platform.leave_persistent(persistent)
+	}
+	return css_builtin_counter_styles_
+}
+
 pub fn (c &ComputedProperties) list_style_type_for_scope(scope &StyleScope) ListStyleType {
 	value := c.property(.list_style_type, .yes) or {
 		return ListStyleType{
 			kind: .counter_style
 			name: 'disc'
-			counter_style: CounterStyle.disc()
+			counter_style: builtin_counter_styles().disc
 		}
 	}
 	parsed := style_value_logic_from_dom(.list_style_type, value) or {
 		return ListStyleType{
 			kind: .counter_style
 			name: 'disc'
-			counter_style: CounterStyle.disc()
+			counter_style: builtin_counter_styles().disc
 		}
 	}
 	if parsed.to_keyword() == .none_ {
@@ -3479,10 +3513,10 @@ pub fn (c &ComputedProperties) list_style_type_for_scope(scope &StyleScope) List
 		mut counter_style := ?CounterStyle(none)
 		match name {
 			'disc' {
-				counter_style = CounterStyle.disc()
+				counter_style = builtin_counter_styles().disc
 			}
 			'decimal' {
-				counter_style = CounterStyle.decimal()
+				counter_style = builtin_counter_styles().decimal
 			}
 			else {
 				if resolved := registered_counter_styles_for_scope(scope)[name] {
@@ -3499,7 +3533,7 @@ pub fn (c &ComputedProperties) list_style_type_for_scope(scope &StyleScope) List
 	return ListStyleType{
 		kind: .counter_style
 		name: 'disc'
-		counter_style: CounterStyle.disc()
+		counter_style: builtin_counter_styles().disc
 	}
 }
 

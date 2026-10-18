@@ -192,6 +192,24 @@ pub fn (state ScrollState) snapshot(device_scale f64) ScrollStateSnapshot {
 	return ScrollStateSnapshot.create(state.frames, device_scale)
 }
 
+// snapshot_matches reports whether `snapshot` already holds the offsets a new
+// snapshot of this state would. Animation frames that move nothing can then
+// keep publishing the existing snapshot instead of allocating an equal one.
+pub fn (state &ScrollState) snapshot_matches(snapshot ScrollStateSnapshot, device_scale f64) bool {
+	if snapshot.device_offsets.len != state.frames.len {
+		return false
+	}
+	scale := f32(device_scale)
+	for index, frame in state.frames {
+		offset := frame.own_offset()
+		current := snapshot.device_offsets[index]
+		if current.x != f64(f32(offset.x) * scale) || current.y != f64(f32(offset.y) * scale) {
+			return false
+		}
+	}
+	return true
+}
+
 pub fn (snapshot ScrollStateSnapshot) device_offset_for_index(index int) Point {
 	if index < 0 || index >= snapshot.device_offsets.len {
 		return Point{}

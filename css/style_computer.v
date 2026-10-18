@@ -1098,6 +1098,11 @@ fn (s &StyleComputer) recompute_style_with_invalidation(mut abstract_element dom
 	return invalidation, computed
 }
 
+struct InheritedStyleOldValue {
+	property_id PropertyID
+	old_value   &dom.StyleValue
+}
+
 // DOM::Element::recompute_inherited_style(). This is the narrow inherited-style
 // update used when an ancestor changed but the element itself did not need a
 // fresh cascade. It updates inherited and font-relative computed values in
@@ -1118,14 +1123,18 @@ fn (s &StyleComputer) recompute_inherited_style_with_invalidation(mut abstract_e
 
 	mut invalidation := RequiredInvalidationAfterStyleChange{}
 	mut only_color_changes := true
-	mut values_affected_by_inherited_style := map[PropertyID]&dom.StyleValue{}
-	for property_id, specified_value in computed.inheritance_dependent_specified_values() {
-		if old_value := computed.property(property_id, .no) {
-			values_affected_by_inherited_style[property_id] = old_value
+	// This runs for every descendant of an animated element on every sample, so
+	// it reads the retained maps in place instead of cloning them; an unchanged
+	// element allocates nothing.
+	mut values_affected_by_inherited_style := []InheritedStyleOldValue{}
+	if computed.inheritance_specified_storage_ != unsafe { nil } {
+		for property_id, specified_value in computed.inheritance_specified_storage_.values {
+			if old_value := computed.property(property_id, .no) {
+				values_affected_by_inherited_style << InheritedStyleOldValue{property_id, old_value}
+			}
+			computed.set_property_without_modifying_flags(property_id, specified_value)
 		}
-		computed.set_property_without_modifying_flags(property_id, specified_value)
 	}
-	animated_values := computed.animated_property_values()
 	for property_id in computed_interpolation_longhand_property_ids() {
 		old_value := computed.property(property_id, .no)
 
@@ -1133,10 +1142,13 @@ fn (s &StyleComputer) recompute_inherited_style_with_invalidation(mut abstract_e
 			continue
 		}
 
-		if computed.is_animated_property_inherited(property_id) || property_id !in animated_values {
+		// Each iteration changes only its own property's animated value, so the
+		// live map answers what a snapshot taken before the loop would.
+		was_animated := computed.has_animated_property(property_id)
+		if computed.is_animated_property_inherited(property_id) || !was_animated {
 			if animated_inherit := StyleComputer.get_animated_inherit_value(property_id, abstract_element) {
 				computed.set_animated_property(property_id, animated_inherit.value, animated_inherit.is_result_of_transition, .yes)
-			} else if property_id in animated_values {
+			} else if was_animated {
 				computed.remove_animated_property(property_id)
 			}
 		}
@@ -1154,9 +1166,9 @@ fn (s &StyleComputer) recompute_inherited_style_with_invalidation(mut abstract_e
 	}
 
 	s.compute_property_values(mut computed, *abstract_element)
-	for property_id, old_value in values_affected_by_inherited_style {
-		property_invalidation := compute_property_invalidation(property_id, old_value, computed.property(property_id, .no))
-		only_color_changes = only_color_changes && (property_id == .color || property_invalidation.is_none())
+	for affected in values_affected_by_inherited_style {
+		property_invalidation := compute_property_invalidation(affected.property_id, affected.old_value, computed.property(affected.property_id, .no))
+		only_color_changes = only_color_changes && (affected.property_id == .color || property_invalidation.is_none())
 		invalidation = required_invalidation_after_style_change_or(invalidation, property_invalidation)
 	}
 	if !invalidation.is_none() {
@@ -1225,16 +1237,25 @@ fn animated_custom_property_maps_differ(old_values map[string]&dom.StyleValue, n
 	return false
 }
 
+// A match, not `in` with an array literal: this runs for every sampled
+// property on every animation frame, and the literal is allocated per test.
+fn property_is_compositor_animated(property PropertyID) bool {
+	return match property {
+		.transform, .translate, .rotate, .scale, .transform_origin, .opacity { true }
+		else { false }
+	}
+}
+
 fn animated_changes_are_compositor_only(old_values map[PropertyID]&dom.StyleValue,
 	new_values map[PropertyID]&dom.StyleValue) bool {
 	for property, old_value in old_values {
-		if property in [.transform, .translate, .rotate, .scale, .transform_origin, .opacity] { continue }
+		if property_is_compositor_animated(property) { continue }
 		new_value := if value := new_values[property] { ?&dom.StyleValue(value) } else { ?&dom.StyleValue(none) }
 		if !compute_property_invalidation(property, old_value, new_value).is_none() { return false }
 	}
 	for property, _ in new_values {
 		if property !in old_values
-			&& property !in [.transform, .translate, .rotate, .scale, .transform_origin, .opacity] { return false }
+			&& !property_is_compositor_animated(property) { return false }
 	}
 	return true
 }
@@ -1316,9 +1337,14 @@ fn (style_computer &StyleComputer) target_has_animation_for_property(abstract_el
 	for effect in web_animation_effects_for_style(abstract_element) {
 		if keyframe_effect_animates_property(effect, property_id) { return true }
 	}
+	// Hidden animated targets ask this on every sample; walk the stores in
+	// place rather than collecting per-target lists.
 	if style_computer.css_animation_storage_ != unsafe { nil } {
-		for animation in style_computer.css_animation_storage_.animations_for(abstract_element) {
-			if effect := animation.effect() {
+		for entry in style_computer.css_animation_storage_.entries {
+			if !abstract_elements_equal(entry.abstract_element, abstract_element) {
+				continue
+			}
+			if effect := entry.animation.effect() {
 				if keyframe_effect_animates_property(effect, property_id) {
 					return true
 				}
@@ -1326,10 +1352,12 @@ fn (style_computer &StyleComputer) target_has_animation_for_property(abstract_el
 		}
 	}
 	if style_computer.css_transition_storage_ != unsafe { nil } {
-		for transition in style_computer.css_transition_storage_.transitions_for(abstract_element) {
-			if effect := transition.effect() {
-				if keyframe_effect_animates_property(effect, property_id) {
-					return true
+		if bucket := style_computer.css_transition_storage_.associated_transitions[abstract_element_storage_key(abstract_element)] {
+			for entry in bucket.entries {
+				if effect := entry.transition.effect() {
+					if keyframe_effect_animates_property(effect, property_id) {
+						return true
+					}
 				}
 			}
 		}

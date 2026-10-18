@@ -488,8 +488,10 @@ mut:
 	// without entering the embedder's explicit layout wrapper.
 	paint_tree_needs_style_update bool
 	paint_style_update_requires_full_refresh bool
-	paint_style_update_handles map[u64]bool
-	paint_style_update_compositor_handles map[u64]bool
+	paint_style_update_handles HandleSet
+	paint_style_update_compositor_handles HandleSet
+	// Scratch for refresh_local_paint_styles, kept for its storage.
+	paint_style_update_ordinary_handles HandleSet
 	// Layout handle -> retained paint box, including the Viewport's root-box
 	// mapping. The paint tree is immutable between refreshes, so wheel
 	// coordinates and visual-context rebuilds share one lazily built index.

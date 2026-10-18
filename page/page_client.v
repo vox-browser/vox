@@ -27,6 +27,9 @@ pub:
 pub struct PageClient {
 pub mut:
 	events                              []ClientEvent
+	// Embedders that never read `events` turn recording off; otherwise every
+	// frame request would grow the log for the life of the page.
+	record_events_                      bool = true
 	screenshots                         [][]u8
 	id_                                 u64 = 1
 	connection_open_                    bool = true
@@ -113,7 +116,19 @@ pub fn (client &PageClient) compositor_host() ?&compositor.CompositorHost {
 }
 
 fn (mut client PageClient) record(name string, text string) {
+	if !client.record_events_ {
+		return
+	}
 	client.events << ClientEvent{name: name, text: text}
+}
+
+// set_event_recording controls whether calls are logged in `events`, which
+// exists for deterministic tests. Turning it off discards the log.
+pub fn (mut client PageClient) set_event_recording(enabled bool) {
+	client.record_events_ = enabled
+	if !enabled {
+		client.events.clear()
+	}
 }
 
 pub fn (mut client PageClient) set_request_frame_hook(hook ?fn ()) {

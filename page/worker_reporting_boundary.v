@@ -108,7 +108,9 @@ pub fn (mut client PageClient) flush_pending_dom_mutations() {
 		client.pending_dom_mutations_.clear()
 		return
 	}
-	client.events << client.pending_dom_mutations_
+	if client.record_events_ {
+		client.events << client.pending_dom_mutations_
+	}
 	client.pending_dom_mutations_.clear()
 }
 

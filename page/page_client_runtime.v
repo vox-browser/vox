@@ -40,6 +40,9 @@ pub fn (mut client PageClient) set_maximum_frames_per_second(value f64) {
 }
 
 pub fn (mut client PageClient) did_handle_input_event(page_id u64, event InputEvent) {
+	if !client.record_events_ {
+		return
+	}
 	kind := match event {
 		DragEvent { 'drag:${event.type_}' }
 		KeyEvent { 'key:${event.type_}' }
@@ -78,7 +81,9 @@ pub fn (mut client PageClient) rendering_opportunity(frame_time_nanoseconds i64,
 	client.last_rendering_frame_time_ns_ = frame_time_nanoseconds
 	client.last_rendering_frame_interval_ms_ = frame_interval_milliseconds
 	client.rendering_opportunity_granted_ = true
-	client.record('rendering-opportunity', '${frame_time_nanoseconds}:${frame_interval_milliseconds}')
+	if client.record_events_ {
+		client.record('rendering-opportunity', '${frame_time_nanoseconds}:${frame_interval_milliseconds}')
+	}
 }
 
 pub fn (mut client PageClient) will_begin_rendering_update() {

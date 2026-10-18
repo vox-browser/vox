@@ -16,6 +16,10 @@ fn database_registry_key(storage_key string, name string) string {
 	return '${storage_key.len}:${storage_key}${name}'
 }
 
+fn idb_has_databases() bool {
+	return indexeddb_database_registry.len > 0
+}
+
 pub fn idb_databases() map[string]&DatabaseData {
 	return indexeddb_database_registry.clone()
 }

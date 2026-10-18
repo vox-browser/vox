@@ -374,6 +374,11 @@ pub fn run_database_tasks() {
 
 pub fn cleanup_indexed_database_transactions(event_loop voidptr) bool {
 	assert event_loop != unsafe { nil }
+	// Every microtask checkpoint runs this; most documents never open a
+	// database, so skip copying the empty registry.
+	if !idb_has_databases() {
+		return false
+	}
 	mut has_matching_event_loop := false
 	for _, database in idb_databases() {
 		for connection in database.associated_connections_as_root_vector() {

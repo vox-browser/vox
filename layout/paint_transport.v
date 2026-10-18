@@ -2944,16 +2944,20 @@ fn (b &BlockBox) refresh_selected_paint_phase_command_cache(entries []PaintOrder
 fn (b &BlockBox) refresh_selected_paint_phase_command_cache_with_debug(entries []PaintOrderEntry,
 	visible []bool, mut phase_commands [][]PaintCommand, mut entry_valid []bool,
 	include_line_box_debug bool) int {
-	mut selected := []bool{len: entries.len}
+	// Most repaints invalidate no entry; find that out before allocating.
 	mut has_invalid_entry := false
 	for index in 0 .. entries.len {
 		if !entry_valid[index] && (visible.len == 0 || visible[index]) {
-			selected[index] = true
 			has_invalid_entry = true
+			break
 		}
 	}
 	if !has_invalid_entry {
 		return 0
+	}
+	mut selected := []bool{len: entries.len}
+	for index in 0 .. entries.len {
+		selected[index] = !entry_valid[index] && (visible.len == 0 || visible[index])
 	}
 	mut recorder := PaintPhaseCommandRecorder{
 		include_line_box_debug: include_line_box_debug
