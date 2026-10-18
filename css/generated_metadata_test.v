@@ -1600,11 +1600,13 @@ fn test_css_transitions_are_retained_and_sampled() {
 	doc.set_browsing_context(&dom.BrowsingContext{
 		active_document_: doc
 	})
+	doc.set_navigable(&dom.Navigable{active_document_: doc})
 	mut element := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'div') or {
 		panic('${err}')
 	}
 	element.set_attribute_value('style', 'opacity: 0; transition-property: opacity; transition-duration: 1000ms; transition-timing-function: linear')
 	mut computer := StyleComputer.new(doc)
+	computer.set_animation_time_ms(0)
 	mut abstract_element := dom.AbstractElement.new(element, none)
 	initial := computer.compute_style(abstract_element)
 	abstract_element.set_computed_properties(computed_properties_to_dom(initial))
