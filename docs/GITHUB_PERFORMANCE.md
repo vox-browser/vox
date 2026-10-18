@@ -10812,6 +10812,126 @@ Equivalent-workload Chrome content/start/submission accounting remains open;
 **faster-than-Chrome performance is unproven**. Round 106 evidence is in
 Build/v/instruction-opt106-* and Build/instructions/vox-opt106-interleaved-*.
 
+## Visit matching attributes without a temporary array
+
+Round 107 ports Alexander Medvednikov's already committed `4bf70518` onto
+accepted frozen 106. Three exact authored hunks touch only css/selectors.v.
+Attribute matching visits namespaced attributes directly and returns after the
+first matching name/value, retaining all namespace rules, value operators,
+HTML/SVG/XML distinctions, ASCII case handling and absent-list behavior.
+The DOM implementation and unrelated newer Root changes remain excluded.
+
+All **ten common functional cases**, plus one inactive diagnostic, pass before/
+Boehm, final/Boehm and final/no-GC C-O2: **852 assertions each**. All five original
+feature contracts remain byte-identical in the common harness; five existing
+selector/ASCII cases are also unchanged. They cover every value operator, empty
+values, explicit/default case handling, Unicode distinctions, wildcard namespace
+later matches, named/missing/default namespaces, mutation/removal/replacement,
+GC, and absent attribute-list ownership. Common SHA256:
+`93c4b9b5706b073936fb809d4e1fe7c92c62a5ddd1d12e2fd0c8c5b9606ab021`.
+
+Three fixed alternating local pairs count **128 complete public author-cascade
+batches over 64 HTML subjects**, each with 48 mixed present/missing attributes,
+explicit case flags, wildcard namespaces with a later matching value, and named
+namespaces. Public StyleComputer.compute_style includes matching, cascade,
+font/context and property resolution; checksum consumers read width, height,
+padding and margin. Setup, independent property expectations, eight warmups and
+forced GC stay outside the counter. All six actual exits are 0 and checksum
+**483,328** matches. No private matcher loop or profile
+time substitutes for hardware instructions.
+
+| Pair | Before retired instructions | Candidate retired instructions |
+| --- | ---: | ---: |
+| 1 | 2,615,715,292 | 2,566,822,559 |
+| 2 | 2,626,673,673 | 2,568,556,267 |
+| 3 | 2,628,056,070 | 2,565,935,244 |
+
+Local medians **2,626,673,673 → 2,566,822,559**, change
+**-2.278590%**, **3/3 wins**. This local result has no
+independent page credit.
+
+The strict generated-C audit authenticates all three authored hunks against
+independent whole-app C generation, with no native/runtime execution. Only
+matches_attribute, the removed matching_attributes array helper and the new
+matches_attribute_in_namespace visitor change. All other executable C,
+records/globals/resources, DOM, decoding/filtering/arenas and heap/GC policy match
+after established compiler identities, exact unchanged assertion-line mapping,
+37 frozen includes and four byte-identical helper reorderings. Actual frontend
+file tables and all 120 native input hashes match. Native arguments differ only
+in artifact paths. Audit script, body, C and archive hashes remain in the receipts.
+
+Both C-O1/Boehm/default marker 1 `-profile-no-inline` runs actually exit 0,
+with full process instrumentation and no filter/reset. These call counts show
+the mechanism; profile timings receive no hardware/page credit.
+
+| Full-process diagnostic function | Before calls | Candidate calls |
+| --- | ---: | ---: |
+| `css__opt107_complete_public_author_cascade` | 137 | 137 |
+| `css__StyleComputer_compute_style` | 8,833 | 8,833 |
+| `css__matches_attribute` | 459,264 | 459,264 |
+| `css__matching_attributes` | 459,264 | 0 |
+| `css__matches_attribute_in_namespace` | 0 | 459,264 |
+| `css__matches_single_attribute` | 251,712 | 251,712 |
+
+The normal candidate is `Build/v/Vox-opt107-attribute-visit-bin`, SHA256
+`58b9a37eaf702da3128d20280ff2e49e01c76598a6996f8ab9c49d6426a98f2b`;
+compiled C SHA256 `8f4eb1079303aa801551447af4e49e8759487b462417606922d297a3e2bec1d7`.
+Both persisted regular binaries load the same frozen 4e helper, verified by
+actual loader logs. SSD caches, 4 GiB heap hint, one default marker, child-only
+placement and 1024×768 document viewport match. No prod/prealloc or heap increase.
+
+The predeclared **30 alternating pairs**, seed 107 and **30,000 paired bootstrap
+resamples**, retain all 60 first `navigation_to_first_document_paint[0]`
+observations: **17,342,759,334 → 17,342,076,794.5**
+retired instructions. Point saving **682,539.5**
+(**-0.003936%**), **15/30 wins**;
+paired median saving **-767,882**, 95% paired interval
+**[-7,058,926.5, 9,791,488]**, repeatable credit **0**.
+The interval does not establish repeatable whole-page savings; repeatable credit is 0.
+
+There are **60 real PNGs**, **0** startup retry records, recovered
+primaries `[]`, post-primary refreshes `[]`, and
+**2** external foreground transitions. Completed primaries are neither discarded nor repeated. Each has
+1 install/2 geometry/1 paint preparation; later work remains separate. Lifetime
+memory peaks through capture/exit are recorded, not first-frame/live memory;
+overlapping checkpoint counters are never summed. All 60 decoded RGB captures
+differ only in the original skeleton bands, x45–662/y335–344 and ten 14px bands
+starting at 380 with 41px spacing. All other pixels match; 30 control and
+30 candidate classes, 0 shared. No bounds change.
+
+The attribute-operator/case/empty-value/HTML-SVG viewport is **pixel-exact**.
+Explicit child argv pins the frozen helper after protected env/sh launch sites;
+actual loader path/hash receipts are retained. Observed carry **682,539.5** stays
+below 5M; broad tests are deferred and the completed 106 baseline remains. The 87 selected
+harness bodies/assertions/expected values are unchanged from 106; the earlier
+image-accessor representation port remains separately authenticated.
+
+The isolated app is `Build/v/Vox-opt107.app`. Signing, startup, installed
+helper and native instruction-text identity pass. GC checks observe actual
+collections at default marker 1 and override 2. The canonical app and GUI remain
+preserved. The next frozen performance control is 107.
+
+Target selection uses the accepted 104 C-O1 call report already documented in
+106: 3,975,163 calls each to matches_attribute and matching_attributes, with
+429,580 matches_single_attribute calls. Those counts may include later lifecycle
+work; the original post-primary watchdog exit 1 and unknown final browser exit
+remain. No profile time or call count becomes hardware/page or Chrome credit.
+An initial static input-checker exit 1 miscounted the one-line inactive case;
+its script and finding remain archived. Only declaration counting was corrected;
+all ten functional bodies remain unchanged, with zero runtime reexecutions.
+
+Seven raw-C duplicates (**147,256,476 bytes**) from completed round 105 were
+removed only after verifying retained durable gzip bytes and original hashes.
+The cleanup receipt lists paths, archive hashes and completed final-audit pins.
+Sources, normal measurement binaries, 104/106 control C, libraries, bundles,
+logs/results, screenshots and active 107 work remain. Generated-C/profile hashes
+are durable in instruction-opt107-artifact-archives.json. No passing check or
+completed primary was repeated. Independent Root work, newer canonical bundles
+and the user's GUI remain preserved. Equivalent-workload Chrome content/start/
+submission accounting remains open; **faster-than-Chrome performance is
+unproven**. Evidence: Build/v/instruction-opt107-* and
+Build/instructions/vox-opt107-interleaved-*.
+
 ## Causes and changes
 
 - The V 0.5.2 compatibility compiler's `-prod` Boehm code repeatedly snapshots

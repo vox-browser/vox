@@ -2004,6 +2004,16 @@ evidence](docs/translation-audit/NATIVE_MEDIA_WHEEL_RAW_HANDLER.md).
   focused Unicode/overflow viewport exact; observed carry 0.
   Segmentation, Unicode tables, substring context, 4 GiB and GC unchanged.
   Root/canonical/GUI preserved; Chrome parity remains open.
+  Direct attribute visitor `4bf70518` uses three authored hunks in one CSS file.
+  Ten common functional cases pass 852 assertions/configuration, including five
+  exact original contracts. DOM, namespace and operator behavior remain covered.
+  Complete public author-cascade batches use 2.28% fewer instructions.
+  Page point saving 682,539.5, 15/30 wins;
+  paired interval [-7,058,926.5, 9,791,488], repeatable credit 0.
+  Broad verification: deferred below cumulative 5M gate;
+  focused attribute viewport exact; observed carry 682,539.5.
+  Same 4 GiB, SSD, placement, frozen helper and GC policy.
+  Root/canonical/GUI preserved; Chrome parity remains open.
 - Outside instruction-count optimization, run broad regression suites once per
   ten completed fixes, not after every fix.
   Broad suites include full translation/package test batches, the full LibJS AST
