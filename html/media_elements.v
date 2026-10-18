@@ -1013,6 +1013,35 @@ pub fn (mut controls MediaControls) create_shadow_tree() {
 					mut area_node := area.as_node()
 					area_node.append_child(volume_node) or { panic(err) }
 					controls.dom_.volume_element = volume
+				} else if class_name == 'mute-button' {
+					mut icon := dom.create_element(document, 'svg', 'http://www.w3.org/2000/svg', none, none, false) or { panic(err) }
+					icon.set_attribute_value('class', 'icon')
+					icon.set_attribute_value('viewBox', '0 0 24 24')
+					mut defs := dom.create_element(document, 'defs', 'http://www.w3.org/2000/svg', none, none, false) or { panic(err) }
+					mut clip := dom.create_element(document, 'clipPath', 'http://www.w3.org/2000/svg', none, none, false) or { panic(err) }
+					clip.set_attribute_value('id', 'muted-clip')
+					mut clip_path := dom.create_element(document, 'path', 'http://www.w3.org/2000/svg', none, none, false) or { panic(err) }
+					clip_path.set_attribute_value('d', 'M3 0h21v21ZM0 0v24h24z')
+					mut clip_node := clip.as_node()
+					clip_node.append_child(clip_path.as_node()) or { panic(err) }
+					mut defs_node := defs.as_node()
+					defs_node.append_child(clip_node) or { panic(err) }
+					mut icon_node := icon.as_node()
+					icon_node.append_child(defs_node) or { panic(err) }
+					for index, geometry in [
+						'm5 5 14 14-1.5 1.5-14-14z',
+						'M14 4.08v2.04c2.23.55 4 2.9 4 5.88 0 2.97-1.77 5.33-4 5.88v2.04c3.45-.56 6-3.96 6-7.92s-2.55-7.36-6-7.92Z',
+						'M14 7.67v8.66c.35-.25.66-.55.92-.9A5.7 5.7 0 0 0 16 12c0-1.3-.39-2.5-1.08-3.43a4.24 4.24 0 0 0-.92-.9Z',
+						'M4 9v6h4l4 5V4L8 9Z',
+					] {
+						mut path := dom.create_element(document, 'path', 'http://www.w3.org/2000/svg', none, none, false) or { panic(err) }
+						path.set_attribute_value('class', ['muted-line', 'volume-high', 'volume-low', 'speaker'][index])
+						path.set_attribute_value('d', geometry)
+						icon_node.append_child(path.as_node()) or { panic(err) }
+					}
+					mut button_node := child.as_node()
+					button_node.append_child(icon_node) or { panic(err) }
+					parent_node.append_child(button_node) or { panic(err) }
 				} else if class_name == 'fullscreen-button' {
 					// MediaControls.html gives the stateful SVG its own identity;
 					// activation belongs to its enclosing HTML button.
