@@ -886,6 +886,7 @@ mut:
 	buffered_ranges_            []MediaControlsBufferedRange
 	pending_scrub_seek_time_     ?f64
 	scrub_seek_preemption_timer_ ?&platform.Timer
+	hover_timer_                 ?&platform.Timer
 	last_timestamp_time_        i64 = -1
 	last_timestamp_duration_    ?i64
 	last_timeline_progress_     f64
@@ -1420,6 +1421,17 @@ pub fn (mut controls MediaControls) show_controls() {
 	if mut bar := controls.dom_.control_bar {
 		mut classes := bar.class_list()
 		classes.add(['visible']) or { panic(err) }
+		if mut timer := controls.hover_timer_ {
+			timer.restart()
+		} else {
+			controls_pointer := voidptr(&controls)
+			mut timer := platform.Timer.create_single_shot(1000, fn [controls_pointer] () {
+				mut controls := unsafe { &MediaControls(controls_pointer) }
+				controls.hide_controls()
+			})
+			timer.start()
+			controls.hover_timer_ = timer
+		}
 	}
 	controls.visible = true
 }
@@ -1432,5 +1444,9 @@ pub fn (mut controls MediaControls) hide_controls() {
 			classes.remove(['visible']) or { panic(err) }
 		}
 		controls.visible = false
+		if mut timer := controls.hover_timer_ {
+			timer.stop()
+		}
+		controls.hover_timer_ = none
 	}
 }
