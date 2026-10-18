@@ -4552,8 +4552,7 @@ fn (mut app BrowserApp) create_image_from_resource_bytes(image_url string, bytes
 					}
 				}
 				if C.native_webp_yuv_paint_supported() != 0 && app.document != unsafe { nil }
-					&& app.document.font_rendering_policy() == .chromium
-					&& chromium_webp_has_atomic_source(image_url) {
+					&& app.document.font_rendering_policy() == .chromium {
 					mut width := 0
 					mut height := 0
 					mut size := 0
