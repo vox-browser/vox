@@ -13416,6 +13416,114 @@ the original ledger/docs remain exact and the resume uses fresh latest HEAD.
 Chrome parity needs an equivalent endpoint and content; the older hydrated Chrome
 lower-bound count cannot establish it.
 
+## Retain exact CSS integers while consuming numeric tokens
+
+Round138 applies complete committed `0f3a06e1` to accepted frozen137: three exact
+authored hunks within `Tokenizer.consume_a_number()` in `css/parser_core.v`.
+The existing digit scan retains an unsigned accumulator while its value is at
+most2^53. That bound makes conversion to binary64 exact, and the next multiply
+by10 plus a digit cannot overflow u64. A larger value disables accumulation and
+keeps the existing converter. Fractions, exponents and the private empty/sign-only
+consumer also keep it. Negation preserves signed zero; number-type flags, token
+boundaries, source spans, decoder/filtering and tokenizer arenas are unchanged.
+
+All four original cases pass both frozen C-O2 GC modes,98,967 assertions each.
+They compare binary64 bits against unchanged `strconv.atof64`, with independent
+signed-zero expectations, values around2^53/u64 bounds,8,192 generated magnitudes
+and signs, Unicode offsets, long spellings, exponent/subnormal/overflow cases and
+public token/source owners across collection. Bodies/expected values are exact
+from the feature commit. Earlier Root coverage also retains all four unchanged
+number-span/builder-oracle cases:8 cases/123,934 assertions eachGC. Common12 cases
+including the inactive diagnostic pass60 assertions per configuration, reusing
+identical successful137-final control evidence.
+
+Three fixed alternating local pairs count16 complete fresh public HTML parse,
+layout/display-list/paint-command/hit-phase/finalize pipelines. The accepted scene
+retains64 Unicode paragraphs,128 discarded indentation blocks and192 independent
+text checks. Setup,8 warmups, forced GC and final assertions are outside the
+counter. All6 actual exits are0 with checksum7,963,486,608; medians are
+**31,398,982,002 → 30,790,035,129** retired instructions,
+**-1.93938413%**, 2/3 wins. The slower third candidate remains.
+Scene and declared measurements are unchanged. Its numeric workload is much
+smaller than the cached page; only the separate page cohort can establish page
+savings. The local negative median and all original contracts gate native work.
+The normal C-O2/Boehm/default marker1, no-prod/no-global-prealloc policy and
+automatic4GiB hint at2,048 elements remain. The smaller local fixture does not
+force expansion; standalone probes do not link the browser helper.
+
+Native compilation/signing/persistence and frozen4e startup actually pass0.
+Independent complete normal C generation authenticates every compiled body,
+type and global after established compiler/source/embed identities and four
+byte-identical helper orderings. An additional control delta confirms that only
+`css__Tokenizer_consume_a_number` changes: no functions are added or removed.
+The first stricter reader exits1 on the unchanged numeric-token caller's assertion
+line1503→1518. Its V body is byte-identical; both metadata rows are authenticated
+against the exact source assertion `unit.len > 0`. Only that line field is
+normalized in the extra comparison; the entire independent-program comparison
+remains intact. Original audit1, diff and actual successful reader are retained
+in `Build/v/instruction-opt138-c-extra-function-finding/`; no compiler/runtime
+job is repeated. Two inherited broad-description round labels are corrected
+only after all actual validation inputs match frozen138; the case inventory,
+source hashes and executions are unchanged. Receipt:
+`Build/v/instruction-opt138-broad-description-correction.json`. All493 builtin and176 protected decoder/filter/arena bodies,
+120 native inputs,37 frozen includes and exact native arguments are verified.
+Binary SHA256: `518df4186a72dc577530ae2ecc75bd970ef078c6d3d62e73c3a528c486fdd93b`.
+Compiled C SHA256: `86d70e9450ebbc636416db80dbb1827ce699e17f608d46accf0579bad22c678a`.
+Normalized entire program: `9c611616ca4cfec1ffb79ab1e2957d9da1e4cdbf09d72e32505bd2ebaebb4bf6`.
+
+Both full-process C-O1/no-inline/Boehm1 profiles actually exit0, main enabled
+throughout and no filter/reset. Call counts diagnose mechanism only, with no
+timing or hardware credit:
+
+| Profile calls | Before | Candidate |
+| --- | ---: | ---: |
+| `layout__opt138_complete_public_document_layout` | 25 | 25 |
+| `html__parse_document` | 26 | 26 |
+| `layout__run_document_layout` | 26 | 26 |
+| `dom__Document_record_display_list` | 26 | 26 |
+| `css__Tokenizer_consume_a_number` | 1,614 | 1,614 |
+| `css__Tokenizer_convert_a_string_to_a_number` | 1,614 | 82 |
+| `strconv__atof64` | 1,614 | 82 |
+
+The fixed30 alternating page pairs use odd before/final, even final/before,
+30,000 paired bootstrap resamples and seed138; the same359-file cache, frozen4e
+and child-only placement helper; document1024×768/window1024×880; and endpoint
+`native.scopes.navigation_to_first_document_paint[0]`.
+
+| First-frame retired instructions | Value |
+| --- | ---: |
+| Before median | 16,703,912,262.5 |
+| Candidate median | 16,678,368,229.5 |
+| Observed marginal-median saving | 25,544,033 |
+| Change | -0.15292246% |
+| Improved pairs | 27/30 |
+| Paired median saving | 25,782,057.5 |
+| Paired 95% interval | [13,083,661, 43,926,162] |
+| Repeatable page credit | 25,544,033 |
+
+A positive paired interval establishes repeatable page savings.
+All60 primaries remain: actual zero exits:60; real PNGs:60;
+recovered:[]; preparse retries:0; later installation refreshes:
+0; unrelated foreground transitions:
+[].
+Every first primary has1 installation/2 formatting passes/1 paint preparation.
+Retained RGB pixels match outside the original fixed skeleton bands and the
+focused1024×768 viewport is exact. Prior carry0 plus max(0,fresh point saving)
+gives25,544,033 for the5M broad gate. Six actual zero exits pass CSS31/SVG10/layout46 both GC modes (174 executions). All19 screenshot comparisons pass,16 exact; known differences remain inline-node13, text-decorations1,341 and canvas-text1,994.
+
+The isolated `/Users/alex/code/vox2/Build/v/Vox-opt138.app` passes library pin/sign/verification,
+startup and real collections with default marker1/override2. Instruction text
+matches the measured binary and startup loads installed4e.
+Frozen control advances to138.
+Actual broad passes reset observed carry to0.
+Exact durable C/profile/test/binary/report hashes are in
+`Build/v/instruction-opt138-durable-archives.json`. Current Root, the canonical app,
+GUI browsers and foreign edits are preserved. Separate Root fraction feature
+`cbfb7f11` also passes12 numeric cases/162,670 assertions eachGC, including all four
+FP rounding modes; it is excluded from frozen138 and receives no138 credit.
+Chrome parity still requires equal endpoints and content; the older hydrated
+Chrome lower-bound count cannot establish it.
+
 ## Causes and changes
 
 - The V 0.5.2 compatibility compiler's `-prod` Boehm code repeatedly snapshots
