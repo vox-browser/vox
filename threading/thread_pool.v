@@ -45,6 +45,11 @@ pub fn ThreadPool.the() &ThreadPool {
 
 @[spawn_stack: 8388608]
 fn (mut pool ThreadPool) worker_thread_func(name string) {
+	// Under -prealloc a spawned thread's arena is freed when it returns; work
+	// results outlive this worker, so keep the arena (see platform).
+	$if prealloc {
+		_ = unsafe { prealloc_scope_retain_current() }
+	}
 	C.vox_thread_pool_set_name(name.str)
 	for {
 		C.vox_thread_pool_lock(pool.condition_)

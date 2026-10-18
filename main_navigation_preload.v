@@ -74,6 +74,7 @@ fn queue_navigation_preloads(mut pending PendingPagePreload, urls []string,
 
 fn fetch_navigation_preload(resource_url string, source_url string, request_type string,
 	cached []PreloadedResource, results chan PreloadedResource) {
+	platform.retain_thread_allocations()
 	resource := if cached.len > 0 {
 		filter_preloaded_resource(cached[0], source_url, request_type) or {
 			PreloadedResource{ url: resource_url, error: err.msg(), source_url: source_url, request_type: request_type }

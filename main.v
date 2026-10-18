@@ -1134,6 +1134,7 @@ fn fetch_browser_resource(reference string, base string, source_url string, requ
 }
 
 fn fetch_resource_in_background(resource_url string, source_url string, request_type string, results chan PreloadedResource) {
+	platform.retain_thread_allocations()
 	resource := fetch_browser_resource(resource_url, '', source_url, request_type) or {
 		results <- PreloadedResource{
 			url: resource_url
@@ -1192,6 +1193,7 @@ fn fetch_background_resource_in_background(resource_url string, source_url strin
 }
 
 fn fetch_page_in_background(resolved string, base string, generation int, add_history bool, had_cached_page bool, results chan NavigationResult) {
+	platform.retain_thread_allocations()
 	loaded := fetch_page(resolved, base) or {
 		results <- NavigationResult{
 			generation: generation
