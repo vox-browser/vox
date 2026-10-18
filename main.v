@@ -3770,6 +3770,9 @@ fn (mut app BrowserApp) start_pending_navigation() {
 // stay queued for the next frame.
 fn (mut app BrowserApp) poll_navigation_and_background_resources(refresh_ready bool) {
 	document_before_navigation := voidptr(app.document)
+	// The refresh deadline holds a newer network document behind the cached
+	// frame. It must not hold that frame's already-completed dependencies.
+	app.poll_page_preload()
 	if app.document == unsafe { nil } || (app.document_presented && refresh_ready) {
 		app.refresh_not_before = 0
 		app.poll_navigation()
