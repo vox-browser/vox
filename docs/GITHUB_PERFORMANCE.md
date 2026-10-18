@@ -13277,6 +13277,145 @@ changed. Its receipt is `Build/v/instruction-opt136-completed-c-compression.json
 Chrome parity remains unestablished: its earlier lower-bound count has a different
 endpoint and hydrated content. This cohort credits only matching Vox work.
 
+## Resolve scroll-edge context only for lengths that need it
+
+Round137 applies complete committed `d318908d` to accepted frozen136: two exact
+authored hunks in `layout/typed_paint_adapter.v`. Scroll-snap edges build a length
+resolution context when an edge is calculated or uses relative units. Absolute
+lengths, percentages and auto keep their existing used-size reference and need no
+font or viewport context. No geometry result is cached. The complete source chain
+reconstructs the authored before/after; all other runtime inputs match control.
+
+All three original cases pass both GC modes, with assertions
+{'boehm': 15026, 'none': 15026}. They cover absolute,
+percentage and auto edges through resizing; em/vw/calculated edges retaining
+their context; and transport of real scroller/target snap geometry. Expectations
+and bodies are unchanged. Common12 cases, including the inactive diagnostic,
+pass60 assertions per configuration; identical136-final control evidence is reused.
+
+Three fixed alternating local pairs count16 complete fresh public HTML parse,
+layout, display-list/paint-command/hit-phase and finalize pipelines. The accepted
+scene has64 Unicode paragraphs,128 discarded indentation blocks and192 independent
+DOM text checks. Setup, eight warmups, forced GC and final checksum assertions are
+outside the counter. All six actual exits are0 with checksum7,963,486,608:
+**32,149,024,933 → 32,007,557,922** retired instructions,
+**-0.44003515%**, 2/3 wins. Every sample remains.
+The negative local median and all original contracts gate native/profile/page work.
+The first diagnostic driver used a marker name different from its retained
+compiled fixture. That actual harness exit0 was inactive, with zero assertions
+and no counter; the driver/gate/launcher exited1 before native/profile/page work.
+All originals remain in `Build/v/instruction-opt137-local-marker-finding/`.
+Only the host marker/parser was corrected; the two already successful builds,
+their sources and binary hashes were reused for the declared six measurements.
+No completed instruction sample was discarded/reexecuted and no functional or
+native compilation was repeated. The profile environment was corrected before
+its first launch. The resumed driver hash and all exits are authenticated.
+The automatic4GiB heap hint at2,048 elements, C-O2/Boehm/default marker1, and
+no-prod/no-global-prealloc policy remain unchanged. The smaller standalone scene
+does not force heap expansion or link the native browser helper.
+
+Normal native compilation, signing, persistence and frozen4e startup actually
+pass0. Independently generated complete normal C authenticates the compiled
+program after established compiler/source/embed identities and authenticated
+byte-identical helper order normalization. No function/type/global is excluded.
+All493 builtin and176 protected encoding/filter/arena bodies,120 native inputs,
+37 frozen includes and exact native arguments are verified. Binary SHA256:
+`c4d3c3deec4f8873711b20b8b71a43642d8e334e3b0682cbad06d40f0866ec01`. Compiled C SHA256:
+`cc0408f05170eb4c0e6643a1bb6dd6689d505746196e2f4d17e803055a0c4a5a`. Normalized whole program:
+`bdf6cf017f37327e797dff60e474a70e1a4037186143f59031eec6e582f37b49`.
+
+Both full-process C-O1/Boehm/marker1 profiles exit0 with `-profile-no-inline`,
+main enabled throughout and no filter/reset. These call counts diagnose mechanism;
+they receive no hardware instruction or timing credit:
+
+| Profile calls | Before | Candidate |
+| --- | ---: | ---: |
+| `layout__opt137_complete_public_document_layout` | 25 | 25 |
+| `html__parse_document` | 26 | 26 |
+| `layout__run_document_layout` | 26 | 26 |
+| `dom__Document_record_display_list` | 26 | 26 |
+| `layout__compatibility_scroll_snap_edges` | 16,744 | 16,744 |
+| `layout__scroll_snap_edge_needs_resolution_context` | 0 | 66,976 |
+| `css__ComputedProperties_length_resolution_context` | 61,958 | 45,214 |
+| `dom__Node_root` | 1,025,076 | 1,025,076 |
+
+The predeclared30 alternating pairs use odd before/final and even final/before,
+30,000 paired bootstrap resamples, seed137, the same359-file cache,4e helper,
+child-only placement library, document1024×768/window1024×880, and fixed endpoint
+`native.scopes.navigation_to_first_document_paint[0]`.
+
+| First-frame retired instructions | Value |
+| --- | ---: |
+| Before median | 16,679,087,120 |
+| Candidate median | 16,669,046,850.5 |
+| Observed marginal-median saving | 10,040,269.5 |
+| Change | -0.06019676% |
+| Improved pairs | 19/30 |
+| Paired median saving | 5,657,294.5 |
+| Paired 95% interval | [-2,714,977.5, 19,555,237] |
+| Repeatable page credit | 0 |
+
+The paired interval does not establish repeatable savings; page credit is0.
+All60 primaries are retained: actual zero exits:60; real PNGs:60;
+recovered primaries:[]; preparse retries:0; later installation
+refreshes:0; unrelated foreground transitions:
+[].
+Each first primary has1 installation/2 formatting passes/1 paint preparation.
+All retained RGB pixels match outside the original fixed skeleton bands.
+Missing images receive no capture credit. Focused1024×768 pixels are exact.
+Prior carry0 plus max(0,fresh observed saving) gives10,040,269.5 for the5M gate.
+Six actual zero exits pass CSS31/SVG10/layout46 both GC modes (174 executions). All19 screenshot comparisons pass,16 exact; known differences remain inline-node13, text-decorations1,341 and canvas-text1,994.
+The initial ordered-list comparison actually exits1 after two owned launches
+trap in `sg_setup`/gg initialization. Both crash reports identify libdispatch
+semaphore disposal while in use. Original browser logs, comparison/validation1
+and blocked bundle1 remain in
+`Build/v/instruction-opt137-validation-launch-finding/`.
+Only unfinished captures resume; all six broad jobs, the focused captures and
+completed comparisons remain without execution. Screenshot-only resume exits0;
+bundle finalization starts only after that actual success. The measured binaries,
+native inputs, cohort and pixel bounds remain unchanged.
+
+The isolated `/Users/alex/code/vox2/Build/v/Vox-opt137.app` passes library pinning, signing,
+verification, startup and real collections with default marker1/override2.
+Its instruction text matches the measured binary and startup loads installed4e.
+Frozen control advances to137.
+Actual broad passes reset observed carry to0.
+Durable C/profile/test/binary/report hashes are in
+`Build/v/instruction-opt137-durable-archives.json`. Current Root, the canonical app,
+GUI browsers and foreign edits are preserved. The separately committed iterative
+Node.root feature is excluded from this frozen comparison and receives no137 credit.
+Its four new cases/23 assertions eachGC pass C-O2, including live reparenting,
+adoption, open/closed shadow roots and a32,768-deep chain with no read allocations.
+The initial fixture alias-checker failure executed zero cases and remains retained.
+Read-only disassembly finds the old optimized recursive implementation and the
+new focused implementation have identical five instruction words. No new root-walk
+performance cohort is declared; source clarity receives no instruction credit.
+Separate Root feature `fb8a57b7` initializes absent marker/paint payloads explicitly
+and passes18 cases/1,969 assertions eachGC. The counter allocation negative
+control fails before at48,960 bytes; the paint budget also passes before and
+establishes no paint-specific saving. The original two-failure reader expectation
+and premature setup failure remain; derived evidence performs no runtime retry.
+The complete feature cannot port to frozen control because its two layout-cache
+records are absent. It is excluded entirely, with no partial import or137 credit.
+Separate `0f3a06e1` retains exact integers through2^53 during CSS number consumption,
+preserving signed zero and the converter for fractions/exponents/larger values.
+Four new and four unchanged span/oracle cases pass123,934 assertions eachGC.
+It ports exactly as one runtime path/three authored hunks and remains unmeasured.
+
+A separate completed full-process C-O1/no-inline frozen136 native page profile
+retains7,171 raw function rows in
+`Build/v/instruction-opt136-fullpage-profile-calls.tsv`. Generation/native/sign,
+owned observer/browser and capture all actually exit0; main stays enabled and no
+filter/reset is used. The original native header-order compile failure1 remains
+retained; only native compilation resumed with `-D_FORTIFY_SOURCE=0 -include stdio.h`,
+without C regeneration or runtime retry. Full source/C/binary/report hashes are in
+`Build/v/instruction-opt136-fullpage-profile-result.json`. This single instrumented
+run triages follow-up work only; it extends no normal cohort and has zero credit.
+An initial documentation concurrency guard exits1 before staging or ledger mutation;
+the original ledger/docs remain exact and the resume uses fresh latest HEAD.
+Chrome parity needs an equivalent endpoint and content; the older hydrated Chrome
+lower-bound count cannot establish it.
+
 ## Causes and changes
 
 - The V 0.5.2 compatibility compiler's `-prod` Boehm code repeatedly snapshots
