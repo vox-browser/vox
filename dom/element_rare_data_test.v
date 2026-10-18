@@ -1,5 +1,7 @@
 module dom
 
+import strings
+
 fn rare_data_test_element(document &Document, name string) &Element {
 	return document.create_element_ns('http://www.w3.org/1999/xhtml', name) or { panic(err) }
 }
@@ -235,4 +237,106 @@ fn test_first_cold_metadata_use_keeps_pseudo_owner_and_survives_independent_remo
 	assert voidptr(store.style_data_) == voidptr(cold_store)
 	assert element.ensure_css_random_base_value('retained') == random_value
 	assert voidptr(element.get_pseudo_element(-7) or { panic('lost replacement') }) == voidptr(replacement)
+}
+
+fn test_first_pseudo_record_has_no_overflow_and_missing_lookups_allocate_nothing() {
+	mut document := Document.create(url_about_blank())
+	defer { document.finalize() }
+	mut element := rare_data_test_element(document, 'div')
+	first := element.ensure_pseudo_element(-17)
+	store := element.rare_data_
+	assert store.additional_pseudos_ == unsafe { nil }
+	assert store.style_data_ == unsafe { nil }
+	assert element.pseudo_element_record_count() == 1
+	before := gc_heap_usage().total_bytes
+	mut found := 0
+	for _ in 0 .. 1024 {
+		if element.get_pseudo_element(-17) != none { found++ }
+		if element.get_pseudo_element(0) != none { found++ }
+		if element.get_pseudo_element(17) != none { found++ }
+		element.remove_pseudo_element_record(17)
+	}
+	after := gc_heap_usage().total_bytes
+	assert found == 1024
+	assert store.additional_pseudos_ == unsafe { nil }
+	$if gcboehm ? { assert after == before }
+	element.remove_pseudo_element_record(-17)
+	assert element.pseudo_element_record_count() == 0
+	replacement := element.ensure_pseudo_element(0)
+	assert voidptr(replacement) != voidptr(first)
+	gc_collect()
+	assert voidptr(element.get_pseudo_element(0) or { panic('missing zero key') }) == voidptr(replacement)
+	assert store.additional_pseudos_ == unsafe { nil }
+}
+
+fn test_overflow_record_identity_survives_empty_first_slot_reuse_and_adoption() {
+	mut source := Document.create(url_about_blank())
+	mut destination := Document.create(URL{ value: 'https://overflow.example/' })
+	defer { source.finalize() }
+	defer { destination.finalize() }
+	mut element := rare_data_test_element(source, 'div')
+	first := element.ensure_pseudo_element(17)
+	second := element.ensure_pseudo_element(-17)
+	overflow := element.rare_data_.additional_pseudos_
+	assert overflow != unsafe { nil }
+	assert element.pseudo_element_record_count() == 2
+	element.remove_pseudo_element_record(17)
+	assert element.pseudo_element_record_count() == 1
+	assert voidptr(element.ensure_pseudo_element(-17)) == voidptr(second)
+	assert element.pseudo_element_record_count() == 1
+	assert element.rare_data_.first_pseudo_ == unsafe { nil }
+	replacement := element.ensure_pseudo_element(0)
+	assert voidptr(replacement) != voidptr(first)
+	assert element.pseudo_element_record_count() == 2
+	assert voidptr(element.rare_data_.additional_pseudos_) == voidptr(overflow)
+	destination.adopt_node(element.as_node())
+	gc_collect()
+	assert voidptr(element.document()) == voidptr(destination)
+	assert voidptr(element.get_pseudo_element(-17) or { panic('lost overflow') }) == voidptr(second)
+	assert voidptr(element.get_pseudo_element(0) or { panic('lost first slot') }) == voidptr(replacement)
+	element.remove_pseudo_element_record(-17)
+	assert element.pseudo_element_record_count() == 1
+	assert element.get_pseudo_element(-17) == none
+	assert voidptr(element.get_pseudo_element(0) or { panic('lost retained record') }) == voidptr(replacement)
+}
+
+fn test_direct_and_overflow_pseudos_keep_visiting_style_invalidation_and_sorted_json() {
+	mut document := Document.create(url_about_blank())
+	defer { document.finalize() }
+	mut element := rare_data_test_element(document, 'div')
+	mut original_edges := CellVisitor{}
+	element.visit_edges(mut original_edges)
+	element.set_computed_properties(int(PseudoElement.selection), &CSSComputedProperties_{
+		attempted_pseudo_class_matches_: u8(1) << int(PseudoClass.hover)
+	})
+	element.set_computed_properties(int(PseudoElement.first_letter), &CSSComputedProperties_{
+		attempted_pseudo_class_matches_: u8(1) << int(PseudoClass.focus)
+	})
+	for typ in [PseudoElement.selection, .first_letter, .before] {
+		element.set_pseudo_element_node(int(typ), &LayoutNodeWithStyle_{})
+	}
+	gc_collect()
+	mut visitor := CellVisitor{}
+	element.visit_edges(mut visitor)
+	assert visitor.visited == original_edges.visited + 3
+	assert element.affected_by_pseudo_class(.hover)
+	assert element.affected_by_pseudo_class(.focus)
+	assert !element.affected_by_pseudo_class(.active)
+	mut builder := strings.new_builder(512)
+	element.serialize_children_as_json(mut builder)
+	serialized := builder.str()
+	before_index := serialized.index('"name":"::before"') or { panic('missing before') }
+	letter_index := serialized.index('"name":"::first-letter"') or { panic('missing first-letter') }
+	selection_index := serialized.index('"name":"::selection"') or { panic('missing selection') }
+	assert before_index < letter_index
+	assert letter_index < selection_index
+	assert element.has_pseudo_elements()
+	element.clear_pseudo_element_nodes()
+	assert !element.has_pseudo_elements()
+	assert element.pseudo_element_record_count() == 3
+	assert element.computed_properties_for_pseudo(int(PseudoElement.selection)) != none
+	assert element.computed_properties_for_pseudo(int(PseudoElement.first_letter)) != none
+	element.remove_pseudo_element_record(int(PseudoElement.selection))
+	assert !element.affected_by_pseudo_class(.hover)
+	assert element.affected_by_pseudo_class(.focus)
 }

@@ -1738,8 +1738,13 @@ pub fn (mut e Element) visit_edges(mut visitor CellVisitor) {
 		visitor.visit(asm_)
 	}
 	if e.rare_data_ != unsafe { nil } {
-		for _, pe in e.rare_data_.pseudo_element_data {
-			visitor.visit(pe)
+		if e.rare_data_.first_pseudo_ != unsafe { nil } {
+			visitor.visit(e.rare_data_.first_pseudo_)
+		}
+		if e.rare_data_.additional_pseudos_ != unsafe { nil } {
+			for _, pe in e.rare_data_.additional_pseudos_.pseudo_element_data {
+				visitor.visit(pe)
+			}
 		}
 	}
 	if mut cs := e.counters_set_ {
@@ -2526,19 +2531,37 @@ pub fn (mut e Element) set_computed_properties(pseudo_element ?int, style ?&CSSC
 }
 
 pub fn (e &Element) get_pseudo_element(typ int) ?&PseudoElement_ {
-	// Optional map lookup creates an error object on every miss in the
-	// compatibility compiler. Most elements have no requested pseudo-element.
-	if e.rare_data_ == unsafe { nil } || typ !in e.rare_data_.pseudo_element_data { return none }
-	return unsafe { e.rare_data_.pseudo_element_data[typ] }
+	if e.rare_data_ == unsafe { nil } { return none }
+	if e.rare_data_.first_pseudo_ != unsafe { nil } && e.rare_data_.first_pseudo_type_ == typ {
+		return e.rare_data_.first_pseudo_
+	}
+	// Avoid the compatibility compiler's error allocation on a missing map key.
+	if e.rare_data_.additional_pseudos_ == unsafe { nil }
+		|| typ !in e.rare_data_.additional_pseudos_.pseudo_element_data { return none }
+	return unsafe { e.rare_data_.additional_pseudos_.pseudo_element_data[typ] }
 }
 
 fn (mut e Element) ensure_pseudo_element(typ int) &PseudoElement_ {
 	mut data := e.ensure_rare_data()
-	if existing := data.pseudo_element_data[typ] {
-		return existing
+	if data.first_pseudo_ != unsafe { nil } && data.first_pseudo_type_ == typ {
+		return data.first_pseudo_
+	}
+	// Check overflow before reusing an empty first slot, preserving an existing
+	// record's identity after the original first record has been removed.
+	if data.additional_pseudos_ != unsafe { nil }
+		&& typ in data.additional_pseudos_.pseudo_element_data {
+		return unsafe { data.additional_pseudos_.pseudo_element_data[typ] }
 	}
 	pe := &PseudoElement_{}
-	data.pseudo_element_data[typ] = pe
+	if data.first_pseudo_ == unsafe { nil } {
+		data.first_pseudo_type_ = typ
+		data.first_pseudo_ = pe
+	} else {
+		if data.additional_pseudos_ == unsafe { nil } {
+			data.additional_pseudos_ = &ElementPseudoElementMap{}
+		}
+		data.additional_pseudos_.pseudo_element_data[typ] = pe
+	}
 	return pe
 }
 
@@ -2549,9 +2572,13 @@ pub fn (e &Element) has_pseudo_element(typ int) bool {
 
 pub fn (e &Element) has_pseudo_elements() bool {
 	if e.rare_data_ == unsafe { nil } { return false }
-	for _, pe in e.rare_data_.pseudo_element_data {
-		if pe.layout_node() != none {
-			return true
+	if e.rare_data_.first_pseudo_ != unsafe { nil }
+		&& e.rare_data_.first_pseudo_.layout_node() != none { return true }
+	if e.rare_data_.additional_pseudos_ != unsafe { nil } {
+		for _, pe in e.rare_data_.additional_pseudos_.pseudo_element_data {
+			if pe.layout_node() != none {
+				return true
+			}
 		}
 	}
 	return false
@@ -2559,8 +2586,14 @@ pub fn (e &Element) has_pseudo_elements() bool {
 
 pub fn (mut e Element) clear_pseudo_element_nodes() {
 	if e.rare_data_ == unsafe { nil } { return }
-	for _, mut pe in e.rare_data_.pseudo_element_data {
+	if e.rare_data_.first_pseudo_ != unsafe { nil } {
+		mut pe := e.rare_data_.first_pseudo_
 		pe.set_layout_node(none)
+	}
+	if e.rare_data_.additional_pseudos_ != unsafe { nil } {
+		for _, mut pe in e.rare_data_.additional_pseudos_.pseudo_element_data {
+			pe.set_layout_node(none)
+		}
 	}
 }
 
@@ -5086,10 +5119,17 @@ pub fn (e &Element) affected_by_pseudo_class(pseudo_class PseudoClass) bool {
 		}
 	}
 	if e.rare_data_ == unsafe { nil } { return false }
-	for _, pseudo_element in e.rare_data_.pseudo_element_data {
-		props := pseudo_element.computed_properties() or { continue }
-		if props.has_attempted_match_against_pseudo_class(pseudo_class) {
-			return true
+	if e.rare_data_.first_pseudo_ != unsafe { nil } {
+		if props := e.rare_data_.first_pseudo_.computed_properties() {
+			if props.has_attempted_match_against_pseudo_class(pseudo_class) { return true }
+		}
+	}
+	if e.rare_data_.additional_pseudos_ != unsafe { nil } {
+		for _, pseudo_element in e.rare_data_.additional_pseudos_.pseudo_element_data {
+			props := pseudo_element.computed_properties() or { continue }
+			if props.has_attempted_match_against_pseudo_class(pseudo_class) {
+				return true
+			}
 		}
 	}
 	return false
@@ -6483,10 +6523,10 @@ pub fn (e &Element) serialize_children_as_json(mut sb strings.Builder) {
 
 	if has_pseudo_elements {
 		wrote_child = serialize_pseudo_element_as_json(e, .after, mut sb, wrote_child)
-		mut pseudo_element_types := e.rare_data_.pseudo_element_data.keys()
+		mut pseudo_element_types := e.pseudo_element_record_types()
 		pseudo_element_types.sort()
 		for pseudo_element_type_int in pseudo_element_types {
-			pseudo_element := e.rare_data_.pseudo_element_data[pseudo_element_type_int] or { continue }
+			pseudo_element := e.get_pseudo_element(pseudo_element_type_int) or { continue }
 			pseudo_element_type := unsafe { PseudoElement(pseudo_element_type_int) }
 			if pseudo_element_type in [.after, .backdrop, .before, .marker]
 				|| pseudo_element.layout_node() == none {

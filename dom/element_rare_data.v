@@ -1,13 +1,20 @@
 module dom
 
-// Pseudo styles are much more common than element-reference pseudos,
-// CSS-defined animations or CSS random() values. Creating a pseudo record
-// should initialize only its own map.
+// Keep the first pseudo record directly in its owner. An element with one
+// pseudo needs no map; additional records share a lazily created overflow map.
 @[heap]
 struct ElementRareData {
 mut:
-	pseudo_element_data map[int]&PseudoElement_
+	first_pseudo_type_ int
+	first_pseudo_ &PseudoElement_ = unsafe { nil }
+	additional_pseudos_ &ElementPseudoElementMap = unsafe { nil }
 	style_data_ &ElementRareStyleData = unsafe { nil }
+}
+
+@[heap]
+struct ElementPseudoElementMap {
+mut:
+	pseudo_element_data map[int]&PseudoElement_
 }
 
 @[heap]
@@ -37,10 +44,34 @@ fn (mut e Element) ensure_rare_style_data() &ElementRareStyleData {
 // count separate from has_pseudo_elements(), which checks live layout nodes.
 pub fn (e &Element) pseudo_element_record_count() int {
 	if e.rare_data_ == unsafe { nil } { return 0 }
-	return e.rare_data_.pseudo_element_data.len
+	mut count := if e.rare_data_.first_pseudo_ == unsafe { nil } { 0 } else { 1 }
+	if e.rare_data_.additional_pseudos_ != unsafe { nil } {
+		count += e.rare_data_.additional_pseudos_.pseudo_element_data.len
+	}
+	return count
 }
 
 pub fn (mut e Element) remove_pseudo_element_record(typ int) {
 	if e.rare_data_ == unsafe { nil } { return }
-	e.rare_data_.pseudo_element_data.delete(typ)
+	if e.rare_data_.first_pseudo_ != unsafe { nil } && e.rare_data_.first_pseudo_type_ == typ {
+		e.rare_data_.first_pseudo_ = unsafe { nil }
+		return
+	}
+	if e.rare_data_.additional_pseudos_ != unsafe { nil } {
+		e.rare_data_.additional_pseudos_.pseudo_element_data.delete(typ)
+	}
+}
+
+fn (e &Element) pseudo_element_record_types() []int {
+	mut types := []int{cap: e.pseudo_element_record_count()}
+	if e.rare_data_ == unsafe { nil } { return types }
+	if e.rare_data_.first_pseudo_ != unsafe { nil } {
+		types << e.rare_data_.first_pseudo_type_
+	}
+	if e.rare_data_.additional_pseudos_ != unsafe { nil } {
+		for typ, _ in e.rare_data_.additional_pseudos_.pseudo_element_data {
+			types << typ
+		}
+	}
+	return types
 }
