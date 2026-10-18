@@ -42,7 +42,7 @@ fn test_final_bridge_keeps_first_letter_inner_text_range_geometry_and_caret_stop
 	assert committed.rendered_text_ == 'Abc'
 	assert committed.rendered_text_chunks_.join('') == 'Abc'
 	mut caret_offsets := []int{}
-	for line in committed.visual_lines_ {
+	for line in committed.visual_lines() {
 		for stop in line.caret_stops { caret_offsets << stop.offset }
 	}
 	assert 0 in caret_offsets
@@ -75,7 +75,7 @@ fn test_final_bridge_refreshes_inner_text_search_and_geometry_after_live_mutatio
 	assert html.html_element_inner_text(unsafe { &dom.HTMLElement(host) }) == 'C   D'
 	latest := text.layout_node() or { panic('missing preserved-whitespace text layout') }
 	assert latest.rendered_text_chunks_.join('') == 'C   D'
-	assert latest.visual_lines_.len > 0
+	assert latest.visual_lines().len > 0
 	range := dom.Range.create_from_boundary_points(text, 0, text, 5)
 	assert range.get_client_rects().length() > 0
 }

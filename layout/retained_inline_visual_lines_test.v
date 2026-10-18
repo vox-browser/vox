@@ -13,6 +13,7 @@ fn test_retained_inline_visual_lines_preserve_caret_mapping_across_comment_chang
 	_ = layout_document_typed_in_viewport(document, 320, 200)
 	root := retained_visual_line_handle(document)
 	text := root.first_child()?
+	assert text.dom_layout_node_.visual_lines().len > 0
 	previous := document_layout_result(document)?
 	cache := previous.state.inline_layouts_[u64(voidptr(root))] or { panic('missing cache') }
 	assert u64(voidptr(text)) in cache.visual_lines_

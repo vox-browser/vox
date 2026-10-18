@@ -1359,8 +1359,7 @@ pub:
 }
 
 // A retained projection of one rendered line for a DOM Text node. Layout
-// fills this at commit time so caret navigation does not dereference a stale
-// layout tree through the DOM/module boundary.
+// materializes this from committed geometry when a caret consumer requests it.
 pub struct VisualLine {
 pub:
 	start_offset                        int
@@ -1407,6 +1406,7 @@ pub mut:
 	rendered_text_                                  string
 	rendered_text_chunks_                           []string
 	visual_lines_                                   []VisualLine
+	visual_lines_callback                           fn (voidptr) []VisualLine = unsafe { nil }
 	paintables_                                     []&Paintable
 	border_box_                                     Rect
 	content_width_                                  f64

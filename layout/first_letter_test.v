@@ -115,13 +115,13 @@ fn test_first_letter_range_geometry_and_caret_projection_use_source_offsets() {
 	assert second_rect.height < first_rect.height
 	assert math.abs(second_rect.x - (first_rect.x + first_rect.width)) < 0.01
 	placeholder := text.layout_node() or { panic('missing text layout') }
-	assert placeholder.visual_lines_.len >= 2
-	assert placeholder.visual_lines_[0].start_offset == 0
-	assert placeholder.visual_lines_[0].end_offset == 1
-	assert placeholder.visual_lines_[1].start_offset == 1
-	assert placeholder.visual_lines_[1].end_offset == 3
-	assert placeholder.visual_lines_[0].caret_stops.last().offset == 1
-	assert placeholder.visual_lines_[1].caret_stops[0].offset == 1
+	assert placeholder.visual_lines().len >= 2
+	assert placeholder.visual_lines()[0].start_offset == 0
+	assert placeholder.visual_lines()[0].end_offset == 1
+	assert placeholder.visual_lines()[1].start_offset == 1
+	assert placeholder.visual_lines()[1].end_offset == 3
+	assert placeholder.visual_lines()[0].caret_stops.last().offset == 1
+	assert placeholder.visual_lines()[1].caret_stops[0].offset == 1
 }
 
 fn test_first_letter_contextual_casing_and_expanding_unicode_source_offsets() {
@@ -157,8 +157,8 @@ fn test_first_letter_contextual_casing_and_expanding_unicode_source_offsets() {
 	}
 	assert total_width > 20
 	placeholder := text.layout_node() or { panic('missing primary text') }
-	assert placeholder.visual_lines_[0].end_offset == 1
-	stops := placeholder.visual_lines_[0].caret_stops
+	assert placeholder.visual_lines()[0].end_offset == 1
+	stops := placeholder.visual_lines()[0].caret_stops
 	assert stops.len == 2
 	assert stops[1].offset == 1
 	assert stops[1].inline_coordinate - stops[0].inline_coordinate > 20

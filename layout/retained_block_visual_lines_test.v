@@ -30,6 +30,7 @@ fn test_retained_block_visual_lines_keep_carets_after_atomic_inlines_and_owner_r
 	line := block_visual_test_node(document, 'line')
 	styled_line := line.as_node_with_style()?
 	text := line.last_child()?
+	assert text.dom_layout_node_.visual_lines().len > 0
 	previous := document_layout_result(document)?
 	assert u64(voidptr(line)) !in previous.state.inline_layouts_
 	cache := previous.state.block_layouts_[u64(voidptr(stable))] or { panic('missing independent block cache') }

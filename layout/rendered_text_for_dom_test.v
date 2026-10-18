@@ -100,7 +100,7 @@ fn test_dom_text_collection_keeps_first_letter_transforms_live_text_and_source_g
 	range := dom.Range.create_from_boundary_points(text, 0, text, 1)
 	assert range.get_client_rects().length() > 0
 	mut caret_offsets := []int{}
-	for line in committed.visual_lines_ {
+	for line in committed.visual_lines() {
 		for stop in line.caret_stops { caret_offsets << stop.offset }
 	}
 	assert 0 in caret_offsets
@@ -112,5 +112,5 @@ fn test_dom_text_collection_keeps_first_letter_transforms_live_text_and_source_g
 	host.set_attribute_value('style', 'white-space:pre')
 	assert html.html_element_inner_text(unsafe { &dom.HTMLElement(host) }) == 'Z  👩‍👩‍👧‍👦'
 	updated := text.layout_node() or { panic('missing updated text') }
-	assert updated.visual_lines_.len > 0
+	assert updated.visual_lines().len > 0
 }

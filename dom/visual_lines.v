@@ -1,8 +1,8 @@
 // Copyright (c) 2026-present, the Ladybird developers
 // SPDX-License-Identifier: BSD-2-Clause
 
-// Translation of LibWeb/VisualLines.{h,cpp}. Layout commits a compact line and
-// caret-stop projection onto dom.LayoutNode; all offsets remain UTF-16 units.
+// Translation of LibWeb/VisualLines.{h,cpp}. Layout supplies a compact line and
+// caret-stop projection on demand; all offsets remain UTF-16 units.
 module dom
 
 import math
@@ -13,10 +13,23 @@ pub:
 	affinity TextAffinity = .downstream
 }
 
+pub fn (node &LayoutNode) visual_lines() []VisualLine {
+	provider := node.visual_lines_callback
+	if provider != unsafe { nil } {
+		mut current := unsafe { &LayoutNode(node) }
+		// A callback is consumed once per committed attachment. Clear it before
+		// entering the provider so reentrant readers see the existing snapshot.
+		current.visual_lines_callback = unsafe { nil }
+		current.visual_lines_ = provider(current.layout_handle)
+	}
+	return node.visual_lines_
+}
+
 pub fn collect_visual_lines(dom_node &Text) []VisualLine {
 	layout_node := dom_node.as_node().layout_node() or { return []VisualLine{} }
-	mut result := []VisualLine{cap: layout_node.visual_lines_.len}
-	for line in layout_node.visual_lines_ {
+	lines := layout_node.visual_lines()
+	mut result := []VisualLine{cap: lines.len}
+	for line in lines {
 		result << VisualLine{
 			start_offset: line.start_offset
 			end_offset: line.end_offset
