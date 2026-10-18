@@ -30,9 +30,9 @@ results, not a claim of complete uBlock extension parity.
 
 ## Current diagnostic progress
 
-The signed SVG-background, mask, selector, text-shadow, offset and ellipse diagnostic has **2,470 differing pixels**, with a
+The signed SVG-background, mask, selector, text-shadow, offset, ellipse and video-scan diagnostic has **2,470 differing pixels**, with a
 maximum channel error of 59, against the unchanged Brave reference. Its single
-diagnostic records **53,274,520,068 instructions** and receives no performance
+diagnostic records **49,967,109,139 instructions** and receives no performance
 credit while the pixels differ. A fresh Brave
 diagnostic remains pixel-exact and records 42,554,598,225 instructions, whose
 15% threshold is approximately 36.171 billion. These are diagnostic runs, not
@@ -213,6 +213,48 @@ synthetic fixture exercised LibWeb policy and receives no Chromium check
 credit; its tagged replacement and original screenshots are retained. The
 first incomplete native diagnostic and a failed test-helper Option signature
 are also retained without final feature credit.
+
+The local-video installer now checks its immutable markup for the legacy
+fixture reference at most once, lazily when a sourceless HTML video needs it.
+CNN has eight such videos in 3,722,837 bytes of markup. Across three fresh
+normal-process pairs, the installer phase falls from approximately 397 million
+to 104 million instructions: a mean saving of 293,055,284 (73.809%). An
+independent seven-pair C-O0 entry probe also confirms fewer instructions; it
+has no production or whole-page credit. Existing native video ownership and
+canvas-frame tests pass 26,212 assertions per GC mode. The broad union passes
+49 unchanged module files in both GC modes (98 logical checks, 26 compiler
+invocations); all 35 Brave fixtures remain exact, and the actual native stream
+again matches all 173 full-uBO checks.
+
+Whole-page results do not establish a reduction. The three candidate counts
+range from 50,620,952,098 to 51,519,184,129, versus 48,923,460,406 to
+52,802,237,932 for the baseline. Two pairs improve, but the aggregate increases
+0.1196%; a separate first candidate records 47,536,437,100. All images remain
+byte-identical with 2,470 differing pixels against Brave. These overlapping
+ranges and the still-failing image gate receive no CNN performance credit.
+Receipts are `video-fallback-focused/results.json`,
+`video-fallback-entry-probe/results.json`,
+`video-fallback-controlled-diagnostics/results.json`,
+`video-fallback-broad-combined.json`, `video-fallback-brave-fixtures/results.json`
+and `production-video-fallback-scan-instructions/pair-1.vox.{json,ubo.json}`.
+The normal source and binary pins are under `production-video-fallback-scan/`.
+The initial private probe's missing CSS import is retained without check credit.
+
+The ellipse payload also supplies both corners to conservative MSAA tile
+classification, preserving transformed, stroked and Retina bounds across tile
+boundaries. Four focused tile cases pass 17 assertions per GC mode. A separate
+native SVG leaf raster-origin probe yields byte-identical CNN pixels and is
+not shipped; it has no performance credit.
+
+The complete normal bundle with the MSAA bounds correction remains
+byte-identical to the video-scan capture, records 49,967,109,139 instructions
+and passes content/font gates, all 35 exact Brave fixtures, eight exact SVG
+mutation guards and all 173 full-uBO checks. Source and binary pins are under
+`production-ellipse-msaa-bounds/`; receipts are
+`production-ellipse-msaa-bounds-instructions/pair-1.vox.{json,ubo.json}`,
+`ellipse-msaa-bounds-brave-fixtures/results.json` and
+`ellipse-msaa-bounds-svg-guards.log`. This single count remains diagnostic;
+the CNN pixel and seven-pair 15% gates are still open.
 
 The preceding isolated gradient-tile baseline passes a 24-file CSS/layout/HTML/
 network selection in both default and no-GC builds, all 30 exact Brave
