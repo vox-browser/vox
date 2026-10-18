@@ -13010,6 +13010,110 @@ All exact durable C/profile/test/binary/report hashes are retained in
 Chrome parity remains unestablished: the earlier Chrome count uses a different
 endpoint and hydrated page content. This result establishes a Vox improvement.
 
+## Collapse repeated descendant-style invalidation work
+
+Round134 applies the entire authored `299be763` feature to accepted frozen133:
+two exact before/after hunks in `dom/shadow_mutation_misc.v`, with no other runtime
+change, getter projection or omitted prerequisite. Pending and active descendant
+rules retain one copy of each equal reason/rule/payload. Distinct reasons, nested
+payloads and sibling reach remain distinct; draining clears the collection so a
+later invalidation still runs. The feature and focused tests were already
+committed together; Root runtime/foreign edits and canonical/GUI remain untouched.
+
+All three original cases pass in both C-O2 GC modes, **nine assertions each**.
+They exercise256 independently allocated equal pending plans,128 equal nested
+active plans, distinct leaf/whole-subtree payloads, reason/sibling reach, the drain
+and a subsequent enqueue. Original bodies and expectations remain unchanged.
+Common12 cases including the inactive diagnostic pass60 assertions per
+configuration, reusing identical133-final successful control evidence.
+
+The fixed local probe now includes the affected public operation: each complete
+pipeline parses the same64 Unicode paragraphs/128 indentation blocks, lays out,
+performs128 alternating body class writes against one fixed descendant-color
+rule, lays out again, records display/paint/hit output, and finalizes. Before and
+candidate use the exact same fixture. Setup,192 independent text checks, eight
+warmups, forced GC and final checksum assertions remain outside the counter.
+All six actual exits are0 and checksums are7,963,486,608. Three alternating local
+pairs give **43,277,761,602 → 43,094,125,345** instructions,
+**0.42432014% fewer**, 3/3 wins. Local samples receive no
+page credit and are never filtered or repeated. The normal automatic4GiB hint
+still begins at2,048 elements; this smaller local fixture does not force it.
+
+Native C-O2/Boehm compilation/signing/persistence/startup pass0 with frozen4e
+loaded. The complete normal C matches independent generation after established
+identities and four byte-identical helper reorderings; every body/type/global
+remains in that comparison. Exact two-hunk source reconstruction,493 builtin
+and176 protected encoder/filter/arena bodies,120 native inputs,37 frozen includes
+and native arguments are authenticated. Normal binary SHA256 is
+`6fcb58e492dee7943a5c13ba006f10b54d3ad3901934c05a8a33b60423d5789b`; compiled C SHA256 is
+`ba03f5a24dc6fbdcf002786dafe24e4641d9618270e4b5d103dd401007107a85`; normalized program SHA256 is
+`a7536f4c81d324a4340073669870ead76d85df2316387d7bd7c183a4f61ed13f`. The public decoder,
+filtering and tokenizer arenas stay unchanged. A second comparison authenticates
+exactly two changed existing function bodies and ten added generated equality/
+membership helpers; every other existing body matches control after established
+anonymous/type/embed identities. Its first raw-name reader fails on those
+compiler identities and is retained; only the reader normalization is corrected,
+without source/build/test/profile/primary reexecution.
+
+Full-process C-O1/Boehm/marker1 profiles both actually exit0 with
+`-profile-no-inline`; main remains enabled without filter/reset. These mechanism
+counts receive no time or hardware instruction credit:
+
+| Profile calls | Before | Candidate |
+| --- | ---: | ---: |
+| `layout__opt134_complete_public_document_layout` | 25 | 25 |
+| `html__parse_document` | 26 | 26 |
+| `layout__run_document_layout` | 51 | 51 |
+| `dom__Document_record_display_list` | 26 | 26 |
+| `dom__StyleInvalidator_add_pending_invalidation` | 3,200 | 3,200 |
+| `dom__StyleInvalidator_apply_invalidation_plan` | 408,000 | 1,600 |
+| `dom__StyleInvalidator_perform_pending_style_invalidations` | 42,789 | 42,789 |
+
+The predeclared page cohort fixes30 alternating pairs (odd before/final, even
+final/before),30,000 paired bootstrap resamples and seed134. Both regular binaries
+use the unchanged359-file cache,4e helper and child-only placement library,
+document1024×768/window1024×880, and
+`native.scopes.navigation_to_first_document_paint[0]`.
+
+| First-frame retired instructions | Value |
+| --- | ---: |
+| Before median | 16,691,567,659 |
+| Candidate median | 16,700,671,083 |
+| Observed marginal-median saving | -9,103,424 |
+| Change | 0.05453906% |
+| Improved pairs | 13/30 |
+| Paired median saving | -2,732,075 |
+| Paired 95% interval | [-17,031,595, 4,418,269] |
+| Repeatable page credit | 0 |
+
+The paired interval does not establish repeatable savings; page credit is0.
+The summary reader actually resamples with seed134 but initially labels that
+field133. The original reader/report are retained; only the metadata label is
+corrected. Samples, interval, statistics and exits stay unchanged, with no
+resampling or runtime repeated. The final audit independently recomputes seed134.
+All60 primaries remain; actual exits0:60; real PNGs:60;
+explicitly recovered primaries:[]; preparse retries:0; later
+installation refreshes:0; external foreground
+transitions:one (candidate pair3; the measured child never becomes foreground). Both first-primary
+preparations remain1 installation/2 formatting passes/1 paint. All retained RGB
+captures match outside the original fixed skeleton bands; no missing PNG is
+invented or recaptured. Focused1024×768 pixels are exact. Prior observed carry0
+plus max(0,fresh saving) gives0 for the5M broad gate.
+The fresh observed page saving is nonpositive; broad verification is deferred
+without repeating completed133 tests.
+
+The isolated `/Users/alex/code/vox2/Build/v/Vox-opt134.app` passes library pinning/signing/verification,
+headless startup and actual GC collections with default marker1/override2. Its
+instruction text matches the measured binary and startup loads the installed4e
+helper. Nonpositive page evidence retains accepted133 as the frozen control.
+Completed133 broad baseline remains unchanged.
+Durable exact C/profile/test/binary/report hashes are in
+`Build/v/instruction-opt134-durable-archives.json`. The round133 final reader's
+initial missing-key expectation is separately retained; correcting only the
+reader to inspect the actual diff0/final validation0 completed its audit without
+runtime reexecution. Chrome parity still requires an equivalent endpoint and
+page state; the old hydrated Chrome lower-bound count does not establish it.
+
 ## Causes and changes
 
 - The V 0.5.2 compatibility compiler's `-prod` Boehm code repeatedly snapshots

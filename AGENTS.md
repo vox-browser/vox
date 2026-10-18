@@ -2217,6 +2217,12 @@ evidence](docs/translation-audit/NATIVE_MEDIA_WHEEL_RAW_HANDLER.md).
   Initial screenshot permission/validation/bundle failures retained;unfinished screenshots only resumed.
   Entire-program independent C/source audit;120inputs/37includes;profiles diagnostic only.
   Frozen133 control/broad/app;carry0;GC1+override2;Root/canonical/GUI preserved;Chrome parity open.
+  Duplicate descendant invalidation round134 (`299be763`):two authoredhunks/oneDOMruntimepath.
+  All3 originalcases/9asserts eachGC;common60/config;full public mutation pipeline -0.424320%/3wins.
+  Page16,691,567,659→16,700,671,083;13/30wins;point-9,103,424.
+  PairedCI[-17,031,595,4,418,269];repeatablecredit0;all60 primaries retained;same1/2/1prep.
+  Broad:deferred below5M;focused viewport exact;strict entire-program C/source audit.
+  Frozen133control;carry0;isolated app/GC1+override2;Root/canonical/GUI preserved;Chrome open.
 - Outside instruction-count optimization, run broad regression suites once per
   ten completed fixes, not after every fix.
   Broad suites include full translation/package test batches, the full LibJS AST
