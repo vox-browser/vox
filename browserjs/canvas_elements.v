@@ -34,25 +34,24 @@ pub fn (mut runtime Runtime) add_canvas_element_provider_with_identity_lookup(pr
 
 // Reverse indexes supply every alias they own. Resolve candidates through the
 // registry so later providers retain key precedence. An indexed miss does not
-// require copying that provider's complete map; legacy providers keep their
-// snapshot fallback after indexed candidates have been tried.
+// require copying that provider's complete map. Keep provider order when an
+// element has different aliases in legacy and indexed providers.
 pub fn (runtime &Runtime) canvas_element_key_for_binding(element &dom.Element) ?string {
- for provider in runtime.canvas_element_providers_ {
-  if provider.identity == unsafe { nil } { continue }
-  for key in provider.identity(element) {
-   registered := runtime.canvas_element_for_binding(key) or { continue }
-   if voidptr(registered) == voidptr(element) { return key }
-  }
- }
- for provider in runtime.canvas_element_providers_ {
-  if provider.identity != unsafe { nil } { continue }
-  for key, candidate in provider.snapshot() {
-   if voidptr(candidate) != voidptr(element) { continue }
-   registered := runtime.canvas_element_for_binding(key) or { continue }
-   if voidptr(registered) == voidptr(element) { return key }
-  }
- }
- return none
+	for provider in runtime.canvas_element_providers_ {
+		if provider.identity != unsafe { nil } {
+			for key in provider.identity(element) {
+				registered := runtime.canvas_element_for_binding(key) or { continue }
+				if voidptr(registered) == voidptr(element) { return key }
+			}
+		} else {
+			for key, candidate in provider.snapshot() {
+				if voidptr(candidate) != voidptr(element) { continue }
+				registered := runtime.canvas_element_for_binding(key) or { continue }
+				if voidptr(registered) == voidptr(element) { return key }
+			}
+		}
+	}
+	return none
 }
 
 pub fn (runtime &Runtime) canvas_elements_for_binding() map[string]&dom.Element {

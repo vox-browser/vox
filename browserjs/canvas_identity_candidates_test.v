@@ -114,3 +114,20 @@ fn test_canvas_identity_lookup_missing_or_removed_owners_do_not_snapshot_indexed
 	assert runtime.canvas_element_key_for_binding(first) == none
 	assert probe.snapshots == 0
 }
+
+fn test_canvas_identity_lookup_preserves_provider_order_across_legacy_and_indexed_aliases() {
+	mut document := dom.Document.create(dom.url_about_blank())
+	defer { document.finalize() }
+	element := document.create_element('button')!
+	mut runtime := Runtime.create()
+	defer { runtime.close() }
+	runtime.add_canvas_element_provider(fn [element] () map[string]&dom.Element {
+		return {'earlier': element}
+	})
+	probe := &CanvasIdentityLookupProbe{
+		elements: {'later': element}
+		keys: {voidptr(element): 'later'}
+	}
+	install_canvas_identity_probe(mut runtime, probe)
+	assert runtime.canvas_element_key_for_binding(element)? == 'earlier'
+}
