@@ -1,5 +1,6 @@
 module main
 
+@[typedef]
 struct C.VoxPngColorProfile {
 	values [10]f32
 }
