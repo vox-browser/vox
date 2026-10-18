@@ -4856,6 +4856,7 @@ pub:
 	colors               []css.Color // retained for compatibility with callers inspecting parsed colors
 	stops                []GradientStop
 	interpolation_method ?css.ColorInterpolationMethod
+	css_angle_degrees    ?f64
 	radial               bool // compatibility discriminator; `kind` is authoritative
 	kind                 string = 'linear' // linear/radial/conic
 	center_x             f64 = 0.5

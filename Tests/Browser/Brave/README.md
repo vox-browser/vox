@@ -62,11 +62,11 @@ renderer. All three cases require exact equality.
 
 A fully transparent gradient stop contributes no premultiplied RGB. The
 constant-color GPU path therefore normalizes its invisible RGB to the visible
-color before interpolating. The unchanged
-[`diagnostic/css-linear-premult-transparent.html`](diagnostic/css-linear-premult-transparent.html)
-retains an angled case, a vertical fade and a hard stop. The latter two are
-exact; the angled case still differs by one level at one pixel from its
-adjacent original Brave reference. The complete diagnostic remains open.
+color before interpolating. `css-linear-premult-transparent` checks an angled
+fade, a vertical fade and a hard stop against the unchanged original Brave
+reference. All three are pixel-exact. The Chromium path retains the CSS angle
+and computes tile-local endpoints with Blink's float intermediates before
+translating the shader to the tile origin.
 
 Outer CSS SVG roots in the Chromium profile snap their border-box paint
 origin while layout, padding, nested viewports and transforms keep their

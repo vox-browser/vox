@@ -1245,6 +1245,7 @@ fn resolve_linear_gradient_data(resolution_context css.LengthResolutionContext,
 		colors: stops.map(it.color)
 		stops: stops
 		interpolation_method: gradient.interpolation_method()
+		css_angle_degrees: angle
 	}
 }
 

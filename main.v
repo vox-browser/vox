@@ -4305,13 +4305,15 @@ fn draw_native_css_gradient_tile(command layout.PaintCommand, gradient layout.Li
 		}
 		if chromium && (gradient.x1 != gradient.x2 || gradient.y1 != gradient.y2) {
 			if gpu_stops := chromium_linear_gradient_stop_data(gradient, command.opacity) {
+				points := chromium_linear_gradient_points(gradient, tile)
 				unsafe {
 					C.native_draw_svg_linear_gradient_path(&path_data[0], path_data.len / layout.compatibility_clip_path_segment_stride,
 						0, f32(matrix[0]), f32(matrix[1]), f32(matrix[2]), f32(matrix[3]),
 						f32(matrix[4]), f32(matrix[5]), page_x, page_y, f32(scroll_y), canvas_height,
-						0, 0, 0, 0, 4, f32(tile.x + gradient.x1 * tile.width),
-						f32(tile.y + gradient.y1 * tile.height), f32(tile.x + gradient.x2 * tile.width),
-						f32(tile.y + gradient.y2 * tile.height), 1, 0, 0, 1, 0, 0, 0, 0,
+						0, 0, 0, 0, 4, points[0], points[1], points[2], points[3],
+						1, 0, 0, 1,
+						if gradient.css_angle_degrees != none { f32(tile.x) } else { f32(0) },
+						if gradient.css_angle_degrees != none { f32(tile.y) } else { f32(0) }, 0, 0,
 						gpu_stops.data, gpu_stops.len / 5, 1)
 				}
 				return true
