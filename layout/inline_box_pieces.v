@@ -48,6 +48,46 @@ mut:
 	last_line_with_content  int = -1
 }
 
+// Sort only scalar keys. Comparator callbacks must not retain the temporary
+// per-node/piece arrays, whose nodes belong to this layout operation.
+struct InlineBoxPieceDepthOrder {
+	index int
+	depth int
+}
+
+fn compare_inline_box_piece_depth(first &InlineBoxPieceDepthOrder, second &InlineBoxPieceDepthOrder) int {
+	if first.depth != second.depth {
+		return if first.depth > second.depth { -1 } else { 1 }
+	}
+	return if first.index < second.index {
+		-1
+	} else if first.index > second.index {
+		1
+	} else {
+		0
+	}
+}
+
+struct InlineBoxPieceEmissionOrder {
+	index      int
+	line_index int
+	depth      int
+	discovery  int
+}
+
+fn compare_inline_box_piece_emission(first &InlineBoxPieceEmissionOrder, second &InlineBoxPieceEmissionOrder) int {
+	if first.line_index != second.line_index {
+		return if first.line_index < second.line_index { -1 } else { 1 }
+	}
+	if first.depth != second.depth {
+		return if first.depth < second.depth { -1 } else { 1 }
+	}
+	if first.discovery != second.discovery {
+		return if first.discovery < second.discovery { -1 } else { 1 }
+	}
+	return 0
+}
+
 // Node::is_fragmented_inline().
 fn is_fragmented_inline(node &Node) bool {
 	return node.is_inline_node() || (node.is_list_item_box() && node.display().is_inline_outside()
@@ -235,24 +275,17 @@ fn compute_inline_box_pieces(container &Node, used &UsedValues, state &LayoutSta
 
 	// Nested boxes' pieces expand their ancestors' extents, so emit the deepest
 	// boxes first.
-	mut order := []int{len: per_nodes.len, init: index}
-	order.sort_with_compare(fn [per_nodes] (a &int, b &int) int {
-		if per_nodes[*a].depth != per_nodes[*b].depth {
-			return if per_nodes[*a].depth > per_nodes[*b].depth { -1 } else { 1 }
-		}
-		return if *a < *b {
-			-1
-		} else if *a > *b {
-			1
-		} else {
-			0
-		}
-	})
+	mut order := []InlineBoxPieceDepthOrder{cap: per_nodes.len}
+	for index, per_node in per_nodes {
+		order << InlineBoxPieceDepthOrder{ index: index, depth: per_node.depth }
+	}
+	order.sort_with_compare(compare_inline_box_piece_depth)
 
 	mut pieces := []InlineBoxPiece{}
 	mut piece_depths := []int{}
 	mut piece_discovery := []int{}
-	for node_index in order {
+	for entry in order {
+		node_index := entry.index
 		node := per_nodes[node_index].node
 		node_styled := node.as_node_with_style() or { continue }
 		node_used := state.try_get(node_styled) or { continue }
@@ -374,20 +407,17 @@ fn compute_inline_box_pieces(container &Node, used &UsedValues, state &LayoutSta
 		}
 	}
 	// Emit in line order, then outermost box first, then discovery order.
-	mut emission := []int{len: pieces.len, init: index}
-	emission.sort_with_compare(fn [pieces, piece_depths, piece_discovery] (a &int, b &int) int {
-		if pieces[*a].line_index != pieces[*b].line_index {
-			return if pieces[*a].line_index < pieces[*b].line_index { -1 } else { 1 }
+	mut emission := []InlineBoxPieceEmissionOrder{cap: pieces.len}
+	for index, piece in pieces {
+		emission << InlineBoxPieceEmissionOrder{
+			index:      index
+			line_index: piece.line_index
+			depth:      piece_depths[index]
+			discovery:  piece_discovery[index]
 		}
-		if piece_depths[*a] != piece_depths[*b] {
-			return if piece_depths[*a] < piece_depths[*b] { -1 } else { 1 }
-		}
-		if piece_discovery[*a] != piece_discovery[*b] {
-			return if piece_discovery[*a] < piece_discovery[*b] { -1 } else { 1 }
-		}
-		return 0
-	})
-	return emission.map(pieces[it])
+	}
+	emission.sort_with_compare(compare_inline_box_piece_emission)
+	return emission.map(pieces[it.index])
 }
 
 // InlinePaintable geometry: the unions of a box's piece content, padding, and
