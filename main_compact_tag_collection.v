@@ -30,9 +30,11 @@ fn (mut binding CompactElementQueryBinding) tag_collection_query(root &dom.Node,
 
 fn compact_tag_collection_bootstrap() string {
 	return r'
+const __tagTreeVersion=globalThis.__ladybirdDOMTreeVersion;
 function __tagCollection(key,name){
  let version="",elements=[];
  return __classCollection(key,"",()=>{
+  if(version!==""&&__state.operations.length===0&&__dirtyElementStates.size===0&&__tagTreeVersion("")===version)return elements;
   const snapshot=__queryElements(key,"getElementsByTagName",JSON.stringify({name,version}));
   if(snapshot.elements!==null){elements=snapshot.elements.map(__queryElement);version=snapshot.version;}
   return elements;

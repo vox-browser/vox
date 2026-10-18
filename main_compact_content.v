@@ -21,6 +21,9 @@ mut:
 // Retain native node identity across insertions instead of serializing each
 // ancestor's complete subtree into the compact script bridge's initial state.
 fn install_compact_element_content_binding(document &dom.Document, mut runtime browserjs.Runtime) ! {
+	runtime.define_host_function('__ladybirdDOMTreeVersion', fn [document] (_ string) !string {
+		return document.dom_tree_version().str()
+	})!
 	elements := css.query_selector_all(unsafe { &dom.Node(document) }, '*')
 	mut binding := &CompactElementQueryBinding{
 		document: document
