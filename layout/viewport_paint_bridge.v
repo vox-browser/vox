@@ -49,7 +49,12 @@ fn install_document_painting_bridge(document &dom.Document, result &DocumentLayo
 	})
 	if viewport := document.layout_node() {
 		if root := viewport.root_layout_node() {
-			install_layout_paintable_repaint_callbacks(root, result)
+			mut bindings := unsafe { result.paintable_bindings }
+			for index in 0 .. bindings.len { bindings[index] = unsafe { nil } }
+			bindings.clear()
+			install_layout_paintable_repaint_callbacks(root, result, mut bindings)
+			mut mutable_result := unsafe { &DocumentLayoutResult(result) }
+			mutable_result.paintable_bindings = bindings
 		}
 	}
 	resnap_document_scroll_containers(result)
@@ -133,7 +138,8 @@ fn collect_paintable_boxes_with_auto_content_visibility_in_subtree(node &Node, m
 	}
 }
 
-fn install_layout_paintable_repaint_callbacks(node &dom.LayoutNode, result &DocumentLayoutResult) {
+fn install_layout_paintable_repaint_callbacks(node &dom.LayoutNode, result &DocumentLayoutResult,
+	mut bindings []&dom.Paintable) {
 	for paintable in node.paintables() {
 		mut mutable_paintable := unsafe { &dom.Paintable(paintable) }
 		mutable_paintable.repaint_callback_target = voidptr(result)
@@ -143,10 +149,36 @@ fn install_layout_paintable_repaint_callbacks(node &dom.LayoutNode, result &Docu
 		mutable_paintable.box_type_agnostic_position_callback = layout_paintable_box_type_agnostic_position
 		mutable_paintable.inverse_transform_point_callback = layout_paintable_inverse_transform_point
 		mutable_paintable.adjust_scroll_destination_callback = layout_paintable_adjust_scroll_destination
+		bindings << paintable
 	}
 	for child in node.children_ {
-		install_layout_paintable_repaint_callbacks(child, result)
+		install_layout_paintable_repaint_callbacks(child, result, mut bindings)
 	}
+}
+
+// A replaced DOM paintable no longer belongs to the document's rendering
+// bridge. Old geometry snapshots can retain its layout node, but must not keep
+// the entire superseded renderer and all its command caches alive through a
+// callback target. Reused live paintables already point at the new result.
+fn take_document_paintable_bindings(document &dom.Document) []&dom.Paintable {
+	mut previous := document_layout_result(document) or { return []&dom.Paintable{} }
+	mut bindings := unsafe { previous.paintable_bindings }
+	previous.paintable_bindings = []&dom.Paintable{}
+	for index, paintable in bindings {
+		if paintable != unsafe { nil } && paintable.repaint_callback_target == voidptr(previous) {
+			mut retired := unsafe { &dom.Paintable(paintable) }
+			retired.repaint_callback_target = unsafe { nil }
+			retired.set_needs_repaint_callback = unsafe { nil }
+			retired.image_contents_changed_callback = unsafe { nil }
+			retired.scroll_ancestor_to_offset_into_view_callback = unsafe { nil }
+			retired.box_type_agnostic_position_callback = unsafe { nil }
+			retired.inverse_transform_point_callback = unsafe { nil }
+			retired.adjust_scroll_destination_callback = unsafe { nil }
+		}
+		bindings[index] = unsafe { nil }
+	}
+	bindings.clear()
+	return bindings
 }
 
 fn viewport_layout_result(target voidptr) &DocumentLayoutResult {

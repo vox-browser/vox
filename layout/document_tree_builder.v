@@ -541,6 +541,7 @@ mut:
 	boxes_by_layout_cache_valid bool
 	// Private recording storage plus command vectors returned by the shell.
 	record_scratch CompatibilityRecordScratch
+	paintable_bindings []&dom.Paintable
 }
 
 fn document_layout_update_callback_with_paint_tree(document &dom.Document, viewport_width f64,
@@ -566,6 +567,7 @@ fn document_layout_update_callback_with_paint_tree(document &dom.Document, viewp
 		resize_handle_states: resize_handle_states
 		record_scratch: take_document_recording_scratch(document)
 		paint_phase_commands: take_document_phase_command_storage(document)
+		paintable_bindings: take_document_paintable_bindings(document)
 	}
 	if build_paint_tree {
 		install_document_painting_bridge(document, result_ptr)
