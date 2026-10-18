@@ -13,6 +13,10 @@ fn (mut host ElementWheelHost) install_raw_wheel_handler_compiler() ! {
 		supports_handler: fn [owner, settings] (target &dom.EventTarget, name string) bool {
 			if name == 'wheel' || (target.data.kind == .window
 				&& voidptr(target) == voidptr(settings.global_object())) { return true }
+			// Most native pointer/focus dispatches query ordinary raw handlers.
+			// Reject unsupported names before resolving an element: resolution
+			// refreshes the complete provider registry for media/track ownership.
+			if name !in ['load', 'play', 'pause', 'playing', 'waiting', 'canplay', 'canplaythrough', 'loadedmetadata', 'loadeddata', 'ratechange', 'volumechange', 'timeupdate', 'durationchange', 'seeking', 'seeked', 'progress', 'suspend', 'abort', 'emptied', 'loadstart', 'ended', 'resize', 'error'] { return false }
 			mut host := unsafe { &ElementWheelHost(owner) }
 			if host.closed || host.runtime.closed { return false }
 			element := host.raw_wheel_handler_element(target) or { return false }

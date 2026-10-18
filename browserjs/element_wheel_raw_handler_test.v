@@ -6,6 +6,34 @@ import json2
 import page
 
 @[heap]
+struct UnsupportedRawHandlerEnumerationProbe {
+mut:
+	calls int
+}
+
+fn test_unsupported_element_raw_handlers_do_not_enumerate_document_providers() {
+	$if !darwin { return }
+	fixture := element_raw_wheel_fixture()!
+	mut runtime := fixture.runtime
+	defer { runtime.close() }
+	probe := &UnsupportedRawHandlerEnumerationProbe{}
+	runtime.add_canvas_element_provider(fn [probe] () map[string]&dom.Element {
+		mut counter := unsafe { &UnsupportedRawHandlerEnumerationProbe(probe) }
+		counter.calls++
+		return map[string]&dom.Element{}
+	})
+	mut target := fixture.document.get_element_by_id('handlerDiv')?
+	native_target := unsafe { &dom.EventTarget(target) }
+	for name in ['click', 'mousedown', 'mouseup', 'pointerdown', 'pointerup', 'focus', 'blur', 'keydown'] {
+		target.set_attribute_value('on' + name, 'globalThis.rawRuns++')
+		assert native_target.get_current_value_of_event_handler(name) == none
+		assert native_target.data.event_handler(name)?.value.kind == .string
+	}
+	assert probe.calls == 0
+	assert runtime.evaluate_host('rawRuns')! == '0'
+}
+
+@[heap]
 struct ElementRawWheelFixture {
 	runtime  &Runtime
 	host     &ElementWheelHost
