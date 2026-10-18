@@ -1375,12 +1375,13 @@ fn (mut controls MediaControls) set_up_timeline_event_listeners() {
 					mouse := media_controls_mouse_event(event) or { return false }
 					mut controls := unsafe { &MediaControls(controls_pointer) }
 					timeline := controls.dom_.timeline_element or { panic('Missing scrub timeline') }
+					was_playing := controls.stop_timeline_scrubbing()
 					mut time := ?f64(none)
 					if range_ := controls.timeline_range() {
 						progress := media_controls_timeline_progress(mouse, timeline)
 						time = range_.start + range_.span() * progress
 					}
-					controls.finish_timeline_scrubbing(time)
+					controls.finish_timeline_scrubbing(time, was_playing)
 					window := controls.relevant_window() or { panic('Missing scrub Window') }
 					unsafe { &dom.EventTarget(window) }.remove_event_listener_without_options('mousemove', mousemove)
 					return true
@@ -1525,10 +1526,11 @@ fn (mut controls MediaControls) submit_pending_scrub_seek() {
 }
 
 pub fn (mut controls MediaControls) end_timeline_scrubbing(time f64) {
-	controls.finish_timeline_scrubbing(time)
+	was_playing := controls.stop_timeline_scrubbing()
+	controls.finish_timeline_scrubbing(time, was_playing)
 }
 
-fn (mut controls MediaControls) finish_timeline_scrubbing(time ?f64) {
+fn (mut controls MediaControls) stop_timeline_scrubbing() bool {
 	was_playing := controls.scrubbing_timeline == .while_playing
 	controls.scrubbing_timeline = .no
 	controls.pending_scrub_seek_time_ = none
@@ -1536,6 +1538,10 @@ fn (mut controls MediaControls) finish_timeline_scrubbing(time ?f64) {
 		timer.stop()
 	}
 	controls.scrub_seek_preemption_timer_ = none
+	return was_playing
+}
+
+fn (mut controls MediaControls) finish_timeline_scrubbing(time ?f64, was_playing bool) {
 	if value := time { controls.set_current_time(value) }
 	if was_playing {
 		mut media := controls.media
