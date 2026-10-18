@@ -502,7 +502,7 @@ pub fn (n &Node) is_positioned() bool {
 pub fn (n &Node) is_absolutely_positioned() bool {
 	styled := n.as_node_with_style() or { return false }
 	position := styled.computed_values().position()
-	return position in [.absolute, .fixed]
+	return position == .absolute || position == .fixed
 }
 
 pub fn (n &Node) is_fixed_position() bool {
@@ -567,8 +567,11 @@ pub fn (n &Node) is_scroll_container() bool {
 		return true
 	}
 	styled := n.as_node_with_style() or { return false }
-	return styled.computed_values().overflow_x() in [.auto_, .hidden, .scroll]
-		|| styled.computed_values().overflow_y() in [.auto_, .hidden, .scroll]
+	computed := styled.computed_values()
+	x := computed.overflow_x()
+	y := computed.overflow_y()
+	return x == .auto_ || x == .hidden || x == .scroll
+		|| y == .auto_ || y == .hidden || y == .scroll
 }
 
 pub fn (n &Node) is_out_of_flow() bool {
@@ -687,7 +690,7 @@ fn (n &Node) user_select_used_value_with_parent(parent_used css.UserSelect) css.
 }
 
 fn inherited_user_select_used_value(parent_used css.UserSelect) css.UserSelect {
-	return if parent_used in [.all, .none_] { parent_used } else { .text }
+	return if parent_used == .all || parent_used == .none_ { parent_used } else { .text }
 }
 
 fn (n &Node) user_select_local_used_value() ?css.UserSelect {
@@ -741,10 +744,10 @@ pub fn (n &Node) establishes_stacking_context() bool {
 	will_change := computed.will_change()
 	position := computed.position()
 	has_z_index := computed.z_index() != none || will_change.has_property(.z_index)
-	if position in [.absolute, .relative] && has_z_index {
+	if (position == .absolute || position == .relative) && has_z_index {
 		return true
 	}
-	if position in [.fixed, .sticky] || will_change.has_property(.position) {
+	if position == .fixed || position == .sticky || will_change.has_property(.position) {
 		return true
 	}
 	if computed.transformations().len > 0 || will_change.has_property(.transform)
