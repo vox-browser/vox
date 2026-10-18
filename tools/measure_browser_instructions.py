@@ -28,7 +28,7 @@ import urllib.request
 from process_instruction_counts import MacCounters, ProcessTreeCounter, CounterSampler
 
 REPO = Path(__file__).resolve().parents[1]
-VOX_TOOLBAR_HEIGHT = 88
+VOX_TOOLBAR_HEIGHT = 60
 VOX_CHROME_HEIGHT = VOX_TOOLBAR_HEIGHT + 24
 
 

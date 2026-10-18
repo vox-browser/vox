@@ -41,10 +41,10 @@ cleanup() {
 }
 trap cleanup EXIT HUP INT TERM
 
-# The native window includes an 88px tab strip and toolbar (diagnostics hidden) and 24px status bar around the requested
+# The native window includes a 60px integrated tab strip and toolbar (diagnostics hidden) and 24px status bar around the requested
 # document viewport. The browser snapshots its Cocoa content view directly, avoiding macOS Screen
-# Recording permission and excluding the title bar by construction.
-toolbar_height=88
+# Recording permission including the integrated window controls in the cropped browser chrome.
+toolbar_height=60
 chrome_height=$((toolbar_height + 24))
 window_height=$((height + chrome_height))
 launch_window_height=$window_height
