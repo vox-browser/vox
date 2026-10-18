@@ -661,3 +661,81 @@ medians around 41 ms do not establish Brave parity. A new normal-build sample
 still identifies tree preparation, geometry, DOM attachment, paint projection
 and whole-DOM queries; optimization continues without a broad regression run
 below the next 5,000,000-instruction gate.
+
+
+The next four fixes reduce repeated work without changing the click workload.
+`16ed80c9` shares CSS image URL resolution within one paint-source session;
+`e9780dc1` formats counter origin descriptions only when an operation can
+publish that origin; `7f80b685` uses a conservative document-local tag-presence
+record to reject impossible independent queries; `6924e0c9` fills retained text
+fragments directly into their final slots. Their focused selections pass in
+both GC modes: respectively 25 cases/six files, 13/three, ten/five, and
+18/seven. Native full-handler checks retain eight correct alternating labels
+per candidate, with no dispatch errors. Both states remain pixel-exact.
+
+The matched source-110/111/111/110 run measures 319,936,930 versus
+294,032,154.5 median warm instructions, saving 25,904,775.5 (8.10%). Warm frame
+medians are 39.668 versus 38.9145 ms; first-action times remain variable.
+Source-111 also includes `85629d7d`, a structured selector-error transport that
+has no separately demonstrated gain. Source-111's broad checkpoint runs 1,116
+original files / 4,278 functions per GC mode. Default GC has 4,257 passes and
+21 failures; no-GC has 4,258 passes and twenty failures. Twenty names and test
+bytes match source-92. The additional default-GC allocation guard also fails
+in unmodified common-context control-110, with the same original test bytes;
+its bounds remain unchanged. Signed startup and eight exact SVG guards pass.
+All eleven default captures match source-92 byte-for-byte after RGBA decoding,
+retaining its four reference mismatches. The 494-file unchanged LibJS tree
+carries the earlier 236-file/784-function checks per mode, and a fresh exact
+AST run matches all 100 upstream fixtures. `parity-v111-checkpoint.json` keeps
+`all_tests_passed: false`.
+
+The selector query probe introduces an extra JavaScriptCore API call. Its
+unsupported-selector timing includes exception reporting at that artificial
+boundary and must not be treated as exclusive native-query cost. The normal
+source-92 OS sample independently shows the real native selector forwarding
+wrapper entering `JSObjectCallAsFunction`, followed by inspector exception
+reporting and native symbol lookup. `9d5cef52` catches inside that call and
+propagates the original thrown value through the native callback. It replaces
+the performance-neutral structured transport. Its 25 focused cases in nine
+original files pass per GC mode; a test-only API observer checks thrown-value
+identity, strict receivers, captured intrinsics, nesting, collection and
+closed runtimes. Handled forwarding produces zero intermediate API exceptions,
+while the ordinary-call positive control still produces one.
+
+Normal source-111/114/114/111 ABBA saves another 15,042,043.5 warm instructions
+(296,579,702 versus 281,537,658.5), measuring 59.409 versus 46.853 ms in that
+run. Both document states remain exactly equal in decoded RGBA bytes. The
+source-114 broad run covers 1,116 files / 4,279 functions per mode. Its raw
+results retain 22 default-GC failures and 21 no-GC failures. Two new transport
+timeouts pass when only the failed case is rerun, in both control-111 and
+candidate-114 with the original assertions and time limits. The verified union
+therefore retains the earlier 21/default and twenty/no-GC failures. Both the
+initial failed checkpoint and raw receipts remain available;
+`parity-v114-checkpoint-closed.json` explicitly separates raw counts from the
+recovered union. Signed startup, eight exact SVG guards, eleven unchanged
+default captures, the unchanged LibJS checks and 100 fresh AST fixtures are
+accounted for. A fresh Brave run has six correct labels, no dispatch errors,
+2.30 ms handler/forced-layout median and 22.45 ms through two animation frames.
+Those endpoints still differ from Vox's native action through layer return.
+
+`997f3d54` omits paint projection for offscreen independent flow contexts only
+when their contents are wholly clipped and a conservative retained-input proof
+excludes escaping geometry and resources. Layout and DOM geometry remain
+complete. Scrolling, offscreen geometry reads, paint-only changes and
+full-document recording restore the complete transport. Its focused composite
+has 32 cases in seven original files per GC mode. The source-119 production
+implementation is unchanged in source-120; the final fixture retains the
+published scene and command vector before testing old-snapshot stability.
+
+Source-114/120/120/114 ABBA measures 283,396,137 versus 269,191,122 median warm
+instructions: 14,205,015 fewer (5.01%), with about six MB less allocation per
+toggle. Warm times are 58.0855 versus 55.488 ms; first-action latency does not
+improve in this run. Both states' document pixels are exact. Source-120's broad
+checkpoint runs 1,117 files / 4,284 functions per mode: 4,263 default-GC passes
+with 21 known failures, and 4,264 no-GC passes with twenty known failures.
+There are no unrun cases or additional transport timeouts. Signed startup,
+eight exact SVG guards, eleven unchanged default captures, carried unchanged
+LibJS checks and all 100 fresh exact AST fixtures are verified.
+`parity-v120-checkpoint.json` closes the instruction gate while retaining
+`all_tests_passed: false` and `parity_achieved: false`. The installed bundle is
+still source-92 while a fresh current-workspace bundle is being checked.
