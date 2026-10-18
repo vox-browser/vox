@@ -3,13 +3,15 @@ module platform
 import os
 
 pub const document_heap_element_threshold = 1024
-const document_heap_capacity = usize(160) * 1024 * 1024
+const document_heap_capacity = usize(320) * 1024 * 1024
 
 $if gcboehm ? {
 	fn C.GC_expand_hp(bytes usize) int
 }
 
-// Large documents create their initial style and paint records in one bulk pass.
+// Large scripted documents create style and paint records in bulk, and retain
+// that graph while an interactive relayout builds its replacement. Leave room
+// for both generations without repeatedly tracing the same live document.
 // A bounded capacity hint avoids repeatedly growing and tracing the same live
 // graph. Existing larger heaps, explicit collector settings and small documents
 // retain their normal policy; collection and idle page unmapping stay enabled.
