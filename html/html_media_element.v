@@ -1804,6 +1804,10 @@ pub fn (mut element HTMLMediaElement) play() &dom.Promise {
 	return promise
 }
 
+pub fn (mut element HTMLMediaElement) play_from_user_interaction() {
+	element.play_element()
+}
+
 pub fn (mut element HTMLMediaElement) play_element() {
 	if element.network_state_ == .empty {
 		element.select_resource() or {}

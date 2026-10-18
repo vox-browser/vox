@@ -1140,7 +1140,11 @@ pub fn (mut controls MediaControls) toggle_playback() {
 		return
 	}
 	mut media := controls.media
-	media.toggle_playback()
+	if media.paused() {
+		media.play_from_user_interaction()
+	} else {
+		media.pause()
+	}
 	controls.update_play_pause_icon()
 	controls.show_controls()
 }
