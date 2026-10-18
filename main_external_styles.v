@@ -126,6 +126,11 @@ fn (mut app BrowserApp) request_script_inserted_stylesheets() bool {
 			continue
 		}
 		app.script_stylesheet_requests[resolved_url] = true
+		// The navigation already requested the parser's sheets. One that
+		// failed is not requested again when the page is installed.
+		if resolved_url in app.navigation_preloaded_resources {
+			continue
+		}
 		if cached := disk_cached_browser_resource(resolved_url, source_url, 'stylesheet') {
 			if app.install_script_inserted_stylesheet(cached) {
 				installed = true
