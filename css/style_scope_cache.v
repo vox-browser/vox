@@ -141,7 +141,7 @@ fn style_scope_is_roundabout_selector_bucketable_as_something_simpler(simple_sel
 		return none
 	}
 
-	pseudo_class := simple_selector.pseudo_class
+	pseudo_class := simple_selector.pseudo_class()
 	if pseudo_class.type_ != .is_ && pseudo_class.type_ != .where {
 		return none
 	}
@@ -164,13 +164,13 @@ fn style_scope_is_roundabout_selector_bucketable_as_something_simpler(simple_sel
 	if inner_simple_selector.type_ == .class || inner_simple_selector.type_ == .id {
 		return SimplifiedSelectorForBucketing{
 			type_: inner_simple_selector.type_
-			name: inner_simple_selector.name.name
+			name: inner_simple_selector.name().name
 		}
 	}
 	if inner_simple_selector.type_ == .tag_name {
 		return SimplifiedSelectorForBucketing{
 			type_: inner_simple_selector.type_
-			name: inner_simple_selector.qualified_name.name.lowercase_name
+			name: inner_simple_selector.qualified_name().name.lowercase_name
 		}
 	}
 	return none
@@ -203,15 +203,15 @@ pub fn (mut cache RuleCache) add_rule(matching_rule &MatchingRule, pseudo_elemen
 	for i := last_compound_selector.simple_selectors.len - 1; i >= 0; i-- {
 		simple_selector := last_compound_selector.simple_selectors[i]
 		if simple_selector.type_ == .id {
-			style_scope_push_rule(mut cache.rules_by_id, cache.selector_name_bucket_key(simple_selector.name.name), matching_rule)
+			style_scope_push_rule(mut cache.rules_by_id, cache.selector_name_bucket_key(simple_selector.name().name), matching_rule)
 			return
 		}
 		if simple_selector.type_ == .class {
-			style_scope_push_rule(mut cache.rules_by_class, cache.selector_name_bucket_key(simple_selector.name.name), matching_rule)
+			style_scope_push_rule(mut cache.rules_by_class, cache.selector_name_bucket_key(simple_selector.name().name), matching_rule)
 			return
 		}
 		if simple_selector.type_ == .tag_name {
-			style_scope_push_rule(mut cache.rules_by_tag_name, simple_selector.qualified_name.name.lowercase_name, matching_rule)
+			style_scope_push_rule(mut cache.rules_by_tag_name, simple_selector.qualified_name().name.lowercase_name, matching_rule)
 			return
 		}
 		// NOTE: Selectors like `:is/where(.foo)` and `:is/where(.foo .bar)` are
@@ -246,7 +246,7 @@ pub fn (mut cache RuleCache) add_rule(matching_rule &MatchingRule, pseudo_elemen
 	} else {
 		for simple_selector in last_compound_selector.simple_selectors {
 			if simple_selector.type_ == .attribute {
-				style_scope_push_rule(mut cache.rules_by_attribute_name, simple_selector.attribute.qualified_name.name.lowercase_name, matching_rule)
+				style_scope_push_rule(mut cache.rules_by_attribute_name, simple_selector.attribute().qualified_name.name.lowercase_name, matching_rule)
 				return
 			}
 		}
@@ -752,13 +752,13 @@ fn style_scope_cache_style_rule(raw_context voidptr, rule &CSSRule) {
 					if simple_selector.type_ == .pseudo_element {
 						matching_rule.contains_pseudo_element = true
 						// FIXME: This wrongly assumes there is only one pseudo-element per selector.
-						pseudo_element = simple_selector.pseudo_element.type_
-						matching_rule.slotted = simple_selector.pseudo_element.type_ == .slotted
-						matching_rule.contains_part_pseudo_element = simple_selector.pseudo_element.type_ == .part
+						pseudo_element = simple_selector.pseudo_element().type_
+						matching_rule.slotted = simple_selector.pseudo_element().type_ == .slotted
+						matching_rule.contains_part_pseudo_element = simple_selector.pseudo_element().type_ == .part
 					}
 				}
 				if !contains_root_pseudo_class {
-					if simple_selector.type_ == .pseudo_class && simple_selector.pseudo_class.type_ == .root {
+					if simple_selector.type_ == .pseudo_class && simple_selector.pseudo_class().type_ == .root {
 						contains_root_pseudo_class = true
 					}
 				}
@@ -1050,12 +1050,12 @@ pub fn StyleScope.collect_selector_insights(selector Selector, mut insights Sele
 	for compound_selector in selector.compound_selectors() {
 		for simple_selector in compound_selector.simple_selectors {
 			if simple_selector.type_ == .pseudo_class {
-				if simple_selector.pseudo_class.type_ == .local_link {
+				if simple_selector.pseudo_class().type_ == .local_link {
 					insights.has_local_link_selectors = true
 				}
-				if simple_selector.pseudo_class.type_ == .has {
+				if simple_selector.pseudo_class().type_ == .has {
 					insights.has_has_selectors = true
-					for argument_selector in simple_selector.pseudo_class.argument_selector_list.selectors {
+					for argument_selector in simple_selector.pseudo_class().argument_selector_list.selectors {
 						for relative_compound_selector in argument_selector.compound_selectors() {
 							if relative_compound_selector.combinator in [.next_sibling, .subsequent_sibling] {
 								insights.has_has_selectors_with_relative_selector_that_has_sibling_combinator = true
@@ -1064,12 +1064,12 @@ pub fn StyleScope.collect_selector_insights(selector Selector, mut insights Sele
 						}
 					}
 				}
-				for argument_selector in simple_selector.pseudo_class.argument_selector_list.selectors {
+				for argument_selector in simple_selector.pseudo_class().argument_selector_list.selectors {
 					StyleScope.collect_selector_insights(argument_selector, mut insights)
 				}
 			} else if simple_selector.type_ == .pseudo_element
-				&& simple_selector.pseudo_element.type_ == .slotted {
-				if argument_selector := simple_selector.pseudo_element.compound_selector {
+				&& simple_selector.pseudo_element().type_ == .slotted {
+				if argument_selector := simple_selector.pseudo_element().compound_selector {
 					StyleScope.collect_selector_insights(argument_selector, mut insights)
 				}
 			}
@@ -1438,25 +1438,25 @@ fn selector_may_match_pending_has_mutation_features(selector Selector, features 
 				.tag_name {
 					saw_concrete_feature = true
 					concrete_feature_found = concrete_feature_found
-						|| features.tag_names[simple_selector.qualified_name.name.lowercase_name]
+						|| features.tag_names[simple_selector.qualified_name().name.lowercase_name]
 				}
 				.id {
 					saw_concrete_feature = true
 					concrete_feature_found = concrete_feature_found
-						|| features.ids[simple_selector.name.name]
+						|| features.ids[simple_selector.name().name]
 				}
 				.class {
 					saw_concrete_feature = true
 					concrete_feature_found = concrete_feature_found
-						|| features.class_names[simple_selector.name.name]
+						|| features.class_names[simple_selector.name().name]
 				}
 				.attribute {
 					saw_concrete_feature = true
 					concrete_feature_found = concrete_feature_found
-						|| features.attribute_names[simple_selector.attribute.qualified_name.name.lowercase_name]
+						|| features.attribute_names[simple_selector.attribute().qualified_name.name.lowercase_name]
 				}
 				.pseudo_class {
-					pseudo_class := simple_selector.pseudo_class
+					pseudo_class := simple_selector.pseudo_class()
 					if pseudo_class.type_ in [.is_, .where] {
 						saw_concrete_feature = true
 						for argument_selector in pseudo_class.argument_selector_list.selectors {
@@ -1495,17 +1495,17 @@ fn compound_may_match_has_anchor_ignoring_has(compound_selector CompoundSelector
 				return true
 			}
 			.tag_name {
-				if anchor.local_name() != simple_selector.qualified_name.name.lowercase_name {
+				if anchor.local_name() != simple_selector.qualified_name().name.lowercase_name {
 					return false
 				}
 			}
 			.id {
-				if anchor.id() or { '' } != simple_selector.name.name {
+				if anchor.id() or { '' } != simple_selector.name().name {
 					return false
 				}
 			}
 			.class {
-				if !anchor.has_class(simple_selector.name.name) {
+				if !anchor.has_class(simple_selector.name().name) {
 					return false
 				}
 			}
@@ -1514,7 +1514,7 @@ fn compound_may_match_has_anchor_ignoring_has(compound_selector CompoundSelector
 				if attributes := anchor.attribute_list() {
 					for index := 0; index < attributes.length(); index++ {
 						attribute := attributes.item(index) or { continue }
-						if attribute.local_name() == simple_selector.attribute.qualified_name.name.lowercase_name {
+						if attribute.local_name() == simple_selector.attribute().qualified_name.name.lowercase_name {
 							has_attribute = true
 							break
 						}
@@ -1525,10 +1525,10 @@ fn compound_may_match_has_anchor_ignoring_has(compound_selector CompoundSelector
 				}
 			}
 			.pseudo_class {
-				if simple_selector.pseudo_class.type_ == .has {
+				if simple_selector.pseudo_class().type_ == .has {
 					continue
 				}
-				if simple_selector.pseudo_class.type_ == .root {
+				if simple_selector.pseudo_class().type_ == .root {
 					document_element := anchor.document().document_element() or { return false }
 					if anchor != document_element {
 						return false
@@ -1549,7 +1549,7 @@ fn selector_has_rule_may_be_affected_by_mutation(selector Selector, anchor &dom.
 			if simple_selector.type_ != .pseudo_class {
 				continue
 			}
-			pseudo_class := simple_selector.pseudo_class
+			pseudo_class := simple_selector.pseudo_class()
 			if pseudo_class.type_ == .has
 				&& compound_may_match_has_anchor_ignoring_has(compound_selector, anchor) {
 				found_has_rule = true
@@ -1764,23 +1764,17 @@ fn style_scope_absolutized_selectors_for_rule(rule &CSSRule) SelectorList {
 				return SelectorList{
 					selectors: [selector_from_compound_selectors([CompoundSelector{
 						combinator: .no_combinator
-						simple_selectors: [SimpleSelector{
-							type_: .pseudo_class
-							pseudo_class: PseudoClassSelector{
+						simple_selectors: [SimpleSelector.with_pseudo_class(.pseudo_class, PseudoClassSelector{
 								type_: .where
 								argument_selector_list: SelectorList{
 									selectors: [selector_from_compound_selectors([CompoundSelector{
 										combinator: .no_combinator
-										simple_selectors: [SimpleSelector{
-											type_: .pseudo_class
-											pseudo_class: PseudoClassSelector{
+										simple_selectors: [SimpleSelector.with_pseudo_class(.pseudo_class, PseudoClassSelector{
 												type_: .scope
-											}
-										}]
+											})]
 									}])]
 								}
-							}
-						}]
+							})]
 					}])]
 				}
 			}

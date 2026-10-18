@@ -482,21 +482,18 @@ fn test_selector_retains_typed_compound_selectors() {
 	assert compound_selectors[0].simple_selectors[0].type_ == .tag_name
 	assert compound_selectors[1].combinator == .immediate_child
 	assert compound_selectors[1].simple_selectors[1].type_ == .pseudo_class
-	assert compound_selectors[1].simple_selectors[1].pseudo_class.argument_selector_list.selectors.len == 2
+	assert compound_selectors[1].simple_selectors[1].pseudo_class().argument_selector_list.selectors.len == 2
 }
 
 fn test_nested_selector_absolutization_rewrites_typed_tree() {
 	selector := selector_from_text('& > .title:is(&, a)')
 	assert selector.contains_the_nesting_selector()
-	selector_for_nesting := SimpleSelector{
-		type_: .pseudo_class
-		pseudo_class: PseudoClassSelector{
+	selector_for_nesting := SimpleSelector.with_pseudo_class(.pseudo_class, PseudoClassSelector{
 			type_: .is_
 			argument_selector_list: SelectorList{
 				selectors: [selector_from_text('.parent')]
 			}
-		}
-	}
+		})
 	absolutized := selector.absolutized(selector_for_nesting) or {
 		panic('failed to absolutize nested selector')
 	}

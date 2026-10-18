@@ -22,7 +22,7 @@ fn test_invalidation_membership_preserves_every_local_enum_mapping() {
 	parser_classes := [PseudoClass.invalid, .link, .any_link, .local_link, .visited, .active, .hover, .focus, .focus_visible, .focus_within, .fullscreen, .first_child, .last_child, .only_child, .empty, .root, .host, .scope, .first_of_type, .last_of_type, .only_of_type, .lang, .disabled, .enabled, .checked, .unchecked, .indeterminate, .high_value, .low_value, .optimal_value, .suboptimal_value, .even_less_good_value, .defined, .has, .is_, .where, .not_, .nth_child, .nth_last_child, .nth_of_type, .nth_last_of_type, .playing, .paused, .seeking, .muted, .volume_locked, .buffering, .stalled, .target, .dir, .read_only, .read_write, .placeholder_shown, .open, .closed, .modal, .popover_open, .valid, .invalid_state, .user_valid, .user_invalid, .required, .optional, .default_, .autofill, .state, .heading]
 	wanted_classes := [CSSPseudoClass.enabled, .disabled, .defined, .placeholder_shown, .checked, .dir, .empty, .lang, .required, .optional, .read_only, .read_write, .link, .any_link, .local_link, .default_, .has, .not, .is_, .where, .nth_child, .nth_last_child, .nth_of_type, .nth_last_of_type, .hover, .focus, .focus_visible, .focus_within, .active, .target, .host, .root, .first_child, .last_child, .only_child, .paused, .playing, .muted, .seeking, .buffering, .stalled, .other]
 	for parser_class in parser_classes {
-		selector := invalidation_membership_selector(SimpleSelector{type_: .pseudo_class, pseudo_class: PseudoClassSelector{type_: parser_class}})
+		selector := invalidation_membership_selector(SimpleSelector.with_pseudo_class(.pseudo_class, PseudoClassSelector{type_: parser_class}))
 		for wanted in wanted_classes {
 			assert selector_contains_pseudo_class(selector, wanted) == invalidation_membership_projection_oracle(selector, wanted)
 			assert selector_contains_pseudo_class(selector, wanted) == (css_pseudo_class_from_selector_pseudo_class(parser_class) == wanted)
@@ -35,9 +35,9 @@ fn test_invalidation_membership_preserves_every_local_enum_mapping() {
 
 fn test_invalidation_membership_reads_nested_lists_and_only_slotted_arguments() {
 	leaf := selector_from_text('.flag:has(> .child):focus')
-	nested := invalidation_membership_selector(SimpleSelector{type_: .pseudo_class, pseudo_class: PseudoClassSelector{type_: .is_, argument_selector_list: SelectorList{selectors: [selector_from_text('.plain'), leaf]}}})
-	slotted := invalidation_membership_selector(SimpleSelector{type_: .pseudo_element, pseudo_element: PseudoElementSelector{type_: .slotted, compound_selector: nested}})
-	ignored := invalidation_membership_selector(SimpleSelector{type_: .pseudo_element, pseudo_element: PseudoElementSelector{type_: .before, compound_selector: nested}})
+	nested := invalidation_membership_selector(SimpleSelector.with_pseudo_class(.pseudo_class, PseudoClassSelector{type_: .is_, argument_selector_list: SelectorList{selectors: [selector_from_text('.plain'), leaf]}}))
+	slotted := invalidation_membership_selector(SimpleSelector.with_pseudo_element(.pseudo_element, PseudoElementSelector{type_: .slotted, compound_selector: nested}))
+	ignored := invalidation_membership_selector(SimpleSelector.with_pseudo_element(.pseudo_element, PseudoElementSelector{type_: .before, compound_selector: nested}))
 	for selector in [leaf, nested, slotted, ignored, Selector{}, Selector{data_: &SelectorData{compound_selectors: [CompoundSelector{}]}}] {
 		for wanted in [CSSPseudoClass.has, .focus, .hover, .is_, .other] {
 			assert selector_contains_pseudo_class(selector, wanted) == invalidation_membership_projection_oracle(selector, wanted)

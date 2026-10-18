@@ -8,7 +8,7 @@ fn direct_attribute_fixture_selector(text string) SelectorAttribute {
 		'b':       true
 		'missing': true
 	}) or { panic(text) }
-	return list.selectors[0].compound_selectors()[0].simple_selectors[0].attribute
+	return list.selectors[0].compound_selectors()[0].simple_selectors[0].attribute()
 }
 
 fn direct_attribute_fixture_matches(text string, element &dom.Element, sheet ?&CSSStyleSheet) bool {

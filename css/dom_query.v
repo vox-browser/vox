@@ -38,15 +38,15 @@ fn selector_list_contains_named_namespace(selectors SelectorList) bool {
 		for compound_selector in selector.compound_selectors() {
 			for simple_selector in compound_selector.simple_selectors {
 				if simple_selector.type_ in [.tag_name, .universal]
-					&& simple_selector.qualified_name.namespace_type == .named {
+					&& simple_selector.qualified_name().namespace_type == .named {
 					return true
 				}
 				if simple_selector.type_ == .attribute
-					&& simple_selector.attribute.qualified_name.namespace_type == .named {
+					&& simple_selector.attribute().qualified_name.namespace_type == .named {
 					return true
 				}
 				if simple_selector.type_ == .pseudo_class
-					&& selector_list_contains_named_namespace(simple_selector.pseudo_class.argument_selector_list) {
+					&& selector_list_contains_named_namespace(simple_selector.pseudo_class().argument_selector_list) {
 					return true
 				}
 			}

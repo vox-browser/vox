@@ -10080,45 +10080,45 @@ fn simple_selector_for_invalidation(simple_selector SimpleSelector) Invalidation
 		.class {
 			return InvalidationSimpleSelector{
 				type_: .class
-				name: simple_selector.name.name
+				name: simple_selector.name().name
 			}
 		}
 		.id {
 			return InvalidationSimpleSelector{
 				type_: .id
-				name: simple_selector.name.name
+				name: simple_selector.name().name
 			}
 		}
 		.tag_name {
 			return InvalidationSimpleSelector{
 				type_: .tag_name
-				name: simple_selector.qualified_name.name.lowercase_name
+				name: simple_selector.qualified_name().name.lowercase_name
 			}
 		}
 		.attribute {
 			return InvalidationSimpleSelector{
 				type_: .attribute
-				name: simple_selector.attribute.qualified_name.name.lowercase_name
+				name: simple_selector.attribute().qualified_name.name.lowercase_name
 			}
 		}
 		.pseudo_class {
 			return InvalidationSimpleSelector{
 				type_: .pseudo_class
-				name: selector_pseudo_class_name(simple_selector.pseudo_class.type_)
-				pseudo_class: css_pseudo_class_from_selector_pseudo_class(simple_selector.pseudo_class.type_)
-				nested_selectors: simple_selector.pseudo_class.argument_selector_list.selectors.clone()
+				name: selector_pseudo_class_name(simple_selector.pseudo_class().type_)
+				pseudo_class: css_pseudo_class_from_selector_pseudo_class(simple_selector.pseudo_class().type_)
+				nested_selectors: simple_selector.pseudo_class().argument_selector_list.selectors.clone()
 			}
 		}
 		.pseudo_element {
 			mut nested_selectors := []Selector{}
-			if simple_selector.pseudo_element.type_ == .slotted {
-				if argument_selector := simple_selector.pseudo_element.compound_selector {
+			if simple_selector.pseudo_element().type_ == .slotted {
+				if argument_selector := simple_selector.pseudo_element().compound_selector {
 					nested_selectors << argument_selector
 				}
 			}
 			return InvalidationSimpleSelector{
 				type_: .pseudo_element
-				pseudo_element: simple_selector.pseudo_element.type_
+				pseudo_element: simple_selector.pseudo_element().type_
 				nested_selectors: nested_selectors
 			}
 		}
@@ -10382,17 +10382,17 @@ fn selector_contains_pseudo_class(selector Selector, pseudo_class CSSPseudoClass
 	for compound_selector in selector.compound_selectors() {
 		for simple_selector in compound_selector.simple_selectors {
 			if simple_selector.type_ == .pseudo_class {
-				if css_pseudo_class_from_selector_pseudo_class(simple_selector.pseudo_class.type_) == pseudo_class {
+				if css_pseudo_class_from_selector_pseudo_class(simple_selector.pseudo_class().type_) == pseudo_class {
 					return true
 				}
-				for nested_selector in simple_selector.pseudo_class.argument_selector_list.selectors {
+				for nested_selector in simple_selector.pseudo_class().argument_selector_list.selectors {
 					if selector_contains_pseudo_class(nested_selector, pseudo_class) {
 						return true
 					}
 				}
 			} else if simple_selector.type_ == .pseudo_element
-				&& simple_selector.pseudo_element.type_ == .slotted {
-				if argument_selector := simple_selector.pseudo_element.compound_selector {
+				&& simple_selector.pseudo_element().type_ == .slotted {
+				if argument_selector := simple_selector.pseudo_element().compound_selector {
 					if selector_contains_pseudo_class(argument_selector, pseudo_class) {
 						return true
 					}

@@ -178,7 +178,7 @@ fn borrow_oracle_simple(simple_selector SimpleSelector, element &dom.Element, sh
 
 	match simple_selector.type_ {
 		.universal {
-			return matches_namespace(simple_selector.qualified_name, element, context.style_sheet_for_rule)
+			return matches_namespace(simple_selector.qualified_name(), element, context.style_sheet_for_rule)
 		}
 		.tag_name {
 			// https://html.spec.whatwg.org/multipage/semantics-other.html#case-sensitivity-of-selectors
@@ -186,35 +186,35 @@ fn borrow_oracle_simple(simple_selector SimpleSelector, element &dom.Element, sh
 			// same selector when compared to other elements must be compared according to its original case. In both cases, to match the values must be identical to each other (and therefore
 			// the comparison is case sensitive).
 			if element.namespace_uri() or { '' } == selector_html_namespace && element.document() != unsafe { nil } && element.document().document_type() == .html {
-				if simple_selector.qualified_name.name.lowercase_name != element.local_name() {
+				if simple_selector.qualified_name().name.lowercase_name != element.local_name() {
 					return false
 				}
-			} else if simple_selector.qualified_name.name.name != element.local_name() {
+			} else if simple_selector.qualified_name().name.name != element.local_name() {
 				// NOTE: Any other elements are either SVG, XHTML or MathML, all of which are case-sensitive.
 				return false
 			}
-			return matches_namespace(simple_selector.qualified_name, element, context.style_sheet_for_rule)
+			return matches_namespace(simple_selector.qualified_name(), element, context.style_sheet_for_rule)
 		}
 		.class {
 			// Class selectors are matched case insensitively in quirks mode.
 			// See: https://drafts.csswg.org/selectors-4/#class-html
 			if element.document() != unsafe { nil } && element.document().in_quirks_mode() {
-				return element.has_class_case_insensitive(simple_selector.name.name)
+				return element.has_class_case_insensitive(simple_selector.name().name)
 			}
-			return element.has_class(simple_selector.name.name)
+			return element.has_class(simple_selector.name().name)
 		}
 		.id {
 			id := element.id() or { return false }
 			if element.document() != unsafe { nil } && element.document().in_quirks_mode() {
-				return equals_ignoring_ascii_case(simple_selector.name.name, id)
+				return equals_ignoring_ascii_case(simple_selector.name().name, id)
 			}
-			return simple_selector.name.name == id
+			return simple_selector.name().name == id
 		}
 		.attribute {
-			return matches_attribute(simple_selector.attribute, context.style_sheet_for_rule, element)
+			return matches_attribute(simple_selector.attribute(), context.style_sheet_for_rule, element)
 		}
 		.pseudo_class {
-			return matches_pseudo_class(simple_selector.pseudo_class, element, shadow_host, mut context, none, .normal)
+			return matches_pseudo_class(simple_selector.pseudo_class(), element, shadow_host, mut context, none, .normal)
 		}
 		else {
 			return false

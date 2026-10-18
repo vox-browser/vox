@@ -3226,20 +3226,20 @@ fn parser_balanced_selector_text(text string) bool {
 fn parser_simple_selector_uses_undeclared_namespace(simple_selector SimpleSelector, declared_namespaces map[string]bool) bool {
 	match simple_selector.type_ {
 		.tag_name, .universal {
-			return parser_qualified_name_uses_undeclared_namespace(simple_selector.qualified_name, declared_namespaces)
+			return parser_qualified_name_uses_undeclared_namespace(simple_selector.qualified_name(), declared_namespaces)
 		}
 		.attribute {
-			return parser_qualified_name_uses_undeclared_namespace(simple_selector.attribute.qualified_name, declared_namespaces)
+			return parser_qualified_name_uses_undeclared_namespace(simple_selector.attribute().qualified_name, declared_namespaces)
 		}
 		.pseudo_class {
-			for selector in simple_selector.pseudo_class.argument_selector_list.selectors {
+			for selector in simple_selector.pseudo_class().argument_selector_list.selectors {
 				if parser_selector_value_uses_undeclared_namespace(selector, declared_namespaces) {
 					return true
 				}
 			}
 		}
 		.pseudo_element {
-			if selector := simple_selector.pseudo_element.compound_selector {
+			if selector := simple_selector.pseudo_element().compound_selector {
 				return parser_selector_value_uses_undeclared_namespace(selector, declared_namespaces)
 			}
 		}

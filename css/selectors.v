@@ -706,15 +706,14 @@ pub mut:
 	case_type      AttributeCaseType
 }
 
+// The payload tag is independent of the public selector kind: changing type_
+// must keep the same inactive values that an ordinary V record copy retained.
 pub struct SimpleSelector {
 pub mut:
-	type_          SimpleSelectorType
-	name           SelectorName
-	qualified_name SelectorQualifiedName
-	attribute      SelectorAttribute
-	pseudo_class   PseudoClassSelector
-	pseudo_element PseudoElementSelector
-	invalid_text   string
+ type_ SimpleSelectorType
+mut:
+ payload_kind_ SimpleSelectorPayloadKind
+ payload_ SimpleSelectorPayload
 }
 
 // https://www.w3.org/TR/cssom/#serialize-a-simple-selector
@@ -722,7 +721,7 @@ pub fn (simple_selector SimpleSelector) serialize() string {
 	mut s := strings.new_builder(16)
 	match simple_selector.type_ {
 		.tag_name, .universal {
-			qualified_name := simple_selector.qualified_name
+			qualified_name := simple_selector.qualified_name()
 			// 1. If the namespace prefix maps to a namespace that is not the default namespace and is not the null
 			//    namespace (not in a namespace) append the serialization of the namespace prefix as an identifier,
 			//    followed by a "|" (U+007C) to s.
@@ -750,7 +749,7 @@ pub fn (simple_selector SimpleSelector) serialize() string {
 			}
 		}
 		.attribute {
-			attribute := simple_selector.attribute
+			attribute := simple_selector.attribute()
 
 			// 1. Append "[" (U+005B) to s.
 			s.write_u8(`[`)
@@ -798,15 +797,15 @@ pub fn (simple_selector SimpleSelector) serialize() string {
 		.class {
 			// Append a "." (U+002E), followed by the serialization of the class name as an identifier to s.
 			s.write_u8(`.`)
-			s.write_string(serialize_an_identifier(simple_selector.name.name))
+			s.write_string(serialize_an_identifier(simple_selector.name().name))
 		}
 		.id {
 			// Append a "#" (U+0023), followed by the serialization of the ID as an identifier to s.
 			s.write_u8(`#`)
-			s.write_string(serialize_an_identifier(simple_selector.name.name))
+			s.write_string(serialize_an_identifier(simple_selector.name().name))
 		}
 		.pseudo_class {
-			pseudo_class := simple_selector.pseudo_class
+			pseudo_class := simple_selector.pseudo_class()
 			name := selector_pseudo_class_name(pseudo_class.type_)
 			accepts_arguments := pseudo_class_accepts_arguments(pseudo_class)
 
@@ -853,7 +852,7 @@ pub fn (simple_selector SimpleSelector) serialize() string {
 		}
 		.pseudo_element {
 			// AD-HOC: Spec issue: https://github.com/w3c/csswg-drafts/issues/11997
-			s.write_string(simple_selector.pseudo_element.serialize())
+			s.write_string(simple_selector.pseudo_element().serialize())
 		}
 		.nesting {
 			// AD-HOC: Not in spec yet.
@@ -861,7 +860,7 @@ pub fn (simple_selector SimpleSelector) serialize() string {
 		}
 		.invalid {
 			// AD-HOC: We're not told how to do these. Just serialize their component values.
-			s.write_string(simple_selector.invalid_text)
+			s.write_string(simple_selector.invalid_text())
 		}
 	}
 
@@ -877,7 +876,7 @@ pub fn (simple_selector SimpleSelector) absolutized(selector_for_nesting SimpleS
 		.pseudo_class {
 			// Pseudo-classes may contain other selectors, so we need to absolutize them.
 			// Copy the PseudoClassSelector, and then replace its argument selector list.
-			mut pseudo_class := simple_selector.pseudo_class
+			mut pseudo_class := simple_selector.pseudo_class()
 			if pseudo_class.argument_selector_list.selectors.len != 0 {
 				mut new_selector_list := SelectorList{}
 				for argument_selector in pseudo_class.argument_selector_list.selectors {
@@ -900,7 +899,7 @@ pub fn (simple_selector SimpleSelector) absolutized(selector_for_nesting SimpleS
 			}
 
 			mut result := simple_selector
-			result.pseudo_class = pseudo_class
+			result.set_pseudo_class(pseudo_class)
 			return result
 		}
 		else {
@@ -1033,14 +1032,14 @@ fn selector_contains_nesting_uncached(compound_selectors []CompoundSelector) boo
 				return true
 			}
 			if simple_selector.type_ == .pseudo_class {
-				for child_selector in simple_selector.pseudo_class.argument_selector_list.selectors {
+				for child_selector in simple_selector.pseudo_class().argument_selector_list.selectors {
 					if child_selector.contains_the_nesting_selector() {
 						return true
 					}
 				}
 			}
 			if simple_selector.type_ == .pseudo_element {
-				if child_selector := simple_selector.pseudo_element.compound_selector {
+				if child_selector := simple_selector.pseudo_element().compound_selector {
 					if child_selector.contains_the_nesting_selector() {
 						return true
 					}
@@ -1073,7 +1072,7 @@ fn selector_pseudo_element_uncached(compound_selectors []CompoundSelector) ?Pseu
 	mut pseudo_element := ?PseudoElementSelector(none)
 	for simple_selector in last.simple_selectors {
 		if simple_selector.type_ == .pseudo_element {
-			pseudo_element = simple_selector.pseudo_element
+			pseudo_element = simple_selector.pseudo_element()
 		}
 	}
 	return pseudo_element
@@ -1085,7 +1084,7 @@ fn selector_contains_part_pseudo_element_uncached(compound_selectors []CompoundS
 	}
 	last := compound_selectors[compound_selectors.len - 1]
 	for simple_selector in last.simple_selectors {
-		if simple_selector.type_ == .pseudo_element && simple_selector.pseudo_element.type_ == .part {
+		if simple_selector.type_ == .pseudo_element && simple_selector.pseudo_element().type_ == .part {
 			return true
 		}
 	}
@@ -1103,13 +1102,13 @@ pub fn (selector Selector) contains_unknown_webkit_pseudo_element() bool {
 	for compound_selector in selector.compound_selectors() {
 		for simple_selector in compound_selector.simple_selectors {
 			if simple_selector.type_ == .pseudo_class {
-				for child_selector in simple_selector.pseudo_class.argument_selector_list.selectors {
+				for child_selector in simple_selector.pseudo_class().argument_selector_list.selectors {
 					if child_selector.contains_unknown_webkit_pseudo_element() {
 						return true
 					}
 				}
 			}
-			if simple_selector.type_ == .pseudo_element && simple_selector.pseudo_element.type_ == .unknown_webkit {
+			if simple_selector.type_ == .pseudo_element && simple_selector.pseudo_element().type_ == .unknown_webkit {
 				return true
 			}
 		}
@@ -1193,7 +1192,7 @@ pub fn (selector Selector) specificity() u32 {
 					classes++
 				}
 				.pseudo_class {
-					pseudo_class := simple_selector.pseudo_class
+					pseudo_class := simple_selector.pseudo_class()
 					match pseudo_class.type_ {
 						.has, .is_, .not_ {
 							// The specificity of an :is(), :not(), or :has() pseudo-class is replaced by the
@@ -1230,8 +1229,8 @@ pub fn (selector Selector) specificity() u32 {
 					// The specificity of a named view transition pseudo-element selector with a <custom-ident> argument is equivalent
 					// to a type selector. The specificity of a named view transition pseudo-element selector with a '*' argument is zero.
 					// NB: We just break before adding to the type (tag name) specificity in case this is a named view transition pseudo that uses '*'
-					if simple_selector.pseudo_element.type_ in [.view_transition_group,
-						.view_transition_image_pair, .view_transition_old, .view_transition_new] && simple_selector.pseudo_element.pt_name_selector.is_universal {
+					if simple_selector.pseudo_element().type_ in [.view_transition_group,
+						.view_transition_image_pair, .view_transition_old, .view_transition_new] && simple_selector.pseudo_element().pt_name_selector.is_universal {
 						continue
 					}
 
@@ -1295,7 +1294,7 @@ pub fn (selector Selector) serialize() string {
 			//    serialize the simple selector and append the result to s.
 			for simple_selector in compound_selector.simple_selectors {
 				if simple_selector.type_ == .universal {
-					qualified_name := simple_selector.qualified_name
+					qualified_name := simple_selector.qualified_name()
 					if qualified_name.namespace_type == .default_ || qualified_name.namespace_type == .any {
 						continue
 					}
@@ -1473,8 +1472,8 @@ pub fn matches(selector Selector, element &dom.Element, shadow_host ?&dom.Elemen
 		// additional pseudo-element and should only match base element styles.
 		mut target_pseudo := ?PseudoElement(none)
 		for simple in compound_selectors[compound_selectors.len - 1].simple_selectors {
-			if simple.type_ == .pseudo_element && simple.pseudo_element.type_ != .part {
-				target_pseudo = simple.pseudo_element.type_
+			if simple.type_ == .pseudo_element && simple.pseudo_element().type_ != .part {
+				target_pseudo = simple.pseudo_element().type_
 				break
 			}
 		}
@@ -1645,17 +1644,17 @@ fn compound_selector_contains_host_for_part_matching(compound_selector CompoundS
 		if simple_selector.type_ != .pseudo_class {
 			continue
 		}
-		if simple_selector.pseudo_class.type_ == .host {
+		if simple_selector.pseudo_class().type_ == .host {
 			return true
 		}
-		if simple_selector.pseudo_class.type_ != .is_ {
+		if simple_selector.pseudo_class().type_ != .is_ {
 			continue
 		}
-		for argument in simple_selector.pseudo_class.argument_selector_list.selectors {
+		for argument in simple_selector.pseudo_class().argument_selector_list.selectors {
 			for argument_compound in argument.compound_selectors() {
 				for argument_simple in argument_compound.simple_selectors {
 					if argument_simple.type_ == .pseudo_class
-						&& argument_simple.pseudo_class.type_ == .host {
+						&& argument_simple.pseudo_class().type_ == .host {
 						return true
 					}
 				}
@@ -1682,7 +1681,7 @@ fn matches_simple(component &SimpleSelector, element &dom.Element, shadow_host ?
 	}
 	match component.type_ {
 		.universal, .tag_name {
-			qualified_name := component.qualified_name
+			qualified_name := component.qualified_name()
 
 			// Reject if the tag name doesn't match
 			if component.type_ == .tag_name {
@@ -1703,31 +1702,31 @@ fn matches_simple(component &SimpleSelector, element &dom.Element, shadow_host ?
 		.id {
 			id := element.id() or { return false }
 			if element.document() != unsafe { nil } && element.document().in_quirks_mode() {
-				return equals_ignoring_ascii_case(component.name.name, id)
+				return equals_ignoring_ascii_case(component.name().name, id)
 			}
-			return component.name.name == id
+			return component.name().name == id
 		}
 		.class {
 			// Class selectors are matched case insensitively in quirks mode.
 			// See: https://drafts.csswg.org/selectors-4/#class-html
 			if element.document() != unsafe { nil } && element.document().in_quirks_mode() {
-				return element.has_class_case_insensitive(component.name.name)
+				return element.has_class_case_insensitive(component.name().name)
 			}
-			return element.has_class(component.name.name)
+			return element.has_class(component.name().name)
 		}
 		.attribute {
-			return matches_attribute(component.attribute, context.style_sheet_for_rule, element)
+			return matches_attribute(component.attribute(), context.style_sheet_for_rule, element)
 		}
 		.pseudo_class {
-			return matches_pseudo_class(component.pseudo_class, element, shadow_host, mut context, scope, selector_kind)
+			return matches_pseudo_class(component.pseudo_class(), element, shadow_host, mut context, scope, selector_kind)
 		}
 		.pseudo_element {
-			if component.pseudo_element.type_ == .slotted {
+			if component.pseudo_element().type_ == .slotted {
 				slotted_element := context.slotted_element or { return false }
-				compound_selector := component.pseudo_element.compound_selector or { return false }
+				compound_selector := component.pseudo_element().compound_selector or { return false }
 				return matches(compound_selector, slotted_element, shadow_host, mut context, none, none, .normal, none)
 			}
-			if component.pseudo_element.type_ == .part {
+			if component.pseudo_element().type_ == .part {
 				// ::part() only consults maps owned by a host in the rule's direct
 				// child scope, except for :host::part() in the rule's own root.
 				mut ancestor_shadow_root := element.as_node().containing_shadow_root()
@@ -1743,7 +1742,7 @@ fn matches_simple(component &SimpleSelector, element &dom.Element, shadow_host ?
 					if is_direct_child_scope || is_host_part_own_scope {
 						part_element_map := root.part_element_map()
 						mut all_part_names_match := true
-						for part_name in component.pseudo_element.ident_list {
+						for part_name in component.pseudo_element().ident_list {
 							if !part_element_map_contains(part_element_map, part_name, element) {
 								all_part_names_match = false
 								break
@@ -2235,7 +2234,7 @@ fn fast_matches_simple_selector(simple_selector &SimpleSelector, element &dom.El
 
 	match simple_selector.type_ {
 		.universal {
-			return matches_namespace(simple_selector.qualified_name, element, context.style_sheet_for_rule)
+			return matches_namespace(simple_selector.qualified_name(), element, context.style_sheet_for_rule)
 		}
 		.tag_name {
 			// https://html.spec.whatwg.org/multipage/semantics-other.html#case-sensitivity-of-selectors
@@ -2243,35 +2242,35 @@ fn fast_matches_simple_selector(simple_selector &SimpleSelector, element &dom.El
 			// same selector when compared to other elements must be compared according to its original case. In both cases, to match the values must be identical to each other (and therefore
 			// the comparison is case sensitive).
 			if element.namespace_uri() or { '' } == selector_html_namespace && element.document() != unsafe { nil } && element.document().document_type() == .html {
-				if simple_selector.qualified_name.name.lowercase_name != element.local_name() {
+				if simple_selector.qualified_name().name.lowercase_name != element.local_name() {
 					return false
 				}
-			} else if simple_selector.qualified_name.name.name != element.local_name() {
+			} else if simple_selector.qualified_name().name.name != element.local_name() {
 				// NOTE: Any other elements are either SVG, XHTML or MathML, all of which are case-sensitive.
 				return false
 			}
-			return matches_namespace(simple_selector.qualified_name, element, context.style_sheet_for_rule)
+			return matches_namespace(simple_selector.qualified_name(), element, context.style_sheet_for_rule)
 		}
 		.class {
 			// Class selectors are matched case insensitively in quirks mode.
 			// See: https://drafts.csswg.org/selectors-4/#class-html
 			if element.document() != unsafe { nil } && element.document().in_quirks_mode() {
-				return element.has_class_case_insensitive(simple_selector.name.name)
+				return element.has_class_case_insensitive(simple_selector.name().name)
 			}
-			return element.has_class(simple_selector.name.name)
+			return element.has_class(simple_selector.name().name)
 		}
 		.id {
 			id := element.id() or { return false }
 			if element.document() != unsafe { nil } && element.document().in_quirks_mode() {
-				return equals_ignoring_ascii_case(simple_selector.name.name, id)
+				return equals_ignoring_ascii_case(simple_selector.name().name, id)
 			}
-			return simple_selector.name.name == id
+			return simple_selector.name().name == id
 		}
 		.attribute {
-			return matches_attribute(simple_selector.attribute, context.style_sheet_for_rule, element)
+			return matches_attribute(simple_selector.attribute(), context.style_sheet_for_rule, element)
 		}
 		.pseudo_class {
-			return matches_pseudo_class(simple_selector.pseudo_class, element, shadow_host, mut context, none, .normal)
+			return matches_pseudo_class(simple_selector.pseudo_class(), element, shadow_host, mut context, none, .normal)
 		}
 		else {
 			return false
@@ -2334,10 +2333,7 @@ fn parse_complex_selector(source string) []CompoundSelector {
 
 		parsed := parse_simple_selector(text, i)
 		if parsed.next <= i {
-			current << SimpleSelector{
-				type_: .invalid
-				invalid_text: text[i..i + 1]
-			}
+			current << SimpleSelector.with_invalid_text(.invalid, text[i..i + 1])
 			i++
 		} else {
 			current << parsed.selector
@@ -2384,10 +2380,7 @@ fn parse_simple_selector(text string, start int) ParsedSimpleSelector {
 			}
 		}
 		return ParsedSimpleSelector{
-			selector: SimpleSelector{
-				type_: .id
-				name: SelectorName.new(name)
-			}
+			selector: SimpleSelector.with_name(.id, SelectorName.new(name))
 			next: next
 		}
 	}
@@ -2400,10 +2393,7 @@ fn parse_simple_selector(text string, start int) ParsedSimpleSelector {
 			}
 		}
 		return ParsedSimpleSelector{
-			selector: SimpleSelector{
-				type_: .class
-				name: SelectorName.new(name)
-			}
+			selector: SimpleSelector.with_name(.class, SelectorName.new(name))
 			next: next
 		}
 	}
@@ -2421,10 +2411,7 @@ fn parse_simple_selector(text string, start int) ParsedSimpleSelector {
 		return parse_type_or_universal_selector(text, start)
 	}
 	return ParsedSimpleSelector{
-		selector: SimpleSelector{
-			type_: .invalid
-			invalid_text: text[start..start + 1]
-		}
+		selector: SimpleSelector.with_invalid_text(.invalid, text[start..start + 1])
 		next: start + 1
 	}
 }
@@ -2488,18 +2475,12 @@ fn parse_type_or_universal_selector(text string, start int) ParsedSimpleSelector
 	}
 	if is_universal {
 		return ParsedSimpleSelector{
-			selector: SimpleSelector{
-				type_: .universal
-				qualified_name: qualified_name
-			}
+			selector: SimpleSelector.with_qualified_name(.universal, qualified_name)
 			next: i
 		}
 	}
 	return ParsedSimpleSelector{
-		selector: SimpleSelector{
-			type_: .tag_name
-			qualified_name: qualified_name
-		}
+		selector: SimpleSelector.with_qualified_name(.tag_name, qualified_name)
 		next: i
 	}
 }
@@ -2549,15 +2530,12 @@ fn parse_attribute_selector(body string) SimpleSelector {
 		else { AttributeMatchType.has_attribute }
 	}
 
-	return SimpleSelector{
-		type_: .attribute
-		attribute: SelectorAttribute{
+	return SimpleSelector.with_attribute(.attribute, SelectorAttribute{
 			match_type: match_type
 			qualified_name: qualified_name
 			value: value
 			case_type: case_type
-		}
-	}
+		})
 }
 
 fn parse_attribute_qualified_name(name_text string) ?SelectorQualifiedName {
@@ -2744,17 +2722,11 @@ fn parse_pseudo_element_selector(name string, argument string, is_function bool)
 			}
 		}
 	}
-	return SimpleSelector{
-		type_: .pseudo_element
-		pseudo_element: selector
-	}
+	return SimpleSelector.with_pseudo_element(.pseudo_element, selector)
 }
 
 fn invalid_simple_selector(text string) SimpleSelector {
-	return SimpleSelector{
-		type_: .invalid
-		invalid_text: text
-	}
+	return SimpleSelector.with_invalid_text(.invalid, text)
 }
 
 fn parse_pseudo_class_selector(name string, argument string, is_function bool) SimpleSelector {
@@ -2847,10 +2819,7 @@ fn parse_pseudo_class_selector(name string, argument string, is_function bool) S
 		else {}
 	}
 
-	return SimpleSelector{
-		type_: SimpleSelectorType.pseudo_class
-		pseudo_class: pseudo_class
-	}
+	return SimpleSelector.with_pseudo_class(SimpleSelectorType.pseudo_class, pseudo_class)
 }
 
 fn pseudo_class_valid_as_function(pseudo_class PseudoClass) bool {
@@ -2920,31 +2889,31 @@ fn parsed_selector_has_invalid_simple_selectors(text string, compound_selectors 
 					return true
 				}
 				.class, .id {
-					if simple_selector.name.name.len == 0 {
+					if simple_selector.name().name.len == 0 {
 						return true
 					}
 				}
 				.tag_name {
-					if simple_selector.qualified_name.name.name.len == 0 || simple_index != 0 {
+					if simple_selector.qualified_name().name.name.len == 0 || simple_index != 0 {
 						return true
 					}
 				}
 				.universal {
-					if simple_selector.qualified_name.name.name.len == 0 {
+					if simple_selector.qualified_name().name.name.len == 0 {
 						return true
 					}
 				}
 				.attribute {
-					if simple_selector.attribute.qualified_name.name.name.len == 0 {
+					if simple_selector.attribute().qualified_name.name.name.len == 0 {
 						return true
 					}
 				}
 				.pseudo_element {
 					pseudo_element_count++
 					if pseudo_element_count == 1 {
-						first_pseudo_element = simple_selector.pseudo_element.type_
+						first_pseudo_element = simple_selector.pseudo_element().type_
 					} else if pseudo_element_count == 2 {
-						second_pseudo_element = simple_selector.pseudo_element.type_
+						second_pseudo_element = simple_selector.pseudo_element().type_
 					}
 					if compound_index != compound_selectors.len - 1 {
 						return true
@@ -3163,7 +3132,7 @@ fn can_selector_use_fast_matches(selector Selector) bool {
 
 		for simple_selector in compound_selector.simple_selectors {
 			if simple_selector.type_ == .pseudo_class {
-				pseudo_class := simple_selector.pseudo_class.type_
+				pseudo_class := simple_selector.pseudo_class().type_
 				if pseudo_class !in [.active, .any_link, .autofill, .checked, .disabled, .empty,
 					.enabled, .first_child, .focus, .focus_visible, .focus_within, .hover,
 					.last_child, .link, .local_link, .only_child, .root, .state, .unchecked, .visited] {
@@ -3240,19 +3209,19 @@ fn append_hashes_from_compound(compound_selector CompoundSelector, ancestor_hash
 	for simple_selector in compound_selector.simple_selectors {
 		match simple_selector.type_ {
 			.id, .class {
-				result = append_unique_hash(selector_string_hash(if fold_id_and_class_name_case { to_ascii_lowercase(simple_selector.name.name) } else { simple_selector.name.name }), result.ancestor_hashes, result.next_hash_index)
+				result = append_unique_hash(selector_string_hash(if fold_id_and_class_name_case { to_ascii_lowercase(simple_selector.name().name) } else { simple_selector.name().name }), result.ancestor_hashes, result.next_hash_index)
 				if result.is_full {
 					return result
 				}
 			}
 			.tag_name {
-				result = append_unique_hash(selector_string_hash(simple_selector.qualified_name.name.lowercase_name), result.ancestor_hashes, result.next_hash_index)
+				result = append_unique_hash(selector_string_hash(simple_selector.qualified_name().name.lowercase_name), result.ancestor_hashes, result.next_hash_index)
 				if result.is_full {
 					return result
 				}
 			}
 			.attribute {
-				result = append_unique_hash(selector_string_hash(simple_selector.attribute.qualified_name.name.lowercase_name), result.ancestor_hashes, result.next_hash_index)
+				result = append_unique_hash(selector_string_hash(simple_selector.attribute().qualified_name.name.lowercase_name), result.ancestor_hashes, result.next_hash_index)
 				if result.is_full {
 					return result
 				}
@@ -3287,8 +3256,8 @@ fn selector_contained_pseudo_classes_uncached(compound_selectors []CompoundSelec
 	for compound_selector in compound_selectors {
 		for simple_selector in compound_selector.simple_selectors {
 			if simple_selector.type_ == .pseudo_class {
-				bitmap.set(simple_selector.pseudo_class.type_, true)
-				for child_selector in simple_selector.pseudo_class.argument_selector_list.selectors {
+				bitmap.set(simple_selector.pseudo_class().type_, true)
+				for child_selector in simple_selector.pseudo_class().argument_selector_list.selectors {
 					if child_selector.data_ != unsafe { nil } {
 						bitmap.merge(child_selector.data_.contained_pseudo_classes)
 					} else {
@@ -3309,15 +3278,15 @@ fn contains_invalid_contents_for_has(selector Selector) bool {
 	for compound_selector in selector.compound_selectors() {
 		for simple_selector in compound_selector.simple_selectors {
 			if simple_selector.type_ == .pseudo_element {
-				if !is_has_allowed_pseudo_element(simple_selector.pseudo_element.type_) {
+				if !is_has_allowed_pseudo_element(simple_selector.pseudo_element().type_) {
 					return true
 				}
 			}
 			if simple_selector.type_ == .pseudo_class {
-				if simple_selector.pseudo_class.type_ == .has {
+				if simple_selector.pseudo_class().type_ == .has {
 					return true
 				}
-				for child_selector in simple_selector.pseudo_class.argument_selector_list.selectors {
+				for child_selector in simple_selector.pseudo_class().argument_selector_list.selectors {
 					if contains_invalid_contents_for_has(child_selector) {
 						return true
 					}
@@ -3834,7 +3803,7 @@ fn should_block_shadow_host_matching(component SimpleSelector, shadow_host ?&dom
 
 	// From within shadow tree, only :host pseudo-class can match the host element
 	if component.type_ == .pseudo_class {
-		pseudo_class := component.pseudo_class
+		pseudo_class := component.pseudo_class()
 		return pseudo_class.type_ != .host && pseudo_class.type_ != .has && pseudo_class.type_ != .is_ && pseudo_class.type_ != .where
 	}
 

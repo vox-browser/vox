@@ -1119,12 +1119,9 @@ pub fn (mut rule CSSRule) scope_end_selectors_for_matching() ?SelectorList {
 		first_combinator := compound_selectors[0].combinator
 		if first_combinator !in [.no_combinator, .descendant] || (!selector.contains_the_nesting_selector()
 			&& !selector.contains_pseudo_class(.scope)) {
-			matching_selectors.selectors << selector.relative_to(SimpleSelector{
-				type_: .pseudo_class
-				pseudo_class: PseudoClassSelector{
+			matching_selectors.selectors << selector.relative_to(SimpleSelector.with_pseudo_class(.pseudo_class, PseudoClassSelector{
 					type_: .scope
-				}
-			})
+				}))
 		} else if first_combinator == .descendant {
 			mut copied := compound_selectors.clone()
 			copied[0].combinator = .no_combinator
@@ -1681,24 +1678,18 @@ fn absolutize_selectors_relative_to(selectors SelectorList, parent ?&CSSRule) Se
 		// A top-level nesting selector is matched like :scope, without changing its specificity.
 		return selectors
 	}
-	mut selector_for_nesting := SimpleSelector{
-		type_: .pseudo_class
-		pseudo_class: PseudoClassSelector{
+	mut selector_for_nesting := SimpleSelector.with_pseudo_class(.pseudo_class, PseudoClassSelector{
 			type_: .where
 			argument_selector_list: SelectorList{
 				selectors: [selector_from_text(':scope')]
 			}
-		}
-	}
+		})
 	if parent_rule.type_ == .style {
 		mut mutable_parent := unsafe { &CSSRule(parent_rule) }
-		selector_for_nesting = SimpleSelector{
-			type_: .pseudo_class
-			pseudo_class: PseudoClassSelector{
+		selector_for_nesting = SimpleSelector.with_pseudo_class(.pseudo_class, PseudoClassSelector{
 				type_: .is_
 				argument_selector_list: mutable_parent.absolutized_selectors()
-			}
-		}
+			})
 	}
 
 	mut absolutized_selectors := SelectorList{}

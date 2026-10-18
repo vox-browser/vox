@@ -75,7 +75,7 @@ fn simple_selector_may_match_shadow_host(simple_selector SimpleSelector) bool {
 	if simple_selector.type_ != .pseudo_class {
 		return false
 	}
-	pseudo_class := simple_selector.pseudo_class
+	pseudo_class := simple_selector.pseudo_class()
 	if pseudo_class.type_ == .host {
 		return true
 	}
@@ -114,7 +114,7 @@ fn simple_selector_may_match_light_dom_outside_shadow_host(simple_selector Simpl
 	if simple_selector.type_ != .pseudo_class {
 		return false
 	}
-	pseudo_class := simple_selector.pseudo_class
+	pseudo_class := simple_selector.pseudo_class()
 	if !pseudo_class_has_positive_selector_list_arguments(pseudo_class.type_) {
 		return false
 	}
@@ -241,7 +241,7 @@ fn extend_style_sheet_invalidation_set_with_style_rule(mut result StyleSheetInva
 		mut rightmost_has_structural_position_pseudo := false
 		for simple in rightmost.simple_selectors {
 			if simple.type_ == .pseudo_class
-				&& simple.pseudo_class.type_ in [.first_child, .last_child, .only_child] {
+				&& simple.pseudo_class().type_ in [.first_child, .last_child, .only_child] {
 				rightmost_has_structural_position_pseudo = true
 				break
 			}
@@ -249,8 +249,8 @@ fn extend_style_sheet_invalidation_set_with_style_rule(mut result StyleSheetInva
 		if rightmost_has_structural_position_pseudo {
 			for simple in rightmost.simple_selectors {
 				if simple.type_ == .pseudo_class
-					&& simple.pseudo_class.type_ in [.first_child, .last_child, .only_child] {
-					result.invalidation_set.set_needs_invalidate_pseudo_class(css_pseudo_class_from_selector_pseudo_class(simple.pseudo_class.type_))
+					&& simple.pseudo_class().type_ in [.first_child, .last_child, .only_child] {
+					result.invalidation_set.set_needs_invalidate_pseudo_class(css_pseudo_class_from_selector_pseudo_class(simple.pseudo_class().type_))
 				}
 			}
 			continue
