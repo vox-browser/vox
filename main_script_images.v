@@ -16,9 +16,10 @@ const script_image_disk_read_distance = 1250.0
 // layout is current, the disk cache's bytes for an image laid out near the
 // viewport are read at once, so the next paint shows it. Each read filters
 // the request on the UI thread, so images further away stay in the
-// background. Returns the resources that are already available.
-fn (mut app BrowserApp) request_script_inserted_images() map[string]bool {
-	mut ready := map[string]bool{}
+// background. Returns the resources that are already available; the list is
+// empty (and allocates nothing) on frames where the DOM did not change.
+fn (mut app BrowserApp) request_script_inserted_images() []string {
+	mut ready := []string{}
 	if app.document == unsafe { nil } || app.js_runtime == unsafe { nil } {
 		return ready
 	}
@@ -50,7 +51,7 @@ fn (mut app BrowserApp) request_script_inserted_images() map[string]bool {
 			continue
 		}
 		if !resource_url.starts_with('http://') && !resource_url.starts_with('https://') {
-			ready[resource_url] = true
+			ready << resource_url
 			continue
 		}
 		if layout_is_current && resource_url !in app.resource_cache
@@ -60,7 +61,7 @@ fn (mut app BrowserApp) request_script_inserted_images() map[string]bool {
 			&& script_image_is_near_viewport(element, viewport_height) {
 			if cached := disk_cached_browser_resource(resource_url, source_url, 'image') {
 				app.resource_cache[resource_url] = cached
-				ready[resource_url] = true
+				ready << resource_url
 				continue
 			}
 		}
@@ -68,7 +69,7 @@ fn (mut app BrowserApp) request_script_inserted_images() map[string]bool {
 		if resource_url in app.background_resource_pending {
 			app.script_image_requests[resource_url] = true
 		} else {
-			ready[resource_url] = true
+			ready << resource_url
 		}
 	}
 	return ready

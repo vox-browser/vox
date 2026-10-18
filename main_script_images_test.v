@@ -159,7 +159,7 @@ fn test_disk_cached_script_inserted_images_near_the_viewport_are_ready_without_a
 	assert near_url !in app.script_image_requests
 	assert far_url !in ready
 	assert far_url in app.script_image_requests
-	assert app.complete_script_inserted_images(ready)
+	assert app.complete_script_inserted_images(url_set(ready))
 	near := document.get_element_by_id('thumb-3') or { panic('missing near thumbnail') }
 	model := html.html_image_element_model_for_dom_element(unsafe { &dom.HTMLImageElement(near) })
 	assert model.complete()

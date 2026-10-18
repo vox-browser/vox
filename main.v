@@ -413,6 +413,11 @@ mut:
 	deferred_navigation_input           ?DeferredNavigationInput
 	deferred_page_input                 []DeferredPageInput
 	background_image_ids                map[string]int
+	// Image ids by URL for the current document and adblock setting; every
+	// frame's lookups use it without building the full cache key.
+	background_image_scope_document voidptr
+	background_image_scope_adblock  bool
+	background_image_scope_ids      map[string]int
 	force_dark_image_states             map[string]int
 	force_dark_image_bitmaps            map[string]&dom.Bitmap_
 	force_dark_images                   map[string]&gg.Image
@@ -444,6 +449,8 @@ mut:
 	paint_display_list                  &dom.DisplayList = unsafe { nil }
 	// Storage behind paint_commands, retained until the next adoption.
 	paint_scene      voidptr
+	paint_status_key PaintStatusKey
+	paint_status_text string
 	animation_epoch_ns                  u64
 	initial_window_frame_presented      bool
 	refresh_not_before                  i64
@@ -3604,7 +3611,7 @@ fn (mut app BrowserApp) install_loaded_page(loaded LoadedPage, add_history bool)
 	// cache holds, are completed before the first paint. One whose size cannot
 	// depend on its natural size only needs repainting.
 	ready_script_images := app.request_script_inserted_images()
-	if ready_script_images.len > 0 && app.complete_script_inserted_images(ready_script_images) {
+	if ready_script_images.len > 0 && app.complete_script_inserted_images(url_set(ready_script_images)) {
 		if app.document.layout_is_up_to_date() {
 			app.paint_commands_pending = true
 			if app.frame_preparation_depth == 0 { app.record_document_paint_commands() }
@@ -3790,6 +3797,11 @@ fn (mut app BrowserApp) poll_navigation_and_background_resources(refresh_ready b
 
 fn (mut app BrowserApp) poll_navigation() {
 	app.poll_page_preload()
+	// A select builds its channel lists on every call; most frames have
+	// nothing to receive.
+	if app.navigation_results.len == 0 {
+		return
+	}
 	select {
 		result := <-app.navigation_results {
 			if result.generation != app.navigation_generation {
@@ -4641,20 +4653,22 @@ fn (mut app BrowserApp) request_background_resource(image_url string) {
 
 fn (mut app BrowserApp) poll_background_resources() {
 	mut installed_stylesheets := app.request_script_inserted_stylesheets()
+	// Polled every frame: the URL lists stay unallocated until a resource
+	// completes, and the channel is only selected on when it holds results.
 	mut completed_script_images := app.request_script_inserted_images()
-	mut changed_svg_resources := map[string]bool{}
-	mut completed_nonrendered_images := map[string]bool{}
-	for {
+	mut changed_svg_resources := []string{}
+	mut completed_nonrendered_images := []string{}
+	for app.background_resource_results.len > 0 {
 		select {
 			resource := <-app.background_resource_results {
 				app.background_resource_pending.delete(resource.url)
 				if resource.url in app.nonrendered_image_preloads {
 					app.nonrendered_image_preloads.delete(resource.url)
-					completed_nonrendered_images[resource.url] = true
+					completed_nonrendered_images << resource.url
 				}
 				if resource.url in app.script_image_requests {
 					app.script_image_requests.delete(resource.url)
-					completed_script_images[resource.url] = true
+					completed_script_images << resource.url
 				}
 				previous_svg_available := if previous := app.resource_cache[resource.url] {
 					previous.error == '' && previous.body != ''
@@ -4666,7 +4680,7 @@ fn (mut app BrowserApp) poll_background_resources() {
 					app.resource_cache[resource.url] = resource
 				}
 				if publish_browser_svg_resource(resource) || failed_previous_svg {
-					changed_svg_resources[resource.url.all_before('#')] = true
+					changed_svg_resources << resource.url.all_before('#')
 				}
 				if app.install_script_inserted_stylesheet(resource) {
 					installed_stylesheets = true
@@ -4678,7 +4692,7 @@ fn (mut app BrowserApp) poll_background_resources() {
 		}
 	}
 	script_images_updated := completed_script_images.len > 0 && app.document != unsafe { nil }
-		&& app.complete_script_inserted_images(completed_script_images)
+		&& app.complete_script_inserted_images(url_set(completed_script_images))
 	if installed_stylesheets && app.document != unsafe { nil } {
 		app.document.set_needs_full_style_update(true)
 		app.document.tear_down_layout_tree()
@@ -4687,10 +4701,10 @@ fn (mut app BrowserApp) poll_background_resources() {
 	}
 	if app.document != unsafe { nil } && app.js_runtime == unsafe { nil }
 		&& completed_nonrendered_images.len > 0 {
-		complete_static_browser_image_requests(app.document, completed_nonrendered_images)
+		complete_static_browser_image_requests(app.document, url_set(completed_nonrendered_images))
 	}
 	if app.document != unsafe { nil } && completed_nonrendered_images.len > 0
-		&& completed_nonrendered_images_need_layout(app.document, completed_nonrendered_images) {
+		&& completed_nonrendered_images_need_layout(app.document, url_set(completed_nonrendered_images)) {
 		app.document.tear_down_layout_tree()
 		app.relayout(app.viewport_width, app.viewport_height + app.chrome_height())
 		return
@@ -4708,9 +4722,10 @@ fn (mut app BrowserApp) poll_background_resources() {
 		return
 	}
 	if changed_svg_resources.len > 0 && app.document != unsafe { nil } {
-		if browser_svg_resources_need_layout(app.document, changed_svg_resources) {
+		changed_svg_resource_set := url_set(changed_svg_resources)
+		if browser_svg_resources_need_layout(app.document, changed_svg_resource_set) {
 			app.document.tear_down_layout_tree()
-		} else if layout.refresh_document_background_resources(app.document, changed_svg_resources) {
+		} else if layout.refresh_document_background_resources(app.document, changed_svg_resource_set) {
 			app.adopt_current_document_geometry()
 			app.paint_commands_pending = true
 			if app.frame_preparation_depth == 0 { app.record_document_paint_commands() }
@@ -4722,7 +4737,34 @@ fn (mut app BrowserApp) poll_background_resources() {
 	}
 }
 
+fn url_set(urls []string) map[string]bool {
+	mut set := map[string]bool{}
+	for url in urls {
+		set[url] = true
+	}
+	return set
+}
+
 fn (mut app BrowserApp) background_image(image_url string) ?&gg.Image {
+	adblock_enabled := adblock.is_enabled()
+	if app.background_image_scope_document != voidptr(app.document)
+		|| app.background_image_scope_adblock != adblock_enabled {
+		app.background_image_scope_document = voidptr(app.document)
+		app.background_image_scope_adblock = adblock_enabled
+		app.background_image_scope_ids = map[string]int{}
+	}
+	if image_id := app.background_image_scope_ids[image_url] {
+		image := app.ctx.get_cached_image_by_idx(image_id)
+		if image.ok {
+			return image
+		}
+	}
+	image := app.background_image_uncached(image_url)?
+	app.background_image_scope_ids[image_url] = image.id
+	return image
+}
+
+fn (mut app BrowserApp) background_image_uncached(image_url string) ?&gg.Image {
 	source_url := if app.document != unsafe { nil } { app.document.url.serialize() } else { app.address }
 	cache_key := source_url + '\n' + adblock.is_enabled().str() + '\n' + image_url
 	if image_id := app.background_image_ids[cache_key] {
@@ -6382,16 +6424,29 @@ fn (mut app BrowserApp) draw_command(source_command layout.PaintCommand, page_x 
 							C.native_add_corner_rounded_clip(f32(clip_x), f32(clip_y), f32(replay.viewport_width), f32(replay.viewport_height), 0, 0, 0, 0, 0, 0, 0, 0, f32(m[0]), f32(m[1]), f32(m[2]), f32(m[3]), f32(m[4]), f32(m[5]), page_x, page_y, f32(scroll_y), f32(app.ctx.height))
 						}
 					}
-					if nested_layout := layout.run_document_layout(svg_document, f64(replay.viewport_width), f64(replay.viewport_height)) {
-						_ = nested_layout
-						if nested_display_list := mutable_svg_document.record_display_list() {
-							for nested_command in layout.display_list_commands(nested_display_list) {
-								transformed := layout.paint_command_for_nested_viewport(nested_command, replay.transform,
-									if chromium_svg { painting.IntPoint{} } else { painting.IntPoint{destination.x, destination.y} }, command.opacity)
-								app.draw_command(transformed, page_x, page_y, window_height)
-							}
-							app.flush_rounded_rect_underlay(page_x, page_y, window_height)
+					// Every frame replays each tile. An image document that is
+					// already laid out at this size keeps its recorded list.
+					svg_viewport := mutable_svg_document.viewport_rect()
+					mut nested_display_list := ?&dom.DisplayList(none)
+					if svg_viewport.width == f64(replay.viewport_width)
+						&& svg_viewport.height == f64(replay.viewport_height)
+						&& mutable_svg_document.layout_is_up_to_date()
+						&& !mutable_svg_document.needs_style_update_after_layout() {
+						nested_display_list = mutable_svg_document.cached_display_list()
+					}
+					if nested_display_list == none {
+						if nested_layout := layout.run_document_layout(svg_document, f64(replay.viewport_width), f64(replay.viewport_height)) {
+							_ = nested_layout
+							nested_display_list = mutable_svg_document.record_display_list()
 						}
+					}
+					if display_list := nested_display_list {
+						for nested_command in layout.display_list_commands(display_list) {
+							transformed := layout.paint_command_for_nested_viewport(nested_command, replay.transform,
+								if chromium_svg { painting.IntPoint{} } else { painting.IntPoint{destination.x, destination.y} }, command.opacity)
+							app.draw_command(transformed, page_x, page_y, window_height)
+						}
+						app.flush_rounded_rect_underlay(page_x, page_y, window_height)
 					}
 					$if macos {
 						if app.ctx.native_rendering { C.native_end_clip() }
@@ -7259,6 +7314,7 @@ fn main() {
 	defer_remote_navigation := markup == '' && !options.headless_smoke && !options.headless_layout_tree
 	page_model := page.Page.create(1.0) or { panic(err) }
 	mut page_client := page_model.client()
+	page_client.set_event_recording(false)
 	page_client.set_request_frame_hook(request_browser_frame)
 	main_checkpoint = debug_timing_checkpoint('startup_page_model', main_checkpoint)
 	mut app := &BrowserApp{

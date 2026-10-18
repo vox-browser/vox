@@ -43,6 +43,15 @@ fn (mut app BrowserApp) finish_frame_preparation() {
 	// depth keeps subsequent work in the outer frame deferred until it presents.
 }
 
+// The values app.status shows after a recording.
+struct PaintStatusKey {
+	load_status     &u8 = unsafe { nil }
+	load_status_len int
+	commands        int
+	width           int
+	height          int
+}
+
 fn (mut app BrowserApp) record_document_paint_commands() {
 	mut heap_scope := platform.begin_browser_activity_heap_scope_for_scripting(app.document_scripting_enabled_for_heap())
 	defer { heap_scope.finish() }
@@ -84,7 +93,19 @@ fn (mut app BrowserApp) record_document_paint_commands() {
 	}
 	app.paint_commands_pending = false
 	root_rect := app.root_box.border_box()
-	app.status = '${app.load_status} · ${app.paint_commands.len} paints · ${int(root_rect.width)}×${int(root_rect.height)} CSS px'
+	// Animation frames re-record without changing what the status shows.
+	status_key := PaintStatusKey{
+		load_status: app.load_status.str
+		load_status_len: app.load_status.len
+		commands: app.paint_commands.len
+		width: int(root_rect.width)
+		height: int(root_rect.height)
+	}
+	if status_key != app.paint_status_key || app.status.str != app.paint_status_text.str {
+		app.paint_status_key = status_key
+		app.status = '${app.load_status} · ${app.paint_commands.len} paints · ${int(root_rect.width)}×${int(root_rect.height)} CSS px'
+		app.paint_status_text = app.status
+	}
 	debug_timing_checkpoint('  paint_commands', checkpoint)
 }
 

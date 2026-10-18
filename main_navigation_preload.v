@@ -155,7 +155,9 @@ fn (mut app BrowserApp) poll_page_preload() {
 		app.cancel_page_preload()
 		return
 	}
-	for pending.remaining > 0 {
+	// Each select builds its channel lists; frames waiting on the network
+	// receive nothing, so only select when a result is buffered.
+	for pending.remaining > 0 && pending.results.len > 0 {
 		select {
 			resource := <-pending.results {
 				pending.resources[resource.url] = resource
