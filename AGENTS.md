@@ -2179,6 +2179,13 @@ evidence](docs/translation-audit/NATIVE_MEDIA_WHEEL_RAW_HANDLER.md).
   Other contract groups stop at compilation: scripting/cache APIs and legacy image-field accessors.
   Aggregate actual1; zero local samples/primaries/credit; all passes/failures retained.
   Frozen124 control/broad baseline, carry0 and verified124 app preserved; Chrome parity open.
+  Property-sharing closure round129:20 authored features/206hunks/33changed paths.
+  C-only preflight0; common60/config; original DOM2/19asserts eachGC pass.
+  Layout33/34 eachGC fails viewport-scroll command; stronger probe1 bothGC, Root test restored.
+  CSS41/42 Boehm fails document owner mask1; no-GC42/37943asserts passes; mask assertion intact.
+  Main6 eachGC derived from actual0/quiet C runner; assertion totals unknown; HTML compile1.
+  Aggregate1; zero local samples/primaries/credit; all outcomes and accessor proofs retained.
+  Frozen124 control/broad baseline, carry0 and verified124 app preserved; Chrome parity open.
 - Outside instruction-count optimization, run broad regression suites once per
   ten completed fixes, not after every fix.
   Broad suites include full translation/package test batches, the full LibJS AST

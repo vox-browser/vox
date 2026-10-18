@@ -12629,6 +12629,60 @@ untouched. Frozen control/broad baseline124, verified isolated124 app and observ
 carry0 remain. Chrome parity remains unestablished: the earlier Chrome count has
 a different endpoint and hydrated content.
 
+## Reject the twenty-feature composition at the ownership and scroll gates
+
+Round129 adds the complete embedder-scripting (`8c026300`), document-resolution
+owner (`260cdb08`) and pointer-identity (`26b07c0f`) prerequisites. Twenty authored
+features reconstruct206 exact hunks:33 runtime paths change, including nine new
+files. The source audit authenticates the actual Git dependency DAG, including
+independent branches, and the already accepted89 post-hunks. Whole-app old-compiler
+C-only preflight exits0; its exact C and durable gzip hashes are retained. This
+establishes frontend compatibility, with no native browser build credit.
+
+The four legacy image tests receive only the exact authored accessor migrations
+from already accepted104 feature `75966fb5`. Original and projected files are
+retained separately. Whole authored before/after files, inverse projection,
+assertion counts and the unchanged runtime getter are authenticated. No expected
+value or weak-owner header changes. The common12 cases, including the inactive
+diagnostic, pass60 assertions per configuration; before reuses identical124
+success and both candidate GC modes run freshly.
+
+The93 original contracts expose three remaining blockers. Layout passes33/34
+cases in each GC mode, with93,822 successful assertions and one failed assertion:
+viewport scrolling leaves the retained scrollbar command unchanged. A stronger
+standalone probe of that single failing case also exits1 in both GC modes: the
+thumb remains at y2 after a160px viewport scroll. The complete authored viewport
+fix `26e60e24` reads the viewport offset instead of the document element's offset.
+The exploratory Root test edit is restored exactly; both probe failures and the
+original inequality remain. No completed passing case is repeated for the probe.
+
+CSS passes41/42 cases under Boehm: the document-owned property-store collection
+check reports **owner mask1**, retaining the document while the other watched
+owners are released. Its zero-mask assertion remains intact. CSS/no-GC passes
+all42 cases/37,943 assertions. Both original DOM cases pass19 assertions in each
+GC mode. Both main harnesses actually generate C, compile, sign and execute with
+exits0 and the verified frozen helper. Their quiet TestRunner emits no case or
+assertion totals; read-only C inspection proves six direct test calls and a
+runner that fails on case/assertion failure. Six cases are therefore derived
+from code plus actual process0; assertion totals remain **unknown**. The original
+quiet-runner receipts and failed aggregate are retained without reexecution.
+
+HTML fails compilation in both GC modes before any case runs: the old event
+handler map length moved behind the getter in already accepted116 feature
+`ddfefde3`. Its exact committed test migration is the next accessor projection.
+The aggregate contract controller actually exits1. The local gate exits1 with
+**zero samples**, before any local build. No normal native binary, V profile,
+strict browser C audit, browser primary, bundle/GC check or broad batch occurs.
+The predeclared30 alternating pairs/30,000 resamples/seed129 remain unstarted;
+page credit is0. All successes and failures are retained in
+`Build/v/instruction-opt129-durable-archives.json` and the quiet-runner finding.
+
+Next review adds the full viewport fix and scoped CSS traversal lifetime
+prerequisites, retaining the ownership assertion. Canonical app/GUI, Root runtime
+and foreign edits remain untouched. Frozen control/broad baseline124, verified
+isolated124 app and observed carry0 remain. Chrome parity remains unestablished:
+the earlier Chrome count uses a different endpoint and hydrated content.
+
 ## Causes and changes
 
 - The V 0.5.2 compatibility compiler's `-prod` Boehm code repeatedly snapshots
