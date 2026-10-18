@@ -33,6 +33,16 @@ struct AnonymousComputedGeometrySource {
 	font_generation u64
 }
 
+// Consumers retaining derived data need to detect in-place inherited-style
+// updates as well as replacement of the ComputedProperties object. Zero means
+// that this graph cannot supply a usable revision (unknown owner or saturation).
+pub fn (c &ComputedProperties) mutation_revision() u64 {
+	if c.computed_property_graph_token_ == unsafe { nil } { return 0 }
+	mut token := unsafe { &ComputedPropertyGraphMutationToken(c.computed_property_graph_token_) }
+	token.observed = true
+	return token.generation
+}
+
 fn (mut c ComputedProperties) note_computed_property_graph_mutation() {
 	if c.computed_property_graph_token_ != unsafe { nil }
 		&& c.computed_property_graph_token_.observed {
