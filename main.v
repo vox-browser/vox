@@ -1036,6 +1036,54 @@ fn fetch_text_resource_for_request(reference string, base string, source_url str
 	return fetch_browser_resource(reference, base, source_url, request_type)!.body
 }
 
+const browser_cache_miss_code = 1404
+
+// The disk-cached response for an already filtered request. A miss fails with
+// browser_cache_miss_code; a filter rejection fails with its own error.
+fn cached_browser_resource_response(resolved string, filtered_url string, owner_url string, request_type string) !PreloadedResource {
+	// Legacy entries have no redirect provenance. Re-fetch those entries so
+	// an allowed URL cannot hide a redirect to a blocked tracker.
+	for cache_key in [resource_accept_cache_key(filtered_url, request_type), filtered_url] {
+		path := browser_cache_entry_path(browser_cache_root(), 'resources', cache_key)
+		if final_url := read_browser_cache_entry(path + '.url') {
+			final_request := adblock.Request{url: final_url, source_url: owner_url, request_type: request_type}
+			final_filter := browsernet.filter(final_request)!
+			if replacement := final_filter.replacement {
+				return PreloadedResource{url: resolved, body: replacement.body, source_url: owner_url, final_url: final_url, request_type: request_type, adblock_replacement: true}
+			}
+			if final_filter.url == final_url && final_url == filtered_url {
+				// Only the final response is retained. Re-fetch redirects so an
+				// intermediate response-header condition cannot bypass filtering.
+				// Older cache entries have no header provenance. Re-fetch them;
+				// assuming an empty header list could expose a header-blocked ad.
+				if encoded_headers := read_browser_cache_entry(path + '.headers.json') {
+					if headers := json2.decode[[]adblock.ResponseHeader](encoded_headers) {
+						filter_browser_response_headers(final_request, headers)!
+						// An old unvaried key cannot identify the Accept value that
+						// selected a negotiated image representation.
+						if cache_key == filtered_url && resource_response_varies_on_accept(headers) { continue }
+						if cached := read_cached_resource(cache_key) {
+							return PreloadedResource{url: resolved, body: cached, source_url: owner_url, final_url: final_url, request_type: request_type, response_headers: headers}
+						}
+					}
+				}
+			}
+		}
+	}
+	return error_with_code('not in the disk cache', browser_cache_miss_code)
+}
+
+// A remote resource that the disk cache can answer on the UI thread. Anything
+// else, including a filter rejection, is left to the background request.
+fn disk_cached_browser_resource(resource_url string, source_url string, request_type string) ?PreloadedResource {
+	if !resource_url.starts_with('http://') && !resource_url.starts_with('https://') { return none }
+	filtered := browsernet.filter(adblock.Request{url: resource_url, source_url: source_url, request_type: request_type}) or { return none }
+	if filtered.replacement != none || filtered.url != resource_url { return none }
+	resource := cached_browser_resource_response(resource_url, filtered.url, source_url, request_type) or { return none }
+	if resource.adblock_replacement { return none }
+	return resource
+}
+
 fn fetch_browser_resource(reference string, base string, source_url string, request_type string) !PreloadedResource {
 	resolved := resolve_document_reference(reference, base)
 	if resolved.starts_with('file://') {
@@ -1049,35 +1097,11 @@ fn fetch_browser_resource(reference string, base string, source_url string, requ
 		return PreloadedResource{url: resolved, body: replacement.body, source_url: owner_url, final_url: filtered.url, request_type: request_type, adblock_replacement: true}
 	}
 	if filtered.url.starts_with('http://') || filtered.url.starts_with('https://') {
-		// Legacy entries have no redirect provenance. Re-fetch those entries so
-		// an allowed URL cannot hide a redirect to a blocked tracker.
-		for cache_key in [resource_accept_cache_key(filtered.url, request_type), filtered.url] {
-			path := browser_cache_entry_path(browser_cache_root(), 'resources', cache_key)
-			if final_url := read_browser_cache_entry(path + '.url') {
-				final_request := adblock.Request{url: final_url, source_url: owner_url, request_type: request_type}
-				final_filter := browsernet.filter(final_request)!
-				if replacement := final_filter.replacement {
-					return PreloadedResource{url: resolved, body: replacement.body, source_url: owner_url, final_url: final_url, request_type: request_type, adblock_replacement: true}
-				}
-				if final_filter.url == final_url && final_url == filtered.url {
-					// Only the final response is retained. Re-fetch redirects so an
-					// intermediate response-header condition cannot bypass filtering.
-					// Older cache entries have no header provenance. Re-fetch them;
-					// assuming an empty header list could expose a header-blocked ad.
-					if encoded_headers := read_browser_cache_entry(path + '.headers.json') {
-						if headers := json2.decode[[]adblock.ResponseHeader](encoded_headers) {
-							filter_browser_response_headers(final_request, headers)!
-							// An old unvaried key cannot identify the Accept value that
-							// selected a negotiated image representation.
-							if cache_key == filtered.url && resource_response_varies_on_accept(headers) { continue }
-							if cached := read_cached_resource(cache_key) {
-								return PreloadedResource{url: resolved, body: cached, source_url: owner_url, final_url: final_url, request_type: request_type, response_headers: headers}
-							}
-						}
-					}
-				}
-			}
+		cached := cached_browser_resource_response(resolved, filtered.url, owner_url, request_type) or {
+			if err.code() != browser_cache_miss_code { return err }
+			PreloadedResource{}
 		}
+		if cached.url != '' { return cached }
 	}
 	result := browsernet.get(adblock.Request{url: filtered.url, source_url: owner_url, request_type: request_type}, tls_ca_bundle())!
 	response := result.response
@@ -3495,6 +3519,18 @@ fn (mut app BrowserApp) install_loaded_page(loaded LoadedPage, add_history bool)
 		hide_cookie_banners(app.document)
 	}
 	checkpoint = debug_timing_checkpoint('cookie_blocker', checkpoint)
+	// Stylesheets and images that scripts inserted, and that the disk cache
+	// holds, take part in the first layout instead of a later relayout.
+	app.script_stylesheet_scan_version = max_u64
+	app.script_image_scan_version = max_u64
+	if app.request_script_inserted_stylesheets() {
+		app.document.set_needs_full_style_update(true)
+	}
+	ready_script_images := app.request_script_inserted_images()
+	if ready_script_images.len > 0 {
+		app.complete_script_inserted_images(ready_script_images)
+	}
+	checkpoint = debug_timing_checkpoint('script_inserted_resources', checkpoint)
 	if add_history {
 		if app.history_index + 1 < app.history.len {
 			app.history = app.history[..app.history_index + 1].clone()
@@ -4499,8 +4535,7 @@ fn (mut app BrowserApp) request_background_resource(image_url string) {
 }
 
 fn (mut app BrowserApp) poll_background_resources() {
-	app.request_script_inserted_stylesheets()
-	mut installed_stylesheets := false
+	mut installed_stylesheets := app.request_script_inserted_stylesheets()
 	mut completed_script_images := app.request_script_inserted_images()
 	mut changed_svg_resources := map[string]bool{}
 	mut completed_nonrendered_images := map[string]bool{}

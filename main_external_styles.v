@@ -96,20 +96,23 @@ fn install_external_styles(document &dom.Document, base_url string, preloaded ma
 // Scripts can insert stylesheet links after the initial resources; 4chan's
 // catalog links its theme this way. After the DOM tree changes, request each
 // new remote one in the background. The CSS bridge installs it, in the link's
-// tree position, once its text arrives.
-fn (mut app BrowserApp) request_script_inserted_stylesheets() {
+// tree position, once its text arrives. A sheet the disk cache holds is
+// installed at once, so the document is not laid out and painted without it
+// first. Returns whether any sheet was installed.
+fn (mut app BrowserApp) request_script_inserted_stylesheets() bool {
 	if app.document == unsafe { nil } {
-		return
+		return false
 	}
 	version := app.document.dom_tree_version()
 	if version == app.script_stylesheet_scan_version {
-		return
+		return false
 	}
 	app.script_stylesheet_scan_version = version
 	root := unsafe { &dom.Node(app.document) }
 	base_url := app.document.base_url().to_string()
 	source_url := app.document.url.serialize()
 	preferred_set_name := preferred_style_sheet_set_name(root)
+	mut installed := false
 	for link in css.query_selector_all(root, 'link[rel][href]') {
 		if !link_stylesheet_applies(link, preferred_set_name) {
 			continue
@@ -123,8 +126,15 @@ fn (mut app BrowserApp) request_script_inserted_stylesheets() {
 			continue
 		}
 		app.script_stylesheet_requests[resolved_url] = true
+		if cached := disk_cached_browser_resource(resolved_url, source_url, 'stylesheet') {
+			if app.install_script_inserted_stylesheet(cached) {
+				installed = true
+			}
+			continue
+		}
 		spawn fetch_stylesheet_in_background(resolved_url, source_url, app.background_resource_results)
 	}
+	return installed
 }
 
 // A parsed link's remote stylesheet is inlined as the <style> after it.

@@ -8,8 +8,9 @@ import html
 // catalog thumbnails written through innerHTML. The parser gives them no fetch
 // hook, so they never requested their bytes. After the DOM tree changes, fetch
 // each new remote one in the background like a deferred image; its request
-// completes from the fetched bytes instead of blocking on the network. Returns
-// the resources that are already available.
+// completes from the fetched bytes instead of blocking on the network. Bytes
+// the disk cache holds are read at once. Returns the resources that are
+// already available.
 fn (mut app BrowserApp) request_script_inserted_images() map[string]bool {
 	mut ready := map[string]bool{}
 	if app.document == unsafe { nil } || app.js_runtime == unsafe { nil } {
@@ -21,6 +22,7 @@ fn (mut app BrowserApp) request_script_inserted_images() map[string]bool {
 	}
 	app.script_image_scan_version = version
 	base_url := app.document.base_url().serialize()
+	source_url := app.document.url.serialize()
 	for element in css.query_selector_all(app.document.as_node(), 'img[src]') {
 		if !element.is_html_element() {
 			continue
@@ -36,6 +38,15 @@ fn (mut app BrowserApp) request_script_inserted_images() map[string]bool {
 		if !resource_url.starts_with('http://') && !resource_url.starts_with('https://') {
 			ready[resource_url] = true
 			continue
+		}
+		if resource_url !in app.resource_cache && resource_url !in app.background_resource_pending
+			&& app.resource_cache.len < max_cached_resources
+			&& !resource_url.all_before('#').all_before('?').to_lower().ends_with('.svg') {
+			if cached := disk_cached_browser_resource(resource_url, source_url, 'image') {
+				app.resource_cache[resource_url] = cached
+				ready[resource_url] = true
+				continue
+			}
 		}
 		app.request_background_resource(resource_url)
 		if resource_url in app.background_resource_pending {

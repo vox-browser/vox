@@ -4,6 +4,8 @@ import browserjs
 import dom
 import encoding.base64
 import html
+import os
+import time
 
 // A 2x1 PNG.
 const script_image_test_png = 'iVBORw0KGgoAAAANSUhEUgAAAAIAAAABCAYAAAD0In+KAAAADklEQVR4nGP4z8AAQv8BD/kD/YURmXYAAAAASUVORK5CYII='
@@ -107,4 +109,50 @@ fn test_sized_script_inserted_images_repaint_without_rebuilding_layout() {
 	images := app.paint_commands.filter(it.kind == 'draw_replaced_image')
 	assert images.len == 1
 	assert images[0].image().image_url == thumbnail_url
+}
+
+// Bytes the disk cache already holds complete the thumbnail when it is found,
+// before the document's first layout, instead of after a background request.
+fn test_disk_cached_script_inserted_images_are_ready_without_a_request() {
+	$if !darwin {
+		return
+	}
+	previous_cache := os.getenv_opt('LADYBIRD_CACHE_DIR')
+	cache := os.join_path(os.temp_dir(), 'vox-script-images-${os.getpid()}-${time.sys_mono_now()}')
+	os.setenv('LADYBIRD_CACHE_DIR', cache, true)
+	defer {
+		if previous := previous_cache {
+			os.setenv('LADYBIRD_CACHE_DIR', previous, true)
+		} else {
+			os.unsetenv('LADYBIRD_CACHE_DIR')
+		}
+		os.rmdir_all(cache) or {}
+	}
+	thumbnail_url := 'https://i.script-images.test/pol/3s.png'
+	cache_resource(thumbnail_url, base64.decode_str(script_image_test_png))
+	address := dom.URL{value: 'https://script-images.test/pol/catalog'}
+	mut document := html.parse_navigation_document('<!doctype html><html><body><div id="threads"></div></body></html>',
+		address, address.origin(), none) or { panic(err) }
+	document.set_scripting_enabled_by_embedder(false)
+	document.set_viewport_rect(dom.Rect{width: 1024, height: 768})
+	defer { document.finalize() }
+	mut runtime := browserjs.Runtime.create()
+	defer { runtime.close() }
+	mut app := BrowserApp{
+		document:                    document
+		js_runtime:                  runtime
+		background_resource_results: chan PreloadedResource{cap: 2}
+	}
+	mut threads := document.get_element_by_id('threads') or { panic('missing threads') }
+	threads.set_inner_html('<a href="thread/3"><img loading="lazy" alt="" id="thumb-3" class="thumb" width="20" height="10" src="//i.script-images.test/pol/3s.png"></a>')!
+	ready := app.request_script_inserted_images()
+	assert thumbnail_url in ready
+	assert thumbnail_url !in app.background_resource_pending
+	assert thumbnail_url !in app.script_image_requests
+	assert app.complete_script_inserted_images(ready)
+	thumbnail := document.get_element_by_id('thumb-3') or { panic('missing thumbnail') }
+	model := html.html_image_element_model_for_dom_element(unsafe { &dom.HTMLImageElement(thumbnail) })
+	assert model.complete()
+	assert model.natural_width() == 2
+	assert model.natural_height() == 1
 }
