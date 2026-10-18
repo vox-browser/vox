@@ -1575,15 +1575,7 @@ fn computed_background_image_layers(node &Node, element &dom.Element, computed &
 		mut resolved_url := ''
 		if image := effective_item.as_image() {
 			source := image.url_.url()
-			resolved_url = if base := base_url {
-				if parsed := dom.dom_url_parse(source, dom.URL{value: base}, '') {
-					parsed.to_string()
-				} else {
-					source
-				}
-			} else {
-				element.document().encoding_parse_and_serialize_url(source) or { source }
-			}
+			resolved_url = resolve_css_paint_image_url(node, source, base_url)
 		} else if gradient_source == none {
 			continue
 		}
