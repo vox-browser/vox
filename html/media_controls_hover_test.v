@@ -91,7 +91,7 @@ fn test_video_hover_events_follow_media_and_bar_targets_without_hiding_on_bar_ex
 	defer { controls.remove_event_listeners(); document.finalize() }
 	bar := controls.dom_.control_bar or { panic('Missing bar') }
 	bar_target := unsafe { &dom.EventTarget(bar.as_node()) }
-	assert controls.registered_event_listeners_.len == 22
+	assert controls.registered_event_listeners_.len == 24
 	for name in ['mouseenter', 'mousemove', 'mouseleave'] {
 		assert controls.registered_event_listeners_.filter(it.target == media.event_target() && it.event_name == name).len == 1
 	}

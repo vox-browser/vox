@@ -951,7 +951,11 @@ pub fn (mut controls MediaControls) create_shadow_tree() {
 				if class_name in ['fullscreen-icon', 'placeholder-circle'] && !is_video { continue }
 				tag_name := if class_name in ['mute-button', 'fullscreen-icon'] { 'button' } else { 'div' }
 				mut child := dom.create_element(document, tag_name, ns_html, none, none, false) or { continue }
-				child.set_attribute_value('class', if class_name == 'mute-button' { 'control-button mute-button' } else { class_name })
+				child.set_attribute_value('class', match class_name {
+					'mute-button' { 'control-button mute-button' }
+					'fullscreen-icon' { 'control-button fullscreen-button fullscreen-icon' }
+					else { class_name }
+				})
 				mut parent_node := if class_name == 'placeholder-circle' {
 					(controls.dom_.video_overlay or { panic('Missing video overlay') }).as_node()
 				} else { bar.as_node() }
@@ -1101,7 +1105,7 @@ pub fn (mut controls MediaControls) set_up_event_listeners() {
 				return true
 			})
 	}
-	if controls.dom_.fullscreen_icon != none {
+	if button := controls.dom_.fullscreen_icon {
 		if html_element := controls.media.associated_element_ {
 			element := unsafe { &dom.Element(html_element) }
 			controls.add_event_listener(unsafe { &dom.EventTarget(element.document()) }, 'fullscreenchange', .no,
@@ -1111,6 +1115,19 @@ pub fn (mut controls MediaControls) set_up_event_listeners() {
 					return true
 				})
 		}
+		controls.add_event_listener(unsafe { &dom.EventTarget(button.as_node()) }, 'click', .no,
+			fn [controls_pointer] (_ &dom.Event) bool {
+				mut controls := unsafe { &MediaControls(controls_pointer) }
+				controls.toggle_fullscreen()
+				return true
+			})
+		overlay := controls.dom_.video_overlay or { panic('Missing fullscreen video overlay') }
+		controls.add_event_listener(unsafe { &dom.EventTarget(overlay.as_node()) }, 'dblclick', .no,
+			fn [controls_pointer] (_ &dom.Event) bool {
+				mut controls := unsafe { &MediaControls(controls_pointer) }
+				controls.toggle_fullscreen()
+				return true
+			})
 	}
 	controls.set_up_hover_event_listeners()
 	controls.add_event_listener(controls.media.event_target(), 'keydown', .no,

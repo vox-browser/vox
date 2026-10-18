@@ -81,7 +81,7 @@ fn test_fullscreen_listener_uses_the_document_and_cleanup_preserves_unrelated_li
 	mut controls := MediaControls.create(media)
 	defer { controls.remove_event_listeners(); document.finalize() }
 	target := unsafe { &dom.EventTarget(document) }
-	assert controls.registered_event_listeners_.len == 22
+	assert controls.registered_event_listeners_.len == 24
 	assert controls.registered_event_listeners_.filter(it.event_name == 'fullscreenchange' && it.target == target).len == 1
 	probe := &FullscreenControlsProbe{}
 	outside := dom.IDLEventListener.create(&dom.CallbackType{
