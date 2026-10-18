@@ -75,6 +75,11 @@ fn construct_document_in_global(window &WindowModel, context &BrowsingContextMod
 				document.set_initial_visibility_state(model.system_visibility_state())
 			}
 		}
+		// This compact constructor activates the replacement directly. Perform
+		// the outgoing document's activation cleanup as history traversal does,
+		// before a reused Window is retargeted to the replacement document.
+		mut mutable_previous := unsafe { &dom.Document(previous) }
+		mutable_previous.did_stop_being_active_document_in_navigable()
 	}
 	_ = WindowModel.create_with_global(document, context, window)!
 	return document
