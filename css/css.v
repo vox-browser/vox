@@ -3856,7 +3856,8 @@ pub enum SizeType {
 pub struct Size {
 pub mut:
 	type_              SizeType
-	length_percentage_ ?LengthPercentage
+	// Keyword sizes retain no unused length/percentage owner.
+	length_percentage_ ?LengthPercentage = none
 }
 
 pub fn Size.new(type_ SizeType, length_percentage ?LengthPercentage) Size {
