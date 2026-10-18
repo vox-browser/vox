@@ -28,6 +28,41 @@ receipts are private under `Build/cnn-parity/`; the relevant receipts are
 `capture-ubo.json` and `frozen-native-ubo.json`. These are observed-stream
 results, not a claim of complete uBlock extension parity.
 
+## Current diagnostic progress
+
+The latest signed default-GC candidate uses **65,062,144,278 instructions** and
+has **6,053 differing pixels**, with a maximum channel error of 88, against the
+unchanged Brave reference. The original single Brave diagnostic uses
+43,604,350,994 instructions; its corresponding 15% target is approximately
+37.064 billion. These are single diagnostic runs, not the required seven-pair
+cohort, and no CNN performance success is credited.
+
+The implementation now skips unused fonts in collapsed whitespace contexts,
+connects TCP before allocating TLS state, initializes DOM JSON through the
+native engine API, and batches raw parser text without bypassing delimiters or
+stream boundaries. Rendering fixes retain eligible gradient stops, normalize
+invisible premultiplied RGB, snap SVG root paint origins, and round SVG
+background containers independently of tile edges. Remaining fractional SVG
+and image-sampling diagnostics keep their unchanged inputs and original Brave
+references under `Tests/Browser/Brave/diagnostic/`.
+
+Cold parallel filtering also exposed incomplete JSON metadata and interleaved
+audit writes. Separate conversion and log locks preserve engine serialization
+and complete request/header records. The latest actual native stream matches
+full uBO across 173 checks, 118 distinct requests and four blocked requests,
+with zero disagreements.
+
+Validation of the isolated source candidate passes a 22-file CSS/layout/HTML/
+network selection in both default and no-GC builds, all 27 exact Brave
+fixtures, eight exact SVG mutation guards, all 100 upstream AST comparisons,
+signing and native startup. Earlier failed invocations are retained and receive
+no wholesale pass credit. Browser JavaScript still runs on JavaScriptCore.
+The private receipts are `tcp-first-broad/direct-results.json`,
+`svg-background-broad-images/results.json`,
+`svg-background-upstream-guards-corrected.log`, and
+`svg-background-instructions/pair-1.vox.{json,ubo.json}`. The current side-by-side
+image is saved to `Build/cnn-parity/cnn-brave-vox-progress.png`.
+
 ## Reproduction
 
 Build the normal signed bundle with `sh build-prod-browser.sh`. Capture a new
