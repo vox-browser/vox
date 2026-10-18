@@ -1,5 +1,6 @@
 #import <Metal/Metal.h>
 #include "native_graphite_bridge.h"
+#include "native_graphite_raster_cache.h"
 #include "include/core/SkCanvas.h"
 #include "include/core/SkBlurTypes.h"
 #include "include/core/SkColorSpace.h"
@@ -32,6 +33,8 @@
 
 namespace {
 std::mutex gpu_mutex;
+VoxGraphiteRasterCache image_cache;
+VoxGraphiteRasterCache shape_cache(8 * 1024 * 1024);
 std::unique_ptr<skgpu::graphite::Context> gpu_context;
 bool gpu_context_attempted = false;
 skgpu::graphite::Context* context()
@@ -86,6 +89,8 @@ void vox_graphite_release_unused_graphics_memory()
 {
     if (!pthread_main_np()) return;
     std::lock_guard lock(gpu_mutex);
+    image_cache.clear();
+    shape_cache.clear();
     if (!gpu_context) return;
     // Draw wrappers already synchronously read their pixels. Submit/wait also
     // covers a previous early-return path before dropping unused cache refs.
@@ -154,6 +159,8 @@ int vox_graphite_draw_image_pixels(uint8_t* pixels, int width, int height,
         || !(image->source[2] > 0) || !(image->source[3] > 0)
         || !(image->destination[2] > 0) || !(image->destination[3] > 0)) return 0;
     std::lock_guard lock(gpu_mutex);
+    auto cached = image_cache.prepare(*image, width, height, pitch, has_background != 0, pixels);
+    if (cached.hit) return 1;
     auto* gpu = context();
     if (!gpu) return 0;
     auto recorder = gpu->makeRecorder();
@@ -287,7 +294,9 @@ int vox_graphite_draw_image_pixels(uint8_t* pixels, int width, int height,
     canvas->drawImageRect(texture, source_rect, rect(image->destination), sampling,
         &paint, whole_source && !image->nearest ? SkCanvas::kFast_SrcRectConstraint
                                                : SkCanvas::kStrict_SrcRectConstraint);
-    return read_pixels(gpu, recorder.get(), surface.get(), info, pixels, pitch);
+    int result = read_pixels(gpu, recorder.get(), surface.get(), info, pixels, pitch);
+    if (result) image_cache.finish(std::move(cached), pixels, pitch);
+    return result;
 }
 
 extern "C" __attribute__((visibility("default")))
@@ -297,6 +306,8 @@ int vox_graphite_draw_shape_pixels(uint8_t* pixels, int width, int height,
     if (!pixels || !shape || width <= 0 || height <= 0 || pitch <= 0
         || static_cast<size_t>(pitch) < static_cast<size_t>(width) * 4) return 0;
     std::lock_guard lock(gpu_mutex);
+    auto cached = shape_cache.prepare(*shape, width, height, pitch, has_background != 0, pixels);
+    if (cached.hit) return 1;
     auto* gpu = context();
     if (!gpu) return 0;
     auto recorder = gpu->makeRecorder();
@@ -343,7 +354,9 @@ int vox_graphite_draw_shape_pixels(uint8_t* pixels, int width, int height,
         paint.setStrokeWidth(std::max(0.0f, shape->thickness));
     }
     canvas->drawRRect(rounded_rect(shape->rect), paint);
-    return read_pixels(gpu, recorder.get(), surface.get(), info, pixels, pitch);
+    int result = read_pixels(gpu, recorder.get(), surface.get(), info, pixels, pitch);
+    if (result) shape_cache.finish(std::move(cached), pixels, pitch);
+    return result;
 }
 
 // Chromium draws SVG paths through its GPU rasterizer, whose multisampled
