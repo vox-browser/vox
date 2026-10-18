@@ -690,12 +690,14 @@ fn copy_used_box_model_to_dom_layout_node(mut placeholder dom.LayoutNode, used &
 	for size in grid_template_rows {
 		used_rows << size.to_double()
 	}
-	placeholder.used_grid_template_columns_ = used_columns
-	placeholder.used_grid_template_rows_ = used_rows
-	placeholder.used_grid_column_line_names_ = used.grid_column_line_names().clone()
-	placeholder.used_grid_row_line_names_ = used.grid_row_line_names().clone()
-	placeholder.used_grid_columns_are_subgrid_ = used.grid_columns_are_subgrid()
-	placeholder.used_grid_rows_are_subgrid_ = used.grid_rows_are_subgrid()
+	placeholder.set_used_grid_data(dom.LayoutGridData{
+		columns: used_columns
+		rows: used_rows
+		column_line_names: used.grid_column_line_names().clone()
+		row_line_names: used.grid_row_line_names().clone()
+		columns_are_subgrid: used.grid_columns_are_subgrid()
+		rows_are_subgrid: used.grid_rows_are_subgrid()
+	})
 }
 
 fn dom_pseudo_element_for_layout_node(pseudo_element ?css.PseudoElement) ?dom.PseudoElement {

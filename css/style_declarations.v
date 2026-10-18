@@ -1751,14 +1751,16 @@ pub fn (properties &CSSStyleProperties) style_value_for_computed_property(layout
 			return cssom_style_value_for_length_percentage_or_auto(inset.top())
 		}
 		.grid_template_columns {
-			if resolved := cssom_resolved_grid_template(layout_node.used_grid_template_columns_,
-				layout_node.used_grid_column_line_names_, layout_node.used_grid_columns_are_subgrid_) {
+			grid := layout_node.used_grid_data()
+			if resolved := cssom_resolved_grid_template(grid.columns,
+				grid.column_line_names, grid.columns_are_subgrid) {
 				return resolved
 			}
 		}
 		.grid_template_rows {
-			if resolved := cssom_resolved_grid_template(layout_node.used_grid_template_rows_,
-				layout_node.used_grid_row_line_names_, layout_node.used_grid_rows_are_subgrid_) {
+			grid := layout_node.used_grid_data()
+			if resolved := cssom_resolved_grid_template(grid.rows,
+				grid.row_line_names, grid.rows_are_subgrid) {
 				return resolved
 			}
 		}

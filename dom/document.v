@@ -1439,12 +1439,7 @@ pub mut:
 	inset_left_                                     f64
 	inset_right_                                    f64
 	inset_top_                                      f64
-	used_grid_template_columns_                     []f64
-	used_grid_template_rows_                        []f64
-	used_grid_column_line_names_                    [][]string
-	used_grid_row_line_names_                       [][]string
-	used_grid_columns_are_subgrid_                  bool
-	used_grid_rows_are_subgrid_                     bool
+	used_grid_data_                                &LayoutGridData = unsafe { nil }
 	inset_bottom_                                   f64
 	// dom<->layout bridge: opaque handle to the real layout.Node this placeholder mirrors (dom can't
 	// name the layout type). The layout module attaches these via attach_layout_nodes. See layout/dom_layout_bridge.v.
@@ -1458,6 +1453,36 @@ pub mut:
 	invalidate_text_for_rendering_callback LayoutInvalidateTextForRenderingCallback = unsafe { nil }
 	refresh_empty_text_fragment_callback fn (voidptr) bool = unsafe { nil }
 	view_transition_properties_callback fn (voidptr) map[string]string = unsafe { nil }
+}
+
+// The DOM/layout boundary needs resolved tracks only for grid containers.
+// Publish a replacement record so value copies of LayoutNode retain their
+// previous array headers, just as they did with inline fields.
+pub struct LayoutGridData {
+pub:
+	columns             []f64
+	rows                []f64
+	column_line_names   [][]string
+	row_line_names      [][]string
+	columns_are_subgrid bool
+	rows_are_subgrid    bool
+}
+
+pub fn (n &LayoutNode) used_grid_data() LayoutGridData {
+	if n.used_grid_data_ == unsafe { nil } {
+		return LayoutGridData{}
+	}
+	return *n.used_grid_data_
+}
+
+pub fn (mut n LayoutNode) set_used_grid_data(data LayoutGridData) {
+	if data.columns.len == 0 && data.rows.len == 0
+		&& data.column_line_names.len == 0 && data.row_line_names.len == 0
+		&& !data.columns_are_subgrid && !data.rows_are_subgrid {
+		n.used_grid_data_ = unsafe { nil }
+		return
+	}
+	n.used_grid_data_ = &LayoutGridData{...data}
 }
 
 pub type SVGRelayoutCallback = fn (&SVGSVGBox)
