@@ -15468,13 +15468,15 @@ __global (
 )
 
 fn begin_parsed_value_cache() {
-	css_parsed_value_cache.clear()
+	// map.clear() leaves values in its scanned backing storage. Detach the
+	// previous traversal's parsed values, including any retained image owners.
+	css_parsed_value_cache = map[int]map[string]StyleValue{}
 	css_parsed_value_cache_enabled = true
 }
 
 fn end_parsed_value_cache() {
 	css_parsed_value_cache_enabled = false
-	css_parsed_value_cache.clear()
+	css_parsed_value_cache = map[int]map[string]StyleValue{}
 }
 
 pub fn parse_css_value_logic(property_id PropertyID, text string) ?StyleValue {
