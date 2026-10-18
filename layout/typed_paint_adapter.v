@@ -59,6 +59,10 @@ fn is_fully_truncated_inline_fragment(node &Node, state &LayoutState) bool {
 }
 
 fn paint_cumulative_offset(node &Node, state &LayoutState, used &UsedValues) css.CSSPixelPoint {
+	session := state.paint_coordinates_
+	if session != unsafe { nil } {
+		if value := cached_paint_coordinate(node, state, used, session, 0) { return value.position }
+	}
 	mut offset := css.CSSPixelPoint{}
 	mut current_node := node
 	mut current_used := used
@@ -2662,6 +2666,8 @@ fn paintable_box_paint_background(mut root_box BlockBox, root_layout_node &Node,
 // both must record and hit-test the exact same paint-order tree.
 fn renderer_box_from_document_layout_result(result &DocumentLayoutResult, viewport_width f64, viewport_height f64) BlockBox {
 	layout_completed := time.sys_mono_now()
+	coordinates := begin_paint_coordinate_session(result.state)
+	defer { coordinates.finish() }
 	root_layout_node := result.root.first_child() or { return BlockBox{} }
 	svg_sources := begin_paint_svg_source_session(root_layout_node)
 	defer { svg_sources.finish() }

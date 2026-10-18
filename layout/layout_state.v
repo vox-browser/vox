@@ -1138,6 +1138,7 @@ mut:
 	block_paint_owners_ map[u64]&RetainedBlockLayout
 	inline_layouts_ map[u64]&RetainedInlineLayout
 	previous_inline_layouts_ map[u64]&RetainedInlineLayout
+	paint_coordinates_ &PaintCoordinateSession = unsafe { nil }
 }
 
 pub fn LayoutState.new() &LayoutState {

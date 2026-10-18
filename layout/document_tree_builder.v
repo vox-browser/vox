@@ -790,6 +790,10 @@ fn finish_document_layout(document &dom.Document, root &Node, viewport_width f64
 	timing_checkpoint = layout_timing_checkpoint('      absolute_descendants', timing_checkpoint)
 	resolve_relative_insets(mut state, root)
 	timing_checkpoint = layout_timing_checkpoint('      relative_insets', timing_checkpoint)
+	// Offsets and relative insets are final. Overflow measurement and DOM
+	// projection read this geometry without changing the containing-block chain.
+	coordinates := begin_paint_coordinate_session(state)
+	defer { coordinates.finish() }
 	measure_document_scrollable_overflow(mut state, root)
 	// The new cache retains only contexts present in this committed pass. Drop
 	// the lookup owner for removed or otherwise ineligible previous contexts.
