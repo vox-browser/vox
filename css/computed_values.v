@@ -616,9 +616,9 @@ pub fn resolve_computed_values(style &ComputedProperties) &ComputedValues {
 	values.set_isolation(style.isolation())
 	values.set_mix_blend_mode(style.mix_blend_mode())
 	values.set_mask_type(style.mask_type())
-	values.ensure_computed_layout_cache().computed_values_mask_ = computed_values_mask_reference(style)
-	values.ensure_computed_layout_cache().computed_values_mask_image_ = computed_values_mask_image(style)
-	values.ensure_computed_layout_cache().computed_values_clip_path_ = computed_values_clip_path(style)
+	values.set_cached_mask(computed_values_mask_reference(style))
+	values.set_cached_mask_image(computed_values_mask_image(style))
+	values.set_cached_clip_path(computed_values_clip_path(style))
 	values.set_stop_opacity(style.stop_opacity())
 	values.set_fill_opacity(style.fill_opacity())
 	values.set_stroke_linecap(style.stroke_linecap())
@@ -1177,15 +1177,15 @@ pub fn (values &ComputedValues) grid_auto_rows() GridTrackSizeList {
 }
 
 pub fn (values &ComputedValues) grid_template_columns() GridTrackSizeList {
-	return values.computed_layout_cache().computed_values_grid_template_columns_
+	return values.computed_layout_cache().rare_data().computed_values_grid_template_columns_
 }
 
 pub fn (values &ComputedValues) grid_template_rows() GridTrackSizeList {
-	return values.computed_layout_cache().computed_values_grid_template_rows_
+	return values.computed_layout_cache().rare_data().computed_values_grid_template_rows_
 }
 
 pub fn (values &ComputedValues) grid_template_areas() GridTemplateAreas {
-	return values.computed_layout_cache().computed_values_grid_template_areas_
+	return values.computed_layout_cache().rare_data().computed_values_grid_template_areas_
 }
 
 pub fn (values &ComputedValues) grid_auto_flow() GridAutoFlow {
@@ -1316,15 +1316,15 @@ pub fn (values &ComputedValues) mask_type() MaskType {
 }
 
 pub fn (values &ComputedValues) mask() ?MaskReference {
-	return values.computed_layout_cache().computed_values_mask_
+	return values.computed_layout_cache().rare_data().computed_values_mask_
 }
 
 pub fn (values &ComputedValues) mask_image() ?ImageStyleValue {
-	return values.computed_layout_cache().computed_values_mask_image_
+	return values.computed_layout_cache().rare_data().computed_values_mask_image_
 }
 
 pub fn (values &ComputedValues) clip_path() ?ClipPathReference {
-	return values.computed_layout_cache().computed_values_clip_path_
+	return values.computed_layout_cache().rare_data().computed_values_clip_path_
 }
 
 pub fn (values &ComputedValues) stop_opacity() f32 {
@@ -1472,43 +1472,43 @@ pub fn (values &ComputedValues) letter_spacing() CSSPixels {
 }
 
 pub fn (values &ComputedValues) backdrop_filter() Filter {
-	return values.computed_layout_cache().computed_values_backdrop_filter_
+	return values.computed_layout_cache().rare_data().computed_values_backdrop_filter_
 }
 
 pub fn (values &ComputedValues) filter() Filter {
-	return values.computed_layout_cache().computed_values_filter_
+	return values.computed_layout_cache().rare_data().computed_values_filter_
 }
 
 pub fn (values &ComputedValues) rotate() ?TransformationData {
-	return values.computed_layout_cache().computed_values_rotate_
+	return values.computed_layout_cache().rare_data().computed_values_rotate_
 }
 
 pub fn (values &ComputedValues) scale() ?TransformationData {
-	return values.computed_layout_cache().computed_values_scale_
+	return values.computed_layout_cache().rare_data().computed_values_scale_
 }
 
 pub fn (values &ComputedValues) perspective() ?CSSPixels {
-	return values.computed_layout_cache().computed_values_perspective_
+	return values.computed_layout_cache().rare_data().computed_values_perspective_
 }
 
 pub fn (values &ComputedValues) perspective_origin() Position {
-	return values.computed_layout_cache().computed_values_perspective_origin_
+	return values.computed_layout_cache().rare_data().computed_values_perspective_origin_
 }
 
 pub fn (values &ComputedValues) transformations() []TransformationData {
-	return values.computed_layout_cache().computed_values_transformations_
+	return values.computed_layout_cache().rare_data().computed_values_transformations_
 }
 
 pub fn (values &ComputedValues) transform_box() TransformBox {
-	return values.computed_layout_cache().computed_values_transform_box_
+	return values.computed_layout_cache().rare_data().computed_values_transform_box_
 }
 
 pub fn (values &ComputedValues) transform_origin() TransformOrigin {
-	return values.computed_layout_cache().computed_values_transform_origin_
+	return values.computed_layout_cache().rare_data().computed_values_transform_origin_
 }
 
 pub fn (values &ComputedValues) transform_style() TransformStyle {
-	return values.computed_layout_cache().computed_values_transform_style_
+	return values.computed_layout_cache().rare_data().computed_values_transform_style_
 }
 
 pub fn (values &ComputedValues) backface_visibility() BackfaceVisibility {
@@ -1516,7 +1516,7 @@ pub fn (values &ComputedValues) backface_visibility() BackfaceVisibility {
 }
 
 pub fn (values &ComputedValues) translate() ?TransformationData {
-	return values.computed_layout_cache().computed_values_translate_
+	return values.computed_layout_cache().rare_data().computed_values_translate_
 }
 
 pub fn (values &ComputedValues) quotes() QuotesData {
@@ -1580,15 +1580,15 @@ pub fn (values &ComputedValues) stroke_width() LengthPercentage {
 }
 
 pub fn (values &ComputedValues) cx() LengthPercentage {
-	return values.computed_layout_cache().computed_values_cx_
+	return values.computed_layout_cache().rare_data().computed_values_cx_
 }
 
 pub fn (values &ComputedValues) cy() LengthPercentage {
-	return values.computed_layout_cache().computed_values_cy_
+	return values.computed_layout_cache().rare_data().computed_values_cy_
 }
 
 pub fn (values &ComputedValues) r() LengthPercentage {
-	return values.computed_layout_cache().computed_values_r_
+	return values.computed_layout_cache().rare_data().computed_values_r_
 }
 
 pub fn (values &ComputedValues) rx() LengthPercentageOrAuto {
@@ -1600,11 +1600,11 @@ pub fn (values &ComputedValues) ry() LengthPercentageOrAuto {
 }
 
 pub fn (values &ComputedValues) x() LengthPercentage {
-	return values.computed_layout_cache().computed_values_x_
+	return values.computed_layout_cache().rare_data().computed_values_x_
 }
 
 pub fn (values &ComputedValues) y() LengthPercentage {
-	return values.computed_layout_cache().computed_values_y_
+	return values.computed_layout_cache().rare_data().computed_values_y_
 }
 
 pub fn (values &ComputedValues) column_count() ?int {
@@ -2112,15 +2112,21 @@ pub fn (mut values MutableComputedValues) set_grid_auto_rows(value GridTrackSize
 }
 
 pub fn (mut values MutableComputedValues) set_grid_template_columns(value GridTrackSizeList) {
-	values.ensure_computed_layout_cache().computed_values_grid_template_columns_ = value
+	mut cache := values.ensure_computed_layout_cache()
+	if cache.rare_data_ == unsafe { nil } && value == initial_computed_layout_rare_data.computed_values_grid_template_columns_ { return }
+	cache.ensure_rare_data().computed_values_grid_template_columns_ = value
 }
 
 pub fn (mut values MutableComputedValues) set_grid_template_rows(value GridTrackSizeList) {
-	values.ensure_computed_layout_cache().computed_values_grid_template_rows_ = value
+	mut cache := values.ensure_computed_layout_cache()
+	if cache.rare_data_ == unsafe { nil } && value == initial_computed_layout_rare_data.computed_values_grid_template_rows_ { return }
+	cache.ensure_rare_data().computed_values_grid_template_rows_ = value
 }
 
 pub fn (mut values MutableComputedValues) set_grid_template_areas(value GridTemplateAreas) {
-	values.ensure_computed_layout_cache().computed_values_grid_template_areas_ = value
+	mut cache := values.ensure_computed_layout_cache()
+	if cache.rare_data_ == unsafe { nil } && value == initial_computed_layout_rare_data.computed_values_grid_template_areas_ { return }
+	cache.ensure_rare_data().computed_values_grid_template_areas_ = value
 }
 
 pub fn (mut values MutableComputedValues) set_grid_auto_flow(value GridAutoFlow) {
@@ -2244,15 +2250,15 @@ pub fn (mut values MutableComputedValues) set_mask_type(value MaskType) {
 }
 
 pub fn (mut values MutableComputedValues) set_mask(value MaskReference) {
-	values.ensure_computed_layout_cache().computed_values_mask_ = value
+	values.set_cached_mask(value)
 }
 
 pub fn (mut values MutableComputedValues) set_mask_image(value ImageStyleValue) {
-	values.ensure_computed_layout_cache().computed_values_mask_image_ = value
+	values.set_cached_mask_image(value)
 }
 
 pub fn (mut values MutableComputedValues) set_clip_path(value ClipPathReference) {
-	values.ensure_computed_layout_cache().computed_values_clip_path_ = value
+	values.set_cached_clip_path(value)
 }
 
 pub fn (mut values MutableComputedValues) set_stop_opacity(value f32) {
@@ -2400,43 +2406,63 @@ pub fn (mut values MutableComputedValues) set_letter_spacing(value CSSPixels) {
 }
 
 pub fn (mut values MutableComputedValues) set_backdrop_filter(value Filter) {
-	values.ensure_computed_layout_cache().computed_values_backdrop_filter_ = value
+	mut cache := values.ensure_computed_layout_cache()
+	if cache.rare_data_ == unsafe { nil } && value == initial_computed_layout_rare_data.computed_values_backdrop_filter_ { return }
+	cache.ensure_rare_data().computed_values_backdrop_filter_ = value
 }
 
 pub fn (mut values MutableComputedValues) set_filter(value Filter) {
-	values.ensure_computed_layout_cache().computed_values_filter_ = value
+	mut cache := values.ensure_computed_layout_cache()
+	if cache.rare_data_ == unsafe { nil } && value == initial_computed_layout_rare_data.computed_values_filter_ { return }
+	cache.ensure_rare_data().computed_values_filter_ = value
 }
 
 pub fn (mut values MutableComputedValues) set_rotate(value ?TransformationData) {
-	values.ensure_computed_layout_cache().computed_values_rotate_ = value
+	mut cache := values.ensure_computed_layout_cache()
+	if cache.rare_data_ == unsafe { nil } && value == initial_computed_layout_rare_data.computed_values_rotate_ { return }
+	cache.ensure_rare_data().computed_values_rotate_ = value
 }
 
 pub fn (mut values MutableComputedValues) set_scale(value ?TransformationData) {
-	values.ensure_computed_layout_cache().computed_values_scale_ = value
+	mut cache := values.ensure_computed_layout_cache()
+	if cache.rare_data_ == unsafe { nil } && value == initial_computed_layout_rare_data.computed_values_scale_ { return }
+	cache.ensure_rare_data().computed_values_scale_ = value
 }
 
 pub fn (mut values MutableComputedValues) set_perspective(value ?CSSPixels) {
-	values.ensure_computed_layout_cache().computed_values_perspective_ = value
+	mut cache := values.ensure_computed_layout_cache()
+	if cache.rare_data_ == unsafe { nil } && value == initial_computed_layout_rare_data.computed_values_perspective_ { return }
+	cache.ensure_rare_data().computed_values_perspective_ = value
 }
 
 pub fn (mut values MutableComputedValues) set_perspective_origin(value Position) {
-	values.ensure_computed_layout_cache().computed_values_perspective_origin_ = value
+	mut cache := values.ensure_computed_layout_cache()
+	if cache.rare_data_ == unsafe { nil } && value == initial_computed_layout_rare_data.computed_values_perspective_origin_ { return }
+	cache.ensure_rare_data().computed_values_perspective_origin_ = value
 }
 
 pub fn (mut values MutableComputedValues) set_transformations(value []TransformationData) {
-	values.ensure_computed_layout_cache().computed_values_transformations_ = value
+	mut cache := values.ensure_computed_layout_cache()
+	if cache.rare_data_ == unsafe { nil } && value == initial_computed_layout_rare_data.computed_values_transformations_ { return }
+	cache.ensure_rare_data().computed_values_transformations_ = value
 }
 
 pub fn (mut values MutableComputedValues) set_transform_box(value TransformBox) {
-	values.ensure_computed_layout_cache().computed_values_transform_box_ = value
+	mut cache := values.ensure_computed_layout_cache()
+	if cache.rare_data_ == unsafe { nil } && value == initial_computed_layout_rare_data.computed_values_transform_box_ { return }
+	cache.ensure_rare_data().computed_values_transform_box_ = value
 }
 
 pub fn (mut values MutableComputedValues) set_transform_origin(value TransformOrigin) {
-	values.ensure_computed_layout_cache().computed_values_transform_origin_ = value
+	mut cache := values.ensure_computed_layout_cache()
+	if cache.rare_data_ == unsafe { nil } && value == initial_computed_layout_rare_data.computed_values_transform_origin_ { return }
+	cache.ensure_rare_data().computed_values_transform_origin_ = value
 }
 
 pub fn (mut values MutableComputedValues) set_transform_style(value TransformStyle) {
-	values.ensure_computed_layout_cache().computed_values_transform_style_ = value
+	mut cache := values.ensure_computed_layout_cache()
+	if cache.rare_data_ == unsafe { nil } && value == initial_computed_layout_rare_data.computed_values_transform_style_ { return }
+	cache.ensure_rare_data().computed_values_transform_style_ = value
 }
 
 pub fn (mut values MutableComputedValues) set_backface_visibility(value BackfaceVisibility) {
@@ -2444,7 +2470,9 @@ pub fn (mut values MutableComputedValues) set_backface_visibility(value Backface
 }
 
 pub fn (mut values MutableComputedValues) set_translate(value ?TransformationData) {
-	values.ensure_computed_layout_cache().computed_values_translate_ = value
+	mut cache := values.ensure_computed_layout_cache()
+	if cache.rare_data_ == unsafe { nil } && value == initial_computed_layout_rare_data.computed_values_translate_ { return }
+	cache.ensure_rare_data().computed_values_translate_ = value
 }
 
 pub fn (mut values MutableComputedValues) set_quotes(value QuotesData) {
@@ -2508,15 +2536,21 @@ pub fn (mut values MutableComputedValues) set_stroke_width(value LengthPercentag
 }
 
 pub fn (mut values MutableComputedValues) set_cx(value LengthPercentage) {
-	values.ensure_computed_layout_cache().computed_values_cx_ = value
+	mut cache := values.ensure_computed_layout_cache()
+	if cache.rare_data_ == unsafe { nil } && value == initial_computed_layout_rare_data.computed_values_cx_ { return }
+	cache.ensure_rare_data().computed_values_cx_ = value
 }
 
 pub fn (mut values MutableComputedValues) set_cy(value LengthPercentage) {
-	values.ensure_computed_layout_cache().computed_values_cy_ = value
+	mut cache := values.ensure_computed_layout_cache()
+	if cache.rare_data_ == unsafe { nil } && value == initial_computed_layout_rare_data.computed_values_cy_ { return }
+	cache.ensure_rare_data().computed_values_cy_ = value
 }
 
 pub fn (mut values MutableComputedValues) set_r(value LengthPercentage) {
-	values.ensure_computed_layout_cache().computed_values_r_ = value
+	mut cache := values.ensure_computed_layout_cache()
+	if cache.rare_data_ == unsafe { nil } && value == initial_computed_layout_rare_data.computed_values_r_ { return }
+	cache.ensure_rare_data().computed_values_r_ = value
 }
 
 pub fn (mut values MutableComputedValues) set_rx(value LengthPercentageOrAuto) {
@@ -2528,11 +2562,15 @@ pub fn (mut values MutableComputedValues) set_ry(value LengthPercentageOrAuto) {
 }
 
 pub fn (mut values MutableComputedValues) set_x(value LengthPercentage) {
-	values.ensure_computed_layout_cache().computed_values_x_ = value
+	mut cache := values.ensure_computed_layout_cache()
+	if cache.rare_data_ == unsafe { nil } && value == initial_computed_layout_rare_data.computed_values_x_ { return }
+	cache.ensure_rare_data().computed_values_x_ = value
 }
 
 pub fn (mut values MutableComputedValues) set_y(value LengthPercentage) {
-	values.ensure_computed_layout_cache().computed_values_y_ = value
+	mut cache := values.ensure_computed_layout_cache()
+	if cache.rare_data_ == unsafe { nil } && value == initial_computed_layout_rare_data.computed_values_y_ { return }
+	cache.ensure_rare_data().computed_values_y_ = value
 }
 
 pub fn (mut values MutableComputedValues) set_column_count(value ?int) {
@@ -2613,4 +2651,22 @@ pub fn (mut values MutableComputedValues) set_counter_reset(value []CounterData)
 
 pub fn (mut values MutableComputedValues) set_counter_set(value []CounterData) {
 	values.ensure_computed_layout_cache().computed_values_counter_set_ = value.clone()
+}
+
+fn (mut values MutableComputedValues) set_cached_mask(value ?MaskReference) {
+	mut cache := values.ensure_computed_layout_cache()
+	if cache.rare_data_ == unsafe { nil } && value == initial_computed_layout_rare_data.computed_values_mask_ { return }
+	cache.ensure_rare_data().computed_values_mask_ = value
+}
+
+fn (mut values MutableComputedValues) set_cached_mask_image(value ?ImageStyleValue) {
+	mut cache := values.ensure_computed_layout_cache()
+	if cache.rare_data_ == unsafe { nil } && value == initial_computed_layout_rare_data.computed_values_mask_image_ { return }
+	cache.ensure_rare_data().computed_values_mask_image_ = value
+}
+
+fn (mut values MutableComputedValues) set_cached_clip_path(value ?ClipPathReference) {
+	mut cache := values.ensure_computed_layout_cache()
+	if cache.rare_data_ == unsafe { nil } && value == initial_computed_layout_rare_data.computed_values_clip_path_ { return }
+	cache.ensure_rare_data().computed_values_clip_path_ = value
 }

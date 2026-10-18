@@ -64,7 +64,7 @@ fn test_unmaterialized_layout_cache_defaults_remain_readable_after_collection() 
 		assert next.computed_layout_cache_ == unsafe { nil }
 		assert voidptr(next.computed_layout_cache()) == voidptr(initial)
 		assert next.computed_layout_cache().computed_values_margin_ == initial.computed_values_margin_
-		assert next.computed_layout_cache().computed_values_rotate_ == none
+		assert next.computed_layout_cache().rare_data().computed_values_rotate_ == none
 	}
 }
 

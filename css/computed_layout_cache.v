@@ -75,9 +75,6 @@ mut:
 	computed_values_row_gap_                       GapValue
 	computed_values_grid_auto_columns_             GridTrackSizeList
 	computed_values_grid_auto_rows_                GridTrackSizeList
-	computed_values_grid_template_columns_         GridTrackSizeList
-	computed_values_grid_template_rows_            GridTrackSizeList
-	computed_values_grid_template_areas_           GridTemplateAreas
 	computed_values_grid_auto_flow_                GridAutoFlow
 	computed_values_appearance_                    Appearance
 	computed_values_opacity_                       f32
@@ -142,18 +139,7 @@ mut:
 	computed_values_white_space_trim_              WhiteSpaceTrimData
 	computed_values_word_spacing_                  CSSPixels
 	computed_values_letter_spacing_                CSSPixels
-	computed_values_backdrop_filter_               Filter
-	computed_values_filter_                        Filter
-	computed_values_rotate_                        ?TransformationData
-	computed_values_scale_                         ?TransformationData
-	computed_values_perspective_                   ?CSSPixels
-	computed_values_perspective_origin_            Position
-	computed_values_transformations_               []TransformationData
-	computed_values_transform_box_                 TransformBox
-	computed_values_transform_origin_              TransformOrigin
-	computed_values_transform_style_               TransformStyle
 	computed_values_backface_visibility_           BackfaceVisibility
-	computed_values_translate_                     ?TransformationData
 	computed_values_quotes_                        QuotesData
 	computed_values_dominant_baseline_             ?BaselineMetric
 	computed_values_container_name_                []string
@@ -169,13 +155,8 @@ mut:
 	computed_values_will_change_                   WillChange
 	computed_values_stroke_dashoffset_             LengthPercentage
 	computed_values_stroke_width_                  LengthPercentage
-	computed_values_cx_                            LengthPercentage
-	computed_values_cy_                            LengthPercentage
-	computed_values_r_                             LengthPercentage
 	computed_values_rx_                            LengthPercentageOrAuto
 	computed_values_ry_                            LengthPercentageOrAuto
-	computed_values_x_                             LengthPercentage
-	computed_values_y_                             LengthPercentage
 	computed_values_column_count_                  ?int
 	computed_values_column_width_                  Size
 	computed_values_column_height_                 Size
@@ -190,15 +171,14 @@ mut:
 	computed_values_outline_color_                 Color = Color{0, 0, 0, 255}
 	computed_values_fill_                          ?SVGPaint
 	computed_values_stroke_                        ?SVGPaint
-	computed_values_mask_                          ?MaskReference
-	computed_values_mask_image_                    ?ImageStyleValue
-	computed_values_clip_path_                     ?ClipPathReference
 	computed_values_text_shadow_                   []ShadowData
 	computed_values_box_shadow_                    []ShadowData
 	computed_values_scrollbar_color_               ScrollbarColorData
 	computed_values_counter_increment_             []CounterData
 	computed_values_counter_reset_                 []CounterData
 	computed_values_counter_set_                   []CounterData
+	rare_data_ &ComputedLayoutRareData = unsafe { nil }
+	rare_data_writable_ bool
 	resolution_provenance &ComputedGeometryProvenance = unsafe { nil }
 	document_resolution_owner &dom.Document = unsafe { nil }
 	writable_owner_identity                        u64
@@ -234,6 +214,7 @@ fn (mut c ComputedProperties) ensure_computed_layout_cache() &ComputedLayoutCach
 	c.computed_layout_cache_ = &ComputedLayoutCache{
 		...previous
 		resolution_provenance: unsafe { nil }
+		rare_data_writable_: false
 		writable_owner_identity: 0
 	}
 	return c.computed_layout_cache_
@@ -248,11 +229,15 @@ fn (mut c ComputedProperties) begin_computed_layout_cache_write() bool {
 	previous := c.computed_layout_cache()
 	c.computed_layout_cache_ = &ComputedLayoutCache{
 		...previous
+		rare_data_writable_: false
 		writable_owner_identity: identity
 	}
 	return true
 }
 
 fn (mut c ComputedProperties) finish_computed_layout_cache_write(owns_scope bool) {
-	if owns_scope { c.computed_layout_cache_.writable_owner_identity = 0 }
+	if owns_scope {
+		c.computed_layout_cache_.writable_owner_identity = 0
+		c.computed_layout_cache_.rare_data_writable_ = false
+	}
 }

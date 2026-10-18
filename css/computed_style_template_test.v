@@ -44,7 +44,7 @@ fn test_resolving_one_initial_style_does_not_change_another_or_the_template() {
 	assert second.root_font_size_px_ == 16
 	assert second.root_line_height_px_ == 19.2
 	assert second.cached_computed_font_list_ == none
-	assert second.computed_layout_cache().computed_values_rotate_ == none
+	assert second.computed_layout_cache().rare_data().computed_values_rotate_ == none
 	assert second.computed_values_content_ == none
 }
 
@@ -58,7 +58,7 @@ fn test_initial_style_template_retains_nested_defaults_across_collection() {
 		assert next.computed_layout_cache().computed_values_stroke_width_ == first.computed_layout_cache().computed_values_stroke_width_
 		assert next.computed_values_list_style_type_.counter_style == none
 		assert next.computed_layout_cache().computed_values_fill_ == none
-		assert next.computed_layout_cache().computed_values_mask_ == none
-		assert next.computed_layout_cache().computed_values_clip_path_ == none
+		assert next.computed_layout_cache().rare_data().computed_values_mask_ == none
+		assert next.computed_layout_cache().rare_data().computed_values_clip_path_ == none
 	}
 }
