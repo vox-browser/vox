@@ -3185,7 +3185,14 @@ fn (mut app BrowserApp) dispatch_javascript_event(name string, element &dom.Elem
 		$if gcboehm ? { C.GC_reachable_here(destination.str) }
 	}
 	app.js_runtime.evaluate_host('__ladybirdClearLogs()') or {}
-	app.relayout(app.viewport_width, app.viewport_height + app.chrome_height())
+	// Read-only input listeners need no cosmetic-filter or rendering pass.
+	// Keep effects flushed by synchronous queries and already-recorded native
+	// paint, just as the asynchronous callback path does.
+	replayed_effects := app.js_runtime.take_document_replay_effects()
+	if replayed_effects || app.document.needs_style_update_after_layout()
+		|| !app.document.layout_is_up_to_date() || app.javascript_tasks_have_unadopted_paint() {
+		app.relayout(app.viewport_width, app.viewport_height + app.chrome_height())
+	}
 	if destination != '' {
 		app.navigate(resolve_document_reference(destination, app.address), true)
 		// A script navigation also consumes the pending link default action

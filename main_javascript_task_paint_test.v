@@ -22,6 +22,52 @@ fn javascript_task_paint_fixture(markup string) (&BrowserApp, &browserjs.Runtime
 	return app, runtime, document
 }
 
+fn test_read_only_input_listener_keeps_adopted_paint_without_cosmetic_refresh() {
+	$if !darwin { return }
+	mut app, mut runtime, mut document := javascript_task_paint_fixture('<!doctype html><div id="target" style="width:30px;height:20px;background:green" onclick="getComputedStyle(this).getPropertyValue(\'width\');console.log(\'read-only input\')"></div>')
+	defer { runtime.close(); document.finalize() }
+	target := document.get_element_by_id('target')?
+	paint := document.cached_display_list()?
+	commands := app.paint_commands.data
+	for _ in 0 .. 2 {
+		assert !app.dispatch_javascript_event('mousedown', target)
+		assert !app.dispatch_javascript_event('click', target)
+		assert runtime.evaluate_host('taskPaintFilterRuns')! == '0'
+		assert voidptr(document.cached_display_list()?) == voidptr(paint)
+		assert app.paint_commands.data == commands
+	}
+	assert app.js_messages == ['read-only input', 'read-only input']
+}
+
+fn test_input_listener_query_flushed_mutation_still_refreshes_and_adopts_geometry() {
+	$if !darwin { return }
+	mut app, mut runtime, mut document := javascript_task_paint_fixture('<!doctype html><style>#target{width:30px;height:20px;background:green}#target.changed{width:80px;background:rgb(81 82 83)}</style><div id="target" onclick="this.className=\'changed\';getComputedStyle(this).getPropertyValue(\'width\')"></div>')
+	defer { runtime.close(); document.finalize() }
+	target := document.get_element_by_id('target')?
+	assert !app.dispatch_javascript_event('click', target)
+	assert target.get_attribute_value('class') == 'changed'
+	assert runtime.evaluate_host('taskPaintFilterRuns')! == '1'
+	box := app.root_box.find_box(i64(target.as_node().unique_id()))?
+	assert box.border_box().width == 80
+	assert app.paint_commands.any(it.color == 'rgb(81 82 83)')
+}
+
+fn test_input_listener_adopts_native_paint_recorded_before_dispatch_finishes() {
+	$if !darwin { return }
+	mut app, mut runtime, mut document := javascript_task_paint_fixture('<!doctype html><div id="target" style="width:30px;height:20px;background:green" onclick="nativeInputPaint(\'\')"></div>')
+	defer { runtime.close(); document.finalize() }
+	mut target := document.get_element_by_id('target')?
+	runtime.define_host_function('nativeInputPaint', fn [mut document, mut target] (_ string) !string {
+		target.set_attribute_value('style', 'width:80px;height:20px;background:rgb(81 82 83)')
+		document.update_layout(.debugging)
+		_ = document.record_display_list() or { return error('missing synchronous paint') }
+		return ''
+	})!
+	assert !app.dispatch_javascript_event('click', target)
+	assert app.paint_commands.any(it.color == 'rgb(81 82 83)')
+	assert !app.javascript_tasks_have_unadopted_paint()
+}
+
 fn run_javascript_task_paint_timer(runtime &browserjs.Runtime, source string) {
 	runtime.evaluate_host('globalThis.taskPaintTimerDone=false;setTimeout(()=>{try{${source}}finally{taskPaintTimerDone=true}},1)') or { panic(err) }
 	deadline := time.sys_mono_now() + 2_000_000_000
