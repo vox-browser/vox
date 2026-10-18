@@ -6650,10 +6650,7 @@ fn (mut app BrowserApp) draw() {
 		app.relayout(window.width, window.height)
 	}
 	app.advance_document_animations(window.width, content_viewport_height)
-	if app.screenshot_path != '' && !app.screenshot_scroll_applied {
-		app.screenshot_scroll_applied = true
-		app.set_scroll_y(f64(app.screenshot_scroll_y), window.height)
-	}
+	app.apply_screenshot_scroll_if_ready(window.height)
 	app.finish_frame_preparation()
 	// Preparation can replace a scripted or absent document with an HTML/CSS
 	// page. Keep its compact policy through native replay and chrome drawing.
