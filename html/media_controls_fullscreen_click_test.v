@@ -59,16 +59,18 @@ fn fullscreen_click_send(element &dom.Element, name string, cancelable bool, bub
 }
 
 fn fullscreen_click_icon(controls &MediaControls, active bool) {
-	mut button := controls.dom_.fullscreen_icon or { panic('Missing fullscreen click button') }
+	mut button := controls.dom_.fullscreen_button or { panic('Missing fullscreen click button') }
+	mut icon := controls.dom_.fullscreen_icon or { panic('Missing fullscreen click icon') }
 	assert button.is_html_element() && button.local_name() == 'button'
-	assert controls.fullscreen == active && button.class_list().contains('fullscreen') == active
-	for name in ['control-button', 'fullscreen-button', 'fullscreen-icon'] { assert button.class_list().contains(name) }
+	assert controls.fullscreen == active && icon.class_list().contains('fullscreen') == active
+	for name in ['control-button', 'fullscreen-button'] { assert button.class_list().contains(name) }
+	assert !button.class_list().contains('fullscreen') && icon.class_list().contains('fullscreen-icon')
 }
 
 fn test_fullscreen_button_click_obeys_activation_and_preserves_hidden_controls_and_playback() {
 	mut document, media, mut controls := fullscreen_click_owner('video')!
 	defer { fullscreen_click_cleanup(mut controls); document.finalize() }
-	mut button := controls.dom_.fullscreen_icon?
+	mut button := controls.dom_.fullscreen_button?
 	element := document.get_element_by_id('player')?
 	mut classes := button.class_list()
 	classes.add(['retained'])!
@@ -127,7 +129,7 @@ fn test_overlay_double_click_bubbles_once_and_stays_separate_from_bar_and_single
 fn test_fullscreen_native_button_disabled_state_and_cleanup_preserve_outside_listeners() {
 	mut document, media, mut controls := fullscreen_click_owner('video')!
 	defer { fullscreen_click_cleanup(mut controls); document.finalize() }
-	mut button := controls.dom_.fullscreen_icon?
+	mut button := controls.dom_.fullscreen_button?
 	overlay := controls.dom_.video_overlay?
 	target := unsafe { &dom.EventTarget(button.as_node()) }
 	assert controls.registered_event_listeners_.filter(it.target == target && it.event_name == 'click').len == 1
@@ -175,7 +177,7 @@ fn test_fullscreen_click_uses_adopted_document_activation_and_skips_missing_vide
 	second.adopt_node(owner.as_node())
 	mut parent := second_owner.as_node().parent() or { panic('Missing adoption container') }
 	parent.append_child(owner.as_node())!
-	button := controls.dom_.fullscreen_icon?
+	button := controls.dom_.fullscreen_button?
 	overlay := controls.dom_.video_overlay?
 	assert owner.is_connected() && button.document() == second && first_media.document()? == second
 	fullscreen_click_activation(first, true)

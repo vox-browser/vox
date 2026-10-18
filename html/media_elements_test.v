@@ -194,7 +194,7 @@ fn test_concrete_video_poster_attribute_change_uses_video_state() {
 	video := unsafe { &dom.HTMLVideoElement(video_element) }
 	mut model := html_video_element_model_for_dom_element(video)
 	controls := MediaControls.create(model.media)
-	assert (controls.dom_.fullscreen_icon or { panic('missing fullscreen control') }).local_name() == 'button'
+	assert (controls.dom_.fullscreen_button or { panic('missing fullscreen control') }).local_name() == 'button'
 	model.set_poster_fetch_hook(poster_test_fetch)
 	html_video_element_attribute_changed(video, 'poster', none, '/poster.png', none)
 	assert model.poster_frame()?.width == 320

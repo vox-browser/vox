@@ -76,7 +76,9 @@ fn test_media_controls_bar_groups_widgets_and_preserves_unrelated_visibility_cla
 		assert (play_icon.as_node().parent() or { panic('Missing play icon parent') }) == button.as_node()
 		if icon := controls.dom_.fullscreen_icon {
 			assert kind == 'video'
-			assert (icon.as_node().parent() or { panic('Missing fullscreen icon parent') }) == bar.as_node()
+			fullscreen_button := controls.dom_.fullscreen_button or { panic('Missing fullscreen button') }
+			assert (icon.as_node().parent() or { panic('Missing fullscreen icon parent') }) == fullscreen_button.as_node()
+			assert (fullscreen_button.as_node().parent() or { panic('Missing fullscreen button parent') }) == bar.as_node()
 		} else { assert kind == 'audio' }
 		if placeholder := controls.dom_.placeholder_circle {
 			overlay := controls.dom_.video_overlay or { panic('Missing video overlay') }

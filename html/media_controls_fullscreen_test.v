@@ -26,7 +26,7 @@ fn fullscreen_controls_media(document &dom.Document, id string) &HTMLMediaElemen
 fn fullscreen_controls_assert_icon(controls &MediaControls, active bool) {
 	mut icon := controls.dom_.fullscreen_icon or { panic('Missing fullscreen icon') }
 	assert icon.document() == (controls.media.document() or { panic('Missing fullscreen document') })
-	assert icon.is_html_element() && icon.local_name() == 'button'
+	assert icon.namespace_uri() or { '' } == 'http://www.w3.org/2000/svg' && icon.local_name() == 'svg'
 	assert controls.fullscreen == active && icon.class_list().contains('fullscreen') == active
 	assert icon.class_list().contains('fullscreen-icon')
 }

@@ -859,6 +859,7 @@ mut:
 	volume_element     ?&dom.Element
 	volume_fill        ?&dom.Element
 	mute_button        ?&dom.Element
+	fullscreen_button  ?&dom.Element
 	fullscreen_icon    ?&dom.Element
 	placeholder_circle ?&dom.Element
 }
@@ -959,13 +960,13 @@ pub fn (mut controls MediaControls) create_shadow_tree() {
 			controls.dom_.control_bar = bar
 			mut created := []&dom.Element{}
 			for class_name in ['play-pause-icon', 'timeline-fill', 'timestamp', 'volume-area',
-				'volume-fill', 'mute-button', 'fullscreen-icon', 'placeholder-circle'] {
-				if class_name in ['fullscreen-icon', 'placeholder-circle'] && !is_video { continue }
-				tag_name := if class_name in ['mute-button', 'fullscreen-icon'] { 'button' } else { 'div' }
+				'volume-fill', 'mute-button', 'fullscreen-button', 'placeholder-circle'] {
+				if class_name in ['fullscreen-button', 'placeholder-circle'] && !is_video { continue }
+				tag_name := if class_name in ['mute-button', 'fullscreen-button'] { 'button' } else { 'div' }
 				mut child := dom.create_element(document, tag_name, ns_html, none, none, false) or { continue }
 				child.set_attribute_value('class', match class_name {
 					'mute-button' { 'control-button mute-button' }
-					'fullscreen-icon' { 'control-button fullscreen-button fullscreen-icon' }
+					'fullscreen-button' { 'control-button fullscreen-button' }
 					else { class_name }
 				})
 				mut parent_node := if class_name == 'placeholder-circle' {
@@ -1002,6 +1003,26 @@ pub fn (mut controls MediaControls) create_shadow_tree() {
 					mut area_node := area.as_node()
 					area_node.append_child(volume_node) or { panic(err) }
 					controls.dom_.volume_element = volume
+				} else if class_name == 'fullscreen-button' {
+					// MediaControls.html gives the stateful SVG its own identity;
+					// activation belongs to its enclosing HTML button.
+					mut icon := dom.create_element(document, 'svg', 'http://www.w3.org/2000/svg', none, none, false) or { panic(err) }
+					icon.set_attribute_value('class', 'icon fullscreen-icon')
+					icon.set_attribute_value('viewBox', '0 0 24 24')
+					for index, geometry in [
+						'M3 3h6v2H5v4H3Zm12 0h6v6h-2V5h-4Zm6 12v6h-6v-2h4v-4ZM3 15v6h6v-2H5v-4Z',
+						'M9 3v6H3V7h4V3Zm6 0v6h6V7h-4V3ZM3 15h6v6H7v-4H3Zm12 0v6h2v-4h4v-2Z',
+					] {
+						mut path := dom.create_element(document, 'path', 'http://www.w3.org/2000/svg', none, none, false) or { panic(err) }
+						path.set_attribute_value('class', if index == 0 { 'fullscreen-maximize-path' } else { 'fullscreen-minimize-path' })
+						path.set_attribute_value('d', geometry)
+						mut icon_node := icon.as_node()
+						icon_node.append_child(path.as_node()) or { panic(err) }
+					}
+					mut button_node := child.as_node()
+					button_node.append_child(icon.as_node()) or { panic(err) }
+					parent_node.append_child(button_node) or { panic(err) }
+					controls.dom_.fullscreen_icon = icon
 				} else {
 					parent_node.append_child(child.as_node()) or { continue }
 				}
@@ -1019,7 +1040,7 @@ pub fn (mut controls MediaControls) create_shadow_tree() {
 				controls.dom_.volume_fill = created[4]
 				controls.dom_.mute_button = created[5]
 				if is_video {
-					controls.dom_.fullscreen_icon = created[6]
+					controls.dom_.fullscreen_button = created[6]
 					controls.dom_.placeholder_circle = created[7]
 				}
 			}
@@ -1173,7 +1194,7 @@ pub fn (mut controls MediaControls) set_up_event_listeners() {
 				return true
 			})
 	}
-	if button := controls.dom_.fullscreen_icon {
+	if button := controls.dom_.fullscreen_button {
 		if html_element := controls.media.associated_element_ {
 			element := unsafe { &dom.Element(html_element) }
 			controls.add_event_listener(unsafe { &dom.EventTarget(element.document()) }, 'fullscreenchange', .no,
