@@ -87,6 +87,20 @@ pub fn RuleSelectorParser.create(params ParsingParams, input string, encoding st
 	}
 }
 
+// Stylesheet callers consume component values, never the public raw-token
+// array. Build that tree directly, keeping only one raw token at a time.
+fn RuleSelectorParser.create_for_stylesheet(params ParsingParams, input string) RuleSelectorParser {
+	return RuleSelectorParser{
+		token_stream: ParserTokenStream.from_source(input, 'utf-8')
+		document: params.document
+		mode: params.mode
+		value_context: params.value_context.clone()
+		rule_context: params.rule_context.clone()
+		declared_namespaces: params.declared_namespaces.clone()
+		is_ua_style_sheet: params.is_ua_style_sheet
+	}
+}
+
 pub fn RuleSelectorParser.create_with_namespaces(input string, declared_namespaces map[string]bool) RuleSelectorParser {
 	tokens := Tokenizer.tokenize(input, 'utf-8')
 	return RuleSelectorParser{
@@ -125,6 +139,20 @@ fn ParserTokenStream.from_tokens(tokens []Token) ParserTokenStream {
 	return ParserTokenStream{
 		values: values
 	}
+}
+
+fn ParserTokenStream.from_source(input string, encoding string) ParserTokenStream {
+	mut source := &StylesheetTokenSource{
+		tokenizer: Tokenizer.new(filter_code_points(input, encoding))
+	}
+	defer { source.tokenizer.input_arena.release() }
+	source.advance()
+	mut stream := RawTokenStream{source: source}
+	mut values := []ComponentValue{}
+	for !stream.next_token().is(.end_of_file) {
+		values << parser_consume_a_component_value_from_tokens(mut stream)
+	}
+	return ParserTokenStream{values: values}
 }
 
 fn ParserTokenStream.from_values(values []ComponentValue) ParserTokenStream {
@@ -226,9 +254,33 @@ struct RawTokenStream {
 pub mut:
 	tokens []Token
 	index  int
+	source &StylesheetTokenSource = unsafe { nil }
+}
+
+struct StylesheetTokenSource {
+mut:
+	tokenizer Tokenizer
+	current Token
+	count int
+}
+
+fn (mut source StylesheetTokenSource) advance() {
+	if source.current.is(.end_of_file) {
+		// As with an exhausted raw array, only the first EOF has an input
+		// position. Enclosing unterminated blocks receive synthetic EOF.
+		source.current = Tokenizer.create_eof_token()
+		return
+	}
+	if source.count % 256 == 0 { platform.cooperative_work_checkpoint() }
+	start := source.tokenizer.position
+	mut token := source.tokenizer.consume_a_token()
+	token.set_position_range(start, source.tokenizer.position)
+	source.current = token
+	source.count++
 }
 
 fn (stream RawTokenStream) next_token() Token {
+	if stream.source != unsafe { nil } { return stream.source.current }
 	if stream.index < stream.tokens.len {
 		return stream.tokens[stream.index]
 	}
@@ -237,6 +289,10 @@ fn (stream RawTokenStream) next_token() Token {
 
 fn (mut stream RawTokenStream) consume_a_token() Token {
 	token := stream.next_token()
+	if stream.source != unsafe { nil } {
+		stream.source.advance()
+		return token
+	}
 	if stream.index < stream.tokens.len {
 		stream.index++
 	}
@@ -244,6 +300,10 @@ fn (mut stream RawTokenStream) consume_a_token() Token {
 }
 
 fn (mut stream RawTokenStream) discard_a_token() {
+	if stream.source != unsafe { nil } {
+		stream.source.advance()
+		return
+	}
 	if stream.index < stream.tokens.len {
 		stream.index++
 	}
@@ -4669,12 +4729,12 @@ pub fn parse_css_stylesheet_with_parser(css_text string, location ?string) &CSSS
 }
 
 pub fn parse_css_stylesheet_with_params(params ParsingParams, css_text string, location ?string) &CSSStyleSheet {
-	mut parser := RuleSelectorParser.create(params, css_text, 'utf-8')
+	mut parser := RuleSelectorParser.create_for_stylesheet(params, css_text)
 	return parser.parse_as_css_stylesheet(location, none)
 }
 
 pub fn parse_css_stylesheet_contents_with_params(params ParsingParams, css_text string) []&CSSRule {
-	mut parser := RuleSelectorParser.create(params, css_text, 'utf-8')
+	mut parser := RuleSelectorParser.create_for_stylesheet(params, css_text)
 	return parser.parse_as_stylesheet_contents()
 }
 

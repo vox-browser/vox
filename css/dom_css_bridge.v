@@ -587,7 +587,7 @@ fn dump_css_style_sheet_if_requested(sheet &CSSStyleSheet) {
 // load synchronously here, ahead of the add a CSS style sheet steps, which
 // then see the imported rules when they invalidate style.
 fn parse_css_style_sheet_for_owner_node(document &dom.Document, css_text string, location string) &CSSStyleSheet {
-	mut parser := RuleSelectorParser.create(ParsingParams{}, css_text, 'utf-8')
+	mut parser := RuleSelectorParser.create_for_stylesheet(ParsingParams{}, css_text)
 	parser.defer_style_declarations = css_text.len >= 16_384
 	mut sheet := parser.parse_as_css_stylesheet(location, none)
 	sheet.base.type_string = 'text/css'
