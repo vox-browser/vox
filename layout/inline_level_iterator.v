@@ -855,9 +855,7 @@ fn (mut iterator InlineLevelIterator) enter_text_node(text_node &TextNode) {
 	// Every retained chunk emits exactly one item, including whitespace and
 	// forced line breaks. Reserve their known demand once instead of growing
 	// and copying the wide item vector while emitting that text node.
-	if chunks.len > 0 && iterator.items.len <= 2_147_483_647 - chunks.len {
-		iterator.items.ensure_cap(iterator.items.len + chunks.len)
-	}
+	reserve_inline_item_capacity(mut iterator.items, chunks.len)
 	iterator.has_text_node_context = true
 	iterator.text_node_context = InlineTextNodeContext{
 		chromium_context_run: iterator.chromium_latin_context_run(text_node, chunks)

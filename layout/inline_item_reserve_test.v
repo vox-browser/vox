@@ -298,7 +298,7 @@ fn reserve_iterator(container &BlockContainer, baseline bool, mode LayoutMode) &
 
 fn reserve_assert_same(actual &InlineLevelIterator, expected &InlineLevelIterator) {
  assert actual.items.len == expected.items.len
- assert actual.items.cap == expected.items.cap
+ assert actual.items.cap >= actual.items.len
  assert actual.accumulated_width_for_tabs == expected.accumulated_width_for_tabs
  for index,a in actual.items {
   b := expected.items[index]
@@ -337,6 +337,24 @@ fn test_inline_item_reserve_matches_complete_previous_generation_for_cold_and_ca
     reserve_assert_same(actual,expected)
    }
   }
+ }
+}
+
+fn test_many_small_text_nodes_keep_inline_item_allocation_linear() {
+ mut items := []InlineLevelItem{}
+ mut total_capacity := 0
+ mut growths := 0
+ for node in 0 .. 1024 {
+  previous := items.data
+  reserve_inline_item_capacity(mut items, 3)
+  if items.data != previous { total_capacity += items.cap; growths++ }
+  for chunk in 0 .. 3 { items << InlineLevelItem{offset_in_node: node, length_in_node: chunk} }
+ }
+ assert growths < 20
+ assert total_capacity < items.len * 4
+ for index, item in items {
+  assert item.offset_in_node == index / 3
+  assert item.length_in_node == index % 3
  }
 }
 
