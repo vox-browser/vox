@@ -5,6 +5,9 @@
 #import <objc/runtime.h>
 #include <math.h>
 #include <stdint.h>
+#if defined(__aarch64__)
+#include <arm_neon.h>
+#endif
 
 static IMP native_layer_original_draw;
 static IMP native_layer_original_move;
@@ -34,6 +37,82 @@ static BOOL native_layer_claim_document_bitmap(CGContextRef context) {
     if (!context || context != native_layer_document_bitmap
         || native_layer_document_bitmap_claimed) return NO;
     native_layer_document_bitmap_claimed = YES;
+    return YES;
+}
+
+// The enclosing document layer claims this private frame before its first
+// paint. Its destination retains the initial full clip and graphics state;
+// only the separate source canvas is painted while that claim is active.
+// Fuse format conversion and publication when image drawing would be an
+// aligned, full-bitmap copy. Filters and all other placements use Quartz.
+static BOOL native_layer_copy_document_bitmap(CGContextRef source,
+    CGContextRef destination, CGFloat canvas_width, CGFloat canvas_height) {
+    if (!source || !destination || source == destination
+        || destination != native_layer_document_bitmap
+        || !native_layer_document_bitmap_claimed) return NO;
+    size_t width = CGBitmapContextGetWidth(destination);
+    size_t height = CGBitmapContextGetHeight(destination);
+    CGAffineTransform ctm = CGContextGetCTM(destination);
+    if (!width || !height || !isfinite(canvas_width) || !isfinite(canvas_height)
+        || canvas_width <= 0 || canvas_height <= 0
+        || ctm.a <= 0 || ctm.d <= 0 || ctm.b != 0 || ctm.c != 0
+        || ctm.tx != 0 || ctm.ty != 0
+        || canvas_width * ctm.a != (CGFloat)width
+        || canvas_height * ctm.d != (CGFloat)height
+        || CGBitmapContextGetWidth(source) != width
+        || CGBitmapContextGetHeight(source) != height
+        || CGBitmapContextGetBitsPerComponent(source) != 8
+        || CGBitmapContextGetBitsPerPixel(source) != 32
+        || CGBitmapContextGetBitmapInfo(source) !=
+            (kCGImageAlphaPremultipliedLast | kCGBitmapByteOrder32Big)
+        || CGBitmapContextGetBitsPerComponent(destination) != 8
+        || CGBitmapContextGetBitsPerPixel(destination) != 32
+        || CGBitmapContextGetBitmapInfo(destination) !=
+            (kCGImageAlphaPremultipliedFirst | kCGBitmapByteOrder32Little)) return NO;
+    CGColorSpaceRef source_color = CGBitmapContextGetColorSpace(source);
+    CGColorSpaceRef destination_color = CGBitmapContextGetColorSpace(destination);
+    if (!source_color || !destination_color || !CFEqual(source_color, destination_color)) return NO;
+    CGRect clip = CGContextGetClipBoundingBox(destination);
+    if (!CGRectEqualToRect(clip, CGRectMake(0, 0, canvas_width, canvas_height))) return NO;
+    size_t source_pitch = CGBitmapContextGetBytesPerRow(source);
+    size_t destination_pitch = CGBitmapContextGetBytesPerRow(destination);
+    if (width > SIZE_MAX / 4 || source_pitch < width * 4
+        || destination_pitch < width * 4 || source_pitch > SIZE_MAX / height
+        || destination_pitch > SIZE_MAX / height) return NO;
+    CGContextFlush(source);
+    CGContextFlush(destination);
+    const uint8_t *input = (const uint8_t *)CGBitmapContextGetData(source);
+    uint8_t *output = (uint8_t *)CGBitmapContextGetData(destination);
+    if (!input || !output) return NO;
+#if defined(__aarch64__)
+    const uint8_t indices[] = {2, 1, 0, 3, 6, 5, 4, 7, 10, 9, 8, 11, 14, 13, 12, 15};
+    uint8x16_t order = vld1q_u8(indices);
+#endif
+    for (size_t y = 0; y < height; ++y) {
+        const uint8_t *row = input + y * source_pitch;
+        uint8_t *target = output + y * destination_pitch;
+        size_t x = 0;
+#if defined(__aarch64__)
+        for (; width - x >= 16; x += 16) {
+            uint8x16_t a = vld1q_u8(row + x * 4);
+            uint8x16_t b = vld1q_u8(row + x * 4 + 16);
+            uint8x16_t c = vld1q_u8(row + x * 4 + 32);
+            uint8x16_t d = vld1q_u8(row + x * 4 + 48);
+            vst1q_u8(target + x * 4, vqtbl1q_u8(a, order));
+            vst1q_u8(target + x * 4 + 16, vqtbl1q_u8(b, order));
+            vst1q_u8(target + x * 4 + 32, vqtbl1q_u8(c, order));
+            vst1q_u8(target + x * 4 + 48, vqtbl1q_u8(d, order));
+        }
+        for (; width - x >= 4; x += 4)
+            vst1q_u8(target + x * 4, vqtbl1q_u8(vld1q_u8(row + x * 4), order));
+#endif
+        for (; x < width; ++x) {
+            target[x * 4] = row[x * 4 + 2];
+            target[x * 4 + 1] = row[x * 4 + 1];
+            target[x * 4 + 2] = row[x * 4];
+            target[x * 4 + 3] = row[x * 4 + 3];
+        }
+    }
     return YES;
 }
 

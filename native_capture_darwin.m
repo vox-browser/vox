@@ -3551,6 +3551,16 @@ void native_end_css_filter_layer(void) {
 		native_free_svg_filter_graph(&layer);
 		return;
 	}
+	if (layer.copies_to_fresh_frame && layer.operation_count == 0
+		&& layer.graph_node_count == 0
+		&& native_layer_copy_document_bitmap(layer.context, layer.destination,
+			layer.canvas_width, layer.canvas_height)) {
+		[NSGraphicsContext restoreGraphicsState];
+		CGContextRelease(layer.context);
+		free(layer.operations);
+		native_free_svg_filter_graph(&layer);
+		return;
+	}
 	CGImageRef source_image = layer.operation_count == 0 && layer.graph_node_count == 0
 		? native_take_bitmap_image_for_destination(layer.context, layer.destination)
 		: native_take_bitmap_image(layer.context);
