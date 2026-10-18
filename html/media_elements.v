@@ -842,6 +842,7 @@ struct MediaControlsRegisteredEventListener {
 struct MediaControlsDOM {
 mut:
 	container          ?&dom.Element
+	control_bar        ?&dom.Element
 	play_pause_icon    ?&dom.Element
 	timeline_track     ?&dom.Element
 	timeline_fill      ?&dom.Element
@@ -929,6 +930,11 @@ pub fn (mut controls MediaControls) create_shadow_tree() {
 				return
 			}
 			container.set_attribute_value('class', if is_video { 'media-controls video' } else { 'media-controls audio' })
+			mut bar := dom.create_element(document, 'div', ns_html, none, none, false) or { panic(err) }
+			bar.set_attribute_value('class', 'controls')
+			mut container_node := container.as_node()
+			container_node.append_child(bar.as_node()) or { panic(err) }
+			controls.dom_.control_bar = bar
 			mut created := []&dom.Element{}
 			for class_name in ['play-pause-icon', 'timeline-fill', 'timestamp', 'volume-area',
 				'volume-fill', 'mute-button', 'fullscreen-icon', 'placeholder-circle'] {
@@ -936,16 +942,16 @@ pub fn (mut controls MediaControls) create_shadow_tree() {
 				tag_name := if class_name == 'fullscreen-icon' { 'button' } else { 'div' }
 				mut child := dom.create_element(document, tag_name, ns_html, none, none, false) or { continue }
 				child.set_attribute_value('class', class_name)
-				mut container_node := container.as_node()
+				mut parent_node := if class_name == 'placeholder-circle' { container.as_node() } else { bar.as_node() }
 				if class_name == 'timeline-fill' {
 					mut track := dom.create_element(document, 'div', ns_html, none, none, false) or { panic(err) }
 					track.set_attribute_value('class', 'timeline-track')
 					mut track_node := track.as_node()
 					track_node.append_child(child.as_node()) or { panic(err) }
-					container_node.append_child(track_node) or { panic(err) }
+					parent_node.append_child(track_node) or { panic(err) }
 					controls.dom_.timeline_track = track
 				} else {
-					container_node.append_child(child.as_node()) or { continue }
+					parent_node.append_child(child.as_node()) or { continue }
 				}
 				created << child
 			}
@@ -1053,6 +1059,7 @@ pub fn (mut controls MediaControls) set_up_event_listeners() {
 				return media_controls_state_handler(controls, event)
 			})
 	}
+	controls.set_up_hover_event_listeners()
 	controls.add_event_listener(controls.media.event_target(), 'keydown', .no,
 		fn [controls_pointer] (event &dom.Event) bool {
 			if event.interface_ != .keyboard_event { return false }
@@ -1075,6 +1082,31 @@ pub fn (mut controls MediaControls) set_up_event_listeners() {
 			}
 			return true
 		})
+}
+
+fn (mut controls MediaControls) set_up_hover_event_listeners() {
+	html_element := controls.media.associated_element_ or { return }
+	element := unsafe { &dom.Element(html_element) }
+	if !element.is_html_element() || element.local_name() != 'video' { return }
+	bar := controls.dom_.control_bar or { return }
+	controls_pointer := voidptr(&controls)
+	for event_name in ['mouseenter', 'mousemove', 'mouseleave'] {
+		controls.add_event_listener(controls.media.event_target(), event_name, .no,
+			fn [controls_pointer] (event &dom.Event) bool {
+				mut controls := unsafe { &MediaControls(controls_pointer) }
+				if event.type_ == 'mouseleave' { controls.hide_controls() } else { controls.show_controls() }
+				return true
+			})
+	}
+	for event_name in ['mouseenter', 'mouseleave'] {
+		controls.add_event_listener(unsafe { &dom.EventTarget(bar.as_node()) }, event_name, .no,
+			fn [controls_pointer] (event &dom.Event) bool {
+				mut controls := unsafe { &MediaControls(controls_pointer) }
+				controls.hovering_controls = event.type_ == 'mouseenter'
+				controls.show_controls()
+				return true
+			})
+	}
 }
 
 pub fn (mut controls MediaControls) toggle_playback() {
@@ -1350,12 +1382,20 @@ pub fn (controls &MediaControls) should_show_placeholder() bool {
 }
 
 pub fn (mut controls MediaControls) show_controls() {
+	if mut bar := controls.dom_.control_bar {
+		mut classes := bar.class_list()
+		classes.add(['visible']) or { panic(err) }
+	}
 	controls.visible = true
 }
 
 pub fn (mut controls MediaControls) hide_controls() {
 	if controls.scrubbing_timeline == .no && !controls.scrubbing_volume && !controls.hovering_controls {
 		if controls.dom_.placeholder_circle != none && controls.should_show_placeholder() { return }
+		if mut bar := controls.dom_.control_bar {
+			mut classes := bar.class_list()
+			classes.remove(['visible']) or { panic(err) }
+		}
 		controls.visible = false
 	}
 }
