@@ -33,44 +33,55 @@ fn retained_inline_paint_can_share(lines []TextLine) bool {
 	return true
 }
 
-fn rebase_retained_inline_fragment(fragment TextFragment, dx f64, dy f64) ?TextFragment {
+fn rebase_retained_inline_fragment_into(fragment &TextFragment, dx f64, dy f64,
+	mut output TextFragment) bool {
 	x := fragment.x + dx
 	y := fragment.y + dy
 	if CSSPixels.nearest_value_for(fragment.x).might_be_saturated()
 		|| CSSPixels.nearest_value_for(fragment.y).might_be_saturated()
 		|| CSSPixels.nearest_value_for(x).might_be_saturated()
 		|| CSSPixels.nearest_value_for(y).might_be_saturated() {
-		return none
+		return false
 	}
 	mut paintable := fragment.paintable_fragment
 	if paintable.text_value != '' {
 		paintable.offset = painting.Point{paintable.offset.x + dx, paintable.offset.y + dy}
 	}
-	return TextFragment{
-		...fragment
-		x:                  x
-		y:                  y
-		paint_line_top:     if top := fragment.paint_line_top { ?f64(top + dy) } else { none }
-		paintable_fragment: paintable
-		// Selection pseudo styles can change without changing line geometry.
-		selection_style: if fragment.layout_handle != unsafe { nil } {
-			selection_style(unsafe { &Node(fragment.layout_handle) })
-		} else {
-			fragment.selection_style
-		}
+	top := if old_top := fragment.paint_line_top { ?f64(old_top + dy) } else { none }
+	// Selection pseudo styles can change without changing line geometry.
+	selection := if fragment.layout_handle != unsafe { nil } {
+		selection_style(unsafe { &Node(fragment.layout_handle) })
+	} else {
+		fragment.selection_style
 	}
+	output = TextFragment{
+		...fragment
+		x: x
+		y: y
+		paint_line_top: top
+		paintable_fragment: paintable
+		selection_style: selection
+	}
+	return true
 }
 
 fn rebase_retained_inline_lines(lines []TextLine, dx f64, dy f64) ?[]TextLine {
 	mut result := []TextLine{cap: lines.len}
-	for line in lines {
+	for line_index in 0 .. lines.len {
+		line := unsafe { &lines[line_index] }
 		mut fragments := []TextFragment{cap: line.fragments.len}
-		for fragment in line.fragments {
-			fragments << rebase_retained_inline_fragment(fragment, dx, dy)?
+		// Initialize final slots directly. Returning and appending an optional
+		// kilobyte-sized fragment otherwise copies each retained word repeatedly.
+		unsafe { fragments.grow_len(line.fragments.len) }
+		for index in 0 .. line.fragments.len {
+			if !rebase_retained_inline_fragment_into(unsafe { &line.fragments[index] }, dx, dy,
+				mut fragments[index]) { return none }
 		}
 		mut decorations := []TextFragment{cap: line.box_decorations.len}
-		for decoration in line.box_decorations {
-			decorations << rebase_retained_inline_fragment(decoration, dx, dy)?
+		unsafe { decorations.grow_len(line.box_decorations.len) }
+		for index in 0 .. line.box_decorations.len {
+			if !rebase_retained_inline_fragment_into(unsafe { &line.box_decorations[index] }, dx, dy,
+				mut decorations[index]) { return none }
 		}
 		result << TextLine{
 			...line
