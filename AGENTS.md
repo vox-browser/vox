@@ -2109,6 +2109,12 @@ evidence](docs/translation-audit/NATIVE_MEDIA_WHEEL_RAW_HANDLER.md).
   Next control 117; observed carry 0 after completed broad checks.
   Same 4 GiB/frozen helpers/GC1+override2; isolated app; Root/canonical/GUI preserved.
   Initial audit/preparation failures retained; Chrome parity remains open.
+  Direct first-pseudo round 118 (`833ff5d3`) fails its local median gate.
+  Root10 cases/150+143 asserts; common60/config;28 DOM21/CSS3/HTML4 contracts per GC pass.
+  Local16 complete public pipelines: +0.097525%, 0/3 wins; all six retained.
+  No normal/profile/C-audit/page/broad run; page credit0; original stale descriptions retained.
+  Own revert `9a16b193` restores exact pre118 Root implementation/tests.
+  Frozen117 control/broad baseline, carry0 and isolated117 app preserved; Chrome parity open.
 - Outside instruction-count optimization, run broad regression suites once per
   ten completed fixes, not after every fix.
   Broad suites include full translation/package test batches, the full LibJS AST

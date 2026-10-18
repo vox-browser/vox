@@ -11911,6 +11911,62 @@ Exact compressed C/profile/test/binary archives and hashes are recorded in
 receipts remain alongside corrections. **Chrome parity remains unestablished**:
 the earlier Chrome count uses a different endpoint and hydrated content.
 
+## Reject direct first-pseudo storage after its local gate
+
+Round 118 (`833ff5d3`) compares accepted frozen 117 with **eight authored
+hunks in two runtime paths**. The candidate keeps one pseudo record directly
+and creates an overflow map only for additional keys. Count, lookup, removal,
+visitation, node clearing, style invalidation and sorted JSON cover both stores.
+The separate cold style maps from accepted round 117 remain intact.
+
+All ten current-Root storage cases pass **150 / 143 assertions** in Boehm /
+no-GC. Three added cases check allocation-free hits/misses, negative and zero
+keys, identity after removing the first record and reusing its slot, overflow
+collection/adoption, visitation, style invalidation and sorted JSON. Existing
+seven case bodies remain unchanged. The feature and focused tests were committed
+together. A second, isolated frozen comparison passes **28 candidate cases per
+GC**: DOM 21 with **2,795 / 2,768 assertions**, CSS three with **952 each** and
+HTML four with **76 each**. Allocation-class and full weak-owner checks remain
+unchanged. Common 11 functional cases plus one inactive diagnostic pass **60
+assertions per configuration**. Before/Boehm safely reuses the identical
+successful round 117-final batch, input bytes, flags, binary and actual zero exit;
+no new before execution is claimed.
+
+Three predeclared alternating local pairs each run **16 complete fresh public
+parse/layout/record/command-consumption/finalize pipelines** over the same
+64-paragraph Unicode scene. Setup, eight warmups, independent DOM-text checks,
+assertions and forced GC stay outside the hardware counter. Paint expectations
+come from uncounted setup. All six actual exits are 0; checksum 54,286,416 matches.
+
+| Pair | Before retired instructions | Candidate retired instructions |
+| --- | ---: | ---: |
+| 1 | 22,477,424,107 | 22,987,260,986 |
+| 2 | 22,978,057,790 | 22,988,039,250 |
+| 3 | 22,965,641,922 | 23,552,043,450 |
+
+Local medians **22,965,641,922 → 22,988,039,250**, change
+**+0.097525%**, **0/3 wins**. Every candidate retires more
+instructions. The local median gate rejects this candidate. This does not
+establish a repeatable whole-page regression. **No normal browser build,
+full-process profile, browser C audit, page primary or broad batch runs; page
+credit is 0.** Prepared downstream scripts remain unexecuted.
+
+The copied diagnostic scope string incorrectly named round 116/cold-map storage;
+its gate error text also named an older control. Original receipts are preserved
+in `Build/v/instruction-opt118-descriptive-scope-finding/`. A marked descriptive
+correction identifies the actual frozen 117 control and eight-hunk/two-path
+candidate. All six counters, actual exits, logs and source hashes remain intact.
+No completed test or hardware sample was repeated to correct that text.
+
+Own revert `9a16b193` restores exactly the three pre118 Root files, including
+the earlier test source. This reversal is authenticated byte for byte against
+the feature's parent and saved pre118 copies; no new test exit is claimed for
+the reversal. Frozen 117 performance control and broad baseline, observed carry 0,
+and the verified isolated 117 app remain unchanged. Foreign edits, the canonical
+app and the user's GUI are preserved. Exact focused/local C and binary archives
+are durable under `Build/v/instruction-opt118-durable-archives.json`.
+**Faster-than-Chrome performance remains unproven.**
+
 ## Causes and changes
 
 - The V 0.5.2 compatibility compiler's `-prod` Boehm code repeatedly snapshots
