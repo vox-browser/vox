@@ -1636,13 +1636,21 @@ fn install_local_video_frames(document &dom.Document, base_url string, markup st
 	root := unsafe { &dom.Node(document) }
 	seconds := requested_video_frame_time(markup)
 	mut decoded := map[string]&dom.Bitmap_{}
+	mut fallback_source_checked := false
+	mut fallback_source := ''
 	for element in css.query_selector_all(root, 'video') {
 		if !element.is_html_element() { continue }
 		mut source := element.get_attribute_value('src')
 		if source == '' {
-			if markup.contains('solid-blue-160x120.webm') {
-				source = '../../Assets/solid-blue-160x120.webm'
+			// Every video sees the same immutable markup. Find this legacy
+			// local-fixture reference once, only when a sourceless video needs it.
+			if !fallback_source_checked {
+				fallback_source_checked = true
+				if markup.contains('solid-blue-160x120.webm') {
+					fallback_source = '../../Assets/solid-blue-160x120.webm'
+				}
 			}
+			source = fallback_source
 		}
 		if source == '' {
 			continue
