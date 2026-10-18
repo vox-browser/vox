@@ -78,7 +78,7 @@ fn test_document_materialization_requires_property_graph_identity_not_equal_toke
 	_ = resolve_computed_values_for_document(second, document)
 	mut copied := &ComputedProperties{
 		...first
-		property_values_: second.property_values_
+		property_store_: second.property_store_
 		computed_property_graph_token_: second.computed_property_graph_token_
 	}
 	assert voidptr(copied.computed_property_graph_token_) != voidptr(first.computed_property_graph_token_)

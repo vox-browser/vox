@@ -1,0 +1,182 @@
+module css
+
+import dom
+
+const computed_property_page_size = 16
+const computed_property_page_count = (number_of_longhand_properties + computed_property_page_size - 1) / computed_property_page_size
+const computed_property_page_pool_limit = 4096
+
+@[heap]
+struct ComputedPropertyPage {
+mut:
+	values [computed_property_page_size]&dom.StyleValue
+}
+
+// Record copies share this owner, preserving the raw array's existing aliases.
+// Only unpublished pages with a set writable bit may be modified in place.
+@[heap]
+struct ComputedPropertyStore {
+mut:
+	pages    [computed_property_page_count]&ComputedPropertyPage
+	writable u32
+}
+
+@[heap]
+struct ComputedPropertyPageInterner {
+mut:
+	pages map[u64]&ComputedPropertyPage
+}
+
+__global computed_empty_property_page &ComputedPropertyPage
+__global computed_initial_property_store &ComputedPropertyStore
+
+fn new_empty_computed_property_store() &ComputedPropertyStore {
+	assert computed_property_page_count <= 32
+	if computed_empty_property_page == unsafe { nil } {
+		computed_empty_property_page = &ComputedPropertyPage{}
+	}
+	mut store := &ComputedPropertyStore{}
+	for page in 0 .. computed_property_page_count {
+		store.pages[page] = computed_empty_property_page
+	}
+	return store
+}
+
+fn new_initial_computed_property_store() &ComputedPropertyStore {
+	assert computed_property_page_count <= 32
+	if computed_initial_property_store == unsafe { nil } {
+		mut initial := &ComputedPropertyStore{}
+		for page_index in 0 .. computed_property_page_count {
+			mut page := &ComputedPropertyPage{}
+			for slot in 0 .. computed_property_page_size {
+				index := page_index * computed_property_page_size + slot
+				if index < number_of_longhand_properties {
+					page.values[slot] = computed_interpolation_initial_value_cache[index]
+				}
+			}
+			initial.pages[page_index] = page
+		}
+		computed_initial_property_store = initial
+	}
+	return copy_readonly_computed_property_store(computed_initial_property_store)
+}
+
+pub fn (c &ComputedProperties) raw_property_count() int {
+	return if c.property_store_ == unsafe { nil } { 0 } else { number_of_longhand_properties }
+}
+
+pub fn (c &ComputedProperties) raw_property_at_index(index int) &dom.StyleValue {
+	if c.property_store_ == unsafe { nil } || index < 0 || index >= number_of_longhand_properties {
+		return unsafe { nil }
+	}
+	return c.property_store_.pages[index >> 4].values[index & 15]
+}
+
+fn (mut c ComputedProperties) set_raw_property_at_index(index int, value &dom.StyleValue) {
+	assert index >= 0 && index < number_of_longhand_properties
+	if c.property_store_ == unsafe { nil } {
+		c.property_store_ = new_empty_computed_property_store()
+	}
+	mut store := c.property_store_
+	page_index := index >> 4
+	slot := index & 15
+	if voidptr(store.pages[page_index].values[slot]) == voidptr(value) { return }
+	bit := u32(1) << page_index
+	if store.writable & bit == 0 {
+		store.pages[page_index] = copy_computed_property_page(store.pages[page_index])
+		store.writable |= bit
+	}
+	store.pages[page_index].values[slot] = unsafe { value }
+}
+
+fn (c &ComputedProperties) clone_raw_property_store() &ComputedPropertyStore {
+	if c.property_store_ == unsafe { nil } { return unsafe { nil } }
+	mut source := unsafe { &ComputedPropertyStore(c.property_store_) }
+	// All value aliases of the source see this freeze as well.
+	source.writable = 0
+	return copy_readonly_computed_property_store(source)
+}
+
+fn computed_property_pages_equal(first &ComputedPropertyPage, second &ComputedPropertyPage) bool {
+	if voidptr(first) == voidptr(second) { return true }
+	for index in 0 .. computed_property_page_size {
+		if voidptr(first.values[index]) != voidptr(second.values[index]) { return false }
+	}
+	return true
+}
+
+fn computed_property_page_hash(page &ComputedPropertyPage) u64 {
+	mut hash := u64(1469598103934665603)
+	for value in page.values {
+		hash = (hash ^ u64(voidptr(value))) * u64(1099511628211)
+	}
+	return hash
+}
+
+fn (mut pool ComputedPropertyPageInterner) intern(page &ComputedPropertyPage, hash u64) &ComputedPropertyPage {
+	if previous := pool.pages[hash] {
+		return if computed_property_pages_equal(previous, page) { previous } else { page }
+	}
+	if pool.pages.len < computed_property_page_pool_limit {
+		pool.pages[hash] = unsafe { page }
+	}
+	return page
+}
+
+fn (computer &StyleComputer) publish_computed_property_pages(style &ComputedProperties) {
+	computer.begin_computed_property_page_batch()
+	defer { computer.end_computed_property_page_batch() }
+	if style.property_store_ == unsafe { nil } { return }
+	mut owner := unsafe { &StyleComputer(computer) }
+	if owner.computed_property_page_interner_ == unsafe { nil } {
+		owner.computed_property_page_interner_ = &ComputedPropertyPageInterner{}
+	}
+	mut pool := owner.computed_property_page_interner_
+	mut store := unsafe { &ComputedPropertyStore(style.property_store_) }
+	store.writable = 0
+	for index in 0 .. computed_property_page_count {
+		page := store.pages[index]
+		store.pages[index] = pool.intern(page, computed_property_page_hash(page))
+	}
+}
+
+fn copy_computed_property_page(source &ComputedPropertyPage) &ComputedPropertyPage {
+	mut page := &ComputedPropertyPage{}
+	for index in 0 .. computed_property_page_size { page.values[index] = source.values[index] }
+	return page
+}
+
+fn copy_readonly_computed_property_store(source &ComputedPropertyStore) &ComputedPropertyStore {
+	mut store := &ComputedPropertyStore{}
+	for index in 0 .. computed_property_page_count { store.pages[index] = source.pages[index] }
+	return store
+}
+
+// A late successful initial-value parse updates only the template's page.
+// Earlier styles retain the nil or previous pointer captured by their constructor.
+fn update_initial_computed_property_page(index int, value &dom.StyleValue) {
+	if computed_initial_property_store == unsafe { nil } { return }
+	page_index := index >> 4
+	mut page := copy_computed_property_page(computed_initial_property_store.pages[page_index])
+	page.values[index & 15] = unsafe { value }
+	computed_initial_property_store.pages[page_index] = page
+}
+
+fn (computer &StyleComputer) begin_computed_property_page_batch() {
+	mut owner := unsafe { &StyleComputer(computer) }
+	if owner.computed_property_page_batch_depth_ == 0 {
+		owner.computed_property_page_interner_ = unsafe { nil }
+	}
+	owner.computed_property_page_batch_depth_++
+}
+
+fn (computer &StyleComputer) end_computed_property_page_batch() {
+	mut owner := unsafe { &StyleComputer(computer) }
+	assert owner.computed_property_page_batch_depth_ > 0
+	owner.computed_property_page_batch_depth_--
+	if owner.computed_property_page_batch_depth_ == 0 {
+		// Drop the entire pool: map.clear retains stale values in the fallback.
+		// Published readonly pages remain owned by the installed styles.
+		owner.computed_property_page_interner_ = unsafe { nil }
+	}
+}

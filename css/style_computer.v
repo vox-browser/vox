@@ -993,6 +993,8 @@ pub fn compute_required_invalidation(old_style &ComputedProperties, new_style &C
 // and applies retained style to an existing layout tree when no rebuild is
 // required.
 fn (s &StyleComputer) recompute_style_with_invalidation(mut abstract_element dom.AbstractElement, did_change_custom_properties &bool) (RequiredInvalidationAfterStyleChange, &ComputedProperties) {
+	s.begin_computed_property_page_batch()
+	defer { s.end_computed_property_page_batch() }
 	platform.cooperative_work_checkpoint()
 	mut element := unsafe { &dom.Element(abstract_element.element()) }
 	element.set_pending_font_input_update(false)
@@ -1103,12 +1105,15 @@ fn (s &StyleComputer) recompute_style_with_invalidation(mut abstract_element dom
 // place, preserving the cascaded-property and computed-style objects exactly as
 // upstream does.
 fn (s &StyleComputer) recompute_inherited_style_with_invalidation(mut abstract_element dom.AbstractElement) RequiredInvalidationAfterStyleChange {
+	s.begin_computed_property_page_batch()
+	defer { s.end_computed_property_page_batch() }
 	dom_computed := abstract_element.computed_properties() or {
 		return RequiredInvalidationAfterStyleChange{}
 	}
 	mut computed := computed_properties_from_dom(dom_computed) or {
 		return RequiredInvalidationAfterStyleChange{}
 	}
+	defer { s.publish_computed_property_pages(computed) }
 	mut document := unsafe { &dom.Document(abstract_element.element().document()) }
 	document.record_element_inherited_style_recomputation()
 
@@ -1572,6 +1577,8 @@ fn style_computer_update_animated_style_callback(target voidptr) {
 // traverses shadow roots before light-DOM children, matching Document's
 // shadow-including style walk.
 pub fn recompute_style_for_subtree(mut style_computer StyleComputer, node &dom.Node) {
+	style_computer.begin_computed_property_page_batch()
+	defer { style_computer.end_computed_property_page_batch() }
 	element_opt := node.as_element()
 	if element := element_opt {
 		style_computer.push_ancestor(element)
@@ -1759,6 +1766,8 @@ fn update_style_for_document_from_upstream(document &dom.Document) RequiredInval
 	}
 
 	mut style_computer := css_style_computer_for(document)
+	style_computer.begin_computed_property_page_batch()
+	defer { style_computer.end_computed_property_page_batch() }
 	viewport := document.viewport_rect()
 	style_computer.set_viewport_rect(CSSPixelRect.new(viewport.x, viewport.y, viewport.width, viewport.height))
 	evaluate_media_rules_for_document(document)

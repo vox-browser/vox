@@ -11,11 +11,12 @@ fn paint_style_update_can_be_local(node &Node, previous &css.ComputedValues, cur
 		|| !local_paint_style_refresh_supports_node(node, current) {
 		return false
 	}
-	if previous.property_values_.len != current.property_values_.len { return false }
-	for index, before in previous.property_values_ {
+	if previous.raw_property_count() != current.raw_property_count() { return false }
+	for index in 0 .. previous.raw_property_count() {
+		before := previous.raw_property_at_index(index)
 		property := unsafe { css.PropertyID(int(css.first_longhand_property_id()) + index) }
 		if property in [.background_color, .text_decoration_line, .cursor] { continue }
-		after := current.property_values_[index]
+		after := current.raw_property_at_index(index)
 		if before == after { continue }
 		if property == .color {
 			// Filter colors also live in accumulated effect contexts. Keep their

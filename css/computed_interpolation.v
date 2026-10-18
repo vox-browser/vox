@@ -1477,6 +1477,7 @@ fn computed_interpolation_property_initial_value(property_id PropertyID) &dom.St
 		return computed_interpolation_empty_style_value()
 	}
 	computed_interpolation_initial_value_cache[index] = value
+	update_initial_computed_property_page(index, value)
 	return value
 }
 
@@ -1613,7 +1614,7 @@ pub enum WithAnimationsApplied {
 @[heap]
 pub struct ComputedProperties {
 pub mut:
-	property_values_                         []&dom.StyleValue
+	property_store_                          &ComputedPropertyStore = unsafe { nil }
 	property_important_                      [computed_property_flag_byte_count]u8
 	property_inherited_                      [computed_property_flag_byte_count]u8
 	animated_property_inherited_             [computed_property_flag_byte_count]u8
@@ -1700,7 +1701,7 @@ pub fn ComputedProperties.new() &ComputedProperties {
 	note_computed_values_created()
 	return &ComputedProperties{
 		computed_property_graph_token_: &ComputedPropertyGraphMutationToken{}
-		property_values_: []&dom.StyleValue{len: number_of_longhand_properties, init: unsafe { nil }}
+		property_store_: new_empty_computed_property_store()
 	}
 }
 
@@ -1734,7 +1735,7 @@ fn computed_properties_with_initial_values() &ComputedProperties {
 	return &ComputedProperties{
 		...template
 		computed_property_graph_token_: &ComputedPropertyGraphMutationToken{}
-		property_values_: computed_interpolation_initial_value_cache.clone()
+		property_store_: new_initial_computed_property_store()
 	}
 }
 
@@ -1759,23 +1760,23 @@ pub fn (c &ComputedProperties) clone_for_anonymous_block() &ComputedProperties {
 		if inherited == 0 {
 			continue
 		}
-		value := c.property_values_[index]
+		value := c.raw_property_at_index(index)
 		if value != unsafe { nil } {
-			clone.property_values_[index] = value
+			clone.set_raw_property_at_index(index, value)
 		}
 		clone.property_inherited_[index / 8] |= u8(1) << (index % 8)
 	}
 	for property_id in [PropertyID.text_decoration_line, .text_decoration_thickness,
 		.text_decoration_color, .text_decoration_style] {
 		index := int(property_id) - int(first_longhand_property_id())
-		value := c.property_values_[index]
+		value := c.raw_property_at_index(index)
 		if value != unsafe { nil } {
-			clone.property_values_[index] = value
+			clone.set_raw_property_at_index(index, value)
 		}
 	}
 	display := Display.from_outside_inside(.block, .flow)
 	display_index := int(PropertyID.display) - int(first_longhand_property_id())
-	clone.property_values_[display_index] = dom_style_value_from_value_logic(StyleValue(DisplayStyleValue.create(display)))
+	clone.set_raw_property_at_index(display_index, dom_style_value_from_value_logic(StyleValue(DisplayStyleValue.create(display))))
 	clone.display_before_box_type_transformation_ = display
 	return clone
 }
@@ -1883,7 +1884,7 @@ pub fn (mut c ComputedProperties) take_properties_for_table_wrapper() &ComputedP
 pub fn (c &ComputedProperties) table_box_and_wrapper_properties() (&ComputedProperties, &ComputedProperties) {
 	mut table := &ComputedProperties{
 		...c
-		property_values_:               c.property_values_.clone()
+		property_store_:                c.clone_raw_property_store()
 		computed_property_graph_token_: unsafe { nil }
 	}
 	wrapper := table.take_properties_for_table_wrapper()
@@ -1891,7 +1892,8 @@ pub fn (c &ComputedProperties) table_box_and_wrapper_properties() (&ComputedProp
 }
 
 pub fn (c &ComputedProperties) for_each_property(callback fn (PropertyID, &dom.StyleValue)) {
-	for index, value in c.property_values_ {
+	for index in 0 .. c.raw_property_count() {
+		value := c.raw_property_at_index(index)
 		if value != unsafe { nil } {
 			if property_id := property_id_from_longhand_index(index) {
 				callback(property_id, value)
@@ -2067,7 +2069,7 @@ pub fn (mut c ComputedProperties) set_property_without_modifying_flags(property_
 	c.note_computed_property_graph_mutation()
 	computed_interpolation_verify_longhand_property(property_id)
 	index := int(property_id) - int(first_longhand_property_id())
-	c.property_values_[index] = unsafe { value }
+	c.set_raw_property_at_index(index, value)
 	if property_affects_computed_font_list(property_id) {
 		c.clear_computed_font_list_cache()
 	}
@@ -2112,7 +2114,7 @@ pub fn (c &ComputedProperties) property(property_id PropertyID, return_animated_
 
 	// By the time C++ calls this method, the property should have been assigned.
 	index := int(property_id) - int(first_longhand_property_id())
-	value := c.property_values_[index]
+	value := c.raw_property_at_index(index)
 	if value == unsafe { nil } {
 		return none
 	}
@@ -2123,7 +2125,7 @@ pub fn (mut c ComputedProperties) revert_property(property_id PropertyID, style_
 	c.note_computed_property_graph_mutation()
 	computed_interpolation_verify_longhand_property(property_id)
 	index := int(property_id) - int(first_longhand_property_id())
-	c.property_values_[index] = style_for_revert.property_values_[index]
+	c.set_raw_property_at_index(index, style_for_revert.raw_property_at_index(index))
 	c.set_property_important(property_id, if style_for_revert.is_property_important(property_id) {
 		Important.yes
 	} else {
@@ -5920,11 +5922,12 @@ pub fn (c &ComputedProperties) font_optical_sizing() FontOpticalSizing {
 }
 
 pub fn (c &ComputedProperties) equals(other &ComputedProperties) bool {
-	if c.property_values_.len != other.property_values_.len {
+	if c.raw_property_count() != other.raw_property_count() {
 		return false
 	}
-	for index, value in c.property_values_ {
-		other_value := other.property_values_[index]
+	for index in 0 .. c.raw_property_count() {
+		value := c.raw_property_at_index(index)
+		other_value := other.raw_property_at_index(index)
 		if value != other_value {
 			return false
 		}
@@ -10687,6 +10690,8 @@ pub mut:
 pub struct StyleComputer {
 pub mut:
 	document_                                            &dom.Document = unsafe { nil }
+	computed_property_page_interner_ &ComputedPropertyPageInterner = unsafe { nil }
+	computed_property_page_batch_depth_ int
 	default_font_metrics                                 LengthFontMetrics = LengthFontMetrics.default()
 	root_element_font_metrics                            LengthFontMetrics = LengthFontMetrics.default()
 	root_element_font_metrics_depend_on_viewport_metrics bool
@@ -11552,7 +11557,7 @@ pub fn (s &StyleComputer) compute_properties(abstract_element dom.AbstractElemen
 			cached_default := computed_interpolation_default_computed_value_cache[property_index]
 			if cached_default != unsafe { nil } {
 				properties.note_computed_property_graph_mutation()
-				properties.property_values_[property_index] = cached_default
+				properties.set_raw_property_at_index(property_index, cached_default)
 				continue
 			}
 		}
@@ -13669,8 +13674,12 @@ fn install_custom_property_data_for_style(abstract_element dom.AbstractElement, 
 }
 
 pub fn (s &StyleComputer) compute_style_impl(abstract_element dom.AbstractElement, mode ComputeStyleMode, did_change_custom_properties ?&bool, scope &StyleScope) ?&ComputedProperties {
-	return s.compute_style_impl_with_animated_custom_property_recompute(abstract_element, mode,
-		did_change_custom_properties, scope, true)
+	s.begin_computed_property_page_batch()
+	defer { s.end_computed_property_page_batch() }
+	computed := s.compute_style_impl_with_animated_custom_property_recompute(abstract_element, mode,
+		did_change_custom_properties, scope, true) or { return none }
+	s.publish_computed_property_pages(computed)
+	return computed
 }
 
 fn (s &StyleComputer) compute_style_impl_with_animated_custom_property_recompute(abstract_element dom.AbstractElement, mode ComputeStyleMode, did_change_custom_properties ?&bool, scope &StyleScope, allow_animated_custom_property_recompute bool) ?&ComputedProperties {
