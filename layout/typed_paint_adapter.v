@@ -254,6 +254,30 @@ fn color_resolution_context_for_typed_node(node &Node, current_color css.Color) 
 	return context
 }
 
+fn paint_image_needs_color_context(value css.StyleValue) bool {
+	if value.is_keyword() || value is css.ImageStyleValue { return false }
+	if list := value.as_value_list() {
+		return list.values().any(paint_image_needs_color_context(it))
+	}
+	// Gradients and image-set candidates can resolve colors and calculations.
+	return true
+}
+
+fn paint_color_context_for_box(node &Node, computed &css.ComputedProperties,
+	current_color css.Color) css.ColorResolutionContext {
+	if computed.filter().has_filters() || computed.backdrop_filter().has_filters() {
+		return color_resolution_context_for_typed_node(node, current_color)
+	}
+	if image := computed.typed_property_value(.background_image) {
+		if paint_image_needs_color_context(image) {
+			return color_resolution_context_for_typed_node(node, current_color)
+		}
+	}
+	// Ordinary resolved box colors and URL images do not consume a calculation
+	// context. Resolve font-relative metrics only for paint which needs them.
+	return css.ColorResolutionContext{current_color: current_color}
+}
+
 fn computed_paint_color(computed &css.ComputedProperties, property css.PropertyID, context css.ColorResolutionContext, fallback css.Color) css.Color {
 	value := computed.typed_property_value(property) or { return fallback }
 	return value.to_color(context) or {
@@ -1439,6 +1463,8 @@ fn computed_background_gradient(computed &css.ComputedProperties, width f64, hei
 	value := computed.typed_property_value(.background_image) or { return none }
 	values := if list := value.as_value_list() { list.values() } else { [value] }
 	for item in values {
+		if item !is css.LinearGradientStyleValue && item !is css.RadialGradientStyleValue
+			&& item !is css.ConicGradientStyleValue { continue }
 		if gradient := resolve_background_gradient(item, width, height, computed.length_resolution_context(), context) {
 			return gradient
 		}
@@ -3564,9 +3590,8 @@ fn uncached_block_box_from_typed_layout_shallow(node &Node, state &LayoutState, 
 	mut clip_path := ?painting.ClipPathVisualData(none)
 	mut svg_clip := ?painting.SVGClipVisualData(none)
 	mut svg_mask := ?painting.SVGMaskVisualData(none)
-	mut color_context := color_resolution_context_for_typed_node(node, text_color)
 	text_color = computed.color()
-	color_context.current_color = text_color
+	mut color_context := paint_color_context_for_box(node, computed, text_color)
 	mut paint_element := element
 	if paint_element == none && node.is_generated_for_pseudo_element() {
 		paint_element = painted_owner_element(node)
