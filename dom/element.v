@@ -2547,6 +2547,17 @@ pub fn (mut e Element) set_computed_properties(pseudo_element ?int, style ?&CSSC
 	e.computed_properties_ = style
 }
 
+// The native embedder reconstructs history from markup after closing the old
+// script runtime. Its discarded document no longer needs resolved styles.
+pub fn (mut e Element) discard_native_computed_properties() {
+	e.computed_properties_ = none
+	if e.rare_data_ != unsafe { nil } {
+		for _, mut pseudo in e.rare_data_.pseudo_element_data {
+			pseudo.computed_props = none
+		}
+	}
+}
+
 pub fn (e &Element) get_pseudo_element(typ int) ?&PseudoElement_ {
 	// Optional map lookup creates an error object on every miss in the
 	// compatibility compiler. Most elements have no requested pseudo-element.

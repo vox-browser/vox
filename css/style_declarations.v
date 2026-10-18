@@ -1628,9 +1628,6 @@ pub fn (properties &CSSStyleProperties) style_value_for_computed_property(layout
 		return properties.style_value_for_computed_property(layout_node, physical)
 	}
 
-	get_computed_value := fn [computed] (id PropertyID) ?&dom.StyleValue {
-		return computed.property(id, .yes)
-	}
 	display_allows_used_value := !computed.display().is_none() && !computed.display().is_contents() && layout_node.has_geometry_
 	margin := computed.length_box(.margin_left, .margin_top, .margin_right, .margin_bottom, LengthPercentageOrAuto.make_auto())
 	padding := computed.length_box(.padding_left, .padding_top, .padding_right, .padding_bottom, LengthPercentageOrAuto.from_length(Length.make_px(0)))
@@ -1638,7 +1635,7 @@ pub fn (properties &CSSStyleProperties) style_value_for_computed_property(layout
 
 	match property_id {
 		.background_color, .border_bottom_color, .border_left_color, .border_right_color, .border_top_color, .caret_color, .color, .column_rule_color, .outline_color, .text_decoration_color, .webkit_text_fill_color {
-			value := get_computed_value(property_id) or { return none }
+			value := computed.property(property_id, .yes) or { return none }
 			return cssom_resolve_color_style_value(value, color_resolution_context_for_layout_node(layout_node))
 		}
 		.box_shadow {
@@ -1648,7 +1645,7 @@ pub fn (properties &CSSStyleProperties) style_value_for_computed_property(layout
 			return cssom_style_value_for_shadow(.text, computed.text_shadow(layout_node))
 		}
 		.line_height {
-			value := get_computed_value(property_id) or { return none }
+			value := computed.property(property_id, .yes) or { return none }
 			if keyword := computed_interpolation_style_value_keyword(value) {
 				if keyword == .normal {
 					return value
@@ -1807,7 +1804,7 @@ pub fn (properties &CSSStyleProperties) style_value_for_computed_property(layout
 	}
 
 	if !property_is_shorthand(property_id) {
-		return get_computed_value(property_id)
+		return computed.property(property_id, .yes)
 	}
 	longhand_ids := longhands_for_shorthand_local(property_id)
 	mut values := []StyleValue{cap: longhand_ids.len}

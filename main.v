@@ -3541,6 +3541,7 @@ fn (mut app BrowserApp) install_loaded_page(loaded LoadedPage, add_history bool)
 		app.js_runtime.close()
 		app.js_runtime = unsafe { nil }
 	}
+	if previous := previous_document { css.discard_native_document_computed_styles(previous) }
 	sources := script_sources(app.document, resource_base_url, preloaded_resources, mut app.js_messages)
 	mut image_loader := new_browser_image_request_loader(app.document, preloaded_resources)
 	app.image_request_loader = image_loader

@@ -20,6 +20,7 @@ fn test_replacing_native_document_releases_its_layout_and_notifies_inactivity_on
 	old_element := old.get_element_by_id('old')?
 	assert old.layout_root != unsafe { nil }
 	assert old_element.as_node().unsafe_layout_node() != none
+	assert old_element.el_computed_properties() != none
 	observation := &InactiveNavigationObservation{}
 	mut observer := dom.DocumentObserver.create(mut old)
 	observer.set_document_became_inactive(fn [observation] () {
@@ -34,6 +35,9 @@ fn test_replacing_native_document_releases_its_layout_and_notifies_inactivity_on
 	assert !old.is_fully_active()
 	assert old.layout_root == unsafe { nil }
 	assert old_element.as_node().unsafe_layout_node() == none
+	assert old.layout_engine_handle() == unsafe { nil }
+	assert old.cached_display_list() == none
+	assert old_element.el_computed_properties() == none
 	assert observation.count == 1
 	assert app.document.is_fully_active()
 	assert app.document.layout_root != unsafe { nil }

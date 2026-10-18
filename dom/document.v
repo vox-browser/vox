@@ -12432,6 +12432,11 @@ pub fn (mut d Document) set_source(source string) {
 pub fn (mut d Document) did_stop_being_active_document_in_navigable() {
 	d.clear_layout_and_paintable_nodes_for_inactive_document()
 	d.tear_down_layout_tree()
+	// The compact layout backend and scroll hook own the same retired tree.
+	// Drop them with the viewport instead of retaining all old style/paint data.
+	d.layout_engine_handle_ = unsafe { nil }
+	d.viewport_scroll_snap_hook_ = none
+	d.invalidate_display_list()
 	d.schedule_html_parser_end_check()
 	if !d.has_fired_document_became_inactive {
 		d.has_fired_document_became_inactive = true
