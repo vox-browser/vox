@@ -82,7 +82,8 @@ fn viewport_fragment_ink_is_outside(fragment &TextFragment, transform [6]f64,
 	width f64, height f64) bool {
 	if fragment.shadow != none || fragment.shadows.len > 0 || fragment.text_shadows.len > 0
 		|| fragment.selection_style.text_shadows.len > 0 || fragment.background_images.len > 0
-		|| fragment.paintable_fragment.orientation != .horizontal { return false }
+		|| fragment.paintable_fragment.orientation != .horizontal
+		|| (fragment.text != '' && !fragment.baseline_set) { return false }
 	mut outset := math.max(f64(0), fragment.outline_width + math.abs(fragment.outline_offset)) + 2
 	if fragment.decoration != 'none' || fragment.selection_style.decoration_set {
 		if !fragment.font_metrics_set { return false }

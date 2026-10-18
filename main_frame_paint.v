@@ -50,7 +50,8 @@ fn (mut app BrowserApp) record_document_paint_commands() {
 	checkpoint := time.sys_mono_now()
 	app.memory_maintenance.document_changed(checkpoint)
 	mut document := unsafe { &dom.Document(app.document) }
-	display_list := if app.ctx != unsafe { nil } && app.ctx.native_rendering {
+	display_list := if app.ctx != unsafe { nil } && app.ctx.native_rendering
+		&& !app.paint_canvas_culling_disabled {
 		document.record_viewport_display_list()
 	} else { document.record_display_list() }
 	if list := display_list {
