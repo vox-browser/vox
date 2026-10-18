@@ -6041,8 +6041,18 @@ fn (mut app BrowserApp) draw_command(source_command layout.PaintCommand, page_x 
 			mut image := &gg.Image{}
 			mut intrinsic_width := f32(image_data.image_intrinsic_width)
 			mut intrinsic_height := f32(image_data.image_intrinsic_height)
-			if image_data.background_svg_document == none || intrinsic_width <= 0
-				|| intrinsic_height <= 0 {
+			mut svg_natural_size := ?css.SizeWithAspectRatio(none)
+			if svg_document := image_data.background_svg_document {
+				natural := layout.svg_background_natural_size(svg_document)
+				svg_natural_size = natural
+				// The legacy string path also needs a concrete default size, but
+				// the typed layer below must retain the optional natural metrics.
+				concrete := css.run_default_sizing_algorithm(none, none, natural,
+					css.CSSPixelSize.new(css.CSSPixels.nearest_value_for(command.width),
+						css.CSSPixels.nearest_value_for(command.height)))
+				intrinsic_width = f32(concrete.width().to_double())
+				intrinsic_height = f32(concrete.height().to_double())
+			} else {
 				image = app.background_image(image_data.image_url) or { return }
 				intrinsic_width = f32(image.width)
 				intrinsic_height = f32(image.height)
@@ -6062,14 +6072,19 @@ fn (mut app BrowserApp) draw_command(source_command layout.PaintCommand, page_x 
 			clip := if snap_bitmap { pixel_snapped_background_bitmap_rect(original_clip) } else { original_clip }
 			mut resolved_layer := ?painting.ResolvedBackgroundLayer(none)
 			if background_data := image_data.background_layer_data {
-				resolved_layer = painting.resolve_background_layer(painting.BackgroundLayerResolutionInput{
+				resolved_layer = if natural := svg_natural_size {
+					painting.resolve_background_layer_with_natural_size(background_data.layer,
+						image_data.image_url, area, background_data.resolution_context, natural)
+				} else {
+					painting.resolve_background_layer(painting.BackgroundLayerResolutionInput{
 					layer: background_data.layer
 					image_id: image_data.image_url
 					natural_width: f64(intrinsic_width)
 					natural_height: f64(intrinsic_height)
 					background_positioning_area: area
 					resolution_context: background_data.resolution_context
-				})
+					})
+				}
 			}
 			if resolved_layer == none {
 				// Detached compatibility commands do not retain ComputedValues. Resolve
@@ -6197,6 +6212,17 @@ fn (mut app BrowserApp) draw_command(source_command layout.PaintCommand, page_x 
 					replay := if chromium_svg { chromium_svg_background_replay(tile, command.transform) } else {
 						ChromiumSVGBackgroundReplay{destination.width, destination.height, command.transform}
 					}
+					// An SVG background is an image bounded by its own viewport,
+					// including when an unsized SVG child extends beyond that viewport.
+					$if macos {
+						if app.ctx.native_rendering {
+							C.native_begin_clip()
+							clip_x := if chromium_svg { f64(0) } else { f64(destination.x) }
+							clip_y := if chromium_svg { f64(0) } else { f64(destination.y) }
+							m := replay.transform
+							C.native_add_corner_rounded_clip(f32(clip_x), f32(clip_y), f32(replay.viewport_width), f32(replay.viewport_height), 0, 0, 0, 0, 0, 0, 0, 0, f32(m[0]), f32(m[1]), f32(m[2]), f32(m[3]), f32(m[4]), f32(m[5]), page_x, page_y, f32(scroll_y), f32(app.ctx.height))
+						}
+					}
 					if nested_layout := layout.run_document_layout(svg_document, f64(replay.viewport_width), f64(replay.viewport_height)) {
 						_ = nested_layout
 						if nested_display_list := mutable_svg_document.record_display_list() {
@@ -6207,6 +6233,9 @@ fn (mut app BrowserApp) draw_command(source_command layout.PaintCommand, page_x 
 							}
 							app.flush_rounded_rect_underlay(page_x, page_y, window_height)
 						}
+					}
+					$if macos {
+						if app.ctx.native_rendering { C.native_end_clip() }
 					}
 					continue
 				}

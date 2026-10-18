@@ -164,7 +164,8 @@ pub fn resolve_background_layer_without_intrinsic(input BackgroundLayerWithoutIn
 	return resolve_background_layer_with_natural_size(input.layer, input.image_id, input.background_positioning_area, input.resolution_context, css.SizeWithAspectRatio{})
 }
 
-fn resolve_background_layer_with_natural_size(layer css.BackgroundLayerData, image_id string,
+// Preserve optional SVG dimensions and aspect ratio through default sizing.
+pub fn resolve_background_layer_with_natural_size(layer css.BackgroundLayerData, image_id string,
 	area Rect, resolution_context css.LengthResolutionContext,
 	natural_size css.SizeWithAspectRatio) ?ResolvedBackgroundLayer {
 	area_width := css.CSSPixels.nearest_value_for(area.width)

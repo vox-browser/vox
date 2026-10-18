@@ -613,6 +613,13 @@ fn image_intrinsic_size_for_source(document &dom.Document, source string) ?css.S
 	return size_with_optional_aspect_ratio(CSSPixels.new(image.width), CSSPixels.new(image.height))
 }
 
+// A viewBox establishes an aspect ratio, not natural width and height. Keep
+// absent dimensions absent when resolving an SVG background's concrete size.
+pub fn svg_background_natural_size(document &dom.Document) css.SizeWithAspectRatio {
+	root := document.document_element() or { return css.SizeWithAspectRatio{} }
+	return negotiate_svg_natural_metrics(root)
+}
+
 // SVG backgrounds are painted from an isolated document instead of through
 // the bitmap decoder. Keep their natural size available to background sizing,
 // including for data: URLs that stb_image cannot decode.
