@@ -4333,22 +4333,42 @@ fn optional_pseudo_element_equal(left ?PseudoElement, right ?PseudoElement) bool
 }
 
 fn selector_string_contains(haystack string, needle string, case_sensitivity SelectorCaseSensitivity) bool {
-	if case_sensitivity == .case_insensitive {
-		return haystack.to_lower().contains(needle.to_lower())
+	if needle.len == 0 { return true }
+	if needle.len > haystack.len { return false }
+	if needle.len > 32 {
+		// Keep linear KMP search for unbounded author-provided patterns.
+		return if case_sensitivity == .case_insensitive {
+			to_ascii_lowercase(haystack).contains(to_ascii_lowercase(needle))
+		} else { haystack.contains(needle) }
 	}
-	return haystack.contains(needle)
+	// Short attribute patterns dominate filtering selectors. Avoid rebuilding
+	// KMP prefixes or allocating lowercase copies on every candidate element.
+	// Each bounded substring is borrowed only for the comparison; it never escapes.
+	for offset in 0 .. haystack.len - needle.len + 1 {
+		if case_sensitivity == .case_insensitive {
+			if equals_ignoring_ascii_case(unsafe { haystack.substr_unsafe(offset, offset + needle.len) }, needle) {
+				return true
+			}
+		} else if haystack[offset] == needle[0]
+			&& unsafe { haystack.substr_unsafe(offset, offset + needle.len) } == needle {
+			return true
+		}
+	}
+	return false
 }
 
 fn selector_string_starts_with(haystack string, needle string, case_sensitivity SelectorCaseSensitivity) bool {
+	if needle.len > haystack.len { return false }
 	if case_sensitivity == .case_insensitive {
-		return haystack.to_lower().starts_with(needle.to_lower())
+		return equals_ignoring_ascii_case(unsafe { haystack.substr_unsafe(0, needle.len) }, needle)
 	}
 	return haystack.starts_with(needle)
 }
 
 fn selector_string_ends_with(haystack string, needle string, case_sensitivity SelectorCaseSensitivity) bool {
+	if needle.len > haystack.len { return false }
 	if case_sensitivity == .case_insensitive {
-		return haystack.to_lower().ends_with(needle.to_lower())
+		return equals_ignoring_ascii_case(unsafe { haystack.substr_unsafe(haystack.len - needle.len, haystack.len) }, needle)
 	}
 	return haystack.ends_with(needle)
 }
