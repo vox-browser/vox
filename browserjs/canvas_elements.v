@@ -15,6 +15,24 @@ struct CanvasElementBindingProvider {
 	identity CanvasElementIdentityLookup = unsafe { nil }
 }
 
+// DOM identity is the native address. V's equality for &Element compares the
+// complete record and can allocate copies of its maps on every candidate.
+// Preserve every alias in map order so registry precedence remains unchanged.
+fn native_canvas_element_identity_keys(elements map[string]&dom.Element, element &dom.Element) []string {
+	// The old compiler clones every named string key in a map loop, even on
+	// a miss. Inspect values first so unrelated native hosts allocate nothing.
+	mut found := false
+	for _, candidate in elements {
+		if voidptr(candidate) == voidptr(element) { found = true; break }
+	}
+	if !found { return []string{} }
+	mut keys := []string{}
+	for key, candidate in elements {
+		if voidptr(candidate) == voidptr(element) { keys << key }
+	}
+	return keys
+}
+
 pub fn (mut runtime Runtime) add_canvas_element_provider(provider CanvasElementProvider) {
 	runtime.canvas_element_providers_ << CanvasElementBindingProvider{ snapshot: provider }
 }

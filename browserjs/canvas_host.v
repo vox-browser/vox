@@ -43,11 +43,13 @@ pub fn (mut host CanvasHost) install(mut runtime Runtime) ! {
 		}
 		return host.call(input)
 	})!
-	runtime.add_canvas_element_provider_with_lookup(fn [mut host] () map[string]&dom.Element {
+	runtime.add_canvas_element_provider_with_identity_lookup(fn [mut host] () map[string]&dom.Element {
 		return host.elements_for_binding()
 	}, fn [mut host] (key string) ?&dom.Element {
 		if key !in host.elements { return none }
 		return unsafe { host.elements[key] }
+	}, fn [host] (element &dom.Element) []string {
+		return native_canvas_element_identity_keys(host.elements, element)
 	})
 }
 

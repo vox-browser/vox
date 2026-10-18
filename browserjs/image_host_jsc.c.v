@@ -37,13 +37,16 @@ pub fn (mut host ImageHost) install(mut runtime Runtime) ! {
 		bind,
 	])!
 	runtime.retain_javascript_value(host.prototype)!
-	runtime.add_canvas_element_provider_with_lookup(fn [host_handle] () map[string]&dom.Element {
+	runtime.add_canvas_element_provider_with_identity_lookup(fn [host_handle] () map[string]&dom.Element {
 		host := unsafe { &ImageHost(host_handle) }
 		return host.elements_for_binding()
 	}, fn [host_handle] (key string) ?&dom.Element {
 		host := unsafe { &ImageHost(host_handle) }
 		if key !in host.elements { return none }
 		return unsafe { host.elements[key] }
+	}, fn [host_handle] (element &dom.Element) []string {
+		host := unsafe { &ImageHost(host_handle) }
+		return native_canvas_element_identity_keys(host.elements, element)
 	})
 	runtime.add_close_handler(fn [host_handle] () {
 		mut host := unsafe { &ImageHost(host_handle) }

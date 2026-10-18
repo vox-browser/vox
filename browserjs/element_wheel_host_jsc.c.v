@@ -69,13 +69,16 @@ pub fn (mut host ElementWheelHost) install(mut runtime Runtime) ! {
 		get_handler,
 		set_handler,
 	])!
-	runtime.add_canvas_element_provider_with_lookup(fn [handle] () map[string]&dom.Element {
+	runtime.add_canvas_element_provider_with_identity_lookup(fn [handle] () map[string]&dom.Element {
 		host := unsafe { &ElementWheelHost(handle) }
 		return host.elements_for_binding()
 	}, fn [handle] (key string) ?&dom.Element {
 		host := unsafe { &ElementWheelHost(handle) }
 		if key !in host.elements { return none }
 		return unsafe { host.elements[key] }
+	}, fn [handle] (element &dom.Element) []string {
+		host := unsafe { &ElementWheelHost(handle) }
+		return native_canvas_element_identity_keys(host.elements, element)
 	})
 	runtime.install_event_target_wrapper_provider(EventTargetWrapperProvider{
 		owner:  handle
