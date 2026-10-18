@@ -58,17 +58,22 @@ fn test_media_controls_bar_groups_widgets_and_preserves_unrelated_visibility_cla
 		mut bar := controls.dom_.control_bar or { panic('Missing control bar') }
 		assert bar.is_html_element() && bar.local_name() == 'div' && bar.document() == document
 		assert (bar.as_node().parent() or { panic('Missing control bar parent') }) == container.as_node()
-		for widget in [controls.dom_.play_pause_icon, controls.dom_.timeline_track, controls.dom_.timestamp_element,
+		for widget in [controls.dom_.play_button, controls.dom_.timeline_track, controls.dom_.timestamp_element,
 			controls.dom_.volume_area, controls.dom_.volume_fill, controls.dom_.mute_button] {
 			element := widget or { panic('Missing bar widget') }
 			assert (element.as_node().parent() or { panic('Missing widget parent') }) == bar.as_node()
 		}
+		play_icon := controls.dom_.play_pause_icon or { panic('Missing play icon') }
+		button := controls.dom_.play_button or { panic('Missing play button') }
+		assert (play_icon.as_node().parent() or { panic('Missing play icon parent') }) == button.as_node()
 		if icon := controls.dom_.fullscreen_icon {
 			assert kind == 'video'
 			assert (icon.as_node().parent() or { panic('Missing fullscreen icon parent') }) == bar.as_node()
 		} else { assert kind == 'audio' }
 		if placeholder := controls.dom_.placeholder_circle {
-			assert (placeholder.as_node().parent() or { panic('Missing placeholder parent') }) == container.as_node()
+			overlay := controls.dom_.video_overlay or { panic('Missing video overlay') }
+			assert (overlay.as_node().parent() or { panic('Missing overlay parent') }) == container.as_node()
+			assert (placeholder.as_node().parent() or { panic('Missing placeholder parent') }) == overlay.as_node()
 		}
 		mut classes := bar.class_list()
 		classes.add(['retained'])!
@@ -86,7 +91,7 @@ fn test_video_hover_events_follow_media_and_bar_targets_without_hiding_on_bar_ex
 	defer { controls.remove_event_listeners(); document.finalize() }
 	bar := controls.dom_.control_bar or { panic('Missing bar') }
 	bar_target := unsafe { &dom.EventTarget(bar.as_node()) }
-	assert controls.registered_event_listeners_.len == 20
+	assert controls.registered_event_listeners_.len == 22
 	for name in ['mouseenter', 'mousemove', 'mouseleave'] {
 		assert controls.registered_event_listeners_.filter(it.target == media.event_target() && it.event_name == name).len == 1
 	}
@@ -165,7 +170,7 @@ fn test_hover_cleanup_preserves_other_listeners_and_skips_audio_or_missing_contr
 	assert probe.outside_events == 1 && !controls.hovering_controls
 	mut audio_document, audio, mut audio_controls := hover_controls_owner('audio')!
 	defer { audio_controls.remove_event_listeners(); audio_document.finalize() }
-	assert audio_controls.registered_event_listeners_.len == 14
+	assert audio_controls.registered_event_listeners_.len == 15
 	hover_controls_send(audio.event_target(), 'mouseleave', false)
 	hover_controls_assert_visible(audio_controls, true)
 	mut ownerless := HTMLMediaElement.create(none, dom.URL{value: 'https://ownerless-hover.example/'})

@@ -81,7 +81,7 @@ fn test_fullscreen_listener_uses_the_document_and_cleanup_preserves_unrelated_li
 	mut controls := MediaControls.create(media)
 	defer { controls.remove_event_listeners(); document.finalize() }
 	target := unsafe { &dom.EventTarget(document) }
-	assert controls.registered_event_listeners_.len == 20
+	assert controls.registered_event_listeners_.len == 22
 	assert controls.registered_event_listeners_.filter(it.event_name == 'fullscreenchange' && it.target == target).len == 1
 	probe := &FullscreenControlsProbe{}
 	outside := dom.IDLEventListener.create(&dom.CallbackType{
@@ -119,7 +119,7 @@ fn test_fullscreen_widget_and_document_listener_are_absent_for_audio_and_unowned
 	defer { audio_controls.remove_event_listeners(); document.finalize() }
 	assert audio_controls.dom_.fullscreen_icon == none && audio_controls.dom_.placeholder_circle == none
 	assert audio_controls.dom_.mute_button != none && audio_controls.dom_.timeline_track != none
-	assert audio_controls.registered_event_listeners_.len == 14
+	assert audio_controls.registered_event_listeners_.len == 15
 	mut element := document.get_element_by_id('second')?
 	root := element.attach_a_user_agent_shadow_root(.named)
 	mut preserving := MediaControls.create(fullscreen_controls_media(document, 'second'))

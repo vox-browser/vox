@@ -843,6 +843,8 @@ struct MediaControlsDOM {
 mut:
 	container          ?&dom.Element
 	control_bar        ?&dom.Element
+	play_button        ?&dom.Element
+	video_overlay      ?&dom.Element
 	play_pause_icon    ?&dom.Element
 	timeline_track     ?&dom.Element
 	timeline_fill      ?&dom.Element
@@ -931,6 +933,13 @@ pub fn (mut controls MediaControls) create_shadow_tree() {
 				return
 			}
 			container.set_attribute_value('class', if is_video { 'media-controls video' } else { 'media-controls audio' })
+			if is_video {
+				mut overlay := dom.create_element(document, 'div', ns_html, none, none, false) or { panic(err) }
+				overlay.set_attribute_value('class', 'video-overlay')
+				mut node := container.as_node()
+				node.append_child(overlay.as_node()) or { panic(err) }
+				controls.dom_.video_overlay = overlay
+			}
 			mut bar := dom.create_element(document, 'div', ns_html, none, none, false) or { panic(err) }
 			bar.set_attribute_value('class', 'controls')
 			mut container_node := container.as_node()
@@ -943,8 +952,17 @@ pub fn (mut controls MediaControls) create_shadow_tree() {
 				tag_name := if class_name in ['mute-button', 'fullscreen-icon'] { 'button' } else { 'div' }
 				mut child := dom.create_element(document, tag_name, ns_html, none, none, false) or { continue }
 				child.set_attribute_value('class', if class_name == 'mute-button' { 'control-button mute-button' } else { class_name })
-				mut parent_node := if class_name == 'placeholder-circle' { container.as_node() } else { bar.as_node() }
-				if class_name == 'timeline-fill' {
+				mut parent_node := if class_name == 'placeholder-circle' {
+					(controls.dom_.video_overlay or { panic('Missing video overlay') }).as_node()
+				} else { bar.as_node() }
+				if class_name == 'play-pause-icon' {
+					mut button := dom.create_element(document, 'button', ns_html, none, none, false) or { panic(err) }
+					button.set_attribute_value('class', 'control-button play-pause-button')
+					mut node := button.as_node()
+					node.append_child(child.as_node()) or { panic(err) }
+					parent_node.append_child(button.as_node()) or { panic(err) }
+					controls.dom_.play_button = button
+				} else if class_name == 'timeline-fill' {
 					mut track := dom.create_element(document, 'div', ns_html, none, none, false) or { panic(err) }
 					track.set_attribute_value('class', 'timeline-track')
 					mut track_node := track.as_node()
@@ -1063,6 +1081,16 @@ pub fn (mut controls MediaControls) set_up_event_listeners() {
 				controls := unsafe { &MediaControls(controls_pointer) }
 				return media_controls_state_handler(controls, event)
 			})
+	}
+	for target in [controls.dom_.play_button, controls.dom_.video_overlay] {
+		if element := target {
+			controls.add_event_listener(unsafe { &dom.EventTarget(element.as_node()) }, 'click', .no,
+				fn [controls_pointer] (_ &dom.Event) bool {
+					mut controls := unsafe { &MediaControls(controls_pointer) }
+					controls.toggle_playback()
+					return true
+				})
+		}
 	}
 	if button := controls.dom_.mute_button {
 		controls.add_event_listener(unsafe { &dom.EventTarget(button.as_node()) }, 'click', .no,
