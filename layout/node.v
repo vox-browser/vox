@@ -2036,6 +2036,7 @@ pub mut:
 	source_text_                  string
 	text_for_rendering_           string
 	text_for_rendering_valid_     bool
+	rendered_utf16_length_        int
 	font_for_rendering_           ?&platform.Font
 	line_segmenter_               &dom.Segmenter = unsafe { nil }
 	is_empty_editable_            bool
@@ -2143,6 +2144,7 @@ pub fn (n &TextNode) text_for_rendering() string {
 pub fn (mut n TextNode) invalidate_text_for_rendering() {
 	n.text_for_rendering_valid_ = false
 	n.text_for_rendering_ = ''
+	n.rendered_utf16_length_ = 0
 	n.rendered_text_edits_.clear()
 	n.cached_inline_chunks_ = none
 	n.cached_font_environment_generation_ = 0
@@ -2277,11 +2279,23 @@ fn (mut n TextNode) compute_text_for_rendering() {
 		text = bytes.bytestr()
 	}
 	n.text_for_rendering_ = text
+	n.rendered_utf16_length_ = utf16_length_for_line_box(text)
 	n.text_for_rendering_valid_ = true
 }
 
+// Caret projection maps many individual boundaries in the same rendered text.
+// Keep its UTF-16 length with that text rather than decoding the complete node
+// for each source/rendered offset. Invalidation refreshes both together.
+fn (n &TextNode) rendered_utf16_length() int {
+	if !n.text_for_rendering_valid_ {
+		mut mutable_node := unsafe { &TextNode(n) }
+		mutable_node.compute_text_for_rendering()
+	}
+	return n.rendered_utf16_length_
+}
+
 pub fn (n &TextNode) source_offset_for_rendered_text_offset(offset int, boundary platform.TextMappingBoundary) int {
-	length := utf16_length_for_line_box(n.text_for_rendering())
+	length := n.rendered_utf16_length()
 	clamped := if offset < 0 {
 		0
 	} else if offset > length {
@@ -2294,7 +2308,7 @@ pub fn (n &TextNode) source_offset_for_rendered_text_offset(offset int, boundary
 }
 
 pub fn (n &TextNode) rendered_text_offset_for_source_offset(offset int, boundary platform.TextMappingBoundary) int {
-	length := utf16_length_for_line_box(n.text_for_rendering())
+	length := n.rendered_utf16_length()
 	source_end := n.source_range_start_ + n.rendered_source_length_
 	clamped := if offset < n.source_range_start_ {
 		n.source_range_start_
