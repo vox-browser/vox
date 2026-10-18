@@ -3489,6 +3489,9 @@ pub:
 pub mut:
 	callback fn () = unsafe { nil }
 	active   bool
+mut:
+	callback_context voidptr
+	context_callback fn (voidptr) = unsafe { nil }
 }
 
 pub fn Timer.create_repeating(interval_ms int, callback fn ()) &Timer {
@@ -3496,6 +3499,17 @@ pub fn Timer.create_repeating(interval_ms int, callback fn ()) &Timer {
 		interval_ms: interval_ms
 		repeating: true
 		callback: callback
+	}
+}
+
+// Keep the receiver in the timer's ordinary managed object graph instead of
+// allocating a captured callback with an independent executable lifetime.
+pub fn Timer.create_repeating_with_context(interval_ms int, context voidptr, callback fn (voidptr)) &Timer {
+	return &Timer{
+		interval_ms: interval_ms
+		repeating: true
+		callback_context: context
+		context_callback: callback
 	}
 }
 
@@ -4410,13 +4424,17 @@ pub fn (mut t Timer) stop() {
 }
 
 pub fn (mut t Timer) fire() {
-	if !t.active || t.callback == unsafe { nil } {
+	if !t.active || (t.callback == unsafe { nil } && t.context_callback == unsafe { nil }) {
 		return
 	}
 	if !t.repeating {
 		t.active = false
 	}
-	t.callback()
+	if t.context_callback != unsafe { nil } {
+		t.context_callback(t.callback_context)
+	} else {
+		t.callback()
+	}
 }
 
 pub fn (t &Timer) is_active() bool {
@@ -5931,29 +5949,30 @@ pub fn (mut d Document) finalize() {
 	d.unregister_from_event_loop()
 }
 
+fn document_cursor_blink_callback(document_pointer voidptr) {
+	mut document := unsafe { &Document(document_pointer) }
+	position := document.cursor_position() or { return }
+	navigable := document.navigable() or { return }
+	if !navigable.is_focused() {
+		return
+	}
+	node := position.node() or { return }
+	if node.unsafe_paintable() == none {
+		return
+	}
+	document.cursor_blink_state = !document.cursor_blink_state
+	mut mutable_node := unsafe { &Node(node) }
+	// Cursor blink changes paint commands without changing caret geometry.
+	mutable_node.set_needs_repaint(.paint_commands)
+}
+
 // https://html.spec.whatwg.org/multipage/dom.html#the-document-object
 pub fn (mut d Document) initialize() {
 	// Set up prototype, create selection, list of available images, etc.
 	d.selection_ = Selection.create(d)
 	d.editing_host_manager_ = EditingHostManager.create(mut d)
 	d.list_of_available_images = &ListOfAvailableImages{}
-	document_pointer := voidptr(&d)
-	d.cursor_blink_timer = Timer.create_repeating(500, fn [document_pointer] () {
-		mut document := unsafe { &Document(document_pointer) }
-		position := document.cursor_position() or { return }
-		navigable := document.navigable() or { return }
-		if !navigable.is_focused() {
-			return
-		}
-		node := position.node() or { return }
-		if node.unsafe_paintable() == none {
-			return
-		}
-		document.cursor_blink_state = !document.cursor_blink_state
-		mut mutable_node := unsafe { &Node(node) }
-		// Cursor blink changes paint commands without changing caret geometry.
-		mutable_node.set_needs_repaint(.paint_commands)
-	})
+	d.cursor_blink_timer = Timer.create_repeating_with_context(500, voidptr(&d), document_cursor_blink_callback)
 	d.cursor_blink_timer.start()
 	if d.page_ != unsafe { nil } {
 		d.page_.client_page_did_create_new_document(d)
