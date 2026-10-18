@@ -18,7 +18,7 @@ fn install_compact_native_selector_bindings(mut runtime browserjs.Runtime) ! {
 				owner_runtime := unsafe { &browserjs.Runtime(owner_handle) }
 				// Keep the existing receiver validation, single DOMString conversion,
 				// mutation replay, selector scope and actual exception identity.
-				return owner_runtime.call_javascript_function(original, receiver, arguments)
+				return owner_runtime.forward_javascript_function(original, receiver, arguments)
 			})!
 			property := json2.encode(name)
 			installer := runtime.retain_javascript_value(runtime.evaluate_host_value('(function(method){Object.defineProperty(${owner},${property},{value:method,writable:true,enumerable:true,configurable:true});})')!)!

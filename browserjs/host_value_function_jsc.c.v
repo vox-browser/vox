@@ -15,6 +15,7 @@ fn C.JSObjectMakeArray(context voidptr, count usize, arguments &voidptr, excepti
 fn C.JSObjectCallAsFunction(context voidptr, function voidptr, receiver voidptr, count usize, arguments &voidptr, exception &voidptr) voidptr
 fn C.JSObjectMakeDeferredPromise(context voidptr, resolve &voidptr, reject &voidptr, exception &voidptr) voidptr
 fn C.JSObjectMakeFunctionWithCallback(context voidptr, name voidptr, callback fn (voidptr, voidptr, voidptr, usize, &voidptr, &voidptr) voidptr) voidptr
+fn C.JSValueToObject(context voidptr, value voidptr, exception &voidptr) voidptr
 
 __global native_value_host_functions_ = map[voidptr]&ValueHostFunctionRecord{}
 
@@ -126,7 +127,7 @@ fn (mut runtime Runtime) initialize_javascript_value_intrinsics() ! {
 	// Capture the actual engine intrinsics before author scripts can replace
 	// global Reflect/Promise properties. Native Promise adoption remains JSC's
 	// Resolve function, including then getter access and thenable job scheduling.
-	runtime.value_call_intrinsic_ = runtime.evaluate_host_value('(function(){const apply=Reflect.apply;return function(callback,receiver,args){return apply(callback,receiver,args)}})()')!
+	runtime.value_call_intrinsic_ = runtime.evaluate_host_value('(function(){const apply=Reflect.apply;return function(callback,receiver,args,caught){if(!caught)return apply(callback,receiver,args);try{return [true,apply(callback,receiver,args)]}catch(error){return [false,error]}}})()')!
 	runtime.promise_observe_intrinsic_ = runtime.evaluate_host_value('(function(){const apply=Reflect.apply,then=Promise.prototype.then;return function(promise,fulfilled,rejected){return apply(then,promise,[fulfilled,rejected])}})()')!
 	runtime.value_error_intrinsic_ = runtime.evaluate_host_value('(function(){const E=Error,T=TypeError,R=RangeError,V=EvalError,F=ReferenceError,U=URIError;return function(kind,message){return new (kind==="TypeError"?T:kind==="RangeError"?R:kind==="EvalError"?V:kind==="ReferenceError"?F:kind==="URIError"?U:E)(message)}})()')!
 	runtime.value_same_intrinsic_ = runtime.evaluate_host_value('Object.is')!
@@ -188,6 +189,32 @@ pub fn (runtime &Runtime) call_javascript_function(function voidptr, receiver vo
 	array := C.JSObjectMakeArray(runtime.context, usize(arguments.len), arguments.data, &exception)
 	if exception != unsafe { nil } { return runtime.actual_javascript_exception(exception) }
 	return runtime.call_engine_function(runtime.value_call_intrinsic_, [function, receiver, array])
+}
+
+// A native DOM method forwards into an implementation written in JavaScript.
+// Catch inside that implementation's API entry, then return the original thrown
+// value through the native callback. JSC otherwise reports this intermediate
+// API exception to the inspector even when the outer script handles it.
+pub fn (runtime &Runtime) forward_javascript_function(function voidptr, receiver voidptr, arguments []voidptr) !voidptr {
+	runtime.require_javascript_value_context()!
+	context := runtime.context
+	mut exception := unsafe { nil }
+	array := C.JSObjectMakeArray(context, usize(arguments.len), arguments.data, &exception)
+	if exception != unsafe { nil } { return runtime.actual_javascript_exception(exception) }
+	outcome := runtime.call_engine_function(runtime.value_call_intrinsic_,
+		[function, receiver, array, C.JSValueMakeBoolean(context, true)])!
+	runtime.require_javascript_value_context()!
+	if runtime.context != context { return error('JavaScript context changed during native forwarding') }
+	C.JSValueProtect(context, outcome)
+	defer { C.JSValueUnprotect(context, outcome) }
+	object := C.JSValueToObject(context, outcome, &exception)
+	if exception != unsafe { nil } { return runtime.actual_javascript_exception(exception) }
+	completed := C.JSObjectGetPropertyAtIndex(context, object, 0, &exception)
+	if exception != unsafe { nil } { return runtime.actual_javascript_exception(exception) }
+	value := C.JSObjectGetPropertyAtIndex(context, object, 1, &exception)
+	if exception != unsafe { nil } { return runtime.actual_javascript_exception(exception) }
+	if !C.JSValueToBoolean(context, completed) { return runtime.actual_javascript_exception(value) }
+	return value
 }
 
 pub fn (mut runtime Runtime) create_javascript_promise() !JavaScriptPromiseCapability {
