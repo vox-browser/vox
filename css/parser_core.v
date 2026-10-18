@@ -1192,6 +1192,11 @@ fn (mut tokenizer Tokenizer) consume_a_number() Number {
 	mut integer_value := u64(0)
 	mut integer_is_exact := true
 	mut has_integer_digit := false
+	mut fractional_integer := u64(0)
+	mut fractional_fives := u64(1)
+	mut fractional_bits := u32(0)
+	mut fraction_is_exact := false
+	mut has_exponent := false
 
 	// 2. If the next input code point is U+002B PLUS SIGN (+) or U+002D HYPHEN-MINUS (-),
 	// consume it and append it to repr.
@@ -1225,6 +1230,14 @@ fn (mut tokenizer Tokenizer) consume_a_number() Number {
 		// 2. Append them to repr.
 		_ = tokenizer.next_code_point()
 		_ = tokenizer.next_code_point()
+		fractional_integer = integer_value
+		fractional_fives = 5
+		fractional_bits = 1
+		fraction_is_exact = integer_is_exact
+		if fraction_is_exact {
+			fractional_integer = fractional_integer * 10 + u64(maybe_number.second - `0`)
+			fraction_is_exact = fractional_integer <= u64(9007199254740992)
+		}
 
 		// 3. Set type to "number".
 		type_ = .number
@@ -1237,6 +1250,17 @@ fn (mut tokenizer Tokenizer) consume_a_number() Number {
 			}
 
 			_ = tokenizer.next_code_point()
+			if fraction_is_exact {
+				// 5^22 still fits in the exact-integer range of binary64.
+				if fractional_bits == 22 {
+					fraction_is_exact = false
+				} else {
+					fractional_integer = fractional_integer * 10 + u64(digit - `0`)
+					fraction_is_exact = fractional_integer <= u64(9007199254740992)
+					fractional_fives *= 5
+					fractional_bits++
+				}
+			}
 		}
 	}
 
@@ -1247,6 +1271,7 @@ fn (mut tokenizer Tokenizer) consume_a_number() Number {
 	if (is_upper_e(maybe_exp.first) || is_e(maybe_exp.first))
 		&& (((is_plus_sign(maybe_exp.second) || is_hyphen_minus(maybe_exp.second))
 		&& is_digit(maybe_exp.third)) || is_digit(maybe_exp.second)) {
+		has_exponent = true
 		// 1. Consume them.
 		// 2. Append them to repr.
 		if is_plus_sign(maybe_exp.second) || is_hyphen_minus(maybe_exp.second) {
@@ -1275,10 +1300,15 @@ fn (mut tokenizer Tokenizer) consume_a_number() Number {
 	}
 
 	// 6. Convert repr to a number, and set the value to the returned value.
-	// Integers through 2^53 convert exactly. Preserve the sign of zero; fractions,
-	// exponents, larger integers and the private empty consumer keep the converter.
+	// Integers through 2^53 and selected fractions need no rounding. Preserve
+	// signed zero and keep the converter for all remaining numeric spellings.
 	value := if type_ == .integer && has_integer_digit && integer_is_exact {
 		if is_hyphen_minus(next_input) { -f64(integer_value) } else { f64(integer_value) }
+	} else if fraction_is_exact && !has_exponent && fractional_integer % fractional_fives == 0 {
+		// After cancelling 5^k, the remaining divisor is 2^k. Both operands
+		// and their quotient are exact, independent of the FP rounding mode.
+		fraction := f64(fractional_integer / fractional_fives) / f64(u64(1) << fractional_bits)
+		if is_hyphen_minus(next_input) { -fraction } else { fraction }
 	} else {
 		tokenizer.convert_a_string_to_a_number(tokenizer.input_since(start_byte_offset))
 	}
