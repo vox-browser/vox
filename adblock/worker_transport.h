@@ -193,6 +193,26 @@ static void vox_adblock_worker_cleanup(void) {
     vox_adblock_worker_pid = 0;
     pthread_mutex_unlock(&vox_adblock_worker_lifecycle_mutex);
 }
+/* dyld image index zero can be an injected library, not the executable.
+   Ask the kernel for this process's image path instead of relying on argv[0]
+   or image ordering. The caller owns the returned bytes. */
+VOX_AB_API int vox_adblock_self_executable_path(unsigned char **output, size_t *size) {
+    if (!output || !size) return EINVAL;
+    *output = NULL; *size = 0;
+#ifdef __APPLE__
+    char path[PROC_PIDPATHINFO_MAXSIZE] = {0};
+    if (proc_pidpath(getpid(), path, sizeof path) <= 0) return errno ? errno : EIO;
+    size_t length = strnlen(path, sizeof path);
+    if (!length || length == sizeof path) return ENAMETOOLONG;
+    unsigned char *copy = malloc(length + 1);
+    if (!copy) return ENOMEM;
+    memcpy(copy, path, length + 1);
+    *output = copy; *size = length;
+    return 0;
+#else
+    return ENOTSUP;
+#endif
+}
 VOX_AB_API int vox_adblock_worker_is_configured(void) { return vox_adblock_worker_helper != NULL; }
 VOX_AB_API int vox_adblock_worker_get_pid(void) { return (int)vox_adblock_worker_pid; }
 VOX_AB_API int vox_adblock_worker_configure(const unsigned char *path, size_t size, int timeout_ms) {

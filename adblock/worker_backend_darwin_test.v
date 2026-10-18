@@ -211,3 +211,9 @@ fn test_worker_restores_full_bundled_request_header_cosmetic_and_scriptlet_rules
 		assert filters.scriptlets.contains('const scriptletGlobals =')
 	}
 }
+
+fn test_worker_self_path_and_bundle_lookup_ignore_injected_dyld_image_order() {
+	expected := os.real_path(os.args[0])
+	assert os.real_path(current_executable_path()!) == expected
+	assert bundled_snapshot_path() == os.join_path(os.dir(expected), '..', 'Resources', 'adblock.snapshot.bin')
+}

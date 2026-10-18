@@ -2,6 +2,7 @@
 #define VOX_AB_WORKER_API_H
 #include <stddef.h>
 #include <stdint.h>
+int vox_adblock_self_executable_path(unsigned char **, size_t *);
 int vox_adblock_worker_configure(const unsigned char*, size_t, int);
 int vox_adblock_worker_is_configured(void);
 int vox_adblock_worker_get_pid(void);

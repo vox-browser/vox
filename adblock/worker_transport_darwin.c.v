@@ -3,6 +3,7 @@ module adblock
 #flag @DIR/worker_transport_native.o
 #include "@DIR/worker_transport_api.h"
 
+fn C.vox_adblock_self_executable_path(&&u8, &usize) int
 fn C.vox_adblock_worker_configure(&u8, usize, int) int
 fn C.vox_adblock_worker_is_configured() int
 fn C.vox_adblock_worker_get_pid() int
@@ -107,4 +108,18 @@ pub fn default_worker_memory_bytes() !u64 {
 		return error('Adblock worker physical footprint unavailable')
 	}
 	return bytes
+}
+
+// An explicitly worker-capable executable opts into using its own signed image.
+// This avoids os.executable()'s dyld-image-order assumption under injection.
+pub fn current_executable_path() !string {
+	mut bytes := unsafe { &u8(nil) }
+	mut size := usize(0)
+	status := C.vox_adblock_self_executable_path(&bytes, &size)
+	if status != 0 { return error('Cannot determine the adblock helper executable (${status})') }
+	return owned_worker_payload(bytes, size)
+}
+
+pub fn configure_default_self_worker() ! {
+	configure_default_worker(current_executable_path()!)!
 }

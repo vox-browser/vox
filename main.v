@@ -7013,7 +7013,7 @@ fn main() {
 	// Dispatch the signed self-helper before browser heap/font/GUI setup.
 	if status := adblock.run_default_worker_role(os.args) { exit(status) }
 	$if macos {
-		adblock.configure_default_worker(os.executable()) or {
+		adblock.configure_default_self_worker() or {
 			eprintln('Ladybird V: cannot configure the default filter worker: ${err.msg()}')
 			exit(1)
 		}

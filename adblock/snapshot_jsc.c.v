@@ -16,7 +16,7 @@ const compressed_snapshot_metadata = $embed_file('engine.snapshot.json.gz')
 fn install_snapshot(context voidptr) ! {
 	// Bundles keep the large payload in a reclaimable file-backed mapping.
 	// Standalone tools/tests retain the same validated embedded fallback.
-	path := os.join_path(os.dir(os.executable()), '..', 'Resources', 'adblock.snapshot.bin')
+	path := bundled_snapshot_path()
 	mut status := 0
 	if os.is_file(path) {
 		status = C.vox_adblock_install_snapshot_file(context, path.str)
@@ -32,4 +32,9 @@ fn install_snapshot(context voidptr) ! {
 	if metadata_status != 0 {
 		return error('Cannot restore bundled adblock metadata: ${metadata_status}')
 	}
+}
+
+fn bundled_snapshot_path() string {
+	executable := current_executable_path() or { return '' }
+	return os.join_path(os.dir(executable), '..', 'Resources', 'adblock.snapshot.bin')
 }

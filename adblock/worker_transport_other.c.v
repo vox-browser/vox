@@ -1,6 +1,10 @@
 module adblock
 
+import os
+
 $if !macos {
+	pub fn current_executable_path() !string { return os.executable() }
+	pub fn configure_default_self_worker() ! { return error('The default adblock worker backend is available only on macOS') }
 	pub fn configure_default_worker(helper string) ! {
 		if helper != '' { return error('The default adblock worker backend is available only on macOS') }
 	}
