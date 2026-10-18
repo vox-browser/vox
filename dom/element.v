@@ -1658,7 +1658,7 @@ pub fn (mut e Element) set_associated_shadow_host_pseudo_element(pseudo_element 
 		panic('associated shadow-host pseudo-element requires a shadow host')
 	}
 	mut mutable_host := unsafe { &Element(host) }
-	mut data := mutable_host.ensure_rare_data()
+	mut data := mutable_host.ensure_rare_style_data()
 	data.element_reference_pseudo_elements[pseudo_element] = &e
 	e.associated_shadow_host_pseudo_element_ = pseudo_element
 }
@@ -1669,10 +1669,11 @@ pub fn (e &Element) associated_shadow_host_pseudo_element() ?int {
 
 pub fn (e &Element) element_reference_pseudo_element(pseudo_element int) ?&Element {
 	if e.rare_data_ == unsafe { nil }
-		|| pseudo_element !in e.rare_data_.element_reference_pseudo_elements {
+		|| e.rare_data_.style_data_ == unsafe { nil }
+		|| pseudo_element !in e.rare_data_.style_data_.element_reference_pseudo_elements {
 		return none
 	}
-	return unsafe { e.rare_data_.element_reference_pseudo_elements[pseudo_element] }
+	return unsafe { e.rare_data_.style_data_.element_reference_pseudo_elements[pseudo_element] }
 }
 
 pub struct StylePropertyMap_ {
@@ -5463,7 +5464,8 @@ pub fn (e &Element) document_scoped_view_transition_name() ?string {
 
 pub fn (mut e Element) play_or_cancel_animations_after_display_property_change() {
 	// OPTIMIZATION: We don't care about elements with no CSS defined animations.
-	if !e.has_css_defined_animations_flag || e.rare_data_ == unsafe { nil } {
+	if !e.has_css_defined_animations_flag || e.rare_data_ == unsafe { nil }
+		|| e.rare_data_.style_data_ == unsafe { nil } {
 		return
 	}
 
@@ -5476,7 +5478,7 @@ pub fn (mut e Element) play_or_cancel_animations_after_display_property_change()
 	// origins, terminate running animations. Restoring the underlying display
 	// resumes each animation according to its last CSS animation-play-state.
 	has_display_none_inclusive_ancestor := e.as_node().has_inclusive_ancestor_with_display_none_ignoring_animations()
-	for _, animations in e.rare_data_.css_defined_animations {
+	for _, animations in e.rare_data_.style_data_.css_defined_animations {
 		for _, animation in animations {
 			if has_display_none_inclusive_ancestor {
 				animation.cancel()
@@ -6172,7 +6174,7 @@ pub fn (mut e Element) computed_style_map() &StylePropertyMapReadOnly_ {
 
 // --- CSS random base value ---
 pub fn (mut e Element) ensure_css_random_base_value(key string) f64 {
-	mut data := e.ensure_rare_data()
+	mut data := e.ensure_rare_style_data()
 	if key in data.element_specific_css_random_base_values {
 		return data.element_specific_css_random_base_values[key]
 	}

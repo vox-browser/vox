@@ -161,7 +161,7 @@ fn test_lazy_css_random_values_survive_collection_and_document_adoption() {
 	assert first >= 0 && first < 1
 	second := element.ensure_css_random_base_value('other-key')
 	assert second >= 0 && second < 1
-	assert store.element_specific_css_random_base_values.len == 2
+	assert store.style_data_.element_specific_css_random_base_values.len == 2
 	for _ in 0 .. 3 {
 		gc_collect()
 		assert element.ensure_css_random_base_value('same-key') == first
@@ -173,4 +173,66 @@ fn test_lazy_css_random_values_survive_collection_and_document_adoption() {
 	assert voidptr(element.rare_data_) == voidptr(store)
 	assert element.ensure_css_random_base_value('same-key') == first
 	assert element.ensure_css_random_base_value('other-key') == second
+}
+
+fn test_pseudo_owner_missing_cold_metadata_reads_and_clears_do_not_allocate() {
+	mut document := Document.create(url_about_blank())
+	defer { document.finalize() }
+	for namespace_ in ['http://www.w3.org/1999/xhtml', 'http://www.w3.org/2000/svg',
+		'http://www.w3.org/1998/Math/MathML'] {
+		mut element := document.create_element_ns(namespace_, 'div') or { panic(err) }
+		pseudo := element.ensure_pseudo_element(1)
+		mut abstract_element := AbstractElement.new(element, none)
+		abstract_element.set_has_css_defined_animations()
+		assert element.rare_data_.style_data_ == unsafe { nil }
+		before := gc_heap_usage().total_bytes
+		mut found := 0
+		for _ in 0 .. 1024 {
+			if element.element_reference_pseudo_element(7) != none { found++ }
+			if abstract_element.css_defined_animations() != none { found++ }
+			abstract_element.remove_css_defined_animation('missing')
+			element.play_or_cancel_animations_after_display_property_change()
+		}
+		after := gc_heap_usage().total_bytes
+		assert found == 0
+		assert element.rare_data_.style_data_ == unsafe { nil }
+		$if gcboehm ? { assert after == before }
+		gc_collect()
+		assert voidptr(element.get_pseudo_element(1) or { panic('lost pseudo') }) == voidptr(pseudo)
+		assert element.rare_data_.style_data_ == unsafe { nil }
+	}
+}
+
+fn test_first_cold_metadata_use_keeps_pseudo_owner_and_survives_independent_removal() {
+	mut source := Document.create(url_about_blank())
+	mut destination := Document.create(URL{ value: 'https://cold.example/' })
+	defer { source.finalize() }
+	defer { destination.finalize() }
+	mut element := rare_data_test_element(source, 'div')
+	pseudo := element.ensure_pseudo_element(-7)
+	store := element.rare_data_
+	assert store.style_data_ == unsafe { nil }
+	random_value := element.ensure_css_random_base_value('retained')
+	cold_store := store.style_data_
+	assert cold_store != unsafe { nil }
+	assert voidptr(element.rare_data_) == voidptr(store)
+	mut base := AbstractElement.new(element, none)
+	animation := &CSSAnimation_{}
+	base.set_css_defined_animation('fade', animation)
+	assert voidptr(store.style_data_) == voidptr(cold_store)
+	element.remove_pseudo_element_record(-7)
+	assert element.pseudo_element_record_count() == 0
+	assert base.css_defined_animations() != none
+	assert element.ensure_css_random_base_value('retained') == random_value
+	replacement := element.ensure_pseudo_element(-7)
+	assert voidptr(replacement) != voidptr(pseudo)
+	base.remove_css_defined_animation('fade')
+	assert base.css_defined_animations() == none
+	destination.adopt_node(element.as_node())
+	gc_collect()
+	assert voidptr(element.document()) == voidptr(destination)
+	assert voidptr(element.rare_data_) == voidptr(store)
+	assert voidptr(store.style_data_) == voidptr(cold_store)
+	assert element.ensure_css_random_base_value('retained') == random_value
+	assert voidptr(element.get_pseudo_element(-7) or { panic('lost replacement') }) == voidptr(replacement)
 }
