@@ -30,11 +30,12 @@ results, not a claim of complete uBlock extension parity.
 
 ## Current diagnostic progress
 
-The latest signed normal build also suppresses duplicate descendant invalidations
-and avoids constructing an absent block-margin record. Its standalone capture
-records **50,469,492,588 instructions** and **208 differing pixels**, with maximum
-channel error 13; content and fonts pass. Three interleaved native pairs average
-48,454,193,091 candidate instructions, still above the target. The earlier
+The latest signed normal build also merges structurally equivalent CSS
+invalidation plans and resolves scroll-edge context only when needed. Its
+standalone capture records **47,486,734,709 instructions** and **208 differing
+pixels**, with maximum channel error 13; content, fonts and all 173 observed
+full-uBO checks pass. Three interleaved native pairs average 47,524,836,952.67
+candidate instructions, still above the target. The earlier
 868-pixel result included a transient scrollbar-policy difference: a fresh capture
 of the unchanged older binary also returns 208 pixels without any configuration
 override. The scrollbar disappearance receives no code-improvement credit.
@@ -409,3 +410,33 @@ probe changes only 11 chevron pixels and reduces the full difference from 208 to
 200; a private image-MSAA probe reduces it to 198. These blanket policies remain
 diagnostics, with no production or CPU credit. General layer-aware rasterization
 and the remaining image-corner/gradient-compositing differences remain open.
+
+Conditional scroll-edge resolution (`d318908d`) avoids creating font and query
+container context for automatic, absolute and percentage edges. Three focused
+cases pass 16,932 assertions per GC mode, preserving relative/calculated values
+and retained padding, margin and snap metadata. The original implementation
+fails the cache-elision guard. Three native pairs increase the observed mean
+from 48,531,873,958 to 49,497,586,169.67 instructions; this receives no page saving
+credit. An unrelated programmatic snap control returns the same unexpected
+position in both binaries and remains an explicitly retained pre-existing issue.
+
+Structural CSS invalidation-plan union (`8557a132`) merges equal payloads and
+unions their match sets without mutating source plans or previous value copies.
+Unordered payload comparison retains duplicate multiplicity. Four focused cases
+pass 21 assertions in each GC mode, while the original fails all four. Three
+native pairs average 48,925,071,717.33 baseline instructions against
+47,524,836,952.67 candidate instructions, with two wins out of three. All six
+captures retain the 208-pixel difference; the noisy reduction is not a final
+15% result. Its observed reduction, net of the scroll-edge regression, exceeds
+the broad-check cadence threshold. The unchanged cumulative source passes
+another 49-file batch in both GC modes, 98 logical checks and 22 compilations.
+
+Private receipts are `scroll-snap-context-focused/`,
+`scroll-snap-context-controlled/assessment.json`, `css-plan-union-focused/commit.json`,
+`css-plan-union-controlled/assessment.json`, `css-plan-union-broad/summary.json`,
+and `css-plan-union-normal-instructions/pair-1.vox.{json,ubo.json}`. Signed normal
+bundles, complete source and binary pins, and all failed invocations are retained.
+A transparent-gradient diagnostic alone worsens the full CNN comparison to
+2,019 pixels. A separate synthetic ribbon case improves from 80 to 12 when
+its exported layer origin is reproduced. These are diagnostic observations,
+with no site-coordinate exception or blanket raster policy shipped for credit.
