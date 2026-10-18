@@ -73,11 +73,31 @@ fn dom_selector_query_matches(target voidptr, selector_text string, element &dom
 	return false
 }
 
+fn dom_selector_scope_query(target voidptr, selector_text string, root &dom.ParentNode,
+	first bool) ?[]&dom.Node {
+	mut state := unsafe { &DocumentSelectorQueryState(target) }
+	selectors := state.parse(selector_text) or { return none }
+	compounds := independent_query_compounds(selectors) or { return none }
+	mut context := MatchContext{has_result_cache: unsafe { nil }}
+	mut nodes := []&dom.Node{}
+	if first {
+		if element := independent_query_first_in(root.as_node(), compounds, mut context) {
+			nodes << element.as_node()
+		}
+	} else {
+		mut elements := []&dom.Element{}
+		independent_query_all_in(root.as_node(), compounds, mut context, mut elements)
+		for element in elements { nodes << element.as_node() }
+	}
+	return nodes
+}
+
 pub fn install_document_selector_query_hook(document &dom.Document) {
 	if hook := document.selector_query_hook() {
 		if hook.validate == dom_selector_query_validate
 			&& hook.matches == dom_selector_query_matches
-			&& hook.contains_named_namespace == dom_selector_query_contains_named_namespace {
+			&& hook.contains_named_namespace == dom_selector_query_contains_named_namespace
+			&& hook.scope_query == dom_selector_scope_query {
 			return
 		}
 	}
@@ -91,6 +111,7 @@ pub fn install_document_selector_query_hook(document &dom.Document) {
 		validate:                 dom_selector_query_validate
 		matches:                  dom_selector_query_matches
 		contains_named_namespace: dom_selector_query_contains_named_namespace
+		scope_query:              dom_selector_scope_query
 	})
 }
 

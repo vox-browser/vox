@@ -1967,12 +1967,15 @@ pub type DocumentSelectorQueryMatchCallback = fn (voidptr, string, &Element, &Pa
 
 pub type DocumentSelectorQueryContainsNamedNamespaceCallback = fn (voidptr, string) bool
 
+pub type DocumentSelectorScopeQueryCallback = fn (voidptr, string, &ParentNode, bool) ?[]&Node
+
 pub struct DocumentSelectorQueryHook {
 pub:
 	target                   voidptr = unsafe { nil }
 	validate                 DocumentSelectorQueryValidateCallback = unsafe { nil }
 	matches                  DocumentSelectorQueryMatchCallback = unsafe { nil }
 	contains_named_namespace DocumentSelectorQueryContainsNamedNamespaceCallback = unsafe { nil }
+	scope_query              DocumentSelectorScopeQueryCallback = unsafe { nil }
 }
 
 pub enum ParserScriptingMode {

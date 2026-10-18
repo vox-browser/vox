@@ -1841,6 +1841,15 @@ fn scope_match_a_selectors_string(node &ParentNode, selector_text string, return
 	}
 
 	// 3. Return the result of match a selector against a tree with s and node's root using scoping root node.
+	// The owning engine can prepare one matching context for the whole query.
+	// Parsing and namespace rejection above still precede this optional path.
+	if hook := document.selector_query_hook() {
+		if hook.scope_query != unsafe { nil } {
+			if nodes := hook.scope_query(hook.target, selector_text, node, return_matches == .first) {
+				return NodeList{nodes: nodes}
+			}
+		}
+	}
 	mut results := []&Node{}
 	results_ptr := &results
 	if return_matches == .first {
