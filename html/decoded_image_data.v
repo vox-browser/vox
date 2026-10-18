@@ -362,6 +362,8 @@ pub fn decoded_image_data_register_client(data DecodedImageData, client_id u64, 
 		data.register_client(client_id, callback)
 	} else if data is AnimatedDecodedImageData {
 		data.register_client(client_id, callback)
+	} else if data is SVGDecodedImageData {
+		data.register_client(client_id, callback)
 	}
 }
 
@@ -369,6 +371,8 @@ pub fn decoded_image_data_unregister_client(data DecodedImageData, client_id u64
 	if data is BitmapDecodedImageData {
 		data.unregister_client(client_id)
 	} else if data is AnimatedDecodedImageData {
+		data.unregister_client(client_id)
+	} else if data is SVGDecodedImageData {
 		data.unregister_client(client_id)
 	}
 }

@@ -6,6 +6,38 @@ import html
 import layout
 import loader
 
+fn browser_image_resource_is_svg(address dom.URL) bool {
+	return address.basename().to_lower().ends_with('.svg')
+		|| (address.scheme() == 'data'
+			&& address.serialize().all_before(',').to_lower().starts_with('data:image/svg+xml'))
+}
+
+fn browser_decode_svg_image(address dom.URL, bytes []u8) !html.DecodedImageData {
+	mut document := dom.Document.create(address)
+	document.set_document_type(.xml)
+	document.set_content_type('image/svg+xml')
+	document.set_is_svg_image_document(true)
+	html.parse_xml_document_source(document, bytes.bytestr()) or {
+		document.finalize()
+		return err
+	}
+	root := document.document_element() or {
+		document.finalize()
+		return error('SVG image has no document element')
+	}
+	if root.local_name() != 'svg' || (root.namespace_uri() or { '' }) != 'http://www.w3.org/2000/svg' {
+		document.finalize()
+		return error('SVG image has no SVG root')
+	}
+	metrics := layout.svg_background_natural_size(document)
+	width := if value := metrics.width { ?f64(value.to_double()) } else { none }
+	height := if value := metrics.height { ?f64(value.to_double()) } else { none }
+	ratio := if value := metrics.aspect_ratio { ?f64(value.to_double()) } else { none }
+	decoded := html.SVGDecodedImageData.create(document, width, height, ratio)
+	decoded.set_is_cors_cross_origin(address.scheme() in ['http', 'https'])
+	return decoded
+}
+
 // Static pages still need real HTML image requests. Installing the JavaScript
 // ImageHost must not be a prerequisite for decoding and displaying an <img>.
 fn install_static_browser_image_fetch_hooks(document &dom.Document, deferred map[string]bool) {

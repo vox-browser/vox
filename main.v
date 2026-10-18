@@ -1524,6 +1524,9 @@ fn browser_fetch_image_resource_for_document(resource_url dom.URL, source_url st
 }
 
 fn browser_decoded_image_data(resource_url dom.URL, bytes []u8) !html.DecodedImageData {
+	if browser_image_resource_is_svg(resource_url) {
+		return browser_decode_svg_image(resource_url, bytes)
+	}
 	bitmap := browser_decode_raster_image_bytes(bytes)!
 	decoded := html.BitmapDecodedImageData.create([html.BitmapDecodedImageFrame{frame: dom.DecodedImageFrame_.create(bitmap)}], 0, false)
 	// Legacy cache entries contain only encoded bytes, without final redirect

@@ -221,8 +221,23 @@ fn available_html_image_natural_size(element &dom.Element) ?css.SizeWithAspectRa
 	if !html.html_image_element_is_image_available(image) {
 		return none
 	}
+	if document := available_html_svg_image_document(element) {
+		return svg_background_natural_size(document)
+	}
 	return natural_size_with_aspect_ratio(html.html_image_element_intrinsic_width(image),
 		html.html_image_element_intrinsic_height(image), html.html_image_element_intrinsic_aspect_ratio(image))
+}
+
+fn available_html_svg_image_document(element &dom.Element) ?&dom.Document {
+	if !element.as_node().is_html_image_element() { return none }
+	image := unsafe { &dom.HTMLImageElement(element) }
+	decoded := html.html_image_element_model_for_dom_element(image).decoded_image_data() or { return none }
+	if decoded is html.SVGDecodedImageData {
+		mut isolated := decoded.svg_document
+		isolated.set_font_rendering_policy(element.document().font_rendering_policy())
+		return isolated
+	}
+	return none
 }
 
 // ImageProvider::intrinsic_aspect_ratio() is the exact width/height fraction
@@ -297,7 +312,9 @@ pub fn ImageBox.new(document &dom.Document, element &dom.Element, computed_value
 			height: CSSPixels.new(0)
 		}
 	}
-	box.svg_image_document_ = svg_image_document_for_source(document, source)
+	box.svg_image_document_ = if isolated := available_html_svg_image_document(element) {
+		isolated
+	} else { svg_image_document_for_source(document, source) }
 	box.auto_content_box_size_ = box.natural_size_
 	return box
 }
@@ -913,7 +930,15 @@ pub fn (mut box ImageBox) reset_for_relayout() {
 			height: CSSPixels.new(0)
 		}
 	}
-	if source != old_source {
+	mut decoded_svg_document := ?&dom.Document(none)
+	if dom_node := box.dom_node() {
+		if element := dom_node.as_element() {
+			decoded_svg_document = available_html_svg_image_document(element)
+		}
+	}
+	if isolated := decoded_svg_document {
+		box.svg_image_document_ = isolated
+	} else if source != old_source {
 		box.svg_image_document_ = svg_image_document_for_source(box.document_, source)
 	}
 	box.auto_content_box_size_ = box.natural_size_
