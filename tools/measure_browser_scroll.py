@@ -22,18 +22,24 @@ REPO = Path(__file__).resolve().parents[1]
 FRAME = re.compile(r"^Vox scroll frame: (\d+) (.*)$", re.MULTILINE)
 
 
-def summarize(log, expected_frames):
+def summarize(log, expected_frames, idle=False):
     rows = []
     for number, fields in FRAME.findall(log):
-        row = {key: float(value) for key, value in
-               (field.split("=", 1) for field in fields.split())}
+        row = {}
+        for key, value in (field.split("=", 1) for field in fields.split()):
+            try:
+                row[key] = float(value)
+            except ValueError:
+                row[key] = value
         row["frame"] = int(number)
         rows.append(row)
     if [row["frame"] for row in rows] != list(range(expected_frames)):
         raise ValueError("Missing, duplicated or out-of-order scroll frames")
     moved = [row for row in rows if row["before_y"] != row["after_y"]]
-    if not moved:
+    if not moved and not idle:
         raise ValueError("No measured wheel event scrolled the viewport")
+    if not moved:
+        moved = rows
 
     def distribution(selected):
         result = {"frames": len(selected)}
@@ -89,6 +95,9 @@ def main():
     parser.add_argument("--trigger-file", type=Path,
                         help="Create this file once --trigger-frame has been logged")
     parser.add_argument("--trigger-frame", type=int, default=5)
+    parser.add_argument("--idle", action="store_true",
+                        help="Profile frames without wheel events, e.g. to measure memory "
+                             "while animations run on a still page")
     args = parser.parse_args()
     if args.frames < 1:
         parser.error("--frames must be positive")
@@ -123,6 +132,8 @@ def main():
     if library.is_file():
         env["DYLD_LIBRARY_PATH"] = str(library.parent)
     env.update(item.split("=", 1) for item in args.env)
+    if args.idle:
+        env["VOX_SCROLL_PROFILE_IDLE"] = "1"
     if args.insert_library:
         env["DYLD_INSERT_LIBRARIES"] = ":".join(str(path.resolve()) for path in args.insert_library)
     if args.trigger_file:
@@ -173,7 +184,7 @@ def main():
               "url": args.url, "viewport": [args.width, args.height],
               "raster_mode": "logical-pixel screenshot" if args.capture else "interactive window backing scale",
               "endpoint": "native wheel dispatch through replay, including synchronous GPU waits; excludes Cocoa layer publication, vsync and idle work",
-              **summarize(log_path.read_text(), args.frames)}
+              **summarize(log_path.read_text(), args.frames, args.idle)}
     (args.output / "summary.json").write_text(json.dumps(result, indent=2) + "\n")
     if args.compare_to:
         result["comparison"] = compare(json.loads(args.compare_to.read_text()), result)

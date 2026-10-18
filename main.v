@@ -6770,10 +6770,13 @@ fn (mut app BrowserApp) draw() {
 	app.begin_frame_preparation()
 	app.sync_window_activity()
 	app.poll_native_navigation()
+	app.scroll_profile_mark('input')
 	// The local native display callback supplies the opportunity. HTML queues
 	// its rendering task and owns eligibility, timestamps and callback ordering.
 	app.deliver_rendering_opportunity(time.sys_mono_now(), sapp.frame_duration() * 1000.0)
+	app.scroll_profile_mark('rendering')
 	app.poll_javascript_tasks()
+	app.scroll_profile_mark('tasks')
 	if app.initial_window_frame_presented && app.document == unsafe { nil }
 		&& app.pending_cached_page != none {
 		app.install_pending_cached_page()
@@ -6793,9 +6796,12 @@ fn (mut app BrowserApp) draw() {
 	if window.width > 0 && (window.width != app.viewport_width || content_viewport_height != app.viewport_height) {
 		app.relayout(window.width, window.height)
 	}
+	app.scroll_profile_mark('navigation')
 	app.advance_document_animations(window.width, content_viewport_height)
+	app.scroll_profile_mark('animations')
 	app.apply_screenshot_scroll_if_ready(window.height)
 	app.finish_frame_preparation()
+	app.scroll_profile_mark('prepare')
 	// Preparation can replace a scripted or absent document with an HTML/CSS
 	// page. Keep its compact policy through native replay and chrome drawing.
 	app.retarget_document_frame_heap_scope(mut heap_scope)
@@ -6842,9 +6848,16 @@ fn (mut app BrowserApp) draw() {
 					}
 				}
 			}
-			app.draw_command(*command, 0, page_y, window.height)
+			if app.scroll_profile.active && app.scroll_profile.replay_kinds {
+				before := platform.thread_arena_usage().used
+				app.draw_command(*command, 0, page_y, window.height)
+				app.scroll_profile.replay_kind_bytes[command.kind] += platform.thread_arena_usage().used - before
+			} else {
+				app.draw_command(*command, 0, page_y, window.height)
+			}
 		}
 		app.flush_rounded_rect_underlay(0, page_y, window.height)
+		app.scroll_profile_mark('replay')
 		for index in app.portable_shadow_image_index .. app.portable_shadow_images.len {
 			app.ctx.remove_cached_image_by_idx(app.portable_shadow_images[index].image_id)
 		}

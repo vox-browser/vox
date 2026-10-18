@@ -6,7 +6,7 @@ set -eu
 # Environment overrides:
 #   V_BIN                     V compiler executable
 #   UI2_SOURCE_DIR            UI2 checkout (defaults to ~/.vmodules/ui2)
-#   LADYBIRD_V_GC            boehm (default), boehm_full, or none
+#   LADYBIRD_V_GC            boehm (default), boehm_full, prealloc, or none
 #   LADYBIRD_V_PROFILE       V profiling report path (unset for normal builds)
 #   LADYBIRD_V_PROFILE_FNS   comma-separated C function names to profile
 #   LADYBIRD_SOURCE_DIR       upstream Ladybird checkout used for Skia
@@ -48,9 +48,9 @@ fi
 # mode remains available for explicit heap-ownership diagnostics.
 gc_mode=${LADYBIRD_V_GC:-boehm}
 case "$gc_mode" in
-    boehm|boehm_full|none) ;;
+    boehm|boehm_full|prealloc|none) ;;
     *)
-        echo "LADYBIRD_V_GC must be boehm, boehm_full, or none" >&2
+        echo "LADYBIRD_V_GC must be boehm, boehm_full, prealloc, or none" >&2
         exit 2
         ;;
 esac
@@ -77,7 +77,7 @@ chmod 644 "$snapshot_resource_tmp"
 mv -f "$snapshot_resource_tmp" "$resources_dir/adblock.snapshot.bin"
 
 extra_cflags=""
-if [ "$gc_mode" != none ]; then
+if [ "$gc_mode" = boehm ] || [ "$gc_mode" = boehm_full ]; then
     # The compatibility compiler's source-built collector has only 2048
     # static-root ranges. AppKit/Metal's dyld images exceed that limit; match
     # the large configuration used by current V and its macOS GC archives.
@@ -151,7 +151,21 @@ http_modules=$(python3 "$repo_dir/tools/prepare_http_compat.py" "$v_compiler")
 # `encoding` as `vox2.encoding` while imports still resolve to vlib's name.
 set -- -old-compiler -exclude "$zoneinfo_exclude" -enable-globals \
     -d vox_ui2 -path "$repo_dir|$http_modules|$ui2_modules|@vmodules|@vlib"
-if [ "$gc_mode" != none ]; then
+if [ "$gc_mode" = prealloc ] && [ "${VOX_PREALLOC_SAMPLER:-0}" = 1 ]; then
+    # Diagnostic build: sample the sites of never-reclaimed allocations
+    # (tools/prealloc_allocation_sampler.c). Needs the allocator hook in V's
+    # prealloc arena.
+    set -- "$@" -d prealloc_alloc_hook
+    mkdir -p "$repo_dir/Build/v"
+    sampler_object="$repo_dir/Build/v/prealloc_allocation_sampler.o"
+    cc -O2 -c "$repo_dir/tools/prealloc_allocation_sampler.c" -o "$sampler_object"
+    extra_ldflags="$extra_ldflags $sampler_object"
+fi
+if [ "$gc_mode" = prealloc ]; then
+    # Thread-local bump arenas without a collector; V's free() is a no-op.
+    set -- "$@" -prealloc
+    extra_cflags="$extra_cflags -O2"
+elif [ "$gc_mode" != none ]; then
     set -- "$@" -gc "$gc_mode"
     extra_cflags="$extra_cflags -O2"
 else
