@@ -846,6 +846,7 @@ mut:
 	play_button        ?&dom.Element
 	video_overlay      ?&dom.Element
 	play_pause_icon    ?&dom.Element
+	timeline_element   ?&dom.Element
 	timeline_track     ?&dom.Element
 	timeline_fill      ?&dom.Element
 	timestamp_element  ?&dom.Element
@@ -967,11 +968,16 @@ pub fn (mut controls MediaControls) create_shadow_tree() {
 					parent_node.append_child(button.as_node()) or { panic(err) }
 					controls.dom_.play_button = button
 				} else if class_name == 'timeline-fill' {
+					mut timeline := dom.create_element(document, 'div', ns_html, none, none, false) or { panic(err) }
+					timeline.set_attribute_value('class', 'timeline')
 					mut track := dom.create_element(document, 'div', ns_html, none, none, false) or { panic(err) }
 					track.set_attribute_value('class', 'timeline-track')
 					mut track_node := track.as_node()
 					track_node.append_child(child.as_node()) or { panic(err) }
-					parent_node.append_child(track_node) or { panic(err) }
+					mut timeline_node := timeline.as_node()
+					timeline_node.append_child(track_node) or { panic(err) }
+					parent_node.append_child(timeline_node) or { panic(err) }
+					controls.dom_.timeline_element = timeline
 					controls.dom_.timeline_track = track
 				} else {
 					parent_node.append_child(child.as_node()) or { continue }
@@ -1129,6 +1135,7 @@ pub fn (mut controls MediaControls) set_up_event_listeners() {
 				return true
 			})
 	}
+	controls.set_up_timeline_event_listeners()
 	controls.set_up_hover_event_listeners()
 	controls.add_event_listener(controls.media.event_target(), 'keydown', .no,
 		fn [controls_pointer] (event &dom.Event) bool {
@@ -1153,6 +1160,64 @@ pub fn (mut controls MediaControls) set_up_event_listeners() {
 			return true
 		})
 	controls.request_timeline_update()
+}
+
+fn media_controls_mouse_event(event &dom.Event) ?&dom.MouseEvent {
+	if event.interface_ !in [.mouse_event, .pointer_event, .wheel_event, .drag_event] { return none }
+	return unsafe { &dom.MouseEvent(event) }
+}
+
+fn media_controls_timeline_progress(event &dom.MouseEvent, timeline &dom.Element) f64 {
+	rect := timeline.get_bounding_client_rect()
+	return math.clamp((event.client_x() - rect.x) / rect.width, 0, 1)
+}
+
+fn (mut controls MediaControls) set_up_timeline_event_listeners() {
+	timeline := controls.dom_.timeline_element or { return }
+	controls_pointer := voidptr(&controls)
+	controls.add_event_listener(unsafe { &dom.EventTarget(timeline.as_node()) }, 'mousedown', .no,
+		fn [controls_pointer] (event &dom.Event) bool {
+			mouse := media_controls_mouse_event(event) or { return false }
+			mut controls := unsafe { &MediaControls(controls_pointer) }
+			timeline := controls.dom_.timeline_element or { panic('Missing scrub timeline') }
+			range_ := controls.timeline_range() or { return false }
+			progress := media_controls_timeline_progress(mouse, timeline)
+			time := range_.start + range_.span() * progress
+			controls.begin_timeline_scrubbing(time)
+			controls.set_timeline_progress(progress)
+			controls.set_timestamp(time, controls.media.duration())
+			window := controls.relevant_window() or { panic('Missing scrub Window') }
+			window_target := unsafe { &dom.EventTarget(window) }
+			mousemove := controls.add_event_listener(window_target, 'mousemove', .no,
+				fn [controls_pointer] (event &dom.Event) bool {
+					mouse := media_controls_mouse_event(event) or { return false }
+					mut controls := unsafe { &MediaControls(controls_pointer) }
+					timeline := controls.dom_.timeline_element or { panic('Missing scrub timeline') }
+					range_ := controls.timeline_range() or { return false }
+					progress := media_controls_timeline_progress(mouse, timeline)
+					time := range_.start + range_.span() * progress
+					controls.seek_while_scrubbing(time)
+					controls.set_timeline_progress(progress)
+					controls.set_timestamp(time, controls.media.duration())
+					return true
+				})
+			controls.add_event_listener(window_target, 'mouseup', .yes,
+				fn [controls_pointer, mousemove] (event &dom.Event) bool {
+					mouse := media_controls_mouse_event(event) or { return false }
+					mut controls := unsafe { &MediaControls(controls_pointer) }
+					timeline := controls.dom_.timeline_element or { panic('Missing scrub timeline') }
+					mut time := ?f64(none)
+					if range_ := controls.timeline_range() {
+						progress := media_controls_timeline_progress(mouse, timeline)
+						time = range_.start + range_.span() * progress
+					}
+					controls.finish_timeline_scrubbing(time)
+					window := controls.relevant_window() or { panic('Missing scrub Window') }
+					unsafe { &dom.EventTarget(window) }.remove_event_listener_without_options('mousemove', mousemove)
+					return true
+				})
+			return true
+		})
 }
 
 fn (mut controls MediaControls) set_up_hover_event_listeners() {
@@ -1246,6 +1311,10 @@ fn (mut controls MediaControls) submit_pending_scrub_seek() {
 }
 
 pub fn (mut controls MediaControls) end_timeline_scrubbing(time f64) {
+	controls.finish_timeline_scrubbing(time)
+}
+
+fn (mut controls MediaControls) finish_timeline_scrubbing(time ?f64) {
 	was_playing := controls.scrubbing_timeline == .while_playing
 	controls.scrubbing_timeline = .no
 	controls.pending_scrub_seek_time_ = none
@@ -1253,11 +1322,11 @@ pub fn (mut controls MediaControls) end_timeline_scrubbing(time f64) {
 		timer.stop()
 	}
 	controls.scrub_seek_preemption_timer_ = none
-	controls.set_current_time(time)
+	if value := time { controls.set_current_time(value) }
 	if was_playing {
 		mut media := controls.media
-		if !media.ended() {
-			_ = media.play()
+		if !media.ended() || media.loop() {
+			media.play_from_user_interaction()
 		}
 	}
 	controls.update_play_pause_icon()
