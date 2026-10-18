@@ -545,3 +545,49 @@ account for many remaining uncached boxes. The normal record sizes are 3,616
 bytes per BlockBox, 1,112 per TextFragment and 760 per DOM layout mirror.
 These diagnostic counts receive no timing credit. Brave parity remains open;
 no app is installed at this checkpoint.
+
+
+The source-80 native check completes eight original-handler clicks with correct
+labels and no dispatch errors. Its additional comment/input checks pass in both
+GC modes. The source-81 experiment widened retained paint-header eligibility;
+its ABBA reduction is only 326,469.5 instructions (0.0933%). That experiment is
+rejected, with its patch and failed initial fixtures retained as artifacts. It
+is excluded from production, subsequent source snapshots and broad-gate credit.
+
+`877c63cf` restores validated retained geometry directly, preserving used-value
+record addresses and rebinding containing blocks without resolving six CSS
+sizes that the snapshot immediately overwrites. Its 57 focused cases in sixteen
+files pass per GC mode. `d962d9ee` fills paint headers into their final reserved
+arena slots, eliminating large optional-return and array-insertion copies.
+Its 24 focused cases in nine files pass per mode, including independent uncached
+projection comparisons, old snapshots, collection and child-array growth.
+Both normal C-O2 Boehm production builds and strict native completion checks
+succeed. Expanded and collapsed Reddit document captures remain pixel-exact.
+
+The six balanced source-80/84/85/85/84/80 runs use the same full original handler,
+normalized fixture and native frame endpoint. Median warm instructions are
+348,774,776.5, 347,131,752 and 340,398,146.5 respectively. Direct restore saves
+1,643,024.5 instructions; direct paint slots save another 6,733,605.5. Combined
+savings are 8,376,630 (2.40%). Warm elapsed medians are 57.2905, 61.35 and 59.832
+ms: these observations establish no latency gain. First-action candidate times
+remain variable (88.067-171.027 ms). No Brave-parity claim follows.
+
+The source-85 checkpoint executes 4,258 functions in 1,105 original files per GC
+mode: 4,238 pass and twenty inherited named cases fail, with no unrun cases.
+All failed names and original test bytes match source-77. Signed startup and
+eight exact SVG mutation guards pass. The eleven default document captures are
+pixel-identical to source-77, retaining its four reference mismatches. All 494
+LibJS source files are unchanged; source-60's 236-file/784-function checks per
+mode carry forward on those identical bytes. A fresh unmodified official AST
+run matches all 100 current upstream fixtures. The actual broad-suite and
+native-smoke failures remain recorded; `parity-v85-checkpoint.json` closes the
+batch with `all_tests_passed: false`, not a blanket test-pass claim.
+
+Post-endpoint forced-collection diagnostics on both source-80 and source-85
+track eight paint arenas: the first seven are reclaimed, and the current eighth
+remains alive. This proves that arena lifetime, not all layout allocations.
+Forced collection has no performance credit. A fresh active-main-thread sample
+still shows tree preparation, geometry, DOM attachment and paint projection;
+cosmetic-filter refresh also surveys the whole light DOM. Further optimization
+continues beyond this checkpoint. No app is installed; Brave parity remains
+open.
