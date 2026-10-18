@@ -1630,8 +1630,20 @@ fn optional_counter_operation_value(value ?i32) ?CounterValue {
 // translated resolve_counters()/inherit_counters() algorithms above and then
 // publishes their result through DOM::AbstractElement.
 pub fn resolve_counters_for_layout(mut abstract_element dom.AbstractElement, computed &ComputedProperties, origin CounterOriginatingElement, has_parent_element bool, parent_counters ?CountersSet, previous_sibling_counters ?CountersSet, previous_element_counters ?CountersSet) ?CountersSet {
-	mut reset := []CounterOperation{}
 	computed_values := unsafe { &ComputedValues(computed) }
+	// A previous element only supplies values for counters already inherited
+	// from the parent or preceding sibling. With neither source nor an operation,
+	// resolution can only clear the DOM snapshot; no CounterElement is needed.
+	if !computed.display().is_list_item() && computed_values.counter_reset().len == 0
+		&& computed_values.counter_increment().len == 0 && computed_values.counter_set().len == 0 {
+		parent_nonempty := if counters := parent_counters { !counters.is_empty() } else { false }
+		sibling_nonempty := if counters := previous_sibling_counters { !counters.is_empty() } else { false }
+		if !has_parent_element || (!parent_nonempty && !sibling_nonempty) {
+			set_counters_set_for_abstract_element(mut abstract_element, none)
+			return none
+		}
+	}
+	mut reset := []CounterOperation{}
 	for counter in computed_values.counter_reset() {
 		mut value := optional_counter_operation_value(counter.value)
 		if counter.is_reversed && value == none {
