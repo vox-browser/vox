@@ -1,6 +1,7 @@
 module main
 
 import gg
+import sokol.sapp
 
 @[heap]
 struct NativeBrowserContextTestState {
@@ -9,6 +10,8 @@ mut:
 	callbacks   []string
 	initialized int
 	cleaned_up  int
+	width       int
+	height      int
 }
 
 fn native_browser_context_test_init(user_data voidptr) {
@@ -50,7 +53,7 @@ fn test_native_browser_context_uses_cocoa_lifecycle_without_gpu_or_font_setup() 
 		configure_native_browser_context(mut context)
 		assert context.window.sample_count == 1
 		assert context.window.frame_userdata_cb == original_frame
-		assert context.window.event_userdata_cb == original_event
+		assert context.window.event_userdata_cb != original_event
 		assert !context.has_started
 		context.window.cleanup_userdata_cb(context)
 		assert state.callbacks.len == 0
@@ -117,4 +120,116 @@ fn test_native_browser_context_without_user_callbacks_initializes_and_cleans_up(
 		context.window.cleanup_userdata_cb(context)
 		assert !context.has_started
 	}
+}
+
+fn native_browser_context_test_resize_event(event &gg.Event, user_data voidptr) {
+	mut state := unsafe { &NativeBrowserContextTestState(user_data) }
+	assert event.typ == .resized
+	assert state.context.width == state.width
+	assert state.context.height == state.height
+	state.callbacks << 'event'
+}
+
+fn native_browser_context_test_resized(event &gg.Event, user_data voidptr) {
+	mut state := unsafe { &NativeBrowserContextTestState(user_data) }
+	assert state.context.width == event.window_width
+	assert state.context.height == event.window_height
+	assert state.context.window.width == event.window_width
+	assert state.context.window.height == event.window_height
+	assert state.context.scale >= 0.1
+	assert state.context.ft == unsafe { nil }
+	assert state.context.pipeline == unsafe { nil }
+	state.width = event.window_width
+	state.height = event.window_height
+	state.callbacks << 'resized'
+}
+
+fn test_native_browser_maximize_restore_and_resize_without_a_font_atlas() {
+	$if !macos { return }
+	mut state := &NativeBrowserContextTestState{width: 800, height: 680}
+	mut context := gg.new_context(
+		width: state.width
+		height: state.height
+		native_rendering: true
+		user_data: state
+		event_fn: native_browser_context_test_resize_event
+		resized_fn: native_browser_context_test_resized
+	)
+	state.context = context
+	configure_native_browser_context(mut context)
+	context.window.init_userdata_cb(context)
+	defer { context.window.cleanup_userdata_cb(context) }
+	for size in [[1920, 1080], [800, 680], [2560, 1440], [640, 480]] {
+		mut event := sapp.Event{type: .resized, window_width: size[0], window_height: size[1]}
+		context.window.event_userdata_cb(&event, context)
+		assert event.type == .resized
+		assert state.width == size[0]
+		assert state.height == size[1]
+	}
+	assert state.callbacks == ['event', 'resized', 'event', 'resized', 'event', 'resized', 'event', 'resized']
+}
+
+fn test_native_browser_resize_supports_on_event_and_absent_resize_hooks() {
+	$if !macos { return }
+	mut state := &NativeBrowserContextTestState{width: 800, height: 680}
+	mut context := gg.new_context(
+		width: state.width
+		height: state.height
+		native_rendering: true
+		user_data: state
+		on_event: fn (user_data voidptr, event &gg.Event) {
+			native_browser_context_test_resize_event(event, user_data)
+		}
+	)
+	state.context = context
+	configure_native_browser_context(mut context)
+	context.window.init_userdata_cb(context)
+	defer { context.window.cleanup_userdata_cb(context) }
+	mut event := sapp.Event{type: .resized, window_width: 1600, window_height: 900}
+	context.window.event_userdata_cb(&event, context)
+	assert state.callbacks == ['event']
+	assert context.width == 1600
+	assert context.height == 900
+	assert context.ft == unsafe { nil }
+	assert !context.font_inited
+}
+
+fn test_native_browser_resize_adapter_preserves_gg_keyboard_and_pointer_dispatch() {
+	$if !macos { return }
+	mut state := &NativeBrowserContextTestState{}
+	mut context := gg.new_context(
+		native_rendering: true
+		user_data: state
+		event_fn: fn (event &gg.Event, user_data voidptr) {
+			mut state := unsafe { &NativeBrowserContextTestState(user_data) }
+			state.callbacks << 'event:${event.typ}'
+		}
+		keydown_fn: fn (key gg.KeyCode, modifiers gg.Modifier, user_data voidptr) {
+			mut state := unsafe { &NativeBrowserContextTestState(user_data) }
+			assert key == .l
+			assert modifiers.has(.super)
+			state.callbacks << 'keydown'
+		}
+		click_fn: fn (x f32, y f32, button gg.MouseButton, user_data voidptr) {
+			mut state := unsafe { &NativeBrowserContextTestState(user_data) }
+			assert x == 12
+			assert y == 18
+			assert button == .left
+			state.callbacks << 'click'
+		}
+	)
+	state.context = context
+	configure_native_browser_context(mut context)
+	context.window.init_userdata_cb(context)
+	defer { context.window.cleanup_userdata_cb(context) }
+	context.scale = 2
+	mut key := sapp.Event{type: .key_down, key_code: .l, modifiers: u32(gg.Modifier.super)}
+	context.window.event_userdata_cb(&key, context)
+	assert context.pressed_keys[int(gg.KeyCode.l)]
+	mut click := sapp.Event{type: .mouse_down, mouse_button: .left, mouse_x: 24, mouse_y: 36}
+	context.window.event_userdata_cb(&click, context)
+	assert context.mouse_pos_x == 12
+	assert context.mouse_pos_y == 18
+	assert state.callbacks == ['event:key_down', 'keydown', 'event:mouse_down', 'click']
+	assert context.ft == unsafe { nil }
 }
