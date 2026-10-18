@@ -2731,6 +2731,11 @@ fn run_document_javascript(document &dom.Document, current_url string, sources [
 }
 
 fn run_document_script_sources(document &dom.Document, current_url string, sources []browserjs.ScriptSource, runtime &browserjs.Runtime, mut messages []string) ?string {
+	return run_document_script_sources_with_image_fetch(document, current_url, sources, runtime,
+		browser_fetch_image_request, mut messages)
+}
+
+fn run_document_script_sources_with_image_fetch(document &dom.Document, current_url string, sources []browserjs.ScriptSource, runtime &browserjs.Runtime, image_fetch browserjs.ImageRequestFetchHook, mut messages []string) ?string {
 	// Parsing creates Document's Selection, while the browsing context normally
 	// arrives with navigation before page scripts run. The compact host executes
 	// scripts before its first layout, so establish that context here as well.
@@ -2893,7 +2898,7 @@ fn run_document_script_sources(document &dom.Document, current_url string, sourc
 		messages << 'JavaScript view-transition bindings: ${err.msg()}'
 		return none
 	}
-	mut image_host := browserjs.ImageHost.create_with_request_fetch(document, browser_fetch_image_request, fn [document] (callback_runtime &browserjs.Runtime) ! {
+	mut image_host := browserjs.ImageHost.create_with_request_fetch(document, image_fetch, fn [document] (callback_runtime &browserjs.Runtime) ! {
 		state := callback_runtime.evaluate_host('__ladybirdFinalize()')!
 		mut replay_messages := []string{}
 		apply_javascript_runtime_state(document, state, callback_runtime, mut replay_messages)
@@ -3520,7 +3525,8 @@ fn (mut app BrowserApp) install_loaded_page(loaded LoadedPage, add_history bool)
 		&& (sources.len > 0 || document_has_window_event_handlers(app.document)
 		|| browser_adblock_requires_runtime(app.document)) {
 		app.js_runtime = create_browser_script_runtime(app.js_engine)
-		run_document_script_sources(app.document, loaded.url, sources, app.js_runtime, mut app.js_messages)
+		run_document_script_sources_with_preloaded_images(app.document, loaded.url, sources, app.js_runtime,
+			preloaded_resources, mut app.js_messages)
 	} else {
 		none
 	}
