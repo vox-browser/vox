@@ -1098,8 +1098,24 @@ fn typed_gradient_position_as_angle(value css.StyleValue) f64 {
 	return 0
 }
 
+// Position resolution is borrowed for this synchronous pass. A stored closure
+// would keep the subject element in LengthResolutionContext alive after paint.
+struct TypedGradientPositionResolver {
+	resolution_context css.LengthResolutionContext
+	reference_length   f64
+	angle              bool
+}
+
+fn (resolver &TypedGradientPositionResolver) resolve(value css.StyleValue) f64 {
+	if resolver.angle {
+		return typed_gradient_position_as_angle(value)
+	}
+	return typed_gradient_position_as_length(resolver.resolution_context, value,
+		resolver.reference_length)
+}
+
 fn resolve_color_stop_positions(elements []css.ColorStopListElement, context css.ColorResolutionContext,
-	repeating bool, resolve_position fn (css.StyleValue) f64) painting.ColorStopData {
+	repeating bool, position_resolver &TypedGradientPositionResolver) painting.ColorStopData {
 	if elements.len == 0 {
 		return painting.ColorStopData{}
 	}
@@ -1110,16 +1126,16 @@ fn resolve_color_stop_positions(elements []css.ColorStopListElement, context css
 			color: color
 		}
 		if hint := element.transition_hint {
-			stop.transition_hint = resolve_position(hint)
+			stop.transition_hint = position_resolver.resolve(hint)
 		}
 		if position := element.color_stop.position {
-			stop.position = resolve_position(position)
+			stop.position = position_resolver.resolve(position)
 		}
 		resolved << stop
 		if second_position := element.color_stop.second_position {
 			resolved << TypedGradientStop{
 				color: color
-				position: resolve_position(second_position)
+				position: position_resolver.resolve(second_position)
 			}
 		}
 	}
@@ -1233,9 +1249,12 @@ fn resolve_linear_gradient_data(resolution_context css.LengthResolutionContext,
 	gradient_length := math.abs(height * math.sin(real_angle)) + math.abs(width * math.cos(real_angle))
 	half_x := if width == 0 { 0.0 } else { direction_x * gradient_length / (2.0 * width) }
 	half_y := if height == 0 { 0.0 } else { direction_y * gradient_length / (2.0 * height) }
-	color_stops := resolve_color_stop_positions(gradient.color_stop_list_, context, gradient.is_repeating(), fn [resolution_context, gradient_length] (value css.StyleValue) f64 {
-		return typed_gradient_position_as_length(resolution_context, value, gradient_length)
-	})
+	position_resolver := TypedGradientPositionResolver{
+		resolution_context: resolution_context
+		reference_length: gradient_length
+	}
+	color_stops := resolve_color_stop_positions(gradient.color_stop_list_, context,
+		gradient.is_repeating(), position_resolver)
 	stops := gradient_stops_for_transport(color_stops)
 	return LinearGradient{
 		x1: 0.5 - half_x
@@ -1345,9 +1364,12 @@ fn resolve_radial_gradient_data(resolution_context css.LengthResolutionContext,
 	if radius_y <= 0 {
 		radius_y = 1.0 / 64.0
 	}
-	color_stops := resolve_color_stop_positions(gradient.color_stop_list_, context, gradient.is_repeating(), fn [resolution_context, radius_x] (value css.StyleValue) f64 {
-		return typed_gradient_position_as_length(resolution_context, value, radius_x)
-	})
+	position_resolver := TypedGradientPositionResolver{
+		resolution_context: resolution_context
+		reference_length: radius_x
+	}
+	color_stops := resolve_color_stop_positions(gradient.color_stop_list_, context,
+		gradient.is_repeating(), position_resolver)
 	stops := gradient_stops_for_transport(color_stops)
 	return LinearGradient{
 		colors: stops.map(it.color)
@@ -1366,9 +1388,9 @@ fn resolve_conic_gradient_data(resolution_context css.LengthResolutionContext,
 	gradient css.ConicGradientStyleValue, width f64, height f64,
 	context css.ColorResolutionContext) LinearGradient {
 	center_x, center_y := resolved_typed_gradient_position(resolution_context, gradient.position_, width, height)
-	color_stops := resolve_color_stop_positions(gradient.color_stop_list_, context, gradient.is_repeating(), fn (value css.StyleValue) f64 {
-		return typed_gradient_position_as_angle(value)
-	})
+	position_resolver := TypedGradientPositionResolver{angle: true}
+	color_stops := resolve_color_stop_positions(gradient.color_stop_list_, context,
+		gradient.is_repeating(), position_resolver)
 	stops := gradient_stops_for_transport(color_stops)
 	return LinearGradient{
 		colors: stops.map(it.color)
