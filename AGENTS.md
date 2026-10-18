@@ -2186,6 +2186,13 @@ evidence](docs/translation-audit/NATIVE_MEDIA_WHEEL_RAW_HANDLER.md).
   Main6 eachGC derived from actual0/quiet C runner; assertion totals unknown; HTML compile1.
   Aggregate1; zero local samples/primaries/credit; all outcomes and accessor proofs retained.
   Frozen124 control/broad baseline, carry0 and verified124 app preserved; Chrome parity open.
+  Property-sharing closure round130:25 features/231authoredhunks/40changed runtime paths.
+  C-only preflight0; common60/config; layout36/97315asserts and main7/57578 eachGC pass.
+  HTML no-GC12/515 passes; Boehm10 passes, two owner-mask3 failures. DOM2/19 eachGC passes.
+  CSS no-GC57/57997 passes; Boehm25 passes, six owner failures then actual134/SIGABRT.
+  Local template missed contract gate: all6 samples retained, -13.72086%/3wins; no page credit.
+  Future generator fixed; original drivers/results retained. Native gate1 starts zero normal jobs.
+  Zero browser primaries/broad work; frozen124/control/broad/carry0/app preserved; Chrome open.
 - Outside instruction-count optimization, run broad regression suites once per
   ten completed fixes, not after every fix.
   Broad suites include full translation/package test batches, the full LibJS AST

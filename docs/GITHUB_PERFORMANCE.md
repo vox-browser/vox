@@ -12683,6 +12683,78 @@ and foreign edits remain untouched. Frozen control/broad baseline124, verified
 isolated124 app and observed carry0 remain. Chrome parity remains unestablished:
 the earlier Chrome count uses a different endpoint and hydrated content.
 
+## Reject the twenty-five-feature composition at the managed-owner gate
+
+Round130 composes the full viewport scrollbar fix (`26e60e24`) and four complete
+CSS lifetime features (`6f2bb573`, `16cf161b`, `1080623f`, `30437cd9`) with the
+prior20-feature dependency closure. All231 authored hunks reconstruct exactly;
+40 runtime paths change, including nine new files. The original Git DAG and
+already accepted89 post-hunks remain authenticated. The rule-cache change also
+uses the exact accepted110 selector field-to-getter migration (`201f3f90`): its
+whole authored helper before/after and inverse transformation match, and both
+existing getter implementations are unchanged. The first static mismatch,
+reader getter-signature error and finding-writer error remain retained. No
+runtime shim or omitted authored change is introduced.
+
+Whole-app old-compiler C-only preflight exits0, with exact C and durable gzip
+hashes. Read-only comparison finds493 emitted builtin functions unchanged from
+accepted124 after compiler identity normalization; six closure-registry records
+are byte-identical. This is no completed normal browser build or strict browser
+C audit. The exact accepted104 image-getter and116 event-handler-count test
+migrations are authenticated independently; original/projected files, every
+assertion and all four weak-owner headers remain retained.
+
+The common12 cases pass60 assertions per configuration: fresh candidate/Boehm
+and no-GC, with identical successful124 control evidence reused. The114 original
+contracts have these actual outcomes:
+
+- Layout: all36 cases/97,315 assertions pass in both GC modes. The original
+  viewport-scroll failure is fixed without changing its assertion.
+- Main: all7 cases/57,578 assertions pass in each GC mode. Actual C generation,
+  Clang, signing and frozen-helper harness execution all exit0. Adding the normal
+  test-runner statistics flag before generation makes the totals observable;
+  round129's quiet-runner evidence remains unchanged.
+- HTML: no-GC12 cases/515 assertions pass. Boehm passes10 cases and fails two
+  collection checks with document/parser owner mask3 each:515 successful and
+  two failed assertions. Functional media traversal still passes.
+- CSS: no-GC57 cases/57,997 assertions pass. Boehm passes25 cases, then retains a
+  document/parser graph at mask3 and fails five invalidation owner checks at
+  mask1. Reusing a still-registered weak slot aborts in the unchanged C header:
+  the V driver actually returns134 and reports SIGABRT6. There is no completed
+  Boehm total;26 cases, including the original paged-store collection check, do
+  not complete. No assertion/header is weakened and the failed binary is kept.
+- DOM: both cases/19 assertions pass in each GC mode.
+
+A preparation-template error omitted the local diagnostic's contract gate. It
+waited for the common checks, then completed the three fixed alternating local
+pairs while original contracts were still running. **All six actual0 samples
+are retained**, checksum7,963,486,608 each. Sixteen full public parse/layout/
+record/finalize pipelines have matching marginal medians32,553,227,098 to
+28,086,644,463 retired instructions (**13.7208597524% fewer**), with3/3 pair wins.
+This is a local observation on a composition that fails ownership validation;
+it receives no page credit. The original generator, actual ungated driver and
+all receipts are preserved in
+`Build/v/instruction-opt130-local-gate-finding/`. The generator is corrected to
+insert and verify the contract-success gate before any future local build or
+sample. No completed sample is rerun or discarded.
+
+The independent native-work gate actually exits1 on the failed contracts, and
+its launcher exits1 before starting any normal build/profile/audit job. No normal
+candidate binary, V profile, strict browser C-audit result, browser primary,
+bundle/GC or broad batch occurs. The30-pair page cohort/30,000 bootstrap samples/
+seed130 remains unstarted. Page credit and observed carry stay0; the local saving
+does not trigger the whole-page5M broad gate. Archive-only exit0 retains every
+actual passing/failed outcome and generated C/binary in
+`Build/v/instruction-opt130-durable-archives.json`.
+
+Static review of the next complete29-feature closure also fits exactly: it adds
+cursor-timer (`42dce2c9`), DOM insertion (`fe105d39`), parser-stack (`48e22bd2`)
+and style-completion (`632080ca`) lifetime prerequisites. Its245 authored hunks
+are a source result, with no runtime or performance pass yet. Root runtime,
+foreign work, canonical app/GUI, accepted frozen124 control/broad baseline and
+verified isolated124 app remain untouched. Chrome parity remains unestablished:
+the earlier Chrome count uses a different endpoint and hydrated content.
+
 ## Causes and changes
 
 - The V 0.5.2 compatibility compiler's `-prod` Boehm code repeatedly snapshots
