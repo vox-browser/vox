@@ -1,5 +1,7 @@
 module css
 
+import dom
+
 // The raw property graph is sufficient until Layout materializes its resolved
 // values. Keep the wide layout-only cache off ordinary/pseudo style records.
 @[heap]
@@ -198,6 +200,7 @@ mut:
 	computed_values_counter_reset_                 []CounterData
 	computed_values_counter_set_                   []CounterData
 	resolution_provenance &ComputedGeometryProvenance = unsafe { nil }
+	document_resolution_owner &dom.Document = unsafe { nil }
 	writable_owner_identity                        u64
 }
 

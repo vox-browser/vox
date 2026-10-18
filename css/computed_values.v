@@ -388,6 +388,25 @@ fn resolve_computed_values_for_document_impl(style &ComputedProperties, document
 	// `line-height: normal` is derived from the selected font's ascent and
 	// descent, so make that face available before resolving layout-facing slots.
 	_ = computed_style.first_available_computed_font(css_style_computer_for(document).font_computer())
+	cache := computed_style.computed_layout_cache()
+	if anonymous_source == none && computed_style.computed_values_resolved_
+		&& cache.document_resolution_owner == document
+		&& previous_provenance != unsafe { nil } && previous_provenance.matches(computed_style)
+		&& !computed_style.has_animated_properties() && !computed_style.has_animated_custom_properties()
+		&& computed_style.line_height_ == none {
+		context := ColorResolutionContext.for_computed_properties(style, document)
+		scheme := context.color_scheme or { PreferredColorScheme.light }
+		if cache.computed_values_color_ == (context.current_color or { Color{0, 0, 0, 255} })
+			&& cache.computed_values_color_scheme_ == scheme
+			&& cache.computed_values_accent_color_ == context.accent_color {
+			// A tree rebuild need not rematerialize unchanged styles. The graph
+			// epoch and font/context provenance protect copied styles; counter
+			// definitions remain live independently of that raw property graph.
+			mut values := unsafe { &MutableComputedValues(style) }
+			values.set_list_style_type(style.list_style_type(document))
+			return unsafe { &ComputedValues(style) }
+		}
+	}
 	// Only a freshly materialized, nonanimated parent has the same effective
 	// inherited property graph as clone_for_anonymous_block(). Animated sources
 	// retain the ordinary resolver, which follows the raw anonymous clone.
@@ -405,6 +424,7 @@ fn resolve_computed_values_for_document_impl(style &ComputedProperties, document
 	defer {
 		// No callbacks run in the pure geometry/color write scope. Publish the
 		// final raw/context provenance, then freeze before returning any values.
+		computed_style.computed_layout_cache_.document_resolution_owner = document
 		computed_style.publish_computed_geometry_provenance(previous_provenance)
 		computed_style.finish_computed_layout_cache_write(owns_cache_write)
 	}
