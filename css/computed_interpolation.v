@@ -9876,6 +9876,7 @@ pub fn (p &InvalidationPlan) is_empty() bool {
 }
 
 pub fn (mut p InvalidationPlan) include_all_from(other &InvalidationPlan) {
+	if voidptr(&p) == voidptr(other) { return }
 	p.invalidate_self = p.invalidate_self || other.invalidate_self
 
 	if p.invalidate_whole_subtree {
@@ -9889,8 +9890,12 @@ pub fn (mut p InvalidationPlan) include_all_from(other &InvalidationPlan) {
 		return
 	}
 
-	p.descendant_rules << other.descendant_rules
-	p.sibling_rules << other.sibling_rules
+	for rule in other.descendant_rules {
+		append_or_merge_descendant_invalidation_rule(mut p.descendant_rules, rule)
+	}
+	for rule in other.sibling_rules {
+		append_or_merge_sibling_invalidation_rule(mut p.sibling_rules, rule)
+	}
 }
 
 pub struct StyleInvalidationData {
