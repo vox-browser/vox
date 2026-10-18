@@ -2571,8 +2571,16 @@ pub fn (mut e Element) clear_pseudo_element_layout_nodes() {
 }
 
 pub fn (mut e Element) set_pseudo_element_node(pseudo_element int, node ?&LayoutNodeWithStyle_) {
-	mut pe := e.ensure_pseudo_element(pseudo_element)
-	pe.set_layout_node(node)
+	if node != none {
+		mut pe := e.ensure_pseudo_element(pseudo_element)
+		pe.set_layout_node(node)
+	} else if existing := e.get_pseudo_element(pseudo_element) {
+		// Layout clears synthetic ownership before rebuilding an element. A
+		// missing pseudo has no layout node to clear and needs no rare data.
+		// Preserve an existing record's computed style when its box disappears.
+		mut pe := unsafe { &PseudoElement_(existing) }
+		pe.set_layout_node(none)
+	}
 }
 
 pub fn (e &Element) get_pseudo_element_node(pseudo_element int) ?&LayoutNodeWithStyle_ {
