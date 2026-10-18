@@ -30,9 +30,9 @@ results, not a claim of complete uBlock extension parity.
 
 ## Current diagnostic progress
 
-The signed SVG-background and mask diagnostic has **2,854 differing pixels**, with a
+The signed SVG-background, mask and cache diagnostic has **2,854 differing pixels**, with a
 maximum channel error of 59, against the unchanged Brave reference. Its single
-diagnostic records **61,377,444,937 instructions** and receives no performance
+diagnostic records **53,753,697,137 instructions** and receives no performance
 credit while the pixels differ. A fresh Brave
 diagnostic remains pixel-exact and records 42,262,584,954 instructions, whose
 15% threshold is approximately 35.923 billion. These are diagnostic runs, not
@@ -87,6 +87,27 @@ are retained without pass credit. Receipts are under
 `mask-origin-focused-linked/`, `production-mask-origin/controls/results.json`,
 and `production-mask-origin-instructions/pair-1.vox.{json,ubo.json}`.
 The current bundle and source/binary pins are under `production-mask-origin/`.
+
+SVG masks now share the response-validated SVG document cache with backgrounds
+within each layout tree, keeping source changes, failed loads, color-scheme
+variants and per-consumer viewport sizes distinct. The ten related focused
+cases pass in both GC modes (24,531 assertions per mode). The integrated
+candidate includes the repository's completed property-store, DOM allocation,
+selector and paint-culling improvements as well as this cache change; the
+7,623,747,800-instruction diagnostic reduction is not isolated cache credit.
+Its CNN screenshot is byte-identical to the preceding normal mask build.
+
+The resulting broad batch passes 40 files in both GC modes (80 logical checks,
+18 compiler invocations), all 33 exact Brave fixtures, eight exact SVG mutation
+guards and all 100 upstream AST comparisons. The guards were recovered after
+script permissions and nested reference-path mistakes; earlier failed harness
+invocations receive no pass credit. The current normal bundle and pins are
+under `production-mask-cache-current/`. Receipts are
+`mask-cache-regression/results.json`, `mask-cache-current-broad/summary.json`,
+`mask-cache-current-brave-fixtures/results.json`,
+`mask-cache-current-svg-guards-paths.{json,log}`, `mask-cache-current-ast.log`,
+and `production-mask-cache-current-instructions/pair-1.vox.{json,ubo.json}`.
+Neither the CNN pixel gate nor its seven-pair performance gate passes.
 
 The preceding isolated gradient-tile baseline passes a 24-file CSS/layout/HTML/
 network selection in both default and no-GC builds, all 30 exact Brave
