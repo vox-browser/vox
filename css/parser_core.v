@@ -764,6 +764,21 @@ fn decode_css_input(input string, encoding_name string) string {
 		text_encoding.TextDecoderOptions{}) or {
 		panic('VERIFY(TextCodec::decoder_for(${encoding_name}).has_value())')
 	}
+	// A fresh UTF-8 decoder maps every ASCII byte to itself. Keep the
+	// constructor/label policy and a fresh, terminated destination owner;
+	// neither the caller's buffer nor a substring view may back our result.
+	if decoder.encoding() == 'utf-8' {
+		mut ascii := true
+		for byte in input {
+			if byte >= 0x80 {
+				ascii = false
+				break
+			}
+		}
+		if ascii {
+			return input.clone()
+		}
+	}
 	// CSS consumes UTF-8. Use the selected decoder's existing UTF-8 destination
 	// instead of materializing the web TextDecoder's UTF-16 result and converting
 	// it back. This fresh one-shot owner is discarded after the final item.
