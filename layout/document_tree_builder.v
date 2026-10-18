@@ -56,6 +56,8 @@ enum SVGReferencedResourceKind {
 
 struct TreeBuilderState {
 mut:
+	allow_subtree_reuse      bool
+	nonreusable_flow_roots   map[u64]bool
 	quote_nesting_level      u32
 	counter_sets             map[string]css.CountersSet
 	last_child_by_parent     map[string]string
@@ -251,6 +253,7 @@ fn build_layout_tree_from_computed_styles(document &dom.Document, mut style_comp
 	mut viewport := unsafe { &Node(Viewport.new(document, document_style)) }
 	mut builder_state := TreeBuilderState{
 		counter_sets: map[string]css.CountersSet{}
+		allow_subtree_reuse: !document.needs_full_layout_tree_update() && document_layout_result(document) != none
 	}
 	if root_element_box := build_layout_box_for_element(document, root_element, style_computer, mut builder_state) {
 		propagate_root_styles_to_viewport(root_element_box, mut viewport)
@@ -851,6 +854,15 @@ pub fn document_layout_result(document &dom.Document) ?&DocumentLayoutResult {
 }
 
 fn build_layout_box_for_element(document &dom.Document, element &dom.Element, style_computer &css.StyleComputer, mut builder_state TreeBuilderState) ?&Node {
+	if builder_state.allow_subtree_reuse {
+		if retained := reusable_clean_flow_subtree(element, mut builder_state.nonreusable_flow_roots) {
+			for current in retained.elements {
+				computed := css.computed_properties_for_element(current) or { continue }
+				resolve_layout_counters(mut builder_state, dom.AbstractElement.new(current, none), computed)
+			}
+			return retained.root
+		}
+	}
 	return build_layout_box_for_element_with_svg_resource_kind(document, element, style_computer, mut builder_state, none)
 }
 
@@ -916,7 +928,7 @@ fn adjusted_display_for_replaced_element(display css.Display) ?css.Display {
 
 fn build_layout_box_for_element_with_svg_resource_kind(document &dom.Document, element &dom.Element, style_computer &css.StyleComputer, mut builder_state TreeBuilderState, svg_resource_kind ?SVGReferencedResourceKind) ?&Node {
 	// TreeBuilder destroys synthetic pseudo ownership with the replaced subtree.
-	// The V builder replaces the complete tree, so clear the previous synthetic
+	// This branch is being replaced, so clear the previous synthetic
 	// first-letter before a possible new target is created below.
 	mut mutable_first_letter_owner := unsafe { &dom.Element(element) }
 	mutable_first_letter_owner.set_pseudo_element_node(int(dom.PseudoElement.first_letter), none)
