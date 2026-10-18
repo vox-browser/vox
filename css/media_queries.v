@@ -778,6 +778,10 @@ pub struct MediaQueryListEntry {
 pub mut:
 	text    string
 	matches bool
+mut:
+	parsed_query_ ?&MediaQuery
+	parsed_text_ string
+	has_parsed_query_ bool
 }
 
 @[heap]
@@ -878,7 +882,7 @@ pub fn (mut media_list MediaList) delete_medium(medium string) ! {
 
 pub fn (mut media_list MediaList) evaluate(document &dom.Document) bool {
 	for i in 0 .. media_list.media.len {
-		media_list.media[i].matches = evaluate_media_query_entry(media_list.media[i], document)
+		media_list.media[i].matches = evaluate_media_query_entry(mut media_list.media[i], document)
 	}
 	return media_list.matches()
 }
@@ -972,11 +976,21 @@ fn parse_media_query_entry(medium string) ?MediaQueryListEntry {
 	return MediaQueryListEntry{
 		text: query.to_string()
 		matches: query.matches()
+		parsed_query_: query
+		parsed_text_: query.to_string()
+		has_parsed_query_: true
 	}
 }
 
-fn evaluate_media_query_entry(entry MediaQueryListEntry, document &dom.Document) bool {
-	query := parse_media_query_from_text(entry.text) or { return false }
+fn evaluate_media_query_entry(mut entry MediaQueryListEntry, document &dom.Document) bool {
+	// CSSOM changes replace the text; viewport and preference changes only
+	// reevaluate the retained syntax tree. Direct V entry edits use the same key.
+	if !entry.has_parsed_query_ || entry.parsed_text_ != entry.text {
+		entry.parsed_query_ = parse_media_query_from_text(entry.text)
+		entry.parsed_text_ = entry.text
+		entry.has_parsed_query_ = true
+	}
+	query := entry.parsed_query_ or { return false }
 	return query.evaluate(document)
 }
 
@@ -986,6 +1000,9 @@ fn media_query_entries_from_queries(queries []&MediaQuery) []MediaQueryListEntry
 		entries << MediaQueryListEntry{
 			text: query.to_string()
 			matches: query.matches()
+			parsed_query_: query
+			parsed_text_: query.to_string()
+			has_parsed_query_: true
 		}
 	}
 	return entries
