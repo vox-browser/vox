@@ -1388,7 +1388,9 @@ fn (mut invalidator StyleInvalidator) perform_pending_style_invalidations(mut no
 
 	previous_active_size := invalidator.active_descendant_invalidations.len
 	if !invalidate_subtree {
-		if pending := invalidator.pending_invalidations[node.unique_id()] {
+		node_id := node.unique_id()
+		if node_id in invalidator.pending_invalidations {
+			pending := unsafe { invalidator.pending_invalidations[node_id] }
 			invalidator.active_descendant_invalidations << pending
 		}
 
