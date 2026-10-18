@@ -238,7 +238,9 @@ arrays and object graphs still require collection.
 
 The application provides a native single-tab browser chrome with back/forward,
 reload, home, an editable address/search field, link navigation, loading and
-console status, and scrolling. HTTP(S), local files, external stylesheets, and
+console status, and scrolling. The production macOS toolbar and status bar use
+UI2 native controls; see [the embedding adapter](tools/ui2/README.md). HTTP(S),
+local files, external stylesheets, and
 classic scripts feed the translated HTML, DOM, CSS, Layout, hit-testing,
 history, and paint-command pipeline. The LibJS frontend validates page scripts
 and supplies retained AST and scope metadata. On macOS, JavaScriptCore supplies
