@@ -2258,6 +2258,14 @@ pub fn (mut e Element) set_shadow_root(sr ?&ShadowRoot) {
 		current_fragment.set_host(none)
 		mut current_node := unsafe { &Node(current_shadow_root) }
 		current_node.set_is_connected(false)
+		if e.is_connected() {
+			old_root := unsafe { &Node(current_shadow_root) }
+			current_node.for_each_shadow_including_descendant(fn [old_root] (descendant &Node) TraversalDecision {
+				mut mutable_descendant := unsafe { &Node(descendant) }
+				mutable_descendant.removed_from_with_context(.no, old_root, old_root)
+				return .@continue
+			})
+		}
 	}
 	e.shadow_root_ = sr
 	mut document := e.document()
