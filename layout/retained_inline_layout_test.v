@@ -23,6 +23,7 @@ fn test_retained_inline_layout_reuses_lines_after_an_unrelated_comment_toggle() 
 	root := retained_inline_handle(document, 'stable')
 	previous := document_layout_result(document)?
 	cached := previous.state.inline_layouts_[u64(voidptr(root))] or { panic('uncached paragraph') }
+	assert cached.inputs[0].parent_id == 0
 	old_commands := document.record_display_list()?
 	old_dump := old_commands.dump()
 	old_rect := document.get_element_by_id('stable')?.get_bounding_client_rect()

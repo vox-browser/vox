@@ -818,7 +818,10 @@ fn finish_document_layout(document &dom.Document, root &Node, viewport_width f64
 	})
 	mut state := LayoutState.new()
 	if previous := document_layout_result(document) {
-		unsafe { state.previous_inline_layouts_ = previous.state.inline_layouts_ }
+		unsafe {
+			state.previous_inline_layouts_ = previous.state.inline_layouts_
+			state.previous_block_layouts_ = previous.state.block_layouts_
+		}
 	}
 	state.enable_measurement_chunk_pool()
 	defer { state.release_measurement_chunk_pool() }
@@ -833,6 +836,7 @@ fn finish_document_layout(document &dom.Document, root &Node, viewport_width f64
 	// The new cache retains only contexts present in this committed pass. Drop
 	// the lookup owner for removed or otherwise ineligible previous contexts.
 	state.previous_inline_layouts_ = map[u64]&RetainedInlineLayout{}
+	state.previous_block_layouts_ = map[u64]&RetainedBlockLayout{}
 	timing_checkpoint = layout_timing_checkpoint('      scrollable_overflow', timing_checkpoint)
 	if os.getenv('LADYBIRD_DEBUG_TIMING') != '' {
 		eprintln('Ladybird V timing:     geometry ${(timing_checkpoint - geometry_started) / 1_000_000} ms')

@@ -1133,6 +1133,8 @@ mut:
 	subgrid_storage_ &LayoutStateSubgridStorage = unsafe { nil }
 	height_dependency_storage_ &LayoutStateHeightDependencyStorage = unsafe { nil }
 	measurement_chunk_pool_ &MeasurementUsedValuesChunkPool = unsafe { nil }
+	block_layouts_ map[u64]&RetainedBlockLayout
+	previous_block_layouts_ map[u64]&RetainedBlockLayout
 	inline_layouts_ map[u64]&RetainedInlineLayout
 	previous_inline_layouts_ map[u64]&RetainedInlineLayout
 }

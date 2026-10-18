@@ -74,7 +74,7 @@ fn collect_retained_inline_inputs(node &Node, root bool, mut inputs []RetainedIn
 		style:          node.computed_values()
 		style_revision: node.computed_values().mutation_revision()
 		child_count:    node.child_count()
-		parent_id:      if parent := node.parent() { u64(voidptr(parent)) } else { 0 }
+		parent_id:      if root { u64(0) } else if parent := node.parent() { u64(voidptr(parent)) } else { 0 }
 		sibling_index:  node.index_in_parent_
 		text:           text
 	}
