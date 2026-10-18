@@ -87,18 +87,18 @@ fn test_browser_debug_row_returns_its_height_to_the_document_when_hidden() {
 	defer { document.finalize() }
 	mut app := BrowserApp{ document: document, layout_tree_only: true }
 	app.relayout(800, 600)
-	assert app.page_top() == 56
-	assert app.viewport_height == 520
-	assert document.viewport_rect().height == 520
-	app.toggle_browser_debug()
-	app.relayout(800, 600)
 	assert app.page_top() == 88
 	assert app.viewport_height == 488
 	assert document.viewport_rect().height == 488
 	app.toggle_browser_debug()
 	app.relayout(800, 600)
-	assert app.viewport_height == 520
-	assert document.viewport_rect().height == 520
+	assert app.page_top() == 120
+	assert app.viewport_height == 456
+	assert document.viewport_rect().height == 456
+	app.toggle_browser_debug()
+	app.relayout(800, 600)
+	assert app.viewport_height == 488
+	assert document.viewport_rect().height == 488
 }
 
 $if vox_ui2 ? {
@@ -301,7 +301,7 @@ $if vox_ui2 ? {
 		assert ui2.text('load-status') == 'Loaded'
 		assert C.native_test_chrome_hidden(ui2.embedded_browser_control('load-status')) == 1
 		assert ui2.text('footer') == 'https://hover.example/'
-		assert C.native_test_chrome_geometry(ui2.embedded_browser_control('toolbar'), ui2.embedded_browser_control('status-bar'), 1000, 700, 56) == 1
+		assert C.native_test_chrome_geometry(ui2.embedded_browser_control('toolbar'), ui2.embedded_browser_control('status-bar'), 1000, 700, 88) == 1
 		assert C.native_test_chrome_document_hit(window, ui2.embedded_browser_control('toolbar'), ui2.embedded_browser_control('status-bar')) == 1
 		app.hovered_link = ''
 		app.js_messages << 'first line\nstack line'
@@ -345,7 +345,7 @@ $if vox_ui2 ? {
 		assert app.chrome_debug
 		assert C.native_test_chrome_hidden(ui2.embedded_browser_control('load-status')) == 0
 		assert ui2.text('load-status') == app.status
-		assert C.native_test_chrome_geometry(ui2.embedded_browser_control('toolbar'), ui2.embedded_browser_control('status-bar'), 800, 600, 88) == 1
+		assert C.native_test_chrome_geometry(ui2.embedded_browser_control('toolbar'), ui2.embedded_browser_control('status-bar'), 800, 600, 120) == 1
 		assert ui2.focused_id() == 'address'
 		assert C.native_test_address_selection(field) == selection
 		assert app.address == 'https://editing.example/'
@@ -353,7 +353,7 @@ $if vox_ui2 ? {
 		C.native_test_address_shortcut(field, app, address_bar_shortcut, 2, 0)
 		assert !app.chrome_debug
 		assert C.native_test_chrome_hidden(ui2.embedded_browser_control('load-status')) == 1
-		assert C.native_test_chrome_geometry(ui2.embedded_browser_control('toolbar'), ui2.embedded_browser_control('status-bar'), 800, 600, 56) == 1
+		assert C.native_test_chrome_geometry(ui2.embedded_browser_control('toolbar'), ui2.embedded_browser_control('status-bar'), 800, 600, 88) == 1
 		assert app.navigation_generation == 0
 	}
 }

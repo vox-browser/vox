@@ -377,6 +377,7 @@ mut:
 	address_active                      bool
 	address_select                      bool
 	native_address_bar                  bool
+	tabs                                &BrowserTabs = unsafe { nil }
 	browser_chrome                      BrowserChromeState
 	chrome_debug                        bool
 	viewport_width                      int
@@ -457,6 +458,7 @@ mut:
 	// enter the browser's compact DOM-click fallback.
 	suppress_next_click_for_chrome bool
 	platform_pointer_buttons u32
+	pending_tab_link ?string
 	platform_pointer_modifiers u32
 }
 
@@ -3078,10 +3080,7 @@ fn (mut app BrowserApp) poll_javascript_tasks() {
 		|| !app.document.layout_is_up_to_date() || app.javascript_tasks_have_unadopted_paint() {
 		app.relayout(app.viewport_width, app.viewport_height + app.chrome_height())
 	}
-	if app.ctx != unsafe { nil } {
-		title := document_title(app.document)
-		gg.set_window_title(if title != '' { '${title} — vox' } else { 'vox' })
-	}
+	app.update_window_title()
 	if destination := navigation {
 		if destination != '' { app.navigate(resolve_document_reference(destination, app.document.url.serialize()), true) }
 	}
@@ -3179,7 +3178,7 @@ fn (app &BrowserApp) chrome_height() int {
 }
 
 fn (app &BrowserApp) page_top() f32 {
-	return f32(browser_toolbar_height(app.chrome_debug))
+	return f32(tab_strip_height + browser_toolbar_height(app.chrome_debug))
 }
 
 fn (app &BrowserApp) status_height() int {
@@ -3676,7 +3675,7 @@ fn (mut app BrowserApp) navigate(address string, add_history bool) {
 			} else {
 				snapshot_path := app.browser_chrome_snapshot_path(resolved)
 				$if macos {
-					if os.is_file(snapshot_path) {
+					if os.is_file(snapshot_path) && app.is_active_browser_tab() {
 						C.native_show_cached_snapshot(snapshot_path)
 						app.snapshot_visible = true
 						// Hold the raster across the cached rebuild AND the refresh
@@ -6894,7 +6893,8 @@ fn (mut app BrowserApp) handle_click(x f32, y f32) {
 		return
 	}
 	$if !vox_ui2 ? {
-		if y >= 12 && y <= 46 {
+		if app.handle_portable_tab_click(x, y) { return }
+		if y >= tab_strip_height + 12 && y <= tab_strip_height + 46 {
 			if x >= 12 && x < 48 {
 				app.history_go(-1)
 				return
@@ -6997,11 +6997,31 @@ fn (mut app BrowserApp) handle_event(event &gg.Event) {
 			app.suppress_next_click_for_chrome = result.target != ''
 		}
 		.mouse_up {
+					|| browser_tab_shortcut(event.key_code, unsafe { gg.Modifier(event.modifiers) }) != ''
 			button := browser_pointer_button(event.mouse_button)
 			app.platform_pointer_buttons &= ~browser_pointer_button_mask(button)
 			if app.overlay_scrollbars.dragging {
 				app.overlay_scrollbars.dragging = false
 				app.overlay_scrollbar_activity()
+	// Modified links belong to a new tab and must bypass the current page's
+	// ordinary link default action (including compact script replay).
+	if event.typ == .mouse_down && event.mouse_y >= app.page_top()
+		&& (event.mouse_button == .middle || (event.mouse_button == .left
+			&& app.platform_pointer_modifiers & (dom.modifier_ctrl | dom.modifier_super) != 0)) {
+		if destination := app.link_at_point(event.mouse_x, event.mouse_y) {
+			app.pending_tab_link = destination
+			app.suppress_next_click_for_chrome = true
+			return
+		}
+	}
+	if event.typ == .mouse_up {
+		if destination := app.pending_tab_link {
+			app.pending_tab_link = none
+			action := if app.platform_pointer_modifiers & dom.modifier_shift != 0 { 'tab-open:' } else { 'tab-open-background:' }
+			app.activate_tab_chrome('${action}${destination}')
+			return
+		}
+	}
 			}
 			result := app.dispatch_chrome_pointer_event_at_viewport_point('pointerup', browser_pointer_button(event.mouse_button), f64(event.mouse_x), f64(event.mouse_y - app.page_top()))
 			if !result.handled && app.page_model != unsafe { nil } && app.page_model.event_handler.last_click_allowed() && button == 0 {
@@ -7101,6 +7121,11 @@ fn (mut app BrowserApp) handle_key(key gg.KeyCode, modifier gg.Modifier) {
 		mut runes := app.address.runes()
 		match key {
 			.enter {
+	tab_action := browser_tab_shortcut(key, modifier)
+	if tab_action != '' {
+		app.activate_tab_chrome(tab_action)
+		return
+	}
 				app.submit_address_bar()
 			}
 			.backspace {
@@ -7207,8 +7232,8 @@ fn main() {
 	mut main_checkpoint := debug_timing_checkpoint('startup', main_started)
 	initial_viewport_height := if options.screenshot_viewport_height > 0 {
 		options.screenshot_viewport_height
-	} else if options.height > int(toolbar_height + status_bar_height) {
-		options.height - int(toolbar_height + status_bar_height)
+	} else if options.height > int(tab_strip_height + toolbar_height + status_bar_height) {
+		options.height - int(tab_strip_height + toolbar_height + status_bar_height)
 	} else {
 		1
 	}
@@ -7320,22 +7345,27 @@ fn main() {
 			app.initialize_native_window()
 		}
 		cleanup_fn: fn (mut app BrowserApp) {
-			app.unmount_address_bar()
+			app.cleanup_browser_tabs()
 		}
 		frame_fn: fn (mut app BrowserApp) {
-			app.draw()
+			app.draw_browser_tabs()
 		}
+	app.initialize_browser_tabs()
 		event_fn: fn (event &gg.Event, mut app BrowserApp) {
-			app.handle_event(event)
+			mut active := app.active_browser_tab()
+			active.handle_event(event)
 		}
 		click_fn: fn (x f32, y f32, _ gg.MouseButton, mut app BrowserApp) {
-			app.handle_click(x, y)
+			mut active := app.active_browser_tab()
+			active.handle_click(x, y)
 		}
 		char_fn: fn (code u32, mut app BrowserApp) {
-			app.handle_character(code)
+			mut active := app.active_browser_tab()
+			active.handle_character(code)
 		}
 		keydown_fn: fn (key gg.KeyCode, modifier gg.Modifier, mut app BrowserApp) {
-			app.handle_key(key, modifier)
+			mut active := app.active_browser_tab()
+			active.handle_key(key, modifier)
 		}
 		user_data: app
 	)

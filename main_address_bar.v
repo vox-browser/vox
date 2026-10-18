@@ -36,6 +36,7 @@ fn (mut app BrowserApp) mount_address_bar() {
 fn (mut app BrowserApp) unmount_address_bar() {
 	$if vox_ui2 ? {
 		if !app.native_address_bar { return }
+		C.native_browser_tabs_remove()
 		C.native_address_bar_remove_shortcuts()
 		C.native_browser_chrome_stop_memory()
 		ui2.unmount_embedded_browser()
@@ -55,7 +56,7 @@ fn (mut app BrowserApp) resize_address_bar(width int) {
 
 fn (app &BrowserApp) sync_address_bar() {
 	$if vox_ui2 ? {
-		if app.native_address_bar { ui2.set_text('address', app.address) }
+		if app.native_address_bar && app.is_active_browser_tab() { ui2.set_text('address', app.address) }
 	}
 }
 
@@ -97,8 +98,8 @@ fn (mut app BrowserApp) cancel_address_bar() {
 
 $if vox_ui2 ? {
 	fn address_bar_event(event string) {
-		mut app := address_bar_owner.app
-		if app == unsafe { nil } { return }
+		if address_bar_owner.app == unsafe { nil } { return }
+		mut app := address_bar_owner.app.active_browser_tab()
 		match event {
 			'address-change' { app.address = ui2.text('address') }
 			else { app.activate_browser_chrome(event) }
@@ -106,12 +107,19 @@ $if vox_ui2 ? {
 	}
 
 	fn address_bar_shortcut(owner voidptr, action int) {
-		mut app := unsafe { &BrowserApp(owner) }
+		mut shell := unsafe { &BrowserApp(owner) }
+		mut app := shell.active_browser_tab()
 		match action {
 			0 { app.focus_address_bar() }
 			1 { app.reload() }
 			2 { app.cancel_address_bar() }
 			3 { app.toggle_browser_debug() }
+			4 { app.activate_tab_chrome('tab-new') }
+			5 { app.activate_tab_chrome('tab-close') }
+			6 { app.activate_tab_chrome('tab-next') }
+			7 { app.activate_tab_chrome('tab-previous') }
+			8 { app.activate_tab_chrome('tab-last') }
+			9...16 { app.activate_tab_chrome('tab-select:${action - 9}') }
 			else {}
 		}
 

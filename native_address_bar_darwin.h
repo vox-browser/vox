@@ -23,6 +23,24 @@ static NSEvent *native_address_bar_filter_key(NSTextField *field, void *owner,
 		if (!event.isARepeat) callback(owner, 3); // Cmd+D, including while editing the address.
 		return nil;
 	}
+	if (!(mods & NSEventModifierFlagOption)) {
+		if ((mods & NSEventModifierFlagControl) && event.keyCode == 48) {
+			callback(owner, (mods & NSEventModifierFlagShift) ? 7 : 6); return nil;
+		}
+		if ((mods & NSEventModifierFlagCommand) && (mods & NSEventModifierFlagShift)) {
+			if (event.keyCode == 33) { callback(owner, 7); return nil; }
+			if (event.keyCode == 30) { callback(owner, 6); return nil; }
+		}
+		if ((mods & NSEventModifierFlagCommand) && !(mods & NSEventModifierFlagShift)) {
+			if (event.keyCode == 17) { callback(owner, 4); return nil; }
+			if (event.keyCode == 13) { callback(owner, 5); return nil; }
+			int numberKeys[] = {18, 19, 20, 21, 23, 22, 26, 28};
+			for (int i = 0; i < 8; ++i) {
+				if (event.keyCode == numberKeys[i]) { callback(owner, 9+i); return nil; }
+			}
+			if (event.keyCode == 25) { callback(owner, 8); return nil; }
+		}
+	}
 	BOOL command = (mods & (NSEventModifierFlagCommand | NSEventModifierFlagControl)) != 0;
 	if (command && !(mods & (NSEventModifierFlagOption | NSEventModifierFlagShift))) {
 		if (event.keyCode == 37) { callback(owner, 0); return nil; } // Cmd+L

@@ -13,7 +13,7 @@ fn C.gg__gg_event_fn(voidptr, voidptr)
 fn (app &BrowserApp) update_window_title() {
 	// Sokol's X11 title setter requires a live Display and Window. Documents
 	// are also installed before window creation and in non-windowed modes.
-	if app.ctx == unsafe { nil } || app.document == unsafe { nil } { return }
+	if app.ctx == unsafe { nil } || app.document == unsafe { nil } || !app.is_active_browser_tab() { return }
 	title := document_title(app.document)
 	gg.set_window_title(if title != '' { '${title} — vox' } else { 'vox' })
 }

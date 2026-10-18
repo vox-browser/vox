@@ -52,7 +52,7 @@ static void native_test_address_shortcut(void *field, void *owner, VoxAddressSho
 
 static int native_test_address_geometry(void *field, int width) {
 	NSRect frame = [(__bridge NSTextField *)field frame];
-	return frame.origin.x == 184 && frame.origin.y == 12 && frame.size.width == width
+	return frame.origin.x == 184 && frame.origin.y == 44 && frame.size.width == width
 		&& frame.size.height == 34;
 }
 

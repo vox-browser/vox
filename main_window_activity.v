@@ -13,7 +13,7 @@ fn (mut app BrowserApp) sync_window_activity() {
 	if app.document == unsafe { nil } {
 		return
 	}
-	mut active := app.screenshot_path == ''
+	mut active := app.screenshot_path == '' && app.is_active_browser_tab()
 	$if macos {
 		if active && app.ctx != unsafe { nil } && app.ctx.native_rendering {
 			active = C.native_browser_window_is_active() != 0
