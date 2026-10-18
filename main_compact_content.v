@@ -7,6 +7,15 @@ import html
 import strconv
 import x.json2
 
+// Only selector parsing may use the lightweight result transport. Replay,
+// receiver and host failures retain their original exception path.
+struct CompactSelectorSyntaxError {
+	message string
+}
+
+fn (failure CompactSelectorSyntaxError) msg() string { return failure.message }
+fn (failure CompactSelectorSyntaxError) code() int { return 0 }
+
 @[heap]
 struct CompactElementQueryBinding {
 	document &dom.Document
@@ -62,7 +71,12 @@ fn install_compact_element_content_binding(document &dom.Document, mut runtime b
 	})!
 	runtime.define_host_function('__ladybirdElementQuery', fn [binding] (input string) !string {
 		mut mutable_binding := unsafe { &CompactElementQueryBinding(binding) }
-		return mutable_binding.query(input)
+		return mutable_binding.query(input) or {
+			if err is CompactSelectorSyntaxError {
+				return json2.encode({'__voxSelectorSyntaxError': json2.Any(err.msg())})
+			}
+			return err
+		}
 	})!
 }
 
@@ -234,7 +248,9 @@ fn (mut binding CompactElementQueryBinding) query(input string) !string {
 	validation_element := root.as_element() or {
 		binding.document.document_element() or { return error('Invalid selector document') }
 	}
-	matched := validation_element.matches(selector)!
+	matched := validation_element.matches(selector) or {
+		return CompactSelectorSyntaxError{message:err.msg()}
+	}
 	if action == 'matches' { return json2.encode(matched) }
 	if action == 'closest' {
 		return if element := validation_element.closest(selector) {
@@ -254,7 +270,9 @@ fn (mut binding CompactElementQueryBinding) query(input string) !string {
 	if action == 'querySelectorAll' {
 		mut result := []json2.Any{}
 		parent := unsafe { &dom.ParentNode(root) }
-		list := parent.query_selector_all(selector)!
+		list := parent.query_selector_all(selector) or {
+			return CompactSelectorSyntaxError{message:err.msg()}
+		}
 		for node in list.nodes {
 			element := node.as_element() or { continue }
 			result << binding.element_state(element)
