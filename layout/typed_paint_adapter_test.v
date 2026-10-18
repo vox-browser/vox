@@ -1365,11 +1365,13 @@ fn test_document_display_list_retains_one_stacking_plan_and_command_store() {
 	_ = mutable_document.record_display_list() or { panic('missing paint-only display list') }
 	assert result.hit_test_display_list_is_valid
 
-	// The explicit full-cache path discards every phase bucket. The following
-	// recording reconstructs them from the retained paintables.
+	// Full invalidation discards every phase record while keeping private
+	// bucket storage for the next recording from the retained paintables.
 	paintable.invalidate_all_paint_caches()
 	assert !result.paint_phase_cache_valid
-	assert result.paint_phase_commands.len == 0
+	assert result.paint_phase_commands.data == paint_phase_commands_data
+	assert result.paint_phase_commands.len == result.paint_order.len * compatibility_paint_phase_count
+	assert result.paint_phase_commands.all(it.len == 0)
 	assert result.paint_phase_entry_valid.len == 0
 	mutable_document.set_needs_repaint()
 	_ = mutable_document.record_display_list() or { panic('missing uncached display list') }
