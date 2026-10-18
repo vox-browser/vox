@@ -78,6 +78,7 @@ fn dom_selector_scope_query(target voidptr, selector_text string, root &dom.Pare
 	mut state := unsafe { &DocumentSelectorQueryState(target) }
 	selectors := state.parse(selector_text) or { return none }
 	compounds := independent_query_compounds(selectors) or { return none }
+	if !independent_query_may_match_document(root.as_node(), compounds) { return []&dom.Node{} }
 	mut context := MatchContext{has_result_cache: unsafe { nil }}
 	mut nodes := []&dom.Node{}
 	if first {
@@ -174,6 +175,7 @@ fn query_selector_all_in(node &dom.Node, selectors SelectorList, mut results []&
 pub fn query_selector(root &dom.Node, selector_text string) ?&dom.Element {
 	selectors := document_query_selector_list(root.document(), selector_text) or { return none }
 	if compounds := independent_query_compounds(selectors) {
+		if !independent_query_may_match_document(root, compounds) { return none }
 		mut context := MatchContext{has_result_cache: unsafe { nil }}
 		return independent_query_first_in(root, compounds, mut context)
 	}
@@ -185,6 +187,7 @@ pub fn query_selector_all(root &dom.Node, selector_text string) []&dom.Element {
 	mut results := []&dom.Element{}
 	selectors := document_query_selector_list(root.document(), selector_text) or { return results }
 	if compounds := independent_query_compounds(selectors) {
+		if !independent_query_may_match_document(root, compounds) { return results }
 		mut context := MatchContext{has_result_cache: unsafe { nil }}
 		independent_query_all_in(root, compounds, mut context, mut results)
 		return results

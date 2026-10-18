@@ -5267,6 +5267,9 @@ pub mut:
 
 	// Version tracking
 	dom_tree_version                         u64
+	// Local names are immutable. Keep a conservative history without retaining
+	// elements, so an absent tag can rule out document-wide selector walks.
+	seen_element_local_names_                map[string]bool
 	character_data_version                   u64
 	option_selectedness_update_index_counter u64
 	style_environment_version_               u64
@@ -6031,6 +6034,16 @@ pub fn (d &Document) dom_tree_version() u64 {
 
 pub fn (mut d Document) bump_dom_tree_version() {
 	d.dom_tree_version++
+}
+
+pub fn (mut d Document) note_element_local_name(local_name string) {
+	d.seen_element_local_names_[local_name] = true
+}
+
+// Removal may leave a positive entry; only a negative result is a proof.
+// Callers use the same conservative case-folded bucket as CSS selector names.
+pub fn (d &Document) has_seen_element_local_name(local_name string) bool {
+	return d.seen_element_local_names_[local_name]
 }
 
 // Process-local ordering is only compared between option elements belonging to the same

@@ -6241,6 +6241,8 @@ pub fn (mut e Element) set_style_uses_tree_counting_function() {
 
 // --- Lifecycle callbacks ---
 pub fn (mut e Element) inserted() {
+	mut owner_document := unsafe { &Document(e.document()) }
+	owner_document.note_element_local_name(e.local_name().to_lower())
 	mut node := unsafe { &Node(e.as_node()) }
 	node.recompute_editable_subtree_flag()
 	node.set_needs_style_update(true)

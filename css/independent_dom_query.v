@@ -34,6 +34,27 @@ fn independent_query_matches(element &dom.Element, compounds []CompoundSelector,
 	return false
 }
 
+// A document remembers names seen by every element insertion, including
+// adoption and fragment insertion. An absent positive tag rules out a whole
+// compound; removed elements only cause a harmless fallback to the live walk.
+// Element/shadow/detached scopes retain their ordinary traversal.
+fn independent_query_may_match_document(root &dom.Node, compounds []CompoundSelector) bool {
+	if !root.is_document() { return true }
+	document := root.document()
+	for compound in compounds {
+		mut possible := true
+		for simple in compound.simple_selectors {
+			if simple.type_ == .tag_name
+				&& !document.has_seen_element_local_name(simple.qualified_name().name.lowercase_name) {
+				possible = false
+				break
+			}
+		}
+		if possible { return true }
+	}
+	return false
+}
+
 fn independent_query_first_in(root &dom.Node, compounds []CompoundSelector,
 	mut context MatchContext) ?&dom.Element {
 	for child in root.children {
