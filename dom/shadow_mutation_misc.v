@@ -1295,20 +1295,6 @@ pub fn (mut invalidator StyleInvalidator) visit_edges(mut visitor CellVisitor) {
 }
 
 pub fn (mut invalidator StyleInvalidator) invalidate(mut node Node) {
-	// Shadow-root clients can publish their own dirty flags before the host's
-	// ancestor path is repaired. Reconcile those few registered roots before
-	// pruning light-tree branches, preserving the old drain's host propagation.
-	document := node.document()
-	if document != unsafe { nil } {
-		for root in document.shadow_roots {
-			shadow_node := unsafe { &Node(root) }
-			if (shadow_node.needs_style_update() || shadow_node.child_needs_style_update()
-				|| shadow_node.entire_subtree_needs_style_update())
-				&& node.is_shadow_including_inclusive_ancestor_of(shadow_node) {
-				mark_ancestors_as_having_child_needing_style_update(shadow_node)
-			}
-		}
-	}
 	invalidator.perform_pending_style_invalidations(mut node, false)
 	invalidator.pending_invalidations.clear()
 	invalidator.active_descendant_invalidations.clear()
@@ -1330,12 +1316,6 @@ fn (mut invalidator StyleInvalidator) add_pending_invalidation(node &Node, reaso
 		}
 	}
 	invalidator.pending_invalidations[key] = pending
-	// The drain can skip clean branches only if every queued descendant rule
-	// publishes its path, including work enqueued for a later sibling while
-	// another rule is already being processed.
-	mut mutable_node := unsafe { &Node(node) }
-	mutable_node.set_child_needs_style_update(true)
-	mark_ancestors_as_having_child_needing_style_update(node)
 }
 
 fn (mut invalidator StyleInvalidator) apply_invalidation_plan(mut element Element, reason StyleInvalidationReason, plan InvalidationPlan, invalidate_entire_subtree bool) bool {
@@ -1397,12 +1377,6 @@ fn (mut invalidator StyleInvalidator) apply_sibling_invalidation(mut element Ele
 }
 
 fn (mut invalidator StyleInvalidator) perform_pending_style_invalidations(mut node Node, invalidate_entire_subtree bool) {
-	if !invalidate_entire_subtree && !node.entire_subtree_needs_style_update()
-		&& !node.needs_style_update() && !node.child_needs_style_update()
-		&& invalidator.active_descendant_invalidations.len == 0
-		&& node.unique_id() !in invalidator.pending_invalidations {
-		return
-	}
 	mut invalidate_subtree := invalidate_entire_subtree || node.entire_subtree_needs_style_update()
 	element := node.as_element()
 	if invalidate_subtree {
