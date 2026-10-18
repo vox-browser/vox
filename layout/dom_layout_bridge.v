@@ -156,6 +156,29 @@ fn visual_caret_coordinate_at(stops []dom.VisualCaretStop, offset int) ?f64 {
 // layout engine keeps the equivalent committed LineBox data, so materialize a
 // cycle-safe copy on the DOM layout placeholder while that state is current.
 fn collect_dom_visual_lines(box &Node, state &LayoutState) []dom.VisualLine {
+	containing_block := box.containing_block() or { return []dom.VisualLine{} }
+	if mut cached := state.inline_layouts_[u64(voidptr(containing_block))] {
+		owner := containing_block.layout_index()
+		key := u64(voidptr(box))
+		if lines := cached.visual_lines_[key] {
+			return copy_dom_visual_lines(lines, owner)
+		}
+		lines := collect_uncached_dom_visual_lines(box, state)
+		cached.visual_lines_[key] = copy_dom_visual_lines(lines, owner)
+		return lines
+	}
+	return collect_uncached_dom_visual_lines(box, state)
+}
+
+fn copy_dom_visual_lines(lines []dom.VisualLine, owner u32) []dom.VisualLine {
+	mut result := []dom.VisualLine{cap: lines.len}
+	for line in lines {
+		result << dom.VisualLine{...line, owner_paintable: owner, caret_stops: line.caret_stops.clone()}
+	}
+	return result
+}
+
+fn collect_uncached_dom_visual_lines(box &Node, state &LayoutState) []dom.VisualLine {
 	text_node := box.as_text_node() or { return []dom.VisualLine{} }
 	containing_block := box.containing_block() or { return []dom.VisualLine{} }
 	containing_node := unsafe { &Node(containing_block) }

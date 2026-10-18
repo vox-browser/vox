@@ -4184,7 +4184,7 @@ fn typed_paint_child_nodes(node &Node, state &LayoutState) []&Node {
 	return children
 }
 
-fn text_lines_from_typed_layout(container &Node, used &UsedValues, state &LayoutState, container_position css.CSSPixelPoint) []TextLine {
+fn uncached_text_lines_from_typed_layout(container &Node, used &UsedValues, state &LayoutState, container_position css.CSSPixelPoint) []TextLine {
 	mut lines := []TextLine{}
 	mut paint_parent_pieces := []InlineBoxPiece{}
 	mut paint_parent_pieces_ready := false

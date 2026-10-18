@@ -1,0 +1,109 @@
+module layout
+
+import css
+import painting
+
+// The layout cache already proves that line geometry and font ownership are
+// unchanged. Keep the expensive style-to-paint projection too, rebasing only
+// document coordinates when preceding content moves the containing block.
+fn retained_inline_paint_inputs_are_current(cache &RetainedInlineLayout) bool {
+	if cache.inputs.len == 0
+		|| cache.style_environment != cache.inputs[0].node.document().style_environment_version() {
+		return false
+	}
+	for input in cache.inputs {
+		if voidptr(input.node.computed_values()) != voidptr(input.style)
+			|| input.node.computed_values().mutation_revision() != input.style_revision
+			|| input.node.computed_values().has_animated_properties() {
+			return false
+		}
+	}
+	return true
+}
+
+fn retained_inline_paint_can_share(lines []TextLine) bool {
+	for line in lines {
+		for fragment in line.fragments {
+			if fragment.background_images.len > 0 { return false }
+		}
+		for decoration in line.box_decorations {
+			if decoration.background_images.len > 0 { return false }
+		}
+	}
+	return true
+}
+
+fn rebase_retained_inline_fragment(fragment TextFragment, dx f64, dy f64) ?TextFragment {
+	x := fragment.x + dx
+	y := fragment.y + dy
+	if CSSPixels.nearest_value_for(fragment.x).might_be_saturated()
+		|| CSSPixels.nearest_value_for(fragment.y).might_be_saturated()
+		|| CSSPixels.nearest_value_for(x).might_be_saturated()
+		|| CSSPixels.nearest_value_for(y).might_be_saturated() {
+		return none
+	}
+	mut paintable := fragment.paintable_fragment
+	if paintable.text_value != '' {
+		paintable.offset = painting.Point{paintable.offset.x + dx, paintable.offset.y + dy}
+	}
+	return TextFragment{
+		...fragment
+		x:                  x
+		y:                  y
+		paint_line_top:     if top := fragment.paint_line_top { ?f64(top + dy) } else { none }
+		paintable_fragment: paintable
+		// Selection pseudo styles can change without changing line geometry.
+		selection_style: if fragment.layout_handle != unsafe { nil } {
+			selection_style(unsafe { &Node(fragment.layout_handle) })
+		} else {
+			fragment.selection_style
+		}
+	}
+}
+
+fn rebase_retained_inline_lines(lines []TextLine, dx f64, dy f64) ?[]TextLine {
+	mut result := []TextLine{cap: lines.len}
+	for line in lines {
+		mut fragments := []TextFragment{cap: line.fragments.len}
+		for fragment in line.fragments {
+			fragments << rebase_retained_inline_fragment(fragment, dx, dy)?
+		}
+		mut decorations := []TextFragment{cap: line.box_decorations.len}
+		for decoration in line.box_decorations {
+			decorations << rebase_retained_inline_fragment(decoration, dx, dy)?
+		}
+		result << TextLine{
+			...line
+			x:               line.x + dx
+			y:               line.y + dy
+			fragments:       fragments
+			box_decorations: decorations
+		}
+	}
+	return result
+}
+
+fn text_lines_from_typed_layout(container &Node, used &UsedValues, state &LayoutState,
+	position css.CSSPixelPoint) []TextLine {
+	if mut cached := state.inline_layouts_[u64(voidptr(container))] {
+		if retained_inline_paint_inputs_are_current(cached) {
+			if cached.paint_ready_ {
+				dx := position.x().to_double() - cached.paint_origin_.x().to_double()
+				dy := position.y().to_double() - cached.paint_origin_.y().to_double()
+				if translated := rebase_retained_inline_lines(cached.paint_lines_, dx, dy) {
+					return translated
+				}
+			}
+			lines := uncached_text_lines_from_typed_layout(container, used, state, position)
+			if !cached.paint_ready_ && retained_inline_paint_can_share(lines) {
+				if snapshot := rebase_retained_inline_lines(lines, 0, 0) {
+					cached.paint_lines_ = snapshot
+					cached.paint_origin_ = position
+					cached.paint_ready_ = true
+				}
+			}
+			return lines
+		}
+	}
+	return uncached_text_lines_from_typed_layout(container, used, state, position)
+}

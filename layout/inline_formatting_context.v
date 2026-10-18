@@ -107,7 +107,7 @@ fn (mut bfc BlockFormattingContext) run_inline_formatting_context_with_floats(mu
 	return run_inline_formatting_context_internal(mut state, containing_block, mut containing_block_used_values, layout_mode, available_space, bfc)
 }
 
-fn run_inline_formatting_context_internal(mut state LayoutState, containing_block &BlockContainer, mut containing_block_used_values UsedValues, layout_mode LayoutMode, available_space AvailableSpace, parent_block_context ?&BlockFormattingContext) InlineFormattingResult {
+fn run_uncached_inline_formatting_context(mut state LayoutState, containing_block &BlockContainer, mut containing_block_used_values UsedValues, layout_mode LayoutMode, available_space AvailableSpace, parent_block_context ?&BlockFormattingContext) InlineFormattingResult {
 	containing_block_used_values.line_boxes.clear()
 	if inline_context_has_only_discarded_text(containing_block) {
 		containing_block_used_values.set_inline_end_static_position_rect(StaticPositionRect{})
