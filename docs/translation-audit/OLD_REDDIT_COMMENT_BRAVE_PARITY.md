@@ -182,3 +182,56 @@ observations remain slower than Brave; host load and first-action variability
 remain material. No collector environment overrides are used. These candidates
 are still private; the installed application and canonical working changes
 remain preserved pending final integration.
+
+The following fixes complete the next ten-fix selection. Its broad checkpoint
+is pending; no reset or Brave-parity credit is claimed yet.
+
+| New cadence | Commit | Completed change and focused checks per GC mode |
+| --- | --- | --- |
+| 3/10 | `569f2a59` | Share successful and failed SVG source probes during one paint-tree build, with document ownership and nested scope restoration. Expire the cache before later resource refreshes. Fourteen cases in five files pass. |
+| 4/10 | `d42d9c69` | Reuse ordinary paint headers only after checking final dimensions, box edges, child presence, style identity/revision and environment; keep dynamic resources and effects on full projection. Twenty-four cases in eight files pass. |
+| 5/10 | `0b771933` | Construct calculation/color contexts only for paint that needs them, retaining full gradient/filter resolution and SVG image color schemes. Twenty-one cases in seven files pass. |
+| 6/10 | `6c26f447` | Replacing a layout child vector no longer detaches a child already moved into an anonymous wrapper. The new ownership case and surrounding table/tree cases pass. |
+| 7/10 | `6504bb45` | Prove table-free subtrees once and skip the table-specific fixup sweeps there; restore all temporary flags afterwards. The combined ownership/table selection passes 37 cases in eight files. |
+| 8/10 | `5fdde264` | Retain ordinary float-tree structure while rerunning placement, float bands, clearance and geometry. Nineteen cases in five files pass, including two new comparisons with full rebuilds. |
+| 9/10 | `725fe5e1` | Assign normal-flow containing blocks in preorder while retaining absolute/fixed and inline-ancestor lookup behavior, including standalone subtree and staged-parent cases. Thirty-two cases in six files pass. |
+| 10/10 | `c48ef6a7` | Accept complete reverse-identity alias lists, validate key precedence with pointer identity, and avoid provider snapshots on indexed misses. Ten cases pass: six identity/alias cases and four keyed/batch cases. |
+
+The two source-32 comment document viewports, expanded and collapsed, remain
+pixel-identical to source-31: 800×488, zero differing RGBA pixels. The source-32
+weak probe again collects seven old arenas and retains only the current one.
+It confirms that ordinary header templates do not root the old paint arena.
+
+Original failed checks remain retained: the first color fixture attempted to
+call `str()` directly on an optional gradient; the corrected fixture unwraps
+both values and preserves the comparison. The first containing-block fixture
+propagated optional values from a non-optional traversal closure; explicit
+failure branches repair the fixture without changing its assertions. The first
+table optimization exposed the parent-link defect now fixed separately by
+`6c26f447`; the original panic receives no pass credit.
+
+The source-38 layout aggregate adds all completed layout cases through fix nine.
+Its first harness omitted `http` and `loader` imports; archived original input
+and failures remain. The corrected harness passes 100 repository cases plus one
+private replay diagnostic in each GC mode. The source-38 native build stops at
+a misplaced tab-shortcut expression already present in canonical HEAD. The
+current shared working tree contains that tab-input correction. Final
+integration must preserve it and all other concurrent working changes, rather
+than publishing a stale isolated application.
+
+Several native runs were terminated by SIGTERM before their first action. They
+receive no timing credit. Later diagnostic launches use private application
+aliases to isolate process naming. The executable bytes are verified identical
+to their production candidates; only bundle executable/identity metadata differs.
+Those aliases are not claimed as signed production applications. Original
+bundles and receipts remain unchanged. The adaptive profiler additionally
+derives the chrome offset and adjusts window height to retain the same 800×488
+document viewport after the canonical tab-strip change. Its timestamp endpoint
+and original native mouse action are unchanged.
+
+A fresh Brave replay reports 2.45 ms median handler-plus-layout and 28.35 ms
+through two animation frames (`styled-v35-current-brave.json`). Under the
+heavier host load during the paired source-35 replay, warm native medians are
+71.527/76.268 ms against source-33's 78.595 ms. These observations show a modest
+table-pass improvement but do not establish a stable latency bound or Brave
+parity. Final combined-source measurement and installation remain open.
