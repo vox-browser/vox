@@ -16,13 +16,13 @@ fn attachment_parent_user_select(root &Node) css.UserSelect {
 
 // Attach populated LayoutNode placeholders onto the DOM for the laid-out tree rooted at `root_box`.
 pub fn attach_layout_nodes(root_box &Node) &dom.LayoutNode {
-	mut placeholders := map[u64]&dom.LayoutNode{}
+	mut placeholders := DOMLayoutAttachmentIndex.new(root_box)
 	mut inline_pieces := map[u64][]InlineBoxPiece{}
 	return attach_layout_node_recursive(root_box, none, none, attachment_parent_user_select(root_box), true, mut placeholders, mut inline_pieces, false, false)
 }
 
 pub fn attach_layout_nodes_with_state(root_box &Node, state &LayoutState) &dom.LayoutNode {
-	mut placeholders := map[u64]&dom.LayoutNode{}
+	mut placeholders := DOMLayoutAttachmentIndex.new(root_box)
 	mut inline_pieces := map[u64][]InlineBoxPiece{}
 	return attach_layout_node_recursive(root_box, none, state, attachment_parent_user_select(root_box), true, mut placeholders, mut inline_pieces, false, false)
 }
@@ -41,7 +41,7 @@ fn attach_layout_nodes_before_layout(root_box &Node) &dom.LayoutNode {
 }
 
 fn prepare_dom_layout_attachment(root_box &Node) PreparedDOMLayoutAttachment {
-	mut placeholders := map[u64]&dom.LayoutNode{}
+	mut placeholders := DOMLayoutAttachmentIndex.new(root_box)
 	mut inline_pieces := map[u64][]InlineBoxPiece{}
 	root := attach_layout_node_recursive(root_box, none, none, attachment_parent_user_select(root_box), false, mut placeholders,
 		mut inline_pieces, true, false)
@@ -58,7 +58,7 @@ fn commit_dom_layout_attachment(root_box &Node, state &LayoutState, prepared Pre
 	}
 	// Keep a separate traversal map so continuation and containing-block links
 	// follow the same tree order as a fresh attachment.
-	mut placeholders := map[u64]&dom.LayoutNode{}
+	mut placeholders := DOMLayoutAttachmentIndex.new(root_box)
 	mut inline_pieces := map[u64][]InlineBoxPiece{}
 	return attach_layout_node_recursive(root_box, none, state, attachment_parent_user_select(root_box), true, mut placeholders,
 		mut inline_pieces, true, root_box.is_viewport())
@@ -355,7 +355,7 @@ fn collect_uncached_dom_visual_lines(box &Node, state &LayoutState) []dom.Visual
 	return result
 }
 
-fn attach_layout_node_recursive(box &Node, parent_placeholder ?&dom.LayoutNode, state ?&LayoutState, parent_user_select css.UserSelect, collect_text_chunks bool, mut placeholders map[u64]&dom.LayoutNode, mut inline_pieces map[u64][]InlineBoxPiece, retain_live_nodes bool, lazy_visual_lines bool) &dom.LayoutNode {
+fn attach_layout_node_recursive(box &Node, parent_placeholder ?&dom.LayoutNode, state ?&LayoutState, parent_user_select css.UserSelect, collect_text_chunks bool, mut placeholders DOMLayoutAttachmentIndex, mut inline_pieces map[u64][]InlineBoxPiece, retain_live_nodes bool, lazy_visual_lines bool) &dom.LayoutNode {
 	mut visibility := dom.CSSVisibility_.visible
 	mut content_visibility := dom.CSSContentVisibility_.visible
 	mut overflow_x := dom.CSSOverflow_.visible
@@ -441,10 +441,10 @@ fn attach_layout_node_recursive(box &Node, parent_placeholder ?&dom.LayoutNode, 
 			if collected != '' { placeholder.rendered_text_chunks_ << collected }
 		}
 	}
-	placeholders[u64(voidptr(box))] = placeholder
+	placeholders.set(box, placeholder)
 	if metrics := box.as_node_with_style_and_box_model_metrics() {
 		if previous := metrics.continuation_of_node() {
-			if previous_placeholder := placeholders[u64(voidptr(previous))] {
+			if previous_placeholder := placeholders.get(unsafe { &Node(previous) }) {
 				placeholder.continuation_of_node_ = previous_placeholder
 				mut mutable_previous_placeholder := unsafe { &dom.LayoutNode(previous_placeholder) }
 				mutable_previous_placeholder.continuation_next_ = placeholder
@@ -452,7 +452,7 @@ fn attach_layout_node_recursive(box &Node, parent_placeholder ?&dom.LayoutNode, 
 		}
 	}
 	if containing_block := box.containing_block() {
-		if containing_block_placeholder := placeholders[u64(voidptr(containing_block))] {
+		if containing_block_placeholder := placeholders.get(unsafe { &Node(containing_block) }) {
 			placeholder.containing_block_ = containing_block_placeholder
 		}
 	}
