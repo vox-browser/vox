@@ -1264,30 +1264,47 @@ pub fn (mut controls MediaControls) update_timestamp() {
 	}
 }
 
+fn media_controls_mute_icon_class(icon MediaControlsMuteIcon) string {
+	return match icon {
+		.empty { '' }
+		.low { 'low' }
+		.high { 'high' }
+	}
+}
+
 pub fn (mut controls MediaControls) update_volume_and_mute_indicator() {
 	volume := controls.media.volume()
 	has_audio := controls.media.audio_tracks().length() > 0
 	muted := !has_audio || controls.media.muted()
 	controls.volume_percentage = if muted { 0.0 } else { volume * 100.0 }
-	controls.mute_icon = if volume > 0.5 {
-		.high
+	new_icon := if volume > 0.5 {
+		MediaControlsMuteIcon.high
 	} else if volume > 0 {
 		.low
 	} else {
 		.empty
 	}
-	controls.was_muted = muted
 	controls.had_audio = has_audio
-	if mut fill := controls.dom_.volume_fill {
-		fill.set_attribute_value('style', 'width:${controls.volume_percentage}%;')
+	if fill := controls.dom_.volume_fill {
+		mut style := css.element_style(fill)
+		style.set_property('width', if muted { '0' } else { '${controls.volume_percentage}%' }, '') or { panic(err) }
 	}
-	if mut button := controls.dom_.mute_button {
-		icon_class := match controls.mute_icon {
-			.empty { '' }
-			.low { ' low' }
-			.high { ' high' }
+	if new_icon != controls.mute_icon {
+		if mut button := controls.dom_.mute_button {
+			mut classes := button.class_list()
+			previous := media_controls_mute_icon_class(controls.mute_icon)
+			next := media_controls_mute_icon_class(new_icon)
+			if previous != '' { classes.remove([previous]) or { panic(err) } }
+			if next != '' { classes.add([next]) or { panic(err) } }
 		}
-		button.set_attribute_value('class', 'mute-button${icon_class}${if muted { ' muted' } else { '' }}')
+		controls.mute_icon = new_icon
+	}
+	if muted != controls.was_muted {
+		if mut button := controls.dom_.mute_button {
+			mut classes := button.class_list()
+			classes.toggle('muted', muted) or { panic(err) }
+		}
+		controls.was_muted = muted
 	}
 	if mut area := controls.dom_.volume_area {
 		area.set_attribute_value('style', if has_audio { '' } else { 'display:none;' })
