@@ -429,6 +429,30 @@ not prove the original handler completed or updated its control label. Their
 before/after instruction comparisons cover that same incomplete native path,
 and cannot establish successful Brave-equivalent completion. The original
 `togglecomment` returns undefined, so `defaultPrevented: false` alone is not a
-failure. A compatibility correction is now in progress. Future functional
+failure. The compatibility correction is recorded below. Future functional
 verification must check completion without click errors and the original
 `[–]`/`[+]` labels before making a new Brave comparison.
+
+
+`4f53c164` supplies native text-node and fragment creation, live child-node lists,
+fragment insertion, and content-cache invalidation used by the original jQuery
+handler. Source-67 passes 16 focused cases in eight original files per GC mode.
+The actual nine-script replay completes four alternating toggles with the
+original labels and no click errors. The native windowed completion probe
+verifies eight correct labels and eight empty dispatch error logs; its extra
+snapshot I/O is diagnostic and receives no performance credit. Signed startup
+and all eight SVG mutation guards pass. All eleven document captures are
+pixel-identical to source-60; the same four reference failures remain.
+
+A separate unmodified-instruction-probe run (`styled-v67-complete-baseline`)
+uses the now-complete original handler: seven warm actions have a 51.248 ms
+median and 367,024,968 median retired instructions. The first action is
+105.416 ms. A fresh Brave run on the same normalized fixture verifies six
+original alternating labels, unchanged URL, and no click errors. It observes
+1.75 ms median handler plus forced layout and 24.25 ms to two animation frames.
+The normalized fixture hash remains
+`1f1c35438904efa1d791fb5b0736b3b8e9f431a0f6571b38228d6142faf4b681`.
+Native completion returns from `updateLayer`; Brave uses two animation frames,
+so these are different endpoints and do not establish physical presentation
+parity. Earlier incomplete-handler instruction reductions are not used as a
+before/after comparison with this new complete workload. No app is installed.
