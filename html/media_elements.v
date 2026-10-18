@@ -962,9 +962,11 @@ pub fn (mut controls MediaControls) create_shadow_tree() {
 			for class_name in ['play-pause-icon', 'timeline-fill', 'timestamp', 'volume-area',
 				'volume-fill', 'mute-button', 'fullscreen-button', 'placeholder-circle'] {
 				if class_name in ['fullscreen-button', 'placeholder-circle'] && !is_video { continue }
-				tag_name := if class_name in ['mute-button', 'fullscreen-button'] { 'button' } else { 'div' }
-				mut child := dom.create_element(document, tag_name, ns_html, none, none, false) or { continue }
+				tag_name := if class_name == 'play-pause-icon' { 'svg' } else if class_name in ['mute-button', 'fullscreen-button'] { 'button' } else { 'div' }
+				namespace := if class_name == 'play-pause-icon' { 'http://www.w3.org/2000/svg' } else { ns_html }
+				mut child := dom.create_element(document, tag_name, namespace, none, none, false) or { continue }
 				child.set_attribute_value('class', match class_name {
+					'play-pause-icon' { 'icon play-pause-icon' }
 					'mute-button' { 'control-button mute-button' }
 					'fullscreen-button' { 'control-button fullscreen-button' }
 					else { class_name }
@@ -973,6 +975,14 @@ pub fn (mut controls MediaControls) create_shadow_tree() {
 					(controls.dom_.video_overlay or { panic('Missing video overlay') }).as_node()
 				} else { bar.as_node() }
 				if class_name == 'play-pause-icon' {
+					child.set_attribute_value('viewBox', '0 0 24 24')
+					for index, geometry in ['m6 5 13 7-13 7Z', 'M14 5h4v14h-4Zm-4 0H6v14h4z'] {
+						mut path := dom.create_element(document, 'path', 'http://www.w3.org/2000/svg', none, none, false) or { panic(err) }
+						path.set_attribute_value('class', if index == 0 { 'play-path' } else { 'pause-path' })
+						path.set_attribute_value('d', geometry)
+						mut icon_node := child.as_node()
+						icon_node.append_child(path.as_node()) or { panic(err) }
+					}
 					mut button := dom.create_element(document, 'button', ns_html, none, none, false) or { panic(err) }
 					button.set_attribute_value('class', 'control-button play-pause-button')
 					mut node := button.as_node()
@@ -1023,6 +1033,18 @@ pub fn (mut controls MediaControls) create_shadow_tree() {
 					button_node.append_child(icon.as_node()) or { panic(err) }
 					parent_node.append_child(button_node) or { panic(err) }
 					controls.dom_.fullscreen_icon = icon
+				} else if class_name == 'placeholder-circle' {
+					mut icon := dom.create_element(document, 'svg', 'http://www.w3.org/2000/svg', none, none, false) or { panic(err) }
+					icon.set_attribute_value('class', 'placeholder-icon')
+					icon.set_attribute_value('viewBox', '0 0 24 24')
+					mut path := dom.create_element(document, 'path', 'http://www.w3.org/2000/svg', none, none, false) or { panic(err) }
+					path.set_attribute_value('class', 'play-path')
+					path.set_attribute_value('d', 'm6 5 13 7-13 7Z')
+					mut icon_node := icon.as_node()
+					icon_node.append_child(path.as_node()) or { panic(err) }
+					mut placeholder_node := child.as_node()
+					placeholder_node.append_child(icon_node) or { panic(err) }
+					parent_node.append_child(placeholder_node) or { panic(err) }
 				} else {
 					parent_node.append_child(child.as_node()) or { continue }
 				}
