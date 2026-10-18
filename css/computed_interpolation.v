@@ -2101,7 +2101,6 @@ pub fn (mut c ComputedProperties) remove_animated_property(property_id PropertyI
 	}
 }
 
-@[inline]
 pub fn (c &ComputedProperties) property(property_id PropertyID, return_animated_value WithAnimationsApplied) ?&dom.StyleValue {
 	computed_interpolation_verify_longhand_property(property_id)
 	// Important properties override animated but not transitioned properties.
