@@ -2,6 +2,7 @@
 module adblock
 
 import os
+import sync
 
 fn C.vox_adblock_log_lock()
 fn C.vox_adblock_log_unlock()
@@ -91,6 +92,50 @@ fn record_request(request Request, decision Decision) {
 	})) or {}
 }
 
+// The default engine's static filter set never changes, so a request, or a
+// response with its headers, always receives the same decision. The browser
+// asks again for the same ones: a script-inserted image is checked when its
+// cached bytes are found and again when they are decoded, and a refreshed
+// document repeats its predecessor's requests. Each check is a serialized
+// JavaScript evaluation, so recent decisions are retained. VOX_ADBLOCK_LOG
+// still records every check.
+const filter_decision_memo_limit = 4096
+
+__global (
+	filter_decision_memo_       = map[string]string{}
+	filter_decision_memo_mutex_ = sync.new_mutex()
+)
+
+fn retained_filter_decision(source string) ?string {
+	filter_decision_memo_mutex_.@lock()
+	defer { filter_decision_memo_mutex_.unlock() }
+	return filter_decision_memo_[source] or { return none }
+}
+
+fn retain_filter_decision(source string, result string) {
+	filter_decision_memo_mutex_.@lock()
+	defer { filter_decision_memo_mutex_.unlock() }
+	if filter_decision_memo_.len >= filter_decision_memo_limit {
+		filter_decision_memo_.clear()
+	}
+	filter_decision_memo_[source] = result
+}
+
+fn retained_filter_decision_count() int {
+	filter_decision_memo_mutex_.@lock()
+	defer { filter_decision_memo_mutex_.unlock() }
+	return filter_decision_memo_.len
+}
+
+fn evaluate_filter_decision(source string) !string {
+	if result := retained_filter_decision(source) {
+		return result
+	}
+	result := evaluate_engine(source)!
+	retain_filter_decision(source, result)
+	return result
+}
+
 // check evaluates one request. It never fetches a URL or changes the filter set.
 // VOX_ADBLOCK_LOG optionally records JSON lines for a live comparison to uBO.
 pub fn check(request Request) Decision {
@@ -101,7 +146,7 @@ pub fn check(request Request) Decision {
 		|| request.url.starts_with('ws://') || request.url.starts_with('wss://')) {
 		return Decision{}
 	}
-	result := evaluate_engine('voxAdblockCheck(${encode_transport_json(request)})') or {
+	result := evaluate_filter_decision('voxAdblockCheck(${encode_transport_json(request)})') or {
 		decision := Decision{error: err.msg()}
 		record_request(request, decision)
 		return decision

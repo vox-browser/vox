@@ -16,7 +16,7 @@ pub fn check_response(request Request, headers []ResponseHeader) Decision {
 		|| request.url.starts_with('ws://') || request.url.starts_with('wss://')) {
 		return Decision{}
 	}
-	result := evaluate_engine('voxAdblockCheckResponse(${encode_transport_json(request)},${encode_transport_json(headers)})') or {
+	result := evaluate_filter_decision('voxAdblockCheckResponse(${encode_transport_json(request)},${encode_transport_json(headers)})') or {
 		decision := Decision{
 			error: err.msg()
 		}
