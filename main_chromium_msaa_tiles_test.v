@@ -60,6 +60,33 @@ fn test_chromium_msaa_tiles_come_from_multiply_clipped_draws_and_svg_paths() {
 	assert chromium_msaa_tiles([msaa_test_underline(140, 2)], 2, 256) == [1]
 }
 
+fn test_explicit_svg_ellipse_msaa_bounds_include_both_corners_and_transforms() {
+	data := &layout.PaintSVGPathData{
+		path_data: [f32(6), 10, 250, 20, 270, 0, 0, 0, 0, 0, 0, 0]
+	}
+	command := layout.PaintCommand{
+		kind: 'draw_svg_path'
+		force_dark_role: .svg
+		svg_data: data
+	}
+	assert chromium_msaa_trigger_bounds(command)? == [f64(249), 271]
+	assert chromium_msaa_tiles([command], 1, 256) == [0, 1]
+	assert chromium_msaa_tiles([command], 2, 256) == [1, 2]
+	stroked := layout.PaintCommand{ ...command, stroke_width: 2 }
+	assert chromium_msaa_trigger_bounds(stroked)? == [f64(248), 272]
+	rotated := layout.PaintCommand{
+		...command
+		transform: [f64(1), 0, 0, 1, 0, 300]!
+		svg_data: &layout.PaintSVGPathData{
+			...data
+			path_transform: [f64(0), 1, -1, 0, 0, 0]!
+		}
+	}
+	assert chromium_msaa_trigger_bounds(rotated)? == [f64(309), 321]
+	assert chromium_msaa_tiles([rotated], 1, 256) == [1]
+	assert command.svg().path_data == [f32(6), 10, 250, 20, 270, 0, 0, 0, 0, 0, 0, 0]
+}
+
 // Without the native GPU painter, the parts between the clip-outs are drawn as
 // separate rectangles; a clip without antialiasing covers whole pixels.
 fn test_clipped_out_rect_segments_cover_the_parts_between_clip_outs() {

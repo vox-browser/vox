@@ -70,14 +70,14 @@ fn chromium_msaa_trigger_bounds(command layout.PaintCommand) ?[]f64 {
 			mut max_x := math.inf(-1)
 			mut max_y := math.inf(-1)
 			for index := 0; index + stride <= svg_data.path_data.len; index += stride {
-				// Each segment holds its end point; quadratic and cubic curves
-				// follow it with one or two control points.
+				// Curves hold an end point followed by their controls. Explicit
+				// ellipses instead hold both LTRB corners in these coordinate slots.
 				kind := int(svg_data.path_data[index])
 				if kind == 5 {
 					continue
 				}
 				points := match kind {
-					2 { 2 }
+					2, 6 { 2 }
 					3 { 3 }
 					else { 1 }
 				}
