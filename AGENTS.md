@@ -1985,6 +1985,14 @@ evidence](docs/translation-audit/NATIVE_MEDIA_WHEEL_RAW_HANDLER.md).
   Same 4 GiB, SSD, placement and frozen library loader proof; live scroll offsets,
   inline gradients, CSS decoding/filtering and GC unchanged. Root/canonical/GUI
   preserved. Absent SVG cull gate excluded; Chrome parity remains open.
+  Dependent anonymous geometry `5dd943ad` + `67c853d6` + `32348332` is locally
+  rejected in105; no old90 observation reused. 26 common functional cases pass
+  3,123 assertions/configuration; 16 exact original contracts pass 30,272/GC.
+  Complete mixed inline/block public layout+recording median increases 0.246%;
+  1/3 wins. Both pre-native gates actually exit1; no normal/profile/page work.
+  Page credit0; retain104 control/broad baseline and observed carry0.
+  Completed artifact bytes remain in verified archives; no passing case repeated.
+  Same4GiB; Root/canonical/GUI preserved; Chrome parity remains open.
 - Outside instruction-count optimization, run broad regression suites once per
   ten completed fixes, not after every fix.
   Broad suites include full translation/package test batches, the full LibJS AST

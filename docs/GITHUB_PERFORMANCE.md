@@ -10591,6 +10591,84 @@ submission accounting is still open; **faster-than-Chrome performance remains
 unproven**. Evidence: Build/instructions/vox-opt104-interleaved-* and
 Build/v/instruction-opt104-*.
 
+## Reject the dependent anonymous-geometry composition locally
+
+Round105 imports only the dependent combination `5dd943ad`,
+`67c853d6` and `32348332` into accepted frozen104. The first
+slice moves cold computed-layout fields into a lazy copy-on-write snapshot;
+the second keeps frequently changed content/marker values inline; the third
+reuses resolved inherited geometry for anonymous block wrappers, guarded by raw
+property mutation provenance, font/context checks and fallback to the ordinary
+resolver. Seven runtime paths include three new CSS files. The static source
+review authenticates the original eight lazy-cache hunks, then each exact later
+authored change. No unrelated Root work is imported.
+
+This is a distinct dependent composition, not a repeat or acceptance of
+round90's standalone lazy-cache experiment, which regressed 2.11%. None of that
+round's instruction observations are reused or credited. The current source
+hashes, ordered authored-hunk proofs and complete final source views remain in
+instruction-future-anonymous-geometry-composition-review.json and
+instruction-opt105-source-hunks.json.
+
+All **26 common functional cases**, plus one inactive diagnostic case, pass
+before/Boehm, final/Boehm and final/no-GC C-O2: **3,123 assertions each**.
+Common source SHA256: `e1fc117e9e0b66fa20cf7c7c60c9a3979ef5345c6b1e8e3350951e2b301a2e6d`.
+The **16 original contract bodies** from the dependent cache, initial-template
+and anonymous-geometry tests remain byte-identical; only module/import wrappers
+and identical GC declarations are combined. Both GC modes pass **30,272
+assertions**. Contracts cover lazy materialization, copy-on-write ownership,
+producer lifetime/GC, inline content/markers, all computed-property comparisons,
+relative units and normal font metrics, viewport/root/subject changes, raw-array
+aliases, typed overrides, callback clone boundaries and container resizing.
+Implementation and tests are already independently committed in Root; this
+attempt changes no Root runtime file and does not revert that independent work.
+
+Three fixed alternating local pairs count **32 complete public document layout
+and display-list rebuilds** over **64 mixed inline/block articles**. Initial
+and trailing inline runs surround each block child, exercising anonymous
+wrappers through the actual document pipeline. Public invalidation, fresh layout
+mirrors, style/formatting, geometry, recording and command traversal are counted.
+The checksum traverses kind/text/color lengths, coordinates, points and glyph
+counts; it does not hash full glyph contents. Setup, eight warmups, expected
+checksum, text-presence assertions and forced GC remain outside the counter.
+All six actual exits are 0; checksum **27,690,048** matches.
+
+| Observation | Before retired instructions | Candidate retired instructions |
+| --- | ---: | ---: |
+| 1 | 8,753,806,408 | 8,808,916,426 |
+| 2 | 8,780,354,756 | 8,801,945,706 |
+| 3 | 8,790,732,529 | 8,789,142,685 |
+
+Medians **8,780,354,756→8,801,945,706** retired instructions:
+**+0.24590%**, **1/3 wins**. This completed public workload
+regresses locally; no private helper loop, profile time or historical page
+median is substituted for these hardware instructions.
+
+The local native gate and its waiting start controller both actually exit **1**
+before launching a normal browser build, profile, independent app-C generation,
+C audit or page observation. Their result JSONs and actual terminal receipts are
+retained. The attempt is **locally rejected**. The prepared fixed30-pair/seed105
+plan remains unused: there are **zero105 page primaries, screenshots, retries or
+recoveries**. No broad batch, app installation or GC-policy claim is made for105.
+Page credit is **0**. Accepted104 remains control at **17,312,897,490** instructions;
+the last broad baseline and observed carry **0** remain unchanged.
+
+Low scratch space prompted archive-backed cleanup of only our completed
+artifacts: **13** old standalone test binaries,
+**34** derived C projections,
+**6** generated-C duplicates from103 and
+**72** completed broad-harness C intermediates.
+Every byte is retained in a verified gzip archive with original path/SHA and
+receipt provenance. Normal measurement binaries, app bundles, libraries, source
+snapshots, logs/results, actual screenshots and current105 artifacts remain.
+A pre-action controller check found that the local gate had already rejected
+the attempt; no process was stopped and no local observation was interrupted.
+No passing functional case or completed primary is repeated. The normal C-O2/
+Boehm/default marker1/4 GiB policy is unchanged. Canonical/GUI browsers and
+foreign working edits/commits remain preserved. Durable test/local C hashes are
+in instruction-opt105-artifact-archives.json. Equivalent-workload Chrome
+accounting is still open; **faster-than-Chrome performance remains unproven**.
+
 ## Causes and changes
 
 - The V 0.5.2 compatibility compiler's `-prod` Boehm code repeatedly snapshots
