@@ -827,10 +827,7 @@ pub fn document_layout_result(document &dom.Document) ?&DocumentLayoutResult {
 fn build_layout_box_for_element(document &dom.Document, element &dom.Element, style_computer &css.StyleComputer, mut builder_state TreeBuilderState) ?&Node {
 	if builder_state.allow_subtree_reuse {
 		if retained := reusable_clean_flow_subtree(element, mut builder_state.nonreusable_flow_roots) {
-			for current in retained.elements {
-				computed := css.computed_properties_for_element(current) or { continue }
-				resolve_layout_counters(mut builder_state, dom.AbstractElement.new(current, none), computed)
-			}
+			resolve_retained_flow_counters(retained, mut builder_state)
 			return retained.root
 		}
 	}
