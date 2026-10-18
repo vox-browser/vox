@@ -30,15 +30,16 @@ results, not a claim of complete uBlock extension parity.
 
 ## Current diagnostic progress
 
-The latest signed normal build includes natural image-coordinate sampling,
-snapped SVG background replay, full-style invalidation draining and allocation-free
-hover matching. It records **50,905,193,102 instructions** and **868 differing
-pixels**, including a newly reproduced scrollbar-policy mismatch; maximum channel
-error is 162. Content, fonts and all 173 full-uBO request/header checks pass.
-The earlier immutable baseline also reproduces the scrollbar mismatch in the
-gradient fixture. AppKit reports legacy scrollbars inside Vox while a standalone
-Cocoa probe reports overlay scrollbars; the environment difference remains open.
-No pixels are excluded, and none of these results receives performance credit.
+The latest signed normal build also suppresses duplicate descendant invalidations
+and avoids constructing an absent block-margin record. Its standalone capture
+records **50,469,492,588 instructions** and **208 differing pixels**, with maximum
+channel error 13; content and fonts pass. Three interleaved native pairs average
+48,454,193,091 candidate instructions, still above the target. The earlier
+868-pixel result included a transient scrollbar-policy difference: a fresh capture
+of the unchanged older binary also returns 208 pixels without any configuration
+override. The scrollbar disappearance receives no code-improvement credit.
+No pixels are excluded, and none of these results passes the final performance
+gate.
 
 Before that scrollbar difference appeared, the isolated natural-image change
 reduced the original CNN difference from 2,470 to **209 pixels**. Brave's exported
@@ -370,3 +371,41 @@ The latter bundle is pinned in `natural-image-final-normal/`; it includes the
 four fixes above, based on the earlier isolated source, rather than unrelated
 concurrent canonical work. The first SVG no-GC compile failed with ENOSPC before
 running tests; the unchanged retry passes. Failed receipts remain retained.
+
+Duplicate descendant invalidation suppression (`299be763`) restores the missing
+upstream pending/active-list checks. Structural comparisons include the reason
+and nested payload; equivalent records with a different ordering remain separate.
+Three focused cases pass nine assertions in each GC mode, while the original
+implementation fails all three. Three interleaved native pairs reduce the observed
+mean from 50,258,308,254.33 to 48,632,429,750.67 instructions, with two wins out of
+three and all six captures at 208 differing pixels. This noisy result is not a
+robust final speed claim. Its observed saving exceeds the repository's five-million
+instruction broad-check gate.
+
+Explicit absent block-margin initialization (`b994ddfa`) reduces allocation for
+512 empty contexts from 257,472 to 57,680 bytes. The final focused tests verify
+the allocation bound and retained child ownership across copying and collection;
+both GC modes pass two cases and 33 assertions, while the original implementation
+fails the allocation bound. Three further interleaved native pairs observe a
+207,195,607.33-instruction mean reduction, again only two wins out of three and
+unchanged 208-pixel differences. The combined frozen-source regression batch
+passes 49 files in both GC modes: 98 logical checks, 22 compiler invocations,
+with unchanged implementation hashes.
+
+Private receipts are `invalidation-dedup-focused/`,
+`invalidation-dedup-controlled/assessment.json`, `invalidation-dedup-broad/summary.json`,
+`block-context-optional-focused/commit.json`,
+`block-context-optional-controlled/assessment.json`, and the signed bundles under
+`invalidation-dedup-normal/` and `block-context-optional-normal/`.
+The final block-margin tests use the retained `tight-default`, `tight-none`, and
+`tight-baseline` logs; the earlier weaker allocation bound did not distinguish
+the baseline and receives no regression-failure credit. The prepared near-viewport
+script-image integration passes its three focused cases in both GC modes and
+matches all 173 full-uBO checks, but its standalone count establishes no page gain.
+
+Brave's current exported layer reasons identify the ribbon button as a separate
+layer promoted for overlap with accelerated scrolling. A private rectangle-MSAA
+probe changes only 11 chevron pixels and reduces the full difference from 208 to
+200; a private image-MSAA probe reduces it to 198. These blanket policies remain
+diagnostics, with no production or CPU credit. General layer-aware rasterization
+and the remaining image-corner/gradient-compositing differences remain open.
