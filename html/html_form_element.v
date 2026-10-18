@@ -2,9 +2,9 @@
 //
 // SPDX-License-Identifier: BSD-2-Clause
 
-// Literal translation of Libraries/LibWeb/HTML/HTMLFormElement.cpp. LibJS
-// values and actual navigable scheduling terminate at the typed submission
-// hook, while the HTML algorithms leading to that boundary live here.
+// Literal translation of Libraries/LibWeb/HTML/HTMLFormElement.cpp. Native GET
+// navigation uses the owning navigable; entity bodies and auxiliary targets
+// remain exposed through the typed submission hook.
 module html
 
 import dom
@@ -185,6 +185,7 @@ pub fn (form &HTMLFormElementModel) report_validity() bool {
 }
 
 pub fn (form &HTMLFormElementModel) get_submittable_elements() []&FormAssociatedElement {
+	materialize_form_associated_controls(form, html_form_element_root(form))
 	mut controls := []&FormAssociatedElement{}
 	// Upstream owns one concrete FormAssociatedElement per DOM element. The V
 	// wrappers are separate records, so resolve the same associated DOM identity
@@ -203,6 +204,32 @@ pub fn (form &HTMLFormElementModel) get_submittable_elements() []&FormAssociated
 		}
 	}
 	return controls
+}
+
+// Concrete control owners are lazy in the V browser. Discover the form's
+// untouched controls before taking the submission snapshot, including controls
+// outside the form which use its ID, without entering another shadow tree.
+fn materialize_form_associated_controls(form &HTMLFormElementModel, node &dom.Node) {
+	if element := node.as_element() {
+		if element.is_html_element() && html_form_element_is_listed(element)
+			&& !html_form_element_is_associated(form, element) {
+			owner := if element.has_attribute('form') && element.is_connected() {
+				form_element_find_form_by_id(node.root(), element.get_attribute_value('form'))
+			} else if ancestor := form_element_nearest_ancestor(element, 'form') {
+				?&dom.HTMLFormElement(unsafe { &dom.HTMLFormElement(ancestor) })
+			} else {
+				?&dom.HTMLFormElement(none)
+			}
+			if owner_form := owner {
+				if voidptr(owner_form) == voidptr(form.element) {
+					_ = form_associated_record_for_entry(form, element)
+				}
+			}
+		}
+	}
+	for child in node.children {
+		materialize_form_associated_controls(form, child)
+	}
 }
 
 fn form_associated_record_for_entry(form &HTMLFormElementModel, element &dom.Element) &FormAssociatedElement {
@@ -433,14 +460,35 @@ pub fn (mut form HTMLFormElementModel) mail_as_body(parsed_action dom.URL, entry
 	form.get_action_url(parsed_action.with_query('${old_query}${separator}body=${body}'), entry_list, user_involvement)!
 }
 
-// HTMLFormElement::plan_to_navigate_to(). Task coalescing and actual navigation
-// are represented by replacing the pending typed submission and invoking the
-// host hook once.
+// HTMLFormElement::plan_to_navigate_to(). The host hook can consume the typed
+// submission; otherwise use the navigable's URL handoff for GET navigation.
 pub fn (mut form HTMLFormElementModel) plan_to_navigate_to(submission FormSubmission) ! {
 	form.last_submission_ = submission
 	if hook := form.submission_hook_ {
 		hook(submission)!
+		return
 	}
+	// The compact browser's navigable already owns the native URL handoff.
+	// Entity-body and auxiliary-target submissions retain their typed host hook.
+	if submission.method != .get {
+		return
+	}
+	element := form_model_element(&form)
+	if ascii_lowercase_string(element.get_attribute_value('target')) !in ['', '_self'] {
+		return
+	}
+	document := element.document()
+	navigable := document.navigable() or { return }
+	if navigable.html_model_handle_ == unsafe { nil }
+		|| navigable.navigate_callback_ == unsafe { nil } {
+		return
+	}
+	involvement := match submission.user_involvement {
+		.browser_ui { dom.UserNavigationInvolvement.browser_ui }
+		.activation { dom.UserNavigationInvolvement.activation }
+		.none_ { dom.UserNavigationInvolvement.none }
+	}
+	navigable.navigate(submission.url, document, submission.referrer_policy, involvement)!
 }
 
 pub fn (mut form HTMLFormElementModel) item_value(index usize) ?&dom.Element {
@@ -585,7 +633,7 @@ pub fn (mut form HTMLFormElementModel) named_item_value(name string) HTMLFormCon
 }
 
 pub fn (form &HTMLFormElementModel) default_button() ?&FormAssociatedElement {
-	for control in form.controls_ {
+	for control in form.get_submittable_elements() {
 		owner := control.form() or { continue }
 		if voidptr(owner) == voidptr(form.element) && control.is_submit_button() {
 			return control
@@ -596,7 +644,7 @@ pub fn (form &HTMLFormElementModel) default_button() ?&FormAssociatedElement {
 
 pub fn (form &HTMLFormElementModel) number_of_fields_blocking_implicit_submission() usize {
 	mut count := 0
-	for control in form.controls_ {
+	for control in form.get_submittable_elements() {
 		if control.element.local_name() != 'input' {
 			continue
 		}

@@ -1304,12 +1304,23 @@ pub fn (mut model HTMLInputElementModel) set_form_action_hook(hook ?InputFormAct
 }
 
 fn (mut model HTMLInputElementModel) run_form_action(action InputFormAction) ! {
-	if model.control.form() == none || !input_element(&model).document().is_fully_active() {
+	owner := model.control.form() or { return }
+	if !input_element(&model).document().is_fully_active() {
 		return
 	}
-	hook := model.form_action_hook_ or { return }
-	if hook.run != unsafe { nil } {
-		hook.run(hook.target, model.control, action)!
+	if hook := model.form_action_hook_ {
+		if hook.run != unsafe { nil } {
+			hook.run(hook.target, model.control, action)!
+		}
+		return
+	}
+	mut form := HTMLFormElementModel.create(owner)
+	match action {
+		.submit {
+			form.submit_form(model.control, SubmitFormOptions{ user_involvement: .activation })!
+		}
+		.reset { form.reset_form() }
+		.implicit_submit { form.implicitly_submit_form()! }
 	}
 }
 

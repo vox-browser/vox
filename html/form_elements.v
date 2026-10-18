@@ -380,21 +380,19 @@ pub fn (mut model HTMLButtonElementModel) activation_behavior(event &dom.Event) 
 		return
 	}
 	if form := model.control.form() {
-		if form_model := html_form_element_model_for(form) {
-			mut mutable_form_model := unsafe { &HTMLFormElementModel(form_model) }
-			if html_button_element_is_submit_button(model.element) {
-				mutable_form_model.submit_form(model.control, SubmitFormOptions{
-					user_involvement: user_navigation_involvement(event)
-				}) or {}
-				return
-			}
-			if html_button_element_type_state(model.element) == .reset {
-				mutable_form_model.reset_form()
-				return
-			}
-			if html_button_element_type_state(model.element) == .auto {
-				return
-			}
+		mut mutable_form_model := HTMLFormElementModel.create(form)
+		if html_button_element_is_submit_button(model.element) {
+			mutable_form_model.submit_form(model.control, SubmitFormOptions{
+				user_involvement: user_navigation_involvement(event)
+			}) or {}
+			return
+		}
+		if html_button_element_type_state(model.element) == .reset {
+			mutable_form_model.reset_form()
+			return
+		}
+		if html_button_element_type_state(model.element) == .auto {
+			return
 		}
 	}
 	target_element := model.command_for_element() or {
