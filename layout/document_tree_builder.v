@@ -519,6 +519,7 @@ mut:
 	paint_phase_commands      [][]PaintCommand
 	paint_phase_command_count int
 	paint_phase_cache_valid   bool
+	paint_phase_line_box_debug bool
 	paint_phase_entry_valid   []bool
 	paint_recording_viewport_only bool
 	// The caret is emitted by its containing block's retained foreground phase.

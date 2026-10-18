@@ -50,3 +50,25 @@ fn test_text_emission_keeps_existing_phases_and_orders_plain_and_shadowed_lines(
 	assert earlier[0].color == 'prefix'
 	assert earlier[3].opacity == 0.5 && earlier[3].y == 20
 }
+
+fn test_disabling_debug_guide_generation_preserves_plain_and_shadowed_text_commands() {
+	plain := TextFragment{
+		x: 10
+		y: 20
+		width: 30
+		height: 16
+		text: 'ink'
+		color: css.Color{r: 7, g: 8, b: 9, a: 255}
+		baseline: 12
+		paintable_fragment: painting.PaintableFragment{length_in_code_units: 3}
+	}
+	for fragment in [plain, TextFragment{...plain, text_shadows: [BoxShadow{offset_x: 1, offset_y: 2, blur: 3, color: css.Color{r: 100, a: 255}}]}] {
+		mut reference := []PaintCommand{}
+		append_text_fragment_commands(mut reference, [fragment], 0.75)
+		assert reference.filter(it.line_box_debug).len == 2
+		mut actual := []PaintCommand{}
+		append_text_fragment_commands_with_debug(mut actual, [fragment], 0.75, false)
+		assert actual == reference.filter(!it.line_box_debug)
+		assert actual.any(it.kind == 'draw_text' && it.text == 'ink')
+	}
+}

@@ -67,7 +67,13 @@ fn (box &BlockBox) build_reusing_paint_phase_command_cache(entries []PaintOrderE
 }
 
 fn (box &BlockBox) build_selected_paint_phase_command_cache(entries []PaintOrderEntry, storage [][]PaintCommand, selected []bool) ([][]PaintCommand, int) {
+	return box.build_selected_paint_phase_command_cache_with_debug(entries, storage, selected, true)
+}
+
+fn (box &BlockBox) build_selected_paint_phase_command_cache_with_debug(entries []PaintOrderEntry,
+	storage [][]PaintCommand, selected []bool, include_line_box_debug bool) ([][]PaintCommand, int) {
 	mut recorder := new_reusing_paint_phase_command_recorder(entries.len, storage)
+	recorder.include_line_box_debug = include_line_box_debug
 	box.record_paint_commands_for_entries(entries, selected, mut recorder)
 	return recorder.phase_commands, recorder.command_count
 }

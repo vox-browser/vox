@@ -2628,26 +2628,36 @@ pub fn recycle_display_list_commands(display_list &dom.DisplayList, commands []P
 fn viewport_record_display_list(target voidptr) &dom.DisplayList {
 	mut result := viewport_layout_result(target)
 	viewport_only := result.document.recording_viewport_only()
+	mut show_line_box_borders := false
+	if model := html.NavigableModel.navigable_with_active_document(result.document) {
+		show_line_box_borders = model.should_show_line_box_borders()
+	}
 	if result.display_list != unsafe { nil } && !result.needs_repaint
-		&& result.paint_recording_viewport_only == viewport_only {
+		&& result.paint_recording_viewport_only == viewport_only
+		&& result.paint_phase_line_box_debug == show_line_box_borders {
 		return result.display_list
 	}
 	viewport_build_stacking_context_tree(target)
 	viewport_sync_cursor_paint_cache(mut result)
 	viewport_invalidate_fixed_background_paint_caches(mut result)
 	selected := if viewport_only { viewport_visible_paint_entries(result) } else { []bool{} }
+	if result.paint_phase_line_box_debug != show_line_box_borders {
+		// Inspector guides are paint output. Rebuild them only when enabled,
+		// retaining ordinary bucket storage while dropping obsolete GC edges.
+		clear_phase_command_storage(mut result.paint_phase_commands)
+		result.paint_phase_cache_valid = false
+		result.paint_phase_entry_valid = []bool{len: result.paint_order.len}
+		result.paint_phase_command_count = 0
+		result.paint_phase_line_box_debug = show_line_box_borders
+	}
 	if !result.paint_phase_cache_valid {
-		result.paint_phase_commands, result.paint_phase_command_count = result.paint_tree.build_selected_paint_phase_command_cache(result.paint_order, result.paint_phase_commands, selected)
+		result.paint_phase_commands, result.paint_phase_command_count = result.paint_tree.build_selected_paint_phase_command_cache_with_debug(result.paint_order, result.paint_phase_commands, selected, show_line_box_borders)
 		result.paint_phase_entry_valid = if selected.len > 0 { selected.clone() } else { []bool{len: result.paint_order.len, init: true} }
 		result.paint_phase_cache_valid = true
 	} else {
-		result.paint_phase_command_count += result.paint_tree.refresh_selected_paint_phase_command_cache(result.paint_order, selected, mut result.paint_phase_commands, mut result.paint_phase_entry_valid)
+		result.paint_phase_command_count += result.paint_tree.refresh_selected_paint_phase_command_cache_with_debug(result.paint_order, selected, mut result.paint_phase_commands, mut result.paint_phase_entry_valid, show_line_box_borders)
 	}
 	snapshot := result.scroll_state_snapshot
-	mut show_line_box_borders := false
-	if model := html.NavigableModel.navigable_with_active_document(result.document) {
-		show_line_box_borders = model.should_show_line_box_borders()
-	}
 	steps := if selected.len > 0 {
 		result.paint_steps.filter(it.entry_index < 0 || selected[it.entry_index])
 	} else { unsafe { result.paint_steps } }

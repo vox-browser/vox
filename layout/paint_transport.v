@@ -2603,7 +2603,8 @@ fn (b &BlockBox) record_paint_commands_for_entries(entries []PaintOrderEntry, se
 			// line's border phase has completed. This keeps a following line's
 			// border from covering the previous line's outline at overlaps.
 			commands << inline_outlines[line_index]
-			append_text_fragment_commands(mut commands, line.fragments, opacity)
+			append_text_fragment_commands_with_debug(mut commands, line.fragments, opacity,
+				recorder.include_line_box_debug)
 		}
 		if box.paintable_with_lines {
 			if cursor := paint_cursor(box, opacity) {
@@ -2865,6 +2866,7 @@ fn (b &BlockBox) build_paint_phase_command_cache(entries []PaintOrderEntry) ([][
 
 struct PaintPhaseCommandRecorder {
 mut:
+	include_line_box_debug bool = true
 	phase_commands  [][]PaintCommand
 	bucket_counts   []int
 	touched_buckets []int
@@ -2912,6 +2914,13 @@ fn (b &BlockBox) refresh_paint_phase_command_cache(entries []PaintOrderEntry, mu
 }
 
 fn (b &BlockBox) refresh_selected_paint_phase_command_cache(entries []PaintOrderEntry, visible []bool, mut phase_commands [][]PaintCommand, mut entry_valid []bool) int {
+	return b.refresh_selected_paint_phase_command_cache_with_debug(entries, visible,
+		mut phase_commands, mut entry_valid, true)
+}
+
+fn (b &BlockBox) refresh_selected_paint_phase_command_cache_with_debug(entries []PaintOrderEntry,
+	visible []bool, mut phase_commands [][]PaintCommand, mut entry_valid []bool,
+	include_line_box_debug bool) int {
 	mut selected := []bool{len: entries.len}
 	mut has_invalid_entry := false
 	for index in 0 .. entries.len {
@@ -2924,6 +2933,7 @@ fn (b &BlockBox) refresh_selected_paint_phase_command_cache(entries []PaintOrder
 		return 0
 	}
 	mut recorder := PaintPhaseCommandRecorder{
+		include_line_box_debug: include_line_box_debug
 		phase_commands: unsafe { phase_commands }
 		bucket_counts: []int{len: phase_commands.len}
 		touched_buckets: []int{cap: compatibility_paint_phase_count}
@@ -3546,7 +3556,7 @@ fn paint_text_fragment(mut commands []PaintCommand, fragment TextFragment,
 // PaintableWithLines::paint(Foreground): selection backgrounds for all spans,
 // then all shadows, then glyphs and decorations.
 fn append_selected_text_fragment_commands(mut commands []PaintCommand,
-	fragments []TextFragment, opacity f64) {
+	fragments []TextFragment, opacity f64, include_line_box_debug bool) {
 	spans := compute_render_spans(fragments)
 	for span in spans {
 		if span.background_color.a == 0 {
@@ -3569,19 +3579,26 @@ fn append_selected_text_fragment_commands(mut commands []PaintCommand,
 		paint_text_shadow(mut commands, fragments[span.fragment_index], span, opacity)
 	}
 	for span in spans {
-		append_line_box_debug_commands(mut commands, fragments[span.fragment_index], opacity)
+		if include_line_box_debug {
+			append_line_box_debug_commands(mut commands, fragments[span.fragment_index], opacity)
+		}
 		paint_text_fragment(mut commands, fragments[span.fragment_index], span, opacity)
 	}
 }
 
 fn append_text_fragment_commands(mut commands []PaintCommand, fragments []TextFragment,
 	opacity f64) {
+	append_text_fragment_commands_with_debug(mut commands, fragments, opacity, true)
+}
+
+fn append_text_fragment_commands_with_debug(mut commands []PaintCommand, fragments []TextFragment,
+	opacity f64, include_line_box_debug bool) {
 	if !fragments.any(text_fragment_has_active_selection(it))
 		&& !fragments.any(it.text_shadows.len > 0) {
-		append_unselected_text_fragment_commands(mut commands, fragments, opacity, true)
+		append_unselected_text_fragment_commands(mut commands, fragments, opacity, include_line_box_debug)
 		return
 	}
-	append_selected_text_fragment_commands(mut commands, fragments, opacity)
+	append_selected_text_fragment_commands(mut commands, fragments, opacity, include_line_box_debug)
 }
 
 // Boundary offsets are inclusive, so a caret at a fragment edge resolves to
