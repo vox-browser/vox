@@ -2073,6 +2073,14 @@ evidence](docs/translation-audit/NATIVE_MEDIA_WHEEL_RAW_HANDLER.md).
   Native gate exits 1 before normal/profile/page work; credit 0.
   Frozen 111/control, 110/broad baseline, observed carry 4,867,127.5 preserved.
   Root/canonical/GUI preserved; Chrome parity open.
+  DOM state-family round 114 (`b487c142+722f9bcb`) fails an original ABI contract.
+  Common 11 cases/60 assertions each; control batch safely reused from 112.
+  Per GC: 18/19 exact candidate cases pass; allocation case expects 1960B Element,
+  observes 2072B. Syntax-only audit identifies missing `ddfefde3` event storage,
+  a 112B map/pointer gap; no size assertion changed. Weak-owner case passes.
+  Fresh public pipelines use 0.77% fewer local instructions (16 batches),
+  but contract failure blocks normal/profile/page work; credit 0; all samples retained.
+  Frozen 111/control, 110/broad baseline, carry 4,867,127.5 preserved; Chrome parity open.
 - Outside instruction-count optimization, run broad regression suites once per
   ten completed fixes, not after every fix.
   Broad suites include full translation/package test batches, the full LibJS AST

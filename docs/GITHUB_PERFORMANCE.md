@@ -11547,6 +11547,64 @@ Build/v/instruction-opt113-*. The separate source feature remains committed in
 Root; this rejection concerns its frozen instruction comparison.
 **Faster-than-Chrome performance remains unproven.**
 
+## Retain the failed DOM allocation-class contract
+
+Round 114 evaluates the full declared two-commit `b487c142+722f9bcb` chain against frozen
+111: 45 exact authored hunks across 13 runtime paths. Round 113's standalone
+regression stays retained. Both complete patches are included; no mutable-marker
+repair or partial prerequisite is substituted.
+
+The 11 common HTML cases plus one inactive diagnostic pass **60 assertions in
+each configuration**. Before/Boehm reuses the verified successful round 112
+individual command with identical 111 runtime, test bytes, native flags and binary
+hash; it is not reexecuted. Round 112's failing overall controller remains
+disclosed. Candidate/Boehm and candidate/no-GC are new actual zero exits.
+
+Of 19 exact authored candidate bodies per GC mode, **18 pass and one fails**.
+Both DOM jobs report 11 passed cases and one failure: the original
+concrete-allocation test expects `sizeof(Element) == 1960`, but observes **2072**.
+They retain **2,635 / 2,622 passed assertions and one failed assertion** under
+Boehm / no-GC. The test's later allocation checks do not execute after this first
+failure. Three CSS cases pass **952 assertions per GC mode**; four HTML cases
+pass **76 per mode**. The passing weak-owner test remains separate from the
+failed allocation test. No original assertion is removed or relaxed.
+
+A read-only Clang syntax/AST audit of the actual generated test C exits 0 without
+code generation, linking or runtime execution. It reports map 120 bytes, pointer
+8, EventTargetData 176, Element 2072, HTMLElement 2080, interactive data 120 and
+HTML rare data 624. Element, Node, ParentNode and EventTarget V records match the
+author's records; EventTargetData still embeds its old event-handler map.
+Replacing that 120-byte map with the authored 8-byte storage pointer would account
+for exactly the **112-byte size gap**. This identifies an additional prerequisite,
+`ddfefde3`; it is an ABI inference, not a passing allocation result.
+
+The separately predeclared local diagnostic uses **16 complete fresh document
+pipelines per observation**, bounding temporary memory while retaining the normal
+4 GiB policy and the same 64-paragraph scene. Public parsing, creation, initial
+layout, recording/consumption and finalization stay inside the counter. Setup,
+eight warmups, text/display assertions and forced GC are outside it. All six
+actual exits are 0 with matching checksum **54,286,416**. Full paint expectations
+come from an uncounted setup run, not an independent literal oracle.
+
+| Pair | Before retired instructions | Candidate retired instructions |
+| --- | ---: | ---: |
+| 1 | 24,863,338,168 | 25,693,811,405 |
+| 2 | 24,822,174,610 | 24,672,767,883 |
+| 3 | 24,939,119,573 | 24,444,006,123 |
+
+Local medians **24,863,338,168 → 24,672,767,883**, change
+**-0.766471%**, **2/3 wins**. This local saving earns no page
+credit because the required allocation contract fails. The actual native gate
+exits 1 before any normal build, profile, C-only browser generation or page
+cohort. All completed samples, successful cases, failures and generated C archives
+remain retained; no completed observation is repeated or extended.
+
+Frozen 111/control, 110/broad baseline and observed carry **4,867,127.5** remain
+unchanged. No app is installed for this attempt. The next assessment addresses
+the event-handler storage prerequisite separately. Root, the canonical app and
+the user's GUI remain preserved. Evidence: Build/v/instruction-opt114-*.
+**Faster-than-Chrome performance remains unproven.**
+
 ## Causes and changes
 
 - The V 0.5.2 compatibility compiler's `-prod` Boehm code repeatedly snapshots
