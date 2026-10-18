@@ -289,36 +289,43 @@ pub fn (mut base StyleElementBase) finished_loading_critical_subresources(any_fa
 	}
 
 	// 4. Queue an element task on the networking task source given element and the following steps:
-	element.queue_an_element_task(.user_interaction, fn [element, success, style_sheet_update_generation] () {
-		mut style_element := unsafe { &Element(element) }
-		// AD-HOC: If the associated stylesheet has been replaced or removed since this task was queued, ignore it.
-		mut style_element_base := style_element.style_element_base() or { return }
-		if style_element_base.style_sheet_update_generation_ != style_sheet_update_generation {
-			return
-		}
+	// Documents without an HTML task queue cannot use the completion callback.
+	// Check before constructing it, so its captured element has no global
+	// executable-closure lifetime when queue_an_element_task would return.
+	if hook := element.document().lifecycle_hook_ {
+		if hook.queue_an_element_task != unsafe { nil } {
+			element.queue_an_element_task(.user_interaction, fn [element, success, style_sheet_update_generation] () {
+				mut style_element := unsafe { &Element(element) }
+				// AD-HOC: If the associated stylesheet has been replaced or removed since this task was queued, ignore it.
+				mut style_element_base := style_element.style_element_base() or { return }
+				if style_element_base.style_sheet_update_generation_ != style_sheet_update_generation {
+					return
+				}
 
-		// 1. If success is true, fire an event named load at element.
-		// AD-HOC: these should call fire an event this is not implemented anywhere so we dispatch it ourselves
-		if success {
-			style_element.dispatch_event_simple('load', false)
-		} else {
-			// 2. Otherwise, fire an event named error at element.
-			style_element.dispatch_event_simple('error', false)
+				// 1. If success is true, fire an event named load at element.
+				// AD-HOC: these should call fire an event this is not implemented anywhere so we dispatch it ourselves
+				if success {
+					style_element.dispatch_event_simple('load', false)
+				} else {
+					// 2. Otherwise, fire an event named error at element.
+					style_element.dispatch_event_simple('error', false)
+				}
+				// 3. If element contributes a script-blocking style sheet:
+				if style_element.contributes_a_script_blocking_style_sheet() {
+					mut document := unsafe { &Document(style_element.document()) }
+					// 1. Assert: element's node document's script-blocking style sheet set contains element.
+					assert document.script_blocking_style_sheet_set_contains(style_element)
+					assert style_element_base.associated_css_style_sheet_is_blocking_scripts_
+					// 2. Remove element from its node document's script-blocking style sheet set.
+					document.remove_from_script_blocking_style_sheet_set(style_element)
+					style_element_base.associated_css_style_sheet_is_blocking_scripts_ = false
+				}
+				// 4. Unblock rendering on element.
+				style_element.unblock_rendering()
+				style_element_base.associated_css_style_sheet_load_is_pending_for_script_blocking_ = false
+			})
 		}
-		// 3. If element contributes a script-blocking style sheet:
-		if style_element.contributes_a_script_blocking_style_sheet() {
-			mut document := unsafe { &Document(style_element.document()) }
-			// 1. Assert: element's node document's script-blocking style sheet set contains element.
-			assert document.script_blocking_style_sheet_set_contains(style_element)
-			assert style_element_base.associated_css_style_sheet_is_blocking_scripts_
-			// 2. Remove element from its node document's script-blocking style sheet set.
-			document.remove_from_script_blocking_style_sheet_set(style_element)
-			style_element_base.associated_css_style_sheet_is_blocking_scripts_ = false
-		}
-		// 4. Unblock rendering on element.
-		style_element.unblock_rendering()
-		style_element_base.associated_css_style_sheet_load_is_pending_for_script_blocking_ = false
-	})
+	}
 	if mut delayer := base.document_load_event_delayer_ {
 		delayer.finish()
 		base.document_load_event_delayer_ = none
