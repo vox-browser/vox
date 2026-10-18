@@ -1047,7 +1047,13 @@ fn cached_browser_resource_response(resolved string, filtered_url string, owner_
 		path := browser_cache_entry_path(browser_cache_root(), 'resources', cache_key)
 		if final_url := read_browser_cache_entry(path + '.url') {
 			final_request := adblock.Request{url: final_url, source_url: owner_url, request_type: request_type}
-			final_filter := browsernet.filter(final_request)!
+			// Without a redirect, the final request is the one the caller has
+			// already filtered.
+			final_filter := if final_url == resolved && filtered_url == resolved {
+				browsernet.FilteredRequest{url: final_url}
+			} else {
+				browsernet.filter(final_request)!
+			}
 			if replacement := final_filter.replacement {
 				return PreloadedResource{url: resolved, body: replacement.body, source_url: owner_url, final_url: final_url, request_type: request_type, adblock_replacement: true}
 			}
@@ -1143,7 +1149,8 @@ fn filter_preloaded_resource(resource PreloadedResource, source_url string, requ
 		return fetch_browser_resource(resource.url, '', source_url, request_type)
 	}
 	if resource.error != '' { return error(resource.error) }
-	if resource.final_url != '' {
+	// Without a redirect, the final request is the one filtered above.
+	if resource.final_url != '' && (resource.final_url != resource.url || filtered.url != resource.url) {
 		final_filter := browsernet.filter(adblock.Request{url: resource.final_url, source_url: source_url, request_type: request_type})!
 		if replacement := final_filter.replacement {
 			return PreloadedResource{url: resource.url, body: replacement.body, source_url: source_url, final_url: resource.final_url, request_type: request_type, adblock_replacement: true}
@@ -4419,12 +4426,13 @@ fn paint_commands_contain_backdrop_filter(commands []layout.PaintCommand) bool {
 
 fn (app &BrowserApp) background_image_bytes(image_url string) ![]u8 {
 	source_url := if app.document != unsafe { nil } { app.document.url.serialize() } else { app.address }
+	// Filtering a retained resource applies the same request filter first.
+	if resource := app.resource_cache[image_url] {
+		return filter_preloaded_resource(resource, source_url, 'image')!.body.bytes()
+	}
 	if image_url.starts_with('http://') || image_url.starts_with('https://') {
 		filtered := browsernet.filter(adblock.Request{url: image_url, source_url: source_url, request_type: 'image'})!
 		if replacement := filtered.replacement { return replacement.body.bytes() }
-	}
-	if resource := app.resource_cache[image_url] {
-		return filter_preloaded_resource(resource, source_url, 'image')!.body.bytes()
 	}
 	if image_url.starts_with('data:') {
 		comma := image_url.index(',') or { return error('Malformed data URL') }
