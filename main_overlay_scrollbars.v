@@ -51,6 +51,12 @@ fn (mut app BrowserApp) prepare_overlay_scrollbars() {
 	}
 	app.overlay_scrollbars.enabled = enabled
 	app.overlay_scrollbars.paint_opacity = app.overlay_scrollbars.opacity_at(time.sys_mono_now())
+	// Match the isolated Chromium reference capture's hidden scrollbars. A
+	// background screenshot window can still receive incidental hover events.
+	if enabled && app.screenshot_path != '' {
+		app.overlay_scrollbars.paint_opacity = 0
+		return
+	}
 	if enabled && app.overlay_scrollbars.paint_opacity > 0 && !app.overlay_scrollbars.hovered
 		&& !app.overlay_scrollbars.dragging
 		&& time.sys_mono_now() - app.overlay_scrollbars.last_activity_ns >= overlay_scrollbar_hold_ns {
