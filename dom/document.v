@@ -5330,6 +5330,7 @@ pub mut:
 	media_element_state_query_                     ?MediaElementStateQuery
 	media_element_resource_attribute_changed_hook_ ?MediaElementResourceAttributeChangedHook
 	media_element_source_attribute_changed_hook_   ?MediaElementSourceAttributeChangedHook
+	media_element_controls_attribute_changed_hook_ ?MediaElementControlsAttributeChangedHook
 	layout_engine_handle_                          voidptr = unsafe { nil }
 
 	// Layout

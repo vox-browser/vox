@@ -287,6 +287,7 @@ pub fn HTMLMediaElement.create(element ?&dom.HTMLElement, base_url dom.URL) &HTM
 		document.set_media_element_state_query(media_element_matches_pseudo_class)
 		document.set_media_element_resource_attribute_changed_hook(html_media_element_resource_attribute_changed)
 		document.set_media_element_source_attribute_changed_hook(html_media_element_source_attribute_changed)
+		document.set_media_element_controls_attribute_changed_hook(html_media_element_controls_attribute_changed)
 		mut observer := dom.DocumentObserver.create(mut document)
 		observer.set_document_became_inactive(fn [media] () {
 			mut mutable_media := unsafe { &HTMLMediaElement(media) }
@@ -364,6 +365,7 @@ pub fn html_media_element_for_dom_element(element &dom.Element) ?&HTMLMediaEleme
 			model.preload_ = element.get_attribute_ns(none, 'preload')
 			model.autoplay_ = element.has_attribute_ns(none, 'autoplay')
 			audio.media_element_model_ = model
+			if element.has_attribute_ns(none, 'controls') { model.create_controls() }
 		}
 		return unsafe { &HTMLMediaElement(audio.media_element_model_) }
 	}
@@ -377,6 +379,7 @@ pub fn html_media_element_for_dom_element(element &dom.Element) ?&HTMLMediaEleme
 			model.preload_ = element.get_attribute_ns(none, 'preload')
 			model.autoplay_ = element.has_attribute_ns(none, 'autoplay')
 			video.media_element_model_ = model
+			if element.has_attribute_ns(none, 'controls') { model.create_controls() }
 		}
 		return unsafe { &HTMLMediaElement(video.media_element_model_) }
 	}
@@ -426,6 +429,24 @@ fn html_media_element_resource_attribute_changed(element &dom.Element) {
 	media.resource_attribute_changed()
 }
 
+fn html_media_element_controls_attribute_changed(element &dom.Element, value ?string) {
+	if !element.is_html_element() { return }
+	model_pointer := match element.local_name() {
+		'audio' { unsafe { &dom.HTMLAudioElement(element) }.media_element_model_ }
+		'video' { unsafe { &dom.HTMLVideoElement(element) }.media_element_model_ }
+		else { return }
+	}
+	// Keep unused DOM owners lazy, as for src/preload/autoplay. Materialization
+	// above projects the parsed null-namespace attribute after publishing the model.
+	if model_pointer == unsafe { nil } { return }
+	mut media := unsafe { &HTMLMediaElement(model_pointer) }
+	if value != none || element.as_node().is_scripting_disabled() {
+		media.create_controls()
+	} else {
+		media.destroy_controls()
+	}
+}
+
 // CSS/Invalidation/ElementStateInvalidator.cpp records typed state changes.
 // The translated style engine consumes those changes through property plans.
 fn (element &HTMLMediaElement) invalidate_media_state_style(names []string) {
@@ -460,6 +481,7 @@ pub fn (mut element HTMLMediaElement) adopted_from(old_document &dom.Document) {
 	element.base_url_ = new_document.base_url()
 	new_document.set_media_element_resource_attribute_changed_hook(html_media_element_resource_attribute_changed)
 	new_document.set_media_element_source_attribute_changed_hook(html_media_element_source_attribute_changed)
+	new_document.set_media_element_controls_attribute_changed_hook(html_media_element_controls_attribute_changed)
 	if observer := element.document_observer_ {
 		mut mutable_observer := unsafe { &dom.DocumentObserver(observer) }
 		mutable_observer.retarget_for_adoption(mut new_document)
