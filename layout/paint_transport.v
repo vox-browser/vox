@@ -2834,8 +2834,11 @@ fn (b &BlockBox) compatibility_paint_plan() ([]PaintOrderEntry, []CompatibilityP
 // StackingContext::hit_test() follows the same phases in reverse but, unlike
 // paint(), opacity:0 remains hit-testable. Non-invertible contexts are omitted
 // from both plans.
-fn (b &BlockBox) compatibility_hit_test_steps() []CompatibilityPaintStep {
-	mut steps := []CompatibilityPaintStep{}
+fn (b &BlockBox) compatibility_hit_test_steps(entry_count int) []CompatibilityPaintStep {
+	// The paint plan already counted the retained boxes, including transparent
+	// contexts. Reserve their phase slots once instead of growing and copying a
+	// document-sized hit-test vector through several collector allocations.
+	mut steps := []CompatibilityPaintStep{cap: entry_count * compatibility_paint_phase_count}
 	b.collect_compatibility_stacking_context_paint_steps(mut steps, true)
 	return steps
 }

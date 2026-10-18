@@ -2915,7 +2915,7 @@ fn viewport_build_hit_test_display_list(target voidptr) {
 		viewport_build_stacking_context_tree(target)
 		return
 	}
-	result.hit_test_steps = result.paint_tree.compatibility_hit_test_steps()
+	result.hit_test_steps = result.paint_tree.compatibility_hit_test_steps(result.paint_order.len)
 	result.hit_test_order = []&BlockBox{cap: result.paint_order.len}
 	result.chrome_widget_boxes.clear()
 	for entry in result.paint_order {
