@@ -883,6 +883,7 @@ pub mut:
 mut:
 	dom_                        MediaControlsDOM
 	registered_event_listeners_ []MediaControlsRegisteredEventListener
+	request_animation_frame_id_ u32
 	buffered_ranges_            []MediaControlsBufferedRange
 	pending_scrub_seek_time_     ?f64
 	scrub_seek_preemption_timer_ ?&platform.Timer
@@ -1006,6 +1007,9 @@ pub fn (mut controls MediaControls) remove_event_listeners() {
 			registration.listener)
 	}
 	controls.registered_event_listeners_.clear()
+	if mut window := controls.relevant_window() {
+		window.cancel_animation_frame(controls.request_animation_frame_id_)
+	}
 }
 
 fn media_controls_state_handler(controls &MediaControls, event &dom.Event) bool {
@@ -1014,6 +1018,7 @@ fn media_controls_state_handler(controls &MediaControls, event &dom.Event) bool 
 		'play', 'pause', 'playing' {
 			mutable_controls.update_play_pause_icon()
 			mutable_controls.update_placeholder_visibility()
+			if event.type_ == 'playing' { mutable_controls.request_timeline_update() }
 		}
 		'seeked' {
 			mutable_controls.update_placeholder_visibility()
@@ -1093,6 +1098,7 @@ pub fn (mut controls MediaControls) set_up_event_listeners() {
 			}
 			return true
 		})
+	controls.request_timeline_update()
 }
 
 fn (mut controls MediaControls) set_up_hover_event_listeners() {
@@ -1303,6 +1309,28 @@ fn (mut controls MediaControls) set_timeline_progress(progress f64) {
 	}
 	controls.last_timeline_progress_ = progress
 	controls.timeline_percentage = progress * 100
+}
+
+fn (controls &MediaControls) relevant_window() ?&WindowModel {
+	document := controls.media.document() or { return none }
+	settings_handle := document.relevant_settings_object()
+	if settings_handle == unsafe { nil } { return none }
+	settings := unsafe { &EnvironmentSettingsObject(settings_handle) }
+	global := settings.global_object()
+	if global.data.kind != .window { return none }
+	return unsafe { &WindowModel(global) }
+}
+
+fn (mut controls MediaControls) request_timeline_update() {
+	if controls.request_animation_frame_id_ != 0 || !controls.media.potentially_playing() { return }
+	mut window := controls.relevant_window() or { return }
+	controls_pointer := voidptr(&controls)
+	controls.request_animation_frame_id_ = window.request_animation_frame(fn [controls_pointer] (_ f64) {
+		mut controls := unsafe { &MediaControls(controls_pointer) }
+		controls.request_animation_frame_id_ = 0
+		controls.update_timeline()
+		controls.request_timeline_update()
+	})
 }
 
 pub fn (mut controls MediaControls) update_timestamp() {
