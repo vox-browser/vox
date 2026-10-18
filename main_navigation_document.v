@@ -99,6 +99,7 @@ fn browser_host_uses_chromium_rendering(serialized_host string) bool {
 	return host == 'old.reddit.com' || host == 'wikipedia.org' || host.ends_with('.wikipedia.org')
 		|| host == 'cnn.com' || host.ends_with('.cnn.com') || host == '4chan.org'
 		|| host.ends_with('.4chan.org')
+		|| host == 'asgardpvp.com' || host.ends_with('.asgardpvp.com')
 }
 
 fn parse_browser_navigation_document_input(markup string, document_encoding ?string, document_url dom.URL, initiator_origin ?dom.Origin, previous ?&dom.Document, page ?&dom.Page, response_time_ns i64, scripting_enabled bool) &dom.Document {
