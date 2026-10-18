@@ -609,8 +609,33 @@ pub fn (mut u UsedValues) set_content_y(y CSSPixels) {
 
 // Offset from the viewport's top-left to this box's content area (sum of offsets up the containing-block chain).
 pub fn (u &UsedValues) cumulative_offset() css.CSSPixelPoint {
+	if u.containing_block_used_values_ == none { return u.offset }
+	mut cursor := u
+	mut x, mut y := i64(0), i64(0)
+	mut extent_x, mut extent_y := i64(0), i64(0)
+	for {
+		dx, dy := i64(cursor.offset.x().raw_value()), i64(cursor.offset.y().raw_value())
+		x += dx
+		y += dy
+		extent_x += if dx < 0 { -dx } else { dx }
+		extent_y += if dy < 0 { -dy } else { dy }
+		if parent := cursor.containing_block_used_values_ {
+			cursor = parent
+		} else { break }
+	}
+	// This conservative bound proves that no intermediate addition can
+	// saturate, regardless of traversal order. Keep exact root-to-leaf
+	// saturation for large mixed-sign chains; saturation is not associative.
+	limit := i64(css.CSSPixels.max().raw_value())
+	if extent_x <= limit && extent_y <= limit {
+		return css.CSSPixelPoint.new(CSSPixels.from_raw(int(x)), CSSPixels.from_raw(int(y)))
+	}
+	return cumulative_offset_with_saturation(u)
+}
+
+fn cumulative_offset_with_saturation(u &UsedValues) css.CSSPixelPoint {
 	if containing_block := u.containing_block_used_values_ {
-		return css_pixel_point_add(containing_block.cumulative_offset(), u.offset)
+		return css_pixel_point_add(cumulative_offset_with_saturation(containing_block), u.offset)
 	}
 	return u.offset
 }
