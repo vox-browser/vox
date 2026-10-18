@@ -10300,6 +10300,136 @@ Equivalent Chrome content/start/submission accounting is still open;
 **faster-than-Chrome performance remains unproven**. Evidence:
 Build/instructions/vox-opt102-interleaved-* and Build/v/instruction-opt102-*.
 
+## Own the ASCII UTF-8 CSS decoding destination
+
+Feature `72ffc938` changes only decode_css_input, adding an identity-copy
+specialization after the existing fresh TextDecoder constructor and canonical
+encoding selection. Every byte must be below128; controls, DEL and NUL are
+included. ASCII is valid UTF-8 without a BOM or partial sequence, so a fresh,
+terminated string clone is the decoded UTF-8 destination. The one-shot decoder
+is discarded. Non-ASCII and other encodings retain Common processing and its
+final-input handling. Public TextDecoder and every encoding implementation,
+CSS filtering, arenas and GC policy are unchanged.
+
+This is distinct from rejected round10's borrowed-input shortcut (`97c69dfb`,
+reverted `def3c1cb`), which skipped construction and retained the producer's
+storage. That experiment's ten pairs regressed and are not reused or credited.
+The new implementation preserves the constructor, label errors, independent
+output ownership and termination, and is measured against frozen102's current
+UTF-8 destination and unchanged 4 GiB hint. Its focused tests were committed
+with implementation before browser observations.
+
+All **27 functional cases** pass before/Boehm, final/Boehm and final/no-GC
+C-O2: **169,184 assertions per configuration**. The five new cases test every
+ASCII byte and UTF-8 aliases, independent terminated storage after a producer
+view is mutated and leaves scope, UTF-16 and stateful ISO-2022-JP ASCII input,
+malformed/BOM/Unicode fallback, filtering and retained token positions.
+The existing 22 decoder/filter/arena cases are retained. Source SHA256:
+`58093b080aed017abe91f086b57c308da0da19d67a29481e9e966c8ab0b39a9f`. No passing unit case is repeated.
+The old standalone-CR filtering bug remains outside this feature.
+
+Three fixed alternating local pairs count **512 batches of twelve complete
+public CSS-value parses**: **6,144 parses**, ten ASCII and two Unicode inputs
+per batch. Typed DOM-value conversion and actual serialized CSS byte traversal
+are included. Setup, eight warmups, independent width/opacity expectations,
+expected checksum, GC and assertions remain outside the counted interval.
+All six actual exits are 0; checksum **60,884,480** matches.
+Before: **174,851,671 / 176,101,858 / 174,832,967**; final by pair:
+**166,418,374 / 165,814,916 / 165,869,071**. Medians **174,851,671→165,869,071**
+retired instructions, **-5.13727%**. This is local evidence,
+with no private helper loop or page credit.
+
+Full-process C-O1/Boehm profiles have no filtering/reset and repeat no passing
+functional case. Counts only:
+
+| Function | Before calls | Candidate calls |
+| --- | ---: | ---: |
+| `css__opt103_complete_public_css_value_batch` | 521 | 521 |
+| `css__parse_css_value` | 6,293 | 6,293 |
+| `css__decode_css_input` | 6,299 | 6,299 |
+| `encoding__TextDecoder__static__construct` | 6,299 | 6,299 |
+| `encoding__TextDecoderCommonMixin_process_an_item` | 6,299 | 1,042 |
+| `encoding__SourceUtf8StreamingDecoder_decode_owned_utf8` | 6,299 | 1,042 |
+| `encoding__TextDecoder_encoding` | 0 | 6,299 |
+| `encoding__TextDecoderCommonMixin_encoding` | 0 | 6,299 |
+
+Both variants retain all 6,299 fresh decoder constructions. General UTF-8
+processing remains for the 1,042 Unicode cases. The selected profile key
+initially omitted __static__; both actual profile runs already exited0.
+The controller's actual exit1 and initial report remain in
+instruction-opt103-profile-constructor-name-finding. Read-only extraction
+repairs the key using retained raw reports and verifies the enabled full-process
+scope in actual C. No native profile is rerun and no timings earn credit.
+
+Strict generated-C audit authenticates the exact decoder-body change against
+independent whole-app C-only output. Two already-existing encoding getters
+become normally reachable; their complete bodies are byte-identical to both
+before/final independent outputs. All encoding sources remain unchanged.
+One initial constructor-presence check used the profile spelling rather than
+the actual C __static__ symbol; its actual exit1 remains in
+instruction-opt103-constructor-check-finding. The corrected read-only audit
+also maps only unchanged source assertion lines across the 15-line insertion.
+All other executable C, records, globals, resources, filtering, arenas, heap
+and GC setup compare exactly after established compiler identities, 37 frozen
+includes and four byte-identical helper reorders. Actual frontend tables,
+all 120 native inputs and native arguments match.
+Passing audit SHA256: `b31e8b28f81e361e208baeebe66d3b22b3f1344dff4d9e1be065aa2d0aac9890`.
+Normal C SHA256: `ab400bb75ac093fab847f1e1d36dfb50049663d30a00ce3c49c80ac11345ade5`.
+Durable generated-C/profile/diagnostic hashes:
+instruction-opt103-artifact-archives.json.
+
+Before any page primary, the benchmark controller waited on an obsolete
+candidate-only contract dependency. The five new tests were already in the
+passing common harness. Only that waiting child was stopped; its actual
+exit -15, script and logs remain in
+instruction-opt103-unused-contract-gate-finding. Removing the unused dependency
+and restarting the controller occurred with zero primaries recorded. No test,
+profile or primary was repeated.
+
+The page cohort is predeclared: **30 alternating pairs**, odd before/candidate,
+even candidate/before, **30,000 paired bootstrap resamples, seed103**. Both
+regular binaries use C-O2/Boehm/default marker1, unchanged 4 GiB hint, fresh
+identical359body cache copies on the same SSD parent, and frozen text/child-only
+placement helpers. The endpoint remains navigation_to_first_document_paint[0]
+at document viewport1024×768.
+
+| Build | Median first-frame retired instructions | Median lifetime peak, MiB |
+| --- | ---: | ---: |
+| Fresh accepted frozen102 control | 17,508,713,109 | 3,342.5 |
+| Fresh owned ASCII CSS destination | 17,334,254,120 | 3,331.9 |
+
+Difference of marginal medians (before minus candidate):
+**174,458,989** instructions; candidate change
+**-0.996%**, **30/30** wins.
+Paired median saving **178,260,145**; 95% interval
+**[171,401,348.5, 187,162,697]**. The positive paired interval qualifies for repeatable page credit of **174,458,989** instructions.
+
+All 60 primaries and **60 actual PNGs** remain. Recoveries:
+none; pre-parse retries: 0. Each first primary has
+1 installation/2 geometry preparations/1 paint. Later completed refreshes:
+none. No completed primary is extended, filtered,
+discarded or rerun. Missing final exits, PNGs, fingerprints or peaks remain
+unknown for recovered reports. Peaks span lifetime through capture/exit and
+refreshes; they are not first-frame live memory and are never summed.
+All differences among the 60 retained RGB captures stay in the original skeleton bands, x45–662: y335–344 and ten 14px bands starting at 380 with 41px spacing. All other pixels match. There are 30 control and 30 candidate classes, 1 shared. Animation is unchanged and no observation repeated. External foreground transitions retained:
+none.
+The child is foreground in neither startup snapshot.
+
+The focused viewport is exact, including retained Unicode, shadows, masks,
+backdrop effects, deep ancestry, UA controls and ASCII CSS escaped content.
+Screenshot children retain explicit frozen-library argv pins and actual loader
+path/hash receipts. Prior carry is **0**. Observed carry **174,458,989** crosses the 5M gate. Six actual zero exits pass CSS 31/SVG 10/layout 46 in both GCs (**174 executions**). All **19 comparisons pass, 16 exact**; known differences remain inline-node 13, text-decorations 1,341 and canvas-text 1,994. Completed broad verification resets carry to 0. All selected harnesses
+and screenshot bounds remain unchanged.
+
+The isolated signed app is `/Users/alex/code/vox2/Build/v/Vox-opt103.app`. Its native instruction text
+matches the measured binary; the frozen helper is pinned inside the app.
+Signatures, actual loaded helper, startup and actual collections pass for
+marker1 and override2. Canonical/GUI browsers and independent Root work remain
+preserved; unrelated work receives no extra regression or performance credit.
+Equivalent Chrome content/start/submission accounting is still open;
+**faster-than-Chrome performance remains unproven**. Evidence:
+Build/instructions/vox-opt103-interleaved-* and Build/v/instruction-opt103-*.
+
 ## Causes and changes
 
 - The V 0.5.2 compatibility compiler's `-prod` Boehm code repeatedly snapshots

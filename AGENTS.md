@@ -1961,6 +1961,18 @@ evidence](docs/translation-audit/NATIVE_MEDIA_WHEEL_RAW_HANDLER.md).
   focused deep/UA viewport exact; additional observed savings 0.
   Same 4 GiB, SSD and placement; frozen library loader proof retained.
   Root/canonical/GUI preserved. Individual component credit 0; Chrome parity open.
+  Owned ASCII CSS UTF-8 destination `72ffc938` retains fresh constructors
+  and clones terminated output; it is distinct from rejected10 borrowed input.
+  27 common cases pass 169,184 assertions/configuration, including 5 new cases.
+  Complete public CSS-value parse batches use 5.14% fewer instructions.
+  Initial constructor-name C/profile extractors remain; only read-only repairs.
+  Page point saving 174,458,989, 30/30 wins;
+  paired interval [171,401,348.5, 187,162,697], repeatable credit 174,458,989.
+  Broad verification: 87 selected cases both GC; 19 comparisons (16 exact);
+  focused viewport exact; additional observed savings 0.
+  Same 4 GiB, SSD, placement and frozen library loader proof; public decoder,
+  encoding, filtering and arenas unchanged. Root/canonical/GUI preserved;
+  Chrome parity remains open.
 - Outside instruction-count optimization, run broad regression suites once per
   ten completed fixes, not after every fix.
   Broad suites include full translation/package test batches, the full LibJS AST
