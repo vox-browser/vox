@@ -959,9 +959,8 @@ pub fn compute_required_invalidation(old_style &ComputedProperties, new_style &C
 	if !reused_font_cache && !old_font_list.equals(new_font_list) {
 		invalidation.ensure_at_least(.relayout)
 	}
-	for property_id in computed_interpolation_longhand_property_ids() {
-		invalidation = required_invalidation_after_style_change_or(invalidation, compute_property_invalidation(property_id, old_style.property(property_id, .no), new_style.property(property_id, .no)))
-	}
+	invalidation = required_invalidation_after_style_change_or(invalidation,
+		compute_raw_property_invalidation(old_style, new_style))
 	// A counter style is resolved from the element's current style scope. Its effective
 	// definition can therefore change while the computed property text remains identical.
 	// Generated pseudo-elements do not expose an independently addressable layout-node
