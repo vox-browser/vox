@@ -86,3 +86,78 @@ python3 tools/measure_browser_scroll.py \
   --env VOX_TEST_WINDOW=1 --frames 120 \
   --output Build/dota2-scroll-new-run
 ```
+
+`51185e83`, the follow-up for the 50 ms target, caches completed Graphite image and small
+shape draws. The profile showed repeated texture uploads, recorder creation
+and synchronous GPU readbacks. A hit now copies the previously rendered pixels.
+It requires identical source bytes, input backdrop, dimensions, transforms,
+clips, opacity, sampling, color profile and shape paint settings. Sources are
+copied into owned snapshots and compared by value, so mutable canvas/video
+buffers, animation frames and recycled addresses cannot supply stale pixels.
+Row padding and source addresses do not establish identity.
+
+Image and shape caches have independent LRU budgets of 32 MiB and 8 MiB of
+pixel storage, each with at most 512 entries. Images larger than the 8 MiB
+per-entry limit bypass caching. Shapes exceeding 128 KiB bypass it, preventing
+large changing backgrounds from displacing reusable small controls. The native
+idle graphics cleanup clears both caches. Only successful GPU draws enter them.
+
+Three alternating matched pairs, each containing all 120 moving frames, give:
+
+| Per moving frame | Uncached control | Cached replay | Reduction |
+| --- | ---: | ---: | ---: |
+| Wheel dispatch through native replay, median | 67.809 ms | 41.255 ms | 39.2% |
+| Native replay, median | 65.076 ms | 37.865 ms | 41.8% |
+| Retired instructions, median | 314.733 million | 248.363 million | 21.1% |
+
+The candidate run medians are 40.307, 41.261 and 41.255 ms. This meets the
+50 ms target for the same median metric as the initial report. It does not
+bound every frame: the median of the three run p95 values is 54.141 ms, and
+the largest observed callback is 129.909 ms. All frames and collections remain
+included. In the preceding diagnostic run, two collections each added roughly
+80 ms to preparation; some frames near the top also exceeded 50 ms in replay.
+
+Both variants use the same existing production executable and Skia bridge;
+only the isolated Graphite library differs. This fresh comparison includes
+intervening repository changes in both variants and attributes no savings from
+those changes to the cache. It retains the same page, cache, viewport, scroll
+trace and 2,355 commands per frame described above. Native libraries were
+rebuilt with the production build commands. The benchmark tool's older endpoint
+metadata says GPU execution is excluded; synchronous GPU waits are in fact
+inside the measured replay, as confirmed by the sampled stacks.
+
+The focused cache checks cover mutation at an unchanged address, replacement
+addresses, backdrop changes, geometry, color profiles, row strides, odd-sized
+YUV planes, LRU eviction, byte limits and idle clearing. They pass with address
+and undefined-behavior sanitizers and with compiler warnings treated as errors.
+The actual cached and uncached GPU backends also produce identical pixels in
+792 comparisons, including image mutations, strokes, underlays, clip-outs,
+MSAA and 1×/2× rasterization.
+
+The four matched page viewports remain pixel-exact. Broad verification passes
+all 210 selected test functions in each GC configuration, all 100 exact AST
+fixtures and all 15 native Skia scenes. The 11 screenshot smoke comparisons
+pass with their existing rules, and all eight SVG mutation guards are exact.
+This covers the additional 66,370,890 instructions saved per moving frame and
+resets the incremental broad-check count for this endpoint. Signed production
+startup passes. The measured native libraries are installed into the existing
+production bundle while preserving its executable code, and the reported URL
+is reopened.
+
+Run the focused cache checks with `sh tools/test_native_graphite_cache.sh`.
+Passing uncached and cached Graphite library paths as its two arguments also
+runs the GPU comparisons. No browser window is needed for either check.
+
+Follow-up evidence is under `Build/dota2-scroll/target50-*`, particularly
+`target50-v3-comparison.json`, the six referenced successful run directories,
+`target50-source-pins.json`, `target50-raster-replay.log`, and the validation
+logs. The first candidate comparison omitted frame 42 from its log and was
+rejected completely; its replacement reruns all 120 frames. The earlier shared
+image/shape cache policy regressed and was discarded. Neither diagnostic run
+receives passing comparison credit.
+Initial visual-harness attempts failed on script permissions and compiler
+selection, and the first broad batch picked up the development compiler through
+`VEXE`. The corrected runs use the repository's `-old-compiler` wrapper. The
+initial default-GC platform result and the successful two-file recovery compose
+the default-GC pass; the first complete no-GC recovery passes all three files.
+Failed harness/compiler attempts remain in the logs without passing credit.
