@@ -60,9 +60,9 @@ fn system_font_face_from_native(native &C.vox_ct_face) SystemFontFace {
 	}
 }
 
-fn coretext_match_family(family string, weight int, size f32) ?SystemFontFace {
+fn coretext_match_family(family string, weight int, italic bool, size f32) ?SystemFontFace {
 	native := C.vox_ct_face{}
-	if C.vox_ct_match_family(&char(family.str), weight, 0, f64(size), &native) == 0 {
+	if C.vox_ct_match_family(&char(family.str), weight, int(italic), f64(size), &native) == 0 {
 		return none
 	}
 	return system_font_face_from_native(&native)
@@ -72,12 +72,12 @@ fn coretext_family_available(family string) bool {
 	return C.vox_ct_family_available(&char(family.str)) != 0
 }
 
-fn coretext_fallback(text []u16, language string, base_family string, weight int, size f32) ?SystemFontFace {
+fn coretext_fallback(text []u16, language string, base_family string, weight int, italic bool, size f32) ?SystemFontFace {
 	if text.len == 0 {
 		return none
 	}
 	native := C.vox_ct_face{}
-	if C.vox_ct_fallback(text.data, text.len, &char(language.str), &char(base_family.str), weight, 0,
+	if C.vox_ct_fallback(text.data, text.len, &char(language.str), &char(base_family.str), weight, int(italic),
 		f64(size), &native) == 0 {
 		return none
 	}

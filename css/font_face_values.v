@@ -3472,6 +3472,7 @@ pub mut:
 	features   ShapeFeatures
 	is_invisible bool
 	font_rendering_policy platform.FontRenderingPolicy
+	italic bool
 mut:
 	metrics_font_ &platform.Font = unsafe { nil }
 	pixel_size_override_ ?f32
@@ -3495,6 +3496,7 @@ pub fn (font &PlatformFont) font_for_rendering() &platform.Font {
 		family: font.typeface.family_name.clone()
 		point_size: font.pixel_size_override_ or { font.point_size / 0.75 }
 		weight: int(font.variations.weight)
+		italic: font.italic
 		source_path: font.typeface.source_path.clone()
 		is_invisible: font.is_invisible
 		font_rendering_policy: font.font_rendering_policy
@@ -3508,6 +3510,7 @@ fn (font &PlatformFont) matches_native_font(cached &platform.Font) bool {
 	return cached != unsafe { nil } && cached.family == font.typeface.family_name
 		&& cached.point_size == (font.pixel_size_override_ or { font.point_size / 0.75 })
 		&& cached.weight == int(font.variations.weight)
+		&& cached.italic == font.italic
 		&& cached.source_path == font.typeface.source_path
 		&& cached.is_invisible == font.is_invisible
 		&& cached.font_rendering_policy == font.font_rendering_policy
@@ -3541,6 +3544,7 @@ fn owned_platform_font(font &PlatformFont) PlatformFont {
 		features:     owned_shape_features(font.features)
 		is_invisible: font.is_invisible
 		font_rendering_policy: font.font_rendering_policy
+		italic: font.italic
 		pixel_size_override_: font.pixel_size_override_
 		// An input mutation replaces the clone's cache on its next lookup; the
 		// immutable old handle remains valid for previously retained fragments.
@@ -3669,6 +3673,7 @@ fn platform_font_equals(left PlatformFont, right PlatformFont) bool {
 		&& left.variations.opsz == right.variations.opsz
 		&& left.variations.axis_values_equal(&right.variations) && left.features == right.features
 		&& left.is_invisible == right.is_invisible
+		&& left.italic == right.italic
 }
 
 pub fn (list &FontCascadeList) equals(other &FontCascadeList) bool {
@@ -3724,7 +3729,7 @@ fn (mut list FontCascadeList) resolve_pending_faces(code_point u32, through_font
 }
 
 fn platform_font_cache_key(font &PlatformFont) string {
-	return '${font.typeface.family_name}|${font.typeface.source_path}|${font.typeface.weight_}|${font.typeface.width_}|${font.typeface.slope_}|${font.point_size}|${font.variations.weight}|${font.variations.width}|${font.variations.opsz}|${font.font_rendering_policy}|${font.pixel_size_override_}'
+	return '${font.typeface.family_name}|${font.typeface.source_path}|${font.typeface.weight_}|${font.typeface.width_}|${font.typeface.slope_}|${font.point_size}|${font.variations.weight}|${font.variations.width}|${font.variations.opsz}|${font.font_rendering_policy}|${font.pixel_size_override_}|${font.italic}'
 }
 
 fn (list &FontCascadeList) font_with_visibility(font &PlatformFont, invisible bool) &PlatformFont {
@@ -3743,6 +3748,7 @@ fn (list &FontCascadeList) font_with_visibility(font &PlatformFont, invisible bo
 		features:     owned_shape_features(font.features)
 		is_invisible: true
 		font_rendering_policy: font.font_rendering_policy
+		italic: font.italic
 		pixel_size_override_: font.pixel_size_override_
 	}
 	mut storage := mutable_list.ensure_invisible_font_storage()
@@ -4484,7 +4490,7 @@ fn (mut computer FontComputer) compute_font_for_style_values_at_size(font_family
 		return cached
 	}
 	mut value := computer.compute_font_for_style_values_impl(font_family, font_size_px, font_slope, font_weight, font_width, font_optical_sizing, font_variation_settings, font_feature_data)
-	value.set_font_rendering_policy(policy, font_size_px)
+	value.set_font_rendering_policy(policy, font_size_px, font_slope)
 	computer.computed_font_cache[key] = value
 	return value
 }

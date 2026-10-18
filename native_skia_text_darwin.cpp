@@ -911,6 +911,16 @@ static int draw_retained_glyph_run(CGContextRef destination,
         return 0;
 
     SkFont font(sk_ref_sp(typeface), std::max(font_size, 0.0f));
+    // Blink synthesizes bold when the selected face has no bold instance.
+    // Keep the retained glyph positions; Skia expands the glyph outlines.
+    font.setEmbolden((font_smoothing & 16) && font_weight >= 600
+        && typeface->fontStyle().weight() < 600);
+    font.setSkewX((font_smoothing & 64) && !typeface->isItalic() ? -0.25f : 0.0f);
+    if (font_smoothing & 16) {
+        font.setEmbeddedBitmaps(false);
+        font.setLinearMetrics(true);
+        font.setEdging(SkFont::Edging::kSubpixelAntiAlias);
+    }
     // This is the only non-default setting in Gfx::Font::skia_font().
     font.setSubpixel(true);
     switch (font_smoothing & 15) {
@@ -991,13 +1001,13 @@ static int draw_retained_glyph_run(CGContextRef destination,
     if (glyph_count <= 4096 && pixel_count <= 32768) {
         std::vector<uint8_t> key;
         uint32_t font_key[] {typeface->uniqueID(), uint32_t(font.getEdging()), uint32_t(font.getHinting()),
-            uint32_t(font_smoothing), SkColorSetARGB(alpha, red, green, blue),
+            uint32_t(font_smoothing), uint32_t(font.isEmbolden()), SkColorSetARGB(alpha, red, green, blue),
             uint32_t(raster_width), uint32_t(raster_height), uint32_t(glyph_count),
             uint32_t(CGBitmapContextGetBitmapInfo(destination)),
             uint32_t(CGBitmapContextGetBitsPerPixel(destination))};
         append_glyph_key(key, font_key, sizeof(font_key) / sizeof(font_key[0]));
-        float geometry[] {font_size, baseline_x, baseline_y, blur};
-        append_glyph_key(key, geometry, 4);
+        float geometry[] {font_size, baseline_x, baseline_y, blur, font.getSkewX()};
+        append_glyph_key(key, geometry, 5);
         SkScalar values[9]; draw_matrix.get9(values); append_glyph_key(key, values, 9);
         append_glyph_key(key, glyphs, glyph_count);
         append_glyph_key(key, packed_positions, size_t(glyph_count) * 2);

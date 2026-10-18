@@ -55,6 +55,7 @@ pub:
 	family     string
 	point_size f32
 	weight     int = 400
+	italic     bool
 	// A decoded @font-face source. System fonts leave this empty and resolve
 	// through the family cascade.
 	source_path string
@@ -140,7 +141,7 @@ pub:
 // whether they still identify the same concrete face and shaping size, as
 // Gfx::FontHandle equality does upstream.
 pub fn (font &Font) has_same_identity(other &Font) bool {
-	if font.point_size != other.point_size || font.weight != other.weight
+	if font.point_size != other.point_size || font.weight != other.weight || font.italic != other.italic
 		|| font.is_invisible != other.is_invisible
 		|| font.font_rendering_policy != other.font_rendering_policy {
 		return false

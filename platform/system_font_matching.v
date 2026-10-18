@@ -100,9 +100,9 @@ fn system_font_matching_family_available(family string) bool {
 	return available
 }
 
-fn resolve_system_font_face(family string, weight int, point_size f32) ?SystemFontFace {
+fn resolve_system_font_face(family string, weight int, italic bool, point_size f32) ?SystemFontFace {
 	name := system_font_matching_family(family)
-	key := '${name.to_lower()}|${weight}|${point_size}'
+	key := '${name.to_lower()}|${weight}|${italic}|${point_size}'
 	if face := platform_system_font_faces[key] {
 		return face
 	}
@@ -110,7 +110,7 @@ fn resolve_system_font_face(family string, weight int, point_size f32) ?SystemFo
 		return none
 	}
 	$if macos {
-		if face := coretext_match_family(name, weight, point_size) {
+		if face := coretext_match_family(name, weight, italic, point_size) {
 			platform_system_font_faces[key] = face
 			return face
 		}
@@ -180,7 +180,7 @@ pub fn system_fallback_font(code_point u32, language string, base &Font) ?&Font 
 	if !base.uses_system_font_matching() {
 		return none
 	}
-	key := '${code_point}|${language}|${base.family}|${base.weight}|${base.point_size}'
+	key := '${code_point}|${language}|${base.family}|${base.weight}|${base.italic}|${base.point_size}'
 	if font := platform_system_fallbacks[key] {
 		return font
 	}
@@ -198,6 +198,7 @@ pub fn system_fallback_font(code_point u32, language string, base &Font) ?&Font 
 			family: family
 			point_size: base.point_size
 			weight: base.weight
+			italic: base.italic
 			font_rendering_policy: base.font_rendering_policy
 		}
 		if candidate.system_face() != none && candidate.contains_glyph(code_point) {
@@ -207,12 +208,13 @@ pub fn system_fallback_font(code_point u32, language string, base &Font) ?&Font 
 	if result == none {
 		$if macos {
 			if face := coretext_fallback(utf16_code_units(rune(code_point).str()), language,
-				system_font_matching_family(base.family), base.weight, base.point_size)
+				system_font_matching_family(base.family), base.weight, base.italic, base.point_size)
 			{
 				result = &Font{
 					family: '${face.path}#${face.face_index}'
 					point_size: base.point_size
 					weight: base.weight
+					italic: base.italic
 					font_rendering_policy: base.font_rendering_policy
 					system_face_override: face
 				}
@@ -237,7 +239,7 @@ fn canonical_system_fallback_font(font &Font) &Font {
 	} else {
 		font.family
 	}
-	key := '${face_key}|${font.point_size}|${font.weight}|${font.font_rendering_policy}'
+	key := '${face_key}|${font.point_size}|${font.weight}|${font.italic}|${font.font_rendering_policy}'
 	if existing := platform_system_fallback_faces[key] {
 		return existing
 	}
@@ -257,7 +259,7 @@ pub fn (font &Font) system_face() ?SystemFontFace {
 	if font.system_face_resolved_ {
 		return font.resolved_system_face_
 	}
-	face := resolve_system_font_face(font.family, font.weight, font.point_size)
+	face := resolve_system_font_face(font.family, font.weight, font.italic, font.point_size)
 	mut mutable_font := unsafe { &Font(font) }
 	mutable_font.resolved_system_face_ = face
 	mutable_font.system_face_resolved_ = true

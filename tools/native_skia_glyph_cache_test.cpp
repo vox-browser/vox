@@ -15,7 +15,7 @@ int main()
     }
     int comparisons = 0;
     for (int scale : {1, 2}) for (int clip = 0; clip < 5; ++clip)
-    for (int smoothing : {0, 1, 2, 3, 16, 18, 32, 48, 50, 51})
+    for (int smoothing : {0, 1, 2, 3, 16, 18, 32, 48, 50, 51, 80, 82})
     for (auto space : {kCGColorSpaceSRGB, kCGColorSpaceDisplayP3}) {
         int width = 128 * scale, height = 96 * scale, pitch = width * 4 + 16;
         std::vector<uint8_t> expected(size_t(pitch) * height), actual(expected.size());
@@ -43,7 +43,7 @@ int main()
         GlyphRasterCache candidate_cache;
         uint16_t glyphs[6] {36, 37, 38, 39, 40, 41};
         double positions[12] {0, 0, 11.5, 0, 22, 0, 34.25, 0, 46, 0, 57.5, 0};
-        for (int step = 0; step < 24; ++step) {
+        for (int step = 0; step < 26; ++step) {
             int mutation = step / 2;
             if (mutation == 2) glyphs[1] = 42;
             if (mutation == 3 && step % 2 == 0) positions[4] += .375;
@@ -58,7 +58,7 @@ int main()
                 CGContextSetAlpha(context, mutation == 8 ? .65 : 1);
                 CGContextSetBlendMode(context, mutation == 9 ? kCGBlendModeMultiply : kCGBlendModeNormal);
                 return function(context, "/System/Library/Fonts/HelveticaNeue.ttc", mutation == 7 ? 1 : 0, glyphs, positions, mutation == 10 ? 5 : 6,
-                    mutation == 6 ? 15.25 : 14, mutation == 7 ? 700 : 400, 0,
+                    mutation == 6 ? 15.25 : 14, (mutation == 7 || mutation == 12) ? 700 : 400, 0,
                     15.375, 46.25, 1, 0, mutation == 11 ? .125 : 0, 1, 0, 0,
                     0, 0, 0, 128, 96, 197, mutation == 1 ? 97 : 37, 83, 201, smoothing);
             };
