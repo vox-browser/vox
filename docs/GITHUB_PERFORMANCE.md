@@ -12558,6 +12558,36 @@ Current Root implementation, foreign edits, canonical app and GUI are untouched.
 No126 instruction saving is claimed. Chrome parity remains unestablished because
 the earlier Chrome count uses a different endpoint and hydrated content.
 
+## Reject the fifteen-feature property-sharing closure at preflight
+
+Round127 adds the complete SVG publication (`8b573697`), selective SVG refresh
+(`bd8120bb`) and background-owner/public-query (`48e678c3`) prerequisites to the
+round126 composition. Fifteen authored features reconstruct167 exact hunks;
+21 runtime paths change, including eight new helper files. Previously accepted
+round89 post-hunks remain authenticated; no hand-written visibility shim or
+partial feature is used. Current Root and foreign changes remain separate.
+
+C-only old-compiler preflight actually exits1. The background refresh helper calls
+`svg_image_document_for_source_in_viewport()`, absent from frozen124. Its dependent
+assignment errors have the same missing-function cause. The complete existing
+prerequisites are isolated network SVG loading (`070f4adc`) and viewport-specific
+SVG reuse (`dfc0992d`). Their seventeen-feature extension receives a separate
+static review before declaration. No fallback wrapper or omitted call is added.
+Actual command, log/hash and exit remain under `Build/v/instruction-opt127-*`.
+
+The76 original prepared cases (CSS42/layout26/DOM2/main6) remain unexecuted; no
+candidate/common test is started. Before/common only reuses identical accepted124
+inputs/binary/actual0. No native compilation, runtime execution, local hardware
+sample, profile, normal browser C audit, page primary or bundle/GC check occurs.
+The fixed three alternating complete-public-pipeline local pairs and negative
+median gate remain unstarted. So do the30 alternating page pairs, seed127 and
+30,000 paired bootstrap resamples. No discarded sample or instruction credit.
+
+Broad validation stays deferred at observed carry0. Frozen control and broad
+baseline124, its verified isolated app, canonical app and GUI remain preserved.
+Chrome parity stays unestablished because the earlier Chrome count uses a
+different endpoint and hydrated content.
+
 ## Causes and changes
 
 - The V 0.5.2 compatibility compiler's `-prod` Boehm code repeatedly snapshots

@@ -2169,6 +2169,11 @@ evidence](docs/translation-audit/NATIVE_MEDIA_WHEEL_RAW_HANDLER.md).
   Prepared69 original cases remain unexecuted; no native/runtime/local/profile/page work or credit.
   Duplicate replay/prelaunch failures retained; no visibility shim or omitted native hook.
   Frozen124 control/broad baseline, carry0 and verified124 app preserved; Chrome parity open.
+  Property-sharing closure round127:15 authored features/167hunks/21changed paths.
+  C-only preflight actual1: viewport-specific SVG document API is absent.
+  Prepared76 original cases remain unexecuted; no native/runtime/local/profile/page work or credit.
+  Complete SVG prerequisites required; no wrapper/shim or dropped call.
+  Frozen124 control/broad baseline, carry0 and verified124 app preserved; Chrome parity open.
 - Outside instruction-count optimization, run broad regression suites once per
   ten completed fixes, not after every fix.
   Broad suites include full translation/package test batches, the full LibJS AST
