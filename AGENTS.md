@@ -2159,6 +2159,11 @@ evidence](docs/translation-audit/NATIVE_MEDIA_WHEEL_RAW_HANDLER.md).
   Strict C/source/filetable audit; static2094u32 table/no new GC roots; all60 primaries retained.
   Next control 124; observed carry 0.
   Same4GiB/frozenhelpers/GC1+override2; isolated app; Root/canonical/GUI preserved; Chrome open.
+  Bounded cumulative offsets round125 (`b53d0b21`) fails the local median gate.
+  One exact authored hunk; original3 cases/814asserts eachGC and common60/config pass.
+  Local16 public pipelines +0.081623%/1wins; all6 actual0 retained.
+  No normal/profile/C-audit/page/broad work or page credit; waiting audit stopped actual-15.
+  Frozen124 control/broad baseline, carry0 and verified124 app preserved; Chrome parity open.
 - Outside instruction-count optimization, run broad regression suites once per
   ten completed fixes, not after every fix.
   Broad suites include full translation/package test batches, the full LibJS AST

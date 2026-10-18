@@ -12462,6 +12462,59 @@ endpoint uses ready-complete hydrated content and a screenshot, whereas this
 native endpoint is the first submitted document frame. Its old count is not a
 matching-workload parity result.
 
+## Reject bounded cumulative offsets at the local instruction gate
+
+Round125 (`b53d0b21`) imports the complete existing Root feature into accepted
+frozen124: one exact authored hunk in `layout/layout_state.v`. It sums raw offsets
+only when absolute bounds prove no intermediate fixed-point saturation; large
+mixed-sign paths retain the original root-to-leaf saturation fallback. No current
+Root runtime or test file is edited. The three original cases are byte-identical.
+
+All three focused cases pass C-O2/Boehm and no-GC, **814 assertions each**.
+They cover mixed signs, explicit saturation order,400 deterministic varied chains,
+a4,096-level chain and live ancestor offset/reparenting updates. The common11
+functional cases plus one inactive diagnostic pass60 assertions per configuration.
+Before/Boehm reuses identical accepted124-final inputs/binary/actual0; final/Boehm
+and no-GC are fresh actual0. No ownership or expected result is weakened.
+
+The predeclared local cohort has three alternating pairs of16 complete fresh
+public HTML parse/layout/record/paint-command/hit-phase consumption/finalize
+pipelines. It retains the124 scene and checks (only round symbols/markers change):
+64 Unicode paragraphs plus128 collapsed-indentation blocks. Setup independently
+checks192 DOM text nodes; eight warmups, full output checks/assertions and forced
+GC remain outside the counter. All six actual exits are0 with checksum7,963,486,608.
+
+| Local pair | Before instructions | Candidate instructions |
+| --- | ---: | ---: |
+| 1 | 32,263,723,879 | 32,908,592,105 |
+| 2 | 32,304,896,046 | 32,331,264,217 |
+| 3 | 32,357,812,263 | 32,217,048,861 |
+
+Local medians **32,304,896,046 → 32,331,264,217**,
+**+0.081623%**, 1/3 wins. This fails the predeclared negative
+local-median gate. Every completed sample is retained; no repetition, extension,
+filtering or page credit is applied. It does not establish a repeatable page
+regression because the browser cohort remains unstarted.
+
+The gate and native launcher exit1 before any normal-browser build, V profile,
+independent app-C generation, browser C audit or page primary. The own C-audit
+reader waiting for a native command is intentionally stopped after gate failure;
+its wrapper captures the actual SIGTERM exit **-15**, with no audit pass claim.
+The fixed30-pair page plan/seed125/30,000 bootstrap resamples remains unstarted.
+Broad tests and screenshots are deferred with observed carry0. All common,
+contract/local C and binary archives retain actual0 and verified hashes in
+`Build/v/instruction-opt125-durable-archives.json`.
+
+Twenty-one owned historical C files are restored as regular SSD files from
+verified RAM bytes and durable archives, freeing831,351,887 RAM bytes. Each old
+RAM path remains a byte-identical reverse symlink. No old evidence or source bytes
+are removed or reexecuted; foreign files and newer applications are preserved.
+Frozen control/broad baseline **124**, carry **0**, verified isolated124 app and
+canonical app/GUI remain the performance baseline. No125 normal C/binary/profile,
+page, bundle or GC result is claimed. Root's independently committed offset
+feature and concurrent edits remain untouched. **Chrome parity remains open**:
+the earlier Chrome count uses a different endpoint and hydrated content.
+
 ## Causes and changes
 
 - The V 0.5.2 compatibility compiler's `-prod` Boehm code repeatedly snapshots
