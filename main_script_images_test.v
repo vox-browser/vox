@@ -170,3 +170,73 @@ fn test_disk_cached_script_inserted_images_near_the_viewport_are_ready_without_a
 	far_model := html.html_image_element_model_for_dom_element(unsafe { &dom.HTMLImageElement(far) })
 	assert !far_model.has_fetch_hook()
 }
+
+// 4chan's script writes its banner without width or height attributes, so
+// the banner's natural size takes part in layout. Before the first layout,
+// the disk cache completes it and that layout includes its size. An uncached
+// banner starts its request at once, while sized and lazy images wait for the
+// laid-out positions that select their reads.
+fn test_unsized_script_inserted_images_complete_before_the_first_layout() {
+	$if !darwin {
+		return
+	}
+	previous_cache := os.getenv_opt('LADYBIRD_CACHE_DIR')
+	cache := os.join_path(os.temp_dir(), 'vox-unsized-script-images-${os.getpid()}-${time.sys_mono_now()}')
+	os.setenv('LADYBIRD_CACHE_DIR', cache, true)
+	defer {
+		if previous := previous_cache {
+			os.setenv('LADYBIRD_CACHE_DIR', previous, true)
+		} else {
+			os.unsetenv('LADYBIRD_CACHE_DIR')
+		}
+		os.rmdir_all(cache) or {}
+	}
+	banner_url := 'https://s.script-images.test/title/5.png'
+	uncached_url := 'https://s.script-images.test/title/6.png'
+	sized_url := 'https://i.script-images.test/pol/7s.png'
+	lazy_url := 'https://i.script-images.test/pol/8s.png'
+	for cached_url in [banner_url, sized_url, lazy_url] {
+		cache_resource(cached_url, base64.decode_str(script_image_test_png))
+	}
+	address := dom.URL{value: 'https://script-images.test/pol/catalog'}
+	mut document := html.parse_navigation_document('<!doctype html><html><body style="margin:0"><div id="threads"></div></body></html>',
+		address, address.origin(), none) or { panic(err) }
+	document.set_scripting_enabled_by_embedder(false)
+	document.set_viewport_rect(dom.Rect{width: 1024, height: 768})
+	defer { document.finalize() }
+	mut runtime := browserjs.Runtime.create()
+	defer { runtime.close() }
+	mut app := BrowserApp{
+		document:                    document
+		js_runtime:                  runtime
+		background_resource_results: chan PreloadedResource{cap: 2}
+		// The test supplies no response for the uncached banner's request.
+		background_resource_pending: {
+			uncached_url: true
+		}
+	}
+	mut threads := document.get_element_by_id('threads') or { panic('missing threads') }
+	threads.set_inner_html('<img alt="4chan" id="banner" src="//s.script-images.test/title/5.png"><img alt="" id="uncached" src="//s.script-images.test/title/6.png" width="30"><img alt="" id="sized" width="20" height="10" src="//i.script-images.test/pol/7s.png"><img alt="" id="lazy" loading="lazy" src="//i.script-images.test/pol/8s.png">')!
+	ready := app.request_unsized_script_inserted_images()
+	assert banner_url in ready
+	assert uncached_url !in ready
+	assert uncached_url in app.script_image_requests
+	for waiting_url in [sized_url, lazy_url] {
+		assert waiting_url !in ready
+		assert waiting_url !in app.script_image_requests
+		assert waiting_url !in app.resource_cache
+	}
+	assert app.complete_script_inserted_images(ready)
+	banner := document.get_element_by_id('banner') or { panic('missing banner') }
+	model := html.html_image_element_model_for_dom_element(unsafe { &dom.HTMLImageElement(banner) })
+	assert model.complete()
+	app.relayout(1024, 768 + app.chrome_height())
+	document.update_paint_and_hit_testing_properties_if_needed()
+	rects := banner.client_rects_assuming_layout_clean()
+	assert rects.len == 1
+	assert rects[0].width_ == 2
+	assert rects[0].height_ == 1
+	sized := document.get_element_by_id('sized') or { panic('missing sized thumbnail') }
+	sized_model := html.html_image_element_model_for_dom_element(unsafe { &dom.HTMLImageElement(sized) })
+	assert !sized_model.has_fetch_hook()
+}

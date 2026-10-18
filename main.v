@@ -3545,6 +3545,11 @@ fn (mut app BrowserApp) install_loaded_page(loaded LoadedPage, add_history bool)
 		app.document.set_needs_full_style_update(true)
 	}
 	checkpoint = debug_timing_checkpoint('script_inserted_stylesheets', checkpoint)
+	unsized_script_images := app.request_unsized_script_inserted_images()
+	if unsized_script_images.len > 0 {
+		app.complete_script_inserted_images(unsized_script_images)
+	}
+	checkpoint = debug_timing_checkpoint('unsized_script_images', checkpoint)
 	if add_history {
 		if app.history_index + 1 < app.history.len {
 			app.history = app.history[..app.history_index + 1].clone()

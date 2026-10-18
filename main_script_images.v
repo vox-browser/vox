@@ -74,6 +74,60 @@ fn (mut app BrowserApp) request_script_inserted_images() map[string]bool {
 	return ready
 }
 
+// At most this many script-inserted images are read from the disk cache
+// before a page's first layout.
+const max_unsized_script_images_before_layout = 8
+
+// An image without both width and height attributes can take its natural
+// size, so its bytes can change the layout; 4chan's script-inserted banner is
+// one. Before the first layout, which the other images' reads wait for, such
+// an eager image completes from the disk cache or starts its request. Returns
+// the resources that are already available.
+fn (mut app BrowserApp) request_unsized_script_inserted_images() map[string]bool {
+	mut ready := map[string]bool{}
+	if app.document == unsafe { nil } || app.js_runtime == unsafe { nil } {
+		return ready
+	}
+	base_url := app.document.base_url().serialize()
+	source_url := app.document.url.serialize()
+	mut candidates := 0
+	for element in css.query_selector_all(app.document.as_node(), 'img[src]') {
+		if !element.is_html_element() || (element.has_attribute('width') && element.has_attribute('height'))
+			|| element.get_attribute_value('loading').to_lower() == 'lazy' {
+			continue
+		}
+		model := html.html_image_element_model_for_dom_element(unsafe { &dom.HTMLImageElement(element) })
+		if model.has_fetch_hook() {
+			continue
+		}
+		resource_url := resolve_document_reference(element.get_attribute_value('src'), base_url)
+		if resource_url in app.script_image_requests || resource_url in ready
+			|| (!resource_url.starts_with('http://') && !resource_url.starts_with('https://'))
+			|| resource_url.all_before('#').all_before('?').to_lower().ends_with('.svg') {
+			continue
+		}
+		if candidates == max_unsized_script_images_before_layout {
+			break
+		}
+		candidates++
+		if resource_url !in app.resource_cache && resource_url !in app.background_resource_pending
+			&& app.resource_cache.len < max_cached_resources {
+			if cached := disk_cached_browser_resource(resource_url, source_url, 'image') {
+				app.resource_cache[resource_url] = cached
+				ready[resource_url] = true
+				continue
+			}
+		}
+		app.request_background_resource(resource_url)
+		if resource_url in app.background_resource_pending {
+			app.script_image_requests[resource_url] = true
+		} else {
+			ready[resource_url] = true
+		}
+	}
+	return ready
+}
+
 fn script_image_is_near_viewport(element &dom.Element, viewport_height f64) bool {
 	rects := element.client_rects_assuming_layout_clean()
 	if rects.len == 0 {
