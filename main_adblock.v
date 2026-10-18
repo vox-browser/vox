@@ -7,16 +7,32 @@ import dom
 
 fn browser_adblock_tokens(document &dom.Document) []string {
 	mut tokens := map[string]bool{}
-	for element in css.query_selector_all(unsafe { &dom.Node(document) }, '[id], [class]') {
-		id := element.get_attribute_value('id')
-		if id != '' { tokens['#${id}'] = true }
-		for name in element.get_attribute_value('class').fields() {
-			tokens['.${name}'] = true
-		}
-	}
+	mut class_values := map[string]bool{}
+	collect_browser_adblock_tokens(document.as_node(), mut tokens, mut class_values)
 	mut result := tokens.keys()
 	result.sort()
 	return result
+}
+
+// Survey the light DOM directly: a selector match would read these same two
+// attributes before the survey reads them again. Repeated class strings only
+// need tokenizing once within this snapshot; later surveys still see live edits.
+fn collect_browser_adblock_tokens(node &dom.Node, mut tokens map[string]bool,
+	mut class_values map[string]bool) {
+	if element := node.as_element() {
+		id := element.get_attribute_value('id')
+		if id != '' { tokens['#${id}'] = true }
+		classes := element.get_attribute_value('class')
+		if classes != '' && classes !in class_values {
+			class_values[classes] = true
+			for name in classes.fields() {
+				tokens['.${name}'] = true
+			}
+		}
+	}
+	for child in node.children {
+		collect_browser_adblock_tokens(child, mut tokens, mut class_values)
+	}
 }
 
 // uBO inserts cosmetic rules at the user cascade origin, so !important page
