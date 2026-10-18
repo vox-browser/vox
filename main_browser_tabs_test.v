@@ -163,6 +163,47 @@ fn test_tab_shortcuts_and_overflow_keep_all_tabs_reachable() {
 	assert app.tabs.selected == 1
 }
 
+fn test_tab_keyboard_dispatch_runs_before_address_and_page_editing() {
+	mut app := browser_tabs_test_app()
+	defer { browser_tabs_test_cleanup(mut app) }
+	app.handle_key(.t, .super)
+	assert app.tabs.pages.len == 2
+	mut second := app.active_browser_tab()
+	assert second.address_active
+	second.handle_key(.t, .super)
+	assert app.tabs.pages.len == 3
+	mut third := app.active_browser_tab()
+	third.handle_key(.w, .super)
+	assert app.tabs.pages.len == 2
+	mut selected := app.active_browser_tab()
+	selected.handle_key(.tab, .ctrl | .shift)
+	assert app.active_browser_tab() == app
+}
+
+fn test_modified_link_pointer_dispatch_opens_a_background_tab() {
+	mut app := browser_tabs_test_app()
+	defer { browser_tabs_test_cleanup(mut app) }
+	app.install_loaded_page(LoadedPage{
+		url:          'https://tabs.example/link'
+		markup:       '<!doctype html><style>a{display:block;width:200px;height:40px}</style><a id="link" href="about:home">Open another tab</a>'
+		content_type: 'text/html'
+	}, false)
+	original := app.document
+	link := original.get_element_by_id('link') or { panic('missing link') }
+	rect := link.get_bounding_client_rect()
+	x := f32(rect.x + rect.width / 2)
+	y := f32(rect.y + rect.height / 2) + app.page_top()
+	app.handle_event(&gg.Event{ typ: .mouse_down, mouse_button: .left, mouse_x: x, mouse_y: y, modifiers: u32(gg.Modifier.super) })
+	assert app.pending_tab_link? == 'about:home'
+	app.handle_click(x, y)
+	app.handle_event(&gg.Event{ typ: .mouse_up, mouse_button: .left, mouse_x: x, mouse_y: y, modifiers: u32(gg.Modifier.super) })
+	assert app.tabs.pages.len == 2
+	assert app.active_browser_tab() == app
+	assert app.document == original
+	assert app.pending_native_navigation == none
+	assert app.tabs.pages[1].address == 'about:home'
+}
+
 $if vox_ui2 ? {
 	#include "native_browser_tabs_test_darwin.h"
 	fn C.native_test_address_window() voidptr

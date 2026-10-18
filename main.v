@@ -6993,29 +6993,12 @@ fn (mut app BrowserApp) handle_event(event &gg.Event) {
 			chrome_shortcut := event.typ == .key_down
 				&& ((app.platform_pointer_modifiers & (dom.modifier_ctrl | dom.modifier_super) != 0
 					&& event.key_code in [.l, .r])
+					|| browser_tab_shortcut(event.key_code, unsafe { gg.Modifier(event.modifiers) }) != ''
 					|| is_browser_debug_shortcut(event.key_code, unsafe { gg.Modifier(event.modifiers) }))
 			if !chrome_shortcut { app.defer_page_input(event) }
 		}
 		return
 	}
-	mut navigation_work := app.begin_navigation_work()
-	defer { navigation_work.finish() }
-	match event.typ {
-		.mouse_down {
-			button := browser_pointer_button(event.mouse_button)
-			app.platform_pointer_buttons |= browser_pointer_button_mask(button)
-			result := app.dispatch_chrome_pointer_event_at_viewport_point('pointerdown', browser_pointer_button(event.mouse_button), f64(event.mouse_x), f64(event.mouse_y - app.page_top()))
-			// gg follows event_fn with click_fn for mouse-down. Upstream does not
-			// run mousedown default actions when the hit target is browser chrome.
-			app.suppress_next_click_for_chrome = result.target != ''
-		}
-		.mouse_up {
-					|| browser_tab_shortcut(event.key_code, unsafe { gg.Modifier(event.modifiers) }) != ''
-			button := browser_pointer_button(event.mouse_button)
-			app.platform_pointer_buttons &= ~browser_pointer_button_mask(button)
-			if app.overlay_scrollbars.dragging {
-				app.overlay_scrollbars.dragging = false
-				app.overlay_scrollbar_activity()
 	// Modified links belong to a new tab and must bypass the current page's
 	// ordinary link default action (including compact script replay).
 	if event.typ == .mouse_down && event.mouse_y >= app.page_top()
@@ -7035,6 +7018,23 @@ fn (mut app BrowserApp) handle_event(event &gg.Event) {
 			return
 		}
 	}
+	mut navigation_work := app.begin_navigation_work()
+	defer { navigation_work.finish() }
+	match event.typ {
+		.mouse_down {
+			button := browser_pointer_button(event.mouse_button)
+			app.platform_pointer_buttons |= browser_pointer_button_mask(button)
+			result := app.dispatch_chrome_pointer_event_at_viewport_point('pointerdown', browser_pointer_button(event.mouse_button), f64(event.mouse_x), f64(event.mouse_y - app.page_top()))
+			// gg follows event_fn with click_fn for mouse-down. Upstream does not
+			// run mousedown default actions when the hit target is browser chrome.
+			app.suppress_next_click_for_chrome = result.target != ''
+		}
+		.mouse_up {
+			button := browser_pointer_button(event.mouse_button)
+			app.platform_pointer_buttons &= ~browser_pointer_button_mask(button)
+			if app.overlay_scrollbars.dragging {
+				app.overlay_scrollbars.dragging = false
+				app.overlay_scrollbar_activity()
 			}
 			result := app.dispatch_chrome_pointer_event_at_viewport_point('pointerup', browser_pointer_button(event.mouse_button), f64(event.mouse_x), f64(event.mouse_y - app.page_top()))
 			if !result.handled && app.page_model != unsafe { nil } && app.page_model.event_handler.last_click_allowed() && button == 0 {
@@ -7117,6 +7117,11 @@ fn (mut app BrowserApp) handle_key(key gg.KeyCode, modifier gg.Modifier) {
 	window_height := browser_window_size().height
 	height := if window_height > 0 { window_height } else { app.viewport_height + app.chrome_height() }
 	command := modifier.has(.super) || modifier.has(.ctrl)
+	tab_action := browser_tab_shortcut(key, modifier)
+	if tab_action != '' {
+		app.activate_tab_chrome(tab_action)
+		return
+	}
 	if is_browser_debug_shortcut(key, modifier) {
 		app.toggle_browser_debug()
 		return
@@ -7134,11 +7139,6 @@ fn (mut app BrowserApp) handle_key(key gg.KeyCode, modifier gg.Modifier) {
 		mut runes := app.address.runes()
 		match key {
 			.enter {
-	tab_action := browser_tab_shortcut(key, modifier)
-	if tab_action != '' {
-		app.activate_tab_chrome(tab_action)
-		return
-	}
 				app.submit_address_bar()
 			}
 			.backspace {
@@ -7346,6 +7346,7 @@ fn main() {
 		return
 	}
 
+	app.initialize_browser_tabs()
 	app.ctx = gg.new_context(
 		width: options.width
 		height: options.height
@@ -7363,7 +7364,6 @@ fn main() {
 		frame_fn: fn (mut app BrowserApp) {
 			app.draw_browser_tabs()
 		}
-	app.initialize_browser_tabs()
 		event_fn: fn (event &gg.Event, mut app BrowserApp) {
 			mut active := app.active_browser_tab()
 			active.handle_event(event)
