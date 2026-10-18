@@ -1636,6 +1636,15 @@ fn element_is_affected_by_same_parent_move(element &Element) bool {
 		|| element.affected_by_has_pseudo_class_with_relative_selector_that_has_sibling_combinator
 }
 
+fn schedule_has_walk_for_parent_scopes(mutated_node &Node, parent &Node, reason StyleInvalidationReason) {
+	// Resolve the same complete scope snapshot before scheduling can mutate roots.
+	scopes := parent.observing_style_scopes()
+	schedule_has_walk_for_parent(mutated_node, scopes.first, parent, reason)
+	for scope in scopes.additional {
+		schedule_has_walk_for_parent(mutated_node, scope, parent, reason)
+	}
+}
+
 fn invalidate_style_after_same_parent_move(node &Node, reason StyleInvalidationReason) {
 	document := node.document()
 	if document.needs_full_style_update() {
@@ -1643,9 +1652,7 @@ fn invalidate_style_after_same_parent_move(node &Node, reason StyleInvalidationR
 	}
 
 	if parent := node.parent_or_shadow_host() {
-		parent.for_each_style_scope_which_may_observe_the_node(fn [node, parent, reason] (scope &StyleScope) {
-			schedule_has_walk_for_parent(node, scope, parent, reason)
-		})
+		schedule_has_walk_for_parent_scopes(node, parent, reason)
 	}
 
 	for ancestor := node.parent_or_shadow_host(); ancestor != none;  {
@@ -1679,10 +1686,7 @@ pub fn (mut n Node) invalidate_style(reason StyleInvalidationReason) {
 	style_scope := n.style_scope()
 	if reason == .node_remove || reason == .node_insert_before {
 		if parent := n.parent_or_shadow_host() {
-			mutated_node := unsafe { &Node(n) }
-			parent.for_each_style_scope_which_may_observe_the_node(fn [mutated_node, parent, reason] (scope &StyleScope) {
-				schedule_has_walk_for_parent(mutated_node, scope, parent, reason)
-			})
+			schedule_has_walk_for_parent_scopes(unsafe { &Node(n) }, parent, reason)
 		}
 	} else if style_scope.may_have_has_selectors() && reason_may_affect_has_selectors(reason) {
 		mut mutable_style_scope := unsafe { &StyleScope(style_scope) }
@@ -2322,6 +2326,20 @@ fn signal_slot_change_if_empty_slot(node &Node, root &Node) {
 	}
 }
 
+fn collect_nodes_for_post_connection(node &Node, mut nodes []&Node) {
+	// This collector has no observable callbacks: retain the traversal's exact
+	// node, shadow-root, light-child order without a captured visitor lifetime.
+	nodes << node
+	if element := node.as_element() {
+		if shadow_root := element.shadow_root() {
+			collect_nodes_for_post_connection(shadow_root_as_node(shadow_root), mut nodes)
+		}
+	}
+	for child in node.children {
+		collect_nodes_for_post_connection(child, mut nodes)
+	}
+}
+
 fn register_slot_descendants_with_shadow_root(node &Node) {
 	shadow_root := node.root().as_shadow_root() or { return }
 	node.for_each_in_inclusive_subtree(fn [shadow_root] (inclusive_descendant &Node) TraversalDecision {
@@ -2427,12 +2445,8 @@ pub fn (mut n Node) insert_before(node &Node, child ?&Node, suppress_observers b
 	// Let staticNodeList be a list of nodes, initially << >>. We collect before running post-connection steps, because
 	// those steps can modify the tree and make live traversal unsafe.
 	mut static_node_list := []&Node{}
-	static_node_list_ptr := &static_node_list
 	for node_to_insert in nodes {
-		node_to_insert.for_each_shadow_including_inclusive_descendant(fn [static_node_list_ptr] (inclusive_descendant &Node) TraversalDecision {
-			dom_ptr_push(static_node_list_ptr, inclusive_descendant)
-			return .@continue
-		})
+		collect_nodes_for_post_connection(node_to_insert, mut static_node_list)
 	}
 	for node_to_connect in static_node_list {
 		if node_to_connect.is_connected() {
