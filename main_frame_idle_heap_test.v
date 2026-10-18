@@ -124,9 +124,12 @@ fn test_idle_filter_release_waits_for_the_whole_native_frame_and_later_succeeds(
 		dom.URL{value: 'https://www.theverge.com/'}, none, none, none, 0, false)
 	defer { document.finalize() }
 	document.update_readiness(.complete)
-	request := adblock.Request{url:'https://securepubads.g.doubleclick.net/tag/js/gpt.js', source_url:'https://www.theverge.com/', request_type:'script'}
 	mut app := &BrowserApp{document: document, ctx: &gg.Context{}}
-	for during_preparation in [false, true] {
+	for iteration, during_preparation in [false, true] {
+		// A retained decision need not restore the filter worker. Use distinct
+		// cache misses when this fixture specifically needs a live worker.
+		request := adblock.Request{url:'https://securepubads.g.doubleclick.net/tag/js/gpt.js?frame=${iteration}', source_url:'https://www.theverge.com/', request_type:'script'}
+		restore_request := adblock.Request{url:request.url + '&restore=1', source_url:request.source_url, request_type:request.request_type}
 		before := adblock.check(request)
 		assert before.error == ''
 		assert before.blocked
@@ -138,7 +141,7 @@ fn test_idle_filter_release_waits_for_the_whole_native_frame_and_later_succeeds(
 		app.release_unused_memory_if_idle(3_000_000_000)
 		assert app.memory_maintenance.pending_document_work
 		assert adblock.release_unused_engine()
-		assert adblock.check(request) == before
+		assert adblock.check(restore_request) == before
 		app.frame_preparation_depth = 0
 		frame.finish()
 		app.release_unused_memory_if_idle(4_000_000_000)
