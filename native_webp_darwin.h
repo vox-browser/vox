@@ -128,4 +128,41 @@ static uint8_t *native_decode_webp_rgba(const uint8_t *bytes, size_t length,
 
 static void native_free_webp_pixels(uint8_t *pixels) { free(pixels); }
 
+static uint8_t *native_decode_chromium_webp_rgba(const uint8_t *bytes, size_t length,
+    int *width, int *height, int *pitch)
+{
+    *width = *height = *pitch = 0;
+    if (!bytes || length < 21 || memcmp(bytes, "RIFF", 4)
+        || memcmp(bytes + 8, "WEBPVP8X", 8) || !(bytes[20] & 32) || (bytes[20] & 2))
+        return NULL;
+    const uint8_t *icc = NULL;
+    size_t icc_size = 0;
+    for (size_t offset = 12; offset + 8 <= length;) {
+        uint32_t size = (uint32_t)bytes[offset + 4] | ((uint32_t)bytes[offset + 5] << 8)
+            | ((uint32_t)bytes[offset + 6] << 16) | ((uint32_t)bytes[offset + 7] << 24);
+        if (size > length - offset - 8) return NULL;
+        if (!memcmp(bytes + offset, "ICCP", 4)) { icc = bytes + offset + 8; icc_size = size; break; }
+        offset += 8 + (size_t)size + (size & 1);
+    }
+    if (!icc || !icc_size || icc_size > INT_MAX) return NULL;
+    typedef int (*VoxConvertIcc)(uint8_t*, int, const uint8_t*, int);
+    static VoxConvertIcc convert;
+    static dispatch_once_t once;
+    dispatch_once(&once, ^{
+        void *library = dlopen("@rpath/libVoxGraphite.dylib", RTLD_LAZY | RTLD_LOCAL);
+        if (library) convert = (VoxConvertIcc)dlsym(library, "vox_graphite_convert_icc_rgba");
+    });
+    native_load_webp_decoder();
+    int w = 0, h = 0;
+    if (!convert || !get_info || !decode_rgba || !get_info(bytes, length, &w, &h)
+        || w <= 0 || h <= 0 || w > INT_MAX / 4 || (size_t)w * h > INT_MAX / 4) return NULL;
+    size_t size = (size_t)w * h * 4;
+    uint8_t *pixels = malloc(size);
+    if (!pixels) return NULL;
+    if (!decode_rgba(bytes, length, pixels, size, w * 4)
+        || !convert(pixels, w * h, icc, (int)icc_size)) { free(pixels); return NULL; }
+    *width = w; *height = h; *pitch = w * 4;
+    return pixels;
+}
+
 #endif

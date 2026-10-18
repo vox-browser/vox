@@ -4522,6 +4522,14 @@ fn (mut app BrowserApp) create_image_from_resource_bytes(image_url string, bytes
 			// Share the document decoder's pixels with native image and background
 			// painting. Animated streams keep AppKit's frame provider below.
 			if app.ctx.native_rendering {
+				if app.document != unsafe { nil } && app.document.font_rendering_policy() == .chromium {
+					if bitmap := chromium_tagged_webp_paint_bitmap(bytes) {
+						mut image := gg.Image{width: bitmap.width, height: bitmap.height,
+							nr_channels: 7, ok: true, data: bitmap.data.data}
+						image.id = app.ctx.cache_image(image)
+						return image
+					}
+				}
 				if C.native_webp_yuv_paint_supported() != 0 && app.document != unsafe { nil }
 					&& app.document.font_rendering_policy() == .chromium {
 					mut width := 0
@@ -4539,9 +4547,12 @@ fn (mut app BrowserApp) create_image_from_resource_bytes(image_url string, bytes
 					}
 				}
 				if bitmap := browser_decode_raster_image_bytes(bytes) {
+					premultiply := app.document != unsafe { nil } && app.document.font_rendering_policy() == .chromium
+						&& chromium_webp_premultiplies_at_decode(bytes)
+					pixels := if premultiply { chromium_webp_paint_pixels(bitmap.data) } else { bitmap.data }
 					mut image := gg.Image{width: bitmap.width, height: bitmap.height,
-						nr_channels: native_bitmap_channel_marker(bitmap, false), ok: true,
-						data: bitmap.data.data}
+						nr_channels: if premultiply { 7 } else { native_bitmap_channel_marker(bitmap, false) }, ok: true,
+						data: pixels.data}
 					image.id = app.ctx.cache_image(image)
 					return image
 				}

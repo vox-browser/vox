@@ -78,6 +78,8 @@ int vox_graphite_draw_shape_pixels(uint8_t *pixels, int width, int height,
     int pitch, int has_background, const VoxGraphiteShape *shape);
 int vox_graphite_draw_path_pixels(uint8_t *pixels, int width, int height,
     int pitch, int has_background, const VoxGraphitePath *path);
+int vox_graphite_convert_icc_rgba(uint8_t *pixels, int count,
+    const uint8_t *profile, int profile_size);
 #ifdef __cplusplus
 }
 #endif
