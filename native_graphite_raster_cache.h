@@ -8,7 +8,7 @@
 #include <memory>
 #include <vector>
 
-// Memoize complete GPU image and shape draws, including their input backdrop.
+// Memoize complete GPU image, shape and path draws, including their input backdrop.
 // Sources can be canvas/video buffers, animated frames or recycled allocations: addresses
 // are never an identity or a promise of immutability. Every hit compares the
 // actual source bytes and every parameter before copying owned output pixels.
@@ -17,12 +17,14 @@ class VoxGraphiteRasterCache {
     struct Entry {
         VoxGraphiteImage image {};
         VoxGraphiteShape shape {};
+        VoxGraphitePath path {};
+        bool is_path = false;
         bool is_shape = false;
         int surface_width = 0, surface_height = 0;
         int width = 0, height = 0;
         bool has_background = false;
-        std::vector<uint8_t> source, background, output;
-        size_t bytes() const { return source.size() + background.size() + output.size(); }
+        std::vector<uint8_t> source, extra, background, output;
+        size_t bytes() const { return source.size() + extra.size() + background.size() + output.size(); }
     };
     struct Rows {
         uint8_t const* pixels;
@@ -66,6 +68,20 @@ class VoxGraphiteRasterCache {
             && a.clip_out_count == b.clip_out_count && a.has_underlay == b.has_underlay
             && (!a.has_underlay || (!std::memcmp(a.underlay_rect, b.underlay_rect, sizeof(a.underlay_rect))
                 && !std::memcmp(a.underlay_rgba, b.underlay_rgba, sizeof(a.underlay_rgba))));
+    }
+    static bool same_path(VoxGraphitePath const& a, VoxGraphitePath const& b)
+    {
+        return !std::memcmp(a.matrix, b.matrix, sizeof(a.matrix))
+            && a.segment_count == b.segment_count && a.even_odd == b.even_odd
+            && a.red == b.red && a.green == b.green && a.blue == b.blue && a.alpha == b.alpha
+            && a.stroke == b.stroke && a.line_cap == b.line_cap && a.line_join == b.line_join
+            && !std::memcmp(&a.stroke_width, &b.stroke_width, sizeof(a.stroke_width))
+            && !std::memcmp(&a.miter_limit, &b.miter_limit, sizeof(a.miter_limit))
+            && a.gradient == b.gradient && a.tile_mode == b.tile_mode
+            && a.linear_color_space == b.linear_color_space && a.stop_count == b.stop_count
+            && !std::memcmp(a.gradient_points, b.gradient_points, sizeof(a.gradient_points))
+            && !std::memcmp(a.gradient_matrix, b.gradient_matrix, sizeof(a.gradient_matrix))
+            && !std::memcmp(&a.opacity, &b.opacity, sizeof(a.opacity));
     }
     std::list<std::unique_ptr<Entry>> entries;
     size_t retained_bytes = 0;
@@ -112,6 +128,19 @@ public:
             Rows {reinterpret_cast<uint8_t const*>(shape.clip_outs), size_t(shape.clip_out_count) * 4 * sizeof(float), 0, 1},
             width, height, pitch, has_background, pixels);
     }
+    Request prepare(VoxGraphitePath const& path, int width, int height,
+        int pitch, bool has_background, uint8_t* pixels)
+    {
+        if (!path.segments || path.segment_count <= 0 || path.stop_count < 0
+            || (path.stop_count && !path.stops)) return {};
+        Entry parameters;
+        parameters.is_path = true;
+        parameters.path = path;
+        return prepare_entry(parameters,
+            Rows {reinterpret_cast<uint8_t const*>(path.segments), size_t(path.segment_count) * 12 * sizeof(float), 0, 1},
+            width, height, pitch, has_background, pixels,
+            Rows {reinterpret_cast<uint8_t const*>(path.stops), size_t(path.stop_count) * 5 * sizeof(float), 0, 1});
+    }
     // Packed patches still depend on the original surface dimensions: GPU
     // clipping and coverage arithmetic must retain the same raster coordinates.
     Request prepare_patches(VoxGraphiteShape const& shape, int surface_width,
@@ -129,29 +158,32 @@ public:
     }
 private:
     Request prepare_entry(Entry const& parameters, Rows source, int width, int height,
-        int pitch, bool has_background, uint8_t* pixels)
+        int pitch, bool has_background, uint8_t* pixels, Rows extra = {nullptr, 0, 0, 1})
     {
         Request request;
         if (!pixels || width <= 0 || height <= 0 || pitch <= 0
             || size_t(pitch) < size_t(width) * 4 || !entry_limit) return request;
         // Large shapes often cover changing page content. Copying those input
         // backdrops would consume the small-control cache without useful hits.
-        size_t shape_limit = parameters.surface_width ? 512 * 1024 : 128 * 1024;
+        constexpr size_t shape_limit = 512 * 1024;
         size_t limit = std::min(byte_limit, parameters.is_shape ? shape_limit : max_entry_bytes);
         Rows backdrop {pixels, size_t(width) * 4, size_t(pitch), size_t(height)};
-        if (source.bytes > limit / source.height || backdrop.bytes > limit / backdrop.height)
+        if (source.bytes > limit / source.height || extra.bytes > limit / extra.height
+            || backdrop.bytes > limit / backdrop.height)
             return request;
-        size_t cost = source.bytes * source.height
+        size_t cost = source.bytes * source.height + extra.bytes * extra.height
             + backdrop.bytes * backdrop.height * (has_background ? 2 : 1);
         if (cost > limit) return request;
         for (auto it = entries.begin(); it != entries.end(); ++it) {
             auto const& entry = **it;
             if (entry.width != width || entry.height != height
                 || entry.has_background != has_background || entry.is_shape != parameters.is_shape
+                || entry.is_path != parameters.is_path
                 || entry.surface_width != parameters.surface_width || entry.surface_height != parameters.surface_height
                 || (entry.is_shape ? !same_shape(entry.shape, parameters.shape)
-                                   : !same_image(entry.image, parameters.image))
-                || !source.equal(entry.source)
+                    : entry.is_path ? !same_path(entry.path, parameters.path)
+                                    : !same_image(entry.image, parameters.image))
+                || !source.equal(entry.source) || !extra.equal(entry.extra)
                 || (has_background && !backdrop.equal(entry.background))) continue;
             for (size_t y = 0; y < backdrop.height; ++y)
                 std::memcpy(pixels + y * backdrop.pitch,
@@ -168,10 +200,13 @@ private:
         auto entry = std::make_unique<Entry>(parameters);
         entry->shape.clip_outs = nullptr;
         entry->image.pixels = nullptr;
+        entry->path.segments = nullptr;
+        entry->path.stops = nullptr;
         entry->width = width;
         entry->height = height;
         entry->has_background = has_background;
         entry->source = source.copy();
+        entry->extra = extra.copy();
         if (has_background) entry->background = backdrop.copy();
         request.pending = std::move(entry);
         return request;

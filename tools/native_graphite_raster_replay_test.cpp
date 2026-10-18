@@ -220,5 +220,80 @@ int main(int argc, char** argv)
         compare();
         clear(); compare();
     }
+    // Pixel-aligned strokes and narrow rounded comment controls, including
+    // corners completely above/below the viewport and fractional fallbacks.
+    for (int scale : {1, 2}) for (int background : {0, 1}) for (int msaa : {0, 1})
+    for (int kind : {0, 1, 2}) for (float phase : {0.0f, .5f, .375f})
+    for (int offset : {-400, -13, 0, 53}) {
+        VoxGraphiteShape shape {};
+        shape.matrix[0] = shape.matrix[4] = scale; shape.matrix[8] = 1;
+        shape.matrix[2] = phase * scale; shape.matrix[5] = offset * scale;
+        shape.rect[0] = 2.5f; shape.rect[1] = 3.5f;
+        shape.rect[2] = kind == 0 ? 269 : 15;
+        shape.rect[3] = kind == 0 ? 23 : (kind == 1 ? 291 : 2080);
+        for (int i = 4; i < 12; ++i) shape.rect[i] = kind == 0 ? 0 : 3;
+        if (kind == 2) { shape.rect[8] = shape.rect[9] = 0; shape.rect[10] = 1; }
+        shape.fill = kind != 0; shape.thickness = 1;
+        shape.anti_alias = 1; shape.force_msaa = msaa;
+        shape.red = 171; shape.green = 53; shape.blue = 248; shape.alpha = 255;
+        int width = (kind == 0 ? 278 : 23) * scale, height = (kind == 0 ? 32 : 303) * scale;
+        int pitch = width * 4 + 12;
+        std::vector<uint8_t> backdrop(size_t(pitch) * height, 89), expected, actual;
+        for (int repeat = 0; repeat < 2; ++repeat) {
+            expected = actual = backdrop;
+            assert(before_shape(expected.data(), width, height, pitch, background, &shape));
+            assert(after_shape(actual.data(), width, height, pitch, background, &shape));
+            if (expected != actual) {
+                std::cerr << "Narrow/stroke mismatch kind=" << kind << " scale=" << scale
+                    << " phase=" << phase << " offset=" << offset << " msaa=" << msaa << '\n';
+                return 1;
+            }
+            ++comparisons;
+        }
+    }
+    auto before_path = reinterpret_cast<decltype(&vox_graphite_draw_path_pixels)>(
+        dlsym(control, "vox_graphite_draw_path_pixels"));
+    auto after_path = reinterpret_cast<decltype(before_path)>(
+        dlsym(candidate, "vox_graphite_draw_path_pixels"));
+    assert(before_path && after_path);
+    for (int scale : {1, 2}) for (int background : {0, 1})
+    for (int gradient : {0, 1, 2}) for (int stroke : {0, 1}) {
+        float segments[] {
+            0, 3.25, 4.5, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            3, 29.5, 24.25, 32, -4, 11, 34, 0, 0, 0, 0, 0,
+            1, 7.25, 26.5, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+        float stops[] {.9, .1, .3, .8, 0, .1, .7, .4, .65, 1};
+        VoxGraphitePath path {};
+        path.matrix[0] = path.matrix[4] = scale; path.matrix[8] = 1;
+        path.matrix[2] = -.375f; path.matrix[5] = .25f;
+        path.segments = segments; path.segment_count = 4;
+        path.red = 35; path.green = 167; path.blue = 79; path.alpha = 190;
+        path.stroke = stroke; path.stroke_width = 2.25f; path.miter_limit = 4;
+        path.gradient = gradient; path.stops = stops; path.stop_count = 2; path.opacity = .8f;
+        path.gradient_points[0] = 2; path.gradient_points[1] = 3;
+        path.gradient_points[2] = gradient == 2 ? 1 : 27;
+        path.gradient_points[3] = 26; path.gradient_points[4] = 25; path.gradient_points[5] = 30;
+        path.gradient_matrix[0] = path.gradient_matrix[4] = path.gradient_matrix[8] = 1;
+        int width = 31 * scale, height = 29 * scale, pitch = width * 4 + 12;
+        std::vector<uint8_t> backdrop(size_t(pitch) * height, 89), expected, actual;
+        auto compare = [&] {
+            expected = actual = backdrop;
+            assert(before_path(expected.data(), width, height, pitch, background, &path));
+            assert(after_path(actual.data(), width, height, pitch, background, &path));
+            assert(expected == actual); ++comparisons;
+        };
+        compare(); compare();
+        segments[13] += .5f; compare(); compare();
+        stops[1] += .125f; compare(); compare();
+        backdrop[13] ^= 31; compare(); compare();
+        path.even_odd = 1; compare(); compare();
+        path.line_cap = 1; path.line_join = 2; compare(); compare();
+        path.matrix[1] = .125f; compare(); compare();
+        path.opacity = .35f; compare(); compare();
+        path.tile_mode = 1; path.linear_color_space = 1; compare(); compare();
+        path.gradient_matrix[2] = .375f; compare(); compare();
+        clear(); compare();
+    }
     std::cout << "Graphite raster replay: " << comparisons << " exact GPU comparisons passed\n";
 }

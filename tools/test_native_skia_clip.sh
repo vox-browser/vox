@@ -24,3 +24,20 @@ clang++ -std=c++20 -O2 -x objective-c++ \
     -framework CoreFoundation -framework CoreGraphics -framework CoreText -framework Foundation -framework Metal \
     -Wl,-rpath,"$skia_root/lib" -o "$output_dir/native_skia_composite_test"
 "$output_dir/native_skia_composite_test"
+clang++ -std=c++20 -O2 -x objective-c++ \
+    -I"$skia_root/include/skia" -I"$skia_root/include" \
+    "$repo_dir/tools/native_skia_glyph_cache_test.cpp" \
+    -L"$skia_root/lib" -lskia \
+    -framework CoreFoundation -framework CoreGraphics -framework CoreText -framework Foundation -framework Metal \
+    -Wl,-rpath,"$skia_root/lib" -o "$output_dir/native_skia_glyph_cache_test"
+"$output_dir/native_skia_glyph_cache_test"
+graphite_dir=${NATIVE_SKIA_GRAPHITE_DIR:-"$repo_dir/Build/v/Vox.app/Contents/MacOS"}
+if [ -f "$graphite_dir/libVoxGraphite.dylib" ]; then
+    clang++ -std=c++20 -O2 -x objective-c++ \
+        -I"$skia_root/include/skia" -I"$skia_root/include" \
+        "$repo_dir/tools/native_skia_shape_backdrop_test.cpp" \
+        -L"$skia_root/lib" -lskia \
+        -framework CoreFoundation -framework CoreGraphics -framework CoreText -framework Foundation -framework Metal \
+        -Wl,-rpath,"$skia_root/lib" -o "$output_dir/native_skia_shape_backdrop_test"
+    DYLD_LIBRARY_PATH="$graphite_dir${DYLD_LIBRARY_PATH:+:$DYLD_LIBRARY_PATH}" "$output_dir/native_skia_shape_backdrop_test"
+fi

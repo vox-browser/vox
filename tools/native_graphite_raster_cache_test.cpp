@@ -1,4 +1,5 @@
 #include "../native_graphite_raster_cache.h"
+#include "../native_graphite_image_upload_cache.h"
 #include <cassert>
 #include <iostream>
 #include <limits>
@@ -166,9 +167,9 @@ int main()
     assert(!cache.prepare(value, 2, 2, 8, false, pixels.data()).pending);
     value = shape; value.clip_outs = nullptr;
     assert(!cache.prepare(value, 2, 2, 8, false, pixels.data()).pending);
-    std::vector<uint8_t> large_output(200 * 200 * 4);
-    assert(!cache.prepare(shape, 200, 200, 800, false, large_output.data()).pending);
-    assert(cache.prepare(descriptor, 200, 200, 800, false, large_output.data()).pending);
+    std::vector<uint8_t> large_output(400 * 400 * 4);
+    assert(!cache.prepare(shape, 400, 400, 1600, false, large_output.data()).pending);
+    assert(cache.prepare(descriptor, 400, 400, 1600, false, large_output.data()).pending);
     cache.clear();
     assert(!cache.prepare(shape, 2, 2, 8, false, pixels.data()).hit);
     // Corner patches retain the original surface geometry in addition to the
@@ -192,5 +193,118 @@ int main()
     shape.clip_out_count = 0;
     assert(!cache.prepare_patches(shape, 0, 303, 4, true, pixels.data()).pending);
     assert(!cache.prepare_patches(shape, 631, 303, -1, true, pixels.data()).pending);
+    // Paths own geometry and gradient stops; recycled buffers cannot identify a draw.
+    cache.clear();
+    float segments[24] {0, 1, 2};
+    float stops[10] {1, 0, 0, 1, 0, 0, 0, 1, 1, 1};
+    VoxGraphitePath path {};
+    path.matrix[0] = path.matrix[4] = path.matrix[8] = 1;
+    path.segments = segments; path.segment_count = 2;
+    path.stops = stops; path.stop_count = 2; path.gradient = 1;
+    std::fill(pixels.begin(), pixels.end(), 19);
+    request = cache.prepare(path, 2, 2, 8, true, pixels.data());
+    assert(!request.hit && request.pending);
+    std::fill(pixels.begin(), pixels.end(), 71);
+    cache.finish(std::move(request), pixels.data(), 8);
+    auto path_misses = [&](VoxGraphitePath const& changed_path) {
+        std::fill(pixels.begin(), pixels.end(), 19);
+        assert(!cache.prepare(changed_path, 2, 2, 8, true, pixels.data()).hit);
+    };
+    for (auto field : {&VoxGraphitePath::even_odd, &VoxGraphitePath::stroke,
+        &VoxGraphitePath::line_cap, &VoxGraphitePath::line_join, &VoxGraphitePath::gradient,
+        &VoxGraphitePath::tile_mode, &VoxGraphitePath::linear_color_space}) {
+        auto v = path; ++(v.*field); path_misses(v);
+    }
+    for (auto field : {&VoxGraphitePath::red, &VoxGraphitePath::green,
+        &VoxGraphitePath::blue, &VoxGraphitePath::alpha}) {
+        auto v = path; ++(v.*field); path_misses(v);
+    }
+    for (auto field : {&VoxGraphitePath::stroke_width, &VoxGraphitePath::miter_limit,
+        &VoxGraphitePath::opacity}) {
+        auto v = path; v.*field += .25f; path_misses(v);
+    }
+    for (int i = 0; i < 9 + 9 + 6; ++i) {
+        auto v = path;
+        if (i < 9) v.matrix[i] += .25f;
+        else if (i < 18) v.gradient_matrix[i - 9] += .25f;
+        else v.gradient_points[i - 18] += .25f;
+        path_misses(v);
+    }
+    for (auto& segment : segments) { segment += .25f; path_misses(path); segment -= .25f; }
+    for (auto& stop : stops) { stop += .25f; path_misses(path); stop -= .25f; }
+    auto v = path; --v.segment_count; path_misses(v);
+    v = path; --v.stop_count; path_misses(v);
+    std::fill(pixels.begin(), pixels.end(), 19); pixels[15]++;
+    assert(!cache.prepare(path, 2, 2, 8, true, pixels.data()).hit);
+    std::fill(pixels.begin(), pixels.end(), 19);
+    float other_segments[24], other_stops[10];
+    std::copy_n(segments, 24, other_segments); std::copy_n(stops, 10, other_stops);
+    v = path; v.segments = other_segments; v.stops = other_stops;
+    assert(cache.prepare(v, 2, 2, 8, true, pixels.data()).hit);
+    assert(pixels == std::vector<uint8_t>(16, 71));
+    v.segment_count = -1;
+    assert(!cache.prepare(v, 2, 2, 8, false, pixels.data()).pending);
+    v = path; v.stops = nullptr;
+    assert(!cache.prepare(v, 2, 2, 8, false, pixels.data()).pending);
+    v = path; v.segment_count = std::numeric_limits<int>::max();
+    assert(!cache.prepare(v, 2, 2, 8, false, pixels.data()).pending);
+    v = path; v.stop_count = std::numeric_limits<int>::max();
+    assert(!cache.prepare(v, 2, 2, 8, false, pixels.data()).pending);
+    cache.clear();
+    assert(!cache.prepare(path, 2, 2, 8, true, pixels.data()).hit);
+    // Upload reuse crosses destination/backdrop changes, but retains every
+    // decoded byte and interpretation parameter, including odd YUV planes.
+    VoxGraphiteImageUploadCache<std::shared_ptr<int>> uploads(8192, 1);
+    descriptor = image(source.data());
+    auto upload = uploads.prepare(descriptor, 2, 2, false);
+    assert(!upload.texture && upload.pending);
+    auto texture = std::make_shared<int>(73);
+    uploads.finish(std::move(upload), texture);
+    assert(uploads.prepare(descriptor, 2, 2, false).texture == texture);
+    changed = descriptor; changed.matrix[2] = .375f; changed.opacity = .5f;
+    changed.source[0] = 1; changed.destination[2] = 17; changed.nearest = 1;
+    assert(uploads.prepare(changed, 2, 2, false).texture == texture);
+    auto upload_misses = [&](VoxGraphiteImage const& v) {
+        assert(!uploads.prepare(v, 2, 2, false).texture);
+    };
+    source[15]++; upload_misses(descriptor); source[15]--;
+    changed = descriptor; changed.flags = 1; upload_misses(changed);
+    changed = descriptor; changed.has_color_profile = 1; upload_misses(changed);
+    assert(!uploads.prepare(descriptor, 1, 2, false).texture);
+    assert(!uploads.prepare(descriptor, 2, 1, false).texture);
+    assert(!uploads.prepare(descriptor, 2, 2, true).texture);
+    for (int y = 0; y < 2; ++y)
+        std::memcpy(padded_source.data() + y * 12, source.data() + y * 8, 8);
+    changed = descriptor; changed.pixels = padded_source.data(); changed.pitch = 12;
+    assert(uploads.prepare(changed, 2, 2, false).texture == texture);
+    padded_source[11]++;
+    assert(uploads.prepare(changed, 2, 2, false).texture == texture);
+    changed = descriptor; changed.has_color_profile = 1; changed.color_profile[0] = 1.8f;
+    upload = uploads.prepare(changed, 2, 2, false);
+    uploads.finish(std::move(upload), texture);
+    changed.color_profile[0] = 2.2f; upload_misses(changed);
+    assert(!uploads.prepare(descriptor, 2, 2, false).texture); // Count eviction.
+    for (int flags : {4, 12, 20, 28}) {
+        std::vector<uint8_t> planes(33, 91);
+        auto yuv = descriptor; yuv.width = 3; yuv.height = 3; yuv.pitch = 12;
+        yuv.flags = flags; yuv.pixels = planes.data();
+        upload = uploads.prepare(yuv, 3, 3, false);
+        assert(upload.pending);
+        uploads.finish(std::move(upload), texture);
+        assert(uploads.prepare(yuv, 3, 3, false).texture == texture);
+        size_t last = flags & 16 ? 26 : 16;
+        planes[last]++;
+        assert(!uploads.prepare(yuv, 3, 3, false).texture);
+    }
+    uploads.clear();
+    assert(!uploads.prepare(descriptor, 2, 2, false).texture);
+    upload = uploads.prepare(descriptor, 2, 2, false);
+    uploads.finish(std::move(upload), nullptr);
+    assert(!uploads.prepare(descriptor, 2, 2, false).texture);
+    VoxGraphiteImageUploadCache<std::shared_ptr<int>> disabled_uploads(0);
+    assert(!disabled_uploads.prepare(descriptor, 2, 2, false).pending);
+    changed = descriptor; changed.width = std::numeric_limits<int>::max();
+    assert(!uploads.prepare(changed, 2, 2, false).pending);
+    assert(!uploads.prepare(descriptor, std::numeric_limits<int>::max(), 2, false).pending);
     std::cout << "Graphite raster cache: source/backdrop mutation, geometry, profiles, strides, YUV, LRU and bounds passed\n";
 }

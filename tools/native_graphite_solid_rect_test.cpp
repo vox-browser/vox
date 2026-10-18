@@ -55,5 +55,28 @@ int main()
     shape.rect[2] = shape.rect[3] = 1;
     assert(vox_draw_solid_rect(pixels, 4, 4, 19, false, shape));
     assert(pixels[0] == 44 && pixels[3] == 255 && pixels[4] == 0 && pixels[19] == 0);
+    shape.matrix[0] = shape.matrix[4] = 1;
+    shape.rect[0] = shape.rect[1] = .5f;
+    shape.rect[2] = shape.rect[3] = 3;
+    shape.fill = 0; shape.thickness = 1;
+    assert(vox_draw_solid_stroke(pixels, 4, 4, 19, false, shape));
+    for (int y = 0; y < 4; ++y) for (int x = 0; x < 4; ++x) {
+        bool border = x == 0 || y == 0 || x == 3 || y == 3;
+        assert(pixels[y * 19 + x * 4 + 3] == (border ? 255 : 0));
+    }
+    auto stroke_rejected = [&](VoxGraphiteShape const& candidate) {
+        std::fill(storage.begin(), storage.end(), 91);
+        auto original = storage;
+        assert(!vox_draw_solid_stroke(pixels, 4, 4, 19, false, candidate));
+        assert(storage == original);
+    };
+    value = shape; value.thickness = .5f; stroke_rejected(value);
+    value = shape; value.thickness = 0; stroke_rejected(value);
+    value = shape; value.rect[0] = 1; stroke_rejected(value);
+    value = shape; value.rect[4] = 1; stroke_rejected(value);
+    value = shape; value.alpha = 128; stroke_rejected(value);
+    value = shape; value.has_underlay = 1; stroke_rejected(value);
+    value = shape; value.rect[2] = .5f; stroke_rejected(value);
+    value = shape; value.rect[0] = std::numeric_limits<float>::infinity(); stroke_rejected(value);
     std::cout << "Solid rectangle: exact coverage, backdrop, padding, clipping and fallback guards passed\n";
 }

@@ -54,4 +54,46 @@ inline bool vox_draw_solid_rect(uint8_t* pixels, int width, int height, int pitc
     return true;
 }
 
+// A rectangular stroke whose inner and outer edges both land on device
+// pixels is four fully covered opaque strips. Keep fractional, rounded and
+// compound strokes on the original GPU path.
+inline bool vox_draw_solid_stroke(uint8_t* pixels, int width, int height, int pitch,
+    bool has_background, VoxGraphiteShape const& shape)
+{
+    if (shape.fill || shape.alpha != 255 || shape.has_underlay || shape.clip_out_count
+        || !pixels || width <= 0 || height <= 0 || pitch <= 0 || size_t(pitch) < size_t(width) * 4)
+        return false;
+    for (int i = 4; i < 12; ++i) if (shape.rect[i] != 0) return false;
+    float edges[4];
+    if (!vox_axis_aligned_rect(shape, edges)) return false;
+    float dx = shape.thickness * shape.matrix[0] / 2;
+    float dy = shape.thickness * shape.matrix[4] / 2;
+    if (!(dx > 0 && dy > 0) || !std::isfinite(dx) || !std::isfinite(dy)
+        || edges[2] - edges[0] <= dx * 2 || edges[3] - edges[1] <= dy * 2) return false;
+    float outer[] {edges[0] - dx, edges[1] - dy, edges[2] + dx, edges[3] + dy};
+    float inner[] {edges[0] + dx, edges[1] + dy, edges[2] - dx, edges[3] - dy};
+    for (auto edge : outer) if (!std::isfinite(edge) || edge != std::floor(edge)) return false;
+    for (auto edge : inner) if (!std::isfinite(edge) || edge != std::floor(edge)) return false;
+    if (!(outer[0] < inner[0] && inner[0] < inner[2] && inner[2] < outer[2]
+        && outer[1] < inner[1] && inner[1] < inner[3] && inner[3] < outer[3])) return false;
+    if (!has_background) for (int y = 0; y < height; ++y)
+        std::memset(pixels + size_t(y) * pitch, 0, size_t(width) * 4);
+    VoxGraphiteShape strip {};
+    strip.fill = 1; strip.alpha = 255;
+    strip.red = shape.red; strip.green = shape.green; strip.blue = shape.blue;
+    strip.matrix[0] = strip.matrix[4] = strip.matrix[8] = 1;
+    auto draw = [&](float left, float top, float right, float bottom) {
+        left = std::clamp(left, 0.0f, float(width)); right = std::clamp(right, 0.0f, float(width));
+        top = std::clamp(top, 0.0f, float(height)); bottom = std::clamp(bottom, 0.0f, float(height));
+        if (left >= right || top >= bottom) return true;
+        strip.rect[0] = left; strip.rect[1] = top;
+        strip.rect[2] = right - left; strip.rect[3] = bottom - top;
+        return vox_draw_solid_rect(pixels, width, height, pitch, true, strip);
+    };
+    return draw(outer[0], outer[1], outer[2], inner[1])
+        && draw(outer[0], inner[3], outer[2], outer[3])
+        && draw(outer[0], inner[1], inner[0], inner[3])
+        && draw(inner[2], inner[1], outer[2], inner[3]);
+}
+
 #endif

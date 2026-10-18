@@ -1,6 +1,7 @@
 #import <Metal/Metal.h>
 #include "native_graphite_bridge.h"
 #include "native_graphite_raster_cache.h"
+#include "native_graphite_image_upload_cache.h"
 #include "native_graphite_solid_rect.h"
 #include "include/core/SkCanvas.h"
 #include "include/core/SkBlurTypes.h"
@@ -35,6 +36,8 @@
 namespace {
 std::mutex gpu_mutex;
 VoxGraphiteRasterCache image_cache;
+VoxGraphiteImageUploadCache<sk_sp<SkImage>> image_upload_cache;
+VoxGraphiteRasterCache path_cache(8 * 1024 * 1024);
 VoxGraphiteRasterCache shape_cache(16 * 1024 * 1024);
 std::unique_ptr<skgpu::graphite::Context> gpu_context;
 bool gpu_context_attempted = false;
@@ -91,7 +94,9 @@ void vox_graphite_release_unused_graphics_memory()
     if (!pthread_main_np()) return;
     std::lock_guard lock(gpu_mutex);
     image_cache.clear();
+    image_upload_cache.clear();
     shape_cache.clear();
+    path_cache.clear();
     if (!gpu_context) return;
     // Draw wrappers already synchronously read their pixels. Submit/wait also
     // covers a previous early-return path before dropping unused cache refs.
@@ -200,7 +205,13 @@ int vox_graphite_draw_image_pixels(uint8_t* pixels, int width, int height,
     bool needs_mips = !image->nearest && whole_source
         && image->width * sx < upload_width && image->height * sy < upload_height;
     SkImage::RequiredProperties properties{.fMipmapped = needs_mips};
-    if (image->flags & 4) {
+    auto upload = image_upload_cache.prepare(*image, upload_width, upload_height, needs_mips);
+    texture = upload.texture;
+    if (upload_width != image->width || upload_height != image->height) {
+        source_scale_x = static_cast<float>(upload_width) / image->width;
+        source_scale_y = static_cast<float>(upload_height) / image->height;
+    }
+    if (!texture && (image->flags & 4)) {
         // Flag 16 marks full-resolution 4:4:4 chroma planes.
         bool full_chroma = image->flags & 16;
         int uv_width = full_chroma ? image->width : (image->width + 1) / 2;
@@ -242,7 +253,7 @@ int vox_graphite_draw_image_pixels(uint8_t* pixels, int width, int height,
         auto pixmaps = SkYUVAPixmaps::FromExternalPixmaps(yuva, planes);
         texture = SkImages::TextureFromYUVAPixmaps(recorder.get(), pixmaps, properties, false,
             SkColorSpace::MakeSRGB());
-    } else {
+    } else if (!texture) {
         if (static_cast<size_t>(image->pitch) < static_cast<size_t>(image->width) * 4) return 0;
         auto src_info = SkImageInfo::Make(image->width, image->height,
             kRGBA_8888_SkColorType, (image->flags & 1) ? kPremul_SkAlphaType : kUnpremul_SkAlphaType,
@@ -296,7 +307,10 @@ int vox_graphite_draw_image_pixels(uint8_t* pixels, int width, int height,
         &paint, whole_source && !image->nearest ? SkCanvas::kFast_SrcRectConstraint
                                                : SkCanvas::kStrict_SrcRectConstraint);
     int result = read_pixels(gpu, recorder.get(), surface.get(), info, pixels, pitch);
-    if (result) image_cache.finish(std::move(cached), pixels, pitch);
+    if (result) {
+        image_upload_cache.finish(std::move(upload), texture);
+        image_cache.finish(std::move(cached), pixels, pitch);
+    }
     return result;
 }
 
@@ -347,7 +361,7 @@ static void draw_shape_on_canvas(SkCanvas* canvas, VoxGraphiteShape const& shape
 static bool draw_large_rounded_shape(uint8_t* pixels, int width, int height,
     int pitch, bool has_background, VoxGraphiteShape const& shape)
 {
-    if (size_t(width) * height < 65536 || width > 16384 || height > 16384) return false;
+    if (size_t(width) * height < 8192 || width > 16384 || height > 16384) return false;
     float edges[4];
     auto solid = shape;
     solid.fill = 1;
@@ -358,10 +372,12 @@ static bool draw_large_rounded_shape(uint8_t* pixels, int width, int height,
     if (!shape.fill && (!(half_x > 0 && half_y > 0) || !std::isfinite(half_x)
             || !std::isfinite(half_y)))
         return false;
-    float rx = shape.rect[4], ry = shape.rect[5];
-    if (rx < 0 || ry < 0 || !std::isfinite(rx) || !std::isfinite(ry)) return false;
-    for (int i = 6; i < 12; i += 2)
-        if (shape.rect[i] != rx || shape.rect[i + 1] != ry) return false;
+    float rx = 0, ry = 0;
+    for (int i = 4; i < 12; i += 2) {
+        if (shape.rect[i] < 0 || shape.rect[i + 1] < 0
+            || !std::isfinite(shape.rect[i]) || !std::isfinite(shape.rect[i + 1])) return false;
+        rx = std::max(rx, shape.rect[i]); ry = std::max(ry, shape.rect[i + 1]);
+    }
     float corner_width = std::ceil(rx * shape.matrix[0] + half_x) + 2;
     float corner_height = std::ceil(ry * shape.matrix[4] + half_y) + 2;
     if (corner_width * 2 >= edges[2] - edges[0] || corner_height * 2 >= edges[3] - edges[1]
@@ -390,11 +406,17 @@ static bool draw_large_rounded_shape(uint8_t* pixels, int width, int height,
     patch(right_cut, outer_top, outer_right, top_cut);
     patch(outer_left, bottom_cut, left_cut, outer_bottom);
     patch(right_cut, bottom_cut, outer_right, outer_bottom);
+    // Integer-aligned opaque edges have full coverage. Only their rounded
+    // corners need GPU pixels; offscreen corners need no readback at all.
+    bool aligned_fill = shape.fill;
+    for (auto edge : edges) aligned_fill = aligned_fill && edge == std::floor(edge);
     // Fractional straight edges and strokes retain the original GPU coverage.
-    patch(left_cut, outer_top, right_cut, std::ceil(edges[1] + half_y) + 2);
-    patch(left_cut, std::floor(edges[3] - half_y) - 2, right_cut, outer_bottom);
-    patch(outer_left, top_cut, std::ceil(edges[0] + half_x) + 2, bottom_cut);
-    patch(std::floor(edges[2] - half_x) - 2, top_cut, outer_right, bottom_cut);
+    if (!aligned_fill) {
+        patch(left_cut, outer_top, right_cut, std::ceil(edges[1] + half_y) + 2);
+        patch(left_cut, std::floor(edges[3] - half_y) - 2, right_cut, outer_bottom);
+        patch(outer_left, top_cut, std::ceil(edges[0] + half_x) + 2, bottom_cut);
+        patch(std::floor(edges[2] - half_x) - 2, top_cut, outer_right, bottom_cut);
+    }
     if (patch_bytes > 256 * 1024) return false;
     std::vector<uint8_t> packed(patch_bytes);
     if (has_background) for (auto const& patch : patches) for (int y = 0; y < patch.height; ++y)
@@ -470,6 +492,7 @@ int vox_graphite_draw_shape_pixels(uint8_t* pixels, int width, int height,
     if (!pixels || !shape || width <= 0 || height <= 0 || pitch <= 0
         || static_cast<size_t>(pitch) < static_cast<size_t>(width) * 4) return 0;
     if (vox_draw_solid_rect(pixels, width, height, pitch, has_background != 0, *shape)) return 1;
+    if (vox_draw_solid_stroke(pixels, width, height, pitch, has_background != 0, *shape)) return 1;
     if (draw_large_rounded_shape(pixels, width, height, pitch, has_background != 0, *shape)) return 1;
     std::lock_guard lock(gpu_mutex);
     auto cached = shape_cache.prepare(*shape, width, height, pitch, has_background != 0, pixels);
@@ -500,6 +523,8 @@ int vox_graphite_draw_path_pixels(uint8_t* pixels, int width, int height,
         || height <= 0 || pitch <= 0
         || static_cast<size_t>(pitch) < static_cast<size_t>(width) * 4) return 0;
     std::lock_guard lock(gpu_mutex);
+    auto cached = path_cache.prepare(*path, width, height, pitch, has_background != 0, pixels);
+    if (cached.hit) return 1;
     auto* gpu = context();
     if (!gpu) return 0;
     auto recorder = gpu->makeRecorder();
@@ -558,5 +583,7 @@ int vox_graphite_draw_path_pixels(uint8_t* pixels, int width, int height,
         paint.setStrokeMiter(std::max(path->miter_limit, 1.0f));
     }
     canvas->drawPath(geometry, paint);
-    return read_pixels(gpu, recorder.get(), surface.get(), info, pixels, pitch);
+    int result = read_pixels(gpu, recorder.get(), surface.get(), info, pixels, pitch);
+    if (result) path_cache.finish(std::move(cached), pixels, pitch);
+    return result;
 }

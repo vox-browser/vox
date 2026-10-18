@@ -28,7 +28,8 @@ int main()
     int cases = 0;
     for (auto space : {kCGColorSpaceSRGB, kCGColorSpaceDisplayP3, kCGColorSpaceGenericRGBLinear})
     for (bool rgba : {false, true}) for (int scale : {1, 2}) for (int clip = 0; clip < 5; ++clip)
-    for (auto blend : {kCGBlendModeNormal, kCGBlendModeCopy, kCGBlendModeMultiply}) {
+    for (auto blend : {kCGBlendModeNormal, kCGBlendModeCopy, kCGBlendModeMultiply})
+    for (bool copy_background : {false, true}) for (bool owned : {false, true}) {
         int width = 83 * scale, height = 67 * scale;
         auto color = CGColorSpaceCreateWithName(space);
         std::vector<uint8_t> expected(size_t(width) * height * 4), actual(expected.size());
@@ -58,14 +59,22 @@ int main()
         }
         std::vector<uint32_t> pixels(41 * 23);
         for (int layer = 0; layer < 3; ++layer) {
+            pixels.resize(41 * 23);
             for (size_t i = 0; i < pixels.size(); ++i) {
                 uint32_t alpha = (i * 37 + layer * 19) % 256;
                 pixels[i] = alpha << 24 | (alpha / 2) << 16 | (alpha / 3) << 8 | alpha;
             }
             CGRect destination = CGRectMake(13.375 + layer * 3, 9.25 + layer * 7, 41.25, 23.75);
+            CGContextSaveGState(before);
+            if (copy_background) CGContextSetBlendMode(before, kCGBlendModeCopy);
             legacy_composite(before, pixels, 41, 23, destination);
-            assert(composite_pixels(after, pixels, 41, 23, destination.origin.x,
-                destination.origin.y, destination.size.width, destination.size.height));
+            CGContextRestoreGState(before);
+            int result = owned
+                ? composite_pixels(after, std::move(pixels), 41, 23, destination.origin.x,
+                    destination.origin.y, destination.size.width, destination.size.height, copy_background)
+                : composite_pixels(after, pixels, 41, 23, destination.origin.x,
+                    destination.origin.y, destination.size.width, destination.size.height, copy_background);
+            assert(result);
             std::fill(pixels.begin(), pixels.end(), 0); // Submitted images own their bytes.
         }
         CGContextFlush(before); CGContextFlush(after);

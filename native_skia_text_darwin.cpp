@@ -52,12 +52,17 @@
 #include <cstdlib>
 #include <cstdint>
 #include <cstring>
+#include <list>
 #include <memory>
 #include <pthread.h>
 #include <string>
 #include <unordered_map>
 #include <utility>
 #include <vector>
+
+#if defined(__aarch64__)
+#include <arm_neon.h>
+#endif
 
 namespace {
 
@@ -197,27 +202,62 @@ SkTypeface* select_typeface(char const* path, int face_index, int font_weight, i
     return s_typefaces[slot].get();
 }
 
-int composite_pixels(CGContextRef destination, std::vector<uint32_t> const& pixels,
-    int width, int height, float destination_x, float destination_y,
-    float destination_width, float destination_height)
+void swap_red_blue_pixels(uint8_t* destination, uint8_t const* source, size_t count)
+{
+    size_t i = 0;
+#if defined(__aarch64__)
+    uint8_t const indices[] {2, 1, 0, 3, 6, 5, 4, 7, 10, 9, 8, 11, 14, 13, 12, 15};
+    auto order = vld1q_u8(indices);
+    for (; count - i >= 4; i += 4)
+        vst1q_u8(destination + i * 4, vqtbl1q_u8(vld1q_u8(source + i * 4), order));
+#endif
+    for (; i < count; ++i) {
+        uint32_t p;
+        std::memcpy(&p, source + i * 4, sizeof(p));
+        p = (p & 0xff00ff00u) | ((p & 0xffu) << 16) | ((p >> 16) & 0xffu);
+        std::memcpy(destination + i * 4, &p, sizeof(p));
+    }
+}
+
+bool rgba_bitmap(CGContextRef destination)
+{
+    return CGBitmapContextGetBitsPerPixel(destination) == 32
+        && CGBitmapContextGetAlphaInfo(destination) == kCGImageAlphaPremultipliedLast
+        && (CGBitmapContextGetBitmapInfo(destination) & kCGBitmapByteOrderMask) == kCGBitmapByteOrder32Big;
+}
+
+CGImageRef image_from_provider(CGDataProviderRef provider, int width, int height, bool rgba)
+{
+    if (!provider) return nullptr;
+    auto color_space = CGColorSpaceCreateWithName(kCGColorSpaceSRGB);
+    auto image = CGImageCreate(static_cast<size_t>(width), static_cast<size_t>(height),
+        8, 32, static_cast<size_t>(width) * sizeof(uint32_t), color_space,
+        (rgba ? static_cast<CGBitmapInfo>(kCGImageAlphaPremultipliedLast)
+            | static_cast<CGBitmapInfo>(kCGBitmapByteOrder32Big)
+            : static_cast<CGBitmapInfo>(kCGImageAlphaPremultipliedFirst)
+            | static_cast<CGBitmapInfo>(kCGBitmapByteOrder32Little)),
+        provider, nullptr, false, kCGRenderingIntentDefault);
+    CGColorSpaceRelease(color_space);
+    CGDataProviderRelease(provider);
+    return image;
+}
+
+CGImageRef create_pixel_image(CGContextRef destination, std::vector<uint32_t> const& pixels,
+    int width, int height)
 {
     // A drawRect: CGContext may retain the image in a display list and replay it
     // later during the Core Animation transaction. Give the provider its own
     // copy instead of pointing it at a vector which dies when this call returns.
     // Match the readable frame's channel order before handing pixels to Quartz.
     // Otherwise each leaf creates an expensive format-conversion provider.
-    bool rgba = CGBitmapContextGetBitsPerPixel(destination) == 32
-        && CGBitmapContextGetAlphaInfo(destination) == kCGImageAlphaPremultipliedLast
-        && (CGBitmapContextGetBitmapInfo(destination) & kCGBitmapByteOrderMask) == kCGBitmapByteOrder32Big;
+    bool rgba = rgba_bitmap(destination);
     CGDataProviderRef provider = nullptr;
     if (rgba) {
         size_t bytes = pixels.size() * sizeof(uint32_t);
         auto* converted = static_cast<uint32_t*>(std::malloc(bytes));
         if (!converted) return 0;
-        for (size_t i = 0; i < pixels.size(); ++i) {
-            uint32_t p = pixels[i];
-            converted[i] = (p & 0xff00ff00u) | ((p & 0xffu) << 16) | ((p >> 16) & 0xffu);
-        }
+        swap_red_blue_pixels(reinterpret_cast<uint8_t*>(converted),
+            reinterpret_cast<uint8_t const*>(pixels.data()), pixels.size());
         provider = CGDataProviderCreateWithData(nullptr, converted, bytes,
             [](void*, void const* bytes, size_t) { std::free(const_cast<void*>(bytes)); });
         if (!provider) std::free(converted);
@@ -229,28 +269,135 @@ int composite_pixels(CGContextRef destination, std::vector<uint32_t> const& pixe
         provider = CGDataProviderCreateWithCFData(data);
         CFRelease(data);
     }
-    if (!provider)
-        return 0;
-    auto color_space = CGColorSpaceCreateWithName(kCGColorSpaceSRGB);
-    auto image = CGImageCreate(static_cast<size_t>(width), static_cast<size_t>(height),
-        8, 32, static_cast<size_t>(width) * sizeof(uint32_t), color_space,
-        (rgba ? static_cast<CGBitmapInfo>(kCGImageAlphaPremultipliedLast)
-            | static_cast<CGBitmapInfo>(kCGBitmapByteOrder32Big)
-            : static_cast<CGBitmapInfo>(kCGImageAlphaPremultipliedFirst)
-            | static_cast<CGBitmapInfo>(kCGBitmapByteOrder32Little)),
-        provider, nullptr, false, kCGRenderingIntentDefault);
-    CGColorSpaceRelease(color_space);
-    CGDataProviderRelease(provider);
-    if (!image)
-        return 0;
+    return image_from_provider(provider, width, height, rgba);
+}
 
+// Transfer the finished raster allocation to Quartz. Its provider keeps the
+// pixels alive for deferred display-list replay, without a second full bitmap.
+CGImageRef create_pixel_image(CGContextRef destination, std::vector<uint32_t>&& pixels,
+    int width, int height)
+{
+    bool rgba = rgba_bitmap(destination);
+    if (rgba) swap_red_blue_pixels(reinterpret_cast<uint8_t*>(pixels.data()),
+        reinterpret_cast<uint8_t const*>(pixels.data()), pixels.size());
+    auto owned = std::make_unique<std::vector<uint32_t>>(std::move(pixels));
+    auto provider = CGDataProviderCreateWithData(owned.get(), owned->data(), owned->size() * 4,
+        [](void* owner, void const*, size_t) { delete static_cast<std::vector<uint32_t>*>(owner); });
+    if (provider) owned.release();
+    return image_from_provider(provider, width, height, rgba);
+}
+
+int composite_image(CGContextRef destination, CGImageRef image, CGRect rect, bool copy_background = false)
+{
+    if (!image) return 0;
     CGContextSaveGState(destination);
+    if (copy_background) CGContextSetBlendMode(destination, kCGBlendModeCopy);
     CGContextSetInterpolationQuality(destination, kCGInterpolationNone);
-    CGContextDrawImage(destination,
-        CGRectMake(destination_x, destination_y, destination_width, destination_height), image);
+    CGContextDrawImage(destination, rect, image);
     CGContextRestoreGState(destination);
-    CGImageRelease(image);
     return 1;
+}
+
+int composite_pixels(CGContextRef destination, std::vector<uint32_t> const& pixels,
+    int width, int height, float destination_x, float destination_y,
+    float destination_width, float destination_height, bool copy_background = false)
+{
+    auto image = create_pixel_image(destination, pixels, width, height);
+    int result = composite_image(destination, image,
+        CGRectMake(destination_x, destination_y, destination_width, destination_height), copy_background);
+    if (image) CGImageRelease(image);
+    return result;
+}
+
+int composite_pixels(CGContextRef destination, std::vector<uint32_t>&& pixels,
+    int width, int height, float destination_x, float destination_y,
+    float destination_width, float destination_height, bool copy_background = false)
+{
+    auto image = create_pixel_image(destination, std::move(pixels), width, height);
+    int result = composite_image(destination, image,
+        CGRectMake(destination_x, destination_y, destination_width, destination_height), copy_background);
+    if (image) CGImageRelease(image);
+    return result;
+}
+
+// Retained text often replays over identical pixels after an integer scroll.
+// Compare owned glyph/position/paint values and the complete input backdrop;
+// neither the caller's buffers nor a text run's address promise immutability.
+class GlyphRasterCache {
+    struct Entry {
+        uint64_t hash;
+        int width, height;
+        std::vector<uint8_t> key;
+        std::vector<uint8_t> background;
+        CGImageRef image {nullptr};
+        size_t cost;
+        ~Entry() { if (image) CGImageRelease(image); }
+    };
+    std::list<std::unique_ptr<Entry>> entries;
+    size_t bytes = 0;
+    size_t byte_limit, entry_limit;
+public:
+    explicit GlyphRasterCache(size_t limit = 8 * 1024 * 1024, size_t count = 512)
+        : byte_limit(limit), entry_limit(count) { }
+    struct Request {
+        CGImageRef image {nullptr};
+        std::unique_ptr<Entry> pending;
+    };
+    Request prepare(std::vector<uint8_t> key, int width, int height,
+        uint8_t const* background, size_t pitch)
+    {
+        if (width <= 0 || height <= 0 || (background && pitch < size_t(width) * 4)) return {};
+        size_t row_bytes = size_t(width) * 4;
+        if (row_bytes > byte_limit / size_t(height)) return {};
+        size_t pixel_bytes = row_bytes * size_t(height);
+        size_t cost = key.size() + pixel_bytes * (background ? 2 : 1);
+        if (!entry_limit || cost > std::min(byte_limit, size_t(256 * 1024))) return {};
+        uint64_t hash = 14695981039346656037ull;
+        for (auto value : key) hash = (hash ^ value) * 1099511628211ull;
+        for (auto it = entries.begin(); it != entries.end(); ++it) {
+            auto const& entry = **it;
+            if (entry.hash != hash || entry.key != key || entry.width != width || entry.height != height
+                || entry.background.size() != (background ? pixel_bytes : 0)) continue;
+            bool equal = true;
+            if (background) for (int y = 0; equal && y < height; ++y)
+                equal = !std::memcmp(entry.background.data() + size_t(y) * row_bytes,
+                    background + size_t(y) * pitch, row_bytes);
+            if (!equal) continue;
+            auto image = entry.image;
+            entries.splice(entries.begin(), entries, it);
+            return {image, nullptr};
+        }
+        auto entry = std::make_unique<Entry>();
+        entry->hash = hash; entry->width = width; entry->height = height;
+        entry->key = std::move(key); entry->cost = cost;
+        if (background) {
+            entry->background.resize(pixel_bytes);
+            for (int y = 0; y < height; ++y)
+                std::memcpy(entry->background.data() + size_t(y) * row_bytes,
+                    background + size_t(y) * pitch, row_bytes);
+        }
+        return {nullptr, std::move(entry)};
+    }
+    void finish(Request&& request, CGImageRef image)
+    {
+        if (!image || !request.pending) return;
+        auto& entry = *request.pending;
+        while (!entries.empty() && (bytes + entry.cost > byte_limit || entries.size() >= entry_limit)) {
+            bytes -= entries.back()->cost;
+            entries.pop_back();
+        }
+        entry.image = CGImageRetain(image);
+        bytes += entry.cost;
+        entries.push_front(std::move(request.pending));
+    }
+    void clear() { entries.clear(); bytes = 0; }
+};
+GlyphRasterCache s_glyph_raster_cache;
+
+template<typename T> void append_glyph_key(std::vector<uint8_t>& key, T const* data, size_t count)
+{
+    auto const* bytes = reinterpret_cast<uint8_t const*>(data);
+    key.insert(key.end(), bytes, bytes + sizeof(T) * count);
 }
 
 // Screenshot references normally use one device pixel per CSS pixel. A
@@ -323,22 +470,20 @@ bool clipped_raster_region(SkRect const& bounds, float canvas_width,
     return region.width() > 0 && region.height() > 0;
 }
 
-// A background sprite's paths can lie within the window but outside its
-// embedding clip. Reject those leaf surfaces before allocating and painting
-// them. CGContext reports the clip in its current user space,
-// which is also the coordinate space used by composite_pixels(); Skia's rows
-// run downwards instead. Retain a conservative fringe for antialiased clips.
-// Filter/shadow inputs and grouped commands keep their existing bounds: their
-// intermediate pixels may still contribute after an effect or group replay.
-bool copy_backdrop(CGContextRef destination, RasterRegion const& region,
-    float destination_scale, int raster_width, int raster_height,
-    std::vector<uint32_t>& pixels)
+// Readable frame and opacity-group backdrops use premultiplied RGBA. Keep a
+// strided view so a glyph-cache hit needs neither an allocation nor conversion.
+struct Backdrop {
+    uint8_t const* pixels {nullptr};
+    size_t pitch {0};
+};
+
+Backdrop read_backdrop(CGContextRef destination, RasterRegion const& region,
+    float destination_scale, int raster_width, int raster_height)
 {
     if (CGBitmapContextGetBitsPerPixel(destination) != 32
         || CGBitmapContextGetAlphaInfo(destination) != kCGImageAlphaPremultipliedLast
         || (CGBitmapContextGetBitmapInfo(destination) & kCGBitmapByteOrderMask) != kCGBitmapByteOrder32Big)
-        return false;
-    bool has_background = false;
+        return {};
     CGContextFlush(destination);
     auto* background = static_cast<uint8_t*>(CGBitmapContextGetData(destination));
     auto source_width = CGBitmapContextGetWidth(destination);
@@ -347,22 +492,39 @@ bool copy_backdrop(CGContextRef destination, RasterRegion const& region,
     auto left = static_cast<size_t>(std::lround(region.left * destination_scale));
     auto top = static_cast<size_t>(std::lround(region.top * destination_scale));
     auto ctm = CGContextGetCTM(destination);
-    has_background = background && ctm.a > 0 && ctm.d > 0
-        && ctm.b == 0 && ctm.c == 0 && ctm.tx == 0 && ctm.ty == 0
-        && left + raster_width <= source_width && top + raster_height <= source_height;
-    // Premultiplied pixels are copied as they are, including the translucent
-    // pixels of an opacity group's own bitmap. Callers composite the result
-    // back with copy blending, so the leaf blends over the backdrop once.
-    for (int y = 0; has_background && y < raster_height; ++y) {
-        auto* row = background + (top + y) * source_pitch + left * 4;
-        for (int x = 0; x < raster_width; ++x) {
-            pixels[static_cast<size_t>(y) * raster_width + x] = uint32_t(row[x * 4 + 3]) << 24
-                | row[x * 4] << 16 | row[x * 4 + 1] << 8 | row[x * 4 + 2];
-        }
-    }
-    return has_background;
+    if (!background || !(ctm.a > 0 && ctm.d > 0) || ctm.b != 0 || ctm.c != 0
+        || ctm.tx != 0 || ctm.ty != 0 || left + raster_width > source_width
+        || top + raster_height > source_height) return {};
+    return {background + top * source_pitch + left * 4, source_pitch};
 }
 
+void copy_backdrop_pixels(Backdrop source, int width, int height, std::vector<uint32_t>& pixels,
+    RasterRegion covered = {})
+{
+    for (int y = 0; y < height; ++y) {
+        auto* row = source.pixels + size_t(y) * source.pitch;
+        auto copy = [&](int left, int right) {
+            swap_red_blue_pixels(reinterpret_cast<uint8_t*>(pixels.data() + size_t(y) * width + left),
+                row + size_t(left) * 4, size_t(right - left));
+        };
+        if (y >= covered.top && y < covered.bottom) {
+            copy(0, covered.left); copy(covered.right, width);
+        } else copy(0, width);
+    }
+}
+
+bool copy_backdrop(CGContextRef destination, RasterRegion const& region,
+    float destination_scale, int raster_width, int raster_height, std::vector<uint32_t>& pixels)
+{
+    auto source = read_backdrop(destination, region, destination_scale, raster_width, raster_height);
+    // Preserve translucent group pixels too. Copy blending later applies the
+    // foreground over its backdrop exactly once.
+    if (source.pixels) copy_backdrop_pixels(source, raster_width, raster_height, pixels);
+    return source.pixels != nullptr;
+}
+
+// Reject fully clipped leaf surfaces while retaining intersecting surfaces at
+// their original origin and dimensions. Shadow and filter inputs stay intact.
 bool leaf_raster_region_intersects_destination_clip(CGContextRef destination,
     float canvas_height, RasterRegion const& region)
 {
@@ -475,6 +637,7 @@ extern "C" void ladybird_v_skia_release_unused_graphics_memory()
         if (purge) purge();
         dlclose(library);
     }
+    s_glyph_raster_cache.clear();
     SkGraphics::PurgeAllCaches();
 }
 
@@ -575,7 +738,8 @@ extern "C" int ladybird_v_skia_end_command_group(CGContextRef destination)
     if (!s_raster_command_group || s_raster_command_group->destination != destination)
         return 0;
     auto group = std::move(s_raster_command_group);
-    return composite_pixels(destination, group->pixels, group->raster_width,
+    group->surface.reset();
+    return composite_pixels(destination, std::move(group->pixels), group->raster_width,
         group->raster_height, static_cast<float>(group->region.left),
         group->canvas_height - static_cast<float>(group->region.bottom),
         static_cast<float>(group->region.width()),
@@ -801,12 +965,38 @@ extern "C" int ladybird_v_skia_draw_glyph_run(CGContextRef destination,
     auto raster_scale_x = static_cast<float>(raster_width) / static_cast<float>(region.width());
     auto raster_scale_y = static_cast<float>(raster_height) / static_cast<float>(region.height());
     bool chromium = font_smoothing & 16;
-    std::vector<uint32_t> pixels(static_cast<size_t>(raster_width) * raster_height);
+    size_t pixel_count = static_cast<size_t>(raster_width) * raster_height;
     // Avoid quantizing a partially covered foreground to premultiplied 8-bit
     // color before blending it over the page. The owning native bitmap frame
     // or opacity group supplies its pixels; transparency layers use the old path.
-    bool has_background = (font_smoothing & 32) && copy_backdrop(destination,
-        region, destination_scale, raster_width, raster_height, pixels);
+    auto backdrop = (font_smoothing & 32)
+        ? read_backdrop(destination, region, destination_scale, raster_width, raster_height) : Backdrop {};
+    bool has_background = backdrop.pixels != nullptr;
+    auto draw_matrix = raster_matrix(matrix, region, raster_scale_x, raster_scale_y);
+    GlyphRasterCache::Request cached;
+    if (glyph_count <= 4096 && pixel_count <= 32768) {
+        std::vector<uint8_t> key;
+        uint32_t font_key[] {typeface->uniqueID(), uint32_t(font.getEdging()), uint32_t(font.getHinting()),
+            uint32_t(font_smoothing), SkColorSetARGB(alpha, red, green, blue),
+            uint32_t(raster_width), uint32_t(raster_height), uint32_t(glyph_count),
+            uint32_t(CGBitmapContextGetBitmapInfo(destination)),
+            uint32_t(CGBitmapContextGetBitsPerPixel(destination))};
+        append_glyph_key(key, font_key, sizeof(font_key) / sizeof(font_key[0]));
+        float geometry[] {font_size, baseline_x, baseline_y};
+        append_glyph_key(key, geometry, 3);
+        SkScalar values[9]; draw_matrix.get9(values); append_glyph_key(key, values, 9);
+        append_glyph_key(key, glyphs, glyph_count);
+        append_glyph_key(key, packed_positions, size_t(glyph_count) * 2);
+        cached = s_glyph_raster_cache.prepare(std::move(key), raster_width, raster_height, backdrop.pixels, backdrop.pitch);
+    }
+    auto destination_rect = CGRectMake(static_cast<float>(region.left),
+        canvas_height - static_cast<float>(region.bottom),
+        static_cast<float>(region.width()), static_cast<float>(region.height()));
+    if (cached.image) {
+        return composite_image(destination, cached.image, destination_rect, has_background);
+    }
+    std::vector<uint32_t> pixels(pixel_count);
+    if (has_background) copy_backdrop_pixels(backdrop, raster_width, raster_height, pixels);
     auto image_info = SkImageInfo::Make(raster_width, raster_height,
         kBGRA_8888_SkColorType, kPremul_SkAlphaType, SkColorSpace::MakeSRGB());
     auto row_bytes = static_cast<size_t>(raster_width) * sizeof(uint32_t);
@@ -821,14 +1011,14 @@ extern "C" int ladybird_v_skia_draw_glyph_run(CGContextRef destination,
 
     auto* canvas = surface->getCanvas();
     if (!has_background) canvas->clear(SK_ColorTRANSPARENT);
-    canvas->setMatrix(raster_matrix(matrix, region, raster_scale_x, raster_scale_y));
+    canvas->setMatrix(draw_matrix);
     canvas->drawTextBlob(blob, baseline_x, baseline_y, paint);
-    CGContextSaveGState(destination);
-    if (has_background) CGContextSetBlendMode(destination, kCGBlendModeCopy);
-    int result = composite_pixels(destination, pixels, raster_width, raster_height,
-        static_cast<float>(region.left), canvas_height - static_cast<float>(region.bottom),
-        static_cast<float>(region.width()), static_cast<float>(region.height()));
-    CGContextRestoreGState(destination);
+    surface.reset();
+    auto image = create_pixel_image(destination, std::move(pixels), raster_width, raster_height);
+    int result = composite_image(destination, image, destination_rect, has_background);
+    s_glyph_raster_cache.finish(std::move(cached), image);
+    if (image) CGImageRelease(image);
+
     return result;
 }
 
@@ -1020,7 +1210,8 @@ extern "C" int ladybird_v_skia_draw_line(CGContextRef destination,
         (from_y - static_cast<float>(region.top)) * raster_scale_y,
         (to_x - static_cast<float>(region.left)) * raster_scale_x,
         (to_y - static_cast<float>(region.top)) * raster_scale_y, paint);
-    return composite_pixels(destination, pixels, raster_width, raster_height,
+    surface.reset();
+    return composite_pixels(destination, std::move(pixels), raster_width, raster_height,
         static_cast<float>(region.left), canvas_height - static_cast<float>(region.bottom),
         static_cast<float>(region.width()), static_cast<float>(region.height()));
 }
@@ -1172,13 +1363,9 @@ extern "C" int ladybird_v_skia_draw_rgba_image(CGContextRef destination,
         raster_matrix(matrix, region, raster_scale_x, raster_scale_y).get9(descriptor.matrix);
         if (auto draw = graphite_image_draw(); draw && draw(reinterpret_cast<uint8_t*>(pixels.data()),
                 raster_width, raster_height, raster_width * 4, has_background, &descriptor)) {
-            CGContextSaveGState(destination);
-            if (has_background) CGContextSetBlendMode(destination, kCGBlendModeCopy);
-            int result = composite_pixels(destination, pixels, raster_width, raster_height,
+            return composite_pixels(destination, std::move(pixels), raster_width, raster_height,
                 static_cast<float>(region.left), canvas_height - static_cast<float>(region.bottom),
-                static_cast<float>(region.width()), static_cast<float>(region.height()));
-            CGContextRestoreGState(destination);
-            return result;
+                static_cast<float>(region.width()), static_cast<float>(region.height()), has_background);
         }
     }
     // Build the CPU image only if the GPU path could not draw it.
@@ -1268,13 +1455,10 @@ extern "C" int ladybird_v_skia_draw_rgba_image(CGContextRef destination,
         if (!result.readPixels(image_info, pixels.data(), static_cast<size_t>(raster_width) * 4))
             return 0;
     }
-    CGContextSaveGState(destination);
-    if (has_background) CGContextSetBlendMode(destination, kCGBlendModeCopy);
-    int result = composite_pixels(destination, pixels, raster_width, raster_height,
+    surface.reset();
+    return composite_pixels(destination, std::move(pixels), raster_width, raster_height,
         static_cast<float>(region.left), canvas_height - static_cast<float>(region.bottom),
-        static_cast<float>(region.width()), static_cast<float>(region.height()));
-    CGContextRestoreGState(destination);
-    return result;
+        static_cast<float>(region.width()), static_cast<float>(region.height()), has_background);
 }
 
 extern "C" int ladybird_v_skia_draw_drop_shadow(CGContextRef destination,
@@ -1340,7 +1524,8 @@ extern "C" int ladybird_v_skia_draw_drop_shadow(CGContextRef destination,
         std::max(standard_deviation, 0.0f) * scale,
         SkColorSetARGB(alpha, red, green, blue), nullptr));
     canvas->drawImage(source_image.get(), 0, 0, SkSamplingOptions(), &paint);
-    return composite_pixels(destination, output_pixels, width, height, 0, 0,
+    surface.reset();
+    return composite_pixels(destination, std::move(output_pixels), width, height, 0, 0,
         canvas_width, canvas_height);
 }
 
@@ -1404,7 +1589,8 @@ extern "C" int ladybird_v_skia_draw_masked_image(CGContextRef destination,
     SkPaint mask_paint;
     mask_paint.setBlendMode(SkBlendMode::kDstIn);
     canvas->drawImage(mask_image.get(), 0, 0, SkSamplingOptions(), &mask_paint);
-    return composite_pixels(destination, output_pixels, width, height,
+    surface.reset();
+    return composite_pixels(destination, std::move(output_pixels), width, height,
         destination_x, destination_y, destination_width, destination_height);
 }
 
@@ -1567,8 +1753,35 @@ extern "C" int ladybird_v_skia_draw_rounded_rect(CGContextRef destination,
     auto image_info = SkImageInfo::Make(raster_width, raster_height, kBGRA_8888_SkColorType,
         kPremul_SkAlphaType, SkColorSpace::MakeSRGB());
     auto row_bytes = static_cast<size_t>(raster_width) * sizeof(uint32_t);
-    bool has_background = s_chromium_painting && opaque_backdrop && copy_backdrop(destination,
-        region, destination_scale, raster_width, raster_height, pixels);
+    auto backdrop = s_chromium_painting && opaque_backdrop
+        ? read_backdrop(destination, region, destination_scale, raster_width, raster_height) : Backdrop {};
+    bool has_background = backdrop.pixels != nullptr;
+    if (has_background) {
+        RasterRegion covered;
+        // The opaque center is independent of the input backdrop. Preserve all
+        // edge/corner pixels and a two-device-pixel guard for GPU coverage.
+        if (fill && alpha == 255 && s_rect_clip_outs.empty()
+            && matrix.getScaleX() > 0 && matrix.getScaleY() > 0
+            && matrix.getSkewX() == 0 && matrix.getSkewY() == 0) {
+            float rx = 0, ry = 0;
+            for (int corner = 0; corner < 4; ++corner) {
+                auto radius = rounded_rect.radii(static_cast<SkRRect::Corner>(corner));
+                rx = std::max(rx, radius.x()); ry = std::max(ry, radius.y());
+            }
+            auto draw_matrix = raster_matrix(matrix, region, raster_scale_x, raster_scale_y);
+            auto bounds = draw_matrix.mapRect(rounded_rect.rect());
+            double inset_x = rx * draw_matrix.getScaleX() + 2;
+            double inset_y = ry * draw_matrix.getScaleY() + 2;
+            if (bounds.isFinite() && std::isfinite(inset_x) && std::isfinite(inset_y)) {
+                covered.left = int(std::clamp(std::ceil(bounds.left() + inset_x), 0.0, double(raster_width)));
+                covered.top = int(std::clamp(std::ceil(bounds.top() + inset_y), 0.0, double(raster_height)));
+                covered.right = int(std::clamp(std::floor(bounds.right() - inset_x), 0.0, double(raster_width)));
+                covered.bottom = int(std::clamp(std::floor(bounds.bottom() - inset_y), 0.0, double(raster_height)));
+                if (covered.left > covered.right || covered.top > covered.bottom) covered = {};
+            }
+        }
+        copy_backdrop_pixels(backdrop, raster_width, raster_height, pixels, covered);
+    }
     if (s_chromium_painting) {
         VoxGraphiteShape descriptor {
             .matrix = {}, .rect = {x, y, rect_width, rect_height,
@@ -1615,13 +1828,9 @@ extern "C" int ladybird_v_skia_draw_rounded_rect(CGContextRef destination,
                 raster_width * 4, has_background, &descriptor);
         }
         if (drawn) {
-            CGContextSaveGState(destination);
-            if (has_background) CGContextSetBlendMode(destination, kCGBlendModeCopy);
-            int result = composite_pixels(destination, pixels, raster_width, raster_height,
+            return composite_pixels(destination, std::move(pixels), raster_width, raster_height,
                 static_cast<float>(region.left), canvas_height - static_cast<float>(region.bottom),
-                static_cast<float>(region.width()), static_cast<float>(region.height()));
-            CGContextRestoreGState(destination);
-            return result;
+                static_cast<float>(region.width()), static_cast<float>(region.height()), has_background);
         }
     }
     auto surface = SkSurfaces::WrapPixels(image_info, pixels.data(), row_bytes);
@@ -1635,7 +1844,8 @@ extern "C" int ladybird_v_skia_draw_rounded_rect(CGContextRef destination,
         canvas->drawRRect(underlay_rect, underlay_paint);
     clip_out_rects(canvas);
     canvas->drawRRect(rounded_rect, paint);
-    return composite_pixels(destination, pixels, raster_width, raster_height,
+    surface.reset();
+    return composite_pixels(destination, std::move(pixels), raster_width, raster_height,
         static_cast<float>(region.left), canvas_height - static_cast<float>(region.bottom),
         static_cast<float>(region.width()), static_cast<float>(region.height()));
 }
@@ -1725,13 +1935,9 @@ extern "C" int ladybird_v_skia_draw_outer_box_shadow(CGContextRef destination,
         raster_matrix(matrix, region, raster_scale_x, raster_scale_y).get9(descriptor.matrix);
         if (auto draw = graphite_shadow_draw(); draw && draw(reinterpret_cast<uint8_t*>(pixels.data()),
                 raster_width, raster_height, raster_width * 4, has_background, &descriptor)) {
-            CGContextSaveGState(destination);
-            if (has_background) CGContextSetBlendMode(destination, kCGBlendModeCopy);
-            int result = composite_pixels(destination, pixels, raster_width, raster_height,
+            return composite_pixels(destination, std::move(pixels), raster_width, raster_height,
                 static_cast<float>(region.left), canvas_height - static_cast<float>(region.bottom),
-                static_cast<float>(region.width()), static_cast<float>(region.height()));
-            CGContextRestoreGState(destination);
-            return result;
+                static_cast<float>(region.width()), static_cast<float>(region.height()), has_background);
         }
     }
     auto* gpu = s_chromium_painting ? image_gpu_context() : nullptr;
@@ -1760,13 +1966,10 @@ extern "C" int ladybird_v_skia_draw_outer_box_shadow(CGContextRef destination,
     canvas->drawRRect(shadow, paint);
     if (gpu_surface && !surface->readPixels(image_info, pixels.data(),
         static_cast<size_t>(raster_width) * sizeof(uint32_t), 0, 0)) return 0;
-    CGContextSaveGState(destination);
-    if (has_background) CGContextSetBlendMode(destination, kCGBlendModeCopy);
-    int result = composite_pixels(destination, pixels, raster_width, raster_height,
+    surface.reset();
+    return composite_pixels(destination, std::move(pixels), raster_width, raster_height,
         static_cast<float>(region.left), canvas_height - static_cast<float>(region.bottom),
-        static_cast<float>(region.width()), static_cast<float>(region.height()));
-    CGContextRestoreGState(destination);
-    return result;
+        static_cast<float>(region.width()), static_cast<float>(region.height()), has_background);
 }
 
 extern "C" int ladybird_v_skia_draw_svg_path(CGContextRef destination,
@@ -1904,13 +2107,9 @@ extern "C" int ladybird_v_skia_draw_svg_path(CGContextRef destination,
                 raster_width * 4, has_background || has_fill, &descriptor);
         }
         if (drawn) {
-            CGContextSaveGState(destination);
-            if (has_background) CGContextSetBlendMode(destination, kCGBlendModeCopy);
-            int result = composite_pixels(destination, pixels, raster_width, raster_height,
+            return composite_pixels(destination, std::move(pixels), raster_width, raster_height,
                 static_cast<float>(region.left), canvas_height - static_cast<float>(region.bottom),
-                static_cast<float>(region.width()), static_cast<float>(region.height()));
-            CGContextRestoreGState(destination);
-            return result;
+                static_cast<float>(region.width()), static_cast<float>(region.height()), has_background);
         }
         std::fill(pixels.begin(), pixels.end(), 0);
     }
@@ -1925,7 +2124,8 @@ extern "C" int ladybird_v_skia_draw_svg_path(CGContextRef destination,
     canvas->clear(SK_ColorTRANSPARENT);
     draw_path(canvas, region, raster_scale_x, raster_scale_y);
 
-    return composite_pixels(destination, pixels, raster_width, raster_height,
+    surface.reset();
+    return composite_pixels(destination, std::move(pixels), raster_width, raster_height,
         static_cast<float>(region.left), canvas_height - static_cast<float>(region.bottom),
         static_cast<float>(region.width()), static_cast<float>(region.height()));
 }
@@ -2129,13 +2329,9 @@ static int draw_svg_gradient_path(CGContextRef destination, float const* data,
                 raster_height, raster_width * 4, has_background, &descriptor);
         }
         if (drawn) {
-            CGContextSaveGState(destination);
-            if (has_background) CGContextSetBlendMode(destination, kCGBlendModeCopy);
-            int result = composite_pixels(destination, pixels, raster_width, raster_height,
+            return composite_pixels(destination, std::move(pixels), raster_width, raster_height,
                 static_cast<float>(region.left), canvas_height - static_cast<float>(region.bottom),
-                static_cast<float>(region.width()), static_cast<float>(region.height()));
-            CGContextRestoreGState(destination);
-            return result;
+                static_cast<float>(region.width()), static_cast<float>(region.height()), has_background);
         }
         std::fill(pixels.begin(), pixels.end(), 0);
     }
@@ -2149,7 +2345,8 @@ static int draw_svg_gradient_path(CGContextRef destination, float const* data,
     canvas->clear(SK_ColorTRANSPARENT);
     canvas->setMatrix(raster_matrix(matrix, region, raster_scale_x, raster_scale_y));
     canvas->drawPath(path, paint);
-    return composite_pixels(destination, pixels, raster_width, raster_height,
+    surface.reset();
+    return composite_pixels(destination, std::move(pixels), raster_width, raster_height,
         static_cast<float>(region.left), canvas_height - static_cast<float>(region.bottom),
         static_cast<float>(region.width()), static_cast<float>(region.height()));
 }
