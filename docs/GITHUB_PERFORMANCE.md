@@ -12803,6 +12803,96 @@ control/broad baseline and verified isolated124 app remain. Canonical app/GUI
 are preserved; Chrome parity remains unestablished because the earlier Chrome
 count uses a different endpoint and hydrated content.
 
+## Retain the full composition but reject its page preparation mismatch
+
+Round132 completes the dependency closure with the entire temporary stylesheet
+invalidation collector fix (`582e160c`). All30 authored features reconstruct246
+hunks exactly, changing42 runtime paths with nine new files. Prior accepted89
+post-hunks and the exact accepted104/110/116 getter migrations remain authenticated.
+No Root runtime, foreign edit, canonical bundle or GUI browser is changed.
+
+All133 original contracts pass in both GC modes: **213,737 Boehm assertions**
+and**213,707 no-GC assertions**. This includes the formerly retained inline-style
+document/parser graph, every paged-store/stylesheet/parser/timer ownership check,
+and discarded-image release. All zero-mask assertions and nine weak-owner
+headers remain unchanged. The common12 cases pass60 assertions per configuration;
+matching successful124 control evidence is reused. The corrected contract gate
+holds before local compilation/sampling. The stale131 final-reader seed mismatch
+and guarded prelaunch132 failure are retained separately; only the reader was
+corrected, with no runtime or primary rerun.
+
+Three fixed alternating local pairs each measure16 complete public HTML parse,
+layout, display-list, paint-command, hit-phase and finalize pipelines. All six
+processes exit0 with checksum7,963,486,608. Medians are
+**32,605,247,506 → 27,992,882,964 retired instructions**,
+**14.14608045% fewer**, with3/3 pair wins. The fixed scene's192
+text checks, setup, eight warmups, forced GC and final assertions stay outside
+the counter. The normal automatic4GiB hint remains gated at2,048 elements; this
+smaller local scene does not force expansion. This is a local result only.
+
+The native C-O2/Boehm candidate actually compiles, signs, persists and passes
+headless startup with the frozen helper loaded. Its regular binary SHA256 is
+`b7d406dc642c1c8f2e61af169a288df0565a54775cc8b63257c1399f2de71865`.
+The complete compiled C matches independent whole-app generation after established
+compiler/source/embed identities and four byte-identical helper reorderings.
+No function, type or global is excluded from that independent comparison.
+All493 builtin functions and176 protected encoding/filter/arena functions match
+control;120 native inputs,37 frozen quoted includes and exact native arguments
+are authenticated. Normal C SHA256 is
+`6d31c2567ca740784d9d03894bdb798bc2582add24ec993917a029695357201d`;
+normalized whole-program SHA256 is
+`a2d9d671a6d45362ace0ccf9c2131ea3ca3ce3c4faeebac18180d82983bc5c5f`.
+This full-source composition audit does not claim unchanged control declarations
+when new record layouts change compiler-generated defaults.
+
+Both C-O1 standalone profiles actually exit0. Profiling stays enabled throughout
+main, with no filter or reset. Each executes25 complete public pipelines and26
+parse/layout/record calls. New rule-cache callbacks are0→5,278; page publication
+0→10,088, raw property writes0→1,163,942 and page copies0→136,734. Array capacity
+checks remain657,077. These are mechanism counts, with no time or CPU credit.
+Durable C/profile/report hashes are in
+`Build/v/instruction-opt132-durable-archives.json`.
+
+The predeclared30 alternating browser pairs all finish:60 real primary reports,
+60 actual process exits0 and60 PNGs. There are no startup retries, recovered
+primaries, later installations or foreground transitions. Both variants use the
+same359-file cache, frozen helper/placement,1024×768 document viewport and
+`navigation_to_first_document_paint[0]` endpoint. Fresh raw marginal medians are
+**16,732,830,539.0 → 16,731,188,629.0** instructions:
+point saving**1,641,910.0** (**0.00981251%**),
+14/30 wins. Seed132/30,000 paired bootstrap resamples yield
+**[-2,910,368.5, 12,256,702.0]**,
+which includes zero. Repeatable page credit is0.
+
+The strict capture audit also rejects the preparation policy: every control
+has1 installation/2 formatting passes/1 paint, while every candidate has
+**1/3/1** before the first primary. The extra small layout pass occurs during
+paint preparation. It is retained as actual work, with no narrowed counter,
+filtered sample or relaxed audit. The legacy reader writes logical result1
+but its caught-error fallthrough actually exits0; that real terminal status is
+preserved. Validation and bundle controllers actually exit1 at this gate;
+no isolated132 app or round132 bundle/GC pass is claimed. A separate read-only
+inventory verifies all60 captures and placement/runtime receipts while explicitly
+keeping matching-preparation false. The next reader must propagate its result
+as the real terminal status.
+
+All60 decoded RGB captures differ only in the original fixed skeleton bands:
+union[45,335,663,763],29 control classes/30 candidate classes/one shared class.
+The previously unstarted focused viewport runs separately and is pixel-exact,
+with identical PNG hash
+`a4282b0feb61c54ffdb9f01b69c726071c698b4e49cc0bdcfdda6450f526f3b7`.
+Its two captures verify the actual frozen helper. No broad batch runs: raw point
+saving is below5M, and matching preparation failed. Accepted control/broad
+baseline124, observed carry0 and verified isolated124 app remain; raw unmatched
+saving is not added to carry. All60 observations are kept unchanged.
+
+Static review now isolates the ten complete callback-lifetime and embedder-policy
+features from geometry/compositor/paged-store changes:22 runtime paths/57 authored
+hunks fit exactly against124, with no shim or omitted change. Its next fixed
+cohort remains to declare and run. Completed132 checks/primaries will not be
+repeated. Chrome parity remains unestablished: the older Chrome count has a
+different endpoint and hydrated content.
+
 ## Causes and changes
 
 - The V 0.5.2 compatibility compiler's `-prod` Boehm code repeatedly snapshots

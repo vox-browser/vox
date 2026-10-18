@@ -2200,6 +2200,14 @@ evidence](docs/translation-audit/NATIVE_MEDIA_WHEEL_RAW_HANDLER.md).
   Corrected local gate1 before builds/samples; native gate1 starts zero normal jobs.
   Zero browser primaries/broad work/credit; full582e160c collector prerequisite reviewed.
   Frozen124/control/broad/carry0/app and canonical/GUI preserved; Chrome parity open.
+  Full property-sharing closure round132:30features/246hunks/42changed paths;133cases bothGC pass.
+  Assertions213737/213707; common60/config; local16 full pipelines -14.14608%/3wins/all6actual0.
+  Normal build/sign/smoke/profiles and entire-program independent C audit pass;120inputs/37includes.
+  All60 real page runs/PNGs kept; raw16,732,830,539→16,731,188,629;14wins.
+  Raw saving1,641,910; pairedCI[-2,910,368.5,12,256,702]; repeatablecredit0.
+  Strict preparation rejects control1/2/1 vs candidate1/3/1; reader result1/actualexit0 retained.
+  Pixel bands exact outside skeleton; focused viewport exact. No broad/bundle/GC pass or carry.
+  Frozen124/control/broad/carry0/app and canonical/GUI preserved; isolate lifetime-only next; Chrome open.
 - Outside instruction-count optimization, run broad regression suites once per
   ten completed fixes, not after every fix.
   Broad suites include full translation/package test batches, the full LibJS AST
