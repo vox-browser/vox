@@ -3779,13 +3779,23 @@ fn uncached_block_box_from_typed_layout_shallow(node &Node, state &LayoutState, 
 			natural_size := image_box.natural_size()
 			default_size := css.CSSPixelSize.new(used.content_width(), used.content_height())
 			concrete_size := css.run_default_sizing_algorithm(none, none, natural_size, default_size)
-			nested_rect_device := painting.get_replaced_box_painting_area(painting.Rect{
+			nested_rect_css := painting.get_replaced_box_painting_rect(painting.Rect{
 				x: position.x().to_double()
 				y: position.y().to_double()
 				width: used.content_width().to_double()
 				height: used.content_height().to_double()
-			}, painting.Size{concrete_size.width().to_double(), concrete_size.height().to_double()}, computed.object_fit(), computed.object_position(), computed.length_resolution_context(), painting.new_device_pixel_converter(1.0) or { panic(err) })
+			}, painting.Size{concrete_size.width().to_double(), concrete_size.height().to_double()}, computed.object_fit(), computed.object_position(), computed.length_resolution_context())
+			mut nested_rect_device := ?painting.IntRect(none)
+			mut nested_layout_size := ?painting.Size(none)
+			if fitted := nested_rect_css {
+				converter := painting.new_device_pixel_converter(1.0) or { panic(err) }
+				nested_rect_device = converter.rounded_device_rect(fitted)
+				if node.document().font_rendering_policy() == .chromium {
+					nested_layout_size = painting.Size{fitted.width, fitted.height}
+				}
+			}
 			nested_viewport_paintable = &painting.NavigableContainerViewportPaintable{
+				nested_layout_size: nested_layout_size
 				viewport_rect: painting.Rect{
 					x: position.x().to_double()
 					y: position.y().to_double()

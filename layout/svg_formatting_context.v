@@ -23,7 +23,7 @@ mut:
 }
 
 struct SVGViewBoxTransform {
-	offset         CSSPixelPoint
+	offset         svg.Point
 	scale_factor_x f64
 	scale_factor_y f64
 }
@@ -75,9 +75,39 @@ fn scale_and_align_viewbox_content(preserve_aspect_ratio svg.PreserveAspectRatio
 		}
 	}
 	return SVGViewBoxTransform{
-		offset: CSSPixelPoint.new(offset_x, offset_y)
+		offset: svg.Point{offset_x.to_double(), offset_y.to_double()}
 		scale_factor_x: uniform_scale
 		scale_factor_y: uniform_scale
+	}
+}
+
+// Blink keeps the viewBox matrix in double precision. Its alignment offset
+// must not be quantized to LayoutUnit/CSSPixels before it reaches Skia.
+fn chromium_scale_and_align_viewbox_content(preserve svg.PreserveAspectRatio,
+	view_box svg.ViewBox, width f64, height f64) SVGViewBoxTransform {
+	sx := width / f64(f32(view_box.width))
+	sy := height / f64(f32(view_box.height))
+	if preserve.align == .none_ {
+		return SVGViewBoxTransform{scale_factor_x: sx, scale_factor_y: sy}
+	}
+	scale := if preserve.meet_or_slice == .meet { math.min(sx, sy) } else { math.max(sx, sy) }
+	x := width - f64(f32(view_box.width)) * scale
+	y := height - f64(f32(view_box.height)) * scale
+	return SVGViewBoxTransform{
+		offset: svg.Point{
+			x: match preserve.align {
+				.x_mid_y_min, .x_mid_y_mid, .x_mid_y_max { x / 2 }
+				.x_max_y_min, .x_max_y_mid, .x_max_y_max { x }
+				else { 0 }
+			}
+			y: match preserve.align {
+				.x_min_y_mid, .x_mid_y_mid, .x_max_y_mid { y / 2 }
+				.x_min_y_max, .x_mid_y_max, .x_max_y_max { y }
+				else { 0 }
+			}
+		}
+		scale_factor_x: scale
+		scale_factor_y: scale
 	}
 }
 
@@ -179,9 +209,14 @@ fn (mut context SVGFormattingContext) run(mut svg_box_state UsedValues) {
 				svg.PreserveAspectRatio{}
 			}
 		}
-		viewbox_transform := scale_and_align_viewbox_content(preserve_aspect_ratio, view_box, scale_width, scale_height, svg_box_state)
-		viewport_transform = viewport_transform.translated(viewbox_transform.offset.x().to_double(), viewbox_transform.offset.y().to_double()).scaled(viewbox_transform.scale_factor_x, viewbox_transform.scale_factor_y).translated(-view_box.min_x, -view_box.min_y)
-		context.current_viewbox_transform = context.current_viewbox_transform.translated(viewbox_transform.offset.x().to_double(), viewbox_transform.offset.y().to_double()).scaled(viewbox_transform.scale_factor_x, viewbox_transform.scale_factor_y).translated(-view_box.min_x, -view_box.min_y)
+		viewbox_transform := if context.context_box.document().font_rendering_policy() == .chromium {
+			chromium_scale_and_align_viewbox_content(preserve_aspect_ratio, view_box,
+				svg_box_state.content_width().to_double(), svg_box_state.content_height().to_double())
+		} else {
+			scale_and_align_viewbox_content(preserve_aspect_ratio, view_box, scale_width, scale_height, svg_box_state)
+		}
+		viewport_transform = viewport_transform.translated(viewbox_transform.offset.x, viewbox_transform.offset.y).scaled(viewbox_transform.scale_factor_x, viewbox_transform.scale_factor_y).translated(-view_box.min_x, -view_box.min_y)
+		context.current_viewbox_transform = context.current_viewbox_transform.translated(viewbox_transform.offset.x, viewbox_transform.offset.y).scaled(viewbox_transform.scale_factor_x, viewbox_transform.scale_factor_y).translated(-view_box.min_x, -view_box.min_y)
 	}
 	if context.context_box.is_svg_svg_box() || element.local_name() in ['symbol', 'pattern'] {
 		svg_box_state.set_svg_viewport_transform(viewport_transform)

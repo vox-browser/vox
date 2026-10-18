@@ -6,6 +6,9 @@ pub struct NavigableContainerViewportPaintable {
 pub:
 	viewport_rect Rect
 	nested_rect   ?Rect
+	// SVG image layout retains its CSS container size even when the painted
+	// destination has been snapped to whole pixels.
+	nested_layout_size ?Size
 	border_radii  BorderRadiiData
 	border_widths PixelBox
 }

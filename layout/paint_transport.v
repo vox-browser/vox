@@ -2422,12 +2422,27 @@ fn (b &BlockBox) record_paint_commands_for_entries(entries []PaintOrderEntry, se
 				nested_rect := nested_viewport_paintable.nested_rect or {
 					nested_viewport_paintable.viewport_rect
 				}
-				nested_layout := run_document_layout(hosted_document, nested_rect.width, nested_rect.height) or {
+				layout_size := nested_viewport_paintable.nested_layout_size or {
+					painting.Size{nested_rect.width, nested_rect.height}
+				}
+				nested_layout := run_document_layout(hosted_document, layout_size.width, layout_size.height) or {
 					DocumentLayoutResult{}
 				}
 				if nested_layout.root != unsafe { nil } {
 					mut mutable_hosted_document := unsafe { &dom.Document(hosted_document) }
 					if nested_display_list := mutable_hosted_document.record_display_list() {
+						mut nested_commands := display_list_commands(nested_display_list).clone()
+						if nested_viewport_paintable.nested_layout_size != none
+							&& layout_size.width > 0 && layout_size.height > 0 {
+							// The SVG recording uses the CSS container; the image draw
+							// maps that recording onto its snapped destination rectangle.
+							scale := [nested_rect.width / layout_size.width, f64(0), 0,
+								nested_rect.height / layout_size.height, 0, 0]!
+							for index, nested in nested_commands {
+								nested_commands[index] = paint_command_for_nested_viewport(nested,
+									scale, painting.IntPoint{}, 1)
+							}
+						}
 						commands << PaintCommand{
 							kind: 'paint_nested_display_list'
 							x: nested_rect.x
@@ -2435,7 +2450,7 @@ fn (b &BlockBox) record_paint_commands_for_entries(entries []PaintOrderEntry, se
 							width: nested_rect.width
 							height: nested_rect.height
 							opacity: opacity
-							nested_viewport_commands: display_list_commands(nested_display_list).clone()
+							nested_viewport_commands: nested_commands
 							nested_viewport_paintable: nested_viewport_paintable
 						}
 					}

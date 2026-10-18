@@ -9,6 +9,15 @@ import css
 pub fn get_replaced_box_painting_area(paintable_rect Rect, content_size Size,
 	object_fit_value css.ObjectFit, object_position css.Position,
 	resolution_context css.LengthResolutionContext, converter DevicePixelConverter) ?IntRect {
+	return converter.rounded_device_rect(get_replaced_box_painting_rect(paintable_rect,
+		content_size, object_fit_value, object_position, resolution_context)?)
+}
+
+// The unsnapped object-fit rectangle is also the container size used to lay
+// out a Chromium SVG image. Raster snapping must not change its viewBox.
+pub fn get_replaced_box_painting_rect(paintable_rect Rect, content_size Size,
+	object_fit_value css.ObjectFit, object_position css.Position,
+	resolution_context css.LengthResolutionContext) ?Rect {
 	if content_size.width <= 0 || content_size.height <= 0 || paintable_rect.width <= 0
 		|| paintable_rect.height <= 0 {
 		return none
@@ -66,11 +75,10 @@ pub fn get_replaced_box_painting_area(paintable_rect Rect, content_size Size,
 	residual_vertical := paintable_height.minus(scaled_height)
 	offset_x := object_position.offset_x.to_px(resolution_context, residual_horizontal)
 	offset_y := object_position.offset_y.to_px(resolution_context, residual_vertical)
-	destination_rect := Rect{
+	return Rect{
 		x: paintable_rect.x + offset_x.to_double()
 		y: paintable_rect.y + offset_y.to_double()
 		width: scaled_width.to_double()
 		height: scaled_height.to_double()
 	}
-	return converter.rounded_device_rect(destination_rect)
 }
