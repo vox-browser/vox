@@ -111,9 +111,10 @@ fn test_sized_script_inserted_images_repaint_without_rebuilding_layout() {
 	assert images[0].image().image_url == thumbnail_url
 }
 
-// Bytes the disk cache already holds complete the thumbnail when it is found,
-// before the document's first layout, instead of after a background request.
-fn test_disk_cached_script_inserted_images_are_ready_without_a_request() {
+// Bytes the disk cache already holds complete a thumbnail laid out near the
+// viewport before the next paint, instead of after a background request. A
+// thumbnail far below the viewport keeps its background request.
+fn test_disk_cached_script_inserted_images_near_the_viewport_are_ready_without_a_request() {
 	$if !darwin {
 		return
 	}
@@ -128,10 +129,12 @@ fn test_disk_cached_script_inserted_images_are_ready_without_a_request() {
 		}
 		os.rmdir_all(cache) or {}
 	}
-	thumbnail_url := 'https://i.script-images.test/pol/3s.png'
-	cache_resource(thumbnail_url, base64.decode_str(script_image_test_png))
+	near_url := 'https://i.script-images.test/pol/3s.png'
+	far_url := 'https://i.script-images.test/pol/4s.png'
+	cache_resource(near_url, base64.decode_str(script_image_test_png))
+	cache_resource(far_url, base64.decode_str(script_image_test_png))
 	address := dom.URL{value: 'https://script-images.test/pol/catalog'}
-	mut document := html.parse_navigation_document('<!doctype html><html><body><div id="threads"></div></body></html>',
+	mut document := html.parse_navigation_document('<!doctype html><html><body style="margin:0"><div id="threads"></div></body></html>',
 		address, address.origin(), none) or { panic(err) }
 	document.set_scripting_enabled_by_embedder(false)
 	document.set_viewport_rect(dom.Rect{width: 1024, height: 768})
@@ -142,17 +145,28 @@ fn test_disk_cached_script_inserted_images_are_ready_without_a_request() {
 		document:                    document
 		js_runtime:                  runtime
 		background_resource_results: chan PreloadedResource{cap: 2}
+		// The test supplies no response for the far thumbnail's request.
+		background_resource_pending: {
+			far_url: true
+		}
 	}
 	mut threads := document.get_element_by_id('threads') or { panic('missing threads') }
-	threads.set_inner_html('<a href="thread/3"><img loading="lazy" alt="" id="thumb-3" class="thumb" width="20" height="10" src="//i.script-images.test/pol/3s.png"></a>')!
+	threads.set_inner_html('<img alt="" id="thumb-3" width="20" height="10" src="//i.script-images.test/pol/3s.png"><div style="height:4000px"></div><img alt="" id="thumb-4" width="20" height="10" src="//i.script-images.test/pol/4s.png">')!
+	app.relayout(1024, 768 + app.chrome_height())
 	ready := app.request_script_inserted_images()
-	assert thumbnail_url in ready
-	assert thumbnail_url !in app.background_resource_pending
-	assert thumbnail_url !in app.script_image_requests
+	assert near_url in ready
+	assert near_url !in app.background_resource_pending
+	assert near_url !in app.script_image_requests
+	assert far_url !in ready
+	assert far_url in app.script_image_requests
 	assert app.complete_script_inserted_images(ready)
-	thumbnail := document.get_element_by_id('thumb-3') or { panic('missing thumbnail') }
-	model := html.html_image_element_model_for_dom_element(unsafe { &dom.HTMLImageElement(thumbnail) })
+	near := document.get_element_by_id('thumb-3') or { panic('missing near thumbnail') }
+	model := html.html_image_element_model_for_dom_element(unsafe { &dom.HTMLImageElement(near) })
 	assert model.complete()
 	assert model.natural_width() == 2
 	assert model.natural_height() == 1
+	assert document.layout_is_up_to_date()
+	far := document.get_element_by_id('thumb-4') or { panic('missing far thumbnail') }
+	far_model := html.html_image_element_model_for_dom_element(unsafe { &dom.HTMLImageElement(far) })
+	assert !far_model.has_fetch_hook()
 }

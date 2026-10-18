@@ -4,13 +4,19 @@ import css
 import dom
 import html
 
+// Chromium starts loading a lazy image once it is this close to the viewport
+// on a fast connection (LazyLoadImageDistanceThresholdPx).
+const script_image_disk_read_distance = 1250.0
+
 // Scripts insert images that the navigation preload never saw, such as 4chan's
 // catalog thumbnails written through innerHTML. The parser gives them no fetch
 // hook, so they never requested their bytes. After the DOM tree changes, fetch
 // each new remote one in the background like a deferred image; its request
-// completes from the fetched bytes instead of blocking on the network. Bytes
-// the disk cache holds are read at once. Returns the resources that are
-// already available.
+// completes from the fetched bytes instead of blocking on the network. While
+// layout is current, the disk cache's bytes for an image laid out near the
+// viewport are read at once, so the next paint shows it. Each read filters
+// the request on the UI thread, so images further away stay in the
+// background. Returns the resources that are already available.
 fn (mut app BrowserApp) request_script_inserted_images() map[string]bool {
 	mut ready := map[string]bool{}
 	if app.document == unsafe { nil } || app.js_runtime == unsafe { nil } {
@@ -23,6 +29,14 @@ fn (mut app BrowserApp) request_script_inserted_images() map[string]bool {
 	app.script_image_scan_version = version
 	base_url := app.document.base_url().serialize()
 	source_url := app.document.url.serialize()
+	// Reading geometry from a stale layout would lay the document out again.
+	layout_is_current := app.document.layout_is_up_to_date()
+		&& !app.document.needs_style_update_after_layout()
+	if layout_is_current {
+		mut document := unsafe { &dom.Document(app.document) }
+		document.update_paint_and_hit_testing_properties_if_needed()
+	}
+	viewport_height := f64(if app.viewport_height > 0 { app.viewport_height } else { initial_height })
 	for element in css.query_selector_all(app.document.as_node(), 'img[src]') {
 		if !element.is_html_element() {
 			continue
@@ -39,9 +53,11 @@ fn (mut app BrowserApp) request_script_inserted_images() map[string]bool {
 			ready[resource_url] = true
 			continue
 		}
-		if resource_url !in app.resource_cache && resource_url !in app.background_resource_pending
+		if layout_is_current && resource_url !in app.resource_cache
+			&& resource_url !in app.background_resource_pending
 			&& app.resource_cache.len < max_cached_resources
-			&& !resource_url.all_before('#').all_before('?').to_lower().ends_with('.svg') {
+			&& !resource_url.all_before('#').all_before('?').to_lower().ends_with('.svg')
+			&& script_image_is_near_viewport(element, viewport_height) {
 			if cached := disk_cached_browser_resource(resource_url, source_url, 'image') {
 				app.resource_cache[resource_url] = cached
 				ready[resource_url] = true
@@ -56,6 +72,17 @@ fn (mut app BrowserApp) request_script_inserted_images() map[string]bool {
 		}
 	}
 	return ready
+}
+
+fn script_image_is_near_viewport(element &dom.Element, viewport_height f64) bool {
+	rects := element.client_rects_assuming_layout_clean()
+	if rects.len == 0 {
+		return false
+	}
+	top := rects[0].y_
+	bottom := top + rects[0].height_
+	return top < viewport_height + script_image_disk_read_distance
+		&& bottom > -script_image_disk_read_distance
 }
 
 // Give the hookless images that use the completed resources the browser fetch

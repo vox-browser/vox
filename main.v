@@ -3538,18 +3538,14 @@ fn (mut app BrowserApp) install_loaded_page(loaded LoadedPage, add_history bool)
 		hide_cookie_banners(app.document)
 	}
 	checkpoint = debug_timing_checkpoint('cookie_blocker', checkpoint)
-	// Stylesheets and images that scripts inserted, and that the disk cache
-	// holds, take part in the first layout instead of a later relayout.
+	// Stylesheets that scripts inserted, and that the disk cache holds, take
+	// part in the first layout instead of a later relayout.
 	app.script_stylesheet_scan_version = max_u64
 	app.script_image_scan_version = max_u64
 	if app.request_script_inserted_stylesheets() {
 		app.document.set_needs_full_style_update(true)
 	}
-	ready_script_images := app.request_script_inserted_images()
-	if ready_script_images.len > 0 {
-		app.complete_script_inserted_images(ready_script_images)
-	}
-	checkpoint = debug_timing_checkpoint('script_inserted_resources', checkpoint)
+	checkpoint = debug_timing_checkpoint('script_inserted_stylesheets', checkpoint)
 	if add_history {
 		if app.history_index + 1 < app.history.len {
 			app.history = app.history[..app.history_index + 1].clone()
@@ -3567,6 +3563,19 @@ fn (mut app BrowserApp) install_loaded_page(loaded LoadedPage, add_history bool)
 		initial_height
 	})
 	checkpoint = debug_timing_checkpoint('relayout', checkpoint)
+	// Script-inserted images laid out near the viewport, whose bytes the disk
+	// cache holds, are completed before the first paint. One whose size cannot
+	// depend on its natural size only needs repainting.
+	ready_script_images := app.request_script_inserted_images()
+	if ready_script_images.len > 0 && app.complete_script_inserted_images(ready_script_images) {
+		if app.document.layout_is_up_to_date() {
+			app.paint_commands_pending = true
+			if app.frame_preparation_depth == 0 { app.record_document_paint_commands() }
+		} else {
+			app.relayout(app.viewport_width, app.viewport_height + app.chrome_height())
+		}
+	}
+	checkpoint = debug_timing_checkpoint('script_inserted_images', checkpoint)
 	debug_timing_checkpoint('install_total', install_start)
 	processmetrics.report_instructions('install_total', app.paint_timing.installation_instructions, processmetrics.begin_instructions())
 	app.update_window_title()
