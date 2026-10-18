@@ -121,7 +121,7 @@ fn test_native_controls_owner_reflects_parsed_created_attributes_and_captured_sy
 	mct_owner_balance(runtime, document)
 }
 
-fn test_native_controls_owner_drives_existing_initial_shadow_layout_without_replacing_media_state() {
+fn test_native_controls_owner_drives_the_controller_shadow_layout_without_replacing_media_state() {
 	$if !darwin { return }
 	mut app, mut document, mut runtime := mct_owner_fixture()!
 	defer {
@@ -148,7 +148,7 @@ fn test_native_controls_owner_drives_existing_initial_shadow_layout_without_repl
 	}
 	assert runtime.evaluate_host('mctVideo.controls=true;mctBareAudio.controls=true;mctVideo.controls&&mctBareAudio.controls&&mctVideo.currentTime===7&&mctBareAudio.currentTime===7&&!mctVideo.paused&&!mctBareAudio.paused')! == 'true'
 	assert video_element.has_attribute('controls') && audio_element.has_attribute('controls')
-	// The existing layout builder consumes the real DOM attribute and creates the initial widget subtree.
+	// Layout consumes the actual owner's controller, including its current timestamp.
 	app.relayout(320, 240 + app.chrome_height())
 	for index, element in [video_element, audio_element] {
 		shadow := element.shadow_root() or { panic('native controls did not reach initial shadow layout') }
@@ -163,11 +163,10 @@ fn test_native_controls_owner_drives_existing_initial_shadow_layout_without_repl
 		assert voidptr(retained) == voidptr(expected)
 		assert retained.current_time() == 7 && !retained.paused()
 		assert retained.current_src() == '' && retained.network_state() == .empty && retained.ready_state() == .have_nothing
-		assert !retained.has_controls() && retained.error() == none
+		assert retained.has_controls() && retained.error() == none
 		for name in ['loadstart', 'play', 'pause', 'volumechange'] { assert retained.event_count(name) == 0 }
 	}
-	assert app.paint_commands.any(it.kind == 'draw_text' && it.text == '00:00 / 00:00')
-	// Attribute removal is covered above; teardown of an existing UA widget is a separate open lifecycle slice.
+	assert app.paint_commands.any(it.kind == 'draw_text' && it.text == '00:07 / 00:00')
 	assert probe.fetches == 0 && mct_owner_take_task(document) == none && app.js_messages == []
 	mct_owner_balance(runtime, document)
 }

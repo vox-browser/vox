@@ -81,7 +81,7 @@ fn test_media_controls_initial_widgets_require_null_namespace_attributes_and_ret
 		assert element.get_attribute_ns('urn:media-controls-test', 'controls')? == 'foreign value'
 		retained_media := html.html_media_element_for_dom_element(element) or { panic('Missing same media model') }
 		assert voidptr(retained_media) == voidptr(media)
-		assert retained_media.current_time() == 4 && !retained_media.paused() && !retained_media.has_controls()
+		assert retained_media.current_time() == 4 && !retained_media.paused() && retained_media.has_controls()
 		assert retained_media.current_src() == '' && retained_media.network_state() == .empty
 		for name in ['loadstart', 'play', 'pause', 'volumechange'] { assert retained_media.event_count(name) == 0 }
 	}

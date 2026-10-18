@@ -10,44 +10,6 @@ import time
 import processmetrics
 import url
 
-const audio_controls_markup = '<style>
-.container { overflow: hidden; text-align: left; }
-.controls { display: flex; flex-direction: column; font-family: sans-serif; font-size: 12px; color: white; user-select: none; }
-.container.audio > .controls { inset: 0; background: rgb(38, 38, 38); justify-content: center; }
-.timeline { z-index: 1; padding: 5px 0; margin: -5px 0; flex-shrink: 0; }
-.timeline-track { position: relative; height: 5px; background: rgb(20, 20, 20); }
-.timeline-fill { height: 100%; background: #9d7cf2; width: 0%; }
-.button-bar { display: flex; align-items: center; padding: 4px 8px; gap: 8px; min-height: 30px; }
-.control-button { background: none; border: none; padding: 0; display: flex; align-items: center; justify-content: center; width: 24px; height: 24px; }
-.icon { width: 24px; height: 24px; }
-.play-pause-icon path { display: none; }
-.play-pause-icon:not(.playing) .play-path { display: inline; }
-.mute-button { margin-left: auto; }
-.mute-button.muted > .icon > .volume-low, .mute-button.muted > .icon > .volume-high, .mute-button.muted > .icon > .speaker { clip-path: url(#muted-clip); }
-.timestamp { min-width: 0; overflow: clip; white-space: nowrap; font-variant-numeric: tabular-nums; }
-</style><div class="container audio"><div class="controls visible"><div class="timeline"><div class="timeline-track"><div class="timeline-fill"></div></div></div><div class="button-bar"><button class="control-button play-pause-button"><svg class="icon play-pause-icon" viewBox="0 0 24 24"><path class="play-path" d="m6 5 13 7-13 7Z"/></svg></button><span class="timestamp">00:00 / 00:00</span><button class="control-button mute-button high muted"><svg class="icon" viewBox="0 0 24 24"><defs><clipPath id="muted-clip"><path d="M3 0h21v21ZM0 0v24h24z"/></clipPath></defs><path class="muted-line" d="m5 5 14 14-1.5 1.5-14-14z"/><path class="volume-high" d="M14 4.08v2.04c2.23.55 4 2.9 4 5.88 0 2.97-1.77 5.33-4 5.88v2.04c3.45-.56 6-3.96 6-7.92s-2.55-7.36-6-7.92Z"/><path class="volume-low" d="M14 7.67v8.66c.35-.25.66-.55.92-.9A5.7 5.7 0 0 0 16 12c0-1.3-.39-2.5-1.08-3.43a4.24 4.24 0 0 0-.92-.9Z"/><path class="speaker" d="M4 9v6h4l4 5V4L8 9Z"/></svg></button></div></div></div>'
-
-const video_controls_markup = '<style>
-.container { overflow: hidden; text-align: left; }
-.container.video { position: relative; width: 100%; height: 100%; }
-.controls { display: flex; flex-direction: column; font-family: sans-serif; font-size: 12px; color: white; user-select: none; }
-.container.video > .controls { position: absolute; bottom: 0; left: 0; right: 0; background: rgba(38, 38, 38, 0.82); }
-.timeline { z-index: 1; padding: 5px 0; margin: -5px 0; flex-shrink: 0; }
-.timeline-track { position: relative; height: 5px; background: rgb(20, 20, 20); }
-.timeline-fill { height: 100%; background: #9d7cf2; width: 0%; }
-.button-bar { display: flex; align-items: center; padding: 4px 8px; gap: 8px; min-height: 30px; }
-.control-button { background: none; border: none; padding: 0; display: flex; align-items: center; justify-content: center; width: 24px; height: 24px; }
-.icon { width: 24px; height: 24px; }
-.play-pause-icon path, .fullscreen-icon path { display: none; }
-.play-pause-icon:not(.playing) .play-path, .fullscreen-icon:not(.fullscreen) .fullscreen-maximize-path { display: inline; }
-.mute-button { margin-left: auto; }
-.mute-button.muted > .icon > .volume-low, .mute-button.muted > .icon > .volume-high, .mute-button.muted > .icon > .speaker { clip-path: url(#muted-clip); }
-.timestamp { min-width: 0; overflow: clip; white-space: nowrap; font-variant-numeric: tabular-nums; }
-.video-overlay { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; }
-.placeholder-circle { width: 80px; height: 80px; border-radius: 50%; background: rgb(38, 38, 38); opacity: 80%; display: flex; align-items: center; justify-content: center; }
-.placeholder-icon { width: 36px; height: 36px; margin-left: 4px; }
-</style><div class="container video"><div class="video-overlay"><div class="placeholder-circle"><svg class="placeholder-icon" viewBox="0 0 24 24"><path class="play-path" d="m6 5 13 7-13 7Z"/></svg></div></div><div class="controls visible"><div class="timeline"><div class="timeline-track"><div class="timeline-fill"></div></div></div><div class="button-bar"><button class="control-button play-pause-button"><svg class="icon play-pause-icon" viewBox="0 0 24 24"><path class="play-path" d="m6 5 13 7-13 7Z"/></svg></button><span class="timestamp">00:00 / 00:00</span><button class="control-button mute-button high muted"><svg class="icon" viewBox="0 0 24 24"><defs><clipPath id="muted-clip"><path d="M3 0h21v21ZM0 0v24h24z"/></clipPath></defs><path class="muted-line" d="m5 5 14 14-1.5 1.5-14-14z"/><path class="volume-high" d="M14 4.08v2.04c2.23.55 4 2.9 4 5.88 0 2.97-1.77 5.33-4 5.88v2.04c3.45-.56 6-3.96 6-7.92s-2.55-7.36-6-7.92Z"/><path class="volume-low" d="M14 7.67v8.66c.35-.25.66-.55.92-.9A5.7 5.7 0 0 0 16 12c0-1.3-.39-2.5-1.08-3.43a4.24 4.24 0 0 0-.92-.9Z"/><path class="speaker" d="M4 9v6h4l4 5V4L8 9Z"/></svg></button><button class="control-button fullscreen-button"><svg class="icon fullscreen-icon" viewBox="0 0 24 24"><path class="fullscreen-maximize-path" d="M3 3h6v2H5v4H3Zm12 0h6v6h-2V5h-4Zm6 12v6h-6v-2h4v-4ZM3 15v6h6v-2H5v-4Z"/></svg></button></div></div></div>'
-
 enum SVGReferencedResourceKind {
 	mask
 	clip_path
@@ -326,22 +288,15 @@ fn layout_timing_checkpoint(label string, previous u64) u64 {
 
 fn materialize_media_controls_shadow_trees(document &dom.Document) {
 	root := unsafe { &dom.Node(document) }
-	for mut media in css.query_selector_all(root, 'audio, video') {
-		// Only HTML media own this widget; use the reflected content attribute.
-		if !media.is_html_element() || !media.has_attribute_ns(none, 'controls')
-			|| media.shadow_root() != none {
+	for element in css.query_selector_all(root, 'audio, video') {
+		// Materialize the actual owner before style/layout. An independently
+		// attached shadow root belongs to its existing owner.
+		if !element.is_html_element() || !element.has_attribute_ns(none, 'controls')
+			|| element.shadow_root() != none {
 			continue
 		}
-		mut shadow_root := media.attach_a_user_agent_shadow_root(.named)
-		mut shadow_node := unsafe { &dom.Node(shadow_root) }
-		markup := if media.local_name() == 'video' {
-			video_controls_markup
-		} else {
-			audio_controls_markup
-		}
-		for child in html.parse_html_fragment(media, markup) {
-			shadow_node.append_child(child) or {}
-		}
+		mut media := html.html_media_element_for_dom_element(element) or { continue }
+		media.create_controls()
 	}
 }
 
