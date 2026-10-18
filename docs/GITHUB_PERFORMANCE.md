@@ -13587,6 +13587,117 @@ Canonical app, GUI and concurrent work remain preserved. Chrome parity remains
 unestablished: the earlier observed Chrome count uses a different endpoint and
 hydrated content.
 
+## Advance CSS identifier cursors once per plain run
+
+Round 140 applies complete feature `86c7786c` to accepted 138. One authored Git
+hunk changes only `consume_an_ident_sequence_with_escape_flag()`. It scans the
+initial contiguous identifier-code-point span and writes the final cursor
+state once. Name code points cannot contain a newline, so the final line,
+code-point column, previous position and previous index match scalar
+consumption. The existing escape path handles the remaining input unchanged.
+Byte offsets, spelling ownership, public decoding, filtering and arenas stay
+unchanged. The entire authored function and whole-file reconstruction are
+authenticated; the rejected fraction feature and concurrent Root changes are
+excluded completely.
+
+All four original cases pass in both C-O2 GC modes: **63,165 assertions each**.
+They compare cursor state with the unchanged scalar oracle across ASCII,
+Unicode, long names, escapes, EOF, filtered malformed UTF-8, token spellings,
+dimension units and collection. Common 12 cases pass 60 assertions/configuration,
+including the inactive diagnostic; the accepted 138-final control is reused.
+The separate Root composite remains 20 cases/263,510 assertions each GC mode,
+with the original constructor-fixture batch1 and its two passing cases retained.
+No whole-batch pass is invented from that composite.
+
+The predeclared three alternating local pairs each count 16 complete public
+parse/layout/display-list/paint-command/hit-phase/finalize pipelines in the
+unchanged accepted 138 scene. Setup, eight warmups, forced GC and assertions
+remain outside the counter. All six actual exits are0 with checksum 7,963,486,608.
+Medians are **32,841,407,447 → 32,232,796,106 retired
+instructions**, **-1.85318288%**, with **2/3 wins**.
+Every completed sample is retained. This local diagnostic earns no page credit.
+
+Normal C-O2 native build, signing, startup and actual frozen-library smoke exit 0.
+The strict generated-C audit independently regenerates the entire normal
+program with identical flags and runtime inputs. It authenticates all source
+changes, 120 native inputs, 37 quoted includes, 493 unchanged builtin functions,
+and 176 unchanged decoder/filter/arena
+functions. Only the identifier consumer changes semantically. The unchanged
+numeric-token caller's shifted assertion line is authenticated against both
+actual source rows; no caller behavior or other function body is excluded.
+The compiled program equals the independent program after established compiler
+identity normalization and authenticated byte-identical helper reordering.
+
+Full-process C-O1/no-inline Boehm profiles keep profiling enabled from main,
+without filtering or resets. Both perform 25 public diagnostic pipelines and 26
+parse/layout/record calls. Identifier-consumer calls remain
+**5,104 → 5,104**; next-code-point
+calls fall **133,743 → 103,673**.
+These are diagnostic call counts, never hardware savings or timing credit.
+
+The fixed **30 alternating pairs** use the same 359-file cache, frozen helper,
+1024×768 document viewport and
+`native.scopes.navigation_to_first_document_paint[0]` endpoint. Fresh matching
+medians are **16,643,508,973 → 16,605,545,345.5
+retired instructions**, an observed saving of **37,963,627.5**
+(-0.22809870%), with **29/30 wins**.
+The paired median saving is **33,160,794.5**; 30,000 paired
+bootstrap resamples with seed 140 give a 95% interval
+**[20,652,239.5, 56,405,530.5]**. Repeatable whole-page credit is **37,963,627.5**;
+integration under the predeclared positive-point policy is **accepted**.
+No historical median is subtracted and the cohort is never extended.
+
+All 60 primaries remain, with **60 actual PNGs**, **0 explicit
+counter-only recoveries** and **0 archived pre-primary startup
+retry logs**. Each first primary retains 1 installation, 2 geometry passes and 1
+paint preparation. Later refresh records remain separate:
+0. Available PNGs are 1024×768; every pixel
+outside the original fixed skeleton bands is exact. Missing exits, images or
+fingerprints in any recovered observation remain explicit.
+
+The focused viewport is pixel-exact. Cumulative positive observed matching
+savings for the broad gate are **37,963,627.5**. Broad result:
+**passed**. All six direct harness jobs actually exit 0:87 selected cases in both GC modes/174 executions. All 19 screenshots finish, 16 exact, with only the unchanged inline-node 13, text-decorations 1,341 and canvas-text 1,994 differences. All 36 loader receipts authenticate the frozen helper.
+
+The actual isolated artifact is `/Users/alex/code/vox2/Build/v/Vox-opt140.app`. Signing,
+verification, library pinning and smoke exit 0. Its instruction text equals the
+measured candidate; its installed helper is the frozen 4eef… image. Actual GC
+collections are observed with default marker 1 and override 2. Canonical app and
+GUI are preserved; this frozen artifact gives no coverage or extra performance
+credit to contemporary Root work. Accepted control is
+**140**; broad baseline is
+**140**, with observed carry
+**0**.
+
+Round 139's original final reader failure is retained: inherited template literals
+corrupted its expected medians and retained seed 135. The corrected reader
+authenticates the actual round 139 data and seed without rerunning runtime work. Round 140
+preparation likewise retains its inherited control reader failure, which failed
+before snapshot/build execution; the corrected setup and provenance identify
+accepted 138 before compilation. Durable archives are indexed in
+`Build/v/instruction-opt140-durable-archives.json`.
+
+Separate committed feature `cf0f012b` accumulates at most six
+CSS hexadecimal escape digits in a bounded u32 instead of allocating a builder
+and parsing a temporary string. Eight focused cases/240,143 assertions pass in
+each C-O2 GC mode, including the unchanged builder/parser oracle, Unicode repair
+boundaries, optional whitespace, exact cursor state and retained token owners.
+Its initial inactive-test-path runner failure occurred before compilation and remains
+retained; only the runner path was corrected. It is excluded from 140 and has
+no hardware or page credit yet.
+
+Separate committed feature `818fe747` explicitly keeps an absent
+`Size.length_percentage_` payload at none. Three focused allocation, keyword,
+present-payload copy and GC cases pass 2,151 assertions in each C-O2 GC mode.
+The unchanged before/Boehm allocation case reports 16,384 allocated bytes for 512
+default sizes and actually exits 1; the final case reports 0. Its failure remains
+retained. This is allocation evidence only: the change is excluded from 140 and
+no hardware or page saving is inferred.
+
+Chrome parity remains unestablished. Its earlier observed-descendant capture
+count and later content/coalition diagnostic have different endpoints and page
+states; neither supplies a matching comparative cohort.
+
 ## Causes and changes
 
 - The V 0.5.2 compatibility compiler's `-prod` Boehm code repeatedly snapshots

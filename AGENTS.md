@@ -2259,6 +2259,15 @@ evidence](docs/translation-audit/NATIVE_MEDIA_WHEEL_RAW_HANDLER.md).
   Separate identifier prefix feature86c7786c committed;20focusedcases/263510asserts eachGC composite.
   Original constructor-fixture batch1 retained;two passing cases reused plus18remaining cases actual0;no case repeat.
   Identifier hardware/page result pending;canonical/GUI/foreign work preserved;Chrome parity open.
+  Identifier prefix round140 (`86c7786c`):one authored hunk/one CSS function;4cases/63165asserts eachGC.
+  Common60/config;local16 full pipelines -1.853183%/2wins/all6 actual0 retained.
+  Fresh page 16,643,508,973→16,605,545,345.5;29/30wins;point 37,963,627.5.
+  PairedCI[20,652,239.5,56,405,530.5];repeatable credit 37,963,627.5;all60 primaries retained;same1/2/1 preparation.
+  Focused viewport exact;broad passed;strict entire-program/source/native-input C audit.
+  Accepted control 140;isolated140 app/GC1+override2;canonical/GUI/foreign work preserved.
+  Separate escape accumulator cf0f012b committed;8cases/240143asserts eachGC;no hardware credit yet.
+  Separate absent Size payload 818fe747 committed;3cases/2151asserts eachGC;excluded from140/page credit.
+  Original reader/setup failures retained without runtime repeats;Chrome parity remains open.
 - Outside instruction-count optimization, run broad regression suites once per
   ten completed fixes, not after every fix.
   Broad suites include full translation/package test batches, the full LibJS AST
