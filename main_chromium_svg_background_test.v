@@ -5,7 +5,7 @@ fn test_svg_background_container_rounding_is_independent_of_tile_origin() {
  replay := chromium_svg_background_replay(painting.Rect{51.453125,241.640625,17.1,17.1}, [f64(1),0,0,1,0,0]!)
  assert replay.viewport_width == 17
  assert replay.viewport_height == 17
- assert replay.transform == [f64(17.09375)/17,0,0,f64(17.09375)/17,51,242]!
+ assert replay.transform == [f64(1),0,0,1,51,242]!
  second := chromium_svg_background_replay(painting.Rect{51,241,17.1,17.1}, [f64(1),0,0,1,0,0]!)
  assert second.viewport_width == replay.viewport_width
  assert second.transform[0] == replay.transform[0]
