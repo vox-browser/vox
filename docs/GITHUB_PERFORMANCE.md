@@ -11496,6 +11496,57 @@ remain preserved. Evidence: Build/v/instruction-opt112-preflight-closure.json an
 instruction-opt112-prerequisite-finding/. The prerequisite will be assessed as a
 separate feature. **Faster-than-Chrome performance remains unproven.**
 
+## Reject the isolated lazy element-map port locally
+
+Round 113 ports the already committed `b487c142` onto frozen 111: 18 exact
+authored hunks across four runtime paths, including the new 33-line
+ElementRareData file. Its explicit private mutable field block is retained.
+Four maps for pseudo records, element-reference pseudos, CSS animations and
+random-value storage become lazy. This is the prerequisite missing from round
+112; that larger interactive-state change remains excluded from this candidate.
+
+All **12 original common HTML algorithm cases plus one inactive diagnostic**
+pass C-O2 before/Boehm, final/Boehm and final/no-GC: **69 assertions each**.
+No common case is removed, including the original nonce-cloning case. Nine exact
+authored candidate bodies also pass both GC modes: six DOM cases with **87
+Boehm / 84 no-GC assertions**, and three keyframe cases with **952 assertions
+each**. They check allocation-free empty reads/clears, late pseudo records,
+identity, tracing across GC, element references, animations and random values.
+The original updated DOM lookup and keyframe tests retain their assertions.
+
+Three fixed alternating local pairs count **32 complete fresh public document
+pipelines** over 64 Unicode paragraphs with intrinsic/absolute children, shadows,
+effects and anchors. Parsing, ordinary element creation, initial layout, DOM
+mirror construction, display-list recording/consumption and document finalization
+all occur inside the hardware counter. Independent expected DOM strings and
+setup display checks run outside it. The complete paint checksum is derived
+from an uncounted setup pipeline, then checked against all six observations;
+it is not claimed as an independent literal oracle. Eight warmups, assertions
+and forced GC remain outside the counter. All six actual exits are 0 and
+checksum **108,572,832** matches.
+
+| Pair | Before retired instructions | Candidate retired instructions |
+| --- | ---: | ---: |
+| 1 | 67,566,792,005 | 69,121,017,299 |
+| 2 | 67,615,263,515 | 69,227,370,192 |
+| 3 | 69,515,580,496 | 69,193,755,083 |
+
+Local medians **67,615,263,515 → 69,193,755,083**, change
+**+2.334520%**, **1/3 wins**. The real native gate exits 1
+before launching normal builds, profiles, independent C generation or page
+observations. Prepared tooling is not credited as a completed build or audit.
+No hardware sample is discarded, repeated or extended; no page saving is claimed.
+Focused/contract/diagnostic C archives, actual exits, source and log hashes remain
+durable. A later read-only command encounters a full SSD; only verified owned
+completed C duplicates are reclaimed, with control inputs and foreign work kept.
+
+Frozen 111 remains control, the completed broad baseline remains 110, and observed
+carry remains **4,867,127.5**. No additional broad batch or app installation is
+triggered. Root, the canonical app and the user's GUI remain preserved. Evidence:
+Build/v/instruction-opt113-*. The separate source feature remains committed in
+Root; this rejection concerns its frozen instruction comparison.
+**Faster-than-Chrome performance remains unproven.**
+
 ## Causes and changes
 
 - The V 0.5.2 compatibility compiler's `-prod` Boehm code repeatedly snapshots

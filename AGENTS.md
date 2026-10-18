@@ -2065,6 +2065,14 @@ evidence](docs/translation-audit/NATIVE_MEDIA_WHEEL_RAW_HANDLER.md).
   All failures retained; no partial prerequisite repair, hardware samples or page credit.
   Frozen 111/control, 110/broad baseline, observed carry 4,867,127.5 preserved.
   Root/canonical/GUI preserved; Chrome parity open.
+  Lazy element-map round 113 (`b487c142`) is locally rejected.
+  All 12 common cases pass 69 assertions/configuration; 9 exact contracts bothGC
+  pass DOM 87 Boehm/84 none plus CSS 952 each. Explicit mutable block retained.
+  Fresh public parse/layout/record/finalize pipelines increase median instructions
+  2.33%; 1/3 wins. All six samples/checksums/actual exits retained.
+  Native gate exits 1 before normal/profile/page work; credit 0.
+  Frozen 111/control, 110/broad baseline, observed carry 4,867,127.5 preserved.
+  Root/canonical/GUI preserved; Chrome parity open.
 - Outside instruction-count optimization, run broad regression suites once per
   ten completed fixes, not after every fix.
   Broad suites include full translation/package test batches, the full LibJS AST
