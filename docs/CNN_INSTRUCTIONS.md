@@ -30,9 +30,9 @@ results, not a claim of complete uBlock extension parity.
 
 ## Current diagnostic progress
 
-The signed SVG-background diagnostic has **2,865 differing pixels**, with a
-maximum channel error of 61, against the unchanged Brave reference. Its single
-diagnostic records **56,784,758,209 instructions** and receives no performance
+The signed SVG-background and mask diagnostic has **2,854 differing pixels**, with a
+maximum channel error of 59, against the unchanged Brave reference. Its single
+diagnostic records **61,377,444,937 instructions** and receives no performance
 credit while the pixels differ. A fresh Brave
 diagnostic remains pixel-exact and records 42,262,584,954 instructions, whose
 15% threshold is approximately 35.923 billion. These are diagnostic runs, not
@@ -50,7 +50,9 @@ transformed partial borders now use snapped local origins and antialiased
 rectangles, fixing the carousel arrow's large coverage error. SVG backgrounds
 now preserve absent natural dimensions through default sizing and clip their
 contents to the image viewport. This removes the thumbnail placeholder's large
-corner error; small image-sampling differences remain there. Fractional SVG,
+corner error; small image-sampling differences remain there. CSS SVG mask
+images snap their paint origin while preserving fractional DOM geometry and
+SVG image coordinates inside mask resources. Fractional SVG,
 text-shadow and image-sampling diagnostics keep their unchanged inputs and original Brave
 references under `Tests/Browser/Brave/diagnostic/`.
 
@@ -74,6 +76,17 @@ retained without pass credit. Receipts are
 `production-svg-natural-size-clipped-instructions/pair-1.vox.{json,ubo.json}`.
 The normal bundle and source/binary pins are under
 `production-svg-natural-size-clipped/`.
+
+The CSS-mask-origin slice passes two focused cases in each GC mode, with
+19,566 assertions per mode. Its thirteen-case synthetic Brave fixture, the
+eleven-case background fixture, and font, raster-gradient and transformed-border
+controls are pixel-exact in the normal optimized build. The corrected default
+check recovered from a missing archive by compiling its unchanged saved C
+response; the no-GC check ran the complete V command. Earlier failed invocations
+are retained without pass credit. Receipts are under
+`mask-origin-focused-linked/`, `production-mask-origin/controls/results.json`,
+and `production-mask-origin-instructions/pair-1.vox.{json,ubo.json}`.
+The current bundle and source/binary pins are under `production-mask-origin/`.
 
 The preceding isolated gradient-tile baseline passes a 24-file CSS/layout/HTML/
 network selection in both default and no-GC builds, all 30 exact Brave

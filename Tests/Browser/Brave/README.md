@@ -258,3 +258,10 @@ aspect ratio alone, either dimension, percentage dimensions, and explicit
 sizing. Each SVG viewport clips its contents before the background is
 composited, including SVG children larger than a width-only image. The fixture
 requires exact RGBA equality against its unchanged Brave reference.
+
+`svg-mask-paint-origin` checks thirteen CSS SVG mask and image placements,
+including fractional and negative half-pixel origins. The Chromium profile
+snaps the CSS mask image paint origin while preserving its resolved size and
+DOM geometry. Inline SVG, background images and SVG images inside mask
+resources retain their own coordinate rules. All cases require exact RGBA
+equality against the unchanged Brave reference.
