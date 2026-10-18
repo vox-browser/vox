@@ -30,9 +30,9 @@ results, not a claim of complete uBlock extension parity.
 
 ## Current diagnostic progress
 
-The signed SVG-background, mask and cache diagnostic has **2,854 differing pixels**, with a
+The signed SVG-background, mask and selector diagnostic has **2,854 differing pixels**, with a
 maximum channel error of 59, against the unchanged Brave reference. Its single
-diagnostic records **53,753,697,137 instructions** and receives no performance
+diagnostic records **48,007,760,558 instructions** and receives no performance
 credit while the pixels differ. A fresh Brave
 diagnostic remains pixel-exact and records 42,262,584,954 instructions, whose
 15% threshold is approximately 35.923 billion. These are diagnostic runs, not
@@ -108,6 +108,25 @@ under `production-mask-cache-current/`. Receipts are
 `mask-cache-current-svg-guards-paths.{json,log}`, `mask-cache-current-ast.log`,
 and `production-mask-cache-current-instructions/pair-1.vox.{json,ubo.json}`.
 Neither the CNN pixel gate nor its seven-pair performance gate passes.
+
+The short attribute-substring slice borrows checked string ranges for patterns
+up to 32 bytes and retains linear KMP search for longer patterns. Insensitive
+substring, prefix and suffix matching folds ASCII only, preserving non-ASCII
+case distinctions. Both GC modes pass 57,117 focused assertions and a 17-case
+selector union (60,434 assertions per mode). A normal build preserves the page
+PNG byte for byte and records 48,007,760,558 instructions, down 5,745,936,579
+(10.689%) from the controlled 53,753,697,137 baseline. This diagnostic reduction
+does not establish CNN performance parity. All 42 files in the resulting
+broad batch pass in both GC modes (84 logical checks, 18 invocations), and all
+33 Brave fixtures remain exact. Its actual native stream again matches all
+173 uBO checks, including four blocked requests. Receipts are
+`selector-substring-focused/borrowed/`, `selector-substring-regression/`,
+`selector-substring-broad/summary.json`,
+`selector-substring-brave-fixtures/results.json`, and
+`production-selector-substring-instructions/pair-1.vox.{json,ubo.json}`.
+The current normal bundle and source/binary pins are under
+`production-selector-substring/`. Earlier failed test-call signatures and the
+stopped allocating-slice build are retained without pass credit.
 
 The preceding isolated gradient-tile baseline passes a 24-file CSS/layout/HTML/
 network selection in both default and no-GC builds, all 30 exact Brave
