@@ -12,8 +12,12 @@ import platform
 const bounded_frames_styles = '<!doctype html><style>html,body{margin:0}
 @keyframes move{from{transform:translateX(0)}to{transform:translateX(100px)}}
 @keyframes fade{from{opacity:0.2}to{opacity:0.9}}
+@keyframes tint{from{background-color:red}to{background-color:blue}}
+@keyframes ink{from{color:red}to{color:blue}}
 .t{width:20px;height:20px;background:green;animation:move 1s linear infinite}
 .o{width:20px;height:20px;background:green;animation:fade 1s linear infinite}
+.c{width:20px;height:20px;animation:tint 1s linear infinite}
+.k{width:60px;height:20px;animation:ink 1s linear infinite}
 .p{position:relative;overflow:hidden;width:60px;height:20px}.p::before{content:"";position:absolute;inset:0;background:linear-gradient(90deg,transparent,#fff,transparent);animation:move 1s linear infinite}
 </style>'
 
@@ -69,6 +73,18 @@ fn test_compositor_animation_frames_reuse_bounded_storage() {
 			// and kept as spares rather than accumulating.
 			assert result.live_scenes == 1, '${class}: ${result.live_scenes} live scenes'
 			assert result.spare_scenes <= display_list_scene_spares
+		}
+	}
+}
+
+// Repaint animations still re-record their boxes on every frame (see
+// docs/PREALLOC_MEMORY.md), so they have no budget yet; their samples must
+// still be safe to retire, including colors resolved while sampling.
+fn test_repaint_animation_frames_keep_one_live_scene() {
+	for class in ['c', 'k'] {
+		result := run_bounded_frames(class)
+		$if prealloc {
+			assert result.live_scenes == 1, '${class}: ${result.live_scenes} live scenes'
 		}
 	}
 }

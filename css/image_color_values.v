@@ -119,12 +119,11 @@ fn resolve_hue(style_value StyleValue, resolution_context CalculationResolutionC
 
 fn resolve_with_reference_value(style_value StyleValue, one_hundred_percent_value f64, resolution_context CalculationResolutionContext) ?f64 {
 	// <percentage> | <number> | none
-	normalize_percentage := fn [one_hundred_percent_value] (percentage Percentage) f64 {
-		return percentage.as_fraction() * one_hundred_percent_value
-	}
-
+	// Plain arithmetic rather than a capturing closure: every closure is
+	// registered in V's global closure table, and this runs for each color
+	// on every animation frame.
 	if style_value.is_percentage() {
-		return normalize_percentage(style_value.as_percentage().percentage())
+		return style_value.as_percentage().percentage().as_fraction() * one_hundred_percent_value
 	}
 
 	if style_value.is_number() {
@@ -140,7 +139,7 @@ fn resolve_with_reference_value(style_value StyleValue, one_hundred_percent_valu
 
 		if calculated.resolves_to_percentage() {
 			percentage := calculated.resolve_percentage(resolution_context) or { return none }
-			return normalize_percentage(percentage)
+			return percentage.as_fraction() * one_hundred_percent_value
 		}
 	}
 
