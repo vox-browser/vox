@@ -617,6 +617,16 @@ fn style_scope_user_agent_stylesheet(name string) ?&CSSStyleSheet {
 	}, source, none)
 }
 
+struct ActiveStyleSheetCollection {
+mut:
+	sheets []&CSSStyleSheet
+}
+
+fn style_scope_append_active_sheet(context voidptr, sheet &CSSStyleSheet) {
+	mut collection := unsafe { &ActiveStyleSheetCollection(context) }
+	collection.sheets << sheet
+}
+
 pub fn (scope &StyleScope) stylesheets_for_cascade_origin(cascade_origin CascadeOrigin) []&CSSStyleSheet {
 	mut sheets := []&CSSStyleSheet{}
 	match cascade_origin {
@@ -649,16 +659,9 @@ pub fn (scope &StyleScope) stylesheets_for_cascade_origin(cascade_origin Cascade
 			}
 		}
 		.author {
-			// V closures capture by value, so a `fn [mut sheets] { sheets << sheet }` append is lost.
-			// Collect through a captured pointer to the local array instead.
-			sheets_ptr := &sheets
-			style_scope_for_each_active_css_style_sheet_boundary(scope, fn [sheets_ptr] (sheet &CSSStyleSheet) {
-				unsafe {
-					mut collected := *sheets_ptr
-					collected << sheet
-					*sheets_ptr = collected
-				}
-			})
+			mut collection := ActiveStyleSheetCollection{}
+			style_scope_for_each_active_css_style_sheet_boundary_with_context(scope, voidptr(&collection), style_scope_append_active_sheet)
+			return collection.sheets
 		}
 		else {}
 	}
@@ -672,6 +675,121 @@ pub fn (scope &StyleScope) for_each_stylesheet(cascade_origin CascadeOrigin, cal
 	}
 }
 
+struct RuleCacheBuildContext {
+	scope &StyleScope
+	rule_caches &RuleCaches
+	sheet &CSSStyleSheet
+	cascade_origin CascadeOrigin
+	insights &SelectorInsights
+	style_sheet_index usize
+	fold_id_and_class_name_case bool
+mut:
+	rule_index usize
+}
+
+fn style_scope_cache_style_rule(raw_context voidptr, rule &CSSRule) {
+	if rule.type_ !in [.style, .nested_declarations] { return }
+	mut context := unsafe { &RuleCacheBuildContext(raw_context) }
+	mut scope := unsafe { &StyleScope(context.scope) }
+	mut rule_caches := unsafe { &RuleCaches(context.rule_caches) }
+	sheet := context.sheet
+	cascade_origin := context.cascade_origin
+	mut mutable_insights := unsafe { &SelectorInsights(context.insights) }
+	style_sheet_index := context.style_sheet_index
+	fold_id_and_class_name_case := context.fold_id_and_class_name_case
+	if container_rule := rule.parent_container_rule() {
+		if container_rule.container_rule_contains_size_feature() {
+			scope.has_size_container_queries = true
+		}
+	}
+	absolutized_selectors := style_scope_absolutized_selectors_for_rule(rule)
+	if style_invalidation_data := scope.style_invalidation_data {
+		mut mutable_invalidation_data := unsafe { &StyleInvalidationData(style_invalidation_data) }
+		for selector in absolutized_selectors.selectors {
+			mutable_invalidation_data.build_invalidation_sets_for_selector(selector)
+		}
+		if scope_rule := rule.parent_scope_rule() {
+			style_scope_collect_boundary_selector_dependencies(scope_rule, mut mutable_invalidation_data, mut mutable_insights)
+		}
+	}
+
+	for selector in absolutized_selectors.selectors {
+		mut matching_rule := &MatchingRule{
+			rule: style_scope_mut_css_rule(rule)
+			sheet: style_scope_mut_css_style_sheet(sheet)
+			default_namespace: sheet.default_namespace()
+			selector: selector
+			style_sheet_index: style_sheet_index
+			rule_index: context.rule_index
+			specificity: selector.specificity()
+			cascade_origin: cascade_origin
+			scope_rule: rule.parent_scope_rule()
+			container_rule: rule.parent_container_rule()
+		}
+
+		qualified_layer_name := matching_rule.qualified_layer_name()
+		mut rule_cache := if qualified_layer_name.len == 0 {
+			rule_caches.main
+		} else {
+			if qualified_layer_name !in rule_caches.by_layer {
+				rule_caches.by_layer[qualified_layer_name] = RuleCache.new()
+			}
+			rule_caches.by_layer[qualified_layer_name] or { rule_caches.main }
+		}
+
+		rule_cache.fold_id_and_class_name_case = fold_id_and_class_name_case
+
+		mut contains_root_pseudo_class := false
+		mut pseudo_element := ?PseudoElement(none)
+
+		StyleScope.collect_selector_insights(selector, mut mutable_insights)
+
+		compound_selectors := selector.compound_selectors()
+		if compound_selectors.len != 0 {
+			last_compound_selector := compound_selectors[compound_selectors.len - 1]
+			for simple_selector in last_compound_selector.simple_selectors {
+				if !matching_rule.contains_pseudo_element {
+					if simple_selector.type_ == .pseudo_element {
+						matching_rule.contains_pseudo_element = true
+						// FIXME: This wrongly assumes there is only one pseudo-element per selector.
+						pseudo_element = simple_selector.pseudo_element.type_
+						matching_rule.slotted = simple_selector.pseudo_element.type_ == .slotted
+						matching_rule.contains_part_pseudo_element = simple_selector.pseudo_element.type_ == .part
+					}
+				}
+				if !contains_root_pseudo_class {
+					if simple_selector.type_ == .pseudo_class && simple_selector.pseudo_class.type_ == .root {
+						contains_root_pseudo_class = true
+					}
+				}
+			}
+		}
+		matching_rule.pseudo_element = pseudo_element
+
+		for pseudo_class in style_scope_pseudo_classes_with_rule_cache() {
+			mut pseudo_class_cache := scope.pseudo_class_rule_cache[pseudo_class] or {
+				continue
+			}
+			if selector.contains_pseudo_class(pseudo_class) {
+				// For pseudo class rule caches we intentionally pass no
+				// pseudo-element, because we don't want to bucket pseudo
+				// class rules by pseudo-element type.
+				pseudo_class_cache.fold_id_and_class_name_case = fold_id_and_class_name_case
+				pseudo_class_cache.add_rule(matching_rule, none, contains_root_pseudo_class)
+			}
+		}
+
+		rule_cache.add_rule(matching_rule, pseudo_element, contains_root_pseudo_class)
+	}
+	context.rule_index++
+}
+
+fn style_scope_cache_keyframes_rule(context voidptr, rule &CSSRule) {
+	if rule.type_ != .keyframes { return }
+	mut cache := unsafe { &RuleCache(context) }
+	style_scope_add_keyframes_rule_to_cache(mut cache, rule)
+}
+
 pub fn (mut scope StyleScope) make_rule_cache_for_cascade_origin(cascade_origin CascadeOrigin, insights &SelectorInsights) {
 	fold_id_and_class_name_case := if document := scope.document() { document.in_quirks_mode() } else { false }
 	mut mutable_insights := unsafe { &SelectorInsights(insights) }
@@ -679,99 +797,19 @@ pub fn (mut scope StyleScope) make_rule_cache_for_cascade_origin(cascade_origin 
 	mut style_sheet_index := usize(0)
 	for sheet in scope.stylesheets_for_cascade_origin(cascade_origin) {
 		mut rule_caches := scope.rule_caches_for_origin_mut(cascade_origin) or { continue }
-		mut rule_index := usize(0)
-		sheet.for_each_effective_style_producing_rule(fn [mut scope, mut rule_caches, sheet, cascade_origin, mut mutable_insights, mut rule_index, style_sheet_index, fold_id_and_class_name_case] (rule &CSSRule) {
-			if container_rule := rule.parent_container_rule() {
-				if container_rule.container_rule_contains_size_feature() {
-					scope.has_size_container_queries = true
-				}
-			}
-			absolutized_selectors := style_scope_absolutized_selectors_for_rule(rule)
-			if style_invalidation_data := scope.style_invalidation_data {
-				mut mutable_invalidation_data := unsafe { &StyleInvalidationData(style_invalidation_data) }
-				for selector in absolutized_selectors.selectors {
-					mutable_invalidation_data.build_invalidation_sets_for_selector(selector)
-				}
-				if scope_rule := rule.parent_scope_rule() {
-					style_scope_collect_boundary_selector_dependencies(scope_rule, mut mutable_invalidation_data, mut mutable_insights)
-				}
-			}
-
-			for selector in absolutized_selectors.selectors {
-				mut matching_rule := &MatchingRule{
-					rule: style_scope_mut_css_rule(rule)
-					sheet: style_scope_mut_css_style_sheet(sheet)
-					default_namespace: sheet.default_namespace()
-					selector: selector
-					style_sheet_index: style_sheet_index
-					rule_index: rule_index
-					specificity: selector.specificity()
-					cascade_origin: cascade_origin
-					scope_rule: rule.parent_scope_rule()
-					container_rule: rule.parent_container_rule()
-				}
-
-				qualified_layer_name := matching_rule.qualified_layer_name()
-				mut rule_cache := if qualified_layer_name.len == 0 {
-					rule_caches.main
-				} else {
-					if qualified_layer_name !in rule_caches.by_layer {
-						rule_caches.by_layer[qualified_layer_name] = RuleCache.new()
-					}
-					rule_caches.by_layer[qualified_layer_name] or { rule_caches.main }
-				}
-
-				rule_cache.fold_id_and_class_name_case = fold_id_and_class_name_case
-
-				mut contains_root_pseudo_class := false
-				mut pseudo_element := ?PseudoElement(none)
-
-				StyleScope.collect_selector_insights(selector, mut mutable_insights)
-
-				compound_selectors := selector.compound_selectors()
-				if compound_selectors.len != 0 {
-					last_compound_selector := compound_selectors[compound_selectors.len - 1]
-					for simple_selector in last_compound_selector.simple_selectors {
-						if !matching_rule.contains_pseudo_element {
-							if simple_selector.type_ == .pseudo_element {
-								matching_rule.contains_pseudo_element = true
-								// FIXME: This wrongly assumes there is only one pseudo-element per selector.
-								pseudo_element = simple_selector.pseudo_element.type_
-								matching_rule.slotted = simple_selector.pseudo_element.type_ == .slotted
-								matching_rule.contains_part_pseudo_element = simple_selector.pseudo_element.type_ == .part
-							}
-						}
-						if !contains_root_pseudo_class {
-							if simple_selector.type_ == .pseudo_class && simple_selector.pseudo_class.type_ == .root {
-								contains_root_pseudo_class = true
-							}
-						}
-					}
-				}
-				matching_rule.pseudo_element = pseudo_element
-
-				for pseudo_class in style_scope_pseudo_classes_with_rule_cache() {
-					mut pseudo_class_cache := scope.pseudo_class_rule_cache[pseudo_class] or {
-						continue
-					}
-					if selector.contains_pseudo_class(pseudo_class) {
-						// For pseudo class rule caches we intentionally pass no
-						// pseudo-element, because we don't want to bucket pseudo
-						// class rules by pseudo-element type.
-						pseudo_class_cache.fold_id_and_class_name_case = fold_id_and_class_name_case
-						pseudo_class_cache.add_rule(matching_rule, none, contains_root_pseudo_class)
-					}
-				}
-
-				rule_cache.add_rule(matching_rule, pseudo_element, contains_root_pseudo_class)
-			}
-			rule_index++
-		})
+		mut context := RuleCacheBuildContext{
+			scope: &scope
+			rule_caches: rule_caches
+			sheet: sheet
+			cascade_origin: cascade_origin
+			insights: mutable_insights
+			style_sheet_index: style_sheet_index
+			fold_id_and_class_name_case: fold_id_and_class_name_case
+		}
+		sheet.for_each_effective_rule_with_context(.preorder, voidptr(&context), style_scope_cache_style_rule)
 
 		// Loosely based on https://drafts.csswg.org/css-animations-2/#keyframe-processing
-		sheet.for_each_effective_keyframes_at_rule(fn [mut rule_caches] (rule &CSSRule) {
-			style_scope_add_keyframes_rule_to_cache(mut rule_caches.main, rule)
-		})
+		sheet.for_each_effective_rule_with_context(.preorder, voidptr(rule_caches.main), style_scope_cache_keyframes_rule)
 		style_sheet_index++
 	}
 }
@@ -1170,6 +1208,10 @@ pub fn (scope &StyleScope) get_pseudo_class_rule_cache(pseudo_class PseudoClass)
 
 pub fn (scope &StyleScope) for_each_active_css_style_sheet(callback fn(&CSSStyleSheet)) {
 	style_scope_for_each_active_css_style_sheet_boundary(scope, callback)
+}
+
+pub fn (scope &StyleScope) for_each_active_css_style_sheet_with_context(context voidptr, callback fn (voidptr, &CSSStyleSheet)) {
+	style_scope_for_each_active_css_style_sheet_boundary_with_context(scope, context, callback)
 }
 
 fn merge_pending_has_invalidation_mutation_features(mut target PendingHasInvalidationMutationFeatures, source &PendingHasInvalidationMutationFeatures) {
@@ -1836,6 +1878,61 @@ fn style_scope_for_each_active_css_style_sheet_boundary(scope &StyleScope, callb
 		}
 	}
 	callback(dynamic_view_transition_style_sheet_for_document(document))
+}
+
+fn style_scope_for_each_active_css_style_sheet_boundary_with_context(scope &StyleScope, context voidptr, callback fn (voidptr, &CSSStyleSheet)) {
+	// Concrete CSSStyleSheet objects remain CSS-owned to avoid a dom -> css
+	// dependency. Sheets installed directly by CSS-aware callers come first:
+	// shadow scopes store theirs on the scope, document scopes in the
+	// document's opaque author-sheet holder. The document or shadow root CSS
+	// style sheets follow in tree order, then the adopted style sheets.
+	if node := scope.node {
+		if node.as_shadow_root() != none {
+			for sheet in scope.author_style_sheets {
+				if !sheet.base.disabled {
+					callback(context, sheet)
+				}
+			}
+			if list := scope.style_sheets {
+				for sheet in list.sheets {
+					if !sheet.base.disabled {
+						callback(context, sheet)
+					}
+				}
+			}
+			if adopted := adopted_style_sheets_list_if_created(node) {
+				for sheet in adopted.items() {
+					if !sheet.base.disabled {
+						callback(context, sheet)
+					}
+				}
+			}
+			return
+		}
+	}
+	document := scope.document() or { return }
+	for sheet in css_author_style_sheets_for(document).sheets {
+		if sheet.base.disabled {
+			continue
+		}
+		callback(context, sheet)
+	}
+	if list := scope.style_sheets {
+		for sheet in list.sheets {
+			if sheet.base.disabled {
+				continue
+			}
+			callback(context, sheet)
+		}
+	}
+	if adopted := adopted_style_sheets_list_if_created(unsafe { &dom.Node(document) }) {
+		for sheet in adopted.items() {
+			if !sheet.base.disabled {
+				callback(context, sheet)
+			}
+		}
+	}
+	callback(context, dynamic_view_transition_style_sheet_for_document(document))
 }
 
 fn style_scope_pseudo_element_from_dom(pseudo_element dom.PseudoElement) PseudoElement {

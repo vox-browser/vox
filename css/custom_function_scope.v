@@ -16,19 +16,30 @@ pub:
 	scope    &StyleScope
 }
 
+struct CachedFunctionRuleContext {
+	cache &StyleCache
+	origin CascadeOrigin
+}
+
+fn cache_function_rule(raw_context voidptr, rule &CSSRule) {
+	context := unsafe { &CachedFunctionRuleContext(raw_context) }
+	mut cache := unsafe { &StyleCache(context.cache) }
+	origin := context.origin
+	if rule.type_ != .function_rule { return }
+	mut mutable_rule := unsafe { &CSSRule(rule) }
+	mut definitions := cache.function_rules_by_name[rule.function_name] or { []CachedFunctionDefinition{} }
+	definitions << CachedFunctionDefinition{
+		function:             rule
+		qualified_layer_name: mutable_rule.qualified_layer_name()
+		cascade_origin:       origin
+	}
+	cache.function_rules_by_name[rule.function_name] = definitions
+}
+
 fn (scope &StyleScope) cache_function_definitions(mut cache StyleCache, origin CascadeOrigin) {
 	for sheet in scope.stylesheets_for_cascade_origin(origin) {
-		sheet.for_each_effective_rule(.preorder, fn [mut cache, origin] (rule &CSSRule) {
-			if rule.type_ != .function_rule { return }
-			mut mutable_rule := unsafe { &CSSRule(rule) }
-			mut definitions := cache.function_rules_by_name[rule.function_name] or { []CachedFunctionDefinition{} }
-			definitions << CachedFunctionDefinition{
-				function:             rule
-				qualified_layer_name: mutable_rule.qualified_layer_name()
-				cascade_origin:       origin
-			}
-			cache.function_rules_by_name[rule.function_name] = definitions
-		})
+		context := CachedFunctionRuleContext{cache: &cache, origin: origin}
+		sheet.for_each_effective_rule_with_context(.preorder, voidptr(&context), cache_function_rule)
 	}
 }
 

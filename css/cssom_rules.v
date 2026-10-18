@@ -460,6 +460,31 @@ pub fn (rule_list &CSSRuleList) for_each_effective_rule(order TraversalOrder, ca
 	}
 }
 
+pub fn (rule_list &CSSRuleList) for_each_effective_rule_with_context(order TraversalOrder, context voidptr, callback fn (voidptr, &CSSRule)) {
+	for rule in rule_list.rules {
+		if order == .preorder {
+			callback(context, rule)
+		}
+
+		match rule.type_ {
+			.import_rule {
+				if loaded_style_sheet := rule.loaded_style_sheet {
+					loaded_style_sheet.for_each_effective_rule_with_context(order, context, callback)
+				}
+			}
+			.container_rule, .function_rule, .layer_block, .media, .page, .scope, .style, .supports {
+				rule.for_each_effective_rule_with_context(order, context, callback)
+			}
+			.counter_style, .font_face, .font_feature_values, .function_declarations, .keyframe, .keyframes, .layer_statement, .margin, .namespace_rule, .nested_declarations, .property {
+			}
+		}
+
+		if order == .postorder {
+			callback(context, rule)
+		}
+	}
+}
+
 // Returns whether the match state of any media queries changed after evaluation.
 pub fn (mut rule_list CSSRuleList) evaluate_media_queries(document &dom.Document) bool {
 	mut any_media_queries_changed_match_state := false
@@ -1172,6 +1197,15 @@ pub fn (rule &CSSRule) for_each_effective_rule(order TraversalOrder, callback fn
 	}
 	if rules := rule.rules {
 		rules.for_each_effective_rule(order, callback)
+	}
+}
+
+pub fn (rule &CSSRule) for_each_effective_rule_with_context(order TraversalOrder, context voidptr, callback fn (voidptr, &CSSRule)) {
+	if rule.type_ in [.media, .supports] && !rule.condition_matches() {
+		return
+	}
+	if rules := rule.rules {
+		rules.for_each_effective_rule_with_context(order, context, callback)
 	}
 }
 
@@ -2101,36 +2135,60 @@ pub fn (sheet &CSSStyleSheet) for_each_effective_rule(order TraversalOrder, call
 	}
 }
 
+pub fn (sheet &CSSStyleSheet) for_each_effective_rule_with_context(order TraversalOrder, context voidptr, callback fn (voidptr, &CSSRule)) {
+	if sheet.base.media.matches() {
+		sheet.rules.for_each_effective_rule_with_context(order, context, callback)
+	}
+}
+
+struct EffectiveRuleCallbackContext {
+	callback fn (&CSSRule)
+	type_ CSSRuleType
+	include_nested_declarations bool
+}
+
+fn invoke_filtered_effective_rule(context voidptr, rule &CSSRule) {
+	state := unsafe { &EffectiveRuleCallbackContext(context) }
+	if rule.type_ == state.type_
+		|| (state.include_nested_declarations && rule.type_ == .nested_declarations) {
+		state.callback(rule)
+	}
+}
+
 pub fn (sheet &CSSStyleSheet) for_each_effective_style_producing_rule(callback fn (&CSSRule)) {
-	sheet.for_each_effective_rule(.preorder, fn [callback] (rule &CSSRule) {
-		if rule.type_ == .style || rule.type_ == .nested_declarations {
-			callback(rule)
-		}
-	})
+	context := EffectiveRuleCallbackContext{
+		callback: callback
+		type_: .style
+		include_nested_declarations: true
+	}
+	sheet.for_each_effective_rule_with_context(.preorder, voidptr(&context), invoke_filtered_effective_rule)
 }
 
 pub fn (sheet &CSSStyleSheet) for_each_effective_keyframes_at_rule(callback fn (&CSSRule)) {
-	sheet.for_each_effective_rule(.preorder, fn [callback] (rule &CSSRule) {
-		if rule.type_ == .keyframes {
-			callback(rule)
-		}
-	})
+	context := EffectiveRuleCallbackContext{
+		callback: callback
+		type_: .keyframes
+		include_nested_declarations: false
+	}
+	sheet.for_each_effective_rule_with_context(.preorder, voidptr(&context), invoke_filtered_effective_rule)
 }
 
 pub fn (sheet &CSSStyleSheet) for_each_effective_counter_style_at_rule(callback fn (&CSSRule)) {
-	sheet.for_each_effective_rule(.preorder, fn [callback] (rule &CSSRule) {
-		if rule.type_ == .counter_style {
-			callback(rule)
-		}
-	})
+	context := EffectiveRuleCallbackContext{
+		callback: callback
+		type_: .counter_style
+		include_nested_declarations: false
+	}
+	sheet.for_each_effective_rule_with_context(.preorder, voidptr(&context), invoke_filtered_effective_rule)
 }
 
 pub fn (sheet &CSSStyleSheet) for_each_effective_property_at_rule(callback fn (&CSSRule)) {
-	sheet.for_each_effective_rule(.preorder, fn [callback] (rule &CSSRule) {
-		if rule.type_ == .property {
-			callback(rule)
-		}
-	})
+	context := EffectiveRuleCallbackContext{
+		callback: callback
+		type_: .property
+		include_nested_declarations: false
+	}
+	sheet.for_each_effective_rule_with_context(.preorder, voidptr(&context), invoke_filtered_effective_rule)
 }
 
 pub fn (sheet &CSSStyleSheet) registered_properties_from_css_property_rules() map[string]CustomPropertyRegistration {
