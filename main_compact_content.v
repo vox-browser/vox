@@ -77,6 +77,14 @@ fn (mut binding CompactElementQueryBinding) element_state(element &dom.Element) 
 			'bridgeKey': json2.Any(key)
 		})
 	}
+	// A native host can materialize a script-created element before a selector
+	// replays its state. Keep that host's key and its existing owning wrapper.
+	for key, registered in binding.runtime.canvas_elements_for_binding() {
+		if registered != element { continue }
+		binding.keys[voidptr(element)] = key
+		binding.elements[key] = element
+		return json2.Any({'bridgeKey': json2.Any(key)})
+	}
 	binding.next_key++
 	key := '__query_${binding.next_key}'
 	binding.keys[voidptr(element)] = key
