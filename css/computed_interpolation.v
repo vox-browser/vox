@@ -5855,6 +5855,13 @@ pub fn (c &ComputedProperties) line_height() CSSPixels {
 			}
 		}
 		if number := computed_interpolation_number_from_dom_style_value(value) {
+			if subject := c.subject_element_ {
+				if subject.document().font_rendering_policy() == .chromium {
+					// Blink truncates its computed float line height to LayoutUnit.
+					pixels := f32(c.resolved_font_size_px()) * f32(number)
+					return CSSPixels.from_raw(int(pixels * 64))
+				}
+			}
 			return c.font_size().times_float(number)
 		}
 	}
