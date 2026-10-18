@@ -204,20 +204,40 @@ int composite_pixels(CGContextRef destination, std::vector<uint32_t> const& pixe
     // A drawRect: CGContext may retain the image in a display list and replay it
     // later during the Core Animation transaction. Give the provider its own
     // copy instead of pointing it at a vector which dies when this call returns.
-    auto data = CFDataCreate(kCFAllocatorDefault,
-        reinterpret_cast<UInt8 const*>(pixels.data()),
-        static_cast<CFIndex>(pixels.size() * sizeof(uint32_t)));
-    if (!data)
-        return 0;
-    auto provider = CGDataProviderCreateWithCFData(data);
-    CFRelease(data);
+    // Match the readable frame's channel order before handing pixels to Quartz.
+    // Otherwise each leaf creates an expensive format-conversion provider.
+    bool rgba = CGBitmapContextGetBitsPerPixel(destination) == 32
+        && CGBitmapContextGetAlphaInfo(destination) == kCGImageAlphaPremultipliedLast
+        && (CGBitmapContextGetBitmapInfo(destination) & kCGBitmapByteOrderMask) == kCGBitmapByteOrder32Big;
+    CGDataProviderRef provider = nullptr;
+    if (rgba) {
+        size_t bytes = pixels.size() * sizeof(uint32_t);
+        auto* converted = static_cast<uint32_t*>(std::malloc(bytes));
+        if (!converted) return 0;
+        for (size_t i = 0; i < pixels.size(); ++i) {
+            uint32_t p = pixels[i];
+            converted[i] = (p & 0xff00ff00u) | ((p & 0xffu) << 16) | ((p >> 16) & 0xffu);
+        }
+        provider = CGDataProviderCreateWithData(nullptr, converted, bytes,
+            [](void*, void const* bytes, size_t) { std::free(const_cast<void*>(bytes)); });
+        if (!provider) std::free(converted);
+    } else {
+        auto data = CFDataCreate(kCFAllocatorDefault,
+            reinterpret_cast<UInt8 const*>(pixels.data()),
+            static_cast<CFIndex>(pixels.size() * sizeof(uint32_t)));
+        if (!data) return 0;
+        provider = CGDataProviderCreateWithCFData(data);
+        CFRelease(data);
+    }
     if (!provider)
         return 0;
     auto color_space = CGColorSpaceCreateWithName(kCGColorSpaceSRGB);
     auto image = CGImageCreate(static_cast<size_t>(width), static_cast<size_t>(height),
         8, 32, static_cast<size_t>(width) * sizeof(uint32_t), color_space,
-        static_cast<CGBitmapInfo>(kCGImageAlphaPremultipliedFirst)
-            | static_cast<CGBitmapInfo>(kCGBitmapByteOrder32Little),
+        (rgba ? static_cast<CGBitmapInfo>(kCGImageAlphaPremultipliedLast)
+            | static_cast<CGBitmapInfo>(kCGBitmapByteOrder32Big)
+            : static_cast<CGBitmapInfo>(kCGImageAlphaPremultipliedFirst)
+            | static_cast<CGBitmapInfo>(kCGBitmapByteOrder32Little)),
         provider, nullptr, false, kCGRenderingIntentDefault);
     CGColorSpaceRelease(color_space);
     CGDataProviderRelease(provider);
@@ -772,6 +792,9 @@ extern "C" int ladybird_v_skia_draw_glyph_run(CGContextRef destination,
     if (!clipped_raster_region(device_bounds, canvas_width, canvas_height, 2.0f, region))
         return 1;
 
+    if (!leaf_raster_region_intersects_destination_clip(destination, canvas_height, region))
+        return 1;
+
     auto destination_scale = raster_scale_for_context(destination);
     auto raster_width = raster_dimension(region.width(), destination_scale);
     auto raster_height = raster_dimension(region.height(), destination_scale);
@@ -1119,6 +1142,8 @@ extern "C" int ladybird_v_skia_draw_rgba_image(CGContextRef destination,
     RasterRegion region;
     if (!clipped_raster_region(device_bounds, canvas_width, canvas_height, 0.0f,
             region))
+        return 1;
+    if (!leaf_raster_region_intersects_destination_clip(destination, canvas_height, region))
         return 1;
 
     auto destination_scale = raster_scale_for_context(destination);
@@ -1527,6 +1552,8 @@ extern "C" int ladybird_v_skia_draw_rounded_rect(CGContextRef destination,
     RasterRegion region;
     if (!clipped_raster_region(matrix.mapRect(local_bounds), canvas_width,
             canvas_height, anti_alias ? 2.0f : 0.0f, region))
+        return 1;
+    if (!leaf_raster_region_intersects_destination_clip(destination, canvas_height, region))
         return 1;
 
     auto destination_scale = screenshot_uses_logical_pixels()

@@ -1,6 +1,7 @@
 #import <Metal/Metal.h>
 #include "native_graphite_bridge.h"
 #include "native_graphite_raster_cache.h"
+#include "native_graphite_solid_rect.h"
 #include "include/core/SkCanvas.h"
 #include "include/core/SkBlurTypes.h"
 #include "include/core/SkColorSpace.h"
@@ -34,7 +35,7 @@
 namespace {
 std::mutex gpu_mutex;
 VoxGraphiteRasterCache image_cache;
-VoxGraphiteRasterCache shape_cache(8 * 1024 * 1024);
+VoxGraphiteRasterCache shape_cache(16 * 1024 * 1024);
 std::unique_ptr<skgpu::graphite::Context> gpu_context;
 bool gpu_context_attempted = false;
 skgpu::graphite::Context* context()
@@ -299,26 +300,9 @@ int vox_graphite_draw_image_pixels(uint8_t* pixels, int width, int height,
     return result;
 }
 
-extern "C" __attribute__((visibility("default")))
-int vox_graphite_draw_shape_pixels(uint8_t* pixels, int width, int height,
-    int pitch, int has_background, VoxGraphiteShape const* shape)
+static void draw_shape_on_canvas(SkCanvas* canvas, VoxGraphiteShape const& shape, int width, int height)
 {
-    if (!pixels || !shape || width <= 0 || height <= 0 || pitch <= 0
-        || static_cast<size_t>(pitch) < static_cast<size_t>(width) * 4) return 0;
-    std::lock_guard lock(gpu_mutex);
-    auto cached = shape_cache.prepare(*shape, width, height, pitch, has_background != 0, pixels);
-    if (cached.hit) return 1;
-    auto* gpu = context();
-    if (!gpu) return 0;
-    auto recorder = gpu->makeRecorder();
-    auto info = SkImageInfo::Make(width, height, kBGRA_8888_SkColorType,
-        kPremul_SkAlphaType, SkColorSpace::MakeSRGB());
-    auto surface = SkSurfaces::RenderTarget(recorder.get(), info);
-    if (!surface) return 0;
-    auto* canvas = surface->getCanvas();
-    if (has_background) surface->writePixels(SkPixmap(info, pixels, pitch), 0, 0);
-    else canvas->clear(SK_ColorTRANSPARENT);
-    if (shape->force_msaa) {
+    if (shape.force_msaa) {
         // Graphite multisamples a render pass that contains a path. A
         // transparent one changes no pixel.
         SkPaint noop;
@@ -332,28 +316,175 @@ int vox_graphite_draw_shape_pixels(uint8_t* pixels, int width, int height,
         canvas->drawPath(path.detach(), noop);
     }
     SkMatrix matrix;
-    matrix.set9(shape->matrix);
+    matrix.set9(shape.matrix);
     canvas->setMatrix(matrix);
-    if (shape->has_underlay) {
+    if (shape.has_underlay) {
         SkPaint underlay;
         underlay.setAntiAlias(true);
-        underlay.setColor(SkColorSetARGB(shape->underlay_rgba[3], shape->underlay_rgba[0],
-            shape->underlay_rgba[1], shape->underlay_rgba[2]));
-        canvas->drawRRect(rounded_rect(shape->underlay_rect), underlay);
+        underlay.setColor(SkColorSetARGB(shape.underlay_rgba[3], shape.underlay_rgba[0],
+            shape.underlay_rgba[1], shape.underlay_rgba[2]));
+        canvas->drawRRect(rounded_rect(shape.underlay_rect), underlay);
     }
-    for (int index = 0; shape->clip_outs && index < shape->clip_out_count; ++index) {
-        float const* clip = shape->clip_outs + index * 4;
+    for (int index = 0; shape.clip_outs && index < shape.clip_out_count; ++index) {
+        float const* clip = shape.clip_outs + index * 4;
         canvas->clipRect(SkRect::MakeLTRB(clip[0], clip[1], clip[2], clip[3]),
             SkClipOp::kDifference, false);
     }
     SkPaint paint;
-    paint.setAntiAlias(shape->anti_alias != 0);
-    paint.setColor(SkColorSetARGB(shape->alpha, shape->red, shape->green, shape->blue));
-    if (!shape->fill) {
+    paint.setAntiAlias(shape.anti_alias != 0);
+    paint.setColor(SkColorSetARGB(shape.alpha, shape.red, shape.green, shape.blue));
+    if (!shape.fill) {
         paint.setStyle(SkPaint::kStroke_Style);
-        paint.setStrokeWidth(std::max(0.0f, shape->thickness));
+        paint.setStrokeWidth(std::max(0.0f, shape.thickness));
     }
-    canvas->drawRRect(rounded_rect(shape->rect), paint);
+    canvas->drawRRect(rounded_rect(shape.rect), paint);
+}
+
+// Read back only the border of large rounded shapes. Opaque fills have a flat
+// interior; the original GPU draw supplies fractional edges, corners and
+// strokes, including their backdrop and MSAA mode. Cache only those patches,
+// retaining the original surface geometry as part of their identity.
+static bool draw_large_rounded_shape(uint8_t* pixels, int width, int height,
+    int pitch, bool has_background, VoxGraphiteShape const& shape)
+{
+    if (size_t(width) * height < 65536 || width > 16384 || height > 16384) return false;
+    float edges[4];
+    auto solid = shape;
+    solid.fill = 1;
+    if (shape.has_underlay || shape.clip_out_count || (shape.fill && shape.alpha != 255)
+        || !vox_axis_aligned_rect(solid, edges)) return false;
+    float half_x = shape.fill ? 0 : shape.thickness * shape.matrix[0] / 2;
+    float half_y = shape.fill ? 0 : shape.thickness * shape.matrix[4] / 2;
+    if (!shape.fill && (!(half_x > 0 && half_y > 0) || !std::isfinite(half_x)
+            || !std::isfinite(half_y)))
+        return false;
+    float rx = shape.rect[4], ry = shape.rect[5];
+    if (rx < 0 || ry < 0 || !std::isfinite(rx) || !std::isfinite(ry)) return false;
+    for (int i = 6; i < 12; i += 2)
+        if (shape.rect[i] != rx || shape.rect[i + 1] != ry) return false;
+    float corner_width = std::ceil(rx * shape.matrix[0] + half_x) + 2;
+    float corner_height = std::ceil(ry * shape.matrix[4] + half_y) + 2;
+    if (corner_width * 2 >= edges[2] - edges[0] || corner_height * 2 >= edges[3] - edges[1]
+        || corner_width * corner_height > 4096) return false;
+    struct Patch { int left, top, width, height; size_t offset; };
+    std::vector<Patch> patches;
+    size_t patch_bytes = 0;
+    auto patch = [&](double left, double top, double right, double bottom) {
+        int l = int(std::clamp(left, 0.0, double(width)));
+        int t = int(std::clamp(top, 0.0, double(height)));
+        int r = int(std::clamp(right, 0.0, double(width)));
+        int b = int(std::clamp(bottom, 0.0, double(height)));
+        if (l >= r || t >= b) return;
+        patches.push_back({l, t, r - l, b - t, patch_bytes});
+        patch_bytes += size_t(r - l) * (b - t) * 4;
+    };
+    double outer_left = std::floor(edges[0] - half_x) - 2;
+    double outer_top = std::floor(edges[1] - half_y) - 2;
+    double outer_right = std::ceil(edges[2] + half_x) + 2;
+    double outer_bottom = std::ceil(edges[3] + half_y) + 2;
+    double left_cut = std::ceil(edges[0] + corner_width);
+    double top_cut = std::ceil(edges[1] + corner_height);
+    double right_cut = std::floor(edges[2] - corner_width);
+    double bottom_cut = std::floor(edges[3] - corner_height);
+    patch(outer_left, outer_top, left_cut, top_cut);
+    patch(right_cut, outer_top, outer_right, top_cut);
+    patch(outer_left, bottom_cut, left_cut, outer_bottom);
+    patch(right_cut, bottom_cut, outer_right, outer_bottom);
+    // Fractional straight edges and strokes retain the original GPU coverage.
+    patch(left_cut, outer_top, right_cut, std::ceil(edges[1] + half_y) + 2);
+    patch(left_cut, std::floor(edges[3] - half_y) - 2, right_cut, outer_bottom);
+    patch(outer_left, top_cut, std::ceil(edges[0] + half_x) + 2, bottom_cut);
+    patch(std::floor(edges[2] - half_x) - 2, top_cut, outer_right, bottom_cut);
+    if (patch_bytes > 256 * 1024) return false;
+    std::vector<uint8_t> packed(patch_bytes);
+    if (has_background) for (auto const& patch : patches) for (int y = 0; y < patch.height; ++y)
+        std::memcpy(packed.data() + patch.offset + size_t(y) * patch.width * 4,
+            pixels + size_t(patch.top + y) * pitch + size_t(patch.left) * 4, size_t(patch.width) * 4);
+    if (!patches.empty()) {
+        std::lock_guard lock(gpu_mutex);
+        auto cached = shape_cache.prepare_patches(shape, width, height,
+            int(patch_bytes / 4), has_background, packed.data());
+        if (!cached.hit) {
+            auto* gpu = context();
+            if (!gpu) return false;
+            auto recorder = gpu->makeRecorder();
+            auto info = SkImageInfo::Make(width, height, kBGRA_8888_SkColorType,
+                kPremul_SkAlphaType, SkColorSpace::MakeSRGB());
+            auto surface = SkSurfaces::RenderTarget(recorder.get(), info);
+            if (!surface) return false;
+            auto* canvas = surface->getCanvas();
+            canvas->clear(SK_ColorTRANSPARENT);
+            if (has_background) for (auto const& patch : patches)
+                surface->writePixels(SkPixmap(info.makeWH(patch.width, patch.height),
+                    packed.data() + patch.offset, size_t(patch.width) * 4), patch.left, patch.top);
+            draw_shape_on_canvas(canvas, shape, width, height);
+            auto recording = recorder->snap();
+            skgpu::graphite::InsertRecordingInfo insertion;
+            insertion.fRecording = recording.get();
+            if (gpu->insertRecording(insertion) != skgpu::graphite::InsertStatus::kSuccess) return false;
+            // Keep the original surface origin and extent. Translating a corner
+            // into a smaller surface changes GPU coverage rounding by one byte.
+            std::vector<std::unique_ptr<const SkImage::AsyncReadResult>> results(patches.size());
+            for (size_t i = 0; i < patches.size(); ++i) {
+                auto const& patch = patches[i];
+                gpu->asyncRescaleAndReadPixels(surface.get(), info.makeWH(patch.width, patch.height),
+                    SkIRect::MakeXYWH(patch.left, patch.top, patch.width, patch.height),
+                    SkImage::RescaleGamma::kSrc, SkImage::RescaleMode::kNearest,
+                    [](void* target, std::unique_ptr<const SkImage::AsyncReadResult> data) {
+                        *static_cast<std::unique_ptr<const SkImage::AsyncReadResult>*>(target) = std::move(data);
+                    }, &results[i]);
+            }
+            if (!gpu->submit(skgpu::graphite::SubmitInfo(skgpu::graphite::SyncToCpu::kYes))) return false;
+            for (size_t i = 0; i < patches.size(); ++i) {
+                if (!results[i]) return false;
+                auto const& patch = patches[i];
+                for (int y = 0; y < patch.height; ++y)
+                    std::memcpy(packed.data() + patch.offset + size_t(y) * patch.width * 4,
+                        static_cast<uint8_t const*>(results[i]->data(0)) + size_t(y) * results[i]->rowBytes(0),
+                        size_t(patch.width) * 4);
+            }
+            shape_cache.finish(std::move(cached), packed.data(), int(patch_bytes));
+        }
+    }
+    if (!has_background) for (int y = 0; y < height; ++y)
+        std::memset(pixels + size_t(y) * pitch, 0, size_t(width) * 4);
+    if (shape.fill) {
+        std::fill_n(solid.rect + 4, 8, 0.0f);
+        std::fill_n(solid.matrix, 9, 0.0f);
+        solid.matrix[0] = solid.matrix[4] = solid.matrix[8] = 1;
+        solid.rect[0] = float(std::ceil(edges[0])); solid.rect[1] = float(std::ceil(edges[1]));
+        solid.rect[2] = float(std::floor(edges[2])) - solid.rect[0];
+        solid.rect[3] = float(std::floor(edges[3])) - solid.rect[1];
+        vox_draw_solid_rect(pixels, width, height, pitch, true, solid);
+    }
+    for (auto const& patch : patches) for (int y = 0; y < patch.height; ++y)
+        std::memcpy(pixels + size_t(patch.top + y) * pitch + size_t(patch.left) * 4,
+            packed.data() + patch.offset + size_t(y) * patch.width * 4, size_t(patch.width) * 4);
+    return true;
+}
+
+extern "C" __attribute__((visibility("default")))
+int vox_graphite_draw_shape_pixels(uint8_t* pixels, int width, int height,
+    int pitch, int has_background, VoxGraphiteShape const* shape)
+{
+    if (!pixels || !shape || width <= 0 || height <= 0 || pitch <= 0
+        || static_cast<size_t>(pitch) < static_cast<size_t>(width) * 4) return 0;
+    if (vox_draw_solid_rect(pixels, width, height, pitch, has_background != 0, *shape)) return 1;
+    if (draw_large_rounded_shape(pixels, width, height, pitch, has_background != 0, *shape)) return 1;
+    std::lock_guard lock(gpu_mutex);
+    auto cached = shape_cache.prepare(*shape, width, height, pitch, has_background != 0, pixels);
+    if (cached.hit) return 1;
+    auto* gpu = context();
+    if (!gpu) return 0;
+    auto recorder = gpu->makeRecorder();
+    auto info = SkImageInfo::Make(width, height, kBGRA_8888_SkColorType,
+        kPremul_SkAlphaType, SkColorSpace::MakeSRGB());
+    auto surface = SkSurfaces::RenderTarget(recorder.get(), info);
+    if (!surface) return 0;
+    auto* canvas = surface->getCanvas();
+    if (has_background) surface->writePixels(SkPixmap(info, pixels, pitch), 0, 0);
+    else canvas->clear(SK_ColorTRANSPARENT);
+    draw_shape_on_canvas(canvas, *shape, width, height);
     int result = read_pixels(gpu, recorder.get(), surface.get(), info, pixels, pitch);
     if (result) shape_cache.finish(std::move(cached), pixels, pitch);
     return result;

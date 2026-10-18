@@ -18,6 +18,7 @@ class VoxGraphiteRasterCache {
         VoxGraphiteImage image {};
         VoxGraphiteShape shape {};
         bool is_shape = false;
+        int surface_width = 0, surface_height = 0;
         int width = 0, height = 0;
         bool has_background = false;
         std::vector<uint8_t> source, background, output;
@@ -111,6 +112,21 @@ public:
             Rows {reinterpret_cast<uint8_t const*>(shape.clip_outs), size_t(shape.clip_out_count) * 4 * sizeof(float), 0, 1},
             width, height, pitch, has_background, pixels);
     }
+    // Packed patches still depend on the original surface dimensions: GPU
+    // clipping and coverage arithmetic must retain the same raster coordinates.
+    Request prepare_patches(VoxGraphiteShape const& shape, int surface_width,
+        int surface_height, int pixel_count, bool has_background, uint8_t* pixels)
+    {
+        if (shape.clip_out_count || surface_width <= 0 || surface_height <= 0
+            || pixel_count <= 0 || size_t(pixel_count) > max_entry_bytes / 4) return {};
+        Entry parameters;
+        parameters.is_shape = true;
+        parameters.shape = shape;
+        parameters.surface_width = surface_width;
+        parameters.surface_height = surface_height;
+        return prepare_entry(parameters, Rows {nullptr, 0, 0, 1}, pixel_count, 1,
+            pixel_count * 4, has_background, pixels);
+    }
 private:
     Request prepare_entry(Entry const& parameters, Rows source, int width, int height,
         int pitch, bool has_background, uint8_t* pixels)
@@ -120,7 +136,8 @@ private:
             || size_t(pitch) < size_t(width) * 4 || !entry_limit) return request;
         // Large shapes often cover changing page content. Copying those input
         // backdrops would consume the small-control cache without useful hits.
-        size_t limit = std::min(byte_limit, parameters.is_shape ? size_t(128 * 1024) : max_entry_bytes);
+        size_t shape_limit = parameters.surface_width ? 512 * 1024 : 128 * 1024;
+        size_t limit = std::min(byte_limit, parameters.is_shape ? shape_limit : max_entry_bytes);
         Rows backdrop {pixels, size_t(width) * 4, size_t(pitch), size_t(height)};
         if (source.bytes > limit / source.height || backdrop.bytes > limit / backdrop.height)
             return request;
@@ -131,6 +148,7 @@ private:
             auto const& entry = **it;
             if (entry.width != width || entry.height != height
                 || entry.has_background != has_background || entry.is_shape != parameters.is_shape
+                || entry.surface_width != parameters.surface_width || entry.surface_height != parameters.surface_height
                 || (entry.is_shape ? !same_shape(entry.shape, parameters.shape)
                                    : !same_image(entry.image, parameters.image))
                 || !source.equal(entry.source)

@@ -17,3 +17,10 @@ clang++ -std=c++20 -O2 -x objective-c++ \
     -framework CoreFoundation -framework CoreGraphics -framework CoreText -framework Foundation -framework Metal \
     -Wl,-rpath,"$skia_root/lib" -o "$output_dir/native_skia_clip_test"
 "$output_dir/native_skia_clip_test"
+clang++ -std=c++20 -O2 -x objective-c++ \
+    -I"$skia_root/include/skia" -I"$skia_root/include" \
+    "$repo_dir/tools/native_skia_composite_test.cpp" \
+    -L"$skia_root/lib" -lskia \
+    -framework CoreFoundation -framework CoreGraphics -framework CoreText -framework Foundation -framework Metal \
+    -Wl,-rpath,"$skia_root/lib" -o "$output_dir/native_skia_composite_test"
+"$output_dir/native_skia_composite_test"

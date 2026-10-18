@@ -171,5 +171,26 @@ int main()
     assert(cache.prepare(descriptor, 200, 200, 800, false, large_output.data()).pending);
     cache.clear();
     assert(!cache.prepare(shape, 2, 2, 8, false, pixels.data()).hit);
+    // Corner patches retain the original surface geometry in addition to the
+    // packed pixels, so a different GPU coverage calculation cannot alias.
+    shape.clip_out_count = 0;
+    std::fill(pixels.begin(), pixels.end(), 19);
+    request = cache.prepare_patches(shape, 631, 303, 4, true, pixels.data());
+    assert(!request.hit && request.pending);
+    std::fill(pixels.begin(), pixels.end(), 71);
+    cache.finish(std::move(request), pixels.data(), 16);
+    std::fill(pixels.begin(), pixels.end(), 19);
+    assert(!cache.prepare_patches(shape, 632, 303, 4, true, pixels.data()).hit);
+    assert(!cache.prepare_patches(shape, 631, 304, 4, true, pixels.data()).hit);
+    assert(!cache.prepare(shape, 4, 1, 16, true, pixels.data()).hit);
+    assert(cache.prepare_patches(shape, 631, 303, 4, true, pixels.data()).hit);
+    assert(pixels == std::vector<uint8_t>(16, 71));
+    std::fill(pixels.begin(), pixels.end(), 19); pixels[15]++;
+    assert(!cache.prepare_patches(shape, 631, 303, 4, true, pixels.data()).hit);
+    shape.clip_out_count = 1;
+    assert(!cache.prepare_patches(shape, 631, 303, 4, true, pixels.data()).pending);
+    shape.clip_out_count = 0;
+    assert(!cache.prepare_patches(shape, 0, 303, 4, true, pixels.data()).pending);
+    assert(!cache.prepare_patches(shape, 631, 303, -1, true, pixels.data()).pending);
     std::cout << "Graphite raster cache: source/backdrop mutation, geometry, profiles, strides, YUV, LRU and bounds passed\n";
 }
