@@ -577,3 +577,65 @@ deep signature verification and headless startup pass. The Reddit URL is
 reopened without test environment overrides. `installed-verification.json`
 records the running process and checks. Concurrent source, staged work and flat
 development libraries remain preserved.
+
+The next follow-up, `9a83198c`, fuses document format conversion and publication.
+The claimed private frame remains empty with its initial clip and graphics state
+while the document paints into its separate RGBA canvas. When dimensions, color
+spaces, bitmap formats and device alignment match, one pass copies RGBA into the
+BGRA frame. This removes the intermediate root-layer image and the subsequent
+Quartz copy. Source pixels remain unchanged. Filters and unsupported formats or
+placements retain the previous image path; the final Core Animation frame
+snapshot remains unchanged.
+
+An isolated 2,048×1,760 publication probe preserves pixels and reduces median CPU
+time from 2.674 to 2.387 ms. Three alternating full-browser pairs compare the
+preceding accepted build against this change alone, using the same retained
+production-generated C and 121 pinned link inputs. Both rendering libraries are
+byte-identical. The frozen Reddit input, cache, 1,024×768 viewport, 0↔1,260 CSS
+pixel trace and 2,355 commands per frame match. Window geometry receipts confirm
+2× backing scale for all six runs. JavaScriptCore and normal Boehm GC with one
+marker remain enabled, with four seconds to settle.
+
+| Per moving frame, median of run medians | Control | Optimized | Reduction |
+| --- | ---: | ---: | ---: |
+| Wheel dispatch through native replay | 14.132 ms | 13.768 ms | 2.6% |
+| Native replay | 12.115 ms | 11.6645 ms | 3.7% |
+| Retired instructions | 94.515346 million | 88.985185 million | 5.9% |
+
+Control medians are 14.6455, 14.1320 and 14.1115 ms; candidate medians are
+14.0345, 13.7680 and 12.4695 ms. Every pair improves. All 120 moving frames per
+run remain included, 360 per variant, with no rejected or retried pair. The
+median run p95 improves from 25.843 to 24.701 ms; maximums are 71.034 and
+70.149 ms. Both variants include three collections. These are matched-run
+comparisons; absolute timing varies between sessions. The endpoint includes
+synchronous GPU waits and excludes Cocoa presentation, vsync and idle work.
+
+The new native test passes 846 exact comparisons, including 281 guarded
+fallbacks, vector tails, padded source rows, alpha states, aligned fractional
+backing scales, color conversion and later translucent paint. It verifies
+immutable snapshots of both source and destination, rejects unclaimed and
+foreign destinations, and checks non-finite geometry. The existing 1,728-case
+publication oracle and 13,824-case bitmap ownership oracle, including 216
+opacity results, also pass. All three tests pass address and undefined-behavior
+sanitizers. An initial standalone ownership-test link omitted CoreFoundation;
+the corrected command passes without rerunning the successful tests.
+
+Four complete Reddit viewports match the control exactly at 1× and 2×. Eleven
+screenshot smoke cases and six opacity visuals pass under existing rules; eight
+SVG mutation guards and both turbulence references are exact. Six filter and
+backdrop-filter pages match the control byte for byte. The additional 5,530,161
+instructions saved per moving frame reach the broad-check gate: 219 selected V
+functions across 52 source test files pass in each GC configuration, and all
+100 upstream AST fixtures compare exactly. The incremental savings count resets
+to zero after this broad verification.
+
+Evidence is retained privately under `Build/dota2-scroll/clear-root/`:
+`comparison.json`, raw `fused-*` runs and their `window-scale.json` receipts,
+`accepted-result.json`, `compiler-source-pins.json`, `focused-complete.json`,
+`pixels-settled/`, `validation.json`, `rendering.json`, `broad-gate.json`, and
+associated test logs. The signed measured components are installed through a
+staged bundle and rename, preserving the previous app and flat development
+libraries. Installed file-backed Mach-O sections match the measured candidate;
+deep signature verification and headless startup pass. The Reddit URL is reopened
+without test overrides. `installed-verification.json` records the live process
+and installation checks.
