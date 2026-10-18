@@ -62,7 +62,8 @@ fn test_svg_background_sharing_preserves_layout_sizes_clean_display_lists_and_re
 	assert voidptr(isolated) == voidptr(svg_document_cache_test_background(&root, document, 'two'))
 	_ = run_document_layout(isolated, 20, 10) or { panic('missing first SVG layout') }
 	first_handle := isolated.layout_engine_handle()
-	first_list := isolated.record_display_list() or { panic('missing first SVG list') }
+	// Retained so its storage is not reused by the later recordings compared below.
+	first_list := record_retained_display_list(mut isolated) or { panic('missing first SVG list') }
 	_ = run_document_layout(isolated, 20, 10) or { panic('missing repeated SVG layout') }
 	assert isolated.layout_engine_handle() == first_handle
 	assert voidptr(isolated.record_display_list()?) == voidptr(first_list)

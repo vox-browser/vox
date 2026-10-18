@@ -18,7 +18,7 @@ fn resource_refresh_publish(address string, source string) {
 
 fn resource_refresh_commands(document &dom.Document) []PaintCommand {
 	mut mutable_document := unsafe { &dom.Document(document) }
-	return display_list_commands(mutable_document.record_display_list() or { panic('missing display list') })
+	return display_list_commands(record_retained_display_list(mut mutable_document) or { panic('missing display list') })
 }
 
 fn test_completed_background_refresh_retains_geometry_and_body_block_inline_owners() {

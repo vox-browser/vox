@@ -6,7 +6,8 @@ fn test_relayout_reuses_phase_buffers_without_changing_published_command_snapsho
 	mut document := html.parse_document('<!doctype html><div id="label">before</div>' + '<p>unchanged <b>text</b></p>'.repeat(16))
 	defer { document.finalize() }
 	_ = layout_document_typed_in_viewport(document, 400, 300)
-	initial := document.record_display_list()?
+	// The published list stays valid while its holder retains its scene.
+	initial := record_retained_display_list(mut document)?
 	initial_dump := initial.dump()
 	initial_commands := display_list_commands(initial)
 	initial_snapshot := initial_commands.map(it.str())
@@ -43,7 +44,8 @@ fn test_phase_storage_remaps_grown_and_shrunk_trees_and_matches_fresh_recording(
 	for markup in ['<p>first</p><p style="color:red">second</p>'.repeat(16), '<p>small</p>', '<p style="background:lime">last</p>'] {
 		target.set_inner_html(markup)!
 		document.update_layout(.debugging)
-		list := document.record_display_list()?
+		// Retained: the list is compared after the next recording.
+		list := record_retained_display_list(mut document)?
 		recording_dump := list.dump()
 		commands := display_list_commands(list)
 		snapshot := commands.map(it.str())

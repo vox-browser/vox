@@ -34,8 +34,7 @@ pub fn refresh_document_background_resources(document &dom.Document, changed map
 	// command buckets so recording observes the new image owners, while keeping
 	// the retained stacking, hit-test and scroll plans attached to those boxes.
 	for box in changed_boxes { viewport_invalidate_box_paint_cache(mut result, box) }
-	result.display_list_commands.clear()
-	result.display_list = unsafe { nil }
+	result.drop_display_list_scene()
 	result.needs_repaint = true
 	mut mutable_document := unsafe { &dom.Document(document) }
 	mutable_document.set_needs_repaint_with_invalidation(.paint_commands)

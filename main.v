@@ -442,6 +442,8 @@ mut:
 	document_presented                  bool
 	paint_timing                        BrowserPaintTiming
 	paint_display_list                  &dom.DisplayList = unsafe { nil }
+	// Storage behind paint_commands, retained until the next adoption.
+	paint_scene      voidptr
 	animation_epoch_ns                  u64
 	initial_window_frame_presented      bool
 	refresh_not_before                  i64
@@ -3378,8 +3380,7 @@ fn (mut app BrowserApp) relayout(window_width int, window_height int) {
 		_ = layout.run_document_layout_for_tree_dump(app.document, f64(viewport_width), f64(viewport_height)) or { return }
 		debug_timing_checkpoint('  layout_tree', layout_checkpoint)
 		app.root_box = layout.BlockBox{}
-		app.paint_commands = []layout.PaintCommand{}
-		app.paint_display_list = unsafe { nil }
+		app.release_paint_commands()
 		app.paint_commands_have_backdrop_filter = false
 		app.paint_commands_pending = false
 		app.content_height = f64(viewport_height)

@@ -2430,6 +2430,9 @@ fn (b &BlockBox) record_paint_commands_for_entries(entries []PaintOrderEntry, se
 				}
 				if nested_layout.root != unsafe { nil } {
 					mut mutable_hosted_document := unsafe { &dom.Document(hosted_document) }
+					// The copied commands below outlive the hosted document's
+					// own scenes.
+					mark_display_list_scenes_borrowed(hosted_document)
 					if nested_display_list := mutable_hosted_document.record_display_list() {
 						mut nested_commands := display_list_commands(nested_display_list).clone()
 						if nested_viewport_paintable.nested_layout_size != none

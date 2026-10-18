@@ -5346,6 +5346,15 @@ pub mut:
 	media_element_source_attribute_changed_hook_   ?MediaElementSourceAttributeChangedHook
 	media_element_controls_attribute_changed_hook_ ?MediaElementControlsAttributeChangedHook
 	layout_engine_handle_                          voidptr = unsafe { nil }
+	// Rendering-update generations that tell the CSS animation sampler when
+	// none of its retained sample storage can be reached any longer (see
+	// css/animation_samples.v). Layout publishes the scene numbers.
+	layout_pass_generation             u64
+	paint_scene_generation             u64
+	oldest_live_paint_scene_generation u64
+	// A hosting document copies this document's display list into its own
+	// paint data, which outlives this document's rendering updates.
+	paint_borrowed_by_host bool
 
 	// Layout
 	layout_root &LayoutViewport = unsafe { nil }

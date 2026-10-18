@@ -22,7 +22,7 @@ fn test_debug_guide_toggling_preserves_cached_commands_and_earlier_recordings() 
 	mut navigable := html.NavigableModel.create(host, none) or { panic(err) }
 	document.set_cached_navigable(host)
 	_ = layout_document_typed_in_viewport(document, 320, 100)
-	initial := display_list_commands(document.record_display_list() or {
+	initial := display_list_commands(record_retained_display_list(mut document) or {
 		panic('missing initial recording')
 	})
 	result := document_layout_result(document) or { panic('missing layout') }
@@ -35,7 +35,7 @@ fn test_debug_guide_toggling_preserves_cached_commands_and_earlier_recordings() 
 		navigable.set_should_show_line_box_borders(true)
 		// The browser consumes the navigable's repaint flag at the next frame.
 		document.set_needs_repaint_with_invalidation(.paint_commands)
-		visible := display_list_commands(document.record_display_list() or {
+		visible := display_list_commands(record_retained_display_list(mut document) or {
 			panic('missing guides')
 		})
 		if guide_count == 0 {
@@ -46,7 +46,7 @@ fn test_debug_guide_toggling_preserves_cached_commands_and_earlier_recordings() 
 		assert cached_line_box_guides(result) == guide_count
 		navigable.set_should_show_line_box_borders(false)
 		document.set_needs_repaint_with_invalidation(.paint_commands)
-		hidden := display_list_commands(document.record_display_list() or {
+		hidden := display_list_commands(record_retained_display_list(mut document) or {
 			panic('missing compact recording')
 		})
 		assert hidden.all(!it.line_box_debug)
@@ -83,5 +83,8 @@ fn test_debug_guide_policy_survives_scrolling_to_deferred_entries() {
 }
 
 fn debug_policy_viewport_commands(mut document dom.Document) []PaintCommand {
- return display_list_commands(document.record_viewport_display_list() or { panic('missing viewport list') })
+	list := document.record_viewport_display_list() or { panic('missing viewport list') }
+	// The commands are compared after later recordings, so keep their scene.
+	_ = retain_display_list_scene(list)
+	return display_list_commands(list)
 }

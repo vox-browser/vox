@@ -4,6 +4,7 @@ import css
 import dom
 import html
 import painting
+import platform
 
 fn assert_flattened_contexts_match(expected CompatibilityFlattenedVisualContext, actual CompatibilityFlattenedVisualContext) {
 	assert actual.transform == expected.transform
@@ -105,7 +106,46 @@ fn test_memoized_visual_contexts_match_plane_roots_scrolls_and_layers() {
 	assert memo.contexts[memo.resolve(effect)].clips.len == 0
 }
 
+fn test_retained_display_list_scenes_survive_later_recordings() {
+	mut document := html.parse_document('<!doctype html><style>html,body{margin:0}div{height:40px;background:rgb(71 72 73)}</style><div></div><div></div><div>text</div>')
+	defer { document.finalize() }
+	_ = layout_document_typed_in_viewport(document, 320, 200)
+	first_list := document.record_display_list() or { panic('missing paint') }
+	first := display_list_commands(first_list)
+	first_kinds := first.map(it.kind)
+	first_scene := retain_display_list_scene(first_list)
+	viewport := document.viewport_rect()
+	document.set_viewport_rect(dom.Rect{viewport.x, 10, viewport.width, viewport.height})
+	second_list := document.record_display_list() or { panic('missing second paint') }
+	second := display_list_commands(second_list)
+	assert second.data != first.data
+	// The consumer still holds the first scene, so its commands stay intact.
+	assert first.map(it.kind) == first_kinds
+	assert normalized_affine(first[0].transform)[5] == 0
+	assert normalized_affine(second[0].transform)[5] == -10
+	release_display_list_scene(first_scene)
+	document.set_viewport_rect(dom.Rect{viewport.x, 20, viewport.width, viewport.height})
+	third_list := document.record_display_list() or { panic('missing third paint') }
+	third := display_list_commands(third_list)
+	assert third.map(it.kind) == first_kinds
+	assert normalized_affine(third[0].transform)[5] == -20
+	$if prealloc {
+		if platform.arenas_poisoned() {
+			return
+		}
+		// The released scene's storage is reused for the third recording.
+		result := document_layout_result(document) or { panic('missing layout') }
+		assert result.scene.arena.contains(first.data)
+		assert result.scene.arena.contains(third.data)
+	}
+}
+
+// Collector builds keep one command vector per recording and recycle the one
+// the consumer returns; -prealloc reuses whole scenes instead.
 fn test_returned_display_list_vectors_are_reused_without_touching_published_lists() {
+	$if prealloc {
+		return
+	}
 	mut document := html.parse_document('<!doctype html><style>html,body{margin:0}div{height:40px;background:rgb(71 72 73)}</style><div></div><div></div><div>text</div>')
 	defer { document.finalize() }
 	_ = layout_document_typed_in_viewport(document, 320, 200)

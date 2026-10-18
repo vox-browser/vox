@@ -21,8 +21,7 @@ fn (mut app BrowserApp) finish_frame_preparation() {
 	app.flush_page_editing_scroll()
 	if app.layout_tree_only { return }
 	if app.document == unsafe { nil } {
-		app.paint_commands = []layout.PaintCommand{}
-		app.paint_display_list = unsafe { nil }
+		app.release_paint_commands()
 		app.paint_commands_have_backdrop_filter = false
 		app.paint_commands_pending = false
 		return
@@ -56,8 +55,11 @@ fn (mut app BrowserApp) record_document_paint_commands() {
 	} else { document.record_display_list() }
 	if list := display_list {
 		previous_commands := app.paint_commands
+		previous_scene := app.paint_scene
 		app.paint_display_list = list
 		app.paint_commands = layout.display_list_commands(list)
+		app.paint_scene = layout.retain_display_list_scene(list)
+		layout.release_display_list_scene(previous_scene)
 		// The shell is the only reader of its adopted vector. Return the previous
 		// one so the next recording can reuse its capacity instead of
 		// allocating a fresh frame-sized vector.
@@ -66,8 +68,7 @@ fn (mut app BrowserApp) record_document_paint_commands() {
 		}
 		app.paint_commands_have_backdrop_filter = paint_commands_contain_backdrop_filter(app.paint_commands)
 	} else {
-		app.paint_commands = []layout.PaintCommand{}
-		app.paint_display_list = unsafe { nil }
+		app.release_paint_commands()
 		app.paint_commands_have_backdrop_filter = false
 	}
 	// Recording can refresh paint-only styles in the retained transport without
@@ -93,4 +94,12 @@ fn (app &BrowserApp) javascript_tasks_have_unadopted_paint() bool {
 		return voidptr(cached) != voidptr(app.paint_display_list)
 	}
 	return true
+}
+
+// Stop replaying the adopted commands and let their scene be reused.
+fn (mut app BrowserApp) release_paint_commands() {
+	app.paint_commands = []layout.PaintCommand{}
+	app.paint_display_list = unsafe { nil }
+	layout.release_display_list_scene(app.paint_scene)
+	app.paint_scene = unsafe { nil }
 }

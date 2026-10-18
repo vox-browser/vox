@@ -498,6 +498,10 @@ mut:
 	// Private recording storage plus command vectors returned by the shell.
 	record_scratch CompatibilityRecordScratch
 	paintable_bindings []&dom.Paintable
+	// Storage of the published display list, and the document's reusable
+	// scene arenas (see display_list_scene.v).
+	scene      &DisplayListScene      = unsafe { nil }
+	scene_pool &DisplayListScenePool = unsafe { nil }
 }
 
 fn document_layout_update_callback_with_paint_tree(document &dom.Document, viewport_width f64,
@@ -507,6 +511,7 @@ fn document_layout_update_callback_with_paint_tree(document &dom.Document, viewp
 	} else {
 		map[i64]CompatibilityResizeHandleState{}
 	}
+	mut previous_result := document_layout_result(document) or { unsafe { &DocumentLayoutResult(nil) } }
 	result := run_document_layout_with_current_style(document, viewport_width, viewport_height, needs_layout_tree_rebuild) or {
 		return unsafe { nil }
 	}
@@ -524,6 +529,12 @@ fn document_layout_update_callback_with_paint_tree(document &dom.Document, viewp
 		record_scratch: take_document_recording_scratch(document)
 		paint_phase_commands: take_document_phase_command_storage(document)
 		paintable_bindings: take_document_paintable_bindings(document)
+		scene_pool: if previous_result != unsafe { nil } { previous_result.scene_pool } else { unsafe { &DisplayListScenePool(nil) } }
+	}
+	// The replaced result no longer publishes commands; the shell keeps any
+	// scene it adopted until it adopts the next one.
+	if previous_result != unsafe { nil } && voidptr(previous_result) != voidptr(result_ptr) {
+		previous_result.retire_display_list_scene()
 	}
 	if build_paint_tree {
 		install_document_painting_bridge(document, result_ptr)

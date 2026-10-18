@@ -28,11 +28,11 @@ fn test_sampled_parent_transform_retains_resources_and_updates_descendant_geomet
 	text_lines := initial_child.lines.data
 	paint_children := result.paint_tree.children.data
 	layout_handle := document.layout_engine_handle()
-	initial := document.record_display_list() or { panic('missing paint') }
+	initial := record_retained_display_list(mut document) or { panic('missing paint') }
 	initial_dump := initial.dump()
 	document.update_animations_and_send_events(1000)
 	document.update_layout(.html_event_loop_rendering_update)
-	current := document.record_display_list() or { panic('missing sampled paint') }
+	current := record_retained_display_list(mut document) or { panic('missing sampled paint') }
 	assert document.layout_engine_handle() == layout_handle
 	assert result.paint_tree.children.data == paint_children
 	current_svg := animation_paint_box_for_handle(&result.paint_tree, svg_handle.layout_handle) or { panic('missing retained svg') }
@@ -45,7 +45,7 @@ fn test_sampled_parent_transform_retains_resources_and_updates_descendant_geomet
 	assert initial.dump() == initial_dump
 	local_dump := current.dump()
 	refresh_document_paint_tree(document, mut result, 320, 200)
-	assert (document.record_display_list() or { panic('missing full paint') }).dump() == local_dump
+	assert (record_retained_display_list(mut document) or { panic('missing full paint') }).dump() == local_dump
 }
 
 fn test_sampled_before_transform_reuses_pseudo_transport() {
@@ -60,17 +60,17 @@ fn test_sampled_before_transform_reuses_pseudo_transport() {
 	initial := animation_paint_box_for_handle(&result.paint_tree, pseudo_layout.layout_handle) or { panic('missing before transport') }
 	initial_address := voidptr(initial)
 	paint_children := result.paint_tree.children.data
-	_ = document.record_display_list() or { panic('missing initial paint') }
+	_ = record_retained_display_list(mut document) or { panic('missing initial paint') }
 	document.update_animations_and_send_events(1000)
 	document.update_layout(.html_event_loop_rendering_update)
-	local := document.record_display_list() or { panic('missing sampled paint') }
+	local := record_retained_display_list(mut document) or { panic('missing sampled paint') }
 	current := animation_paint_box_for_handle(&result.paint_tree, pseudo_layout.layout_handle) or { panic('missing retained before') }
 	assert voidptr(current) == initial_address
 	assert result.paint_tree.children.data == paint_children
 	assert current.own_paint_transform[4] == 50
 	local_dump := local.dump()
 	refresh_document_paint_tree(document, mut result, 320, 200)
-	assert (document.record_display_list() or { panic('missing full paint') }).dump() == local_dump
+	assert (record_retained_display_list(mut document) or { panic('missing full paint') }).dump() == local_dump
 }
 
 fn test_sampled_outer_svg_rotation_keeps_path_transport_and_matches_a_full_refresh() {
@@ -88,11 +88,11 @@ fn test_sampled_outer_svg_rotation_keeps_path_transport_and_matches_a_full_refre
 	image_tile := image_pattern.tile_display_list or { panic('missing retained image tile') }
 	assert image_tile.operations.any(it.kind == .image)
 	paint_children := result.paint_tree.children.data
-	initial := document.record_display_list() or { panic('missing initial svg paint') }
+	initial := record_retained_display_list(mut document) or { panic('missing initial svg paint') }
 	initial_dump := initial.dump()
 	document.update_animations_and_send_events(1000)
 	document.update_layout(.html_event_loop_rendering_update)
-	local := document.record_display_list() or { panic('missing rotated svg paint') }
+	local := record_retained_display_list(mut document) or { panic('missing rotated svg paint') }
 	current_box := animation_paint_box_for_handle(&result.paint_tree, placeholder.layout_handle) or { panic('missing retained svg transport') }
 	assert result.paint_tree.children.data == paint_children
 	assert current_box.children.data == children
@@ -111,7 +111,7 @@ fn test_sampled_outer_svg_rotation_keeps_path_transport_and_matches_a_full_refre
 	assert initial.dump() == initial_dump
 	local_dump := local.dump()
 	refresh_document_paint_tree(document, mut result, 320, 200)
-	assert (document.record_display_list() or { panic('missing full svg paint') }).dump() == local_dump
+	assert (record_retained_display_list(mut document) or { panic('missing full svg paint') }).dump() == local_dump
 }
 
 fn test_sampled_opacity_zero_and_recovery_rebuild_paint_steps_and_preserve_hits() {
@@ -120,14 +120,14 @@ fn test_sampled_opacity_zero_and_recovery_rebuild_paint_steps_and_preserve_hits(
 	_ = layout_document_typed_in_viewport(document, 320, 200)
 	result := document_layout_result(document) or { panic('missing layout') }
 	target := document.get_element_by_id('target') or { panic('missing target') }
-	initial := document.record_display_list() or { panic('missing initial paint') }
+	initial := record_retained_display_list(mut document) or { panic('missing initial paint') }
 	initial_dump := initial.dump()
 	paint_children := result.paint_tree.children.data
 	assert display_list_commands(initial).any(it.color == 'rgb(71 72 73)')
 	for timestamp in [1000, 2000] {
 		document.update_animations_and_send_events(timestamp)
 		document.update_layout(.html_event_loop_rendering_update)
-		paint := document.record_display_list() or { panic('missing sampled opacity paint') }
+		paint := record_retained_display_list(mut document) or { panic('missing sampled opacity paint') }
 		assert result.paint_tree.children.data == paint_children
 		assert display_list_commands(paint).any(it.color == 'rgb(71 72 73)') == (timestamp == 2000)
 		assert (document.element_from_point(10, 10) or { panic('missing transparent hit') }) == target
@@ -148,13 +148,13 @@ fn test_non_compositor_same_pointer_sample_retains_the_full_refresh_fallback() {
 	placeholder.apply_animated_style(voidptr(computed), false)
 	assert result.paint_style_update_requires_full_refresh
 	document.set_needs_repaint_with_invalidation(.paint_commands)
-	_ = document.record_display_list() or { panic('missing filter paint') }
+	_ = record_retained_display_list(mut document) or { panic('missing filter paint') }
 	assert !result.paint_tree_needs_style_update
 	mutable_computed.remove_animated_property(.filter)
 	placeholder.apply_animated_style(voidptr(computed), false)
 	assert result.paint_style_update_requires_full_refresh
 	document.set_needs_repaint_with_invalidation(.paint_commands)
-	_ = document.record_display_list() or { panic('missing restored paint') }
+	_ = record_retained_display_list(mut document) or { panic('missing restored paint') }
 	assert !result.paint_tree_needs_style_update
 }
 
@@ -164,12 +164,12 @@ fn test_sampled_compositor_category_changes_use_the_full_transport_refresh() {
 		defer { document.finalize() }
 		_ = layout_document_typed_in_viewport(document, 320, 200)
 		result := document_layout_result(document) or { panic('missing layout') }
-		_ = document.record_display_list() or { panic('missing initial paint') }
+		_ = record_retained_display_list(mut document) or { panic('missing initial paint') }
 		paint_children := result.paint_tree.children.data
 		layout_handle := document.layout_engine_handle()
 		document.update_animations_and_send_events(1000)
 		document.update_layout(.html_event_loop_rendering_update)
-		_ = document.record_display_list() or { panic('missing sampled paint') }
+		_ = record_retained_display_list(mut document) or { panic('missing sampled paint') }
 		assert document.layout_engine_handle() == layout_handle
 		assert result.paint_tree.children.data != paint_children
 	}
@@ -183,14 +183,14 @@ fn test_compositor_transform_presence_change_uses_the_full_transport_refresh() {
 	target := document.get_element_by_id('target') or { panic('missing target') }
 	placeholder := target.as_node().layout_node() or { panic('missing target layout') }
 	computed := css.computed_properties_for_element(target) or { panic('missing style') }
-	_ = document.record_display_list() or { panic('missing initial paint') }
+	_ = record_retained_display_list(mut document) or { panic('missing initial paint') }
 	paint_children := result.paint_tree.children.data
 	mut mutable_computed := unsafe { &css.ComputedProperties(computed) }
 	mutable_computed.set_animated_property(.transform, &dom.StyleValue{css_text:'translateX(50px)'}, .no, .no)
 	placeholder.apply_animated_style(voidptr(computed), true)
 	document.set_needs_repaint_with_invalidation(.paint_commands_and_hit_test_list)
 	document.set_needs_accumulated_visual_contexts_update(true)
-	_ = document.record_display_list() or { panic('missing transformed paint') }
+	_ = record_retained_display_list(mut document) or { panic('missing transformed paint') }
 	assert result.paint_tree.children.data != paint_children
 	assert target.get_bounding_client_rect().x == 50
 }

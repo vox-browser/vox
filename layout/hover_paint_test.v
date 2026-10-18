@@ -14,14 +14,14 @@ fn test_hover_style_refreshes_retained_paint_without_an_embedder_relayout() {
 	result := document_layout_result(document) or { panic('missing layout') }
 	layout_handle := document.layout_engine_handle()
 	state := result.state
-	initial := display_list_commands(document.record_display_list() or { panic('missing initial paint') })
+	initial := display_list_commands(record_retained_display_list(mut document) or { panic('missing initial paint') })
 	assert !initial.any(it.color == 'rgb(234 236 240)')
 
 	document.set_hovered_node(label.as_node())
 	document.update_layout(.event_handler_handle_mouse_move)
 	assert document.layout_engine_handle() == layout_handle
 	assert result.state == state
-	hovered := display_list_commands(document.record_display_list() or { panic('missing hovered paint') })
+	hovered := display_list_commands(record_retained_display_list(mut document) or { panic('missing hovered paint') })
 	assert hovered.any(it.color == 'rgb(234 236 240)' && it.width == 200)
 	assert !initial.any(it.color == 'rgb(234 236 240)')
 	assert !result.paint_tree_needs_style_update
@@ -30,13 +30,13 @@ fn test_hover_style_refreshes_retained_paint_without_an_embedder_relayout() {
 	paint_children := result.paint_tree.children.data
 	phase_commands := result.paint_phase_commands.data
 	document.set_needs_repaint_with_invalidation(.paint_commands)
-	_ = document.record_display_list() or { panic('missing repeated paint') }
+	_ = record_retained_display_list(mut document) or { panic('missing repeated paint') }
 	assert result.paint_tree.children.data == paint_children
 	assert result.paint_phase_commands.data == phase_commands
 
 	document.set_hovered_node(none)
 	document.update_layout(.event_handler_handle_mouse_move)
-	unhovered := display_list_commands(document.record_display_list() or { panic('missing unhovered paint') })
+	unhovered := display_list_commands(record_retained_display_list(mut document) or { panic('missing unhovered paint') })
 	assert !unhovered.any(it.color == 'rgb(234 236 240)')
 	assert hovered.any(it.color == 'rgb(234 236 240)')
 	assert document.layout_engine_handle() == layout_handle
@@ -69,7 +69,7 @@ fn test_hover_background_and_underline_keep_unrelated_paint_caches() {
 		+ '<svg id="unrelated" width="100" height="100"><path d="M0 0H100V100H0Z" fill="green"/></svg>')
 	_ = layout_document_typed_in_viewport(document, 320, 200)
 	link := document.get_element_by_id('link') or { panic('missing link') }
-	_ = document.record_display_list() or { panic('missing initial paint') }
+	_ = record_retained_display_list(mut document) or { panic('missing initial paint') }
 	mut result := document_layout_result(document) or { panic('missing layout') }
 	children := result.paint_tree.children.data
 	phase_storage := result.paint_phase_commands.data
@@ -83,16 +83,16 @@ fn test_hover_background_and_underline_keep_unrelated_paint_caches() {
 		if hovered { document.set_hovered_node(link.as_node()) }
 		else { document.set_hovered_node(none) }
 		document.update_layout(.event_handler_handle_mouse_move)
-		commands := display_list_commands(document.record_display_list() or { panic('missing hover paint') })
+		commands := display_list_commands(record_retained_display_list(mut document) or { panic('missing hover paint') })
 		assert commands.any(it.color == 'rgb(234 236 240)') == hovered
 		assert commands.any(it.kind == 'draw_line') == hovered
 		assert result.paint_tree.children.data == children
 		assert result.paint_phase_commands.data == phase_storage
 		assert result.paint_phase_commands[unchanged_bucket].data == svg_commands
 	}
-	local_dump := (document.record_display_list() or { panic('missing local recording') }).dump()
+	local_dump := (record_retained_display_list(mut document) or { panic('missing local recording') }).dump()
 	refresh_document_paint_tree(document, mut result, 320, 200)
-	full_dump := (document.record_display_list() or { panic('missing full recording') }).dump()
+	full_dump := (record_retained_display_list(mut document) or { panic('missing full recording') }).dump()
 	assert local_dump == full_dump
 }
 
@@ -103,14 +103,14 @@ fn test_local_hover_underline_propagates_through_block_descendants() {
 	</style><a id="link" href="#"><strong>Italiano</strong></a>')
 	_ = layout_document_typed_in_viewport(document, 320, 200)
 	link := document.get_element_by_id('link') or { panic('missing link') }
-	_ = document.record_display_list() or { panic('missing initial recording') }
+	_ = record_retained_display_list(mut document) or { panic('missing initial recording') }
 	document.set_hovered_node(link.as_node())
 	document.update_layout(.event_handler_handle_mouse_move)
-	local := document.record_display_list() or { panic('missing local recording') }
+	local := record_retained_display_list(mut document) or { panic('missing local recording') }
 	local_dump := local.dump()
 	assert display_list_commands(local).any(it.kind == 'draw_line')
 	mut result := document_layout_result(document) or { panic('missing layout') }
 	refresh_document_paint_tree(document, mut result, 320, 200)
-	full_dump := (document.record_display_list() or { panic('missing full recording') }).dump()
+	full_dump := (record_retained_display_list(mut document) or { panic('missing full recording') }).dump()
 	assert local_dump == full_dump
 }

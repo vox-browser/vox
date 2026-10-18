@@ -197,7 +197,7 @@ fn test_css_filter_is_lowered_once_around_the_complete_subtree() {
 	document := html.parse_document('<!doctype html><style>html, body { margin: 0 } #filtered { filter: blur(3px) contrast(150%) } .part { width: 40px; height: 20px } </style><body><div id="filtered"><div class="part" style="background:red"></div><div class="part" style="background:blue"></div></div></body>')
 	_ = layout_document_typed_in_viewport(document, 160, 120)
 	mut mutable_document := unsafe { &dom.Document(document) }
-	display_list := mutable_document.record_display_list() or { panic('missing display list') }
+	display_list := record_retained_display_list(mut mutable_document) or { panic('missing display list') }
 	commands := display_list_commands(display_list)
 	filter_begins := commands.filter(it.kind == 'begin_css_filter_layer')
 	filter_ends := commands.filter(it.kind == 'end_css_filter_layer')
@@ -228,7 +228,7 @@ fn test_css_opacity_is_lowered_as_one_retained_subtree_effect() {
 	document := html.parse_document('<!doctype html><style>html, body { margin: 0 } #faded { opacity: .4 } .part { width: 40px; height: 20px } </style><body><div id="faded"><div class="part" style="background:red"></div><div class="part" style="background:blue"></div></div></body>')
 	_ = layout_document_typed_in_viewport(document, 160, 120)
 	mut mutable_document := unsafe { &dom.Document(document) }
-	commands := display_list_commands(mutable_document.record_display_list() or {
+	commands := display_list_commands(record_retained_display_list(mut mutable_document) or {
 		panic('missing display list')
 	})
 	effect_begins := commands.filter(it.kind == 'begin_css_effect_layer')
@@ -274,7 +274,7 @@ fn test_backdrop_filter_records_cpp_background_phase_command() {
 		panic('missing target box')
 	}
 	mut mutable_document := unsafe { &dom.Document(document) }
-	commands := display_list_commands(mutable_document.record_display_list() or {
+	commands := display_list_commands(record_retained_display_list(mut mutable_document) or {
 		panic('missing display list')
 	})
 	backdrops := commands.filter(it.kind == 'apply_backdrop_filter')
@@ -315,7 +315,7 @@ fn test_backdrop_filter_samples_outside_own_css_filter_layer() {
 	document := html.parse_document('<!doctype html><style>html, body { margin: 0 } #target { width: 80px; height: 40px; background: rgb(11 22 33); filter: saturate(50%); backdrop-filter: brightness(120%) }</style><body><div id="target"></div></body>')
 	_ = layout_document_typed_in_viewport(document, 160, 120)
 	mut mutable_document := unsafe { &dom.Document(document) }
-	commands := display_list_commands(mutable_document.record_display_list() or {
+	commands := display_list_commands(record_retained_display_list(mut mutable_document) or {
 		panic('missing display list')
 	})
 	mut begin_index := -1
@@ -344,7 +344,7 @@ fn test_same_document_svg_backdrop_filter_retains_the_translated_graph() {
 	document := html.parse_document('<!doctype html><style>html, body { margin: 0 } #target { width: 80px; height: 40px; backdrop-filter: url(#soft) }</style><body><svg width="0" height="0"><defs><filter id="soft" color-interpolation-filters="sRGB"><feGaussianBlur in="SourceGraphic" stdDeviation="2 3"/></filter></defs></svg><div id="target"></div></body>')
 	_ = layout_document_typed_in_viewport(document, 160, 120)
 	mut mutable_document := unsafe { &dom.Document(document) }
-	commands := display_list_commands(mutable_document.record_display_list() or {
+	commands := display_list_commands(record_retained_display_list(mut mutable_document) or {
 		panic('missing display list')
 	})
 	backdrops := commands.filter(it.kind == 'apply_backdrop_filter')
@@ -368,7 +368,7 @@ fn test_same_document_svg_filter_url_retains_the_translated_graph() {
 	document := html.parse_document('<!doctype html><style>html, body { margin: 0 } #filtered { width: 80px; height: 40px; background: red; filter: contrast(150%) url(#soft) } feFlood { flood-color: rgb(12 34 56); flood-opacity: .25 }</style><body><svg width="0" height="0"><defs><filter id="soft" color-interpolation-filters="sRGB"><feGaussianBlur in="SourceGraphic" stdDeviation="2 3" result="blurred"/><feOffset in="blurred" dx="4" dy="5" result="shifted"/><feFlood result="paint"/><feBlend in="shifted" in2="paint" mode="multiply"/></filter></defs></svg><div id="filtered"></div></body>')
 	_ = layout_document_typed_in_viewport(document, 160, 120)
 	mut mutable_document := unsafe { &dom.Document(document) }
-	display_list := mutable_document.record_display_list() or { panic('missing display list') }
+	display_list := record_retained_display_list(mut mutable_document) or { panic('missing display list') }
 	filter_commands := display_list_commands(display_list).filter(it.kind == 'begin_css_filter_layer')
 	assert filter_commands.len == 1
 	filter := filter_commands[0].visual_layer().filter or { panic('missing retained filter') }
@@ -394,7 +394,7 @@ fn test_same_document_svg_filter_uses_computed_interpolation_color_space() {
 	document := html.parse_document('<!doctype html><style>html, body { margin: 0 } #filtered { width: 80px; height: 40px; background: rgb(128 0 0); filter: url(#matrix) } feColorMatrix { color-interpolation-filters: linearRGB }</style><body><svg width="0" height="0"><defs><filter id="matrix" color-interpolation-filters="sRGB"><feColorMatrix type="matrix" values="1 0 0 0 0 0 1 0 0 0 0 0 1 0 0 0 0 0 1 0"/></filter></defs></svg><div id="filtered"></div></body>')
 	_ = layout_document_typed_in_viewport(document, 160, 120)
 	mut mutable_document := unsafe { &dom.Document(document) }
-	display_list := mutable_document.record_display_list() or { panic('missing display list') }
+	display_list := record_retained_display_list(mut mutable_document) or { panic('missing display list') }
 	filter_commands := display_list_commands(display_list).filter(it.kind == 'begin_css_filter_layer')
 	assert filter_commands.len == 1
 	filter := filter_commands[0].visual_layer().filter or { panic('missing retained filter') }
@@ -414,7 +414,7 @@ fn test_same_document_svg_filter_retains_absolute_feimage_resource() {
 	document := html.parse_document('<!doctype html><style>html, body { margin: 0 } #filtered { width: 80px; height: 40px; filter: url(#picture) }</style><body><svg width="0" height="0"><defs><filter id="picture"><feImage href="data:image/png;base64,AAAA" result="decoded"/><feOffset in="decoded" dx="2"/></filter></defs></svg><div id="filtered"></div></body>')
 	_ = layout_document_typed_in_viewport(document, 160, 120)
 	mut mutable_document := unsafe { &dom.Document(document) }
-	display_list := mutable_document.record_display_list() or { panic('missing display list') }
+	display_list := record_retained_display_list(mut mutable_document) or { panic('missing display list') }
 	filter_commands := display_list_commands(display_list).filter(it.kind == 'begin_css_filter_layer')
 	assert filter_commands.len == 1
 	filter := filter_commands[0].visual_layer().filter or { panic('missing retained filter') }
@@ -428,7 +428,7 @@ fn test_svg_filter_content_generation_records_the_cpp_transparent_bounds_trigger
 	document := html.parse_document('<!doctype html><style>html, body { margin: 0 } #filtered { width: 80px; height: 40px; filter: url(#paint) }</style><body><svg width="0" height="0"><defs><filter id="paint"><feFlood flood-color="green"/></filter></defs></svg><div id="filtered"></div></body>')
 	_ = layout_document_typed_in_viewport(document, 160, 120)
 	mut mutable_document := unsafe { &dom.Document(document) }
-	display_list := mutable_document.record_display_list() or { panic('missing display list') }
+	display_list := record_retained_display_list(mut mutable_document) or { panic('missing display list') }
 	commands := display_list_commands(display_list)
 	mut begin_index := -1
 	mut trigger_index := -1
@@ -460,7 +460,7 @@ fn test_external_and_non_filter_css_urls_do_not_create_svg_graphs() {
 	document := html.parse_document('<!doctype html><style>#target { filter: url(https://example.test/filter.svg#remote) url(#not-filter) blur(2px) }</style><body><div id="not-filter"></div><div id="target">text</div></body>')
 	_ = layout_document_typed_in_viewport(document, 160, 120)
 	mut mutable_document := unsafe { &dom.Document(document) }
-	display_list := mutable_document.record_display_list() or { panic('missing display list') }
+	display_list := record_retained_display_list(mut mutable_document) or { panic('missing display list') }
 	filter_commands := display_list_commands(display_list).filter(it.kind == 'begin_css_filter_layer')
 	assert filter_commands.len == 1
 	filter := filter_commands[0].visual_layer().filter or { panic('missing retained filter') }
@@ -474,7 +474,7 @@ fn test_css_filter_and_svg_mask_keep_visual_context_nesting_order() {
 	document := html.parse_document('<!doctype html><style>html, body { margin: 0 } #filtered { filter: saturate(50%) } svg { display:block }</style><body><div id="filtered"><svg width="120" height="80"><defs><mask id="fade" mask-type="alpha"><rect width="120" height="80" fill="white"/></mask></defs><g mask="url(#fade)"><rect width="120" height="80" fill="red"/></g></svg></div></body>')
 	_ = layout_document_typed_in_viewport(document, 160, 120)
 	mut mutable_document := unsafe { &dom.Document(document) }
-	display_list := mutable_document.record_display_list() or { panic('missing display list') }
+	display_list := record_retained_display_list(mut mutable_document) or { panic('missing display list') }
 	mut significant := []string{}
 	for command in display_list_commands(display_list) {
 		if command.kind in ['begin_css_filter_layer', 'begin_svg_mask_layer', 'draw_svg_path',
@@ -686,7 +686,7 @@ fn test_fixed_background_layers_compensate_nested_scroll_frames_independently() 
 	mut scroller_paintable := scroller.paintable_box() or { panic('missing scroller paintable') }
 	assert scroller_paintable.set_scroll_offset(dom.CSSPixelPoint_{ y_: 25 })
 	mut mutable_document := unsafe { &dom.Document(document) }
-	display_list := mutable_document.record_display_list() or { panic('missing display list') }
+	display_list := record_retained_display_list(mut mutable_document) or { panic('missing display list') }
 	gradients := display_list_commands(display_list).filter(it.kind == 'fill_gradient'
 		&& it.gradient_background_layer)
 	assert gradients.len == 2
@@ -702,7 +702,7 @@ fn test_fixed_background_layers_compensate_nested_scroll_frames_independently() 
 
 	retained_command_count := result.paint_phase_command_count
 	assert scroller_paintable.set_scroll_offset(dom.CSSPixelPoint_{ y_: 35 })
-	replayed := mutable_document.record_display_list() or { panic('missing replayed display list') }
+	replayed := record_retained_display_list(mut mutable_document) or { panic('missing replayed display list') }
 	replayed_gradients := display_list_commands(replayed).filter(it.kind == 'fill_gradient'
 		&& it.gradient_background_layer)
 	assert replayed_gradients[0].transform[5] == -35
@@ -729,7 +729,7 @@ fn test_fixed_background_inside_transform_behaves_as_scroll() {
 	}
 	assert target.fixed_background_visual_context == none
 	mut mutable_document := unsafe { &dom.Document(document) }
-	display_list := mutable_document.record_display_list() or { panic('missing display list') }
+	display_list := record_retained_display_list(mut mutable_document) or { panic('missing display list') }
 	gradients := display_list_commands(display_list).filter(it.kind == 'fill_gradient'
 		&& it.gradient_background_layer)
 	assert gradients.len == 1
@@ -1246,7 +1246,7 @@ fn test_document_viewport_paintable_records_and_hit_tests_committed_layout() {
 	assert viewport.root_layout_node() != none
 	viewport_paintable := document.paintable() or { panic('missing viewport paintable') }
 	mut mutable_document := unsafe { &dom.Document(document) }
-	display_list := mutable_document.record_display_list() or { panic('missing display list') }
+	display_list := record_retained_display_list(mut mutable_document) or { panic('missing display list') }
 	commands := display_list_commands(display_list)
 	assert commands.len == display_list.command_count()
 	assert commands.len == root.paint_commands().len
@@ -1270,7 +1270,7 @@ fn test_document_display_list_retains_one_stacking_plan_and_command_store() {
 	document := html.parse_document('<!doctype html><style>html, body { margin: 0 } .front { position: relative; z-index: 2 }</style><body><div id="back">back</div><div id="front" class="front">front</div></body>')
 	_ := layout_document_typed_in_viewport(document, 320, 200)
 	mut mutable_document := unsafe { &dom.Document(document) }
-	display_list := mutable_document.record_display_list() or { panic('missing display list') }
+	display_list := record_retained_display_list(mut mutable_document) or { panic('missing display list') }
 	result := document_layout_result(document) or { panic('missing layout result') }
 	assert result.stacking_context_tree_is_valid
 	assert result.paint_order.len > 0
@@ -1300,7 +1300,7 @@ fn test_document_display_list_retains_one_stacking_plan_and_command_store() {
 	mutable_document.set_needs_repaint()
 	assert mutable_document.cached_display_list() == none
 	assert !result.hit_test_display_list_is_valid
-	_ = mutable_document.record_display_list() or { panic('missing repainted display list') }
+	_ = record_retained_display_list(mut mutable_document) or { panic('missing repainted display list') }
 	assert result.hit_test_display_list_is_valid
 	assert result.paint_order.data == paint_order_data
 	assert result.paint_steps.data == paint_steps_data
@@ -1320,7 +1320,7 @@ fn test_document_display_list_retains_one_stacking_plan_and_command_store() {
 	}
 	assert root_entry_index >= 0
 	assert !result.paint_phase_entry_valid[root_entry_index]
-	_ = mutable_document.record_display_list() or { panic('missing box-invalidated display list') }
+	_ = record_retained_display_list(mut mutable_document) or { panic('missing box-invalidated display list') }
 	assert result.paint_phase_entry_valid.all(it)
 	assert result.paint_phase_commands.data == paint_phase_commands_data
 
@@ -1351,7 +1351,7 @@ fn test_document_display_list_retains_one_stacking_plan_and_command_store() {
 	assert !result.paint_phase_entry_valid[front_entry_index]
 	assert !result.paint_phase_entry_valid[containing_block_entry_index]
 	assert result.paint_phase_entry_valid[root_entry_index]
-	_ = mutable_document.record_display_list() or { panic('missing child-invalidated display list') }
+	_ = record_retained_display_list(mut mutable_document) or { panic('missing child-invalidated display list') }
 	assert result.hit_test_display_list_is_valid
 	assert result.paint_phase_entry_valid.all(it)
 	assert result.paint_phase_commands.data == paint_phase_commands_data
@@ -1362,7 +1362,7 @@ fn test_document_display_list_retains_one_stacking_plan_and_command_store() {
 	assert mutable_document.cached_display_list() == none
 	assert result.hit_test_display_list_is_valid
 	assert !result.paint_phase_entry_valid[front_entry_index]
-	_ = mutable_document.record_display_list() or { panic('missing paint-only display list') }
+	_ = record_retained_display_list(mut mutable_document) or { panic('missing paint-only display list') }
 	assert result.hit_test_display_list_is_valid
 
 	// Full invalidation discards every phase record while keeping private
@@ -1374,7 +1374,7 @@ fn test_document_display_list_retains_one_stacking_plan_and_command_store() {
 	assert result.paint_phase_commands.all(it.len == 0)
 	assert result.paint_phase_entry_valid.len == 0
 	mutable_document.set_needs_repaint()
-	_ = mutable_document.record_display_list() or { panic('missing uncached display list') }
+	_ = record_retained_display_list(mut mutable_document) or { panic('missing uncached display list') }
 	assert result.paint_phase_cache_valid
 	assert result.paint_phase_commands.len == result.paint_order.len * compatibility_paint_phase_count
 }
@@ -1387,7 +1387,7 @@ fn test_paint_only_style_change_keeps_hit_test_display_list() {
 	_ = layout_document_typed_in_viewport(document, 320, 200)
 	box := document.get_element_by_id('box') or { panic('missing box') }
 	mut mutable_document := unsafe { &dom.Document(document) }
-	_ = mutable_document.record_display_list() or { panic('missing initial display list') }
+	_ = record_retained_display_list(mut mutable_document) or { panic('missing initial display list') }
 	initial_hit := mutable_document.element_from_point(50, 50) or { panic('missing initial hit') }
 	assert initial_hit.as_node().unique_id() == box.as_node().unique_id()
 	mut result := document_layout_result(document) or { panic('missing layout result') }
@@ -1405,7 +1405,7 @@ fn test_paint_only_style_change_keeps_hit_test_display_list() {
 	assert paint_only_hit.as_node().unique_id() == box.as_node().unique_id()
 	assert result.hit_test_display_list_is_valid
 
-	_ = mutable_document.record_display_list() or { panic('missing refreshed display list') }
+	_ = record_retained_display_list(mut mutable_document) or { panic('missing refreshed display list') }
 	mutable_box.set_attribute_value('style', 'pointer-events: none')
 	_ = layout_document_typed_in_viewport(document, 320, 200)
 	result = document_layout_result(document) or { panic('missing hit-test-invalidated result') }
@@ -1692,13 +1692,13 @@ fn test_highlighted_node_records_box_and_text_inspector_overlays_without_clippin
 		panic('missing highlighted target box')
 	}
 	mut mutable_document := unsafe { &dom.Document(document) }
-	initial := display_list_commands(mutable_document.record_display_list() or {
+	initial := display_list_commands(record_retained_display_list(mut mutable_document) or {
 		panic('missing initial display list')
 	})
 	assert !initial.any(it.color in ['#ffff0064', '#00ffff64', '#00800064', '#ff00ff64'])
 
 	mutable_document.set_highlighted_node(target.as_node(), none)
-	box_commands := display_list_commands(mutable_document.record_display_list() or {
+	box_commands := display_list_commands(record_retained_display_list(mut mutable_document) or {
 		panic('missing box inspector display list')
 	})
 	box_overlay := box_commands.filter(it.color in ['#ffff0064', '#00ffff64', '#00800064', '#ff00ff64',
@@ -1721,7 +1721,7 @@ fn test_highlighted_node_records_box_and_text_inspector_overlays_without_clippin
 
 	text_node := target.as_node().first_child() or { panic('missing highlighted text') }
 	mutable_document.set_highlighted_node(text_node, none)
-	text_commands := display_list_commands(mutable_document.record_display_list() or {
+	text_commands := display_list_commands(record_retained_display_list(mut mutable_document) or {
 		panic('missing text inspector display list')
 	})
 	text_overlay := text_commands.filter((it.kind == 'stroke_rounded_rect' && it.color == '#008000')
@@ -1733,7 +1733,7 @@ fn test_highlighted_node_records_box_and_text_inspector_overlays_without_clippin
 	assert text_overlay[1].points[1] == text_overlay[1].points[3]
 
 	mutable_document.set_highlighted_node(none, none)
-	cleared := display_list_commands(mutable_document.record_display_list() or {
+	cleared := display_list_commands(record_retained_display_list(mut mutable_document) or {
 		panic('missing cleared inspector display list')
 	})
 	assert !cleared.any(it.color in ['#ffff0064', '#00ffff64', '#00800064', '#ff00ff64'])
@@ -2100,7 +2100,7 @@ fn test_active_scrollbar_hover_jump_drag_and_release_follow_source_state() {
 	assert result.chrome_widget_boxes[scrollbar_identity] != unsafe { nil }
 	result.chrome_widget_mouse_enter(initial_hit.chrome_widget_id)
 	mut mutable_document := unsafe { &dom.Document(document) }
-	hovered_commands := display_list_commands(mutable_document.record_display_list() or {
+	hovered_commands := display_list_commands(record_retained_display_list(mut mutable_document) or {
 		panic('missing hovered scrollbar display list')
 	})
 	gutter_input := box.compatibility_scrollbar_geometry_input(overlay, .vertical, metrics, true)
@@ -2200,7 +2200,7 @@ fn test_element_scroll_replays_retained_commands_through_live_visual_context() {
 	document := html.parse_document('<!doctype html><style>html, body { margin: 0 } #scroller { width: 100px; height: 50px; overflow: auto; background: rgb(9 8 7) } #spacer { height: 80px } #target { height: 20px; background: rgb(1 2 3) }</style><body><div id="scroller"><div id="spacer"></div><div id="target"></div></div></body>')
 	_ = layout_document_typed_in_viewport(document, 320, 200)
 	mut mutable_document := unsafe { &dom.Document(document) }
-	initial_display_list := mutable_document.record_display_list() or {
+	initial_display_list := record_retained_display_list(mut mutable_document) or {
 		panic('missing initial display list')
 	}
 	initial_commands := display_list_commands(initial_display_list)
@@ -2234,7 +2234,7 @@ fn test_element_scroll_replays_retained_commands_through_live_visual_context() {
 	assert mutable_document.cached_display_list() == none
 	assert result.paint_phase_cache_valid
 
-	scrolled_display_list := mutable_document.record_display_list() or {
+	scrolled_display_list := record_retained_display_list(mut mutable_document) or {
 		panic('missing scrolled display list')
 	}
 	scrolled_commands := display_list_commands(scrolled_display_list)
@@ -2262,7 +2262,7 @@ fn test_retained_commands_preserve_nested_rounded_overflow_clip_nodes() {
 	document := html.parse_document('<!doctype html><style>html, body { margin: 0 } #outer { width: 100px; height: 80px; overflow: hidden; border-radius: 30px / 20px } #inner { width: 80px; height: 60px; overflow: hidden; border-radius: 10px / 6px; transform: translate(5px, 7px); transform-origin: 0 0 } #target { width: 120px; height: 120px; background: rgb(71 72 73) }</style><body><div id="outer"><div id="inner"><div id="target"></div></div></div></body>')
 	_ = layout_document_typed_in_viewport(document, 320, 200)
 	mut mutable_document := unsafe { &dom.Document(document) }
-	display_list := mutable_document.record_display_list() or { panic('missing display list') }
+	display_list := record_retained_display_list(mut mutable_document) or { panic('missing display list') }
 	target_color := css.Color{71, 72, 73, 255}.serialize()
 	target_commands := display_list_commands(display_list).filter(it.kind == 'fill_rect'
 		&& it.color == target_color)
@@ -2292,7 +2292,7 @@ fn test_css_clip_rect_clips_absolute_box_descendants_and_hit_testing() {
 	document := html.parse_document('<!doctype html><style>html, body { margin: 0 } #target { position: absolute; width: 100px; height: 100px; background: rgb(61 62 63); clip: rect(10px, 80px, 60px, 20px) } #child { width: 100px; height: 100px; background: rgb(64 65 66) }</style><body><div id="target"><div id="child"></div></div></body>')
 	_ = layout_document_typed_in_viewport(document, 320, 200)
 	mut mutable_document := unsafe { &dom.Document(document) }
-	display_list := mutable_document.record_display_list() or { panic('missing display list') }
+	display_list := record_retained_display_list(mut mutable_document) or { panic('missing display list') }
 	commands := display_list_commands(display_list)
 	for color in [css.Color{61, 62, 63, 255}.serialize(), css.Color{64, 65, 66, 255}.serialize()] {
 		matching := commands.filter(it.kind == 'fill_rect' && it.color == color)
@@ -2318,7 +2318,7 @@ fn test_css_clip_rect_is_ignored_for_non_positioned_boxes_and_negative_extents_a
 	document := html.parse_document('<!doctype html><style>html, body { margin: 0 } #static { width: 100px; height: 30px; background: rgb(67 68 69); clip: rect(0, 0, 0, 0) } #negative { position: absolute; top: 40px; width: 100px; height: 100px; background: rgb(70 71 72); clip: rect(80px, 20px, 10px, 90px) }</style><body><div id="static"></div><div id="negative"></div></body>')
 	_ = layout_document_typed_in_viewport(document, 320, 200)
 	mut mutable_document := unsafe { &dom.Document(document) }
-	display_list := mutable_document.record_display_list() or { panic('missing display list') }
+	display_list := record_retained_display_list(mut mutable_document) or { panic('missing display list') }
 	commands := display_list_commands(display_list)
 	static_commands := commands.filter(it.kind == 'fill_rect'
 		&& it.color == css.Color{67, 68, 69, 255}.serialize())
@@ -2336,7 +2336,7 @@ fn test_basic_shape_clip_path_retains_curves_fill_rule_and_hit_testing() {
 	document := html.parse_document('<!doctype html><style>html, body { margin: 0 } #target { width: 100px; height: 100px; background: rgb(81 82 83); clip-path: path(evenodd, "M 0 0 H 100 V 100 H 0 Z M 25 25 H 75 V 75 H 25 Z") }</style><body><div id="target"></div></body>')
 	_ = layout_document_typed_in_viewport(document, 320, 200)
 	mut mutable_document := unsafe { &dom.Document(document) }
-	display_list := mutable_document.record_display_list() or { panic('missing display list') }
+	display_list := record_retained_display_list(mut mutable_document) or { panic('missing display list') }
 	target_color := css.Color{81, 82, 83, 255}.serialize()
 	target_commands := display_list_commands(display_list).filter(it.kind == 'fill_rect'
 		&& it.color == target_color)
@@ -2365,7 +2365,7 @@ fn test_circle_clip_path_retains_endpoint_arcs() {
 	document := html.parse_document('<!doctype html><style>html, body { margin: 0 } #target { width: 100px; height: 100px; background: rgb(91 92 93); clip-path: circle(40px at 50px 50px) }</style><body><div id="target"></div></body>')
 	_ = layout_document_typed_in_viewport(document, 320, 200)
 	mut mutable_document := unsafe { &dom.Document(document) }
-	display_list := mutable_document.record_display_list() or { panic('missing display list') }
+	display_list := record_retained_display_list(mut mutable_document) or { panic('missing display list') }
 	target_color := css.Color{91, 92, 93, 255}.serialize()
 	commands := display_list_commands(display_list).filter(it.kind == 'fill_rect'
 		&& it.color == target_color)
@@ -2569,7 +2569,7 @@ fn test_svg_paint_resource_mutation_invalidates_the_retained_display_list() {
 	document := html.parse_document('<!doctype html><style>html, body { margin: 0 }</style><svg width="100" height="100"><defs><linearGradient id="paint"><stop id="stop" stop-color="red"/><stop offset="1" stop-color="blue"/></linearGradient></defs><rect id="painted" width="100" height="100" fill="url(#paint)"/></svg>')
 	root := layout_document_typed_in_viewport(document, 100, 100)
 	mut mutable_document := unsafe { &dom.Document(document) }
-	initial_display_list := mutable_document.record_display_list() or {
+	initial_display_list := record_retained_display_list(mut mutable_document) or {
 		panic('missing initial display list')
 	}
 	initial_path := display_list_commands(initial_display_list).filter(it.kind == 'draw_svg_path')[0]
@@ -2594,7 +2594,7 @@ fn test_svg_paint_resource_mutation_invalidates_the_retained_display_list() {
 	}
 	assert !painted_entry_is_valid
 	mutable_document.update_layout(.dump_display_list)
-	updated_display_list := mutable_document.record_display_list() or {
+	updated_display_list := record_retained_display_list(mut mutable_document) or {
 		panic('missing updated display list')
 	}
 	updated_path := display_list_commands(updated_display_list).filter(it.kind == 'draw_svg_path')[0]
@@ -2606,7 +2606,7 @@ fn test_svg_paint_resource_lookup_is_rebuilt_after_an_id_collision_changes() {
 	document := html.parse_document('<!doctype html><style>html, body { margin: 0 }</style><div id="paint" style="display:none"></div><svg width="100" height="100"><defs><linearGradient id="paint"><stop stop-color="green"/></linearGradient></defs><rect width="100" height="100" fill="url(#paint) red"/></svg>')
 	layout_document_typed_in_viewport(document, 100, 100)
 	mut mutable_document := unsafe { &dom.Document(document) }
-	initial_display_list := mutable_document.record_display_list() or {
+	initial_display_list := record_retained_display_list(mut mutable_document) or {
 		panic('missing initial display list')
 	}
 	initial_path := display_list_commands(initial_display_list).filter(it.kind == 'draw_svg_path')[0]
@@ -2618,7 +2618,7 @@ fn test_svg_paint_resource_lookup_is_rebuilt_after_an_id_collision_changes() {
 	collision.set_attribute_value('id', 'other')
 	assert mutable_document.cached_display_list() == none
 	mutable_document.update_layout(.dump_display_list)
-	updated_display_list := mutable_document.record_display_list() or {
+	updated_display_list := record_retained_display_list(mut mutable_document) or {
 		panic('missing updated display list')
 	}
 	updated_path := display_list_commands(updated_display_list).filter(it.kind == 'draw_svg_path')[0]
@@ -2791,7 +2791,7 @@ fn test_svg_mask_path_retains_pattern_instead_of_url_fallback() {
 	document := html.parse_document('<!doctype html><style>html, body { margin: 0 } svg { display:block }</style><svg width="100" height="100"><defs><pattern id="checks" width="20%" height="20%"><rect width=".5" height="1" fill="white"/></pattern><mask id="mask"><rect width="100" height="100" fill="url(#checks) red"/></mask></defs><rect width="100" height="100" fill="blue" mask="url(#mask)"/></svg>')
 	_ = layout_document_typed_in_viewport(document, 120, 120)
 	mut mutable_document := unsafe { &dom.Document(document) }
-	display_list := mutable_document.record_display_list() or { panic('missing display list') }
+	display_list := record_retained_display_list(mut mutable_document) or { panic('missing display list') }
 	mask_commands := display_list_commands(display_list).filter(it.kind == 'begin_svg_mask_layer')
 	assert mask_commands.len == 1
 	paths := mask_commands[0].mask_clip().mask_operations.filter(it.kind == .path)
@@ -2808,7 +2808,7 @@ fn test_css_mask_image_url_wraps_the_complete_box_paint_as_an_alpha_mask() {
 	document := html.parse_document('<!doctype html><style>html, body { margin: 0 } #target { width: 160px; height: 160px; background: red; mask-image: linear-gradient(transparent, transparent), url("https://example.test/mask.gif"); mask-size: 160px 160px; mask-repeat: no-repeat; }</style><div id="target"></div>')
 	_ = layout_document_typed_in_viewport(document, 200, 200)
 	mut mutable_document := unsafe { &dom.Document(document) }
-	display_list := mutable_document.record_display_list() or { panic('missing display list') }
+	display_list := record_retained_display_list(mut mutable_document) or { panic('missing display list') }
 	mask_commands := display_list_commands(display_list).filter(it.kind == 'begin_svg_mask_layer')
 	assert mask_commands.len == 1
 	mask := mask_commands[0].mask_clip()
@@ -2826,7 +2826,7 @@ fn test_svg_mask_path_retains_linear_gradient_instead_of_url_fallback() {
 	document := html.parse_document('<!doctype html><style>html, body { margin: 0 } svg { display:block }</style><svg width="100" height="100"><defs><linearGradient id="fade"><stop stop-color="black"/><stop offset="100%" stop-color="white"/></linearGradient><mask id="mask"><rect width="100" height="100" fill="url(#fade) red"/></mask></defs><rect width="100" height="100" fill="blue" mask="url(#mask)"/></svg>')
 	_ = layout_document_typed_in_viewport(document, 120, 120)
 	mut mutable_document := unsafe { &dom.Document(document) }
-	display_list := mutable_document.record_display_list() or { panic('missing display list') }
+	display_list := record_retained_display_list(mut mutable_document) or { panic('missing display list') }
 	mask_commands := display_list_commands(display_list).filter(it.kind == 'begin_svg_mask_layer')
 	assert mask_commands.len == 1
 	paths := mask_commands[0].mask_clip().mask_operations.filter(it.kind == .path)
@@ -2844,7 +2844,7 @@ fn test_svg_mask_path_retains_radial_gradient_instead_of_url_fallback() {
 	document := html.parse_document('<!doctype html><style>html, body { margin: 0 } svg { display:block }</style><svg width="100" height="100"><defs><radialGradient id="fade" fx="25%" fy="30%" fr="10%"><stop stop-color="black"/><stop offset="100%" stop-color="white"/></radialGradient><mask id="mask"><rect width="100" height="100" fill="url(#fade) red"/></mask></defs><rect width="100" height="100" fill="blue" mask="url(#mask)"/></svg>')
 	_ = layout_document_typed_in_viewport(document, 120, 120)
 	mut mutable_document := unsafe { &dom.Document(document) }
-	display_list := mutable_document.record_display_list() or { panic('missing display list') }
+	display_list := record_retained_display_list(mut mutable_document) or { panic('missing display list') }
 	mask_commands := display_list_commands(display_list).filter(it.kind == 'begin_svg_mask_layer')
 	assert mask_commands.len == 1
 	paths := mask_commands[0].mask_clip().mask_operations.filter(it.kind == .path)
@@ -3127,7 +3127,7 @@ fn test_url_svg_clip_path_is_a_retained_alpha_mask_not_a_painted_child_or_hit_te
 	document := html.parse_document('<!doctype html><style>html, body { margin: 0 } svg { display:block }</style><svg width="140" height="120" viewBox="0 0 140 120"><defs><clipPath id="cut"><circle cx="60" cy="50" r="35" clip-rule="evenodd"/></clipPath></defs><rect id="target" x="10" y="0" width="100" height="100" fill="rgb(101 102 103)" clip-path="url(#cut)"/></svg>')
 	_ = layout_document_typed_in_viewport(document, 320, 200)
 	mut mutable_document := unsafe { &dom.Document(document) }
-	display_list := mutable_document.record_display_list() or { panic('missing display list') }
+	display_list := record_retained_display_list(mut mutable_document) or { panic('missing display list') }
 	paths := display_list_commands(display_list).filter(it.kind == 'draw_svg_path')
 	// SVGMaskable paints the attached clip resource into a separate mask display
 	// list; the resource geometry must not leak into the target display list.
@@ -3161,7 +3161,7 @@ fn test_url_svg_clip_path_prepends_target_and_resource_transforms() {
 	document := html.parse_document('<!doctype html><style>html, body { margin: 0 } svg { display:block }</style><svg width="280" height="240" viewBox="0 0 140 120"><defs><clipPath id="cut" transform="translate(3 4)"><circle cx="60" cy="50" r="35"/></clipPath></defs><rect transform="translate(7 8)" x="10" y="5" width="100" height="80" fill="red" clip-path="url(#cut)"/></svg>')
 	_ = layout_document_typed_in_viewport(document, 320, 260)
 	mut mutable_document := unsafe { &dom.Document(document) }
-	display_list := mutable_document.record_display_list() or { panic('missing display list') }
+	display_list := record_retained_display_list(mut mutable_document) or { panic('missing display list') }
 	paths := display_list_commands(display_list).filter(it.kind == 'draw_svg_path')
 	assert paths.len == 1
 	mask_begins := display_list_commands(display_list).filter(it.kind == 'begin_svg_mask_layer')
@@ -3177,7 +3177,7 @@ fn test_object_bounding_box_svg_clip_retains_every_component_for_union_mask() {
 	document := html.parse_document('<!doctype html><style>html, body { margin: 0 } svg { display:block }</style><svg width="280" height="240" viewBox="0 0 140 120"><defs><clipPath id="cut" clipPathUnits="objectBoundingBox"><circle cx=".3" cy=".5" r=".2"/><circle cx=".7" cy=".5" r=".2"/></clipPath></defs><rect x="10" y="5" width="100" height="80" fill="red" clip-path="url(#cut)"/></svg>')
 	_ = layout_document_typed_in_viewport(document, 320, 260)
 	mut mutable_document := unsafe { &dom.Document(document) }
-	display_list := mutable_document.record_display_list() or { panic('missing display list') }
+	display_list := record_retained_display_list(mut mutable_document) or { panic('missing display list') }
 	paths := display_list_commands(display_list).filter(it.kind == 'draw_svg_path')
 	assert paths.len == 1
 	mask_begins := display_list_commands(display_list).filter(it.kind == 'begin_svg_mask_layer')
@@ -3193,7 +3193,7 @@ fn test_svg_clip_path_bounds_ignore_invisible_descendant_geometry() {
 	document := html.parse_document('<!doctype html><style>html, body { margin: 0 } svg { display:block }</style><svg width="200" height="160"><defs><clipPath id="cut"><g visibility="hidden"><rect x="0" y="0" width="200" height="160"/></g><rect x="30" y="40" width="50" height="60"/></clipPath></defs><rect width="200" height="160" fill="red" clip-path="url(#cut)"/></svg>')
 	_ = layout_document_typed_in_viewport(document, 220, 180)
 	mut mutable_document := unsafe { &dom.Document(document) }
-	display_list := mutable_document.record_display_list() or { panic('missing display list') }
+	display_list := record_retained_display_list(mut mutable_document) or { panic('missing display list') }
 	mask_begins := display_list_commands(display_list).filter(it.kind == 'begin_svg_mask_layer')
 	assert mask_begins.len == 1
 	clip := mask_begins[0].mask_clip()
@@ -3205,7 +3205,7 @@ fn test_empty_url_svg_clip_path_fully_clips_the_target() {
 	document := html.parse_document('<!doctype html><style>html, body { margin: 0 } svg { display:block }</style><svg width="100" height="100"><defs><clipPath id="empty"/></defs><rect width="100" height="100" fill="red" clip-path="url(#empty)"/></svg>')
 	_ = layout_document_typed_in_viewport(document, 120, 120)
 	mut mutable_document := unsafe { &dom.Document(document) }
-	display_list := mutable_document.record_display_list() or { panic('missing display list') }
+	display_list := record_retained_display_list(mut mutable_document) or { panic('missing display list') }
 	paths := display_list_commands(display_list).filter(it.kind == 'draw_svg_path')
 	assert paths.len == 1
 	mask_begins := display_list_commands(display_list).filter(it.kind == 'begin_svg_mask_layer')
@@ -3219,7 +3219,7 @@ fn test_svg_clip_mask_wraps_the_complete_target_context_once() {
 	document := html.parse_document('<!doctype html><style>html, body { margin: 0 } svg { display:block }</style><svg width="160" height="100"><defs><clipPath id="cut"><circle cx="60" cy="50" r="40"/></clipPath></defs><g clip-path="url(#cut)"><rect width="120" height="50" fill="red"/><rect y="50" width="120" height="50" fill="green"/></g></svg>')
 	_ = layout_document_typed_in_viewport(document, 180, 120)
 	mut mutable_document := unsafe { &dom.Document(document) }
-	display_list := mutable_document.record_display_list() or { panic('missing display list') }
+	display_list := record_retained_display_list(mut mutable_document) or { panic('missing display list') }
 	commands := display_list_commands(display_list)
 	paths := commands.filter(it.kind == 'draw_svg_path')
 	assert paths.len == 2
@@ -3248,7 +3248,7 @@ fn test_url_svg_mask_retains_luminance_paint_and_group_opacity_layers() {
 	document := html.parse_document('<!doctype html><style>html, body { margin: 0 } svg { display:block }</style><svg width="280" height="240" viewBox="0 0 140 120"><defs><mask id="fade" mask-type="luminance" transform="translate(3 4)"><g opacity=".5"><path d="M 0 0 C 25 0 25 40 50 40 Z" fill="rgb(200 20 10)" fill-opacity=".4" stroke="rgb(10 20 200)" stroke-opacity=".6" stroke-width="3" stroke-linecap="round" stroke-linejoin="bevel" stroke-miterlimit="7" paint-order="stroke fill"/></g></mask></defs><rect transform="translate(7 8)" x="10" y="5" width="100" height="80" fill="red" mask="url(#fade)"/></svg>')
 	_ = layout_document_typed_in_viewport(document, 320, 260)
 	mut mutable_document := unsafe { &dom.Document(document) }
-	display_list := mutable_document.record_display_list() or { panic('missing display list') }
+	display_list := record_retained_display_list(mut mutable_document) or { panic('missing display list') }
 	commands := display_list_commands(display_list)
 	paths := commands.filter(it.kind == 'draw_svg_path')
 	mask_begins := commands.filter(it.kind == 'begin_svg_mask_layer')
@@ -3294,7 +3294,7 @@ fn test_svg_mask_text_is_the_same_retained_glyph_path_as_normal_svg_painting() {
 	document := html.parse_document('<!doctype html><style>html, body { margin: 0 } svg { display:block }</style><svg width="180" height="100"><defs><mask id="letters" mask-type="alpha"><text x="10" y="60" font-size="48" fill="white" stroke="rgb(20 30 40)" stroke-width="2">O</text></mask></defs><rect width="180" height="100" fill="red" mask="url(#letters)"/></svg>')
 	_ = layout_document_typed_in_viewport(document, 200, 120)
 	mut mutable_document := unsafe { &dom.Document(document) }
-	display_list := mutable_document.record_display_list() or { panic('missing display list') }
+	display_list := record_retained_display_list(mut mutable_document) or { panic('missing display list') }
 	commands := display_list_commands(display_list)
 	assert commands.all(it.kind != 'draw_text')
 	mask_begins := commands.filter(it.kind == 'begin_svg_mask_layer')
@@ -3311,7 +3311,7 @@ fn test_svg_mask_text_path_reuses_rotated_glyph_geometry_without_text_fallback()
 	document := html.parse_document('<!doctype html><style>html, body { margin: 0 } svg { display:block }</style><svg width="180" height="120"><defs><path id="guide" d="M 20 10 L 20 110"/><mask id="letters" mask-type="alpha"><text fill="white"><textPath href="#guide" font-size="28">OO</textPath></text></mask></defs><rect width="180" height="120" fill="red" mask="url(#letters)"/></svg>')
 	_ = layout_document_typed_in_viewport(document, 200, 140)
 	mut mutable_document := unsafe { &dom.Document(document) }
-	display_list := mutable_document.record_display_list() or { panic('missing display list') }
+	display_list := record_retained_display_list(mut mutable_document) or { panic('missing display list') }
 	commands := display_list_commands(display_list)
 	assert commands.all(it.kind != 'draw_text')
 	mask_begins := commands.filter(it.kind == 'begin_svg_mask_layer')
@@ -3326,7 +3326,7 @@ fn test_svg_mask_retains_image_paintable_between_group_opacity_boundaries() {
 	document := html.parse_document('<!doctype html><style>html, body { margin: 0 } svg { display:block }</style><svg width="200" height="100"><defs><mask id="picture" mask-type="luminance"><g opacity=".4"><image x="10" y="12" width="80" height="40" href="https://example.test/mask.png" style="object-position:25% 75%;image-rendering:crisp-edges"/></g></mask></defs><rect width="180" height="90" fill="red" mask="url(#picture)"/></svg>')
 	_ = layout_document_typed_in_viewport(document, 240, 140)
 	mut mutable_document := unsafe { &dom.Document(document) }
-	display_list := mutable_document.record_display_list() or { panic('missing display list') }
+	display_list := record_retained_display_list(mut mutable_document) or { panic('missing display list') }
 	commands := display_list_commands(display_list)
 	assert commands.all(it.kind != 'draw_svg_image')
 	mask_begins := commands.filter(it.kind == 'begin_svg_mask_layer')
@@ -3357,7 +3357,7 @@ fn test_alpha_svg_mask_and_empty_svg_mask_keep_upstream_mask_semantics() {
 	document := html.parse_document('<!doctype html><style>html, body { margin: 0 } svg { display:block }</style><svg width="220" height="100"><defs><mask id="alpha" mask-type="alpha"><rect x="10" y="10" width="50" height="50" fill="rgb(1 2 3)"/></mask><mask id="empty" mask-type="alpha"/></defs><rect width="100" height="100" fill="red" mask="url(#alpha)"/><rect x="110" width="100" height="100" fill="blue" mask="url(#empty)"/></svg>')
 	_ = layout_document_typed_in_viewport(document, 240, 120)
 	mut mutable_document := unsafe { &dom.Document(document) }
-	display_list := mutable_document.record_display_list() or { panic('missing display list') }
+	display_list := record_retained_display_list(mut mutable_document) or { panic('missing display list') }
 	commands := display_list_commands(display_list)
 	masks := commands.filter(it.kind == 'begin_svg_mask_layer').map(it.mask_clip())
 	assert masks.len == 2
@@ -3384,7 +3384,7 @@ fn test_svg_mask_and_clip_layers_are_nested_in_upstream_order() {
 	document := html.parse_document('<!doctype html><style>html, body { margin: 0 } svg { display:block }</style><svg width="120" height="100"><defs><mask id="fade" mask-type="alpha"><rect width="120" height="100" fill="white" fill-opacity=".5"/></mask><clipPath id="cut"><circle cx="60" cy="50" r="40"/></clipPath></defs><g mask="url(#fade)" clip-path="url(#cut)"><rect width="80" height="100" fill="blue"/><rect x="40" width="80" height="100" fill="blue"/></g></svg>')
 	_ = layout_document_typed_in_viewport(document, 140, 120)
 	mut mutable_document := unsafe { &dom.Document(document) }
-	display_list := mutable_document.record_display_list() or { panic('missing display list') }
+	display_list := record_retained_display_list(mut mutable_document) or { panic('missing display list') }
 	commands := display_list_commands(display_list)
 	mut significant := []string{}
 	for command in commands {
@@ -3405,7 +3405,7 @@ fn test_object_bounding_box_svg_mask_content_uses_target_geometry() {
 	document := html.parse_document('<!doctype html><style>html, body { margin: 0 } svg { display:block }</style><svg width="280" height="240" viewBox="0 0 140 120"><defs><mask id="fade" mask-type="alpha" maskContentUnits="objectBoundingBox"><circle cx=".5" cy=".5" r=".4" fill="white"/></mask></defs><rect x="10" y="5" width="100" height="80" fill="red" mask="url(#fade)"/></svg>')
 	_ = layout_document_typed_in_viewport(document, 320, 260)
 	mut mutable_document := unsafe { &dom.Document(document) }
-	display_list := mutable_document.record_display_list() or { panic('missing display list') }
+	display_list := record_retained_display_list(mut mutable_document) or { panic('missing display list') }
 	mask_begins := display_list_commands(display_list).filter(it.kind == 'begin_svg_mask_layer')
 	assert mask_begins.len == 1
 	mask := mask_begins[0].mask_clip()
@@ -3421,7 +3421,7 @@ fn test_svg_mask_areas_resolve_in_target_user_space() {
 	document := html.parse_document('<!doctype html><style>html, body { margin: 0 } svg { display:block }</style><svg width="200" viewBox="0 0 100 100"><defs><mask id="user"><circle cx="50" cy="50" r="35"/></mask><mask id="object" maskContentUnits="objectBoundingBox"><circle cx=".5" cy=".5" r=".35"/></mask></defs><rect id="lower" y="55" width="45" height="45"/><rect id="right" x="55" width="45" height="45"/><use mask="url(#user)" href="#lower"/><use mask="url(#object)" href="#right"/></svg>')
 	_ = layout_document_typed_in_viewport(document, 240, 240)
 	mut mutable_document := unsafe { &dom.Document(document) }
-	display_list := mutable_document.record_display_list() or { panic('missing display list') }
+	display_list := record_retained_display_list(mut mutable_document) or { panic('missing display list') }
 	masks := display_list_commands(display_list).filter(it.kind == 'begin_svg_mask_layer').map(it.mask_clip())
 	assert masks.len == 2
 	assert masks[0].rect == LayoutRect{-9, 101, 108, 108}
@@ -3432,7 +3432,7 @@ fn test_sticky_element_uses_live_scroll_frame_without_rebuilding_phase_commands(
 	document := html.parse_document('<!doctype html><style>html, body { margin: 0 } #scroller { width: 100px; height: 50px; overflow: auto } #before { height: 30px } #sticky { position: sticky; top: 0; height: 10px; background: rgb(21 22 23) } #after { height: 100px; background: rgb(31 32 33) }</style><body><div id="scroller"><div id="before"></div><div id="sticky"></div><div id="after"></div></div></body>')
 	_ = layout_document_typed_in_viewport(document, 320, 200)
 	mut mutable_document := unsafe { &dom.Document(document) }
-	initial_display_list := mutable_document.record_display_list() or {
+	initial_display_list := record_retained_display_list(mut mutable_document) or {
 		panic('missing initial display list')
 	}
 	sticky_color := css.Color{21, 22, 23, 255}.serialize()
@@ -3463,7 +3463,7 @@ fn test_sticky_element_uses_live_scroll_frame_without_rebuilding_phase_commands(
 	mut scroller_paintable := scroller.paintable_box() or { panic('missing scroller paintable') }
 	assert scroller_paintable.set_scroll_offset(dom.CSSPixelPoint_{ y_: 40 })
 	assert result.scroll_state.needs_refresh()
-	scrolled_display_list := mutable_document.record_display_list() or {
+	scrolled_display_list := record_retained_display_list(mut mutable_document) or {
 		panic('missing scrolled display list')
 	}
 	scrolled_sticky_commands := display_list_commands(scrolled_display_list).filter(it.kind == 'fill_rect'
@@ -3502,7 +3502,7 @@ fn test_sticky_element_uses_the_viewport_scroll_frame() {
 	document := html.parse_document('<!doctype html><style>html, body { margin: 0 } #before { height: 30px } #sticky { position: sticky; top: 0; height: 10px; background: rgb(61 62 63) } #after { height: 150px }</style><body><div id="before"></div><div id="sticky"></div><div id="after"></div></body>')
 	_ = layout_document_typed_in_viewport(document, 320, 100)
 	mut mutable_document := unsafe { &dom.Document(document) }
-	initial_display_list := mutable_document.record_display_list() or {
+	initial_display_list := record_retained_display_list(mut mutable_document) or {
 		panic('missing initial display list')
 	}
 	sticky_color := css.Color{61, 62, 63, 255}.serialize()
@@ -3529,7 +3529,7 @@ fn test_sticky_element_uses_the_viewport_scroll_frame() {
 	viewport := mutable_document.viewport_rect()
 	mutable_document.set_viewport_rect(dom.Rect{0, 40, viewport.width, viewport.height})
 	assert mutable_document.cached_display_list() == none
-	scrolled_display_list := mutable_document.record_display_list() or {
+	scrolled_display_list := record_retained_display_list(mut mutable_document) or {
 		panic('missing scrolled display list')
 	}
 	scrolled_sticky_commands := display_list_commands(scrolled_display_list).filter(it.kind == 'fill_rect'
@@ -3548,7 +3548,7 @@ fn test_fixed_visual_context_bypasses_viewport_scroll_for_paint_and_hit_testing(
 	document := html.parse_document('<!doctype html><style>html, body { margin: 0 } #spacer { height: 100px } #target { height: 20px; background: rgb(41 42 43) } #fixed { position: fixed; top: 5px; left: 0; width: 20px; height: 20px; background: rgb(51 52 53) }</style><body><div id="spacer"></div><div id="target"></div><div id="fixed"></div></body>')
 	_ = layout_document_typed_in_viewport(document, 320, 100)
 	mut mutable_document := unsafe { &dom.Document(document) }
-	display_list := mutable_document.record_display_list() or { panic('missing display list') }
+	display_list := record_retained_display_list(mut mutable_document) or { panic('missing display list') }
 	commands := display_list_commands(display_list)
 	fixed_color := css.Color{51, 52, 53, 255}.serialize()
 	target_color := css.Color{41, 42, 43, 255}.serialize()
@@ -3559,7 +3559,7 @@ fn test_fixed_visual_context_bypasses_viewport_scroll_for_paint_and_hit_testing(
 
 	viewport := mutable_document.viewport_rect()
 	mutable_document.set_viewport_rect(dom.Rect{0, 100, viewport.width, viewport.height})
-	scrolled_display_list := mutable_document.record_display_list() or {
+	scrolled_display_list := record_retained_display_list(mut mutable_document) or {
 		panic('missing scrolled display list')
 	}
 	scrolled_commands := display_list_commands(scrolled_display_list)
@@ -3655,7 +3655,7 @@ fn test_checkbox_paint_reads_live_checkedness_and_invalidates_retained_commands(
 	document := html.parse_document('<!doctype html><style>html, body { margin: 0 } #control { accent-color: rgb(255, 0, 0) }</style><body><input id="control" type="checkbox"></body>')
 	root := layout_document_typed_in_viewport(document, 320, 200)
 	mut mutable_document := unsafe { &dom.Document(document) }
-	initial_display_list := mutable_document.record_display_list() or {
+	initial_display_list := record_retained_display_list(mut mutable_document) or {
 		panic('missing initial display list')
 	}
 	assert !display_list_commands(initial_display_list).any(it.kind == 'draw_svg_path')
@@ -3665,7 +3665,7 @@ fn test_checkbox_paint_reads_live_checkedness_and_invalidates_retained_commands(
 	model.set_checked(true)
 	assert control.matches_checked_pseudo_class()
 	assert mutable_document.cached_display_list() == none
-	checked_display_list := mutable_document.record_display_list() or {
+	checked_display_list := record_retained_display_list(mut mutable_document) or {
 		panic('missing checked display list')
 	}
 	checked_commands := display_list_commands(checked_display_list)
@@ -3683,7 +3683,7 @@ fn test_checkbox_paint_reacts_to_direct_and_fieldset_disabled_changes() {
 	document := html.parse_document('<!doctype html><style>html, body { margin: 0 } #control { accent-color: rgb(255, 0, 0) }</style><body><fieldset id="group"><input id="control" type="checkbox" checked></fieldset></body>')
 	_ := layout_document_typed_in_viewport(document, 320, 200)
 	mut mutable_document := unsafe { &dom.Document(document) }
-	initial_display_list := mutable_document.record_display_list() or {
+	initial_display_list := record_retained_display_list(mut mutable_document) or {
 		panic('missing initial display list')
 	}
 	assert display_list_commands(initial_display_list).any(it.kind == 'fill_rounded_rect'
@@ -3705,7 +3705,7 @@ fn test_checkbox_paint_reacts_to_direct_and_fieldset_disabled_changes() {
 	group.set_attribute_value('disabled', '')
 	assert mutable_document.cached_display_list() == none
 	assert !result.paint_phase_entry_valid[control_entry_index]
-	disabled_by_fieldset := mutable_document.record_display_list() or {
+	disabled_by_fieldset := record_retained_display_list(mut mutable_document) or {
 		panic('missing fieldset-disabled display list')
 	}
 	assert !display_list_commands(disabled_by_fieldset).any(it.kind == 'fill_rounded_rect'
@@ -3713,13 +3713,13 @@ fn test_checkbox_paint_reacts_to_direct_and_fieldset_disabled_changes() {
 
 	group.remove_attribute('disabled')
 	assert !result.paint_phase_entry_valid[control_entry_index]
-	_ = mutable_document.record_display_list() or { panic('missing re-enabled display list') }
+	_ = record_retained_display_list(mut mutable_document) or { panic('missing re-enabled display list') }
 
 	mut mutable_control := unsafe { &dom.Element(control) }
 	mutable_control.set_attribute_value('disabled', '')
 	assert mutable_document.cached_display_list() == none
 	assert !result.paint_phase_entry_valid[control_entry_index]
-	directly_disabled := mutable_document.record_display_list() or {
+	directly_disabled := record_retained_display_list(mut mutable_document) or {
 		panic('missing directly-disabled display list')
 	}
 	assert !display_list_commands(directly_disabled).any(it.kind == 'fill_rounded_rect'
@@ -3735,7 +3735,7 @@ fn test_fieldset_paint_shifts_background_and_splits_top_border_around_legend() {
 	</style><fieldset><legend>Legend</legend><div>content</div></fieldset>')
 	_ := layout_document_typed_in_viewport(document, 240, 120)
 	mut mutable_document := unsafe { &dom.Document(document) }
-	display_list := mutable_document.record_display_list() or { panic('missing fieldset display list') }
+	display_list := record_retained_display_list(mut mutable_document) or { panic('missing fieldset display list') }
 	commands := display_list_commands(display_list)
 	background := commands.filter(it.color == 'rgb(180 220 255)')
 	assert background.len == 1
@@ -3765,7 +3765,7 @@ fn test_list_markers_paint_as_generated_text() {
 		<li id="d"></li><li id="e"></li></ul>')
 	_ := layout_document_typed_in_viewport(document, 140, 120)
 	mut mutable_document := unsafe { &dom.Document(document) }
-	display_list := mutable_document.record_display_list() or { panic('missing marker display list') }
+	display_list := record_retained_display_list(mut mutable_document) or { panic('missing marker display list') }
 	commands := display_list_commands(display_list)
 	markers := commands.filter(it.color == 'rgb(20 60 180)')
 	text_markers := markers.filter(it.kind == 'draw_text')
@@ -3861,7 +3861,7 @@ fn test_paintable_with_lines_translates_selection_render_spans_and_cache_invalid
 	</style><body><p id="target">hello</p></body>')
 	root := layout_document_typed_in_viewport(document, 240, 100)
 	mut mutable_document := unsafe { &dom.Document(document) }
-	initial := display_list_commands(mutable_document.record_display_list() or {
+	initial := display_list_commands(record_retained_display_list(mut mutable_document) or {
 		panic('missing initial display list')
 	})
 	initial_text := initial.filter(it.kind == 'draw_text' && it.text == 'hello')
@@ -3884,7 +3884,7 @@ fn test_paintable_with_lines_translates_selection_render_spans_and_cache_invalid
 	assert paintable.selection_state == .start_and_end
 	assert paintable.needs_repaint
 
-	commands := display_list_commands(mutable_document.record_display_list() or {
+	commands := display_list_commands(record_retained_display_list(mut mutable_document) or {
 		panic('missing selected display list')
 	})
 	mut background_index := -1
@@ -3954,7 +3954,7 @@ fn test_paintable_with_lines_translates_fragment_caret_and_rebuilds_its_phase_ca
 	mutable_document.set_focused_area(target.as_node())
 	mut selection := document.get_selection() or { panic('missing document selection') }
 	selection.collapse(text_node, 2) or { panic(err) }
-	first_commands := display_list_commands(mutable_document.record_display_list() or {
+	first_commands := display_list_commands(record_retained_display_list(mut mutable_document) or {
 		panic('missing first caret display list')
 	})
 	first_carets := first_commands.filter(it.kind == 'fill_rect'
@@ -3974,7 +3974,7 @@ fn test_paintable_with_lines_translates_fragment_caret_and_rebuilds_its_phase_ca
 
 	selection.collapse(text_node, 4) or { panic(err) }
 	assert mutable_document.cached_display_list() == none
-	second_commands := display_list_commands(mutable_document.record_display_list() or {
+	second_commands := display_list_commands(record_retained_display_list(mut mutable_document) or {
 		panic('missing moved caret display list')
 	})
 	second_carets := second_commands.filter(it.kind == 'fill_rect'
@@ -3988,7 +3988,7 @@ fn test_paintable_with_lines_translates_fragment_caret_and_rebuilds_its_phase_ca
 	other_text_node := other.as_node().first_child() or { panic('missing other text node') }
 	mutable_document.set_focused_area(other.as_node())
 	selection.collapse(other_text_node, 3) or { panic(err) }
-	third_commands := display_list_commands(mutable_document.record_display_list() or {
+	third_commands := display_list_commands(record_retained_display_list(mut mutable_document) or {
 		panic('missing cross-box caret display list')
 	})
 	assert !third_commands.any(it.kind == 'fill_rect' && it.color == 'rgb(13 14 15)')
@@ -4000,7 +4000,7 @@ fn test_paintable_with_lines_translates_fragment_caret_and_rebuilds_its_phase_ca
 	// Losing the editable focus invalidates the last bucket and removes its
 	// already-recorded caret command.
 	mutable_document.set_focused_area(none)
-	last_commands := display_list_commands(mutable_document.record_display_list() or {
+	last_commands := display_list_commands(record_retained_display_list(mut mutable_document) or {
 		panic('missing unfocused display list')
 	})
 	assert !last_commands.any(it.kind == 'fill_rect' && (it.color == 'rgb(13 14 15)'
@@ -4024,7 +4024,7 @@ fn test_paintable_with_lines_centers_empty_editable_caret_at_font_height() {
 	mutable_document.set_focused_area(target.as_node())
 	mut selection := document.get_selection() or { panic('missing document selection') }
 	selection.collapse(target.as_node(), 0) or { panic(err) }
-	commands := display_list_commands(mutable_document.record_display_list() or {
+	commands := display_list_commands(record_retained_display_list(mut mutable_document) or {
 		panic('missing empty caret display list')
 	})
 	carets := commands.filter(it.kind == 'fill_rect' && it.color == 'rgb(31 32 33)')
@@ -4053,7 +4053,7 @@ fn test_paintable_with_lines_sizes_empty_paragraph_caret_from_its_font() {
 	mutable_document.set_focused_area(target.as_node())
 	mut selection := document.get_selection() or { panic('missing selection') }
 	selection.collapse(target.as_node(), 0) or { panic(err) }
-	commands := display_list_commands(mutable_document.record_display_list() or { panic('missing display list') })
+	commands := display_list_commands(record_retained_display_list(mut mutable_document) or { panic('missing display list') })
 	carets := commands.filter(it.kind == 'fill_rect' && it.color == 'rgb(41 42 43)')
 	assert carets.len == 1
 	target_box := root.find_box(i64(target.as_node().unique_id())) or { panic('missing target box') }
@@ -4075,7 +4075,7 @@ fn test_paintable_with_lines_sizes_empty_inline_caret_from_its_font() {
 	mutable_document.set_focused_area(target.as_node())
 	mut selection := document.get_selection() or { panic('missing selection') }
 	selection.collapse(target.as_node(), 0) or { panic(err) }
-	commands := display_list_commands(mutable_document.record_display_list() or { panic('missing display list') })
+	commands := display_list_commands(record_retained_display_list(mut mutable_document) or { panic('missing display list') })
 	carets := commands.filter(it.kind == 'fill_rect' && it.color == 'rgb(51 52 53)')
 	assert carets.len == 1
 	paintable := target.as_node().unsafe_paintable() or { panic('missing inline paintable') }
@@ -4092,7 +4092,7 @@ fn collapsed_caret_command(document &dom.Document, node &dom.Node, offset int,
 	mut selection := document.get_selection() or { panic('missing selection') }
 	selection.collapse(node, offset) or { panic(err) }
 	mut mutable_document := unsafe { &dom.Document(document) }
-	commands := display_list_commands(mutable_document.record_display_list() or {
+	commands := display_list_commands(record_retained_display_list(mut mutable_document) or {
 		panic('missing caret display list')
 	})
 	carets := commands.filter(it.kind == 'fill_rect' && it.color == color)

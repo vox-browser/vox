@@ -79,8 +79,7 @@ fn refresh_document_paint_tree(document &dom.Document, mut result DocumentLayout
 	had_valid_hit_test_display_list := result.hit_test_display_list_is_valid
 	result.paint_tree = renderer_box_from_document_layout_result(result, viewport_width, viewport_height)
 	result.invalidate_boxes_by_layout_cache()
-	result.display_list_commands.clear()
-	result.display_list = unsafe { nil }
+	result.drop_display_list_scene()
 	result.needs_repaint = true
 	result.scroll_state.invalidate()
 	viewport_invalidate_stacking_context(voidptr(&result))
@@ -1575,8 +1574,7 @@ fn viewport_invalidate_box_paint_cache(mut result DocumentLayoutResult, box &Blo
 
 fn viewport_invalidate_all_paint_caches(target voidptr) {
 	mut result := viewport_layout_result(target)
-	result.display_list_commands.clear()
-	result.display_list = unsafe { nil }
+	result.drop_display_list_scene()
 	clear_phase_command_storage(mut result.paint_phase_commands)
 	result.paint_phase_command_count = 0
 	result.paint_phase_cache_valid = false
@@ -2460,6 +2458,20 @@ mut:
 	plan              []CompatibilityCachedVisualReplayStep
 }
 
+// Grow the retained buffers before recording enters its scene arena, so the
+// recording itself only fills them.
+fn (mut scratch CompatibilityRecordScratch) reserve(context_count int, command_count int) {
+	if scratch.memo_slots.cap < context_count {
+		scratch.memo_slots = []int{cap: context_count}
+	}
+	if scratch.memo_contexts.cap < context_count + 1 {
+		scratch.memo_contexts = []CompatibilityFlattenedVisualContext{cap: context_count + 1}
+	}
+	if scratch.plan.cap < command_count {
+		scratch.plan = []CompatibilityCachedVisualReplayStep{cap: command_count}
+	}
+}
+
 fn record_cached_paint_commands_with_visual_context(steps []CompatibilityPaintStep,
 	phase_commands [][]PaintCommand, command_count int, tree painting.AccumulatedVisualContextTree,
 	snapshot painting.ScrollStateSnapshot, show_line_box_borders bool) []PaintCommand {
@@ -2614,6 +2626,10 @@ fn record_cached_paint_commands_with_visual_context_into(steps []CompatibilityPa
 // next recording of the same document may overwrite it; the vector currently
 // published by the document is never accepted.
 pub fn recycle_display_list_commands(display_list &dom.DisplayList, commands []PaintCommand) {
+	// Under -prealloc the vector belongs to its scene, which is reused whole.
+	$if prealloc {
+		return
+	}
 	if display_list == unsafe { nil } || display_list.concrete_handle == unsafe { nil }
 		|| commands.cap == 0 {
 		return
@@ -2658,6 +2674,24 @@ fn viewport_record_display_list(target voidptr) &dom.DisplayList {
 		result.paint_phase_command_count += result.paint_tree.refresh_selected_paint_phase_command_cache_with_debug(result.paint_order, selected, mut result.paint_phase_commands, mut result.paint_phase_entry_valid, show_line_box_borders)
 	}
 	snapshot := result.scroll_state_snapshot
+	mut force_dark := ?painting.ForceDarkSettings(none)
+	if model := html.NavigableModel.navigable_with_active_document(result.document) {
+		if model.force_dark_applies_to_active_document() {
+			force_dark = painting.ForceDarkSettings{
+				foreground_brightness_threshold: model.force_dark_foreground_threshold()
+				background_brightness_threshold: model.force_dark_background_threshold()
+			}
+		}
+	}
+	// Retained recording buffers grow in ordinary storage; everything the
+	// commands themselves need is allocated in the new scene.
+	result.record_scratch.reserve(result.visual_context_tree.nodes.len, result.paint_phase_command_count)
+	mut pool := result.scene_pool_()
+	mut scene := if pool.borrowed { unsafe { &DisplayListScene(nil) } } else { pool.acquire() }
+	mut scene_entry := platform.ArenaEntry{}
+	if scene != unsafe { nil } {
+		scene_entry = scene.arena.enter()
+	}
 	steps := if selected.len > 0 {
 		result.paint_steps.filter(it.entry_index < 0 || selected[it.entry_index])
 	} else { unsafe { result.paint_steps } }
@@ -2666,20 +2700,21 @@ fn viewport_record_display_list(target voidptr) &dom.DisplayList {
 		snapshot, show_line_box_borders, mut result.record_scratch)
 	commands << result.paint_tree.paint_inspector_overlay(result.document, result.visual_context_tree,
 		snapshot)
-	if model := html.NavigableModel.navigable_with_active_document(result.document) {
-		if model.force_dark_applies_to_active_document() {
-			commands = resolve_force_dark_paint_commands(commands, painting.ForceDarkSettings{
-				foreground_brightness_threshold: model.force_dark_foreground_threshold()
-				background_brightness_threshold: model.force_dark_background_threshold()
-			})
-		}
+	if settings := force_dark {
+		commands = resolve_force_dark_paint_commands(commands, settings)
 	}
-	result.display_list_commands = commands
-	result.display_list = &dom.DisplayList{
+	display_list := &dom.DisplayList{
 		concrete_handle: target
-		command_count_: result.display_list_commands.len
+		command_count_: commands.len
 		dump_callback: viewport_display_list_dump
 	}
+	if scene != unsafe { nil } {
+		scene.arena.leave(scene_entry)
+	}
+	result.drop_display_list_scene()
+	result.scene = scene
+	result.display_list_commands = commands
+	result.display_list = display_list
 	result.needs_repaint = false
 	result.paint_recording_viewport_only = viewport_only
 	return result.display_list

@@ -19,7 +19,7 @@ fn test_compositor_frames_retain_unrelated_border_paths_and_match_full_recording
 	defer { document.finalize() }
 	_ = layout_document_typed_in_viewport(document, 320, 200)
 	mut result := document_layout_result(document) or { panic('missing layout') }
-	initial := document.record_display_list() or { panic('missing initial recording') }
+	initial := record_retained_display_list(mut document) or { panic('missing initial recording') }
 	initial_commands := display_list_commands(initial)
 	initial_snapshot := compositor_command_snapshot(initial_commands)
 	for timestamp in [250, 500, 1000, 1500] {
@@ -30,7 +30,7 @@ fn test_compositor_frames_retain_unrelated_border_paths_and_match_full_recording
 		cached_count := result.paint_phase_command_count
 		document.update_animations_and_send_events(timestamp)
 		document.update_layout(.html_event_loop_rendering_update)
-		local := document.record_display_list() or { panic('missing sampled recording') }
+		local := record_retained_display_list(mut document) or { panic('missing sampled recording') }
 		assert result.paint_phase_commands.data == phase_storage
 		assert result.paint_phase_commands[bucket].data == border_storage
 		assert result.paint_phase_commands[bucket][0].svg().path_data.data == path_storage
@@ -40,7 +40,7 @@ fn test_compositor_frames_retain_unrelated_border_paths_and_match_full_recording
 		local_commands := display_list_commands(local)
 		local_snapshot := compositor_command_snapshot(local_commands)
 		refresh_document_paint_tree(document, mut result, 320, 200)
-		assert (document.record_display_list() or { panic('missing full recording') }).dump() == local_dump
+		assert (record_retained_display_list(mut document) or { panic('missing full recording') }).dump() == local_dump
 		assert compositor_command_snapshot(local_commands) == local_snapshot
 	}
 }
@@ -51,7 +51,7 @@ fn test_fading_context_refreshes_descendant_alpha_but_keeps_other_phase_storage(
 	defer { document.finalize() }
 	_ = layout_document_typed_in_viewport(document, 320, 200)
 	mut result := document_layout_result(document) or { panic('missing layout') }
-	initial := document.record_display_list() or { panic('missing initial recording') }
+	initial := record_retained_display_list(mut document) or { panic('missing initial recording') }
 	initial_commands := display_list_commands(initial)
 	initial_snapshot := compositor_command_snapshot(initial_commands)
 	for timestamp in [250, 1000, 2000] {
@@ -60,7 +60,7 @@ fn test_fading_context_refreshes_descendant_alpha_but_keeps_other_phase_storage(
 		phase_storage := result.paint_phase_commands.data
 		document.update_animations_and_send_events(timestamp)
 		document.update_layout(.html_event_loop_rendering_update)
-		local := document.record_display_list() or { panic('missing fading recording') }
+		local := record_retained_display_list(mut document) or { panic('missing fading recording') }
 		assert result.paint_phase_commands.data == phase_storage
 		assert result.paint_phase_commands[bucket].data == unrelated_storage
 		commands := display_list_commands(local)
@@ -74,7 +74,7 @@ fn test_fading_context_refreshes_descendant_alpha_but_keeps_other_phase_storage(
 		local_commands := display_list_commands(local)
 		local_snapshot := compositor_command_snapshot(local_commands)
 		refresh_document_paint_tree(document, mut result, 320, 200)
-		assert (document.record_display_list() or { panic('missing full fading recording') }).dump() == local_dump
+		assert (record_retained_display_list(mut document) or { panic('missing full fading recording') }).dump() == local_dump
 		assert compositor_command_snapshot(local_commands) == local_snapshot
 	}
 }
@@ -85,7 +85,7 @@ fn test_singular_compositor_frames_recover_retained_phases_and_fixed_background_
 	defer { document.finalize() }
 	_ = layout_document_typed_in_viewport(document, 320, 200)
 	mut result := document_layout_result(document) or { panic('missing layout') }
-	initial := document.record_display_list() or { panic('missing initial recording') }
+	initial := record_retained_display_list(mut document) or { panic('missing initial recording') }
 	initial_commands := display_list_commands(initial)
 	initial_snapshot := compositor_command_snapshot(initial_commands)
 	target := document.get_element_by_id('target') or { panic('missing target') }
@@ -95,7 +95,7 @@ fn test_singular_compositor_frames_recover_retained_phases_and_fixed_background_
 		phase_storage := result.paint_phase_commands.data
 		document.update_animations_and_send_events(timestamp)
 		document.update_layout(.html_event_loop_rendering_update)
-		local := document.record_display_list() or { panic('missing transformed recording') }
+		local := record_retained_display_list(mut document) or { panic('missing transformed recording') }
 		assert result.paint_phase_commands.data == phase_storage
 		assert result.paint_phase_commands[bucket].data == unrelated_storage
 		assert display_list_commands(local).any(it.gradient != none) == (timestamp != 1000)
@@ -109,7 +109,7 @@ fn test_singular_compositor_frames_recover_retained_phases_and_fixed_background_
 		local_commands := display_list_commands(local)
 		local_snapshot := compositor_command_snapshot(local_commands)
 		refresh_document_paint_tree(document, mut result, 320, 200)
-		assert (document.record_display_list() or { panic('missing full transformed recording') }).dump() == local_dump
+		assert (record_retained_display_list(mut document) or { panic('missing full transformed recording') }).dump() == local_dump
 		assert compositor_command_snapshot(local_commands) == local_snapshot
 	}
 }
