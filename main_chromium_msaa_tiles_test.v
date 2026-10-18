@@ -133,22 +133,46 @@ fn test_chromium_msaa_layer_tiles_keep_path_triggers_in_their_own_layer() {
 	assert commands[2].svg().path_data[2] == 570
 }
 
-fn test_svg_background_paths_trigger_msaa_in_the_parent_raster_layer() {
+fn msaa_test_svg_background(y f64) (layout.PaintCommand,&dom.Document) {
  mut image:=dom.Document.create(dom.URL{value:'https://msaa.test/path.svg'})
  image.set_content_type('image/svg+xml')
  image.set_document_type(.xml)
  image.set_is_svg_image_document(true)
  image.set_font_rendering_policy(.chromium)
  html.parse_xml_document_source(image,'<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64"><path d="M0 0L64 64L0 64Z"/></svg>') or {panic(err)}
- defer {image.finalize()}
- command:=layout.PaintCommand{kind:'draw_background_image',transform:[f64(1),0,0,1,0,0]!,x:51,y:242,width:17.1,height:17.1,image_data:&layout.PaintImageData{
-  background_svg_document:image,image_url:'https://msaa.test/path.svg',image_clip_x:51,image_clip_y:242,image_clip_width:17.1,image_clip_height:17.1,
+ command:=layout.PaintCommand{kind:'draw_background_image',transform:[f64(1),0,0,1,0,0]!,x:51,y:y,width:17.1,height:17.1,image_data:&layout.PaintImageData{
+  background_svg_document:image,image_url:'https://msaa.test/path.svg',image_clip_x:51,image_clip_y:y,image_clip_width:17.1,image_clip_height:17.1,
   background_layer_data:&layout.PaintBackgroundLayerData{layer:css.BackgroundLayerData{repeat_x:.no_repeat,repeat_y:.no_repeat,size_x:css.LengthPercentageOrAuto.from_length(css.Length.make_px(17.1)),size_y:css.LengthPercentageOrAuto.from_length(css.Length.make_px(17.1))},resolution_context:css.LengthResolutionContext.default()}
  }}
+ return command,image
+}
+
+fn test_svg_background_paths_trigger_msaa_in_the_parent_raster_layer() {
+ command,mut image:=msaa_test_svg_background(242)
+ defer {image.finalize()}
  ranges:=chromium_svg_background_msaa_ranges(command)
  assert ranges.len==1
  assert ranges[0][0]==242 && ranges[0][1]==259
  assert chromium_msaa_tiles([command],1,256)==[0,1]
  assert chromium_msaa_layer_tiles([command],layout.ChromiumRasterLayer{bounds:layout.LayoutRect{y:230},command_indices:[0]},1,256,false)==[0]
  assert image.cached_display_list()!=none
+}
+
+fn test_svg_msaa_preparation_skips_distant_pictures_and_keeps_offscreen_tile_paths() {
+ far,mut distant_image:=msaa_test_svg_background(3000)
+ defer {distant_image.finalize()}
+ viewport:=ChromiumMSAAViewport{scroll_y:0,height:768,fringe:256}
+ assert distant_image.cached_display_list()==none
+ assert chromium_msaa_triggers_for_viewport([far],viewport).len==0
+ assert distant_image.cached_display_list()==none
+ near,mut nearby_image:=msaa_test_svg_background(900)
+ defer {nearby_image.finalize()}
+ assert nearby_image.cached_display_list()==none
+ triggers:=chromium_msaa_triggers_for_viewport([near],viewport)
+ assert triggers.len==1 && triggers[0].top==900
+ assert nearby_image.cached_display_list()!=none
+ scrolled:=ChromiumMSAAViewport{scroll_y:2500,height:768,fringe:256}
+ assert chromium_svg_background_intersects_raster_viewport(far,scrolled)
+ fixed:=layout.PaintCommand{...far,fixed_to_viewport:true}
+ assert !chromium_svg_background_intersects_raster_viewport(fixed,scrolled)
 }

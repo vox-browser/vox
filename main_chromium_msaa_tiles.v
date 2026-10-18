@@ -26,12 +26,26 @@ struct ChromiumMSAATrigger {
 	bottom        f64
 }
 
+struct ChromiumMSAAViewport {
+	scroll_y f64
+	height   f64
+	fringe   f64
+}
+
 fn chromium_msaa_triggers(commands []layout.PaintCommand) []ChromiumMSAATrigger {
+	return chromium_msaa_triggers_for_viewport(commands, none)
+}
+
+fn chromium_msaa_triggers_for_viewport(commands []layout.PaintCommand, viewport ?ChromiumMSAAViewport) []ChromiumMSAATrigger {
 	mut triggers := []ChromiumMSAATrigger{}
 	for index, command in commands {
 		if bounds := chromium_msaa_trigger_bounds(command) {
 			triggers << ChromiumMSAATrigger{index, bounds[0], bounds[1]}
 		} else if command.kind == 'draw_background_image' {
+			if visible := viewport {
+				if !chromium_svg_background_intersects_raster_viewport(command, visible) { continue
+				 }
+			}
 			for bounds in chromium_svg_background_msaa_ranges(command) {
 				triggers << ChromiumMSAATrigger{index, bounds[0], bounds[1]}
 			}
@@ -195,7 +209,11 @@ fn (mut app BrowserApp) set_chromium_msaa_tiles() {
 		scale := C.native_display_device_pixel_ratio()
 		tile_rows := chromium_gpu_raster_tile_rows(int(math.ceil(f64(app.viewport_height) * scale)))
 		app.chromium_raster_tiles = [][]int{cap: app.chromium_raster_plan.layers.len}
-		triggers := chromium_msaa_triggers(app.paint_commands)
+		triggers := chromium_msaa_triggers_for_viewport(app.paint_commands, ChromiumMSAAViewport{
+			scroll_y: app.scroll_y
+			height:   f64(app.viewport_height)
+			fringe:   f64(tile_rows) / scale
+		})
 		legacy_tiles := chromium_msaa_tiles_for_triggers(triggers, 0, scale, tile_rows)
 		for index, layer in app.chromium_raster_plan.layers {
 			if layer.legacy_raster {

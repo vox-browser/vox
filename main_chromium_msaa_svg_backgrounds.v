@@ -55,3 +55,25 @@ fn chromium_svg_background_msaa_ranges(command layout.PaintCommand) [][]f64 {
 	}
 	return ranges
 }
+
+// Only tiles which can appear in this frame need an SVG picture prepared.
+// Keep a complete tile of fringe, since an offscreen path can multisample a
+// tile whose border rows are visible. Fetching and filtering remain unchanged.
+fn chromium_svg_background_intersects_raster_viewport(command layout.PaintCommand,
+	viewport ChromiumMSAAViewport) bool {
+	if command.image_data == unsafe { nil } { return false }
+	image := command.image_data
+	if image.image_clip_width <= 0 || image.image_clip_height <= 0
+		|| (command.has_clip && (command.clip_width <= 0 || command.clip_height <= 0)) {
+		return false
+	}
+	bounds := transformed_row_bounds(command.transform, image.image_clip_x, image.image_clip_y,
+		image.image_clip_width, image.image_clip_height)
+	if math.is_nan(bounds[0]) || math.is_inf(bounds[0], 0) || math.is_nan(bounds[1])
+		|| math.is_inf(bounds[1], 0) {
+		return true
+	}
+	scroll := if command.fixed_to_viewport { 0.0 } else { viewport.scroll_y }
+	return bounds[1] >= scroll - viewport.fringe
+		&& bounds[0] <= scroll + viewport.height + viewport.fringe
+}
