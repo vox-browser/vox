@@ -1209,6 +1209,24 @@ fn (mut state LayoutState) mutable_box_values(node &NodeWithStyle) &UsedValues {
 	return state.ensure_used_values_for(node)
 }
 
+// A validated retained snapshot already contains every resolved size. Preserve
+// an existing record's address, or allocate raw storage, instead of resolving
+// computed sizes which would immediately be overwritten by this complete copy.
+fn (mut state LayoutState) restore_retained_values(node &NodeWithStyle,
+	snapshot &UsedValues, containing ?&UsedValues) &UsedValues {
+	mut values := state.used_values_store.get(node.layout_index()) or {
+		state.used_values_store.allocate(node.layout_index())
+	}
+	unsafe { *values = *snapshot }
+	values.containing_block_used_values_ = containing
+	values.borrow_retained_line_boxes(snapshot.line_boxes)
+	if rare := snapshot.rare_ {
+		values.rare_ = rare.clone()
+		values.rare_is_shared_ = false
+	}
+	return values
+}
+
 pub fn (mut state LayoutState) get(node &NodeWithStyle) &UsedValues {
 	return state.ensure_used_values_for(node)
 }

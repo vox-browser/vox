@@ -106,14 +106,11 @@ fn run_retaining_independent_formatting_context(mut state LayoutState, box &Node
 			used.borrow_retained_line_boxes(cached.lines)
 			if end := cached.inline_end { used.set_inline_end_static_position_rect(end) }
 			for entry in cached.values {
-				mut current := state.mutable_box_values(entry.node)
-				unsafe { *current = entry.values }
-				current.borrow_retained_line_boxes(entry.values.line_boxes)
-				current.containing_block_used_values_ = none
+				mut containing_values := ?&UsedValues(none)
 				if containing := entry.containing {
-					current.containing_block_used_values_ = state.get(containing)
+					containing_values = state.get(containing)
 				}
-				if rare := current.rare_ { current.rare_ = rare.clone() }
+				_ = state.restore_retained_values(entry.node, &entry.values, containing_values)
 			}
 			for input in cached.inputs {
 				input_key := u64(voidptr(input.node))

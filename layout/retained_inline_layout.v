@@ -166,14 +166,9 @@ fn run_inline_formatting_context_internal(mut state LayoutState, containing_bloc
 			&& retained_inline_inputs_are_current(cached.inputs) {
 			used.borrow_retained_line_boxes(cached.lines)
 			used.set_inline_end_static_position_rect(cached.inline_end)
+			containing_values := state.get(unsafe { &NodeWithStyle(containing_block) })
 			for entry in cached.values {
-				mut current := state.mutable_box_values(entry.node)
-				containing_values := current.containing_block_used_values_
-				unsafe {
-					*current = entry.values
-				}
-				current.containing_block_used_values_ = containing_values
-				if rare := current.rare_ { current.rare_ = rare.clone() }
+				_ = state.restore_retained_values(entry.node, &entry.values, containing_values)
 			}
 			if mut bfc := context {
 				// The ordinary line builder consumes this pending margin before
