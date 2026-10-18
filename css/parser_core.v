@@ -1074,15 +1074,25 @@ fn (mut tokenizer Tokenizer) consume_escaped_code_point() u32 {
 
 	// hex digit
 	if is_hex_digit(input) {
-		// Consume as many hex digits as possible, but no more than 5.
-		// Note that this means 1-6 hex digits have been consumed in total.
-		mut builder := strings.new_builder(6)
-		append_code_point(mut builder, input)
-
+		// At most six hexadecimal digits fit in 24 bits. Accumulate their value
+		// directly while retaining the same code-point and whitespace consumption.
+		mut unhexed := u32(0)
+		mut digit := input
 		mut counter := 0
-		for is_hex_digit(tokenizer.peek_code_point(0)) && counter < 5 {
+		for {
+			value := if is_digit(digit) {
+				digit - u32(`0`)
+			} else if digit >= `a` {
+				digit - u32(`a`) + 10
+			} else {
+				digit - u32(`A`) + 10
+			}
+			unhexed = unhexed * 16 + value
+			if counter == 5 || !is_hex_digit(tokenizer.peek_code_point(0)) {
+				break
+			}
 			counter++
-			append_code_point(mut builder, tokenizer.next_code_point())
+			digit = tokenizer.next_code_point()
 		}
 
 		// If the next input code point is whitespace, consume it as well.
@@ -1090,8 +1100,6 @@ fn (mut tokenizer Tokenizer) consume_escaped_code_point() u32 {
 			_ = tokenizer.next_code_point()
 		}
 
-		// Interpret the hex digits as a hexadecimal number.
-		unhexed := u32(strconv.parse_uint(builder.str(), 16, 32) or { 0 })
 		// If this number is zero, or is for a surrogate, or is greater than the maximum allowed
 		// code point, return U+FFFD REPLACEMENT CHARACTER.
 		if unhexed == 0 || is_unicode_surrogate(unhexed)
