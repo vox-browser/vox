@@ -1355,6 +1355,24 @@ fn (mut tokenizer Tokenizer) consume_an_ident_sequence_with_escape_flag() (strin
 	start_byte_offset := tokenizer.current_byte_offset()
 	mut result := unsafe { &TokenizerNameBuilder(nil) }
 
+	// Name code points cannot advance the line. Scan the initial unescaped
+	// run without storing cursor state at every scalar, then publish the same
+	// last-consumed and next-input positions as next_code_point().
+	prefix_start := tokenizer.index
+	mut prefix_end := prefix_start
+	for prefix_end < tokenizer.input_arena.len {
+		code_point := unsafe { tokenizer.input_arena.code_points[prefix_end] }
+		if !is_ident_code_point(code_point) { break }
+		prefix_end++
+	}
+	if prefix_end > prefix_start {
+		tokenizer.prev_index = prefix_end - 1
+		tokenizer.index = prefix_end
+		tokenizer.prev_position = tokenizer.position
+		tokenizer.prev_position.column += usize(prefix_end - prefix_start - 1)
+		tokenizer.position.column += usize(prefix_end - prefix_start)
+	}
+
 	// Repeatedly consume the next input code point from the stream:
 	for {
 		input := tokenizer.next_code_point()
