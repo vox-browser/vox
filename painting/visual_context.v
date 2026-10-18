@@ -306,6 +306,48 @@ pub fn (mut tree AccumulatedVisualContextTree) append(data VisualContextData, pa
 
 // Replace the values of an existing transform or effects node. Its depth,
 // empty-clip and backface flags depend only on clips and the tree structure.
+// Compositor samples rewrite an existing node's values in place. Recorded
+// display lists copy these values rather than referencing the node, so no
+// published list observes the change, and no new node data is allocated.
+pub fn (mut tree AccumulatedVisualContextTree) set_compositor_transform(index int, matrix Affine,
+	matrix_4x4 css.FloatMatrix4x4, uses_matrix_4x4 bool) bool {
+	if index <= 0 || index >= tree.nodes.len {
+		return false
+	}
+	data := tree.nodes[index].data
+	if data is TransformVisualData {
+		unsafe {
+			mut target := &TransformVisualData(&data)
+			*target = TransformVisualData{
+				...*target
+				matrix:          matrix
+				matrix_4x4:      matrix_4x4
+				uses_matrix_4x4: uses_matrix_4x4
+			}
+		}
+		return true
+	}
+	return false
+}
+
+pub fn (mut tree AccumulatedVisualContextTree) set_compositor_opacity(index int, opacity f64) bool {
+	if index <= 0 || index >= tree.nodes.len {
+		return false
+	}
+	data := tree.nodes[index].data
+	if data is EffectsVisualData {
+		unsafe {
+			mut target := &EffectsVisualData(&data)
+			*target = EffectsVisualData{
+				...*target
+				opacity: opacity
+			}
+		}
+		return true
+	}
+	return false
+}
+
 pub fn (mut tree AccumulatedVisualContextTree) replace_compositor_values(index int,
 	data VisualContextData) bool {
 	if index <= 0 || index >= tree.nodes.len {

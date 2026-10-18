@@ -656,20 +656,12 @@ fn patch_compositor_visual_contexts(mut tree painting.AccumulatedVisualContextTr
 	}
 	for box in boxes {
 		if box.own_effects_visual_context_idx > 0 {
-			effects := tree.node_at(box.own_effects_visual_context_idx).data as painting.EffectsVisualData
-			tree.replace_compositor_values(box.own_effects_visual_context_idx, painting.EffectsVisualData{
-				...effects
-				opacity: box.opacity
-			})
+			tree.set_compositor_opacity(box.own_effects_visual_context_idx, box.opacity)
 		}
 		if box.own_transform_visual_context_idx > 0 {
-			transform := tree.node_at(box.own_transform_visual_context_idx).data as painting.TransformVisualData
-			tree.replace_compositor_values(box.own_transform_visual_context_idx, painting.TransformVisualData{
-				...transform
-				matrix: compatibility_painting_affine(box.own_paint_transform)
-				matrix_4x4: box.own_paint_transform_4x4
-				uses_matrix_4x4: box.uses_own_paint_transform_4x4
-			})
+			tree.set_compositor_transform(box.own_transform_visual_context_idx,
+				compatibility_painting_affine(box.own_paint_transform), box.own_paint_transform_4x4,
+				box.uses_own_paint_transform_4x4)
 		}
 	}
 	return true
