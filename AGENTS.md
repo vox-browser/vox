@@ -2025,6 +2025,17 @@ evidence](docs/translation-audit/NATIVE_MEDIA_WHEEL_RAW_HANDLER.md).
   focused general-selector viewport exact; observed carry 0.
   Same 4 GiB, SSD, placement, frozen helper and GC policy.
   Concurrent Root/canonical/GUI preserved; Chrome parity remains open.
+  Direct DOM rendered-text collection `19f513dc` uses one authored bridge hunk
+  and one exact new file. 28 common cases pass 21,835 assertions/configuration;
+  five exact contracts pass 18,556/GC, including the restored 106 innerText call.
+  Complete public Unicode layout/recording batches use 0.27% fewer instructions.
+  Page point saving 175,782,410, 30/30 wins;
+  paired interval [169,674,798.5, 189,042,702], repeatable credit 175,782,410.
+  Broad verification: 87 selected cases both GC; 19 screenshots/16 exact;
+  focused first-letter/whitespace viewport exact; observed carry 0.
+  UTF-8 validated; malformed/grapheme fallback retains the unchanged iterator.
+  Same 4 GiB, frozen helper, GC policy; Root/canonical/GUI preserved.
+  Chrome parity remains open.
 - Outside instruction-count optimization, run broad regression suites once per
   ten completed fixes, not after every fix.
   Broad suites include full translation/package test batches, the full LibJS AST

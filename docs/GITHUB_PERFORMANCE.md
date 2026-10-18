@@ -11081,6 +11081,135 @@ Chrome content/start/submission accounting remains open; **faster-than-Chrome
 performance is unproven**. Evidence: Build/v/instruction-opt108-* and
 Build/instructions/vox-opt108-interleaved-*.
 
+## Collect DOM rendered text without font chunks
+
+Round 109 ports Alexander Medvednikov’s already committed `19f513dc` onto
+accepted frozen 108. One exact authored hunk in layout/dom_layout_bridge.v and
+the exact new 96-line layout/rendered_text_for_dom.v file collect the string
+consumed by innerText directly. Valid UTF-8 keeps text transformation and source
+fragment boundaries, handles collapsible ASCII spaces and CRLF clusters, and
+shares the retained string when no removal is needed. Malformed UTF-8 and a
+removed space with a grapheme extension retain the unchanged iterator fallback.
+Font, UTF-16 and segmenter data stay lazy on the direct path. The iterator,
+Unicode tables, CSS decoding/filtering and GC policy remain unchanged.
+
+All **28 common functional cases**, plus one inactive diagnostic, pass before/
+Boehm, final/Boehm and final/no-GC C-O2: **21,835 assertions each**. The sole old
+initial-bridge case asserting eager UTF-16 cache creation is excluded from this
+common set. The author’s updated version is checked in the candidate contracts.
+Common SHA256 `4cbb10e6ae1129c1b374318dd0a3173cf4582009282cc1758e0ceea9f04ea5b1`.
+
+All **five candidate-only cases** pass **18,556 assertions in each GC mode**:
+three exact original collector tests, the author’s exact updated initial-bridge
+case, and the original 106 cache-laziness case with its innerText setup call now
+restored. No assertion or expected value is omitted. They compare against the
+unchanged no-wrap iterator across whitespace modes, Unicode/grapheme/CRLF and
+malformed/WTF-8 data; check retained-string identity and lazy font/UTF-16/line
+state; and retain first-letter, transformation, live mutation and source geometry.
+Contract SHA256 `69602f06f3e8c4700ca24222c92e6a4c066da9abaf900595d46460c638aa8c58`.
+
+Three fixed alternating local pairs count **32 complete public document layout
+and display-list rebuilds over 64 Unicode paragraphs**, including intrinsic
+inline/absolute children, combining marks, ZWJ families, flags, RTL/CJK, four
+shadows and two effect groups. Public invalidation, fresh DOM mirrors and
+innerText collection, style, formatting, geometry, recording and command
+checksums are included. Setup, eight warmups, independent expected checksums,
+text assertions and forced GC remain outside the counter. All six actual exits
+are 0 and checksum **74,728,352** matches. No private collector loop or profile
+time substitutes for retired hardware instructions.
+
+| Pair | Before retired instructions | Candidate retired instructions |
+| --- | ---: | ---: |
+| 1 | 18,244,382,145 | 18,102,341,914 |
+| 2 | 18,179,497,547 | 18,167,000,583 |
+| 3 | 18,216,288,830 | 18,232,235,739 |
+
+Local medians **18,216,288,830 → 18,167,000,583**, change
+**-0.270572%**, **2/3 wins**. This local result has no
+independent page credit.
+
+The strict C audit permits only attach_layout_node_recursive and three new
+private collector helpers. All four are authenticated against independent
+whole-app C-only generation. The bridge changes two iterator constructions into
+two collector calls. The helper validates UTF-8 before byte collection and
+retains three fallback sites to the unchanged iterator. The actual frontend
+has one added layout file at index 664; all previous file order is preserved.
+Only anonymous file identities after that observed insertion are projected.
+One existing option typedef/record and two existing contains helpers/prototypes
+move; each is byte-identical and authenticated against independent C before
+sorting. Four older byte-identical helper reorderings remain authenticated.
+All other executable C, records/globals/resources, iterator/Unicode code,
+CSS decoding/filtering/arenas and heap/GC policy match after established compiler
+identities and exact unchanged assertion-line mapping. All 120 native inputs,
+37 frozen includes and native arguments match except artifact paths.
+
+The initial strict reader actually exits 1; its script, full projections, diff,
+results and controller exit are retained before the authenticated identity/order
+repair. An earlier ad-hoc header reader also exits 1 because its pattern omitted
+VV_LOC; recognition alone was repaired. Neither repair changes production code,
+generated C, native arguments or measurements. No functional test or completed
+primary is repeated to repair a reader.
+
+Both C-O1/Boehm/default-marker-1 -profile-no-inline diagnostics actually exit 0.
+Instrumentation covers the whole process, with no filter/reset. Public layout,
+recording and text-command counts match. The direct collector replaces most
+iterator construction; the fallback has zero calls in this particular diagnostic
+and is covered by the exact contracts. Profile timings receive no page credit.
+
+| Full-process diagnostic function | Before calls | Candidate calls |
+| --- | ---: | ---: |
+| `layout__opt109_complete_public_document_layout` | 41 | 41 |
+| `layout__run_document_layout` | 42 | 42 |
+| `dom__Document_record_display_list` | 41 | 41 |
+| `layout__BlockBox_flat_paint_commands_for_entries` | 41 | 41 |
+| `layout__lower_visual_layers` | 41 | 41 |
+| `layout__append_text_fragment_commands` | 18,368 | 18,368 |
+| `layout__text_grapheme_boundaries` | 24,448 | 24,448 |
+| `layout__TextNodeChunkIterator__static__new_with_direction` | 11,008 | 256 |
+| `layout__TextNode_grapheme_boundaries_for_rendered_text` | 11,008 | 256 |
+| `layout__collect_dom_rendered_text` | 0 | 10,752 |
+| `layout__collect_dom_rendered_text_with_chunks` | 0 | 0 |
+| `layout__removed_dom_space_has_grapheme_extension` | 0 | 5,376 |
+
+Normal candidate Build/v/Vox-opt109-dom-text-bin SHA256
+`f4a7d3e59d26219d976c62429803e6b7a889dc66e3186337fb0e0f45378eb9b7`;
+compiled C SHA256 `1341045a1151a0374ab6b306e6359dda0b260aa9844673861465799aff1810e1`.
+Both persisted regular binaries load the frozen 4e helper with actual loader
+proof. SSD cache parent, 4 GiB hint, default marker 1, child-only placement and
+1024×768 document viewport match. No prod/prealloc or heap increase.
+
+The predeclared **30 alternating pairs**, seed 109 and **30,000 paired bootstrap
+resamples**, retain all 60 first navigation_to_first_document_paint[0]
+observations: **17,225,046,662.5 → 17,049,264,252.5**
+retired instructions. Point saving **175,782,410**
+(**-1.020505%**), **30/30 wins**;
+paired median saving **177,765,420.5**, 95% paired interval
+**[169,674,798.5, 189,042,702]**, repeatable credit **175,782,410**.
+The positive paired interval permits this repeatable credit.
+
+There are **60 real PNGs**, **0** startup retry records, recovered
+primaries `[]`, post-primary refreshes `[]`, and
+**0** external foreground
+transitions. No completed primary is discarded or repeated. First preparations
+retain 1 install/2 geometry/1 paint; later work stays separate. Memory peaks
+cover process lifetime through capture/exit, not first-frame live memory;
+overlapping counters are not summed. All 60 decoded RGB captures differ only in the original skeleton bands, x45–662/y335–344 and ten 14px bands starting at 380 with 41px spacing. All other pixels match; 28 control and 29 candidate classes, 0 shared. No bounds change.
+
+The focused first-letter/whitespace/Unicode viewport is **pixel-exact**.
+Explicit child argv pins the frozen helper after protected env/sh launch sites;
+actual loader path/hash receipts remain. Six actual zero exits pass CSS 31/SVG 10/layout 46 in both GC modes: **174 executions**. All **19 screenshot comparisons pass, 16 exact**. Known differences remain inline-node 13, text-decorations 1,341 and canvas-text 1,994. Completed broad validation resets observed carry to 0. The 87 selected harness
+bodies, assertions and expected values are unchanged from 108.
+
+The isolated app is `/Users/alex/code/vox2/Build/v/Vox-opt109.app`. Signing, startup, installed helper
+and native instruction-text identity pass. GC checks observe actual collections
+at default marker 1 and override 2. Accepted 109 becomes the next frozen performance control. The independently advancing Root,
+newer canonical bundle and user’s GUI remain preserved and receive no additional
+performance credit. Generated-C/profile hashes are durable in
+instruction-opt109-artifact-archives.json. Equivalent Chrome content/start/
+submission accounting remains open; **faster-than-Chrome performance is
+unproven**. Evidence: Build/v/instruction-opt109-* and
+Build/instructions/vox-opt109-interleaved-*.
+
 ## Causes and changes
 
 - The V 0.5.2 compatibility compiler's `-prod` Boehm code repeatedly snapshots
