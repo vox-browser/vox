@@ -72,6 +72,7 @@ pub mut:
 mut:
 	// Live module-cycle boundary, retained for this exact typed layout node.
 	dom_layout_node_ &dom.LayoutNode = unsafe { nil }
+	flow_validation_cache_ &RetainedFlowValidationCache = unsafe { nil }
 	tree_order_       &LayoutTreeOrder = unsafe { nil }
 	tree_order_owner_ voidptr
 	tree_order_start_ u32

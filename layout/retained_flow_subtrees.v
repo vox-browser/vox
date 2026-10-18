@@ -8,6 +8,56 @@ struct RetainedFlowSubtree {
 	elements []&dom.Element
 }
 
+@[heap]
+struct RetainedFlowValidationCache {
+	inputs []RetainedInlineInput
+	elements []&dom.Element
+}
+
+fn collect_retained_flow_validation_inputs(node &Node, root bool,
+	mut inputs []RetainedInlineInput) bool {
+	style := node.computed_values()
+	revision := style.mutation_revision()
+	if revision == 0 { return false }
+	inputs << RetainedInlineInput{
+		node: node
+		style: style
+		style_revision: revision
+		child_count: node.child_count()
+		parent_id: if root { u64(0) } else if parent := node.parent() { u64(voidptr(parent)) } else { 0 }
+		sibling_index: node.index_in_parent_
+		text: if text := node.as_text_node() { text.text_for_rendering() } else { '' }
+	}
+	for child in node.children() {
+		if !collect_retained_flow_validation_inputs(child, false, mut inputs) { return false }
+	}
+	return true
+}
+
+fn retained_flow_validation_is_current(cache &RetainedFlowValidationCache) bool {
+	if !retained_inline_inputs_are_current(cache.inputs) { return false }
+	for element in cache.elements {
+		computed := css.computed_properties_for_element(element) or { return false }
+		mirror := element.as_node().unsafe_layout_node() or { return false }
+		if mirror.real_layout_handle() == unsafe { nil } { return false }
+		typed := unsafe { &Node(mirror.real_layout_handle()) }
+		if voidptr(typed.computed_values()) != voidptr(computed) { return false }
+	}
+	for input in cache.inputs {
+		if dom_node := input.node.dom_node() {
+			mirror := dom_node.unsafe_layout_node() or { return false }
+			if mirror.real_layout_handle() != voidptr(input.node) { return false }
+		}
+		if text := input.node.as_text_node() {
+			dom_node := input.node.dom_node() or { return false }
+			data := dom_node.as_character_data() or { return false }
+			if text.source_text_ != data.data() || text.source_range_length_ != none
+				|| text.first_letter_ != none { return false }
+		}
+	}
+	return true
+}
+
 // TreeBuilder's DOM invalidation flags identify the branches which need new
 // boxes. Keep ordinary flow branches outside those mutations, including their
 // text shaping caches and live DOM layout boundaries. Formatting and geometry
@@ -43,8 +93,21 @@ fn reusable_clean_flow_subtree(element &dom.Element, mut rejected map[u64]bool) 
 	parent_dom := parent.dom_node() or { return none }
 	dom_parent := dom_root.parent() or { return none }
 	if voidptr(parent_dom) != voidptr(dom_parent) { return none }
+	if root.flow_validation_cache_ != unsafe { nil }
+		&& retained_flow_layout_node_is_ordinary(root)
+		&& retained_flow_validation_is_current(root.flow_validation_cache_) {
+		return RetainedFlowSubtree{root: root, elements: root.flow_validation_cache_.elements}
+	}
 	mut elements := []&dom.Element{}
 	if !collect_retained_flow_elements(element, mut elements, mut rejected) { return none }
+	mut inputs := []RetainedInlineInput{}
+	if collect_retained_flow_validation_inputs(root, true, mut inputs) {
+		mut mutable_root := unsafe { &Node(root) }
+		mutable_root.flow_validation_cache_ = &RetainedFlowValidationCache{
+			inputs: inputs
+			elements: elements
+		}
+	}
 	return RetainedFlowSubtree{
 		root:     root
 		elements: elements

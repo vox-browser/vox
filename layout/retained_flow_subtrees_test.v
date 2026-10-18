@@ -153,3 +153,51 @@ fn test_clean_flow_roots_and_inline_block_action_menus_retain_their_tree_roles()
 		retained_flow_check_full_rebuild(mut document)
 	}
 }
+
+fn test_unchanged_flow_validation_reuses_its_snapshot_and_rechecks_changed_styles() {
+	mut document := html.parse_document('<!doctype html><div id="changed"></div><section id="stable"><p>Unchanged <strong id="label">comment</strong></p></section>')
+	defer { document.finalize() }
+	_ = layout_document_typed_in_viewport(document, 400, 300)
+	stable := document.get_element_by_id('stable')?
+	mut changed := document.get_element_by_id('changed')?
+	changed.set_inner_html('<p>First preceding update</p>')!
+	document.update_layout(.debugging)
+	root := unsafe { &Node(retained_flow_handle(stable)) }
+	cache := root.flow_validation_cache_
+	assert cache != unsafe { nil }
+	assert cache.inputs[0].parent_id == 0
+	changed.set_inner_html('<p>Second preceding update</p>')!
+	document.update_layout(.debugging)
+	assert retained_flow_handle(stable) == voidptr(root)
+	assert voidptr(root.flow_validation_cache_) == voidptr(cache)
+	mut label := document.get_element_by_id('label')?
+	label.set_attribute_value('style', 'color:red;font-size:22px')
+	changed.set_inner_html('<p>Third preceding update</p>')!
+	document.update_layout(.debugging)
+	current := unsafe { &Node(retained_flow_handle(stable)) }
+	assert voidptr(current.flow_validation_cache_) != voidptr(cache)
+	assert display_list_commands(document.record_display_list()?).any(it.text == 'comment'
+		&& it.color == 'rgb(255 0 0)')
+	retained_flow_check_full_rebuild(mut document)
+}
+
+fn test_flow_validation_rechecks_text_and_roles_after_nested_mutations() {
+	mut document := html.parse_document('<!doctype html><div id="changed"></div><section id="stable"><p id="text">Original comment</p></section>')
+	defer { document.finalize() }
+	_ = layout_document_typed_in_viewport(document, 400, 300)
+	mut changed := document.get_element_by_id('changed')?
+	changed.set_inner_html('<p>First preceding update</p>')!
+	document.update_layout(.debugging)
+	mut text := document.get_element_by_id('text')?
+	text.set_inner_html('Changed comment with different wrapping')!
+	changed.set_inner_html('<p>Second preceding update</p>')!
+	document.update_layout(.debugging)
+	retained_flow_check_full_rebuild(mut document)
+	text.set_attribute_value('style', 'float:left;width:120px')
+	changed.set_inner_html('<p>Third preceding update</p>')!
+	document.update_layout(.debugging)
+	stable := document.get_element_by_id('stable')?
+	root := unsafe { &Node(retained_flow_handle(stable)) }
+	assert root.flow_validation_cache_ == unsafe { nil }
+	retained_flow_check_full_rebuild(mut document)
+}
