@@ -1081,6 +1081,7 @@ pub fn (will_change &WillChange) has_scroll_position() bool {
 }
 
 pub fn (will_change &WillChange) has_property(property_id PropertyID) bool {
+	if will_change.names.len == 0 { return false }
 	return string_from_property_id(property_id) in will_change.names
 }
 
