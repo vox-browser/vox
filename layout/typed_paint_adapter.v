@@ -2605,51 +2605,10 @@ fn block_box_from_typed_layout(node &Node, state &LayoutState) BlockBox {
 	return block_box_from_typed_layout_with_ancestor(node, state, [6]f64{})
 }
 
-struct TypedPaintBuildFrame {
-	node &Node
-	box  &BlockBox
-}
-
-// Paintable construction used to recurse through this tree while every call
-// retained the adapter's large collection of temporary paint data. Moderately
-// deep, entirely valid documents could consequently exhaust the native stack
-// before painting began. Keep the breadth-first construction order without a
-// second wide box vector: each parent installs its final child storage before
-// the compact work queue takes pointers into it. That storage never grows after
-// its children enter the queue, so later queue reallocations cannot move boxes.
+// Build into one exact-sized backing store so ordinary small child groups do
+// not each allocate a large, separately scanned BlockBox vector.
 fn block_box_from_typed_layout_with_ancestor(node &Node, state &LayoutState, ancestor_paint_transform [6]f64) BlockBox {
-	mut root_box := block_box_from_typed_layout_shallow(node, state, ancestor_paint_transform)
-	mut frames := [TypedPaintBuildFrame{
-		node: node
-		box: &root_box
-	}]
-	mut frame_index := 0
-	for frame_index < frames.len {
-		parent_node := frames[frame_index].node
-		mut parent_box := unsafe { &BlockBox(frames[frame_index].box) }
-		parent_transform := parent_box.paint_transform
-		children := typed_paint_child_nodes(parent_node, state)
-		mut child_boxes := []BlockBox{cap: children.len}
-		mut child_nodes := []&Node{cap: children.len}
-		for child in children {
-			child_box := block_box_from_typed_layout_shallow(child, state, parent_transform)
-			if child_box.tag_name == '' && !child.is_anonymous()
-				&& !child.is_generated_for_pseudo_element() {
-				continue
-			}
-			child_boxes << child_box
-			child_nodes << child
-		}
-		parent_box.children = child_boxes
-		for child_index, child in child_nodes {
-			frames << TypedPaintBuildFrame{
-				node: child
-				box: unsafe { &parent_box.children[child_index] }
-			}
-		}
-		frame_index++
-	}
-	return root_box
+	return build_typed_paint_tree_in_arena(node, state, ancestor_paint_transform)
 }
 
 fn painting_clip_path_segment(segment html.PathSegment) painting.ClipPathSegment {
