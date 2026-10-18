@@ -71,6 +71,7 @@ fn refresh_document_paint_tree(document &dom.Document, mut result DocumentLayout
 	result.paint_style_update_requires_full_refresh = false
 	result.paint_style_update_handles.clear()
 	result.paint_style_update_compositor_handles.clear()
+	result.paint_style_update_text_handles.clear()
 	// The renderer snapshot owns the concrete command vector behind Document's
 	// cached DisplayList. Invalidating that vector must invalidate the outer
 	// Document cache too, so record_display_list enters the actual paint path.

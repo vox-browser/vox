@@ -1289,6 +1289,54 @@ fn animated_property_reaches_children(property_id PropertyID, target &dom.Node) 
 	return false
 }
 
+// Colors the retained paint tree refreshes per box without rebuilding the
+// transport (see layout/local_paint_style_refresh.v).
+fn property_is_local_paint_animated(property PropertyID) bool {
+	return match property {
+		.background_color, .color, .outline_color { true }
+		else { false }
+	}
+}
+
+// Whether the samples changed only colors that a local paint refresh applies,
+// and whether the background color is the only one: text then keeps its lines.
+fn animated_changes_are_local_paint(old_values map[PropertyID]&dom.StyleValue,
+	new_values map[PropertyID]&dom.StyleValue) (bool, bool) {
+	mut background_only := true
+	for property, old_value in old_values {
+		new_value := if value := new_values[property] { ?&dom.StyleValue(value) } else { ?&dom.StyleValue(none) }
+		if compute_property_invalidation(property, old_value, new_value).is_none() {
+			continue
+		}
+		if !property_is_local_paint_animated(property) {
+			return false, false
+		}
+		if property != .background_color {
+			background_only = false
+		}
+	}
+	for property, _ in new_values {
+		if property in old_values {
+			continue
+		}
+		if !property_is_local_paint_animated(property) {
+			return false, false
+		}
+		if property != .background_color {
+			background_only = false
+		}
+	}
+	return true, background_only
+}
+
+// Set while an animation sample that changed only background colors is
+// applied to its layout node, so the paint refresh can keep text lines.
+__global css_animated_background_only_update = false
+
+pub fn animated_background_only_update() bool {
+	return css_animated_background_only_update
+}
+
 fn animated_changes_are_compositor_only(old_values map[PropertyID]&dom.StyleValue,
 	new_values map[PropertyID]&dom.StyleValue) bool {
 	for property, old_value in old_values {
@@ -1595,6 +1643,9 @@ fn style_computer_update_animated_style_callback(target voidptr) {
 			computed.animated_custom_property_values())
 		compositor_only_changes := animated_changes_are_compositor_only(old_animated_values,
 			computed.animated_property_values())
+		local_paint, background_only := animated_changes_are_local_paint(old_animated_values,
+			computed.animated_property_values())
+		local_paint_changes := !compositor_only_changes && local_paint
 		samples.leave()
 		if full_refresh {
 			// Every value derived from the previous samples is rebuilt: paint
@@ -1636,6 +1687,7 @@ fn style_computer_update_animated_style_callback(target voidptr) {
 		}
 
 		mut retained_compositor_paint := false
+		mut retained_local_paint := false
 		if !target_was_recomputed {
 			// The DOM mirror is rebuilt on every install and kept by the element
 			// and its layout node until the next one.
@@ -1649,8 +1701,18 @@ fn style_computer_update_animated_style_callback(target voidptr) {
 					&& !invalidation.needs_relayout() && !invalidation.needs_layout_tree_rebuild()
 					&& compositor_only_changes
 				style_computer.animation_layout_style_ = computed
-				retained_compositor_paint = layout_node.apply_animated_style(computed_dom_mirror,
-					only_compositor_changes)
+				if !full_refresh && !custom_properties_changed && local_paint_changes
+					&& !invalidation.needs_relayout() && !invalidation.needs_layout_tree_rebuild() {
+					// The retained paint tree refreshes this box's colors and
+					// re-records only its phase commands; otherwise the style is
+					// applied normally.
+					css_animated_background_only_update = background_only
+					retained_local_paint = layout_node.apply_inherited_color_style(computed_dom_mirror)
+					css_animated_background_only_update = false
+				} else {
+					retained_compositor_paint = layout_node.apply_animated_style(computed_dom_mirror,
+						only_compositor_changes)
+				}
 				style_computer.animation_layout_style_ = unsafe { nil }
 			}
 		}
@@ -1668,7 +1730,9 @@ fn style_computer_update_animated_style_callback(target voidptr) {
 			}
 		}
 		mut document := unsafe { &dom.Document(target_element.document()) }
-		if invalidation.needs_repaint() {
+		if invalidation.needs_repaint() && retained_local_paint {
+			document.set_needs_repaint_with_invalidation(.paint_commands)
+		} else if invalidation.needs_repaint() {
 			if retained_compositor_paint {
 				// The retained paint transport resamples this compositor value, so
 				// only the assembled display list needs recording again.

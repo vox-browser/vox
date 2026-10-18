@@ -508,8 +508,12 @@ mut:
 	paint_style_update_requires_full_refresh bool
 	paint_style_update_handles HandleSet
 	paint_style_update_compositor_handles HandleSet
+	// The subset whose text may paint differently: all updates except
+	// animated samples that changed only background colors.
+	paint_style_update_text_handles HandleSet
 	// Scratch for refresh_local_paint_styles, kept for its storage.
 	paint_style_update_ordinary_handles HandleSet
+	paint_style_update_line_handles     HandleSet
 	// Layout handle -> retained paint box, including the Viewport's root-box
 	// mapping. The paint tree is immutable between refreshes, so wheel
 	// coordinates and visual-context rebuilds share one lazily built index.

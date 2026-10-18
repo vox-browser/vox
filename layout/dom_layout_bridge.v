@@ -662,6 +662,7 @@ fn apply_style_to_layout_node(layout_handle voidptr, css_computed_properties_han
 		result.paint_tree_needs_style_update = true
 		result.paint_style_update_requires_full_refresh = result.paint_style_update_requires_full_refresh || !can_refresh_locally
 		result.paint_style_update_handles.add(u64(layout_handle))
+		result.paint_style_update_text_handles.add(u64(layout_handle))
 	}
 }
 
@@ -693,7 +694,9 @@ fn apply_inherited_color_style_to_layout_node(layout_handle voidptr, style voidp
 	node := unsafe { &Node(layout_handle) }
 	styled := node.as_node_with_style() or { return false }
 	computed := unsafe { &css.ComputedProperties(style) }
-	if !local_paint_style_refresh_supports_node(node, computed)
+	// CSS calls this only after checking that colors are the only change,
+	// including for sampled colors.
+	if !local_paint_style_refresh_supports_box(node)
 		|| !computed.filter().is_none() || !computed.backdrop_filter().is_none() {
 		return false
 	}
@@ -702,6 +705,9 @@ fn apply_inherited_color_style_to_layout_node(layout_handle voidptr, style voidp
 	if mut result := document_layout_result(node.document()) {
 		result.paint_tree_needs_style_update = true
 		result.paint_style_update_handles.add(u64(layout_handle))
+		if !css.animated_background_only_update() {
+			result.paint_style_update_text_handles.add(u64(layout_handle))
+		}
 	}
 	return true
 }

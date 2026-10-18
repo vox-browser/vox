@@ -21,7 +21,8 @@ fn paint_style_update_can_be_local(node &Node, previous &css.ComputedValues, cur
 		after := current.raw_property_at_index(index)
 		if before == after { continue
 		 }
-		if property in [.outline_color, .outline_width, .outline_style, .outline_offset] {
+		if property == .outline_color || property == .outline_width
+			|| property == .outline_style || property == .outline_offset {
 			if !current.filter().is_none() || !current.backdrop_filter().is_none() { return false }
 			continue
 		}
@@ -48,8 +49,14 @@ fn paint_style_update_can_be_local(node &Node, previous &css.ComputedValues, cur
 	return true
 }
 
+// Animated styles can be refreshed locally only when CSS has checked which
+// sampled values changed: a raw property diff cannot see them.
 fn local_paint_style_refresh_supports_node(node &Node, current &css.ComputedProperties) bool {
-	if current.has_animated_properties() || node.is_generated_for_pseudo_element()
+	return !current.has_animated_properties() && local_paint_style_refresh_supports_box(node)
+}
+
+fn local_paint_style_refresh_supports_box(node &Node) bool {
+	if node.is_generated_for_pseudo_element()
 		|| node.is_svg_box() || node.is_svg_svg_box() || node.is_svg_foreign_object_box()
 		|| node.is_viewport() || node.display().is_internal_table()
 		|| node.display().is_table_inside() {
@@ -93,14 +100,23 @@ fn refresh_local_paint_styles(mut result DocumentLayoutResult) {
 			&result.paint_style_update_compositor_handles, [6]f64{}, mut compositor)
 	}
 	mut ordinary_changes := &result.paint_style_update_ordinary_handles
+	mut line_changes := &result.paint_style_update_line_handles
 	ordinary_changes.clear()
+	line_changes.clear()
 	for handle in result.paint_style_update_handles.items {
-		if !result.paint_style_update_compositor_handles.contains(handle) { ordinary_changes.add(handle) }
+		if !result.paint_style_update_compositor_handles.contains(handle) {
+			ordinary_changes.add(handle)
+			if result.paint_style_update_text_handles.contains(handle) {
+				line_changes.add(handle)
+			}
+		}
 	}
 	mut changed_boxes := []&BlockBox{}
 	refresh_local_paint_styles_in_box(mut result.paint_tree, result.state,
-		ordinary_changes, mut changed_boxes)
+		ordinary_changes, line_changes, mut changed_boxes)
 	ordinary_changes.clear()
+	line_changes.clear()
+	result.paint_style_update_text_handles.clear()
 	for box in changed_boxes { viewport_invalidate_box_paint_cache(mut result, box) }
 	if compositor.changed {
 		// Opacity zero and singular transforms also change paint-step membership,
@@ -177,18 +193,43 @@ fn line_style_depends_on_changed_node(box &BlockBox, changed &HandleSet) bool {
 	return false
 }
 
+// A box paints its own computed background color unless it is anonymous or
+// its background propagates to the canvas.
+fn box_background_color_refreshes_directly(node &Node) bool {
+	if node.is_body() || node.is_root_element() || node.is_anonymous() {
+		return false
+	}
+	element := node.dom_node() or { return false }
+	return element.as_element() != none
+}
+
+// `line_changes` are the changed nodes whose text may paint differently;
+// nodes whose only change is their background color keep their lines.
 fn refresh_local_paint_styles_in_box(mut box BlockBox, state &LayoutState,
-	changed &HandleSet, mut changed_boxes []&BlockBox) {
+	changed &HandleSet, line_changes &HandleSet, mut changed_boxes []&BlockBox) {
 	if changed.len() == 0 { return }
 	mut did_change := false
 	if box.layout_handle != unsafe { nil } {
 		node := unsafe { &Node(box.layout_handle) }
-		if changed.contains(u64(box.layout_handle)) {
+		if changed.contains(u64(box.layout_handle)) && !line_changes.contains(u64(box.layout_handle))
+			&& box_background_color_refreshes_directly(node) {
+			// Only the background color changed (an animation sample): the other
+			// box paint data, which a shallow rebuild would recompute together
+			// with the text lines, is unchanged.
+			if styled := node.as_node_with_style() {
+				computed := styled.computed_values()
+				box.background_color = computed.background_color()
+				box.background_srgb_color = chromium_background_srgb_color(node, computed,
+					box.background_color)
+				did_change = true
+			}
+		} else if changed.contains(u64(box.layout_handle)) {
 			// Resolve currentColor in borders, shadows, outlines and image layers
 			// exactly as a full transport rebuild does. Retain box addresses,
 			// children, geometry and accumulated visual/scroll context indices.
 			fresh := block_box_from_typed_layout_shallow(node, state, [6]f64{})
 			box.background_color = fresh.background_color
+			box.background_srgb_color = fresh.background_srgb_color
 			box.text_color = fresh.text_color
 			box.border_color = fresh.border_color
 			box.border_colors = fresh.border_colors
@@ -203,7 +244,7 @@ fn refresh_local_paint_styles_in_box(mut box BlockBox, state &LayoutState,
 			box.background_images = fresh.background_images
 			did_change = true
 		}
-		if line_style_depends_on_changed_node(&box, changed) {
+		if line_changes.len() > 0 && line_style_depends_on_changed_node(&box, line_changes) {
 			if styled := node.as_node_with_style() {
 				if used := state.try_get(styled) {
 					box.lines = text_lines_from_typed_layout(node, used, state, paint_cumulative_offset(node,
@@ -215,6 +256,6 @@ fn refresh_local_paint_styles_in_box(mut box BlockBox, state &LayoutState,
 	}
 	if did_change { changed_boxes << unsafe { &box } }
 	for mut child in box.children {
-		refresh_local_paint_styles_in_box(mut child, state, changed, mut changed_boxes)
+		refresh_local_paint_styles_in_box(mut child, state, changed, line_changes, mut changed_boxes)
 	}
 }
