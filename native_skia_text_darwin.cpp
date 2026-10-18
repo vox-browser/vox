@@ -1387,9 +1387,15 @@ extern "C" int ladybird_v_skia_draw_masked_image(CGContextRef destination,
 // by index, with their height in device rows including both border texels.
 static std::vector<int> s_msaa_tiles;
 static int s_msaa_tile_rows = 256;
+static double s_root_raster_scroll_y = 0;
 // Rectangles clipped out of the next rectangle drawn, as left, top, right and
 // bottom in its local coordinates.
 static std::vector<float> s_rect_clip_outs;
+
+extern "C" void ladybird_v_skia_set_root_raster_scroll_y(double scroll_y)
+{
+    s_root_raster_scroll_y = scroll_y;
+}
 
 extern "C" void ladybird_v_skia_set_msaa_tiles(int const* tiles, int count, int tile_rows)
 {
@@ -1909,6 +1915,64 @@ static SkTileMode svg_gradient_tile_mode(int spread_method)
     }
 }
 
+// The first tile owns rows [0, spacing], subsequent tiles exclude their
+// first border texel. This is also the tile whose device coordinates seed
+// gradient dithering at each visible row.
+static long chromium_raster_tile_for_row(long row)
+{
+    long spacing = s_msaa_tile_rows - 2;
+    return row <= spacing ? 0 : (row - 1) / spacing;
+}
+
+static bool chromium_root_gradient_tiles_eligible(float scale, float page_x,
+    float page_y, bool has_background, int tile_width, RasterRegion const& region)
+{
+    // Other scales, scrolled roots and isolated layers keep the existing
+    // bounded leaf renderer until their raster origins are supplied separately.
+    constexpr size_t maximum_tile_pixels = 8 * 1024 * 1024;
+    return scale == 1 && page_x == 0 && page_y == std::round(page_y)
+        && s_root_raster_scroll_y == 0 && has_background && tile_width > 0
+        && region.left >= 0 && region.right <= tile_width
+        && static_cast<size_t>(tile_width) * s_msaa_tile_rows <= maximum_tile_pixels;
+}
+
+static bool draw_chromium_root_gradient_tiles(
+    decltype(&vox_graphite_draw_path_pixels) draw,
+    std::vector<uint32_t>& pixels, int raster_width, int raster_height,
+    int tile_width, int offset_x, long first_row, VoxGraphitePath const& descriptor)
+{
+    if (!draw) return false;
+    auto original_backdrop = pixels;
+    long spacing = s_msaa_tile_rows - 2;
+    long first_tile = chromium_raster_tile_for_row(first_row);
+    long last_tile = chromium_raster_tile_for_row(first_row + raster_height - 1);
+    std::vector<uint32_t> tile_pixels(static_cast<size_t>(tile_width) * s_msaa_tile_rows);
+    for (long tile = first_tile; tile <= last_tile; ++tile) {
+        long origin = tile * spacing;
+        std::fill(tile_pixels.begin(), tile_pixels.end(), 0);
+        for (int row = 0; row < raster_height; ++row) {
+            long tile_row = first_row + row - origin;
+            if (tile_row < 0 || tile_row >= s_msaa_tile_rows) continue;
+            std::copy_n(original_backdrop.begin() + static_cast<size_t>(row) * raster_width,
+                raster_width, tile_pixels.begin() + tile_row * tile_width + offset_x);
+        }
+        auto tile_descriptor = descriptor;
+        tile_descriptor.matrix[2] += offset_x;
+        tile_descriptor.matrix[5] += first_row - origin;
+        if (!draw(reinterpret_cast<uint8_t*>(tile_pixels.data()), tile_width,
+                s_msaa_tile_rows, tile_width * 4, 1, &tile_descriptor)) return false;
+        for (int row = 0; row < raster_height; ++row) {
+            long document_row = first_row + row;
+            if (chromium_raster_tile_for_row(document_row) != tile) continue;
+            long tile_row = document_row - origin;
+            if (tile_row < 0 || tile_row >= s_msaa_tile_rows) continue;
+            std::copy_n(tile_pixels.begin() + tile_row * tile_width + offset_x,
+                raster_width, pixels.begin() + static_cast<size_t>(row) * raster_width);
+        }
+    }
+    return true;
+}
+
 template<typename MakeShader>
 static int draw_svg_gradient_path(CGContextRef destination, float const* data,
     int segment_count, int even_odd, float transform_a, float transform_b,
@@ -2022,8 +2086,22 @@ static int draw_svg_gradient_path(CGContextRef destination, float const* data,
         };
         raster_matrix(matrix, region, raster_scale_x, raster_scale_y).get9(descriptor.matrix);
         gradient_matrix.get9(descriptor.gradient_matrix);
-        if (auto draw = graphite_path_draw(); draw && draw(reinterpret_cast<uint8_t*>(pixels.data()),
-                raster_width, raster_height, raster_width * 4, has_background, &descriptor)) {
+        auto draw = graphite_path_draw();
+        int tile_width = static_cast<int>(std::ceil(canvas_width));
+        bool drawn;
+        if (chromium_root_gradient_tiles_eligible(destination_scale, page_x, page_y,
+                has_background, tile_width, region)) {
+            // A page-aligned eight-pixel dither pattern stops matching at the
+            // next Chromium tile. Replay in each tile's actual coordinate
+            // space, retaining its border texels and immutable backdrop.
+            long first_row = std::lround(static_cast<float>(region.top) - page_y + scroll_y);
+            drawn = draw_chromium_root_gradient_tiles(draw, pixels, raster_width,
+                raster_height, tile_width, region.left, first_row, descriptor);
+        } else {
+            drawn = draw && draw(reinterpret_cast<uint8_t*>(pixels.data()), raster_width,
+                raster_height, raster_width * 4, has_background, &descriptor);
+        }
+        if (drawn) {
             CGContextSaveGState(destination);
             if (has_background) CGContextSetBlendMode(destination, kCGBlendModeCopy);
             int result = composite_pixels(destination, pixels, raster_width, raster_height,

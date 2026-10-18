@@ -264,6 +264,7 @@ fn C.native_end_svg_mask_layer(cache_key u64, content_mask int, canvas_width f32
 
 fn C.native_begin_css_filter_layer(canvas_width f32, canvas_height f32)
 fn C.native_begin_font_compositing_layer(canvas_width f32, canvas_height f32)
+fn C.native_set_chromium_raster_scroll_y(scroll_y f64)
 fn C.native_set_chromium_msaa_tiles(tiles &int, count int, tile_rows int)
 fn C.native_set_rect_clip_outs(rects &f64, count int)
 fn C.native_rounded_rect_underlay_supported() int

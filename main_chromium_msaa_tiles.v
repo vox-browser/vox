@@ -156,6 +156,7 @@ fn (mut app BrowserApp) set_chromium_msaa_tiles() {
 		tile_rows := chromium_gpu_raster_tile_rows(int(math.ceil(f64(app.viewport_height) * scale)))
 		tiles := chromium_msaa_tiles(app.paint_commands, scale, tile_rows)
 		tiles_pointer := if tiles.len > 0 { &tiles[0] } else { unsafe { &int(nil) } }
+		C.native_set_chromium_raster_scroll_y(app.scroll_y)
 		C.native_set_chromium_msaa_tiles(tiles_pointer, tiles.len, tile_rows)
 	}
 }

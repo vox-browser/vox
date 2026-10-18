@@ -77,6 +77,13 @@ positions retain their existing path. The unchanged four-case
 and adjacent original Brave PNG preserve remaining dither, rounded-clip and
 explicit-size differences.
 
+`gradient-raster-tiles` places angled and vertical fades across four Chromium
+raster tiles. Their shared border texels make a 256-row tile advance by 254
+rows. The opaque, unscrolled 1× root path now draws gradients in each tile's
+coordinate space, preserving its dither pattern and float rounding; all eight
+cases are exact. Tile allocation is bounded at 32 MiB. Other scales, scrolled
+roots and isolated layers retain the existing leaf renderer.
+
 Outer CSS SVG roots in the Chromium profile snap their border-box paint
 origin while layout, padding, nested viewports and transforms keep their
 fractions. The two CNN header icons are exact after this change. The unchanged
