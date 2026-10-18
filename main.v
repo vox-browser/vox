@@ -3521,6 +3521,16 @@ fn (mut app BrowserApp) install_loaded_page(loaded LoadedPage, add_history bool)
 	} else {
 		parse_loaded_browser_navigation_document(loaded, dom.url_about_blank(), initiator_origin, previous_document, unsafe { &dom.Page(app.page_model) }, scripting_enabled)
 	}
+	// Navigation has deactivated the old document. Release its realm and
+	// rendering before the replacement stylesheet allocation wave, which can
+	// otherwise trigger collections while both complete render graphs live.
+	if app.js_runtime != unsafe { nil } {
+		mut agent_event_loop := html.main_thread_event_loop()
+		agent_event_loop.bind_vm(none)
+		app.js_runtime.close()
+		app.js_runtime = unsafe { nil }
+	}
+	if previous := previous_document { app.retire_native_document_rendering(previous) }
 	install_browser_adblock_styles(app.document, '') or { app.js_messages << 'Adblock styles: ${err.msg()}' }
 	if app.page_model != unsafe { nil } && !app.page_model.has_local_root_navigable() {
 		if navigable := app.document.navigable() {
@@ -3549,13 +3559,6 @@ fn (mut app BrowserApp) install_loaded_page(loaded LoadedPage, add_history bool)
 	checkpoint = debug_timing_checkpoint('install_styles', checkpoint)
 	install_local_video_frames(app.document, resource_base_url, loaded.markup)
 	checkpoint = debug_timing_checkpoint('install_video_frames', checkpoint)
-	if app.js_runtime != unsafe { nil } {
-		mut agent_event_loop := html.main_thread_event_loop()
-		agent_event_loop.bind_vm(none)
-		app.js_runtime.close()
-		app.js_runtime = unsafe { nil }
-	}
-	if previous := previous_document { app.retire_native_document_rendering(previous) }
 	sources := script_sources(app.document, resource_base_url, preloaded_resources, mut app.js_messages)
 	mut image_loader := new_browser_image_request_loader(app.document, preloaded_resources)
 	app.image_request_loader = image_loader
