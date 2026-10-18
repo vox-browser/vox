@@ -407,7 +407,21 @@ pub fn (mut c CascadedProperties) set_property(property_id PropertyID, value &do
 	c.entry_heads_[property_id] = index
 }
 
-fn for_each_typed_property_expanding_shorthands(property_id PropertyID, value StyleValue, set_longhand_property fn(PropertyID, StyleValue)) {
+struct TypedLonghandExpansionCallback {
+	callback fn (PropertyID, StyleValue)
+}
+
+fn invoke_legacy_typed_longhand(context voidptr, property_id PropertyID, value StyleValue) {
+	state := unsafe { &TypedLonghandExpansionCallback(context) }
+	state.callback(property_id, value)
+}
+
+fn for_each_typed_property_expanding_shorthands(property_id PropertyID, value StyleValue, set_longhand_property fn (PropertyID, StyleValue)) {
+	state := TypedLonghandExpansionCallback{callback: set_longhand_property}
+	for_each_typed_property_expanding_shorthands_with_context(property_id, value, voidptr(&state), invoke_legacy_typed_longhand)
+}
+
+fn for_each_typed_property_expanding_shorthands_with_context(property_id PropertyID, value StyleValue, context voidptr, set_longhand_property fn (voidptr, PropertyID, StyleValue)) {
 	if property_is_shorthand(property_id) && (value.type_() == .unresolved || value.type_() == .pending_substitution) {
 		// If a shorthand property contains an arbitrary substitution function in its value, the longhand properties
 		// it's associated with must instead be filled in with a special, unobservable-to-authors pending-substitution
@@ -415,10 +429,10 @@ fn for_each_typed_property_expanding_shorthands(property_id PropertyID, value St
 		// value can't be determined until after substituted.
 		// https://drafts.csswg.org/css-values-5/#pending-substitution-value
 		// Ensure we keep the longhand around until it can be resolved.
-		set_longhand_property(property_id, value)
+		set_longhand_property(context, property_id, value)
 		pending_substitution_value := StyleValue(PendingSubstitutionStyleValue.create(value))
 		for longhand_id in longhands_for_shorthand_local(property_id) {
-			for_each_typed_property_expanding_shorthands(longhand_id, pending_substitution_value, set_longhand_property)
+			for_each_typed_property_expanding_shorthands_with_context(longhand_id, pending_substitution_value, context, set_longhand_property)
 		}
 		return
 	}
@@ -427,7 +441,7 @@ fn for_each_typed_property_expanding_shorthands(property_id PropertyID, value St
 		properties := value.sub_properties()
 		values := value.values()
 		for i := 0; i < properties.len && i < values.len; i++ {
-			for_each_typed_property_expanding_shorthands(properties[i], values[i], set_longhand_property)
+			for_each_typed_property_expanding_shorthands_with_context(properties[i], values[i], context, set_longhand_property)
 		}
 		return
 	}
@@ -442,12 +456,12 @@ fn for_each_typed_property_expanding_shorthands(property_id PropertyID, value St
 			return
 		}
 		for longhand in longhands_for_shorthand_local(property_id) {
-			for_each_typed_property_expanding_shorthands(longhand, value, set_longhand_property)
+			for_each_typed_property_expanding_shorthands_with_context(longhand, value, context, set_longhand_property)
 		}
 		return
 	}
 
-	set_longhand_property(property_id, value)
+	set_longhand_property(context, property_id, value)
 }
 
 fn longhands_for_shorthand_local(property_id PropertyID) []PropertyID {

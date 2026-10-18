@@ -10735,19 +10735,40 @@ pub fn (computer &StyleComputer) font_computer() &FontComputer {
 	return computer.font_computer_
 }
 
+struct DOMLonghandExpansionCallback {
+	callback fn (PropertyID, &dom.StyleValue)
+}
+
+fn invoke_legacy_dom_longhand(context voidptr, property_id PropertyID, value &dom.StyleValue) {
+	state := unsafe { &DOMLonghandExpansionCallback(context) }
+	state.callback(property_id, value)
+}
+
+struct TypedDOMLonghandExpansionContext {
+	context voidptr
+	callback fn (voidptr, PropertyID, &dom.StyleValue)
+}
+
+fn bridge_typed_dom_longhand(context voidptr, property_id PropertyID, value StyleValue) {
+	state := unsafe { &TypedDOMLonghandExpansionContext(context) }
+	state.callback(state.context, property_id, dom_style_value_from_value_logic(value))
+}
+
 pub fn StyleComputer.for_each_property_expanding_shorthands(property_id PropertyID, value &dom.StyleValue, set_longhand_property fn (PropertyID, &dom.StyleValue)) {
-	// Cascaded properties retain typed StyleValue handles. Expand a typed
-	// shorthand and bridge each resulting longhand across the DOM/CSS module
-	// boundary; only DOM-authored boundary values need the parser fallback.
+	state := DOMLonghandExpansionCallback{callback: set_longhand_property}
+	StyleComputer.for_each_property_expanding_shorthands_with_context(property_id, value, voidptr(&state), invoke_legacy_dom_longhand)
+}
+
+// Synchronous expansion keeps each borrowed receiver in the caller's graph.
+pub fn StyleComputer.for_each_property_expanding_shorthands_with_context(property_id PropertyID, value &dom.StyleValue, context voidptr, set_longhand_property fn (voidptr, PropertyID, &dom.StyleValue)) {
 	if property_is_shorthand(property_id) {
 		if typed_value := style_value_logic_from_dom(property_id, value) {
-			for_each_typed_property_expanding_shorthands(property_id, typed_value, fn [set_longhand_property] (longhand_id PropertyID, longhand_value StyleValue) {
-				set_longhand_property(longhand_id, dom_style_value_from_value_logic(longhand_value))
-			})
+			state := TypedDOMLonghandExpansionContext{context: context, callback: set_longhand_property}
+			for_each_typed_property_expanding_shorthands_with_context(property_id, typed_value, voidptr(&state), bridge_typed_dom_longhand)
 			return
 		}
 	}
-	set_longhand_property(property_id, value)
+	set_longhand_property(context, property_id, value)
 }
 
 pub fn StyleComputer.get_non_animated_inherit_value(property_id PropertyID, abstract_element dom.AbstractElement) &dom.StyleValue {

@@ -687,28 +687,28 @@ struct ExpandedLonghand {
 	value &dom.StyleValue = unsafe { nil }
 }
 
-// Expand `value` for `property_id` into its longhands, collected into a list. Wraps
-// StyleComputer.for_each_property_expanding_shorthands; the callback appends through a captured
-// pointer (V closures capture value-types by value, so mutating a captured list needs a pointer).
+struct ExpandedLonghandCollection {
+	base_url ?string
+mut:
+	longhands []ExpandedLonghand
+}
+
+fn collect_expanded_longhand(context voidptr, property_id PropertyID, value &dom.StyleValue) {
+	mut collection := unsafe { &ExpandedLonghandCollection(context) }
+	mut value_with_base := unsafe { &dom.StyleValue(value) }
+	if value_with_base.base_url == none {
+		value_with_base.base_url = collection.base_url
+	}
+	unsafe {
+		collection.longhands << ExpandedLonghand{id: property_id, value: value}
+	}
+}
+
+// Collect expanded values without creating an independently stored executable callback.
 fn expand_property_longhands(property_id PropertyID, value &dom.StyleValue) []ExpandedLonghand {
-	mut longhands := []ExpandedLonghand{}
-	longhands_ptr := &longhands
-	base_url := value.base_url
-	StyleComputer.for_each_property_expanding_shorthands(property_id, value, fn [longhands_ptr, base_url] (longhand_id PropertyID, longhand_value &dom.StyleValue) {
-		unsafe {
-			mut value_with_base := &dom.StyleValue(longhand_value)
-			if value_with_base.base_url == none {
-				value_with_base.base_url = base_url
-			}
-			mut list := *longhands_ptr
-			list << ExpandedLonghand{
-				id: longhand_id
-				value: longhand_value
-			}
-			*longhands_ptr = list
-		}
-	})
-	return longhands
+	mut collection := ExpandedLonghandCollection{base_url: value.base_url}
+	StyleComputer.for_each_property_expanding_shorthands_with_context(property_id, value, voidptr(&collection), collect_expanded_longhand)
+	return collection.longhands
 }
 
 // Whether the opaque cascaded `value` for `property_id` is the CSS-wide `revert`/`revert-layer`
