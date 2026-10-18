@@ -404,24 +404,30 @@ pub fn (mut c CharacterData) replace_data_with_mutation_steps(offset int, count 
 					return .@continue
 				})
 				auto_direction_element_node := current.as_node()
-				auto_direction_element_node.for_each_style_scope_which_may_observe_the_node(fn [auto_direction_element_node] (scope &StyleScope) {
-					mut mutable_scope := unsafe { &StyleScope(scope) }
-					mutable_scope.record_pending_has_invalidation_mutation_properties(auto_direction_element_node, [
-						InvalidationProperty{
-							type_: .pseudo_class
-							pseudo_class_name: 'dir'
-						},
-						InvalidationProperty{
-							type_: .pseudo_class
-							pseudo_class_name: 'empty'
-						},
-					])
-				})
+				scopes := auto_direction_element_node.observing_style_scopes()
+				record_auto_directionality_invalidation(scopes.first, auto_direction_element_node)
+				for scope in scopes.additional {
+					record_auto_directionality_invalidation(scope, auto_direction_element_node)
+				}
 				schedule_has_invalidation_for_inherited_attribute_change(current, 'dir')
 			}
 		}
 		ancestor = current.as_node().parent_element()
 	}
+}
+
+fn record_auto_directionality_invalidation(scope &StyleScope, node &Node) {
+	mut mutable_scope := unsafe { &StyleScope(scope) }
+	mutable_scope.record_pending_has_invalidation_mutation_properties(node, [
+		InvalidationProperty{
+			type_: .pseudo_class
+			pseudo_class_name: 'dir'
+		},
+		InvalidationProperty{
+			type_: .pseudo_class
+			pseudo_class_name: 'empty'
+		},
+	])
 }
 
 fn utf16_code_units_from_string(value string) []u16 {

@@ -5599,16 +5599,24 @@ pub fn (mut e Element) invalidate_lang_value() {
 
 fn schedule_has_invalidation_for_inherited_attribute_change(element &Element, pseudo_class_name string) {
 	node := element.as_node()
-	node.for_each_style_scope_which_may_observe_the_node(fn [node, pseudo_class_name] (scope &StyleScope) {
-		mut mutable_scope := unsafe { &StyleScope(scope) }
-		mutable_scope.record_pending_has_invalidation_mutation_properties(node, [
-			InvalidationProperty{
-				type_: .pseudo_class
-				pseudo_class_name: pseudo_class_name
-			},
-		])
-		mutable_scope.schedule_ancestors_style_invalidation_due_to_presence_of_has(node)
-	})
+	// Resolve the same scope snapshot before invalidation, without retaining the
+	// changed node in a captured callback after this synchronous walk returns.
+	scopes := node.observing_style_scopes()
+	record_inherited_attribute_invalidation(scopes.first, node, pseudo_class_name)
+	for scope in scopes.additional {
+		record_inherited_attribute_invalidation(scope, node, pseudo_class_name)
+	}
+}
+
+fn record_inherited_attribute_invalidation(scope &StyleScope, node &Node, pseudo_class_name string) {
+	mut mutable_scope := unsafe { &StyleScope(scope) }
+	mutable_scope.record_pending_has_invalidation_mutation_properties(node, [
+		InvalidationProperty{
+			type_: .pseudo_class
+			pseudo_class_name: pseudo_class_name
+		},
+	])
+	mutable_scope.schedule_ancestors_style_invalidation_due_to_presence_of_has(node)
 }
 
 // CSS/Invalidation/LanguageInvalidator.cpp:22–61. Keep the existing V
