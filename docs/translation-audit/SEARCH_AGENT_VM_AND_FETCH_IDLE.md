@@ -41,10 +41,9 @@ Focused receipts are private ignored `Build/search-speed/agent-context{,-none}`,
 `agent-integration{,-none}`, `fetch-state{,-none}`, and
 `fetch-idle-control-corrected`, each with `.log` and `.status`. The original
 failed control and pre-runtime verification setup corrections are retained.
-The committed checkpoint source is frozen under `Build/search-speed/ten-fix`
+The committed checkpoint runtime is frozen under `Build/search-speed/ten-fix`
 at `9927de40db10ed693cebf69dee59e29896391e7d`; independently changing canonical
-work is excluded from that snapshot. Broad checkpoint validation and final
-live comparisons are still pending, so the ten-fix cadence has not reset.
+work is excluded from that snapshot.
 
 The canonical production pilot after these two changes still measured 1,152 ms
 versus Brave's 697 ms for uncached main responses, with one native win out of
@@ -52,3 +51,61 @@ five pairs. Both painted 25 actual result elements with scripts enabled. The
 pilot ran while this task's broad compiler workers were at background priority;
 it does not isolate either fix's latency effect. Fresh-search parity remains
 open. Its full series is retained in `agent-idle-production-pilot-comparison.json`.
+
+## Completed ten-fix checkpoint
+
+Both original 37-file native selections exited 1. Thirty-five files passed;
+the idle-worker fixture and the 66-case `main_test.v` file failed. The latter
+contained two obsolete assumptions: animation ticks used to refresh paint
+immediately, and cached content types used to discard the charset. Fixture
+corrections `b79b22e7` and `341ce21d` exercise actual frame preparation, preserve
+the original transport charset, and keep the existing rendering/cleanup
+assertions. Both corrected files pass in both GC modes. Successful files were
+not rerun. The authenticated composite is 35 retained plus two recovered files,
+216 cases per GC mode; the earlier seven focused files add 40 disjoint cases.
+The total native union is therefore 44 files and 256 cases in each mode.
+
+The earlier full LibJS runs retain all 236 passing files in each GC mode:
+`git diff 06fdff11 HEAD -- libjs tools/libjs_ast_corpus.v` is empty at checkpoint
+completion. The fresh, unmodified AST driver again matches all 100 upstream
+fixtures exactly. This preserves the existing JSC execution/backend boundary.
+
+The signed frozen and canonical production bundles pass headless startup and
+strict signing checks. All eleven default smoke comparisons pass: eight are
+pixel-exact, three use their existing bounds. All eight SVG guards are exact,
+including image source replacement, resource removal, ID collisions, gradient
+stop mutation/animation, and pattern transforms. The saved 1024×768 search
+viewport is also exactly equal to its control. No bounds changed.
+
+The final five-pair live series uses the actual-DOM, scripted, direct-network
+method documented in the preceding audit, excluding one initial navigation:
+
+| Executable / main response | Vox median | Brave median | Vox pair wins |
+| --- | ---: | ---: | ---: |
+| Frozen checkpoint, ordinary warm cache | 355 ms | 697 ms | 5/5 |
+| Frozen checkpoint, uncached | 1,012 ms | 664 ms | 0/5 |
+| Canonical production, ordinary warm cache | 453 ms | 648 ms | 5/5 |
+| Canonical production, uncached | 1,067 ms | 645 ms | 0/5 |
+
+Both browsers paint 25 actual result elements; native script inputs exceed
+1 MB, and uncached rows verify a newly fetched main response in both browsers.
+Warm searches are faster in these series. Fresh-search parity remains open.
+These measurements precede the outgoing-shell release in `582993bb` and do not
+credit that later fix. One private candidate build ran during part of the
+checkpoint's live comparison; these are observed wall times under shared host
+load, not isolated CPU savings attributable to one change.
+
+Checkpoint completion has actual-zero receipts in
+`ten-fix-native-composite.status`, `ten-fix-ast.status`,
+`ten-fix-verification.status`, and `ten-fix-verification-v5-runner.status`.
+The 35+2 union and original failures are recorded in
+`ten-fix-native-composite.json`, both original native logs, and the separate
+`ten-fix-{idle,main}-fixture{,-none}` recovery logs/statuses. Binary identities,
+all four complete live series, pixels and screenshot results are retained as
+`ten-fix-binaries.json`, `ten-fix-*-comparison.json`,
+`ten-fix-style-pixels.json`, `ten-fix-smoke.log`, and `ten-fix-svg.log`.
+
+This closes the ten-fix batch at runtime `9927de40` with the two fixture-only
+corrections, without claiming broad coverage of later runtime changes. The
+cadence resets there; the subsequently implemented `582993bb` is fix 1 in the
+next batch. No historical inventories or unrelated broad baselines are changed.
