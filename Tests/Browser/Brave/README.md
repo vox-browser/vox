@@ -265,3 +265,13 @@ snaps the CSS mask image paint origin while preserving its resolved size and
 DOM geometry. Inline SVG, background images and SVG images inside mask
 resources retain their own coordinate rules. All cases require exact RGBA
 equality against the unchanged Brave reference.
+
+`text-shadow-retained-font` checks four opaque text shadows using Arial and
+Verdana, regular and bold faces, and fractional line positions. The Chromium
+profile replays shadows with the foreground's retained font and glyph geometry.
+The fixture is pixel-exact. Expanded alpha/scaled cases remain unchanged in
+`diagnostic/text-shadow-retained-font.html` and its original Brave PNG; 1,085
+pixels still differ by at most two levels. The four-case
+`diagnostic/text-shadow-blur.html` and original PNG retain 5,295 differing
+pixels, with maximum error four, after correcting double-scaled blur. Neither
+diagnostic establishes exact parity.

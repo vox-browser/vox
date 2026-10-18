@@ -30,9 +30,9 @@ results, not a claim of complete uBlock extension parity.
 
 ## Current diagnostic progress
 
-The signed SVG-background, mask and selector diagnostic has **2,854 differing pixels**, with a
+The signed SVG-background, mask, selector and text-shadow diagnostic has **2,490 differing pixels**, with a
 maximum channel error of 59, against the unchanged Brave reference. Its single
-diagnostic records **48,007,760,558 instructions** and receives no performance
+diagnostic records **48,943,973,161 instructions** and receives no performance
 credit while the pixels differ. A fresh Brave
 diagnostic remains pixel-exact and records 42,262,584,954 instructions, whose
 15% threshold is approximately 35.923 billion. These are diagnostic runs, not
@@ -127,6 +127,28 @@ broad batch pass in both GC modes (84 logical checks, 18 invocations), and all
 The current normal bundle and source/binary pins are under
 `production-selector-substring/`. Earlier failed test-call signatures and the
 stopped allocating-slice build are retained without pass credit.
+
+Chromium text shadows now use the retained font, glyph IDs and positions
+through Skia instead of the fallback Core Graphics face. Their CSS blur is
+resolved before the paint transform, avoiding double scaling. The foreground
+C ABI and the portable/emoji fallback remain unchanged. The four-case opaque
+font fixture is exact; 4,800 native foreground cache replays also match the
+preceding library, and all 34 Brave fixtures pass in the optimized build.
+The unchanged expanded diagnostics still differ: alpha/scaled flat shadows
+have 1,085 pixels with maximum error 2; four blurred cases have 5,295 pixels
+with maximum error 4. These remain open, with no tolerance or reference edits.
+
+The resulting normal CNN capture has 2,490 differing pixels (32 over three
+channel levels), maximum error 59, and 48,943,973,161 instructions. Full uBO
+again matches 173 checks over 118 distinct requests, including four blocked
+requests. The count is diagnostic only and does not meet the seven-pair
+performance target. Receipts are `text-shadow-native-focused/result.json`,
+`retained-text-shadow-brave-fixtures/results.json`, and
+`production-retained-text-shadow-instructions/pair-1.vox.{json,ubo.json}`.
+The current normal bundle and pins are under `production-retained-text-shadow/`.
+An additional GPU glyph-mask experiment produced the same diagnostic pixels
+as the corrected CPU bridge and was omitted. Arc-normalization and coordinate
+prototypes also remain outside production after regressions or no CNN benefit.
 
 The preceding isolated gradient-tile baseline passes a 24-file CSS/layout/HTML/
 network selection in both default and no-GC builds, all 30 exact Brave
