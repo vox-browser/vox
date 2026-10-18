@@ -3729,6 +3729,23 @@ fn (mut app BrowserApp) start_pending_navigation() {
 	spawn fetch_page_in_background(pending.resolved, pending.base, pending.generation, pending.add_history, pending.had_cached_page, app.navigation_results)
 }
 
+// A page that replaces the document is installed before background resources
+// are applied. Completing them for the outgoing document, such as a cached
+// page's thumbnails, would only delay the replacement's first paint, so they
+// stay queued for the next frame.
+fn (mut app BrowserApp) poll_navigation_and_background_resources(refresh_ready bool) {
+	document_before_navigation := voidptr(app.document)
+	if app.document == unsafe { nil } || (app.document_presented && refresh_ready) {
+		app.refresh_not_before = 0
+		app.poll_navigation()
+	}
+	if voidptr(app.document) == document_before_navigation {
+		app.poll_background_resources()
+	} else {
+		request_browser_frame()
+	}
+}
+
 fn (mut app BrowserApp) poll_navigation() {
 	app.poll_page_preload()
 	select {
@@ -6654,12 +6671,8 @@ fn (mut app BrowserApp) draw() {
 		&& app.pending_cached_page != none {
 		app.install_pending_cached_page()
 	}
-	app.poll_background_resources()
-	refresh_ready := app.refresh_not_before == 0 || time.sys_mono_now() >= app.refresh_not_before
-	if app.document == unsafe { nil } || (app.document_presented && refresh_ready) {
-		app.refresh_not_before = 0
-		app.poll_navigation()
-	}
+	app.poll_navigation_and_background_resources(app.refresh_not_before == 0
+		|| time.sys_mono_now() >= app.refresh_not_before)
 	report_first_paint := debug_timing_enabled() && app.document != unsafe { nil }
 		&& !app.document_presented
 	mut paint_checkpoint := time.sys_mono_now()

@@ -29,3 +29,47 @@ fn test_cached_page_refresh_starts_with_the_chrome_only_frame() {
 	loaded := result.loaded or { panic('missing refreshed page') }
 	assert loaded.url == 'about:blank'
 }
+
+// A refreshed page that arrives with background resources queued replaces the
+// cached document first. The outgoing document's resources stay queued until
+// the next frame, which applies them to the replacement.
+fn test_refreshed_page_installs_before_queued_background_resources() {
+	mut app := BrowserApp{
+		navigation_generation:       4
+		navigation_results:          chan NavigationResult{cap: 1}
+		background_resource_results: chan PreloadedResource{cap: 1}
+		background_resource_pending: {
+			'https://refresh-order.test/1s.jpg': true
+		}
+	}
+	app.install_loaded_page(LoadedPage{
+		url:          'https://refresh-order.test/catalog'
+		content_type: 'text/html'
+		markup:       '<!doctype html><p>cached</p>'
+	}, false)
+	cached := voidptr(app.document)
+	app.document_presented = true
+	app.navigation_results <- NavigationResult{
+		generation:      4
+		had_cached_page: true
+		resolved:        'https://refresh-order.test/catalog'
+		loaded:          LoadedPage{
+			url:          'https://refresh-order.test/catalog'
+			content_type: 'text/html'
+			markup:       '<!doctype html><p>refreshed</p>'
+		}
+	}
+	app.background_resource_results <- PreloadedResource{
+		url:          'https://refresh-order.test/1s.jpg'
+		error:        'not fetched'
+		request_type: 'image'
+	}
+	app.poll_navigation_and_background_resources(true)
+	assert voidptr(app.document) != cached
+	assert app.markup.contains('refreshed')
+	assert 'https://refresh-order.test/1s.jpg' in app.background_resource_pending
+	assert app.background_resource_results.len == 1
+	app.poll_navigation_and_background_resources(true)
+	assert 'https://refresh-order.test/1s.jpg' !in app.background_resource_pending
+	assert app.background_resource_results.len == 0
+}
