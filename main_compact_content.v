@@ -36,8 +36,9 @@ fn install_compact_element_content_binding(document &dom.Document, mut runtime b
 		return binding.elements.clone()
 	}, fn [binding] (key string) ?&dom.Element {
 		return binding.elements[key] or { return none }
-	}, fn [binding] (element &dom.Element) ?string {
-		return binding.keys[voidptr(element)] or { return none }
+	}, fn [binding] (element &dom.Element) []string {
+		if key := binding.keys[voidptr(element)] { return [key] }
+		return []string{}
 	})
 	runtime.define_host_function('__ladybirdReadElementContent', fn [elements, binding] (input string) !string {
 		parts := input.split(':')

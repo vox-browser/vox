@@ -6,8 +6,8 @@ import dom
 struct CanvasIdentityLookupProbe {
 mut:
 	snapshots int
-	elements map[string]&dom.Element
-	keys map[voidptr]string
+	elements  map[string]&dom.Element
+	keys      map[voidptr]string
 }
 
 fn install_canvas_identity_probe(mut runtime Runtime, probe &CanvasIdentityLookupProbe) {
@@ -17,8 +17,13 @@ fn install_canvas_identity_probe(mut runtime Runtime, probe &CanvasIdentityLooku
 		return current.elements.clone()
 	}, fn [probe] (key string) ?&dom.Element {
 		return probe.elements[key] or { return none }
-	}, fn [probe] (element &dom.Element) ?string {
-		return probe.keys[voidptr(element)] or { return none }
+	}, fn [probe] (element &dom.Element) []string {
+		mut keys := []string{}
+		if key := probe.keys[voidptr(element)] { keys << key }
+		for key, candidate in probe.elements {
+			if voidptr(candidate) == voidptr(element) && key !in keys { keys << key }
+		}
+		return keys
 	})
 }
 
@@ -28,8 +33,14 @@ fn test_canvas_identity_lookup_avoids_snapshots_and_preserves_distinct_equal_ele
 	first := document.create_element('button')!
 	second := document.create_element('button')!
 	probe := &CanvasIdentityLookupProbe{
-		elements: {'first': first, 'second': second}
-		keys: {voidptr(first): 'first', voidptr(second): 'second'}
+		elements: {
+			'first':  first
+			'second': second
+		}
+		keys:     {
+			voidptr(first):  'first'
+			voidptr(second): 'second'
+		}
 	}
 	mut runtime := Runtime.create()
 	defer { runtime.close() }
@@ -48,12 +59,21 @@ fn test_canvas_identity_lookup_honors_later_collisions_and_legacy_provider_fallb
 	second := document.create_element('button')!
 	legacy_element := document.create_element('a')!
 	first_probe := &CanvasIdentityLookupProbe{
-		elements: {'shared': first, 'alias': first}
-		keys: {voidptr(first): 'shared'}
+		elements: {
+			'shared': first
+			'alias':  first
+		}
+		keys:     {
+			voidptr(first): 'shared'
+		}
 	}
 	second_probe := &CanvasIdentityLookupProbe{
-		elements: {'shared': second}
-		keys: {voidptr(second): 'shared'}
+		elements: {
+			'shared': second
+		}
+		keys:     {
+			voidptr(second): 'shared'
+		}
 	}
 	mut runtime := Runtime.create()
 	defer { runtime.close() }
@@ -62,8 +82,35 @@ fn test_canvas_identity_lookup_honors_later_collisions_and_legacy_provider_fallb
 	assert runtime.canvas_element_key_for_binding(first)? == 'alias'
 	assert runtime.canvas_element_key_for_binding(second)? == 'shared'
 	runtime.add_canvas_element_provider(fn [legacy_element] () map[string]&dom.Element {
-		return {'legacy': legacy_element}
+		return {
+			'legacy': legacy_element
+		}
 	})
 	assert runtime.canvas_element_key_for_binding(legacy_element)? == 'legacy'
 	assert voidptr(runtime.canvas_element_for_binding('shared')?) == voidptr(second)
+}
+
+fn test_canvas_identity_lookup_missing_or_removed_owners_do_not_snapshot_indexed_providers() {
+	mut document := dom.Document.create(dom.url_about_blank())
+	defer { document.finalize() }
+	first := document.create_element('button')!
+	missing := document.create_element('button')!
+	mut probe := &CanvasIdentityLookupProbe{
+		elements: {
+			'first': first
+		}
+		keys:     {
+			voidptr(first): 'first'
+		}
+	}
+	mut runtime := Runtime.create()
+	defer { runtime.close() }
+	install_canvas_identity_probe(mut runtime, probe)
+	for _ in 0 .. 100 {
+		assert runtime.canvas_element_key_for_binding(missing) == none
+	}
+	probe.elements.delete('first')
+	probe.keys.delete(voidptr(first))
+	assert runtime.canvas_element_key_for_binding(first) == none
+	assert probe.snapshots == 0
 }
