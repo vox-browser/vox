@@ -14,13 +14,13 @@ $if !vox_ui2 ? {
 
 	fn (mut app BrowserApp) draw_portable_browser_chrome(window gg.Size) {
 		// Draw chrome last so scrolled page content cannot paint over it.
-		draw_srgb_rect(app.ctx, 0, 0, f32(window.width), f32(toolbar_height), gg.rgb(23, 32, 51))
+		draw_srgb_rect(app.ctx, 0, 0, f32(window.width), app.page_top(), gg.rgb(23, 32, 51))
 		app.draw_chrome_button(12, '‹', app.history_index > 0)
 		app.draw_chrome_button(54, '›', app.history_index + 1 < app.history.len)
 		app.draw_chrome_button(96, '↻', app.history_index >= 0)
 		app.draw_chrome_button(138, '⌂', true)
 		address_x := f32(184)
-		address_width := f32(window.width - 252)
+		address_width := f32(window.width - 196)
 		app.resize_address_bar(window.width)
 		if !app.native_address_bar {
 			address_color := if app.address_active {
@@ -38,16 +38,9 @@ $if !vox_ui2 ? {
 				size:  14
 			)
 		}
-		draw_rounded_fill(app.ctx, f32(window.width - 60), 12, 48, 34, 8, gg.rgb(109, 40, 217))
-		app.ctx.draw_text(window.width - 48, 20, 'Go',
-			color: gg.rgb(255, 255, 255)
-			size:  14
-		)
-		app.ctx.draw_text(14, 58, 'V · HTML/DOM/CSS/Layout · LibJS + JavaScriptCore',
-			color: gg.rgb(196, 181, 253)
-			size:  13
-		)
-		app.ctx.draw_text(348, 58, app.status, color: gg.rgb(148, 163, 184), size: 12)
+		if app.chrome_debug {
+			app.ctx.draw_text(14, 64, app.status, color: gg.rgb(148, 163, 184), size: 12)
+		}
 
 		status_y := window.height - int(status_bar_height)
 		draw_srgb_rect(app.ctx, 0, f32(status_y), f32(window.width), f32(status_bar_height), gg.rgb(30, 41, 59))

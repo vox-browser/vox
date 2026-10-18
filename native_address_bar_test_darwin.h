@@ -69,11 +69,15 @@ static int native_test_chrome_button(void *control) {
 		&& [(__bridge NSButton *)control isBordered];
 }
 
-static int native_test_chrome_geometry(void *toolbar, void *status, int width, int height) {
+static int native_test_chrome_geometry(void *toolbar, void *status, int width, int height, int toolbar_height) {
 	NSRect top = [(__bridge NSView *)toolbar frame];
 	NSRect bottom = [(__bridge NSView *)status frame];
-	return NSEqualRects(top, NSMakeRect(0, height - 88, width, 88))
+	return NSEqualRects(top, NSMakeRect(0, height - toolbar_height, width, toolbar_height))
 		&& NSEqualRects(bottom, NSMakeRect(0, 0, width, 24));
+}
+
+static int native_test_chrome_hidden(void *control) {
+	return [(__bridge NSView *)control isHidden];
 }
 
 static void native_test_chrome_resize(void *window, int width, int height) {

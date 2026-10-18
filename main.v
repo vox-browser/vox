@@ -303,7 +303,8 @@ fn request_browser_frame() {
 
 const initial_width = 1024
 const initial_height = 768
-const toolbar_height = 88.0
+const toolbar_height = 56.0
+const debug_status_height = 32.0
 const status_bar_height = 24.0
 const max_preloaded_resources = 32
 const max_cached_resources = 256
@@ -377,6 +378,7 @@ mut:
 	address_select                      bool
 	native_address_bar                  bool
 	browser_chrome                      BrowserChromeState
+	chrome_debug                        bool
 	viewport_width                      int
 	viewport_height                     int
 	scroll_y                            f64
@@ -3172,11 +3174,11 @@ fn (mut app BrowserApp) dispatch_javascript_event(name string, element &dom.Elem
 }
 
 fn (app &BrowserApp) chrome_height() int {
-	return int(toolbar_height + status_bar_height)
+	return int(app.page_top()) + int(status_bar_height)
 }
 
 fn (app &BrowserApp) page_top() f32 {
-	return f32(toolbar_height)
+	return f32(browser_toolbar_height(app.chrome_debug))
 }
 
 fn (app &BrowserApp) status_height() int {
@@ -3671,7 +3673,7 @@ fn (mut app BrowserApp) navigate(address string, add_history bool) {
 					generation: generation
 				}
 			} else {
-				snapshot_path := cached_snapshot_path(resolved)
+				snapshot_path := app.browser_chrome_snapshot_path(resolved)
 				$if macos {
 					if os.is_file(snapshot_path) {
 						C.native_show_cached_snapshot(snapshot_path)
@@ -6829,7 +6831,7 @@ fn (mut app BrowserApp) draw() {
 			if paint_document && browser_snapshot_cache_enabled() && !app.snapshot_cached
 				&& !app.load_status.starts_with('Cached') && !app.load_status.starts_with('Loading ') {
 				app.snapshot_cached = true
-				C.native_cache_browser_snapshot(cached_snapshot_path(app.address))
+				C.native_cache_browser_snapshot(app.browser_chrome_snapshot_path(app.address))
 			}
 		}
 	}
@@ -6909,12 +6911,8 @@ fn (mut app BrowserApp) handle_click(x f32, y f32) {
 				return
 			}
 			window := browser_window_size()
-			if x >= 184 && x < f32(window.width - 68) {
+			if x >= 184 && x < f32(window.width - 12) {
 				app.focus_address_bar()
-				return
-			}
-			if x >= f32(window.width - 60) {
-				app.submit_address_bar()
 				return
 			}
 		}
@@ -6979,8 +6977,9 @@ fn (mut app BrowserApp) handle_event(event &gg.Event) {
 		}
 		if !app.address_active && event.typ in [.key_down, .char] {
 			chrome_shortcut := event.typ == .key_down
-				&& app.platform_pointer_modifiers & (dom.modifier_ctrl | dom.modifier_super) != 0
-				&& event.key_code in [.l, .r]
+				&& ((app.platform_pointer_modifiers & (dom.modifier_ctrl | dom.modifier_super) != 0
+					&& event.key_code in [.l, .r])
+					|| is_browser_debug_shortcut(event.key_code, unsafe { gg.Modifier(event.modifiers) }))
 			if !chrome_shortcut { app.defer_page_input(event) }
 		}
 		return
@@ -7084,6 +7083,10 @@ fn (mut app BrowserApp) handle_key(key gg.KeyCode, modifier gg.Modifier) {
 	window_height := browser_window_size().height
 	height := if window_height > 0 { window_height } else { app.viewport_height + app.chrome_height() }
 	command := modifier.has(.super) || modifier.has(.ctrl)
+	if is_browser_debug_shortcut(key, modifier) {
+		app.toggle_browser_debug()
+		return
+	}
 	if command && key == .l {
 		app.focus_address_bar()
 		return

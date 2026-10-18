@@ -18,6 +18,11 @@ static NSEvent *native_address_bar_filter_key(NSTextField *field, void *owner,
 	BOOL editing = control.currentEditor != nil
 		&& control.window.firstResponder == control.currentEditor;
 	NSEventModifierFlags mods = event.modifierFlags & NSEventModifierFlagDeviceIndependentFlagsMask;
+	if (event.keyCode == 2 && (mods & NSEventModifierFlagCommand)
+		&& !(mods & (NSEventModifierFlagControl | NSEventModifierFlagOption | NSEventModifierFlagShift))) {
+		if (!event.isARepeat) callback(owner, 3); // Cmd+D, including while editing the address.
+		return nil;
+	}
 	BOOL command = (mods & (NSEventModifierFlagCommand | NSEventModifierFlagControl)) != 0;
 	if (command && !(mods & (NSEventModifierFlagOption | NSEventModifierFlagShift))) {
 		if (event.keyCode == 37) { callback(owner, 0); return nil; } // Cmd+L

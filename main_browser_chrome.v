@@ -1,5 +1,7 @@
 module main
 
+import gg
+
 $if vox_ui2 ? {
 	import ui2
 
@@ -17,6 +19,46 @@ struct BrowserChromeState {
 	back    bool
 	forward bool
 	reload  bool
+	debug   bool
+}
+
+fn browser_toolbar_height(debug bool) f64 {
+	return toolbar_height + if debug { debug_status_height } else { 0.0 }
+}
+
+fn browser_debug_modifier(modifier gg.Modifier, is_macos bool) bool {
+	if modifier.has(.shift) || modifier.has(.alt) { return false }
+	return if is_macos { modifier.has(.super) } else { modifier.has(.ctrl) }
+}
+
+fn is_browser_debug_shortcut(key gg.KeyCode, modifier gg.Modifier) bool {
+	if key != .d { return false }
+	$if macos {
+		return browser_debug_modifier(modifier, true)
+	} $else {
+		return browser_debug_modifier(modifier, false)
+	}
+}
+
+fn (mut app BrowserApp) toggle_browser_debug() {
+	app.chrome_debug = !app.chrome_debug
+	// A cached full-window image has the old strip height and visibility.
+	$if macos {
+		if app.snapshot_visible { C.native_hide_cached_snapshot() }
+	}
+	app.snapshot_visible = false
+	app.snapshot_hold = false
+	app.snapshot_hold_until = 0
+	app.snapshot_cached = false
+	app.update_browser_chrome(app.browser_chrome.width, app.browser_chrome.height)
+	// The next frame resolves the document viewport against the new strip height.
+	request_browser_frame()
+}
+
+fn (app &BrowserApp) browser_chrome_snapshot_path(resource_url string) string {
+	// Keep previous chrome layouts and debug-only diagnostics out of normal
+	// startup snapshots, while retaining the shared snapshots cache directory.
+	return cached_snapshot_path('${resource_url}\ncompact-chrome-v1:${app.chrome_debug}')
 }
 
 fn (app &BrowserApp) chrome_footer() string {
@@ -38,6 +80,7 @@ fn (app &BrowserApp) browser_chrome_state(width int, height int) BrowserChromeSt
 		back:    app.history_index > 0
 		forward: app.history_index + 1 < app.history.len
 		reload:  app.history_index >= 0
+		debug:   app.chrome_debug
 	}
 }
 
@@ -54,11 +97,11 @@ $if vox_ui2 ? {
 
 	fn browser_chrome_elements(chrome BrowserChromeState) []ui2.Element {
 		width := f64(chrome.width)
-		address_width := if width > 276 { width - 252 } else { 24.0 }
+		address_width := if width > 220 { width - 196 } else { 24.0 }
 		footer_width := if width > 224 { width - 224 } else { 0.0 }
 		memory := ui2.text('memory')
 		return [
-			ui2.view('toolbar', ui2.rect(0, 0, width, toolbar_height), ui2.BoxStyle{ bg: 0xececec }, [
+			ui2.view('toolbar', ui2.rect(0, 0, width, browser_toolbar_height(chrome.debug)), ui2.BoxStyle{ bg: 0xececec }, [
 				ui2.Element{ ...chrome_navigation_button('back', '‹', 12, chrome.back), tooltip: 'Back', accessibility_label: 'Back' },
 				ui2.Element{ ...chrome_navigation_button('forward', '›', 54, chrome.forward), tooltip: 'Forward', accessibility_label: 'Forward' },
 				ui2.Element{ ...chrome_navigation_button('reload', '↻', 96, chrome.reload), tooltip: 'Reload', accessibility_label: 'Reload' },
@@ -74,8 +117,10 @@ $if vox_ui2 ? {
 					frame:       ui2.rect(184, 12, address_width, 34)
 					text_style:  ui2.TextStyle{ size: 14 }
 				) or { panic(err) },
-				ui2.with_native_style(ui2.button('go', 'Go', ui2.rect(width - 60, 12, 48, 34), ui2.BoxStyle{}, ui2.TextStyle{})),
-				ui2.label('load-status', chrome.status, ui2.rect(12, 52, width - 24, 28), ui2.TextStyle{ color: 0x555555, size: 12 }),
+				ui2.Element{
+					...ui2.label('load-status', chrome.status, ui2.rect(12, 56, width - 24, debug_status_height), ui2.TextStyle{ color: 0x555555, size: 12 })
+					hidden: !chrome.debug
+				},
 			]),
 			ui2.view('status-bar', ui2.rect(0, f64(chrome.height) - status_bar_height, width, status_bar_height), ui2.BoxStyle{ bg: 0xececec }, [
 				ui2.label('footer', chrome.footer, ui2.rect(12, 0, footer_width, status_bar_height), ui2.TextStyle{ color: 0x555555, size: 12 }),
@@ -122,7 +167,7 @@ fn (mut app BrowserApp) activate_browser_chrome(action string) {
 			app.blur_address_bar()
 			app.navigate('about:home', true)
 		}
-		'go', 'address-submit' { app.submit_address_bar() }
+		'address-submit' { app.submit_address_bar() }
 		else { return }
 	}
 	request_browser_frame()

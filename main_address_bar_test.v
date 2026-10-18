@@ -1,9 +1,9 @@
 module main
 
 import dom
+import gg
 
 $if vox_ui2 ? {
-	import gg
 	import ui2
 }
 
@@ -50,6 +50,57 @@ fn test_address_bar_escape_restores_current_history_url() {
 	assert app.navigation_generation == 0
 }
 
+fn test_browser_debug_uses_command_on_macos_and_control_on_windows() {
+	assert browser_debug_modifier(.super, true)
+	assert !browser_debug_modifier(.ctrl, true)
+	assert browser_debug_modifier(.ctrl, false)
+	assert !browser_debug_modifier(.super, false)
+	assert !browser_debug_modifier(.super | .shift, true)
+	assert !browser_debug_modifier(.ctrl | .alt, false)
+	modifier := $if macos { gg.Modifier.super } $else { gg.Modifier.ctrl }
+	mut app := BrowserApp{ address: 'unfinished.example', address_active: true }
+	assert !app.chrome_debug
+	normal_snapshot := app.browser_chrome_snapshot_path('https://example.test/')
+	assert normal_snapshot != cached_snapshot_path('https://example.test/')
+	app.snapshot_cached = true
+	app.snapshot_hold = true
+	app.snapshot_hold_until = 1
+	app.navigation_work_depth = 1
+	app.handle_event(&gg.Event{ typ: .key_down, key_code: .d, modifiers: u32(modifier) })
+	assert app.deferred_page_input.len == 0
+	app.handle_key(.d, modifier)
+	assert app.chrome_debug
+	assert app.browser_chrome_snapshot_path('https://example.test/') != normal_snapshot
+	assert !app.snapshot_cached
+	assert !app.snapshot_hold
+	assert app.snapshot_hold_until == 0
+	assert app.address == 'unfinished.example'
+	assert app.address_active
+	app.handle_key(.d, modifier)
+	assert !app.chrome_debug
+	assert app.browser_chrome_snapshot_path('https://example.test/') == normal_snapshot
+}
+
+fn test_browser_debug_row_returns_its_height_to_the_document_when_hidden() {
+	mut document := parse_browser_navigation_document_with_scripting('<!doctype html><p>Viewport</p>',
+		dom.url_about_blank(), none, none, none, 0, false)
+	defer { document.finalize() }
+	mut app := BrowserApp{ document: document, layout_tree_only: true }
+	app.relayout(800, 600)
+	assert app.page_top() == 56
+	assert app.viewport_height == 520
+	assert document.viewport_rect().height == 520
+	app.toggle_browser_debug()
+	app.relayout(800, 600)
+	assert app.page_top() == 88
+	assert app.viewport_height == 488
+	assert document.viewport_rect().height == 488
+	app.toggle_browser_debug()
+	app.relayout(800, 600)
+	assert app.viewport_height == 520
+	assert document.viewport_rect().height == 520
+}
+
 $if vox_ui2 ? {
 	#include "native_address_bar_test_darwin.h"
 
@@ -68,7 +119,8 @@ $if vox_ui2 ? {
 	fn C.native_test_chrome_click(control voidptr)
 	fn C.native_test_chrome_enabled(control voidptr) int
 	fn C.native_test_chrome_button(control voidptr) int
-	fn C.native_test_chrome_geometry(toolbar voidptr, status voidptr, width int, height int) int
+	fn C.native_test_chrome_geometry(toolbar voidptr, status voidptr, width int, height int, toolbar_height int) int
+	fn C.native_test_chrome_hidden(control voidptr) int
 	fn C.native_test_chrome_resize(window voidptr, width int, height int)
 	fn C.native_test_chrome_document_hit(window voidptr, toolbar voidptr, status voidptr) int
 	fn C.native_test_chrome_unmounted(window voidptr) int
@@ -112,7 +164,7 @@ $if vox_ui2 ? {
 		assert !app.address_active
 	}
 
-	fn test_ui2_address_bar_go_reads_the_live_control_and_resize_preserves_edits() {
+	fn test_ui2_address_bar_enter_reads_the_live_control_and_resize_preserves_edits() {
 		window := C.native_test_address_window()
 		mut app, field := address_bar_test_app(C.native_test_address_parent(window))
 		defer {
@@ -120,15 +172,15 @@ $if vox_ui2 ? {
 			C.native_test_address_close(window)
 		}
 		app.focus_address_bar()
-		address_bar_test_insert(field, 'https://ui2-address-bar.invalid/go')
+		address_bar_test_insert(field, 'https://ui2-address-bar.invalid/enter')
 		app.resize_address_bar(1000)
-		assert C.native_test_address_geometry(field, 748) == 1
+		assert C.native_test_address_geometry(field, 804) == 1
 		assert ui2.focused_id() == 'address'
 		assert ui2.text('address') == app.address
 		// Imperative native replacement need not deliver a change notification.
 		ui2.set_text('address', 'https://ui2-address-bar.invalid/live')
-		C.native_test_chrome_click(ui2.embedded_browser_control('go'))
-		pending := app.pending_navigation or { panic('Go did not navigate') }
+		C.native_test_address_submit(field)
+		pending := app.pending_navigation or { panic('Enter did not navigate') }
 		assert pending.resolved == 'https://ui2-address-bar.invalid/live'
 		assert pending.add_history
 		assert app.navigation_generation == 1
@@ -189,7 +241,8 @@ $if vox_ui2 ? {
 			app.unmount_address_bar()
 			C.native_test_address_close(window)
 		}
-		for id in ['back', 'forward', 'reload', 'home', 'go'] {
+		assert ui2.embedded_browser_control('go') == unsafe { nil }
+		for id in ['back', 'forward', 'reload', 'home'] {
 			assert C.native_test_chrome_button(ui2.embedded_browser_control(id)) == 1
 		}
 		assert C.native_test_chrome_enabled(ui2.embedded_browser_control('back')) == 0
@@ -241,13 +294,14 @@ $if vox_ui2 ? {
 		C.native_test_chrome_resize(window, 1000, 700)
 		app.update_browser_chrome(1000, 700)
 		assert ui2.embedded_browser_control('address') == field
-		assert C.native_test_address_geometry(field, 748) == 1
+		assert C.native_test_address_geometry(field, 804) == 1
 		assert ui2.focused_id() == 'address'
 		assert ui2.text('address') == 'https://editing.example/привет'
 		assert C.native_test_address_selection(field) == selection
 		assert ui2.text('load-status') == 'Loaded'
+		assert C.native_test_chrome_hidden(ui2.embedded_browser_control('load-status')) == 1
 		assert ui2.text('footer') == 'https://hover.example/'
-		assert C.native_test_chrome_geometry(ui2.embedded_browser_control('toolbar'), ui2.embedded_browser_control('status-bar'), 1000, 700) == 1
+		assert C.native_test_chrome_geometry(ui2.embedded_browser_control('toolbar'), ui2.embedded_browser_control('status-bar'), 1000, 700, 56) == 1
 		assert C.native_test_chrome_document_hit(window, ui2.embedded_browser_control('toolbar'), ui2.embedded_browser_control('status-bar')) == 1
 		app.hovered_link = ''
 		app.js_messages << 'first line\nstack line'
@@ -264,11 +318,42 @@ $if vox_ui2 ? {
 		app.unmount_address_bar()
 		assert C.native_test_chrome_unmounted(window) == 1
 		assert ui2.embedded_browser_control('address') == unsafe { nil }
-		assert ui2.embedded_browser_control('go') == unsafe { nil }
+		assert ui2.embedded_browser_control('home') == unsafe { nil }
 		mut next, _ := address_bar_test_app(C.native_test_address_parent(window))
-		assert ui2.embedded_browser_control('go') != unsafe { nil }
+		assert ui2.embedded_browser_control('home') != unsafe { nil }
 		next.unmount_address_bar()
 		assert C.native_test_chrome_unmounted(window) == 1
 		C.native_test_address_close(window)
+	}
+
+	fn test_ui2_debug_shortcut_toggles_diagnostics_from_address_and_page_focus() {
+		window := C.native_test_address_window()
+		mut app, field := address_bar_test_app(C.native_test_address_parent(window))
+		defer {
+			app.unmount_address_bar()
+			C.native_test_address_close(window)
+		}
+		app.status = 'HTTP 200 · 422405 bytes · 2539 paints · 1024×656 CSS px'
+		app.update_browser_chrome(800, 600)
+		assert !app.chrome_debug
+		assert C.native_test_chrome_hidden(ui2.embedded_browser_control('load-status')) == 1
+		app.focus_address_bar()
+		address_bar_test_insert(field, 'https://editing.example/')
+		C.native_test_address_shortcut(field, app, address_bar_shortcut, 0, 0)
+		selection := C.native_test_address_selection(field)
+		C.native_test_address_shortcut(field, app, address_bar_shortcut, 2, 0)
+		assert app.chrome_debug
+		assert C.native_test_chrome_hidden(ui2.embedded_browser_control('load-status')) == 0
+		assert ui2.text('load-status') == app.status
+		assert C.native_test_chrome_geometry(ui2.embedded_browser_control('toolbar'), ui2.embedded_browser_control('status-bar'), 800, 600, 88) == 1
+		assert ui2.focused_id() == 'address'
+		assert C.native_test_address_selection(field) == selection
+		assert app.address == 'https://editing.example/'
+		app.blur_address_bar()
+		C.native_test_address_shortcut(field, app, address_bar_shortcut, 2, 0)
+		assert !app.chrome_debug
+		assert C.native_test_chrome_hidden(ui2.embedded_browser_control('load-status')) == 1
+		assert C.native_test_chrome_geometry(ui2.embedded_browser_control('toolbar'), ui2.embedded_browser_control('status-bar'), 800, 600, 56) == 1
+		assert app.navigation_generation == 0
 	}
 }

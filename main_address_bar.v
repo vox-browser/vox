@@ -111,6 +111,7 @@ $if vox_ui2 ? {
 			0 { app.focus_address_bar() }
 			1 { app.reload() }
 			2 { app.cancel_address_bar() }
+			3 { app.toggle_browser_debug() }
 			else {}
 		}
 
