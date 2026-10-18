@@ -251,3 +251,10 @@ style sheet isolates each of them, but an LTR isolate of LTR text resolves to
 LTR bidi levels, so Blink keeps its paragraph in one LTR shaping run and kerns
 pairs such as `w.` and `Ty`. Splitting neutral punctuation into separate runs
 drops those kerns.
+
+`svg-background-natural-size` covers eleven SVG backgrounds with a natural
+aspect ratio alone, either dimension, percentage dimensions, and explicit
+`background-size` values. Missing dimensions stay absent during CSS default
+sizing. Each SVG viewport clips its contents before the background is
+composited, including SVG children larger than a width-only image. The fixture
+requires exact RGBA equality against its unchanged Brave reference.
