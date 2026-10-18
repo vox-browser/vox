@@ -134,6 +134,22 @@ pub fn (mut p Page) handle_pinch_event(position PixelPoint, scale f64) EventResu
 
 pub fn (mut p Page) handle_keydown(key int, modifiers u32, code_point u32,
 	repeat bool) EventResult {
+	if root := p.local_root_navigable_ {
+		if document := root.active_document() {
+			p.event_handler.focused_target_ = ''
+			p.event_handler.focused_target_state = none
+			if focused := document.focused_area() {
+				target := InputTarget{
+					id: focused.unique_id().value().str()
+					node: focused
+					is_editable: document.active_input_events_target(none) != none
+					is_focusable: true
+				}
+				p.event_handler.focused_target_ = target.id
+				p.event_handler.focused_target_state = target
+			}
+		}
+	}
 	return p.event_handler.handle_keydown(key, code_point, modifiers, repeat, false)
 }
 

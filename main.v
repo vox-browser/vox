@@ -7010,7 +7010,7 @@ fn (mut app BrowserApp) handle_event(event &gg.Event) {
 }
 
 fn (mut app BrowserApp) handle_character(code u32) {
-	if app.native_address_bar || !app.address_active || code < 32 || code == 127 {
+	if code < 32 || code == 127 {
 		return
 	}
 	// X11 can deliver the printable key for a Ctrl/Super shortcut as well as
@@ -7021,6 +7021,11 @@ fn (mut app BrowserApp) handle_character(code u32) {
 			&& app.platform_pointer_modifiers & dom.modifier_alt == 0) {
 		return
 	}
+	if !app.address_active {
+		app.handle_page_character(code)
+		return
+	}
+	if app.native_address_bar { return }
 	mut runes := app.address.runes()
 	if app.address_select {
 		runes.clear()
@@ -7101,6 +7106,7 @@ fn (mut app BrowserApp) handle_key(key gg.KeyCode, modifier gg.Modifier) {
 		return
 	}
 	if app.navigation_work_depth > 0 { return }
+	if app.handle_page_editing_key(key, modifier) { return }
 	match key {
 		.up { app.scroll_by(-42.0, height) }
 		.down { app.scroll_by(42.0, height) }

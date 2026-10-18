@@ -983,7 +983,8 @@ pub fn (text &FormAssociatedTextControlElement) selected_text_for_stringifier() 
 }
 
 pub fn (mut text FormAssociatedTextControlElement) handle_insert(input_type string, data string) ! {
-	if !text.control.is_mutable() {
+	if !text.control.is_mutable() || text.control.element.is_actually_disabled()
+		|| text.control.element.has_attribute('readonly') {
 		return
 	}
 	mut text_node := text.text_node_ or { return }
@@ -1053,7 +1054,8 @@ pub fn (mut text FormAssociatedTextControlElement) handle_insert(input_type stri
 }
 
 pub fn (mut text FormAssociatedTextControlElement) handle_delete(input_type string) ! {
-	if !text.control.is_mutable() {
+	if !text.control.is_mutable() || text.control.element.is_actually_disabled()
+		|| text.control.element.has_attribute('readonly') {
 		return
 	}
 	mut text_node := text.text_node_ or { return }

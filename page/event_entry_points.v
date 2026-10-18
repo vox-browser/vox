@@ -355,10 +355,24 @@ pub fn (mut handler EventHandler) initiate_paragraph_selection(position PixelPoi
 pub fn (mut handler EventHandler) run_mousedown_default_actions(target InputTarget) EventResult {
 	if handler.platform_mouse_button_ != 0 { return .handled }
 	$if macos { if handler.platform_mouse_modifiers_ & dom.modifier_ctrl != 0 { return .handled } }
-	if target.is_focusable {
-		handler.focused_target_ = target.id
-		handler.focused_target_state = target
-		if node := target.node { dom.run_focusing_steps_for_node(node, none, .click) }
+	mut focus_target := target
+	if !focus_target.is_focusable {
+		if node := target.node {
+			mut candidate := node.parent_or_shadow_host()
+			for candidate != none {
+				ancestor := candidate or { break }
+				if node_has_focus_behavior(ancestor) {
+					focus_target = InputTarget.from_node(ancestor)
+					break
+				}
+				candidate = ancestor.parent_or_shadow_host()
+			}
+		}
+	}
+	if focus_target.is_focusable {
+		handler.focused_target_ = focus_target.id
+		handler.focused_target_state = focus_target
+		if node := focus_target.node { dom.run_focusing_steps_for_node(node, none, .click) }
 	}
 	return .handled
 }
