@@ -591,3 +591,54 @@ still shows tree preparation, geometry, DOM attachment and paint projection;
 cosmetic-filter refresh also surveys the whole light DOM. Further optimization
 continues beyond this checkpoint. No app is installed; Brave parity remains
 open.
+
+
+`25456800` surveys cosmetic-filter ID/class tokens directly, retaining light-DOM
+scope and exact attribute/token behavior while tokenizing repeated class strings
+once per pass. Twenty-two cases in seven files pass per GC mode on source-87;
+the source-86 fixture's unsupported removal method was corrected without a
+production change. Source-85/source-86 ABBA measures 341,563,076 versus
+332,794,760.5 median warm instructions, saving 8,768,315.5. The warm elapsed
+medians (52.1035 versus 59.5545 ms) establish no latency gain. Eight native
+complete-handler checks pass with correct labels and no script errors.
+
+`867255fe` connects validated independent DOM queries to the CSS engine's
+prepared matching context, keeping relational and pseudo-class queries on the
+original path. The twelve CSS cases in three files pass per mode on source-90;
+fixture-only compilation repairs retain the source-88 production implementation.
+Fifteen native selector/scope/computed-style/comment cases in seven files pass
+per mode on the combined source-92. `e7a7dd9f` replaces attachment address maps
+with a pointer table indexed by existing preorder ranges, preserving visited
+order, pointer identity, unindexed trees and associations across reindexing.
+Its 37 cases in nine files pass per mode. Source-91's derived-pointer argument
+errors were corrected in source-92 before production or performance credit.
+
+The six balanced source-86/88/92/92/88/86 runs retain the original full handler,
+identical normalized fixture and instruction probe. Median warm instruction
+counts are 333,863,191, 324,667,159.5 and 322,292,174.5. The query path saves
+9,196,031.5 instructions; dense attachment saves another 2,374,985. Combined
+savings are 11,571,016.5 (3.47%). Warm elapsed medians are 63.2, 62.321 and
+60.3585 ms. First-action times still range from 111.498 to 257.058 ms across the
+two candidates; no first-click or Brave-parity claim is made. Eight original
+native clicks per candidate retain alternating labels and no dispatch errors.
+Both states' document pixels are identical across all three versions.
+
+Source-92 closes the next broad checkpoint: 1,108 original files / 4,261 cases
+per mode, with 4,241 passes, the same twenty named inherited failures and no
+unrun cases. Every failing test's bytes match source-85. Signed startup, eight
+exact live SVG guards and all eleven captures match the prior checkpoint; the
+same four default reference mismatches remain recorded. The unchanged 494-file
+LibJS tree carries the existing 236-file/784-function checks per mode, and the
+fresh official AST run matches all 100 upstream cases. The checkpoint retains
+`all_tests_passed: false`. The 8,768,315.5 instruction saving in the token survey
+already met the next broad gate; the query/attachment savings add to that batch.
+
+All production input paths in the canonical checkout match source-92, including
+untracked native sources. The checked, strictly verified normal bundle is now
+installed at `Build/v/Vox.app`. Its executable SHA-256 is
+`3c7eb041c1b39888acc3bb1baa6e43b4cd80e2c63ab92df510cace11f4efee5e`.
+The prior bundle is retained under `Build/reddit-comment-latency/previous-Vox-source92-1792359353164304000.app`.
+Installation used an atomic bundle exchange and did not restart a running
+browser. `parity-v92-install.json` records the installation. The browser must
+be reopened to load the new executable. Brave parity remains open, and further
+optimization continues beyond this checkpoint.
