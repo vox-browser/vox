@@ -226,3 +226,106 @@ additional pair is recorded in `installed-{control,candidate}-profile/`; it is
 kept separate from the three-pair attribution above. The staged bundle retains
 the last validated executable code and exact renderer libraries, verifies its
 signature and headless startup, and reopens the reported URL.
+
+The 20 ms follow-up combines native reuse and raster ownership (`f6209a65`),
+conservative viewport culling (`d51cea5d`), and shared sprite-source snapshots
+(`a4cd26d1`). Repeated glyph and SVG path draws reuse completed pixels only
+when their actual inputs and backdrop match. A separate uploaded-image cache
+avoids uploading unchanged decoded bytes when the destination changes. Cache
+identity includes the relevant font, geometry, transform, clipping, sampling,
+color-profile and source-format settings. Actual source and backdrop bytes are
+compared; caller addresses never establish content identity.
+
+Cached sprite results share an owned source snapshot by byte value. Previously,
+each sprite draw retained another copy of its entire sheet, evicting otherwise
+reusable results. Sources shared by pending requests remain valid across cache
+clearing and eviction, and their storage is charged once while retained. The
+image-result cache keeps its 32 MiB pixel budget and allows 2,048 entries.
+Shape results retain a separate 16 MiB / 512-entry budget, with a 512 KiB
+per-entry limit. Path results use 8 MiB / 512 entries. Glyph results use
+8 MiB / 512 entries, capped at 256 KiB each. Uploaded images have a separate
+32 MiB budget accounting for owned source bytes and estimated GPU texels,
+128 entries and an 8 MiB per-entry limit. Idle graphics cleanup releases these
+caches before purging the GPU context.
+
+The native bridge transfers owned raster allocations to Quartz instead of
+copying their full bitmap again; the image provider releases the allocation
+after Quartz releases the image. Surfaces referencing those allocations are
+released before transfer. Exact aligned opaque rectangular strokes use four
+direct strips, with other strokes retaining the original path. Large rounded
+boxes avoid unnecessary interior backdrop copies and readbacks, preserving
+corner coverage and the original GPU surface coordinates. ARM64 channel
+conversion uses an exact vectorized byte swap, with a scalar fallback.
+
+Before native dispatch, viewport culling reuses the retained leaf ink bounds
+with a three-CSS-pixel fringe. It preserves all group markers and disables leaf
+culling inside effect and resource-input groups. Unknown, blurred and
+nonfinite bounds fall through to normal painting. Large coordinates or scales
+also fall through when float32 native geometry could invalidate a float64
+visibility decision. Retained commands and hit-test records remain available.
+`VOX_DISABLE_CANVAS_CULLING=1` selects the control behavior for diagnosis.
+
+The final comparison uses three alternating matched pairs, retaining every
+moving frame: 120 per run, 360 per variant. Both variants use the same newly
+built production executable, the same frozen 85-comment page, initial cache,
+1,024×768 viewport, interactive 2× scale, 0↔1,260 scroll trace and 2,355 retained
+commands per frame. The control uses the native libraries captured at the start
+of this follow-up with early culling disabled; the candidate uses the optimized
+libraries with culling enabled. Concurrent repository changes receive no
+savings credit. JavaScriptCore and production Boehm GC remain enabled, with
+one marker thread.
+
+| Per moving frame, median of run medians | Control | Optimized | Reduction |
+| --- | ---: | ---: | ---: |
+| Wheel dispatch through native replay | 26.0745 ms | 19.4780 ms | 25.3% |
+| Native replay | 23.9675 ms | 17.2635 ms | 28.0% |
+| Retired instructions | 173.334 million | 134.560 million | 22.4% |
+
+Candidate run medians are 19.4780, 19.6085 and 19.0615 ms, all below 20 ms.
+The median of their p95 values is 28.316 ms and the largest callback is
+38.759 ms. This meets the median target; it does not bound every frame to
+20 ms. All slow frames and collections remain included. Two collections occur
+in the control's second run and none in the candidate runs. The endpoint
+includes synchronous GPU waits and excludes Cocoa presentation, vsync and
+post-frame idle work. `31c37aad` corrects the profiling tool's endpoint metadata
+to state that existing behavior explicitly.
+
+Native verification passes 2,920 exact GPU replay comparisons, 720 exact Quartz
+compositor comparisons, 4,800 exact glyph comparisons, 864 exact shape-backdrop
+comparisons and all 15 original Skia clip/shadow scenes. Focused cache, stroke,
+compositor, glyph and shape checks pass address and undefined-behavior
+sanitizers; source-sharing cases also pass a fresh sanitizer check after that
+change. The external production Skia library itself is not sanitizer-built.
+Mutation, changed addresses, row strides, source interpretations, profile
+changes, backdrop changes, bounds, eviction and ownership are covered.
+
+All four final page viewports are pixel-exact against the control: 1× at scroll
+0 and 630, and 2× at 630 and 1,260. The 11 default screenshot smoke comparisons
+pass, eight exactly and three under their existing allowances. The eight SVG
+mutation guards and both turbulence references are exact. Selected V
+regression checks cover 216 unique functions in each GC configuration: the
+previous 210 plus six culling cases, including the later precision guard.
+The root culling helper's aggregate adapter only changes module/import and
+namespace qualification; its independent default-namespace check also passes.
+All 100 upstream LibJS AST fixtures match exactly. This broad verification
+covers the additional 38,773,699 instructions saved per moving frame and resets
+the incremental broad-check count for this endpoint.
+
+Evidence is retained privately under `Build/dota2-scroll/target20/`:
+`budget-comparison.json`, its six referenced raw run directories,
+`accepted-result.json`, `budget-validation.json`, `budget-pixels/`,
+`budget-svg/`, `sanitize/`, `regression-results.json`, the regression source
+manifest and referenced logs. Earlier candidates that missed 20 ms, rejected
+prototypes, an interrupted build and a stale aggregate-module-link failure
+remain retained without passing credit. The corrected production build uses a
+private output name to avoid shared compiler-temporary collisions. The default
+regression recovery refreshes the missing module links and retains the two
+already successful groups; the complete no-GC run passes all three groups.
+
+The measured executable and both native libraries are installed through a
+separately signed staged bundle and rename, preserving the previous bundle
+and existing processes' mapped files. Every file-backed Mach-O section matches
+the measured candidate after signing. Deep signature verification and installed
+headless startup pass, and the reported live URL is reopened without the test
+network gate. `installed-verification.json` records the new running process and
+the installed-component checks.
