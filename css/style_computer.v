@@ -1247,6 +1247,48 @@ fn property_is_compositor_animated(property PropertyID) bool {
 	}
 }
 
+fn animated_values_reach_descendants(old_values map[PropertyID]&dom.StyleValue,
+	computed &ComputedProperties, target &dom.Node) bool {
+	if old_values.len == 0 && !computed.has_animated_properties() {
+		return false
+	}
+	for property_id, _ in old_values {
+		if animated_property_reaches_children(property_id, target) {
+			return true
+		}
+	}
+	if computed.animated_property_storage_ != unsafe { nil } {
+		for property_id, _ in computed.animated_property_storage_.values {
+			if animated_property_reaches_children(property_id, target) {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+fn animated_property_reaches_children(property_id PropertyID, target &dom.Node) bool {
+	if !computed_interpolation_is_longhand_property(property_id)
+		|| computed_interpolation_is_inherited_property(property_id) {
+		return true
+	}
+	mut child := target.first_child()
+	for {
+		current := child or { break }
+		if element := current.as_element() {
+			if child_computed := computed_properties_for_element(element) {
+				// For a non-inherited property this records an explicit
+				// `inherit` from the parent.
+				if child_computed.is_property_inherited(property_id) {
+					return true
+				}
+			}
+		}
+		child = current.next_sibling()
+	}
+	return false
+}
+
 fn animated_changes_are_compositor_only(old_values map[PropertyID]&dom.StyleValue,
 	new_values map[PropertyID]&dom.StyleValue) bool {
 	for property, old_value in old_values {
@@ -1574,7 +1616,12 @@ fn style_computer_update_animated_style_callback(target voidptr) {
 				target_invalidation)
 			target_was_recomputed = true
 		}
-		mut child := target_node.first_child()
+		// As upstream, descendants are revisited only when they can observe an
+		// animated value: an inherited property, or one a child inherits
+		// explicitly. Otherwise every frame would recompute their styles.
+		visits_descendants := custom_properties_changed || (full_refresh && installs_inherited_values)
+			|| animated_values_reach_descendants(old_animated_values, computed, target_node)
+		mut child := if visits_descendants { target_node.first_child() } else { ?&dom.Node(none) }
 		for {
 			current := child or { break }
 			if custom_properties_changed || (full_refresh && installs_inherited_values) {
