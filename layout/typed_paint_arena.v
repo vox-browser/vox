@@ -38,6 +38,7 @@ fn typed_paint_arena_plan(root &Node, state &LayoutState) []TypedPaintArenaEntry
 }
 
 fn build_typed_paint_tree_in_arena(root &Node, state &LayoutState, ancestor_transform [6]f64) BlockBox {
+	prepare_retained_block_paint_owners(state)
 	plan := typed_paint_arena_plan(root, state)
 	mut boxes := []BlockBox{cap: plan.len}
 	for entry in plan {

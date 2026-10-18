@@ -105,5 +105,5 @@ fn text_lines_from_typed_layout(container &Node, used &UsedValues, state &Layout
 			return lines
 		}
 	}
-	return uncached_text_lines_from_typed_layout(container, used, state, position)
+	return retained_block_text_lines(container, used, state, position)
 }

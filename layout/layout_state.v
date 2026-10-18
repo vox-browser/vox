@@ -1135,6 +1135,7 @@ mut:
 	measurement_chunk_pool_ &MeasurementUsedValuesChunkPool = unsafe { nil }
 	block_layouts_ map[u64]&RetainedBlockLayout
 	previous_block_layouts_ map[u64]&RetainedBlockLayout
+	block_paint_owners_ map[u64]&RetainedBlockLayout
 	inline_layouts_ map[u64]&RetainedInlineLayout
 	previous_inline_layouts_ map[u64]&RetainedInlineLayout
 }

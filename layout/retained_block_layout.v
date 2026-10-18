@@ -26,6 +26,9 @@ struct RetainedBlockLayout {
 	lines             []LineBox
 	inline_end        ?StaticPositionRect
 	result            FormattingContextResult
+mut:
+	paint_lines_ map[u64]&RetainedBlockPaintLines
+	paint_boxes_ map[u64]&RetainedBlockPaintBox
 }
 
 // Independent ordinary flow cannot exchange floats or collapsed margins with

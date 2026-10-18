@@ -3442,7 +3442,7 @@ fn paintable_is_positioned(node &Node, computed &css.ComputedValues) bool {
 		|| ((node.is_flex_item() || node.is_grid_item()) && computed.z_index() != none)
 }
 
-fn block_box_from_typed_layout_shallow(node &Node, state &LayoutState, ancestor_paint_transform [6]f64) BlockBox {
+fn uncached_block_box_from_typed_layout_shallow(node &Node, state &LayoutState, ancestor_paint_transform [6]f64) BlockBox {
 	platform.cooperative_work_checkpoint()
 	styled := node.as_node_with_style() or { return BlockBox{} }
 	used := state.try_get(styled) or { return BlockBox{} }
