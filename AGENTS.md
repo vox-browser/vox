@@ -2014,6 +2014,17 @@ evidence](docs/translation-audit/NATIVE_MEDIA_WHEEL_RAW_HANDLER.md).
   focused attribute viewport exact; observed carry 682,539.5.
   Same 4 GiB, SSD, placement, frozen helper and GC policy.
   Root/canonical/GUI preserved; Chrome parity remains open.
+  Immutable general-selector borrowing `e289178a` uses two hunks/one CSS file;
+  four new public contracts are committed with it. 12 common functional cases
+  pass 1,418 assertions/configuration; contemporaneous Root passes 1,128/GC.
+  Earlier parent/header boxing prototypes and all local observations retained.
+  Complete public author-cascade batches use 3.36% fewer instructions.
+  Page point saving 52,298,107, 30/30 wins;
+  paired interval [45,029,424.5, 58,496,768], repeatable credit 52,298,107.
+  Broad verification: 87 selected cases both GC; 19 screenshots/16 exact;
+  focused general-selector viewport exact; observed carry 0.
+  Same 4 GiB, SSD, placement, frozen helper and GC policy.
+  Concurrent Root/canonical/GUI preserved; Chrome parity remains open.
 - Outside instruction-count optimization, run broad regression suites once per
   ten completed fixes, not after every fix.
   Broad suites include full translation/package test batches, the full LibJS AST

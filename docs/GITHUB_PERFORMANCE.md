@@ -10932,6 +10932,155 @@ submission accounting remains open; **faster-than-Chrome performance is
 unproven**. Evidence: Build/v/instruction-opt107-* and
 Build/instructions/vox-opt107-interleaved-*.
 
+## Borrow immutable general-selector records
+
+Round 108 implements `e289178a` and four new focused tests in the same
+feature commit. The frozen performance candidate is accepted 107 plus exactly
+two hunks in css/selectors.v. General matching borrows a SimpleSelector from the
+owning typed array inside the unchanged bounded reverse loop, and passes it by
+immutable reference to matches_simple. It retains the value parent wrapper;
+no selector ownership, matching, mutation or context policy changes.
+
+Actual normal C-O2 control assembly showed a 496-byte memcpy before the general
+matches_simple call. Static assembly and C-O1 calls establish a target, with no
+hardware credit or multiplication of call counts into instruction savings.
+The data-pointer form avoids an old-compiler escape transformation: taking the
+child’s address boxed its local CompoundSelector parent, while explicitly
+borrowing that parent moved boxing to the local array header. Both prototypes
+are retained rather than counted as the final revision.
+
+| Local prototype | Before median | Candidate median | Change | Page primaries before revision fixed |
+| --- | ---: | ---: | ---: | ---: |
+| Child address / boxed parent | 2,776,158,579 | 2,772,770,297 | -0.122049% | 0 |
+| Parent address / boxed array header | 2,769,886,985 | 2,770,132,434 | +0.008861% | 0 |
+| Bounded typed-data borrow / no boxing | 2,779,484,796 | 2,686,132,510 | -3.358618% | 0 before page gate |
+
+Each revision has its own predeclared three alternating local pairs; all 18
+completed local observations remain. No page cohort was started or extended
+while changing revisions. The first version’s completed focused, profile and
+Root-snapshot checks remain archived. Its obsolete native compile was stopped
+only after identifying our compiler descendants: three SIGTERM deliveries,
+actual Clang driver/controller exit 1, no successful normal binary. The second
+version’s local gate actually exits 1, with no normal/profile/Root/page work.
+No GUI or foreign compiler was signalled. The final revision’s C-only probe
+actually exits 0 and proves neither target contains HEAP boxing.
+
+All **12 common functional cases**, plus one inactive diagnostic, pass before/
+Boehm, final/Boehm and final/no-GC C-O2: **1,418 assertions each**. The four new
+public tests force general :is/:not/:has/nth/sibling matching and cover quirks,
+Unicode, namespaces, retained owners across GC, attribute changes, selector
+serialization/vector identity, stylesheet ownership and MatchContext fields.
+Six existing shadow/part and two allocation contracts remain in the common
+harness. Common SHA256 `58c19cc60c7f6019eeb72bf47d17ddb70de2652a1a74c1d4757e7cde1e2c534f`.
+An initial test-only optional stylesheet alias failed the old V checker in all
+three configurations before any case ran. The explicit unsafe alias repairs
+that existing mutable context slot; every assertion and expected result stays.
+The original failed logs, commands and exits are retained.
+
+The final local workload counts **128 complete public author-cascade batches
+over 64 HTML subjects**, with 48 mixed attributes, namespaces and :is arguments
+forcing general matching. Matching, cascade, fonts/context and property
+resolution are included; consumers read width, height, padding and margin.
+Setup, independent expected values, eight warmups and forced GC are outside
+the counter. All six final-revision exits are 0, checksum **483,328**.
+
+| Pair | Before retired instructions | Candidate retired instructions |
+| --- | ---: | ---: |
+| 1 | 2,768,228,364 | 2,693,143,575 |
+| 2 | 2,779,484,796 | 2,685,258,659 |
+| 3 | 2,780,260,625 | 2,686,132,510 |
+
+Local medians **2,779,484,796 → 2,686,132,510**, change
+**-3.358618%**, **3/3 wins**. This local result receives
+no independent page credit.
+
+The contemporaneous immutable Root snapshot passes all **four new cases and
+1,128 assertions in each GC mode** with the same two function changes, before
+Root application and feature commit. Both target bodies match the frozen
+candidate. Other Root changes receive no performance or broad-regression
+credit. The implementation and exact new tests are committed together;
+independent concurrent edits and the newer canonical app remain preserved.
+
+The strict generated-C audit permits only matches_selector_at and matches_simple
+to change. Their bodies are authenticated by independent whole-app C-only
+generation. A separate core projection returns the reference parameter and
+field accesses to the old value form, and the typed data address to array_get;
+the unchanged reverse loop proves 0 ≤ i < len and the immutable owning selector
+keeps the array alive. Both projected bodies exactly match. All remaining
+executable C, records/globals/resources, DOM, decoding/filtering/arenas and
+heap/GC policy match after established compiler identities, exact unchanged
+assertion-line mapping, 37 frozen includes and four byte-identical helper
+reorderings. Actual frontend tables, 120 native input hashes and native
+arguments match, apart from artifact paths. Audit/body/C/archive hashes remain.
+
+Both C-O1/Boehm/default-marker-1 -profile-no-inline diagnostics actually exit 0;
+the unchanged control’s earlier successful run is retained. Instrumentation
+covers the whole process, with no filter/reset. Counts match for the same public
+workload; profile timings receive no hardware/page credit.
+
+| Full-process diagnostic function | Before calls | Candidate calls |
+| --- | ---: | ---: |
+| `css__opt108_complete_public_author_cascade` | 137 | 137 |
+| `css__StyleComputer_compute_style` | 8,833 | 8,833 |
+| `css__matches_selector_at` | 582,927 | 582,927 |
+| `css__matches_simple` | 825,807 | 825,807 |
+| `css__matches_attribute` | 459,264 | 459,264 |
+| `css__matches_single_attribute` | 251,712 | 251,712 |
+| `css__fast_matches` | 653,590 | 653,590 |
+
+The normal candidate is Build/v/Vox-opt108-general-selector-borrow-bin, SHA256
+`89de138a0f44b4f4102aac4f381a288220a46e249ef46b736fe5eca2cc432c9a`;
+compiled C SHA256 `46e69d4c43dce59932a1aff64a11041988ead45cad0fd9a58430aa773329a1e3`.
+The final normal C-O2 assembly passes the owned array element address directly;
+the control’s 496-byte memcpy in call preparation is absent. Both assembly
+reader exits and text/binary hashes are retained; static assembly receives no
+hardware credit. Both persisted regular binaries load the frozen 4e helper, verified by actual
+loader logs. SSD caches, 4 GiB hint, default marker 1, child-only placement and
+1024×768 document viewport match. No prod/prealloc or heap increase.
+
+The predeclared **30 alternating pairs**, seed 108 and **30,000 paired bootstrap
+resamples**, retain all 60 first navigation_to_first_document_paint[0]
+observations: **17,302,996,572.5 → 17,250,698,465.5**
+retired instructions. Point saving **52,298,107**
+(**-0.302249%**), **30/30 wins**;
+paired median saving **48,246,662.5**, 95% paired interval
+**[45,029,424.5, 58,496,768]**, repeatable credit **52,298,107**.
+The positive paired interval permits this repeatable credit.
+
+There are **60 real PNGs**, **0** startup retry records, recovered
+primaries `[]`, post-primary refreshes `[]`, and
+**0** external foreground
+transitions. Completed primaries are neither discarded nor repeated. First
+preparations retain 1 install/2 geometry/1 paint; later work remains separate.
+Memory peaks cover process lifetime through capture/exit, not first-frame live
+memory. Overlapping counters are not summed. All 60 decoded RGB captures differ only in the original skeleton bands, x45–662/y335–344 and ten 14px bands starting at 380 with 41px spacing. All other pixels match; 30 control and 30 candidate classes, 0 shared. No bounds change.
+
+The broad screenshot controller initially stopped at gradient-stop-move-before:
+two owned browser launches trapped in _dispatch_semaphore_dispose during
+sg_setup / Metal window initialization, with no PNG. Both original crash
+reports, failed launch logs and comparison exit 1 are retained. The validation
+and dependent bundle drivers initially recorded logical failure 1 but actually
+exited 0; those original receipts are retained without pass credit. Their status
+propagation was corrected. Resumption retained all six passed broad jobs and
+13 passed comparisons byte-for-byte, then completed only the missing screenshot
+work. No page primary or successful capture was repeated. The dedicated visual
+resume audit verifies these hashes and actual corrected exits.
+
+The focused general-selector viewport is **pixel-exact**. Explicit child argv
+pins the frozen helper after protected env/sh launch sites; actual loader
+path/hash receipts remain. Six actual zero exits pass CSS 31/SVG 10/layout 46 in both GC modes: **174 executions**. All **19 screenshot comparisons pass, 16 exact**. Known differences remain inline-node 13, text-decorations 1,341 and canvas-text 1,994. Completed broad validation resets observed carry to 0. The 87 selected harness bodies,
+assertions and expected values are unchanged from 107.
+
+The isolated app is `/Users/alex/code/vox2/Build/v/Vox-opt108.app`. Signing, startup, installed helper
+and native instruction-text identity pass. GC checks observe actual collections
+at default marker 1 and override 2. The canonical app and GUI remain preserved.
+The next frozen performance control is 108.
+Generated-C/profile hashes are durable in instruction-opt108-artifact-archives.json.
+No successful unchanged check or completed primary is repeated. Equivalent
+Chrome content/start/submission accounting remains open; **faster-than-Chrome
+performance is unproven**. Evidence: Build/v/instruction-opt108-* and
+Build/instructions/vox-opt108-interleaved-*.
+
 ## Causes and changes
 
 - The V 0.5.2 compatibility compiler's `-prod` Boehm code repeatedly snapshots
