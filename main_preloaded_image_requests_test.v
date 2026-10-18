@@ -78,6 +78,12 @@ fn test_script_image_binding_consumes_failed_preloads_without_network_retries() 
 	// The initial failure is scoped to installation. An author can retry the
 	// same URL later, after selecting a different source in between.
 	app.js_runtime.evaluate_host('failed.src="data:image/png;base64,${preloaded_image_small_png}";failed.src="/failed.png"')!
+	deadline := time.sys_mono_now() + 5 * time.second
+	for !model.complete() && time.sys_mono_now() < deadline {
+		app.poll_browser_image_requests()
+		time.sleep(time.millisecond)
+	}
+	assert model.complete()
 	stop <- true
 	assert <-count == 1
 }

@@ -19,7 +19,14 @@ fn (mut app BrowserApp) preload_initial_document_resources(base_url string) map[
 	// documents let their managed heap grow with actual live state.
 	_ = prepare_document_render_heap(app.document)
 	if app.document.as_node().is_scripting_enabled() {
-		loaded := preload_document_resources(app.document, base_url, cached)
+		types := document_preload_resource_types(app.document, base_url)
+		// Images do not block scripts or the first document frame. Their native
+		// request models consume cached bytes or complete on the owning thread.
+		urls := document_preload_resource_urls(app.document, base_url).filter((types[it] or { 'image' }) != 'image')
+		mut loaded := preload_document_resource_urls(app.document, base_url, urls, cached)
+		for resource_url, resource in cached {
+			if (types[resource_url] or { 'image' }) == 'image' { loaded[resource_url] = resource }
+		}
 		app.js_messages << install_external_styles(app.document, base_url, loaded)
 		return loaded
 	}

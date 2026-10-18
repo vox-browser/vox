@@ -420,6 +420,7 @@ mut:
 	portable_shadow_image_index         int
 	resource_cache                      map[string]PreloadedResource
 	background_resource_results         chan PreloadedResource
+	image_request_loader                ?&BrowserImageRequestLoader
 	background_resource_pending         map[string]bool
 	// Remote stylesheets requested for links that scripts inserted, and the DOM
 	// tree version last scanned for them.
@@ -1856,6 +1857,7 @@ fn javascript_bootstrap() string {
 		'const __trackEndsWith=String.prototype.endsWith,__trackApply=Reflect.apply;',
 		'function __isTrackElementState(s){return s.namespaceURI==="http://www.w3.org/1999/xhtml"&&(s.tagName==="track"||__trackApply(__trackEndsWith,s.tagName,[":track"]));}',
 		'const __bindElementWheel = globalThis.__ladybirdElementWheelBind;',
+		'const __nativeImageGet = globalThis.__ladybirdImageGet;',
 		'const __listeners = Object.create(null);',
 		browserjs.compact_attribute_bootstrap(),
 		browserjs.media_element_reflection_bootstrap(),
@@ -1901,7 +1903,7 @@ fn javascript_bootstrap() string {
 		'  if (!s.__object) {',
 		'    const o = { getAttribute: function (n) { n=__attributeName(s,n); return Object.prototype.hasOwnProperty.call(s.attributes,n)?s.attributes[n]:null; }, hasAttribute: function(n){return Object.prototype.hasOwnProperty.call(s.attributes,__attributeName(s,n));}, setAttribute: function (n, v) { n=__attributeName(s,n); if(n==="src")__setElementSource(s,v);else if(n==="data")__setElementData(s,v);else __setAttribute(s,n,v); }, removeAttribute:function(n){__removeAttribute(s,n);}, remove:function(){if(!s.removed){s.removed=true;s.parentKey="";__state.operations.push({op:"remove",target:s.bridgeKey});}}, addEventListener: function (n, f) { (__listeners[__listenerKey(s, n)] ||= []).push(f); if(s.tagName==="video"&&s.readyState>=2&&(n==="loadeddata"||n==="seeked"))f.call(this,{type:n,target:this}); if(s.tagName==="img"&&s.complete&&n==="load")f.call(this,{type:n,target:this}); }, removeEventListener: function(n,f){const key=__listenerKey(s,n);__listeners[key]=(__listeners[key]||[]).filter(function(listener){return listener!==f;});}, append: function (child) { return this.appendChild(child); }, appendChild: function (child) { const c=child&&child.__state; if(!c)return child; if(s.tagName==="#document-fragment"){s.children.push(c);s.hasChildren=true;}else{__state.operations.push({op:"appendCreated",target:s.bridgeKey,child:c});s.hasChildren=true;c.parentKey=s.bridgeKey;c.removed=false;} return child; }, insertBefore:function(child,reference){const c=child&&child.__state,r=reference&&reference.__state;if(c){__state.operations.push({op:"insertCreated",target:s.bridgeKey,child:c,reference:r?r.bridgeKey:"",referenceFirstChild:!!(reference&&reference.__firstChildOf===s.bridgeKey)});s.hasChildren=true;c.parentKey=s.bridgeKey;c.removed=false;}return child;}, moveBefore:function(child,reference){const c=child&&child.__state,r=reference&&reference.__state;if(c){__state.operations.push({op:"moveBefore",target:s.bridgeKey,child:c.bridgeKey,reference:r?r.bridgeKey:""});c.parentKey=s.bridgeKey;c.removed=false;}}, animate:function(keyframes){const frames=Array.isArray(keyframes)?keyframes:[keyframes];const finalFrame=frames.length?frames[frames.length-1]:{};for(const name of Object.keys(finalFrame||{}))__setAttribute(s,__styleName(name),finalFrame[name]);return{finished:Promise.resolve()};}, getContext: function(kind,options) { return s.tagName === "canvas" ? __canvasGetContext(s,kind,options) : null; }, };',
 		'    if(s.tagName!=="#document-fragment"&&s.tagName!=="#text"){Object.setPrototypeOf(o,Element.prototype);__elementApply(__elementRecordSet,__elementRecords,[o,s]);}',
-		'    Object.defineProperties(o, { id: { get: function () { return s.id; }, set:function(v){__setAttribute(s,"id",v);} }, firstChild:{get:function(){if(s.tagName==="#document-fragment")return s.children.length?__element(s.children[0]):null;return __queryElements(s.bridgeKey,"firstChild","");}}, parentNode:{get:function(){const p=s.parentKey&&__state.elements[s.parentKey];if(p&&!p.removed)return __element(p);return !s.parentKey&&!s.removed&&!s.created&&s.tagName==="html"?document:null;}}, parentElement:{get:function(){const p=s.parentKey&&__state.elements[s.parentKey];return p&&!p.removed?__element(p):null;}}, textContent: { get: function () { return __elementContent(s,"textContent"); }, set: function (v) { s.textContent = String(v); s.innerHTML = ""; s.textContentDirty=true; s.innerHTMLDirty=false; } }, innerHTML: { get: function () { return __elementContent(s,"innerHTML"); }, set: function (v) { s.innerHTML = String(v); s.innerHTMLDirty=true; s.textContentDirty=false; } }, className: { get: function () { return s.className; }, set: function (v) { __setAttribute(s,"class",v); } }, name:{get:function(){return s.attributes.name||"";},set:function(v){__setAttribute(s,"name",v);}}, content:{get:function(){return s.attributes.content||"";},set:function(v){__setAttribute(s,"content",v);}}, hidden:{get:function(){return Object.prototype.hasOwnProperty.call(s.attributes,"hidden");},set:function(v){if(v)__setAttribute(s,"hidden","");else __removeAttribute(s,"hidden");}}, disabled:{get:function(){return !!s.disabled;},set:function(v){if(v)__setAttribute(s,"disabled","");else __removeAttribute(s,"disabled");}}, checked:{get:function(){return !!s.checked;},set:function(v){s.checked=!!v;s.checkedDirty=true;}}, indeterminate:{get:function(){return !!s.indeterminate;},set:function(v){s.indeterminate=!!v;s.indeterminateDirty=true;}}, complete:{get:function(){return !!s.complete;}}, value:{get:function(){return s.value;},set:function(v){s.value=String(v);}}, data:{get:function(){return s.attributes.data||"";},set:function(v){__setElementData(s,v);}}, sheet:{get:function(){return s.tagName==="style"?__styleSheet(s):null;}} });',
+		'    Object.defineProperties(o, { id: { get: function () { return s.id; }, set:function(v){__setAttribute(s,"id",v);} }, firstChild:{get:function(){if(s.tagName==="#document-fragment")return s.children.length?__element(s.children[0]):null;return __queryElements(s.bridgeKey,"firstChild","");}}, parentNode:{get:function(){const p=s.parentKey&&__state.elements[s.parentKey];if(p&&!p.removed)return __element(p);return !s.parentKey&&!s.removed&&!s.created&&s.tagName==="html"?document:null;}}, parentElement:{get:function(){const p=s.parentKey&&__state.elements[s.parentKey];return p&&!p.removed?__element(p):null;}}, textContent: { get: function () { return __elementContent(s,"textContent"); }, set: function (v) { s.textContent = String(v); s.innerHTML = ""; s.textContentDirty=true; s.innerHTMLDirty=false; } }, innerHTML: { get: function () { return __elementContent(s,"innerHTML"); }, set: function (v) { s.innerHTML = String(v); s.innerHTMLDirty=true; s.textContentDirty=false; } }, className: { get: function () { return s.className; }, set: function (v) { __setAttribute(s,"class",v); } }, name:{get:function(){return s.attributes.name||"";},set:function(v){__setAttribute(s,"name",v);}}, content:{get:function(){return s.attributes.content||"";},set:function(v){__setAttribute(s,"content",v);}}, hidden:{get:function(){return Object.prototype.hasOwnProperty.call(s.attributes,"hidden");},set:function(v){if(v)__setAttribute(s,"hidden","");else __removeAttribute(s,"hidden");}}, disabled:{get:function(){return !!s.disabled;},set:function(v){if(v)__setAttribute(s,"disabled","");else __removeAttribute(s,"disabled");}}, checked:{get:function(){return !!s.checked;},set:function(v){s.checked=!!v;s.checkedDirty=true;}}, indeterminate:{get:function(){return !!s.indeterminate;},set:function(v){s.indeterminate=!!v;s.indeterminateDirty=true;}}, complete:{get:function(){return s.tagName==="img"&&s.namespaceURI==="http://www.w3.org/1999/xhtml"?__nativeImageGet(o,"complete"):!!s.complete;}}, value:{get:function(){return s.value;},set:function(v){s.value=String(v);}}, data:{get:function(){return s.attributes.data||"";},set:function(v){__setElementData(s,v);}}, sheet:{get:function(){return s.tagName==="style"?__styleSheet(s):null;}} });',
 		// Reflected attributes that scripts set as properties, such as 4chan's
 		// catalog creating its theme link with rel and type. href returns the
 		// resolved URL, as HTMLHyperlinkElementUtils and HTMLLinkElement do.
@@ -2741,6 +2743,10 @@ fn run_document_script_sources(document &dom.Document, current_url string, sourc
 }
 
 fn run_document_script_sources_with_image_fetch(document &dom.Document, current_url string, sources []browserjs.ScriptSource, runtime &browserjs.Runtime, image_fetch browserjs.ImageRequestFetchHook, mut messages []string) ?string {
+	return run_document_script_sources_with_image_fetch_hooks(document, current_url, sources, runtime, image_fetch, none, mut messages)
+}
+
+fn run_document_script_sources_with_image_fetch_hooks(document &dom.Document, current_url string, sources []browserjs.ScriptSource, runtime &browserjs.Runtime, image_fetch browserjs.ImageRequestFetchHook, image_async_fetch ?browserjs.ImageAsyncRequestFetchHook, mut messages []string) ?string {
 	// Parsing creates Document's Selection, while the browsing context normally
 	// arrives with navigation before page scripts run. The compact host executes
 	// scripts before its first layout, so establish that context here as well.
@@ -2903,7 +2909,7 @@ fn run_document_script_sources_with_image_fetch(document &dom.Document, current_
 		messages << 'JavaScript view-transition bindings: ${err.msg()}'
 		return none
 	}
-	mut image_host := browserjs.ImageHost.create_with_request_fetch(document, image_fetch, fn [document] (callback_runtime &browserjs.Runtime) ! {
+	mut image_host := browserjs.ImageHost.create_with_request_fetch_hooks(document, image_fetch, image_async_fetch, fn [document] (callback_runtime &browserjs.Runtime) ! {
 		state := callback_runtime.evaluate_host('__ladybirdFinalize()')!
 		mut replay_messages := []string{}
 		apply_javascript_runtime_state(document, state, callback_runtime, mut replay_messages)
@@ -3034,6 +3040,7 @@ fn run_document_script_sources_with_image_fetch(document &dom.Document, current_
 	}
 	for name in ['DOMContentLoaded', 'load'] {
 		if !compact_document_can_run_script(document) { continue }
+		if name == 'load' && image_async_fetch != none && document.anything_is_delaying_the_load_event() { continue }
 		runtime.dispatch_document_readiness_event(name) or {
 			messages << 'JavaScript: ${err.msg()}'
 			return none
@@ -3463,6 +3470,8 @@ fn (mut app BrowserApp) install_loaded_page(loaded LoadedPage, add_history bool)
 	app.markup = loaded.markup
 	app.content_type = loaded.content_type
 	app.source_label = loaded.url
+	if mut old_loader := app.image_request_loader { old_loader.cancel() }
+	app.image_request_loader = none
 	app.address = loaded.url
 	app.address_cursor = app.address.runes().len
 	app.address_select = false
@@ -3523,15 +3532,18 @@ fn (mut app BrowserApp) install_loaded_page(loaded LoadedPage, add_history bool)
 		app.js_runtime = unsafe { nil }
 	}
 	sources := script_sources(app.document, resource_base_url, preloaded_resources, mut app.js_messages)
+	mut image_loader := new_browser_image_request_loader(app.document, preloaded_resources)
+	app.image_request_loader = image_loader
 	javascript_navigation := if app.document.as_node().is_scripting_enabled()
 		&& (sources.len > 0 || document_has_window_event_handlers(app.document)
 		|| browser_adblock_requires_runtime(app.document)) {
 		app.js_runtime = create_browser_script_runtime(app.js_engine)
-		run_document_script_sources_with_preloaded_images(app.document, loaded.url, sources, app.js_runtime,
-			preloaded_resources, mut app.js_messages)
+		run_document_script_sources_with_image_fetch_hooks(app.document, loaded.url, sources, app.js_runtime,
+			browser_fetch_image_request, image_loader.callback(), mut app.js_messages)
 	} else {
 		none
 	}
+	image_loader.finish_initialization(app.js_runtime != unsafe { nil })
 	if debug_timing_enabled() {
 		mut source_bytes := 0
 		for source in sources { source_bytes += source.code.len }
@@ -3763,6 +3775,7 @@ fn (mut app BrowserApp) poll_navigation_and_background_resources(refresh_ready b
 		app.poll_navigation()
 	}
 	if voidptr(app.document) == document_before_navigation {
+		app.poll_browser_image_requests()
 		app.poll_background_resources()
 	} else {
 		request_browser_frame()

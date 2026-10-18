@@ -96,7 +96,7 @@ fn (mut host ImageHost) bind(arguments []voidptr) !voidptr {
 	host.records[wrapper] = &ImageHostRecord{ key: key, element: image, model: model }
 	host.runtime.bind_event_target(wrapper, unsafe { &dom.EventTarget(element) })!
 	C.JSObjectSetPrototype(host.runtime.context, wrapper, host.prototype)
-	if element.has_attribute('src') || element.has_attribute('srcset') {
+	if !model.has_pending_request() && (element.has_attribute('src') || element.has_attribute('srcset')) {
 		model.update_the_image_data(false, false)
 	}
 	return C.JSValueMakeUndefined(host.runtime.context)
@@ -166,7 +166,7 @@ const image_host_bootstrap = r'(function(decode,get,setAttribute,bind){
  const prototype=HTMLImageElement.prototype;Object.setPrototypeOf(prototype,EventTarget.prototype);
  define(prototype,"decode",{value:function decode(){return apply(decodeNative,this,[])},writable:true,enumerable:true,configurable:true});
  const decodeNative=decode;
- for(const name of ["naturalWidth","naturalHeight","currentSrc"])define(prototype,name,{get:function(){return apply(get,this,[name])},enumerable:true,configurable:true});
+ for(const name of ["complete","naturalWidth","naturalHeight","currentSrc"])define(prototype,name,{get:function(){return apply(get,this,[name])},enumerable:true,configurable:true});
  define(prototype,"crossOrigin",{get:function(){return apply(get,this,["crossOrigin"])},set:function(value){const converted=value===null?null:String(value);setAttribute(this,"crossorigin",converted);const state=this.__state;if(state&&state.attributes){if(converted===null)delete state.attributes.crossorigin;else state.attributes.crossorigin=converted;state.attributesDirty=true;}},enumerable:true,configurable:true});
  define(prototype,Symbol.toStringTag,{value:"HTMLImageElement",configurable:true});
  define(globalThis,"HTMLImageElement",{value:HTMLImageElement,writable:true,configurable:true});

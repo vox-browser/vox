@@ -20,6 +20,12 @@ pub enum ImageLoadingAttribute {
 
 pub type HTMLImageFetchHook = fn (dom.URL) !DecodedImageData
 
+// The owning thread supplies the completion after network I/O, without
+// changing the image's pending state into a spurious decode failure.
+pub type HTMLImageFetchCompletion = fn (?DecodedImageData)
+
+pub type HTMLImageAsyncFetchHook = fn (dom.URL, HTMLImageFetchCompletion)
+
 @[heap]
 struct BatchingDispatcher {
 mut:
@@ -151,6 +157,7 @@ mut:
 	pending_request_           ?&ImageRequest
 	decoded_data_              ?SharedResourceImageData
 	fetch_hook_                ?HTMLImageFetchHook
+	async_fetch_hook_          ?HTMLImageAsyncFetchHook
 	current_frame_index_       usize
 	loops_completed_           usize
 	animation_stopped_         bool
@@ -270,10 +277,20 @@ pub fn (image &HTMLImageElementModel) event_count(name string) int {
 
 pub fn (mut image HTMLImageElementModel) set_fetch_hook(hook ?HTMLImageFetchHook) {
 	image.fetch_hook_ = hook
+	image.async_fetch_hook_ = none
+}
+
+pub fn (mut image HTMLImageElementModel) set_async_fetch_hook(hook HTMLImageAsyncFetchHook) {
+	image.async_fetch_hook_ = hook
+	image.fetch_hook_ = none
+}
+
+pub fn (image &HTMLImageElementModel) has_pending_request() bool {
+	return image.pending_request_ != none
 }
 
 pub fn (image &HTMLImageElementModel) has_fetch_hook() bool {
-	return image.fetch_hook_ != none
+	return image.fetch_hook_ != none || image.async_fetch_hook_ != none
 }
 
 pub fn (mut image HTMLImageElementModel) set_src(value ?string) {
@@ -446,6 +463,7 @@ pub fn (mut image HTMLImageElementModel) update_the_image_data_impl(restart_anim
 	previous_url := image.current_request_.current_url()
 	selection := image.select_an_image_source() or {
 		image.pending_request_ = none
+		image.stop_delaying_document_load_event()
 		image.current_request_.set_state(.broken)
 		image.current_request_.set_current_url('')
 		image.replace_decoded_data(none)
@@ -459,6 +477,7 @@ pub fn (mut image HTMLImageElementModel) update_the_image_data_impl(restart_anim
 	url := dom.dom_url_parse(selection.source.url, image.base_url_, 'UTF-8') or {
 		image.current_request_.set_state(.broken)
 		image.pending_request_ = none
+		image.stop_delaying_document_load_event()
 		image.update_alt_text_shadow_tree()
 		if !maybe_omit_events || previous_url != '' {
 			image.fire_event('error')
@@ -466,6 +485,9 @@ pub fn (mut image HTMLImageElementModel) update_the_image_data_impl(restart_anim
 		return
 	}
 	if previous_url == url.serialize() && image.current_request_.state() == .completely_available {
+		image.pending_request_ = none
+		image.stop_delaying_document_load_event()
+		image.update_alt_text_shadow_tree()
 		if restart_animations {
 			image.restart_the_animation()
 		}
@@ -479,6 +501,29 @@ pub fn (mut image HTMLImageElementModel) update_the_image_data_impl(restart_anim
 	image.update_alt_text_shadow_tree()
 	if image.loading_ == .eager {
 		image.begin_delaying_document_load_event()
+	}
+	if fetch_async := image.async_fetch_hook_ {
+		image_pointer := image
+		request_document := image.document_
+		url_string := url.serialize()
+		opaque := image_response_is_cors_cross_origin(image, url)
+		fetch_async(url, fn [image_pointer, request, request_document, url_string, previous_url,
+			update_the_image_data_count, maybe_omit_events, restart_animations, opaque] (decoded ?DecodedImageData) {
+			mut image := unsafe { &HTMLImageElementModel(image_pointer) }
+			if image.document_ != request_document || image.update_count_ != update_the_image_data_count
+				|| request.state() != .partially_available {
+				return
+			}
+			mut mutable_request := unsafe { &ImageRequest(request) }
+			if data := decoded {
+				data.set_is_cors_cross_origin(data.is_cors_cross_origin() || opaque)
+				mutable_request.set_image_data(SharedResourceImageData{data: data})
+			}
+			image.image_request_finished(request, maybe_omit_events, url_string, previous_url,
+				update_the_image_data_count)
+			if decoded != none && restart_animations { image.restart_the_animation() }
+		})
+		return
 	}
 	fetch := image.fetch_hook_ or {
 		request.set_state(.broken)
@@ -880,6 +925,7 @@ pub fn (mut image HTMLImageElementModel) update_alt_text_shadow_tree() {
 // the pending slot, or still unavailable despite a concrete source is expected
 // to produce pixels later and must render as blank space instead of alt text.
 pub fn (image &HTMLImageElementModel) is_image_pending() bool {
+	if image.pending_request_ != none { return true }
 	if image.current_request_.state() == .broken {
 		return false
 	}
@@ -1061,6 +1107,12 @@ pub fn (mut image HTMLImageElementModel) adopted_from(old_document &dom.Document
 	}
 	if mut form_control := image.form_control_ {
 		form_control.reset_form_owner()
+	}
+	if image.async_fetch_hook_ != none && image.pending_request_ != none {
+		// The old response belongs to the previous owner and base URL. Start
+		// the replacement request before accepting any completion for this host.
+		image.pending_request_ = none
+		image.update_the_image_data(false, false)
 	}
 }
 

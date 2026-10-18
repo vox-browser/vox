@@ -132,8 +132,8 @@ fn (mut app BrowserApp) start_page_preload(loaded LoadedPage, add_history bool) 
 	}
 	mut initial_urls := []string{}
 	for resource_url in urls {
-		if !scripting_enabled && (types[resource_url] or { 'image' }) == 'image' {
-			pending.image_urls << resource_url
+		if (types[resource_url] or { 'image' }) == 'image' {
+			if !scripting_enabled { pending.image_urls << resource_url }
 		} else {
 			initial_urls << resource_url
 		}
