@@ -35,8 +35,9 @@ fn test_paint_tree_queue_keeps_wide_sibling_storage_and_nested_geometry_live() {
 		assert box.children[0].lines[0].fragments.any(it.text == 'L${index}')
 		assert box.children[1].lines[0].fragments.any(it.text == 'R${index}')
 	}
-	// Queue metadata must not retain another wide BlockBox per paint node.
-	assert sizeof(TypedPaintBuildFrame) <= 2 * sizeof(voidptr)
+	// The arena plan holds one node pointer and compact child/parent indexes;
+	// it must not retain another wide BlockBox per paint node.
+	assert sizeof(TypedPaintArenaEntry) <= sizeof(voidptr) + 4 * sizeof(int)
 }
 
 fn test_paint_tree_final_storage_preserves_unboxed_order_and_previous_snapshots() {
