@@ -138,6 +138,7 @@ fn install_layout_paintable_repaint_callbacks(node &dom.LayoutNode, result &Docu
 		mut mutable_paintable := unsafe { &dom.Paintable(paintable) }
 		mutable_paintable.repaint_callback_target = voidptr(result)
 		mutable_paintable.set_needs_repaint_callback = layout_paintable_set_needs_repaint
+		mutable_paintable.image_contents_changed_callback = layout_paintable_image_contents_changed
 		mutable_paintable.scroll_ancestor_to_offset_into_view_callback = layout_paintable_scroll_ancestor_to_offset_into_view
 		mutable_paintable.box_type_agnostic_position_callback = layout_paintable_box_type_agnostic_position
 		mutable_paintable.inverse_transform_point_callback = layout_paintable_inverse_transform_point
@@ -1170,6 +1171,40 @@ fn layout_paintable_set_needs_repaint(target voidptr, layout_handle voidptr, sho
 	if should_invalidate_display_list == .paint_commands_and_hit_test_list {
 		viewport_invalidate_hit_test_display_list(target)
 	}
+}
+
+// Painting::push_replaced_image_paint_facts() and set_needs_repaint(PaintCommands)
+// for an image box whose new contents cannot change its used size. Its retained
+// paint box keeps the source URL and natural size recorded at layout; refresh
+// them in place. A new source URL or an SVG document still needs layout.
+fn layout_paintable_image_contents_changed(target voidptr, layout_handle voidptr) bool {
+	if layout_handle == unsafe { nil } {
+		return false
+	}
+	mut result := viewport_layout_result(target)
+	source_node := unsafe { &Node(layout_handle) }
+	image_box := source_node.as_image_box() or { return false }
+	mut box := result.retained_box_for_layout(layout_handle) or { return false }
+	paintable := box.replaced_image_paintable or { return false }
+	if paintable.is_svg_image || box.is_svg_image || image_box.svg_image_document() != none {
+		return false
+	}
+	mut mutable_image_box := unsafe { &ImageBox(image_box) }
+	mutable_image_box.reset_for_relayout()
+	if mutable_image_box.svg_image_document() != none {
+		return false
+	}
+	source := mutable_image_box.source()
+	source_url := source_node.document().encoding_parse_and_serialize_url(source) or { source }
+	if source_url != box.replaced_image_url {
+		return false
+	}
+	box.replaced_image_paintable = &painting.ImagePaintable{
+		...*paintable
+		intrinsic_size: mutable_image_box.natural_size()
+	}
+	layout_paintable_set_needs_repaint(target, layout_handle, .paint_commands)
+	return true
 }
 
 fn compatibility_cursor_rect_for_layout_handle(box &BlockBox, layout_handle voidptr,

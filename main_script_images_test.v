@@ -57,3 +57,54 @@ fn test_script_inserted_images_decode_once_their_bytes_arrive() {
 	assert model.natural_height() == 1
 	assert model.complete()
 }
+
+// The catalog's thumbnails carry width and height attributes, so their bytes
+// cannot change the page's layout. Each completed batch keeps the layout tree
+// and records the thumbnails' paint again.
+fn test_sized_script_inserted_images_repaint_without_rebuilding_layout() {
+	$if !darwin {
+		return
+	}
+	address := dom.URL{value: 'https://script-images.test/pol/catalog'}
+	mut document := html.parse_navigation_document('<!doctype html><html><body><div id="threads"></div></body></html>',
+		address, address.origin(), none) or { panic(err) }
+	document.set_scripting_enabled_by_embedder(false)
+	document.set_viewport_rect(dom.Rect{width: 1024, height: 768})
+	defer { document.finalize() }
+	mut runtime := browserjs.Runtime.create()
+	defer { runtime.close() }
+	thumbnail_url := 'https://i.script-images.test/pol/2s.png'
+	mut app := BrowserApp{
+		document:                    document
+		js_runtime:                  runtime
+		background_resource_results: chan PreloadedResource{cap: 2}
+		background_resource_pending: {
+			thumbnail_url: true
+		}
+	}
+	app.relayout(1024, 768 + app.chrome_height())
+	mut threads := document.get_element_by_id('threads') or { panic('missing threads') }
+	threads.set_inner_html('<a href="thread/2"><img loading="lazy" alt="" id="thumb-2" class="thumb" width="20" height="10" src="//i.script-images.test/pol/2s.png"></a>')!
+	app.relayout(1024, 768 + app.chrome_height())
+	thumbnail := document.get_element_by_id('thumb-2') or { panic('missing thumbnail') }
+	layout_node := thumbnail.as_node().unsafe_layout_node() or { panic('missing thumbnail box') }
+	app.poll_background_resources()
+	assert thumbnail_url in app.script_image_requests
+	app.background_resource_results <- PreloadedResource{
+		url:          thumbnail_url
+		body:         base64.decode_str(script_image_test_png)
+		source_url:   document.url.serialize()
+		final_url:    thumbnail_url
+		request_type: 'image'
+	}
+	app.poll_background_resources()
+	model := html.html_image_element_model_for_dom_element(unsafe { &dom.HTMLImageElement(thumbnail) })
+	assert model.complete()
+	assert document.layout_is_up_to_date()
+	assert !app.paint_commands_pending
+	retained := thumbnail.as_node().unsafe_layout_node() or { panic('missing retained thumbnail box') }
+	assert voidptr(retained) == voidptr(layout_node)
+	images := app.paint_commands.filter(it.kind == 'draw_replaced_image')
+	assert images.len == 1
+	assert images[0].image().image_url == thumbnail_url
+}

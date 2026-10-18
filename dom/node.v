@@ -257,6 +257,8 @@ pub type PaintableSetNeedsRepaintCallback = fn (voidptr, voidptr, InvalidateDisp
 
 pub type PaintableScrollAncestorToOffsetCallback = fn (voidptr, voidptr, int)
 
+pub type PaintableImageContentsChangedCallback = fn (voidptr, voidptr) bool
+
 pub type PaintableBoxTypeAgnosticPositionCallback = fn (voidptr, voidptr) CSSPixelPoint_
 
 pub enum ScrollSnapSelectionType_ {
@@ -303,6 +305,7 @@ pub mut:
 	layout_handle                                voidptr = unsafe { nil }
 	repaint_callback_target                      voidptr = unsafe { nil }
 	set_needs_repaint_callback                   PaintableSetNeedsRepaintCallback = unsafe { nil }
+	image_contents_changed_callback              PaintableImageContentsChangedCallback = unsafe { nil }
 	scroll_ancestor_to_offset_into_view_callback PaintableScrollAncestorToOffsetCallback = unsafe { nil }
 	box_type_agnostic_position_callback          PaintableBoxTypeAgnosticPositionCallback = unsafe { nil }
 	inverse_transform_point_callback            PaintableInverseTransformPointCallback = unsafe { nil }
@@ -327,6 +330,17 @@ pub fn (mut p Paintable) set_needs_repaint(should_invalidate_display_list Invali
 		&& p.set_needs_repaint_callback != unsafe { nil } {
 		p.set_needs_repaint_callback(p.repaint_callback_target, p.layout_handle, should_invalidate_display_list)
 	}
+}
+
+// Painting::push_replaced_image_paint_facts() followed by
+// set_needs_repaint(PaintCommands) for this paintable's image provider. Returns
+// false when its retained paint input cannot take the new contents.
+pub fn (mut p Paintable) image_provider_contents_changed() bool {
+	if p.repaint_callback_target == unsafe { nil } || p.image_contents_changed_callback == unsafe { nil } {
+		return false
+	}
+	p.needs_repaint = true
+	return p.image_contents_changed_callback(p.repaint_callback_target, p.layout_handle)
 }
 
 pub fn (mut p Paintable) set_selection_state(state SelectionState) {
@@ -4223,6 +4237,23 @@ pub fn (mut n Node) set_needs_repaint(should_invalidate_display_list InvalidateD
 			paintable.set_needs_repaint(should_invalidate_display_list)
 		}
 	}
+}
+
+// ImageProvider::image_provider_contents_changed(). Returns whether the
+// provider's new contents reached every paintable without a layout pass.
+pub fn (mut n Node) image_provider_contents_changed() bool {
+	layout_node := n.unsafe_layout_node() or { return false }
+	mut paintables := layout_node.paintables()
+	if paintables.len == 0 {
+		return false
+	}
+	mut pushed := true
+	for mut paintable in paintables {
+		if !paintable.image_provider_contents_changed() {
+			pushed = false
+		}
+	}
+	return pushed
 }
 
 pub fn (mut n Node) set_needs_layout_update(reason SetNeedsLayoutReason) {

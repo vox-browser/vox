@@ -726,6 +726,8 @@ fn layout_node_display(box &Node) dom.CSSDisplay_ {
 		is_contents_: display.is_contents()
 		is_inline_outside_: display.is_inline_outside()
 		is_flow_inside_: display.is_flow_inside()
+		is_flex_inside_: display.is_flex_inside()
+		is_grid_inside_: display.is_grid_inside()
 		is_block_outside_: display.is_block_outside()
 		is_table_caption_: display.is_table_caption()
 		is_table_cell_: display.is_table_cell()

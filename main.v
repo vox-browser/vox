@@ -4556,7 +4556,14 @@ fn (mut app BrowserApp) poll_background_resources() {
 		return
 	}
 	if script_images_updated {
-		app.document.tear_down_layout_tree()
+		// Each completed image marks only what its new contents change. A
+		// thumbnail whose size cannot depend on its natural size is repainted;
+		// frame preparation still restyles it before recording.
+		if app.document.layout_is_up_to_date() {
+			app.paint_commands_pending = true
+			if app.frame_preparation_depth == 0 { app.record_document_paint_commands() }
+			return
+		}
 		app.relayout(app.viewport_width, app.viewport_height + app.chrome_height())
 		return
 	}

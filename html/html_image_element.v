@@ -62,6 +62,66 @@ fn (mut dispatcher BatchingDispatcher) process() {
 	}
 }
 
+// HTMLImageElement.cpp: image_element_dimensions_may_depend_on_intrinsic_size().
+// Upstream also counts an `auto` minimum size, the initial value, as possibly
+// natural-size dependent. Its automatic minimum size depends on content only
+// for flex and grid items (CSS Sizing 3, section 4.5) and is zero elsewhere,
+// so an image outside those containers keeps the repaint-only path.
+fn image_element_dimensions_may_depend_on_intrinsic_size(element &dom.Element, layout_node &dom.LayoutNode) bool {
+	computed := css.computed_properties_for_element(element) or { return true }
+	size_is_definite := fn (size css.Size) bool {
+		return size.is_length() || (size.is_calculated() && !size.contains_percentage())
+	}
+	size_constraint_is_definite_or_none := fn [size_is_definite] (size css.Size) bool {
+		return size.is_none() || size_is_definite(size)
+	}
+	automatic_minimum_is_zero := if parent := layout_node.parent_ {
+		!parent.display_.is_flex_inside() && !parent.display_.is_grid_inside()
+	} else {
+		true
+	}
+	minimum_is_definite := fn [size_is_definite, automatic_minimum_is_zero] (size css.Size) bool {
+		return (automatic_minimum_is_zero && size.is_auto()) || size_is_definite(size)
+	}
+	if !size_is_definite(computed.size_value(.width)) || !size_is_definite(computed.size_value(.height)) {
+		return true
+	}
+	if !minimum_is_definite(computed.size_value(.min_width))
+		|| !minimum_is_definite(computed.size_value(.min_height)) {
+		return true
+	}
+	if !size_constraint_is_definite_or_none(computed.size_value(.max_width))
+		|| !size_constraint_is_definite_or_none(computed.size_value(.max_height)) {
+		return true
+	}
+	return false
+}
+
+// HTMLImageElement::set_needs_layout_update_or_repaint_after_image_data_change().
+// The translated paint transport retains the image box's source and natural
+// size from layout; when it cannot take the provider's new contents, the image
+// is laid out again as before.
+fn (mut image HTMLImageElementModel) set_needs_layout_update_or_repaint_after_image_data_change(reason dom.SetNeedsLayoutReason) {
+	image.update_alt_text_shadow_tree()
+	element := image.element_ or { return }
+	dom_element := image_dom_element(element)
+	mut node := unsafe { &dom.Node(dom_element.as_node()) }
+	// Without a layout node, there is no box to lay out or repaint.
+	layout_node := node.unsafe_layout_node() or { return }
+	is_image_box := layout_node.is_replaced_box_
+	// The request state change may have flipped which kind of layout node the
+	// element produces (an image box or a non-replaced alt text container); if
+	// the existing node no longer matches, it has to be rebuilt.
+	if is_image_box == (image.renders_as_alt_text() && image.alt() != '') {
+		node.set_needs_layout_tree_update(true, .html_image_element_update_the_image_data)
+		return
+	}
+	if !is_image_box || image_element_dimensions_may_depend_on_intrinsic_size(dom_element, layout_node)
+		|| !node.image_provider_contents_changed() {
+		node.set_needs_layout_update(reason)
+	}
+}
+
 fn html_image_decoded_data_did_update(target voidptr) {
 	mut image := unsafe { &HTMLImageElementModel(target) }
 	if element := image.element_ {
@@ -439,6 +499,7 @@ pub fn (mut image HTMLImageElementModel) update_the_image_data_impl(restart_anim
 		image.replace_decoded_data(none)
 		image.stop_delaying_document_load_event()
 		image.update_alt_text_shadow_tree()
+		image.invalidate_after_synchronous_image_data_change()
 		if !maybe_omit_events || previous_url != url.serialize() {
 			image.fire_event('error')
 		}
@@ -459,12 +520,24 @@ pub fn (mut image HTMLImageElementModel) update_the_image_data_impl(restart_anim
 	image.animation_stopped_ = false
 	image.stop_delaying_document_load_event()
 	image.update_alt_text_shadow_tree()
+	image.invalidate_after_synchronous_image_data_change()
 	if restart_animations {
 		image.restart_the_animation()
 	}
 	if !maybe_omit_events || previous_url != url.serialize() {
 		image.fire_event('load')
 	}
+}
+
+// The compact host's fetch hook completes the request inside update the image
+// data, where upstream's fetch completion records the element's style input
+// change and then lays out or repaints it.
+fn (mut image HTMLImageElementModel) invalidate_after_synchronous_image_data_change() {
+	if element := image.element_ {
+		mut node := unsafe { &dom.Node(image_dom_element(element).as_node()) }
+		node.set_needs_style_update(true)
+	}
+	image.set_needs_layout_update_or_repaint_after_image_data_change(.html_image_element_update_the_image_data)
 }
 
 pub fn (image &HTMLImageElementModel) complete() bool {
@@ -890,8 +963,8 @@ fn (mut image HTMLImageElementModel) image_request_finished(image_request &Image
 		if element := image.element_ {
 			mut node := unsafe { &dom.Node(image_dom_element(element).as_node()) }
 			node.set_needs_style_update(true)
-			node.set_needs_layout_update(.html_image_element_update_the_image_data)
 		}
+		image.set_needs_layout_update_or_repaint_after_image_data_change(.html_image_element_update_the_image_data)
 		return
 	}
 	mut request := unsafe { &ImageRequest(image_request) }
@@ -912,8 +985,8 @@ fn (mut image HTMLImageElementModel) image_request_finished(image_request &Image
 	if element := image.element_ {
 		mut node := unsafe { &dom.Node(image_dom_element(element).as_node()) }
 		node.set_needs_style_update(true)
-		node.set_needs_layout_update(.html_image_element_update_the_image_data)
 	}
+	image.set_needs_layout_update_or_repaint_after_image_data_change(.html_image_element_update_the_image_data)
 }
 
 pub fn (mut image HTMLImageElementModel) add_callbacks_to_image_request(image_request &ImageRequest, maybe_omit_events bool, url_string string, previous_url string, update_the_image_data_count u64) {
@@ -964,8 +1037,8 @@ pub fn (mut image HTMLImageElementModel) react_to_changes_in_the_environment() {
 	if element := image.element_ {
 		mut node := unsafe { &dom.Node(image_dom_element(element).as_node()) }
 		node.set_needs_style_update(true)
-		node.set_needs_layout_update(.html_image_element_react_to_changes_in_the_environment)
 	}
+	image.set_needs_layout_update_or_repaint_after_image_data_change(.html_image_element_react_to_changes_in_the_environment)
 }
 
 pub fn (mut image HTMLImageElementModel) adopted_from(old_document &dom.Document) {
