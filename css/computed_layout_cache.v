@@ -169,8 +169,9 @@ mut:
 	computed_values_stop_color_                    Color = Color{0, 0, 0, 255}
 	computed_values_flood_color_                   Color = Color{0, 0, 0, 255}
 	computed_values_outline_color_                 Color = Color{0, 0, 0, 255}
-	computed_values_fill_                          ?SVGPaint
-	computed_values_stroke_                        ?SVGPaint
+	// Explicit absence avoids constructing unused paint owners in the old compiler.
+	computed_values_fill_                          ?SVGPaint = none
+	computed_values_stroke_                        ?SVGPaint = none
 	computed_values_text_shadow_                   []ShadowData
 	computed_values_box_shadow_                    []ShadowData
 	computed_values_scrollbar_color_               ScrollbarColorData

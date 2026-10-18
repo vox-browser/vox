@@ -584,7 +584,8 @@ pub struct ListStyleType {
 pub mut:
 	kind          ListStyleTypeKind
 	name          string
-	counter_style ?CounterStyle
+	// An absent counter owns no algorithm or symbol storage.
+	counter_style ?CounterStyle = none
 }
 
 pub enum ListStylePosition {
