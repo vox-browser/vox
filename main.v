@@ -6909,6 +6909,7 @@ fn (mut app BrowserApp) draw() {
 		debug_timing_checkpoint('first_paint_total', first_paint_start)
 	}
 	if app.document != unsafe { nil } && !app.document_presented {
+		app.report_navigation_content_profile()
 		app.paint_timing.report_document_paint()
 	}
 	if app.document != unsafe { nil } {
