@@ -957,6 +957,13 @@ pub mut:
 	force_dark_backdrop       ?painting.Color = none
 	apply_force_dark_to_image bool
 	line_box_debug            bool
+	// Keep the shape flags in this existing boolean/padding group: adding a
+	// rare border payload must not widen every retained paint command.
+	// A square fill_rect that Blink rasterizes as an antialiased GPU rectangle,
+	// such as a text decoration with fractional ends.
+	antialiased_rect bool
+	// A rounded fill_rect that the following border draws first in its GPU pass.
+	underlays_next bool
 	text      string // for 'draw_text'
 	font_size f64 = 16.0 // for 'draw_text'
 	bold      bool
@@ -978,12 +985,9 @@ pub mut:
 	// flattened-alpha fallback until they gain offscreen effect surfaces.
 	group_opacity f64 = 1.0
 	radius        f64 // corner radius for a rounded 'fill_rect' (0 = square)
-	// A square 'fill_rect' with fractional edges that Blink rasterizes as an
-	// antialiased GPU rectangle, such as a text decoration with fractional ends.
-	antialiased_rect bool
-	// A rounded 'fill_rect' that the following rounded border draws first in
-	// its own GPU pass, as a check box's background and border share a tile.
-	underlays_next bool
+	// Box-local CSS border geometry resolves its snapped origin against the
+	// current retained transform, including compositor-only animation updates.
+	local_border_data &PaintLocalBorderData = unsafe { nil }
 	// Rectangles clipped out of an antialiased 'fill_rect' without
 	// antialiasing, as left, top, right and bottom: skip-ink decoration gaps.
 	clip_outs []f64
@@ -2509,7 +2513,8 @@ fn (b &BlockBox) record_paint_commands_for_entries(entries []PaintOrderEntry, se
 						set_recording_clip_for_range(mut commands, command_start_index, commands.len, clip)
 					}
 				}
-			} else {
+			} else if !append_chromium_partial_border(mut commands, box, border_colors,
+				box_radii, border_rect, opacity) {
 				append_translated_border_commands(mut commands, box.border, border_colors, box.border_styles, box_radii, border_left, border_top, border_width, border_height, opacity, box.snaps_background_rect)
 			}
 		}
@@ -2611,6 +2616,11 @@ fn (b &BlockBox) record_paint_commands_for_entries(entries []PaintOrderEntry, se
 		overlay_end := commands.len
 		for command_index := command_start; command_index < commands.len; command_index++ {
 			commands[command_index].transform = box.paint_transform
+			data := commands[command_index].local_border_data
+			if data != unsafe { nil } {
+				commands[command_index].transform = chromium_local_border_transform(data,
+					box.paint_transform, box.own_paint_transform)
+			}
 			commands[command_index].paint_box_index = entry_index
 			commands[command_index].force_dark_backdrop = painting.Color{box.background_color.r,
 				box.background_color.g, box.background_color.b, box.background_color.a}

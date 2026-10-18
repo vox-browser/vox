@@ -134,6 +134,15 @@ shadow cutouts overlap the background by one pixel. Block backgrounds inset
 under opaque solid rounded borders; inline backgrounds retain Chromium's
 separate treatment. Uniform circular rounded borders use an analytic stroke.
 
+`transformed-partial-border` checks opaque two-sided borders rotated and skewed
+at fractional box origins. Their paint offset snaps before the box transform;
+matching solid sides retain overlapping antialiased rectangles. Retained
+transform updates resolve that offset again without changing layout geometry.
+The unchanged colored-backdrop case remains in
+`diagnostic/rotated-partial-border.html`; five pixels still differ by one
+channel level there. Translucent, rounded and differently colored sides keep
+their existing border paths.
+
 `background-sprite-rounding` checks an unscaled tall RGBA sprite whose offscreen
 origin lies on a negative half pixel. Both edges round toward positive infinity
 at ties, preserving the image's original size. `rounded-background-image`

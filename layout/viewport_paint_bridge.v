@@ -2308,7 +2308,7 @@ fn replay_cached_paint_commands_with_visual_context(steps []CompatibilityPaintSt
 			}
 			if hidden_guide { continue }
 			mut command := *cached_command
-			command.transform = context.transform
+			command.transform = chromium_border_replay_transform(cached_command, context.transform, &tree)
 			command.fixed_to_viewport = step.box.fixed_to_viewport
 			if recording_clip := command.recording_clip {
 				mapped_recording_clip := compatibility_affine_map_rect(context.transform, recording_clip)
@@ -2485,7 +2485,7 @@ fn record_cached_paint_commands_with_visual_context_into(steps []CompatibilityPa
 		}
 		if step.command == unsafe { nil } { continue }
 		mut command := *step.command
-		command.transform = context.transform
+		command.transform = chromium_border_replay_transform(step.command, context.transform, tree)
 		command.fixed_to_viewport = step.box.fixed_to_viewport
 		if recording_clip := command.recording_clip {
 			mapped_recording_clip := compatibility_affine_map_rect(context.transform, recording_clip)
