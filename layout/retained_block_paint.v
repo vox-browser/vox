@@ -105,34 +105,7 @@ fn block_box_from_typed_layout_shallow(node &Node, state &LayoutState,
 			}
 			position := paint_cumulative_offset(node, state, used)
 			if snapshot := owner.paint_boxes_[key] {
-				dx := position.x().to_double() - snapshot.origin.x().to_double()
-				dy := position.y().to_double() - snapshot.origin.y().to_double()
-				mut clip_ok := true
-				if clip := snapshot.box.overflow_clip {
-					clip_ok = retained_paint_rect_can_translate(clip.rect, dx, dy)
-				}
-				if clip_ok && retained_paint_rect_can_translate(snapshot.box.border_box(), dx, dy) {
-					mut box := snapshot.box
-					box.x += dx
-					box.y += dy
-					box.lines = text_lines_from_typed_layout(node, used, state, position)
-					box.pointer_events_enabled = paintable_visible_for_hit_testing(node, node.computed_values())
-					if overflow := used.scrollable_overflow_rect() {
-						box.scrollable_overflow = LayoutRect{
-							x:      overflow.x.to_double()
-							y:      overflow.y.to_double()
-							width:  overflow.width.to_double()
-							height: overflow.height.to_double()
-						}
-					} else {
-						box.scrollable_overflow = none
-					}
-					if clip := box.overflow_clip {
-						box.overflow_clip = CompatibilityOverflowClip{
-							...clip
-							rect: LayoutRect{clip.rect.x + dx, clip.rect.y + dy, clip.rect.width, clip.rect.height}
-						}
-					}
+				if box := rebase_retained_paint_box(snapshot, node, used, state, position) {
 					return box
 				}
 			}
@@ -145,5 +118,5 @@ fn block_box_from_typed_layout_shallow(node &Node, state &LayoutState,
 			return box
 		}
 	}
-	return uncached_block_box_from_typed_layout_shallow(node, state, ancestor_transform)
+	return ordinary_paint_box_from_typed_layout(node, state, ancestor_transform)
 }
