@@ -768,7 +768,7 @@ fn html_track_element_content_attribute_changed(element &dom.HTMLTrackElement, n
 }
 
 fn (mut model HTMLTrackElementModel) content_attribute_changed(element &dom.HTMLTrackElement, name string, value ?string) {
-	match name.to_lower() {
+	match name.to_lower_ascii() {
 		'kind' { model.set_kind(value or { '' }) }
 		'label' { model.set_label(value or { '' }) }
 		'srclang' { model.set_srclang(value or { '' }) }
