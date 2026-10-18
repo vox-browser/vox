@@ -118,6 +118,11 @@ fn (mut n Node) replace_children(children []&Node) {
 	n.invalidate_tree_order()
 	for old_child in n.children_ {
 		old_child.invalidate_tree_order()
+		if parent := old_child.parent_ {
+			// Fixup can move an old child into a new anonymous wrapper before
+			// replacing this vector. Its new parent already owns that link.
+			if voidptr(parent) != voidptr(&n) { continue }
+		}
 		mut mutable_old_child := unsafe { &Node(old_child) }
 		mutable_old_child.parent_ = none
 		mutable_old_child.index_in_parent_ = -1
