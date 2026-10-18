@@ -2663,7 +2663,10 @@ fn renderer_box_from_document_layout_result(result &DocumentLayoutResult, viewpo
 	root_layout_node := result.root.first_child() or { return BlockBox{} }
 	svg_sources := begin_paint_svg_source_session(root_layout_node)
 	defer { svg_sources.finish() }
-	mut root_box := block_box_from_typed_layout(root_layout_node, result.state)
+	mut incomplete := PaintProjectionStatus{}
+	mut root_box := build_typed_paint_tree_with_interest(root_layout_node, result.state, [6]f64{}, result.paint_projection_interest, mut incomplete)
+	mut projection_owner := unsafe { &DocumentLayoutResult(result) }
+	projection_owner.paint_projection_incomplete = incomplete.incomplete
 	paintable_box_paint_background(mut root_box, root_layout_node, result.state, viewport_width, viewport_height)
 
 	// The compatibility transport omits the typed Viewport node itself. Mark its

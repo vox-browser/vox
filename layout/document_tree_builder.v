@@ -493,6 +493,8 @@ mut:
 	// Each entry's cumulative opacity when its phase commands were recorded.
 	paint_phase_entry_opacity []f64
 	paint_recording_viewport_only bool
+	paint_projection_interest ?LayoutRect
+	paint_projection_incomplete bool
 	// The caret is emitted by its containing block's retained foreground phase.
 	// Remember the dynamic inputs which selected that command so cursor moves and
 	// blink/focus changes only invalidate the old and new containing blocks.
@@ -530,8 +532,11 @@ fn document_layout_update_callback_with_paint_tree(document &dom.Document, viewp
 		map[i64]CompatibilityResizeHandleState{}
 	}
 	mut previous_result := document_layout_result(document) or { unsafe { &DocumentLayoutResult(nil) } }
-	result := run_document_layout_with_current_style(document, viewport_width, viewport_height, needs_layout_tree_rebuild) or {
+	mut result := run_document_layout_with_current_style(document, viewport_width, viewport_height, needs_layout_tree_rebuild) or {
 		return unsafe { nil }
+	}
+	if previous_result != unsafe { nil } && previous_result.paint_recording_viewport_only {
+		result.paint_projection_interest = viewport_paint_interest(document)
 	}
 	paint_tree := if build_paint_tree {
 		renderer_box_from_document_layout_result(result, viewport_width, viewport_height)
@@ -542,6 +547,8 @@ fn document_layout_update_callback_with_paint_tree(document &dom.Document, viewp
 		root: result.root
 		state: result.state
 		document: document
+		paint_projection_interest: result.paint_projection_interest
+		paint_projection_incomplete: result.paint_projection_incomplete
 		paint_tree: paint_tree
 		resize_handle_states: resize_handle_states
 		record_scratch: take_document_recording_scratch(document)

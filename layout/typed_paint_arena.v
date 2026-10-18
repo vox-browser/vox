@@ -1,11 +1,17 @@
 module layout
 
+struct PaintProjectionStatus {
+mut:
+	incomplete bool
+}
+
 struct TypedPaintArenaEntry {
 	node &Node
 	parent int
 mut:
 	first_child int
 	child_count int
+	omitted bool
 }
 
 // Match the shallow builder's empty-box exits before reserving storage. Its
@@ -21,10 +27,21 @@ fn typed_paint_child_has_transport_box(node &Node, state &LayoutState) bool {
 }
 
 fn typed_paint_arena_plan(root &Node, state &LayoutState) []TypedPaintArenaEntry {
+	return typed_paint_arena_plan_with_interest(root, state, none)
+}
+
+fn typed_paint_arena_plan_with_interest(root &Node, state &LayoutState, interest ?LayoutRect) []TypedPaintArenaEntry {
 	mut entries := [TypedPaintArenaEntry{node: root, parent: -1}]
 	mut index := 0
 	for index < entries.len {
 		node := entries[index].node
+		if rect := interest {
+			if paint_interest_can_omit(node, state, rect) {
+				entries[index].omitted = true
+				index++
+				continue
+			}
+		}
 		first_child := entries.len
 		for child in typed_paint_child_nodes(node, state) {
 			if !typed_paint_child_has_transport_box(child, state) { continue }
@@ -38,14 +55,24 @@ fn typed_paint_arena_plan(root &Node, state &LayoutState) []TypedPaintArenaEntry
 }
 
 fn build_typed_paint_tree_in_arena(root &Node, state &LayoutState, ancestor_transform [6]f64) BlockBox {
+	mut omitted := PaintProjectionStatus{}
+	return build_typed_paint_tree_with_interest(root, state, ancestor_transform, none, mut omitted)
+}
+
+fn build_typed_paint_tree_with_interest(root &Node, state &LayoutState, ancestor_transform [6]f64, interest ?LayoutRect, mut omitted PaintProjectionStatus) BlockBox {
 	prepare_retained_block_paint_owners(state)
-	plan := typed_paint_arena_plan(root, state)
+	plan := typed_paint_arena_plan_with_interest(root, state, interest)
 	mut boxes := []BlockBox{cap: plan.len}
 	// Capacity is exact and the allocator zeroes reserved storage. Each slot is
 	// fully written before a later child reads its parent's transform; no
 	// interior slice is published until every record has been initialized.
 	unsafe { boxes.grow_len(plan.len) }
 	for index, entry in plan {
+		if entry.omitted {
+			omitted.incomplete = true
+			fill_omitted_paint_box(entry.node, state, mut boxes[index])
+			continue
+		}
 		transform := if entry.parent < 0 { ancestor_transform } else { boxes[entry.parent].paint_transform }
 		fill_block_box_from_typed_layout_shallow(entry.node, state, transform, mut boxes[index])
 	}

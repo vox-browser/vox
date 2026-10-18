@@ -95,6 +95,7 @@ fn refresh_document_paint_tree(document &dom.Document, mut result DocumentLayout
 
 fn refresh_document_paint_tree_if_needed(mut result DocumentLayoutResult) bool {
 	if !result.paint_tree_needs_style_update { return false }
+	if restore_complete_paint_projection(mut result) { return true }
 	if !result.paint_style_update_requires_full_refresh
 		&& !compositor_style_refresh_preserves_box_categories(&result.paint_tree,
 			&result.paint_style_update_compositor_handles) {
@@ -213,6 +214,10 @@ fn viewport_layout_subtree_is_clipped_outside_viewport(target voidptr, layout_ha
 
 fn viewport_invalidate_scroll_state(target voidptr) {
 	mut result := viewport_layout_result(target)
+	if result.paint_projection_incomplete {
+		result.paint_tree_needs_style_update = true
+		result.paint_style_update_requires_full_refresh = true
+	}
 	result.scroll_state.invalidate()
 }
 
@@ -228,6 +233,7 @@ fn verify_scroll_state_requested() bool {
 
 fn viewport_refresh_scroll_state(target voidptr) {
 	mut result := viewport_layout_result(target)
+	if refresh_document_paint_tree_if_needed(mut result) { return }
 	if result.scroll_state.begin_refresh(false) {
 		result.scroll_state_snapshot = viewport_rederive_scroll_state(mut result)
 		return
@@ -1089,7 +1095,8 @@ fn viewport_recompute_selection_states(target voidptr, range &dom.Range) {
 // while sharing the same transforms and live scroll offsets as display replay.
 fn viewport_text_range_rects(target voidptr, text_node &dom.Node, state dom.SelectionState,
 	start_offset int, end_offset int) []dom.DOMRect {
-	result := viewport_layout_result(target)
+	mut result := viewport_layout_result(target)
+	restore_complete_paint_projection(mut result)
 	mut rects := []dom.DOMRect{}
 	collect_text_range_rects(result.paint_tree, text_node, dom_selection_state_to_painting(state),
 		start_offset, end_offset, result.document.device_pixels_per_css_pixel(),
@@ -1144,11 +1151,14 @@ fn visual_context_index_for_layout_handle(box &BlockBox, layout_handle voidptr) 
 
 fn viewport_transform_client_rects(target voidptr, node &dom.Node,
 	rects []dom.CSSPixelRect_) []dom.CSSPixelRect_ {
-	result := viewport_layout_result(target)
+	mut result := viewport_layout_result(target)
 	layout_node := node.layout_node() or { return rects.clone() }
 	layout_handle := layout_node.real_layout_handle()
 	if layout_handle == unsafe { nil } {
 		return rects.clone()
+	}
+	if result.paint_projection_incomplete && result.retained_box_for_layout(layout_handle) == none {
+		restore_complete_paint_projection(mut result)
 	}
 	context_index := visual_context_index_for_layout_handle(result.paint_tree, layout_handle) or {
 		return rects.clone()
@@ -2713,6 +2723,7 @@ fn viewport_entry_opacity_scales(mut result DocumentLayoutResult) {
 fn viewport_record_display_list(target voidptr) &dom.DisplayList {
 	mut result := viewport_layout_result(target)
 	viewport_only := result.document.recording_viewport_only()
+	if !viewport_only { restore_complete_paint_projection(mut result) }
 	mut show_line_box_borders := false
 	if model := html.NavigableModel.navigable_with_active_document(result.document) {
 		show_line_box_borders = model.should_show_line_box_borders()
@@ -3170,7 +3181,8 @@ fn dump_stacking_context(box &BlockBox, indent int, mut builder strings.Builder)
 }
 
 fn viewport_stacking_context_dump(target voidptr) string {
-	result := viewport_layout_result(target)
+	mut result := viewport_layout_result(target)
+	restore_complete_paint_projection(mut result)
 	mut builder := strings.new_builder(256)
 	dump_stacking_context(&result.paint_tree, 0, mut builder)
 	return builder.str()
