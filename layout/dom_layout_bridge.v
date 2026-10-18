@@ -475,7 +475,11 @@ fn materialize_dom_paintables(box &Node, state &LayoutState, mut placeholder dom
 		mutable_dom_node.clear_paintable()
 		}
 	}
-	count := layout_debug_paintable_count(box, state)
+	// The attachment already resolved inline geometry through its shared
+	// per-container piece cache. Recomputing it for every empty/nested inline
+	// repeats the complete container traversal and its temporary allocations.
+	count := layout_debug_paintable_count_with_inline_geometry(box, state,
+		placeholder.has_geometry_)
 	previous_count := placeholder.paintables_.len
 	class_name := layout_debug_paintable_class(box)
 	for index in 0 .. count {

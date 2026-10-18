@@ -54,6 +54,11 @@ fn append_typed_paintables(node &Node, state &LayoutState, depth int, mut lines 
 }
 
 fn layout_debug_paintable_count(node &Node, state &LayoutState) int {
+	return layout_debug_paintable_count_with_inline_geometry(node, state, none)
+}
+
+fn layout_debug_paintable_count_with_inline_geometry(node &Node, state &LayoutState,
+	inline_has_geometry ?bool) int {
 	if node.is_text_node() {
 		return if layout_debug_text_node_has_fragment(node, state) { 1 } else { 0 }
 	}
@@ -71,6 +76,7 @@ fn layout_debug_paintable_count(node &Node, state &LayoutState) int {
 		if line_indices.len > 0 {
 			return line_indices.len
 		}
+		if has_geometry := inline_has_geometry { return if has_geometry { 1 } else { 0 } }
 		return if layout_debug_inline_metrics(node, state) != none { 1 } else { 0 }
 	}
 	styled := node.as_node_with_style() or { return 0 }
