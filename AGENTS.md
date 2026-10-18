@@ -2252,6 +2252,13 @@ evidence](docs/translation-audit/NATIVE_MEDIA_WHEEL_RAW_HANDLER.md).
   Only number-consumer C body changes;shifted assertion metadata authenticated;original reader1 retained.
   Frozen138control;carry0;isolated app/GC1+override2.
   Separate exact-fraction feature excluded;Root/canonical/GUI/foreign work preserved;Chrome open.
+  Exact CSS fraction round139 (`cbfb7f11`):all5 Git hunks/one whole-function region;4cases/38736asserts eachGC.
+  Common60/config;normal C-only frontend0;predeclared CSS-rich local16full pipelines +3.308673%/1win/all6actual0.
+  Local gate1/native launcher1;zero normal/profile/page/broad/bundle work;accepted138/carry0 retained.
+  Source-context and page-draft findings preserved;entire authored feature authenticated without projections.
+  Separate identifier prefix feature86c7786c committed;20focusedcases/263510asserts eachGC composite.
+  Original constructor-fixture batch1 retained;two passing cases reused plus18remaining cases actual0;no case repeat.
+  Identifier hardware/page result pending;canonical/GUI/foreign work preserved;Chrome parity open.
 - Outside instruction-count optimization, run broad regression suites once per
   ten completed fixes, not after every fix.
   Broad suites include full translation/package test batches, the full LibJS AST

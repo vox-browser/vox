@@ -13524,6 +13524,69 @@ FP rounding modes; it is excluded from frozen138 and receives no138 credit.
 Chrome parity still requires equal endpoints and content; the older hydrated
 Chrome lower-bound count cannot establish it.
 
+## Retain exact fractions as a rejected local attempt
+
+Round139 tests complete feature `cbfb7f11` against accepted138. Five authored
+Git hunks all belong to the number consumer in `css/parser_core.v`. The consumer
+retains a bounded decimal mantissa and accepts a fraction only when divisibility
+by the corresponding power of five proves the result is binary-exact. Other
+fractions and exponents retain the existing conversion path. The constructor,
+decoder, filtering and tokenizer storage remain unchanged.
+
+Four original cases pass in both C-O2 GC modes, **38,736 assertions each**.
+The earlier Root selection passes12 numeric cases/162,670 assertions each mode,
+including all four hardware rounding modes. Common12 cases pass60 assertions
+per configuration; the accepted138-final control evidence is reused. Normal
+whole-app C-only frontend/typechecking exits0, without native-build credit.
+Repeated three-line Git context initially prevented a unique hunk match; that
+static finding is retained. A strict entire-function proof authenticates all
+five authored hunks, reconstructs the whole authored file exactly, and applies
+one unique function region to frozen138. No implementation or test projection
+is used.
+
+Before any139 build or sample, the local protocol declares a CSS-rich complete
+public pipeline scene. It adds8,192 nonmatching author rules, each with four
+dyadic declarations and one inexact control, to the existing64 Unicode
+paragraphs/128 indentation blocks. CSS construction is outside the counter;
+all16 fresh parse/layout/display-list/paint-command/hit-phase/finalize pipelines
+are inside. The192 independent text checks, eight warmups, forced collection
+and final assertions remain outside. All six actual exits are0 and every
+checksum is7,963,486,608. No completed sample is discarded, rerun or extended.
+
+The fixed three alternating pairs have medians **249,186,464,789 →
+257,431,230,620 retired instructions**, **3.30867322% more**,
+with **1/3 wins**. The negative-local-median gate and native launcher both
+actually exit1, with zero jobs started. This result rejects139 under its
+declared gate. No normal native build, independent whole-C audit, profile,
+browser primary, screenshot, broad batch, bundle or GC pass is claimed. The
+declared30-pair seed139 browser cohort never starts. Draft page-tool control and
+seed substitutions were corrected statically before any launch; original
+drafts remain archived. Durable focused/local/frontend C and binary hashes are
+in `Build/v/instruction-opt139-durable-archives.json`.
+
+Accepted138 remains the frozen control, broad baseline and verified app;
+observed carry and page credit stay0. The original archive aggregate's human
+description says137, but its actual before receipt and hashes reuse138; the
+durable archive receipt records this description discrepancy without rewriting
+the original. Root's independently committed fraction implementation remains
+outside the accepted frozen runtime.
+
+Separate feature **`86c7786c`** advances the initial plain identifier
+run in bulk, then enters the existing escape path with identical index,
+previous-index, line and code-point-column state. Its focused composite covers
+**20 cases/263,510 assertions per GC mode**: two unchanged passing cases from
+the original actual batch1 plus18 corrected or unfinished cases from actual
+driver0. The original third test passed malformed UTF-8 directly to a
+constructor whose precondition requires decoded/filtered UTF-8; that failure
+is retained. Only that fixture is corrected to use the unchanged CSS
+decoder/filter. The two completed cases are not repeated. Cursor/escape,
+borrowed spelling/owner and existing numeric cases all pass. The feature and
+four new cases are committed together; it has no hardware or page credit yet.
+
+Canonical app, GUI and concurrent work remain preserved. Chrome parity remains
+unestablished: the earlier observed Chrome count uses a different endpoint and
+hydrated content.
+
 ## Causes and changes
 
 - The V 0.5.2 compatibility compiler's `-prod` Boehm code repeatedly snapshots
