@@ -1625,7 +1625,13 @@ fn css_mask_image_for_box(element &dom.Element, computed &css.ComputedProperties
 		// SVG mask images are vector image documents, just like SVG images
 		// inside a mask resource. The bitmap-only replay cannot decode them.
 		mut vector := SVGMaskPaintCollection{}
-		if collect_svg_vector_image_paint_operations(element, resolved_url, border_rect,
+		// CSS mask images use the snapped image origin of the background
+		// painting geometry. Keep SVG <image> resource coordinates fractional.
+		vector_rect := if element.document().font_rendering_policy() == .chromium {
+			painting.Rect{math.floor(border_rect.x + .5), math.floor(border_rect.y + .5),
+				border_rect.width, border_rect.height}
+		} else { border_rect }
+		if collect_svg_vector_image_paint_operations(element, resolved_url, vector_rect,
 			image_color_scheme(element.document(), computed), mut vector) {
 			operations << vector.operations
 			continue
