@@ -80,7 +80,7 @@ fn test_video_representation_dimensions_poster_and_controls() {
 	assert controls.play_icon_is_pause
 	controls.set_current_time(30)
 	assert controls.timeline_percentage == 25
-	assert controls.timestamp == '0:30 / 2:00'
+	assert controls.timestamp == '00:30 / 02:00'
 	controls.set_volume(0.25)!
 	assert controls.mute_icon == .low
 	controls.toggle_mute()
@@ -179,7 +179,7 @@ fn test_media_controls_timeline_uses_the_last_seekable_range() {
 	controls.update_timeline()
 	controls.update_timestamp()
 	assert controls.timeline_percentage == 25
-	assert controls.timestamp == '0:20'
+	assert controls.timestamp == '00:20'
 
 	media.seekable_.clear()
 	controls.update_timeline()

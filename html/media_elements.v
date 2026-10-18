@@ -886,6 +886,8 @@ mut:
 	buffered_ranges_            []MediaControlsBufferedRange
 	pending_scrub_seek_time_     ?f64
 	scrub_seek_preemption_timer_ ?&platform.Timer
+	last_timestamp_time_        i64 = -1
+	last_timestamp_duration_    ?i64
 }
 
 pub fn MediaControls.create(media &HTMLMediaElement) &MediaControls {
@@ -897,15 +899,11 @@ pub fn MediaControls.create(media &HTMLMediaElement) &MediaControls {
 	return controls
 }
 
-fn media_timestamp(seconds f64) string {
-	if math.is_nan(seconds) || math.is_inf(seconds, 0) || seconds < 0 {
-		return '0:00'
-	}
-	total := int(seconds)
-	hours := total / 3600
-	minutes := (total / 60) % 60
-	secs := total % 60
-	return if hours > 0 { '${hours}:${minutes:02d}:${secs:02d}' } else { '${minutes}:${secs:02d}' }
+fn media_timestamp(seconds i64) string {
+	hours := seconds / 3600
+	minutes := (seconds / 60) % 60
+	secs := seconds % 60
+	return if hours > 0 { '${hours:02d}:${minutes:02d}:${secs:02d}' } else { '${minutes:02d}:${secs:02d}' }
 }
 
 pub fn (mut controls MediaControls) update() {
@@ -1147,14 +1145,15 @@ pub fn (mut controls MediaControls) begin_timeline_scrubbing(time f64) {
 	}
 	controls.pending_scrub_seek_time_ = time
 	controls.submit_pending_scrub_seek()
+	controls.set_timestamp(time, controls.media.duration())
 }
 
 pub fn (mut controls MediaControls) seek_while_scrubbing(time f64) {
 	controls.pending_scrub_seek_time_ = time
-	if controls.media.seeking() {
-		return
+	if !controls.media.seeking() {
+		controls.submit_pending_scrub_seek()
 	}
-	controls.submit_pending_scrub_seek()
+	controls.set_timestamp(time, controls.media.duration())
 }
 
 fn (mut controls MediaControls) submit_pending_scrub_seek() {
@@ -1293,17 +1292,28 @@ pub fn (mut controls MediaControls) update_timeline() {
 }
 
 pub fn (mut controls MediaControls) update_timestamp() {
-	current := media_timestamp(math.round(controls.media.current_time()))
-	duration := controls.media.duration()
-	controls.timestamp = if math.is_inf(duration, 0) {
-		current
+	time := if controls.scrubbing_timeline == .no { controls.media.current_time() } else { f64(controls.last_timestamp_time_) }
+	controls.set_timestamp(time, controls.media.duration())
+}
+
+fn (mut controls MediaControls) set_timestamp(time f64, duration f64) {
+	rounded_time := i64(math.round_to_even(time))
+	mut rounded_duration := ?i64(none)
+	if !math.is_inf(duration, 0) {
+		rounded_duration = if math.is_nan(duration) { i64(0) } else { i64(math.round_to_even(duration)) }
+	}
+	if rounded_time == controls.last_timestamp_time_ && rounded_duration == controls.last_timestamp_duration_ { return }
+	controls.last_timestamp_time_ = rounded_time
+	controls.last_timestamp_duration_ = rounded_duration
+	current := media_timestamp(rounded_time)
+	controls.timestamp = if total := rounded_duration {
+		'${current} / ${media_timestamp(total)}'
 	} else {
-		total := media_timestamp(if math.is_nan(duration) { 0.0 } else { math.round(duration) })
-		'${current} / ${total}'
+		current
 	}
 	if element := controls.dom_.timestamp_element {
 		mut node := element.as_node()
-		node.set_text_content(controls.timestamp) or {}
+		node.set_text_content(controls.timestamp) or { panic(err) }
 	}
 }
 

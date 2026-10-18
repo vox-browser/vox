@@ -81,7 +81,7 @@ fn test_controls_keyboard_seeks_five_seconds_and_uses_the_last_seekable_end_on_a
 			assert media.current_time() == expected && media.seeking() && controls.visible
 			assert probe.seeks.last() == expected && probe.modes.last() == .accurate
 			assert media.event_count('seeking') == i
-			if i == 0 { assert controls.timeline_percentage == 37.5 && controls.timestamp == '1:55 / 3:20' }
+			if i == 0 { assert controls.timeline_percentage == 37.5 && controls.timestamp == '01:55 / 03:20' }
 			if i == 2 { assert controls.timeline_percentage == 100 && media.duration() == 200 }
 			media.finish_seeking_element()
 			media_keyboard_drain(media)
