@@ -2268,6 +2268,14 @@ evidence](docs/translation-audit/NATIVE_MEDIA_WHEEL_RAW_HANDLER.md).
   Separate escape accumulator cf0f012b committed;8cases/240143asserts eachGC;no hardware credit yet.
   Separate absent Size payload 818fe747 committed;3cases/2151asserts eachGC;excluded from140/page credit.
   Original reader/setup failures retained without runtime repeats;Chrome parity remains open.
+  Hex escape round141 (`cf0f012b`):two authored Git hunks/one CSS function;4cases/202468asserts eachGC.
+  Common60/config;declared512-rule escape scene/local16 full pipelines -0.271767%/2wins/all6 actual0.
+  Fresh page 16,618,382,670.5→16,614,190,283;19/30wins;point 4,192,387.5.
+  PairedCI[-9,156,015.5,14,238,649];repeatable credit 0;all60 primaries retained;same1/2/1 preparation.
+  Focused viewport exact;broad skipped below 5,000,000-instruction threshold;strict entire-program/source/native-input C audit.
+  Accepted control 141;isolated141 app/GC1+override2;canonical/GUI/foreign work preserved.
+  Separate Size818fe747/3cases/2151asserts eachGC;old allocation driver1 retained;no hardware credit yet.
+  Root setup failure retained without runtime repeats;Chrome parity remains open.
 - Outside instruction-count optimization, run broad regression suites once per
   ten completed fixes, not after every fix.
   Broad suites include full translation/package test batches, the full LibJS AST

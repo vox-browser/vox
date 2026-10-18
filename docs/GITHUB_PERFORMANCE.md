@@ -13698,6 +13698,124 @@ Chrome parity remains unestablished. Its earlier observed-descendant capture
 count and later content/coalition diagnostic have different endpoints and page
 states; neither supplies a matching comparative cohort.
 
+## Accumulate CSS escape digits directly
+
+Round 141 applies complete feature `cf0f012b` to accepted round 140. Two authored
+Git hunks lie in one exact `consume_escaped_code_point()` function. At most six
+hex digits fit in 24 bits, so the consumer can accumulate their value in u32
+while preserving the existing code-point and optional-whitespace consumption.
+It retains EOF/nonhex handling and the zero, surrogate and above-U+10FFFF repair
+policy. Public decoding, filtering, arenas and token ownership stay unchanged.
+The whole authored file reconstructs exactly; no partial feature, shim or Root
+source substitution is used.
+
+Four original cases pass in both C-O2 GC modes: **202,468 assertions each**.
+They retain the original builder/parser as an oracle and independently check
+scalar values, upper/lowercase hex, the six-digit boundary, whitespace, cursor
+state, token values and GC ownership. The separate original Root selection
+passes eight cases/240,143 assertions per GC mode, including four unchanged
+spelling cases. Common 12 cases pass 60 assertions per configuration; accepted
+140-final control evidence is reused without executing it again.
+
+Before any 141 build or measurement, the local scene declares 512 nonmatching
+CSS rules with five hex escapes per rule, alongside the existing 64 Unicode
+paragraphs, 128 indentation blocks and 192 independent text checks. Scene
+construction, eight warmups, forced GC and assertions stay outside the counter.
+Each observation counts 16 full public parse/layout/display-list/paint-command/
+hit-phase/finalize pipelines. The fixed three alternating pairs have medians
+**40,702,321,755 → 40,591,706,447 retired instructions**
+(-0.27176658%), with **2/3 wins**. All six actual exits are 0
+and all checksums are 7,963,486,608. Every completed sample remains; local work
+is never substituted for page savings.
+
+Normal C-O2 build, signing, startup and actual frozen-library smoke exit 0.
+The C audit authenticates every authored change, the exact native arguments,
+120 native inputs and 37 quoted includes. Its independent entire-program
+regeneration matches the whole compiled normal program after the established
+compiler identities and byte-identical helper reorderings are normalized.
+All 493 builtin and 176 protected
+decoder/filter/arena function bodies remain unchanged. Only the escaped-codepoint
+consumer changes semantically; the unchanged numeric-token caller's shifted
+assertion metadata is authenticated against its actual before/final source.
+
+Full-process C-O1/no-inline Boehm profiles start enabled in main without any
+filter or reset. Both execute 25 complete pipelines and 26 parse/layout/record
+calls. Escape-consumer calls remain **70,580 →
+70,580**; general unsigned-integer parser calls fall
+**70,580 → 0**. Profile counts
+are diagnostic only, with no timing or hardware credit.
+
+The predeclared **30 alternating browser pairs** use the same frozen 359-body
+cache, helper and 1024×768 document viewport. The fixed endpoint remains
+`native.scopes.navigation_to_first_document_paint[0]`. Fresh matching medians
+are **16,618,382,670.5 → 16,614,190,283
+retired instructions**, an observed saving of **4,192,387.5**
+(-0.02522741%), with **19/30 wins**. Paired median
+saving is **8,380,980.5**. Exactly 30,000 paired bootstrap
+resamples with seed 141 give 95% interval **[-9,156,015.5, 14,238,649]**.
+Repeatable page credit is **0**; the candidate is
+**accepted** under
+the predeclared positive-point integration policy. No historical median is
+subtracted and the cohort is never extended.
+
+All 60 primaries remain: **60 actual PNGs**, **0 explicit counter-only
+recoveries**, **0 archived pre-primary startup retries**. First
+preparation stays exactly 1 installation/2 geometry/1 paint; later refreshes
+remain separate (0). Available captures are
+1024×768 and every pixel outside the original skeleton bands is exact. Unknown
+process exits or missing captures in any recovery remain explicit. External
+foreground transitions retained: 0.
+
+The focused viewport is pixel-exact. Positive observed savings accumulated for
+the broad gate are **4,192,387.5**. Broad result: **skipped below 5,000,000-instruction threshold**.
+Below the 5M gate, no broad execution is claimed; the two focused capture loader receipts remain required.
+The actual artifact is `/Users/alex/code/vox2/Build/v/Vox-opt141.app`. Signing, verification,
+library pinning and smoke exit 0. Its instruction text equals the measured
+candidate and the installed helper is the frozen 4eef image. GC has actual
+collections with default marker 1 and override 2. Canonical app and GUI are
+preserved. The frozen artifact gives no extra credit or coverage to concurrent
+Root work. Accepted control is **141**; broad baseline is
+**140**, with observed carry
+**4,192,387.5**.
+Durable generated C, profile and binary archives are indexed in
+`Build/v/instruction-opt141-durable-archives.json`.
+
+The original Root runner setup failure remains retained: an inactive test had
+been renamed to `.v.txt` while the reader expected `.v`. It failed before
+compilation; only that runner path was corrected. No successful test was rerun
+to repair this setup finding. After both profiles actually finished with exit 0, the
+original aggregate reader failed on a tuple lookup key; its first recovery
+also failed on indentation. Both failures and the blocked page readers remain
+retained. A fresh read-only extractor authenticates the original complete
+reports and generated C, including 70,580→0 general integer-parser calls,
+without rerunning either profile. No browser primary existed before recovery;
+only unfinished page work then resumed. The measured frozen 141 source and all original
+contract bodies remain separate from that Root snapshot.
+
+A separate C-O2 hardware attribution uses the accepted round 140 runtime. Same-function recursion is included only within its outermost call; the categories below still overlap, include counter/wrapper work and process-wide work charged on other threads, and must never be summed or treated as self work.
+
+| Scope | Measured outermost calls | Inclusive retired instructions |
+| --- | ---: | ---: |
+| Flex layout | 452 | 5,034,507,586 |
+| Block children | 462 | 5,011,225,500 |
+| Inline layout | 36,932 | 3,793,983,902 |
+| Rule matching | 127,328 | 2,174,358,565 |
+| Grid layout | 284 | 778,253,497 |
+| Style properties | 2,910 | 557,138,713 |
+
+Native build, signing, smoke, observer and owned browser actually exit 0, with zero counter failures. Independent audit restores the entire original C byte for byte and authenticates all native inputs, normal arguments, frozen cache/helper and real 1024×768 PNG. This one diagnostic has zero page credit and extends no cohort. It identifies inline/flex work for further investigation. Evidence: `Build/v/instruction-hotspots140-final-audit.json` and `Build/instructions/vox-hotspots140-diagnostic.run-1.json`. The diagnostic C archive SHA256 is `4c9bb3bface430de855db16aeeaf6ee404ad493cb420586e2696530e09dcc5e8`. A more detailed inline follow-up is separately declared and waits until round 141 validation finishes before its sole observation.
+
+Separate committed feature `818fe747` leaves absent `Size` payloads
+at none. Three focused cases pass 2,151 assertions per GC mode. The unchanged
+before/Boehm allocation case reports 16,384 bytes for 512 default sizes and
+actually exits 1; final reports 0. The original failure remains retained.
+This is allocation evidence only; the Size feature is excluded from 141 and
+has no hardware/page credit yet.
+
+Chrome parity remains unestablished. The earlier observed-descendant capture
+count and the content/coalition diagnostic use different endpoints and page
+states; neither provides a matching cross-browser cohort.
+
 ## Causes and changes
 
 - The V 0.5.2 compatibility compiler's `-prod` Boehm code repeatedly snapshots
