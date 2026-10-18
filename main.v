@@ -6184,11 +6184,18 @@ fn (mut app BrowserApp) draw_command(source_command layout.PaintCommand, page_x 
 							rounded_destination.height
 						}
 					}
-					if nested_layout := layout.run_document_layout(svg_document, f64(destination.width), f64(destination.height)) {
+					chromium_svg := app.document != unsafe { nil }
+						&& app.document.font_rendering_policy() == .chromium
+						&& !plan.repeat_x && !plan.repeat_y
+					replay := if chromium_svg { chromium_svg_background_replay(tile, command.transform) } else {
+						ChromiumSVGBackgroundReplay{destination.width, destination.height, command.transform}
+					}
+					if nested_layout := layout.run_document_layout(svg_document, f64(replay.viewport_width), f64(replay.viewport_height)) {
 						_ = nested_layout
 						if nested_display_list := mutable_svg_document.record_display_list() {
 							for nested_command in layout.display_list_commands(nested_display_list) {
-								transformed := layout.paint_command_for_nested_viewport(nested_command, command.transform, painting.IntPoint{destination.x, destination.y}, command.opacity)
+								transformed := layout.paint_command_for_nested_viewport(nested_command, replay.transform,
+									if chromium_svg { painting.IntPoint{} } else { painting.IntPoint{destination.x, destination.y} }, command.opacity)
 								app.draw_command(transformed, page_x, page_y, window_height)
 							}
 							app.flush_rounded_rect_underlay(page_x, page_y, window_height)

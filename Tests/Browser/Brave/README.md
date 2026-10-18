@@ -77,6 +77,16 @@ ten levels, where a rectangular path shares a raster tile with complex paths.
 A private multisampling probe removes those differences; tile-wide native
 multisampling remains open. This diagnostic is not an exact-parity fixture.
 
+Non-repeating SVG backgrounds in the Chromium profile lay out in an
+independently rounded container and scale the retained vector picture to the
+fractional CSS tile size. This avoids changing the viewBox scale when rounding
+the two tile edges produces a different width. All 27 existing Brave fixtures
+remain exact. The unchanged
+[`diagnostic/svg-background-fractional.html`](diagnostic/svg-background-fractional.html)
+and adjacent original Brave reference preserve three fractional-size icons;
+they improve from 204 to 123 differing pixels, with multisampling and vector
+background shader behavior still open.
+
 `inline-advances` checks shaped-item width rounding, kerning across ASCII
 word boundaries, fractional max-content tables with emergency wrapping, and
 font-relative inline margins. The Chromium profile keeps exact glyph advances
