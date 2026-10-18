@@ -46,11 +46,13 @@ fn install_compact_element_content_binding(document &dom.Document, mut runtime b
 			return error('Invalid element content request')
 		}
 		element := binding.elements[parts[0]] or {
-			index := strconv.atoi(parts[0])!
-			if index < 0 || index >= elements.len {
-				return error('Invalid element content index')
+			binding.runtime.canvas_element_for_binding(parts[0]) or {
+				index := strconv.atoi(parts[0])!
+				if index < 0 || index >= elements.len {
+					return error('Invalid element content index')
+				}
+				elements[index]
 			}
-			elements[index]
 		}
 		return match parts[1] {
 			'textContent' { element.as_node().text_content() or { '' } }
@@ -113,6 +115,7 @@ fn (mut binding CompactElementQueryBinding) element_state(element &dom.Element) 
 		'onclick':          json2.Any(element.get_attribute_value('onclick'))
 		'hasChildren':      json2.Any(element.as_node().has_children())
 		'parentKey':        json2.Any(parent_key)
+		'nativeParent':     json2.Any(true)
 		'disabled':         json2.Any(element.has_attribute('disabled'))
 	}
 	if element.is_html_element() && element.local_name() == 'option' {
@@ -155,6 +158,9 @@ fn (mut binding CompactElementQueryBinding) query(input string) !string {
 		binding.node_for_key(key) or { return error('TypeError: Invalid Element receiver') }
 	}
 	if action == 'removeChild' { return binding.remove_child_query(root, selector) }
+	if action in ['createText', 'createFragment', 'childNodes', 'nodeText', 'setNodeText', 'appendNode', 'insertNode'] {
+		return binding.node_tree_query(root, action, selector)
+	}
 	if action == 'getElementsByTagName' { return binding.tag_collection_query(root, selector) }
 	if action == 'lastChild' { return binding.node_relation_query(root, 'last') }
 	if action == 'firstChild' { return binding.node_relation_query(root, 'first') }
