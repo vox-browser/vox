@@ -51,6 +51,14 @@ extern int ladybird_v_skia_draw_glyph_run(CGContextRef destination,
 	float page_y, float scroll_y, float canvas_width, float canvas_height,
 	uint8_t red, uint8_t green, uint8_t blue, uint8_t alpha,
 	int font_smoothing);
+extern int ladybird_v_skia_draw_glyph_shadow_run(CGContextRef destination,
+	const char *font_path, int face_index, const uint16_t *glyphs, const double *packed_positions, int glyph_count,
+	float font_size, int font_weight, int emoji_face, float baseline_x,
+	float baseline_y, float transform_a, float transform_b, float transform_c,
+	float transform_d, float transform_e, float transform_f, float page_x,
+	float page_y, float scroll_y, float canvas_width, float canvas_height,
+	uint8_t red, uint8_t green, uint8_t blue, uint8_t alpha,
+	int font_smoothing, float blur);
 extern int ladybird_v_skia_draw_canvas_glyph_run(uint8_t *destination_pixels,
 	int width, int height, int pitch, int pixels_are_premultiplied,
 	const char *font_path, int face_index,
@@ -1040,21 +1048,27 @@ static int native_draw_retained_glyph_run(CGContextRef context,
 		return 0;
 	}
 #ifdef LADYBIRD_V_HAS_SKIA_TEXT
-	if (!shadow_only && blur <= 0.0f) {
+	if ((!shadow_only && blur <= 0.0f) || (shadow_only && blur >= 0.0f && (font_smoothing & 16))) {
 		const CGFloat *components = CGColorGetComponents(color);
-		if (components != NULL && CGColorGetNumberOfComponents(color) == 4
-			&& ladybird_v_skia_draw_glyph_run(context, font_path, face_index, glyphs, packed_positions,
-				glyph_count, font_size, font_weight, emoji_face, baseline_x,
-				baseline_y, transform_a, transform_b, transform_c, transform_d,
-				transform_e, transform_f, page_x, page_y, scroll_y, canvas_width,
-				canvas_height, (uint8_t)lrint(components[0] * 255.0),
-				(uint8_t)lrint(components[1] * 255.0),
-				(uint8_t)lrint(components[2] * 255.0),
-				(uint8_t)lrint(components[3] * 255.0), font_smoothing
-					| (((font_smoothing & 16) && context == native_font_compositing_context
-						&& native_font_compositing_transparency_depth == 0) ? 32 : 0))) {
-			return 1;
-		}
+		if (components != NULL && CGColorGetNumberOfComponents(color) == 4) {
+            int flags = font_smoothing
+                | (((font_smoothing & 16) && context == native_font_compositing_context
+                    && native_font_compositing_transparency_depth == 0) ? 32 : 0);
+            uint8_t red = (uint8_t)lrint(components[0] * 255.0);
+            uint8_t green = (uint8_t)lrint(components[1] * 255.0);
+            uint8_t blue = (uint8_t)lrint(components[2] * 255.0);
+            uint8_t alpha = (uint8_t)lrint(components[3] * 255.0);
+            int drawn = shadow_only
+                ? ladybird_v_skia_draw_glyph_shadow_run(context, font_path, face_index, glyphs, packed_positions,
+                    glyph_count, font_size, font_weight, emoji_face, baseline_x, baseline_y,
+                    transform_a, transform_b, transform_c, transform_d, transform_e, transform_f,
+                    page_x, page_y, scroll_y, canvas_width, canvas_height, red, green, blue, alpha, flags, blur)
+                : ladybird_v_skia_draw_glyph_run(context, font_path, face_index, glyphs, packed_positions,
+                    glyph_count, font_size, font_weight, emoji_face, baseline_x, baseline_y,
+                    transform_a, transform_b, transform_c, transform_d, transform_e, transform_f,
+                    page_x, page_y, scroll_y, canvas_width, canvas_height, red, green, blue, alpha, flags);
+            if (drawn) return 1;
+        }
 	}
 #endif
 	CTFontRef font = CTFontCreateWithGraphicsFont(graphics_font,

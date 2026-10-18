@@ -889,13 +889,13 @@ extern "C" int ladybird_v_skia_face_advances(char const* font_path, int face_ind
     return 1;
 }
 
-extern "C" int ladybird_v_skia_draw_glyph_run(CGContextRef destination,
+static int draw_retained_glyph_run(CGContextRef destination,
     char const* font_path, int face_index, uint16_t const* glyphs, double const* packed_positions, int glyph_count,
     float font_size, int font_weight, int emoji_face, float baseline_x,
     float baseline_y, float transform_a, float transform_b, float transform_c,
     float transform_d, float transform_e, float transform_f, float page_x,
     float page_y, float scroll_y, float canvas_width, float canvas_height,
-    uint8_t red, uint8_t green, uint8_t blue, uint8_t alpha, int font_smoothing)
+    uint8_t red, uint8_t green, uint8_t blue, uint8_t alpha, int font_smoothing, float blur)
 {
     auto* typeface = select_typeface(font_path, face_index, font_weight, emoji_face);
     if (!destination || !typeface || !glyphs || !packed_positions || glyph_count <= 0
@@ -939,6 +939,8 @@ extern "C" int ladybird_v_skia_draw_glyph_run(CGContextRef destination,
 
     SkPaint paint;
     paint.setColor(SkColorSetARGB(alpha, red, green, blue));
+    if (blur > 0)
+        paint.setMaskFilter(SkMaskFilter::MakeBlur(kNormal_SkBlurStyle, blur * 0.5f));
     auto matrix = SkMatrix::MakeAll(
         transform_a, transform_c, page_x + transform_e,
         transform_b, transform_d, page_y - scroll_y + transform_f,
@@ -951,6 +953,10 @@ extern "C" int ladybird_v_skia_draw_glyph_run(CGContextRef destination,
     // transformed run bounds (plus an antialiasing guard pixel).
     auto local_bounds = blob->bounds();
     local_bounds.offset(baseline_x, baseline_y);
+    if (blur > 0) {
+        SkRect filtered_bounds;
+        local_bounds = paint.computeFastBounds(local_bounds, &filtered_bounds);
+    }
     auto device_bounds = matrix.mapRect(local_bounds);
     RasterRegion region;
     if (!clipped_raster_region(device_bounds, canvas_width, canvas_height, 2.0f, region))
@@ -982,8 +988,8 @@ extern "C" int ladybird_v_skia_draw_glyph_run(CGContextRef destination,
             uint32_t(CGBitmapContextGetBitmapInfo(destination)),
             uint32_t(CGBitmapContextGetBitsPerPixel(destination))};
         append_glyph_key(key, font_key, sizeof(font_key) / sizeof(font_key[0]));
-        float geometry[] {font_size, baseline_x, baseline_y};
-        append_glyph_key(key, geometry, 3);
+        float geometry[] {font_size, baseline_x, baseline_y, blur};
+        append_glyph_key(key, geometry, 4);
         SkScalar values[9]; draw_matrix.get9(values); append_glyph_key(key, values, 9);
         append_glyph_key(key, glyphs, glyph_count);
         append_glyph_key(key, packed_positions, size_t(glyph_count) * 2);
@@ -1020,6 +1026,42 @@ extern "C" int ladybird_v_skia_draw_glyph_run(CGContextRef destination,
     if (image) CGImageRelease(image);
 
     return result;
+}
+
+extern "C" int ladybird_v_skia_draw_glyph_run(CGContextRef destination,
+    char const* font_path, int face_index, uint16_t const* glyphs, double const* packed_positions, int glyph_count,
+    float font_size, int font_weight, int emoji_face, float baseline_x,
+    float baseline_y, float transform_a, float transform_b, float transform_c,
+    float transform_d, float transform_e, float transform_f, float page_x,
+    float page_y, float scroll_y, float canvas_width, float canvas_height,
+    uint8_t red, uint8_t green, uint8_t blue, uint8_t alpha, int font_smoothing)
+{
+    return draw_retained_glyph_run(destination, font_path, face_index, glyphs,
+        packed_positions, glyph_count, font_size, font_weight, emoji_face,
+        baseline_x, baseline_y, transform_a, transform_b, transform_c,
+        transform_d, transform_e, transform_f, page_x, page_y, scroll_y,
+        canvas_width, canvas_height, red, green, blue, alpha, font_smoothing,
+        0);
+}
+
+extern "C" int ladybird_v_skia_draw_glyph_shadow_run(CGContextRef destination,
+    char const* font_path, int face_index, uint16_t const* glyphs, double const* packed_positions, int glyph_count,
+    float font_size, int font_weight, int emoji_face, float baseline_x,
+    float baseline_y, float transform_a, float transform_b, float transform_c,
+    float transform_d, float transform_e, float transform_f, float page_x,
+    float page_y, float scroll_y, float canvas_width, float canvas_height,
+    uint8_t red, uint8_t green, uint8_t blue, uint8_t alpha, int font_smoothing, float blur)
+{
+    if (!(font_smoothing & 16) || emoji_face || !std::isfinite(blur) || blur < 0) return 0;
+    // The native shell supplies device blur; Skia scales its mask filter with the CTM.
+    float font_scale = std::hypot(transform_a, transform_b);
+    if (!std::isfinite(font_scale)) return 0;
+    return draw_retained_glyph_run(destination, font_path, face_index, glyphs,
+        packed_positions, glyph_count, font_size, font_weight, emoji_face,
+        baseline_x, baseline_y, transform_a, transform_b, transform_c,
+        transform_d, transform_e, transform_f, page_x, page_y, scroll_y,
+        canvas_width, canvas_height, red, green, blue, alpha, font_smoothing,
+        font_scale > 0 ? blur / font_scale : 0);
 }
 
 // Canvas command streams retain shaped glyph IDs all the way to the raster
