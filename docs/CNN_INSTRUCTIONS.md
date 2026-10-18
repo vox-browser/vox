@@ -30,9 +30,9 @@ results, not a claim of complete uBlock extension parity.
 
 ## Current diagnostic progress
 
-The signed SVG-background, mask, selector and text-shadow diagnostic has **2,490 differing pixels**, with a
+The signed SVG-background, mask, selector, text-shadow and offset diagnostic has **2,490 differing pixels**, with a
 maximum channel error of 59, against the unchanged Brave reference. Its single
-diagnostic records **48,943,973,161 instructions** and receives no performance
+diagnostic records **51,742,412,525 instructions** and receives no performance
 credit while the pixels differ. A fresh Brave
 diagnostic remains pixel-exact and records 42,262,584,954 instructions, whose
 15% threshold is approximately 35.923 billion. These are diagnostic runs, not
@@ -149,6 +149,31 @@ The current normal bundle and pins are under `production-retained-text-shadow/`.
 An additional GPU glyph-mask experiment produced the same diagnostic pixels
 as the corrected CPU bridge and was omitted. Arc-normalization and coordinate
 prototypes also remain outside production after regressions or no CNN benefit.
+
+Containing-block offsets now use an iterative raw sum when conservative
+absolute bounds prove no intermediate saturation. Large mixed-sign chains
+retain the original root-to-leaf saturating calculation. Three focused cases
+pass 814 assertions per GC mode, covering ordered saturation, 400 mixed
+chains, a 4,096-level chain and live ancestor updates. The resulting broad
+batch passes 45 files in both GC modes (90 logical checks, 22 invocations),
+all 34 exact Brave fixtures and eight exact SVG mutation guards.
+
+Three fresh baseline/candidate pairs preserve identical page PNGs and reduce
+total instructions by 3.4174%. Their candidate counts range from 50,511,311,673
+to 51,337,710,641, versus 51,279,452,878 to 53,431,472,348 for the preceding
+normal text-shadow bundle. The first standalone candidate records
+51,742,412,525. These counts vary between processes and remain diagnostics;
+they are not the required seven Brave/Vox pairs or a CNN performance pass.
+The actual native stream still matches all 173 uBO checks, including four
+blocked requests. Receipts are `cumulative-offset-focused/corrected/`,
+`cumulative-offset-controlled-diagnostics/results.json`,
+`cumulative-offset-broad/summary.json`,
+`cumulative-offset-brave-fixtures/results.json`,
+`cumulative-offset-svg-guards.{json,log}`, and
+`production-cumulative-offset-instructions/pair-1.vox.{json,ubo.json}`.
+The current normal bundle and pins are under `production-cumulative-offset/`.
+The initial test-only optional-pointer C interop failure is retained without
+pass credit; the corrected checks preserve all runtime assertions.
 
 The preceding isolated gradient-tile baseline passes a 24-file CSS/layout/HTML/
 network selection in both default and no-GC builds, all 30 exact Brave
