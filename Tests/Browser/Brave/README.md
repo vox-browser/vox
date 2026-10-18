@@ -275,3 +275,13 @@ pixels still differ by at most two levels. The four-case
 `diagnostic/text-shadow-blur.html` and original PNG retain 5,295 differing
 pixels, with maximum error four, after correcting double-scaled blur. Neither
 diagnostic establishes exact parity.
+
+`svg-ellipse-computed-geometry` checks CSS percentage circle geometry and an
+ellipse with an automatic radius. Explicit SVG primitives retain their
+identity in the native paint stream; the fixture improves from 184 differing
+pixels to exact equality. The original thirteen-case
+`diagnostic/svg-ellipse-identity.html` and Brave PNG remain unchanged. That
+expanded diagnostic improves from 1,110 to 405 differing pixels, including
+41 pixel errors that increase; its authored-arc and previously exact stroke
+controls remain exact. Fractional, transformed, dashed and small-circle
+cases still require work, so the expanded diagnostic has no parity credit.

@@ -19,7 +19,7 @@ with Brave Shields disabled, empty user filters, automatic list updates off,
 and the same ten repository filter-list snapshots as Vox. The existing Brave
 profile is unchanged.
 
-The live capture audit matched all 268 request/header checks, including 24
+The earlier live capture audit matched all 268 request/header checks, including 24
 blocked requests, with zero static-filter disagreements. Cosmetic CSS,
 procedural filters and selected scriptlets also matched. A separate replay of
 Vox's actual frozen-page traffic matched all 179 request/header checks over
@@ -30,12 +30,12 @@ results, not a claim of complete uBlock extension parity.
 
 ## Current diagnostic progress
 
-The signed SVG-background, mask, selector, text-shadow and offset diagnostic has **2,490 differing pixels**, with a
+The signed SVG-background, mask, selector, text-shadow, offset and ellipse diagnostic has **2,470 differing pixels**, with a
 maximum channel error of 59, against the unchanged Brave reference. Its single
-diagnostic records **51,742,412,525 instructions** and receives no performance
+diagnostic records **53,274,520,068 instructions** and receives no performance
 credit while the pixels differ. A fresh Brave
-diagnostic remains pixel-exact and records 42,262,584,954 instructions, whose
-15% threshold is approximately 35.923 billion. These are diagnostic runs, not
+diagnostic remains pixel-exact and records 42,554,598,225 instructions, whose
+15% threshold is approximately 36.171 billion. These are diagnostic runs, not
 the required seven-pair cohort, and no CNN performance success is credited.
 
 The implementation now skips unused fonts in collapsed whitespace contexts,
@@ -174,6 +174,45 @@ blocked requests. Receipts are `cumulative-offset-focused/corrected/`,
 The current normal bundle and pins are under `production-cumulative-offset/`.
 The initial test-only optional-pointer C interop failure is retained without
 pass credit; the corrected checks preserve all runtime assertions.
+
+Explicit SVG circles and ellipses now retain their primitive identity through
+the existing twelve-float native paint protocol. Graphite, CPU Skia and the
+CoreGraphics fallback recognize their ellipse bounds; authored four-arc paths
+remain ordinary paths. Computed geometry, live updates and retained snapshots
+are covered by two focused cases (22,118 assertions per GC mode), and 145
+native path checks pass. The common paint record remains 1,320 bytes. Ten
+related files pass in both GC modes (20 logical checks, four invocations),
+all 34 existing Brave fixtures remain exact, the new computed-ellipse fixture
+improves from 184 differing pixels to zero, and eight SVG mutation guards are
+exact.
+
+The original expanded thirteen-case ellipse diagnostic is retained unchanged:
+1,110 differing pixels become 405, with 818 pixel errors improving, 41
+increasing and seven changed pixels retaining the same maximum error. Its
+authored-arc and previously exact stroked-ellipse controls remain exact.
+Fractional, transformed, dashed and small-circle raster differences remain
+open. CNN improves from 2,490 to 2,470 differing pixels; pixels over three
+channel levels fall from 32 to 16. No tolerance or reference changes are used.
+Receipts are `ellipse-current-focused/summary.json`,
+`ellipse-identity-focused/native-result.json`, `ellipse-identity-visual/`,
+`current-svg-ellipse-brave-fixtures/results.json`,
+`current-svg-ellipse-svg-guards.log` and
+`production-current-svg-ellipse-instructions/pair-1.vox.{json,ubo.json}`.
+
+The installed Brave extension directory was replaced between checkpoints.
+The earlier pinned profile and receipts remain untouched. A private copy of
+the current full MV2 uBO 1.75.0 and a newly prepared profile use the same ten
+filter snapshots, empty user filters, disabled automatic updates and disabled
+Shields. The fresh Brave screenshot matches the original reference exactly;
+the native stream again matches all 173 checks over 118 distinct requests,
+including four blocked requests. Pins and preparation receipts are
+`current-ubo-profile.json` and `current-ubo-profile-preparation.log`; the fresh
+Brave receipt is `reference-current-ubo/pair-1.brave.json`. The normal ellipse
+bundle is pinned under `production-current-svg-ellipse/`. An earlier untagged
+synthetic fixture exercised LibWeb policy and receives no Chromium check
+credit; its tagged replacement and original screenshots are retained. The
+first incomplete native diagnostic and a failed test-helper Option signature
+are also retained without final feature credit.
 
 The preceding isolated gradient-tile baseline passes a 24-file CSS/layout/HTML/
 network selection in both default and no-GC builds, all 30 exact Brave
