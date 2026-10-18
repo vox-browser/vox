@@ -139,6 +139,7 @@ pub mut:
 mut:
 	rare_ ?&UsedValuesRareData
 	rare_is_shared_ bool
+	line_boxes_are_shared_ bool
 	// Inline formatting publishes this small immutable scalar snapshot without
 	// allocating the unrelated SVG, table, and grid state.
 	inline_end_static_position_snapshot_ &StaticPositionRect = unsafe { nil }
@@ -1197,6 +1198,14 @@ pub fn (mut state LayoutState) ensure_capacity(node_count u32) {
 
 // The UsedValues for `node`, creating an empty one on first access (Layout::LayoutState::get_mutable).
 pub fn (mut state LayoutState) get_mutable(node &NodeWithStyle) &UsedValues {
+	mut values := state.ensure_used_values_for(node)
+	values.ensure_mutable_line_boxes()
+	return values
+}
+
+// Scalar box updates do not modify line buffers. Retained-layout replay and
+// overflow computation use this private path to preserve immutable cache data.
+fn (mut state LayoutState) mutable_box_values(node &NodeWithStyle) &UsedValues {
 	return state.ensure_used_values_for(node)
 }
 
@@ -1279,7 +1288,11 @@ pub fn (mut state LayoutState) populate_node_from(mut source LayoutState, node &
 	values.inset_right = source_values.inset_right
 	values.inset_top = source_values.inset_top
 	values.inset_bottom = source_values.inset_bottom
-	values.line_boxes = source_values.line_boxes.clone()
+	values.line_boxes = if source_values.line_boxes_are_shared_ {
+		copy_retained_inline_lines(source_values.line_boxes)
+	} else {
+		source_values.line_boxes.clone()
+	}
 	values.containing_line_box_fragment = source_values.containing_line_box_fragment
 	if source_values.inline_end_static_position_snapshot_ != unsafe { nil } {
 		if source_values.inline_end_snapshot_arena_ == unsafe { nil } {
@@ -1358,7 +1371,9 @@ pub fn (state &LayoutState) try_get(node &NodeWithStyle) ?&UsedValues {
 }
 
 pub fn (state &LayoutState) try_get_mutable(node &NodeWithStyle) ?&UsedValues {
-	return state.used_values_store.get(node.layout_index())
+	mut values := state.used_values_store.get(node.layout_index()) or { return none }
+	values.ensure_mutable_line_boxes()
+	return values
 }
 
 // --- CSSPixels helpers (the port's CSSPixels has no arithmetic operators) ---

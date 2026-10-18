@@ -103,15 +103,15 @@ fn run_retaining_independent_formatting_context(mut state LayoutState, box &Node
 			&& cached.font_policy == box.document().font_rendering_policy()
 			&& cached.style_environment == box.document().style_environment_version()
 			&& retained_inline_inputs_are_current(cached.inputs) {
-			used.line_boxes = copy_retained_inline_lines(cached.lines)
+			used.borrow_retained_line_boxes(cached.lines)
 			if end := cached.inline_end { used.set_inline_end_static_position_rect(end) }
 			for entry in cached.values {
-				mut current := state.get_mutable(entry.node)
+				mut current := state.mutable_box_values(entry.node)
 				unsafe { *current = entry.values }
-				current.line_boxes = copy_retained_inline_lines(entry.values.line_boxes)
+				current.borrow_retained_line_boxes(entry.values.line_boxes)
 				current.containing_block_used_values_ = none
 				if containing := entry.containing {
-					current.containing_block_used_values_ = state.get_mutable(containing)
+					current.containing_block_used_values_ = state.get(containing)
 				}
 				if rare := current.rare_ { current.rare_ = rare.clone() }
 			}
@@ -146,6 +146,7 @@ fn run_retaining_independent_formatting_context(mut state LayoutState, box &Node
 			mut snapshot := *values
 			snapshot.containing_block_used_values_ = none
 			snapshot.line_boxes = copy_retained_inline_lines(values.line_boxes)
+			snapshot.line_boxes_are_shared_ = false
 			if rare := snapshot.rare_ { snapshot.rare_ = rare.clone() }
 			snapshots << RetainedBlockValues{
 				node: child

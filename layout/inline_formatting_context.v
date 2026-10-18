@@ -108,7 +108,7 @@ fn (mut bfc BlockFormattingContext) run_inline_formatting_context_with_floats(mu
 }
 
 fn run_uncached_inline_formatting_context(mut state LayoutState, containing_block &BlockContainer, mut containing_block_used_values UsedValues, layout_mode LayoutMode, available_space AvailableSpace, parent_block_context ?&BlockFormattingContext) InlineFormattingResult {
-	containing_block_used_values.line_boxes.clear()
+	containing_block_used_values.clear_line_boxes()
 	if inline_context_has_only_discarded_text(containing_block) {
 		containing_block_used_values.set_inline_end_static_position_rect(StaticPositionRect{})
 		return InlineFormattingResult{}
@@ -502,6 +502,7 @@ fn (bfc &BlockFormattingContext) line_clamp_has_future_content(anchor &Node) boo
 fn (mut bfc BlockFormattingContext) apply_line_clamp_to_lines(containing_block &BlockContainer,
 	mut used UsedValues, mut state LayoutState) {
 	maximum := bfc.max_lines or { return }
+	used.ensure_mutable_line_boxes()
 	if maximum <= 0 {
 		bfc.line_clamp_reached_ = used.line_boxes.len > 0
 		if root := bfc.root {
@@ -716,6 +717,7 @@ fn apply_block_ellipsis(containing_block &BlockContainer, mut used UsedValues,
 	if ellipsis.len == 0 {
 		return
 	}
+	used.ensure_mutable_line_boxes()
 	mut line := &used.line_boxes[used.line_boxes.len - 1]
 	line.inline_length_before_block_ellipsis_ = line.inline_length()
 	line.trim_trailing_whitespace()

@@ -126,6 +126,7 @@ fn distribute_lines_into_columns(mut state LayoutState, box &Node, mut box_state
 	if line_count == 0 {
 		return none
 	}
+	box_state.ensure_mutable_line_boxes()
 	mut tops := []CSSPixels{cap: line_count}
 	mut bottoms := []CSSPixels{cap: line_count}
 	for line in box_state.line_boxes {

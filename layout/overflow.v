@@ -82,7 +82,7 @@ fn measure_scrollable_overflow(mut state LayoutState, box &Node, contained_boxes
 	mut in_flow_and_floated_content_bounds := content_box
 	// Replaced and nested SVG viewports clip their content to the viewport.
 	if box.is_svg_svg_box() {
-		mut mutable_used := state.get_mutable(styled)
+		mut mutable_used := state.mutable_box_values(styled)
 		mutable_used.scrollable_overflow_rect_ = scrollable_overflow_rect
 		mutable_used.has_scrollable_overflow_ = false
 		return scrollable_overflow_rect
@@ -198,7 +198,7 @@ fn measure_scrollable_overflow(mut state LayoutState, box &Node, contained_boxes
 	has_scrollable_overflow := box.is_scroll_container()
 		&& !overflow_rect_contains(padding_box, scrollable_overflow_rect)
 
-	mut mutable_used := state.get_mutable(styled)
+	mut mutable_used := state.mutable_box_values(styled)
 	mutable_used.scrollable_overflow_rect_ = scrollable_overflow_rect
 	mutable_used.has_scrollable_overflow_ = has_scrollable_overflow
 	return scrollable_overflow_rect

@@ -118,6 +118,28 @@ fn copy_retained_inline_lines(lines []LineBox) []LineBox {
 	return result
 }
 
+// Cache-owned buffers are immutable. A public mutable UsedValues handle must
+// detach both the line headers and their mutable fragments before exposing them.
+fn (mut used UsedValues) borrow_retained_line_boxes(lines []LineBox) {
+	unsafe { used.line_boxes = lines }
+	used.line_boxes_are_shared_ = lines.len > 0
+}
+
+fn (mut used UsedValues) ensure_mutable_line_boxes() {
+	if !used.line_boxes_are_shared_ { return }
+	used.line_boxes = copy_retained_inline_lines(used.line_boxes)
+	used.line_boxes_are_shared_ = false
+}
+
+fn (mut used UsedValues) clear_line_boxes() {
+	if used.line_boxes_are_shared_ {
+		used.line_boxes = []LineBox{}
+		used.line_boxes_are_shared_ = false
+	} else {
+		used.line_boxes.clear()
+	}
+}
+
 fn run_inline_formatting_context_internal(mut state LayoutState, containing_block &BlockContainer,
 	mut used UsedValues, mode LayoutMode, space AvailableSpace,
 	context ?&BlockFormattingContext) InlineFormattingResult {
@@ -142,10 +164,10 @@ fn run_inline_formatting_context_internal(mut state LayoutState, containing_bloc
 			&& cached.style_environment == root.document().style_environment_version()
 			&& cached.content_width == used.content_width()
 			&& retained_inline_inputs_are_current(cached.inputs) {
-			used.line_boxes = copy_retained_inline_lines(cached.lines)
+			used.borrow_retained_line_boxes(cached.lines)
 			used.set_inline_end_static_position_rect(cached.inline_end)
 			for entry in cached.values {
-				mut current := state.get_mutable(entry.node)
+				mut current := state.mutable_box_values(entry.node)
 				containing_values := current.containing_block_used_values_
 				unsafe {
 					*current = entry.values

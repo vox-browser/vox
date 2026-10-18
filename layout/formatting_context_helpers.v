@@ -204,10 +204,12 @@ fn resolve_relative_insets(mut state LayoutState, root &Node) {
 	if styled := root.as_node_with_style() {
 		// Nodes which did not participate in layout (for example anonymous text
 		// wrappers below an SVG viewport) have no UsedValues to adjust.
-		if existing := state.try_get(styled) {
-			if containing := existing.containing_block_used_values() {
-				mut used_values := state.get_mutable(styled)
-				compute_relative_inset_for_node(styled, mut used_values, containing)
+		if styled.computed_values().position() == .relative {
+			if existing := state.try_get(styled) {
+				if containing := existing.containing_block_used_values() {
+					mut used_values := state.mutable_box_values(styled)
+					compute_relative_inset_for_node(styled, mut used_values, containing)
+				}
 			}
 		}
 	}
