@@ -57,11 +57,10 @@ fn test_native_document_fonts_are_constructed_with_the_real_owner_before_dom_ini
 
 fn test_navigation_reuses_only_the_initial_same_origin_window_without_changing_prior_promises() {
 	page := &dom.Page{}
-	group := html.BrowsingContextGroup.create(page)
 	creator :=
 		parse_browser_navigation_document('<p>creator</p>', dom.URL{value: 'https://creation.example/creator'}, none)
 	initial := html.BrowsingContextModel.create_a_new_browsing_context_and_document(page, creator,
-		none, group)!
+		none)!
 	mut initial_document := unsafe { &dom.Document(initial.document) }
 	initial_ready := initial_document.fonts().ready()
 	initial_set := initial_document.fonts().font_face_set_record()
