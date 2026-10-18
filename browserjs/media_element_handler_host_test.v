@@ -26,7 +26,9 @@ fn native_media_handler_fixture(replay ?MediaElementReplayHook) !(&Runtime, &htm
 			runtime.evaluate_host('globalThis.${name}={};__ladybirdMediaElementBind(${name},"${key}","${name}")')!
 		}
 	}
-	handle := voidptr(&runtime)
+	// Runtime.create already returns the heap pointer; the local pointer slot
+	// expires when this fixture returns.
+	handle := voidptr(runtime)
 	runtime.define_value_host_function('__nativeMediaHandlerContext', fn [handle, settings] (_ voidptr, _ []voidptr) !voidptr {
 		runtime := unsafe { &Runtime(handle) }
 		return C.JSValueMakeBoolean(runtime.context, settings.realm().script_execution_depth > 0
@@ -117,6 +119,7 @@ fn test_native_media_error_handler_receives_one_event_reports_original_throw_and
 	}
 	mut runtime, mut media, _, settings := native_media_handler_fixture(none)!
 	defer { runtime.close() }
+	assert runtime.evaluate_host('__nativeMediaHandlerContext() === false')! == 'true'
 	runtime.evaluate_host(r'globalThis.nativeMediaHandlerErrorOrder=[];globalThis.nativeMediaHandlerErrorChecks=[];globalThis.nativeMediaHandlerReason={};globalThis.nativeMediaHandlerErrorEvent=null;
  video.onerror=function(event){nativeMediaHandlerErrorOrder.push("handler");nativeMediaHandlerErrorEvent=event;nativeMediaHandlerErrorChecks.push(arguments.length===1&&this===video&&event.target===video&&event.currentTarget===video&&event instanceof Event&&event.isTrusted&&__nativeMediaHandlerContext());throw nativeMediaHandlerReason};
  video.addEventListener("error",function(event){nativeMediaHandlerErrorOrder.push("later");nativeMediaHandlerErrorChecks.push(this===video&&event===nativeMediaHandlerErrorEvent&&event.target===video&&event.currentTarget===video)});')!
