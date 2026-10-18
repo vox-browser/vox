@@ -304,9 +304,18 @@ int vox_graphite_draw_image_pixels(uint8_t* pixels, int width, int height,
     auto source_rect = SkRect::MakeXYWH(image->source[0] * source_scale_x,
         image->source[1] * source_scale_y, image->source[2] * source_scale_x,
         image->source[3] * source_scale_y);
-    canvas->drawImageRect(texture, source_rect, rect(image->destination), sampling,
-        &paint, whole_source && !image->nearest ? SkCanvas::kFast_SrcRectConstraint
-                                               : SkCanvas::kStrict_SrcRectConstraint);
+    // Blink records a full image in natural coordinates and puts its scale
+    // on the canvas. Keep that operation order: folding it into destination
+    // geometry changes fractional GPU sampling even with the same outer bounds.
+    if (whole_source) {
+        auto natural = rect(image->source);
+        canvas->concat(SkMatrix::RectToRect(natural, rect(image->destination)));
+        canvas->drawImageRect(texture, source_rect, natural, sampling, &paint,
+            !image->nearest ? SkCanvas::kFast_SrcRectConstraint : SkCanvas::kStrict_SrcRectConstraint);
+    } else {
+        canvas->drawImageRect(texture, source_rect, rect(image->destination), sampling,
+            &paint, SkCanvas::kStrict_SrcRectConstraint);
+    }
     int result = read_pixels(gpu, recorder.get(), surface.get(), info, pixels, pitch);
     if (result) {
         image_upload_cache.finish(std::move(upload), texture);
