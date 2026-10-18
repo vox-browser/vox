@@ -30,12 +30,12 @@ results, not a claim of complete uBlock extension parity.
 
 ## Current diagnostic progress
 
-The latest signed normal build also merges structurally equivalent CSS
-invalidation plans and resolves scroll-edge context only when needed. Its
-standalone capture records **47,486,734,709 instructions** and **208 differing
-pixels**, with maximum channel error 13; content, fonts and all 173 observed
-full-uBO checks pass. Three interleaved native pairs average 47,524,836,952.67
-candidate instructions, still above the target. The earlier
+The latest signed normal build uses scroll and overlap raster layers for gradient
+origins and MSAA, including paths replayed from SVG background images. Its
+standalone capture records **50,026,514,857 instructions** and **112 differing
+pixels**, with maximum channel error 12; content, fonts and all 173 observed
+full-uBO checks pass. The instruction count remains above the approximately
+36.171 billion ceiling and establishes no saving for this rendering change. The earlier
 868-pixel result included a transient scrollbar-policy difference: a fresh capture
 of the unchanged older binary also returns 208 pixels without any configuration
 override. The scrollbar disappearance receives no code-improvement credit.
@@ -440,3 +440,27 @@ A transparent-gradient diagnostic alone worsens the full CNN comparison to
 2,019 pixels. A separate synthetic ribbon case improves from 80 to 12 when
 its exported layer origin is reproduced. These are diagnostic observations,
 with no site-coordinate exception or blanket raster policy shipped for credit.
+
+Raster-layer replay (`dfa92b07`) reads retained scroll, sticky and viewport-fixed
+ancestry, limits sparse merges using the Chromium area-growth rule, and preserves
+atomic effect groups. Gradient dither origins and path-triggered MSAA follow the
+resulting layers. SVG background paths participate using their actual resolved
+tile and snapped viewport geometry. The new gradient fixture improves from 68
+pixels to zero; all 35 existing Brave image fixtures are pixel-exact. Focused
+layout tests pass seven cases and 20,599 assertions per GC mode; focused native
+classification tests pass six cases and 15,926 assertions per mode. The original
+classifier fails the SVG-background tile assertion, while the other five cases
+pass. The portable native dither-phase tests also pass.
+
+Private receipts are `raster-layer-commit/receipt.json`,
+`raster-layer-final-focused/summary.json`,
+`raster-layer-svg-focused-retry/summary.json`, `raster-layer-svg-negative/`,
+`raster-layer-public-fixture/assessment.json`,
+`raster-layer-svg-normal-controls-retry/recovered-summary.json` and
+`raster-layer-svg-normal-instructions/pair-1.vox.{json,ubo.json}`. Initial control
+setup failed before launch; subsequent successful captures initially lacked the
+pixel-diff executable in the isolated checkout. Exact metrics were recovered
+from those unchanged PNGs using the pinned executable, without recapture.
+The archived failures receive no pass credit. The side-by-side image on disk
+contains the original Brave viewport and this 112-pixel Vox result, with every
+viewport byte preserved. Both final gates and the seven-pair cohort remain open.
