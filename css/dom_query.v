@@ -98,6 +98,16 @@ fn parse_query_selector_list(selector_text string) ?SelectorList {
 	return parse_selector_with_parser(selector_text, map[string]bool{})
 }
 
+// CSS-side callers and the DOM callback bridge belong to the same document.
+// Share their immutable parsed selectors, while each match still reads live
+// element state and creates its own relational matching context.
+fn document_query_selector_list(document &dom.Document, selector_text string) ?SelectorList {
+	install_document_selector_query_hook(document)
+	hook := document.selector_query_hook() or { return none }
+	mut state := unsafe { &DocumentSelectorQueryState(hook.target) }
+	return state.parse(selector_text)
+}
+
 fn element_matches_any(element &dom.Element, selectors SelectorList) bool {
 	for selector in selectors.selectors {
 		if selector_matches(selector, element) {
@@ -109,8 +119,7 @@ fn element_matches_any(element &dom.Element, selectors SelectorList) bool {
 
 // https://dom.spec.whatwg.org/#dom-element-matches
 pub fn element_matches_selector(element &dom.Element, selector_text string) bool {
-	install_document_selector_query_hook(element.document())
-	selectors := parse_query_selector_list(selector_text) or { return false }
+	selectors := document_query_selector_list(element.document(), selector_text) or { return false }
 	return element_matches_any(element, selectors)
 }
 
@@ -142,8 +151,7 @@ fn query_selector_all_in(node &dom.Node, selectors SelectorList, mut results []&
 // https://dom.spec.whatwg.org/#dom-parentnode-queryselector
 // Returns the first descendant element of `root` (in tree order) that matches the selector.
 pub fn query_selector(root &dom.Node, selector_text string) ?&dom.Element {
-	install_document_selector_query_hook(root.document())
-	selectors := parse_query_selector_list(selector_text) or { return none }
+	selectors := document_query_selector_list(root.document(), selector_text) or { return none }
 	if compounds := independent_query_compounds(selectors) {
 		mut context := MatchContext{has_result_cache: unsafe { nil }}
 		return independent_query_first_in(root, compounds, mut context)
@@ -154,8 +162,7 @@ pub fn query_selector(root &dom.Node, selector_text string) ?&dom.Element {
 // https://dom.spec.whatwg.org/#dom-parentnode-queryselectorall
 pub fn query_selector_all(root &dom.Node, selector_text string) []&dom.Element {
 	mut results := []&dom.Element{}
-	install_document_selector_query_hook(root.document())
-	selectors := parse_query_selector_list(selector_text) or { return results }
+	selectors := document_query_selector_list(root.document(), selector_text) or { return results }
 	if compounds := independent_query_compounds(selectors) {
 		mut context := MatchContext{has_result_cache: unsafe { nil }}
 		independent_query_all_in(root, compounds, mut context, mut results)
@@ -168,8 +175,7 @@ pub fn query_selector_all(root &dom.Node, selector_text string) []&dom.Element {
 // https://dom.spec.whatwg.org/#dom-element-closest
 // Returns `element` or its nearest inclusive ancestor element that matches the selector.
 pub fn closest_matching_selector(element &dom.Element, selector_text string) ?&dom.Element {
-	install_document_selector_query_hook(element.document())
-	selectors := parse_query_selector_list(selector_text) or { return none }
+	selectors := document_query_selector_list(element.document(), selector_text) or { return none }
 	mut current := ?&dom.Element(element)
 	for {
 		candidate := current or { break }
