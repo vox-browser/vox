@@ -20,17 +20,35 @@ fn chromium_gpu_raster_tile_rows(viewport_device_height int) int {
 // then take multisampled coverage too. Returns the indices of those tiles; a
 // draw affects every tile whose raster rows, including border texels, it
 // touches.
-fn chromium_msaa_tiles(commands []layout.PaintCommand, device_scale f64, tile_rows int) []int {
+struct ChromiumMSAATrigger {
+	command_index int
+	top           f64
+	bottom        f64
+}
+
+fn chromium_msaa_triggers(commands []layout.PaintCommand) []ChromiumMSAATrigger {
+	mut triggers := []ChromiumMSAATrigger{}
+	for index, command in commands {
+		if bounds := chromium_msaa_trigger_bounds(command) {
+			triggers << ChromiumMSAATrigger{index, bounds[0], bounds[1]}
+		} else if command.kind == 'draw_background_image' {
+			for bounds in chromium_svg_background_msaa_ranges(command) {
+				triggers << ChromiumMSAATrigger{index, bounds[0], bounds[1]}
+			}
+		}
+	}
+	return triggers
+}
+
+fn chromium_msaa_tiles_for_triggers(triggers []ChromiumMSAATrigger, origin_y f64,
+	device_scale f64, tile_rows int) []int {
 	spacing := tile_rows - 2
 	mut tiles := []int{}
-	for command in commands {
-		bounds := chromium_msaa_trigger_bounds(command) or { continue }
-		top := bounds[0] * device_scale
-		bottom := bounds[1] * device_scale
-		if !(bottom > top) || math.is_nan(top) || math.is_inf(bottom, 0) {
-			continue
-		}
-		// Tile k rasterizes rows [k * spacing, k * spacing + tile_rows).
+	for trigger in triggers {
+		top := (trigger.top - origin_y) * device_scale
+		bottom := (trigger.bottom - origin_y) * device_scale
+		if !(bottom > top) || math.is_nan(top) || math.is_inf(bottom, 0) { continue
+		 }
 		first := math.max(0, int(math.ceil((top - f64(tile_rows)) / f64(spacing))))
 		last := int(math.floor(math.max(bottom - 1, 0) / f64(spacing)))
 		for tile in first .. last + 1 {
@@ -44,6 +62,11 @@ fn chromium_msaa_tiles(commands []layout.PaintCommand, device_scale f64, tile_ro
 	return tiles
 }
 
+fn chromium_msaa_tiles(commands []layout.PaintCommand, device_scale f64, tile_rows int) []int {
+	return chromium_msaa_tiles_for_triggers(chromium_msaa_triggers(commands), 0, device_scale,
+		tile_rows)
+}
+
 // The document rows covered by a draw that makes Chromium's tile multisampled.
 fn chromium_msaa_trigger_bounds(command layout.PaintCommand) ?[]f64 {
 	match command.kind {
@@ -51,8 +74,8 @@ fn chromium_msaa_trigger_bounds(command layout.PaintCommand) ?[]f64 {
 			if command.clip_outs.len < 8 {
 				return none
 			}
-			return transformed_row_bounds(command.transform, command.x, command.y,
-				command.width, command.height)
+			return transformed_row_bounds(command.transform, command.x, command.y, command.width,
+				command.height)
 		}
 		'draw_svg_path' {
 			// Chromium paints CSS borders as rectangles and rounded rectangles;
@@ -81,9 +104,11 @@ fn chromium_msaa_trigger_bounds(command layout.PaintCommand) ?[]f64 {
 					3 { 3 }
 					else { 1 }
 				}
+
 				// An arc can bulge up to its radius beyond its end point.
 				bulge := if kind == 4 {
-					math.max(math.abs(f64(svg_data.path_data[index + 7])), math.abs(f64(svg_data.path_data[index + 8])))
+					math.max(math.abs(f64(svg_data.path_data[index + 7])), math.abs(f64(svg_data.path_data[
+						index + 8])))
 				} else {
 					0.0
 				}
@@ -101,8 +126,8 @@ fn chromium_msaa_trigger_bounds(command layout.PaintCommand) ?[]f64 {
 			}
 			outset := math.max(command.stroke_width, 0) / 2 + 1
 			matrix := multiply_paint_transforms(command.transform, svg_data.path_transform)
-			return transformed_row_bounds(matrix, min_x - outset, min_y - outset,
-				max_x - min_x + outset * 2, max_y - min_y + outset * 2)
+			return transformed_row_bounds(matrix, min_x - outset, min_y - outset, max_x - min_x +
+				outset * 2, max_y - min_y + outset * 2)
 		}
 		else {
 			return none
@@ -133,7 +158,13 @@ fn clipped_out_rect_segments(command layout.PaintCommand) [][]f64 {
 	clips.sort_with_compare(fn (a &[]f64, b &[]f64) int {
 		first := unsafe { a[0] }
 		second := unsafe { b[0] }
-		return if first < second { -1 } else if first > second { 1 } else { 0 }
+		return if first < second {
+			-1
+		} else if first > second {
+			1
+		} else {
+			0
+		}
 	})
 	end := command.x + command.width
 	mut segments := [][]f64{}
@@ -150,13 +181,62 @@ fn clipped_out_rect_segments(command layout.PaintCommand) [][]f64 {
 	return segments
 }
 
+// Classify paths in their owning layer. A path in the document's root tile
+// does not force an overlapping scroll button's independent tile to use MSAA.
+fn chromium_msaa_layer_tiles(commands []layout.PaintCommand, layer layout.ChromiumRasterLayer,
+	device_scale f64, tile_rows int, root bool) []int {
+	triggers := chromium_msaa_triggers(commands).filter(it.command_index in layer.command_indices)
+	origin_y := if root { 0.0 } else { math.floor(layer.bounds.y * device_scale) / device_scale }
+	return chromium_msaa_tiles_for_triggers(triggers, origin_y, device_scale, tile_rows)
+}
+
 fn (mut app BrowserApp) set_chromium_msaa_tiles() {
 	$if macos {
 		scale := C.native_display_device_pixel_ratio()
 		tile_rows := chromium_gpu_raster_tile_rows(int(math.ceil(f64(app.viewport_height) * scale)))
-		tiles := chromium_msaa_tiles(app.paint_commands, scale, tile_rows)
-		tiles_pointer := if tiles.len > 0 { &tiles[0] } else { unsafe { &int(nil) } }
+		app.chromium_raster_tiles = [][]int{cap: app.chromium_raster_plan.layers.len}
+		triggers := chromium_msaa_triggers(app.paint_commands)
+		legacy_tiles := chromium_msaa_tiles_for_triggers(triggers, 0, scale, tile_rows)
+		for index, layer in app.chromium_raster_plan.layers {
+			if layer.legacy_raster {
+				app.chromium_raster_tiles << legacy_tiles
+			} else {
+				selected := triggers.filter(
+					it.command_index < app.chromium_raster_plan.command_layers.len
+					&& app.chromium_raster_plan.command_layers[it.command_index] == index)
+				origin_y := if index == 0 { 0.0 } else { math.floor(layer.bounds.y * scale) / scale }
+				app.chromium_raster_tiles << chromium_msaa_tiles_for_triggers(selected, origin_y,
+					scale, tile_rows)
+			}
+		}
 		C.native_set_chromium_raster_scroll_y(app.scroll_y)
-		C.native_set_chromium_msaa_tiles(tiles_pointer, tiles.len, tile_rows)
+		C.native_set_chromium_raster_layer(0, 0, 1)
+		C.native_set_chromium_msaa_tiles(unsafe { nil }, 0, tile_rows)
+	}
+}
+
+fn (mut app BrowserApp) select_chromium_raster_layer(index int) {
+	$if macos {
+		if index < 0 || index >= app.chromium_raster_plan.layers.len
+			|| index >= app.chromium_raster_tiles.len {
+			return
+		}
+		layer := app.chromium_raster_plan.layers[index]
+		scale := C.native_display_device_pixel_ratio()
+		x := if index == 0 || layer.legacy_raster {
+			0.0
+		} else {
+			math.floor(layer.bounds.x * scale) / scale
+		}
+		y := if index == 0 || layer.legacy_raster {
+			0.0
+		} else {
+			math.floor(layer.bounds.y * scale) / scale
+		}
+		C.native_set_chromium_raster_layer(x, y, int(index == 0 || layer.legacy_raster))
+		tiles := app.chromium_raster_tiles[index]
+		pointer := if tiles.len > 0 { &tiles[0] } else { unsafe { &int(nil) } }
+		rows := chromium_gpu_raster_tile_rows(int(math.ceil(f64(app.viewport_height) * scale)))
+		C.native_set_chromium_msaa_tiles(pointer, tiles.len, rows)
 	}
 }

@@ -5,6 +5,7 @@
 #include <CoreGraphics/CoreGraphics.h>
 #include <dlfcn.h>
 #include "native_graphite_bridge.h"
+#include "native_chromium_raster_phase.h"
 #import <Metal/Metal.h>
 #include "include/gpu/ganesh/GrDirectContext.h"
 #include "include/gpu/ganesh/SkSurfaceGanesh.h"
@@ -1797,6 +1798,15 @@ extern "C" int ladybird_v_skia_draw_masked_image(CGContextRef destination,
 static std::vector<int> s_msaa_tiles;
 static int s_msaa_tile_rows = 256;
 static double s_root_raster_scroll_y = 0;
+static double s_raster_origin_x = 0, s_raster_origin_y = 0;
+static bool s_raster_layer_is_root = true;
+
+extern "C" void ladybird_v_skia_set_raster_layer(double x, double y, int root)
+{
+    s_raster_origin_x = x;
+    s_raster_origin_y = y;
+    s_raster_layer_is_root = root != 0;
+}
 // Rectangles clipped out of the next rectangle drawn, as left, top, right and
 // bottom in its local coordinates.
 static std::vector<float> s_rect_clip_outs;
@@ -1999,8 +2009,8 @@ extern "C" int ladybird_v_skia_draw_rounded_rect(CGContextRef destination,
         }
         // Each raster row takes the mode of the Chromium tile that shows it,
         // in device rows of the root layer's content.
-        long first_row = std::lround((static_cast<float>(region.top) - page_y + scroll_y)
-            * destination_scale);
+        long first_row = std::lround((static_cast<float>(region.top) - page_y + scroll_y
+            - s_raster_origin_y) * destination_scale);
         std::vector<char> msaa_rows(static_cast<size_t>(raster_height));
         int msaa_row_count = 0;
         for (int row = 0; row < raster_height; ++row)
@@ -2356,7 +2366,7 @@ static bool chromium_root_gradient_tiles_eligible(float scale, float page_x,
     // bounded leaf renderer until their raster origins are supplied separately.
     constexpr size_t maximum_tile_pixels = 8 * 1024 * 1024;
     return scale == 1 && page_x == 0 && page_y == std::round(page_y)
-        && s_root_raster_scroll_y == 0 && has_background && tile_width > 0
+        && s_raster_layer_is_root && s_root_raster_scroll_y == 0 && has_background && tile_width > 0
         && region.left >= 0 && region.right <= tile_width
         && static_cast<size_t>(tile_width) * s_msaa_tile_rows <= maximum_tile_pixels;
 }
@@ -2497,7 +2507,7 @@ static int draw_svg_gradient_path(CGContextRef destination, float const* data,
             stops.insert(stops.end(), {colors[index].fR, colors[index].fG,
                 colors[index].fB, colors[index].fA, positions[index]});
         }
-        bool has_background = opaque_backdrop && copy_backdrop(destination, region,
+        bool has_background = s_raster_layer_is_root && opaque_backdrop && copy_backdrop(destination, region,
             destination_scale, raster_width, raster_height, pixels);
         VoxGraphitePath descriptor {
             .matrix = {}, .segments = data, .segment_count = segment_count,
@@ -2523,8 +2533,29 @@ static int draw_svg_gradient_path(CGContextRef destination, float const* data,
             drawn = draw_chromium_root_gradient_tiles(draw, pixels, raster_width,
                 raster_height, tile_width, region.left, first_row, descriptor);
         } else {
-            drawn = draw && draw(reinterpret_cast<uint8_t*>(pixels.data()), raster_width,
-                raster_height, raster_width * 4, has_background, &descriptor);
+            if (!s_raster_layer_is_root) {
+                // Independent composited layers rasterize against transparent
+                // pixels. Preserve the layer's ordered-dither phase even when
+                // rendering just this bounded leaf instead of its full tile.
+                int phase_x = vox_chromium_dither_phase(region.left - page_x,
+                    s_raster_origin_x, destination_scale);
+                int phase_y = vox_chromium_dither_phase(region.top - page_y + scroll_y,
+                    s_raster_origin_y, destination_scale);
+                int width = raster_width + phase_x, height = raster_height + phase_y;
+                std::vector<uint32_t> shifted(static_cast<size_t>(width) * height);
+                descriptor.matrix[2] += phase_x;
+                descriptor.matrix[5] += phase_y;
+                drawn = draw && draw(reinterpret_cast<uint8_t*>(shifted.data()), width,
+                    height, width * 4, 0, &descriptor);
+                if (drawn) {
+                    for (int row = 0; row < raster_height; ++row)
+                        std::copy_n(shifted.begin() + static_cast<size_t>(row + phase_y) * width + phase_x,
+                            raster_width, pixels.begin() + static_cast<size_t>(row) * raster_width);
+                }
+            } else {
+                drawn = draw && draw(reinterpret_cast<uint8_t*>(pixels.data()), raster_width,
+                    raster_height, raster_width * 4, has_background, &descriptor);
+            }
         }
         if (drawn) {
             return composite_pixels(destination, std::move(pixels), raster_width, raster_height,

@@ -73,6 +73,14 @@ fn (mut app BrowserApp) record_document_paint_commands() {
 	// Recording can refresh paint-only styles in the retained transport without
 	// a layout pass. Adopt that final snapshot as well as geometry changes.
 	app.adopt_current_document_geometry()
+	if document.font_rendering_policy() == .chromium {
+		mut raster_scale := 1.0
+		$if macos { raster_scale = C.native_display_device_pixel_ratio() }
+		app.chromium_raster_plan = layout.chromium_raster_layer_plan(document, app.paint_commands,
+			raster_scale)
+	} else {
+		app.chromium_raster_plan = layout.ChromiumRasterLayerPlan{}
+	}
 	app.paint_commands_pending = false
 	root_rect := app.root_box.border_box()
 	app.status = '${app.load_status} · ${app.paint_commands.len} paints · ${int(root_rect.width)}×${int(root_rect.height)} CSS px'

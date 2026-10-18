@@ -266,6 +266,7 @@ fn C.native_end_svg_mask_layer(cache_key u64, content_mask int, canvas_width f32
 fn C.native_begin_css_filter_layer(canvas_width f32, canvas_height f32)
 fn C.native_begin_font_compositing_layer(canvas_width f32, canvas_height f32)
 fn C.native_set_chromium_raster_scroll_y(scroll_y f64)
+fn C.native_set_chromium_raster_layer(origin_x f64, origin_y f64, root int)
 fn C.native_set_chromium_msaa_tiles(tiles &int, count int, tile_rows int)
 fn C.native_set_rect_clip_outs(rects &f64, count int)
 fn C.native_rounded_rect_underlay_supported() int
@@ -381,6 +382,8 @@ mut:
 	overlay_scrollbars                  BrowserOverlayScrollbars
 	content_height                      f64
 	paint_commands                      []layout.PaintCommand
+	chromium_raster_plan                layout.ChromiumRasterLayerPlan
+	chromium_raster_tiles               [][]int
 	paint_commands_have_backdrop_filter bool
 	frame_preparation_depth             int
 	paint_commands_pending              bool
@@ -6723,11 +6726,22 @@ fn (mut app BrowserApp) draw() {
 		$if macos {
 			culling.enabled = app.ctx.native_rendering && !app.paint_canvas_culling_disabled
 		}
+		mut raster_layer := -1
 		for command_index in 0 .. app.paint_commands.len {
 			platform.cooperative_work_checkpoint()
 			command := unsafe { &app.paint_commands[command_index] }
 			if culling.skip(command, 0, f64(page_y), f64(window.width), f64(window.height)) {
 				continue
+			}
+			$if macos {
+				if app.ctx.native_rendering && command_index < app.chromium_raster_plan.command_layers.len {
+					next_layer := app.chromium_raster_plan.command_layers[command_index]
+					if next_layer != raster_layer {
+						app.flush_rounded_rect_underlay(0, page_y, window.height)
+						app.select_chromium_raster_layer(next_layer)
+						raster_layer = next_layer
+					}
+				}
 			}
 			app.draw_command(*command, 0, page_y, window.height)
 		}
@@ -6743,6 +6757,7 @@ fn (mut app BrowserApp) draw() {
 			if app.ctx.native_rendering && app.document != unsafe { nil }
 				&& app.document.font_rendering_policy() == .chromium {
 				C.native_set_chromium_msaa_tiles(unsafe { nil }, 0, chromium_min_gpu_raster_tile_rows)
+				C.native_set_chromium_raster_layer(0, 0, 1)
 				C.native_end_font_compositing_layer()
 			} else if app.ctx.native_rendering
 				&& app.paint_commands_have_backdrop_filter {

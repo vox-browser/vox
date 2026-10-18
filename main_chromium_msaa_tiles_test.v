@@ -1,6 +1,9 @@
 module main
 
 import layout
+import css
+import dom
+import html
 
 fn msaa_test_svg_path(top f64, bottom f64, role string) layout.PaintCommand {
 	mut path_data := []f32{}
@@ -97,4 +100,55 @@ fn test_clipped_out_rect_segments_cover_the_parts_between_clip_outs() {
 		clip_outs: [50.0, 0, 60.2, 2, 20.4, 0, 30.6, 2]
 	}
 	assert clipped_out_rect_segments(command) == [[10.0, 20.0], [31.0, 50.0], [60.0, 110.0]]
+}
+
+fn test_chromium_msaa_layer_tiles_keep_path_triggers_in_their_own_layer() {
+	commands := [msaa_test_svg_path(242, 259, 'svg'), msaa_test_underline(80, 1),
+		msaa_test_svg_path(570, 580, 'svg')]
+	root := layout.ChromiumRasterLayer{
+		command_indices: [0]
+	}
+	button := layout.ChromiumRasterLayer{
+		bounds:          layout.LayoutRect{
+			x:      936
+			y:      67.5
+			width:  68
+			height: 33
+		}
+		command_indices: [1]
+	}
+	shifted := layout.ChromiumRasterLayer{
+		bounds:          layout.LayoutRect{
+			x:      20
+			y:      400.5
+			width:  100
+			height: 200
+		}
+		command_indices: [2]
+	}
+	assert chromium_msaa_layer_tiles(commands, root, 1, 256, true) == [0, 1]
+	assert chromium_msaa_layer_tiles(commands, button, 1, 256, false) == []int{}
+	assert chromium_msaa_layer_tiles(commands, shifted, 1, 256, false) == [0]
+	assert chromium_msaa_layer_tiles(commands, shifted, 2, 256, false) == [1]
+	assert commands[2].svg().path_data[2] == 570
+}
+
+fn test_svg_background_paths_trigger_msaa_in_the_parent_raster_layer() {
+ mut image:=dom.Document.create(dom.URL{value:'https://msaa.test/path.svg'})
+ image.set_content_type('image/svg+xml')
+ image.set_document_type(.xml)
+ image.set_is_svg_image_document(true)
+ image.set_font_rendering_policy(.chromium)
+ html.parse_xml_document_source(image,'<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64"><path d="M0 0L64 64L0 64Z"/></svg>') or {panic(err)}
+ defer {image.finalize()}
+ command:=layout.PaintCommand{kind:'draw_background_image',transform:[f64(1),0,0,1,0,0]!,x:51,y:242,width:17.1,height:17.1,image_data:&layout.PaintImageData{
+  background_svg_document:image,image_url:'https://msaa.test/path.svg',image_clip_x:51,image_clip_y:242,image_clip_width:17.1,image_clip_height:17.1,
+  background_layer_data:&layout.PaintBackgroundLayerData{layer:css.BackgroundLayerData{repeat_x:.no_repeat,repeat_y:.no_repeat,size_x:css.LengthPercentageOrAuto.from_length(css.Length.make_px(17.1)),size_y:css.LengthPercentageOrAuto.from_length(css.Length.make_px(17.1))},resolution_context:css.LengthResolutionContext.default()}
+ }}
+ ranges:=chromium_svg_background_msaa_ranges(command)
+ assert ranges.len==1
+ assert ranges[0][0]==242 && ranges[0][1]==259
+ assert chromium_msaa_tiles([command],1,256)==[0,1]
+ assert chromium_msaa_layer_tiles([command],layout.ChromiumRasterLayer{bounds:layout.LayoutRect{y:230},command_indices:[0]},1,256,false)==[0]
+ assert image.cached_display_list()!=none
 }

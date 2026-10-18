@@ -38,6 +38,7 @@ extern void ladybird_v_skia_release_unused_graphics_memory(void);
 extern int ladybird_v_skia_configure_font(const char *path, int slot);
 extern void ladybird_v_skia_set_image_color_profile(const float *profile);
 extern void ladybird_v_skia_set_root_raster_scroll_y(double scroll_y);
+extern void ladybird_v_skia_set_raster_layer(double origin_x, double origin_y, int root);
 extern void ladybird_v_skia_set_msaa_tiles(const int *tiles, int count, int tile_rows);
 extern void ladybird_v_skia_set_rect_clip_outs(const float *rects, int count);
 extern void ladybird_v_skia_set_rounded_rect_underlay(const float *rect, uint8_t red, uint8_t green, uint8_t blue, uint8_t alpha);
@@ -2342,6 +2343,14 @@ void native_set_chromium_raster_scroll_y(double scroll_y) {
 
 // The Chromium raster tiles whose GPU render pass is multisampled in this
 // frame; their anti-aliased shapes take multisampled coverage.
+void native_set_chromium_raster_layer(double origin_x, double origin_y, int root) {
+#ifdef LADYBIRD_V_HAS_SKIA_TEXT
+    ladybird_v_skia_set_raster_layer(origin_x, origin_y, root);
+#else
+    (void)origin_x; (void)origin_y; (void)root;
+#endif
+}
+
 void native_set_chromium_msaa_tiles(const int *tiles, int count, int tile_rows) {
 #ifdef LADYBIRD_V_HAS_SKIA_TEXT
 	ladybird_v_skia_set_msaa_tiles(tiles, count, tile_rows);
