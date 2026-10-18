@@ -58,19 +58,30 @@ fn ordinary_paint_projection_eligible(node &Node, used &UsedValues) bool {
 
 fn ordinary_paint_box_from_typed_layout(node &Node, state &LayoutState,
 	ancestor_transform [6]f64) BlockBox {
+	mut box := BlockBox{}
+	fill_ordinary_paint_box(node, state, ancestor_transform, mut box)
+	return box
+}
+
+fn fill_ordinary_paint_box(node &Node, state &LayoutState,
+	ancestor_transform [6]f64, mut output BlockBox) {
 	styled := node.as_node_with_style() or {
-		return uncached_block_box_from_typed_layout_shallow(node, state, ancestor_transform)
+		output = uncached_block_box_from_typed_layout_shallow(node, state, ancestor_transform)
+		return
 	}
 	used := state.try_get(styled) or {
-		return uncached_block_box_from_typed_layout_shallow(node, state, ancestor_transform)
+		output = uncached_block_box_from_typed_layout_shallow(node, state, ancestor_transform)
+		return
 	}
 	if !affine_is_compact_identity(ancestor_transform) || !ordinary_paint_projection_eligible(node, used) {
-		return uncached_block_box_from_typed_layout_shallow(node, state, ancestor_transform)
+		output = uncached_block_box_from_typed_layout_shallow(node, state, ancestor_transform)
+		return
 	}
 	computed := node.computed_values()
 	revision := computed.mutation_revision()
 	if revision == 0 {
-		return uncached_block_box_from_typed_layout_shallow(node, state, ancestor_transform)
+		output = uncached_block_box_from_typed_layout_shallow(node, state, ancestor_transform)
+		return
 	}
 	geometry := ordinary_paint_geometry(used)
 	font_generation := css.css_style_computer_for(node.document()).font_computer().environment_generation()
@@ -82,15 +93,15 @@ fn ordinary_paint_box_from_typed_layout(node &Node, state &LayoutState,
 		&& snapshot.style_environment == node.document().style_environment_version()
 		&& snapshot.font_generation == font_generation
 		&& snapshot.font_policy == node.document().font_rendering_policy() {
-		if box := rebase_retained_paint_box(&snapshot.paint, node, used, state, position) {
-			return box
+		if rebase_retained_paint_box_into(&snapshot.paint, node, used, state, position, mut output) {
+			return
 		}
 	}
-	box := uncached_block_box_from_typed_layout_shallow(node, state, ancestor_transform)
+	output = uncached_block_box_from_typed_layout_shallow(node, state, ancestor_transform)
 	mut mutable_node := unsafe { &Node(node) }
 	mutable_node.ordinary_paint_box_ = unsafe { nil }
-	if retained_paint_box_can_share(&box) {
-		mut template := box
+	if retained_paint_box_can_share(&output) {
+		mut template := output
 		template.lines = []TextLine{}
 		mutable_node.ordinary_paint_box_ = &OrdinaryPaintBoxProjection{
 			style:             computed
@@ -103,18 +114,19 @@ fn ordinary_paint_box_from_typed_layout(node &Node, state &LayoutState,
 			paint:             RetainedBlockPaintBox{ box: template, origin: position }
 		}
 	}
-	return box
 }
 
-fn rebase_retained_paint_box(snapshot &RetainedBlockPaintBox, node &Node, used &UsedValues,
-	state &LayoutState, position css.CSSPixelPoint) ?BlockBox {
+// Fill the caller's final slot without returning a several-kilobyte optional
+// record through each layer of the projection pipeline.
+fn rebase_retained_paint_box_into(snapshot &RetainedBlockPaintBox, node &Node, used &UsedValues,
+	state &LayoutState, position css.CSSPixelPoint, mut box BlockBox) bool {
 	dx := position.x().to_double() - snapshot.origin.x().to_double()
 	dy := position.y().to_double() - snapshot.origin.y().to_double()
 	if clip := snapshot.box.overflow_clip {
-		if !retained_paint_rect_can_translate(clip.rect, dx, dy) { return none }
+		if !retained_paint_rect_can_translate(clip.rect, dx, dy) { return false }
 	}
-	if !retained_paint_rect_can_translate(snapshot.box.border_box(), dx, dy) { return none }
-	mut box := snapshot.box
+	if !retained_paint_rect_can_translate(snapshot.box.border_box(), dx, dy) { return false }
+	box = snapshot.box
 	box.x += dx
 	box.y += dy
 	box.lines = text_lines_from_typed_layout(node, used, state, position)
@@ -130,5 +142,5 @@ fn rebase_retained_paint_box(snapshot &RetainedBlockPaintBox, node &Node, used &
 			rect: LayoutRect{clip.rect.x + dx, clip.rect.y + dy, clip.rect.width, clip.rect.height}
 		}
 	}
-	return box
+	return true
 }

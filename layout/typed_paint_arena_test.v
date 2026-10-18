@@ -7,6 +7,30 @@ struct PaintArenaReferenceFrame {
 	box &BlockBox
 }
 
+fn test_direct_paint_slots_match_uncached_projection_and_replace_empty_outputs() {
+	mut document := html.parse_document('<!doctype html><section style="overflow:hidden;width:180px"><p>Several <strong>words</strong> on a line.</p></section><div style="border:2px solid blue;padding:3px">ordinary</div>')
+	defer { document.finalize() }
+	_ = layout_document_typed_in_viewport(document, 400, 300)
+	result := document_layout_result(document)?
+	root := result.root.first_child()?
+	prepare_retained_block_paint_owners(result.state)
+	for entry in typed_paint_arena_plan(root, result.state) {
+		mut output := BlockBox{x:999, opacity:0.25, visible:false, children:[BlockBox{tag_name:'stale'}]}
+		fill_block_box_from_typed_layout_shallow(entry.node, result.state, [6]f64{}, mut output)
+		expected := uncached_block_box_from_typed_layout_shallow(entry.node, result.state, [6]f64{})
+		assert output.str() == expected.str()
+	}
+	// Missing layout values and unstyled nodes must overwrite the complete
+	// destination too, rather than leave geometry from the previous record.
+	mut state := LayoutState.new()
+	mut empty := BlockBox{x:999, opacity:0.25, visible:false}
+	fill_block_box_from_typed_layout_shallow(root, state, [6]f64{}, mut empty)
+	assert empty.str() == (BlockBox{}).str()
+	unstyled := &Node{document_:document}
+	fill_block_box_from_typed_layout_shallow(unstyled, state, [6]f64{}, mut empty)
+	assert empty.str() == (BlockBox{}).str()
+}
+
 // The former per-parent allocator is an independent construction oracle.
 fn paint_arena_reference_tree(node &Node, state &LayoutState, transform [6]f64) BlockBox {
 	mut root := block_box_from_typed_layout_shallow(node, state, transform)

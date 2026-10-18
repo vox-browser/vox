@@ -41,9 +41,13 @@ fn build_typed_paint_tree_in_arena(root &Node, state &LayoutState, ancestor_tran
 	prepare_retained_block_paint_owners(state)
 	plan := typed_paint_arena_plan(root, state)
 	mut boxes := []BlockBox{cap: plan.len}
-	for entry in plan {
+	// Capacity is exact and the allocator zeroes reserved storage. Each slot is
+	// fully written before a later child reads its parent's transform; no
+	// interior slice is published until every record has been initialized.
+	unsafe { boxes.grow_len(plan.len) }
+	for index, entry in plan {
 		transform := if entry.parent < 0 { ancestor_transform } else { boxes[entry.parent].paint_transform }
-		boxes << block_box_from_typed_layout_shallow(entry.node, state, transform)
+		fill_block_box_from_typed_layout_shallow(entry.node, state, transform, mut boxes[index])
 	}
 	// Every append is finished before publishing interior pointers or slices.
 	// Slices are ordinary V array views, so later child-list growth detaches

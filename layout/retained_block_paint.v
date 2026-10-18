@@ -91,6 +91,13 @@ fn retained_paint_rect_can_translate(rect LayoutRect, dx f64, dy f64) bool {
 
 fn block_box_from_typed_layout_shallow(node &Node, state &LayoutState,
 	ancestor_transform [6]f64) BlockBox {
+	mut box := BlockBox{}
+	fill_block_box_from_typed_layout_shallow(node, state, ancestor_transform, mut box)
+	return box
+}
+
+fn fill_block_box_from_typed_layout_shallow(node &Node, state &LayoutState,
+	ancestor_transform [6]f64, mut output BlockBox) {
 	key := u64(voidptr(node))
 	if mut owner := state.block_paint_owners_[key] {
 		// A parent's final placement can change its own margins after layout of
@@ -98,25 +105,27 @@ fn block_box_from_typed_layout_shallow(node &Node, state &LayoutState,
 		if voidptr(node) != voidptr(owner.inputs[0].node) && !node.is_body() && !node.is_root_element()
 			&& affine_is_compact_identity(ancestor_transform) {
 			styled := node.as_node_with_style() or {
-				return uncached_block_box_from_typed_layout_shallow(node, state, ancestor_transform)
+				output = uncached_block_box_from_typed_layout_shallow(node, state, ancestor_transform)
+				return
 			}
 			used := state.try_get(styled) or {
-				return uncached_block_box_from_typed_layout_shallow(node, state, ancestor_transform)
+				output = uncached_block_box_from_typed_layout_shallow(node, state, ancestor_transform)
+				return
 			}
 			position := paint_cumulative_offset(node, state, used)
 			if snapshot := owner.paint_boxes_[key] {
-				if box := rebase_retained_paint_box(snapshot, node, used, state, position) {
-					return box
+				if rebase_retained_paint_box_into(snapshot, node, used, state, position, mut output) {
+					return
 				}
 			}
-			box := uncached_block_box_from_typed_layout_shallow(node, state, ancestor_transform)
-			if retained_paint_box_can_share(&box) {
-				mut template := box
+			output = uncached_block_box_from_typed_layout_shallow(node, state, ancestor_transform)
+			if retained_paint_box_can_share(&output) {
+				mut template := output
 				template.lines = []TextLine{}
 				owner.paint_boxes_[key] = &RetainedBlockPaintBox{ box: template, origin: position }
 			}
-			return box
+			return
 		}
 	}
-	return ordinary_paint_box_from_typed_layout(node, state, ancestor_transform)
+	fill_ordinary_paint_box(node, state, ancestor_transform, mut output)
 }
