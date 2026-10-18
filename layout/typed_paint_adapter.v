@@ -441,7 +441,17 @@ fn compatibility_scroll_snap_edges(computed &css.ComputedProperties, used &UsedV
 		computed.length_box(.scroll_margin_left, .scroll_margin_top, .scroll_margin_right,
 			.scroll_margin_bottom, zero)
 	}
-	context := computed.length_resolution_context()
+	// Auto, percentages and absolute lengths need only the used reference
+	// sizes below. Resolve font/viewport/container inputs when an edge uses
+	// them, rather than allocating a query-container cache for every box.
+	context := if scroll_snap_edge_needs_resolution_context(values.top())
+		|| scroll_snap_edge_needs_resolution_context(values.right())
+		|| scroll_snap_edge_needs_resolution_context(values.bottom())
+		|| scroll_snap_edge_needs_resolution_context(values.left()) {
+		computed.length_resolution_context()
+	} else {
+		css.LengthResolutionContext{}
+	}
 	horizontal_reference := if padding {
 		css.CSSPixels.nearest_value_for(used.content_width().to_double() + used.padding_left.to_double() + used.padding_right.to_double())
 	} else {
@@ -458,6 +468,10 @@ fn compatibility_scroll_snap_edges(computed &css.ComputedProperties, used &UsedV
 		bottom: values.bottom().to_px_or_zero(context, vertical_reference).to_double()
 		left: values.left().to_px_or_zero(context, horizontal_reference).to_double()
 	}
+}
+
+fn scroll_snap_edge_needs_resolution_context(value css.LengthPercentageOrAuto) bool {
+	return value.is_calculated() || (value.is_length() && !value.length().is_absolute())
 }
 
 // Direct translation of PaintableBox::overflow_clip_edge_rect(). Geometry
