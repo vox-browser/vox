@@ -365,3 +365,70 @@ Its first native observation is 347,903,971 warm instructions, with 64.738 ms wa
 median and 245.187 ms cold action; this single run does not establish repeatable
 savings or a latency bound. Position-cache work and combined canonical validation
 are still in progress. No new application has been installed.
+
+
+## Source-60 combined verification and the incomplete click path
+
+`b9d0aa07` scopes an ordinal-indexed paint-position cache to committed geometry
+projection. It keeps `UsedValues` compact, expires the table before later
+geometry changes, and restores nested scopes. Cycles, foreign records and deep
+chains keep the iterative fallback. Absolute coordinate travel proves that
+regrouping fixed-point additions cannot change saturation behavior. Eighty-eight
+cases in ten files pass per mode on source-59. The initial source-57 build fails
+on an integer/unsigned capacity expression; the corrected source-59 code is the
+only version receiving build credit. Its new test helper is self-contained.
+Original missing-file harness attempts and failed build receipts remain.
+
+The source-52/source-53 query-context ABBA sequence observes 357,203,108.5 versus
+351,450,678.5 median warm instructions: 5,752,430 fewer (1.61%). This exceeds the
+next broad threshold. The source-60 combined snapshot includes all four later
+completed fixes (passive counters, lazy DOM lines, independent query contexts and
+scoped paint positions), current canonical commits and then-current foreign
+working changes. Integration `d8e4fa00` preserves unrelated working files.
+
+Source-60 runs all 4,234 functions in 1,097 original layout/CSS/browser/root files
+per mode. Default GC passes 4,209 and fails 25; no-GC passes 4,208 and fails 26.
+There are no unrun cases. Every named failure belongs to the source-45 set, with
+identical original test bytes. The CSS allocation check and no-GC media handler
+case that failed earlier now pass. The raw package exits remain nonzero. All 236
+LibJS files pass in both modes: 233 ordinary files/771 functions plus three
+separate files/13 functions. The official AST comparison passes all 100 cases
+exactly. These are fresh checks: a strictness-metadata optimization and its two
+cases differ from the earlier frozen source and prevent carrying old LibJS
+results without a rerun. The initial checkpoint attempt rejects that carry;
+`parity-v60-checkpoint.json` records the subsequent fresh verification, with
+`all_tests_passed: false`.
+
+The signed source-60 bundle passes startup and all eight exact SVG guards. Its
+eleven rendered document images are decoded-pixel-identical to source-52;
+the four old reference mismatches remain. The first combined native observation
+is 345,473,118 median warm instructions and 58.078 ms median elapsed, with one
+measured collection on a later action. No application has been installed and
+Brave parity remains open.
+
+A sparse invalidation-frontier experiment passes 89 focused cases per mode but
+provides no Reddit instruction benefit: its ABBA comparison is 341,128,486.5
+versus 341,688,759 warm instructions, 560,272.5 more for the candidate. The entire
+experiment (`8243cba3`) is reverted by `17038ad8`. Failed immutable-fixture receipts
+remain; repaired DOM cases pass on source-62. The experiment receives no
+performance credit and is absent from later candidates.
+
+`efc7e404` skips property-name conversion for empty `will-change` lists.
+`caa12b8d` shares the existing per-document parsed-selector cache with CSS-side
+queries, keeping live match evaluation separate. Eighty-six focused cases in six
+files pass per mode, including three new cache/relational/allocation cases.
+Source-63's combined native ABBA observes 343,222,424.5 versus 342,197,383 median
+warm instructions, 1,025,041.5 fewer (0.30%): below the next broad threshold.
+
+A later diagnostic reveals an important limitation in all earlier native click
+measurements: Reddit changes the comment class, then jQuery throws while reading
+`DocumentFragment.childNodes`. The snapshots contain `TypeError: undefined is
+not an object (evaluating n.childNodes.length)`. The earlier native success
+criteria checked alternating collapsed classes and an unchanged URL; they did
+not prove the original handler completed or updated its control label. Their
+before/after instruction comparisons cover that same incomplete native path,
+and cannot establish successful Brave-equivalent completion. The original
+`togglecomment` returns undefined, so `defaultPrevented: false` alone is not a
+failure. A compatibility correction is now in progress. Future functional
+verification must check completion without click errors and the original
+`[–]`/`[+]` labels before making a new Brave comparison.
