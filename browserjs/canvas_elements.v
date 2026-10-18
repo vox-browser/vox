@@ -7,9 +7,12 @@ pub type CanvasElementProvider = fn () map[string]&dom.Element
 
 pub type CanvasElementLookup = fn (string) ?&dom.Element
 
+pub type CanvasElementIdentityLookup = fn (&dom.Element) ?string
+
 struct CanvasElementBindingProvider {
 	snapshot CanvasElementProvider
 	lookup   CanvasElementLookup = unsafe { nil }
+	identity_lookup CanvasElementIdentityLookup = unsafe { nil }
 }
 
 pub fn (mut runtime Runtime) add_canvas_element_provider(provider CanvasElementProvider) {
@@ -18,6 +21,32 @@ pub fn (mut runtime Runtime) add_canvas_element_provider(provider CanvasElementP
 
 pub fn (mut runtime Runtime) add_canvas_element_provider_with_lookup(provider CanvasElementProvider, lookup CanvasElementLookup) {
 	runtime.canvas_element_providers_ << CanvasElementBindingProvider{ snapshot: provider, lookup: lookup }
+}
+
+pub fn (mut runtime Runtime) add_canvas_element_provider_with_identity_lookup(provider CanvasElementProvider,
+	lookup CanvasElementLookup, identity_lookup CanvasElementIdentityLookup) {
+	runtime.canvas_element_providers_ << CanvasElementBindingProvider{
+		snapshot: provider
+		lookup: lookup
+		identity_lookup: identity_lookup
+	}
+}
+
+// A provider's reverse index is a candidate, not an override of registry
+// order. Validate its key through the normal lookup so later providers still
+// win collisions. Legacy providers and newly materialized elements retain the
+// complete snapshot fallback.
+pub fn (runtime &Runtime) canvas_element_key_for_binding(element &dom.Element) ?string {
+	for provider in runtime.canvas_element_providers_ {
+		if provider.identity_lookup == unsafe { nil } { continue }
+		key := provider.identity_lookup(element) or { continue }
+		registered := runtime.canvas_element_for_binding(key) or { continue }
+		if voidptr(registered) == voidptr(element) { return key }
+	}
+	for key, registered in runtime.canvas_elements_for_binding() {
+		if voidptr(registered) == voidptr(element) { return key }
+	}
+	return none
 }
 
 pub fn (runtime &Runtime) canvas_elements_for_binding() map[string]&dom.Element {

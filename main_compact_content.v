@@ -32,10 +32,12 @@ fn install_compact_element_content_binding(document &dom.Document, mut runtime b
 		binding.elements[key] = element
 		binding.keys[voidptr(element)] = key
 	}
-	runtime.add_canvas_element_provider_with_lookup(fn [binding] () map[string]&dom.Element {
+	runtime.add_canvas_element_provider_with_identity_lookup(fn [binding] () map[string]&dom.Element {
 		return binding.elements.clone()
 	}, fn [binding] (key string) ?&dom.Element {
 		return binding.elements[key] or { return none }
+	}, fn [binding] (element &dom.Element) ?string {
+		return binding.keys[voidptr(element)] or { return none }
 	})
 	runtime.define_host_function('__ladybirdReadElementContent', fn [elements, binding] (input string) !string {
 		parts := input.split(':')
@@ -79,8 +81,7 @@ fn (mut binding CompactElementQueryBinding) element_state(element &dom.Element) 
 	}
 	// A native host can materialize a script-created element before a selector
 	// replays its state. Keep that host's key and its existing owning wrapper.
-	for key, registered in binding.runtime.canvas_elements_for_binding() {
-		if registered != element { continue }
+	if key := binding.runtime.canvas_element_key_for_binding(element) {
 		binding.keys[voidptr(element)] = key
 		binding.elements[key] = element
 		return json2.Any({'bridgeKey': json2.Any(key)})

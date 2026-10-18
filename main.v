@@ -3137,10 +3137,8 @@ fn (mut app BrowserApp) dispatch_javascript_event(name string, element &dom.Elem
 	}
 	id := element.get_attribute_value('id')
 	if media_replay == '' {
-		for key, candidate in app.js_runtime.canvas_elements_for_binding() {
-			if voidptr(candidate) != voidptr(element) { continue }
+		if key := app.js_runtime.canvas_element_key_for_binding(element) {
 			media_replay = ', ' + json2.encode({'key': json2.Any(key)})
-			break
 		}
 	}
 	if id == '' && media_replay == '' { return false }
