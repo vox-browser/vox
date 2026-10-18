@@ -53,12 +53,12 @@ fn (maintenance &BrowserMemoryMaintenance) has_pending_cleanup(allocated usize) 
 			&& allocated - maintenance.last_cleanup_allocated >= usize(32) * 1024 * 1024)
 }
 
-fn (mut app BrowserApp) finish_frame_memory_activity(now_ns i64, previous_paint voidptr) {
+fn (mut app BrowserApp) finish_frame_memory_activity(now_ns i64, previous_paint u64) {
 	if app.document == unsafe { nil } { return }
 	// Installation may build the display list before the native frame begins.
-	// Its first replay is still document work even when that pointer is stable.
+	// Its first replay is still document work even when its revision is stable.
 	updated_document := app.memory_maintenance.presentation_pending || !app.document_presented
-		|| previous_paint != voidptr(app.paint_display_list)
+		|| previous_paint != app.paint_generation
 	app.memory_maintenance.frame_finished(now_ns, updated_document)
 	app.schedule_static_graphics_cleanup()
 	$if gcboehm ? {

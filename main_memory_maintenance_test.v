@@ -12,11 +12,11 @@ fn test_first_native_replay_of_an_already_recorded_document_is_active_work() {
 	mut app := BrowserApp{document: document}
 	app.memory_maintenance.document_changed(1_000_000_000)
 	// The display list was adopted before draw(), so its identity is unchanged.
-	app.finish_frame_memory_activity(3_000_000_000, voidptr(app.paint_display_list))
+	app.finish_frame_memory_activity(3_000_000_000, app.paint_generation)
 	assert !app.memory_maintenance.cleanup_due(3_000_000_000, 100)
 	assert !app.memory_maintenance.cleanup_due(3_499_000_000, 100)
 	app.document_presented = true
-	app.finish_frame_memory_activity(4_000_000_000, voidptr(app.paint_display_list))
+	app.finish_frame_memory_activity(4_000_000_000, app.paint_generation)
 	assert app.memory_maintenance.cleanup_due(4_000_000_000, 100)
 }
 
@@ -112,7 +112,7 @@ fn test_unchanged_document_replays_preserve_the_idle_timer_and_allow_cleanup() {
 	app.document_presented = true
 	finished := i64(time.sys_mono_now()) - 2_000_000_000
 	app.memory_maintenance.document_changed(finished - 1_000_000_000)
-	paint := voidptr(app.paint_display_list)
+	paint := app.paint_generation
 	app.finish_frame_memory_activity(finished, paint)
 	assert app.memory_maintenance.last_document_activity_ns == finished
 	assert !app.memory_maintenance.presentation_pending
@@ -136,7 +136,7 @@ fn test_unchanged_document_replays_preserve_the_idle_timer_and_allow_cleanup() {
 	assert !app.memory_maintenance.cleanup_timer.is_active()
 	assert !adblock.release_unused_engine()
 	assert adblock.check(request) == before
-	assert voidptr(app.paint_display_list) == paint
+	assert app.paint_generation == paint
 	assert document.get_element_by_id('kept')?.text_content() or { '' } == 'retained'
 }
 
@@ -157,7 +157,7 @@ fn test_recording_with_a_stable_display_list_waits_for_its_completed_presentatio
 
 fn test_changed_document_restarts_idle_timer_but_empty_frames_create_no_activity() {
 	mut empty := BrowserApp{}
-	empty.finish_frame_memory_activity(3_000_000_000, unsafe { nil })
+	empty.finish_frame_memory_activity(3_000_000_000, 0)
 	assert empty.memory_maintenance.last_document_activity_ns == 0
 	assert !empty.memory_maintenance.pending_document_work
 	mut document := dom.Document.create(dom.url_about_blank())
@@ -165,10 +165,10 @@ fn test_changed_document_restarts_idle_timer_but_empty_frames_create_no_activity
 	mut app := BrowserApp{document: document, ctx: &gg.Context{}, document_presented: true}
 	defer { if app.memory_maintenance.cleanup_timer != unsafe { nil } { app.memory_maintenance.cleanup_timer.stop() } }
 	app.memory_maintenance.document_changed(1_000_000_000)
-	app.finish_frame_memory_activity(2_000_000_000, voidptr(app.paint_display_list))
+	app.finish_frame_memory_activity(2_000_000_000, app.paint_generation)
 	$if gcboehm ? { app.memory_maintenance.cleanup_timer.restart_with_interval(30_000) }
 	app.memory_maintenance.document_changed(3_000_000_000)
-	app.finish_frame_memory_activity(5_000_000_000, voidptr(app.paint_display_list))
+	app.finish_frame_memory_activity(5_000_000_000, app.paint_generation)
 	assert app.memory_maintenance.last_document_activity_ns == 5_000_000_000
 	$if gcboehm ? { assert app.memory_maintenance.cleanup_timer.interval() == 500 }
 	assert !app.memory_maintenance.cleanup_due(5_499_000_000, 100)

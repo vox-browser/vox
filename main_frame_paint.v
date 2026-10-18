@@ -67,6 +67,7 @@ fn (mut app BrowserApp) record_document_paint_commands() {
 		previous_commands := app.paint_commands
 		previous_scene := app.paint_scene
 		app.paint_display_list = list
+		app.paint_generation++
 		app.paint_commands = layout.display_list_commands(list)
 		app.paint_scene = layout.retain_display_list_scene(list)
 		layout.release_display_list_scene(previous_scene)

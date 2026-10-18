@@ -448,6 +448,8 @@ mut:
 	document_presented                  bool
 	paint_timing                        BrowserPaintTiming
 	paint_display_list                  &dom.DisplayList = unsafe { nil }
+	// Frame activity compares revisions without rooting the previous list.
+	paint_generation                    u64
 	// Storage behind paint_commands, retained until the next adoption.
 	paint_scene      voidptr
 	paint_status_key PaintStatusKey
@@ -3543,7 +3545,7 @@ fn (mut app BrowserApp) install_loaded_page(loaded LoadedPage, add_history bool)
 		app.js_runtime.close()
 		app.js_runtime = unsafe { nil }
 	}
-	if previous := previous_document { css.discard_native_document_computed_styles(previous) }
+	if previous := previous_document { app.retire_native_document_rendering(previous) }
 	sources := script_sources(app.document, resource_base_url, preloaded_resources, mut app.js_messages)
 	mut image_loader := new_browser_image_request_loader(app.document, preloaded_resources)
 	app.image_request_loader = image_loader
@@ -6761,7 +6763,7 @@ fn (mut app BrowserApp) draw() {
 			&& C.vox_browser_has_paint_context() == 0 { return }
 	}
 	if app.navigation_work_depth > 0 { return }
-	paint_before_frame := app.paint_display_list
+	paint_before_frame := app.paint_generation
 	app.poll_deferred_navigation_input()
 	app.poll_deferred_page_input()
 	// Profile wheels enter like physical input, outside the frame's navigation
@@ -6895,7 +6897,7 @@ fn (mut app BrowserApp) draw() {
 	app.finish_scroll_profile_frame()
 	processmetrics.instruction_checkpoint('frame_complete')
 	frame_finished_ns := time.sys_mono_now()
-	app.finish_frame_memory_activity(frame_finished_ns, voidptr(paint_before_frame))
+	app.finish_frame_memory_activity(frame_finished_ns, paint_before_frame)
 	if !app.initial_window_frame_presented {
 		app.initial_window_frame_presented = true
 		if app.pending_cached_page != none {
