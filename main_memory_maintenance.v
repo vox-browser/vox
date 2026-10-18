@@ -3,6 +3,7 @@ module main
 import platform
 import time
 import adblock
+import layout
 
 struct BrowserMemoryMaintenance {
 mut:
@@ -104,6 +105,7 @@ fn (mut app BrowserApp) release_unused_memory_if_idle(now_ns i64) {
 			// default engine under its own lock.
 			if !app.document.as_node().is_scripting_enabled()
 				&& app.js_runtime == unsafe { nil } {
+				layout.release_unused_display_list_caches(app.paint_display_list)
 				adblock.release_unused_engine()
 			}
 			platform.release_unused_browser_memory()
