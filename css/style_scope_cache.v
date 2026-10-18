@@ -1423,7 +1423,7 @@ fn selector_may_match_pending_has_mutation_features(selector Selector, features 
 								break
 							}
 						}
-					} else if pseudo_class.type_ in [.enabled, .defined, .disabled, .empty,
+					} else if pseudo_class.type_ in [.active, .enabled, .defined, .disabled, .empty,
 						.placeholder_shown, .checked, .dir, .lang, .link, .any_link, .local_link,
 						.required, .optional, .read_only, .read_write, .paused, .playing,
 						.muted, .seeking, .buffering, .stalled] {

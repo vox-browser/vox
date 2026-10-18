@@ -3378,7 +3378,16 @@ pub fn (mut e Element) set_being_activated(active bool) {
 	}
 	e.is_being_activated_ = active
 	mut node := unsafe { &Node(&e) }
-	node.invalidate_style(.element_set_active)
+	// CSS::Invalidation::invalidate_style_after_active_state_change records the
+	// changed pseudo-class instead of invalidating every descendant. Pointer
+	// input activates the whole ancestor chain, including html and body.
+	if e.document().style_computer().invalidation_plan_callback == unsafe { nil } {
+		node.invalidate_style(.element_set_active)
+		return
+	}
+	node.invalidate_style_with_properties(.element_set_active, [
+		InvalidationProperty{ type_: .pseudo_class, pseudo_class_name: 'active' },
+	], StyleInvalidationOptions{ invalidate_self: true })
 }
 
 pub fn (e &Element) is_target() bool {

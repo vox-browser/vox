@@ -10179,7 +10179,7 @@ fn collect_properties_used_in_has(selector InvalidationSimpleSelector, mut style
 			}
 		}
 		.pseudo_class {
-			if in_has && selector.pseudo_class in [.enabled, .disabled, .defined, .placeholder_shown,
+			if in_has && selector.pseudo_class in [.active, .enabled, .disabled, .defined, .placeholder_shown,
 				.checked, .required, .optional, .read_only, .read_write, .link, .any_link, .local_link,
 				.paused, .playing, .muted, .seeking, .buffering, .stalled] {
 				style_invalidation_data.pseudo_classes_used_in_has_selectors[selector.pseudo_class] = true
