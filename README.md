@@ -236,9 +236,10 @@ document, committed geometry, and shared resources retain their existing heap
 ownership. Disabling GC remains a diagnostic option while other temporary V
 arrays and object graphs still require collection.
 
-The application provides a native single-tab browser chrome with back/forward,
-reload, home, an editable address/search field, link navigation, loading and
-console status, and scrolling. The production macOS toolbar and status bar use
+The application provides tabs with independent page state and history, back/forward,
+reload, an editable address/search field, link navigation, loading and console
+status, and scrolling. On macOS the window buttons and tabs share a compact top
+row, with flat navigation icons below it. The production macOS toolbar and status bar use
 UI2 native controls; see [the embedding adapter](tools/ui2/README.md). Enter
 submits the address. Cmd+D on macOS (Ctrl+D on Windows/Linux) toggles the
 otherwise hidden HTTP/rendering diagnostic row. HTTP(S), local files, external
@@ -413,7 +414,7 @@ Exact Brave pixel equality remains open.
 
 This bundle is distinct from `~/code/3rd/ladybird/Build/.../Ladybird.app`, which
 is the upstream C++ application. The V-native application does not yet provide
-the full generated Web-IDL JavaScript surface, multi-process isolation, tabs,
+the full generated Web-IDL JavaScript surface, multi-process isolation,
 downloads, media playback, or persistent browser profiles.
 
 Run the full translation test suite with:
