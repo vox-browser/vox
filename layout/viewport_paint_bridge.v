@@ -1510,7 +1510,7 @@ fn viewport_invalidate_all_paint_caches(target voidptr) {
 	mut result := viewport_layout_result(target)
 	result.display_list_commands.clear()
 	result.display_list = unsafe { nil }
-	result.paint_phase_commands.clear()
+	clear_phase_command_storage(mut result.paint_phase_commands)
 	result.paint_phase_command_count = 0
 	result.paint_phase_cache_valid = false
 	result.paint_phase_entry_valid.clear()
@@ -2567,7 +2567,7 @@ fn viewport_record_display_list(target voidptr) &dom.DisplayList {
 	viewport_sync_cursor_paint_cache(mut result)
 	viewport_invalidate_fixed_background_paint_caches(mut result)
 	if !result.paint_phase_cache_valid {
-		result.paint_phase_commands, result.paint_phase_command_count = result.paint_tree.build_paint_phase_command_cache(result.paint_order)
+		result.paint_phase_commands, result.paint_phase_command_count = result.paint_tree.build_reusing_paint_phase_command_cache(result.paint_order, result.paint_phase_commands)
 		result.paint_phase_entry_valid = []bool{len: result.paint_order.len, init: true}
 		result.paint_phase_cache_valid = true
 	} else {
@@ -3000,7 +3000,7 @@ fn viewport_invalidate_stacking_context(target voidptr) {
 	viewport_invalidate_hit_test_display_list(target)
 	// The cache is indexed by the retained paint order. A rebuilt stacking tree
 	// may assign different indices even when individual box commands are stable.
-	result.paint_phase_commands.clear()
+	clear_phase_command_storage(mut result.paint_phase_commands)
 	result.paint_phase_command_count = 0
 	result.paint_phase_cache_valid = false
 	result.paint_phase_entry_valid.clear()
@@ -3032,7 +3032,7 @@ fn viewport_reconcile_retained_paint_cache(mut result DocumentLayoutResult,
 		}
 	}
 	if !same_order {
-		result.paint_phase_commands.clear()
+		clear_phase_command_storage(mut result.paint_phase_commands)
 		result.paint_phase_command_count = 0
 		result.paint_phase_cache_valid = false
 		result.paint_phase_entry_valid.clear()

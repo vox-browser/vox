@@ -2857,9 +2857,7 @@ fn (b &BlockBox) paint_commands_from_plan(entries []PaintOrderEntry, steps []Com
 // one bucket for every PaintPhase, populated by its first paint and reused by
 // later display-list recordings until paint-cache invalidation.
 fn (b &BlockBox) build_paint_phase_command_cache(entries []PaintOrderEntry) ([][]PaintCommand, int) {
-	mut recorder := new_paint_phase_command_recorder(entries.len)
-	b.record_paint_commands_for_entries(entries, []bool{}, mut recorder)
-	return recorder.phase_commands, recorder.command_count
+	return b.build_reusing_paint_phase_command_cache(entries, [][]PaintCommand{})
 }
 
 struct PaintPhaseCommandRecorder {
@@ -2871,12 +2869,7 @@ mut:
 }
 
 fn new_paint_phase_command_recorder(entry_count int) PaintPhaseCommandRecorder {
-	bucket_count := entry_count * compatibility_paint_phase_count
-	return PaintPhaseCommandRecorder{
-		phase_commands: [][]PaintCommand{len: bucket_count}
-		bucket_counts: []int{len: bucket_count}
-		touched_buckets: []int{cap: compatibility_paint_phase_count}
-	}
+	return new_reusing_paint_phase_command_recorder(entry_count, [][]PaintCommand{})
 }
 
 fn (mut recorder PaintPhaseCommandRecorder) publish_commands(mut commands []PaintCommand) {
@@ -2893,9 +2886,7 @@ fn (mut recorder PaintPhaseCommandRecorder) publish_commands(mut commands []Pain
 	for bucket in recorder.touched_buckets {
 		// Usually a bucket is written once. Keeping an existing prefix also
 		// preserves commands retained by the flat generator's early exits.
-		mut next := []PaintCommand{cap: recorder.phase_commands[bucket].len + recorder.bucket_counts[bucket]}
-		next << recorder.phase_commands[bucket]
-		recorder.phase_commands[bucket] = next
+		recorder.reserve_phase_bucket(bucket, recorder.bucket_counts[bucket])
 	}
 	for index in 0 .. commands.len {
 		command := unsafe { &commands[index] }
