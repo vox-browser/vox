@@ -490,3 +490,58 @@ shows roughly 39-40 MB allocated per warm action and substantial tree, geometry,
 and renderer preparation; its intrusive elapsed times receive no speed credit.
 Brave parity remains open. These commits are integrated into the canonical
 checkout with unrelated working changes preserved; no app is installed.
+
+
+`88ef808f` supplies native-provider alias scans that compare addresses rather
+than complete Element records. A warm allocation diagnostic had found 4,292
+record comparisons and roughly 4.5 MB of record-copy allocation during event
+target lookup. The initial source-75 allocation test also found 2,048,000 bytes
+of named map-key cloning on 1,000 misses. Source-76 first checks values without
+naming keys, preserving allocation-free misses and all aliases on a hit. All
+39 focused cases in thirteen files pass per GC mode, including equal-record
+identity, live aliases, native hosts and original comment child-node behavior.
+The five overlapping native-provider callbacks were integrated by preserving
+every surrounding working byte and replacing only their record-comparison
+bodies with the tested helper; unrelated working files and untracked tests stay
+untouched.
+
+Source-73/source-76 complete-handler ABBA observes 363,086,093 versus 352,945,628
+median warm instructions, saving 10,140,465 (2.79%). Warm elapsed medians are
+52.979 versus 57.5355 ms; the run does not establish a latency gain. The source-73
+baseline and source-76 candidate each separately pass eight original-label/no-
+click-error native checks. Combined with source-70, cumulative complete-workload
+savings are 13,120,339 instructions and exceed the broad-suite gate.
+
+`cc9affc8` avoids constructing an optional-map error record for each absent
+pending style invalidation. The allocation diagnostic had counted 26,125 such
+24-byte allocations in one warm action. Forty-four cases in five DOM files
+pass per mode, including allocation-free repeated misses. Source-77's broad
+checkpoint runs 4,253 functions in 1,104 original files per mode: 4,233 pass and
+the same twenty inherited cases fail in each mode, with no unrun cases. Every
+failed name and its original test bytes match source-60. All 494 files in the
+LibJS tree are byte-identical, carrying source-60's 236-file/784-function checks
+per mode. A fresh official AST-driver execution matches all 100 current
+upstream cases exactly. Signed startup and eight exact SVG guards pass; all
+eleven document captures are pixel-identical to source-60, retaining the same
+four reference mismatches. `parity-v77-checkpoint.json` accepts that coverage
+with `all_tests_passed: false`, and closes the optimization batch through the
+pending-map fix.
+
+`bbba3aa0` belongs to the next batch. Read-only native input listeners now avoid
+cosmetic filtering and rendering, using the existing asynchronous callback
+checks. Effects already flushed by a query and native paint recorded during a
+listener still reach the shell. Thirty-one focused cases in eight files pass
+per mode, combining the retained source-78 cases with the corrected source-79
+listener fixture. The initial fixture used an unsupported compact inline
+mousedown attribute; the final test executes a click listener, asserts its two
+console messages, and also checks empty mousedown dispatches. No Reddit speed
+credit is assigned before measuring the production change.
+
+A diagnostic of the real thread finds 88 disjoint retained block contexts,
+3,676 unique cached inputs, and no nested block-cache validation. Its 2,301
+paint-transport boxes include 688 ordinary header templates, 1,133 block-owned
+templates and 480 uncached headers. Floats, anonymous wrappers and list items
+account for many remaining uncached boxes. The normal record sizes are 3,616
+bytes per BlockBox, 1,112 per TextFragment and 760 per DOM layout mirror.
+These diagnostic counts receive no timing credit. Brave parity remains open;
+no app is installed at this checkpoint.
