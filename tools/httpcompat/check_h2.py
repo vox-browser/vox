@@ -13,6 +13,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--gc', choices=('both', 'boehm', 'none'), default='both')
     parser.add_argument('--integration', action='store_true')
+    parser.add_argument('--mux', action='store_true', help='Run the upstream multiplexing regression cases')
     args = parser.parse_args()
     repo = Path(__file__).resolve().parents[2]
     compiler = os.environ.get('V_BIN', shutil.which('v') or str(Path.home() / 'code/v/v'))
@@ -25,6 +26,11 @@ def main():
         temporary.write_text(content)
         temporary.replace(target)
     tests = [str(target)]
+    credit = modules / 'net/http/vox_h2_receive_credit_test.v'
+    credit.write_text((repo / 'tools/httpcompat/h2_receive_credit_test.v.inc').read_text())
+    tests.append(str(credit))
+    if args.mux:
+        tests.append(str(modules / 'net/http/h2_mux_conn_test.v'))
     if args.integration:
         tests.append(str(repo / 'browsernet/http2_tls_test.v'))
     for mode in ('boehm', 'none') if args.gc == 'both' else (args.gc,):
@@ -37,7 +43,7 @@ def main():
                        '-o', str(binary), test]
             print(f'Compile and run {Path(test).name} with {mode}', flush=True)
             subprocess.run(command, cwd=repo, check=True)
-            subprocess.run([str(binary)], cwd=repo, check=True)
+            subprocess.run([str(binary)], cwd=repo, check=True, timeout=180)
 
 
 if __name__ == '__main__':
