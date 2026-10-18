@@ -851,6 +851,7 @@ mut:
 	timeline_fill      ?&dom.Element
 	timestamp_element  ?&dom.Element
 	volume_area        ?&dom.Element
+	volume_element     ?&dom.Element
 	volume_fill        ?&dom.Element
 	mute_button        ?&dom.Element
 	fullscreen_icon    ?&dom.Element
@@ -979,6 +980,18 @@ pub fn (mut controls MediaControls) create_shadow_tree() {
 					parent_node.append_child(timeline_node) or { panic(err) }
 					controls.dom_.timeline_element = timeline
 					controls.dom_.timeline_track = track
+				} else if class_name == 'volume-area' {
+					parent_node.append_child(child.as_node()) or { panic(err) }
+					controls.dom_.volume_area = child
+				} else if class_name == 'volume-fill' {
+					area := controls.dom_.volume_area or { panic('Missing volume area') }
+					mut volume := dom.create_element(document, 'div', ns_html, none, none, false) or { panic(err) }
+					volume.set_attribute_value('class', 'volume')
+					mut volume_node := volume.as_node()
+					volume_node.append_child(child.as_node()) or { panic(err) }
+					mut area_node := area.as_node()
+					area_node.append_child(volume_node) or { panic(err) }
+					controls.dom_.volume_element = volume
 				} else {
 					parent_node.append_child(child.as_node()) or { continue }
 				}
@@ -1136,6 +1149,7 @@ pub fn (mut controls MediaControls) set_up_event_listeners() {
 			})
 	}
 	controls.set_up_timeline_event_listeners()
+	controls.set_up_volume_event_listeners()
 	controls.set_up_hover_event_listeners()
 	controls.add_event_listener(controls.media.event_target(), 'keydown', .no,
 		fn [controls_pointer] (event &dom.Event) bool {
@@ -1213,6 +1227,50 @@ fn (mut controls MediaControls) set_up_timeline_event_listeners() {
 					}
 					controls.finish_timeline_scrubbing(time)
 					window := controls.relevant_window() or { panic('Missing scrub Window') }
+					unsafe { &dom.EventTarget(window) }.remove_event_listener_without_options('mousemove', mousemove)
+					return true
+				})
+			return true
+		})
+}
+
+fn media_controls_volume(event &dom.MouseEvent, element &dom.Element) ?f64 {
+	rect := element.get_bounding_client_rect()
+	return math.clamp((event.client_x() - rect.x) / rect.width, 0, 1)
+}
+
+fn (mut controls MediaControls) set_up_volume_event_listeners() {
+	area := controls.dom_.volume_area or { return }
+	controls_pointer := voidptr(&controls)
+	controls.add_event_listener(unsafe { &dom.EventTarget(area.as_node()) }, 'mousedown', .no,
+		fn [controls_pointer] (event &dom.Event) bool {
+			mouse := media_controls_mouse_event(event) or { return false }
+			mut controls := unsafe { &MediaControls(controls_pointer) }
+			element := controls.dom_.volume_element or { panic('Missing volume element') }
+			volume := media_controls_volume(mouse, element) or { return false }
+			controls.scrubbing_volume = true
+			controls.set_volume(volume) or { panic(err) }
+			window := controls.relevant_window() or { panic('Missing volume Window') }
+			window_target := unsafe { &dom.EventTarget(window) }
+			mousemove := controls.add_event_listener(window_target, 'mousemove', .no,
+				fn [controls_pointer] (event &dom.Event) bool {
+					mouse := media_controls_mouse_event(event) or { return false }
+					mut controls := unsafe { &MediaControls(controls_pointer) }
+					element := controls.dom_.volume_element or { panic('Missing volume element') }
+					volume := media_controls_volume(mouse, element) or { return false }
+					controls.set_volume(volume) or { panic(err) }
+					return true
+				})
+			controls.add_event_listener(window_target, 'mouseup', .yes,
+				fn [controls_pointer, mousemove] (event &dom.Event) bool {
+					mouse := media_controls_mouse_event(event) or { return false }
+					mut controls := unsafe { &MediaControls(controls_pointer) }
+					element := controls.dom_.volume_element or { panic('Missing volume element') }
+					controls.scrubbing_volume = false
+					if volume := media_controls_volume(mouse, element) {
+						controls.set_volume(volume) or { panic(err) }
+					}
+					window := controls.relevant_window() or { panic('Missing volume Window') }
 					unsafe { &dom.EventTarget(window) }.remove_event_listener_without_options('mousemove', mousemove)
 					return true
 				})
