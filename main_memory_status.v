@@ -4,6 +4,13 @@ import gg
 import processmetrics
 import time
 
+$if macos {
+	#include "native_memory_status_darwin.m"
+
+	fn C.native_use_static_memory_label(width f32, status_y f32, height f32) int
+	fn C.native_disable_static_memory_label()
+}
+
 struct BrowserMemoryStatus {
 mut:
 	sampled        bool
@@ -22,7 +29,19 @@ fn (mut status BrowserMemoryStatus) refresh_if_due(now_ns i64) bool {
 	return true
 }
 
+fn (app &BrowserApp) use_native_memory_status(window_width int, status_y int) bool {
+	$if macos {
+		if app.uses_static_native_memory_policy()
+			&& C.native_use_static_memory_label(f32(window_width), f32(status_y), f32(status_bar_height)) != 0 {
+			return true
+		}
+		C.native_disable_static_memory_label()
+	}
+	return false
+}
+
 fn (mut app BrowserApp) draw_memory_status(window_width int, status_y int) {
+	if app.use_native_memory_status(window_width, status_y) { return }
 	if app.memory_status.refresh_if_due(time.sys_mono_now()) {
 		$if macos {
 			C.native_wake_browser_after(1000)
@@ -35,7 +54,7 @@ fn (mut app BrowserApp) draw_memory_status(window_width int, status_y int) {
 		f32(status_bar_height), gg.rgb(30, 41, 59))
 	app.ctx.draw_text(window_width - 12, status_y + 4, app.memory_status.label,
 		color: gg.rgb(203, 213, 225)
-		size: 12
+		size:  12
 		align: .right
 	)
 }
