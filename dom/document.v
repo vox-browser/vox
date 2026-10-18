@@ -11163,6 +11163,10 @@ pub fn (d &Document) descendant_elements() []&Element {
 }
 
 // --- Shadow roots ---
+pub fn (d &Document) registered_shadow_roots() []&ShadowRoot {
+	return d.shadow_roots.clone()
+}
+
 pub fn (mut d Document) register_shadow_root(shadow_root &ShadowRoot) {
 	d.shadow_roots << shadow_root
 }

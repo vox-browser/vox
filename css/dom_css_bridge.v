@@ -855,23 +855,6 @@ fn evaluate_media_rules_for_shadow_root(shadow_root &dom.ShadowRoot, document &d
 }
 
 
-// Match the DOM shadow-including pre-order: current node, attached shadow tree,
-// then light children. Keep the document on the stack rather than in a stored
-// executable closure, whose registry otherwise outlives this traversal.
-fn evaluate_shadow_media_rules_in_subtree(node &dom.Node, document &dom.Document) {
-	if shadow_root := node.as_shadow_root() {
-		evaluate_media_rules_for_shadow_root(shadow_root, document)
-	}
-	if element := node.as_element() {
-		if shadow_root := element.shadow_root() {
-			evaluate_shadow_media_rules_in_subtree(unsafe { &dom.Node(shadow_root) }, document)
-		}
-	}
-	for child in node.children {
-		evaluate_shadow_media_rules_in_subtree(child, document)
-	}
-}
-
 // DOM::Document::evaluate_media_rules(). CSSStyleSheet is CSS-owned in the V
 // module graph, so the translated algorithm lives at this bridge rather than
 // in dom.Document.
@@ -884,7 +867,14 @@ fn evaluate_media_rules_for_document(document &dom.Document) {
 			document_media_queries_changed_match_state = true
 		}
 	}
-	evaluate_shadow_media_rules_in_subtree(unsafe { &dom.Node(document) }, document)
+	// Each shadow scope is independent. Visit the document's registered roots
+	// instead of walking every ordinary element and text node to discover them.
+	// Disconnected hosts were excluded by the old shadow-including traversal.
+	for shadow_root in document.registered_shadow_roots() {
+		if unsafe { &dom.Node(shadow_root) }.is_connected() {
+			evaluate_media_rules_for_shadow_root(shadow_root, document)
+		}
+	}
 
 	if document_media_queries_changed_match_state {
 		document_scope.invalidate_rule_cache()
