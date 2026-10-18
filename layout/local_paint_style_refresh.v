@@ -15,9 +15,15 @@ fn paint_style_update_can_be_local(node &Node, previous &css.ComputedValues, cur
 	for index in 0 .. previous.raw_property_count() {
 		before := previous.raw_property_at_index(index)
 		property := unsafe { css.PropertyID(int(css.first_longhand_property_id()) + index) }
-		if property in [.background_color, .text_decoration_line, .cursor] { continue }
+		if property in [.background_color, .text_decoration_line, .cursor] { continue
+		 }
 		after := current.raw_property_at_index(index)
-		if before == after { continue }
+		if before == after { continue
+		 }
+		if property in [.outline_color, .outline_width, .outline_style, .outline_offset] {
+			if !current.filter().is_none() || !current.backdrop_filter().is_none() { return false }
+			continue
+		}
 		if property == .color {
 			// Filter colors also live in accumulated effect contexts. Keep their
 			// full refresh until that context update has a local equivalent.
@@ -70,9 +76,11 @@ fn refresh_local_paint_styles(mut result DocumentLayoutResult) {
 		}
 	}
 	mut changed_boxes := []&BlockBox{}
-	refresh_local_paint_styles_in_box(mut result.paint_tree, result.state,
-		ordinary_changes, mut changed_boxes)
-	for box in changed_boxes { viewport_invalidate_box_paint_cache(mut result, box) }
+	refresh_local_paint_styles_in_box(mut result.paint_tree, result.state, ordinary_changes, mut
+		changed_boxes)
+	for box in changed_boxes {
+		viewport_invalidate_box_paint_cache(mut result, box)
+	}
 	if compositor.changed {
 		// Opacity zero and singular transforms also change paint-step membership,
 		// and cached commands carry cumulative opacity. Rebuild those plans from
@@ -98,7 +106,8 @@ fn refresh_local_paint_styles(mut result DocumentLayoutResult) {
 fn line_style_depends_on_changed_node(box &BlockBox, changed map[u64]bool) bool {
 	for line in box.lines {
 		for fragment in line.fragments {
-			if fragment.layout_handle == unsafe { nil } { continue }
+			if fragment.layout_handle == unsafe { nil } { continue
+			 }
 			mut node := unsafe { &Node(fragment.layout_handle) }
 			for {
 				if u64(voidptr(node)) in changed { return true }
@@ -125,6 +134,10 @@ fn refresh_local_paint_styles_in_box(mut box BlockBox, state &LayoutState,
 			box.border_color = fresh.border_color
 			box.border_colors = fresh.border_colors
 			box.outline_color = fresh.outline_color
+			box.outline_width = fresh.outline_width
+			box.outline_style = fresh.outline_style
+			box.outline_offset = fresh.outline_offset
+			box.outline_is_auto = fresh.outline_is_auto
 			box.shadow = fresh.shadow
 			box.shadows = fresh.shadows
 			box.background_gradient = fresh.background_gradient
@@ -134,7 +147,8 @@ fn refresh_local_paint_styles_in_box(mut box BlockBox, state &LayoutState,
 		if line_style_depends_on_changed_node(&box, changed) {
 			if styled := node.as_node_with_style() {
 				if used := state.try_get(styled) {
-					box.lines = text_lines_from_typed_layout(node, used, state, paint_cumulative_offset(node, state, used))
+					box.lines = text_lines_from_typed_layout(node, used, state, paint_cumulative_offset(node,
+						state, used))
 					did_change = true
 				}
 			}
