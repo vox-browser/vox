@@ -913,9 +913,13 @@ pub fn MediaControls.create(media &HTMLMediaElement) &MediaControls {
 	mut controls := &MediaControls{
 		media: media
 	}
+	controls.initialize()
+	return controls
+}
+
+fn (mut controls MediaControls) initialize() {
 	controls.create_shadow_tree()
 	controls.set_up_event_listeners()
-	return controls
 }
 
 fn media_timestamp(seconds i64) string {
@@ -948,6 +952,8 @@ pub fn (mut controls MediaControls) create_shadow_tree() {
 			style_node.set_text_content(media_controls_stylesheet_source) or { panic(err) }
 			mut root_node := unsafe { &dom.Node(shadow) }
 			root_node.append_child(style_node) or { panic(err) }
+			// The stylesheet policy boundary can destroy this published owner.
+			if controls.destroyed_ { return }
 			mut container := dom.create_element(document, 'div', ns_html, none, none, false) or {
 				controls.update()
 				controls.show_controls()
