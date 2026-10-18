@@ -1,7 +1,17 @@
 module main
 
 import dom
+import browserjs
 import x.json2
+
+fn install_compact_dom_tree_version_binding(document &dom.Document, mut runtime browserjs.Runtime) ! {
+	runtime.define_number_host_function('__ladybirdDOMTreeVersion', fn [document] () f64 {
+		version := document.dom_tree_version()
+		// Above Number's exact integer range, use the exact JSON/string query
+		// path on every read instead of accepting a rounded version as current.
+		return if version <= u64(9007199254740991) { f64(version) } else { -1.0 }
+	})!
+}
 
 fn (mut binding CompactElementQueryBinding) tag_collection_query(root &dom.Node, input string) !string {
 	request := json2.decode[map[string]json2.Any](input)!
@@ -32,11 +42,11 @@ fn compact_tag_collection_bootstrap() string {
 	return r'
 const __tagTreeVersion=globalThis.__ladybirdDOMTreeVersion;
 function __tagCollection(key,name){
- let version="",elements=[];
+ let version="",numericVersion=-1,elements=[];
  return __classCollection(key,"",()=>{
-  if(version!==""&&__state.operations.length===0&&__dirtyElementStates.size===0&&__tagTreeVersion("")===version)return elements;
+  if(version!==""&&__state.operations.length===0&&__dirtyElementStates.size===0&&__tagTreeVersion()===numericVersion)return elements;
   const snapshot=__queryElements(key,"getElementsByTagName",JSON.stringify({name,version}));
-  if(snapshot.elements!==null){elements=snapshot.elements.map(__queryElement);version=snapshot.version;}
+  if(snapshot.elements!==null){elements=snapshot.elements.map(__queryElement);version=snapshot.version;numericVersion=Number(version);}
   return elements;
  });
 }

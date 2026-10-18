@@ -8,7 +8,7 @@ const __state={operations:[]},__dirtyElementStates=new Set();
 const __elementRecords=new WeakMap(),__elementRecordGet=WeakMap.prototype.get,__elementApply=Reflect.apply;
 function Element(){};const document={};
 let nativeVersion="1",members=[{id:"first"}],queries=0,versionReads=0;
-globalThis.__ladybirdDOMTreeVersion=function(){versionReads++;return nativeVersion;};
+globalThis.__ladybirdDOMTreeVersion=function(){versionReads++;const number=Number(nativeVersion);return number<=Number.MAX_SAFE_INTEGER?number:-1;};
 function __queryElement(value){return value;}
 function __classCollection(key,name,read){return {get length(){return read().length;},item(index){return read()[index];}};}
 function __queryElements(key,action,input){
@@ -16,6 +16,7 @@ function __queryElements(key,action,input){
  if(__state.operations.length||__dirtyElementStates.size){nativeVersion=String(+nativeVersion+1);__state.operations=[];__dirtyElementStates.clear();}
  const request=JSON.parse(input);return {version:nativeVersion,elements:request.version===nativeVersion?null:members};
 }
+
 ' + compact_tag_collection_bootstrap()
 }
 
@@ -46,6 +47,21 @@ if(collection.length!==3||queries!==3)throw new Error("pending operation was not
 __dirtyElementStates.add({textContentDirty:true});members=[];
 if(collection.length!==0||queries!==4)throw new Error("pending content edit was not flushed");
 collection.length;if(queries!==4)throw new Error("clean read used JSON query");
+true;
+')! == 'true'
+}
+
+fn test_tag_collection_unsafe_numeric_versions_keep_exact_json_membership_checks() {
+	mut runtime := browserjs.Runtime.create()
+	defer { runtime.close() }
+	assert runtime.evaluate_host(tag_collection_fast_read_fixture() + r'
+nativeVersion="9007199254740992";
+const collection=__tagCollection("root","*");
+if(collection.length!==1||queries!==1)throw new Error("initial membership");
+members=[{id:"second"},{id:"third"}];nativeVersion="9007199254740993";
+if(collection.length!==2||queries!==2)throw new Error("rounded native version reused stale membership");
+collection.item(0);
+if(queries!==3)throw new Error("unsafe version bypassed exact query");
 true;
 ')! == 'true'
 }
