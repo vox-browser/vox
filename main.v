@@ -2899,6 +2899,10 @@ fn run_document_script_sources(document &dom.Document, current_url string, sourc
 		return none
 	}
 	processmetrics.instruction_checkpoint('javascript_bootstrap_evaluated')
+	install_compact_native_selector_bindings(mut mutable_runtime) or {
+		messages << 'JavaScript selector bindings: ${err.msg()}'
+		return none
+	}
 	document_wrapper := runtime.evaluate_host_value('document') or {
 		messages << 'JavaScript Document event bindings: ${err.msg()}'
 		return none
