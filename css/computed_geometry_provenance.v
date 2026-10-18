@@ -116,6 +116,9 @@ fn (c &ComputedProperties) anonymous_computed_geometry_source(clone &ComputedPro
 		|| !computed_geometry_subject_matches(p.subject, clone.subject_element_) {
 		return none
 	}
+	// The anonymous box resolves against this captured snapshot, which must
+	// survive a later restyle of its parent unchanged.
+	c.share_computed_layout_cache()
 	return AnonymousComputedGeometrySource{
 		cache:           cache
 		font_list:       p.font_list

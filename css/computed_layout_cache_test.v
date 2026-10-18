@@ -25,6 +25,7 @@ fn test_layout_cache_is_materialized_only_for_layout_and_mutable_values() {
 fn test_layout_cache_mutations_detach_copied_styles_and_keep_previous_values_alive() {
 	mut first := computed_properties_with_initial_values()
 	_ = resolve_computed_values(first)
+	first.share_computed_layout_cache()
 	mut copied := &ComputedProperties{
 		...first
 	}
@@ -44,6 +45,7 @@ fn test_layout_cache_mutations_detach_copied_styles_and_keep_previous_values_ali
 		assert first.property(.font_size, .no)!.css_text == copied.property(.font_size, .no)!.css_text
 		assert first.computed_layout_cache().computed_values_color_ == Color{1, 2, 3, 255}
 	}
+	first.share_computed_layout_cache()
 	before_resolve := &ComputedProperties{
 		...first
 	}
@@ -104,4 +106,42 @@ fn test_hot_content_and_marker_updates_preserve_style_copies_without_detaching_l
 		}).text == 'original content'
 		assert unsafe { &ComputedValues(copied) }.computed_list_style_type().name == 'original marker'
 	}
+}
+
+fn test_restyling_an_unshared_style_rewrites_its_snapshot_in_place() {
+	mut style := computed_properties_with_initial_values()
+	reuse_previous := begin_layout_cache_reuse(style)
+	defer { end_layout_cache_reuse(reuse_previous) }
+	_ = resolve_computed_values(style)
+	cache := style.computed_layout_cache()
+	assert style.owns_computed_layout_cache(u64(voidptr(style)))
+	width := parse_css_value(ParsingParams{}, '41px', .width) or { panic('width') }
+	for _ in 0 .. 3 {
+		style.set_property(.width, width, .no, .no)
+		_ = resolve_computed_values(style)
+		mut values := unsafe { &MutableComputedValues(style) }
+		values.set_color(Color{1, 2, 3, 255})
+		assert voidptr(style.computed_layout_cache()) == voidptr(cache)
+		assert style.computed_layout_cache().writable_owner_identity == 0
+	}
+	assert style.computed_layout_cache().computed_values_color_ == Color{1, 2, 3, 255}
+	// Outside an animation restyle, a write takes a copy.
+	end_layout_cache_reuse(voidptr(0))
+	mut outside := unsafe { &MutableComputedValues(style) }
+	outside.set_color(Color{4, 5, 6, 255})
+	assert voidptr(style.computed_layout_cache()) != voidptr(cache)
+	cache_after_copy := style.computed_layout_cache()
+	_ = begin_layout_cache_reuse(style)
+	_ = resolve_computed_values(style)
+	assert voidptr(style.computed_layout_cache()) == voidptr(cache_after_copy)
+	// Once shared, the next write detaches again and owns the new snapshot.
+	style.share_computed_layout_cache()
+	copied := &ComputedProperties{
+		...style
+	}
+	_ = resolve_computed_values(style)
+	assert voidptr(style.computed_layout_cache()) != voidptr(cache_after_copy)
+	assert voidptr(copied.computed_layout_cache()) == voidptr(cache_after_copy)
+	assert style.owns_computed_layout_cache(u64(voidptr(style)))
+	assert !copied.owns_computed_layout_cache(u64(voidptr(copied)))
 }

@@ -1,6 +1,7 @@
 module css
 
 import dom
+import platform
 
 // The raw property graph is sufficient until Layout materializes its resolved
 // values. Keep the wide layout-only cache off ordinary/pseudo style records.
@@ -183,6 +184,47 @@ mut:
 	resolution_provenance &ComputedGeometryProvenance = unsafe { nil }
 	document_resolution_owner &dom.Document = unsafe { nil }
 	writable_owner_identity                        u64
+	// The style that created this snapshot, by address and serial number (an
+	// address alone can be reused by a later style). Readers reach a snapshot
+	// only through its style, so its creator may overwrite it in place.
+	owner_identity u64
+	owner_serial   u64
+}
+
+__global css_layout_cache_owner_serials u64
+
+fn (mut c ComputedProperties) layout_cache_owner_serial() u64 {
+	if c.layout_cache_owner_serial_ == 0 {
+		css_layout_cache_owner_serials++
+		c.layout_cache_owner_serial_ = css_layout_cache_owner_serials
+	}
+	return c.layout_cache_owner_serial_
+}
+
+// Restyling an animation target re-resolves the same style on every frame.
+// Only that resolve rewrites the style's own snapshot in place; every other
+// write keeps copy-on-write, so a snapshot that a value copy of the style may
+// share is never changed under it.
+__global css_layout_cache_reuse_style = unsafe { voidptr(0) }
+
+fn begin_layout_cache_reuse(style &ComputedProperties) voidptr {
+	previous := css_layout_cache_reuse_style
+	css_layout_cache_reuse_style = voidptr(style)
+	return previous
+}
+
+fn end_layout_cache_reuse(previous voidptr) {
+	css_layout_cache_reuse_style = previous
+}
+
+fn (c &ComputedProperties) reuses_computed_layout_cache(identity u64) bool {
+	return voidptr(c) == css_layout_cache_reuse_style && c.owns_computed_layout_cache(identity)
+}
+
+fn (c &ComputedProperties) owns_computed_layout_cache(identity u64) bool {
+	cache := c.computed_layout_cache_
+	return cache != unsafe { nil } && cache.owner_identity == identity && cache.owner_serial != 0
+		&& cache.owner_serial == c.layout_cache_owner_serial_
 }
 
 __global (
@@ -201,24 +243,41 @@ fn (c &ComputedProperties) computed_layout_cache() &ComputedLayoutCache {
 	return default_computed_layout_cache()
 }
 
-// Published caches are immutable snapshots, including after a ComputedProperties
-// value copy. Public individual setters detach even when the original owner
-// writes first. Pure bulk materialization uses one scoped writable snapshot.
+// A snapshot is copied before its first write, except while an animation
+// frame restyles the style that created it (begin_layout_cache_reuse): every
+// frame then reuses one snapshot instead of allocating another.
 fn (mut c ComputedProperties) ensure_computed_layout_cache() &ComputedLayoutCache {
 	identity := u64(voidptr(c))
 	if c.computed_layout_cache_ != unsafe { nil }
-		&& c.computed_layout_cache_.writable_owner_identity == identity {
+		&& (c.computed_layout_cache_.writable_owner_identity == identity
+		|| c.reuses_computed_layout_cache(identity)) {
 		c.computed_layout_cache_.resolution_provenance = unsafe { nil }
 		return c.computed_layout_cache_
 	}
+	// The snapshot is the style's own storage, even when values are being
+	// materialized in an arena.
+	persistent := platform.enter_persistent()
+	defer { platform.leave_persistent(persistent) }
 	previous := c.computed_layout_cache()
 	c.computed_layout_cache_ = &ComputedLayoutCache{
 		...previous
 		resolution_provenance: unsafe { nil }
 		rare_data_writable_: false
 		writable_owner_identity: 0
+		owner_identity: identity
+		owner_serial: c.layout_cache_owner_serial()
 	}
 	return c.computed_layout_cache_
+}
+
+// Copying a style shares its snapshot. Neither style then overwrites it in
+// place: the next write by either takes a copy, as before reuse existed.
+fn (c &ComputedProperties) share_computed_layout_cache() {
+	if c.computed_layout_cache_ != unsafe { nil } {
+		unsafe {
+			c.computed_layout_cache_.owner_serial = 0
+		}
+	}
 }
 
 fn (mut c ComputedProperties) begin_computed_layout_cache_write() bool {
@@ -227,11 +286,19 @@ fn (mut c ComputedProperties) begin_computed_layout_cache_write() bool {
 		&& c.computed_layout_cache_.writable_owner_identity == identity {
 		return false
 	}
+	if c.reuses_computed_layout_cache(identity) {
+		c.computed_layout_cache_.writable_owner_identity = identity
+		return true
+	}
+	persistent := platform.enter_persistent()
+	defer { platform.leave_persistent(persistent) }
 	previous := c.computed_layout_cache()
 	c.computed_layout_cache_ = &ComputedLayoutCache{
 		...previous
 		rare_data_writable_: false
 		writable_owner_identity: identity
+		owner_identity: identity
+		owner_serial: c.layout_cache_owner_serial()
 	}
 	return true
 }

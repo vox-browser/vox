@@ -1357,14 +1357,18 @@ fn (s &StyleComputer) animated_target_is_offscreen_throttled(target dom.Abstract
 	if !document.layout_is_up_to_date() {
 		return false
 	}
-	if s.css_transition_storage_ != unsafe { nil }
-		&& s.css_transition_storage_.transitions_for(target).len > 0 {
-		return false
-	}
-	if web_animation_effects_for_style(target).len > 0 {
-		return false
-	}
+	// Effect lists are read-only queries; during an animation frame they are
+	// built among its samples.
+	mut samples := if s.sampling_animation_frame_ { s.animation_samples_ } else { unsafe { &AnimationSampleStorage(nil) } }
+	samples.enter()
+	has_transitions := s.css_transition_storage_ != unsafe { nil }
+		&& s.css_transition_storage_.transitions_for(target).len > 0
 	animations := s.css_animation_storage_.animations_for(target)
+	samples.leave()
+	has_web_effects := web_animation_effects_for_style(target).len > 0
+	if has_transitions || has_web_effects {
+		return false
+	}
 	if animations.len == 0 {
 		return false
 	}
@@ -1407,6 +1411,21 @@ fn style_computer_update_animated_style_callback(target voidptr) {
 		return
 	}
 	mut style_computer := unsafe { &StyleComputer(target) }
+	// Samples go into bounded arenas under -prealloc. When the current one is
+	// full, this update re-installs every target so the old one can be reused.
+	mut samples := style_computer.animation_sample_storage()
+	full_refresh := if samples != unsafe { nil } {
+		samples.begin_update(style_computer.document_)
+	} else {
+		false
+	}
+	style_computer.sampling_animation_frame_ = samples != unsafe { nil }
+	defer {
+		style_computer.sampling_animation_frame_ = false
+	}
+	// Per-update working data (target lists, previous-value snapshots and
+	// change comparisons) lives with the samples.
+	samples.enter()
 	mut targets := []dom.AbstractElement{}
 	mut seen := map[i64]bool{}
 	if hook := style_computer.document_.animations_hook_ {
@@ -1441,6 +1460,7 @@ fn style_computer_update_animated_style_callback(target voidptr) {
 		}
 	}
 
+	samples.leave()
 	for target_element in targets {
 		target_node := target_element.element().as_node()
 		if !target_node.is_connected() {
@@ -1450,41 +1470,67 @@ fn style_computer_update_animated_style_callback(target voidptr) {
 			&& !style_computer.target_has_animation_for_property(target_element, .display) {
 			continue
 		}
-		if style_computer.animated_target_is_offscreen_throttled(target_element) {
+		if !full_refresh && style_computer.animated_target_is_offscreen_throttled(target_element) {
 			continue
 		}
 		dom_computed := target_element.computed_properties() or { continue }
 		mut computed := computed_properties_from_dom(dom_computed) or { continue }
+		samples.enter()
 		old_animated_values := computed.animated_property_values()
 		old_animated_custom_values := computed.animated_custom_property_values()
 		computed.reset_non_inherited_animated_properties()
 		computed.reset_animated_custom_properties()
+		samples.leave()
 
-		if style_computer.css_animation_storage_ != unsafe { nil } {
-			for existing in style_computer.css_animation_storage_.animations_for(target_element) {
-				mut animation := existing
-				if animation.sample_at(style_computer.animation_time_ms_) != none {
-					animation.effect_.update_computed_properties_for_style(mut style_computer, target_element, mut computed)
-				}
+		// The target's effect lists are read-only queries for this update.
+		samples.enter()
+		animations := if style_computer.css_animation_storage_ != unsafe { nil } {
+			style_computer.css_animation_storage_.animations_for(target_element)
+		} else {
+			[]&CSSAnimation{}
+		}
+		transitions := if style_computer.css_transition_storage_ != unsafe { nil } {
+			style_computer.css_transition_storage_.transitions_for(target_element)
+		} else {
+			[]&CSSTransition{}
+		}
+		samples.leave()
+		// Web Animations effects create their CSS view lazily and keep it.
+		web_effects := web_animation_effects_for_style(target_element)
+		for existing in animations {
+			mut animation := existing
+			if animation.sample_at(style_computer.animation_time_ms_) != none {
+				animation.effect_.update_computed_properties_for_style(mut style_computer, target_element, mut computed)
 			}
 		}
-		if style_computer.css_transition_storage_ != unsafe { nil } {
-			for existing in style_computer.css_transition_storage_.transitions_for(target_element) {
-				mut transition := existing
-				if transition.sample_at(style_computer.animation_time_ms_) != none {
-					transition.keyframe_effect_.update_computed_properties_for_style(mut style_computer, target_element, mut computed)
-				}
+		for existing in transitions {
+			mut transition := existing
+			if transition.sample_at(style_computer.animation_time_ms_) != none {
+				transition.keyframe_effect_.update_computed_properties_for_style(mut style_computer, target_element, mut computed)
 			}
 		}
-		for effect in web_animation_effects_for_style(target_element) {
+		for effect in web_effects {
 			effect.update_computed_properties_for_style(mut style_computer, target_element, mut computed)
+		}
+		installs_inherited_values := computed_installs_inherited_animated_values(computed)
+		if samples != unsafe { nil } {
+			samples.note_target(target_element, installs_inherited_values)
 		}
 		publish_animated_custom_properties(computed, target_element)
 
+		samples.enter()
 		mut invalidation := animated_property_maps_invalidation(old_animated_values, computed.animated_property_values())
 		custom_properties_changed := animated_custom_property_maps_differ(old_animated_custom_values,
 			computed.animated_custom_property_values())
-		if invalidation.is_none() && !custom_properties_changed {
+		compositor_only_changes := animated_changes_are_compositor_only(old_animated_values,
+			computed.animated_property_values())
+		samples.leave()
+		if full_refresh {
+			// Every value derived from the previous samples is rebuilt: paint
+			// data, visual contexts and, for inherited values, descendants.
+			invalidation.ensure_at_least(.repaint)
+			invalidation.ensure_accumulated_visual_contexts_at_least(.rebuild)
+		} else if invalidation.is_none() && !custom_properties_changed {
 			continue
 		}
 		mut target_was_recomputed := false
@@ -1502,10 +1548,10 @@ fn style_computer_update_animated_style_callback(target voidptr) {
 		mut child := target_node.first_child()
 		for {
 			current := child or { break }
-			if custom_properties_changed {
+			if custom_properties_changed || (full_refresh && installs_inherited_values) {
 				invalidation = required_invalidation_after_style_change_or(invalidation,
 					update_style_recursively(mut style_computer, current, false, true, false,
-						false))
+						full_refresh))
 			} else {
 				invalidation = required_invalidation_after_style_change_or(invalidation,
 					style_computer.recompute_inherited_style_for_animated_descendants(current))
@@ -1515,15 +1561,21 @@ fn style_computer_update_animated_style_callback(target voidptr) {
 
 		mut retained_compositor_paint := false
 		if !target_was_recomputed {
+			// The DOM mirror is rebuilt on every install and kept by the element
+			// and its layout node until the next one.
+			samples.enter()
 			computed_dom_mirror := computed_properties_to_dom(computed)
+			samples.leave()
 			mut mutable_target := target_element
 			mutable_target.set_computed_properties(computed_dom_mirror)
 			if layout_node := target_element.unsafe_layout_node() {
 				only_compositor_changes := !custom_properties_changed
 					&& !invalidation.needs_relayout() && !invalidation.needs_layout_tree_rebuild()
-					&& animated_changes_are_compositor_only(old_animated_values, computed.animated_property_values())
+					&& compositor_only_changes
+				style_computer.animation_layout_style_ = computed
 				retained_compositor_paint = layout_node.apply_animated_style(computed_dom_mirror,
 					only_compositor_changes)
+				style_computer.animation_layout_style_ = unsafe { nil }
 			}
 		}
 
@@ -1566,6 +1618,23 @@ fn style_computer_update_animated_style_callback(target voidptr) {
 			document.invalidate_stacking_context_tree()
 		}
 	}
+}
+
+// Whether animation values for inherited properties, or custom properties,
+// were installed: descendants can hold such values.
+fn computed_installs_inherited_animated_values(computed &ComputedProperties) bool {
+	if computed.animated_custom_storage_ != unsafe { nil }
+		&& computed.animated_custom_storage_.values.len > 0 {
+		return true
+	}
+	if computed.animated_property_storage_ != unsafe { nil } {
+		for property_id, _ in computed.animated_property_storage_.values {
+			if computed_interpolation_is_inherited_property(property_id) {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 // Recompute style for `node` and its whole subtree, top-down — the recursive core of

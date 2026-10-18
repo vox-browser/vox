@@ -7528,6 +7528,7 @@ pub fn (mut d Document) update_layout(reason UpdateLayoutReason) {
 			return
 		}
 		d.layout_engine_handle_ = new_layout
+		d.layout_pass_generation++
 
 		// TreeBuilder consumes these DOM invalidations while rebuilding the tree.
 		document_node.for_each_shadow_including_inclusive_descendant(fn (node &Node) TraversalDecision {

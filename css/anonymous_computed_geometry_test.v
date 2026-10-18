@@ -385,6 +385,7 @@ fn test_anonymous_geometry_preserves_relative_units_normal_metrics_and_cache_lif
 		retained := resolve_anonymous_block_values_for_document(source, document)
 		original_color := retained.color()
 		original_size := retained.font_size()
+		retained.share_computed_layout_cache()
 		mut copied := *retained
 		mut mutable_original := unsafe { &MutableComputedValues(retained) }
 		mutable_original.set_color(Color{5, 6, 7, 255})

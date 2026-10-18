@@ -1,6 +1,7 @@
 module css
 
 import dom
+import platform
 import math
 import strconv
 import svg
@@ -15485,6 +15486,9 @@ pub fn parse_css_value_logic(property_id PropertyID, text string) ?StyleValue {
 		if cached := css_parsed_value_cache[key][text] {
 			return cached
 		}
+		// The process-wide cache keeps the parsed value and its text.
+		persistent := platform.enter_persistent()
+		defer { platform.leave_persistent(persistent) }
 		mut cache_parser := Parser.from_css_text(text)
 		value := cache_parser.parse_css_value(property_id)?
 		if key !in css_parsed_value_cache {

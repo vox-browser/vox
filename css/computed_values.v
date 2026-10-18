@@ -422,6 +422,22 @@ fn resolve_computed_values_for_document_impl(style &ComputedProperties, document
 			computed_style.computed_layout_cache_ = initial_anonymous_geometry_cache()
 		}
 	}
+	// An animation frame re-resolves its target from fresh samples. The arrays
+	// and typed copies stored in the snapshot are derived from them and are
+	// replaced by the next resolve, so they are samples too.
+	mut samples := css_style_computer_for(document).animation_layout_samples(style)
+	samples.enter()
+	reusing := samples != unsafe { nil }
+	mut reuse_previous := unsafe { voidptr(0) }
+	if reusing {
+		reuse_previous = begin_layout_cache_reuse(computed_style)
+	}
+	defer {
+		if reusing {
+			end_layout_cache_reuse(reuse_previous)
+		}
+		samples.leave()
+	}
 	// Font discovery is complete before the pure geometry/color write scope.
 	owns_cache_write := computed_style.begin_computed_layout_cache_write()
 	defer {

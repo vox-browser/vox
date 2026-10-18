@@ -9,6 +9,7 @@ pub fn (values &ComputedValues) with_viewport_overrides(overflow_x Overflow, ove
 		return unsafe { values }
 	}
 	source := unsafe { &ComputedProperties(values) }
+	source.share_computed_layout_cache()
 	mut clone := &ComputedProperties{
 		...source
 	}

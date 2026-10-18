@@ -1655,6 +1655,9 @@ pub mut:
 mut:
 	computed_property_graph_token_ &ComputedPropertyGraphMutationToken = unsafe { nil }
 	computed_layout_cache_ &ComputedLayoutCache = unsafe { nil }
+	// Serial number pairing this style with the snapshots it may rewrite in
+	// place; see computed_layout_cache.v.
+	layout_cache_owner_serial_ u64
 	animated_property_storage_     &ComputedPropertyValueMap       = unsafe { nil }
 	animated_custom_storage_       &ComputedCustomPropertyValueMap = unsafe { nil }
 	inheritance_specified_storage_ &ComputedPropertyValueMap       = unsafe { nil }
@@ -1883,6 +1886,7 @@ pub fn (mut c ComputedProperties) take_properties_for_table_wrapper() &ComputedP
 // element's ComputedProperties, so the transfer applies to a copy for the
 // table box: the element keeps its margins for every later layout tree build.
 pub fn (c &ComputedProperties) table_box_and_wrapper_properties() (&ComputedProperties, &ComputedProperties) {
+	c.share_computed_layout_cache()
 	mut table := &ComputedProperties{
 		...c
 		property_store_:                c.clone_raw_property_store()
@@ -5758,6 +5762,10 @@ pub fn (mut c ComputedProperties) computed_font_list(font_computer &FontComputer
 		c.clear_computed_font_list_cache()
 		font_environment_changed = true
 	}
+	// The style and the font computer retain what this computes; a caller
+	// working in an arena (animation samples) must not own it.
+	persistent := platform.enter_persistent()
+	defer { platform.leave_persistent(persistent) }
 	value := c.property(.font_family, .yes) or {
 		&dom.StyleValue{
 			css_text: 'sans-serif'
@@ -5800,7 +5808,9 @@ pub fn (mut c ComputedProperties) first_available_computed_font(font_computer &F
 	if c.cached_first_available_computed_font_ != unsafe { nil } {
 		return c.cached_first_available_computed_font_
 	}
+	persistent := platform.enter_persistent()
 	selected_font := font_list.font_for_code_point(u32(` `))
+	platform.leave_persistent(persistent)
 	// The cascade and its entries are heap-backed. Cache the selected entry by
 	// identity so its nested typeface and feature storage remain owned by the
 	// cascade under the old no-GC backend.
@@ -10722,6 +10732,11 @@ pub mut:
 	font_face_set_                                       &FontFaceSet = unsafe { nil }
 	animation_time_ms_                                   f64
 	transition_generation_                               int
+	// Arenas for animation samples (css/animation_samples.v), used while the
+	// animated-style update samples targets.
+	animation_samples_         &AnimationSampleStorage = unsafe { nil }
+	sampling_animation_frame_  bool
+	animation_layout_style_    &ComputedProperties = unsafe { nil }
 }
 
 pub fn StyleComputer.new(document &dom.Document) &StyleComputer {
@@ -11340,6 +11355,15 @@ pub fn (s &StyleComputer) collect_animation_into(abstract_element dom.AbstractEl
 		return
 	}
 
+	// During an animation frame, keyframe values and the interpolated results
+	// are samples (animation_samples.v); installing them updates the target's
+	// retained style, which stays in ordinary storage.
+	mut samples := if s.sampling_animation_frame_ { s.animation_samples_ } else { unsafe { &AnimationSampleStorage(nil) } }
+	samples.enter()
+	defer {
+		samples.leave()
+		s.clear_computation_context_caches()
+	}
 	mut keys := key_frame_set.keyframes_by_key.keys()
 	keys.sort()
 	progress := math.round(output_progress * 100.0 * animation_key_frame_key_scale_factor)
@@ -11398,13 +11422,19 @@ pub fn (s &StyleComputer) collect_animation_into(abstract_element dom.AbstractEl
 			end = composited
 		}
 		if interpolated := interpolate_property(abstract_element.element(), property_id, start, end, interval_progress, .yes) {
-			computed_properties.set_animated_property(property_id, interpolated, if effect.is_css_transition {
+			installed := samples.adopt(interpolated)
+			persistent := platform.enter_persistent()
+			computed_properties.set_animated_property(property_id, installed, if effect.is_css_transition {
 				AnimatedPropertyResultOfTransition.yes
 			} else {
 				AnimatedPropertyResultOfTransition.no
 			}, .no)
+			platform.leave_persistent(persistent)
 		} else {
-			computed_properties.set_animated_property(.visibility, dom_style_value_from_value_logic(StyleValue(KeywordStyleValue.create(.hidden))), .no, .no)
+			hidden := dom_style_value_from_value_logic(StyleValue(KeywordStyleValue.create(.hidden)))
+			persistent := platform.enter_persistent()
+			computed_properties.set_animated_property(.visibility, hidden, .no, .no)
+			platform.leave_persistent(persistent)
 		}
 	}
 
@@ -11452,7 +11482,10 @@ pub fn (s &StyleComputer) collect_animation_into(abstract_element dom.AbstractEl
 		}
 		interpolated := interpolate_animated_custom_property(abstract_element.document(), name,
 			start, end, interval_progress)
-		computed_properties.set_animated_custom_property(name, interpolated)
+		installed := samples.adopt(interpolated)
+		persistent := platform.enter_persistent()
+		computed_properties.set_animated_custom_property(name, installed)
+		platform.leave_persistent(persistent)
 	}
 }
 
@@ -11508,15 +11541,25 @@ fn publish_animated_custom_properties(computed_properties &ComputedProperties, a
 		}
 	}
 
+	// During an animation frame the overlay is built among the samples it
+	// exposes; the element keeps it until the next update replaces it.
+	style_computer := css_style_computer_for(abstract_element.document())
+	mut samples := if style_computer.sampling_animation_frame_ {
+		style_computer.animation_samples_
+	} else {
+		unsafe { &AnimationSampleStorage(nil) }
+	}
+	samples.enter()
 	mut overlay_values := map[string]dom.CSSCustomProperty_{}
 	for name, value in animated_values {
 		overlay_values[name] = dom.CSSCustomProperty_{
 			value: custom_property_bridge_value(value)
 		}
 	}
+	overlay := dom.CSSCustomPropertyData_.create_animation_overlay(overlay_values, base)
+	samples.leave()
 	mut mutable_element := abstract_element
-	mutable_element.set_custom_property_data(dom.CSSCustomPropertyData_.create_animation_overlay(overlay_values,
-		base))
+	mutable_element.set_custom_property_data(overlay)
 }
 
 pub fn (s &StyleComputer) compute_properties(abstract_element dom.AbstractElement, mut cascaded_properties CascadedProperties) &ComputedProperties {
@@ -11677,7 +11720,8 @@ pub fn (s &StyleComputer) compute_properties(abstract_element dom.AbstractElemen
 			}
 		}
 		properties.set_property_without_modifying_flags(property_id, computed_value)
-		if can_reuse_default_computed_value {
+		// A value computed inside an arena is not kept for every later style.
+		if can_reuse_default_computed_value && !platform.arena_entered() {
 			computed_interpolation_default_computed_value_cache[property_index] = computed_value
 		}
 	}
@@ -12803,6 +12847,8 @@ fn computed_interpolation_font_metrics_for_size(font_size CSSPixels) LengthFontM
 	if cached := css_length_font_metrics_cache[key] {
 		return cached
 	}
+	persistent := platform.enter_persistent()
+	defer { platform.leave_persistent(persistent) }
 	ratio := font_size.to_double() / 16.0
 	font := platform.Font{
 		family: 'sans-serif'

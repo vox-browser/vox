@@ -1,6 +1,7 @@
 module css
 
 import dom
+import platform
 
 // Cache the style's font inputs, keeping container-query lookup state local
 // to each resolution context so layout changes remain visible to cq units.
@@ -30,6 +31,9 @@ fn (c &ComputedProperties) length_font_metrics() &ComputedLengthMetrics {
 			return cached
 		}
 	}
+	// Cached on the style, which outlives any arena its caller works in.
+	persistent := platform.enter_persistent()
+	defer { platform.leave_persistent(persistent) }
 	font_px := CSSPixels.nearest_value_for(c.resolved_font_size_px())
 	mut font_metrics := computed_interpolation_font_metrics_for_size(font_px)
 	font_metrics.line_height = c.line_height()

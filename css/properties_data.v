@@ -1,6 +1,7 @@
 module css
 
 import dom
+import platform
 
 // Compare two optional strings for equality without using `?string == ?string`, which triggers a V
 // codegen bug (the auto-generated `builtin___option_string__eq` is sometimes emitted as a call but never
@@ -146,6 +147,9 @@ pub fn (c &CustomPropertyData) inheritable(document &dom.Document) ?&CustomPrope
 		return c.cached_inheritable_data
 	}
 
+	// The result is cached on this data for every later lookup.
+	persistent := platform.enter_persistent()
+	defer { platform.leave_persistent(persistent) }
 	mut inheritable_parent := ?&CustomPropertyData(none)
 	if parent := c.parent_ {
 		inheritable_parent = parent.inheritable(document)
