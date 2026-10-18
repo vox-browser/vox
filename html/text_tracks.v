@@ -133,11 +133,20 @@ pub fn (mut t TextTrack) set_readiness_state(readiness_state TextTrackReadinessS
 }
 
 pub fn (mut t TextTrack) register_observer(observer &TextTrackObserver) {
+	for registered in t.observers_ {
+		if voidptr(registered) == voidptr(observer) { panic('Source VERIFY: TextTrack observer must be registered only once') }
+	}
 	t.observers_ << observer
 }
 
 pub fn (mut t TextTrack) unregister_observer(observer &TextTrackObserver) {
-	t.observers_ = t.observers_.filter(it != observer)
+	for index, registered in t.observers_ {
+		if voidptr(registered) == voidptr(observer) {
+			t.observers_.delete(index)
+			return
+		}
+	}
+	panic('Source VERIFY: TextTrack observer removal requires a registered observer')
 }
 
 pub fn (t &TextTrack) cues() &TextTrackCueList {
