@@ -438,6 +438,10 @@ pub fn HTMLAudioElementModel.create(media &HTMLMediaElement) &HTMLAudioElementMo
 }
 
 pub fn (audio &HTMLAudioElementModel) should_paint(scripting_disabled bool) bool {
+	if owner := audio.media.associated_element_ {
+		element := unsafe { &dom.Element(owner) }
+		return element.has_attribute('controls') || element.as_node().is_scripting_disabled()
+	}
 	return audio.media.has_controls() || scripting_disabled
 }
 
