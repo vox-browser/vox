@@ -1973,6 +1973,18 @@ evidence](docs/translation-audit/NATIVE_MEDIA_WHEEL_RAW_HANDLER.md).
   Same 4 GiB, SSD, placement and frozen library loader proof; public decoder,
   encoding, filtering and arenas unchanged. Root/canonical/GUI preserved;
   Chrome parity remains open.
+  Immutable image parameters `75966fb5` use an independently authenticated port.
+  29 functional common cases pass 22,107 assertions/configuration; eight original
+  contract bodies plus the sole failed-case setup repair pass both GC; all
+  assertions remain. The baseline automatic-refresh failure is retained.
+  Complete public image/layout/recording batches use 18.07% fewer instructions.
+  Page point saving 7,558,950, 21/30 wins;
+  paired interval [1,623,164, 23,311,872], repeatable credit 7,558,950.
+  Broad verification: 87 selected cases both GC; 19 comparisons (16 exact);
+  focused image/effect viewport exact; additional observed savings 0.
+  Same 4 GiB, SSD, placement and frozen library loader proof; live scroll offsets,
+  inline gradients, CSS decoding/filtering and GC unchanged. Root/canonical/GUI
+  preserved. Absent SVG cull gate excluded; Chrome parity remains open.
 - Outside instruction-count optimization, run broad regression suites once per
   ten completed fixes, not after every fix.
   Broad suites include full translation/package test batches, the full LibJS AST

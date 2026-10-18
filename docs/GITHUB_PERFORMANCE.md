@@ -10430,6 +10430,167 @@ Equivalent Chrome content/start/submission accounting is still open;
 **faster-than-Chrome performance remains unproven**. Evidence:
 Build/instructions/vox-opt103-interleaved-* and Build/v/instruction-opt103-*.
 
+## Share immutable image paint parameters
+
+Round104 measures an isolated port of Alexander Medvednikov's already-committed
+`75966fb5`. Nineteen immutable image parameters move from every PaintCommand
+into an optional shared PaintImageData owner. Ordinary text, borders and controls
+carry a nil pointer. Background/gradient/replaced-image producers allocate the
+payload; image consumers take one logical snapshot, while debug URL access avoids
+materializing defaults. Live scroll offsets remain per-command. Phase caches,
+nested replay and subsequent recordings retain the immutable owner.
+
+The source port has **15 exact authored hunks and one image-only fragment** in
+layout/paint_transport.v, layout/viewport_paint_bridge.v and main.v. A newer-source
+SVG viewport-culling gate and its absent helper are excluded from both frozen
+variants. The original inline gradient representation remains; rejected round98's
+gradient-pointer experiment is not imported. The control is the exact accepted
+frozen103 runtime, including the owned ASCII CSS destination. Contemporary Root
+changes and independently newer app bundles receive no performance credit.
+
+All **29 common functional cases**, plus one inactive diagnostic case, pass
+before/Boehm, final/Boehm and final/no-GC C-O2: **22,107 assertions each**.
+Common source SHA256: `2ad6a0629cdbd06eac1da7626c4d84db3ebf4360c1c9e4b5b65d5645d69bea68`.
+The original nine image contract bodies were initially byte-identical to the
+committed feature. Two newer-source oracle helpers use the exact frozen103
+record/background producer, renamed; the comparison helper reads both original
+inline gradients as values. Eight cases pass in both GCs. The phase-cache
+mutation case fails in both: its third recording retains the first owner.
+Both actual full-suite exits1 and the pre-native gate exit1 remain in
+instruction-opt104-inline-style-contract-finding. No native browser/profile/page
+job started through that failed gate.
+
+Separate C-O0 public diagnostics prove that control and candidate both retain
+retained.png after the ordinary inline-style mutation, including after re-entering
+the public layout helper. With the existing public full-style and full-layout
+refresh flags, both expose replacement.png while the earlier recording remains
+retained.png. The frozen runtime's automatic-refresh limitation remains outside
+this feature. Only the failed case is adapted by adding those two setup calls;
+all original assertions and expected values remain. That one C-O2 case passes
+both GCs. The eight passing cases are not repeated. Joint completed coverage is
+**nine cases and 30,265
+assertions per GC**; this is not a claim that the initial full suite exited0.
+The original source, failed logs/C/binaries, both baseline diagnostics and the
+single-case repair remain. A read-only report-name symlink points at the actual
+completed explicit-refresh result; its original JSON and actual controller0 are
+retained, with no repeated runtime.
+
+The record shrinks **2,120→1,800 bytes**, with a **328-byte** image payload.
+Contracts retain checks for width/defaults, background fields/gradients, producer
+lifetime/GC, source replacement, phase-cache identity, live scroll offsets,
+nested replay, replaced content and SVG escaping. No assertion, expected value
+or case is dropped. The source oracle port and original/ported hashes remain in
+instruction-opt104-static-source-review.json; the two-call fixture port is
+recorded separately in instruction-opt104-contract-repair-result.json.
+
+Three fixed alternating local pairs count **32 complete public document layout
+and display-list rebuilds** per observation. The 64 Unicode paragraphs include
+eight image-plus-gradient backgrounds, four shadow groups, two opacity/filter
+groups and nested intrinsic/absolute children. Public invalidation, fresh layout
+mirrors, formatting, geometry, recording and command-field traversal are counted.
+Checksum traversal includes kind/text/color lengths, coordinates, points and
+glyph counts, not full glyph bytes. Setup, eight warmups, expected checksum,
+text/image/gradient presence assertions and forced GC remain outside the counter.
+All six actual exits are 0; checksum **41,547,104** matches.
+Before: **14,417,160,920 / 14,426,495,120 / 14,366,271,586**; final by pair:
+**11,810,668,477 / 11,811,754,295 / 11,873,854,778**. Medians **14,417,160,920→11,811,754,295**
+retired instructions, **-18.07157%**. This is a complete public
+workload, not a private helper loop, and receives no page credit.
+
+Full-process C-O1/Boehm profiles retain enabled counters without filtering or
+reset and repeat no functional common case. Counts only:
+
+| Function | Before calls | Candidate calls |
+| --- | ---: | ---: |
+| `layout__opt104_complete_public_document_layout` | 41 | 41 |
+| `layout__run_document_layout` | 42 | 42 |
+| `dom__Document_record_display_list` | 41 | 41 |
+| `layout__BlockBox_flat_paint_commands_for_entries` | 41 | 41 |
+| `layout__lower_visual_layers` | 41 | 41 |
+| `layout__append_text_fragment_commands` | 13,120 | 13,120 |
+| `layout__background_layer_command` | 656 | 656 |
+| `layout__apply_live_background_offsets` | 53,546 | 53,546 |
+| `layout__PaintCommand_image` | 0 | 0 |
+| `layout__PaintCommand_image_url` | 0 | 0 |
+
+The common public layout/recording calls are preserved. Profile times and call
+counts earn no hardware-instruction credit. Actual enabled generated C and raw
+reports remain with SHA hashes. Strict C comparison independently authenticates
+five normally emitted edited functions, two added accessors, the new payload
+record, and the exact
+nineteen-field replacement in PaintCommand. Every ordinary constructor retains
+the getter's exact logical image defaults or the exact nil pointer. Only the
+PaintCommand declaration and twelve explicitly byte-identical option declaration
+positions are canonicalized after four-way authentication. The SVG exporter is absent from both normal binaries; its before/final bodies
+are byte-identical between independent whole-app output and the already-passed
+focused C. The initial audit assumed normal reachability and exited1; its script,
+result and actual terminal remain in instruction-opt104-unemitted-svg-export-finding.
+Only read-only authentication changed; no runtime or primary was repeated.
+All other executable
+C, records, globals, resources, CSS filtering, arenas, heap and GC setup compare
+exactly after established compiler identities and unchanged source assertion
+lines. The 37 frozen includes, actual frontend file tables, all 120 native
+inputs and native arguments remain matched. Passing audit SHA256:
+`6be1baa8a5e202860cac891c9ba82ebbc17fb60c835d1866c9ceee56bff90484`.
+Normal C SHA256: `4bd518fcf31e0f1a024ddf877c2c61436f2af016350b38eb1f231ebde195bcf4`.
+Durable C/profile/contract/local/functional-diagnostic archive hashes:
+instruction-opt104-artifact-archives.json.
+
+The page plan is fixed before observations: **30 alternating pairs**, odd
+before/candidate and even candidate/before, **30,000 paired bootstrap resamples,
+seed104**. Both regular binaries use C-O2/Boehm/default marker1, unchanged 4 GiB
+hint, identical359body cache copies on the same SSD parent, and the frozen text
+and child-only placement helpers. The primary remains
+navigation_to_first_document_paint[0], document viewport1024×768.
+
+| Build | Median first-frame retired instructions | Median lifetime peak, MiB |
+| --- | ---: | ---: |
+| Fresh accepted frozen103 control | 17,320,456,440 | 3,331.8 |
+| Fresh immutable image payload | 17,312,897,490 | 3,294.8 |
+
+Difference of marginal medians (before minus candidate):
+**7,558,950** instructions; candidate change
+**-0.044%**, **21/30** wins.
+Paired median saving **10,719,144**; 95% interval
+**[1,623,164, 23,311,872]**. The positive paired interval qualifies for repeatable page credit of **7,558,950** instructions.
+
+All60 primaries and **60 actual PNGs** are retained. Recoveries:
+none; pre-parse retries: 0. Each first primary has
+1 installation/2 geometry preparations/1 paint. Later completed refreshes:
+none. No completed primary is extended, filtered,
+discarded or rerun. A recovered report retains unknown missing final exits,
+PNGs, fingerprints or peaks. Peaks span lifetime through capture/exit, including
+refreshes; they are not first-frame live memory and are never summed.
+All differences among the 60 retained RGB captures stay in the original skeleton bands, x45–662: y335–344 and ten 14px bands starting at 380 with 41px spacing. All other pixels match. There are 30 control and 30 candidate classes, 2 shared. Animation is unchanged and no observation repeated. External foreground transitions retained:
+none.
+The child is foreground in neither startup snapshot.
+
+The focused viewport is pixel-exact, including retained Unicode, shadows,
+effects, SVG masks, backdrop filters, deep ancestry, UA controls, owned ASCII
+CSS, and a colored alpha-PNG image with repeat/position/clip/gradient blending
+and replaced-image sizing. Screenshot children retain explicit frozen-library
+argv pins and actual loader path/hash receipts. Prior carry is **0**.
+Observed carry **7,558,950** crosses the 5M gate. Six actual zero exits pass CSS 31/SVG 10/layout 46 in both GCs (**174 executions**). All **19 comparisons pass, 16 exact**; known differences remain inline-node 13, text-decorations 1,341 and canvas-text 1,994. Completed broad verification resets carry to 0. The selected87 harness cases retain all assertions and expected
+values; only image field reads gain the image() accessor. The exact projection
+back to their prior source is recorded. Screenshot bounds remain unchanged.
+
+The isolated signed app is `/Users/alex/code/vox2/Build/v/Vox-opt104.app`. Its native instruction text
+matches the measured binary; its frozen helper is pinned inside the bundle.
+Signatures, the actual loaded helper, startup, and actual collections pass for
+marker1 and override2. The canonical and GUI browsers remain preserved. Only
+190 uncompressed generated-C duplicates from already completed rounds70–102
+were removed after verifying retained durable archives byte for byte; source
+snapshots, binaries, results, logs and current103/104 files remain. The cleanup
+receipts list exact paths and archive hashes. An initial second-batch index scan
+exited1 before deleting any file: rejected rounds use c_sha256 rather than
+sha256. Its script and observed exit remain in
+instruction-opt104-cleanup-index-schema-finding; the corrected scan authenticates
+either explicit schema. This read-only repair repeats no runtime. Independent Root work receives
+no extra regression or performance credit. Equivalent Chrome content/start/
+submission accounting is still open; **faster-than-Chrome performance remains
+unproven**. Evidence: Build/instructions/vox-opt104-interleaved-* and
+Build/v/instruction-opt104-*.
+
 ## Causes and changes
 
 - The V 0.5.2 compatibility compiler's `-prod` Boehm code repeatedly snapshots
