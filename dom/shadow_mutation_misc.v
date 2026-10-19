@@ -649,7 +649,7 @@ pub fn (shadow_root &ShadowRoot) calculate_part_element_map() map[string][]Abstr
 	map_ptr := &part_element_map
 
 	// 1. For each descendant el within outerRoot:
-	shadow_root_as_node(shadow_root).for_each_in_subtree(fn [map_ptr] (node &Node) TraversalDecision {
+	shadow_root_as_node(shadow_root).visit_subtree(fn [map_ptr] (node &Node) TraversalDecision {
 		element := node.as_element() or { return .@continue }
 
 		// 1. For each name in el's part name list, append el to outerRoot's part element map[name].
@@ -2971,7 +2971,7 @@ pub fn (id_map &ElementByIdMap) for_each_element_with_id(element_id string, scop
 	} else {
 		return
 	}
-	scope_root.for_each_in_inclusive_subtree(fn [element_id, callback] (node &Node) TraversalDecision {
+	scope_root.visit_inclusive_subtree(fn [element_id, callback] (node &Node) TraversalDecision {
 		element := node.as_element() or { return .@continue }
 		if id := element.id() {
 			if id == element_id {

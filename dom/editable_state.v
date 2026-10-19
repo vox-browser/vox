@@ -11,7 +11,7 @@ struct PreviousReadWriteState {
 fn previous_read_write_states(root &Node) []PreviousReadWriteState {
 	mut states := []PreviousReadWriteState{}
 	states_ptr := &states
-	root.for_each_in_inclusive_subtree(fn [states_ptr] (node &Node) TraversalDecision {
+	root.visit_inclusive_subtree(fn [states_ptr] (node &Node) TraversalDecision {
 		if element := node.as_element() {
 			dom_ptr_push(states_ptr, PreviousReadWriteState{element, element.matches_read_write_pseudo_class()})
 		}

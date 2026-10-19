@@ -1015,7 +1015,7 @@ fn build_layout_box_for_element_with_svg_resource_kind(document &dom.Document, e
 	// size.
 	if computed.content_visibility() == .hidden {
 		hidden_root := element.as_node()
-		hidden_root.for_each_shadow_including_descendant(fn [hidden_root] (node &dom.Node) dom.TraversalDecision {
+		hidden_root.visit_shadow_including_descendants(fn [hidden_root] (node &dom.Node) dom.TraversalDecision {
 			return clear_stale_layout_and_paint_node(node, hidden_root)
 		})
 		// Assigned slottables are not DOM descendants of the slot, so the
@@ -1023,7 +1023,7 @@ fn build_layout_box_for_element_with_svg_resource_kind(document &dom.Document, e
 		if element.is_html_element() && element.local_name() == 'slot' {
 			slot := unsafe { &dom.HTMLSlotElement(element) }
 			for slottable_root in slot.assigned_nodes_internal() {
-				slottable_root.for_each_shadow_including_inclusive_descendant(fn [slottable_root] (node &dom.Node) dom.TraversalDecision {
+				slottable_root.visit_shadow_including_inclusive_descendants(fn [slottable_root] (node &dom.Node) dom.TraversalDecision {
 					return clear_stale_layout_and_paint_node(node, slottable_root)
 				})
 			}

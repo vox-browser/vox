@@ -183,7 +183,7 @@ fn enqueue_upgrade_candidates(node &dom.Node, registry &CustomElementRegistry, r
 }
 
 fn (registry &CustomElementRegistry) initialize_global_document(document &dom.Document) {
-	document.as_node().for_each_shadow_including_inclusive_descendant(fn [registry] (node &dom.Node) dom.TraversalDecision {
+	document.as_node().visit_shadow_including_inclusive_descendants(fn [registry] (node &dom.Node) dom.TraversalDecision {
 		if element := node.as_element() {
 			if element.custom_element_registry() == unsafe { nil } {
 				mut mutable_element := unsafe { &dom.Element(element) }
@@ -345,7 +345,7 @@ pub fn (mut registry CustomElementRegistry) initialize(root &dom.Node) ! {
 	}
 	registry_handle := voidptr(&registry)
 	registry_is_scoped := registry.is_scoped_
-	root.for_each_in_inclusive_subtree(fn [registry_handle, registry_is_scoped] (node &dom.Node) dom.TraversalDecision {
+	root.visit_inclusive_subtree(fn [registry_handle, registry_is_scoped] (node &dom.Node) dom.TraversalDecision {
 		if element := node.as_element() {
 			mut mutable_element := unsafe { &dom.Element(element) }
 			if element.custom_element_registry() == unsafe { nil } {

@@ -52,7 +52,7 @@ fn view_transition_refresh_elements(target voidptr, mut context viewtransition.T
 		mutable_item.rendered = false
 	}
 	if root := document.document_element() {
-		root.as_node().for_each_in_inclusive_subtree(fn [document, root, collector, capturing_old] (node &Node) TraversalDecision {
+		root.as_node().visit_inclusive_subtree(fn [document, root, collector, capturing_old] (node &Node) TraversalDecision {
 			mut element := node.as_element() or { return .@continue }
 			if voidptr(node.document()) != voidptr(document) || !node.is_connected() {
 				return .@continue

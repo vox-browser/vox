@@ -9,6 +9,7 @@
 // Translated from Libraries/LibWeb/DOM/Node.cpp
 module dom
 
+import platform
 import math
 import strings
 
@@ -1279,7 +1280,7 @@ fn dom_ptr_push[T](p &[]T, item T) {
 pub fn (n &Node) descendant_text_content() string {
 	mut builder := strings.new_builder(0)
 	builder_ptr := &builder
-	n.for_each_in_subtree(fn [builder_ptr] (node &Node) TraversalDecision {
+	n.visit_subtree(fn [builder_ptr] (node &Node) TraversalDecision {
 		if node.is_text() {
 			if data := node.character_data() {
 				unsafe { builder_ptr.write_string(data.data_) }
@@ -1345,7 +1346,7 @@ pub fn (mut n Node) normalize() ! {
 	// The normalize() method steps are to run these steps for each descendant exclusive Text node node of this.
 	mut text_nodes := []&Node{}
 	text_nodes_ptr := &text_nodes
-	n.for_each_in_inclusive_subtree(fn [text_nodes_ptr] (node &Node) TraversalDecision {
+	n.visit_inclusive_subtree(fn [text_nodes_ptr] (node &Node) TraversalDecision {
 		if node.is_exclusive_text() {
 			dom_ptr_push(text_nodes_ptr, node)
 		}
@@ -2360,7 +2361,7 @@ fn collect_nodes_for_post_connection(node &Node, mut nodes []&Node) {
 
 fn register_slot_descendants_with_shadow_root(node &Node) {
 	shadow_root := node.root().as_shadow_root() or { return }
-	node.for_each_in_inclusive_subtree(fn [shadow_root] (inclusive_descendant &Node) TraversalDecision {
+	node.visit_inclusive_subtree(fn [shadow_root] (inclusive_descendant &Node) TraversalDecision {
 		if slot := node_as_html_slot_element(inclusive_descendant) {
 			mut mutable_shadow_root := unsafe { &ShadowRoot(shadow_root) }
 			mutable_shadow_root.register_slot(slot)
@@ -2631,7 +2632,7 @@ pub fn (mut n Node) remove(suppress_observers bool) {
 		}
 	}
 	n.removed_from_with_context(.yes, parent, parent_root)
-	n.for_each_shadow_including_descendant(fn [parent, parent_root] (descendant &Node) TraversalDecision {
+	n.visit_shadow_including_descendants(fn [parent, parent_root] (descendant &Node) TraversalDecision {
 		mut mutable_descendant := unsafe { &Node(descendant) }
 		mutable_descendant.removed_from_with_context(.no, parent, parent_root)
 		return .@continue
@@ -2835,7 +2836,7 @@ pub fn (mut n Node) move_node(mut new_parent Node, child ?&Node) ! {
 		new_parent.set_needs_layout_tree_update(true, .node_insert_before)
 	}
 	moved_node := &n
-	n.for_each_shadow_including_inclusive_descendant(fn [old_parent, moved_node] (inclusive_descendant &Node) TraversalDecision {
+	n.visit_shadow_including_inclusive_descendants(fn [old_parent, moved_node] (inclusive_descendant &Node) TraversalDecision {
 		mut mutable_descendant := unsafe { &Node(inclusive_descendant) }
 		if inclusive_descendant == moved_node {
 			mutable_descendant.moved_from_with_context(.yes, old_parent)
@@ -4975,6 +4976,34 @@ pub fn (n &Node) for_each_shadow_including_descendant(callback fn (&Node) Traver
 		}
 	}
 	return .@continue
+}
+
+// The visit_* traversals run the matching for_each_* traversal and then
+// release its callback, which must be a closure literal written at the call.
+// A closure passed to a traversal otherwise stays registered, with the nodes
+// and documents it captured, after the traversal returns.
+pub fn (n &Node) visit_subtree(callback fn (&Node) TraversalDecision) TraversalDecision {
+	decision := n.for_each_in_subtree(callback)
+	platform.release_closure(voidptr(callback))
+	return decision
+}
+
+pub fn (n &Node) visit_inclusive_subtree(callback fn (&Node) TraversalDecision) TraversalDecision {
+	decision := n.for_each_in_inclusive_subtree(callback)
+	platform.release_closure(voidptr(callback))
+	return decision
+}
+
+pub fn (n &Node) visit_shadow_including_descendants(callback fn (&Node) TraversalDecision) TraversalDecision {
+	decision := n.for_each_shadow_including_descendant(callback)
+	platform.release_closure(voidptr(callback))
+	return decision
+}
+
+pub fn (n &Node) visit_shadow_including_inclusive_descendants(callback fn (&Node) TraversalDecision) TraversalDecision {
+	decision := n.for_each_shadow_including_inclusive_descendant(callback)
+	platform.release_closure(voidptr(callback))
+	return decision
 }
 
 pub fn (n &Node) character_data() ?&CharacterData {

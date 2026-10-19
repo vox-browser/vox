@@ -40,7 +40,7 @@ pub fn sanitize_clipboard_html(range &dom.Range, html string) !string {
 	mut active_elements := []&dom.Element{}
 	active_elements_pointer := &active_elements
 	mut fragment_node := fragment.as_node()
-	fragment_node.for_each_in_subtree(fn [active_elements_pointer] (node &dom.Node) dom.TraversalDecision {
+	fragment_node.visit_subtree(fn [active_elements_pointer] (node &dom.Node) dom.TraversalDecision {
 		element := node.as_element() or { return .@continue }
 		if is_active_element(element) {
 			append_clipboard_element(active_elements_pointer, element)

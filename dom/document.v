@@ -4530,6 +4530,11 @@ pub fn (d &Document) for_each_shadow_including_descendant(callback fn (&Node) Tr
 	return document_node.for_each_shadow_including_descendant(callback)
 }
 
+pub fn (d &Document) visit_shadow_including_descendants(callback fn (&Node) TraversalDecision) TraversalDecision {
+	document_node := unsafe { &Node(d) }
+	return document_node.visit_shadow_including_descendants(callback)
+}
+
 pub fn (mut d Document) notify_each_document_observer_completely_loaded() {
 	d.document_observers_being_notified = d.document_observers.clone()
 	for observer in d.document_observers_being_notified {
@@ -6226,7 +6231,7 @@ pub fn (mut d Document) respond_to_base_url_changes(old_document_url URL, old_ba
 		return
 	}
 	encoding := d.encoding_or_default()
-	d.for_each_shadow_including_descendant(fn [old_document_url, old_base_url, new_document_url, new_base_url, base_url_unchanged, encoding] (node &Node) TraversalDecision {
+	d.visit_shadow_including_descendants(fn [old_document_url, old_base_url, new_document_url, new_base_url, base_url_unchanged, encoding] (node &Node) TraversalDecision {
 		element := node.as_element() or { return .@continue }
 		if !element.matches_link_pseudo_class() {
 			return .@continue
@@ -6539,7 +6544,7 @@ pub fn (d &Document) title_element() ?&HTMLTitleElement {
 	mut found := []&HTMLTitleElement{}
 	found_ptr := &found
 	document_node := unsafe { &Node(d) }
-	document_node.for_each_in_subtree(fn [found_ptr] (node &Node) TraversalDecision {
+	document_node.visit_subtree(fn [found_ptr] (node &Node) TraversalDecision {
 		element := node.as_element() or { return .@continue }
 		if is_html_element_with_local_name(element, 'title') {
 			dom_ptr_push(found_ptr, unsafe { &HTMLTitleElement(element) })
@@ -6934,7 +6939,7 @@ pub fn (mut d Document) obtain_supported_color_schemes() {
 	mut found := []ParsedMetaColorScheme{}
 	found_ptr := &found
 	document_node := unsafe { &Node(&d) }
-	document_node.for_each_in_subtree(fn [found_ptr] (node &Node) TraversalDecision {
+	document_node.visit_subtree(fn [found_ptr] (node &Node) TraversalDecision {
 		element := node.as_element() or { return .@continue }
 		if !is_html_element_with_local_name(element, 'meta') || to_ascii_lowercase(element.get_attribute_value('name')) != 'color-scheme' {
 			return .@continue
@@ -6999,7 +7004,7 @@ pub fn (mut d Document) obtain_theme_color() {
 	mut found := []string{}
 	found_ptr := &found
 	document_node := unsafe { &Node(&d) }
-	document_node.for_each_in_subtree(fn [hook, found_ptr] (node &Node) TraversalDecision {
+	document_node.visit_subtree(fn [hook, found_ptr] (node &Node) TraversalDecision {
 		element := node.as_element() or { return .@continue }
 		if !is_html_element_with_local_name(element, 'meta') || to_ascii_lowercase(element.get_attribute_value('name')) != 'theme-color' {
 			return .@continue
@@ -8035,7 +8040,7 @@ pub fn (mut d Document) adopt_node(node &Node) {
 			d.style_scope_adoption_depth_--
 		}
 		// 1. For each inclusiveDescendant in node's shadow-including inclusive descendants:
-		node.for_each_shadow_including_inclusive_descendant(fn [d_ptr] (inclusive_descendant &Node) TraversalDecision {
+		node.visit_shadow_including_inclusive_descendants(fn [d_ptr] (inclusive_descendant &Node) TraversalDecision {
 			// 1. Set inclusiveDescendant's node document to document.
 			mut mutable_descendant := unsafe { &Node(inclusive_descendant) }
 			mutable_descendant.set_document(d_ptr)
@@ -8074,7 +8079,7 @@ pub fn (mut d Document) adopt_node(node &Node) {
 
 		// 3. For each inclusiveDescendant in node's shadow-including inclusive descendants, in shadow-including tree order,
 		//    run the adopting steps with inclusiveDescendant and oldDocument.
-		node.for_each_shadow_including_inclusive_descendant(fn [old_document] (inclusive_descendant &Node) TraversalDecision {
+		node.visit_shadow_including_inclusive_descendants(fn [old_document] (inclusive_descendant &Node) TraversalDecision {
 			mut mutable_descendant := unsafe { &Node(inclusive_descendant) }
 			mutable_descendant.adopted_from(old_document)
 			return .@continue
@@ -9750,7 +9755,7 @@ pub fn (d &Document) descendant_navigables() []&Navigable {
 	mut navigables := []&Navigable{}
 	navigables_ptr := &navigables
 	// 2-3. For each shadow-including descendant that is a navigable container:
-	d.for_each_shadow_including_descendant(fn [navigables_ptr] (node &Node) TraversalDecision {
+	d.visit_shadow_including_descendants(fn [navigables_ptr] (node &Node) TraversalDecision {
 		nc := as_navigable_container(node) or { return .@continue }
 		content_nav := nc.content_navigable() or { return .@continue }
 		active_doc := content_nav.active_document() or { return .@continue }

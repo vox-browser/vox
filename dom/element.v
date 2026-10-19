@@ -2260,7 +2260,7 @@ pub fn (mut e Element) set_shadow_root(sr ?&ShadowRoot) {
 		current_node.set_is_connected(false)
 		if e.is_connected() {
 			old_root := unsafe { &Node(current_shadow_root) }
-			current_node.for_each_shadow_including_descendant(fn [old_root] (descendant &Node) TraversalDecision {
+			current_node.visit_shadow_including_descendants(fn [old_root] (descendant &Node) TraversalDecision {
 				mut mutable_descendant := unsafe { &Node(descendant) }
 				mutable_descendant.removed_from_with_context(.no, old_root, old_root)
 				return .@continue
@@ -4135,7 +4135,7 @@ fn (mut e Element) exit_fullscreen_on_element_removal() {
 	//    have their fullscreen flag set, in shadow-including tree order.
 	mut fullscreen_elements := []&Element{}
 	fullscreen_elements_ptr := &fullscreen_elements
-	e.as_node().for_each_shadow_including_inclusive_descendant(fn [fullscreen_elements_ptr] (node &Node) TraversalDecision {
+	e.as_node().visit_shadow_including_inclusive_descendants(fn [fullscreen_elements_ptr] (node &Node) TraversalDecision {
 		element := node.as_element() or { return .@continue }
 		if element.is_fullscreen_element() {
 			dom_ptr_push(fullscreen_elements_ptr, element)
@@ -4523,7 +4523,7 @@ pub fn (mut e Element) set_popover_target_element(value ?&Element) {
 pub fn (mut element HTMLElement) set_subtree_inertness(is_inert bool) {
 	element.set_inert(is_inert)
 	element_node := unsafe { &Node(&element) }
-	element_node.for_each_in_subtree(fn [is_inert] (node &Node) TraversalDecision {
+	element_node.visit_subtree(fn [is_inert] (node &Node) TraversalDecision {
 		descendant := node.as_element() or { return .@continue }
 		if !descendant.is_html_element() {
 			return .@continue
@@ -5633,7 +5633,7 @@ pub fn (mut e Element) invalidate_style_after_language_change() {
 }
 
 fn (mut e Element) publish_language_and_directionality(is_directionality_change bool) {
-	e.as_node().for_each_shadow_including_inclusive_descendant(fn [is_directionality_change] (node &Node) TraversalDecision {
+	e.as_node().visit_shadow_including_inclusive_descendants(fn [is_directionality_change] (node &Node) TraversalDecision {
 		if element := node.as_element() {
 			mut mutable_element := unsafe { &Element(element) }
 			if !is_directionality_change {
@@ -6975,7 +6975,7 @@ pub fn (mut e Element) update_use_elements_that_reference_this() {
 	}
 	document_root := unsafe { &Node(e.document()) }
 	changed_element := unsafe { &Element(e) }
-	document_root.for_each_in_subtree(fn [changed_element] (node &Node) TraversalDecision {
+	document_root.visit_subtree(fn [changed_element] (node &Node) TraversalDecision {
 		if use_element := node.as_element() {
 			if use_element.is_svg_element() && use_element.local_name() == 'use' {
 				mut mutable_use := unsafe { &Element(use_element) }
@@ -6992,7 +6992,7 @@ pub fn (mut e Element) remove_from_use_element_that_reference_this() {
 	}
 	document_root := unsafe { &Node(e.document()) }
 	removed_element := unsafe { &Element(e) }
-	document_root.for_each_in_subtree(fn [removed_element] (node &Node) TraversalDecision {
+	document_root.visit_subtree(fn [removed_element] (node &Node) TraversalDecision {
 		if use_element := node.as_element() {
 			if use_element.is_svg_element() && use_element.local_name() == 'use' {
 				mut mutable_use := unsafe { &Element(use_element) }

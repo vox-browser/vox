@@ -1853,7 +1853,7 @@ fn scope_match_a_selectors_string(node &ParentNode, selector_text string, return
 	mut results := []&Node{}
 	results_ptr := &results
 	if return_matches == .first {
-		node.as_node().for_each_in_subtree(fn [selectors, node, results_ptr] (tree_node &Node) TraversalDecision {
+		node.as_node().visit_subtree(fn [selectors, node, results_ptr] (tree_node &Node) TraversalDecision {
 			element := tree_node.as_element() or { return .@continue }
 			for selector in selectors.selectors {
 				if selector_engine_matches(selector, element, node) {
@@ -1870,7 +1870,7 @@ fn scope_match_a_selectors_string(node &ParentNode, selector_text string, return
 		}
 		return NodeList{}
 	}
-	node.as_node().for_each_in_subtree(fn [selectors, node, results_ptr] (tree_node &Node) TraversalDecision {
+	node.as_node().visit_subtree(fn [selectors, node, results_ptr] (tree_node &Node) TraversalDecision {
 		element := tree_node.as_element() or { return .@continue }
 		for selector in selectors.selectors {
 			if selector_engine_matches(selector, element, node) {

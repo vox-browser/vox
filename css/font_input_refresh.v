@@ -44,7 +44,7 @@ fn mark_font_family_inputs_changed(document &dom.Document, family_name string) {
 			root_metrics_may_change = retained_style_needs_font_inputs(style, family_name)
 		}
 	}
-	document.for_each_shadow_including_descendant(fn [family_name, root_metrics_may_change] (node &dom.Node) dom.TraversalDecision {
+	document.visit_shadow_including_descendants(fn [family_name, root_metrics_may_change] (node &dom.Node) dom.TraversalDecision {
 		element := node.as_element() or { return .@continue }
 		mut affected := false
 		if style := element.el_computed_properties() {

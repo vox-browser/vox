@@ -148,7 +148,7 @@ fn hide_cookie_banners(document &dom.Document) int {
 	mut banners := []&dom.Element{}
 	banners_ptr := &banners
 	document_node := unsafe { &dom.Node(document) }
-	document_node.for_each_in_subtree(fn [banners_ptr] (node &dom.Node) dom.TraversalDecision {
+	document_node.visit_subtree(fn [banners_ptr] (node &dom.Node) dom.TraversalDecision {
 		element := node.as_element() or { return .@continue }
 		if !element.has_attribute('data-vox-cookie-blocked') && is_cookie_banner(element)
 			&& !has_cookie_banner_ancestor(node) {
