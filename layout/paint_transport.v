@@ -267,6 +267,7 @@ pub mut:
 	floating              bool
 	absolutely_positioned bool
 	inline_or_replaced    bool
+	atomic_in_flow        bool
 	stacking_context      bool
 	paintable_with_lines  bool
 	// Retained table paint metadata from PaintableBox. Collapsed cells do not
@@ -2735,6 +2736,15 @@ fn (b &BlockBox) collect_compatibility_descendant_paint_steps(phase Compatibilit
 		// Positioned descendants with z-index:auto are painted atomically during
 		// the stack-level-zero phase, just like StackingContext::paint_internal().
 		if child.positioned {
+			continue
+		}
+		// Flex/grid items paint like inline blocks. Their
+		// backgrounds must stay beside their own foreground, rather than being
+		// hoisted ahead of an earlier sibling's foreground.
+		if child.atomic_in_flow {
+			if phase == .foreground {
+				child.collect_compatibility_node_as_stacking_context_steps(mut steps)
+			}
 			continue
 		}
 		// A non-positioned float is treated as a temporary stacking context in

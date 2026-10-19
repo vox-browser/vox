@@ -4080,6 +4080,7 @@ fn uncached_block_box_from_typed_layout_shallow(node &Node, state &LayoutState, 
 		floating: floating
 		absolutely_positioned: node.is_absolutely_positioned()
 		inline_or_replaced: inline_or_replaced
+		atomic_in_flow: node.is_flex_item() || node.is_grid_item()
 		stacking_context: stacking_context
 		paintable_with_lines: layout_debug_paintable_class(node) == 'PaintableWithLines'
 		table_inside: display.is_table_inside()

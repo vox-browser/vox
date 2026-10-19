@@ -1,0 +1,11 @@
+<!doctype html>
+<!-- Viewport: 400x200, device scale 1. Item backgrounds follow earlier item foregrounds. -->
+<meta charset="utf-8"><base href="https://asgardpvp.com/">
+<style>
+body{margin:0;background:white}.flex{display:flex}.grid{display:grid;margin-top:10px}
+main{width:60px}section{width:60px;height:60px;flex:none;grid-area:1/1}
+.first{margin-right:-60px}.second{background:blue}svg{display:block}
+.top{position:absolute;left:0;top:0;width:10px;height:10px;background:lime;z-index:1}
+</style>
+<main class="flex"><section class="first"><svg width="60" height="60"><rect width="60" height="60" fill="red"/></svg><div class="top"></div></section><section class="second"></section></main>
+<main class="grid"><section class="first"><svg width="60" height="60"><rect width="60" height="60" fill="red"/></svg></section><section class="second"></section></main>
