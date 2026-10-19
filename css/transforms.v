@@ -1123,14 +1123,17 @@ pub fn (perspective CSSPerspective) to_string() !string {
 	mut serialized := 'perspective('
 
 	// 2. Serialize this’s length internal slot, with a minimum of 0px, and append it to s.
-	serialized += match perspective.length_ {
+	// Match a local: current V miscompiles a multi-variant branch that converts a
+	// matched field to another sum type.
+	length := perspective.length_
+	serialized += match length {
 		CSSUnitValue, CSSMathSum, CSSMathProduct, CSSMathNegate, CSSMathInvert, CSSMathMin, CSSMathMax, CSSMathClamp {
-			CSSNumericValue(perspective.length_).serialize(CSSNumericSerializationParams{
+			CSSNumericValue(length).serialize(CSSNumericSerializationParams{
 				minimum: 0
 			})
 		}
 		CSSKeywordValue {
-			perspective.length_.to_string()
+			length.to_string()
 		}
 	}
 
