@@ -738,4 +738,48 @@ eight exact SVG guards, eleven unchanged default captures, carried unchanged
 LibJS checks and all 100 fresh exact AST fixtures are verified.
 `parity-v120-checkpoint.json` closes the instruction gate while retaining
 `all_tests_passed: false` and `parity_achieved: false`. The installed bundle is
-still source-92 while a fresh current-workspace bundle is being checked.
+still source-92 at that checkpoint while a fresh current-workspace bundle is
+being checked.
+
+`ebf932c0` avoids constructing a counter-resolution record when there are no
+list-item or explicit counter operations and no inherited counter values. Its
+80 focused cases in six files pass in both GC modes. Source-120/121/121/120
+ABBA measures 267,257,416 versus 265,471,011 warm instructions, saving
+1,786,405. Warm times are 36.3815 versus 33.6785 ms. Eight native toggles retain
+the complete handler, correct labels and no dispatch errors. This gain remains
+below the next broad-verification gate.
+
+`2237ceee` adds a bounded, conservative class-token history for independent
+document queries. It records the matcher's actual class tokens, owns its
+strings, and becomes unknown after 512 tokens or 32 KB of token bytes. Removal,
+adoption, namespaces, quirks matching, shadow roots, parser insertion and bound
+overflow are covered. All seventeen focused cases in nine files pass per GC
+mode. Source-121/124/124/121 ABBA saves 1,821,553 warm instructions
+(269,865,478 versus 268,043,925). Its large elapsed difference, 57.9175 versus
+40.3765 ms, is not credited to that small CPU reduction. Eight complete native
+toggles pass, and both document states match in every decoded RGBA byte.
+
+A separately frozen current-workspace build, source-123, retains both states'
+pixels but regresses by 22,175,143 warm instructions against source-120. Its
+production drift includes lazy initial element metadata, live parent reads,
+stylesheet syntax caching and HTTP wakeup support. That comparison does not
+attribute the regression to an individual change. The extra work precedes the
+first layout timing checkpoint. Source-123 is not installed.
+
+`752b573f` batches the native click ancestor snapshot into one query. Fifteen
+cases in six original files pass per GC mode, including new target-movement,
+captured-path, identity and cancellation checks. The new cases also pass with
+the complete initial-state adapter. The matched source-123/128/128/123 ABBA
+saves only 396,813 warm instructions (291,947,467.5 versus 291,550,654.5),
+with warm times of 41.476 versus 64.511 ms. It does not explain the regression.
+Eight native toggles pass and both states remain pixel-exact. The cumulative
+measured savings since source-120 are 4,004,771 instructions; broad verification
+is therefore deferred under the unchanged 5,000,000-instruction rule.
+
+A diagnostic profiler now forwards the original C host callback directly,
+without inserting a `JSObjectCallAsFunction` around it. Its source-128 run
+observes about 98 native `nodeParent` requests per warm toggle, mostly from
+jQuery traversal; two computed-display reads also trigger substantial native
+work. These diagnostic timings receive no performance credit. A parent cache
+keyed by the document mutation clock is being checked next. Brave parity and
+installation of the newer bundle remain open.
