@@ -3899,7 +3899,7 @@ pub fn (mut n Node) unsafely_set_html(context_element &Element, html string) ! {
 	}
 
 	// 4. Replace all within contextElement (or within a template element's template contents).
-	mut target := n
+	mut target := unsafe { &n }
 	if context_element.is_html_element() && context_element.local_name() == 'template' {
 		template_element := unsafe { &HTMLTemplateElement(context_element) }
 		target = template_element.content().as_node()

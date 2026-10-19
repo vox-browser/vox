@@ -354,7 +354,7 @@ pub fn (mut pipe AudioWorkletPipe) request_wakeup() {
 		return
 	}
 	pipe.pump_scheduled_ = true
-	pipe_pointer := pipe
+	pipe_pointer := unsafe { &pipe }
 	html.queue_a_task(.media_element, html.main_thread_event_loop(), none, fn [pipe_pointer] () {
 		mut current_pipe := pipe_pointer
 		if current_pipe.state() == .shut_down {

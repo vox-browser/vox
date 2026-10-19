@@ -503,7 +503,7 @@ pub fn (mut image HTMLImageElementModel) update_the_image_data_impl(restart_anim
 		image.begin_delaying_document_load_event()
 	}
 	if fetch_async := image.async_fetch_hook_ {
-		image_pointer := image
+		image_pointer := unsafe { &image }
 		request_document := image.document_
 		url_string := url.serialize()
 		opaque := image_response_is_cors_cross_origin(image, url)
@@ -1036,7 +1036,7 @@ fn (mut image HTMLImageElementModel) image_request_finished(image_request &Image
 }
 
 pub fn (mut image HTMLImageElementModel) add_callbacks_to_image_request(image_request &ImageRequest, maybe_omit_events bool, url_string string, previous_url string, update_the_image_data_count u64) {
-	image_pointer := image
+	image_pointer := unsafe { &image }
 	mut request := unsafe { &ImageRequest(image_request) }
 	request.add_callbacks(fn [image_pointer, image_request, maybe_omit_events, url_string, previous_url, update_the_image_data_count] () {
 		if shared_request := image_request.shared_resource_request() {

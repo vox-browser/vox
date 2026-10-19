@@ -487,7 +487,7 @@ pub fn (mut window WindowModel) start_an_idle_period() {
 	if window.runnable_idle_callbacks_.len == 0 {
 		return
 	}
-	window_pointer := window
+	window_pointer := unsafe { &window }
 	queue_a_task(.idle_task, main_thread_event_loop(), window.associated_document(), fn [window_pointer] () {
 		mut callback_window := window_pointer
 		callback_window.invoke_idle_callbacks()
@@ -517,7 +517,7 @@ pub fn (mut window WindowModel) invoke_idle_callbacks() {
 	}
 	callback.handler(requestidlecallback.IdleDeadline.create(false)) or {}
 	if window.runnable_idle_callbacks_.len > 0 {
-		window_pointer := window
+		window_pointer := unsafe { &window }
 		queue_a_task(.idle_task, main_thread_event_loop(), window.associated_document(), fn [window_pointer] () {
 			mut callback_window := window_pointer
 			callback_window.invoke_idle_callbacks()
@@ -865,7 +865,7 @@ pub fn (mut window WindowModel) request_idle_callback(handler WindowIdleCallback
 	window.idle_request_callback_order_ << handle
 	if timeout := options.timeout {
 		if timeout > 0 {
-			window_pointer := window
+			window_pointer := unsafe { &window }
 			mut scope := window.global_scope_
 			timer_id := scope.run_steps_after_a_timeout(if timeout > u32(2_147_483_647) {
 				2_147_483_647

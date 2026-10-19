@@ -338,7 +338,7 @@ fn (mut node AudioWorkletNode) fail_processor(message string) {
 }
 
 pub fn (mut node AudioWorkletNode) fire_processor_error(message string) {
-	node_pointer := node
+	node_pointer := unsafe { &node }
 	html.queue_a_task(.dom_manipulation, html.main_thread_event_loop(), none, fn [node_pointer, message] () {
 		mut mutable_node := unsafe { &AudioWorkletNode(node_pointer) }
 		mutable_node.processor_error_messages_ << message
