@@ -111,18 +111,20 @@ void v_prealloc_base_alloc_hook(void *pointer, intptr_t size) {
         if (stat(vox_sample_trigger, &info) != 0) return;
     }
     vox_sample_busy = 1;
-    void *frames[VOX_SAMPLE_DEPTH + 2];
-    int depth = backtrace(frames, VOX_SAMPLE_DEPTH + 2) - 2;
+    // frames[0] is this hook. The allocator's fast path is inlined into its
+    // callers, so frames[1] can already be the allocating function.
+    void *frames[VOX_SAMPLE_DEPTH + 1];
+    int depth = backtrace(frames, VOX_SAMPLE_DEPTH + 1) - 1;
     if (depth > 0) {
         uint64_t hash = 1469598103934665603ULL;
-        for (int i = 0; i < depth; i++) hash = (hash ^ (uint64_t)frames[i + 2]) * 1099511628211ULL;
+        for (int i = 0; i < depth; i++) hash = (hash ^ (uint64_t)frames[i + 1]) * 1099511628211ULL;
         pthread_mutex_lock(&vox_sample_lock);
         for (uint64_t probe = 0; probe < VOX_SAMPLE_SLOTS; probe++) {
             VoxSampleSite *site = &vox_sample_sites[(hash + probe) % VOX_SAMPLE_SLOTS];
             if (!site->count) {
                 site->hash = hash;
                 site->depth = depth;
-                memcpy(site->frames, frames + 2, sizeof(void *) * (size_t)depth);
+                memcpy(site->frames, frames + 1, sizeof(void *) * (size_t)depth);
             }
             if (site->hash == hash) {
                 site->bytes += vox_sample_interval * crossings;
