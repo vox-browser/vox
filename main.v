@@ -6769,6 +6769,7 @@ fn (mut app BrowserApp) draw() {
 		$if macos {
 			if app.ctx.native_rendering && app.document != unsafe { nil }
 				&& app.document.font_rendering_policy() == .chromium {
+				C.native_set_chromium_shared_recording(i32(chromium_shared_recording_supported(app.paint_commands, app.chromium_raster_plan)), i32(app.viewport_width), i32(app.viewport_height))
 				C.native_begin_font_compositing_layer(f32(app.ctx.width), f32(app.ctx.height))
 				app.set_chromium_msaa_tiles()
 			} else if app.ctx.native_rendering

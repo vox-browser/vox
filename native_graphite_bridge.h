@@ -2,6 +2,7 @@
 #define VOX_NATIVE_GRAPHITE_BRIDGE_H
 
 #include <stdint.h>
+#include <stddef.h>
 
 enum { VOX_GRAPHITE_IMAGE_FORCE_MSAA = 32 };
 
@@ -74,6 +75,9 @@ extern "C" {
 // Owner/main-thread idle cache eviction. Does not initialize an unused backend
 // or destroy live paint resources; the next draw may rebuild temporary caches.
 void vox_graphite_release_unused_graphics_memory(void);
+void vox_graphite_picture_release_unused_graphics_memory(void);
+int vox_graphite_draw_picture_pixels(uint8_t *pixels, int width, int height,
+    int pitch, const void *bytes, size_t size, const float *matrix);
 int vox_graphite_draw_shadow_pixels(uint8_t *pixels, int width, int height,
     int pitch, int has_background, const VoxGraphiteShadow *shadow);
 int vox_graphite_draw_image_pixels(uint8_t *pixels, int width, int height,

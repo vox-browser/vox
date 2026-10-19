@@ -43,6 +43,9 @@ extern void ladybird_v_skia_set_raster_layer(double origin_x, double origin_y, i
 extern void ladybird_v_skia_set_msaa_tiles(const int *tiles, int count, int tile_rows);
 extern void ladybird_v_skia_set_rect_clip_outs(const float *rects, int count);
 extern void ladybird_v_skia_set_rounded_rect_underlay(const float *rect, uint8_t red, uint8_t green, uint8_t blue, uint8_t alpha);
+extern void ladybird_v_skia_set_shared_recording(int, int, int);
+extern void ladybird_v_skia_record_rect(CGContextRef, float, float, float, float,
+    uint8_t, uint8_t, uint8_t, uint8_t);
 extern int ladybird_v_skia_register_system_face(const char *key, const char *path,
 	const char *postscript_name, const uint32_t *axis_tags, const float *axis_values, int axis_count);
 extern int ladybird_v_skia_draw_glyph_run(CGContextRef destination,
@@ -676,6 +679,10 @@ void native_draw_rect_srgb(float x, float y, float width, float height, gg__Colo
 	if (context == NULL) {
 		return;
 	}
+#ifdef LADYBIRD_V_HAS_SKIA_TEXT
+    ladybird_v_skia_record_rect(context, x, y, width, height,
+        color.r, color.g, color.b, color.a);
+#endif
 	static CGColorSpaceRef colorSpace;
 	static dispatch_once_t onceToken;
 	dispatch_once(&onceToken, ^{
@@ -2428,6 +2435,12 @@ void native_set_rect_clip_outs(const double *rects, int count) {
 	free(values);
 #else
 	(void)rects; (void)count;
+#endif
+}
+
+void native_set_chromium_shared_recording(int enabled, int width, int height) {
+#ifdef LADYBIRD_V_HAS_SKIA_TEXT
+    ladybird_v_skia_set_shared_recording(enabled, width, height);
 #endif
 }
 

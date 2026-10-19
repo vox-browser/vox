@@ -30,6 +30,9 @@
 #include "include/core/SkMaskFilter.h"
 #include "include/core/SkMatrix.h"
 #include "include/core/SkPaint.h"
+#include "include/core/SkPicture.h"
+#include "include/core/SkPictureRecorder.h"
+#include "include/core/SkSerialProcs.h"
 #include "include/core/SkPath.h"
 #include "include/core/SkRRect.h"
 #include "include/core/SkSize.h"
@@ -57,6 +60,7 @@
 #include <cstring>
 #include <list>
 #include <memory>
+#include <set>
 #include <pthread.h>
 #include <string>
 #include <unordered_map>
@@ -68,6 +72,12 @@
 #endif
 
 namespace {
+
+SkCanvas* shared_recording_canvas(CGContextRef);
+void shared_recording_block(SkRect);
+void shared_recording_svg(CGContextRef, SkRect, float);
+void shared_recording_image(CGContextRef, SkMatrix const&, VoxGraphiteImage const&);
+void finish_shared_recording();
 
 enum FontSlot {
     RegularFont = 0,
@@ -678,12 +688,19 @@ extern "C" void ladybird_v_skia_release_unused_graphics_memory()
         if (purge) purge();
         dlclose(library);
     }
+    if (void* library = dlopen("@rpath/libVoxGraphiteDawn.dylib", RTLD_LAZY | RTLD_LOCAL | RTLD_NOLOAD)) {
+        auto purge = reinterpret_cast<decltype(&vox_graphite_picture_release_unused_graphics_memory)>(
+            dlsym(library, "vox_graphite_picture_release_unused_graphics_memory"));
+        if (purge) purge();
+        dlclose(library);
+    }
     s_glyph_raster_cache.clear();
     SkGraphics::PurgeAllCaches();
 }
 
 extern "C" void ladybird_v_skia_set_chromium_painting(int active)
 {
+    if (!active) finish_shared_recording();
     s_chromium_painting = active != 0;
 }
 
@@ -996,6 +1013,13 @@ static int draw_retained_glyph_run(CGContextRef destination,
         transform_a, transform_c, page_x + transform_e,
         transform_b, transform_d, page_y - scroll_y + transform_f,
         0.0f, 0.0f, 1.0f);
+
+    if (auto* canvas = shared_recording_canvas(destination)) {
+        canvas->save();
+        canvas->setMatrix(matrix);
+        canvas->drawTextBlob(blob, baseline_x, baseline_y, paint);
+        canvas->restore();
+    }
 
     // The old bridge allocated and recorded one canvas-sized transparent image
     // for every glyph run. A text-heavy page consequently made AppKit replay
@@ -1599,6 +1623,7 @@ extern "C" int ladybird_v_skia_draw_rgba_image(CGContextRef destination,
         };
         std::copy_n(s_image_color_profile, 10, descriptor.color_profile);
         if (clip_radii) std::copy_n(clip_radii, 8, descriptor.clip + 4);
+        shared_recording_image(destination, matrix, descriptor);
         raster_matrix(matrix, region, raster_scale_x, raster_scale_y).get9(descriptor.matrix);
         auto rows = chromium_layer_msaa_rows(region.top, raster_height, page_y, scroll_y, destination_scale);
         auto draw = graphite_image_draw();
@@ -1854,8 +1879,11 @@ static double s_raster_origin_x = 0, s_raster_origin_y = 0;
 static double s_raster_layer_width = 0, s_raster_layer_height = 0;
 static bool s_raster_layer_is_root = true;
 
+#include "native_chromium_shared_recording.h"
+
 extern "C" void ladybird_v_skia_set_raster_layer(double x, double y, int root)
 {
+    if (!root) finish_shared_recording();
     s_raster_origin_x = x;
     s_raster_origin_y = y;
     s_raster_layer_is_root = root != 0;
@@ -2058,6 +2086,14 @@ extern "C" int ladybird_v_skia_draw_rounded_rect(CGContextRef destination,
     if (!fill) {
         paint.setStyle(SkPaint::kStroke_Style);
         paint.setStrokeWidth(thickness);
+    }
+    if (auto* canvas = shared_recording_canvas(destination)) {
+        canvas->save();
+        canvas->setMatrix(matrix);
+        if (has_underlay) canvas->drawRRect(underlay_rect, underlay_paint);
+        clip_out_rects(canvas);
+        canvas->drawRRect(rounded_rect, paint);
+        canvas->restore();
     }
     if (s_raster_command_group
         && s_raster_command_group->destination == destination) {
@@ -2352,6 +2388,47 @@ extern "C" int ladybird_v_skia_draw_svg_path_batch(CGContextRef destination,
         || count <= 0 || count > 65536 || width <= 0 || height <= 0) return 0;
     auto matrix = SkMatrix::MakeAll(outer[0], outer[2], page_x + outer[4],
         outer[1], outer[3], page_y - scroll_y + outer[5], 0, 0, 1);
+    if (auto* canvas = shared_recording_canvas(destination)) {
+        auto bounds = matrix.mapRect(SkRect::MakeXYWH(x, y, width, height));
+        bool supported = std::none_of(paths, paths + count,
+            [](auto const& path) { return path.gradient != 0; });
+        if (!supported) shared_recording_block(bounds);
+        else {
+            shared_recording_svg(destination, bounds, page_y);
+            canvas->save();
+            canvas->setMatrix(matrix);
+            canvas->clipRect(SkRect::MakeXYWH(x, y, width, height));
+            for (int index = 0; index < count; ++index) {
+                auto const& source = paths[index];
+                SkMatrix local;
+                local.set9(source.matrix);
+                auto geometry = path_from_serialized_segments(source.segments, source.segment_count);
+                geometry.setFillType(source.even_odd ? SkPathFillType::kEvenOdd : SkPathFillType::kWinding);
+                SkPaint paint;
+                paint.setAntiAlias(true);
+                paint.setColor(SkColorSetARGB(source.alpha, source.red, source.green, source.blue));
+                if (source.has_float_alpha) paint.setAlphaf(source.opacity);
+                canvas->save();
+                canvas->setMatrix(matrix);
+                canvas->concat(local);
+                if (source.stroke) {
+                    paint.setStyle(SkPaint::kStroke_Style);
+                    paint.setStrokeWidth(source.stroke_width);
+                    paint.setStrokeCap(SkPaint::Cap(source.line_cap));
+                    paint.setStrokeJoin(SkPaint::Join(source.line_join));
+                    paint.setStrokeMiter(source.miter_limit);
+                    if (source.non_scaling_stroke) {
+                        geometry.transform(local);
+                        SkMatrix inverse;
+                        if (local.invert(&inverse)) canvas->concat(inverse);
+                    }
+                }
+                canvas->drawPath(geometry, paint);
+                canvas->restore();
+            }
+            canvas->restore();
+        }
+    }
     RasterRegion region;
     if (!clipped_raster_region(matrix.mapRect(SkRect::MakeXYWH(x, y, width, height)),
             canvas_width, canvas_height, 0, region)) return 1;
@@ -2490,6 +2567,12 @@ extern "C" int ladybird_v_skia_draw_svg_path(CGContextRef destination,
 			canvas->drawPath(non_scaling_stroke ? transformed_stroke_path : path, paint);
 		}
 	};
+    if (auto* canvas = shared_recording_canvas(destination)) {
+        shared_recording_svg(destination, matrix.mapRect(local_bounds), page_y);
+        canvas->save();
+        draw_path(canvas, RasterRegion{}, 1, 1);
+        canvas->restore();
+    }
 	if (s_raster_command_group
 		&& s_raster_command_group->destination == destination) {
 		auto& group = *s_raster_command_group;

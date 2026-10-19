@@ -292,3 +292,9 @@ expanded diagnostic improves from 1,110 to 405 differing pixels, including
 41 pixel errors that increase; its authored-arc and previously exact stroke
 controls remain exact. Fractional, transformed, dashed and small-circle
 cases still require work, so the expanded diagnostic has no parity credit.
+
+`svg-shared-root-recording` captures an inline SVG image at 1280 by 800.
+Its short non-scaling stroke shares the root recording with surrounding
+drawing, then replays through the pinned Dawn/Metal backend. The expected PNG
+requires exact RGBA equality; unsupported effect and clip scopes keep their
+existing leaf rendering path.
