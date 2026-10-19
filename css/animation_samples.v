@@ -491,16 +491,20 @@ fn owned_length_percentage_or_auto(value LengthPercentageOrAuto) LengthPercentag
 }
 
 // A style value that outlives its sample: transitions keep their start and
-// end values for their whole duration. Copy samples into ordinary storage;
-// the typed value is parsed again from its text on first use.
-fn (s &StyleComputer) copy_sampled_style_value(value &dom.StyleValue) &dom.StyleValue {
+// end values for their whole duration. Copy samples into ordinary storage by
+// parsing their text again, so the copy keeps a typed value for the
+// keyframe computation.
+fn (s &StyleComputer) copy_sampled_style_value(property_id PropertyID, value &dom.StyleValue) &dom.StyleValue {
 	if s.animation_samples_ == unsafe { nil } || !s.animation_samples_.contains(voidptr(value)) {
 		return unsafe { value }
 	}
 	persistent := platform.enter_persistent()
 	defer { platform.leave_persistent(persistent) }
-	mut copy := &dom.StyleValue{
-		css_text: value.css_text.clone()
+	text := value.css_text.clone()
+	mut copy := parse_css_value(ParsingParams{}, text, property_id) or {
+		&dom.StyleValue{
+			css_text: text
+		}
 	}
 	if url := value.base_url {
 		copy.base_url = url.clone()

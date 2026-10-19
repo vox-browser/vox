@@ -1535,7 +1535,7 @@ fn start_transition_for_storage(abstract_element dom.AbstractElement, property_i
 	// A transition keeps its endpoints for its whole run; the before-change
 	// style can hold animation samples that are reused later.
 	style_computer := css_style_computer_for(abstract_element.document())
-	transition := CSSTransition.start_a_transition_for_storage(mut storage, abstract_element, property_id, transition_generation, transition_attributes, delay, start_time, end_time, style_computer.copy_sampled_style_value(start_value), style_computer.copy_sampled_style_value(end_value), style_computer.copy_sampled_style_value(reversing_adjusted_start_value), reversing_shortening_factor)
+	transition := CSSTransition.start_a_transition_for_storage(mut storage, abstract_element, property_id, transition_generation, transition_attributes, delay, start_time, end_time, style_computer.copy_sampled_style_value(property_id, start_value), style_computer.copy_sampled_style_value(property_id, end_value), style_computer.copy_sampled_style_value(property_id, reversing_adjusted_start_value), reversing_shortening_factor)
 
 	// Immediately set the property's value to the transition's current value, to prevent single-frame jumps.
 	collect_transition_into_computed_properties(abstract_element, transition, mut new_style)
