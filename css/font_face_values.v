@@ -3492,6 +3492,10 @@ pub fn (font &PlatformFont) font_for_rendering() &platform.Font {
 	if font.matches_native_font(cached) {
 		return cached
 	}
+	// The handle is cached on a font that outlives any arena entered by the
+	// caller, such as keyframe sampling.
+	persistent := platform.enter_persistent()
+	defer { platform.leave_persistent(persistent) }
 	native_font := &platform.Font{
 		family: font.typeface.family_name.clone()
 		point_size: font.pixel_size_override_ or { font.point_size / 0.75 }
