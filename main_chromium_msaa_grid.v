@@ -2,13 +2,16 @@ module main
 
 import math
 
-fn C.native_set_chromium_msaa_grid(&int, int, int, int, int)
+fn C.native_set_chromium_msaa_grid(&i32, int, int, int, int)
 
 struct ChromiumRasterGrid {
 	tile_width  int
 	tile_height int
 	columns     int
 	cells       []int
+	// cells for the native renderer, which reads C ints: V's int is 64-bit
+	// under current V.
+	native_cells []i32
 }
 
 // cc/layers/tile_size_calculator.cc. The raster scale and the device viewport
@@ -75,5 +78,11 @@ fn chromium_raster_grid(triggers []ChromiumMSAATrigger, viewport_width int,
 	}
 	mut active := cells.keys()
 	active.sort()
-	return ChromiumRasterGrid{tile_width, tile_height, columns, active}
+	return ChromiumRasterGrid{
+		tile_width:   tile_width
+		tile_height:  tile_height
+		columns:      columns
+		cells:        active
+		native_cells: active.map(i32(it))
+	}
 }

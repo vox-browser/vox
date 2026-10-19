@@ -205,7 +205,7 @@ fn (mut app BrowserApp) dispose_browser_tab() {
 	app.paint_display_list = unsafe { nil }
 	app.paint_commands = []layout.PaintCommand{}
 	app.chromium_raster_plan = layout.ChromiumRasterLayerPlan{}
-	app.chromium_raster_tiles = [][]int{}
+	app.chromium_raster_tiles = [][]i32{}
 	app.history = []HistoryEntry{}
 	app.resource_cache = map[string]PreloadedResource{}
 	app.markup = ''

@@ -24,4 +24,6 @@ fn test_msaa_grid_includes_shared_border_texels_on_both_axes() {
 		ChromiumMSAATrigger{ left: 270, right: 273, top: 126, bottom: 129 },
 	], 1024, 684, 1024, 2821, 0, 0, 2)
 	assert grid.cells == [0, 1, 4, 5]
+	// The native renderer reads C ints.
+	assert grid.native_cells == [i32(0), 1, 4, 5]
 }

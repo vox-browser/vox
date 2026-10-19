@@ -661,10 +661,11 @@ pub fn (mut context WebGLRenderingContext) get_shader_parameter(shader &WebGLSha
 
 pub fn (mut context WebGLRenderingContext) get_shader_precision_format(shader GLenum, precision GLenum) WebGLShaderPrecisionFormat {
 	context.command('get_shader_precision_format')
-	mut range := [0, 0]!
+	// C writes two C ints; V's int is 64-bit under current V.
+	mut range := [i32(0), 0]!
 	mut bits := 0
 	C.vox_gl_shader_precision(shader, precision, &range[0], &bits)
-	return WebGLShaderPrecisionFormat.create(range[0], range[1], bits)
+	return WebGLShaderPrecisionFormat.create(int(range[0]), int(range[1]), bits)
 }
 
 pub fn (mut context WebGLRenderingContext) get_buffer_parameter(target GLenum, pname GLenum) WebGLParameterValue {

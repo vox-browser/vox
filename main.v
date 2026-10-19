@@ -267,7 +267,7 @@ fn C.native_begin_css_filter_layer(canvas_width f32, canvas_height f32)
 fn C.native_begin_font_compositing_layer(canvas_width f32, canvas_height f32)
 fn C.native_set_chromium_raster_scroll_y(scroll_y f64)
 fn C.native_set_chromium_raster_layer(origin_x f64, origin_y f64, root int)
-fn C.native_set_chromium_msaa_tiles(tiles &int, count int, tile_rows int)
+fn C.native_set_chromium_msaa_tiles(tiles &i32, count int, tile_rows int)
 fn C.native_set_rect_clip_outs(rects &f64, count int)
 fn C.native_rounded_rect_underlay_supported() int
 fn C.native_set_rounded_rect_underlay(rect &f32, color gg.Color)
@@ -281,7 +281,7 @@ fn C.native_begin_svg_filter_graph(root_id int, node_count int, bounds_x f32, bo
 
 fn C.native_add_svg_filter_node(id int, kind int, first f32, second f32, third f32, fourth f32, fifth f32, sixth f32, color gg.Color, mode int, x_channel int, y_channel int)
 
-fn C.native_set_svg_filter_node_inputs(id int, inputs &int, count int)
+fn C.native_set_svg_filter_node_inputs(id int, inputs &i32, count int)
 
 fn C.native_set_svg_filter_node_matrix(id int, matrix &f64, count int)
 
@@ -387,7 +387,7 @@ mut:
 	content_height                      f64
 	paint_commands                      []layout.PaintCommand
 	chromium_raster_plan                layout.ChromiumRasterLayerPlan
-	chromium_raster_tiles               [][]int
+	chromium_raster_tiles               [][]i32
 	chromium_raster_grids               []ChromiumRasterGrid
 	paint_commands_have_backdrop_filter bool
 	frame_preparation_depth             int
@@ -5230,7 +5230,17 @@ fn (mut app BrowserApp) add_native_svg_filter_graph(filter painting.GfxFilter, t
 		C.native_add_svg_filter_node(node.id, kind, parameters[0], parameters[1], parameters[2], parameters[3], tile_size[0], tile_size[1], gg.rgba(node.color.r, node.color.g, node.color.b, node.color.a), mode, x_channel, y_channel)
 		unsafe {
 			if node.input_ids.len > 0 {
-				C.native_set_svg_filter_node_inputs(node.id, &node.input_ids[0], node.input_ids.len)
+				// The native graph reads C ints; V's int is 64-bit under current V.
+				if node.input_ids.len <= 8 {
+					mut inputs := [8]i32{}
+					for i, input_id in node.input_ids {
+						inputs[i] = i32(input_id)
+					}
+					C.native_set_svg_filter_node_inputs(node.id, &inputs[0], node.input_ids.len)
+				} else {
+					inputs := node.input_ids.map(i32(it))
+					C.native_set_svg_filter_node_inputs(node.id, &inputs[0], inputs.len)
+				}
 			}
 			if node.matrix.len == 20 {
 				C.native_set_svg_filter_node_matrix(node.id, &node.matrix[0], node.matrix.len)

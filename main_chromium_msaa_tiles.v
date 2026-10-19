@@ -241,14 +241,15 @@ fn (mut app BrowserApp) set_chromium_msaa_tiles() {
 	$if macos {
 		scale := C.native_display_device_pixel_ratio()
 		tile_rows := chromium_gpu_raster_tile_rows(int(math.ceil(f64(app.viewport_height) * scale)))
-		app.chromium_raster_tiles = [][]int{cap: app.chromium_raster_plan.layers.len}
+		app.chromium_raster_tiles = [][]i32{cap: app.chromium_raster_plan.layers.len}
 		app.chromium_raster_grids = []ChromiumRasterGrid{cap: app.chromium_raster_plan.layers.len}
 		triggers := chromium_msaa_triggers_for_viewport(app.paint_commands, ChromiumMSAAViewport{
 			scroll_y: app.scroll_y
 			height:   f64(app.viewport_height)
 			fringe:   f64(tile_rows) / scale
 		})
-		legacy_tiles := chromium_msaa_tiles_for_triggers(triggers, 0, scale, tile_rows)
+		// The native renderer reads C ints; V's int is 64-bit under current V.
+		legacy_tiles := chromium_msaa_tiles_for_triggers(triggers, 0, scale, tile_rows).map(i32(it))
 		for index, layer in app.chromium_raster_plan.layers {
 			selected := triggers.filter(it.command_index < app.chromium_raster_plan.command_layers.len
 				&& app.chromium_raster_plan.command_layers[it.command_index] == index)
@@ -279,7 +280,7 @@ fn (mut app BrowserApp) set_chromium_msaa_tiles() {
 					math.floor(layer.bounds.y * scale) / scale
 				}
 				app.chromium_raster_tiles << chromium_msaa_tiles_for_triggers(selected, origin_y,
-					scale, tile_rows)
+					scale, tile_rows).map(i32(it))
 			}
 		}
 		C.native_set_chromium_raster_scroll_y(app.scroll_y)
@@ -309,18 +310,18 @@ fn (mut app BrowserApp) select_chromium_raster_layer(index int) {
 		C.native_set_chromium_raster_layer(x, y, int(index == 0 || layer.legacy_raster))
 		C.native_set_chromium_raster_layer_size(layer.bounds.width, layer.bounds.height)
 		tiles := app.chromium_raster_tiles[index]
-		pointer := if tiles.len > 0 { &tiles[0] } else { unsafe { &int(nil) } }
+		pointer := if tiles.len > 0 { &tiles[0] } else { unsafe { &i32(nil) } }
 		rows := chromium_gpu_raster_tile_rows(int(math.ceil(f64(app.viewport_height) * scale)))
 		C.native_set_chromium_msaa_tiles(pointer, tiles.len, rows)
 		if index < app.chromium_raster_grids.len {
 			grid := app.chromium_raster_grids[index]
 			if grid.columns > 0 {
-				cell_pointer := if grid.cells.len > 0 {
-					&grid.cells[0]
+				cell_pointer := if grid.native_cells.len > 0 {
+					&grid.native_cells[0]
 				} else {
-					unsafe { &int(nil) }
+					unsafe { &i32(nil) }
 				}
-				C.native_set_chromium_msaa_grid(cell_pointer, grid.cells.len, grid.tile_width, grid.tile_height, grid.columns)
+				C.native_set_chromium_msaa_grid(cell_pointer, grid.native_cells.len, grid.tile_width, grid.tile_height, grid.columns)
 			}
 		}
 	}

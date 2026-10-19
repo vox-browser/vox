@@ -12,7 +12,7 @@ fn (mut app BrowserApp) retire_native_document_rendering(previous &dom.Document)
 	app.root_box = layout.BlockBox{}
 	app.release_paint_commands()
 	app.chromium_raster_plan = layout.ChromiumRasterLayerPlan{}
-	app.chromium_raster_tiles = [][]int{}
+	app.chromium_raster_tiles = [][]i32{}
 	app.paint_commands_have_backdrop_filter = false
 	app.paint_commands_pending = false
 	return true
