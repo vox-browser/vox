@@ -3,6 +3,8 @@ module platform
 import os
 
 $if gcboehm ? {
+	#include "@DIR/boehm_gc.h"
+
 	fn C.GC_get_heap_usage_safe(heap_size &usize, free_bytes &usize, unmapped_bytes &usize,
 		bytes_since_gc &usize, total_bytes &usize)
 	fn C.GC_get_free_space_divisor() usize

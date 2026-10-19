@@ -881,6 +881,8 @@ mut:
 }
 
 $if gcboehm ? {
+	#include "@DIR/../platform/boehm_gc.h"
+
 	fn C.GC_free(voidptr)
 }
 

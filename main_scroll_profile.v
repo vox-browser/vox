@@ -7,6 +7,8 @@ import gg
 import platform
 
 $if gcboehm ? {
+	#include "@DIR/platform/boehm_gc.h"
+
 	fn C.GC_get_gc_no() usize
 }
 
