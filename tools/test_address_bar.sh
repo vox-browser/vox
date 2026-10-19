@@ -14,6 +14,6 @@ for source in "$repo_dir"/*.v; do
     ln -sf "$source" "$test_dir/$(basename "$source")"
 done
 ln -sf "$repo_dir/$test_file" "$test_dir/$test_file"
-"$v_compiler" -old-compiler -exclude @vlib/time/zoneinfo.native.v -enable-globals \
+"$v_compiler" -exclude @vlib/time/zoneinfo.native.v -enable-globals \
     -d vox_ui2 -path "$ui2_modules|$repo_dir|@vmodules|@vlib" \
     -cflags "-DLARGE_CONFIG=1 -O0 -I$repo_dir" "$@" "$test_dir/$test_file"

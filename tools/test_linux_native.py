@@ -40,7 +40,7 @@ def main():
     output.mkdir(parents=True, exist_ok=True)
     with tempfile.TemporaryDirectory(prefix="vox-native-") as temporary:
         for case in args.cases:
-            command = [compiler, "-old-compiler", "-enable-globals", "-cc", os.environ.get("CC", "clang"),
+            command = [compiler, "-enable-globals", "-cc", os.environ.get("CC", "clang"),
                        "-gc", args.gc, "-d", "use_openssl", "-path", paths]
             if args.gc != "none":
                 command += ["-d", "dynamic_boehm"]

@@ -15,7 +15,7 @@ def main():
     modules = subprocess.check_output(
         [sys.executable, str(repo / "tools/prepare_http_compat.py"), compiler], text=True).strip()
     binary = repo / "Build/v/httpcompat/check_headers"
-    subprocess.run([compiler, "-old-compiler", "-enable-globals", "-path",
+    subprocess.run([compiler, "-enable-globals", "-path",
                     f"{modules}|{repo}|@vmodules|@vlib", "-o", str(binary),
                     str(repo / "tools/httpcompat/check_headers.v")], cwd=repo, check=True)
     subprocess.run([str(binary)], cwd=repo, check=True)

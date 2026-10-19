@@ -38,7 +38,7 @@ def main():
             binary = repo / f'Build/v/httpcompat/check_h2_{mode}_{index}'
             # Direct compilation avoids vtest's shell rejoining the pipe-separated
             # module search path without quoting. Always run the resulting test.
-            command = [compiler, '-old-compiler', '-enable-globals', '-skip-running',
+            command = [compiler, '-enable-globals', '-skip-running',
                        '-path', f'{modules}|{repo}|@vmodules|@vlib', '-gc', mode,
                        '-o', str(binary), test]
             print(f'Compile and run {Path(test).name} with {mode}', flush=True)

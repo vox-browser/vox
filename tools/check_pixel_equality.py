@@ -36,7 +36,7 @@ def main():
         executable = REPO / 'Build/pixel-equality/pixel_diff'
         executable.parent.mkdir(parents=True, exist_ok=True)
         compiler = os.environ.get('V_BIN') or shutil.which('v') or str(Path.home() / 'code/v/v')
-        subprocess.run([compiler, '-old-compiler', '-o', str(executable),
+        subprocess.run([compiler, '-o', str(executable),
                         str(REPO / 'tools/pixel_diff.v')], check=True)
     verdict = compare(args.expected, args.actual, args.diff, executable.resolve())
     if args.result:

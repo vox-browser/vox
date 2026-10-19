@@ -1,4 +1,4 @@
-// Run with -old-compiler -enable-globals -prod -gc none. This is a regular
+// Run with -enable-globals -prod -gc none. This is a regular
 // executable so assertions cannot accidentally retain library drawing calls.
 module main
 

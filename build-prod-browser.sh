@@ -134,22 +134,23 @@ fi
 # the normal macOS C implementation and avoids duplicate method definitions.
 zoneinfo_exclude='@vlib/time/zoneinfo.native.v'
 
-# The translated tree is validated with V's stable compatibility compiler.
-# Select the same frontend explicitly so a newer default compiler on PATH does
-# not turn a browser build into an unrelated source-migration attempt.
-# This compatibility compiler's -prod mode snapshots every pointer in live
-# aggregates around calls. Growing CSS token arrays are traversed on every
-# token, turning linear parsing into quadratic work. Optimize the generated C
-# directly instead. Pointer-aware Boehm traces the live object graph while
-# leaving pointer-free buffers atomic. Optimized forced-GC tests cover nested
-# token strings, CSSOM values and arena records. boehm_full remains available
-# as an ownership diagnostic.
+# Build with the current V compiler. Its driver otherwise retries a failed
+# build with the 0.5.2 compatibility compiler, which would silently produce a
+# browser from a different frontend; fail instead.
+V_MACOS_V3_NO_FALLBACK=1
+export V_MACOS_V3_NO_FALLBACK
+# The compatibility compiler's -prod mode snapshotted every pointer in live
+# aggregates around calls, turning CSS token parsing quadratic. Optimize the
+# generated C directly instead. Pointer-aware Boehm traces the live object
+# graph while leaving pointer-free buffers atomic. Optimized forced-GC tests
+# cover nested token strings, CSSOM values and arena records. boehm_full
+# remains available as an ownership diagnostic.
 ui2_modules=$(python3 "$repo_dir/tools/prepare_ui2.py" "$v_compiler")
 http_modules=$(python3 "$repo_dir/tools/prepare_http_compat.py" "$v_compiler")
 # Anchor package names at the repository; see build-linux-browser.sh. Without
 # it, a checkout under `modules`, `.vmodules`, `vlib` or another v.mod compiles
 # `encoding` as `vox2.encoding` while imports still resolve to vlib's name.
-set -- -old-compiler -exclude "$zoneinfo_exclude" -enable-globals \
+set -- -exclude "$zoneinfo_exclude" -enable-globals \
     -d vox_ui2 -path "$repo_dir|$http_modules|$ui2_modules|@vmodules|@vlib"
 if [ "$gc_mode" = prealloc ] && [ "${VOX_PREALLOC_SAMPLER:-0}" = 1 ]; then
     # Diagnostic build: sample the sites of never-reclaimed allocations
@@ -163,7 +164,8 @@ if [ "$gc_mode" = prealloc ] && [ "${VOX_PREALLOC_SAMPLER:-0}" = 1 ]; then
 fi
 if [ "$gc_mode" = prealloc ]; then
     # Thread-local bump arenas without a collector; V's free() is a no-op.
-    set -- "$@" -prealloc
+    # -prealloc leaves V's default collector selected, so deselect it too.
+    set -- "$@" -prealloc -gc none
     extra_cflags="$extra_cflags -O2"
 elif [ "$gc_mode" != none ]; then
     set -- "$@" -gc "$gc_mode"

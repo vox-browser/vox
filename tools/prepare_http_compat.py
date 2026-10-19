@@ -136,6 +136,9 @@ def write_if_changed(path, content):
 def patch_request(source):
     """Preserve an explicit Cookie header when the optional cookie map is empty."""
     signature = 'fn (req &Request) build_request_cookies_header_with_header(header Header) string'
+    if 'cookie_header_value_with_header(header)' in source:
+        # Current V already serializes an explicit Cookie header itself.
+        return source
     start = source.index(signature)
     end = source.index('\n}', start) + 2
     function = source[start:end]
@@ -154,14 +157,16 @@ def patch_proxy(source):
         raise RuntimeError('Unsupported HTTP proxy TLS call')
     source = source.replace(old, "pr.ssl_dial('${host_name}:${port}', req)", 1)
     old = "'${host.scheme}://${host_name}${port_part}${path}', data, header)"
-    if source.count(old) != 1:
+    if source.count(old) == 1:
+        # Both HTTP CONNECT and SOCKS establish an end-to-end tunnel. The
+        # request inside it is addressed to the origin, not to a forward HTTP
+        # proxy. Current V already builds that origin-form target.
+        source = source.replace(old, 'path, data, header)', 1)
+        start = source.index('\tport_part :=')
+        end = source.index('\n\ts :=', start)
+        source = source[:start] + source[end:]
+    elif 'req.build_request_headers_with(method, host_name, port, default_port, path, data' not in source:
         raise RuntimeError('Unsupported HTTP proxy request target')
-    # Both HTTP CONNECT and SOCKS establish an end-to-end tunnel. The request
-    # inside it is addressed to the origin, not to a forward HTTP proxy.
-    source = source.replace(old, 'path, data, header)', 1)
-    start = source.index('\tport_part :=')
-    end = source.index('\n\ts :=', start)
-    source = source[:start] + source[end:]
     return replace_function(source, 'fn (pr &HttpProxy) ssl_dial(host string) !&ssl.SSLConn', r'''
 fn (pr &HttpProxy) ssl_dial(host string, req &Request) !&ssl.SSLConn {
     mut ssl_conn := ssl.new_ssl_conn(
@@ -192,7 +197,7 @@ def compiler_vlib(compiler, work):
     with tempfile.TemporaryDirectory(prefix="compiler-root-", dir=work) as temporary:
         probe = Path(temporary) / "compiler_root.v"
         probe.write_text("module main\nfn main() { println(@VEXEROOT) }\n")
-        result = subprocess.run([compiler, "-old-compiler", "run", str(probe)],
+        result = subprocess.run([compiler, "run", str(probe)],
                                 capture_output=True, text=True, check=True)
     return Path(result.stdout.strip()).resolve() / "vlib"
 

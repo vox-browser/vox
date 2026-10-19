@@ -26,7 +26,7 @@ fn worker_test_build_helpers_if_needed() ! {
 		helper := os.join_path(directory, 'worker')
 		command := ['/usr/bin/env', 'VTMP=' + os.join_path(directory, 'tmp'),
 			'TMPDIR=' + os.join_path(directory, 'tmp'), 'VCACHE=' + os.join_path(directory, 'cache'),
-			compiler, '-old-compiler', '-bug-report-url', 'http://127.0.0.1:9', '-enable-globals',
+			compiler, '-bug-report-url', 'http://127.0.0.1:9', '-enable-globals',
 			'-exclude', '@vlib/time/zoneinfo.native.v', '-gc', gc, '-path', root + '|@vlib',
 			'-o', helper, os.join_path(root, 'tools/adblock-worker-mini/main.v')]
 		result := os.execute(command.map(os.quoted_path(it)).join(' '))

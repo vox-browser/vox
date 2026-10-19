@@ -52,7 +52,7 @@ def main():
         helper = args.helper.resolve() if args.helper else output / 'helper'
         if not args.helper:
             compiler = os.environ.get('V_BIN') or shutil.which('v') or str(Path.home() / 'code/v/v')
-            run([compiler, '-old-compiler', '-bug-report-url', 'http://127.0.0.1:9', '-enable-globals', '-exclude', '@vlib/time/zoneinfo.native.v', '-gc', args.gc, '-path', str(ROOT) + '|@vlib', '-keepc', '-o', str(helper), str(ROOT / 'tools/adblock-worker-mini/main.v')], 'helper-compile')
+            run([compiler, '-bug-report-url', 'http://127.0.0.1:9', '-enable-globals', '-exclude', '@vlib/time/zoneinfo.native.v', '-gc', args.gc, '-path', str(ROOT) + '|@vlib', '-keepc', '-o', str(helper), str(ROOT / 'tools/adblock-worker-mini/main.v')], 'helper-compile')
         result['helper_sha256'] = sha(helper)
         for name, source in zip(source_names, sources):
             run(['cc', '-std=c11', '-O2', '-Wall', '-Wextra', '-Werror', '-Wno-unused-function', str(source), '-o', str(output / name)], name + '-compile')

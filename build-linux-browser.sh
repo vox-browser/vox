@@ -43,7 +43,7 @@ linux_modules=$(python3 "$repo_dir/tools/prepare_linux_modules.py" "$v_compiler"
 # A checkout such as ~/.vmodules/vox2 would compile `encoding` as
 # `vox2.encoding` while its imports still name vlib's `encoding` directory.
 # Listing the repository first keeps its packages unqualified wherever it lives.
-set -- -old-compiler -enable-globals -cc "${CC:-clang}" \
+set -- -enable-globals -cc "${CC:-clang}" \
     -d use_openssl \
     -exclude '@vlib/time/zoneinfo.native.v' \
     -path "$repo_dir|$linux_modules|$http_modules|@vmodules|@vlib" -gc "$gc_mode"
