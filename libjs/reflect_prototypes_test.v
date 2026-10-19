@@ -19,7 +19,7 @@ fn test_reflect_prototype_operations_validate_target_before_prototype_and_never_
 	for name in ['getPrototypeOf', 'setPrototypeOf', 'isExtensible', 'preventExtensions'] {
 		for value in [js_null(), js_undefined(), Value.from_i32(42),
 			Value.from_bool(true), Value.from_string(vm.create_string_from_str('abc')),
-			Value.from_bigint(string_to_bigint(utf16_string('42'))?),
+			Value.from_bigint(string_to_bigint(utf16_string('42')) or { panic('invalid BigInt literal') }),
 			Value.from_symbol(Symbol.create(none, .unique))] {
 			if _ := reflect_prototype_call(mut vm, name, [value, Value.from_i32(42)]) {
 				assert false

@@ -42,8 +42,8 @@ fn test_boolean_call_and_construction_use_to_boolean_without_primitive_conversio
 	for value in [js_undefined(), js_null(), Value.from_bool(false), Value.from_bool(true),
 		Value.from_f64(0), Value.from_f64(-0.0), Value.from_f64(math.nan()), Value.from_i32(42),
 		Value.from_string(vm.create_string_from_str('')), Value.from_string(vm.create_string_from_str('false')),
-		Value.from_bigint(string_to_bigint(utf16_string('0'))?),
-		Value.from_bigint(string_to_bigint(utf16_string('42'))?),
+		Value.from_bigint(string_to_bigint(utf16_string('0')) or { panic('invalid BigInt literal') }),
+		Value.from_bigint(string_to_bigint(utf16_string('42')) or { panic('invalid BigInt literal') }),
 		Value.from_symbol(Symbol.create(none, .unique)), Value.from_object(trap)] {
 		assert call(mut vm, function, Value.from_i32(99), [value])!.as_bool() == value.to_boolean()
 		boxed := construct(mut vm, function, [value], none)!

@@ -90,7 +90,7 @@ fn test_concrete_typed_array_of_and_species_use_the_real_constructor_receiver_fo
 		assert same_value(species, Value.from_object(constructor.object))
 		method := constructor.object.get(mut vm, PropertyName.from_str('of'))!
 		value := if kind.is_bigint() {
-			Value.from_bigint(string_to_bigint(utf16_string('42'))?)
+			Value.from_bigint(string_to_bigint(utf16_string('42')) or { panic('invalid BigInt literal') })
 		} else {
 			Value.from_i32(42)
 		}

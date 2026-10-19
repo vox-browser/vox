@@ -9,8 +9,8 @@ fn test_buffer_numeric_integer_layouts_endianness_and_bigint_modulo_are_exact() 
 		.big_uint64, .uint8_clamped]
 	values := [Value.from_i32(-1), Value.from_i32(258), Value.from_i32(-258),
 		Value.from_i32(65537), Value.from_f64(-2147483649), Value.from_f64(4294967297),
-		Value.from_bigint(string_to_bigint(utf16_string('18446744073709551615'))?),
-		Value.from_bigint(string_to_bigint(utf16_string('-18446744073709551617'))?),
+		Value.from_bigint(string_to_bigint(utf16_string('18446744073709551615')) or { panic('invalid BigInt literal') }),
+		Value.from_bigint(string_to_bigint(utf16_string('-18446744073709551617')) or { panic('invalid BigInt literal') }),
 		Value.from_f64(2.5)]
 	expected := [[u8(255)], [u8(2)], [u8(254), 254], [u8(1), 0],
 		[u8(255), 255, 255, 127], [u8(1), 0, 0, 0], [u8(255), 255, 255, 255, 255, 255, 255, 255],

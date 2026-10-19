@@ -43,7 +43,7 @@ fn test_typed_array_bigint_comparison_is_exact_beyond_double_precision() {
 	mut values := []Value{}
 	for source in ['-18446744073709551616', '-1', '0', '9007199254740992', '9007199254740993',
 		'18446744073709551616'] {
-		values << Value.from_bigint(string_to_bigint(utf16_string(source))?)
+		values << Value.from_bigint(string_to_bigint(utf16_string(source)) or { panic('invalid BigInt literal') })
 	}
 	for i, x in values {
 		for j, y in values {

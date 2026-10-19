@@ -22,7 +22,7 @@ fn test_proto_getter_returns_null_or_prototype_and_boxes_current_realm_primitive
 		string: getter
 	}
 	for receiver in [Value.from_object(child), Value.from_i32(42),
-		Value.from_bigint(string_to_bigint(utf16_string('42'))?),
+		Value.from_bigint(string_to_bigint(utf16_string('42')) or { panic('invalid BigInt literal') }),
 		Value.from_string(vm.create_string_from_str('abc'))] {
 		result := proto_accessor_call(mut vm, false, receiver, []Value{}, prototypes)!
 		assert same_value(result, Value.from_object(parent))
@@ -66,7 +66,7 @@ fn test_proto_setter_requires_coercibility_first_and_ignores_primitives_without_
 		}
 		for receiver in [Value.from_i32(42), Value.from_string(vm.create_string_from_str('abc')),
 			Value.from_bool(true), Value.from_symbol(Symbol.create(none, .unique)),
-			Value.from_bigint(string_to_bigint(utf16_string('42'))?)] {
+			Value.from_bigint(string_to_bigint(utf16_string('42')) or { panic('invalid BigInt literal') })] {
 			// No primitive dependencies supplied: this path must never box.
 			result :=
 				proto_accessor_call(mut vm, true, receiver, [prototype], PrimitiveObjectPrototypes{})!

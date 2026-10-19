@@ -53,7 +53,7 @@ fn test_index_conversions_run_object_coercion_once_and_preserve_its_errors() {
 	assert value.to_index(mut vm)! == 42
 	assert object.get(mut vm, PropertyName.from_str('calls'))!.number == 3
 	for primitive in [Value.from_symbol(Symbol.create_private()),
-		Value.from_bigint(string_to_bigint(utf16_string('42'))?)] {
+		Value.from_bigint(string_to_bigint(utf16_string('42')) or { panic('invalid BigInt literal') })] {
 		if _ := primitive.to_length(mut vm) {
 			assert false
 		} else {

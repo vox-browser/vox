@@ -12,7 +12,7 @@ fn test_get_method_uses_primitive_receivers_and_distinguishes_nullish_and_noncal
 		bigint: getter
 		string: getter
 	}
-	values := [Value.from_i32(42), Value.from_bigint(string_to_bigint(utf16_string('42'))?),
+	values := [Value.from_i32(42), Value.from_bigint(string_to_bigint(utf16_string('42')) or { panic('invalid BigInt literal') }),
 		Value.from_string(vm.create_string_from_str('abc'))]
 	for receiver in values {
 		function := NativeFunction.create(mut vm, vm.realm(), vm.realm().function_prototype, fn (mut vm VM) !Value {
@@ -75,7 +75,7 @@ fn test_get_v_and_invoke_preserve_primitive_receiver_for_prototype_accessors_and
 		bigint: getter
 		string: getter
 	}
-	values := [Value.from_i32(42), Value.from_bigint(string_to_bigint(utf16_string('42'))?),
+	values := [Value.from_i32(42), Value.from_bigint(string_to_bigint(utf16_string('42')) or { panic('invalid BigInt literal') }),
 		Value.from_string(vm.create_string_from_str('abc')), Value.from_bool(true),
 		Value.from_symbol(vm.well_known_symbol_iterator())]
 	for value in values {

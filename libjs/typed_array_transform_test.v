@@ -49,7 +49,7 @@ fn test_typed_array_filter_map_all_kinds_capture_values_and_keep_callback_this_a
 				mut source := TypedArray.create(realm, kind, 3, buffer, parent)
 				for index in 0 .. 3 {
 					value := if kind.is_bigint() {
-						Value.from_bigint(string_to_bigint(utf16_string((index + 1).str()))?)
+						Value.from_bigint(string_to_bigint(utf16_string((index + 1).str())) or { panic('invalid BigInt literal') })
 					} else {
 						Value.from_i32(index + 1)
 					}

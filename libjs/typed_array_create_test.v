@@ -32,7 +32,7 @@ fn test_typed_array_create_validates_results_and_checks_only_a_sole_numeric_mini
 		[Value.from_f64(math.nan())],
 		[Value.from_f64(math.inf(-1))],
 		[Value.from_string(vm.create_string_from_str('3'))],
-		[Value.from_bigint(string_to_bigint(utf16_string('3'))?)],
+		[Value.from_bigint(string_to_bigint(utf16_string('3')) or { panic('invalid BigInt literal') })],
 		[Value.from_bool(true)],
 		[Value.from_i32(3), js_undefined()],
 	] {

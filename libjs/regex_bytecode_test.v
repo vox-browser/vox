@@ -185,9 +185,9 @@ fn test_regex_program_clone_owns_instruction_vectors_and_nested_matcher_boxes() 
 	original_union := original_greedy.matcher as RegexSimpleUnion
 	assert union_matcher == original_union
 	assert voidptr(union_matcher.left) != voidptr(original_union.left)
-	mut class := *union_matcher.left as RegexBytecodeCharClass
+	mut class := (*union_matcher.left) as RegexBytecodeCharClass
 	class.ranges[0].start = 0
-	original_class := *original_union.left as RegexBytecodeCharClass
+	original_class := (*original_union.left) as RegexBytecodeCharClass
 	assert original_class.ranges[0].start == 0x41
 	assert program.named_groups[0].index == 1
 	assert (program.instructions[25] as RegexStringPropertyMatch).strings[0] == 2

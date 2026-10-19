@@ -99,7 +99,7 @@ fn test_to_object_selects_missing_intrinsics_from_the_running_realm() {
 		assert vm.running_execution_context() == context
 		realm := context.realm?
 		number := Value.from_i32(42).to_object_with_prototypes(mut vm, prototypes)!
-		bigint := Value.from_bigint(string_to_bigint(utf16_string('42'))?).to_object_with_prototypes(mut vm, prototypes)!
+		bigint := Value.from_bigint(string_to_bigint(utf16_string('42')) or { panic('invalid BigInt literal') }).to_object_with_prototypes(mut vm, prototypes)!
 		text := Value.from_string(vm.create_string_from_str('42')).to_object_with_prototypes(mut vm, prototypes)!
 		assert voidptr(number.prototype?) == voidptr(realm.array_buffer_prototype_record())
 		assert voidptr(bigint.prototype?) == voidptr(realm.data_view_prototype_record())

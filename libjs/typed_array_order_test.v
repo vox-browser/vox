@@ -30,7 +30,7 @@ fn test_typed_array_reverse_all_kinds_preserves_identity_offsets_and_unpaired_mi
 			initialize_typed_array_from_array_buffer(mut vm, mut array, buffer, Value.from_f64(f64(kind.size())), Value.from_i32(5))!
 			for index, number in [42, 17, 7, 99, 43] {
 				value := if kind.is_bigint() {
-					Value.from_bigint(string_to_bigint(utf16_string(number.str()))?)
+					Value.from_bigint(string_to_bigint(utf16_string(number.str())) or { panic('invalid BigInt literal') })
 				} else {
 					Value.from_i32(number)
 				}
@@ -73,9 +73,9 @@ fn test_typed_array_sort_default_is_numeric_orders_nan_and_signed_zero_and_handl
 	}
 	mut big := TypedArray.create(vm.realm(), .big_int64, 0, empty, parent)
 	initialize_typed_array_from_list(mut vm, mut big, [
-		Value.from_bigint(string_to_bigint(utf16_string('9007199254740993'))?),
-		Value.from_bigint(string_to_bigint(utf16_string('-1'))?),
-		Value.from_bigint(string_to_bigint(utf16_string('9007199254740992'))?),
+		Value.from_bigint(string_to_bigint(utf16_string('9007199254740993')) or { panic('invalid BigInt literal') }),
+		Value.from_bigint(string_to_bigint(utf16_string('-1')) or { panic('invalid BigInt literal') }),
+		Value.from_bigint(string_to_bigint(utf16_string('9007199254740992')) or { panic('invalid BigInt literal') }),
 	])!
 	typed_order_call(mut vm, 'sort', Value.from_object(big.object), []Value{})!
 	for index, number in ['-1', '9007199254740992', '9007199254740993'] {

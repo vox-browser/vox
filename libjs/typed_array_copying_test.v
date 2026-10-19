@@ -54,7 +54,7 @@ fn test_typed_array_copying_methods_all_kinds_create_independent_fixed_storage_w
 				Value.from_f64(f64(kind.size())), Value.from_i32(3))!
 			for index, number in [3, 1, 2] {
 				value := if kind.is_bigint() {
-					Value.from_bigint(string_to_bigint(utf16_string(number.str()))?)
+					Value.from_bigint(string_to_bigint(utf16_string(number.str())) or { panic('invalid BigInt literal') })
 				} else {
 					Value.from_i32(number)
 				}
@@ -73,7 +73,7 @@ fn test_typed_array_copying_methods_all_kinds_create_independent_fixed_storage_w
 			before := buffer.read_bytes(0, buffer.byte_length())
 			for name in ['toReversed', 'toSorted', 'with'] {
 				replacement := if kind.is_bigint() {
-					Value.from_bigint(string_to_bigint(utf16_string('42'))?)
+					Value.from_bigint(string_to_bigint(utf16_string('42')) or { panic('invalid BigInt literal') })
 				} else {
 					Value.from_i32(42)
 				}
@@ -133,9 +133,9 @@ fn test_typed_array_to_sorted_numeric_nan_signed_zero_bigint_order_and_stable_ca
 	assert math.is_nan(typed_array_get_element(result, CanonicalIndex.create(.index, 4)).number)
 	mut big := TypedArray.create(vm.realm(), .big_int64, 0, buffer, parent)
 	initialize_typed_array_from_list(mut vm, mut big, [
-		Value.from_bigint(string_to_bigint(utf16_string('9007199254740993'))?),
-		Value.from_bigint(string_to_bigint(utf16_string('9007199254740992'))?),
-		Value.from_bigint(string_to_bigint(utf16_string('-42'))?),
+		Value.from_bigint(string_to_bigint(utf16_string('9007199254740993')) or { panic('invalid BigInt literal') }),
+		Value.from_bigint(string_to_bigint(utf16_string('9007199254740992')) or { panic('invalid BigInt literal') }),
+		Value.from_bigint(string_to_bigint(utf16_string('-42')) or { panic('invalid BigInt literal') }),
 	])!
 	big_constructor := typed_copying_constructor(mut vm, .big_int64, parent)
 	big_getter := fn [big_constructor] (realm &Realm, kind BufferElementType) &Object {
@@ -324,7 +324,7 @@ fn test_typed_array_copying_receiver_bounds_and_with_content_type_errors_precede
 		Value.from_f64(math.inf(-1))] {
 		if _ := typed_copying_call(mut vm, 'with', Value.from_object(array.object), [
 			index,
-			Value.from_bigint(string_to_bigint(utf16_string('42'))?),
+			Value.from_bigint(string_to_bigint(utf16_string('42')) or { panic('invalid BigInt literal') }),
 		], getter)
 		{
 			assert false

@@ -135,7 +135,7 @@ fn test_typed_array_find_empty_nonmatching_bigint_and_callback_validation() {
 	mut buffer := ArrayBufferObject.create(mut vm, vm.realm(), 0, parent)!
 	mut big := TypedArray.create(vm.realm(), .big_int64, 0, buffer, parent)
 	initialize_typed_array_from_list(mut vm, mut big, [
-		Value.from_bigint(string_to_bigint(utf16_string('9007199254740993'))?),
+		Value.from_bigint(string_to_bigint(utf16_string('9007199254740993')) or { panic('invalid BigInt literal') }),
 	])!
 	empty := TypedArray.create(vm.realm(), .uint8, 0, buffer, parent)
 	for name in ['find', 'findIndex', 'findLast', 'findLastIndex'] {

@@ -35,7 +35,7 @@ fn test_typed_array_iterator_methods_yield_exact_all_kind_values_keys_and_real_e
 			mut array := TypedArray.create(vm.realm(), kind, 2, buffer, parent)
 			for index, number in [42, 17] {
 				value := if kind.is_bigint() {
-					Value.from_bigint(string_to_bigint(utf16_string(number.str()))?)
+					Value.from_bigint(string_to_bigint(utf16_string(number.str())) or { panic('invalid BigInt literal') })
 				} else {
 					Value.from_i32(number)
 				}

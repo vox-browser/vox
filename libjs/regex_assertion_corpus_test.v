@@ -200,7 +200,7 @@ fn regex_assertion_fixture_matchers() []RegexSimpleMatch {
 			'builtin' {
 				RegexSimpleMatch(RegexBuiltinCharacterClass.from_string(['digit', 'non_digit',
 					'word', 'non_word', 'whitespace', 'non_whitespace'][fields[1].int()]) or {
-					panic(err)
+					panic('unknown builtin character class')
 				})
 			}
 			'property' {

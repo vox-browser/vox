@@ -73,7 +73,7 @@ fn test_typed_array_callbacks_deliver_exact_elements_indices_receiver_and_empty_
 			mut array := TypedArray.create(vm.realm(), kind, 3, buffer, parent)
 			for index, number in [42, 17, 43] {
 				value := if kind.is_bigint() {
-					Value.from_bigint(string_to_bigint(utf16_string(number.str()))?)
+					Value.from_bigint(string_to_bigint(utf16_string(number.str())) or { panic('invalid BigInt literal') })
 				} else {
 					Value.from_i32(number)
 				}

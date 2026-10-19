@@ -55,8 +55,8 @@ fn test_typed_array_cross_type_copy_converts_numbers_clamping_and_bigint_modulo(
 	assert signed.viewed_buffer.read_bytes(0, 4) == [u8(2), 3, 255, 44]
 	mut big_source := TypedArray.create(vm.realm(), .big_int64, 0, empty, parent)
 	initialize_typed_array_from_list(mut vm, mut big_source, [
-		Value.from_bigint(string_to_bigint(utf16_string('-1'))?),
-		Value.from_bigint(string_to_bigint(utf16_string('42'))?),
+		Value.from_bigint(string_to_bigint(utf16_string('-1')) or { panic('invalid BigInt literal') }),
+		Value.from_bigint(string_to_bigint(utf16_string('42')) or { panic('invalid BigInt literal') }),
 	])!
 	mut big_unsigned := TypedArray.create(vm.realm(), .big_uint64, 0, empty, parent)
 	initialize_typed_array_from_typed_array(mut vm, mut big_unsigned, big_source)!

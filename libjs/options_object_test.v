@@ -26,7 +26,7 @@ fn test_get_options_object_rejects_every_defined_primitive_without_boxing() {
 	base := create_simple_execution_context(mut vm)
 	for value in [js_null(), Value.from_i32(42), Value.from_bool(false),
 		Value.from_string(vm.create_string_from_str('options')),
-		Value.from_bigint(string_to_bigint(utf16_string('42'))?),
+		Value.from_bigint(string_to_bigint(utf16_string('42')) or { panic('invalid BigInt literal') }),
 		Value.from_symbol(Symbol.create(none, .unique))] {
 		if _ := get_options_object(mut vm, value) {
 			assert false

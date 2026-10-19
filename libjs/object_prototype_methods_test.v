@@ -141,7 +141,7 @@ fn test_object_value_of_boxes_all_primitives_with_current_realm_prototypes_and_p
 		bigint: getter
 		string: getter
 	}
-	for value in [Value.from_i32(42), Value.from_bigint(string_to_bigint(utf16_string('42'))?),
+	for value in [Value.from_i32(42), Value.from_bigint(string_to_bigint(utf16_string('42')) or { panic('invalid BigInt literal') }),
 		Value.from_string(vm.create_string_from_str('ab')), Value.from_bool(true),
 		Value.from_symbol(Symbol.create(utf16_string('key'), .unique)),
 		Value.from_object(parent)] {
@@ -185,7 +185,7 @@ fn test_object_to_locale_string_invokes_live_to_string_with_primitive_receiver_a
 		string: getter
 	}
 	mut log := &ObjectMethodLog{}
-	for receiver in [Value.from_i32(42), Value.from_bigint(string_to_bigint(utf16_string('42'))?),
+	for receiver in [Value.from_i32(42), Value.from_bigint(string_to_bigint(utf16_string('42')) or { panic('invalid BigInt literal') }),
 		Value.from_string(vm.create_string_from_str('ab')), Value.from_object(parent)] {
 		function := NativeFunction.create(mut vm, vm.realm(), vm.realm().function_prototype, fn [receiver, mut log] (mut vm VM) !Value {
 			log.events << 'call'

@@ -20,7 +20,7 @@ fn test_typed_array_records_read_and_write_every_numeric_kind_through_shared_buf
 		assert array.is_unclamped_integer_element_type() == (kind in [.int8, .int16, .int32, .uint8,
 			.uint16, .uint32])
 		input := if kind.is_bigint() {
-			Value.from_bigint(string_to_bigint(utf16_string('42'))?)
+			Value.from_bigint(string_to_bigint(utf16_string('42')) or { panic('invalid BigInt literal') })
 		} else {
 			Value.from_i32(42)
 		}
@@ -48,7 +48,7 @@ fn test_typed_array_records_read_and_write_every_numeric_kind_through_shared_buf
 			}
 		} else {
 			if _ := typed_array_set_element(mut vm, mut array, CanonicalIndex.create(.numeric, 0),
-				Value.from_bigint(string_to_bigint(utf16_string('1'))?))
+				Value.from_bigint(string_to_bigint(utf16_string('1')) or { panic('invalid BigInt literal') }))
 			{
 				assert false
 			} else {

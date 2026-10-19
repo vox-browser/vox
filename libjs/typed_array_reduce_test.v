@@ -141,8 +141,8 @@ fn test_typed_array_reduce_keeps_exact_bigints_and_object_accumulators_without_c
 	buffer := ArrayBufferObject.create(mut vm, vm.realm(), 0, parent)!
 	mut array := TypedArray.create(vm.realm(), .big_int64, 0, buffer, parent)
 	initialize_typed_array_from_list(mut vm, mut array, [
-		Value.from_bigint(string_to_bigint(utf16_string('9007199254740993'))?),
-		Value.from_bigint(string_to_bigint(utf16_string('-42'))?),
+		Value.from_bigint(string_to_bigint(utf16_string('9007199254740993')) or { panic('invalid BigInt literal') }),
+		Value.from_bigint(string_to_bigint(utf16_string('-42')) or { panic('invalid BigInt literal') }),
 	])!
 	for name in ['reduce', 'reduceRight'] {
 		callback := NativeFunction.create(mut vm, vm.realm(), vm.realm().function_prototype, fn [parent] (mut vm VM) !Value {

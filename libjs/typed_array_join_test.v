@@ -30,8 +30,8 @@ fn test_typed_array_join_formats_numbers_bigints_and_preserves_utf16_separator_c
 	assert typed_join_call(mut vm, receiver, [js_null()])!.as_string().str() == '42null0nullNaNnullInfinitynull-Infinity'
 	mut big := TypedArray.create(vm.realm(), .big_int64, 0, buffer, parent)
 	initialize_typed_array_from_list(mut vm, mut big, [
-		Value.from_bigint(string_to_bigint(utf16_string('9007199254740993'))?),
-		Value.from_bigint(string_to_bigint(utf16_string('-42'))?),
+		Value.from_bigint(string_to_bigint(utf16_string('9007199254740993')) or { panic('invalid BigInt literal') }),
+		Value.from_bigint(string_to_bigint(utf16_string('-42')) or { panic('invalid BigInt literal') }),
 	])!
 	separator := vm.create_string(Utf16String{ data: [u16(0xd800), 0x007c, 0xdc00] })
 	result := typed_join_call(mut vm, Value.from_object(big.object), [

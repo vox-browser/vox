@@ -76,7 +76,12 @@ fn test_string_iterator_records_collect_through_cached_next_and_respect_replacem
 		0, PropertyName.from_str('next'), none)
 	object.define_direct_property(PropertyName.from_str('next'), Value.from_object(replacement.object), 7)
 	values := iterator_to_list(mut vm, mut record)!
-	assert values.map(it.as_string().str()) == ['h', 'i']
+	// Current V formats a reference's str() inside map() as `&` plus the value.
+	mut texts := []string{}
+	for value in values {
+		texts << value.as_string().str()
+	}
+	assert texts == ['h', 'i']
 	assert record.done && iterator.done
 	mut changed := get_iterator_direct(mut vm, iterator.object)!
 	if _ := iterator_step_value(mut vm, mut changed) { assert false } else {

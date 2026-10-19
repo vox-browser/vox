@@ -121,7 +121,7 @@ fn regex_scan_fixture_scanners() []RegexSimpleScan {
 					'non_word',
 					'whitespace',
 					'non_whitespace',
-				][fields[1].int()]) or { panic(err) })
+				][fields[1].int()]) or { panic('unknown builtin character class') })
 			}
 			'greedy' {
 				RegexSimpleScan(RegexGreedyLoop{

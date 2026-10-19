@@ -197,9 +197,9 @@ fn test_regex_hint_analysis_clones_class_and_recursive_greedy_matcher_filters() 
 	mut union_filter := union_value as RegexSimpleUnion
 	original_union := matcher as RegexSimpleUnion
 	assert voidptr(union_filter.left) != voidptr(original_union.left)
-	mut union_class := *union_filter.left as RegexBytecodeCharClass
+	mut union_class := (*union_filter.left) as RegexBytecodeCharClass
 	union_class.ranges[0].end = 0x62
-	assert (*original_union.left as RegexBytecodeCharClass).ranges[0].end == 0x7a
+	assert ((*original_union.left) as RegexBytecodeCharClass).ranges[0].end == 0x7a
 	greedy_value := hints.simple_scan?
 	greedy_scan := greedy_value as RegexGreedyLoop
 	assert (greedy_scan.matcher as RegexSimpleUnion) == original_union && greedy_scan.max? == 4

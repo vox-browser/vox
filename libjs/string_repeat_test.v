@@ -115,7 +115,7 @@ fn test_string_repeat_coerces_receiver_then_count_once_and_restores_errors() {
 	}
 	assert log.steps.len == 0
 	for count in [Value.from_symbol(Symbol.create(none, .unique)),
-		Value.from_bigint(string_to_bigint(utf16_string('2'))?)] {
+		Value.from_bigint(string_to_bigint(utf16_string('2')) or { panic('invalid BigInt literal') })] {
 		if _ := string_repeat_call(mut vm, values[0], count) {
 			assert false
 		} else {

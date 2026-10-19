@@ -76,7 +76,7 @@ fn test_typed_array_accessors_preserve_to_object_errors_and_require_own_internal
 	fake.class_name = 'Uint8Array'
 	receivers := [js_null(), js_undefined(), Value.from_bool(true), Value.from_i32(42),
 		Value.from_string(vm.create_string_from_str('42')),
-		Value.from_bigint(string_to_bigint(utf16_string('42'))?),
+		Value.from_bigint(string_to_bigint(utf16_string('42')) or { panic('invalid BigInt literal') }),
 		Value.from_symbol(Symbol.create(none, .unique)), Value.from_object(fake)]
 	for receiver in receivers {
 		for name in ['buffer', 'byteLength', 'byteOffset', 'length', 'at'] {
@@ -131,9 +131,9 @@ fn test_typed_array_at_resolves_relative_indices_and_preserves_bigint_elements()
 	assert typed_access_call(mut vm, 'at', receiver, []Value{})!.number == 42
 	assert typed_access_call(mut vm, 'at', receiver, [Value.from_f64(math.nan())])!.number == 42
 	mut big := TypedArray.create(vm.realm(), .big_int64, 0, buffer, parent)
-	initialize_typed_array_from_list(mut vm, mut big, [Value.from_bigint(string_to_bigint(utf16_string('-42'))?)])!
+	initialize_typed_array_from_list(mut vm, mut big, [Value.from_bigint(string_to_bigint(utf16_string('-42')) or { panic('invalid BigInt literal') })])!
 	assert typed_access_call(mut vm, 'at', Value.from_object(big.object), [Value.from_i32(-1)])!.as_bigint().big_integer.str() == '-42'
-	for index in [Value.from_bigint(string_to_bigint(utf16_string('0'))?),
+	for index in [Value.from_bigint(string_to_bigint(utf16_string('0')) or { panic('invalid BigInt literal') }),
 		Value.from_symbol(Symbol.create(none, .unique))] {
 		if _ := typed_access_call(mut vm, 'at', receiver, [index]) {
 			assert false

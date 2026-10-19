@@ -11,7 +11,7 @@ fn test_require_object_coercible_preserves_each_non_nullish_value_without_boxing
 		Value.from_string(vm.create_string_from_str('')),
 		Value.from_symbol(Symbol.create(none,
 			.unique)),
-		Value.from_bigint(string_to_bigint(utf16_string('42'))?),
+		Value.from_bigint(string_to_bigint(utf16_string('42')) or { panic('invalid BigInt literal') }),
 		Value.from_object(object)] {
 		result := require_object_coercible(mut vm, value)!
 		assert same_value(value, result)

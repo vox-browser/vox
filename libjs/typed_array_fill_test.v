@@ -29,7 +29,7 @@ fn test_typed_array_fill_all_kinds_shared_and_chunked_paths_preserve_offsets_and
 			initialize_typed_array_from_array_buffer(mut vm, mut array, buffer,
 				Value.from_i32(size), Value.from_i32(300))!
 			value := if kind.is_bigint() {
-				Value.from_bigint(string_to_bigint(utf16_string('9007199254740993'))?)
+				Value.from_bigint(string_to_bigint(utf16_string('9007199254740993')) or { panic('invalid BigInt literal') })
 			} else {
 				Value.from_i32(-257)
 			}
@@ -181,7 +181,7 @@ fn test_typed_array_fill_content_type_errors_precede_index_conversion_and_do_not
 		value := if kind.is_bigint() {
 			Value.from_i32(42)
 		} else {
-			Value.from_bigint(string_to_bigint(utf16_string('42'))?)
+			Value.from_bigint(string_to_bigint(utf16_string('42')) or { panic('invalid BigInt literal') })
 		}
 		if _ := typed_fill_call(mut vm, Value.from_object(array.object), [value,
 			Value.from_object(index)])

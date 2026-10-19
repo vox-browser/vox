@@ -27,7 +27,7 @@ fn test_array_to_string_calls_observable_join_with_boxed_object_and_no_forwarded
 		bigint: getter
 		string: getter
 	}
-	for receiver in [Value.from_i32(42), Value.from_bigint(string_to_bigint(utf16_string('42'))?),
+	for receiver in [Value.from_i32(42), Value.from_bigint(string_to_bigint(utf16_string('42')) or { panic('invalid BigInt literal') }),
 		Value.from_string(vm.create_string_from_str('abc')), Value.from_object(parent)] {
 		mut log := &ArrayToStringLog{}
 		join := NativeFunction.create(mut vm, vm.realm(), vm.realm().function_prototype, fn [receiver, mut log] (mut vm VM) !Value {

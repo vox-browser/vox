@@ -333,7 +333,7 @@ fn test_typed_array_of_all_kinds_uses_argument_count_and_converts_in_order_witho
 		mut arguments := []Value{}
 		for number in [42, 17, 3] {
 			arguments << if kind.is_bigint() {
-				Value.from_bigint(string_to_bigint(utf16_string(number.str()))?)
+				Value.from_bigint(string_to_bigint(utf16_string(number.str())) or { panic('invalid BigInt literal') })
 			} else {
 				Value.from_i32(number)
 			}

@@ -35,7 +35,7 @@ fn test_typed_array_to_locale_string_all_kinds_invoke_primitives_with_locales_an
 		mut source := TypedArray.create(vm.realm(), kind, 2, buffer, parent)
 		for index in 0 .. 2 {
 			value := if kind.is_bigint() {
-				Value.from_bigint(string_to_bigint(utf16_string((index + 1).str()))?)
+				Value.from_bigint(string_to_bigint(utf16_string((index + 1).str())) or { panic('invalid BigInt literal') })
 			} else {
 				Value.from_i32(index + 1)
 			}

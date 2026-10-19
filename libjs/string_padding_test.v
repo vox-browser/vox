@@ -151,7 +151,7 @@ fn test_string_padding_conversion_order_early_returns_and_errors_match_source() 
 		}
 		text := Value.from_string(vm.create_string_from_str('a'))
 		for poison in [Value.from_symbol(Symbol.create(none, .unique)),
-			Value.from_bigint(string_to_bigint(utf16_string('5'))?)] {
+			Value.from_bigint(string_to_bigint(utf16_string('5')) or { panic('invalid BigInt literal') })] {
 			if _ := string_padding_call(mut vm, placement, text, [poison]) {
 				assert false
 			} else {

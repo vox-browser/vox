@@ -32,16 +32,16 @@ fn test_typed_array_search_distinguishes_nan_signed_zero_and_strict_type_identit
 	assert typed_search_call(mut vm, 'indexOf', array, [Value.from_i32(42)])!.number == 2
 	assert typed_search_call(mut vm, 'lastIndexOf', array, [Value.from_i32(42)])!.number == 4
 	for value in [Value.from_string(vm.create_string_from_str('42')),
-		Value.from_bigint(string_to_bigint(utf16_string('42'))?), js_undefined(), js_null()] {
+		Value.from_bigint(string_to_bigint(utf16_string('42')) or { panic('invalid BigInt literal') }), js_undefined(), js_null()] {
 		assert !typed_search_call(mut vm, 'includes', array, [value])!.as_bool()
 		assert typed_search_call(mut vm, 'indexOf', array, [value])!.number == -1
 	}
 	mut big := TypedArray.create(vm.realm(), .big_int64, 0, empty, parent)
 	initialize_typed_array_from_list(mut vm, mut big, [
-		Value.from_bigint(string_to_bigint(utf16_string('9007199254740993'))?),
-		Value.from_bigint(string_to_bigint(utf16_string('9007199254740992'))?),
+		Value.from_bigint(string_to_bigint(utf16_string('9007199254740993')) or { panic('invalid BigInt literal') }),
+		Value.from_bigint(string_to_bigint(utf16_string('9007199254740992')) or { panic('invalid BigInt literal') }),
 	])!
-	assert typed_search_call(mut vm, 'indexOf', big, [Value.from_bigint(string_to_bigint(utf16_string('9007199254740993'))?)])!.number == 0
+	assert typed_search_call(mut vm, 'indexOf', big, [Value.from_bigint(string_to_bigint(utf16_string('9007199254740993')) or { panic('invalid BigInt literal') })])!.number == 0
 	assert !typed_search_call(mut vm, 'includes', big, [Value.from_f64(9007199254740992)])!.as_bool()
 }
 

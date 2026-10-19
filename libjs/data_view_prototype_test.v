@@ -77,7 +77,7 @@ fn test_data_view_all_numeric_pairs_write_at_the_offset_and_handle_byte_order() 
 		'Uint8', 'Uint16', 'Uint32'] {
 		for little_endian in [false, true] {
 			value := if name.starts_with('Big') {
-				Value.from_bigint(string_to_bigint(utf16_string('42'))?)
+				Value.from_bigint(string_to_bigint(utf16_string('42')) or { panic('invalid BigInt literal') })
 			} else {
 				Value.from_i32(42)
 			}
@@ -99,7 +99,7 @@ fn test_data_view_all_numeric_pairs_write_at_the_offset_and_handle_byte_order() 
 		Value.from_bool(true)])!.number == 0x3412
 	for signed in [false, true] {
 		name := if signed { 'BigInt64' } else { 'BigUint64' }
-		value := Value.from_bigint(string_to_bigint(utf16_string('-18446744073709551617'))?)
+		value := Value.from_bigint(string_to_bigint(utf16_string('-18446744073709551617')) or { panic('invalid BigInt literal') })
 		assert view_method(mut vm, view, 'set' + name, [Value.from_i32(0), value])!.is_undefined()
 		result := view_method(mut vm, view, 'get' + name, [Value.from_i32(0)])!
 		assert result.as_bigint().big_integer.str() == if signed {
@@ -239,7 +239,7 @@ fn test_data_view_float_special_values_bigint_type_errors_and_large_indices() {
 		}
 	}
 	if _ := view_method(mut vm, view, 'setUint32', [Value.from_i32(0),
-		Value.from_bigint(string_to_bigint(utf16_string('42'))?)])
+		Value.from_bigint(string_to_bigint(utf16_string('42')) or { panic('invalid BigInt literal') })])
 	{
 		assert false
 	} else {

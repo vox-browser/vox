@@ -61,7 +61,7 @@ fn test_typed_array_construction_all_kinds_empty_scalar_lengths_call_errors_and_
 				assert thrown_value(err).as_object().error_message()?.str() == 'Invalid typed array length'
 			}
 		}
-		for input in [Value.from_bigint(string_to_bigint(utf16_string('1'))?),
+		for input in [Value.from_bigint(string_to_bigint(utf16_string('1')) or { panic('invalid BigInt literal') }),
 			Value.from_symbol(Symbol.create(none, .unique))] {
 			if _ := construct(mut vm, value, [input], none) {
 				assert false
