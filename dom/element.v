@@ -5796,6 +5796,8 @@ pub fn (mut e Element) attribute_changed(local_name string, old_value ?string, v
 		} else {
 			e.classes = value_or_empty.split(' ').filter(it.len > 0)
 		}
+		mut owner_document := unsafe { &Document(e.document()) }
+		owner_document.note_element_classes(e.classes)
 		if mut cl := e.class_list_ {
 			cl.associated_attribute_changed(value_or_empty)
 		}
@@ -6243,6 +6245,7 @@ pub fn (mut e Element) set_style_uses_tree_counting_function() {
 pub fn (mut e Element) inserted() {
 	mut owner_document := unsafe { &Document(e.document()) }
 	owner_document.note_element_local_name(e.local_name().to_lower())
+	owner_document.note_element_classes(e.classes)
 	mut node := unsafe { &Node(e.as_node()) }
 	node.recompute_editable_subtree_flag()
 	node.set_needs_style_update(true)

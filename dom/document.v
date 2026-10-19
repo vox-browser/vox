@@ -5270,6 +5270,9 @@ pub mut:
 	// Local names are immutable. Keep a conservative history without retaining
 	// elements, so an absent tag can rule out document-wide selector walks.
 	seen_element_local_names_                map[string]bool
+	seen_element_classes_ map[string]bool
+	seen_element_classes_unknown_ bool
+	seen_element_class_bytes_ int
 	character_data_version                   u64
 	option_selectedness_update_index_counter u64
 	style_environment_version_               u64
@@ -6044,6 +6047,31 @@ pub fn (mut d Document) note_element_local_name(local_name string) {
 // Callers use the same conservative case-folded bucket as CSS selector names.
 pub fn (d &Document) has_seen_element_local_name(local_name string) bool {
 	return d.seen_element_local_names_[local_name]
+}
+
+// This is a negative-query summary, never a live class index. Removed and
+// disconnected classes may stay present. Stop retaining tokens at the bound;
+// unknown means every class remains possible, including future additions.
+pub fn (mut d Document) note_element_classes(classes []string) {
+	if d.seen_element_classes_unknown_ { return }
+	for token in classes {
+		if token == '' { continue }
+		key := token.to_lower()
+		if key in d.seen_element_classes_ { continue }
+		if d.seen_element_classes_.len >= 512 || key.len > 32768 - d.seen_element_class_bytes_ {
+			d.seen_element_classes_unknown_ = true
+			d.seen_element_classes_.clear()
+			d.seen_element_class_bytes_ = 0
+			return
+		}
+		// Own the token so a short substring cannot retain a large old attribute.
+		d.seen_element_classes_[key.clone()] = true
+		d.seen_element_class_bytes_ += key.len
+	}
+}
+
+pub fn (d &Document) may_have_element_class(token string) bool {
+	return d.seen_element_classes_unknown_ || d.seen_element_classes_[token.to_lower()]
 }
 
 // Process-local ordering is only compared between option elements belonging to the same

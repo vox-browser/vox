@@ -44,6 +44,10 @@ fn independent_query_may_match_document(root &dom.Node, compounds []CompoundSele
 	for compound in compounds {
 		mut possible := true
 		for simple in compound.simple_selectors {
+			if simple.type_ == .class && !document.may_have_element_class(simple.name().name) {
+				possible = false
+				break
+			}
 			if simple.type_ == .tag_name
 				&& !document.has_seen_element_local_name(simple.qualified_name().name.lowercase_name) {
 				possible = false
