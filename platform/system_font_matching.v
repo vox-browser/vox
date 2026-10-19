@@ -93,6 +93,9 @@ fn system_font_matching_family_available(family string) bool {
 	if cached := platform_system_font_families[key] {
 		return cached
 	}
+	// System font caches outlive any arena entered by the caller.
+	persistent := enter_persistent()
+	defer { leave_persistent(persistent) }
 	mut available := false
 	$if macos {
 		available = coretext_family_available(name)
@@ -110,6 +113,8 @@ fn resolve_system_font_face(family string, weight int, italic bool, point_size f
 	if platform_system_font_misses[key] {
 		return none
 	}
+	persistent := enter_persistent()
+	defer { leave_persistent(persistent) }
 	$if macos {
 		if face := coretext_match_family(name, weight, italic, point_size) {
 			platform_system_font_faces[key] = face
@@ -188,6 +193,8 @@ pub fn system_fallback_font(code_point u32, language string, base &Font) ?&Font 
 	if platform_system_fallback_miss[key] {
 		return none
 	}
+	persistent := enter_persistent()
+	defer { leave_persistent(persistent) }
 	mut result := ?&Font(none)
 	preferred_family := if family := cjk_fallback_family(code_point, language) {
 		?string(family)
@@ -244,6 +251,8 @@ fn canonical_system_fallback_font(font &Font) &Font {
 	if existing := platform_system_fallback_faces[key] {
 		return existing
 	}
+	persistent := enter_persistent()
+	defer { leave_persistent(persistent) }
 	platform_system_fallback_faces[key] = font
 	return font
 }

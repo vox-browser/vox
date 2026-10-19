@@ -183,12 +183,16 @@ fn clone_cached_shape(shape CachedShape) CachedShape {
 }
 
 fn (mut cache ShapingCache) store(font_key string, text string, params ShapeParams, shape CachedShape) {
+	// The cache outlives any arena entered by the caller; store() copies the
+	// shape and keys into it.
+	persistent := enter_persistent()
+	defer { leave_persistent(persistent) }
 	mut font_index := cache.font_index(font_key)
 	if font_index < 0 {
 		if cache.fonts.len >= max_shape_cache_fonts {
 			cache.evict_least_recently_used_font()
 		}
-		cache.fonts << new_font_shape_cache(font_key, cache.tick)
+		cache.fonts << new_font_shape_cache(font_key.clone(), cache.tick)
 		font_index = cache.fonts.len - 1
 	}
 	cache.fonts[font_index].last_used_tick = cache.tick
@@ -206,7 +210,7 @@ fn (mut cache ShapingCache) store(font_key string, text string, params ShapePara
 			cache.evict_least_recently_used_texts(font_index)
 		}
 		cache.fonts[font_index].shapes_by_text << ShapesForText{
-			text: text
+			text: text.clone()
 			last_used_tick: cache.tick
 		}
 		text_index = cache.fonts[font_index].shapes_by_text.len - 1
@@ -296,15 +300,18 @@ fn shaping_font_key_after_last_miss(font &Font) string {
 			}
 		}
 	}
+	// The key and its ring entry outlive any arena entered by the caller.
+	persistent := enter_persistent()
+	defer { leave_persistent(persistent) }
 	resolved_path := font.font_path() or { '' }
 	key := '${font.family.len}:${font.family}|${font.source_path.len}:${font.source_path}|${resolved_path.len}:${resolved_path}|${font.weight}|${font.face_index()}|${point_size_bits}|${font.is_invisible}|${font.font_rendering_policy}|${font.synthesize_ascii_caps}' + if font.italic { '|italic' } else { '' }
 	// An unavailable explicit source can appear later. Its fallback path remains
 	// unpinned, and must continue through the original resolution on each call.
 	if font.resolved_path_ != '' {
 		mut entry := &ShapingFontKey{
-			family:          font.family
-			source_path:     font.source_path
-			resolved_path:   resolved_path
+			family:          font.family.clone()
+			source_path:     font.source_path.clone()
+			resolved_path:   resolved_path.clone()
 			weight:          font.weight
 			italic:          font.italic
 			point_size_bits: point_size_bits

@@ -246,6 +246,9 @@ pub fn font_path_for_family(family string, weight int) ?string {
 	if harfbuzz_family_attempted[cache_key] {
 		return none
 	}
+	// HarfBuzz caches outlive any arena entered by the caller.
+	persistent := enter_persistent()
+	defer { leave_persistent(persistent) }
 	harfbuzz_family_attempted[cache_key] = true
 	path := resolve_font_path_for_family(family, weight) or { return none }
 	harfbuzz_family_paths[cache_key] = path
@@ -372,6 +375,8 @@ fn scaled_harfbuzz_font(face voidptr, point_size f32, resolution f32, variations
 			return cached.font
 		}
 	}
+	persistent := enter_persistent()
+	defer { leave_persistent(persistent) }
 	font := C.hb_font_create(face)
 	if font == unsafe { nil } {
 		return none
@@ -387,7 +392,7 @@ fn scaled_harfbuzz_font(face voidptr, point_size f32, resolution f32, variations
 		face: face
 		scale: scale
 		point_size: point_size
-		variations: variations
+		variations: variations.clone()
 		font: font
 	}
 	return font
@@ -417,6 +422,8 @@ fn document_harfbuzz_face(font &Font) ?voidptr {
 	if harfbuzz_document_attempted[cache_key] {
 		return none
 	}
+	persistent := enter_persistent()
+	defer { leave_persistent(persistent) }
 	harfbuzz_document_attempted[cache_key] = true
 	blob := C.hb_blob_create_from_file_or_fail(path.str)
 	if blob == unsafe { nil } {
@@ -450,6 +457,8 @@ fn emoji_harfbuzz_face() ?voidptr {
 	if harfbuzz_emoji_attempted {
 		return none
 	}
+	persistent := enter_persistent()
+	defer { leave_persistent(persistent) }
 	harfbuzz_emoji_attempted = true
 	path := bundled_font_path('NotoEmoji.ttf')?
 	blob := C.hb_blob_create_from_file_or_fail(path.str)

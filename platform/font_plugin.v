@@ -425,6 +425,9 @@ fn (font &Font) glyph_metrics_for_shaping(code_point u32) (f32, int) {
 	if entry := platform_glyph_units_cache[cache_key] {
 		return f32(entry.advance_units) * font.point_size / units_per_em, entry.glyph_index
 	}
+	// The entry and the face's lazily built cmap cache outlive any arena.
+	persistent := enter_persistent()
+	defer { leave_persistent(persistent) }
 	mut mutable_face := unsafe { &ttf.TTF_File(face) }
 	// x.ttf currently exposes only cmap formats 0 and 4 and allocates a BMP-
 	// sized cache. Unsupported supplementary-plane characters map to .notdef;
@@ -519,6 +522,9 @@ fn font_face(font &Font) ?&ttf.TTF_File {
 	if platform_font_face_attempted[cache_key] {
 		return none
 	}
+	// Cached faces outlive any arena entered by the caller.
+	persistent := enter_persistent()
+	defer { leave_persistent(persistent) }
 	platform_font_face_attempted[cache_key] = true
 	mut bytes := read_outline_face_bytes(path, face_index)?
 	normalize_table_checksums(mut bytes)
