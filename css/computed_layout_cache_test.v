@@ -42,7 +42,7 @@ fn test_layout_cache_mutations_detach_copied_styles_and_keep_previous_values_ali
 		$if gcboehm ? { C.GC_gcollect() }
 		assert original_cache.computed_values_color_ == Color{0, 0, 0, 255}
 		assert copied.computed_layout_cache().computed_values_color_ == Color{9, 8, 7, 255}
-		assert first.property(.font_size, .no)!.css_text == copied.property(.font_size, .no)!.css_text
+		assert (first.property(.font_size, .no) or { panic('missing first font size') }).css_text == (copied.property(.font_size, .no) or { panic('missing copied font size') }).css_text
 		assert first.computed_layout_cache().computed_values_color_ == Color{1, 2, 3, 255}
 	}
 	first.share_computed_layout_cache()
