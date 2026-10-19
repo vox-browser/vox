@@ -823,3 +823,35 @@ Its failed receipts are retained. The retry passes after removing regenerable
 benchmark aliases and consolidating identical frozen fixtures with verified
 copy-on-write storage. Original production executables, test inputs and result
 records remain available; fixture bytes and GC configuration are unchanged.
+
+`646a3d4b` skips empty parent/sibling counter history before any counter has
+been created. It preserves the previous-element key and exact tree order,
+clears stale DOM snapshots, and resumes ordinary inheritance at the first
+creator. Seven focused cases in four files pass per GC mode, including the
+existing allocation assertions without changes. Source-130/133/133/130 ABBA
+saves 1,734,558.5 warm instructions (269,821,610.5 versus 268,087,052), with
+59.354 versus 55.654 ms elapsed medians. Eight complete native toggles, strict
+signing and startup pass, and both document states remain pixel-exact. This is
+the only measured saving after the source-131 broad reset and remains below
+the next gate.
+
+Source-135 rebuilds the then-current canonical working context, including seven
+new or changed graphics production paths relative to source-133. Thirteen
+focused graphics/collapse cases in four files pass per GC mode. Eight native
+handler toggles have the correct labels and no errors; strict signing, startup,
+eight exact SVG guards and the new 1280-by-800 raster-origin reference pass.
+Both Reddit document states retain source-133's decoded RGBA bytes. Its fresh
+warm measurement is 272,865,108 instructions / 61.275 ms. Fresh Brave measures
+3.0 ms for handler plus forced layout and 24.1 ms through two animation frames,
+with the same complete fixture and no handler errors. These endpoints still
+differ and do not establish parity. The preceding broad checkpoint remains
+source-131; source-135's additional validation is focused on its changed inputs.
+
+`parity-v135-install.json` records an atomic installation of that checked bundle
+at `Build/v/Vox.app`. Installed executable SHA256 is
+`095162a70872828ed87cd9f607d6f47cb3ff831ab7f2ce030c856049bf62019e`.
+Staged and installed signature/startup checks pass. The original source-92
+bundle is preserved under
+`Build/reddit-comment-latency/installed-prior-v135-1792371369041263000.app`.
+The user's running browser was not restarted; it must be relaunched to execute
+the updated binary.
