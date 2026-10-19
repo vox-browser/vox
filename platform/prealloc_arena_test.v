@@ -71,6 +71,39 @@ fn test_persistent_allocations_escape_the_entered_arena() {
 	assert kept.value == 2
 }
 
+fn test_nested_persistent_sections_stay_in_the_base_arena() {
+	mut arena := new_arena('test')
+	defer { arena.release() }
+	entry := arena.enter()
+	outer := enter_persistent()
+	// Grow the base arena past its saved tail before the nested section.
+	grown := []u8{len: 64 * 1024 * 1024}
+	inner := enter_persistent()
+	nested := &ArenaTestNode{
+		value: 1
+	}
+	$if prealloc {
+		assert !arena_entered()
+	}
+	leave_persistent(inner)
+	after_inner := &ArenaTestNode{
+		value: 2
+	}
+	leave_persistent(outer)
+	scratch := &ArenaTestNode{
+		value: 3
+	}
+	arena.leave(entry)
+	$if prealloc {
+		assert !arena.contains(voidptr(nested))
+		assert !arena.contains(voidptr(after_inner))
+		assert arena.contains(voidptr(scratch))
+		assert !arena_entered()
+	}
+	assert grown.len == 64 * 1024 * 1024
+	assert nested.value + after_inner.value + scratch.value == 6
+}
+
 fn test_reset_keeps_one_block_sized_to_the_high_water_mark() {
 	mut arena := new_arena('test')
 	defer { arena.release() }

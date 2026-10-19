@@ -235,7 +235,9 @@ pub fn arena_entered() bool {
 pub fn enter_persistent() ArenaEntry {
 	$if prealloc {
 		mut state := arena_state()
-		if state.depth == 0 {
+		// Outside an arena, or already in a persistent section whose base tail
+		// may have grown since it was saved, allocations already go to the base.
+		if state.depth <= 0 {
 			return ArenaEntry{
 				base: true
 			}
