@@ -159,8 +159,10 @@ fn match_capabilities(requested map[string]json2.Any, endpoint EndpointCapabilit
 	}
 	if 'acceptInsecureCerts' in requested {
 		insecure := requested['acceptInsecureCerts'] or { return CapabilitiesResult{} }
-		if insecure is bool && insecure {
-			return CapabilitiesResult{}
+		if insecure is bool {
+			if insecure {
+				return CapabilitiesResult{}
+			}
 		}
 	}
 	if 'proxy' in requested && has_proxy_configuration() {

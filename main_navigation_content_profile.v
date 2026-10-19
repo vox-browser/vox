@@ -2,7 +2,7 @@ module main
 
 import crypto.sha256
 import dom
-import json
+import json2
 import os
 
 struct BrowserNavigationContentProfile {
@@ -35,5 +35,5 @@ fn (app &BrowserApp) report_navigation_content_profile() {
 	class_name := os.getenv('VOX_PROFILE_CLASS')
 	if class_name == '' { return }
 	profile := navigation_content_profile(app.document, class_name)
-	eprintln('Vox navigation content: ${json.encode(profile)}')
+	eprintln('Vox navigation content: ${json2.encode(profile)}')
 }

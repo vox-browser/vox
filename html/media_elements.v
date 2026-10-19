@@ -1377,9 +1377,9 @@ fn (mut controls MediaControls) set_up_timeline_event_listeners() {
 					timeline := controls.dom_.timeline_element or { panic('Missing scrub timeline') }
 					was_playing := controls.stop_timeline_scrubbing()
 					mut time := ?f64(none)
-					if range_ := controls.timeline_range() {
+					if released_range := controls.timeline_range() {
 						progress := media_controls_timeline_progress(mouse, timeline)
-						time = range_.start + range_.span() * progress
+						time = released_range.start + released_range.span() * progress
 					}
 					controls.finish_timeline_scrubbing(time, was_playing)
 					window := controls.relevant_window() or { panic('Missing scrub Window') }
@@ -1423,8 +1423,8 @@ fn (mut controls MediaControls) set_up_volume_event_listeners() {
 					mut controls := unsafe { &MediaControls(controls_pointer) }
 					element := controls.dom_.volume_element or { panic('Missing volume element') }
 					controls.scrubbing_volume = false
-					if volume := media_controls_volume(mouse, element) {
-						controls.set_volume(volume) or { panic(err) }
+					if released_volume := media_controls_volume(mouse, element) {
+						controls.set_volume(released_volume) or { panic(err) }
 					}
 					window := controls.relevant_window() or { panic('Missing volume Window') }
 					unsafe { &dom.EventTarget(window) }.remove_event_listener_without_options('mousemove', mousemove)
@@ -1725,9 +1725,9 @@ pub fn (mut controls MediaControls) update_volume_and_mute_indicator() {
 	new_icon := if volume > 0.5 {
 		MediaControlsMuteIcon.high
 	} else if volume > 0 {
-		.low
+		MediaControlsMuteIcon.low
 	} else {
-		.empty
+		MediaControlsMuteIcon.empty
 	}
 	if fill := controls.dom_.volume_fill {
 		mut style := css.element_style(fill)
