@@ -277,20 +277,20 @@ fn (mut host CanvasWebGLHost) parameter(context &webgl.WebGLRenderingContext, va
 		host.programs[handle] = program
 		return host.resource_reply(handle)
 	}
-	if array := value.vertex_array {
-		if handle := host.platform_objects[voidptr(&array.object)] {
+	if vertex_array := value.vertex_array {
+		if handle := host.platform_objects[voidptr(&vertex_array.object)] {
 			return host.resource_reply(handle)
 		}
-		handle := host.register(context, 'vertex_array', &array.object)
-		host.vertex_arrays[handle] = array
+		handle := host.register(context, 'vertex_array', &vertex_array.object)
+		host.vertex_arrays[handle] = vertex_array
 		return host.resource_reply(handle)
 	}
-	if array := value.vertex_array_oes {
-		if handle := host.platform_objects[voidptr(&array.object)] {
+	if vertex_array := value.vertex_array_oes {
+		if handle := host.platform_objects[voidptr(&vertex_array.object)] {
 			return host.resource_reply(handle)
 		}
-		handle := host.register(context, 'vertex_array_oes', &array.object)
-		host.vertex_arrays_oes[handle] = array
+		handle := host.register(context, 'vertex_array_oes', &vertex_array.object)
+		host.vertex_arrays_oes[handle] = vertex_array
 		return host.resource_reply(handle)
 	}
 	return match value.kind {
