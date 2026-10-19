@@ -9180,8 +9180,7 @@ fn is_stacking_context_creating_value_boundary(property_id PropertyID, value ?&d
 	if value == none {
 		return false
 	}
-	style_value := unsafe { value }
-	parsed := style_value_logic_from_dom(property_id, style_value) or { return true }
+	parsed := style_value_logic_from_dom(property_id, value) or { return true }
 	keyword := parsed.to_keyword()
 	return match property_id {
 		.opacity {
@@ -9311,8 +9310,7 @@ fn display_from_invalidation_style_value(value ?&dom.StyleValue) ?Display {
 	if value == none {
 		return none
 	}
-	dom_value := unsafe { value }
-	typed := style_value_logic_from_dom(.display, dom_value) or { return none }
+	typed := style_value_logic_from_dom(.display, value) or { return none }
 	if typed is DisplayStyleValue {
 		return typed.display()
 	}
