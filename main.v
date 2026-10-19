@@ -3538,6 +3538,14 @@ fn (mut app BrowserApp) install_loaded_page(loaded LoadedPage, add_history bool)
 	}
 	if previous := previous_document { app.retire_native_document_rendering(previous) }
 	install_browser_adblock_styles(app.document, '') or { app.js_messages << 'Adblock styles: ${err.msg()}' }
+	$if vox_document_retention_diagnostics ? {
+	if replaced := previous_document {
+		if voidptr(replaced) != voidptr(app.document) && os.getenv('VOX_TRACE_TEARDOWN') != '' {
+			mut outgoing := unsafe { &dom.Document(replaced) }
+			outgoing.unload_a_document_and_its_descendants(app.document)
+		}
+	}
+	}
 	if app.page_model != unsafe { nil } && !app.page_model.has_local_root_navigable() {
 		if navigable := app.document.navigable() {
 			mut page_model := app.page_model

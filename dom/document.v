@@ -9894,6 +9894,72 @@ pub fn (mut d Document) destroy() {
 	d.clear_layout_and_paintable_nodes_for_inactive_document()
 	d.tear_down_layout_tree()
 
+	$if vox_document_retention_diagnostics ? {
+	teardown_value := C.getenv(c'VOX_TRACE_TEARDOWN')
+	teardown := if teardown_value != unsafe { nil } { unsafe { cstring_to_vstring(teardown_value) }.int() } else { 0 }
+	if teardown >= 1 {
+		d.layout_engine_handle_ = unsafe { nil }
+		d.cached_display_list_ = unsafe { nil }
+	}
+	if teardown >= 2 {
+		mut pending := [unsafe { &Node(d) }]
+		mut all := []&Node{}
+		for pending.len > 0 {
+			node := pending.pop()
+			all << node
+			if element := node.as_element() {
+				if shadow_root := element.shadow_root() {
+					pending << unsafe { &Node(shadow_root) }
+				}
+			}
+			for child in node.children {
+				pending << child
+			}
+		}
+		for node in all {
+			mut detached := unsafe { &Node(node) }
+			detached.children = []&Node{}
+			detached.parent_ = unsafe { nil }
+			detached.index_in_parent_ = -1
+			detached.child_nodes_ = unsafe { nil }
+			detached.registered_observer_list_ = []
+		}
+	}
+	if teardown >= 3 {
+		d.element_by_id_map_ = unsafe { nil }
+		d.style_sheets_ = unsafe { nil }
+		d.shadow_roots = []
+		d.potentially_named_elements = []
+		d.selector_query_cache = map[string]?SelectorList{}
+		d.list_of_available_images = unsafe { nil }
+		d.shared_resource_requests_ = map[string]&SharedResourceRequest{}
+		d.preloaded_resource_entries_ = map[string]voidptr{}
+		d.applets_ = unsafe { nil }
+		d.anchors_ = unsafe { nil }
+		d.images_ = unsafe { nil }
+		d.embeds_ = unsafe { nil }
+		d.links_ = unsafe { nil }
+		d.forms_ = unsafe { nil }
+		d.scripts_ = unsafe { nil }
+		d.all_ = unsafe { nil }
+		d.parser = unsafe { nil }
+		d.style_invalidator_ = unsafe { nil }
+		d.adopted_style_sheets = []
+		d.media_query_lists = []
+		d.form_associated_elements_with_form_attribute = []
+		d.render_blocking_elements = []
+		d.script_blocking_style_sheet_set = []
+		d.style_computer = unsafe { nil }
+		d.font_computer = unsafe { nil }
+		d.hovered_node = unsafe { nil }
+		d.focused_area = unsafe { nil }
+		d.active_element_ = unsafe { nil }
+		d.selection_ = unsafe { nil }
+		d.editing_host_manager_ = unsafe { nil }
+	}
+
+	}
+
 	// 7. Remove any tasks whose document is document from any task queue.
 	d.remove_tasks_for_document()
 
