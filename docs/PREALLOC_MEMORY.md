@@ -27,10 +27,11 @@ frame: each arena is reset only after its last reader has let go.
 
 ## Mechanisms
 
-- `platform/prealloc_arena.v` wraps V's scoped arenas. `Arena.enter()` routes the
-  thread's allocations into the arena until `leave()`; `reset()` reuses its
-  blocks (a multi-block arena is remapped as one block sized from its
-  high-water mark); `release()` returns them. `enter_persistent()` temporarily
+- `platform/prealloc_arena.v` wraps V's scoped arenas through the prealloc
+  scope API of current V (the 0.5.2 compatibility compiler lacks it).
+  `Arena.enter()` routes the thread's allocations into the arena until
+  `leave()`; `reset()` rewinds it, keeping the blocks that cover a quarter more
+  than its high-water mark; `release()` returns them. `enter_persistent()` temporarily
   routes allocations back to the thread's base arena: every cache fill or
   install into longer-lived state that can run inside an arena must use it.
   Outside `-prealloc` all of this is inert and the collector owns everything.
@@ -93,10 +94,11 @@ frame: each arena is reset only after its last reader has let go.
 
 ## Measuring
 
-- `layout/prealloc_bounded_frames_test.v` (run with `-prealloc`) requires
-  transform and pseudo-element transform animations to add at most 256 bytes
-  of persistent storage per frame after warm-up and to keep one live scene,
-  for complete and for viewport recordings.
+- `layout/prealloc_bounded_frames_test.v` requires transform and
+  pseudo-element transform animations to add at most 256 bytes of persistent
+  storage per frame after warm-up and to keep one live scene, for complete and
+  for viewport recordings. Run it with `-prealloc -gc none`: V keeps its
+  default collector selected under `-prealloc` alone.
 - `VOX_PREALLOC_SAMPLER=1 LADYBIRD_V_GC=prealloc sh build-prod-browser.sh`
   links `tools/prealloc_allocation_sampler.c`, which samples allocations from
   thread base arenas (never reclaimed) when the V allocator provides the
@@ -136,8 +138,12 @@ found no stale arena access after the font-cache and background-layer fixes.
   animation frame resolves its target's whole snapshot into the sample arena;
   resolving only animated values there would remove that hazard and most
   sample bytes.
+- Current V copies a local to the heap (`memdup`) when its address goes to a
+  call it cannot prove keeps no reference: methods of another module, or
+  recursion. Under `-prealloc` those copies are never freed. Animated style
+  updates copy their `AbstractElement` arguments this way, about 1 KB per
+  frame for ten animated elements, so `prealloc_bounded_frames_test.v` exceeds
+  its budget with current V.
 - Document teardown: navigation, reload and tab close do not reclaim the old
   document's storage; documents need their own arenas and fetch threads need an
   owner for the allocations they retain.
-- The compatibility compiler's V runtime must provide a `realloc` that copies
-  only the old allocation's size under `-prealloc`; current V does.
