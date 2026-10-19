@@ -1533,7 +1533,8 @@ fn computed_background_image_layers(node &Node, element &dom.Element, computed &
 	if computed_image_value_has_no_layers(value) {
 		return []BackgroundImageLayer{}
 	}
-	computed_layers := resolved_background_layers_for_paint(computed)
+	computed_layers := css.background_layers_outside_samples(element.document(),
+		resolved_background_layers_for_paint(computed))
 	base_url := if dom_value := computed.property(.background_image, .yes) {
 		dom_value.base_url
 	} else {

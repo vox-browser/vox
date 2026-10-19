@@ -430,6 +430,66 @@ fn (mut storage AnimationSampleStorage) adopt(value &dom.StyleValue) &dom.StyleV
 	return copy
 }
 
+fn document_animation_samples(document &dom.Document) &AnimationSampleStorage {
+	if document == unsafe { nil } || document.style_computer == unsafe { nil }
+		|| document.style_computer.css_handle == unsafe { nil } {
+		return unsafe { nil }
+	}
+	computer := unsafe { &StyleComputer(document.style_computer.css_handle) }
+	return computer.animation_samples_
+}
+
+// Paint boxes keep their style's background layers until the box is next
+// rebuilt, which can be after the style's sample arena has been reset. An
+// animation frame re-resolves its target's layers into that arena even when
+// they do not animate, so copy sampled layers into ordinary storage.
+pub fn background_layers_outside_samples(document &dom.Document, layers []BackgroundLayerData) []BackgroundLayerData {
+	$if prealloc {
+		storage := document_animation_samples(document)
+		if layers.len == 0 || !storage.contains(layers.data) {
+			return layers
+		}
+		persistent := platform.enter_persistent()
+		defer { platform.leave_persistent(persistent) }
+		mut owned := []BackgroundLayerData{cap: layers.len}
+		for layer in layers {
+			owned << BackgroundLayerData{
+				...layer
+				image: layer.image.clone()
+				position_x: owned_length_percentage(layer.position_x)
+				position_y: owned_length_percentage(layer.position_y)
+				size_x: owned_length_percentage_or_auto(layer.size_x)
+				size_y: owned_length_percentage_or_auto(layer.size_y)
+			}
+		}
+		return owned
+	}
+	return layers
+}
+
+// A copy that shares no storage with `value`. Calculations are parsed again
+// from their serialization.
+fn owned_length_percentage(value LengthPercentage) LengthPercentage {
+	inner := value.value_
+	return match inner {
+		Length { LengthPercentage.from_length(Length.new(inner.value_, inner.unit_)) }
+		Percentage { LengthPercentage.from_percentage(Percentage.new(inner.value())) }
+		CalculatedStyleValue {
+			parsed := parse_css_value_logic(.width, inner.serialization.clone()) or {
+				return LengthPercentage.from_length(Length.make_px(0))
+			}
+			LengthPercentage.from_style_value_logic(parsed)
+		}
+	}
+}
+
+fn owned_length_percentage_or_auto(value LengthPercentageOrAuto) LengthPercentageOrAuto {
+	length_percentage := value.length_percentage_ or { return LengthPercentageOrAuto.make_auto() }
+	return LengthPercentageOrAuto{
+		length_percentage_: owned_length_percentage(length_percentage)
+	}
+}
+
 // A style value that outlives its sample: transitions keep their start and
 // end values for their whole duration. Copy samples into ordinary storage;
 // the typed value is parsed again from its text on first use.
