@@ -4,7 +4,7 @@ The live site is **not yet pixel-exact**. Comparisons require identical RGBA
 pixels, without a tolerance or excluded regions. Browser chrome is cropped;
 the rendered document viewport is compared at the same size and device scale.
 
-The reference browser used on 2026-10-18 was Brave 155.1.97.59 on macOS.
+The reference browser used on 2026-10-18 and rechecked on 2026-10-19 was Brave 155.1.97.59 on macOS.
 Both browsers reached `https://asgardpvp.com/` through the SOCKS5 proxy on
 `127.0.0.1:1337`. Repeating the 1280×800 Brave capture changed zero pixels.
 
@@ -16,16 +16,18 @@ viewport has two device pixels per CSS pixel in each axis.
 | Viewport | Scale | Scroll Y | Differing pixels | Maximum channel error |
 | --- | --- | --- | --- | --- |
 | 800×600 | 1× | 0 | 0 | 0 |
-| 1280×800 | 1× | 0 | 9 | 6 |
-| 1024×684 | 2× | 0 | 29 | 19 |
-| 1280×800 | 1× | 800 | 6,517 | 1 |
-| 1280×800 | 1× | 1600 | 4,369 | 2 |
+| 1280×800 | 1× | 0 | 2 | 6 |
+| 1024×684 | 2× | 0 | 0 | 0 |
+| 1280×800 | 1× | 800 | 0 | 0 |
+| 1280×800 | 1× | 1600 | 0 | 0 |
 
-The scrolled discrepancies are predominantly image sampling. The small channel
-errors still fail exact equality. The same-size SVG source replacement reftest passes with zero differing
-pixels. The original inputs for 22 focused Brave rendering fixtures also
-passed in the isolated validation checkout; this does not certify concurrent
-fixture edits in the main checkout.
+The two wider-viewport discrepancies are in the logo; they still fail exact
+equality. The same-size SVG source replacement reftest passes with zero differing
+pixels. The original inputs for 22 focused Brave rendering fixtures passed in the
+isolated validation checkout. The new `webp-root-raster-tiles`,
+`svg-image-raster-origin`, `msaa-tile-columns`, and
+`transformed-rounded-background` fixtures also pass exact comparisons. This does
+not certify concurrent fixture edits in the main checkout.
 Native clipping, compositing, glyph-cache, shape-backdrop, and tiled-image
 checks pass. Focused V checks also passed with Boehm and with `-gc none`.
 
@@ -43,6 +45,14 @@ checks pass. Focused V checks also passed with Boehm and with `-gc none`.
 - Tagged static WebP painting uses Chromium alpha premultiplication and ICC
   conversion. Fractional HSL background channels survive until rasterization.
 - Captures suppress pointer-dependent overlay scrollbars.
+- Root rasterization retains Chromium's tile width, height, shared border
+  ownership, and two-dimensional MSAA classification. The raster scale remains
+  separate from the compositor's device viewport size.
+- SVG circles and ellipses retain fractional user units. SVG image embedding
+  transforms and non-scaling strokes remain separate; fixed layers include their
+  empty container bounds when choosing a raster surface.
+- Explicit CSS transforms, including identity transforms, preserve rounded
+  background geometry in local coordinates.
 
 The synthetic `svg-image-non-scaling-stroke` fixture includes adjacent flag
 fills/strokes, fractional intrinsic image sizing, a distant image, and a
@@ -66,10 +76,11 @@ The equality command intentionally fails while any pixel differs.
 
 ## Remaining work
 
-The SVG logo and fixed back-to-top artwork retain a few GPU edge differences.
-Replaying Brave's exported path geometry through the compatibility GPU backend
-also reproduces edge differences, so a geometry-only correction does not
-establish exact raster parity.
+The SVG logo retains two GPU edge differences at 1280×800. Replaying only the
+logo's exported path geometry reproduces differences, while replaying Brave's
+surrounding drawing operations changes the result even with identical path
+coordinates. Shared GPU recording and shader behavior remain under investigation;
+the experimental recording path is not enabled in the production app.
 
 Lossy WebP representation also depends on the decoder's lifetime. Blink retains
 RGB when its first decoding generator was created before the complete response
