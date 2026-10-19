@@ -161,6 +161,10 @@ pub fn (mut a Attr_) set_owner_element(element ?&Element) {
 }
 
 pub fn (a &Attr_) handle_attribute_changes(element &Element, old_value ?string, new_value ?string) {
+	if new_value != none && element.document() != unsafe { nil } {
+		mut owner := unsafe { &Document(element.document()) }
+		owner.note_element_attribute_name(element.local_name(), a.local_name_)
+	}
 	if element.document() != unsafe { nil } {
 		element.document().notify_editing_history_dom_mutation()
 	}
@@ -6246,6 +6250,11 @@ pub fn (mut e Element) inserted() {
 	mut owner_document := unsafe { &Document(e.document()) }
 	owner_document.note_element_local_name(e.local_name().to_lower())
 	owner_document.note_element_classes(e.classes)
+	if attributes := e.attributes_ {
+		for attribute in attributes.attrs {
+			owner_document.note_element_attribute_name(e.local_name(), attribute.local_name_)
+		}
+	}
 	mut node := unsafe { &Node(e.as_node()) }
 	node.recompute_editable_subtree_flag()
 	node.set_needs_style_update(true)

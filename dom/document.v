@@ -5274,7 +5274,7 @@ pub mut:
 	dom_tree_version                         u64
 	// Local names are immutable. Keep a conservative history without retaining
 	// elements, so an absent tag can rule out document-wide selector walks.
-	seen_element_local_names_                map[string]bool
+	seen_element_local_names_                map[string]u64
 	seen_element_classes_ map[string]bool
 	seen_element_classes_unknown_ bool
 	seen_element_class_bytes_ int
@@ -6045,13 +6045,37 @@ pub fn (mut d Document) bump_dom_tree_version() {
 }
 
 pub fn (mut d Document) note_element_local_name(local_name string) {
-	d.seen_element_local_names_[local_name] = true
+	d.seen_element_local_names_[local_name] |= u64(1)
 }
 
 // Removal may leave a positive entry; only a negative result is a proof.
 // Callers use the same conservative case-folded bucket as CSS selector names.
 pub fn (d &Document) has_seen_element_local_name(local_name string) bool {
-	return d.seen_element_local_names_[local_name]
+	return d.seen_element_local_names_[local_name] != 0
+}
+
+// Attribute names use two bits in the existing per-tag history. Collisions
+// retain the live selector walk; they can never exclude a matching element.
+// Bit zero records tag presence. Fold only ASCII, just as attribute matching
+// does for HTML names; preserving other bytes also keeps XML names conservative.
+fn tag_attribute_history_mask(attribute_name string) u64 {
+	mut hash := u32(2166136261)
+	for raw in attribute_name {
+		folded := if raw >= `A` && raw <= `Z` { raw + u8(32) } else { raw }
+		hash = (hash ^ u32(folded)) * u32(16777619)
+	}
+	return (u64(1) << (u32(1) + hash % 63))
+		| (u64(1) << (u32(1) + (hash >> 16) % 63))
+}
+
+pub fn (mut d Document) note_element_attribute_name(local_name string, attribute_name string) {
+	key := local_name.to_lower()
+	d.seen_element_local_names_[key] |= u64(1) | tag_attribute_history_mask(attribute_name)
+}
+
+pub fn (d &Document) may_have_tag_attribute(local_name string, attribute_name string) bool {
+	mask := tag_attribute_history_mask(attribute_name)
+	return d.seen_element_local_names_[local_name] & mask == mask
 }
 
 // This is a negative-query summary, never a live class index. Removed and

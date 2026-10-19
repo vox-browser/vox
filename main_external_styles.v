@@ -13,7 +13,7 @@ import url
 // tree order. A titled stylesheet, alternate or not, applies only when its
 // title names that set; untitled alternates never apply.
 fn preferred_style_sheet_set_name(root &dom.Node) string {
-	for element in css.query_selector_all(root, 'link[rel][href], style') {
+	for element in css.query_selector_all(root, 'link[rel][href][title], style[title]') {
 		title := element.get_attribute_value('title')
 		if title == '' {
 			continue

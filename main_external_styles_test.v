@@ -94,3 +94,23 @@ fn test_titled_author_style_names_the_preferred_set_before_later_links() {
 	assert link_stylesheet_applies(links[1], 'Night')
 	assert !link_stylesheet_applies(links[1], 'night')
 }
+
+fn test_preferred_stylesheet_set_discovery_observes_late_titles_and_reordering() {
+	mut document := external_styles_test_document('<!doctype html><head><style id="first"></style><style id="second"></style></head><a title="other">link</a>')
+	defer { document.finalize() }
+	root := document.as_node()
+	assert !document.may_have_tag_attribute('style', 'title')
+	assert preferred_style_sheet_set_name(root) == ''
+	mut first := document.get_element_by_id('first') or { panic('first') }
+	mut second := document.get_element_by_id('second') or { panic('second') }
+	second.set_attribute_value('title', 'Later')
+	assert preferred_style_sheet_set_name(root) == 'Later'
+	first.set_attribute_value('title', 'Earlier')
+	assert preferred_style_sheet_set_name(root) == 'Earlier'
+	first.set_attribute_value('title', '')
+	assert preferred_style_sheet_set_name(root) == 'Later'
+	second.remove_attribute('title')
+	assert preferred_style_sheet_set_name(root) == ''
+	second.set_attribute_value('title', 'Restored')
+	assert preferred_style_sheet_set_name(root) == 'Restored'
+}
