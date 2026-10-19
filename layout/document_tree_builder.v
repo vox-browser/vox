@@ -101,6 +101,20 @@ fn counter_origin_description(abstract_element &dom.AbstractElement, computed &c
 }
 
 fn resolve_layout_counters(mut builder_state TreeBuilderState, abstract_element dom.AbstractElement, computed &css.ComputedProperties) {
+	if builder_state.counter_sets.len == 0 {
+		values := unsafe { &css.ComputedValues(computed) }
+		if !computed.display().is_list_item() && values.counter_reset().len == 0
+			&& values.counter_increment().len == 0 && values.counter_set().len == 0 {
+			// Before any counter exists, empty parent/sibling history cannot
+			// affect a later creator. Keep its order and previous-element key,
+			// but avoid allocating parent keys and empty history entries.
+			mut target := abstract_element
+			css.set_counters_set_for_abstract_element(mut target, none)
+			builder_state.counter_tree_order_index++
+			builder_state.last_processed_key = abstract_element_counter_key(&abstract_element)
+			return
+		}
+	}
 	parent := abstract_element_counter_parent(&abstract_element)
 	parent_key := if parent_element := parent {
 		abstract_element_counter_key(&parent_element)
