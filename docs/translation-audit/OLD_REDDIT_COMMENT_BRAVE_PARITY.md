@@ -782,4 +782,44 @@ observes about 98 native `nodeParent` requests per warm toggle, mostly from
 jQuery traversal; two computed-display reads also trigger substantial native
 work. These diagnostic timings receive no performance credit. A parent cache
 keyed by the document mutation clock is being checked next. Brave parity and
-installation of the newer bundle remain open.
+installation of the newer bundle remain open at that point.
+
+`76f6a23e` caches a connected native owner's parent against the captured
+document mutation clock. Pending facade operations and dirty state bypass the
+cache and flush through the ordinary query boundary. Disconnected owners,
+owners adopted into another document, and unrepresentable mutation versions
+remain uncached. Cross-document facade construction retains the existing native
+event-owner gate; raw parent-state queries verify the foreign ownership flag
+without claiming new foreign-facade support. Nineteen focused cases in eight
+original files pass per GC mode, including native moves, text parents, pending
+appends, stale snapshot clearing and adoption back into the owning document.
+The new cases also pass with the complete initial-state adapter.
+
+The source-129/130/130/129 comparison uses identical full scripts, handler,
+fixture and native frame endpoint. Median warm work falls from 306,249,548 to
+269,791,427 instructions, saving 36,458,121 (11.90%). Individual runs are
+variable; warm elapsed medians are 64.7925 versus 59.219 ms, and first-action
+latency does not consistently improve. Neither configuration collects during
+the measured clicks. Both states remain exact in decoded document RGBA bytes.
+The direct-callback diagnostic observes twenty JSON parent requests per warm
+toggle instead of 98; mutation-clock reads use the cheaper numeric binding.
+
+Source-131 changes only the new test fixture from the source-130 production
+inputs. Its broad checkpoint checks 1,128 original files and 4,309 functions per
+GC mode. Default GC has 4,288 passes and 21 known failures; no-GC has 4,289
+passes and twenty known failures. The failed names and original test bytes
+retain the earlier baseline classifications, including the default-GC
+allocation guard's unchanged control-110 failure. There are no unrun cases or
+new failed cases. Strict signing, startup and eight exact SVG guards pass;
+all eleven default captures retain every decoded RGBA byte from source-92,
+including its four reference mismatches. The unchanged 494-file LibJS tree
+carries its previous checks, and all 100 fresh upstream AST fixtures compare
+exactly. `parity-v131-checkpoint.json` closes the gate at 40,462,892 cumulative
+saved instructions since source-120, retaining `all_tests_passed: false`,
+`parity_achieved: false` and `app_installed: false`.
+
+The first source-130 build/test attempt failed because the local disk filled.
+Its failed receipts are retained. The retry passes after removing regenerable
+benchmark aliases and consolidating identical frozen fixtures with verified
+copy-on-write storage. Original production executables, test inputs and result
+records remain available; fixture bytes and GC configuration are unchanged.
