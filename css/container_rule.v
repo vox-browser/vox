@@ -370,7 +370,7 @@ fn (mut parser Parser) parse_style_feature(mut tokens SupportsTokenStream) ?&Boo
 	}
 
 	// <style-feature-plain> = <style-feature-name> : <style-feature-value>
-	mut transaction := tokens
+	mut transaction := tokens.fork()
 	transaction.discard_whitespace()
 	name_token := transaction.consume_a_token() or { return none }
 	if name_token.is(.ident) {

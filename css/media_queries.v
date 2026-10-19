@@ -57,6 +57,14 @@ fn SupportsTokenStream.from_values_with_namespaces(values []ComponentValue, decl
 	}
 }
 
+// fork returns an independent copy for a transaction. Current V moves some
+// transaction locals to the heap; for `mut transaction := tokens` with a mut
+// parameter it then copies the bytes of the parameter's pointer instead of the
+// stream, so take the copy through a call.
+fn (tokens SupportsTokenStream) fork() SupportsTokenStream {
+	return tokens
+}
+
 fn (tokens SupportsTokenStream) has_next_token() bool {
 	return tokens.index < tokens.values.len
 }
@@ -411,7 +419,7 @@ fn component_values_contain_only_any_value(values []ComponentValue) bool {
 // https://drafts.csswg.org/mediaqueries-5/#typedef-general-enclosed
 fn (mut parser Parser) parse_general_enclosed(mut tokens SupportsTokenStream, result MatchResult) ?&BooleanExpression {
 	_ = parser
-	mut transaction := tokens
+	mut transaction := tokens.fork()
 	transaction.discard_whitespace()
 	first_token := transaction.consume_a_token() or { return none }
 	if first_token.is_function() {
@@ -1321,7 +1329,7 @@ fn parse_media_feature_comparison(mut tokens SupportsTokenStream) ?MediaFeatureC
 }
 
 fn parse_media_feature_value_with_parser(mut parser Parser, feature_name string, mut tokens SupportsTokenStream) ?MediaFeatureValueLocal {
-	mut transaction := tokens
+	mut transaction := tokens.fork()
 	transaction.discard_whitespace()
 	mut values := []ComponentValue{}
 	for transaction.has_next_token() {
