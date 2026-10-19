@@ -1,5 +1,15 @@
 # Repository instructions
 
+## Development branch
+
+- Do all development and commit all changes directly on `master` in the
+  canonical checkout at `/Users/alex/code/vox2`.
+- Do not create or use feature branches, detached checkouts, or Git worktrees
+  for development. Serialize edits and commits in the canonical checkout.
+- Keep new history linear with focused commits; do not rewrite existing shared
+  history. Remove an existing worktree only after its committed and uncommitted
+  logic has been incorporated into `master` and verified.
+
 ## Commits
 
 - Commit every completed feature and fix after running the relevant checks.
