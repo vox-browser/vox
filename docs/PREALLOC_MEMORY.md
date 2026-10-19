@@ -61,6 +61,17 @@ frame: each arena is reset only after its last reader has let go.
 - **Visual contexts**. Compositor-only samples patch transform and opacity in
   the existing accumulated visual-context tree instead of rebuilding it; the
   topology is rebuilt only when a sample changes box categories.
+- **Viewport culling**. Viewport recordings resolve the visual contexts they
+  need to cull offscreen entries in a scratch arena reset after culling, and
+  keep the selection in a buffer retained with the recording scratch.
+- **Shared caches**. Process-wide font caches (decoded faces, glyph units,
+  system matches and fallbacks, HarfBuzz faces and scaled fonts, shaped runs)
+  and cached native font handles fill their misses in persistent sections. A
+  persistent section entered inside another leaves allocations where they go.
+- **Sampled background layers**. An animation frame re-resolves its target's
+  whole layout snapshot into the sample arena, including layers that do not
+  animate. A paint box can outlive that arena, so it copies sampled layers
+  into ordinary storage when it is built.
 - **Per-frame churn removed**: per-frame client event logs, empty map/array
   temporaries, `in [...]` literal arrays on hot paths (the compatibility
   compiler allocates them), unchanged scroll snapshots, idle channel selects,
@@ -74,14 +85,18 @@ frame: each arena is reset only after its last reader has let go.
    scene (tests use `record_retained_display_list`).
 3. A value copy of `ComputedProperties` shares its layout snapshot; call
    `share_computed_layout_cache()` before copying.
-4. `VOX_ARENA_POISON=1` write-protects reset and released blocks instead of
-   reusing them, so a stale pointer faults at its first use.
+4. Paint data copied from a style must not point into its samples: retained
+   boxes outlive the sample arena that a style was resolved in.
+5. `VOX_ARENA_POISON=1` write-protects reset and released blocks instead of
+   reusing them, so a stale pointer faults at its first use; the fault names
+   the arena. `VOX_ARENA_NO_REUSE=label,...` poisons only the named arenas.
 
 ## Measuring
 
 - `layout/prealloc_bounded_frames_test.v` (run with `-prealloc`) requires
   transform and pseudo-element transform animations to add at most 256 bytes
-  of persistent storage per frame after warm-up and to keep one live scene.
+  of persistent storage per frame after warm-up and to keep one live scene,
+  for complete and for viewport recordings.
 - `VOX_PREALLOC_SAMPLER=1 LADYBIRD_V_GC=prealloc sh build-prod-browser.sh`
   links `tools/prealloc_allocation_sampler.c`, which samples allocations from
   thread base arenas (never reclaimed) when the V allocator provides the
@@ -95,6 +110,10 @@ Pikabu (offline cache, 1024×880, idle animations, 600 frames): the profile's
 base-arena growth fell from about 587 KB per frame before this work to about
 5 KB per frame; the sampler attributes what remains to shell replay
 temporaries, CSS animation events and the hidden-target animation query.
+Viewport culling later added about 700 KB per frame until its storage was
+retained (2026-10-19, `Build/pikabu-instructions-cache-final`, 400 frames:
+median 5 KB, maximum 42 KB per frame after warm-up). Thirty poisoned runs
+found no stale arena access after the font-cache and background-layer fixes.
 
 ## Remaining work before `-prealloc` becomes the default
 
@@ -113,6 +132,10 @@ temporaries, CSS animation events and the hidden-target animation query.
   still rebuild the whole paint tree on every sample.
 - Layout-affecting animations rebuild layout state every frame.
 - Shell replay (`draw_command`) still allocates small per-frame temporaries.
+- Paint boxes copy other snapshot data besides background layers. An
+  animation frame resolves its target's whole snapshot into the sample arena;
+  resolving only animated values there would remove that hazard and most
+  sample bytes.
 - Document teardown: navigation, reload and tab close do not reclaim the old
   document's storage; documents need their own arenas and fetch threads need an
   owner for the allocations they retain.
