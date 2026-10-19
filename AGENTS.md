@@ -50,6 +50,12 @@
 - `build-prod-browser.sh` uses `V_BIN` when set, then `v` from `PATH`, and finally
   `~/code/v/v`. It writes `Build/v/Vox.app` and ad-hoc signs the bundle.
   `build_ladybird.sh` is a compatibility alias for the same build.
+- The browser builds with current V and fails rather than falling back to the
+  0.5.2 compatibility compiler; an outdated `v` on `PATH` needs `V_BIN`.
+  `LADYBIRD_V_GC=prealloc` builds use `-prealloc -gc none` and need V's
+  bounded `v_realloc` copy under `-prealloc`. Under current V, `int` is 64-bit:
+  hand native code `i32` data, and compare references with
+  `voidptr(a) == voidptr(b)` (`==` compares the referenced values).
 - Launch the browser with `open Build/v/Vox.app`, or pass a URL, an HTML
   file, or literal HTML directly to its executable:
 
