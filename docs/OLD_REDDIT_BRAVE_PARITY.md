@@ -48,9 +48,8 @@ its reference and allowances have not changed.
 
 ## Rendering changes
 
-Native old.reddit.com documents, including saved documents with that explicit
-base URL, select the Chromium compatibility policy. Other documents retain
-the translated LibWeb policy. The changes cover:
+All native browser documents use the Chromium compatibility policy, including
+local files and saved pages regardless of their base URL. The changes cover:
 
 - Chromium font keyword sizes, fractional font metrics and glyph advances,
   normal line heights, font smoothing, and sRGB text compositing.
@@ -106,6 +105,42 @@ attributes. Netscape files cannot retain SameSite or partition keys, so
 partitioned cookies are excluded and imported cookies are sent only in a
 same-site context. This read-only import does not implement a complete
 persistent cookie store or replace DOM cookie APIs.
+
+## SOCKS5 access
+
+Set the proxy on each new Vox process, including launches through macOS
+Launch Services:
+
+```sh
+open -n Build/v/Vox.app --env VOX_PROXY=socks5h://127.0.0.1:1337 \
+  --args https://old.reddit.com/
+open -n Build/v/Vox.app --env VOX_PROXY=socks5h://127.0.0.1:1337 \
+  --args https://boards.4chan.org/pol/
+```
+
+`VOX_PROXY` overrides ambient HTTP/HTTPS/ALL proxy variables. Both `socks5`
+and `socks5h` send destination hostnames to the proxy. `NO_PROXY`/`no_proxy`
+retain host, domain, port and wildcard exclusions. Invalid or unavailable
+proxies fail the request instead of opening a direct connection. Proxy
+tunnels retain certificate and hostname validation and currently use HTTP/1.1.
+
+Capture Brave with the same imported session and proxy in a temporary profile:
+
+```sh
+python3 tools/capture_brave_reference.py \
+  --url https://old.reddit.com/ \
+  --out Build/reddit-parity/brave-socks-live.png \
+  --width 1024 --height 768 --scale 1 \
+  --proxy-server socks5h://127.0.0.1:1337 \
+  --cookie-file "$HOME/Library/Application Support/Vox/imported-cookies.txt" \
+  --metadata Build/reddit-parity/brave-socks-live.json
+```
+
+On 2026-10-17, Brave successfully loaded example.com through this SOCKS5
+proxy, but old.reddit.com displayed "You've been blocked by network security"
+with the imported Reddit cookies. A proxied HTTP request likewise returned
+403. This prevents a fresh authenticated live-page comparison; the frozen
+authenticated comparison remains the rendering regression gate.
 
 ## Validation
 

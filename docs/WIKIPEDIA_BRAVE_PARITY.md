@@ -42,9 +42,9 @@ the last 12 pixels match.
 
 ## Rendering changes
 
-All of them apply only to documents under the Chromium compatibility policy
-(`font_rendering_policy`), which navigation selects for wikipedia.org and
-old.reddit.com. Other documents keep LibWeb's behavior.
+All native browser documents use the Chromium compatibility policy
+(`font_rendering_policy`), including local files and saved pages regardless of
+their base URL.
 
 - **Focus:** Chromium matches `:focus` and paints the caret only in a focused,
   active window. A screenshot run captures like headless Chromium, so the
