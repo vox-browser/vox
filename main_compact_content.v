@@ -15,12 +15,17 @@ mut:
 	elements map[string]&dom.Element
 	nodes    map[string]&dom.Node
 	keys     map[voidptr]string
+	materialized map[string]bool
 	next_key int
 }
 
 // Retain native node identity across insertions instead of serializing each
 // ancestor's complete subtree into the compact script bridge's initial state.
 fn install_compact_element_content_binding(document &dom.Document, mut runtime browserjs.Runtime) ! {
+	install_compact_element_content_binding_with_policy(document, mut runtime, .all_elements)!
+}
+
+fn install_compact_element_content_binding_with_policy(document &dom.Document, mut runtime browserjs.Runtime, policy CompactInitialElementPolicy) ! {
 	install_compact_dom_tree_version_binding(document, mut runtime)!
 	elements := css.query_selector_all(unsafe { &dom.Node(document) }, '*')
 	mut binding := &CompactElementQueryBinding{
@@ -31,6 +36,7 @@ fn install_compact_element_content_binding(document &dom.Document, mut runtime b
 		key := '__element_${index}'
 		binding.elements[key] = element
 		binding.keys[voidptr(element)] = key
+		binding.materialized[key] = policy == .all_elements || compact_initial_element_state_needed(element)
 	}
 	runtime.add_canvas_element_provider_with_identity_lookup(fn [binding] () map[string]&dom.Element {
 		return binding.elements.clone()
@@ -76,51 +82,38 @@ fn (mut binding CompactElementQueryBinding) node_for_key(key string) ?&dom.Node 
 	return element.as_node()
 }
 
-fn (mut binding CompactElementQueryBinding) element_state(element &dom.Element) json2.Any {
+fn (mut binding CompactElementQueryBinding) element_key(element &dom.Element) string {
 	if key := binding.keys[voidptr(element)] {
-		return json2.Any({
-			'bridgeKey': json2.Any(key)
-		})
+		return key
 	}
 	// A native host can materialize a script-created element before a selector
 	// replays its state. Keep that host's key and its existing owning wrapper.
 	if key := binding.runtime.canvas_element_key_for_binding(element) {
 		binding.keys[voidptr(element)] = key
 		binding.elements[key] = element
-		return json2.Any({'bridgeKey': json2.Any(key)})
+		return key
 	}
 	binding.next_key++
 	key := '__query_${binding.next_key}'
 	binding.keys[voidptr(element)] = key
 	binding.elements[key] = element
-	attribute_records, attributes := browserjs.compact_attribute_state(element)
+	return key
+}
+
+fn (mut binding CompactElementQueryBinding) element_state(element &dom.Element) json2.Any {
+	key := binding.element_key(element)
+	if binding.materialized[key] {
+		return json2.Any({'bridgeKey': json2.Any(key)})
+	}
+	binding.materialized[key] = true
 	parent_key := if parent := element.as_node().parent_element() {
 		binding.keys[voidptr(parent)] or { '' }
 	} else {
 		''
 	}
-	mut state := {
-		'bridgeKey':        json2.Any(key)
-		'elementIndex':     json2.Any(-1)
-		'tagName':          json2.Any(element.local_name())
-		'namespaceURI':     json2.Any(element.namespace_uri() or { '' })
-		'attributes':       json2.Any(attributes)
-		'attributeRecords': json2.Any(attribute_records)
-		'id':               json2.Any(element.get_attribute_value('id'))
-		'src':              json2.Any(element.get_attribute_value('src'))
-		'width':            json2.Any(element.get_attribute_value('width'))
-		'height':           json2.Any(element.get_attribute_value('height'))
-		'className':        json2.Any(element.get_attribute_value('class'))
-		'styleText':        json2.Any(element.get_attribute_value('style'))
-		'onclick':          json2.Any(element.get_attribute_value('onclick'))
-		'hasChildren':      json2.Any(element.as_node().has_children())
-		'parentKey':        json2.Any(parent_key)
-		'nativeParent':     json2.Any(true)
-		'disabled':         json2.Any(element.has_attribute('disabled'))
-	}
-	if element.is_html_element() && element.local_name() == 'option' {
-		state['value'] = json2.Any(html.html_option_element_value(unsafe { &dom.HTMLOptionElement(element) }))
-	}
+	index := if key.starts_with('__element_') { key['__element_'.len..].int() } else { -1 }
+	state := javascript_initial_element_state(element, key, index, parent_key,
+		binding.document.url.serialize(), true)
 	return json2.Any(state)
 }
 
@@ -152,6 +145,17 @@ fn (mut binding CompactElementQueryBinding) query(input string) !string {
 	}
 	action := json_string_property(request, 'action') or { return error('Invalid selector action') }
 	key := json_string_property(request, 'key') or { '' }
+	if action == 'state' {
+		node := binding.node_for_key(key) or { return 'null' }
+		return json2.encode(binding.node_state(node))
+	}
+	if action == 'snapshotStates' {
+		mut states := []json2.Any{}
+		for element in css.query_selector_all(binding.document.as_node(), '*') {
+			states << binding.element_state(element)
+		}
+		return json2.encode(states)
+	}
 	root := if key == '' {
 		unsafe { &dom.Node(binding.document) }
 	} else {

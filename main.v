@@ -1775,97 +1775,6 @@ fn javascript_video_source_states(current_url string, scripts []string) map[stri
 	return sources
 }
 
-fn javascript_initial_state(document &dom.Document, current_url string, scripts []string) map[string]json2.Any {
-	root := unsafe { &dom.Node(document) }
-	mut elements := map[string]json2.Any{}
-	all_elements := css.query_selector_all(root, '*')
-	mut element_keys := map[voidptr]string{}
-	for element_index, element in all_elements {
-		element_keys[voidptr(element)] = '__element_${element_index}'
-	}
-	for element_index, element in all_elements {
-		id := element.get_attribute_value('id')
-		bridge_key := '__element_${element_index}'
-		parent_key := if parent := element.as_node().parent_element() {
-			element_keys[voidptr(parent)] or { '' }
-		} else {
-			''
-		}
-		attribute_records, attributes := browserjs.compact_attribute_state(element)
-		mut state := {
-			'id':           json2.Any(id)
-			'bridgeKey':    json2.Any(bridge_key)
-			'elementIndex': json2.Any(element_index)
-			'tagName':      json2.Any(element.local_name())
-			'namespaceURI': json2.Any(element.namespace_uri() or { '' })
-			'attributes':   json2.Any(attributes)
-			'attributeRecords': json2.Any(attribute_records)
-			'src':          json2.Any(element.get_attribute_value('src'))
-			'width':        json2.Any(element.get_attribute_value('width'))
-			'height':       json2.Any(element.get_attribute_value('height'))
-			'className':    json2.Any(element.get_attribute_value('class'))
-			'styleText':    json2.Any(element.get_attribute_value('style'))
-			'onclick':      json2.Any(element.get_attribute_value('onclick'))
-			'hasChildren':  json2.Any(element.as_node().has_children())
-			'disabled':     json2.Any(element.has_attribute('disabled'))
-			'parentKey':    json2.Any(parent_key)
-		}
-		if element.is_html_element() && element.local_name() == 'select' {
-			select_element := unsafe { &dom.HTMLSelectElement(element) }
-			state['value'] = json2.Any(compact_select_value(select_element))
-		}
-		if element.is_html_element() && element.local_name() == 'option' {
-			state['value'] = json2.Any(html.html_option_element_value(unsafe { &dom.HTMLOptionElement(element) }))
-		}
-		if element.is_html_element() && element.local_name() == 'video' {
-			video := unsafe { &dom.HTMLVideoElement(element) }
-			model := html.html_video_element_model_for_dom_element(video)
-			if frame := model.current_decoded_image_frame() {
-				bitmap := frame.bitmap()
-				frame_state := bitmap_javascript_state(bitmap)
-				state['readyState'] = json2.Any(2)
-				state['videoWidth'] = frame_state['width'] or { json2.Any(0) }
-				state['videoHeight'] = frame_state['height'] or { json2.Any(0) }
-				state['videoPixels'] = frame_state['pixels'] or { json2.Any('') }
-			}
-		}
-		if element.local_name() == 'img' {
-			image := unsafe { &dom.HTMLImageElement(element) }
-			source := element.get_attribute_value('src').trim_space()
-			resolved_source := resolve_document_reference(source, current_url)
-			// The compact host decodes data and local-file images at paint time,
-			// outside HTMLImageElement's request object. They are nevertheless
-			// synchronously available before this script snapshot is executed.
-			host_image_complete := source.starts_with('data:')
-				|| (resolved_source.starts_with('file://')
-					&& os.is_file(url.percent_decode(resolved_source['file://'.len..]).bytestr()))
-			state['complete'] = json2.Any(html.html_image_element_complete(image)
-				|| host_image_complete)
-		}
-		if element.local_name() == 'input' {
-			input := unsafe { &dom.HTMLInputElement(element) }
-			state['checked'] = json2.Any(input.checked())
-			state['indeterminate'] = json2.Any(input.indeterminate())
-		}
-		elements[bridge_key] = json2.Any(state)
-	}
-	model := html.NavigableModel.navigable_with_active_document(document)
-	return {
-		'title':         json2.Any(document_title(document))
-		'bodyHTMLDirty': json2.Any(false)
-		'bodyTextDirty': json2.Any(false)
-		'location':      json2.Any(current_url)
-		'navigate':      json2.Any('')
-		'logs':          json2.Any([]json2.Any{})
-		'operations':    json2.Any([]json2.Any{})
-		'elements':      json2.Any(elements)
-		'videoSources':  json2.Any(javascript_video_source_states(current_url, scripts))
-		'forceDarkEnabled': json2.Any(if value := model { value.force_dark_enabled() } else { false })
-		'forceDarkForegroundThreshold': json2.Any(if value := model { int(value.force_dark_foreground_threshold()) } else { 150 })
-		'forceDarkBackgroundThreshold': json2.Any(if value := model { int(value.force_dark_background_threshold()) } else { 205 })
-		'showLineBoxBorders': json2.Any(false)
-	}
-}
 
 fn javascript_bootstrap() string {
 	return [
@@ -1883,6 +1792,7 @@ fn javascript_bootstrap() string {
 		'const __elementRecords=new WeakMap(),__elementRecordGet=WeakMap.prototype.get,__elementRecordSet=WeakMap.prototype.set,__elementApply=Reflect.apply,__nativeElementQuery=globalThis.__ladybirdElementQuery;',
 		'function Element(){throw new TypeError("Illegal Element constructor");} Object.setPrototypeOf(Element,EventTarget); Object.setPrototypeOf(Element.prototype,EventTarget.prototype); Object.defineProperty(Element,"prototype",{writable:false}); Object.defineProperty(Element.prototype,Symbol.toStringTag,{value:"Element",configurable:true}); Object.defineProperty(globalThis,"Element",{value:Element,writable:true,configurable:true});',
 		'for(const constructor of [globalThis.HTMLImageElement,globalThis.HTMLMediaElement,globalThis.HTMLTrackElement])if(constructor)Object.setPrototypeOf(constructor.prototype,Element.prototype);',
+		'function __resolveElementState(key){const known=__state.elements[key];if(known)return known;if(typeof __nativeElementQuery!=="function")return null;const object=__queryElements(key,"state","");return object?__elementApply(__elementRecordGet,__elementRecords,[object]):null;}',
 		'function __queryElement(value){if(value===null)return null;const known=__state.elements[value.bridgeKey];if(known)return __compactNodeWrapper(known);__state.elements[value.bridgeKey]=value;return __compactNodeWrapper(value);}',
 		compact_pending_elements_bootstrap(),
 		compact_native_parent_bootstrap(),
@@ -1959,9 +1869,9 @@ fn javascript_bootstrap() string {
 		'const __documentCookie=globalThis.__ladybirdDocumentCookie,__documentCookieException=globalThis.DOMException; function __callDocumentCookie(input){try{return __documentCookie(input);}catch(error){const message=String(error.message);if(message.indexOf("SecurityError:")===0)throw new __documentCookieException(message.slice(14).trim(),"SecurityError");throw error;}} Object.defineProperty(document,"cookie",{enumerable:true,configurable:true,get:function(){return __callDocumentCookie("get");},set:function(value){__callDocumentCookie("set:"+String(value));}});',
 		'const window = globalThis; window.window = window; window.document = document; window.console = console; window.location = location; window.alert = function (v) { console.log(v); }; window.addEventListener = document.addEventListener; window.getSelection=function(){return __selection;}; window.Image=function(){return document.createElement("img");}; window.internals={imageAnimationStateForURL:function(){return{timerActive:true,frameIndex:1};},signalTestIsDone:function(){},spoofCurrentURL:function(){},setForceDarkEnabled:function(value){__state.forceDarkEnabled=!!value;},setForceDarkThresholds:function(foreground,background){__state.forceDarkForegroundThreshold=Math.trunc(Number(foreground));__state.forceDarkBackgroundThreshold=Math.trunc(Number(background));},setShowLineBoxBorders:function(value){__state.showLineBoxBorders=!!value;}}; if(!Promise.withResolvers)Promise.withResolvers=function(){let resolve,reject;const promise=new Promise(function(a,b){resolve=a;reject=b;});return{promise:promise,resolve:resolve,reject:reject};};',
 		compact_computed_style_bootstrap(),
-		'__ladybirdElementWheelSetResolver(function(key){const s=__state.elements[key];return s?__element(s):null;});',
+		'__ladybirdElementWheelSetResolver(function(key){const s=__resolveElementState(key);return s?__element(s):null;});',
 		'const __initialNamedElements=Object.create(null); for (const s of __elementStates()) { if(!s.id)continue; if(!Object.prototype.hasOwnProperty.call(__initialNamedElements,s.id))__initialNamedElements[s.id]=s; try { window[s.id] = __element(__initialNamedElements[s.id]); } catch (_) {} }',
-		'window.__ladybirdSnapshot = function () { return JSON.stringify(__state); };',
+		'window.__ladybirdSnapshot = function () { if(typeof __nativeElementQuery==="function"){const states=JSON.parse(__nativeElementQuery(JSON.stringify({key:"",action:"snapshotStates",selector:""})));for(const state of states)if(!__state.elements[state.bridgeKey])__state.elements[state.bridgeKey]=state;} return JSON.stringify(__state); };',
 		'window.__ladybirdFinalize = function () { for (const key of Object.keys(__canvases)) { const c=__canvases[key],s=c.state;if(!c.context||c.kind!=="2d")continue;const snapshot=__canvasCall(s,"snapshot");s.canvasPixels=snapshot.pixels;s.canvasWidth=__canvasDimension(s,"width");s.canvasHeight=__canvasDimension(s,"height");s.canvasPixelsPremultiplied=snapshot.premultiplied;s.canvasPixelsTopDown=snapshot.topDown;s.canvasNative=true; } const snapshot=JSON.stringify(Object.assign({},__state,{elements:__pendingElementStates(true)})); __state.operations=[]; __clearPendingElementEdits(); return snapshot; };',
 		'window.__ladybirdClearLogs = function () { __state.logs = []; __state.operations=[]; __state.bodyHTMLDirty = false; __state.bodyTextDirty = false; __clearPendingElementEdits(); };',
 		compact_event_dispatch_bootstrap(),
@@ -2969,7 +2879,7 @@ fn run_document_script_sources_with_image_fetch_hooks(document &dom.Document, cu
 		messages << 'JavaScript element wheel bindings: ${err.msg()}'
 		return none
 	}
-	install_compact_element_content_binding(document, mut mutable_runtime) or {
+	install_compact_element_content_binding_with_policy(document, mut mutable_runtime, .roots_and_ids) or {
 		messages << 'JavaScript element content bindings: ${err.msg()}'
 		return none
 	}
@@ -2978,7 +2888,7 @@ fn run_document_script_sources_with_image_fetch_hooks(document &dom.Document, cu
 		return none
 	}
 	processmetrics.instruction_checkpoint('javascript_native_bindings')
-	initial_state := javascript_initial_state(document, current_url, sources.map(it.code))
+	initial_state := javascript_initial_state_with_policy(document, current_url, sources.map(it.code), .roots_and_ids)
 	processmetrics.instruction_checkpoint('javascript_initial_state')
 	bootstrap := javascript_bootstrap()
 	initial_state_json := json2.encode(initial_state)

@@ -5,7 +5,7 @@ module main
 fn compact_event_dispatch_bootstrap() string {
 	return r'
 window.__ladybirdDispatch = function (name, id, replay) {
- const s = replay ? (__state.elements[replay.key] || null) :
+ const s = replay ? __resolveElementState(replay.key) :
   (String(id) === "" ? null : (__elementStates().find(item => item.id === String(id)) || null));
  if (replay && !s) return window.__ladybirdFinalize();
  const target = s ? __element(s) : document;

@@ -11,8 +11,7 @@ fn (mut binding CompactElementQueryBinding) node_state(node &dom.Node) json2.Any
 	mut parent_key := ''
 	if parent := node.parent() {
 		if element := parent.as_element() {
-			_ = binding.element_state(element)
-			parent_key = binding.keys[voidptr(element)] or { '' }
+			parent_key = binding.element_key(element)
 		} else if !parent.is_document() {
 			parent_key = '__node_${parent.unique_id()}'
 			binding.nodes[parent_key] = parent
