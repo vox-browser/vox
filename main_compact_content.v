@@ -167,6 +167,7 @@ fn (mut binding CompactElementQueryBinding) query(input string) !string {
 	if action == 'nextSibling' { return binding.node_relation_query(root, 'next') }
 	if action == 'previousSibling' { return binding.node_relation_query(root, 'previous') }
 	if action == 'nodeParent' { return binding.node_relation_query(root, 'parent') }
+	if action == 'cachedParent' { return binding.cached_parent_query(root) }
 	if action == 'geometry' { return compact_element_geometry_query(root, selector) }
 	if action == 'offsetParent' {
 		element := root.as_element() or { return error('TypeError: Invalid Element receiver') }

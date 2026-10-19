@@ -39,6 +39,16 @@ fn (mut binding CompactElementQueryBinding) node_relation_query(root &dom.Node, 
 	return if found := node { json2.encode(binding.node_state(found)) } else { 'null' }
 }
 
+// Only connected owners in this realm's document can use its mutation clock.
+// Removing a connected node invalidates that clock before adoption elsewhere.
+fn (mut binding CompactElementQueryBinding) cached_parent_query(root &dom.Node) string {
+	parent := if found := root.parent() { binding.node_state(found) } else { json2.Any(json2.Null{}) }
+	return json2.encode({
+		'parent': parent
+		'cacheable': json2.Any(root.is_connected() && voidptr(root.document()) == voidptr(binding.document))
+	})
+}
+
 fn (mut binding CompactElementQueryBinding) node_value_query(root &dom.Node, action string, value string) !string {
 	if action == 'setNodeValue' {
 		mut node := unsafe { &dom.Node(root) }
@@ -63,7 +73,7 @@ function __compactNodeWrapper(state){
  function write(receiver,value,nullable){const own=record(receiver);if(typeof value==="symbol")throw new TypeError("Cannot convert a Symbol to a string");__queryElements(own.bridgeKey,"setNodeValue",nullable&&value===null?"":String(value));__compactInvalidateContent(own);}
  Object.defineProperties(node,{
   __state:{value:state},nodeType:{value:state.nodeType},nodeName:{value:state.nodeName},ownerDocument:{value:document},
-  parentNode:{get(){return __queryElements(record(this).bridgeKey,"nodeParent","");}},
+  parentNode:{get(){return __compactNativeParent(record(this));}},
   parentElement:{get(){const parent=this.parentNode;return parent&&parent.nodeType===1?parent:null;}},
   firstChild:{get(){return __queryElements(record(this).bridgeKey,"firstChild","");}},
   lastChild:{get(){return __queryElements(record(this).bridgeKey,"lastChild","");}},
