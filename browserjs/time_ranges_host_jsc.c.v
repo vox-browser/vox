@@ -57,8 +57,8 @@ pub fn (mut runtime Runtime) install_time_ranges_binding() ! {
 	time_ranges_bindings_[owner] = binding
 	runtime.add_close_handler(fn [owner, binding] () {
 		mut retained := unsafe { &TimeRangesBinding(binding) }
-		retained.records.clear()
-		retained.by_wrapper.clear()
+		retained.records = {}
+		retained.by_wrapper = {}
 		time_ranges_bindings_.delete(owner)
 	})
 }

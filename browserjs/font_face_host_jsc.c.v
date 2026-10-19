@@ -97,10 +97,10 @@ pub fn (mut host FontFaceHost) install(mut runtime Runtime) ! {
 		mut host := unsafe { &FontFaceHost(handle) }
 		host.closed = true
 		host.set.clear_setlike_binding_hooks(handle)
-		host.faces.clear()
-		host.wrappers.clear()
-		host.font_events.clear()
-		host.font_event_faces.clear()
+		host.faces = {}
+		host.wrappers = {}
+		host.font_events = {}
+		host.font_event_faces = {}
 	})
 }
 

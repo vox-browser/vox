@@ -44,6 +44,6 @@ pub fn WritableStreamHost.create(document &dom.Document) !&WritableStreamHost {
 pub fn (mut host WritableStreamHost) close() {
 	if host.closed { return }
 	host.closed = true
-	host.records.clear()
-	host.prototypes.clear()
+	host.records = {}
+	host.prototypes = {}
 }

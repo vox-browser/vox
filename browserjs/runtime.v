@@ -4,6 +4,7 @@ import libjs
 import dom
 import html
 import json2
+import platform
 
 pub enum Engine {
 	javascriptcore
@@ -78,6 +79,9 @@ mut:
 	canvas_element_providers_ []CanvasElementBindingProvider
 	media_element_hosts_ []&MediaElementHost
 	close_handlers_ []fn ()
+	// Closures, besides function and close-handler callbacks, that this
+	// runtime's bindings own and release when it closes.
+	owned_closures_ []voidptr
 	document_state_dirty_ bool
 	document_replay_effects_pending_ bool
 	scripting_settings_ ?&html.EnvironmentSettingsObject
@@ -338,24 +342,39 @@ pub fn (mut runtime Runtime) close() {
 		return
 	}
 	runtime.closed = true
-	for handler in runtime.close_handlers_ { handler() }
-	runtime.close_handlers_.clear()
+	for handler in runtime.close_handlers_ {
+		handler()
+		platform.release_closure(voidptr(handler))
+	}
+	runtime.close_handlers_ = []
 	$if darwin || linux {
 		if runtime.context != unsafe { nil } {
 			for value in runtime.protected_values_ { C.JSValueUnprotect(runtime.context, value) }
-			runtime.protected_values_.clear()
+			runtime.protected_values_ = []
 			release_javascript_core_context(runtime.context)
 			runtime.context = unsafe { nil }
 		}
 	}
 	mut vm := unsafe { &libjs.VM(runtime.agent_vm) }
 	vm.clear_execution_context_stack()
-	runtime.host_functions_.clear()
-	runtime.value_host_functions_.clear()
-	runtime.native_stream_wrapper_records_.clear()
-	runtime.webidl_promise_bridges_.clear()
-	runtime.canvas_element_providers_.clear()
-	runtime.media_element_hosts_.clear()
+	// Binding callbacks are closures written at their definitions. The
+	// runtime that owns them can no longer call them, and they would otherwise
+	// keep their hosts, and through them the document, alive.
+	for record in runtime.host_functions_ { platform.release_closure(voidptr(record.callback)) }
+	for record in runtime.value_host_functions_ { platform.release_closure(voidptr(record.callback)) }
+	for owned in runtime.owned_closures_ { platform.release_closure(owned) }
+	for provider in runtime.canvas_element_providers_ {
+		platform.release_closure(voidptr(provider.snapshot))
+		platform.release_closure(voidptr(provider.lookup))
+		platform.release_closure(voidptr(provider.identity))
+	}
+	runtime.owned_closures_ = []
+	runtime.host_functions_ = []
+	runtime.value_host_functions_ = []
+	runtime.native_stream_wrapper_records_ = {}
+	runtime.webidl_promise_bridges_ = {}
+	runtime.canvas_element_providers_ = []
+	runtime.media_element_hosts_ = []
 	if settings := runtime.scripting_settings_ {
 		mut event_loop := unsafe { &html.EventLoop(settings.responsible_event_loop()) }
 		event_loop.detach_embedding_vm(runtime.agent_vm)
@@ -364,7 +383,13 @@ pub fn (mut runtime Runtime) close() {
 	runtime.closed = true
 }
 
+// The runtime owns the handler, a closure written at the call, and releases
+// it after running it.
 pub fn (mut runtime Runtime) add_close_handler(handler fn ()) { runtime.close_handlers_ << handler }
+
+// Release callback, a closure that only this runtime's bindings call, when the
+// runtime closes.
+pub fn (mut runtime Runtime) own_closure(callback voidptr) { runtime.owned_closures_ << callback }
 pub fn (mut runtime Runtime) mark_document_state_dirty() { runtime.document_state_dirty_ = true }
 pub fn (runtime &Runtime) has_pending_document_state() bool {
 	return runtime.document_state_dirty_

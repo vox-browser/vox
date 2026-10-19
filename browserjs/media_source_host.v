@@ -70,8 +70,8 @@ pub fn MediaSourceHost.create(document &dom.Document) !&MediaSourceHost {
 pub fn (mut host MediaSourceHost) close() {
 	if host.closed { return }
 	host.closed = true
-	host.records.clear()
-	host.by_wrapper.clear()
-	host.buffer_records.clear()
-	host.buffer_by_wrapper.clear()
+	host.records = {}
+	host.by_wrapper = {}
+	host.buffer_records = {}
+	host.buffer_by_wrapper = {}
 }

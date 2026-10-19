@@ -5,6 +5,7 @@ import browsernet
 import adblock
 import dom
 import html
+import platform
 
 const max_browser_image_fetches = 8
 
@@ -49,8 +50,18 @@ fn (mut loader BrowserImageRequestLoader) finish_initialization(has_runtime bool
 fn (mut loader BrowserImageRequestLoader) cancel() {
 	loader.cancelled = true
 	loader.queued = []BrowserImageFetchJob{}
-	loader.pending.clear()
-	loader.resources.clear()
+	for _, completions in loader.pending {
+		for complete in completions { platform.release_closure(voidptr(complete)) }
+	}
+	loader.pending = map[string][]html.HTMLImageFetchCompletion{}
+	loader.resources = map[string]PreloadedResource{}
+}
+
+// The loader owns each completion, a closure the image model made for one
+// request: it is called once and then released.
+fn finish_browser_image_request(complete html.HTMLImageFetchCompletion, decoded ?html.DecodedImageData) {
+	complete(decoded)
+	platform.release_closure(voidptr(complete))
 }
 
 fn (mut loader BrowserImageRequestLoader) start_queued_fetches() {
@@ -72,14 +83,14 @@ fn (loader &BrowserImageRequestLoader) callback() browserjs.ImageAsyncRequestFet
 
 fn (mut loader BrowserImageRequestLoader) request(image &dom.HTMLImageElement,
 	model &html.HTMLImageElementModel, address dom.URL, complete html.HTMLImageFetchCompletion) {
-	if loader.cancelled { complete(none); return }
+	if loader.cancelled { finish_browser_image_request(complete, none); return }
 	if address.scheme() !in ['http', 'https'] {
-		decoded := browser_fetch_image_request(image, model, address) or { complete(none); return }
-		complete(decoded)
+		decoded := browser_fetch_image_request(image, model, address) or { finish_browser_image_request(complete, none); return }
+		finish_browser_image_request(complete, decoded)
 		return
 	}
 	if !browser_image_request_allows_cached_bytes(image, model, address) {
-		complete(none)
+		finish_browser_image_request(complete, none)
 		return
 	}
 	owner := unsafe { &dom.Element(image) }.document()
@@ -87,12 +98,12 @@ fn (mut loader BrowserImageRequestLoader) request(image &dom.HTMLImageElement,
 	resource_url := address.serialize()
 	key := source_url + '\n' + resource_url
 	filtered := browsernet.filter(adblock.Request{url: resource_url, source_url: source_url, request_type: 'image'}) or {
-		complete(none)
+		finish_browser_image_request(complete, none)
 		return
 	}
 	if replacement := filtered.replacement {
-		decoded := browser_decoded_image_data(address, replacement.body.bytes()) or { complete(none); return }
-		complete(decoded)
+		decoded := browser_decoded_image_data(address, replacement.body.bytes()) or { finish_browser_image_request(complete, none); return }
+		finish_browser_image_request(complete, decoded)
 		return
 	}
 	if voidptr(owner) == voidptr(loader.document) {
@@ -101,14 +112,14 @@ fn (mut loader BrowserImageRequestLoader) request(image &dom.HTMLImageElement,
 				&& !resource.adblock_replacement
 				&& (resource.error == '' || (resource.source_url == source_url && resource.request_type == 'image'))
 				&& (resource.final_url in ['', resource_url] || resource.source_url == source_url) {
-				if resource.error != '' { complete(none); return }
+				if resource.error != '' { finish_browser_image_request(complete, none); return }
 				filter_browser_response_headers(adblock.Request{
 					url: if resource.final_url == '' { resource_url } else { resource.final_url }
 					source_url: source_url
 					request_type: 'image'
-				}, resource.response_headers) or { complete(none); return }
-				decoded := browser_decoded_image_data(address, resource.body.bytes()) or { complete(none); return }
-				complete(decoded)
+				}, resource.response_headers) or { finish_browser_image_request(complete, none); return }
+				decoded := browser_decoded_image_data(address, resource.body.bytes()) or { finish_browser_image_request(complete, none); return }
+				finish_browser_image_request(complete, decoded)
 				return
 			}
 		}
@@ -120,8 +131,8 @@ fn (mut loader BrowserImageRequestLoader) request(image &dom.HTMLImageElement,
 	// This helper never performs network I/O, including for a cached redirect.
 	// Available pixels keep their natural size in the very first layout.
 	if resource := disk_cached_browser_resource(resource_url, source_url, 'image') {
-		decoded := browser_decoded_image_data(address, resource.body.bytes()) or { complete(none); return }
-		complete(decoded)
+		decoded := browser_decoded_image_data(address, resource.body.bytes()) or { finish_browser_image_request(complete, none); return }
+		finish_browser_image_request(complete, decoded)
 		return
 	}
 	loader.pending[key] = [complete]
@@ -147,7 +158,7 @@ fn (mut app BrowserApp) poll_browser_image_requests() {
 					}
 					app.retain_navigation_resource(resource.url, resource)
 				}
-				for callback in callbacks { callback(decoded) }
+				for callback in callbacks { finish_browser_image_request(callback, decoded) }
 				completed = true
 			}
 			else { break }

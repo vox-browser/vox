@@ -91,6 +91,13 @@ fn browser_decode_svg_image(address dom.URL, bytes []u8) !html.DecodedImageData 
 	return decoded
 }
 
+// Each image's request goes through the model it is made for, so the hook is a
+// plain function rather than a closure that would keep its image alive.
+fn browser_image_model_fetch(model &html.HTMLImageElementModel, address dom.URL) !html.DecodedImageData {
+	image := model.image_element() or { return error('Image request has no element') }
+	return browser_fetch_image_request(image, model, address)
+}
+
 // Static pages still need real HTML image requests. Installing the JavaScript
 // ImageHost must not be a prerequisite for decoding and displaying an <img>.
 fn install_static_browser_image_fetch_hooks(document &dom.Document, deferred map[string]bool) {
@@ -98,9 +105,7 @@ fn install_static_browser_image_fetch_hooks(document &dom.Document, deferred map
 		if !element.is_html_element() { continue }
 		image := unsafe { &dom.HTMLImageElement(element) }
 		mut model := html.html_image_element_model_for_dom_element(image)
-		model.set_fetch_hook(fn [image, model] (address dom.URL) !html.DecodedImageData {
-			return browser_fetch_image_request(image, model, address)
-		})
+		model.set_model_fetch_hook(browser_image_model_fetch)
 		address := resolve_document_reference(element.get_attribute_value('src'), document.base_url().serialize())
 		if address !in deferred && (element.has_attribute('src') || element.has_attribute('srcset')) {
 			model.update_the_image_data(false, false)
@@ -206,7 +211,7 @@ fn browser_svg_resources_need_layout(document &dom.Document, changed map[string]
 	if result.root == unsafe { nil } { return true }
 	// Inspect DOM owners too: pending images and object fallback content need
 	// not yet have a replaced layout box. Include author and UA shadow trees.
-	if document.as_node().for_each_shadow_including_inclusive_descendant(fn [changed] (node &dom.Node) dom.TraversalDecision {
+	if document.as_node().visit_shadow_including_inclusive_descendants(fn [changed] (node &dom.Node) dom.TraversalDecision {
 		return if browser_svg_dom_resource_needs_layout(node, changed) { .@break } else { .@continue }
 	}) == .@break { return true }
 	return browser_svg_layout_resource_needs_layout(result.root, changed)

@@ -42,6 +42,6 @@ pub fn AbortSignalHost.create(document &dom.Document) !&AbortSignalHost {
 pub fn (mut host AbortSignalHost) close() {
 	if host.closed { return }
 	host.closed = true
-	host.records.clear()
-	host.prototypes.clear()
+	host.records = {}
+	host.prototypes = {}
 }

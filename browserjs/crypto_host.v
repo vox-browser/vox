@@ -65,8 +65,8 @@ pub fn CryptoHost.create_for_settings(settings &html.EnvironmentSettingsObject) 
 pub fn (mut host CryptoHost) close() {
 	if host.closed { return }
 	host.closed = true
-	host.prototypes.clear()
-	host.records.clear()
-	host.by_wrapper.clear()
-	host.object_wrappers.clear()
+	host.prototypes = {}
+	host.records = {}
+	host.by_wrapper = {}
+	host.object_wrappers = {}
 }

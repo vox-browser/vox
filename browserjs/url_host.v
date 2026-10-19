@@ -46,6 +46,6 @@ pub fn URLHost.create_for_settings(settings &html.EnvironmentSettingsObject) !&U
 pub fn (mut host URLHost) close() {
 	if host.closed { return }
 	host.closed = true
-	host.records.clear()
-	host.by_wrapper.clear()
+	host.records = {}
+	host.by_wrapper = {}
 }

@@ -26,6 +26,14 @@ pub type HTMLImageFetchCompletion = fn (?DecodedImageData)
 
 pub type HTMLImageAsyncFetchHook = fn (dom.URL, HTMLImageFetchCompletion)
 
+// These hooks receive the requesting model instead of capturing it, so one
+// embedder hook serves every image. A closure installed per image stays
+// registered with the image it captured after that image's document is gone.
+pub type HTMLImageModelFetchHook = fn (&HTMLImageElementModel, dom.URL) !DecodedImageData
+
+// The hook owns the completion: it calls it at most once, then releases it.
+pub type HTMLImageModelAsyncFetchHook = fn (&HTMLImageElementModel, dom.URL, HTMLImageFetchCompletion)
+
 @[heap]
 struct BatchingDispatcher {
 mut:
@@ -158,6 +166,10 @@ mut:
 	decoded_data_              ?SharedResourceImageData
 	fetch_hook_                ?HTMLImageFetchHook
 	async_fetch_hook_          ?HTMLImageAsyncFetchHook
+	model_fetch_hook_          ?HTMLImageModelFetchHook
+	model_async_fetch_hook_    ?HTMLImageModelAsyncFetchHook
+	embedder_response_url_     string
+	embedder_response_bytes_   []u8
 	current_frame_index_       usize
 	loops_completed_           usize
 	animation_stopped_         bool
@@ -271,18 +283,54 @@ pub fn html_image_element_model_for_dom_element(element &dom.HTMLImageElement) &
 	return model
 }
 
+pub fn (image &HTMLImageElementModel) image_element() ?&dom.HTMLImageElement {
+	return image.element_
+}
+
 pub fn (image &HTMLImageElementModel) event_count(name string) int {
 	return image.event_counts_[name]
 }
 
 pub fn (mut image HTMLImageElementModel) set_fetch_hook(hook ?HTMLImageFetchHook) {
+	image.clear_fetch_hooks()
 	image.fetch_hook_ = hook
-	image.async_fetch_hook_ = none
 }
 
 pub fn (mut image HTMLImageElementModel) set_async_fetch_hook(hook HTMLImageAsyncFetchHook) {
+	image.clear_fetch_hooks()
 	image.async_fetch_hook_ = hook
+}
+
+pub fn (mut image HTMLImageElementModel) set_model_fetch_hook(hook HTMLImageModelFetchHook) {
+	image.clear_fetch_hooks()
+	image.model_fetch_hook_ = hook
+}
+
+pub fn (mut image HTMLImageElementModel) set_model_async_fetch_hook(hook HTMLImageModelAsyncFetchHook) {
+	image.clear_fetch_hooks()
+	image.model_async_fetch_hook_ = hook
+}
+
+// Bytes the embedder already fetched for one URL, which its model fetch hook
+// can decode instead of requesting them again.
+pub fn (mut image HTMLImageElementModel) set_embedder_response(url string, bytes []u8) {
+	image.embedder_response_url_ = url
+	image.embedder_response_bytes_ = bytes
+}
+
+pub fn (image &HTMLImageElementModel) embedder_response_url() string {
+	return image.embedder_response_url_
+}
+
+pub fn (image &HTMLImageElementModel) embedder_response_bytes() []u8 {
+	return image.embedder_response_bytes_
+}
+
+fn (mut image HTMLImageElementModel) clear_fetch_hooks() {
 	image.fetch_hook_ = none
+	image.async_fetch_hook_ = none
+	image.model_fetch_hook_ = none
+	image.model_async_fetch_hook_ = none
 }
 
 pub fn (image &HTMLImageElementModel) has_pending_request() bool {
@@ -291,6 +339,7 @@ pub fn (image &HTMLImageElementModel) has_pending_request() bool {
 
 pub fn (image &HTMLImageElementModel) has_fetch_hook() bool {
 	return image.fetch_hook_ != none || image.async_fetch_hook_ != none
+		|| image.model_fetch_hook_ != none || image.model_async_fetch_hook_ != none
 }
 
 pub fn (mut image HTMLImageElementModel) set_src(value ?string) {
@@ -502,12 +551,12 @@ pub fn (mut image HTMLImageElementModel) update_the_image_data_impl(restart_anim
 	if image.loading_ == .eager {
 		image.begin_delaying_document_load_event()
 	}
-	if fetch_async := image.async_fetch_hook_ {
+	if image.async_fetch_hook_ != none || image.model_async_fetch_hook_ != none {
 		image_pointer := unsafe { &image }
 		request_document := image.document_
 		url_string := url.serialize()
 		opaque := image_response_is_cors_cross_origin(image, url)
-		fetch_async(url, fn [image_pointer, request, request_document, url_string, previous_url,
+		complete := fn [image_pointer, request, request_document, url_string, previous_url,
 			update_the_image_data_count, maybe_omit_events, restart_animations, opaque] (decoded ?DecodedImageData) {
 			mut image := unsafe { &HTMLImageElementModel(image_pointer) }
 			if voidptr(image.document_) != voidptr(request_document) || image.update_count_ != update_the_image_data_count
@@ -522,7 +571,17 @@ pub fn (mut image HTMLImageElementModel) update_the_image_data_impl(restart_anim
 			image.image_request_finished(request, maybe_omit_events, url_string, previous_url,
 				update_the_image_data_count)
 			if decoded != none && restart_animations { image.restart_the_animation() }
-		})
+		}
+		if fetch_async := image.model_async_fetch_hook_ {
+			fetch_async(image, url, complete)
+		} else if fetch_async := image.async_fetch_hook_ {
+			fetch_async(url, complete)
+		}
+		return
+	}
+	if fetch := image.model_fetch_hook_ {
+		image.complete_synchronous_fetch(request, url, previous_url, maybe_omit_events, restart_animations,
+			image_model_fetch_hook_result(fetch, image, url))
 		return
 	}
 	fetch := image.fetch_hook_ or {
@@ -537,8 +596,23 @@ pub fn (mut image HTMLImageElementModel) update_the_image_data_impl(restart_anim
 		return
 	}
 
-	decoded := fetch(url) or {
-		request.set_state(.broken)
+	image.complete_synchronous_fetch(request, url, previous_url, maybe_omit_events, restart_animations,
+		image_fetch_hook_result(fetch, url))
+}
+
+fn image_fetch_hook_result(fetch HTMLImageFetchHook, url dom.URL) ?DecodedImageData {
+	return fetch(url) or { return none }
+}
+
+fn image_model_fetch_hook_result(fetch HTMLImageModelFetchHook, image &HTMLImageElementModel, url dom.URL) ?DecodedImageData {
+	return fetch(image, url) or { return none }
+}
+
+fn (mut image HTMLImageElementModel) complete_synchronous_fetch(request &ImageRequest, url dom.URL, previous_url string,
+	maybe_omit_events bool, restart_animations bool, result ?DecodedImageData) {
+	mut request_ := unsafe { &ImageRequest(request) }
+	decoded := result or {
+		request_.set_state(.broken)
 		image.pending_request_ = none
 		image.current_request_ = request
 		image.replace_decoded_data(none)
@@ -555,8 +629,8 @@ pub fn (mut image HTMLImageElementModel) update_the_image_data_impl(restart_anim
 	data := SharedResourceImageData{
 		data: decoded
 	}
-	request.set_image_data(data)
-	request.set_state(.completely_available)
+	request_.set_image_data(data)
+	request_.set_state(.completely_available)
 	image.pending_request_ = none
 	image.current_request_ = request
 	image.replace_decoded_data(data)

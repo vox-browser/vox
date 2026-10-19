@@ -23,6 +23,7 @@ pub fn (mut runtime Runtime) define_number_host_function(name string, callback N
 			runtime.define_value_host_function(name, fn [context, callback] (_ voidptr, _ []voidptr) !voidptr {
 				return C.JSValueMakeNumber(context, callback())
 			})!
+			runtime.own_closure(voidptr(callback))
 		} $else {
 			return error('JavaScriptCore host bindings are unavailable on this platform')
 		}

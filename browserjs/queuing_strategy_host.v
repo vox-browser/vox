@@ -46,7 +46,7 @@ pub fn QueuingStrategyHost.create(document &dom.Document) !&QueuingStrategyHost 
 pub fn (mut host QueuingStrategyHost) close() {
 	if host.closed { return }
 	host.closed = true
-	host.records.clear()
-	host.prototypes.clear()
-	host.functions.clear()
+	host.records = {}
+	host.prototypes = {}
+	host.functions = {}
 }

@@ -2,6 +2,7 @@
 // selection, request state, decode microtasks/tasks and the Promise capability.
 module browserjs
 
+import platform
 import css
 import dom
 import html
@@ -35,6 +36,10 @@ mut:
 	closed    bool
 	request_fetch_hook ?ImageRequestFetchHook
 	async_request_fetch_hook ?ImageAsyncRequestFetchHook
+	// One hook for all of this host's images, so no closure per image keeps
+	// that image alive after its document is replaced.
+	model_fetch_hook ?html.HTMLImageModelFetchHook
+	model_async_fetch_hook ?html.HTMLImageModelAsyncFetchHook
 }
 
 pub fn ImageHost.create(document &dom.Document, fetch_hook ?html.HTMLImageFetchHook, replay ?ImageReplayHook) !&ImageHost {
@@ -56,6 +61,21 @@ pub fn ImageHost.create_with_request_fetch_hooks(document &dom.Document, fetch_h
 	mut host := ImageHost.create(document, none, replay)!
 	host.request_fetch_hook = fetch_hook
 	host.async_request_fetch_hook = async_hook
+	if hook := async_hook {
+		host.model_async_fetch_hook = fn [hook] (model &html.HTMLImageElementModel, resource_url dom.URL, complete html.HTMLImageFetchCompletion) {
+			image := model.image_element() or {
+				complete(none)
+				platform.release_closure(voidptr(complete))
+				return
+			}
+			hook(image, model, resource_url, complete)
+		}
+	} else {
+		host.model_fetch_hook = fn [fetch_hook] (model &html.HTMLImageElementModel, resource_url dom.URL) !html.DecodedImageData {
+			image := model.image_element() or { return error('Image request has no element') }
+			return fetch_hook(image, model, resource_url)
+		}
+	}
 	for _, element in host.elements {
 		if !element.is_html_element() || element.local_name() != 'img' { continue }
 		image := unsafe { &dom.HTMLImageElement(element) }
@@ -69,14 +89,10 @@ pub fn ImageHost.create_with_request_fetch_hooks(document &dom.Document, fetch_h
 
 fn (host &ImageHost) configure_image_fetch(image &dom.HTMLImageElement) &html.HTMLImageElementModel {
 	mut model := html.html_image_element_model_for_dom_element(image)
-	if hook := host.async_request_fetch_hook {
-		model.set_async_fetch_hook(fn [hook, image, model] (resource_url dom.URL, complete html.HTMLImageFetchCompletion) {
-			hook(image, model, resource_url, complete)
-		})
-	} else if hook := host.request_fetch_hook {
-		model.set_fetch_hook(fn [hook, image, model] (resource_url dom.URL) !html.DecodedImageData {
-			return hook(image, model, resource_url)
-		})
+	if hook := host.model_async_fetch_hook {
+		model.set_model_async_fetch_hook(hook)
+	} else if hook := host.model_fetch_hook {
+		model.set_model_fetch_hook(hook)
 	} else {
 		model.set_fetch_hook(host.fetch_hook)
 	}

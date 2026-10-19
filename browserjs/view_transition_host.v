@@ -48,7 +48,7 @@ pub fn (mut host ViewTransitionHost) install(mut runtime Runtime) ! {
 	})!
 	runtime.add_close_handler(fn [mut host] () {
 		host.closed = true
-		host.records.clear()
+		host.records = {}
 	})
 }
 

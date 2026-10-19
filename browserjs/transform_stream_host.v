@@ -43,6 +43,6 @@ pub fn TransformStreamHost.create(document &dom.Document) !&TransformStreamHost 
 pub fn (mut host TransformStreamHost) close() {
 	if host.closed { return }
 	host.closed = true
-	host.records.clear()
-	host.prototypes.clear()
+	host.records = {}
+	host.prototypes = {}
 }

@@ -349,24 +349,24 @@ pub fn (mut host MediaElementHost) install(mut runtime Runtime) ! {
 		host.audio_factory = unsafe { nil }
 		host.audio_track_prototype = unsafe { nil }
 		host.audio_list_wrap = unsafe { nil }
-		host.audio_lists.clear()
-		host.audio_tracks.clear()
-		host.audio_owner_wrappers.clear()
+		host.audio_lists = {}
+		host.audio_tracks = {}
+		host.audio_owner_wrappers = {}
 		host.video_track_prototype = unsafe { nil }
 		host.video_list_wrap = unsafe { nil }
-		host.video_lists.clear()
-		host.video_tracks.clear()
-		host.video_owner_wrappers.clear()
+		host.video_lists = {}
+		host.video_tracks = {}
+		host.video_owner_wrappers = {}
 		host.text_track_prototype = unsafe { nil }
 		host.text_list_wrap = unsafe { nil }
-		host.text_lists.clear()
-		host.text_tracks.clear()
-		host.text_owner_wrappers.clear()
+		host.text_lists = {}
+		host.text_tracks = {}
+		host.text_owner_wrappers = {}
 		host.track_element_prototype = unsafe { nil }
-		host.track_elements.clear()
-		host.bound_elements.clear()
-		host.records.clear()
-		host.elements.clear()
+		host.track_elements = {}
+		host.bound_elements = {}
+		host.records = {}
+		host.elements = {}
 	})
 	// The combined Document compiler must use this owner's actual media records.
 	runtime.media_element_hosts_ << &host

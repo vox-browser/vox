@@ -91,8 +91,8 @@ pub fn (mut host ElementWheelHost) install(mut runtime Runtime) ! {
 		mut host := unsafe { &ElementWheelHost(handle) }
 		host.closed = true
 		host.resolver = unsafe { nil }
-		host.records.clear()
-		host.elements.clear()
+		host.records = {}
+		host.elements = {}
 	})
 }
 

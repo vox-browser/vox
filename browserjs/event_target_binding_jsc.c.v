@@ -2,6 +2,7 @@
 @[has_globals]
 module browserjs
 
+import platform
 import dom
 import html
 import highresolutiontime
@@ -135,23 +136,36 @@ pub fn (mut runtime Runtime) install_event_target_binding() ! {
 	}
 	runtime.add_close_handler(fn [owner, mut binding] () {
 		binding.closed = true
-		binding.data_transfers.clear()
-		binding.data_transfer_wrappers.clear()
-		binding.data_transfer_types_arrays.clear()
+		// Closed callbacks return before reaching these records. Dropping them
+		// keeps a callback that outlives the runtime from retaining its targets.
+		for provider in binding.providers { platform.release_closure(voidptr(provider.create)) }
+		for provider in binding.target_providers { platform.release_closure(voidptr(provider.create)) }
+		// Clearing in place would leave the old entries in the buffers that
+		// the collector still scans.
+		binding.providers = []EventWrapperProvider{}
+		binding.target_providers = []EventTargetWrapperProvider{}
+		binding.targets = map[voidptr]&dom.EventTarget{}
+		binding.target_wrappers = map[voidptr]voidptr{}
+		binding.events = map[voidptr]&dom.Event{}
+		binding.event_wrappers = map[voidptr]voidptr{}
+		binding.callbacks = map[voidptr]voidptr{}
+		binding.data_transfers = {}
+		binding.data_transfer_wrappers = {}
+		binding.data_transfer_types_arrays = {}
 		if binding.file_system_entry_binding != unsafe { nil } {
 			mut entries := binding.file_system_entry_binding
-			entries.entries.clear()
-			entries.wrappers.clear()
+			entries.entries = {}
+			entries.wrappers = {}
 		}
 		if binding.data_transfer_item_binding != unsafe { nil } {
 			mut items := binding.data_transfer_item_binding
-			items.items.clear()
-			items.item_wrappers.clear()
-			items.lists.clear()
-			items.list_wrappers.clear()
+			items.items = {}
+			items.item_wrappers = {}
+			items.lists = {}
+			items.list_wrappers = {}
 			// Runtime.close unprotects the pending callback values before it
 			// releases the engine context; already queued tasks observe closed.
-			items.string_callbacks.clear()
+			items.string_callbacks = {}
 		}
 		event_target_bindings_.delete(owner)
 	})

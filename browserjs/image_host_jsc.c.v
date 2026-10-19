@@ -51,7 +51,7 @@ pub fn (mut host ImageHost) install(mut runtime Runtime) ! {
 	runtime.add_close_handler(fn [host_handle] () {
 		mut host := unsafe { &ImageHost(host_handle) }
 		host.closed = true
-		host.records.clear()
+		host.records = {}
 	})
 }
 

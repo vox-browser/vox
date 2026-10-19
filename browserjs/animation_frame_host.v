@@ -54,5 +54,5 @@ pub fn (mut host AnimationFrameHost) close() {
 		window.cancel_animation_frame(handle)
 		host.runtime.release_javascript_value(record.function)
 	}
-	host.records.clear()
+	host.records = {}
 }

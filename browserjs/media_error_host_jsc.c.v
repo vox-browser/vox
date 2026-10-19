@@ -51,8 +51,8 @@ pub fn (mut runtime Runtime) install_media_error_binding() ! {
 	runtime.add_close_handler(fn [owner, binding] () {
 		mut retained := unsafe { &MediaErrorBinding(binding) }
 		retained.closed = true
-		retained.records.clear()
-		retained.by_wrapper.clear()
+		retained.records = {}
+		retained.by_wrapper = {}
 		retained.prototype = unsafe { nil }
 		media_error_bindings_.delete(owner)
 	})

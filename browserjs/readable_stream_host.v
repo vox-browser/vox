@@ -49,6 +49,6 @@ pub fn ReadableStreamHost.create(document &dom.Document) !&ReadableStreamHost {
 pub fn (mut host ReadableStreamHost) close() {
 	if host.closed { return }
 	host.closed = true
-	host.records.clear()
-	host.prototypes.clear()
+	host.records = {}
+	host.prototypes = {}
 }

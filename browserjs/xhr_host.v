@@ -69,10 +69,10 @@ pub fn (mut host XMLHttpRequestHost) close() {
 		xhr.XMLHttpRequest.release_activity_roots_for_relevant_global_object(record.request.relevant_global_object())
 	}
 	if mut connection := host.connection { connection.close() }
-	host.requests.clear()
-	host.events.clear()
-	host.documents.clear()
-	host.elements.clear()
+	host.requests = {}
+	host.events = {}
+	host.documents = {}
+	host.elements = {}
 }
 
 fn xhr_host_optional_string(value json2.Any) ?string {

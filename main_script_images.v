@@ -129,6 +129,21 @@ fn (mut app BrowserApp) request_unsized_script_inserted_images() map[string]bool
 	return ready
 }
 
+// A completed script-inserted image decodes the bytes its background request
+// fetched; any other URL is requested as usual.
+fn browser_script_image_model_fetch(model &html.HTMLImageElementModel, address dom.URL) !html.DecodedImageData {
+	image := model.image_element() or { return error('Image request has no element') }
+	if address.serialize() != model.embedder_response_url()
+		|| !browser_image_request_allows_cached_bytes(image, model, address) {
+		return browser_fetch_image_request(image, model, address)
+	}
+	bytes := model.embedder_response_bytes()
+	if bytes.len == 0 {
+		return error('Image request failed')
+	}
+	return browser_decoded_image_data(address, bytes)
+}
+
 fn script_image_is_near_viewport(element &dom.Element, viewport_height f64) bool {
 	rects := element.client_rects_assuming_layout_clean()
 	if rects.len == 0 {
@@ -160,16 +175,8 @@ fn (mut app BrowserApp) complete_script_inserted_images(completed map[string]boo
 		}
 		// A failed fetch leaves the image broken rather than retrying it on
 		// the UI thread.
-		bytes := app.background_image_bytes(resource_url) or { []u8{} }
-		model.set_fetch_hook(fn [image, model, resource_url, bytes] (address dom.URL) !html.DecodedImageData {
-			if address.serialize() != resource_url || !browser_image_request_allows_cached_bytes(image, model, address) {
-				return browser_fetch_image_request(image, model, address)
-			}
-			if bytes.len == 0 {
-				return error('Image request failed')
-			}
-			return browser_decoded_image_data(address, bytes)
-		})
+		model.set_embedder_response(resource_url, app.background_image_bytes(resource_url) or { []u8{} })
+		model.set_model_fetch_hook(browser_script_image_model_fetch)
 		model.update_the_image_data(false, false)
 		updated = true
 	}

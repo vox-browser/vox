@@ -34,7 +34,7 @@ pub fn (mut host TimerHost) close() {
 	host.closed = true
 	mut scope := unsafe { &html.WindowOrWorkerGlobalScopeMixin(host.scope) }
 	for id, _ in host.ids { scope.clear_timeout(id) }
-	host.ids.clear()
+	host.ids = {}
 	scope.set_timer_classic_script_evaluator(none)
 	scope.set_timer_compilation_exception_value_converter(none)
 }

@@ -57,7 +57,7 @@ pub fn URLSearchParamsHost.create_for_settings(settings &html.EnvironmentSetting
 pub fn (mut host URLSearchParamsHost) close() {
 	if host.closed { return }
 	host.closed = true
-	host.records.clear()
-	host.by_wrapper.clear()
-	host.iterators.clear()
+	host.records = {}
+	host.by_wrapper = {}
+	host.iterators = {}
 }
