@@ -2677,12 +2677,15 @@ fn (mut values MutableComputedValues) set_cached_mask(value ?MaskReference) {
 
 fn (mut values MutableComputedValues) set_cached_mask_image(value ?ImageStyleValue) {
 	mut cache := values.ensure_computed_layout_cache()
-	if cache.rare_data_ == unsafe { nil } && value == initial_computed_layout_rare_data.computed_values_mask_image_ { return }
+	// The initial value is none; comparing image values would deep-compare
+	// the style sheets they reference.
+	if cache.rare_data_ == unsafe { nil } && value == none { return }
 	cache.ensure_rare_data().computed_values_mask_image_ = value
 }
 
 fn (mut values MutableComputedValues) set_cached_clip_path(value ?ClipPathReference) {
 	mut cache := values.ensure_computed_layout_cache()
-	if cache.rare_data_ == unsafe { nil } && value == initial_computed_layout_rare_data.computed_values_clip_path_ { return }
+	// The initial value is none.
+	if cache.rare_data_ == unsafe { nil } && value == none { return }
 	cache.ensure_rare_data().computed_values_clip_path_ = value
 }
