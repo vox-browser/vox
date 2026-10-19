@@ -3851,13 +3851,15 @@ fn append_background_text_clip_runs(box &BlockBox, mut runs []PaintTextClipRun) 
 			}
 		}
 	}
-	for child in box.children {
+	// Borrow each child: passing a loop copy's address would heap-allocate it.
+	for i in 0 .. box.children.len {
+		child := &box.children[i]
 		// Backgrounds 4: descendants that are neither in flow nor floating do
 		// not contribute, and their complete subtrees are skipped.
 		if child.absolutely_positioned && !child.floating {
 			continue
 		}
-		append_background_text_clip_runs(&child, mut runs)
+		append_background_text_clip_runs(child, mut runs)
 	}
 }
 

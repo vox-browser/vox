@@ -188,19 +188,21 @@ fn is_captured_by_snap_container(snap_area &BlockBox, snap_container &BlockBox) 
 
 fn for_each_descendant_snap_area(parent &BlockBox, snap_container &BlockBox,
 	mut areas []DescendantSnapArea) {
-	for child in parent.children {
+	// Borrow each child: passing a loop copy's address would heap-allocate it.
+	for i in 0 .. parent.children.len {
+		child := &parent.children[i]
 		if has_snap_alignment(child.scroll_snap_align)
-			&& is_captured_by_snap_container(&child, snap_container) {
+			&& is_captured_by_snap_container(child, snap_container) {
 			areas << DescendantSnapArea{
-				rect: snap_area_rect(&child)
-				reference: snap_area_reference_for(&child)
+				rect: snap_area_rect(child)
+				reference: snap_area_reference_for(child)
 				alignment: child.scroll_snap_align
 				always_stop: child.scroll_snap_stop == .always
 				writing_mode: child.writing_mode
 				direction: child.direction
 			}
 		}
-		for_each_descendant_snap_area(&child, snap_container, mut areas)
+		for_each_descendant_snap_area(child, snap_container, mut areas)
 	}
 }
 

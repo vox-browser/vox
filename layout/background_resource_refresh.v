@@ -48,8 +48,9 @@ fn background_resource_refresh_supported(box &BlockBox) bool {
 		|| box.backdrop_filter.has_svg_filters() || box.nested_viewport_document != none {
 		return false
 	}
-	for child in box.children {
-		if !background_resource_refresh_supported(&child) { return false }
+	// Borrow each child: passing a loop copy's address would heap-allocate it.
+	for i in 0 .. box.children.len {
+		if !background_resource_refresh_supported(&box.children[i]) { return false }
 	}
 	return true
 }

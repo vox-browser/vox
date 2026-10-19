@@ -49,8 +49,9 @@ fn compositor_style_refresh_preserves_box_categories(box &BlockBox, changed &Han
 			|| box.uses_own_paint_transform_4x4 == computed_transform_is_none(computed)
 			|| (box.opacity < 1) != (computed.opacity() < 1) { return false }
 	}
-	for child in box.children {
-		if !compositor_style_refresh_preserves_box_categories(&child, changed) { return false }
+	// Borrow each child: passing a loop copy's address would heap-allocate it.
+	for i in 0 .. box.children.len {
+		if !compositor_style_refresh_preserves_box_categories(&box.children[i], changed) { return false }
 	}
 	return true
 }
