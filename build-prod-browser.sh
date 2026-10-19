@@ -105,10 +105,14 @@ if [ -n "$rust_cargo" ]; then
 fi
 bridge_library=""
 graphite_library=""
+dawn_library=""
 if [ -f "$skia_root/lib/libskia.dylib" ] && [ -d "$skia_root/include/skia/include" ]; then
     graphite_library="$build_dir/libVoxGraphite.dylib"
     python3 "$repo_dir/tools/build_mac_graphite.py" --skia-root "$skia_root" \
         --output "$graphite_library"
+    dawn_library="$build_dir/libVoxGraphiteDawn.dylib"
+    python3 "$repo_dir/tools/build_mac_graphite_dawn.py" --skia-root "$skia_root" \
+        --output "$dawn_library"
     bridge_library="$build_dir/libLadybirdVSkiaText.dylib"
     clang++ -std=c++20 -O2 -fPIC -dynamiclib -x objective-c++ \
 		-I"$skia_root/include/skia" -I"$skia_root/include" \
@@ -216,6 +220,18 @@ if [ -n "$graphite_library" ]; then
     fi
 else
     rm -f "$binary_dir/libVoxGraphite.dylib"
+fi
+
+if [ -n "$dawn_library" ]; then
+    dawn_resource_tmp=$(mktemp "$binary_dir/.dawn-bridge.XXXXXX")
+    cp "$dawn_library" "$dawn_resource_tmp"
+    chmod 755 "$dawn_resource_tmp"
+    mv -f "$dawn_resource_tmp" "$binary_dir/libVoxGraphiteDawn.dylib"
+    if command -v codesign >/dev/null 2>&1; then
+        codesign --force --sign - "$binary_dir/libVoxGraphiteDawn.dylib" >/dev/null
+    fi
+else
+    rm -f "$binary_dir/libVoxGraphiteDawn.dylib"
 fi
 
 if command -v codesign >/dev/null 2>&1; then
