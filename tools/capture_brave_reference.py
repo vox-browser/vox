@@ -4,7 +4,7 @@
 usage: capture_brave_reference.py --url URL --out OUT.png [--width 1024]
        [--height 768] [--scale 2] [--no-js] [--rects RECTS.json]
 
-The page renders in a fresh headless profile at the requested viewport and
+The page renders in a fresh isolated profile at the requested viewport and
 device scale. Focus emulation matches a focused browser window, and the
 capture waits for document load and web fonts. --rects writes every element's
 client rectangle as JSON for geometry comparisons. --proxy-server and
@@ -101,8 +101,8 @@ def imported_cookies(path):
     return cookies
 
 
-def launch_command(binary, profile, proxy_server=None):
-    command = [binary, "--headless=new", "--no-first-run", "--no-default-browser-check",
+def launch_command(binary, profile, proxy_server=None, windowed=False):
+    command = [binary, "--no-first-run", "--no-default-browser-check",
                "--disable-background-networking", "--disable-sync", "--remote-debugging-port=0",
                "--hide-scrollbars", "--lang=en-US", f"--user-data-dir={profile}"]
     if proxy_server:
@@ -115,7 +115,17 @@ def launch_command(binary, profile, proxy_server=None):
             if not host or any(char in host for char in ',* \t\r\n'):
                 raise ValueError('Invalid SOCKS5 proxy hostname')
             command += [f'--host-resolver-rules=MAP * ~NOTFOUND, EXCLUDE localhost, EXCLUDE {host}']
-    return command + ['about:blank']
+    if windowed:
+        return command + ['--no-startup-window']
+    return command + ['--headless=new', 'about:blank']
+
+
+def window_position(value):
+    try:
+        x, y = map(int, value.split(','))
+        return x, y
+    except ValueError:
+        raise argparse.ArgumentTypeError('window position must be X,Y') from None
 
 
 def wait_for_page_debugger(opener, port, deadline):
@@ -148,23 +158,37 @@ def main() -> None:
     parser.add_argument("--cookie-file", type=Path, help="private Netscape cookie jar to import")
     parser.add_argument("--metadata", type=Path, help="write final URL, title, login state and viewport")
     parser.add_argument("--timeout", type=float, default=60, help="navigation watchdog in seconds")
+    parser.add_argument("--windowed", action="store_true", help="capture a normal background window")
+    parser.add_argument("--window-position", type=window_position,
+                        help="X,Y on the test display away from the pointer; required with --windowed")
     args = parser.parse_args()
     if args.width <= 0 or args.height <= 0 or args.scale <= 0 or args.timeout <= 0 or args.settle < 0:
         parser.error('viewport, scale and timeout must be positive; settle must be nonnegative')
+    if args.windowed and args.window_position is None:
+        parser.error('--windowed requires --window-position X,Y on the test display')
 
     with tempfile.TemporaryDirectory(prefix="brave-reference-") as profile:
-        command = launch_command(args.binary, profile, args.proxy_server)
+        command = launch_command(args.binary, profile, args.proxy_server, args.windowed)
         process = subprocess.Popen(command, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
                                    start_new_session=True)
+        browser = cdp = None
         try:
             deadline = time.monotonic() + 30
             while (endpoint := chrome_debugger_endpoint(Path(profile) / "DevToolsActivePort")) is None:
                 if time.monotonic() > deadline:
                     raise SystemExit("Brave did not open a debugging port")
                 time.sleep(0.05)
-            port, _ = endpoint
+            port, browser_path = endpoint
+            if args.windowed:
+                browser = CDP(f'ws://127.0.0.1:{port}{browser_path}')
+                target = browser.call('Target.createTarget', {
+                    'url': 'about:blank', 'newWindow': True, 'background': True,
+                    'left': args.window_position[0], 'top': args.window_position[1],
+                    'width': args.width + 80, 'height': args.height + 140})['targetId']
+                cdp = CDP(f'ws://127.0.0.1:{port}/devtools/page/{target}')
             opener = urllib.request.build_opener(urllib.request.ProxyHandler({}))
-            cdp = CDP(wait_for_page_debugger(opener, port, deadline))
+            if cdp is None:
+                cdp = CDP(wait_for_page_debugger(opener, port, deadline))
             cdp.call("Page.enable")
             cdp.call("Runtime.enable")
             if args.cookie_file:
@@ -210,6 +234,10 @@ def main() -> None:
             except Exception:
                 pass
         finally:
+            if cdp is not None:
+                cdp.sock.close()
+            if browser is not None:
+                browser.sock.close()
             stop_process(process)
 
 

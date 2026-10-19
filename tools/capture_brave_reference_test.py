@@ -2,7 +2,7 @@ import tempfile
 from pathlib import Path
 import unittest
 
-from capture_brave_reference import imported_cookies, launch_command
+from capture_brave_reference import imported_cookies, launch_command, window_position
 
 
 class BraveReferenceTests(unittest.TestCase):
@@ -36,6 +36,13 @@ class BraveReferenceTests(unittest.TestCase):
                 jar.write_text(row + '\n')
                 with self.assertRaises(ValueError):
                     imported_cookies(jar)
+
+    def test_windowed_launch_waits_for_a_background_target_at_the_requested_position(self):
+        command = launch_command('brave', '/tmp/isolated', windowed=True)
+        self.assertNotIn('--headless=new', command)
+        self.assertNotIn('about:blank', command)
+        self.assertIn('--no-startup-window', command)
+        self.assertEqual(window_position('-1100,32'), (-1100, 32))
 
 
 if __name__ == '__main__':
