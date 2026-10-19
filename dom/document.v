@@ -10,6 +10,7 @@
 @[has_globals]
 module dom
 
+import platform
 import rand
 import math
 import strings
@@ -7363,6 +7364,10 @@ fn (d &Document) create_html_parser_for_scripting() !&HTMLParser {
 }
 
 pub fn (mut d Document) update_style() {
+	phase_mark := platform.arena_phase_begin()
+	defer {
+		platform.arena_phase_end('style', phase_mark)
+	}
 	// A child document's viewport can change as a consequence of laying out its
 	// container, so upstream updates the parent document first.
 	if navigable := d.navigable() {
@@ -13491,6 +13496,10 @@ pub fn (d &Document) collect_documents_to_unfullscreen() []&Document {
 
 // C++: RefPtr<Painting::DisplayList> Document::record_display_list(HTML::PaintConfig config)
 pub fn (mut d Document) record_display_list() ?&DisplayList {
+	phase_mark := platform.arena_phase_begin()
+	defer {
+		platform.arena_phase_end('display_list', phase_mark)
+	}
 	return d.record_display_list_for_viewport(false)
 }
 

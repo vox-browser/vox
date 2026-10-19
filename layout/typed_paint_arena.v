@@ -1,5 +1,7 @@
 module layout
 
+import platform
+
 struct PaintProjectionStatus {
 mut:
 	incomplete bool
@@ -60,6 +62,10 @@ fn build_typed_paint_tree_in_arena(root &Node, state &LayoutState, ancestor_tran
 }
 
 fn build_typed_paint_tree_with_interest(root &Node, state &LayoutState, ancestor_transform [6]f64, interest ?LayoutRect, mut omitted PaintProjectionStatus) BlockBox {
+	phase_mark := platform.arena_phase_begin()
+	defer {
+		platform.arena_phase_end('paint_tree', phase_mark)
+	}
 	prepare_retained_block_paint_owners(state)
 	plan := typed_paint_arena_plan_with_interest(root, state, interest)
 	mut boxes := []BlockBox{cap: plan.len}

@@ -1,5 +1,6 @@
 module main
 
+import platform
 import dom
 import encoding
 import html
@@ -108,6 +109,10 @@ fn parse_browser_navigation_document_input(markup string, document_encoding ?str
 }
 
 fn parse_browser_navigation_document_input_with_source(markup string, document_encoding ?string, document_url dom.URL, initiator_origin ?dom.Origin, previous ?&dom.Document, page ?&dom.Page, response_time_ns i64, scripting_enabled bool, javascript_url_source ?&dom.Document) &dom.Document {
+	phase_mark := platform.arena_phase_begin()
+	defer {
+		platform.arena_phase_end('html_parse', phase_mark)
+	}
 	origin := html.determine_the_origin(document_url, html.SandboxingFlagSet{}, initiator_origin)
 	mut document := create_browser_navigation_document(document_url, origin, previous, page) or {
 		panic(err)

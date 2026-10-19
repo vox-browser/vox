@@ -2767,6 +2767,10 @@ fn run_document_script_sources_with_image_fetch(document &dom.Document, current_
 }
 
 fn run_document_script_sources_with_image_fetch_hooks(document &dom.Document, current_url string, sources []browserjs.ScriptSource, runtime &browserjs.Runtime, image_fetch browserjs.ImageRequestFetchHook, image_async_fetch ?browserjs.ImageAsyncRequestFetchHook, mut messages []string) ?string {
+	phase_mark := platform.arena_phase_begin()
+	defer {
+		platform.arena_phase_end('scripts', phase_mark)
+	}
 	// Parsing creates Document's Selection, while the browsing context normally
 	// arrives with navigation before page scripts run. The compact host executes
 	// scripts before its first layout, so establish that context here as well.

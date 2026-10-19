@@ -1,5 +1,6 @@
 module css
 
+import platform
 import dom
 import os
 
@@ -587,6 +588,10 @@ fn dump_css_style_sheet_if_requested(sheet &CSSStyleSheet) {
 // load synchronously here, ahead of the add a CSS style sheet steps, which
 // then see the imported rules when they invalidate style.
 fn parse_css_style_sheet_for_owner_node(document &dom.Document, css_text string, location string) &CSSStyleSheet {
+	phase_mark := platform.arena_phase_begin()
+	defer {
+		platform.arena_phase_end('css_parse', phase_mark)
+	}
 	mut parser := RuleSelectorParser.create_for_stylesheet(ParsingParams{}, css_text)
 	parser.defer_style_declarations = css_text.len >= 16_384
 	mut sheet := parser.parse_as_css_stylesheet(location, none)

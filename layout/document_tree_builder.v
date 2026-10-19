@@ -1,5 +1,6 @@
 module layout
 
+import platform
 import dom
 import css
 import html
@@ -649,6 +650,10 @@ pub fn run_document_layout_for_tree_dump(document &dom.Document, viewport_width 
 
 fn run_document_layout_with_renderer_mode(document &dom.Document, viewport_width f64,
 	viewport_height f64, build_paint_tree bool) ?DocumentLayoutResult {
+	phase_mark := platform.arena_phase_begin()
+	defer {
+		platform.arena_phase_end('layout', phase_mark)
+	}
 	mut mutable_document := unsafe { &dom.Document(document) }
 	previous_layout_handle := mutable_document.layout_engine_handle()
 	old_viewport := mutable_document.viewport_rect()
