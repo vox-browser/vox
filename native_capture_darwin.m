@@ -2383,6 +2383,16 @@ void native_set_chromium_msaa_tiles(const int *tiles, int count, int tile_rows) 
 #endif
 }
 
+void native_set_chromium_msaa_grid(const int *tiles, int count, int tile_width,
+    int tile_height, int columns) {
+#ifdef LADYBIRD_V_HAS_SKIA_TEXT
+    extern void ladybird_v_skia_set_msaa_grid(const int *, int, int, int, int);
+    ladybird_v_skia_set_msaa_grid(tiles, count, tile_width, tile_height, columns);
+#else
+    (void)tiles; (void)count; (void)tile_width; (void)tile_height; (void)columns;
+#endif
+}
+
 // Whether the next native rounded rectangle can draw an underlay in its pass.
 int native_rounded_rect_underlay_supported(void) {
 #ifdef LADYBIRD_V_HAS_SKIA_TEXT

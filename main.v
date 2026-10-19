@@ -388,6 +388,7 @@ mut:
 	paint_commands                      []layout.PaintCommand
 	chromium_raster_plan                layout.ChromiumRasterLayerPlan
 	chromium_raster_tiles               [][]int
+	chromium_raster_grids               []ChromiumRasterGrid
 	paint_commands_have_backdrop_filter bool
 	frame_preparation_depth             int
 	paint_commands_pending              bool

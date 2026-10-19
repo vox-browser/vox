@@ -27,6 +27,8 @@ struct ChromiumMSAATrigger {
 	command_index int
 	top           f64
 	bottom        f64
+	left          f64
+	right         f64
 }
 
 struct ChromiumMSAAViewport {
@@ -42,15 +44,16 @@ fn chromium_msaa_triggers(commands []layout.PaintCommand) []ChromiumMSAATrigger 
 fn chromium_msaa_triggers_for_viewport(commands []layout.PaintCommand, viewport ?ChromiumMSAAViewport) []ChromiumMSAATrigger {
 	mut triggers := []ChromiumMSAATrigger{}
 	for index, command in commands {
-		if bounds := chromium_msaa_trigger_bounds(command) {
-			triggers << ChromiumMSAATrigger{index, bounds[0], bounds[1]}
+		if rect := chromium_msaa_trigger_rect(command) {
+			triggers << ChromiumMSAATrigger{index, rect.y, rect.y + rect.height, rect.x, rect.x + rect.width}
 		} else if command.kind == 'draw_background_image' {
 			if visible := viewport {
-				if !chromium_svg_background_intersects_raster_viewport(command, visible) { continue
-				 }
+				if !chromium_svg_background_intersects_raster_viewport(command, visible) {
+					continue
+				}
 			}
-			for bounds in chromium_svg_background_msaa_ranges(command) {
-				triggers << ChromiumMSAATrigger{index, bounds[0], bounds[1]}
+			for rect in chromium_svg_background_msaa_rects(command) {
+				triggers << ChromiumMSAATrigger{index, rect.y, rect.y + rect.height, rect.x, rect.x + rect.width}
 			}
 		} else if command.kind == 'paint_nested_display_list' {
 			paintable := command.nested_viewport_paintable or { continue }
@@ -62,7 +65,7 @@ fn chromium_msaa_triggers_for_viewport(commands []layout.PaintCommand, viewport 
 					painting.IntPoint{result.nested_rect.x, result.nested_rect.y}, command.opacity)
 			}
 			for trigger in chromium_msaa_triggers_for_viewport(nested, viewport) {
-				triggers << ChromiumMSAATrigger{index, trigger.top, trigger.bottom}
+				triggers << ChromiumMSAATrigger{index, trigger.top, trigger.bottom, trigger.left, trigger.right}
 			}
 		}
 	}
@@ -76,8 +79,9 @@ fn chromium_msaa_tiles_for_triggers(triggers []ChromiumMSAATrigger, origin_y f64
 	for trigger in triggers {
 		top := (trigger.top - origin_y) * device_scale
 		bottom := (trigger.bottom - origin_y) * device_scale
-		if !(bottom > top) || math.is_nan(top) || math.is_inf(bottom, 0) { continue
-		 }
+		if !(bottom > top) || math.is_nan(top) || math.is_inf(bottom, 0) {
+			continue
+		}
 		first := math.max(0, int(math.ceil((top - f64(tile_rows)) / f64(spacing))))
 		last := int(math.floor(math.max(bottom - 1, 0) / f64(spacing)))
 		for tile in first .. last + 1 {
@@ -98,12 +102,17 @@ fn chromium_msaa_tiles(commands []layout.PaintCommand, device_scale f64, tile_ro
 
 // The document rows covered by a draw that makes Chromium's tile multisampled.
 fn chromium_msaa_trigger_bounds(command layout.PaintCommand) ?[]f64 {
+	rect := chromium_msaa_trigger_rect(command) or { return none }
+	return [rect.y, rect.y + rect.height]
+}
+
+fn chromium_msaa_trigger_rect(command layout.PaintCommand) ?layout.LayoutRect {
 	match command.kind {
 		'fill_rect' {
 			if command.clip_outs.len < 8 {
 				return none
 			}
-			return transformed_row_bounds(command.transform, command.x, command.y, command.width,
+			return transformed_raster_bounds(command.transform, command.x, command.y, command.width,
 				command.height)
 		}
 		'draw_svg_path' {
@@ -136,8 +145,7 @@ fn chromium_msaa_trigger_bounds(command layout.PaintCommand) ?[]f64 {
 
 				// An arc can bulge up to its radius beyond its end point.
 				bulge := if kind == 4 {
-					math.max(math.abs(f64(svg_data.path_data[index + 7])), math.abs(f64(svg_data.path_data[
-						index + 8])))
+					math.max(math.abs(f64(svg_data.path_data[index + 7])), math.abs(f64(svg_data.path_data[index + 8])))
 				} else {
 					0.0
 				}
@@ -155,7 +163,7 @@ fn chromium_msaa_trigger_bounds(command layout.PaintCommand) ?[]f64 {
 			}
 			outset := math.max(command.stroke_width, 0) / 2 + 1
 			matrix := multiply_paint_transforms(command.transform, svg_data.path_transform)
-			return transformed_row_bounds(matrix, min_x - outset, min_y - outset, max_x - min_x +
+			return transformed_raster_bounds(matrix, min_x - outset, min_y - outset, max_x - min_x +
 				outset * 2, max_y - min_y + outset * 2)
 		}
 		else {
@@ -165,15 +173,25 @@ fn chromium_msaa_trigger_bounds(command layout.PaintCommand) ?[]f64 {
 }
 
 fn transformed_row_bounds(transform [6]f64, x f64, y f64, width f64, height f64) []f64 {
+	rect := transformed_raster_bounds(transform, x, y, width, height)
+	return [rect.y, rect.y + rect.height]
+}
+
+fn transformed_raster_bounds(transform [6]f64, x f64, y f64, width f64, height f64) layout.LayoutRect {
 	matrix := normalized_paint_transform(transform)
+	mut left := math.inf(1)
 	mut top := math.inf(1)
+	mut right := math.inf(-1)
 	mut bottom := math.inf(-1)
 	for corner in [[x, y], [x + width, y], [x, y + height], [x + width, y + height]] {
+		column := matrix[0] * corner[0] + matrix[2] * corner[1] + matrix[4]
 		row := matrix[1] * corner[0] + matrix[3] * corner[1] + matrix[5]
+		left = math.min(left, column)
+		right = math.max(right, column)
 		top = math.min(top, row)
 		bottom = math.max(bottom, row)
 	}
-	return [top, bottom]
+	return layout.LayoutRect{ x: left, y: top, width: right - left, height: bottom - top }
 }
 
 // Without the native GPU painter, the parts of an anti-aliased rectangle left
@@ -224,6 +242,7 @@ fn (mut app BrowserApp) set_chromium_msaa_tiles() {
 		scale := C.native_display_device_pixel_ratio()
 		tile_rows := chromium_gpu_raster_tile_rows(int(math.ceil(f64(app.viewport_height) * scale)))
 		app.chromium_raster_tiles = [][]int{cap: app.chromium_raster_plan.layers.len}
+		app.chromium_raster_grids = []ChromiumRasterGrid{cap: app.chromium_raster_plan.layers.len}
 		triggers := chromium_msaa_triggers_for_viewport(app.paint_commands, ChromiumMSAAViewport{
 			scroll_y: app.scroll_y
 			height:   f64(app.viewport_height)
@@ -231,13 +250,34 @@ fn (mut app BrowserApp) set_chromium_msaa_tiles() {
 		})
 		legacy_tiles := chromium_msaa_tiles_for_triggers(triggers, 0, scale, tile_rows)
 		for index, layer in app.chromium_raster_plan.layers {
+			selected := triggers.filter(it.command_index < app.chromium_raster_plan.command_layers.len
+				&& app.chromium_raster_plan.command_layers[it.command_index] == index)
+			root := index == 0
+			content_width := if root {
+				math.max(f64(app.viewport_width), layer.bounds.x + layer.bounds.width)
+			} else {
+				layer.bounds.width
+			}
+			content_height := if root {
+				math.max(f64(app.viewport_height), layer.bounds.y + layer.bounds.height)
+			} else {
+				layer.bounds.height
+			}
+			app.chromium_raster_grids << if layer.legacy_raster {
+				ChromiumRasterGrid{}
+			} else {
+				chromium_raster_grid(selected, app.viewport_width, app.viewport_height, content_width, content_height,
+					if root { 0.0 } else { math.floor(layer.bounds.x * scale) / scale },
+					if root { -app.scroll_y } else { math.floor(layer.bounds.y * scale) / scale }, scale)
+			}
 			if layer.legacy_raster {
 				app.chromium_raster_tiles << legacy_tiles
 			} else {
-				selected := triggers.filter(
-					it.command_index < app.chromium_raster_plan.command_layers.len
-					&& app.chromium_raster_plan.command_layers[it.command_index] == index)
-				origin_y := if index == 0 { 0.0 } else { math.floor(layer.bounds.y * scale) / scale }
+				origin_y := if index == 0 {
+					0.0
+				} else {
+					math.floor(layer.bounds.y * scale) / scale
+				}
 				app.chromium_raster_tiles << chromium_msaa_tiles_for_triggers(selected, origin_y,
 					scale, tile_rows)
 			}
@@ -272,5 +312,16 @@ fn (mut app BrowserApp) select_chromium_raster_layer(index int) {
 		pointer := if tiles.len > 0 { &tiles[0] } else { unsafe { &int(nil) } }
 		rows := chromium_gpu_raster_tile_rows(int(math.ceil(f64(app.viewport_height) * scale)))
 		C.native_set_chromium_msaa_tiles(pointer, tiles.len, rows)
+		if index < app.chromium_raster_grids.len {
+			grid := app.chromium_raster_grids[index]
+			if grid.columns > 0 {
+				cell_pointer := if grid.cells.len > 0 {
+					&grid.cells[0]
+				} else {
+					unsafe { &int(nil) }
+				}
+				C.native_set_chromium_msaa_grid(cell_pointer, grid.cells.len, grid.tile_width, grid.tile_height, grid.columns)
+			}
+		}
 	}
 }

@@ -7,6 +7,7 @@
 #include "native_graphite_bridge.h"
 #include "native_chromium_raster_phase.h"
 #include "native_chromium_raster_rows.h"
+#include "native_chromium_raster_grid.h"
 #import <Metal/Metal.h>
 #include "include/gpu/ganesh/GrDirectContext.h"
 #include "include/gpu/ganesh/SkSurfaceGanesh.h"
@@ -1845,6 +1846,8 @@ extern "C" int ladybird_v_skia_draw_masked_image(CGContextRef destination,
 // The Chromium raster tiles whose render pass is multisampled in this frame,
 // by index, with their height in device rows including both border texels.
 static std::vector<int> s_msaa_tiles;
+static std::vector<int> s_msaa_grid_tiles;
+static int s_msaa_grid_width = 0, s_msaa_grid_height = 0, s_msaa_grid_columns = 0;
 static int s_msaa_tile_rows = 256;
 static double s_root_raster_scroll_y = 0;
 static double s_raster_origin_x = 0, s_raster_origin_y = 0;
@@ -1875,9 +1878,65 @@ extern "C" void ladybird_v_skia_set_root_raster_scroll_y(double scroll_y)
 
 extern "C" void ladybird_v_skia_set_msaa_tiles(int const* tiles, int count, int tile_rows)
 {
+    s_msaa_grid_tiles.clear();
+    s_msaa_grid_columns = 0;
     s_msaa_tiles.assign(tiles, tiles + (tiles && count > 0 ? count : 0));
     std::sort(s_msaa_tiles.begin(), s_msaa_tiles.end());
     s_msaa_tile_rows = std::max(tile_rows, 3);
+}
+
+extern "C" void ladybird_v_skia_set_msaa_grid(int const* tiles, int count,
+    int tile_width, int tile_height, int columns)
+{
+    s_msaa_grid_tiles.clear();
+    if (tiles && count > 0) s_msaa_grid_tiles.assign(tiles, tiles + count);
+    std::sort(s_msaa_grid_tiles.begin(), s_msaa_grid_tiles.end());
+    s_msaa_grid_width = tile_width;
+    s_msaa_grid_height = tile_height;
+    s_msaa_grid_columns = tile_width > 2 && tile_height > 2 ? std::max(columns, 0) : 0;
+}
+
+static std::vector<char> chromium_layer_msaa_pixel_mask(RasterRegion const& region,
+    int width, int height, float page_x, float page_y, float scroll_y, float scale)
+{
+    std::vector<char> mask(static_cast<size_t>(width) * height);
+    long first_x = std::lround((region.left - page_x - s_raster_origin_x) * scale);
+    long first_y = std::lround((region.top - page_y + scroll_y - s_raster_origin_y
+        + (s_raster_layer_is_root ? s_root_raster_scroll_y : 0)) * scale);
+    auto owner = [](long coordinate, int size) {
+        return coordinate <= size - 2 ? 0L : (coordinate - 1) / (size - 2);
+    };
+    for (int y = 0; y < height; ++y) {
+        if (first_y + y < 0) continue;
+        long row = owner(first_y + y, s_msaa_grid_height);
+        for (int x = 0; x < width; ++x) {
+            if (first_x + x < 0) continue;
+            long column = owner(first_x + x, s_msaa_grid_width);
+            column = std::min(column, static_cast<long>(s_msaa_grid_columns - 1));
+            int cell = static_cast<int>(row * s_msaa_grid_columns + column);
+            mask[static_cast<size_t>(y) * width + x] = std::binary_search(
+                s_msaa_grid_tiles.begin(), s_msaa_grid_tiles.end(), cell);
+        }
+    }
+    return mask;
+}
+
+template<typename Draw>
+static bool draw_chromium_root_raster_grid(std::vector<uint32_t>& pixels,
+    int width, int height, RasterRegion const& region, float page_x,
+    float page_y, float scroll_y, float scale, Draw draw)
+{
+    if (!s_raster_layer_is_root || s_msaa_grid_columns <= 0) return false;
+    long first_x = std::lround((region.left - page_x) * scale);
+    long first_y = std::lround((region.top - page_y + scroll_y + s_root_raster_scroll_y) * scale);
+    int content_height = std::max(1, static_cast<int>(std::ceil(s_raster_layer_height * scale)));
+    int rows = std::max(1, (content_height - 2 + s_msaa_grid_height - 3) / (s_msaa_grid_height - 2));
+    VoxChromiumRasterGrid grid{s_msaa_grid_width, s_msaa_grid_height, s_msaa_grid_columns, rows};
+    return vox_draw_chromium_raster_grid(pixels, width, height, first_x, first_y, grid,
+        [&](auto& target, long offset_x, long offset_y, int cell) {
+            return draw(target, offset_x, offset_y, std::binary_search(
+                s_msaa_grid_tiles.begin(), s_msaa_grid_tiles.end(), cell));
+        });
 }
 
 extern "C" void ladybird_v_skia_set_rect_clip_outs(float const* rects, int count)
@@ -2096,7 +2155,29 @@ extern "C" int ladybird_v_skia_draw_rounded_rect(CGContextRef destination,
             msaa_row_count += msaa_rows[row] = row_in_msaa_tile(first_row + row);
         auto draw = graphite_shape_draw();
         bool drawn = draw != nullptr;
-        if (drawn && msaa_row_count > 0 && msaa_row_count < raster_height) {
+        bool tiled = drawn && has_background && draw_chromium_root_raster_grid(pixels,
+            raster_width, raster_height, region, page_x, page_y, scroll_y,
+            destination_scale, [&](auto& target, long offset_x, long offset_y, bool msaa) {
+                auto shape = descriptor;
+                shape.matrix[2] += offset_x;
+                shape.matrix[5] += offset_y;
+                shape.force_msaa = msaa;
+                return draw(reinterpret_cast<uint8_t*>(target.data()), s_msaa_grid_width,
+                    s_msaa_grid_height, s_msaa_grid_width * 4, 1, &shape) != 0;
+            });
+        if (tiled) {
+            drawn = true;
+        } else if (drawn && s_msaa_grid_columns > 0) {
+            auto mask = chromium_layer_msaa_pixel_mask(region, raster_width, raster_height,
+                page_x, page_y, scroll_y, destination_scale);
+            // A one-pixel span lets the two-pass compositor preserve both
+            // horizontal and vertical tile boundaries over the same backdrop.
+            drawn = vox_draw_with_msaa_rows(pixels, 1, mask, [&](auto& target, bool msaa) {
+                descriptor.force_msaa = msaa;
+                return draw(reinterpret_cast<uint8_t*>(target.data()), raster_width,
+                    raster_height, raster_width * 4, has_background, &descriptor) != 0;
+            });
+        } else if (drawn && msaa_row_count > 0 && msaa_row_count < raster_height) {
             auto multisampled = pixels;
             descriptor.force_msaa = 1;
             drawn = draw(reinterpret_cast<uint8_t*>(multisampled.data()), raster_width,
@@ -2302,7 +2383,12 @@ extern "C" int ladybird_v_skia_draw_svg_path_batch(CGContextRef destination,
     long first_row = std::lround((region.top - page_y + scroll_y
         + (s_raster_layer_is_root ? s_root_raster_scroll_y : -s_raster_origin_y)) * scale);
     bool drawn = false;
-    if (layer_width > 0 && offset_x >= 0 && offset_x + raster_width <= layer_width
+    if (has_background) drawn = draw_chromium_root_raster_grid(pixels, raster_width,
+        raster_height, region, page_x, page_y, scroll_y, scale,
+        [&](auto& target, long offset_x, long offset_y, bool) {
+            return draw_in_raster(target, s_msaa_grid_width, s_msaa_grid_height, offset_x, offset_y);
+        });
+    if (!drawn && layer_width > 0 && offset_x >= 0 && offset_x + raster_width <= layer_width
         && first_row >= 0 && (s_raster_layer_is_root ? has_background
             : s_raster_layer_width > 0 && s_raster_layer_height > 0
                 && first_row + raster_height <= layer_height)) {
@@ -2532,6 +2618,18 @@ static bool draw_chromium_root_image_tiles(std::vector<uint32_t>& pixels,
     float canvas_width, bool has_background, VoxGraphiteImage const& descriptor)
 {
     auto draw = graphite_image_draw();
+    if (draw && has_background && s_raster_layer_is_root && s_msaa_grid_columns > 0)
+        return draw_chromium_root_raster_grid(pixels, raster_width, raster_height,
+            region, page_x, page_y, scroll_y, scale,
+            [&](auto& target, long offset_x, long offset_y, bool msaa) {
+                auto image = descriptor;
+                image.matrix[2] += offset_x;
+                image.matrix[5] += offset_y;
+                image.flags = (image.flags & ~VOX_GRAPHITE_IMAGE_FORCE_MSAA)
+                    | (msaa ? VOX_GRAPHITE_IMAGE_FORCE_MSAA : 0);
+                return draw(reinterpret_cast<uint8_t*>(target.data()), s_msaa_grid_width,
+                    s_msaa_grid_height, s_msaa_grid_width * 4, 1, &image) != 0;
+            });
     int tile_width = raster_dimension(canvas_width, scale);
     int offset_x = std::lround(region.left * scale);
     constexpr size_t maximum_tile_pixels = 8 * 1024 * 1024;

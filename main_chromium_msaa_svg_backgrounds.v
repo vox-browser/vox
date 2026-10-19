@@ -10,20 +10,24 @@ import painting
 // Inspect their actual recorded paths, using the same tile and viewport
 // geometry as native playback; they are not opaque bitmap-only operations.
 fn chromium_svg_background_msaa_ranges(command layout.PaintCommand) [][]f64 {
-	if command.image_data == unsafe { nil } || command.opacity <= 0 { return [][]f64{} }
+	return chromium_svg_background_msaa_rects(command).map([it.y, it.y + it.height])
+}
+
+fn chromium_svg_background_msaa_rects(command layout.PaintCommand) []layout.LayoutRect {
+	if command.image_data == unsafe { nil } || command.opacity <= 0 { return []layout.LayoutRect{} }
 	image := command.image_data
-	svg_document := image.background_svg_document or { return [][]f64{} }
-	data := image.background_layer_data or { return [][]f64{} }
+	svg_document := image.background_svg_document or { return []layout.LayoutRect{} }
+	data := image.background_layer_data or { return []layout.LayoutRect{} }
 	natural := layout.svg_background_natural_size(svg_document)
 	layer := painting.resolve_background_layer_with_natural_size(data.layer, image.image_url, painting.Rect{command.x, command.y, command.width, command.height},
-		data.resolution_context, natural) or { return [][]f64{} }
+		data.resolution_context, natural) or { return []layout.LayoutRect{} }
 	clip :=
 		painting.Rect{image.image_clip_x, image.image_clip_y, image.image_clip_width, image.image_clip_height}
 	plan :=
 		painting.background_tile_plan(layer, painting.Point{command.image_scroll_offset_x, command.image_scroll_offset_y}, clip)
 	mut document := unsafe { &dom.Document(svg_document) }
 	document.set_svg_image_color_scheme(css.preferred_color_scheme_to_string(image.background_svg_color_scheme))
-	mut ranges := [][]f64{}
+	mut ranges := []layout.LayoutRect{}
 	outer := command.transform
 	converter := painting.new_device_pixel_converter(1.0) or { return ranges }
 	for tile in painting.background_tiles_from_plan_limited(plan, clip, 4096) {
@@ -42,15 +46,19 @@ fn chromium_svg_background_msaa_ranges(command layout.PaintCommand) [][]f64 {
 		_ = layout.run_document_layout(svg_document, f64(replay.viewport_width),
 			f64(replay.viewport_height)) or { continue }
 		list := document.record_display_list() or { continue }
-		viewport_rows := transformed_row_bounds(replay.transform, f64(offset.x), f64(offset.y),
+		viewport_bounds := transformed_raster_bounds(replay.transform, f64(offset.x), f64(offset.y),
 			f64(replay.viewport_width), f64(replay.viewport_height))
 		for nested in layout.display_list_commands(list) {
 			transformed := layout.paint_command_for_nested_viewport(nested, replay.transform,
 				offset, command.opacity)
-			bounds := chromium_msaa_trigger_bounds(transformed) or { continue }
-			top := math.max(bounds[0], viewport_rows[0])
-			bottom := math.min(bounds[1], viewport_rows[1])
-			if bottom > top { ranges << [top, bottom] }
+			bounds := chromium_msaa_trigger_rect(transformed) or { continue }
+			top := math.max(bounds.y, viewport_bounds.y)
+			bottom := math.min(bounds.y + bounds.height, viewport_bounds.y + viewport_bounds.height)
+			left := math.max(bounds.x, viewport_bounds.x)
+			right := math.min(bounds.x + bounds.width, viewport_bounds.x + viewport_bounds.width)
+			if bottom > top && right > left {
+				ranges << layout.LayoutRect{ x: left, y: top, width: right - left, height: bottom - top }
+			}
 		}
 	}
 	return ranges
