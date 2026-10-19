@@ -174,6 +174,16 @@ auto graphite_path_batch_draw()
     return draw;
 }
 
+auto graphite_svg_image_draw()
+{
+    static auto draw = [] {
+        void* library = dlopen("@rpath/libVoxGraphite.dylib", RTLD_LAZY | RTLD_LOCAL);
+        return library ? reinterpret_cast<decltype(&vox_graphite_draw_svg_image_pixels)>(
+            dlsym(library, "vox_graphite_draw_svg_image_pixels")) : nullptr;
+    }();
+    return draw;
+}
+
 SkTypeface* select_typeface(char const* path, int face_index, int font_weight, int emoji_face)
 {
     if (path && *path) {
@@ -1838,6 +1848,7 @@ static std::vector<int> s_msaa_tiles;
 static int s_msaa_tile_rows = 256;
 static double s_root_raster_scroll_y = 0;
 static double s_raster_origin_x = 0, s_raster_origin_y = 0;
+static double s_raster_layer_width = 0, s_raster_layer_height = 0;
 static bool s_raster_layer_is_root = true;
 
 extern "C" void ladybird_v_skia_set_raster_layer(double x, double y, int root)
@@ -1845,6 +1856,13 @@ extern "C" void ladybird_v_skia_set_raster_layer(double x, double y, int root)
     s_raster_origin_x = x;
     s_raster_origin_y = y;
     s_raster_layer_is_root = root != 0;
+    s_raster_layer_width = s_raster_layer_height = 0;
+}
+
+extern "C" void ladybird_v_skia_set_raster_layer_size(double width, double height)
+{
+    s_raster_layer_width = width;
+    s_raster_layer_height = height;
 }
 // Rectangles clipped out of the next rectangle drawn, as left, top, right and
 // bottom in its local coordinates.
@@ -2241,12 +2259,14 @@ extern "C" int ladybird_v_skia_draw_outer_box_shadow(CGContextRef destination,
         static_cast<float>(region.width()), static_cast<float>(region.height()), has_background);
 }
 
+static long chromium_raster_tile_for_row(long row);
+
 extern "C" int ladybird_v_skia_draw_svg_path_batch(CGContextRef destination,
     VoxGraphitePath const* paths, int count, float const* outer, float x, float y,
     float width, float height, float page_x, float page_y, float scroll_y,
     float canvas_width, float canvas_height, int opaque_backdrop)
 {
-    auto draw = graphite_path_batch_draw();
+    auto draw = graphite_svg_image_draw();
     if (!s_chromium_painting || !destination || !draw || !paths || !outer
         || count <= 0 || count > 65536 || width <= 0 || height <= 0) return 0;
     auto matrix = SkMatrix::MakeAll(outer[0], outer[2], page_x + outer[4],
@@ -2263,17 +2283,64 @@ extern "C" int ladybird_v_skia_draw_svg_path_batch(CGContextRef destination,
     std::vector<uint32_t> pixels(static_cast<size_t>(raster_width) * raster_height);
     bool has_background = s_raster_layer_is_root && opaque_backdrop && copy_backdrop(destination, region,
         scale, raster_width, raster_height, pixels);
-    std::vector<VoxGraphitePath> local(paths, paths + count);
     auto image_to_raster = raster_matrix(matrix, region, sx, sy);
-    for (auto& path : local) {
-        SkMatrix transform;
-        transform.set9(path.matrix);
-        transform.postConcat(image_to_raster);
-        transform.get9(path.matrix);
-        if (path.non_scaling_stroke) path.stroke_width *= sx;
+    float viewport[] {x, y, width, height};
+    auto draw_in_raster = [&](std::vector<uint32_t>& target, int target_width,
+                              int target_height, int offset_x, long offset_y) {
+        auto parent = image_to_raster;
+        parent.postTranslate(offset_x, offset_y);
+        float parent_values[9];
+        parent.get9(parent_values);
+        return draw(reinterpret_cast<uint8_t*>(target.data()), target_width,
+            target_height, target_width * 4, has_background, paths, count,
+            parent_values, viewport) != 0;
+    };
+    constexpr size_t maximum_tile_pixels = 8 * 1024 * 1024;
+    int layer_width = raster_dimension(s_raster_layer_is_root ? canvas_width : s_raster_layer_width, scale);
+    int layer_height = raster_dimension(s_raster_layer_height, scale);
+    int offset_x = std::lround((region.left - (s_raster_layer_is_root ? 0 : s_raster_origin_x)) * scale);
+    long first_row = std::lround((region.top - page_y + scroll_y
+        + (s_raster_layer_is_root ? s_root_raster_scroll_y : -s_raster_origin_y)) * scale);
+    bool drawn = false;
+    if (layer_width > 0 && offset_x >= 0 && offset_x + raster_width <= layer_width
+        && first_row >= 0 && (s_raster_layer_is_root ? has_background
+            : s_raster_layer_width > 0 && s_raster_layer_height > 0
+                && first_row + raster_height <= layer_height)) {
+        int tile_height = s_raster_layer_is_root ? s_msaa_tile_rows : layer_height;
+        if (static_cast<size_t>(layer_width) * tile_height <= maximum_tile_pixels) {
+            auto original = pixels;
+            auto result = pixels;
+            long spacing = s_msaa_tile_rows - 2;
+            long first_tile = s_raster_layer_is_root ? chromium_raster_tile_for_row(first_row) : 0;
+            long last_tile = s_raster_layer_is_root ? chromium_raster_tile_for_row(first_row + raster_height - 1) : 0;
+            std::vector<uint32_t> tile_pixels(static_cast<size_t>(layer_width) * tile_height);
+            drawn = true;
+            for (long tile = first_tile; tile <= last_tile; ++tile) {
+                long origin = s_raster_layer_is_root ? tile * spacing : 0;
+                std::fill(tile_pixels.begin(), tile_pixels.end(), 0);
+                for (int row = 0; row < raster_height; ++row) {
+                    long tile_row = first_row + row - origin;
+                    if (tile_row < 0 || tile_row >= tile_height) continue;
+                    std::copy_n(original.begin() + static_cast<size_t>(row) * raster_width,
+                        raster_width, tile_pixels.begin() + tile_row * layer_width + offset_x);
+                }
+                if (!draw_in_raster(tile_pixels, layer_width, tile_height, offset_x, first_row - origin)) {
+                    drawn = false;
+                    break;
+                }
+                for (int row = 0; row < raster_height; ++row) {
+                    long document_row = first_row + row;
+                    if (s_raster_layer_is_root && chromium_raster_tile_for_row(document_row) != tile) continue;
+                    long tile_row = document_row - origin;
+                    if (tile_row < 0 || tile_row >= tile_height) continue;
+                    std::copy_n(tile_pixels.begin() + tile_row * layer_width + offset_x,
+                        raster_width, result.begin() + static_cast<size_t>(row) * raster_width);
+                }
+            }
+            if (drawn) pixels = std::move(result);
+        }
     }
-    if (!draw(reinterpret_cast<uint8_t*>(pixels.data()), raster_width, raster_height,
-            raster_width * 4, has_background, local.data(), count)) return 0;
+    if (!drawn && !draw_in_raster(pixels, raster_width, raster_height, 0, 0)) return 0;
     return composite_pixels(destination, std::move(pixels), raster_width, raster_height,
         region.left, canvas_height - region.bottom, region.width(), region.height(), has_background);
 }

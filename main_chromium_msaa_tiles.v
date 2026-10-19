@@ -4,6 +4,8 @@ import layout
 import math
 import painting
 
+fn C.native_set_chromium_raster_layer_size(f64, f64)
+
 // Chromium rasterizes the root layer on the GPU in tiles as wide as the
 // viewport. CalculateGpuTileSize() covers the viewport height with four
 // tiles, adds one border texel on each side, rounds up to 32 rows and keeps at
@@ -265,6 +267,7 @@ fn (mut app BrowserApp) select_chromium_raster_layer(index int) {
 			math.floor(layer.bounds.y * scale) / scale
 		}
 		C.native_set_chromium_raster_layer(x, y, int(index == 0 || layer.legacy_raster))
+		C.native_set_chromium_raster_layer_size(layer.bounds.width, layer.bounds.height)
 		tiles := app.chromium_raster_tiles[index]
 		pointer := if tiles.len > 0 { &tiles[0] } else { unsafe { &int(nil) } }
 		rows := chromium_gpu_raster_tile_rows(int(math.ceil(f64(app.viewport_height) * scale)))

@@ -153,9 +153,17 @@ fn chromium_raster_chunk_bounds(box &BlockBox, command &PaintCommand) LayoutRect
 pub fn chromium_raster_layer_plan(document &dom.Document, commands []PaintCommand, device_scale f64) ChromiumRasterLayerPlan {
 	result := document_layout_result(document) or { return chromium_root_raster_plan(commands.len) }
 	mut composited_scrolls := map[int]bool{}
+	mut fixed_bounds := map[u64]LayoutRect{}
 	for entry in result.paint_order {
 		if chromium_user_scrollable_box(entry.box) {
 			composited_scrolls[entry.box.own_scroll_frame_index] = true
+		}
+		if entry.box.fixed_to_viewport && entry.box.layout_handle != unsafe { nil } {
+			node := unsafe { &Node(entry.box.layout_handle) }
+			if node.is_fixed_position() {
+				fixed_bounds[u64(voidptr(node))] = compatibility_affine_map_rect(
+					entry.box.paint_transform, entry.box.border_box())
+			}
 		}
 	}
 	tree := result.visual_context_tree
@@ -235,6 +243,20 @@ pub fn chromium_raster_layer_plan(document &dom.Document, commands []PaintComman
 				has_state = true
 			}
 			bounds = chromium_layer_bounds_union(bounds, chromium_raster_chunk_bounds(box, command))
+			// A fixed container establishes its compositor layer even when only
+			// a small descendant paints. Keep the container's empty space in the
+			// raster extent; tightening it to that descendant changes GPU coverage.
+			if command.fixed_to_viewport && box.layout_handle != unsafe { nil } {
+				mut ancestor := ?&Node(unsafe { &Node(box.layout_handle) })
+				for {
+					node := ancestor or { break }
+					if rect := fixed_bounds[u64(voidptr(node))] {
+						bounds = chromium_layer_bounds_union(bounds, rect)
+						break
+					}
+					ancestor = node.parent()
+				}
+			}
 		}
 		if has_state {
 			chunks << ChromiumRasterChunk{

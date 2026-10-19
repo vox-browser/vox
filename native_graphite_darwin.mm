@@ -667,11 +667,15 @@ int vox_graphite_draw_shape_pixels(uint8_t* pixels, int width, int height,
     return result;
 }
 
-static bool draw_path_on_canvas(SkCanvas* canvas, VoxGraphitePath const* path)
+static bool draw_path_on_canvas(SkCanvas* canvas, VoxGraphitePath const* path,
+    SkM44 const* parent = nullptr)
 {
     SkMatrix matrix;
     matrix.set9(path->matrix);
-    canvas->setMatrix(matrix);
+    if (parent) {
+        canvas->setMatrix(*parent);
+        canvas->concat(SkM44(matrix));
+    } else canvas->setMatrix(matrix);
     auto geometry = vox_path_from_serialized_segments(path->segments, path->segment_count);
     geometry.setFillType(path->even_odd ? SkPathFillType::kEvenOdd : SkPathFillType::kWinding);
     SkPaint paint;
@@ -711,7 +715,11 @@ static bool draw_path_on_canvas(SkCanvas* canvas, VoxGraphitePath const* path)
     if (path->stroke) {
         if (path->non_scaling_stroke) {
             geometry = geometry.makeTransform(matrix);
-            canvas->resetMatrix();
+            if (parent) {
+                SkMatrix inverse;
+                if (!matrix.invert(&inverse)) return true;
+                canvas->concat(SkM44(inverse));
+            } else canvas->resetMatrix();
         }
         paint.setStyle(SkPaint::kStroke_Style);
         paint.setStrokeWidth(path->stroke_width);
@@ -777,5 +785,39 @@ int vox_graphite_draw_path_batch_pixels(uint8_t* pixels, int width, int height,
     else canvas->clear(SK_ColorTRANSPARENT);
     for (int index = 0; index < count; ++index)
         if (!draw_path_on_canvas(canvas, paths + index)) return 0;
+    return read_pixels(gpu, recorder.get(), surface.get(), info, pixels, pitch);
+}
+
+// Keep the SVG's user-space transform separate from its embedding transform.
+// A non-scaling stroke cancels the former while retaining the latter, including
+// device scale and the raster tile's translation.
+extern "C" __attribute__((visibility("default")))
+int vox_graphite_draw_svg_image_pixels(uint8_t* pixels, int width, int height,
+    int pitch, int has_background, VoxGraphitePath const* paths, int count,
+    float const* parent_values, float const* viewport)
+{
+    if (!pixels || !paths || !parent_values || !viewport || count <= 0 || count > 65536
+        || width <= 0 || height <= 0 || pitch <= 0
+        || static_cast<size_t>(pitch) < static_cast<size_t>(width) * 4) return 0;
+    for (int index = 0; index < count; ++index)
+        if (!paths[index].segments || paths[index].segment_count <= 0) return 0;
+    std::lock_guard lock(gpu_mutex);
+    auto* gpu = context();
+    if (!gpu) return 0;
+    auto recorder = gpu->makeRecorder();
+    auto info = SkImageInfo::Make(width, height, kBGRA_8888_SkColorType,
+        kPremul_SkAlphaType, SkColorSpace::MakeSRGB());
+    auto surface = SkSurfaces::RenderTarget(recorder.get(), info);
+    if (!surface) return 0;
+    if (has_background) surface->writePixels(SkPixmap(info, pixels, pitch), 0, 0);
+    else surface->getCanvas()->clear(SK_ColorTRANSPARENT);
+    SkMatrix matrix;
+    matrix.set9(parent_values);
+    SkM44 parent(matrix);
+    auto* canvas = surface->getCanvas();
+    canvas->setMatrix(parent);
+    canvas->clipRect(SkRect::MakeXYWH(viewport[0], viewport[1], viewport[2], viewport[3]), true);
+    for (int index = 0; index < count; ++index)
+        if (!draw_path_on_canvas(canvas, paths + index, &parent)) return 0;
     return read_pixels(gpu, recorder.get(), surface.get(), info, pixels, pitch);
 }
