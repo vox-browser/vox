@@ -3,7 +3,8 @@ module libjs
 #include <pthread.h>
 #include <sys/resource.h>
 
-fn C.pthread_self() voidptr
+// C.pthread_self comes from vlib's os module, whose declared return type
+// differs across V versions and platforms; cast its result.
 fn C.pthread_get_stackaddr_np(thread voidptr) voidptr
 fn C.pthread_get_stacksize_np(thread voidptr) usize
 fn C.pthread_main_np() int
@@ -20,8 +21,8 @@ const default_main_thread_stack_size = usize(8 * 1024 * 1024)
 // NOTE: On macOS pthread_get_stackaddr_np returns the top of the stack, and the
 //       main thread's size is only reliable through getrlimit.
 fn native_stack_bounds() (usize, usize) {
-	top_of_stack := usize(C.pthread_get_stackaddr_np(C.pthread_self()))
-	mut size := C.pthread_get_stacksize_np(C.pthread_self())
+	top_of_stack := usize(C.pthread_get_stackaddr_np(voidptr(C.pthread_self())))
+	mut size := C.pthread_get_stacksize_np(voidptr(C.pthread_self()))
 	if C.pthread_main_np() == 1 {
 		mut limit := C.rlimit{}
 		C.getrlimit(C.RLIMIT_STACK, &limit)
