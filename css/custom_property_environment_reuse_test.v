@@ -78,7 +78,10 @@ fn test_custom_environment_reuse_keeps_distinct_retained_values_and_relative_url
 	}, none)
 	assert custom_property_maps_equal(previous.own_values, current.own_values)
 	assert reuse_unchanged_custom_property_environment(previous, current)? == current
-	retained := dom_style_value_from_custom_property_bridge(current.get('--image')?)?
+	// Bind the custom property first: current V passes the address of the
+	// option's payload, not the reference it holds, for `f(g()?)`.
+	image := current.get('--image')?
+	retained := dom_style_value_from_custom_property_bridge(image)?
 	assert retained.base_url? == 'https://second.example/styles/'
 }
 
