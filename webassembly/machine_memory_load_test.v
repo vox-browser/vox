@@ -7,7 +7,7 @@ import os
 import strconv
 
 fn test_source_memory_read_aligned_and_unaligned_values_match_verbatim_cpp_bodies() {
-	text := os.read_file('${@VMODROOT}/webassembly/fixtures/memory_read.tsv')!
+	text := os.read_file('${os.dir(@DIR)}/webassembly/fixtures/memory_read.tsv')!
 	mut count := 0
 	for line in text.split_into_lines() {
 		if line.starts_with('#') || line.len == 0 { continue }

@@ -11,7 +11,7 @@ pub:
 }
 
 fn test_exact_source_jis0208_and_ibm_literal_tables_match_actual_native_statics() {
-	tables := json2.decode[[][]u16](os.read_file('${@VMODROOT}/encoding/fixtures/jis0208_tables.json')!)!
+	tables := json2.decode[[][]u16](os.read_file('${os.dir(@DIR)}/encoding/fixtures/jis0208_tables.json')!)!
 	assert tables.len == 6
 	assert tables[0] == source_jis0208_level1_kanji
 	assert tables[1] == source_jis0208_level2_and_additional_kanji
@@ -24,7 +24,7 @@ fn test_exact_source_jis0208_and_ibm_literal_tables_match_actual_native_statics(
 }
 
 fn test_source_jis0208_symbol_and_range_ordered_helpers_match_actual_native_bodies() {
-	cases := json2.decode[[]Jis0208NativeSourceHelper](os.read_file('${@VMODROOT}/encoding/fixtures/jis0208_helpers.json')!)!
+	cases := json2.decode[[]Jis0208NativeSourceHelper](os.read_file('${os.dir(@DIR)}/encoding/fixtures/jis0208_helpers.json')!)!
 	assert cases.len == 11286
 	for item in cases {
 		pointer := item.pointer.u64()

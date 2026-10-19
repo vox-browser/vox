@@ -54,7 +54,7 @@ fn test_source_typed_stores_match_actual_cpp_temporaries_through_all_operand_sou
 	base_call := unsafe { BinaryRegisterOrStack(int(BinaryRegisterOrStack.call_record) + 1) }
 	mut buffer := second.data()
 	mut observations := 0
-	for line in os.read_file('${@VMODROOT}/webassembly/fixtures/memory_store.tsv')!.split_into_lines() {
+	for line in os.read_file('${os.dir(@DIR)}/webassembly/fixtures/memory_store.tsv')!.split_into_lines() {
 		if line.starts_with('#') || line.len == 0 { continue }
 		fields := line.split('\t')
 		assert fields.len == 4

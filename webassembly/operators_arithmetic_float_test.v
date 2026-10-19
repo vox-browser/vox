@@ -36,7 +36,7 @@ fn source_float_arithmetic_case(name string, lhs u64, rhs u64) u64 {
 }
 
 fn test_float_arithmetic_preserves_exact_source_results_and_nan_bits() {
-	rows := os.read_lines(@VMODROOT + '/webassembly/fixtures/arithmetic_float_operators.tsv')!
+	rows := os.read_lines(os.dir(@DIR) + '/webassembly/fixtures/arithmetic_float_operators.tsv')!
 	mut count := 0
 	for row in rows {
 		if row.starts_with('#') || row.len == 0 { continue }

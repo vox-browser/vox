@@ -40,7 +40,7 @@ fn assert_source_shift_jis_native_utf16_raw_record(mut decoder SourceShiftJisDec
 }
 
 fn test_source_shift_jis_raw_utf16_all_byte_pairs_whole_and_retained_split_calls_match_native_body() {
-	fixture := os.read_bytes('${@VMODROOT}/encoding/fixtures/shift_jis_utf16_raw_pairs.bin')!
+	fixture := os.read_bytes('${os.dir(@DIR)}/encoding/fixtures/shift_jis_utf16_raw_pairs.bin')!
 	assert fixture.len == 524288 * 15
 	mut at := 0
 	for first in 0 .. 256 {
@@ -82,7 +82,7 @@ pub:
 }
 
 fn test_source_shift_jis_raw_utf16_short_output_pending_lead_ascii_unread_and_eof_order() {
-	cases := json2.decode[[]ShiftJisUtf16RawSourceEdgeSequence](os.read_file('${@VMODROOT}/encoding/fixtures/shift_jis_utf16_raw_edges.json')!)!
+	cases := json2.decode[[]ShiftJisUtf16RawSourceEdgeSequence](os.read_file('${os.dir(@DIR)}/encoding/fixtures/shift_jis_utf16_raw_edges.json')!)!
 	assert cases.len == 290
 	mut checked := 0
 	for item in cases {
@@ -128,7 +128,7 @@ pub:
 }
 
 fn test_source_shift_jis_mixed_raw_destinations_retain_same_actual_lead_owner() {
-	cases := json2.decode[[]ShiftJisRawSourceMixedSequence](os.read_file('${@VMODROOT}/encoding/fixtures/shift_jis_raw_mixed_destinations.json')!)!
+	cases := json2.decode[[]ShiftJisRawSourceMixedSequence](os.read_file('${os.dir(@DIR)}/encoding/fixtures/shift_jis_raw_mixed_destinations.json')!)!
 	assert cases.len == 232
 	mut checked := 0
 	for item in cases {

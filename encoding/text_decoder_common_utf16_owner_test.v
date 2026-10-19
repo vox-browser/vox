@@ -51,7 +51,7 @@ fn assert_utf16_common_source_owner(common &TextDecoderCommonMixin, step Utf16Co
 }
 
 fn utf16_common_source_sequences() ![]Utf16CommonSourceSequence {
-	return json2.decode[[]Utf16CommonSourceSequence](os.read_file('${@VMODROOT}/encoding/fixtures/utf16_common_owners.json')!)!
+	return json2.decode[[]Utf16CommonSourceSequence](os.read_file('${os.dir(@DIR)}/encoding/fixtures/utf16_common_owners.json')!)!
 }
 
 fn run_utf16_common_stream_step(mut stream TextDecoderStream, input []u8, last bool) !string {

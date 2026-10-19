@@ -30,7 +30,7 @@ fn source_float_extrema_case(name string, lhs u64, rhs u64) u64 {
 }
 
 fn test_float_extrema_match_exact_source_nan_zero_and_sign_bit_results() {
-	rows := os.read_lines(@VMODROOT + '/webassembly/fixtures/extrema_float_operators.tsv')!
+	rows := os.read_lines(os.dir(@DIR) + '/webassembly/fixtures/extrema_float_operators.tsv')!
 	mut count := 0
 	for row in rows {
 		if row.starts_with('#') || row.len == 0 { continue }

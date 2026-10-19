@@ -78,7 +78,7 @@ fn utf16_utf8_streaming_source_life_cycle(name string) Utf16DecoderLifeCycle {
 }
 
 fn test_source_utf16_utf8_outer_bom_off_remove_and_real_owned_output_match_native_calls() {
-	cases := json2.decode[[]Utf16Utf8StreamingSourceSequence](os.read_file('${@VMODROOT}/encoding/fixtures/utf16_utf8_streaming_sequences.json')!)!
+	cases := json2.decode[[]Utf16Utf8StreamingSourceSequence](os.read_file('${os.dir(@DIR)}/encoding/fixtures/utf16_utf8_streaming_sequences.json')!)!
 	assert cases.len == 13840
 	mut fatal_calls := 0
 	for item in cases {
@@ -118,7 +118,7 @@ fn test_source_utf16_utf8_outer_bom_off_remove_and_real_owned_output_match_nativ
 }
 
 fn test_source_utf16_utf8_outer_max_capacities_match_actual_lifecycle_and_variant_slots() {
-	cases := json2.decode[[]Utf16Utf8StreamingSourceStateCapacities](os.read_file('${@VMODROOT}/encoding/fixtures/utf16_utf8_streaming_capacities.json')!)!
+	cases := json2.decode[[]Utf16Utf8StreamingSourceStateCapacities](os.read_file('${os.dir(@DIR)}/encoding/fixtures/utf16_utf8_streaming_capacities.json')!)!
 	assert cases.len == 28
 	for item in cases {
 		assert item.capacities.len == 10
@@ -148,7 +148,7 @@ fn test_source_utf16_utf8_outer_max_capacities_match_actual_lifecycle_and_varian
 }
 
 fn test_source_utf16_utf8_owned_fatal_output_matches_real_partial_ffi_callbacks() {
-	cases := json2.decode[[]Utf16Utf8StreamingSourceStep](os.read_file('${@VMODROOT}/encoding/fixtures/utf16_utf8_partial_callbacks.json')!)!
+	cases := json2.decode[[]Utf16Utf8StreamingSourceStep](os.read_file('${os.dir(@DIR)}/encoding/fixtures/utf16_utf8_partial_callbacks.json')!)!
 	assert cases.len == 32
 	for item in cases {
 		mut decoder := SourceUtf16StreamingDecoder.create(item.be, item.remove_bom)
@@ -217,7 +217,7 @@ pub:
 }
 
 fn test_source_utf16_same_owning_record_mixed_utf8_utf16_destinations_match_original_ffi() {
-	cases := json2.decode[[]Utf16Utf8StreamingSourceMixedSequence](os.read_file('${@VMODROOT}/encoding/fixtures/utf16_utf8_mixed_owners.json')!)!
+	cases := json2.decode[[]Utf16Utf8StreamingSourceMixedSequence](os.read_file('${os.dir(@DIR)}/encoding/fixtures/utf16_utf8_mixed_owners.json')!)!
 	assert cases.len == 768
 	for item in cases {
 		mut decoder := SourceUtf16StreamingDecoder.create(item.be, item.remove_bom)

@@ -7,7 +7,7 @@ import os
 
 fn test_chromium_webp_paint_truncates_alpha_without_changing_decoder_pixels() {
 	$if macos {
-		bytes := os.read_bytes(os.join_path(@VMODROOT,
+		bytes := os.read_bytes(os.join_path(@DIR,
 			'Tests/Browser/Brave/input/decode-colors.webp'))!
 		bitmap := browser_decode_raster_image_bytes(bytes)!
 		original := bitmap.data.clone()
@@ -27,13 +27,13 @@ fn test_chromium_webp_paint_truncates_alpha_without_changing_decoder_pixels() {
 		assert bitmap.data == original
 		assert chromium_webp_paint_pixels([u8(254), 128, 1, 128]) == [u8(127), 64, 0, 128]
 		assert browser_decoded_image_data(dom.URL{ value: 'https://webp.test/alpha.webp' }, bytes)!.intrinsic_width()? == 4
-		rounding := os.read_bytes(os.join_path(@VMODROOT,
+		rounding := os.read_bytes(os.join_path(@DIR,
 			'Tests/Browser/Brave/input/decode-alpha-rounding.webp'))!
 		rounding_image := app.create_image_from_resource_bytes('https://webp.test/rounding.webp',
 			rounding)!
 		assert rounding_image.nr_channels == 7
 		assert unsafe { (&u8(rounding_image.data)).vbytes(4) } == [u8(127), 64, 0, 128]
-		tagged := os.read_bytes(os.join_path(@VMODROOT,
+		tagged := os.read_bytes(os.join_path(@DIR,
 			'Tests/Browser/Brave/input/decode-alpha-tagged.webp'))!
 		tagged_image := app.create_image_from_resource_bytes('https://webp.test/tagged.webp',
 			tagged)!

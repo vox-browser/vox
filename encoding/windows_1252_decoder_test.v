@@ -21,7 +21,7 @@ pub:
 }
 
 fn test_source_windows_1252_matches_real_rust_bridge_for_all_bytes_and_fatal_aliases() {
-	gold := json2.decode[Windows1252SourceGolden](os.read_file('${@VMODROOT}/encoding/fixtures/windows_1252_all-bytes.json')!)!
+	gold := json2.decode[Windows1252SourceGolden](os.read_file('${os.dir(@DIR)}/encoding/fixtures/windows_1252_all-bytes.json')!)!
 	input := []u8{len: 256, init: u8(index)}
 	expected := hex.decode(gold.utf8_hex)!
 	assert decode_windows_1252_to_utf8(input).bytes() == expected
@@ -48,7 +48,7 @@ fn test_source_windows_1252_matches_real_rust_bridge_for_all_bytes_and_fatal_ali
 }
 
 fn test_source_windows_1252_raw_positions_capacity_and_bytes_match_65_actual_source_cases() {
-	cases := json2.decode[[]Windows1252RawSourceGolden](os.read_file('${@VMODROOT}/encoding/fixtures/windows_1252_raw-capacities.json')!)!
+	cases := json2.decode[[]Windows1252RawSourceGolden](os.read_file('${os.dir(@DIR)}/encoding/fixtures/windows_1252_raw-capacities.json')!)!
 	assert cases.len == 65
 	decoder := Windows1252Decoder{}
 	for item in cases {

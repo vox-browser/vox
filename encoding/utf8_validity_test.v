@@ -11,7 +11,7 @@ pub:
 }
 
 fn test_source_utf8_scalar_validity_matches_actual_helper_for_all_two_byte_inputs() {
-	gold := os.read_bytes('${@VMODROOT}/encoding/fixtures/utf8_validity_pairs.bin')!
+	gold := os.read_bytes('${os.dir(@DIR)}/encoding/fixtures/utf8_validity_pairs.bin')!
 	assert gold.len == 65536 && utf8_validity_masks.len == 384
 	for first in 0 .. 256 {
 		for second in 0 .. 256 {
@@ -21,7 +21,7 @@ fn test_source_utf8_scalar_validity_matches_actual_helper_for_all_two_byte_input
 }
 
 fn test_source_utf8_scalar_three_byte_mask_matches_every_actual_native_triple() {
-	gold := os.read_bytes('${@VMODROOT}/encoding/fixtures/utf8_validity_triples.bin')!
+	gold := os.read_bytes('${os.dir(@DIR)}/encoding/fixtures/utf8_validity_triples.bin')!
 	assert gold.len == 1048576
 	mut index := 0
 	for first in 0xe0 .. 0xf0 {
@@ -35,7 +35,7 @@ fn test_source_utf8_scalar_three_byte_mask_matches_every_actual_native_triple() 
 }
 
 fn test_source_utf8_scalar_four_byte_mask_matches_actual_native_boundary_classes() {
-	gold := os.read_bytes('${@VMODROOT}/encoding/fixtures/utf8_validity_quads.bin')!
+	gold := os.read_bytes('${os.dir(@DIR)}/encoding/fixtures/utf8_validity_quads.bin')!
 	assert gold.len == 81920
 	mut index := 0
 	edges := [u8(0), 0x7f, 0x80, 0x9f, 0xa0, 0xbf, 0xc0, 0xff]
@@ -52,7 +52,7 @@ fn test_source_utf8_scalar_four_byte_mask_matches_actual_native_boundary_classes
 }
 
 fn test_source_utf8_validity_ascii_prefix_tail_and_native_simd_threshold_match() {
-	cases := json2.decode[[]Utf8ValiditySourceEdge](os.read_file('${@VMODROOT}/encoding/fixtures/utf8_validity_edges.json')!)!
+	cases := json2.decode[[]Utf8ValiditySourceEdge](os.read_file('${os.dir(@DIR)}/encoding/fixtures/utf8_validity_edges.json')!)!
 	assert cases.len == 454
 	for item in cases {
 		assert source_utf8_valid_up_to(hex.decode(item.input_hex)!) == item.valid_up_to

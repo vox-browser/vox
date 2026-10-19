@@ -42,7 +42,7 @@ fn integer_operator_case(name string, lhs u64, rhs u64) !u64 {
 }
 
 fn test_integer_operators_match_pinned_native_source_boundary_corpus() {
-	rows := os.read_lines(@VMODROOT + '/webassembly/fixtures/integer_operators.tsv')!
+	rows := os.read_lines(os.dir(@DIR) + '/webassembly/fixtures/integer_operators.tsv')!
 	mut count := 0
 	for row in rows {
 		if row.starts_with('#') || row.len == 0 { continue }

@@ -43,7 +43,7 @@ fn test_source_lane_load_native_vector_bytes_and_actual_source_destination_owner
 	destination_call := unsafe { BinaryRegisterOrStack(int(BinaryRegisterOrStack.call_record) + 2) }
 	mut buffer := second.data()
 	mut observations := 0
-	for line in os.read_file('${@VMODROOT}/webassembly/fixtures/memory_lane_load.tsv')!.split_into_lines() {
+	for line in os.read_file('${os.dir(@DIR)}/webassembly/fixtures/memory_lane_load.tsv')!.split_into_lines() {
 		if line.starts_with('#') || line.len == 0 { continue }
 		fields := line.split('\t')
 		assert fields.len == 7

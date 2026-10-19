@@ -60,7 +60,7 @@ fn assert_text_decoder_utf16_owner_after_call(decoder &TextDecoder, step TextDec
 }
 
 fn test_source_text_decoder_calls_actual_utf16_owner_and_projects_native_ffi_units() {
-	cases := json2.decode[[]TextDecoderUtf16OwnerSourceSequence](os.read_file('${@VMODROOT}/encoding/fixtures/utf8_utf16_streaming_sequences.json')!)!
+	cases := json2.decode[[]TextDecoderUtf16OwnerSourceSequence](os.read_file('${os.dir(@DIR)}/encoding/fixtures/utf8_utf16_streaming_sequences.json')!)!
 	assert cases.len == 5000
 	mut observed_calls := 0
 	for item in cases {
@@ -85,7 +85,7 @@ fn test_source_text_decoder_calls_actual_utf16_owner_and_projects_native_ffi_uni
 }
 
 fn test_source_text_decoder_withholds_actual_fatal_partial_utf16_callbacks() {
-	cases := json2.decode[[]TextDecoderUtf16OwnerSourceStep](os.read_file('${@VMODROOT}/encoding/fixtures/utf8_utf16_partial_callbacks.json')!)!
+	cases := json2.decode[[]TextDecoderUtf16OwnerSourceStep](os.read_file('${os.dir(@DIR)}/encoding/fixtures/utf8_utf16_partial_callbacks.json')!)!
 	assert cases.len == 16
 	for item in cases {
 		assert !item.ok && item.units.len > 0

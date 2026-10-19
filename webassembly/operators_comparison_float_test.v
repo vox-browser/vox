@@ -38,7 +38,7 @@ fn source_float_comparison_case(name string, lhs u64, rhs u64) bool {
 }
 
 fn test_floating_comparisons_match_exact_source_nan_zero_and_subnormal_corpus() {
-	rows := os.read_lines(@VMODROOT + '/webassembly/fixtures/comparison_float_operators.tsv')!
+	rows := os.read_lines(os.dir(@DIR) + '/webassembly/fixtures/comparison_float_operators.tsv')!
 	mut count := 0
 	for row in rows {
 		if row.starts_with('#') || row.len == 0 { continue }

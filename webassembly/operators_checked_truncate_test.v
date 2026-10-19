@@ -68,7 +68,7 @@ fn source_checked_truncate_case(name string, bits u64) string {
 }
 
 fn test_checked_truncate_operators_match_exact_source_results_and_error_gates() {
-	rows := os.read_lines(@VMODROOT + '/webassembly/fixtures/checked_truncate_operators.tsv')!
+	rows := os.read_lines(os.dir(@DIR) + '/webassembly/fixtures/checked_truncate_operators.tsv')!
 	mut count := 0
 	for row in rows {
 		if row.starts_with('#') || row.len == 0 { continue }

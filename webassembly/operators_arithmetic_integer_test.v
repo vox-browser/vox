@@ -23,7 +23,7 @@ fn source_integer_arithmetic_case(name string, lhs u64, rhs u64) u64 {
 }
 
 fn test_integer_arithmetic_and_bitwise_match_exact_pinned_native_cpp_boundaries() {
-	rows := os.read_lines(@VMODROOT + '/webassembly/fixtures/arithmetic_integer_operators.tsv')!
+	rows := os.read_lines(os.dir(@DIR) + '/webassembly/fixtures/arithmetic_integer_operators.tsv')!
 	mut count := 0
 	for row in rows {
 		if row.starts_with('#') || row.len == 0 { continue }

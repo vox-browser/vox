@@ -36,7 +36,7 @@ fn assert_source_shift_jis_native_raw_record(mut decoder SourceShiftJisDecoder, 
 }
 
 fn test_source_shift_jis_raw_all_byte_pairs_whole_and_retained_split_calls_match_native_body() {
-	fixture := os.read_bytes('${@VMODROOT}/encoding/fixtures/shift_jis_raw_pairs.bin')!
+	fixture := os.read_bytes('${os.dir(@DIR)}/encoding/fixtures/shift_jis_raw_pairs.bin')!
 	assert fixture.len == 524288 * 15
 	mut at := 0
 	for first in 0 .. 256 {
@@ -71,7 +71,7 @@ pub:
 }
 
 fn test_source_shift_jis_actual_normalized_lead_and_checked_max_capacities() {
-	cases := json2.decode[[]ShiftJisRawSourceStateCapacities](os.read_file('${@VMODROOT}/encoding/fixtures/shift_jis_raw_capacities.json')!)!
+	cases := json2.decode[[]ShiftJisRawSourceStateCapacities](os.read_file('${os.dir(@DIR)}/encoding/fixtures/shift_jis_raw_capacities.json')!)!
 	assert cases.len == 3
 	for item in cases {
 		decoder := SourceShiftJisDecoder{ lead: if item.has_lead { ?u8(item.lead) } else { none } }
@@ -119,7 +119,7 @@ pub:
 }
 
 fn test_source_shift_jis_raw_short_output_pending_lead_ascii_unread_and_eof_order() {
-	cases := json2.decode[[]ShiftJisRawSourceEdgeSequence](os.read_file('${@VMODROOT}/encoding/fixtures/shift_jis_raw_edges.json')!)!
+	cases := json2.decode[[]ShiftJisRawSourceEdgeSequence](os.read_file('${os.dir(@DIR)}/encoding/fixtures/shift_jis_raw_edges.json')!)!
 	assert cases.len > 500
 	mut checked := 0
 	for item in cases {

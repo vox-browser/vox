@@ -60,7 +60,7 @@ fn assert_utf16_raw_slots(decoder SourceUtf16Decoder, lead_surrogate u16, has_le
 }
 
 fn test_source_utf16_raw_matches_all_native_units_at_one_and_two_unit_destinations() {
-	gold := os.read_bytes('${@VMODROOT}/encoding/fixtures/utf16_raw_units.bin')!
+	gold := os.read_bytes('${os.dir(@DIR)}/encoding/fixtures/utf16_raw_units.bin')!
 	assert gold.len == 3670016
 	mut at := 0
 	for be in [false, true] {
@@ -87,7 +87,7 @@ fn test_source_utf16_raw_matches_all_native_units_at_one_and_two_unit_destinatio
 }
 
 fn test_source_utf16_raw_and_replacement_match_native_retained_slots_and_counters() {
-	cases := json2.decode[[]Utf16SourceRawSequence](os.read_file('${@VMODROOT}/encoding/fixtures/utf16_raw_sequences.json')!)!
+	cases := json2.decode[[]Utf16SourceRawSequence](os.read_file('${os.dir(@DIR)}/encoding/fixtures/utf16_raw_sequences.json')!)!
 	assert cases.len == 15248
 	for item in cases {
 		mut decoder := SourceUtf16Decoder.new_inner(item.be)
@@ -131,7 +131,7 @@ fn test_source_utf16_raw_and_replacement_match_native_retained_slots_and_counter
 }
 
 fn test_source_utf16_checked_capacity_matches_native_four_slot_state() {
-	cases := json2.decode[[]Utf16SourceCapacityState](os.read_file('${@VMODROOT}/encoding/fixtures/utf16_raw_capacities.json')!)!
+	cases := json2.decode[[]Utf16SourceCapacityState](os.read_file('${os.dir(@DIR)}/encoding/fixtures/utf16_raw_capacities.json')!)!
 	assert cases.len == 14
 	for item in cases {
 		mut decoder := SourceUtf16Decoder.new_inner(item.be)

@@ -53,7 +53,7 @@ fn source_saturating_truncate_case(name string, bits u64) u64 {
 fn test_saturating_truncate_operators_match_exact_source_in_all_native_rounding_modes() {
 	previous := C.fegetround()
 	defer { C.fesetround(previous) }
-	rows := os.read_lines(@VMODROOT + '/webassembly/fixtures/saturating_truncate_operators.tsv')!
+	rows := os.read_lines(os.dir(@DIR) + '/webassembly/fixtures/saturating_truncate_operators.tsv')!
 	mut count := 0
 	for row in rows {
 		if row.starts_with('#') || row.len == 0 { continue }

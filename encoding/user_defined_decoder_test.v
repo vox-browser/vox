@@ -21,7 +21,7 @@ pub:
 }
 
 fn test_source_user_defined_matches_actual_bridge_all_bytes_and_owned_null_output() {
-	gold := json2.decode[UserDefinedSourceGolden](os.read_file('${@VMODROOT}/encoding/fixtures/user_defined_all-bytes.json')!)!
+	gold := json2.decode[UserDefinedSourceGolden](os.read_file('${os.dir(@DIR)}/encoding/fixtures/user_defined_all-bytes.json')!)!
 	input := []u8{len: 256, init: u8(index)}
 	expected := hex.decode(gold.utf8_hex)!
 	assert decode_x_user_defined(input).bytes() == expected
@@ -53,7 +53,7 @@ fn test_source_user_defined_matches_actual_bridge_all_bytes_and_owned_null_outpu
 }
 
 fn test_source_user_defined_macro_control_order_matches_native_raw_capacity_goldens() {
-	cases := json2.decode[[]UserDefinedRawSourceGolden](os.read_file('${@VMODROOT}/encoding/fixtures/user_defined_raw-capacities.json')!)!
+	cases := json2.decode[[]UserDefinedRawSourceGolden](os.read_file('${os.dir(@DIR)}/encoding/fixtures/user_defined_raw-capacities.json')!)!
 	assert cases.len == 114
 	decoder := UserDefinedDecoder{}
 	for item in cases {

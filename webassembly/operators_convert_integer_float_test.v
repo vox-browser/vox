@@ -37,7 +37,7 @@ fn source_integer_float_case(name string, bits u64) u64 {
 fn test_integer_to_floating_operators_match_source_native_cast_bits_in_all_rounding_modes() {
 	previous := C.fegetround()
 	defer { C.fesetround(previous) }
-	rows := os.read_lines(@VMODROOT + '/webassembly/fixtures/convert_integer_float_operators.tsv')!
+	rows := os.read_lines(os.dir(@DIR) + '/webassembly/fixtures/convert_integer_float_operators.tsv')!
 	mut count := 0
 	for row in rows {
 		if row.starts_with('#') || row.len == 0 { continue }

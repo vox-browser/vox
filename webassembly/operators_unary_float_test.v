@@ -49,7 +49,7 @@ fn source_float_unary_rounding(mode string) int {
 fn test_float_unary_operators_match_exact_source_bits_in_all_native_rounding_modes() {
 	previous_rounding := C.fegetround()
 	defer { C.fesetround(previous_rounding) }
-	rows := os.read_lines(@VMODROOT + '/webassembly/fixtures/unary_float_operators.tsv')!
+	rows := os.read_lines(os.dir(@DIR) + '/webassembly/fixtures/unary_float_operators.tsv')!
 	mut count := 0
 	for row in rows {
 		if row.starts_with('#') || row.len == 0 { continue }

@@ -5,7 +5,7 @@ import layout
 import os
 
 fn test_simple_svg_images_share_recording_but_effects_keep_individual_replay() {
-	markup := os.read_file(os.join_path(@VMODROOT,
+	markup := os.read_file(os.join_path(@DIR,
 		'Tests/Browser/Brave/input/svg-image-non-scaling-stroke.html'))!
 	mut document := parse_loaded_browser_navigation_document(LoadedPage{
 		url:    'about:blank'

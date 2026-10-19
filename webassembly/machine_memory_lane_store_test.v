@@ -43,7 +43,7 @@ fn test_source_lane_stores_match_native_vector_views_for_all_valid_lanes_and_ope
 	base_call := unsafe { BinaryRegisterOrStack(int(BinaryRegisterOrStack.call_record) + 1) }
 	mut buffer := second.data()
 	mut observations := 0
-	for line in os.read_file('${@VMODROOT}/webassembly/fixtures/memory_lane_store.tsv')!.split_into_lines() {
+	for line in os.read_file('${os.dir(@DIR)}/webassembly/fixtures/memory_lane_store.tsv')!.split_into_lines() {
 		if line.starts_with('#') || line.len == 0 { continue }
 		fields := line.split('\t')
 		assert fields.len == 5

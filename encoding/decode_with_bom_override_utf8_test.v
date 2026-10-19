@@ -13,7 +13,7 @@ pub:
 }
 
 fn utf8_given_whole_source_cases() ![]Utf8GivenWholeSourceCase {
-	return json2.decode[[]Utf8GivenWholeSourceCase](os.read_file('${@VMODROOT}/encoding/fixtures/utf8_whole_owner.json')!)!
+	return json2.decode[[]Utf8GivenWholeSourceCase](os.read_file('${os.dir(@DIR)}/encoding/fixtures/utf8_whole_owner.json')!)!
 }
 
 fn test_source_utf8_whole_matching_bom_flags_and_fatal_withholding_match_original_ffi() {

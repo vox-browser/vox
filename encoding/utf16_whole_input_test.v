@@ -29,7 +29,7 @@ pub:
 }
 
 fn test_source_utf16_whole_input_original_ffi_outputs_errors_and_fatal_withholding() {
-	cases := json2.decode[[]Utf16WholeSourceCase](os.read_file('${@VMODROOT}/encoding/fixtures/utf16_whole_input.json')!)!
+	cases := json2.decode[[]Utf16WholeSourceCase](os.read_file('${os.dir(@DIR)}/encoding/fixtures/utf16_whole_input.json')!)!
 	assert cases.len == 1504
 	mut fatal_withheld := 0
 	for item in cases {
@@ -49,7 +49,7 @@ fn test_source_utf16_whole_input_original_ffi_outputs_errors_and_fatal_withholdi
 }
 
 fn test_source_utf16_whole_initial_capacity_and_actual_decode_to_string_calls_match_native_body() {
-	cases := json2.decode[[]Utf16WholeSourceCase](os.read_file('${@VMODROOT}/encoding/fixtures/utf16_whole_input.json')!)!
+	cases := json2.decode[[]Utf16WholeSourceCase](os.read_file('${os.dir(@DIR)}/encoding/fixtures/utf16_whole_input.json')!)!
 	mut natural_reserve_calls := 0
 	for item in cases {
 		input := hex.decode(item.input_hex)!

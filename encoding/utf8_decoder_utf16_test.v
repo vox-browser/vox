@@ -41,7 +41,7 @@ pub:
 }
 
 fn test_source_utf8_utf16_prefix_matches_all_native_byte_pairs_and_edges() {
-	pairs := os.read_bytes('${@VMODROOT}/encoding/fixtures/utf8_utf16_prefix_pairs.bin')!
+	pairs := os.read_bytes('${os.dir(@DIR)}/encoding/fixtures/utf8_utf16_prefix_pairs.bin')!
 	assert pairs.len == 655360
 	mut at := 0
 	for first in 0 .. 256 {
@@ -65,7 +65,7 @@ fn test_source_utf8_utf16_prefix_matches_all_native_byte_pairs_and_edges() {
 		}
 	}
 	assert at == pairs.len
-	cases := json2.decode[[]Utf8Utf16SourcePrefix](os.read_file('${@VMODROOT}/encoding/fixtures/utf8_utf16_prefix_edges.json')!)!
+	cases := json2.decode[[]Utf8Utf16SourcePrefix](os.read_file('${os.dir(@DIR)}/encoding/fixtures/utf8_utf16_prefix_edges.json')!)!
 	assert cases.len == 3024
 	for item in cases {
 		mut output := []u16{len: item.capacity}
@@ -87,7 +87,7 @@ fn test_source_utf8_utf16_prefix_matches_all_native_byte_pairs_and_edges() {
 }
 
 fn test_source_utf8_raw_utf16_matches_actual_native_counters_output_and_five_slots() {
-	cases := json2.decode[[]Utf8Utf16SourceSequence](os.read_file('${@VMODROOT}/encoding/fixtures/utf8_utf16_decoder_sequences.json')!)!
+	cases := json2.decode[[]Utf8Utf16SourceSequence](os.read_file('${os.dir(@DIR)}/encoding/fixtures/utf8_utf16_decoder_sequences.json')!)!
 	assert cases.len == 11932
 	mut fatal_cases := 0
 	for item in cases {

@@ -44,7 +44,7 @@ fn assert_shift_jis_text_decoder_actual_state(decoder &TextDecoder, state ShiftJ
 }
 
 fn test_source_text_decoder_shift_jis_direct_utf16_owner_matches_original_ffi_and_caller_schedules() {
-	cases := json2.decode[[]ShiftJisTextDecoderSourceSequence](os.read_file('${@VMODROOT}/encoding/fixtures/text_decoder_shift_jis_schedules.json')!)!
+	cases := json2.decode[[]ShiftJisTextDecoderSourceSequence](os.read_file('${os.dir(@DIR)}/encoding/fixtures/text_decoder_shift_jis_schedules.json')!)!
 	assert cases.len == 852
 	mut checked := 0
 	mut failed_partial := 0

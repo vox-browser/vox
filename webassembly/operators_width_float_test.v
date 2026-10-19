@@ -35,7 +35,7 @@ fn source_float_width_case(name string, bits u64) u64 {
 fn test_float_width_operators_match_source_nan_inf_and_native_rounding_bits() {
 	previous_rounding := C.fegetround()
 	defer { C.fesetround(previous_rounding) }
-	rows := os.read_lines(@VMODROOT + '/webassembly/fixtures/width_float_operators.tsv')!
+	rows := os.read_lines(os.dir(@DIR) + '/webassembly/fixtures/width_float_operators.tsv')!
 	mut count := 0
 	for row in rows {
 		if row.starts_with('#') || row.len == 0 { continue }

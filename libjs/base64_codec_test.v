@@ -5,7 +5,7 @@ import strconv
 import encoding.hex
 
 fn test_translated_base64_codec_matches_pinned_simdutf_output_status_and_utf16_read_counts() {
-	fixture := os.read_file(os.join_path(@VMODROOT, 'libjs', 'testdata', 'base64-codec.tsv'))!
+	fixture := os.read_file(os.join_path(os.dir(@DIR), 'libjs', 'testdata', 'base64-codec.tsv'))!
 	mut count := 0
 	for line in fixture.split_into_lines() {
 		if line.starts_with('#') || line == '' { continue

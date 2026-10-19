@@ -73,7 +73,7 @@ fn test_source_utf8_short_eof_replacement_preserves_actual_fatal_boundary() {
 }
 
 fn test_source_utf8_five_slots_raw_and_replacement_match_actual_native_sequences() {
-	cases := json2.decode[[]Utf8DecoderSourceSequence](os.read_file('${@VMODROOT}/encoding/fixtures/utf8_decoder_sequences.json')!)!
+	cases := json2.decode[[]Utf8DecoderSourceSequence](os.read_file('${os.dir(@DIR)}/encoding/fixtures/utf8_decoder_sequences.json')!)!
 	assert cases.len == 11932
 	mut fatal_cases := 0
 	for item in cases {
@@ -112,7 +112,7 @@ fn test_source_utf8_five_slots_raw_and_replacement_match_actual_native_sequences
 }
 
 fn test_source_utf8_checked_max_capacities_match_actual_observed_native_slots() {
-	cases := json2.decode[[]Utf8DecoderSourceStateCapacities](os.read_file('${@VMODROOT}/encoding/fixtures/utf8_decoder_capacities.json')!)!
+	cases := json2.decode[[]Utf8DecoderSourceStateCapacities](os.read_file('${os.dir(@DIR)}/encoding/fixtures/utf8_decoder_capacities.json')!)!
 	assert cases.len == 60
 	for item in cases {
 		decoder := SourceUtf8Decoder{

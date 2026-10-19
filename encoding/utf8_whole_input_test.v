@@ -13,7 +13,7 @@ pub:
 }
 
 fn test_source_utf8_whole_input_consumer_matches_actual_bridge_and_withholds_fatal_output() {
-	cases := json2.decode[[]Utf8WholeInputSourceCase](os.read_file('${@VMODROOT}/encoding/fixtures/utf8_whole_input.json')!)!
+	cases := json2.decode[[]Utf8WholeInputSourceCase](os.read_file('${os.dir(@DIR)}/encoding/fixtures/utf8_whole_input.json')!)!
 	assert cases.len == 903
 	for item in cases {
 		input := hex.decode(item.input_hex)!

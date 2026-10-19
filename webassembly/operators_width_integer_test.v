@@ -19,7 +19,7 @@ fn source_integer_width_case(name string, bits u64) u64 {
 }
 
 fn test_integer_width_operators_match_source_wrapping_signed_and_unsigned_bit_patterns() {
-	rows := os.read_lines(@VMODROOT + '/webassembly/fixtures/width_integer_operators.tsv')!
+	rows := os.read_lines(os.dir(@DIR) + '/webassembly/fixtures/width_integer_operators.tsv')!
 	mut count := 0
 	for row in rows {
 		if row.starts_with('#') || row.len == 0 { continue }

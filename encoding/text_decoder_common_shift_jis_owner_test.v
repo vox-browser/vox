@@ -24,7 +24,7 @@ pub:
 }
 
 fn shift_jis_common_source_sequences() ![]ShiftJisCommonSourceSequence {
-	return json2.decode[[]ShiftJisCommonSourceSequence](os.read_file('${@VMODROOT}/encoding/fixtures/shift_jis_streaming_sequences.json')!)!
+	return json2.decode[[]ShiftJisCommonSourceSequence](os.read_file('${os.dir(@DIR)}/encoding/fixtures/shift_jis_streaming_sequences.json')!)!
 }
 
 fn assert_shift_jis_common_source_owner(common &TextDecoderCommonMixin, step ShiftJisCommonSourceStep) {

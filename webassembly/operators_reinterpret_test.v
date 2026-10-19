@@ -16,7 +16,7 @@ fn source_reinterpret_case(name string, bits u64) u64 {
 }
 
 fn test_reinterpret_operators_match_source_bitcasts_without_nan_or_signed_zero_normalization() {
-	rows := os.read_lines(@VMODROOT + '/webassembly/fixtures/reinterpret_operators.tsv')!
+	rows := os.read_lines(os.dir(@DIR) + '/webassembly/fixtures/reinterpret_operators.tsv')!
 	mut count := 0
 	for row in rows {
 		if row.starts_with('#') || row.len == 0 { continue }

@@ -31,7 +31,7 @@ fn source_integer_comparison_case(name string, lhs u64, rhs u64) bool {
 }
 
 fn test_integer_comparisons_match_pinned_cpp_signed_and_unsigned_boundary_corpus() {
-	rows := os.read_lines(@VMODROOT + '/webassembly/fixtures/comparison_integer_operators.tsv')!
+	rows := os.read_lines(os.dir(@DIR) + '/webassembly/fixtures/comparison_integer_operators.tsv')!
 	mut count := 0
 	for row in rows {
 		if row.starts_with('#') || row.len == 0 { continue }

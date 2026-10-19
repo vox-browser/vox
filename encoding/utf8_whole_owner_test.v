@@ -32,7 +32,7 @@ pub:
 }
 
 fn utf8_whole_owner_source_cases() ![]Utf8WholeOwnerSourceCase {
-	return json2.decode[[]Utf8WholeOwnerSourceCase](os.read_file('${@VMODROOT}/encoding/fixtures/utf8_whole_owner.json')!)!
+	return json2.decode[[]Utf8WholeOwnerSourceCase](os.read_file('${os.dir(@DIR)}/encoding/fixtures/utf8_whole_owner.json')!)!
 }
 
 fn utf8_whole_owner_source_span(item Utf8WholeOwnerSourceCase) ![]u8 {

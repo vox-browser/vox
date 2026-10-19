@@ -21,7 +21,7 @@ fn source_unary_integer_case(name string, bits u64) i32 {
 }
 
 fn test_unary_integer_operators_match_pinned_native_source_corpus() {
-	rows := os.read_lines(@VMODROOT + '/webassembly/fixtures/unary_integer_operators.tsv')!
+	rows := os.read_lines(os.dir(@DIR) + '/webassembly/fixtures/unary_integer_operators.tsv')!
 	mut count := 0
 	for row in rows {
 		if row.starts_with('#') || row.len == 0 { continue }

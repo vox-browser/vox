@@ -71,7 +71,7 @@ fn assert_text_decoder_utf16_variant_after_call(decoder &TextDecoder, step TextD
 }
 
 fn test_source_text_decoder_utf16_variants_project_actual_owned_ffi_units_and_keep_slots() {
-	cases := json2.decode[[]TextDecoderUtf16VariantSourceSequence](os.read_file('${@VMODROOT}/encoding/fixtures/utf16_streaming_sequences.json')!)!
+	cases := json2.decode[[]TextDecoderUtf16VariantSourceSequence](os.read_file('${os.dir(@DIR)}/encoding/fixtures/utf16_streaming_sequences.json')!)!
 	assert cases.len == 13840
 	mut observed_calls := 0
 	for item in cases {
@@ -97,7 +97,7 @@ fn test_source_text_decoder_utf16_variants_project_actual_owned_ffi_units_and_ke
 }
 
 fn test_source_text_decoder_utf16_variants_withhold_fatal_partial_callback_units() {
-	cases := json2.decode[[]TextDecoderUtf16VariantSourceStep](os.read_file('${@VMODROOT}/encoding/fixtures/utf16_partial_callbacks.json')!)!
+	cases := json2.decode[[]TextDecoderUtf16VariantSourceStep](os.read_file('${os.dir(@DIR)}/encoding/fixtures/utf16_partial_callbacks.json')!)!
 	assert cases.len == 32
 	for item in cases {
 		assert !item.ok && item.units.len > 0
@@ -113,7 +113,7 @@ fn test_source_text_decoder_utf16_variants_withhold_fatal_partial_callback_units
 }
 
 fn test_source_text_decoder_utf16_three_byte_eof_matches_original_ffi_at_each_split() {
-	cases := json2.decode[[]TextDecoderUtf16EofSourceSequence](os.read_file('${@VMODROOT}/encoding/fixtures/utf16_eof.json')!)!
+	cases := json2.decode[[]TextDecoderUtf16EofSourceSequence](os.read_file('${os.dir(@DIR)}/encoding/fixtures/utf16_eof.json')!)!
 	assert cases.len == 32
 	for item in cases {
 		decoder := TextDecoder.construct(item.label, TextDecoderOptions{ fatal: item.fatal, ignore_bom: !item.remove_bom })!

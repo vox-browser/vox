@@ -41,7 +41,7 @@ pub:
 }
 
 fn test_source_shift_jis_actual_outer_lifecycle_and_original_ffi_match_native_records() {
-	cases := json2.decode[[]ShiftJisStreamingSourceSequence](os.read_file('${@VMODROOT}/encoding/fixtures/shift_jis_streaming_sequences.json')!)!
+	cases := json2.decode[[]ShiftJisStreamingSourceSequence](os.read_file('${os.dir(@DIR)}/encoding/fixtures/shift_jis_streaming_sequences.json')!)!
 	assert cases.len == 1988
 	mut actual_fatal_calls := 0
 	mut failed_partial_callbacks := 0
@@ -106,7 +106,7 @@ fn test_source_shift_jis_actual_outer_lifecycle_and_original_ffi_match_native_re
 }
 
 fn test_source_shift_jis_finished_and_held_lead_short_replacement_keep_native_fatal_boundaries() {
-	fatal := json2.decode[[]ShiftJisStreamingSourceFatal](os.read_file('${@VMODROOT}/encoding/fixtures/shift_jis_streaming_fatal.json')!)!
+	fatal := json2.decode[[]ShiftJisStreamingSourceFatal](os.read_file('${os.dir(@DIR)}/encoding/fixtures/shift_jis_streaming_fatal.json')!)!
 	assert fatal.len == 7
 	for item in fatal {
 		assert !item.has_lead

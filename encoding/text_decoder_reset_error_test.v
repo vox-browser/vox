@@ -21,7 +21,7 @@ pub:
 }
 
 fn test_source_nonstreaming_error_resets_before_return_and_matches_real_utf16_bridge_units() {
-	cases := json2.decode[[]TextDecoderUtf16ResetSourceCase](os.read_file('${@VMODROOT}/encoding/fixtures/text_decoder_utf16_reset.json')!)!
+	cases := json2.decode[[]TextDecoderUtf16ResetSourceCase](os.read_file('${os.dir(@DIR)}/encoding/fixtures/text_decoder_utf16_reset.json')!)!
 	assert cases.len == 16
 	for item in cases {
 		decoder := TextDecoder.construct('utf-8', TextDecoderOptions{ fatal: item.fatal, ignore_bom: !item.remove_bom })!

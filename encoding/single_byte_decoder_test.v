@@ -27,7 +27,7 @@ pub:
 }
 
 fn test_source_all_27_single_byte_tables_match_native_bridge_bytes_and_fatal_outcomes() {
-	cases := json2.decode[[]SingleByteSourceGolden](os.read_file('${@VMODROOT}/encoding/fixtures/single_byte_all-bytes.json')!)!
+	cases := json2.decode[[]SingleByteSourceGolden](os.read_file('${os.dir(@DIR)}/encoding/fixtures/single_byte_all-bytes.json')!)!
 	assert cases.len == 28 // ISO8859-8-I uses the same actual table as ISO8859-8.
 	input := []u8{len: 256, init: u8(index)}
 	for item in cases {
@@ -70,7 +70,7 @@ fn test_source_all_27_single_byte_tables_match_native_bridge_bytes_and_fatal_out
 }
 
 fn test_source_single_byte_raw_and_replacement_loop_match_all_native_capacity_records() {
-	cases := json2.decode[[]SingleByteRawSourceGolden](os.read_file('${@VMODROOT}/encoding/fixtures/single_byte_raw-capacities.json')!)!
+	cases := json2.decode[[]SingleByteRawSourceGolden](os.read_file('${os.dir(@DIR)}/encoding/fixtures/single_byte_raw-capacities.json')!)!
 	assert cases.len == 7540
 	mut malformed_cases := 0
 	mut replacement_error_cases := 0

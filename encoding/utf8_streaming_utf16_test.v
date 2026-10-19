@@ -63,7 +63,7 @@ fn utf8_utf16_streaming_source_life_cycle(name string) Utf8DecoderLifeCycle {
 }
 
 fn test_source_utf8_utf16_outer_bom_off_remove_and_real_owned_output_match_native_calls() {
-	cases := json2.decode[[]Utf8Utf16StreamingSourceSequence](os.read_file('${@VMODROOT}/encoding/fixtures/utf8_utf16_streaming_sequences.json')!)!
+	cases := json2.decode[[]Utf8Utf16StreamingSourceSequence](os.read_file('${os.dir(@DIR)}/encoding/fixtures/utf8_utf16_streaming_sequences.json')!)!
 	assert cases.len == 5000
 	mut fatal_calls := 0
 	for item in cases {
@@ -105,7 +105,7 @@ fn test_source_utf8_utf16_outer_bom_off_remove_and_real_owned_output_match_nativ
 }
 
 fn test_source_utf8_utf16_outer_max_capacities_match_actual_lifecycle_and_variant_slots() {
-	cases := json2.decode[[]Utf8Utf16StreamingSourceStateCapacities](os.read_file('${@VMODROOT}/encoding/fixtures/utf8_utf16_streaming_capacities.json')!)!
+	cases := json2.decode[[]Utf8Utf16StreamingSourceStateCapacities](os.read_file('${os.dir(@DIR)}/encoding/fixtures/utf8_utf16_streaming_capacities.json')!)!
 	assert cases.len == 12
 	for item in cases {
 		assert item.capacities.len == 10
@@ -131,7 +131,7 @@ fn test_source_utf8_utf16_outer_max_capacities_match_actual_lifecycle_and_varian
 }
 
 fn test_source_utf8_utf16_owned_fatal_output_matches_real_partial_ffi_callbacks() {
-	cases := json2.decode[[]Utf8Utf16StreamingSourceStep](os.read_file('${@VMODROOT}/encoding/fixtures/utf8_utf16_partial_callbacks.json')!)!
+	cases := json2.decode[[]Utf8Utf16StreamingSourceStep](os.read_file('${os.dir(@DIR)}/encoding/fixtures/utf8_utf16_partial_callbacks.json')!)!
 	assert cases.len == 16
 	for item in cases {
 		mut decoder := SourceUtf8StreamingDecoder.create(item.remove_bom)

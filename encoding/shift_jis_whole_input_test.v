@@ -30,7 +30,7 @@ pub:
 }
 
 fn shift_jis_whole_source_cases() ![]ShiftJisWholeSourceCase {
-	return json2.decode[[]ShiftJisWholeSourceCase](os.read_file('${@VMODROOT}/encoding/fixtures/shift_jis_whole_input.json')!)!
+	return json2.decode[[]ShiftJisWholeSourceCase](os.read_file('${os.dir(@DIR)}/encoding/fixtures/shift_jis_whole_input.json')!)!
 }
 
 fn test_source_shift_jis_whole_original_ffi_outputs_errors_and_entire_fatal_withholding() {

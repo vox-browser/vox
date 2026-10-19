@@ -62,7 +62,7 @@ fn assert_utf16_utf8_variant_slots(decoder SourceUtf16Decoder, lead_surrogate u1
 }
 
 fn test_source_utf16_utf8_raw_matches_all_native_units_at_three_and_four_byte_destinations() {
-	gold := os.read_bytes('${@VMODROOT}/encoding/fixtures/utf16_utf8_raw_units.bin')!
+	gold := os.read_bytes('${os.dir(@DIR)}/encoding/fixtures/utf16_utf8_raw_units.bin')!
 	assert gold.len == 3407872
 	mut at := 0
 	for be in [false, true] {
@@ -86,7 +86,7 @@ fn test_source_utf16_utf8_raw_matches_all_native_units_at_three_and_four_byte_de
 }
 
 fn test_source_utf16_utf8_raw_and_replacement_match_native_retained_slots_and_counters() {
-	cases := json2.decode[[]Utf16Utf8SourceRawSequence](os.read_file('${@VMODROOT}/encoding/fixtures/utf16_utf8_raw_sequences.json')!)!
+	cases := json2.decode[[]Utf16Utf8SourceRawSequence](os.read_file('${os.dir(@DIR)}/encoding/fixtures/utf16_utf8_raw_sequences.json')!)!
 	assert cases.len == 15248
 	for item in cases {
 		mut decoder := SourceUtf16Decoder.new_inner(item.be)
@@ -130,7 +130,7 @@ fn test_source_utf16_utf8_raw_and_replacement_match_native_retained_slots_and_co
 }
 
 fn test_source_utf16_utf8_checked_capacity_matches_native_four_slot_state() {
-	cases := json2.decode[[]Utf16Utf8SourceCapacityState](os.read_file('${@VMODROOT}/encoding/fixtures/utf16_utf8_raw_capacities.json')!)!
+	cases := json2.decode[[]Utf16Utf8SourceCapacityState](os.read_file('${os.dir(@DIR)}/encoding/fixtures/utf16_utf8_raw_capacities.json')!)!
 	assert cases.len == 14
 	for item in cases {
 		mut decoder := SourceUtf16Decoder.new_inner(item.be)
@@ -179,7 +179,7 @@ pub:
 }
 
 fn test_source_utf16_utf8_prefix_matches_actual_native_scalar_ascii_and_surrogate_edges() {
-	cases := json2.decode[[]Utf16Utf8SourcePrefixCase](os.read_file('${@VMODROOT}/encoding/fixtures/utf16_utf8_prefix_edges.json')!)!
+	cases := json2.decode[[]Utf16Utf8SourcePrefixCase](os.read_file('${os.dir(@DIR)}/encoding/fixtures/utf16_utf8_prefix_edges.json')!)!
 	assert cases.len == 3168
 	for item in cases {
 		input := hex.decode(item.input_hex)!
@@ -200,7 +200,7 @@ fn test_source_utf16_utf8_prefix_matches_actual_native_scalar_ascii_and_surrogat
 }
 
 fn test_source_utf16_variant_retains_same_native_slots_across_mixed_utf8_utf16_destinations() {
-	cases := json2.decode[[]Utf16Utf8SourceMixedSequence](os.read_file('${@VMODROOT}/encoding/fixtures/utf16_utf8_mixed_sequences.json')!)!
+	cases := json2.decode[[]Utf16Utf8SourceMixedSequence](os.read_file('${os.dir(@DIR)}/encoding/fixtures/utf16_utf8_mixed_sequences.json')!)!
 	assert cases.len == 672
 	for item in cases {
 		mut decoder := SourceUtf16Decoder.new_inner(item.be)

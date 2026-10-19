@@ -17,7 +17,7 @@ fn source_shift_integer_case(name string, lhs u64, rhs u64) u64 {
 }
 
 fn test_scalar_shifts_match_verbatim_pinned_cpp_for_signed_counts_and_every_bit_position() {
-	rows := os.read_lines(@VMODROOT + '/webassembly/fixtures/shift_integer_operators.tsv')!
+	rows := os.read_lines(os.dir(@DIR) + '/webassembly/fixtures/shift_integer_operators.tsv')!
 	mut count := 0
 	for row in rows {
 		if row.starts_with('#') || row.len == 0 { continue }

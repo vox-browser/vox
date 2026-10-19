@@ -8,7 +8,7 @@ fn test_lossy_webp_retains_complete_yuv420_planes_for_native_sampling() {
 			eprintln('SKIP: optional libwebp YUV decoder unavailable')
 			return
 		}
-		bytes := os.read_bytes(os.join_path(@VMODROOT, 'Tests/Browser/Brave/input/decode-texture.webp'))!
+		bytes := os.read_bytes(os.join_path(@DIR, 'Tests/Browser/Brave/input/decode-texture.webp'))!
 		mut width := 0
 		mut height := 0
 		mut size := 0
@@ -20,7 +20,7 @@ fn test_lossy_webp_retains_complete_yuv420_planes_for_native_sampling() {
 		planes := unsafe { decoded.vbytes(size) }
 		assert planes[0] >= 16 && planes[0] < 40
 		assert planes[140 * 94] != planes[140 * 94 + 70 * 47]
-		lossless := os.read_bytes(os.join_path(@VMODROOT, 'Tests/Browser/Brave/input/decode-colors.webp'))!
+		lossless := os.read_bytes(os.join_path(@DIR, 'Tests/Browser/Brave/input/decode-colors.webp'))!
 		rejected := C.native_decode_webp_yuv(lossless.data, usize(lossless.len), &width, &height, &size)
 		assert rejected == unsafe { nil }
 		assert width == 0 && height == 0 && size == 0

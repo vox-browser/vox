@@ -75,7 +75,7 @@ pub:
 }
 
 fn test_source_bom_override_utf16_odd_byte_eof_matches_original_utf8_ffi() {
-	cases := json2.decode[[]BomOverrideUtf16NativeSourceCase](os.read_file('${@VMODROOT}/encoding/fixtures/post_sniff_utf16_utf8.json')!)!
+	cases := json2.decode[[]BomOverrideUtf16NativeSourceCase](os.read_file('${os.dir(@DIR)}/encoding/fixtures/post_sniff_utf16_utf8.json')!)!
 	assert cases.len == 8
 	mut observed := 0
 	for item in cases {
@@ -106,7 +106,7 @@ pub:
 }
 
 fn test_selected_utf16_bom_override_reaches_actual_source_whole_utf8_owner() {
-	cases := json2.decode[[]BomOverrideWholeUtf16SourceCase](os.read_file('${@VMODROOT}/encoding/fixtures/utf16_whole_input.json')!)!
+	cases := json2.decode[[]BomOverrideWholeUtf16SourceCase](os.read_file('${os.dir(@DIR)}/encoding/fixtures/utf16_whole_input.json')!)!
 	assert cases.len == 1504
 	mut checked := 0
 	for item in cases {

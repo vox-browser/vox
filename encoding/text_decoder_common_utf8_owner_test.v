@@ -38,7 +38,7 @@ fn utf8_common_owner_source_life_cycle(name string) Utf8DecoderLifeCycle {
 }
 
 fn test_source_common_utf8_retained_owner_matches_actual_native_string_calls() {
-	cases := json2.decode[[]Utf8CommonOwnerSourceSequence](os.read_file('${@VMODROOT}/encoding/fixtures/utf8_streaming_sequences.json')!)!
+	cases := json2.decode[[]Utf8CommonOwnerSourceSequence](os.read_file('${os.dir(@DIR)}/encoding/fixtures/utf8_streaming_sequences.json')!)!
 	mut checked := 0
 	for item in cases {
 		if item.mode < 2 { continue }

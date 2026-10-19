@@ -41,7 +41,7 @@ pub:
 }
 
 fn test_source_shift_jis_actual_utf16_outer_lifecycle_and_original_ffi_match_native_records() {
-	cases := json2.decode[[]ShiftJisStreamingUtf16SourceSequence](os.read_file('${@VMODROOT}/encoding/fixtures/shift_jis_streaming_utf16_sequences.json')!)!
+	cases := json2.decode[[]ShiftJisStreamingUtf16SourceSequence](os.read_file('${os.dir(@DIR)}/encoding/fixtures/shift_jis_streaming_utf16_sequences.json')!)!
 	assert cases.len == 1704
 	mut actual_fatal_calls := 0
 	mut failed_partial_callbacks := 0
@@ -106,7 +106,7 @@ fn test_source_shift_jis_actual_utf16_outer_lifecycle_and_original_ffi_match_nat
 }
 
 fn test_source_shift_jis_utf16_finished_and_held_lead_short_replacement_keep_native_fatal_boundaries() {
-	fatal := json2.decode[[]ShiftJisStreamingUtf16SourceFatal](os.read_file('${@VMODROOT}/encoding/fixtures/shift_jis_streaming_utf16_fatal.json')!)!
+	fatal := json2.decode[[]ShiftJisStreamingUtf16SourceFatal](os.read_file('${os.dir(@DIR)}/encoding/fixtures/shift_jis_streaming_utf16_fatal.json')!)!
 	assert fatal.len == 4
 	for item in fatal {
 		assert !item.has_lead
@@ -181,7 +181,7 @@ pub:
 }
 
 fn test_source_shift_jis_both_owned_destinations_retain_one_actual_variant_and_lifecycle() {
-	cases := json2.decode[[]ShiftJisMixedOwnedSourceSequence](os.read_file('${@VMODROOT}/encoding/fixtures/shift_jis_mixed_owned_destinations.json')!)!
+	cases := json2.decode[[]ShiftJisMixedOwnedSourceSequence](os.read_file('${os.dir(@DIR)}/encoding/fixtures/shift_jis_mixed_owned_destinations.json')!)!
 	assert cases.len == 568
 	mut calls := 0
 	mut failed_partial := 0
