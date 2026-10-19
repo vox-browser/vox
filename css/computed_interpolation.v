@@ -1,5 +1,6 @@
 module css
 
+
 import math
 import dom
 import os
@@ -11596,6 +11597,9 @@ fn publish_animated_custom_properties(computed_properties &ComputedProperties, a
 }
 
 pub fn (s &StyleComputer) compute_properties(abstract_element dom.AbstractElement, mut cascaded_properties CascadedProperties) &ComputedProperties {
+	diagnostic_scope_start := begin_diagnostic_instruction_scope()
+	defer { record_diagnostic_instruction_scope(4, diagnostic_scope_start) }
+
 	mut properties := computed_properties_with_initial_values()
 	properties.viewport_rect_ = s.viewport_rect_
 	properties.root_font_size_px_ = s.root_element_font_metrics.font_size.to_double()
@@ -13455,6 +13459,9 @@ pub fn (s &StyleComputer) build_matching_rule_set(abstract_element dom.AbstractE
 }
 
 pub fn (s &StyleComputer) compute_logical_alias_mapping_context(abstract_element dom.AbstractElement, mode ComputeStyleMode, matching_rule_set MatchingRuleSet) LogicalAliasMappingContext {
+	diagnostic_scope_start := begin_diagnostic_instruction_scope()
+	defer { record_diagnostic_instruction_scope(7, diagnostic_scope_start) }
+
 	// StyleComputer::compute_logical_alias_mapping_context (StyleComputer.cpp:1408): cascade only
 	// writing-mode + direction, normalize each to a concrete keyword, and build the flow-relative context
 	// used to resolve logical property aliases (e.g. margin-inline-start -> margin-left/right).
@@ -13658,6 +13665,9 @@ fn report_custom_property_change(old_data ?&dom.CSSCustomPropertyData_, new_data
 
 fn reuse_unchanged_custom_property_environment(previous ?&dom.CSSCustomPropertyData_,
 	current ?&dom.CSSCustomPropertyData_) ?&dom.CSSCustomPropertyData_ {
+	diagnostic_scope_start := begin_diagnostic_instruction_scope()
+	defer { record_diagnostic_instruction_scope(9, diagnostic_scope_start) }
+
 	old_data := previous or { return current }
 	new_data := current or { return current }
 	if voidptr(old_data) == voidptr(new_data) { return current }
@@ -13703,6 +13713,9 @@ fn has_cascaded_custom_property_declarations(abstract_element dom.AbstractElemen
 }
 
 fn install_custom_property_data_for_style(abstract_element dom.AbstractElement, matching_rule_set MatchingRuleSet) {
+	diagnostic_scope_start := begin_diagnostic_instruction_scope()
+	defer { record_diagnostic_instruction_scope(8, diagnostic_scope_start) }
+
 	// With no own declarations, inheritance is the complete result. Animation
 	// overlays still use the ordinary path to retain their separate sampled layer.
 	previous_data := abstract_element.custom_property_data()
@@ -13775,6 +13788,9 @@ pub fn (s &StyleComputer) compute_style_impl(abstract_element dom.AbstractElemen
 }
 
 fn (s &StyleComputer) compute_style_impl_with_animated_custom_property_recompute(abstract_element dom.AbstractElement, mode ComputeStyleMode, did_change_custom_properties ?&bool, scope &StyleScope, allow_animated_custom_property_recompute bool) ?&ComputedProperties {
+	diagnostic_scope_start := begin_diagnostic_instruction_scope()
+	defer { record_diagnostic_instruction_scope(5, diagnostic_scope_start) }
+
 	mut profile_checkpoint := if css_style_profile_enabled { time.sys_mono_now() } else { u64(0) }
 	// StyleComputer::compute_style_impl (StyleComputer.cpp:1806).
 	scope.build_rule_cache_if_needed()
@@ -13954,6 +13970,9 @@ pub fn end_style_profile() {
 }
 
 pub fn (s &StyleComputer) compute_cascaded_values(abstract_element dom.AbstractElement, did_match_any_pseudo_element_rules bool, mode ComputeStyleMode, matching_rule_set MatchingRuleSet, logical_alias_mapping_context ?LogicalAliasMappingContext, properties_to_cascade ComputedInterpolationPropertyIDs) &CascadedProperties {
+	diagnostic_scope_start := begin_diagnostic_instruction_scope()
+	defer { record_diagnostic_instruction_scope(6, diagnostic_scope_start) }
+
 	mut cascaded_properties := CascadedProperties.new()
 	if mode == .create_pseudo_element_style_if_needed {
 		if !did_match_any_pseudo_element_rules {

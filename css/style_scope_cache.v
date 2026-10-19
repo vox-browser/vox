@@ -1,5 +1,6 @@
 module css
 
+
 import dom
 
 // Translated scaffolding from:
@@ -2350,6 +2351,9 @@ fn style_scope_add_cached_rules_to_run(style_computer &StyleComputer, abstract_e
 }
 
 pub fn style_computer_collect_matching_rules_in_scope(style_computer &StyleComputer, abstract_element dom.AbstractElement, cascade_origin CascadeOrigin, mut attempted_pseudo_class_matches PseudoClassBitmap, qualified_layer_name ?string, scope &StyleScope) []ScopedMatchingRule {
+	diagnostic_scope_start := begin_diagnostic_instruction_scope()
+	defer { record_diagnostic_instruction_scope(3, diagnostic_scope_start) }
+
 	scope.build_rule_cache_if_needed()
 
 	root_node := abstract_element.element().as_node().root()
@@ -2398,6 +2402,10 @@ pub fn style_computer_collect_matching_rules_in_scope(style_computer &StyleCompu
 		style_scope_add_slotted_rules_for_available_scopes(style_computer, abstract_element, cascade_origin, qualified_layer_name, scope, shadow_root, element_shadow_root, mut rules_to_run)
 	}
 	style_scope_add_part_rules_for_available_scopes(style_computer, abstract_element, cascade_origin, qualified_layer_name, scope, shadow_root, element_shadow_root, mut rules_to_run)
+
+ record_diagnostic_instruction_scope(12, diagnostic_scope_start)
+ diagnostic_matches_start := begin_diagnostic_instruction_scope()
+ defer { record_diagnostic_instruction_scope(13, diagnostic_matches_start) }
 
 	mut matching_rules := []ScopedMatchingRule{}
 	for scoped_rule_to_run in rules_to_run {

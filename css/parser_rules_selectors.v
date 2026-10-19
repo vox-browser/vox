@@ -1,5 +1,6 @@
 module css
 
+
 import dom
 import strings
 import platform
@@ -74,6 +75,9 @@ pub mut:
 }
 
 pub fn RuleSelectorParser.create(params ParsingParams, input string, encoding string) RuleSelectorParser {
+	diagnostic_scope_start := begin_diagnostic_instruction_scope()
+	defer { record_diagnostic_instruction_scope(0, diagnostic_scope_start) }
+
 	tokens := Tokenizer.tokenize(input, encoding)
 	return RuleSelectorParser{
 		tokens: tokens
@@ -311,6 +315,9 @@ fn (mut stream RawTokenStream) discard_a_token() {
 
 // https://drafts.csswg.org/css-syntax/#parse-stylesheet
 fn (mut parser RuleSelectorParser) parse_a_stylesheet(location ?string) ParsedStyleSheet {
+	diagnostic_scope_start := begin_diagnostic_instruction_scope()
+	defer { record_diagnostic_instruction_scope(1, diagnostic_scope_start) }
+
 	// To parse a stylesheet from an input given an optional url location:
 	// 1. If input is a byte stream for a stylesheet, decode bytes from input, and set input to the result.
 	// 2. Normalize input, and set input to the result.
@@ -339,6 +346,9 @@ fn (mut parser RuleSelectorParser) parse_a_stylesheets_contents(mut input Parser
 }
 
 pub fn (mut parser RuleSelectorParser) convert_rules(raw_rules []Rule) []&CSSRule {
+	diagnostic_scope_start := begin_diagnostic_instruction_scope()
+	defer { record_diagnostic_instruction_scope(2, diagnostic_scope_start) }
+
 	mut import_rules_valid := true
 	mut namespace_rules_valid := true
 

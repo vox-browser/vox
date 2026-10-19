@@ -88,18 +88,18 @@ fn mark_font_family_inputs_changed(document &dom.Document, family_name string) {
 }
 
 fn (s &StyleComputer) can_refresh_font_inputs(abstract_element dom.AbstractElement) bool {
-	bridge := abstract_element.computed_properties() or { return false }
-	computed := computed_properties_from_dom(bridge) or { return false }
+	bridge := abstract_element.computed_properties() or { return diagnostic_font_guard_reject(0) }
+	computed := computed_properties_from_dom(bridge) or { return diagnostic_font_guard_reject(1) }
 	if !computed.font_input_refresh_safe_ || computed.has_animated_properties()
 		|| computed.has_animated_custom_properties() {
-		return false
+		return diagnostic_font_guard_reject(2)
 	}
 	// A font-metric-relative font size on an ancestor can change after loading
 	// its face. Keep em/rem results only while both size inputs stay identical.
 	if computed.root_font_size_px_ != s.root_element_font_metrics.font_size.to_double()
 		|| style_value_option_changed(computed.font_input_parent_font_size_,
 			StyleComputer.get_non_animated_inherit_value(.font_size, abstract_element)) {
-		return false
+		return diagnostic_font_guard_reject(3)
 	}
 	if abstract_element.pseudo_element() == none {
 		if root := abstract_element.document().document_element() {
@@ -107,26 +107,26 @@ fn (s &StyleComputer) can_refresh_font_inputs(abstract_element dom.AbstractEleme
 				if value := computed.raw_cascaded_font_size() {
 					// The root's initial font context also governs nested calc()
 					// font-size leaves, which have no direct inheritance entry.
-					length := computed_interpolation_length_from_dom_style_value(value) or { return false }
-					if !length.is_absolute() { return false }
+					length := computed_interpolation_length_from_dom_style_value(value) or { return diagnostic_font_guard_reject(4) }
+					if !length.is_absolute() { return diagnostic_font_guard_reject(5) }
 				}
 			}
 		}
 	}
 	if computed.inheritance_specified_storage_ != unsafe { nil } {
 		for _, value in computed.inheritance_specified_storage_.values {
-			length := computed_interpolation_length_from_dom_style_value(value) or { return false }
-			if length.unit() !in [.em, .rem] { return false }
+			length := computed_interpolation_length_from_dom_style_value(value) or { return diagnostic_font_guard_reject(6) }
+			if length.unit() !in [.em, .rem] { return diagnostic_font_guard_reject(7) }
 		}
 	}
 	if s.css_animation_storage_ != unsafe { nil } {
 		for entry in s.css_animation_storage_.entries {
-			if abstract_elements_equal(entry.abstract_element, abstract_element) { return false }
+			if abstract_elements_equal(entry.abstract_element, abstract_element) { return diagnostic_font_guard_reject(8) }
 		}
 	}
 	if s.css_transition_storage_ != unsafe { nil }
 		&& abstract_element_storage_key(abstract_element) in s.css_transition_storage_.associated_transitions {
-		return false
+		return diagnostic_font_guard_reject(9)
 	}
 	// Reusing the object is safe only when its inherited property values also
 	// remain unchanged. A changed inherited value can start a transition and
@@ -134,7 +134,7 @@ fn (s &StyleComputer) can_refresh_font_inputs(abstract_element dom.AbstractEleme
 	for id in computed.inherited_property_iterator() {
 		if style_value_option_changed(computed.property(id, .no),
 				StyleComputer.get_non_animated_inherit_value(id, abstract_element)) {
-			return false
+			return diagnostic_font_guard_reject(10)
 		}
 	}
 	return true

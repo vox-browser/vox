@@ -946,6 +946,9 @@ fn counter_style_options_equal(left ?CounterStyle, right ?CounterStyle) bool {
 }
 
 pub fn compute_required_invalidation(old_style &ComputedProperties, new_style &ComputedProperties, font_computer &FontComputer, old_layout_node ?&dom.LayoutNodeWithStyle_, abstract_element &dom.AbstractElement) RequiredInvalidationAfterStyleChange {
+ diagnostic_scope_start := begin_diagnostic_instruction_scope()
+ defer { record_diagnostic_instruction_scope(11, diagnostic_scope_start) }
+
 	mut invalidation := RequiredInvalidationAfterStyleChange{}
 	mut mutable_old_style := unsafe { &ComputedProperties(old_style) }
 	mut mutable_new_style := unsafe { &ComputedProperties(new_style) }
@@ -1833,6 +1836,10 @@ fn update_style_recursively(mut style_computer StyleComputer, node &dom.Node, ne
 				&& (element.style_uses_var_css_function() || element.style_uses_inherit_css_function()))
 			|| needs_style_update_due_to_if_media
 		if should_recompute {
+            reason := if needs_full_style_update { 0 } else if node.needs_style_update() { 1 }
+                else if parent_display_changed { 2 } else if ancestor_needs_descendant_style_recompute { 3 }
+                else if recompute_elements_depending_on_custom_properties { 4 } else { 5 }
+            record_diagnostic_style_update_cause(reason)
 			mut abstract_element := dom.AbstractElement.new(element, none)
 			node_invalidation, _ = style_computer.recompute_style_with_invalidation(mut abstract_element, &did_change_custom_properties)
 		} else {
@@ -1841,9 +1848,11 @@ fn update_style_recursively(mut style_computer StyleComputer, node &dom.Node, ne
 				mut mutable_element := unsafe { &dom.Element(element) }
 				mutable_element.set_pending_font_input_update(false)
 				if font_invalidation := style_computer.try_refresh_font_inputs(element) {
+                    record_diagnostic_style_update_cause(6)
 					node_invalidation = font_invalidation
 					font_inputs_refreshed = true
 				} else {
+                    record_diagnostic_style_update_cause(7)
 					mut abstract_element := dom.AbstractElement.new(element, none)
 					node_invalidation, _ = style_computer.recompute_style_with_invalidation(mut abstract_element, &did_change_custom_properties)
 					font_inputs_refreshed = true

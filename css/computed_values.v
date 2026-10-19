@@ -382,6 +382,9 @@ pub fn resolve_anonymous_block_values_for_document(source &ComputedProperties, d
 }
 
 fn resolve_computed_values_for_document_impl(style &ComputedProperties, document &dom.Document, anonymous_source ?AnonymousComputedGeometrySource) &ComputedValues {
+ diagnostic_scope_start := begin_diagnostic_instruction_scope()
+ defer { record_diagnostic_instruction_scope(10, diagnostic_scope_start) }
+
 	mut computed_style := unsafe { &ComputedProperties(style) }
 	previous_provenance := computed_style.computed_layout_cache().resolution_provenance
 	font_list := computed_style.computed_font_list(css_style_computer_for(document).font_computer())

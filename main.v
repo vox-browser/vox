@@ -6921,6 +6921,7 @@ fn (mut app BrowserApp) draw() {
 	end_browser_frame(app.ctx)
 	app.finish_scroll_profile_frame()
 	processmetrics.instruction_checkpoint('frame_complete')
+	css.report_diagnostic_instruction_scopes()
 	frame_finished_ns := time.sys_mono_now()
 	app.finish_frame_memory_activity(frame_finished_ns, paint_before_frame)
 	if !app.initial_window_frame_presented {
