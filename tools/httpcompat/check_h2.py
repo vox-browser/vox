@@ -29,6 +29,9 @@ def main():
     credit = modules / 'net/http/vox_h2_receive_credit_test.v'
     credit.write_text((repo / 'tools/httpcompat/h2_receive_credit_test.v.inc').read_text())
     tests.append(str(credit))
+    wake = modules / 'net/http/vox_h2_wakeup_test.v'
+    wake.write_text((repo / 'tools/httpcompat/h2_wakeup_test.v.inc').read_text())
+    tests.append(str(wake))
     if args.mux:
         tests.append(str(modules / 'net/http/h2_mux_conn_test.v'))
     if args.integration:

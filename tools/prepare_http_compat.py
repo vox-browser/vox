@@ -13,6 +13,7 @@ import tempfile
 from http_tls_dial import patch_transport_tls, tls_dial_helper
 from http_h2_fairness import patch_h2_pooled_transport
 from http_h2_receive_credit import patch_h2_mux_receive_credit
+from http_h2_wakeup import patch_h2_wakeup
 
 
 def replace_function(source, signature, replacement):
@@ -222,12 +223,13 @@ def main():
     h2_text = (original / 'transport_h2.v').read_text()
     patched_h2 = patch_transport_tls(h2_text, http2=True)
     h2_pooled_text = (original / 'h2_pooled_transport.v').read_text()
-    patched_h2_pooled = patch_h2_pooled_transport(h2_pooled_text)
+    patched_h2_pooled = patch_h2_wakeup(patch_h2_pooled_transport(h2_pooled_text))
     h2_mux_text = (original / 'h2_mux_conn.v').read_text()
     patched_h2_mux = patch_h2_mux_receive_credit(h2_mux_text)
     modules = repo / "Build/v/modules"
     target = modules / "net/http"
     target.mkdir(parents=True, exist_ok=True)
+    write_if_changed(target / 'vox_h2_wake.h', (repo / 'tools/httpcompat/h2_wake.h').read_text())
     for entry in original.iterdir():
         output = target / entry.name
         if entry.name == "header.v":
