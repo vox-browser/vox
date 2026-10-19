@@ -1254,18 +1254,18 @@ fn svg_geometry_element_model(graphics_box &Node, element &dom.Element, viewport
 		}
 		'circle' {
 			diagonal := math.sqrt((viewport_size.width().to_double() * viewport_size.width().to_double() + viewport_size.height().to_double() * viewport_size.height().to_double()) / 2.0)
-			model.attributes['cx'] = '${computed.length_percentage_to_px(.cx, viewport_size.width().to_double()) or { 0.0 }}'
-			model.attributes['cy'] = '${computed.length_percentage_to_px(.cy, viewport_size.height().to_double()) or { 0.0 }}'
-			model.attributes['r'] = '${computed.length_percentage_to_px(.r, diagonal) or { 0.0 }}'
+			model.attributes['cx'] = '${svg_ellipse_length(graphics_box, .cx, viewport_size.width().to_double()) or { 0.0 }}'
+			model.attributes['cy'] = '${svg_ellipse_length(graphics_box, .cy, viewport_size.height().to_double()) or { 0.0 }}'
+			model.attributes['r'] = '${svg_ellipse_length(graphics_box, .r, diagonal) or { 0.0 }}'
 			return model
 		}
 		'ellipse' {
 			rx_is_auto := computed.rx().is_auto()
 			ry_is_auto := computed.ry().is_auto()
-			mut rx := computed.length_percentage_to_px(.rx, viewport_size.width().to_double()) or {
+			mut rx := svg_ellipse_length(graphics_box, .rx, viewport_size.width().to_double()) or {
 				0.0
 			}
-			mut ry := computed.length_percentage_to_px(.ry, viewport_size.height().to_double()) or {
+			mut ry := svg_ellipse_length(graphics_box, .ry, viewport_size.height().to_double()) or {
 				0.0
 			}
 			if rx_is_auto {
@@ -1274,8 +1274,8 @@ fn svg_geometry_element_model(graphics_box &Node, element &dom.Element, viewport
 			if ry_is_auto {
 				ry = rx
 			}
-			model.attributes['cx'] = '${computed.length_percentage_to_px(.cx, viewport_size.width().to_double()) or { 0.0 }}'
-			model.attributes['cy'] = '${computed.length_percentage_to_px(.cy, viewport_size.height().to_double()) or { 0.0 }}'
+			model.attributes['cx'] = '${svg_ellipse_length(graphics_box, .cx, viewport_size.width().to_double()) or { 0.0 }}'
+			model.attributes['cy'] = '${svg_ellipse_length(graphics_box, .cy, viewport_size.height().to_double()) or { 0.0 }}'
 			model.attributes['rx'] = '${rx}'
 			model.attributes['ry'] = '${ry}'
 			return model
