@@ -1,7 +1,6 @@
 module libjs
 
 import math
-import strconv
 
 // Translated from Runtime/GlobalObject.cpp. NativeFunction owns the callee realm
 // and frame; the complete Intrinsics prototype graph is separate runtime work.
@@ -52,7 +51,7 @@ fn parse_first_decimal(units []u16) ?f64 {
 		// trailing token, so restore the prefix ending immediately before e.
 		if cursor == exponent_start { cursor = location_of_e }
 	}
-	return strconv.atof64(encode_utf16(units[..cursor], false)) or { return none }
+	return atof64_rounding_overflow(encode_utf16(units[..cursor], false)) or { return none }
 }
 
 fn global_parse_float(mut vm VM) !Value {

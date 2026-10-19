@@ -58,6 +58,11 @@ pub fn string_to_bigint(text Utf16String) ?&BigInt {
 	for end > start && is_number_whitespace(text.data[end - 1]) {
 		end--
 	}
+	// An empty StringIntegerLiteral is 0. Current V's math.big rejects an empty
+	// digit string rather than returning zero.
+	if start == end {
+		return BigInt.create(big.integer_from_int(0))
+	}
 	mut base := u32(10)
 	mut negative := false
 	if end - start > 2 && text.data[start] == u16(`0`) {

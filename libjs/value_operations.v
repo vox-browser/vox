@@ -48,7 +48,7 @@ pub fn string_to_number(text Utf16String) f64 {
 			if digit >= radix { return math.nan() }
 		}
 		integer := big.integer_from_radix(source[2..], radix) or { return math.nan() }
-		return strconv.atof64(integer.str()) or { return math.nan() }
+		return atof64_rounding_overflow(integer.str()) or { return math.nan() }
 	}
 	// atof64 accepts incomplete exponents; validate StringNumericLiteral first.
 	mut cursor := 0
@@ -76,7 +76,20 @@ pub fn string_to_number(text Utf16String) f64 {
 		if cursor == exponent_start { return math.nan() }
 	}
 	if cursor != source.len { return math.nan() }
-	return strconv.atof64(source) or { return math.nan() }
+	return atof64_rounding_overflow(source) or { return math.nan() }
+}
+
+// Upstream's decimal parsers round a magnitude beyond the f64 range to an
+// infinity. Current V's strconv.atof64 reports it as an error instead (the
+// compatibility compiler's returned the infinity); restore the rounding.
+fn atof64_rounding_overflow(text string) !f64 {
+	value := strconv.atof64(text) or {
+		if !err.msg().ends_with('value out of range') {
+			return err
+		}
+		math.inf(if text.starts_with('-') { -1 } else { 1 })
+	}
+	return value
 }
 
 // 7.1.4 ToNumber.
