@@ -591,7 +591,7 @@ pub fn (mut element HTMLMediaElement) toggle_fullscreen() {
 	mut dom_element := unsafe { &dom.Element(html_element) }
 	mut document := dom_element.document()
 	if fullscreen_element := document.fullscreen_element() {
-		if fullscreen_element == dom_element {
+		if voidptr(fullscreen_element) == voidptr(dom_element) {
 			document.exit_fullscreen()
 			return
 		}

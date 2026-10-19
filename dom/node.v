@@ -1560,7 +1560,7 @@ fn invalidate_structurally_affected_siblings(node &Node, reason StyleInvalidatio
 					mutable_document.record_previous_sibling_invalidation_walk_visit()
 					if element := current.as_element() {
 						is_last_child_transition_target := if target := last_child_transition_target {
-							element == target
+							voidptr(element) == voidptr(target)
 						} else {
 							false
 						}
@@ -1583,7 +1583,7 @@ fn invalidate_structurally_affected_siblings(node &Node, reason StyleInvalidatio
 		if element := current.as_element() {
 			mut needs_to_invalidate := false
 			is_first_child_transition_target := if target := first_child_transition_target {
-				element == target
+				voidptr(element) == voidptr(target)
 			} else {
 				false
 			}
@@ -3273,7 +3273,7 @@ pub fn (n &Node) first_letter_owner_for_layout_subtree_from(inclusive_ancestor &
 					mut layout_ancestor := ?&LayoutNode(pseudo.layout_node_)
 					for layout_ancestor != none {
 						layout_current := layout_ancestor or { break }
-						if layout_current == layout_root { return element }
+						if voidptr(layout_current) == voidptr(layout_root) { return element }
 						layout_ancestor = layout_current.parent()
 					}
 				} else {
@@ -4318,7 +4318,7 @@ pub fn (mut n Node) queue_mutation_record(type_ MutationType, attribute_name ?st
 			//      - type is "characterData" and options["characterData"] either does not exist or is false
 			//      - type is "childList" and options["childList"] is false
 			//    then:
-			if node != target && !options.subtree {
+			if voidptr(node) != voidptr(target) && !options.subtree {
 				continue
 			}
 			mut should_use_old_value := false
@@ -4361,7 +4361,7 @@ pub fn (mut n Node) queue_mutation_record(type_ MutationType, attribute_name ?st
 			// 2. If interestedObservers[mo] does not exist, then set interestedObservers[mo] to null.
 			mut observer_index := -1
 			for i, interested_observer in interested_observers {
-				if interested_observer == observer {
+				if voidptr(interested_observer) == voidptr(observer) {
 					observer_index = i
 					break
 				}

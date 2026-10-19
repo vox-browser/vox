@@ -532,7 +532,7 @@ pub fn (mut receiver FetchedDataReceiver) set_response(response &Response) {
 }
 
 pub fn (mut receiver FetchedDataReceiver) set_body(body &Body) {
-	assert body.stream() == receiver.stream_
+	assert voidptr(body.stream()) == voidptr(receiver.stream_)
 	receiver.body_ = body
 	if mut stored_body := receiver.body_ {
 		if receiver.pre_body_sniff_buffer_.len > 0 {

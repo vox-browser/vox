@@ -12,7 +12,7 @@ fn (p &Page) rendered_search_documents() []&dom.Document {
 	mut result := []&dom.Document{}
 	for document in dom.documents_in_main_thread_event_loop() {
 		if candidate := document.get_window() {
-			if candidate == window { result << document }
+			if voidptr(candidate) == voidptr(window) { result << document }
 		}
 	}
 	return result
@@ -29,7 +29,7 @@ fn (mut p Page) perform_rendered_find(query FindInPageQuery, direction int) Find
 		} else {
 			.case_insensitive
 		})
-		if document == active_document {
+		if voidptr(document) == voidptr(active_document) {
 			mut active_range := ?&dom.Range(none)
 			if selection := document.get_selection() {
 				if !selection.is_collapsed() { active_range = selection.range() }

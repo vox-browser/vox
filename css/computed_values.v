@@ -416,7 +416,7 @@ fn resolve_computed_values_for_document_impl(style &ComputedProperties, document
 	mut resolved_anonymous_source := ?&ComputedLayoutCache(none)
 	if source := anonymous_source {
 		if voidptr(source.font_list) == voidptr(font_list)
-			&& source.font_computer == computed_style.cached_computed_font_list_owner_
+			&& voidptr(source.font_computer) == voidptr(computed_style.cached_computed_font_list_owner_)
 			&& source.font_generation == computed_style.cached_computed_font_list_generation_ {
 			resolved_anonymous_source = source.cache
 			computed_style.computed_layout_cache_ = initial_anonymous_geometry_cache()

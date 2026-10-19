@@ -7,10 +7,17 @@ module streams
 import webidl
 
 pub interface ReadRequest {
+	// The request object itself: pending reads are removed by identity, and
+	// == on interface values compares the referenced objects' contents.
+	read_request_identity() voidptr
 mut:
 	on_chunk(Value)
 	on_close()
 	on_error(webidl.Value)
+}
+
+pub fn (promise &ReadPromise) read_request_identity() voidptr {
+	return voidptr(promise)
 }
 
 pub fn (mut promise ReadPromise) on_chunk(chunk Value) {
@@ -41,6 +48,10 @@ struct ReadLoopReadRequest {
 	failure_steps ReadLoopFailureSteps @[required]
 mut:
 	bytes []u8
+}
+
+fn (request &ReadLoopReadRequest) read_request_identity() voidptr {
+	return voidptr(request)
 }
 
 fn (mut request ReadLoopReadRequest) on_chunk(chunk Value) {

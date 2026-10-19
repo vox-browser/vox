@@ -8029,7 +8029,7 @@ pub fn (mut d Document) adopt_node(node &Node) {
 
 	// 3. If document is not oldDocument, then:
 	d_ptr := unsafe { &Document(d) }
-	if old_document != d_ptr {
+	if voidptr(old_document) != voidptr(d_ptr) {
 		d.style_scope_adoption_depth_++
 		defer {
 			d.style_scope_adoption_depth_--
@@ -8083,7 +8083,7 @@ pub fn (mut d Document) adopt_node(node &Node) {
 		// Transfer NodeIterators rooted at `node` from old_document to this document.
 		mut node_iterators_to_transfer := []&NodeIterator{}
 		for node_iterator in old_document.node_iterators {
-			if node_iterator.root == node {
+			if voidptr(node_iterator.root) == voidptr(node) {
 				node_iterators_to_transfer << node_iterator
 			}
 		}
@@ -11407,7 +11407,7 @@ pub fn (d &Document) get_cursor_blink_state() bool {
 // --- Navigable back-pointer ---
 pub fn (mut d Document) set_navigable(navigable ?&Navigable) {
 	value := navigable or { unsafe { nil } }
-	if d.navigable_ == value {
+	if voidptr(d.navigable_) == voidptr(value) {
 		return
 	}
 	if value != unsafe { nil } {
@@ -11751,7 +11751,7 @@ pub fn (mut d Document) fully_exit_fullscreen() {
 	// 2. Unfullscreen elements whose fullscreen flag is set, except the fullscreen element.
 	mut to_unfullscreen := []&Element{}
 	for el in d.top_layer_elements {
-		if el.is_fullscreen_element() && el != fullscreened {
+		if el.is_fullscreen_element() && voidptr(el) != voidptr(fullscreened) {
 			to_unfullscreen << el
 		}
 	}

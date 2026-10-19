@@ -275,7 +275,9 @@ pub fn (mut script HTMLScriptElementModel) prepare_script(document ?&dom.Documen
 	}
 	script.already_started_ = true
 	script.preparation_time_document_ = document
-	if parser_document != none && document != parser_document {
+	if parser_document != none && voidptr(document or { unsafe { nil } }) != voidptr(parser_document or {
+		unsafe { nil }
+	}) {
 		return
 	}
 	if !script.scripting_enabled_ || (script.script_type_ == .classic && script.nomodule_) {

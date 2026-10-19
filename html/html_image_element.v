@@ -372,7 +372,7 @@ pub fn (mut image HTMLImageElementModel) update_source_set() {
 			if parent.is_html_element() && parent.local_name() == 'picture' {
 				for child_node in parent.as_node().children_as_vector() {
 					child := child_node.as_element() or { continue }
-					if child == dom_element {
+					if voidptr(child) == voidptr(dom_element) {
 						break
 					}
 					if !child.is_html_element() || child.local_name() != 'source' || !child.has_attribute('srcset') {
@@ -510,7 +510,7 @@ pub fn (mut image HTMLImageElementModel) update_the_image_data_impl(restart_anim
 		fetch_async(url, fn [image_pointer, request, request_document, url_string, previous_url,
 			update_the_image_data_count, maybe_omit_events, restart_animations, opaque] (decoded ?DecodedImageData) {
 			mut image := unsafe { &HTMLImageElementModel(image_pointer) }
-			if image.document_ != request_document || image.update_count_ != update_the_image_data_count
+			if voidptr(image.document_) != voidptr(request_document) || image.update_count_ != update_the_image_data_count
 				|| request.state() != .partially_available {
 				return
 			}
@@ -827,7 +827,9 @@ pub fn (image &HTMLImageElementModel) pending_request() ?&ImageRequest {
 }
 
 pub fn (mut image HTMLImageElementModel) set_dimension_attribute_source(source ?&dom.Element) {
-	if image.dimension_attribute_source == source {
+	if voidptr(image.dimension_attribute_source or { unsafe { nil } }) == voidptr(source or {
+		unsafe { nil }
+	}) {
 		return
 	}
 	image.dimension_attribute_source = source

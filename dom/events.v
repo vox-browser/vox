@@ -618,7 +618,7 @@ pub fn (e &Event) composed_path() []&EventTarget {
 			current_target_hidden_subtree_level++
 		}
 		// 2. If path[index]'s invocation target is currentTarget, then set currentTargetIndex to index and break.
-		if path_entry.invocation_target == current_target {
+		if voidptr(path_entry.invocation_target) == voidptr(current_target) {
 			current_target_index = index
 			break
 		}

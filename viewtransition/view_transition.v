@@ -659,7 +659,7 @@ pub fn (mut transition ViewTransition) skip_the_view_transition(reason webidl.Va
 	mut document := transition.document_
 	document.rendering_suppression = false
 	if active := document.active_transition {
-		if active == transition {
+		if voidptr(active) == voidptr(transition) {
 			transition.clear_view_transition()
 		}
 	}
@@ -707,7 +707,7 @@ pub fn (mut transition ViewTransition) handle_transition_frame(has_active_animat
 pub fn (mut transition ViewTransition) clear_view_transition() {
 	mut document := transition.document_
 	active := document.active_transition or { return }
-	if active != transition {
+	if voidptr(active) != voidptr(transition) {
 		return
 	}
 	for _, capture in transition.named_elements {

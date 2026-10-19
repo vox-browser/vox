@@ -15083,7 +15083,7 @@ pub fn (s &StyleComputer) compute_custom_properties(mut computed_properties Comp
 	}
 	if inherit_from := abstract_element.element_to_inherit_style_from() {
 		if parent_data := inheritable_custom_property_data(inherit_from) {
-			if data == parent_data {
+			if voidptr(data) == voidptr(parent_data) {
 				return
 			}
 		}

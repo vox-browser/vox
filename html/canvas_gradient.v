@@ -126,5 +126,6 @@ pub fn (gradient &CanvasGradient) color_stops_for_painting() []CanvasColorStop {
 
 // GC::CanvasGradient identity survives value transport through the host bridge.
 pub fn (gradient CanvasGradient) is_same_gradient(other CanvasGradient) bool {
-	return gradient.color_stops_record_ != unsafe { nil } && gradient.color_stops_record_ == other.color_stops_record_
+	return gradient.color_stops_record_ != unsafe { nil }
+		&& voidptr(gradient.color_stops_record_) == voidptr(other.color_stops_record_)
 }

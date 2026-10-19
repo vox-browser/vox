@@ -362,7 +362,7 @@ pub fn (mut context WebGLRenderingContext) delete_vertex_array(mut array ?&WebGL
 		context.native.dispatch('delete_vertex_array', handle)
 		C.vox_gl_delete_object(6,value.object.native_handle_)
 		if current := context.current_vertex_array {
-			if current == value {
+			if voidptr(current) == voidptr(value) {
 				context.current_vertex_array = none
 				context.set_current_vertex_array_binding(none)
 			}
@@ -430,7 +430,7 @@ pub fn (mut context WebGLRenderingContext) delete_vertex_array_oes(array ?&WebGL
 		context.native.dispatch('delete_vertex_array_oes', handle)
 		C.vox_gl_delete_object(7,value.object.native_handle_)
 		if current := context.current_vertex_array_oes {
-			if current == value {
+			if voidptr(current) == voidptr(value) {
 				context.current_vertex_array_oes = none
 				context.set_current_vertex_array_binding(none)
 			}

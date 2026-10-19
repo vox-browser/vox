@@ -230,7 +230,7 @@ fn (host &CanvasHost) style_value(style html.FillOrStrokeStyle) json2.Any {
 	}
 	if pattern := style.pattern {
 		for handle, candidate in host.patterns {
-			if pattern == candidate {
+			if voidptr(pattern) == voidptr(candidate) {
 				return json2.Any({
 					'handle': json2.Any(handle)
 				})

@@ -340,7 +340,7 @@ pub fn (mut context WebGLRenderingContext) delete_framebuffer(object ?&WebGLFram
 		context.command('delete_framebuffer', handle)
 		C.vox_gl_delete_object(1, value.object.native_handle_)
 		if bound := context.bound_framebuffer_object {
-			if bound == value {
+			if voidptr(bound) == voidptr(value) {
 				context.bound_framebuffer = 0
 				context.bound_framebuffer_object = none
 			}
@@ -382,7 +382,7 @@ pub fn (mut context WebGLRenderingContext) delete_texture(object ?&WebGLTexture)
 		context.command('delete_texture', handle)
 		C.vox_gl_delete_object(3, value.object.native_handle_)
 		for target, bound in context.bound_texture_objects {
-			if bound == value {
+			if voidptr(bound) == voidptr(value) {
 				context.bound_textures.delete(target)
 				context.bound_texture_objects.delete(target)
 			}
@@ -428,7 +428,7 @@ pub fn (mut context WebGLRenderingContext) delete_program(object ?&WebGLProgram)
 			C.vox_gl_delete_program(value.object.native_handle_)
 		}
 		if current := context.current_program {
-			if current == value {
+			if voidptr(current) == voidptr(value) {
 				context.current_program = none
 			}
 		}

@@ -739,7 +739,7 @@ fn (mut registry SlotRegistry) try_insert_in_tree_order(slot &HTMLSlotElement) b
 			if element.local_name() == 'slot' {
 				following_slot := unsafe { &HTMLSlotElement(element) }
 				for index, registered_slot in registry.slots {
-					if registered_slot == following_slot {
+					if voidptr(registered_slot) == voidptr(following_slot) {
 						registry.slots.insert(index, slot)
 						return true
 					}
@@ -1202,7 +1202,7 @@ pub fn (mut document Document) notify_mutation_observers() {
 			for i := mutable_node.registered_observer_list_.len - 1; i >= 0; i-- {
 				registered_observer := mutable_node.registered_observer_list_[i]
 				if registered_observer.is_transient()
-					&& registered_observer.observer() == mutation_observer {
+					&& voidptr(registered_observer.observer()) == voidptr(mutation_observer) {
 					mutable_node.registered_observer_list_.delete(i)
 				}
 			}

@@ -88,7 +88,7 @@ pub fn (entry &NavigationHistoryEntry) index() i64 {
 		return -1
 	}
 	for index, candidate in entry.navigation_entries_ {
-		if candidate == entry.session_history_entry_ {
+		if voidptr(candidate) == voidptr(entry.session_history_entry_) {
 			return i64(index)
 		}
 	}

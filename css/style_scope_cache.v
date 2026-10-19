@@ -1984,7 +1984,7 @@ fn style_scope_optional_shadow_root_equal(left ?&dom.ShadowRoot, right ?&dom.Sha
 	}
 	if l := left {
 		if r := right {
-			return l == r
+			return voidptr(l) == voidptr(r)
 		}
 	}
 	return false

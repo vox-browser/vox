@@ -2250,7 +2250,7 @@ pub fn (e &Element) shadow_root() ?&ShadowRoot {
 pub fn (mut e Element) set_shadow_root(sr ?&ShadowRoot) {
 	current_shadow_root := e.shadow_root_ or { unsafe { nil } }
 	new_shadow_root := sr or { unsafe { nil } }
-	if current_shadow_root == new_shadow_root {
+	if voidptr(current_shadow_root) == voidptr(new_shadow_root) {
 		return
 	}
 	if current_shadow_root != unsafe { nil } {
@@ -3162,7 +3162,7 @@ fn serialize_html_node(node &Node, serializable_shadow_roots SerializableShadowR
 		if shadow_root := element.shadow_root() {
 			mut explicitly_included := false
 			for candidate in shadow_roots {
-				if candidate == shadow_root {
+				if voidptr(candidate) == voidptr(shadow_root) {
 					explicitly_included = true
 					break
 				}
@@ -4147,7 +4147,7 @@ fn (mut e Element) exit_fullscreen_on_element_removal() {
 	for mut element in fullscreen_elements {
 		// 1. If node is document's fullscreen element, exit fullscreen document.
 		if fullscreen_element := document.fullscreen_element() {
-			if fullscreen_element == element {
+			if voidptr(fullscreen_element) == voidptr(element) {
 				document.exit_fullscreen()
 			} else {
 				// 2. Otherwise, unfullscreen node.
@@ -5362,7 +5362,7 @@ pub fn (e &Element) maybe_invalidate_ordinals_for_list_owner(skip_node ?&Element
 	owner := e.list_owner() or { return }
 	for item in owner.numbered_items_owned_by_list_owner() {
 		if skipped := skip_node {
-			if item == skipped {
+			if voidptr(item) == voidptr(skipped) {
 				continue
 			}
 		}

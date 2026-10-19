@@ -25,7 +25,7 @@ mut:
 }
 
 fn (run &SearchTextRun) is_linear() bool {
-	return run.from.node == run.to.node && run.to.offset - run.from.offset == run.end - run.start
+	return voidptr(run.from.node) == voidptr(run.to.node) && run.to.offset - run.from.offset == run.end - run.start
 }
 
 fn (mut text SearchMappedText) append(unit u16, from SearchTextPosition, to SearchTextPosition) {
@@ -33,8 +33,8 @@ fn (mut text SearchMappedText) append(unit u16, from SearchTextPosition, to Sear
 	text.units << unit
 	if text.runs.len > 0 {
 		mut last := &text.runs[text.runs.len - 1]
-		if last.to.node == from.node && last.to.offset == from.offset && last.is_linear()
-			&& from.node == to.node && to.offset - from.offset == 1 {
+		if voidptr(last.to.node) == voidptr(from.node) && last.to.offset == from.offset && last.is_linear()
+			&& voidptr(from.node) == voidptr(to.node) && to.offset - from.offset == 1 {
 			last.end = text.units.len
 			last.to = to
 			return

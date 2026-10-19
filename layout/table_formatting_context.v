@@ -196,7 +196,7 @@ fn table_row_groups_by_index(rows []&Node) map[int]TableRowGroupInfo {
 		start_index := index
 		for index + 1 < rows.len {
 			next_parent := rows[index + 1].parent() or { break }
-			if next_parent != parent {
+			if voidptr(next_parent) != voidptr(parent) {
 				break
 			}
 			index++

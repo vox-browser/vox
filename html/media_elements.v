@@ -1168,7 +1168,7 @@ pub fn (mut controls MediaControls) destroy() {
 	if controls.destroyed_ { return }
 	mut media := controls.media
 	if owned := media.controls_ {
-		if owned == &controls && !media.destroying_controls_ {
+		if voidptr(owned) == voidptr(&controls) && !media.destroying_controls_ {
 			media.destroy_controls()
 			return
 		}
@@ -1196,7 +1196,7 @@ pub fn (mut controls MediaControls) destroy() {
 		if html_element := controls.media.associated_element_ {
 			mut element := unsafe { &dom.Element(html_element) }
 			if current := element.shadow_root() {
-				if current == shadow { element.set_shadow_root(none) }
+				if voidptr(current) == voidptr(shadow) { element.set_shadow_root(none) }
 			}
 		}
 	}
@@ -1764,7 +1764,7 @@ pub fn (mut controls MediaControls) update_fullscreen_icon() {
 	if html_element := controls.media.associated_element_ {
 		element := unsafe { &dom.Element(html_element) }
 		if fullscreen_element := element.document().fullscreen_element() {
-			is_fullscreen = fullscreen_element == element
+			is_fullscreen = voidptr(fullscreen_element) == voidptr(element)
 		} else {
 			is_fullscreen = false
 		}

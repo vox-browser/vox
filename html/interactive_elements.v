@@ -560,7 +560,7 @@ pub fn html_details_element_ensure_details_exclusivity_by_closing_other_elements
 	mut group := []&dom.Element{}
 	collect_details_elements(element.as_node().root(), mut group)
 	for candidate in group {
-		if candidate != element && candidate.get_attribute_value('name') == name && candidate.has_attribute('open') {
+		if voidptr(candidate) != voidptr(element) && candidate.get_attribute_value('name') == name && candidate.has_attribute('open') {
 			set_html_details_element_open(unsafe { &dom.HTMLDetailsElement(candidate) }, false)
 			break
 		}
@@ -579,7 +579,7 @@ pub fn html_details_element_ensure_details_exclusivity_by_closing_the_given_elem
 	mut group := []&dom.Element{}
 	collect_details_elements(element.as_node().root(), mut group)
 	for candidate in group {
-		if candidate != element && candidate.get_attribute_value('name') == name && candidate.has_attribute('open') {
+		if voidptr(candidate) != voidptr(element) && candidate.get_attribute_value('name') == name && candidate.has_attribute('open') {
 			set_html_details_element_open(details, false)
 			break
 		}
@@ -715,7 +715,7 @@ pub fn html_summary_element_is_summary_for_parent(summary &dom.HTMLSummaryElemen
 	for child in parent.as_node().children_as_vector() {
 		if child_element := child.as_element() {
 			if child_element.local_name() == 'summary' {
-				return child_element == element
+				return voidptr(child_element) == voidptr(element)
 			}
 		}
 	}

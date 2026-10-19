@@ -278,7 +278,7 @@ pub:
 pub fn (location &WebGLUniformLocation) handle(current_program ?&WebGLProgram) !GLuint {
 	if program := current_program {
 		parent := location.parent_program or { return error('GL_INVALID_OPERATION') }
-		if program != parent {
+		if voidptr(program) != voidptr(parent) {
 			return error('GL_INVALID_OPERATION')
 		}
 	} else if location.parent_program != none {

@@ -396,9 +396,9 @@ pub fn (object &Object) internal_get(mut vm VM, key PropertyName, receiver Value
 	mut receiver_uses_holder_cache := false
 	if receiver.is_object() {
 		receiver_object := receiver.as_object()
-		receiver_uses_holder_cache = receiver_object == object
+		receiver_uses_holder_cache = voidptr(receiver_object) == voidptr(object)
 		if parent := receiver_object.prototype {
-			receiver_uses_holder_cache = receiver_uses_holder_cache || parent == object
+			receiver_uses_holder_cache = receiver_uses_holder_cache || voidptr(parent) == voidptr(object)
 		}
 	}
 	if cached_key := accessor.cached_value_key {
@@ -414,7 +414,7 @@ pub fn (object &Object) internal_get(mut vm VM, key PropertyName, receiver Value
 				value := object.properties[current_index].value
 				// A getter may delete or replace itself. Only the same Accessor
 				// cell may publish the value under its private cache key.
-				if value.is_accessor() && value.as_accessor() == accessor {
+				if value.is_accessor() && voidptr(value.as_accessor()) == voidptr(accessor) {
 					mut holder := unsafe { &Object(object) }
 					holder.set_engine_private_property(cached_key, result)
 				}

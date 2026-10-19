@@ -525,13 +525,13 @@ fn (mut list ReadPromiseList) remove(value ReadRequest) bool {
 	mut previous := &ReadPromiseEntry(unsafe { nil })
 	mut entry := list.head_
 	for !isnil(entry) {
-		if entry.value == value {
+		if entry.value.read_request_identity() == value.read_request_identity() {
 			if isnil(previous) {
 				list.head_ = entry.next_
 			} else {
 				previous.next_ = entry.next_
 			}
-			if list.tail_ == entry {
+			if voidptr(list.tail_) == voidptr(entry) {
 				list.tail_ = previous
 			}
 			entry.next_ = unsafe { nil }

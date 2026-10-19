@@ -66,12 +66,12 @@ fn computed_geometry_subject_matches(first ?&dom.Element, second ?&dom.Element) 
 
 fn (p &ComputedGeometryProvenance) matches(c &ComputedProperties) bool {
 	fonts := c.cached_computed_font_list_ or { return false }
-	return p.token == c.computed_property_graph_token_ && p.generation != 0
+	return voidptr(p.token) == voidptr(c.computed_property_graph_token_) && p.generation != 0
 		&& p.generation == p.token.generation && p.viewport == c.viewport_rect_
 		&& p.root_font_size == c.root_font_size_px_ && p.root_line_height == c.root_line_height_px_
 		&& p.root_font_depends_on_viewport == c.root_font_metrics_depend_on_viewport_metrics_
 		&& computed_geometry_subject_matches(p.subject, c.subject_element_)
-		&& p.font_computer == c.cached_computed_font_list_owner_
+		&& voidptr(p.font_computer) == voidptr(c.cached_computed_font_list_owner_)
 		&& p.font_generation == c.cached_computed_font_list_generation_
 		&& voidptr(fonts) == voidptr(p.font_list)
 }

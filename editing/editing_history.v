@@ -279,7 +279,7 @@ pub fn (mut history EditingHistory) end_recording() {
 	step.set_ending_selection(capture_selection(step.editing_host))
 	closes_coalescing := step.performed_lasting_node_removal()
 	if history.open_step_ != unsafe { nil } && history.undo_stack_.len > 0
-		&& history.open_step_ == history.undo_stack_.last()
+		&& voidptr(history.open_step_) == voidptr(history.undo_stack_.last())
 		&& history.open_step_.editing_host == step.editing_host
 		&& history.open_step_.accepts_merge_of(step.category) {
 		deferred_close := history.open_step_.closes_after_next_merge()
