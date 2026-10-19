@@ -108,8 +108,13 @@ graphite_library=""
 dawn_library=""
 if [ -f "$skia_root/lib/libskia.dylib" ] && [ -d "$skia_root/include/skia/include" ]; then
     graphite_library="$build_dir/libVoxGraphite.dylib"
-    python3 "$repo_dir/tools/build_mac_graphite.py" --skia-root "$skia_root" \
-        --output "$graphite_library"
+    if [ -n "${VOX_PRIVATE_GRAPHITE_HELPER:-}" ]; then
+        python3 "$VOX_PRIVATE_GRAPHITE_HELPER" --repo "$repo_dir" \
+            --skia-root "$skia_root" --output "$graphite_library"
+    else
+        python3 "$repo_dir/tools/build_mac_graphite.py" --skia-root "$skia_root" \
+            --output "$graphite_library"
+    fi
     dawn_library="$build_dir/libVoxGraphiteDawn.dylib"
     python3 "$repo_dir/tools/build_mac_graphite_dawn.py" --skia-root "$skia_root" \
         --output "$dawn_library"
@@ -156,6 +161,18 @@ http_modules=$(python3 "$repo_dir/tools/prepare_http_compat.py" "$v_compiler")
 # `encoding` as `vox2.encoding` while imports still resolve to vlib's name.
 set -- -exclude "$zoneinfo_exclude" -enable-globals \
     -d vox_ui2 -path "$repo_dir|$http_modules|$ui2_modules|@vmodules|@vlib"
+if [ "${VOX_KEEP_C:-0}" = 1 ]; then
+    set -- "$@" -keepc
+fi
+if [ "${VOX_DOCUMENT_RETENTION_DIAGNOSTICS:-0}" = 1 ]; then
+    set -- "$@" -d vox_document_retention_diagnostics
+fi
+if [ "${VOX_PHASE_DIAGNOSTICS:-0}" = 1 ]; then
+    set -- "$@" -d vox_phase_diagnostics
+fi
+if [ "${VOX_CSS_DIAGNOSTICS:-0}" = 1 ]; then
+    set -- "$@" -d vox_css_diagnostics
+fi
 if [ "$gc_mode" = prealloc ] && [ "${VOX_PREALLOC_SAMPLER:-0}" = 1 ]; then
     # Diagnostic build: sample the sites of never-reclaimed allocations
     # (tools/prealloc_allocation_sampler.c). Needs the allocator hook in V's
