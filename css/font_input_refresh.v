@@ -131,9 +131,8 @@ fn (s &StyleComputer) can_refresh_font_inputs(abstract_element dom.AbstractEleme
 	// Reusing the object is safe only when its inherited property values also
 	// remain unchanged. A changed inherited value can start a transition and
 	// therefore retains the normal cascade/transition publication path.
-	for id in computed_interpolation_longhand_property_ids() {
-		if computed.is_property_inherited(id)
-			&& style_value_option_changed(computed.property(id, .no),
+	for id in computed.inherited_property_iterator() {
+		if style_value_option_changed(computed.property(id, .no),
 				StyleComputer.get_non_animated_inherit_value(id, abstract_element)) {
 			return false
 		}

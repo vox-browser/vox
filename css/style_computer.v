@@ -1135,10 +1135,7 @@ fn (s &StyleComputer) recompute_inherited_style_with_invalidation(mut abstract_e
 			computed.set_property_without_modifying_flags(property_id, specified_value)
 		}
 	}
-	for property_id in computed_interpolation_longhand_property_ids() {
-		if !computed.is_property_inherited(property_id) {
-			continue
-		}
+	for property_id in computed.inherited_property_iterator() {
 		// Compare the values the element uses, animations applied: an
 		// inherited animated value can change while the base value stays.
 		old_value := computed.property(property_id, .yes)
