@@ -3,6 +3,10 @@ module platform
 import os
 
 #include <sys/mman.h>
+#include "@DIR/arena_poison_report.h"
+
+fn C.vox_note_poisoned_range(start voidptr, end voidptr, label &char)
+fn C.vox_install_poison_fault_handler()
 
 // Arenas for -prealloc builds.
 //
@@ -18,6 +22,7 @@ import os
 // persistent object) must allocate that state through enter_persistent().
 // VOX_ARENA_POISON=1 replaces reset and release with write-protecting the old
 // blocks and never reusing them, so any later access to them faults.
+// VOX_ARENA_NO_REUSE=label,... does the same for the named arenas only.
 
 // Mirrors of V's VMemoryBlock and VPreallocScope (vlib/builtin/prealloc.c.v).
 // verify_prealloc_layout() compares their sizes with V's own types.
@@ -59,6 +64,8 @@ struct ArenaThreadState {
 mut:
 	initialized bool
 	poison      bool
+	// Labels of arenas poisoned like VOX_ARENA_POISON while others are reused.
+	no_reuse []string
 	// The main thread's own arena tail while an Arena is entered; nil when the
 	// thread allocates from its base arena.
 	base_tail voidptr
@@ -73,6 +80,15 @@ fn arena_state() &ArenaThreadState {
 	if !state.initialized {
 		state.initialized = true
 		state.poison = os.getenv('VOX_ARENA_POISON') == '1'
+		no_reuse := os.getenv('VOX_ARENA_NO_REUSE')
+		if no_reuse != '' {
+			state.no_reuse = no_reuse.split(',')
+		}
+		$if prealloc {
+			if state.poison || state.no_reuse.len > 0 {
+				C.vox_install_poison_fault_handler()
+			}
+		}
 		state.owner = u64(C.pthread_self())
 		verify_prealloc_layout()
 	}
@@ -289,7 +305,7 @@ pub fn (mut arena Arena) reset() {
 		}
 		arena.resets++
 		mut state := arena_state()
-		if state.poison {
+		if state.poison || arena.label in state.no_reuse {
 			arena.poison_blocks()
 			arena.begin_scope()
 			return
@@ -325,7 +341,7 @@ pub fn (mut arena Arena) release() {
 			panic('arena ${arena.label} is released while entered')
 		}
 		mut state := arena_state()
-		if state.poison {
+		if state.poison || arena.label in state.no_reuse {
 			arena.poison_blocks()
 		} else {
 			unsafe { prealloc_scope_free_after(voidptr(arena.scope)) }
@@ -373,8 +389,12 @@ fn (mut arena Arena) poison_blocks() {
 	mut block := arena.scope.first
 	for block != unsafe { nil } {
 		size := usize(i64(block.stop) - i64(block.start))
+		// Overwrite the old contents too: blocks that were not mapped on their
+		// own cannot be protected, and stale readers then see garbage.
+		unsafe { vmemset(block.start, 0xa5, isize(size)) }
 		if block.mmap_allocated {
 			unsafe { C.mprotect(block.start, size, C.PROT_NONE) }
+			C.vox_note_poisoned_range(block.start, block.stop, arena.label.str)
 		}
 		block = block.next
 	}

@@ -104,6 +104,41 @@ fn test_nested_persistent_sections_stay_in_the_base_arena() {
 	assert nested.value + after_inner.value + scratch.value == 6
 }
 
+fn test_no_reuse_label_poisons_only_that_arena() {
+	mut reused := new_arena('test reused')
+	mut kept := new_arena('test no reuse')
+	defer {
+		reused.release()
+		kept.release()
+	}
+	$if prealloc {
+		mut state := arena_state()
+		if state.poison { return }
+		state.no_reuse = ['test no reuse']
+	}
+	first_entry := reused.enter()
+	first := &ArenaTestNode{value: 1}
+	reused.leave(first_entry)
+	kept_entry := kept.enter()
+	old := &ArenaTestNode{value: 2}
+	kept.leave(kept_entry)
+	reused.reset()
+	kept.reset()
+	again := reused.enter()
+	second := &ArenaTestNode{value: 3}
+	reused.leave(again)
+	kept_again := kept.enter()
+	fresh := &ArenaTestNode{value: 4}
+	kept.leave(kept_again)
+	$if prealloc {
+		arena_state().no_reuse = []string{}
+		assert voidptr(second) == voidptr(first)
+		assert voidptr(fresh) != voidptr(old)
+		assert !kept.contains(voidptr(old))
+	}
+	assert second.value + fresh.value == 7
+}
+
 fn test_reset_keeps_one_block_sized_to_the_high_water_mark() {
 	mut arena := new_arena('test')
 	defer { arena.release() }
