@@ -11,8 +11,16 @@ window.__ladybirdDispatch = function (name, id, replay) {
  const target = s ? __element(s) : document;
  const path = [s];
  if (s && name === "click") {
-  let parent = s.parentKey && __state.elements[s.parentKey];
-  while (parent) { path.push(parent); parent = parent.parentKey && __state.elements[parent.parentKey]; }
+  if(s.nativeParent){
+   const ancestors=__queryElements(s.bridgeKey,"eventAncestors","");
+   for(let index=0;index<ancestors.length;index++){
+    const element=__queryElement(ancestors[index]);
+    path.push(__elementApply(__elementRecordGet,__elementRecords,[element]));
+   }
+  }else{
+   let parent=s.parentKey&&__state.elements[s.parentKey];
+   while(parent){path.push(parent);parent=parent.parentKey&&__state.elements[parent.parentKey];}
+  }
   path.push(null);
  }
  const event = {type:name, target:target, currentTarget:null, bubbles:name === "click",

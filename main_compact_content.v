@@ -180,6 +180,18 @@ fn (mut binding CompactElementQueryBinding) query(input string) !string {
 	if action == 'computedStyle' {
 		return compact_computed_style_query(root, selector)
 	}
+	if action == 'eventAncestors' {
+		// Snapshot the native element path before JavaScript listeners can move
+		// the target. One request also hydrates any previously unseeded owner.
+		mut ancestors := []json2.Any{}
+		mut current := root.parent_element()
+		for current != none {
+			parent := current or { break }
+			ancestors << binding.element_state(parent)
+			current = parent.as_node().parent_element()
+		}
+		return json2.encode(ancestors)
+	}
 	if action == 'elementRelative' {
 		// NonDocumentTypeChildNode and ParentNode element navigation.
 		parent := unsafe { &dom.ParentNode(root) }
