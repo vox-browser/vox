@@ -1443,9 +1443,9 @@ pub fn (mut element HTMLMediaElement) set_ready_state(state MediaReadyState) {
 	defer {
 		element.upon_has_ended_playback_possibly_changed()
 		element.update_screen_wake_lock()
-	}
-	if mut video := element.video_element_model_ {
-		video.update_natural_dimensions()
+		if mut video := element.video_element_model_ {
+			video.update_natural_dimensions()
+		}
 	}
 	if element.network_state_ == .empty {
 		return
