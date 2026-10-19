@@ -2473,6 +2473,8 @@ mut:
 	memo_slots        []int
 	memo_contexts     []CompatibilityFlattenedVisualContext
 	plan              []CompatibilityCachedVisualReplayStep
+	// Per paint-order entry, whether a viewport recording paints it.
+	visible_entries []bool
 	// Per paint-order entry, current over recorded cumulative opacity; empty
 	// when no entry's opacity changed since its commands were recorded.
 	entry_opacity_scales []f64
@@ -2737,7 +2739,7 @@ fn viewport_record_display_list(target voidptr) &dom.DisplayList {
 	viewport_build_stacking_context_tree(target)
 	viewport_sync_cursor_paint_cache(mut result)
 	viewport_invalidate_fixed_background_paint_caches(mut result)
-	selected := if viewport_only { viewport_visible_paint_entries(result) } else { []bool{} }
+	selected := if viewport_only { viewport_visible_paint_entries(mut result) } else { []bool{} }
 	if result.paint_phase_line_box_debug != show_line_box_borders {
 		// Inspector guides are paint output. Rebuild them only when enabled,
 		// retaining ordinary bucket storage while dropping obsolete GC edges.

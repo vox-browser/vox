@@ -1,15 +1,50 @@
 module layout
 
 import math
+import platform
+
+// Culling resolves a flattened visual context for every bounded entry on each
+// viewport recording. Those temporaries live in this arena, reset as soon as
+// the selection is known.
+__global viewport_visible_entries_scratch_ = &platform.Arena(unsafe { nil })
 
 // Cull individual paintables, never descendants on the strength of a parent's
 // border box. Overflowing, transformed and fixed descendants remain separate
 // entries. Effect/resource inputs stay complete even when their source is off
 // screen: a filter or mask can move or generate visible pixels from them.
-fn viewport_visible_paint_entries(result &DocumentLayoutResult) []bool {
+// The selection reuses the result's recording scratch until the next one.
+fn viewport_visible_paint_entries(mut result DocumentLayoutResult) []bool {
+	count := result.paint_order.len
+	mut selected := unsafe { result.record_scratch.visible_entries }
+	if selected.cap < count {
+		selected = []bool{cap: count}
+	}
+	selected.clear()
+	for _ in 0 .. count {
+		selected << true
+	}
+	result.record_scratch.visible_entries = selected
 	viewport := result.document.viewport_rect()
-	mut selected := []bool{len: result.paint_order.len, init: true}
 	if viewport.width <= 0 || viewport.height <= 0 { return selected }
+	// A nested document records inside its parent's arena and allocates there.
+	if platform.arena_entered() {
+		mark_viewport_invisible_entries(result, mut selected, viewport.width, viewport.height)
+		return selected
+	}
+	if viewport_visible_entries_scratch_ == unsafe { nil } {
+		persistent := platform.enter_persistent()
+		viewport_visible_entries_scratch_ = platform.new_arena('viewport visible entries')
+		platform.leave_persistent(persistent)
+	}
+	mut scratch := viewport_visible_entries_scratch_
+	entry := scratch.enter()
+	mark_viewport_invisible_entries(result, mut selected, viewport.width, viewport.height)
+	scratch.leave(entry)
+	scratch.reset()
+	return selected
+}
+
+fn mark_viewport_invisible_entries(result &DocumentLayoutResult, mut selected []bool, width f64, height f64) {
 	mut contexts := new_compatibility_visual_context_memo(&result.visual_context_tree,
 		result.scroll_state_snapshot)
 	for index, entry in result.paint_order {
@@ -20,11 +55,10 @@ fn viewport_visible_paint_entries(result &DocumentLayoutResult) []bool {
 		slot := contexts.resolve(box.accumulated_visual_context_index)
 		context := unsafe { &contexts.contexts[slot] }
 		if context.layer_list != unsafe { nil } { continue }
-		if viewport_box_ink_is_outside(box, context.transform, viewport.width, viewport.height) {
+		if viewport_box_ink_is_outside(box, context.transform, width, height) {
 			selected[index] = false
 		}
 	}
-	return selected
 }
 
 fn viewport_entry_has_bounded_ink(box &BlockBox) bool {

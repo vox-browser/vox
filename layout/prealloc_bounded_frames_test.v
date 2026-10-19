@@ -1,5 +1,6 @@
 module layout
 
+import dom
 import html
 import platform
 
@@ -32,7 +33,13 @@ struct BoundedFramesResult {
 	spare_scenes    int
 }
 
-fn run_bounded_frames(class string) BoundedFramesResult {
+// Native windows record only the viewport, which culls entries on each frame.
+fn record_bounded_frame(mut document dom.Document, viewport_only bool) {
+	list := if viewport_only { document.record_viewport_display_list() } else { document.record_display_list() }
+	_ = list or { panic('missing frame paint') }
+}
+
+fn run_bounded_frames(class string, viewport_only bool) BoundedFramesResult {
 	mut markup := bounded_frames_styles
 	for _ in 0 .. 10 {
 		markup += '<div class="${class}">x</div>'
@@ -40,7 +47,7 @@ fn run_bounded_frames(class string) BoundedFramesResult {
 	markup += '<p>Some text that does not animate.</p>'
 	mut document := html.parse_document(markup)
 	_ = layout_document_typed_in_viewport(document, 320, 4000)
-	_ = document.record_display_list() or { panic('missing paint') }
+	record_bounded_frame(mut document, viewport_only)
 	mut before := i64(0)
 	for frame in 0 .. bounded_frames_warmup + bounded_frames_measured {
 		if frame == bounded_frames_warmup {
@@ -48,7 +55,7 @@ fn run_bounded_frames(class string) BoundedFramesResult {
 		}
 		document.update_animations_and_send_events(f64(frame) * 16.7)
 		document.update_layout(.html_event_loop_rendering_update)
-		_ = document.record_display_list() or { panic('missing frame paint') }
+		record_bounded_frame(mut document, viewport_only)
 	}
 	grown := platform.thread_arena_usage().used - before
 	mut result := document_layout_result(document) or { panic('missing layout result') }
@@ -61,18 +68,20 @@ fn run_bounded_frames(class string) BoundedFramesResult {
 }
 
 fn test_compositor_animation_frames_reuse_bounded_storage() {
-	for class in ['t', 'o', 'p'] {
-		result := run_bounded_frames(class)
-		$if prealloc {
-			// Poisoned arenas are never reused, by design.
-			if platform.arenas_poisoned() {
-				continue
+	for viewport_only in [false, true] {
+		for class in ['t', 'o', 'p'] {
+			result := run_bounded_frames(class, viewport_only)
+			$if prealloc {
+				// Poisoned arenas are never reused, by design.
+				if platform.arenas_poisoned() {
+					continue
+				}
+				assert result.bytes_per_frame <= bounded_frames_budget, '${class} viewport=${viewport_only}: ${result.bytes_per_frame} persistent bytes per frame'
+				// The layout result holds the current scene; earlier ones are reset
+				// and kept as spares rather than accumulating.
+				assert result.live_scenes == 1, '${class}: ${result.live_scenes} live scenes'
+				assert result.spare_scenes <= display_list_scene_spares
 			}
-			assert result.bytes_per_frame <= bounded_frames_budget, '${class}: ${result.bytes_per_frame} persistent bytes per frame'
-			// The layout result holds the current scene; earlier ones are reset
-			// and kept as spares rather than accumulating.
-			assert result.live_scenes == 1, '${class}: ${result.live_scenes} live scenes'
-			assert result.spare_scenes <= display_list_scene_spares
 		}
 	}
 }
@@ -81,10 +90,12 @@ fn test_compositor_animation_frames_reuse_bounded_storage() {
 // docs/PREALLOC_MEMORY.md), so they have no budget yet; their samples must
 // still be safe to retire, including colors resolved while sampling.
 fn test_repaint_animation_frames_keep_one_live_scene() {
-	for class in ['c', 'k'] {
-		result := run_bounded_frames(class)
-		$if prealloc {
-			assert result.live_scenes == 1, '${class}: ${result.live_scenes} live scenes'
+	for viewport_only in [false, true] {
+		for class in ['c', 'k'] {
+			result := run_bounded_frames(class, viewport_only)
+			$if prealloc {
+				assert result.live_scenes == 1, '${class}: ${result.live_scenes} live scenes'
+			}
 		}
 	}
 }
