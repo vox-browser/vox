@@ -18,6 +18,8 @@ fn test_handler_activation_retains_the_passed_handler_and_removes_its_exact_list
 	handler := target.data.event_handler('load') or { panic('handler not installed') }
 	listener := handler.listener or { panic('handler lost its activated listener identity') }
 	assert target.event_listener_list() == [listener]
+	installed := target.event_handler_attribute('load') or { panic('handler value not installed') }
+	assert voidptr(installed) == voidptr(callback)
 	target.dispatch_event(Event.create('load', EventInit{}))
 	assert state.values == ['callback']
 	target.set_event_handler_attribute('load', none)

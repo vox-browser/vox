@@ -1296,7 +1296,9 @@ pub fn (et &EventTarget) set_event_handler_attribute(name string, value ?&Callba
 
 	// 2. If eventTarget is null, then return.
 	// 3. If the given value is null, then deactivate an event handler given eventTarget and name.
-	if value == none {
+	// Unwrap explicitly: current V passes the address of a none-checked option's
+	// payload, not the payload, to a voidptr parameter.
+	callback := value or {
 		event_target.deactivate_event_handler(name)
 		return
 	}
@@ -1304,13 +1306,13 @@ pub fn (et &EventTarget) set_event_handler_attribute(name string, value ?&Callba
 	// 4. Otherwise:
 	mut target := unsafe { &EventTarget(event_target) }
 	if mut handler := target.data.event_handler(name) {
-		handler.value = js_object(value)
+		handler.value = js_object(callback)
 		event_target.activate_event_handler(name, handler)
 		return
 	}
 
 	handler := &EventHandler_{
-		value: js_object(value)
+		value: js_object(callback)
 	}
 	event_target.activate_event_handler(name, handler)
 	target.data.store_event_handler(name, handler)
