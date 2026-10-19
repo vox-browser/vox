@@ -3,8 +3,8 @@
 References were captured from Brave 155.1.97.57 on macOS at device scale 1.
 `font-rasterization` covers Arial and Verdana at integer and fractional sizes,
 automatic and antialiased smoothing, three foreground colors, and white and
-colored backgrounds. Its explicit base URL selects the native compatibility
-profile used for old Reddit.
+colored backgrounds. All native browser documents use the Chromium compatibility
+profile, including local fixtures without an explicit base URL.
 
 ```sh
 ./capture_screenshot.sh Tests/Browser/Brave/input/font-rasterization.html Build/font-rasterization.png 1024 768

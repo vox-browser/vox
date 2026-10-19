@@ -10,15 +10,21 @@ import mimesniff
 // BrowsingContext.cpp::determine_the_origin and navigation document creation.
 // Compact top-level navigation has no inherited creation sandbox flags.
 fn parse_browser_navigation_document(markup string, document_url dom.URL, initiator_origin ?dom.Origin) &dom.Document {
-	origin := html.determine_the_origin(document_url, html.SandboxingFlagSet{}, initiator_origin)
-	return html.parse_navigation_document(markup, document_url, origin, none) or { panic(err) }
+	return parse_browser_navigation_document_with_previous(markup, document_url, initiator_origin,
+		none)
 }
 
 // The source navigation reuse decision requires the actual prior Document,
 // independently of the initiator origin used by determine_the_origin().
 fn parse_browser_navigation_document_with_previous(markup string, document_url dom.URL, initiator_origin ?dom.Origin, previous ?&dom.Document) &dom.Document {
 	origin := html.determine_the_origin(document_url, html.SandboxingFlagSet{}, initiator_origin)
-	return html.parse_navigation_document(markup, document_url, origin, previous) or { panic(err) }
+	mut document := create_browser_navigation_document(document_url, origin, previous, none) or {
+		panic(err)
+	}
+	document.set_document_type(.html)
+	document.set_allow_declarative_shadow_roots(true)
+	html.parse_html_from_a_string(document, markup)
+	return document
 }
 
 // Document.cpp: responses made outside Fetch use their real monotonic creation
@@ -34,10 +40,16 @@ fn parse_browser_navigation_document_for_page_with_response_time(markup string, 
 }
 
 fn create_browser_navigation_document(document_url dom.URL, origin dom.Origin, previous ?&dom.Document, page ?&dom.Page) !&dom.Document {
-	if owner := page {
-		return html.create_navigation_document_for_page(document_url, origin, previous, owner)
+	mut document := if owner := page {
+		html.create_navigation_document_for_page(document_url, origin, previous, owner)!
+	} else {
+		html.create_navigation_document(document_url, origin, previous)!
 	}
-	return html.create_navigation_document(document_url, origin, previous)
+	// Every browser document uses Chromium's font sizes, metrics, layout and
+	// painting. Install the policies before parsing can resolve any styles.
+	document.set_font_size_keyword_policy(.chromium)
+	document.set_font_rendering_policy(.chromium)
+	return document
 }
 
 fn parse_browser_navigation_document_with_optional_page_and_response_time(markup string, document_url dom.URL, initiator_origin ?dom.Origin, previous ?&dom.Document, page ?&dom.Page, response_time_ns i64) &dom.Document {
@@ -80,27 +92,9 @@ fn loaded_browser_navigation_input(loaded LoadedPage) (string, ?string) {
 
 fn parse_loaded_browser_navigation_document(loaded LoadedPage, document_url dom.URL, initiator_origin ?dom.Origin, previous ?&dom.Document, page ?&dom.Page, scripting_enabled bool) &dom.Document {
 	markup, encoding_name := loaded_browser_navigation_input(loaded)
-	mut document := parse_browser_navigation_document_input_with_source(markup, encoding_name, document_url,
+	return parse_browser_navigation_document_input_with_source(markup, encoding_name, document_url,
 		initiator_origin, previous, page, loaded.monotonic_response_time_ns, scripting_enabled,
 		loaded.javascript_url_source)
-	// Also honor the policy in saved copies whose explicit base URL identifies
-	// the site.
-	if browser_host_uses_chromium_rendering(document.base_url().serialized_host()) {
-		document.set_font_size_keyword_policy(.chromium)
-		document.set_font_rendering_policy(.chromium)
-	}
-	return document
-}
-
-// Sites compared pixel for pixel against Chromium use its font-size keywords,
-// installed-font matching and inline geometry. Old Reddit's compact layout
-// relies on the legacy 10px x-small mapping.
-fn browser_host_uses_chromium_rendering(serialized_host string) bool {
-	host := serialized_host.to_lower().trim_right('.')
-	return host == 'old.reddit.com' || host == 'wikipedia.org' || host.ends_with('.wikipedia.org')
-		|| host == 'cnn.com' || host.ends_with('.cnn.com') || host == '4chan.org'
-		|| host.ends_with('.4chan.org')
-		|| host == 'asgardpvp.com' || host.ends_with('.asgardpvp.com')
 }
 
 fn parse_browser_navigation_document_input(markup string, document_encoding ?string, document_url dom.URL, initiator_origin ?dom.Origin, previous ?&dom.Document, page ?&dom.Page, response_time_ns i64, scripting_enabled bool) &dom.Document {
