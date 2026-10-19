@@ -3067,7 +3067,7 @@ pub fn (mut set FontFaceSet) synchronize_css_connected_font_order(ordered_connec
 	mut order_changed := ordered_faces.len != set.set_entries_.len
 	if !order_changed {
 		for index, face in ordered_faces {
-			if face != set.set_entries_[index] {
+			if voidptr(face) != voidptr(set.set_entries_[index]) {
 				order_changed = true
 				break
 			}

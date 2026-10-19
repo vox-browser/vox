@@ -233,8 +233,9 @@ fn (mut app BrowserApp) draw_browser_tabs() {
 	}
 	mut active := app.active_browser_tab()
 	if app.tabs != unsafe { nil } {
-		for mut tab in app.tabs.pages {
-			if tab != active { tab.poll_background_browser_tab() }
+		for i in 0 .. app.tabs.pages.len {
+			mut tab := app.tabs.pages[i]
+			if voidptr(tab) != voidptr(active) { tab.poll_background_browser_tab() }
 		}
 	}
 	active.draw()

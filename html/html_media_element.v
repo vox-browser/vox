@@ -2315,7 +2315,7 @@ pub fn (mut element HTMLMediaElement) on_audio_track_added(metadata MediaTrackMe
 		})
 	}
 	element.audio_tracks_.add_track(track)
-	enable := !element.audio_tracks_.tracks().any(it != track && it.enabled)
+	enable := !element.audio_tracks_.tracks().any(voidptr(it) != voidptr(track) && it.enabled)
 	if enable {
 		mutable_track.set_enabled(true)
 	}

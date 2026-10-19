@@ -272,7 +272,7 @@ pub fn (mut track VideoTrack) set_selected(selected bool) {
 	}
 	if list := track.video_track_list {
 		for other_track in list.video_tracks {
-			if other_track != track {
+			if voidptr(other_track) != voidptr(track) {
 				mut mutable_other_track := unsafe { &VideoTrack(other_track) }
 				mutable_other_track.selected = false
 			}
