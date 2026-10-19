@@ -24,8 +24,9 @@ fn C.vox_install_poison_fault_handler()
 // blocks and never reusing them, so any later access to them faults.
 // VOX_ARENA_NO_REUSE=label,... does the same for the named arenas only.
 
-// Mirrors of V's VMemoryBlock and VPreallocScope (vlib/builtin/prealloc.c.v).
-// verify_prealloc_layout() compares their sizes with V's own types.
+// Mirrors of V's VMemoryBlock and VPreallocScope (vlib/builtin/prealloc.c.v),
+// read to walk an arena's blocks. verify_prealloc_layout() compares their
+// sizes with V's own types; every change to them goes through V's scope API.
 struct PreallocBlockView {
 mut:
 	current        &u8                = unsafe { nil }
@@ -34,6 +35,7 @@ mut:
 	previous       &PreallocBlockView = unsafe { nil }
 	next           &PreallocBlockView = unsafe { nil }
 	scope          voidptr
+	recycle_cache  voidptr
 	min_block_size isize
 	is_scope       bool
 	mmap_allocated bool
@@ -45,10 +47,16 @@ struct PreallocScopeView {
 mut:
 	previous       &PreallocBlockView = unsafe { nil }
 	first          &PreallocBlockView = unsafe { nil }
-	refs           int
-	free_requested int
-	abandoned      int
-	finalized      int
+	saved_next     &PreallocBlockView = unsafe { nil }
+	min_address    usize
+	max_address    usize
+	ranges         voidptr
+	ranges_len     int
+	ranges_cap     int
+	refs           i32
+	free_requested i32
+	abandoned      i32
+	finalized      i32
 }
 
 // ArenaUsage describes a chain of arena blocks: bytes handed out by the bump
@@ -185,16 +193,16 @@ pub fn new_arena(label string) &Arena {
 
 fn (mut arena Arena) begin_scope() {
 	$if prealloc {
-		// A scope links its first block after the current one; create it from
-		// the thread's base arena so no other arena's chain is extended.
+		// Begin the scope from the thread's base arena, then detach it: an
+		// arena is only current between enter and leave.
 		entry := enter_persistent()
 		scope := unsafe { prealloc_scope_begin() }
 		unsafe { prealloc_scope_leave(scope) }
 		leave_persistent(entry)
 		arena.scope = unsafe { &PreallocScopeView(scope) }
 		arena.tail = arena.scope.first
-		// The first block is not chained to the arena that was current when it
-		// was created.
+		// The detached first block is not chained to the block it was begun
+		// after, so walks of one arena never reach another.
 		arena.tail.previous = unsafe { nil }
 	}
 }
@@ -288,7 +296,22 @@ pub fn (arena &Arena) usage() ArenaUsage {
 	if arena.scope == unsafe { nil } {
 		return ArenaUsage{}
 	}
-	return chain_usage(arena.scope.first, true)
+	mut used := i64(0)
+	mut blocks := 0
+	mut block := arena.scope.first
+	for block != unsafe { nil } && block.scope == voidptr(arena.scope) {
+		used += i64(block.current) - i64(block.start)
+		blocks++
+		block = block.next
+	}
+	$if prealloc {
+		return ArenaUsage{
+			used:     used
+			capacity: i64(unsafe { prealloc_scope_allocated_size(voidptr(arena.scope)) })
+			blocks:   blocks
+		}
+	}
+	return ArenaUsage{}
 }
 
 pub fn (arena &Arena) reset_count() u64 {
@@ -296,8 +319,8 @@ pub fn (arena &Arena) reset_count() u64 {
 }
 
 // reset makes the arena's space reusable. Every pointer into it becomes
-// invalid. An arena that grew past one block is remapped as a single block
-// with a quarter more than its high-water mark, so steady reuse maps nothing.
+// invalid. The arena keeps the blocks that cover a quarter more than its
+// high-water mark, so steady reuse maps nothing new.
 pub fn (mut arena Arena) reset() {
 	$if prealloc {
 		if arena.entered {
@@ -311,22 +334,14 @@ pub fn (mut arena Arena) reset() {
 			return
 		}
 		usage := arena.usage()
-		mut first := arena.scope.first
-		if usage.blocks > 1 {
-			size := isize((usage.used + usage.used / 4 + arena_block_granularity - 1) / arena_block_granularity * arena_block_granularity)
-			mut block := arena.scope.first
-			for block != unsafe { nil } {
-				mut next := block.next
-				free_block(block)
-				block = next
-			}
-			first = new_block(size, voidptr(arena.scope))
+		scope := voidptr(arena.scope)
+		// Reentering rewinds every kept block; leaving detaches the scope again.
+		if !unsafe { prealloc_scope_reenter(scope, isize(usage.used + usage.used / 4)) } {
+			panic('arena ${arena.label} could not be reset')
 		}
-		first.previous = unsafe { nil }
-		first.next = unsafe { nil }
-		first.current = first.start
-		arena.scope.first = first
-		arena.tail = first
+		unsafe { prealloc_scope_leave(scope) }
+		arena.tail = arena.scope.first
+		arena.tail.previous = unsafe { nil }
 	}
 }
 
@@ -351,52 +366,22 @@ pub fn (mut arena Arena) release() {
 	}
 }
 
-const arena_block_granularity = i64(64 * 1024)
-
-fn new_block(size isize, scope voidptr) &PreallocBlockView {
-	mut block := unsafe { &PreallocBlockView(C.calloc(1, sizeof(PreallocBlockView))) }
-	if block == unsafe { nil } {
-		panic('could not allocate an arena block')
-	}
-	start := unsafe {
-		C.mmap(nil, usize(size), C.PROT_READ | C.PROT_WRITE, C.MAP_ANONYMOUS | C.MAP_PRIVATE, -1, 0)
-	}
-	if start == C.MAP_FAILED {
-		panic('could not map an arena block of ${size} bytes')
-	}
-	block.start = unsafe { &u8(start) }
-	block.current = block.start
-	block.stop = unsafe { block.start + size }
-	block.scope = scope
-	block.min_block_size = size
-	block.is_scope = true
-	block.mmap_allocated = true
-	return block
-}
-
-fn free_block(block &PreallocBlockView) {
-	size := usize(i64(block.stop) - i64(block.start))
-	if block.mmap_allocated {
-		unsafe { C.munmap(block.start, size) }
-	} else {
-		unsafe { C.free(block.start) }
-	}
-	unsafe { C.free(block) }
-}
-
 // Write-protect every block and abandon them with their scope.
 fn (mut arena Arena) poison_blocks() {
-	mut block := arena.scope.first
-	for block != unsafe { nil } {
-		size := usize(i64(block.stop) - i64(block.start))
-		// Overwrite the old contents too: blocks that were not mapped on their
-		// own cannot be protected, and stale readers then see garbage.
-		unsafe { vmemset(block.start, 0xa5, isize(size)) }
-		if block.mmap_allocated {
-			unsafe { C.mprotect(block.start, size, C.PROT_NONE) }
-			C.vox_note_poisoned_range(block.start, block.stop, arena.label.str)
+	$if prealloc {
+		mut block := arena.scope.first
+		for block != unsafe { nil } && block.scope == voidptr(arena.scope) {
+			size := usize(i64(block.stop) - i64(block.start))
+			// Overwrite the old contents too: blocks that were not mapped on
+			// their own cannot be protected, and stale readers then see garbage.
+			unsafe { vmemset(block.start, 0xa5, isize(size)) }
+			if block.mmap_allocated {
+				unsafe { C.mprotect(block.start, size, C.PROT_NONE) }
+				C.vox_note_poisoned_range(block.start, block.stop, arena.label.str)
+			}
+			block = block.next
 		}
-		block = block.next
+		unsafe { prealloc_scope_abandon(voidptr(arena.scope)) }
 	}
 	arena.scope = unsafe { nil }
 	arena.tail = unsafe { nil }
@@ -407,12 +392,8 @@ pub fn (arena &Arena) contains(pointer voidptr) bool {
 	if arena.scope == unsafe { nil } {
 		return false
 	}
-	mut block := arena.scope.first
-	for block != unsafe { nil } {
-		if u64(pointer) >= u64(block.start) && u64(pointer) < u64(block.stop) {
-			return true
-		}
-		block = block.next
+	$if prealloc {
+		return unsafe { prealloc_scope_owns(voidptr(arena.scope), pointer) }
 	}
 	return false
 }

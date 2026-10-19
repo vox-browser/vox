@@ -139,9 +139,10 @@ fn test_no_reuse_label_poisons_only_that_arena() {
 	assert second.value + fresh.value == 7
 }
 
-fn test_reset_keeps_one_block_sized_to_the_high_water_mark() {
+fn test_reset_reuses_the_blocks_of_the_high_water_mark() {
 	mut arena := new_arena('test')
 	defer { arena.release() }
+	mut settled := ArenaUsage{}
 	for round in 0 .. 4 {
 		entry := arena.enter()
 		nodes := arena_test_allocate(20000)
@@ -149,9 +150,12 @@ fn test_reset_keeps_one_block_sized_to_the_high_water_mark() {
 		assert nodes[19999].value == 19999
 		$if prealloc {
 			usage := arena.usage()
-			if round >= 1 {
-				// After the first reset one block covers a whole round.
-				assert usage.blocks == 1
+			if round == 1 {
+				settled = usage
+			} else if round > 1 {
+				// The rewound blocks hold a whole round: nothing new is mapped.
+				assert usage.capacity == settled.capacity
+				assert usage.blocks == settled.blocks
 			}
 		}
 		arena.reset()
