@@ -4645,23 +4645,20 @@ fn (mut app BrowserApp) create_image_from_resource_bytes(image_url string, bytes
 				image.id = app.ctx.cache_image(image)
 				return image
 			}
-		}
-	}
-	mut image := app.ctx.create_image_from_byte_array(bytes)!
-	$if macos {
-		if app.ctx.native_rendering {
-			// gg's byte decoder also uses stb's top-to-bottom rows. Native paint
-			// reads the cached image, so retain that order in both representations.
-			image.nr_channels = 6
-			mut cached := app.ctx.get_cached_image_by_idx(image.id)
-			cached.nr_channels = 6
-			// Chromium draws PNGs in the color space of their gAMA and cHRM chunks.
+			// Native replay consumes CPU rows. gg's byte loader also creates a
+			// Sokol texture whenever gfx is initialized, retaining a second copy
+			// of every PNG even though this renderer never draws that texture.
+			decoded := stbi.load_from_memory(bytes.data, bytes.len)!
+			mut image := gg.Image{width: decoded.width, height: decoded.height,
+				nr_channels: 6, ok: decoded.ok, data: decoded.data, ext: decoded.ext}
 			chromium := app.document != unsafe { nil } && app.document.font_rendering_policy() == .chromium
 			C.native_tag_image_color_profile(image.data, image.width, image.height, bytes.data,
 				usize(bytes.len), int(chromium))
+			image.id = app.ctx.cache_image(image)
+			return image
 		}
 	}
-	return image
+	return app.ctx.create_image_from_byte_array(bytes)
 }
 
 fn browser_local_file_path(serialized_url string) ?string {
