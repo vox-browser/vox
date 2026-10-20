@@ -258,6 +258,10 @@ def main() -> None:
                                           "awaitPromise": True})
             time.sleep(args.settle)
             position = scroll_viewport(cdp, args.scroll_y)
+            if args.scroll_y:
+                # Newly visible tiles can first show an intermediate decode.
+                # Let their final raster settle just like the initial viewport.
+                time.sleep(args.settle)
             data = cdp.call("Page.captureScreenshot", {"format": "png"})["data"]
             Path(args.out).write_bytes(base64.b64decode(data))
             if args.metadata:
