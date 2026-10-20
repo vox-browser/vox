@@ -395,9 +395,36 @@ so the helper was removed from the source and build. The prototype and measured
 logs remain under `Build/prealloc-document/`; it is not an enabled renderer.
 
 These ownership and allocation checks do not establish the browser RAM target.
-The latest previously recorded clean optimized Pikabu endpoint remains
-1,095.9 MiB, above the verified Brave endpoint. New normal-window measurements
-must include the committed font-registration lifetime repair and the parser
-changes before comparing their effect. A diagnostic run of an earlier binary
+The latest clean optimized Pikabu endpoint is 1,051.8 MiB
+(`native-35-clean-memory/1-vox/result.json`), above the verified Brave endpoint.
+This includes the font-registration and parser repairs, but predates the parent
+block-chain repair below. A diagnostic run of an earlier binary
 faulted in `native_replay_font_path`; that run supplied allocation samples,
 not a valid memory endpoint. Prealloc remains opt-in while the target is unmet.
+
+### Parent block chains and small idle allocations
+
+A temporary V scope saves its parent's `next` block before entering. Redirected
+document allocations can grow that parent while the temporary scope is active.
+Restoring the original saved link on exit disconnected the newly grown document
+blocks, so document retirement could not free them. `ThreadScratchScope` now
+preserves the grown parent chain before leaving the raw V scope. A block census
+previously counted 362,452,187 document bytes but could reach only 231,673,118
+through the owner's chain. After the repair, the census and owner both reach
+all 328,900,923 bytes in the corresponding diagnostic run. These runs include
+instrumentation and are not clean production RAM comparisons.
+
+The focused parent-growth regression creates three six-MiB allocations across
+nested temporary scopes. It checks every original allocation remains in the
+owner chain, then checks their actual OS mappings disappear at retirement.
+Normal and poison modes pass. The full frozen Pikabu page also completes a
+60-second normal-window poison run with a valid endpoint document after this
+repair (`native-38-poison-memory/1-vox/result.json`).
+
+SVG numeric scanning borrows its synchronous number span instead of copying
+each substring; `viewBox` parses into four fixed coordinates. A 1,024-read
+allocation check stays below one KiB in normal and poison modes, with the
+existing accepted/rejected numeric syntax preserved. Animation sample retirement
+also transfers spare target vectors in a record: appending a nested array had
+copied the backing store which the pool intended to reuse. Repeated retirement
+checks preserve the original pointer and capacity in both modes.
