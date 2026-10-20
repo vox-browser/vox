@@ -168,7 +168,7 @@ fn chain_usage(start &PreallocBlockView, forward bool) ArenaUsage {
 pub struct ArenaEntry {
 	previous voidptr
 	base     bool
-	depth    int
+	depth    i32
 }
 
 @[heap]
@@ -228,7 +228,7 @@ pub fn (mut arena Arena) enter() ArenaEntry {
 		return ArenaEntry{
 			previous: previous
 			base: base
-			depth: depth
+			depth: i32(depth)
 		}
 	}
 	return ArenaEntry{}
