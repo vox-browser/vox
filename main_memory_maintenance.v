@@ -123,6 +123,7 @@ fn (mut app BrowserApp) release_unused_memory_if_idle(now_ns i64) {
 				&& app.js_runtime == unsafe { nil } {
 				layout.release_unused_display_list_caches(app.paint_display_list)
 				css.release_unused_stylesheet_syntax()
+				platform.release_unused_text_shaping()
 				adblock.release_unused_engine()
 			}
 			platform.release_unused_browser_memory()

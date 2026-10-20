@@ -260,6 +260,12 @@ fn shared_shaping_cache() &ShapingCache {
 	return platform_shaping_cache
 }
 
+// Returned glyph runs own their glyph storage. Static idle pages can discard
+// the lookup copies; a later measurement or shape request refills the cache.
+pub fn release_unused_text_shaping() {
+	platform_shaping_cache = unsafe { nil }
+}
+
 // Equivalent Font values select the same concrete face and may safely share
 // a shape. Include the resolved face as well as the CSS identity so changes to
 // font configuration cannot alias an older entry.
