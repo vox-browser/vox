@@ -670,12 +670,15 @@ int vox_graphite_draw_shape_pixels(uint8_t* pixels, int width, int height,
 static bool draw_path_on_canvas(SkCanvas* canvas, VoxGraphitePath const* path,
     SkM44 const* parent = nullptr)
 {
+    SkAutoCanvasRestore clip_scope(canvas, path->has_clip || path->has_ancestor_clip);
     SkMatrix matrix;
     matrix.set9(path->matrix);
     if (parent) {
         canvas->setMatrix(*parent);
         canvas->concat(SkM44(matrix));
     } else canvas->setMatrix(matrix);
+    if (path->has_clip) canvas->clipRRect(rounded_rect(path->clip), SkClipOp::kIntersect, true);
+    if (path->has_ancestor_clip) canvas->clipRRect(rounded_rect(path->ancestor_clip), SkClipOp::kIntersect, true);
     auto geometry = vox_path_from_serialized_segments(path->segments, path->segment_count);
     geometry.setFillType(path->even_odd ? SkPathFillType::kEvenOdd : SkPathFillType::kWinding);
     SkPaint paint;

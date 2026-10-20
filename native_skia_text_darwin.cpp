@@ -2823,7 +2823,7 @@ static int draw_svg_gradient_path(CGContextRef destination, float const* data,
     float gradient_c, float gradient_d, float gradient_e, float gradient_f,
     int spread_method, int linear_color_space, float const* stop_data,
     int stop_count, float opacity, int gradient_kind, float const* gradient_points,
-    int opaque_backdrop, MakeShader make_shader)
+    int opaque_backdrop, float const* clip, float const* ancestor_clip, MakeShader make_shader)
 {
     if (!destination || !data || segment_count <= 0 || !stop_data
         || stop_count <= 0 || canvas_width <= 0 || canvas_height <= 0)
@@ -2924,6 +2924,14 @@ static int draw_svg_gradient_path(CGContextRef destination, float const* data,
                 gradient_points[3], gradient_points[4], gradient_points[5]},
             .gradient_matrix = {}, .opacity = opacity, .stops = stops.data()
         };
+        if (clip) {
+            descriptor.has_clip = 1;
+            std::copy_n(clip, 12, descriptor.clip);
+        }
+        if (ancestor_clip) {
+            descriptor.has_ancestor_clip = 1;
+            std::copy_n(ancestor_clip, 12, descriptor.ancestor_clip);
+        }
         raster_matrix(matrix, region, raster_scale_x, raster_scale_y).get9(descriptor.matrix);
         gradient_matrix.get9(descriptor.gradient_matrix);
         auto draw = graphite_path_draw();
@@ -2978,11 +2986,43 @@ static int draw_svg_gradient_path(CGContextRef destination, float const* data,
     auto* canvas = surface->getCanvas();
     canvas->clear(SK_ColorTRANSPARENT);
     canvas->setMatrix(raster_matrix(matrix, region, raster_scale_x, raster_scale_y));
+    if (clip) canvas->clipRRect(rounded_rect_from_data(clip), SkClipOp::kIntersect, true);
+    if (ancestor_clip) canvas->clipRRect(rounded_rect_from_data(ancestor_clip), SkClipOp::kIntersect, true);
     canvas->drawPath(path, paint);
     surface.reset();
     return composite_pixels(destination, std::move(pixels), raster_width, raster_height,
         static_cast<float>(region.left), canvas_height - static_cast<float>(region.bottom),
         static_cast<float>(region.width()), static_cast<float>(region.height()));
+}
+
+static int draw_svg_linear_gradient_path_with_clip(
+    CGContextRef destination, float const* data, int segment_count, int even_odd,
+    float transform_a, float transform_b, float transform_c, float transform_d,
+    float transform_e, float transform_f, float page_x, float page_y,
+    float scroll_y, float canvas_width, float canvas_height, int stroke,
+    float stroke_width, int line_cap, int line_join, float miter_limit,
+    float start_x, float start_y, float end_x, float end_y, float gradient_a,
+    float gradient_b, float gradient_c, float gradient_d, float gradient_e,
+    float gradient_f, int spread_method, int linear_color_space,
+    float const* stop_data, int stop_count, float opacity, int opaque_backdrop, float const* clip, float const* ancestor_clip)
+{
+    float const gradient_points[] { start_x, start_y, end_x, end_y, 0.0f, 0.0f };
+    return draw_svg_gradient_path(destination, data, segment_count, even_odd,
+        transform_a, transform_b, transform_c, transform_d, transform_e,
+        transform_f, page_x, page_y, scroll_y, canvas_width, canvas_height,
+        stroke, stroke_width, line_cap, line_join, miter_limit, gradient_a,
+        gradient_b, gradient_c, gradient_d, gradient_e, gradient_f,
+        spread_method, linear_color_space, stop_data, stop_count, opacity,
+        1, gradient_points, opaque_backdrop, clip, ancestor_clip,
+        [=](std::vector<SkColor4f> const& colors,
+            std::vector<SkScalar> const& positions, SkTileMode tile_mode,
+            SkMatrix const& gradient_matrix) {
+            SkPoint points[] { { start_x, start_y }, { end_x, end_y } };
+            SkGradientShader::Interpolation interpolation;
+            return SkGradientShader::MakeLinear(points, colors.data(), nullptr,
+                positions.data(), static_cast<int>(colors.size()), tile_mode,
+                interpolation, &gradient_matrix);
+        });
 }
 
 extern "C" int ladybird_v_skia_draw_svg_linear_gradient_path(
@@ -2996,23 +3036,31 @@ extern "C" int ladybird_v_skia_draw_svg_linear_gradient_path(
     float gradient_f, int spread_method, int linear_color_space,
     float const* stop_data, int stop_count, float opacity, int opaque_backdrop)
 {
-    float const gradient_points[] { start_x, start_y, end_x, end_y, 0.0f, 0.0f };
-    return draw_svg_gradient_path(destination, data, segment_count, even_odd,
-        transform_a, transform_b, transform_c, transform_d, transform_e,
-        transform_f, page_x, page_y, scroll_y, canvas_width, canvas_height,
-        stroke, stroke_width, line_cap, line_join, miter_limit, gradient_a,
-        gradient_b, gradient_c, gradient_d, gradient_e, gradient_f,
-        spread_method, linear_color_space, stop_data, stop_count, opacity,
-        1, gradient_points, opaque_backdrop,
-        [=](std::vector<SkColor4f> const& colors,
-            std::vector<SkScalar> const& positions, SkTileMode tile_mode,
-            SkMatrix const& gradient_matrix) {
-            SkPoint points[] { { start_x, start_y }, { end_x, end_y } };
-            SkGradientShader::Interpolation interpolation;
-            return SkGradientShader::MakeLinear(points, colors.data(), nullptr,
-                positions.data(), static_cast<int>(colors.size()), tile_mode,
-                interpolation, &gradient_matrix);
-        });
+    return draw_svg_linear_gradient_path_with_clip(destination, data, segment_count, even_odd,
+        transform_a, transform_b, transform_c, transform_d, transform_e, transform_f,
+        page_x, page_y, scroll_y, canvas_width, canvas_height, stroke, stroke_width,
+        line_cap, line_join, miter_limit, start_x, start_y, end_x, end_y, gradient_a,
+        gradient_b, gradient_c, gradient_d, gradient_e, gradient_f, spread_method,
+        linear_color_space, stop_data, stop_count, opacity, opaque_backdrop, nullptr, nullptr);
+}
+
+extern "C" int ladybird_v_skia_draw_clipped_svg_linear_gradient_path(
+    CGContextRef destination, float const* data, int segment_count, int even_odd,
+    float transform_a, float transform_b, float transform_c, float transform_d,
+    float transform_e, float transform_f, float page_x, float page_y,
+    float scroll_y, float canvas_width, float canvas_height, int stroke,
+    float stroke_width, int line_cap, int line_join, float miter_limit,
+    float start_x, float start_y, float end_x, float end_y, float gradient_a,
+    float gradient_b, float gradient_c, float gradient_d, float gradient_e,
+    float gradient_f, int spread_method, int linear_color_space,
+    float const* stop_data, int stop_count, float opacity, int opaque_backdrop, float const* clip, float const* ancestor_clip)
+{
+    return draw_svg_linear_gradient_path_with_clip(destination, data, segment_count, even_odd,
+        transform_a, transform_b, transform_c, transform_d, transform_e, transform_f,
+        page_x, page_y, scroll_y, canvas_width, canvas_height, stroke, stroke_width,
+        line_cap, line_join, miter_limit, start_x, start_y, end_x, end_y, gradient_a,
+        gradient_b, gradient_c, gradient_d, gradient_e, gradient_f, spread_method,
+        linear_color_space, stop_data, stop_count, opacity, opaque_backdrop, clip, ancestor_clip);
 }
 
 extern "C" int ladybird_v_skia_draw_svg_radial_gradient_path(
@@ -3035,7 +3083,7 @@ extern "C" int ladybird_v_skia_draw_svg_radial_gradient_path(
         stroke, stroke_width, line_cap, line_join, miter_limit, gradient_a,
         gradient_b, gradient_c, gradient_d, gradient_e, gradient_f,
         spread_method, linear_color_space, stop_data, stop_count, opacity,
-        2, gradient_points, opaque_backdrop,
+        2, gradient_points, opaque_backdrop, nullptr, nullptr,
         [=](std::vector<SkColor4f> const& colors,
             std::vector<SkScalar> const& positions, SkTileMode tile_mode,
             SkMatrix const& gradient_matrix) {

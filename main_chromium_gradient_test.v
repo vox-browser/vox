@@ -100,3 +100,58 @@ fn test_retained_css_linear_gradient_carries_the_source_angle() {
 	gradient := commands[0].gradient or { panic('missing retained gradient') }
 	assert gradient.css_angle_degrees? == 222
 }
+
+fn test_chromium_gradient_clip_transfer_preserves_local_rect_and_corner_order() {
+	command := layout.PaintCommand{
+		gradient_background_layer: true
+		transform:                 [f64(1), 0, 0, 1, 200, 300]!
+		image_data:                &layout.PaintImageData{
+			image_clip_x:      2.25
+			image_clip_y:      7.5
+			image_clip_width:  129
+			image_clip_height: 81
+			image_clip_radii:  layout.BoxRadii{
+				top_left:     layout.CornerRadius{1, 2}
+				top_right:    layout.CornerRadius{3, 4}
+				bottom_right: layout.CornerRadius{5, 6}
+				bottom_left:  layout.CornerRadius{7, 8}
+			}
+		}
+	}
+	assert chromium_gradient_clip_data(command) == [f32(2.25), 7.5, 129, 81, 1, 2, 3, 4, 5, 6,
+		7, 8]!
+	gradient := layout.LinearGradient{ y2: 1, colors: [css.Color{0, 0, 0, 0}, css.Color{0, 0, 0, 255}] }
+	assert chromium_gradient_uses_gpu_clip(command, gradient)
+	assert !chromium_gradient_uses_gpu_clip(layout.PaintCommand{ ...command, gradient_background_layer: false }, gradient)
+	assert !chromium_gradient_uses_gpu_clip(command, layout.LinearGradient{ ...gradient, y2: 0 })
+	assert !chromium_gradient_uses_gpu_clip(command, layout.LinearGradient{ ...gradient, kind: 'radial' })
+}
+
+fn test_chromium_gradient_transfers_only_compatible_rounded_ancestor() {
+	identity := [f64(1), 0, 0, 1, 0, 0]!
+	radius := layout.BoxRadii{top_left: layout.CornerRadius{4, 4}}
+	compatible := layout.PaintClip{
+		rect: layout.LayoutRect{32, 127, 269, 151}
+		corner_radii: radius
+		transform: identity
+	}
+	clips := [compatible,
+		layout.PaintClip{...compatible, is_path: true},
+		layout.PaintClip{...compatible, is_svg_mask: true},
+		layout.PaintClip{...compatible, is_svg_content_mask: true},
+		layout.PaintClip{...compatible, transform: [f64(1), 0, 0, 1, 0, 8]!}]
+	command := layout.PaintCommand{
+		kind: 'fill_gradient'
+		gradient_background_layer: true
+		has_clip: true
+		gradient: &layout.LinearGradient{y2: 1, colors: [css.Color{0, 0, 0, 0}, css.Color{0, 0, 0, 255}]}
+		transform: identity
+		clip_list: &layout.PaintClipList{items: clips}
+	}
+	assert chromium_gradient_gpu_ancestor_clip_index(&command) == 0
+	assert chromium_paint_clip_data(compatible) == [f32(32), 127, 269, 151, 4, 4, 0, 0, 0, 0, 0, 0]!
+	assert chromium_gradient_gpu_ancestor_clip_index(&layout.PaintCommand{...command, kind: 'draw_svg_path'}) == -1
+	assert chromium_gradient_gpu_ancestor_clip_index(&layout.PaintCommand{...command, gradient_background_layer: false}) == -1
+	assert chromium_gradient_gpu_ancestor_clip_index(&layout.PaintCommand{...command, has_clip: false}) == -1
+	assert chromium_gradient_gpu_ancestor_clip_index(&layout.PaintCommand{...command, clip_list: &layout.PaintClipList{items: clips[1..]}}) == -1
+}

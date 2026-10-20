@@ -237,6 +237,32 @@ int main()
         else v.gradient_points[i - 18] += .25f;
         path_misses(v);
     }
+    for (int i = 0; i < 12; ++i) {
+        auto clipped = path; clipped.has_clip = 1;
+        std::fill(pixels.begin(), pixels.end(), 19);
+        auto item = cache.prepare(clipped, 2, 2, 8, true, pixels.data());
+        std::fill(pixels.begin(), pixels.end(), 71);
+        cache.finish(std::move(item), pixels.data(), 8);
+        clipped.clip[i] += .25f; path_misses(clipped);
+        cache.clear();
+        std::fill(pixels.begin(), pixels.end(), 19);
+        item = cache.prepare(path, 2, 2, 8, true, pixels.data());
+        std::fill(pixels.begin(), pixels.end(), 71);
+        cache.finish(std::move(item), pixels.data(), 8);
+    }
+    for (int i = 0; i < 12; ++i) {
+        auto clipped = path; clipped.has_ancestor_clip = 1;
+        std::fill(pixels.begin(), pixels.end(), 19);
+        auto item = cache.prepare(clipped, 2, 2, 8, true, pixels.data());
+        std::fill(pixels.begin(), pixels.end(), 71);
+        cache.finish(std::move(item), pixels.data(), 8);
+        clipped.ancestor_clip[i] += .25f; path_misses(clipped);
+        cache.clear();
+        std::fill(pixels.begin(), pixels.end(), 19);
+        item = cache.prepare(path, 2, 2, 8, true, pixels.data());
+        std::fill(pixels.begin(), pixels.end(), 71);
+        cache.finish(std::move(item), pixels.data(), 8);
+    }
     for (auto& segment : segments) { segment += .25f; path_misses(path); segment -= .25f; }
     for (auto& stop : stops) { stop += .25f; path_misses(path); stop -= .25f; }
     auto v = path; --v.segment_count; path_misses(v);

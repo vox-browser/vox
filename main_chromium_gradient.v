@@ -112,3 +112,50 @@ fn chromium_linear_gradient_stop_data(gradient layout.LinearGradient, opacity f6
 	}
 	return data
 }
+
+// Send the background's own clip into the same GPU draw as its gradient.
+// A later CoreGraphics clip applies a different fractional corner coverage.
+fn chromium_gradient_uses_gpu_clip(command layout.PaintCommand, gradient layout.LinearGradient) bool {
+	return command.gradient_background_layer
+		&& (gradient.x1 != gradient.x2 || gradient.y1 != gradient.y2)
+		&& chromium_linear_gradient_stop_data(gradient, command.opacity) != none
+}
+
+fn chromium_gradient_clip_data(command layout.PaintCommand) [12]f32 {
+	image := command.image()
+	r := image.image_clip_radii
+	return [f32(image.image_clip_x), f32(image.image_clip_y), f32(image.image_clip_width),
+		f32(image.image_clip_height), f32(r.top_left.x), f32(r.top_left.y), f32(r.top_right.x),
+		f32(r.top_right.y), f32(r.bottom_right.x), f32(r.bottom_right.y), f32(r.bottom_left.x),
+		f32(r.bottom_left.y)]!
+}
+
+fn chromium_gradient_gpu_ancestor_clip_index(command &layout.PaintCommand) int {
+	if command.kind != 'fill_gradient' || !command.has_clip || command.clip_list == unsafe { nil } {
+		return -1
+	}
+	gradient := command.gradient or { return -1 }
+	if !chromium_gradient_uses_gpu_clip(*command, gradient) { return -1 }
+	transform := normalized_paint_transform(command.transform)
+	for index := command.clip_list.items.len - 1; index >= 0; index-- {
+		clip := command.clip_list.items[index]
+		if clip.is_path || clip.is_svg_mask || clip.is_svg_content_mask
+			|| normalized_paint_transform(clip.transform) != transform {
+			continue
+		}
+		r := clip.corner_radii
+		if r.top_left.x > 0 || r.top_left.y > 0 || r.top_right.x > 0 || r.top_right.y > 0
+			|| r.bottom_right.x > 0 || r.bottom_right.y > 0 || r.bottom_left.x > 0
+			|| r.bottom_left.y > 0 {
+			return index
+		}
+	}
+	return -1
+}
+
+fn chromium_paint_clip_data(clip layout.PaintClip) [12]f32 {
+	r := clip.corner_radii
+	return [f32(clip.rect.x), f32(clip.rect.y), f32(clip.rect.width), f32(clip.rect.height),
+		f32(r.top_left.x), f32(r.top_left.y), f32(r.top_right.x), f32(r.top_right.y),
+		f32(r.bottom_right.x), f32(r.bottom_right.y), f32(r.bottom_left.x), f32(r.bottom_left.y)]!
+}

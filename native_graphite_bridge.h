@@ -67,6 +67,11 @@ typedef struct {
     float gradient_points[6], gradient_matrix[9], opacity;
     const float *stops;
     int has_float_alpha;
+    // Optional rounded clips in the path's local coordinate space.
+    int has_clip;
+    float clip[12];
+    int has_ancestor_clip;
+    float ancestor_clip[12];
 } VoxGraphitePath;
 
 #ifdef __cplusplus

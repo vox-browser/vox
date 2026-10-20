@@ -93,7 +93,11 @@ class VoxGraphiteRasterCache {
             && a.linear_color_space == b.linear_color_space && a.stop_count == b.stop_count
             && !std::memcmp(a.gradient_points, b.gradient_points, sizeof(a.gradient_points))
             && !std::memcmp(a.gradient_matrix, b.gradient_matrix, sizeof(a.gradient_matrix))
-            && !std::memcmp(&a.opacity, &b.opacity, sizeof(a.opacity));
+            && !std::memcmp(&a.opacity, &b.opacity, sizeof(a.opacity))
+            && a.has_clip == b.has_clip
+            && (!a.has_clip || !std::memcmp(a.clip, b.clip, sizeof(a.clip)))
+            && a.has_ancestor_clip == b.has_ancestor_clip
+            && (!a.has_ancestor_clip || !std::memcmp(a.ancestor_clip, b.ancestor_clip, sizeof(a.ancestor_clip)));
     }
     std::list<std::unique_ptr<Entry>> entries;
     // Small sprite draws share a large decoded sheet. Retain one immutable
