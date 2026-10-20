@@ -3,9 +3,9 @@ module layout
 import dom
 import platform
 
-// Only the contiguous BlockBox slots live in this arena. Filling a slot runs
-// in ordinary storage: style projections and retained command payloads can
-// outlive a particular tree. Every published tree has an explicit owner.
+// A published tree owns its slots and style-to-paint projections. Geometry
+// caches allocate their reusable templates independently; scenes retain this
+// owner while their command payloads still refer to a particular projection.
 @[heap]
 struct PaintTreeStorage {
 mut:
@@ -51,7 +51,7 @@ fn (mut result DocumentLayoutResult) acquire_paint_tree_storage(document &dom.Do
 		mut storage := if pool.free.len > 0 {
 			pool.free.pop()
 		} else {
-			&PaintTreeStorage{ arena: platform.new_arena('paint tree slots'), pool: pool }
+			&PaintTreeStorage{ arena: platform.new_arena('paint tree projections'), pool: pool }
 		}
 		storage.references = 1
 		storage.document_storage = document.native_storage()

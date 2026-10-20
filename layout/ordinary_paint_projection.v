@@ -2,6 +2,7 @@ module layout
 
 import css
 import dom
+import platform
 
 struct OrdinaryPaintBoxGeometry {
 	width   f64
@@ -97,6 +98,9 @@ fn fill_ordinary_paint_box(node &Node, state &LayoutState,
 			return
 		}
 	}
+	// Nodes retain this template across independently owned paint trees.
+	persistent := platform.enter_persistent_if(platform.transient_arena_entered())
+	defer { platform.leave_persistent(persistent) }
 	output = uncached_block_box_from_typed_layout_shallow(node, state, ancestor_transform)
 	mut mutable_node := unsafe { &Node(node) }
 	mutable_node.ordinary_paint_box_ = unsafe { nil }

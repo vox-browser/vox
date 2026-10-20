@@ -2,6 +2,7 @@ module layout
 
 import css
 import painting
+import platform
 
 // The layout cache already proves that line geometry and font ownership are
 // unchanged. Keep the expensive style-to-paint projection too, rebasing only
@@ -105,6 +106,10 @@ fn text_lines_from_typed_layout(container &Node, used &UsedValues, state &Layout
 					return translated
 				}
 			}
+			// The geometry cache can serve a later tree after this projection's
+			// arena has been recycled. Build its immutable template outside it.
+			persistent := platform.enter_persistent_if(platform.transient_arena_entered())
+			defer { platform.leave_persistent(persistent) }
 			lines := uncached_text_lines_from_typed_layout(container, used, state, position)
 			if !cached.paint_ready_ && retained_inline_paint_can_share(lines) {
 				if snapshot := rebase_retained_inline_lines(lines, 0, 0) {

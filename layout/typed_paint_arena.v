@@ -62,23 +62,18 @@ fn build_typed_paint_tree_in_arena(root &Node, state &LayoutState, ancestor_tran
 }
 
 fn build_typed_paint_tree_with_interest(root &Node, state &LayoutState, ancestor_transform [6]f64, interest ?LayoutRect, mut omitted PaintProjectionStatus) BlockBox {
-	return build_typed_paint_tree_with_storage(root, state, ancestor_transform, interest,
-		mut omitted, unsafe { nil })
+	return build_typed_paint_tree_projection(root, state, ancestor_transform, interest, mut omitted)
 }
 
-fn build_typed_paint_tree_with_storage(root &Node, state &LayoutState, ancestor_transform [6]f64,
-	interest ?LayoutRect, mut omitted PaintProjectionStatus, storage &PaintTreeStorage) BlockBox {
+fn build_typed_paint_tree_projection(root &Node, state &LayoutState, ancestor_transform [6]f64,
+	interest ?LayoutRect, mut omitted PaintProjectionStatus) BlockBox {
 	phase_mark := platform.arena_phase_begin()
 	defer {
 		platform.arena_phase_end('paint_tree', phase_mark)
 	}
 	prepare_retained_block_paint_owners(state)
 	plan := typed_paint_arena_plan_with_interest(root, state, interest)
-	mut slot_entry := platform.ArenaEntry{}
-	mut arena := if storage != unsafe { nil } { storage.arena } else { unsafe { &platform.Arena(nil) } }
-	if arena != unsafe { nil } { slot_entry = arena.enter() }
 	mut boxes := []BlockBox{cap: plan.len}
-	if arena != unsafe { nil } { arena.leave(slot_entry) }
 	// Capacity is exact and the allocator zeroes reserved storage. Each slot is
 	// fully written before a later child reads its parent's transform; no
 	// interior slice is published until every record has been initialized.

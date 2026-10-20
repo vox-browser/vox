@@ -68,3 +68,41 @@ fn test_native_paint_tree_slot_arenas_stay_bounded_across_rebuilds() {
 		assert result.paint_tree.paint_commands().any(it.text.contains('Text with'))
 	}
 }
+
+fn test_native_paint_projection_payloads_follow_the_scene_and_reuse_after_release() {
+	$if !prealloc { return }
+	mut document := html.parse_document('<!doctype html><style>html,body{margin:0}section{overflow:hidden;width:180px}p{border:2px solid blue}</style><div id="changed"></div><section><p id="text">Retained <b>decorated</b> words</p></section>')
+	defer { document.finalize() }
+	enable_native_paint_tree_storage(document)
+	_ = layout_document_typed_in_viewport(document, 320, 240)
+	mut result := document_layout_result(document)?
+	// Warm the geometry-owned projection caches before measuring refreshes.
+	refresh_document_paint_tree(document, mut result, 320, 240)
+	viewport_build_stacking_context_tree(voidptr(result))
+	old_tree := result.paint_tree
+	old_owner := result.paint_tree_storage
+	text := document.get_element_by_id('text')?
+	box := old_tree.find_box(i64(text.as_node().unique_id()))?
+	assert old_owner.arena.contains(box.lines.data)
+	assert old_owner.arena.contains(box.lines[0].fragments.data)
+	old_list := document.record_display_list()?
+	scene := retain_display_list_scene(old_list)
+	old_dump := old_list.dump()
+	for _ in 0 .. 8 {
+		refresh_document_paint_tree(document, mut result, 320, 240)
+		viewport_build_stacking_context_tree(voidptr(result))
+		_ = document.record_display_list()?
+		assert old_list.dump() == old_dump
+		assert old_tree.paint_commands().any(it.text == 'Retained ')
+	}
+	assert old_owner.arena.reset_count() == 0
+	release_display_list_scene(scene)
+	assert old_owner.arena.reset_count() == 1
+	for _ in 0 .. 32 {
+		refresh_document_paint_tree(document, mut result, 320, 240)
+		viewport_build_stacking_context_tree(voidptr(result))
+		_ = document.record_display_list()?
+		assert result.paint_tree_pool.live.len == 1
+		assert result.paint_tree_pool.free.len <= paint_tree_storage_spares
+	}
+}

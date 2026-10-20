@@ -3,6 +3,8 @@
 // SPDX-License-Identifier: BSD-2-Clause
 module layout
 
+import platform
+
 import css
 import dom
 import encoding.base64
@@ -503,6 +505,9 @@ fn svg_image_document_for_source(document &dom.Document, source string) ?&dom.Do
 // response or local-file replacement. Failed loads never reuse a cached image.
 fn svg_image_document_for_source_in_viewport(node &Node, source string,
 	color_scheme css.PreferredColorScheme) ?&dom.Document {
+	// Isolated SVG documents and the viewport cache survive paint projections.
+	persistent := platform.enter_persistent_if(platform.transient_arena_entered())
+	defer { platform.leave_persistent(persistent) }
 	image_source := svg_image_source_for_paint(node, source) or { return none }
 	scheme := css.preferred_color_scheme_to_string(color_scheme)
 	viewport := node.root_viewport() or {
