@@ -45,7 +45,7 @@ mut:
 	target_indices      map[i64]int
 	retiring            []RetiringAnimationSamples
 	spare               []&platform.Arena
-	spare_target_lists  [][]AnimationSampleTarget
+	spare_target_lists  []AnimationSampleTargetList
 	// Decaying maximum of the sample bytes one update allocates, and the
 	// current arena's use when this update began.
 	update_bytes      i64
@@ -60,6 +60,12 @@ mut:
 	element dom.AbstractElement
 	// The target installed an inherited property: descendants may hold it.
 	inherited bool
+}
+
+// Appending a nested array makes current V clone its backing store. Transfer
+// these already owned vectors in a record so arena rotation reuses them.
+struct AnimationSampleTargetList {
+	items []AnimationSampleTarget
 }
 
 struct RetiringAnimationSamples {
@@ -152,7 +158,7 @@ fn (mut storage AnimationSampleStorage) begin_update(document &dom.Document) boo
 		retired_layout_generation: document.layout_pass_generation
 	}
 	storage.current_targets = if storage.spare_target_lists.len > 0 {
-		storage.spare_target_lists.pop()
+		storage.spare_target_lists.pop().items
 	} else {
 		[]AnimationSampleTarget{}
 	}
@@ -285,7 +291,7 @@ fn (mut storage AnimationSampleStorage) retire_unreachable(document &dom.Documen
 			mut targets := unsafe { retiring.targets }
 			targets.clear()
 			if storage.spare_target_lists.len < 2 {
-				storage.spare_target_lists << targets
+				storage.spare_target_lists << AnimationSampleTargetList{items:targets}
 			}
 			platform.leave_persistent(persistent)
 			continue
