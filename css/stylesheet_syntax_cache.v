@@ -31,6 +31,23 @@ mut:
 
 __global stylesheet_syntax_cache_ = StylesheetSyntaxCache{}
 
+// Completed stylesheets own their rules and any deferred component input.
+// Keeping a second root to every token tree only benefits a future parse. An
+// idle static document can discard that cache without changing live CSSOM or
+// parser borrowers; a later parse repopulates it normally.
+fn (mut cache StylesheetSyntaxCache) release_unused() {
+	cache.mutex.lock()
+	defer { cache.mutex.unlock() }
+	// clear() would leave pointers in the scanned array's backing allocation.
+	cache.entries = []&StylesheetSyntaxEntry{}
+	cache.source_bytes = 0
+	cache.nodes = 0
+}
+
+pub fn release_unused_stylesheet_syntax() {
+	stylesheet_syntax_cache_.release_unused()
+}
+
 fn stylesheet_syntax_node_count(values []ComponentValue) int {
 	mut count := values.len
 	for value in values {
