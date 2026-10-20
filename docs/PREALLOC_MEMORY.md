@@ -20,6 +20,7 @@ what remains before it can become the default.
 | Frame/pass scratch (transform resolution, refresh lists) | `platform.Arena`, reset after the pass | one pass |
 | Animation samples | `css.AnimationSampleStorage` arenas | until no style, layout snapshot or live scene can reach them |
 | Display-list scenes | `layout.DisplayListScene` arenas | until the layout result and every consumer released them |
+| Native paint-tree slots | `layout.PaintTreeStorage` arenas | until the layout result, shell geometry and every scene released them |
 | Shared caches (fonts, parsed values, images) | base arena via `platform.enter_persistent()` | process |
 
 Allocated during a frame does not mean safe to discard at the end of that
@@ -45,6 +46,23 @@ frame: each arena is reset only after its last reader has let go.
   spare (at most two). Documents whose commands a host copies into its own
   paint data (nested viewports) record into ordinary storage. Recording copies
   command records; payloads stay owned by the retained phase caches.
+- **Native paint trees** (`layout/paint_tree_storage.v`). The native shell opts
+  its documents into recycling before script execution can force layout. Only
+  the contiguous `BlockBox` array lives in the tree arena; filling its slots
+  runs in ordinary storage, preserving the lifetime of cached style projections
+  and command payloads. The committed layout result, adopted shell geometry,
+  and each display-list scene hold separate references. Replacing geometry or
+  releasing a scene drops its reference; the final release resets the arena.
+  A document keeps at most two reset spares. General layout APIs retain their
+  existing snapshot lifetime, and host-borrowed documents remain unpooled.
+- **Recording buffers**. The shell updates its raster-layer plan in place,
+  retaining command vectors for temporarily inactive layers. Property/chunk
+  scratch and scroll/fixed lookup maps also retain capacity. MSAA preparation
+  reuses its triggers, layer groups, native tile vectors, grid maps and cell
+  vectors; native setters copy those vectors before returning. Gradient replay
+  reuses sampled stops, GPU stops and clip-path vectors across commands and
+  frames, and color-only gradients no longer materialize fallback stop arrays
+  for each interpolation sample.
 - **Animation samples** (`css/animation_samples.v`). Keyframe values,
   interpolated results, and everything derived from them for the target's
   layout snapshot are allocated in the current sample arena. Installing a
@@ -91,6 +109,11 @@ frame: each arena is reset only after its last reader has let go.
 5. `VOX_ARENA_POISON=1` write-protects reset and released blocks instead of
    reusing them, so a stale pointer faults at its first use; the fault names
    the arena. `VOX_ARENA_NO_REUSE=label,...` poisons only the named arenas.
+6. A geometry snapshot from a document opted into native paint-tree recycling
+   holds `retain_document_paint_tree()` until `release_paint_tree()`. Retain
+   before replacing the previous snapshot, then release its handle. Scenes
+   retain tree slots independently. The `paint tree slots` poison label covers
+   this lifetime; payload allocation is deliberately outside that arena.
 
 ## Heap copies inserted by current V
 
@@ -118,6 +141,13 @@ position. To check a function, generate C (`v -o out.c` with the build's
 `-path`) and look for `memdup(&__esc_` and `memdup(&__heap_value_param_` in its
 body. The sampler shows an inlined copy as an allocation by the function itself.
 
+Two other implicit allocations matter on replay paths. Current V's
+`i32.sort()` and `sort_with_compare()` reserve a merge buffer; collecting
+unique tile indices in sorted order avoids that buffer. Constructing a
+sum-type variant boxes its payload, including an enum used as an `or`
+fallback. Gradient sampling shares one immutable sRGB default instead of
+constructing it for every sample.
+
 ## Measuring
 
 - `layout/prealloc_bounded_frames_test.v` requires transform and
@@ -143,6 +173,61 @@ retained (2026-10-19, `Build/pikabu-instructions-cache-final`, 400 frames:
 median 5 KB, maximum 42 KB per frame after warm-up). Thirty poisoned runs
 found no stale arena access after the font-cache and background-layer fixes.
 
+### Buffer reuse and tree retirement, 2026-10-20
+
+`e09ac3ff`, `6217d8a8` and `fa517eaf` add reused raster-plan output, MSAA and
+gradient buffers, then reference-counted native paint-tree slots. Current V
+`0.5.2 1e63d0f` built the optimized prealloc bundle. Matched `memrun.py` runs
+used the same offline Pikabu cache and network guard, a 1024×880 window,
+JavaScript enabled, no scrolling, and 60 seconds per process:
+
+| Build | RSS at 30 s (MiB) | RSS at 60 s (MiB) | Idle RSS slope (MiB/s) |
+| --- | ---: | ---: | ---: |
+| Saved prealloc baseline | 2105.6 | 2169.7 | 1.69 |
+| Reused buffers and retired tree slots | 1982.7 | 2012.2 | 0.55 |
+| Saved Boehm reference | 934.2 | 938.5 | 0.13 |
+
+The slopes are linear fits over samples from 20 to 60 seconds. Final physical
+footprints were 2389, 2223 and 1132 MiB respectively. The measurement helper
+terminated each browser normally for this experiment (`SIGTERM`, exit -15).
+This reduces idle growth by about 68%, but still leaves growing memory and a
+large gap to Boehm. It does not justify changing the default allocator.
+Binary hashes, compiler and source identity, raw samples and logs are retained
+under `Build/prealloc-reuse/`, including `metadata.json`,
+`memory-summary.json`, `before.json`, `after.json` and
+`boehm-reference.json`.
+
+The raster-plan, MSAA and gradient reuse checks require zero base-arena growth
+after warm-up. They pass under prealloc, including arena poisoning; the
+recording behavior checks also pass under Boehm. Native tree and shell tests
+cover retained old geometry and scenes, layout and paint-only replacements,
+deferred recording, hit-test refresh and tab disposal. They pass with normal
+arena reuse and poisoning. A 240-frame native Pikabu idle run also completes
+with `VOX_ARENA_POISON=1`.
+The two new shell lifetime cases and ten existing frame cases also pass under
+Boehm, separately from its GC-worker check below.
+
+All visual checks use the final optimized prealloc bundle and arena poisoning.
+The four targeted gradient/SVG reftests are pixel-exact (`css-gradient-currentcolor`,
+`css-gradient-negative-first-stop`, `svg-gradient-in-defs-removed-repaint`, and
+`svg/gradient-stop-move-before`). The default smoke suite has six exact passes,
+one pass within its existing canvas allowance, and four upstream-reference
+failures: `inline-node`, `ordered-list`, `text-decorations`, and
+`default-ignorable-code-points-not-painted`. Capturing those four through the
+saved prealloc baseline gives identical decoded pixels to the final bundle;
+no tolerance was changed. Receipts and images are in `screenshots.log`,
+`gradient-screenshots.log` and `screenshot-baseline-proof.log` under the same
+artifact directory.
+
+Broader checks have separate limits: `layout/typed_paint_arena_test.v` reached
+the compiler's 10 GiB footprint cap while compiling its whole-struct string
+comparisons; an unrestricted retry was stopped after compiler RSS exceeded
+35 GiB. The broader Boehm retirement test needs `-D_VGCBOEHM` to expose its
+legacy C helper, then exhausts that helper's worker stack in generated
+`__v3_sum_eq_css__StyleValue`. Neither check receives broad pass credit. The
+previously reported `css/native_style_scope_retirement_test.v` failure is
+unchanged.
+
 ## Remaining work before `-prealloc` becomes the default
 
 - Opacity samples that stay nonzero keep the paint plan and phase cache;
@@ -164,14 +249,15 @@ found no stale arena access after the font-cache and background-layer fixes.
   animation frame resolves its target's whole snapshot into the sample arena;
   resolving only animated values there would remove that hazard and most
   sample bytes.
-- Recording still rebuilds the Chromium raster-layer plan, MSAA tiles and
-  gradient stop and clip buffers from scratch (about 6 MB/s on an idle Pikabu
-  on 2026-10-20, after its heap copies were removed); they need reused
-  storage or a per-recording arena.
+- Gradient tile enumeration, nested/SVG replay transformations and other shell
+  replay temporaries still need allocation profiling. Reusing the plan, MSAA
+  and gradient data vectors does not bound every recording allocation.
 - Document teardown: navigation, reload and tab close do not reclaim the old
   document's storage; documents need their own arenas and fetch threads need an
   owner for the allocations they retain. A Pikabu visit with a cached copy
-  installs the cached document and then the refreshed one, and each install
-  grows the base arena by about 800 MB (HTML 49 MB, style sheets 82 MB, the
-  first style pass 137 MB, about 27 paint-tree rebuilds of 11 MB, layouts);
+  installs the cached document and then the refreshed one. The original
+  profile grew the base arena by about 800 MB per install (HTML 49 MB,
+  style sheets 82 MB, the
+  first style pass 137 MB, layouts). Before native tree-slot recycling, about
+  27 paint-tree rebuilds also accumulated roughly 11 MB each;
   `VOX_PHASE_DIAGNOSTICS=1` builds print these `PHASE` lines.
