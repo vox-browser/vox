@@ -9,6 +9,7 @@ pub:
 mut:
 	references int = 1
 	pinned     bool
+	cleanup []fn ()
 }
 
 pub fn new_retained_arena(label string) &RetainedArena {
@@ -25,7 +26,20 @@ pub fn (mut storage RetainedArena) retain() {
 pub fn (mut storage RetainedArena) release() {
 	assert storage.references > 0
 	storage.references--
-	if storage.references == 0 && !storage.pinned { storage.arena.release() }
+	if storage.references == 0 && !storage.pinned {
+		for callback in storage.cleanup { callback() }
+		storage.cleanup.clear()
+		storage.arena.release()
+	}
+}
+
+// Dependent arenas (such as animation samples) remain readable by snapshots
+// for exactly as long as the document payload, and retire before that payload.
+pub fn (mut storage RetainedArena) add_cleanup(callback fn ()) {
+	assert storage.references > 0
+	persistent := enter_persistent()
+	storage.cleanup << callback
+	leave_persistent(persistent)
 }
 
 // Cross-document adoption or an untracked host borrower conservatively keeps

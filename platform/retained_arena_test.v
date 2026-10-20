@@ -4,6 +4,48 @@ struct RetainedArenaTestNode {
 	value int
 }
 
+struct RetainedArenaCleanupProbe {
+mut:
+	calls int
+	bytes_before_release i64
+}
+
+fn test_dependent_storage_retires_after_final_reader_before_payload_release() {
+	mut storage := new_retained_arena('cleanup ordering')
+	probe := &RetainedArenaCleanupProbe{}
+	storage.add_cleanup(fn [storage, probe] () {
+		mut observation := unsafe { &RetainedArenaCleanupProbe(probe) }
+		observation.calls++
+		observation.bytes_before_release = storage.arena.usage().used
+	})
+	mut scope := storage.enter()
+	value := &RetainedArenaTestNode{value: 19}
+	storage.retain()
+	scope.finish()
+	storage.release()
+	assert probe.calls == 0 && value.value == 19
+	storage.release()
+	assert probe.calls == 1
+	$if prealloc { assert probe.bytes_before_release > 0 }
+	assert storage.arena.usage().used == 0
+}
+
+fn fill_cache_from_worker() bool {
+	entry := enter_persistent()
+	value := 'worker-owned allocation'.bytes()
+	leave_persistent(entry)
+	return value.len == 23 && current_retained_arena() == unsafe { nil }
+}
+
+fn test_persistent_cache_sections_do_not_enter_an_origin_arena_from_workers() {
+	mut storage := new_retained_arena('origin cache')
+	mut scope := storage.enter()
+	worker := spawn fill_cache_from_worker()
+	assert worker.wait()
+	scope.finish()
+	storage.release()
+}
+
 fn test_retained_arena_waits_for_snapshot_and_scope() {
 	mut storage := new_retained_arena('retained test')
 	mut scope := storage.enter()

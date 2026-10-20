@@ -259,6 +259,12 @@ pub fn arena_entered() bool {
 // arena is entered: retained state such as caches must outlive the arena.
 pub fn enter_persistent() ArenaEntry {
 	$if prealloc {
+		// Workers already allocate in their own base scope. They must not
+		// switch the origin thread's entered arena when filling shared caches.
+		if arena_thread_state.initialized
+			&& arena_thread_state.owner != u64(C.pthread_self()) {
+			return ArenaEntry{base: true}
+		}
 		mut state := arena_state()
 		// Outside an arena, or already in a persistent section whose base tail
 		// may have grown since it was saved, allocations already go to the base.
