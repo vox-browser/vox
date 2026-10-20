@@ -279,7 +279,7 @@ fn (font &Font) pixel_metrics_uncached() FontPixelMetrics {
 	}
 	if !has_os2_x_height && font_face_has_truetype_outlines(face) {
 		mut mutable_face := unsafe { &ttf.TTF_File(face) }
-		x_glyph := mutable_face.map_code(int(`x`))
+		x_glyph := font_cmap_glyph(face.buf, u32(`x`))
 		_, _, _, x_max_y := mutable_face.read_glyph_dim(x_glyph)
 		if x_max_y > 0 {
 			x_height_units = i16(x_max_y)
@@ -341,8 +341,7 @@ pub fn (font &Font) contains_glyph(code_point u32) bool {
 	if code_point > 0xffff {
 		return false
 	}
-	mut mutable_face := unsafe { &ttf.TTF_File(face) }
-	if mutable_face.map_code(int(code_point)) != 0 {
+	if font_cmap_glyph(face.buf, code_point) != 0 {
 		return true
 	}
 	// NotoEmoji's BMP symbols are exposed through a cmap format which x.ttf

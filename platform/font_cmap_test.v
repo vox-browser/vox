@@ -22,8 +22,29 @@ fn test_compact_font_cmap_matches_the_legacy_mapper_for_every_bmp_code_point() {
 		advance, _ := legacy.get_horizontal_metrics(glyph)
 		actual_advance, actual_glyph := font.glyph_metrics_for_shaping(code_point)
 		assert actual_glyph == int(glyph)
+		assert font.contains_glyph(code_point) == (glyph != 0)
 		assert actual_advance == f32(advance) * font.point_size / f32(legacy.units_per_em)
 	}
+	assert !font.contains_glyph(0x10000)
+}
+
+fn test_compact_font_cmap_supplies_x_height_without_os2_metrics() {
+	path := bundled_font_path('SerenitySans-Regular.ttf') or { panic('missing bundled font') }
+	mut bytes := read_outline_face_bytes(path, 0) or { panic('missing font bytes') }
+	normalize_table_checksums(mut bytes)
+	mut face := &ttf.TTF_File{buf: bytes, panose_array: []u8{len: 12}, width_scale: 1}
+	face.init()
+	x_glyph := face.map_code(int(`x`))
+	assert x_glyph != 0
+	_, _, _, y_max := face.read_glyph_dim(x_glyph)
+	if os2 := font_table_offset(face.buf, 'OS/2') {
+		// Version 1 has no sxHeight; the font must measure the x glyph.
+		face.buf[os2] = 0
+		face.buf[os2 + 1] = 1
+	}
+	face.cmaps = face.cmaps[..0].clone()
+	font := &Font{family: 'CompactXHeightFixture', point_size: 16, decoded_face_: face}
+	assert font.pixel_metrics().x_height == f32(y_max) * 16 / f32(face.units_per_em)
 }
 
 fn test_compact_font_cmap_rejects_truncated_tables_and_range_offsets() {
