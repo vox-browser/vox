@@ -6,6 +6,8 @@
 
 static unsigned graphics_releases;
 static unsigned managed_deliveries;
+static unsigned idle_checks;
+static unsigned pending_idle_checks;
 static void *expected_owner;
 static CIContext *native_css_filter_ci_context;
 
@@ -13,6 +15,15 @@ void ladybird_v_skia_release_unused_graphics_memory(void) {
     assert([NSThread isMainThread]);
     assert(!native_layer_document_work_active && !native_layer_presenting);
     graphics_releases++;
+}
+
+int ladybird_v_skia_release_idle_graphics_memory(void) {
+    assert([NSThread isMainThread]);
+    assert(!native_layer_document_work_active && !native_layer_presenting);
+    idle_checks++;
+    if (!pending_idle_checks) return 0;
+    pending_idle_checks--;
+    return 1;
 }
 
 // The driver extracts these function bodies verbatim from the production host.
@@ -62,6 +73,28 @@ int main(void) {
         native_layer_presenting = NO;
         pump(0.03);
         assert(managed_deliveries == 2);
+
+        // A final frame must retire a context even when the first check is
+        // earlier than its idle threshold and no more frames are requested.
+        pending_idle_checks = 2;
+        native_schedule_idle_graphics_cleanup();
+        native_schedule_idle_graphics_cleanup();
+        pump(1.10);
+        assert(idle_checks == 1);
+        pump(1.10);
+        assert(idle_checks == 2);
+        pump(1.10);
+        assert(idle_checks == 3);
+        pump(1.10);
+        assert(idle_checks == 3); // No permanent polling after retirement.
+
+        native_layer_document_work_active = YES;
+        native_schedule_idle_graphics_cleanup();
+        pump(1.10);
+        assert(idle_checks == 3);
+        native_layer_document_work_active = NO;
+        pump(0.10);
+        assert(idle_checks == 4);
 
         native_schedule_static_graphics_cleanup();
         pump(0.05);

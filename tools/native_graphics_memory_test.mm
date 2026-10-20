@@ -199,7 +199,7 @@ int main(int argc, char** argv)
     auto idle_purge = symbol<decltype(&vox_graphite_release_idle_graphics_memory)>(library,
         "vox_graphite_release_idle_graphics_memory");
     auto cached_pixels = graphite_case(library, 1, 1);
-    assert(idle_purge() == 0);
+    assert(idle_purge() == -1);
     std::this_thread::sleep_for(std::chrono::milliseconds(2100));
     assert(idle_purge() == 1);
     assert(idle_purge() == 0);

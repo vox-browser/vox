@@ -37,7 +37,7 @@ int native_prefers_overlay_scrollbars(void) {
 #ifdef LADYBIRD_V_HAS_SKIA_TEXT
 extern void ladybird_v_skia_set_chromium_painting(int active);
 extern void ladybird_v_skia_release_unused_graphics_memory(void);
-extern void ladybird_v_skia_release_idle_graphics_memory(void);
+extern int ladybird_v_skia_release_idle_graphics_memory(void);
 extern int ladybird_v_skia_configure_font(const char *path, int slot);
 extern void ladybird_v_skia_set_image_color_profile(const float *profile);
 extern void ladybird_v_skia_set_root_raster_scroll_y(double scroll_y);
@@ -2332,7 +2332,11 @@ void native_schedule_idle_graphics_cleanup(void) {
 		native_when_document_work_idle(^{
 			native_idle_graphics_cleanup_scheduled = NO;
 #ifdef LADYBIRD_V_HAS_SKIA_TEXT
-			ladybird_v_skia_release_idle_graphics_memory();
+			// A first check can precede the renderer's two-second idle
+			// threshold. Keep polling until the final live context retires,
+			// even if the document never paints another frame.
+			if (ladybird_v_skia_release_idle_graphics_memory())
+				native_schedule_idle_graphics_cleanup();
 #endif
 		});
 	});

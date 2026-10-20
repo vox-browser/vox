@@ -198,7 +198,8 @@ int vox_graphite_picture_release_idle_graphics_memory()
 {
     if (!pthread_main_np()) return 0;
     std::lock_guard lock(gpu_mutex);
-    if (!gpu_context || std::chrono::steady_clock::now() - gpu_context_last_use < std::chrono::seconds(2)) return 0;
+    if (!gpu_context) return 0;
+    if (std::chrono::steady_clock::now() - gpu_context_last_use < std::chrono::seconds(2)) return -1;
     gpu_context->submit(skgpu::graphite::SubmitInfo(skgpu::graphite::SyncToCpu::kYes));
     gpu_context->checkAsyncWorkCompletion();
     gpu_context.reset();

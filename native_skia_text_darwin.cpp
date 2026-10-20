@@ -706,9 +706,10 @@ extern "C" void ladybird_v_skia_release_unused_graphics_memory()
 
 // Polling may run on scripted pages. Preserve CPU paint/font caches and only
 // retire contexts that have not performed GPU raster work for two seconds.
-extern "C" void ladybird_v_skia_release_idle_graphics_memory()
+extern "C" int ladybird_v_skia_release_idle_graphics_memory()
 {
-    if (!pthread_main_np()) return;
+    if (!pthread_main_np()) return 0;
+    bool pending = false;
     if (auto* gpu = s_image_gpu_context.get(); gpu &&
         std::chrono::steady_clock::now() - s_image_gpu_context_last_use >= std::chrono::seconds(2)) {
         gpu->flushAndSubmit(GrSyncCpu::kYes);
@@ -720,18 +721,20 @@ extern "C" void ladybird_v_skia_release_idle_graphics_memory()
             s_image_gpu_context_attempted = false;
         }
     }
+    pending = s_image_gpu_context != nullptr;
     if (void* library = dlopen("@rpath/libVoxGraphite.dylib", RTLD_LAZY | RTLD_LOCAL | RTLD_NOLOAD)) {
         auto purge = reinterpret_cast<decltype(&vox_graphite_release_idle_graphics_memory)>(
             dlsym(library, "vox_graphite_release_idle_graphics_memory"));
-        if (purge) purge();
+        if (purge) pending |= purge() < 0;
         dlclose(library);
     }
     if (void* library = dlopen("@rpath/libVoxGraphiteDawn.dylib", RTLD_LAZY | RTLD_LOCAL | RTLD_NOLOAD)) {
         auto purge = reinterpret_cast<decltype(&vox_graphite_picture_release_idle_graphics_memory)>(
             dlsym(library, "vox_graphite_picture_release_idle_graphics_memory"));
-        if (purge) purge();
+        if (purge) pending |= purge() < 0;
         dlclose(library);
     }
+    return pending;
 }
 
 extern "C" void ladybird_v_skia_set_chromium_painting(int active)
