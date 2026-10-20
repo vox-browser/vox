@@ -1,8 +1,9 @@
 import tempfile
 from pathlib import Path
 import unittest
+from unittest.mock import Mock, call, patch
 
-from capture_brave_reference import imported_cookies, launch_command, window_position
+from capture_brave_reference import imported_cookies, launch_command, resize_native_viewport, window_position
 
 
 class BraveReferenceTests(unittest.TestCase):
@@ -43,6 +44,38 @@ class BraveReferenceTests(unittest.TestCase):
         self.assertNotIn('about:blank', command)
         self.assertIn('--no-startup-window', command)
         self.assertEqual(window_position('-1100,32'), (-1100, 32))
+
+    def test_native_viewport_resize_accounts_for_browser_chrome(self):
+        browser = Mock()
+        browser.call.side_effect = [dict(windowId=7),
+                                    dict(bounds=dict(width=1104, height=824)), {}]
+        cdp = Mock()
+        cdp.call.side_effect = [dict(result=dict(value=viewport)) for viewport in
+                               [dict(width=1088, height=728, scale=2),
+                                dict(width=1024, height=684, scale=2)]]
+        with patch('capture_brave_reference.time.sleep'):
+            actual = resize_native_viewport(browser, cdp, 'page', 1024, 684, 2)
+        self.assertEqual(actual, dict(width=1024, height=684, scale=2))
+        self.assertIn(call('Browser.setWindowBounds', {
+            'windowId': 7, 'bounds': dict(width=1040, height=780)}), browser.call.call_args_list)
+
+    def test_native_capture_rejects_a_different_display_scale(self):
+        browser = Mock()
+        browser.call.return_value = dict(windowId=7)
+        cdp = Mock()
+        cdp.call.return_value = dict(result=dict(value=dict(width=1024, height=684, scale=1)))
+        with self.assertRaisesRegex(RuntimeError, 'Native display scale'):
+            resize_native_viewport(browser, cdp, 'page', 1024, 684, 2)
+
+    def test_native_capture_rejects_a_window_manager_size_limit(self):
+        browser = Mock()
+        browser.call.side_effect = lambda method, params: (
+            dict(windowId=7) if method == 'Browser.getWindowForTarget' else
+            dict(bounds=dict(width=1104, height=824)))
+        cdp = Mock()
+        cdp.call.return_value = dict(result=dict(value=dict(width=1088, height=728, scale=2)))
+        with patch('capture_brave_reference.time.sleep'), self.assertRaisesRegex(RuntimeError, 'could not resize'):
+            resize_native_viewport(browser, cdp, 'page', 2048, 1368, 2)
 
 
 if __name__ == '__main__':

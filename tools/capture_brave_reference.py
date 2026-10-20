@@ -9,6 +9,8 @@ device scale. Focus emulation matches a focused browser window, and the
 capture waits for document load and web fonts. --rects writes every element's
 client rectangle as JSON for geometry comparisons. --proxy-server and
 --cookie-file reuse an explicitly imported session in the isolated profile.
+Captures use sRGB. --windowed --native-scale uses the display's real scale
+and resizes the window around the requested viewport without emulation.
 """
 import argparse
 import base64
@@ -104,7 +106,8 @@ def imported_cookies(path):
 def launch_command(binary, profile, proxy_server=None, windowed=False):
     command = [binary, "--no-first-run", "--no-default-browser-check",
                "--disable-background-networking", "--disable-sync", "--remote-debugging-port=0",
-               "--hide-scrollbars", "--lang=en-US", f"--user-data-dir={profile}"]
+               "--hide-scrollbars", "--force-color-profile=srgb", "--lang=en-US",
+               f"--user-data-dir={profile}"]
     if proxy_server:
         # Chromium's SOCKS5 implementation resolves hostnames at the proxy.
         if proxy_server.startswith('socks5h://'):
@@ -142,6 +145,26 @@ def wait_for_page_debugger(opener, port, deadline):
         time.sleep(min(.05, remaining))
 
 
+def resize_native_viewport(browser, cdp, target, width, height, scale):
+    """Resize browser chrome around a real viewport without device emulation."""
+    window = browser.call('Browser.getWindowForTarget', {'targetId': target})['windowId']
+    for _ in range(6):
+        viewport = cdp.call('Runtime.evaluate', {
+            'expression': '({width:innerWidth,height:innerHeight,scale:devicePixelRatio})',
+            'returnByValue': True})['result']['value']
+        if viewport['scale'] != scale:
+            raise RuntimeError(f"Native display scale is {viewport['scale']}, requested {scale}")
+        if viewport['width'] == width and viewport['height'] == height:
+            return viewport
+        bounds = browser.call('Browser.getWindowBounds', {'windowId': window})['bounds']
+        browser.call('Browser.setWindowBounds', {
+            'windowId': window, 'bounds': {
+                'width': bounds['width'] + width - viewport['width'],
+                'height': bounds['height'] + height - viewport['height']}})
+        time.sleep(.1)
+    raise RuntimeError(f'Brave could not resize its native viewport to {width}x{height}')
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--binary", default=BRAVE)
@@ -159,6 +182,8 @@ def main() -> None:
     parser.add_argument("--metadata", type=Path, help="write final URL, title, login state and viewport")
     parser.add_argument("--timeout", type=float, default=60, help="navigation watchdog in seconds")
     parser.add_argument("--windowed", action="store_true", help="capture a normal background window")
+    parser.add_argument("--native-scale", action="store_true",
+                        help="resize a window to the viewport using the display's real scale")
     parser.add_argument("--window-position", type=window_position,
                         help="X,Y on the test display away from the pointer; required with --windowed")
     args = parser.parse_args()
@@ -166,6 +191,8 @@ def main() -> None:
         parser.error('viewport, scale and timeout must be positive; settle must be nonnegative')
     if args.windowed and args.window_position is None:
         parser.error('--windowed requires --window-position X,Y on the test display')
+    if args.native_scale and not args.windowed:
+        parser.error('--native-scale requires --windowed')
 
     with tempfile.TemporaryDirectory(prefix="brave-reference-") as profile:
         command = launch_command(args.binary, profile, args.proxy_server, args.windowed)
@@ -193,9 +220,12 @@ def main() -> None:
             cdp.call("Runtime.enable")
             if args.cookie_file:
                 cdp.call('Network.setCookies', {'cookies': imported_cookies(args.cookie_file)})
-            cdp.call("Emulation.setDeviceMetricsOverride", {
-                "width": args.width, "height": args.height,
-                "deviceScaleFactor": args.scale, "mobile": False})
+            if args.native_scale:
+                resize_native_viewport(browser, cdp, target, args.width, args.height, args.scale)
+            else:
+                cdp.call("Emulation.setDeviceMetricsOverride", {
+                    "width": args.width, "height": args.height,
+                    "deviceScaleFactor": args.scale, "mobile": False})
             if args.no_js:
                 cdp.call("Emulation.setScriptExecutionDisabled", {"value": True})
             cdp.call("Emulation.setFocusEmulationEnabled", {"enabled": True})
@@ -220,6 +250,8 @@ def main() -> None:
                     'returnByValue': True})['result']['value']
                 if navigation.get('errorText'):
                     metadata['navigation_error'] = navigation['errorText']
+                metadata['native_scale'] = args.native_scale
+                metadata['color_profile'] = 'sRGB'
                 args.metadata.write_text(json.dumps(metadata, indent=2) + '\n')
             if args.rects:
                 rects = cdp.call("Runtime.evaluate", {"expression": RECTS, "returnByValue": True})
