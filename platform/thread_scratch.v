@@ -34,6 +34,19 @@ pub fn begin_thread_scratch(label string) &ThreadScratchScope {
 pub fn (mut scratch ThreadScratchScope) leave() {
 	$if prealloc {
 		if scratch.entered {
+			// A retained allocation can grow this scope's parent while the
+			// temporary scope is active. V's unlink restores saved_next from
+			// begin(), which would discard that new parent chain. Preserve the
+			// current sibling when it belongs to the parent rather than us.
+			mut scope := unsafe { &PreallocScopeView(scratch.scope) }
+			parent := scope.previous
+			if parent != unsafe { nil } {
+				next := parent.next
+				if next != unsafe { nil } && next.is_scope == parent.is_scope
+					&& next.scope == parent.scope {
+					scope.saved_next = next
+				}
+			}
 			unsafe { prealloc_scope_leave(scratch.scope) }
 			set_current_block(latest_arena_block(current_block()))
 			scratch.entered = false

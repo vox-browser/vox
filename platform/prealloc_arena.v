@@ -26,7 +26,8 @@ fn C.vox_install_poison_fault_handler()
 
 // Mirrors of V's VMemoryBlock and VPreallocScope (vlib/builtin/prealloc.c.v),
 // read to walk an arena's blocks. verify_prealloc_layout() compares their
-// sizes with V's own types; every change to them goes through V's scope API.
+// sizes with V's own types. Allocation/free use V's scope API; ThreadScratchScope
+// also preserves a newly grown parent's saved link before V detaches a scope.
 struct PreallocBlockView {
 mut:
 	current        &u8                = unsafe { nil }
