@@ -1,8 +1,8 @@
 module css
 
 // Construction boundary for callers that provide more than one old field.
-// The common parser constructors below retain one by-value union arm without
-// allocating. A multi-field record owns an immutable compatibility snapshot.
+// Names and qualified names stay inline. Larger uncommon arms and multi-field
+// records own immutable snapshots, so every class/tag selector avoids their size.
 pub struct SimpleSelectorInit {
 pub mut:
 	type_          SimpleSelectorType
@@ -29,9 +29,9 @@ union SimpleSelectorPayload {
 mut:
 	name           SelectorName
 	qualified_name SelectorQualifiedName
-	attribute      SelectorAttribute
-	pseudo_class   PseudoClassSelector
-	pseudo_element PseudoElementSelector
+	attribute      &SelectorAttribute = unsafe { nil }
+	pseudo_class   &PseudoClassSelector = unsafe { nil }
+	pseudo_element &PseudoElementSelector = unsafe { nil }
 	invalid_text   string
 	expanded       &SimpleSelectorInit = unsafe { nil }
 }
@@ -76,12 +76,16 @@ pub fn (selector &SimpleSelector) qualified_name() SelectorQualifiedName {
 pub fn SimpleSelector.with_attribute(type_ SimpleSelectorType, value SelectorAttribute) SimpleSelector {
 	mut selector := SimpleSelector{ type_: type_ }
 	selector.clear_payload(.attribute)
-	unsafe { selector.payload_.attribute = value }
+	unsafe { selector.payload_.attribute = &SelectorAttribute{ ...value } }
 	return selector
 }
 
 pub fn (selector &SimpleSelector) attribute() SelectorAttribute {
-	if selector.payload_kind_ == .attribute { return unsafe { selector.payload_.attribute } }
+	if selector.payload_kind_ == .attribute {
+		unsafe {
+			if selector.payload_.attribute != nil { return *selector.payload_.attribute }
+		}
+	}
 	if selector.payload_kind_ == .expanded {
 		return unsafe { selector.payload_.expanded.attribute }
 	}
@@ -91,12 +95,16 @@ pub fn (selector &SimpleSelector) attribute() SelectorAttribute {
 pub fn SimpleSelector.with_pseudo_class(type_ SimpleSelectorType, value PseudoClassSelector) SimpleSelector {
 	mut selector := SimpleSelector{ type_: type_ }
 	selector.clear_payload(.pseudo_class)
-	unsafe { selector.payload_.pseudo_class = value }
+	unsafe { selector.payload_.pseudo_class = &PseudoClassSelector{ ...value } }
 	return selector
 }
 
 pub fn (selector &SimpleSelector) pseudo_class() PseudoClassSelector {
-	if selector.payload_kind_ == .pseudo_class { return unsafe { selector.payload_.pseudo_class } }
+	if selector.payload_kind_ == .pseudo_class {
+		unsafe {
+			if selector.payload_.pseudo_class != nil { return *selector.payload_.pseudo_class }
+		}
+	}
 	if selector.payload_kind_ == .expanded {
 		return unsafe { selector.payload_.expanded.pseudo_class }
 	}
@@ -106,13 +114,15 @@ pub fn (selector &SimpleSelector) pseudo_class() PseudoClassSelector {
 pub fn SimpleSelector.with_pseudo_element(type_ SimpleSelectorType, value PseudoElementSelector) SimpleSelector {
 	mut selector := SimpleSelector{ type_: type_ }
 	selector.clear_payload(.pseudo_element)
-	unsafe { selector.payload_.pseudo_element = value }
+	unsafe { selector.payload_.pseudo_element = &PseudoElementSelector{ ...value } }
 	return selector
 }
 
 pub fn (selector &SimpleSelector) pseudo_element() PseudoElementSelector {
 	if selector.payload_kind_ == .pseudo_element {
-		return unsafe { selector.payload_.pseudo_element }
+		unsafe {
+			if selector.payload_.pseudo_element != nil { return *selector.payload_.pseudo_element }
+		}
 	}
 	if selector.payload_kind_ == .expanded {
 		return unsafe { selector.payload_.expanded.pseudo_element }
@@ -207,7 +217,7 @@ pub fn (mut selector SimpleSelector) set_qualified_name(value SelectorQualifiedN
 pub fn (mut selector SimpleSelector) set_attribute(value SelectorAttribute) {
 	if selector.payload_kind_ in [.empty, .attribute] {
 		selector.clear_payload(.attribute)
-		unsafe { selector.payload_.attribute = value }
+		unsafe { selector.payload_.attribute = &SelectorAttribute{ ...value } }
 		return
 	}
 	mut fields := selector.fields()
@@ -218,7 +228,7 @@ pub fn (mut selector SimpleSelector) set_attribute(value SelectorAttribute) {
 pub fn (mut selector SimpleSelector) set_pseudo_class(value PseudoClassSelector) {
 	if selector.payload_kind_ in [.empty, .pseudo_class] {
 		selector.clear_payload(.pseudo_class)
-		unsafe { selector.payload_.pseudo_class = value }
+		unsafe { selector.payload_.pseudo_class = &PseudoClassSelector{ ...value } }
 		return
 	}
 	mut fields := selector.fields()
@@ -229,7 +239,7 @@ pub fn (mut selector SimpleSelector) set_pseudo_class(value PseudoClassSelector)
 pub fn (mut selector SimpleSelector) set_pseudo_element(value PseudoElementSelector) {
 	if selector.payload_kind_ in [.empty, .pseudo_element] {
 		selector.clear_payload(.pseudo_element)
-		unsafe { selector.payload_.pseudo_element = value }
+		unsafe { selector.payload_.pseudo_element = &PseudoElementSelector{ ...value } }
 		return
 	}
 	mut fields := selector.fields()

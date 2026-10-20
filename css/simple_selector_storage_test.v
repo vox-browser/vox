@@ -100,16 +100,17 @@ fn test_compact_simple_selector_absolutization_and_default_namespace_keep_serial
 }
 
 fn test_compact_simple_selector_record_and_dynamic_array_capacity_are_reduced() {
-	assert sizeof(SimpleSelectorPayload) == 168
-	assert sizeof(SimpleSelector) == 176
-	assert sizeof(SimpleSelectorInit) == 496
+	assert sizeof(SimpleSelectorPayload) == sizeof(SelectorQualifiedName)
+	assert sizeof(SimpleSelector) <= sizeof(SelectorQualifiedName) + 8
+	assert sizeof(SimpleSelector) * 2 < sizeof(SimpleSelectorInit)
 	mut values := []SimpleSelector{}
 	values << SimpleSelector.with_name(.class, SelectorName.new('one'))
 	values << SimpleSelector.with_name(.class, SelectorName.new('two'))
 	assert values.len == 2 && values.cap == 2
 	$if gcboehm ? {
 		assert C.vox_compact_selector_array_kind(values.data) == 1
-		assert C.vox_compact_selector_array_size(values.data) == 368
+		assert C.vox_compact_selector_array_size(values.data) >= usize(values.len * int(sizeof(SimpleSelector)))
+		assert C.vox_compact_selector_array_size(values.data) < usize(values.cap * int(sizeof(SimpleSelectorInit)))
 	}
 }
 

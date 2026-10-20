@@ -1,6 +1,6 @@
 #ifndef VOX_CSS_COMPACT_SELECTOR_STORAGE_TEST_H
 #define VOX_CSS_COMPACT_SELECTOR_STORAGE_TEST_H
-#ifdef _VGCBOEHM
+#if defined(_VGCBOEHM) || defined(CUSTOM_DEFINE_gcboehm) || defined(V_GCBOEHM_NATIVE)
 #include <assert.h>
 #include <stdint.h>
 #include <gc/gc.h>
