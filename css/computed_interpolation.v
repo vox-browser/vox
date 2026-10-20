@@ -10762,6 +10762,7 @@ pub struct StyleComputer {
 pub mut:
 	document_                                            &dom.Document = unsafe { nil }
 	computed_property_page_interner_ &ComputedPropertyPageInterner = unsafe { nil }
+	computed_property_page_arena_ &platform.Arena = unsafe { nil }
 	computed_property_page_batch_depth_ int
 	default_font_metrics                                 LengthFontMetrics = LengthFontMetrics.default()
 	root_element_font_metrics                            LengthFontMetrics = LengthFontMetrics.default()

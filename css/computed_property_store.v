@@ -133,6 +133,11 @@ fn (computer &StyleComputer) publish_computed_property_pages(style &ComputedProp
 	defer { computer.end_computed_property_page_batch() }
 	if style.property_store_ == unsafe { nil } { return }
 	mut owner := unsafe { &StyleComputer(computer) }
+	// Only the index is temporary. Interned pages keep the allocation owner of
+	// their styles and remain readable after the outer batch retires this map.
+	mut index_arena := computer.computed_property_page_index_arena()
+	entry := index_arena.enter()
+	defer { index_arena.leave(entry) }
 	if owner.computed_property_page_interner_ == unsafe { nil } {
 		owner.computed_property_page_interner_ = &ComputedPropertyPageInterner{}
 	}
@@ -143,6 +148,23 @@ fn (computer &StyleComputer) publish_computed_property_pages(style &ComputedProp
 		page := store.pages[index]
 		store.pages[index] = pool.intern(page, computed_property_page_hash(page))
 	}
+}
+
+fn (computer &StyleComputer) computed_property_page_index_arena() &platform.Arena {
+	mut owner := unsafe { &StyleComputer(computer) }
+	if owner.computed_property_page_arena_ == unsafe { nil } {
+		persistent := platform.enter_persistent()
+		mut arena := platform.new_arena('computed property page index')
+		owner.computed_property_page_arena_ = arena
+		if computer.document_ != unsafe { nil } {
+			mut storage := computer.document_.native_storage()
+			if storage != unsafe { nil } {
+				storage.add_cleanup(fn [mut arena] () { arena.release() })
+			}
+		}
+		platform.leave_persistent(persistent)
+	}
+	return owner.computed_property_page_arena_
 }
 
 fn copy_computed_property_page(source &ComputedPropertyPage) &ComputedPropertyPage {
@@ -183,5 +205,9 @@ fn (computer &StyleComputer) end_computed_property_page_batch() {
 		// Drop the entire pool: map.clear retains stale values in the fallback.
 		// Published readonly pages remain owned by the installed styles.
 		owner.computed_property_page_interner_ = unsafe { nil }
+		if owner.computed_property_page_arena_ != unsafe { nil } {
+			mut arena := owner.computed_property_page_arena_
+			arena.reset()
+		}
 	}
 }
