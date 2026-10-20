@@ -74,7 +74,9 @@ fn (mut scanner Scanner) number() !f64 {
 			scanner.index = exponent_start
 		}
 	}
-	return strconv.atof64(scanner.source[start..scanner.index])!
+	// The numeric parser consumes this span synchronously. Ordinary string
+	// slicing copies every coordinate under current V, even for a cache hit.
+	return strconv.atof64(unsafe { scanner.source.substr_unsafe(start, scanner.index) })!
 }
 
 fn (mut scanner Scanner) nonnegative_number() !f64 {
@@ -292,10 +294,14 @@ pub fn parse_spread_method(input string) ?SpreadMethod {
 }
 
 pub fn parse_viewbox(input string) ?ViewBox {
-	values := parse_number_sequence(input) or { return none }
-	if values.len != 4 {
-		return none
+	mut scanner := Scanner{source:input}
+	mut values := [4]f64{}
+	scanner.whitespace()
+	for index in 0 .. 4 {
+		values[index] = scanner.number() or { return none }
+		if !scanner.done() && !scanner.comma_whitespace() { return none }
 	}
+	if !scanner.done() { return none }
 	return ViewBox{
 		min_x: values[0]
 		min_y: values[1]
