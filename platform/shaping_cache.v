@@ -253,7 +253,9 @@ __global (
 
 fn shared_shaping_cache() &ShapingCache {
 	if isnil(platform_shaping_cache) {
+		persistent := enter_persistent()
 		platform_shaping_cache = &ShapingCache{}
+		leave_persistent(persistent)
 	}
 	return platform_shaping_cache
 }

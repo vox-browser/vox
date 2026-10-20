@@ -22,6 +22,7 @@ fn test_font_caches_filled_inside_an_arena_survive_its_reset() {
 	arena.leave(entry)
 	glyph_count := shaped.glyph_run.glyphs().len
 	$if prealloc {
+		assert !arena.contains(voidptr(shared_shaping_cache()))
 		assert !arena.contains(voidptr(face))
 		assert !arena.contains(voidptr(face.buf.data))
 	}
