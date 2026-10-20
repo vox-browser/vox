@@ -554,7 +554,9 @@ fn harfbuzz_face_is_bitmap_face(face voidptr) bool {
 	}
 	// 'sbix'
 	is_bitmap := harfbuzz_face_has_table(face, 0x73626978)
+	persistent := enter_persistent()
 	skia_system_face_advances_lookup.bitmap_faces[key] = is_bitmap
+	leave_persistent(persistent)
 	return is_bitmap
 }
 

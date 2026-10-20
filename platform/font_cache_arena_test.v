@@ -11,7 +11,8 @@ fn test_font_caches_filled_inside_an_arena_survive_its_reset() {
 	path := os.join_path(os.temp_dir(), 'vox-arena-font-${os.getpid()}-${time.sys_mono_now()}.ttf')
 	os.cp(source, path)!
 	defer { os.rm(path) or {} }
-	font := &Font{family: 'ArenaCacheTestFace', point_size: 16, source_path: path}
+	font := &Font{family: 'ArenaCacheTestFace', point_size: 16, source_path: path,
+		font_rendering_policy: .chromium}
 	text := 'arena ${time.sys_mono_now()}'
 	mut arena := new_arena('test')
 	defer { arena.release() }
@@ -36,4 +37,7 @@ fn test_font_caches_filled_inside_an_arena_survive_its_reset() {
 	assert font.glyph_width(u32(`A`)) == width
 	assert shape_text_cached(0, 0, 0, text, font, .ltr).glyph_run.glyphs().len == glyph_count
 	assert glyph_count == text.len
+	// Miss the shape cache after retirement to exercise the retained HarfBuzz
+	// bitmap-face classification rather than just the original glyph-run hit.
+	assert shape_text_cached(0, 0, 0, text + ' again', font, .ltr).glyph_run.glyphs().len == text.len + 6
 }
