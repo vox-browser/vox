@@ -3,6 +3,7 @@ module adblock
 
 import os
 import sync
+import platform
 
 fn C.vox_adblock_log_lock()
 fn C.vox_adblock_log_unlock()
@@ -113,12 +114,14 @@ fn retained_filter_decision(source string) ?string {
 }
 
 fn retain_filter_decision(source string, result string) {
+	persistent := platform.enter_persistent()
+	defer { platform.leave_persistent(persistent) }
 	filter_decision_memo_mutex_.@lock()
 	defer { filter_decision_memo_mutex_.unlock() }
 	if filter_decision_memo_.len >= filter_decision_memo_limit {
 		filter_decision_memo_.clear()
 	}
-	filter_decision_memo_[source] = result
+	filter_decision_memo_[source.clone()] = result.clone()
 }
 
 fn retained_filter_decision_count() int {
