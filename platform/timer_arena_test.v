@@ -71,3 +71,21 @@ fn test_process_timer_created_during_document_work_does_not_retain_that_document
 	assert owner.arena.usage().used == 0
 	timer.fire()
 }
+
+fn test_cooperative_timer_queue_outlives_a_nested_recording_scratch_arena() {
+	observation := &ArenaTimerObservation{}
+	mut timer := Timer.create_single_shot(1000, fn [observation] () {
+		mut result := unsafe { &ArenaTimerObservation(observation) }
+		result.fired = true
+	})
+	timer.start()
+	mut work := begin_cooperative_work(unsafe { nil }, fn (_ voidptr) {})
+	mut scratch := new_arena('recording scratch')
+	entry := scratch.enter()
+	timer.fire()
+	scratch.leave(entry)
+	scratch.release()
+	work.finish()
+	pump_native_events(0.01)
+	assert observation.fired
+}

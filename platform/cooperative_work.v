@@ -39,6 +39,8 @@ pub fn begin_cooperative_work(target voidptr, callback CooperativeWorkCallback) 
 		if !C.libweb_v_is_main_thread() { return CooperativeWorkScope{} }
 	}
 	if cooperative_work_state_ != unsafe { nil } { return CooperativeWorkScope{} }
+	persistent := enter_persistent()
+	defer { leave_persistent(persistent) }
 	now := time.sys_mono_now()
 	mut heap_adjustment_allowed := false
 	$if gcboehm ? {
@@ -115,7 +117,9 @@ fn defer_timer_during_cooperative_work(timer &Timer) bool {
 	if !state.deferred_timers.any(voidptr(it.timer) == voidptr(timer) && it.generation == timer.registration_generation_) {
 		mut owner := timer.allocation_owner_
 		if owner != unsafe { nil } { owner.retain() }
+		persistent := enter_persistent()
 		state.deferred_timers << DeferredWorkTimer{ timer: timer, generation: timer.registration_generation_, owner: owner }
+		leave_persistent(persistent)
 	}
 	return true
 }
@@ -131,6 +135,8 @@ pub fn (mut scope CooperativeWorkScope) finish() {
 	}
 	cooperative_work_state_ = unsafe { nil }
 	if state.deferred_timers.len > 0 {
+		persistent := enter_persistent()
+		defer { leave_persistent(persistent) }
 		pending := state.deferred_timers.clone()
 		mut delivery := Timer.create_single_shot(0, fn [pending] () {
 			for item in pending {
