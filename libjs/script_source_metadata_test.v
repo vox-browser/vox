@@ -108,3 +108,37 @@ fn test_metadata_fast_start_preserves_comment_and_unicode_directive_prefixes() {
 		assert !script_source_is_strict(prefix + ' first; "use strict";')
 	}
 }
+
+fn test_script_source_metadata_widens_its_prefix_across_long_leading_tokens() {
+	license := '/*! ' + 'license text '.repeat(20000) + '*/\n'
+	for source in [
+		license + '"use strict";',
+		license + '"first directive"\n"use strict"\nvar x=1;',
+		'"' + 'a'.repeat(5000) + '";"use strict";',
+		'/*' + 'x'.repeat(4085) + '*/"use strict";',
+		'/*' + '\u00e9'.repeat(3000) + '*/"use strict";',
+		'// ' + '\U0001f600'.repeat(2000) + '\n"use strict"',
+	] {
+		assert script_source_is_strict(source), source.len.str()
+	}
+	for source in [
+		license + 'var x=1; "use strict";',
+		license + '"use strict"\n+ 1;',
+		license,
+		'"' + 'a'.repeat(5000) + '" + "use strict";',
+	] {
+		assert !script_source_is_strict(source), source.len.str()
+	}
+}
+
+fn test_comment_prefixed_programs_do_not_copy_the_whole_program_for_metadata() {
+	source := '/*! license */\nvar first=1;' + ' /* large bundle */ '.repeat(100000)
+	$if gcboehm ? {
+		before := gc_heap_usage().total_bytes
+		assert !script_source_is_strict(source)
+		allocated := gc_heap_usage().total_bytes - before
+		assert allocated < usize(source.len / 10), 'Strictness metadata copied ${allocated} bytes for a comment-prefixed program'
+	} $else {
+		assert !script_source_is_strict(source)
+	}
+}

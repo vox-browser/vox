@@ -14,22 +14,49 @@ pub fn script_source_is_strict(source string) bool {
 	if start == source.len { return false }
 	first := source[start]
 	if first < 128 && first !in [u8(`"`), `'`, `/`, `<`, `-`, `#`] { return false }
+	// The prologue is at the start of the script. Lex a prefix, widened only
+	// when the decision reaches its end: bundles often open with a license
+	// comment, and copying all of them to UTF-16 here is the bulk of the cost.
+	mut length := 4096
+	for length < source.len {
+		mut end := length
+		for end > 0 && source[end] & 0xc0 == 0x80 { end-- }
+		strict, decided := script_prefix_is_strict(source[..end], false)
+		if decided { return strict }
+		length *= 8
+	}
+	strict, _ := script_prefix_is_strict(source, true)
+	return strict
+}
+
+// Whether `source`, the start of a script or all of it when `complete`, begins
+// with a "use strict" directive, and whether that is decided: a token the
+// answer depends on can continue past the end of an incomplete prefix.
+fn script_prefix_is_strict(source string, complete bool) (bool, bool) {
 	code_units := utf16(source)
 	defer { unsafe { code_units.free() } }
+	end := u32(code_units.len)
 	mut lexer := Lexer.new(code_units, 1, 1)
 	mut token := lexer.next()
-	for token.token_type == .string_literal {
+	for {
+		if !complete && script_token_reaches(token, end) { return false, false }
+		if token.token_type != .string_literal { return false, true }
 		next := lexer.next()
+		if !complete && script_token_reaches(next, end) { return false, false }
 		terminated := next.token_type in [.semicolon, .eof, .curly_close]
 			|| (next.trivia_has_line_terminator
 				&& !script_directive_expression_continues(next.token_type))
-		if !terminated { return false }
+		if !terminated { return false, true }
 		if script_token_is_use_strict(code_units, token) {
-			return true
+			return true, true
 		}
 		token = if next.token_type == .semicolon { lexer.next() } else { next }
 	}
-	return false
+	return false, true
+}
+
+fn script_token_reaches(token Token, end u32) bool {
+	return token.token_type == .eof || token.value_start + token.value_len >= end
 }
 
 fn script_token_is_use_strict(source []u16, token Token) bool {
