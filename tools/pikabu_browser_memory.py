@@ -30,6 +30,8 @@ from wikipedia_browser_memory import PhysicalTree, clean_environment, placement,
 
 REPO = Path(__file__).resolve().parents[1]
 URL = 'https://pikabu.ru/'
+ENDPOINT_STATE = DOC_STATE.replace('title:document.title,',
+                                   'title:document.title,visibility:document.visibilityState,')
 
 
 def runtime_identity(binary):
@@ -109,7 +111,7 @@ def measure(args, browser, output):
             process = subprocess.Popen(command, cwd=REPO, env=env, stdout=log,
                                        stderr=subprocess.STDOUT, start_new_session=True)
             counter = PhysicalTree(process.pid, started)
-            foreground = ForegroundControl(process.pid, True, start_at=1)
+            foreground = ForegroundControl(process.pid, not args.background, start_at=1)
             try:
                 with CounterSampler(counter, .05):
                     if browser == 'brave':
@@ -146,11 +148,13 @@ def measure(args, browser, output):
                     foreground.verify_steady(endpoint)
                     result = dict(browser=browser, command=command, identity=identity,
                         screen=screen, seconds=endpoint, memory=memory,
-                        samples=counter.samples, foreground_checks=foreground.checks)
+                        samples=counter.samples, foreground_checks=foreground.checks,
+                        foreground_controlled=not args.background)
                     if client:
-                        state = client.call('Runtime.evaluate', dict(expression=DOC_STATE, returnByValue=True))
+                        state = client.call('Runtime.evaluate', dict(expression=ENDPOINT_STATE, returnByValue=True))
                         document = json.loads(state['result']['value'])
-                        if document['url'] != URL or document['ready'] != 'complete' or document['stories'] <= 0:
+                        if (document['url'] != URL or document['ready'] != 'complete'
+                                or document['stories'] <= 0 or document['visibility'] != 'visible'):
                             raise RuntimeError('Brave did not load the frozen document')
                         result.update(document=document, requests=client.requests)
                         pixels = client.call('Page.captureScreenshot', dict(format='png', captureBeyondViewport=False))
@@ -189,7 +193,9 @@ def native_readiness(log):
 def validate_native_document(document):
     stories = next((s['count'] for s in document.get('selections', []) if s['name'] == 'stories'), 0)
     if (document.get('url') != URL or document.get('ready') != 'complete'
-            or not document.get('title') or document.get('paint_commands', 0) < 100 or stories <= 0):
+            or not document.get('title') or document.get('paint_commands', 0) < 100 or stories <= 0
+            or document.get('visibility', 'visible') != 'visible'
+            or not document.get('fully_active', True)):
         raise RuntimeError('Vox did not retain the frozen document at the memory endpoint')
 
 
@@ -210,6 +216,8 @@ def main():
     parser.add_argument('--network-deny', type=Path, required=True)
     parser.add_argument('--output', type=Path, required=True)
     parser.add_argument('--seconds', type=float, default=60)
+    parser.add_argument('--background', action='store_true',
+                        help='Keep the browser visible without repeatedly taking keyboard focus')
     parser.add_argument('--trials', type=int, default=3)
     parser.add_argument('--browser', choices=['both', 'vox', 'brave'], default='both')
     args = parser.parse_args()

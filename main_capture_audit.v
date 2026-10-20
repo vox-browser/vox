@@ -85,6 +85,8 @@ struct CaptureAudit {
 	url                    string
 	title                  string
 	ready                  string
+	visibility             string
+	fully_active           bool
 	viewport_width         int
 	viewport_height        int
 	font_set_present       bool
@@ -187,6 +189,8 @@ fn (app &BrowserApp) collect_capture_audit(config CaptureAuditConfig) !CaptureAu
 		url: app.document.url.serialize()
 		title: app.document.title()
 		ready: app.document.readiness().str()
+		visibility: app.document.visibility_state()
+		fully_active: app.document.is_fully_active()
 		viewport_width: app.viewport_width
 		viewport_height: app.viewport_height
 		font_set_present: font_set_present

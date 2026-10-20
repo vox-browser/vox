@@ -40,6 +40,8 @@ fn test_capture_audit_reads_retained_text_attributes_counts_and_geometry() {
 		CaptureAuditSelector{name: 'count', selector: '.row', limit: 0},
 	]})!
 	assert audit.title == 'Capture'
+	assert audit.visibility == document.visibility_state()
+	assert audit.fully_active == document.is_fully_active()
 	assert audit.viewport_width == 200 && audit.viewport_height == 232 - app.chrome_height()
 	assert audit.javascript_diagnostics == ['retained diagnostic']
 	assert audit.selections.len == 2

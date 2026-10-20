@@ -34,7 +34,8 @@ class ComparisonTests(unittest.TestCase):
                         paint_commands=600, selections=[dict(name='stories', count=15)])
         validate_native_document(document)
         for change in [dict(url='about:blank'), dict(ready='loading'), dict(title=''),
-                       dict(paint_commands=0), dict(selections=[])]:
+                       dict(paint_commands=0), dict(selections=[]), dict(visibility='hidden'),
+                       dict(fully_active=False)]:
             with self.assertRaises(RuntimeError):
                 validate_native_document(document | change)
 
