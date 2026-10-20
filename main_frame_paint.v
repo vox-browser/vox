@@ -62,7 +62,9 @@ fn (mut app BrowserApp) record_document_paint_commands() {
 	display_list := if app.ctx != unsafe { nil } && app.ctx.native_rendering
 		&& !app.paint_canvas_culling_disabled {
 		document.record_viewport_display_list()
-	} else { document.record_display_list() }
+	} else {
+		document.record_display_list()
+	}
 	if list := display_list {
 		previous_commands := app.paint_commands
 		previous_scene := app.paint_scene
@@ -87,9 +89,11 @@ fn (mut app BrowserApp) record_document_paint_commands() {
 	app.adopt_current_document_geometry()
 	if document.font_rendering_policy() == .chromium {
 		mut raster_scale := 1.0
-		$if macos { raster_scale = C.native_display_device_pixel_ratio() }
-		app.chromium_raster_plan = layout.chromium_raster_layer_plan(document, app.paint_commands,
-			raster_scale)
+		$if macos {
+			raster_scale = C.native_display_device_pixel_ratio()
+		}
+		layout.update_chromium_raster_layer_plan(document, app.paint_commands,
+			raster_scale, mut app.chromium_raster_plan)
 	} else {
 		app.chromium_raster_plan = layout.ChromiumRasterLayerPlan{}
 	}
@@ -97,11 +101,11 @@ fn (mut app BrowserApp) record_document_paint_commands() {
 	root_rect := app.root_box.border_box()
 	// Animation frames re-record without changing what the status shows.
 	status_key := PaintStatusKey{
-		load_status: app.load_status.str
+		load_status:     app.load_status.str
 		load_status_len: app.load_status.len
-		commands: app.paint_commands.len
-		width: int(root_rect.width)
-		height: int(root_rect.height)
+		commands:        app.paint_commands.len
+		width:           int(root_rect.width)
+		height:          int(root_rect.height)
 	}
 	if status_key != app.paint_status_key || app.status.str != app.paint_status_text.str {
 		app.paint_status_key = status_key

@@ -17,9 +17,12 @@ pub mut:
 }
 
 pub struct ChromiumRasterLayerPlan {
-pub:
+pub mut:
 	layers         []ChromiumRasterLayer
 	command_layers []int
+mut:
+	// Keep inactive slots too: their command vectors are reused if layers return.
+	layer_storage []ChromiumRasterLayer
 }
 
 struct ChromiumRasterPropertyState {
@@ -42,8 +45,11 @@ struct ChromiumRasterChunk {
 // Its capacity is reserved in persistent storage.
 struct ChromiumRasterPlanScratch {
 mut:
-	properties []ChromiumRasterPropertyState
-	chunks     []ChromiumRasterChunk
+	properties         []ChromiumRasterPropertyState
+	chunks             []ChromiumRasterChunk
+	layer_states       []ChromiumRasterPropertyState
+	composited_scrolls map[int]bool
+	fixed_bounds       map[u64]LayoutRect
 }
 
 __global chromium_raster_plan_scratch_ = ChromiumRasterPlanScratch{}
@@ -86,15 +92,44 @@ fn chromium_layer_bounds_overlap(a LayoutRect, b LayoutRect) bool {
 		&& b.x < a.x + a.width && a.y < b.y + b.height && b.y < a.y + a.height
 }
 
+// Explicitly updated plans lend their vectors until the next update. The
+// value-returning API still produces independent snapshots.
+fn (mut plan ChromiumRasterLayerPlan) prepare(count int) {
+	for index in 0 .. plan.layer_storage.len {
+		plan.layer_storage[index].bounds = LayoutRect{}
+		plan.layer_storage[index].legacy_raster = false
+		plan.layer_storage[index].command_indices.clear()
+	}
+	plan.layers = []ChromiumRasterLayer{}
+	plan.command_layers.clear()
+	for _ in 0 .. count { plan.command_layers << 0 }
+}
+
+fn (mut plan ChromiumRasterLayerPlan) append_layer(legacy bool) {
+	index := plan.layers.len
+	if index == plan.layer_storage.len { plan.layer_storage << ChromiumRasterLayer{} }
+	plan.layer_storage[index].legacy_raster = legacy
+	plan.layers = unsafe { plan.layer_storage[..index + 1] }
+}
+
 fn chromium_layerize_chunks(chunks []ChromiumRasterChunk, count int, device_scale f64) ChromiumRasterLayerPlan {
-	mut layers := [ChromiumRasterLayer{}]
-	mut states := [ChromiumRasterPropertyState{}]
-	mut command_layers := []int{len: count}
+	mut plan := ChromiumRasterLayerPlan{}
+	mut states := []ChromiumRasterPropertyState{}
+	chromium_layerize_chunks_into(chunks, count, device_scale, mut plan, mut states)
+	return plan
+}
+
+fn chromium_layerize_chunks_into(chunks []ChromiumRasterChunk, count int, device_scale f64,
+	mut plan ChromiumRasterLayerPlan, mut states []ChromiumRasterPropertyState) {
+	plan.prepare(count)
+	plan.append_layer(false)
+	states.clear()
+	states << ChromiumRasterPropertyState{}
 	for chunk in chunks {
 		mut merged := -1
-		for index := layers.len - 1; index >= 0; index-- {
-			merged_bounds := chromium_layer_bounds_union(layers[index].bounds, chunk.bounds)
-			home := layers[index].bounds
+		for index := plan.layers.len - 1; index >= 0; index-- {
+			merged_bounds := chromium_layer_bounds_union(plan.layers[index].bounds, chunk.bounds)
+			home := plan.layers[index].bounds
 			// PendingLayer::CanMerge bounds extra raster area rather than
 			// joining arbitrarily distant chunks with a common property state.
 			extra_area := merged_bounds.width * merged_bounds.height - home.width * home.height -
@@ -105,42 +140,38 @@ fn chromium_layerize_chunks(chunks []ChromiumRasterChunk, count int, device_scal
 			}
 			// A matching earlier layer cannot be reached through overlapping
 			// independently scrolling content without changing paint order.
-			if chromium_layer_bounds_overlap(layers[index].bounds, chunk.bounds) { break
-			 }
+			if chromium_layer_bounds_overlap(plan.layers[index].bounds, chunk.bounds) {
+				break
+			}
 		}
 		if merged < 0 {
-			merged = layers.len
-			layers << ChromiumRasterLayer{
-				legacy_raster: chunk.state.effect_scope != 0
-			}
+			merged = plan.layers.len
+			plan.append_layer(chunk.state.effect_scope != 0)
 			states << chunk.state
 		}
-		layers[merged].bounds = chromium_layer_bounds_union(layers[merged].bounds, chunk.bounds)
+		plan.layers[merged].bounds = chromium_layer_bounds_union(plan.layers[merged].bounds, chunk.bounds)
 		end := if chunk.command_end > chunk.command_index {
 			chunk.command_end
 		} else {
 			chunk.command_index + 1
 		}
 		for index in chunk.command_index .. end {
-			layers[merged].command_indices << index
-			command_layers[index] = merged
+			plan.layers[merged].command_indices << index
+			plan.command_layers[index] = merged
 		}
-	}
-	return ChromiumRasterLayerPlan{
-		layers:         layers
-		command_layers: command_layers
 	}
 }
 
 fn chromium_root_raster_plan(count int) ChromiumRasterLayerPlan {
-	return ChromiumRasterLayerPlan{
-		layers:         [
-			ChromiumRasterLayer{
-				command_indices: []int{len: count, init: index}
-			},
-		]
-		command_layers: []int{len: count}
-	}
+	mut plan := ChromiumRasterLayerPlan{}
+	chromium_root_raster_plan_into(count, mut plan)
+	return plan
+}
+
+fn chromium_root_raster_plan_into(count int, mut plan ChromiumRasterLayerPlan) {
+	plan.prepare(count)
+	plan.append_layer(false)
+	for index in 0 .. count { plan.layers[0].command_indices << index }
 }
 
 fn chromium_user_scrollable_box(box &BlockBox) bool {
@@ -151,7 +182,10 @@ fn chromium_user_scrollable_box(box &BlockBox) bool {
 	node := unsafe { &Node(box.layout_handle) }
 	if node.is_viewport() { return false }
 	computed := node.computed_values()
-	return computed.overflow_x() in [.auto_, .scroll] || computed.overflow_y() in [.auto_, .scroll]
+	return computed.overflow_x() in [.auto_, .scroll] || computed.overflow_y() in [
+		.auto_,
+		.scroll,
+	]
 }
 
 fn chromium_raster_chunk_bounds(box &BlockBox, command &PaintCommand) LayoutRect {
@@ -183,26 +217,39 @@ fn chromium_raster_chunk_bounds(box &BlockBox, command &PaintCommand) LayoutRect
 // tree, so absolutely positioned descendants which escape a scroller keep the
 // same scroll ancestry used by painting and hit testing.
 pub fn chromium_raster_layer_plan(document &dom.Document, commands []PaintCommand, device_scale f64) ChromiumRasterLayerPlan {
-	result := document_layout_result(document) or { return chromium_root_raster_plan(commands.len) }
-	mut composited_scrolls := map[int]bool{}
-	mut fixed_bounds := map[u64]LayoutRect{}
+	mut plan := ChromiumRasterLayerPlan{}
+	update_chromium_raster_layer_plan(document, commands, device_scale, mut plan)
+	return plan
+}
+
+// Reuse a shell-owned plan after its previous replay has finished.
+pub fn update_chromium_raster_layer_plan(document &dom.Document, commands []PaintCommand,
+	device_scale f64, mut plan ChromiumRasterLayerPlan) {
+	persistent := platform.enter_persistent()
+	defer { platform.leave_persistent(persistent) }
+	result := document_layout_result(document) or {
+		chromium_root_raster_plan_into(commands.len, mut plan)
+		return
+	}
+	mut scratch := unsafe { &chromium_raster_plan_scratch_ }
+	scratch.composited_scrolls.clear()
+	scratch.fixed_bounds.clear()
 	for entry in result.paint_order {
 		// Use the box pointer itself: reading its transform through the loop's
 		// entry copy makes current V move every copy to the heap.
 		box := entry.box
 		if chromium_user_scrollable_box(box) {
-			composited_scrolls[box.own_scroll_frame_index] = true
+			scratch.composited_scrolls[box.own_scroll_frame_index] = true
 		}
 		if box.fixed_to_viewport && box.layout_handle != unsafe { nil } {
 			node := unsafe { &Node(box.layout_handle) }
 			if node.is_fixed_position() {
-				fixed_bounds[u64(voidptr(node))] = compatibility_affine_map_rect(box.paint_transform,
+				scratch.fixed_bounds[u64(voidptr(node))] = compatibility_affine_map_rect(box.paint_transform,
 					box.border_box())
 			}
 		}
 	}
 	tree := result.visual_context_tree
-	mut scratch := unsafe { &chromium_raster_plan_scratch_ }
 	scratch.prepare(tree.nodes.len, commands.len)
 	for index in 1 .. tree.nodes.len {
 		node := tree.nodes[index]
@@ -212,14 +259,16 @@ pub fn chromium_raster_layer_plan(document &dom.Document, commands []PaintComman
 		if node.data is painting.ScrollVisualData {
 			if node.data.is_sticky {
 				scratch.properties[index].sticky_frame = node.data.scroll_frame_index
-			} else if composited_scrolls[node.data.scroll_frame_index] {
+			} else if scratch.composited_scrolls[node.data.scroll_frame_index] {
 				scratch.properties[index].scroll_frame = node.data.scroll_frame_index
 			}
 		} else if node.data is painting.ScrollCompensationVisualData {
 			// Compensated backgrounds need a separate transform/raster policy.
-			return chromium_root_raster_plan(commands.len)
+			chromium_root_raster_plan_into(commands.len, mut plan)
+			return
 		} else if node.data is painting.PerspectiveVisualData {
-			return chromium_root_raster_plan(commands.len)
+			chromium_root_raster_plan_into(commands.len, mut plan)
+			return
 		}
 	}
 	mut index := 0
@@ -229,10 +278,14 @@ pub fn chromium_raster_layer_plan(document &dom.Document, commands []PaintComman
 		mut effect_scope := u64(0)
 		if layer := commands[index].visual_layer_data {
 			if !commands[index].kind.starts_with('begin_') {
-				return chromium_root_raster_plan(commands.len)
+				chromium_root_raster_plan_into(commands.len, mut plan)
+				return
 			}
 			effect_scope = layer.scope_id
-			if effect_scope == 0 { return chromium_root_raster_plan(commands.len) }
+			if effect_scope == 0 {
+				chromium_root_raster_plan_into(commands.len, mut plan)
+				return
+			}
 			mut depth := 1
 			for end < commands.len && depth > 0 {
 				if commands[end].visual_layer_data != none {
@@ -244,7 +297,10 @@ pub fn chromium_raster_layer_plan(document &dom.Document, commands []PaintComman
 				}
 				end++
 			}
-			if depth != 0 { return chromium_root_raster_plan(commands.len) }
+			if depth != 0 {
+				chromium_root_raster_plan_into(commands.len, mut plan)
+				return
+			}
 		}
 		mut bounds := LayoutRect{}
 		mut state := ChromiumRasterPropertyState{}
@@ -254,10 +310,12 @@ pub fn chromium_raster_layer_plan(document &dom.Document, commands []PaintComman
 			// Lowered begin/end commands own no box; their enclosed commands
 			// supply geometry. Keep the complete effect group atomic while
 			// allowing independent ordinary scroll/overlap chunks elsewhere.
-			if command.visual_layer_data != none { continue
-			 }
+			if command.visual_layer_data != none {
+				continue
+			}
 			if command.paint_box_index < 0 || command.paint_box_index >= result.paint_order.len {
-				return chromium_root_raster_plan(commands.len)
+				chromium_root_raster_plan_into(commands.len, mut plan)
+				return
 			}
 			box := result.paint_order[command.paint_box_index].box
 			context := command.visual_context_index or {
@@ -269,7 +327,8 @@ pub fn chromium_raster_layer_plan(document &dom.Document, commands []PaintComman
 			}
 
 			if context < 0 || context >= scratch.properties.len {
-				return chromium_root_raster_plan(commands.len)
+				chromium_root_raster_plan_into(commands.len, mut plan)
+				return
 			}
 			if !has_state {
 				state = scratch.properties[context]
@@ -285,7 +344,7 @@ pub fn chromium_raster_layer_plan(document &dom.Document, commands []PaintComman
 				mut ancestor := ?&Node(unsafe { &Node(box.layout_handle) })
 				for {
 					node := ancestor or { break }
-					if rect := fixed_bounds[u64(voidptr(node))] {
+					if rect := scratch.fixed_bounds[u64(voidptr(node))] {
 						bounds = chromium_layer_bounds_union(bounds, rect)
 						break
 					}
@@ -303,5 +362,5 @@ pub fn chromium_raster_layer_plan(document &dom.Document, commands []PaintComman
 		}
 		index = end
 	}
-	return chromium_layerize_chunks(scratch.chunks, commands.len, device_scale)
+	chromium_layerize_chunks_into(scratch.chunks, commands.len, device_scale, mut plan, mut scratch.layer_states)
 }
