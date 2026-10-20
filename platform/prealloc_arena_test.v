@@ -196,3 +196,33 @@ fn test_nested_arenas_restore_their_targets() {
 	}
 	assert a.value + b.value + c.value + d.value == 10
 }
+
+fn test_arena_entered_from_persistent_section_restores_depth_and_latest_base_tail() {
+	mut outer := new_arena('outer durable owner')
+	mut inner := new_arena('nested temporary')
+	outer_entry := outer.enter()
+	persistent := enter_persistent()
+	inner_entry := inner.enter()
+	inside := &ArenaTestNode{value: 17}
+	nested_persistent := enter_persistent()
+	grown := []u8{len: 32 * 1024 * 1024, init: 19}
+	$if prealloc { assert !arena_entered() }
+	leave_persistent(nested_persistent)
+	$if prealloc { assert arena_entered() }
+	inner.leave(inner_entry)
+	$if prealloc {
+		assert !arena_entered()
+		assert current_block() == arena_state().base_tail
+		assert inner.contains(inside)
+	}
+	base_tail := current_block()
+	leave_persistent(persistent)
+	after := &ArenaTestNode{value: 23}
+	$if prealloc { assert outer.contains(after) }
+	outer.leave(outer_entry)
+	$if prealloc { assert current_block() == base_tail }
+	inner.release()
+	outer.release()
+	assert grown[0] == 19 && grown[grown.len - 1] == 19
+	assert !arena_entered()
+}

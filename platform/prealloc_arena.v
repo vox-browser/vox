@@ -168,6 +168,7 @@ fn chain_usage(start &PreallocBlockView, forward bool) ArenaUsage {
 pub struct ArenaEntry {
 	previous voidptr
 	base     bool
+	depth    int
 }
 
 @[heap]
@@ -216,14 +217,18 @@ pub fn (mut arena Arena) enter() ArenaEntry {
 			panic('arena ${arena.label} is already entered')
 		}
 		previous := current_block()
-		if state.depth == 0 {
+		depth := state.depth
+		base := depth <= 0
+		if base {
 			state.base_tail = previous
 		}
-		state.depth++
+		state.depth = if base { 1 } else { depth + 1 }
 		arena.entered = true
 		set_current_block(arena.tail)
 		return ArenaEntry{
 			previous: previous
+			base: base
+			depth: depth
 		}
 	}
 	return ArenaEntry{}
@@ -238,8 +243,11 @@ pub fn (mut arena Arena) leave(entry ArenaEntry) {
 		}
 		arena.tail = &PreallocBlockView(current_block())
 		arena.entered = false
-		state.depth--
-		set_current_block(entry.previous)
+		state.depth = entry.depth
+		// Persistent sections may have grown the base chain while this arena
+		// was entered. Restore its latest tail, including when entered from a
+		// persistent section nested inside another arena.
+		set_current_block(if entry.base { state.base_tail } else { entry.previous })
 		if state.depth == 0 {
 			state.base_tail = unsafe { nil }
 		}
