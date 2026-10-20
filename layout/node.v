@@ -1653,6 +1653,8 @@ fn (cache &IntrinsicSizes) cached_content_height(minimum bool, width int) ?CSSPi
 }
 
 fn (mut cache IntrinsicSizes) cache_content_height(minimum bool, width int, value ?CSSPixels) {
+	persistent := platform.enter_persistent_if(platform.transient_arena_entered())
+	defer { platform.leave_persistent(persistent) }
 	mut heights := cache.height_cache(minimum)
 	if heights == unsafe { nil } {
 		heights = &IntrinsicHeightCache{ first_width: width, first_value: value }
@@ -1702,7 +1704,9 @@ pub fn (mut n Box) cached_intrinsic_sizes() &IntrinsicSizes {
 	if cached := n.cached_intrinsic_sizes_ {
 		return cached
 	}
+	persistent := platform.enter_persistent_if(platform.transient_arena_entered())
 	new_cache := &IntrinsicSizes{}
+	platform.leave_persistent(persistent)
 	n.cached_intrinsic_sizes_ = new_cache
 	return new_cache
 }
@@ -2119,6 +2123,8 @@ pub fn (n &TextNode) font_for_rendering() &platform.Font {
 pub fn (n &TextNode) line_segmenter() &dom.Segmenter {
 	mut mutable_node := unsafe { &TextNode(n) }
 	if mutable_node.line_segmenter_ == unsafe { nil } {
+		persistent := platform.enter_persistent_if(platform.transient_arena_entered())
+		defer { platform.leave_persistent(persistent) }
 		text := n.text_for_rendering()
 		if ascii_segmenter := dom.Segmenter.try_create_for_ascii_line(text) {
 			mutable_node.line_segmenter_ = ascii_segmenter
@@ -2208,6 +2214,8 @@ pub fn (mut n TextNode) invalidate_text_for_rendering() {
 }
 
 fn (mut n TextNode) compute_text_for_rendering() {
+	persistent := platform.enter_persistent_if(platform.transient_arena_entered())
+	defer { platform.leave_persistent(persistent) }
 	mut text := n.source_text_
 	if dom_text := n.dom_node_ {
 		if character_data := dom_text.as_character_data() {

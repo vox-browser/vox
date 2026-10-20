@@ -122,8 +122,10 @@ fn TextNodeChunkIterator.new_with_direction(text_node &TextNode, should_wrap_lin
 	code_units := if cached := text_node.cached_utf16_code_units_ {
 		unsafe { cached }
 	} else {
+		persistent := platform.enter_persistent_if(platform.transient_arena_entered())
 		units := utf16_code_units_for_line_box(view)
 		mutable_text_node.cached_utf16_code_units_ = units
+		platform.leave_persistent(persistent)
 		units
 	}
 	font_cascade := text_node.Node.font_list()
@@ -165,7 +167,9 @@ fn (node &TextNode) grapheme_boundaries_for_rendered_text() []int {
 	if node.cached_grapheme_boundaries_.len > 0 {
 		return unsafe { node.cached_grapheme_boundaries_ }
 	}
+	persistent := platform.enter_persistent_if(platform.transient_arena_entered())
 	boundaries := text_grapheme_boundaries(text)
+	platform.leave_persistent(persistent)
 	mut mutable_node := unsafe { &TextNode(node) }
 	mutable_node.cached_grapheme_boundaries_ = boundaries
 	return boundaries

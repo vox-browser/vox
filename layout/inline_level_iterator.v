@@ -791,25 +791,27 @@ fn (iterator &InlineLevelIterator) shape_text_for_layout(text_node &TextNode, in
 		}
 	}
 
-	shaped := platform.shape_text_with_spacing(initial_x, letter_spacing, word_spacing, text, font, text_type)
 	if iterator.layout_mode == .intrinsic_sizing {
+		persistent := platform.enter_persistent_if(platform.transient_arena_entered())
+		shaped := platform.shape_text_with_spacing(initial_x, letter_spacing, word_spacing, text, font, text_type)
 		mut mutable_text_node := unsafe { &TextNode(text_node) }
 		mutable_text_node.cached_intrinsic_text_shapes_ << IntrinsicTextShapeCacheEntry{
 			initial_x: initial_x
 			letter_spacing: letter_spacing
 			word_spacing: word_spacing
-			text: text
+			text: text.clone()
 			font: font
 			text_type: text_type
 			glyph_run: shaped.glyph_run
 			trailing_whitespace: shaped.trailing_whitespace
 		}
+		platform.leave_persistent(persistent)
 		return platform.ShapedText{
 			glyph_run: shaped.glyph_run.fork_for_layout()
 			trailing_whitespace: shaped.trailing_whitespace
 		}
 	}
-	return shaped
+	return platform.shape_text_with_spacing(initial_x, letter_spacing, word_spacing, text, font, text_type)
 }
 
 fn (mut iterator InlineLevelIterator) enter_text_node(text_node &TextNode) {
@@ -832,6 +834,7 @@ fn (mut iterator InlineLevelIterator) enter_text_node(text_node &TextNode) {
 		}
 	}
 	if !cached_chunks_valid {
+		persistent := platform.enter_persistent_if(platform.transient_arena_entered())
 		mut chunk_iterator := TextNodeChunkIterator.new_with_direction(text_node, should_wrap_lines,
 			should_respect_linebreaks, if iterator.is_unidirectional_left_to_right {
 				TextDirectionMode.unidirectional_left_to_right
@@ -855,6 +858,7 @@ fn (mut iterator InlineLevelIterator) enter_text_node(text_node &TextNode) {
 		mutable_text_node.cached_inline_chunks_ = chunks
 		mutable_text_node.cached_font_environment_generation_ = css.css_style_computer_for(text_node.Node.document()).font_computer().environment_generation()
 		mutable_text_node.cached_intrinsic_text_shapes_.clear()
+		platform.leave_persistent(persistent)
 	}
 	// Every retained chunk emits exactly one item, including whitespace and
 	// forced line breaks. Reserve their known demand once instead of growing

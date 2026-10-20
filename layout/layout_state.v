@@ -3,6 +3,7 @@ module layout
 import css
 import painting
 import svg
+import platform
 
 // Translation of Ladybird's Layout::LayoutState + LayoutState::UsedValues (Layout/LayoutState.h) — the
 // per-box geometry produced by a formatting context: content size, offset within the containing block,
@@ -920,6 +921,10 @@ mut:
 	chunks []&MeasurementUsedValuesChunk
 	active_arenas int
 	closed bool
+	scratch_metadata_ &platform.Arena = unsafe { nil }
+	scratch_slots_ []&MeasurementScratchSlot
+	scratch_depth_ int
+	scratch_enabled_ bool
 }
 
 fn (mut pool MeasurementUsedValuesChunkPool) take() &MeasurementUsedValuesChunk {
@@ -943,6 +948,7 @@ fn (mut pool MeasurementUsedValuesChunkPool) put(chunk &MeasurementUsedValuesChu
 
 fn (mut pool MeasurementUsedValuesChunkPool) release() {
 	assert pool.active_arenas == 0
+	pool.release_scratch()
 	pool.closed = true
 	for chunk in pool.chunks {
 		free_measurement_allocation(chunk)
@@ -1142,6 +1148,7 @@ mut:
 	inline_layouts_ map[u64]&RetainedInlineLayout
 	previous_inline_layouts_ map[u64]&RetainedInlineLayout
 	paint_coordinates_ &PaintCoordinateSession = unsafe { nil }
+	measurement_scratch_ MeasurementScratchScope
 }
 
 pub fn LayoutState.new() &LayoutState {
@@ -1171,12 +1178,22 @@ fn (mut state LayoutState) release_measurement_chunk_pool() {
 }
 
 fn (mut source LayoutState) new_measurement_for_subtree(subtree_root &NodeWithStyle) &LayoutState {
+	mut scratch := MeasurementScratchScope{}
+	mut chunk_pool := source.measurement_chunk_pool_
+	$if prealloc {
+		if chunk_pool != unsafe { nil } && chunk_pool.scratch_enabled_ {
+			scratch = chunk_pool.enter_scratch()
+			// Whole-probe storage replaces the separate record-chunk free list.
+			chunk_pool = unsafe { nil }
+		}
+	}
 	return &LayoutState{
+		measurement_scratch_: scratch
 		subtree_root: subtree_root
 		measurement_chunk_pool_: source.measurement_chunk_pool_
 		used_values_store: UsedValuesPagedStore{
 			measurement_arena: &MeasurementUsedValuesArena{
-				chunk_pool_: source.measurement_chunk_pool_
+				chunk_pool_: chunk_pool
 			}
 		}
 	}
@@ -1192,6 +1209,10 @@ fn (mut state LayoutState) release_measurement() {
 	unsafe { state.used_values_store.pages.free() }
 	state.used_values_store.pages = []&UsedValuesPage{}
 	arena.release()
+	// This releases `state` too. Finish through a value copy and never touch
+	// the retired receiver afterwards.
+	mut scratch := state.measurement_scratch_
+	scratch.finish()
 }
 
 pub fn (mut state LayoutState) ensure_capacity(node_count u32) {

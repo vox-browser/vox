@@ -849,6 +849,9 @@ fn finish_document_layout(document &dom.Document, root &Node, viewport_width f64
 		}
 	}
 	state.enable_measurement_chunk_pool()
+	$if prealloc {
+		state.measurement_chunk_pool_.scratch_enabled_ = document.native_storage() != unsafe { nil }
+	}
 	defer { state.release_measurement_chunk_pool() }
 	geometry_started := timing_checkpoint
 	layout_viewport(mut state, viewport, viewport_width, viewport_height)

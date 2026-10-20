@@ -8,6 +8,7 @@ import math
 import os
 import painting
 import time
+import platform
 
 struct TableCellPlacement {
 	cell        &Node = unsafe { nil }
@@ -1887,9 +1888,33 @@ fn calculate_table_grid_intrinsic_widths(mut state LayoutState, table &Node, per
 		mut cache := mutable_table_box.cached_intrinsic_sizes()
 		cache.min_content_width = grid_min
 		cache.max_content_width = grid_max
-		cache.table_grid_width_measures = widths
+		cache.table_grid_width_measures = retain_intrinsic_table_widths(widths)
+		return cache.table_grid_width_measures or { widths }
 	}
 	return widths
+}
+
+fn retain_intrinsic_table_widths(widths &TableGridIntrinsicWidths) &TableGridIntrinsicWidths {
+	if !platform.transient_arena_entered() { return widths }
+	persistent := platform.enter_persistent()
+	defer { platform.leave_persistent(persistent) }
+	return &TableGridIntrinsicWidths{
+		...widths
+		rows: widths.rows.clone()
+		placements: widths.placements.clone()
+		column_definitions: widths.column_definitions.clone()
+		cell_measures: widths.cell_measures.clone()
+		nonspanning_min_widths: widths.nonspanning_min_widths.clone()
+		nonspanning_max_widths: widths.nonspanning_max_widths.clone()
+		column_min_widths: widths.column_min_widths.clone()
+		column_max_widths: widths.column_max_widths.clone()
+		constrained_columns: widths.constrained_columns.clone()
+		intrinsic_percentages: widths.intrinsic_percentages.clone()
+		has_intrinsic_percentage: widths.has_intrinsic_percentage.clone()
+		percentage_offsets: widths.percentage_offsets.clone()
+		has_originating_cells: widths.has_originating_cells.clone()
+		collapsed_columns: widths.collapsed_columns.clone()
+	}
 }
 
 fn calculate_table_grid_intrinsic_width(mut state LayoutState, table &Node, percentage_basis CSSPixels, constraint SizeConstraint) CSSPixels {
