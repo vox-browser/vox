@@ -425,13 +425,11 @@ fn (font &Font) glyph_metrics_for_shaping(code_point u32) (f32, int) {
 	if entry := platform_glyph_units_cache[cache_key] {
 		return f32(entry.advance_units) * font.point_size / units_per_em, entry.glyph_index
 	}
-	// The entry and the face's lazily built cmap cache outlive any arena.
+	// The entry outlives any arena and is the only glyph-index memo needed.
 	persistent := enter_persistent()
 	defer { leave_persistent(persistent) }
 	mut mutable_face := unsafe { &ttf.TTF_File(face) }
-	// x.ttf currently exposes only cmap formats 0 and 4 and allocates a BMP-
-	// sized cache. Unsupported supplementary-plane characters map to .notdef;
-	// never index that cache with the full Unicode scalar value.
+	// Keep the existing formats 0/4 and supplementary-plane .notdef behavior.
 	if code_point > 0xffff {
 		advance, _ := mutable_face.get_horizontal_metrics(0)
 		platform_glyph_units_cache[cache_key] = GlyphUnitsEntry{
@@ -440,7 +438,7 @@ fn (font &Font) glyph_metrics_for_shaping(code_point u32) (f32, int) {
 		}
 		return f32(advance) * font.point_size / units_per_em, 0
 	}
-	glyph_index := mutable_face.map_code(int(code_point))
+	glyph_index := font_cmap_glyph(face.buf, code_point)
 	advance, _ := mutable_face.get_horizontal_metrics(glyph_index)
 	platform_glyph_units_cache[cache_key] = GlyphUnitsEntry{
 		advance_units: advance
@@ -536,6 +534,9 @@ fn font_face(font &Font) ?&ttf.TTF_File {
 		width_scale: 1.0
 	}
 	face.init()
+	// Outline/metrics operations use glyph indices. Their Unicode lookup is
+	// served above, so release x.ttf's duplicate dense BMP caches and segments.
+	face.cmaps = face.cmaps[..0].clone()
 	platform_font_faces[cache_key] = face
 	if font.resolved_path_ != '' {
 		mut mutable_font := unsafe { &Font(font) }
