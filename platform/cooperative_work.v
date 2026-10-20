@@ -22,6 +22,7 @@ mut:
 struct DeferredWorkTimer {
 	timer      &Timer
 	generation u64
+	owner &RetainedArena = unsafe { nil }
 }
 
 __global cooperative_work_state_ &CooperativeWorkState
@@ -112,7 +113,9 @@ fn defer_timer_during_cooperative_work(timer &Timer) bool {
 	mut state := cooperative_work_state_
 	if state == unsafe { nil } { return false }
 	if !state.deferred_timers.any(voidptr(it.timer) == voidptr(timer) && it.generation == timer.registration_generation_) {
-		state.deferred_timers << DeferredWorkTimer{ timer: timer, generation: timer.registration_generation_ }
+		mut owner := timer.allocation_owner_
+		if owner != unsafe { nil } { owner.retain() }
+		state.deferred_timers << DeferredWorkTimer{ timer: timer, generation: timer.registration_generation_, owner: owner }
 	}
 	return true
 }
@@ -133,6 +136,8 @@ pub fn (mut scope CooperativeWorkScope) finish() {
 			for item in pending {
 				mut timer := item.timer
 				if timer.registration_generation_ == item.generation { timer.fire() }
+				mut owner := item.owner
+				if owner != unsafe { nil } { owner.release() }
 			}
 		})
 		delivery.start()
