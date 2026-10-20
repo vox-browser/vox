@@ -70,7 +70,7 @@ python3 tools/benchmark_wikipedia_memory.py \
   --after Build/wikipedia-100mb/allocator-candidate.app/Contents/MacOS/Vox \
   --cache Build/wikipedia-100mb/cache \
   --network-deny Build/pikabu-instructions-network-deny.dylib \
-  --activity background --repeat 5 \
+  --activity background --repeat 5 --limit-mb 100 \
   --output Build/wikipedia-100mb/recheck
 ```
 

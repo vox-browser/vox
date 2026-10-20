@@ -55,7 +55,8 @@ def main():
     parser.add_argument('--network-deny', type=Path, required=True)
     parser.add_argument('--output', type=Path, required=True)
     parser.add_argument('--repeat', type=int, default=3)
-    parser.add_argument('--limit-mb', type=float, default=100)
+    parser.add_argument('--limit-mb', type=float, default=50,
+        help='Maximum settled physical footprint in decimal MB (default: 50)')
     parser.add_argument('--activity', choices=['foreground', 'background'], default='foreground')
     args = parser.parse_args()
     if args.repeat < 1 or args.limit_mb <= 0:
