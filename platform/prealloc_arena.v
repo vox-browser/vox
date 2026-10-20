@@ -79,6 +79,7 @@ mut:
 	base_tail voidptr
 	depth     int
 	owner     u64
+	retained &RetainedArena = unsafe { nil }
 }
 
 __global arena_thread_state ArenaThreadState
@@ -289,6 +290,11 @@ pub fn leave_persistent(entry ArenaEntry) {
 		state.depth = -state.depth
 		set_current_block(entry.previous)
 	}
+}
+
+pub fn enter_persistent_if(enabled bool) ArenaEntry {
+	if enabled { return enter_persistent() }
+	return ArenaEntry{base: true}
 }
 
 // usage reports the arena's current blocks.
