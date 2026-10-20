@@ -320,21 +320,16 @@ fn (retiring &RetiringAnimationSamples) element_style_references_arena(target do
 		if retiring.arena.contains(voidptr(current)) {
 			return true
 		}
-		for _, own_property in current.own_values {
-			if retiring.custom_value_references_arena(own_property.value) {
+		for _, property in current.own_values {
+			if retiring.arena.contains(voidptr(property.value))
+				|| retiring.arena.contains(property.value.css_value_handle)
+				|| retiring.arena.contains(voidptr(property.value.css_text.str)) {
 				return true
 			}
 		}
 		data = current.parent
 	}
 	return false
-}
-
-// A helper rather than inline checks on the loop's property: current V moves
-// that loop value to the heap on every iteration when its fields are read here.
-fn (retiring &RetiringAnimationSamples) custom_value_references_arena(value &dom.CSSStyleValue_) bool {
-	return retiring.arena.contains(voidptr(value)) || retiring.arena.contains(value.css_value_handle)
-		|| retiring.arena.contains(voidptr(value.css_text.str))
 }
 
 fn (retiring &RetiringAnimationSamples) descendant_styles_reference_arena(node &dom.Node) bool {
