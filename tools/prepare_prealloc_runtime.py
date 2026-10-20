@@ -8,6 +8,17 @@ import re
 import sys
 
 
+def validate_allocator(builtin):
+    allocation = (builtin / "allocation.c.v").read_text()
+    prealloc = (builtin / "prealloc.c.v").read_text()
+    if ("prealloc_realloc_copy_size(" not in allocation
+            or "fn prealloc_realloc_copy_size(" not in prealloc):
+        raise RuntimeError(
+            "Prealloc requires V's bounded v_realloc copy, including realloc(nil, n). "
+            "Set V_BIN to a compatible current V compiler."
+        )
+
+
 def wrap_function(source, signature, before="", after=""):
     pattern = re.compile(re.escape(signature) + r"\s*\{(.*?)^\}", re.M | re.S)
     def replace(match):
@@ -20,7 +31,9 @@ def wrap_function(source, signature, before="", after=""):
 
 def prepare(compiler):
     repo = Path(__file__).resolve().parents[1]
-    source = Path(compiler).resolve().parent / "vlib/builtin/closure"
+    builtin = Path(compiler).resolve().parent / "vlib/builtin"
+    validate_allocator(builtin)
+    source = builtin / "closure"
     if not (source / "closure.c.v").is_file():
         raise RuntimeError("Prealloc requires the current V closure runtime")
     helper = Path(__file__).with_name("prealloc_runtime") / "closure_prealloc_metadata.c.v"
