@@ -30,30 +30,48 @@ fn own_stylesheet_token(token Token) Token {
 	}
 }
 
-fn own_stylesheet_components(values []ComponentValue) []ComponentValue {
-	mut owned := []ComponentValue{cap: values.len}
-	for component in values {
-		payload := match component.value {
-			Token { ComponentValuePayload(own_stylesheet_token(component.value)) }
-			SimpleBlock {
-				ComponentValuePayload(SimpleBlock{
-					token: own_stylesheet_token(component.value.token)
-					end_token: own_stylesheet_token(component.value.end_token)
-					value: own_stylesheet_components(component.value.value)
-				})
-			}
-			Function {
-				ComponentValuePayload(Function{
-					name: component.value.name.clone()
-					name_token: own_stylesheet_token(component.value.name_token)
-					end_token: own_stylesheet_token(component.value.end_token)
-					value: own_stylesheet_components(component.value.value)
-				})
-			}
-			RawComponentValue { ComponentValuePayload(RawComponentValue{text:component.value.text.clone()}) }
-			GuaranteedInvalidValue { ComponentValuePayload(GuaranteedInvalidValue{}) }
+// A match expression initializes the sum type's first (Function) variant in
+// current V before selecting a branch. Return from each branch instead: token
+// leaves must allocate their actual payload once, without an unused Function.
+fn own_stylesheet_component(component &ComponentValue) ComponentValue {
+	match component.value {
+		Token {
+			return ComponentValue{value:ComponentValuePayload(own_stylesheet_token(component.value)), attr_tainted:component.attr_tainted}
 		}
-		owned << ComponentValue{value:payload, attr_tainted:component.attr_tainted}
+		SimpleBlock {
+			return ComponentValue{
+				value:ComponentValuePayload(SimpleBlock{
+					token:own_stylesheet_token(component.value.token)
+					end_token:own_stylesheet_token(component.value.end_token)
+					value:own_stylesheet_components(component.value.value)
+				})
+				attr_tainted:component.attr_tainted
+			}
+		}
+		Function {
+			return ComponentValue{
+				value:ComponentValuePayload(Function{
+					name:component.value.name.clone()
+					name_token:own_stylesheet_token(component.value.name_token)
+					end_token:own_stylesheet_token(component.value.end_token)
+					value:own_stylesheet_components(component.value.value)
+				})
+				attr_tainted:component.attr_tainted
+			}
+		}
+		RawComponentValue {
+			return ComponentValue{value:ComponentValuePayload(RawComponentValue{text:component.value.text.clone()}), attr_tainted:component.attr_tainted}
+		}
+		GuaranteedInvalidValue {
+			return ComponentValue{value:ComponentValuePayload(GuaranteedInvalidValue{}), attr_tainted:component.attr_tainted}
+		}
+	}
+}
+
+fn own_stylesheet_components(values []ComponentValue) []ComponentValue {
+	mut owned := []ComponentValue{cap:values.len}
+	for index in 0 .. values.len {
+		owned << own_stylesheet_component(unsafe { &values[index] })
 	}
 	return owned
 }
