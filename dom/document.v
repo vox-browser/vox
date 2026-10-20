@@ -5299,6 +5299,7 @@ pub mut:
 	scripting_enabled_by_embedder_ bool = true
 	font_size_keyword_policy_ FontSizeKeywordPolicy
 	font_rendering_policy_ FontRenderingPolicy
+	layout_coordinate_scale_ f64
 	embedder_window_inactive_ bool
 
 	// Encoding
