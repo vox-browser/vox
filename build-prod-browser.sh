@@ -156,11 +156,15 @@ export V_MACOS_V3_NO_FALLBACK
 # remains available as an ownership diagnostic.
 ui2_modules=$(python3 "$repo_dir/tools/prepare_ui2.py" "$v_compiler")
 http_modules=$(python3 "$repo_dir/tools/prepare_http_compat.py" "$v_compiler")
+prealloc_modules=""
+if [ "$gc_mode" = prealloc ]; then
+    prealloc_modules=$(python3 "$repo_dir/tools/prepare_prealloc_runtime.py" "$v_compiler")
+fi
 # Anchor package names at the repository; see build-linux-browser.sh. Without
 # it, a checkout under `modules`, `.vmodules`, `vlib` or another v.mod compiles
 # `encoding` as `vox2.encoding` while imports still resolve to vlib's name.
 set -- -exclude "$zoneinfo_exclude" -enable-globals \
-    -d vox_ui2 -path "$repo_dir|$http_modules|$ui2_modules|@vmodules|@vlib"
+    -d vox_ui2 -path "$repo_dir|$prealloc_modules|$http_modules|$ui2_modules|@vmodules|@vlib"
 if [ "${VOX_KEEP_C:-0}" = 1 ]; then
     set -- "$@" -keepc
 fi
