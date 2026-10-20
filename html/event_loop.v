@@ -128,10 +128,16 @@ mut:
 
 pub fn Task.create(source TaskSource, document ?&dom.Document, steps fn()) &Task {
 	mut owner := platform.current_retained_arena()
-	if source == .rendering { owner = unsafe { nil } }
-	if owner == unsafe { nil } {
-		if target := document { owner = target.native_storage() }
+	if target := document {
+		storage := target.native_storage()
+		if storage != unsafe { nil } { owner = storage }
 	}
+	if source == .rendering { owner = unsafe { nil } }
+	return Task.create_with_storage(source, document, steps, owner)
+}
+
+fn Task.create_with_storage(source TaskSource, document ?&dom.Document, steps fn(), storage &platform.RetainedArena) &Task {
+	mut owner := unsafe { &platform.RetainedArena(storage) }
 	if owner != unsafe { nil } { owner.retain() }
 	persistent := platform.enter_persistent()
 	defer { platform.leave_persistent(persistent) }
@@ -1096,9 +1102,18 @@ pub fn run_when_event_loop_reaches_step_1(steps fn()) {
 
 // https://html.spec.whatwg.org/multipage/webappapis.html#queue-a-task
 pub fn queue_a_task(source TaskSource, event_loop ?&EventLoop, document ?&dom.Document, steps fn()) u64 {
+	return enqueue_owned_task(event_loop, Task.create(source, document, steps))
+}
+
+// A task's runnability association and the receiver's storage lifetime are
+// separate. Parser and font progress checks intentionally have no association.
+fn queue_a_task_with_storage(source TaskSource, event_loop ?&EventLoop, document ?&dom.Document, steps fn(), storage &platform.RetainedArena) u64 {
+	return enqueue_owned_task(event_loop, Task.create_with_storage(source, document, steps, storage))
+}
+
+fn enqueue_owned_task(event_loop ?&EventLoop, task &Task) u64 {
 	mut responsible_event_loop := event_loop or { main_thread_event_loop() }
-	task := Task.create(source, document, steps)
-	if source == .microtask {
+	if task.source == .microtask {
 		responsible_event_loop.enqueue_microtask(task)
 	} else {
 		mut queue := responsible_event_loop.task_queue()

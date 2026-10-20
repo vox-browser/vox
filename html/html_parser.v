@@ -532,17 +532,19 @@ fn (mut p HTMLParser) invoke_parsing_complete_callback() {
 }
 
 pub fn (mut p HTMLParser) schedule_resume_check() {
-	if p.resume_check_pending || !p.parser_pause_flag {
+	if p.resume_check_pending || !p.parser_pause_flag || p.document_.has_been_destroyed() {
 		return
 	}
 	p.resume_check_pending = true
 	parser_pointer := voidptr(p)
-	queue_a_task(.unspecified, main_thread_event_loop(), none, fn [parser_pointer] () {
+	persistent := platform.enter_persistent()
+	defer { platform.leave_persistent(persistent) }
+	queue_a_task_with_storage(.unspecified, main_thread_event_loop(), none, fn [parser_pointer] () {
 		perform_a_microtask_checkpoint()
 		mut mutable_parser := unsafe { &HTMLParser(parser_pointer) }
 		mutable_parser.resume_check_pending = false
 		mutable_parser.resume_after_parser_blocking_script()
-	})
+	}, p.document_.native_storage())
 }
 
 fn (mut p HTMLParser) resume_after_parser_blocking_script() {
@@ -656,17 +658,19 @@ fn html_parser_end_state_schedule_callback(target voidptr) {
 }
 
 pub fn (mut state HTMLParserEndState) schedule_progress_check() {
-	if state.phase_ == .completed || state.check_pending {
+	if state.phase_ == .completed || state.check_pending || state.document.has_been_destroyed() {
 		return
 	}
 	state.check_pending = true
 	state_pointer := voidptr(state)
-	queue_a_task(.unspecified, main_thread_event_loop(), none, fn [state_pointer] () {
+	persistent := platform.enter_persistent()
+	defer { platform.leave_persistent(persistent) }
+	queue_a_task_with_storage(.unspecified, main_thread_event_loop(), none, fn [state_pointer] () {
 		perform_a_microtask_checkpoint()
 		mut mutable_state := unsafe { &HTMLParserEndState(state_pointer) }
 		mutable_state.check_progress()
 		mutable_state.check_pending = false
-	})
+	}, state.document.native_storage())
 }
 
 fn (mut state HTMLParserEndState) check_progress() {

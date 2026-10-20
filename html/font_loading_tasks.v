@@ -25,11 +25,13 @@ fn font_loading_promise_context_for_document(document &dom.Document) webidl.Prom
 }
 
 fn font_loading_task_for_document(document &dom.Document, associate_document bool, steps fn ()) bool {
+	if document.has_been_destroyed() { return true }
 	settings_pointer := document.relevant_settings_object()
 	if settings_pointer == unsafe { nil } { return false }
 	settings := unsafe { &EnvironmentSettingsObject(settings_pointer) }
 	mut task_document := ?&dom.Document(none)
 	if associate_document { task_document = document }
-	queue_a_task(.font_loading, settings.responsible_event_loop(), task_document, steps)
+	queue_a_task_with_storage(.font_loading, settings.responsible_event_loop(), task_document, steps,
+		document.native_storage())
 	return true
 }

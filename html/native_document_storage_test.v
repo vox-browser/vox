@@ -8,6 +8,29 @@ mut:
 	called bool
 }
 
+fn test_unassociated_progress_task_retains_its_explicit_document_owner() {
+	mut document := dom.Document.create(dom.url_about_blank())
+	document.enable_native_storage()
+	storage := document.native_storage()
+	probe := &NativeTaskStorageProbe{}
+	mut scope := document.enter_native_storage()
+	payload := 'unassociated progress payload'.bytes()
+	scope.finish()
+	mut loop := EventLoop.create(.window)
+	queue_a_task_with_storage(.unspecified, loop, none, fn [payload, probe] () {
+		assert payload.bytestr() == 'unassociated progress payload'
+		mut observation := unsafe { &NativeTaskStorageProbe(probe) }
+		observation.called = true
+	}, storage)
+	document.release_native_storage()
+	task := loop.task_queue().take_first_runnable()?
+	assert task.document() == none
+	task.execute()
+	assert probe.called
+	$if prealloc { assert storage.arena.usage().used == 0 }
+	if mut timer := loop.system_event_loop_timer_ { timer.stop() }
+}
+
 fn test_inner_html_fragment_adoption_does_not_pin_the_native_document() {
 	url := dom.URL{value: 'https://fragment-storage.example/'}
 	mut document := create_navigation_document(url, url.origin(), none)!
