@@ -8,6 +8,7 @@ module requestserver
 
 import fetch
 import http
+import os
 
 @[heap]
 pub struct CurlRequest {
@@ -76,6 +77,14 @@ pub fn (mut connection CurlConnection) start_fetch(params &fetch.FetchParams, in
 	check_curl_result(C.vox_curl_setopt_long(native.easy_, C.CURLOPT_NOSIGNAL, 1), C.CURLE_OK)
 	check_curl_result(C.vox_curl_setopt_pointer(native.easy_, C.CURLOPT_ACCEPT_ENCODING, c''), C.CURLE_OK)
 	check_curl_result(C.vox_curl_setopt_pointer(native.easy_, C.CURLOPT_URL, request.current_url().serialize().str), C.CURLE_OK)
+	if proxy := os.getenv_opt('VOX_PROXY') {
+		if proxy.trim_space() != '' {
+			// libcurl keeps the scheme, including socks5h's remote DNS, and
+			// copies this string: https://curl.se/libcurl/c/CURLOPT_PROXY.html
+			check_curl_result(C.vox_curl_setopt_pointer(native.easy_, C.CURLOPT_PROXY,
+				proxy.trim_space().str), C.CURLE_OK)
+		}
+	}
 	check_curl_result(C.vox_curl_setopt_long(native.easy_, C.CURLOPT_CONNECTTIMEOUT, 90), C.CURLE_OK)
 	check_curl_result(C.vox_curl_setopt_pointer(native.easy_, C.CURLOPT_CUSTOMREQUEST, request.method.str), C.CURLE_OK)
 	check_curl_result(C.vox_curl_setopt_long(native.easy_, C.CURLOPT_FOLLOWLOCATION, 0), C.CURLE_OK)
