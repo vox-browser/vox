@@ -200,13 +200,19 @@ pub fn (u URL) parsed() ?liburl.URL {
 	if cached := dom_url_record_cache[u.value] {
 		return cached.copy()
 	}
-	parsed := liburl.parse(u.value) or { return none }
 	// Source URL's copy-on-write data keeps a mutable value copy independent.
-	// Neither the first caller nor a cache lookup may share its path array.
+	// Parse the owned source in persistent storage too: copying the path array
+	// does not detach its strings or the host from a caller's temporary arena.
 	persistent := platform.enter_persistent()
-	dom_url_record_cache[u.value.clone()] = parsed.copy()
+	owned := u.value.clone()
+	parsed := liburl.parse(owned) or {
+		platform.leave_persistent(persistent)
+		return none
+	}
+	dom_url_record_cache[owned] = parsed
 	platform.leave_persistent(persistent)
-	return parsed
+	// Neither the first caller nor a cache lookup may share its path array.
+	return parsed.copy()
 }
 
 pub fn (u URL) has_an_opaque_path() bool {
