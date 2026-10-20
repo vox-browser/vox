@@ -13,6 +13,29 @@ import measure_browser_instructions as measurement
 from process_instruction_counts import Reading
 
 
+class ProcessStopTests(unittest.TestCase):
+    def test_exited_capture_is_reaped_before_signalling_its_process_group(self):
+        process = Mock(pid=123, returncode=None)
+        process.poll.return_value = 0
+        with patch.object(measurement.os, 'killpg') as kill:
+            measurement.stop_process(process)
+        kill.assert_not_called()
+
+    def test_capture_exit_between_poll_and_signal_does_not_mask_its_results(self):
+        process = Mock(pid=123, returncode=None)
+        process.poll.side_effect = [None, 0]
+        with patch.object(measurement.os, 'killpg', side_effect=PermissionError()):
+            measurement.stop_process(process)
+        process.wait.assert_called_once_with(timeout=3)
+
+    def test_signalling_a_live_process_preserves_permission_errors(self):
+        process = Mock(pid=123, returncode=None)
+        process.poll.return_value = None
+        with patch.object(measurement.os, 'killpg', side_effect=PermissionError()):
+            with self.assertRaises(PermissionError):
+                measurement.stop_process(process)
+
+
 class ChromeDebuggerStartupTests(unittest.TestCase):
     def counter(self, exited=False):
         counter = Mock(root_identity=(1, 100))

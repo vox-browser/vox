@@ -221,11 +221,16 @@ def parse_native_counters(text):
 
 
 def stop_process(process):
-    if process.returncode is None:
+    if process.poll() is None:
         try:
             os.killpg(process.pid, signal.SIGTERM)
         except ProcessLookupError:
             pass
+        except PermissionError:
+            # A native capture may exit between poll and killpg. A remaining
+            # system-owned crash reporter does not make that browser alive.
+            if process.poll() is None:
+                raise
         try:
             process.wait(timeout=3)
         except subprocess.TimeoutExpired:
