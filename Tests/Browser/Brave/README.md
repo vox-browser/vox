@@ -298,3 +298,8 @@ Its short non-scaling stroke shares the root recording with surrounding
 drawing, then replays through the pinned Dawn/Metal backend. The expected PNG
 requires exact RGBA equality; unsupported effect and clip scopes keep their
 existing leaf rendering path.
+
+`svg-shared-empty-clip` adds a checkbox hidden by a zero-area CSS clip.
+Discarded drawing commands leave shared recording enabled; effect boundaries
+and visible clips retain their existing fallback. Capture at 1280 by 800,
+device scale 1, and require exact RGBA equality.

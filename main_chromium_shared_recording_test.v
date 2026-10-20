@@ -40,7 +40,7 @@ fn test_shared_recording_keeps_clips_effects_and_unrepresented_draws_on_the_leaf
 	for unsupported in [
 		layout.PaintCommand{ kind: 'begin_css_effect_layer' },
 		layout.PaintCommand{ kind: 'draw_text', blur: 1 },
-		layout.PaintCommand{ kind: 'fill_rect', has_clip: true },
+		layout.PaintCommand{ kind: 'fill_rect', has_clip: true, clip_width: 1, clip_height: 1 },
 		layout.PaintCommand{ kind: 'fill_rect', clip_outs: [f64(0), 0, 10, 10] },
 	] {
 		assert !chromium_shared_recording_supported([unsupported, base[1]], plan)
@@ -70,4 +70,37 @@ fn test_shared_recording_accepts_vector_image_display_lists_but_rejects_nested_d
 		...image
 		nested_viewport_commands: [layout.PaintCommand{ kind: 'draw_text' }]
 	}], plan)
+}
+
+fn test_shared_recording_ignores_empty_clipped_leaves_but_keeps_effect_boundaries() {
+	base := shared_recording_test_commands()
+	plan := layout.ChromiumRasterLayerPlan{
+		layers:         [layout.ChromiumRasterLayer{}]
+		command_layers: [0, 0, 0]
+	}
+	for kind in ['fill_rect', 'stroke_rounded_rect'] {
+		for size in [[f64(0), 1]!, [f64(1), 0]!, [f64(-1), 1]!] {
+			hidden := layout.PaintCommand{
+				kind:        kind
+				has_clip:    true
+				clip_width:  size[0]
+				clip_height: size[1]
+				clip_list:   &layout.PaintClipList{items: [layout.PaintClip{}]}
+			}
+			assert chromium_shared_recording_supported([base[0], hidden, base[1]], plan)
+		}
+	}
+	for kind in ['begin_css_effect_layer', 'end_css_effect_layer', 'begin_svg_mask_layer'] {
+		assert !chromium_shared_recording_supported([base[0], layout.PaintCommand{
+			kind:     kind
+			has_clip: true
+		}, base[1]], plan)
+	}
+	assert !chromium_shared_recording_supported([layout.PaintCommand{
+		...base[1]
+		has_clip: true
+	}], layout.ChromiumRasterLayerPlan{
+		layers:         plan.layers
+		command_layers: [0]
+	})
 }

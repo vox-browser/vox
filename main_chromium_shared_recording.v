@@ -21,6 +21,13 @@ fn chromium_shared_recording_supported(commands []layout.PaintCommand,
 			left_root = true
 			continue
 		}
+		// Native replay discards ordinary leaves with an empty clip before
+		// drawing. Hidden accessible controls must not disable the recording;
+		// effect boundaries still need their existing balanced replay path.
+		if command.has_clip && (command.clip_width <= 0 || command.clip_height <= 0)
+			&& !command.kind.starts_with('begin_') && !command.kind.starts_with('end_') {
+			continue
+		}
 		if left_root || command.has_clip || command.clip_list != unsafe { nil }
 			|| command.clip_outs.len > 0 || command.blur != 0 || command.outer_shadow {
 			return false
