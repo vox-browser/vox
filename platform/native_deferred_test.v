@@ -83,3 +83,20 @@ fn test_deferred_worker_completion_keeps_retired_document_payload_until_delivery
 	assert state.delivered
 	assert storage.arena.usage().used == 0
 }
+
+fn test_deferred_completion_can_retain_its_receiver_outside_the_receivers_allocation_scope() {
+	mut storage := new_retained_arena('explicit deferred document')
+	state := &DeferredThreadObservation{}
+	mut scope := storage.enter()
+	payload := 'document-owned result'.bytes()
+	scope.finish()
+	// Fetch callbacks need not execute while their original document is entered.
+	invoker := capture_native_deferred_invoker_for_storage(storage) or { storage.release(); return }
+	storage.release()
+	worker := spawn post_document_owned_result(invoker, state, payload)
+	worker.wait()
+	deadline := time.sys_mono_now() + time.second
+	for !state.delivered && time.sys_mono_now() < deadline { pump_native_events(0.05) }
+	assert state.delivered
+	assert storage.arena.usage().used == 0
+}

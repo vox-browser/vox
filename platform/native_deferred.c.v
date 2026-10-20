@@ -32,8 +32,14 @@ pub struct NativeDeferredInvoker {
 // Each capture is consumed by one deferred invocation, matching the source's
 // originating EventLoop handle retained for the pending worker completion.
 pub fn capture_native_deferred_invoker() ?NativeDeferredInvoker {
+	return capture_native_deferred_invoker_for_storage(current_retained_arena())
+}
+
+// An async resource completion can run with another document's allocation
+// scope entered by a cooperative UI checkpoint. Its receiver is the owner.
+pub fn capture_native_deferred_invoker_for_storage(owner &RetainedArena) ?NativeDeferredInvoker {
 	$if macos || linux {
-		mut storage := current_retained_arena()
+		mut storage := unsafe { &RetainedArena(owner) }
 		if storage != unsafe { nil } { storage.retain() }
 		return NativeDeferredInvoker{
 			loop_handle: C.vox_capture_origin_run_loop()

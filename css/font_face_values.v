@@ -2698,7 +2698,7 @@ fn (mut face FontFaceObject) start_owned_binary_load() {
 	face.binary_data = []u8{}
 	handle := voidptr(&face)
 	if requires_off_thread_vector_font_preparation(data, none) {
-		if prepare_vector_font_data_off_thread(data, fn [handle] (prepared PreparedVectorFontData) {
+		if prepare_vector_font_data_for_computer(data, fn [handle] (prepared PreparedVectorFontData) {
 			mut owner := unsafe { &FontFaceObject(handle) }
 			if message := prepared.error_message {
 				owner.queue_binary_completion(unsafe { nil }, message)
@@ -2709,7 +2709,7 @@ fn (mut face FontFaceObject) start_owned_binary_load() {
 				}
 				owner.queue_binary_completion(typeface, '')
 			}
-		}) { return }
+		}, face.environment_font_computer_) { return }
 	}
 	typeface := try_load_vector_font(data, none, face.family_) or {
 		face.queue_binary_completion(unsafe { nil }, err.msg())
@@ -4008,7 +4008,7 @@ pub fn (mut loader FontLoader) start_loading_next_url() {
 				current.has_received_font_data_ = true
 				mime := current.try_load_font_mime_type_essence(response, body.bytes)
 				if requires_off_thread_vector_font_preparation(body.bytes, mime) {
-					if prepare_vector_font_data_off_thread(body.bytes,
+					if prepare_vector_font_data_for_computer(body.bytes,
 						fn [loader_handle] (prepared PreparedVectorFontData) {
 							mut owner := unsafe { &FontLoader(loader_handle) }
 							if prepared.error_message != none {
@@ -4020,7 +4020,7 @@ pub fn (mut loader FontLoader) start_loading_next_url() {
 								return
 							}
 							owner.font_did_load_or_fail(typeface)
-						}) {
+						}, current.font_computer) {
 						return
 					}
 				}

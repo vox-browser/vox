@@ -6,6 +6,7 @@ import http
 import os
 import platform
 import time
+import dom
 
 @[heap]
 struct PreparedFontObservation {
@@ -80,4 +81,29 @@ fn test_font_preparation_retains_its_origin_callback_through_gc_until_native_del
 	assert state.callback_thread == origin_thread
 	assert state.error_message == none
 	assert font_typeface_from_prepared_bytes(state.data, 'Source prepared font')!.source_path != ''
+}
+
+fn test_font_preparation_retains_the_receiving_document_outside_its_allocation_scope() {
+	$if !darwin { return }
+	mut document := dom.Document.create(dom.URL{value:'https://font-owner.test/'})
+	document.enable_native_storage()
+	storage := document.native_storage()
+	state := &PreparedFontObservation{}
+	mut scope := document.enter_native_storage()
+	computer := FontComputer.create_for_document(document)
+	name := 'Retired font family'.clone()
+	bytes := font_loading_fixture('incorrect_sfnt_size.woff2')
+	scope.finish()
+	assert prepare_vector_font_data_for_computer(bytes, fn [state, name] (prepared PreparedVectorFontData) {
+		assert prepared.error_message == none
+		typeface := font_typeface_from_prepared_bytes(prepared.data, name) or { panic(err) }
+		assert typeface.family_name == 'Retired font family'
+		mut observation := unsafe { &PreparedFontObservation(state) }
+		observation.done = true
+	}, computer)
+	document.release_native_storage()
+	deadline := time.sys_mono_now() + 2 * time.second
+	for !state.done && time.sys_mono_now() < deadline { platform.pump_native_events(0.05) }
+	assert state.done
+	assert storage.arena.usage().used == 0
 }

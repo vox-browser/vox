@@ -30,7 +30,18 @@ pub:
 // CSS/FontLoading.cpp keeps the callback and any captured GC roots on the
 // originating thread. The platform projection supplies its actual native loop.
 pub fn prepare_vector_font_data_off_thread(data []u8, on_complete fn (PreparedVectorFontData)) bool {
-	invoker := platform.capture_native_deferred_invoker() or { return false }
+	return prepare_vector_font_data_for_storage(data, on_complete, platform.current_retained_arena())
+}
+
+fn prepare_vector_font_data_for_computer(data []u8, on_complete fn (PreparedVectorFontData), computer ?&FontComputer) bool {
+	storage := if owner := computer {
+		if document := owner.document_ { document.native_storage() } else { unsafe { &platform.RetainedArena(nil) } }
+	} else { unsafe { &platform.RetainedArena(nil) } }
+	return prepare_vector_font_data_for_storage(data, on_complete, storage)
+}
+
+fn prepare_vector_font_data_for_storage(data []u8, on_complete fn (PreparedVectorFontData), storage &platform.RetainedArena) bool {
+	invoker := platform.capture_native_deferred_invoker_for_storage(storage) or { return false }
 	// Source allocates the callback on the origin thread and only the native
 	// decoded bytes travel back from its worker. Keep owner roots out of work.
 	callback := &VectorFontPreparationCallback{
