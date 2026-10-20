@@ -5,22 +5,30 @@ module html
 // Ladybird (C++) uses a generated DAFSA (deterministic acyclic finite state automaton) to match
 // named character references one code point at a time while tracking the longest complete match
 // and how many code points were "overconsumed" past it (so the tokenizer can backtrack, e.g.
-// `&notit` backtracks to `&not`). We reproduce that behaviour with a plain map of entity name ->
-// code points (`named_char_ref_codepoints`, generated in named_character_references.v) plus a set
-// of every valid prefix of every entity name. Walking the prefix set gives exactly the same
-// "is `c` a child of the current node" decision the DAFSA makes.
+// `&notit` backtracks to `&not`). The generated code-point map provides the
+// complete matches. A sorted index of its existing names answers prefix queries
+// without retaining a second hash table containing every partial entity name.
 
-// The set of every prefix of every named-character-reference name. Built once at startup.
-const named_char_ref_prefixes = build_named_char_ref_prefixes()
+const named_char_ref_names = build_named_char_ref_names()
 
-fn build_named_char_ref_prefixes() map[string]bool {
-	mut set := map[string]bool{}
-	for name, _ in named_char_ref_codepoints {
-		for i := 1; i <= name.len; i++ {
-			set[name[..i]] = true
+fn build_named_char_ref_names() []string {
+	mut names := named_char_ref_codepoints.keys()
+	names.sort()
+	return names
+}
+
+fn named_char_ref_has_prefix(prefix string) bool {
+	mut first := 0
+	mut end := named_char_ref_names.len
+	for first < end {
+		middle := first + (end - first) / 2
+		if named_char_ref_names[middle] < prefix {
+			first = middle + 1
+		} else {
+			end = middle
 		}
 	}
-	return set
+	return first < named_char_ref_names.len && named_char_ref_names[first].starts_with(prefix)
 }
 
 struct NamedCharacterReferenceMatcher {
@@ -46,7 +54,7 @@ fn (mut m NamedCharacterReferenceMatcher) try_consume_code_point(c rune) bool {
 
 fn (mut m NamedCharacterReferenceMatcher) try_consume_ascii_char(c u8) bool {
 	candidate := m.consumed + c.ascii_str()
-	if candidate !in named_char_ref_prefixes {
+	if !named_char_ref_has_prefix(candidate) {
 		return false
 	}
 	m.consumed = candidate

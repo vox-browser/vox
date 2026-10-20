@@ -1,7 +1,7 @@
 // Named character reference data for the HTML tokenizer.
 // Generated from Ladybird's Libraries/LibWeb/HTML/Parser/Entities.json (WHATWG named character
 // references). Maps each entity name (WITHOUT the leading '&') to its Unicode code point(s).
-// Ladybird compiles this into a DAFSA at build time; here we use a plain map plus a prefix set
+// Ladybird compiles this into a DAFSA at build time; here we use a plain map plus a sorted name index
 // (see entities.v), which is behaviourally equivalent for tokenization.
 module html
 
