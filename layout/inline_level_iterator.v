@@ -414,7 +414,10 @@ pub fn (iterator &InlineLevelIterator) next_non_whitespace_sequence_width() CSSP
 	mut next_width := CSSPixels.new(0)
 	for index := iterator.next_item_index; index < iterator.items.len; index++ {
 		next_item := iterator.items[index]
-		if next_item.type_ in [.forced_break, .block_level_box] {
+		// Atomic inlines allow a break at their outer boundary even when their
+		// own contents are nowrap. Do not reserve the following badge's width
+		// while deciding whether the preceding word fits on this line.
+		if next_item.type_ in [.forced_break, .block_level_box, .element] {
 			break
 		}
 		node := next_item.node or { break }
@@ -435,7 +438,7 @@ fn (iterator &InlineLevelIterator) next_non_whitespace_sequence_items() []Inline
 	mut end := iterator.next_item_index
 	for end < iterator.items.len {
 		item := iterator.items[end]
-		if item.type_ in [.forced_break, .block_level_box] { break }
+		if item.type_ in [.forced_break, .block_level_box, .element] { break }
 		node := item.node or { break }
 		if node.computed_values().text_wrap_mode() == .wrap
 			&& (item.type_ != .text || item.is_collapsible_whitespace || item.is_all_whitespace) { break }
