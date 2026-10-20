@@ -121,3 +121,42 @@ fn test_anonymous_layout_wrappers_keep_their_projected_font_and_scale() {
 	assert anonymous.length_percentage_to_px(.padding_left, 1600)? == 0
 	assert voidptr(anonymous.cached_computed_font_list_?) == voidptr(values.cached_computed_font_list_?)
 }
+
+fn test_direct_anonymous_clones_preserve_layout_coordinates_before_resolution() {
+	mut document, source := device_layout_test_style('font:17px Arial;padding:10px')
+	defer { document.finalize() }
+	document.set_layout_coordinate_scale(2)
+	projected := computed_style_in_layout_coordinates(source, document)
+	assert projected.cached_computed_font_list_ != none
+	assert projected.cached_computed_font_list_?.fonts[0].font.pixel_size_override_? == 34
+
+	for clone in [projected.clone_for_anonymous_block(), projected.clone_for_button_flex_wrapper(),
+		projected.clone_for_anonymous_with_display(Display.from_short(.flow_root))] {
+		assert clone.layout_coordinate_scale() == 2
+		assert clone.resolved_font_size_px() == 34
+		assert voidptr(computed_style_in_layout_coordinates(clone, document)) == voidptr(clone)
+		assert clone.cached_computed_font_list_ != none
+		assert voidptr(clone.cached_computed_font_list_?) == voidptr(projected.cached_computed_font_list_?)
+	}
+	mut inherited := source.clone_for_anonymous_block()
+	inherited.inherit_from_for_layout(projected)
+	assert inherited.layout_coordinate_scale() == 2
+	assert inherited.resolved_font_size_px() == 34
+	assert voidptr(computed_style_in_layout_coordinates(inherited, document)) == voidptr(inherited)
+}
+
+fn test_transferred_wrapper_properties_keep_the_scaled_font_after_mutations() {
+	mut document, source := device_layout_test_style('font:17px Arial;display:table;margin:10px;overflow:scroll')
+	defer { document.finalize() }
+	document.set_layout_coordinate_scale(2)
+	projected := computed_style_in_layout_coordinates(source, document)
+	table, wrapper := projected.table_box_and_wrapper_properties()
+	mut fieldset := projected.clone_for_anonymous_block()
+	content := fieldset.take_properties_for_fieldset_content_box()
+	for style in [table, wrapper, fieldset, content] {
+		assert style.layout_coordinate_scale() == 2
+		assert style.resolved_font_size_px() == 34
+		assert style.cached_computed_font_list_ != none
+		assert voidptr(style.cached_computed_font_list_?) == voidptr(projected.cached_computed_font_list_?)
+	}
+}

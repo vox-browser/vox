@@ -14,6 +14,20 @@ pub fn (style &ComputedProperties) layout_coordinate_scale() f64 {
 	return style.computed_layout_cache().layout_coordinate_scale_
 }
 
+// Anonymous table, button and fieldset styles also pass through the ordinary
+// layout resolver. Keep their inherited physical font and coordinate marker
+// together so they are never projected a second time.
+fn (mut style ComputedProperties) inherit_layout_coordinate_context(source &ComputedProperties) {
+	scale := source.layout_coordinate_scale()
+	if scale == 1 { return }
+	style.ensure_computed_layout_cache().layout_coordinate_scale_ = scale
+	style.cached_computed_font_list_ = source.cached_computed_font_list_
+	style.cached_computed_font_list_generation_ = source.cached_computed_font_list_generation_
+	style.cached_computed_font_list_owner_ = source.cached_computed_font_list_owner_
+	style.cached_first_available_computed_font_ = source.cached_first_available_computed_font_
+	style.cached_length_metrics_ = unsafe { nil }
+}
+
 fn device_layout_font(font PlatformFont, factor f64, pixel_size f64) PlatformFont {
 	return PlatformFont{
 		...font
@@ -91,24 +105,20 @@ pub fn computed_style_in_layout_coordinates(source &ComputedProperties,
 	scaled_fonts := device_layout_fonts(fonts, factor, pixel_size)
 	mut target := &ComputedProperties{
 		...*source
-		property_store_:                       source.clone_raw_property_store()
-		computed_property_graph_token_:        &ComputedPropertyGraphMutationToken{}
-		computed_layout_cache_:                unsafe { nil }
-		layout_cache_owner_serial_:            0
-		computed_values_resolved_:             false
-		cached_length_metrics_:                unsafe { nil }
-		cached_computed_font_list_:            scaled_fonts
-		cached_computed_font_list_generation_: source.cached_computed_font_list_generation_
-		cached_computed_font_list_owner_:      source.cached_computed_font_list_owner_
-		cached_first_available_computed_font_: scaled_fonts.font_for_code_point(u32(` `))
-		font_input_refresh_safe_:              false
-		root_font_size_px_:                    source.root_font_size_px_ * factor
-		root_line_height_px_:                  source.root_line_height_px_ * factor
-		viewport_rect_:                        CSSPixelRect.new(source.viewport_rect_.left_value() * factor,
+		property_store_:                source.clone_raw_property_store()
+		computed_property_graph_token_: &ComputedPropertyGraphMutationToken{}
+		computed_layout_cache_:         unsafe { nil }
+		layout_cache_owner_serial_:     0
+		computed_values_resolved_:      false
+		cached_length_metrics_:         unsafe { nil }
+		font_input_refresh_safe_:       false
+		root_font_size_px_:             source.root_font_size_px_ * factor
+		root_line_height_px_:           source.root_line_height_px_ * factor
+		viewport_rect_:                 CSSPixelRect.new(source.viewport_rect_.left_value() * factor,
 			source.viewport_rect_.top_value() * factor,
 			source.viewport_rect_.width_value() * factor,
 			source.viewport_rect_.height_value() * factor)
-		line_height_:                          if height := source.line_height_ {
+		line_height_:                   if height := source.line_height_ {
 			?CSSPixels(height.scaled(factor))
 		} else {
 			none
@@ -116,6 +126,12 @@ pub fn computed_style_in_layout_coordinates(source &ComputedProperties,
 	}
 	target.set_property_without_modifying_flags(.font_size,
 		dom_style_value_from_value_logic(StyleValue(LengthStyleValue.create(Length.make_px(pixel_size)))))
+	// Installing font-size invalidates the inherited font cache. Seed the
+	// scaled faces only after that setter, preserving the CSS optical axes.
+	target.cached_computed_font_list_ = scaled_fonts
+	target.cached_computed_font_list_generation_ = source.cached_computed_font_list_generation_
+	target.cached_computed_font_list_owner_ = source.cached_computed_font_list_owner_
+	target.cached_first_available_computed_font_ = scaled_fonts.font_for_code_point(u32(` `))
 	color_context := ColorResolutionContext.for_computed_properties(source, document)
 	mut context := ComputationContext{
 		length_resolution_context: target.length_resolution_context()

@@ -1796,6 +1796,7 @@ pub fn (c &ComputedProperties) clone_for_anonymous_block() &ComputedProperties {
 	display_index := int(PropertyID.display) - int(first_longhand_property_id())
 	clone.set_raw_property_at_index(display_index, dom_style_value_from_value_logic(StyleValue(DisplayStyleValue.create(display))))
 	clone.display_before_box_type_transformation_ = display
+	clone.inherit_layout_coordinate_context(c)
 	return clone
 }
 
@@ -1830,6 +1831,7 @@ pub fn (mut c ComputedProperties) inherit_from_for_layout(source &ComputedProper
 			c.set_property_without_modifying_flags(property_id, value)
 		}
 	}
+	c.inherit_layout_coordinate_context(source)
 }
 
 // The anonymous flex wrapper mandated by HTML's button-layout algorithm.
