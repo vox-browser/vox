@@ -4,6 +4,7 @@
 
 #include <CoreGraphics/CoreGraphics.h>
 #include <dlfcn.h>
+#include <chrono>
 #include "native_graphite_bridge.h"
 #include "native_chromium_raster_phase.h"
 #include "native_chromium_raster_rows.h"
@@ -107,9 +108,11 @@ sk_sp<SkFontMgr> font_manager()
 
 sk_sp<GrDirectContext> s_image_gpu_context;
 bool s_image_gpu_context_attempted = false;
+std::chrono::steady_clock::time_point s_image_gpu_context_last_use;
 
 GrDirectContext* image_gpu_context()
 {
+    s_image_gpu_context_last_use = std::chrono::steady_clock::now();
     if (!s_image_gpu_context_attempted) {
         s_image_gpu_context_attempted = true;
         s_image_gpu_context = []() -> sk_sp<GrDirectContext> {
@@ -119,7 +122,9 @@ GrDirectContext* image_gpu_context()
         backend.fDevice.reset((GrMTLHandle)device);
         backend.fQueue.reset((GrMTLHandle)[device newCommandQueue]);
         if (!backend.fQueue) return nullptr;
-        return GrDirectContexts::MakeMetal(backend);
+        auto gpu = GrDirectContexts::MakeMetal(backend);
+        if (gpu) gpu->setResourceCacheLimit(64 * 1024 * 1024);
+        return gpu;
         }();
     }
     return s_image_gpu_context.get();
@@ -696,6 +701,36 @@ extern "C" void ladybird_v_skia_release_unused_graphics_memory()
     }
     s_glyph_raster_cache.clear();
     SkGraphics::PurgeAllCaches();
+}
+
+// Polling may run on scripted pages. Preserve CPU paint/font caches and only
+// retire contexts that have not performed GPU raster work for two seconds.
+extern "C" void ladybird_v_skia_release_idle_graphics_memory()
+{
+    if (!pthread_main_np()) return;
+    if (auto* gpu = s_image_gpu_context.get(); gpu &&
+        std::chrono::steady_clock::now() - s_image_gpu_context_last_use >= std::chrono::seconds(2)) {
+        gpu->flushAndSubmit(GrSyncCpu::kYes);
+        gpu->checkAsyncWorkCompletion();
+        gpu->freeGpuResources();
+        gpu->purgeUnlockedResources(GrPurgeResourceOptions::kAllResources);
+        if (gpu->unique()) {
+            s_image_gpu_context.reset();
+            s_image_gpu_context_attempted = false;
+        }
+    }
+    if (void* library = dlopen("@rpath/libVoxGraphite.dylib", RTLD_LAZY | RTLD_LOCAL | RTLD_NOLOAD)) {
+        auto purge = reinterpret_cast<decltype(&vox_graphite_release_idle_graphics_memory)>(
+            dlsym(library, "vox_graphite_release_idle_graphics_memory"));
+        if (purge) purge();
+        dlclose(library);
+    }
+    if (void* library = dlopen("@rpath/libVoxGraphiteDawn.dylib", RTLD_LAZY | RTLD_LOCAL | RTLD_NOLOAD)) {
+        auto purge = reinterpret_cast<decltype(&vox_graphite_picture_release_idle_graphics_memory)>(
+            dlsym(library, "vox_graphite_picture_release_idle_graphics_memory"));
+        if (purge) purge();
+        dlclose(library);
+    }
 }
 
 extern "C" void ladybird_v_skia_set_chromium_painting(int active)

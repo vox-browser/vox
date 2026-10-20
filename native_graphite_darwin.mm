@@ -33,6 +33,7 @@
 #include <mutex>
 #include <pthread.h>
 #include <vector>
+#include <chrono>
 
 namespace {
 std::mutex gpu_mutex;
@@ -43,8 +44,10 @@ VoxGraphiteRasterCache path_cache(8 * 1024 * 1024);
 VoxGraphiteRasterCache shape_cache(16 * 1024 * 1024);
 std::unique_ptr<skgpu::graphite::Context> gpu_context;
 bool gpu_context_attempted = false;
+std::chrono::steady_clock::time_point gpu_context_last_use;
 skgpu::graphite::Context* context()
 {
+    gpu_context_last_use = std::chrono::steady_clock::now();
     if (!gpu_context_attempted) {
         gpu_context_attempted = true;
         gpu_context = [] {
@@ -52,7 +55,9 @@ skgpu::graphite::Context* context()
         backend.fDevice.reset((CFTypeRef)MTLCreateSystemDefaultDevice());
         if (!backend.fDevice) return std::unique_ptr<skgpu::graphite::Context>();
         backend.fQueue.reset((CFTypeRef)[(id<MTLDevice>)backend.fDevice.get() newCommandQueue]);
-        return skgpu::graphite::ContextFactory::MakeMetal(backend, {});
+        skgpu::graphite::ContextOptions options;
+        options.fGpuBudgetInBytes = 64 * 1024 * 1024;
+        return skgpu::graphite::ContextFactory::MakeMetal(backend, options);
         }();
     }
     return gpu_context.get();
@@ -110,6 +115,21 @@ int read_pixels(skgpu::graphite::Context* gpu, skgpu::graphite::Recorder* record
     }
     return 1;
 }
+}
+
+extern "C" __attribute__((visibility("default")))
+int vox_graphite_release_idle_graphics_memory()
+{
+    if (!pthread_main_np()) return 0;
+    std::lock_guard lock(gpu_mutex);
+    if (!gpu_context || std::chrono::steady_clock::now() - gpu_context_last_use < std::chrono::seconds(2)) return 0;
+    // CPU raster results remain reusable after the unused upload/context die.
+    image_upload_cache.clear();
+    gpu_context->submit(skgpu::graphite::SubmitInfo(skgpu::graphite::SyncToCpu::kYes));
+    gpu_context->checkAsyncWorkCompletion();
+    gpu_context.reset();
+    gpu_context_attempted = false;
+    return 1;
 }
 
 extern "C" __attribute__((visibility("default")))

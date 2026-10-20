@@ -5,6 +5,7 @@ import time
 $if macos {
 	fn C.native_dispatch_browser_memory_cleanup(owner voidptr, callback fn (voidptr))
 	fn C.native_schedule_static_graphics_cleanup()
+	fn C.native_schedule_idle_graphics_cleanup()
 }
 
 // The host queue holds an opaque pointer. Keep its app alive until delivery;
@@ -20,6 +21,9 @@ fn (app &BrowserApp) uses_static_native_memory_policy() bool {
 
 fn (app &BrowserApp) schedule_static_graphics_cleanup() {
 	$if macos {
+		if app.ctx != unsafe { nil } && app.ctx.native_rendering {
+			C.native_schedule_idle_graphics_cleanup()
+		}
 		if app.uses_static_native_memory_policy() {
 			C.native_schedule_static_graphics_cleanup()
 		}

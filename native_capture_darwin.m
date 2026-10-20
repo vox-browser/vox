@@ -36,6 +36,7 @@ int native_prefers_overlay_scrollbars(void) {
 #ifdef LADYBIRD_V_HAS_SKIA_TEXT
 extern void ladybird_v_skia_set_chromium_painting(int active);
 extern void ladybird_v_skia_release_unused_graphics_memory(void);
+extern void ladybird_v_skia_release_idle_graphics_memory(void);
 extern int ladybird_v_skia_configure_font(const char *path, int slot);
 extern void ladybird_v_skia_set_image_color_profile(const float *profile);
 extern void ladybird_v_skia_set_root_raster_scroll_y(double scroll_y);
@@ -2316,6 +2317,20 @@ void native_dispatch_browser_memory_cleanup(void *owner, void (*callback)(void *
 }
 
 static uint64_t native_graphics_cleanup_generation;
+static BOOL native_idle_graphics_cleanup_scheduled;
+
+void native_schedule_idle_graphics_cleanup(void) {
+	if (native_idle_graphics_cleanup_scheduled) return;
+	native_idle_graphics_cleanup_scheduled = YES;
+	dispatch_after(dispatch_time(DISPATCH_TIME_NOW, NSEC_PER_SEC), dispatch_get_main_queue(), ^{
+		native_when_document_work_idle(^{
+			native_idle_graphics_cleanup_scheduled = NO;
+#ifdef LADYBIRD_V_HAS_SKIA_TEXT
+			ladybird_v_skia_release_idle_graphics_memory();
+#endif
+		});
+	});
+}
 
 static void native_release_unused_graphics_memory(void) {
 	if (![NSThread isMainThread]) return;

@@ -149,6 +149,13 @@ static void check_idle_ganesh_context_and_cpu_inputs(int scale)
         return pixels;
     };
     auto before = draw();
+    assert(s_image_gpu_context->getResourceCacheLimit() == 64 * 1024 * 1024);
+    ladybird_v_skia_release_idle_graphics_memory();
+    assert(s_image_gpu_context);
+    s_image_gpu_context_last_use = std::chrono::steady_clock::now() - std::chrono::seconds(3);
+    ladybird_v_skia_release_idle_graphics_memory();
+    assert(!s_image_gpu_context && !s_image_gpu_context_attempted);
+    assert(before == draw());
     ladybird_v_skia_release_unused_graphics_memory();
     assert(!s_image_gpu_context && !s_image_gpu_context_attempted);
     ladybird_v_skia_release_unused_graphics_memory();
@@ -188,6 +195,17 @@ int main(int argc, char** argv)
         std::printf("Ganesh idle Context scale %d: released and recreated with retained CPU inputs\n", scale);
     }
     // Reject non-owner use without touching either context.
+    graphite_purge();
+    auto idle_purge = symbol<decltype(&vox_graphite_release_idle_graphics_memory)>(library,
+        "vox_graphite_release_idle_graphics_memory");
+    auto cached_pixels = graphite_case(library, 1, 1);
+    assert(idle_purge() == 0);
+    std::this_thread::sleep_for(std::chrono::milliseconds(2100));
+    assert(idle_purge() == 1);
+    assert(idle_purge() == 0);
+    assert(cached_pixels == graphite_case(library, 1, 1));
+    assert(idle_purge() == 0); // CPU cache hit did not recreate a GPU context.
+    puts("Graphite idle context retired while CPU raster cache stayed reusable.");
     auto retained_cpu_pixels = graphite_case(library, 3, 1);
     auto* retained_gpu = image_gpu_context();
     assert(retained_gpu);

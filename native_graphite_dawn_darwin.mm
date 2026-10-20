@@ -24,13 +24,16 @@
 #include <mutex>
 #include <pthread.h>
 #include <vector>
+#include <chrono>
 
 namespace {
 std::mutex gpu_mutex;
 std::unique_ptr<skgpu::graphite::Context> gpu_context;
 bool gpu_context_attempted = false;
+std::chrono::steady_clock::time_point gpu_context_last_use;
 skgpu::graphite::Context* context()
 {
+    gpu_context_last_use = std::chrono::steady_clock::now();
     if (!gpu_context_attempted) {
         gpu_context_attempted = true;
         gpu_context = [] {
@@ -108,7 +111,9 @@ skgpu::graphite::Context* context()
         backend.fInstance = wgpu::Instance(instance->Get());
         backend.fDevice = device;
         backend.fQueue = device.GetQueue();
-        return skgpu::graphite::ContextFactory::MakeDawn(backend, {});
+        skgpu::graphite::ContextOptions options;
+        options.fGpuBudgetInBytes = 64 * 1024 * 1024;
+        return skgpu::graphite::ContextFactory::MakeDawn(backend, options);
         }();
     }
     return gpu_context.get();
@@ -185,6 +190,19 @@ int vox_graphite_draw_picture_pixels(uint8_t* pixels, int width, int height,
         std::memcpy(pixels + size_t(row) * pitch,
             static_cast<uint8_t const*>(result->data(0)) + size_t(row) * result->rowBytes(0),
             size_t(width) * 4);
+    return 1;
+}
+
+extern "C" __attribute__((visibility("default")))
+int vox_graphite_picture_release_idle_graphics_memory()
+{
+    if (!pthread_main_np()) return 0;
+    std::lock_guard lock(gpu_mutex);
+    if (!gpu_context || std::chrono::steady_clock::now() - gpu_context_last_use < std::chrono::seconds(2)) return 0;
+    gpu_context->submit(skgpu::graphite::SubmitInfo(skgpu::graphite::SyncToCpu::kYes));
+    gpu_context->checkAsyncWorkCompletion();
+    gpu_context.reset();
+    gpu_context_attempted = false;
     return 1;
 }
 

@@ -81,6 +81,8 @@ extern "C" {
 // or destroy live paint resources; the next draw may rebuild temporary caches.
 void vox_graphite_release_unused_graphics_memory(void);
 void vox_graphite_picture_release_unused_graphics_memory(void);
+int vox_graphite_release_idle_graphics_memory(void);
+int vox_graphite_picture_release_idle_graphics_memory(void);
 int vox_graphite_draw_picture_pixels(uint8_t *pixels, int width, int height,
     int pitch, const void *bytes, size_t size, const float *matrix);
 int vox_graphite_draw_shadow_pixels(uint8_t *pixels, int width, int height,
