@@ -19,7 +19,7 @@ fn (mut parser RuleSelectorParser) declaration_for_style_rule(declarations []Dec
 	}
 	return &CSSStyleProperties{
 		deferred_declarations_: &DeferredStyleDeclaration{
-			declarations: declarations
+			declarations: parser.own_deferred_rule_declarations(declarations)
 			params: parser.parsing_params()
 		}
 	}

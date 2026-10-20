@@ -72,6 +72,8 @@ pub mut:
 	rule_context        []RuleContext
 	declared_namespaces map[string]bool
 	is_ua_style_sheet   IsUAStyleSheet
+mut:
+	raw_rules_transient bool
 }
 
 pub fn RuleSelectorParser.create(params ParsingParams, input string, encoding string) RuleSelectorParser {
@@ -979,7 +981,14 @@ fn (mut parser RuleSelectorParser) consume_a_declaration(mut input ParserTokenSt
 
 	// 5. Consume a list of component values from input, with nested, and with <semicolon-token> as the stop token, and
 	// set decl's value to the result.
-	declaration.value = parser.consume_a_list_of_component_values(mut input, TokenType.semicolon, nested)
+	// Declaration values borrow the immutable component stream. Growing a second
+	// vector copied every token and retained each growth buffer under prealloc.
+	start_value := input.index
+	for !input.next_token().is(.end_of_file) && !input.next_token().is(.semicolon)
+		&& !(nested == .yes && input.next_token().is(.close_curly)) {
+		input.discard_a_token()
+	}
+	declaration.value = input.values[start_value..input.index]
 
 	// 6. If the last two non-<whitespace-token>s in decl's value are a <delim-token> with the value "!" followed by an
 	// <ident-token> with a value that is an ASCII case-insensitive match for "important", remove them from decl's value
@@ -988,7 +997,7 @@ fn (mut parser RuleSelectorParser) consume_a_declaration(mut input ParserTokenSt
 
 	// 7. While the last item in decl's value is a <whitespace-token>, remove that token.
 	for declaration.value.len > 0 && declaration.value[declaration.value.len - 1].is(.whitespace) {
-		declaration.value.delete(declaration.value.len - 1)
+		declaration.value = declaration.value[..declaration.value.len - 1]
 	}
 
 	// 8. If decl's name is a custom property name string, then set decl's original text to the segment of the original
@@ -1130,6 +1139,19 @@ fn parser_consume_a_function(mut input RawTokenStream) Function {
 }
 
 fn (mut parser RuleSelectorParser) convert_to_rule(rule Rule, nested ParserNested, declaration_rule_kind NestedDeclarationRuleKind) ?&CSSRule {
+	// Query/selector parsers may retain spans of their prelude input. Only the
+	// raw rule vectors are temporary; their nested component payloads already
+	// belong to the immutable tokenizer input.
+	owned := if parser.raw_rules_transient {
+		match rule {
+			AtRule { Rule(AtRule{...rule, prelude: rule.prelude.clone()}) }
+			QualifiedRule { Rule(QualifiedRule{...rule, prelude: rule.prelude.clone()}) }
+		}
+	} else { rule }
+	return parser.convert_to_rule_impl(owned, nested, declaration_rule_kind)
+}
+
+fn (mut parser RuleSelectorParser) convert_to_rule_impl(rule Rule, nested ParserNested, declaration_rule_kind NestedDeclarationRuleKind) ?&CSSRule {
 	platform.cooperative_work_checkpoint()
 	match rule {
 		AtRule {
@@ -2408,7 +2430,7 @@ fn (mut parser RuleSelectorParser) convert_to_style_declaration(declarations Par
 	for declaration in declarations {
 		if is_a_custom_property_name_string(declaration.name) {
 			value_text := if original := declaration.original_value_text {
-				original
+				if parser.raw_rules_transient { original.clone() } else { original }
 			} else {
 				parser_component_values_to_string(declaration.value).trim_space()
 			}
@@ -3113,8 +3135,9 @@ fn parser_strip_important(mut declaration Declaration) {
 		break
 	}
 	if bang_index >= 0 {
-		declaration.value.delete(important_index)
-		declaration.value.delete(bang_index)
+		// Both removed tokens and the intervening/trailing whitespace are a
+		// suffix. Keep the shared syntax-cache input immutable.
+		declaration.value = declaration.value[..bang_index]
 		declaration.important = .yes
 	}
 }
