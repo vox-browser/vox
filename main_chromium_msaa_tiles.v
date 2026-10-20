@@ -245,6 +245,21 @@ fn chromium_msaa_layer_tiles(commands []layout.PaintCommand, layer layout.Chromi
 	return chromium_msaa_tiles_for_triggers(triggers, origin_y, device_scale, tile_rows)
 }
 
+// The triggers of each raster layer, in paint order. One pass: filtering
+// them for every layer reserved room for all of them each time.
+fn chromium_msaa_triggers_by_layer(triggers []ChromiumMSAATrigger, plan layout.ChromiumRasterLayerPlan) [][]ChromiumMSAATrigger {
+	mut by_layer := [][]ChromiumMSAATrigger{len: plan.layers.len}
+	for trigger in triggers {
+		if trigger.command_index < plan.command_layers.len {
+			layer := plan.command_layers[trigger.command_index]
+			if layer >= 0 && layer < by_layer.len {
+				by_layer[layer] << trigger
+			}
+		}
+	}
+	return by_layer
+}
+
 fn (mut app BrowserApp) set_chromium_msaa_tiles() {
 	$if macos {
 		scale := C.native_display_device_pixel_ratio()
@@ -258,9 +273,9 @@ fn (mut app BrowserApp) set_chromium_msaa_tiles() {
 		})
 		// The native renderer reads C ints; V's int is 64-bit under current V.
 		legacy_tiles := chromium_msaa_tiles_for_triggers(triggers, 0, scale, tile_rows).map(i32(it))
+		triggers_by_layer := chromium_msaa_triggers_by_layer(triggers, app.chromium_raster_plan)
 		for index, layer in app.chromium_raster_plan.layers {
-			selected := triggers.filter(it.command_index < app.chromium_raster_plan.command_layers.len
-				&& app.chromium_raster_plan.command_layers[it.command_index] == index)
+			selected := triggers_by_layer[index]
 			root := index == 0
 			content_width := if root {
 				math.max(f64(app.viewport_width), layer.bounds.x + layer.bounds.width)

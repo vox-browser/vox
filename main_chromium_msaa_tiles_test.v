@@ -194,3 +194,23 @@ fn test_svg_msaa_preparation_skips_distant_pictures_and_keeps_offscreen_tile_pat
  fixed:=layout.PaintCommand{...far,fixed_to_viewport:true}
  assert !chromium_svg_background_intersects_raster_viewport(fixed,scrolled)
 }
+
+fn test_chromium_msaa_triggers_are_grouped_by_their_command_layer_in_order() {
+	plan := layout.ChromiumRasterLayerPlan{
+		layers:         [layout.ChromiumRasterLayer{}, layout.ChromiumRasterLayer{},
+			layout.ChromiumRasterLayer{}]
+		command_layers: [0, 2, 2, 0]
+	}
+	triggers := [
+		ChromiumMSAATrigger{3, 1, 2, 0, 1},
+		ChromiumMSAATrigger{1, 3, 4, 0, 1},
+		ChromiumMSAATrigger{0, 5, 6, 0, 1},
+		ChromiumMSAATrigger{2, 7, 8, 0, 1},
+		ChromiumMSAATrigger{9, 9, 10, 0, 1},
+	]
+	grouped := chromium_msaa_triggers_by_layer(triggers, plan)
+	assert grouped.len == 3
+	assert grouped[0].map(it.command_index) == [3, 0]
+	assert grouped[1].len == 0
+	assert grouped[2].map(it.command_index) == [1, 2]
+}
