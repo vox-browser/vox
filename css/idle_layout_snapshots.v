@@ -3,12 +3,12 @@ module css
 import math
 
 fn idle_layout_snapshot_is_shareable(cache &ComputedLayoutCache) bool {
-	if cache.writable_owner_identity != 0 || cache.rare_data_ != unsafe { nil }
+	if cache.writable_owner_identity != 0 || voidptr(cache.rare_data_) != unsafe { nil }
 		|| cache.computed_values_background_layers_.len != 0 { return false }
 	// A projection can retain an element-specific source style. Keep it local.
 	$for field in ComputedLayoutCache.fields {
 		$if field.name == 'device_layout_projection_' {
-			if cache.$(field.name) != unsafe { nil } { return false }
+			if voidptr(cache.$(field.name)) != unsafe { nil } { return false }
 		}
 	}
 	return true
@@ -17,10 +17,12 @@ fn idle_layout_snapshot_is_shareable(cache &ComputedLayoutCache) bool {
 fn idle_layout_snapshots_equal(first &ComputedLayoutCache, second &ComputedLayoutCache) bool {
 	// Compare every resolved field, including future additions. Only write
 	// ownership and raw-graph resolution provenance are not rendered values.
+	// Eligibility already requires absent rare data and empty background layers.
 	$for field in ComputedLayoutCache.fields {
 		$if field.name != 'resolution_provenance' && field.name != 'document_resolution_owner'
 			&& field.name != 'writable_owner_identity' && field.name != 'owner_identity'
 			&& field.name != 'owner_serial' && field.name != 'rare_data_writable_'
+			&& field.name != 'rare_data_' && field.name != 'computed_values_background_layers_'
 			&& field.name != 'device_layout_projection_' {
 			if first.$(field.name) != second.$(field.name) { return false }
 		}
@@ -40,7 +42,7 @@ pub fn share_idle_layout_snapshots(styles []&ComputedProperties) int {
 		if visited[identity] { continue }
 		visited[identity] = true
 		cache := style.computed_layout_cache_
-		if cache == unsafe { nil } || !idle_layout_snapshot_is_shareable(cache) { continue }
+		if voidptr(cache) == unsafe { nil } || !idle_layout_snapshot_is_shareable(cache) { continue }
 		color := cache.computed_values_color_
 		key := math.f64_bits(cache.computed_values_font_size_.to_double())
 			^ (u64(color.r) << 24 | u64(color.g) << 16 | u64(color.b) << 8 | u64(color.a))

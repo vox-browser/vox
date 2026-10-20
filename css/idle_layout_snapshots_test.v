@@ -72,6 +72,17 @@ fn test_idle_snapshot_sharing_leaves_unresolved_rare_and_writable_styles_local()
 	assert share_idle_layout_snapshots([first, third]) == 1
 }
 
+fn test_idle_snapshot_sharing_keeps_even_equal_background_layers_local() {
+	mut first := idle_snapshot_style()
+	mut second := idle_snapshot_style()
+	mut first_values := unsafe { &MutableComputedValues(first) }
+	mut second_values := unsafe { &MutableComputedValues(second) }
+	first_values.set_background_layers([BackgroundLayerData{}])
+	second_values.set_background_layers([BackgroundLayerData{}])
+	assert share_idle_layout_snapshots([first, second]) == 0
+	assert voidptr(first.computed_layout_cache()) != voidptr(second.computed_layout_cache())
+}
+
 fn test_idle_shared_snapshot_reresolves_against_each_raw_graph_and_document() {
 	mut document := dom.Document.create(dom.URL{value: 'https://idle-snapshot.test/'})
 	defer { document.finalize() }
