@@ -1,5 +1,10 @@
 # Wikipedia memory usage
 
+The [2026-10-21 HTML/CSS-only measurement](WIKIPEDIA_NOJS_MEMORY.md) records
+**123.2 → 87.3 MB settled physical memory** for Wikipedia, with unchanged
+viewport captures across five before/after pairs. Every candidate settled
+observation is below 100 MB. Sampled startup peaks remain above 500 MB.
+
 The [2026-10-18 no-JavaScript comparison](WIKIPEDIA_NOJS_MEMORY.md) measures
 **71.1% less settled RAM than Chrome**, with page scripts disabled in both.
 It identifies its validated production bundle. The October 15 app measurements

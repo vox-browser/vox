@@ -1,5 +1,81 @@
 # Wikipedia without page JavaScript: memory
 
+## 2026-10-21: below 100 MB settled RAM
+
+Five fresh alternating before/after pairs of the Wikipedia portal measure
+**123.2 → 87.3 MB**, a **29.1% reduction**. Every candidate observation in every
+settled window is below **87.7 MB**, passing the **100,000,000-byte** limit.
+All ten native document captures are byte-identical. MB means 1,000,000 bytes.
+
+| Metric | Before | After |
+| --- | ---: | ---: |
+| Median settled physical footprint | 123,159,776 bytes | 87,328,064 bytes |
+| Range of five settled medians | 121.6–123.5 MB | 86.6–87.6 MB |
+| Largest individual settled observation | 123,602,168 bytes | 87,622,976 bytes |
+| Median sampled launch peak | 558.7 MB | 521.9 MB |
+
+**The 100 MB result applies to settled memory. Startup still exceeds 500 MB.**
+Peak counters cover launch through the pre-capture endpoint and are polling
+lower bounds, including the normal filter helper while it is alive.
+
+The saving comes from the native allocator startup policy
+(`c2875366`): macOS libmalloc's `MallocSpaceEfficient=1` takes effect before V
+globals, parsing and painting. A small native constructor restarts the same
+executable once, preserving its PID, arguments and inherited descriptors.
+Explicit caller settings, including `0`, retain precedence. Helpers inherit
+the setting. The policy is included in the native host and the packaged Skia
+bridge, so ordinary bundle launches and direct executable launches use it.
+The benchmark supplies no allocator setting, GC override or extra collection.
+
+The separate idle stylesheet-syntax cleanup (`31a8afb5`) passes borrower,
+deferred CSSOM and collection tests, but its portal pilot showed no RAM saving;
+it receives no isolated reduction claim. Font-catalog retirement, manual malloc
+pressure relief and encoded-frame experiments were also ineffective and are
+excluded from the shipped rendering changes.
+
+Both variants use the same verified 40-file frozen cache at
+`https://www.wikipedia.org/`, a 1024×768 CSS viewport and DPR 2. Page JavaScript
+runtime, sources, source bytes and script preloads are all zero. The observer
+checks document readiness, fonts, the decoded Retina globe and 21 sprite
+elements. Windows stay visible in the background on the test display; the
+last-second median follows 15 seconds of settling and precedes PNG allocation.
+Memory is the simultaneous physical footprint of the browser and its discovered
+descendants, rather than summed RSS. Foreground attempts failed the activity
+guard and receive no accepted measurement credit.
+
+The measured bundles, generated C, build logs, hashes, screenshots and raw
+samples are retained in `Build/wikipedia-100mb/`. The accepted cohort is
+`final-paired/summary.json`; its input and capture guards pass. Failed attempts
+remain separate. `cache-restoration.json` records restoration of the exact
+historic cache hashes after a diagnostic accidentally wrote to the template.
+The canonical app received the measured allocator library while preserving its
+existing executable and other rendering libraries, followed by bundle signing
+and a successful headless startup check. See `installed-policy.json`. A fresh
+verification of that installed bundle snapshot measures **86.4 MB** (largest
+settled observation **86.5 MB**) with the same viewport bytes;
+`installed-background/result.json` retains that separate observation.
+
+Validation passes the three native bootstrap integration tests (default,
+explicit settings, argument/PID/descriptor preservation), native graphics
+ownership and pixel checks, CSS borrower/deferred-CSSOM tests with explicit
+Boehm and no GC, Boehm lifetime tests and existing syntax-cache regressions,
+24 benchmark/observer unit
+tests, and native startup. This does not claim a full repository test run.
+
+Reproduce the accepted comparison with:
+
+```sh
+python3 tools/benchmark_wikipedia_memory.py \
+  --before Build/wikipedia-100mb/before.app/Contents/MacOS/Vox \
+  --after Build/wikipedia-100mb/allocator-candidate.app/Contents/MacOS/Vox \
+  --cache Build/wikipedia-100mb/cache \
+  --network-deny Build/pikabu-instructions-network-deny.dylib \
+  --activity background --repeat 5 \
+  --output Build/wikipedia-100mb/recheck
+```
+
+## Earlier Chrome comparison
+
 On 2026-10-18, five fresh alternating pairs measured **110.5 MB for Vox versus
 382.6 MB for Chrome: 71.1% less settled physical memory**, with page JavaScript
 disabled in both browsers. MB here means 1,000,000 bytes. All five Vox document
