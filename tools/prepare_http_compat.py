@@ -203,6 +203,21 @@ def compiler_vlib(compiler, work):
     return Path(result.stdout.strip()).resolve() / "vlib"
 
 
+def staged_modules(work, vlib):
+    identity = hashlib.sha256(str(vlib.resolve()).encode()).hexdigest()[:16]
+    return work / identity / "modules"
+
+
+def remove_obsolete_entries(target, original):
+    names = {entry.name for entry in original.iterdir()} | {"vox_h2_wake.h"}
+    for entry in target.iterdir():
+        if entry.name not in names:
+            if entry.is_symlink() or entry.is_file():
+                entry.unlink()
+            else:
+                shutil.rmtree(entry)
+
+
 def main():
     repo = Path(__file__).resolve().parent.parent
     compiler = sys.argv[1] if len(sys.argv) > 1 else os.environ.get(
@@ -226,9 +241,10 @@ def main():
     patched_h2_pooled = patch_h2_wakeup(patch_h2_pooled_transport(h2_pooled_text))
     h2_mux_text = (original / 'h2_mux_conn.v').read_text()
     patched_h2_mux = patch_h2_mux_receive_credit(h2_mux_text)
-    modules = repo / "Build/v/modules"
+    modules = staged_modules(work, vlib)
     target = modules / "net/http"
     target.mkdir(parents=True, exist_ok=True)
+    remove_obsolete_entries(target, original)
     write_if_changed(target / 'vox_h2_wake.h', (repo / 'tools/httpcompat/h2_wake.h').read_text())
     for entry in original.iterdir():
         output = target / entry.name
@@ -250,7 +266,7 @@ def main():
             if output.is_symlink() or output.is_file():
                 output.unlink()
             output.symlink_to(entry, target_is_directory=entry.is_dir())
-    write_if_changed(work / "manifest.json", json.dumps({
+    write_if_changed(modules.parent / "manifest.json", json.dumps({
         "vlib": str(vlib),
         "source_header_sha256": hashlib.sha256(text.encode()).hexdigest(),
         "staged_header_sha256": hashlib.sha256(patched.encode()).hexdigest(),
