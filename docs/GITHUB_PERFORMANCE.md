@@ -13816,6 +13816,144 @@ Chrome parity remains unestablished. The earlier observed-descendant capture
 count and the content/coalition diagnostic use different endpoints and page
 states; neither provides a matching cross-browser cohort.
 
+## Leave absent CSS size payloads empty
+
+Round 142 applies complete feature `818fe747` to accepted round 141. The one original
+Git hunk adds an explicit `none` default to `Size.length_percentage_`. Keyword sizes
+keep the same absent option state while avoiding construction of an unreachable boxed
+zero-length payload. Present length, percentage, calculation and fit-content payloads
+retain their constructors and ownership. The complete authored record and original file
+reconstruct exactly; unrelated Root computed-property/default-cache work is excluded.
+
+All three original focused cases pass in both C-O2 GC modes: **2,151 assertions per
+mode**. They cover empty/keyword defaults, explicit payloads, fit-content omitted versus
+zero, copies, clearing and GC ownership. The unchanged old Boehm allocation case
+actually exits 1 with **16,384 bytes for 512 default sizes**; the final case allocates
+zero. That retained negative control is allocation evidence only. Common 12 cases pass
+60 assertions per configuration; 141-final evidence supplies the unchanged before
+configuration without rerun.
+
+The canonical small local scene was sealed before any 142 build or sample: 64 Unicode
+paragraphs, 128 indentation blocks, 192 independent text checks, 16 full public
+parse/layout/record/paint-command/hit/finalize pipelines per sample. Setup, eight
+warmups, forced GC and assertions remain outside the counter. Three fixed alternating
+pairs give **32,610,827,354 → 32,144,094,143 retired instructions (-1.43122162%)**, with
+**2/3 wins**. All six actual exits are zero and checksums match 7,963,486,608. The
+slower third pair remains. No completed measurement is filtered, extended or rerun.
+
+The strict C audit authenticates the one source hunk, 120 native inputs, 37 frozen
+quoted includes and exact normal native arguments. The entire candidate program equals
+an independent C-only regeneration after established compiler identities and four
+byte-identical helper reorderings. Every function, type and global remains in that
+comparison. Against control, exactly eight unused `option_none` payload constructions
+disappear in each of two unchanged property constructors. Each old temporary has exactly
+three references: its declaration, its exact initializer and its one absent Size field.
+After these 16 substitutions and three exact declaration-indentation changes, the
+complete remaining C program matches. All 493 builtin and 176 protected decoder/filter/
+arena bodies are unchanged. No assertion-line projection is needed.
+
+Actual normal C-O2 native build, signing and frozen-library startup exit zero.
+Full-process C-O1/no-inline Boehm profiles remain enabled in main without a filter or
+reset. Both execute 25 complete pipelines and 26 parse/layout/record calls. `Size.new`
+calls remain **97,945 → 97,945**; total `Length.make_px()` calls fall **190,146 →
+189,930**. The C proof identifies the removed calls as unused zero-length payload
+construction. These are diagnostic call counts with no hardware or page credit.
+
+The predeclared 30 alternating browser pairs use the frozen 359-body cache, 4eef helper
+and 1024×768 document viewport. The endpoint is
+`native.scopes.navigation_to_first_document_paint[0]`. Fresh matching medians are
+**16,611,123,638 → 16,584,057,241.5 retired instructions**: observed saving
+**27,066,396.5** (-0.16294139%), **17/30 wins**. Paired median saving is
+**6,428,840.5**. The 30,000 paired bootstrap resamples with seed 142 give 95% interval
+**[-5,745,182, 12,590,968]**. Repeatable page credit is **0**. The candidate is
+**accepted** under the positive-point integration policy; no historical median is
+subtracted.
+
+All 60 primaries remain: 60 actual PNGs, 0 explicit counter-only recoveries and 0
+archived pre-primary startup retries. First preparation is exactly 1 installation/2
+geometry/1 paint. Later refreshes remain separate (0); foreground transitions retained:
+0. Available captures are 1024×768, with every pixel outside the original skeleton bands
+exact. Any recovered unknown exit or missing capture remains explicit.
+
+The focused viewport is pixel-exact. Prior observed carry **4,192,387.5** plus this
+round's positive matching observed saving gives **31,258,784** for the broad gate. Broad
+result: **passed**. Six actual zero-exit jobs cover87selected cases
+bothGC/174executions;19screenshots finish,16exact. Known differences remain
+inline-node13,text-decorations1341,canvas-text1994. All36actual loader receipts pin the
+frozen helper. The isolated artifact is `/Users/alex/code/vox2/Build/v/Vox-opt142.app`.
+Library pinning, signing, verification, smoke and GC checks all actually exit zero. Its
+instruction text matches the measured binary; the installed helper is the frozen 4eef
+image. GC has actual collections with default marker 1 and override 2. The canonical
+app, GUI and concurrent Root work are preserved. Accepted control is **142**; broad
+baseline is **142**, with observed carry **0**. Durable source/C/profile/binary archive
+hashes are indexed in `Build/v/instruction-opt142-durable-archives.json`. The frozen
+artifact adds no coverage or credit to independent current-source changes.
+
+The isolated app initially copied four `.Vox.v3cc.*` compiler directories from a
+concurrent canonical build. The bundle controller actually exited1 on signing. Only
+those inert copies were moved into `Build/v/instruction-opt142-bundle-signing-finding/`,
+with every copied file hashed;the canonical originals stay untouched. Signing then
+resumed, followed by its first verification/smoke/GC checks. The completed library pin
+was authenticated without rerun. The initial canonical hash was not persisted before
+failure,so it remains unknown;only resume-time hashes are reported.
+
+The original C reader failed before native compilation because it expected raw temporary
+names after identity normalization. Its first recovery enumerated raw anonymous/embed
+identities too early. A discovery-only indentation check then caught the nested
+declaration's second leading tab. All failures and the blocked native-gate receipt
+remain under `Build/v/instruction-opt142-c-audit-reader-finding/`. The corrected reader
+retains every source, exact initializer/use, independent whole-program and
+remaining-control assertion. Only the unfinished native compile resumed; no successful
+test, profile or performance sample was rerun. The October20 cleanup archived the
+immutable source trees/generated C and removed compiled images. Exact source/C manifests
+were restored from verified archives; interrupted native final exits remain unknown. The
+accepted control is reconstructed byte for byte before any142 primary, and only
+unfinished candidate native work resumes. Original partial native logs and cleanup
+evidence remain retained. The first cleanup-resume launcher also failed on Python syntax
+before execution; its logs remain retained with no invented terminal status, and the
+corrected native commands have real zero-exit receipts. Round 141's final reader also
+retained its actual exit 1 for stale human-readable source labels; a read-only label
+correction passed without runtime repeats.
+
+A separate inner-layout attribution on accepted140 finished after round141's final
+audit. It wraps owner-thread outermost calls but reads process counters, so categories
+overlap and include other-thread work and instrumentation. They must never be summed or
+interpreted as self work:
+
+| Scope | Measured outermost calls | Inclusive process instructions |
+| --- | ---: | ---: |
+| Append text item | 374,596 | 3,875,434,562 |
+| Inline iterator construction | 27,564 | 2,979,902,500 |
+| Inline item generation | 27,564 | 2,385,233,222 |
+| Update last line | 52,620 | 812,427,410 |
+| Line builder construction | 32,244 | 430,532,866 |
+| Shape text | 8,960 | 159,734,038 |
+
+The native build, observer, browser and restoration audit actually exit zero, with zero
+counter failures and a real1024×768PNG. The whole original C restores byte for byte.
+Evidence: `Build/v/instruction-hotspots141-final-audit.json`; C archive SHA256
+`54d102cafe92c30947a963b9bc862e73ee9ff10ff67eecf012539960847ad771`. There is zero page
+credit.
+
+A separate C-O2 single-thread calibration retains three alternating groups of 256
+consecutive empty-read intervals per API, with 128 warmup reads each. Process-read
+medians are **6,469 / 6,494 / 6,494 instructions**; private self-thread-read medians are
+**1,725 / 1,725 / 1,725**. Both native and probe exits are zero. Intervals include
+storage/loop work. This explains why many small process-counter scopes can be dominated
+by instrumentation; calibration values are never subtracted or extrapolated into browser
+savings. Normal page accounting still uses the process counter. Apple's [Recount
+documentation](https://github.com/apple-oss-distributions/xnu/blob/main/doc/observability/recount.md)
+and [private
+ABI](https://github.com/apple-oss-distributions/xnu/blob/main/bsd/sys/resource_private.h)
+describe the distinct accounting boundaries. Source/raw hashes and all samples remain in
+`Build/v/instruction-counter-read-calibration-result.json`. A separate one-observation
+every64th-entry self-thread diagnostic is declared for after 142 validation; its sampled
+totals cannot establish page credit.
+
+Chrome parity remains unestablished. Prior Chrome observed-descendant and
+content/coalition diagnostics use different endpoints and content states. An equivalent
+cross-browser content/endpoint cohort is still required.
+
 ## Causes and changes
 
 - The V 0.5.2 compatibility compiler's `-prod` Boehm code repeatedly snapshots

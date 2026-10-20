@@ -2293,6 +2293,13 @@ evidence](docs/translation-audit/NATIVE_MEDIA_WHEEL_RAW_HANDLER.md).
   Accepted control 141;isolated141 app/GC1+override2;canonical/GUI/foreign work preserved.
   Separate Size818fe747/3cases/2151asserts eachGC;old allocation driver1 retained;no hardware credit yet.
   Root setup failure retained without runtime repeats;Chrome parity remains open.
+  Absent Size round142 (`818fe747`):one authored Git hunk/one record;3cases/2151asserts eachGC.
+  Common60/config;canonical small scene/local16 full pipelines -1.431222%/2wins/all6 actual0.
+  Fresh page 16,611,123,638→16,584,057,241.5;17/30wins;point 27,066,396.5.
+  PairedCI[-5,745,182,12,590,968];repeatable credit 0;all60 retained;same1/2/1 preparation.
+  Focused viewport exact;broad passed;prior carry4192387.5 included in gate.
+  Accepted control 142;isolated142 app/GC1+override2;strict full independent C and exact16default-owner proof.
+  Reader failures retained;no successful runtime repeats;canonical/GUI/foreign work preserved;Chrome parity open.
 - Outside instruction-count optimization, run broad regression suites once per
   ten completed fixes, not after every fix.
   Broad suites include full translation/package test batches, the full LibJS AST
