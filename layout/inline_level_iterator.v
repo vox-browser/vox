@@ -257,9 +257,6 @@ mut:
 	should_wrap_lines          bool
 	should_respect_linebreaks  bool
 	last_known_direction       ?platform.GlyphRunTextType
-	spacing_resolved           bool
-	letter_spacing             f64
-	word_spacing               f64
 }
 
 struct IntrinsicTextShapeCacheEntry {
@@ -629,15 +626,9 @@ fn (mut iterator InlineLevelIterator) generate_next_item() ?InlineLevelItem {
 			}
 		}
 		computed := text_node.Node.computed_values()
-		// Item generation is synchronous. Resolve immutable text-node spacing
-		// once for this context, after preserved-break-only chunks return.
-		if !context.spacing_resolved {
-			context.letter_spacing = resolved_text_spacing_for_node(unsafe { &Node(text_node) }, .letter_spacing).to_double()
-			context.word_spacing = resolved_text_spacing_for_node(unsafe { &Node(text_node) }, .word_spacing).to_double()
-			context.spacing_resolved = true
-		}
-		letter_spacing := context.letter_spacing
-		word_spacing := context.word_spacing
+		letter_spacing := resolved_text_spacing_for_node(unsafe { &Node(text_node) }, .letter_spacing).to_double()
+		word_spacing :=
+			resolved_text_spacing_for_node(unsafe { &Node(text_node) }, .word_spacing).to_double()
 		mut shaped_text := chunk.view
 		mut x := 0.0
 		if chunk.has_breaking_tab {
