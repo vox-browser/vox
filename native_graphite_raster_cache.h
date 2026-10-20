@@ -17,6 +17,7 @@
 class VoxGraphiteRasterCache {
     struct Entry {
         VoxGraphiteImage image {};
+        std::vector<VoxGraphiteImage> tiles;
         VoxGraphiteShape shape {};
         VoxGraphitePath path {};
         bool is_path = false;
@@ -26,7 +27,7 @@ class VoxGraphiteRasterCache {
         bool has_background = false;
         std::shared_ptr<std::vector<uint8_t> const> source;
         std::vector<uint8_t> extra, background, output;
-        size_t bytes() const { return extra.size() + background.size() + output.size(); }
+        size_t bytes() const { return tiles.size() * sizeof(VoxGraphiteImage) + extra.size() + background.size() + output.size(); }
     };
     struct Rows {
         uint8_t const* pixels;
@@ -142,6 +143,35 @@ public:
     Request prepare(VoxGraphiteImage const& image, int width, int height,
         int pitch, bool has_background, uint8_t* pixels)
     {
+        Entry parameters;
+        parameters.image = image;
+        return prepare_image(parameters, width, height, pitch, has_background, pixels);
+    }
+    // Background placements share one source during a call. Across calls the
+    // cache still owns and compares its bytes, including animated/reused data.
+    Request prepare_tiles(VoxGraphiteImage const* images, int count, int width,
+        int height, int pitch, bool has_background, uint8_t* pixels)
+    {
+        if (!images || count <= 0 || !entry_limit
+            || size_t(count) > std::min(byte_limit, max_entry_bytes) / sizeof(VoxGraphiteImage)) return {};
+        auto const& first = images[0];
+        for (int i = 1; i < count; ++i) {
+            auto const& image = images[i];
+            if (image.pixels != first.pixels || image.width != first.width
+                || image.height != first.height || image.pitch != first.pitch
+                || (image.flags & ~VOX_GRAPHITE_IMAGE_FORCE_MSAA)
+                    != (first.flags & ~VOX_GRAPHITE_IMAGE_FORCE_MSAA)) return {};
+        }
+        Entry parameters;
+        parameters.image = first;
+        parameters.tiles.assign(images, images + count);
+        return prepare_image(parameters, width, height, pitch, has_background, pixels);
+    }
+private:
+    Request prepare_image(Entry const& parameters, int width, int height,
+        int pitch, bool has_background, uint8_t* pixels)
+    {
+        auto const& image = parameters.image;
         Request request;
         if (!pixels || !image.pixels || width <= 0 || height <= 0 || pitch <= 0
             || image.width <= 0 || image.height <= 0 || image.pitch <= 0
@@ -157,10 +187,9 @@ public:
             if (w > limit / h || uv_w > limit / uv_h) return request;
             source = {image.pixels, w * h + 2 * uv_w * uv_h, 0, 1};
         } else if (source.bytes > source.pitch) return request;
-        Entry parameters;
-        parameters.image = image;
         return prepare_entry(parameters, source, width, height, pitch, has_background, pixels);
     }
+public:
     Request prepare(VoxGraphiteShape const& shape, int width, int height,
         int pitch, bool has_background, uint8_t* pixels)
     {
@@ -216,7 +245,8 @@ private:
             || backdrop.bytes > limit / backdrop.height)
             return request;
         size_t cost = source.bytes * source.height + extra.bytes * extra.height
-            + backdrop.bytes * backdrop.height * (has_background ? 2 : 1);
+            + backdrop.bytes * backdrop.height * (has_background ? 2 : 1)
+            + parameters.tiles.size() * sizeof(VoxGraphiteImage);
         if (cost > limit) return request;
         for (auto it = entries.begin(); it != entries.end(); ++it) {
             auto const& entry = **it;
@@ -224,6 +254,8 @@ private:
                 || entry.has_background != has_background || entry.is_shape != parameters.is_shape
                 || entry.is_path != parameters.is_path
                 || entry.surface_width != parameters.surface_width || entry.surface_height != parameters.surface_height
+                || entry.tiles.size() != parameters.tiles.size()
+                || !std::equal(entry.tiles.begin(), entry.tiles.end(), parameters.tiles.begin(), same_image)
                 || (entry.is_shape ? !same_shape(entry.shape, parameters.shape)
                     : entry.is_path ? !same_path(entry.path, parameters.path)
                                     : !same_image(entry.image, parameters.image))

@@ -451,6 +451,9 @@ int vox_graphite_draw_image_tiles(uint8_t* pixels, int width, int height,
     for (int index = 0; index < count; ++index)
         if (!image_draw_is_valid(&images[index])) return 0;
     std::lock_guard lock(gpu_mutex);
+    auto cached = image_cache.prepare_tiles(images, count, width, height, pitch,
+        has_background != 0, pixels);
+    if (cached.hit) return 1;
     auto* gpu = context();
     if (!gpu) return 0;
     auto recorder = gpu->makeRecorder();
@@ -491,6 +494,7 @@ int vox_graphite_draw_image_tiles(uint8_t* pixels, int width, int height,
     if (result) {
         for (auto& draw : prepared)
             image_upload_cache.finish(std::move(draw.upload), draw.texture);
+        image_cache.finish(std::move(cached), pixels, pitch);
     }
     return result;
 }
