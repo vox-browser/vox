@@ -1090,8 +1090,11 @@ fn svg_payload_assert_original_fields(actual LegacySVGPathPaintCommand, expected
 }
 
 fn test_svg_payload_reduces_actual_command_width_and_keeps_nil_defaults() {
-	assert sizeof(LegacySVGPathPaintCommand) == 1608
-	assert sizeof(PaintCommand) <= 1320
+	// V compiler versions use different option and enum representations.
+	// Require the payload split to save at least 256 bytes in either layout.
+	assert sizeof(LegacySVGPathPaintCommand) >= sizeof(PaintCommand) + 256
+	// Includes the independently added shared sRGB color payload pointer.
+	assert sizeof(PaintCommand) <= 1328
 	assert sizeof(PaintSVGPathData) <= 352
 	println('svg-payload-size old=${sizeof(LegacySVGPathPaintCommand)} new=${sizeof(PaintCommand)} payload=${sizeof(PaintSVGPathData)}')
 	for kind in ['draw_text', 'fill_rect', 'draw_line', 'draw_svg_path', 'fill_gradient'] {

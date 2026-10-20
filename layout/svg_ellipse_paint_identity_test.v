@@ -29,8 +29,9 @@ fn test_chromium_svg_ellipse_retains_computed_geometry_and_authored_arc_identity
 		assert commands[2].svg().path_data.len == 60
 		assert commands[2].svg().path_data[0] == 0
 		assert commands[2].svg().path_data[12] == 4
-		// No common display-list record growth for this specialized payload.
-		assert sizeof(PaintCommand) == 1320
+		// The common record includes the independent shared sRGB payload pointer.
+		// Ellipse encoding still adds no common record fields.
+		assert sizeof(PaintCommand) <= 1328
 	}
 }
 
