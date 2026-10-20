@@ -92,6 +92,32 @@ frame: each arena is reset only after its last reader has let go.
    reusing them, so a stale pointer faults at its first use; the fault names
    the arena. `VOX_ARENA_NO_REUSE=label,...` poisons only the named arenas.
 
+## Heap copies inserted by current V
+
+Current V moves a by-value local or parameter to the heap (`memdup`) when it
+cannot prove that an address taken from it stays inside the call. Under
+`-prealloc` each copy is never freed, so one in a per-command or per-element
+path grows memory every frame. Patterns that trigger it, and what to write
+instead:
+
+- Calling a `&` method on a by-value value whose type holds an inline fixed
+  array (`layout.PaintCommand.transform`, `css.ComputedProperties`, a struct
+  with `[N]T`): read the public payload fields directly (`command.svg_data`,
+  `command.image_data`), or pass the command by reference.
+- Returning a pointer reached through such a call, including through a
+  pointer field of a by-value value (`return value.ptr_field.method()`): read
+  the pointer field into a local first (`element := value.element_`).
+- A by-value copy of a `@[heap]` struct: every local and loop copy is
+  allocated on the heap. Do not declare small value records such as
+  `dom.CSSCustomProperty_` `@[heap]`.
+- Iterating an array field of a by-value parameter and appending the loop
+  values elsewhere: index the array instead.
+
+`v -warn-about-allocs` lists most of these copies with their reason and
+position. To check a function, generate C (`v -o out.c` with the build's
+`-path`) and look for `memdup(&__esc_` and `memdup(&__heap_value_param_` in its
+body. The sampler shows an inlined copy as an allocation by the function itself.
+
 ## Measuring
 
 - `layout/prealloc_bounded_frames_test.v` requires transform and
@@ -138,12 +164,14 @@ found no stale arena access after the font-cache and background-layer fixes.
   animation frame resolves its target's whole snapshot into the sample arena;
   resolving only animated values there would remove that hazard and most
   sample bytes.
-- Current V copies a local to the heap (`memdup`) when its address goes to a
-  call it cannot prove keeps no reference: methods of another module, or
-  recursion. Under `-prealloc` those copies are never freed. Animated style
-  updates copy their `AbstractElement` arguments this way, about 1 KB per
-  frame for ten animated elements, so `prealloc_bounded_frames_test.v` exceeds
-  its budget with current V.
+- Recording still rebuilds the Chromium raster-layer plan, MSAA tiles and
+  gradient stop and clip buffers from scratch (about 6 MB/s on an idle Pikabu
+  on 2026-10-20, after its heap copies were removed); they need reused
+  storage or a per-recording arena.
 - Document teardown: navigation, reload and tab close do not reclaim the old
   document's storage; documents need their own arenas and fetch threads need an
-  owner for the allocations they retain.
+  owner for the allocations they retain. A Pikabu visit with a cached copy
+  installs the cached document and then the refreshed one, and each install
+  grows the base arena by about 800 MB (HTML 49 MB, style sheets 82 MB, the
+  first style pass 137 MB, about 27 paint-tree rebuilds of 11 MB, layouts);
+  `VOX_PHASE_DIAGNOSTICS=1` builds print these `PHASE` lines.
