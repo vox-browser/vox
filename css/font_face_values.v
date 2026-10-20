@@ -4178,6 +4178,7 @@ mut:
 	normal_variation_settings_ map[string]f64
 	normal_feature_settings_ map[string]u32
 	font_key_scratch_ &platform.Arena = unsafe { nil }
+	font_input_scratch_ &FontInputScratchPool = unsafe { nil }
 }
 
 pub fn FontComputer.create() &FontComputer {
@@ -4494,9 +4495,18 @@ fn (mut computer FontComputer) compute_font_for_style_values_at_size(font_family
 	if cached != unsafe { nil } {
 		return cached
 	}
+	// Input formatting may run in a reusable scope. A cached cascade and its
+	// map/key must instead belong to this computer's document (or ordinary
+	// persistent storage for standalone and worker computers).
+	owner := if document := computer.document_ { document.native_storage() } else { unsafe { &platform.RetainedArena(nil) } }
+	use_document := owner != unsafe { nil } && voidptr(owner) == voidptr(platform.current_retained_arena())
+	persistent := platform.enter_persistent_if(platform.arena_thread_is_current() && !use_document && platform.transient_arena_entered())
+	mut retained := if use_document { platform.enter_retained_allocations() } else { platform.RetainedAllocationScope{} }
+	defer { retained.finish(); platform.leave_persistent(persistent) }
+	owned_key := key.clone()
 	mut value := computer.compute_font_for_style_values_impl(font_family, font_size_px, font_slope, font_weight, font_width, font_optical_sizing, font_variation_settings, font_feature_data)
 	value.set_font_rendering_policy(policy, font_size_px, font_slope)
-	computer.computed_font_cache[key] = value
+	computer.computed_font_cache[owned_key] = value
 	return value
 }
 

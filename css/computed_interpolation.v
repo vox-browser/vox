@@ -5810,10 +5810,9 @@ pub fn (mut c ComputedProperties) computed_font_list(font_computer &FontComputer
 		c.clear_computed_font_list_cache()
 		font_environment_changed = true
 	}
-	// The style and font computer share the document's durable storage;
-	// temporary animation samples must not own the cached cascade.
-	persistent := platform.enter_persistent_if(platform.transient_arena_entered())
-	defer { platform.leave_persistent(persistent) }
+	mut mutable_font_computer := unsafe { &FontComputer(font_computer) }
+	mut inputs := mutable_font_computer.acquire_font_input_scratch()
+	defer { inputs.finish() }
 	value := c.property(.font_family, .yes) or {
 		&dom.StyleValue{
 			css_text: 'sans-serif'
@@ -5834,9 +5833,9 @@ pub fn (mut c ComputedProperties) computed_font_list(font_computer &FontComputer
 	if families.len == 0 {
 		families << 'sans-serif'
 	}
-	mut mutable_font_computer := unsafe { &FontComputer(font_computer) }
 	font_size_px := if font_computer.font_rendering_policy() == .chromium { c.resolved_font_size_px() } else { c.font_size().to_double() }
 	font_list := mutable_font_computer.compute_font_for_style_values_at_size(families, font_size_px, c.font_slope(), c.font_weight(), c.font_width(), c.font_optical_sizing(), font_computer.variation_settings_for_computation(c), font_computer.feature_data_for_computation(c))
+	inputs.finish()
 	assert !font_list.is_empty()
 	c.cached_computed_font_list_ = font_list
 	c.cached_computed_font_list_generation_ = font_computer.environment_generation()
