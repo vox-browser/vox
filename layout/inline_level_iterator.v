@@ -290,6 +290,7 @@ mut:
 	extra_leading_metrics          ?InlineExtraBoxMetrics
 	extra_trailing_metrics         ?InlineExtraBoxMetrics
 	box_model_node_stack           []&NodeWithStyleAndBoxModelMetrics
+	item_storage_                  &platform.Arena = unsafe { nil }
 	items                          []InlineLevelItem
 	next_item_index                int
 	accumulated_width_for_tabs     CSSPixels
@@ -297,7 +298,12 @@ mut:
 }
 
 pub fn InlineLevelIterator.new(mut state LayoutState, containing_block &BlockContainer, containing_block_used_values &UsedValues, layout_mode LayoutMode, available_space AvailableSpace, parent_block_context ?&BlockFormattingContext) &InlineLevelIterator {
+	return new_inline_iterator_with_item_storage(mut state, containing_block, containing_block_used_values, layout_mode, available_space, parent_block_context, unsafe { nil })
+}
+
+fn new_inline_iterator_with_item_storage(mut state LayoutState, containing_block &BlockContainer, containing_block_used_values &UsedValues, layout_mode LayoutMode, available_space AvailableSpace, parent_block_context ?&BlockFormattingContext, storage &platform.Arena) &InlineLevelIterator {
 	mut iterator := &InlineLevelIterator{
+		item_storage_: storage
 		state: state
 		containing_block: containing_block
 		containing_block_used_values: containing_block_used_values
@@ -393,6 +399,7 @@ fn (mut iterator InlineLevelIterator) generate_all_items() {
 			iterator.accumulated_width_for_tabs =
 				iterator.accumulated_width_for_tabs.plus(item.border_box_width())
 		}
+		reserve_inline_items_in_storage(mut iterator.items, 1, iterator.item_storage_)
 		iterator.items << item
 	}
 }
@@ -866,7 +873,7 @@ fn (mut iterator InlineLevelIterator) enter_text_node(text_node &TextNode) {
 	// Every retained chunk emits exactly one item, including whitespace and
 	// forced line breaks. Reserve their known demand once instead of growing
 	// and copying the wide item vector while emitting that text node.
-	reserve_inline_item_capacity(mut iterator.items, chunks.len)
+	reserve_inline_items_in_storage(mut iterator.items, chunks.len, iterator.item_storage_)
 	iterator.has_text_node_context = true
 	iterator.text_node_context = InlineTextNodeContext{
 		chromium_context_run: iterator.chromium_latin_context_run(text_node, chunks)
