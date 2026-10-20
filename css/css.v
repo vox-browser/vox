@@ -3058,6 +3058,13 @@ pub fn Length.from_style_value(style_value &dom.StyleValue, percentage_basis ?Le
 		if typed.value is LengthStyleValue {
 			return typed.value.length()
 		}
+		if typed.value is PercentageStyleValue || typed.value is CalculatedStyleValue {
+			return Length.from_style_value_logic(typed.value, percentage_basis)
+		}
+		if basis := percentage_basis {
+			return basis
+		}
+		return Length.make_px(0)
 	}
 	if parsed_value := parsed_length_percentage_style_value_from_dom_style_value(style_value) {
 		return Length.from_style_value_logic(parsed_value, percentage_basis)
