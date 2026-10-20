@@ -4,6 +4,7 @@ import dom
 import layout
 import math
 import painting
+import platform
 
 // The display list of an SVG image document laid out at `width`×`height`.
 // SVG backgrounds are replayed, and inspected for MSAA, for every tile of
@@ -17,6 +18,8 @@ fn svg_image_document_display_list(svg_document &dom.Document, width int, height
 			return list
 		}
 	}
+	persistent := platform.enter_persistent()
+	defer { platform.leave_persistent(persistent) }
 	_ = layout.run_document_layout(svg_document, f64(width), f64(height)) or { return none }
 	return document.record_display_list()
 }

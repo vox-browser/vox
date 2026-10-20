@@ -4,6 +4,7 @@ import css
 import layout
 import math
 import painting
+import platform
 
 fn C.tanf(f32) f32
 
@@ -66,6 +67,8 @@ fn chromium_linear_gradient_stop_data(gradient layout.LinearGradient, opacity f6
 
 fn chromium_linear_gradient_stop_data_into(gradient layout.LinearGradient, opacity f64,
 	mut data []f32) bool {
+	persistent := platform.enter_persistent_if(platform.transient_arena_entered())
+	defer { platform.leave_persistent(persistent) }
 	data.clear()
 	analysis := chromium_linear_gradient_stop_analysis(gradient) or { return false }
 	for index in 0 .. analysis.count {

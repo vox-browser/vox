@@ -445,6 +445,7 @@ mut:
 	// draw_command's working copy of each command, one per nesting depth.
 	draw_command_copies []&layout.PaintCommand
 	draw_command_depth  int
+	native_replay_scratch &platform.Arena = unsafe { nil }
 	rounded_rect_underlay_source        ?layout.PaintCommand
 	nonrendered_image_preloads          map[string]bool
 	screenshot_path                     string
@@ -4399,6 +4400,8 @@ fn native_gradient_clip_path(command layout.PaintCommand, tile painting.Rect) []
 }
 
 fn native_gradient_clip_path_into(command layout.PaintCommand, tile painting.Rect, mut data []f32) {
+	persistent := platform.enter_persistent_if(platform.transient_arena_entered())
+	defer { platform.leave_persistent(persistent) }
 	data.clear()
 	if !command.gradient_background_layer && command.points.len >= 6 {
 		for index := 0; index + 1 < command.points.len; index += 2 {
@@ -4423,6 +4426,8 @@ fn native_gradient_stop_data(gradient layout.LinearGradient, opacity f64) []f32 
 
 fn native_gradient_stop_data_into(gradient layout.LinearGradient, opacity f64,
 	mut data []f32, mut samples []layout.GradientStop) {
+	persistent := platform.enter_persistent_if(platform.transient_arena_entered())
+	defer { platform.leave_persistent(persistent) }
 	// Preserve duplicate-position hard stops and sample each resolved span.
 	layout.sampled_gradient_stops_into(gradient, 16, mut samples)
 	data.clear()
@@ -4673,9 +4678,12 @@ fn (mut app BrowserApp) request_background_resource(image_url string) {
 	if image_url in app.resource_cache || image_url in app.background_resource_pending {
 		return
 	}
-	app.background_resource_pending[image_url] = true
-	source_url := if app.document != unsafe { nil } { app.document.url.serialize() } else { app.address }
-	spawn fetch_background_resource_in_background(image_url, source_url, app.background_resource_results)
+	persistent := platform.enter_persistent()
+	owned_url := image_url.clone()
+	app.background_resource_pending[owned_url] = true
+	source_url := if app.document != unsafe { nil } { app.document.url.serialize().clone() } else { app.address.clone() }
+	spawn fetch_background_resource_in_background(owned_url, source_url, app.background_resource_results)
+	platform.leave_persistent(persistent)
 }
 
 fn (mut app BrowserApp) poll_background_resources() {
@@ -4773,6 +4781,8 @@ fn url_set(urls []string) map[string]bool {
 }
 
 fn (mut app BrowserApp) background_image(image_url string) ?&gg.Image {
+	persistent := platform.enter_persistent()
+	defer { platform.leave_persistent(persistent) }
 	adblock_enabled := adblock.is_enabled()
 	if app.background_image_scope_document != voidptr(app.document)
 		|| app.background_image_scope_adblock != adblock_enabled {
@@ -4787,7 +4797,7 @@ fn (mut app BrowserApp) background_image(image_url string) ?&gg.Image {
 		}
 	}
 	image := app.background_image_uncached(image_url)?
-	app.background_image_scope_ids[image_url] = image.id
+	app.background_image_scope_ids[image_url.clone()] = image.id
 	return image
 }
 
@@ -4825,6 +4835,8 @@ fn (mut app BrowserApp) background_image_uncached(image_url string) ?&gg.Image {
 
 fn (mut app BrowserApp) force_dark_image_from_bitmap(key string, bitmap &dom.Bitmap_,
 	original &gg.Image) &gg.Image {
+	persistent := platform.enter_persistent()
+	defer { platform.leave_persistent(persistent) }
 	if state := app.force_dark_image_states[key] {
 		if state == 1 {
 			return original
@@ -4834,7 +4846,7 @@ fn (mut app BrowserApp) force_dark_image_from_bitmap(key string, bitmap &dom.Bit
 		}
 	}
 	if !painting.force_dark_should_filter_bitmap(bitmap) {
-		app.force_dark_image_states[key] = 1
+		app.force_dark_image_states[key.clone()] = 1
 		return original
 	}
 	filtered_bitmap := painting.force_dark_filter_bitmap(bitmap)
@@ -4848,14 +4860,17 @@ fn (mut app BrowserApp) force_dark_image_from_bitmap(key string, bitmap &dom.Bit
 	if !app.ctx.native_rendering {
 		filtered_image.init_sokol_image()
 	}
-	app.force_dark_image_states[key] = 2
-	app.force_dark_image_bitmaps[key] = filtered_bitmap
-	app.force_dark_images[key] = filtered_image
+	owned_key := key.clone()
+	app.force_dark_image_states[owned_key] = 2
+	app.force_dark_image_bitmaps[owned_key] = filtered_bitmap
+	app.force_dark_images[owned_key] = filtered_image
 	return filtered_image
 }
 
 fn (mut app BrowserApp) force_dark_image_for_url(image_url string,
 	original &gg.Image) &gg.Image {
+	persistent := platform.enter_persistent()
+	defer { platform.leave_persistent(persistent) }
 	key := 'url:${image_url}'
 	if state := app.force_dark_image_states[key] {
 		if state == 1 {
@@ -6443,7 +6458,9 @@ fn (mut app BrowserApp) draw_command(source_command layout.PaintCommand, page_x 
 				tile := if snap_bitmap { pixel_snapped_background_bitmap_rect(original_tile) } else { original_tile }
 				if svg_document := image_data.background_svg_document {
 					mut mutable_svg_document := unsafe { &dom.Document(svg_document) }
+					persistent := platform.enter_persistent()
 					mutable_svg_document.set_svg_image_color_scheme(css.preferred_color_scheme_to_string(image_data.background_svg_color_scheme))
+					platform.leave_persistent(persistent)
 					converter := painting.new_device_pixel_converter(1.0) or { return }
 					rounded_destination := converter.rounded_device_rect(tile)
 					destination := painting.IntRect{
@@ -6890,6 +6907,7 @@ fn (mut app BrowserApp) draw() {
 			culling.enabled = app.ctx.native_rendering && !app.paint_canvas_culling_disabled
 		}
 		mut raster_layer := -1
+		mut replay_scratch := app.begin_native_replay_scratch()
 		for command_index in 0 .. app.paint_commands.len {
 			platform.cooperative_work_checkpoint()
 			command := unsafe { &app.paint_commands[command_index] }
@@ -6934,6 +6952,7 @@ fn (mut app BrowserApp) draw() {
 				C.native_end_css_filter_layer()
 			}
 		}
+		replay_scratch.finish()
 	} else {
 		draw_srgb_rect(app.ctx, 0, 0, f32(window.width), f32(window.height), gg.rgb(255, 255, 255))
 	}

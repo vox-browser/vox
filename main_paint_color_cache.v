@@ -2,6 +2,7 @@ module main
 
 import css
 import gg
+import platform
 
 const paint_color_cache_capacity = 256
 const paint_color_cache_key_limit = 256
@@ -30,7 +31,9 @@ fn (mut cache PaintColorCache) color(serialized string, opacity f64) gg.Color {
 		}
 		if cache.entries.len < paint_color_cache_capacity
 			&& serialized.len <= paint_color_cache_key_limit {
+			persistent := platform.enter_persistent()
 			cache.entries[serialized.clone()] = result
+			platform.leave_persistent(persistent)
 		}
 		result
 	}

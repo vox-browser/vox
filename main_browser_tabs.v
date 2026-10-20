@@ -183,6 +183,7 @@ fn (mut app BrowserApp) close_browser_tab(index int) {
 }
 
 fn (mut app BrowserApp) dispose_browser_tab() {
+	app.release_native_replay_scratch()
 	mut retiring := app.document
 	layout_handle := if retiring != unsafe { nil } { retiring.layout_engine_handle() } else { unsafe { nil } }
 	app.navigation_generation++
