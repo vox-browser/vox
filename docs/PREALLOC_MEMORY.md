@@ -15,7 +15,8 @@ what remains before it can become the default.
 
 | Class | Storage | Lifetime |
 | --- | --- | --- |
-| Document-owned state (DOM, styles, layout tree) | thread base arena | process (document teardown is not reclaimed yet) |
+| Native document payload (DOM, styles, layout tree) | `platform.RetainedArena` | until document retirement and the last asynchronous/snapshot reader |
+| Document/Window/context identity and general DOM API allocations | base arena | existing navigation/history and embedder lifetime |
 | Recyclable persistent storage (retained buffers, handle sets, phase buckets) | base arena, reused in place | grows to the workload's high-water mark |
 | Frame/pass scratch (transform resolution, refresh lists) | `platform.Arena`, reset after the pass | one pass |
 | Animation samples | `css.AnimationSampleStorage` arenas | until no style, layout snapshot or live scene can reach them |
@@ -39,6 +40,31 @@ frame: each arena is reset only after its last reader has let go.
 - Threads that hand results to the UI thread (fetch, preload and thread-pool
   workers) call `platform.retain_thread_allocations()` first, so their
   allocations survive the thread's exit.
+- **Native documents** (`dom/native_document_storage.v`). The shell enables
+  payload storage before parsing. Replacement navigation closes the old realm,
+  cancels document tasks and resources, retires layout publishers, and releases
+  the document's allocation owner. Scenes, geometry, active/deferred timers and
+  worker completions retain that owner through their final read. Inert template
+  and fragment documents share their containing document's allocation lifetime.
+  Cross-document adoption and untracked host borrowing conservatively pin it.
+  Process-wide caches, diagnostic maps and V closure bookkeeping stay outside
+  these arenas; `tools/prepare_prealloc_runtime.py` stages the closure runtime
+  used by the build without modifying the compiler checkout.
+- **Cascade bookkeeping** (`css/cascade_scratch.v`). Private style passes lease
+  reusable buffers, with a separate slot for each nested call. Only map heads,
+  presence bits and entry records belong to these buffers. Declarations and
+  computed values keep their own storage. Public cascade APIs still return
+  independent results. The final document reader releases the scratch arenas.
+- **Intrinsic probes** (`layout/measurement_scratch.v`). Native document layout
+  reuses a scratch arena at each nested probe depth. Scalar results are consumed
+  before release. Text, font, intrinsic-size and table caches that survive a
+  probe own their backing data outside it. The layout pass closes the pool.
+- **Native graphics**. Each Skia GPU context has a 64 MiB resource-cache budget.
+  Native maintenance retires contexts after two seconds without GPU raster work,
+  including on scripted pages, while preserving reusable CPU raster results.
+  Live Ganesh image/surface references keep their context alive. The default
+  filtering VM is similarly released after five seconds without an evaluation;
+  the next uncached filtering request recreates it under the evaluation lock.
 - **Display-list scenes** (`layout/display_list_scene.v`). A recording enters a
   scene arena from the document's pool. The layout result holds one reference;
   the shell retains the scene it adopted (`retain_display_list_scene`) and
@@ -177,9 +203,14 @@ found no stale arena access after the font-cache and background-layer fixes.
 
 `e09ac3ff`, `6217d8a8` and `fa517eaf` add reused raster-plan output, MSAA and
 gradient buffers, then reference-counted native paint-tree slots. Current V
-`0.5.2 1e63d0f` built the optimized prealloc bundle. Matched `memrun.py` runs
-used the same offline Pikabu cache and network guard, a 1024×880 window,
+`0.5.2 1e63d0f` built the optimized prealloc bundle. Historical `memrun.py` runs
+used the same Pikabu cache and network guard, a 1024×880 window,
 JavaScript enabled, no scrolling, and 60 seconds per process:
+
+These runs inherited ambient loopback proxy settings. The guard permits
+loopback connections, so those proxies could fetch live refreshed content.
+They are historical mixed cache/live measurements, **not verified offline
+comparisons**. Do not compare them directly with a frozen Brave replay.
 
 | Build | RSS at 30 s (MiB) | RSS at 60 s (MiB) | Idle RSS slope (MiB/s) |
 | --- | ---: | ---: | ---: |
@@ -228,6 +259,30 @@ legacy C helper, then exhausts that helper's worker stack in generated
 previously reported `css/native_style_scope_retirement_test.v` failure is
 unchanged.
 
+### Reproducible Brave comparison
+
+`tools/pikabu_browser_memory.py` clears inherited proxies and runtime overrides,
+uses a fresh cache/profile per trial, and counts the simultaneous physical
+footprint of the whole process tree, including GPU and filtering helpers.
+Brave uses default Shields without extra extensions. Both execute author
+JavaScript against the same archived responses. Missing responses fail closed.
+The offline native page may install only once; replacement safety is tested
+with explicit navigation, rather than requiring an unavailable live refresh.
+
+```sh
+python3 tools/pikabu_browser_memory.py \
+  --cache Build/pikabu-instructions-cache-final \
+  --network-deny Build/pikabu-instructions-network-deny.dylib \
+  --output Build/prealloc-comparison --trials 3 --seconds 60
+```
+
+The comparison alternates launch order, verifies foreground focus, retains
+binary identities and samples, and requires every Vox trial to be below every
+Brave trial. Content capture/audit checks complement the native completion and
+paint checks. The verified Brave reference on 2026-10-20 was 454.6 MiB of
+settled process-tree physical footprint with 15 stories loaded. Diagnostic Vox
+builds still exceed that target; no claim of beating Brave is established yet.
+
 ## Remaining work before `-prealloc` becomes the default
 
 - Opacity samples that stay nonzero keep the paint plan and phase cache;
@@ -252,12 +307,8 @@ unchanged.
 - Gradient tile enumeration, nested/SVG replay transformations and other shell
   replay temporaries still need allocation profiling. Reusing the plan, MSAA
   and gradient data vectors does not bound every recording allocation.
-- Document teardown: navigation, reload and tab close do not reclaim the old
-  document's storage; documents need their own arenas and fetch threads need an
-  owner for the allocations they retain. A Pikabu visit with a cached copy
-  installs the cached document and then the refreshed one. The original
-  profile grew the base arena by about 800 MB per install (HTML 49 MB,
-  style sheets 82 MB, the
-  first style pass 137 MB, layouts). Before native tree-slot recycling, about
-  27 paint-tree rebuilds also accumulated roughly 11 MB each;
-  `VOX_PHASE_DIAGNOSTICS=1` builds print these `PHASE` lines.
+- Single-load parsing, style and layout temporaries still inflate a native
+  document's high-water mark. Typed layout trees and committed geometry need
+  finer retirement than the complete document lifetime. Native identity
+  allocations and conservatively pinned adoption/host cases also retain their
+  existing lifetime. `VOX_PHASE_DIAGNOSTICS=1` prints allocation-phase totals.
