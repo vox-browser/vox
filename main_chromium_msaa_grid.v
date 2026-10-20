@@ -5,6 +5,7 @@ import math
 fn C.native_set_chromium_msaa_grid(&i32, int, int, int, int)
 
 struct ChromiumRasterGrid {
+mut:
 	tile_width  int
 	tile_height int
 	columns     int
@@ -12,6 +13,7 @@ struct ChromiumRasterGrid {
 	// cells for the native renderer, which reads C ints: V's int is 64-bit
 	// under current V.
 	native_cells []i32
+	active_cells map[int]bool
 }
 
 // cc/layers/tile_size_calculator.cc. The raster scale and the device viewport
@@ -50,6 +52,18 @@ fn chromium_raster_tile_size(viewport_width int, viewport_height int,
 fn chromium_raster_grid(triggers []ChromiumMSAATrigger, viewport_width int,
 	viewport_height int, content_width f64, content_height f64, origin_x f64,
 	origin_y f64, scale f64) ChromiumRasterGrid {
+	mut grid := ChromiumRasterGrid{}
+	update_chromium_raster_grid(triggers, viewport_width, viewport_height, content_width,
+		content_height, origin_x, origin_y, scale, mut grid)
+	return grid
+}
+
+fn update_chromium_raster_grid(triggers []ChromiumMSAATrigger, viewport_width int,
+	viewport_height int, content_width f64, content_height f64, origin_x f64,
+	origin_y f64, scale f64, mut grid ChromiumRasterGrid) {
+	grid.cells.clear()
+	grid.native_cells.clear()
+	grid.active_cells.clear()
 	width := math.max(1, int(math.ceil(content_width * scale)))
 	height := math.max(1, int(math.ceil(content_height * scale)))
 	tile_width, tile_height := chromium_raster_tile_size(viewport_width, viewport_height,
@@ -58,7 +72,6 @@ fn chromium_raster_grid(triggers []ChromiumMSAATrigger, viewport_width int,
 	step_y := tile_height - 2
 	columns := math.max(1, (width - 2 + step_x - 1) / step_x)
 	rows := math.max(1, (height - 2 + step_y - 1) / step_y)
-	mut cells := map[int]bool{}
 	for trigger in triggers {
 		left := (trigger.left - origin_x) * scale
 		right := (trigger.right - origin_x) * scale
@@ -73,16 +86,18 @@ fn chromium_raster_grid(triggers []ChromiumMSAATrigger, viewport_width int,
 		first_y := math.max(0, int(math.ceil((top - tile_height) / step_y)))
 		last_y := math.min(rows - 1, int(math.floor(math.max(bottom - 1, 0) / step_y)))
 		for y := first_y; y <= last_y; y++ {
-			for x := first_x; x <= last_x; x++ { cells[y * columns + x] = true }
+			for x := first_x; x <= last_x; x++ {
+				cell := y * columns + x
+				if !grid.active_cells[cell] {
+					grid.active_cells[cell] = true
+					grid.cells << cell
+				}
+			}
 		}
 	}
-	mut active := cells.keys()
-	active.sort()
-	return ChromiumRasterGrid{
-		tile_width:   tile_width
-		tile_height:  tile_height
-		columns:      columns
-		cells:        active
-		native_cells: active.map(i32(it))
-	}
+	grid.cells.sort()
+	for cell in grid.cells { grid.native_cells << i32(cell) }
+	grid.tile_width = tile_width
+	grid.tile_height = tile_height
+	grid.columns = columns
 }

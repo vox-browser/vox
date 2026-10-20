@@ -5,6 +5,7 @@ import css
 import dom
 import html
 import painting
+import platform
 
 fn test_nested_svg_paths_trigger_msaa_in_the_owning_document_tile() {
 	commands := [layout.PaintCommand{
@@ -213,4 +214,45 @@ fn test_chromium_msaa_triggers_are_grouped_by_their_command_layer_in_order() {
 	assert grouped[0].map(it.command_index) == [3, 0]
 	assert grouped[1].len == 0
 	assert grouped[2].map(it.command_index) == [1, 2]
+}
+
+fn test_msaa_preparation_reuses_layer_storage_and_clears_removed_triggers() {
+	commands := [msaa_test_svg_path(250, 260, 'svg'), msaa_test_underline(620, 2)]
+	plan := layout.ChromiumRasterLayerPlan{
+		layers: [layout.ChromiumRasterLayer{bounds: layout.LayoutRect{width: 1024, height: 1000}},
+			layout.ChromiumRasterLayer{bounds: layout.LayoutRect{width: 100, height: 700}}]
+		command_layers: [0, 1]
+	}
+	legacy := layout.ChromiumRasterLayerPlan{
+		layers: [layout.ChromiumRasterLayer{legacy_raster: true}]
+		command_layers: [0, 0]
+	}
+	empty := []layout.PaintCommand{}
+	mut storage := ChromiumMSAAStorage{}
+	storage.update(commands, plan, 1024, 684, 0, 1)
+	assert storage.tiles[0] == [i32(0), 1]
+	assert storage.tiles[1] == [i32(2)]
+	assert storage.grids[0].native_cells == storage.grids[0].cells.map(i32(it))
+	assert storage.grids[1].columns > 0
+	tiles := storage.tiles[1].data
+	cells := storage.grids[1].native_cells.data
+	// Warm up the shared legacy vector and then restore independent layers.
+	storage.update(commands, legacy, 1024, 684, 0, 1)
+	assert storage.tiles[0] == [i32(0), 1, 2]
+	assert storage.grids[0].columns == 0
+	storage.update(commands, plan, 1024, 684, 0, 1)
+	before := platform.thread_arena_usage().used
+	for _ in 0 .. 100 {
+		storage.update(empty, legacy, 1024, 684, 0, 1)
+		assert storage.tiles[0].len == 0
+		assert storage.grids[0].columns == 0
+		storage.update(commands, plan, 1024, 684, 0, 1)
+		assert storage.tiles[0].len == 2
+		assert storage.tiles[1].len == 1
+		assert storage.tiles[1][0] == 2
+		assert storage.tiles[1].data == tiles
+		assert storage.grids[1].native_cells.data == cells
+		assert storage.grids[0].columns > 0
+	}
+	$if prealloc { assert platform.thread_arena_usage().used == before }
 }

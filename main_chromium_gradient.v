@@ -59,8 +59,15 @@ fn chromium_linear_gradient_points(gradient layout.LinearGradient, tile painting
 // are constant (invisible RGB is normalized below). Preserve original stops for these sRGB linear gradients rather
 // than quantizing an intermediate set of samples to eight bits.
 fn chromium_linear_gradient_stop_data(gradient layout.LinearGradient, opacity f64) ?[]f32 {
-	analysis := chromium_linear_gradient_stop_analysis(gradient) or { return none }
-	mut data := []f32{cap: analysis.count * 5}
+	mut data := []f32{}
+	if !chromium_linear_gradient_stop_data_into(gradient, opacity, mut data) { return none }
+	return data
+}
+
+fn chromium_linear_gradient_stop_data_into(gradient layout.LinearGradient, opacity f64,
+	mut data []f32) bool {
+	data.clear()
+	analysis := chromium_linear_gradient_stop_analysis(gradient) or { return false }
 	for index in 0 .. analysis.count {
 		stop := chromium_gradient_stop(gradient.stops, gradient.colors, index)
 		color := if analysis.same_rgb && stop.color.a == 0 { analysis.visible_color } else { stop.color }
@@ -70,7 +77,7 @@ fn chromium_linear_gradient_stop_data(gradient layout.LinearGradient, opacity f6
 		data << f32(clamp(f64(stop.color.a) / 255 * opacity, 0.0, 1.0))
 		data << f32(stop.offset)
 	}
-	return data
+	return true
 }
 
 struct ChromiumGradientStopAnalysis {

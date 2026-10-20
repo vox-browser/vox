@@ -388,6 +388,8 @@ mut:
 	content_height                      f64
 	paint_commands                      []layout.PaintCommand
 	chromium_raster_plan                layout.ChromiumRasterLayerPlan
+	native_gradient_storage             NativeGradientStorage
+	chromium_msaa_storage               ChromiumMSAAStorage
 	chromium_raster_tiles               [][]i32
 	chromium_raster_grids               []ChromiumRasterGrid
 	paint_commands_have_backdrop_filter bool
@@ -4357,48 +4359,72 @@ fn append_native_gradient_path_point(mut data []f32, kind f32, x f64, y f64) {
 	}
 }
 
+// Native draws consume these vectors synchronously. Keep their high-water
+// capacities across commands and frames rather than allocating per tile.
+struct NativeGradientStorage {
+mut:
+	path []f32
+	stops []f32
+	gpu_stops []f32
+	samples []layout.GradientStop
+}
+
 fn native_gradient_clip_path(command layout.PaintCommand, tile painting.Rect) []f32 {
-	points := if !command.gradient_background_layer && command.points.len >= 6 {
-		command.points
-	} else {
-		[tile.x, tile.y, tile.right(), tile.y, tile.right(), tile.bottom(), tile.x, tile.bottom()]
-	}
-	mut data := []f32{cap: (points.len / 2 + 1) * layout.compatibility_clip_path_segment_stride}
-	for index := 0; index + 1 < points.len; index += 2 {
-		append_native_gradient_path_point(mut data, if index == 0 { f32(0) } else { f32(1) }, points[index], points[index + 1])
-	}
-	append_native_gradient_path_point(mut data, 5, 0, 0)
+	mut data := []f32{}
+	native_gradient_clip_path_into(command, tile, mut data)
 	return data
 }
 
+fn native_gradient_clip_path_into(command layout.PaintCommand, tile painting.Rect, mut data []f32) {
+	data.clear()
+	if !command.gradient_background_layer && command.points.len >= 6 {
+		for index := 0; index + 1 < command.points.len; index += 2 {
+			append_native_gradient_path_point(mut data, if index == 0 { f32(0) } else { f32(1) }, command.points[index], command.points[index + 1])
+		}
+	} else {
+		for corner in 0 .. 4 {
+			x := if corner == 0 || corner == 3 { tile.x } else { tile.right() }
+			y := if corner < 2 { tile.y } else { tile.bottom() }
+			append_native_gradient_path_point(mut data, if corner == 0 { f32(0) } else { f32(1) }, x, y)
+		}
+	}
+	append_native_gradient_path_point(mut data, 5, 0, 0)
+}
+
 fn native_gradient_stop_data(gradient layout.LinearGradient, opacity f64) []f32 {
-	// Sixteen subdivisions per resolved stop span keep the native sRGB interpolation between
-	// samples below a visible color step while preserving duplicate-position hard stops.
-	stops := layout.sampled_gradient_stops(gradient, 16)
-	mut data := []f32{cap: stops.len * 5}
-	for stop in stops {
+	mut data := []f32{}
+	mut samples := []layout.GradientStop{}
+	native_gradient_stop_data_into(gradient, opacity, mut data, mut samples)
+	return data
+}
+
+fn native_gradient_stop_data_into(gradient layout.LinearGradient, opacity f64,
+	mut data []f32, mut samples []layout.GradientStop) {
+	// Preserve duplicate-position hard stops and sample each resolved span.
+	layout.sampled_gradient_stops_into(gradient, 16, mut samples)
+	data.clear()
+	for stop in samples {
 		data << f32(stop.color.r) / 255.0
 		data << f32(stop.color.g) / 255.0
 		data << f32(stop.color.b) / 255.0
 		data << f32(clamp(f64(stop.color.a) / 255.0 * opacity, 0.0, 1.0))
 		data << f32(stop.offset)
 	}
-	return data
 }
 
 fn draw_native_css_gradient_tile(command &layout.PaintCommand, gradient layout.LinearGradient,
 	tile painting.Rect, stop_data []f32, matrix [6]f64, page_x f32, page_y f32,
-	scroll_y f64, canvas_height f32, chromium bool) bool {
+	scroll_y f64, canvas_height f32, chromium bool, mut path_data []f32, mut gpu_stops []f32) bool {
 	$if macos {
 		if stop_data.len < 5 {
 			return false
 		}
-		path_data := native_gradient_clip_path(*command, tile)
+		native_gradient_clip_path_into(*command, tile, mut path_data)
 		if path_data.len < layout.compatibility_clip_path_segment_stride {
 			return false
 		}
 		if chromium && (gradient.x1 != gradient.x2 || gradient.y1 != gradient.y2) {
-			if gpu_stops := chromium_linear_gradient_stop_data(gradient, command.opacity) {
+			if chromium_linear_gradient_stop_data_into(gradient, command.opacity, mut gpu_stops) {
 				points := chromium_linear_gradient_points(gradient, tile)
 				if command.gradient_background_layer {
 					clip := chromium_gradient_clip_data(*command)
@@ -5926,10 +5952,9 @@ fn (mut app BrowserApp) draw_command(source_command layout.PaintCommand, page_x 
 						}
 					}
 				}
-				mut native_stop_data := []f32{}
 				$if macos {
 					if app.ctx.native_rendering {
-						native_stop_data = native_gradient_stop_data(gradient, command.opacity)
+						native_gradient_stop_data_into(gradient, command.opacity, mut app.native_gradient_storage.stops, mut app.native_gradient_storage.samples)
 					}
 				}
 				for tile in tiles {
@@ -5938,7 +5963,7 @@ fn (mut app BrowserApp) draw_command(source_command layout.PaintCommand, page_x 
 					}
 					$if macos {
 						if app.ctx.native_rendering
-							&& draw_native_css_gradient_tile(command, gradient, tile, native_stop_data, matrix, page_x, page_y, scroll_y, f32(app.ctx.height), app.document != unsafe { nil } && app.document.font_rendering_policy() == .chromium) {
+							&& draw_native_css_gradient_tile(command, gradient, tile, app.native_gradient_storage.stops, matrix, page_x, page_y, scroll_y, f32(app.ctx.height), app.document != unsafe { nil } && app.document.font_rendering_policy() == .chromium, mut app.native_gradient_storage.path, mut app.native_gradient_storage.gpu_stops) {
 							continue
 						}
 					}

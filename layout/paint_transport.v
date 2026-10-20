@@ -4972,16 +4972,31 @@ fn gradient_stops_or_fallback(gradient LinearGradient) []GradientStop {
 	return stops
 }
 
+fn gradient_stop_count(gradient LinearGradient) int {
+	return if gradient.stops.len > 0 { gradient.stops.len } else { gradient.colors.len }
+}
+
+fn gradient_stop_at(gradient LinearGradient, index int) GradientStop {
+	if gradient.stops.len > 0 { return gradient.stops[index] }
+	return GradientStop{gradient.colors[index], if gradient.colors.len > 1 {
+		f64(index) / f64(gradient.colors.len - 1)
+	} else { 0.0 }}
+}
+
+// Sum-type construction boxes its enum in current V. Share the immutable
+// default instead of allocating one box for every interpolation sample.
+const fallback_gradient_interpolation = css.ColorInterpolationMethod(css.RectangularColorSpace.srgb)
+
 pub fn gradient_color_at(gradient LinearGradient, position f64) css.Color {
-	stops := gradient_stops_or_fallback(gradient)
-	if stops.len == 0 {
+	count := gradient_stop_count(gradient)
+	if count == 0 {
 		return css.Color{0, 0, 0, 0}
 	}
-	if stops.len == 1 {
-		return stops[0].color
+	if count == 1 {
+		return gradient_stop_at(gradient, 0).color
 	}
-	minimum := stops[0].offset
-	maximum := stops[stops.len - 1].offset
+	minimum := gradient_stop_at(gradient, 0).offset
+	maximum := gradient_stop_at(gradient, count - 1).offset
 	p := if position < minimum {
 		minimum
 	} else if position > maximum {
@@ -4990,19 +5005,17 @@ pub fn gradient_color_at(gradient LinearGradient, position f64) css.Color {
 		position
 	}
 	mut right := 1
-	for right < stops.len && stops[right].offset < p {
+	for right < count && gradient_stop_at(gradient, right).offset < p {
 		right++
 	}
-	if right >= stops.len {
-		return stops[stops.len - 1].color
+	if right >= count {
+		return gradient_stop_at(gradient, count - 1).color
 	}
-	left := stops[right - 1]
-	next := stops[right]
+	left := gradient_stop_at(gradient, right - 1)
+	next := gradient_stop_at(gradient, right)
 	span := next.offset - left.offset
 	t := if span > 0 { (p - left.offset) / span } else { 1.0 }
-	method := gradient.interpolation_method or {
-		css.ColorInterpolationMethod(css.RectangularColorSpace.srgb)
-	}
+	method := gradient.interpolation_method or { fallback_gradient_interpolation }
 	return css.interpolate_gradient_color(left.color, next.color, t, method)
 }
 
@@ -5011,23 +5024,33 @@ pub fn gradient_color_at(gradient LinearGradient, position f64) css.Color {
 // and non-sRGB interpolation semantics. Original stop boundaries are kept (including duplicate
 // positions), so hard color transitions remain hard instead of being spread over a sample.
 pub fn sampled_gradient_stops(gradient LinearGradient, subdivisions int) []GradientStop {
-	source := gradient_stops_or_fallback(gradient)
-	if source.len == 0 {
-		return []
+	mut sampled := []GradientStop{}
+	sampled_gradient_stops_into(gradient, subdivisions, mut sampled)
+	return sampled
+}
+
+// The caller owns and reuses `sampled`; it must not alias the source stops.
+pub fn sampled_gradient_stops_into(gradient LinearGradient, subdivisions int,
+	mut sampled []GradientStop) {
+	sampled.clear()
+	count := gradient_stop_count(gradient)
+	if count == 0 {
+		return
 	}
-	if source.len == 1 {
-		return [GradientStop{source[0].color, 0.0}, GradientStop{source[0].color, 1.0}]
+	if count == 1 {
+		sampled << GradientStop{gradient_stop_at(gradient, 0).color, 0.0}
+		sampled << GradientStop{gradient_stop_at(gradient, 0).color, 1.0}
+		return
 	}
 
 	steps := math.max(subdivisions, 1)
-	mut sampled := []GradientStop{cap: (source.len - 1) * steps + 2}
 	sampled << GradientStop{
 		color: gradient_color_at(gradient, 0.0)
 		offset: 0.0
 	}
-	for index := 1; index < source.len; index++ {
-		left := source[index - 1]
-		right := source[index]
+	for index := 1; index < count; index++ {
+		left := gradient_stop_at(gradient, index - 1)
+		right := gradient_stop_at(gradient, index)
 		span := right.offset - left.offset
 		if span <= 0 {
 			if right.offset >= 0 && right.offset <= 1 {
@@ -5070,7 +5093,6 @@ pub fn sampled_gradient_stops(gradient LinearGradient, subdivisions int) []Gradi
 			offset: 1.0
 		}
 	}
-	return sampled
 }
 
 fn parsed_background_repeat(value string) (string, string) {

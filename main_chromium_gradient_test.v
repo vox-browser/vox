@@ -4,6 +4,7 @@ import css
 import layout
 import painting
 import html
+import platform
 
 fn test_chromium_linear_gradient_keeps_original_alpha_and_hard_stops() {
 	gradient := layout.LinearGradient{
@@ -19,6 +20,49 @@ fn test_chromium_linear_gradient_keeps_original_alpha_and_hard_stops() {
 	assert data[13] == f32(.5)
 	assert data[9] == data[14] && data[9] == f32(.5)
 	assert gradient.stops.len == 4
+}
+
+fn test_gradient_replay_reuses_stop_sample_and_clip_vectors() {
+	gradient := layout.LinearGradient{
+		stops: [layout.GradientStop{css.Color{255, 0, 0, 255}, 0},
+			layout.GradientStop{css.Color{255, 0, 0, 255}, .5},
+			layout.GradientStop{css.Color{0, 0, 255, 128}, .5},
+			layout.GradientStop{css.Color{0, 0, 255, 128}, 1}]
+	}
+	colors := layout.LinearGradient{colors: [css.Color{0, 0, 0, 255}, css.Color{255, 255, 255, 255}]}
+	empty := layout.LinearGradient{}
+	polygon := layout.PaintCommand{points: [f64(1), 2, 3, 4, 5, 6, 7, 8, 9, 10]}
+	rectangle := layout.PaintCommand{gradient_background_layer: true}
+	tile := painting.Rect{20, 30, 40, 50}
+	mut storage := NativeGradientStorage{}
+	native_gradient_stop_data_into(gradient, .5, mut storage.stops, mut storage.samples)
+	assert storage.stops == native_gradient_stop_data(gradient, .5)
+	assert storage.samples.any(it.offset == .5 && it.color.r == 255)
+	assert storage.samples.any(it.offset == .5 && it.color.b == 255)
+	native_gradient_clip_path_into(polygon, tile, mut storage.path)
+	assert storage.path == native_gradient_clip_path(polygon, tile)
+	assert chromium_linear_gradient_stop_data_into(colors, 1, mut storage.gpu_stops)
+	before := platform.thread_arena_usage().used
+	for _ in 0 .. 100 {
+		native_gradient_stop_data_into(empty, 1, mut storage.stops, mut storage.samples)
+		assert storage.stops.len == 0 && storage.samples.len == 0
+		native_gradient_stop_data_into(gradient, .5, mut storage.stops, mut storage.samples)
+		native_gradient_stop_data_into(colors, 1, mut storage.stops, mut storage.samples)
+		assert storage.stops.len == 85
+		assert storage.stops[0] == 0 && storage.stops[80] == 1
+		assert storage.stops[84] == 1
+		assert chromium_linear_gradient_stop_data_into(colors, .5, mut storage.gpu_stops)
+		assert storage.gpu_stops.len == 10 && storage.gpu_stops[8] == f32(0.5)
+		assert !chromium_linear_gradient_stop_data_into(gradient, 1, mut storage.gpu_stops)
+		assert storage.gpu_stops.len == 0
+		native_gradient_clip_path_into(polygon, tile, mut storage.path)
+		native_gradient_clip_path_into(rectangle, tile, mut storage.path)
+		assert storage.path.len == 5 * layout.compatibility_clip_path_segment_stride
+		assert storage.path[1] == 20 && storage.path[2] == 30
+		assert storage.path[25] == 60 && storage.path[26] == 80
+		assert storage.path[48] == 5
+	}
+	$if prealloc { assert platform.thread_arena_usage().used == before }
 }
 
 fn test_chromium_linear_gradient_falls_back_for_other_interpolation_semantics() {

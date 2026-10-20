@@ -43,39 +43,49 @@ fn chromium_msaa_triggers(commands []layout.PaintCommand) []ChromiumMSAATrigger 
 
 fn chromium_msaa_triggers_for_viewport(commands []layout.PaintCommand, viewport ?ChromiumMSAAViewport) []ChromiumMSAATrigger {
 	mut triggers := []ChromiumMSAATrigger{}
-	for index, command in commands {
-		if rect := chromium_msaa_trigger_rect(command) {
-			triggers << ChromiumMSAATrigger{index, rect.y, rect.y + rect.height, rect.x, rect.x + rect.width}
-		} else if command.kind == 'draw_background_image' {
-			if visible := viewport {
-				if !chromium_svg_background_intersects_raster_viewport(command, visible) {
-					continue
-				}
-			}
-			for rect in chromium_svg_background_msaa_rects(command) {
-				triggers << ChromiumMSAATrigger{index, rect.y, rect.y + rect.height, rect.x, rect.x + rect.width}
-			}
-		} else if command.kind == 'paint_nested_display_list' {
-			paintable := command.nested_viewport_paintable or { continue }
-			converter := painting.new_device_pixel_converter(1) or { continue }
-			result := paintable.paint(converter) or { continue }
-			mut nested := []layout.PaintCommand{cap: command.nested_viewport_commands.len}
-			for path in command.nested_viewport_commands {
-				nested << layout.paint_command_for_nested_viewport(path, command.transform,
-					painting.IntPoint{result.nested_rect.x, result.nested_rect.y}, command.opacity)
-			}
-			for trigger in chromium_msaa_triggers_for_viewport(nested, viewport) {
-				triggers << ChromiumMSAATrigger{index, trigger.top, trigger.bottom, trigger.left, trigger.right}
-			}
+	append_chromium_msaa_triggers(commands, viewport, mut triggers)
+	return triggers
+}
+
+fn append_chromium_msaa_triggers(commands []layout.PaintCommand,
+	viewport ?ChromiumMSAAViewport, mut triggers []ChromiumMSAATrigger) {
+	for index in 0 .. commands.len {
+		append_chromium_msaa_trigger(commands[index], index, viewport, mut triggers)
+	}
+}
+
+fn append_chromium_msaa_trigger(command layout.PaintCommand, index int,
+	viewport ?ChromiumMSAAViewport, mut triggers []ChromiumMSAATrigger) {
+	if rect := chromium_msaa_trigger_rect(command) {
+		triggers << ChromiumMSAATrigger{index, rect.y, rect.y + rect.height, rect.x, rect.x + rect.width}
+	} else if command.kind == 'draw_background_image' {
+		if visible := viewport {
+			if !chromium_svg_background_intersects_raster_viewport(command, visible) { return }
+		}
+		append_chromium_svg_background_msaa_triggers(command, index, mut triggers)
+	} else if command.kind == 'paint_nested_display_list' {
+		paintable := command.nested_viewport_paintable or { return }
+		converter := painting.new_device_pixel_converter(1) or { return }
+		result := paintable.paint(converter) or { return }
+		for path in command.nested_viewport_commands {
+			transformed := layout.paint_command_for_nested_viewport(path, command.transform,
+				painting.IntPoint{result.nested_rect.x, result.nested_rect.y}, command.opacity)
+			append_chromium_msaa_trigger(transformed, index, viewport, mut triggers)
 		}
 	}
-	return triggers
 }
 
 fn chromium_msaa_tiles_for_triggers(triggers []ChromiumMSAATrigger, origin_y f64,
 	device_scale f64, tile_rows int) []int {
+	mut tiles := []i32{}
+	chromium_msaa_tiles_for_triggers_into(triggers, origin_y, device_scale, tile_rows, mut tiles)
+	return tiles.map(int(it))
+}
+
+fn chromium_msaa_tiles_for_triggers_into(triggers []ChromiumMSAATrigger, origin_y f64,
+	device_scale f64, tile_rows int, mut tiles []i32) {
 	spacing := tile_rows - 2
-	mut tiles := []int{}
+	tiles.clear()
 	for trigger in triggers {
 		top := (trigger.top - origin_y) * device_scale
 		bottom := (trigger.bottom - origin_y) * device_scale
@@ -85,14 +95,18 @@ fn chromium_msaa_tiles_for_triggers(triggers []ChromiumMSAATrigger, origin_y f64
 		first := math.max(0, int(math.ceil((top - f64(tile_rows)) / f64(spacing))))
 		last := int(math.floor(math.max(bottom - 1, 0) / f64(spacing)))
 		for tile in first .. last + 1 {
-			if f64(tile * spacing) < bottom && f64(tile * spacing + tile_rows) > top
-				&& tile !in tiles {
-				tiles << tile
+			if f64(tile * spacing) >= bottom || f64(tile * spacing + tile_rows) <= top { continue }
+			// Keep the vector sorted while inserting unique indices. Both V's
+			// i32 sort and comparator sort reserve a fresh merge buffer.
+			mut position := 0
+			for position < tiles.len && tiles[position] < tile { position++ }
+			if position == tiles.len {
+				tiles << i32(tile)
+			} else if tiles[position] != tile {
+				tiles.insert(position, i32(tile))
 			}
 		}
 	}
-	tiles.sort()
-	return tiles
 }
 
 fn chromium_msaa_tiles(commands []layout.PaintCommand, device_scale f64, tile_rows int) []int {
@@ -260,55 +274,73 @@ fn chromium_msaa_triggers_by_layer(triggers []ChromiumMSAATrigger, plan layout.C
 	return by_layer
 }
 
+// Each layer keeps its own vectors, including while temporarily inactive.
+// Native setters copy their inputs before returning; the next preparation is
+// the only writer of these shell-owned buffers.
+struct ChromiumMSAAStorage {
+mut:
+	triggers []ChromiumMSAATrigger
+	by_layer [][]ChromiumMSAATrigger
+	legacy_tiles []i32
+	tiles [][]i32
+	grids []ChromiumRasterGrid
+}
+
+fn (mut storage ChromiumMSAAStorage) update(commands []layout.PaintCommand,
+	plan layout.ChromiumRasterLayerPlan, viewport_width int, viewport_height int,
+	scroll_y f64, scale f64) {
+	tile_rows := chromium_gpu_raster_tile_rows(int(math.ceil(f64(viewport_height) * scale)))
+	storage.triggers.clear()
+	append_chromium_msaa_triggers(commands, ChromiumMSAAViewport{
+		scroll_y: scroll_y
+		height: f64(viewport_height)
+		fringe: f64(tile_rows) / scale
+	}, mut storage.triggers)
+	chromium_msaa_tiles_for_triggers_into(storage.triggers, 0, scale, tile_rows, mut storage.legacy_tiles)
+	for storage.by_layer.len < plan.layers.len {
+		storage.by_layer << []ChromiumMSAATrigger{}
+		storage.tiles << []i32{}
+		storage.grids << ChromiumRasterGrid{}
+	}
+	for index in 0 .. storage.by_layer.len { storage.by_layer[index].clear() }
+	for trigger in storage.triggers {
+		if trigger.command_index >= 0 && trigger.command_index < plan.command_layers.len {
+			layer := plan.command_layers[trigger.command_index]
+			if layer >= 0 && layer < plan.layers.len { storage.by_layer[layer] << trigger }
+		}
+	}
+	for index, layer in plan.layers {
+		selected := storage.by_layer[index]
+		root := index == 0
+		if layer.legacy_raster {
+			storage.grids[index].columns = 0
+			storage.tiles[index].clear()
+			storage.tiles[index] << storage.legacy_tiles
+		} else {
+			content_width := if root { math.max(f64(viewport_width), layer.bounds.x + layer.bounds.width) } else { layer.bounds.width }
+			content_height := if root { math.max(f64(viewport_height), layer.bounds.y + layer.bounds.height) } else { layer.bounds.height }
+			update_chromium_raster_grid(selected, viewport_width, viewport_height, content_width, content_height,
+				if root { 0.0 } else { math.floor(layer.bounds.x * scale) / scale },
+				if root { -scroll_y } else { math.floor(layer.bounds.y * scale) / scale }, scale,
+				mut storage.grids[index])
+			origin_y := if root { 0.0 } else { math.floor(layer.bounds.y * scale) / scale }
+			chromium_msaa_tiles_for_triggers_into(selected, origin_y, scale, tile_rows, mut storage.tiles[index])
+		}
+	}
+}
+
 fn (mut app BrowserApp) set_chromium_msaa_tiles() {
 	$if macos {
 		scale := C.native_display_device_pixel_ratio()
-		tile_rows := chromium_gpu_raster_tile_rows(int(math.ceil(f64(app.viewport_height) * scale)))
-		app.chromium_raster_tiles = [][]i32{cap: app.chromium_raster_plan.layers.len}
-		app.chromium_raster_grids = []ChromiumRasterGrid{cap: app.chromium_raster_plan.layers.len}
-		triggers := chromium_msaa_triggers_for_viewport(app.paint_commands, ChromiumMSAAViewport{
-			scroll_y: app.scroll_y
-			height:   f64(app.viewport_height)
-			fringe:   f64(tile_rows) / scale
-		})
-		// The native renderer reads C ints; V's int is 64-bit under current V.
-		legacy_tiles := chromium_msaa_tiles_for_triggers(triggers, 0, scale, tile_rows).map(i32(it))
-		triggers_by_layer := chromium_msaa_triggers_by_layer(triggers, app.chromium_raster_plan)
-		for index, layer in app.chromium_raster_plan.layers {
-			selected := triggers_by_layer[index]
-			root := index == 0
-			content_width := if root {
-				math.max(f64(app.viewport_width), layer.bounds.x + layer.bounds.width)
-			} else {
-				layer.bounds.width
-			}
-			content_height := if root {
-				math.max(f64(app.viewport_height), layer.bounds.y + layer.bounds.height)
-			} else {
-				layer.bounds.height
-			}
-			app.chromium_raster_grids << if layer.legacy_raster {
-				ChromiumRasterGrid{}
-			} else {
-				chromium_raster_grid(selected, app.viewport_width, app.viewport_height, content_width, content_height,
-					if root { 0.0 } else { math.floor(layer.bounds.x * scale) / scale },
-					if root { -app.scroll_y } else { math.floor(layer.bounds.y * scale) / scale }, scale)
-			}
-			if layer.legacy_raster {
-				app.chromium_raster_tiles << legacy_tiles
-			} else {
-				origin_y := if index == 0 {
-					0.0
-				} else {
-					math.floor(layer.bounds.y * scale) / scale
-				}
-				app.chromium_raster_tiles << chromium_msaa_tiles_for_triggers(selected, origin_y,
-					scale, tile_rows).map(i32(it))
-			}
-		}
+		app.chromium_msaa_storage.update(app.paint_commands, app.chromium_raster_plan,
+			app.viewport_width, app.viewport_height, app.scroll_y, scale)
+		count := app.chromium_raster_plan.layers.len
+		app.chromium_raster_tiles = app.chromium_msaa_storage.tiles[..count]
+		app.chromium_raster_grids = app.chromium_msaa_storage.grids[..count]
 		C.native_set_chromium_raster_scroll_y(app.scroll_y)
 		C.native_set_chromium_raster_layer(0, 0, 1)
-		C.native_set_chromium_msaa_tiles(unsafe { nil }, 0, tile_rows)
+		C.native_set_chromium_msaa_tiles(unsafe { nil }, 0,
+			chromium_gpu_raster_tile_rows(int(math.ceil(f64(app.viewport_height) * scale))))
 	}
 }
 

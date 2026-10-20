@@ -14,22 +14,28 @@ fn chromium_svg_background_msaa_ranges(command layout.PaintCommand) [][]f64 {
 }
 
 fn chromium_svg_background_msaa_rects(command layout.PaintCommand) []layout.LayoutRect {
-	if command.image_data == unsafe { nil } || command.opacity <= 0 { return []layout.LayoutRect{} }
+	mut triggers := []ChromiumMSAATrigger{}
+	append_chromium_svg_background_msaa_triggers(command, 0, mut triggers)
+	return triggers.map(layout.LayoutRect{x: it.left, y: it.top, width: it.right - it.left, height: it.bottom - it.top})
+}
+
+fn append_chromium_svg_background_msaa_triggers(command layout.PaintCommand, index int,
+	mut triggers []ChromiumMSAATrigger) {
+	if command.image_data == unsafe { nil } || command.opacity <= 0 { return }
 	image := command.image_data
-	svg_document := image.background_svg_document or { return []layout.LayoutRect{} }
-	data := image.background_layer_data or { return []layout.LayoutRect{} }
+	svg_document := image.background_svg_document or { return }
+	data := image.background_layer_data or { return }
 	natural := layout.svg_background_natural_size(svg_document)
 	layer := painting.resolve_background_layer_with_natural_size(data.layer, image.image_url, painting.Rect{command.x, command.y, command.width, command.height},
-		data.resolution_context, natural) or { return []layout.LayoutRect{} }
+		data.resolution_context, natural) or { return }
 	clip :=
 		painting.Rect{image.image_clip_x, image.image_clip_y, image.image_clip_width, image.image_clip_height}
 	plan :=
 		painting.background_tile_plan(layer, painting.Point{command.image_scroll_offset_x, command.image_scroll_offset_y}, clip)
 	mut document := unsafe { &dom.Document(svg_document) }
 	document.set_svg_image_color_scheme(css.preferred_color_scheme_to_string(image.background_svg_color_scheme))
-	mut ranges := []layout.LayoutRect{}
 	outer := command.transform
-	converter := painting.new_device_pixel_converter(1.0) or { return ranges }
+	converter := painting.new_device_pixel_converter(1.0) or { return }
 	for tile in painting.background_tiles_from_plan_limited(plan, clip, 4096) {
 		destination := converter.rounded_device_rect(tile)
 		replay := if !plan.repeat_x && !plan.repeat_y {
@@ -56,11 +62,10 @@ fn chromium_svg_background_msaa_rects(command layout.PaintCommand) []layout.Layo
 			left := math.max(bounds.x, viewport_bounds.x)
 			right := math.min(bounds.x + bounds.width, viewport_bounds.x + viewport_bounds.width)
 			if bottom > top && right > left {
-				ranges << layout.LayoutRect{ x: left, y: top, width: right - left, height: bottom - top }
+				triggers << ChromiumMSAATrigger{index, top, bottom, left, right}
 			}
 		}
 	}
-	return ranges
 }
 
 // Only tiles which can appear in this frame need an SVG picture prepared.
@@ -74,13 +79,13 @@ fn chromium_svg_background_intersects_raster_viewport(command layout.PaintComman
 		|| (command.has_clip && (command.clip_width <= 0 || command.clip_height <= 0)) {
 		return false
 	}
-	bounds := transformed_row_bounds(command.transform, image.image_clip_x, image.image_clip_y,
+	bounds := transformed_raster_bounds(command.transform, image.image_clip_x, image.image_clip_y,
 		image.image_clip_width, image.image_clip_height)
-	if math.is_nan(bounds[0]) || math.is_inf(bounds[0], 0) || math.is_nan(bounds[1])
-		|| math.is_inf(bounds[1], 0) {
+	if math.is_nan(bounds.y) || math.is_inf(bounds.y, 0) || math.is_nan(bounds.height)
+		|| math.is_inf(bounds.height, 0) {
 		return true
 	}
 	scroll := if command.fixed_to_viewport { 0.0 } else { viewport.scroll_y }
-	return bounds[1] >= scroll - viewport.fringe
-		&& bounds[0] <= scroll + viewport.height + viewport.fringe
+	return bounds.y + bounds.height >= scroll - viewport.fringe
+		&& bounds.y <= scroll + viewport.height + viewport.fringe
 }
