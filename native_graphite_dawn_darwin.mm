@@ -111,9 +111,9 @@ skgpu::graphite::Context* context()
         backend.fInstance = wgpu::Instance(instance->Get());
         backend.fDevice = device;
         backend.fQueue = device.GetQueue();
-        skgpu::graphite::ContextOptions options;
-        options.fGpuBudgetInBytes = 64 * 1024 * 1024;
-        return skgpu::graphite::ContextFactory::MakeDawn(backend, options);
+        skgpu::graphite::ContextOptions contextOptions;
+        contextOptions.fGpuBudgetInBytes = 64 * 1024 * 1024;
+        return skgpu::graphite::ContextFactory::MakeDawn(backend, contextOptions);
         }();
     }
     return gpu_context.get();
