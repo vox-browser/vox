@@ -58,3 +58,28 @@ fn test_deferred_completion_can_target_a_worker_owned_native_loop() {
 	worker := spawn deliver_with_worker_owned_loop()
 	assert worker.wait()
 }
+
+fn post_document_owned_result(invoker NativeDeferredInvoker, state &DeferredThreadObservation, payload []u8) {
+	invoker.deferred_invoke(fn [state, payload] () {
+		assert payload.bytestr() == 'document-owned result'
+		mut observation := unsafe { &DeferredThreadObservation(state) }
+		observation.delivered = true
+	})
+}
+
+fn test_deferred_worker_completion_keeps_retired_document_payload_until_delivery() {
+	mut storage := new_retained_arena('deferred document')
+	state := &DeferredThreadObservation{}
+	mut scope := storage.enter()
+	payload := 'document-owned result'.bytes()
+	invoker := capture_native_deferred_invoker() or { scope.finish(); storage.release(); return }
+	scope.finish()
+	storage.release()
+	worker := spawn post_document_owned_result(invoker, state, payload)
+	worker.wait()
+	$if prealloc { assert storage.arena.usage().used > 0 }
+	deadline := time.sys_mono_now() + time.second
+	for !state.delivered && time.sys_mono_now() < deadline { pump_native_events(0.05) }
+	assert state.delivered
+	assert storage.arena.usage().used == 0
+}
