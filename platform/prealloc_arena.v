@@ -87,6 +87,18 @@ mut:
 
 __global arena_thread_state ArenaThreadState
 
+// Reusable UI arenas belong to their origin thread. Check without initializing
+// that ownership from a background font or resource operation.
+pub fn arena_thread_is_current() bool {
+	if arena_thread_state.initialized {
+		return arena_thread_state.owner == u64(C.pthread_self())
+	}
+	$if macos || linux {
+		return C.libweb_v_is_main_thread()
+	}
+	return false
+}
+
 fn arena_state() &ArenaThreadState {
 	mut state := unsafe { &arena_thread_state }
 	if !state.initialized {

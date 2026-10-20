@@ -10,25 +10,31 @@ fn (mut computer FontComputer) lookup_font_cache_key(key ComputedFontCacheKey,
 	mut scratch := unsafe { &platform.Arena(nil) }
 	mut entry := platform.ArenaEntry{}
 	$if prealloc {
-		if computer.font_key_scratch_ == unsafe { nil } {
-			persistent := platform.enter_persistent()
-			arena := platform.new_arena('font cache key')
-			computer.font_key_scratch_ = arena
-			if document := computer.document_ {
-				mut owner := document.native_storage()
-				if owner != unsafe { nil } {
-					owner.add_cleanup(fn [arena] () {
-						mut storage := unsafe { &platform.Arena(arena) }
-						storage.release()
-					})
+		if platform.arena_thread_is_current() {
+			if computer.font_key_scratch_ == unsafe { nil } {
+				persistent := platform.enter_persistent()
+				arena := platform.new_arena('font cache key')
+				computer.font_key_scratch_ = arena
+				if document := computer.document_ {
+					mut owner := document.native_storage()
+					if owner != unsafe { nil } {
+						owner.add_cleanup(fn [arena] () {
+							mut storage := unsafe { &platform.Arena(arena) }
+							storage.release()
+						})
+					}
 				}
+				platform.leave_persistent(persistent)
 			}
-			platform.leave_persistent(persistent)
+			scratch = computer.font_key_scratch_
+			entry = scratch.enter()
 		}
-		scratch = computer.font_key_scratch_
-		entry = scratch.enter()
 	}
-	serialized := key.id() + if policy == .libweb { '' } else { '|rendering:${policy}|size:${math.f64_bits(font_size_px)}' }
+	serialized := key.id() + if policy == .libweb {
+		''
+	} else {
+		'|rendering:${policy}|size:${math.f64_bits(font_size_px)}'
+	}
 	if scratch != unsafe { nil } { scratch.leave(entry) }
 	if cached := computer.computed_font_cache[serialized] {
 		if scratch != unsafe { nil } { scratch.reset() }
