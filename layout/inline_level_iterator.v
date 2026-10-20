@@ -413,7 +413,8 @@ pub fn (iterator &InlineLevelIterator) items() []InlineLevelItem {
 pub fn (iterator &InlineLevelIterator) next_non_whitespace_sequence_width() CSSPixels {
 	mut next_width := CSSPixels.new(0)
 	for index := iterator.next_item_index; index < iterator.items.len; index++ {
-		next_item := iterator.items[index]
+		// Borrow the item so current V does not heap-promote a copy.
+		next_item := unsafe { &iterator.items[index] }
 		// Atomic inlines allow a break at their outer boundary even when their
 		// own contents are nowrap. Do not reserve the following badge's width
 		// while deciding whether the preceding word fits on this line.

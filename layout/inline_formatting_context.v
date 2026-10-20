@@ -62,7 +62,9 @@ fn calculate_inline_end_static_position_rect(containing_block &BlockContainer, c
 	for line_box in containing_block_used_values.line_boxes {
 		line_boxes_bottom = css_pixels_max(line_boxes_bottom, line_box.bottom())
 	}
-	last_line_box := containing_block_used_values.line_boxes.last()
+	// Read the last line and fragment in place: copies of them would be moved to
+	// the heap by current V.
+	last_line_box := unsafe { &containing_block_used_values.line_boxes[containing_block_used_values.line_boxes.len - 1] }
 	if last_line_box.has_forced_break() || last_line_box.fragments_.len == 0 {
 		position := to_physical_position(writing_mode, CSSPixels.new(0), line_boxes_bottom)
 		return StaticPositionRect{
@@ -72,7 +74,7 @@ fn calculate_inline_end_static_position_rect(containing_block &BlockContainer, c
 			}
 		}
 	}
-	last_fragment := last_line_box.fragments_.last()
+	last_fragment := unsafe { &last_line_box.fragments_[last_line_box.fragments_.len - 1] }
 	mut direction := containing_block.computed_values().direction()
 	containing_node := unsafe { &Node(containing_block) }
 	if containing_node.is_anonymous() {

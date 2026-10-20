@@ -4196,6 +4196,10 @@ pub:
 }
 
 // Either an Element or a PseudoElement.
+//
+// Its methods take it by value, and read `element_` into a local before
+// calling methods on it: current V moves a local to the heap when a pointer
+// returned through `&local` or `local.pointer_field.method()` is returned.
 pub struct AbstractElement {
 pub mut:
 	element_             &Element = unsafe { nil }
@@ -4210,15 +4214,16 @@ pub fn AbstractElement.new(element &Element, pseudo_element ?PseudoElement) Abst
 	}
 }
 
-pub fn (abstract_element &AbstractElement) document() &Document {
-	return abstract_element.element_.document()
+pub fn (abstract_element AbstractElement) document() &Document {
+	element := abstract_element.element_
+	return element.document()
 }
 
-pub fn (abstract_element &AbstractElement) element() &Element {
+pub fn (abstract_element AbstractElement) element() &Element {
 	return abstract_element.element_
 }
 
-pub fn (abstract_element &AbstractElement) pseudo_element() ?PseudoElement {
+pub fn (abstract_element AbstractElement) pseudo_element() ?PseudoElement {
 	return abstract_element.pseudo_element_
 }
 
@@ -4228,8 +4233,9 @@ pub mut:
 	sibling_index int
 }
 
-pub fn (abstract_element &AbstractElement) tree_counting_function_resolution_context() TreeCountingFunctionResolutionContext {
-	parent := abstract_element.element_.as_node().parent_element() or {
+pub fn (abstract_element AbstractElement) tree_counting_function_resolution_context() TreeCountingFunctionResolutionContext {
+	element := abstract_element.element_
+	parent := element.as_node().parent_element() or {
 		return TreeCountingFunctionResolutionContext{
 			sibling_count: 1
 			sibling_index: 1
@@ -4240,7 +4246,7 @@ pub fn (abstract_element &AbstractElement) tree_counting_function_resolution_con
 	for child in parent.as_node().children {
 		if child.is_element() {
 			count++
-			if child == abstract_element.element_.as_node() {
+			if voidptr(child) == voidptr(element.as_node()) {
 				index = count
 			}
 		}
@@ -4251,40 +4257,45 @@ pub fn (abstract_element &AbstractElement) tree_counting_function_resolution_con
 	}
 }
 
-pub fn (abstract_element &AbstractElement) layout_node() ?&LayoutNodeWithStyle_ {
+pub fn (abstract_element AbstractElement) layout_node() ?&LayoutNodeWithStyle_ {
+	element := abstract_element.element_
 	if pseudo := abstract_element.pseudo_element_ {
-		return abstract_element.element_.get_pseudo_element_node(int(pseudo))
+		return element.get_pseudo_element_node(int(pseudo))
 	}
-	return abstract_element.element_.el_layout_node()
+	return element.el_layout_node()
 }
 
-pub fn (abstract_element &AbstractElement) unsafe_layout_node() ?&LayoutNodeWithStyle_ {
+pub fn (abstract_element AbstractElement) unsafe_layout_node() ?&LayoutNodeWithStyle_ {
+	element := abstract_element.element_
 	if pseudo := abstract_element.pseudo_element_ {
-		return abstract_element.element_.get_pseudo_element_node(int(pseudo))
+		return element.get_pseudo_element_node(int(pseudo))
 	}
-	return abstract_element.element_.el_unsafe_layout_node()
+	return element.el_unsafe_layout_node()
 }
 
-pub fn (abstract_element &AbstractElement) parent_element() ?&Element {
+pub fn (abstract_element AbstractElement) parent_element() ?&Element {
+	element := abstract_element.element_
 	if abstract_element.pseudo_element_ != none {
 		return abstract_element.element_
 	}
-	return abstract_element.element_.as_node().parent_element()
+	return element.as_node().parent_element()
 }
 
-pub fn (abstract_element &AbstractElement) flat_tree_parent_element() ?&Element {
+pub fn (abstract_element AbstractElement) flat_tree_parent_element() ?&Element {
+	element := abstract_element.element_
 	if abstract_element.pseudo_element_ != none {
 		return abstract_element.element_
 	}
-	return abstract_element.element_.as_node().flat_tree_parent_element()
+	return element.as_node().flat_tree_parent_element()
 }
 
-pub fn (abstract_element &AbstractElement) element_to_inherit_style_from() ?AbstractElement {
+pub fn (abstract_element AbstractElement) element_to_inherit_style_from() ?AbstractElement {
+	source := abstract_element.element_
 	if override := abstract_element.inheritance_override {
 		return AbstractElement.new(override, none)
 	}
 	pseudo := if p := abstract_element.pseudo_element_ { int(p) } else { none }
-	element := abstract_element.element_.element_to_inherit_style_from(pseudo) or { return none }
+	element := source.element_to_inherit_style_from(pseudo) or { return none }
 	return AbstractElement.new(element, none)
 }
 
@@ -4293,7 +4304,7 @@ pub enum AbstractElementWalkMethod {
 	previous_sibling
 }
 
-pub fn (abstract_element &AbstractElement) walk_layout_tree(walk_method AbstractElementWalkMethod) ?AbstractElement {
+pub fn (abstract_element AbstractElement) walk_layout_tree(walk_method AbstractElementWalkMethod) ?AbstractElement {
 	mut node := abstract_element.unsafe_layout_node() or { return none }
 	for {
 		node = match walk_method {
@@ -4315,15 +4326,15 @@ pub fn (abstract_element &AbstractElement) walk_layout_tree(walk_method Abstract
 	return none
 }
 
-pub fn (abstract_element &AbstractElement) previous_in_tree_order() ?AbstractElement {
+pub fn (abstract_element AbstractElement) previous_in_tree_order() ?AbstractElement {
 	return abstract_element.walk_layout_tree(.previous)
 }
 
-pub fn (abstract_element &AbstractElement) previous_sibling_in_tree_order() ?AbstractElement {
+pub fn (abstract_element AbstractElement) previous_sibling_in_tree_order() ?AbstractElement {
 	return abstract_element.walk_layout_tree(.previous_sibling)
 }
 
-pub fn (abstract_element &AbstractElement) is_before(other AbstractElement) bool {
+pub fn (abstract_element AbstractElement) is_before(other AbstractElement) bool {
 	this_node := abstract_element.unsafe_layout_node() or { return false }
 	other_node := other.unsafe_layout_node() or { return false }
 	return this_node.is_before(other_node)
@@ -4333,9 +4344,10 @@ pub fn (mut abstract_element AbstractElement) set_inheritance_override(element &
 	abstract_element.inheritance_override = element
 }
 
-pub fn (abstract_element &AbstractElement) computed_properties() ?&CSSComputedProperties_ {
+pub fn (abstract_element AbstractElement) computed_properties() ?&CSSComputedProperties_ {
+	element := abstract_element.element_
 	pseudo := if p := abstract_element.pseudo_element_ { int(p) } else { none }
-	return abstract_element.element_.computed_properties_for_pseudo(pseudo)
+	return element.computed_properties_for_pseudo(pseudo)
 }
 
 pub fn (mut abstract_element AbstractElement) set_computed_properties(computed_properties ?&CSSComputedProperties_) {
@@ -4344,9 +4356,10 @@ pub fn (mut abstract_element AbstractElement) set_computed_properties(computed_p
 	element.set_computed_properties(pseudo, computed_properties)
 }
 
-pub fn (abstract_element &AbstractElement) custom_property_data() ?&CSSCustomPropertyData_ {
+pub fn (abstract_element AbstractElement) custom_property_data() ?&CSSCustomPropertyData_ {
+	element := abstract_element.element_
 	pseudo := if p := abstract_element.pseudo_element_ { int(p) } else { none }
-	return abstract_element.element_.custom_property_data(pseudo)
+	return element.custom_property_data(pseudo)
 }
 
 pub fn (mut abstract_element AbstractElement) set_custom_property_data(data ?&CSSCustomPropertyData_) {
@@ -4355,29 +4368,31 @@ pub fn (mut abstract_element AbstractElement) set_custom_property_data(data ?&CS
 	element.set_custom_property_data(pseudo, data)
 }
 
-pub fn (abstract_element &AbstractElement) get_custom_property(name string) ?&CSSStyleValue_ {
+pub fn (abstract_element AbstractElement) get_custom_property(name string) ?&CSSStyleValue_ {
 	data := abstract_element.custom_property_data() or { return none }
 	return data.get(name)
 }
 
-pub fn (abstract_element &AbstractElement) has_non_empty_counters_set() bool {
+pub fn (abstract_element AbstractElement) has_non_empty_counters_set() bool {
+	element := abstract_element.element_
 	if pseudo := abstract_element.pseudo_element_ {
-		pseudo_element := abstract_element.element_.get_pseudo_element(int(pseudo)) or {
+		pseudo_element := element.get_pseudo_element(int(pseudo)) or {
 			return false
 		}
 		return pseudo_element.has_non_empty_counters_set()
 	}
-	return abstract_element.element_.has_non_empty_counters_set()
+	return element.has_non_empty_counters_set()
 }
 
-pub fn (abstract_element &AbstractElement) counters_set() ?&CSSCountersSet_ {
+pub fn (abstract_element AbstractElement) counters_set() ?&CSSCountersSet_ {
+	element := abstract_element.element_
 	if pseudo := abstract_element.pseudo_element_ {
-		pseudo_element := abstract_element.element_.get_pseudo_element(int(pseudo)) or {
+		pseudo_element := element.get_pseudo_element(int(pseudo)) or {
 			return none
 		}
 		return pseudo_element.counters_set()
 	}
-	return abstract_element.element_.el_counters_set()
+	return element.el_counters_set()
 }
 
 pub fn (mut abstract_element AbstractElement) ensure_counters_set() &CSSCountersSet_ {
@@ -4402,13 +4417,14 @@ pub fn (mut abstract_element AbstractElement) set_counters_set(counters_set ?&CS
 	element.set_counters_set(counters_set)
 }
 
-pub fn (abstract_element &AbstractElement) css_defined_animations() ?map[string]&CSSAnimation_ {
+pub fn (abstract_element AbstractElement) css_defined_animations() ?map[string]&CSSAnimation_ {
+	element := abstract_element.element_
 	key := if pseudo := abstract_element.pseudo_element_ { int(pseudo) } else { -1 }
-	if abstract_element.element_.has_css_defined_animations_flag
-		&& abstract_element.element_.rare_data_ != unsafe { nil }
-		&& abstract_element.element_.rare_data_.style_data_ != unsafe { nil }
-		&& key in abstract_element.element_.rare_data_.style_data_.css_defined_animations {
-		return abstract_element.element_.rare_data_.style_data_.css_defined_animations[key] or { return none }
+	if element.has_css_defined_animations_flag
+		&& element.rare_data_ != unsafe { nil }
+		&& element.rare_data_.style_data_ != unsafe { nil }
+		&& key in element.rare_data_.style_data_.css_defined_animations {
+		return element.rare_data_.style_data_.css_defined_animations[key] or { return none }
 	}
 	return none
 }
@@ -4444,21 +4460,22 @@ pub fn (mut abstract_element AbstractElement) remove_css_defined_animation(name 
 	}
 }
 
-pub fn (abstract_element &AbstractElement) visit(mut visitor CellVisitor) {
+pub fn (abstract_element AbstractElement) visit(mut visitor CellVisitor) {
 	visitor.visit(abstract_element.element_)
 	if override := abstract_element.inheritance_override {
 		visitor.visit(override)
 	}
 }
 
-pub fn (abstract_element &AbstractElement) debug_description() string {
+pub fn (abstract_element AbstractElement) debug_description() string {
+	element := abstract_element.element_
 	if pseudo := abstract_element.pseudo_element_ {
-		return '${abstract_element.element_.debug_description()}::${pseudo_element_name(pseudo)}'
+		return '${element.debug_description()}::${pseudo_element_name(pseudo)}'
 	}
-	return abstract_element.element_.debug_description()
+	return element.debug_description()
 }
 
-pub fn (abstract_element &AbstractElement) style_scope() &StyleScope {
+pub fn (abstract_element AbstractElement) style_scope() &StyleScope {
 	return abstract_element.element_.as_node().style_scope()
 }
 

@@ -1097,8 +1097,15 @@ pub fn (command &PaintCommand) svg() PaintSVGPathData {
 // Logical defaults preserve commands which have no image payload. Callers in
 // image/gradient branches take one snapshot rather than copying this per field.
 pub fn (command &PaintCommand) image() PaintImageData {
-	if command.image_data != unsafe { nil } {
-		return *command.image_data
+	return paint_image_data(command.image_data)
+}
+
+// The accessors below are also free functions over the command's payload
+// pointers: calling a method on a command held by value would make current V
+// move that copy to the heap, since the command holds an inline transform array.
+fn paint_image_data(data &PaintImageData) PaintImageData {
+	if data != unsafe { nil } {
+		return *data
 	}
 	return PaintImageData{}
 }
@@ -1130,10 +1137,14 @@ pub fn (command &PaintCommand) visual_layer() PaintVisualLayer {
 }
 
 pub fn (command &PaintCommand) mask_clip() PaintClip {
-	if clip := command.mask_clip_data {
+	return paint_mask_clip(command.mask_clip_data, command.visual_layer_data)
+}
+
+fn paint_mask_clip(mask_clip ?&PaintClip, visual_layer ?&PaintVisualLayer) PaintClip {
+	if clip := mask_clip {
 		return *clip
 	}
-	if layer := command.visual_layer_data {
+	if layer := visual_layer {
 		return layer.mask_clip
 	}
 	return PaintClip{}
@@ -4499,7 +4510,7 @@ pub fn resolved_background_gradient_tiles(command PaintCommand) []painting.Rect 
 	if !command.gradient_background_layer {
 		return [painting.Rect{command.x, command.y, command.width, command.height}]
 	}
-	image_data := command.image()
+	image_data := paint_image_data(command.image_data)
 	background_data := image_data.background_layer_data or { return []painting.Rect{} }
 	resolved := painting.resolve_background_layer_without_intrinsic(painting.BackgroundLayerWithoutIntrinsicResolutionInput{
 		layer: background_data.layer
@@ -4625,7 +4636,8 @@ pub fn paint_command_for_nested_viewport(command PaintCommand, outer_transform [
 	// The retained layer snapshot can be shared by recordings. Transform only
 	// this nested replay's mask and leave the earlier recording untouched.
 	if command.mask_clip_data != none || command.visual_layer_data != none {
-		clip := nested_viewport_clip(command.mask_clip(), ancestor)
+		clip := nested_viewport_clip(paint_mask_clip(command.mask_clip_data, command.visual_layer_data),
+			ancestor)
 		transformed.mask_clip_data = &PaintClip{
 			...clip
 			transform: [clip.transform[0], clip.transform[1], clip.transform[2],

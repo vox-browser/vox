@@ -438,6 +438,9 @@ mut:
 	// A check box background deferred to its border's native GPU pass, with
 	// the command as drawn and as it was submitted.
 	rounded_rect_underlay               ?layout.PaintCommand
+	// draw_command's working copy of each command, one per nesting depth.
+	draw_command_copies []&layout.PaintCommand
+	draw_command_depth  int
 	rounded_rect_underlay_source        ?layout.PaintCommand
 	nonrendered_image_preloads          map[string]bool
 	screenshot_path                     string
@@ -5221,7 +5224,10 @@ fn (mut app BrowserApp) draw_command(source_command layout.PaintCommand, page_x 
 	}
 	app.paint_effect_depth = background_clip_effect_depth_after_command(app.paint_effect_depth,
 		source_command.kind)
-	mut command := source_command
+	mut command := app.enter_draw_command(source_command)
+	defer {
+		app.draw_command_depth--
+	}
 	if command.scrollbar_axis != '' {
 		command.opacity *= app.overlay_scrollbars.paint_opacity
 		if command.opacity == 0 { return }
@@ -5282,7 +5288,7 @@ fn (mut app BrowserApp) draw_command(source_command layout.PaintCommand, page_x 
 	if command.kind == 'begin_background_text_clip' {
 		$if macos {
 			if app.ctx.native_rendering {
-				clip_points := transformed_rect_points(command, page_x, page_y, 0)
+				clip_points := transformed_rect_points(*command, page_x, page_y, 0)
 				mut clip_left := clip_points[0]
 				mut clip_top := clip_points[1]
 				mut clip_right := clip_left
@@ -5410,7 +5416,7 @@ fn (mut app BrowserApp) draw_command(source_command layout.PaintCommand, page_x 
 	scroll_y := 0.0
 	gpu_image_ancestor_clip := if app.document != unsafe { nil }
 		&& app.document.font_rendering_policy() == .chromium {
-		replaced_image_gpu_ancestor_clip_index(&command)
+		replaced_image_gpu_ancestor_clip_index(command)
 	} else { -1 }
 	mut clip_active := false
 	if command.has_clip {
@@ -5481,7 +5487,7 @@ fn (mut app BrowserApp) draw_command(source_command layout.PaintCommand, page_x 
 			}
 		}
 	}
-	rect_points := transformed_rect_points(command, page_x, page_y, scroll_y)
+	rect_points := transformed_rect_points(*command, page_x, page_y, scroll_y)
 	mut x := rect_points[0]
 	mut y := rect_points[1]
 	mut bounds_right := x
@@ -5499,7 +5505,7 @@ fn (mut app BrowserApp) draw_command(source_command layout.PaintCommand, page_x 
 	mut cull_top := y
 	mut cull_bottom := y + h
 	if command.kind in ['paint_outer_box_shadow', 'paint_inner_box_shadow', 'draw_text_shadow'] {
-		mut bounds_command := command
+		mut bounds_command := *command
 		if command.kind in ['paint_outer_box_shadow', 'draw_text_shadow'] {
 			margin := command.blur * 2.0
 			bounds_command.x -= margin
@@ -5549,7 +5555,7 @@ fn (mut app BrowserApp) draw_command(source_command layout.PaintCommand, page_x 
 					C.native_begin_clip()
 					C.native_add_corner_rounded_clip(f32(result.clip_rect.x), f32(result.clip_rect.y), f32(result.clip_rect.width), f32(result.clip_rect.height), f32(radii.top_left.horizontal), f32(radii.top_left.vertical), f32(radii.top_right.horizontal), f32(radii.top_right.vertical), f32(radii.bottom_right.horizontal), f32(radii.bottom_right.vertical), f32(radii.bottom_left.horizontal), f32(radii.bottom_left.vertical), f32(matrix[0]), f32(matrix[1]), f32(matrix[2]), f32(matrix[3]), f32(matrix[4]), f32(matrix[5]), page_x, page_y, f32(scroll_y), f32(app.ctx.height))
 					C.native_add_corner_rounded_clip(f32(result.clip_rect.x), f32(result.clip_rect.y), f32(result.clip_rect.width), f32(result.clip_rect.height), 0, 0, 0, 0, 0, 0, 0, 0, f32(matrix[0]), f32(matrix[1]), f32(matrix[2]), f32(matrix[3]), f32(matrix[4]), f32(matrix[5]), page_x, page_y, f32(scroll_y), f32(app.ctx.height))
-					if app.draw_chromium_svg_image_group(command, result, page_x, page_y, scroll_y) {
+					if app.draw_chromium_svg_image_group(*command, result, page_x, page_y, scroll_y) {
 						C.native_end_clip()
 						return
 					}
@@ -5588,7 +5594,7 @@ fn (mut app BrowserApp) draw_command(source_command layout.PaintCommand, page_x 
 					return
 				}
 			}
-			app.draw_portable_shadow(command, page_x, page_y, scroll_y)
+			app.draw_portable_shadow(*command, page_x, page_y, scroll_y)
 		}
 		'paint_inner_box_shadow' {
 			shadow_geometry := command.box_shadow()
@@ -5606,7 +5612,7 @@ fn (mut app BrowserApp) draw_command(source_command layout.PaintCommand, page_x 
 					return
 				}
 			}
-			app.draw_portable_shadow(command, page_x, page_y, scroll_y)
+			app.draw_portable_shadow(*command, page_x, page_y, scroll_y)
 		}
 		'fill_rect' {
 			fill := app.paint_colors.color(command.color, command.opacity)
@@ -5614,7 +5620,7 @@ fn (mut app BrowserApp) draw_command(source_command layout.PaintCommand, page_x 
 				if app.ctx.native_rendering && !command.outer_shadow
 					&& (command.radius > 0 || command.antialiased_rect) {
 					if command.underlays_next && C.native_rounded_rect_underlay_supported() != 0 {
-						app.rounded_rect_underlay = command
+						app.rounded_rect_underlay = *command
 						app.rounded_rect_underlay_source = source_command
 						return
 					}
@@ -5622,7 +5628,7 @@ fn (mut app BrowserApp) draw_command(source_command layout.PaintCommand, page_x 
 					if command.clip_outs.len >= 4 {
 						C.native_set_rect_clip_outs(&command.clip_outs[0], command.clip_outs.len / 4)
 					}
-					set_native_chromium_paint_color(command)
+					set_native_chromium_paint_color(*command)
 					C.native_draw_rounded_rect_srgb(f32(command.x), f32(command.y), f32(command.width), f32(command.height), used_radius, used_radius, used_radius, used_radius, used_radius, used_radius, used_radius, used_radius, f32(matrix[0]), f32(matrix[1]), f32(matrix[2]), f32(matrix[3]), f32(matrix[4]), f32(matrix[5]), page_x, page_y, f32(scroll_y), f32(app.ctx.width), f32(app.ctx.height), fill, 1, 0, if command.scrollbar_axis == '' {
 						1
 					} else {
@@ -5635,9 +5641,9 @@ fn (mut app BrowserApp) draw_command(source_command layout.PaintCommand, page_x 
 				}
 			}
 			if command.clip_outs.len >= 4 {
-				for segment in clipped_out_rect_segments(command) {
+				for segment in clipped_out_rect_segments(*command) {
 					app.draw_command(layout.PaintCommand{
-						...command
+						...*command
 						x:         segment[0]
 						width:     segment[1] - segment[0]
 						clip_outs: []f64{}
@@ -5646,7 +5652,10 @@ fn (mut app BrowserApp) draw_command(source_command layout.PaintCommand, page_x 
 				return
 			}
 			if non_axis_aligned {
-				draw_browser_polygon(app.ctx, borrowed_rectangle_screen_points(&rect_points), fill)
+				// The borrowed view keeps its own copy: one of rect_points would move
+				// rect_points to the heap on every call.
+				polygon_points := rect_points
+				draw_browser_polygon(app.ctx, borrowed_rectangle_screen_points(&polygon_points), fill)
 			} else if command.outer_shadow {
 				$if macos {
 					if app.ctx.native_rendering {
@@ -5673,7 +5682,7 @@ fn (mut app BrowserApp) draw_command(source_command layout.PaintCommand, page_x 
 			$if macos {
 				if app.ctx.native_rendering {
 					radii := command.corner_radii
-					set_native_chromium_paint_color(command)
+					set_native_chromium_paint_color(*command)
 					C.native_draw_rounded_rect_srgb(f32(command.x), f32(command.y), f32(command.width), f32(command.height), f32(radii.top_left.x), f32(radii.top_left.y), f32(radii.top_right.x), f32(radii.top_right.y), f32(radii.bottom_right.x), f32(radii.bottom_right.y), f32(radii.bottom_left.x), f32(radii.bottom_left.y), f32(matrix[0]), f32(matrix[1]), f32(matrix[2]), f32(matrix[3]), f32(matrix[4]), f32(matrix[5]), page_x, page_y, f32(scroll_y), f32(app.ctx.width), f32(app.ctx.height), fill, 1, 0, if command.scrollbar_axis == '' {
 						1
 					} else {
@@ -5685,7 +5694,7 @@ fn (mut app BrowserApp) draw_command(source_command layout.PaintCommand, page_x 
 			points64 := layout.rounded_rect_points(command.x, command.y, command.width, command.height, command.corner_radii)
 			mut points := []f32{cap: points64.len}
 			for index := 0; index + 1 < points64.len; index += 2 {
-				point_x, point_y := paint_screen_point(command, points64[index], points64[index + 1], page_x, page_y, scroll_y)
+				point_x, point_y := paint_screen_point(*command, points64[index], points64[index + 1], page_x, page_y, scroll_y)
 				points << point_x
 				points << point_y
 			}
@@ -5717,8 +5726,8 @@ fn (mut app BrowserApp) draw_command(source_command layout.PaintCommand, page_x 
 			points := layout.rounded_rect_points(command.x, command.y, command.width, command.height, command.corner_radii)
 			for index := 0; index + 1 < points.len; index += 2 {
 				next := (index + 2) % points.len
-				x1, y1 := paint_screen_point(command, points[index], points[index + 1], page_x, page_y, scroll_y)
-				x2, y2 := paint_screen_point(command, points[next], points[next + 1], page_x, page_y, scroll_y)
+				x1, y1 := paint_screen_point(*command, points[index], points[index + 1], page_x, page_y, scroll_y)
+				x2, y2 := paint_screen_point(*command, points[next], points[next + 1], page_x, page_y, scroll_y)
 				draw_browser_line(app.ctx, x1, y1, x2, y2, gg.PenConfig{color: stroke, thickness: f32(command.stroke_width)})
 			}
 		}
@@ -5743,7 +5752,7 @@ fn (mut app BrowserApp) draw_command(source_command layout.PaintCommand, page_x 
 			if command.points.len >= 4 {
 				mut points := []f32{cap: command.points.len}
 				for index := 0; index + 1 < command.points.len; index += 2 {
-					point_x, point_y := paint_screen_point(command, command.points[index], command.points[index + 1], page_x, page_y, scroll_y)
+					point_x, point_y := paint_screen_point(*command, command.points[index], command.points[index + 1], page_x, page_y, scroll_y)
 					points << point_x
 					points << point_y
 				}
@@ -5785,7 +5794,7 @@ fn (mut app BrowserApp) draw_command(source_command layout.PaintCommand, page_x 
 				mut points := []f32{cap: 64}
 				for step in 0 .. 32 {
 					angle := f64(step) * 2.0 * math.pi / 32.0
-					point_x, point_y := paint_screen_point(command, command.x + command.width / 2.0 + math.cos(angle) * command.width / 2.0, command.y + command.height / 2.0 + math.sin(angle) * command.height / 2.0, page_x, page_y, scroll_y)
+					point_x, point_y := paint_screen_point(*command, command.x + command.width / 2.0 + math.cos(angle) * command.width / 2.0, command.y + command.height / 2.0 + math.sin(angle) * command.height / 2.0, page_x, page_y, scroll_y)
 					points << point_x
 					points << point_y
 				}
@@ -5806,8 +5815,8 @@ fn (mut app BrowserApp) draw_command(source_command layout.PaintCommand, page_x 
 		}
 		'draw_line' {
 			if command.points.len >= 4 {
-				from_x, from_y := paint_screen_point(command, command.points[0], command.points[1], page_x, page_y, scroll_y)
-				to_x, to_y := paint_screen_point(command, command.points[2], command.points[3], page_x, page_y, scroll_y)
+				from_x, from_y := paint_screen_point(*command, command.points[0], command.points[1], page_x, page_y, scroll_y)
+				to_x, to_y := paint_screen_point(*command, command.points[2], command.points[3], page_x, page_y, scroll_y)
 				line_color := app.paint_colors.color(command.color, command.opacity)
 				$if macos {
 					line_style := match command.line_style {
@@ -5833,7 +5842,7 @@ fn (mut app BrowserApp) draw_command(source_command layout.PaintCommand, page_x 
 		'fill_polygon' {
 			mut points := []f32{cap: command.points.len}
 			for index := 0; index + 1 < command.points.len; index += 2 {
-				point_x, point_y := paint_screen_point(command, command.points[index], command.points[index + 1], page_x, page_y, scroll_y)
+				point_x, point_y := paint_screen_point(*command, command.points[index], command.points[index + 1], page_x, page_y, scroll_y)
 				points << point_x
 				points << point_y
 			}
@@ -5856,7 +5865,7 @@ fn (mut app BrowserApp) draw_command(source_command layout.PaintCommand, page_x 
 				if gradient.colors.len == 0 {
 					return
 				}
-				tiles := layout.resolved_background_gradient_tiles(command)
+				tiles := layout.resolved_background_gradient_tiles(*command)
 				if tiles.len == 0 {
 					return
 				}
@@ -5883,12 +5892,12 @@ fn (mut app BrowserApp) draw_command(source_command layout.PaintCommand, page_x 
 					}
 					$if macos {
 						if app.ctx.native_rendering
-							&& draw_native_css_gradient_tile(command, gradient, tile, native_stop_data, matrix, page_x, page_y, scroll_y, f32(app.ctx.height), app.document != unsafe { nil } && app.document.font_rendering_policy() == .chromium) {
+							&& draw_native_css_gradient_tile(*command, gradient, tile, native_stop_data, matrix, page_x, page_y, scroll_y, f32(app.ctx.height), app.document != unsafe { nil } && app.document.font_rendering_policy() == .chromium) {
 							continue
 						}
 					}
-					screen_left, screen_top := paint_screen_point(command, tile.x, tile.y, page_x, page_y, scroll_y)
-					screen_right, screen_bottom := paint_screen_point(command, tile.right(), tile.bottom(), page_x, page_y, scroll_y)
+					screen_left, screen_top := paint_screen_point(*command, tile.x, tile.y, page_x, page_y, scroll_y)
+					screen_right, screen_bottom := paint_screen_point(*command, tile.right(), tile.bottom(), page_x, page_y, scroll_y)
 					columns := int(clamp(math.abs(f64(screen_right - screen_left)) / 4.0, 1.0, 128.0) + 0.5)
 					rows := int(clamp(math.abs(f64(screen_bottom - screen_top)) / 4.0, 1.0, 128.0) + 0.5)
 					cell_width := tile.width / f64(columns)
@@ -5951,7 +5960,7 @@ fn (mut app BrowserApp) draw_command(source_command layout.PaintCommand, page_x 
 								[cell_left + cell_width + 0.5, cell_top],
 								[cell_left + cell_width + 0.5, cell_top + cell_height + 0.5],
 								[cell_left, cell_top + cell_height + 0.5]] {
-								point_x, point_y := paint_screen_point(command, point[0], point[1], page_x, page_y, scroll_y)
+								point_x, point_y := paint_screen_point(*command, point[0], point[1], page_x, page_y, scroll_y)
 								cell_points << point_x
 								cell_points << point_y
 							}
@@ -6005,7 +6014,7 @@ fn (mut app BrowserApp) draw_command(source_command layout.PaintCommand, page_x 
 				|| clip.height <= 0 {
 				return
 			}
-			if paint_command_image_allows_force_dark(command, f64(destination.width),
+			if paint_command_image_allows_force_dark(*command, f64(destination.width),
 				f64(destination.height), image) {
 				if bitmap := command.replaced_image_bitmap {
 					image = app.force_dark_image_from_bitmap('bitmap:${u64(voidptr(bitmap))}', bitmap,
@@ -6070,8 +6079,8 @@ fn (mut app BrowserApp) draw_command(source_command layout.PaintCommand, page_x 
 			source_y := f32((top - f64(destination.y)) * f64(image.height) / f64(destination.height))
 			source_width := f32((right - left) * f64(image.width) / f64(destination.width))
 			source_height := f32((bottom - top) * f64(image.height) / f64(destination.height))
-			screen_left, screen_top := paint_screen_point(command, left, top, page_x, page_y, scroll_y)
-			screen_right, screen_bottom := paint_screen_point(command, right, bottom, page_x, page_y, scroll_y)
+			screen_left, screen_top := paint_screen_point(*command, left, top, page_x, page_y, scroll_y)
+			screen_right, screen_bottom := paint_screen_point(*command, right, bottom, page_x, page_y, scroll_y)
 			app.ctx.draw_image_with_config(
 				img: image
 				img_rect: gg.Rect{math.min(screen_left, screen_right), math.min(screen_top, screen_bottom), math.abs(screen_right - screen_left), math.abs(screen_bottom - screen_top)}
@@ -6182,7 +6191,7 @@ fn (mut app BrowserApp) draw_command(source_command layout.PaintCommand, page_x 
 		'draw_background_image' {
 			image_data := command.image()
 			if image_data.background_svg_document != none
-				&& !background_image_clip_intersects_viewport(&command, f64(page_x), f64(page_y),
+				&& !background_image_clip_intersects_viewport(command, f64(page_x), f64(page_y),
 					f64(app.ctx.width), f64(app.page_top()), f64(window_height - app.status_height()),
 					app.paint_effect_depth > 0) {
 				return
@@ -6286,7 +6295,7 @@ fn (mut app BrowserApp) draw_command(source_command layout.PaintCommand, page_x 
 			// their materialized tiles at the compatibility player's allocation cap.
 			gpu_bitmap_tiles := snap_bitmap && (!plan.can_use_repeated_bitmap()
 				|| chromium_background_bitmap_tiles_are_bounded(plan, clip, 4096))
-			if paint_command_image_allows_force_dark(command, plan.first_tile.width,
+			if paint_command_image_allows_force_dark(*command, plan.first_tile.width,
 				plan.first_tile.height, image) {
 				image = app.force_dark_image_for_url(image_data.image_url, image)
 			}
@@ -6441,8 +6450,8 @@ fn (mut app BrowserApp) draw_command(source_command layout.PaintCommand, page_x 
 							}
 						}
 					} else {
-						screen_left, screen_top := paint_screen_point(command, left, top, page_x, page_y, scroll_y)
-						screen_right, screen_bottom := paint_screen_point(command, right_edge, bottom_edge, page_x, page_y, scroll_y)
+						screen_left, screen_top := paint_screen_point(*command, left, top, page_x, page_y, scroll_y)
+						screen_right, screen_bottom := paint_screen_point(*command, right_edge, bottom_edge, page_x, page_y, scroll_y)
 						app.ctx.draw_image_with_config(
 							img: image
 							img_rect: gg.Rect{math.min(screen_left, screen_right), math.min(screen_top, screen_bottom), math.abs(screen_right - screen_left), math.abs(screen_bottom - screen_top)}
@@ -6471,7 +6480,7 @@ fn (mut app BrowserApp) draw_command(source_command layout.PaintCommand, page_x 
 			if destination_width <= 0 || destination_height <= 0 {
 				return
 			}
-			if paint_command_image_allows_force_dark(command, f64(destination_width),
+			if paint_command_image_allows_force_dark(*command, f64(destination_width),
 				f64(destination_height), image) {
 				image = app.force_dark_image_for_url(image_data.image_url, image)
 			}
@@ -6489,8 +6498,8 @@ fn (mut app BrowserApp) draw_command(source_command layout.PaintCommand, page_x 
 			// gg's portable painter has no affine image primitive. Keep the same
 			// contain sizing for axis-aligned contexts; native replay handles the
 			// full accumulated visual-context transform above.
-			screen_x, screen_y := paint_screen_point(command, f64(destination_x), f64(destination_y), page_x, page_y, scroll_y)
-			screen_right, screen_bottom := paint_screen_point(command, f64(destination_x + destination_width), f64(destination_y + destination_height), page_x, page_y, scroll_y)
+			screen_x, screen_y := paint_screen_point(*command, f64(destination_x), f64(destination_y), page_x, page_y, scroll_y)
+			screen_right, screen_bottom := paint_screen_point(*command, f64(destination_x + destination_width), f64(destination_y + destination_height), page_x, page_y, scroll_y)
 			app.ctx.draw_image_with_config(
 				img: image
 				img_rect: gg.Rect{math.min(screen_x, screen_right), math.min(screen_y, screen_bottom), math.abs(screen_right - screen_x), math.abs(screen_bottom - screen_y)}
@@ -6588,7 +6597,7 @@ fn (mut app BrowserApp) draw_command(source_command layout.PaintCommand, page_x 
 			for polygon in input_polygons {
 				mut screen_points := []f32{cap: polygon.len}
 				for index := 0; index + 1 < polygon.len; index += 2 {
-					point_x, point_y := paint_screen_point(command, polygon[index], polygon[index + 1], page_x, page_y, scroll_y)
+					point_x, point_y := paint_screen_point(*command, polygon[index], polygon[index + 1], page_x, page_y, scroll_y)
 					screen_points << point_x
 					screen_points << point_y
 				}
@@ -6629,7 +6638,7 @@ fn (mut app BrowserApp) draw_command(source_command layout.PaintCommand, page_x 
 				text_color := app.paint_colors.color(command.color, command.opacity)
 				$if macos {
 					if app.ctx.native_rendering {
-						if native_draw_retained_glyph_run(command, page_x, page_y, scroll_y, f32(app.ctx.width), f32(app.ctx.height), text_color, 0, false) {
+						if native_draw_retained_glyph_run(*command, page_x, page_y, scroll_y, f32(app.ctx.width), f32(app.ctx.height), text_color, 0, false) {
 							return
 						}
 						if app.use_document_font {
@@ -6655,7 +6664,7 @@ fn (mut app BrowserApp) draw_command(source_command layout.PaintCommand, page_x 
 				shadow_color := app.paint_colors.color(command.color, command.opacity)
 				$if macos {
 					if app.ctx.native_rendering {
-						if native_draw_retained_glyph_run(command, page_x, page_y, scroll_y, f32(app.ctx.width), f32(app.ctx.height), shadow_color, f32(command.blur * font_scale), true) {
+						if native_draw_retained_glyph_run(*command, page_x, page_y, scroll_y, f32(app.ctx.width), f32(app.ctx.height), shadow_color, f32(command.blur * font_scale), true) {
 							return
 						}
 						if app.use_document_font {
@@ -6664,13 +6673,31 @@ fn (mut app BrowserApp) draw_command(source_command layout.PaintCommand, page_x 
 						}
 					}
 				}
-				app.draw_portable_shadow(command, page_x, page_y, scroll_y)
+				app.draw_portable_shadow(*command, page_x, page_y, scroll_y)
 			}
 		}
 		else {}
 	}
 }
 
+
+// enter_draw_command returns draw_command's working copy of `source` at the
+// current nesting depth. A local copy would be moved to the heap on every call
+// by current V: the command holds an inline transform array, and V cannot tell
+// that the accessors it is passed to keep no reference to it.
+fn (mut app BrowserApp) enter_draw_command(source layout.PaintCommand) &layout.PaintCommand {
+	if app.draw_command_depth == app.draw_command_copies.len {
+		persistent := platform.enter_persistent()
+		app.draw_command_copies << &layout.PaintCommand{}
+		platform.leave_persistent(persistent)
+	}
+	mut command := app.draw_command_copies[app.draw_command_depth]
+	app.draw_command_depth++
+	unsafe {
+		*command = source
+	}
+	return command
+}
 fn address_for_display(address string, cursor int, active bool, max_characters int) string {
 	if max_characters <= 0 {
 		return ''

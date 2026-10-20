@@ -715,7 +715,6 @@ pub enum CSSMathStyle_ {
 	compact
 }
 
-@[heap]
 pub struct CSSCustomProperty_ {
 pub:
 	important bool

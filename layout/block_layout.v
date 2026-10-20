@@ -464,7 +464,7 @@ fn layout_uncached_independent_formatting_context(mut state LayoutState, box &No
 				CSSPixels.new(0)
 			}
 			if box_state.line_boxes.len > 0 {
-				last_line := box_state.line_boxes.last()
+				last_line := unsafe { &box_state.line_boxes[box_state.line_boxes.len - 1] }
 				if last_line.has_block_level_box() {
 					automatic_height = automatic_height.plus(last_line.block_level_box_bottom_margin())
 				}
