@@ -5,6 +5,30 @@ import css
 import dom
 import html
 import json2
+import os
+import platform
+import time
+
+fn test_normal_window_observation_does_not_enable_screenshot_document_mode() {
+	path := os.join_path(os.temp_dir(), 'vox-normal-window-observation-${os.getpid()}.json')
+	defer {
+		os.unsetenv('VOX_NATIVE_OBSERVATION_DELAY_MS')
+		os.unsetenv('VOX_CAPTURE_AUDIT_PATH')
+		os.rm(path) or {}
+	}
+	os.setenv('VOX_CAPTURE_AUDIT_PATH', path, true)
+	mut document := html.parse_document('<!doctype html><title>Active observation</title><p>Retained content</p>')
+	defer { document.finalize() }
+	mut app := &BrowserApp{document: document}
+	assert !app.schedule_native_observation()
+	os.setenv('VOX_NATIVE_OBSERVATION_DELAY_MS', '1', true)
+	assert app.schedule_native_observation()
+	deadline := time.sys_mono_now() + time.second
+	for !os.is_file(path) && time.sys_mono_now() < deadline { platform.pump_native_events(0.01) }
+	audit := json2.decode[CaptureAudit](os.read_file(path)!)!
+	assert audit.title == 'Active observation'
+	assert app.screenshot_path == '' && !app.screenshot_scheduled
+}
 
 fn test_capture_audit_reads_retained_text_attributes_counts_and_geometry() {
 	mut document := html.parse_document('<!doctype html><title>Capture</title><style>body{margin:0}.row{width:70px;height:20px}</style><div class="row" data-key="one">Первый</div><div class="row" data-key="two">Second</div>')
@@ -16,7 +40,7 @@ fn test_capture_audit_reads_retained_text_attributes_counts_and_geometry() {
 		CaptureAuditSelector{name: 'count', selector: '.row', limit: 0},
 	]})!
 	assert audit.title == 'Capture'
-	assert audit.viewport_width == 200 && audit.viewport_height == 120
+	assert audit.viewport_width == 200 && audit.viewport_height == 232 - app.chrome_height()
 	assert audit.javascript_diagnostics == ['retained diagnostic']
 	assert audit.selections.len == 2
 	assert audit.selections[0].count == 2

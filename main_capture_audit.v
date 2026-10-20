@@ -7,6 +7,27 @@ import dom
 import html
 import json2
 import os
+import platform
+
+// Observe a normally active window after a benchmark's memory endpoint. The
+// screenshot launch mode intentionally changes document activity, so it cannot
+// serve as the content check for an ordinary scripted browsing measurement.
+fn (mut app BrowserApp) schedule_native_observation() bool {
+	delay_text := os.getenv('VOX_NATIVE_OBSERVATION_DELAY_MS')
+	if delay_text == '' { return false }
+	delay := delay_text.int()
+	if delay <= 0 { return false }
+	persistent := platform.enter_persistent()
+	defer { platform.leave_persistent(persistent) }
+	screenshot := os.getenv('VOX_NATIVE_OBSERVATION_SCREENSHOT')
+	mut timer := platform.Timer.create_single_shot(delay, fn [app, screenshot] () {
+		active := app.active_browser_tab()
+		active.write_capture_audit_if_requested()
+		if screenshot != '' { schedule_native_screenshot(screenshot) }
+	})
+	timer.start()
+	return true
+}
 
 // Optional observer output for reproducible native capture benchmarks. Reading
 // this snapshot does not execute page script, materialize image/font state, or

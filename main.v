@@ -7492,6 +7492,7 @@ fn main() {
 		native_rendering: $if macos { true } $else { false }
 		init_fn: fn (mut app BrowserApp) {
 			app.initialize_native_window()
+			app.schedule_native_observation()
 		}
 		cleanup_fn: fn (mut app BrowserApp) {
 			app.cleanup_browser_tabs()
