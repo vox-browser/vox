@@ -43,7 +43,10 @@ fn chromium_svg_image_can_share_recording(command layout.PaintCommand) bool {
 	}
 	for path in command.nested_viewport_commands {
 		if path.kind != 'draw_svg_path' || path.opacity != 1 { return false }
-		svg := path.svg()
+		// Read the payload directly: an accessor call on the loop's copy of the
+		// command makes current V move that copy to the heap.
+		if path.svg_data == unsafe { nil } { return false }
+		svg := path.svg_data
 		if svg.path_data.len == 0 || svg.stroke_dasharray.len > 0 || svg.svg_gradient_data != none
 			|| svg.fill_pattern != none || svg.stroke_pattern != none {
 			return false

@@ -155,14 +155,17 @@ pub fn chromium_raster_layer_plan(document &dom.Document, commands []PaintComman
 	mut composited_scrolls := map[int]bool{}
 	mut fixed_bounds := map[u64]LayoutRect{}
 	for entry in result.paint_order {
-		if chromium_user_scrollable_box(entry.box) {
-			composited_scrolls[entry.box.own_scroll_frame_index] = true
+		// Use the box pointer itself: reading its transform through the loop's
+		// entry copy makes current V move every copy to the heap.
+		box := entry.box
+		if chromium_user_scrollable_box(box) {
+			composited_scrolls[box.own_scroll_frame_index] = true
 		}
-		if entry.box.fixed_to_viewport && entry.box.layout_handle != unsafe { nil } {
-			node := unsafe { &Node(entry.box.layout_handle) }
+		if box.fixed_to_viewport && box.layout_handle != unsafe { nil } {
+			node := unsafe { &Node(box.layout_handle) }
 			if node.is_fixed_position() {
-				fixed_bounds[u64(voidptr(node))] = compatibility_affine_map_rect(
-					entry.box.paint_transform, entry.box.border_box())
+				fixed_bounds[u64(voidptr(node))] = compatibility_affine_map_rect(box.paint_transform,
+					box.border_box())
 			}
 		}
 	}

@@ -31,10 +31,14 @@ fn chromium_shared_recording_supported(commands []layout.PaintCommand,
 			}
 			'draw_svg_path' {
 				has_vectors = true
-				data := command.svg()
-				if data.svg_gradient_data != none || data.fill_pattern != none
-					|| data.stroke_pattern != none || data.stroke_dasharray.len > 0 {
-					return false
+				// Read the payload directly: an accessor call on the loop's copy of
+				// the command makes current V move that copy to the heap.
+				if command.svg_data != unsafe { nil } {
+					data := command.svg_data
+					if data.svg_gradient_data != none || data.fill_pattern != none
+						|| data.stroke_pattern != none || data.stroke_dasharray.len > 0 {
+						return false
+					}
 				}
 			}
 			'paint_nested_display_list' {

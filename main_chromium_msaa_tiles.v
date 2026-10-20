@@ -121,7 +121,12 @@ fn chromium_msaa_trigger_rect(command layout.PaintCommand) ?layout.LayoutRect {
 			if command.force_dark_role == .border {
 				return none
 			}
-			svg_data := command.svg()
+			// Read the payload directly: calling an accessor on this by-value
+			// command makes current V move the command to the heap on every call.
+			if command.svg_data == unsafe { nil } {
+				return none
+			}
+			svg_data := command.svg_data
 			stride := layout.compatibility_clip_path_segment_stride
 			if svg_data.path_data.len < stride {
 				return none
@@ -183,9 +188,12 @@ fn transformed_raster_bounds(transform [6]f64, x f64, y f64, width f64, height f
 	mut top := math.inf(1)
 	mut right := math.inf(-1)
 	mut bottom := math.inf(-1)
-	for corner in [[x, y], [x + width, y], [x, y + height], [x + width, y + height]] {
-		column := matrix[0] * corner[0] + matrix[2] * corner[1] + matrix[4]
-		row := matrix[1] * corner[0] + matrix[3] * corner[1] + matrix[5]
+	// The four corners, without allocating a list of them for every command.
+	for corner in 0 .. 4 {
+		corner_x := if corner & 1 == 0 { x } else { x + width }
+		corner_y := if corner < 2 { y } else { y + height }
+		column := matrix[0] * corner_x + matrix[2] * corner_y + matrix[4]
+		row := matrix[1] * corner_x + matrix[3] * corner_y + matrix[5]
 		left = math.min(left, column)
 		right = math.max(right, column)
 		top = math.min(top, row)
