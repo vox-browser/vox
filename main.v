@@ -558,6 +558,7 @@ struct PreloadedResource {
 	request_type string
 	adblock_replacement bool
 	response_headers []adblock.ResponseHeader
+	bytes_available_before_completion u64
 }
 
 // Keep the root executable linked against the translated support modules too. The visible page
@@ -1158,7 +1159,7 @@ fn fetch_browser_resource(reference string, base string, source_url string, requ
 		cache_key := if resource_response_varies_on_accept(headers) { resource_accept_cache_key(filtered.url, request_type) } else { filtered.url }
 		cache_resource_response_headers_with_status(cache_key, result.url, response.body, headers, response.status_code)
 	}
-	return PreloadedResource{url: resolved, body: response.body, source_url: owner_url, final_url: result.url, request_type: request_type, adblock_replacement: result.is_replacement, response_headers: headers}
+	return PreloadedResource{url: resolved, body: response.body, source_url: owner_url, final_url: result.url, request_type: request_type, adblock_replacement: result.is_replacement, response_headers: headers, bytes_available_before_completion: result.bytes_available_before_completion}
 }
 
 fn fetch_resource_in_background(resource_url string, source_url string, request_type string, results chan PreloadedResource) {
@@ -4610,7 +4611,8 @@ fn (mut app BrowserApp) create_image_from_resource_bytes(image_url string, bytes
 					}
 				}
 				if C.native_webp_yuv_paint_supported() != 0 && app.document != unsafe { nil }
-					&& app.document.font_rendering_policy() == .chromium {
+					&& app.document.font_rendering_policy() == .chromium
+					&& !app.webp_generator_requires_rgb(image_url, bytes) {
 					mut width := 0
 					mut height := 0
 					mut size := 0
