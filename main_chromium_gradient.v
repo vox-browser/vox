@@ -59,6 +59,29 @@ fn chromium_linear_gradient_points(gradient layout.LinearGradient, tile painting
 // are constant (invisible RGB is normalized below). Preserve original stops for these sRGB linear gradients rather
 // than quantizing an intermediate set of samples to eight bits.
 fn chromium_linear_gradient_stop_data(gradient layout.LinearGradient, opacity f64) ?[]f32 {
+	analysis := chromium_linear_gradient_stop_analysis(gradient) or { return none }
+	mut data := []f32{cap: analysis.count * 5}
+	for index in 0 .. analysis.count {
+		stop := chromium_gradient_stop(gradient.stops, gradient.colors, index)
+		color := if analysis.same_rgb && stop.color.a == 0 { analysis.visible_color } else { stop.color }
+		data << f32(color.r) / 255
+		data << f32(color.g) / 255
+		data << f32(color.b) / 255
+		data << f32(clamp(f64(stop.color.a) / 255 * opacity, 0.0, 1.0))
+		data << f32(stop.offset)
+	}
+	return data
+}
+
+struct ChromiumGradientStopAnalysis {
+	count         int
+	same_rgb      bool
+	visible_color css.Color
+}
+
+// Whether the original stops can be drawn as they are (see above), without
+// building their data: the checks run several times for every gradient draw.
+fn chromium_linear_gradient_stop_analysis(gradient layout.LinearGradient) ?ChromiumGradientStopAnalysis {
 	if gradient.kind != 'linear' || gradient.radial { return none }
 	if method := gradient.interpolation_method {
 		if method is css.RectangularColorSpace {
@@ -67,21 +90,13 @@ fn chromium_linear_gradient_stop_data(gradient layout.LinearGradient, opacity f6
 			return none
 		}
 	}
-	mut stops := gradient.stops.clone()
-	if stops.len == 0 {
-		for index, color in gradient.colors {
-			stops << layout.GradientStop{color, if gradient.colors.len > 1 {
-				f64(index) / f64(gradient.colors.len - 1)
-			} else {
-				0.0
-			}}
-		}
-	}
-	if stops.len == 0 { return none }
-	first := stops[0].color
+	count := if gradient.stops.len > 0 { gradient.stops.len } else { gradient.colors.len }
+	if count == 0 { return none }
+	first := chromium_gradient_stop(gradient.stops, gradient.colors, 0).color
 	// A fully transparent stop contributes no RGB in premultiplied CSS.
 	mut visible_color := first
-	for stop in stops {
+	for index in 0 .. count {
+		stop := chromium_gradient_stop(gradient.stops, gradient.colors, index)
 		if stop.color.a != 0 {
 			visible_color = stop.color
 			break
@@ -90,7 +105,8 @@ fn chromium_linear_gradient_stop_data(gradient layout.LinearGradient, opacity f6
 	mut same_alpha := true
 	mut same_rgb := true
 	mut previous := f64(0)
-	for stop in stops {
+	for index in 0 .. count {
+		stop := chromium_gradient_stop(gradient.stops, gradient.colors, index)
 		if math.is_nan(stop.offset) || math.is_inf(stop.offset, 0) || stop.offset < previous
 			|| stop.offset > 1 {
 			return none
@@ -101,16 +117,20 @@ fn chromium_linear_gradient_stop_data(gradient layout.LinearGradient, opacity f6
 			&& stop.color.g == visible_color.g && stop.color.b == visible_color.b))
 	}
 	if !same_alpha && !same_rgb { return none }
-	mut data := []f32{cap: stops.len * 5}
-	for stop in stops {
-		color := if same_rgb && stop.color.a == 0 { visible_color } else { stop.color }
-		data << f32(color.r) / 255
-		data << f32(color.g) / 255
-		data << f32(color.b) / 255
-		data << f32(clamp(f64(stop.color.a) / 255 * opacity, 0.0, 1.0))
-		data << f32(stop.offset)
+	return ChromiumGradientStopAnalysis{count, same_rgb, visible_color}
+}
+
+// The stop at `index`: the gradient's own stops, or its colors spread evenly.
+// Indexing rather than collecting them keeps the gradient itself off the heap.
+fn chromium_gradient_stop(stops []layout.GradientStop, colors []css.Color, index int) layout.GradientStop {
+	if stops.len > 0 {
+		return stops[index]
 	}
-	return data
+	return layout.GradientStop{colors[index], if colors.len > 1 {
+		f64(index) / f64(colors.len - 1)
+	} else {
+		0.0
+	}}
 }
 
 // Send the background's own clip into the same GPU draw as its gradient.
@@ -118,11 +138,16 @@ fn chromium_linear_gradient_stop_data(gradient layout.LinearGradient, opacity f6
 fn chromium_gradient_uses_gpu_clip(command layout.PaintCommand, gradient layout.LinearGradient) bool {
 	return command.gradient_background_layer
 		&& (gradient.x1 != gradient.x2 || gradient.y1 != gradient.y2)
-		&& chromium_linear_gradient_stop_data(gradient, command.opacity) != none
+		&& chromium_linear_gradient_stop_analysis(gradient) != none
 }
 
 fn chromium_gradient_clip_data(command layout.PaintCommand) [12]f32 {
-	image := command.image()
+	// Read the payload directly: an accessor call on this by-value command
+	// makes current V move the command to the heap.
+	if command.image_data == unsafe { nil } {
+		return [12]f32{}
+	}
+	image := command.image_data
 	r := image.image_clip_radii
 	return [f32(image.image_clip_x), f32(image.image_clip_y), f32(image.image_clip_width),
 		f32(image.image_clip_height), f32(r.top_left.x), f32(r.top_left.y), f32(r.top_right.x),

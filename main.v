@@ -4386,14 +4386,14 @@ fn native_gradient_stop_data(gradient layout.LinearGradient, opacity f64) []f32 
 	return data
 }
 
-fn draw_native_css_gradient_tile(command layout.PaintCommand, gradient layout.LinearGradient,
+fn draw_native_css_gradient_tile(command &layout.PaintCommand, gradient layout.LinearGradient,
 	tile painting.Rect, stop_data []f32, matrix [6]f64, page_x f32, page_y f32,
 	scroll_y f64, canvas_height f32, chromium bool) bool {
 	$if macos {
 		if stop_data.len < 5 {
 			return false
 		}
-		path_data := native_gradient_clip_path(command, tile)
+		path_data := native_gradient_clip_path(*command, tile)
 		if path_data.len < layout.compatibility_clip_path_segment_stride {
 			return false
 		}
@@ -4401,7 +4401,7 @@ fn draw_native_css_gradient_tile(command layout.PaintCommand, gradient layout.Li
 			if gpu_stops := chromium_linear_gradient_stop_data(gradient, command.opacity) {
 				points := chromium_linear_gradient_points(gradient, tile)
 				if command.gradient_background_layer {
-					clip := chromium_gradient_clip_data(command)
+					clip := chromium_gradient_clip_data(*command)
 					ancestor_index := chromium_gradient_gpu_ancestor_clip_index(command)
 					ancestor := if ancestor_index >= 0 {
 						chromium_paint_clip_data(command.clip_list.items[ancestor_index])
@@ -5938,7 +5938,7 @@ fn (mut app BrowserApp) draw_command(source_command layout.PaintCommand, page_x 
 					}
 					$if macos {
 						if app.ctx.native_rendering
-							&& draw_native_css_gradient_tile(*command, gradient, tile, native_stop_data, matrix, page_x, page_y, scroll_y, f32(app.ctx.height), app.document != unsafe { nil } && app.document.font_rendering_policy() == .chromium) {
+							&& draw_native_css_gradient_tile(command, gradient, tile, native_stop_data, matrix, page_x, page_y, scroll_y, f32(app.ctx.height), app.document != unsafe { nil } && app.document.font_rendering_policy() == .chromium) {
 							continue
 						}
 					}
