@@ -14093,6 +14093,105 @@ Chrome parity remains unestablished. Prior Chrome observed-descendant and
 content/coalition diagnostics use different endpoints and content states.
 An equivalent cross-browser content/endpoint cohort is still required.
 
+## Reject the first larger text-shape cache index
+
+Round144 applies complete feature `c85909ed` to accepted142. Three exact
+authored insertion/replacement hunks plus the whole new helper file add an
+integer index for caches with at least16 entries. The owner vector stays in
+insertion order; the index groups equal text stably, and the original complete
+shape key still determines a hit. Misses, normal-mode nonpopulation and glyph
+fork ownership remain. All four original runtime Git hunks reconstruct the
+whole authored files exactly and apply without a source projection or shim.
+Independent Root item-buffer/arena changes remain excluded.
+
+Four new focused cases plus two exact unchanged immutable-owner cases pass
+both C-O2 GC modes with the pinned normal browser compiler: **six cases/8,430
+assertions each**. They cover every ordered key/duplicate, small-cache cutoff,
+append/clear/refill and stale-index fallback, all shape-key variants, immutable
+owners, collection and normal misses. Both actual V-driver exits are0. The
+original summary reader recognized only the current compiler's `main` prefix;
+the compatibility compiler prints `layout`. Its original failed receipts stay
+retained. A read-only reader authenticates all six exact rows and actual
+zero exits without repeating a case. Round144 reuses those identical complete
+runtime/fixture results. Common12 cases pass60 assertions per configuration;
+accepted142-final supplies the unchanged before evidence.
+
+Before any144 performance build or sample, the local scene is sealed. Each of
+the existing64 Unicode intrinsic spans receives the first paragraph of at
+least40 words from the identical frozen GitHub body: the selected paragraph
+has44 words. The128 indentation blocks,192 independent text checks, CSS,
+complete public pipeline and counter boundaries stay the same. The paragraph,
+source-body and fixture hashes are in
+`Build/v/instruction-opt144-local-fixture-declaration.json`. This is a local
+prose target; the browser cache, viewport and first-paint endpoint stay fixed.
+Setup, eight warmups, forced collection and assertions are outside the counter;
+16 fresh parse/layout/record/paint-command/hit/finalize pipelines are inside.
+
+Three fixed alternating pairs give medians **73,088,663,205 →
+73,464,459,776 retired instructions**, **0.51416534% more**,
+with **1/3 wins**. All six actual exits are0 and every checksum is
+8,580,676,368. The first pair's large improvement and the other two slower
+pairs all remain. No completed observation is extended, filtered or rerun.
+The declared local gate actually exits1; the native launcher also exits1 with
+an empty job list. **No normal native candidate, profile, browser primary,
+independent whole-C audit, screenshot, broad batch, bundle or GC pass is
+claimed.** The declared30-pair seed144 browser cohort never starts. C-only
+normal-app frontend/typechecking actually exits0; read-only C-scope discovery
+is not an audit approval. Durable focused/local/frontend C and binary hashes
+are indexed by `Build/v/instruction-opt144-durable-archives.json`.
+
+Accepted142 remains the performance control, broad baseline and verified app;
+observed carry and repeatable page credit stay0. The committed implementation
+has no accepted page credit. Its extra range lookup, position mapping and
+index maintenance remain candidates for review before further optimization.
+No new claimed result uses a historical browser median.
+
+Supplementary current-V verification is separate from this passed frozen-runtime
+scope. Two current working-tree Boehm fixtures fail before any case on a
+concurrent immutable-glyph binding in `viewport_paint_entries.v`; their unfinished
+GC-none compiler jobs are explicitly terminated with actual driver exits-15,
+zero cases and preserved logs. A complete pinned committed-master snapshot
+passes the current checker but initially lacks its generated native regex
+archive. Its archive reader then collides on two retained C outputs and loses
+separate V-driver exits, which remain unknown. The first retained-response-file
+native resumption actually exits1 on an unqualified closure symbol; no source
+alias or shim is introduced. Fresh supplementary jobs supply a frozen copy of
+the existing generated native dependency and explicitly disable compiler retry.
+Their actual terminal receipts are persisted before archive processing. These
+jobs remain separately scoped; this round claims no completed current-V runtime
+pass from the earlier failures. Original C, logs and per-driver receipts remain
+under the `Build/v/intrinsic-shape-order-*` evidence paths.
+
+After143 validation, one separately declared startup attribution runs on
+accepted142. The native build, observer, browser and restoration audit actually
+exit0, with a real1024×768PNG and zero counter failures. Every category is
+owner-thread outermost but reads the process counter; categories overlap and
+include other-thread work and instrumentation, so they must not be summed or
+interpreted as self work:
+
+| Scope | Calls | Inclusive process instructions |
+| --- | ---: | ---: |
+| V initialization | 1 | 260,320,870 |
+| Builtin initialization | 1 | 8,878 |
+| Translated-module links | 1 | 8,144 |
+| Font-fetch host installation | 1 | 11,025,753 |
+| Browser font setup | 1 | 48,707,734 |
+| Initial document selection | 1 | 63,930 |
+
+The first observed `_vinit` entry already has an absolute process count of
+**2,085,173,500 instructions**.
+That earlier work is not attributed to `_vinit`. No subtraction, extrapolation
+or page credit is taken. The full original C restores byte for byte; native
+inputs and the frozen4eef helper remain unchanged. Evidence:
+`Build/v/instruction-startup143-final-audit.json`; C archive SHA256
+`a2fa5b5d0dc33353f64af2ab052d4c71bded29a402525b4324b16df30db795ba`. The original wrapper compile exits1 on invalid
+`void` call arguments; the corrected generator's first retry also exits1 on
+an existing-log collision before compilation. Both are retained; only the
+unfinished corrected native command resumes, before its sole observation.
+
+Canonical app, GUI and concurrent work are preserved. Chrome parity remains
+unestablished: prior Chrome measurements use different endpoints/content.
+
 ## Causes and changes
 
 - The V 0.5.2 compatibility compiler's `-prod` Boehm code repeatedly snapshots

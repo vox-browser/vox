@@ -2307,6 +2307,12 @@ evidence](docs/translation-audit/NATIVE_MEDIA_WHEEL_RAW_HANDLER.md).
   PairedCI[-32,009,294.5,36,665,142];repeatable credit 0;all60 retained;same1/2/1 preparation.
   Focused viewport exact;broad skipped below 5,000,000-instruction threshold;prior carry0;strict entire-program independent C audit.
   Accepted control 142;isolated143 app/GC1+override2;canonical/GUI/foreign work preserved;Chrome open.
+  Larger shape-index round144 (`c85909ed`):all4 runtime Git hunks/3paths;6cases/8430asserts eachGC.
+  Common60/config;normal C-only frontend0;sealed44-word prose/public16 pipelines +0.514165%/1win/all6actual0.
+  Local gate1/native launcher1/jobs0;zero normal/profile/page/broad/bundle work;accepted142/carry0 retained.
+  Original namespace-reader and supplementary current-Root build failures retained;no shim or invented exits.
+  Separate one-observation startup attribution actual0;full C restores byteexact;zero page credit.
+  Canonical/GUI/foreign work preserved;Chrome parity remains open.
 - Outside instruction-count optimization, run broad regression suites once per
   ten completed fixes, not after every fix.
   Broad suites include full translation/package test batches, the full LibJS AST
