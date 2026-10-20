@@ -100,3 +100,23 @@ fn test_deferred_completion_can_retain_its_receiver_outside_the_receivers_alloca
 	assert state.delivered
 	assert storage.arena.usage().used == 0
 }
+
+fn test_native_worker_completion_waits_for_cooperative_work_to_finish() {
+	mut storage := new_retained_arena('deferred cooperative document')
+	state := &DeferredThreadObservation{}
+	mut scope := storage.enter()
+	payload := 'document-owned result'.bytes()
+	invoker := capture_native_deferred_invoker() or { scope.finish(); storage.release(); return }
+	scope.finish()
+	storage.release()
+	mut work := begin_cooperative_work(unsafe { nil }, fn (_ voidptr) {})
+	worker := spawn post_document_owned_result(invoker, state, payload)
+	worker.wait()
+	pump_native_events(0.02)
+	assert !state.delivered
+	work.finish()
+	deadline := time.sys_mono_now() + time.second
+	for !state.delivered && time.sys_mono_now() < deadline { pump_native_events(0.05) }
+	assert state.delivered
+	assert storage.arena.usage().used == 0
+}

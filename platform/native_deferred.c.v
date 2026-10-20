@@ -81,6 +81,9 @@ pub fn (invoker NativeDeferredInvoker) deferred_invoke(callback fn ()) {
 }
 
 fn invoke_native_deferred_call(pointer voidptr) {
+	// A UI checkpoint can pump the native loop from a temporary layout/paint
+	// arena. Worker completions follow the same run-to-completion rule as timers.
+	if defer_native_call_during_cooperative_work(pointer) { return }
 	$if prealloc {
 		call := unsafe { &NativeDeferredCall(pointer) }
 		defer {

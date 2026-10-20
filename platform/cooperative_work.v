@@ -13,6 +13,7 @@ mut:
 	started_ns              i64
 	delivering              bool
 	deferred_timers         []DeferredWorkTimer
+	deferred_native_calls   []voidptr
 	heap_adjustment_allowed bool
 	heap_policy_changed     bool
 	previous_heap_divisor   usize
@@ -124,6 +125,18 @@ fn defer_timer_during_cooperative_work(timer &Timer) bool {
 	return true
 }
 
+fn defer_native_call_during_cooperative_work(pointer voidptr) bool {
+	$if macos || linux {
+		if !C.libweb_v_is_main_thread() { return false }
+	}
+	mut state := cooperative_work_state_
+	if state == unsafe { nil } { return false }
+	persistent := enter_persistent()
+	state.deferred_native_calls << pointer
+	leave_persistent(persistent)
+	return true
+}
+
 pub fn (mut scope CooperativeWorkScope) finish() {
 	state := scope.state
 	if state == unsafe { nil } { return }
@@ -134,6 +147,15 @@ pub fn (mut scope CooperativeWorkScope) finish() {
 		}
 	}
 	cooperative_work_state_ = unsafe { nil }
+	if state.deferred_native_calls.len > 0 {
+		persistent := enter_persistent()
+		pending := state.deferred_native_calls.clone()
+		mut delivery := Timer.create_single_shot(0, fn [pending] () {
+			for pointer in pending { invoke_native_deferred_call(pointer) }
+		})
+		delivery.start()
+		leave_persistent(persistent)
+	}
 	if state.deferred_timers.len > 0 {
 		persistent := enter_persistent()
 		defer { leave_persistent(persistent) }
