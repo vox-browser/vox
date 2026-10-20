@@ -2300,6 +2300,13 @@ evidence](docs/translation-audit/NATIVE_MEDIA_WHEEL_RAW_HANDLER.md).
   Focused viewport exact;broad passed;prior carry4192387.5 included in gate.
   Accepted control 142;isolated142 app/GC1+override2;strict full independent C and exact16default-owner proof.
   Reader failures retained;no successful runtime repeats;canonical/GUI/foreign work preserved;Chrome parity open.
+  Retained length round143 (`6c2c56d9`):one authored Git hunk/one function;7cases/1650asserts eachGC.
+  CurrentV Root:four new cases/536asserts eachGC;old fullRoot C-closure failures retained separately.
+  Common60/config;canonical small scene/local16 full pipelines -1.807659%/2wins/all6 actual0.
+  Fresh page 16,721,401,895→16,724,246,003;15/30wins;point -2,844,108.
+  PairedCI[-32,009,294.5,36,665,142];repeatable credit 0;all60 retained;same1/2/1 preparation.
+  Focused viewport exact;broad skipped below 5,000,000-instruction threshold;prior carry0;strict entire-program independent C audit.
+  Accepted control 142;isolated143 app/GC1+override2;canonical/GUI/foreign work preserved;Chrome open.
 - Outside instruction-count optimization, run broad regression suites once per
   ten completed fixes, not after every fix.
   Broad suites include full translation/package test batches, the full LibJS AST

@@ -13954,6 +13954,145 @@ Chrome parity remains unestablished. Prior Chrome observed-descendant and
 content/coalition diagnostics use different endpoints and content states. An equivalent
 cross-browser content/endpoint cohort is still required.
 
+## Dispatch retained CSS lengths through their existing owner
+
+Round 143 applies complete feature `6c2c56d9` to accepted round 142. The one
+original Git hunk changes `Length.from_style_value()`: retained percentages and
+calculations enter the existing conversion through their existing typed owner;
+other retained non-length values use the same basis/zero fallback. Typed
+lengths and the complete serialized fallback remain unchanged. The generic
+parsing helper is unchanged. The complete authored function and original file
+reconstruct exactly; independent Root changes are excluded.
+
+Four new focused cases pass current V on current-source snapshots in both
+C-O2 GC modes: **536 assertions per mode**, covering retained type precedence,
+stale serialization, percentage signs/units/bits, calculations, serialized
+fallback, live handles and retained snapshots. The accepted142 runtime plus
+the whole authored feature passes those four original cases and three
+unchanged retained-length cases with the pinned compatibility compiler:
+**seven cases/1,650 assertions per GC mode**. Round143 authenticates and reuses
+these identical completed frozen results without rerun. Common 12 cases pass
+60 assertions per configuration; 142-final supplies the unchanged before
+configuration. These separate scopes do not establish modern Root compatibility
+with the old compiler.
+
+The unchanged canonical small local scene was sealed before any 143 performance
+build or sample: 64 Unicode paragraphs, 128 indentation blocks, 192 independent
+text checks and 16 complete public parse/layout/record/paint-command/hit/finalize
+pipelines per sample. Earlier functional-only feature builds are disclosed.
+Setup, eight warmups, forced GC and assertions are outside the counter. Three
+fixed alternating pairs give **32,623,711,724 →
+32,033,986,303 retired instructions (-1.80765888%)**,
+**2/3 wins**. All six actual exits are zero and checksums match
+7,963,486,608. The slower third pair remains. No completed measurement is
+filtered, extended or rerun.
+
+The strict C audit authenticates the one source hunk, 120 native inputs,
+37 frozen quoted includes and exact normal native arguments. The entire
+candidate program equals an independent C-only regeneration after established
+compiler identities and four byte-identical helper reorderings. Every function,
+type and global remains in that comparison. Against control, only the length
+dispatcher's body changes; all remaining function bodies, records, globals and
+resources match. All 493 builtin and 176 protected decoder/filter/arena bodies
+remain unchanged. Serialized fallback source and generic helper are exact.
+
+Actual normal C-O2 native build, signing and frozen-library startup exit zero.
+Full-process C-O1/no-inline Boehm profiles remain enabled throughout main without
+a filter or reset. Each executes 25 complete pipelines and 26 parse/layout/
+record calls. The diagnostic counts are:
+
+| Function | Before calls | Final calls |
+| --- | ---: | ---: |
+| `css__Length__static__from_style_value` | 176,852 | 176,852 |
+| `css__parsed_length_percentage_style_value_from_dom_style_value` | 0 | 0 |
+| `css__typed_style_value_logic_from_dom` | 175,265 | 175,265 |
+| `css__Length__static__from_style_value_logic` | 31,252 | 31,252 |
+
+`Length.make_px()`, `Size.new()` and the existing logic conversion retain their
+call counts. The generic helper has **zero calls in both runs**: its initialized
+counter, function-entry increment and nonzero-only report printer are
+independently authenticated in actual generated C. The original summary
+actually exited1 because it predicted a decrease. That failed expectation and
+both successful profile drivers remain retained under
+`Build/v/instruction-opt143-profile-expectation-finding/`. A read-only extraction
+records the unchanged counts without rerunning either profile. The small scene
+does not exercise this new retained-type branch, so its observed local point
+cannot establish causal path coverage. Profile counts receive no hardware or
+page credit; whole-page evidence remains separate.
+
+The predeclared 30 alternating browser pairs use the frozen 359-body cache,
+4eef helper and 1024×768 document viewport. The endpoint is
+`native.scopes.navigation_to_first_document_paint[0]`. Fresh matching medians
+are **16,721,401,895 → 16,724,246,003
+retired instructions**: observed saving **-2,844,108**
+(0.01700879%), **15/30 wins**. Paired median
+saving is **-4,689,431**. The 30,000 paired bootstrap
+resamples with seed143 give 95% interval **[-32,009,294.5, 36,665,142]**.
+Repeatable page credit is **0**. The candidate is
+**retained as an unaccepted attempt** under
+the positive-point integration policy; no historical median is subtracted.
+
+All 60 primaries remain: 60 actual PNGs, 0 explicit counter-only
+recoveries and 2 archived pre-primary startup retries. First
+preparation is exactly 1 installation/2 geometry/1 paint. Later refreshes
+remain separate (0); foreground transitions
+retained: 0. Available captures are
+1024×768 and every pixel outside the original skeleton bands is exact.
+Recovered unknown exits or missing captures, if any, remain explicit.
+
+The focused viewport is pixel-exact. Prior observed carry is zero; the broad
+gate adds only positive observed savings, so this attempt contributes **0**.
+Broad result: **skipped below 5,000,000-instruction threshold**.
+The total stays below5M;no broad execution is claimed. Both focused capture loader receipts pin the frozen helper.
+The isolated artifact is `/Users/alex/code/vox2/Build/v/Vox-opt143.app`. Library pinning, signing,
+verification, smoke and GC checks all actually exit zero. Its instruction text
+matches the measured binary and its installed helper is the frozen4eef image.
+GC has actual collections with default marker1 and override2. Only canonical
+Info.plist/resources are copied, excluding concurrent executables and compiler
+temporaries. The canonical app, GUI and concurrent Root work are preserved.
+Accepted control is **142**; broad baseline is
+**142**, with observed carry
+**0**.
+Durable source/C/profile/binary archive hashes are indexed in
+`Build/v/instruction-opt143-durable-archives.json`. Frozen results add no
+coverage or credit to independent current-source changes.
+
+Original pre-runtime fixture-path and option-setup failures are retained under
+`Build/v/length-typed-dispatch-fixture-path-finding/` and
+`Build/v/length-typed-dispatch-current-option-setup-finding/`. Modern Root with
+the compatibility compiler fails native C on the unrelated
+`closure__closure_try_destroy` declaration; both failed batches retain actual
+exit1 and zero executed cases. No shim or partial Root import was introduced.
+The original current-V test summary counted four cases; the derived focused
+reader authenticates 536 assertions from exact per-case rows. Its original
+reader syntax failure remains retained. The explicitly scoped successful jobs
+are indexed by `Build/v/length-typed-dispatch-focused-final-audit.json`.
+
+The separate sampled self-thread diagnostic declared after142 validation has
+now completed on accepted141. Every64th eligible owner-thread outermost entry,
+starting at64, is sampled once in one fixed observation:
+
+| Scope | Eligible calls | Completed samples | Sampled inclusive self-thread instructions |
+| --- | ---: | ---: | ---: |
+| Inline iterator construction | 27,564 | 430 | 30,481,656 |
+| Inline item generation | 27,564 | 430 | 27,789,952 |
+| Append text item | 374,596 | 5,853 | 16,141,175 |
+| Update last line | 52,620 | 822 | 6,281,510 |
+| Line builder construction | 32,244 | 503 | 2,785,355 |
+| Shape text | 8,960 | 140 | 1,453,346 |
+
+All attempts complete with zero counter failures. Actual native, observer and
+browser exits are zero, with a real1024×768PNG. The entire original141 C restores
+byte for byte, and normal process accounting is unchanged. Categories overlap;
+sampled totals include private counter/wrapper overhead and fixed sampling can
+alias workload. They are never summed, extrapolated, subtracted or credited to
+a page. Evidence: `Build/v/instruction-hotspots142-final-audit.json`; C archive
+SHA256 `da4024c1798ed59b98c43fdef820d8741e810218acf37aded83e82ae11c2b48c`.
+
+Chrome parity remains unestablished. Prior Chrome observed-descendant and
+content/coalition diagnostics use different endpoints and content states.
+An equivalent cross-browser content/endpoint cohort is still required.
+
 ## Causes and changes
 
 - The V 0.5.2 compatibility compiler's `-prod` Boehm code repeatedly snapshots
