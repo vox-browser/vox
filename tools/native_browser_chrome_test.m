@@ -46,6 +46,28 @@ int main(void) { @autoreleasepool {
 	assert(!back.bordered && !forward.bordered && !reload.bordered);
 	assert(back.image && forward.image && reload.image && !forward.enabled);
 	assert(!address.bezeled && !address.bordered && !address.drawsBackground);
+	assert([window makeFirstResponder:address]);
+	NSText *editor = address.currentEditor;
+	assert(editor);
+	editor.selectedRange = NSMakeRange(7,4);
+	// UI2 reconciles its children from the bottom on every refresh. Its first
+	// child moves below our unmanaged background, followed by the other controls.
+	// Styling must restore the background behind them even when it already exists.
+	NSView *previous = nil;
+	for (NSView *control in @[back,forward,reload,address]) {
+		[toolbar addSubview:control positioned:previous ? NSWindowAbove : NSWindowBelow relativeTo:previous];
+		previous = control;
+	}
+	native_browser_chrome_style_controls((__bridge void *)toolbar,(__bridge void *)back,(__bridge void *)forward,
+		(__bridge void *)reload,(__bridge void *)address);
+	assert(toolbar.subviews.firstObject == vox_chrome_toolbar_background);
+	NSPoint addressPoint = [toolbar convertPoint:NSMakePoint(110,44) toView:toolbar.superview];
+	NSView *addressHit = [toolbar hitTest:addressPoint];
+	assert(addressHit == address || [addressHit isDescendantOf:address]);
+	assert([address.stringValue isEqualToString:@"chrome://apps"]);
+	assert(window.firstResponder == editor && NSEqualRanges(editor.selectedRange, NSMakeRange(7,4)));
+	[window endEditingFor:address];
+	assert([address.stringValue isEqualToString:@"chrome://apps"]);
 	native_browser_tabs_update((__bridge void *)toolbar,NULL,tab_action,1,0,0,1,184);
 	native_browser_tab_title(0,(const unsigned char *)"Apps",4);
 	int windowButtons=0;

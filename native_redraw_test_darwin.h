@@ -15,6 +15,7 @@ void native_wake_browser(void);
 @end
 
 @implementation VoxNativeRedrawTestView
+- (BOOL)isHidden { return NO; }
 - (NSRect)bounds { return NSMakeRect(0, 0, 320, 200); }
 - (id)window { return self.owningWindow; }
 - (NSArray *)subviews { return self.children ?: @[]; }

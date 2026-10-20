@@ -99,8 +99,10 @@ static void native_browser_chrome_style_controls(void *toolbar_pointer, void *ba
 		[vox_chrome_toolbar_background removeFromSuperview];
 		vox_chrome_toolbar_background = [[VoxBrowserToolbarBackground alloc] initWithFrame:toolbar.bounds];
 		vox_chrome_toolbar_background.autoresizingMask = NSViewWidthSizable | NSViewHeightSizable;
-		[toolbar addSubview:vox_chrome_toolbar_background positioned:NSWindowBelow relativeTo:nil];
 	}
+	// UI2 reorders its managed children during reconciliation. Keep this native
+	// background below them after every refresh, including focus/resize updates.
+	[toolbar addSubview:vox_chrome_toolbar_background positioned:NSWindowBelow relativeTo:nil];
 	vox_chrome_toolbar_background.frame = toolbar.bounds;
 	vox_chrome_toolbar_background.needsDisplay = YES;
 	NSButton *buttons[] = {(__bridge NSButton *)back_pointer, (__bridge NSButton *)forward_pointer, (__bridge NSButton *)reload_pointer};

@@ -236,7 +236,12 @@ static void native_consider_largest_view(NSView *view, NSView **largest_view, CG
 }
 
 static NSView *native_browser_view(void) {
-	NSWindow *window = [NSApp mainWindow];
+	// Native field editors and app switching can make an auxiliary window key
+	// or main. Keep using the drawable's owning window while it is attached.
+	NSWindow *window = [native_cached_browser_view window];
+	if (window == nil) {
+		window = [NSApp mainWindow];
+	}
 	if (window == nil) {
 		window = [NSApp keyWindow];
 	}
