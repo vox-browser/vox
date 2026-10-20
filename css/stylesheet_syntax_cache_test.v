@@ -30,11 +30,11 @@ fn test_shared_stylesheet_syntax_keeps_cssom_and_document_contexts_independent()
 	mut first := first_parser.parse_as_css_stylesheet('https://syntax-one.test/a.css', none)
 	second := second_parser.parse_as_css_stylesheet('https://syntax-two.test/b.css', none)
 	assert first.rules.length() == 2 && second.rules.length() == 2
-	assert first.rules.rules[1].declaration?.deferred_declarations_?.params.document == first_document
-	assert second.rules.rules[1].declaration?.deferred_declarations_?.params.document == second_document
-	assert first.rules.rules[1].parent_style_sheet? == first
-	assert second.rules.rules[1].parent_style_sheet? == second
-	assert first.rules.rules[1] != second.rules.rules[1]
+	assert voidptr(first.rules.rules[1].declaration?.deferred_declarations_?.params.document) == voidptr(first_document)
+	assert voidptr(second.rules.rules[1].declaration?.deferred_declarations_?.params.document) == voidptr(second_document)
+	assert voidptr(first.rules.rules[1].parent_style_sheet?) == voidptr(first)
+	assert voidptr(second.rules.rules[1].parent_style_sheet?) == voidptr(second)
+	assert voidptr(first.rules.rules[1]) != voidptr(second.rules.rules[1])
 	mut declaration := first.rules.rules[1].style()?
 	declaration.set_property('color', 'blue', '')!
 	assert second.rules.rules[1].style()?.get_property_value('color') == 'red'
