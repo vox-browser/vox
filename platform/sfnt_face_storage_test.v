@@ -156,6 +156,9 @@ fn test_sfnt_streaming_real_collection_tables_metrics_and_outlines_match_the_leg
 		indices << [0, 17, 1, 0, 0]
 	}
 	for row, path in paths {
+		// Previous fixture faces may leave address-keyed glyph metrics behind.
+		// Exercise their ownership across collection before decoding another face.
+		gc_collect()
 		raw := os.read_bytes(path)!
 		legacy := sfnt_storage_test_legacy_outline_bytes_for_face(raw, indices[row]) or { panic('legacy adapter rejected real face') }
 		compact := read_outline_face_bytes(path, indices[row]) or { panic('stream reader rejected real face') }
