@@ -1,7 +1,25 @@
 module main
 
+import dom
+import layout
 import math
 import painting
+
+// The display list of an SVG image document laid out at `width`×`height`.
+// SVG backgrounds are replayed, and inspected for MSAA, for every tile of
+// every recording; a document already laid out at that size keeps its list.
+fn svg_image_document_display_list(svg_document &dom.Document, width int, height int) ?&dom.DisplayList {
+	mut document := unsafe { &dom.Document(svg_document) }
+	viewport := document.viewport_rect()
+	if viewport.width == f64(width) && viewport.height == f64(height)
+		&& document.layout_is_up_to_date() && !document.needs_style_update_after_layout() {
+		if list := document.cached_display_list() {
+			return list
+		}
+	}
+	_ = layout.run_document_layout(svg_document, f64(width), f64(height)) or { return none }
+	return document.record_display_list()
+}
 
 struct ChromiumSVGBackgroundReplay {
  viewport_width int

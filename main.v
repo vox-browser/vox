@@ -6432,22 +6432,8 @@ fn (mut app BrowserApp) draw_command(source_command layout.PaintCommand, page_x 
 							C.native_add_corner_rounded_clip(f32(clip_x), f32(clip_y), f32(replay.viewport_width), f32(replay.viewport_height), 0, 0, 0, 0, 0, 0, 0, 0, f32(m[0]), f32(m[1]), f32(m[2]), f32(m[3]), f32(m[4]), f32(m[5]), page_x, page_y, f32(scroll_y), f32(app.ctx.height))
 						}
 					}
-					// Every frame replays each tile. An image document that is
-					// already laid out at this size keeps its recorded list.
-					svg_viewport := mutable_svg_document.viewport_rect()
-					mut nested_display_list := ?&dom.DisplayList(none)
-					if svg_viewport.width == f64(replay.viewport_width)
-						&& svg_viewport.height == f64(replay.viewport_height)
-						&& mutable_svg_document.layout_is_up_to_date()
-						&& !mutable_svg_document.needs_style_update_after_layout() {
-						nested_display_list = mutable_svg_document.cached_display_list()
-					}
-					if nested_display_list == none {
-						if nested_layout := layout.run_document_layout(svg_document, f64(replay.viewport_width), f64(replay.viewport_height)) {
-							_ = nested_layout
-							nested_display_list = mutable_svg_document.record_display_list()
-						}
-					}
+					nested_display_list := svg_image_document_display_list(svg_document,
+						replay.viewport_width, replay.viewport_height)
 					if display_list := nested_display_list {
 						for nested_command in layout.display_list_commands(display_list) {
 							transformed := layout.paint_command_for_nested_viewport(nested_command, replay.transform,

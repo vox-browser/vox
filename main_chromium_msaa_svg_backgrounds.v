@@ -43,9 +43,8 @@ fn chromium_svg_background_msaa_rects(command layout.PaintCommand) []layout.Layo
 		} else {
 			painting.IntPoint{destination.x, destination.y}
 		}
-		_ = layout.run_document_layout(svg_document, f64(replay.viewport_width),
-			f64(replay.viewport_height)) or { continue }
-		list := document.record_display_list() or { continue }
+		list := svg_image_document_display_list(svg_document, replay.viewport_width,
+			replay.viewport_height) or { continue }
 		viewport_bounds := transformed_raster_bounds(replay.transform, f64(offset.x), f64(offset.y),
 			f64(replay.viewport_width), f64(replay.viewport_height))
 		for nested in layout.display_list_commands(list) {
