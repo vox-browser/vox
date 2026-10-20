@@ -280,3 +280,19 @@ fn test_ua_only_shadow_cache_tracks_import_loading_replacement_and_nested_revisi
 	assert ua_cache_fresh_color(document, target) == 'rgb(141, 142, 143)'
 	ua_cache_assert_fresh_properties(document, one, target)
 }
+
+fn test_ua_only_shadow_caches_are_shared_under_the_chromium_rendering_policy() {
+	mut document := dom.Document.create(dom.url_about_blank())
+	defer { document.finalize() }
+	document.set_font_rendering_policy(.chromium)
+	_, one, target := ua_cache_shadow(document, 'input')
+	_, two, _ := ua_cache_shadow(document, 'input')
+	scope := css_style_scope_for_shadow_root(one)
+	sheets := scope.stylesheets_for_cascade_origin(.user_agent)
+	assert sheets.len == 4
+	assert voidptr(sheets[3]) == voidptr(chromium_control_font_style_sheet())
+	shared_cache := ua_cache_for(one)
+	assert voidptr(ua_cache_for(two)) == voidptr(shared_cache)
+	computed := StyleComputer.new(document).compute_style(dom.AbstractElement.new(target, none))
+	assert (computed.property(.font_family, .no) or { panic('font-family') }).css_text == 'Arial'
+}
