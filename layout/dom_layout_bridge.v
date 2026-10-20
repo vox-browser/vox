@@ -381,42 +381,43 @@ fn attach_layout_node_recursive(box &Node, parent_placeholder ?&dom.LayoutNode, 
 	}
 	retained_children.clear()
 	retained_paintables := unsafe { placeholder.paintables_ }
+	// Reset stale geometry in place before publishing current tree metadata.
 	unsafe {
 		*placeholder = dom.LayoutNode{
 			children_: retained_children
 			paintables_: retained_paintables
-			dom_node_: box.dom_node()
-			parent_: parent_placeholder
-			is_anonymous_: box.is_anonymous()
-			is_text_node_: box.is_text_node()
-			is_atomic_inline_: box.is_atomic_inline()
-			is_replaced_box_: box.is_replaced_box()
-			display_: layout_node_display(box)
-			pseudo_element_generator_: box.pseudo_element_generator()
-			generated_for_: dom_pseudo_element_for_layout_node(box.generated_for_pseudo_element())
-			is_viewport_: box.is_viewport()
-			is_positioned_: box.is_positioned()
-			is_sticky_position_: box.is_sticky_position()
-			is_fixed_position_: box.is_fixed_position()
-			is_scroll_container_: box.is_scroll_container()
-			establishes_fixed_positioning_containing_block_: box.establishes_a_fixed_positioning_containing_block()
-			overflow_x_: overflow_x
-			visibility_: visibility
-			content_visibility_: content_visibility
-			user_select_none_: user_select == .none_
-			white_space_collapse_is_not_collapse_: box.computed_values().white_space_collapse() != .collapse
-			layout_handle: voidptr(box)
-			find_matching_text_callback: find_matching_layout_text
-			apply_style_callback: apply_style_to_layout_node
-			apply_animated_style_callback: apply_animated_style_to_layout_node
-			apply_color_style_callback: apply_inherited_color_style_to_layout_node
-			clear_image_observers_callback: clear_layout_image_observers
-			set_needs_layout_update_callback: set_layout_node_needs_layout_update
-			invalidate_text_for_rendering_callback: invalidate_layout_text_for_rendering
-			refresh_empty_text_fragment_callback: refresh_layout_empty_text_fragment
-			view_transition_properties_callback: layout_view_transition_properties
 		}
 	}
+	placeholder.dom_node_ = box.dom_node()
+	placeholder.parent_ = parent_placeholder
+	placeholder.is_anonymous_ = box.is_anonymous()
+	placeholder.is_text_node_ = box.is_text_node()
+	placeholder.is_atomic_inline_ = box.is_atomic_inline()
+	placeholder.is_replaced_box_ = box.is_replaced_box()
+	placeholder.display_ = layout_node_display(box)
+	placeholder.pseudo_element_generator_ = box.pseudo_element_generator()
+	placeholder.generated_for_ = dom_pseudo_element_for_layout_node(box.generated_for_pseudo_element())
+	placeholder.is_viewport_ = box.is_viewport()
+	placeholder.is_positioned_ = box.is_positioned()
+	placeholder.is_sticky_position_ = box.is_sticky_position()
+	placeholder.is_fixed_position_ = box.is_fixed_position()
+	placeholder.is_scroll_container_ = box.is_scroll_container()
+	placeholder.establishes_fixed_positioning_containing_block_ = box.establishes_a_fixed_positioning_containing_block()
+	placeholder.overflow_x_ = overflow_x
+	placeholder.visibility_ = visibility
+	placeholder.content_visibility_ = content_visibility
+	placeholder.user_select_none_ = user_select == .none_
+	placeholder.white_space_collapse_is_not_collapse_ = box.computed_values().white_space_collapse() != .collapse
+	placeholder.layout_handle = voidptr(box)
+	placeholder.find_matching_text_callback = find_matching_layout_text
+	placeholder.apply_style_callback = apply_style_to_layout_node
+	placeholder.apply_animated_style_callback = apply_animated_style_to_layout_node
+	placeholder.apply_color_style_callback = apply_inherited_color_style_to_layout_node
+	placeholder.clear_image_observers_callback = clear_layout_image_observers
+	placeholder.set_needs_layout_update_callback = set_layout_node_needs_layout_update
+	placeholder.invalidate_text_for_rendering_callback = invalidate_layout_text_for_rendering
+	placeholder.refresh_empty_text_fragment_callback = refresh_layout_empty_text_fragment
+	placeholder.view_transition_properties_callback = layout_view_transition_properties
 	if retain_live_nodes {
 		mut mutable_box := unsafe { &Node(box) }
 		mutable_box.dom_layout_node_ = placeholder

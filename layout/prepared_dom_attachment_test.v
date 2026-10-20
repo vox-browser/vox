@@ -50,6 +50,10 @@ fn test_prepared_dom_attachment_reuses_live_nodes_and_keeps_previous_layout_stat
  old_used := first_state.get(typed)
  previous_paintable := host.as_node().paintable() or { panic('paintable') }
  prepared := prepare_dom_layout_attachment(root)
+ assert !previous_host.has_geometry_
+ assert previous_host.border_box_ == dom.Rect{}
+ assert previous_host.content_width_ == 0
+ assert first_state.get(typed).content_width().to_double() == 200
  assert voidptr(prepared.root) == voidptr(previous)
  assert voidptr(host.as_node().layout_node() or { panic('host') }) == voidptr(previous_host)
  mut second_state := LayoutState.new()
