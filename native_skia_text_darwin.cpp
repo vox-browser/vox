@@ -2,6 +2,7 @@
 // uses for DisplayListPlayerSkia. V continues to shape and position every glyph;
 // this file only turns the retained glyph IDs into the final antialiased pixels.
 
+#include "native_allocator_policy_darwin.h"
 #include <CoreGraphics/CoreGraphics.h>
 #include <dlfcn.h>
 #include <chrono>

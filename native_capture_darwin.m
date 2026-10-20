@@ -1,4 +1,5 @@
 #include <Cocoa/Cocoa.h>
+#include "native_allocator_policy_darwin.h"
 #include "native_test_window_darwin.h"
 #include <CoreImage/CoreImage.h>
 #include <CoreText/CoreText.h>
