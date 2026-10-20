@@ -1,6 +1,7 @@
 module css
 
 import dom
+import platform
 
 // CSS::InitialValues. Keeping the composite defaults in one translated table
 // prevents layout materialization from growing a second, handwritten set of
@@ -382,6 +383,18 @@ pub fn resolve_anonymous_block_values_for_document(source &ComputedProperties, d
 }
 
 fn resolve_computed_values_for_document_impl(style &ComputedProperties, document &dom.Document, anonymous_source ?AnonymousComputedGeometrySource) &ComputedValues {
+	// Hidden SVG resources can first resolve while a paint projection is
+	// entered. Every cache leaf and its provenance must share the durable
+	// owner of the style, not just the outer ComputedLayoutCache record.
+	owner := document.native_storage()
+	use_document := owner != unsafe { nil }
+		&& voidptr(owner) == voidptr(platform.current_retained_arena())
+	persistent := platform.enter_persistent_if(!use_document && platform.transient_arena_entered())
+	mut retained := if use_document { platform.enter_retained_allocations() } else { platform.RetainedAllocationScope{} }
+	defer {
+		retained.finish()
+		platform.leave_persistent(persistent)
+	}
  diagnostic_scope_start := begin_diagnostic_instruction_scope()
  defer { record_diagnostic_instruction_scope(10, diagnostic_scope_start) }
 
