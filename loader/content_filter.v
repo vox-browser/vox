@@ -9,6 +9,7 @@ module loader
 import dom
 import encoding.utf8
 import fetch
+import platform
 import url as liburl
 
 pub enum ContentBlockerResourceType {
@@ -434,7 +435,11 @@ pub fn ContentBlocker.create() &ContentBlocker {
 
 pub fn ContentBlocker.the() &ContentBlocker {
 	if loader_global_content_blocker == unsafe { nil } {
+		// A lazy first lookup can happen while a navigation document owns
+		// allocations. The shared blocker must survive that document.
+		persistent := platform.enter_persistent()
 		loader_global_content_blocker = ContentBlocker.create()
+		platform.leave_persistent(persistent)
 	}
 	return loader_global_content_blocker
 }
