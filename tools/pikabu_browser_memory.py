@@ -135,8 +135,8 @@ def measure(args, browser, output):
 def native_readiness(log):
     installs = len(re.findall(r'Ladybird V timing: install_total ', log))
     commands = [int(n) for n in re.findall(r'first_paint_replay \((\d+) commands\)', log)]
-    if installs < 2 or not commands or max(commands) < 100:
-        raise RuntimeError('Vox did not install and paint both the cached and refreshed page')
+    if installs < 1 or not commands or max(commands) < 100:
+        raise RuntimeError('Vox did not install and paint the frozen page')
     return dict(completed_installs=installs, first_paint_command_counts=commands,
                 note='Engine completion and paint checks; validate content in a separate capture audit.')
 
