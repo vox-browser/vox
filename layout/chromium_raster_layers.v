@@ -3,6 +3,7 @@ module layout
 import dom
 import math
 import painting
+import platform
 
 // The layerizer can merge chunks with a common property state until a
 // different composited scroll/sticky state overlaps them. Raster origins and
@@ -34,6 +35,37 @@ struct ChromiumRasterChunk {
 	bounds        LayoutRect
 	command_index int
 	command_end   int
+}
+
+// Working storage of chromium_raster_layer_plan, reused by every recording:
+// without a collector, allocating it per recording grows memory every frame.
+// Its capacity is reserved in persistent storage.
+struct ChromiumRasterPlanScratch {
+mut:
+	properties []ChromiumRasterPropertyState
+	chunks     []ChromiumRasterChunk
+}
+
+__global chromium_raster_plan_scratch_ = ChromiumRasterPlanScratch{}
+
+// Leave `property_count` default states and no chunks, with room for
+// `chunk_count` chunks.
+fn (mut scratch ChromiumRasterPlanScratch) prepare(property_count int, chunk_count int) {
+	if scratch.properties.cap < property_count || scratch.chunks.cap < chunk_count {
+		persistent := platform.enter_persistent()
+		if scratch.properties.cap < property_count {
+			scratch.properties = []ChromiumRasterPropertyState{cap: property_count}
+		}
+		if scratch.chunks.cap < chunk_count {
+			scratch.chunks = []ChromiumRasterChunk{cap: chunk_count}
+		}
+		platform.leave_persistent(persistent)
+	}
+	scratch.properties.clear()
+	for _ in 0 .. property_count {
+		scratch.properties << ChromiumRasterPropertyState{}
+	}
+	scratch.chunks.clear()
 }
 
 fn chromium_layer_bounds_union(a LayoutRect, b LayoutRect) LayoutRect {
@@ -170,17 +202,18 @@ pub fn chromium_raster_layer_plan(document &dom.Document, commands []PaintComman
 		}
 	}
 	tree := result.visual_context_tree
-	mut properties := []ChromiumRasterPropertyState{len: tree.nodes.len}
+	mut scratch := unsafe { &chromium_raster_plan_scratch_ }
+	scratch.prepare(tree.nodes.len, commands.len)
 	for index in 1 .. tree.nodes.len {
 		node := tree.nodes[index]
 		if node.parent_index >= 0 && node.parent_index < index {
-			properties[index] = properties[node.parent_index]
+			scratch.properties[index] = scratch.properties[node.parent_index]
 		}
 		if node.data is painting.ScrollVisualData {
 			if node.data.is_sticky {
-				properties[index].sticky_frame = node.data.scroll_frame_index
+				scratch.properties[index].sticky_frame = node.data.scroll_frame_index
 			} else if composited_scrolls[node.data.scroll_frame_index] {
-				properties[index].scroll_frame = node.data.scroll_frame_index
+				scratch.properties[index].scroll_frame = node.data.scroll_frame_index
 			}
 		} else if node.data is painting.ScrollCompensationVisualData {
 			// Compensated backgrounds need a separate transform/raster policy.
@@ -189,7 +222,6 @@ pub fn chromium_raster_layer_plan(document &dom.Document, commands []PaintComman
 			return chromium_root_raster_plan(commands.len)
 		}
 	}
-	mut chunks := []ChromiumRasterChunk{cap: commands.len}
 	mut index := 0
 	for index < commands.len {
 		first := index
@@ -236,11 +268,11 @@ pub fn chromium_raster_layer_plan(document &dom.Document, commands []PaintComman
 				}
 			}
 
-			if context < 0 || context >= properties.len {
+			if context < 0 || context >= scratch.properties.len {
 				return chromium_root_raster_plan(commands.len)
 			}
 			if !has_state {
-				state = properties[context]
+				state = scratch.properties[context]
 				state.effect_scope = effect_scope
 				state.fixed_to_viewport = command.fixed_to_viewport
 				has_state = true
@@ -262,7 +294,7 @@ pub fn chromium_raster_layer_plan(document &dom.Document, commands []PaintComman
 			}
 		}
 		if has_state {
-			chunks << ChromiumRasterChunk{
+			scratch.chunks << ChromiumRasterChunk{
 				state:         state
 				bounds:        bounds
 				command_index: first
@@ -271,5 +303,5 @@ pub fn chromium_raster_layer_plan(document &dom.Document, commands []PaintComman
 		}
 		index = end
 	}
-	return chromium_layerize_chunks(chunks, commands.len, device_scale)
+	return chromium_layerize_chunks(scratch.chunks, commands.len, device_scale)
 }
