@@ -1,8 +1,9 @@
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
-from prepare_prealloc_runtime import validate_allocator
+from prepare_prealloc_runtime import prepare, validate_allocator
 
 
 class PreallocAllocatorCompatibilityTest(unittest.TestCase):
@@ -31,6 +32,18 @@ class PreallocAllocatorCompatibilityTest(unittest.TestCase):
             "fn prealloc_realloc_copy_size(old_data &u8, n isize) isize {\n"
             "if old_data == unsafe { nil } { return 0 }\nreturn n\n}",
         )
+
+    def test_checks_the_active_library_of_a_moved_compiler(self):
+        with tempfile.TemporaryDirectory() as directory:
+            vlib = Path(directory) / "baked-in-vlib"
+            builtin = vlib / "builtin"
+            builtin.mkdir(parents=True)
+            (builtin / "allocation.c.v").write_text("C.memcpy(new_ptr, b, n)")
+            (builtin / "prealloc.c.v").write_text("")
+            with patch("prepare_prealloc_runtime.compiler_vlib", return_value=vlib) as resolve:
+                with self.assertRaisesRegex(RuntimeError, "bounded v_realloc"):
+                    prepare("/moved/compiler/v")
+                self.assertEqual(resolve.call_args.args[0], "/moved/compiler/v")
 
 
 if __name__ == "__main__":

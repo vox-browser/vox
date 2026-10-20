@@ -6,6 +6,8 @@ import json
 from pathlib import Path
 import re
 import sys
+import tempfile
+from prepare_http_compat import compiler_vlib
 
 
 def validate_allocator(builtin):
@@ -31,7 +33,10 @@ def wrap_function(source, signature, before="", after=""):
 
 def prepare(compiler):
     repo = Path(__file__).resolve().parents[1]
-    builtin = Path(compiler).resolve().parent / "vlib/builtin"
+    # A moved compiler can retain a different baked-in standard-library root.
+    # Validate and stage the library it actually compiles against.
+    with tempfile.TemporaryDirectory(prefix="vox-prealloc-root-") as temporary:
+        builtin = compiler_vlib(compiler, Path(temporary)) / "builtin"
     validate_allocator(builtin)
     source = builtin / "closure"
     if not (source / "closure.c.v").is_file():
