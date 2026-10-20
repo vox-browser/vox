@@ -42,6 +42,7 @@ VoxGraphiteRasterCache image_cache(32 * 1024 * 1024, 2048);
 VoxGraphiteImageUploadCache<sk_sp<SkImage>> image_upload_cache;
 VoxGraphiteRasterCache path_cache(8 * 1024 * 1024);
 VoxGraphiteRasterCache shape_cache(16 * 1024 * 1024);
+VoxGraphiteRasterCache shadow_cache(8 * 1024 * 1024, 128);
 std::unique_ptr<skgpu::graphite::Context> gpu_context;
 bool gpu_context_attempted = false;
 std::chrono::steady_clock::time_point gpu_context_last_use;
@@ -140,6 +141,7 @@ void vox_graphite_release_unused_graphics_memory()
     image_cache.clear();
     image_upload_cache.clear();
     shape_cache.clear();
+    shadow_cache.clear();
     path_cache.clear();
     if (!gpu_context) return;
     // Draw wrappers already synchronously read their pixels. Submit/wait also
@@ -162,6 +164,8 @@ int vox_graphite_draw_shadow_pixels(uint8_t* pixels, int width, int height,
     if (!pixels || !shadow || width <= 0 || height <= 0 || pitch <= 0
         || static_cast<size_t>(pitch) < static_cast<size_t>(width) * 4) return 0;
     std::lock_guard lock(gpu_mutex);
+    auto cached = shadow_cache.prepare(*shadow, width, height, pitch, has_background, pixels);
+    if (cached.hit) return 1;
     auto* gpu = context();
     if (!gpu) return 0;
     auto recorder = gpu->makeRecorder();
@@ -181,7 +185,9 @@ int vox_graphite_draw_shadow_pixels(uint8_t* pixels, int width, int height,
     paint.setColor(SkColorSetARGB(shadow->alpha, shadow->red, shadow->green, shadow->blue));
     paint.setMaskFilter(SkMaskFilter::MakeBlur(kNormal_SkBlurStyle, std::max(shadow->blur, 0.0f) / 2.0f));
     canvas->drawRRect(rounded_rect(shadow->shadow), paint);
-    return read_pixels(gpu, recorder.get(), surface.get(), info, pixels, pitch);
+    int result = read_pixels(gpu, recorder.get(), surface.get(), info, pixels, pitch);
+    if (result) shadow_cache.finish(std::move(cached), pixels, pitch);
+    return result;
 }
 
 // A PNG tagged by its gAMA and cHRM chunks keeps that color space until the

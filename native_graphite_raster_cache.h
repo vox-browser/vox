@@ -9,7 +9,7 @@
 #include <vector>
 #include <unordered_map>
 
-// Memoize complete GPU image, shape and path draws, including their input backdrop.
+// Memoize complete GPU image, shape, shadow and path draws, including their input backdrop.
 // Sources can be canvas/video buffers, animated frames or recycled allocations: addresses
 // are never an identity or a promise of immutability. Every hit compares the
 // actual source bytes and every parameter before copying owned output pixels.
@@ -19,9 +19,11 @@ class VoxGraphiteRasterCache {
         VoxGraphiteImage image {};
         std::vector<VoxGraphiteImage> tiles;
         VoxGraphiteShape shape {};
+        VoxGraphiteShadow shadow {};
         VoxGraphitePath path {};
         bool is_path = false;
         bool is_shape = false;
+        bool is_shadow = false;
         int surface_width = 0, surface_height = 0;
         int width = 0, height = 0;
         bool has_background = false;
@@ -79,6 +81,14 @@ class VoxGraphiteRasterCache {
             && a.has_underlay == b.has_underlay
             && (!a.has_underlay || (!std::memcmp(a.underlay_rect, b.underlay_rect, sizeof(a.underlay_rect))
                 && !std::memcmp(a.underlay_rgba, b.underlay_rgba, sizeof(a.underlay_rgba))));
+    }
+    static bool same_shadow(VoxGraphiteShadow const& a, VoxGraphiteShadow const& b)
+    {
+        return !std::memcmp(a.matrix, b.matrix, sizeof(a.matrix))
+            && !std::memcmp(a.shadow, b.shadow, sizeof(a.shadow))
+            && !std::memcmp(a.content, b.content, sizeof(a.content))
+            && !std::memcmp(&a.blur, &b.blur, sizeof(a.blur))
+            && a.red == b.red && a.green == b.green && a.blue == b.blue && a.alpha == b.alpha;
     }
     static bool same_path(VoxGraphitePath const& a, VoxGraphitePath const& b)
     {
@@ -190,6 +200,15 @@ private:
         return prepare_entry(parameters, source, width, height, pitch, has_background, pixels);
     }
 public:
+    Request prepare(VoxGraphiteShadow const& shadow, int width, int height,
+        int pitch, bool has_background, uint8_t* pixels)
+    {
+        Entry parameters;
+        parameters.is_shadow = true;
+        parameters.shadow = shadow;
+        return prepare_entry(parameters, Rows {nullptr, 0, 0, 1}, width, height,
+            pitch, has_background, pixels);
+    }
     Request prepare(VoxGraphiteShape const& shape, int width, int height,
         int pitch, bool has_background, uint8_t* pixels)
     {
@@ -253,11 +272,13 @@ private:
             if (entry.width != width || entry.height != height
                 || entry.has_background != has_background || entry.is_shape != parameters.is_shape
                 || entry.is_path != parameters.is_path
+                || entry.is_shadow != parameters.is_shadow
                 || entry.surface_width != parameters.surface_width || entry.surface_height != parameters.surface_height
                 || entry.tiles.size() != parameters.tiles.size()
                 || !std::equal(entry.tiles.begin(), entry.tiles.end(), parameters.tiles.begin(), same_image)
                 || (entry.is_shape ? !same_shape(entry.shape, parameters.shape)
                     : entry.is_path ? !same_path(entry.path, parameters.path)
+                    : entry.is_shadow ? !same_shadow(entry.shadow, parameters.shadow)
                                     : !same_image(entry.image, parameters.image))
                 || (has_background && !backdrop.equal(entry.background))
                 || !extra.equal(entry.extra) || !source.equal(*entry.source)) continue;

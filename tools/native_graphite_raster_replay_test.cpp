@@ -7,6 +7,8 @@
 #include <dlfcn.h>
 #include <iostream>
 #include <vector>
+#include <chrono>
+#include <thread>
 
 int main(int argc, char** argv)
 {
@@ -295,5 +297,57 @@ int main(int argc, char** argv)
         path.gradient_matrix[2] = .375f; compare(); compare();
         clear(); compare();
     }
-    std::cout << "Graphite raster replay: " << comparisons << " exact GPU comparisons passed\n";
+    auto before_shadow = reinterpret_cast<decltype(&vox_graphite_draw_shadow_pixels)>(
+        dlsym(control, "vox_graphite_draw_shadow_pixels"));
+    auto after_shadow = reinterpret_cast<decltype(before_shadow)>(
+        dlsym(candidate, "vox_graphite_draw_shadow_pixels"));
+    assert(before_shadow && after_shadow);
+    assert(before_shadow != after_shadow);
+    for (int scale : {1, 2}) for (int background : {0, 1}) for (float blur : {0.f, 7.f}) {
+        int width = 31 * scale, height = 29 * scale, pitch = width * 4 + 12;
+        std::vector<uint8_t> backdrop(size_t(pitch) * height, 89), expected, actual;
+        VoxGraphiteShadow shadow {};
+        shadow.matrix[0] = shadow.matrix[4] = scale; shadow.matrix[8] = 1;
+        float outer[] {3, 4, 24, 21, 3, 3, 4, 4, 2, 2, 1, 1};
+        float inner[] {7, 8, 15, 12, 2, 2, 2, 2, 1, 1, 1, 1};
+        std::copy_n(outer, 12, shadow.shadow);
+        std::copy_n(inner, 12, shadow.content);
+        shadow.blur = blur; shadow.red = 137; shadow.green = 25; shadow.blue = 61; shadow.alpha = 190;
+        auto compare = [&] {
+            expected = actual = backdrop;
+            assert(before_shadow(expected.data(), width, height, pitch, background, &shadow));
+            assert(after_shadow(actual.data(), width, height, pitch, background, &shadow));
+            assert(expected == actual); ++comparisons;
+        };
+        compare(); compare();
+        shadow.blur += 1.25f; compare(); compare();
+        shadow.matrix[1] = .125f; compare(); compare();
+        shadow.content[4] += .25f; compare(); compare();
+        shadow.shadow[2] += .5f; compare(); compare();
+        shadow.alpha = 87; compare(); compare();
+        backdrop[13] ^= 31; compare(); compare();
+        clear(); compare();
+    }
+    // A cached shadow must remain readable after idle GPU teardown and must
+    // not recreate a context merely to replay its owned CPU pixels.
+    auto idle = reinterpret_cast<decltype(&vox_graphite_release_idle_graphics_memory)>(
+        dlsym(candidate, "vox_graphite_release_idle_graphics_memory"));
+    assert(idle);
+    clear();
+    VoxGraphiteShadow retained_shadow {};
+    retained_shadow.matrix[0] = retained_shadow.matrix[4] = retained_shadow.matrix[8] = 1;
+    retained_shadow.shadow[2] = 12; retained_shadow.shadow[3] = 10;
+    retained_shadow.content[2] = retained_shadow.content[3] = 4;
+    retained_shadow.blur = 3; retained_shadow.alpha = 150;
+    std::vector<uint8_t> retained_pixels(16 * 16 * 4, 93);
+    assert(after_shadow(retained_pixels.data(), 16, 16, 64, 1, &retained_shadow));
+    auto retained_output = retained_pixels;
+    std::this_thread::sleep_for(std::chrono::milliseconds(2100));
+    assert(idle() == 1);
+    std::fill(retained_pixels.begin(), retained_pixels.end(), 93);
+    assert(after_shadow(retained_pixels.data(), 16, 16, 64, 1, &retained_shadow));
+    assert(retained_pixels == retained_output);
+    std::this_thread::sleep_for(std::chrono::milliseconds(2100));
+    assert(idle() == 0);
+    std::cout << "Graphite raster replay: " << comparisons << " exact GPU comparisons and idle shadow replay passed\n";
 }

@@ -13,6 +13,10 @@ clang++ -std=c++20 -O2 -Wall -Wextra -Werror \
     -o "$output_dir/native_graphite_raster_cache_test"
 "$output_dir/native_graphite_raster_cache_test"
 clang++ -std=c++20 -O2 -Wall -Wextra -Werror \
+    "$repo_dir/tools/native_graphite_shadow_cache_test.cpp" \
+    -o "$output_dir/native_graphite_shadow_cache_test"
+"$output_dir/native_graphite_shadow_cache_test"
+clang++ -std=c++20 -O2 -Wall -Wextra -Werror \
     "$repo_dir/tools/native_graphite_solid_rect_test.cpp" \
     -o "$output_dir/native_graphite_solid_rect_test"
 "$output_dir/native_graphite_solid_rect_test"
