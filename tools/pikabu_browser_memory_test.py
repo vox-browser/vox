@@ -1,6 +1,6 @@
 import unittest
 
-from pikabu_browser_memory import clean_environment, comparison, native_readiness
+from pikabu_browser_memory import clean_environment, comparison, native_readiness, validate_native_document
 
 
 class ComparisonTests(unittest.TestCase):
@@ -22,6 +22,17 @@ class ComparisonTests(unittest.TestCase):
                 native_readiness(log)
         self.assertEqual(native_readiness(installed * 2 + painted)['completed_installs'], 2)
         self.assertEqual(native_readiness(installed + painted)['completed_installs'], 1)
+        with self.assertRaises(RuntimeError):
+            native_readiness(installed + painted + installed + 'Ladybird V timing: first_paint_replay (0 commands) 1 ms\n')
+
+    def test_native_endpoint_rejects_navigation_away_from_a_previously_painted_page(self):
+        document = dict(url='https://pikabu.ru/', ready='complete', title='Pikabu',
+                        paint_commands=600, selections=[dict(name='stories', count=15)])
+        validate_native_document(document)
+        for change in [dict(url='about:blank'), dict(ready='loading'), dict(title=''),
+                       dict(paint_commands=0), dict(selections=[])]:
+            with self.assertRaises(RuntimeError):
+                validate_native_document(document | change)
 
     def test_ambient_local_proxies_cannot_bypass_the_offline_guard(self):
         inherited = {key: 'http://127.0.0.1:7890' for key in

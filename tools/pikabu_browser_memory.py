@@ -60,7 +60,15 @@ def measure(args, browser, output):
                        LADYBIRD_DEBUG_TIMING='1',
                        DYLD_LIBRARY_PATH=str(binary.parent),
                        DYLD_INSERT_LIBRARIES=str(args.network_deny),
-                       NO_PROXY='localhost,127.0.0.1')
+                       NO_PROXY='localhost,127.0.0.1',
+                       VOX_NATIVE_OBSERVATION_DELAY_MS=str(int(args.seconds * 1000) + 500),
+                       VOX_NATIVE_OBSERVATION_SCREENSHOT=str(output / 'window.png'),
+                       VOX_CAPTURE_AUDIT_PATH=str(output / 'document.json'),
+                       VOX_CAPTURE_AUDIT_CONFIG=str(output / 'audit-config.json'))
+            (output / 'audit-config.json').write_text(json.dumps({'selectors': [
+                {'name': 'stories', 'selector': '.story', 'limit': 20},
+                {'name': 'images', 'selector': '.story img', 'limit': 20, 'attributes': ['src']},
+            ]}))
             command = [str(binary), '--enable-javascript', '--window-width', '1024',
                        '--window-height', '880', URL]
         else:
@@ -123,6 +131,14 @@ def measure(args, browser, output):
                         (output / 'document.png').write_bytes(base64.b64decode(pixels['data']))
                     else:
                         result['readiness'] = native_readiness((output / 'browser.log').read_text())
+                        deadline = time.monotonic() + 15
+                        while not (output / 'document.json').is_file() or not (output / 'window.png').is_file():
+                            if process.poll() is not None or time.monotonic() > deadline:
+                                raise RuntimeError('Vox did not produce its normal-window endpoint observation')
+                            time.sleep(.02)
+                        document = json.loads((output / 'document.json').read_text())
+                        validate_native_document(document)
+                        result['document'] = document
                     # Capture/debugger observations follow the primary endpoint.
                     (output / 'result.json').write_text(json.dumps(result, indent=2) + '\n')
                     return result
@@ -135,10 +151,17 @@ def measure(args, browser, output):
 def native_readiness(log):
     installs = len(re.findall(r'Ladybird V timing: install_total ', log))
     commands = [int(n) for n in re.findall(r'first_paint_replay \((\d+) commands\)', log)]
-    if installs < 1 or not commands or max(commands) < 100:
+    if installs < 1 or not commands or commands[-1] < 100:
         raise RuntimeError('Vox did not install and paint the frozen page')
     return dict(completed_installs=installs, first_paint_command_counts=commands,
-                note='Engine completion and paint checks; validate content in a separate capture audit.')
+                note='Initial completion/paint checks; endpoint DOM and window capture validated separately.')
+
+
+def validate_native_document(document):
+    stories = next((s['count'] for s in document.get('selections', []) if s['name'] == 'stories'), 0)
+    if (document.get('url') != URL or document.get('ready') != 'complete'
+            or not document.get('title') or document.get('paint_commands', 0) < 100 or stories <= 0):
+        raise RuntimeError('Vox did not retain the frozen document at the memory endpoint')
 
 
 def comparison(vox, brave):
