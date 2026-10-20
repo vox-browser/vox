@@ -1,10 +1,12 @@
 # AsgardPvP rendering against Brave
 
-The live site is **not yet pixel-exact**. Comparisons require identical RGBA
+The five controlled viewport comparisons below are **pixel-exact**. Normal
+Retina-window parity remains unfinished. Comparisons require identical RGBA
 pixels, without a tolerance or excluded regions. Browser chrome is cropped;
-the rendered document viewport is compared at the same size and device scale.
+the rendered document viewport is compared at the same size and raster scale.
 
 The reference browser used on 2026-10-18 and rechecked on 2026-10-19 was Brave 155.1.97.59 on macOS.
+The 1280×800 reference was rechecked on 2026-10-20; it still changed zero pixels.
 Both browsers reached `https://asgardpvp.com/` through the SOCKS5 proxy on
 `127.0.0.1:1337`. Repeating the 1280×800 Brave capture changed zero pixels.
 
@@ -16,21 +18,20 @@ viewport has two device pixels per CSS pixel in each axis.
 | Viewport | Scale | Scroll Y | Differing pixels | Maximum channel error |
 | --- | --- | --- | --- | --- |
 | 800×600 | 1× | 0 | 0 | 0 |
-| 1280×800 | 1× | 0 | 2 | 6 |
+| 1280×800 | 1× | 0 | 0 | 0 |
 | 1024×684 | 2× | 0 | 0 | 0 |
 | 1280×800 | 1× | 800 | 0 | 0 |
 | 1280×800 | 1× | 1600 | 0 | 0 |
 
-The two wider-viewport discrepancies are in the logo; they still fail exact
-equality. The same-size SVG source replacement reftest passes with zero differing
-pixels. The original inputs for 22 focused Brave rendering fixtures passed in the
-isolated validation checkout. The new `webp-root-raster-tiles`,
-`svg-image-raster-origin`, `msaa-tile-columns`, and
-`transformed-rounded-background` fixtures also pass exact comparisons. This does
-not certify concurrent fixture edits in the main checkout.
-Native clipping, compositing, glyph-cache, shape-backdrop, and tiled-image
-checks pass. Focused V checks also passed with Boehm and with `-gc none`.
+The signed native bundle built on 2026-10-21 passes all five comparisons.
+The previously failing wider logo is exact after sharing its drawing operations
+with the surrounding root tile. Focused shared-recording tests pass with Boehm
+and `-gc none`; native startup also passes. The original Brave reference PNGs
+are unchanged.
 
+These references use headless Brave's emulated device scale. Emulating 2× on a
+1× host does not reproduce the layout precision of a normal 2× window; see the
+remaining work below.
 ## Implemented behavior
 
 - SVG image requests retain vectors and their exact intrinsic aspect ratio.
@@ -53,6 +54,11 @@ checks pass. Focused V checks also passed with Boehm and with `-gc none`.
   empty container bounds when choosing a raster surface.
 - Explicit CSS transforms, including identity transforms, preserve rounded
   background geometry in local coordinates.
+- Supported root SVG tiles share one recording with text, backgrounds, borders
+  and images through pinned Dawn/Metal. Flex and grid items paint atomically in
+  foreground order. Fully clipped leaves, such as hidden accessible controls,
+  do not disable this recording; effect boundaries and visible unsupported clips
+  retain their established replay path.
 
 The synthetic `svg-image-non-scaling-stroke` fixture includes adjacent flag
 fills/strokes, fractional intrinsic image sizing, a distant image, and a
@@ -72,16 +78,23 @@ python3 tools/check_pixel_equality.py \
   Build/asgard-brave.png Build/asgard-vox.png Build/asgard-diff.png
 ```
 
-The equality command intentionally fails while any pixel differs.
+The equality command fails while any pixel differs.
 
 ## Remaining work
 
-The SVG logo retains two GPU edge differences at 1280×800. Replaying only the
-logo's exported path geometry reproduces differences, while replaying Brave's
-surrounding drawing operations changes the result even with identical path
-coordinates. Shared GPU recording and shader behavior remain under investigation;
-the experimental recording path is not enabled in the production app.
+Normal Retina windows still require layout in device pixels. At 2×, Brave
+exports CSS coordinates on a 1/128-pixel grid, while a 2× emulated screenshot
+on a 1× host retains 1/64-pixel layout. The native browser currently uses the
+latter precision. The difference is measurable in DOM rectangles and font
+placement, and the normal-window result is not covered by the exact table.
+Chromium distinguishes the original display scale from the emulated scale
+when sizing its layout viewport; see its
+[viewport scaling implementation](https://chromium.googlesource.com/chromium/src/+/0c4572c29ed752832057a9b89b4e7c2252013992/content/renderer/render_widget.cc).
 
+The comparison must also use one color space. Windowed Brave screenshots on
+this display carry a Display P3 profile; headless references and Vox's document
+captures use sRGB. Normal-window diagnostics force Brave's output profile to
+sRGB before comparing pixels.
 Lossy WebP representation also depends on the decoder's lifetime. Blink retains
 RGB when its first decoding generator was created before the complete response
 arrived; a complete response may use YUV. See
