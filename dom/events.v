@@ -1621,7 +1621,7 @@ fn event_listener_callback_global_window(listener &DOMEventListener) ?&Window {
 }
 
 pub fn (et &EventTarget) has_event_listener(type_ string) bool {
-	for listener in et.event_listener_list() {
+	for listener in et.data.event_listener_list {
 		if listener.type_ == type_ {
 			return true
 		}
@@ -1630,7 +1630,7 @@ pub fn (et &EventTarget) has_event_listener(type_ string) bool {
 }
 
 pub fn (et &EventTarget) has_event_listeners() bool {
-	return et.event_listener_list().len > 0
+	return et.data.event_listener_list.len > 0
 }
 
 // HTMLAnchorElement, HTMLAreaElement, and SVGAElement override activation behavior with activating the hyperlink,
