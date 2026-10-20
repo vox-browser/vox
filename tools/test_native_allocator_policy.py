@@ -3,10 +3,12 @@
 import os
 from pathlib import Path
 import subprocess
+import sys
 import tempfile
 import unittest
 
 
+@unittest.skipUnless(sys.platform == 'darwin', 'macOS allocator policy')
 class NativeAllocatorPolicyTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
