@@ -15,6 +15,8 @@ import re
 import subprocess
 
 RUNTIME = re.compile(r'^(builtin__|GC_|_v_malloc|malloc_noscan|memdup|vcalloc|sampled_|'
+                     r'vmemory_block_|prealloc_|v_malloc|v_realloc|malloc_uninit|alloc_array_data|VMapData__|new_dense_array|'
+                     r'__v3_internal_symbol_array_new|malloc_string_buffer|'
                      r'tracked_|record|__new_array|new_array|array_|map_|string_|'
                      r'strings__Builder|DenseArray|new_map|realloc_data|vmemdup)')
 
