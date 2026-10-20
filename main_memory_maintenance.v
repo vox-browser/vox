@@ -5,6 +5,19 @@ import time
 import adblock
 import layout
 
+__global browser_filter_cleanup_timer &platform.Timer
+
+fn arm_filter_memory_cleanup() {
+	if browser_filter_cleanup_timer != unsafe { nil } { return }
+	persistent := platform.enter_persistent()
+	defer { platform.leave_persistent(persistent) }
+	mut timer := platform.Timer.create_repeating(1000, fn () {
+		adblock.release_default_engine_if_idle(5000)
+	})
+	browser_filter_cleanup_timer = timer
+	timer.start()
+}
+
 struct BrowserMemoryMaintenance {
 mut:
 	last_document_activity_ns i64
@@ -55,6 +68,7 @@ fn (maintenance &BrowserMemoryMaintenance) has_pending_cleanup(allocated usize) 
 
 fn (mut app BrowserApp) finish_frame_memory_activity(now_ns i64, previous_paint u64) {
 	if app.document == unsafe { nil } { return }
+	arm_filter_memory_cleanup()
 	// Installation may build the display list before the native frame begins.
 	// Its first replay is still document work even when its revision is stable.
 	updated_document := app.memory_maintenance.presentation_pending || !app.document_presented

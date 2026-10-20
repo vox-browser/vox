@@ -2,6 +2,7 @@ module adblock
 
 import json2
 import platform
+import time
 
 
 #flag darwin -framework JavaScriptCore
@@ -26,6 +27,7 @@ fn C.JSValueToStringCopy(voidptr, voidptr, &voidptr) voidptr
 fn C.JSStringGetMaximumUTF8CStringSize(voidptr) usize
 fn C.JSStringGetUTF8CString(voidptr, &char, usize) usize
 fn C.vox_adblock_lock()
+fn C.vox_adblock_try_lock() int
 fn C.vox_adblock_unlock()
 fn C.vox_adblock_get_context() voidptr
 fn C.vox_adblock_get_error() &char
@@ -35,6 +37,10 @@ fn C.vox_adblock_get_enabled() int
 fn C.vox_adblock_set_enabled(int)
 
 const compressed_engine_source = $embed_file('engine.js.gz')
+
+// Protected by the same lock as the default engine. Cache hits that require
+// no VM evaluation do not postpone releasing that VM.
+__global default_engine_last_used_ns i64
 
 fn evaluate_context(context voidptr, source string) !string {
 	if context == unsafe { nil } {
@@ -118,7 +124,10 @@ fn create_context_in_current_arena(custom_filters ?string) !voidptr {
 // All entry points share the lock because a JSC context must not run concurrently.
 pub fn evaluate_engine(source string) !string {
 	C.vox_adblock_lock()
-	defer { C.vox_adblock_unlock() }
+	defer {
+		default_engine_last_used_ns = time.sys_mono_now()
+		C.vox_adblock_unlock()
+	}
 	$if macos {
 		if C.vox_adblock_worker_is_configured() != 0 {
 			previous_error := C.vox_adblock_get_error()
@@ -151,6 +160,23 @@ pub fn evaluate_engine(source string) !string {
 pub fn release_unused_engine() bool {
 	C.vox_adblock_lock()
 	defer { C.vox_adblock_unlock() }
+	return release_default_engine_locked()
+}
+
+// A host may poll this on its event loop even while page JavaScript runs.
+// A busy filtering request wins immediately; no evaluation is interrupted.
+pub fn release_default_engine_if_idle(idle_ms int) bool {
+	if C.vox_adblock_try_lock() == 0 { return false }
+	defer { C.vox_adblock_unlock() }
+	now := time.sys_mono_now()
+	if idle_ms < 0 || now < default_engine_last_used_ns
+		|| now - default_engine_last_used_ns < i64(idle_ms) * 1_000_000 {
+		return false
+	}
+	return release_default_engine_locked()
+}
+
+fn release_default_engine_locked() bool {
 	$if macos {
 		if C.vox_adblock_worker_is_configured() != 0 {
 			return C.vox_adblock_worker_release() != 0
