@@ -6,6 +6,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <stdatomic.h>
+#include <execinfo.h>
 
 typedef struct {
 	char *start;
@@ -44,11 +45,17 @@ static void vox_poison_fault_handler(int sig, siginfo_t *info, void *context) {
 			break;
 		}
 	}
+	void *frames[48];
+	int frame_count = backtrace(frames, 48);
+	backtrace_symbols_fd(frames, frame_count, 2);
 	signal(sig, SIG_DFL);
 	raise(sig);
 }
 
 static void vox_install_poison_fault_handler(void) {
+	// Warm the unwinder before a fault, while allocation is still safe.
+	void *frame;
+	backtrace(&frame, 1);
 	struct sigaction action;
 	memset(&action, 0, sizeof action);
 	action.sa_sigaction = vox_poison_fault_handler;
