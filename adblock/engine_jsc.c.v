@@ -1,6 +1,7 @@
 module adblock
 
 import json2
+import platform
 
 
 #flag darwin -framework JavaScriptCore
@@ -66,6 +67,29 @@ fn value_string(context voidptr, value voidptr) !string {
 }
 
 fn create_context(custom_filters ?string) !voidptr {
+	$if prealloc {
+		// JSC copies script text and the snapshot bridge owns its native buffers.
+		// Keep decompression, encoding and initialization-result temporaries out
+		// of the request thread's retained base arena.
+		if _ := custom_filters { return create_context_in_current_arena(custom_filters) }
+		persistent := platform.enter_persistent()
+		_ = compressed_engine_source.data()
+		warm_snapshot_sources()
+		platform.leave_persistent(persistent)
+		mut scratch := platform.begin_thread_scratch('adblock initialization')
+		context := create_context_in_current_arena(custom_filters) or {
+			scratch.leave()
+			message := err.msg().clone()
+			scratch.finish()
+			return error(message)
+		}
+		scratch.finish()
+		return context
+	}
+	return create_context_in_current_arena(custom_filters)
+}
+
+fn create_context_in_current_arena(custom_filters ?string) !voidptr {
 	context := C.JSGlobalContextCreate(unsafe { nil })
 	if context == unsafe { nil } {
 		return error('Cannot create isolated adblock JavaScriptCore context')

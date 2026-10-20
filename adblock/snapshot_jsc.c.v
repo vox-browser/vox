@@ -13,6 +13,11 @@ fn C.vox_adblock_install_snapshot_metadata(voidptr, &u8, usize) int
 const native_snapshot_bytes = $embed_file('engine.snapshot.bin')
 const compressed_snapshot_metadata = $embed_file('engine.snapshot.json.gz')
 
+fn warm_snapshot_sources() {
+	_ = compressed_snapshot_metadata.data()
+	if !os.is_file(bundled_snapshot_path()) { _ = native_snapshot_bytes.data() }
+}
+
 fn install_snapshot(context voidptr) ! {
 	// Bundles keep the large payload in a reclaimable file-backed mapping.
 	// Standalone tools/tests retain the same validated embedded fallback.
