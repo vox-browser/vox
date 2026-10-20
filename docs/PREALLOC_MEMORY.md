@@ -66,11 +66,20 @@ frame: each arena is reset only after its last reader has let go.
   retain their shorter lifetime. Inline, table and SVG construction currently
   stay durable as complete operations; their internal temporaries remain a
   later target. The scope closes before publishing the DOM geometry attachment.
-- **Font keys and stylesheet tokens**. Font-cache key formatting reuses an arena;
-  a miss copies its key before reset. Background font computers keep their
-  ordinary allocation path. Native stylesheet tokenization releases raw token
-  builders after copying the complete immutable component tree into its owner.
-  This does not yet retire the rule parser's intermediate syntax trees.
+- **Font inputs and keys**. Family lists, bridge-value parsing, variation/feature
+  maps and key formatting use reusable arenas. Nested font lookups have separate
+  input slots. Cache misses materialize their cascade and map/key in the owning
+  document, or persistent storage for standalone callers, before resetting the
+  inputs. Worker computers retain their ordinary allocation path. Document
+  teardown releases both input and key arenas.
+- **Stylesheet input and rule syntax**. Tokenization releases raw token builders
+  after copying the immutable component tree into its owner. Component copies
+  return directly from each sum-type branch, avoiding an unused default Function
+  per token. Native whole-stylesheet parsing then retires its intermediate rule
+  and declaration vectors after conversion. Declaration values borrow immutable
+  token spans; deferred rules own their declaration records and original strings.
+  Prelude spans which query parsers may keep are copied before retirement.
+  CSSOM single-rule and fragment parsing keep their ordinary allocation path.
 - **Native graphics**. Each Skia GPU context has a 64 MiB resource-cache budget.
   Native maintenance retires contexts after two seconds without GPU raster work,
   including on scripted pages, while preserving reusable CPU raster results.
@@ -181,6 +190,15 @@ instead:
   `dom.CSSCustomProperty_` `@[heap]`.
 - Iterating an array field of a by-value parameter and appending the loop
   values elsewhere: index the array instead.
+- Appending an optional binding directly (`if declaration := ... { list <<
+  declaration }`): current V inserts `__derived_clone_*`, including string and
+  array clones. A record literal with explicit fields preserves borrowed token
+  spans and their original owner. Otherwise a temporary parser arena can become
+  the accidental owner of a deferred declaration's name and value array.
+- Assigning a sum-type match expression: generated C may allocate the first
+  variant as a default before overwriting it. `ComponentValuePayload` starts
+  with Function, so that default is substantially larger than an ordinary Token.
+  A helper which returns directly from each match branch avoids the default.
 
 `v -warn-about-allocs` lists most of these copies with their reason and
 position. To check a function, generate C (`v -o out.c` with the build's
@@ -356,3 +374,30 @@ context/cache cleanup does not return all of this process-attributed memory.
   finer retirement than the complete document lifetime. Native identity
   allocations and conservatively pinned adoption/host cases also retain their
   existing lifetime. `VOX_PHASE_DIAGNOSTICS=1` prints allocation-phase totals.
+
+
+### Parser and font input follow-up, 2026-10-21
+
+Font lookup input reuse, direct listener membership queries, rule-syntax
+retirement and component-copy changes have focused prealloc and poisoned checks.
+The parser checks include deferred/eager nested rules and a large single media
+block containing discarded syntax; the latter catches an accidentally bypassed
+scratch path. Font checks exercise nested lookups, document retirement and a
+worker which must not enter UI arenas. Repeating a warm font lookup 256 times
+adds less than 1 KiB of persistent storage. Component-copy checks bound each
+leaf to its component slot, actual Token payload, spelling and alignment.
+Boehm checks also cover parser and font behavior.
+
+A separate graphics-helper prototype retained the existing GPU draw results
+(2,920 image comparisons and 14 draw/lifecycle comparisons), but live animation
+kept producing new cache misses. Its full process-tree footprint increased,
+so the helper was removed from the source and build. The prototype and measured
+logs remain under `Build/prealloc-document/`; it is not an enabled renderer.
+
+These ownership and allocation checks do not establish the browser RAM target.
+The latest previously recorded clean optimized Pikabu endpoint remains
+1,095.9 MiB, above the verified Brave endpoint. New normal-window measurements
+must include the committed font-registration lifetime repair and the parser
+changes before comparing their effect. A diagnostic run of an earlier binary
+faulted in `native_replay_font_path`; that run supplied allocation samples,
+not a valid memory endpoint. Prealloc remains opt-in while the target is unmet.
