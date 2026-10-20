@@ -69,7 +69,7 @@ fn (mut cache StylesheetSyntaxCache) evict_oldest() {
 
 fn (mut cache StylesheetSyntaxCache) parse(input string) []ComponentValue {
 	if input.len < stylesheet_syntax_minimum_bytes || input.len > cache.max_source_bytes {
-		return ParserTokenStream.from_source(input, 'utf-8').values
+		return stylesheet_components_from_source(input)
 	}
 	cache.mutex.lock()
 	if values := cache.find(input) {
@@ -85,7 +85,7 @@ fn (mut cache StylesheetSyntaxCache) parse(input string) []ComponentValue {
 	// Cached token ranges can borrow the source. Own both in persistent
 	// storage even when the caller's stylesheet text belongs to a document.
 	owned_input := input.clone()
-	values := ParserTokenStream.from_source(owned_input, 'utf-8').values
+	values := stylesheet_components_from_source(owned_input)
 	nodes := stylesheet_syntax_node_count(values)
 	if nodes > cache.max_nodes || cache.max_entries <= 0 { return values }
 	cache.mutex.lock()
