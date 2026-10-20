@@ -950,6 +950,8 @@ fn place_list_item_marker_at_first_baseline(mut state LayoutState, box &Node) {
 // BlockFormattingContext::ensure_sizes_correct_for_left_offset_calculation()
 // and layout_list_item_marker().
 fn layout_list_item_marker(mut state LayoutState, list_item &ListItemBox, mut list_item_state UsedValues, bfc &BlockFormattingContext) {
+	mut retained := retain_geometry_allocations()
+	defer { retained.finish() }
 	marker_node := list_item.marker() or { return }
 	marker := marker_node.as_list_item_marker_box() or { return }
 	marker_styled := marker_node.as_node_with_style() or { return }

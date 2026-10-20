@@ -18,9 +18,11 @@ mut:
 fn (mut pool MeasurementUsedValuesChunkPool) enter_scratch() MeasurementScratchScope {
 	$if prealloc {
 		assert !pool.closed
+		mut retained := retain_geometry_allocations()
 		if pool.scratch_metadata_ == unsafe { nil } {
 			pool.scratch_metadata_ = platform.new_arena('intrinsic scratch metadata')
 		}
+		retained.finish()
 		metadata := pool.scratch_metadata_.enter()
 		if pool.scratch_depth_ == pool.scratch_slots_.len {
 			pool.scratch_slots_ << &MeasurementScratchSlot{
@@ -30,6 +32,7 @@ fn (mut pool MeasurementUsedValuesChunkPool) enter_scratch() MeasurementScratchS
 		mut slot := pool.scratch_slots_[pool.scratch_depth_]
 		pool.scratch_depth_++
 		pool.scratch_metadata_.leave(metadata)
+		geometry_measurement_depth++
 		return MeasurementScratchScope{pool: pool, slot: slot, entry: slot.arena.enter()}
 	}
 	return MeasurementScratchScope{}
@@ -43,6 +46,7 @@ fn (mut scope MeasurementScratchScope) finish() {
 	assert voidptr(pool.scratch_slots_[pool.scratch_depth_ - 1]) == voidptr(slot)
 	slot.arena.leave(scope.entry)
 	slot.arena.reset()
+	geometry_measurement_depth--
 	pool.scratch_depth_--
 	scope.slot = unsafe { nil }
 }

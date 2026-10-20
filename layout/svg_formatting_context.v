@@ -112,6 +112,8 @@ fn chromium_scale_and_align_viewbox_content(preserve svg.PreserveAspectRatio,
 }
 
 fn run_svg_formatting_context(mut state LayoutState, context_box &Node, mut root_state UsedValues, available_space AvailableSpace, parent_viewbox_transform svg.AffineTransform) FormattingContextResult {
+	mut retained := retain_geometry_allocations()
+	defer { retained.finish() }
 	mut context := SVGFormattingContext{
 		state: state
 		context_box: context_box

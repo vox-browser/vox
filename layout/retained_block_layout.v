@@ -112,6 +112,8 @@ fn run_retaining_independent_formatting_context(mut state LayoutState, box &Node
 				}
 				_ = state.restore_retained_values(entry.node, &entry.values, containing_values)
 			}
+			mut retained := retain_geometry_allocations()
+			defer { retained.finish() }
 			for input in cached.inputs {
 				input_key := u64(voidptr(input.node))
 				if inline_cache := state.previous_inline_layouts_[input_key] {
@@ -136,6 +138,8 @@ fn run_retaining_independent_formatting_context(mut state LayoutState, box &Node
 	width_constraint := used.width_constraint
 	height_constraint := used.height_constraint
 	result := layout_uncached_independent_formatting_context(mut state, box, mut used, mode, space)
+	mut retained := retain_geometry_allocations()
+	defer { retained.finish() }
 	mut snapshots := []RetainedBlockValues{cap: inputs.len}
 	for input in inputs[1..] {
 		child := input.node.as_node_with_style() or { continue }
@@ -153,7 +157,7 @@ fn run_retaining_independent_formatting_context(mut state LayoutState, box &Node
 		}
 	}
 	state.block_layouts_[key] = &RetainedBlockLayout{
-		inputs: inputs
+		inputs: inputs.clone()
 		values: snapshots
 		space: space
 		width: width

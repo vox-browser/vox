@@ -143,6 +143,10 @@ fn (mut used UsedValues) clear_line_boxes() {
 fn run_inline_formatting_context_internal(mut state LayoutState, containing_block &BlockContainer,
 	mut used UsedValues, mode LayoutMode, space AvailableSpace,
 	context ?&BlockFormattingContext) InlineFormattingResult {
+	// Lines and glyph runs are published by this operation. Keep their entire
+	// construction durable while the surrounding block/flex workspace retires.
+	mut retained := retain_geometry_allocations()
+	defer { retained.finish() }
 	root := unsafe { &Node(containing_block) }
 	mut eligible := mode == .normal && state.subtree_root == none && space.width.is_definite()
 	if bfc := context {

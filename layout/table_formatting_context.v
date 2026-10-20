@@ -2061,6 +2061,8 @@ fn position_table_captions(mut state LayoutState, table &Node, side css.CaptionS
 }
 
 fn run_table_formatting_context(mut state LayoutState, table &Node, mut table_state UsedValues, available_space AvailableSpace) FormattingContextResult {
+	mut retained := retain_geometry_allocations()
+	defer { retained.finish() }
 	table_timing_start := time.sys_mono_now()
 	_ = available_space
 	table_width_percentage_basis := if wrapper_state := table_state.containing_block_used_values() {

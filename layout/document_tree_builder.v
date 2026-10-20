@@ -853,6 +853,7 @@ fn finish_document_layout(document &dom.Document, root &Node, viewport_width f64
 		state.measurement_chunk_pool_.scratch_enabled_ = document.native_storage() != unsafe { nil }
 	}
 	defer { state.release_measurement_chunk_pool() }
+	mut geometry_scratch := begin_document_geometry_scratch(document)
 	geometry_started := timing_checkpoint
 	layout_viewport(mut state, viewport, viewport_width, viewport_height)
 	timing_checkpoint = layout_timing_checkpoint('      formatting_contexts', timing_checkpoint)
@@ -863,8 +864,9 @@ fn finish_document_layout(document &dom.Document, root &Node, viewport_width f64
 	// Offsets and relative insets are final. Overflow measurement and DOM
 	// projection read this geometry without changing the containing-block chain.
 	coordinates := begin_paint_coordinate_session(state)
-	defer { coordinates.finish() }
 	measure_document_scrollable_overflow(mut state, root)
+	coordinates.finish()
+	geometry_scratch.finish()
 	// The new cache retains only contexts present in this committed pass. Drop
 	// the lookup owner for removed or otherwise ineligible previous contexts.
 	state.previous_inline_layouts_ = map[u64]&RetainedInlineLayout{}

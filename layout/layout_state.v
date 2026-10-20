@@ -73,6 +73,8 @@ fn (rare &UsedValuesRareData) can_share_for_measurement() bool {
 }
 
 fn (rare &UsedValuesRareData) clone() &UsedValuesRareData {
+	mut retained_scope := retain_geometry_allocations()
+	defer { retained_scope.finish() }
 	return &UsedValuesRareData{
 		static_position_rect_: rare.static_position_rect_
 		relative_inset_basis_width_: rare.relative_inset_basis_width_
@@ -169,6 +171,8 @@ fn (u &UsedValues) derived_last_baseline() ?CSSPixels {
 }
 
 fn (mut u UsedValues) ensure_rare_data() &UsedValuesRareData {
+	mut retained_scope := retain_geometry_allocations()
+	defer { retained_scope.finish() }
 	if rare := u.rare_ {
 		if u.rare_is_shared_ {
 			owned := rare.clone()
@@ -280,6 +284,8 @@ pub fn (mut u UsedValues) set_table_cell_coordinates(table_cell_coordinates pain
 }
 
 pub fn (mut u UsedValues) set_grid_template_columns(columns []CSSPixels) {
+	mut retained_scope := retain_geometry_allocations()
+	defer { retained_scope.finish() }
 	mut rare := u.ensure_rare_data()
 	rare.used_grid_template_columns = columns.clone()
 }
@@ -292,6 +298,8 @@ pub fn (u &UsedValues) grid_template_columns() []CSSPixels {
 // getComputedStyle() reports the used grid-template sizes and explicit line
 // names, so the grid formatting context retains them in rare layout state.
 pub fn (mut u UsedValues) set_grid_template_rows(rows []CSSPixels) {
+	mut retained_scope := retain_geometry_allocations()
+	defer { retained_scope.finish() }
 	mut rare := u.ensure_rare_data()
 	rare.used_grid_template_rows = rows.clone()
 }
@@ -302,9 +310,21 @@ pub fn (u &UsedValues) grid_template_rows() []CSSPixels {
 }
 
 pub fn (mut u UsedValues) set_grid_line_names(columns [][]string, rows [][]string) {
+	mut retained_scope := retain_geometry_allocations()
+	defer { retained_scope.finish() }
 	mut rare := u.ensure_rare_data()
-	rare.used_grid_column_line_names = columns.clone()
-	rare.used_grid_row_line_names = rows.clone()
+	rare.used_grid_column_line_names = own_grid_line_names(columns)
+	rare.used_grid_row_line_names = own_grid_line_names(rows)
+}
+
+fn own_grid_line_names(source [][]string) [][]string {
+	mut result := [][]string{cap: source.len}
+	for line in source {
+		mut names := []string{cap: line.len}
+		for name in line { names << name.clone() }
+		result << names
+	}
+	return result
 }
 
 pub fn (u &UsedValues) grid_column_line_names() [][]string {
@@ -648,6 +668,8 @@ pub fn (mut u UsedValues) set_static_position_rect(position StaticPositionRect) 
 }
 
 pub fn (mut u UsedValues) set_inline_end_static_position_rect(position StaticPositionRect) {
+	mut retained_scope := retain_geometry_allocations()
+	defer { retained_scope.finish() }
 	if u.inline_end_snapshot_arena_ != unsafe { nil } {
 		mut arena := u.inline_end_snapshot_arena_
 		u.inline_end_static_position_snapshot_ = arena.allocate_inline_end_snapshot(position)
@@ -1080,6 +1102,8 @@ fn (store &UsedValuesPagedStore) get(index u32) ?&UsedValues {
 }
 
 fn (mut store UsedValuesPagedStore) allocate(index u32) &UsedValues {
+	mut retained_scope := retain_geometry_allocations()
+	defer { retained_scope.finish() }
 	page_index := int(index >> layout_state_page_bits)
 	if page_index >= store.pages.len {
 		store.ensure_capacity(index + 1)
@@ -1216,6 +1240,8 @@ fn (mut state LayoutState) release_measurement() {
 }
 
 pub fn (mut state LayoutState) ensure_capacity(node_count u32) {
+	mut retained_scope := retain_geometry_allocations()
+	defer { retained_scope.finish() }
 	state.used_values_store.ensure_capacity(node_count)
 }
 
@@ -1237,6 +1263,8 @@ fn (mut state LayoutState) mutable_box_values(node &NodeWithStyle) &UsedValues {
 // computed sizes which would immediately be overwritten by this complete copy.
 fn (mut state LayoutState) restore_retained_values(node &NodeWithStyle,
 	snapshot &UsedValues, containing ?&UsedValues) &UsedValues {
+	mut retained_scope := retain_geometry_allocations()
+	defer { retained_scope.finish() }
 	mut values := state.used_values_store.get(node.layout_index()) or {
 		state.used_values_store.allocate(node.layout_index())
 	}
@@ -1269,6 +1297,8 @@ fn (state &LayoutState) cached_definite_height_dependency(index u32) ?bool {
 }
 
 fn (mut state LayoutState) cache_definite_height_dependency(index u32, depends bool) {
+	mut retained_scope := retain_geometry_allocations()
+	defer { retained_scope.finish() }
 	if state.height_dependency_storage_ == unsafe { nil } {
 		state.height_dependency_storage_ = &LayoutStateHeightDependencyStorage{}
 	}
@@ -1276,12 +1306,21 @@ fn (mut state LayoutState) cache_definite_height_dependency(index u32, depends b
 }
 
 fn (mut state LayoutState) set_subgrid_axis_data(node &NodeWithStyle, columns bool, axis GridSubgridAxisData) {
+	mut retained_scope := retain_geometry_allocations()
+	defer { retained_scope.finish() }
 	mut storage := state.ensure_subgrid_storage()
 	mut data := storage.values[node.layout_index()] or { GridSubgridNodeData{} }
+	mut line_names := [][]css.GridLineName{cap: axis.line_names.len}
+	for line in axis.line_names {
+		mut names := []css.GridLineName{cap: line.len}
+		for name in line { names << css.GridLineName{name: name.name.clone(), implicit: name.implicit} }
+		line_names << names
+	}
+	owned := GridSubgridAxisData{tracks: axis.tracks.clone(), line_names: line_names, gap: axis.gap}
 	if columns {
-		data.columns = axis
+		data.columns = owned
 	} else {
-		data.rows = axis
+		data.rows = owned
 	}
 	storage.values[node.layout_index()] = data
 }
