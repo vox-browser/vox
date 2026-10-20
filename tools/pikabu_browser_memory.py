@@ -14,6 +14,7 @@ import re
 import select
 import shutil
 import statistics
+import struct
 import subprocess
 import tempfile
 import time
@@ -29,6 +30,28 @@ from wikipedia_browser_memory import PhysicalTree, clean_environment, placement,
 
 REPO = Path(__file__).resolve().parents[1]
 URL = 'https://pikabu.ru/'
+
+
+def runtime_identity(binary):
+    files = [binary, *sorted(binary.parent.glob('*.dylib'))]
+    snapshot = binary.parent.parent / 'Resources/adblock.snapshot.bin'
+    if snapshot.is_file():
+        files.append(snapshot)
+    return {str(path): digest(path) for path in files}
+
+
+def crop_native_document(window, target, document):
+    header = window.read_bytes()[:24]
+    if len(header) != 24 or header[:8] != b'\x89PNG\r\n\x1a\n':
+        raise RuntimeError('Invalid native endpoint image')
+    width, height = struct.unpack('!II', header[16:24])
+    logical_width, logical_height = document['viewport_width'], document['viewport_height']
+    scale = width // logical_width
+    if scale < 1 or width % logical_width or height != (logical_height + 84) * scale:
+        raise RuntimeError('Native endpoint image does not contain the measured viewport')
+    subprocess.run(['sips', '--cropToHeightWidth', str(logical_height * scale), str(width),
+                    '--cropOffset', str(60 * scale), '0', str(window), '--out', str(target)],
+                   check=True, stdout=subprocess.DEVNULL)
 
 
 def memory_result(counter, endpoint):
@@ -49,6 +72,8 @@ def measure(args, browser, output):
     screen = placement()
     binary = args.vox if browser == 'vox' else args.brave
     identity = {'binary': str(binary), 'sha256': digest(binary)}
+    if browser == 'vox':
+        identity['runtime'] = runtime_identity(binary)
     with tempfile.TemporaryDirectory(prefix='profile-', dir=output) as temporary:
         profile = Path(temporary).resolve()
         env = clean_environment()
@@ -61,6 +86,7 @@ def measure(args, browser, output):
                        DYLD_LIBRARY_PATH=str(binary.parent),
                        DYLD_INSERT_LIBRARIES=str(args.network_deny),
                        NO_PROXY='localhost,127.0.0.1',
+                       LADYBIRD_SCREENSHOT_SCALE=str(screen['scale']),
                        VOX_NATIVE_OBSERVATION_DELAY_MS=str(int(args.seconds * 1000) + 500),
                        VOX_NATIVE_OBSERVATION_SCREENSHOT=str(output / 'window.png'),
                        VOX_CAPTURE_AUDIT_PATH=str(output / 'document.json'),
@@ -139,6 +165,9 @@ def measure(args, browser, output):
                         document = json.loads((output / 'document.json').read_text())
                         validate_native_document(document)
                         result['document'] = document
+                        crop_native_document(output / 'window.png', output / 'document.png', document)
+                        if runtime_identity(binary) != identity['runtime']:
+                            raise RuntimeError('Vox executable or runtime changed during measurement')
                     # Capture/debugger observations follow the primary endpoint.
                     (output / 'result.json').write_text(json.dumps(result, indent=2) + '\n')
                     return result

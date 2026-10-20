@@ -1,6 +1,10 @@
 import unittest
+import struct
+import tempfile
+from pathlib import Path
+from unittest.mock import patch
 
-from pikabu_browser_memory import clean_environment, comparison, native_readiness, validate_native_document
+from pikabu_browser_memory import clean_environment, comparison, native_readiness, validate_native_document, runtime_identity, crop_native_document
 
 
 class ComparisonTests(unittest.TestCase):
@@ -38,6 +42,33 @@ class ComparisonTests(unittest.TestCase):
         inherited = {key: 'http://127.0.0.1:7890' for key in
                      ['HTTP_PROXY', 'HTTPS_PROXY', 'ALL_PROXY', 'http_proxy', 'https_proxy', 'all_proxy', 'VOX_PROXY']}
         self.assertFalse(set(inherited) & set(clean_environment(inherited)))
+
+    def test_runtime_identity_detects_changes_to_the_backend_and_snapshot(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            binary = root / 'MacOS/Vox'
+            binary.parent.mkdir()
+            binary.write_bytes(b'executable')
+            library = binary.with_name('libVoxGraphite.dylib')
+            library.write_bytes(b'backend')
+            snapshot = root / 'Resources/adblock.snapshot.bin'
+            snapshot.parent.mkdir()
+            snapshot.write_bytes(b'snapshot')
+            before = runtime_identity(binary)
+            self.assertEqual(len(before), 3)
+            library.write_bytes(b'changed backend')
+            self.assertNotEqual(before, runtime_identity(binary))
+
+    def test_native_crop_preserves_the_measured_device_pixel_density(self):
+        with tempfile.TemporaryDirectory() as directory:
+            source, target = Path(directory) / 'window.png', Path(directory) / 'document.png'
+            source.write_bytes(b'\x89PNG\r\n\x1a\n' + b'\0' * 8 + struct.pack('!II', 2048, 1760))
+            with patch('pikabu_browser_memory.subprocess.run') as run:
+                crop_native_document(source, target, dict(viewport_width=1024, viewport_height=796))
+                self.assertEqual(run.call_args.args[0][1:7],
+                                 ['--cropToHeightWidth', '1592', '2048', '--cropOffset', '120', '0'])
+                with self.assertRaises(RuntimeError):
+                    crop_native_document(source, target, dict(viewport_width=1024, viewport_height=600))
 
 
 if __name__ == '__main__':
