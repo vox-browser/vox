@@ -21,7 +21,7 @@ what remains before it can become the default.
 | Frame/pass scratch (transform resolution, refresh lists) | `platform.Arena`, reset after the pass | one pass |
 | Animation samples | `css.AnimationSampleStorage` arenas | until no style, layout snapshot or live scene can reach them |
 | Display-list scenes | `layout.DisplayListScene` arenas | until the layout result and every consumer released them |
-| Native paint-tree slots | `layout.PaintTreeStorage` arenas | until the layout result, shell geometry and every scene released them |
+| Native paint trees and style-to-paint projections | `layout.PaintTreeStorage` arenas | until the layout result, shell geometry and every scene released them |
 | Shared caches (fonts, parsed values, images) | base arena via `platform.enter_persistent()` | process |
 
 Allocated during a frame does not mean safe to discard at the end of that
@@ -59,6 +59,18 @@ frame: each arena is reset only after its last reader has let go.
   reuses a scratch arena at each nested probe depth. Scalar results are consumed
   before release. Text, font, intrinsic-size and table caches that survive a
   probe own their backing data outside it. The layout pass closes the pool.
+- **Ordinary geometry** (`layout/document_geometry_scratch.v`). Native block,
+  flex and grid work runs in a temporary scope. Used-value pages, rare data,
+  retained snapshots and grid metadata allocate back into the entered document
+  through `platform.enter_retained_allocations()`. Nested intrinsic probes
+  retain their shorter lifetime. Inline, table and SVG construction currently
+  stay durable as complete operations; their internal temporaries remain a
+  later target. The scope closes before publishing the DOM geometry attachment.
+- **Font keys and stylesheet tokens**. Font-cache key formatting reuses an arena;
+  a miss copies its key before reset. Background font computers keep their
+  ordinary allocation path. Native stylesheet tokenization releases raw token
+  builders after copying the complete immutable component tree into its owner.
+  This does not yet retire the rule parser's intermediate syntax trees.
 - **Native graphics**. Each Skia GPU context has a 64 MiB resource-cache budget.
   Native maintenance retires contexts after two seconds without GPU raster work,
   including on scripted pages, while preserving reusable CPU raster results.
@@ -73,10 +85,11 @@ frame: each arena is reset only after its last reader has let go.
   paint data (nested viewports) record into ordinary storage. Recording copies
   command records; payloads stay owned by the retained phase caches.
 - **Native paint trees** (`layout/paint_tree_storage.v`). The native shell opts
-  its documents into recycling before script execution can force layout. Only
-  the contiguous `BlockBox` array lives in the tree arena; filling its slots
-  runs in ordinary storage, preserving the lifetime of cached style projections
-  and command payloads. The committed layout result, adopted shell geometry,
+  its documents into recycling before script execution can force layout. The
+  contiguous `BlockBox` array and its projection payloads live in the tree arena.
+  Reusable geometry/paint templates own their backing storage independently.
+  SVG resource dependency lists belong to the document rather than a projection.
+  The committed layout result, adopted shell geometry,
   and each display-list scene hold separate references. Replacing geometry or
   releasing a scene drops its reference; the final release resets the arena.
   A document keeps at most two reset spares. General layout APIs retain their
@@ -138,8 +151,8 @@ frame: each arena is reset only after its last reader has let go.
 6. A geometry snapshot from a document opted into native paint-tree recycling
    holds `retain_document_paint_tree()` until `release_paint_tree()`. Retain
    before replacing the previous snapshot, then release its handle. Scenes
-   retain tree slots independently. The `paint tree slots` poison label covers
-   this lifetime; payload allocation is deliberately outside that arena.
+   retain projections independently. The `paint tree projections` poison label
+   covers both the slots and the payloads produced for that projection.
 
 ## Heap copies inserted by current V
 
@@ -277,11 +290,27 @@ python3 tools/pikabu_browser_memory.py \
 ```
 
 The comparison alternates launch order, verifies foreground focus, retains
-binary identities and samples, and requires every Vox trial to be below every
-Brave trial. Content capture/audit checks complement the native completion and
-paint checks. The verified Brave reference on 2026-10-20 was 454.6 MiB of
+binary/runtime identities and samples, and requires every Vox trial to be below
+every Brave trial. A one-shot observer captures the normally active Vox window
+and reads its retained DOM immediately after the memory endpoint. It does not
+enable screenshot document mode. Both captures use the display's pixel density.
+The endpoint must still have the frozen URL, a nonempty title, complete readiness,
+paint commands and story elements; an initial successful paint followed by an
+empty replacement is rejected. The verified Brave reference on 2026-10-20 was 454.6 MiB of
 settled process-tree physical footprint with 15 stories loaded. Diagnostic Vox
 builds still exceed that target; no claim of beating Brave is established yet.
+
+The clean optimized build retained at `Build/prealloc-document/app-document-16`
+settled at 1113.3 MiB over 60 seconds; its fitted latter-half growth was about
+0.47 MiB/s (`native-16-memory/1-vox/result.json`). This predates the font-key,
+tokenizer, ordinary-geometry and replay changes. Later poisoned/O0 runs validate
+ownership and content; their totals are not optimized allocator comparisons.
+
+A temporary CPU-only graphics diagnostic on the same frozen page removed the
+roughly 326 MiB category reported as unmapped graphics ownership. It establishes
+that the GPU path contributes that cost, rather than a V document arena. It is
+not a production renderer change or a visual-conformance result. Existing Skia
+context/cache cleanup does not return all of this process-attributed memory.
 
 ## Remaining work before `-prealloc` becomes the default
 
