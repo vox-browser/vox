@@ -102,6 +102,13 @@ frame: each arena is reset only after its last reader has let go.
   reuses sampled stops, GPU stops and clip-path vectors across commands and
   frames, and color-only gradients no longer materialize fallback stop arrays
   for each interpolation sample.
+- **Native replay** (`main_native_replay_scratch.v`). Command replay enters a
+  reusable arena after frame preparation and MSAA planning. The enclosing
+  compositing layer and deferred rounded-rectangle underlay finish before reset.
+  Nested SVG replay shares that frame lifetime. Image/color caches, gradient
+  buffers and cached SVG layouts fill in durable storage. Browser input delivered
+  at a cooperative checkpoint also allocates outside the current paint scope.
+  Tab disposal releases the replay arena.
 - **Animation samples** (`css/animation_samples.v`). Keyframe values,
   interpolated results, and everything derived from them for the target's
   layout snapshot are allocated in the current sample arena. Installing a
@@ -306,6 +313,14 @@ settled at 1113.3 MiB over 60 seconds; its fitted latter-half growth was about
 tokenizer, ordinary-geometry and replay changes. Later poisoned/O0 runs validate
 ownership and content; their totals are not optimized allocator comparisons.
 
+The next clean optimized build, `app-document-23`, settled at 1095.9 MiB with
+about 0.248 MiB/s latter-half growth over 60 seconds
+(`native-23-clean-memory/1-vox/result.json`). Its endpoint audit confirms the
+Pikabu URL/title, complete readiness, 15 stories and 34 story images. This build
+includes geometry and replay retirement, but predates the last lazy SVG style
+ownership fix. Eight selected live SVG reftests subsequently compare exactly
+with poisoning in `replay-24-svg/results.json`; these are O0 correctness checks.
+
 A temporary CPU-only graphics diagnostic on the same frozen page removed the
 roughly 326 MiB category reported as unmapped graphics ownership. It establishes
 that the GPU path contributes that cost, rather than a V document arena. It is
@@ -328,14 +343,14 @@ context/cache cleanup does not return all of this process-attributed memory.
 - Other paint-only animations (gradients, background-position, shadows)
   still rebuild the whole paint tree on every sample.
 - Layout-affecting animations rebuild layout state every frame.
-- Shell replay (`draw_command`) still allocates small per-frame temporaries.
+- Frame preparation, event dispatch and browser chrome still allocate outside
+  the bounded native command-replay workspace; idle growth remains measurable.
 - Paint boxes copy other snapshot data besides background layers. An
   animation frame resolves its target's whole snapshot into the sample arena;
   resolving only animated values there would remove that hazard and most
   sample bytes.
-- Gradient tile enumeration, nested/SVG replay transformations and other shell
-  replay temporaries still need allocation profiling. Reusing the plan, MSAA
-  and gradient data vectors does not bound every recording allocation.
+- Recording and non-native replay temporaries still need allocation profiling.
+  Bounding native command replay does not bound every frame-preparation path.
 - Single-load parsing, style and layout temporaries still inflate a native
   document's high-water mark. Typed layout trees and committed geometry need
   finer retirement than the complete document lifetime. Native identity
