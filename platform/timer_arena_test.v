@@ -52,3 +52,22 @@ fn test_restarting_a_timer_transfers_its_last_activity_lease() {
 	timer.stop()
 	assert owner.arena.usage().used == 0
 }
+
+fn test_process_timer_created_during_document_work_does_not_retain_that_document() {
+	mut owner := new_retained_arena('persistent timer initialization')
+	observation := &ArenaTimerObservation{}
+	owner.add_cleanup(fn [observation] () {
+		mut result := unsafe { &ArenaTimerObservation(observation) }
+		result.fired = true
+	})
+	mut scope := owner.enter()
+	persistent := enter_persistent()
+	mut timer := Timer.create_single_shot(1000, fn () {})
+	leave_persistent(persistent)
+	timer.start()
+	scope.finish()
+	owner.release()
+	assert observation.fired
+	assert owner.arena.usage().used == 0
+	timer.fire()
+}

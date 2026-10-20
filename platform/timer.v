@@ -26,12 +26,19 @@ mut:
 }
 
 pub fn Timer.create() &Timer {
-	return &Timer{allocation_owner_: current_retained_arena()}
+	return &Timer{allocation_owner_: timer_allocation_owner()}
+}
+
+fn timer_allocation_owner() &RetainedArena {
+	// Process-wide timers created in a persistent section have no document
+	// payload owner, even when that initialization runs during document work.
+	if !arena_entered() { return unsafe { nil } }
+	return current_retained_arena()
 }
 
 pub fn Timer.create_repeating(interval_ms int, handler TimerCallback) &Timer {
 	return &Timer{
-		allocation_owner_: current_retained_arena()
+		allocation_owner_: timer_allocation_owner()
 		interval_ms_: interval_ms
 		single_shot_: false
 		on_timeout: handler
@@ -40,7 +47,7 @@ pub fn Timer.create_repeating(interval_ms int, handler TimerCallback) &Timer {
 
 pub fn Timer.create_single_shot(interval_ms int, handler TimerCallback) &Timer {
 	return &Timer{
-		allocation_owner_: current_retained_arena()
+		allocation_owner_: timer_allocation_owner()
 		interval_ms_: interval_ms
 		single_shot_: true
 		on_timeout: handler
