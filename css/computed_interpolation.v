@@ -10771,6 +10771,7 @@ pub mut:
 	ancestor_filter_                                     CountingBloomFilter = CountingBloomFilter.new()
 	has_result_cache_                                    &HasResultCache = &HasResultCache{}
 	matching_rule_candidates_                            &MatchingRuleCandidateScratch = unsafe { nil }
+	cascade_scratch_ &CascadeScratchPool = unsafe { nil }
 	css_animation_storage_                               &CSSAnimationStorage = unsafe { nil }
 	css_transition_storage_                              &CSSTransitionStorage = unsafe { nil }
 	document_timeline_                                   &AnimationTimeline = unsafe { nil }
@@ -13487,7 +13488,10 @@ pub fn (s &StyleComputer) compute_logical_alias_mapping_context(abstract_element
 	// used to resolve logical property aliases (e.g. margin-inline-start -> margin-left/right).
 	did_match_any_pseudo_element_rules := false
 	properties_to_cascade := [PropertyID.writing_mode, PropertyID.direction]
-	cascaded_properties := s.compute_cascaded_values(abstract_element, did_match_any_pseudo_element_rules, mode, matching_rule_set, none, properties_to_cascade)
+	mut cascade := s.acquire_cascade_scratch()
+	defer { cascade.finish() }
+	mut cascaded_properties := cascade.properties
+	s.compute_cascaded_values_into(mut cascaded_properties, abstract_element, did_match_any_pseudo_element_rules, mode, matching_rule_set, none, properties_to_cascade)
 
 	writing_mode_value := logical_alias_normalize_value(abstract_element, .writing_mode, cascaded_properties.property(.writing_mode))
 	direction_value := logical_alias_normalize_value(abstract_element, .direction, cascaded_properties.property(.direction))
@@ -13889,7 +13893,10 @@ fn (s &StyleComputer) compute_style_impl_with_animated_custom_property_recompute
 	next_logical_checkpoint, logical_elapsed := css_style_profile_checkpoint(profile_checkpoint)
 	profile_checkpoint = next_logical_checkpoint
 	css_style_profile_logical_ns += logical_elapsed
-	mut cascaded_properties := s.compute_cascaded_values(abstract_element, did_match_any_pseudo_element_rules, mode, matching_rule_set, logical_alias_mapping_context, []PropertyID{})
+	mut cascade := s.acquire_cascade_scratch()
+	defer { cascade.finish() }
+	mut cascaded_properties := cascade.properties
+	s.compute_cascaded_values_into(mut cascaded_properties, abstract_element, did_match_any_pseudo_element_rules, mode, matching_rule_set, logical_alias_mapping_context, []PropertyID{})
 	next_cascade_checkpoint, cascade_elapsed := css_style_profile_checkpoint(profile_checkpoint)
 	profile_checkpoint = next_cascade_checkpoint
 	css_style_profile_cascade_ns += cascade_elapsed
@@ -13990,13 +13997,18 @@ pub fn end_style_profile() {
 }
 
 pub fn (s &StyleComputer) compute_cascaded_values(abstract_element dom.AbstractElement, did_match_any_pseudo_element_rules bool, mode ComputeStyleMode, matching_rule_set MatchingRuleSet, logical_alias_mapping_context ?LogicalAliasMappingContext, properties_to_cascade ComputedInterpolationPropertyIDs) &CascadedProperties {
+	mut cascaded_properties := CascadedProperties.new()
+	s.compute_cascaded_values_into(mut cascaded_properties, abstract_element, did_match_any_pseudo_element_rules, mode, matching_rule_set, logical_alias_mapping_context, properties_to_cascade)
+	return cascaded_properties
+}
+
+fn (s &StyleComputer) compute_cascaded_values_into(mut cascaded_properties CascadedProperties, abstract_element dom.AbstractElement, did_match_any_pseudo_element_rules bool, mode ComputeStyleMode, matching_rule_set MatchingRuleSet, logical_alias_mapping_context ?LogicalAliasMappingContext, properties_to_cascade ComputedInterpolationPropertyIDs) {
 	diagnostic_scope_start := begin_diagnostic_instruction_scope()
 	defer { record_diagnostic_instruction_scope(6, diagnostic_scope_start) }
 
-	mut cascaded_properties := CascadedProperties.new()
 	if mode == .create_pseudo_element_style_if_needed {
 		if !did_match_any_pseudo_element_rules {
-			return cascaded_properties
+			return
 		}
 	}
 
@@ -14038,7 +14050,6 @@ pub fn (s &StyleComputer) compute_cascaded_values(abstract_element dom.AbstractE
 	// Important user agent declarations
 	s.cascade_declarations(mut cascaded_properties, abstract_element, matching_rule_set.user_agent_rules, .user_agent, .yes, none, logical_alias_mapping_context, properties_to_cascade)
 
-	return cascaded_properties
 }
 
 fn set_html_presentational_hint(mut properties []StyleProperty, properties_to_cascade ComputedInterpolationPropertyIDs, property_id PropertyID, value StyleValue) {

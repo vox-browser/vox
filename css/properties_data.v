@@ -230,6 +230,7 @@ mut:
 	entry_chunks_          []&CascadedPropertiesEntryChunk
 	allocated_entry_count_ int
 	free_entry_index_      int = -1
+	scratch_arena_ &platform.Arena = unsafe { nil }
 }
 
 pub fn CascadedProperties.new() &CascadedProperties {
@@ -252,7 +253,7 @@ fn (mut c CascadedProperties) allocate_entry(entry CascadedPropertiesEntry, prev
 	} else {
 		index = c.allocated_entry_count_
 		c.allocated_entry_count_++
-		if index % cascaded_property_entry_chunk_size == 0 {
+		if index / cascaded_property_entry_chunk_size >= c.entry_chunks_.len {
 			// Allocate scanned storage without eagerly constructing unused slots.
 			// Every slot is initialized before its index enters a property chain.
 			c.entry_chunks_ << unsafe { &CascadedPropertiesEntryChunk(vcalloc(isize(sizeof(CascadedPropertiesEntryChunk)))) }
@@ -319,7 +320,8 @@ fn (mut c CascadedProperties) revert_entries(property_id PropertyID, important I
 		index = previous
 	}
 	if last_kept < 0 {
-		c.entry_heads_.delete(property_id)
+		if c.scratch_arena_ != unsafe { nil } { c.entry_heads_[property_id] = -1 }
+		else { c.entry_heads_.delete(property_id) }
 		c.contained_properties_cache_[cascaded_property_index(property_id)] = 0
 	} else {
 		mut last := c.entry_node(last_kept)
@@ -377,6 +379,8 @@ fn resolve_unresolved_style_value_for_property_with_context(abstract_element dom
 }
 
 pub fn (mut c CascadedProperties) set_property(property_id PropertyID, value &dom.StyleValue, important Important, origin CascadeOrigin, layer_name ?string, source voidptr, source_shadow_root ?&dom.ShadowRoot) {
+	entry := if c.scratch_arena_ != unsafe { nil } { c.scratch_arena_.enter() } else { platform.ArenaEntry{} }
+	defer { if c.scratch_arena_ != unsafe { nil } { c.scratch_arena_.leave(entry) } }
 	c.contained_properties_cache_[cascaded_property_index(property_id)] = 1
 	head := c.entry_heads_[property_id] or { -1 }
 	mut index := head
