@@ -227,14 +227,17 @@ def stop_process(process):
         except ProcessLookupError:
             pass
         except PermissionError:
-            # A native capture may exit between poll and killpg. A remaining
-            # system-owned crash reporter does not make that browser alive.
+            # Cocoa may already be tearing down the process group after a
+            # capture. Fall back to the exact Popen child, never another group.
             if process.poll() is None:
-                raise
+                process.terminate()
         try:
             process.wait(timeout=3)
         except subprocess.TimeoutExpired:
-            os.killpg(process.pid, signal.SIGKILL)
+            try:
+                os.killpg(process.pid, signal.SIGKILL)
+            except PermissionError:
+                process.kill()
             process.wait()
 
 

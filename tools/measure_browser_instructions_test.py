@@ -28,12 +28,12 @@ class ProcessStopTests(unittest.TestCase):
             measurement.stop_process(process)
         process.wait.assert_called_once_with(timeout=3)
 
-    def test_signalling_a_live_process_preserves_permission_errors(self):
+    def test_group_permission_failure_targets_only_the_original_child(self):
         process = Mock(pid=123, returncode=None)
         process.poll.return_value = None
         with patch.object(measurement.os, 'killpg', side_effect=PermissionError()):
-            with self.assertRaises(PermissionError):
-                measurement.stop_process(process)
+            measurement.stop_process(process)
+        process.terminate.assert_called_once_with()
 
 
 class ChromeDebuggerStartupTests(unittest.TestCase):
