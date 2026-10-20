@@ -3709,7 +3709,9 @@ pub fn (mut reporter ErrorReporter) report(error ParsingError) {
 		}
 		return
 	}
-	reporter.errors[key] = ParsingErrorMetadata{
+	persistent := platform.enter_persistent()
+	defer { platform.leave_persistent(persistent) }
+	reporter.errors[key.clone()] = ParsingErrorMetadata{
 		message: serialize_parsing_error(error)
 	}
 }
