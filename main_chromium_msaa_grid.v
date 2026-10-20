@@ -61,9 +61,9 @@ fn chromium_raster_grid(triggers []ChromiumMSAATrigger, viewport_width int,
 fn update_chromium_raster_grid(triggers []ChromiumMSAATrigger, viewport_width int,
 	viewport_height int, content_width f64, content_height f64, origin_x f64,
 	origin_y f64, scale f64, mut grid ChromiumRasterGrid) {
+	for cell in grid.cells { grid.active_cells[cell] = false }
 	grid.cells.clear()
 	grid.native_cells.clear()
-	grid.active_cells.clear()
 	width := math.max(1, int(math.ceil(content_width * scale)))
 	height := math.max(1, int(math.ceil(content_height * scale)))
 	tile_width, tile_height := chromium_raster_tile_size(viewport_width, viewport_height,
@@ -90,12 +90,13 @@ fn update_chromium_raster_grid(triggers []ChromiumMSAATrigger, viewport_width in
 				cell := y * columns + x
 				if !grid.active_cells[cell] {
 					grid.active_cells[cell] = true
-					grid.cells << cell
+					mut position := grid.cells.len
+					for position > 0 && grid.cells[position - 1] > cell { position-- }
+					grid.cells.insert(position, cell)
 				}
 			}
 		}
 	}
-	grid.cells.sort()
 	for cell in grid.cells { grid.native_cells << i32(cell) }
 	grid.tile_width = tile_width
 	grid.tile_height = tile_height

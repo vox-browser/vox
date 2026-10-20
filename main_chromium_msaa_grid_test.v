@@ -1,5 +1,22 @@
 module main
 
+import platform
+
+fn test_raster_grid_updates_reuse_hash_capacity_and_sort_without_allocations() {
+	triggers := [ChromiumMSAATrigger{left: 0, top: 0, right: 4096, bottom: 4096}]
+	mut grid := chromium_raster_grid(triggers, 1024, 768, 4096, 4096, 0, 0, 1)
+	before := platform.thread_arena_usage().used
+	for _ in 0 .. 100 {
+		update_chromium_raster_grid(triggers, 1024, 768, 4096, 4096, 0, 0, 1, mut grid)
+	}
+	$if prealloc { assert platform.thread_arena_usage().used <= before + 64 }
+	for index in 1 .. grid.cells.len { assert grid.cells[index - 1] < grid.cells[index] }
+	update_chromium_raster_grid([], 1024, 768, 4096, 4096, 0, 0, 1, mut grid)
+	assert grid.cells.len == 0
+	update_chromium_raster_grid(triggers, 1024, 768, 4096, 4096, 0, 0, 1, mut grid)
+	assert grid.cells.len > 16
+}
+
 fn test_chromium_raster_grid_retains_viewport_and_content_scale_separately() {
 	width, height := chromium_raster_tile_size(1280, 800, 1280, 2720, 1)
 	assert width == 1280 && height == 256
