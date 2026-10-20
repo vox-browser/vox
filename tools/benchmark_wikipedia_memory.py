@@ -32,10 +32,11 @@ def summarize(rows, limit_bytes):
         result[name] = dict(settled_bytes=values,
             median_settled_bytes=statistics.median(values),
             maximum_settled_bytes=max(values),
+            maximum_settled_observation_bytes=max(r['memory']['settled_range_bytes'][1] for r in group),
             observed_launch_peak_bytes=[r['memory']['observed_simultaneous_peak_bytes'] for r in group])
     result['reduction_percent'] = 100 * (1 - result['after']['median_settled_bytes']
         / result['before']['median_settled_bytes'])
-    result['passed'] = exact and result['after']['maximum_settled_bytes'] <= limit_bytes
+    result['passed'] = exact and result['after']['maximum_settled_observation_bytes'] <= limit_bytes
     return result
 
 
@@ -82,7 +83,7 @@ def main():
         metric='Simultaneous sum of browser and descendant task physical footprints; decimal MB.',
         endpoint='Last second of 15s after readiness, before screenshot allocation.',
         peak='Observed simultaneous launch-to-endpoint peak, a polling lower bound.',
-        limit_scope='Every after sample settled median; startup peak reported separately.',
+        limit_scope='Every observation in every after settled window; startup peak reported separately.',
         files_sha256=pins, cache_files_sha256=cache_pins)
     (args.output / 'protocol.json').write_text(json.dumps(protocol, indent=2) + '\n')
     rows = []

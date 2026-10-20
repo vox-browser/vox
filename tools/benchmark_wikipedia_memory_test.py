@@ -6,6 +6,7 @@ from benchmark_wikipedia_memory import summarize
 def row(variant, settled, peak=500_000_000, image='same', cache='frozen'):
     return dict(variant=variant, cache_digest=cache, raw_viewport_sha256=image,
         memory=dict(settled_physical_footprint_bytes=settled,
+                    settled_range_bytes=[settled, settled],
                     observed_simultaneous_peak_bytes=peak))
 
 
@@ -20,6 +21,11 @@ class WikipediaMemoryTargetTests(unittest.TestCase):
         result = summarize(rows, 100_000_000)
         self.assertTrue(result['passed'])
         self.assertEqual(result['after']['observed_launch_peak_bytes'], [500_000_000] * 2)
+
+    def test_rejects_a_settled_spike_even_when_every_run_median_passes(self):
+        rows = [row('before', 120_000_000), row('after', 99_000_000)]
+        rows[-1]['memory']['settled_range_bytes'] = [98_000_000, 100_000_001]
+        self.assertFalse(summarize(rows, 100_000_000)['passed'])
 
     def test_rejects_rendering_changes_and_mismatched_workloads(self):
         result = summarize([row('before', 120), row('after', 90, image='changed')], 100)
