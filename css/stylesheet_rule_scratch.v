@@ -9,7 +9,7 @@ import platform
 fn (mut parser RuleSelectorParser) parse_stylesheet_rules(location ?string) []&CSSRule {
 	$if prealloc {
 		if platform.current_retained_arena() != unsafe { nil }
-			&& parser.token_stream.values.len >= 128 {
+			&& parser.token_stream.values.len > 0 {
 			mut scratch := platform.new_arena('stylesheet rule syntax')
 			entry := scratch.enter()
 			mut raw_parser := RuleSelectorParser{

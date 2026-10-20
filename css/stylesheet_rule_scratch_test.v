@@ -70,3 +70,24 @@ fn test_long_declarations_do_not_allocate_another_component_vector() {
 		assert declaration.value.last().is_ident('none')
 	}
 }
+
+fn test_large_single_media_block_retires_discarded_rule_recovery() {
+	mut document := dom.Document.create(dom.URL{value:'https://rule-recovery.test/'})
+	document.enable_native_storage()
+	mut baseline := i64(0)
+	for count in [1, 1, 4096] {
+		mut parser := RuleSelectorParser.create(ParsingParams{}, '@media(width>1px){' + 'invalid garbage;'.repeat(count) + '}', 'utf-8')
+		mut scope := document.enter_native_storage()
+		mut before := i64(0)
+		$if prealloc { before = document.native_storage().arena.usage().used }
+		sheet := parser.parse_as_css_stylesheet(none, none)
+		assert sheet.rules.length() == 1
+		$if prealloc {
+			growth := document.native_storage().arena.usage().used - before
+			if count == 1 { baseline = growth }
+			else { assert growth < baseline + 128 * 1024, '${growth} bytes retained versus ${baseline} for an empty block' }
+		}
+		scope.finish()
+	}
+	document.release_native_storage()
+}

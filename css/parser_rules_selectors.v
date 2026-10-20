@@ -393,8 +393,7 @@ pub fn (mut parser RuleSelectorParser) convert_rules(raw_rules []Rule) []&CSSRul
 // https://drafts.csswg.org/css-syntax/#parse-a-css-stylesheet
 pub fn (mut parser RuleSelectorParser) parse_as_css_stylesheet(location ?string, media_list ?&MediaList) &CSSStyleSheet {
 	// To parse a CSS stylesheet, first parse a stylesheet.
-	style_sheet := parser.parse_a_stylesheet(location)
-	rule_list := CSSRuleList.create(parser.convert_rules(style_sheet.rules))
+	rule_list := CSSRuleList.create(parser.parse_stylesheet_rules(location))
 	media := media_list or { MediaList.create_empty() }
 	return CSSStyleSheet.create(rule_list, media, location)
 }
@@ -852,7 +851,15 @@ fn (mut parser RuleSelectorParser) consume_a_blocks_contents(mut input ParserTok
 			// Consume a declaration from input, with nested set to true. If a declaration was returned, append it to
 			// decls, and discard a mark from input.
 			if declaration := parser.consume_a_declaration(mut input, .yes, .no) {
-				declarations << declaration
+				// V deep-clones an optional binding appended directly, including
+				// the borrowed token span and name. Preserve those source owners.
+				declarations << Declaration{
+					name: declaration.name
+					value: declaration.value
+					important: declaration.important
+					original_value_text: declaration.original_value_text
+					original_full_text: declaration.original_full_text
+				}
 				input.discard_a_mark()
 			} else {
 				// Otherwise, restore a mark from input, then consume a qualified rule from input, with nested set to
