@@ -779,7 +779,9 @@ fn (mut iterator InlineLevelIterator) generate_next_item() ?InlineLevelItem {
 }
 
 fn (iterator &InlineLevelIterator) shape_text_for_layout(text_node &TextNode, initial_x f32, letter_spacing f32, word_spacing f32, text string, font &platform.Font, text_type platform.GlyphRunTextType) platform.ShapedText {
-	for cached in text_node.cached_intrinsic_text_shapes_ {
+	cache_start, cache_end := intrinsic_shape_cache_range(text_node, text)
+	for cache_position := cache_start; cache_position < cache_end; cache_position++ {
+		cached := text_node.cached_intrinsic_text_shapes_[intrinsic_shape_cache_entry_index(text_node, cache_position)]
 		if cached.initial_x == initial_x && cached.letter_spacing == letter_spacing
 			&& cached.word_spacing == word_spacing
 			&& cached.text == text && voidptr(cached.font) == voidptr(font)
@@ -805,6 +807,7 @@ fn (iterator &InlineLevelIterator) shape_text_for_layout(text_node &TextNode, in
 			glyph_run: shaped.glyph_run
 			trailing_whitespace: shaped.trailing_whitespace
 		}
+		append_intrinsic_shape_cache_order(mut mutable_text_node)
 		platform.leave_persistent(persistent)
 		return platform.ShapedText{
 			glyph_run: shaped.glyph_run.fork_for_layout()

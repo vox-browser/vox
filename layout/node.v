@@ -2101,6 +2101,7 @@ pub mut:
 	cached_inline_font_owner_ voidptr
 	cached_utf16_code_units_      ?[]u16
 	cached_intrinsic_text_shapes_ []IntrinsicTextShapeCacheEntry
+	cached_intrinsic_shape_order_ &IntrinsicTextShapeOrder = unsafe { nil }
 	source_range_start_                    int
 	source_range_length_                   ?int
 	first_letter_                          ?&TextNode
