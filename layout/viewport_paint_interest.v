@@ -7,7 +7,7 @@ import dom
 // DOM paintable geometry remain complete. Any scroll, geometry query, paint
 // style update, or full-document recording restores the ordinary transport.
 fn viewport_paint_interest(document &dom.Document) LayoutRect {
-	viewport := document.viewport_rect()
+	viewport := document.layout_viewport_rect()
 	return LayoutRect{viewport.x - viewport.width, viewport.y - viewport.height,
 		viewport.width * 3, viewport.height * 3}
 }

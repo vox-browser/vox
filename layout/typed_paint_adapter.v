@@ -2662,7 +2662,8 @@ fn renderer_box_from_document_layout_result(result &DocumentLayoutResult, viewpo
 	projection_owner.paint_tree_storage = unsafe { nil }
 	layout_completed := time.sys_mono_now()
 	root_layout_node := result.root.first_child() or { return BlockBox{} }
-	storage := projection_owner.acquire_paint_tree_storage(root_layout_node.document())
+	document := root_layout_node.document()
+	storage := projection_owner.acquire_paint_tree_storage(document)
 	mut entry := platform.ArenaEntry{}
 	if storage != unsafe { nil } { entry = storage.arena.enter() }
 	defer { if storage != unsafe { nil } { storage.arena.leave(entry) } }
@@ -2671,17 +2672,19 @@ fn renderer_box_from_document_layout_result(result &DocumentLayoutResult, viewpo
 	svg_sources := begin_paint_svg_source_session(root_layout_node)
 	defer { svg_sources.finish() }
 	mut incomplete := PaintProjectionStatus{}
-	mut root_box := build_typed_paint_tree_projection(root_layout_node, result.state, [6]f64{}, result.paint_projection_interest, mut incomplete)
+	mut root_box := build_typed_paint_tree_projection(root_layout_node, result.state, layout_to_css_transform(document), result.paint_projection_interest, mut incomplete)
 	projection_owner.paint_tree_storage = storage
 	projection_owner.paint_projection_incomplete = incomplete.incomplete
-	paintable_box_paint_background(mut root_box, root_layout_node, result.state, viewport_width, viewport_height)
+	paintable_box_paint_background(mut root_box, root_layout_node, result.state,
+		viewport_width * document.layout_coordinate_scale(),
+		viewport_height * document.layout_coordinate_scale())
 
 	// The compatibility transport omits the typed Viewport node itself. Mark its
 	// root element as the owner of the mandatory viewport scroll frame so replay
 	// still follows ViewportPaintable::assign_scroll_frames().
 	root_box.is_viewport_scroller = true
-	root_box.viewport_width = viewport_width
-	root_box.viewport_height = viewport_height
+	root_box.viewport_width = viewport_width * document.layout_coordinate_scale()
+	root_box.viewport_height = viewport_height * document.layout_coordinate_scale()
 	if viewport_styled := result.root.as_node_with_style() {
 		if viewport_used := result.state.try_get(viewport_styled) {
 			root_box.overlay = compatibility_overlay_data(result.root, viewport_styled.computed_values(), viewport_used)

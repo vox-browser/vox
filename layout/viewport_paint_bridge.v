@@ -336,7 +336,7 @@ fn viewport_rederive_scroll_state(mut result DocumentLayoutResult) painting.Scro
 fn compatibility_live_scroll_offset(result &DocumentLayoutResult, frame &painting.ScrollFrame) painting.Point {
 	paintable_box := frame.paintable_box()
 	if paintable_box == 'viewport' {
-		viewport := result.document.viewport_rect()
+		viewport := result.document.layout_viewport_rect()
 		return painting.Point{viewport.x, viewport.y}
 	}
 	node_id := paintable_box.i64()
@@ -344,7 +344,8 @@ fn compatibility_live_scroll_offset(result &DocumentLayoutResult, frame &paintin
 		if node := dom.Node.from_unique_id(dom.UniqueNodeID(node_id)) {
 			if paintable := node.paintable_box() {
 				live := paintable.scroll_offset()
-				return painting.Point{live.x(), live.y()}
+				return painting.Point{live.x() * result.document.layout_coordinate_scale(),
+					live.y() * result.document.layout_coordinate_scale()}
 			}
 		}
 	}
@@ -689,10 +690,15 @@ fn patch_compositor_visual_contexts(mut tree painting.AccumulatedVisualContextTr
 	return true
 }
 
-fn assign_compatibility_visual_contexts(mut box BlockBox, visual_parent ?&BlockBox, boxes_by_layout map[u64]&BlockBox, mut tree painting.AccumulatedVisualContextTree) {
+fn assign_compatibility_visual_contexts(mut box BlockBox, visual_parent ?&BlockBox,
+	boxes_by_layout map[u64]&BlockBox, mut tree painting.AccumulatedVisualContextTree) {
+	assign_compatibility_visual_contexts_with_coordinate_root(mut box, visual_parent, boxes_by_layout, 0, mut tree)
+}
+
+fn assign_compatibility_visual_contexts_with_coordinate_root(mut box BlockBox, visual_parent ?&BlockBox, boxes_by_layout map[u64]&BlockBox, coordinate_root int, mut tree painting.AccumulatedVisualContextTree) {
 	box.fixed_background_visual_context = none
-	mut inherited_state := 0
-	mut inherited_plane_root := 0
+	mut inherited_state := coordinate_root
+	mut inherited_plane_root := coordinate_root
 	mut fixed_to_viewport := false
 	if box.layout_handle != unsafe { nil } {
 		node := unsafe { &Node(box.layout_handle) }
@@ -883,7 +889,7 @@ fn assign_compatibility_visual_contexts(mut box BlockBox, visual_parent ?&BlockB
 
 	for child_index := 0; child_index < box.children.len; child_index++ {
 		mut child := unsafe { &box.children[child_index] }
-		assign_compatibility_visual_contexts(mut child, unsafe { box }, boxes_by_layout, mut tree)
+		assign_compatibility_visual_contexts_with_coordinate_root(mut child, unsafe { box }, boxes_by_layout, coordinate_root, mut tree)
 	}
 }
 
@@ -939,13 +945,20 @@ fn paintable_box_transform_point_to_local_for_descendants(box &BlockBox,
 fn paintable_box_transform_rect_to_viewport(box &BlockBox, rect LayoutRect,
 	device_pixels_per_css_pixel f64, tree painting.AccumulatedVisualContextTree,
 	snapshot painting.ScrollStateSnapshot) LayoutRect {
-	return transform_rect_to_viewport_with_visual_context(box.accumulated_visual_context_index,
-		rect, device_pixels_per_css_pixel, tree, snapshot)
+	return transform_rect_to_viewport_in_layout_coordinates(box.accumulated_visual_context_index,
+		rect, device_pixels_per_css_pixel, box_layout_coordinate_scale(box), tree, snapshot)
 }
 
 fn transform_rect_to_viewport_with_visual_context(context_index int, rect LayoutRect,
 	device_pixels_per_css_pixel f64, tree painting.AccumulatedVisualContextTree,
 	snapshot painting.ScrollStateSnapshot) LayoutRect {
+	return transform_rect_to_viewport_in_layout_coordinates(context_index, rect,
+		device_pixels_per_css_pixel, 1, tree, snapshot)
+}
+
+fn transform_rect_to_viewport_in_layout_coordinates(context_index int, rect LayoutRect,
+	device_pixels_per_css_pixel f64, layout_coordinate_scale f64,
+	tree painting.AccumulatedVisualContextTree, snapshot painting.ScrollStateSnapshot) LayoutRect {
 	if context_index == 0 {
 		return rect
 	}
@@ -958,6 +971,16 @@ fn transform_rect_to_viewport_with_visual_context(context_index int, rect Layout
 	}
 	result := tree.transform_rect_to_viewport(context_index, device_rect, snapshot)
 	inverse_scale := f32(1) / scale
+	if layout_coordinate_scale != 1 {
+		// Layout is already quantized in physical pixels. Keep the inverse
+		// viewport transform's CSS precision (and fractional author transforms).
+		return LayoutRect{
+			x: f64(f32(result.x) * inverse_scale)
+			y: f64(f32(result.y) * inverse_scale)
+			width: f64(f32(result.width) * inverse_scale)
+			height: f64(f32(result.height) * inverse_scale)
+		}
+	}
 	return LayoutRect{
 		x: css.CSSPixels.nearest_value_for(f64(f32(result.x) * inverse_scale)).to_double()
 		y: css.CSSPixels.nearest_value_for(f64(f32(result.y) * inverse_scale)).to_double()
@@ -1007,7 +1030,13 @@ fn rebuild_compatibility_visual_contexts(mut result DocumentLayoutResult) {
 	mut boxes_by_scroll_frame := map[int]&BlockBox{}
 	assign_compatibility_scroll_frames(mut result.paint_tree, result.boxes_by_layout_cache, mut boxes_by_scroll_frame, mut result.scroll_state)
 	result.visual_context_tree = painting.new_accumulated_visual_context_tree()
-	assign_compatibility_visual_contexts(mut result.paint_tree, none, result.boxes_by_layout_cache, mut result.visual_context_tree)
+	mut coordinate_root := 0
+	if result.document.layout_coordinate_scale() != 1 {
+		coordinate_root = result.visual_context_tree.append(painting.TransformVisualData{
+			matrix: compatibility_painting_affine(layout_to_css_transform(result.document))
+		}, 0)
+	}
+	assign_compatibility_visual_contexts_with_coordinate_root(mut result.paint_tree, none, result.boxes_by_layout_cache, coordinate_root, mut result.visual_context_tree)
 	result.needs_accumulated_visual_contexts = false
 }
 
@@ -1168,12 +1197,12 @@ fn viewport_transform_client_rects(target voidptr, node &dom.Node,
 	}
 	mut transformed_rects := []dom.CSSPixelRect_{cap: rects.len}
 	for rect in rects {
-		transformed := transform_rect_to_viewport_with_visual_context(context_index, LayoutRect{
+		transformed := transform_rect_to_viewport_in_layout_coordinates(context_index, LayoutRect{
 			x: rect.x_
 			y: rect.y_
 			width: rect.width()
 			height: rect.height()
-		}, result.document.device_pixels_per_css_pixel(), result.visual_context_tree,
+		}, result.document.device_pixels_per_css_pixel(), result.document.layout_coordinate_scale(), result.visual_context_tree,
 			result.scroll_state_snapshot)
 		transformed_rects << dom.CSSPixelRect_{
 			x_: transformed.x
@@ -1316,7 +1345,7 @@ fn compatibility_scroll_box_to_rect(mut result DocumentLayoutResult, box &BlockB
 	mut current_y := 0.0
 	mut paintable_box := ?&dom.PaintableBox(none)
 	if box.is_viewport_scroller {
-		viewport := result.document.viewport_rect()
+		viewport := result.document.layout_viewport_rect()
 		current_x = viewport.x
 		current_y = viewport.y
 	} else if box.layout_handle != unsafe { nil } {
@@ -1325,8 +1354,8 @@ fn compatibility_scroll_box_to_rect(mut result DocumentLayoutResult, box &BlockB
 			paintable_box = dom_node.paintable_box()
 			if value := paintable_box {
 				current := value.scroll_offset()
-				current_x = current.x()
-				current_y = current.y()
+				current_x = current.x() * result.document.layout_coordinate_scale()
+				current_y = current.y() * result.document.layout_coordinate_scale()
 			}
 		}
 	}
@@ -1365,7 +1394,7 @@ fn compatibility_scroll_box_to_rect(mut result DocumentLayoutResult, box &BlockB
 	} else if content_top < current_y {
 		target_y = content_top
 	}
-	requested := dom.CSSPixelPoint_{ x_: target_x, y_: target_y }
+	requested := dom.CSSPixelPoint_{ x_: target_x / result.document.layout_coordinate_scale(), y_: target_y / result.document.layout_coordinate_scale() }
 	if box.is_viewport_scroller {
 		if navigable := result.document.navigable() {
 			navigable.perform_scroll_of_viewport_scrolling_box(requested)

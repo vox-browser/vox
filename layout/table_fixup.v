@@ -254,7 +254,7 @@ fn wrap_table_roots(mut node Node, document &dom.Document) {
 			element_style := unsafe { &css.ComputedProperties(child_styled.computed_values()) }
 			table_style, style := element_style.table_box_and_wrapper_properties()
 			mut mutable_child_style := unsafe { &NodeWithStyle(child_styled) }
-			mutable_child_style.computed_values_ = css.resolve_computed_values_for_document(table_style, document)
+			mutable_child_style.computed_values_ = computed_values_in_layout_coordinates(table_style, document)
 			mut wrapper := unsafe { &Node(TableWrapper.new(document, none, style)) }
 			wrapper.anonymous_ = true
 			wrapper.append_child(child)

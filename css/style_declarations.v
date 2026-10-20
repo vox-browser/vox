@@ -1543,8 +1543,8 @@ fn cssom_resolved_transform(computed &ComputedProperties, layout_node &dom.Layou
 
 	paintable_box := TransformPaintableBox{
 		reference_box: TransformReferenceBox{
-			width: CSSPixels.nearest_value_for(layout_node.border_box_.width)
-			height: CSSPixels.nearest_value_for(layout_node.border_box_.height)
+			width: CSSPixels.nearest_value_for(layout_node.border_box_.width / if node := layout_node.dom_node() { node.document().layout_coordinate_scale() } else { 1.0 })
+			height: CSSPixels.nearest_value_for(layout_node.border_box_.height / if node := layout_node.dom_node() { node.document().layout_coordinate_scale() } else { 1.0 })
 		}
 		length_resolution_context: length_resolution_context_from_layout_node(layout_node) or {
 			LengthResolutionContext.default()
@@ -1660,7 +1660,7 @@ pub fn (properties &CSSStyleProperties) style_value_for_computed_property(layout
 				} else {
 					layout_node.content_height_
 				}
-				return cssom_style_value_for_size(Size.make_px(CSSPixels.nearest_value_for(used / owner.document().layout_coordinate_scale())))
+				return cssom_style_value_for_px(used / owner.document().layout_coordinate_scale())
 			}
 			return cssom_style_value_for_size(computed.size_value(.height))
 		}
@@ -1671,7 +1671,7 @@ pub fn (properties &CSSStyleProperties) style_value_for_computed_property(layout
 				} else {
 					layout_node.content_width_
 				}
-				return cssom_style_value_for_size(Size.make_px(CSSPixels.nearest_value_for(used / owner.document().layout_coordinate_scale())))
+				return cssom_style_value_for_px(used / owner.document().layout_coordinate_scale())
 			}
 			return cssom_style_value_for_size(computed.size_value(.width))
 		}

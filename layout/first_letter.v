@@ -152,7 +152,7 @@ fn create_first_letter_boxes(document &dom.Document, element &dom.Element, targe
 		remainder.source_range_length_ = target.source_length - target.letter_end
 		remainder.first_letter_ = first
 	}
-	css.resolve_computed_values_for_document(style, document)
+	computed_values_in_layout_coordinates(style, document)
 	mut wrapper := create_layout_node_for_generated_content(document, style)
 	wrapper.set_generated_for(.first_letter, element)
 	wrapper.set_children_are_inline(true)

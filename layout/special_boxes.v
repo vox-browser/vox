@@ -28,7 +28,7 @@ fn special_box_base(document &dom.Document, dom_node ?&dom.Node, computed_values
 					has_style_: true
 					is_box_: true
 				}
-				computed_values_: css.resolve_computed_values_for_document(computed_values, document)
+				computed_values_: computed_values_in_layout_coordinates(computed_values, document)
 			}
 		}
 	}

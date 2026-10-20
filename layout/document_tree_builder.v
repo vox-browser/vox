@@ -855,7 +855,8 @@ fn finish_document_layout(document &dom.Document, root &Node, viewport_width f64
 	defer { state.release_measurement_chunk_pool() }
 	mut geometry_scratch := begin_document_geometry_scratch(document)
 	geometry_started := timing_checkpoint
-	layout_viewport(mut state, viewport, viewport_width, viewport_height)
+	layout_viewport(mut state, viewport, viewport_width * document.layout_coordinate_scale(),
+		viewport_height * document.layout_coordinate_scale())
 	timing_checkpoint = layout_timing_checkpoint('      formatting_contexts', timing_checkpoint)
 	layout_absolutely_positioned_descendants(mut state, root)
 	timing_checkpoint = layout_timing_checkpoint('      absolute_descendants', timing_checkpoint)
@@ -889,6 +890,7 @@ fn finish_document_layout(document &dom.Document, root &Node, viewport_width f64
 	return DocumentLayoutResult{
 		root: root
 		state: state
+		document: document
 	}
 }
 
@@ -2302,7 +2304,7 @@ fn fixup_fieldset_content_box(mut node Node, document &dom.Document) {
 		return
 	}
 	content_style := fieldset_computed.take_properties_for_fieldset_content_box()
-	fieldset_style.computed_values_ = css.resolve_computed_values_for_document(fieldset_computed, document)
+	fieldset_style.computed_values_ = computed_values_in_layout_coordinates(fieldset_computed, document)
 	mut wrapper := unsafe { &Node(BlockContainer.new(document, none, content_style)) }
 	wrapper.anonymous_ = true
 	mut non_legend_children := []&Node{}
@@ -2331,7 +2333,7 @@ fn build_generated_pseudo_element(document &dom.Document, element &dom.Element, 
 	if computed.display().is_none() {
 		return none
 	}
-	css.resolve_computed_values_for_document(computed, document)
+	computed_values_in_layout_coordinates(computed, document)
 	abstract_element := dom.AbstractElement.new(element, dom_pseudo)
 	registered_counter_styles := css.registered_counter_styles_for_abstract_element(abstract_element)
 	mut content_replacement_source := computed.content_replacement_image(&abstract_element)
@@ -2418,7 +2420,7 @@ fn build_backdrop_pseudo_element(document &dom.Document, element &dom.Element, m
 	if computed.display().is_none() {
 		return none
 	}
-	css.resolve_computed_values_for_document(computed, document)
+	computed_values_in_layout_coordinates(computed, document)
 	resolve_layout_counters(mut builder_state, dom.AbstractElement.new(element, .backdrop), computed)
 	mut node := create_layout_node_for_generated_content(document, computed)
 	node.set_generated_for(.backdrop, element)
@@ -2432,7 +2434,7 @@ fn build_list_item_marker(document &dom.Document, element &dom.Element, list_ite
 	if marker_computed.display().is_none() {
 		return none
 	}
-	css.resolve_computed_values_for_document(marker_computed, document)
+	computed_values_in_layout_coordinates(marker_computed, document)
 	abstract_element := dom.AbstractElement.new(element, .marker)
 	registered_counter_styles := css.registered_counter_styles_for_abstract_element(abstract_element)
 	initial_content := marker_computed.content(&abstract_element, 0, registered_counter_styles).content_data

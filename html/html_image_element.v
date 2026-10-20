@@ -1310,7 +1310,7 @@ pub fn html_image_element_width(element &dom.HTMLImageElement) u32 {
 	document.update_layout_if_needed_for_node(dom_element.as_node(), .html_image_element_width)
 	if layout_node := dom_element.as_node().layout_node() {
 		if layout_node.has_geometry_ {
-			return u32(layout_node.content_width_)
+			return u32(layout_node.content_width_ / document.layout_coordinate_scale())
 		}
 	}
 	if width := parse_non_negative_integer(dom_element.get_attribute_value('width')) {
@@ -1337,7 +1337,7 @@ pub fn html_image_element_height(element &dom.HTMLImageElement) u32 {
 	document.update_layout_if_needed_for_node(dom_element.as_node(), .html_image_element_height)
 	if layout_node := dom_element.as_node().layout_node() {
 		if layout_node.has_geometry_ {
-			return u32(layout_node.content_height_)
+			return u32(layout_node.content_height_ / document.layout_coordinate_scale())
 		}
 	}
 	if height := parse_non_negative_integer(dom_element.get_attribute_value('height')) {
@@ -1377,7 +1377,7 @@ pub fn html_image_element_x(element &dom.HTMLImageElement) int {
 	// The accumulated visual context supplies scroll-frame state used by the
 	// coordinate calculation. Do not resolve it until a committed box exists.
 	document.update_paint_and_hit_testing_properties_if_needed()
-	return int(layout_node.border_box_.x)
+	return int(layout_node.border_box_.x / document.layout_coordinate_scale())
 }
 
 pub fn html_image_element_y(element &dom.HTMLImageElement) int {
@@ -1389,7 +1389,7 @@ pub fn html_image_element_y(element &dom.HTMLImageElement) int {
 		return 0
 	}
 	document.update_paint_and_hit_testing_properties_if_needed()
-	return int(layout_node.border_box_.y)
+	return int(layout_node.border_box_.y / document.layout_coordinate_scale())
 }
 
 pub fn html_image_element_complete(element &dom.HTMLImageElement) bool {

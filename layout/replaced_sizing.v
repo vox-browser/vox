@@ -64,7 +64,7 @@ fn compute_replaced_size_with_box_model(box &Box, available_space AvailableSpace
 		} else if intrinsic_height := intrinsic.height {
 			height = intrinsic_height
 		} else {
-			height = CSSPixels.new(150)
+			height = CSSPixels.nearest_value_for(150 * node.document().layout_coordinate_scale())
 		}
 	} else if specified_block := specified_height {
 		// tentative_width_for_replaced_element() transfers the *used* height,
@@ -78,7 +78,7 @@ fn compute_replaced_size_with_box_model(box &Box, available_space AvailableSpace
 		} else if intrinsic_width := intrinsic.width {
 			width = intrinsic_width
 		} else {
-			width = CSSPixels.new(300)
+			width = CSSPixels.nearest_value_for(300 * node.document().layout_coordinate_scale())
 		}
 	} else if intrinsic_width := intrinsic.width {
 		width = intrinsic_width
@@ -87,14 +87,14 @@ fn compute_replaced_size_with_box_model(box &Box, available_space AvailableSpace
 		} else if intrinsic_ratio := ratio {
 			height = width.divided_by_fraction(intrinsic_ratio)
 		} else {
-			height = CSSPixels.new(150)
+			height = CSSPixels.nearest_value_for(150 * node.document().layout_coordinate_scale())
 		}
 	} else if intrinsic_height := intrinsic.height {
 		height = intrinsic_height
 		if intrinsic_ratio := ratio {
 			width = height.times_fraction(intrinsic_ratio)
 		} else {
-			width = CSSPixels.new(300)
+			width = CSSPixels.nearest_value_for(300 * node.document().layout_coordinate_scale())
 		}
 	} else if intrinsic_ratio := ratio {
 		width = if available_space.width.is_definite() {
@@ -105,7 +105,7 @@ fn compute_replaced_size_with_box_model(box &Box, available_space AvailableSpace
 			// value during max-content measurement. For a replaced element
 			// with only a natural ratio, that falls through to the 300px
 			// default instead of stretch-fitting against a zero constraint.
-			CSSPixels.new(300)
+			CSSPixels.nearest_value_for(300 * node.document().layout_coordinate_scale())
 		} else {
 			// CSS 2.2 leaves this width undefined and suggests the normal-flow
 			// constraint equation when the containing block does not depend on
@@ -122,8 +122,8 @@ fn compute_replaced_size_with_box_model(box &Box, available_space AvailableSpace
 			height = width.divided_by_fraction(intrinsic_ratio)
 		}
 	} else {
-		width = CSSPixels.new(300)
-		height = CSSPixels.new(150)
+		width = CSSPixels.nearest_value_for(300 * node.document().layout_coordinate_scale())
+		height = CSSPixels.nearest_value_for(150 * node.document().layout_coordinate_scale())
 	}
 	// FormattingContext::compute_width_for_replaced_element() and
 	// compute_height_for_replaced_element() run the constraint-violation table

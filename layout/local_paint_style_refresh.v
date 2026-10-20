@@ -93,11 +93,11 @@ fn refresh_local_paint_styles(mut result DocumentLayoutResult) {
 	if use_scratch {
 		entry := scratch.enter()
 		refresh_compositor_paint_styles_in_box(mut result.paint_tree, result.state,
-			&result.paint_style_update_compositor_handles, [6]f64{}, mut compositor)
+			&result.paint_style_update_compositor_handles, layout_to_css_transform(result.document), mut compositor)
 		scratch.leave(entry)
 	} else {
 		refresh_compositor_paint_styles_in_box(mut result.paint_tree, result.state,
-			&result.paint_style_update_compositor_handles, [6]f64{}, mut compositor)
+			&result.paint_style_update_compositor_handles, layout_to_css_transform(result.document), mut compositor)
 	}
 	mut ordinary_changes := &result.paint_style_update_ordinary_handles
 	mut line_changes := &result.paint_style_update_line_handles

@@ -1157,7 +1157,7 @@ fn materialize_list_style_image(computed_values &css.ComputedProperties, documen
 }
 
 pub fn NodeWithStyle.new(document &dom.Document, dom_node ?&dom.Node, computed_values &css.ComputedProperties) &NodeWithStyle {
-	values := css.resolve_computed_values_for_document(computed_values, document)
+	values := computed_values_in_layout_coordinates(computed_values, document)
 	if node := dom_node {
 		mut mutable_values := unsafe { &css.MutableComputedValues(values) }
 		mutable_values.set_list_style_type(computed_values.list_style_type_for_scope(css.style_scope_for_dom_node(node)))
@@ -1198,14 +1198,14 @@ pub fn (n &NodeWithStyle) style_scope() &css.StyleScope {
 }
 
 pub fn (mut n NodeWithStyle) set_computed_values(computed_values &css.ComputedProperties) {
-	n.computed_values_ = css.resolve_computed_values_for_document(computed_values, n.document_)
+	n.computed_values_ = computed_values_in_layout_coordinates(computed_values, n.document_)
 	mut mutable_values := unsafe { &css.MutableComputedValues(n.computed_values_) }
 	mutable_values.set_list_style_type(computed_values.list_style_type_for_scope(n.style_scope()))
 	n.list_style_image_ = materialize_list_style_image(computed_values, n.document_)
 }
 
 pub fn (mut n NodeWithStyle) apply_style(computed_style &css.ComputedProperties) {
-	n.computed_values_ = css.resolve_computed_values_for_document(computed_style, n.document_)
+	n.computed_values_ = computed_values_in_layout_coordinates(computed_style, n.document_)
 	mut mutable_values := unsafe { &css.MutableComputedValues(n.computed_values_) }
 	mutable_values.set_list_style_type(computed_style.list_style_type_for_scope(n.style_scope()))
 	n.list_style_image_ = materialize_list_style_image(computed_style, n.document_)
@@ -1360,7 +1360,7 @@ fn (mut n NodeWithStyle) propagate_style_to_anonymous_wrappers() {
 		if parent.is_table_wrapper() && node.display().is_table_inside() {
 			element_style := unsafe { &css.ComputedProperties(n.computed_values_) }
 			table_style, wrapper_style := element_style.table_box_and_wrapper_properties()
-			n.computed_values_ = css.resolve_computed_values_for_document(table_style, n.document_)
+			n.computed_values_ = computed_values_in_layout_coordinates(table_style, n.document_)
 			if wrapper_styled := parent.as_node_with_style() {
 				mut mutable_wrapper := unsafe { &NodeWithStyle(wrapper_styled) }
 				mutable_wrapper.set_computed_values(wrapper_style)
@@ -1540,7 +1540,7 @@ pub fn InlineNode.new(document &dom.Document, dom_node ?&dom.Node, computed_valu
 					has_style_: true
 					is_inline_node_: true
 				}
-				computed_values_: css.resolve_computed_values_for_document(computed_values, document)
+				computed_values_: computed_values_in_layout_coordinates(computed_values, document)
 			}
 		}
 	}
@@ -1574,7 +1574,7 @@ pub fn BreakNode.new(document &dom.Document, dom_node &dom.Node, computed_values
 					has_style_: true
 					is_break_node_: true
 				}
-				computed_values_: css.resolve_computed_values_for_document(computed_values, document)
+				computed_values_: computed_values_in_layout_coordinates(computed_values, document)
 			}
 		}
 	}
@@ -1682,7 +1682,7 @@ pub fn Box.new(document &dom.Document, dom_node ?&dom.Node, computed_values &css
 					has_style_: true
 					is_box_: true
 				}
-				computed_values_: css.resolve_computed_values_for_document(computed_values, document)
+				computed_values_: computed_values_in_layout_coordinates(computed_values, document)
 			}
 		}
 	}
@@ -1730,7 +1730,7 @@ pub fn (n &Box) natural_size() css.SizeWithAspectRatio {
 			}
 		}
 	}
-	return n.natural_size_
+	return natural_size_in_layout_coordinates(n.natural_size_, n.document_)
 }
 
 pub fn (n &Box) has_auto_content_box_size() bool {
@@ -1746,7 +1746,7 @@ pub fn (n &Box) auto_content_box_size() css.SizeWithAspectRatio {
 		}
 	}
 	if n.has_auto_content_box_size_ {
-		return n.auto_content_box_size_
+		return natural_size_in_layout_coordinates(n.auto_content_box_size_, n.document_)
 	}
 	// Box::compute_auto_content_box_size() falls back to the virtual
 	// natural_size() result. In particular, VideoBox metadata is live and is
@@ -1801,7 +1801,7 @@ pub struct BlockContainer {
 }
 
 pub fn BlockContainer.new(document &dom.Document, dom_node ?&dom.Node, computed_values &css.ComputedProperties) &BlockContainer {
-	return BlockContainer.with_resolved_values(document, dom_node, css.resolve_computed_values_for_document(computed_values, document))
+	return BlockContainer.with_resolved_values(document, dom_node, computed_values_in_layout_coordinates(computed_values, document))
 }
 
 fn BlockContainer.with_resolved_values(document &dom.Document, dom_node ?&dom.Node, computed_values &css.ComputedValues) &BlockContainer {
@@ -1857,7 +1857,7 @@ pub fn ListItemBox.new(document &dom.Document, dom_node ?&dom.Node, computed_val
 							is_block_container_: true
 							is_list_item_box_: true
 						}
-						computed_values_: css.resolve_computed_values_for_document(computed_values, document)
+						computed_values_: computed_values_in_layout_coordinates(computed_values, document)
 					}
 				}
 			}
@@ -1991,7 +1991,7 @@ pub fn Viewport.new(document &dom.Document, computed_values &css.ComputedPropert
 							is_block_container_: true
 							is_viewport_: true
 						}
-						computed_values_: css.resolve_computed_values_for_document(computed_values, document)
+						computed_values_: computed_values_in_layout_coordinates(computed_values, document)
 					}
 				}
 			}

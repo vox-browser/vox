@@ -622,6 +622,23 @@ fn materialize_dom_paintables(box &Node, state &LayoutState, mut placeholder dom
 					}
 				}
 			}
+			// DOM scrolling and scroll bounds are CSS-pixel APIs. The paint tree
+			// retains physical geometry independently of this boundary record.
+			scale := box.document().layout_coordinate_scale()
+			if scale != 1 {
+				paintable_box.padding_box_x_ /= scale
+				paintable_box.padding_box_y_ /= scale
+				paintable_box.padding_box_width_ /= scale
+				paintable_box.padding_box_height_ /= scale
+				if overflow := paintable_box.scrollable_overflow_rect_ {
+					paintable_box.scrollable_overflow_rect_ = dom.CSSPixelRect_{
+						x_: overflow.x_ / scale
+						y_: overflow.y_ / scale
+						width_: overflow.width() / scale
+						height_: overflow.height() / scale
+					}
+				}
+			}
 			paintable = unsafe { &dom.Paintable(paintable_box) }
 		} else {
 			if previous != unsafe { nil } && !previous.is_box && previous.layout_handle == voidptr(box) {

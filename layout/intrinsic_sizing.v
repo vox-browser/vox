@@ -176,7 +176,7 @@ fn max_content_size_for_replaced_element_without_natural_size(box &Box, natural_
 			return minimum_height
 		}
 
-		initial_inline_size := CSSPixels.nearest_value_for(node.document().viewport_rect().width)
+		initial_inline_size := CSSPixels.nearest_value_for(node.document().layout_viewport_rect().width)
 		return if is_width {
 			initial_inline_size
 		} else {

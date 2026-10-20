@@ -212,6 +212,10 @@ fn snap_area_rect(snap_area &BlockBox) LayoutRect {
 	if !affine_is_compact_identity(snap_area.paint_transform) {
 		rect = compatibility_affine_map_rect(snap_area.paint_transform, rect)
 	}
+	scale := box_layout_coordinate_scale(snap_area)
+	if scale != 1 {
+		rect = LayoutRect{rect.x * scale, rect.y * scale, rect.width * scale, rect.height * scale}
+	}
 	return LayoutRect{
 		x:      rect.x - snap_area.scroll_margin.left
 		y:      rect.y - snap_area.scroll_margin.top
@@ -1054,12 +1058,13 @@ fn resnap_committed_paintables(node &dom.LayoutNode, boxes_by_layout map[u64]&Bl
 		if previous.is_empty() && !is_scroll_snap_container(box) {
 			continue
 		}
-		destination := select_resnap_destination(box, box_paintable.scroll_offset(), ResnapSelection{
+		scale := box_layout_coordinate_scale(box)
+		destination := select_resnap_destination(box, scaled_dom_point(box_paintable.scroll_offset(), scale), ResnapSelection{
 			snapped_areas:       previous
 			focused_node_id:     focused_node_id
 			targeted_element_id: targeted_element_id
 		})
-		box_paintable.apply_scroll_snap_destination(scroll_snap_destination_to_dom(destination))
+		box_paintable.apply_scroll_snap_destination(scroll_snap_destination_in_css_coordinates(destination, scale))
 	}
 	for child in node.children_ {
 		resnap_committed_paintables(child, boxes_by_layout, focused_node_id, targeted_element_id)
@@ -1086,26 +1091,26 @@ fn resnap_document_scroll_containers(result &DocumentLayoutResult) {
 		result.document.viewport_snapped_areas_y())
 	if !previous_viewport_areas.is_empty() || is_scroll_snap_container(&result.paint_tree) {
 		viewport_rect := result.document.viewport_rect()
-		destination := select_resnap_destination(&result.paint_tree, dom.CSSPixelPoint_{
+		destination := select_resnap_destination(&result.paint_tree, scaled_dom_point(dom.CSSPixelPoint_{
 			x_: viewport_rect.x
 			y_: viewport_rect.y
-		}, ResnapSelection{
+		}, result.document.layout_coordinate_scale()), ResnapSelection{
 			snapped_areas: previous_viewport_areas
 			focused_node_id: focused_node_id
 			targeted_element_id: targeted_element_id
 		})
-		dom_destination := scroll_snap_destination_to_dom(destination)
+		dom_destination := scroll_snap_destination_in_css_coordinates(destination, result.document.layout_coordinate_scale())
 		mut mutable_document := unsafe { &dom.Document(result.document) }
 		mutable_document.record_viewport_scroll_snap_destination(dom_destination)
-		if destination.position.x() != viewport_rect.x || destination.position.y() != viewport_rect.y {
+		if dom_destination.position.x() != viewport_rect.x || dom_destination.position.y() != viewport_rect.y {
 			if navigable := result.document.navigable() {
-				navigable.perform_scroll_of_viewport_scrolling_box(destination.position)
+				navigable.perform_scroll_of_viewport_scrolling_box(dom_destination.position)
 			}
 			updated_viewport := result.document.viewport_rect()
 			if updated_viewport.x == viewport_rect.x && updated_viewport.y == viewport_rect.y {
 				mutable_document.set_viewport_rect(dom.Rect{
-					x: destination.position.x()
-					y: destination.position.y()
+					x: dom_destination.position.x()
+					y: dom_destination.position.y()
 					width: viewport_rect.width
 					height: viewport_rect.height
 				})
@@ -1128,11 +1133,15 @@ fn layout_paintable_adjust_scroll_destination(target voidptr, layout_handle void
 	box := boxes_by_layout[u64(layout_handle)] or {
 		return dom.ScrollSnapDestination_{ position: destination }
 	}
-	return scroll_snap_destination_to_dom(adjust_scroll_destination_for_snapping(box, destination, snap_selection_strategy_from_dom(strategy)))
+	scale := result.document.layout_coordinate_scale()
+	return scroll_snap_destination_in_css_coordinates(adjust_scroll_destination_for_snapping(box,
+		scaled_dom_point(destination, scale), snap_selection_strategy_in_layout_coordinates(strategy, scale)), scale)
 }
 
 fn layout_viewport_adjust_scroll_destination(target voidptr, destination dom.CSSPixelPoint_,
 	strategy dom.ScrollSnapSelectionStrategy_) dom.ScrollSnapDestination_ {
 	result := viewport_layout_result(target)
-	return scroll_snap_destination_to_dom(adjust_scroll_destination_for_snapping(&result.paint_tree, destination, snap_selection_strategy_from_dom(strategy)))
+	scale := result.document.layout_coordinate_scale()
+	return scroll_snap_destination_in_css_coordinates(adjust_scroll_destination_for_snapping(&result.paint_tree,
+		scaled_dom_point(destination, scale), snap_selection_strategy_in_layout_coordinates(strategy, scale)), scale)
 }

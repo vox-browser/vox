@@ -1483,12 +1483,13 @@ fn (b &BlockBox) current_scroll_offset(fallback CompatibilityOverlayData) painti
 			// The transport's root element also represents the omitted viewport
 			// box. Its scrollbar follows the document, not the element's offset.
 			if b.is_viewport_scroller {
-				viewport := node.document().viewport_rect()
+				viewport := node.document().layout_viewport_rect()
 				return painting.Point{viewport.x, viewport.y}
 			}
 			if paintable := node.paintable_box() {
 				offset := paintable.scroll_offset()
-				return painting.Point{offset.x(), offset.y()}
+				return painting.Point{offset.x() * node.document().layout_coordinate_scale(),
+					offset.y() * node.document().layout_coordinate_scale()}
 			}
 		}
 	}
@@ -5194,7 +5195,7 @@ struct PositionedContainingBlock {
 }
 
 fn initial_containing_block(element &dom.Element, fallback_width f64, fallback_height f64) PositionedContainingBlock {
-	viewport := element.document().viewport_rect()
+	viewport := element.document().layout_viewport_rect()
 	return PositionedContainingBlock{
 		x: viewport.x
 		y: viewport.y
