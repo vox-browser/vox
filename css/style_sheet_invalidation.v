@@ -194,7 +194,8 @@ fn try_build_style_sheet_anchor_for_leading_compounds(compounds []CompoundSelect
 	anchor_compounds := compounds[..compounds.len - 1].clone()
 	rightmost_anchor := anchor_compounds[anchor_compounds.len - 1]
 	mut anchor_set := InvalidationSet{}
-	for simple in rightmost_anchor.simple_selectors {
+	for simple_index in 0 .. rightmost_anchor.simple_selectors.len {
+		simple := unsafe { &rightmost_anchor.simple_selectors[simple_index] }
 		build_invalidation_sets_for_simple_selector(simple_selector_for_invalidation(simple), mut anchor_set, .no, mut throwaway_data, .no)
 	}
 	if !anchor_set.has_properties() {
@@ -228,7 +229,8 @@ fn extend_style_sheet_invalidation_set_with_style_rule(mut result StyleSheetInva
 		}
 		rightmost := compounds[compounds.len - 1]
 		mut rightmost_set := InvalidationSet{}
-		for simple in rightmost.simple_selectors {
+		for simple_index in 0 .. rightmost.simple_selectors.len {
+			simple := unsafe { &rightmost.simple_selectors[simple_index] }
 			build_invalidation_sets_for_simple_selector(simple_selector_for_invalidation(simple), mut rightmost_set, .no, mut throwaway_data, .no)
 		}
 		if rightmost_set_has_targetable_features(rightmost_set) {

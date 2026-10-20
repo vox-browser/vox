@@ -10138,7 +10138,7 @@ fn selector_combinator_for_invalidation(combinator Combinator) SelectorCombinato
 	}
 }
 
-fn simple_selector_for_invalidation(simple_selector SimpleSelector) InvalidationSimpleSelector {
+fn simple_selector_for_invalidation(simple_selector &SimpleSelector) InvalidationSimpleSelector {
 	match simple_selector.type_ {
 		.universal {
 			return InvalidationSimpleSelector{
@@ -10213,8 +10213,9 @@ fn selector_groups_for_invalidation(selector Selector) []InvalidationSimpleSelec
 	for compound_index := compound_selectors.len - 1; compound_index >= 0; compound_index-- {
 		compound_selector := compound_selectors[compound_index]
 		mut simple_selectors := []InvalidationSimpleSelector{cap: compound_selector.simple_selectors.len}
-		for simple_selector in compound_selector.simple_selectors {
-			simple_selectors << simple_selector_for_invalidation(simple_selector)
+		for simple_index in 0 .. compound_selector.simple_selectors.len {
+			simple := unsafe { &compound_selector.simple_selectors[simple_index] }
+			simple_selectors << simple_selector_for_invalidation(simple)
 		}
 		if simple_selectors.len == 0 {
 			continue
