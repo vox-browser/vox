@@ -3,7 +3,7 @@ from pathlib import Path
 import unittest
 from unittest.mock import Mock, call, patch
 
-from capture_brave_reference import imported_cookies, launch_command, resize_native_viewport, window_position
+from capture_brave_reference import imported_cookies, launch_command, resize_native_viewport, scroll_viewport, window_position
 
 
 class BraveReferenceTests(unittest.TestCase):
@@ -76,6 +76,22 @@ class BraveReferenceTests(unittest.TestCase):
         cdp.call.return_value = dict(result=dict(value=dict(width=1088, height=728, scale=2)))
         with patch('capture_brave_reference.time.sleep'), self.assertRaisesRegex(RuntimeError, 'could not resize'):
             resize_native_viewport(browser, cdp, 'page', 2048, 1368, 2)
+
+    def test_scrolled_reference_waits_for_frames_and_records_the_actual_position(self):
+        cdp = Mock()
+        cdp.call.return_value = dict(result=dict(value=dict(x=0, y=800)))
+        self.assertEqual(scroll_viewport(cdp, 800), dict(x=0, y=800))
+        arguments = cdp.call.call_args.args[1]
+        self.assertTrue(arguments['awaitPromise'])
+        self.assertTrue(arguments['returnByValue'])
+        self.assertEqual(arguments['expression'].count('requestAnimationFrame'), 2)
+
+    def test_scrolled_reference_rejects_a_clamped_or_horizontal_scroll(self):
+        for position in [dict(x=0, y=300), dict(x=1, y=800)]:
+            cdp = Mock()
+            cdp.call.return_value = dict(result=dict(value=position))
+            with self.assertRaisesRegex(RuntimeError, 'could not reach scroll'):
+                scroll_viewport(cdp, 800)
 
 
 if __name__ == '__main__':

@@ -15,6 +15,7 @@ and resizes the window around the requested viewport without emulation.
 import argparse
 import base64
 import json
+import math
 import subprocess
 import tempfile
 import time
@@ -165,6 +166,17 @@ def resize_native_viewport(browser, cdp, target, width, height, scale):
     raise RuntimeError(f'Brave could not resize its native viewport to {width}x{height}')
 
 
+def scroll_viewport(cdp, scroll_y):
+    position = cdp.call('Runtime.evaluate', {
+        'expression': 'new Promise(resolve => {scrollTo({top:' + json.dumps(scroll_y) +
+                      ',left:0,behavior:"instant"});requestAnimationFrame(() => '
+                      'requestAnimationFrame(() => resolve({x:scrollX,y:scrollY})));})',
+        'awaitPromise': True, 'returnByValue': True})['result']['value']
+    if position['x'] != 0 or abs(position['y'] - scroll_y) > .001:
+        raise RuntimeError(f'Brave could not reach scroll Y {scroll_y}: {position}')
+    return position
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--binary", default=BRAVE)
@@ -177,6 +189,7 @@ def main() -> None:
     parser.add_argument("--rects", help="write element rectangles as JSON")
     parser.add_argument("--freeze", type=Path, help="write the scripted DOM as static HTML")
     parser.add_argument("--settle", type=float, default=2, help="seconds to wait after load")
+    parser.add_argument("--scroll-y", type=float, default=0, help="document scroll position in CSS pixels")
     parser.add_argument("--proxy-server", help="HTTP or SOCKS5 proxy for this isolated Brave process")
     parser.add_argument("--cookie-file", type=Path, help="private Netscape cookie jar to import")
     parser.add_argument("--metadata", type=Path, help="write final URL, title, login state and viewport")
@@ -193,6 +206,8 @@ def main() -> None:
         parser.error('--windowed requires --window-position X,Y on the test display')
     if args.native_scale and not args.windowed:
         parser.error('--native-scale requires --windowed')
+    if not math.isfinite(args.scroll_y) or args.scroll_y < 0:
+        parser.error('--scroll-y must be finite and nonnegative')
 
     with tempfile.TemporaryDirectory(prefix="brave-reference-") as profile:
         command = launch_command(args.binary, profile, args.proxy_server, args.windowed)
@@ -242,6 +257,7 @@ def main() -> None:
             cdp.call("Runtime.evaluate", {"expression": "document.fonts.ready.then(() => true)",
                                           "awaitPromise": True})
             time.sleep(args.settle)
+            position = scroll_viewport(cdp, args.scroll_y)
             data = cdp.call("Page.captureScreenshot", {"format": "png"})["data"]
             Path(args.out).write_bytes(base64.b64decode(data))
             if args.metadata:
@@ -252,6 +268,8 @@ def main() -> None:
                     metadata['navigation_error'] = navigation['errorText']
                 metadata['native_scale'] = args.native_scale
                 metadata['color_profile'] = 'sRGB'
+                metadata['scroll_x'] = position['x']
+                metadata['scroll_y'] = position['y']
                 args.metadata.write_text(json.dumps(metadata, indent=2) + '\n')
             if args.rects:
                 rects = cdp.call("Runtime.evaluate", {"expression": RECTS, "returnByValue": True})
