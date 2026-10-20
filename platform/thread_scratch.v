@@ -8,20 +8,21 @@ import os
 @[heap]
 pub struct ThreadScratchScope {
 mut:
-	scope voidptr
+	scope   voidptr
 	entered bool
-	poison bool
-	label string
+	poison  bool
+	label   string
 }
 
 pub fn begin_thread_scratch(label string) &ThreadScratchScope {
 	// Allocate the descriptor before entering its temporary payload scope.
-	mut scratch := &ThreadScratchScope{label: label}
+	mut scratch := &ThreadScratchScope{ label: label }
 	$if prealloc {
 		verify_prealloc_layout()
 		scratch.poison = os.getenv('VOX_ARENA_POISON') == '1'
 			|| label in os.getenv('VOX_ARENA_NO_REUSE').split(',')
 		if scratch.poison { C.vox_install_poison_fault_handler() }
+		remember_current_arena_tail()
 		scratch.scope = unsafe { prealloc_scope_begin() }
 		scratch.entered = true
 	}
@@ -34,6 +35,7 @@ pub fn (mut scratch ThreadScratchScope) leave() {
 	$if prealloc {
 		if scratch.entered {
 			unsafe { prealloc_scope_leave(scratch.scope) }
+			set_current_block(latest_arena_block(current_block()))
 			scratch.entered = false
 		}
 	}

@@ -38,7 +38,11 @@ fn test_entered_arena_receives_allocations_and_reset_reuses_them() {
 			value: 3
 		}
 		arena.leave(again)
-		assert voidptr(second) == voidptr(first)
+		if arenas_poisoned() {
+			assert voidptr(second) != voidptr(first)
+		} else {
+			assert voidptr(second) == voidptr(first)
+		}
 	} $else {
 		assert !arena.contains(voidptr(first))
 		assert arena.usage().used == 0
@@ -117,18 +121,18 @@ fn test_no_reuse_label_poisons_only_that_arena() {
 		state.no_reuse = ['test no reuse']
 	}
 	first_entry := reused.enter()
-	first := &ArenaTestNode{value: 1}
+	first := &ArenaTestNode{ value: 1 }
 	reused.leave(first_entry)
 	kept_entry := kept.enter()
-	old := &ArenaTestNode{value: 2}
+	old := &ArenaTestNode{ value: 2 }
 	kept.leave(kept_entry)
 	reused.reset()
 	kept.reset()
 	again := reused.enter()
-	second := &ArenaTestNode{value: 3}
+	second := &ArenaTestNode{ value: 3 }
 	reused.leave(again)
 	kept_again := kept.enter()
-	fresh := &ArenaTestNode{value: 4}
+	fresh := &ArenaTestNode{ value: 4 }
 	kept.leave(kept_again)
 	$if prealloc {
 		arena_state().no_reuse = []string{}
@@ -203,12 +207,16 @@ fn test_arena_entered_from_persistent_section_restores_depth_and_latest_base_tai
 	outer_entry := outer.enter()
 	persistent := enter_persistent()
 	inner_entry := inner.enter()
-	inside := &ArenaTestNode{value: 17}
+	inside := &ArenaTestNode{ value: 17 }
 	nested_persistent := enter_persistent()
 	grown := []u8{len: 32 * 1024 * 1024, init: 19}
-	$if prealloc { assert !arena_entered() }
+	$if prealloc {
+		assert !arena_entered()
+	}
 	leave_persistent(nested_persistent)
-	$if prealloc { assert arena_entered() }
+	$if prealloc {
+		assert arena_entered()
+	}
 	inner.leave(inner_entry)
 	$if prealloc {
 		assert !arena_entered()
@@ -217,10 +225,14 @@ fn test_arena_entered_from_persistent_section_restores_depth_and_latest_base_tai
 	}
 	base_tail := current_block()
 	leave_persistent(persistent)
-	after := &ArenaTestNode{value: 23}
-	$if prealloc { assert outer.contains(after) }
+	after := &ArenaTestNode{ value: 23 }
+	$if prealloc {
+		assert outer.contains(after)
+	}
 	outer.leave(outer_entry)
-	$if prealloc { assert current_block() == base_tail }
+	$if prealloc {
+		assert current_block() == base_tail
+	}
 	inner.release()
 	outer.release()
 	assert grown[0] == 19 && grown[grown.len - 1] == 19

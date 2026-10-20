@@ -76,10 +76,13 @@ mut:
 	no_reuse []string
 	// The main thread's own arena tail while an Arena is entered; nil when the
 	// thread allocates from its base arena.
-	base_tail voidptr
-	depth     int
-	owner     u64
-	retained &RetainedArena = unsafe { nil }
+	base_tail                 voidptr
+	depth                     int
+	owner                     u64
+	retained                  &RetainedArena = unsafe { nil }
+	current_arena             &Arena         = unsafe { nil }
+	retained_allocation_stack []RetainedAllocationEntry
+	retained_allocation_depth int
 }
 
 __global arena_thread_state ArenaThreadState
@@ -174,11 +177,12 @@ pub struct ArenaEntry {
 @[heap]
 pub struct Arena {
 mut:
-	scope   &PreallocScopeView = unsafe { nil }
-	tail    &PreallocBlockView = unsafe { nil }
-	entered bool
-	resets  u64
-	label   string
+	scope          &PreallocScopeView = unsafe { nil }
+	tail           &PreallocBlockView = unsafe { nil }
+	entered        bool
+	resets         u64
+	label          string
+	previous_arena &Arena = unsafe { nil }
 }
 
 // new_arena creates an empty arena. Its first block is mapped lazily by the
@@ -217,6 +221,9 @@ pub fn (mut arena Arena) enter() ArenaEntry {
 			panic('arena ${arena.label} is already entered')
 		}
 		previous := current_block()
+		remember_current_arena_tail()
+		arena.previous_arena = state.current_arena
+		state.current_arena = arena
 		depth := state.depth
 		base := depth <= 0
 		if base {
@@ -227,8 +234,8 @@ pub fn (mut arena Arena) enter() ArenaEntry {
 		set_current_block(arena.tail)
 		return ArenaEntry{
 			previous: previous
-			base: base
-			depth: i32(depth)
+			base:     base
+			depth:    i32(depth)
 		}
 	}
 	return ArenaEntry{}
@@ -243,11 +250,17 @@ pub fn (mut arena Arena) leave(entry ArenaEntry) {
 		}
 		arena.tail = &PreallocBlockView(current_block())
 		arena.entered = false
+		state.current_arena = arena.previous_arena
+		arena.previous_arena = unsafe { nil }
 		state.depth = entry.depth
 		// Persistent sections may have grown the base chain while this arena
 		// was entered. Restore its latest tail, including when entered from a
 		// persistent section nested inside another arena.
-		set_current_block(if entry.base { state.base_tail } else { entry.previous })
+		set_current_block(if entry.base {
+			state.base_tail
+		} else {
+			latest_arena_block(entry.previous)
+		})
 		if state.depth == 0 {
 			state.base_tail = unsafe { nil }
 		}
@@ -286,7 +299,7 @@ pub fn enter_persistent() ArenaEntry {
 		// switch the origin thread's entered arena when filling shared caches.
 		if arena_thread_state.initialized
 			&& arena_thread_state.owner != u64(C.pthread_self()) {
-			return ArenaEntry{base: true}
+			return ArenaEntry{ base: true }
 		}
 		mut state := arena_state()
 		// Outside an arena, or already in a persistent section whose base tail
@@ -297,6 +310,7 @@ pub fn enter_persistent() ArenaEntry {
 			}
 		}
 		previous := current_block()
+		remember_current_arena_tail()
 		set_current_block(state.base_tail)
 		state.depth = -state.depth
 		return ArenaEntry{
@@ -317,13 +331,13 @@ pub fn leave_persistent(entry ArenaEntry) {
 		// The base arena may have grown a new block meanwhile.
 		state.base_tail = current_block()
 		state.depth = -state.depth
-		set_current_block(entry.previous)
+		set_current_block(latest_arena_block(entry.previous))
 	}
 }
 
 pub fn enter_persistent_if(enabled bool) ArenaEntry {
 	if enabled { return enter_persistent() }
-	return ArenaEntry{base: true}
+	return ArenaEntry{ base: true }
 }
 
 // usage reports the arena's current blocks.
