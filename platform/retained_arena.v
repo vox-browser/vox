@@ -29,7 +29,8 @@ pub fn (mut storage RetainedArena) release() {
 	if storage.references == 0 && !storage.pinned {
 		for callback in storage.cleanup { callback() }
 		storage.cleanup.clear()
-		storage.arena.release()
+		mut arena := storage.arena
+		arena.release()
 	}
 }
 
@@ -78,7 +79,8 @@ pub fn (mut scope RetainedArenaScope) finish() {
 	if scope.storage == unsafe { nil } { return }
 	mut storage := scope.storage
 	scope.storage = unsafe { nil }
-	storage.arena.leave(scope.entry)
+	mut arena := storage.arena
+	arena.leave(scope.entry)
 	$if prealloc {
 		arena_thread_state.retained = unsafe { nil }
 	}
