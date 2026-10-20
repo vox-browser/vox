@@ -1,18 +1,27 @@
 module layout
 
 import dom
+import css
 
 // The published vector owns every command needed to replay the current frame.
 // Between recordings, phase buckets and the returned vector are only reusable
 // storage. Release their backing arrays at the embedder's static idle boundary.
 pub fn release_unused_display_list_caches(display_list &dom.DisplayList) {
-	if display_list == unsafe { nil } || display_list.concrete_handle == unsafe { nil } {
+	mut visited := map[u64]bool{}
+	release_idle_display_list_caches(display_list, mut visited)
+}
+
+fn release_idle_display_list_caches(display_list &dom.DisplayList, mut visited map[u64]bool) {
+	if voidptr(display_list) == unsafe { nil } || display_list.concrete_handle == unsafe { nil } {
 		return
 	}
+	identity := u64(display_list.concrete_handle)
+	if visited[identity] { return }
 	mut result := viewport_layout_result(display_list.concrete_handle)
 	if voidptr(result.display_list) != voidptr(display_list) || result.needs_repaint {
 		return
 	}
+	visited[identity] = true
 	// The replay plan holds pointers into phase buckets. Drop the complete
 	// scratch generation together; clear() would retain scanned backing storage.
 	result.record_scratch = CompatibilityRecordScratch{}
@@ -20,4 +29,35 @@ pub fn release_unused_display_list_caches(display_list &dom.DisplayList) {
 	result.paint_phase_entry_valid = []bool{}
 	result.paint_phase_command_count = 0
 	result.paint_phase_cache_valid = false
+	// UsedValues and the published paint tree own their committed geometry.
+	// These snapshots only accelerate a later layout or tree projection.
+	mut state := unsafe { &LayoutState(result.state) }
+	state.block_layouts_ = map[u64]&RetainedBlockLayout{}
+	state.block_paint_owners_ = map[u64]&RetainedBlockLayout{}
+	state.inline_layouts_ = map[u64]&RetainedInlineLayout{}
+	result.root.for_each_in_inclusive_subtree(release_idle_node_projection)
+	mut styles := []&css.ComputedProperties{}
+	collect_idle_layout_styles(result.root, mut styles)
+	_ = css.share_idle_layout_snapshots(styles)
+	// Image documents record their own phase buckets. Releasing only the
+	// embedding page leaves the complete scratch generation of each SVG alive.
+	if viewport := result.root.as_viewport() {
+		for _, image in viewport.svg_image_documents_ {
+			if list := image.document.cached_display_list() {
+				release_idle_display_list_caches(list, mut visited)
+			}
+		}
+	}
+}
+
+fn collect_idle_layout_styles(node &Node, mut styles []&css.ComputedProperties) {
+	if styled := node.as_node_with_style() { styles << styled.computed_values() }
+	for child in node.children() { collect_idle_layout_styles(child, mut styles) }
+}
+
+fn release_idle_node_projection(node &Node) dom.TraversalDecision {
+	mut mutable_node := unsafe { &Node(node) }
+	mutable_node.ordinary_paint_box_ = unsafe { nil }
+	mutable_node.flow_validation_cache_ = unsafe { nil }
+	return .@continue
 }

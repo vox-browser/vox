@@ -1,6 +1,6 @@
 #ifndef VOX_IDLE_PAINT_CACHE_TEST_H
 #define VOX_IDLE_PAINT_CACHE_TEST_H
-#ifdef _VGCBOEHM
+#if defined(_VGCBOEHM) || defined(CUSTOM_DEFINE_gcboehm) || defined(V_GCBOEHM_NATIVE)
 #include <assert.h>
 #include <stdint.h>
 #include <gc/gc.h>
@@ -27,7 +27,11 @@ static void *vox_idle_paint_worker(void *opaque) {
 }
 static void vox_idle_paint_run_worker(void (*run)(void)) {
     pthread_t thread;
-    assert(GC_pthread_create(&thread, NULL, vox_idle_paint_worker, &run) == 0);
+    pthread_attr_t attributes;
+    assert(pthread_attr_init(&attributes) == 0);
+    assert(pthread_attr_setstacksize(&attributes, 64 * 1024 * 1024) == 0);
+    assert(GC_pthread_create(&thread, &attributes, vox_idle_paint_worker, &run) == 0);
+    assert(pthread_attr_destroy(&attributes) == 0);
     assert(GC_pthread_join(thread, NULL) == 0);
 }
 static unsigned vox_idle_paint_mask;
