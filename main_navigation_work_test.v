@@ -175,6 +175,27 @@ fn test_superseded_navigation_discards_queued_page_coordinates() {
 	assert app.navigation_generation == 1
 }
 
+fn test_deferred_input_backing_survives_the_recording_checkpoint_that_queued_it() {
+	mut app := &BrowserApp{ctx: &gg.Context{}}
+	mut scope := app.begin_navigation_work()
+	mut recording := platform.new_arena('input recording checkpoint')
+	entry := recording.enter()
+	app.handle_event(&gg.Event{typ: .mouse_move, mouse_x: 17, mouse_y: 100})
+	app.handle_event(&gg.Event{typ: .mouse_down, mouse_button: .left, mouse_x: 19, mouse_y: 100})
+	app.handle_event(&gg.Event{typ: .mouse_up, mouse_button: .left, mouse_x: 23, mouse_y: 100})
+	recording.leave(entry)
+	recording.release()
+	assert app.deferred_page_input.len == 3
+	assert app.deferred_page_input[0].event.mouse_x == 17
+	assert app.deferred_page_input[1].event.mouse_x == 19
+	assert app.deferred_page_input[2].event.mouse_x == 23
+	scope.finish()
+	app.ctx = unsafe { nil }
+	app.navigation_generation++
+	app.poll_deferred_page_input()
+	assert app.deferred_page_input.len == 0
+}
+
 fn test_native_work_pump_receives_input_posted_from_another_thread() {
 	$if macos {
 		assert C.vox_test_navigation_ui_pump() == 3

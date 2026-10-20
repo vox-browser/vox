@@ -35,6 +35,10 @@ struct DeferredPageInput {
 fn service_navigation_ui(context voidptr) {
 	mut app := unsafe { &BrowserApp(context) }
 	if app.ctx == unsafe { nil } { return }
+	// Checkpoints can run while a paint/layout arena is entered. Input queues
+	// and editable browser chrome belong to the shell across those checkpoints.
+	persistent := platform.enter_persistent()
+	defer { platform.leave_persistent(persistent) }
 	$if macos {
 		if C.vox_service_navigation_ui() != 0 {
 			app.navigation_work_yielded = true
@@ -95,6 +99,8 @@ fn (app &BrowserApp) native_frame_consumed_work() bool {
 }
 
 fn (mut app BrowserApp) defer_page_input(event &gg.Event) {
+	persistent := platform.enter_persistent()
+	defer { platform.leave_persistent(persistent) }
 	input := DeferredPageInput{ event: *event, document: voidptr(app.document), generation: app.navigation_generation }
 	last := app.deferred_page_input.len - 1
 	if event.typ == .mouse_move && last >= 0 && app.deferred_page_input[last].event.typ == .mouse_move {
