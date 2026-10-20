@@ -16,8 +16,10 @@ struct RetainedBlockPaintBox {
 // The independent-context snapshot proves local geometry for every descendant,
 // including atomic inline menus. Validate its styles once per paint-tree build.
 fn prepare_retained_block_paint_owners(state &LayoutState) {
-	persistent := platform.enter_persistent_if(platform.transient_arena_entered())
-	defer { platform.leave_persistent(persistent) }
+	use_document := block_paint_caches_use_entered_document_storage(state)
+	mut retained := if use_document { platform.enter_retained_allocations() } else { platform.RetainedAllocationScope{} }
+	persistent := platform.enter_persistent_if(!use_document)
+	defer { platform.leave_persistent(persistent); retained.finish() }
 	mut current := unsafe { &LayoutState(state) }
 	current.block_paint_owners_ = map[u64]&RetainedBlockLayout{}
 	for _, cache in state.block_layouts_ {
@@ -60,8 +62,10 @@ fn retained_block_text_lines(container &Node, used &UsedValues, state &LayoutSta
 			dy := position.y().to_double() - snapshot.origin.y().to_double()
 			if lines := rebase_retained_inline_lines(snapshot.lines, dx, dy) { return lines }
 		}
-		persistent := platform.enter_persistent_if(platform.transient_arena_entered())
-		defer { platform.leave_persistent(persistent) }
+		use_document := cache_uses_entered_document_storage(container.document())
+		mut retained := if use_document { platform.enter_retained_allocations() } else { platform.RetainedAllocationScope{} }
+		persistent := platform.enter_persistent_if(!use_document)
+		defer { platform.leave_persistent(persistent); retained.finish() }
 		lines := uncached_text_lines_from_typed_layout(container, used, state, position)
 		if lines.len > 0 && retained_inline_paint_can_share(lines) {
 			if snapshot := rebase_retained_inline_lines(lines, 0, 0) {
@@ -123,8 +127,10 @@ fn fill_block_box_from_typed_layout_shallow(node &Node, state &LayoutState,
 					return
 				}
 			}
-			persistent := platform.enter_persistent_if(platform.transient_arena_entered())
-			defer { platform.leave_persistent(persistent) }
+			use_document := cache_uses_entered_document_storage(node.document())
+			mut retained := if use_document { platform.enter_retained_allocations() } else { platform.RetainedAllocationScope{} }
+			persistent := platform.enter_persistent_if(!use_document)
+			defer { platform.leave_persistent(persistent); retained.finish() }
 			output = uncached_block_box_from_typed_layout_shallow(node, state, ancestor_transform)
 			if retained_paint_box_can_share(&output) {
 				mut template := output

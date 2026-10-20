@@ -257,6 +257,9 @@ mut:
 	should_wrap_lines          bool
 	should_respect_linebreaks  bool
 	last_known_direction       ?platform.GlyphRunTextType
+	spacing_resolved           bool
+	letter_spacing             f64
+	word_spacing               f64
 }
 
 struct IntrinsicTextShapeCacheEntry {
@@ -626,9 +629,15 @@ fn (mut iterator InlineLevelIterator) generate_next_item() ?InlineLevelItem {
 			}
 		}
 		computed := text_node.Node.computed_values()
-		letter_spacing := resolved_text_spacing_for_node(unsafe { &Node(text_node) }, .letter_spacing).to_double()
-		word_spacing :=
-			resolved_text_spacing_for_node(unsafe { &Node(text_node) }, .word_spacing).to_double()
+		// Item generation is synchronous. Resolve immutable text-node spacing
+		// once for this context, after preserved-break-only chunks return.
+		if !context.spacing_resolved {
+			context.letter_spacing = resolved_text_spacing_for_node(unsafe { &Node(text_node) }, .letter_spacing).to_double()
+			context.word_spacing = resolved_text_spacing_for_node(unsafe { &Node(text_node) }, .word_spacing).to_double()
+			context.spacing_resolved = true
+		}
+		letter_spacing := context.letter_spacing
+		word_spacing := context.word_spacing
 		mut shaped_text := chunk.view
 		mut x := 0.0
 		if chunk.has_breaking_tab {
@@ -801,7 +810,9 @@ fn (iterator &InlineLevelIterator) shape_text_for_layout(text_node &TextNode, in
 	}
 
 	if iterator.layout_mode == .intrinsic_sizing {
-		persistent := platform.enter_persistent_if(platform.transient_arena_entered())
+		use_document := cache_uses_entered_document_storage(text_node.Node.document())
+		mut retained := if use_document { platform.enter_retained_allocations() } else { platform.RetainedAllocationScope{} }
+		persistent := platform.enter_persistent_if(!use_document)
 		shaped := platform.shape_text_with_spacing(initial_x, letter_spacing, word_spacing, text, font, text_type)
 		mut mutable_text_node := unsafe { &TextNode(text_node) }
 		mutable_text_node.cached_intrinsic_text_shapes_ << IntrinsicTextShapeCacheEntry{
@@ -816,6 +827,7 @@ fn (iterator &InlineLevelIterator) shape_text_for_layout(text_node &TextNode, in
 		}
 		append_intrinsic_shape_cache_order(mut mutable_text_node)
 		platform.leave_persistent(persistent)
+		retained.finish()
 		return platform.ShapedText{
 			glyph_run: shaped.glyph_run.fork_for_layout()
 			trailing_whitespace: shaped.trailing_whitespace
@@ -844,7 +856,9 @@ fn (mut iterator InlineLevelIterator) enter_text_node(text_node &TextNode) {
 		}
 	}
 	if !cached_chunks_valid {
-		persistent := platform.enter_persistent_if(platform.transient_arena_entered())
+		use_document := cache_uses_entered_document_storage(text_node.Node.document())
+		mut retained := if use_document { platform.enter_retained_allocations() } else { platform.RetainedAllocationScope{} }
+		persistent := platform.enter_persistent_if(!use_document)
 		mut chunk_iterator := TextNodeChunkIterator.new_with_direction(text_node, should_wrap_lines,
 			should_respect_linebreaks, if iterator.is_unidirectional_left_to_right {
 				TextDirectionMode.unidirectional_left_to_right
@@ -869,6 +883,7 @@ fn (mut iterator InlineLevelIterator) enter_text_node(text_node &TextNode) {
 		mutable_text_node.cached_font_environment_generation_ = css.css_style_computer_for(text_node.Node.document()).font_computer().environment_generation()
 		mutable_text_node.cached_intrinsic_text_shapes_.clear()
 		platform.leave_persistent(persistent)
+		retained.finish()
 	}
 	// Every retained chunk emits exactly one item, including whitespace and
 	// forced line breaks. Reserve their known demand once instead of growing

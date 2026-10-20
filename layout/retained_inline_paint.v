@@ -108,8 +108,10 @@ fn text_lines_from_typed_layout(container &Node, used &UsedValues, state &Layout
 			}
 			// The geometry cache can serve a later tree after this projection's
 			// arena has been recycled. Build its immutable template outside it.
-			persistent := platform.enter_persistent_if(platform.transient_arena_entered())
-			defer { platform.leave_persistent(persistent) }
+			use_document := cache_uses_entered_document_storage(container.document())
+			mut retained := if use_document { platform.enter_retained_allocations() } else { platform.RetainedAllocationScope{} }
+			persistent := platform.enter_persistent_if(!use_document)
+			defer { platform.leave_persistent(persistent); retained.finish() }
 			lines := uncached_text_lines_from_typed_layout(container, used, state, position)
 			if !cached.paint_ready_ && retained_inline_paint_can_share(lines) {
 				if snapshot := rebase_retained_inline_lines(lines, 0, 0) {
