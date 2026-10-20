@@ -116,7 +116,10 @@ group("tint") {{ public_configs = [":dawn_api_config"] }}
                'target_cpu="' + ('arm64' if os.uname().machine == 'arm64' else 'x64') + '"',
                'cc="clang"', 'cxx="clang++"', 'skia_enable_graphite=true',
                'skia_use_dawn=true', 'skia_use_metal=false', 'skia_use_fonthost_mac=true',
-               'extra_cflags=["-fPIC","-fvisibility=hidden","-DSK_GRAPHITE_USE_LEGACY_RRECT_CLIP_SHADER","-DSK_SUPPORT_LEGACY_ANISOTROPIC_MIPMAP_SCALE"]']
+               # Chromium's macOS skia/BUILD.gn omits the standalone GN
+               # build's A8 gamma adjustment and uses zero text contrast.
+               # The adjustment also changes distance-field glyph coverage.
+               'extra_cflags=["-fPIC","-fvisibility=hidden","-USK_GAMMA_APPLY_TO_A8","-DSK_GAMMA_CONTRAST=0.0f","-DSK_GRAPHITE_USE_LEGACY_RRECT_CLIP_SHADER","-DSK_SUPPORT_LEGACY_ANISOTROPIC_MIPMAP_SCALE"]']
     gn_args += ['skia_enable_' + item + '=false' for item in ['tools', 'ganesh', 'pdf', 'gpu_debug_layers']]
     unused = ['gl', 'vulkan', 'icu', 'harfbuzz', 'freetype', 'fontconfig', 'wuffs', 'piex',
               'dng_sdk', 'expat', 'libavif', 'libjpeg_turbo_decode', 'libjpeg_turbo_encode',

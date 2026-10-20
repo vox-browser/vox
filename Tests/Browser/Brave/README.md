@@ -13,6 +13,11 @@ python3 tools/check_pixel_equality.py Tests/Browser/Brave/expected/font-rasteriz
 
 This comparison requires exact RGBA equality, with no excluded pixels or tolerance.
 
+`font-large-distance-field` checks colored 180px text in a shared SVG raster tile
+at 800×600 and scale 1. The standalone Skia build's A8 gamma adjustment must be
+disabled to match Chromium's macOS text coverage, including distance-field
+glyphs. The fixture is pixel-exact; its original backend differed at 2,955 pixels.
+
 `box-shadow-blur` checks square and two rounded outer shadows. The native
 Chromium profile uses an isolated Skia 155 Metal backend for these shadows,
 including Chromium's legacy rounded clip shader and full precision arithmetic.
