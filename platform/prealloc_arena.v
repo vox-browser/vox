@@ -388,23 +388,27 @@ pub fn (mut arena Arena) release() {
 
 // Write-protect every block and abandon them with their scope.
 fn (mut arena Arena) poison_blocks() {
+	poison_prealloc_scope(arena.scope, arena.label)
+	arena.scope = unsafe { nil }
+	arena.tail = unsafe { nil }
+}
+
+fn poison_prealloc_scope(scope &PreallocScopeView, label string) {
 	$if prealloc {
-		mut block := arena.scope.first
-		for block != unsafe { nil } && block.scope == voidptr(arena.scope) {
+		mut block := scope.first
+		for block != unsafe { nil } && block.scope == voidptr(scope) {
 			size := usize(i64(block.stop) - i64(block.start))
 			// Overwrite the old contents too: blocks that were not mapped on
 			// their own cannot be protected, and stale readers then see garbage.
 			unsafe { vmemset(block.start, 0xa5, isize(size)) }
 			if block.mmap_allocated {
 				unsafe { C.mprotect(block.start, size, C.PROT_NONE) }
-				C.vox_note_poisoned_range(block.start, block.stop, arena.label.str)
+				C.vox_note_poisoned_range(block.start, block.stop, label.str)
 			}
 			block = block.next
 		}
-		unsafe { prealloc_scope_abandon(voidptr(arena.scope)) }
+		unsafe { prealloc_scope_abandon(voidptr(scope)) }
 	}
-	arena.scope = unsafe { nil }
-	arena.tail = unsafe { nil }
 }
 
 // contains reports whether `pointer` lies in one of the arena's blocks.
