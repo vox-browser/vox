@@ -461,6 +461,8 @@ fn document_theme_color_media_matches_callback(target voidptr, value string) boo
 // — the html parser can't build css.CSSStyleSheet objects (it doesn't import css), so author sheets are
 // attached here by css-aware callers.
 pub fn add_document_author_style_sheet(document &dom.Document, css_text string) {
+	mut allocations := document.enter_native_storage()
+	defer { allocations.finish() }
 	holder := css_author_style_sheets_for(document)
 	mut sheet := parse_css_stylesheet_with_parser(css_text, none)
 	sheet.add_owning_document_or_shadow_root(unsafe { &dom.Node(document) })
@@ -517,7 +519,9 @@ __global remote_link_style_sheets = map[string]string{}
 // Record a fetched remote link stylesheet. The next style synchronization
 // installs it for each link that references it.
 pub fn set_remote_link_style_sheet(resolved_url string, css_text string) {
-	remote_link_style_sheets[resolved_url] = css_text
+	persistent := platform.enter_persistent()
+	defer { platform.leave_persistent(persistent) }
+	remote_link_style_sheets[resolved_url.clone()] = css_text.clone()
 }
 
 pub fn has_remote_link_style_sheet(resolved_url string) bool {
@@ -750,6 +754,8 @@ pub fn style_element_sheet(element &dom.Element) ?&CSSStyleSheet {
 // browser fetched, on each layout and adds them to the list with the link's
 // media, title, and alternate flag.
 pub fn sync_document_style_elements(document &dom.Document) {
+	mut allocations := document.enter_native_storage()
+	defer { allocations.finish() }
 	root := unsafe { &dom.Node(document) }
 	base_url := document.base_url().to_string()
 	mut link_sources := []DocumentStyleSource{}

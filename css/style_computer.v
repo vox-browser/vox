@@ -657,6 +657,8 @@ fn declaration_style_properties(declaration &CSSStyleProperties) []StyleProperty
 	if cached := declaration.typed_properties_cache_ {
 		return unsafe { cached }
 	}
+	persistent := platform.enter_persistent_if(declaration.has_process_lifetime_sheet())
+	defer { platform.leave_persistent(persistent) }
 	mut result := []StyleProperty{cap: declaration.properties.len}
 	mut importance_mask := u8(0)
 	for property in declaration.properties {

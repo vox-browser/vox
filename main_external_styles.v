@@ -47,6 +47,8 @@ fn link_stylesheet_applies(link &dom.Element, preferred_set_name string) bool {
 }
 
 fn install_external_styles(document &dom.Document, base_url string, preloaded map[string]PreloadedResource) []string {
+	mut allocations := document.enter_native_storage()
+	defer { allocations.finish() }
 	root := unsafe { &dom.Node(document) }
 	mut messages := []string{}
 	preferred_set_name := preferred_style_sheet_set_name(root)

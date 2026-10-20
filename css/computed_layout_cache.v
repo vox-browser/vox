@@ -233,7 +233,9 @@ __global (
 
 fn default_computed_layout_cache() &ComputedLayoutCache {
 	if initial_computed_layout_cache == unsafe { nil } {
+		persistent := platform.enter_persistent()
 		initial_computed_layout_cache = &ComputedLayoutCache{}
+		platform.leave_persistent(persistent)
 	}
 	return initial_computed_layout_cache
 }
@@ -254,9 +256,9 @@ fn (mut c ComputedProperties) ensure_computed_layout_cache() &ComputedLayoutCach
 		c.computed_layout_cache_.resolution_provenance = unsafe { nil }
 		return c.computed_layout_cache_
 	}
-	// The snapshot is the style's own storage, even when values are being
-	// materialized in an arena.
-	persistent := platform.enter_persistent()
+	// Document storage owns the style and its resolved snapshot. Temporary
+	// animation/layout scopes must still keep this snapshot outside themselves.
+	persistent := platform.enter_persistent_if(platform.transient_arena_entered())
 	defer { platform.leave_persistent(persistent) }
 	previous := c.computed_layout_cache()
 	c.computed_layout_cache_ = &ComputedLayoutCache{
@@ -290,7 +292,7 @@ fn (mut c ComputedProperties) begin_computed_layout_cache_write() bool {
 		c.computed_layout_cache_.writable_owner_identity = identity
 		return true
 	}
-	persistent := platform.enter_persistent()
+	persistent := platform.enter_persistent_if(platform.transient_arena_entered())
 	defer { platform.leave_persistent(persistent) }
 	previous := c.computed_layout_cache()
 	c.computed_layout_cache_ = &ComputedLayoutCache{

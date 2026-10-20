@@ -12,6 +12,7 @@ import css
 import dom
 import fileapi
 import highresolutiontime
+import platform
 import speech
 
 pub struct LocationNavigation {
@@ -555,6 +556,8 @@ pub fn determine_the_creation_sandboxing_flags(context &BrowsingContextModel, em
 }
 
 pub fn BrowsingContextModel.create(document ?&dom.Document, parent ?&BrowsingContextModel, target_name string) &BrowsingContextModel {
+	persistent := platform.enter_persistent()
+	defer { platform.leave_persistent(persistent) }
 	mut context := &BrowsingContextModel{
 		document_:    document
 		parent_:      parent
@@ -1445,6 +1448,18 @@ fn document_remove_tasks_from_event_loop(_ voidptr, document &dom.Document) {
 		task_document := task.document() or { return false }
 		return voidptr(task_document) == voidptr(document)
 	})
+	mut index := 0
+	for index < event_loop.microtask_queue.len {
+		task := event_loop.microtask_queue[index]
+		if target := task.document() {
+			if voidptr(target) == voidptr(document) {
+				task.cancel()
+				event_loop.microtask_queue.delete(index)
+				continue
+			}
+		}
+		index++
+	}
 }
 
 fn document_increment_event_loop_termination_nesting(_ voidptr, _ &dom.Document) {
@@ -1518,6 +1533,7 @@ fn document_queue_an_element_task(_ voidptr, element &dom.Element, source dom.Ta
 }
 
 fn document_run_unloading_cleanup_steps(target voidptr, document &dom.Document) {
+	html_popover_close_watcher_managers.delete(u64(voidptr(document)))
 	mut window := unsafe { &WindowModel(target) }
 	mut mutable_document := unsafe { &dom.Document(document) }
 	if window.global_scope_ != unsafe { nil } {
@@ -1560,6 +1576,8 @@ pub fn WindowModel.create(document &dom.Document, context &BrowsingContextModel)
 }
 
 fn WindowModel.create_with_global(document &dom.Document, context &BrowsingContextModel, existing_global ?&WindowModel) !&WindowModel {
+	persistent := platform.enter_persistent()
+	defer { platform.leave_persistent(persistent) }
 	mut document_with_html_hooks := unsafe { &dom.Document(document) }
 	context.associate_native_identity_with_document(document)
 	if document.cached_navigable() == none {

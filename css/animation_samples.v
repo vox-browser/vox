@@ -90,10 +90,32 @@ fn (mut s StyleComputer) animation_sample_storage() &AnimationSampleStorage {
 			persistent := platform.enter_persistent()
 			s.animation_samples_ = &AnimationSampleStorage{}
 			platform.leave_persistent(persistent)
+			mut owner := s.document_.native_storage()
+			if owner != unsafe { nil } {
+				samples := s.animation_samples_
+				owner.add_cleanup(fn [samples] () {
+					mut retiring := unsafe { &AnimationSampleStorage(samples) }
+					retiring.dispose()
+				})
+			}
 		}
 		return s.animation_samples_
 	}
 	return unsafe { nil }
+}
+
+fn (mut storage AnimationSampleStorage) dispose() {
+	assert storage.depth == 0
+	if storage.current != unsafe { nil } { storage.current.release() }
+	for mut retiring in storage.retiring { retiring.arena.release() }
+	for mut spare in storage.spare { spare.release() }
+	storage.current = unsafe { nil }
+	storage.current_targets.clear()
+	storage.retiring.clear()
+	storage.spare.clear()
+	storage.spare_target_lists.clear()
+	storage.target_serials.clear()
+	storage.target_indices.clear()
 }
 
 // begin_update retires arenas nothing can reach any longer and, when the

@@ -183,19 +183,23 @@ fn (mut app BrowserApp) close_browser_tab(index int) {
 }
 
 fn (mut app BrowserApp) dispose_browser_tab() {
+	mut retiring := app.document
+	layout_handle := if retiring != unsafe { nil } { retiring.layout_engine_handle() } else { unsafe { nil } }
 	app.navigation_generation++
 	app.pending_navigation = none
 	app.pending_cached_page = none
 	app.cancel_page_preload()
 	app.pending_native_navigation = none
 	app.deferred_page_input = []DeferredPageInput{}
-	if app.document != unsafe { nil } {
-		app.document.destroy_a_document_and_its_descendants()
-		app.document.finalize()
-	}
+	if mut loader := app.image_request_loader { loader.cancel() }
+	app.image_request_loader = none
 	if app.js_runtime != unsafe { nil } {
 		app.js_runtime.close()
 		app.js_runtime = unsafe { nil }
+	}
+	if retiring != unsafe { nil } {
+		retiring.destroy_a_document_and_its_descendants()
+		retiring.finalize()
 	}
 	app.document = unsafe { nil }
 	app.page_model = unsafe { nil }
@@ -205,6 +209,8 @@ fn (mut app BrowserApp) dispose_browser_tab() {
 	layout.release_paint_tree(app.paint_tree_storage)
 	app.paint_tree_storage = unsafe { nil }
 	app.release_paint_commands()
+	layout.retire_native_document_layout(layout_handle)
+	if retiring != unsafe { nil } { retiring.release_native_storage() }
 	app.chromium_raster_plan = layout.ChromiumRasterLayerPlan{}
 	app.chromium_raster_tiles = [][]i32{}
 	app.history = []HistoryEntry{}

@@ -1,5 +1,7 @@
 module css
 
+import platform
+
 // The user-agent (default) stylesheet, embedded verbatim from Ladybird's CSS/Default.css.
 const user_agent_stylesheet_source = $embed_file('ua_default.css').to_string()
 const user_agent_quirks_mode_stylesheet_source = $embed_file('ua_quirks_mode.css').to_string()
@@ -11,18 +13,10 @@ const user_agent_counter_stylesheet_source = user_agent_stylesheet_source.all_af
 
 // The parsed user-agent CSSStyleSheet, built once at startup and shared by every StyleScope's UA rule
 // cache (the sheet is identical for all documents), so documents don't each re-parse Default.css.
-const user_agent_default_stylesheet = parse_css_stylesheet_with_params(ParsingParams{
-	is_ua_style_sheet: .yes
-}, user_agent_cascade_stylesheet_source, none)
-const user_agent_quirks_mode_stylesheet = parse_css_stylesheet_with_params(ParsingParams{
-	is_ua_style_sheet: .yes
-}, user_agent_quirks_mode_stylesheet_source, none)
-const user_agent_mathml_stylesheet = parse_css_stylesheet_with_params(ParsingParams{
-	is_ua_style_sheet: .yes
-}, user_agent_mathml_stylesheet_source, none)
-const user_agent_svg_stylesheet = parse_css_stylesheet_with_params(ParsingParams{
-	is_ua_style_sheet: .yes
-}, user_agent_svg_stylesheet_source, none)
+const user_agent_default_stylesheet = parse_shared_user_agent_stylesheet(user_agent_cascade_stylesheet_source)
+const user_agent_quirks_mode_stylesheet = parse_shared_user_agent_stylesheet(user_agent_quirks_mode_stylesheet_source)
+const user_agent_mathml_stylesheet = parse_shared_user_agent_stylesheet(user_agent_mathml_stylesheet_source)
+const user_agent_svg_stylesheet = parse_shared_user_agent_stylesheet(user_agent_svg_stylesheet_source)
 
 __global user_agent_counter_stylesheet &CSSStyleSheet
 
@@ -31,9 +25,9 @@ __global user_agent_counter_stylesheet &CSSStyleSheet
 // needs a non-trivial list marker or generated counter.
 fn user_agent_counter_style_sheet() &CSSStyleSheet {
 	if user_agent_counter_stylesheet == unsafe { nil } {
-		user_agent_counter_stylesheet = parse_css_stylesheet_with_params(ParsingParams{
-			is_ua_style_sheet: .yes
-		}, user_agent_counter_stylesheet_source, none)
+		persistent := platform.enter_persistent()
+		defer { platform.leave_persistent(persistent) }
+		user_agent_counter_stylesheet = parse_shared_user_agent_stylesheet(user_agent_counter_stylesheet_source)
 	}
 	return user_agent_counter_stylesheet
 }
@@ -67,4 +61,12 @@ pub fn user_agent_default_style_sheet(url string) ?&CSSStyleSheet {
 		return user_agent_svg_stylesheet
 	}
 	return none
+}
+
+fn parse_shared_user_agent_stylesheet(source string) &CSSStyleSheet {
+	persistent := platform.enter_persistent()
+	defer { platform.leave_persistent(persistent) }
+	mut sheet := parse_css_stylesheet_with_params(ParsingParams{is_ua_style_sheet: .yes}, source, none)
+	sheet.process_lifetime = true
+	return sheet
 }

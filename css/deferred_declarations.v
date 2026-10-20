@@ -1,6 +1,7 @@
 module css
 
 import dom
+import platform
 
 @[heap]
 struct DeferredStyleDeclaration {
@@ -28,6 +29,8 @@ fn (mut parser RuleSelectorParser) declaration_for_style_rule(declarations []Dec
 // conversion waits for matching or CSSOM access; descriptors stay eager.
 fn (properties &CSSStyleProperties) ensure_declarations_parsed() {
 	deferred := properties.deferred_declarations_ or { return }
+	persistent := platform.enter_persistent_if(properties.has_process_lifetime_sheet())
+	defer { platform.leave_persistent(persistent) }
 	mut target := unsafe { &CSSStyleProperties(properties) }
 	target.deferred_declarations_ = none
 	mut parser := RuleSelectorParser{
@@ -47,6 +50,11 @@ fn (properties &CSSStyleProperties) ensure_declarations_parsed() {
 	if deferred.resource_owner_was_set {
 		target.set_rule_resource_owner(deferred.resource_owner)
 	}
+}
+
+fn (properties &CSSStyleProperties) has_process_lifetime_sheet() bool {
+	if rule := properties.parent_rule { return rule.has_process_lifetime_sheet() }
+	return false
 }
 
 fn (mut properties CSSStyleProperties) set_rule_base_url(base_url string) {

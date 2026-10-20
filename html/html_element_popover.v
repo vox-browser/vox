@@ -5,6 +5,8 @@
 // Translation of the Popover API algorithms in HTMLElement.cpp.
 module html
 
+import platform
+
 import dom
 
 pub enum ThrowExceptions {
@@ -240,7 +242,9 @@ fn popover_close_watcher_manager(document &dom.Document) &CloseWatcherManager {
 		return manager
 	}
 	manager := CloseWatcherManager.create()
+	persistent := platform.enter_persistent()
 	html_popover_close_watcher_managers[key] = manager
+	platform.leave_persistent(persistent)
 	return manager
 }
 

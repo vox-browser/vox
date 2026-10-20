@@ -2,6 +2,7 @@ module css
 
 import dom
 import strings
+import platform
 
 // This file ports the CSSOM rule/list/style-sheet layer from Ladybird's LibWeb/CSS.
 // It includes folded translations of CSSConditionRule.cpp and CSSGroupingRule.cpp.
@@ -924,6 +925,8 @@ pub fn (mut rule CSSRule) clear_caches() {
 }
 
 pub fn (mut rule CSSRule) parent_layer_internal_qualified_name() string {
+	persistent := platform.enter_persistent_if(rule.has_process_lifetime_sheet())
+	defer { platform.leave_persistent(persistent) }
 	if cached := rule.cached_layer_name {
 		return cached
 	}
@@ -1096,6 +1099,8 @@ pub fn (rule &CSSRule) parent_scope_rule() ?&CSSRule {
 }
 
 pub fn (mut rule CSSRule) scope_start_selectors_for_matching() ?SelectorList {
+	persistent := platform.enter_persistent_if(rule.has_process_lifetime_sheet())
+	defer { platform.leave_persistent(persistent) }
 	selectors := rule.scope_start_selectors or { return none }
 	if cached := rule.cached_scope_start_selectors {
 		return cached
@@ -1106,6 +1111,8 @@ pub fn (mut rule CSSRule) scope_start_selectors_for_matching() ?SelectorList {
 }
 
 pub fn (mut rule CSSRule) scope_end_selectors_for_matching() ?SelectorList {
+	persistent := platform.enter_persistent_if(rule.has_process_lifetime_sheet())
+	defer { platform.leave_persistent(persistent) }
 	selectors := rule.scope_end_selectors or { return none }
 	if cached := rule.cached_scope_end_selectors {
 		return cached
@@ -1709,6 +1716,8 @@ fn absolutize_selectors_relative_to(selectors SelectorList, parent ?&CSSRule) Se
 }
 
 pub fn (mut rule CSSRule) absolutized_selectors() SelectorList {
+	persistent := platform.enter_persistent_if(rule.has_process_lifetime_sheet())
+	defer { platform.leave_persistent(persistent) }
 	if cached := rule.cached_absolutized_selectors {
 		return cached
 	}
@@ -1793,6 +1802,8 @@ pub fn (sheet &StyleSheet) title_for_bindings() ?string {
 @[heap]
 pub struct CSSStyleSheet {
 pub mut:
+	// Embedded UA sheets are shared across document payload arenas.
+	process_lifetime bool
 	base StyleSheet
 
 	rules &CSSRuleList = unsafe { nil }
@@ -1817,6 +1828,11 @@ pub mut:
 	source_text_            ?string
 mut:
 	shared_style_cache_revision_ u64
+}
+
+fn (rule &CSSRule) has_process_lifetime_sheet() bool {
+	if sheet := rule.parent_style_sheet { return sheet.process_lifetime }
+	return false
 }
 
 pub struct CSSStyleSheetInit {

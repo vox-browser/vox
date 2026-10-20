@@ -10,13 +10,13 @@ __global chromium_control_font_stylesheet &CSSStyleSheet
 
 fn chromium_control_font_style_sheet() &CSSStyleSheet {
 	if chromium_control_font_stylesheet == unsafe { nil } {
-		chromium_control_font_stylesheet = parse_css_stylesheet_with_params(ParsingParams{
-			is_ua_style_sheet: .yes
-		}, 'input, select, button, textarea { font: 13.3333333333333px Arial; }
+		persistent := platform.enter_persistent()
+		defer { platform.leave_persistent(persistent) }
+		chromium_control_font_stylesheet = parse_shared_user_agent_stylesheet('input, select, button, textarea { font: 13.3333333333333px Arial; }
 textarea { font-family: monospace; }
 input::placeholder, textarea::placeholder { color:#757575; }
 input[type=checkbox i] { margin: 3px 3px 3px 4px; }
-input[type=radio i] { margin: 3px 3px 0px 5px; }', none)
+input[type=radio i] { margin: 3px 3px 0px 5px; }')
 	}
 	return chromium_control_font_stylesheet
 }

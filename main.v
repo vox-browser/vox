@@ -3446,6 +3446,7 @@ fn (mut app BrowserApp) install_loaded_page(loaded LoadedPage, add_history bool)
 	app.paint_timing.installation_instructions = processmetrics.begin_instructions()
 	initiator_origin := if app.document != unsafe { nil } { ?dom.Origin(app.document.origin()) } else { none }
 	previous_document := if app.document != unsafe { nil } { ?&dom.Document(app.document) } else { ?&dom.Document(none) }
+	previous_layout := if app.document != unsafe { nil } { app.document.layout_engine_handle() } else { unsafe { nil } }
 	scripting_enabled := browser_scripting_enabled(loaded.url, app.script_policy)
 	app.document = if document_url := dom.dom_url_parse(loaded.url, dom.url_about_blank(),
 		'UTF-8') {
@@ -3464,11 +3465,21 @@ fn (mut app BrowserApp) install_loaded_page(loaded LoadedPage, add_history bool)
 		app.js_runtime.close()
 		app.js_runtime = unsafe { nil }
 	}
-	if previous := previous_document { app.retire_native_document_rendering(previous) }
+	if previous := previous_document {
+		app.retire_native_document_rendering(previous)
+		if previous.native_storage() != unsafe { nil } {
+			mut outgoing := unsafe { &dom.Document(previous) }
+			outgoing.destroy_a_document_and_its_descendants()
+			outgoing.finalize()
+			layout.retire_native_document_layout(previous_layout)
+			outgoing.release_native_storage()
+		}
+	}
 	install_browser_adblock_styles(app.document, '') or { app.js_messages << 'Adblock styles: ${err.msg()}' }
 	$if vox_document_retention_diagnostics ? {
 	if replaced := previous_document {
-		if voidptr(replaced) != voidptr(app.document) && os.getenv('VOX_TRACE_TEARDOWN') != '' {
+		if !replaced.has_been_destroyed() && voidptr(replaced) != voidptr(app.document)
+			&& os.getenv('VOX_TRACE_TEARDOWN') != '' {
 			mut outgoing := unsafe { &dom.Document(replaced) }
 			outgoing.unload_a_document_and_its_descendants(app.document)
 		}

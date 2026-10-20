@@ -1,5 +1,7 @@
 module css
 
+import platform
+
 // Resolving initial geometry once keeps anonymous boxes independent of the
 // parent's non-inherited values without decoding those same defaults per box.
 __global (
@@ -8,6 +10,8 @@ __global (
 
 fn initial_anonymous_geometry_cache() &ComputedLayoutCache {
 	if anonymous_initial_geometry_cache == unsafe { nil } {
+		persistent := platform.enter_persistent()
+		defer { platform.leave_persistent(persistent) }
 		initial := computed_properties_with_initial_values()
 		_ = resolve_computed_values(initial)
 		anonymous_initial_geometry_cache = initial.computed_layout_cache()

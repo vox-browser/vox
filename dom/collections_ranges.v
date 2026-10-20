@@ -20,6 +20,8 @@
 // - Libraries/LibWeb/DOM/Position.cpp
 module dom
 
+import platform
+
 __global dom_live_ranges map[u64]&Range
 
 // The current V DOM port has skeletal storage for some platform objects.
@@ -2211,7 +2213,9 @@ pub fn Range.create(document &Document) &Range {
 		start_container_: unsafe { &Node(document) }
 		end_container_: unsafe { &Node(document) }
 	}
+	persistent := platform.enter_persistent()
 	dom_live_ranges[u64(voidptr(range))] = range
+	platform.leave_persistent(persistent)
 	return range
 }
 
@@ -2234,7 +2238,9 @@ pub fn Range.create_from_boundary_points(start_container &Node, start_offset int
 		end_container_: end_container
 		end_offset_: end_offset
 	}
+	persistent := platform.enter_persistent()
 	dom_live_ranges[u64(voidptr(range))] = range
+	platform.leave_persistent(persistent)
 	return range
 }
 

@@ -1,6 +1,7 @@
 module css
 
 import sync
+import platform
 
 const stylesheet_syntax_minimum_bytes = 4096
 
@@ -76,10 +77,15 @@ fn (mut cache StylesheetSyntaxCache) parse(input string) []ComponentValue {
 		return values
 	}
 	cache.mutex.unlock()
+	persistent := platform.enter_persistent()
+	defer { platform.leave_persistent(persistent) }
 	// Tokenization can service a cooperative UI checkpoint. Never hold the
 	// cache lock across parsing or author/native reentry, or wait for another
 	// thread's parse to finish while holding it.
-	values := ParserTokenStream.from_source(input, 'utf-8').values
+	// Cached token ranges can borrow the source. Own both in persistent
+	// storage even when the caller's stylesheet text belongs to a document.
+	owned_input := input.clone()
+	values := ParserTokenStream.from_source(owned_input, 'utf-8').values
 	nodes := stylesheet_syntax_node_count(values)
 	if nodes > cache.max_nodes || cache.max_entries <= 0 { return values }
 	cache.mutex.lock()
@@ -92,7 +98,7 @@ fn (mut cache StylesheetSyntaxCache) parse(input string) []ComponentValue {
 	}
 	cache.serial++
 	cache.entries << &StylesheetSyntaxEntry{
-		input: input
+		input: owned_input
 		values: values
 		nodes: nodes
 		last_used: cache.serial

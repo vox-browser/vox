@@ -111,7 +111,17 @@ fn parse_browser_navigation_document_input_with_source(markup string, document_e
 	mut document := create_browser_navigation_document(document_url, origin, previous, page) or {
 		panic(err)
 	}
+	// Construct context/realm identity before entering the payload arena. These
+	// objects can be reused by a later navigation.
+	document.enable_native_storage()
+	mut allocations := document.enter_native_storage()
+	defer { allocations.finish() }
 	if source := javascript_url_source {
+		// Policy containers preserve source identities across javascript: URL
+		// replacement. Keep their source allocation owner until these aliases
+		// acquire an explicit independent lifetime.
+		mut source_storage := source.native_storage()
+		if source_storage != unsafe { nil } { source_storage.pin() }
 		document.set_origin(source.origin())
 		policy := source.policy_container().clone()
 		document.set_policy_container(&policy)

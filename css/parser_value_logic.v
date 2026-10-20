@@ -15489,12 +15489,13 @@ pub fn parse_css_value_logic(property_id PropertyID, text string) ?StyleValue {
 		// The process-wide cache keeps the parsed value and its text.
 		persistent := platform.enter_persistent()
 		defer { platform.leave_persistent(persistent) }
-		mut cache_parser := Parser.from_css_text(text)
+		owned_text := text.clone()
+		mut cache_parser := Parser.from_css_text(owned_text)
 		value := cache_parser.parse_css_value(property_id)?
 		if key !in css_parsed_value_cache {
 			css_parsed_value_cache[key] = map[string]StyleValue{}
 		}
-		css_parsed_value_cache[key][text] = value
+		css_parsed_value_cache[key][owned_text] = value
 		return value
 	}
 	mut parser := Parser.from_css_text(text)

@@ -1,6 +1,7 @@
 module css
 
 import dom
+import platform
 
 const computed_property_page_size = 16
 const computed_property_page_count = (number_of_longhand_properties + computed_property_page_size - 1) / computed_property_page_size
@@ -33,7 +34,9 @@ __global computed_initial_property_store &ComputedPropertyStore
 fn new_empty_computed_property_store() &ComputedPropertyStore {
 	assert computed_property_page_count <= 32
 	if computed_empty_property_page == unsafe { nil } {
+		persistent := platform.enter_persistent()
 		computed_empty_property_page = &ComputedPropertyPage{}
+		platform.leave_persistent(persistent)
 	}
 	mut store := &ComputedPropertyStore{}
 	for page in 0 .. computed_property_page_count {
@@ -45,6 +48,8 @@ fn new_empty_computed_property_store() &ComputedPropertyStore {
 fn new_initial_computed_property_store() &ComputedPropertyStore {
 	assert computed_property_page_count <= 32
 	if computed_initial_property_store == unsafe { nil } {
+		persistent := platform.enter_persistent()
+		defer { platform.leave_persistent(persistent) }
 		mut initial := &ComputedPropertyStore{}
 		for page_index in 0 .. computed_property_page_count {
 			mut page := &ComputedPropertyPage{}

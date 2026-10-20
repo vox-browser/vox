@@ -88,7 +88,7 @@ fn refresh_local_paint_styles(mut result DocumentLayoutResult) {
 	mut scratch := paint_style_refresh_scratch_
 	// Nested documents refresh from their own update; only the outermost
 	// refresh uses the arena.
-	use_scratch := !platform.arena_entered()
+	use_scratch := !platform.transient_arena_entered()
 	mut compositor := CompositorPaintStyleRefresh{}
 	if use_scratch {
 		entry := scratch.enter()

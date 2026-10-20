@@ -3,6 +3,7 @@
 module html
 
 import dom
+import platform
 
 fn document_lifecycle_hook(window &WindowModel) dom.DocumentLifecycleHook {
 	return dom.DocumentLifecycleHook{
@@ -28,6 +29,8 @@ fn document_lifecycle_hook(window &WindowModel) dom.DocumentLifecycleHook {
 }
 
 fn create_window_global_before_document(context &BrowsingContextModel, creation_url dom.URL, origin dom.Origin, top_level_creation_url dom.URL, top_level_origin dom.Origin) &WindowModel {
+	persistent := platform.enter_persistent()
+	defer { platform.leave_persistent(persistent) }
 	mut window := &WindowModel{
 		browsing_context_: context
 		animation_driver_: &AnimationFrameCallbackDriver{}
@@ -42,6 +45,8 @@ fn create_window_global_before_document(context &BrowsingContextModel, creation_
 }
 
 fn construct_document_in_global(window &WindowModel, context &BrowsingContextModel, creation_url dom.URL, origin dom.Origin) !&dom.Document {
+	persistent := platform.enter_persistent()
+	defer { platform.leave_persistent(persistent) }
 	temporary_context := dom.DocumentTemporaryExecutionContextHook{
 		target: voidptr(window)
 		begin:  document_begin_temporary_execution_context

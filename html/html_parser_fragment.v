@@ -178,15 +178,18 @@ pub fn parse_html_fragment_with_options(context_element &dom.Element, markup str
 		panic('HTML fragment parsing requires Inert or Fragment scripting mode')
 	}
 	install_document_fragment_parsing_hook(context_element.document())
+	context_document := context_element.document()
+	mut allocations := context_document.enter_native_storage()
+	defer { allocations.finish() }
 	// 1. Let document be a Document node whose type is "html".
 	mut temp_document := dom.Document.create_for_fragment_parsing()
+	temp_document.borrow_native_storage(context_document)
 	temp_document.set_document_type(.html)
 	if allow_declarative_shadow_roots == .yes {
 		temp_document.set_allow_declarative_shadow_roots(true)
 	}
 
 	// 2/3. Inherit quirks mode from the context's node document.
-	context_document := context_element.document()
 	temp_document.set_scripting_enabled_by_embedder(context_document.is_scripting_enabled_by_embedder())
 	if context_document.in_quirks_mode() {
 		temp_document.set_quirks_mode(.yes)

@@ -11,6 +11,7 @@ module html
 import aria
 import css
 import dom
+import platform
 import webidl
 
 pub enum ImageLoadingAttribute {
@@ -37,7 +38,7 @@ pub type HTMLImageModelAsyncFetchHook = fn (&HTMLImageElementModel, dom.URL, HTM
 @[heap]
 struct BatchingDispatcher {
 mut:
-	queue     []fn ()
+	queue     []&Task
 	scheduled bool
 }
 
@@ -50,13 +51,21 @@ fn process_image_batch() {
 
 fn batching_dispatcher() &BatchingDispatcher {
 	if html_image_batching_dispatcher == unsafe { nil } {
+		persistent := platform.enter_persistent()
 		html_image_batching_dispatcher = &BatchingDispatcher{}
+		platform.leave_persistent(persistent)
 	}
 	return html_image_batching_dispatcher
 }
 
 fn (mut dispatcher BatchingDispatcher) enqueue(callback fn ()) {
-	dispatcher.queue << callback
+	dispatcher.enqueue_for_document(none, callback)
+}
+
+fn (mut dispatcher BatchingDispatcher) enqueue_for_document(document ?&dom.Document, callback fn ()) {
+	persistent := platform.enter_persistent()
+	defer { platform.leave_persistent(persistent) }
+	dispatcher.queue << Task.create(.networking, document, callback)
 	if dispatcher.queue.len >= 16 {
 		dispatcher.process()
 		return
@@ -72,7 +81,7 @@ fn (mut dispatcher BatchingDispatcher) process() {
 	dispatcher.queue.clear()
 	dispatcher.scheduled = false
 	for callback in queue {
-		callback()
+		callback.execute()
 	}
 }
 
@@ -795,7 +804,7 @@ fn (image &HTMLImageElementModel) begin_decode(promise &dom.Promise) {
 	mut request := unsafe { &ImageRequest(expected_request) }
 	request.add_callbacks(fn [image_pointer, expected_request, promise, owner, settlement_document] () {
 		mut dispatcher := batching_dispatcher()
-		dispatcher.enqueue(fn [image_pointer, expected_request, promise, owner, settlement_document] () {
+		dispatcher.enqueue_for_document(image_pointer.document_, fn [image_pointer, expected_request, promise, owner, settlement_document] () {
 			if !image_pointer.document_.is_fully_active() {
 				queue_image_decode_rejection(image_pointer, promise, 'Node document not fully active', owner, settlement_document)
 				return
@@ -1122,7 +1131,7 @@ pub fn (mut image HTMLImageElementModel) add_callbacks_to_image_request(image_re
 			}
 		}
 		mut dispatcher := batching_dispatcher()
-		dispatcher.enqueue(fn [image_pointer, image_request, maybe_omit_events, url_string, previous_url, update_the_image_data_count] () {
+		dispatcher.enqueue_for_document(image_pointer.document_, fn [image_pointer, image_request, maybe_omit_events, url_string, previous_url, update_the_image_data_count] () {
 			mut mutable_image := unsafe { &HTMLImageElementModel(image_pointer) }
 			mutable_image.image_request_finished(image_request, maybe_omit_events, url_string, previous_url, update_the_image_data_count)
 		})

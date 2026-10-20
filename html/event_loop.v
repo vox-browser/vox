@@ -123,19 +123,38 @@ mut:
 	steps     fn() @[required]
 	document_ ?&dom.Document
 	timer_nesting_level_ u32
+	allocation_owner &platform.RetainedArena = unsafe { nil }
 }
 
 pub fn Task.create(source TaskSource, document ?&dom.Document, steps fn()) &Task {
+	mut owner := platform.current_retained_arena()
+	if source == .rendering { owner = unsafe { nil } }
+	if owner == unsafe { nil } {
+		if target := document { owner = target.native_storage() }
+	}
+	if owner != unsafe { nil } { owner.retain() }
+	persistent := platform.enter_persistent()
+	defer { platform.leave_persistent(persistent) }
 	return &Task{
 		id: allocate_task_id()
 		source: source
 		document_: document
 		steps: steps
+		allocation_owner: owner
 	}
 }
 
 pub fn (task &Task) execute() {
+	if task.is_permanently_unrunnable() { task.cancel(); return }
+	defer { task.cancel() }
 	task.steps()
+}
+
+fn (task &Task) cancel() {
+	mut mutable_task := unsafe { &Task(task) }
+	mut owner := mutable_task.allocation_owner
+	mutable_task.allocation_owner = unsafe { nil }
+	if owner != unsafe { nil } { owner.release() }
 }
 
 pub fn (task &Task) id() u64 {
@@ -212,8 +231,11 @@ pub fn (queue &TaskQueue) is_empty() bool {
 }
 
 pub fn (mut queue TaskQueue) add(task &Task) {
+	persistent := platform.enter_persistent()
+	defer { platform.leave_persistent(persistent) }
 	if document := task.document() {
-		if document.is_temporary_document_for_fragment_parsing() {
+		if document.is_temporary_document_for_fragment_parsing() || document.has_been_destroyed() {
+			task.cancel()
 			return
 		}
 	}
@@ -262,6 +284,7 @@ pub fn (mut queue TaskQueue) take_first_runnable() ?&Task {
 		}
 		if task.is_permanently_unrunnable() {
 			queue.tasks.delete(index)
+			task.cancel()
 			continue
 		}
 		index++
@@ -286,6 +309,7 @@ pub fn (mut queue TaskQueue) remove_tasks_matching(predicate fn(&Task) bool) {
 	mut index := 0
 	for index < queue.tasks.len {
 		if predicate(queue.tasks[index]) {
+			queue.tasks[index].cancel()
 			queue.tasks.delete(index)
 		} else {
 			index++
@@ -335,7 +359,7 @@ mut:
 	microtask_queue                       []&Task
 	currently_running_task_               ?&Task
 	task_generation_                      u64
-	reached_step_1_tasks                  []fn()
+	reached_step_1_tasks                  []&Task
 	performing_a_microtask_checkpoint     bool
 	documents_                            []&dom.Document
 	documents_sort_dirty_                 bool = true
@@ -438,10 +462,14 @@ pub fn (mut event_loop EventLoop) decrement_termination_nesting_level() {
 }
 
 pub fn (mut event_loop EventLoop) run_upon_reaching_step_1(steps fn()) {
-	event_loop.reached_step_1_tasks << steps
+	persistent := platform.enter_persistent()
+	defer { platform.leave_persistent(persistent) }
+	event_loop.reached_step_1_tasks << Task.create(.unspecified, none, steps)
 }
 
 pub fn (mut event_loop EventLoop) schedule() {
+	persistent := platform.enter_persistent()
+	defer { platform.leave_persistent(persistent) }
 	event_loop.scheduled = true
 	if event_loop.system_event_loop_timer_ == none {
 		event_loop.system_event_loop_timer_ = platform.Timer.create_single_shot(0, fn [mut event_loop] () {
@@ -453,6 +481,8 @@ pub fn (mut event_loop EventLoop) schedule() {
 }
 
 pub fn (mut event_loop EventLoop) enqueue_microtask(task &Task) {
+	persistent := platform.enter_persistent()
+	defer { platform.leave_persistent(persistent) }
 	event_loop.microtask_queue << task
 }
 
@@ -526,7 +556,7 @@ pub fn (mut event_loop EventLoop) process() {
 	reached_step_1_tasks := event_loop.reached_step_1_tasks.clone()
 	event_loop.reached_step_1_tasks.clear()
 	for steps in reached_step_1_tasks {
-		steps()
+		steps.execute()
 	}
 
 	if event_loop.task_queue_.has_runnable_tasks() {
@@ -601,6 +631,8 @@ pub fn (mut event_loop EventLoop) process() {
 
 // Queue rendering tasks for registered active documents.
 pub fn (mut event_loop EventLoop) queue_task_to_update_the_rendering() {
+	persistent := platform.enter_persistent()
+	defer { platform.leave_persistent(persistent) }
 	event_loop.request_rendering_update()
 	event_loop.rendering_opportunity(unsafe_shared_current_time_ms(), false)
 }
@@ -908,6 +940,8 @@ pub fn (event_loop &EventLoop) documents_in_this_event_loop_matching(callback fn
 }
 
 pub fn (mut event_loop EventLoop) register_document(document &dom.Document) {
+	persistent := platform.enter_persistent()
+	defer { platform.leave_persistent(persistent) }
 	event_loop.documents_ << document
 	event_loop.documents_sort_dirty_ = true
 }
@@ -919,6 +953,8 @@ pub fn (mut event_loop EventLoop) document_navigable_did_change() {
 // EventLoop::ensure_documents_sorted(): visit a registered container before
 // appending its child. Unrelated documents retain their registration order.
 fn (mut event_loop EventLoop) ensure_documents_sorted() {
+	persistent := platform.enter_persistent()
+	defer { platform.leave_persistent(persistent) }
 	if !event_loop.documents_sort_dirty_ {
 		return
 	}
@@ -955,7 +991,7 @@ fn visit_document_container_before_child(documents []&dom.Document, document_to_
 
 pub fn (mut event_loop EventLoop) unregister_document(document &dom.Document) {
 	for index, entry in event_loop.documents_ {
-		if entry == document {
+		if voidptr(entry) == voidptr(document) {
 			event_loop.documents_.delete(index)
 			return
 		}
@@ -964,6 +1000,8 @@ pub fn (mut event_loop EventLoop) unregister_document(document &dom.Document) {
 }
 
 pub fn (mut event_loop EventLoop) push_onto_backup_incumbent_realm_stack(realm &ScriptingRealm) {
+	persistent := platform.enter_persistent()
+	defer { platform.leave_persistent(persistent) }
 	event_loop.backup_incumbent_realm_stack_ << realm
 }
 
@@ -982,6 +1020,8 @@ pub fn (event_loop &EventLoop) is_backup_incumbent_realm_stack_empty() bool {
 }
 
 pub fn (mut event_loop EventLoop) register_environment_settings_object(settings &EnvironmentSettingsObject) {
+	persistent := platform.enter_persistent()
+	defer { platform.leave_persistent(persistent) }
 	event_loop.related_environment_settings_objects_ << settings
 }
 

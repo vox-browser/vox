@@ -656,6 +656,8 @@ pub fn run_document_layout_for_tree_dump(document &dom.Document, viewport_width 
 
 fn run_document_layout_with_renderer_mode(document &dom.Document, viewport_width f64,
 	viewport_height f64, build_paint_tree bool) ?DocumentLayoutResult {
+	mut allocations := document.enter_native_storage()
+	defer { allocations.finish() }
 	phase_mark := platform.arena_phase_begin()
 	defer {
 		platform.arena_phase_end('layout', phase_mark)

@@ -12,6 +12,7 @@ mut:
 	arena      &platform.Arena       = unsafe { nil }
 	pool       &PaintTreeStoragePool = unsafe { nil }
 	references int
+	document_storage &platform.RetainedArena = unsafe { nil }
 }
 
 @[heap]
@@ -20,6 +21,7 @@ mut:
 	document &dom.Document = unsafe { nil }
 	free     []&PaintTreeStorage
 	live     []&PaintTreeStorage
+	retired bool
 }
 
 const paint_tree_storage_spares = 2
@@ -52,6 +54,8 @@ fn (mut result DocumentLayoutResult) acquire_paint_tree_storage(document &dom.Do
 			&PaintTreeStorage{ arena: platform.new_arena('paint tree slots'), pool: pool }
 		}
 		storage.references = 1
+		storage.document_storage = document.native_storage()
+		if storage.document_storage != unsafe { nil } { storage.document_storage.retain() }
 		pool.live << storage
 		return storage
 	}
@@ -69,21 +73,24 @@ fn (mut storage PaintTreeStorage) release() {
 	mut pool := storage.pool
 	// A later host can borrow an already-recorded document. Keep its storage
 	// just as display-list scenes do when host ownership is not tracked.
-	if pool.document.paint_borrowed_by_host { return }
+	if pool.document != unsafe { nil } && pool.document.paint_borrowed_by_host { return }
 	for index, live in pool.live {
 		if voidptr(live) == voidptr(storage) {
 			pool.live.delete(index)
 			break
 		}
 	}
-	if pool.free.len >= paint_tree_storage_spares {
+	if pool.retired || pool.free.len >= paint_tree_storage_spares {
 		storage.arena.release()
-		return
+	} else {
+		storage.arena.reset()
+		persistent := platform.enter_persistent()
+		pool.free << storage
+		platform.leave_persistent(persistent)
 	}
-	storage.arena.reset()
-	persistent := platform.enter_persistent()
-	pool.free << storage
-	platform.leave_persistent(persistent)
+	mut document_storage := storage.document_storage
+	storage.document_storage = unsafe { nil }
+	if document_storage != unsafe { nil } { document_storage.release() }
 }
 
 // The shell keeps its geometry independently of its currently adopted scene.

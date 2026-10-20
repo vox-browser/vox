@@ -263,6 +263,21 @@ pub fn arena_entered() bool {
 	return false
 }
 
+// A document arena is a durable owner for retained state, but still needs
+// the same short-lived culling and paint-refresh scratch as base allocations.
+pub fn transient_arena_entered() bool {
+	$if prealloc {
+		state := arena_state()
+		if state.depth <= 0 { return false }
+		if state.retained != unsafe { nil } {
+			block := unsafe { &PreallocBlockView(current_block()) }
+			if block.scope == voidptr(state.retained.arena.scope) { return false }
+		}
+		return true
+	}
+	return false
+}
+
 // enter_persistent routes allocations to the thread's base arena while an
 // arena is entered: retained state such as caches must outlive the arena.
 pub fn enter_persistent() ArenaEntry {

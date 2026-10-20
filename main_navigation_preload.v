@@ -4,6 +4,7 @@ import dom
 import css
 import html
 import platform
+import layout
 
 // Resource requests must not block the native event callback that commits a
 // navigation. Discover them on the owning thread, then wait through the frame
@@ -22,7 +23,7 @@ mut:
 
 fn (mut app BrowserApp) cancel_page_preload() {
 	if mut pending := app.pending_page_preload {
-		if pending.discovery_document != unsafe { nil } { pending.discovery_document.finalize() }
+		if pending.discovery_document != unsafe { nil } { retire_native_preload_document(pending.discovery_document) }
 	}
 	app.pending_page_preload = none
 }
@@ -45,6 +46,9 @@ fn (mut app BrowserApp) retain_navigation_resource(resource_url string, resource
 fn parse_page_preload_document(loaded LoadedPage, scripting_enabled bool) &dom.Document {
 	document_url := dom.dom_url_parse(loaded.url, dom.url_about_blank(), 'UTF-8') or { dom.url_about_blank() }
 	mut document := dom.Document.create(document_url)
+	document.enable_native_storage()
+	mut allocations := document.enter_native_storage()
+	defer { allocations.finish() }
 	document.set_scripting_enabled_by_embedder(scripting_enabled)
 	document.set_allow_declarative_shadow_roots(true)
 	markup, encoding_name := loaded_browser_navigation_input(loaded)
@@ -62,12 +66,22 @@ fn parse_page_preload_document(loaded LoadedPage, scripting_enabled bool) &dom.D
 	return document
 }
 
+fn retire_native_preload_document(document &dom.Document) {
+	mut retiring := unsafe { &dom.Document(document) }
+	handle := document.layout_engine_handle()
+	retiring.destroy_a_document_and_its_descendants()
+	retiring.finalize()
+	layout.retire_native_document_layout(handle)
+	retiring.release_native_storage()
+}
+
 fn queue_navigation_preloads(mut pending PendingPagePreload, urls []string,
 	types map[string]string, cache map[string]PreloadedResource) {
 	pending.remaining += urls.len
 	for resource_url in urls {
+		owned_url := resource_url.clone()
 		cached := if resource := cache[resource_url] { [resource] } else { []PreloadedResource{} }
-		spawn fetch_navigation_preload(resource_url, pending.loaded.url,
+		spawn fetch_navigation_preload(owned_url, pending.loaded.url,
 			types[resource_url] or { 'image' }, cached, pending.results)
 	}
 }
@@ -120,7 +134,7 @@ fn (mut app BrowserApp) start_page_preload(loaded LoadedPage, add_history bool) 
 	urls := document_preload_resource_urls(document, base_url)
 	types := document_preload_resource_types(document, base_url)
 	if urls.len == 0 {
-		document.finalize()
+		retire_native_preload_document(document)
 		app.commit_preloaded_page(loaded, add_history)
 		return
 	}
@@ -142,7 +156,7 @@ fn (mut app BrowserApp) start_page_preload(loaded LoadedPage, add_history bool) 
 	if pending.image_urls.len > 0 {
 		pending.discovery_document = document
 	} else {
-		document.finalize()
+		retire_native_preload_document(document)
 	}
 	queue_navigation_preloads(mut pending, initial_urls, types, app.resource_cache)
 	app.pending_page_preload = pending
@@ -190,10 +204,13 @@ fn (mut app BrowserApp) poll_page_preload() {
 		})
 		css.sync_document_style_elements(document)
 		foreground, _ := partition_nonrendered_image_preloads(document, base_url, pending.image_urls)
-		document.finalize()
+		// URL discovery returns values while the document is alive; worker
+		// arguments own their strings before releasing its payload.
+		foreground_urls := foreground.map(it.clone())
+		retire_native_preload_document(document)
 		pending.discovery_document = unsafe { nil }
 		pending.image_urls = []string{}
-		queue_navigation_preloads(mut pending, foreground, map[string]string{}, app.resource_cache)
+		queue_navigation_preloads(mut pending, foreground_urls, map[string]string{}, app.resource_cache)
 		if pending.remaining > 0 {
 			app.pending_page_preload = pending
 			return

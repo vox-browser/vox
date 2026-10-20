@@ -27,7 +27,7 @@ fn viewport_visible_paint_entries(mut result DocumentLayoutResult) []bool {
 	viewport := result.document.viewport_rect()
 	if viewport.width <= 0 || viewport.height <= 0 { return selected }
 	// A nested document records inside its parent's arena and allocates there.
-	if platform.arena_entered() {
+	if platform.transient_arena_entered() {
 		mark_viewport_invisible_entries(result, mut selected, viewport.width, viewport.height)
 		return selected
 	}

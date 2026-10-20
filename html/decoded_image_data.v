@@ -283,7 +283,20 @@ pub fn AnimatedDecodedImageData.create(session_id i64, frame_count u32, loop_cou
 		data.last_displayed_frame = data.buffer_slots[0].frame
 	}
 	AnimatedDecodedImageData.install_frame_delivery_callback()
+	persistent := platform.enter_persistent()
 	html_animated_image_sessions[session_id] = data
+	platform.leave_persistent(persistent)
+	mut owner := platform.current_retained_arena()
+	if owner != unsafe { nil } {
+		owner.add_cleanup(fn [data] () {
+			if live := html_animated_image_sessions[data.session_id] {
+				if voidptr(live) == voidptr(data) {
+					mut retiring := unsafe { &AnimatedDecodedImageData(data) }
+					retiring.finalize()
+				}
+			}
+		})
+	}
 	return data
 }
 

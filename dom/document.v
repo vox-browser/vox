@@ -203,7 +203,9 @@ pub fn (u URL) parsed() ?liburl.URL {
 	parsed := liburl.parse(u.value) or { return none }
 	// Source URL's copy-on-write data keeps a mutable value copy independent.
 	// Neither the first caller nor a cache lookup may share its path array.
-	dom_url_record_cache[u.value] = parsed.copy()
+	persistent := platform.enter_persistent()
+	dom_url_record_cache[u.value.clone()] = parsed.copy()
+	platform.leave_persistent(persistent)
 	return parsed
 }
 
@@ -5372,6 +5374,8 @@ pub mut:
 	paint_borrowed_by_host bool
 	// Native shell snapshots retain/release their contiguous paint-tree slots.
 	recycle_native_paint_trees bool
+	native_storage_ &platform.RetainedArena = unsafe { nil }
+	native_storage_borrowed_ bool
 
 	// Layout
 	layout_root &LayoutViewport = unsafe { nil }
@@ -7366,6 +7370,8 @@ fn (d &Document) create_html_parser_for_scripting() !&HTMLParser {
 }
 
 pub fn (mut d Document) update_style() {
+	mut allocations := d.enter_native_storage()
+	defer { allocations.finish() }
 	phase_mark := platform.arena_phase_begin()
 	defer {
 		platform.arena_phase_end('style', phase_mark)
@@ -7529,6 +7535,8 @@ fn (mut d Document) invalidate_pending_size_query_dependents() {
 }
 
 pub fn (mut d Document) update_layout(reason UpdateLayoutReason) {
+	mut allocations := d.enter_native_storage()
+	defer { allocations.finish() }
 	_ = reason
 
 	// Document.cpp: Document::update_layout(). Only the active document of a
@@ -8066,6 +8074,13 @@ pub fn (mut d Document) adopt_node(node &Node) {
 	// 3. If document is not oldDocument, then:
 	d_ptr := unsafe { &Document(d) }
 	if voidptr(old_document) != voidptr(d_ptr) {
+		mut storage := old_document.native_storage_
+		if storage != unsafe { nil } && voidptr(storage) != voidptr(d.native_storage_)
+			&& !storage.arena.contains(voidptr(d_ptr)) {
+			storage.pin()
+			mut source := unsafe { &Document(old_document) }
+			source.paint_borrowed_by_host = true
+		}
 		d.style_scope_adoption_depth_++
 		defer {
 			d.style_scope_adoption_depth_--
@@ -8505,6 +8520,9 @@ pub fn (mut d Document) appropriate_template_contents_owner_document() &Document
 			//    this algorithm" for the purposes of the step above.
 			mut new_doc := Document.create(url_about_blank())
 			new_doc.created_for_appropriate_template_contents = true
+			// Inert template contents have a different DOM Document identity but
+			// the containing native document owns their allocation lifetime.
+			new_doc.borrow_native_storage(&d)
 
 			// 2. If document is an HTML document, then mark newDocument as an HTML document also.
 			if d.type_ == .html {
@@ -9982,7 +10000,9 @@ pub fn (mut d Document) destroy() {
 	// 9. Set document's node navigable's active session history entry's document state's document to null.
 	if nav := d.navigable() {
 		mut mutable_navigable := unsafe { &Navigable(nav) }
-		mutable_navigable.set_active_document(none)
+		if mutable_navigable.active_document_is(&d) {
+			mutable_navigable.set_active_document(none)
+		}
 	}
 
 }
@@ -13582,6 +13602,8 @@ pub fn (d &Document) recording_viewport_only() bool {
 }
 
 fn (mut d Document) record_display_list_for_viewport(viewport_only bool) ?&DisplayList {
+	mut allocations := d.enter_native_storage()
+	defer { allocations.finish() }
 	if d.cached_display_list_ != unsafe { nil }
 		&& d.cached_display_list_viewport_only_ == viewport_only {
 		return d.cached_display_list_

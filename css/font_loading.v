@@ -37,10 +37,13 @@ pub fn prepare_vector_font_data_off_thread(data []u8, on_complete fn (PreparedVe
 		on_complete: on_complete
 	}
 	callback_id := u64(voidptr(callback))
+	persistent := platform.enter_persistent()
 	vector_font_preparation_callbacks_mutex_.lock()
 	vector_font_preparation_callbacks_[callback_id] = callback
 	vector_font_preparation_callbacks_mutex_.unlock()
 	mut pool := threading.ThreadPool.the()
+	platform.leave_persistent(persistent)
+	queue_storage := platform.enter_persistent()
 	pool.submit(fn [data, callback_id, invoker] () {
 		mut prepared := PreparedVectorFontData{}
 		if converted := gfxfont.convert_woff2_to_sfnt(data) {
@@ -61,6 +64,7 @@ pub fn prepare_vector_font_data_off_thread(data []u8, on_complete fn (PreparedVe
 			callback.on_complete(prepared)
 		})
 	})
+	platform.leave_persistent(queue_storage)
 	return true
 }
 

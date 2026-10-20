@@ -23,6 +23,7 @@ mut:
 	// The document's paint_scene_generation when this scene was recorded.
 	generation u64
 	paint_tree_storage &PaintTreeStorage = unsafe { nil }
+	document_storage &platform.RetainedArena = unsafe { nil }
 }
 
 // Per-document scenes, carried from one layout result to the next.
@@ -37,6 +38,7 @@ mut:
 	// transport (nested viewports), which outlives any one of our scenes.
 	// Such documents record into ordinary storage.
 	borrowed bool
+	retired bool
 }
 
 // A reset scene is kept for the next recording; a couple of spares cover a
@@ -56,6 +58,8 @@ fn (mut pool DisplayListScenePool) acquire() &DisplayListScene {
 	}
 	scene.references = 1
 	if pool.document != unsafe { nil } {
+		scene.document_storage = pool.document.native_storage()
+		if scene.document_storage != unsafe { nil } { scene.document_storage.retain() }
 		mut document := pool.document
 		document.paint_scene_generation++
 		scene.generation = document.paint_scene_generation
@@ -104,14 +108,17 @@ fn (mut scene DisplayListScene) release() {
 	pool.publish_oldest_live_generation()
 	release_paint_tree(voidptr(scene.paint_tree_storage))
 	scene.paint_tree_storage = unsafe { nil }
-	if pool.free.len >= display_list_scene_spares {
+	if pool.retired || pool.free.len >= display_list_scene_spares {
 		arena.release()
-		return
+	} else {
+		arena.reset()
+		persistent := platform.enter_persistent()
+		pool.free << scene
+		platform.leave_persistent(persistent)
 	}
-	arena.reset()
-	persistent := platform.enter_persistent()
-	pool.free << scene
-	platform.leave_persistent(persistent)
+	mut document_storage := scene.document_storage
+	scene.document_storage = unsafe { nil }
+	if document_storage != unsafe { nil } { document_storage.release() }
 }
 
 fn (mut result DocumentLayoutResult) scene_pool_() &DisplayListScenePool {

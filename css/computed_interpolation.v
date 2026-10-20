@@ -1379,6 +1379,8 @@ type ComputedInterpolationInvalidationProperties = []InvalidationProperty
 
 fn computed_interpolation_longhand_property_ids() ComputedInterpolationPropertyIDs {
 	if computed_interpolation_longhand_ids_cache.len == 0 {
+		persistent := platform.enter_persistent()
+		defer { platform.leave_persistent(persistent) }
 		mut ids := []PropertyID{cap: number_of_longhand_properties}
 		for index in 0 .. number_of_longhand_properties {
 			if property_id := property_id_from_longhand_index(index) {
@@ -1416,6 +1418,8 @@ fn computed_interpolation_property_computation_order() ComputedInterpolationProp
 	if computed_interpolation_computation_order_cache.len != 0 {
 		return computed_interpolation_computation_order_cache
 	}
+	persistent := platform.enter_persistent()
+	defer { platform.leave_persistent(persistent) }
 	// GeneratedCSSPropertyID.cpp puts dependency-bearing properties first. math-depth feeds font-size,
 	// the font set feeds font-relative units, line-height feeds lh units, color-scheme feeds
 	// light-dark(), and background-image determines coordinated background-list lengths.
@@ -1465,6 +1469,8 @@ __global (
 )
 
 fn computed_interpolation_property_initial_value(property_id PropertyID) &dom.StyleValue {
+	persistent := platform.enter_persistent()
+	defer { platform.leave_persistent(persistent) }
 	computed_interpolation_verify_longhand_property(property_id)
 	if computed_interpolation_initial_value_cache.len == 0 {
 		computed_interpolation_initial_value_cache = []&dom.StyleValue{len: number_of_longhand_properties, init: unsafe { nil }}
@@ -1493,6 +1499,8 @@ fn computed_interpolation_is_inherited_property(property_id PropertyID) bool {
 
 fn ensure_computed_interpolation_inherited_cache() {
 	if !computed_interpolation_inherited_cache_initialized {
+		persistent := platform.enter_persistent()
+		defer { platform.leave_persistent(persistent) }
 		computed_interpolation_inherited_cache = []u8{len: number_of_longhand_properties}
 		for index in 0 .. number_of_longhand_properties {
 			if id := property_id_from_longhand_index(index) {
@@ -1717,6 +1725,8 @@ fn computed_properties_with_initial_values() &ComputedProperties {
 	// a time for every element is needless work in V; build the immutable value
 	// pointer template once and clone its dense array for each computed style.
 	if !computed_interpolation_initial_values_complete {
+		persistent := platform.enter_persistent()
+		defer { platform.leave_persistent(persistent) }
 		computed_interpolation_default_work_cache = []u8{len: number_of_longhand_properties}
 		computed_interpolation_default_computed_value_cache = []&dom.StyleValue{len: number_of_longhand_properties, init: unsafe { nil }}
 		for property_id in computed_interpolation_longhand_property_ids() {
@@ -1731,7 +1741,9 @@ fn computed_properties_with_initial_values() &ComputedProperties {
 	}
 	note_computed_values_created()
 	if computed_interpolation_unresolved_style_template == unsafe { nil } {
+		persistent := platform.enter_persistent()
 		computed_interpolation_unresolved_style_template = &ComputedProperties{}
+		platform.leave_persistent(persistent)
 	}
 	template := computed_interpolation_unresolved_style_template
 	// The layout-cache defaults are immutable until resolve_computed_values()
@@ -5798,9 +5810,9 @@ pub fn (mut c ComputedProperties) computed_font_list(font_computer &FontComputer
 		c.clear_computed_font_list_cache()
 		font_environment_changed = true
 	}
-	// The style and the font computer retain what this computes; a caller
-	// working in an arena (animation samples) must not own it.
-	persistent := platform.enter_persistent()
+	// The style and font computer share the document's durable storage;
+	// temporary animation samples must not own the cached cascade.
+	persistent := platform.enter_persistent_if(platform.transient_arena_entered())
 	defer { platform.leave_persistent(persistent) }
 	value := c.property(.font_family, .yes) or {
 		&dom.StyleValue{
@@ -11734,8 +11746,17 @@ pub fn (s &StyleComputer) compute_properties(abstract_element dom.AbstractElemen
 		if requires_computation {
 			mut computation_context := s.get_computation_context_for_property(property_id, properties, abstract_element)
 			computation_context.reset_viewport_metric_dependency_tracking()
-			computed_value = compute_value_of_property_from_source(property_id, style_value, property_source,
-				computation_context, 1.0)
+			if can_reuse_default_computed_value {
+				// This value is shared by all later documents. Only its calculation
+				// escapes; the element's property pages remain document-owned.
+				persistent := platform.enter_persistent()
+				computed_value = compute_value_of_property_from_source(property_id, style_value, property_source,
+					computation_context, 1.0)
+				platform.leave_persistent(persistent)
+			} else {
+				computed_value = compute_value_of_property_from_source(property_id, style_value, property_source,
+					computation_context, 1.0)
+			}
 			if computation_context.did_resolve_font_relative_length {
 				properties.font_input_depends_on_font_size_ = true
 			}
@@ -11757,8 +11778,7 @@ pub fn (s &StyleComputer) compute_properties(abstract_element dom.AbstractElemen
 			}
 		}
 		properties.set_property_without_modifying_flags(property_id, computed_value)
-		// A value computed inside an arena is not kept for every later style.
-		if can_reuse_default_computed_value && !platform.arena_entered() {
+		if can_reuse_default_computed_value {
 			computed_interpolation_default_computed_value_cache[property_index] = computed_value
 		}
 	}
