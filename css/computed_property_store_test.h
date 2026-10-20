@@ -2,7 +2,7 @@
 #define VOX_COMPUTED_PROPERTY_STORE_TEST_H
 #define vox_property_store_bytes() ((unsigned)sizeof(css__ComputedPropertyStore))
 #define vox_property_page_bytes() ((unsigned)sizeof(css__ComputedPropertyPage))
-#ifdef _VGCBOEHM
+#if defined(_VGCBOEHM) || defined(CUSTOM_DEFINE_gcboehm) || defined(V_GCBOEHM_NATIVE)
 #include <assert.h>
 #include <stdint.h>
 #include <gc/gc.h>
