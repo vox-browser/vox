@@ -104,11 +104,8 @@ fn simplify_calc_with_resolution(node CalcNode, calculation_context CalculationC
 			if node.kind == .length {
 				unit := string_to_length_unit(node.unit) or { return CalcNode(node) }
 				length := Length.new(node.value, unit)
-				return calc_canonical_leaf(.length, if length.is_absolute() {
-					length.absolute_length_to_px_without_rounding()
-				} else {
-					length.to_px_without_rounding(context.length_resolution_context)
-				})
+				return calc_canonical_leaf(.length,
+					length.to_px_without_rounding(context.length_resolution_context))
 			}
 			return canonicalize_calc_leaf(node)
 		}

@@ -376,6 +376,14 @@ pub fn resolve_computed_values_for_document(style &ComputedProperties, document 
 // counter-style resolution identical to ordinary layout style application.
 pub fn resolve_anonymous_block_values_for_document(source &ComputedProperties, document &dom.Document) &ComputedValues {
 	style := source.clone_for_anonymous_block()
+	if source.layout_coordinate_scale() != 1 {
+		mut mutable_style := unsafe { &ComputedProperties(style) }
+		mutable_style.ensure_computed_layout_cache().layout_coordinate_scale_ = source.layout_coordinate_scale()
+		mutable_style.cached_computed_font_list_ = source.cached_computed_font_list_
+		mutable_style.cached_computed_font_list_generation_ = source.cached_computed_font_list_generation_
+		mutable_style.cached_computed_font_list_owner_ = source.cached_computed_font_list_owner_
+		mutable_style.cached_first_available_computed_font_ = source.cached_first_available_computed_font_
+	}
 	// Capture the immutable geometry snapshot while it still matches this raw
 	// clone. Font discovery below can invoke callbacks that change the parent.
 	snapshot := source.anonymous_computed_geometry_source(style)
@@ -435,7 +443,9 @@ fn resolve_computed_values_for_document_impl(style &ComputedProperties, document
 			&& voidptr(source.font_computer) == voidptr(computed_style.cached_computed_font_list_owner_)
 			&& source.font_generation == computed_style.cached_computed_font_list_generation_ {
 			resolved_anonymous_source = source.cache
+			layout_scale := computed_style.layout_coordinate_scale()
 			computed_style.computed_layout_cache_ = initial_anonymous_geometry_cache()
+			computed_style.computed_layout_cache_.layout_coordinate_scale_ = layout_scale
 		}
 	}
 	// An animation frame re-resolves its target from fresh samples. The arrays

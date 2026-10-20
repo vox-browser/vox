@@ -3109,8 +3109,17 @@ pub fn (style_value TransformationStyleValue) absolutized(computation_context Co
 
 	mut absolutized_values_different := false
 
-	for value in style_value.values_ {
-		absolutized_value := value.absolutized(computation_context)
+	for index, value in style_value.values_ {
+		mut absolutized_value := value.absolutized(computation_context)
+		scale := computation_context.length_resolution_context.absolute_length_scale
+		if scale != 1 && value is NumberStyleValue {
+			if (style_value.transform_function_ == .matrix && index in [4, 5])
+				|| (style_value.transform_function_ == .matrix3d && index in [12, 13, 14]) {
+				absolutized_value = StyleValue(NumberStyleValue.create(value.number() * scale))
+			} else if style_value.transform_function_ == .matrix3d && index in [3, 7, 11] {
+				absolutized_value = StyleValue(NumberStyleValue.create(value.number() / scale))
+			}
+		}
 
 		if absolutized_value != value {
 			absolutized_values_different = true

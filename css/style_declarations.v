@@ -1660,7 +1660,7 @@ pub fn (properties &CSSStyleProperties) style_value_for_computed_property(layout
 				} else {
 					layout_node.content_height_
 				}
-				return cssom_style_value_for_size(Size.make_px(CSSPixels.nearest_value_for(used)))
+				return cssom_style_value_for_size(Size.make_px(CSSPixels.nearest_value_for(used / owner.document().layout_coordinate_scale())))
 			}
 			return cssom_style_value_for_size(computed.size_value(.height))
 		}
@@ -1671,79 +1671,79 @@ pub fn (properties &CSSStyleProperties) style_value_for_computed_property(layout
 				} else {
 					layout_node.content_width_
 				}
-				return cssom_style_value_for_size(Size.make_px(CSSPixels.nearest_value_for(used)))
+				return cssom_style_value_for_size(Size.make_px(CSSPixels.nearest_value_for(used / owner.document().layout_coordinate_scale())))
 			}
 			return cssom_style_value_for_size(computed.size_value(.width))
 		}
 		.margin_bottom {
 			if display_allows_used_value {
-				return cssom_style_value_for_px(layout_node.margin_bottom_)
+				return cssom_style_value_for_px(layout_node.margin_bottom_ / owner.document().layout_coordinate_scale())
 			}
 			return cssom_style_value_for_length_percentage_or_auto(margin.bottom())
 		}
 		.margin_left {
 			if display_allows_used_value {
-				return cssom_style_value_for_px(layout_node.margin_left_)
+				return cssom_style_value_for_px(layout_node.margin_left_ / owner.document().layout_coordinate_scale())
 			}
 			return cssom_style_value_for_length_percentage_or_auto(margin.left())
 		}
 		.margin_right {
 			if display_allows_used_value {
-				return cssom_style_value_for_px(layout_node.margin_right_)
+				return cssom_style_value_for_px(layout_node.margin_right_ / owner.document().layout_coordinate_scale())
 			}
 			return cssom_style_value_for_length_percentage_or_auto(margin.right())
 		}
 		.margin_top {
 			if display_allows_used_value {
-				return cssom_style_value_for_px(layout_node.margin_top_)
+				return cssom_style_value_for_px(layout_node.margin_top_ / owner.document().layout_coordinate_scale())
 			}
 			return cssom_style_value_for_length_percentage_or_auto(margin.top())
 		}
 		.padding_bottom {
 			if display_allows_used_value {
-				return cssom_style_value_for_px(layout_node.padding_bottom_)
+				return cssom_style_value_for_px(layout_node.padding_bottom_ / owner.document().layout_coordinate_scale())
 			}
 			return cssom_style_value_for_length_percentage_or_auto(padding.bottom())
 		}
 		.padding_left {
 			if display_allows_used_value {
-				return cssom_style_value_for_px(layout_node.padding_left_)
+				return cssom_style_value_for_px(layout_node.padding_left_ / owner.document().layout_coordinate_scale())
 			}
 			return cssom_style_value_for_length_percentage_or_auto(padding.left())
 		}
 		.padding_right {
 			if display_allows_used_value {
-				return cssom_style_value_for_px(layout_node.padding_right_)
+				return cssom_style_value_for_px(layout_node.padding_right_ / owner.document().layout_coordinate_scale())
 			}
 			return cssom_style_value_for_length_percentage_or_auto(padding.right())
 		}
 		.padding_top {
 			if display_allows_used_value {
-				return cssom_style_value_for_px(layout_node.padding_top_)
+				return cssom_style_value_for_px(layout_node.padding_top_ / owner.document().layout_coordinate_scale())
 			}
 			return cssom_style_value_for_length_percentage_or_auto(padding.top())
 		}
 		.bottom {
 			if cssom_should_use_resolved_inset(layout_node, inset.bottom(), inset.top()) {
-				return cssom_style_value_for_px(layout_node.inset_bottom_)
+				return cssom_style_value_for_px(layout_node.inset_bottom_ / owner.document().layout_coordinate_scale())
 			}
 			return cssom_style_value_for_length_percentage_or_auto(inset.bottom())
 		}
 		.left {
 			if cssom_should_use_resolved_inset(layout_node, inset.left(), inset.right()) {
-				return cssom_style_value_for_px(layout_node.inset_left_)
+				return cssom_style_value_for_px(layout_node.inset_left_ / owner.document().layout_coordinate_scale())
 			}
 			return cssom_style_value_for_length_percentage_or_auto(inset.left())
 		}
 		.right {
 			if cssom_should_use_resolved_inset(layout_node, inset.right(), inset.left()) {
-				return cssom_style_value_for_px(layout_node.inset_right_)
+				return cssom_style_value_for_px(layout_node.inset_right_ / owner.document().layout_coordinate_scale())
 			}
 			return cssom_style_value_for_length_percentage_or_auto(inset.right())
 		}
 		.top {
 			if cssom_should_use_resolved_inset(layout_node, inset.top(), inset.bottom()) {
-				return cssom_style_value_for_px(layout_node.inset_top_)
+				return cssom_style_value_for_px(layout_node.inset_top_ / owner.document().layout_coordinate_scale())
 			}
 			return cssom_style_value_for_length_percentage_or_auto(inset.top())
 		}

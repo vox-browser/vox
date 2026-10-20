@@ -1145,8 +1145,8 @@ fn size_feature_value_for_query_container(feature_name string, container &dom.El
 	}
 	dom_style := container.el_computed_properties() or { return none }
 	style := computed_properties_from_dom(dom_style) or { return none }
-	width := layout_node.content_width_
-	height := layout_node.content_height_
+	width := layout_node.content_width_ / container.document().layout_coordinate_scale()
+	height := layout_node.content_height_ / container.document().layout_coordinate_scale()
 	inline_axis_horizontal := style.writing_mode() == .horizontal_tb
 	return match feature_name {
 		'aspect-ratio' {

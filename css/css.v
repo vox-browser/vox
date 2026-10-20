@@ -2137,6 +2137,9 @@ pub fn LengthFontMetrics.default() LengthFontMetrics {
 
 pub struct LengthResolutionContext {
 pub mut:
+	// Used while projecting a CSS style into another layout coordinate space.
+	// Relative metrics in that context are already expressed in the new units.
+	absolute_length_scale f64 = 1.0
 	viewport_rect                                CSSPixelRect
 	font_metrics                                 LengthFontMetrics
 	root_font_metrics                            LengthFontMetrics
@@ -2294,7 +2297,7 @@ pub fn (l Length) to_px(context LengthResolutionContext) CSSPixels {
 
 pub fn (l Length) to_px_without_rounding(context LengthResolutionContext) f64 {
 	if l.is_absolute() {
-		return l.absolute_length_to_px_without_rounding()
+		return l.absolute_length_to_px_without_rounding() * context.absolute_length_scale
 	}
 	if l.is_font_relative() {
 		context.record_font_relative_length_resolution(l.unit_)
@@ -2525,9 +2528,9 @@ fn container_relative_basis_length(context LengthResolutionContext, physical_axi
 		return 0
 	}
 	return if physical_axis == .width {
-		layout_node.content_width_
+		layout_node.content_width_ / query_container.document().layout_coordinate_scale()
 	} else {
-		layout_node.content_height_
+		layout_node.content_height_ / query_container.document().layout_coordinate_scale()
 	}
 }
 
@@ -2572,7 +2575,7 @@ pub fn (l Length) to_string_with_mode(mode SerializationMode) string {
 }
 
 pub fn (l Length) absolutize(context LengthResolutionContext) ?Length {
-	if l.is_px() {
+	if l.is_px() && context.absolute_length_scale == 1 {
 		return none
 	}
 	return Length.make_px(l.to_px_without_rounding(context))
