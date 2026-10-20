@@ -22,6 +22,7 @@ mut:
 	pool       &DisplayListScenePool = unsafe { nil }
 	// The document's paint_scene_generation when this scene was recorded.
 	generation u64
+	paint_tree_storage &PaintTreeStorage = unsafe { nil }
 }
 
 // Per-document scenes, carried from one layout result to the next.
@@ -101,6 +102,8 @@ fn (mut scene DisplayListScene) release() {
 		}
 	}
 	pool.publish_oldest_live_generation()
+	release_paint_tree(voidptr(scene.paint_tree_storage))
+	scene.paint_tree_storage = unsafe { nil }
 	if pool.free.len >= display_list_scene_spares {
 		arena.release()
 		return

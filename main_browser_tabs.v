@@ -202,8 +202,9 @@ fn (mut app BrowserApp) dispose_browser_tab() {
 	// The original tab remains the window callback owner after it closes.
 	// Release its retained page graph as well as the live Document pointer.
 	app.root_box = layout.BlockBox{}
-	app.paint_display_list = unsafe { nil }
-	app.paint_commands = []layout.PaintCommand{}
+	layout.release_paint_tree(app.paint_tree_storage)
+	app.paint_tree_storage = unsafe { nil }
+	app.release_paint_commands()
 	app.chromium_raster_plan = layout.ChromiumRasterLayerPlan{}
 	app.chromium_raster_tiles = [][]i32{}
 	app.history = []HistoryEntry{}

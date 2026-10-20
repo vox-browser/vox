@@ -10,6 +10,8 @@ import layout
 fn (mut app BrowserApp) retire_native_document_rendering(previous &dom.Document) bool {
 	if !css.discard_native_document_computed_styles(previous) { return false }
 	app.root_box = layout.BlockBox{}
+	layout.release_paint_tree(app.paint_tree_storage)
+	app.paint_tree_storage = unsafe { nil }
 	app.release_paint_commands()
 	app.chromium_raster_plan = layout.ChromiumRasterLayerPlan{}
 	app.chromium_raster_tiles = [][]i32{}

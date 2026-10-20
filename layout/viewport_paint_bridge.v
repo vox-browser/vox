@@ -78,6 +78,8 @@ fn refresh_document_paint_tree(document &dom.Document, mut result DocumentLayout
 	mut mutable_document := unsafe { &dom.Document(document) }
 	mutable_document.invalidate_display_list()
 	had_valid_hit_test_display_list := result.hit_test_display_list_is_valid
+	previous_storage := result.paint_tree_storage
+	defer { release_paint_tree(voidptr(previous_storage)) }
 	result.paint_tree = renderer_box_from_document_layout_result(result, viewport_width, viewport_height)
 	result.invalidate_boxes_by_layout_cache()
 	result.drop_display_list_scene()
@@ -2775,6 +2777,8 @@ fn viewport_record_display_list(target voidptr) &dom.DisplayList {
 	mut scene := if pool.borrowed { unsafe { &DisplayListScene(nil) } } else { pool.acquire() }
 	mut scene_entry := platform.ArenaEntry{}
 	if scene != unsafe { nil } {
+		scene.paint_tree_storage = result.paint_tree_storage
+		if scene.paint_tree_storage != unsafe { nil } { scene.paint_tree_storage.retain() }
 		scene_entry = scene.arena.enter()
 	}
 	steps := if selected.len > 0 {

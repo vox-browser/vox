@@ -386,6 +386,7 @@ mut:
 	scroll_y                            f64
 	overlay_scrollbars                  BrowserOverlayScrollbars
 	content_height                      f64
+	paint_tree_storage                  voidptr = unsafe { nil }
 	paint_commands                      []layout.PaintCommand
 	chromium_raster_plan                layout.ChromiumRasterLayerPlan
 	native_gradient_storage             NativeGradientStorage
@@ -3214,7 +3215,10 @@ fn (app &BrowserApp) document_content_height(viewport_height int) f64 {
 
 fn (mut app BrowserApp) adopt_current_document_geometry() {
 	result := layout.document_layout_result(app.document) or { return }
+	previous_storage := app.paint_tree_storage
+	app.paint_tree_storage = layout.retain_document_paint_tree(app.document)
 	app.root_box = result.paint_tree
+	layout.release_paint_tree(previous_storage)
 	app.content_height = app.document_content_height(app.viewport_height)
 	app.set_scroll_y(app.scroll_y, app.viewport_height + app.chrome_height())
 }
@@ -3323,6 +3327,8 @@ fn (mut app BrowserApp) relayout(window_width int, window_height int) {
 		_ = layout.run_document_layout_for_tree_dump(app.document, f64(viewport_width), f64(viewport_height)) or { return }
 		debug_timing_checkpoint('  layout_tree', layout_checkpoint)
 		app.root_box = layout.BlockBox{}
+		layout.release_paint_tree(app.paint_tree_storage)
+		app.paint_tree_storage = unsafe { nil }
 		app.release_paint_commands()
 		app.paint_commands_have_backdrop_filter = false
 		app.paint_commands_pending = false
@@ -3338,7 +3344,11 @@ fn (mut app BrowserApp) relayout(window_width int, window_height int) {
 	if app.document.navigable() != none {
 		html.flush_autofocus_candidates(app.document)
 	}
+	layout.enable_native_paint_tree_storage(app.document)
 	app.root_box = layout.layout_document_typed_in_viewport(app.document, f64(viewport_width), f64(viewport_height))
+	previous_storage := app.paint_tree_storage
+	app.paint_tree_storage = layout.retain_document_paint_tree(app.document)
+	layout.release_paint_tree(previous_storage)
 	debug_timing_checkpoint('  layout_tree', layout_checkpoint)
 	// The compact native shell owns one visible top-level document. Layout
 	// creates its DOM navigable; attach the HTML model before display-list
@@ -3443,6 +3453,8 @@ fn (mut app BrowserApp) install_loaded_page(loaded LoadedPage, add_history bool)
 	} else {
 		parse_loaded_browser_navigation_document(loaded, dom.url_about_blank(), initiator_origin, previous_document, unsafe { &dom.Page(app.page_model) }, scripting_enabled)
 	}
+	// Scripts and subresource preflight can force layout before relayout().
+	layout.enable_native_paint_tree_storage(app.document)
 	// Navigation has deactivated the old document. Release its realm and
 	// rendering before the replacement stylesheet allocation wave, which can
 	// otherwise trigger collections while both complete render graphs live.

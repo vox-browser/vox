@@ -5370,6 +5370,8 @@ pub mut:
 	// A hosting document copies this document's display list into its own
 	// paint data, which outlives this document's rendering updates.
 	paint_borrowed_by_host bool
+	// Native shell snapshots retain/release their contiguous paint-tree slots.
+	recycle_native_paint_trees bool
 
 	// Layout
 	layout_root &LayoutViewport = unsafe { nil }

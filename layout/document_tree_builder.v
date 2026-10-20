@@ -539,6 +539,8 @@ mut:
 	paintable_bindings []&dom.Paintable
 	// Storage of the published display list, and the document's reusable
 	// scene arenas (see display_list_scene.v).
+	paint_tree_storage &PaintTreeStorage = unsafe { nil }
+	paint_tree_pool &PaintTreeStoragePool = unsafe { nil }
 	scene      &DisplayListScene      = unsafe { nil }
 	scene_pool &DisplayListScenePool = unsafe { nil }
 }
@@ -557,6 +559,7 @@ fn document_layout_update_callback_with_paint_tree(document &dom.Document, viewp
 	if previous_result != unsafe { nil } && previous_result.paint_recording_viewport_only {
 		result.paint_projection_interest = viewport_paint_interest(document)
 	}
+	if previous_result != unsafe { nil } { result.paint_tree_pool = previous_result.paint_tree_pool }
 	paint_tree := if build_paint_tree {
 		renderer_box_from_document_layout_result(result, viewport_width, viewport_height)
 	} else {
@@ -569,6 +572,8 @@ fn document_layout_update_callback_with_paint_tree(document &dom.Document, viewp
 		paint_projection_interest: result.paint_projection_interest
 		paint_projection_incomplete: result.paint_projection_incomplete
 		paint_tree: paint_tree
+		paint_tree_storage: result.paint_tree_storage
+		paint_tree_pool: result.paint_tree_pool
 		resize_handle_states: resize_handle_states
 		record_scratch: take_document_recording_scratch(document)
 		paint_phase_commands: take_document_phase_command_storage(document)
@@ -579,6 +584,7 @@ fn document_layout_update_callback_with_paint_tree(document &dom.Document, viewp
 	// scene it adopted until it adopts the next one.
 	if previous_result != unsafe { nil } && voidptr(previous_result) != voidptr(result_ptr) {
 		previous_result.retire_display_list_scene()
+		previous_result.retire_paint_tree_storage()
 	}
 	if build_paint_tree {
 		install_document_painting_bridge(document, result_ptr)

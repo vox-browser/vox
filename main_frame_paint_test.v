@@ -4,6 +4,7 @@ import browserjs
 import css
 import dom
 import html
+import layout
 import time
 
 fn test_frame_preparation_keeps_layout_current_and_records_only_final_paint() {
@@ -35,6 +36,8 @@ fn test_frame_preparation_allows_synchronous_geometry_and_paint_queries() {
 	app.relayout(200, 232)
 	assert target.get_bounding_client_rect().width == 30
 	first := document.record_display_list() or { panic('missing synchronous display list') }
+	first_scene := layout.retain_display_list_scene(first)
+	defer { layout.release_display_list_scene(first_scene) }
 	target.set_attribute_value('style', 'width:70px;height:20px;background:rgb(71 72 73)')
 	app.relayout(200, 232)
 	assert target.get_bounding_client_rect().width == 70
