@@ -52,6 +52,7 @@ pub fn share_idle_layout_snapshots(styles []&ComputedProperties) int {
 			// resolve follows the complete context-aware path before publishing.
 			mut snapshot := unsafe { &ComputedLayoutCache(previous) }
 			snapshot.owner_serial = 0
+			snapshot.owner_identity = 0
 			snapshot.resolution_provenance = unsafe { nil }
 			snapshot.document_resolution_owner = unsafe { nil }
 			snapshot.rare_data_writable_ = false

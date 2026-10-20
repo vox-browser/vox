@@ -27,7 +27,13 @@ static void *vox_property_store_worker_entry(void *opaque) {
 }
 static void vox_property_store_worker(void (*run)(void)) {
     pthread_t thread;
-    assert(GC_pthread_create(&thread, NULL, vox_property_store_worker_entry, &run) == 0);
+    // Match the native browser stack. macOS's default 512 KiB pthread stack
+    // cannot hold the translated computed-style constructor's value temporaries.
+    pthread_attr_t attributes;
+    assert(pthread_attr_init(&attributes) == 0);
+    assert(pthread_attr_setstacksize(&attributes, 64 * 1024 * 1024) == 0);
+    assert(GC_pthread_create(&thread, &attributes, vox_property_store_worker_entry, &run) == 0);
+    assert(pthread_attr_destroy(&attributes) == 0);
     assert(GC_pthread_join(thread, NULL) == 0);
 }
 static unsigned vox_property_store_mask;
