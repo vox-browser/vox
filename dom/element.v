@@ -11,6 +11,7 @@ import rand
 import math
 import strings
 import webidl
+import platform
 
 // --- Types needed by Element that are NOT already in document.v ---
 pub struct QualifiedName {
@@ -7052,6 +7053,17 @@ pub fn (mut e Element) mark_svg_resource_box_referencing_elements_for_layout_upd
 }
 
 pub fn (mut e Element) register_svg_paint_resource_referencing_element(referencing_element &Element) {
+	// Paint projection registers dependencies, but its arena is retired after
+	// the last scene. The resource retains this list for later invalidation.
+	owner := e.document().native_storage()
+	use_document := owner != unsafe { nil }
+		&& voidptr(owner) == voidptr(platform.current_retained_arena())
+	persistent := platform.enter_persistent_if(!use_document && platform.transient_arena_entered())
+	mut retained := if use_document { platform.enter_retained_allocations() } else { platform.RetainedAllocationScope{} }
+	defer {
+		retained.finish()
+		platform.leave_persistent(persistent)
+	}
 	for existing in e.svg_paint_resource_referencing_elements_ {
 		if voidptr(existing) == voidptr(referencing_element) {
 			return
