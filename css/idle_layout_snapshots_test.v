@@ -73,7 +73,7 @@ fn test_idle_shared_snapshot_reresolves_against_each_raw_graph_and_document() {
 	snapshot := first.computed_layout_cache()
 	assert snapshot.resolution_provenance == unsafe { nil }
 	assert snapshot.document_resolution_owner == unsafe { nil }
-	width := parse_css_value(ParsingParams{}, '71px', .width) or { panic(err) }
+	width := parse_css_value(ParsingParams{}, '71px', .width) or { panic('missing width') }
 	second.set_property(.width, width, .no, .no)
 	values := resolve_computed_values_for_document(second, document)
 	assert values.width() == Size.make_length(Length.make_px(71))
