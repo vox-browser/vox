@@ -4,6 +4,7 @@ import css
 import dom
 
 fn (mut app BrowserApp) preload_initial_document_resources(base_url string) map[string]PreloadedResource {
+	app.sync_layout_coordinate_scale()
 	mut cached := app.resource_cache.clone()
 	for resource_url, resource in app.navigation_preloaded_resources {
 		cached[resource_url] = resource

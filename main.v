@@ -3209,13 +3209,13 @@ fn (app &BrowserApp) document_content_height(viewport_height int) f64 {
 		if viewport := result.root.as_node_with_style() {
 			if used := result.state.try_get(viewport) {
 				if overflow := used.scrollable_overflow_rect() {
-					return math.max(f64(viewport_height), overflow.height.to_double())
+					return math.max(f64(viewport_height), overflow.height.to_double() / app.document.layout_coordinate_scale())
 				}
 			}
 		}
 	}
 	root_rect := app.root_box.border_box()
-	return math.max(f64(viewport_height), root_rect.y + root_rect.height)
+	return math.max(f64(viewport_height), (root_rect.y + root_rect.height) / app.document.layout_coordinate_scale())
 }
 
 fn (mut app BrowserApp) adopt_current_document_geometry() {
@@ -3312,6 +3312,7 @@ fn (mut app BrowserApp) relayout(window_width int, window_height int) {
 	if app.document == unsafe { nil } {
 		return
 	}
+	app.sync_layout_coordinate_scale()
 	mut heap_scope := platform.begin_browser_activity_heap_scope_for_scripting(app.document_scripting_enabled_for_heap())
 	defer { heap_scope.finish() }
 	refresh_browser_adblock(app.document, app.js_runtime, mut app.js_messages)
