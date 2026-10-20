@@ -131,6 +131,9 @@ fn native_replay_font_path(font &platform.Font) string {
 		key += '|${axis.tag}=${axis.value}'
 	}
 	if key !in native_registered_system_faces {
+		// Replay can run in a frame arena. The process-wide map and its
+		// copied keys must remain valid after that frame's scratch is reset.
+		persistent := platform.enter_persistent()
 		mut registered := false
 		$if macos {
 			tags := face.variations.map(it.tag)
@@ -139,6 +142,7 @@ fn native_replay_font_path(font &platform.Font) string {
 				tags.data, values.data, tags.len) != 0
 		}
 		native_registered_system_faces[key] = registered
+		platform.leave_persistent(persistent)
 	}
 	return if native_registered_system_faces[key] { key } else { face.path }
 }
