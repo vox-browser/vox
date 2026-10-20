@@ -4177,6 +4177,7 @@ mut:
 	// snapshot getters always construct their own independently mutable maps.
 	normal_variation_settings_ map[string]f64
 	normal_feature_settings_ map[string]u32
+	font_key_scratch_ &platform.Arena = unsafe { nil }
 }
 
 pub fn FontComputer.create() &FontComputer {
@@ -4489,8 +4490,8 @@ fn (mut computer FontComputer) compute_font_for_style_values_at_size(font_family
 		font_feature_data: font_feature_data
 	}
 	policy := computer.font_rendering_policy()
-	key := cache_key.id() + if policy == .libweb { '' } else { '|rendering:${policy}|size:${math.f64_bits(font_size_px)}' }
-	if cached := computer.computed_font_cache[key] {
+	cached, key := computer.lookup_font_cache_key(cache_key, policy, font_size_px)
+	if cached != unsafe { nil } {
 		return cached
 	}
 	mut value := computer.compute_font_for_style_values_impl(font_family, font_size_px, font_slope, font_weight, font_width, font_optical_sizing, font_variation_settings, font_feature_data)
