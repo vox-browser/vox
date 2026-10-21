@@ -61,22 +61,30 @@ pub fn LineBuilder.new(mut layout_state LayoutState, containing_block &BlockCont
 fn LineBuilder.new_with_block_context(mut layout_state LayoutState, containing_block &BlockContainer, containing_block_used_values &UsedValues, available_width AvailableSize, direction css.Direction, writing_mode css.WritingMode, parent_block_context ?&BlockFormattingContext) &LineBuilder {
 	computed := containing_block.computed_values()
 	indent := computed.text_indent()
-	mut context :=
-		css.LengthResolutionContext.for_document(unsafe { &Node(containing_block) }.document())
-	font_size := computed.font_size()
-	font_metrics := layout_font_metrics_for_node(unsafe { &Node(containing_block) })
-	context.font_metrics.font_size = font_size
-	context.font_metrics.x_height = CSSPixels.nearest_value_for(f64(font_metrics.x_height))
-	context.font_metrics.cap_height = font_size.scaled(0.75)
-	context.font_metrics.zero_advance =
-		CSSPixels.nearest_value_for(f64(font_metrics.advance_of_ascii_zero))
-	context.font_metrics.line_height = computed.line_height()
+	mut text_indent := CSSPixels.new(0)
+	// An absolute zero has no font, viewport or container dependency. Keep
+	// the existing context and font-metric path for every other indent.
+	if !indent.length_percentage.is_length()
+		|| !indent.length_percentage.length().is_absolute()
+		|| indent.length_percentage.length().raw_value() != 0 {
+		mut context :=
+			css.LengthResolutionContext.for_document(unsafe { &Node(containing_block) }.document())
+		font_size := computed.font_size()
+		font_metrics := layout_font_metrics_for_node(unsafe { &Node(containing_block) })
+		context.font_metrics.font_size = font_size
+		context.font_metrics.x_height = CSSPixels.nearest_value_for(f64(font_metrics.x_height))
+		context.font_metrics.cap_height = font_size.scaled(0.75)
+		context.font_metrics.zero_advance =
+			CSSPixels.nearest_value_for(f64(font_metrics.advance_of_ascii_zero))
+		context.font_metrics.line_height = computed.line_height()
+		text_indent = indent.length_percentage.to_px(context, containing_block_used_values.content_width())
+	}
 	mut builder := &LineBuilder{
 		layout_state: layout_state
 		containing_block: containing_block
 		containing_block_used_values: containing_block_used_values
 		available_width: available_width
-		text_indent: indent.length_percentage.to_px(context, containing_block_used_values.content_width())
+		text_indent: text_indent
 		text_indent_hanging: indent.hanging
 		text_indent_each_line: indent.each_line
 		direction: direction
