@@ -9,9 +9,10 @@ growing after warm-up, however many frames or replacements happen.
 
 This document records what the `-prealloc` build already bounds, the contracts
 code must follow, how to measure it, and what remains to meet the RAM target.
-The default has changed. A three-pair 60-second Pikabu comparison is below
-Brave, but its five-minute follow-up still fails. The sustained RAM target
-remains open.
+The default has changed. The latest three-pair 60-second Pikabu comparison and
+its five-minute follow-up are both below Brave. This qualifies the timed,
+settled-RAM target for the frozen workload; idle variation and residual
+allocation remain, so it does not establish perfectly flat memory indefinitely.
 
 ## Ownership classes
 
@@ -1067,6 +1068,38 @@ Its poisoned 60-second Pikabu audit preserves one installation, the 606-command
 first paint, 15 stories and 34 images (`native-277`). All four targeted
 inherited-SVG, retained-pattern and animation-frame selection comparisons are
 pixel-exact under poisoning (`replay-278-cache-and-event-loop`). The foreground
-Brave comparison remains pending. A separate GPU diagnostic (`native-276`)
+Brave comparison is recorded below. A separate GPU diagnostic (`native-276`)
 finds about 26 MiB of budgeted Graphite resources near 60 seconds, below the
 existing 64 MiB cap; that diagnostic does not justify lowering the cap.
+
+### Qualified default prealloc build
+
+The unchanged three-pair foreground criterion passes (`native-279`): every
+Vox trial is below every Brave trial. The same executable then passes the
+paired five-minute follow-up (`native-280`). No failed trial was discarded.
+
+| Duration | Vox full-process physical footprint | Brave full-process physical footprint |
+| --- | --- | --- |
+| 60 seconds, three alternating pairs | 414.0, 444.7, 440.2 MiB | 455.5, 455.9, 453.5 MiB |
+| 300 seconds, one pair | 418.1 MiB | 440.3 MiB |
+
+Each value is the median over the final two seconds, with verified foreground
+focus, fresh profile/cache and the same frozen responses. Scripting remains
+enabled and the logical viewport remains 1024 by 796. Every Vox trial retains
+one completed installation, the 606-command first paint, 15 stories, 34 images,
+loaded fonts and a complete, visible, fully active document. Existing compact
+JavaScript compatibility errors remain; this is not full site-runtime parity.
+
+The five-minute Vox 15-second low envelope rises from 392.2 MiB at seconds
+15–30 to 397.3 MiB at seconds 285–300. GPU excursions also remain. Accordingly,
+the passing RAM comparison does not claim zero idle growth or a bound for
+every site or longer session. The earlier failed comparisons remain above.
+
+`Build/v/Vox-prealloc.app` is a byte-verified, signed copy of the tested
+native-274 bundle. `Build/v/Vox-prealloc-validation.json` records its runtime
+hashes, source identity, focused checks and both comparisons. The frozen
+source includes `14f8a892`, `e9a22493` and the exact implementation of
+`b98e59d7`; unrelated concurrent uncommitted work is excluded. The default
+builder already selects `-prealloc -gc none -d vox_sparse_ttf`. The canonical
+`Build/v/Vox.app` and its running instances are preserved. Launch the validated
+copy separately with `open -n Build/v/Vox-prealloc.app`.
