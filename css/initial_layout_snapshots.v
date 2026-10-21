@@ -27,7 +27,6 @@ fn begin_initial_layout_snapshot(style &ComputedProperties, document &dom.Docume
 		if anonymous || style.computed_layout_cache_ != unsafe { nil }
 			|| owner == unsafe { nil }
 			|| voidptr(owner) != voidptr(platform.current_retained_arena())
-			|| document.as_node().is_scripting_enabled()
 			|| style.has_animated_properties() || style.has_animated_custom_properties() {
 			return InitialLayoutSnapshot{}
 		}
@@ -43,6 +42,8 @@ fn begin_initial_layout_snapshot(style &ComputedProperties, document &dom.Docume
 		if computer.initial_layout_snapshots_ == unsafe { nil } {
 			computer.initial_layout_snapshots_ = &InitialLayoutSnapshotPool{}
 		}
+		// Scripting can be enabled: font/counter discovery already finished,
+		// and typed getters below cannot invoke the parser or a checkpoint.
 		// Only the outer record is temporary. Do not enter a temporary V arena:
 		// setters can publish typed payloads which must remain document-owned.
 		mut temporary := unsafe { &ComputedLayoutCache(C.malloc(sizeof(ComputedLayoutCache))) }

@@ -7,7 +7,7 @@ fn initial_snapshot_document() &dom.Document {
 	mut document := dom.Document.create(dom.url_about_blank())
 	document.set_browsing_context(&dom.BrowsingContext{active_document_: document})
 	document.enable_native_storage()
-	document.set_scripting_enabled_by_embedder(false)
+	document.set_scripting_enabled_by_embedder(true)
 	return document
 }
 
@@ -76,9 +76,10 @@ fn test_initial_snapshot_values_match_the_existing_resolver_for_rare_and_ordinar
 			initial_snapshot_set(mut expected, property, text)
 			initial_snapshot_set(mut actual, property, text)
 		}
-		document.set_scripting_enabled_by_embedder(true)
+		// Seed the existing read-only default to exercise the ordinary write
+		// path without allocating a record or changing the document's behavior.
+		expected.computed_layout_cache_ = default_computed_layout_cache()
 		_ = resolve_computed_values_for_document(expected, document)
-		document.set_scripting_enabled_by_embedder(false)
 		_ = resolve_computed_values_for_document(actual, document)
 		// Include every resolved field rather than selecting only the ones set
 		// by this fixture. Provenance and write ownership intentionally differ.
@@ -127,9 +128,9 @@ fn test_initial_geometry_interning_avoids_duplicate_permanent_records() {
 		assert voidptr(style.computed_layout_cache()) == voidptr(warm.computed_layout_cache())
 	}
 	actual := document.native_storage().arena.usage().used - before
-	document.set_scripting_enabled_by_embedder(true)
 	for _ in 0 .. 64 {
-		style := computed_properties_with_initial_values()
+		mut style := computed_properties_with_initial_values()
+		style.computed_layout_cache_ = default_computed_layout_cache()
 		_ = resolve_computed_values_for_document(style, document)
 	}
 	reference := document.native_storage().arena.usage().used - before - actual
@@ -138,15 +139,47 @@ fn test_initial_geometry_interning_avoids_duplicate_permanent_records() {
 	document.release_native_storage()
 }
 
-fn test_scripted_animated_and_untyped_styles_keep_their_ordinary_snapshot_path() {
+fn test_scripted_initial_snapshot_aliases_survive_animation_and_raw_style_mutations() {
+	mut document := initial_snapshot_document()
+	mut scope := document.enter_native_storage()
+	assert document.as_node().is_scripting_enabled()
+	mut first := computed_properties_with_initial_values()
+	second := computed_properties_with_initial_values()
+	_ = resolve_computed_values_for_document(first, document)
+	_ = resolve_computed_values_for_document(second, document)
+	original := second.computed_layout_cache()
+	$if prealloc {
+		assert voidptr(first.computed_layout_cache()) == voidptr(original)
+	}
+	initial_snapshot_set(mut first, .width, '37px')
+	_ = resolve_computed_values_for_document(first, document)
+	changed := first.computed_layout_cache()
+	assert changed.computed_values_width_ == Size.make_length(Length.make_px(37))
+	assert original.computed_values_width_ != changed.computed_values_width_
+	first.set_animated_property(.width, parse_css_value(ParsingParams{}, '81px', .width) or { panic('width') }, .no, .no)
+	_ = resolve_computed_values_for_document(first, document)
+	assert first.computed_layout_cache().computed_values_width_ == Size.make_length(Length.make_px(81))
+	assert changed.computed_values_width_ == Size.make_length(Length.make_px(37))
+	first.remove_animated_property(.width)
+	_ = resolve_computed_values_for_document(first, document)
+	assert first.computed_layout_cache().computed_values_width_ == Size.make_length(Length.make_px(37))
+	assert second.geometry_provenance().matches(second)
+	assert voidptr(second.computed_layout_cache()) == voidptr(original)
+	assert original.computed_values_width_ != Size.make_length(Length.make_px(37))
+	scope.finish()
+	document.release_native_storage()
+}
+
+fn test_scripted_typed_styles_share_but_animated_and_untyped_styles_keep_the_ordinary_path() {
 	mut document := initial_snapshot_document()
 	mut scope := document.enter_native_storage()
 	document.set_scripting_enabled_by_embedder(true)
 	assert document.as_node().is_scripting_enabled()
 	scripted := computed_properties_with_initial_values()
 	_ = resolve_computed_values_for_document(scripted, document)
-	assert scripted.shared_geometry_cache_ == unsafe { nil }
-	document.set_scripting_enabled_by_embedder(false)
+	$if prealloc {
+		assert scripted.shared_geometry_cache_ != unsafe { nil }
+	}
 	mut untyped := computed_properties_with_initial_values()
 	untyped.set_property(.width, &dom.StyleValue{css_text:'53px'}, .no, .no)
 	_ = resolve_computed_values_for_document(untyped, document)
