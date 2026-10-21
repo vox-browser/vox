@@ -3803,7 +3803,22 @@ pub struct GuardedSubstitutionContexts {
 pub mut:
 	contexts              []SubstitutionContext
 	function_local_scopes []&FunctionLocalScope
-	function_definition_scopes map[u64]&StyleScope
+	function_definition_scopes ?map[u64]&StyleScope
+}
+
+fn (contexts GuardedSubstitutionContexts) definition_scope(identity u64) ?&StyleScope {
+	if scopes := contexts.function_definition_scopes {
+		return scopes[identity] or { return none }
+	}
+	return none
+}
+
+fn (mut contexts GuardedSubstitutionContexts) remember_definition_scope(identity u64, scope &StyleScope) {
+	// Ordinary var()/attr()/env() resolution never calls a custom function.
+	// Keep its empty context free of a heap-allocated map until the first call.
+	mut scopes := unsafe { contexts.function_definition_scopes or { map[u64]&StyleScope{} } }
+	scopes[identity] = scope
+	contexts.function_definition_scopes = unsafe { scopes }
 }
 
 pub fn (mut contexts GuardedSubstitutionContexts) guard(mut context SubstitutionContext) {

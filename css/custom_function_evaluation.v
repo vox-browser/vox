@@ -199,7 +199,7 @@ fn resolve_custom_function_definition(element ?dom.AbstractElement, name string,
 	for index := guarded_contexts.contexts.len - 1; index >= 0; index-- {
 		context := guarded_contexts.contexts[index]
 		if context.dependency_type == .function {
-			if scope := guarded_contexts.function_definition_scopes[context.function_identity] {
+			if scope := guarded_contexts.definition_scope(context.function_identity) {
 				return scope.get_function_definition(name)
 			}
 		}
@@ -280,7 +280,7 @@ fn evaluate_a_custom_function(element ?dom.AbstractElement, mut guarded_contexts
 	if function_context.is_cyclic {
 		return arbitrary_substitution_guaranteed_invalid_value()
 	}
-	guarded_contexts.function_definition_scopes[identity] = definition.scope
+	guarded_contexts.remember_definition_scope(identity, definition.scope)
 
 	if arguments.len > rule.function_parameters.len {
 		guarded_contexts.unguard(function_context)
