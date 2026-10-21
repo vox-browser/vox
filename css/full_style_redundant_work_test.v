@@ -44,3 +44,24 @@ fn test_pending_full_pass_does_not_allocate_selective_invalidation_records_per_n
 	after := platform.thread_arena_usage().used
 	$if prealloc { assert after == before }
 }
+
+fn test_full_pass_pending_before_host_attribute_change_updates_shadow_style() {
+	mut document := dom.Document.create(dom.url_about_blank())
+	defer { document.finalize() }
+	document.set_browsing_context(&dom.BrowsingContext{})
+	root := full_invalidation_element(document, document.as_node(), 'html')
+	mut host := full_invalidation_element(document, root.as_node(), 'div')
+	shadow := host.attach_shadow(dom.ShadowRootInit{mode:.open}) or { panic(err) }
+	target := full_invalidation_element(document, unsafe { &dom.Node(shadow) }, 'span')
+	add_shadow_root_author_style_sheet(shadow, 'span{color:blue}:host(.on) span{color:red}')
+	css_style_computer_for(document)
+	document.update_style()
+	assert computed_value_for(target, .color) or { '' } == 'rgb(0, 0, 255)'
+	document.set_needs_full_style_update(true)
+	host.set_attribute_value('class', 'on')
+	document.update_style()
+	assert computed_value_for(target, .color) or { '' } == 'rgb(255, 0, 0)'
+	host.remove_attribute('class')
+	document.update_style()
+	assert computed_value_for(target, .color) or { '' } == 'rgb(0, 0, 255)'
+}

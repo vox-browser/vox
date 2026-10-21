@@ -5986,6 +5986,12 @@ fn dom_assign_slottables_for_a_tree(root &Node) {
 
 fn (mut e Element) invalidate_style_after_attribute_change(attribute_name string, old_value ?string, new_value ?string) {
 	mut node := unsafe { &Node(&e) }
+	// The full pass visits host shadow scopes as well as the light tree. Avoid
+	// building class/id deltas or selector plans that it immediately discards.
+	if e.document().needs_full_style_update() {
+		node.set_needs_style_update(true)
+		return
+	}
 	style_computer := e.document().style_computer()
 	if style_computer.invalidation_plan_callback == unsafe { nil } {
 		// A DOM-only consumer has no CSS rule cache to produce an invalidation plan. Conservatively
