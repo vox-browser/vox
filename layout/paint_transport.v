@@ -4906,9 +4906,9 @@ fn scale_corner_radius(radius CornerRadius, factor f64) CornerRadius {
 
 fn normalize_box_radii(radii BoxRadii, width f64, height f64) BoxRadii {
 	mut factor := 1.0
-	available_sizes := [width, width, height, height]
+	available_sizes := [width, width, height, height]!
 	radius_sums := [radii.top_left.x + radii.top_right.x, radii.bottom_left.x + radii.bottom_right.x,
-		radii.top_left.y + radii.bottom_left.y, radii.top_right.y + radii.bottom_right.y]
+		radii.top_left.y + radii.bottom_left.y, radii.top_right.y + radii.bottom_right.y]!
 	for index, sum in radius_sums {
 		available := available_sizes[index]
 		if sum > 0 && available / sum < factor {
