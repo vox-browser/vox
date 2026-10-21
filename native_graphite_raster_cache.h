@@ -148,6 +148,10 @@ class VoxGraphiteRasterCache {
     size_t retained_bytes = 0;
     size_t byte_limit, entry_limit;
     static constexpr size_t max_entry_bytes = 8 * 1024 * 1024;
+    // Retina photo draws include their decoded source and both raster rows.
+    // Keep the total cache budget unchanged, but admit these larger image
+    // entries so an unchanged visible photo need not submit GPU work again.
+    static constexpr size_t max_image_entry_bytes = 16 * 1024 * 1024;
 
 public:
     explicit VoxGraphiteRasterCache(size_t bytes = 32 * 1024 * 1024, size_t count = 512)
@@ -193,8 +197,8 @@ private:
             || image.width <= 0 || image.height <= 0 || image.pitch <= 0
             || size_t(pitch) < size_t(width) * 4 || !entry_limit) return request;
         // Bound dimensions before multiplication, allocations and source reads.
-        // This also bypasses large one-off photos/video frames.
-        size_t limit = std::min(byte_limit, max_entry_bytes);
+        // This still bypasses oversized one-off photos/video frames.
+        size_t limit = std::min(byte_limit, max_image_entry_bytes);
         Rows source {image.pixels, size_t(image.width) * 4, size_t(image.pitch), size_t(image.height)};
         if (image.flags & 4) {
             size_t w = image.width, h = image.height;
@@ -264,7 +268,9 @@ private:
         // Large shapes often cover changing page content. Copying those input
         // backdrops would consume the small-control cache without useful hits.
         constexpr size_t shape_limit = 512 * 1024;
-        size_t limit = std::min(byte_limit, parameters.is_shape ? shape_limit : max_entry_bytes);
+        bool is_image = !parameters.is_shape && !parameters.is_shadow && !parameters.is_path;
+        size_t limit = std::min(byte_limit, parameters.is_shape ? shape_limit
+            : is_image ? max_image_entry_bytes : max_entry_bytes);
         Rows backdrop {pixels, size_t(width) * 4, size_t(pitch), size_t(height)};
         if (source.bytes > limit / source.height || extra.bytes > limit / extra.height
             || backdrop.bytes > limit / backdrop.height)

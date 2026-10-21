@@ -29,6 +29,31 @@ int main(int argc, char** argv)
     assert(before && after && clear);
     auto finish_frame = reinterpret_cast<void (*)()>(dlsym(candidate, "vox_graphite_finish_frame"));
     int comparisons = 0;
+    // These Retina-sized photo draws exceed the old 8 MiB entry allowance.
+    // Compare first draws, cache hits and changed inputs against the renderer.
+    for (int flags : {4 | 8, 4 | 8 | 16}) {
+        constexpr int width = 1252, height = 884, pitch = width * 4 + 12;
+        std::vector<uint8_t> source(700 * 700 * 3), backdrop(pitch * height, 255), expected, actual;
+        for (size_t i = 0; i < source.size(); ++i) source[i] = (i * 37 + i / 11) % 256;
+        VoxGraphiteImage photo {};
+        photo.matrix[0] = photo.matrix[4] = photo.matrix[8] = 1;
+        photo.source[2] = photo.source[3] = photo.width = photo.height = 700;
+        photo.destination[2] = photo.destination[3] = width;
+        photo.clip[2] = width; photo.clip[3] = height;
+        photo.opacity = 1; photo.pitch = 2800; photo.flags = flags;
+        photo.pixels = source.data();
+        auto compare = [&] {
+            expected = actual = backdrop;
+            assert(before(expected.data(), width, height, pitch, 1, &photo));
+            assert(after(actual.data(), width, height, pitch, 1, &photo));
+            assert(expected == actual); ++comparisons;
+            if (finish_frame) finish_frame();
+        };
+        compare(); compare();
+        source[700 * 700 - 1] ^= 31; compare(); compare();
+        backdrop[(height - 1) * pitch + width * 4 - 1] ^= 31; compare(); compare();
+        clear(); compare();
+    }
     for (int flags : {0, 1, 4, 4 | 8, 4 | 16, 4 | 8 | 16}) {
         for (int scale : {1, 2}) for (int background : {0, 1}) for (int cropped : {0, 1}) {
             // Odd dimensions exercise the complete final chroma row/column.

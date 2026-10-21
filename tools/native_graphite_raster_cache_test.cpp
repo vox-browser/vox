@@ -440,5 +440,43 @@ int main()
             assert(!compact.prepare(large_shadow, width, height, pitch, true, surface.data()).hit);
         }
     }
+    // A modest photo can have a larger visible raster on a Retina display.
+    // Its source plus two raw surfaces exceeds the small-control entry cap,
+    // even though the ordinary image-cache budget comfortably covers it.
+    {
+        VoxGraphiteRasterCache photos;
+        constexpr int width = 1252, height = 884, pitch = width * 4 + 13;
+        std::vector<uint8_t> planes(700 * 700 * 3, 91), surface(pitch * height, 201);
+        auto photo = image(planes.data());
+        photo.width = photo.height = 700; photo.pitch = 2800;
+        photo.source[2] = photo.source[3] = 700;
+        photo.destination[2] = photo.clip[2] = width;
+        photo.destination[3] = photo.clip[3] = height;
+        photo.flags = 4 | 8 | 16;
+        auto reset = [&] {
+            for (int y = 0; y < height; ++y) std::fill_n(surface.data() + y * pitch, width * 4, 47);
+        };
+        reset();
+        auto draw = photos.prepare(photo, width, height, pitch, true, surface.data());
+        assert(draw.pending && !draw.hit);
+        for (int y = 0; y < height; ++y)
+            for (int x = 0; x < width * 4; ++x) surface[y * pitch + x] = (x * 17 + y * 31) % 251;
+        photos.finish(std::move(draw), surface.data(), pitch);
+        reset();
+        assert(photos.prepare(photo, width, height, pitch, true, surface.data()).hit);
+        for (int y = 0; y < height; ++y) {
+            for (int x = 0; x < width * 4; ++x) assert(surface[y * pitch + x] == (x * 17 + y * 31) % 251);
+            for (int x = width * 4; x < pitch; ++x) assert(surface[y * pitch + x] == 201);
+        }
+        reset(); planes.back()++;
+        assert(!photos.prepare(photo, width, height, pitch, true, surface.data()).hit);
+        planes.back()--; surface[(height - 1) * pitch + width * 4 - 1]++;
+        assert(!photos.prepare(photo, width, height, pitch, true, surface.data()).hit);
+        // The per-image bound and the configured total budget still apply.
+        std::vector<uint8_t> oversized(2048 * 1024 * 4, 47);
+        assert(!photos.prepare(photo, 2048, 1024, 2048 * 4, true, oversized.data()).pending);
+        VoxGraphiteRasterCache small(8 * 1024 * 1024);
+        assert(!small.prepare(photo, width, height, pitch, true, surface.data()).pending);
+    }
     std::cout << "Graphite raster cache: source/backdrop mutation, geometry, profiles, strides, YUV, LRU and bounds passed\n";
 }
