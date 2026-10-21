@@ -15484,3 +15484,48 @@ Evidence is under
 `Build/v/instruction-chrome-first-paint-trace-audit.json`.
 Trace archive SHA256: `5c8afe03203f734706f3519b120376a793eca11a96c3d9ae12bd5d774642a3ce`.
 Raw trace SHA256: `997dbf02b8acd1fb5702ac6b426fdfabce832f49e52f4c396fb18308f3edfe39`.
+
+
+## Frozen round 153 inclusive hardware-instruction attribution
+
+A separate diagnostic wraps 14 functions in the accepted round 153 normal C-O2
+Boehm program. Counters run on the navigation owner thread from navigation
+entry through the first native document-frame report, using process-wide retired
+instructions. The single completed primary, owned browser and observer all
+actually exit 0; the retained document PNG is 1024×768. It uses the same
+359-file frozen cache, helper library, placement library and automatic 4 GiB
+heap hint. All program C outside the wrappers and their reporting gates restores
+byte-for-byte to the frozen input. Current Root is excluded.
+
+These are inclusive scope totals with counter overhead. Nested and recursive
+calls overlap: flex alone exceeds the whole-page count. Do not sum the rows,
+interpret them as self costs, or use this instrumented run as a speed comparison.
+
+| Function | Calls | Inclusive retired instructions |
+| --- | ---: | ---: |
+| `layout__run_flex_formatting_context_with_mode` | 9,116 | 39,438,117,546 |
+| `layout__finish_document_layout` | 2 | 5,956,622,830 |
+| `layout__run_inline_formatting_context_internal` | 44,526 | 4,402,348,682 |
+| `dom__Document_update_style` | 3 | 3,200,468,603 |
+| `main__install_external_styles` | 1 | 2,643,797,295 |
+| `main__run_document_script_sources` | 1 | 2,305,662,531 |
+| `layout__run_grid_formatting_context` | 284 | 962,881,947 |
+| `layout__run_table_formatting_context` | 392 | 750,218,791 |
+| `layout__build_layout_tree_from_computed_styles` | 2 | 675,466,034 |
+| `css__StyleComputer_compute_properties` | 2,910 | 559,815,563 |
+| `html__HTMLParser_run_with_stop_at_insertion_point` | 1 | 555,331,435 |
+| `css__StyleScope_build_rule_cache` | 2 | 541,881,501 |
+| `css__resolve_computed_values_for_document` | 5,379 | 379,630,624 |
+| `layout__SVGFormattingContext_run` | 4,270 | 164,315,297 |
+
+The evidence points further investigation toward layout and style; it does not
+establish a saving. Counter failures are 0. Page credit is 0, the accepted
+control and verification ledger remain round 153, and Chrome parity remains
+open. No completed round 154 primary was rerun; the diagnostic waited until
+that entire cohort had completed. Canonical and GUI browsers remain preserved.
+
+Evidence: `Build/v/instruction-hotspots153-{instrumentation-audit,build-result,
+result,final-audit}.json`; original observation:
+`Build/instructions/vox-hotspots153-diagnostic.run-1.{json,log,png}`.
+Diagnostic binary SHA256: `d4ad89b0cf2dd220d47915f7030be4f6b0ce27fe0e923a622433d0410330c0b3`.
+Durable generated-C archive SHA256: `f5c249e3008103e0c2f4c7b27aaf467098f5cc5961cf38df172f0e1587be6361`.
