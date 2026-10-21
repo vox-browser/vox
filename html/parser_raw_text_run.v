@@ -32,7 +32,7 @@ fn (mut p HTMLParser) insert_text_run_if_available(stop StopAtInsertionPoint) bo
 	if p.insertion_mode != .text || p.next_line_feed_can_be_ignored { return false }
 	current := p.current_node() or { return false }
 	if !element_in_namespace(current, ns_html) { return false }
-	run := p.tokenizer.consume_parser_text_run(stop) or { return false }
+	run := p.parser_text_run(stop) or { return false }
 	p.insert_character(run[0])
 	p.character_insertion_builder << run[1..]
 	return true

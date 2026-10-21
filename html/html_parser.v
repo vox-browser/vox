@@ -98,6 +98,7 @@ pub mut:
 	document_                          &dom.Document = unsafe { nil }
 	realm_                             &ScriptingRealm = unsafe { nil }
 	tokenizer                          HTMLTokenizer
+	tokenizer_storage                  &platform.Arena = unsafe { nil }
 	insertion_mode                     InsertionMode = .initial
 	original_insertion_mode            InsertionMode = .initial
 	stack_of_open_elements             StackOfOpenElements
@@ -150,6 +151,28 @@ pub fn HTMLParser.create(document &dom.Document, input string) &HTMLParser {
 }
 
 pub fn HTMLParser.create_with_scripting_mode(document &dom.Document, input string, scripting_mode dom.ParserScriptingMode) &HTMLParser {
+	$if prealloc {
+		owner := document.native_storage()
+		if owner != unsafe { nil } && scripting_mode == .disabled {
+			// Keep the original source with the document. Only tokenizer payloads
+			// go in the short-lived arena; the tree builder publishes owned DOM data.
+			source := input.clone()
+			persistent := platform.enter_persistent()
+			mut storage := platform.new_arena('HTML tokenizer')
+			platform.leave_persistent(persistent)
+			entry := storage.enter()
+			tokenizer := HTMLTokenizer.new(source)
+			storage.leave(entry)
+			mut parser := HTMLParser.create_with_tokenizer(document, tokenizer, scripting_mode)
+			parser.tokenizer_storage = storage
+			mut retained_owner := owner
+			retained_owner.add_cleanup(fn [storage] () {
+				mut retired := unsafe { &platform.Arena(storage) }
+				retired.release()
+			})
+			return parser
+		}
+	}
 	return HTMLParser.create_with_tokenizer(document, HTMLTokenizer.new(input), scripting_mode)
 }
 
@@ -407,9 +430,9 @@ fn (mut p HTMLParser) register_parser_inserted_script(element &dom.Element, toke
 		script.set_already_started(true)
 	}
 	script.set_scripting_enabled(p.scripting_mode != .disabled)
-	script.set_src(token.attribute('src'))
-	script.set_type(token.attribute('type'))
-	script.set_language(token.attribute('language'))
+	script.set_src(p.own_tokenizer_optional_string(token.attribute('src')))
+	script.set_type(p.own_tokenizer_optional_string(token.attribute('type')))
+	script.set_language(p.own_tokenizer_optional_string(token.attribute('language')))
 	script.set_async(token.has_attribute('async'))
 	script.set_nomodule(token.has_attribute('nomodule'))
 	script.set_fetch_hook(p.script_fetch_hook)
@@ -484,7 +507,7 @@ fn (mut p HTMLParser) run_with_stop_at_insertion_point(stop_at_insertion_point S
 			if p.stop_parsing { break }
 			continue
 		}
-		mut token := p.tokenizer.next_token_impl(stop_at_insertion_point) or { break }
+		mut token := p.next_parser_token(stop_at_insertion_point) or { break }
 
 		if p.next_line_feed_can_be_ignored {
 			p.next_line_feed_can_be_ignored = false
@@ -518,6 +541,7 @@ fn (mut p HTMLParser) run_with_stop_at_insertion_point(stop_at_insertion_point S
 		p.the_end_started = true
 		p.invoke_parsing_complete_callback()
 		HTMLParser.the_end(p.document_, p)
+		p.retire_tokenizer_storage()
 	}
 }
 
@@ -1075,8 +1099,8 @@ fn (mut p HTMLParser) create_element_for(token &HTMLToken, namespace_ ?string, i
 	// Steps 1-2 concern the optional speculative parser. This parser is the
 	// active tree builder, so there is no speculative mock-element branch.
 	document := intended_parent.document()
-	local_name := token.tag_name
-	is_value := token.attribute('is')
+	local_name := p.own_tokenizer_string(token.tag_name)
+	is_value := p.own_tokenizer_optional_string(token.attribute('is'))
 	registry := dom.look_up_custom_element_registry(intended_parent)
 	definition := dom.look_up_custom_element_definition(registry, namespace_, local_name, is_value)
 	will_execute_script := definition != none && !p.parsing_fragment
@@ -1102,9 +1126,9 @@ fn (mut p HTMLParser) create_element_for(token &HTMLToken, namespace_ ?string, i
 	// carry a prefix and namespace from adjust_foreign_attributes().
 	for attribute in token.attributes {
 		if attribute.prefix != none || attribute.namespace_ != none {
-			element.set_attribute_value_ns(attribute.local_name, attribute.value, attribute.prefix, attribute.namespace_)
+			element.set_attribute_value_ns(p.own_tokenizer_string(attribute.local_name), p.own_tokenizer_string(attribute.value), p.own_tokenizer_optional_string(attribute.prefix), p.own_tokenizer_optional_string(attribute.namespace_))
 		} else if !element.has_attribute(attribute.local_name) {
-			element.set_attribute_value(attribute.local_name, attribute.value)
+			element.set_attribute_value(p.own_tokenizer_string(attribute.local_name), p.own_tokenizer_string(attribute.value))
 		}
 	}
 	if will_execute_script {
@@ -1140,7 +1164,7 @@ fn (mut p HTMLParser) insert_an_element_at_the_adjusted_insertion_location(eleme
 fn (mut p HTMLParser) insert_comment(token &HTMLToken) {
 	location := p.find_appropriate_place_for_inserting_node()
 	mut parent := location.parent or { return }
-	comment := p.document_.create_comment(token.comment())
+	comment := p.document_.create_comment(p.own_tokenizer_string(token.comment()))
 	record_parser_insertion_location(location)
 	parent.insert_before(comment.as_node(), location.insert_before_sibling, false)
 }

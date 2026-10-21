@@ -35,15 +35,15 @@ fn (mut p HTMLParser) handle_initial(mut token HTMLToken) {
 	}
 	if token.is_comment() {
 		mut doc_node := p.document_as_node()
-		comment := p.document_.create_comment(token.comment())
+		comment := p.document_.create_comment(p.own_tokenizer_string(token.comment()))
 		doc_node.append_child(comment.as_node()) or {}
 		return
 	}
 	if token.is_doctype() {
 		mut doctype := dom.DocumentType.create(p.document_)
-		doctype.set_name(token.doctype.name)
-		doctype.set_public_id(token.doctype.public_identifier)
-		doctype.set_system_id(token.doctype.system_identifier)
+		doctype.set_name(p.own_tokenizer_string(token.doctype.name))
+		doctype.set_public_id(p.own_tokenizer_string(token.doctype.public_identifier))
+		doctype.set_system_id(p.own_tokenizer_string(token.doctype.system_identifier))
 		mut doc_node := p.document_as_node()
 		doc_node.append_child(doctype.as_node()) or {}
 		p.document_.set_quirks_mode(p.which_quirks_mode(token))
@@ -62,7 +62,7 @@ fn (mut p HTMLParser) handle_before_html(mut token HTMLToken) {
 	}
 	if token.is_comment() {
 		mut doc_node := p.document_as_node()
-		comment := p.document_.create_comment(token.comment())
+		comment := p.document_.create_comment(p.own_tokenizer_string(token.comment()))
 		doc_node.append_child(comment.as_node()) or {}
 		return
 	}
@@ -419,7 +419,7 @@ fn (mut p HTMLParser) handle_in_body(mut token HTMLToken) {
 		mut top := p.stack_of_open_elements.first()
 		for attribute in token.attributes {
 			if !top.has_attribute(attribute.local_name) {
-				top.set_attribute_value(attribute.local_name, attribute.value)
+				top.set_attribute_value(p.own_tokenizer_string(attribute.local_name), p.own_tokenizer_string(attribute.value))
 			}
 		}
 		return
@@ -436,7 +436,7 @@ fn (mut p HTMLParser) handle_in_body(mut token HTMLToken) {
 		mut body := p.stack_of_open_elements.elements[1]
 		for attribute in token.attributes {
 			if !body.has_attribute(attribute.local_name) {
-				body.set_attribute_value(attribute.local_name, attribute.value)
+				body.set_attribute_value(p.own_tokenizer_string(attribute.local_name), p.own_tokenizer_string(attribute.value))
 			}
 		}
 		return
@@ -992,7 +992,7 @@ fn (mut p HTMLParser) handle_after_body(mut token HTMLToken) {
 	if token.is_comment() {
 		mut first := p.stack_of_open_elements.first()
 		mut first_node := first.as_node()
-		comment := p.document_.create_comment(token.comment())
+		comment := p.document_.create_comment(p.own_tokenizer_string(token.comment()))
 		first_node.append_child(comment.as_node()) or {}
 		return
 	}
@@ -1023,7 +1023,7 @@ fn (mut p HTMLParser) handle_after_body(mut token HTMLToken) {
 fn (mut p HTMLParser) handle_after_after_body(mut token HTMLToken) {
 	if token.is_comment() {
 		mut doc_node := p.document_as_node()
-		comment := p.document_.create_comment(token.comment())
+		comment := p.document_.create_comment(p.own_tokenizer_string(token.comment()))
 		doc_node.append_child(comment.as_node()) or {}
 		return
 	}
@@ -1124,7 +1124,7 @@ fn (mut p HTMLParser) handle_after_frameset(mut token HTMLToken) {
 fn (mut p HTMLParser) handle_after_after_frameset(mut token HTMLToken) {
 	if token.is_comment() {
 		mut document_node := p.document_as_node()
-		comment := p.document_.create_comment(token.comment())
+		comment := p.document_.create_comment(p.own_tokenizer_string(token.comment()))
 		document_node.append_child(comment.as_node()) or {}
 		return
 	}
