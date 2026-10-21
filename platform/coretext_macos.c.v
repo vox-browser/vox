@@ -61,10 +61,15 @@ fn system_font_face_from_native(native &C.vox_ct_face) SystemFontFace {
 }
 
 fn coretext_match_family(family string, weight int, italic bool, size f32) ?SystemFontFace {
+	// Current V boxes this large native output record when its fields are
+	// borrowed by the converter. Retire it after copying the final face payload.
+	mut work := begin_thread_scratch('CoreText face query')
+	defer { work.finish() }
 	native := C.vox_ct_face{}
 	if C.vox_ct_match_family(&char(family.str), weight, int(italic), f64(size), &native) == 0 {
 		return none
 	}
+	work.leave()
 	return system_font_face_from_native(&native)
 }
 
@@ -76,10 +81,13 @@ fn coretext_fallback(text []u16, language string, base_family string, weight int
 	if text.len == 0 {
 		return none
 	}
+	mut work := begin_thread_scratch('CoreText face query')
+	defer { work.finish() }
 	native := C.vox_ct_face{}
 	if C.vox_ct_fallback(text.data, text.len, &char(language.str), &char(base_family.str), weight, int(italic),
 		f64(size), &native) == 0 {
 		return none
 	}
+	work.leave()
 	return system_font_face_from_native(&native)
 }
