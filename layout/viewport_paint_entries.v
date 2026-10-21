@@ -47,6 +47,10 @@ fn viewport_visible_paint_entries(mut result DocumentLayoutResult) []bool {
 fn mark_viewport_invisible_entries(result &DocumentLayoutResult, mut selected []bool, width f64, height f64) {
 	mut contexts := new_compatibility_visual_context_memo(&result.visual_context_tree,
 		result.scroll_state_snapshot)
+	// The bounds helper borrows a command. Reuse one probe for the traversal:
+	// taking the address of a fresh local makes current V allocate a complete
+	// command for every box and text fragment, even in Boehm builds.
+	mut ink_probe := PaintCommand{}
 	for index, entry in result.paint_order {
 		box := entry.box
 		if !viewport_entry_has_bounded_ink(box) { continue }
@@ -55,7 +59,7 @@ fn mark_viewport_invisible_entries(result &DocumentLayoutResult, mut selected []
 		slot := contexts.resolve(box.accumulated_visual_context_index)
 		context := unsafe { &contexts.contexts[slot] }
 		if context.layer_list != unsafe { nil } { continue }
-		if viewport_box_ink_is_outside(box, context.transform, width, height) {
+		if viewport_box_ink_is_outside(box, context.transform, width, height, mut ink_probe) {
 			selected[index] = false
 		}
 	}
@@ -76,8 +80,9 @@ fn viewport_entry_has_bounded_ink(box &BlockBox) bool {
 		&& box.fixed_background_visual_context == none
 }
 
-fn viewport_rect_is_outside(rect LayoutRect, transform [6]f64, width f64, height f64) bool {
-	command := PaintCommand{
+fn viewport_rect_is_outside(rect LayoutRect, transform [6]f64, width f64, height f64,
+	mut ink_probe PaintCommand) bool {
+	ink_probe = PaintCommand{
 		kind: 'fill_rect'
 		x: rect.x
 		y: rect.y
@@ -85,35 +90,36 @@ fn viewport_rect_is_outside(rect LayoutRect, transform [6]f64, width f64, height
 		height: rect.height
 		transform: transform
 	}
-	return paint_leaf_is_outside_canvas(&command, 0, 0, width, height)
+	return paint_leaf_is_outside_canvas(ink_probe, 0, 0, width, height)
 }
 
-fn viewport_box_ink_is_outside(box &BlockBox, transform [6]f64, width f64, height f64) bool {
+fn viewport_box_ink_is_outside(box &BlockBox, transform [6]f64, width f64, height f64,
+	mut ink_probe PaintCommand) bool {
 	border := box.border_box()
 	// Includes native antialiasing, negative outline offsets and auto rings.
 	outset := math.max(f64(0), box.outline_width + math.abs(box.outline_offset)) + 2
 	if !viewport_rect_is_outside(LayoutRect{border.x - outset, border.y - outset,
-		border.width + outset * 2, border.height + outset * 2}, transform, width, height) {
+		border.width + outset * 2, border.height + outset * 2}, transform, width, height, mut ink_probe) {
 		return false
 	}
 	if box.paints_canvas_background && !viewport_rect_is_outside(
 		LayoutRect{box.canvas_x, box.canvas_y, box.canvas_width, box.canvas_height},
-		transform, width, height) { return false }
+		transform, width, height, mut ink_probe) { return false }
 	for line in box.lines {
 		for index in 0 .. line.fragments.len {
 			if !viewport_fragment_ink_is_outside(unsafe { &line.fragments[index] }, transform,
-				width, height) { return false }
+				width, height, mut ink_probe) { return false }
 		}
 		for index in 0 .. line.box_decorations.len {
 			if !viewport_fragment_ink_is_outside(unsafe { &line.box_decorations[index] }, transform,
-				width, height) { return false }
+				width, height, mut ink_probe) { return false }
 		}
 	}
 	return true
 }
 
 fn viewport_fragment_ink_is_outside(fragment &TextFragment, transform [6]f64,
-	width f64, height f64) bool {
+	width f64, height f64, mut ink_probe PaintCommand) bool {
 	if fragment.shadow != none || fragment.shadows.len > 0 || fragment.text_shadows.len > 0
 		|| fragment.selection_style.text_shadows.len > 0 || fragment.background_images.len > 0
 		|| fragment.paintable_fragment.orientation != .horizontal
@@ -134,15 +140,15 @@ fn viewport_fragment_ink_is_outside(fragment &TextFragment, transform [6]f64,
 	right := fragment.x + fragment.width + fragment.padding.right + fragment.border.right + outset
 	bottom := fragment.y + fragment.height + fragment.padding.bottom + fragment.border.bottom + outset
 	if !viewport_rect_is_outside(LayoutRect{left, top, right - left, bottom - top},
-		transform, width, height) { return false }
+		transform, width, height, mut ink_probe) { return false }
 	if fragment.text == '' { return true }
 	run := fragment.paintable_fragment.glyph_run or { return false }
-	command := PaintCommand{
+	ink_probe = PaintCommand{
 		kind: 'draw_text'
 		glyph_run: run
 		glyph_translation_x: fragment.x
 		glyph_translation_y: text_fragment_paint_top(*fragment) + fragment.baseline
 		transform: transform
 	}
-	return paint_leaf_is_outside_canvas(&command, 0, 0, width, height)
+	return paint_leaf_is_outside_canvas(ink_probe, 0, 0, width, height)
 }
