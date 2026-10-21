@@ -305,6 +305,8 @@ pub fn InlineLevelIterator.new(mut state LayoutState, containing_block &BlockCon
 }
 
 fn new_inline_iterator_with_item_storage(mut state LayoutState, containing_block &BlockContainer, containing_block_used_values &UsedValues, layout_mode LayoutMode, available_space AvailableSpace, parent_block_context ?&BlockFormattingContext, storage &platform.Arena) &InlineLevelIterator {
+	mut record_storage := unsafe { &platform.Arena(storage) }
+	entry := if record_storage != unsafe { nil } { record_storage.enter() } else { platform.ArenaEntry{} }
 	mut iterator := &InlineLevelIterator{
 		item_storage_: storage
 		state: state
@@ -315,6 +317,10 @@ fn new_inline_iterator_with_item_storage(mut state LayoutState, containing_block
 		available_space: available_space
 		parent_block_context: parent_block_context
 	}
+	if record_storage != unsafe { nil } { record_storage.leave(entry) }
+	// The iterator record has the same synchronous reader as its item vector.
+	// Shaping and layout below publish separately owned state and glyphs, so
+	// their allocations must use the caller again before generation starts.
 	iterator.is_unidirectional_left_to_right = iterator.compute_is_unidirectional_left_to_right()
 	iterator.skip_to_next()
 	iterator.generate_all_items()
