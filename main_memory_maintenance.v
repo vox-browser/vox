@@ -76,6 +76,14 @@ fn (mut app BrowserApp) finish_frame_memory_activity(now_ns i64, previous_paint 
 		|| previous_paint != app.paint_generation
 	app.memory_maintenance.frame_finished(now_ns, updated_document)
 	app.schedule_static_graphics_cleanup()
+	$if prealloc {
+		if app.uses_static_native_memory_policy()
+			&& app.memory_maintenance.has_pending_cleanup(0)
+			&& (updated_document || app.memory_maintenance.cleanup_timer == unsafe { nil }
+				|| !app.memory_maintenance.cleanup_timer.is_active()) {
+			app.arm_arena_cache_cleanup()
+		}
+	}
 	$if gcboehm ? {
 		if app.ctx != unsafe { nil }
 			&& app.memory_maintenance.has_pending_cleanup(gc_heap_usage().total_bytes)
