@@ -2388,6 +2388,22 @@ fn collect_nodes_for_post_connection(node &Node, mut nodes []&Node) {
 	}
 }
 
+fn run_post_connection_steps(nodes []&Node) {
+	// Snapshot before invoking any step; callbacks can change the tree. Only
+	// that local pointer vector uses temporary storage, never callback writes.
+	scratch := platform.begin_thread_scratch('post-connection snapshot')
+	mut snapshot := []&Node{}
+	for node in nodes { collect_nodes_for_post_connection(node, mut snapshot) }
+	scratch.leave()
+	for node in snapshot {
+		if node.is_connected() {
+			mut mutable_node := unsafe { &Node(node) }
+			mutable_node.post_connection()
+		}
+	}
+	scratch.finish()
+}
+
 fn register_slot_descendants_with_shadow_root(node &Node) {
 	shadow_root := node.root().as_shadow_root() or { return }
 	node.visit_inclusive_subtree(fn [shadow_root] (inclusive_descendant &Node) TraversalDecision {
@@ -2490,18 +2506,7 @@ pub fn (mut n Node) insert_before(node &Node, child ?&Node, suppress_observers b
 		type_: .inserted
 		node: node
 	})
-	// Let staticNodeList be a list of nodes, initially << >>. We collect before running post-connection steps, because
-	// those steps can modify the tree and make live traversal unsafe.
-	mut static_node_list := []&Node{}
-	for node_to_insert in nodes {
-		collect_nodes_for_post_connection(node_to_insert, mut static_node_list)
-	}
-	for node_to_connect in static_node_list {
-		if node_to_connect.is_connected() {
-			mut mutable_node_to_connect := unsafe { &Node(node_to_connect) }
-			mutable_node_to_connect.post_connection()
-		}
-	}
+	run_post_connection_steps(nodes)
 	if n.is_connected() {
 		// NB: Called during DOM insertion, layout is not up to date.
 		if layout_node := n.unsafe_layout_node() {
