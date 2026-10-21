@@ -143,7 +143,9 @@ fn collect_paintable_boxes_with_auto_content_visibility_in_subtree(node &Node, m
 
 fn install_layout_paintable_repaint_callbacks(node &dom.LayoutNode, result &DocumentLayoutResult,
 	mut bindings []&dom.Paintable) {
-	for paintable in node.paintables() {
+	// Only callback fields change here; the node's paintable vector stays
+	// fixed. The public getter returns a caller-owned copy for mutable callers.
+	for paintable in node.paintables_ {
 		mut mutable_paintable := unsafe { &dom.Paintable(paintable) }
 		mutable_paintable.repaint_callback_target = voidptr(result)
 		mutable_paintable.set_needs_repaint_callback = layout_paintable_set_needs_repaint
