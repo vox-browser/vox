@@ -2211,8 +2211,22 @@ pub fn (mut values ComputedProperties) set_list_style_type(value ListStyleType) 
 	values.computed_list_style_storage_ = stored_list_style_type(value)
 }
 
+__global computed_normal_content_ = &ContentData{type_:.normal}
+__global computed_none_content_ = &ContentData{type_:.none_}
+
+fn stored_content_data(content ContentData) &ContentData {
+	if content.text.len == 0 && content.alt_text.len == 0 && content.items.len == 0
+		&& content.counter_style_dependencies.len == 0 {
+		if content.type_ == .normal { return computed_normal_content_ }
+		if content.type_ == .none_ { return computed_none_content_ }
+	}
+	return &ContentData{...content}
+}
+
 pub fn (mut values ComputedProperties) set_content(value ?ContentData) {
-	values.computed_content_storage_ = if content := value { &ContentData{...content} } else { unsafe { nil } }
+	// These keyword results contain no mutable payload. The getter returns a
+	// value snapshot, and every later install replaces rather than mutates it.
+	values.computed_content_storage_ = if content := value { stored_content_data(content) } else { unsafe { nil } }
 }
 
 pub fn (mut values MutableComputedValues) set_grid_column_end(value GridTrackPlacement) {
