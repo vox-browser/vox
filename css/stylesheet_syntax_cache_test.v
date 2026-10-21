@@ -87,6 +87,9 @@ fn test_concurrent_syntax_cache_misses_and_hits_keep_complete_immutable_input() 
 	for _ in 0 .. 8 { workers << spawn syntax_cache_parse_worker(mut cache, text, expected) }
 	for worker in workers { assert worker.wait() }
 	assert cache.entries.len == 1
+	// Published input must survive the exit of the worker that won the miss.
+	assert cache.entries[0].input == text
+	assert ParserTokenStream.from_values(cache.parse(text)).dump_string() == expected
 }
 
 @[noinline]

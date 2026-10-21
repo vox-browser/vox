@@ -94,6 +94,7 @@ fn (mut cache StylesheetSyntaxCache) parse(input string) []ComponentValue {
 		return values
 	}
 	cache.mutex.unlock()
+	$if prealloc { return cache.parse_candidate(input) }
 	persistent := platform.enter_persistent()
 	defer { platform.leave_persistent(persistent) }
 	// Tokenization can service a cooperative UI checkpoint. Never hold the
@@ -123,6 +124,50 @@ fn (mut cache StylesheetSyntaxCache) parse(input string) []ComponentValue {
 	cache.source_bytes += input.len
 	cache.nodes += nodes
 	return values
+}
+
+// A source-byte limit cannot predict its token count. Decide whether this tree
+// can enter the process cache before choosing the owner of its immutable copy.
+// Rejected candidates belong to the caller, including a retiring native document.
+fn (mut cache StylesheetSyntaxCache) parse_candidate(input string) []ComponentValue {
+	mut scratch := platform.begin_thread_scratch('stylesheet syntax cache candidate')
+	values := ParserTokenStream.from_source(input, 'utf-8').values
+	nodes := stylesheet_syntax_node_count(values)
+	scratch.leave()
+	defer { scratch.finish() }
+	if nodes > cache.max_nodes || cache.max_entries <= 0 {
+		return own_stylesheet_components(values)
+	}
+	cache.mutex.lock()
+	defer { cache.mutex.unlock() }
+	// Parsing can yield or race another parser. Recheck before publishing or
+	// allocating another process-owned copy. Copying immutable values cannot
+	// invoke author code or a cooperative checkpoint while the lock is held.
+	if existing := cache.find(input) { return existing }
+	persistent := platform.enter_persistent()
+	defer { platform.leave_persistent(persistent) }
+	if !platform.arena_thread_is_current() {
+		// Worker persistent sections use that worker's base scope, which must
+		// survive its exit when it publishes a process-wide cache payload.
+		platform.retain_thread_allocations()
+	}
+	owned_input := input.clone()
+	owned_values := own_stylesheet_components(values)
+	for cache.entries.len > 0 && (cache.entries.len >= cache.max_entries
+		|| cache.source_bytes + input.len > cache.max_source_bytes
+		|| cache.nodes + nodes > cache.max_nodes) {
+		cache.evict_oldest()
+	}
+	cache.serial++
+	cache.entries << &StylesheetSyntaxEntry{
+		input: owned_input
+		values: owned_values
+		nodes: nodes
+		last_used: cache.serial
+	}
+	cache.source_bytes += input.len
+	cache.nodes += nodes
+	return owned_values
 }
 
 fn stylesheet_parser_input(input string) ParserTokenStream {
