@@ -2118,7 +2118,7 @@ fn svg_bounding_box_gradient_transform(gradient_transform svg.AffineTransform, b
 }
 
 fn resolve_svg_linear_gradient_paint_style(node &Node, state &LayoutState,
-	paint css.SVGPaint, path painting.ClipPathVisualData) ?painting.SVGLinearGradientPaintStyle {
+	paint css.SVGPaint, path_bounds ?painting.Rect) ?painting.SVGLinearGradientPaintStyle {
 	if !paint.is_url() {
 		return none
 	}
@@ -2131,7 +2131,7 @@ fn resolve_svg_linear_gradient_paint_style(node &Node, state &LayoutState,
 		return none
 	}
 	register_svg_gradient_paint_resource_chain(element, dom_node.as_element() or { return none })
-	bounds := painting_clip_path_bounds(path) or { return none }
+	bounds := path_bounds or { return none }
 	viewport := svg_paint_viewport_size(node, state)
 	mut seen := map[i64]bool{}
 	units := svg_gradient_units(element, mut seen)
@@ -2186,7 +2186,7 @@ fn resolve_svg_linear_gradient_paint_style(node &Node, state &LayoutState,
 }
 
 fn resolve_svg_radial_gradient_paint_style(node &Node, state &LayoutState,
-	paint css.SVGPaint, path painting.ClipPathVisualData) ?painting.SVGRadialGradientPaintStyle {
+	paint css.SVGPaint, path_bounds ?painting.Rect) ?painting.SVGRadialGradientPaintStyle {
 	if !paint.is_url() {
 		return none
 	}
@@ -2197,7 +2197,7 @@ fn resolve_svg_radial_gradient_paint_style(node &Node, state &LayoutState,
 		return none
 	}
 	register_svg_gradient_paint_resource_chain(element, dom_node.as_element() or { return none })
-	bounds := painting_clip_path_bounds(path) or { return none }
+	bounds := path_bounds or { return none }
 	viewport := svg_paint_viewport_size(node, state)
 	mut seen := map[i64]bool{}
 	units := svg_gradient_units(element, mut seen)
@@ -2394,7 +2394,7 @@ fn normalize_svg_pattern_operations(operations []painting.SVGMaskPaintOperation,
 }
 
 fn resolve_svg_pattern_paint_style(node &Node, state &LayoutState, paint css.SVGPaint,
-	path painting.ClipPathVisualData, target_transform svg.AffineTransform) ?&painting.SVGPatternPaintStyle {
+	path_bounds ?painting.Rect, target_transform svg.AffineTransform) ?&painting.SVGPatternPaintStyle {
 	if !paint.is_url() {
 		return none
 	}
@@ -2420,7 +2420,7 @@ fn resolve_svg_pattern_paint_style(node &Node, state &LayoutState, paint css.SVG
 		}
 	}
 	resource := pattern_box or { return none }
-	bounds := painting_clip_path_bounds(path) or { return none }
+	bounds := path_bounds or { return none }
 	viewport := svg_paint_viewport_size(node, state)
 	mut seen := map[i64]bool{}
 	units := svg_pattern_units(element, 'patternUnits', .object_bounding_box, mut seen)
@@ -3319,6 +3319,7 @@ fn collect_svg_mask_paint_operations(node &Node, state &LayoutState,
 				painting.WindingRule.nonzero
 			})
 			if path.segments.len > 0 {
+				path_bounds := painting_clip_path_bounds(path)
 				mut fill_linear_gradient := ?painting.SVGLinearGradientPaintStyle(none)
 				mut stroke_linear_gradient := ?painting.SVGLinearGradientPaintStyle(none)
 				mut fill_radial_gradient := ?painting.SVGRadialGradientPaintStyle(none)
@@ -3326,14 +3327,14 @@ fn collect_svg_mask_paint_operations(node &Node, state &LayoutState,
 				mut fill_pattern := ?&painting.SVGPatternPaintStyle(none)
 				mut stroke_pattern := ?&painting.SVGPatternPaintStyle(none)
 				if fill_paint := computed.fill() {
-					fill_linear_gradient = resolve_svg_linear_gradient_paint_style(node, state, fill_paint, path)
-					fill_radial_gradient = resolve_svg_radial_gradient_paint_style(node, state, fill_paint, path)
-					fill_pattern = resolve_svg_pattern_paint_style(node, state, fill_paint, path, to_page)
+					fill_linear_gradient = resolve_svg_linear_gradient_paint_style(node, state, fill_paint, path_bounds)
+					fill_radial_gradient = resolve_svg_radial_gradient_paint_style(node, state, fill_paint, path_bounds)
+					fill_pattern = resolve_svg_pattern_paint_style(node, state, fill_paint, path_bounds, to_page)
 				}
 				if stroke_paint := computed.stroke() {
-					stroke_linear_gradient = resolve_svg_linear_gradient_paint_style(node, state, stroke_paint, path)
-					stroke_radial_gradient = resolve_svg_radial_gradient_paint_style(node, state, stroke_paint, path)
-					stroke_pattern = resolve_svg_pattern_paint_style(node, state, stroke_paint, path, to_page)
+					stroke_linear_gradient = resolve_svg_linear_gradient_paint_style(node, state, stroke_paint, path_bounds)
+					stroke_radial_gradient = resolve_svg_radial_gradient_paint_style(node, state, stroke_paint, path_bounds)
+					stroke_pattern = resolve_svg_pattern_paint_style(node, state, stroke_paint, path_bounds, to_page)
 				}
 				fill := if fill_linear_gradient == none && fill_radial_gradient == none
 					&& fill_pattern == none {
@@ -3684,15 +3685,11 @@ fn uncached_block_box_from_typed_layout_shallow(node &Node, state &LayoutState, 
 		if path_bounds := svg_path_bounds(path) {
 			svg_path_bounding_box = painting.Rect{path_bounds.x, path_bounds.y, path_bounds.width, path_bounds.height}
 		}
-		exact_path := html.canvas_gfx_path_from_svg_path(path)
-		exact_visual_path := painting_clip_path_from_canvas_path(exact_path, if computed.fill_rule() == .evenodd {
+		ellipse_data := retained_svg_ellipse_data(node, path)
+		projection := svg_paint_path_projection(path, if computed.fill_rule() == .evenodd {
 			painting.WindingRule.even_odd
-		} else {
-			painting.WindingRule.nonzero
-		})
-		svg_path_data = retained_svg_ellipse_data(node, path) or {
-			compatibility_pack_clip_path_segments(exact_visual_path)
-		}
+		} else { painting.WindingRule.nonzero }, ellipse_data == none)
+		svg_path_data = ellipse_data or { projection.packed_segments }
 		svg_fill_even_odd = computed.fill_rule() == .evenodd
 		to_page := svg_path_transform_to_page(node, state)
 		svg_transform = [to_page.a, to_page.b, to_page.c, to_page.d, to_page.e, to_page.f]!
@@ -3706,14 +3703,14 @@ fn uncached_block_box_from_typed_layout_shallow(node &Node, state &LayoutState, 
 			svg_points << mapped.y
 		}
 		if fill_paint := computed.fill() {
-			svg_fill_linear_gradient = resolve_svg_linear_gradient_paint_style(node, state, fill_paint, exact_visual_path)
-			svg_fill_radial_gradient = resolve_svg_radial_gradient_paint_style(node, state, fill_paint, exact_visual_path)
-			svg_fill_pattern = resolve_svg_pattern_paint_style(node, state, fill_paint, exact_visual_path, to_page)
+			svg_fill_linear_gradient = resolve_svg_linear_gradient_paint_style(node, state, fill_paint, projection.bounds)
+			svg_fill_radial_gradient = resolve_svg_radial_gradient_paint_style(node, state, fill_paint, projection.bounds)
+			svg_fill_pattern = resolve_svg_pattern_paint_style(node, state, fill_paint, projection.bounds, to_page)
 		}
 		if stroke_paint := computed.stroke() {
-			svg_stroke_linear_gradient = resolve_svg_linear_gradient_paint_style(node, state, stroke_paint, exact_visual_path)
-			svg_stroke_radial_gradient = resolve_svg_radial_gradient_paint_style(node, state, stroke_paint, exact_visual_path)
-			svg_stroke_pattern = resolve_svg_pattern_paint_style(node, state, stroke_paint, exact_visual_path, to_page)
+			svg_stroke_linear_gradient = resolve_svg_linear_gradient_paint_style(node, state, stroke_paint, projection.bounds)
+			svg_stroke_radial_gradient = resolve_svg_radial_gradient_paint_style(node, state, stroke_paint, projection.bounds)
+			svg_stroke_pattern = resolve_svg_pattern_paint_style(node, state, stroke_paint, projection.bounds, to_page)
 		}
 		if svg_fill_linear_gradient == none && svg_fill_radial_gradient == none
 			&& svg_fill_pattern == none {
