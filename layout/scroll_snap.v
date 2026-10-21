@@ -1071,9 +1071,36 @@ fn resnap_committed_paintables(node &dom.LayoutNode, boxes_by_layout map[u64]&Bl
 	}
 }
 
+fn paint_tree_has_scroll_snap_container(box &BlockBox) bool {
+	if is_scroll_snap_container(box) { return true }
+	for index in 0 .. box.children.len {
+		if paint_tree_has_scroll_snap_container(unsafe { &box.children[index] }) { return true }
+	}
+	return false
+}
+
+fn layout_tree_has_remembered_snap_areas(node &dom.LayoutNode) bool {
+	for paintable in node.paintables_ {
+		if !paintable.is_paintable_box() { continue }
+		box := unsafe { &dom.PaintableBox(paintable) }
+		if box.snapped_areas_x_.len > 0 || box.snapped_areas_y_.len > 0 { return true }
+	}
+	for child in node.children_ {
+		if layout_tree_has_remembered_snap_areas(child) { return true }
+	}
+	return false
+}
+
 fn resnap_document_scroll_containers(result &DocumentLayoutResult) {
 	viewport := result.document.layout_node() or { return }
 	root := viewport.root_layout_node() or { return }
+	previous_viewport_areas := snapped_areas_from_dom(result.document.viewport_snapped_areas_x(),
+		result.document.viewport_snapped_areas_y())
+	// A page without snap containers or remembered destinations has no work.
+	// Avoid constructing the box index and paintable snapshots in that case.
+	// Actual snapping retains the existing snapshot across scroll callbacks.
+	if previous_viewport_areas.is_empty() && !paint_tree_has_scroll_snap_container(&result.paint_tree)
+		&& !layout_tree_has_remembered_snap_areas(root) { return }
 	mut boxes_by_layout := map[u64]&BlockBox{}
 	mut paint_tree := result.paint_tree
 	collect_compatibility_boxes(mut paint_tree, mut boxes_by_layout)
@@ -1087,8 +1114,6 @@ fn resnap_document_scroll_containers(result &DocumentLayoutResult) {
 	} else {
 		i64(0)
 	}
-	previous_viewport_areas := snapped_areas_from_dom(result.document.viewport_snapped_areas_x(),
-		result.document.viewport_snapped_areas_y())
 	if !previous_viewport_areas.is_empty() || is_scroll_snap_container(&result.paint_tree) {
 		viewport_rect := result.document.viewport_rect()
 		destination := select_resnap_destination(&result.paint_tree, scaled_dom_point(dom.CSSPixelPoint_{
