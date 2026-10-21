@@ -1227,7 +1227,9 @@ fn visible_svg_stroke_width(graphics_box &Node, viewport_size CSSPixelSize) f64 
 }
 
 fn svg_transform_element_model(graphics_box &Node, element &dom.Element, viewport_size CSSPixelSize) svg.Element {
-	mut model := svg_element_model(element)
+	// element_transform reads only transform and <use> offsets. Descendants,
+	// filter styles and the remaining attributes have no role in this query.
+	mut model := svg.Element{tag:element.local_name(), attributes:map[string]string{}}
 	computed := graphics_box.computed_values()
 	if !element.has_attribute('transform') || computed_transform_is_none(computed) {
 		model.attributes.delete('transform')
