@@ -1005,8 +1005,8 @@ fn build_layout_box_for_element_with_svg_resource_kind(document &dom.Document, e
 		if !computed.display().is_contents() {
 			content_replacement_source = computed.content_replacement_image(&abstract_element)
 		}
-		registered_counter_styles := css.registered_counter_styles_for_content(computed, abstract_element)
-		content := computed.content(&abstract_element, builder_state.quote_nesting_level, registered_counter_styles).content_data
+		registered_counter_styles := css.content_counter_styles_for_layout(computed, abstract_element)
+		content := registered_counter_styles.resolve_content(computed, &abstract_element, builder_state.quote_nesting_level).content_data
 		mut mutable_computed := unsafe { &css.MutableComputedValues(computed) }
 		mutable_computed.set_content(content)
 	}
@@ -2360,17 +2360,17 @@ fn build_generated_pseudo_element(document &dom.Document, element &dom.Element, 
 	}
 	computed_values_in_layout_coordinates(computed, document)
 	abstract_element := dom.AbstractElement.new(element, dom_pseudo)
-	registered_counter_styles := css.registered_counter_styles_for_content(computed, abstract_element)
+	registered_counter_styles := css.content_counter_styles_for_layout(computed, abstract_element)
 	mut content_replacement_source := computed.content_replacement_image(&abstract_element)
 	initial_quote_nesting_level := builder_state.quote_nesting_level
-	initial_content_result := computed.content(&abstract_element, initial_quote_nesting_level, registered_counter_styles)
+	initial_content_result := registered_counter_styles.resolve_content(computed, &abstract_element, initial_quote_nesting_level)
 	builder_state.quote_nesting_level = initial_content_result.final_quote_nesting_level
 	initial_content := initial_content_result.content_data
 	if initial_content.type_ in [.normal, .none_] {
 		return none
 	}
 	resolve_layout_counters(mut builder_state, abstract_element, computed)
-	content := computed.content(&abstract_element, initial_quote_nesting_level, registered_counter_styles).content_data
+	content := registered_counter_styles.resolve_content(computed, &abstract_element, initial_quote_nesting_level).content_data
 	mut mutable_computed := unsafe { &css.MutableComputedValues(computed) }
 	mutable_computed.set_content(content)
 	if computed.display().is_list_item() || computed.display().is_contents() {
@@ -2461,8 +2461,8 @@ fn build_list_item_marker(document &dom.Document, element &dom.Element, list_ite
 	}
 	computed_values_in_layout_coordinates(marker_computed, document)
 	abstract_element := dom.AbstractElement.new(element, .marker)
-	registered_counter_styles := css.registered_counter_styles_for_content(marker_computed, abstract_element)
-	initial_content := marker_computed.content(&abstract_element, 0, registered_counter_styles).content_data
+	registered_counter_styles := css.content_counter_styles_for_layout(marker_computed, abstract_element)
+	initial_content := registered_counter_styles.resolve_content(marker_computed, &abstract_element, 0).content_data
 	if initial_content.type_ == .none_ {
 		return none
 	}
@@ -2471,7 +2471,7 @@ fn build_list_item_marker(document &dom.Document, element &dom.Element, list_ite
 	mutable_list_item_computed.set_list_style_type(list_style_type)
 	if initial_content.type_ == .list {
 		resolve_marker_layout_counters(mut builder_state, abstract_element, marker_computed)
-		content := marker_computed.content(&abstract_element, 0, registered_counter_styles).content_data
+		content := registered_counter_styles.resolve_content(marker_computed, &abstract_element, 0).content_data
 		mut mutable_marker_computed := unsafe { &css.MutableComputedValues(marker_computed) }
 		mutable_marker_computed.set_content(content)
 		marker_box := ListItemMarkerBox.new(document, list_style_type, list_item_computed.list_style_position(), element, marker_computed)
