@@ -46,7 +46,7 @@ report no page runtime, sources, source bytes or preloaded scripts.
 | Local SVG transforms, slimmer nodes and static layout queries | 84,002,208 bytes | 82,838,872 bytes | 1.38% |
 | Exact text buffers, cached-header decoding, table flags and CSS probes | 82,920,816 bytes | 82,036,128 bytes | 1.07% |
 | Iterator records, insertion snapshots, rendered text and counter targets | 82,199,920 bytes | 81,577,328 bytes | 0.76% |
-| Empty reusable arena and allocator recycle-cache pages at idle | 81,593,736 bytes | 80,528,728 bytes | 1.31% |
+| Shaping idle pages; additional trim helpers not yet wired | 81,593,736 bytes | 80,528,728 bytes | 1.31% |
 
 Each row is its own three-pair cohort; these are aggregate build comparisons,
 not isolated savings attributed to individual commits. Evidence is in
