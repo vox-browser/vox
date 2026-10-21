@@ -16440,3 +16440,53 @@ build-result,result,final-audit}.json`; original single observation:
 `Build/instructions/vox-layoutcost162-diagnostic.run-1.{json,log,png}`.
 Diagnostic binary SHA256: `10f5b23330b54c52ac1351a615457b96e61d7c8c01db7a556d94df9eaa73b4dd`.
 Durable generated-C archive SHA256: `75980cdf4b4483074d7dd3421f200bebb0187f2804a108794cff51ad0e2845c9`.
+
+
+## Frozen round 164 measurement page-directory diagnostic
+
+One separate diagnostic on accepted round 164 counts directory operations for
+measurement stores on the navigation owner thread through the first native
+document-paint report. Native build, signing, smoke, observer and browser all
+actually exit 0. The retained document PNG is 1024×768, with the same 359-file
+cache, frozen helper, placement and automatic 4 GiB heap hint. Four function
+wrappers plus navigation/report gates restore all other C byte-for-byte.
+Current Root is excluded; this is not another speed-cohort observation.
+
+| Logical metric | Count |
+| --- | ---: |
+| `grow_calls` | 12,543 |
+| `slots_added` | 600,148 |
+| `grow_checks` | 50,414 |
+| `reallocations` | 50,414 |
+| `capacity_slots_added` | 822,800 |
+| `allocate_calls` | 247,393 |
+| `new_pages` | 64,265 |
+| `releases` | 7,918 |
+| `released_slots` | 600,148 |
+| `released_holes` | 535,883 |
+| `released_live_pages` | 64,265 |
+| `max_directory_length` | 146 |
+| `max_requested_count` | 2,331 |
+| `calls_with_buffer_growth` | 8,624 |
+
+Of 600,148 directory slots released across 7,918 temporary states, 535,883
+were empty and 64,265 held pages. Maximum directory length was 146 pointers
+for a request of 2,331 nodes. These totals accumulate across probe lifetimes;
+they are not peak memory or instruction self costs. The 600,148 individual
+appends caused 50,414 calls to the capacity helper, each growing its buffer,
+across 8,624 directory-growth invocations. This supports investigating batched
+directory growth, but does not prove a speed improvement.
+
+The original metadata reader exited 1 after the successful observation because
+it incorrectly expected one capacity-helper call per appended slot. Generated
+`array_push` checks available capacity first. The original failed reader/audit
+receipts are retained; a read-only extractor and independent audit now pass.
+The completed primary was not rerun. Instrumentation errors, page credit and
+additional broad carry are all zero. Accepted control and broad baseline remain
+164. Canonical and GUI browsers remain preserved; Chrome parity stays open.
+
+Evidence: `Build/v/instruction-storemeta164-{plan,instrumentation-audit,
+build-result,result,capacity-predicate-finding,final-audit}.json`; original
+observation `Build/instructions/vox-storemeta164-diagnostic.run-1.{json,log,png}`.
+Binary SHA256: `1cc302a2ff4feb8b17fd3e3096f7a0637b2293a5e3a33e07e7fe293ba30c770b`.
+Durable generated-C archive SHA256: `6c0d1565702d47ac51765d77cb7e84689614076571ee9427e7c389e78a2cc318`.
