@@ -61,6 +61,7 @@ mut:
 	font_cascade_ranges    [][]css.UnicodeRange
 	last_resort_font       ?&platform.Font
 	selected_font_storage_ &InvisibleFontSelectionStorage = unsafe { nil }
+	retain_selected_fonts_ bool
 pub mut:
 	current_index            int
 	grapheme_boundary_index  int = 1
@@ -131,7 +132,7 @@ fn TextNodeChunkIterator.new_with_direction(text_node &TextNode, should_wrap_lin
 		retained.finish()
 		units
 	}
-	font_cascade := text_node.Node.font_list()
+	font_cascade, rendering_font := chunk_iterator_rendering_fonts(text_node)
 	mut iterator := &TextNodeChunkIterator{
 		text_node: text_node
 		should_wrap_lines_: should_wrap_lines
@@ -155,7 +156,7 @@ fn TextNodeChunkIterator.new_with_direction(text_node &TextNode, should_wrap_lin
 		}
 		word_break: text_node.Node.computed_values().word_break()
 		text_direction_mode: text_direction_mode
-		font: text_node.font_for_rendering()
+		font: rendering_font
 		font_variant_caps: text_node.Node.computed_values().font_variant_caps()
 	}
 	iterator.install_font_cascade(font_cascade)
@@ -298,14 +299,20 @@ fn (mut iterator TextNodeChunkIterator) font_for_code_point(code_point u32) &pla
 	}
 	font_computer := css.css_style_computer_for(iterator.text_node.Node.document()).font_computer()
 	font_generation := font_computer.environment_generation()
-	fallback_is_invisible := iterator.font_cascade_list.fallback_is_invisible_for_code_point_through(code_point,
-		selected_index)
+	fallback_is_invisible := iterator.fallback_visibility_for_code_point(code_point, selected_index)
 	if font_computer.environment_generation() != font_generation {
 		// A synchronously loaded URL-backed face invalidates the old cascade.
 		// Rebuild it before shaping this code point so the first layout uses the
 		// author font rather than retaining fallback metrics until another pass.
 		mut computed_values := unsafe { &css.ComputedProperties(iterator.text_node.Node.computed_values()) }
-		iterator.install_font_cascade(computed_values.computed_font_list(font_computer))
+		use_document := iterator.retain_selected_fonts_ && iterator.text_node != unsafe { nil }
+			&& cache_uses_entered_document_storage(iterator.text_node.Node.document())
+		mut retained := if use_document { platform.enter_retained_allocations() } else { platform.RetainedAllocationScope{} }
+		persistent := platform.enter_persistent_if(iterator.retain_selected_fonts_ && !use_document)
+		updated := computed_values.computed_font_list(font_computer)
+		platform.leave_persistent(persistent)
+		retained.finish()
+		iterator.install_font_cascade(updated)
 		return iterator.font_for_code_point(code_point)
 	}
 	if !fallback_is_invisible {
@@ -328,15 +335,21 @@ fn (mut iterator TextNodeChunkIterator) synthetic_caps_font_for(selected &platfo
 	if selected.has_gsub_feature('smcp') { return selected }
 	uppercase := if code_point >= u32(`a`) && code_point <= u32(`z`) { code_point - 32 } else { code_point }
 	if !selected.contains_glyph(uppercase) { return selected }
+	use_document := iterator.retain_selected_fonts_ && iterator.text_node != unsafe { nil }
+		&& cache_uses_entered_document_storage(iterator.text_node.Node.document())
+	mut retained := if use_document { platform.enter_retained_allocations() } else { platform.RetainedAllocationScope{} }
+	persistent := platform.enter_persistent_if(iterator.retain_selected_fonts_ && !use_document)
 	font := &platform.Font{
-		family: selected.family
+		family: selected.family.clone()
 		point_size: f32(math.round(f64(selected.point_size * 0.7)))
 		weight: selected.weight
-		source_path: selected.source_path
+		source_path: selected.source_path.clone()
 		is_invisible: selected.is_invisible
 		font_rendering_policy: selected.font_rendering_policy
 		synthesize_ascii_caps: true
 	}
+	platform.leave_persistent(persistent)
+	retained.finish()
 	if iterator.selected_font_storage_ == unsafe { nil } {
 		iterator.selected_font_storage_ = &InvisibleFontSelectionStorage{values: map[string]&platform.Font{}}
 	}
@@ -380,7 +393,13 @@ fn (mut iterator TextNodeChunkIterator) invisible_font_for(selected &platform.Fo
 	if font := iterator.cached_invisible_font(key) {
 		return font
 	}
+	use_document := iterator.retain_selected_fonts_ && iterator.text_node != unsafe { nil }
+		&& cache_uses_entered_document_storage(iterator.text_node.Node.document())
+	mut retained := if use_document { platform.enter_retained_allocations() } else { platform.RetainedAllocationScope{} }
+	persistent := platform.enter_persistent_if(iterator.retain_selected_fonts_ && !use_document)
 	font := text_node_chunk_invisible_font(selected)
+	platform.leave_persistent(persistent)
+	retained.finish()
 	if iterator.selected_font_storage_ == unsafe { nil } {
 		iterator.selected_font_storage_ = &InvisibleFontSelectionStorage{
 			values: map[string]&platform.Font{}

@@ -859,25 +859,12 @@ fn (mut iterator InlineLevelIterator) enter_text_node(text_node &TextNode) {
 		use_document := cache_uses_entered_document_storage(text_node.Node.document())
 		mut retained := if use_document { platform.enter_retained_allocations() } else { platform.RetainedAllocationScope{} }
 		persistent := platform.enter_persistent_if(!use_document)
-		mut chunk_iterator := TextNodeChunkIterator.new_with_direction(text_node, should_wrap_lines,
-			should_respect_linebreaks, if iterator.is_unidirectional_left_to_right {
+		chunks = retained_text_node_chunks(text_node, should_wrap_lines, should_respect_linebreaks,
+			if iterator.is_unidirectional_left_to_right {
 				TextDirectionMode.unidirectional_left_to_right
 			} else {
 				TextDirectionMode.per_code_point
 			})
-		for {
-			chunk := chunk_iterator.next() or { break }
-			chunks << chunk
-		}
-		// InlineLevelIterator::generate_next_item() synthesizes one empty chunk for
-		// mutable form-control editing text and generated empty strings. The V DOM
-		// does not materialize the closed UA shadow root, so TreeBuilder records the
-		// former on its equivalent internal TextNode.
-		if chunks.len == 0 && text_node.text_for_rendering().len == 0
-			&& (text_node.retains_empty_generated_fragment_
-			|| text_node.produces_line_box_fragment_when_empty_) {
-			chunks << chunk_iterator.create_empty_chunk()
-		}
 		mut mutable_text_node := unsafe { &TextNode(text_node) }
 		mutable_text_node.cached_inline_chunks_ = chunks
 		mutable_text_node.cached_font_environment_generation_ = css.css_style_computer_for(text_node.Node.document()).font_computer().environment_generation()
