@@ -498,17 +498,12 @@ pub fn background_layers_outside_samples(document &dom.Document, layers []Backgr
 // A copy that shares no storage with `value`. Calculations are parsed again
 // from their serialization.
 fn owned_length_percentage(value LengthPercentage) LengthPercentage {
-	inner := value.value_
-	return match inner {
-		Length { LengthPercentage.from_length(Length.new(inner.value_, inner.unit_)) }
-		Percentage { LengthPercentage.from_percentage(Percentage.new(inner.value())) }
-		CalculatedStyleValue {
-			parsed := parse_css_value_logic(.width, inner.serialization.clone()) or {
-				return LengthPercentage.from_length(Length.make_px(0))
-			}
-			LengthPercentage.from_style_value_logic(parsed)
-		}
+	if !value.is_calculated() { return value }
+	inner := value.calculated()
+	parsed := parse_css_value_logic(.width, inner.serialization.clone()) or {
+		return LengthPercentage.from_length(Length.make_px(0))
 	}
+	return LengthPercentage.from_style_value_logic(parsed)
 }
 
 fn owned_length_percentage_or_auto(value LengthPercentageOrAuto) LengthPercentageOrAuto {
