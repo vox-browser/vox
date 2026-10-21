@@ -134,3 +134,16 @@ logs, recovered files and the recovery pack/index are retained under
 `unreachable-commit-coverage.json` and `dropped-stash-coverage.json` describe the
 decisions. Historical experiments must be reviewed against current source
 before reuse; their old complete trees must not replace master wholesale.
+
+## Branch cleanup, 2026-10-21
+
+The six remaining non-master local branches were deleted after rechecking their
+tips against `05d4e7b4`. Five tips were ancestors of master. All twelve divergent
+patches on `codex/nojs-wikipedia-ram-v10` had exact equivalents on master; its
+original tip remains at
+`refs/archive/worktree-consolidation-20261020/a5c6fd2ba7e8`.
+
+Only the local `master` branch and canonical checkout remain. There were no
+additional worktrees to remove. Remote-tracking refs, tags, recovery refs and
+the untracked editor swap were preserved. The checks and deletion results are
+recorded in `Build/master-audit-20261021/branch-cleanup.json`.
