@@ -5162,6 +5162,15 @@ pub mut:
 	animation            &Animation = unsafe { nil }
 	target               &EventTarget = unsafe { nil }
 	scheduled_event_time ?f64
+	// CSS events have no default action. Keep their small input record until
+	// delivery and create an Event only when the current dispatch path has a
+	// listener. Earlier events may install listeners for later queued events.
+	event_factory fn (&PendingAnimationEvent) &Event = unsafe { nil }
+	event_type string
+	event_name string
+	event_elapsed_time f64
+	event_pseudo_element string
+	event_time_stamp f64
 }
 
 pub struct OpenerPolicy {
@@ -10847,7 +10856,10 @@ pub fn (mut d Document) disassociate_with_timeline(timeline AnimationTimelineHan
 }
 
 pub fn (mut d Document) append_pending_animation_event(event PendingAnimationEvent) {
-	d.pending_animation_event_queue << event
+	// The record borrows immutable metadata from its document/animation just
+	// like its target and animation pointers. Appending the named value makes
+	// current V deep-clone every string; a fresh record preserves those borrows.
+	d.pending_animation_event_queue << PendingAnimationEvent{...event}
 }
 
 // https://www.w3.org/TR/web-animations-1/#update-animations-and-send-events
@@ -10909,9 +10921,20 @@ pub fn (mut d Document) update_animations_and_send_events(timestamp f64) {
 	}
 
 	// 7. Dispatch each event.
-	for event in events_to_dispatch {
+	for index in 0 .. events_to_dispatch.len {
+		event := unsafe { &events_to_dispatch[index] }
 		if event.target != unsafe { nil } {
-			event.target.dispatch_event(event.event)
+			if event.event_factory != unsafe { nil } {
+				mut observed := should_dispatch_non_activation_event(event.target, event.event_type)
+				if !observed {
+					if legacy := legacy_prefixed_animation_or_transition_event_type(event.event_type) {
+						observed = should_dispatch_non_activation_event(event.target, legacy)
+					}
+				}
+				if observed { event.target.dispatch_event(event.event_factory(event)) }
+			} else {
+				event.target.dispatch_event(event.event)
+			}
 		}
 	}
 }

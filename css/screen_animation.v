@@ -1988,16 +1988,13 @@ fn append_transition_event(mut document dom.Document, transition &CSSTransition,
 		.end { active_duration }
 		.active_time { 0.0 }
 	}
-	event := TransitionEvent.create(name, TransitionEventInit{
-		EventInit: dom.EventInit{
-			bubbles: true
-		}
-		property_name: transition.transition_property()
-		elapsed_time: elapsed_time_ms / 1000.0
-		pseudo_element: css_animation_pseudo_element_string(owner)
-	})
 	document.append_pending_animation_event(dom.PendingAnimationEvent{
-		event: event.base_event()
+		event_factory: materialize_pending_css_transition_event
+		event_type: name
+		event_name: transition.transition_property()
+		event_elapsed_time: elapsed_time_ms / 1000.0
+		event_pseudo_element: css_animation_pseudo_element_string(owner)
+		event_time_stamp: dom.current_event_timestamp()
 		animation: &transition.Animation
 		target: unsafe { &dom.EventTarget(owner.element().as_node()) }
 		scheduled_event_time: css_animation_event_scheduled_time()
@@ -2057,20 +2054,41 @@ fn append_css_animation_event(mut document dom.Document, animation &CSSAnimation
 	effect := animation.effect() or { return }
 	target := effect.target_ or { return }
 	owner := animation.owning_element() or { target }
-	event := AnimationEvent.create(name, AnimationEventInit{
-		EventInit: dom.EventInit{
-			bubbles: true
-		}
-		animation_name: animation.animation_name()
-		elapsed_time: elapsed_time_ms / 1000.0
-		pseudo_element: css_animation_pseudo_element_string(owner)
-	})
 	document.append_pending_animation_event(dom.PendingAnimationEvent{
-		event: event.base_event()
+		event_factory: materialize_pending_css_animation_event
+		event_type: name
+		event_name: animation.animation_name()
+		event_elapsed_time: elapsed_time_ms / 1000.0
+		event_pseudo_element: css_animation_pseudo_element_string(owner)
+		event_time_stamp: dom.current_event_timestamp()
 		animation: &animation.Animation
 		target: unsafe { &dom.EventTarget(target.element().as_node()) }
 		scheduled_event_time: css_animation_event_scheduled_time()
 	})
+}
+
+fn materialize_pending_css_animation_event(pending &dom.PendingAnimationEvent) &dom.Event {
+	mut event := AnimationEvent.create(pending.event_type, AnimationEventInit{
+		EventInit: dom.EventInit{
+			bubbles: true
+		}
+		animation_name: pending.event_name
+		elapsed_time: pending.event_elapsed_time
+		pseudo_element: pending.event_pseudo_element
+	}).base_event()
+	event.set_time_stamp(pending.event_time_stamp)
+	return event
+}
+
+fn materialize_pending_css_transition_event(pending &dom.PendingAnimationEvent) &dom.Event {
+	mut event := TransitionEvent.create(pending.event_type, TransitionEventInit{
+		EventInit: dom.EventInit{bubbles:true}
+		property_name: pending.event_name
+		elapsed_time: pending.event_elapsed_time
+		pseudo_element: pending.event_pseudo_element
+	}).base_event()
+	event.set_time_stamp(pending.event_time_stamp)
+	return event
 }
 
 // Document::dispatch_events_for_animation_if_necessary() for CSSAnimation.
