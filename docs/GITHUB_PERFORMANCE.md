@@ -14719,6 +14719,57 @@ rewriting original statuses or hashes. Archive index:
 extra coverage/credit for unrelated current-source changes. Chrome parity
 remains unestablished;equivalent content and endpoint accounting are still needed.
 
+## Retain the nearest style walk as a rejected local attempt
+
+Round151 applies complete feature `7cb580db` to accepted150. One exact
+original Git runtime hunk replaces the whole recursive `Node.computed_values()`
+lookup with an explicit nearest-styled-ancestor loop. The same styled
+predicate,parent guard,missing-parent panic and retained owner identity remain.
+The complete authored before/after file reconstructs exactly;the whole hunk
+applies unchanged to frozen150. No Root arena,font-policy,storage projection,
+compiler shim or independent runtime work is imported.
+
+The three exact original cases pass C-O2 bothGC with **791 assertions each**:
+256 unstyled ancestors and nearest owner identity;staged reparenting and owner
+replacement;32 distinct equal-valued owners and collection. Whole immutable
+runtime/fixture hashes authenticate reuse without runtime replay. Common12
+cases pass60 assertions/config;unchanged150-final supplies before. The first
+fixture had immutable document locals for mutable `finalize()` and stopped in
+checking with actual driver1/zero cases each. Those original logs/results stay;
+only previously unexecuted corrected cases ran. No current-Root pass is inferred.
+
+The canonical147 scene is unchanged:64 Unicode paragraphs,128 indentation
+blocks,192 independent checks and16 complete public parse/layout/record/
+paint-command/hit/finalize pipelines per sample. Setup,eight warmups,forced GC
+and assertions stay outside the counter. Three fixed alternating pairs give
+medians **32,600,608,625 → 32,627,508,016 retired
+instructions**, **0.08251193% more**, **1/3 wins**.
+All six actual exits0 and checksum7,963,486,608 match. All six observations
+remain;no completed sample is discarded,filtered,extended or rerun.
+
+Local gate and native launcher actually exit1,with zero normal/profile jobs.
+There is no normal native candidate,profile,page primary,strict independent
+C audit,screenshot,broad suite,bundle or GC pass for151. The predeclared30-page
+pair cohort,seed151 and30,000 resamples never starts. Normal C-only frontend
+exits0;read-only definition evidence confirms the explicit loop and removed
+recursive call,with no strict-audit approval or page credit. Durable focused,
+local,frontend C and binary hashes are indexed in
+`Build/v/instruction-opt151-durable-archives.json`.
+
+Both local variants use the same predeclared private RAM compiler scratch.
+Generated C is durably archived with actual hashes;normal C,regular browser
+binaries,receipts and frozen cache remain SSD. Native/profile/independent
+scratch remains unused after rejection. Accepted control stays150,broad
+baseline147 and observed carry4,130,722.5. Repeatable page credit is0.
+A stale predecessor-round assertion stopped the first documentation reader
+before ledger/index/document edits. Its actual exit1 and original bytes remain;
+only the bookkeeping reader resumes,without any test or counter replay. Owned
+closed148/149 expanded scratch was removed only after authenticating retained
+archives. Unstarted broad scratch was declared on private RAM,but no broad
+compiler or validation job starts after local rejection.
+Canonical app,GUI and foreign work are preserved. Chrome parity remains
+unestablished;equivalent content and endpoint accounting are still required.
+
 ## Causes and changes
 
 - The V 0.5.2 compatibility compiler's `-prod` Boehm code repeatedly snapshots

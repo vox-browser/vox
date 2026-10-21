@@ -2355,6 +2355,11 @@ evidence](docs/translation-audit/NATIVE_MEDIA_WHEEL_RAW_HANDLER.md).
   Accepted control 150;isolated150app/GC1+override2;canonical/GUI/foreign work preserved.
   Profiles getter2359552each/helper2359552→authenticated0;no profile credit. Original audit/dependent failures retained;native argv resumed honestly.
   RAM compiler/SSD durable evidence declared;Chrome parity remains open.
+  Nearest style walk round151 (`7cb580db`):one original Git hunk/whole function;3cases/791asserts eachGC reused exactly.
+  Common60/config;normal C-only frontend0;unchanged canonical local16 pipelines +0.082512%/1wins/all6actual0.
+  Local gate1/native launcher1/jobs0;no normal binary/profile/page/broad/bundle;accepted150/carry4130722.5 retained.
+  Whole source/fixture authenticated;explicit loop preserves nearest owner and live tree reads;no strict C/profile pass.
+  Original zero-case fixture typing failures retained;matched RAM scratch/durable actual evidence;canonical/GUI/foreign work preserved;Chrome open.
 - Outside instruction-count optimization, run broad regression suites once per
   ten completed fixes, not after every fix.
   Broad suites include full translation/package test batches, the full LibJS AST
