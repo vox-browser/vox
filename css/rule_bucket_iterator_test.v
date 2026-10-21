@@ -42,8 +42,10 @@ fn test_pseudo_class_rule_comparison_reuses_contexts_without_candidate_vectors()
 	root := document.create_element('div')!
 	computer := css_style_computer_for(document)
 	mut cache := RuleCache.new()
-	selector := invalidation_test_selector('div:hover')
-	rule := &MatchingRule{ selector: selector }
+	selectors := parse_selector_with_parser('div:hover', map[string]bool{}) or {
+		panic('invalid hover fixture')
+	}
+	rule := &MatchingRule{ selector: selectors.selectors[0] }
 	cache.rules_by_tag_name['div'] = []&MatchingRule{len: 256, init: rule}
 	before_cache := &HasResultCache{}
 	after_cache := &HasResultCache{}
