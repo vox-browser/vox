@@ -1669,7 +1669,7 @@ pub fn resolve_counters_for_layout(mut abstract_element dom.AbstractElement, com
 			value: optional_counter_operation_value(counter.value)
 		}
 	}
-	resolved := resolve_counters(CounterElement{
+	resolved := resolve_retained_counter_state(CounterElement{
 		origin: origin
 		generates_box: !computed.display().is_none()
 		parent_counters: parent_counters
@@ -1681,8 +1681,8 @@ pub fn resolve_counters_for_layout(mut abstract_element dom.AbstractElement, com
 		is_list_item: computed.display().is_list_item()
 		has_parent_element: has_parent_element
 	})
-	set_counters_set_for_abstract_element(mut abstract_element, resolved.counters_set)
-	return resolved.counters_set
+	set_counters_set_for_abstract_element(mut abstract_element, resolved)
+	return resolved
 }
 
 // Narrow stand-in for the DOM/Layout/style hooks used by resolve_counters()/inherit_counters().
