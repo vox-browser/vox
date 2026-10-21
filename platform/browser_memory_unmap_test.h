@@ -5,6 +5,9 @@
 #include <string.h>
 #include <gc/gc.h>
 #include <gc/gc_pthread_redirects.h>
+#ifdef HBLKSIZE
+#include <gc/gc_mark.h>
+#endif
 static void **vox_idle_unmap_weak;
 static size_t vox_idle_unmap_baseline;
 static void *vox_idle_unmap_allocate(void *unused) {
@@ -17,6 +20,9 @@ static void *vox_idle_unmap_allocate(void *unused) {
     return NULL;
 }
 static void vox_idle_unmap_prepare(void) {
+#ifdef HBLKSIZE
+    assert(GC_get_hblk_size() == HBLKSIZE);
+#endif
     vox_idle_unmap_weak = GC_MALLOC_ATOMIC(sizeof(void *));
     assert(vox_idle_unmap_weak);
     vox_idle_unmap_baseline = GC_get_unmapped_bytes();

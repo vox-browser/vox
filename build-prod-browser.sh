@@ -194,6 +194,14 @@ if [ "$gc_mode" = prealloc ]; then
     extra_cflags="$extra_cflags -O2"
 elif [ "$gc_mode" != none ]; then
     set -- "$@" -gc "$gc_mode"
+    if [ "$(uname -m)" = arm64 ] && [ "$(getconf PAGESIZE)" = 16384 ]; then
+        # Apple Silicon can return only whole 16 KiB pages to the OS. A
+        # prebuilt collector's 4 KiB blocks strand free space beside live
+        # blocks in the same page. Use V's source-built collector with one
+        # allocation block per native page; keep its normal ownership rules.
+        set -- "$@" -d use_bundled_libgc
+        extra_cflags="$extra_cflags -DHBLKSIZE=16384"
+    fi
     extra_cflags="$extra_cflags -O2"
 else
     set -- "$@" -prod -gc none
