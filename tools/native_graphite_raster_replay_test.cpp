@@ -295,6 +295,34 @@ int main(int argc, char** argv)
     auto after_path = reinterpret_cast<decltype(before_path)>(
         dlsym(candidate, "vox_graphite_draw_path_pixels"));
     assert(before_path && after_path);
+    for (int alpha : {128, 255}) for (bool noise : {false, true}) {
+        constexpr int width = 1260, height = 888, pitch = width * 4 + 12;
+        float segments[] {
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            1, 700, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            1, 700, 490, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            1, 0, 490, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+        VoxGraphitePath path {};
+        path.segments = segments; path.segment_count = 6;
+        path.matrix[0] = path.matrix[4] = 1.78799f; path.matrix[8] = 1;
+        path.matrix[2] = 4; path.matrix[5] = 4.203125f;
+        path.red = 171; path.green = 83; path.blue = 47; path.alpha = alpha;
+        std::vector<uint8_t> backdrop(size_t(pitch) * height, 255), expected, actual;
+        if (noise) for (size_t i = 0; i < backdrop.size(); ++i) backdrop[i] = (i * 17 + i / 11) % 251;
+        auto compare = [&] {
+            expected = actual = backdrop;
+            assert(before_path(expected.data(), width, height, pitch, 1, &path));
+            assert(after_path(actual.data(), width, height, pitch, 1, &path));
+            assert(expected == actual); ++comparisons;
+            if (finish_frame) finish_frame();
+        };
+        compare(); compare();
+        segments[13] += .375f; compare(); compare();
+        backdrop[(height - 1) * pitch + width * 4 - 1] ^= 31; compare(); compare();
+        clear(); compare();
+    }
     for (int scale : {1, 2}) for (int background : {0, 1})
     for (int gradient : {0, 1, 2}) for (int stroke : {0, 1}) {
         float segments[] {

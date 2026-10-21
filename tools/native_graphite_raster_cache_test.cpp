@@ -499,5 +499,37 @@ int main()
             assert(!conservative.prepare(changed_photo, width, height, pitch, true, surface.data()).hit);
         }
     }
+    // A large flat SVG path can fit after lossless row compression even when
+    // its two raw surfaces exceed the unchanged 8 MiB path-cache budget.
+    {
+        VoxGraphiteRasterCache paths(8 * 1024 * 1024);
+        constexpr int width = 1260, height = 888, pitch = width * 4;
+        std::vector<uint8_t> surface(size_t(pitch) * height, 47);
+        float rectangle[6 * 12] {};
+        VoxGraphitePath path {};
+        path.segments = rectangle; path.segment_count = 6;
+        path.matrix[0] = path.matrix[4] = path.matrix[8] = 1;
+        auto draw = paths.prepare(path, width, height, pitch, true, surface.data());
+        assert(draw.pending && !draw.hit);
+        std::fill(surface.begin(), surface.end(), 103);
+        paths.finish(std::move(draw), surface.data(), pitch);
+        std::fill(surface.begin(), surface.end(), 47);
+        assert(paths.prepare(path, width, height, pitch, true, surface.data()).hit);
+        assert(surface == std::vector<uint8_t>(surface.size(), 103));
+        std::fill(surface.begin(), surface.end(), 47); surface.back()++;
+        assert(!paths.prepare(path, width, height, pitch, true, surface.data()).hit);
+        // An incompressible result must be rejected without evicting the warm
+        // entry speculatively on the basis of its larger raw size.
+        for (size_t i = 0; i < surface.size(); ++i) surface[i] = (i * 17 + i / 11) % 251;
+        auto noise = surface;
+        draw = paths.prepare(path, width, height, pitch, true, surface.data());
+        assert(draw.pending && !draw.hit);
+        for (size_t i = 0; i < surface.size(); ++i) surface[i] = (i * 31 + i / 13) % 253;
+        paths.finish(std::move(draw), surface.data(), pitch);
+        surface = noise;
+        assert(!paths.prepare(path, width, height, pitch, true, surface.data()).hit);
+        std::fill(surface.begin(), surface.end(), 47);
+        assert(paths.prepare(path, width, height, pitch, true, surface.data()).hit);
+    }
     std::cout << "Graphite raster cache: source/backdrop mutation, geometry, profiles, strides, YUV, LRU and bounds passed\n";
 }

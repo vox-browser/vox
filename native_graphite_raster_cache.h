@@ -324,15 +324,20 @@ private:
         // backdrops would consume the small-control cache without useful hits.
         constexpr size_t shape_limit = 512 * 1024;
         bool is_image = !parameters.is_shape && !parameters.is_shadow && !parameters.is_path;
-        size_t limit = std::min(byte_limit, parameters.is_shape ? shape_limit
-            : is_image ? max_image_entry_bytes : max_entry_bytes);
+        // Flat SVG surfaces can shrink greatly in the row codec. Bound their
+        // temporary raw pair separately, then enforce the retained budget on
+        // the actual compressed result before admitting it.
+        size_t limit = parameters.is_path ? std::min(byte_limit, max_entry_bytes) * 2
+            : std::min(byte_limit, parameters.is_shape ? shape_limit
+                : is_image ? max_image_entry_bytes : max_entry_bytes);
         Rows backdrop {pixels, size_t(width) * 4, size_t(pitch), size_t(height)};
         if (source.bytes > limit / source.height || extra.bytes > limit / extra.height
             || backdrop.bytes > limit / backdrop.height)
             return request;
-        size_t cost = source.bytes * source.height + extra.bytes * extra.height
-            + backdrop.bytes * backdrop.height * (has_background ? 2 : 1)
+        size_t immutable_cost = source.bytes * source.height + extra.bytes * extra.height
             + parameters.tiles.size() * sizeof(VoxGraphiteImage);
+        if (immutable_cost > byte_limit) return request;
+        size_t cost = immutable_cost + backdrop.bytes * backdrop.height * (has_background ? 2 : 1);
         if (cost > limit) return request;
         auto opaque = is_image && parameters.tiles.empty()
             ? opaque_image_interior(parameters.image, width, height) : VoxRasterSnapshot::Rect{};
@@ -356,10 +361,6 @@ private:
             request.hit = true;
             return request;
         }
-        while (!entries.empty() && (retained_bytes + cost > byte_limit
-                || entries.size() >= entry_limit)) {
-            evict_back();
-        }
         auto entry = std::make_unique<Entry>(parameters);
         entry->shape.clip_outs = nullptr;
         entry->image.pixels = nullptr;
@@ -380,6 +381,8 @@ public:
         if (!request.pending) return;
         auto& entry = *request.pending;
         entry.output = VoxRasterSnapshot(Rows {pixels, size_t(entry.width) * 4, size_t(pitch), size_t(entry.height)}.copy());
+        if (entry.source->size() > byte_limit
+            || entry.bytes() > byte_limit - entry.source->size()) return;
         // A source may have lost its final retained entry while this request
         // was rendering. Charge it once again if necessary, including when
         // multiple pending requests finish after a clear or eviction.
