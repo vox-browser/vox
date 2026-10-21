@@ -14770,6 +14770,64 @@ compiler or validation job starts after local rejection.
 Canonical app,GUI and foreign work are preserved. Chrome parity remains
 unestablished;equivalent content and endpoint accounting are still required.
 
+## Retain tokenizer buffer reuse as a rejected local attempt
+
+Round152 applies complete existing feature `72042b98` to accepted150.
+Its entire original parent HTML tokenizer file is byte-identical to frozen150;
+the entire committed final file imports all18 original runtime Git hunks.
+Private rune/temporary buffers retain storage and ASCII output owns terminated
+bytes. The accompanying correctness fix preserves rewind history across paused
+character references and records every skipped position. Non-ASCII and invalid
+internal scalars retain the original encoder. No partial feature,Root arena
+dependency,source projection or compiler shim is imported. CSS decoding,
+filtering and CSS tokenizer arenas remain unchanged.
+
+Two original feature cases plus four unchanged ASCII legacy cases pass C-O2
+bothGC: **6 cases and958 assertions per mode**. They cover buffer identity and
+allocation bounds,all128 ASCII code points/controls/embedded NULs,non-ASCII and
+invalid-scalar oracle parity,owned strings after reuse/replacement/collection,
+streamed names/attributes/comments/entities and positions. Both complete
+original fixtures are retained from their commits;only duplicate module/import
+headers are consolidated. Every helper/case body and expectation stays exact.
+Whole runtime/fixture hashes authenticate reuse without case replay. Common12
+cases pass60 assertions/config;unchanged150-final supplies before. No
+current-Root compiler pass is inferred.
+
+The unchanged canonical147 scene has64 Unicode paragraphs,128 indentation
+blocks,192 independent checks and16 complete public parse/layout/record/
+paint-command/hit/finalize pipelines. Setup,eight warmups,forced GC and assertions
+stay outside the counter. Three fixed alternating pairs give medians
+**32,011,024,993 → 32,664,226,053 retired instructions**,
+**2.04055028% more**, **0/3 wins**. All six actual exits0 and
+checksum7,963,486,608 match. Every observation remains;none is discarded,
+filtered,extended or rerun. Allocation savings alone earn no instruction credit.
+
+Local gate and native launcher actually exit1,with zero normal/profile jobs.
+There is no normal native candidate,profile,page primary,strict independent
+C audit,screenshot,broad suite,bundle or GC pass for152. The predeclared30-pair
+page cohort,seed152 and30,000 resamples never starts. Normal C-only frontend
+actually exits0. Read-only definition evidence confirms the six expected source
+changes and owned ASCII output shape,without approving the full C remainder.
+Durable focused/local/frontend C and binary hashes are indexed by
+`Build/v/instruction-opt152-durable-archives.json`.
+
+Matched private RAM scratch was declared before focused/local/native/profile/
+independent/broad compiles;the latter four remain unused after rejection.
+Generated C and test binaries have durable archive/hash evidence on SSD.
+Normal C,regular browser binaries,frozen cache,logs and receipts remain SSD.
+Only byte-authenticated expanded scratch from closed148–151 was removed during
+low space;all archives,apps,sources,controls and foreign work remain. An
+unreleased pipeline maker stopped at a placeholder-label assertion before
+writing any tool;its original bytes and observed failure remain under
+`instruction-opt152-draft-marker-finding`. A separate fixed-marker trial failed
+checking a missing prerequisite with0cases and0performance builds/samples;it
+is excluded from152 and its exact source/actual failures remain.
+
+Accepted control stays150,broad baseline147,observed carry4,130,722.5 and
+repeatable page credit0. Canonical app,GUI and foreign work are preserved.
+Chrome parity remains unestablished;equivalent content/endpoint accounting
+is still required.
+
 ## Causes and changes
 
 - The V 0.5.2 compatibility compiler's `-prod` Boehm code repeatedly snapshots

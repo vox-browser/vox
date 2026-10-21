@@ -2360,6 +2360,12 @@ evidence](docs/translation-audit/NATIVE_MEDIA_WHEEL_RAW_HANDLER.md).
   Local gate1/native launcher1/jobs0;no normal binary/profile/page/broad/bundle;accepted150/carry4130722.5 retained.
   Whole source/fixture authenticated;explicit loop preserves nearest owner and live tree reads;no strict C/profile pass.
   Original zero-case fixture typing failures retained;matched RAM scratch/durable actual evidence;canonical/GUI/foreign work preserved;Chrome open.
+  Tokenizer buffer reuse round152 (`72042b98`):all18original runtime Git hunks/entire exact file;6cases/958asserts eachGC reused exactly.
+  Two feature/four ASCII legacy cases;only duplicate module/import headers consolidated. Common60/config;normal C-only frontend0.
+  Canonical local16 complete public pipelines +2.040550%/0wins/all6actual0.
+  Local gate1/native launcher1/jobs0;no normal/profile/page/broad/bundle;accepted150/carry4130722.5 retained.
+  Allocation bounds pass but no hardware saving;all observations kept. Strict independent C audit never starts.
+  Missing marker prerequisite/draft label findings retained;matched RAM scratch/durable evidence;canonical/GUI/foreign work preserved;Chrome open.
 - Outside instruction-count optimization, run broad regression suites once per
   ten completed fixes, not after every fix.
   Broad suites include full translation/package test batches, the full LibJS AST
