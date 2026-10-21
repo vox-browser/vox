@@ -403,13 +403,13 @@ pub fn (n &Node) display_before_box_type_transformation() css.Display {
 // Node::computed_values(): unstyled text nodes inherit the immutable computed
 // values of their styled parent.
 pub fn (n &Node) computed_values() &css.ComputedValues {
-	// The same discriminant guards as_node_with_style(). Avoid materializing an
-	// optional pointer (and its GC stack root) on these frequent field reads.
-	if n.has_style_ {
-		return unsafe { &NodeWithStyle(n) }.computed_values()
+	// Keep the nearest styled ancestor lookup local. An explicit walk lets
+	// callers inline the common styled-node read without a recursive call.
+	mut current := n
+	for !current.has_style_ {
+		current = current.parent() or { panic('VERIFY(has_style_or_parent_with_style())') }
 	}
-	parent := n.parent() or { panic('VERIFY(has_style_or_parent_with_style())') }
-	return parent.computed_values()
+	return unsafe { &NodeWithStyle(current) }.computed_values()
 }
 
 pub fn (n &Node) first_available_font() &platform.Font {
