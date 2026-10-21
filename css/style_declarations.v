@@ -443,9 +443,8 @@ pub fn parse_custom_property_value(value string) &dom.StyleValue {
 }
 
 fn parse_custom_property_components(values []ComponentValue, original_text string) &dom.StyleValue {
-	mut parser := Parser{component_values: values}
 	mut tokens := ComponentValueStream.new(values)
-	if keyword := parser.parse_css_wide_keyword_value(mut tokens) {
+	if keyword := parse_css_wide_keyword_value(mut tokens) {
 		tokens.consume_whitespace()
 		if tokens.is_empty() {
 			return dom_style_value_from_value_logic(keyword)

@@ -889,7 +889,7 @@ fn (mut parser Parser) parse_css_value_tokens(property_id PropertyID, mut tokens
 		return StyleValue(UnresolvedStyleValue.create_with_presence(remaining, substitution_presence, none))
 	}
 	// CSS-wide keywords can be used as the entire value of any property.
-	if value := parser.parse_css_wide_keyword_value(mut tokens) {
+	if value := parse_css_wide_keyword_value(mut tokens) {
 		if !tokens.has_more_tokens() {
 			return value
 		}
@@ -2011,7 +2011,7 @@ fn (mut parser Parser) parse_line_clamp_shorthand(property_id PropertyID, mut to
 	]))
 }
 
-fn (mut parser Parser) parse_css_wide_keyword_value(mut tokens ComponentValueStream) ?StyleValue {
+fn parse_css_wide_keyword_value(mut tokens ComponentValueStream) ?StyleValue {
 	// Use a transaction so the tokens are only consumed on success; otherwise a
 	// failed CSS-wide-keyword probe would swallow the first token of the value.
 	mut transaction := tokens.clone()

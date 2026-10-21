@@ -3892,12 +3892,46 @@ pub fn to_arbitrary_substitution_function(name string) ?ArbitrarySubstitutionFun
 // the parser boundary gives properties, descriptors, syntax parsing, and Typed
 // OM one recursive implementation for inspecting component values.
 pub fn collect_arbitrary_substitution_function_presence(values []ComponentValue, mut presence SubstitutionFunctionsPresence) ! {
+	$if prealloc {
+		scratch := platform.begin_thread_scratch('CSS substitution validation')
+		collect_substitution_presence_in_workspace(values, mut presence) or {
+			code := err.code()
+			scratch.leave()
+			message := err.msg().clone()
+			scratch.finish()
+			return error_with_code(message, code)
+		}
+		scratch.finish()
+		return
+	}
+	collect_substitution_presence_in_workspace(values, mut presence)!
+}
+
+fn collect_substitution_presence_in_workspace(values []ComponentValue, mut presence SubstitutionFunctionsPresence) ! {
 	for value in values {
-		collect_arbitrary_substitution_function_presence_from_component(value, mut presence)!
+		collect_substitution_presence_from_component_in_workspace(value, mut presence)!
 	}
 }
 
 fn collect_arbitrary_substitution_function_presence_from_component(value ComponentValue, mut presence SubstitutionFunctionsPresence) ! {
+	$if prealloc {
+		scratch := platform.begin_thread_scratch('CSS substitution validation')
+		collect_substitution_presence_from_component_in_workspace(value, mut presence) or {
+			code := err.code()
+			scratch.leave()
+			message := err.msg().clone()
+			scratch.finish()
+			return error_with_code(message, code)
+		}
+		scratch.finish()
+		return
+	}
+	collect_substitution_presence_from_component_in_workspace(value, mut presence)!
+}
+
+// Argument parsers produce temporary grammar records; only these scalar flags
+// escape. Recursion stays inside the same workspace and never publishes tokens.
+fn collect_substitution_presence_from_component_in_workspace(value ComponentValue, mut presence SubstitutionFunctionsPresence) ! {
 	if value.is_function() {
 		function := value.function()
 		if is_a_custom_property_name_string(function.name) {
@@ -3925,9 +3959,9 @@ fn collect_arbitrary_substitution_function_presence_from_component(value Compone
 				}
 			}
 		}
-		collect_arbitrary_substitution_function_presence(function.value, mut presence)!
+		collect_substitution_presence_in_workspace(function.value, mut presence)!
 	} else if value.is_block() {
-		collect_arbitrary_substitution_function_presence(value.block().value, mut presence)!
+		collect_substitution_presence_in_workspace(value.block().value, mut presence)!
 	}
 }
 
