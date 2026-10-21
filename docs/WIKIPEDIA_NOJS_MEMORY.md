@@ -16,9 +16,9 @@ in its protocol. Explicit historic Boehm comparisons require `--allocator boehm`
 
 ### Corrected arena before/after: 50 MB remains unmet
 
-The latest three alternating optimized pairs measure **142.84 → 132.24 MB**,
-a **7.42% reduction**. The largest candidate settled observation is
-**132,416,928 bytes**. The **50,000,000-byte limit still fails**. All six raw
+The latest three alternating optimized pairs measure **127.22 → 118.85 MB**,
+a **6.58% reduction**. The largest candidate settled observation is
+**119,014,864 bytes**. The **50,000,000-byte limit still fails**. All six raw
 viewport images match, all frozen-input guards pass, and all six script audits
 report no page runtime, sources, source bytes or preloaded scripts.
 
@@ -26,15 +26,20 @@ report no page runtime, sources, source bytes or preloaded scripts.
 | --- | ---: | ---: | ---: |
 | Text, parser and decoder lifetimes | 157,959,656 bytes | 142,624,256 bytes | 9.71% |
 | Fixed markers and embedded SVG ownership | 142,837,224 bytes | 132,236,728 bytes | 7.42% |
+| Full-pass style invalidation and static paint templates | 132,433,384 bytes | 127,288,808 bytes | 3.88% |
+| SVG path parsing, formatting and paint projection workspaces | 127,223,248 bytes | 118,851,024 bytes | 6.58% |
 
 Each row is its own three-pair cohort; these are aggregate build comparisons,
 not isolated savings attributed to individual commits. Evidence is in
 `Build/wikipedia-50mb/arena-text-lifetimes-paired2/` and
-`Build/wikipedia-50mb/arena-svg-lifetimes-paired/`, including summaries, raw
+`Build/wikipedia-50mb/arena-svg-lifetimes-paired/`, followed by
+`arena-static-paint-paired/` and `arena-svg-workspace-paired/`, including summaries, raw
 process samples, allocator checks, resource audits and captures. Matching
 `arena-{text,svg}-lifetimes-build-protocol.json` files pin the complete source
-inputs, current compiler and native libraries. The SVG candidate's sampled
-launch peaks are 570.5–572.0 MB, so this is a settled-memory reduction.
+inputs, current compiler and native libraries. The two later build protocols are
+`arena-static-paint-build-protocol.json` and `arena-svg-workspace-build-protocol.json`.
+The latest candidate's sampled launch peaks are 551.4–557.3 MB, so this is a
+settled-memory reduction.
 
 The changes retire stylesheet tokenizer/rule workspaces and raster-decoder
 intermediates, avoid UTF-16 buffers for whole text replacement, reuse parser
@@ -46,6 +51,13 @@ checks cover each completed change; later unmeasured changes receive no RAM
 credit here. These private signed measurement bundles preserve the canonical
 installed app.
 
+The later cohorts also skip selective mutation histories during a pending full
+style pass, avoid duplicate native static-page paint templates, reuse SVG number
+scanners, parse raw SVG presentation paths directly, and retire numeric-formatting
+buffers and temporary Canvas contours after copying their final strings, packed
+segments and bounds. The scalar CSS length representation and subsequent parser,
+decoding and idle-loop changes are not included in these measured candidates.
+
 The conditions below also apply to these cohorts: `-prealloc -gc none`, optimized
 C, the unchanged 40-file cache, 1024×768 CSS pixels at DPR 2, a visible background
 window, and simultaneous app/descendant physical footprint measured before PNG
@@ -55,12 +67,12 @@ Reproduce the latest cohort with:
 
 ```sh
 python3 tools/benchmark_wikipedia_memory.py \
-  --before Build/wikipedia-50mb/arena-text-lifetimes.app/Contents/MacOS/Vox \
-  --after Build/wikipedia-50mb/arena-svg-lifetimes.app/Contents/MacOS/Vox \
+  --before Build/wikipedia-50mb/arena-static-paint.app/Contents/MacOS/Vox \
+  --after Build/wikipedia-50mb/arena-svg-workspace.app/Contents/MacOS/Vox \
   --cache Build/wikipedia-100mb/cache \
   --network-deny Build/pikabu-instructions-network-deny.dylib \
   --activity background --repeat 3 --allocator prealloc \
-  --output Build/wikipedia-50mb/arena-svg-recheck
+  --output Build/wikipedia-50mb/arena-svg-workspace-recheck
 ```
 
 The command exits nonzero while the 50 MB budget is exceeded.
