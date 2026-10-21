@@ -17,8 +17,8 @@ in its protocol. Explicit historic Boehm comparisons require `--allocator boehm`
 ### Corrected arena before/after: 50 MB remains unmet
 
 The latest V-source comparison, three alternating optimized pairs, measures
-**85.41 → 84.00 MB**, a **1.65% reduction**. The largest candidate settled
-observation is **84,362,680 bytes**. The **50,000,000-byte limit still fails**.
+**84.00 → 82.84 MB**, a **1.38% reduction**. The largest candidate settled
+observation is **83,051,912 bytes**. The **50,000,000-byte limit still fails**.
 All six raw viewport images match, all frozen-input guards pass, and all six script audits
 report no page runtime, sources, source bytes or preloaded scripts.
 
@@ -43,6 +43,7 @@ report no page runtime, sources, source bytes or preloaded scripts.
 | Updated native wrappers with unchanged V code/data | 88,229,256 bytes | 88,163,744 bytes | 0.07% |
 | Retained geometry, scalar background queries, stylesheet and parser workspaces, geometry bounds | 87,819,656 bytes | 85,394,824 bytes | 2.76% |
 | ASCII names, reusable scratch descriptors and numeric counter keys | 85,411,208 bytes | 84,002,160 bytes | 1.65% |
+| Local SVG transforms, slimmer nodes and static layout queries | 84,002,208 bytes | 82,838,872 bytes | 1.38% |
 
 Each row is its own three-pair cohort; these are aggregate build comparisons,
 not isolated savings attributed to individual commits. Evidence is in
@@ -56,7 +57,7 @@ not isolated savings attributed to individual commits. Evidence is in
 `arena-style-lists-paired/`, `arena-initial-snapshots-paired/` and
 `arena-native-font-idle-paired/`, `arena-glyph-index-fonts-paired/` and
 `arena-native-frame-pool-paired/`, `arena-match-text-geometry2-paired/` and
-`arena-scratch-counter-keys-paired/`, including summaries, raw
+`arena-scratch-counter-keys-paired/` and `arena-static-layout-queries-paired/`, including summaries, raw
 process samples, allocator checks, resource audits and captures. Matching
 `arena-{text,svg}-lifetimes-build-protocol.json` files pin the complete source
 inputs, current compiler and native libraries. The static-paint and SVG protocols are
@@ -278,7 +279,7 @@ executable SHA-256 is
 Later ASCII name validation and reusable scratch descriptors are excluded.
 The canonical installed application remains untouched.
 
-The latest `arena-scratch-counter-keys` cohort freezes `e6c3b06a` plus two
+The `arena-scratch-counter-keys` cohort freezes `e6c3b06a` plus two
 counter-key overlays, authenticated against committed `1b469a16`. It includes
 the intervening committed source and keeps the same native libraries. ASCII
 name validation avoids rune and delimiter vectors on its ordinary path.
@@ -301,6 +302,23 @@ pass. Sampled launch peaks are 489.88–492.90 MB. The settled and peak 50 MB
 budgets both remain unmet. Later local SVG-transform projection is excluded,
 and the canonical installed bundle remains untouched.
 
+The latest `arena-static-layout-queries` cohort freezes `2190b5c6` plus two
+scroll-snap overlays authenticated against committed `23eaec44`. It includes
+local SVG-transform projections, removal of the duplicate listener-type array
+from every DOM node, borrowed line-box queries, fixed pseudo-element inventories
+and a no-work scroll-snap preflight. Their selections pass 9, 10, 8, 7 and 14
+cases respectively in both allocator modes plus poisoning. It retains the same
+native providers; intervening committed source is included in this aggregate
+comparison. Later anonymous layout-cache interning is excluded.
+
+Its generated C SHA-256 is
+`43b1cfc387296d3f913e5a00f4712d68cd4239d74fe8821e7f9fd1bace986179`;
+the signed executable is
+`f6195e412e384b25a0d9ff3268fad8fb04aa0be44deb1f2c504c78404f11aa4a`.
+Signing, startup, all six raw viewport hashes, script audits and input guards
+pass. Sampled launch peaks are 488.90–491.24 MB. The settled and peak 50 MB
+budgets both remain unmet. The canonical installed bundle remains untouched.
+
 The conditions below also apply to these cohorts: `-prealloc -gc none`, optimized
 C, the unchanged 40-file cache, 1024×768 CSS pixels at DPR 2, a visible background
 window, and simultaneous app/descendant physical footprint measured before PNG
@@ -310,12 +328,12 @@ Reproduce the latest V-source cohort with:
 
 ```sh
 python3 tools/benchmark_wikipedia_memory.py \
-  --before Build/wikipedia-50mb/arena-match-text-geometry2.app/Contents/MacOS/Vox \
-  --after Build/wikipedia-50mb/arena-scratch-counter-keys.app/Contents/MacOS/Vox \
+  --before Build/wikipedia-50mb/arena-scratch-counter-keys.app/Contents/MacOS/Vox \
+  --after Build/wikipedia-50mb/arena-static-layout-queries.app/Contents/MacOS/Vox \
   --cache Build/wikipedia-100mb/cache \
   --network-deny Build/pikabu-instructions-network-deny.dylib \
   --activity background --repeat 3 --allocator prealloc \
-  --output Build/wikipedia-50mb/arena-scratch-counter-keys-recheck
+  --output Build/wikipedia-50mb/arena-static-layout-queries-recheck
 ```
 
 The command exits nonzero while the 50 MB budget is exceeded.
