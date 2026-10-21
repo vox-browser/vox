@@ -1099,8 +1099,15 @@ mut:
 
 fn (mut store UsedValuesPagedStore) ensure_capacity(count u32) {
 	required_page_count := int((count + layout_state_page_size - 1) >> layout_state_page_bits)
-	for store.pages.len < required_page_count {
-		store.pages << unsafe { &UsedValuesPage(nil) }
+	old_length := store.pages.len
+	if required_page_count <= old_length {
+		return
+	}
+	// grow_len leaves the new slots uninitialized. Fill them before exposing
+	// the directory to a lookup, allocation, or traversal.
+	unsafe { store.pages.grow_len(required_page_count - old_length) }
+	for index in old_length .. required_page_count {
+		store.pages[index] = unsafe { &UsedValuesPage(nil) }
 	}
 }
 
