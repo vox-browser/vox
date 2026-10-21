@@ -14499,6 +14499,62 @@ additional coverage or credit for unrelated current-source changes.
 Chrome parity remains unestablished: prior Chrome observations use different
 endpoints/content. Equivalent content and endpoint accounting are still needed.
 
+## Retain context-independent size resolution as a rejected local attempt
+
+Round148 applies complete feature `7d16089e` to accepted147:one exact
+original runtime Git hunk changes the whole `resolve_layout_size()` function.
+Absolute lengths/plain percentages retain the same `Size.to_px()` resolver
+and actual payload semantics without unused font/viewport preparation. Every
+other runtime source hash remains unchanged; whole authored before/after
+files reconstruct exactly. Independent Root changes, spacing, decoding,
+filtering and tokenizer arenas are excluded; no source projection is used.
+
+The three exact original focused cases pass C-O2 in both GC modes with
+**1,301 assertions each**. Explicit units and fractional percentages plus the
+unchanged full-context oracle cover signed values, truncation, saturation,
+font/calculated values, absent/mismatched numeric payloads, keyword rejection
+and content/border-box edge/clamp behavior. Complete immutable runtime/fixture
+hashes match the earlier successful jobs, which are reused without repeating
+a case. Common12 cases pass60 assertions per configuration; unchanged
+147-final supplies before. The original fixture's two typing errors have
+actual driver1/zero cases eachGC; corrected cases ran only after those
+pre-runtime failures. No modern-Root compiler pass is inferred.
+
+The unchanged canonical147 scene is sealed before any148 counter build or
+sample:64 Unicode paragraphs,128 indentation blocks,192 independent checks.
+Setup,eight warmups,forced GC/assertions remain outside the counter;16 complete
+public parse/layout/record/paint-command/hit/finalize pipelines are inside.
+Three fixed alternating pairs give medians **32,174,392,817 →
+32,215,560,166 retired instructions**, **0.12795066%
+more**, **1/3 wins**. All six actual exits0 and checksum7,963,486,608 match.
+Both slower pairs and the faster last pair remain. No completed measurement
+is discarded, filtered, extended or rerun.
+
+The actual local gate1 and native launcher1 reject the attempt with zero jobs.
+The gate's inherited error text says142; actual frozen control/provenance and
+ledger are147. **No normal native candidate, profile, page primary,
+independent strict C audit, screenshot,broad suite,bundle or GC pass is
+claimed for148.** Its predeclared30-pair browser cohort/seed148/30,000 resamples
+never starts. Normal C-only frontend/typechecking exits0. Unreleased tools
+remain drafts; source/focused/local/frontend hashes and durable archives are
+indexed by `Build/v/instruction-opt148-durable-archives.json`.
+
+SSD space became small during concurrent work. Only owned completed expanded
+scratch was removed after authenticating durable archives byte for byte.
+Logs,actual exits,source,binaries/apps and foreign work remain. A private8GiB
+RAM volume was prepared for still-unstarted native/profile/independent compiler
+scratch; the rejected gate leaves it unused. Both local variants compile and
+run from their unchanged SSD scratch. A placement precondition rejected an
+attempt after local compilation had begun, with zero mutations to active
+paths. Frozen cache,endpoint and cohort are unchanged. The unused full-page
+documentation generator also had a syntax failure before producing files or
+changing Git; original source/failure is retained.
+
+Accepted control,broad baseline and verified isolated app remain147; observed
+carry and repeatable page credit stay0. The committed feature earns no accepted
+hardware saving. Canonical app,GUI and concurrent work are preserved. Chrome
+parity remains unestablished; equivalent content/endpoint accounting is needed.
+
 ## Causes and changes
 
 - The V 0.5.2 compatibility compiler's `-prod` Boehm code repeatedly snapshots
