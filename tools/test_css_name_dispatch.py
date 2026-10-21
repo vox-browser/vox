@@ -8,6 +8,11 @@ import unittest
 ROOT = Path(__file__).resolve().parents[1]
 
 
+def lookup_rows(source, result):
+    return re.findall(r"'([^']+)'\s*\{\s*value = " + result
+                      + r"\.([a-z0-9_]+)\s+found = true\s*\}", source)
+
+
 def load(name):
     spec = importlib.util.spec_from_file_location(name, ROOT / 'tools' / (name + '.py'))
     module = importlib.util.module_from_spec(spec)
@@ -23,7 +28,7 @@ class CSSNameDispatchTests(unittest.TestCase):
         for tool in ['generate_css_keywords', 'generate_css_calculation_metadata']:
             output = load(tool).dispatched_lookup(rows, 'name', 'Keyword')
             outputs.append(output)
-            self.assertEqual(sorted(re.findall(r"'([^']+)' \{ Keyword\.([a-z0-9_]+) \}", output)), sorted(rows))
+            self.assertEqual(sorted(lookup_rows(output, 'Keyword')), sorted(rows))
             self.assertIn('match name.len {', output)
             self.assertIn('match name[0] {', output)
             self.assertLess(output.index('match name.len {'), output.index('match name[0] {'))
@@ -36,10 +41,27 @@ class CSSNameDispatchTests(unittest.TestCase):
         start = source.index('pub fn keyword_from_string(')
         end = source.index('// --- StyleValue ---', start)
         body = source[start:end]
-        rows = re.findall(r"'([^']+)'\s*\{\s*Keyword\.([a-z0-9_]+)\s*\}", body)
+        rows = lookup_rows(body, 'Keyword')
         self.assertGreater(len(rows), 800)
         generated = load('generate_css_keywords').dispatched_lookup(rows, 'name', 'Keyword')
-        self.assertEqual(sorted(rows), sorted(re.findall(r"'([^']+)' \{ Keyword\.([a-z0-9_]+) \}", generated)))
+        self.assertEqual(sorted(rows), sorted(lookup_rows(generated, 'Keyword')))
+
+    def test_dispatch_is_independent_of_input_order_and_preserves_the_caller_rows(self):
+        rows = [('inherit', 'inherit'), ('inline', 'inline_'), ('initial', 'initial'),
+                ('inside', 'inside'), ('invert', 'invert')]
+        original = rows.copy()
+        for name in ['generate_css_keywords', 'generate_css_calculation_metadata']:
+            tool = load(name)
+            forward = tool.dispatched_lookup(rows, 'name', 'Keyword')
+            reverse = tool.dispatched_lookup(list(reversed(rows)), 'name', 'Keyword')
+            self.assertEqual(forward, reverse)
+            self.assertEqual(rows, original)
+            self.assertEqual(sorted(lookup_rows(forward, 'Keyword')), sorted(rows))
+
+    def test_empty_dispatch_returns_none_without_reading_an_initial_byte(self):
+        for name in ['generate_css_keywords', 'generate_css_calculation_metadata']:
+            output = load(name).dispatched_lookup([], 'name', 'Keyword')
+            self.assertEqual(output, '\treturn none\n')
 
     def test_property_generator_uses_identical_dispatch_without_legacy_alias_entries(self):
         tool = load('generate_css_calculation_metadata')

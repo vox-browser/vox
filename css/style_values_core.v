@@ -2990,27 +2990,37 @@ pub fn string_from_keyword(keyword Keyword) string {
 
 pub fn keyword_from_string(input string) ?Keyword {
 	name := to_ascii_lowercase(input)
-	// Reject unrelated names before comparing complete strings. These integer
-	// switches use no runtime table or retained allocation.
+	// Keep bucket selection scalar; wrap the result once after a full match.
+	mut value := Keyword.negative_infinity
+	mut found := false
 	match name.len {
 		1 {
 			match name[0] {
 				0x65 {
-					return match name {
-						'e' { Keyword.e }
-						else { none }
+					match name {
+						'e' {
+							value = Keyword.e
+							found = true
+						}
+						else {}
 					}
 				}
 				0x78 {
-					return match name {
-						'x' { Keyword.x }
-						else { none }
+					match name {
+						'x' {
+							value = Keyword.x
+							found = true
+						}
+						else {}
 					}
 				}
 				0x79 {
-					return match name {
-						'y' { Keyword.y }
-						else { none }
+					match name {
+						'y' {
+							value = Keyword.y
+							found = true
+						}
+						else {}
 					}
 				}
 				else {}
@@ -3019,37 +3029,64 @@ pub fn keyword_from_string(input string) ?Keyword {
 		2 {
 			match name[0] {
 				0x61 {
-					return match name {
-						'a3' { Keyword.a3 }
-						'a4' { Keyword.a4 }
-						'a5' { Keyword.a5 }
-						else { none }
+					match name {
+						'a3' {
+							value = Keyword.a3
+							found = true
+						}
+						'a4' {
+							value = Keyword.a4
+							found = true
+						}
+						'a5' {
+							value = Keyword.a5
+							found = true
+						}
+						else {}
 					}
 				}
 				0x62 {
-					return match name {
-						'b4' { Keyword.b4 }
-						'b5' { Keyword.b5 }
-						else { none }
+					match name {
+						'b4' {
+							value = Keyword.b4
+							found = true
+						}
+						'b5' {
+							value = Keyword.b5
+							found = true
+						}
+						else {}
 					}
 				}
 				0x6f {
-					return match name {
-						'on' { Keyword.on }
-						else { none }
+					match name {
+						'on' {
+							value = Keyword.on
+							found = true
+						}
+						else {}
 					}
 				}
 				0x70 {
-					return match name {
-						'p3' { Keyword.p3 }
-						'pi' { Keyword.pi }
-						else { none }
+					match name {
+						'p3' {
+							value = Keyword.p3
+							found = true
+						}
+						'pi' {
+							value = Keyword.pi
+							found = true
+						}
+						else {}
 					}
 				}
 				0x75 {
-					return match name {
-						'up' { Keyword.up }
-						else { none }
+					match name {
+						'up' {
+							value = Keyword.up
+							found = true
+						}
+						else {}
 					}
 				}
 				else {}
@@ -3058,83 +3095,143 @@ pub fn keyword_from_string(input string) ?Keyword {
 		3 {
 			match name[0] {
 				0x61 {
-					return match name {
-						'add' { Keyword.add }
-						'all' { Keyword.all }
-						'ari' { Keyword.ari }
-						else { none }
+					match name {
+						'add' {
+							value = Keyword.add
+							found = true
+						}
+						'all' {
+							value = Keyword.all
+							found = true
+						}
+						'ari' {
+							value = Keyword.ari
+							found = true
+						}
+						else {}
 					}
 				}
 				0x65 {
-					return match name {
-						'end' { Keyword.end_ }
-						else { none }
+					match name {
+						'end' {
+							value = Keyword.end_
+							found = true
+						}
+						else {}
 					}
 				}
 				0x68 {
-					return match name {
-						'hsl' { Keyword.hsl }
-						'hue' { Keyword.hue }
-						'hwb' { Keyword.hwb }
-						else { none }
+					match name {
+						'hsl' {
+							value = Keyword.hsl
+							found = true
+						}
+						'hue' {
+							value = Keyword.hue
+							found = true
+						}
+						'hwb' {
+							value = Keyword.hwb
+							found = true
+						}
+						else {}
 					}
 				}
 				0x6c {
-					return match name {
-						'lao' { Keyword.lao }
-						'lab' { Keyword.lab }
-						'lch' { Keyword.lch }
-						'ltr' { Keyword.ltr }
-						else { none }
+					match name {
+						'lab' {
+							value = Keyword.lab
+							found = true
+						}
+						'lao' {
+							value = Keyword.lao
+							found = true
+						}
+						'lch' {
+							value = Keyword.lch
+							found = true
+						}
+						'ltr' {
+							value = Keyword.ltr
+							found = true
+						}
+						else {}
 					}
 				}
 				0x6d {
-					return match name {
-						'mro' { Keyword.mro }
-						else { none }
+					match name {
+						'mro' {
+							value = Keyword.mro
+							found = true
+						}
+						else {}
 					}
 				}
 				0x6e {
-					return match name {
-						'nan' { Keyword.nan }
-						else { none }
+					match name {
+						'nan' {
+							value = Keyword.nan
+							found = true
+						}
+						else {}
 					}
 				}
 				0x6f {
-					return match name {
-						'off' { Keyword.off }
-						else { none }
+					match name {
+						'off' {
+							value = Keyword.off
+							found = true
+						}
+						else {}
 					}
 				}
 				0x70 {
-					return match name {
-						'pre' { Keyword.pre }
-						else { none }
+					match name {
+						'pre' {
+							value = Keyword.pre
+							found = true
+						}
+						else {}
 					}
 				}
 				0x72 {
-					return match name {
-						'row' { Keyword.row }
-						'rtl' { Keyword.rtl }
-						else { none }
+					match name {
+						'row' {
+							value = Keyword.row
+							found = true
+						}
+						'rtl' {
+							value = Keyword.rtl
+							found = true
+						}
+						else {}
 					}
 				}
 				0x73 {
-					return match name {
-						'sub' { Keyword.sub }
-						else { none }
+					match name {
+						'sub' {
+							value = Keyword.sub
+							found = true
+						}
+						else {}
 					}
 				}
 				0x74 {
-					return match name {
-						'top' { Keyword.top }
-						else { none }
+					match name {
+						'top' {
+							value = Keyword.top
+							found = true
+						}
+						else {}
 					}
 				}
 				0x78 {
-					return match name {
-						'xyz' { Keyword.xyz }
-						else { none }
+					match name {
+						'xyz' {
+							value = Keyword.xyz
+							found = true
+						}
+						else {}
 					}
 				}
 				else {}
@@ -3143,154 +3240,337 @@ pub fn keyword_from_string(input string) ?Keyword {
 		4 {
 			match name[0] {
 				0x61 {
-					return match name {
-						'afar' { Keyword.afar }
-						'agaw' { Keyword.agaw }
-						'auto' { Keyword.auto }
-						else { none }
+					match name {
+						'afar' {
+							value = Keyword.afar
+							found = true
+						}
+						'agaw' {
+							value = Keyword.agaw
+							found = true
+						}
+						'auto' {
+							value = Keyword.auto
+							found = true
+						}
+						else {}
 					}
 				}
 				0x62 {
-					return match name {
-						'back' { Keyword.back }
-						'blin' { Keyword.blin }
-						'bodo' { Keyword.bodo }
-						'bold' { Keyword.bold }
-						'both' { Keyword.both }
-						'butt' { Keyword.butt }
-						else { none }
+					match name {
+						'back' {
+							value = Keyword.back
+							found = true
+						}
+						'blin' {
+							value = Keyword.blin
+							found = true
+						}
+						'bodo' {
+							value = Keyword.bodo
+							found = true
+						}
+						'bold' {
+							value = Keyword.bold
+							found = true
+						}
+						'both' {
+							value = Keyword.both
+							found = true
+						}
+						'butt' {
+							value = Keyword.butt
+							found = true
+						}
+						else {}
 					}
 				}
 				0x63 {
-					return match name {
-						'cell' { Keyword.cell }
-						'clip' { Keyword.clip }
-						'copy' { Keyword.copy }
-						'crop' { Keyword.crop }
-						else { none }
+					match name {
+						'cell' {
+							value = Keyword.cell
+							found = true
+						}
+						'clip' {
+							value = Keyword.clip
+							found = true
+						}
+						'copy' {
+							value = Keyword.copy
+							found = true
+						}
+						'crop' {
+							value = Keyword.crop
+							found = true
+						}
+						else {}
 					}
 				}
 				0x64 {
-					return match name {
-						'dark' { Keyword.dark }
-						'disc' { Keyword.disc }
-						'dizi' { Keyword.dizi }
-						'down' { Keyword.down }
-						else { none }
+					match name {
+						'dark' {
+							value = Keyword.dark
+							found = true
+						}
+						'disc' {
+							value = Keyword.disc
+							found = true
+						}
+						'dizi' {
+							value = Keyword.dizi
+							found = true
+						}
+						'down' {
+							value = Keyword.down
+							found = true
+						}
+						else {}
 					}
 				}
 				0x65 {
-					return match name {
-						'ease' { Keyword.ease }
-						'else' { Keyword.else_ }
-						else { none }
+					match name {
+						'ease' {
+							value = Keyword.ease
+							found = true
+						}
+						'else' {
+							value = Keyword.else_
+							found = true
+						}
+						else {}
 					}
 				}
 				0x66 {
-					return match name {
-						'fast' { Keyword.fast }
-						'fill' { Keyword.fill }
-						'fine' { Keyword.fine }
-						'flat' { Keyword.flat }
-						'flex' { Keyword.flex }
-						'flow' { Keyword.flow }
-						else { none }
+					match name {
+						'fast' {
+							value = Keyword.fast
+							found = true
+						}
+						'fill' {
+							value = Keyword.fill
+							found = true
+						}
+						'fine' {
+							value = Keyword.fine
+							found = true
+						}
+						'flat' {
+							value = Keyword.flat
+							found = true
+						}
+						'flex' {
+							value = Keyword.flex
+							found = true
+						}
+						'flow' {
+							value = Keyword.flow
+							found = true
+						}
+						else {}
 					}
 				}
 				0x67 {
-					return match name {
-						'grab' { Keyword.grab }
-						'grid' { Keyword.grid }
-						else { none }
+					match name {
+						'grab' {
+							value = Keyword.grab
+							found = true
+						}
+						'grid' {
+							value = Keyword.grid
+							found = true
+						}
+						else {}
 					}
 				}
 				0x68 {
-					return match name {
-						'help' { Keyword.help }
-						'hide' { Keyword.hide }
-						'high' { Keyword.high }
-						else { none }
+					match name {
+						'help' {
+							value = Keyword.help
+							found = true
+						}
+						'hide' {
+							value = Keyword.hide
+							found = true
+						}
+						'high' {
+							value = Keyword.high
+							found = true
+						}
+						else {}
 					}
 				}
 				0x6c {
-					return match name {
-						'left' { Keyword.left }
-						'less' { Keyword.less }
-						else { none }
+					match name {
+						'left' {
+							value = Keyword.left
+							found = true
+						}
+						'less' {
+							value = Keyword.less
+							found = true
+						}
+						else {}
 					}
 				}
 				0x6d {
-					return match name {
-						'mark' { Keyword.mark }
-						'math' { Keyword.math }
-						'meen' { Keyword.meen }
-						'menu' { Keyword.menu }
-						'more' { Keyword.more }
-						'move' { Keyword.move }
-						else { none }
+					match name {
+						'mark' {
+							value = Keyword.mark
+							found = true
+						}
+						'math' {
+							value = Keyword.math
+							found = true
+						}
+						'meen' {
+							value = Keyword.meen
+							found = true
+						}
+						'menu' {
+							value = Keyword.menu
+							found = true
+						}
+						'more' {
+							value = Keyword.more
+							found = true
+						}
+						'move' {
+							value = Keyword.move
+							found = true
+						}
+						else {}
 					}
 				}
 				0x6e {
-					return match name {
-						'newa' { Keyword.newa }
-						'none' { Keyword.none_ }
-						else { none }
+					match name {
+						'newa' {
+							value = Keyword.newa
+							found = true
+						}
+						'none' {
+							value = Keyword.none_
+							found = true
+						}
+						else {}
 					}
 				}
 				0x6f {
-					return match name {
-						'odia' { Keyword.odia }
-						else { none }
+					match name {
+						'odia' {
+							value = Keyword.odia
+							found = true
+						}
+						else {}
 					}
 				}
 				0x70 {
-					return match name {
-						'page' { Keyword.page }
-						else { none }
+					match name {
+						'page' {
+							value = Keyword.page
+							found = true
+						}
+						else {}
 					}
 				}
 				0x72 {
-					return match name {
-						'root' { Keyword.root }
-						'ruby' { Keyword.ruby }
-						else { none }
+					match name {
+						'root' {
+							value = Keyword.root
+							found = true
+						}
+						'ruby' {
+							value = Keyword.ruby
+							found = true
+						}
+						else {}
 					}
 				}
 				0x73 {
-					return match name {
-						'safe' { Keyword.safe }
-						'saho' { Keyword.saho }
-						'self' { Keyword.self }
-						'shan' { Keyword.shan }
-						'show' { Keyword.show }
-						'size' { Keyword.size }
-						'slow' { Keyword.slow }
-						'srgb' { Keyword.srgb }
-						'swap' { Keyword.swap }
-						else { none }
+					match name {
+						'safe' {
+							value = Keyword.safe
+							found = true
+						}
+						'saho' {
+							value = Keyword.saho
+							found = true
+						}
+						'self' {
+							value = Keyword.self
+							found = true
+						}
+						'shan' {
+							value = Keyword.shan
+							found = true
+						}
+						'show' {
+							value = Keyword.show
+							found = true
+						}
+						'size' {
+							value = Keyword.size
+							found = true
+						}
+						'slow' {
+							value = Keyword.slow
+							found = true
+						}
+						'srgb' {
+							value = Keyword.srgb
+							found = true
+						}
+						'swap' {
+							value = Keyword.swap
+							found = true
+						}
+						else {}
 					}
 				}
 				0x74 {
-					return match name {
-						'text' { Keyword.text }
-						'thai' { Keyword.thai }
-						'thin' { Keyword.thin }
-						'true' { Keyword.true_ }
-						else { none }
+					match name {
+						'text' {
+							value = Keyword.text
+							found = true
+						}
+						'thai' {
+							value = Keyword.thai
+							found = true
+						}
+						'thin' {
+							value = Keyword.thin
+							found = true
+						}
+						'true' {
+							value = Keyword.true_
+							found = true
+						}
+						else {}
 					}
 				}
 				0x75 {
-					return match name {
-						'urdu' { Keyword.urdu }
-						else { none }
+					match name {
+						'urdu' {
+							value = Keyword.urdu
+							found = true
+						}
+						else {}
 					}
 				}
 				0x77 {
-					return match name {
-						'wait' { Keyword.wait }
-						'wavy' { Keyword.wavy }
-						'wrap' { Keyword.wrap }
-						else { none }
+					match name {
+						'wait' {
+							value = Keyword.wait
+							found = true
+						}
+						'wavy' {
+							value = Keyword.wavy
+							found = true
+						}
+						'wrap' {
+							value = Keyword.wrap
+							found = true
+						}
+						else {}
 					}
 				}
 				else {}
@@ -3299,198 +3579,423 @@ pub fn keyword_from_string(input string) ?Keyword {
 		5 {
 			match name[0] {
 				0x61 {
-					return match name {
-						'adlam' { Keyword.adlam }
-						'alias' { Keyword.alias }
-						'alpha' { Keyword.alpha }
-						'avoid' { Keyword.avoid }
-						'avar2' { Keyword.avar2 }
-						else { none }
+					match name {
+						'adlam' {
+							value = Keyword.adlam
+							found = true
+						}
+						'alias' {
+							value = Keyword.alias
+							found = true
+						}
+						'alpha' {
+							value = Keyword.alpha
+							found = true
+						}
+						'avar2' {
+							value = Keyword.avar2
+							found = true
+						}
+						'avoid' {
+							value = Keyword.avoid
+							found = true
+						}
+						else {}
 					}
 				}
 				0x62 {
-					return match name {
-						'bamum' { Keyword.bamum }
-						'bevel' { Keyword.bevel }
-						'blink' { Keyword.blink }
-						'block' { Keyword.block }
-						else { none }
+					match name {
+						'bamum' {
+							value = Keyword.bamum
+							found = true
+						}
+						'bevel' {
+							value = Keyword.bevel
+							found = true
+						}
+						'blink' {
+							value = Keyword.blink
+							found = true
+						}
+						'block' {
+							value = Keyword.block
+							found = true
+						}
+						else {}
 					}
 				}
 				0x63 {
-					return match name {
-						'clone' { Keyword.clone }
-						'color' { Keyword.color }
-						'cover' { Keyword.cover }
-						'cross' { Keyword.cross }
-						else { none }
+					match name {
+						'clone' {
+							value = Keyword.clone
+							found = true
+						}
+						'color' {
+							value = Keyword.color
+							found = true
+						}
+						'cover' {
+							value = Keyword.cover
+							found = true
+						}
+						'cross' {
+							value = Keyword.cross
+							found = true
+						}
+						else {}
 					}
 				}
 				0x64 {
-					return match name {
-						'dogri' { Keyword.dogri }
-						else { none }
+					match name {
+						'dogri' {
+							value = Keyword.dogri
+							found = true
+						}
+						else {}
 					}
 				}
 				0x65 {
-					return match name {
-						'embed' { Keyword.embed }
-						'emoji' { Keyword.emoji }
-						else { none }
+					match name {
+						'embed' {
+							value = Keyword.embed
+							found = true
+						}
+						'emoji' {
+							value = Keyword.emoji
+							found = true
+						}
+						else {}
 					}
 				}
 				0x66 {
-					return match name {
-						'false' { Keyword.false_ }
-						'field' { Keyword.field }
-						'fixed' { Keyword.fixed }
-						else { none }
+					match name {
+						'false' {
+							value = Keyword.false_
+							found = true
+						}
+						'field' {
+							value = Keyword.field
+							found = true
+						}
+						'fixed' {
+							value = Keyword.fixed
+							found = true
+						}
+						else {}
 					}
 				}
 				0x67 {
-					return match name {
-						'gedeo' { Keyword.gedeo }
-						'gumuz' { Keyword.gumuz }
-						else { none }
+					match name {
+						'gedeo' {
+							value = Keyword.gedeo
+							found = true
+						}
+						'gumuz' {
+							value = Keyword.gumuz
+							found = true
+						}
+						else {}
 					}
 				}
 				0x68 {
-					return match name {
-						'hindi' { Keyword.hindi }
-						'hover' { Keyword.hover }
-						else { none }
+					match name {
+						'hindi' {
+							value = Keyword.hindi
+							found = true
+						}
+						'hover' {
+							value = Keyword.hover
+							found = true
+						}
+						else {}
 					}
 				}
 				0x69 {
-					return match name {
-						'inset' { Keyword.inset }
-						else { none }
+					match name {
+						'inset' {
+							value = Keyword.inset
+							found = true
+						}
+						else {}
 					}
 				}
 				0x6a {
-					return match name {
-						'jis04' { Keyword.jis04 }
-						'jis78' { Keyword.jis78 }
-						'jis83' { Keyword.jis83 }
-						'jis90' { Keyword.jis90 }
-						else { none }
+					match name {
+						'jis04' {
+							value = Keyword.jis04
+							found = true
+						}
+						'jis78' {
+							value = Keyword.jis78
+							found = true
+						}
+						'jis83' {
+							value = Keyword.jis83
+							found = true
+						}
+						'jis90' {
+							value = Keyword.jis90
+							found = true
+						}
+						else {}
 					}
 				}
 				0x6b {
-					return match name {
-						'kaffa' { Keyword.kaffa }
-						'khmer' { Keyword.khmer }
-						'konso' { Keyword.konso }
-						else { none }
+					match name {
+						'kaffa' {
+							value = Keyword.kaffa
+							found = true
+						}
+						'khmer' {
+							value = Keyword.khmer
+							found = true
+						}
+						'konso' {
+							value = Keyword.konso
+							found = true
+						}
+						else {}
 					}
 				}
 				0x6c {
-					return match name {
-						'large' { Keyword.large }
-						'legal' { Keyword.legal }
-						'light' { Keyword.light }
-						'limbu' { Keyword.limbu }
-						'local' { Keyword.local }
-						else { none }
+					match name {
+						'large' {
+							value = Keyword.large
+							found = true
+						}
+						'legal' {
+							value = Keyword.legal
+							found = true
+						}
+						'light' {
+							value = Keyword.light
+							found = true
+						}
+						'limbu' {
+							value = Keyword.limbu
+							found = true
+						}
+						'local' {
+							value = Keyword.local
+							found = true
+						}
+						else {}
 					}
 				}
 				0x6d {
-					return match name {
-						'meter' { Keyword.meter }
-						'miter' { Keyword.miter }
-						else { none }
+					match name {
+						'meter' {
+							value = Keyword.meter
+							found = true
+						}
+						'miter' {
+							value = Keyword.miter
+							found = true
+						}
+						else {}
 					}
 				}
 				0x6e {
-					return match name {
-						'notch' { Keyword.notch }
-						else { none }
+					match name {
+						'notch' {
+							value = Keyword.notch
+							found = true
+						}
+						else {}
 					}
 				}
 				0x6f {
-					return match name {
-						'octal' { Keyword.octal }
-						'oklab' { Keyword.oklab }
-						'oklch' { Keyword.oklch }
-						'oriya' { Keyword.oriya }
-						'oromo' { Keyword.oromo }
-						else { none }
+					match name {
+						'octal' {
+							value = Keyword.octal
+							found = true
+						}
+						'oklab' {
+							value = Keyword.oklab
+							found = true
+						}
+						'oklch' {
+							value = Keyword.oklch
+							found = true
+						}
+						'oriya' {
+							value = Keyword.oriya
+							found = true
+						}
+						'oromo' {
+							value = Keyword.oromo
+							found = true
+						}
+						else {}
 					}
 				}
 				0x70 {
-					return match name {
-						'paged' { Keyword.paged }
-						'paint' { Keyword.paint }
-						'pan-x' { Keyword.pan_x }
-						'pan-y' { Keyword.pan_y }
-						else { none }
+					match name {
+						'paged' {
+							value = Keyword.paged
+							found = true
+						}
+						'paint' {
+							value = Keyword.paint
+							found = true
+						}
+						'pan-x' {
+							value = Keyword.pan_x
+							found = true
+						}
+						'pan-y' {
+							value = Keyword.pan_y
+							found = true
+						}
+						else {}
 					}
 				}
 				0x72 {
-					return match name {
-						'recto' { Keyword.recto }
-						'radio' { Keyword.radio }
-						'ridge' { Keyword.ridge }
-						'right' { Keyword.right }
-						'round' { Keyword.round }
-						else { none }
+					match name {
+						'radio' {
+							value = Keyword.radio
+							found = true
+						}
+						'recto' {
+							value = Keyword.recto
+							found = true
+						}
+						'ridge' {
+							value = Keyword.ridge
+							found = true
+						}
+						'right' {
+							value = Keyword.right
+							found = true
+						}
+						'round' {
+							value = Keyword.round
+							found = true
+						}
+						else {}
 					}
 				}
 				0x73 {
-					return match name {
-						'slice' { Keyword.slice }
-						'scoop' { Keyword.scoop }
-						'serif' { Keyword.serif }
-						'silti' { Keyword.silti }
-						'small' { Keyword.small }
-						'solid' { Keyword.solid }
-						'space' { Keyword.space }
-						'start' { Keyword.start }
-						'style' { Keyword.style }
-						'super' { Keyword.super }
-						else { none }
+					match name {
+						'scoop' {
+							value = Keyword.scoop
+							found = true
+						}
+						'serif' {
+							value = Keyword.serif
+							found = true
+						}
+						'silti' {
+							value = Keyword.silti
+							found = true
+						}
+						'slice' {
+							value = Keyword.slice
+							found = true
+						}
+						'small' {
+							value = Keyword.small
+							found = true
+						}
+						'solid' {
+							value = Keyword.solid
+							found = true
+						}
+						'space' {
+							value = Keyword.space
+							found = true
+						}
+						'start' {
+							value = Keyword.start
+							found = true
+						}
+						'style' {
+							value = Keyword.style
+							found = true
+						}
+						'super' {
+							value = Keyword.super
+							found = true
+						}
+						else {}
 					}
 				}
 				0x74 {
-					return match name {
-						'table' { Keyword.table }
-						'tamil' { Keyword.tamil }
-						'thick' { Keyword.thick }
-						'tigre' { Keyword.tigre }
-						else { none }
+					match name {
+						'table' {
+							value = Keyword.table
+							found = true
+						}
+						'tamil' {
+							value = Keyword.tamil
+							found = true
+						}
+						'thick' {
+							value = Keyword.thick
+							found = true
+						}
+						'tigre' {
+							value = Keyword.tigre
+							found = true
+						}
+						else {}
 					}
 				}
 				0x75 {
-					return match name {
-						'under' { Keyword.under }
-						'unset' { Keyword.unset }
-						else { none }
+					match name {
+						'under' {
+							value = Keyword.under
+							found = true
+						}
+						'unset' {
+							value = Keyword.unset
+							found = true
+						}
+						else {}
 					}
 				}
 				0x76 {
-					return match name {
-						'verso' { Keyword.verso }
-						else { none }
+					match name {
+						'verso' {
+							value = Keyword.verso
+							found = true
+						}
+						else {}
 					}
 				}
 				0x77 {
-					return match name {
-						'width' { Keyword.width }
-						'words' { Keyword.words }
-						else { none }
+					match name {
+						'width' {
+							value = Keyword.width
+							found = true
+						}
+						'words' {
+							value = Keyword.words
+							found = true
+						}
+						else {}
 					}
 				}
 				0x78 {
-					return match name {
-						'x-end' { Keyword.x_end }
-						else { none }
+					match name {
+						'x-end' {
+							value = Keyword.x_end
+							found = true
+						}
+						else {}
 					}
 				}
 				0x79 {
-					return match name {
-						'y-end' { Keyword.y_end }
-						'yemsa' { Keyword.yemsa }
-						else { none }
+					match name {
+						'y-end' {
+							value = Keyword.y_end
+							found = true
+						}
+						'yemsa' {
+							value = Keyword.yemsa
+							found = true
+						}
+						else {}
 					}
 				}
 				else {}
@@ -3499,174 +4004,387 @@ pub fn keyword_from_string(input string) ?Keyword {
 		6 {
 			match name[0] {
 				0x61 {
-					return match name {
-						'active' { Keyword.active }
-						'always' { Keyword.always }
-						else { none }
+					match name {
+						'active' {
+							value = Keyword.active
+							found = true
+						}
+						'always' {
+							value = Keyword.always
+							found = true
+						}
+						else {}
 					}
 				}
 				0x62 {
-					return match name {
-						'bangla' { Keyword.bangla }
-						'binary' { Keyword.binary }
-						'bolder' { Keyword.bolder }
-						'bottom' { Keyword.bottom }
-						'button' { Keyword.button }
-						else { none }
+					match name {
+						'bangla' {
+							value = Keyword.bangla
+							found = true
+						}
+						'binary' {
+							value = Keyword.binary
+							found = true
+						}
+						'bolder' {
+							value = Keyword.bolder
+							found = true
+						}
+						'bottom' {
+							value = Keyword.bottom
+							found = true
+						}
+						'button' {
+							value = Keyword.button
+							found = true
+						}
+						else {}
 					}
 				}
 				0x63 {
-					return match name {
-						'canvas' { Keyword.canvas }
-						'center' { Keyword.center }
-						'circle' { Keyword.circle }
-						'coarse' { Keyword.coarse }
-						'column' { Keyword.column }
-						'custom' { Keyword.custom }
-						'cyclic' { Keyword.cyclic }
-						else { none }
+					match name {
+						'canvas' {
+							value = Keyword.canvas
+							found = true
+						}
+						'center' {
+							value = Keyword.center
+							found = true
+						}
+						'circle' {
+							value = Keyword.circle
+							found = true
+						}
+						'coarse' {
+							value = Keyword.coarse
+							found = true
+						}
+						'column' {
+							value = Keyword.column
+							found = true
+						}
+						'custom' {
+							value = Keyword.custom
+							found = true
+						}
+						'cyclic' {
+							value = Keyword.cyclic
+							found = true
+						}
+						else {}
 					}
 				}
 				0x64 {
-					return match name {
-						'darken' { Keyword.darken }
-						'dashed' { Keyword.dashed }
-						'dotted' { Keyword.dotted }
-						'double' { Keyword.double_ }
-						else { none }
+					match name {
+						'darken' {
+							value = Keyword.darken
+							found = true
+						}
+						'dashed' {
+							value = Keyword.dashed
+							found = true
+						}
+						'dotted' {
+							value = Keyword.dotted
+							found = true
+						}
+						'double' {
+							value = Keyword.double_
+							found = true
+						}
+						else {}
 					}
 				}
 				0x67 {
-					return match name {
-						'groove' { Keyword.groove }
-						else { none }
+					match name {
+						'groove' {
+							value = Keyword.groove
+							found = true
+						}
+						else {}
 					}
 				}
 				0x68 {
-					return match name {
-						'hangul' { Keyword.hangul }
-						'harari' { Keyword.harari }
-						'hebrew' { Keyword.hebrew }
-						'height' { Keyword.height }
-						'hidden' { Keyword.hidden }
-						else { none }
+					match name {
+						'hangul' {
+							value = Keyword.hangul
+							found = true
+						}
+						'harari' {
+							value = Keyword.harari
+							found = true
+						}
+						'hebrew' {
+							value = Keyword.hebrew
+							found = true
+						}
+						'height' {
+							value = Keyword.height
+							found = true
+						}
+						'hidden' {
+							value = Keyword.hidden
+							found = true
+						}
+						else {}
 					}
 				}
 				0x69 {
-					return match name {
-						'inline' { Keyword.inline_ }
-						'inside' { Keyword.inside }
-						'invert' { Keyword.invert }
-						'italic' { Keyword.italic }
-						else { none }
+					match name {
+						'inline' {
+							value = Keyword.inline_
+							found = true
+						}
+						'inside' {
+							value = Keyword.inside
+							found = true
+						}
+						'invert' {
+							value = Keyword.invert
+							found = true
+						}
+						'italic' {
+							value = Keyword.italic
+							found = true
+						}
+						else {}
 					}
 				}
 				0x6a {
-					return match name {
-						'jis-b4' { Keyword.jis_b4 }
-						'jis-b5' { Keyword.jis_b5 }
-						else { none }
+					match name {
+						'jis-b4' {
+							value = Keyword.jis_b4
+							found = true
+						}
+						'jis-b5' {
+							value = Keyword.jis_b5
+							found = true
+						}
+						else {}
 					}
 				}
 				0x6b {
-					return match name {
-						'kebena' { Keyword.kebena }
-						'kunama' { Keyword.kunama }
-						else { none }
+					match name {
+						'kebena' {
+							value = Keyword.kebena
+							found = true
+						}
+						'kunama' {
+							value = Keyword.kunama
+							found = true
+						}
+						else {}
 					}
 				}
 				0x6c {
-					return match name {
-						'larger' { Keyword.larger }
-						'layout' { Keyword.layout }
-						'ledger' { Keyword.ledger }
-						'legacy' { Keyword.legacy }
-						'lepcha' { Keyword.lepcha }
-						'letter' { Keyword.letter }
-						'linear' { Keyword.linear }
-						'longer' { Keyword.longer }
-						else { none }
+					match name {
+						'larger' {
+							value = Keyword.larger
+							found = true
+						}
+						'layout' {
+							value = Keyword.layout
+							found = true
+						}
+						'ledger' {
+							value = Keyword.ledger
+							found = true
+						}
+						'legacy' {
+							value = Keyword.legacy
+							found = true
+						}
+						'lepcha' {
+							value = Keyword.lepcha
+							found = true
+						}
+						'letter' {
+							value = Keyword.letter
+							found = true
+						}
+						'linear' {
+							value = Keyword.linear
+							found = true
+						}
+						'longer' {
+							value = Keyword.longer
+							found = true
+						}
+						else {}
 					}
 				}
 				0x6d {
-					return match name {
-						'medium' { Keyword.medium }
-						'meetei' { Keyword.meetei }
-						'middle' { Keyword.middle }
-						else { none }
+					match name {
+						'medium' {
+							value = Keyword.medium
+							found = true
+						}
+						'meetei' {
+							value = Keyword.meetei
+							found = true
+						}
+						'middle' {
+							value = Keyword.middle
+							found = true
+						}
+						else {}
 					}
 				}
 				0x6e {
-					return match name {
-						'normal' { Keyword.normal }
-						'nowrap' { Keyword.nowrap }
-						else { none }
+					match name {
+						'normal' {
+							value = Keyword.normal
+							found = true
+						}
+						'nowrap' {
+							value = Keyword.nowrap
+							found = true
+						}
+						else {}
 					}
 				}
 				0x6f {
-					return match name {
-						'opaque' { Keyword.opaque }
-						'origin' { Keyword.origin }
-						'outset' { Keyword.outset }
-						else { none }
+					match name {
+						'opaque' {
+							value = Keyword.opaque
+							found = true
+						}
+						'origin' {
+							value = Keyword.origin
+							found = true
+						}
+						'outset' {
+							value = Keyword.outset
+							found = true
+						}
+						else {}
 					}
 				}
 				0x70 {
-					return match name {
-						'pan-up' { Keyword.pan_up }
-						'paused' { Keyword.paused }
-						'pretty' { Keyword.pretty }
-						else { none }
+					match name {
+						'pan-up' {
+							value = Keyword.pan_up
+							found = true
+						}
+						'paused' {
+							value = Keyword.paused
+							found = true
+						}
+						'pretty' {
+							value = Keyword.pretty
+							found = true
+						}
+						else {}
 					}
 				}
 				0x72 {
-					return match name {
-						'region' { Keyword.region }
-						'reduce' { Keyword.reduce }
-						'repeat' { Keyword.repeat }
-						'revert' { Keyword.revert }
-						'run-in' { Keyword.run_in }
-						else { none }
+					match name {
+						'reduce' {
+							value = Keyword.reduce
+							found = true
+						}
+						'region' {
+							value = Keyword.region
+							found = true
+						}
+						'repeat' {
+							value = Keyword.repeat
+							found = true
+						}
+						'revert' {
+							value = Keyword.revert
+							found = true
+						}
+						'run-in' {
+							value = Keyword.run_in
+							found = true
+						}
+						else {}
 					}
 				}
 				0x73 {
-					return match name {
-						'screen' { Keyword.screen }
-						'scroll' { Keyword.scroll }
-						'sidama' { Keyword.sidama }
-						'sindhi' { Keyword.sindhi }
-						'smooth' { Keyword.smooth }
-						'square' { Keyword.square }
-						'stable' { Keyword.stable }
-						'static' { Keyword.static_ }
-						'sticky' { Keyword.sticky }
-						'strict' { Keyword.strict }
-						'stroke' { Keyword.stroke }
-						else { none }
+					match name {
+						'screen' {
+							value = Keyword.screen
+							found = true
+						}
+						'scroll' {
+							value = Keyword.scroll
+							found = true
+						}
+						'sidama' {
+							value = Keyword.sidama
+							found = true
+						}
+						'sindhi' {
+							value = Keyword.sindhi
+							found = true
+						}
+						'smooth' {
+							value = Keyword.smooth
+							found = true
+						}
+						'square' {
+							value = Keyword.square
+							found = true
+						}
+						'stable' {
+							value = Keyword.stable
+							found = true
+						}
+						'static' {
+							value = Keyword.static_
+							found = true
+						}
+						'sticky' {
+							value = Keyword.sticky
+							found = true
+						}
+						'strict' {
+							value = Keyword.strict
+							found = true
+						}
+						'stroke' {
+							value = Keyword.stroke
+							found = true
+						}
+						else {}
 					}
 				}
 				0x74 {
-					return match name {
-						'telugu' { Keyword.telugu }
-						else { none }
+					match name {
+						'telugu' {
+							value = Keyword.telugu
+							found = true
+						}
+						else {}
 					}
 				}
 				0x75 {
-					return match name {
-						'unsafe' { Keyword.unsafe_ }
-						else { none }
+					match name {
+						'unsafe' {
+							value = Keyword.unsafe_
+							found = true
+						}
+						else {}
 					}
 				}
 				0x77 {
-					return match name {
-						'window' { Keyword.window }
-						else { none }
+					match name {
+						'window' {
+							value = Keyword.window
+							found = true
+						}
+						else {}
 					}
 				}
 				0x7a {
-					return match name {
-						'zhuyin' { Keyword.zhuyin }
-						else { none }
+					match name {
+						'zhuyin' {
+							value = Keyword.zhuyin
+							found = true
+						}
+						else {}
 					}
 				}
 				else {}
@@ -3675,193 +4393,403 @@ pub fn keyword_from_string(input string) ?Keyword {
 		7 {
 			match name[0] {
 				0x61 {
-					return match name {
-						'a98-rgb' { Keyword.a98_rgb }
-						else { none }
+					match name {
+						'a98-rgb' {
+							value = Keyword.a98_rgb
+							found = true
+						}
+						else {}
 					}
 				}
 				0x62 {
-					return match name {
-						'balance' { Keyword.balance }
-						'bengali' { Keyword.bengali }
-						'browser' { Keyword.browser }
-						'bullets' { Keyword.bullets }
-						else { none }
+					match name {
+						'balance' {
+							value = Keyword.balance
+							found = true
+						}
+						'bengali' {
+							value = Keyword.bengali
+							found = true
+						}
+						'browser' {
+							value = Keyword.browser
+							found = true
+						}
+						'bullets' {
+							value = Keyword.bullets
+							found = true
+						}
+						else {}
 					}
 				}
 				0x63 {
-					return match name {
-						'central' { Keyword.central }
-						'compact' { Keyword.compact }
-						'contain' { Keyword.contain }
-						'content' { Keyword.content }
-						'cursive' { Keyword.cursive }
-						else { none }
+					match name {
+						'central' {
+							value = Keyword.central
+							found = true
+						}
+						'compact' {
+							value = Keyword.compact
+							found = true
+						}
+						'contain' {
+							value = Keyword.contain
+							found = true
+						}
+						'content' {
+							value = Keyword.content
+							found = true
+						}
+						'cursive' {
+							value = Keyword.cursive
+							found = true
+						}
+						else {}
 					}
 				}
 				0x64 {
-					return match name {
-						'decimal' { Keyword.decimal }
-						'default' { Keyword.default }
-						'discard' { Keyword.discard }
-						else { none }
+					match name {
+						'decimal' {
+							value = Keyword.decimal
+							found = true
+						}
+						'default' {
+							value = Keyword.default
+							found = true
+						}
+						'discard' {
+							value = Keyword.discard
+							found = true
+						}
+						else {}
 					}
 				}
 				0x65 {
-					return match name {
-						'ease-in' { Keyword.ease_in }
-						'enabled' { Keyword.enabled }
-						'evenodd' { Keyword.evenodd }
-						'exclude' { Keyword.exclude }
-						'extends' { Keyword.extends }
-						else { none }
+					match name {
+						'ease-in' {
+							value = Keyword.ease_in
+							found = true
+						}
+						'enabled' {
+							value = Keyword.enabled
+							found = true
+						}
+						'evenodd' {
+							value = Keyword.evenodd
+							found = true
+						}
+						'exclude' {
+							value = Keyword.exclude
+							found = true
+						}
+						'extends' {
+							value = Keyword.extends
+							found = true
+						}
+						else {}
 					}
 				}
 				0x66 {
-					return match name {
-						'fantasy' { Keyword.fantasy }
-						else { none }
+					match name {
+						'fantasy' {
+							value = Keyword.fantasy
+							found = true
+						}
+						else {}
 					}
 				}
 				0x68 {
-					return match name {
-						'hadiyaa' { Keyword.hadiyaa }
-						'hanging' { Keyword.hanging }
-						else { none }
+					match name {
+						'hadiyaa' {
+							value = Keyword.hadiyaa
+							found = true
+						}
+						'hanging' {
+							value = Keyword.hanging
+							found = true
+						}
+						else {}
 					}
 				}
 				0x69 {
-					return match name {
-						'inherit' { Keyword.inherit }
-						'initial' { Keyword.initial }
-						'isolate' { Keyword.isolate }
-						else { none }
+					match name {
+						'inherit' {
+							value = Keyword.inherit
+							found = true
+						}
+						'initial' {
+							value = Keyword.initial
+							found = true
+						}
+						'isolate' {
+							value = Keyword.isolate
+							found = true
+						}
+						else {}
 					}
 				}
 				0x6a {
-					return match name {
-						'justify' { Keyword.justify }
-						else { none }
+					match name {
+						'justify' {
+							value = Keyword.justify
+							found = true
+						}
+						else {}
 					}
 				}
 				0x6b {
-					return match name {
-						'kannada' { Keyword.kannada }
-						'kembata' { Keyword.kembata }
-						'konkani' { Keyword.konkani }
-						else { none }
+					match name {
+						'kannada' {
+							value = Keyword.kannada
+							found = true
+						}
+						'kembata' {
+							value = Keyword.kembata
+							found = true
+						}
+						'konkani' {
+							value = Keyword.konkani
+							found = true
+						}
+						else {}
 					}
 				}
 				0x6c {
-					return match name {
-						'lighten' { Keyword.lighten }
-						'lighter' { Keyword.lighter }
-						'listbox' { Keyword.listbox }
-						else { none }
+					match name {
+						'lighten' {
+							value = Keyword.lighten
+							found = true
+						}
+						'lighter' {
+							value = Keyword.lighter
+							found = true
+						}
+						'listbox' {
+							value = Keyword.listbox
+							found = true
+						}
+						else {}
 					}
 				}
 				0x6d {
-					return match name {
-						'marathi' { Keyword.marathi }
-						'markers' { Keyword.markers }
-						'myanmar' { Keyword.myanmar }
-						else { none }
+					match name {
+						'marathi' {
+							value = Keyword.marathi
+							found = true
+						}
+						'markers' {
+							value = Keyword.markers
+							found = true
+						}
+						'myanmar' {
+							value = Keyword.myanmar
+							found = true
+						}
+						else {}
 					}
 				}
 				0x6e {
-					return match name {
-						'nearest' { Keyword.nearest }
-						'no-clip' { Keyword.no_clip }
-						'no-drop' { Keyword.no_drop }
-						'nonzero' { Keyword.nonzero }
-						'numbers' { Keyword.numbers }
-						'numeric' { Keyword.numeric }
-						else { none }
+					match name {
+						'nearest' {
+							value = Keyword.nearest
+							found = true
+						}
+						'no-clip' {
+							value = Keyword.no_clip
+							found = true
+						}
+						'no-drop' {
+							value = Keyword.no_drop
+							found = true
+						}
+						'nonzero' {
+							value = Keyword.nonzero
+							found = true
+						}
+						'numbers' {
+							value = Keyword.numbers
+							found = true
+						}
+						'numeric' {
+							value = Keyword.numeric
+							found = true
+						}
+						else {}
 					}
 				}
 				0x6f {
-					return match name {
-						'oblique' { Keyword.oblique }
-						'ordinal' { Keyword.ordinal }
-						'outside' { Keyword.outside }
-						'overlay' { Keyword.overlay }
-						else { none }
+					match name {
+						'oblique' {
+							value = Keyword.oblique
+							found = true
+						}
+						'ordinal' {
+							value = Keyword.ordinal
+							found = true
+						}
+						'outside' {
+							value = Keyword.outside
+							found = true
+						}
+						'overlay' {
+							value = Keyword.overlay
+							found = true
+						}
+						else {}
 					}
 				}
 				0x70 {
-					return match name {
-						'persian' { Keyword.persian }
-						'pointer' { Keyword.pointer }
-						'punjabi' { Keyword.punjabi }
-						else { none }
+					match name {
+						'persian' {
+							value = Keyword.persian
+							found = true
+						}
+						'pointer' {
+							value = Keyword.pointer
+							found = true
+						}
+						'punjabi' {
+							value = Keyword.punjabi
+							found = true
+						}
+						else {}
 					}
 				}
 				0x72 {
-					return match name {
-						'rec2020' { Keyword.rec2020 }
-						'replace' { Keyword.replace }
-						'reverse' { Keyword.reverse }
-						'running' { Keyword.running }
-						else { none }
+					match name {
+						'rec2020' {
+							value = Keyword.rec2020
+							found = true
+						}
+						'replace' {
+							value = Keyword.replace
+							found = true
+						}
+						'reverse' {
+							value = Keyword.reverse
+							found = true
+						}
+						'running' {
+							value = Keyword.running
+							found = true
+						}
+						else {}
 					}
 				}
 				0x73 {
-					return match name {
-						'santali' { Keyword.santali }
-						'shorter' { Keyword.shorter }
-						'smaller' { Keyword.smaller }
-						'stretch' { Keyword.stretch }
-						else { none }
+					match name {
+						'santali' {
+							value = Keyword.santali
+							found = true
+						}
+						'shorter' {
+							value = Keyword.shorter
+							found = true
+						}
+						'smaller' {
+							value = Keyword.smaller
+							found = true
+						}
+						'stretch' {
+							value = Keyword.stretch
+							found = true
+						}
+						else {}
 					}
 				}
 				0x74 {
-					return match name {
-						'tai-lue' { Keyword.tai_lue }
-						'tibetan' { Keyword.tibetan }
-						'to-zero' { Keyword.to_zero }
-						else { none }
+					match name {
+						'tai-lue' {
+							value = Keyword.tai_lue
+							found = true
+						}
+						'tibetan' {
+							value = Keyword.tibetan
+							found = true
+						}
+						'to-zero' {
+							value = Keyword.to_zero
+							found = true
+						}
+						else {}
 					}
 				}
 				0x75 {
-					return match name {
-						'unicase' { Keyword.unicase }
-						'unicode' { Keyword.unicode }
-						'upright' { Keyword.upright }
-						else { none }
+					match name {
+						'unicase' {
+							value = Keyword.unicase
+							found = true
+						}
+						'unicode' {
+							value = Keyword.unicode
+							found = true
+						}
+						'upright' {
+							value = Keyword.upright
+							found = true
+						}
+						else {}
 					}
 				}
 				0x76 {
-					return match name {
-						'visible' { Keyword.visible }
-						else { none }
+					match name {
+						'visible' {
+							value = Keyword.visible
+							found = true
+						}
+						else {}
 					}
 				}
 				0x77 {
-					return match name {
-						'wolaita' { Keyword.wolaita }
-						else { none }
+					match name {
+						'wolaita' {
+							value = Keyword.wolaita
+							found = true
+						}
+						else {}
 					}
 				}
 				0x78 {
-					return match name {
-						'x-large' { Keyword.x_large }
-						'x-start' { Keyword.x_start }
-						'x-small' { Keyword.x_small }
-						'xyz-d50' { Keyword.xyz_d50 }
-						'xyz-d65' { Keyword.xyz_d65 }
-						else { none }
+					match name {
+						'x-large' {
+							value = Keyword.x_large
+							found = true
+						}
+						'x-small' {
+							value = Keyword.x_small
+							found = true
+						}
+						'x-start' {
+							value = Keyword.x_start
+							found = true
+						}
+						'xyz-d50' {
+							value = Keyword.xyz_d50
+							found = true
+						}
+						'xyz-d65' {
+							value = Keyword.xyz_d65
+							found = true
+						}
+						else {}
 					}
 				}
 				0x79 {
-					return match name {
-						'y-start' { Keyword.y_start }
-						else { none }
+					match name {
+						'y-start' {
+							value = Keyword.y_start
+							found = true
+						}
+						else {}
 					}
 				}
 				0x7a {
-					return match name {
-						'zoom-in' { Keyword.zoom_in }
-						else { none }
+					match name {
+						'zoom-in' {
+							value = Keyword.zoom_in
+							found = true
+						}
+						else {}
 					}
 				}
 				else {}
@@ -3870,194 +4798,422 @@ pub fn keyword_from_string(input string) ?Keyword {
 		8 {
 			match name[0] {
 				0x61 {
-					return match name {
-						'absolute' { Keyword.absolute }
-						'additive' { Keyword.additive }
-						'anywhere' { Keyword.anywhere }
-						'armenian' { Keyword.armenian }
-						'auto-add' { Keyword.auto_add }
-						else { none }
+					match name {
+						'absolute' {
+							value = Keyword.absolute
+							found = true
+						}
+						'additive' {
+							value = Keyword.additive
+							found = true
+						}
+						'anywhere' {
+							value = Keyword.anywhere
+							found = true
+						}
+						'armenian' {
+							value = Keyword.armenian
+							found = true
+						}
+						'auto-add' {
+							value = Keyword.auto_add
+							found = true
+						}
+						else {}
 					}
 				}
 				0x62 {
-					return match name {
-						'balinese' { Keyword.balinese }
-						'baseline' { Keyword.baseline }
-						else { none }
+					match name {
+						'balinese' {
+							value = Keyword.balinese
+							found = true
+						}
+						'baseline' {
+							value = Keyword.baseline
+							found = true
+						}
+						else {}
 					}
 				}
 				0x63 {
-					return match name {
-						'checkbox' { Keyword.checkbox }
-						'collapse' { Keyword.collapse }
-						'contents' { Keyword.contents }
-						else { none }
+					match name {
+						'checkbox' {
+							value = Keyword.checkbox
+							found = true
+						}
+						'collapse' {
+							value = Keyword.collapse
+							found = true
+						}
+						'contents' {
+							value = Keyword.contents
+							found = true
+						}
+						else {}
 					}
 				}
 				0x65 {
-					return match name {
-						'e-resize' { Keyword.e_resize }
-						'ease-out' { Keyword.ease_out }
-						'ellipsis' { Keyword.ellipsis }
-						'expanded' { Keyword.expanded }
-						else { none }
+					match name {
+						'e-resize' {
+							value = Keyword.e_resize
+							found = true
+						}
+						'ease-out' {
+							value = Keyword.ease_out
+							found = true
+						}
+						'ellipsis' {
+							value = Keyword.ellipsis
+							found = true
+						}
+						'expanded' {
+							value = Keyword.expanded
+							found = true
+						}
+						else {}
 					}
 				}
 				0x66 {
-					return match name {
-						'fallback' { Keyword.fallback }
-						'fill-box' { Keyword.fill_box }
-						'flex-end' { Keyword.flex_end }
-						'forwards' { Keyword.forwards }
-						else { none }
+					match name {
+						'fallback' {
+							value = Keyword.fallback
+							found = true
+						}
+						'fill-box' {
+							value = Keyword.fill_box
+							found = true
+						}
+						'flex-end' {
+							value = Keyword.flex_end
+							found = true
+						}
+						'forwards' {
+							value = Keyword.forwards
+							found = true
+						}
+						else {}
 					}
 				}
 				0x67 {
-					return match name {
-						'georgian' { Keyword.georgian }
-						'grabbing' { Keyword.grabbing }
-						'graytext' { Keyword.graytext }
-						'gujarati' { Keyword.gujarati }
-						'gurmukhi' { Keyword.gurmukhi }
-						else { none }
+					match name {
+						'georgian' {
+							value = Keyword.georgian
+							found = true
+						}
+						'grabbing' {
+							value = Keyword.grabbing
+							found = true
+						}
+						'graytext' {
+							value = Keyword.graytext
+							found = true
+						}
+						'gujarati' {
+							value = Keyword.gujarati
+							found = true
+						}
+						'gurmukhi' {
+							value = Keyword.gurmukhi
+							found = true
+						}
+						else {}
 					}
 				}
 				0x68 {
-					return match name {
-						'hiragana' { Keyword.hiragana }
-						else { none }
+					match name {
+						'hiragana' {
+							value = Keyword.hiragana
+							found = true
+						}
+						else {}
 					}
 				}
 				0x69 {
-					return match name {
-						'infinite' { Keyword.infinite }
-						'infinity' { Keyword.infinity }
-						'infotext' { Keyword.infotext }
-						'inverted' { Keyword.inverted }
-						else { none }
+					match name {
+						'infinite' {
+							value = Keyword.infinite
+							found = true
+						}
+						'infinity' {
+							value = Keyword.infinity
+							found = true
+						}
+						'infotext' {
+							value = Keyword.infotext
+							found = true
+						}
+						'inverted' {
+							value = Keyword.inverted
+							found = true
+						}
+						else {}
 					}
 				}
 				0x6a {
-					return match name {
-						'javanese' { Keyword.javanese }
-						'jump-end' { Keyword.jump_end }
-						else { none }
+					match name {
+						'javanese' {
+							value = Keyword.javanese
+							found = true
+						}
+						'jump-end' {
+							value = Keyword.jump_end
+							found = true
+						}
+						else {}
 					}
 				}
 				0x6b {
-					return match name {
-						'kashmiri' { Keyword.kashmiri }
-						'katakana' { Keyword.katakana }
-						'kayah-li' { Keyword.kayah_li }
-						'keep-all' { Keyword.keep_all }
-						else { none }
+					match name {
+						'kashmiri' {
+							value = Keyword.kashmiri
+							found = true
+						}
+						'katakana' {
+							value = Keyword.katakana
+							found = true
+						}
+						'kayah-li' {
+							value = Keyword.kayah_li
+							found = true
+						}
+						'keep-all' {
+							value = Keyword.keep_all
+							found = true
+						}
+						else {}
 					}
 				}
 				0x6c {
-					return match name {
-						'linktext' { Keyword.linktext }
-						else { none }
+					match name {
+						'linktext' {
+							value = Keyword.linktext
+							found = true
+						}
+						else {}
 					}
 				}
 				0x6d {
-					return match name {
-						'maithili' { Keyword.maithili }
-						'manipuri' { Keyword.manipuri }
-						'marktext' { Keyword.marktext }
-						'menulist' { Keyword.menulist }
-						'menutext' { Keyword.menutext }
-						'multiply' { Keyword.multiply }
-						else { none }
+					match name {
+						'maithili' {
+							value = Keyword.maithili
+							found = true
+						}
+						'manipuri' {
+							value = Keyword.manipuri
+							found = true
+						}
+						'marktext' {
+							value = Keyword.marktext
+							found = true
+						}
+						'menulist' {
+							value = Keyword.menulist
+							found = true
+						}
+						'menutext' {
+							value = Keyword.menutext
+							found = true
+						}
+						'multiply' {
+							value = Keyword.multiply
+							found = true
+						}
+						else {}
 					}
 				}
 				0x6e {
-					return match name {
-						'n-resize' { Keyword.n_resize }
-						else { none }
+					match name {
+						'n-resize' {
+							value = Keyword.n_resize
+							found = true
+						}
+						else {}
 					}
 				}
 				0x6f {
-					return match name {
-						'ol-chiki' { Keyword.ol_chiki }
-						'optional' { Keyword.optional }
-						'overline' { Keyword.overline }
-						else { none }
+					match name {
+						'ol-chiki' {
+							value = Keyword.ol_chiki
+							found = true
+						}
+						'optional' {
+							value = Keyword.optional
+							found = true
+						}
+						'overline' {
+							value = Keyword.overline
+							found = true
+						}
+						else {}
 					}
 				}
 				0x70 {
-					return match name {
-						'palettes' { Keyword.palettes }
-						'pan-down' { Keyword.pan_down }
-						'pan-left' { Keyword.pan_left }
-						'portrait' { Keyword.portrait }
-						'pre-line' { Keyword.pre_line }
-						'pre-wrap' { Keyword.pre_wrap }
-						'preserve' { Keyword.preserve }
-						'progress' { Keyword.progress }
-						else { none }
+					match name {
+						'palettes' {
+							value = Keyword.palettes
+							found = true
+						}
+						'pan-down' {
+							value = Keyword.pan_down
+							found = true
+						}
+						'pan-left' {
+							value = Keyword.pan_left
+							found = true
+						}
+						'portrait' {
+							value = Keyword.portrait
+							found = true
+						}
+						'pre-line' {
+							value = Keyword.pre_line
+							found = true
+						}
+						'pre-wrap' {
+							value = Keyword.pre_wrap
+							found = true
+						}
+						'preserve' {
+							value = Keyword.preserve
+							found = true
+						}
+						'progress' {
+							value = Keyword.progress
+							found = true
+						}
+						else {}
 					}
 				}
 				0x72 {
-					return match name {
-						'relative' { Keyword.relative }
-						'repeat-x' { Keyword.repeat_x }
-						'repeat-y' { Keyword.repeat_y }
-						else { none }
+					match name {
+						'relative' {
+							value = Keyword.relative
+							found = true
+						}
+						'repeat-x' {
+							value = Keyword.repeat_x
+							found = true
+						}
+						'repeat-y' {
+							value = Keyword.repeat_y
+							found = true
+						}
+						else {}
 					}
 				}
 				0x73 {
-					return match name {
-						's-resize' { Keyword.s_resize }
-						'sanskrit' { Keyword.sanskrit }
-						'self-end' { Keyword.self_end }
-						'separate' { Keyword.separate }
-						'span-all' { Keyword.span_all }
-						'span-end' { Keyword.span_end }
-						'span-top' { Keyword.span_top }
-						'squircle' { Keyword.squircle }
-						'standard' { Keyword.standard }
-						'subtract' { Keyword.subtract }
-						'symbolic' { Keyword.symbolic }
-						else { none }
+					match name {
+						's-resize' {
+							value = Keyword.s_resize
+							found = true
+						}
+						'sanskrit' {
+							value = Keyword.sanskrit
+							found = true
+						}
+						'self-end' {
+							value = Keyword.self_end
+							found = true
+						}
+						'separate' {
+							value = Keyword.separate
+							found = true
+						}
+						'span-all' {
+							value = Keyword.span_all
+							found = true
+						}
+						'span-end' {
+							value = Keyword.span_end
+							found = true
+						}
+						'span-top' {
+							value = Keyword.span_top
+							found = true
+						}
+						'squircle' {
+							value = Keyword.squircle
+							found = true
+						}
+						'standard' {
+							value = Keyword.standard
+							found = true
+						}
+						'subtract' {
+							value = Keyword.subtract
+							found = true
+						}
+						'symbolic' {
+							value = Keyword.symbolic
+							found = true
+						}
+						else {}
 					}
 				}
 				0x74 {
-					return match name {
-						'text-top' { Keyword.text_top }
-						'textarea' { Keyword.textarea }
-						else { none }
+					match name {
+						'text-top' {
+							value = Keyword.text_top
+							found = true
+						}
+						'textarea' {
+							value = Keyword.textarea
+							found = true
+						}
+						else {}
 					}
 				}
 				0x75 {
-					return match name {
-						'ui-serif' { Keyword.ui_serif }
-						else { none }
+					match name {
+						'ui-serif' {
+							value = Keyword.ui_serif
+							found = true
+						}
+						else {}
 					}
 				}
 				0x76 {
-					return match name {
-						'vertical' { Keyword.vertical }
-						'view-box' { Keyword.view_box }
-						else { none }
+					match name {
+						'vertical' {
+							value = Keyword.vertical
+							found = true
+						}
+						'view-box' {
+							value = Keyword.view_box
+							found = true
+						}
+						else {}
 					}
 				}
 				0x77 {
-					return match name {
-						'w-resize' { Keyword.w_resize }
-						else { none }
+					match name {
+						'w-resize' {
+							value = Keyword.w_resize
+							found = true
+						}
+						else {}
 					}
 				}
 				0x78 {
-					return match name {
-						'xx-large' { Keyword.xx_large }
-						'xx-small' { Keyword.xx_small }
-						else { none }
+					match name {
+						'xx-large' {
+							value = Keyword.xx_large
+							found = true
+						}
+						'xx-small' {
+							value = Keyword.xx_small
+							found = true
+						}
+						else {}
 					}
 				}
 				0x7a {
-					return match name {
-						'zoom-out' { Keyword.zoom_out }
-						else { none }
+					match name {
+						'zoom-out' {
+							value = Keyword.zoom_out
+							found = true
+						}
+						else {}
 					}
 				}
 				else {}
@@ -4066,145 +5222,301 @@ pub fn keyword_from_string(input string) ?Keyword {
 		9 {
 			match name[0] {
 				0x2d {
-					return match name {
-						'-infinity' { Keyword.negative_infinity }
-						else { none }
+					match name {
+						'-infinity' {
+							value = Keyword.negative_infinity
+							found = true
+						}
+						else {}
 					}
 				}
 				0x61 {
-					return match name {
-						'alternate' { Keyword.alternate }
-						'anonymous' { Keyword.anonymous }
-						else { none }
+					match name {
+						'alternate' {
+							value = Keyword.alternate
+							found = true
+						}
+						'anonymous' {
+							value = Keyword.anonymous
+							found = true
+						}
+						else {}
 					}
 				}
 				0x62 {
-					return match name {
-						'backwards' { Keyword.backwards }
-						'block-end' { Keyword.block_end }
-						'break-all' { Keyword.break_all }
-						else { none }
+					match name {
+						'backwards' {
+							value = Keyword.backwards
+							found = true
+						}
+						'block-end' {
+							value = Keyword.block_end
+							found = true
+						}
+						'break-all' {
+							value = Keyword.break_all
+							found = true
+						}
+						else {}
 					}
 				}
 				0x63 {
-					return match name {
-						'cambodian' { Keyword.cambodian }
-						'color-svg' { Keyword.color_svg }
-						'condensed' { Keyword.condensed }
-						'crosshair' { Keyword.crosshair }
-						else { none }
+					match name {
+						'cambodian' {
+							value = Keyword.cambodian
+							found = true
+						}
+						'color-svg' {
+							value = Keyword.color_svg
+							found = true
+						}
+						'condensed' {
+							value = Keyword.condensed
+							found = true
+						}
+						'crosshair' {
+							value = Keyword.crosshair
+							found = true
+						}
+						else {}
 					}
 				}
 				0x65 {
-					return match name {
-						'each-line' { Keyword.each_line }
-						'ew-resize' { Keyword.ew_resize }
-						'exclusion' { Keyword.exclusion }
-						else { none }
+					match name {
+						'each-line' {
+							value = Keyword.each_line
+							found = true
+						}
+						'ew-resize' {
+							value = Keyword.ew_resize
+							found = true
+						}
+						'exclusion' {
+							value = Keyword.exclusion
+							found = true
+						}
+						else {}
 					}
 				}
 				0x66 {
-					return match name {
-						'fieldtext' { Keyword.fieldtext }
-						'flow-root' { Keyword.flow_root }
-						'from-font' { Keyword.from_font }
-						else { none }
+					match name {
+						'fieldtext' {
+							value = Keyword.fieldtext
+							found = true
+						}
+						'flow-root' {
+							value = Keyword.flow_root
+							found = true
+						}
+						'from-font' {
+							value = Keyword.from_font
+							found = true
+						}
+						else {}
 					}
 				}
 				0x68 {
-					return match name {
-						'highlight' { Keyword.highlight }
-						else { none }
+					match name {
+						'highlight' {
+							value = Keyword.highlight
+							found = true
+						}
+						else {}
 					}
 				}
 				0x69 {
-					return match name {
-						'interlace' { Keyword.interlace }
-						'intersect' { Keyword.intersect }
-						else { none }
+					match name {
+						'interlace' {
+							value = Keyword.interlace
+							found = true
+						}
+						'intersect' {
+							value = Keyword.intersect
+							found = true
+						}
+						else {}
 					}
 				}
 				0x6a {
-					return match name {
-						'jump-both' { Keyword.jump_both }
-						'jump-none' { Keyword.jump_none }
-						else { none }
+					match name {
+						'jump-both' {
+							value = Keyword.jump_both
+							found = true
+						}
+						'jump-none' {
+							value = Keyword.jump_none
+							found = true
+						}
+						else {}
 					}
 				}
 				0x6c {
-					return match name {
-						'landscape' { Keyword.landscape }
-						'linearrgb' { Keyword.linearrgb }
-						'list-item' { Keyword.list_item }
-						'lowercase' { Keyword.lowercase }
-						'luminance' { Keyword.luminance }
-						else { none }
+					match name {
+						'landscape' {
+							value = Keyword.landscape
+							found = true
+						}
+						'linearrgb' {
+							value = Keyword.linearrgb
+							found = true
+						}
+						'list-item' {
+							value = Keyword.list_item
+							found = true
+						}
+						'lowercase' {
+							value = Keyword.lowercase
+							found = true
+						}
+						'luminance' {
+							value = Keyword.luminance
+							found = true
+						}
+						else {}
 					}
 				}
 				0x6d {
-					return match name {
-						'malayalam' { Keyword.malayalam }
-						'math-auto' { Keyword.math_auto }
-						'mandatory' { Keyword.mandatory }
-						'mongolian' { Keyword.mongolian }
-						'monospace' { Keyword.monospace }
-						else { none }
+					match name {
+						'malayalam' {
+							value = Keyword.malayalam
+							found = true
+						}
+						'mandatory' {
+							value = Keyword.mandatory
+							found = true
+						}
+						'math-auto' {
+							value = Keyword.math_auto
+							found = true
+						}
+						'mongolian' {
+							value = Keyword.mongolian
+							found = true
+						}
+						'monospace' {
+							value = Keyword.monospace
+							found = true
+						}
+						else {}
 					}
 				}
 				0x6e {
-					return match name {
-						'ne-resize' { Keyword.ne_resize }
-						'no-repeat' { Keyword.no_repeat }
-						'ns-resize' { Keyword.ns_resize }
-						'nw-resize' { Keyword.nw_resize }
-						else { none }
+					match name {
+						'ne-resize' {
+							value = Keyword.ne_resize
+							found = true
+						}
+						'no-repeat' {
+							value = Keyword.no_repeat
+							found = true
+						}
+						'ns-resize' {
+							value = Keyword.ns_resize
+							found = true
+						}
+						'nw-resize' {
+							value = Keyword.nw_resize
+							found = true
+						}
+						else {}
 					}
 				}
 				0x70 {
-					return match name {
-						'pan-right' { Keyword.pan_right }
-						'pixelated' { Keyword.pixelated }
-						'plaintext' { Keyword.plaintext }
-						'proximity' { Keyword.proximity }
-						else { none }
+					match name {
+						'pan-right' {
+							value = Keyword.pan_right
+							found = true
+						}
+						'pixelated' {
+							value = Keyword.pixelated
+							found = true
+						}
+						'plaintext' {
+							value = Keyword.plaintext
+							found = true
+						}
+						'proximity' {
+							value = Keyword.proximity
+							found = true
+						}
+						else {}
 					}
 				}
 				0x72 {
-					return match name {
-						'ruby-base' { Keyword.ruby_base }
-						'ruby-text' { Keyword.ruby_text }
-						else { none }
+					match name {
+						'ruby-base' {
+							value = Keyword.ruby_base
+							found = true
+						}
+						'ruby-text' {
+							value = Keyword.ruby_text
+							found = true
+						}
+						else {}
 					}
 				}
 				0x73 {
-					return match name {
-						'scrollbar' { Keyword.scrollbar }
-						'se-resize' { Keyword.se_resize }
-						'span-left' { Keyword.span_left }
-						'spell-out' { Keyword.spell_out }
-						'sundanese' { Keyword.sundanese }
-						'sw-resize' { Keyword.sw_resize }
-						else { none }
+					match name {
+						'scrollbar' {
+							value = Keyword.scrollbar
+							found = true
+						}
+						'se-resize' {
+							value = Keyword.se_resize
+							found = true
+						}
+						'span-left' {
+							value = Keyword.span_left
+							found = true
+						}
+						'spell-out' {
+							value = Keyword.spell_out
+							found = true
+						}
+						'sundanese' {
+							value = Keyword.sundanese
+							found = true
+						}
+						'sw-resize' {
+							value = Keyword.sw_resize
+							found = true
+						}
+						else {}
 					}
 				}
 				0x74 {
-					return match name {
-						'table-row' { Keyword.table_row }
-						'textfield' { Keyword.textfield }
-						else { none }
+					match name {
+						'table-row' {
+							value = Keyword.table_row
+							found = true
+						}
+						'textfield' {
+							value = Keyword.textfield
+							found = true
+						}
+						else {}
 					}
 				}
 				0x75 {
-					return match name {
-						'underline' { Keyword.underline }
-						'uppercase' { Keyword.uppercase }
-						else { none }
+					match name {
+						'underline' {
+							value = Keyword.underline
+							found = true
+						}
+						'uppercase' {
+							value = Keyword.uppercase
+							found = true
+						}
+						else {}
 					}
 				}
 				0x78 {
-					return match name {
-						'xxx-large' { Keyword.xxx_large }
-						else { none }
+					match name {
+						'xxx-large' {
+							value = Keyword.xxx_large
+							found = true
+						}
+						else {}
 					}
 				}
 				else {}
@@ -4213,156 +5525,360 @@ pub fn keyword_from_string(input string) ?Keyword {
 		10 {
 			match name[0] {
 				0x61 {
-					return match name {
-						'accumulate' { Keyword.accumulate }
-						'activetext' { Keyword.activetext }
-						'all-scroll' { Keyword.all_scroll }
-						'alphabetic' { Keyword.alphabetic }
-						'avoid-page' { Keyword.avoid_page }
-						else { none }
+					match name {
+						'accumulate' {
+							value = Keyword.accumulate
+							found = true
+						}
+						'activetext' {
+							value = Keyword.activetext
+							found = true
+						}
+						'all-scroll' {
+							value = Keyword.all_scroll
+							found = true
+						}
+						'alphabetic' {
+							value = Keyword.alphabetic
+							found = true
+						}
+						'avoid-page' {
+							value = Keyword.avoid_page
+							found = true
+						}
+						else {}
 					}
 				}
 				0x62 {
-					return match name {
-						'background' { Keyword.background }
-						'border-box' { Keyword.border_box }
-						'both-edges' { Keyword.both_edges }
-						'break-word' { Keyword.break_word }
-						'buttonface' { Keyword.buttonface }
-						'buttontext' { Keyword.buttontext }
-						else { none }
+					match name {
+						'background' {
+							value = Keyword.background
+							found = true
+						}
+						'border-box' {
+							value = Keyword.border_box
+							found = true
+						}
+						'both-edges' {
+							value = Keyword.both_edges
+							found = true
+						}
+						'break-word' {
+							value = Keyword.break_word
+							found = true
+						}
+						'buttonface' {
+							value = Keyword.buttonface
+							found = true
+						}
+						'buttontext' {
+							value = Keyword.buttontext
+							found = true
+						}
+						else {}
 					}
 				}
 				0x63 {
-					return match name {
-						'canvastext' { Keyword.canvastext }
-						'capitalize' { Keyword.capitalize }
-						'col-resize' { Keyword.col_resize }
-						'color-burn' { Keyword.color_burn }
-						'color-cbdt' { Keyword.color_cbdt }
-						'color-sbix' { Keyword.color_sbix }
-						'contextual' { Keyword.contextual }
-						'crispedges' { Keyword.crispedges }
-						else { none }
+					match name {
+						'canvastext' {
+							value = Keyword.canvastext
+							found = true
+						}
+						'capitalize' {
+							value = Keyword.capitalize
+							found = true
+						}
+						'col-resize' {
+							value = Keyword.col_resize
+							found = true
+						}
+						'color-burn' {
+							value = Keyword.color_burn
+							found = true
+						}
+						'color-cbdt' {
+							value = Keyword.color_cbdt
+							found = true
+						}
+						'color-sbix' {
+							value = Keyword.color_sbix
+							found = true
+						}
+						'contextual' {
+							value = Keyword.contextual
+							found = true
+						}
+						'crispedges' {
+							value = Keyword.crispedges
+							found = true
+						}
+						else {}
 					}
 				}
 				0x64 {
-					return match name {
-						'decreasing' { Keyword.decreasing }
-						'devanagari' { Keyword.devanagari }
-						'difference' { Keyword.difference }
-						'distribute' { Keyword.distribute }
-						'display-p3' { Keyword.display_p3 }
-						else { none }
+					match name {
+						'decreasing' {
+							value = Keyword.decreasing
+							found = true
+						}
+						'devanagari' {
+							value = Keyword.devanagari
+							found = true
+						}
+						'difference' {
+							value = Keyword.difference
+							found = true
+						}
+						'display-p3' {
+							value = Keyword.display_p3
+							found = true
+						}
+						'distribute' {
+							value = Keyword.distribute
+							found = true
+						}
+						else {}
 					}
 				}
 				0x66 {
-					return match name {
-						'flex-start' { Keyword.flex_start }
-						'flip-block' { Keyword.flip_block }
-						'flip-start' { Keyword.flip_start }
-						'full-width' { Keyword.full_width }
-						'fullscreen' { Keyword.fullscreen }
-						else { none }
+					match name {
+						'flex-start' {
+							value = Keyword.flex_start
+							found = true
+						}
+						'flip-block' {
+							value = Keyword.flip_block
+							found = true
+						}
+						'flip-start' {
+							value = Keyword.flip_start
+							found = true
+						}
+						'full-width' {
+							value = Keyword.full_width
+							found = true
+						}
+						'fullscreen' {
+							value = Keyword.fullscreen
+							found = true
+						}
+						else {}
 					}
 				}
 				0x68 {
-					return match name {
-						'hard-light' { Keyword.hard_light }
-						'horizontal' { Keyword.horizontal }
-						else { none }
+					match name {
+						'hard-light' {
+							value = Keyword.hard_light
+							found = true
+						}
+						'horizontal' {
+							value = Keyword.horizontal
+							found = true
+						}
+						else {}
 					}
 				}
 				0x69 {
-					return match name {
-						'increasing' { Keyword.increasing }
-						'inline-end' { Keyword.inline_end }
-						'inter-word' { Keyword.inter_word }
-						else { none }
+					match name {
+						'increasing' {
+							value = Keyword.increasing
+							found = true
+						}
+						'inline-end' {
+							value = Keyword.inline_end
+							found = true
+						}
+						'inter-word' {
+							value = Keyword.inter_word
+							found = true
+						}
+						else {}
 					}
 				}
 				0x6a {
-					return match name {
-						'jump-start' { Keyword.jump_start }
-						else { none }
+					match name {
+						'jump-start' {
+							value = Keyword.jump_start
+							found = true
+						}
+						else {}
 					}
 				}
 				0x6c {
-					return match name {
-						'lanna-hora' { Keyword.lanna_hora }
-						'lanna-tham' { Keyword.lanna_tham }
-						'luminosity' { Keyword.luminosity }
-						else { none }
+					match name {
+						'lanna-hora' {
+							value = Keyword.lanna_hora
+							found = true
+						}
+						'lanna-tham' {
+							value = Keyword.lanna_tham
+							found = true
+						}
+						'luminosity' {
+							value = Keyword.luminosity
+							found = true
+						}
+						else {}
 					}
 				}
 				0x6d {
-					return match name {
-						'margin-box' { Keyword.margin_box }
-						'minimal-ui' { Keyword.minimal_ui }
-						'most-width' { Keyword.most_width }
-						else { none }
+					match name {
+						'margin-box' {
+							value = Keyword.margin_box
+							found = true
+						}
+						'minimal-ui' {
+							value = Keyword.minimal_ui
+							found = true
+						}
+						'most-width' {
+							value = Keyword.most_width
+							found = true
+						}
+						else {}
 					}
 				}
 				0x6f {
-					return match name {
-						'open-quote' { Keyword.open_quote }
-						else { none }
+					match name {
+						'open-quote' {
+							value = Keyword.open_quote
+							found = true
+						}
+						else {}
 					}
 				}
 				0x72 {
-					return match name {
-						'row-resize' { Keyword.row_resize }
-						else { none }
+					match name {
+						'row-resize' {
+							value = Keyword.row_resize
+							found = true
+						}
+						else {}
 					}
 				}
 				0x73 {
-					return match name {
-						'sans-serif' { Keyword.sans_serif }
-						'saturation' { Keyword.saturation }
-						'scale-down' { Keyword.scale_down }
-						'self-block' { Keyword.self_block }
-						'self-x-end' { Keyword.self_x_end }
-						'self-y-end' { Keyword.self_y_end }
-						'self-start' { Keyword.self_start }
-						'simplified' { Keyword.simplified }
-						'small-caps' { Keyword.small_caps }
-						'soft-light' { Keyword.soft_light }
-						'span-right' { Keyword.span_right }
-						'span-start' { Keyword.span_start }
-						'span-x-end' { Keyword.span_x_end }
-						'span-y-end' { Keyword.span_y_end }
-						'standalone' { Keyword.standalone }
-						'stroke-box' { Keyword.stroke_box }
-						else { none }
+					match name {
+						'sans-serif' {
+							value = Keyword.sans_serif
+							found = true
+						}
+						'saturation' {
+							value = Keyword.saturation
+							found = true
+						}
+						'scale-down' {
+							value = Keyword.scale_down
+							found = true
+						}
+						'self-block' {
+							value = Keyword.self_block
+							found = true
+						}
+						'self-start' {
+							value = Keyword.self_start
+							found = true
+						}
+						'self-x-end' {
+							value = Keyword.self_x_end
+							found = true
+						}
+						'self-y-end' {
+							value = Keyword.self_y_end
+							found = true
+						}
+						'simplified' {
+							value = Keyword.simplified
+							found = true
+						}
+						'small-caps' {
+							value = Keyword.small_caps
+							found = true
+						}
+						'soft-light' {
+							value = Keyword.soft_light
+							found = true
+						}
+						'span-right' {
+							value = Keyword.span_right
+							found = true
+						}
+						'span-start' {
+							value = Keyword.span_start
+							found = true
+						}
+						'span-x-end' {
+							value = Keyword.span_x_end
+							found = true
+						}
+						'span-y-end' {
+							value = Keyword.span_y_end
+							found = true
+						}
+						'standalone' {
+							value = Keyword.standalone
+							found = true
+						}
+						'stroke-box' {
+							value = Keyword.stroke_box
+							found = true
+						}
+						else {}
 					}
 				}
 				0x74 {
-					return match name {
-						'table-cell' { Keyword.table_cell }
-						'tally-mark' { Keyword.tally_mark }
-						'thai-alpha' { Keyword.thai_alpha }
-						'threedface' { Keyword.threedface }
-						else { none }
+					match name {
+						'table-cell' {
+							value = Keyword.table_cell
+							found = true
+						}
+						'tally-mark' {
+							value = Keyword.tally_mark
+							found = true
+						}
+						'thai-alpha' {
+							value = Keyword.thai_alpha
+							found = true
+						}
+						'threedface' {
+							value = Keyword.threedface
+							found = true
+						}
+						else {}
 					}
 				}
 				0x75 {
-					return match name {
-						'ui-rounded' { Keyword.ui_rounded }
-						'unsafe-url' { Keyword.unsafe_url }
-						'urdu-abjad' { Keyword.urdu_abjad }
-						else { none }
+					match name {
+						'ui-rounded' {
+							value = Keyword.ui_rounded
+							found = true
+						}
+						'unsafe-url' {
+							value = Keyword.unsafe_url
+							found = true
+						}
+						'urdu-abjad' {
+							value = Keyword.urdu_abjad
+							found = true
+						}
+						else {}
 					}
 				}
 				0x76 {
-					return match name {
-						'variations' { Keyword.variations }
-						else { none }
+					match name {
+						'variations' {
+							value = Keyword.variations
+							found = true
+						}
+						else {}
 					}
 				}
 				0x77 {
-					return match name {
-						'windowtext' { Keyword.windowtext }
-						else { none }
+					match name {
+						'windowtext' {
+							value = Keyword.windowtext
+							found = true
+						}
+						else {}
 					}
 				}
 				else {}
@@ -4371,149 +5887,332 @@ pub fn keyword_from_string(input string) ?Keyword {
 		11 {
 			match name[0] {
 				0x2d {
-					return match name {
-						'-webkit-box' { Keyword.webkit_box }
-						else { none }
+					match name {
+						'-webkit-box' {
+							value = Keyword.webkit_box
+							found = true
+						}
+						else {}
 					}
 				}
 				0x61 {
-					return match name {
-						'accentcolor' { Keyword.accentcolor }
-						'antialiased' { Keyword.antialiased }
-						else { none }
+					match name {
+						'accentcolor' {
+							value = Keyword.accentcolor
+							found = true
+						}
+						'antialiased' {
+							value = Keyword.antialiased
+							found = true
+						}
+						else {}
 					}
 				}
 				0x62 {
-					return match name {
-						'balance-all' { Keyword.balance_all }
-						'block-start' { Keyword.block_start }
-						else { none }
+					match name {
+						'balance-all' {
+							value = Keyword.balance_all
+							found = true
+						}
+						'block-start' {
+							value = Keyword.block_start
+							found = true
+						}
+						else {}
 					}
 				}
 				0x63 {
-					return match name {
-						'captiontext' { Keyword.captiontext }
-						'cjk-decimal' { Keyword.cjk_decimal }
-						'close-quote' { Keyword.close_quote }
-						'color-dodge' { Keyword.color_dodge }
-						'content-box' { Keyword.content_box }
-						'crisp-edges' { Keyword.crisp_edges }
-						else { none }
+					match name {
+						'captiontext' {
+							value = Keyword.captiontext
+							found = true
+						}
+						'cjk-decimal' {
+							value = Keyword.cjk_decimal
+							found = true
+						}
+						'close-quote' {
+							value = Keyword.close_quote
+							found = true
+						}
+						'color-dodge' {
+							value = Keyword.color_dodge
+							found = true
+						}
+						'content-box' {
+							value = Keyword.content_box
+							found = true
+						}
+						'crisp-edges' {
+							value = Keyword.crisp_edges
+							found = true
+						}
+						else {}
 					}
 				}
 				0x65 {
-					return match name {
-						'ease-in-out' { Keyword.ease_in_out }
-						else { none }
+					match name {
+						'ease-in-out' {
+							value = Keyword.ease_in_out
+							found = true
+						}
+						else {}
 					}
 				}
 				0x66 {
-					return match name {
-						'fit-content' { Keyword.fit_content }
-						'flip-inline' { Keyword.flip_inline }
-						else { none }
+					match name {
+						'fit-content' {
+							value = Keyword.fit_content
+							found = true
+						}
+						'flip-inline' {
+							value = Keyword.flip_inline
+							found = true
+						}
+						else {}
 					}
 				}
 				0x69 {
-					return match name {
-						'ideographic' { Keyword.ideographic }
-						'incremental' { Keyword.incremental }
-						'inline-flex' { Keyword.inline_flex }
-						'inline-grid' { Keyword.inline_grid }
-						'inline-size' { Keyword.inline_size }
-						else { none }
+					match name {
+						'ideographic' {
+							value = Keyword.ideographic
+							found = true
+						}
+						'incremental' {
+							value = Keyword.incremental
+							found = true
+						}
+						'inline-flex' {
+							value = Keyword.inline_flex
+							found = true
+						}
+						'inline-grid' {
+							value = Keyword.inline_grid
+							found = true
+						}
+						'inline-size' {
+							value = Keyword.inline_size
+							found = true
+						}
+						else {}
 					}
 				}
 				0x6c {
-					return match name {
-						'lining-nums' { Keyword.lining_nums }
-						'lower-alpha' { Keyword.lower_alpha }
-						'lower-greek' { Keyword.lower_greek }
-						'lower-latin' { Keyword.lower_latin }
-						'lower-roman' { Keyword.lower_roman }
-						else { none }
+					match name {
+						'lining-nums' {
+							value = Keyword.lining_nums
+							found = true
+						}
+						'lower-alpha' {
+							value = Keyword.lower_alpha
+							found = true
+						}
+						'lower-greek' {
+							value = Keyword.lower_greek
+							found = true
+						}
+						'lower-latin' {
+							value = Keyword.lower_latin
+							found = true
+						}
+						'lower-roman' {
+							value = Keyword.lower_roman
+							found = true
+						}
+						else {}
 					}
 				}
 				0x6d {
-					return match name {
-						'max-content' { Keyword.max_content }
-						'min-content' { Keyword.min_content }
-						'most-height' { Keyword.most_height }
-						else { none }
+					match name {
+						'max-content' {
+							value = Keyword.max_content
+							found = true
+						}
+						'min-content' {
+							value = Keyword.min_content
+							found = true
+						}
+						'most-height' {
+							value = Keyword.most_height
+							found = true
+						}
+						else {}
 					}
 				}
 				0x6e {
-					return match name {
-						'nag-mundari' { Keyword.nag_mundari }
-						'nesw-resize' { Keyword.nesw_resize }
-						'new-base-60' { Keyword.new_base_60 }
-						'no-ellipsis' { Keyword.no_ellipsis }
-						'no-overflow' { Keyword.no_overflow }
-						'no-referrer' { Keyword.no_referrer }
-						'not-allowed' { Keyword.not_allowed }
-						'nwse-resize' { Keyword.nwse_resize }
-						else { none }
+					match name {
+						'nag-mundari' {
+							value = Keyword.nag_mundari
+							found = true
+						}
+						'nesw-resize' {
+							value = Keyword.nesw_resize
+							found = true
+						}
+						'new-base-60' {
+							value = Keyword.new_base_60
+							found = true
+						}
+						'no-ellipsis' {
+							value = Keyword.no_ellipsis
+							found = true
+						}
+						'no-overflow' {
+							value = Keyword.no_overflow
+							found = true
+						}
+						'no-referrer' {
+							value = Keyword.no_referrer
+							found = true
+						}
+						'not-allowed' {
+							value = Keyword.not_allowed
+							found = true
+						}
+						'nwse-resize' {
+							value = Keyword.nwse_resize
+							found = true
+						}
+						else {}
 					}
 				}
 				0x70 {
-					return match name {
-						'padding-box' { Keyword.padding_box }
-						'petite-caps' { Keyword.petite_caps }
-						'plus-darker' { Keyword.plus_darker }
-						'preserve-3d' { Keyword.preserve_3d }
-						'progressive' { Keyword.progressive }
-						'push-button' { Keyword.push_button }
-						else { none }
+					match name {
+						'padding-box' {
+							value = Keyword.padding_box
+							found = true
+						}
+						'petite-caps' {
+							value = Keyword.petite_caps
+							found = true
+						}
+						'plus-darker' {
+							value = Keyword.plus_darker
+							found = true
+						}
+						'preserve-3d' {
+							value = Keyword.preserve_3d
+							found = true
+						}
+						'progressive' {
+							value = Keyword.progressive
+							found = true
+						}
+						'push-button' {
+							value = Keyword.push_button
+							found = true
+						}
+						else {}
 					}
 				}
 				0x72 {
-					return match name {
-						'rotate-left' { Keyword.rotate_left }
-						'row-reverse' { Keyword.row_reverse }
-						else { none }
+					match name {
+						'rotate-left' {
+							value = Keyword.rotate_left
+							found = true
+						}
+						'row-reverse' {
+							value = Keyword.row_reverse
+							found = true
+						}
+						else {}
 					}
 				}
 				0x73 {
-					return match name {
-						'same-origin' { Keyword.same_origin }
-						'searchfield' { Keyword.searchfield }
-						'self-inline' { Keyword.self_inline }
-						'sideways-lr' { Keyword.sideways_lr }
-						'sideways-rl' { Keyword.sideways_rl }
-						'span-bottom' { Keyword.span_bottom }
-						'srgb-linear' { Keyword.srgb_linear }
-						'subtractive' { Keyword.subtractive }
-						else { none }
+					match name {
+						'same-origin' {
+							value = Keyword.same_origin
+							found = true
+						}
+						'searchfield' {
+							value = Keyword.searchfield
+							found = true
+						}
+						'self-inline' {
+							value = Keyword.self_inline
+							found = true
+						}
+						'sideways-lr' {
+							value = Keyword.sideways_lr
+							found = true
+						}
+						'sideways-rl' {
+							value = Keyword.sideways_rl
+							found = true
+						}
+						'span-bottom' {
+							value = Keyword.span_bottom
+							found = true
+						}
+						'srgb-linear' {
+							value = Keyword.srgb_linear
+							found = true
+						}
+						'subtractive' {
+							value = Keyword.subtractive
+							found = true
+						}
+						else {}
 					}
 				}
 				0x74 {
-					return match name {
-						'text-bottom' { Keyword.text_bottom }
-						'traditional' { Keyword.traditional }
-						else { none }
+					match name {
+						'text-bottom' {
+							value = Keyword.text_bottom
+							found = true
+						}
+						'traditional' {
+							value = Keyword.traditional
+							found = true
+						}
+						else {}
 					}
 				}
 				0x75 {
-					return match name {
-						'upper-alpha' { Keyword.upper_alpha }
-						'upper-latin' { Keyword.upper_latin }
-						'upper-roman' { Keyword.upper_roman }
-						else { none }
+					match name {
+						'upper-alpha' {
+							value = Keyword.upper_alpha
+							found = true
+						}
+						'upper-latin' {
+							value = Keyword.upper_latin
+							found = true
+						}
+						'upper-roman' {
+							value = Keyword.upper_roman
+							found = true
+						}
+						else {}
 					}
 				}
 				0x76 {
-					return match name {
-						'vertical-lr' { Keyword.vertical_lr }
-						'vertical-rl' { Keyword.vertical_rl }
-						'visitedtext' { Keyword.visitedtext }
-						else { none }
+					match name {
+						'vertical-lr' {
+							value = Keyword.vertical_lr
+							found = true
+						}
+						'vertical-rl' {
+							value = Keyword.vertical_rl
+							found = true
+						}
+						'visitedtext' {
+							value = Keyword.visitedtext
+							found = true
+						}
+						else {}
 					}
 				}
 				0x77 {
-					return match name {
-						'warang-citi' { Keyword.warang_citi }
-						'windowframe' { Keyword.windowframe }
-						else { none }
+					match name {
+						'warang-citi' {
+							value = Keyword.warang_citi
+							found = true
+						}
+						'windowframe' {
+							value = Keyword.windowframe
+							found = true
+						}
+						else {}
 					}
 				}
 				else {}
@@ -4522,132 +6221,279 @@ pub fn keyword_from_string(input string) ?Keyword {
 		12 {
 			match name[0] {
 				0x2d {
-					return match name {
-						'-libweb-left' { Keyword.libweb_left }
-						'-libweb-link' { Keyword.libweb_link }
-						else { none }
+					match name {
+						'-libweb-left' {
+							value = Keyword.libweb_left
+							found = true
+						}
+						'-libweb-link' {
+							value = Keyword.libweb_link
+							found = true
+						}
+						else {}
 					}
 				}
 				0x61 {
-					return match name {
-						'activeborder' { Keyword.activeborder }
-						'appworkspace' { Keyword.appworkspace }
-						'arabic-abjad' { Keyword.arabic_abjad }
-						'arabic-indic' { Keyword.arabic_indic }
-						'avoid-column' { Keyword.avoid_column }
-						'avoid-region' { Keyword.avoid_region }
-						else { none }
+					match name {
+						'activeborder' {
+							value = Keyword.activeborder
+							found = true
+						}
+						'appworkspace' {
+							value = Keyword.appworkspace
+							found = true
+						}
+						'arabic-abjad' {
+							value = Keyword.arabic_abjad
+							found = true
+						}
+						'arabic-indic' {
+							value = Keyword.arabic_indic
+							found = true
+						}
+						'avoid-column' {
+							value = Keyword.avoid_column
+							found = true
+						}
+						'avoid-region' {
+							value = Keyword.avoid_region
+							found = true
+						}
+						else {}
 					}
 				}
 				0x62 {
-					return match name {
-						'break-spaces' { Keyword.break_spaces }
-						'buttonborder' { Keyword.buttonborder }
-						'buttonshadow' { Keyword.buttonshadow }
-						else { none }
+					match name {
+						'break-spaces' {
+							value = Keyword.break_spaces
+							found = true
+						}
+						'buttonborder' {
+							value = Keyword.buttonborder
+							found = true
+						}
+						'buttonshadow' {
+							value = Keyword.buttonshadow
+							found = true
+						}
+						else {}
 					}
 				}
 				0x63 {
-					return match name {
-						'closest-side' { Keyword.closest_side }
-						'color-colrv0' { Keyword.color_colrv0 }
-						'color-colrv1' { Keyword.color_colrv1 }
-						'context-menu' { Keyword.context_menu }
-						'currentcolor' { Keyword.currentcolor }
-						else { none }
+					match name {
+						'closest-side' {
+							value = Keyword.closest_side
+							found = true
+						}
+						'color-colrv0' {
+							value = Keyword.color_colrv0
+							found = true
+						}
+						'color-colrv1' {
+							value = Keyword.color_colrv1
+							found = true
+						}
+						'context-menu' {
+							value = Keyword.context_menu
+							found = true
+						}
+						'currentcolor' {
+							value = Keyword.currentcolor
+							found = true
+						}
+						else {}
 					}
 				}
 				0x66 {
-					return match name {
-						'features-aat' { Keyword.features_aat }
-						else { none }
+					match name {
+						'features-aat' {
+							value = Keyword.features_aat
+							found = true
+						}
+						else {}
 					}
 				}
 				0x68 {
-					return match name {
-						'high-quality' { Keyword.high_quality }
-						else { none }
+					match name {
+						'high-quality' {
+							value = Keyword.high_quality
+							found = true
+						}
+						else {}
 					}
 				}
 				0x69 {
-					return match name {
-						'initial-only' { Keyword.initial_only }
-						'inline-block' { Keyword.inline_block }
-						'inline-start' { Keyword.inline_start }
-						'inline-table' { Keyword.inline_table }
-						else { none }
+					match name {
+						'initial-only' {
+							value = Keyword.initial_only
+							found = true
+						}
+						'inline-block' {
+							value = Keyword.inline_block
+							found = true
+						}
+						'inline-start' {
+							value = Keyword.inline_start
+							found = true
+						}
+						'inline-table' {
+							value = Keyword.inline_table
+							found = true
+						}
+						else {}
 					}
 				}
 				0x6c {
-					return match name {
-						'line-through' { Keyword.line_through }
-						else { none }
+					match name {
+						'line-through' {
+							value = Keyword.line_through
+							found = true
+						}
+						else {}
 					}
 				}
 				0x6d {
-					return match name {
-						'manipulation' { Keyword.manipulation }
-						'match-parent' { Keyword.match_parent }
-						'match-source' { Keyword.match_source }
-						'mathematical' { Keyword.mathematical }
-						else { none }
+					match name {
+						'manipulation' {
+							value = Keyword.manipulation
+							found = true
+						}
+						'match-parent' {
+							value = Keyword.match_parent
+							found = true
+						}
+						'match-source' {
+							value = Keyword.match_source
+							found = true
+						}
+						'mathematical' {
+							value = Keyword.mathematical
+							found = true
+						}
+						else {}
 					}
 				}
 				0x6e {
-					return match name {
-						'nko-cardinal' { Keyword.nko_cardinal }
-						else { none }
+					match name {
+						'nko-cardinal' {
+							value = Keyword.nko_cardinal
+							found = true
+						}
+						else {}
 					}
 				}
 				0x70 {
-					return match name {
-						'plus-lighter' { Keyword.plus_lighter }
-						'progress-bar' { Keyword.progress_bar }
-						'prophoto-rgb' { Keyword.prophoto_rgb }
-						else { none }
+					match name {
+						'plus-lighter' {
+							value = Keyword.plus_lighter
+							found = true
+						}
+						'progress-bar' {
+							value = Keyword.progress_bar
+							found = true
+						}
+						'prophoto-rgb' {
+							value = Keyword.prophoto_rgb
+							found = true
+						}
+						else {}
 					}
 				}
 				0x72 {
-					return match name {
-						'revert-layer' { Keyword.revert_layer }
-						'rotate-right' { Keyword.rotate_right }
-						else { none }
+					match name {
+						'revert-layer' {
+							value = Keyword.revert_layer
+							found = true
+						}
+						'rotate-right' {
+							value = Keyword.rotate_right
+							found = true
+						}
+						else {}
 					}
 				}
 				0x73 {
-					return match name {
-						'scroll-state' { Keyword.scroll_state }
-						'selecteditem' { Keyword.selecteditem }
-						'self-x-start' { Keyword.self_x_start }
-						'self-y-start' { Keyword.self_y_start }
-						'slashed-zero' { Keyword.slashed_zero }
-						'space-around' { Keyword.space_around }
-						'space-evenly' { Keyword.space_evenly }
-						'span-x-start' { Keyword.span_x_start }
-						'span-y-start' { Keyword.span_y_start }
-						else { none }
+					match name {
+						'scroll-state' {
+							value = Keyword.scroll_state
+							found = true
+						}
+						'selecteditem' {
+							value = Keyword.selecteditem
+							found = true
+						}
+						'self-x-start' {
+							value = Keyword.self_x_start
+							found = true
+						}
+						'self-y-start' {
+							value = Keyword.self_y_start
+							found = true
+						}
+						'slashed-zero' {
+							value = Keyword.slashed_zero
+							found = true
+						}
+						'space-around' {
+							value = Keyword.space_around
+							found = true
+						}
+						'space-evenly' {
+							value = Keyword.space_evenly
+							found = true
+						}
+						'span-x-start' {
+							value = Keyword.span_x_start
+							found = true
+						}
+						'span-y-start' {
+							value = Keyword.span_y_start
+							found = true
+						}
+						else {}
 					}
 				}
 				0x74 {
-					return match name {
-						'table-column' { Keyword.table_column }
-						'tabular-nums' { Keyword.tabular_nums }
-						'telugu-alpha' { Keyword.telugu_alpha }
-						'threedshadow' { Keyword.threedshadow }
-						'titling-caps' { Keyword.titling_caps }
-						else { none }
+					match name {
+						'table-column' {
+							value = Keyword.table_column
+							found = true
+						}
+						'tabular-nums' {
+							value = Keyword.tabular_nums
+							found = true
+						}
+						'telugu-alpha' {
+							value = Keyword.telugu_alpha
+							found = true
+						}
+						'threedshadow' {
+							value = Keyword.threedshadow
+							found = true
+						}
+						'titling-caps' {
+							value = Keyword.titling_caps
+							found = true
+						}
+						else {}
 					}
 				}
 				0x75 {
-					return match name {
-						'ui-monospace' { Keyword.ui_monospace }
-						else { none }
+					match name {
+						'ui-monospace' {
+							value = Keyword.ui_monospace
+							found = true
+						}
+						else {}
 					}
 				}
 				0x77 {
-					return match name {
-						'wrap-reverse' { Keyword.wrap_reverse }
-						else { none }
+					match name {
+						'wrap-reverse' {
+							value = Keyword.wrap_reverse
+							found = true
+						}
+						else {}
 					}
 				}
 				else {}
@@ -4656,114 +6502,207 @@ pub fn keyword_from_string(input string) ?Keyword {
 		13 {
 			match name[0] {
 				0x2d {
-					return match name {
-						'-libweb-right' { Keyword.libweb_right }
-						else { none }
+					match name {
+						'-libweb-right' {
+							value = Keyword.libweb_right
+							found = true
+						}
+						else {}
 					}
 				}
 				0x61 {
-					return match name {
-						'activecaption' { Keyword.activecaption }
-						'anchors-valid' { Keyword.anchors_valid }
-						'ancient-tamil' { Keyword.ancient_tamil }
-						else { none }
+					match name {
+						'activecaption' {
+							value = Keyword.activecaption
+							found = true
+						}
+						'anchors-valid' {
+							value = Keyword.anchors_valid
+							found = true
+						}
+						'ancient-tamil' {
+							value = Keyword.ancient_tamil
+							found = true
+						}
+						else {}
 					}
 				}
 				0x62 {
-					return match name {
-						'bidi-override' { Keyword.bidi_override }
-						else { none }
+					match name {
+						'bidi-override' {
+							value = Keyword.bidi_override
+							found = true
+						}
+						else {}
 					}
 				}
 				0x64 {
-					return match name {
-						'discard-after' { Keyword.discard_after }
-						'discard-inner' { Keyword.discard_inner }
-						else { none }
+					match name {
+						'discard-after' {
+							value = Keyword.discard_after
+							found = true
+						}
+						'discard-inner' {
+							value = Keyword.discard_inner
+							found = true
+						}
+						else {}
 					}
 				}
 				0x66 {
-					return match name {
-						'farthest-side' { Keyword.farthest_side }
-						else { none }
+					match name {
+						'farthest-side' {
+							value = Keyword.farthest_side
+							found = true
+						}
+						else {}
 					}
 				}
 				0x67 {
-					return match name {
-						'grammar-error' { Keyword.grammar_error }
-						else { none }
+					match name {
+						'grammar-error' {
+							value = Keyword.grammar_error
+							found = true
+						}
+						else {}
 					}
 				}
 				0x68 {
-					return match name {
-						'highlighttext' { Keyword.highlighttext }
-						'horizontal-tb' { Keyword.horizontal_tb }
-						else { none }
+					match name {
+						'highlighttext' {
+							value = Keyword.highlighttext
+							found = true
+						}
+						'horizontal-tb' {
+							value = Keyword.horizontal_tb
+							found = true
+						}
+						else {}
 					}
 				}
 				0x6b {
-					return match name {
-						'kannada-alpha' { Keyword.kannada_alpha }
-						else { none }
+					match name {
+						'kannada-alpha' {
+							value = Keyword.kannada_alpha
+							found = true
+						}
+						else {}
 					}
 				}
 				0x6c {
-					return match name {
-						'lower-russian' { Keyword.lower_russian }
-						'lower-serbian' { Keyword.lower_serbian }
-						else { none }
+					match name {
+						'lower-russian' {
+							value = Keyword.lower_russian
+							found = true
+						}
+						'lower-serbian' {
+							value = Keyword.lower_serbian
+							found = true
+						}
+						else {}
 					}
 				}
 				0x6e {
-					return match name {
-						'no-contextual' { Keyword.no_contextual }
-						'no-open-quote' { Keyword.no_open_quote }
-						'no-preference' { Keyword.no_preference }
-						else { none }
+					match name {
+						'no-contextual' {
+							value = Keyword.no_contextual
+							found = true
+						}
+						'no-open-quote' {
+							value = Keyword.no_open_quote
+							found = true
+						}
+						'no-preference' {
+							value = Keyword.no_preference
+							found = true
+						}
+						else {}
 					}
 				}
 				0x6f {
-					return match name {
-						'oldstyle-nums' { Keyword.oldstyle_nums }
-						'optimizespeed' { Keyword.optimizespeed }
-						else { none }
+					match name {
+						'oldstyle-nums' {
+							value = Keyword.oldstyle_nums
+							found = true
+						}
+						'optimizespeed' {
+							value = Keyword.optimizespeed
+							found = true
+						}
+						else {}
 					}
 				}
 				0x70 {
-					return match name {
-						'persian-abjad' { Keyword.persian_abjad }
-						else { none }
+					match name {
+						'persian-abjad' {
+							value = Keyword.persian_abjad
+							found = true
+						}
+						else {}
 					}
 				}
 				0x73 {
-					return match name {
-						'semi-expanded' { Keyword.semi_expanded }
-						'space-between' { Keyword.space_between }
-						'span-self-end' { Keyword.span_self_end }
-						'square-button' { Keyword.square_button }
-						'strict-origin' { Keyword.strict_origin }
-						'super-decimal' { Keyword.super_decimal }
-						else { none }
+					match name {
+						'semi-expanded' {
+							value = Keyword.semi_expanded
+							found = true
+						}
+						'space-between' {
+							value = Keyword.space_between
+							found = true
+						}
+						'span-self-end' {
+							value = Keyword.span_self_end
+							found = true
+						}
+						'square-button' {
+							value = Keyword.square_button
+							found = true
+						}
+						'strict-origin' {
+							value = Keyword.strict_origin
+							found = true
+						}
+						'super-decimal' {
+							value = Keyword.super_decimal
+							found = true
+						}
+						else {}
 					}
 				}
 				0x74 {
-					return match name {
-						'table-caption' { Keyword.table_caption }
-						else { none }
+					match name {
+						'table-caption' {
+							value = Keyword.table_caption
+							found = true
+						}
+						else {}
 					}
 				}
 				0x75 {
-					return match name {
-						'ui-sans-serif' { Keyword.ui_sans_serif }
-						'upper-russian' { Keyword.upper_russian }
-						'upper-serbian' { Keyword.upper_serbian }
-						else { none }
+					match name {
+						'ui-sans-serif' {
+							value = Keyword.ui_sans_serif
+							found = true
+						}
+						'upper-russian' {
+							value = Keyword.upper_russian
+							found = true
+						}
+						'upper-serbian' {
+							value = Keyword.upper_serbian
+							found = true
+						}
+						else {}
 					}
 				}
 				0x76 {
-					return match name {
-						'vertical-text' { Keyword.vertical_text }
-						else { none }
+					match name {
+						'vertical-text' {
+							value = Keyword.vertical_text
+							found = true
+						}
+						else {}
 					}
 				}
 				else {}
@@ -4772,104 +6711,182 @@ pub fn keyword_from_string(input string) ?Keyword {
 		14 {
 			match name[0] {
 				0x2d {
-					return match name {
-						'-libweb-center' { Keyword.libweb_center }
-						'-webkit-legacy' { Keyword.webkit_legacy }
-						else { none }
+					match name {
+						'-libweb-center' {
+							value = Keyword.libweb_center
+							found = true
+						}
+						'-webkit-legacy' {
+							value = Keyword.webkit_legacy
+							found = true
+						}
+						else {}
 					}
 				}
 				0x61 {
-					return match name {
-						'all-small-caps' { Keyword.all_small_caps }
-						'allow-discrete' { Keyword.allow_discrete }
-						else { none }
+					match name {
+						'all-small-caps' {
+							value = Keyword.all_small_caps
+							found = true
+						}
+						'allow-discrete' {
+							value = Keyword.allow_discrete
+							found = true
+						}
+						else {}
 					}
 				}
 				0x63 {
-					return match name {
-						'cjk-tally-mark' { Keyword.cjk_tally_mark }
-						'closest-corner' { Keyword.closest_corner }
-						'column-reverse' { Keyword.column_reverse }
-						else { none }
+					match name {
+						'cjk-tally-mark' {
+							value = Keyword.cjk_tally_mark
+							found = true
+						}
+						'closest-corner' {
+							value = Keyword.closest_corner
+							found = true
+						}
+						'column-reverse' {
+							value = Keyword.column_reverse
+							found = true
+						}
+						else {}
 					}
 				}
 				0x64 {
-					return match name {
-						'discard-before' { Keyword.discard_before }
-						'dotted-decimal' { Keyword.dotted_decimal }
-						else { none }
+					match name {
+						'discard-before' {
+							value = Keyword.discard_before
+							found = true
+						}
+						'dotted-decimal' {
+							value = Keyword.dotted_decimal
+							found = true
+						}
+						else {}
 					}
 				}
 				0x65 {
-					return match name {
-						'element-shared' { Keyword.element_shared }
-						'extra-expanded' { Keyword.extra_expanded }
-						else { none }
+					match name {
+						'element-shared' {
+							value = Keyword.element_shared
+							found = true
+						}
+						'extra-expanded' {
+							value = Keyword.extra_expanded
+							found = true
+						}
+						else {}
 					}
 				}
 				0x66 {
-					return match name {
-						'full-size-kana' { Keyword.full_size_kana }
-						else { none }
+					match name {
+						'full-size-kana' {
+							value = Keyword.full_size_kana
+							found = true
+						}
+						else {}
 					}
 				}
 				0x67 {
-					return match name {
-						'gujarati-alpha' { Keyword.gujarati_alpha }
-						else { none }
+					match name {
+						'gujarati-alpha' {
+							value = Keyword.gujarati_alpha
+							found = true
+						}
+						else {}
 					}
 				}
 				0x68 {
-					return match name {
-						'hiragana-iroha' { Keyword.hiragana_iroha }
-						else { none }
+					match name {
+						'hiragana-iroha' {
+							value = Keyword.hiragana_iroha
+							found = true
+						}
+						else {}
 					}
 				}
 				0x69 {
-					return match name {
-						'inactiveborder' { Keyword.inactiveborder }
-						'infobackground' { Keyword.infobackground }
-						else { none }
+					match name {
+						'inactiveborder' {
+							value = Keyword.inactiveborder
+							found = true
+						}
+						'infobackground' {
+							value = Keyword.infobackground
+							found = true
+						}
+						else {}
 					}
 				}
 				0x6b {
-					return match name {
-						'katakana-iroha' { Keyword.katakana_iroha }
-						else { none }
+					match name {
+						'katakana-iroha' {
+							value = Keyword.katakana_iroha
+							found = true
+						}
+						else {}
 					}
 				}
 				0x6c {
-					return match name {
-						'lower-armenian' { Keyword.lower_armenian }
-						else { none }
+					match name {
+						'lower-armenian' {
+							value = Keyword.lower_armenian
+							found = true
+						}
+						else {}
 					}
 				}
 				0x6d {
-					return match name {
-						'maghrebi-abjad' { Keyword.maghrebi_abjad }
-						else { none }
+					match name {
+						'maghrebi-abjad' {
+							value = Keyword.maghrebi_abjad
+							found = true
+						}
+						else {}
 					}
 				}
 				0x6e {
-					return match name {
-						'no-close-quote' { Keyword.no_close_quote }
-						else { none }
+					match name {
+						'no-close-quote' {
+							value = Keyword.no_close_quote
+							found = true
+						}
+						else {}
 					}
 				}
 				0x73 {
-					return match name {
-						'self-block-end' { Keyword.self_block_end }
-						'semi-condensed' { Keyword.semi_condensed }
-						'span-block-end' { Keyword.span_block_end }
-						'spelling-error' { Keyword.spelling_error }
-						else { none }
+					match name {
+						'self-block-end' {
+							value = Keyword.self_block_end
+							found = true
+						}
+						'semi-condensed' {
+							value = Keyword.semi_condensed
+							found = true
+						}
+						'span-block-end' {
+							value = Keyword.span_block_end
+							found = true
+						}
+						'spelling-error' {
+							value = Keyword.spelling_error
+							found = true
+						}
+						else {}
 					}
 				}
 				0x75 {
-					return match name {
-						'ultra-expanded' { Keyword.ultra_expanded }
-						'upper-armenian' { Keyword.upper_armenian }
-						else { none }
+					match name {
+						'ultra-expanded' {
+							value = Keyword.ultra_expanded
+							found = true
+						}
+						'upper-armenian' {
+							value = Keyword.upper_armenian
+							found = true
+						}
+						else {}
 					}
 				}
 				else {}
@@ -4878,125 +6895,236 @@ pub fn keyword_from_string(input string) ?Keyword {
 		15 {
 			match name[0] {
 				0x61 {
-					return match name {
-						'accentcolortext' { Keyword.accentcolortext }
-						'all-petite-caps' { Keyword.all_petite_caps }
-						'anchors-visible' { Keyword.anchors_visible }
-						else { none }
+					match name {
+						'accentcolortext' {
+							value = Keyword.accentcolortext
+							found = true
+						}
+						'all-petite-caps' {
+							value = Keyword.all_petite_caps
+							found = true
+						}
+						'anchors-visible' {
+							value = Keyword.anchors_visible
+							found = true
+						}
+						else {}
 					}
 				}
 				0x62 {
-					return match name {
-						'buttonhighlight' { Keyword.buttonhighlight }
-						else { none }
+					match name {
+						'buttonhighlight' {
+							value = Keyword.buttonhighlight
+							found = true
+						}
+						else {}
 					}
 				}
 				0x63 {
-					return match name {
-						'circled-decimal' { Keyword.circled_decimal }
-						'cjk-ideographic' { Keyword.cjk_ideographic }
-						'cjk-stem-branch' { Keyword.cjk_stem_branch }
-						else { none }
+					match name {
+						'circled-decimal' {
+							value = Keyword.circled_decimal
+							found = true
+						}
+						'cjk-ideographic' {
+							value = Keyword.cjk_ideographic
+							found = true
+						}
+						'cjk-stem-branch' {
+							value = Keyword.cjk_stem_branch
+							found = true
+						}
+						else {}
 					}
 				}
 				0x64 {
-					return match name {
-						'disclosure-open' { Keyword.disclosure_open }
-						else { none }
+					match name {
+						'disclosure-open' {
+							value = Keyword.disclosure_open
+							found = true
+						}
+						else {}
 					}
 				}
 				0x65 {
-					return match name {
-						'extra-condensed' { Keyword.extra_condensed }
-						else { none }
+					match name {
+						'extra-condensed' {
+							value = Keyword.extra_condensed
+							found = true
+						}
+						else {}
 					}
 				}
 				0x66 {
-					return match name {
-						'farthest-corner' { Keyword.farthest_corner }
-						else { none }
+					match name {
+						'farthest-corner' {
+							value = Keyword.farthest_corner
+							found = true
+						}
+						else {}
 					}
 				}
 				0x68 {
-					return match name {
-						'hanifi-rohingya' { Keyword.hanifi_rohingya }
-						else { none }
+					match name {
+						'hanifi-rohingya' {
+							value = Keyword.hanifi_rohingya
+							found = true
+						}
+						else {}
 					}
 				}
 				0x69 {
-					return match name {
-						'inactivecaption' { Keyword.inactivecaption }
-						'inter-character' { Keyword.inter_character }
-						else { none }
+					match name {
+						'inactivecaption' {
+							value = Keyword.inactivecaption
+							found = true
+						}
+						'inter-character' {
+							value = Keyword.inter_character
+							found = true
+						}
+						else {}
 					}
 				}
 				0x6a {
-					return match name {
-						'japanese-formal' { Keyword.japanese_formal }
-						else { none }
+					match name {
+						'japanese-formal' {
+							value = Keyword.japanese_formal
+							found = true
+						}
+						else {}
 					}
 				}
 				0x6b {
-					return match name {
-						'khmer-consonant' { Keyword.khmer_consonant }
-						'korean-syllable' { Keyword.korean_syllable }
-						else { none }
+					match name {
+						'khmer-consonant' {
+							value = Keyword.khmer_consonant
+							found = true
+						}
+						'korean-syllable' {
+							value = Keyword.korean_syllable
+							found = true
+						}
+						else {}
 					}
 				}
 				0x6c {
-					return match name {
-						'lower-bulgarian' { Keyword.lower_bulgarian }
-						'lower-ukrainian' { Keyword.lower_ukrainian }
-						else { none }
+					match name {
+						'lower-bulgarian' {
+							value = Keyword.lower_bulgarian
+							found = true
+						}
+						'lower-ukrainian' {
+							value = Keyword.lower_ukrainian
+							found = true
+						}
+						else {}
 					}
 				}
 				0x6d {
-					return match name {
-						'malayalam-alpha' { Keyword.malayalam_alpha }
-						'menulist-button' { Keyword.menulist_button }
-						'most-block-size' { Keyword.most_block_size }
-						else { none }
+					match name {
+						'malayalam-alpha' {
+							value = Keyword.malayalam_alpha
+							found = true
+						}
+						'menulist-button' {
+							value = Keyword.menulist_button
+							found = true
+						}
+						'most-block-size' {
+							value = Keyword.most_block_size
+							found = true
+						}
+						else {}
 					}
 				}
 				0x6f {
-					return match name {
-						'optimizequality' { Keyword.optimizequality }
-						else { none }
+					match name {
+						'optimizequality' {
+							value = Keyword.optimizequality
+							found = true
+						}
+						else {}
 					}
 				}
 				0x70 {
-					return match name {
-						'preserve-breaks' { Keyword.preserve_breaks }
-						'preserve-spaces' { Keyword.preserve_spaces }
-						else { none }
+					match name {
+						'preserve-breaks' {
+							value = Keyword.preserve_breaks
+							found = true
+						}
+						'preserve-spaces' {
+							value = Keyword.preserve_spaces
+							found = true
+						}
+						else {}
 					}
 				}
 				0x73 {
-					return match name {
-						'scroll-position' { Keyword.scroll_position }
-						'self-inline-end' { Keyword.self_inline_end }
-						'span-inline-end' { Keyword.span_inline_end }
-						'span-self-start' { Keyword.span_self_start }
-						'span-self-x-end' { Keyword.span_self_x_end }
-						'span-self-y-end' { Keyword.span_self_y_end }
-						else { none }
+					match name {
+						'scroll-position' {
+							value = Keyword.scroll_position
+							found = true
+						}
+						'self-inline-end' {
+							value = Keyword.self_inline_end
+							found = true
+						}
+						'span-inline-end' {
+							value = Keyword.span_inline_end
+							found = true
+						}
+						'span-self-start' {
+							value = Keyword.span_self_start
+							found = true
+						}
+						'span-self-x-end' {
+							value = Keyword.span_self_x_end
+							found = true
+						}
+						'span-self-y-end' {
+							value = Keyword.span_self_y_end
+							found = true
+						}
+						else {}
 					}
 				}
 				0x74 {
-					return match name {
-						'table-row-group' { Keyword.table_row_group }
-						'threedhighlight' { Keyword.threedhighlight }
-						else { none }
+					match name {
+						'table-row-group' {
+							value = Keyword.table_row_group
+							found = true
+						}
+						'threedhighlight' {
+							value = Keyword.threedhighlight
+							found = true
+						}
+						else {}
 					}
 				}
 				0x75 {
-					return match name {
-						'ultra-condensed' { Keyword.ultra_condensed }
-						'upper-bulgarian' { Keyword.upper_bulgarian }
-						'upper-ukrainian' { Keyword.upper_ukrainian }
-						'urdu-alphabetic' { Keyword.urdu_alphabetic }
-						'use-credentials' { Keyword.use_credentials }
-						else { none }
+					match name {
+						'ultra-condensed' {
+							value = Keyword.ultra_condensed
+							found = true
+						}
+						'upper-bulgarian' {
+							value = Keyword.upper_bulgarian
+							found = true
+						}
+						'upper-ukrainian' {
+							value = Keyword.upper_ukrainian
+							found = true
+						}
+						'urdu-alphabetic' {
+							value = Keyword.urdu_alphabetic
+							found = true
+						}
+						'use-credentials' {
+							value = Keyword.use_credentials
+							found = true
+						}
+						else {}
 					}
 				}
 				else {}
@@ -5005,67 +7133,109 @@ pub fn keyword_from_string(input string) ?Keyword {
 		16 {
 			match name[0] {
 				0x63 {
-					return match name {
-						'circled-katakana' { Keyword.circled_katakana }
-						'common-ligatures' { Keyword.common_ligatures }
-						else { none }
+					match name {
+						'circled-katakana' {
+							value = Keyword.circled_katakana
+							found = true
+						}
+						'common-ligatures' {
+							value = Keyword.common_ligatures
+							found = true
+						}
+						else {}
 					}
 				}
 				0x65 {
-					return match name {
-						'ethiopic-numeric' { Keyword.ethiopic_numeric }
-						else { none }
+					match name {
+						'ethiopic-numeric' {
+							value = Keyword.ethiopic_numeric
+							found = true
+						}
+						else {}
 					}
 				}
 				0x68 {
-					return match name {
-						'hangul-consonant' { Keyword.hangul_consonant }
-						'historical-forms' { Keyword.historical_forms }
-						else { none }
+					match name {
+						'hangul-consonant' {
+							value = Keyword.hangul_consonant
+							found = true
+						}
+						'historical-forms' {
+							value = Keyword.historical_forms
+							found = true
+						}
+						else {}
 					}
 				}
 				0x69 {
-					return match name {
-						'isolate-override' { Keyword.isolate_override }
-						else { none }
+					match name {
+						'isolate-override' {
+							value = Keyword.isolate_override
+							found = true
+						}
+						else {}
 					}
 				}
 				0x6b {
-					return match name {
-						'korean-consonant' { Keyword.korean_consonant }
-						else { none }
+					match name {
+						'korean-consonant' {
+							value = Keyword.korean_consonant
+							found = true
+						}
+						else {}
 					}
 				}
 				0x6c {
-					return match name {
-						'lower-macedonian' { Keyword.lower_macedonian }
-						else { none }
+					match name {
+						'lower-macedonian' {
+							value = Keyword.lower_macedonian
+							found = true
+						}
+						else {}
 					}
 				}
 				0x6d {
-					return match name {
-						'most-inline-size' { Keyword.most_inline_size }
-						else { none }
+					match name {
+						'most-inline-size' {
+							value = Keyword.most_inline_size
+							found = true
+						}
+						else {}
 					}
 				}
 				0x73 {
-					return match name {
-						'selecteditemtext' { Keyword.selecteditemtext }
-						'self-block-start' { Keyword.self_block_start }
-						'span-block-start' { Keyword.span_block_start }
-						else { none }
+					match name {
+						'selecteditemtext' {
+							value = Keyword.selecteditemtext
+							found = true
+						}
+						'self-block-start' {
+							value = Keyword.self_block_start
+							found = true
+						}
+						'span-block-start' {
+							value = Keyword.span_block_start
+							found = true
+						}
+						else {}
 					}
 				}
 				0x74 {
-					return match name {
-						'threeddarkshadow' { Keyword.threeddarkshadow }
-						else { none }
+					match name {
+						'threeddarkshadow' {
+							value = Keyword.threeddarkshadow
+							found = true
+						}
+						else {}
 					}
 				}
 				0x75 {
-					return match name {
-						'upper-macedonian' { Keyword.upper_macedonian }
-						else { none }
+					match name {
+						'upper-macedonian' {
+							value = Keyword.upper_macedonian
+							found = true
+						}
+						else {}
 					}
 				}
 				else {}
@@ -5074,82 +7244,154 @@ pub fn keyword_from_string(input string) ?Keyword {
 		17 {
 			match name[0] {
 				0x61 {
-					return match name {
-						'alternate-reverse' { Keyword.alternate_reverse }
-						else { none }
+					match name {
+						'alternate-reverse' {
+							value = Keyword.alternate_reverse
+							found = true
+						}
+						else {}
 					}
 				}
 				0x63 {
-					return match name {
-						'circled-ideograph' { Keyword.circled_ideograph }
-						'cjk-heavenly-stem' { Keyword.cjk_heavenly_stem }
-						else { none }
+					match name {
+						'circled-ideograph' {
+							value = Keyword.circled_ideograph
+							found = true
+						}
+						'cjk-heavenly-stem' {
+							value = Keyword.cjk_heavenly_stem
+							found = true
+						}
+						else {}
 					}
 				}
 				0x64 {
-					return match name {
-						'disclosure-closed' { Keyword.disclosure_closed }
-						'display-p3-linear' { Keyword.display_p3_linear }
-						else { none }
+					match name {
+						'disclosure-closed' {
+							value = Keyword.disclosure_closed
+							found = true
+						}
+						'display-p3-linear' {
+							value = Keyword.display_p3_linear
+							found = true
+						}
+						else {}
 					}
 				}
 				0x65 {
-					return match name {
-						'ethiopic-halehame' { Keyword.ethiopic_halehame }
-						else { none }
+					match name {
+						'ethiopic-halehame' {
+							value = Keyword.ethiopic_halehame
+							found = true
+						}
+						else {}
 					}
 				}
 				0x66 {
-					return match name {
-						'features-graphite' { Keyword.features_graphite }
-						'features-opentype' { Keyword.features_opentype }
-						'fullwidth-decimal' { Keyword.fullwidth_decimal }
-						else { none }
+					match name {
+						'features-graphite' {
+							value = Keyword.features_graphite
+							found = true
+						}
+						'features-opentype' {
+							value = Keyword.features_opentype
+							found = true
+						}
+						'fullwidth-decimal' {
+							value = Keyword.fullwidth_decimal
+							found = true
+						}
+						else {}
 					}
 				}
 				0x6a {
-					return match name {
-						'japanese-informal' { Keyword.japanese_informal }
-						else { none }
+					match name {
+						'japanese-informal' {
+							value = Keyword.japanese_informal
+							found = true
+						}
+						else {}
 					}
 				}
 				0x6c {
-					return match name {
-						'lower-belorussian' { Keyword.lower_belorussian }
-						'lower-hexadecimal' { Keyword.lower_hexadecimal }
-						'lower-oromo-qubee' { Keyword.lower_oromo_qubee }
-						else { none }
+					match name {
+						'lower-belorussian' {
+							value = Keyword.lower_belorussian
+							found = true
+						}
+						'lower-hexadecimal' {
+							value = Keyword.lower_hexadecimal
+							found = true
+						}
+						'lower-oromo-qubee' {
+							value = Keyword.lower_oromo_qubee
+							found = true
+						}
+						else {}
 					}
 				}
 				0x70 {
-					return match name {
-						'proportional-nums' { Keyword.proportional_nums }
-						else { none }
+					match name {
+						'proportional-nums' {
+							value = Keyword.proportional_nums
+							found = true
+						}
+						else {}
 					}
 				}
 				0x73 {
-					return match name {
-						'self-inline-start' { Keyword.self_inline_start }
-						'slider-horizontal' { Keyword.slider_horizontal }
-						'span-inline-start' { Keyword.span_inline_start }
-						'span-self-x-start' { Keyword.span_self_x_start }
-						'span-self-y-start' { Keyword.span_self_y_start }
-						'stacked-fractions' { Keyword.stacked_fractions }
-						else { none }
+					match name {
+						'self-inline-start' {
+							value = Keyword.self_inline_start
+							found = true
+						}
+						'slider-horizontal' {
+							value = Keyword.slider_horizontal
+							found = true
+						}
+						'span-inline-start' {
+							value = Keyword.span_inline_start
+							found = true
+						}
+						'span-self-x-start' {
+							value = Keyword.span_self_x_start
+							found = true
+						}
+						'span-self-y-start' {
+							value = Keyword.span_self_y_start
+							found = true
+						}
+						'stacked-fractions' {
+							value = Keyword.stacked_fractions
+							found = true
+						}
+						else {}
 					}
 				}
 				0x74 {
-					return match name {
-						'threedlightshadow' { Keyword.threedlightshadow }
-						else { none }
+					match name {
+						'threedlightshadow' {
+							value = Keyword.threedlightshadow
+							found = true
+						}
+						else {}
 					}
 				}
 				0x75 {
-					return match name {
-						'upper-belorussian' { Keyword.upper_belorussian }
-						'upper-hexadecimal' { Keyword.upper_hexadecimal }
-						'upper-oromo-qubee' { Keyword.upper_oromo_qubee }
-						else { none }
+					match name {
+						'upper-belorussian' {
+							value = Keyword.upper_belorussian
+							found = true
+						}
+						'upper-hexadecimal' {
+							value = Keyword.upper_hexadecimal
+							found = true
+						}
+						'upper-oromo-qubee' {
+							value = Keyword.upper_oromo_qubee
+							found = true
+						}
+						else {}
 					}
 				}
 				else {}
@@ -5158,76 +7400,130 @@ pub fn keyword_from_string(input string) ?Keyword {
 		18 {
 			match name[0] {
 				0x2d {
-					return match name {
-						'-webkit-inline-box' { Keyword.webkit_inline_box }
-						else { none }
+					match name {
+						'-webkit-inline-box' {
+							value = Keyword.webkit_inline_box
+							found = true
+						}
+						else {}
 					}
 				}
 				0x63 {
-					return match name {
-						'cjk-earthly-branch' { Keyword.cjk_earthly_branch }
-						else { none }
+					match name {
+						'cjk-earthly-branch' {
+							value = Keyword.cjk_earthly_branch
+							found = true
+						}
+						else {}
 					}
 				}
 				0x64 {
-					return match name {
-						'diagonal-fractions' { Keyword.diagonal_fractions }
-						else { none }
+					match name {
+						'diagonal-fractions' {
+							value = Keyword.diagonal_fractions
+							found = true
+						}
+						else {}
 					}
 				}
 				0x67 {
-					return match name {
-						'geometricprecision' { Keyword.geometricprecision }
-						'greek-lower-modern' { Keyword.greek_lower_modern }
-						'greek-upper-modern' { Keyword.greek_upper_modern }
-						else { none }
+					match name {
+						'geometricprecision' {
+							value = Keyword.geometricprecision
+							found = true
+						}
+						'greek-lower-modern' {
+							value = Keyword.greek_lower_modern
+							found = true
+						}
+						'greek-upper-modern' {
+							value = Keyword.greek_upper_modern
+							found = true
+						}
+						else {}
 					}
 				}
 				0x6c {
-					return match name {
-						'lower-russian-full' { Keyword.lower_russian_full }
-						else { none }
+					match name {
+						'lower-russian-full' {
+							value = Keyword.lower_russian_full
+							found = true
+						}
+						else {}
 					}
 				}
 				0x6e {
-					return match name {
-						'non-scaling-stroke' { Keyword.non_scaling_stroke }
-						else { none }
+					match name {
+						'non-scaling-stroke' {
+							value = Keyword.non_scaling_stroke
+							found = true
+						}
+						else {}
 					}
 				}
 				0x6f {
-					return match name {
-						'optimizelegibility' { Keyword.optimizelegibility }
-						else { none }
+					match name {
+						'optimizelegibility' {
+							value = Keyword.optimizelegibility
+							found = true
+						}
+						else {}
 					}
 				}
 				0x70 {
-					return match name {
-						'persian-alphabetic' { Keyword.persian_alphabetic }
-						'picture-in-picture' { Keyword.picture_in_picture }
-						'proportional-width' { Keyword.proportional_width }
-						else { none }
+					match name {
+						'persian-alphabetic' {
+							value = Keyword.persian_alphabetic
+							found = true
+						}
+						'picture-in-picture' {
+							value = Keyword.picture_in_picture
+							found = true
+						}
+						'proportional-width' {
+							value = Keyword.proportional_width
+							found = true
+						}
+						else {}
 					}
 				}
 				0x73 {
-					return match name {
-						'simple-lower-roman' { Keyword.simple_lower_roman }
-						'simple-upper-roman' { Keyword.simple_upper_roman }
-						else { none }
+					match name {
+						'simple-lower-roman' {
+							value = Keyword.simple_lower_roman
+							found = true
+						}
+						'simple-upper-roman' {
+							value = Keyword.simple_upper_roman
+							found = true
+						}
+						else {}
 					}
 				}
 				0x74 {
-					return match name {
-						'table-column-group' { Keyword.table_column_group }
-						'table-footer-group' { Keyword.table_footer_group }
-						'table-header-group' { Keyword.table_header_group }
-						else { none }
+					match name {
+						'table-column-group' {
+							value = Keyword.table_column_group
+							found = true
+						}
+						'table-footer-group' {
+							value = Keyword.table_footer_group
+							found = true
+						}
+						'table-header-group' {
+							value = Keyword.table_header_group
+							found = true
+						}
+						else {}
 					}
 				}
 				0x75 {
-					return match name {
-						'upper-russian-full' { Keyword.upper_russian_full }
-						else { none }
+					match name {
+						'upper-russian-full' {
+							value = Keyword.upper_russian_full
+							found = true
+						}
+						else {}
 					}
 				}
 				else {}
@@ -5236,55 +7532,91 @@ pub fn keyword_from_string(input string) ?Keyword {
 		19 {
 			match name[0] {
 				0x63 {
-					return match name {
-						'circled-lower-latin' { Keyword.circled_lower_latin }
-						'circled-upper-latin' { Keyword.circled_upper_latin }
-						else { none }
+					match name {
+						'circled-lower-latin' {
+							value = Keyword.circled_lower_latin
+							found = true
+						}
+						'circled-upper-latin' {
+							value = Keyword.circled_upper_latin
+							found = true
+						}
+						else {}
 					}
 				}
 				0x67 {
-					return match name {
-						'greek-lower-ancient' { Keyword.greek_lower_ancient }
-						'greek-upper-ancient' { Keyword.greek_upper_ancient }
-						else { none }
+					match name {
+						'greek-lower-ancient' {
+							value = Keyword.greek_lower_ancient
+							found = true
+						}
+						'greek-upper-ancient' {
+							value = Keyword.greek_upper_ancient
+							found = true
+						}
+						else {}
 					}
 				}
 				0x69 {
-					return match name {
-						'inactivecaptiontext' { Keyword.inactivecaptiontext }
-						else { none }
+					match name {
+						'inactivecaptiontext' {
+							value = Keyword.inactivecaptiontext
+							found = true
+						}
+						else {}
 					}
 				}
 				0x6b {
-					return match name {
-						'korean-hanja-formal' { Keyword.korean_hanja_formal }
-						else { none }
+					match name {
+						'korean-hanja-formal' {
+							value = Keyword.korean_hanja_formal
+							found = true
+						}
+						else {}
 					}
 				}
 				0x6e {
-					return match name {
-						'no-common-ligatures' { Keyword.no_common_ligatures }
-						else { none }
+					match name {
+						'no-common-ligatures' {
+							value = Keyword.no_common_ligatures
+							found = true
+						}
+						else {}
 					}
 				}
 				0x72 {
-					return match name {
-						'ruby-base-container' { Keyword.ruby_base_container }
-						'ruby-text-container' { Keyword.ruby_text_container }
-						else { none }
+					match name {
+						'ruby-base-container' {
+							value = Keyword.ruby_base_container
+							found = true
+						}
+						'ruby-text-container' {
+							value = Keyword.ruby_text_container
+							found = true
+						}
+						else {}
 					}
 				}
 				0x73 {
-					return match name {
-						'simp-chinese-formal' { Keyword.simp_chinese_formal }
-						'span-self-block-end' { Keyword.span_self_block_end }
-						else { none }
+					match name {
+						'simp-chinese-formal' {
+							value = Keyword.simp_chinese_formal
+							found = true
+						}
+						'span-self-block-end' {
+							value = Keyword.span_self_block_end
+							found = true
+						}
+						else {}
 					}
 				}
 				0x74 {
-					return match name {
-						'trad-chinese-formal' { Keyword.trad_chinese_formal }
-						else { none }
+					match name {
+						'trad-chinese-formal' {
+							value = Keyword.trad_chinese_formal
+							found = true
+						}
+						else {}
 					}
 				}
 				else {}
@@ -5293,55 +7625,91 @@ pub fn keyword_from_string(input string) ?Keyword {
 		20 {
 			match name[0] {
 				0x2d {
-					return match name {
-						'-libweb-palette-base' { Keyword.libweb_palette_base }
-						'-libweb-palette-link' { Keyword.libweb_palette_link }
-						else { none }
+					match name {
+						'-libweb-palette-base' {
+							value = Keyword.libweb_palette_base
+							found = true
+						}
+						'-libweb-palette-link' {
+							value = Keyword.libweb_palette_link
+							found = true
+						}
+						else {}
 					}
 				}
 				0x64 {
-					return match name {
-						'decimal-leading-zero' { Keyword.decimal_leading_zero }
-						else { none }
+					match name {
+						'decimal-leading-zero' {
+							value = Keyword.decimal_leading_zero
+							found = true
+						}
+						else {}
 					}
 				}
 				0x65 {
-					return match name {
-						'ethiopic-halehame-am' { Keyword.ethiopic_halehame_am }
-						else { none }
+					match name {
+						'ethiopic-halehame-am' {
+							value = Keyword.ethiopic_halehame_am
+							found = true
+						}
+						else {}
 					}
 				}
 				0x68 {
-					return match name {
-						'historical-ligatures' { Keyword.historical_ligatures }
-						else { none }
+					match name {
+						'historical-ligatures' {
+							value = Keyword.historical_ligatures
+							found = true
+						}
+						else {}
 					}
 				}
 				0x6b {
-					return match name {
-						'korean-hangul-formal' { Keyword.korean_hangul_formal }
-						else { none }
+					match name {
+						'korean-hangul-formal' {
+							value = Keyword.korean_hangul_formal
+							found = true
+						}
+						else {}
 					}
 				}
 				0x6c {
-					return match name {
-						'lower-alpha-symbolic' { Keyword.lower_alpha_symbolic }
-						'lower-ukrainian-full' { Keyword.lower_ukrainian_full }
-						else { none }
+					match name {
+						'lower-alpha-symbolic' {
+							value = Keyword.lower_alpha_symbolic
+							found = true
+						}
+						'lower-ukrainian-full' {
+							value = Keyword.lower_ukrainian_full
+							found = true
+						}
+						else {}
 					}
 				}
 				0x73 {
-					return match name {
-						'span-self-inline-end' { Keyword.span_self_inline_end }
-						'subpixel-antialiased' { Keyword.subpixel_antialiased }
-						else { none }
+					match name {
+						'span-self-inline-end' {
+							value = Keyword.span_self_inline_end
+							found = true
+						}
+						'subpixel-antialiased' {
+							value = Keyword.subpixel_antialiased
+							found = true
+						}
+						else {}
 					}
 				}
 				0x75 {
-					return match name {
-						'upper-alpha-symbolic' { Keyword.upper_alpha_symbolic }
-						'upper-ukrainian-full' { Keyword.upper_ukrainian_full }
-						else { none }
+					match name {
+						'upper-alpha-symbolic' {
+							value = Keyword.upper_alpha_symbolic
+							found = true
+						}
+						'upper-ukrainian-full' {
+							value = Keyword.upper_ukrainian_full
+							found = true
+						}
+						else {}
 					}
 				}
 				else {}
@@ -5350,42 +7718,69 @@ pub fn keyword_from_string(input string) ?Keyword {
 		21 {
 			match name[0] {
 				0x2d {
-					return match name {
-						'-libweb-palette-ruler' { Keyword.libweb_palette_ruler }
-						else { none }
+					match name {
+						'-libweb-palette-ruler' {
+							value = Keyword.libweb_palette_ruler
+							found = true
+						}
+						else {}
 					}
 				}
 				0x66 {
-					return match name {
-						'fullwidth-lower-alpha' { Keyword.fullwidth_lower_alpha }
-						'fullwidth-upper-alpha' { Keyword.fullwidth_upper_alpha }
-						'fullwidth-upper-roman' { Keyword.fullwidth_upper_roman }
-						else { none }
+					match name {
+						'fullwidth-lower-alpha' {
+							value = Keyword.fullwidth_lower_alpha
+							found = true
+						}
+						'fullwidth-upper-alpha' {
+							value = Keyword.fullwidth_upper_alpha
+							found = true
+						}
+						'fullwidth-upper-roman' {
+							value = Keyword.fullwidth_upper_roman
+							found = true
+						}
+						else {}
 					}
 				}
 				0x6b {
-					return match name {
-						'korean-hanja-informal' { Keyword.korean_hanja_informal }
-						else { none }
+					match name {
+						'korean-hanja-informal' {
+							value = Keyword.korean_hanja_informal
+							found = true
+						}
+						else {}
 					}
 				}
 				0x70 {
-					return match name {
-						'parenthesized-decimal' { Keyword.parenthesized_decimal }
-						else { none }
+					match name {
+						'parenthesized-decimal' {
+							value = Keyword.parenthesized_decimal
+							found = true
+						}
+						else {}
 					}
 				}
 				0x73 {
-					return match name {
-						'simp-chinese-informal' { Keyword.simp_chinese_informal }
-						'span-self-block-start' { Keyword.span_self_block_start }
-						else { none }
+					match name {
+						'simp-chinese-informal' {
+							value = Keyword.simp_chinese_informal
+							found = true
+						}
+						'span-self-block-start' {
+							value = Keyword.span_self_block_start
+							found = true
+						}
+						else {}
 					}
 				}
 				0x74 {
-					return match name {
-						'trad-chinese-informal' { Keyword.trad_chinese_informal }
-						else { none }
+					match name {
+						'trad-chinese-informal' {
+							value = Keyword.trad_chinese_informal
+							found = true
+						}
+						else {}
 					}
 				}
 				else {}
@@ -5394,28 +7789,43 @@ pub fn keyword_from_string(input string) ?Keyword {
 		22 {
 			match name[0] {
 				0x2d {
-					return match name {
-						'-libweb-palette-button' { Keyword.libweb_palette_button }
-						'-libweb-palette-window' { Keyword.libweb_palette_window }
-						else { none }
+					match name {
+						'-libweb-palette-button' {
+							value = Keyword.libweb_palette_button
+							found = true
+						}
+						'-libweb-palette-window' {
+							value = Keyword.libweb_palette_window
+							found = true
+						}
+						else {}
 					}
 				}
 				0x64 {
-					return match name {
-						'double-circled-decimal' { Keyword.double_circled_decimal }
-						else { none }
+					match name {
+						'double-circled-decimal' {
+							value = Keyword.double_circled_decimal
+							found = true
+						}
+						else {}
 					}
 				}
 				0x66 {
-					return match name {
-						'filled-circled-decimal' { Keyword.filled_circled_decimal }
-						else { none }
+					match name {
+						'filled-circled-decimal' {
+							value = Keyword.filled_circled_decimal
+							found = true
+						}
+						else {}
 					}
 				}
 				0x73 {
-					return match name {
-						'span-self-inline-start' { Keyword.span_self_inline_start }
-						else { none }
+					match name {
+						'span-self-inline-start' {
+							value = Keyword.span_self_inline_start
+							found = true
+						}
+						else {}
 					}
 				}
 				else {}
@@ -5424,40 +7834,61 @@ pub fn keyword_from_string(input string) ?Keyword {
 		23 {
 			match name[0] {
 				0x2d {
-					return match name {
-						'-libweb-buttonfacehover' { Keyword.libweb_buttonfacehover }
-						else { none }
+					match name {
+						'-libweb-buttonfacehover' {
+							value = Keyword.libweb_buttonfacehover
+							found = true
+						}
+						else {}
 					}
 				}
 				0x63 {
-					return match name {
-						'circled-korean-syllable' { Keyword.circled_korean_syllable }
-						else { none }
+					match name {
+						'circled-korean-syllable' {
+							value = Keyword.circled_korean_syllable
+							found = true
+						}
+						else {}
 					}
 				}
 				0x64 {
-					return match name {
-						'discretionary-ligatures' { Keyword.discretionary_ligatures }
-						else { none }
+					match name {
+						'discretionary-ligatures' {
+							value = Keyword.discretionary_ligatures
+							found = true
+						}
+						else {}
 					}
 				}
 				0x65 {
-					return match name {
-						'ethiopic-halehame-ti-er' { Keyword.ethiopic_halehame_ti_er }
-						'ethiopic-halehame-ti-et' { Keyword.ethiopic_halehame_ti_et }
-						else { none }
+					match name {
+						'ethiopic-halehame-ti-er' {
+							value = Keyword.ethiopic_halehame_ti_er
+							found = true
+						}
+						'ethiopic-halehame-ti-et' {
+							value = Keyword.ethiopic_halehame_ti_et
+							found = true
+						}
+						else {}
 					}
 				}
 				0x6e {
-					return match name {
-						'no-historical-ligatures' { Keyword.no_historical_ligatures }
-						else { none }
+					match name {
+						'no-historical-ligatures' {
+							value = Keyword.no_historical_ligatures
+							found = true
+						}
+						else {}
 					}
 				}
 				0x70 {
-					return match name {
-						'parenthesized-ideograph' { Keyword.parenthesized_ideograph }
-						else { none }
+					match name {
+						'parenthesized-ideograph' {
+							value = Keyword.parenthesized_ideograph
+							found = true
+						}
+						else {}
 					}
 				}
 				else {}
@@ -5466,15 +7897,21 @@ pub fn keyword_from_string(input string) ?Keyword {
 		24 {
 			match name[0] {
 				0x63 {
-					return match name {
-						'circled-korean-consonant' { Keyword.circled_korean_consonant }
-						else { none }
+					match name {
+						'circled-korean-consonant' {
+							value = Keyword.circled_korean_consonant
+							found = true
+						}
+						else {}
 					}
 				}
 				0x6f {
-					return match name {
-						'origin-when-cross-origin' { Keyword.origin_when_cross_origin }
-						else { none }
+					match name {
+						'origin-when-cross-origin' {
+							value = Keyword.origin_when_cross_origin
+							found = true
+						}
+						else {}
 					}
 				}
 				else {}
@@ -5483,18 +7920,33 @@ pub fn keyword_from_string(input string) ?Keyword {
 		25 {
 			match name[0] {
 				0x2d {
-					return match name {
-						'-libweb-inherit-or-center' { Keyword.libweb_inherit_or_center }
-						'-libweb-palette-base-text' { Keyword.libweb_palette_base_text }
-						'-libweb-palette-menu-base' { Keyword.libweb_palette_menu_base }
-						'-libweb-palette-selection' { Keyword.libweb_palette_selection }
-						else { none }
+					match name {
+						'-libweb-inherit-or-center' {
+							value = Keyword.libweb_inherit_or_center
+							found = true
+						}
+						'-libweb-palette-base-text' {
+							value = Keyword.libweb_palette_base_text
+							found = true
+						}
+						'-libweb-palette-menu-base' {
+							value = Keyword.libweb_palette_menu_base
+							found = true
+						}
+						'-libweb-palette-selection' {
+							value = Keyword.libweb_palette_selection
+							found = true
+						}
+						else {}
 					}
 				}
 				0x70 {
-					return match name {
-						'parenthesized-lower-latin' { Keyword.parenthesized_lower_latin }
-						else { none }
+					match name {
+						'parenthesized-lower-latin' {
+							value = Keyword.parenthesized_lower_latin
+							found = true
+						}
+						else {}
 					}
 				}
 				else {}
@@ -5503,16 +7955,25 @@ pub fn keyword_from_string(input string) ?Keyword {
 		26 {
 			match name[0] {
 				0x2d {
-					return match name {
-						'-libweb-buttonfacedisabled' { Keyword.libweb_buttonfacedisabled }
-						else { none }
+					match name {
+						'-libweb-buttonfacedisabled' {
+							value = Keyword.libweb_buttonfacedisabled
+							found = true
+						}
+						else {}
 					}
 				}
 				0x6e {
-					return match name {
-						'no-discretionary-ligatures' { Keyword.no_discretionary_ligatures }
-						'no-referrer-when-downgrade' { Keyword.no_referrer_when_downgrade }
-						else { none }
+					match name {
+						'no-discretionary-ligatures' {
+							value = Keyword.no_discretionary_ligatures
+							found = true
+						}
+						'no-referrer-when-downgrade' {
+							value = Keyword.no_referrer_when_downgrade
+							found = true
+						}
+						else {}
 					}
 				}
 				else {}
@@ -5521,14 +7982,32 @@ pub fn keyword_from_string(input string) ?Keyword {
 		27 {
 			match name[0] {
 				0x2d {
-					return match name {
-						'-libweb-palette-active-link' { Keyword.libweb_palette_active_link }
-						'-libweb-palette-button-text' { Keyword.libweb_palette_button_text }
-						'-libweb-palette-menu-stripe' { Keyword.libweb_palette_menu_stripe }
-						'-libweb-palette-syntax-type' { Keyword.libweb_palette_syntax_type }
-						'-libweb-palette-text-cursor' { Keyword.libweb_palette_text_cursor }
-						'-libweb-palette-window-text' { Keyword.libweb_palette_window_text }
-						else { none }
+					match name {
+						'-libweb-palette-active-link' {
+							value = Keyword.libweb_palette_active_link
+							found = true
+						}
+						'-libweb-palette-button-text' {
+							value = Keyword.libweb_palette_button_text
+							found = true
+						}
+						'-libweb-palette-menu-stripe' {
+							value = Keyword.libweb_palette_menu_stripe
+							found = true
+						}
+						'-libweb-palette-syntax-type' {
+							value = Keyword.libweb_palette_syntax_type
+							found = true
+						}
+						'-libweb-palette-text-cursor' {
+							value = Keyword.libweb_palette_text_cursor
+							found = true
+						}
+						'-libweb-palette-window-text' {
+							value = Keyword.libweb_palette_window_text
+							found = true
+						}
+						else {}
 					}
 				}
 				else {}
@@ -5537,10 +8016,16 @@ pub fn keyword_from_string(input string) ?Keyword {
 		28 {
 			match name[0] {
 				0x2d {
-					return match name {
-						'-libweb-palette-ruler-border' { Keyword.libweb_palette_ruler_border }
-						'-libweb-palette-visited-link' { Keyword.libweb_palette_visited_link }
-						else { none }
+					match name {
+						'-libweb-palette-ruler-border' {
+							value = Keyword.libweb_palette_ruler_border
+							found = true
+						}
+						'-libweb-palette-visited-link' {
+							value = Keyword.libweb_palette_visited_link
+							found = true
+						}
+						else {}
 					}
 				}
 				else {}
@@ -5549,17 +8034,29 @@ pub fn keyword_from_string(input string) ?Keyword {
 		29 {
 			match name[0] {
 				0x2d {
-					return match name {
-						'-libweb-palette-focus-outline' { Keyword.libweb_palette_focus_outline }
-						'-libweb-palette-syntax-number' { Keyword.libweb_palette_syntax_number }
-						'-libweb-palette-syntax-string' { Keyword.libweb_palette_syntax_string }
-						else { none }
+					match name {
+						'-libweb-palette-focus-outline' {
+							value = Keyword.libweb_palette_focus_outline
+							found = true
+						}
+						'-libweb-palette-syntax-number' {
+							value = Keyword.libweb_palette_syntax_number
+							found = true
+						}
+						'-libweb-palette-syntax-string' {
+							value = Keyword.libweb_palette_syntax_string
+							found = true
+						}
+						else {}
 					}
 				}
 				0x70 {
-					return match name {
-						'parenthesized-hangul-syllable' { Keyword.parenthesized_hangul_syllable }
-						else { none }
+					match name {
+						'parenthesized-hangul-syllable' {
+							value = Keyword.parenthesized_hangul_syllable
+							found = true
+						}
+						else {}
 					}
 				}
 				else {}
@@ -5568,21 +8065,45 @@ pub fn keyword_from_string(input string) ?Keyword {
 		30 {
 			match name[0] {
 				0x2d {
-					return match name {
-						'-libweb-palette-menu-base-text' { Keyword.libweb_palette_menu_base_text }
-						'-libweb-palette-menu-selection' { Keyword.libweb_palette_menu_selection }
-						'-libweb-palette-selection-text' { Keyword.libweb_palette_selection_text }
-						'-libweb-palette-syntax-comment' { Keyword.libweb_palette_syntax_comment }
-						'-libweb-palette-syntax-keyword' { Keyword.libweb_palette_syntax_keyword }
-						'-libweb-palette-threed-shadow1' { Keyword.libweb_palette_threed_shadow1 }
-						'-libweb-palette-threed-shadow2' { Keyword.libweb_palette_threed_shadow2 }
-						else { none }
+					match name {
+						'-libweb-palette-menu-base-text' {
+							value = Keyword.libweb_palette_menu_base_text
+							found = true
+						}
+						'-libweb-palette-menu-selection' {
+							value = Keyword.libweb_palette_menu_selection
+							found = true
+						}
+						'-libweb-palette-selection-text' {
+							value = Keyword.libweb_palette_selection_text
+							found = true
+						}
+						'-libweb-palette-syntax-comment' {
+							value = Keyword.libweb_palette_syntax_comment
+							found = true
+						}
+						'-libweb-palette-syntax-keyword' {
+							value = Keyword.libweb_palette_syntax_keyword
+							found = true
+						}
+						'-libweb-palette-threed-shadow1' {
+							value = Keyword.libweb_palette_threed_shadow1
+							found = true
+						}
+						'-libweb-palette-threed-shadow2' {
+							value = Keyword.libweb_palette_threed_shadow2
+							found = true
+						}
+						else {}
 					}
 				}
 				0x70 {
-					return match name {
-						'parenthesized-hangul-consonant' { Keyword.parenthesized_hangul_consonant }
-						else { none }
+					match name {
+						'parenthesized-hangul-consonant' {
+							value = Keyword.parenthesized_hangul_consonant
+							found = true
+						}
+						else {}
 					}
 				}
 				else {}
@@ -5591,16 +8112,25 @@ pub fn keyword_from_string(input string) ?Keyword {
 		31 {
 			match name[0] {
 				0x2d {
-					return match name {
-						'-libweb-palette-hover-highlight' { Keyword.libweb_palette_hover_highlight }
-						'-libweb-palette-syntax-operator' { Keyword.libweb_palette_syntax_operator }
-						else { none }
+					match name {
+						'-libweb-palette-hover-highlight' {
+							value = Keyword.libweb_palette_hover_highlight
+							found = true
+						}
+						'-libweb-palette-syntax-operator' {
+							value = Keyword.libweb_palette_syntax_operator
+							found = true
+						}
+						else {}
 					}
 				}
 				0x73 {
-					return match name {
-						'strict-origin-when-cross-origin' { Keyword.strict_origin_when_cross_origin }
-						else { none }
+					match name {
+						'strict-origin-when-cross-origin' {
+							value = Keyword.strict_origin_when_cross_origin
+							found = true
+						}
+						else {}
 					}
 				}
 				else {}
@@ -5609,10 +8139,16 @@ pub fn keyword_from_string(input string) ?Keyword {
 		32 {
 			match name[0] {
 				0x2d {
-					return match name {
-						'-libweb-palette-rubber-band-fill' { Keyword.libweb_palette_rubber_band_fill }
-						'-libweb-palette-threed-highlight' { Keyword.libweb_palette_threed_highlight }
-						else { none }
+					match name {
+						'-libweb-palette-rubber-band-fill' {
+							value = Keyword.libweb_palette_rubber_band_fill
+							found = true
+						}
+						'-libweb-palette-threed-highlight' {
+							value = Keyword.libweb_palette_threed_highlight
+							found = true
+						}
+						else {}
 					}
 				}
 				else {}
@@ -5621,10 +8157,16 @@ pub fn keyword_from_string(input string) ?Keyword {
 		33 {
 			match name[0] {
 				0x2d {
-					return match name {
-						'-libweb-palette-ruler-active-text' { Keyword.libweb_palette_ruler_active_text }
-						'-libweb-palette-syntax-identifier' { Keyword.libweb_palette_syntax_identifier }
-						else { none }
+					match name {
+						'-libweb-palette-ruler-active-text' {
+							value = Keyword.libweb_palette_ruler_active_text
+							found = true
+						}
+						'-libweb-palette-syntax-identifier' {
+							value = Keyword.libweb_palette_syntax_identifier
+							found = true
+						}
+						else {}
 					}
 				}
 				else {}
@@ -5633,12 +8175,24 @@ pub fn keyword_from_string(input string) ?Keyword {
 		34 {
 			match name[0] {
 				0x2d {
-					return match name {
-						'-libweb-palette-desktop-background' { Keyword.libweb_palette_desktop_background }
-						'-libweb-palette-inactive-selection' { Keyword.libweb_palette_inactive_selection }
-						'-libweb-palette-rubber-band-border' { Keyword.libweb_palette_rubber_band_border }
-						'-libweb-palette-syntax-punctuation' { Keyword.libweb_palette_syntax_punctuation }
-						else { none }
+					match name {
+						'-libweb-palette-desktop-background' {
+							value = Keyword.libweb_palette_desktop_background
+							found = true
+						}
+						'-libweb-palette-inactive-selection' {
+							value = Keyword.libweb_palette_inactive_selection
+							found = true
+						}
+						'-libweb-palette-rubber-band-border' {
+							value = Keyword.libweb_palette_rubber_band_border
+							found = true
+						}
+						'-libweb-palette-syntax-punctuation' {
+							value = Keyword.libweb_palette_syntax_punctuation
+							found = true
+						}
+						else {}
 					}
 				}
 				else {}
@@ -5647,12 +8201,24 @@ pub fn keyword_from_string(input string) ?Keyword {
 		35 {
 			match name[0] {
 				0x2d {
-					return match name {
-						'-libweb-palette-active-window-title' { Keyword.libweb_palette_active_window_title }
-						'-libweb-palette-menu-selection-text' { Keyword.libweb_palette_menu_selection_text }
-						'-libweb-palette-moving-window-title' { Keyword.libweb_palette_moving_window_title }
-						'-libweb-palette-ruler-inactive-text' { Keyword.libweb_palette_ruler_inactive_text }
-						else { none }
+					match name {
+						'-libweb-palette-active-window-title' {
+							value = Keyword.libweb_palette_active_window_title
+							found = true
+						}
+						'-libweb-palette-menu-selection-text' {
+							value = Keyword.libweb_palette_menu_selection_text
+							found = true
+						}
+						'-libweb-palette-moving-window-title' {
+							value = Keyword.libweb_palette_moving_window_title
+							found = true
+						}
+						'-libweb-palette-ruler-inactive-text' {
+							value = Keyword.libweb_palette_ruler_inactive_text
+							found = true
+						}
+						else {}
 					}
 				}
 				else {}
@@ -5661,13 +8227,28 @@ pub fn keyword_from_string(input string) ?Keyword {
 		37 {
 			match name[0] {
 				0x2d {
-					return match name {
-						'-libweb-palette-active-window-border1' { Keyword.libweb_palette_active_window_border1 }
-						'-libweb-palette-active-window-border2' { Keyword.libweb_palette_active_window_border2 }
-						'-libweb-palette-inactive-window-title' { Keyword.libweb_palette_inactive_window_title }
-						'-libweb-palette-moving-window-border1' { Keyword.libweb_palette_moving_window_border1 }
-						'-libweb-palette-moving-window-border2' { Keyword.libweb_palette_moving_window_border2 }
-						else { none }
+					match name {
+						'-libweb-palette-active-window-border1' {
+							value = Keyword.libweb_palette_active_window_border1
+							found = true
+						}
+						'-libweb-palette-active-window-border2' {
+							value = Keyword.libweb_palette_active_window_border2
+							found = true
+						}
+						'-libweb-palette-inactive-window-title' {
+							value = Keyword.libweb_palette_inactive_window_title
+							found = true
+						}
+						'-libweb-palette-moving-window-border1' {
+							value = Keyword.libweb_palette_moving_window_border1
+							found = true
+						}
+						'-libweb-palette-moving-window-border2' {
+							value = Keyword.libweb_palette_moving_window_border2
+							found = true
+						}
+						else {}
 					}
 				}
 				else {}
@@ -5676,10 +8257,16 @@ pub fn keyword_from_string(input string) ?Keyword {
 		38 {
 			match name[0] {
 				0x2d {
-					return match name {
-						'-libweb-palette-highlight-window-title' { Keyword.libweb_palette_highlight_window_title }
-						'-libweb-palette-syntax-control-keyword' { Keyword.libweb_palette_syntax_control_keyword }
-						else { none }
+					match name {
+						'-libweb-palette-highlight-window-title' {
+							value = Keyword.libweb_palette_highlight_window_title
+							found = true
+						}
+						'-libweb-palette-syntax-control-keyword' {
+							value = Keyword.libweb_palette_syntax_control_keyword
+							found = true
+						}
+						else {}
 					}
 				}
 				else {}
@@ -5688,11 +8275,20 @@ pub fn keyword_from_string(input string) ?Keyword {
 		39 {
 			match name[0] {
 				0x2d {
-					return match name {
-						'-libweb-palette-inactive-selection-text' { Keyword.libweb_palette_inactive_selection_text }
-						'-libweb-palette-inactive-window-border1' { Keyword.libweb_palette_inactive_window_border1 }
-						'-libweb-palette-inactive-window-border2' { Keyword.libweb_palette_inactive_window_border2 }
-						else { none }
+					match name {
+						'-libweb-palette-inactive-selection-text' {
+							value = Keyword.libweb_palette_inactive_selection_text
+							found = true
+						}
+						'-libweb-palette-inactive-window-border1' {
+							value = Keyword.libweb_palette_inactive_window_border1
+							found = true
+						}
+						'-libweb-palette-inactive-window-border2' {
+							value = Keyword.libweb_palette_inactive_window_border2
+							found = true
+						}
+						else {}
 					}
 				}
 				else {}
@@ -5701,10 +8297,16 @@ pub fn keyword_from_string(input string) ?Keyword {
 		40 {
 			match name[0] {
 				0x2d {
-					return match name {
-						'-libweb-palette-highlight-window-border1' { Keyword.libweb_palette_highlight_window_border1 }
-						'-libweb-palette-highlight-window-border2' { Keyword.libweb_palette_highlight_window_border2 }
-						else { none }
+					match name {
+						'-libweb-palette-highlight-window-border1' {
+							value = Keyword.libweb_palette_highlight_window_border1
+							found = true
+						}
+						'-libweb-palette-highlight-window-border2' {
+							value = Keyword.libweb_palette_highlight_window_border2
+							found = true
+						}
+						else {}
 					}
 				}
 				else {}
@@ -5713,9 +8315,12 @@ pub fn keyword_from_string(input string) ?Keyword {
 		41 {
 			match name[0] {
 				0x2d {
-					return match name {
-						'-libweb-palette-syntax-preprocessor-value' { Keyword.libweb_palette_syntax_preprocessor_value }
-						else { none }
+					match name {
+						'-libweb-palette-syntax-preprocessor-value' {
+							value = Keyword.libweb_palette_syntax_preprocessor_value
+							found = true
+						}
+						else {}
 					}
 				}
 				else {}
@@ -5724,9 +8329,12 @@ pub fn keyword_from_string(input string) ?Keyword {
 		45 {
 			match name[0] {
 				0x2d {
-					return match name {
-						'-libweb-palette-syntax-preprocessor-statement' { Keyword.libweb_palette_syntax_preprocessor_statement }
-						else { none }
+					match name {
+						'-libweb-palette-syntax-preprocessor-statement' {
+							value = Keyword.libweb_palette_syntax_preprocessor_statement
+							found = true
+						}
+						else {}
 					}
 				}
 				else {}
@@ -5734,7 +8342,8 @@ pub fn keyword_from_string(input string) ?Keyword {
 		}
 		else {}
 	}
-	return none
+	if !found { return none }
+	return value
 }
 
 // --- StyleValue ---

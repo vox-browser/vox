@@ -75,21 +75,29 @@ def replace_block(source: str, start_pattern: str, end_pattern: str, replacement
 
 
 def dispatched_lookup(rows, name, result):
+    rows = sorted(rows)
+    if not rows:
+        return '\treturn none\n'
     groups = collections.defaultdict(lambda: collections.defaultdict(list))
     for text, value in rows:
         assert text and text.isascii()
         groups[len(text)][ord(text[0])].append((text, value))
-    lines = [f'\t// Reject unrelated names before comparing complete strings. These integer',
-             '\t// switches use no runtime table or retained allocation.',
+    lines = [f'\t// Keep bucket selection scalar; wrap the result once after a full match.',
+             f'\tmut value := {result}.{rows[0][1]}',
+             '\tmut found := false',
              f'\tmatch {name}.len {{']
     for length, prefixes in sorted(groups.items()):
         lines += [f'\t\t{length} {{', f'\t\t\tmatch {name}[0] {{']
         for prefix, entries in sorted(prefixes.items()):
-            lines += [f'\t\t\t\t0x{prefix:02x} {{', f'\t\t\t\t\treturn match {name} {{']
-            lines += [f"\t\t\t\t\t\t'{text}' {{ {result}.{value} }}" for text, value in entries]
-            lines += ['\t\t\t\t\t\telse { none }', '\t\t\t\t\t}', '\t\t\t\t}']
+            lines += [f'\t\t\t\t0x{prefix:02x} {{', f'\t\t\t\t\tmatch {name} {{']
+            for text, value in entries:
+                lines += [f"\t\t\t\t\t\t'{text}' {{",
+                          f'\t\t\t\t\t\t\tvalue = {result}.{value}',
+                          '\t\t\t\t\t\t\tfound = true',
+                          '\t\t\t\t\t\t}']
+            lines += ['\t\t\t\t\t\telse {}', '\t\t\t\t\t}', '\t\t\t\t}']
         lines += ['\t\t\t\telse {}', '\t\t\t}', '\t\t}']
-    lines += ['\t\telse {}', '\t}', '\treturn none']
+    lines += ['\t\telse {}', '\t}', '\tif !found { return none }', '\treturn value']
     return '\n'.join(lines) + '\n'
 
 def main() -> int:

@@ -183,33 +183,46 @@ fn canonical_property_name_from_metadata(name string) string {
 }
 
 fn property_id_from_canonical_name(name string) ?PropertyID {
-	// Reject unrelated names before comparing complete strings. These integer
-	// switches use no runtime table or retained allocation.
+	// Keep bucket selection scalar; wrap the result once after a full match.
+	mut value := PropertyID.webkit_box_orient
+	mut found := false
 	match name.len {
 		1 {
 			match name[0] {
 				0x64 {
-					return match name {
-						'd' { PropertyID.d }
-						else { none }
+					match name {
+						'd' {
+							value = PropertyID.d
+							found = true
+						}
+						else {}
 					}
 				}
 				0x72 {
-					return match name {
-						'r' { PropertyID.r }
-						else { none }
+					match name {
+						'r' {
+							value = PropertyID.r
+							found = true
+						}
+						else {}
 					}
 				}
 				0x78 {
-					return match name {
-						'x' { PropertyID.x }
-						else { none }
+					match name {
+						'x' {
+							value = PropertyID.x
+							found = true
+						}
+						else {}
 					}
 				}
 				0x79 {
-					return match name {
-						'y' { PropertyID.y }
-						else { none }
+					match name {
+						'y' {
+							value = PropertyID.y
+							found = true
+						}
+						else {}
 					}
 				}
 				else {}
@@ -218,17 +231,29 @@ fn property_id_from_canonical_name(name string) ?PropertyID {
 		2 {
 			match name[0] {
 				0x63 {
-					return match name {
-						'cx' { PropertyID.cx }
-						'cy' { PropertyID.cy }
-						else { none }
+					match name {
+						'cx' {
+							value = PropertyID.cx
+							found = true
+						}
+						'cy' {
+							value = PropertyID.cy
+							found = true
+						}
+						else {}
 					}
 				}
 				0x72 {
-					return match name {
-						'rx' { PropertyID.rx }
-						'ry' { PropertyID.ry }
-						else { none }
+					match name {
+						'rx' {
+							value = PropertyID.rx
+							found = true
+						}
+						'ry' {
+							value = PropertyID.ry
+							found = true
+						}
+						else {}
 					}
 				}
 				else {}
@@ -237,21 +262,30 @@ fn property_id_from_canonical_name(name string) ?PropertyID {
 		3 {
 			match name[0] {
 				0x61 {
-					return match name {
-						'all' { PropertyID.all }
-						else { none }
+					match name {
+						'all' {
+							value = PropertyID.all
+							found = true
+						}
+						else {}
 					}
 				}
 				0x67 {
-					return match name {
-						'gap' { PropertyID.gap }
-						else { none }
+					match name {
+						'gap' {
+							value = PropertyID.gap
+							found = true
+						}
+						else {}
 					}
 				}
 				0x74 {
-					return match name {
-						'top' { PropertyID.top }
-						else { none }
+					match name {
+						'top' {
+							value = PropertyID.top
+							found = true
+						}
+						else {}
 					}
 				}
 				else {}
@@ -260,35 +294,56 @@ fn property_id_from_canonical_name(name string) ?PropertyID {
 		4 {
 			match name[0] {
 				0x63 {
-					return match name {
-						'clip' { PropertyID.clip }
-						else { none }
+					match name {
+						'clip' {
+							value = PropertyID.clip
+							found = true
+						}
+						else {}
 					}
 				}
 				0x66 {
-					return match name {
-						'fill' { PropertyID.fill }
-						'flex' { PropertyID.flex }
-						'font' { PropertyID.font }
-						else { none }
+					match name {
+						'fill' {
+							value = PropertyID.fill
+							found = true
+						}
+						'flex' {
+							value = PropertyID.flex
+							found = true
+						}
+						'font' {
+							value = PropertyID.font
+							found = true
+						}
+						else {}
 					}
 				}
 				0x67 {
-					return match name {
-						'grid' { PropertyID.grid }
-						else { none }
+					match name {
+						'grid' {
+							value = PropertyID.grid
+							found = true
+						}
+						else {}
 					}
 				}
 				0x6c {
-					return match name {
-						'left' { PropertyID.left }
-						else { none }
+					match name {
+						'left' {
+							value = PropertyID.left
+							found = true
+						}
+						else {}
 					}
 				}
 				0x6d {
-					return match name {
-						'mask' { PropertyID.mask }
-						else { none }
+					match name {
+						'mask' {
+							value = PropertyID.mask
+							found = true
+						}
+						else {}
 					}
 				}
 				else {}
@@ -297,46 +352,70 @@ fn property_id_from_canonical_name(name string) ?PropertyID {
 		5 {
 			match name[0] {
 				0x63 {
-					return match name {
-						'clear' { PropertyID.clear }
-						'color' { PropertyID.color }
-						else { none }
+					match name {
+						'clear' {
+							value = PropertyID.clear
+							found = true
+						}
+						'color' {
+							value = PropertyID.color
+							found = true
+						}
+						else {}
 					}
 				}
 				0x66 {
-					return match name {
-						'float' { PropertyID.float_ }
-						else { none }
+					match name {
+						'float' {
+							value = PropertyID.float_
+							found = true
+						}
+						else {}
 					}
 				}
 				0x69 {
-					return match name {
-						'inset' { PropertyID.inset }
-						else { none }
+					match name {
+						'inset' {
+							value = PropertyID.inset
+							found = true
+						}
+						else {}
 					}
 				}
 				0x6f {
-					return match name {
-						'order' { PropertyID.order }
-						else { none }
+					match name {
+						'order' {
+							value = PropertyID.order
+							found = true
+						}
+						else {}
 					}
 				}
 				0x72 {
-					return match name {
-						'right' { PropertyID.right }
-						else { none }
+					match name {
+						'right' {
+							value = PropertyID.right
+							found = true
+						}
+						else {}
 					}
 				}
 				0x73 {
-					return match name {
-						'scale' { PropertyID.scale }
-						else { none }
+					match name {
+						'scale' {
+							value = PropertyID.scale
+							found = true
+						}
+						else {}
 					}
 				}
 				0x77 {
-					return match name {
-						'width' { PropertyID.width }
-						else { none }
+					match name {
+						'width' {
+							value = PropertyID.width
+							found = true
+						}
+						else {}
 					}
 				}
 				else {}
@@ -345,59 +424,92 @@ fn property_id_from_canonical_name(name string) ?PropertyID {
 		6 {
 			match name[0] {
 				0x62 {
-					return match name {
-						'border' { PropertyID.border }
-						'bottom' { PropertyID.bottom }
-						else { none }
+					match name {
+						'border' {
+							value = PropertyID.border
+							found = true
+						}
+						'bottom' {
+							value = PropertyID.bottom
+							found = true
+						}
+						else {}
 					}
 				}
 				0x63 {
-					return match name {
-						'cursor' { PropertyID.cursor }
-						else { none }
+					match name {
+						'cursor' {
+							value = PropertyID.cursor
+							found = true
+						}
+						else {}
 					}
 				}
 				0x66 {
-					return match name {
-						'filter' { PropertyID.filter }
-						else { none }
+					match name {
+						'filter' {
+							value = PropertyID.filter
+							found = true
+						}
+						else {}
 					}
 				}
 				0x68 {
-					return match name {
-						'height' { PropertyID.height }
-						else { none }
+					match name {
+						'height' {
+							value = PropertyID.height
+							found = true
+						}
+						else {}
 					}
 				}
 				0x6d {
-					return match name {
-						'margin' { PropertyID.margin }
-						else { none }
+					match name {
+						'margin' {
+							value = PropertyID.margin
+							found = true
+						}
+						else {}
 					}
 				}
 				0x71 {
-					return match name {
-						'quotes' { PropertyID.quotes }
-						else { none }
+					match name {
+						'quotes' {
+							value = PropertyID.quotes
+							found = true
+						}
+						else {}
 					}
 				}
 				0x72 {
-					return match name {
-						'resize' { PropertyID.resize }
-						'rotate' { PropertyID.rotate }
-						else { none }
+					match name {
+						'resize' {
+							value = PropertyID.resize
+							found = true
+						}
+						'rotate' {
+							value = PropertyID.rotate
+							found = true
+						}
+						else {}
 					}
 				}
 				0x73 {
-					return match name {
-						'stroke' { PropertyID.stroke }
-						else { none }
+					match name {
+						'stroke' {
+							value = PropertyID.stroke
+							found = true
+						}
+						else {}
 					}
 				}
 				0x77 {
-					return match name {
-						'widows' { PropertyID.widows }
-						else { none }
+					match name {
+						'widows' {
+							value = PropertyID.widows
+							found = true
+						}
+						else {}
 					}
 				}
 				else {}
@@ -406,43 +518,73 @@ fn property_id_from_canonical_name(name string) ?PropertyID {
 		7 {
 			match name[0] {
 				0x63 {
-					return match name {
-						'columns' { PropertyID.columns }
-						'contain' { PropertyID.contain }
-						'content' { PropertyID.content }
-						else { none }
+					match name {
+						'columns' {
+							value = PropertyID.columns
+							found = true
+						}
+						'contain' {
+							value = PropertyID.contain
+							found = true
+						}
+						'content' {
+							value = PropertyID.content
+							found = true
+						}
+						else {}
 					}
 				}
 				0x64 {
-					return match name {
-						'display' { PropertyID.display }
-						else { none }
+					match name {
+						'display' {
+							value = PropertyID.display
+							found = true
+						}
+						else {}
 					}
 				}
 				0x6f {
-					return match name {
-						'opacity' { PropertyID.opacity }
-						'orphans' { PropertyID.orphans }
-						'outline' { PropertyID.outline }
-						else { none }
+					match name {
+						'opacity' {
+							value = PropertyID.opacity
+							found = true
+						}
+						'orphans' {
+							value = PropertyID.orphans
+							found = true
+						}
+						'outline' {
+							value = PropertyID.outline
+							found = true
+						}
+						else {}
 					}
 				}
 				0x70 {
-					return match name {
-						'padding' { PropertyID.padding }
-						else { none }
+					match name {
+						'padding' {
+							value = PropertyID.padding
+							found = true
+						}
+						else {}
 					}
 				}
 				0x72 {
-					return match name {
-						'row-gap' { PropertyID.row_gap }
-						else { none }
+					match name {
+						'row-gap' {
+							value = PropertyID.row_gap
+							found = true
+						}
+						else {}
 					}
 				}
 				0x7a {
-					return match name {
-						'z-index' { PropertyID.z_index }
-						else { none }
+					match name {
+						'z-index' {
+							value = PropertyID.z_index
+							found = true
+						}
+						else {}
 					}
 				}
 				else {}
@@ -451,33 +593,48 @@ fn property_id_from_canonical_name(name string) ?PropertyID {
 		8 {
 			match name[0] {
 				0x63 {
-					return match name {
-						'continue' { PropertyID.continue_ }
-						else { none }
+					match name {
+						'continue' {
+							value = PropertyID.continue_
+							found = true
+						}
+						else {}
 					}
 				}
 				0x67 {
-					return match name {
-						'grid-row' { PropertyID.grid_row }
-						else { none }
+					match name {
+						'grid-row' {
+							value = PropertyID.grid_row
+							found = true
+						}
+						else {}
 					}
 				}
 				0x6f {
-					return match name {
-						'overflow' { PropertyID.overflow }
-						else { none }
+					match name {
+						'overflow' {
+							value = PropertyID.overflow
+							found = true
+						}
+						else {}
 					}
 				}
 				0x70 {
-					return match name {
-						'position' { PropertyID.position }
-						else { none }
+					match name {
+						'position' {
+							value = PropertyID.position
+							found = true
+						}
+						else {}
 					}
 				}
 				0x74 {
-					return match name {
-						'tab-size' { PropertyID.tab_size }
-						else { none }
+					match name {
+						'tab-size' {
+							value = PropertyID.tab_size
+							found = true
+						}
+						else {}
 					}
 				}
 				else {}
@@ -486,65 +643,131 @@ fn property_id_from_canonical_name(name string) ?PropertyID {
 		9 {
 			match name[0] {
 				0x61 {
-					return match name {
-						'animation' { PropertyID.animation }
-						else { none }
+					match name {
+						'animation' {
+							value = PropertyID.animation
+							found = true
+						}
+						else {}
 					}
 				}
 				0x63 {
-					return match name {
-						'clip-path' { PropertyID.clip_path }
-						'clip-rule' { PropertyID.clip_rule }
-						'container' { PropertyID.container }
-						else { none }
+					match name {
+						'clip-path' {
+							value = PropertyID.clip_path
+							found = true
+						}
+						'clip-rule' {
+							value = PropertyID.clip_rule
+							found = true
+						}
+						'container' {
+							value = PropertyID.container
+							found = true
+						}
+						else {}
 					}
 				}
 				0x64 {
-					return match name {
-						'direction' { PropertyID.direction }
-						else { none }
+					match name {
+						'direction' {
+							value = PropertyID.direction
+							found = true
+						}
+						else {}
 					}
 				}
 				0x66 {
-					return match name {
-						'fill-rule' { PropertyID.fill_rule }
-						'flex-flow' { PropertyID.flex_flow }
-						'flex-grow' { PropertyID.flex_grow }
-						'flex-wrap' { PropertyID.flex_wrap }
-						'font-size' { PropertyID.font_size }
-						else { none }
+					match name {
+						'fill-rule' {
+							value = PropertyID.fill_rule
+							found = true
+						}
+						'flex-flow' {
+							value = PropertyID.flex_flow
+							found = true
+						}
+						'flex-grow' {
+							value = PropertyID.flex_grow
+							found = true
+						}
+						'flex-wrap' {
+							value = PropertyID.flex_wrap
+							found = true
+						}
+						'font-size' {
+							value = PropertyID.font_size
+							found = true
+						}
+						else {}
 					}
 				}
 				0x67 {
-					return match name {
-						'grid-area' { PropertyID.grid_area }
-						else { none }
+					match name {
+						'grid-area' {
+							value = PropertyID.grid_area
+							found = true
+						}
+						else {}
 					}
 				}
 				0x69 {
-					return match name {
-						'isolation' { PropertyID.isolation }
-						else { none }
+					match name {
+						'isolation' {
+							value = PropertyID.isolation
+							found = true
+						}
+						else {}
 					}
 				}
 				0x6d {
-					return match name {
-						'mask-clip' { PropertyID.mask_clip }
-						'mask-mode' { PropertyID.mask_mode }
-						'mask-size' { PropertyID.mask_size }
-						'mask-type' { PropertyID.mask_type }
-						'max-lines' { PropertyID.max_lines }
-						'max-width' { PropertyID.max_width }
-						'min-width' { PropertyID.min_width }
-						else { none }
+					match name {
+						'mask-clip' {
+							value = PropertyID.mask_clip
+							found = true
+						}
+						'mask-mode' {
+							value = PropertyID.mask_mode
+							found = true
+						}
+						'mask-size' {
+							value = PropertyID.mask_size
+							found = true
+						}
+						'mask-type' {
+							value = PropertyID.mask_type
+							found = true
+						}
+						'max-lines' {
+							value = PropertyID.max_lines
+							found = true
+						}
+						'max-width' {
+							value = PropertyID.max_width
+							found = true
+						}
+						'min-width' {
+							value = PropertyID.min_width
+							found = true
+						}
+						else {}
 					}
 				}
 				0x74 {
-					return match name {
-						'text-wrap' { PropertyID.text_wrap }
-						'transform' { PropertyID.transform }
-						'translate' { PropertyID.translate }
-						else { none }
+					match name {
+						'text-wrap' {
+							value = PropertyID.text_wrap
+							found = true
+						}
+						'transform' {
+							value = PropertyID.transform
+							found = true
+						}
+						'translate' {
+							value = PropertyID.translate
+							found = true
+						}
+						else {}
 					}
 				}
 				else {}
@@ -553,92 +776,179 @@ fn property_id_from_canonical_name(name string) ?PropertyID {
 		10 {
 			match name[0] {
 				0x61 {
-					return match name {
-						'align-self' { PropertyID.align_self }
-						'appearance' { PropertyID.appearance }
-						else { none }
+					match name {
+						'align-self' {
+							value = PropertyID.align_self
+							found = true
+						}
+						'appearance' {
+							value = PropertyID.appearance
+							found = true
+						}
+						else {}
 					}
 				}
 				0x62 {
-					return match name {
-						'background' { PropertyID.background }
-						'block-size' { PropertyID.block_size }
-						'border-top' { PropertyID.border_top }
-						'box-shadow' { PropertyID.box_shadow }
-						'box-sizing' { PropertyID.box_sizing }
-						else { none }
+					match name {
+						'background' {
+							value = PropertyID.background
+							found = true
+						}
+						'block-size' {
+							value = PropertyID.block_size
+							found = true
+						}
+						'border-top' {
+							value = PropertyID.border_top
+							found = true
+						}
+						'box-shadow' {
+							value = PropertyID.box_shadow
+							found = true
+						}
+						'box-sizing' {
+							value = PropertyID.box_sizing
+							found = true
+						}
+						else {}
 					}
 				}
 				0x63 {
-					return match name {
-						'column-gap' { PropertyID.column_gap }
-						else { none }
+					match name {
+						'column-gap' {
+							value = PropertyID.column_gap
+							found = true
+						}
+						else {}
 					}
 				}
 				0x66 {
-					return match name {
-						'flex-basis' { PropertyID.flex_basis }
-						'font-style' { PropertyID.font_style }
-						'font-width' { PropertyID.font_width }
-						else { none }
+					match name {
+						'flex-basis' {
+							value = PropertyID.flex_basis
+							found = true
+						}
+						'font-style' {
+							value = PropertyID.font_style
+							found = true
+						}
+						'font-width' {
+							value = PropertyID.font_width
+							found = true
+						}
+						else {}
 					}
 				}
 				0x6c {
-					return match name {
-						'line-clamp' { PropertyID.line_clamp }
-						'list-style' { PropertyID.list_style }
-						else { none }
+					match name {
+						'line-clamp' {
+							value = PropertyID.line_clamp
+							found = true
+						}
+						'list-style' {
+							value = PropertyID.list_style
+							found = true
+						}
+						else {}
 					}
 				}
 				0x6d {
-					return match name {
-						'margin-top' { PropertyID.margin_top }
-						'mask-image' { PropertyID.mask_image }
-						'math-depth' { PropertyID.math_depth }
-						'math-shift' { PropertyID.math_shift }
-						'math-style' { PropertyID.math_style }
-						'max-height' { PropertyID.max_height }
-						'min-height' { PropertyID.min_height }
-						else { none }
+					match name {
+						'margin-top' {
+							value = PropertyID.margin_top
+							found = true
+						}
+						'mask-image' {
+							value = PropertyID.mask_image
+							found = true
+						}
+						'math-depth' {
+							value = PropertyID.math_depth
+							found = true
+						}
+						'math-shift' {
+							value = PropertyID.math_shift
+							found = true
+						}
+						'math-style' {
+							value = PropertyID.math_style
+							found = true
+						}
+						'max-height' {
+							value = PropertyID.max_height
+							found = true
+						}
+						'min-height' {
+							value = PropertyID.min_height
+							found = true
+						}
+						else {}
 					}
 				}
 				0x6f {
-					return match name {
-						'object-fit' { PropertyID.object_fit }
-						'overflow-x' { PropertyID.overflow_x }
-						'overflow-y' { PropertyID.overflow_y }
-						else { none }
+					match name {
+						'object-fit' {
+							value = PropertyID.object_fit
+							found = true
+						}
+						'overflow-x' {
+							value = PropertyID.overflow_x
+							found = true
+						}
+						'overflow-y' {
+							value = PropertyID.overflow_y
+							found = true
+						}
+						else {}
 					}
 				}
 				0x70 {
-					return match name {
-						'place-self' { PropertyID.place_self }
-						else { none }
+					match name {
+						'place-self' {
+							value = PropertyID.place_self
+							found = true
+						}
+						else {}
 					}
 				}
 				0x73 {
-					return match name {
-						'stop-color' { PropertyID.stop_color }
-						else { none }
+					match name {
+						'stop-color' {
+							value = PropertyID.stop_color
+							found = true
+						}
+						else {}
 					}
 				}
 				0x74 {
-					return match name {
-						'text-align' { PropertyID.text_align }
-						'transition' { PropertyID.transition }
-						else { none }
+					match name {
+						'text-align' {
+							value = PropertyID.text_align
+							found = true
+						}
+						'transition' {
+							value = PropertyID.transition
+							found = true
+						}
+						else {}
 					}
 				}
 				0x76 {
-					return match name {
-						'visibility' { PropertyID.visibility }
-						else { none }
+					match name {
+						'visibility' {
+							value = PropertyID.visibility
+							found = true
+						}
+						else {}
 					}
 				}
 				0x77 {
-					return match name {
-						'word-break' { PropertyID.word_break }
-						else { none }
+					match name {
+						'word-break' {
+							value = PropertyID.word_break
+							found = true
+						}
+						else {}
 					}
 				}
 				else {}
@@ -647,99 +957,192 @@ fn property_id_from_canonical_name(name string) ?PropertyID {
 		11 {
 			match name[0] {
 				0x61 {
-					return match name {
-						'align-items' { PropertyID.align_items }
-						'anchor-name' { PropertyID.anchor_name }
-						else { none }
+					match name {
+						'align-items' {
+							value = PropertyID.align_items
+							found = true
+						}
+						'anchor-name' {
+							value = PropertyID.anchor_name
+							found = true
+						}
+						else {}
 					}
 				}
 				0x62 {
-					return match name {
-						'border-left' { PropertyID.border_left }
-						'break-after' { PropertyID.break_after }
-						else { none }
+					match name {
+						'border-left' {
+							value = PropertyID.border_left
+							found = true
+						}
+						'break-after' {
+							value = PropertyID.break_after
+							found = true
+						}
+						else {}
 					}
 				}
 				0x63 {
-					return match name {
-						'caret-color' { PropertyID.caret_color }
-						'column-fill' { PropertyID.column_fill }
-						'column-rule' { PropertyID.column_rule }
-						'column-span' { PropertyID.column_span }
-						'counter-set' { PropertyID.counter_set }
-						else { none }
+					match name {
+						'caret-color' {
+							value = PropertyID.caret_color
+							found = true
+						}
+						'column-fill' {
+							value = PropertyID.column_fill
+							found = true
+						}
+						'column-rule' {
+							value = PropertyID.column_rule
+							found = true
+						}
+						'column-span' {
+							value = PropertyID.column_span
+							found = true
+						}
+						'counter-set' {
+							value = PropertyID.counter_set
+							found = true
+						}
+						else {}
 					}
 				}
 				0x65 {
-					return match name {
-						'empty-cells' { PropertyID.empty_cells }
-						else { none }
+					match name {
+						'empty-cells' {
+							value = PropertyID.empty_cells
+							found = true
+						}
+						else {}
 					}
 				}
 				0x66 {
-					return match name {
-						'flex-shrink' { PropertyID.flex_shrink }
-						'flood-color' { PropertyID.flood_color }
-						'font-family' { PropertyID.font_family }
-						'font-weight' { PropertyID.font_weight }
-						else { none }
+					match name {
+						'flex-shrink' {
+							value = PropertyID.flex_shrink
+							found = true
+						}
+						'flood-color' {
+							value = PropertyID.flood_color
+							found = true
+						}
+						'font-family' {
+							value = PropertyID.font_family
+							found = true
+						}
+						'font-weight' {
+							value = PropertyID.font_weight
+							found = true
+						}
+						else {}
 					}
 				}
 				0x67 {
-					return match name {
-						'grid-column' { PropertyID.grid_column }
-						else { none }
+					match name {
+						'grid-column' {
+							value = PropertyID.grid_column
+							found = true
+						}
+						else {}
 					}
 				}
 				0x69 {
-					return match name {
-						'inline-size' { PropertyID.inline_size }
-						'inset-block' { PropertyID.inset_block }
-						else { none }
+					match name {
+						'inline-size' {
+							value = PropertyID.inline_size
+							found = true
+						}
+						'inset-block' {
+							value = PropertyID.inset_block
+							found = true
+						}
+						else {}
 					}
 				}
 				0x6c {
-					return match name {
-						'line-height' { PropertyID.line_height }
-						else { none }
+					match name {
+						'line-height' {
+							value = PropertyID.line_height
+							found = true
+						}
+						else {}
 					}
 				}
 				0x6d {
-					return match name {
-						'margin-left' { PropertyID.margin_left }
-						'mask-origin' { PropertyID.mask_origin }
-						'mask-repeat' { PropertyID.mask_repeat }
-						else { none }
+					match name {
+						'margin-left' {
+							value = PropertyID.margin_left
+							found = true
+						}
+						'mask-origin' {
+							value = PropertyID.mask_origin
+							found = true
+						}
+						'mask-repeat' {
+							value = PropertyID.mask_repeat
+							found = true
+						}
+						else {}
 					}
 				}
 				0x70 {
-					return match name {
-						'padding-top' { PropertyID.padding_top }
-						'paint-order' { PropertyID.paint_order }
-						'perspective' { PropertyID.perspective }
-						'place-items' { PropertyID.place_items }
-						else { none }
+					match name {
+						'padding-top' {
+							value = PropertyID.padding_top
+							found = true
+						}
+						'paint-order' {
+							value = PropertyID.paint_order
+							found = true
+						}
+						'perspective' {
+							value = PropertyID.perspective
+							found = true
+						}
+						'place-items' {
+							value = PropertyID.place_items
+							found = true
+						}
+						else {}
 					}
 				}
 				0x74 {
-					return match name {
-						'text-anchor' { PropertyID.text_anchor }
-						'text-indent' { PropertyID.text_indent }
-						'text-shadow' { PropertyID.text_shadow }
-						else { none }
+					match name {
+						'text-anchor' {
+							value = PropertyID.text_anchor
+							found = true
+						}
+						'text-indent' {
+							value = PropertyID.text_indent
+							found = true
+						}
+						'text-shadow' {
+							value = PropertyID.text_shadow
+							found = true
+						}
+						else {}
 					}
 				}
 				0x75 {
-					return match name {
-						'user-select' { PropertyID.user_select }
-						else { none }
+					match name {
+						'user-select' {
+							value = PropertyID.user_select
+							found = true
+						}
+						else {}
 					}
 				}
 				0x77 {
-					return match name {
-						'white-space' { PropertyID.white_space }
-						'will-change' { PropertyID.will_change }
-						else { none }
+					match name {
+						'white-space' {
+							value = PropertyID.white_space
+							found = true
+						}
+						'will-change' {
+							value = PropertyID.will_change
+							found = true
+						}
+						else {}
 					}
 				}
 				else {}
@@ -748,102 +1151,204 @@ fn property_id_from_canonical_name(name string) ?PropertyID {
 		12 {
 			match name[0] {
 				0x61 {
-					return match name {
-						'accent-color' { PropertyID.accent_color }
-						'anchor-scope' { PropertyID.anchor_scope }
-						'aspect-ratio' { PropertyID.aspect_ratio }
-						else { none }
+					match name {
+						'accent-color' {
+							value = PropertyID.accent_color
+							found = true
+						}
+						'anchor-scope' {
+							value = PropertyID.anchor_scope
+							found = true
+						}
+						'aspect-ratio' {
+							value = PropertyID.aspect_ratio
+							found = true
+						}
+						else {}
 					}
 				}
 				0x62 {
-					return match name {
-						'border-block' { PropertyID.border_block }
-						'border-color' { PropertyID.border_color }
-						'border-image' { PropertyID.border_image }
-						'border-right' { PropertyID.border_right }
-						'border-style' { PropertyID.border_style }
-						'border-width' { PropertyID.border_width }
-						'break-before' { PropertyID.break_before }
-						'break-inside' { PropertyID.break_inside }
-						else { none }
+					match name {
+						'border-block' {
+							value = PropertyID.border_block
+							found = true
+						}
+						'border-color' {
+							value = PropertyID.border_color
+							found = true
+						}
+						'border-image' {
+							value = PropertyID.border_image
+							found = true
+						}
+						'border-right' {
+							value = PropertyID.border_right
+							found = true
+						}
+						'border-style' {
+							value = PropertyID.border_style
+							found = true
+						}
+						'border-width' {
+							value = PropertyID.border_width
+							found = true
+						}
+						'break-before' {
+							value = PropertyID.break_before
+							found = true
+						}
+						'break-inside' {
+							value = PropertyID.break_inside
+							found = true
+						}
+						else {}
 					}
 				}
 				0x63 {
-					return match name {
-						'caption-side' { PropertyID.caption_side }
-						'color-scheme' { PropertyID.color_scheme }
-						'column-count' { PropertyID.column_count }
-						'column-width' { PropertyID.column_width }
-						'corner-shape' { PropertyID.corner_shape }
-						else { none }
+					match name {
+						'caption-side' {
+							value = PropertyID.caption_side
+							found = true
+						}
+						'color-scheme' {
+							value = PropertyID.color_scheme
+							found = true
+						}
+						'column-count' {
+							value = PropertyID.column_count
+							found = true
+						}
+						'column-width' {
+							value = PropertyID.column_width
+							found = true
+						}
+						'corner-shape' {
+							value = PropertyID.corner_shape
+							found = true
+						}
+						else {}
 					}
 				}
 				0x66 {
-					return match name {
-						'fill-opacity' { PropertyID.fill_opacity }
-						'font-kerning' { PropertyID.font_kerning }
-						'font-variant' { PropertyID.font_variant }
-						else { none }
+					match name {
+						'fill-opacity' {
+							value = PropertyID.fill_opacity
+							found = true
+						}
+						'font-kerning' {
+							value = PropertyID.font_kerning
+							found = true
+						}
+						'font-variant' {
+							value = PropertyID.font_variant
+							found = true
+						}
+						else {}
 					}
 				}
 				0x67 {
-					return match name {
-						'grid-row-end' { PropertyID.grid_row_end }
-						else { none }
+					match name {
+						'grid-row-end' {
+							value = PropertyID.grid_row_end
+							found = true
+						}
+						else {}
 					}
 				}
 				0x69 {
-					return match name {
-						'inset-inline' { PropertyID.inset_inline }
-						else { none }
+					match name {
+						'inset-inline' {
+							value = PropertyID.inset_inline
+							found = true
+						}
+						else {}
 					}
 				}
 				0x6a {
-					return match name {
-						'justify-self' { PropertyID.justify_self }
-						else { none }
+					match name {
+						'justify-self' {
+							value = PropertyID.justify_self
+							found = true
+						}
+						else {}
 					}
 				}
 				0x6d {
-					return match name {
-						'margin-block' { PropertyID.margin_block }
-						'margin-right' { PropertyID.margin_right }
-						else { none }
+					match name {
+						'margin-block' {
+							value = PropertyID.margin_block
+							found = true
+						}
+						'margin-right' {
+							value = PropertyID.margin_right
+							found = true
+						}
+						else {}
 					}
 				}
 				0x70 {
-					return match name {
-						'padding-left' { PropertyID.padding_left }
-						else { none }
+					match name {
+						'padding-left' {
+							value = PropertyID.padding_left
+							found = true
+						}
+						else {}
 					}
 				}
 				0x73 {
-					return match name {
-						'shape-margin' { PropertyID.shape_margin }
-						'stop-opacity' { PropertyID.stop_opacity }
-						'stroke-width' { PropertyID.stroke_width }
-						else { none }
+					match name {
+						'shape-margin' {
+							value = PropertyID.shape_margin
+							found = true
+						}
+						'stop-opacity' {
+							value = PropertyID.stop_opacity
+							found = true
+						}
+						'stroke-width' {
+							value = PropertyID.stroke_width
+							found = true
+						}
+						else {}
 					}
 				}
 				0x74 {
-					return match name {
-						'table-layout' { PropertyID.table_layout }
-						'text-justify' { PropertyID.text_justify }
-						'touch-action' { PropertyID.touch_action }
-						else { none }
+					match name {
+						'table-layout' {
+							value = PropertyID.table_layout
+							found = true
+						}
+						'text-justify' {
+							value = PropertyID.text_justify
+							found = true
+						}
+						'touch-action' {
+							value = PropertyID.touch_action
+							found = true
+						}
+						else {}
 					}
 				}
 				0x75 {
-					return match name {
-						'unicode-bidi' { PropertyID.unicode_bidi }
-						else { none }
+					match name {
+						'unicode-bidi' {
+							value = PropertyID.unicode_bidi
+							found = true
+						}
+						else {}
 					}
 				}
 				0x77 {
-					return match name {
-						'word-spacing' { PropertyID.word_spacing }
-						'writing-mode' { PropertyID.writing_mode }
-						else { none }
+					match name {
+						'word-spacing' {
+							value = PropertyID.word_spacing
+							found = true
+						}
+						'writing-mode' {
+							value = PropertyID.writing_mode
+							found = true
+						}
+						else {}
 					}
 				}
 				else {}
@@ -852,89 +1357,167 @@ fn property_id_from_canonical_name(name string) ?PropertyID {
 		13 {
 			match name[0] {
 				0x61 {
-					return match name {
-						'align-content' { PropertyID.align_content }
-						else { none }
+					match name {
+						'align-content' {
+							value = PropertyID.align_content
+							found = true
+						}
+						else {}
 					}
 				}
 				0x62 {
-					return match name {
-						'border-bottom' { PropertyID.border_bottom }
-						'border-inline' { PropertyID.border_inline }
-						'border-radius' { PropertyID.border_radius }
-						else { none }
+					match name {
+						'border-bottom' {
+							value = PropertyID.border_bottom
+							found = true
+						}
+						'border-inline' {
+							value = PropertyID.border_inline
+							found = true
+						}
+						'border-radius' {
+							value = PropertyID.border_radius
+							found = true
+						}
+						else {}
 					}
 				}
 				0x63 {
-					return match name {
-						'column-height' { PropertyID.column_height }
-						'counter-reset' { PropertyID.counter_reset }
-						else { none }
+					match name {
+						'column-height' {
+							value = PropertyID.column_height
+							found = true
+						}
+						'counter-reset' {
+							value = PropertyID.counter_reset
+							found = true
+						}
+						else {}
 					}
 				}
 				0x66 {
-					return match name {
-						'flood-opacity' { PropertyID.flood_opacity }
-						else { none }
+					match name {
+						'flood-opacity' {
+							value = PropertyID.flood_opacity
+							found = true
+						}
+						else {}
 					}
 				}
 				0x67 {
-					return match name {
-						'grid-template' { PropertyID.grid_template }
-						else { none }
+					match name {
+						'grid-template' {
+							value = PropertyID.grid_template
+							found = true
+						}
+						else {}
 					}
 				}
 				0x6a {
-					return match name {
-						'justify-items' { PropertyID.justify_items }
-						else { none }
+					match name {
+						'justify-items' {
+							value = PropertyID.justify_items
+							found = true
+						}
+						else {}
 					}
 				}
 				0x6d {
-					return match name {
-						'margin-bottom' { PropertyID.margin_bottom }
-						'margin-inline' { PropertyID.margin_inline }
-						'mask-position' { PropertyID.mask_position }
-						else { none }
+					match name {
+						'margin-bottom' {
+							value = PropertyID.margin_bottom
+							found = true
+						}
+						'margin-inline' {
+							value = PropertyID.margin_inline
+							found = true
+						}
+						'mask-position' {
+							value = PropertyID.mask_position
+							found = true
+						}
+						else {}
 					}
 				}
 				0x6f {
-					return match name {
-						'outline-color' { PropertyID.outline_color }
-						'outline-style' { PropertyID.outline_style }
-						'outline-width' { PropertyID.outline_width }
-						'overflow-wrap' { PropertyID.overflow_wrap }
-						else { none }
+					match name {
+						'outline-color' {
+							value = PropertyID.outline_color
+							found = true
+						}
+						'outline-style' {
+							value = PropertyID.outline_style
+							found = true
+						}
+						'outline-width' {
+							value = PropertyID.outline_width
+							found = true
+						}
+						'overflow-wrap' {
+							value = PropertyID.overflow_wrap
+							found = true
+						}
+						else {}
 					}
 				}
 				0x70 {
-					return match name {
-						'padding-block' { PropertyID.padding_block }
-						'padding-right' { PropertyID.padding_right }
-						'place-content' { PropertyID.place_content }
-						'position-area' { PropertyID.position_area }
-						else { none }
+					match name {
+						'padding-block' {
+							value = PropertyID.padding_block
+							found = true
+						}
+						'padding-right' {
+							value = PropertyID.padding_right
+							found = true
+						}
+						'place-content' {
+							value = PropertyID.place_content
+							found = true
+						}
+						'position-area' {
+							value = PropertyID.position_area
+							found = true
+						}
+						else {}
 					}
 				}
 				0x73 {
-					return match name {
-						'scroll-margin' { PropertyID.scroll_margin }
-						'shape-outside' { PropertyID.shape_outside }
-						else { none }
+					match name {
+						'scroll-margin' {
+							value = PropertyID.scroll_margin
+							found = true
+						}
+						'shape-outside' {
+							value = PropertyID.shape_outside
+							found = true
+						}
+						else {}
 					}
 				}
 				0x74 {
-					return match name {
-						'text-overflow' { PropertyID.text_overflow }
-						'transform-box' { PropertyID.transform_box }
-						else { none }
+					match name {
+						'text-overflow' {
+							value = PropertyID.text_overflow
+							found = true
+						}
+						'transform-box' {
+							value = PropertyID.transform_box
+							found = true
+						}
+						else {}
 					}
 				}
 				0x76 {
-					return match name {
-						'vector-effect' { PropertyID.vector_effect }
-						'view-timeline' { PropertyID.view_timeline }
-						else { none }
+					match name {
+						'vector-effect' {
+							value = PropertyID.vector_effect
+							found = true
+						}
+						'view-timeline' {
+							value = PropertyID.view_timeline
+							found = true
+						}
+						else {}
 					}
 				}
 				else {}
@@ -943,90 +1526,171 @@ fn property_id_from_canonical_name(name string) ?PropertyID {
 		14 {
 			match name[0] {
 				0x61 {
-					return match name {
-						'animation-name' { PropertyID.animation_name }
-						else { none }
+					match name {
+						'animation-name' {
+							value = PropertyID.animation_name
+							found = true
+						}
+						else {}
 					}
 				}
 				0x62 {
-					return match name {
-						'block-ellipsis' { PropertyID.block_ellipsis }
-						'border-spacing' { PropertyID.border_spacing }
-						else { none }
+					match name {
+						'block-ellipsis' {
+							value = PropertyID.block_ellipsis
+							found = true
+						}
+						'border-spacing' {
+							value = PropertyID.border_spacing
+							found = true
+						}
+						else {}
 					}
 				}
 				0x63 {
-					return match name {
-						'container-name' { PropertyID.container_name }
-						'container-type' { PropertyID.container_type }
-						else { none }
+					match name {
+						'container-name' {
+							value = PropertyID.container_name
+							found = true
+						}
+						'container-type' {
+							value = PropertyID.container_type
+							found = true
+						}
+						else {}
 					}
 				}
 				0x66 {
-					return match name {
-						'flex-direction' { PropertyID.flex_direction }
-						else { none }
+					match name {
+						'flex-direction' {
+							value = PropertyID.flex_direction
+							found = true
+						}
+						else {}
 					}
 				}
 				0x67 {
-					return match name {
-						'grid-auto-flow' { PropertyID.grid_auto_flow }
-						'grid-auto-rows' { PropertyID.grid_auto_rows }
-						'grid-row-start' { PropertyID.grid_row_start }
-						else { none }
+					match name {
+						'grid-auto-flow' {
+							value = PropertyID.grid_auto_flow
+							found = true
+						}
+						'grid-auto-rows' {
+							value = PropertyID.grid_auto_rows
+							found = true
+						}
+						'grid-row-start' {
+							value = PropertyID.grid_row_start
+							found = true
+						}
+						else {}
 					}
 				}
 				0x6c {
-					return match name {
-						'letter-spacing' { PropertyID.letter_spacing }
-						else { none }
+					match name {
+						'letter-spacing' {
+							value = PropertyID.letter_spacing
+							found = true
+						}
+						else {}
 					}
 				}
 				0x6d {
-					return match name {
-						'mask-composite' { PropertyID.mask_composite }
-						'max-block-size' { PropertyID.max_block_size }
-						'min-block-size' { PropertyID.min_block_size }
-						'mix-blend-mode' { PropertyID.mix_blend_mode }
-						else { none }
+					match name {
+						'mask-composite' {
+							value = PropertyID.mask_composite
+							found = true
+						}
+						'max-block-size' {
+							value = PropertyID.max_block_size
+							found = true
+						}
+						'min-block-size' {
+							value = PropertyID.min_block_size
+							found = true
+						}
+						'mix-blend-mode' {
+							value = PropertyID.mix_blend_mode
+							found = true
+						}
+						else {}
 					}
 				}
 				0x6f {
-					return match name {
-						'outline-offset' { PropertyID.outline_offset }
-						'overflow-block' { PropertyID.overflow_block }
-						else { none }
+					match name {
+						'outline-offset' {
+							value = PropertyID.outline_offset
+							found = true
+						}
+						'overflow-block' {
+							value = PropertyID.overflow_block
+							found = true
+						}
+						else {}
 					}
 				}
 				0x70 {
-					return match name {
-						'padding-bottom' { PropertyID.padding_bottom }
-						'padding-inline' { PropertyID.padding_inline }
-						'pointer-events' { PropertyID.pointer_events }
-						else { none }
+					match name {
+						'padding-bottom' {
+							value = PropertyID.padding_bottom
+							found = true
+						}
+						'padding-inline' {
+							value = PropertyID.padding_inline
+							found = true
+						}
+						'pointer-events' {
+							value = PropertyID.pointer_events
+							found = true
+						}
+						else {}
 					}
 				}
 				0x73 {
-					return match name {
-						'scroll-padding' { PropertyID.scroll_padding }
-						'stroke-linecap' { PropertyID.stroke_linecap }
-						'stroke-opacity' { PropertyID.stroke_opacity }
-						else { none }
+					match name {
+						'scroll-padding' {
+							value = PropertyID.scroll_padding
+							found = true
+						}
+						'stroke-linecap' {
+							value = PropertyID.stroke_linecap
+							found = true
+						}
+						'stroke-opacity' {
+							value = PropertyID.stroke_opacity
+							found = true
+						}
+						else {}
 					}
 				}
 				0x74 {
-					return match name {
-						'text-rendering' { PropertyID.text_rendering }
-						'text-transform' { PropertyID.text_transform }
-						'text-wrap-mode' { PropertyID.text_wrap_mode }
-						'timeline-scope' { PropertyID.timeline_scope }
-						else { none }
+					match name {
+						'text-rendering' {
+							value = PropertyID.text_rendering
+							found = true
+						}
+						'text-transform' {
+							value = PropertyID.text_transform
+							found = true
+						}
+						'text-wrap-mode' {
+							value = PropertyID.text_wrap_mode
+							found = true
+						}
+						'timeline-scope' {
+							value = PropertyID.timeline_scope
+							found = true
+						}
+						else {}
 					}
 				}
 				0x76 {
-					return match name {
-						'vertical-align' { PropertyID.vertical_align }
-						else { none }
+					match name {
+						'vertical-align' {
+							value = PropertyID.vertical_align
+							found = true
+						}
+						else {}
 					}
 				}
 				else {}
@@ -1035,82 +1699,154 @@ fn property_id_from_canonical_name(name string) ?PropertyID {
 		15 {
 			match name[0] {
 				0x61 {
-					return match name {
-						'animation-delay' { PropertyID.animation_delay }
-						else { none }
+					match name {
+						'animation-delay' {
+							value = PropertyID.animation_delay
+							found = true
+						}
+						else {}
 					}
 				}
 				0x62 {
-					return match name {
-						'backdrop-filter' { PropertyID.backdrop_filter }
-						'background-clip' { PropertyID.background_clip }
-						'background-size' { PropertyID.background_size }
-						'border-collapse' { PropertyID.border_collapse }
-						else { none }
+					match name {
+						'backdrop-filter' {
+							value = PropertyID.backdrop_filter
+							found = true
+						}
+						'background-clip' {
+							value = PropertyID.background_clip
+							found = true
+						}
+						'background-size' {
+							value = PropertyID.background_size
+							found = true
+						}
+						'border-collapse' {
+							value = PropertyID.border_collapse
+							found = true
+						}
+						else {}
 					}
 				}
 				0x67 {
-					return match name {
-						'grid-column-end' { PropertyID.grid_column_end }
-						else { none }
+					match name {
+						'grid-column-end' {
+							value = PropertyID.grid_column_end
+							found = true
+						}
+						else {}
 					}
 				}
 				0x69 {
-					return match name {
-						'image-rendering' { PropertyID.image_rendering }
-						'inset-block-end' { PropertyID.inset_block_end }
-						else { none }
+					match name {
+						'image-rendering' {
+							value = PropertyID.image_rendering
+							found = true
+						}
+						'inset-block-end' {
+							value = PropertyID.inset_block_end
+							found = true
+						}
+						else {}
 					}
 				}
 				0x6a {
-					return match name {
-						'justify-content' { PropertyID.justify_content }
-						else { none }
+					match name {
+						'justify-content' {
+							value = PropertyID.justify_content
+							found = true
+						}
+						else {}
 					}
 				}
 				0x6c {
-					return match name {
-						'list-style-type' { PropertyID.list_style_type }
-						else { none }
+					match name {
+						'list-style-type' {
+							value = PropertyID.list_style_type
+							found = true
+						}
+						else {}
 					}
 				}
 				0x6d {
-					return match name {
-						'max-inline-size' { PropertyID.max_inline_size }
-						'min-inline-size' { PropertyID.min_inline_size }
-						else { none }
+					match name {
+						'max-inline-size' {
+							value = PropertyID.max_inline_size
+							found = true
+						}
+						'min-inline-size' {
+							value = PropertyID.min_inline_size
+							found = true
+						}
+						else {}
 					}
 				}
 				0x6f {
-					return match name {
-						'object-position' { PropertyID.object_position }
-						'overflow-inline' { PropertyID.overflow_inline }
-						else { none }
+					match name {
+						'object-position' {
+							value = PropertyID.object_position
+							found = true
+						}
+						'overflow-inline' {
+							value = PropertyID.overflow_inline
+							found = true
+						}
+						else {}
 					}
 				}
 				0x70 {
-					return match name {
-						'position-anchor' { PropertyID.position_anchor }
-						else { none }
+					match name {
+						'position-anchor' {
+							value = PropertyID.position_anchor
+							found = true
+						}
+						else {}
 					}
 				}
 				0x73 {
-					return match name {
-						'scroll-behavior' { PropertyID.scroll_behavior }
-						'scroll-timeline' { PropertyID.scroll_timeline }
-						'scrollbar-color' { PropertyID.scrollbar_color }
-						'scrollbar-width' { PropertyID.scrollbar_width }
-						'shape-rendering' { PropertyID.shape_rendering }
-						'stroke-linejoin' { PropertyID.stroke_linejoin }
-						else { none }
+					match name {
+						'scroll-behavior' {
+							value = PropertyID.scroll_behavior
+							found = true
+						}
+						'scroll-timeline' {
+							value = PropertyID.scroll_timeline
+							found = true
+						}
+						'scrollbar-color' {
+							value = PropertyID.scrollbar_color
+							found = true
+						}
+						'scrollbar-width' {
+							value = PropertyID.scrollbar_width
+							found = true
+						}
+						'shape-rendering' {
+							value = PropertyID.shape_rendering
+							found = true
+						}
+						'stroke-linejoin' {
+							value = PropertyID.stroke_linejoin
+							found = true
+						}
+						else {}
 					}
 				}
 				0x74 {
-					return match name {
-						'text-decoration' { PropertyID.text_decoration }
-						'text-wrap-style' { PropertyID.text_wrap_style }
-						'transform-style' { PropertyID.transform_style }
-						else { none }
+					match name {
+						'text-decoration' {
+							value = PropertyID.text_decoration
+							found = true
+						}
+						'text-wrap-style' {
+							value = PropertyID.text_wrap_style
+							found = true
+						}
+						'transform-style' {
+							value = PropertyID.transform_style
+							found = true
+						}
+						else {}
 					}
 				}
 				else {}
@@ -1119,66 +1855,120 @@ fn property_id_from_canonical_name(name string) ?PropertyID {
 		16 {
 			match name[0] {
 				0x62 {
-					return match name {
-						'background-color' { PropertyID.background_color }
-						'background-image' { PropertyID.background_image }
-						'border-block-end' { PropertyID.border_block_end }
-						'border-top-color' { PropertyID.border_top_color }
-						'border-top-style' { PropertyID.border_top_style }
-						'border-top-width' { PropertyID.border_top_width }
-						else { none }
+					match name {
+						'background-color' {
+							value = PropertyID.background_color
+							found = true
+						}
+						'background-image' {
+							value = PropertyID.background_image
+							found = true
+						}
+						'border-block-end' {
+							value = PropertyID.border_block_end
+							found = true
+						}
+						'border-top-color' {
+							value = PropertyID.border_top_color
+							found = true
+						}
+						'border-top-style' {
+							value = PropertyID.border_top_style
+							found = true
+						}
+						'border-top-width' {
+							value = PropertyID.border_top_width
+							found = true
+						}
+						else {}
 					}
 				}
 				0x63 {
-					return match name {
-						'corner-top-shape' { PropertyID.corner_top_shape }
-						else { none }
+					match name {
+						'corner-top-shape' {
+							value = PropertyID.corner_top_shape
+							found = true
+						}
+						else {}
 					}
 				}
 				0x69 {
-					return match name {
-						'inset-inline-end' { PropertyID.inset_inline_end }
-						else { none }
+					match name {
+						'inset-inline-end' {
+							value = PropertyID.inset_inline_end
+							found = true
+						}
+						else {}
 					}
 				}
 				0x6c {
-					return match name {
-						'list-style-image' { PropertyID.list_style_image }
-						else { none }
+					match name {
+						'list-style-image' {
+							value = PropertyID.list_style_image
+							found = true
+						}
+						else {}
 					}
 				}
 				0x6d {
-					return match name {
-						'margin-block-end' { PropertyID.margin_block_end }
-						else { none }
+					match name {
+						'margin-block-end' {
+							value = PropertyID.margin_block_end
+							found = true
+						}
+						else {}
 					}
 				}
 				0x70 {
-					return match name {
-						'page-break-after' { PropertyID.page_break_after }
-						else { none }
+					match name {
+						'page-break-after' {
+							value = PropertyID.page_break_after
+							found = true
+						}
+						else {}
 					}
 				}
 				0x73 {
-					return match name {
-						'scroll-snap-stop' { PropertyID.scroll_snap_stop }
-						'scroll-snap-type' { PropertyID.scroll_snap_type }
-						'scrollbar-gutter' { PropertyID.scrollbar_gutter }
-						'stroke-dasharray' { PropertyID.stroke_dasharray }
-						else { none }
+					match name {
+						'scroll-snap-stop' {
+							value = PropertyID.scroll_snap_stop
+							found = true
+						}
+						'scroll-snap-type' {
+							value = PropertyID.scroll_snap_type
+							found = true
+						}
+						'scrollbar-gutter' {
+							value = PropertyID.scrollbar_gutter
+							found = true
+						}
+						'stroke-dasharray' {
+							value = PropertyID.stroke_dasharray
+							found = true
+						}
+						else {}
 					}
 				}
 				0x74 {
-					return match name {
-						'transform-origin' { PropertyID.transform_origin }
-						'transition-delay' { PropertyID.transition_delay }
-						else { none }
+					match name {
+						'transform-origin' {
+							value = PropertyID.transform_origin
+							found = true
+						}
+						'transition-delay' {
+							value = PropertyID.transition_delay
+							found = true
+						}
+						else {}
 					}
 				}
 				0x77 {
-					return match name {
-						'white-space-trim' { PropertyID.white_space_trim }
-						else { none }
+					match name {
+						'white-space-trim' {
+							value = PropertyID.white_space_trim
+							found = true
+						}
+						else {}
 					}
 				}
 				else {}
@@ -1187,72 +1977,144 @@ fn property_id_from_canonical_name(name string) ?PropertyID {
 		17 {
 			match name[0] {
 				0x62 {
-					return match name {
-						'background-origin' { PropertyID.background_origin }
-						'background-repeat' { PropertyID.background_repeat }
-						'border-inline-end' { PropertyID.border_inline_end }
-						'border-left-color' { PropertyID.border_left_color }
-						'border-left-style' { PropertyID.border_left_style }
-						'border-left-width' { PropertyID.border_left_width }
-						else { none }
+					match name {
+						'background-origin' {
+							value = PropertyID.background_origin
+							found = true
+						}
+						'background-repeat' {
+							value = PropertyID.background_repeat
+							found = true
+						}
+						'border-inline-end' {
+							value = PropertyID.border_inline_end
+							found = true
+						}
+						'border-left-color' {
+							value = PropertyID.border_left_color
+							found = true
+						}
+						'border-left-style' {
+							value = PropertyID.border_left_style
+							found = true
+						}
+						'border-left-width' {
+							value = PropertyID.border_left_width
+							found = true
+						}
+						else {}
 					}
 				}
 				0x63 {
-					return match name {
-						'column-rule-color' { PropertyID.column_rule_color }
-						'column-rule-style' { PropertyID.column_rule_style }
-						'column-rule-width' { PropertyID.column_rule_width }
-						'corner-left-shape' { PropertyID.corner_left_shape }
-						'counter-increment' { PropertyID.counter_increment }
-						else { none }
+					match name {
+						'column-rule-color' {
+							value = PropertyID.column_rule_color
+							found = true
+						}
+						'column-rule-style' {
+							value = PropertyID.column_rule_style
+							found = true
+						}
+						'column-rule-width' {
+							value = PropertyID.column_rule_width
+							found = true
+						}
+						'corner-left-shape' {
+							value = PropertyID.corner_left_shape
+							found = true
+						}
+						'counter-increment' {
+							value = PropertyID.counter_increment
+							found = true
+						}
+						else {}
 					}
 				}
 				0x64 {
-					return match name {
-						'dominant-baseline' { PropertyID.dominant_baseline }
-						else { none }
+					match name {
+						'dominant-baseline' {
+							value = PropertyID.dominant_baseline
+							found = true
+						}
+						else {}
 					}
 				}
 				0x66 {
-					return match name {
-						'font-variant-caps' { PropertyID.font_variant_caps }
-						else { none }
+					match name {
+						'font-variant-caps' {
+							value = PropertyID.font_variant_caps
+							found = true
+						}
+						else {}
 					}
 				}
 				0x67 {
-					return match name {
-						'grid-auto-columns' { PropertyID.grid_auto_columns }
-						'grid-column-start' { PropertyID.grid_column_start }
-						else { none }
+					match name {
+						'grid-auto-columns' {
+							value = PropertyID.grid_auto_columns
+							found = true
+						}
+						'grid-column-start' {
+							value = PropertyID.grid_column_start
+							found = true
+						}
+						else {}
 					}
 				}
 				0x69 {
-					return match name {
-						'inset-block-start' { PropertyID.inset_block_start }
-						else { none }
+					match name {
+						'inset-block-start' {
+							value = PropertyID.inset_block_start
+							found = true
+						}
+						else {}
 					}
 				}
 				0x6d {
-					return match name {
-						'margin-inline-end' { PropertyID.margin_inline_end }
-						else { none }
+					match name {
+						'margin-inline-end' {
+							value = PropertyID.margin_inline_end
+							found = true
+						}
+						else {}
 					}
 				}
 				0x70 {
-					return match name {
-						'padding-block-end' { PropertyID.padding_block_end }
-						'page-break-before' { PropertyID.page_break_before }
-						'page-break-inside' { PropertyID.page_break_inside }
-						else { none }
+					match name {
+						'padding-block-end' {
+							value = PropertyID.padding_block_end
+							found = true
+						}
+						'page-break-before' {
+							value = PropertyID.page_break_before
+							found = true
+						}
+						'page-break-inside' {
+							value = PropertyID.page_break_inside
+							found = true
+						}
+						else {}
 					}
 				}
 				0x73 {
-					return match name {
-						'scroll-margin-top' { PropertyID.scroll_margin_top }
-						'scroll-snap-align' { PropertyID.scroll_snap_align }
-						'stroke-dashoffset' { PropertyID.stroke_dashoffset }
-						'stroke-miterlimit' { PropertyID.stroke_miterlimit }
-						else { none }
+					match name {
+						'scroll-margin-top' {
+							value = PropertyID.scroll_margin_top
+							found = true
+						}
+						'scroll-snap-align' {
+							value = PropertyID.scroll_snap_align
+							found = true
+						}
+						'stroke-dashoffset' {
+							value = PropertyID.stroke_dashoffset
+							found = true
+						}
+						'stroke-miterlimit' {
+							value = PropertyID.stroke_miterlimit
+							found = true
+						}
+						else {}
 					}
 				}
 				else {}
@@ -1261,84 +2123,162 @@ fn property_id_from_canonical_name(name string) ?PropertyID {
 		18 {
 			match name[0] {
 				0x2d {
-					return match name {
-						'-webkit-box-orient' { PropertyID.webkit_box_orient }
-						'-webkit-line-clamp' { PropertyID.webkit_line_clamp }
-						else { none }
+					match name {
+						'-webkit-box-orient' {
+							value = PropertyID.webkit_box_orient
+							found = true
+						}
+						'-webkit-line-clamp' {
+							value = PropertyID.webkit_line_clamp
+							found = true
+						}
+						else {}
 					}
 				}
 				0x61 {
-					return match name {
-						'animation-duration' { PropertyID.animation_duration }
-						'animation-timeline' { PropertyID.animation_timeline }
-						else { none }
+					match name {
+						'animation-duration' {
+							value = PropertyID.animation_duration
+							found = true
+						}
+						'animation-timeline' {
+							value = PropertyID.animation_timeline
+							found = true
+						}
+						else {}
 					}
 				}
 				0x62 {
-					return match name {
-						'border-block-color' { PropertyID.border_block_color }
-						'border-block-start' { PropertyID.border_block_start }
-						'border-block-style' { PropertyID.border_block_style }
-						'border-block-width' { PropertyID.border_block_width }
-						'border-image-slice' { PropertyID.border_image_slice }
-						'border-image-width' { PropertyID.border_image_width }
-						'border-right-color' { PropertyID.border_right_color }
-						'border-right-style' { PropertyID.border_right_style }
-						'border-right-width' { PropertyID.border_right_width }
-						else { none }
+					match name {
+						'border-block-color' {
+							value = PropertyID.border_block_color
+							found = true
+						}
+						'border-block-start' {
+							value = PropertyID.border_block_start
+							found = true
+						}
+						'border-block-style' {
+							value = PropertyID.border_block_style
+							found = true
+						}
+						'border-block-width' {
+							value = PropertyID.border_block_width
+							found = true
+						}
+						'border-image-slice' {
+							value = PropertyID.border_image_slice
+							found = true
+						}
+						'border-image-width' {
+							value = PropertyID.border_image_width
+							found = true
+						}
+						'border-right-color' {
+							value = PropertyID.border_right_color
+							found = true
+						}
+						'border-right-style' {
+							value = PropertyID.border_right_style
+							found = true
+						}
+						'border-right-width' {
+							value = PropertyID.border_right_width
+							found = true
+						}
+						else {}
 					}
 				}
 				0x63 {
-					return match name {
-						'content-visibility' { PropertyID.content_visibility }
-						'corner-right-shape' { PropertyID.corner_right_shape }
-						else { none }
+					match name {
+						'content-visibility' {
+							value = PropertyID.content_visibility
+							found = true
+						}
+						'corner-right-shape' {
+							value = PropertyID.corner_right_shape
+							found = true
+						}
+						else {}
 					}
 				}
 				0x66 {
-					return match name {
-						'font-variant-emoji' { PropertyID.font_variant_emoji }
-						else { none }
+					match name {
+						'font-variant-emoji' {
+							value = PropertyID.font_variant_emoji
+							found = true
+						}
+						else {}
 					}
 				}
 				0x67 {
-					return match name {
-						'grid-template-rows' { PropertyID.grid_template_rows }
-						else { none }
+					match name {
+						'grid-template-rows' {
+							value = PropertyID.grid_template_rows
+							found = true
+						}
+						else {}
 					}
 				}
 				0x69 {
-					return match name {
-						'inset-inline-start' { PropertyID.inset_inline_start }
-						else { none }
+					match name {
+						'inset-inline-start' {
+							value = PropertyID.inset_inline_start
+							found = true
+						}
+						else {}
 					}
 				}
 				0x6d {
-					return match name {
-						'margin-block-start' { PropertyID.margin_block_start }
-						else { none }
+					match name {
+						'margin-block-start' {
+							value = PropertyID.margin_block_start
+							found = true
+						}
+						else {}
 					}
 				}
 				0x70 {
-					return match name {
-						'padding-inline-end' { PropertyID.padding_inline_end }
-						'perspective-origin' { PropertyID.perspective_origin }
-						'position-try-order' { PropertyID.position_try_order }
-						else { none }
+					match name {
+						'padding-inline-end' {
+							value = PropertyID.padding_inline_end
+							found = true
+						}
+						'perspective-origin' {
+							value = PropertyID.perspective_origin
+							found = true
+						}
+						'position-try-order' {
+							value = PropertyID.position_try_order
+							found = true
+						}
+						else {}
 					}
 				}
 				0x73 {
-					return match name {
-						'scroll-margin-left' { PropertyID.scroll_margin_left }
-						'scroll-padding-top' { PropertyID.scroll_padding_top }
-						else { none }
+					match name {
+						'scroll-margin-left' {
+							value = PropertyID.scroll_margin_left
+							found = true
+						}
+						'scroll-padding-top' {
+							value = PropertyID.scroll_padding_top
+							found = true
+						}
+						else {}
 					}
 				}
 				0x76 {
-					return match name {
-						'view-timeline-axis' { PropertyID.view_timeline_axis }
-						'view-timeline-name' { PropertyID.view_timeline_name }
-						else { none }
+					match name {
+						'view-timeline-axis' {
+							value = PropertyID.view_timeline_axis
+							found = true
+						}
+						'view-timeline-name' {
+							value = PropertyID.view_timeline_name
+							found = true
+						}
+						else {}
 					}
 				}
 				else {}
@@ -1347,87 +2287,174 @@ fn property_id_from_canonical_name(name string) ?PropertyID {
 		19 {
 			match name[0] {
 				0x61 {
-					return match name {
-						'animation-direction' { PropertyID.animation_direction }
-						'animation-fill-mode' { PropertyID.animation_fill_mode }
-						else { none }
+					match name {
+						'animation-direction' {
+							value = PropertyID.animation_direction
+							found = true
+						}
+						'animation-fill-mode' {
+							value = PropertyID.animation_fill_mode
+							found = true
+						}
+						else {}
 					}
 				}
 				0x62 {
-					return match name {
-						'background-position' { PropertyID.background_position }
-						'border-bottom-color' { PropertyID.border_bottom_color }
-						'border-bottom-style' { PropertyID.border_bottom_style }
-						'border-bottom-width' { PropertyID.border_bottom_width }
-						'border-image-outset' { PropertyID.border_image_outset }
-						'border-image-repeat' { PropertyID.border_image_repeat }
-						'border-image-source' { PropertyID.border_image_source }
-						'border-inline-color' { PropertyID.border_inline_color }
-						'border-inline-start' { PropertyID.border_inline_start }
-						'border-inline-style' { PropertyID.border_inline_style }
-						'border-inline-width' { PropertyID.border_inline_width }
-						'backface-visibility' { PropertyID.backface_visibility }
-						else { none }
+					match name {
+						'backface-visibility' {
+							value = PropertyID.backface_visibility
+							found = true
+						}
+						'background-position' {
+							value = PropertyID.background_position
+							found = true
+						}
+						'border-bottom-color' {
+							value = PropertyID.border_bottom_color
+							found = true
+						}
+						'border-bottom-style' {
+							value = PropertyID.border_bottom_style
+							found = true
+						}
+						'border-bottom-width' {
+							value = PropertyID.border_bottom_width
+							found = true
+						}
+						'border-image-outset' {
+							value = PropertyID.border_image_outset
+							found = true
+						}
+						'border-image-repeat' {
+							value = PropertyID.border_image_repeat
+							found = true
+						}
+						'border-image-source' {
+							value = PropertyID.border_image_source
+							found = true
+						}
+						'border-inline-color' {
+							value = PropertyID.border_inline_color
+							found = true
+						}
+						'border-inline-start' {
+							value = PropertyID.border_inline_start
+							found = true
+						}
+						'border-inline-style' {
+							value = PropertyID.border_inline_style
+							found = true
+						}
+						'border-inline-width' {
+							value = PropertyID.border_inline_width
+							found = true
+						}
+						else {}
 					}
 				}
 				0x63 {
-					return match name {
-						'color-interpolation' { PropertyID.color_interpolation }
-						'corner-bottom-shape' { PropertyID.corner_bottom_shape }
-						else { none }
+					match name {
+						'color-interpolation' {
+							value = PropertyID.color_interpolation
+							found = true
+						}
+						'corner-bottom-shape' {
+							value = PropertyID.corner_bottom_shape
+							found = true
+						}
+						else {}
 					}
 				}
 				0x66 {
-					return match name {
-						'font-optical-sizing' { PropertyID.font_optical_sizing }
-						else { none }
+					match name {
+						'font-optical-sizing' {
+							value = PropertyID.font_optical_sizing
+							found = true
+						}
+						else {}
 					}
 				}
 				0x67 {
-					return match name {
-						'grid-template-areas' { PropertyID.grid_template_areas }
-						else { none }
+					match name {
+						'grid-template-areas' {
+							value = PropertyID.grid_template_areas
+							found = true
+						}
+						else {}
 					}
 				}
 				0x6c {
-					return match name {
-						'list-style-position' { PropertyID.list_style_position }
-						else { none }
+					match name {
+						'list-style-position' {
+							value = PropertyID.list_style_position
+							found = true
+						}
+						else {}
 					}
 				}
 				0x6d {
-					return match name {
-						'margin-inline-start' { PropertyID.margin_inline_start }
-						else { none }
+					match name {
+						'margin-inline-start' {
+							value = PropertyID.margin_inline_start
+							found = true
+						}
+						else {}
 					}
 				}
 				0x70 {
-					return match name {
-						'padding-block-start' { PropertyID.padding_block_start }
-						'position-visibility' { PropertyID.position_visibility }
-						else { none }
+					match name {
+						'padding-block-start' {
+							value = PropertyID.padding_block_start
+							found = true
+						}
+						'position-visibility' {
+							value = PropertyID.position_visibility
+							found = true
+						}
+						else {}
 					}
 				}
 				0x73 {
-					return match name {
-						'scroll-margin-block' { PropertyID.scroll_margin_block }
-						'scroll-margin-right' { PropertyID.scroll_margin_right }
-						'scroll-padding-left' { PropertyID.scroll_padding_left }
-						else { none }
+					match name {
+						'scroll-margin-block' {
+							value = PropertyID.scroll_margin_block
+							found = true
+						}
+						'scroll-margin-right' {
+							value = PropertyID.scroll_margin_right
+							found = true
+						}
+						'scroll-padding-left' {
+							value = PropertyID.scroll_padding_left
+							found = true
+						}
+						else {}
 					}
 				}
 				0x74 {
-					return match name {
-						'transition-behavior' { PropertyID.transition_behavior }
-						'transition-duration' { PropertyID.transition_duration }
-						'transition-property' { PropertyID.transition_property }
-						else { none }
+					match name {
+						'transition-behavior' {
+							value = PropertyID.transition_behavior
+							found = true
+						}
+						'transition-duration' {
+							value = PropertyID.transition_duration
+							found = true
+						}
+						'transition-property' {
+							value = PropertyID.transition_property
+							found = true
+						}
+						else {}
 					}
 				}
 				0x76 {
-					return match name {
-						'view-timeline-inset' { PropertyID.view_timeline_inset }
-						else { none }
+					match name {
+						'view-timeline-inset' {
+							value = PropertyID.view_timeline_inset
+							found = true
+						}
+						else {}
 					}
 				}
 				else {}
@@ -1436,68 +2463,113 @@ fn property_id_from_canonical_name(name string) ?PropertyID {
 		20 {
 			match name[0] {
 				0x61 {
-					return match name {
-						'animation-play-state' { PropertyID.animation_play_state }
-						else { none }
+					match name {
+						'animation-play-state' {
+							value = PropertyID.animation_play_state
+							found = true
+						}
+						else {}
 					}
 				}
 				0x62 {
-					return match name {
-						'box-decoration-break' { PropertyID.box_decoration_break }
-						else { none }
+					match name {
+						'box-decoration-break' {
+							value = PropertyID.box_decoration_break
+							found = true
+						}
+						else {}
 					}
 				}
 				0x63 {
-					return match name {
-						'corner-end-end-shape' { PropertyID.corner_end_end_shape }
-						else { none }
+					match name {
+						'corner-end-end-shape' {
+							value = PropertyID.corner_end_end_shape
+							found = true
+						}
+						else {}
 					}
 				}
 				0x66 {
-					return match name {
-						'font-variant-numeric' { PropertyID.font_variant_numeric }
-						else { none }
+					match name {
+						'font-variant-numeric' {
+							value = PropertyID.font_variant_numeric
+							found = true
+						}
+						else {}
 					}
 				}
 				0x6f {
-					return match name {
-						'overflow-clip-margin' { PropertyID.overflow_clip_margin }
-						else { none }
+					match name {
+						'overflow-clip-margin' {
+							value = PropertyID.overflow_clip_margin
+							found = true
+						}
+						else {}
 					}
 				}
 				0x70 {
-					return match name {
-						'padding-inline-start' { PropertyID.padding_inline_start }
-						else { none }
+					match name {
+						'padding-inline-start' {
+							value = PropertyID.padding_inline_start
+							found = true
+						}
+						else {}
 					}
 				}
 				0x73 {
-					return match name {
-						'scroll-margin-bottom' { PropertyID.scroll_margin_bottom }
-						'scroll-margin-inline' { PropertyID.scroll_margin_inline }
-						'scroll-padding-block' { PropertyID.scroll_padding_block }
-						'scroll-padding-right' { PropertyID.scroll_padding_right }
-						'scroll-timeline-axis' { PropertyID.scroll_timeline_axis }
-						'scroll-timeline-name' { PropertyID.scroll_timeline_name }
-						else { none }
+					match name {
+						'scroll-margin-bottom' {
+							value = PropertyID.scroll_margin_bottom
+							found = true
+						}
+						'scroll-margin-inline' {
+							value = PropertyID.scroll_margin_inline
+							found = true
+						}
+						'scroll-padding-block' {
+							value = PropertyID.scroll_padding_block
+							found = true
+						}
+						'scroll-padding-right' {
+							value = PropertyID.scroll_padding_right
+							found = true
+						}
+						'scroll-timeline-axis' {
+							value = PropertyID.scroll_timeline_axis
+							found = true
+						}
+						'scroll-timeline-name' {
+							value = PropertyID.scroll_timeline_name
+							found = true
+						}
+						else {}
 					}
 				}
 				0x74 {
-					return match name {
-						'text-decoration-line' { PropertyID.text_decoration_line }
-						else { none }
+					match name {
+						'text-decoration-line' {
+							value = PropertyID.text_decoration_line
+							found = true
+						}
+						else {}
 					}
 				}
 				0x76 {
-					return match name {
-						'view-transition-name' { PropertyID.view_transition_name }
-						else { none }
+					match name {
+						'view-transition-name' {
+							value = PropertyID.view_transition_name
+							found = true
+						}
+						else {}
 					}
 				}
 				0x77 {
-					return match name {
-						'white-space-collapse' { PropertyID.white_space_collapse }
-						else { none }
+					match name {
+						'white-space-collapse' {
+							value = PropertyID.white_space_collapse
+							found = true
+						}
+						else {}
 					}
 				}
 				else {}
@@ -1506,54 +2578,102 @@ fn property_id_from_canonical_name(name string) ?PropertyID {
 		21 {
 			match name[0] {
 				0x61 {
-					return match name {
-						'animation-composition' { PropertyID.animation_composition }
-						else { none }
+					match name {
+						'animation-composition' {
+							value = PropertyID.animation_composition
+							found = true
+						}
+						else {}
 					}
 				}
 				0x62 {
-					return match name {
-						'background-attachment' { PropertyID.background_attachment }
-						'background-blend-mode' { PropertyID.background_blend_mode }
-						'background-position-x' { PropertyID.background_position_x }
-						'background-position-y' { PropertyID.background_position_y }
-						'border-end-end-radius' { PropertyID.border_end_end_radius }
-						else { none }
+					match name {
+						'background-attachment' {
+							value = PropertyID.background_attachment
+							found = true
+						}
+						'background-blend-mode' {
+							value = PropertyID.background_blend_mode
+							found = true
+						}
+						'background-position-x' {
+							value = PropertyID.background_position_x
+							found = true
+						}
+						'background-position-y' {
+							value = PropertyID.background_position_y
+							found = true
+						}
+						'border-end-end-radius' {
+							value = PropertyID.border_end_end_radius
+							found = true
+						}
+						else {}
 					}
 				}
 				0x63 {
-					return match name {
-						'corner-top-left-shape' { PropertyID.corner_top_left_shape }
-						else { none }
+					match name {
+						'corner-top-left-shape' {
+							value = PropertyID.corner_top_left_shape
+							found = true
+						}
+						else {}
 					}
 				}
 				0x66 {
-					return match name {
-						'font-feature-settings' { PropertyID.font_feature_settings }
-						'font-variant-position' { PropertyID.font_variant_position }
-						else { none }
+					match name {
+						'font-feature-settings' {
+							value = PropertyID.font_feature_settings
+							found = true
+						}
+						'font-variant-position' {
+							value = PropertyID.font_variant_position
+							found = true
+						}
+						else {}
 					}
 				}
 				0x67 {
-					return match name {
-						'grid-template-columns' { PropertyID.grid_template_columns }
-						else { none }
+					match name {
+						'grid-template-columns' {
+							value = PropertyID.grid_template_columns
+							found = true
+						}
+						else {}
 					}
 				}
 				0x73 {
-					return match name {
-						'scroll-padding-bottom' { PropertyID.scroll_padding_bottom }
-						'scroll-padding-inline' { PropertyID.scroll_padding_inline }
-						'shape-image-threshold' { PropertyID.shape_image_threshold }
-						else { none }
+					match name {
+						'scroll-padding-bottom' {
+							value = PropertyID.scroll_padding_bottom
+							found = true
+						}
+						'scroll-padding-inline' {
+							value = PropertyID.scroll_padding_inline
+							found = true
+						}
+						'shape-image-threshold' {
+							value = PropertyID.shape_image_threshold
+							found = true
+						}
+						else {}
 					}
 				}
 				0x74 {
-					return match name {
-						'text-decoration-color' { PropertyID.text_decoration_color }
-						'text-decoration-style' { PropertyID.text_decoration_style }
-						'text-underline-offset' { PropertyID.text_underline_offset }
-						else { none }
+					match name {
+						'text-decoration-color' {
+							value = PropertyID.text_decoration_color
+							found = true
+						}
+						'text-decoration-style' {
+							value = PropertyID.text_decoration_style
+							found = true
+						}
+						'text-underline-offset' {
+							value = PropertyID.text_underline_offset
+							found = true
+						}
+						else {}
 					}
 				}
 				else {}
@@ -1562,41 +2682,80 @@ fn property_id_from_canonical_name(name string) ?PropertyID {
 		22 {
 			match name[0] {
 				0x2d {
-					return match name {
-						'-webkit-font-smoothing' { PropertyID.webkit_font_smoothing }
-						else { none }
+					match name {
+						'-webkit-font-smoothing' {
+							value = PropertyID.webkit_font_smoothing
+							found = true
+						}
+						else {}
 					}
 				}
 				0x62 {
-					return match name {
-						'border-block-end-color' { PropertyID.border_block_end_color }
-						'border-block-end-style' { PropertyID.border_block_end_style }
-						'border-block-end-width' { PropertyID.border_block_end_width }
-						'border-top-left-radius' { PropertyID.border_top_left_radius }
-						else { none }
+					match name {
+						'border-block-end-color' {
+							value = PropertyID.border_block_end_color
+							found = true
+						}
+						'border-block-end-style' {
+							value = PropertyID.border_block_end_style
+							found = true
+						}
+						'border-block-end-width' {
+							value = PropertyID.border_block_end_width
+							found = true
+						}
+						'border-top-left-radius' {
+							value = PropertyID.border_top_left_radius
+							found = true
+						}
+						else {}
 					}
 				}
 				0x63 {
-					return match name {
-						'contain-intrinsic-size' { PropertyID.contain_intrinsic_size }
-						'corner-block-end-shape' { PropertyID.corner_block_end_shape }
-						'corner-end-start-shape' { PropertyID.corner_end_start_shape }
-						'corner-start-end-shape' { PropertyID.corner_start_end_shape }
-						'corner-top-right-shape' { PropertyID.corner_top_right_shape }
-						else { none }
+					match name {
+						'contain-intrinsic-size' {
+							value = PropertyID.contain_intrinsic_size
+							found = true
+						}
+						'corner-block-end-shape' {
+							value = PropertyID.corner_block_end_shape
+							found = true
+						}
+						'corner-end-start-shape' {
+							value = PropertyID.corner_end_start_shape
+							found = true
+						}
+						'corner-start-end-shape' {
+							value = PropertyID.corner_start_end_shape
+							found = true
+						}
+						'corner-top-right-shape' {
+							value = PropertyID.corner_top_right_shape
+							found = true
+						}
+						else {}
 					}
 				}
 				0x66 {
-					return match name {
-						'font-language-override' { PropertyID.font_language_override }
-						'font-variant-ligatures' { PropertyID.font_variant_ligatures }
-						else { none }
+					match name {
+						'font-language-override' {
+							value = PropertyID.font_language_override
+							found = true
+						}
+						'font-variant-ligatures' {
+							value = PropertyID.font_variant_ligatures
+							found = true
+						}
+						else {}
 					}
 				}
 				0x70 {
-					return match name {
-						'position-try-fallbacks' { PropertyID.position_try_fallbacks }
-						else { none }
+					match name {
+						'position-try-fallbacks' {
+							value = PropertyID.position_try_fallbacks
+							found = true
+						}
+						else {}
 					}
 				}
 				else {}
@@ -1605,47 +2764,89 @@ fn property_id_from_canonical_name(name string) ?PropertyID {
 		23 {
 			match name[0] {
 				0x2d {
-					return match name {
-						'-webkit-text-fill-color' { PropertyID.webkit_text_fill_color }
-						else { none }
+					match name {
+						'-webkit-text-fill-color' {
+							value = PropertyID.webkit_text_fill_color
+							found = true
+						}
+						else {}
 					}
 				}
 				0x62 {
-					return match name {
-						'border-end-start-radius' { PropertyID.border_end_start_radius }
-						'border-inline-end-color' { PropertyID.border_inline_end_color }
-						'border-inline-end-style' { PropertyID.border_inline_end_style }
-						'border-inline-end-width' { PropertyID.border_inline_end_width }
-						'border-start-end-radius' { PropertyID.border_start_end_radius }
-						'border-top-right-radius' { PropertyID.border_top_right_radius }
-						else { none }
+					match name {
+						'border-end-start-radius' {
+							value = PropertyID.border_end_start_radius
+							found = true
+						}
+						'border-inline-end-color' {
+							value = PropertyID.border_inline_end_color
+							found = true
+						}
+						'border-inline-end-style' {
+							value = PropertyID.border_inline_end_style
+							found = true
+						}
+						'border-inline-end-width' {
+							value = PropertyID.border_inline_end_width
+							found = true
+						}
+						'border-start-end-radius' {
+							value = PropertyID.border_start_end_radius
+							found = true
+						}
+						'border-top-right-radius' {
+							value = PropertyID.border_top_right_radius
+							found = true
+						}
+						else {}
 					}
 				}
 				0x63 {
-					return match name {
-						'contain-intrinsic-width' { PropertyID.contain_intrinsic_width }
-						'corner-inline-end-shape' { PropertyID.corner_inline_end_shape }
-						else { none }
+					match name {
+						'contain-intrinsic-width' {
+							value = PropertyID.contain_intrinsic_width
+							found = true
+						}
+						'corner-inline-end-shape' {
+							value = PropertyID.corner_inline_end_shape
+							found = true
+						}
+						else {}
 					}
 				}
 				0x66 {
-					return match name {
-						'font-variant-alternates' { PropertyID.font_variant_alternates }
-						'font-variant-east-asian' { PropertyID.font_variant_east_asian }
-						'font-variation-settings' { PropertyID.font_variation_settings }
-						else { none }
+					match name {
+						'font-variant-alternates' {
+							value = PropertyID.font_variant_alternates
+							found = true
+						}
+						'font-variant-east-asian' {
+							value = PropertyID.font_variant_east_asian
+							found = true
+						}
+						'font-variation-settings' {
+							value = PropertyID.font_variation_settings
+							found = true
+						}
+						else {}
 					}
 				}
 				0x73 {
-					return match name {
-						'scroll-margin-block-end' { PropertyID.scroll_margin_block_end }
-						else { none }
+					match name {
+						'scroll-margin-block-end' {
+							value = PropertyID.scroll_margin_block_end
+							found = true
+						}
+						else {}
 					}
 				}
 				0x74 {
-					return match name {
-						'text-underline-position' { PropertyID.text_underline_position }
-						else { none }
+					match name {
+						'text-underline-position' {
+							value = PropertyID.text_underline_position
+							found = true
+						}
+						else {}
 					}
 				}
 				else {}
@@ -1654,39 +2855,72 @@ fn property_id_from_canonical_name(name string) ?PropertyID {
 		24 {
 			match name[0] {
 				0x62 {
-					return match name {
-						'border-block-start-color' { PropertyID.border_block_start_color }
-						'border-block-start-style' { PropertyID.border_block_start_style }
-						'border-block-start-width' { PropertyID.border_block_start_width }
-						else { none }
+					match name {
+						'border-block-start-color' {
+							value = PropertyID.border_block_start_color
+							found = true
+						}
+						'border-block-start-style' {
+							value = PropertyID.border_block_start_style
+							found = true
+						}
+						'border-block-start-width' {
+							value = PropertyID.border_block_start_width
+							found = true
+						}
+						else {}
 					}
 				}
 				0x63 {
-					return match name {
-						'contain-intrinsic-height' { PropertyID.contain_intrinsic_height }
-						'corner-block-start-shape' { PropertyID.corner_block_start_shape }
-						'corner-bottom-left-shape' { PropertyID.corner_bottom_left_shape }
-						'corner-start-start-shape' { PropertyID.corner_start_start_shape }
-						else { none }
+					match name {
+						'contain-intrinsic-height' {
+							value = PropertyID.contain_intrinsic_height
+							found = true
+						}
+						'corner-block-start-shape' {
+							value = PropertyID.corner_block_start_shape
+							found = true
+						}
+						'corner-bottom-left-shape' {
+							value = PropertyID.corner_bottom_left_shape
+							found = true
+						}
+						'corner-start-start-shape' {
+							value = PropertyID.corner_start_start_shape
+							found = true
+						}
+						else {}
 					}
 				}
 				0x6f {
-					return match name {
-						'overflow-clip-margin-top' { PropertyID.overflow_clip_margin_top }
-						else { none }
+					match name {
+						'overflow-clip-margin-top' {
+							value = PropertyID.overflow_clip_margin_top
+							found = true
+						}
+						else {}
 					}
 				}
 				0x73 {
-					return match name {
-						'scroll-margin-inline-end' { PropertyID.scroll_margin_inline_end }
-						'scroll-padding-block-end' { PropertyID.scroll_padding_block_end }
-						else { none }
+					match name {
+						'scroll-margin-inline-end' {
+							value = PropertyID.scroll_margin_inline_end
+							found = true
+						}
+						'scroll-padding-block-end' {
+							value = PropertyID.scroll_padding_block_end
+							found = true
+						}
+						else {}
 					}
 				}
 				0x74 {
-					return match name {
-						'text-decoration-skip-ink' { PropertyID.text_decoration_skip_ink }
-						else { none }
+					match name {
+						'text-decoration-skip-ink' {
+							value = PropertyID.text_decoration_skip_ink
+							found = true
+						}
+						else {}
 					}
 				}
 				else {}
@@ -1695,46 +2929,85 @@ fn property_id_from_canonical_name(name string) ?PropertyID {
 		25 {
 			match name[0] {
 				0x61 {
-					return match name {
-						'animation-iteration-count' { PropertyID.animation_iteration_count }
-						'animation-timing-function' { PropertyID.animation_timing_function }
-						else { none }
+					match name {
+						'animation-iteration-count' {
+							value = PropertyID.animation_iteration_count
+							found = true
+						}
+						'animation-timing-function' {
+							value = PropertyID.animation_timing_function
+							found = true
+						}
+						else {}
 					}
 				}
 				0x62 {
-					return match name {
-						'border-bottom-left-radius' { PropertyID.border_bottom_left_radius }
-						'border-inline-start-color' { PropertyID.border_inline_start_color }
-						'border-inline-start-style' { PropertyID.border_inline_start_style }
-						'border-inline-start-width' { PropertyID.border_inline_start_width }
-						'border-start-start-radius' { PropertyID.border_start_start_radius }
-						else { none }
+					match name {
+						'border-bottom-left-radius' {
+							value = PropertyID.border_bottom_left_radius
+							found = true
+						}
+						'border-inline-start-color' {
+							value = PropertyID.border_inline_start_color
+							found = true
+						}
+						'border-inline-start-style' {
+							value = PropertyID.border_inline_start_style
+							found = true
+						}
+						'border-inline-start-width' {
+							value = PropertyID.border_inline_start_width
+							found = true
+						}
+						'border-start-start-radius' {
+							value = PropertyID.border_start_start_radius
+							found = true
+						}
+						else {}
 					}
 				}
 				0x63 {
-					return match name {
-						'corner-bottom-right-shape' { PropertyID.corner_bottom_right_shape }
-						'corner-inline-start-shape' { PropertyID.corner_inline_start_shape }
-						else { none }
+					match name {
+						'corner-bottom-right-shape' {
+							value = PropertyID.corner_bottom_right_shape
+							found = true
+						}
+						'corner-inline-start-shape' {
+							value = PropertyID.corner_inline_start_shape
+							found = true
+						}
+						else {}
 					}
 				}
 				0x6f {
-					return match name {
-						'overflow-clip-margin-left' { PropertyID.overflow_clip_margin_left }
-						else { none }
+					match name {
+						'overflow-clip-margin-left' {
+							value = PropertyID.overflow_clip_margin_left
+							found = true
+						}
+						else {}
 					}
 				}
 				0x73 {
-					return match name {
-						'scroll-margin-block-start' { PropertyID.scroll_margin_block_start }
-						'scroll-padding-inline-end' { PropertyID.scroll_padding_inline_end }
-						else { none }
+					match name {
+						'scroll-margin-block-start' {
+							value = PropertyID.scroll_margin_block_start
+							found = true
+						}
+						'scroll-padding-inline-end' {
+							value = PropertyID.scroll_padding_inline_end
+							found = true
+						}
+						else {}
 					}
 				}
 				0x74 {
-					return match name {
-						'text-decoration-thickness' { PropertyID.text_decoration_thickness }
-						else { none }
+					match name {
+						'text-decoration-thickness' {
+							value = PropertyID.text_decoration_thickness
+							found = true
+						}
+						else {}
 					}
 				}
 				else {}
@@ -1743,29 +3016,47 @@ fn property_id_from_canonical_name(name string) ?PropertyID {
 		26 {
 			match name[0] {
 				0x62 {
-					return match name {
-						'border-bottom-right-radius' { PropertyID.border_bottom_right_radius }
-						else { none }
+					match name {
+						'border-bottom-right-radius' {
+							value = PropertyID.border_bottom_right_radius
+							found = true
+						}
+						else {}
 					}
 				}
 				0x6f {
-					return match name {
-						'overflow-clip-margin-block' { PropertyID.overflow_clip_margin_block }
-						'overflow-clip-margin-right' { PropertyID.overflow_clip_margin_right }
-						else { none }
+					match name {
+						'overflow-clip-margin-block' {
+							value = PropertyID.overflow_clip_margin_block
+							found = true
+						}
+						'overflow-clip-margin-right' {
+							value = PropertyID.overflow_clip_margin_right
+							found = true
+						}
+						else {}
 					}
 				}
 				0x73 {
-					return match name {
-						'scroll-margin-inline-start' { PropertyID.scroll_margin_inline_start }
-						'scroll-padding-block-start' { PropertyID.scroll_padding_block_start }
-						else { none }
+					match name {
+						'scroll-margin-inline-start' {
+							value = PropertyID.scroll_margin_inline_start
+							found = true
+						}
+						'scroll-padding-block-start' {
+							value = PropertyID.scroll_padding_block_start
+							found = true
+						}
+						else {}
 					}
 				}
 				0x74 {
-					return match name {
-						'transition-timing-function' { PropertyID.transition_timing_function }
-						else { none }
+					match name {
+						'transition-timing-function' {
+							value = PropertyID.transition_timing_function
+							found = true
+						}
+						else {}
 					}
 				}
 				else {}
@@ -1774,22 +3065,34 @@ fn property_id_from_canonical_name(name string) ?PropertyID {
 		27 {
 			match name[0] {
 				0x63 {
-					return match name {
-						'color-interpolation-filters' { PropertyID.color_interpolation_filters }
-						else { none }
+					match name {
+						'color-interpolation-filters' {
+							value = PropertyID.color_interpolation_filters
+							found = true
+						}
+						else {}
 					}
 				}
 				0x6f {
-					return match name {
-						'overflow-clip-margin-bottom' { PropertyID.overflow_clip_margin_bottom }
-						'overflow-clip-margin-inline' { PropertyID.overflow_clip_margin_inline }
-						else { none }
+					match name {
+						'overflow-clip-margin-bottom' {
+							value = PropertyID.overflow_clip_margin_bottom
+							found = true
+						}
+						'overflow-clip-margin-inline' {
+							value = PropertyID.overflow_clip_margin_inline
+							found = true
+						}
+						else {}
 					}
 				}
 				0x73 {
-					return match name {
-						'scroll-padding-inline-start' { PropertyID.scroll_padding_inline_start }
-						else { none }
+					match name {
+						'scroll-padding-inline-start' {
+							value = PropertyID.scroll_padding_inline_start
+							found = true
+						}
+						else {}
 					}
 				}
 				else {}
@@ -1798,9 +3101,12 @@ fn property_id_from_canonical_name(name string) ?PropertyID {
 		28 {
 			match name[0] {
 				0x63 {
-					return match name {
-						'contain-intrinsic-block-size' { PropertyID.contain_intrinsic_block_size }
-						else { none }
+					match name {
+						'contain-intrinsic-block-size' {
+							value = PropertyID.contain_intrinsic_block_size
+							found = true
+						}
+						else {}
 					}
 				}
 				else {}
@@ -1809,9 +3115,12 @@ fn property_id_from_canonical_name(name string) ?PropertyID {
 		29 {
 			match name[0] {
 				0x63 {
-					return match name {
-						'contain-intrinsic-inline-size' { PropertyID.contain_intrinsic_inline_size }
-						else { none }
+					match name {
+						'contain-intrinsic-inline-size' {
+							value = PropertyID.contain_intrinsic_inline_size
+							found = true
+						}
+						else {}
 					}
 				}
 				else {}
@@ -1820,9 +3129,12 @@ fn property_id_from_canonical_name(name string) ?PropertyID {
 		30 {
 			match name[0] {
 				0x6f {
-					return match name {
-						'overflow-clip-margin-block-end' { PropertyID.overflow_clip_margin_block_end }
-						else { none }
+					match name {
+						'overflow-clip-margin-block-end' {
+							value = PropertyID.overflow_clip_margin_block_end
+							found = true
+						}
+						else {}
 					}
 				}
 				else {}
@@ -1831,9 +3143,12 @@ fn property_id_from_canonical_name(name string) ?PropertyID {
 		31 {
 			match name[0] {
 				0x6f {
-					return match name {
-						'overflow-clip-margin-inline-end' { PropertyID.overflow_clip_margin_inline_end }
-						else { none }
+					match name {
+						'overflow-clip-margin-inline-end' {
+							value = PropertyID.overflow_clip_margin_inline_end
+							found = true
+						}
+						else {}
 					}
 				}
 				else {}
@@ -1842,9 +3157,12 @@ fn property_id_from_canonical_name(name string) ?PropertyID {
 		32 {
 			match name[0] {
 				0x6f {
-					return match name {
-						'overflow-clip-margin-block-start' { PropertyID.overflow_clip_margin_block_start }
-						else { none }
+					match name {
+						'overflow-clip-margin-block-start' {
+							value = PropertyID.overflow_clip_margin_block_start
+							found = true
+						}
+						else {}
 					}
 				}
 				else {}
@@ -1853,9 +3171,12 @@ fn property_id_from_canonical_name(name string) ?PropertyID {
 		33 {
 			match name[0] {
 				0x6f {
-					return match name {
-						'overflow-clip-margin-inline-start' { PropertyID.overflow_clip_margin_inline_start }
-						else { none }
+					match name {
+						'overflow-clip-margin-inline-start' {
+							value = PropertyID.overflow_clip_margin_inline_start
+							found = true
+						}
+						else {}
 					}
 				}
 				else {}
@@ -1863,7 +3184,8 @@ fn property_id_from_canonical_name(name string) ?PropertyID {
 		}
 		else {}
 	}
-	return none
+	if !found { return none }
+	return value
 }
 
 pub fn string_from_property_id(property_id PropertyID) string {
