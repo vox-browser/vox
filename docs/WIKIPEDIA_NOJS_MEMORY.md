@@ -17,8 +17,8 @@ in its protocol. Explicit historic Boehm comparisons require `--allocator boehm`
 ### Corrected arena before/after: 50 MB remains unmet
 
 The latest V-source comparison, three alternating optimized pairs, measures
-**103.86 → 101.24 MB**, a **2.52% reduction**. The largest candidate settled
-observation is **101,287,376 bytes**. The **50,000,000-byte limit still fails**.
+**101.11 → 97.06 MB**, a **4.00% reduction**. The largest candidate settled
+observation is **97,338,760 bytes**. The **50,000,000-byte limit still fails**.
 All six raw viewport images match, all frozen-input guards pass, and all six script audits
 report no page runtime, sources, source bytes or preloaded scripts.
 
@@ -33,6 +33,7 @@ report no page runtime, sources, source bytes or preloaded scripts.
 | Native tokenizer, inline geometry and selector workspaces | 109,282,792 bytes | 106,104,272 bytes | 2.91% |
 | Cascade contexts, pseudo traversal and SVG metadata | 105,924,048 bytes | 103,712,184 bytes | 2.09% |
 | URL parser workspaces and immutable DOM URL snapshots | 103,859,664 bytes | 101,238,248 bytes | 2.52% |
+| Selector workspaces, decoded SVG metadata and cache storage | 101,107,152 bytes | 97,060,328 bytes | 4.00% |
 
 Each row is its own three-pair cohort; these are aggregate build comparisons,
 not isolated savings attributed to individual commits. Evidence is in
@@ -41,7 +42,7 @@ not isolated savings attributed to individual commits. Evidence is in
 `arena-static-paint-paired/`, `arena-svg-workspace-paired/`,
 `arena-inline-length-paired/`, `arena-inline-native-queue-paired/`,
 `arena-parser-workspaces-paired/`, `arena-cascade-workspaces-paired/` and
-`arena-url-snapshots-paired/`, including summaries, raw
+`arena-url-snapshots-paired/` and `arena-cache-lifetimes-paired/`, including summaries, raw
 process samples, allocator checks, resource audits and captures. Matching
 `arena-{text,svg}-lifetimes-build-protocol.json` files pin the complete source
 inputs, current compiler and native libraries. The static-paint and SVG protocols are
@@ -90,7 +91,7 @@ uses the original pinned native providers, not the separate queue experiment.
 Its generated C SHA-256 is
 `c6ed937bd1e619ebb2645fdc55924b5e80a25de693839d813978a47615a725fe`.
 
-The latest URL-snapshot cohort freezes committed source `e06ea99f`, including
+The URL-snapshot cohort freezes committed source `e06ea99f`, including
 the URL parser workspaces, compact immutable DOM URL snapshots, and intervening
 stylesheet parser and scripted-tokenizer fixes. It excludes later selector
 invalidation workspaces, SVG background metadata reuse and idle shaping-cache
@@ -105,6 +106,28 @@ of an interrupted compilation from those exact generated C and native object
 inputs; the final bundle is signed after moving the preserved compiler work out
 of the app. No canonical installed app is replaced.
 
+The latest cache-lifetimes cohort freezes committed source `f4723673`. It adds
+selector-invalidation workspaces, retained SVG background dimensions, separately
+owned text-shaping cache storage, and intervening replaced/flex sizing fixes.
+XML token allocation changes and the arena idle-timer integration are excluded.
+In particular, the frozen build still arms automatic text-cache cleanup only
+under Boehm: no saving from automatic arena cache retirement is claimed. This
+row measures the aggregate implementation, not individual commit savings.
+Its sampled launch peaks are 509.8–524.4 MB, and its generated C SHA-256 is
+`7cfc9933ca4fea30dc73a5011eceb1d77dfa10a38c8631e122944d20546b96e6`.
+It passes signing and headless startup with the original native providers.
+
+The selector workspace's 26 focused cases and shaping cache's 16 focused cases
+pass in both allocator modes and with poisoned retired arenas. The shaping
+fixture explicitly supplies the upstream test-font root after its first copied-
+module run could not find the font. The SVG metadata batch has 13 passing cases
+per mode, including all three new cases, and one failure in the existing
+`test_ratio_only_svg_background_resizes_its_viewbox_without_changing_natural_metrics`
+assertion (`commands.len` is zero instead of one). Restoring the unchanged SVG
+implementation reproduces that failure; the committed production source snapshot
+also reproduces it. Full-batch exit is one, and no whole-batch pass is claimed.
+The six accepted Wikipedia viewport images remain byte-identical.
+
 The conditions below also apply to these cohorts: `-prealloc -gc none`, optimized
 C, the unchanged 40-file cache, 1024×768 CSS pixels at DPR 2, a visible background
 window, and simultaneous app/descendant physical footprint measured before PNG
@@ -114,12 +137,12 @@ Reproduce the latest V-source cohort with:
 
 ```sh
 python3 tools/benchmark_wikipedia_memory.py \
-  --before Build/wikipedia-50mb/arena-cascade-workspaces.app/Contents/MacOS/Vox \
-  --after Build/wikipedia-50mb/arena-url-snapshots.app/Contents/MacOS/Vox \
+  --before Build/wikipedia-50mb/arena-url-snapshots.app/Contents/MacOS/Vox \
+  --after Build/wikipedia-50mb/arena-cache-lifetimes.app/Contents/MacOS/Vox \
   --cache Build/wikipedia-100mb/cache \
   --network-deny Build/pikabu-instructions-network-deny.dylib \
   --activity background --repeat 3 --allocator prealloc \
-  --output Build/wikipedia-50mb/arena-url-snapshots-recheck
+  --output Build/wikipedia-50mb/arena-cache-lifetimes-recheck
 ```
 
 The command exits nonzero while the 50 MB budget is exceeded.
