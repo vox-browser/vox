@@ -4,9 +4,11 @@ import os
 
 #include <sys/mman.h>
 #include "@DIR/arena_poison_report.h"
+#include "@DIR/arena_page_retirement.h"
 
 fn C.vox_note_poisoned_range(start voidptr, end voidptr, label &char)
 fn C.vox_install_poison_fault_handler()
+fn C.vox_retire_empty_arena_pages(start voidptr, bytes usize) int
 
 // Arenas for -prealloc builds.
 //
@@ -404,6 +406,19 @@ pub fn (mut arena Arena) reset() {
 		unsafe { prealloc_scope_leave(scope) }
 		arena.tail = arena.scope.first
 		arena.tail.previous = unsafe { nil }
+		// Large high-water buffers can stay unused for the rest of a page.
+		// Keep their virtual capacity for reuse without retaining dirty payload
+		// pages. Small working arenas retain their warm backing pages.
+		if arena.usage().capacity >= 1024 * 1024 {
+			mut block := arena.scope.first
+			for block != unsafe { nil } && block.scope == scope {
+				if block.mmap_allocated && C.vox_retire_empty_arena_pages(block.start,
+					usize(block.stop) - usize(block.start)) != 0 {
+					panic('could not retire empty arena pages')
+				}
+				block = block.next
+			}
+		}
 	}
 }
 
