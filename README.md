@@ -215,26 +215,21 @@ bundle with:
 open Build/v/Vox.app
 ```
 
-The production builder uses `-enable-globals -gc boehm -cflags -O2`, integrates the
+The macOS production builder uses `-enable-globals -prealloc -gc none -cflags -O2`, integrates the
 upstream Skia text bridge when its release dependencies are available, writes
 `Build/v/Vox.app` with the executable `Contents/MacOS/Vox`, and ad-hoc signs the
 bundle. `build_ladybird.sh` remains as a compatibility alias for existing tooling.
-Garbage collection reclaims temporary parsing and layout data during interactive
-page updates. Set `LADYBIRD_V_GC=none` to build without it for heap-ownership
-diagnostics.
+Scoped arenas own document payloads, paint trees, display-list scenes and
+temporary measurement/replay data. Retained snapshots keep their allocation
+owners alive. Individual V `free()` calls do nothing under `-prealloc`; reclaiming
+memory requires resetting or releasing the owning arena.
 
-The default build uses pointer-aware Boehm collection (`-gc boehm`) and
-optimizes generated C with `-O2`. The compatibility compiler's `-prod` mode
-repeatedly walks live aggregates to keep nested pointers alive, making large
-CSS token streams quadratic. The scanned heap retains those pointers without
-the walks. Set `LADYBIRD_DEBUG_TIMING=1` when launching Vox to report parsing,
-stylesheet, JavaScript, layout, and first-paint timings.
-
-Temporary intrinsic-sizing and minimum-height probes pool their geometry in
-arenas and release the owned blocks after computing their dimensions. The live
-document, committed geometry, and shared resources retain their existing heap
-ownership. Disabling GC remains a diagnostic option while other temporary V
-arrays and object graphs still require collection.
+Use a current V compiler with bounded arena reallocation, including
+`realloc(nil, n)`. The builder checks this requirement; set `V_BIN` to a compatible
+compiler when the compiler on `PATH` fails it. `LADYBIRD_V_GC=boehm` selects an
+explicit collector build for comparisons, and `LADYBIRD_V_GC=none` selects plain
+allocation without scoped arenas. Set `LADYBIRD_DEBUG_TIMING=1` when launching
+Vox to report parsing, stylesheet, JavaScript, layout, and first-paint timings.
 
 The application provides tabs with independent page state and history, back/forward,
 reload, an editable address/search field, link navigation, loading and console

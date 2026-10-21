@@ -1,5 +1,90 @@
 # Wikipedia without page JavaScript: memory
 
+## Allocator correction for the 50 MB target
+
+The earlier measurements below used **Boehm**, including the 100 MB result.
+They do not establish the memory usage of `-prealloc -gc none`. In the macOS
+`vmmap` report, `VM_ALLOCATE` names an operating-system virtual-memory region;
+it does not identify a JavaScript VM or a collector. The previous attribution
+of roughly 60 MB of those regions to the collector does not apply to an arena
+build.
+
+The macOS builder now defaults to `-prealloc -gc none`. The Wikipedia benchmark
+checks both binaries' allocator symbols before launching them, requires arenas
+by default, rejects mixed arena/collector builds, and records allocator identity
+in its protocol. Explicit historic Boehm comparisons require `--allocator boehm`.
+
+### Corrected arena before/after: 50 MB remains unmet
+
+Three fresh alternating pairs measure **158.8 → 158.0 MB**, a **0.46% reduction**.
+The largest candidate settled observation is **158,172,672 bytes**. The
+**50,000,000-byte limit fails**. All six viewport images are byte-identical, the
+input guards pass, and both binaries verify as arena builds without Boehm.
+
+| Metric | Arena before | Arena after |
+| --- | ---: | ---: |
+| Median settled physical footprint | 158,778,856 bytes | 158,041,576 bytes |
+| Range of three settled medians | 158.5–158.8 MB | 158.0–158.2 MB |
+| Largest individual settled observation | 158,844,416 bytes | 158,172,672 bytes |
+| Median sampled launch peak | 605.3 MB | 602.6 MB |
+
+The candidate packs optional generated content and shared builtin marker data
+out of ordinary computed-style records (`6a7157ee`) and avoids resolving counter
+registries for content with no counter references (`96d6a3e5`). These changes
+do not provide a substantial Wikipedia RAM reduction. The separate earlier
+style-only comparison also showed less than 1% improvement. No reduction from a
+Boehm measurement is credited to the arena build.
+
+Both variants use the same optimized current V frontend and native libraries,
+with `-prealloc -gc none -cflags -O2` and no compiler fallback. The compatible
+compiler used here is `/Users/alex/code/v-latest/v`, SHA-256
+`dfd0ac6c17cd0c10e804be6720f363c13fe242bdaba5d4315f1a6961c06ce607`.
+The compiler on the default `PATH` fails the repository's bounded arena
+reallocation check. Source inputs are fixed measurement archives of canonical
+commit `905348a0`, with the candidate's exact changes recorded separately.
+These are benchmark artifacts; development and commits remain on canonical
+`master`. The installed `Build/v/Vox.app` still contained Boehm when inspected;
+these measurements describe the preserved arena bundles.
+
+Conditions remain the same 40-file frozen portal cache, 1024×768 CSS viewport,
+DPR 2, visible background window and 15 seconds after readiness. The last-second
+physical-footprint window precedes screenshot allocation and includes browser
+descendants. Page runtime, sources, source bytes and script preloads are all zero.
+
+Evidence is under `Build/wikipedia-50mb/`: `arena-content-paired/summary.json`
+and its six raw observations, `arena-{before-head,content}-build-protocol.json`,
+the frozen source/generated C, signed bundles and startup logs. Earlier attempts
+rejected by activity or sampling guards remain separate. The initial style-only
+composite explicitly identifies its successful pairs and rejected later samples.
+
+An unoptimized diagnostic of the baseline found about 73 MB allocated in the
+main thread's base arena and 53 MB in the native document arena. Those totals
+include live and obsolete allocations; they are not JavaScript heap sizes or
+an independent RAM result. Resetting or releasing complete owners is necessary
+to reclaim arena allocations; merely dropping a reference does not do so.
+
+Validation passes the arena style regressions, focused collector ownership
+checks, 12 content/counter invalidation tests in each allocator mode, all three
+bundles' headless startup checks, four arena-runtime staging tests and 26
+benchmark/observer tests. An exploratory 29-case Boehm bundle failed its
+default-allocation comparison; that failed log is preserved under
+`style-storage-regressions4/boehm-run.log` and receives no full-batch pass credit.
+This does not claim a full repository test run.
+
+Reproduce the corrected comparison with:
+
+```sh
+python3 tools/benchmark_wikipedia_memory.py \
+  --before Build/wikipedia-50mb/arena-before-head.app/Contents/MacOS/Vox \
+  --after Build/wikipedia-50mb/arena-content.app/Contents/MacOS/Vox \
+  --cache Build/wikipedia-100mb/cache \
+  --network-deny Build/pikabu-instructions-network-deny.dylib \
+  --activity background --repeat 3 --allocator prealloc \
+  --output Build/wikipedia-50mb/arena-recheck
+```
+
+The command exits nonzero while the 50 MB budget is exceeded.
+
 ## 2026-10-21: below 100 MB settled RAM
 
 Five fresh alternating before/after pairs of the Wikipedia portal measure
@@ -70,7 +155,7 @@ python3 tools/benchmark_wikipedia_memory.py \
   --after Build/wikipedia-100mb/allocator-candidate.app/Contents/MacOS/Vox \
   --cache Build/wikipedia-100mb/cache \
   --network-deny Build/pikabu-instructions-network-deny.dylib \
-  --activity background --repeat 5 --limit-mb 100 \
+  --activity background --repeat 5 --limit-mb 100 --allocator boehm \
   --output Build/wikipedia-100mb/recheck
 ```
 
@@ -184,8 +269,8 @@ including selector borrowing commit `e289178a`, and is not byte-identical to
 the current canonical HEAD. The feature commits themselves are in the canonical
 repository.
 
-The normal production build uses V's old compiler, Boehm and native Clang `-O2`,
-without V `-prod`. Build, linked-library closure, signature, worker-input
+That historic measured bundle used V's compatibility compiler, Boehm and native
+Clang `-O2`, without V `-prod`. Build, linked-library closure, signature, worker-input
 preflight and headless startup all exit 0. Source/native/toolchain/runtime pins
 remain unchanged. The executable SHA-256 is
 `9925a47e76a1457ead9ada6fd6495db5d22505944d57eb0567add11feda87683`.
