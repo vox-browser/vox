@@ -542,9 +542,10 @@ fn utf16_units_for_shaping(text string) []u16 {
 }
 
 fn trailing_whitespace_length(text string) int {
-	units := utf16_units_for_shaping(text)
 	mut length := 0
-	for length < units.len && is_ascii_space_for_shaping(units[units.len - length - 1]) {
+	// All shaping whitespace is ASCII, so each trailing byte is also exactly
+	// one UTF-16 code unit. The preceding text needs no decoding or storage.
+	for length < text.len && is_ascii_space_for_shaping(u16(text[text.len - length - 1])) {
 		length++
 	}
 	return length
