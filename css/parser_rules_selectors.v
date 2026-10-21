@@ -117,12 +117,17 @@ pub fn RuleSelectorParser.create_with_namespaces(input string, declared_namespac
 }
 
 fn (parser RuleSelectorParser) parsing_params() ParsingParams {
+	// Clone borrowed headers rather than taking addresses of parser fields.
+	// Current V otherwise boxes the complete parser for every parameter snapshot.
+	value_context := parser.value_context
+	rule_context := parser.rule_context
+	declared_namespaces := unsafe { parser.declared_namespaces }
 	return ParsingParams{
 		document: parser.document
 		mode: parser.mode
-		value_context: parser.value_context.clone()
-		rule_context: parser.rule_context.clone()
-		declared_namespaces: parser.declared_namespaces.clone()
+		value_context: value_context.clone()
+		rule_context: rule_context.clone()
+		declared_namespaces: declared_namespaces.clone()
 		is_ua_style_sheet: parser.is_ua_style_sheet
 	}
 }
