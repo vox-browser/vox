@@ -33,7 +33,11 @@ frame: each arena is reset only after its last reader has let go.
   scope API of current V (the 0.5.2 compatibility compiler lacks it).
   `Arena.enter()` routes the thread's allocations into the arena until
   `leave()`; `reset()` rewinds it, keeping the blocks that cover a quarter more
-  than its high-water mark; `release()` returns them. `enter_persistent()` temporarily
+  than its high-water mark. When retained capacity reaches one MiB, reset also
+  discards complete mmap payload pages, preserving virtual capacity and addresses
+  without keeping their dirty physical backing. Small arenas keep warm pages;
+  poison mode keeps its protected mappings. `release()` returns the blocks.
+  `enter_persistent()` temporarily
   routes allocations back to the thread's base arena: every cache fill or
   install into longer-lived state that can run inside an arena must use it.
   Outside `-prealloc` all of this is inert and the collector owns everything.
@@ -395,7 +399,7 @@ so the helper was removed from the source and build. The prototype and measured
 logs remain under `Build/prealloc-document/`; it is not an enabled renderer.
 
 These ownership and allocation checks do not establish the browser RAM target.
-The latest validated clean optimized Pikabu endpoint is 934.6 MiB
+An earlier validated clean optimized Pikabu endpoint is 934.6 MiB
 (`native-89-optimized-foreground/1-vox/result.json`), with a latter-half slope
 of 135.2 KiB/s. The foreground checks pass and its completed document retains
 15 stories and 34 story images. It remains above the 454.6 MiB Brave reference.
@@ -517,3 +521,53 @@ SVG/image mutation and turbulence comparisons remain pixel-exact in
 `replay-76-svg/results.json`. These checks do not establish the RAM target. The
 optimized foreground attempt was interrupted by repeated new-tab actions and
 then faulted in a PageClient rendering callback; its endpoint is invalid.
+
+### Shared UA indexes, parser buffers and animation event delivery
+
+Immutable selector indexes for process-lifetime UA stylesheets are shared across
+documents and shadow roots. The bounded eight-entry template cache checks exact
+sheet identities, revisions, media effectiveness and effective rule order; each
+document retains its own wrapper and invalidation state. An empty view-transition
+sheet does not prevent sharing, but its first rule does. Mutation, capacity,
+document retirement and full computed-longhand comparisons pass with prealloc,
+poisoning and Boehm. This establishes ownership and behavior, not a page RAM win.
+
+HTML tokenization reuses character and entity buffers. ASCII output allocates
+only its final owned string. Streamed character references retain one rewind
+position per consumed code point until a token is delivered, fixing source
+positions when a reference pauses across input chunks. The complete tokenizer
+selection and focused allocation checks pass in all three modes.
+
+SVG background replay uses a value iterator instead of materializing a tile
+vector. Exhaustive geometry/repeat/limit comparisons preserve the previous tile
+order, and nested traversals stay within the focused allocation bound. CSS
+animation and transition queues likewise keep event metadata until delivery;
+they construct an Event only when the current delivery path has listeners.
+Late listeners, event identity, sorting and the original creation timestamp are
+preserved. Focused prealloc, poison and Boehm checks pass for both changes.
+
+### Physical pages retained by reset arenas
+
+Resetting a large arena now discards its dead payload's complete OS pages.
+Darwin replaces those anonymous pages in place because MADV_DONTNEED alone
+leaves their dirty backing charged; Linux uses MADV_DONTNEED. Allocator metadata
+and address reservations survive. A four-MiB test verifies the kernel reports
+less than 512 KiB resident after reset, then refills the same addresses while
+preserving capacity. Existing arena tests and the new check pass normally,
+under poisoning and with Boehm.
+
+The combined browser completes normal and poisoned headless startup checks and
+a full 60-second Pikabu poison run with one installation, 15 stories and 34
+story images (`native-117-poison-background`). All eight SVG/image mutation
+reftests and both turbulence images remain pixel-exact under poisoning in
+`replay-117-svg/results.json`.
+
+The latest completed clean optimized foreground measurement before these later
+buffer/parser/event changes is **1065.9 MiB**, with a latter-half physical-footprint
+slope of **2496.3 KiB/s** (`native-95-optimized-foreground/1-vox/result.json`).
+It passes all 59 focus checks and the endpoint document checks, but regresses
+from the earlier 934.6 MiB result and remains above Brave's 454.6 MiB reference.
+Background, poison, sampler and context-retirement experiments do not replace
+that primary result. A raw Metal queue probe also finds essentially the same
+181 MiB active footprint at command-buffer limits 1, 4, 8 and 64
+(`metal-queue-119-count-*.log`); no queue-limit change is justified by that probe.
