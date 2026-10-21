@@ -1,6 +1,7 @@
 module html
 
 import dom
+import platform
 
 // Translation of Libraries/LibWeb/HTML/Parser/ListOfActiveFormattingElements.{h,cpp}.
 // https://html.spec.whatwg.org/multipage/parsing.html#list-of-active-formatting-elements
@@ -25,6 +26,8 @@ pub fn entry_is_marker(entry &ActiveFormattingElement) bool {
 }
 
 pub struct ListOfActiveFormattingElements {
+mut:
+	parser_storage &platform.Arena = unsafe { nil }
 pub mut:
 	entries []ActiveFormattingElement
 }
@@ -67,26 +70,49 @@ pub fn (list &ListOfActiveFormattingElements) create_own_token(token &HTMLToken)
 	return create_own_token(token)
 }
 
+// The native parser clears the active-formatting list at the same EOF boundary
+// as its tokenizer. Keep its token snapshots and growing entry vector there,
+// while the standalone public snapshot API retains its original owner.
+fn (list &ListOfActiveFormattingElements) parser_owned_token(token &HTMLToken) &HTMLToken {
+	if list.parser_storage == unsafe { nil } { return create_own_token(token) }
+	mut storage := list.parser_storage
+	entry := storage.enter()
+	defer { storage.leave(entry) }
+	return create_own_token(token)
+}
+
+fn (mut list ListOfActiveFormattingElements) append_parser_entry(value ActiveFormattingElement) {
+	if list.parser_storage == unsafe { nil } { list.entries << value; return }
+	mut storage := list.parser_storage
+	entry := storage.enter()
+	list.entries << value
+	storage.leave(entry)
+}
+
 // https://html.spec.whatwg.org/multipage/parsing.html#push-onto-the-list-of-active-formatting-elements
 pub fn (mut l ListOfActiveFormattingElements) add(element &dom.Element, token &HTMLToken) {
 	l.ensure_noahs_ark_clause(element)
-	l.entries << ActiveFormattingElement{
+	l.append_parser_entry(ActiveFormattingElement{
 		element: element
-		token:   create_own_token(token)
-	}
+		token:   l.parser_owned_token(token)
+	})
 }
 
 pub fn (mut l ListOfActiveFormattingElements) add_marker() {
-	l.entries << ActiveFormattingElement{
+	l.append_parser_entry(ActiveFormattingElement{
 		element: none
 		token:   none
-	}
+	})
 }
 
 pub fn (mut l ListOfActiveFormattingElements) insert_at(index int, element &dom.Element, token &HTMLToken) {
+	owned := l.parser_owned_token(token)
+	mut storage := l.parser_storage
+	entry := if storage != unsafe { nil } { storage.enter() } else { platform.ArenaEntry{} }
+	defer { if storage != unsafe { nil } { storage.leave(entry) } }
 	l.entries.insert(index, ActiveFormattingElement{
 		element: element
-		token:   create_own_token(token)
+		token:   owned
 	})
 }
 
@@ -95,7 +121,7 @@ pub fn (mut l ListOfActiveFormattingElements) replace(to_remove &dom.Element, to
 		if el := entry.element {
 			if same_element(el, to_remove) {
 				l.entries[i].element = to_add
-				l.entries[i].token = create_own_token(token)
+				l.entries[i].token = l.parser_owned_token(token)
 				break
 			}
 		}

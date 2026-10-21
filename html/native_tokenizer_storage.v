@@ -53,6 +53,7 @@ fn (mut p HTMLParser) retire_tokenizer_storage() {
 		source_positions:            [position]
 	}
 	p.list_of_active_formatting_elements.entries = []ActiveFormattingElement{}
+	p.list_of_active_formatting_elements.parser_storage = unsafe { nil }
 	p.pending_table_character_tokens = []HTMLToken{}
 	p.tokenizer_storage = unsafe { nil }
 	storage.release()

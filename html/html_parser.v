@@ -165,6 +165,7 @@ pub fn HTMLParser.create_with_scripting_mode(document &dom.Document, input strin
 			storage.leave(entry)
 			mut parser := HTMLParser.create_with_tokenizer(document, tokenizer, scripting_mode)
 			parser.tokenizer_storage = storage
+			parser.list_of_active_formatting_elements.parser_storage = storage
 			mut retained_owner := owner
 			retained_owner.add_cleanup(fn [storage] () {
 				mut retired := unsafe { &platform.Arena(storage) }
@@ -1520,7 +1521,7 @@ fn (mut p HTMLParser) run_the_adoption_agency_algorithm(token &HTMLToken) Adopti
 		}
 		fe_entry := p.list_of_active_formatting_elements.entries[formatting_element_index]
 		fe_token := fe_entry.token or { return .do_nothing }
-		token_data := create_own_token(fe_token)
+		token_data := p.list_of_active_formatting_elements.parser_owned_token(fe_token)
 		new_element := p.create_element_for(token_data, ns_html, furthest_block.as_node())
 
 		// 16. Move furthestBlock's children into the new element.
