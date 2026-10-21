@@ -2346,6 +2346,15 @@ evidence](docs/translation-audit/NATIVE_MEDIA_WHEEL_RAW_HANDLER.md).
   Local gate1/native launcher1/jobs0;no normal binary/profile/page/broad/bundle;accepted147/carry0 retained.
   Read-only C definition confirms inline keyword only;no strict audit or profile pass. Both improving pairs/slower third retained.
   Matched RAM local scratch;durable C/actual exits and metadata errata retained;canonical/GUI/foreign work preserved;Chrome open.
+  Retained length owner round150 (`9c2ff112`):one original Git hunk/whole getter;3cases/763asserts eachGC composed without replay.
+  Original640assert case/driver1 retained;unfinished2cases123asserts/driver0 each;no fabricated whole-driver0. Common60/config.
+  Declared public262144length-read local batch -7.679009%/3wins/all6actual0;zero local pagecredit.
+  Fresh page 16,611,067,127.5→16,606,936,405;17/30wins;point 4,130,722.5.
+  PairedCI[-5,939,354,9,976,399.5];repeatable credit 0;all60 retained;same1/2/1 preparation.
+  Focused exact;broad skipped below 5,000,000-instruction threshold;prior carry0;strict entire-program C permits only getter body/source assertion offsets.
+  Accepted control 150;isolated150app/GC1+override2;canonical/GUI/foreign work preserved.
+  Profiles getter2359552each/helper2359552→authenticated0;no profile credit. Original audit/dependent failures retained;native argv resumed honestly.
+  RAM compiler/SSD durable evidence declared;Chrome parity remains open.
 - Outside instruction-count optimization, run broad regression suites once per
   ten completed fixes, not after every fix.
   Broad suites include full translation/package test batches, the full LibJS AST

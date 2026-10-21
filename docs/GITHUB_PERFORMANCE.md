@@ -14605,6 +14605,120 @@ accepted hardware saving;independent current-Root performance remains unmeasured
 Canonical app,GUI and foreign work are preserved. Chrome parity remains
 unestablished;equivalent content/endpoint accounting is still required.
 
+## Read retained CSS lengths before optional fallback setup
+
+Round150 applies complete feature `9c2ff112` to accepted147. One exact original
+Git hunk changes the whole public `ComputedProperties.length()` getter. Its
+existing property lookup/animation policy remains first;the identical retained
+`LengthStyleValue` return now precedes construction of the optional percentage
+basis needed by the general fallback. The unchanged public conversion and all
+other types/serialized fallback remain. No rejected149 inline attribute or
+independent Root storage work is imported;whole authored files reconstruct
+exactly,without source projection.
+
+Three original cases verify **763 assertions per GC mode** on the same full
+C-O2 compatibility runtime. The original drivers actually exit1 after the first
+640-assert unit/scalar-bit case passes. A fixture wrongly expected0 from a
+percentage without a basis;the unchanged public converter requires a basis or
+panics `VERIFY_NOT_REACHED`. The corrected two unfinished cases pass123
+assertions/actual driver0 eachGC,including owned-child panic expectations for
+retained/serialized percentages,fallbacks,animation precedence,live handles and
+snapshots. The completed first case/helper is exact and reused;compiler
+`-run-only` selection and actual generated main exclude it from both resumes.
+**No whole-driver0 or replay is fabricated.** Contract verification composes
+actual1/0 runs;aggregate process exit is inapplicable and stays null. Common12
+cases pass60 assertions/configuration;before reuses unchanged147-final. No
+modern-Root compiler coverage is inferred.
+
+This new150 local endpoint was declared before any performance build/sample.
+It measures a complete batch of **262,144 source public length reads** across
+32 owners,eight dynamic property IDs,four units and signed exact fractions.
+Setup,eight full warmups,forced GC and independent raw/unit/checksum assertions
+remain outside the hardware counter. It replaces the canonical layout scene
+for this feature-local gate;it is not a document-layout/page measurement.
+Actual machine-code evidence retains getter calls in both measured loops.
+Three fixed alternating pairs give **27,309,306 →
+25,212,222 retired instructions (-7.67900876%)**,
+**3/3 wins**;all six actual exits0 and checksum73,138,176 match. Every
+observation remains. This confirmed local result earns **zero page credit**.
+
+Strict independent entire-program C comparison passes,retaining every
+function/type/global. Only the complete getter body changes against control;
+all other bodies,records,globals/resources remain exact after established
+compiler identities,identical helper reorderings and four exact source-line
+maps. All493 builtin and176 protected decoder/filter/arena functions,120 native
+inputs,37 frozen quoted includes and exact native arguments authenticate.
+Normal C/raw/independent hashes are in the strict audit receipt.
+
+The original audit exits1 because its callee-specific assertion expected
+generic `StyleValue.length()`. V smartcasts to `LengthStyleValue.length()`;
+that exact return is already present in the unchanged public converter. The
+corrected audit authenticates that identical return and preserves all strict
+comparisons. Original audit,build and dependent pre-primary failures remain
+under `instruction-opt150-audit-callee-finding`;no native compilation or browser
+primary had begun. Actual Clang resumes the stored immutable C/argument array,
+then signs,persists a regular binary and smokes with frozen4eef—all exit0.
+Original builder actual1/native notstarted remains distinct from the successful
+resume;no frontend/profile/focused check is repeated. The still-unstarted
+fixed browser cohort resumes only after actual build/audit/profile success.
+
+Full-process C-O1/Boehm/marker1 profiles stay enabled throughout main without
+function filtering/reset. Both drivers and the evidence reader exit0. Each
+includes setup,eight warmups and one measured public batch:
+
+| Function | Before calls | Final calls |
+| --- | ---: | ---: |
+| `css__opt150_complete_public_length_batch` | 9 | 9 |
+| `css__ComputedProperties_length` | 2,359,552 | 2,359,552 |
+| `css__ComputedProperties_property` | 2,359,552 | 2,359,552 |
+| `css__Length__static__from_style_value` | 2,359,552 | 0 |
+
+The final public-conversion counter remains compiled/instrumented. Its zero
+initialization,entry increment,always-enabled main and nonzero-only printer
+prove the absent row is an authenticated0. Getter/property calls stay equal.
+Profile calls,timings and instrumented instruction counts receive no page credit.
+
+The fixed30 alternating browser pairs retain the359-body frozen cache,4eef
+helper,1024×768 viewport and
+`native.scopes.navigation_to_first_document_paint[0]` endpoint. Fresh medians:
+**16,611,067,127.5 → 16,606,936,405
+instructions**,observed saving **4,130,722.5**
+(-0.02486729%),**17/30 wins**. Paired median
+saving **2,291,996**;30,000 paired bootstrap resamples,
+seed150,95% interval **[-5,939,354, 9,976,399.5]**. Repeatable page credit:
+**0**. Candidate is **accepted**
+under the existing positive-point policy;no historical median is subtracted.
+
+All60 primaries remain:60 actual PNGs,0 explicit counter-only
+recoveries,0 archived pre-primary retries. First preparation stays
+1install/2geometry/1paint;later refreshes remain separate
+(0). All1
+external foreground transitions remain. Available images are1024×768 and all
+pixels outside the original fixed skeleton bands are exact. Unknown exit or
+missing PNG,if any,remains explicit;no completed primary is rerun,filtered or
+extended.
+
+Focused viewport is exact. Prior observed carry0 plus positive observed point
+gives **4,130,722.5** for the broad gate. Broad result:**skipped below 5,000,000-instruction threshold**.
+Below5M,no broad execution is claimed;both focused capture loader receipts pin frozen4eef.
+The isolated artifact `/Users/alex/code/vox2/Build/v/Vox-opt150.app` passes actual library pinning,
+signing,verification,smoke and GC(default marker1/override2 with collections).
+Instruction text matches the measured image. Canonical Info/resources are
+copied without concurrent executables/compiler temporaries;canonical app,GUI
+and foreign work remain preserved. Accepted control **150**,
+broad baseline **147**,observed carry
+**4,130,722.5**.
+
+Both local variants and compiler scratch use the same declared private RAM
+volume;all ephemeral generated C is durably archived with actual hashes.
+Frozen browser cache,both regular persisted normal binaries,normal candidate
+C and all receipts/archive evidence remain SSD. The inherited frontend/profile scope
+labels remains recorded in `instruction-opt150-metadata-errata.json`,without
+rewriting original statuses or hashes. Archive index:
+`Build/v/instruction-opt150-durable-archives.json`. Frozen results provide no
+extra coverage/credit for unrelated current-source changes. Chrome parity
+remains unestablished;equivalent content and endpoint accounting are still needed.
+
 ## Causes and changes
 
 - The V 0.5.2 compatibility compiler's `-prod` Boehm code repeatedly snapshots
