@@ -10,6 +10,7 @@
 module dom
 
 import strings
+import encoding.utf8
 
 #flag darwin -licucore
 
@@ -297,14 +298,20 @@ pub fn (mut c CharacterData) replace_data_with_mutation_steps(offset int, count 
 	// 6. Let delete offset be offset + data's length.
 	// 7. Starting from delete offset code units, remove count code units from node's data.
 	old_data := c.data_
-	mut full_data := utf16_code_units_from_string(c.data_)
-	replacement_data := utf16_code_units_from_string(data)
-	before_data := full_data[..offset].clone()
-	after_data := full_data[offset + actual_count..].clone()
-	full_data = before_data.clone()
-	full_data << replacement_data
-	full_data << after_data
-	c.data_ = string_from_utf16_code_units(full_data)
+	if offset == 0 && actual_count == length && utf8.validate_str(data) {
+		// Parser text flushes replace a complete node. Well-formed UTF-8 needs
+		// no UTF-16 splice or normalization, and the node owns its sole copy.
+		c.data_ = data.clone()
+	} else {
+		mut full_data := utf16_code_units_from_string(c.data_)
+		replacement_data := utf16_code_units_from_string(data)
+		before_data := full_data[..offset].clone()
+		after_data := full_data[offset + actual_count..].clone()
+		full_data = before_data.clone()
+		full_data << replacement_data
+		full_data << after_data
+		c.data_ = string_from_utf16_code_units(full_data)
+	}
 
 	mut node := unsafe { &Node(&c) }
 
@@ -355,7 +362,7 @@ pub fn (mut c CharacterData) replace_data_with_mutation_steps(offset int, count 
 				owner_node.set_needs_layout_tree_update(true, .character_data_replace_data)
 			}
 		}
-		whitespace_changed := old_data.bytes().all(is_ascii_whitespace(it)) != c.data_.bytes().all(is_ascii_whitespace(it))
+		whitespace_changed := character_data_is_ascii_whitespace(old_data) != character_data_is_ascii_whitespace(c.data_)
 		if layout_node := node.unsafe_layout_node() {
 			if layout_node.is_text_node() && layout_node.text_has_source_range_ {
 				if parent := node.parent() {
@@ -443,6 +450,13 @@ fn utf16_code_units_from_string(value string) []u16 {
 		code_units << u16(0xdc00 + (scalar & 0x3ff))
 	}
 	return code_units
+}
+
+fn character_data_is_ascii_whitespace(value string) bool {
+	for index := 0; index < value.len; index++ {
+		if !is_ascii_whitespace(value[index]) { return false }
+	}
+	return true
 }
 
 fn string_from_utf16_code_units(code_units []u16) string {

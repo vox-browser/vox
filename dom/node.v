@@ -12,6 +12,7 @@ module dom
 import platform
 import math
 import strings
+import encoding.utf8
 
 pub type UniqueNodeID = i64
 
@@ -5083,6 +5084,18 @@ pub fn (mut c CharacterData) replace_data(offset int, count int, data string) ! 
 }
 
 fn utf16_code_unit_length(value string) int {
+	// DOM offsets count UTF-16 units, but callers only need the length. Avoid
+	// allocating a rune vector on every text replacement and range query.
+	if utf8.validate_str(value) {
+		mut length := 0
+		for index := 0; index < value.len; index++ {
+			byte := value[index]
+			if byte & 0xc0 != 0x80 {
+				length += if byte >= 0xf0 { 2 } else { 1 }
+			}
+		}
+		return length
+	}
 	mut length := 0
 	for r in value.runes() {
 		length += if u32(r) > 0xffff { 2 } else { 1 }
