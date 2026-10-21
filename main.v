@@ -1529,26 +1529,7 @@ fn browser_decode_raster_image_bytes(bytes []u8) !&dom.Bitmap_ {
 			return bitmap
 		}
 	}
-	image := stbi.load_from_memory(bytes.data, bytes.len)!
-	defer {
-		image.free()
-	}
-	if image.width <= 0 || image.height <= 0 || image.nr_channels != 4 {
-		return error('Invalid decoded image')
-	}
-	mut pixels := []u8{len: image.width * image.height * 4}
-	unsafe {
-		vmemcpy(pixels.data, image.data, pixels.len)
-	}
-	return &dom.Bitmap_{
-		width: image.width
-		height: image.height
-		pitch: image.width * 4
-		data: pixels
-		// stb preserves the encoded top-to-bottom scanline order. Keep the
-		// native image bridge from reflecting those rows as Quartz storage.
-		native_rows_are_top_down: true
-	}
+	return browser_decode_stb_raster_bytes(bytes)
 }
 
 // The existing compact raster decoder supplies the actual HTML request.
