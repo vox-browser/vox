@@ -17,8 +17,8 @@ in its protocol. Explicit historic Boehm comparisons require `--allocator boehm`
 ### Corrected arena before/after: 50 MB remains unmet
 
 The latest V-source comparison, three alternating optimized pairs, measures
-**80.38 → 77.99 MB**, a **2.98% reduction**. The largest candidate settled
-observation is **78,202,248 bytes**. The **50,000,000-byte limit still fails**.
+**78.07 → 76.40 MB**, a **2.14% reduction**. The largest candidate settled
+observation is **76,694,944 bytes**. The **50,000,000-byte limit still fails**.
 All six raw viewport images match, all frozen-input guards pass, and all six script audits
 report no page runtime, sources, source bytes or preloaded scripts.
 
@@ -49,6 +49,7 @@ report no page runtime, sources, source bytes or preloaded scripts.
 | Shaping idle pages; additional trim helpers not yet wired | 81,593,736 bytes | 80,528,728 bytes | 1.31% |
 | Lazy function maps, shared content keywords and child snapshots | 80,807,280 bytes | 80,332,168 bytes | 0.59% |
 | Read-only content contexts and actual arena idle page maintenance | 80,381,272 bytes | 77,989,208 bytes | 2.98% |
+| CoreText query, SVG bounds, URL and cosmetic JSON workspaces | 78,071,152 bytes | 76,400,008 bytes | 2.14% |
 
 Each row is its own three-pair cohort; these are aggregate build comparisons,
 not isolated savings attributed to individual commits. Evidence is in
@@ -65,7 +66,7 @@ not isolated savings attributed to individual commits. Evidence is in
 `arena-scratch-counter-keys-paired/`, `arena-static-layout-queries-paired/` and
 `arena-text-header-fixup2-paired/`, `arena-iterator-rendered-text-paired/` and
 `arena-idle-pages-paired/`, `arena-content-child-snapshots-paired/` and
-`arena-idle-wiring-paired/`, including summaries, raw
+`arena-idle-wiring-paired/` and `arena-resource-queries-paired/`, including summaries, raw
 process samples, allocator checks, resource audits and captures. Matching
 `arena-{text,svg}-lifetimes-build-protocol.json` files pin the complete source
 inputs, current compiler and native libraries. The static-paint and SVG protocols are
@@ -418,7 +419,7 @@ Its maximum settled observation is 80,364,960 bytes and launch peaks are
 487.72–490.34 MB. Signing, startup, captures, script audits and input guards pass.
 This cohort excludes the later read-only counter context and idle wiring.
 
-The latest `arena-idle-wiring` cohort freezes `1e3b874f` plus four overlays
+The `arena-idle-wiring` cohort freezes `1e3b874f` plus four overlays
 authenticated against `d8a92985`. The actual prealloc idle callback now retires
 empty CSS, inline, scene/tree spare, replay, shaping and recycle payload pages
 while preserving published cache roots and live readers. Ordinary content
@@ -437,6 +438,34 @@ All six captures and audits pass with unchanged native providers. Sampled
 candidate launch peaks are 489.05–489.46 MB. Both 50 MB budgets still fail.
 The canonical app remains unchanged.
 
+The latest `arena-resource-queries` cohort freezes `ae40f3fb` plus two cosmetic
+JSON overlays authenticated against `3610256d`. CoreText output records retire
+after their final strings and variation coordinates are copied. SVG antialiasing
+queries project only geometry, avoiding unused clip/mask copies. Resource URL
+resolution retires parser records after serializing its result. Cosmetic string
+surveys retain their final JSON only; struct encodes keep their existing lifetime
+because json2 lazily publishes field metadata. An earlier generic encoding-scope
+experiment exposed that lifetime error and remains recorded as failed.
+
+Eight CoreText, 11 SVG/MSAA, 14 URL/preload and eight cosmetic JSON cases pass
+per allocator mode and with poisoning. The first CoreText value-parameter
+experiment failed its allocation bound; the final scoped-record version passes
+the unchanged bound. The first Boehm SVG check exhausted disk space at linking;
+its exact frozen fixture passes after lossless compression of completed private
+artifacts. The original failed logs remain retained. A new Unicode JSON fixture
+was corrected to accept either hexadecimal letter case while retaining exact
+decode and allocation checks.
+
+Generated C SHA-256 is
+`523cb9fce6f7fa5a8de123f72ce4dba3d71de14c48ccf0d732b3e6ac5838f982`;
+the signed executable is
+`a25a882630213a6251972a6fcb66be8f40625e2c3dc9711245d68dbc33d6b6e4`.
+Candidate settled medians are 76,219,784, 76,678,560 and 76,400,008 bytes.
+All six captures, script audits and frozen-input guards pass. Signing and
+headless startup pass with the same native providers. Candidate launch peaks
+are 487.30–487.84 MB. Both 50 MB budgets remain unmet. The later counter-handle
+change is excluded and the canonical app remains unchanged.
+
 The conditions below also apply to these cohorts: `-prealloc -gc none`, optimized
 C, the unchanged 40-file cache, 1024×768 CSS pixels at DPR 2, a visible background
 window, and simultaneous app/descendant physical footprint measured before PNG
@@ -446,12 +475,12 @@ Reproduce the latest V-source cohort with:
 
 ```sh
 python3 tools/benchmark_wikipedia_memory.py \
-  --before Build/wikipedia-50mb/arena-content-child-snapshots.app/Contents/MacOS/Vox \
-  --after Build/wikipedia-50mb/arena-idle-wiring.app/Contents/MacOS/Vox \
+  --before Build/wikipedia-50mb/arena-idle-wiring.app/Contents/MacOS/Vox \
+  --after Build/wikipedia-50mb/arena-resource-queries.app/Contents/MacOS/Vox \
   --cache Build/wikipedia-100mb/cache \
   --network-deny Build/pikabu-instructions-network-deny.dylib \
   --activity background --repeat 3 --allocator prealloc \
-  --output Build/wikipedia-50mb/arena-idle-wiring-recheck
+  --output Build/wikipedia-50mb/arena-resource-queries-recheck
 ```
 
 The command exits nonzero while the 50 MB budget is exceeded.
