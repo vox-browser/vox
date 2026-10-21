@@ -20,6 +20,7 @@ fn svg_image_document_display_list(svg_document &dom.Document, width int, height
 	}
 	persistent := platform.enter_persistent()
 	defer { platform.leave_persistent(persistent) }
+	layout.enable_native_paint_tree_storage(svg_document)
 	_ = layout.run_document_layout(svg_document, f64(width), f64(height)) or { return none }
 	return document.record_display_list()
 }
