@@ -1,6 +1,7 @@
 module layout
 
 import css
+import platform
 
 // InlineFormattingContext's inline box pieces. Each fragmented inline box gets
 // one piece per line it spans; the piece's border box covers the fragments the
@@ -163,6 +164,20 @@ fn inline_box_piece_node_index(mut per_nodes []InlineBoxPieceNode, mut node_to_i
 // InlineFormattingContext::compute_inline_box_pieces(). Rectangles are relative
 // to the containing block's content origin and exclude relative positioning.
 fn compute_inline_box_pieces(container &Node, used &UsedValues, state &LayoutState) []InlineBoxPiece {
+	$if prealloc {
+		mut scratch := platform.begin_thread_scratch('inline box pieces')
+		pieces := compute_inline_box_pieces_in_workspace(container, used, state)
+		scratch.leave()
+		// Pieces contain retained node pointers and scalar geometry only. The
+		// per-node line vectors, lookup map and sorting keys have no later users.
+		owned := pieces.clone()
+		scratch.finish()
+		return owned
+	}
+	return compute_inline_box_pieces_in_workspace(container, used, state)
+}
+
+fn compute_inline_box_pieces_in_workspace(container &Node, used &UsedValues, state &LayoutState) []InlineBoxPiece {
 	horizontal := container.computed_values().writing_mode() == .horizontal_tb
 	mut per_nodes := []InlineBoxPieceNode{}
 	mut node_to_index := map[u64]int{}

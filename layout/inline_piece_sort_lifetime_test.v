@@ -2,6 +2,7 @@ module layout
 
 import css
 import dom
+import platform
 
 #include "inline_piece_lifetime_test.h"
 
@@ -174,5 +175,26 @@ fn test_actual_nested_inline_pieces_keep_line_outer_inner_order_in_all_writing_d
 				assert pieces[line * 2 + 1].corners.block_end.to_double() == 15 + line * 20
 			}
 		}
+	}
+}
+
+fn test_inline_piece_workspace_retains_only_published_scalar_geometry() {
+	scene := inline_piece_lifetime_scene(.horizontal_tb, .ltr)
+	before := platform.thread_arena_usage().used
+	pieces := inline_piece_lifetime_compute(scene)
+	after := platform.thread_arena_usage().used
+	$if prealloc { assert after - before <= pieces.len * sizeof(InlineBoxPiece) + 1024 }
+	mut reuse := platform.begin_thread_scratch('reuse inline piece workspace')
+	_ = []u8{len: 64 * 1024, init: 0xa5}
+	reuse.finish()
+	assert pieces.len == 4
+	expected_block_ends := [21.0, 15.0, 41.0, 35.0]!
+	for index, piece in pieces {
+		assert piece.line_index == index / 2
+		assert piece.node.document_.url.serialize() == 'about:blank'
+		assert piece.corners.inline_start.to_double() == 10
+		assert piece.corners.inline_end.to_double() == 30
+		assert piece.corners.block_start.to_double() == 5 + (index / 2) * 20
+		assert piece.corners.block_end.to_double() == expected_block_ends[index]
 	}
 }
