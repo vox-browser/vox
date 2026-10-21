@@ -15,7 +15,7 @@ fn test_flex_work_inside_retained_inline_construction_retires_its_workspace() {
 	mut outer := begin_document_geometry_scratch(document)
 	mut inline_allocations := retain_geometry_allocations()
 	before := owner.arena.usage().used
-	mut flex := begin_flex_geometry_scratch(document, .normal)
+	mut flex := begin_nested_geometry_scratch(document, .normal)
 	temporary := []u8{len: 20 * 1024 * 1024, init: 31}
 	mut values := state.get_mutable(node)
 	values.set_grid_template_columns([CSSPixels.new(37)])
@@ -50,13 +50,13 @@ fn test_flex_does_not_shorten_an_existing_workspace_or_intrinsic_probe() {
 	state.enable_measurement_chunk_pool()
 	state.measurement_chunk_pool_.scratch_enabled_ = true
 	mut outer := begin_document_geometry_scratch(document)
-	mut flex := begin_flex_geometry_scratch(document, .normal)
+	mut flex := begin_nested_geometry_scratch(document, .normal)
 	assert flex.scratch == unsafe { nil }
 	work := []u8{len: 1024, init: 53}
 	flex.finish()
 	assert work[work.len - 1] == 53
 	mut probe := state.new_measurement_for_subtree(node)
-	mut probe_flex := begin_flex_geometry_scratch(document, .normal)
+	mut probe_flex := begin_nested_geometry_scratch(document, .normal)
 	assert probe_flex.scratch == unsafe { nil }
 	mut values := probe.get_mutable(node)
 	values.set_grid_template_columns([CSSPixels.new(59)])
@@ -65,7 +65,7 @@ fn test_flex_does_not_shorten_an_existing_workspace_or_intrinsic_probe() {
 	assert !document.native_storage().arena.contains(values)
 	probe.release_measurement()
 	outer.finish()
-	mut intrinsic := begin_flex_geometry_scratch(document, .intrinsic_sizing)
+	mut intrinsic := begin_nested_geometry_scratch(document, .intrinsic_sizing)
 	assert intrinsic.scratch == unsafe { nil }
 	intrinsic.finish()
 	state.release_measurement_chunk_pool()

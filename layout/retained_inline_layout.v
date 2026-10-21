@@ -127,6 +127,8 @@ fn (mut used UsedValues) borrow_retained_line_boxes(lines []LineBox) {
 
 fn (mut used UsedValues) ensure_mutable_line_boxes() {
 	if !used.line_boxes_are_shared_ { return }
+	mut retained := retain_geometry_allocations()
+	defer { retained.finish() }
 	used.line_boxes = copy_retained_inline_lines(used.line_boxes)
 	used.line_boxes_are_shared_ = false
 }

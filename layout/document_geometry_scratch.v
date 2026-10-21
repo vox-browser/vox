@@ -25,12 +25,12 @@ fn begin_document_geometry_scratch(document &dom.Document) DocumentGeometryScope
 }
 
 // Inline layout retains its line construction, but can synchronously invoke
-// flex layout for an atomic inline box. Give that algorithm its own workspace
+// an independent formatting context. Give that algorithm its own workspace
 // when the enclosing caller is currently allocating into the document. An
 // existing geometry workspace or intrinsic probe already has a suitable owner.
-fn begin_flex_geometry_scratch(document &dom.Document, mode LayoutMode) DocumentGeometryScope {
+fn begin_nested_geometry_scratch(document &dom.Document, mode LayoutMode) DocumentGeometryScope {
 	$if prealloc {
-		if mode == .normal && geometry_measurement_depth == 0
+		if mode == .normal && geometry_measurement_depth == 0 && document != unsafe { nil }
 			&& document.native_storage() != unsafe { nil }
 			&& platform.current_retained_arena() != unsafe { nil }
 			&& !platform.transient_arena_entered() {

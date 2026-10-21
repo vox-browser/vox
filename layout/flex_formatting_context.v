@@ -1321,7 +1321,7 @@ fn flex_subtree_depends_on_definite_height(mut state LayoutState, node &Node) bo
 }
 
 fn run_flex_formatting_context_with_mode(mut state LayoutState, container &Node, mut container_state UsedValues, layout_mode LayoutMode, available_space AvailableSpace) FormattingContextResult {
-	mut geometry_scratch := begin_flex_geometry_scratch(container.document(), layout_mode)
+	mut geometry_scratch := begin_nested_geometry_scratch(container.document(), layout_mode)
 	defer { geometry_scratch.finish() }
 	direction := container.computed_values().effective_flex_direction()
 	if direction in [.column, .column_reverse] {
