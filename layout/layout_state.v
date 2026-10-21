@@ -440,6 +440,9 @@ fn definite_size_needs_node_metrics(size css.Size) bool {
 }
 
 fn resolve_definite_size(node &NodeWithStyle, computed &css.ComputedProperties, size css.Size, containing_block_used_values ?&UsedValues, width bool, used_values &UsedValues) ?CSSPixels {
+	// Automatic heights stay indefinite until their formatting context runs.
+	if !width && size.is_auto() { return none }
+
 	containing_block_has_definite_size := if containing_block := containing_block_used_values {
 		if width {
 			containing_block.has_definite_width()
