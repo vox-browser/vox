@@ -259,47 +259,11 @@ pub fn (cache &RuleCache) matching_rule_buckets(abstract_element dom.AbstractEle
 	element := abstract_element.element()
 	attribute_count := if attrs := element.attributes_ { attrs.length() } else { 0 }
 	mut buckets := [][]&MatchingRule{cap: element.classes.len + attribute_count + 5}
-	for original_class_name in element.classes {
-		class_name := cache.selector_name_bucket_key(original_class_name)
-		if class_name in cache.rules_by_class {
-			buckets << unsafe { cache.rules_by_class[class_name] }
-		}
+	mut iterator := rule_bucket_iterator(cache, abstract_element)
+	for {
+		bucket := iterator.next() or { break }
+		buckets << unsafe { bucket }
 	}
-	if original_id := element.id() {
-		id := cache.selector_name_bucket_key(original_id)
-		if id in cache.rules_by_id {
-			buckets << unsafe { cache.rules_by_id[id] }
-		}
-	}
-	tag_name := element.lowercased_local_name()
-	if tag_name in cache.rules_by_tag_name {
-		buckets << unsafe { cache.rules_by_tag_name[tag_name] }
-	}
-	if pseudo := style_scope_pseudo_element_from_abstract_element(abstract_element) {
-		if is_known_pseudo_element_type(pseudo) {
-			if pseudo in cache.rules_by_pseudo_element {
-				buckets << unsafe { cache.rules_by_pseudo_element[pseudo] }
-			}
-		} else {
-			// NOTE: We don't cache rules for unknown pseudo-elements. They can't
-			// match anything anyway.
-		}
-	}
-
-	if element.is_document_element() {
-		buckets << cache.root_rules
-	}
-
-	if attrs := element.attributes_ {
-		for attribute in attrs.attrs {
-			name := rule_cache_attribute_bucket_name(attribute.name())
-			if name in cache.rules_by_attribute_name {
-				buckets << unsafe { cache.rules_by_attribute_name[name] }
-			}
-		}
-	}
-
-	buckets << cache.other_rules
 	return buckets
 }
 
@@ -315,7 +279,9 @@ fn rule_cache_attribute_bucket_name(name string) string {
 }
 
 pub fn (cache &RuleCache) for_each_matching_rules(abstract_element dom.AbstractElement, callback fn([]&MatchingRule) RuleCacheIterationDecision) {
-	for bucket in cache.matching_rule_buckets(abstract_element) {
+	mut iterator := rule_bucket_iterator(cache, abstract_element)
+	for {
+		bucket := iterator.next() or { break }
 		if callback(bucket) == .break_ {
 			return
 		}

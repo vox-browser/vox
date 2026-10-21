@@ -1312,26 +1312,36 @@ fn selector_matches_pseudo_class_invalidation_candidate_with_context(selector Se
 	}
 }
 
-fn pseudo_class_rule_matches_element(style_computer &StyleComputer, element &dom.Element, rule &MatchingRule, cache &HasResultCache) bool {
+struct PseudoClassInvalidationContexts {
+mut:
+	before MatchContext = MatchContext{has_result_cache: unsafe { nil }}
+	after MatchContext = MatchContext{has_result_cache: unsafe { nil }}
+}
+
+fn pseudo_class_rule_matches_element(style_computer &StyleComputer, element &dom.Element, rule &MatchingRule, cache &HasResultCache, mut context MatchContext) bool {
 	selector := rule.selector
 	if selector.can_use_ancestor_filter()
 		&& style_computer.should_reject_with_ancestor_filter(selector) {
 		return false
 	}
 
-	mut context := MatchContext{has_result_cache: unsafe { &HasResultCache(cache) }}
+	// A rule's traversal flags and subject must not leak into the next rule.
+	// The relational cache alone is shared within this old/new document state.
+	context = MatchContext{has_result_cache: unsafe { &HasResultCache(cache) }}
 	return selector_matches_pseudo_class_invalidation_candidate_with_context(selector, element, mut context)
 }
 
-fn pseudo_class_matches_different_rule_set_after_state_change(document &dom.Document, pseudo_class dom.PseudoClass, new_node ?&dom.Node, element &dom.Element, rules &RuleCache, style_computer &StyleComputer, before_cache &HasResultCache, after_cache &HasResultCache) bool {
+fn pseudo_class_matches_different_rule_set_after_state_change(document &dom.Document, pseudo_class dom.PseudoClass, new_node ?&dom.Node, element &dom.Element, rules &RuleCache, style_computer &StyleComputer, before_cache &HasResultCache, after_cache &HasResultCache, mut contexts PseudoClassInvalidationContexts) bool {
 	abstract_element := dom.AbstractElement.new(element, none)
 	old_node := document.pseudo_class_state_node(pseudo_class)
-	for bucket in rules.matching_rule_buckets(abstract_element) {
+	mut iterator := rule_bucket_iterator(rules, abstract_element)
+	for {
+		bucket := iterator.next() or { break }
 		for rule in bucket {
-			before := pseudo_class_rule_matches_element(style_computer, element, rule, before_cache)
+			before := pseudo_class_rule_matches_element(style_computer, element, rule, before_cache, mut contexts.before)
 			mut mutable_document := unsafe { &dom.Document(document) }
 			mutable_document.set_pseudo_class_state_without_invalidation(pseudo_class, new_node)
-			after := pseudo_class_rule_matches_element(style_computer, element, rule, after_cache)
+			after := pseudo_class_rule_matches_element(style_computer, element, rule, after_cache, mut contexts.after)
 			mutable_document.set_pseudo_class_state_without_invalidation(pseudo_class, old_node)
 			if before != after {
 				return true
@@ -1341,21 +1351,23 @@ fn pseudo_class_matches_different_rule_set_after_state_change(document &dom.Docu
 	return false
 }
 
-fn invalidate_elements_affected_by_pseudo_class_recursively(document &dom.Document, pseudo_class dom.PseudoClass, new_node ?&dom.Node, node &dom.Node, rules &RuleCache, style_computer &StyleComputer, before_cache &HasResultCache, after_cache &HasResultCache) {
+fn invalidate_elements_affected_by_pseudo_class_recursively(document &dom.Document, pseudo_class dom.PseudoClass, new_node ?&dom.Node, node &dom.Node, rules &RuleCache, style_computer &StyleComputer, before_cache &HasResultCache, after_cache &HasResultCache, mut contexts PseudoClassInvalidationContexts) {
 	mut element_for_pop := ?&dom.Element(none)
 	if element := node.as_element() {
 		mut mutable_style_computer := unsafe { &StyleComputer(style_computer) }
 		mutable_style_computer.push_ancestor(element)
 		element_for_pop = element
 		if element.affected_by_pseudo_class(pseudo_class)
-			&& pseudo_class_matches_different_rule_set_after_state_change(document, pseudo_class, new_node, element, rules, style_computer, before_cache, after_cache) {
+			&& pseudo_class_matches_different_rule_set_after_state_change(document, pseudo_class, new_node, element, rules, style_computer, before_cache, after_cache, mut contexts) {
 			mut mutable_element := unsafe { &dom.Element(element) }
 			mutable_element.set_needs_style_update(true)
 		}
 	}
 
-	for child in node.children_as_vector() {
-		invalidate_elements_affected_by_pseudo_class_recursively(document, pseudo_class, new_node, child, rules, style_computer, before_cache, after_cache)
+	for child := node.first_child(); child != none; {
+		current := child or { break }
+		invalidate_elements_affected_by_pseudo_class_recursively(document, pseudo_class, new_node, current, rules, style_computer, before_cache, after_cache, mut contexts)
+		child = current.next_sibling()
 	}
 
 	if element := element_for_pop {
@@ -1394,7 +1406,8 @@ fn document_pseudo_class_invalidation_callback(target voidptr, pseudo_class dom.
 	// :has(:hover), :has(:focus), etc. cannot reuse a result across the change.
 	before_cache := &HasResultCache{}
 	after_cache := &HasResultCache{}
-	invalidate_elements_affected_by_pseudo_class_recursively(document, pseudo_class, new_node, common_ancestor, rules, style_computer, before_cache, after_cache)
+	mut contexts := PseudoClassInvalidationContexts{}
+	invalidate_elements_affected_by_pseudo_class_recursively(document, pseudo_class, new_node, common_ancestor, rules, style_computer, before_cache, after_cache, mut contexts)
 
 	ancestor = common_ancestor.parent()
 	for ancestor != none {
