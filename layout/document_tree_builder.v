@@ -1067,7 +1067,9 @@ fn build_layout_box_for_element_with_svg_resource_kind(document &dom.Document, e
 	if before := build_generated_pseudo_element(document, element, .before, .before, mut builder_state) {
 		children << before
 	}
-	for child_node in layout_tree_children_for_element(element) {
+	child_snapshot := layout_tree_children_for_element(element)
+	defer { child_snapshot.storage.finish() }
+	for child_node in child_snapshot.children {
 		// Textarea light-DOM text initializes its value; rendering traverses the
 		// UA-internal shadow tree instead.
 		if element.is_html_element() && element.local_name() in ['textarea', 'select', 'details']
@@ -1247,7 +1249,12 @@ fn build_layout_box_for_element_with_svg_resource_kind(document &dom.Document, e
 	return box_node
 }
 
-fn layout_tree_children_for_element(element &dom.Element) []&dom.Node {
+struct LayoutTreeChildSnapshot {
+	children []&dom.Node
+	storage platform.ThreadScratchScope
+}
+
+fn layout_tree_child_candidates(element &dom.Element) []&dom.Node {
 	if shadow_root := element.shadow_root() {
 		return unsafe { &dom.Node(shadow_root) }.children_as_vector()
 	}
@@ -1258,9 +1265,17 @@ fn layout_tree_children_for_element(element &dom.Element) []&dom.Node {
 			return assigned.clone()
 		}
 	}
-	children := element.as_node().children_as_vector()
-	if !element.as_node().is_svg_switch_element() {
-		return children
+	return element.as_node().children_as_vector()
+}
+
+fn layout_tree_children_for_element(element &dom.Element) LayoutTreeChildSnapshot {
+	storage := platform.begin_thread_scratch('layout child snapshot')
+	children := layout_tree_child_candidates(element)
+	storage.leave()
+	// Selection can detach old layout nodes and notify resource owners. Keep
+	// those mutations outside the pointer-vector workspace.
+	if element.shadow_root() != none || !element.as_node().is_svg_switch_element() {
+		return LayoutTreeChildSnapshot{children:children, storage:storage}
 	}
 
 	// SVG <switch> processes only the first direct SVG element child. The
@@ -1279,9 +1294,9 @@ fn layout_tree_children_for_element(element &dom.Element) []&dom.Node {
 		})
 	}
 	if selected := selected_child {
-		return [selected]
+		return LayoutTreeChildSnapshot{children:[selected], storage:storage}
 	}
-	return []&dom.Node{}
+	return LayoutTreeChildSnapshot{storage:storage}
 }
 
 fn build_details_internal_layout_children(document &dom.Document, element &dom.Element, host_computed &css.ComputedProperties, style_computer &css.StyleComputer, mut builder_state TreeBuilderState) []&Node {
