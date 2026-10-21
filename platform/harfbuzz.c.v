@@ -691,7 +691,7 @@ fn font_supplies_chromium_emoji(font &Font, text string) bool {
 
 fn utf16_code_units(text string) []u16 {
 	mut units := []u16{cap: text.len}
-	for character in text.runes() {
+	for character in text.runes_iterator() {
 		code_point := u32(character)
 		if code_point <= 0xffff {
 			units << u16(code_point)
