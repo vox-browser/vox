@@ -62,6 +62,8 @@ pub struct RetainedArenaScope {
 mut:
 	storage &RetainedArena = unsafe { nil }
 	entry   ArenaEntry
+	previous &RetainedArena = unsafe { nil }
+	redirect RetainedAllocationScope
 }
 
 pub fn (mut storage RetainedArena) enter() RetainedArenaScope {
@@ -75,14 +77,33 @@ pub fn (mut storage RetainedArena) enter() RetainedArenaScope {
 	return RetainedArenaScope{}
 }
 
+// An independently owned embedded document can be parsed or laid out while
+// its host's frame workspace is entered. This explicit boundary switches the
+// owner too; ordinary enter() continues to preserve arbitrary nested scratch.
+pub fn (mut storage RetainedArena) enter_nested() RetainedArenaScope {
+	$if prealloc {
+		mut state := arena_state()
+		if storage.arena.entered {
+			assert voidptr(state.retained) == voidptr(storage)
+			return RetainedArenaScope{redirect: enter_retained_allocations()}
+		}
+		storage.retain()
+		previous := state.retained
+		state.retained = storage
+		return RetainedArenaScope{storage:storage, previous:previous, entry:storage.arena.enter()}
+	}
+	return RetainedArenaScope{}
+}
+
 pub fn (mut scope RetainedArenaScope) finish() {
+	scope.redirect.finish()
 	if scope.storage == unsafe { nil } { return }
 	mut storage := scope.storage
 	scope.storage = unsafe { nil }
 	mut arena := storage.arena
 	arena.leave(scope.entry)
 	$if prealloc {
-		arena_thread_state.retained = unsafe { nil }
+		arena_thread_state.retained = scope.previous
 	}
 	storage.release()
 }
