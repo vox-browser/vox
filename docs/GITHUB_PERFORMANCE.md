@@ -15291,6 +15291,105 @@ is retained. The successful native candidate SHA256 is
 Chrome parity still requires equivalent content,start and paint endpoints.
 Independent current Root receives no performance credit or coverage.
 
+## Keep the first intrinsic height outside an overflow map
+
+Round158 applies complete `bc1c1c69` to accepted153. Intrinsic width caches
+keep both height axes absent until used; each axis stores its first width/value
+in a dedicated slot and allocates an overflow map only for additional widths.
+All four original runtime hunks across `layout/node.v` and
+`layout/intrinsic_sizing.v` reconstruct the original author files exactly.
+Every other frozen runtime hash remains unchanged. No context rebase,partial
+feature,storage projection,compiler shim,or rejected154–157 work is imported.
+
+All five unchanged original cases pass **14,986 assertions per GC mode** with
+native C-O2. They cover allocation-free absent reads,optional none versus zero,
+independent axes,overflow widths,retained owners/reset after collection,and real
+layout recomputation after a cached none. Completed exact-runtime successes are
+reused without replay. Common12 cases pass60 assertions/configuration;matching
+before reuses accepted153. Independent current Root is outside this coverage.
+
+Before any158 performance/counter build,the local diagnostic is declared as
+the exact canonical147 scene,apart from function/probe labels:64 Unicode
+paragraphs and128 whitespace-only blocks,with192 independent setup text checks,
+paint-command/hit presence and16 complete public parse/layout/record/paint/hit/
+finalization pipelines per observation. Setup,eight warmups and forcedGC stay
+outside the counter. Automatic4GiB heap policy is unchanged and not forced or
+triggered by the scene. Three fixed alternating pairs give medians
+**32,490,725,983 → 31,154,301,742** retired instructions
+**(-4.11324832%)**, **2/3 wins**,all six actual exits0 and
+checksum7,963,486,608. This local result earns0 page credit.
+
+Independent whole-program normal C matches the compiled candidate while
+retaining every function,type and global. The complete source delta is
+reconstructed;all493 builtins,176 protected encoding/filter/arena functions,
+120 native inputs,37 frozen headers and exact native arguments authenticate.
+Changed record-layout defaults are covered by independent generation;no false
+claim of all control declarations remaining identical is made. Established
+compiler/embed identities and four byte-identical helper reorderings are
+normalized. Public decoding,CSS filtering and tokenizer arenas stay unchanged.
+Actual native build,signing and frozen4eef-loaded smoke exit0.
+
+Both full-process C-O1/Boehm/marker1/no-inline profiles actually exit0. Main
+remains enabled without filtering/reset. Each executes25 complete public
+pipelines and26 parse,layout and record calls. Missing optional rows stay
+unknown,never assumed zero:
+
+| Function | Before calls | Final calls |
+| --- | ---: | ---: |
+| `layout__opt158_complete_public_document_layout` | 25 | 25 |
+| `html__parse_document` | 26 | 26 |
+| `layout__run_document_layout` | 26 | 26 |
+| `dom__Document_record_display_list` | 26 | 26 |
+| `layout__calculate_min_content_height` | unknown | unknown |
+| `layout__calculate_max_content_height` | unknown | unknown |
+| `layout__Box_cached_intrinsic_sizes` | 3,328 | 3,328 |
+| `layout__IntrinsicSizes_cached_content_height` | unknown | unknown |
+| `layout__IntrinsicSizes_cache_content_height` | unknown | unknown |
+
+
+Profile counts,timings and instrumented hardware counters earn0 page credit.
+Matching normal page builds retain the359-body cache,same4eef helper and
+placement library,1024×768 document viewport and
+`native.scopes.navigation_to_first_document_paint[0]`. Fresh fixed30 alternating
+pairs give medians **16,360,893,532.5 →
+16,350,090,559** instructions:point saving
+**10,802,973.5 (-0.06602924%)**,
+**28/30 wins**. Paired median saving is
+**10,975,332.5**;30,000 paired bootstrap resamples use actual
+and reported seed158,with95% interval **[8,777,041, 12,397,119]**.
+Repeatable page credit is **10,802,973.5**. Integration is
+**accepted** under the existing positive-point
+policy. No historical median is subtracted.
+
+All60 primaries remain:60 actual PNGs,0 counter-only recoveries,
+0 archived pre-primary startup retries. First preparation stays
+1installation/2geometry/1paint. Later refreshes
+(0) and external foreground transitions
+(0) remain separate. Available PNGs
+are1024×768 and exact outside the original fixed skeleton bands. Unknown exits
+and missing PNGs remain explicit;no completed primary is discarded,filtered,
+rerun or added beyond the cohort.
+
+Focused viewport is pixel-exact. Prior observed carry0 plus the fresh positive
+point gives **10,802,973.5** for the5M broad gate:**passed**.
+Six actual zero-exit jobs cover87 selected cases bothGC/174 executions;19 screenshots finish,16 exact. Known differences remain inline-node13,text-decorations1341,canvas-text1994.
+Capture reuse requires matching actual source,binary,viewport,fonts,helper,
+logs,PNG hashes and a completed zero-exit per-page receipt.
+
+Isolated artifact:`/Users/alex/code/vox2/Build/v/Vox-opt158.app`. Pinning,signing,verification,smoke
+and actual GC checks exit0;instruction text matches the measured image and the
+installed helper is frozen4eef. Collections use defaultmarker1/override2.
+Only canonical Info/resources are read;canonical executables,GUI browsers,newer
+bundles and foreign work remain preserved. Accepted control is
+**158**,broad baseline
+**158**,observed carry
+**0**.
+
+Durable normal/independent/focused/local/profile/broad C and binary hashes are
+indexed by `Build/v/instruction-opt158-durable-archives.json`;matched privateRAM
+scratch remains declared. Chrome parity still needs equivalent content,start
+and paint endpoints. No additional credit or coverage applies to current Root.
+
 ## Causes and changes
 
 - The V 0.5.2 compatibility compiler's `-prod` Boehm code repeatedly snapshots
