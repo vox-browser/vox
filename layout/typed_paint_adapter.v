@@ -2642,7 +2642,7 @@ fn paintable_box_paint_background(mut root_box BlockBox, root_layout_node &Node,
 					mut color_context := color_resolution_context_for_typed_node(body_layout_node, css.Color{0, 0, 0, 255})
 					color_context.current_color = computed_paint_color(body_computed, .color, color_context, css.Color{0, 0, 0, 255})
 					root_box.background_color = computed_paint_color(body_computed, .background_color, color_context, css.Color{0, 0, 0, 0})
-					root_box.background_gradient = computed_background_gradient(body_computed, root_box.border_box().width, root_box.border_box().height, color_context)
+					root_box.background_gradient = retained_box_paint_payload(computed_background_gradient(body_computed, root_box.border_box().width, root_box.border_box().height, color_context))
 					root_box.background_images = computed_background_image_layers(body_layout_node, body_element, body_computed, color_context)
 					// If the body's background was propagated to the root element, use the
 					// body's image-rendering value too.
@@ -2687,7 +2687,7 @@ fn renderer_box_from_document_layout_result(result &DocumentLayoutResult, viewpo
 	root_box.viewport_height = viewport_height * document.layout_coordinate_scale()
 	if viewport_styled := result.root.as_node_with_style() {
 		if viewport_used := result.state.try_get(viewport_styled) {
-			root_box.overlay = compatibility_overlay_data(result.root, viewport_styled.computed_values(), viewport_used)
+			root_box.overlay = retained_box_paint_payload(compatibility_overlay_data(result.root, viewport_styled.computed_values(), viewport_used))
 		}
 	}
 	if os.getenv('LADYBIRD_DEBUG_TIMING') != '' {
@@ -4093,8 +4093,8 @@ fn uncached_block_box_from_typed_layout_shallow(node &Node, state &LayoutState, 
 		table_inside: display.is_table_inside()
 		table_cell: display.is_table_cell()
 		uses_collapsed_borders: uses_collapsed_borders
-		table_cell_coordinates: used.table_cell_coordinates()
-		table_cell_borders: table_cell_borders
+		table_cell_coordinates: retained_box_paint_payload(used.table_cell_coordinates())
+		table_cell_borders: retained_box_paint_payload(table_cell_borders)
 		empty_cells_hide: computed.empty_cells() == .hide
 		has_layout_children: node.has_children()
 		background_color: background_color
@@ -4112,7 +4112,7 @@ fn uncached_block_box_from_typed_layout_shallow(node &Node, state &LayoutState, 
 		outline_is_auto: outline_is_auto
 		shadow: shadow
 		shadows: shadows
-		background_gradient: background_gradient
+		background_gradient: retained_box_paint_payload(background_gradient)
 		background_images: background_images
 		background_color_clip: background_box_name(computed.background_color_clip())
 		replaced_image_url: replaced_image_url
@@ -4138,7 +4138,7 @@ fn uncached_block_box_from_typed_layout_shallow(node &Node, state &LayoutState, 
 		form_control_activated: form_control_activated
 		form_control_color_scheme: computed.color_scheme()
 		form_control_accent_color: computed.accent_color()
-		fieldset_paintable: fieldset_paintable
+		fieldset_paintable: retained_box_paint_payload(fieldset_paintable)
 		opacity: f64(computed.opacity())
 		mix_blend_mode: painting.mix_blend_mode_to_compositing_and_blending_operator(painting.blend_mode_from_css(computed.mix_blend_mode()))
 		filter: filter
@@ -4177,10 +4177,10 @@ fn uncached_block_box_from_typed_layout_shallow(node &Node, state &LayoutState, 
 		svg_fill_opacity: svg_fill_opacity
 		svg_stroke_opacity: svg_stroke_opacity
 		marker_shape: marker_shape
-		overlay: overlay
+		overlay: retained_box_paint_payload(overlay)
 		has_scrollable_overflow: used.has_scrollable_overflow() && !node.is_viewport()
 		scrollable_overflow: scrollable_overflow
-		overflow_clip: overflow_clip
+		overflow_clip: retained_box_paint_payload(overflow_clip)
 		scroll_snap_align: computed.scroll_snap_align()
 		scroll_snap_stop: computed.scroll_snap_stop()
 		scroll_snap_type: computed.scroll_snap_type()
@@ -4188,10 +4188,10 @@ fn uncached_block_box_from_typed_layout_shallow(node &Node, state &LayoutState, 
 		scroll_padding: compatibility_scroll_snap_edges(computed, used, true)
 		writing_mode: computed.writing_mode()
 		direction: computed.direction()
-		css_clip: css_clip
-		clip_path: clip_path
-		svg_clip: svg_clip
-		svg_mask: svg_mask
+		css_clip: retained_box_paint_payload(css_clip)
+		clip_path: retained_box_paint_payload(clip_path)
+		svg_clip: retained_box_paint_payload(svg_clip)
+		svg_mask: retained_box_paint_payload(svg_mask)
 		sticky_position: node.is_sticky_position()
 		own_paint_transform: paint_transform
 		own_paint_transform_4x4: paint_transform_4x4

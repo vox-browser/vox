@@ -243,6 +243,13 @@ struct StaticPosition {
 	containing_block_height   f64
 }
 
+// Optional geometry is immutable after publication. Keep its storage only on
+// boxes that use it, and share that snapshot when a paint tree is copied.
+fn retained_box_paint_payload[T](value ?T) ?&T {
+	snapshot := value or { return none }
+	return &snapshot
+}
+
 pub struct BlockBox {
 pub:
 	tag_name string
@@ -276,8 +283,8 @@ pub mut:
 	table_inside           bool
 	table_cell             bool
 	uses_collapsed_borders bool
-	table_cell_coordinates ?painting.TableCellCoordinates
-	table_cell_borders     ?painting.BordersDataWithElementKind
+	table_cell_coordinates ?&painting.TableCellCoordinates
+	table_cell_borders     ?&painting.BordersDataWithElementKind
 	empty_cells_hide       bool
 	has_layout_children    bool
 	// The computed background-color, text color, and border color, used to build the display list.
@@ -302,7 +309,7 @@ pub mut:
 	shadow  ?BoxShadow
 	shadows []BoxShadow
 	// A `linear-gradient` background image, painted over the background color, or none.
-	background_gradient   ?LinearGradient
+	background_gradient   ?&LinearGradient
 	background_images     []BackgroundImageLayer
 	background_color_clip string = 'border-box'
 	// Replaced image content paints over CSS backgrounds and below borders.
@@ -333,7 +340,7 @@ pub mut:
 	form_control_activated     bool
 	form_control_color_scheme  css.PreferredColorScheme
 	form_control_accent_color  ?css.Color
-	fieldset_paintable         ?painting.FieldSetPaintable
+	fieldset_paintable         ?&painting.FieldSetPaintable
 	// Root backgrounds cover the viewport canvas. A transparent HTML root may receive these values
 	// from the body background according to CSS canvas-background propagation.
 	canvas_background_color  css.Color
@@ -397,14 +404,14 @@ pub mut:
 	marker_shape string
 	// Scrollbars and the CSS resize handle paint after the outline in the
 	// overlay phase. None means this box has neither kind of overlay.
-	overlay ?CompatibilityOverlayData
+	overlay ?&CompatibilityOverlayData
 	// A scroll frame exists only when layout measured overflow beyond the
 	// scrollport, except that the root transport box also carries the viewport's
 	// mandatory scroll frame. Clipping also exists for overflow:clip without a
 	// scroll frame.
 	has_scrollable_overflow bool
 	scrollable_overflow     ?LayoutRect
-	overflow_clip           ?CompatibilityOverflowClip
+	overflow_clip           ?&CompatibilityOverflowClip
 	// CSS Scroll Snap metadata retained by the renderer transport. Snap
 	// destination selection runs after layout, when scroll operations arrive.
 	scroll_snap_align css.ScrollSnapAlignData
@@ -417,12 +424,12 @@ pub mut:
 	// CSS2 `clip: rect(...)`, resolved from an absolute/fixed box's border box.
 	// Unlike overflow clipping, this belongs to the box's own visual context and
 	// therefore clips both the box and its descendants.
-	css_clip ?LayoutRect
+	css_clip ?&LayoutRect
 	// CSS basic-shape clip-path geometry is retained in absolute document
 	// coordinates, matching Painting::ClipPathData.
-	clip_path            ?painting.ClipPathVisualData
-	svg_clip             ?painting.SVGClipVisualData
-	svg_mask             ?painting.SVGMaskVisualData
+	clip_path            ?&painting.ClipPathVisualData
+	svg_clip             ?&painting.SVGClipVisualData
+	svg_mask             ?&painting.SVGMaskVisualData
 	sticky_position      bool
 	is_viewport_scroller bool
 	viewport_width       f64
@@ -1744,9 +1751,9 @@ fn collect_table_cells(box &BlockBox, mut cells []painting.TableCellPaintData) {
 			border_rect := child.border_box()
 			radii := effective_box_radii(child.border_radii, child.border_radius, border_rect.width, border_rect.height)
 			cells << painting.TableCellPaintData{
-				coordinates: coordinates
+				coordinates: *coordinates
 				rect: painting.Rect{border_rect.x, border_rect.y, border_rect.width, border_rect.height}
-				borders: borders
+				borders: *borders
 				radii: painting.BorderRadiiData{
 					top_left: painting.BorderRadiusData{radii.top_left.x, radii.top_left.y}
 					top_right: painting.BorderRadiusData{radii.top_right.x, radii.top_right.y}
@@ -2314,7 +2321,7 @@ fn (b &BlockBox) record_paint_commands_for_entries(entries []PaintOrderEntry, se
 						height: background_border_rect.height
 						opacity: opacity
 						radius: if box.paints_canvas_background { 0.0 } else { radius }
-						gradient: &LinearGradient{...grad}
+						gradient: grad
 						points: gradient_points
 					}
 				}

@@ -280,7 +280,7 @@ fn image_payload_assert_legacy(actual PaintCommand, expected LegacyImagePaintCom
 	assert actual.image_scroll_offset_y == expected.image_scroll_offset_y
 	assert actual.visual_context_index == expected.visual_context_index
 	assert image.image_url == expected.image_url
-	assert image.background_svg_document == expected.background_svg_document
+	assert retained_paint_payload_equal(image.background_svg_document, expected.background_svg_document)
 	assert image.background_svg_color_scheme == expected.background_svg_color_scheme
 	assert image.image_intrinsic_width == expected.image_intrinsic_width
 	assert image.image_intrinsic_height == expected.image_intrinsic_height
@@ -367,7 +367,7 @@ fn test_image_payload_survives_producer_return_collection_and_source_replacement
 		$if gcboehm ? {
 			C.GC_gcollect()
 		}
-		assert first.image() == saved
+		assert retained_paint_payload_equal(first.image(), saved)
 		assert first.image_url() == 'retained.png'
 	}
 	changed := PaintCommand{ ...first, image_data: &PaintImageData{ ...first.image(), image_url: 'replacement.png', image_clip_y: 999 } }
@@ -386,7 +386,7 @@ fn test_image_payload_phase_cache_replay_shares_only_immutable_parameters() {
 	second := display_list_commands(document.record_display_list() or { panic('second recording') })
 	second_image := second.filter(it.kind == 'draw_background_image')[0]
 	assert voidptr(first_image.image_data) == voidptr(second_image.image_data)
-	assert first_image.image() == second_image.image()
+	assert retained_paint_payload_equal(first_image.image(), second_image.image())
 	for command in second {
 		if command.kind !in ['draw_background_image', 'draw_replaced_image', 'draw_svg_image'] && !(command.kind == 'fill_gradient' && command.gradient_background_layer) {
 			assert command.image_data == unsafe { nil }
@@ -404,12 +404,12 @@ fn test_image_payload_phase_cache_replay_shares_only_immutable_parameters() {
 fn test_image_payload_live_scroll_offsets_do_not_mutate_retained_parameters() {
 	first := image_payload_returned_background()
 	mut replay := first
-	box := BlockBox{ overlay: CompatibilityOverlayData{ scroll_offset_x: 17, scroll_offset_y: 29 } }
+	box := BlockBox{ overlay: &CompatibilityOverlayData{ scroll_offset_x: 17, scroll_offset_y: 29 } }
 	apply_live_background_offsets(mut replay, &box)
 	assert replay.image_scroll_offset_x == 17
 	assert replay.image_scroll_offset_y == 29
 	assert voidptr(replay.image_data) == voidptr(first.image_data)
-	assert replay.image() == first.image()
+	assert retained_paint_payload_equal(replay.image(), first.image())
 	assert first.image_scroll_offset_x == 0
 	assert first.image_scroll_offset_y == 0
 }
@@ -418,7 +418,7 @@ fn test_image_payload_nested_replay_preserves_source_geometry_and_earlier_record
 	first := image_payload_returned_background()
 	nested := paint_command_for_nested_viewport(first, [f64(2), 0, 0, 3, 11, 13]!, painting.IntPoint{5, 7}, 0.5)
 	assert voidptr(nested.image_data) == voidptr(first.image_data)
-	assert nested.image() == first.image()
+	assert retained_paint_payload_equal(nested.image(), first.image())
 	assert nested.transform == [f64(2), 0, 0, 3, 21, 34]!
 	assert nested.opacity == first.opacity * 0.5
 	assert first.transform == [6]f64{}

@@ -73,7 +73,7 @@ fn test_fused_visual_replay_matches_two_stage_layers_clips_backfaces_and_live_of
 	}
 	mut svg_box := BlockBox{
 		accumulated_visual_context_index: clip
-		overlay:                          CompatibilityOverlayData{
+		overlay:                          &CompatibilityOverlayData{
 			scroll_offset_x: 7
 			scroll_offset_y: 9
 		}
@@ -167,7 +167,7 @@ fn test_fused_visual_replay_matches_two_stage_layers_clips_backfaces_and_live_of
 
 	initial := record_cached_paint_commands_with_visual_context(steps, buckets, 7, tree, painting.ScrollStateSnapshot{},
 		false)
-	svg_box.overlay = CompatibilityOverlayData{
+	svg_box.overlay = &CompatibilityOverlayData{
 		scroll_offset_x: 20
 		scroll_offset_y: 30
 	}

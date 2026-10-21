@@ -800,17 +800,17 @@ fn assign_compatibility_visual_contexts_with_coordinate_root(mut box BlockBox, v
 	}
 	if css_clip := box.css_clip {
 		own_state = tree.append(painting.ClipVisualData{
-			rect: compatibility_rounded_int_rect(css_clip)
+			rect: compatibility_rounded_int_rect(*css_clip)
 		}, own_state)
 	}
 	if clip_path := box.clip_path {
-		own_state = tree.append(clip_path, own_state)
+		own_state = tree.append(*clip_path, own_state)
 	}
 	if svg_mask := box.svg_mask {
-		own_state = tree.append(svg_mask, own_state)
+		own_state = tree.append(*svg_mask, own_state)
 	}
 	if svg_clip := box.svg_clip {
-		own_state = tree.append(svg_clip, own_state)
+		own_state = tree.append(*svg_clip, own_state)
 	}
 	box.accumulated_visual_context_index = own_state
 

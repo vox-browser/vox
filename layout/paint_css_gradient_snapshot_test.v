@@ -12,7 +12,7 @@ fn ephemeral_css_gradient_commands() []PaintCommand {
 	return BlockBox{
 		width: 100
 		height: 50
-		background_gradient: LinearGradient{
+		background_gradient: &LinearGradient{
 			x2: 1
 			colors: [css.Color{255, 255, 255, 255}, css.Color{0, 0, 0, 255}]
 			stops: [GradientStop{color: css.Color{255, 255, 255, 255}, offset: 0},

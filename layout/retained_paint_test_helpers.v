@@ -25,6 +25,11 @@ fn retained_paint_payload_equal[T](actual T, expected T) bool {
 		|| T is &PaintLocalBorderData || T is &PaintBoxShadowData
 		|| T is &PaintBackgroundLayerData || T is &PaintImageData
 		|| T is &PaintSVGPathData || T is &LinearGradient
+		|| T is &painting.TableCellCoordinates || T is &painting.BordersDataWithElementKind
+		|| T is &painting.FieldSetPaintable || T is &CompatibilityOverlayData
+		|| T is &CompatibilityOverflowClip || T is &LayoutRect
+		|| T is &painting.ClipPathVisualData || T is &painting.SVGClipVisualData
+		|| T is &painting.SVGMaskVisualData
 		|| T is &PaintClip || T is &PaintClipList
 		|| T is &PaintVisualLayer || T is &PaintVisualLayerList
 		|| T is &painting.ImagePaintable || T is &painting.CanvasPaintable

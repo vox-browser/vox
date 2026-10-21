@@ -5,7 +5,7 @@ import painting
 
 fn test_cached_replay_reserves_only_enabled_commands_and_keeps_live_snapshots() {
 	mut box := BlockBox{
-		overlay: CompatibilityOverlayData{scroll_offset_x: 7, scroll_offset_y: 9}
+		overlay: &CompatibilityOverlayData{scroll_offset_x: 7, scroll_offset_y: 9}
 	}
 	steps := [CompatibilityPaintStep{box: &box, phase: .foreground, entry_index: 0}]
 	mut buckets := [][]PaintCommand{len: compatibility_paint_phase_count}
@@ -24,7 +24,7 @@ fn test_cached_replay_reserves_only_enabled_commands_and_keeps_live_snapshots() 
 	assert visible.cap == visible.len
 	assert buckets[int(CompatibilityPaintPhase.foreground)].len == 3
 	assert buckets[int(CompatibilityPaintPhase.foreground)][1].image_scroll_offset_x == 0
-	box.overlay = CompatibilityOverlayData{scroll_offset_x: 20, scroll_offset_y: 30}
+	box.overlay = &CompatibilityOverlayData{scroll_offset_x: 20, scroll_offset_y: 30}
 	buckets[int(CompatibilityPaintPhase.foreground)][1].text = 'updated'
 	updated := replay_cached_paint_commands(steps, buckets, 3, false)
 	assert updated[0].text == 'updated'
@@ -50,7 +50,7 @@ fn test_visual_replay_skips_hidden_and_backface_commands_without_reserving_them(
 	backface := tree.append(painting.BackfaceVisibilityVisualData{}, rotation)
 	mut box := BlockBox{
 		accumulated_visual_context_index: effect
-		overlay: CompatibilityOverlayData{scroll_offset_x: 5, scroll_offset_y: 6}
+		overlay: &CompatibilityOverlayData{scroll_offset_x: 5, scroll_offset_y: 6}
 	}
 	steps := [CompatibilityPaintStep{box: &box, phase: .foreground, entry_index: 0}]
 	mut buckets := [][]PaintCommand{len: compatibility_paint_phase_count}
@@ -83,7 +83,7 @@ fn test_visual_replay_skips_hidden_and_backface_commands_without_reserving_them(
 	assert actual[0].visual_layer() == expected[0].visual_layer()
 	assert actual[0].transform == expected[0].transform
 	assert actual[1].clip_list.items == expected[1].clip_list.items
-	box.overlay = CompatibilityOverlayData{scroll_offset_x: 15, scroll_offset_y: 16}
+	box.overlay = &CompatibilityOverlayData{scroll_offset_x: 15, scroll_offset_y: 16}
 	updated, _ := replay_cached_paint_commands_with_visual_context(steps, buckets, 3, tree,
 		painting.ScrollStateSnapshot{}, false)
 	assert updated[0].image_scroll_offset_x == 15

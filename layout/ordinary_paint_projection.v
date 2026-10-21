@@ -141,7 +141,7 @@ fn rebase_retained_paint_box_into(snapshot &RetainedBlockPaintBox, node &Node, u
 		none
 	}
 	if clip := box.overflow_clip {
-		box.overflow_clip = CompatibilityOverflowClip{
+		box.overflow_clip = &CompatibilityOverflowClip{
 			...clip
 			rect: LayoutRect{clip.rect.x + dx, clip.rect.y + dy, clip.rect.width, clip.rect.height}
 		}

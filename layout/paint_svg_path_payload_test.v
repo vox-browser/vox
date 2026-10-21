@@ -989,104 +989,7 @@ pub fn (b &BlockBox) svg_payload_legacy_render_svg(width f64, height f64) string
 // Compare all original logical fields; force-dark independently allocates its
 // gradient snapshot, so verify each gradient value and test identity separately.
 fn svg_payload_assert_original_fields(actual LegacySVGPathPaintCommand, expected LegacySVGPathPaintCommand) {
-	assert actual.kind == expected.kind
-	assert actual.x == expected.x
-	assert actual.y == expected.y
-	assert actual.width == expected.width
-	assert actual.height == expected.height
-	assert actual.color == expected.color
-	assert actual.force_dark_role == expected.force_dark_role
-	assert actual.force_dark_role_set == expected.force_dark_role_set
-	assert actual.force_dark_backdrop == expected.force_dark_backdrop
-	assert actual.apply_force_dark_to_image == expected.apply_force_dark_to_image
-	assert actual.line_box_debug == expected.line_box_debug
-	assert actual.text == expected.text
-	assert actual.font_size == expected.font_size
-	assert actual.bold == expected.bold
-	assert actual.italic == expected.italic
-	assert actual.mono == expected.mono
-	assert actual.rtl == expected.rtl
-	assert actual.glyph_run == expected.glyph_run
-	assert actual.glyph_translation_x == expected.glyph_translation_x
-	assert actual.glyph_translation_y == expected.glyph_translation_y
-	assert actual.glyph_orientation == expected.glyph_orientation
-	assert actual.font_smoothing == expected.font_smoothing
-	assert actual.opacity == expected.opacity
-	assert actual.group_opacity == expected.group_opacity
-	assert actual.radius == expected.radius
-	assert actual.corner_radii == expected.corner_radii
-	assert actual.blur == expected.blur
-	assert actual.shadow_offset_x == expected.shadow_offset_x
-	assert actual.shadow_offset_y == expected.shadow_offset_y
-	assert actual.shadow_spread == expected.shadow_spread
-	assert actual.outer_shadow == expected.outer_shadow
-	assert actual.box_shadow_data == expected.box_shadow_data
-	assert actual.gradient == expected.gradient
-	assert actual.gradient_background_layer == expected.gradient_background_layer
-	assert actual.path == expected.path
-	assert actual.path_data == expected.path_data
-	assert actual.transform == expected.transform
-	assert actual.path_transform == expected.path_transform
-	assert actual.points == expected.points
-	assert actual.path_polygons == expected.path_polygons
-	assert actual.stroke_color == expected.stroke_color
-	if expected_data := expected.svg_gradient_data {
-		actual_data := actual.svg_gradient_data or { panic('missing gradient data') }
-		assert actual_data.fill_linear_gradient == expected_data.fill_linear_gradient
-		assert actual_data.stroke_linear_gradient == expected_data.stroke_linear_gradient
-		assert actual_data.fill_radial_gradient == expected_data.fill_radial_gradient
-		assert actual_data.stroke_radial_gradient == expected_data.stroke_radial_gradient
-	} else {
-		assert actual.svg_gradient_data == none
-	}
-	assert actual.svg_solid_color_data == expected.svg_solid_color_data
-	assert actual.fill_pattern == expected.fill_pattern
-	assert actual.stroke_pattern == expected.stroke_pattern
-	assert actual.stroke_width == expected.stroke_width
-	assert actual.stroke_dasharray == expected.stroke_dasharray
-	assert actual.stroke_dashoffset == expected.stroke_dashoffset
-	assert actual.non_scaling_stroke == expected.non_scaling_stroke
-	assert actual.stroke_first == expected.stroke_first
-	assert actual.fill_even_odd == expected.fill_even_odd
-	assert actual.stroke_linecap == expected.stroke_linecap
-	assert actual.stroke_linejoin == expected.stroke_linejoin
-	assert actual.stroke_miterlimit == expected.stroke_miterlimit
-	assert actual.line_style == expected.line_style
-	assert actual.fill_opacity == expected.fill_opacity
-	assert actual.stroke_opacity == expected.stroke_opacity
-	assert actual.image_data == expected.image_data
-	assert actual.image_scroll_offset_x == expected.image_scroll_offset_x
-	assert actual.image_scroll_offset_y == expected.image_scroll_offset_y
-	assert actual.visual_context_index == expected.visual_context_index
-	assert actual.image_paintable == expected.image_paintable
-	assert actual.replaced_image_bitmap == expected.replaced_image_bitmap
-	assert actual.canvas_bitmap == expected.canvas_bitmap
-	assert actual.canvas_paintable == expected.canvas_paintable
-	assert actual.video_bitmap == expected.video_bitmap
-	assert actual.video_frame_source == expected.video_frame_source
-	assert actual.video_representation == expected.video_representation
-	assert actual.video_paintable == expected.video_paintable
-	assert actual.nested_viewport_commands == expected.nested_viewport_commands
-	assert actual.nested_viewport_paintable == expected.nested_viewport_paintable
-	assert actual.text_clip_runs == expected.text_clip_runs
-	assert actual.has_clip == expected.has_clip
-	assert actual.clip_x == expected.clip_x
-	assert actual.clip_y == expected.clip_y
-	assert actual.clip_width == expected.clip_width
-	assert actual.clip_height == expected.clip_height
-	assert actual.clip_list == expected.clip_list
-	assert actual.recording_clip == expected.recording_clip
-	assert actual.visual_layer_list == expected.visual_layer_list
-	assert actual.visual_layer_data == expected.visual_layer_data
-	assert actual.backdrop_filter_data == expected.backdrop_filter_data
-	assert actual.backdrop_source_outside_filter == expected.backdrop_source_outside_filter
-	assert actual.mask_clip_data == expected.mask_clip_data
-	assert actual.fixed_to_viewport == expected.fixed_to_viewport
-	assert actual.scrollbar_axis == expected.scrollbar_axis
-	assert actual.scrollbar_thumb_travel_ratio == expected.scrollbar_thumb_travel_ratio
-	assert actual.scrollbar_recorded_scroll_offset == expected.scrollbar_recorded_scroll_offset
-	assert actual.paint_box_index == expected.paint_box_index
-	assert actual.paint_phase == expected.paint_phase
+	assert retained_paint_payload_equal(actual, expected)
 }
 
 fn test_svg_payload_reduces_actual_command_width_and_keeps_nil_defaults() {
@@ -1102,9 +1005,7 @@ fn test_svg_payload_reduces_actual_command_width_and_keeps_nil_defaults() {
 			kind: kind
 		}
 		assert command.svg_data == unsafe { nil }
-		assert svg_payload_legacy(command) == LegacySVGPathPaintCommand{
-			kind: kind
-		}
+		assert retained_paint_payload_equal(svg_payload_legacy(command), LegacySVGPathPaintCommand{kind: kind})
 	}
 }
 
@@ -1219,7 +1120,7 @@ fn test_svg_payload_generic_path_producer_matches_original_display_commands() {
 		mut expected := []LegacySVGPathPaintCommand{}
 		append_painting_display_command(mut actual, input, 0.8)
 		svg_payload_legacy_append_painting_display_command(mut expected, input, 0.8)
-		assert actual.map(svg_payload_legacy(it)) == expected
+		assert retained_paint_payload_equal(actual.map(svg_payload_legacy(it)), expected)
 	}
 }
 
@@ -1232,7 +1133,7 @@ fn test_svg_payload_wavy_and_other_text_decoration_producers_match_original() {
 				'red', 3, style, 0.6)
 			svg_payload_legacy_append_text_decoration_style(mut expected, line, painting.IntPoint{3, 5}, painting.IntPoint{103, 5},
 				'red', 3, style, 0.6)
-			assert actual.map(svg_payload_legacy(it)) == expected
+			assert retained_paint_payload_equal(actual.map(svg_payload_legacy(it)), expected)
 		}
 	}
 }
@@ -1247,7 +1148,7 @@ fn test_svg_payload_outlives_producer_collection_and_other_results() {
 		$if gcboehm ? {
 			C.GC_gcollect()
 		}
-		assert svg_payload_legacy(first) == saved
+		assert retained_paint_payload_equal(svg_payload_legacy(first), saved)
 	}
 	second_data := second.svg()
 	changed := PaintCommand{
@@ -1270,18 +1171,18 @@ fn test_svg_payload_nested_and_scroll_replay_share_source_geometry() {
 	nested :=
 		paint_command_for_nested_viewport(first, [f64(2), 0, 0, 3, 11, 13]!, painting.IntPoint{5, 7}, 0.5)
 	assert voidptr(first.svg_data) == voidptr(nested.svg_data)
-	assert first.svg() == nested.svg()
+	assert retained_paint_payload_equal(first.svg(), nested.svg())
 	assert nested.transform == [f64(2), 0, 0, 3, 21, 34]!
 	assert first.transform == [6]f64{}
 	mut replay := nested
 	box := BlockBox{
-		overlay: CompatibilityOverlayData{
+		overlay: &CompatibilityOverlayData{
 			scroll_offset_x: 17
 			scroll_offset_y: 29
 		}
 	}
 	apply_live_background_offsets(mut replay, &box)
-	assert replay.svg() == first.svg()
+	assert retained_paint_payload_equal(replay.svg(), first.svg())
 	assert replay.image_scroll_offset_x == nested.image_scroll_offset_x
 }
 
@@ -1317,18 +1218,22 @@ fn test_svg_payload_force_dark_matches_original_and_preserves_shared_gradients()
 	svg_payload_assert_original_fields(svg_payload_legacy(actual[1]), expected)
 	assert voidptr(actual[0].svg_data) != voidptr(source.svg_data)
 	assert voidptr(actual[0].svg_data) != voidptr(actual[1].svg_data)
-	assert svg_payload_legacy(source) == original
+	assert retained_paint_payload_equal(svg_payload_legacy(source), original)
 	$if gcboehm ? {
 		C.GC_gcollect()
 	}
-	assert svg_payload_legacy(source) == original
+	assert retained_paint_payload_equal(svg_payload_legacy(source), original)
 }
 
 fn test_svg_payload_cache_source_replacement_and_collection_preserve_old_recordings() {
 	mut document :=
 		html.parse_document('<!doctype html><svg width="120" height="80"><path id="p" d="M0 0L100 0L100 50Z" fill="red" stroke="blue" stroke-dasharray="3 4"/></svg>')
+	defer { document.finalize() }
 	_ = layout_document_typed_in_viewport(document, 200, 120)
-	first := display_list_commands(document.record_display_list() or { panic('first') }).filter(it.kind == 'draw_svg_path')[0]
+	first_list := document.record_display_list() or { panic('first') }
+	first_scene := retain_display_list_scene(first_list)
+	defer { release_display_list_scene(first_scene) }
+	first := display_list_commands(first_list).filter(it.kind == 'draw_svg_path')[0]
 	document.set_needs_repaint_with_invalidation(.paint_commands)
 	second := display_list_commands(document.record_display_list() or { panic('second') }).filter(it.kind == 'draw_svg_path')[0]
 	assert voidptr(first.svg_data) == voidptr(second.svg_data)
@@ -1338,6 +1243,7 @@ fn test_svg_payload_cache_source_replacement_and_collection_preserve_old_recordi
 	// replacement here; native bridge mutation cases run in the focused matrix.
 	mut replacement :=
 		html.parse_document('<!doctype html><svg width="120" height="80"><path id="p" d="M0 0L50 0L100 50Z" fill="red" stroke="blue" stroke-dasharray="7 8"/></svg>')
+	defer { replacement.finalize() }
 	_ = layout_document_typed_in_viewport(replacement, 200, 120)
 	third := display_list_commands(replacement.record_display_list() or { panic('third') }).filter(it.kind == 'draw_svg_path')[0]
 	assert voidptr(first.svg_data) != voidptr(third.svg_data)
@@ -1347,7 +1253,7 @@ fn test_svg_payload_cache_source_replacement_and_collection_preserve_old_recordi
 	$if gcboehm ? {
 		C.GC_gcollect()
 	}
-	assert svg_payload_legacy(first) == saved
+	assert retained_paint_payload_equal(svg_payload_legacy(first), saved)
 }
 
 fn test_svg_payload_svg_export_matches_the_entire_original_player() {

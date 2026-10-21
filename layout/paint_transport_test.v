@@ -192,7 +192,7 @@ fn test_spelling_and_grammar_error_decorations_use_upstream_ua_styles() {
 
 fn test_local_background_attachment_offset_is_refreshed_during_retained_replay() {
 	box := &BlockBox{
-		overlay: CompatibilityOverlayData{
+		overlay: &CompatibilityOverlayData{
 			scroll_offset_x: 7
 			scroll_offset_y: 9
 		}

@@ -168,7 +168,7 @@ fn test_scrollbar_overlay_uses_translated_geometry_and_paints_after_outline() {
 		background_color: css.Color{0, 0, 0, 0}
 		outline_width: 1
 		outline_color: css.Color{0, 0, 0, 255}
-		overlay: CompatibilityOverlayData{
+		overlay: &CompatibilityOverlayData{
 			scrollable_overflow: LayoutRect{10, 10, 100, 300}
 			scroll_offset_y: 60
 			can_scroll_vertically: true
@@ -196,7 +196,7 @@ fn test_scrollbar_width_none_suppresses_scrollbars_but_not_resizer() {
 		width: 100
 		height: 100
 		background_color: css.Color{0, 0, 0, 0}
-		overlay: CompatibilityOverlayData{
+		overlay: &CompatibilityOverlayData{
 			scrollable_overflow: LayoutRect{0, 0, 100, 300}
 			can_scroll_vertically: true
 			scrollbar_width: .none_
@@ -208,7 +208,7 @@ fn test_scrollbar_width_none_suppresses_scrollbars_but_not_resizer() {
 		width: 100
 		height: 100
 		background_color: css.Color{0, 0, 0, 0}
-		overlay: CompatibilityOverlayData{
+		overlay: &CompatibilityOverlayData{
 			scrollable_overflow: LayoutRect{0, 0, 100, 100}
 			scrollbar_width: .none_
 			has_resizer: true
@@ -226,7 +226,7 @@ fn test_scrollbar_overlay_paints_vertical_before_horizontal() {
 		width: 100
 		height: 80
 		background_color: css.Color{0, 0, 0, 0}
-		overlay: CompatibilityOverlayData{
+		overlay: &CompatibilityOverlayData{
 			scrollable_overflow: LayoutRect{0, 0, 300, 240}
 			can_scroll_horizontally: true
 			can_scroll_vertically: true
@@ -258,13 +258,13 @@ fn test_viewport_scrollbar_painting_can_be_disabled_without_hiding_element_scrol
 		height: 100
 		background_color: css.Color{0, 0, 0, 0}
 		is_viewport_scroller: true
-		overlay: overlay
+		overlay: &overlay
 	}
 	element := BlockBox{
 		width: 100
 		height: 100
 		background_color: css.Color{0, 0, 0, 0}
-		overlay: overlay
+		overlay: &overlay
 	}
 
 	painting.set_paint_viewport_scrollbars(false)
@@ -287,7 +287,7 @@ fn test_root_overlay_paints_after_positive_stacking_context() {
 		height: 100
 		background_color: css.Color{0, 0, 0, 0}
 		children: [positive]
-		overlay: CompatibilityOverlayData{
+		overlay: &CompatibilityOverlayData{
 			scrollable_overflow: LayoutRect{0, 0, 100, 300}
 			can_scroll_vertically: true
 			scrollbar_thumb_color: css.Color{64, 64, 64, 192}
