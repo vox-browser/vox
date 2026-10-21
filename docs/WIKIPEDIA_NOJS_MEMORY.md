@@ -17,8 +17,8 @@ in its protocol. Explicit historic Boehm comparisons require `--allocator boehm`
 ### Corrected arena before/after: 50 MB remains unmet
 
 The latest V-source comparison, three alternating optimized pairs, measures
-**87.82 → 85.39 MB**, a **2.76% reduction**. The largest candidate settled
-observation is **85,444,000 bytes**. The **50,000,000-byte limit still fails**.
+**85.41 → 84.00 MB**, a **1.65% reduction**. The largest candidate settled
+observation is **84,362,680 bytes**. The **50,000,000-byte limit still fails**.
 All six raw viewport images match, all frozen-input guards pass, and all six script audits
 report no page runtime, sources, source bytes or preloaded scripts.
 
@@ -42,6 +42,7 @@ report no page runtime, sources, source bytes or preloaded scripts.
 | Glyph-index font initialization and native allocator relief | 89,032,072 bytes | 87,836,064 bytes | 1.34% |
 | Updated native wrappers with unchanged V code/data | 88,229,256 bytes | 88,163,744 bytes | 0.07% |
 | Retained geometry, scalar background queries, stylesheet and parser workspaces, geometry bounds | 87,819,656 bytes | 85,394,824 bytes | 2.76% |
+| ASCII names, reusable scratch descriptors and numeric counter keys | 85,411,208 bytes | 84,002,160 bytes | 1.65% |
 
 Each row is its own three-pair cohort; these are aggregate build comparisons,
 not isolated savings attributed to individual commits. Evidence is in
@@ -54,7 +55,8 @@ not isolated savings attributed to individual commits. Evidence is in
 `arena-idle-xml-paired/`, `arena-inline-chunks-paired/` and
 `arena-style-lists-paired/`, `arena-initial-snapshots-paired/` and
 `arena-native-font-idle-paired/`, `arena-glyph-index-fonts-paired/` and
-`arena-native-frame-pool-paired/` and `arena-match-text-geometry2-paired/`, including summaries, raw
+`arena-native-frame-pool-paired/`, `arena-match-text-geometry2-paired/` and
+`arena-scratch-counter-keys-paired/`, including summaries, raw
 process samples, allocator checks, resource audits and captures. Matching
 `arena-{text,svg}-lifetimes-build-protocol.json` files pin the complete source
 inputs, current compiler and native libraries. The static-paint and SVG protocols are
@@ -250,7 +252,7 @@ viewport hashes and every no-script/input guard pass. Later retained-geometry
 copies, scalar background queries and callback traversal changes are excluded.
 The 50 MB budget remains unmet.
 
-The latest `arena-match-text-geometry2` cohort holds those native libraries
+The `arena-match-text-geometry2` cohort holds those native libraries
 fixed and includes scalar background-list queries, committed retained-geometry
 copies, stylesheet insertion workspaces, borrowed callback vectors, parser text
 storage, and streaming SVG bounds accumulation. It freezes `6002e21c` plus ten
@@ -276,6 +278,29 @@ executable SHA-256 is
 Later ASCII name validation and reusable scratch descriptors are excluded.
 The canonical installed application remains untouched.
 
+The latest `arena-scratch-counter-keys` cohort freezes `e6c3b06a` plus two
+counter-key overlays, authenticated against committed `1b469a16`. It includes
+the intervening committed source and keeps the same native libraries. ASCII
+name validation avoids rune and delimiter vectors on its ordinary path.
+Scratch descriptors reuse thread-owned native slots, with generation checks
+protecting stale copied handles. Counter history uses node/pseudo-element
+numeric keys instead of formatting strings. Three name cases, 13 platform
+lease cases, seven lease/layout integration cases and six counter-key cases
+pass per allocator mode plus poisoning. Four corrected existing counter
+fixtures also pass with the original string keys. Their optional arguments
+are bound before calls, preserving inputs and assertions. An unrelated
+diagnostic-label test still fails on both key implementations and is excluded;
+the original failures and private binding probes remain recorded.
+
+Its generated C SHA-256 is
+`30300a199068a25a96c666b4de9aee01baee795bc759b04b95c561068f306a42`;
+the signed executable is
+`56cb24c027de7eea177504694e92c5827babebf21f98c4003ba263fdce3d9bde`.
+Signing, startup, all six raw viewport hashes, script audits and input guards
+pass. Sampled launch peaks are 489.88–492.90 MB. The settled and peak 50 MB
+budgets both remain unmet. Later local SVG-transform projection is excluded,
+and the canonical installed bundle remains untouched.
+
 The conditions below also apply to these cohorts: `-prealloc -gc none`, optimized
 C, the unchanged 40-file cache, 1024×768 CSS pixels at DPR 2, a visible background
 window, and simultaneous app/descendant physical footprint measured before PNG
@@ -285,12 +310,12 @@ Reproduce the latest V-source cohort with:
 
 ```sh
 python3 tools/benchmark_wikipedia_memory.py \
-  --before Build/wikipedia-50mb/arena-native-frame-pool.app/Contents/MacOS/Vox \
-  --after Build/wikipedia-50mb/arena-match-text-geometry2.app/Contents/MacOS/Vox \
+  --before Build/wikipedia-50mb/arena-match-text-geometry2.app/Contents/MacOS/Vox \
+  --after Build/wikipedia-50mb/arena-scratch-counter-keys.app/Contents/MacOS/Vox \
   --cache Build/wikipedia-100mb/cache \
   --network-deny Build/pikabu-instructions-network-deny.dylib \
   --activity background --repeat 3 --allocator prealloc \
-  --output Build/wikipedia-50mb/arena-match-text-geometry2-recheck
+  --output Build/wikipedia-50mb/arena-scratch-counter-keys-recheck
 ```
 
 The command exits nonzero while the 50 MB budget is exceeded.
