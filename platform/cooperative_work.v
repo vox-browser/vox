@@ -29,6 +29,67 @@ struct DeferredWorkTimer {
 __global cooperative_work_state_ &CooperativeWorkState
 __global cooperative_work_spare_ &CooperativeWorkState
 
+@[heap]
+struct CooperativeWorkDelivery {
+mut:
+	timer &Timer = unsafe { nil }
+	timers []DeferredWorkTimer
+	native_calls []voidptr
+	next &CooperativeWorkDelivery = unsafe { nil }
+}
+
+__global cooperative_delivery_spares_ &CooperativeWorkDelivery
+
+fn schedule_cooperative_delivery(mut state CooperativeWorkState, native_calls bool) {
+	persistent := enter_persistent()
+	defer { leave_persistent(persistent) }
+	mut delivery := cooperative_delivery_spares_
+	if delivery == unsafe { nil } {
+		delivery = &CooperativeWorkDelivery{}
+		pointer := voidptr(delivery)
+		delivery.timer = Timer.create_single_shot(0, fn [pointer] () {
+			deliver_cooperative_work(pointer)
+		})
+	} else {
+		cooperative_delivery_spares_ = delivery.next
+		delivery.next = unsafe { nil }
+	}
+	// Move each input queue into its delivery, taking an empty reusable vector
+	// back. Separate timers preserve native-call/page-timer delivery ordering.
+	if native_calls {
+		empty := delivery.native_calls
+		delivery.native_calls = state.deferred_native_calls
+		state.deferred_native_calls = empty
+	} else {
+		empty := delivery.timers
+		delivery.timers = state.deferred_timers
+		state.deferred_timers = empty
+	}
+	delivery.timer.start()
+}
+
+fn deliver_cooperative_work(pointer voidptr) {
+	mut delivery := unsafe { &CooperativeWorkDelivery(pointer) }
+	for index in 0 .. delivery.native_calls.len {
+		invoke_native_deferred_call(delivery.native_calls[index])
+		delivery.native_calls[index] = unsafe { nil }
+	}
+	delivery.native_calls.clear()
+	for index in 0 .. delivery.timers.len {
+		item := delivery.timers[index]
+		mut timer := item.timer
+		if timer.registration_generation_ == item.generation { timer.fire() }
+		mut owner := item.owner
+		if owner != unsafe { nil } { owner.release() }
+		delivery.timers[index] = DeferredWorkTimer{timer: unsafe { nil }}
+	}
+	delivery.timers.clear()
+	// A callback can enqueue another batch. Keep this slot unavailable until
+	// every callback and document lease from the current batch has completed.
+	delivery.next = cooperative_delivery_spares_
+	cooperative_delivery_spares_ = delivery
+}
+
 pub struct CooperativeWorkScope {
 mut:
 	state &CooperativeWorkState = unsafe { nil }
@@ -158,31 +219,41 @@ pub fn (mut scope CooperativeWorkScope) finish() {
 		}
 	}
 	cooperative_work_state_ = unsafe { nil }
-	if state.deferred_native_calls.len > 0 {
-		persistent := enter_persistent()
-		pending := state.deferred_native_calls.clone()
-		mut delivery := Timer.create_single_shot(0, fn [pending] () {
-			for pointer in pending { invoke_native_deferred_call(pointer) }
-		})
-		delivery.start()
-		leave_persistent(persistent)
-	}
-	if state.deferred_timers.len > 0 {
-		persistent := enter_persistent()
-		defer { leave_persistent(persistent) }
-		pending := state.deferred_timers.clone()
-		mut delivery := Timer.create_single_shot(0, fn [pending] () {
-			for item in pending {
-				mut timer := item.timer
-				if timer.registration_generation_ == item.generation { timer.fire() }
-				mut owner := item.owner
-				if owner != unsafe { nil } { owner.release() }
-			}
-		})
-		delivery.start()
+	$if prealloc {
+		mut completed := unsafe { &CooperativeWorkState(state) }
+		if completed.deferred_native_calls.len > 0 {
+			schedule_cooperative_delivery(mut completed, true)
+		}
+		if completed.deferred_timers.len > 0 {
+			schedule_cooperative_delivery(mut completed, false)
+		}
+	} $else {
+		if state.deferred_native_calls.len > 0 {
+			persistent := enter_persistent()
+			pending := state.deferred_native_calls.clone()
+			mut delivery := Timer.create_single_shot(0, fn [pending] () {
+				for pointer in pending { invoke_native_deferred_call(pointer) }
+			})
+			delivery.start()
+			leave_persistent(persistent)
+		}
+		if state.deferred_timers.len > 0 {
+			persistent := enter_persistent()
+			defer { leave_persistent(persistent) }
+			pending := state.deferred_timers.clone()
+			mut delivery := Timer.create_single_shot(0, fn [pending] () {
+				for item in pending {
+					mut timer := item.timer
+					if timer.registration_generation_ == item.generation { timer.fire() }
+					mut owner := item.owner
+					if owner != unsafe { nil } { owner.release() }
+				}
+			})
+			delivery.start()
+		}
 	}
 	$if prealloc {
-		// Deliveries own independent snapshots. Reuse only the finished work
+		// Deliveries own their queues. Reuse only the finished work
 		// record and its input vectors; never keep its last document reachable.
 		mut completed := unsafe { &CooperativeWorkState(state) }
 		for index in 0 .. completed.deferred_timers.len {

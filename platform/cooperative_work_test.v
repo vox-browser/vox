@@ -57,6 +57,55 @@ fn test_finished_prealloc_work_reuses_its_record_without_retaining_the_last_targ
 	assert thread_arena_usage().used - before < 4096
 }
 
+fn test_repeated_cooperative_timer_delivery_reuses_queues_timers_and_closures() {
+	$if !prealloc { return }
+	if !native_timer_scheduling_available() { return }
+	state := &CooperativeWorkObservation{}
+	mut timer := Timer.create_single_shot(1000, fn [state] () {
+		mut observation := unsafe { &CooperativeWorkObservation(state) }
+		observation.fires++
+	})
+	defer { timer.stop() }
+	mut before := i64(0)
+	for iteration in 0 .. 129 {
+		mut scope := begin_cooperative_work(state, cooperative_work_test_callback)
+		timer.restart()
+		timer.fire()
+		scope.finish()
+		deadline := time.sys_mono_now() + time.second
+		for state.fires <= iteration && time.sys_mono_now() < deadline { pump_native_events(0.001) }
+		assert state.fires == iteration + 1
+		if iteration == 0 { before = thread_arena_usage().used }
+	}
+	assert thread_arena_usage().used - before < 8192
+}
+
+fn test_reentrant_cooperative_delivery_keeps_its_active_batch_independent() {
+	if !native_timer_scheduling_available() { return }
+	state := &CooperativeWorkObservation{}
+	mut second := Timer.create_single_shot(1000, fn [state] () {
+		mut observation := unsafe { &CooperativeWorkObservation(state) }
+		observation.fires++
+	})
+	mut first := Timer.create_single_shot(1000, fn [state, mut second] () {
+		mut observation := unsafe { &CooperativeWorkObservation(state) }
+		observation.fires++
+		mut nested := begin_cooperative_work(state, cooperative_work_test_callback)
+		second.restart()
+		second.fire()
+		nested.finish()
+		assert observation.fires == 1
+	})
+	defer { first.stop(); second.stop() }
+	mut scope := begin_cooperative_work(state, cooperative_work_test_callback)
+	first.start()
+	first.fire()
+	scope.finish()
+	deadline := time.sys_mono_now() + time.second
+	for state.fires < 2 && time.sys_mono_now() < deadline { pump_native_events(0.001) }
+	assert state.fires == 2
+}
+
 fn test_native_page_timer_is_deferred_and_coalesced_until_work_completes() {
 	if !native_timer_scheduling_available() { return }
 	state := &CooperativeWorkObservation{}
