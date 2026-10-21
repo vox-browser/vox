@@ -2382,6 +2382,12 @@ evidence](docs/translation-audit/NATIVE_MEDIA_WHEEL_RAW_HANDLER.md).
   Focused exact;broad skipped below 5,000,000-instruction threshold;prior carry0;strict one-body/whole-program independent C audit.
   Accepted control 153;isolated154app/GC1+override2;canonical/GUI/foreign work preserved.
   Full profiles actual0;no call-count credit. Actual/reported bootstrapseed154;capture guard preserves completed pages;Chrome open.
+  Guarded replaced constraints round155 (`de867d73`):onewholefunction/oneGit hunk/oneLayoutpath.
+  C-O2 logical6case composite/30973asserts eachGC;3new+3exactSVG-replaced. Originaldriver1/fivepasses retained;onlyfailedcase repairedactual0.
+  Singlecaseparser1/committer1 retained;read-onlyevidencerecovery0;no completedcase repeated. Common60/config;C-onlyfrontend0.
+  Canonical local16 complete public pipelines +2.081194%/1wins/all6actual0;allobservations retained.
+  Localgate1/nativelauncher1/jobs0/pagerelease1;no normal/profile/page/broad/bundle;accepted153/broad153/carry0 retained.
+  MatchedRAM/durableactualarchives;canonical/GUI/foreignpreserved;Chrome open.
 - Outside instruction-count optimization, run broad regression suites once per
   ten completed fixes, not after every fix.
   Broad suites include full translation/package test batches, the full LibJS AST

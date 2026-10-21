@@ -15079,6 +15079,56 @@ No codeflow,inputs,expectations or observations changed.
 Chrome parity remains unestablished;equivalent content/endpoint accounting is
 still required. Frozen checks add no credit or coverage for unrelated Root.
 
+## Retain guarded replaced constraints as a rejected local attempt
+
+Round155 applies `de867d73` to accepted153. One complete authored
+`calculate_max_content_width()` function and one original Git hunk guard the
+natural-size fallback constraints with `is_replaced_box()`. Ordinary boxes
+previously resolved those constraints before a downstream helper rejected them.
+Lazy `state.get()` initialization remains outside the guard; SVG handling and
+all replaced-element calculations remain unchanged. Every other frozen runtime
+hash is exact. No partial Root feature, storage projection or shim is imported.
+
+Three new ordinary-box tests cover fresh/cached constrained widths, lazy
+UsedValues initialization and a nested column with percentage minimums. Three
+unchanged original SVG/replaced tests cover partial natural dimensions, cyclic
+percentages, ratio transfer and min/max/border-box constraints. Both GC modes
+have an authenticated **six-case composite, 30,973 assertions each** in C-O2.
+The original drivers actually exit1: five cases pass, while the new nested
+case incorrectly expects57px despite its child's explicit `max-width:10px`.
+Only that case's three expected widths change57→10; its input is unchanged.
+Separate one-case repairs actually exit0/14,958 assertions in before/Boehm,
+final/Boehm and final/none. No completed passing case is repeated. The first
+repair wrapper misparses V's index-free single-case output and exits1; a
+read-only parser recovery authenticates the real test exits0. Original failed
+drivers, wrapper and committer statuses remain. No whole original driver0 is
+invented. Common12 cases pass60 assertions/config;153-final is reused before.
+
+The predeclared local fixture is the unchanged canonical147 public pipeline:
+64Unicode paragraphs,128 indentation blocks,192 independent text checks and
+16 complete parse/layout/record/paint-command/hit/finalize pipelines per sample.
+Setup, eight warmups, forced GC and assertions stay outside the counter.
+Three fixed alternating pairs give medians **31,839,616,380 →
+32,502,260,562 retired instructions**, **2.08119399% more**,
+**1/3 wins**. All six actual exits0 and checksum7,963,486,608 match. All
+observations remain;none is filtered, extended or rerun. The reason for this
+whole-pipeline regression is unestablished; source-level work avoidance earns
+no hardware saving by itself.
+
+The local gate and native launcher actually exit1 with zero native/profile
+jobs. The page-release controller also exits1 before launch. There is no
+normal native candidate, profile, strict independent C audit, page primary,
+screenshot, broad suite, bundle or GC pass for155. The declared30-pair page
+cohort/seed155/30,000 resamples never starts. The whole-app C-only frontend
+actually exits0; this is not a strict generated-C audit. Matched private RAM
+compiler scratch and durable SSD C/binary archives retain actual statuses and
+hashes: `Build/v/instruction-opt155-durable-archives.json`. Fixture findings:
+`Build/v/max-content-replaced-guard-{fixture-finding,single-case-parser-finding}.json`.
+
+Accepted control and broad baseline remain153; observed carry and repeatable
+page credit remain0. Current Root, canonical app, GUI and foreign work are
+preserved. Chrome parity remains unestablished.
+
 ## Causes and changes
 
 - The V 0.5.2 compatibility compiler's `-prod` Boehm code repeatedly snapshots
