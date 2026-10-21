@@ -30,8 +30,15 @@ pub fn Parser.from_component_values(component_values []ComponentValue) Parser {
 	}
 }
 
+// Internal parsing reads an immutable span. Its owner must keep the array
+// unchanged for the parse; the public constructor still provides a snapshot
+// for callers which can subsequently replace their component slots.
+fn Parser.from_component_span(component_values []ComponentValue) Parser {
+	return Parser{component_values: component_values}
+}
+
 pub fn Parser.from_css_text(text string) Parser {
-	return Parser.from_component_values(parse_component_values_for_value_logic(text))
+	return Parser.from_component_span(parse_component_values_for_value_logic(text))
 }
 
 pub fn Parser.with_context(context ParsingParams, text string) Parser {
@@ -874,7 +881,7 @@ fn (mut parser Parser) parse_css_value_tokens(property_id PropertyID, mut tokens
 		if token.is(.semicolon) {
 			return none
 		}
-		collect_arbitrary_substitution_function_presence([token], mut substitution_presence) or {
+		collect_arbitrary_substitution_function_presence_from_component(token, mut substitution_presence) or {
 			return none
 		}
 	}

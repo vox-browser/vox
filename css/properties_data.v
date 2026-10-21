@@ -369,7 +369,9 @@ fn resolve_unresolved_style_value_for_property_with_context(abstract_element dom
 	// 3. Parse result according to prop's grammar. If this returns failure, prop is invalid at computed-value time; return.
 	// NB: Custom properties have no grammar as such, so we skip this step for them.
 	// FIXME: Parse according to @property syntax once we support that.
-	mut parser := Parser.from_component_values(result)
+	// Substitution has already materialized this immutable input. The parser
+	// only advances a separate cursor, so it need not copy the component slots.
+	mut parser := Parser.from_component_span(result)
 	parsed_value := parser.parse_css_value(property_id) or {
 		return dom_style_value_from_value_logic(StyleValue(GuaranteedInvalidStyleValue.create()))
 	}
