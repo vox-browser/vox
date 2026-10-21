@@ -15677,6 +15677,57 @@ Chrome parity remains unestablished: content, start and paint endpoints must
 match before a speed comparison. Independent Root receives no extra coverage
 or performance credit.
 
+## Retain single-walk intrinsic seeding as a rejected attempt
+
+Round163 tests complete feature `9fbc5131` against accepted162. The width
+and height probes remove the separate containing-block prefix walk because the
+existing external-block traversal begins with the same chain. Both original
+Git hunks and every authored added/deleted line are retained in the frozen
+candidate. The full original author file reconstructs. Only unchanged context
+rebases the Root pooled measurement-state factory to accepted162's existing
+ordinary factory; no pool, partial runtime feature or storage projection is
+imported. All other162 runtime hashes remain exact.
+
+Seven focused cases pass **16,354 assertions** in before/Boehm, final/Boehm
+and final/no-GC C-O2, with three actual driver exits0. Three new cases check
+complete deep ancestor snapshots, lazy missing source entries and hoisted
+external blocks, plus public width/height probes and committed percentage
+geometry. Four existing containing-block and column-geometry cases remain
+byte-exact; only duplicate module/import headers are consolidated. Successful
+checks are reused without replay. Common12 cases pass60 assertions/configuration;
+before reuses actual161-final, whose runtime equals accepted162. Normal C-only
+preflight actually exits0; it is not a native or strict C pass.
+
+Before performance builds, the public scene is fixed: canonical147's64Unicode
+paragraphs,128whitespace blocks and192 independent setup text checks, inside28
+nested sections. The depth is chosen from the separate162 trace's roughly27
+ancestor copies per intrinsic probe; no private helper microloop is timed.
+Each observation completes16 public parse/layout/record/paint-command/hit/finalize
+pipelines. Setup,eight warmups,forcedGC and assertions stay outside the hardware
+counter. C-O2/Boehm/defaultmarker1/same automatic4GiB policy stays unchanged,
+not forced locally,no-prod/no-global-prealloc. Three fixed alternating pairs
+produce medians **33,919,403,915 → 34,020,273,043** retired
+instructions, **+0.29737883%**, **0/3wins**. All six actual exits0
+and checksum6,030,222,016 agree. Every observation remains retained; no repeat,
+filter, cohort extension or replacement workload is used for this feature.
+
+The local gate actually exits1. No native-release controller is started and no
+native-start receipt exists. Normal native, profile, independent C and page
+jobs remain unstarted; prepared scripts earn no pass credit. The declared30
+page pairs/seed163/30,000bootstrap do not begin. There is no163 page saving,
+strict C, broad, screenshot, bundle or GC pass. Durable focused/local/frontend
+C and binary hashes: `Build/v/instruction-opt163-durable-archives.json`.
+
+Feature and new tests commit together as`9fbc5131`. Because all three local
+pairs regress, restoration **`a71d5f4d`** restores
+the complete runtime author file byte-for-byte to the feature's parent, while
+retaining the new tests and all evidence. The successful before checks already
+cover the restored frozen runtime; no completed test or primary is rerun.
+
+Accepted control, broad baseline and verified isolated app remain162. Repeatable
+page credit and observed carry remain0. Canonical/GUI browsers, newer bundles
+and foreign edits are preserved. Chrome parity remains unestablished.
+
 ## Causes and changes
 
 - The V 0.5.2 compatibility compiler's `-prod` Boehm code repeatedly snapshots
