@@ -2436,6 +2436,15 @@ evidence](docs/translation-audit/NATIVE_MEDIA_WHEEL_RAW_HANDLER.md).
   Predeclared canonical147scene plus28nestedsections/16completepublicpipelines/192textchecks:local +0.297379%/0wins/all6actual0;all retained.
   Actual localgate1;native-release notstarted/no native-start/jobs0;no normal/profile/independentC/page/broad/bundle/GC163 pass.
   Runtime restored exactly bya71d5f4d;new tests retained/no completed check replay;accepted162/broad162/app162/carry0 preserved;canonical/GUI/foreign preserved;Chrome open.
+  Definite-size metrics round164 (`f8aa40ae`):both2authoredruntimehunks/oneLayoutpath/no context rebase;one resolver+one actual-payload helper.
+  Sevenexactcases/2127asserts eachconfiguration/4new+3unchanged;common60/config;successful cases reused without replay.
+  Declared512completefreshstates/33publicget calls each:local -2.039603%/3wins/all6actual0;zero pagecredit.
+  Two pre-counter setup1/root zero-minimum binding retained;all measured samples follow ready fixture;no completed observation replay.
+  Fresh page 16,495,729,915→16,487,273,693.5;20/30wins;point 8,456,221.5.
+  PairedCI[-799,727.5,8,751,161];repeatable credit 0;all60retained;same1/2/1;seed164/30000bootstrap.
+  Focused exact;broad passed;prior carry0;strict entire independent C/all493builtins/176protected/120nativeinputs/37headers.
+  Acceptedcontrol 164;isolated164app/GC1+override2;canonical/GUI/foreign preserved;fullprofiles521completeoperations/no profile credit.
+  Original scratch-label1/control-path audit1/builder guard1/profile version1/static-name reader1 retained;read-only/resume actual0;Chrome open.
 - Outside instruction-count optimization, run broad regression suites once per
   ten completed fixes, not after every fix.
   Broad suites include full translation/package test batches, the full LibJS AST

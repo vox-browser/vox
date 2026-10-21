@@ -15728,6 +15728,143 @@ Accepted control, broad baseline and verified isolated app remain162. Repeatable
 page credit and observed carry remain0. Canonical/GUI browsers, newer bundles
 and foreign edits are preserved. Chrome parity remains unestablished.
 
+## Prepare definite-size metrics only for dependent values
+
+Round164 applies complete feature`f8aa40ae` to accepted162. `resolve_definite_size`
+now prepares the document/font context only when the actual Size payload or
+axis-relevant border-box padding requires it. Absolute lengths, percentages and
+missing payloads keep the existing numeric resolver with an empty context.
+Relative/calculated payloads retain the original context path; border widths
+already contain computed pixels. Auto-size handling, percentage definiteness,
+box-sizing adjustment, rounding and clamps remain unchanged. The predicate
+follows the actual public payload even when it differs from the tag.
+
+Both original runtime Git hunks/one Layout path reconstruct the full original
+author file without a context rebase, partial feature, storage projection or
+compiler shim. All other162 source hashes stay exact. Four new cases and three
+byte-exact original Size-contract cases pass **2,127 assertions** in each of
+before/Boehm,final/Boehm and final/no-GC C-O2, with three actual driver exits0.
+They cover absolute units,min/max clamps,fractional percentages,payload/tag
+mismatches,missing owners,border-box percentage/font/calculated padding,live
+viewport changes and indefinite percentages. Only duplicate module/import
+headers are consolidated. These successes are reused without replay. Common12
+cases include one inactive diagnostic and pass60 assertions/configuration;
+before reuses actual161-final, whose runtime equals accepted162. The feature
+and four new tests commit together as`f8aa40ae`.
+
+The local operation is declared before performance builds:512 complete fresh
+`LayoutState` initializations, each with33 public `get_mutable()` calls on a root
+and32 styled real layout-tree boxes. It includes all six constraint resolutions,
+owned state allocation,recursive ancestor materialization and consumption of
+sizes,definiteness,containing ownership and box dimensions. It is not a private
+resolver microloop. Four fixed variants cover absolute content/border boxes,
+font-relative border boxes and percentage border boxes. Setup,independent
+64child-dimension/32definiteness/32owner/2root checks,one expected complete state,
+eight complete-state warmups,forcedGC and final checksum assertion stay outside
+the hardware counter. Each measured observation completes16,896 public calls.
+
+Two initial setup launches actually exit1 before any instruction snapshot.
+The first240px-root check receives800px; complete public document-layout setup
+still gives the same fresh-state result. Source inspection shows the generic
+initializer resolves an automatic root minimum through its auto-width path.
+The ready fixture explicitly gives that root`min-width:0`, representing the
+intended240px case. All32 child variants,expected sizes,33calls/state,512states,
+eightwarmups and counter boundaries stay fixed. The full public layout setup
+also remains outside the counter. This corrects the fixture's prerequisite,
+without changing production auto-minimum behavior. Original declarations,
+all three fixture versions,source clones,generated C,binaries and actual exits
+remain hash-linked in the setup-correction and fixture-ready findings. No local
+hardware observation exists before this binding; no completed sample is
+repeated,replaced,discarded or added to the fixed cohort.
+
+Three alternating pairs produce medians **211,118,321 →
+206,812,345** retired instructions, **-2.03960319%**,
+**3/3wins**. All six actual exits0 and checksum4,134,737,408 agree.
+This local result earns0 page credit. Policy remains C-O2/Boehm/defaultmarker1,
+same automatic4GiB hint,not forced or triggered locally,no-prod/no-global-prealloc.
+
+Normal C-only generation actually exits0 and is reused without regeneration.
+The independent entire normal program authenticates every body,type and global.
+Strict C permits one changed resolver and one added payload-predicate body and
+its exact prototype. All remaining functions,records,globals/resources match
+control after established compiler/embed normalization and four byte-identical
+helper reorderings. All493 builtins,176 protected encoding/filter/arena routines,
+120 native inputs,37 frozen headers and exact native arguments authenticate.
+The first audit's final binary lookup uses an inherited nonexistent control
+basename; that actual1 and the native builder's guard1 remain. Correcting only
+the filename makes the read-only audit exit0. The stored immutable C/argument
+array then resumes its first and only native compilation,signing,persistence
+and smoke,all actual0,with the loaded frozen4eef helper. No strict comparison
+is relaxed and no successful frontend or test is repeated.
+
+The first profile attempts stop before C generation because loader-print
+logging contaminates the old-compiler wrapper's version probe. Both actual1
+logs/results remain. Clearing print logging for the compiler child,while
+retaining the frozen DYLD library path and all C-O1/Boehm1/no-inline flags,
+completes both full-process programs with actual0. Their generated C proves
+main stays enabled without reset/filter. A later reader uses the wrong static
+constructor spelling and actually exits1; a read-only extractor corrects the
+labels from the existing reports/C. No profile program is repeated. All full
+setup work remains included,including142 extra public get calls:
+
+| Function | Before calls | Final calls |
+| --- | ---: | ---: |
+| `layout__opt164_complete_state_initialization` | 521 | 521 |
+| `layout__LayoutState_get_mutable` | 17,368 | 17,368 |
+| `layout__LayoutState__static__new` | 523 | 523 |
+| `layout__resolve_definite_size` | 112,968 | 112,968 |
+| `layout__definite_size_needs_node_metrics` | unknown | 253,655 |
+| `layout__layout_font_metrics_for_node` | 103,031 | unknown |
+| `css__LengthResolutionContext__static__for_document` | 103,066 | 35 |
+
+
+Missing optimization rows remain unknown,not0. Profile counts,timings and
+instrumented instructions earn0 hardware/page credit.
+
+Matching normal binaries retain the359-body cache,frozen4eef and placement
+helpers,1024×768 document viewport and
+`native.scopes.navigation_to_first_document_paint[0]`. Fresh fixed30 alternating
+pairs give medians **16,495,729,915 →
+16,487,273,693.5** instructions:point saving
+**8,456,221.5 (-0.05126309%)**,
+**20/30wins**. Paired median saving
+**2,943,372.5**;30,000 paired bootstrap resamples with actual
+and reported seed164 give95% interval **[-799,727.5, 8,751,161]**.
+Repeatable page credit **0**;integration
+**accepted** under the existing positive-point
+policy. No historical median is subtracted.
+
+All60 primaries remain:60 actual PNGs,0 counter-only recoveries,
+0 archived pre-primary startup retries. First preparation remains
+1install/2geometry/1paint;0 later refreshes and
+0 external foreground transitions stay
+separate. Available PNGs are1024×768 and exact outside the original fixed
+skeleton bands. Recovered unknown exits or missing PNGs stay explicit;no primary
+is filtered,discarded,rerun or added beyond the cohort.
+
+Focused viewport exact. Prior observed carry0 plus the matching positive point
+gives **8,456,221.5** for the5M gate:**passed**.
+Six actual zero-exit jobs cover87selected bothGC/174executions;19screenshots finish,16exact. Known differences remain inline-node13,text-decorations1341,canvas-text1994.
+Capture receipts authenticate actual exits,source,binary,viewport,helper,fonts,
+logs and PNG hashes. Initial preparation stops on an inherited occupied RAM
+label after completing four source clones;those clones are verified and only
+unfinished setup resumes. Original preparation1 remains. Pre-primary guard and
+case-label metadata are corrected with retained originals;actual seed164 and
+cohort semantics stay unchanged.
+
+Isolated artifact **`/Users/alex/code/vox2/Build/v/Vox-opt164.app`** has actual pin/sign/verify/smoke
+and GC exits0. Its instruction text matches the measured image;defaultmarker1
+and override2 both collect. Canonical Info/resources are read;canonical
+executables,GUI browsers,newer bundles and foreign edits are preserved.
+Accepted control **164**,broad baseline
+**164**,observed carry
+**0**.
+Durable generated-C/profile/focused/local/broad/binary archive hashes:
+`Build/v/instruction-opt164-durable-archives.json`. Original failed receipts are
+retained and linked by their findings. Rejected163 and its runtime restoration
+remain recorded. Chrome parity still requires equivalent content,start and
+paint endpoints. Independent Root receives no extra coverage or credit.
+
 ## Causes and changes
 
 - The V 0.5.2 compatibility compiler's `-prod` Boehm code repeatedly snapshots
