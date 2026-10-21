@@ -17,8 +17,8 @@ in its protocol. Explicit historic Boehm comparisons require `--allocator boehm`
 ### Corrected arena before/after: 50 MB remains unmet
 
 The latest V-source comparison, three alternating optimized pairs, measures
-**105.92 → 103.71 MB**, a **2.09% reduction**. The largest candidate settled
-observation is **103,908,816 bytes**. The **50,000,000-byte limit still fails**.
+**103.86 → 101.24 MB**, a **2.52% reduction**. The largest candidate settled
+observation is **101,287,376 bytes**. The **50,000,000-byte limit still fails**.
 All six raw viewport images match, all frozen-input guards pass, and all six script audits
 report no page runtime, sources, source bytes or preloaded scripts.
 
@@ -32,6 +32,7 @@ report no page runtime, sources, source bytes or preloaded scripts.
 | Updated native graphics providers with the same V executable | 109,381,096 bytes | 109,413,912 bytes | -0.03% |
 | Native tokenizer, inline geometry and selector workspaces | 109,282,792 bytes | 106,104,272 bytes | 2.91% |
 | Cascade contexts, pseudo traversal and SVG metadata | 105,924,048 bytes | 103,712,184 bytes | 2.09% |
+| URL parser workspaces and immutable DOM URL snapshots | 103,859,664 bytes | 101,238,248 bytes | 2.52% |
 
 Each row is its own three-pair cohort; these are aggregate build comparisons,
 not isolated savings attributed to individual commits. Evidence is in
@@ -39,7 +40,8 @@ not isolated savings attributed to individual commits. Evidence is in
 `Build/wikipedia-50mb/arena-svg-lifetimes-paired/`, followed by
 `arena-static-paint-paired/`, `arena-svg-workspace-paired/`,
 `arena-inline-length-paired/`, `arena-inline-native-queue-paired/`,
-`arena-parser-workspaces-paired/` and `arena-cascade-workspaces-paired/`, including summaries, raw
+`arena-parser-workspaces-paired/`, `arena-cascade-workspaces-paired/` and
+`arena-url-snapshots-paired/`, including summaries, raw
 process samples, allocator checks, resource audits and captures. Matching
 `arena-{text,svg}-lifetimes-build-protocol.json` files pin the complete source
 inputs, current compiler and native libraries. The static-paint and SVG protocols are
@@ -82,11 +84,26 @@ final flat pieces, reuse cascade matching contexts and pseudo-rule iterators,
 avoid fixed selector-origin list allocations, and skip inapplicable SVG
 presentation attributes and typed path geometry during resource discovery.
 The final source-position preservation fix is included in the cascade cohort.
-Later URL parser/snapshot work and the scripted-tokenizer extension are excluded
-from its frozen executable and receive no RAM credit here. The cascade candidate
+URL parser/snapshot work and the scripted-tokenizer extension are excluded
+from that cascade executable. The cascade candidate
 uses the original pinned native providers, not the separate queue experiment.
 Its generated C SHA-256 is
 `c6ed937bd1e619ebb2645fdc55924b5e80a25de693839d813978a47615a725fe`.
+
+The latest URL-snapshot cohort freezes committed source `e06ea99f`, including
+the URL parser workspaces, compact immutable DOM URL snapshots, and intervening
+stylesheet parser and scripted-tokenizer fixes. It excludes later selector
+invalidation workspaces, SVG background metadata reuse and idle shaping-cache
+retirement. This is an aggregate comparison; individual changes receive no
+isolated RAM attribution. Nine DOM URL checks and 29 URL parser checks pass in
+both allocator modes and with retired arenas poisoned. The signed private app
+passes headless startup and retains the original native providers. Its generated
+C SHA-256 is
+`67487a42646f8e7d313ddb36447445181d82527c0776bb5b4ca814d5fb5f82fd`.
+Its sampled launch peaks are 513.7–525.6 MB. The build protocol records recovery
+of an interrupted compilation from those exact generated C and native object
+inputs; the final bundle is signed after moving the preserved compiler work out
+of the app. No canonical installed app is replaced.
 
 The conditions below also apply to these cohorts: `-prealloc -gc none`, optimized
 C, the unchanged 40-file cache, 1024×768 CSS pixels at DPR 2, a visible background
@@ -97,12 +114,12 @@ Reproduce the latest V-source cohort with:
 
 ```sh
 python3 tools/benchmark_wikipedia_memory.py \
-  --before Build/wikipedia-50mb/arena-parser-workspaces.app/Contents/MacOS/Vox \
-  --after Build/wikipedia-50mb/arena-cascade-workspaces.app/Contents/MacOS/Vox \
+  --before Build/wikipedia-50mb/arena-cascade-workspaces.app/Contents/MacOS/Vox \
+  --after Build/wikipedia-50mb/arena-url-snapshots.app/Contents/MacOS/Vox \
   --cache Build/wikipedia-100mb/cache \
   --network-deny Build/pikabu-instructions-network-deny.dylib \
   --activity background --repeat 3 --allocator prealloc \
-  --output Build/wikipedia-50mb/arena-cascade-workspaces-recheck
+  --output Build/wikipedia-50mb/arena-url-snapshots-recheck
 ```
 
 The command exits nonzero while the 50 MB budget is exceeded.
