@@ -2341,6 +2341,11 @@ evidence](docs/translation-audit/NATIVE_MEDIA_WHEEL_RAW_HANDLER.md).
   Local gate1/native launcher1/jobs0;no normal binary/profile/page/broad/bundle;accepted147/carry0 retained.
   Exact payload/rounding/box-sizing contracts retained;original zero-case fixture typing failures preserved.
   PrivateRAM prepared only for unstarted compilers;local variants/cache/evidence remain SSD;Chrome parity open.
+  Inline property lookup round149 (`bcc4c557`):one original attribute hunk/body unchanged;2cases/2493asserts eachGC reused exactly.
+  Common60/config;normal C-only frontend0;unchanged canonical local16 pipelines +1.780721%/2wins/all6actual0.
+  Local gate1/native launcher1/jobs0;no normal binary/profile/page/broad/bundle;accepted147/carry0 retained.
+  Read-only C definition confirms inline keyword only;no strict audit or profile pass. Both improving pairs/slower third retained.
+  Matched RAM local scratch;durable C/actual exits and metadata errata retained;canonical/GUI/foreign work preserved;Chrome open.
 - Outside instruction-count optimization, run broad regression suites once per
   ten completed fixes, not after every fix.
   Broad suites include full translation/package test batches, the full LibJS AST

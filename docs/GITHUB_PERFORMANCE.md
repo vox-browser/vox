@@ -14555,6 +14555,56 @@ carry and repeatable page credit stay0. The committed feature earns no accepted
 hardware saving. Canonical app,GUI and concurrent work are preserved. Chrome
 parity remains unestablished; equivalent content/endpoint accounting is needed.
 
+## Retain inline property lookup as a rejected local attempt
+
+Round149 applies complete feature `bcc4c557` to accepted147:one exact
+original Git runtime hunk adds `@[inline]` to public `ComputedProperties.property()`.
+Signature,whole body,guards,optional result and animation/important/transition
+precedence remain unchanged. The entire authored before/after file reconstructs
+exactly; the same attribute hunk applies unchanged to frozen147. Root paged
+storage and other independent changes are excluded,without a source projection.
+
+The two exact original cases pass C-O2 in both GC modes with **2,493 assertions
+each**:the unchanged precedence/missing-value case and the new pointer/option
+identity case spanning every longhand slot and distinct owners with identical
+serialization. Full immutable runtime/fixture hashes authenticate reuse of those
+completed jobs,without case replay. Common12 cases pass60 assertions/config;
+unchanged147-final supplies before. No current-Root compiler pass is inferred.
+
+Canonical147 scene remains unchanged:64 Unicode paragraphs,128 indentation
+blocks,192 independent checks and16 complete public parse/layout/record/
+paint-command/hit/finalize pipelines per sample. Setup,eight warmups,forced GC
+and assertions remain outside the counter. Three fixed alternating pairs give
+medians **32,028,156,666 → 32,598,488,848 instructions**,
+**1.78072122% more**, **2/3 wins**. All six actual exits0 and
+checksum7,963,486,608 match. The slower third pair remains alongside both
+improving pairs; no completed observation is discarded,filtered,extended or rerun.
+
+Actual local gate1 and native launcher1 retain zero normal/profile jobs.
+**No normal native candidate,profile,page primary,strict independent C audit,
+screenshot,broad suite,bundle or GC pass is claimed for149.** Its declared
+30-pair browser cohort/seed149/30,000 resamples never starts. Normal C-only
+frontend/typechecking exits0. Read-only definition discovery confirms exactly
+one C `inline` keyword,with unchanged full body/signature;it explicitly provides
+no strict-audit approval. Unreleased profile tooling accounts for the existing
+compiler rule that omits inline counters under `-profile-no-inline`;no profile
+run or observed counter reduction is claimed. Durable source/focused/local/
+frontend hashes are indexed by `Build/v/instruction-opt149-durable-archives.json`.
+
+Both local variants use the same private RAM compiler scratch,declared before
+any performance build/sample. All generated C is durably archived with actual
+hashes;normal C,receipts/evidence and frozen browser cache remain SSD. The normal
+native/profile/independent scratch directories remain unused after rejection.
+Inherited preparation stdout/frontend wording labels are retained in
+`instruction-opt149-metadata-errata.json`;actual source/fixture/C hashes and
+captured statuses are unchanged. No compiler shim or fake process exit is used.
+
+Accepted control,broad baseline and verified isolated app remain147. Observed
+carry and repeatable page credit remain0. The committed annotation earns no
+accepted hardware saving;independent current-Root performance remains unmeasured.
+Canonical app,GUI and foreign work are preserved. Chrome parity remains
+unestablished;equivalent content/endpoint accounting is still required.
+
 ## Causes and changes
 
 - The V 0.5.2 compatibility compiler's `-prod` Boehm code repeatedly snapshots
