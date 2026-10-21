@@ -15087,12 +15087,7 @@ fn collect_svg_presentational_hints(mut properties []StyleProperty, element &dom
 			continue
 		}
 		attribute_value := attribute.value()
-		value_source := if property_id == .d {
-			'path(${serialize_a_string(attribute_value)})'
-		} else {
-			attribute_value
-		}
-		value := parse_svg_presentation_attribute_value(element.document(), property_id, value_source) or {
+		value := parse_svg_presentation_attribute_value(element.document(), property_id, attribute_value) or {
 			continue
 		}
 		properties << StyleProperty{
@@ -15103,6 +15098,9 @@ fn collect_svg_presentational_hints(mut properties []StyleProperty, element &dom
 }
 
 fn parse_svg_presentation_attribute_value(document &dom.Document, property_id PropertyID, source string) ?StyleValue {
+	if property_id == .d {
+		return svg_presentation_path_value(source)
+	}
 	// SVG transform attributes use the transform-list grammar: unitless
 	// translations, optional commas, and three-argument rotate(). Re-express
 	// that grammar as the single matrix() value used by the CSS cascade.
