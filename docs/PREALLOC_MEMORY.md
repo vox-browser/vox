@@ -657,3 +657,23 @@ A matched O0 background diagnostic falls from 541.8 to 529.3 MiB in one trial
 trials do not establish a foreground RAM result. A separate cache census
 finds about 0.66 MiB of retained shape pixels and 0.89 MiB of shadow pixels
 after compression (`native-145-cache-census-background/1-vox/browser.log`).
+
+
+### Foreground and live-arena diagnostics
+
+The clean optimized source-133 build completes a valid foreground Pikabu
+trial at **714.9 MiB**, with **329.2 KiB/s** latter-half growth. All 59 focus
+checks pass, with one installation, 15 stories and 34 images
+(`native-159-source-133-foreground/1-vox/result.json`). This includes completed
+Metal queue retirement and the newer inline-length/parser work, but predates
+compressed raster rows and stylesheet candidate retirement. It supersedes
+the earlier 1065.9 MiB foreground endpoint, while remaining above Brave.
+
+A later background arena census counts about 273 MiB used by the main
+document and 110 MiB in base storage. A 15-second warm base allocation sample
+records about 0.2 MiB, roughly 14 KiB/s
+(`native-150-idle-profile/`, `native-150-idle-base-sites.txt`). The raw footprint
+still varies substantially across GPU frame phases; these diagnostic numbers
+do not establish a foreground comparison. Releasing all Context GPU resources
+after every completed frame has not established a RAM win and remains an
+unlanded experiment (`native-156-frame-resources-background`).
