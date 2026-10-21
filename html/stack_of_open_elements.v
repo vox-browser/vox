@@ -11,6 +11,15 @@ import dom
 // The base list of tag names that terminate the "in scope" search.
 const scope_base_list = ['applet', 'caption', 'html', 'table', 'td', 'th', 'marquee', 'object',
 	'select', 'template']
+const scope_button_list = extended_scope_boundaries(['button'])
+const scope_list_item_list = extended_scope_boundaries(['ol', 'ul'])
+const scope_table_list = ['html', 'table', 'template']
+
+fn extended_scope_boundaries(extra []string) []string {
+	mut boundaries := scope_base_list.clone()
+	boundaries << extra
+	return boundaries
+}
 
 pub struct StackOfOpenElements {
 mut:
@@ -195,22 +204,17 @@ pub fn (s &StackOfOpenElements) has_in_scope_element(target_node &dom.Element) b
 
 // https://html.spec.whatwg.org/multipage/parsing.html#has-an-element-in-button-scope
 pub fn (s &StackOfOpenElements) has_in_button_scope(tag_name string) bool {
-	mut list := scope_base_list.clone()
-	list << 'button'
-	return s.has_in_scope_impl_tag(tag_name, list, true)
+	return s.has_in_scope_impl_tag(tag_name, scope_button_list, true)
 }
 
 // https://html.spec.whatwg.org/multipage/parsing.html#has-an-element-in-table-scope
 pub fn (s &StackOfOpenElements) has_in_table_scope(tag_name string) bool {
-	return s.has_in_scope_impl_tag(tag_name, ['html', 'table', 'template'], false)
+	return s.has_in_scope_impl_tag(tag_name, scope_table_list, false)
 }
 
 // https://html.spec.whatwg.org/multipage/parsing.html#has-an-element-in-list-item-scope
 pub fn (s &StackOfOpenElements) has_in_list_item_scope(tag_name string) bool {
-	mut list := scope_base_list.clone()
-	list << 'ol'
-	list << 'ul'
-	return s.has_in_scope_impl_tag(tag_name, list, true)
+	return s.has_in_scope_impl_tag(tag_name, scope_list_item_list, true)
 }
 
 pub fn (mut s StackOfOpenElements) pop_until_an_element_with_tag_name_has_been_popped(tag_name string) {
