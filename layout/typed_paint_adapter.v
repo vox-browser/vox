@@ -4250,7 +4250,17 @@ fn uncached_text_lines_from_typed_layout(container &Node, used &UsedValues, stat
 	mut paint_parent_pieces := []InlineBoxPiece{}
 	mut paint_parent_pieces_ready := false
 	for line_index, line_box in used.line_boxes {
-		mut fragments := []TextFragment{}
+		// Reserve only text-bearing fragments. Growing these wide paint records
+		// leaves every old buffer in the page's arena; atomic inline boxes and
+		// truncated fragments need no transport slot.
+		mut fragment_count := 0
+		for fragment in line_box.fragments_ {
+			if !fragment.is_fully_truncated()
+				&& (fragment.block_ellipsis_text_ != none || fragment.layout_node_.is_text_node()) {
+				fragment_count++
+			}
+		}
+		mut fragments := []TextFragment{cap: fragment_count}
 		mut first_fragment_continues_previous_line := false
 		if line_index > 0 && used.line_boxes[line_index - 1].fragments_.len > 0
 			&& line_box.fragments_.len > 0 {
@@ -4481,12 +4491,6 @@ fn uncached_text_lines_from_typed_layout(container &Node, used &UsedValues, stat
 			// PaintableFragment is constructed directly from the committed
 			// LineBoxFragment upstream. Preserve that run instead of splitting it
 			// into words and making paint_commands() concatenate it again.
-			// A fragment includes the full paint style. Most lines contain only
-			// one, so avoid the default first-append capacity of two. Allocate
-			// lazily: atomic inline boxes need no text transport buffer at all.
-			if fragments.cap == 0 {
-				fragments = []TextFragment{cap: 1}
-			}
 			fragments << transport_fragment
 		}
 		mut box_decorations := []TextFragment{}

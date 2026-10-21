@@ -2,6 +2,7 @@ module layout
 
 import dom
 import html
+import platform
 
 fn storage_text_lines(document &dom.Document, id string) []TextLine {
 	element := document.get_element_by_id(id) or { panic('missing paint owner') }
@@ -46,6 +47,7 @@ fn test_multiple_text_runs_and_wrapped_lines_preserve_transport() {
 	runs := storage_text_lines(document, 'runs')
 	assert runs.len == 1
 	assert runs[0].fragments.len == 3
+	assert runs[0].fragments.cap == 3
 	assert runs[0].fragments.map(it.text).join('') == 'alphabetagamma'
 	assert runs[0].fragments[0].x < runs[0].fragments[1].x
 	assert runs[0].fragments[1].x < runs[0].fragments[2].x
@@ -62,4 +64,30 @@ fn test_multiple_text_runs_and_wrapped_lines_preserve_transport() {
 			assert line.y > wrapped[index - 1].y
 		}
 	}
+}
+
+fn test_many_styled_runs_reserve_one_exact_transport_buffer() {
+	mut markup := '<!doctype html><p id="text" style="white-space:nowrap">'
+	for index in 0 .. 37 { markup += '<span style="color:rgb(${index},0,0)">x</span>' }
+	markup += '</p>'
+	mut document := html.parse_document(markup)
+	defer { document.finalize() }
+	_ = layout_document_typed_in_viewport(document, 1000, 200)
+	// Warm lazy style/font projections, then measure only the paint projection.
+	_ = storage_text_lines(document, 'text')
+	mut arena := platform.new_arena('exact fragment transport')
+	entry := arena.enter()
+	lines := storage_text_lines(document, 'text')
+	arena.leave(entry)
+	assert lines.len == 1
+	assert lines[0].fragments.len == 37
+	assert lines[0].fragments.cap == 37
+	assert lines[0].fragments.map(it.text).join('') == 'x'.repeat(37)
+	for index, fragment in lines[0].fragments { assert fragment.color.r == u8(index) }
+	$if prealloc {
+		// The final wide fragment buffer dominates this projection. A geometric
+		// growth chain alone exceeds twice its size, before any paint metadata.
+		assert arena.usage().used < i64(37 * sizeof(TextFragment) * 2)
+	}
+	arena.release()
 }
