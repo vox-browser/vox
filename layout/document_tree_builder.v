@@ -115,8 +115,7 @@ fn resolve_layout_counters(mut builder_state TreeBuilderState, abstract_element 
 			// Before any counter exists, empty parent/sibling history cannot
 			// affect a later creator. Keep its order and previous-element key,
 			// but avoid allocating parent keys and empty history entries.
-			mut target := abstract_element
-			css.set_counters_set_for_abstract_element(mut target, none)
+			abstract_element.set_counters_set(none)
 			builder_state.counter_tree_order_index++
 			builder_state.last_processed_key = abstract_element_counter_key(abstract_element)
 			return

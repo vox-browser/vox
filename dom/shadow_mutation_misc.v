@@ -4405,7 +4405,10 @@ pub fn (mut abstract_element AbstractElement) ensure_counters_set() &CSSCounters
 	return abstract_element.element_.ensure_counters_set()
 }
 
-pub fn (mut abstract_element AbstractElement) set_counters_set(counters_set ?&CSSCountersSet_) {
+// The handle's identity stays unchanged; the concrete element or pseudo owns
+// the counters. Passing the small handle by value avoids boxing temporary
+// layout targets merely to clear their absent counter state.
+pub fn (abstract_element AbstractElement) set_counters_set(counters_set ?&CSSCountersSet_) {
 	if pseudo := abstract_element.pseudo_element_ {
 		mut pseudo_element := abstract_element.element_.get_pseudo_element(int(pseudo)) or {
 			return
