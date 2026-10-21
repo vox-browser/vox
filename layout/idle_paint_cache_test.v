@@ -89,6 +89,10 @@ fn test_idle_trim_ignores_stale_lists_and_pending_recordings() {
 	defer { document.finalize() }
 	_ = layout_document_typed_in_viewport(document, 320, 200)
 	first := document.record_display_list() or { panic('missing first paint') }
+	// A native scene must remain leased while this test passes its old list
+	// back to the stale-list guard after the next recording replaces it.
+	first_lease := retain_display_list_scene(first)
+	defer { release_display_list_scene(first_lease) }
 	document.set_needs_repaint_with_invalidation(.paint_commands)
 	second := document.record_display_list() or { panic('missing second paint') }
 	result := document_layout_result(document) or { panic('missing layout') }
@@ -142,6 +146,8 @@ fn test_idle_trim_rebuilds_svg_mask_clip_and_transparency_commands() {
 	defer { document.finalize() }
 	_ = layout_document_typed_in_viewport(document, 320, 200)
 	list := document.record_display_list() or { panic('missing SVG paint') }
+	lease := retain_display_list_scene(list)
+	defer { release_display_list_scene(lease) }
 	commands := display_list_commands(list)
 	idle_paint_expect(commands.any(it.kind == 'begin_svg_mask_layer'))
 	idle_paint_expect(commands.any(it.kind == 'begin_css_filter_layer'))
