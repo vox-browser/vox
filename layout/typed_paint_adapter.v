@@ -4249,7 +4249,7 @@ fn typed_paint_child_nodes(node &Node, state &LayoutState) []&Node {
 }
 
 fn uncached_text_lines_from_typed_layout(container &Node, used &UsedValues, state &LayoutState, container_position css.CSSPixelPoint) []TextLine {
-	mut lines := []TextLine{}
+	mut lines := []TextLine{cap: used.line_boxes.len}
 	mut paint_parent_pieces := []InlineBoxPiece{}
 	mut paint_parent_pieces_ready := false
 	for line_index, line_box in used.line_boxes {
@@ -4484,6 +4484,12 @@ fn uncached_text_lines_from_typed_layout(container &Node, used &UsedValues, stat
 			// PaintableFragment is constructed directly from the committed
 			// LineBoxFragment upstream. Preserve that run instead of splitting it
 			// into words and making paint_commands() concatenate it again.
+			// A fragment includes the full paint style. Most lines contain only
+			// one, so avoid the default first-append capacity of two. Allocate
+			// lazily: atomic inline boxes need no text transport buffer at all.
+			if fragments.cap == 0 {
+				fragments = []TextFragment{cap: 1}
+			}
 			fragments << transport_fragment
 		}
 		mut box_decorations := []TextFragment{}
@@ -4506,6 +4512,9 @@ fn uncached_text_lines_from_typed_layout(container &Node, used &UsedValues, stat
 						continue
 					}
 					if decoration := inline_piece_decoration_fragment(piece, container_position, state) {
+						if box_decorations.cap == 0 {
+							box_decorations = []TextFragment{cap: 1}
+						}
 						box_decorations << decoration
 						owner_ids[decoration.inline_node_id] = true
 					}
