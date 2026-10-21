@@ -409,7 +409,13 @@ fn (mut t HTMLTokenizer) dequeue() ?HTMLToken {
 }
 
 fn (mut t HTMLTokenizer) enqueue(token HTMLToken) {
-	t.queued_tokens << token
+	// Emission transfers this completed token's immutable payloads. The next
+	// token gets a fresh attribute vector; builders own separate storage.
+	index := t.queued_tokens.len
+	unsafe {
+		t.queued_tokens.grow_len(1)
+		vmemcpy(&t.queued_tokens[index], &token, sizeof(HTMLToken))
+	}
 }
 
 fn (mut t HTMLTokenizer) create_new_token(type_ TokenType) {

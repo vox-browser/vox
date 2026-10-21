@@ -1177,7 +1177,7 @@ fn (mut p HTMLParser) flush_character_insertions() {
 		return
 	}
 	mut node := p.character_insertion_node or {
-		p.character_insertion_builder = []
+		p.character_insertion_builder.clear()
 		return
 	}
 
@@ -1187,7 +1187,9 @@ fn (mut p HTMLParser) flush_character_insertions() {
 	} else {
 		node.append_data(data) or {}
 	}
-	p.character_insertion_builder = []
+	// runes_to_string and CharacterData own the emitted text. The next text
+	// node can reuse this private workspace without changing earlier nodes.
+	p.character_insertion_builder.clear()
 }
 
 fn (mut p HTMLParser) handle_element_popped(element &dom.Element) {

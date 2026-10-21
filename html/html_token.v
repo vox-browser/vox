@@ -203,7 +203,9 @@ pub fn (t &HTMLToken) attribute_count() int {
 }
 
 pub fn (mut t HTMLToken) add_attribute(attribute Attribute) {
-	t.attributes << attribute
+	// Copy the attribute record. Its string payloads are immutable; later
+	// edits replace the string header rather than modifying shared bytes.
+	t.attributes << unsafe { attribute }
 }
 
 // The native class has const and mutable overloads. V consolidates them into

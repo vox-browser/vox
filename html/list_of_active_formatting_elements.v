@@ -53,10 +53,11 @@ pub fn (l &ListOfActiveFormattingElements) contains(element &dom.Element) bool {
 fn create_own_token(token &HTMLToken) &HTMLToken {
 	mut new_token := &HTMLToken{
 		type_: token.type_
+		attributes: []Attribute{cap: token.attributes.len}
 	}
 	new_token.tag_name = token.tag_name
 	for attribute in token.attributes {
-		new_token.attributes << attribute
+		new_token.attributes << unsafe { attribute }
 	}
 	return new_token
 }
