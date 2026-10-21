@@ -34,6 +34,6 @@ fn (mut p HTMLParser) insert_text_run_if_available(stop StopAtInsertionPoint) bo
 	if !element_in_namespace(current, ns_html) { return false }
 	run := p.parser_text_run(stop) or { return false }
 	p.insert_character(run[0])
-	p.character_insertion_builder << run[1..]
+	p.append_character_insertion_run(run[1..])
 	return true
 }

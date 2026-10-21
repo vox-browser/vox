@@ -1208,14 +1208,14 @@ fn (mut p HTMLParser) flush_character_insertions() {
 		return
 	}
 
-	data := runes_to_string(p.character_insertion_builder)
+	data := p.character_insertion_text()
 	if node.data() == '' {
 		node.set_data(data)
 	} else {
 		node.append_data(data) or {}
 	}
-	// runes_to_string and CharacterData own the emitted text. The next text
-	// node can reuse this private workspace without changing earlier nodes.
+	// CharacterData owns the emitted text. The next text node can reuse this
+	// private workspace without changing earlier nodes.
 	p.character_insertion_builder.clear()
 }
 
@@ -1252,16 +1252,16 @@ fn (mut p HTMLParser) insert_character(data rune) {
 	node := p.find_character_insertion_node() or { return }
 	if cin := p.character_insertion_node {
 		if same_node(node.as_node(), cin.as_node()) {
-			p.character_insertion_builder << data
+			p.append_character_insertion(data)
 			return
 		}
 		p.flush_character_insertions()
 		p.character_insertion_node = node
-		p.character_insertion_builder << data
+		p.append_character_insertion(data)
 		return
 	}
 	p.character_insertion_node = node
-	p.character_insertion_builder << data
+	p.append_character_insertion(data)
 }
 
 // ===== implied end tags / p closing =====

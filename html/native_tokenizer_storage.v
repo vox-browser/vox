@@ -1,5 +1,39 @@
 module html
 
+fn (mut p HTMLParser) append_character_insertion(data rune) {
+	if p.tokenizer_storage != unsafe { nil } {
+		mut storage := p.tokenizer_storage
+		entry := storage.enter()
+		p.character_insertion_builder << data
+		storage.leave(entry)
+		return
+	}
+	p.character_insertion_builder << data
+}
+
+fn (mut p HTMLParser) append_character_insertion_run(data []rune) {
+	if p.tokenizer_storage != unsafe { nil } {
+		mut storage := p.tokenizer_storage
+		entry := storage.enter()
+		p.character_insertion_builder << data
+		storage.leave(entry)
+		return
+	}
+	p.character_insertion_builder << data
+}
+
+// CharacterData copies this input into its own lifetime. Encoding and growing
+// the parser's rune buffer can therefore retire with the tokenizer at EOF.
+fn (p &HTMLParser) character_insertion_text() string {
+	if p.tokenizer_storage != unsafe { nil } {
+		mut storage := p.tokenizer_storage
+		entry := storage.enter()
+		defer { storage.leave(entry) }
+		return runes_to_string(p.character_insertion_builder)
+	}
+	return runes_to_string(p.character_insertion_builder)
+}
+
 // Tokens borrow immutable payloads from the tokenizer. Native closed-input
 // documents copy strings published into the DOM and script models, then retire the
 // tokenizer's input runes, token queue, builders, and source-position history.
@@ -55,6 +89,7 @@ fn (mut p HTMLParser) retire_tokenizer_storage() {
 	p.list_of_active_formatting_elements.entries = []ActiveFormattingElement{}
 	p.list_of_active_formatting_elements.parser_storage = unsafe { nil }
 	p.pending_table_character_tokens = []HTMLToken{}
+	p.character_insertion_builder = []rune{}
 	p.tokenizer_storage = unsafe { nil }
 	storage.release()
 }
