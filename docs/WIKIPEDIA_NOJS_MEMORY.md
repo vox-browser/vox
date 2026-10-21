@@ -374,12 +374,15 @@ Both 50 MB budgets still fail. Later idle arena-page trimming is excluded,
 and the installed app is unchanged.
 
 The latest `arena-idle-pages` cohort freezes `73223a08` plus three idle CSS/layout
-overlays authenticated against committed `c9fa7be3`. It discards physical pages
-from reset empty shaping, matching, font-input, property-index and inline-item
-workspaces, and from detached dead blocks in V's thread-local recycle cache.
-Mappings, capacity and live allocations remain intact. Kernel residency tests
-verify page retirement and refill; nine platform, six shaping, 12 CSS and seven
-selected layout cases pass in both allocator modes and under poisoning.
+overlays authenticated against committed `c9fa7be3`. Its active arena idle callback
+runs shaping cleanup only, so the measured saving is an aggregate build result
+with automatic shaping-arena page retirement. The new matching, font-input,
+property-index, inline and recycle-cache trimming helpers are tested, but their
+existing caller is in the Boehm maintenance branch. No automatic saving from
+those helpers is credited to this arena run; wiring them into arena maintenance
+remains pending. Kernel residency tests verify empty/recycle page retirement and
+refill. Nine platform, six shaping, 12 CSS and seven selected layout cases pass
+in both allocator modes and under poisoning.
 
 Three older layout cases fail identically before the new trimming calls and
 remain excluded: hover, compositor/caret and resized-output snapshots. The
