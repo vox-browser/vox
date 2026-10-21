@@ -17,9 +17,10 @@ in its protocol. Explicit historic Boehm comparisons require `--allocator boehm`
 ### Corrected arena before/after: 50 MB remains unmet
 
 The latest V-source comparison, three alternating optimized pairs, measures
-**89.20 → 89.13 MB**, a **0.07% reduction**. This small change does not
-establish a substantial RAM saving. The largest candidate settled observation
-is **89,146,784 bytes**. The **50,000,000-byte limit still fails**.
+**88.23 → 88.16 MB**, a **0.07% reduction**. This provider-only change does
+not establish a substantial RAM saving. The preceding glyph-index font cohort
+measures **89.03 → 87.84 MB**. The latest largest candidate settled observation
+is **88,556,984 bytes**. The **50,000,000-byte limit still fails**.
 All six raw viewport images match, all frozen-input guards pass, and all six script audits
 report no page runtime, sources, source bytes or preloaded scripts.
 
@@ -40,6 +41,8 @@ report no page runtime, sources, source bytes or preloaded scripts.
 | Matching-rule list workspaces and exact paint fragment reservations | 93,406,672 bytes | 92,620,216 bytes | 0.84% |
 | Initial resolved-style sharing, counters, font handles and formatting tokens | 92,423,680 bytes | 89,474,440 bytes | 3.19% |
 | Native HarfBuzz cache retirement | 89,195,888 bytes | 89,130,376 bytes | 0.07% |
+| Glyph-index font initialization and native allocator relief | 89,032,072 bytes | 87,836,064 bytes | 1.34% |
+| Updated native wrappers with unchanged V code/data | 88,229,256 bytes | 88,163,744 bytes | 0.07% |
 
 Each row is its own three-pair cohort; these are aggregate build comparisons,
 not isolated savings attributed to individual commits. Evidence is in
@@ -51,7 +54,8 @@ not isolated savings attributed to individual commits. Evidence is in
 `arena-url-snapshots-paired/`, `arena-cache-lifetimes-paired/` and
 `arena-idle-xml-paired/`, `arena-inline-chunks-paired/` and
 `arena-style-lists-paired/`, `arena-initial-snapshots-paired/` and
-`arena-native-font-idle-paired/`, including summaries, raw
+`arena-native-font-idle-paired/`, `arena-glyph-index-fonts-paired/` and
+`arena-native-frame-pool-paired/`, including summaries, raw
 process samples, allocator checks, resource audits and captures. Matching
 `arena-{text,svg}-lifetimes-build-protocol.json` files pin the complete source
 inputs, current compiler and native libraries. The static-paint and SVG protocols are
@@ -205,7 +209,7 @@ Sampled launch peaks are 499.6–501.4 MB. All six raw viewport hashes retain
 `3010d840c8adaf0a5b71254499c27d9888d21b0cc92246c2ce989af60d8bb1fd`,
 with every frozen-input and no-script guard passing. The 50 MB gate still fails.
 
-The latest native-font-idle cohort freezes `b1396aaf`, adding native HarfBuzz
+The native-font-idle cohort freezes `b1396aaf`, adding native HarfBuzz
 font/face/blob retirement, generation-protected borrowed handles, cleared bitmap
 classification and reusable scaled-font slots. Thirteen focused cases pass in
 both allocator modes and with poisoned arenas, including retained glyph runs,
@@ -217,6 +221,36 @@ The signed app passes headless startup; generated C SHA-256 is
 Sampled launch peaks are 509.4–515.7 MB. All six viewport hashes, no-script
 checks and frozen-input guards pass. The 50 MB budget remains unmet.
 
+The glyph-index-fonts cohort freezes `7ad241b3`. The macOS arena builder now
+stages an additional x.ttf entry point that follows the active compiler's exact
+initializer order while omitting its dense cmap construction. The compiler
+checkout and its ordinary initializer remain unchanged. Vox already uses sparse
+Unicode lookup and calls the reader by glyph index for metrics, outlines and
+kerning. Nine focused font cases pass in both allocator modes with the staged
+entry point enabled and under arena poisoning; three staging unit tests pass.
+The idle cleanup also asks the native malloc zones to return freed pages after
+font retirement, covered by 13 checks per allocator mode plus poison. Both
+changes are included in this aggregate comparison. The generated C SHA-256 is
+`2a4bc3bf7a9e2a95100f0bf49dd4a34fc48378bd50c9c4f0b69d96b28f48002a`;
+the build protocol also pins the complete staged font-runtime manifest.
+Sampled launch peaks are 498.6–500.6 MB; the largest settled observation is
+87,901,576 bytes. Signing, startup, all viewport hashes and no-script/input
+guards pass. The 50 MB budget remains unmet.
+
+The latest native-frame-pool cohort uses the same V code and data with committed
+Skia/Metal wrappers from `3649ed83`, including per-frame autorelease draining.
+The original pinned Dawn provider remains. Native graphics lifetime and redraw
+checks pass against the actual new wrappers. Re-signing the bundle changes its
+executable signature bytes: `arena-native-frame-pool-code-sections-identity.json`
+verifies identical sizes and contents for all 34 Mach-O sections rather than
+claiming identical whole-file hashes. The aggregate 0.07% median difference
+establishes no substantial RAM saving; independent cohorts must not be combined
+as isolated change savings. Sampled launch peaks are 495.0–509.3 MB and the
+largest settled observation is 88,556,984 bytes. Signing, startup, all six raw
+viewport hashes and every no-script/input guard pass. Later retained-geometry
+copies, scalar background queries and callback traversal changes are excluded.
+The 50 MB budget remains unmet.
+
 The conditions below also apply to these cohorts: `-prealloc -gc none`, optimized
 C, the unchanged 40-file cache, 1024×768 CSS pixels at DPR 2, a visible background
 window, and simultaneous app/descendant physical footprint measured before PNG
@@ -226,12 +260,12 @@ Reproduce the latest V-source cohort with:
 
 ```sh
 python3 tools/benchmark_wikipedia_memory.py \
-  --before Build/wikipedia-50mb/arena-initial-snapshots.app/Contents/MacOS/Vox \
-  --after Build/wikipedia-50mb/arena-native-font-idle.app/Contents/MacOS/Vox \
+  --before Build/wikipedia-50mb/arena-glyph-index-fonts.app/Contents/MacOS/Vox \
+  --after Build/wikipedia-50mb/arena-native-frame-pool.app/Contents/MacOS/Vox \
   --cache Build/wikipedia-100mb/cache \
   --network-deny Build/pikabu-instructions-network-deny.dylib \
   --activity background --repeat 3 --allocator prealloc \
-  --output Build/wikipedia-50mb/arena-native-font-idle-recheck
+  --output Build/wikipedia-50mb/arena-native-frame-pool-recheck
 ```
 
 The command exits nonzero while the 50 MB budget is exceeded.
