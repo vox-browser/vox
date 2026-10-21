@@ -39,7 +39,7 @@ fn test_retained_public_length_preserves_other_types_calculations_and_serialized
 	percentage := dom_style_value_from_value_logic(StyleValue(PercentageStyleValue.create(Percentage.new(25))))
 	assert Length.from_style_value(percentage, Length.new(80, .em)) == Length.new(20, .em)
 	assert Length.from_style_value(percentage, Length.make_px(320)) == Length.make_px(80)
-	calculated := parse_css_value(ParsingParams{}, 'calc(2px + 3px)', .width) or { panic(err) }
+	calculated := parse_css_value(ParsingParams{}, 'calc(2px + 3px)', .width) or { panic('missing calculation') }
 	assert Length.from_style_value(calculated, none) == Length.make_px(5)
 	assert Length.from_style_value(calculated, none) == retained_length_old_public_oracle(calculated, none)
 	for text in ['', 'auto', '12px trailing', '12px 5px', '/* comment */', '12px', '-2.5em', '25%', 'calc(2px + 3px)'] {

@@ -27,7 +27,7 @@ fn test_retained_length_auto_keeps_units_values_and_owner_precedence() {
 
 fn test_retained_length_auto_preserves_other_types_and_strict_serialized_fallback() {
 	for source in ['auto', '25%', 'calc(2px + 3%)', '-2.5em'] {
-		bridge := parse_css_value(ParsingParams{}, source, .margin_left) or { panic(err) }
+		bridge := parse_css_value(ParsingParams{}, source, .margin_left) or { panic('missing ${source}') }
 		assert LengthPercentageOrAuto.from_style_value(bridge) == retained_length_auto_old_oracle(bridge)
 	}
 	for typed in [StyleValue(KeywordStyleValue.create(.normal)), StyleValue(NumberStyleValue.create(3)),
