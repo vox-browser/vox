@@ -2322,6 +2322,12 @@ evidence](docs/translation-audit/NATIVE_MEDIA_WHEEL_RAW_HANDLER.md).
   Original profile hypothesis/dependent preprimary reader failures retained;read-only recovery0/no profile replay.
   Separate spacing6c498aec(3cases/1869eachGC) and zero-indent1f3ab03a(3cases/3753eachGC) committed;zero hardware credit yet.
   Supplementary current-V shape fixture interrupted143after2cases eachGC;no whole-batch pass;Chrome remains open.
+  Spacing context round146 (`6c498aec`):all2authored Git hunks/one runtimepath;3cases/1869asserts eachGC reused exactly.
+  Common60/config;normal C-only frontend0;unchanged canonical local16 pipelines +0.361193%/1win/all6actual0.
+  Local gate1/native launcher1/jobs0;no normal binary/profile/page/broad/bundle;accepted142/carry0 retained.
+  Separate one-observation full-browser profile142 after145:actual native/observer/browser0;7176raw call-count rows.
+  Original unused-parser-wrapper expectation1 retained;counter-authenticated read-only correction0/no observation replay.
+  Profile counts/timings/instrumented instructions earn0 page credit;zero-indent1f3ab03a measurement pending;Chrome remains open.
 - Outside instruction-count optimization, run broad regression suites once per
   ten completed fixes, not after every fix.
   Broad suites include full translation/package test batches, the full LibJS AST
