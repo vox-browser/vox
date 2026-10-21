@@ -2,6 +2,7 @@ module main
 
 import gg
 import page
+import platform
 
 $if vox_ui2 ? {
 	import ui2
@@ -41,9 +42,9 @@ fn test_tabs_keep_independent_dom_javascript_history_and_scroll() {
 	editor.set_attribute_value('value', 'edited')
 	app.activate_tab_chrome('tab-new')
 	mut second := app.active_browser_tab()
-	assert second != app
-	assert second.page_model != app.page_model
-	assert second.document != first_document
+	assert voidptr(second) != voidptr(app)
+	assert voidptr(second.page_model) != voidptr(app.page_model)
+	assert voidptr(second.document) != voidptr(first_document)
 	assert second.address_active
 	assert second.address == ''
 	assert second.history.len == 1
@@ -55,16 +56,16 @@ fn test_tabs_keep_independent_dom_javascript_history_and_scroll() {
 	assert second.js_runtime.evaluate('tabValue')! == '99'
 	assert second.history.len == 2
 	app.activate_tab_chrome('tab-select:0')
-	assert app.active_browser_tab() == app
-	assert app.document == first_document
-	assert app.js_runtime == first_runtime
+	assert voidptr(app.active_browser_tab()) == voidptr(app)
+	assert voidptr(app.document) == voidptr(first_document)
+	assert voidptr(app.js_runtime) == voidptr(first_runtime)
 	assert app.js_runtime.evaluate('tabValue += 1; tabValue')! == '42'
 	assert app.scroll_y == 123
 	assert app.history.len == 1
 	assert app.history_index == 0
 	assert app.document.get_element_by_id('editor')?.get_attribute('value')? == 'edited'
 	app.activate_tab_chrome('tab-next')
-	assert app.active_browser_tab() == second
+	assert voidptr(app.active_browser_tab()) == voidptr(second)
 	assert second.js_runtime.evaluate('tabValue')! == '99'
 	chrome := second.browser_chrome_state(800, 600)
 	assert chrome.tab_titles == ['First page', 'Second page']
@@ -81,7 +82,7 @@ fn test_tab_close_disposes_only_its_owner_and_last_tab_becomes_blank() {
 	app.activate_tab_chrome('tab-close:0')
 	assert first.has_been_destroyed()
 	assert app.tabs.pages.len == 1
-	assert app.active_browser_tab() == second
+	assert voidptr(app.active_browser_tab()) == voidptr(second)
 	assert !second_document.has_been_destroyed()
 	app.activate_tab_chrome('tab-close')
 	assert second_document.has_been_destroyed()
@@ -110,6 +111,38 @@ fn test_tab_actions_wait_until_reentrant_navigation_finishes() {
 	assert app.tabs.selected == 1
 }
 
+fn test_tab_actions_wait_until_document_scratch_retires_and_native_clients_do_not_log_frames() {
+	mut app := browser_tabs_test_app()
+	defer { browser_tabs_test_cleanup(mut app) }
+	mut scratch := platform.new_arena('tab callback ownership')
+	entry := scratch.enter()
+	app.activate_tab_chrome('tab-new'.clone())
+	$if prealloc {
+		assert app.tabs.pages.len == 1
+		assert app.tabs.pending_actions == ['tab-new']
+	}
+	scratch.leave(entry)
+	scratch.release()
+	$if prealloc {
+		pending := app.tabs.pending_actions.clone()
+		app.tabs.pending_actions.clear()
+		for action in pending { app.activate_tab_chrome(action) }
+	}
+	assert app.tabs.pages.len == 2
+	mut second := app.active_browser_tab()
+	mut client := second.page_model.client()
+	for _ in 0 .. 1024 {
+		client.will_begin_rendering_update()
+		client.did_finish_rendering_update()
+	}
+	assert client.events.len == 0
+	app.close_browser_tab(0)
+	assert voidptr(app.active_browser_tab()) == voidptr(second)
+	client.will_begin_rendering_update()
+	client.did_finish_rendering_update()
+	assert client.events.len == 0
+}
+
 fn test_background_navigation_preserves_the_selected_page_and_address() {
 	mut app := browser_tabs_test_app()
 	defer { browser_tabs_test_cleanup(mut app) }
@@ -128,14 +161,14 @@ fn test_background_navigation_preserves_the_selected_page_and_address() {
 		}
 	}
 	background.poll_background_browser_tab()
-	assert app.active_browser_tab() == app
-	assert app.document == first
+	assert voidptr(app.active_browser_tab()) == voidptr(app)
+	assert voidptr(app.document) == voidptr(first)
 	assert app.address == 'https://tabs.example/first'
 	assert app.address_active
 	assert background.browser_tab_title() == 'Background'
 	assert background.document.hidden()
 	app.activate_tab_chrome('tab-close:1')
-	assert app.document == first
+	assert voidptr(app.document) == voidptr(first)
 	assert app.address_active
 }
 
@@ -177,7 +210,7 @@ fn test_tab_keyboard_dispatch_runs_before_address_and_page_editing() {
 	assert app.tabs.pages.len == 2
 	mut selected := app.active_browser_tab()
 	selected.handle_key(.tab, .ctrl | .shift)
-	assert app.active_browser_tab() == app
+	assert voidptr(app.active_browser_tab()) == voidptr(app)
 }
 
 fn test_modified_link_pointer_dispatch_opens_a_background_tab() {
@@ -198,8 +231,8 @@ fn test_modified_link_pointer_dispatch_opens_a_background_tab() {
 	app.handle_click(x, y)
 	app.handle_event(&gg.Event{ typ: .mouse_up, mouse_button: .left, mouse_x: x, mouse_y: y, modifiers: u32(gg.Modifier.super) })
 	assert app.tabs.pages.len == 2
-	assert app.active_browser_tab() == app
-	assert app.document == original
+	assert voidptr(app.active_browser_tab()) == voidptr(app)
+	assert voidptr(app.document) == voidptr(original)
 	assert app.pending_native_navigation == none
 	assert app.tabs.pages[1].address == 'about:home'
 }
@@ -246,7 +279,7 @@ $if vox_ui2 ? {
 		C.native_test_tabs_snapshot()
 		C.native_test_address_shortcut(field, app, address_bar_shortcut, 13, 0)
 		assert app.tabs.pages.len == 1
-		assert app.active_browser_tab() == app
+		assert voidptr(app.active_browser_tab()) == voidptr(app)
 		assert ui2.text('address') == 'https://tabs.example/first'
 		app.update_browser_chrome(640, 600)
 		assert C.native_test_tabs_count() == 1

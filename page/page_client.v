@@ -9,6 +9,7 @@ module page
 import compositor
 import fetch
 import streams
+import platform
 
 pub struct NewWebViewResult {
 pub:
@@ -119,7 +120,9 @@ fn (mut client PageClient) record(name string, text string) {
 	if !client.record_events_ {
 		return
 	}
-	client.events << ClientEvent{name: name, text: text}
+	persistent := platform.enter_persistent()
+	defer { platform.leave_persistent(persistent) }
+	client.events << ClientEvent{name: name.clone(), text: text.clone()}
 }
 
 // set_event_recording controls whether calls are logged in `events`, which

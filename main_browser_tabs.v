@@ -4,6 +4,7 @@ import gg
 import layout
 import math
 import page
+import platform
 
 const tab_strip_height = 29.0
 const tab_strip_leading_width = 62.0
@@ -20,6 +21,8 @@ mut:
 
 fn (mut app BrowserApp) initialize_browser_tabs() {
 	if app.tabs != unsafe { nil } { return }
+	persistent := platform.enter_persistent()
+	defer { platform.leave_persistent(persistent) }
 	app.tabs = &BrowserTabs{ pages: [unsafe { &BrowserApp(app) }] }
 }
 
@@ -31,7 +34,7 @@ fn (app &BrowserApp) active_browser_tab() &BrowserApp {
 }
 
 fn (app &BrowserApp) is_active_browser_tab() bool {
-	return app.active_browser_tab() == app
+	return voidptr(app.active_browser_tab()) == voidptr(app)
 }
 
 fn (app &BrowserApp) browser_tabs_busy() bool {
@@ -66,8 +69,13 @@ fn browser_visible_tabs(width int, count int, selected int) (int, int) {
 
 fn (mut app BrowserApp) activate_tab_chrome(action string) {
 	app.initialize_browser_tabs()
-	if app.browser_tabs_busy() {
-		app.tabs.pending_actions << action
+	if app.browser_tabs_busy() || platform.arena_entered() {
+		// Native callbacks can arrive during a document or replay allocation
+		// scope. Create/destroy tabs only after that scope has unwound; their
+		// Page clients and shared tab list outlive every document in the window.
+		persistent := platform.enter_persistent()
+		app.tabs.pending_actions << action.clone()
+		platform.leave_persistent(persistent)
 		request_browser_frame()
 		return
 	}
@@ -85,6 +93,7 @@ fn (mut app BrowserApp) activate_tab_chrome(action string) {
 		'tab-new' {
 			owner := page.Page.create(1.0) or { return }
 			mut client := owner.client()
+			client.set_event_recording(false)
 			client.set_request_frame_hook(request_browser_frame)
 			mut tab := &BrowserApp{
 				tabs:                           app.tabs
@@ -226,7 +235,7 @@ fn (mut app BrowserApp) draw_browser_tabs() {
 			return
 		}
 	}
-	if app.browser_tabs_busy() {
+	if app.browser_tabs_busy() || platform.arena_entered() {
 		// Cooperative navigation can consume a redraw while servicing AppKit.
 		// Keep queued tab actions scheduled until the owning work scope unwinds.
 		$if macos {

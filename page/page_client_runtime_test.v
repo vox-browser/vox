@@ -1,6 +1,7 @@
 module page
 
 import compositor
+import platform
 
 fn test_page_client_identity_focus_and_allocation_defaults() {
 	mut client := PageClient.create()
@@ -60,4 +61,19 @@ fn test_page_client_tracks_input_and_manual_rendering_opportunities() {
 	client.inject_rendering_opportunity(20)
 	assert client.has_rendering_opportunity()
 	assert client.last_rendering_frame_time_nanoseconds() == 20_000_000
+}
+
+fn test_page_client_event_log_owns_payloads_after_document_work_retires() {
+	mut client := PageClient.create()
+	mut work := platform.new_arena('page client event input')
+	entry := work.enter()
+	client.record('document-event'.clone(), 'retained event text'.clone())
+	$if prealloc { assert !work.contains(client.events.data) }
+	work.leave(entry)
+	work.release()
+	assert client.events[0] == ClientEvent{name: 'document-event', text: 'retained event text'}
+	client.will_begin_rendering_update()
+	client.did_finish_rendering_update()
+	assert client.events.len == 3
+	assert client.events[0].text == 'retained event text'
 }
