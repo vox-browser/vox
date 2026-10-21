@@ -9,6 +9,10 @@ repo_dir=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
 output_dir=${NATIVE_GRAPHITE_TEST_OUTPUT_DIR:-"$repo_dir/Build/native-graphite-cache-test"}
 mkdir -p "$output_dir"
 clang++ -std=c++20 -O2 -Wall -Wextra -Werror \
+    "$repo_dir/tools/native_raster_snapshot_test.cpp" \
+    -o "$output_dir/native_raster_snapshot_test"
+"$output_dir/native_raster_snapshot_test"
+clang++ -std=c++20 -O2 -Wall -Wextra -Werror \
     "$repo_dir/tools/native_graphite_raster_cache_test.cpp" \
     -o "$output_dir/native_graphite_raster_cache_test"
 "$output_dir/native_graphite_raster_cache_test"

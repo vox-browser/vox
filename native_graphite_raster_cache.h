@@ -2,6 +2,7 @@
 #define VOX_NATIVE_GRAPHITE_RASTER_CACHE_H
 
 #include "native_graphite_bridge.h"
+#include "native_raster_snapshot.h"
 #include <algorithm>
 #include <cstring>
 #include <list>
@@ -28,7 +29,8 @@ class VoxGraphiteRasterCache {
         int width = 0, height = 0;
         bool has_background = false;
         std::shared_ptr<std::vector<uint8_t> const> source;
-        std::vector<uint8_t> extra, background, output;
+        std::vector<uint8_t> extra;
+        VoxRasterSnapshot background, output;
         size_t bytes() const { return tiles.size() * sizeof(VoxGraphiteImage) + extra.size() + background.size() + output.size(); }
     };
     struct Rows {
@@ -43,6 +45,10 @@ class VoxGraphiteRasterCache {
             for (size_t y = 0; y < height; ++y)
                 if (std::memcmp(pixels + y * pitch, copy.data() + y * bytes, bytes)) return false;
             return true;
+        }
+        bool equal(VoxRasterSnapshot const& copy) const
+        {
+            return copy.equal(pixels, bytes, pitch, height);
         }
         std::vector<uint8_t> copy() const
         {
@@ -282,11 +288,7 @@ private:
                                     : !same_image(entry.image, parameters.image))
                 || (has_background && !backdrop.equal(entry.background))
                 || !extra.equal(entry.extra) || !source.equal(*entry.source)) continue;
-            if (backdrop.pitch == backdrop.bytes || backdrop.height == 1)
-                std::memcpy(pixels, entry.output.data(), entry.output.size());
-            else for (size_t y = 0; y < backdrop.height; ++y)
-                    std::memcpy(pixels + y * backdrop.pitch,
-                        entry.output.data() + y * backdrop.bytes, backdrop.bytes);
+            entry.output.copy_to(pixels, backdrop.bytes, backdrop.pitch, backdrop.height);
             entries.splice(entries.begin(), entries, it);
             request.hit = true;
             return request;
@@ -305,7 +307,7 @@ private:
         entry->has_background = has_background;
         entry->source = intern_source(source);
         entry->extra = extra.copy();
-        if (has_background) entry->background = backdrop.copy();
+        if (has_background) entry->background = VoxRasterSnapshot(backdrop.copy());
         request.pending = std::move(entry);
         return request;
     }
@@ -314,7 +316,7 @@ public:
     {
         if (!request.pending) return;
         auto& entry = *request.pending;
-        entry.output = Rows {pixels, size_t(entry.width) * 4, size_t(pitch), size_t(entry.height)}.copy();
+        entry.output = VoxRasterSnapshot(Rows {pixels, size_t(entry.width) * 4, size_t(pitch), size_t(entry.height)}.copy());
         // A source may have lost its final retained entry while this request
         // was rendering. Charge it once again if necessary, including when
         // multiple pending requests finish after a clear or eviction.

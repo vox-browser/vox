@@ -410,5 +410,35 @@ int main()
             assert(!rows.prepare(padded_sheet, 7, 19, 44, true, padded.data()).hit);
         }
     }
+    {
+        // Three full surfaces exceed the raw byte budget together. Lossless
+        // flat-region storage keeps all three without increasing that budget.
+        VoxGraphiteRasterCache compact(4 * 1024 * 1024);
+        constexpr int width = 513, height = 511, pitch = width * 4 + 13;
+        std::vector<uint8_t> surface(pitch * height, 201);
+        VoxGraphiteShadow large_shadow {};
+        auto reset = [&] {
+            for (int y = 0; y < height; ++y) std::fill_n(surface.data() + y * pitch, width * 4, 47);
+        };
+        for (int key = 0; key != 3; ++key) {
+            large_shadow.red = key;
+            reset();
+            auto draw = compact.prepare(large_shadow, width, height, pitch, true, surface.data());
+            assert(draw.pending && !draw.hit);
+            for (int y = 0; y < height; ++y) std::fill_n(surface.data() + y * pitch, width * 4, 103 + key);
+            compact.finish(std::move(draw), surface.data(), pitch);
+        }
+        for (int key = 0; key != 3; ++key) {
+            large_shadow.red = key;
+            reset();
+            assert(compact.prepare(large_shadow, width, height, pitch, true, surface.data()).hit);
+            for (int y = 0; y < height; ++y) {
+                for (int x = 0; x < width * 4; ++x) assert(surface[y * pitch + x] == 103 + key);
+                for (int x = width * 4; x < pitch; ++x) assert(surface[y * pitch + x] == 201);
+            }
+            reset(); surface[(height - 1) * pitch + width * 4 - 1]++;
+            assert(!compact.prepare(large_shadow, width, height, pitch, true, surface.data()).hit);
+        }
+    }
     std::cout << "Graphite raster cache: source/backdrop mutation, geometry, profiles, strides, YUV, LRU and bounds passed\n";
 }
