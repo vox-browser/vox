@@ -1261,7 +1261,7 @@ fn marker_text_for_list_style(list_style_type css.ListStyleType, element &dom.El
 	}
 	mut mutable_element := unsafe { &dom.Element(element) }
 	ordinal := mutable_element.ordinal_value()
-	registered_counter_styles := css.registered_counter_styles_for_abstract_element(dom.AbstractElement.new(element, none))
+	registered_counter_styles := css.registered_counter_styles_for_marker(list_style_type, dom.AbstractElement.new(element, none))
 	mut style := list_style_type.counter_style
 	if resolved_style := registered_counter_styles[list_style_type.name] {
 		style = resolved_style
