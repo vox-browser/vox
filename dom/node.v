@@ -1210,7 +1210,7 @@ pub fn (n &Node) dispatch_event(event &Event) {
 }
 
 pub fn (n &Node) has_event_listener(type_ string) bool {
-	return type_ in n.event_listener_types || unsafe { &EventTarget(n) }.has_event_listener(type_)
+	return unsafe { &EventTarget(n) }.has_event_listener(type_)
 }
 
 // https://dom.spec.whatwg.org/#dom-node-baseuri

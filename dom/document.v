@@ -501,7 +501,6 @@ pub mut:
 	unique_id_                UniqueNodeID
 	registered_observer_list_ []&RegisteredObserver
 	slottable_name_           string
-	event_listener_types      []string
 	assigned_slot_            ?&HTMLSlotElement
 	manual_slot_assignment_   ?&HTMLSlotElement
 	load_event_delay_hook_    ?NodeLoadEventDelayHook

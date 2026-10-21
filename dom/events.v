@@ -1076,12 +1076,6 @@ pub fn (et &EventTarget) add_an_event_listener(listener &DOMEventListener) {
 	}
 	if !listener_already_registered {
 		target.data.event_listener_list << listener
-		if node := event_target_as_node(et) {
-			mut mutable_node := unsafe { &Node(node) }
-			if listener.type_ !in mutable_node.event_listener_types {
-				mutable_node.event_listener_types << listener.type_
-			}
-		}
 		target.event_listener_list_changed()
 	}
 
@@ -1127,20 +1121,6 @@ pub fn (et &EventTarget) remove_an_event_listener(listener &DOMEventListener) {
 	for index, entry in target.data.event_listener_list {
 		if entry == listener {
 			target.data.event_listener_list.delete(index)
-			if node := event_target_as_node(et) {
-				mut has_same_type := false
-				for remaining in target.data.event_listener_list {
-					if remaining.type_ == listener.type_ {
-						has_same_type = true
-						break
-					}
-				}
-				if !has_same_type {
-					mut mutable_node := unsafe { &Node(node) }
-					mutable_node.event_listener_types =
-						mutable_node.event_listener_types.filter(it != listener.type_)
-				}
-			}
 			target.event_listener_list_changed()
 			return
 		}
