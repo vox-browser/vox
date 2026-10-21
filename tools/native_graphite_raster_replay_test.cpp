@@ -27,6 +27,7 @@ int main(int argc, char** argv)
     auto clear = reinterpret_cast<decltype(&vox_graphite_release_unused_graphics_memory)>(
         dlsym(candidate, "vox_graphite_release_unused_graphics_memory"));
     assert(before && after && clear);
+    auto finish_frame = reinterpret_cast<void (*)()>(dlsym(candidate, "vox_graphite_finish_frame"));
     int comparisons = 0;
     for (int flags : {0, 1, 4, 4 | 8, 4 | 16, 4 | 8 | 16}) {
         for (int scale : {1, 2}) for (int background : {0, 1}) for (int cropped : {0, 1}) {
@@ -70,6 +71,7 @@ int main(int argc, char** argv)
                 assert(after(actual.data(), width, height, pitch, background, &image));
                 assert(expected == actual);
                 ++comparisons;
+                if (finish_frame) finish_frame();
             };
             compare(); compare(); // Cold followed by a hit.
             source[0] ^= 63; compare(); compare(); // Same buffer, changed content.
@@ -111,6 +113,7 @@ int main(int argc, char** argv)
             assert(after_shape(actual.data(), width, height, pitch, background, &shape));
             assert(expected == actual);
             ++comparisons;
+            if (finish_frame) finish_frame();
         };
         compare(); compare();
         shape.fill = 0; shape.thickness = 2.25f; compare(); compare();
@@ -151,6 +154,7 @@ int main(int argc, char** argv)
         assert(after_shape(actual.data(), width, height, pitch, background, &shape));
         assert(expected == actual);
         ++comparisons;
+        if (finish_frame) finish_frame();
     }
     for (int scale : {1, 2}) for (int background : {0, 1}) for (int fill : {0, 1})
     for (int msaa : {0, 1}) for (int offset : {-280, -13, 0, 53, 290})
@@ -193,6 +197,7 @@ int main(int argc, char** argv)
             std::abort();
         }
         ++comparisons;
+        if (finish_frame) finish_frame();
     }
     for (int scale : {1, 2}) for (int background : {0, 1}) for (int fill : {0, 1}) {
         VoxGraphiteShape shape {};
@@ -210,6 +215,7 @@ int main(int argc, char** argv)
             assert(after_shape(actual.data(), width, height, pitch, background, &shape));
             assert(expected == actual);
             ++comparisons;
+            if (finish_frame) finish_frame();
         };
         compare(); compare();
         // A cached stroke must preserve changed pixels in its untouched middle.
@@ -251,6 +257,7 @@ int main(int argc, char** argv)
                 return 1;
             }
             ++comparisons;
+            if (finish_frame) finish_frame();
         }
     }
     auto before_path = reinterpret_cast<decltype(&vox_graphite_draw_path_pixels)>(
@@ -284,6 +291,7 @@ int main(int argc, char** argv)
             assert(before_path(expected.data(), width, height, pitch, background, &path));
             assert(after_path(actual.data(), width, height, pitch, background, &path));
             assert(expected == actual); ++comparisons;
+            if (finish_frame) finish_frame();
         };
         compare(); compare();
         segments[13] += .5f; compare(); compare();
@@ -318,6 +326,7 @@ int main(int argc, char** argv)
             assert(before_shadow(expected.data(), width, height, pitch, background, &shadow));
             assert(after_shadow(actual.data(), width, height, pitch, background, &shadow));
             assert(expected == actual); ++comparisons;
+            if (finish_frame) finish_frame();
         };
         compare(); compare();
         shadow.blur += 1.25f; compare(); compare();

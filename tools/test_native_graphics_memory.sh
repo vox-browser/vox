@@ -10,6 +10,11 @@ esac
 skia_root="$upstream_dir/Build/release/vcpkg_installed/${LADYBIRD_VCPKG_TRIPLET:-$triplet}"
 output_dir=${NATIVE_GRAPHICS_TEST_OUTPUT_DIR:-"$repo_dir/Build/native-graphics-memory-test"}
 mkdir -p "$output_dir"
+clang++ -std=c++20 -O2 -Wall -Wextra -Werror -x objective-c++ \
+    "$repo_dir/tools/native_frame_metal_queue_test.mm" \
+    -framework Foundation -framework Metal \
+    -o "$output_dir/native_frame_metal_queue_test"
+"$output_dir/native_frame_metal_queue_test"
 python3 "$repo_dir/tools/build_mac_graphite.py" --skia-root "$skia_root" \
     --output "$output_dir/libVoxGraphite.dylib"
 clang++ -std=c++20 -O2 -x objective-c++ \
@@ -27,7 +32,8 @@ expected = {'_vox_graphite_draw_shadow_pixels', '_vox_graphite_draw_image_pixels
     '_vox_graphite_draw_shape_pixels', '_vox_graphite_draw_path_pixels',
     '_vox_graphite_draw_image_tiles', '_vox_graphite_draw_path_batch_pixels',
     '_vox_graphite_draw_svg_image_pixels', '_vox_graphite_convert_icc_rgba',
-    '_vox_graphite_release_unused_graphics_memory', '_vox_graphite_release_idle_graphics_memory'}
+    '_vox_graphite_release_unused_graphics_memory', '_vox_graphite_release_idle_graphics_memory',
+    '_vox_graphite_finish_frame'}
 assert symbols == expected, (symbols, expected)
-print('Graphite exports exactly ten plain C bridge functions.')
+print('Graphite exports exactly eleven plain C bridge functions.')
 PY

@@ -1,4 +1,5 @@
 #import <Metal/Metal.h>
+#include "native_frame_metal_queue.h"
 #include "native_graphite_bridge.h"
 #include "native_graphite_raster_cache.h"
 #include "native_graphite_image_upload_cache.h"
@@ -44,6 +45,7 @@ VoxGraphiteRasterCache path_cache(8 * 1024 * 1024);
 VoxGraphiteRasterCache shape_cache(16 * 1024 * 1024);
 VoxGraphiteRasterCache shadow_cache(8 * 1024 * 1024, 128);
 std::unique_ptr<skgpu::graphite::Context> gpu_context;
+VoxFrameMetalQueue* gpu_frame_queue;
 bool gpu_context_attempted = false;
 std::chrono::steady_clock::time_point gpu_context_last_use;
 skgpu::graphite::Context* context()
@@ -55,10 +57,13 @@ skgpu::graphite::Context* context()
         skgpu::graphite::MtlBackendContext backend;
         backend.fDevice.reset((CFTypeRef)MTLCreateSystemDefaultDevice());
         if (!backend.fDevice) return std::unique_ptr<skgpu::graphite::Context>();
-        backend.fQueue.reset((CFTypeRef)[(id<MTLDevice>)backend.fDevice.get() newCommandQueue]);
+        auto* queue = [[VoxFrameMetalQueue alloc] initWithDevice:(id<MTLDevice>)backend.fDevice.get()];
+        backend.fQueue.reset((CFTypeRef)queue);
         skgpu::graphite::ContextOptions options;
         options.fGpuBudgetInBytes = 64 * 1024 * 1024;
-        return skgpu::graphite::ContextFactory::MakeMetal(backend, options);
+        auto result = skgpu::graphite::ContextFactory::MakeMetal(backend, options);
+        if (result) gpu_frame_queue = queue;
+        return result;
         }();
     }
     return gpu_context.get();
@@ -119,6 +124,20 @@ int read_pixels(skgpu::graphite::Context* gpu, skgpu::graphite::Recorder* record
 }
 
 extern "C" __attribute__((visibility("default")))
+void vox_graphite_finish_frame()
+{
+    if (!pthread_main_np()) return;
+    std::lock_guard lock(gpu_mutex);
+    if (!gpu_context || !gpu_frame_queue) return;
+    // All public draws synchronously return owned CPU pixels. Finish any work
+    // remaining after an early return before detaching the underlying queue.
+    gpu_context->submit(skgpu::graphite::SubmitInfo(skgpu::graphite::SyncToCpu::kYes));
+    gpu_context->checkAsyncWorkCompletion();
+    if ([gpu_frame_queue retireCompletedQueue])
+        gpu_context_last_use = std::chrono::steady_clock::now();
+}
+
+extern "C" __attribute__((visibility("default")))
 int vox_graphite_release_idle_graphics_memory()
 {
     if (!pthread_main_np()) return 0;
@@ -130,6 +149,7 @@ int vox_graphite_release_idle_graphics_memory()
     gpu_context->submit(skgpu::graphite::SubmitInfo(skgpu::graphite::SyncToCpu::kYes));
     gpu_context->checkAsyncWorkCompletion();
     gpu_context.reset();
+    gpu_frame_queue = nil;
     gpu_context_attempted = false;
     return 1;
 }
@@ -155,6 +175,7 @@ void vox_graphite_release_unused_graphics_memory()
     // Dropping cache entries alone leaves Metal's per-context driver storage
     // resident. Release the Context and queue; the next draw recreates them.
     gpu_context.reset();
+    gpu_frame_queue = nil;
     gpu_context_attempted = false;
 }
 

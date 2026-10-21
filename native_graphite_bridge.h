@@ -84,6 +84,7 @@ void vox_graphite_picture_release_unused_graphics_memory(void);
 // Idle polling: -1 means a live context is still in use/recently used, 1
 // means it was released, and 0 means there is no context to retire.
 int vox_graphite_release_idle_graphics_memory(void);
+void vox_graphite_finish_frame(void);
 int vox_graphite_picture_release_idle_graphics_memory(void);
 int vox_graphite_draw_picture_pixels(uint8_t *pixels, int width, int height,
     int pitch, const void *bytes, size_t size, const float *matrix);

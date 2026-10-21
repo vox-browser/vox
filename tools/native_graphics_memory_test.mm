@@ -110,6 +110,8 @@ static void check_live_ganesh_image_and_font(int scale)
     assert(image->readPixels(gpu, info, before.data(), info.minRowBytes(), 0, 0));
     ladybird_v_skia_release_unused_graphics_memory();
     ladybird_v_skia_release_unused_graphics_memory();
+    ladybird_v_skia_set_chromium_painting(0);
+    ladybird_v_skia_set_chromium_painting(0);
     assert(s_image_gpu_context.get() == gpu && !gpu->unique());
     assert(image->readPixels(gpu, info, after.data(), info.minRowBytes(), 0, 0));
     assert(before == after);
@@ -173,14 +175,32 @@ int main(int argc, char** argv)
     assert(!dlopen("@rpath/libVoxGraphite.dylib", RTLD_LAZY | RTLD_LOCAL | RTLD_NOLOAD));
     ladybird_v_skia_release_unused_graphics_memory();
     ladybird_v_skia_release_unused_graphics_memory();
+    ladybird_v_skia_set_chromium_painting(0);
+    ladybird_v_skia_set_chromium_painting(0);
     assert(!s_image_gpu_context_attempted && !s_image_gpu_context);
     assert(!dlopen("@rpath/libVoxGraphite.dylib", RTLD_LAZY | RTLD_LOCAL | RTLD_NOLOAD));
     void* library = dlopen(argv[1], RTLD_LAZY | RTLD_LOCAL);
     assert(library);
     auto graphite_purge = symbol<decltype(&vox_graphite_release_unused_graphics_memory)>(
         library, "vox_graphite_release_unused_graphics_memory");
+    auto finish_frame = symbol<decltype(&vox_graphite_finish_frame)>(library, "vox_graphite_finish_frame");
+    auto frame_idle_purge = symbol<decltype(&vox_graphite_release_idle_graphics_memory)>(
+        library, "vox_graphite_release_idle_graphics_memory");
     // A loaded but unused Graphite backend also accepts repeated cleanup.
     graphite_purge(); graphite_purge();
+    finish_frame(); finish_frame();
+    std::array<std::vector<uint8_t>, 8> frame_expected;
+    for (int scale : {1, 2}) for (int kind = 0; kind != 4; ++kind)
+        frame_expected[(scale - 1) * 4 + kind] = graphite_case(library, kind, scale);
+    graphite_purge();
+    // Purging once makes every actual draw a GPU miss. Between those draws,
+    // retire only the completed queue; the Context and pipelines remain live.
+    for (int scale : {1, 2}) for (int kind = 0; kind != 4; ++kind) {
+        assert(frame_expected[(scale - 1) * 4 + kind] == graphite_case(library, kind, scale));
+        finish_frame(); finish_frame();
+        assert(frame_idle_purge() == -1);
+    }
+    std::puts("Graphite completed frame queues: eight exact GPU replays with a retained Context");
     for (int scale : {1, 2}) {
         for (int kind = 0; kind != 4; ++kind) {
             auto before = graphite_case(library, kind, scale);
@@ -209,9 +229,10 @@ int main(int argc, char** argv)
     auto retained_cpu_pixels = graphite_case(library, 3, 1);
     auto* retained_gpu = image_gpu_context();
     assert(retained_gpu);
-    std::thread worker([graphite_purge] {
+    std::thread worker([graphite_purge, finish_frame] {
         ladybird_v_skia_release_unused_graphics_memory();
         graphite_purge();
+        finish_frame();
     });
     worker.join();
     assert(s_image_gpu_context.get() == retained_gpu && s_image_gpu_context_attempted);

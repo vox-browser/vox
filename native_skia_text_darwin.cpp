@@ -739,7 +739,18 @@ extern "C" int ladybird_v_skia_release_idle_graphics_memory()
 
 extern "C" void ladybird_v_skia_set_chromium_painting(int active)
 {
-    if (!active) finish_shared_recording();
+    if (!active) {
+        finish_shared_recording();
+        // Keep the Context/pipelines and reusable pixels, but retire Metal's
+        // completed command queue before the next native frame. Looking up a
+        // backend here must not load it on a page that never used GPU raster.
+        if (void* library = dlopen("@rpath/libVoxGraphite.dylib", RTLD_LAZY | RTLD_LOCAL | RTLD_NOLOAD)) {
+            auto finish = reinterpret_cast<decltype(&vox_graphite_finish_frame)>(
+                dlsym(library, "vox_graphite_finish_frame"));
+            if (finish) finish();
+            dlclose(library);
+        }
+    }
     s_chromium_painting = active != 0;
 }
 
