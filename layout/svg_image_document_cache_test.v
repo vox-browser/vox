@@ -80,7 +80,8 @@ fn test_svg_background_sharing_preserves_layout_sizes_clean_display_lists_and_re
 	mut mutable_stop := unsafe { &dom.Element(stop) }
 	mutable_stop.set_attribute_value('stop-color', 'blue')
 	_ = run_document_layout(isolated, 20, 10) or { panic('missing mutated SVG layout') }
-	mutated_commands := display_list_commands(isolated.record_display_list()?)
+	mutated_list := isolated.record_display_list() or { panic('missing mutated SVG paint') }
+	mutated_commands := display_list_commands(mutated_list)
 	paths := mutated_commands.filter(it.kind == 'draw_svg_path')
 	gradient_paint := paths[0].fill_linear_gradient() or { panic('missing mutated gradient') }
 	assert gradient_paint.gradient.color_stops[0].color == painting.Color{0, 0, 255, 255}
