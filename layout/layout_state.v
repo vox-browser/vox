@@ -394,12 +394,11 @@ fn (mut u UsedValues) set_node(node &NodeWithStyle, containing_block_used_values
 	u.containing_block_used_values_ = containing_block_used_values
 	computed := node.computed_values()
 
-	min_width := resolve_definite_size(node, computed, computed.size_value(.min_width), containing_block_used_values, true, u)
-	max_width := resolve_definite_size(node, computed, computed.size_value(.max_width), containing_block_used_values, true, u)
-	min_height := resolve_definite_size(node, computed, computed.size_value(.min_height), containing_block_used_values, false, u)
-	max_height := resolve_definite_size(node, computed, computed.size_value(.max_height), containing_block_used_values, false, u)
-
 	if width := resolve_definite_size(node, computed, computed.size_value(.width), containing_block_used_values, true, u) {
+		// Constraints clamp a resolved axis; an indefinite axis has no size to
+		// clamp until its formatting context resolves it later.
+		min_width := resolve_definite_size(node, computed, computed.size_value(.min_width), containing_block_used_values, true, u)
+		max_width := resolve_definite_size(node, computed, computed.size_value(.max_width), containing_block_used_values, true, u)
 		u.content_width_ = clamp_to_max_dimension_value(width)
 		u.has_definite_width_ = true
 		if minimum := min_width {
@@ -414,6 +413,8 @@ fn (mut u UsedValues) set_node(node &NodeWithStyle, containing_block_used_values
 		}
 	}
 	if height := resolve_definite_size(node, computed, computed.size_value(.height), containing_block_used_values, false, u) {
+		min_height := resolve_definite_size(node, computed, computed.size_value(.min_height), containing_block_used_values, false, u)
+		max_height := resolve_definite_size(node, computed, computed.size_value(.max_height), containing_block_used_values, false, u)
 		u.content_height_ = clamp_to_max_dimension_value(height)
 		u.has_definite_height_ = true
 		if minimum := min_height {
