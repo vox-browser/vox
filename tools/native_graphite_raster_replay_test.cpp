@@ -51,6 +51,11 @@ int main(int argc, char** argv)
         };
         compare(); compare();
         source[700 * 700 - 1] ^= 31; compare(); compare();
+        backdrop[(height / 2) * pitch + (width / 2) * 4] ^= 73; compare(); compare();
+        photo.matrix[2] = .375f; compare(); compare();
+        photo.matrix[0] = .9f; photo.matrix[4] = .95f; compare(); compare();
+        for (int i = 4; i < 12; ++i) photo.clip[i] = 5.5f;
+        compare(); compare();
         backdrop[(height - 1) * pitch + width * 4 - 1] ^= 31; compare(); compare();
         clear(); compare();
     }

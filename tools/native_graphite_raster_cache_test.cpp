@@ -468,6 +468,8 @@ int main()
             for (int x = 0; x < width * 4; ++x) assert(surface[y * pitch + x] == (x * 17 + y * 31) % 251);
             for (int x = width * 4; x < pitch; ++x) assert(surface[y * pitch + x] == 201);
         }
+        reset(); surface[(height / 2) * pitch + (width / 2) * 4] ^= 31;
+        assert(photos.prepare(photo, width, height, pitch, true, surface.data()).hit);
         reset(); planes.back()++;
         assert(!photos.prepare(photo, width, height, pitch, true, surface.data()).hit);
         planes.back()--; surface[(height - 1) * pitch + width * 4 - 1]++;
@@ -477,6 +479,20 @@ int main()
         assert(!photos.prepare(photo, 2048, 1024, 2048 * 4, true, oversized.data()).pending);
         VoxGraphiteRasterCache small(8 * 1024 * 1024);
         assert(!small.prepare(photo, width, height, pitch, true, surface.data()).pending);
+        // Partial opacity and transforms without the coverage proof still
+        // compare every backdrop pixel, including the image's center.
+        for (bool rotated : {false, true}) {
+            VoxGraphiteRasterCache conservative;
+            auto changed_photo = photo;
+            if (rotated) changed_photo.matrix[1] = .1f;
+            else changed_photo.opacity = .5f;
+            reset();
+            auto request = conservative.prepare(changed_photo, width, height, pitch, true, surface.data());
+            assert(request.pending);
+            conservative.finish(std::move(request), surface.data(), pitch);
+            reset(); surface[(height / 2) * pitch + (width / 2) * 4] ^= 31;
+            assert(!conservative.prepare(changed_photo, width, height, pitch, true, surface.data()).hit);
+        }
     }
     std::cout << "Graphite raster cache: source/backdrop mutation, geometry, profiles, strides, YUV, LRU and bounds passed\n";
 }

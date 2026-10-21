@@ -4,6 +4,7 @@
 #include "native_graphite_bridge.h"
 #include "native_raster_snapshot.h"
 #include <algorithm>
+#include <cmath>
 #include <cstring>
 #include <list>
 #include <memory>
@@ -50,6 +51,10 @@ class VoxGraphiteRasterCache {
         {
             return copy.equal(pixels, bytes, pitch, height);
         }
+        bool equal(VoxRasterSnapshot const& copy, VoxRasterSnapshot::Rect ignore) const
+        {
+            return copy.equal_outside_rectangle(pixels, bytes, pitch, height, ignore);
+        }
         std::vector<uint8_t> copy() const
         {
             std::vector<uint8_t> result(bytes * height);
@@ -74,6 +79,46 @@ class VoxGraphiteRasterCache {
             && a.nearest == b.nearest && a.has_color_profile == b.has_color_profile
             && (!a.has_color_profile || !std::memcmp(a.color_profile, b.color_profile,
                 sizeof(a.color_profile)));
+    }
+    static VoxRasterSnapshot::Rect opaque_image_interior(VoxGraphiteImage const& image,
+        int width, int height)
+    {
+        // Planar YUV has no alpha plane. Restrict the proof to complete source
+        // samples and axis-aligned positive transforms; all other images keep
+        // exact backdrop comparisons. Leave two device pixels at every edge
+        // for clipping/MSAA/filtering coverage, including fractional geometry.
+        auto const* m = image.matrix;
+        if (!(image.flags & 4) || image.opacity != 1 || image.has_color_profile
+            || m[1] != 0 || m[3] != 0 || m[6] != 0 || m[7] != 0 || m[8] != 1
+            || !(m[0] > 0) || !(m[4] > 0)) return {};
+        for (int i = 0; i < 9; ++i) if (!std::isfinite(m[i])) return {};
+        for (int i = 0; i < 4; ++i)
+            if (!std::isfinite(image.source[i]) || !std::isfinite(image.destination[i])) return {};
+        for (float v : image.clip) if (!std::isfinite(v)) return {};
+        if (image.source[0] < 0 || image.source[1] < 0
+            || !(image.source[2] > 0) || !(image.source[3] > 0)
+            || double(image.source[0]) + image.source[2] > image.width
+            || double(image.source[1]) + image.source[3] > image.height
+            || !(image.destination[2] > 0) || !(image.destination[3] > 0)
+            || !(image.clip[2] > 0) || !(image.clip[3] > 0)) return {};
+        for (int i = 4; i < 12; ++i) if (image.clip[i] < 0) return {};
+        double left = std::max(double(image.destination[0]),
+            double(image.clip[0]) + std::max(image.clip[4], image.clip[10]));
+        double top = std::max(double(image.destination[1]),
+            double(image.clip[1]) + std::max(image.clip[5], image.clip[7]));
+        double right = std::min(double(image.destination[0]) + image.destination[2],
+            double(image.clip[0]) + image.clip[2] - std::max(image.clip[6], image.clip[8]));
+        double bottom = std::min(double(image.destination[1]) + image.destination[3],
+            double(image.clip[1]) + image.clip[3] - std::max(image.clip[9], image.clip[11]));
+        auto bound = [](double value, int limit) { return size_t(std::clamp(value, 0.0, double(limit))); };
+        VoxRasterSnapshot::Rect result {
+            bound(std::ceil(left * m[0] + m[2] + 2), width),
+            bound(std::ceil(top * m[4] + m[5] + 2), height),
+            bound(std::floor(right * m[0] + m[2] - 2), width),
+            bound(std::floor(bottom * m[4] + m[5] - 2), height)
+        };
+        if (result.left >= result.right || result.top >= result.bottom) return {};
+        return result;
     }
     static bool same_shape(VoxGraphiteShape const& a, VoxGraphiteShape const& b)
     {
@@ -279,6 +324,8 @@ private:
             + backdrop.bytes * backdrop.height * (has_background ? 2 : 1)
             + parameters.tiles.size() * sizeof(VoxGraphiteImage);
         if (cost > limit) return request;
+        auto opaque = is_image && parameters.tiles.empty()
+            ? opaque_image_interior(parameters.image, width, height) : VoxRasterSnapshot::Rect{};
         for (auto it = entries.begin(); it != entries.end(); ++it) {
             auto const& entry = **it;
             if (entry.width != width || entry.height != height
@@ -292,7 +339,7 @@ private:
                     : entry.is_path ? !same_path(entry.path, parameters.path)
                     : entry.is_shadow ? !same_shadow(entry.shadow, parameters.shadow)
                                     : !same_image(entry.image, parameters.image))
-                || (has_background && !backdrop.equal(entry.background))
+                || (has_background && !backdrop.equal(entry.background, opaque))
                 || !extra.equal(entry.extra) || !source.equal(*entry.source)) continue;
             entry.output.copy_to(pixels, backdrop.bytes, backdrop.pitch, backdrop.height);
             entries.splice(entries.begin(), entries, it);

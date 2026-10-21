@@ -11,6 +11,9 @@
 // regions use word runs; noisy images stay raw. A hit compares/expands directly
 // into the caller's rows, without allocating a temporary decoded bitmap.
 class VoxRasterSnapshot {
+public:
+    struct Rect { size_t left, top, right, bottom; };
+private:
     std::vector<uint8_t> raw_;
     std::vector<uint32_t> packed_;
     size_t logical_bytes_ = 0;
@@ -46,9 +49,19 @@ class VoxRasterSnapshot {
             for (size_t i = start; i < at; ++i) emit(word(bytes + i * 4));
         }
     }
+    static bool equal_span(uint8_t const* first, uint8_t const* second,
+        size_t bytes, size_t x, size_t y, Rect ignore)
+    {
+        if (y < ignore.top || y >= ignore.bottom || x >= ignore.right
+            || x + bytes <= ignore.left) return !std::memcmp(first, second, bytes);
+        size_t before = ignore.left > x ? ignore.left - x : 0;
+        size_t after = std::min(bytes, ignore.right > x ? ignore.right - x : 0);
+        return !std::memcmp(first, second, before)
+            && !std::memcmp(first + after, second + after, bytes - after);
+    }
     template<bool Compare>
     bool replay(uint8_t const* input, uint8_t* output, size_t row_bytes,
-        size_t pitch, size_t height) const
+        size_t pitch, size_t height, Rect ignore) const
     {
         if (pitch < row_bytes || (height && row_bytes > SIZE_MAX / height)
             || row_bytes * height != logical_bytes_ || (!packed_.empty() && row_bytes % 4)) return false;
@@ -56,7 +69,8 @@ class VoxRasterSnapshot {
         if (packed_.empty()) {
             for (size_t y = 0; y < height; ++y) {
                 if constexpr (Compare) {
-                    if (std::memcmp(input + y * pitch, raw_.data() + y * row_bytes, row_bytes)) return false;
+                    if (!equal_span(input + y * pitch, raw_.data() + y * row_bytes,
+                            row_bytes, 0, y, ignore)) return false;
                 } else std::memcpy(output + y * pitch, raw_.data() + y * row_bytes, row_bytes);
             }
             return true;
@@ -72,12 +86,16 @@ class VoxRasterSnapshot {
                 if (repeated) {
                     for (size_t i = 0; i < count; ++i) {
                         if constexpr (Compare) {
+                            if (y >= ignore.top && y < ignore.bottom
+                                && x + i * 4 >= ignore.left && x + i * 4 < ignore.right) continue;
                             if (word(input + y * pitch + x + i * 4) != value) return false;
                         } else std::memcpy(output + y * pitch + x + i * 4, &value, 4);
                     }
                 } else {
                     if constexpr (Compare) {
-                        if (std::memcmp(input + y * pitch + x, packed_.data() + at, count * 4)) return false;
+                        if (!equal_span(input + y * pitch + x,
+                                reinterpret_cast<uint8_t const*>(packed_.data() + at),
+                                count * 4, x, y, ignore)) return false;
                     } else std::memcpy(output + y * pitch + x, packed_.data() + at, count * 4);
                     at += count;
                 }
@@ -106,11 +124,21 @@ public:
     size_t size() const { return raw_.size() + packed_.size() * 4; }
     bool equal(uint8_t const* pixels, size_t row_bytes, size_t pitch, size_t height) const
     {
-        return replay<true>(pixels, nullptr, row_bytes, pitch, height);
+        return replay<true>(pixels, nullptr, row_bytes, pitch, height, Rect{});
+    }
+    // Only a caller with an independent opacity/coverage proof may ignore
+    // these whole pixels. Edges, padding and all other input remain exact.
+    bool equal_outside_rectangle(uint8_t const* pixels, size_t row_bytes,
+        size_t pitch, size_t height, Rect ignore) const
+    {
+        if (ignore.left > ignore.right || ignore.right > row_bytes / 4
+            || ignore.top > ignore.bottom || ignore.bottom > height) return false;
+        ignore.left *= 4; ignore.right *= 4;
+        return replay<true>(pixels, nullptr, row_bytes, pitch, height, ignore);
     }
     bool copy_to(uint8_t* pixels, size_t row_bytes, size_t pitch, size_t height) const
     {
-        return replay<false>(nullptr, pixels, row_bytes, pitch, height);
+        return replay<false>(nullptr, pixels, row_bytes, pitch, height, Rect{});
     }
 };
 #endif
