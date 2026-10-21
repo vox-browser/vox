@@ -10,7 +10,8 @@ __global (
 
 struct DocumentGeometryScope {
 mut:
-	scratch &platform.ThreadScratchScope = unsafe { nil }
+	scratch platform.ThreadScratchScope
+	active bool
 }
 
 fn begin_document_geometry_scratch(document &dom.Document) DocumentGeometryScope {
@@ -18,7 +19,7 @@ fn begin_document_geometry_scratch(document &dom.Document) DocumentGeometryScope
 		if document.native_storage() != unsafe { nil }
 			&& platform.current_retained_arena() != unsafe { nil } {
 			document_geometry_depth++
-			return DocumentGeometryScope{ scratch: platform.begin_thread_scratch('document geometry') }
+			return DocumentGeometryScope{ scratch: platform.begin_thread_scratch('document geometry'), active:true }
 		}
 	}
 	return DocumentGeometryScope{}
@@ -41,10 +42,10 @@ fn begin_nested_geometry_scratch(document &dom.Document, mode LayoutMode) Docume
 }
 
 fn (mut scope DocumentGeometryScope) finish() {
-	if scope.scratch == unsafe { nil } { return }
+	if !scope.active { return }
 	scope.scratch.finish()
 	document_geometry_depth--
-	scope.scratch = unsafe { nil }
+	scope.active = false
 }
 
 // Algorithm workspaces retire at the geometry boundary; published geometry

@@ -1,44 +1,58 @@
 module platform
 
-import os
+#include "@DIR/thread_scratch_leases.h"
+
+@[typedef]
+struct C.VoxThreadScratchLease {
+mut:
+	scope voidptr
+	label &u8
+	label_len i64
+	generation u64
+	active i32
+	entered i32
+	poison i32
+}
+
+fn C.vox_thread_scratch_acquire() &C.VoxThreadScratchLease
+fn C.vox_thread_scratch_poison_enabled(&u8, i64) i32
 
 // Short-lived synchronous work on the calling thread. No V allocation made
 // inside this scope may escape it; native APIs must copy the inputs they keep.
 // Unlike the reusable UI arenas this scope is also usable by fetch workers.
-@[heap]
 pub struct ThreadScratchScope {
-mut:
-	scope   voidptr
-	entered bool
-	poison  bool
-	label   string
+	lease &C.VoxThreadScratchLease = unsafe { nil }
+	generation u64
 }
 
-pub fn begin_thread_scratch(label string) &ThreadScratchScope {
-	// Allocate the descriptor before entering its temporary payload scope.
-	mut scratch := &ThreadScratchScope{ label: label }
+pub fn begin_thread_scratch(label string) ThreadScratchScope {
 	$if prealloc {
 		verify_prealloc_layout()
-		scratch.poison = os.getenv('VOX_ARENA_POISON') == '1'
-			|| label in os.getenv('VOX_ARENA_NO_REUSE').split(',')
-		if scratch.poison { C.vox_install_poison_fault_handler() }
+		mut lease := C.vox_thread_scratch_acquire()
+		lease.label = label.str
+		lease.label_len = label.len
+		lease.poison = C.vox_thread_scratch_poison_enabled(label.str, label.len)
+		if lease.poison != 0 { C.vox_install_poison_fault_handler() }
 		remember_current_arena_tail()
-		scratch.scope = unsafe { prealloc_scope_begin() }
-		scratch.entered = true
+		lease.scope = unsafe { prealloc_scope_begin() }
+		lease.entered = 1
+		return ThreadScratchScope{lease:lease, generation:lease.generation}
 	}
-	return scratch
+	return ThreadScratchScope{}
 }
 
 // Restore the caller's allocation target while keeping temporary bytes alive,
 // allowing an error message to be copied out before finish() frees them.
-pub fn (mut scratch ThreadScratchScope) leave() {
+pub fn (scratch ThreadScratchScope) leave() {
 	$if prealloc {
-		if scratch.entered {
+		mut lease := scratch.lease
+		if lease == unsafe { nil } || lease.active == 0 || lease.generation != scratch.generation { return }
+		if lease.entered != 0 {
 			// A retained allocation can grow this scope's parent while the
 			// temporary scope is active. V's unlink restores saved_next from
 			// begin(), which would discard that new parent chain. Preserve the
 			// current sibling when it belongs to the parent rather than us.
-			mut scope := unsafe { &PreallocScopeView(scratch.scope) }
+			mut scope := unsafe { &PreallocScopeView(lease.scope) }
 			parent := scope.previous
 			if parent != unsafe { nil } {
 				next := parent.next
@@ -47,22 +61,27 @@ pub fn (mut scratch ThreadScratchScope) leave() {
 					scope.saved_next = next
 				}
 			}
-			unsafe { prealloc_scope_leave(scratch.scope) }
+			unsafe { prealloc_scope_leave(lease.scope) }
 			set_current_block(latest_arena_block(current_block()))
-			scratch.entered = false
+			lease.entered = 0
 		}
 	}
 }
 
-pub fn (mut scratch ThreadScratchScope) finish() {
+pub fn (scratch ThreadScratchScope) finish() {
 	$if prealloc {
-		if scratch.scope == unsafe { nil } { return }
+		mut lease := scratch.lease
+		if lease == unsafe { nil } || lease.active == 0 || lease.generation != scratch.generation { return }
 		scratch.leave()
-		if scratch.poison {
-			poison_prealloc_scope(&PreallocScopeView(scratch.scope), scratch.label)
+		if lease.poison != 0 {
+			label := unsafe { tos(lease.label, int(lease.label_len)) }
+			poison_prealloc_scope(&PreallocScopeView(lease.scope), label)
 		} else {
-			unsafe { prealloc_scope_free_after(scratch.scope) }
+			unsafe { prealloc_scope_free_after(lease.scope) }
 		}
-		scratch.scope = unsafe { nil }
+		lease.scope = unsafe { nil }
+		lease.label = unsafe { nil }
+		lease.label_len = 0
+		lease.active = 0
 	}
 }
