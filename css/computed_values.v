@@ -399,15 +399,15 @@ fn resolve_computed_values_for_document_impl(style &ComputedProperties, document
  defer { record_diagnostic_instruction_scope(10, diagnostic_scope_start) }
 
 	mut computed_style := unsafe { &ComputedProperties(style) }
-	previous_provenance := computed_style.computed_layout_cache().resolution_provenance
+	previous_provenance := computed_style.geometry_provenance()
 	font_list := computed_style.computed_font_list(css_style_computer_for(document).font_computer())
 	// `line-height: normal` is derived from the selected font's ascent and
 	// descent, so make that face available before resolving layout-facing slots.
 	_ = computed_style.first_available_computed_font(css_style_computer_for(document).font_computer())
 	cache := computed_style.computed_layout_cache()
 	if anonymous_source == none && computed_style.computed_values_resolved_
-		&& voidptr(cache.document_resolution_owner) == voidptr(document)
 		&& previous_provenance != unsafe { nil }
+		&& voidptr(previous_provenance.document) == voidptr(document)
 		&& voidptr(previous_provenance.token) == voidptr(computed_style.computed_property_graph_token_)
 		&& voidptr(previous_provenance.font_computer) == voidptr(computed_style.cached_computed_font_list_owner_)
 		&& previous_provenance.matches(computed_style)
@@ -456,7 +456,11 @@ fn resolve_computed_values_for_document_impl(style &ComputedProperties, document
 		}
 		samples.leave()
 	}
+	// Resolve counter definitions too before the pure geometry/color write
+	// scope: loading a custom registry can parse CSS and yield to native work.
+	resolved_list_style := style.list_style_type(document)
 	// Font discovery is complete before the pure geometry/color write scope.
+	mut initial_snapshot := begin_initial_layout_snapshot(computed_style, document, anonymous_source != none)
 	owns_cache_write := computed_style.begin_computed_layout_cache_write()
 	defer {
 		// No callbacks run in the pure geometry/color write scope. Publish the
@@ -464,6 +468,7 @@ fn resolve_computed_values_for_document_impl(style &ComputedProperties, document
 		computed_style.computed_layout_cache_.document_resolution_owner = document
 		computed_style.publish_computed_geometry_provenance(previous_provenance)
 		computed_style.finish_computed_layout_cache_write(owns_cache_write)
+		initial_snapshot.publish(mut computed_style)
 	}
 	values := if source := resolved_anonymous_source {
 		resolve_anonymous_computed_geometry(style, source)
@@ -511,7 +516,7 @@ fn resolve_computed_values_for_document_impl(style &ComputedProperties, document
 	mutable_values.set_text_shadow(computed_values_shadow(style, .text_shadow, context))
 	mutable_values.set_box_shadow(computed_values_shadow(style, .box_shadow, context))
 	mutable_values.set_scrollbar_color(computed_values_scrollbar_color(style, context))
-	mutable_values.set_list_style_type(style.list_style_type(document))
+	mutable_values.set_list_style_type(resolved_list_style)
 
 	mut left := values.border_left()
 	left.color = color_from_computed_value(style.color_or_fallback(.border_left_color, context, ComputedColor.rgba(color.r, color.g, color.b, color.a)))

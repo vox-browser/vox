@@ -1667,6 +1667,8 @@ mut:
 	computed_content_storage_ &ContentData = unsafe { nil }
 	computed_property_graph_token_ &ComputedPropertyGraphMutationToken = unsafe { nil }
 	computed_layout_cache_ &ComputedLayoutCache = unsafe { nil }
+	shared_geometry_provenance_ &ComputedGeometryProvenance = unsafe { nil }
+	shared_geometry_cache_ &ComputedLayoutCache = unsafe { nil }
 	// Density conversion is memoized independently of resolved layout values.
 	device_layout_projection_ &DeviceLayoutStyleProjection = unsafe { nil }
 	// Serial number pairing this style with the snapshots it may rewrite in
@@ -10815,6 +10817,7 @@ pub mut:
 	has_result_cache_                                    &HasResultCache = &HasResultCache{}
 	matching_rule_candidates_                            &MatchingRuleCandidateScratch = unsafe { nil }
 	matching_rule_sets_ &MatchingRuleSetWorkspacePool = unsafe { nil }
+	initial_layout_snapshots_ &InitialLayoutSnapshotPool = unsafe { nil }
 	cascade_scratch_ &CascadeScratchPool = unsafe { nil }
 	css_animation_storage_                               &CSSAnimationStorage = unsafe { nil }
 	css_transition_storage_                              &CSSTransitionStorage = unsafe { nil }

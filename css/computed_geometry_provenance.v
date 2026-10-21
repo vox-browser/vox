@@ -14,6 +14,7 @@ mut:
 
 @[heap]
 struct ComputedGeometryProvenance {
+	document                      &dom.Document = unsafe { nil }
 	token                         &ComputedPropertyGraphMutationToken
 	generation                    u64
 	viewport                      CSSPixelRect
@@ -24,6 +25,14 @@ struct ComputedGeometryProvenance {
 	font_list                     &FontCascadeList
 	font_computer                 &FontComputer
 	font_generation               u64
+}
+
+fn (c &ComputedProperties) geometry_provenance() &ComputedGeometryProvenance {
+	if c.shared_geometry_cache_ != unsafe { nil }
+		&& voidptr(c.shared_geometry_cache_) == voidptr(c.computed_layout_cache_) {
+		return c.shared_geometry_provenance_
+	}
+	return c.computed_layout_cache().resolution_provenance
 }
 
 struct AnonymousComputedGeometrySource {
@@ -77,7 +86,8 @@ fn (p &ComputedGeometryProvenance) matches(c &ComputedProperties) bool {
 }
 
 fn (mut c ComputedProperties) publish_computed_geometry_provenance(previous &ComputedGeometryProvenance) {
-	if previous != unsafe { nil } && previous.matches(c) {
+	if previous != unsafe { nil } && previous.matches(c)
+		&& voidptr(previous.document) == voidptr(c.computed_layout_cache_.document_resolution_owner) {
 		c.computed_layout_cache_.resolution_provenance = previous
 		return
 	}
@@ -87,6 +97,7 @@ fn (mut c ComputedProperties) publish_computed_geometry_provenance(previous &Com
 	fonts := c.cached_computed_font_list_ or { return }
 	c.computed_property_graph_token_.observed = true
 	c.computed_layout_cache_.resolution_provenance = &ComputedGeometryProvenance{
+		document:                      c.computed_layout_cache_.document_resolution_owner
 		token:                         c.computed_property_graph_token_
 		generation:                    c.computed_property_graph_token_.generation
 		viewport:                      c.viewport_rect_
@@ -104,12 +115,12 @@ fn (c &ComputedProperties) anonymous_computed_geometry_source(clone &ComputedPro
 	cache := c.computed_layout_cache_
 	if !c.computed_values_resolved_ || cache == unsafe { nil } || c.has_animated_properties()
 		|| c.has_animated_custom_properties() || c.line_height_ != none
-		|| cache.resolution_provenance == unsafe { nil } || !cache.resolution_provenance.matches(c) {
+		|| c.geometry_provenance() == unsafe { nil } || !c.geometry_provenance().matches(c) {
 		return none
 	}
 	// The clone has an independent raw property array but must retain the
 	// exact context against which these inherited geometry values resolved.
-	p := cache.resolution_provenance
+	p := c.geometry_provenance()
 	if p.viewport != clone.viewport_rect_ || p.root_font_size != clone.root_font_size_px_
 		|| p.root_line_height != clone.root_line_height_px_
 		|| p.root_font_depends_on_viewport != clone.root_font_metrics_depend_on_viewport_metrics_
