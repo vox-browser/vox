@@ -27,7 +27,7 @@ fn effect_leaf_ink_bounds_with_precision_guard(command &PaintCommand, native_pre
 	mut rect := LayoutRect{command.x, command.y, command.width, command.height}
 	mut outset := f64(0)
 	match command.kind {
-		'fill_rect', 'fill_rounded_rect', 'fill_ellipse',
+		'fill_rect', 'fill_rounded_rect', 'fill_ellipse', 'begin_background_text_clip',
 		'draw_replaced_image', 'draw_svg_image' {
 			if command.outer_shadow || command.blur != 0 { return none }
 		}
@@ -100,8 +100,9 @@ fn effect_leaf_ink_bounds_with_precision_guard(command &PaintCommand, native_pre
 	return mapped
 }
 
-// Only ordinary leaves are eligible. Callers keep resource/effect command
-// groups intact: offscreen source pixels can still feed a filter or mask.
+// Ordinary leaves and a text clip's final output rectangle are eligible.
+// Callers discard a text clip only as a complete group; individual source
+// pixels inside a resource/filter group can still contribute visible output.
 pub fn paint_leaf_is_outside_canvas(command &PaintCommand, page_x f64, page_y f64,
     width f64, height f64) bool {
     if command.outer_shadow || command.blur != 0 || width <= 0 || height <= 0 { return false }
