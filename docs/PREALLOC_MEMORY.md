@@ -1,15 +1,15 @@
 # Bounded memory under `-prealloc`
 
-`LADYBIRD_V_GC=prealloc sh build-prod-browser.sh` builds Vox with V's
-`-prealloc` allocator instead of the Boehm collector. Every thread allocates by
+The macOS browser build defaults to V's `-prealloc` allocator. Set
+`LADYBIRD_V_GC=boehm` to build with the Boehm collector. Every prealloc thread allocates by
 bumping a pointer through its arena; `free()` does nothing. Memory comes back
 only when a whole arena is reset or released, so the rule for every piece of
 retained state is: for a fixed live workload, retained memory must stop
 growing after warm-up, however many frames or replacements happen.
 
-Boehm remains the default build. This document records what the `-prealloc`
-build already bounds, the contracts code must follow, how to measure it, and
-what remains before it can become the default.
+This document records what the `-prealloc` build already bounds, the contracts
+code must follow, how to measure it, and what remains to meet the RAM target.
+The default has changed; beating Brave has not yet been demonstrated.
 
 ## Ownership classes
 
@@ -260,7 +260,7 @@ The slopes are linear fits over samples from 20 to 60 seconds. Final physical
 footprints were 2389, 2223 and 1132 MiB respectively. The measurement helper
 terminated each browser normally for this experiment (`SIGTERM`, exit -15).
 This reduces idle growth by about 68%, but still leaves growing memory and a
-large gap to Boehm. It does not justify changing the default allocator.
+large gap to Boehm. That experiment alone did not establish allocator readiness.
 Binary hashes, compiler and source identity, raw samples and logs are retained
 under `Build/prealloc-reuse/`, including `metadata.json`,
 `memory-summary.json`, `before.json`, `after.json` and
@@ -345,7 +345,7 @@ that the GPU path contributes that cost, rather than a V document arena. It is
 not a production renderer change or a visual-conformance result. Existing Skia
 context/cache cleanup does not return all of this process-attributed memory.
 
-## Remaining work before `-prealloc` becomes the default
+## Remaining work toward the RAM target
 
 - Opacity samples that stay nonzero keep the paint plan and phase cache;
   replay scales the cached commands. Background-color, color and
@@ -395,11 +395,14 @@ so the helper was removed from the source and build. The prototype and measured
 logs remain under `Build/prealloc-document/`; it is not an enabled renderer.
 
 These ownership and allocation checks do not establish the browser RAM target.
-The latest validated clean optimized Pikabu endpoint is 950.8 MiB
-(`native-38-optimized-verified/1-vox/result.json`), above the verified Brave
-endpoint. This includes the parent block-chain repair below. A diagnostic run of an earlier binary
+The latest validated clean optimized Pikabu endpoint is 934.6 MiB
+(`native-89-optimized-foreground/1-vox/result.json`), with a latter-half slope
+of 135.2 KiB/s. The foreground checks pass and its completed document retains
+15 stories and 34 story images. It remains above the 454.6 MiB Brave reference.
+This includes the parent block-chain repair below. A diagnostic run of an earlier binary
 faulted in `native_replay_font_path`; that run supplied allocation samples,
-not a valid memory endpoint. Prealloc remains opt-in while the target is unmet.
+not a valid memory endpoint. Prealloc is the macOS default while the RAM target
+remains unmet.
 
 ### Parent block chains and small idle allocations
 
