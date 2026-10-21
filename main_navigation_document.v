@@ -67,6 +67,7 @@ fn parse_browser_navigation_document_with_scripting(markup string, document_url 
 // before the tokenizer consumes them: a BOM wins over the transport charset,
 // which wins over a meta declaration.
 fn decode_browser_navigation_response(body string, content_type string) (string, string) {
+	mut workspace := platform.begin_thread_scratch('navigation text decoding')
 	transport_encoding := if mime := mimesniff.MimeType.parse(content_type) {
 		mime.parameters()['charset']
 	} else {
@@ -77,7 +78,11 @@ fn decode_browser_navigation_response(body string, content_type string) (string,
 		panic(err)
 	}
 	markup := decoder.decode(body.bytes(), encoding.TextDecodeOptions{}) or { panic(err) }
-	return markup, encoding_name
+	workspace.leave()
+	owned_markup := markup.clone()
+	owned_encoding := encoding_name.clone()
+	workspace.finish()
+	return owned_markup, owned_encoding
 }
 
 fn loaded_browser_navigation_input(loaded LoadedPage) (string, ?string) {
