@@ -11,6 +11,7 @@ struct MatchingRuleCandidateBuffer {
 mut:
 	rules []ScopedMatchingRule
 	depth int
+	context MatchContext = MatchContext{has_result_cache: unsafe { nil }}
 }
 
 @[heap]
@@ -47,6 +48,7 @@ fn (computer &StyleComputer) release_matching_rule_candidates(mut buffer Matchin
 	assert scratch.active_depth == buffer.depth + 1
 	scratch.active_depth--
 	buffer.rules = unsafe { rules }
+	buffer.context = MatchContext{has_result_cache: unsafe { nil }}
 	// Clear the live prefix as well as its length. The collector must not retain
 	// rules or shadow scopes from a sheet which is later removed from the page.
 	unsafe { buffer.rules.reset() }

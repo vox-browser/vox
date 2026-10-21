@@ -2404,7 +2404,9 @@ pub fn style_computer_collect_matching_rules_in_scope(style_computer &StyleCompu
 		if root := rule_root {
 			rule_shadow_root_for_context = unsafe { &dom.ShadowRoot(root) }
 		}
-		mut context := MatchContext{
+		// Matching is synchronous. Reuse the context allocation while resetting
+		// every rule's subject, shadow traversal state and attempted metadata.
+		candidate_buffer.context = MatchContext{
 			style_sheet_for_rule: rule_to_run.sheet
 			subject: abstract_element.element()
 			rule_shadow_root: rule_shadow_root_for_context
@@ -2428,7 +2430,7 @@ pub fn style_computer_collect_matching_rules_in_scope(style_computer &StyleCompu
 		if selector.is_slotted() {
 			if abstract_element.element().as_node().assigned_slot_internal() == none
 				|| subject_is_reslotted_slot {
-				style_scope_merge_attempted_pseudo_class_matches(mut attempted_pseudo_class_matches, context)
+				style_scope_merge_attempted_pseudo_class_matches(mut attempted_pseudo_class_matches, candidate_buffer.context)
 				continue
 			}
 			// We're collecting rules for element, which is assigned to a slot.
@@ -2448,21 +2450,21 @@ pub fn style_computer_collect_matching_rules_in_scope(style_computer &StyleCompu
 				slot = style_scope_slot_node(current_slot).assigned_slot_internal()
 			}
 			if actual_slot := matching_slot {
-				context.slotted_element = abstract_element.element()
+				candidate_buffer.context.slotted_element = abstract_element.element()
 				matching_slot_element := style_scope_matching_slot_element(actual_slot)
-				context.subject = matching_slot_element
+				candidate_buffer.context.subject = matching_slot_element
 
 				mut slot_shadow_host := ?&dom.Element(none)
 				if slot_shadow_root := style_scope_slot_node(actual_slot).root().as_shadow_root() {
 					slot_shadow_host = slot_shadow_root.host()
 				}
-				did_match = matches(selector, matching_slot_element, slot_shadow_host, mut context, PseudoElement.slotted, selector_scope, .normal, none)
+				did_match = matches(selector, matching_slot_element, slot_shadow_host, mut candidate_buffer.context, PseudoElement.slotted, selector_scope, .normal, none)
 			}
 		} else {
-			did_match = matches(selector, abstract_element.element(), shadow_host_to_use, mut context, style_scope_pseudo_element_from_abstract_element(abstract_element), selector_scope, .normal, none)
+			did_match = matches(selector, abstract_element.element(), shadow_host_to_use, mut candidate_buffer.context, style_scope_pseudo_element_from_abstract_element(abstract_element), selector_scope, .normal, none)
 		}
 
-		style_scope_merge_attempted_pseudo_class_matches(mut attempted_pseudo_class_matches, context)
+		style_scope_merge_attempted_pseudo_class_matches(mut attempted_pseudo_class_matches, candidate_buffer.context)
 		if did_match {
 			if container_rule := rule_to_run.container_rule {
 				contains_size_feature := container_rule.container_rule_contains_size_feature()

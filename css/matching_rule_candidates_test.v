@@ -1,6 +1,7 @@
 module css
 
 import dom
+import platform
 
 fn candidate_scratch_element(document &dom.Document, name string, classes string) &dom.Element {
 	mut element := document.create_element_ns('http://www.w3.org/1999/xhtml', name) or {
@@ -12,6 +13,30 @@ fn candidate_scratch_element(document &dom.Document, name string, classes string
 
 fn candidate_rule_snapshot(rules []ScopedMatchingRule) []string {
 	return rules.map('${it.rule.selector.serialize()}:${it.rule.rule_index}:${it.rule.specificity}:${it.scope_proximity}')
+}
+
+fn test_matching_query_reuses_context_for_rejected_candidates() {
+	mut document := dom.Document.create(dom.url_about_blank())
+	defer { document.finalize() }
+	element := candidate_scratch_element(document, 'div', '')
+	computer := StyleComputer.new(document)
+	mut scope := css_style_scope_for_document(document)
+	scope.populate_new_rule_cache()
+	mut cache := scope.rule_cache_for_cascade_origin(.author, none) or { panic('missing author cache') }
+	selectors := parse_selector_with_parser('div:hover', map[string]bool{}) or { panic('invalid hover fixture') }
+	rule := &MatchingRule{selector:selectors.selectors[0]}
+	cache.rules_by_tag_name['div'] = []&MatchingRule{len:1024, init:rule}
+	mut attempted := PseudoClassBitmap{}
+	abstract := dom.AbstractElement.new(element, none)
+	assert style_computer_collect_matching_rules_in_scope(computer, abstract, .author, mut attempted, none, scope).len == 0
+	assert attempted.get(.hover)
+	assert computer.matching_rule_candidates_.buffers[0].context.subject == none
+	assert computer.matching_rule_candidates_.buffers[0].context.has_result_cache == unsafe { nil }
+	before := platform.thread_arena_usage().used
+	for _ in 0 .. 4 {
+		assert style_computer_collect_matching_rules_in_scope(computer, abstract, .author, mut attempted, none, scope).len == 0
+	}
+	$if prealloc { assert platform.thread_arena_usage().used - before < 4096 }
 }
 
 fn test_candidate_scratch_reuses_storage_without_retaining_rules_or_aliasing_outputs() {
