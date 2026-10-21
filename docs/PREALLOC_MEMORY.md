@@ -615,3 +615,24 @@ on each poll. Their focused allocation and behavior checks pass with normal
 prealloc, poisoning and Boehm. The broader native tab test still fails its
 modified-link case at an unset option; an exact pre-change control fails at
 the same point (`tabs-129-control-prealloc-run.log`).
+
+
+### Stylesheet cache candidate ownership and parser snapshots
+
+The shared stylesheet syntax cache parses a miss in temporary storage before
+deciding its owner. A candidate that exceeds the node budget, or a disabled
+cache, returns an immutable copy in the caller's storage. Admitted trees and
+their source keys are copied to process storage after a locked duplicate
+check. A publishing worker retains its base storage beyond thread exit.
+Previously, even a rejected candidate stayed process-owned. Focused checks
+cover repeated owner retirement, source/key ownership, concurrent publication
+and cache reads after all workers exit; prealloc, poisoning and Boehm pass
+(`syntax-candidate-139-*-run.log`). Full-page RAM savings are not yet established.
+
+CSS parser parameter snapshots clone local array/map headers. Taking the
+addresses of fields directly had caused current V to box the entire parser
+for each snapshot. The generated C now clones stack headers without a parser
+`memdup`; focused checks preserve independent value/rule contexts and namespace
+maps, and bound repeated empty snapshots. All three allocator/poison modes
+pass (`syntax-candidate-141-*-run.log`,
+`parser-params-141-generated-c.txt`).
