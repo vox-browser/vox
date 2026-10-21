@@ -2504,6 +2504,15 @@ evidence](docs/translation-audit/NATIVE_MEDIA_WHEEL_RAW_HANDLER.md).
   Untyped-null/import-order/missing-directory/gate/setup failures retained;geometry expectations repaired before firstcounter;no completed replay.
   Actual localgate1;normalnative/strictC/profile/page/broad/bundle/GC170 unstarted;prepared scripts earn no pass.
   All3runtimehunks restored by8058e3f8;tests retained;accepted169/app169/broad168/carry1613198 preserved;canonical/GUI/foreign preserved;Chrome open.
+  Initial size constraints round171 (`c94a8529`):two complete original runtime hunks/one Layout path/no rebase or projection.
+  Six exact cases/3527assertions beforeBoehm/finalBoehm/finalnone;common60/config;no test compatibility edits.
+  Declared2048fresh65-node public owners/133120records:local -22.608024%/3wins/all6actual0;zero page credit.
+  Full-process profiles2057complete owners;construction/lookup/release/set_node counts equal;resolver calls decrease;no reset/filter.
+  Fresh page 16,359,018,853→16,350,458,515.5;19/30wins;point 8,560,337.5.
+  Paired CI[-3,097,131,24,528,720];repeatable credit 0;all60retained;seed171/30000bootstrap;first preparation1/2/1.
+  Focused exact;broad passed;prior carry1613198;entire independent C/all493builtins/176protected/120native/37headers/exactargs.
+  Accepted control171;broad baseline171;carry0;isolated171app/GC1+override2.
+  Complete feature retained;all original failed receipts remain. Canonical/GUI/foreign work preserved;Chrome parity open.
 - Outside instruction-count optimization, run broad regression suites once per
   ten completed fixes, not after every fix.
   Broad suites include full translation/package test batches, the full LibJS AST

@@ -16521,6 +16521,122 @@ Canonical and GUI browsers, newer bundles and foreign edits are preserved.
 Chrome parity remains unestablished: equivalent content, start and paint
 submission endpoints are still required.
 
+## Resolve initial size constraints only for definite axes
+
+Round 171 applies the complete `c94a8529` feature to accepted 169.
+`UsedValues.set_node` resolves min/max constraints for an axis only after
+its initial width or height resolves. Indefinite axes retain their previous
+initial state for later formatting. Resolver behavior, clamp order, box sizing,
+font metrics, public decoding, filtering and tokenizer arenas are unchanged.
+
+Both original runtime hunks in `layout/layout_state.v` reconstruct the whole
+author file and apply directly to frozen 169, without a context rebase or
+runtime projection. Independent Root changes are excluded. Two new cases and
+four unchanged size-metrics cases pass **3,527 assertions** in each of
+before/Boehm, final/Boehm and final/no-GC C-O2. The previous eager initialization
+is an oracle, with independent expectations for automatic, fixed, floating,
+absolute and intrinsic dimensions. The matrix includes optional/indefinite
+containing blocks, percentages, calculations, font-relative units, box edges
+and contradictory min/max constraints. No test compatibility edits are needed.
+Common 12 cases pass 60 assertions/configuration; before reuses exact accepted
+169 evidence without replay. The implementation and focused tests share the
+feature commit.
+
+The local fixture was declared before performance builds or counters. Each
+observation uses **2,048 fresh public LayoutState owners**, 65 nodes per owner,
+with **133,120 records** initialized through public subtree construction and
+mutable lookup, then released through the public measurement boundary. Eight
+real CSS states cover definite and indefinite axes. Setup, 455 geometry checks,
+one checksum reference, eight warmups, forced GC and final checksum assertion
+stay outside the counter. All six observations exit zero with checksum
+**20,251,774,976**. Three fixed alternating pairs give
+medians **912,742,422 → 706,389,395** retired
+instructions, **-22.60802413%**, **3/3 wins**.
+No observation is discarded, repeated or added. This opens the native gate;
+local savings earn zero page credit.
+
+Normal C-only generation exits zero and is reused without regeneration.
+Strict C permits only `layout__UsedValues_set_node` to change, with no added
+or removed functions. The entire independently generated normal program
+matches. All other functions, records, globals and resources remain unchanged
+after established compiler/embed normalization, authenticated unchanged
+assertion-line shifts and four byte-identical helper reorderings. All 493
+builtins, 176 protected routines, 120 native inputs, 37 headers and exact native
+arguments authenticate. Native compilation, signing, persistence and frozen
+library smoke actually exit zero. Policy remains C-O2/Boehm/default marker 1,
+the same automatic 4 GiB hint, no `-prod` and no global `-prealloc`.
+
+Both full-process C-O1/Boehm/one-marker/no-inline profiles exit zero. Generated
+C proves profiling stays enabled throughout main with no filter or reset.
+Setup and all nine reference/warmup invocations are included:
+
+| Function | Before calls | Final calls |
+| --- | ---: | ---: |
+| `layout__opt171_complete_public_state_initialization` | 2,057 | 2,057 |
+| `layout__LayoutState__static__new_for_subtree` | 2,058 | 2,058 |
+| `layout__LayoutState_get_mutable` | 134,064 | 134,064 |
+| `layout__LayoutState_release_measurement` | 2,058 | 2,058 |
+| `layout__UsedValues_set_node` | 133,838 | 133,838 |
+| `layout__resolve_definite_size` | 803,028 | 539,472 |
+
+
+Public construction, lookup, release and initialization counts remain equal;
+definite-size resolver calls decrease. Missing rows would stay unknown.
+Profile calls, timings and instrumented counters earn zero page credit.
+
+Matching normal binaries use the fixed 359-body cache, frozen helper and
+placement library, 1024×768 document viewport and
+`native.scopes.navigation_to_first_document_paint[0]`. The fixed 30 alternating
+pairs give medians **16,359,018,853 →
+16,350,458,515.5** instructions: observed saving
+**8,560,337.5 (-0.05232794%)**,
+**19/30 wins**. Paired median saving is
+**16,215,462.5**. The 30,000 paired bootstrap resamples use
+seed 171, giving 95% interval **[-3,097,131, 24,528,720]**.
+Repeatable page credit is **0**; integration is
+**accepted** under the existing positive-point
+and nonnegative-upper-interval policy. No historical median is subtracted.
+
+All 60 primaries remain: 60 actual PNGs, 0 counter-only recoveries
+and 0 archived pre-primary startup retries. First preparation is
+1 installation/2 geometry/1 paint. There are 0
+later refreshes and 1 external
+foreground transitions, recorded separately. Available PNGs are 1024×768 and
+exact outside the original fixed skeleton bands. Unknown exits and missing
+captures remain explicit. No primary is filtered, replayed or added.
+
+The focused viewport is exact. Prior observed carry **1,613,198** plus this
+round's positive matching point gives **10,173,535.5** for the 5-million
+gate: **passed**.
+Six actual zero-exit jobs cover 87 selected cases in both GC modes/174 executions. All 19 screenshots complete, 16 exact; existing differences remain 13/1,341/1,994 pixels.
+Capture receipts bind actual exits, source, binary, viewport, library, fonts,
+logs and PNG hashes.
+
+Isolated **`/Users/alex/code/vox2/Build/v/Vox-opt171.app`** has actual pin/sign/verify/smoke and GC
+exits zero. Its instruction text equals the measured image. Default marker 1
+and override 2 both collect. Canonical executables, GUI browsers, newer bundles
+and foreign work are preserved. Accepted control is **171**,
+broad baseline **171**, observed carry
+**0**.
+The complete feature remains committed in Root. Its frozen result does not cover independent Root changes.
+Durable C/profile/focused/local/broad/binary archive hashes are recorded in
+`Build/v/instruction-opt171-durable-archives.json`. The missing retained-test
+filename preparation failure occurred before declaration, build or counter
+and remains recorded; corrected preparation reads the unchanged original test
+hash. Already-running checks complete without replay. Subsequent expensive
+stages use the repository memory guard. Two profile launch attempts rejected
+the current-V memory-limit flag before generation or execution; both actual
+exit-1 logs remain. The required old compiler lacks that flag; compatible
+resumption keeps the external 12 GiB guard and replays no completed profile.
+The first broad screenshot launcher exited 1 before launching a browser because
+the copied capture wrapper lacked its executable bit. Changing only its mode
+from 0644 to 0755 resumed unfinished screenshots; all six completed broad jobs,
+the focused captures and all page primaries were retained without replay.
+Original failure logs and hashes remain in `instruction-opt171-capture-mode-repair.json`.
+Frozen compiler argument arrays remain unchanged for exact provenance. Chrome parity requires equivalent content,
+start and paint submission endpoints and remains unknown. Independent Root
+receives no coverage or performance credit here.
+
 ## Causes and changes
 
 - The V 0.5.2 compatibility compiler's `-prod` Boehm code repeatedly snapshots
