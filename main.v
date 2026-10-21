@@ -880,18 +880,6 @@ fn resolve_url(reference string, base string) string {
 	return 'https://duckduckgo.com/html/?q=${url.percent_encode(trimmed, .application_x_www_form_urlencoded, true)}'
 }
 
-fn resolve_document_reference(reference string, base string) string {
-	trimmed := reference.trim_space()
-	if trimmed == '' {
-		return base
-	}
-	if parsed := url.parse(trimmed) {
-		return parsed.serialize(false)
-	}
-	base_url := url.parse(base) or { return resolve_url(trimmed, '') }
-	return (url.parse_with_base(trimmed, &base_url) or { return resolve_url(trimmed, '') }).serialize(false)
-}
-
 fn tls_ca_bundle() string {
 	if configured := os.getenv_opt('SSL_CERT_FILE') {
 		if os.is_file(configured) {
