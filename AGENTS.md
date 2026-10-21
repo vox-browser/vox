@@ -2453,6 +2453,15 @@ evidence](docs/translation-audit/NATIVE_MEDIA_WHEEL_RAW_HANDLER.md).
   Focused exact;broad passed;prior carry0;strict entire independent C/all493builtins/176protected/120nativeinputs/37headers.
   Acceptedcontrol 165;isolated165app/GC1+override2;canonical/GUI/foreign preserved;fullprofiles2057completeoperations/no profile credit.
   Original case-label metadata erratum retained;no successful runtime replay;Chrome open.
+  Nullable paged lookup round166 (`82be7df2`):all3authoredruntimehunks/oneLayoutpath/no context rebase;three caller/wrapper bodies+one helper.
+  Fiveexactcases/467asserts eachconfiguration/3new+2unchanged;common60/config;successful cases reused without replay.
+  Declared2048completefreshstates/onecapacity+33publicgets each:local -0.000895%/1wins/all6actual0;tiny point only/no pagecredit.
+  Original candidate typecheck1/1,prelaunch log-path failure and missing-row profile reader1 retained;fixed/extractor actual0;no successful replay.
+  Fresh page 16,433,118,458.5→16,427,480,632;19/30wins;point 5,637,826.5.
+  PairedCI[-3,621,568,16,452,803.5];repeatable credit 0;all60retained;same1/2/1;seed166/30000bootstrap.
+  Focused exact;broad passed;prior carry0;strict entire independent C/all493builtins/176protected/120nativeinputs/37headers.
+  Acceptedcontrol 166;isolated166app/GC1+override2;canonical/GUI/foreign preserved;fullprofiles2057completeoperations/no profile credit.
+  Complete feature retained;all original failed receipts remain. Chrome parity open.
 - Outside instruction-count optimization, run broad regression suites once per
   ten completed fixes, not after every fix.
   Broad suites include full translation/package test batches, the full LibJS AST

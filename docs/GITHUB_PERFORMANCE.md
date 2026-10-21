@@ -15982,6 +15982,132 @@ capture, strict-source and actual-exit receipts use `instruction-opt165-*`.
 Chrome parity still requires equivalent content, start and paint endpoints.
 Independent Root receives no additional coverage or performance credit.
 
+## Keep optional construction at the paged lookup boundary
+
+Round 166 applies complete feature `82be7df2` to accepted 165. A private paged
+lookup returns a nullable pointer for internal cached-value and duplicate-entry
+checks. The existing optional getter wraps that pointer at its original API
+boundary. Missing directories, pages and entries keep the same absent result;
+lookup does not allocate or change ownership. Existing page geometry, pointer
+identity, ancestor links and measurement cleanup remain unchanged.
+
+All three original Git hunks in one Layout path reconstruct the complete
+author file without a context rebase, partial feature, storage projection or
+compiler shim. Independent retained-line and map work in Root is excluded from
+the frozen comparison. Three new cases and two byte-exact original storage
+cases pass **467 assertions** in each of before/Boehm, final/Boehm and
+final/no-GC C-O2, with three actual V driver exits zero. They cover absent slots,
+missing pages, maximum-index reads, allocation-free misses, cached geometry,
+ancestor identity and independently released/reused probes. The feature and
+three new tests commit together as `82be7df2`. Successful checks are reused
+without replay. Common 12 cases, including one inactive diagnostic, pass
+60 assertions/configuration; before reuses identical accepted-165 final runtime.
+
+The original candidate checks exit 1 during type checking, before generated C,
+native compilation or test execution: a new local name conflicts with the
+later allocation variable in the same function. Renaming only that local to
+`existing_values` resolves the error. Original failed source, manifests,
+chains, logs and actual exits remain. A fresh immutable final clone retains
+all three corrected author hunks. Before's five successful cases are reused.
+The first fixed-only launcher then stops before V invocation because the old
+failed logs occupy exclusive paths; its null V exits are preserved. Unique
+scratch/log paths complete only the two unfinished candidate checks. The
+source-correction binding predates every performance build and counter.
+No test input, expected result, measured fixture or cohort boundary changes.
+
+The local workload is declared before performance builds: 2,048 complete fresh
+public state initializations, each with one capacity request and 33 public
+`get_mutable()` calls. It retains the exact complete 165 workload apart from
+round and marker labels: the same root/32 real styled boxes, six constraints,
+recursive ancestors, owned allocations and geometry/definiteness/owner/box-size
+consumption. Capacity requests cycle through 32, 512, 1,024 and 2,331 nodes.
+Parsing, full public document layout, 130 independent setup assertions, one
+expected complete state, eight complete warmups, forced GC and checksum
+assertions stay outside the counter. Each observation makes 67,584 public gets
+and 2,048 capacity calls. Three fixed alternating pairs produce medians
+**884,290,380 → 884,282,467** retired instructions,
+**-0.00089484%**, **1/3 wins**. All six actual exits are zero
+and checksum 16,538,949,632 agrees. This tiny local point passes the declared
+negative-median gate but does not establish a repeatable benefit. Local page
+credit is zero; all six observations remain. Policy is C-O2/Boehm/default
+marker 1/the same automatic 4 GiB hint/no `-prod`/no global `-prealloc`.
+
+Normal C-only generation exits zero and is reused without regeneration.
+Strict C authenticates three changed wrapper/caller bodies and one new pointer
+helper with its exact prototype. The independently generated entire normal
+program retains every body, type and global. All remaining functions, records,
+globals and resources match accepted 165 after established compiler/embed
+normalization and four byte-identical helper reorderings. All 493 builtins,
+176 protected encoding/filter/arena routines, 120 native inputs, 37 headers and
+exact native arguments authenticate. Native build, signing, persistence and
+frozen-library smoke actually exit zero.
+
+Both full-process C-O1/Boehm/one-marker/no-inline profile programs exit zero.
+Their generated C proves main stays enabled without counter reset or filtering.
+The original reader requires a `populate_node_from` row absent from both raw
+reports and exits 1. A read-only extractor keeps those rows unknown and retains
+the original failed reader/source/result. All setup/warmup work remains included:
+
+| Function | Before calls | Final calls |
+| --- | ---: | ---: |
+| `layout__opt166_complete_state_initialization` | 2,057 | 2,057 |
+| `layout__LayoutState_get_mutable` | 68,056 | 68,056 |
+| `layout__LayoutState__static__new` | 2,059 | 2,059 |
+| `layout__LayoutState_ensure_capacity` | 2,057 | 2,057 |
+| `layout__UsedValuesPagedStore_ensure_capacity` | 2,578 | 2,578 |
+| `layout__LayoutState_ensure_used_values_for` | 140,159 | 140,159 |
+| `layout__LayoutState_populate_node_from` | unknown | unknown |
+| `layout__UsedValuesPagedStore_get` | 140,621 | 462 |
+| `layout__UsedValuesPagedStore_find` | unknown | 140,621 |
+| `layout__resolve_definite_size` | 444,744 | 444,744 |
+
+
+Missing rows are unknown, never zero. Call counts, profile timings and
+instrumented instructions earn no page credit. The dependent page guards
+originally exit 1 before any browser launch or primary. Their receipts remain;
+only read-only preparation and the unstarted cohort resume after extraction.
+No successful profile, check or primary is repeated.
+
+Matching normal binaries keep the same 359-body cache, frozen helper and
+placement library, 1024×768 document viewport and
+`native.scopes.navigation_to_first_document_paint[0]`. Fresh fixed 30 alternating
+pairs give medians **16,433,118,458.5 →
+16,427,480,632** instructions: observed saving
+**5,637,826.5 (-0.03430771%)**,
+**19/30 wins**. Paired median saving is
+**7,410,972.5**; 30,000 paired bootstrap resamples with actual
+and reported seed 166 give the 95% interval **[-3,621,568, 16,452,803.5]**.
+Repeatable page credit is **0**; integration is
+**accepted** under the existing positive-point
+policy. No historical median is subtracted.
+
+All 60 primaries remain: 60 actual PNGs, 0 counter-only recoveries
+and 0 archived pre-primary startup retries. First preparation is
+1 installation/2 geometry/1 paint; 0 later
+refreshes and 1 external foreground
+transitions stay separate. Available PNGs are 1024×768 and exact outside the
+original fixed skeleton bands. Recovered unknown exits and missing captures
+stay explicit. No completed primary is discarded, filtered, rerun or added.
+
+The focused viewport is exact. Prior carry zero plus the positive matching
+point gives **5,637,826.5** for the 5-million gate: **passed**.
+Six actual zero-exit jobs cover 87 selected cases in both GC modes/174 executions; all 19 screenshot comparisons complete, 16 exact. Known differences remain inline-node 13, text-decorations 1,341 and canvas-text 1,994.
+Capture receipts bind actual exits, source, binary, viewport, helper, fonts,
+logs and PNG hashes.
+
+Isolated artifact **`/Users/alex/code/vox2/Build/v/Vox-opt166.app`** has actual pin/sign/verify/smoke
+and GC exits zero. Its instruction text equals the measured image; marker 1
+and override 2 both collect. Canonical executables, GUI browsers, newer bundles
+and foreign work are preserved. Accepted control is **166**,
+broad baseline **166**, observed carry
+**0**.
+The complete feature remains committed in Root. Its frozen result does not cover independent Root changes.
+Durable C/profile/focused/local/broad/binary archive hashes are recorded in
+`Build/v/instruction-opt166-durable-archives.json`. Original failures remain
+linked by their findings. Chrome parity still requires equivalent content,
+start and submission endpoints. Independent Root earns no additional coverage
+or performance credit from this frozen comparison.
+
 ## Causes and changes
 
 - The V 0.5.2 compatibility compiler's `-prod` Boehm code repeatedly snapshots
