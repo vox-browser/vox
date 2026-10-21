@@ -223,7 +223,7 @@ fn test_separate_table_borders_retain_rounded_cell_clip() {
 	], false, converter)
 	assert commands.len == 1
 	assert commands[0] is FillPath
-	command := commands[0]
+	command := DisplayListCommand(commands[0])
 	match command {
 		FillPath {
 			assert command.path_bounding_rect == IntRect{10, 20, 30, 15}
@@ -254,7 +254,7 @@ fn test_collapsed_table_borders_repaint_radiused_cells_after_collected_edges() {
 	// same-color joined path for the radiused cell.
 	assert commands.len == 5
 	assert commands[4] is FillPath
-	command := commands[4]
+	command := DisplayListCommand(commands[4])
 	match command {
 		FillPath {
 			assert command.path.segments.any(it.kind == .elliptical_arc_to
