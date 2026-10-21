@@ -17,8 +17,8 @@ in its protocol. Explicit historic Boehm comparisons require `--allocator boehm`
 ### Corrected arena before/after: 50 MB remains unmet
 
 The latest V-source comparison, three alternating optimized pairs, measures
-**101.11 → 97.06 MB**, a **4.00% reduction**. The largest candidate settled
-observation is **97,338,760 bytes**. The **50,000,000-byte limit still fails**.
+**97.24 → 96.03 MB**, a **1.25% reduction**. The largest candidate settled
+observation is **96,110,104 bytes**. The **50,000,000-byte limit still fails**.
 All six raw viewport images match, all frozen-input guards pass, and all six script audits
 report no page runtime, sources, source bytes or preloaded scripts.
 
@@ -34,6 +34,7 @@ report no page runtime, sources, source bytes or preloaded scripts.
 | Cascade contexts, pseudo traversal and SVG metadata | 105,924,048 bytes | 103,712,184 bytes | 2.09% |
 | URL parser workspaces and immutable DOM URL snapshots | 103,859,664 bytes | 101,238,248 bytes | 2.52% |
 | Selector workspaces, decoded SVG metadata and cache storage | 101,107,152 bytes | 97,060,328 bytes | 4.00% |
+| XML tokens, static animation work and arena idle cleanup | 97,240,600 bytes | 96,028,088 bytes | 1.25% |
 
 Each row is its own three-pair cohort; these are aggregate build comparisons,
 not isolated savings attributed to individual commits. Evidence is in
@@ -42,7 +43,8 @@ not isolated savings attributed to individual commits. Evidence is in
 `arena-static-paint-paired/`, `arena-svg-workspace-paired/`,
 `arena-inline-length-paired/`, `arena-inline-native-queue-paired/`,
 `arena-parser-workspaces-paired/`, `arena-cascade-workspaces-paired/` and
-`arena-url-snapshots-paired/` and `arena-cache-lifetimes-paired/`, including summaries, raw
+`arena-url-snapshots-paired/`, `arena-cache-lifetimes-paired/` and
+`arena-idle-xml-paired/`, including summaries, raw
 process samples, allocator checks, resource audits and captures. Matching
 `arena-{text,svg}-lifetimes-build-protocol.json` files pin the complete source
 inputs, current compiler and native libraries. The static-paint and SVG protocols are
@@ -106,7 +108,7 @@ of an interrupted compilation from those exact generated C and native object
 inputs; the final bundle is signed after moving the preserved compiler work out
 of the app. No canonical installed app is replaced.
 
-The latest cache-lifetimes cohort freezes committed source `f4723673`. It adds
+The cache-lifetimes cohort freezes committed source `f4723673`. It adds
 selector-invalidation workspaces, retained SVG background dimensions, separately
 owned text-shaping cache storage, and intervening replaced/flex sizing fixes.
 XML token allocation changes and the arena idle-timer integration are excluded.
@@ -128,6 +130,25 @@ implementation reproduces that failure; the committed production source snapshot
 also reproduces it. Full-batch exit is one, and no whole-batch pass is claimed.
 The six accepted Wikipedia viewport images remain byte-identical.
 
+The latest idle/XML cohort freezes `d44437bf`, adding entity-free XML token reuse,
+allocation-free prefix probes, namespace copy-on-write, and small-attribute
+checking without a hash table. It also arms arena text-cache cleanup after a
+completed static native frame and avoids animation lists/name maps for static
+styles. Intervening committed CSS parser component-span changes are included;
+this row gives no isolated attribution. Inline chunk workspaces and the later
+invalidation-copy memo changes are excluded. Ten XML cases, 17 browser idle/
+maintenance cases and eight static-animation cases pass in both allocator modes
+and with poisoned arenas. The root fixture redirects only its V-side native
+queue entry points to the existing deterministic test adapter. The corrected
+idle-readiness fixture explicitly starts its document in `loading`.
+
+The latest signed private app passes headless startup. Its generated C SHA-256
+is `31ad3f9c7da588d75a6d9fbec129e9289992e538b19e96777b46d4ff1ddbec88`.
+Sampled launch peaks are 507.4–510.9 MB. All six raw viewports keep the prior
+`3010d840c8adaf0a5b71254499c27d9888d21b0cc92246c2ce989af60d8bb1fd`
+SHA-256, and all six script audits again report zero page runtimes and sources.
+The 50,000,000-byte gate still fails.
+
 The conditions below also apply to these cohorts: `-prealloc -gc none`, optimized
 C, the unchanged 40-file cache, 1024×768 CSS pixels at DPR 2, a visible background
 window, and simultaneous app/descendant physical footprint measured before PNG
@@ -137,12 +158,12 @@ Reproduce the latest V-source cohort with:
 
 ```sh
 python3 tools/benchmark_wikipedia_memory.py \
-  --before Build/wikipedia-50mb/arena-url-snapshots.app/Contents/MacOS/Vox \
-  --after Build/wikipedia-50mb/arena-cache-lifetimes.app/Contents/MacOS/Vox \
+  --before Build/wikipedia-50mb/arena-cache-lifetimes.app/Contents/MacOS/Vox \
+  --after Build/wikipedia-50mb/arena-idle-xml.app/Contents/MacOS/Vox \
   --cache Build/wikipedia-100mb/cache \
   --network-deny Build/pikabu-instructions-network-deny.dylib \
   --activity background --repeat 3 --allocator prealloc \
-  --output Build/wikipedia-50mb/arena-cache-lifetimes-recheck
+  --output Build/wikipedia-50mb/arena-idle-xml-recheck
 ```
 
 The command exits nonzero while the 50 MB budget is exceeded.
