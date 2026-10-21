@@ -750,3 +750,35 @@ no benefit from that prototype, so it remains unshipped. Neither result
 includes the flex change, and neither establishes the Brave goal. The earlier
 657.6 MiB result remains retained; final comparison still requires three
 alternating trials, with every Vox endpoint below every Brave endpoint.
+
+
+### Source-168 alternating comparison and parser array follow-up
+
+All six 60-second foreground trials completed in
+`native-175-source-168-alternating/results.json`, alternating launch order.
+Vox endpoints were **464.9, 507.6 and 477.6 MiB**; Brave endpoints were
+**457.4, 458.7 and 458.9 MiB**. The median comparison is 477.6 versus
+458.7 MiB, and the all-trials criterion remains false. This includes the
+nested flex workspace but predates idle shaping-cache retirement and the
+CSS value-array change below. All three Vox audits retain one installation,
+15 stories and 34 images.
+
+A separate O0 source-168 census (`native-176-source-168-census-background`)
+finds 303,675,309 used bytes in the main document arena and 105,784,754 in
+the main thread base arena. The live paint projection uses 10,459,087 bytes.
+These are allocator usage counts, not physical footprint or clean optimized
+comparison results. The older source-141 allocation sample, reranked by site
+in `native-160-document-sites-120.txt`, attributes about 30.2 MiB of document
+allocation to resolved layout-cache writes; ordinary measurement record
+allocation is about 3.5 MiB. This does not establish a gain from a hypothetical
+geometry-generation arena.
+
+`d9aa07b3` keeps immutable component spans when a CSS parser receives freshly
+tokenized text or the result of substitution. The public component constructor
+still snapshots its caller's array. Property validation also calls the existing
+single-component presence checker directly, replacing a one-element array per
+token. The new long-input regression first retained 33,588,945 bytes across
+64 parses; after the direct call it passes a 1,573,056-byte bound, including
+actual property parsing. Three new cases and seven substitution/presence
+regressions pass with prealloc, poisoning and Boehm (`parser-span-178-*`).
+No full-page RAM saving is attributed to this microbenchmark.
