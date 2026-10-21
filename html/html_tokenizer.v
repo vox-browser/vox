@@ -266,19 +266,24 @@ fn is_unicode_surrogate(code_point u32) bool {
 }
 
 fn runes_to_string(runes []rune) string {
-	if runes.len == 0 { return '' }
+	length := runes.len
+	if length == 0 { return '' }
 	// Copy the byte candidates and accumulate their high bits in one pass.
 	// Only ASCII publishes this storage; other values keep the original encoder.
-	mut bytes := unsafe { malloc_noscan(runes.len + 1) }
+	// Keep the borrowed input bounds fixed while writing the separate owner.
+	// Neither the array header nor its elements are changed by this function.
+	source := unsafe { &rune(runes.data) }
+	mut bytes := unsafe { malloc_noscan(length + 1) }
 	mut bits := u32(0)
-	for index, code_point in runes {
+	for index in 0 .. length {
+		code_point := unsafe { source[index] }
 		bits |= u32(code_point)
 		unsafe { bytes[index] = u8(code_point) }
 	}
 	if bits <= 0x7f {
 		unsafe {
-			bytes[runes.len] = 0
-			return tos(bytes, runes.len)
+			bytes[length] = 0
+			return tos(bytes, length)
 		}
 	}
 	// The candidate never escaped. Release it before encoding non-ASCII or
