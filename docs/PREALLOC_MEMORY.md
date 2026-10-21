@@ -9,7 +9,9 @@ growing after warm-up, however many frames or replacements happen.
 
 This document records what the `-prealloc` build already bounds, the contracts
 code must follow, how to measure it, and what remains to meet the RAM target.
-The default has changed; beating Brave has not yet been demonstrated.
+The default has changed. A three-pair 60-second Pikabu comparison is below
+Brave, but its five-minute follow-up still fails. The sustained RAM target
+remains open.
 
 ## Ownership classes
 
@@ -939,5 +941,60 @@ snapshots compare outside that rectangle directly, without decoding a temporary.
 Snapshot/cache checks pass normally and under address/undefined-behavior
 sanitizers. All **3,070** GPU comparisons equal the uncached renderer, including
 Retina photos, source/background mutations, fractional transforms, rounded
-clips and retained idle shadows (`native-226-raster-replay.log`). Full browser
-and foreground validation for this combined candidate are pending.
+clips and retained idle shadows (`native-226-raster-replay.log`). Startup in
+both modes, ten poisoned SVG checks and the complete poisoned Pikabu audit pass
+(`replay-229-svg`, `native-231`). All eleven default actual images equal the
+preceding control in decoded RGB pixels (`replay-230-default`), retaining the
+four existing upstream differences and the canvas allowance.
+
+The three-pair foreground gate passes at Vox **421.8, 444.8, 447.3 MiB**, versus
+Brave **457.0, 454.8, 456.4 MiB** (`native-227`). Every Vox endpoint is below
+every Brave endpoint. Its five-minute follow-up fails: **494.3 MiB** for Vox
+versus **441.4 MiB** for Brave (`native-228`). The Vox page remains complete
+with one installation and 15 stories/34 images. Fifteen-second low-end samples
+rise by about 9 MiB after the initial warm-up, alongside much larger GPU
+excursions. This is not evidence of bounded idle memory.
+
+`a3487c6a` subsequently limits the opacity proof's coordinate range and scale.
+Large float coordinates canceled by translation must retain exact background
+comparisons. The new control fails against the prior proof and passes normally
+and under sanitizers (`native-234-*`).
+
+### Reused cooperative work and compressed path admission
+
+`28f4a7e8` reuses completed prealloc cooperative-work records and input-vector
+capacity, clearing the callback and target after work finishes. A thousand
+repeated begin/finish cycles retain less than 4 KiB. `10a8e3b0` also moves each
+deferred input queue into a reusable delivery slot and timer, avoiding per-frame
+queue clones and closure allocation. Native calls and page timers still use
+separate deliveries. Generation checks and document leases remain until the
+last callback; an active batch cannot be reused by a reentrant callback.
+
+All 23 cooperative, timer, worker-completion and retired-document cases pass
+with prealloc, poison and Boehm (`cooperative-237-*`). The allocation control
+retains **24,576 bytes** across 128 deliveries with the old implementation
+(`cooperative-240-control-run.log`); the new implementation passes an 8 KiB
+bound. The staged prealloc runtime is byte-identical between these focused
+checks and the browser candidate.
+
+The backend trace confirms two photo raster variants reused by the opacity
+proof (`native-233`). A later path trace (`native-239`) finds a recurring
+1260-by-888 static path rejected at **8,951,328 raw bytes**, just above its
+8 MiB cache budget. `015b948a` bounds the temporary raw path surfaces separately
+and admits only the final compressed result. Incompressible results exceeding
+the unchanged retained budget are rejected. Eviction waits for that actual
+size, so an oversized miss cannot discard a useful warm entry speculatively.
+
+The new admission regression fails before the fix and passes normally and
+under address/undefined-behavior sanitizers (`native-242-*`). All **3,098** GPU
+comparisons equal the uncached renderer, including large solid/translucent
+paths over flat/noisy backdrops (`native-244-raster-replay.log`). The combined
+source-237 browser passes startup in both modes, ten exact poisoned SVG checks,
+eleven default images equal to the preceding control, and a full 60-second
+poisoned page audit (`replay-245-svg`, `replay-246-default`, `native-247`). Its
+optimized comparison is pending.
+
+Older generated C intermediates are retained as verified gzip files to recover
+build space. `Build/prealloc-document/archived-generated-c.json` records their
+original names, SHA-256 hashes and compressed sizes; runtime binaries, reports
+and active compiler inputs are preserved.
