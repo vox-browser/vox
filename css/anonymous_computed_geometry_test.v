@@ -227,8 +227,8 @@ fn anonymous_geometry_assert_same(actual &ComputedValues, expected &ComputedValu
 	assert actual.computed_layout_cache().computed_values_counter_reset_ == expected.computed_layout_cache().computed_values_counter_reset_, 'computed_values_counter_reset_'
 	assert actual.computed_layout_cache().computed_values_counter_set_ == expected.computed_layout_cache().computed_values_counter_set_, 'computed_values_counter_set_'
 	assert actual.computed_values_line_height_ == expected.computed_values_line_height_
-	assert actual.computed_values_list_style_type_ == expected.computed_values_list_style_type_
-	assert actual.computed_values_content_ == expected.computed_values_content_
+	assert actual.computed_list_style_type() == expected.computed_list_style_type()
+	assert actual.computed_content() == expected.computed_content()
 	assert actual.computed_values_resolved_ == expected.computed_values_resolved_
 	assert actual.cached_computed_font_list_owner_ == expected.cached_computed_font_list_owner_
 	assert actual.cached_computed_font_list_generation_ == expected.cached_computed_font_list_generation_

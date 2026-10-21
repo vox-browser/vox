@@ -71,7 +71,7 @@ fn (mut snapshot LayoutInheritanceSnapshot) capture(style &ComputedProperties) {
 	snapshot.font_owner = voidptr(style.cached_computed_font_list_owner_)
 	snapshot.font_generation = style.cached_computed_font_list_generation_
 	snapshot.first_font = voidptr(style.cached_first_available_computed_font_)
-	snapshot.list_style = style.computed_values_list_style_type_
+	snapshot.list_style = style.computed_list_style_type()
 }
 
 fn (snapshot &LayoutInheritanceSnapshot) matches(style &ComputedProperties) bool {
@@ -90,7 +90,7 @@ fn (snapshot &LayoutInheritanceSnapshot) matches(style &ComputedProperties) bool
 		&& snapshot.font_owner == voidptr(style.cached_computed_font_list_owner_)
 		&& snapshot.font_generation == style.cached_computed_font_list_generation_
 		&& snapshot.first_font == voidptr(style.cached_first_available_computed_font_)
-		&& snapshot.list_style == style.computed_values_list_style_type_
+		&& snapshot.list_style == style.computed_list_style_type()
 }
 
 pub fn layout_inheritance_is_current(proof &LayoutInheritanceProof, target &ComputedProperties,

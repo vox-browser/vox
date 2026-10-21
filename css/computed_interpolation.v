@@ -1659,10 +1659,12 @@ pub mut:
 	// StyleValue objects on every layout query.
 	computed_values_resolved_                      bool
 	computed_values_line_height_                   CSSPixels
-	computed_values_list_style_type_               ListStyleType
-	computed_values_content_                       ?ContentData
 
 mut:
+	// Generated content is absent on ordinary elements. Marker payloads are
+	// immutable snapshots, with the common builtins shared between styles.
+	computed_list_style_storage_ &ListStyleType = unsafe { nil }
+	computed_content_storage_ &ContentData = unsafe { nil }
 	computed_property_graph_token_ &ComputedPropertyGraphMutationToken = unsafe { nil }
 	computed_layout_cache_ &ComputedLayoutCache = unsafe { nil }
 	// Density conversion is memoized independently of resolved layout values.
@@ -3485,6 +3487,9 @@ pub fn (c &ComputedProperties) text_wrap_style() TextWrapStyle {
 struct BuiltinCounterStyles {
 	disc    CounterStyle
 	decimal CounterStyle
+mut:
+	disc_list_style &ListStyleType = unsafe { nil }
+	decimal_list_style &ListStyleType = unsafe { nil }
 }
 
 __global css_builtin_counter_styles_ = &BuiltinCounterStyles(unsafe { nil })

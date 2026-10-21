@@ -1250,12 +1250,14 @@ pub fn (values &ComputedValues) list_style_position() ListStylePosition {
 	return values.computed_layout_cache().computed_values_list_style_position_
 }
 
-pub fn (values &ComputedValues) computed_list_style_type() ListStyleType {
-	return values.computed_values_list_style_type_
+pub fn (values &ComputedProperties) computed_list_style_type() ListStyleType {
+	if voidptr(values.computed_list_style_storage_) == unsafe { nil } { return ListStyleType{} }
+	return *values.computed_list_style_storage_
 }
 
-pub fn (values &ComputedValues) computed_content() ?ContentData {
-	return values.computed_values_content_
+pub fn (values &ComputedProperties) computed_content() ?ContentData {
+	if voidptr(values.computed_content_storage_) == unsafe { nil } { return none }
+	return *values.computed_content_storage_
 }
 
 pub fn (values &ComputedValues) grid_column_end() GridTrackPlacement {
@@ -1756,7 +1758,7 @@ pub fn (values &ComputedValues) clone_inherited_values() &ComputedValues {
 	mutable_result.ensure_computed_layout_cache().computed_values_stroke_ = values.computed_layout_cache().computed_values_stroke_
 	mutable_result.ensure_computed_layout_cache().computed_values_text_shadow_ = values.computed_layout_cache().computed_values_text_shadow_.clone()
 	mutable_result.ensure_computed_layout_cache().computed_values_scrollbar_color_ = values.computed_layout_cache().computed_values_scrollbar_color_
-	mutable_result.computed_values_list_style_type_ = values.computed_values_list_style_type_
+	mutable_result.computed_list_style_storage_ = values.computed_list_style_storage_
 	mutable_result.cached_computed_font_list_ = source.cached_computed_font_list_
 	mutable_result.cached_computed_font_list_generation_ = source.cached_computed_font_list_generation_
 	mutable_result.cached_first_available_computed_font_ = source.cached_first_available_computed_font_
@@ -1811,7 +1813,7 @@ pub fn (mut values MutableComputedValues) inherit_from(other &ComputedValues) {
 	values.ensure_computed_layout_cache().computed_values_white_space_collapse_ = other.computed_layout_cache().computed_values_white_space_collapse_
 	values.ensure_computed_layout_cache().computed_values_word_break_ = other.computed_layout_cache().computed_values_word_break_
 	values.ensure_computed_layout_cache().computed_values_list_style_position_ = other.computed_layout_cache().computed_values_list_style_position_
-	values.computed_values_list_style_type_ = other.computed_values_list_style_type_
+	values.computed_list_style_storage_ = other.computed_list_style_storage_
 	values.ensure_computed_layout_cache().computed_values_visibility_ = other.computed_layout_cache().computed_values_visibility_
 	values.ensure_computed_layout_cache().computed_values_direction_ = other.computed_layout_cache().computed_values_direction_
 	values.ensure_computed_layout_cache().computed_values_writing_mode_ = other.computed_layout_cache().computed_values_writing_mode_
@@ -2192,12 +2194,12 @@ pub fn (mut values MutableComputedValues) set_list_style_position(value ListStyl
 	values.ensure_computed_layout_cache().computed_values_list_style_position_ = value
 }
 
-pub fn (mut values MutableComputedValues) set_list_style_type(value ListStyleType) {
-	values.computed_values_list_style_type_ = value
+pub fn (mut values ComputedProperties) set_list_style_type(value ListStyleType) {
+	values.computed_list_style_storage_ = stored_list_style_type(value)
 }
 
-pub fn (mut values MutableComputedValues) set_content(value ?ContentData) {
-	values.computed_values_content_ = value
+pub fn (mut values ComputedProperties) set_content(value ?ContentData) {
+	values.computed_content_storage_ = if content := value { &ContentData{...content} } else { unsafe { nil } }
 }
 
 pub fn (mut values MutableComputedValues) set_grid_column_end(value GridTrackPlacement) {
