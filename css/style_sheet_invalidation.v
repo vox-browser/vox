@@ -5,6 +5,7 @@
 module css
 
 import dom
+import platform
 
 struct StyleSheetPseudoElementInvalidationRule {
 	anchor_set           InvalidationSet
@@ -187,17 +188,30 @@ fn rightmost_set_has_targetable_features(rightmost_set InvalidationSet) bool {
 	return false
 }
 
-fn try_build_style_sheet_anchor_for_leading_compounds(compounds []CompoundSelector, mut throwaway_data StyleInvalidationData, style_sheet_for_rule ?&CSSStyleSheet) ?StyleSheetAnchorInvalidationRule {
+// Dependency plans built while projecting a compound are unused by stylesheet
+// insertion. Keep those plans and selector adapters out of the document arena;
+// only the final match properties must survive the projection.
+fn style_sheet_compound_invalidation_set(compound CompoundSelector) InvalidationSet {
+	mut scratch := platform.begin_thread_scratch('stylesheet match projection')
+	mut throwaway_data := StyleInvalidationData{}
+	mut temporary := InvalidationSet{}
+	for simple_index in 0 .. compound.simple_selectors.len {
+		simple := unsafe { &compound.simple_selectors[simple_index] }
+		build_invalidation_sets_for_simple_selector(simple_selector_for_invalidation(simple), mut temporary, .no, mut throwaway_data, .no)
+	}
+	scratch.leave()
+	result := own_invalidation_match_set(&temporary)
+	scratch.finish()
+	return result
+}
+
+fn try_build_style_sheet_anchor_for_leading_compounds(compounds []CompoundSelector, style_sheet_for_rule ?&CSSStyleSheet) ?StyleSheetAnchorInvalidationRule {
 	if compounds.len < 2 {
 		return none
 	}
 	anchor_compounds := compounds[..compounds.len - 1].clone()
 	rightmost_anchor := anchor_compounds[anchor_compounds.len - 1]
-	mut anchor_set := InvalidationSet{}
-	for simple_index in 0 .. rightmost_anchor.simple_selectors.len {
-		simple := unsafe { &rightmost_anchor.simple_selectors[simple_index] }
-		build_invalidation_sets_for_simple_selector(simple_selector_for_invalidation(simple), mut anchor_set, .no, mut throwaway_data, .no)
-	}
+	anchor_set := style_sheet_compound_invalidation_set(rightmost_anchor)
 	if !anchor_set.has_properties() {
 		return none
 	}
@@ -215,7 +229,6 @@ fn try_build_style_sheet_anchor_for_leading_compounds(compounds []CompoundSelect
 
 fn extend_style_sheet_invalidation_set_with_style_rule(mut result StyleSheetInvalidationSet, style_rule &CSSRule) {
 	mut mutable_rule := unsafe { &CSSRule(style_rule) }
-	mut throwaway_data := StyleInvalidationData.new()
 	for selector in mutable_rule.absolutized_selectors().selectors {
 		result.may_match_light_dom_under_shadow_host = result.may_match_light_dom_under_shadow_host
 			|| selector_may_match_light_dom_under_shadow_host(selector)
@@ -228,11 +241,7 @@ fn extend_style_sheet_invalidation_set_with_style_rule(mut result StyleSheetInva
 			continue
 		}
 		rightmost := compounds[compounds.len - 1]
-		mut rightmost_set := InvalidationSet{}
-		for simple_index in 0 .. rightmost.simple_selectors.len {
-			simple := unsafe { &rightmost.simple_selectors[simple_index] }
-			build_invalidation_sets_for_simple_selector(simple_selector_for_invalidation(simple), mut rightmost_set, .no, mut throwaway_data, .no)
-		}
+		rightmost_set := style_sheet_compound_invalidation_set(rightmost)
 		if rightmost_set_has_targetable_features(rightmost_set) {
 			result.invalidation_set.include_all_from(rightmost_set)
 			continue
@@ -258,7 +267,7 @@ fn extend_style_sheet_invalidation_set_with_style_rule(mut result StyleSheetInva
 			continue
 		}
 		if style_sheet_compound_is_pseudo_element_only(rightmost) {
-			if anchor := try_build_style_sheet_anchor_for_leading_compounds(compounds, mut throwaway_data, style_rule.parent_style_sheet) {
+			if anchor := try_build_style_sheet_anchor_for_leading_compounds(compounds, style_rule.parent_style_sheet) {
 				result.pseudo_element_rules << StyleSheetPseudoElementInvalidationRule{
 					anchor_set: anchor.anchor_set
 					anchor_selector: anchor.anchor_selector
@@ -268,7 +277,7 @@ fn extend_style_sheet_invalidation_set_with_style_rule(mut result StyleSheetInva
 			}
 		}
 		if style_sheet_compound_is_universal_only(rightmost) {
-			if anchor := try_build_style_sheet_anchor_for_leading_compounds(compounds, mut throwaway_data, style_rule.parent_style_sheet) {
+			if anchor := try_build_style_sheet_anchor_for_leading_compounds(compounds, style_rule.parent_style_sheet) {
 				result.trailing_universal_rules << StyleSheetTrailingUniversalInvalidationRule{
 					anchor_set: anchor.anchor_set
 					anchor_selector: anchor.anchor_selector
