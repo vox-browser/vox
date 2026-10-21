@@ -214,6 +214,23 @@ pub mut:
 
 // Gfx::ShapeFeatures FontFeatureData::to_shape_features(...) const
 pub fn (data FontFeatureData) to_shape_features(font_feature_values map[string][]u32) ShapeFeatures {
+	$if prealloc {
+		mut scratch := platform.begin_thread_scratch('font feature selection')
+		selected := select_shape_features(data, font_feature_values)
+		scratch.leave()
+		mut owned := []ShapeFeature{len: selected.len}
+		for index, feature in selected {
+			owned[index] = ShapeFeature{tag: feature.tag.clone(), value: feature.value}
+		}
+		scratch.finish()
+		return owned
+	}
+	return select_shape_features(data, font_feature_values)
+}
+
+// The map and generated alternate-feature keys are construction work. Only
+// the ordered final feature records and their tag bytes belong to the caller.
+fn select_shape_features(data FontFeatureData, font_feature_values map[string][]u32) ShapeFeatures {
 	mut features := map[string]u32{}
 
 	// 6.4 https://drafts.csswg.org/css-fonts/#font-variant-ligatures-prop
