@@ -3495,6 +3495,10 @@ pub fn (c &ComputedProperties) text_wrap_style() TextWrapStyle {
 struct BuiltinCounterStyles {
 	disc    CounterStyle
 	decimal CounterStyle
+	circle CounterStyle
+	square CounterStyle
+	disclosure_open CounterStyle
+	disclosure_closed CounterStyle
 mut:
 	disc_list_style &ListStyleType = unsafe { nil }
 	decimal_list_style &ListStyleType = unsafe { nil }
@@ -3508,6 +3512,10 @@ fn builtin_counter_styles() &BuiltinCounterStyles {
 		css_builtin_counter_styles_ = &BuiltinCounterStyles{
 			disc:    CounterStyle.disc()
 			decimal: CounterStyle.decimal()
+			circle: fixed_symbol_counter_style('circle', '◦')
+			square: fixed_symbol_counter_style('square', '▪')
+			disclosure_open: fixed_symbol_counter_style('disclosure-open', '▾')
+			disclosure_closed: fixed_symbol_counter_style('disclosure-closed', '▸')
 		}
 		platform.leave_persistent(persistent)
 	}
@@ -3550,6 +3558,10 @@ pub fn (c &ComputedProperties) list_style_type_for_scope(scope &StyleScope) List
 			'decimal' {
 				counter_style = builtin_counter_styles().decimal
 			}
+			'circle' { counter_style = builtin_counter_styles().circle }
+			'square' { counter_style = builtin_counter_styles().square }
+			'disclosure-open' { counter_style = builtin_counter_styles().disclosure_open }
+			'disclosure-closed' { counter_style = builtin_counter_styles().disclosure_closed }
 			else {
 				if resolved := registered_counter_styles_for_scope(scope)[name] {
 					counter_style = resolved

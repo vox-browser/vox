@@ -37,3 +37,23 @@ fn test_named_markers_keep_author_definitions_and_fallback_resolution() {
 	updated := registered_counter_styles_for_marker(style, abstract_element)
 	assert generate_a_counter_representation(updated['marker'], updated, 2) == 'Z'
 }
+
+fn test_fixed_symbol_markers_match_embedded_ua_descriptors_without_named_lookup() {
+	mut document := dom.Document.create(dom.url_about_blank())
+	element := document.create_element('li') or { panic(err) }
+	abstract_element := dom.AbstractElement.new(element, none)
+	scope := css_style_scope_for(abstract_element)
+	mut actual := map[string]CounterStyle{}
+	for name in ['circle', 'square', 'disclosure-open', 'disclosure-closed'] {
+		style := counter_style_invalidation_test_properties(.list_style_type, name)
+		marker := style.list_style_type_for_scope(scope)
+		counter := marker.counter_style or { panic('missing fixed marker') }
+		assert registered_counter_styles_for_marker(marker, abstract_element).len == 0
+		assert scope.needs_counter_style_cache_update
+		actual[name] = counter
+	}
+	registered := registered_counter_styles_for_scope(scope)
+	for name, counter in actual {
+		assert counter.equals(registered[name] or { panic('missing UA definition') }), name
+	}
+}
