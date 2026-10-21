@@ -78,7 +78,11 @@ fn (mut parser SimpleXMLDocumentParser) skip_space() {
 }
 
 fn (parser &SimpleXMLDocumentParser) starts_with(value string) bool {
-	return parser.position + value.len <= parser.source.len && parser.source[parser.position..parser.position + value.len] == value
+	if parser.position + value.len > parser.source.len { return false }
+	for index, byte in value {
+		if parser.source[parser.position + index] != byte { return false }
+	}
+	return true
 }
 
 fn (mut parser SimpleXMLDocumentParser) consume(value string) ! {
@@ -105,6 +109,9 @@ fn (mut parser SimpleXMLDocumentParser) parse_name() !string {
 }
 
 fn xml_decode_references(value string) !string {
+	// The parser already owns the substring for this token. Most SVG/XML
+	// attributes and text have no references and need no second byte buffer.
+	if !value.contains('&') { return value }
 	mut output := []u8{cap: value.len}
 	mut position := 0
 	for position < value.len {
@@ -251,8 +258,9 @@ fn (mut parser SimpleXMLDocumentParser) parse_element(parent &dom.Node, inherite
 	parser.consume('<')!
 	qualified_name := parser.parse_name()!
 	mut attributes := []XMLAttributeToken{}
-	mut attribute_names := map[string]bool{}
-	mut namespaces := inherited_namespaces.clone()
+	mut attribute_names := ?map[string]bool(none)
+	mut namespaces := unsafe { inherited_namespaces }
+	mut owns_namespaces := false
 	mut self_closing := false
 	for {
 		parser.skip_space()
@@ -266,15 +274,32 @@ fn (mut parser SimpleXMLDocumentParser) parse_element(parent &dom.Node, inherite
 			break
 		}
 		name := parser.parse_name()!
-		if attribute_names[name] {
-			return error('duplicate XML attribute ${name}')
+		// Most SVG elements have only a handful of attributes. Their token list
+		// is already a duplicate-name index; large elements use a hash table.
+		if attributes.len < 16 {
+			for attribute in attributes {
+				if attribute.name == name { return error('duplicate XML attribute ${name}') }
+			}
+		} else {
+			mut names := unsafe { attribute_names or { map[string]bool{} } }
+			if names.len == 0 {
+				for attribute in attributes { names[attribute.name] = true }
+			}
+			if names[name] { return error('duplicate XML attribute ${name}') }
+			names[name] = true
+			attribute_names = unsafe { names }
 		}
-		attribute_names[name] = true
 		parser.skip_space()
 		parser.consume('=')!
 		parser.skip_space()
 		value := parser.parse_quoted_value()!
 		attributes << XMLAttributeToken{name, value}
+		if name == 'xmlns' || name.starts_with('xmlns:') {
+			if !owns_namespaces {
+				namespaces = inherited_namespaces.clone()
+				owns_namespaces = true
+			}
+		}
 		if name == 'xmlns' {
 			namespaces[''] = value
 		} else if name.starts_with('xmlns:') {
