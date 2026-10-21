@@ -59,7 +59,8 @@ fn calculate_inline_end_static_position_rect(containing_block &BlockContainer, c
 		}
 	}
 	mut line_boxes_bottom := CSSPixels.new(0)
-	for line_box in containing_block_used_values.line_boxes {
+	for index in 0 .. containing_block_used_values.line_boxes.len {
+		line_box := unsafe { &containing_block_used_values.line_boxes[index] }
 		line_boxes_bottom = css_pixels_max(line_boxes_bottom, line_box.bottom())
 	}
 	// Read the last line and fragment in place: copies of them would be moved to
