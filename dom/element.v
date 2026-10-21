@@ -1353,6 +1353,25 @@ fn contains_any_code_point(value string, invalid []u32) bool {
 	return false
 }
 
+// Name delimiters are ASCII. Ordinary parser names need neither a rune vector
+// nor a delimiter vector. Preserve the existing decoder for non-ASCII input,
+// including its treatment of malformed UTF-8 supplied by native callers.
+fn contains_invalid_name_ascii(value string, attribute bool) bool {
+	for byte in value {
+		if byte >= 0x80 {
+			if attribute {
+				return contains_any_code_point(value, [u32(9), 10, 12, 13, 32, 0, 47, 61, 62])
+			}
+			return contains_any_code_point(value, [u32(9), 10, 12, 13, 32, 0, 47, 62])
+		}
+		if byte == 9 || byte == 10 || byte == 12 || byte == 13 || byte == 32
+			|| byte == 0 || byte == 47 || byte == 62 || (attribute && byte == 61) {
+			return true
+		}
+	}
+	return false
+}
+
 fn is_ascii_alpha_code_point(ch u32) bool {
 	return (ch >= `A` && ch <= `Z`) || (ch >= `a` && ch <= `z`)
 }
@@ -1372,14 +1391,13 @@ fn is_ascii_digit_code_point(ch u32) bool {
 // https://dom.spec.whatwg.org/#valid-namespace-prefix
 pub fn is_valid_namespace_prefix(prefix string) bool {
 	// A string is a valid namespace prefix if its length is at least 1 and it does not contain ASCII whitespace, U+0000 NULL, U+002F (/), or U+003E (>).
-	return prefix.len > 0 && !contains_any_code_point(prefix, [u32(9), 10, 12, 13, 32, 0, 47, 62])
+	return prefix.len > 0 && !contains_invalid_name_ascii(prefix, false)
 }
 
 // https://dom.spec.whatwg.org/#valid-attribute-local-name
 pub fn is_valid_attribute_local_name(local_name string) bool {
 	// A string is a valid attribute local name if its length is at least 1 and it does not contain ASCII whitespace, U+0000 NULL, U+002F (/), U+003D (=), or U+003E (>).
-	return local_name.len > 0 && !contains_any_code_point(local_name, [u32(9), 10, 12, 13, 32, 0,
-		47, 61, 62])
+	return local_name.len > 0 && !contains_invalid_name_ascii(local_name, true)
 }
 
 // https://dom.spec.whatwg.org/#valid-element-local-name
@@ -1389,19 +1407,18 @@ pub fn is_valid_element_local_name(name string) bool {
 		return false
 	}
 
-	runes := name.runes()
-	first_code_point := u32(runes[0])
-
 	// 2. If name's 0th code point is an ASCII alpha, then:
-	if is_ascii_alpha_code_point(first_code_point) {
+	if is_ascii_alpha_code_point(u32(name[0])) {
 		// 1. If name contains ASCII whitespace, U+0000 NULL, U+002F (/), or U+003E (>), then return false.
-		if contains_any_code_point(name, [u32(9), 10, 12, 13, 32, 0, 47, 62]) {
+		if contains_invalid_name_ascii(name, false) {
 			return false
 		}
 
 		// 2. Return true.
 		return true
 	}
+	runes := name.runes()
+	first_code_point := u32(runes[0])
 
 	// 3. If name's 0th code point is not U+003A (:), U+005F (_), or in the range U+0080 to U+10FFFF, inclusive, then return false.
 	if first_code_point != `:` && first_code_point != `_` && (first_code_point < 0x0080 || first_code_point > 0x10ffff) {
