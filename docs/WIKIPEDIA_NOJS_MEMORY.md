@@ -17,8 +17,8 @@ in its protocol. Explicit historic Boehm comparisons require `--allocator boehm`
 ### Corrected arena before/after: 50 MB remains unmet
 
 The latest V-source comparison, three alternating optimized pairs, measures
-**75.02 → 74.76 MB**, a **0.35% reduction**. The largest candidate settled
-observation is **74,810,760 bytes**. The **50,000,000-byte limit still fails**.
+**74.52 → 73.65 MB**, a **1.17% reduction**. The largest candidate settled
+observation is **73,745,800 bytes**. The **50,000,000-byte limit still fails**.
 All six raw viewport images match, all frozen-input guards pass, and all six script audits
 report no page runtime, sources, source bytes or preloaded scripts.
 
@@ -52,6 +52,8 @@ report no page runtime, sources, source bytes or preloaded scripts.
 | CoreText query, SVG bounds, URL and cosmetic JSON workspaces | 78,071,152 bytes | 76,400,008 bytes | 2.14% |
 | Counter handles, font features, selector publication and paint projection | 76,449,136 bytes | 75,285,872 bytes | 1.52% |
 | Declarative shadow parsing, paint storage and scalar SVG snapshots | 75,023,752 bytes | 74,761,584 bytes | 0.35% |
+| Custom-property cascade workspace retirement | 75,187,592 bytes | 74,614,152 bytes | 0.76% |
+| Optional retained paint geometry storage | 74,515,872 bytes | 73,647,472 bytes | 1.17% |
 
 Each row is its own three-pair cohort; these are aggregate build comparisons,
 not isolated savings attributed to individual commits. Evidence is in
@@ -69,7 +71,8 @@ not isolated savings attributed to individual commits. Evidence is in
 `arena-text-header-fixup2-paired/`, `arena-iterator-rendered-text-paired/` and
 `arena-idle-pages-paired/`, `arena-content-child-snapshots-paired/` and
 `arena-idle-wiring-paired/`, `arena-resource-queries-paired/`,
-`arena-selector-paint-paired/` and `arena-scalar-plan-paired/`, including summaries, raw
+`arena-selector-paint-paired/`, `arena-scalar-plan-paired/`,
+`arena-custom-cascade-paired/` and `arena-paint-box-paired/`, including summaries, raw
 process samples, allocator checks, resource audits and captures. Matching
 `arena-{text,svg}-lifetimes-build-protocol.json` files pin the complete source
 inputs, current compiler and native libraries. The static-paint and SVG protocols are
@@ -480,7 +483,7 @@ SHA-256 is `b6a20a4efdcb09a0b1ca7e1defb69a57f466f199d1249a154eb0147c5fd98a44`.
 The signed executable is
 `6bec53cfa2314e2bc9b458f43e877b82b68fa0b3077ab19db401177cc457a50e`.
 
-The latest `arena-scalar-plan` cohort freezes `97da9d95` plus seven overlays
+The `arena-scalar-plan` cohort freezes `97da9d95` plus seven overlays
 authenticated against `5e6d2f71`. Its matching build protocol records every
 source and overlay hash. Declarative-shadow parsing, scalar SVG geometry
 snapshots and paint-plan workspace retirement are included. The later cosmetic
@@ -506,18 +509,37 @@ C, the unchanged 40-file cache, 1024×768 CSS pixels at DPR 2, a visible backgro
 window, and simultaneous app/descendant physical footprint measured before PNG
 allocation. Diagnostic samplers and unoptimized pilot builds are excluded.
 
+The `arena-custom-cascade` cohort includes custom-property cascade workspace
+retirement (`f739bdb6`). Its candidate settled values are 74,138,992,
+74,614,152 and 74,679,688 bytes, with a maximum observation of 74,696,072
+bytes. Candidate launch peaks are 484.66–486.36 MB.
+
+The latest `arena-paint-box` cohort freezes committed source `50d3765e`.
+Ten optional paint payloads now occupy pointer-sized slots on ordinary boxes;
+present payloads retain immutable snapshots. Eleven focused test files (63
+functions) pass with normal arenas, poisoned retired arenas, and Boehm.
+The candidate settled values are 73,647,472, 73,483,632 and 73,696,648 bytes;
+candidate launch peaks are 484.98–486.41 MB. All six viewport hashes remain
+`3010d840c8adaf0a5b71254499c27d9888d21b0cc92246c2ce989af60d8bb1fd`,
+all six script audits report no runtime or sources, and frozen inputs remain
+unchanged. The 50 MB gate fails for both settled and peak memory. Generated C
+SHA-256 is `60f849284e0df299bb2f0a990234fd0af1a05141ab724ac7d1c2055c78edaef8`.
+Separate guarded V emission and C compilation peak at 8.87 and 9.81 GB of
+sampled process-tree RSS. The private bundle passes signing and headless startup.
+The later resource-URL token workspace change is excluded from this cohort.
+
 Reproduce the latest V-source cohort with:
 
 ```sh
 python3 tools/run_memory_bounded.py \
-  --report Build/wikipedia-50mb/arena-scalar-plan-recheck-guard.json -- \
+  --limit-gib 3 --report Build/wikipedia-50mb/arena-paint-box-recheck-guard.json -- \
   python3 tools/benchmark_wikipedia_memory.py \
-  --before Build/wikipedia-50mb/arena-selector-paint.app/Contents/MacOS/Vox \
-  --after Build/wikipedia-50mb/arena-scalar-plan.app/Contents/MacOS/Vox \
+  --before Build/wikipedia-50mb/arena-custom-cascade.app/Contents/MacOS/Vox \
+  --after Build/wikipedia-50mb/arena-paint-box.app/Contents/MacOS/Vox \
   --cache Build/wikipedia-100mb/cache \
   --network-deny Build/pikabu-instructions-network-deny.dylib \
   --activity background --repeat 3 --allocator prealloc \
-  --output Build/wikipedia-50mb/arena-scalar-plan-recheck
+  --output Build/wikipedia-50mb/arena-paint-box-recheck
 ```
 
 The command exits nonzero while the 50 MB budget is exceeded.
