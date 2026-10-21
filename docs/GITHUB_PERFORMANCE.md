@@ -15678,3 +15678,31 @@ result,final-audit}.json`; original observation:
 `Build/instructions/vox-hotspots153i-diagnostic.run-1.{json,log,png}`.
 Diagnostic binary SHA256: `0a0b0369362beafb34757046b9b7e354408fe90f7d9d501ec9c34b92edc0eb79`.
 Durable generated-C archive SHA256: `c6ac62add57ecc4473945fe7fa0baa9a430fb6a902e22761edf7a66a8620708d`.
+
+
+## Size-query invalidation explains the second initial layout
+
+A separate frozen153 diagnostic records style flags and symbol backtraces from
+first navigation through first document-paint reporting. The first style update
+registers two size-query containers. After the first layout, their invalidation
+callback marks14 descendant `span` nodes dirty. The first after-layout check
+requests another style pass; the next two checks report clean state. There are
+three style-update calls in total, with animation state pending at the third.
+The original log shows two layout-tree builds before installation returns.
+This establishes the trigger, without establishing that any responsive update
+can be skipped or that subtree retention will save instructions.
+
+The owned browser and observer actually exit0 and retain one real1024×768 PNG.
+All14 dirty-node stacks name the size-query invalidator; the256-entry trace cap
+is not reached. Native compilation, signing and frozen-library startup actually
+exit0. All120 native inputs,37 frozen headers and exact native arguments are
+authenticated. Removing only the tracing wrappers, trace state and added system
+`execinfo.h` include restores the original C byte-for-byte. Runtime source stays
+accepted153. Current Root, canonical and GUI browsers are preserved.
+Instrumentation receives0 performance credit and Chrome parity remains open.
+
+Evidence: `Build/v/instruction-layout-reasons153-{plan,instrumentation-audit,
+build-result,result,final-audit}.json`; original trace and viewport:
+`Build/instructions/vox-layout-reasons153-diagnostic.run-1.{log,json,png}`.
+Diagnostic binary SHA256: `7892d907a22d26322e3d403a750bb22e20616380fae611f63e5f123b64db6055`.
+Durable C archive SHA256: `7c00f1505bf418a08fc2a19e2c91872dc3af8bde18e346378702999bf1a2d751`.
