@@ -4,14 +4,21 @@ import adblock
 import browserjs
 import css
 import dom
+import platform
 
 fn browser_adblock_tokens(document &dom.Document) []string {
+	scratch := platform.begin_thread_scratch('adblock DOM token survey')
 	mut tokens := map[string]bool{}
 	mut class_values := map[string]bool{}
 	collect_browser_adblock_tokens(document.as_node(), mut tokens, mut class_values)
 	mut result := tokens.keys()
 	result.sort()
-	return result
+	// The maps, split class names and sort buffer are query state. Keep only
+	// independent strings: filter transport may outlive this survey workspace.
+	scratch.leave()
+	retained := []string{len: result.len, init: result[index].clone()}
+	scratch.finish()
+	return retained
 }
 
 // Survey the light DOM directly: a selector match would read these same two
