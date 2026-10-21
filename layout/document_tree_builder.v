@@ -22,9 +22,9 @@ mut:
 	allow_subtree_reuse      bool
 	nonreusable_flow_roots   map[u64]bool
 	quote_nesting_level      u32
-	counter_sets             map[string]css.CountersSet
-	last_child_by_parent     map[string]string
-	last_processed_key       string
+	counter_sets             map[i64]css.CountersSet
+	last_child_by_parent     map[i64]i64
+	last_processed_key       i64 = -1
 	counter_tree_order_index i64
 	// Block-level pseudo-element boxes of an InlineNode, waiting to be inserted
 	// into the nearest ancestor that is not an InlineNode.
@@ -62,13 +62,19 @@ fn insert_hoisted_pseudo_element_boxes(mut children []&Node, child &Node, mut bu
 	}
 }
 
-fn abstract_element_counter_key(abstract_element &dom.AbstractElement) string {
-	pseudo_suffix := if pseudo := abstract_element.pseudo_element() {
-		':${int(pseudo) + 1}'
+fn abstract_element_counter_key(abstract_element &dom.AbstractElement) i64 {
+	// Node IDs are nonnegative. Reserve a lane for every current pseudo type
+	// and a separate lane for the element itself, without formatting strings
+	// for each parent, previous sibling and counter-free element.
+	pseudo_lane := if pseudo := abstract_element.pseudo_element() {
+		i64(int(pseudo) + 1)
 	} else {
-		':0'
+		i64(0)
 	}
-	return '${abstract_element.element().as_node().unique_id().value()}${pseudo_suffix}'
+	assert pseudo_lane < 32
+	node_id := abstract_element.element().as_node().unique_id().value()
+	assert node_id >= 0 && node_id <= (i64(1) << 58) - 1
+	return node_id * 32 + pseudo_lane
 }
 
 fn abstract_element_counter_id(abstract_element &dom.AbstractElement) i64 {
@@ -120,9 +126,9 @@ fn resolve_layout_counters(mut builder_state TreeBuilderState, abstract_element 
 	parent_key := if parent_element := parent {
 		abstract_element_counter_key(&parent_element)
 	} else {
-		''
+		i64(-1)
 	}
-	parent_counters := if parent_key.len > 0 {
+	parent_counters := if parent_key >= 0 {
 		builder_state.counter_sets[parent_key]
 	} else {
 		none
@@ -132,7 +138,7 @@ fn resolve_layout_counters(mut builder_state TreeBuilderState, abstract_element 
 	} else {
 		none
 	}
-	previous_element_counters := if builder_state.last_processed_key.len > 0 {
+	previous_element_counters := if builder_state.last_processed_key >= 0 {
 		builder_state.counter_sets[builder_state.last_processed_key]
 	} else {
 		none
@@ -156,7 +162,7 @@ fn resolve_layout_counters(mut builder_state TreeBuilderState, abstract_element 
 	} else {
 		builder_state.counter_sets.delete(key)
 	}
-	if parent_key.len > 0 {
+	if parent_key >= 0 {
 		builder_state.last_child_by_parent[parent_key] = key
 	}
 	builder_state.last_processed_key = key
@@ -243,7 +249,7 @@ fn build_layout_tree_from_computed_styles(document &dom.Document, mut style_comp
 	document_style := style_computer.create_document_style()
 	mut viewport := unsafe { &Node(Viewport.new(document, document_style)) }
 	mut builder_state := TreeBuilderState{
-		counter_sets: map[string]css.CountersSet{}
+		counter_sets: map[i64]css.CountersSet{}
 		allow_subtree_reuse: !document.needs_full_layout_tree_update() && document_layout_result(document) != none
 	}
 	if root_element_box := build_layout_box_for_element(document, root_element, style_computer, mut builder_state) {
