@@ -1042,15 +1042,14 @@ fn (s &StyleComputer) recompute_style_with_invalidation(mut abstract_element dom
 		})
 	}
 
-	mut pseudo_elements := [dom.PseudoElement.before, .after, .selection, .first_letter]
-	if element.rendered_in_top_layer() {
-		pseudo_elements << dom.PseudoElement.backdrop
-	}
-	if had_list_marker || computed.display().is_list_item() {
-		pseudo_elements << dom.PseudoElement.marker
-	}
+	pseudo_elements := [dom.PseudoElement.before, .after, .selection, .first_letter,
+		.backdrop, .marker]!
+	process_backdrop := element.rendered_in_top_layer()
+	process_marker := had_list_marker || computed.display().is_list_item()
 	mut mutable_computer := unsafe { &StyleComputer(s) }
 	for pseudo_element in pseudo_elements {
+		if (pseudo_element == .backdrop && !process_backdrop)
+			|| (pseudo_element == .marker && !process_marker) { continue }
 		mutable_computer.push_ancestor(abstract_element.element())
 		mut pseudo_abstract := dom.AbstractElement.new(abstract_element.element(), pseudo_element)
 		mut old_pseudo_style := ?&ComputedProperties(none)
@@ -1093,6 +1092,8 @@ fn (s &StyleComputer) recompute_style_with_invalidation(mut abstract_element dom
 			}
 		}
 		for pseudo_element in pseudo_elements {
+			if (pseudo_element == .backdrop && !process_backdrop)
+				|| (pseudo_element == .marker && !process_marker) { continue }
 			pseudo_abstract := dom.AbstractElement.new(abstract_element.element(), pseudo_element)
 			if layout_node := pseudo_abstract.unsafe_layout_node() {
 				if dom_style := pseudo_abstract.computed_properties() {
