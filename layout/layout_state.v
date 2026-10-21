@@ -429,6 +429,15 @@ fn (mut u UsedValues) set_node(node &NodeWithStyle, containing_block_used_values
 	}
 }
 
+// Size resolves its actual payload, which can differ from its public tag.
+// A missing payload and absolute/percentage leaves never read node metrics.
+fn definite_size_needs_node_metrics(size css.Size) bool {
+	if value := size.length_percentage_ {
+		return !value.is_percentage() && !(value.is_length() && value.length().is_absolute())
+	}
+	return false
+}
+
 fn resolve_definite_size(node &NodeWithStyle, computed &css.ComputedProperties, size css.Size, containing_block_used_values ?&UsedValues, width bool, used_values &UsedValues) ?CSSPixels {
 	containing_block_has_definite_size := if containing_block := containing_block_used_values {
 		if width {
@@ -460,14 +469,24 @@ fn resolve_definite_size(node &NodeWithStyle, computed &css.ComputedProperties, 
 	if size.contains_percentage() && !containing_block_has_definite_size {
 		return none
 	}
-	mut context := css.LengthResolutionContext.for_document(node.document())
-	font_size := CSSPixels.nearest_value_for(computed.resolved_font_size_px())
-	font_metrics := layout_font_metrics_for_node(node)
-	context.font_metrics.font_size = font_size
-	context.font_metrics.x_height = CSSPixels.nearest_value_for(f64(font_metrics.x_height))
-	context.font_metrics.cap_height = font_size.scaled(0.75)
-	context.font_metrics.zero_advance = CSSPixels.nearest_value_for(f64(font_metrics.advance_of_ascii_zero))
-	context.font_metrics.line_height = computed.line_height()
+	mut needs_metrics := definite_size_needs_node_metrics(size)
+	if !needs_metrics && computed.box_sizing() != .content_box {
+		start_padding := computed.size_value(if width { .padding_left } else { .padding_top })
+		end_padding := computed.size_value(if width { .padding_right } else { .padding_bottom })
+		needs_metrics = definite_size_needs_node_metrics(start_padding)
+			|| definite_size_needs_node_metrics(end_padding)
+	}
+	mut context := css.LengthResolutionContext{}
+	if needs_metrics {
+		context = css.LengthResolutionContext.for_document(node.document())
+		font_size := CSSPixels.nearest_value_for(computed.resolved_font_size_px())
+		font_metrics := layout_font_metrics_for_node(node)
+		context.font_metrics.font_size = font_size
+		context.font_metrics.x_height = CSSPixels.nearest_value_for(f64(font_metrics.x_height))
+		context.font_metrics.cap_height = font_size.scaled(0.75)
+		context.font_metrics.zero_advance = CSSPixels.nearest_value_for(f64(font_metrics.advance_of_ascii_zero))
+		context.font_metrics.line_height = computed.line_height()
+	}
 	reference_value := if containing_block := containing_block_used_values {
 		if width { containing_block.content_width() } else { containing_block.content_height() }
 	} else {
