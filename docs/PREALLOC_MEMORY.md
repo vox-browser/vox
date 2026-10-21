@@ -907,10 +907,12 @@ A poisoned 60-second scripted Pikabu run preserves one installation, the
 background endpoint is a safety diagnostic, not a Brave comparison result.
 
 The optimized source-210 candidate also includes the committed formatting-token
-retirement, stable/idle HarfBuzz face handling and glyph-index-only font reader.
-The font reader is staged from the active V library by the production build;
-the compiler checkout remains unchanged. All seven font/prealloc-runtime staging
-tests pass. The source-210 foreground comparison completes at Vox **416.6,
+retirement and stable/idle HarfBuzz face handling. Although the glyph-index-only
+font reader was staged, the private helper omitted `-d vox_sparse_ttf`, leaving
+the dense reader active in candidates through source-265. The canonical
+production build already supplies that flag. The corrected private builds
+start at native-267; no compiler-checkout change is needed. All seven
+font/prealloc-runtime staging tests pass. The source-210 foreground comparison completes at Vox **416.6,
 568.7, 461.1 MiB**, versus Brave **458.1, 458.0, 458.6 MiB** (`native-214`).
 It fails the unchanged all-trials criterion. The two-second settled intervals
 still include large GPU bursts, independently of the smaller V arena payload.
@@ -992,9 +994,54 @@ paths over flat/noisy backdrops (`native-244-raster-replay.log`). The combined
 source-237 browser passes startup in both modes, ten exact poisoned SVG checks,
 eleven default images equal to the preceding control, and a full 60-second
 poisoned page audit (`replay-245-svg`, `replay-246-default`, `native-247`). Its
-optimized comparison is pending.
+optimized comparison fails: Vox **490.0, 452.8, 414.9 MiB**, versus Brave
+**455.4, 460.9, 457.7 MiB** (`native-248`). All six trials are retained; the
+five-minute follow-up was not started after this failed gate. The 23 focused
+cooperative cases also pass with C optimization enabled, normally and under
+poisoning (`cooperative-250-*`).
 
 Older generated C intermediates are retained as verified gzip files to recover
 build space. `Build/prealloc-document/archived-generated-c.json` records their
-original names, SHA-256 hashes and compressed sizes; runtime binaries, reports
-and active compiler inputs are preserved.
+original names, SHA-256 hashes and compressed sizes. Older private app bundles
+are likewise recoverable from verified tar archives listed in
+`archived-browser-bundles/manifest.json`. Reports, active inputs and the
+canonical user application remain in place.
+
+### Repeated layout-cache writes and idle allocation profiles
+
+The arena census (`native-257`) stabilizes at **276,343,667 document bytes**
+and **10,311,199 paint-tree bytes**, while base storage grows about **17 KB/s**.
+The cold document sample (`native-263`) attributes 24.73 MB to outer computed
+layout-cache writes: 10.11 MB in ordinary style application, 9.12 MB in
+anonymous inheritance and 4.83 MB in anonymous construction. These sampled
+weights identify allocation paths, not independently measured savings.
+
+`14f8a892` extends the temporary publication scope to existing immutable
+caches and anonymous geometry/inheritance. It copies the previous record,
+keeps rare data under copy-on-write, and shares only completed ordinary
+snapshots within the owning document. Nested writers, animation reuse,
+animated/untyped styles and foreign allocation owners keep their durable
+paths. Fonts and counters are resolved before entering the pure write scope.
+
+All **31** focused initial, idle, rare and anonymous cases pass with prealloc,
+arena poisoning and Boehm (`initial-snapshot-268-*`). The new checks retain old
+geometry and rare payloads across mutations and preserve document isolation.
+Across 64 repeated resolutions, the old implementation retains **211,968
+bytes**, versus **211,960** for the forced ordinary control; the new path
+passes a bound below one quarter of its ordinary control. The isolated old
+budget failure is retained in `initial-snapshot-269-budget-control-run.log`.
+
+The warm base profile (`native-266`, seconds 20–40) finds empty animation-frame
+map cloning, filtered document/window vectors, navigable snapshots and rendering
+task records. A native diagnostic collecting JavaScriptCore and requesting
+malloc pressure relief (`native-259`) establishes no attributable improvement:
+the pressure call returns zero, and its smaller document arena predates the
+collection. These diagnostic runs do not count toward the Brave RAM gate.
+
+`e9a22493` moves pending and empty animation-frame callback maps instead
+of cloning on every rendering update; empty frames return immediately. A
+reentered delivery retains the outer batch and defers registrations to the
+proper subsequent batch. All six focused driver cases pass with prealloc,
+poisoning and Boehm (`animation-frame-271-*`), including 1,024 empty/nonempty
+frame pairs retaining less than 4 KiB. These unit results do not establish the
+full-browser RAM target.
