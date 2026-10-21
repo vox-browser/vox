@@ -1016,6 +1016,45 @@ mut:
 }
 
 fn (mut arena MeasurementUsedValuesArena) allocate() &UsedValues {
+	mut value := arena.allocate_slot()
+	unsafe { *value = UsedValues{inline_end_snapshot_arena_: arena} }
+	return value
+}
+
+fn (mut arena MeasurementUsedValuesArena) allocate_populated(source &UsedValues) &UsedValues {
+	mut value := arena.allocate_slot()
+	unsafe { *value = UsedValues{
+		node_: source.node_
+		content_width_: source.content_width_
+		content_height_: source.content_height_
+		has_definite_width_: source.has_definite_width_
+		has_definite_height_: source.has_definite_height_
+		width_constraint: source.width_constraint
+		height_constraint: source.height_constraint
+		offset: source.offset
+		margin_left: source.margin_left
+		margin_right: source.margin_right
+		margin_top: source.margin_top
+		margin_bottom: source.margin_bottom
+		border_left: source.border_left
+		border_right: source.border_right
+		border_top: source.border_top
+		border_bottom: source.border_bottom
+		padding_left: source.padding_left
+		padding_right: source.padding_right
+		padding_top: source.padding_top
+		padding_bottom: source.padding_bottom
+		inset_left: source.inset_left
+		inset_right: source.inset_right
+		inset_top: source.inset_top
+		inset_bottom: source.inset_bottom
+		inline_end_snapshot_arena_: arena
+	} }
+	return value
+}
+
+// Both callers immediately initialize the selected slot before publishing it.
+fn (mut arena MeasurementUsedValuesArena) allocate_slot() &UsedValues {
 	mut chunk := if arena.chunks.len == 0
 		|| arena.chunks.last().used == measurement_arena_chunk_size {
 		// Keep unused slots zeroed and scanned, then construct each record on
@@ -1035,7 +1074,6 @@ fn (mut arena MeasurementUsedValuesArena) allocate() &UsedValues {
 	}
 	index := chunk.used
 	chunk.used++
-	chunk.values[index] = UsedValues{inline_end_snapshot_arena_: arena}
 	return unsafe { &chunk.values[index] }
 }
 
@@ -1135,6 +1173,10 @@ fn (store &UsedValuesPagedStore) find(index u32) &UsedValues {
 }
 
 fn (mut store UsedValuesPagedStore) allocate(index u32) &UsedValues {
+	return store.allocate_with_source(index, unsafe { nil })
+}
+
+fn (mut store UsedValuesPagedStore) allocate_with_source(index u32, source &UsedValues) &UsedValues {
 	mut retained_scope := retain_geometry_allocations()
 	defer { retained_scope.finish() }
 	page_index := int(index >> layout_state_page_bits)
@@ -1147,12 +1189,16 @@ fn (mut store UsedValuesPagedStore) allocate(index u32) &UsedValues {
 		store.pages[page_index] = page
 	}
 	entry := if mut arena := store.measurement_arena {
-		arena.allocate()
+		if source == unsafe { nil } { arena.allocate() } else { arena.allocate_populated(source) }
 	} else {
 		if store.retained_arena == unsafe { nil } {
 			store.retained_arena = &RetainedUsedValuesArena{}
 		}
-		mut retained := store.retained_arena.storage.allocate()
+		mut retained := if source == unsafe { nil } {
+			store.retained_arena.storage.allocate()
+		} else {
+			store.retained_arena.storage.allocate_populated(source)
+		}
 		// A retained paintable can outlive the state. Its scalar snapshot stays
 		// GC-owned without retaining every other arena chunk through a back edge.
 		retained.inline_end_snapshot_arena_ = unsafe { nil }
@@ -1376,31 +1422,7 @@ pub fn (mut state LayoutState) populate_node_from(mut source LayoutState, node &
 		panic('VERIFY(!m_used_values_store.get(index))')
 	}
 	mut source_values := source.get(node)
-	mut values := state.used_values_store.allocate(index)
-	values.node_ = source_values.node_
-	values.content_width_ = source_values.content_width_
-	values.content_height_ = source_values.content_height_
-	values.has_definite_width_ = source_values.has_definite_width_
-	values.has_definite_height_ = source_values.has_definite_height_
-	values.width_constraint = source_values.width_constraint
-	values.height_constraint = source_values.height_constraint
-	values.offset = source_values.offset
-	values.margin_left = source_values.margin_left
-	values.margin_right = source_values.margin_right
-	values.margin_top = source_values.margin_top
-	values.margin_bottom = source_values.margin_bottom
-	values.border_left = source_values.border_left
-	values.border_right = source_values.border_right
-	values.border_top = source_values.border_top
-	values.border_bottom = source_values.border_bottom
-	values.padding_left = source_values.padding_left
-	values.padding_right = source_values.padding_right
-	values.padding_top = source_values.padding_top
-	values.padding_bottom = source_values.padding_bottom
-	values.inset_left = source_values.inset_left
-	values.inset_right = source_values.inset_right
-	values.inset_top = source_values.inset_top
-	values.inset_bottom = source_values.inset_bottom
+	mut values := state.used_values_store.allocate_with_source(index, source_values)
 	values.line_boxes = if source_values.line_boxes_are_shared_ {
 		copy_retained_inline_lines(source_values.line_boxes)
 	} else {
