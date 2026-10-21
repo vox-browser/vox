@@ -22,7 +22,7 @@ fn test_retained_independent_flow_reuses_descendants_after_preceding_comment_cha
 	root := retained_block_handle(document, 'stable')
 	before := document_layout_result(document)?
 	cache := before.state.block_layouts_[u64(voidptr(root))] or { panic('uncached BFC') }
-	old_list := document.record_display_list()?
+	old_list := record_retained_display_list(mut document)?
 	old_commands := display_list_commands(old_list).clone()
 	mut old_values := map[u64]&UsedValues{}
 	for entry in cache.values { old_values[u64(voidptr(entry.node))] = before.state.try_get(entry.node)? }
