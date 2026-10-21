@@ -8,10 +8,8 @@ import platform
 // by the caller or syntax cache.
 fn (mut parser RuleSelectorParser) parse_stylesheet_rules(location ?string) []&CSSRule {
 	$if prealloc {
-		if platform.current_retained_arena() != unsafe { nil }
-			&& parser.token_stream.values.len > 0 {
-			mut scratch := platform.new_arena('stylesheet rule syntax')
-			entry := scratch.enter()
+		if parser.token_stream.values.len > 0 {
+			mut scratch := platform.begin_thread_scratch('stylesheet rule syntax')
 			mut raw_parser := RuleSelectorParser{
 				...parser
 				token_stream: ParserTokenStream{
@@ -22,13 +20,13 @@ fn (mut parser RuleSelectorParser) parse_stylesheet_rules(location ?string) []&C
 				rule_context: parser.rule_context.clone()
 			}
 			raw := raw_parser.parse_a_stylesheet(location)
-			scratch.leave(entry)
+			scratch.leave()
 			parser.token_stream.index = raw_parser.token_stream.index
 			previous := parser.raw_rules_transient
 			parser.raw_rules_transient = true
 			defer {
 				parser.raw_rules_transient = previous
-				scratch.release()
+				scratch.finish()
 			}
 			return parser.convert_rules(raw.rules)
 		}

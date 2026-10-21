@@ -4,18 +4,16 @@ import platform
 
 // The syntax cache owns the immutable component tree, while tokenizer builders,
 // raw token copies and growing temporary vectors can retire after construction.
-// Native document scopes prove origin-thread ownership; concurrent standalone
-// parser callers keep their existing allocation path.
+// The workspace is thread-local, including for shared user-agent sheets parsed
+// before any document exists. Only the owned result escapes its lifetime.
 fn stylesheet_components_from_source(input string) []ComponentValue {
 	$if prealloc {
-		if input.len >= stylesheet_syntax_minimum_bytes
-			&& platform.current_retained_arena() != unsafe { nil } {
-			mut scratch := platform.new_arena('stylesheet tokenization')
-			entry := scratch.enter()
+		if input.len >= stylesheet_syntax_minimum_bytes {
+			mut scratch := platform.begin_thread_scratch('stylesheet tokenization')
 			values := ParserTokenStream.from_source(input, 'utf-8').values
-			scratch.leave(entry)
+			scratch.leave()
 			owned := own_stylesheet_components(values)
-			scratch.release()
+			scratch.finish()
 			return owned
 		}
 	}
