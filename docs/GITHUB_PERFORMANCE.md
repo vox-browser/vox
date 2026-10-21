@@ -16205,3 +16205,50 @@ build-result,result,final-audit}.json`; original trace and viewport:
 `Build/instructions/vox-layout-reasons153-diagnostic.run-1.{log,json,png}`.
 Diagnostic binary SHA256: `7892d907a22d26322e3d403a750bb22e20616380fae611f63e5f123b64db6055`.
 Durable C archive SHA256: `7c00f1505bf418a08fc2a19e2c91872dc3af8bde18e346378702999bf1a2d751`.
+
+
+## Frozen round 162 intrinsic-state hardware attribution
+
+A separate diagnostic wraps 14 intrinsic-state/ancestor/store functions in the accepted round 162 normal C-O2
+Boehm program. Counters run on the navigation owner thread from navigation
+entry through the first native document-frame report, using process-wide retired
+instructions. The single completed primary, owned browser and observer all
+actually exit 0; the retained document PNG is 1024×768. It uses the same
+359-file frozen cache, helper library, placement library and automatic 4 GiB
+heap hint. All program C outside the wrappers and their reporting gates restores
+byte-for-byte to the frozen input. Current Root is excluded.
+
+These are inclusive scope totals with counter overhead. Nested and recursive
+calls overlap: recursive width scopes exceed the whole-page count. Do not sum the rows,
+interpret them as self costs, or use this instrumented run as a speed comparison.
+
+| Function | Calls | Inclusive retired instructions |
+| --- | ---: | ---: |
+| `layout__calculate_content_width_with_constraint` | 7,138 | 269,079,327,704 |
+| `layout__populate_intrinsic_external_containing_blocks_once` | 165,117 | 48,049,150,052 |
+| `layout__populate_intrinsic_containing_block_chain` | 7,852 | 29,483,910,405 |
+| `layout__LayoutState_ensure_used_values_for` | 693,252 | 24,840,261,148 |
+| `layout__calculate_content_height_with_constraint` | 714 | 23,520,537,142 |
+| `layout__LayoutState_populate_node_from` | 212,982 | 23,324,834,167 |
+| `layout__UsedValuesPagedStore_get` | 1,542,935 | 15,167,333,531 |
+| `layout__populate_intrinsic_external_containing_blocks` | 7,852 | 13,372,268,654 |
+| `layout__UsedValuesPagedStore_allocate` | 252,018 | 7,645,597,599 |
+| `layout__Node_is_inclusive_ancestor_of` | 312,625 | 3,081,374,500 |
+| `layout__MeasurementUsedValuesArena_allocate` | 252,018 | 2,591,865,158 |
+| `layout__Box_cached_intrinsic_sizes` | 67,362 | 662,709,382 |
+| `layout__UsedValues_set_node` | 39,036 | 501,294,849 |
+| `layout__UsedValuesRareData_clone` | 12 | 167,369 |
+
+The trace records1,542,935 paged-store lookups,212,982 ancestor-state copies,
+165,117 recursive external-containing-block visits and39,036 size initializations.
+These counts guide the next investigation toward repeated intrinsic-state work.
+They do not establish self costs or prove that an alternative is faster. Counter
+failures are0, page credit0, and the accepted control/broad baseline remain162
+with observed carry0. The completed162 speed cohort is retained without replay.
+Chrome parity remains open; canonical and GUI browsers remain preserved.
+
+Evidence: `Build/v/instruction-layoutcost162-{plan,instrumentation-audit,
+build-result,result,final-audit}.json`; original single observation:
+`Build/instructions/vox-layoutcost162-diagnostic.run-1.{json,log,png}`.
+Diagnostic binary SHA256: `10f5b23330b54c52ac1351a615457b96e61d7c8c01db7a556d94df9eaa73b4dd`.
+Durable generated-C archive SHA256: `75980cdf4b4483074d7dd3421f200bebb0187f2804a108794cff51ad0e2845c9`.
