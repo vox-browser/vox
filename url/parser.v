@@ -235,6 +235,11 @@ fn parser_parse_authority(mut record URL, authority string) bool {
 
 // Parse a URL string against an optional base URL.
 pub fn basic_parse(input string, base ?&URL) ?URL {
+	$if prealloc { return parse_url_in_workspace(input, base) }
+	return basic_parse_in_workspace(input, base)
+}
+
+fn basic_parse_in_workspace(input string, base ?&URL) ?URL {
 	code_points := parser_processed_input(input)
 	mut record := URL{}
 	mut state := ParserState.scheme_start
