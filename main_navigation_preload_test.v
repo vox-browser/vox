@@ -78,7 +78,7 @@ fn test_navigation_keeps_current_document_active_while_stylesheet_is_blocked() {
 	assert <-requested
 	app.poll_page_preload()
 	assert app.pending_page_preload != none
-	assert app.document == old
+	assert voidptr(app.document) == voidptr(old)
 	assert old.is_fully_active()
 	assert app.address == 'https://www.wikipedia.org/'
 	_ = app.dispatch_chrome_pointer_event_at_viewport_point('pointermove', 0, 15, 15)
@@ -87,7 +87,7 @@ fn test_navigation_keeps_current_document_active_while_stylesheet_is_blocked() {
 	release <- true
 	assert <-finished
 	finish_navigation_preload(mut app)
-	assert app.document != old
+	assert voidptr(app.document) != voidptr(old)
 	assert app.address == 'https://it.wikipedia.org/wiki/Pagina_principale'
 	assert app.document.get_element_by_id('next')?.get_bounding_client_rect().width == 73
 	assert app.history.len == 1 && app.history[0].url == app.address
@@ -117,7 +117,7 @@ fn test_failed_navigation_preload_is_consumed_without_synchronous_retry() {
 	}, true)
 	assert <-requested
 	app.poll_page_preload()
-	assert app.document == old
+	assert voidptr(app.document) == voidptr(old)
 	release <- true
 	assert <-finished
 	finish_navigation_preload(mut app)
@@ -151,7 +151,7 @@ fn test_superseded_navigation_preload_cannot_replace_current_page() {
 	results <- PreloadedResource{ url: 'https://it.wikipedia.org/old.css', body: 'p{color:red}' }
 	app.poll_page_preload()
 	assert app.pending_page_preload == none
-	assert app.document == old
+	assert voidptr(app.document) == voidptr(old)
 	assert app.resource_cache.len == 0
 	assert app.history.len == 0
 	mut document := app.document
