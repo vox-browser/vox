@@ -14979,6 +14979,106 @@ and log-hash authentication,so subsequent recovery never repeats a completed pag
 Chrome parity remains unestablished;equivalent content/endpoint accounting is
 still required. Frozen checks add no credit or coverage for unrelated Root.
 
+## Fixed input bounds for token rune output
+
+Round154 applies `72883d4a` to accepted153. One complete authored
+`runes_to_string()` function and its one original Git hunk hold the borrowed
+source address and length fixed while copying into the separate byte owner.
+Unsigned OR still classifies every rune;only an all-ASCII result publishes that
+terminated owner. Other values retain the same private candidate release and
+original rune encoder. All other runtime hashes remain exact. No partial Root
+feature,storage projection or compiler shim is imported.
+
+Two new cases plus nine unchanged prerequisite/ASCII cases pass C-O2 bothGC:
+**11 cases and9,426 assertions per mode**. The new cases cover offset slices and
+boundary lengths surrounded by non-ASCII backing data,controls/NULs,Unicode and
+invalid internal scalars at both ends and the middle,source mutation and retained
+owners through collection. Four original fixtures remain;only duplicate
+module/import headers are consolidated. Identical completed checks are reused
+without replay. Common12 cases pass60 assertions/config;153-final supplies the
+matching before result. Current independent Root is outside this coverage.
+
+Before any154 performance/counter build,the local diagnostic was declared as
+4096 complete public tokenizer creations and EOF/none drains per observation,
+with16fixed512-rune attribute inputs (14ASCII/twoUnicode),every emitted owner
+byte consumed,16independent setup parses,eight warmups and forcedGC outside the
+counter. The unchanged automatic4GiB document hint is not forced or triggered.
+Three fixed alternating pairs give medians **1,131,533,787 →
+1,113,245,003 retired instructions (-1.61628263%)**,
+**3/3 wins**,all six actual exits0/equal checksums. This public API result
+earns0 page credit. Read-only focused C-O2 machine-code evidence is retained
+separately;code shape earns0 page credit.
+
+Strict normal C permits only `html__runes_to_string` to change. Full independent
+generation retains every function,type and global;all other functions,records,
+globals/resources remain exact after established compiler identities,four
+byte-identical helper reorderings and authenticated unchanged-source assertion
+lines. All493builtins,176protected decoder/filter/arena functions,120native inputs,
+37headers and exact native arguments authenticate. Public decoding,CSS filtering
+and CSS tokenizer arenas remain unchanged. Actual native build,signing and the
+frozen4eef helper startup exit0.
+
+Both full-process C-O1/Boehm/marker1/no-inline profiles actually exit0. They stay
+enabled through main without filtering/reset. Each executes9full batches,
+36,880public tokenizer creations and221,280next-token calls. Raw selected counts:
+
+| Function | Before calls | Final calls |
+| --- | ---: | ---: |
+| `html__opt154_complete_public_tokenizer_batch` | 9 | 9 |
+| `html__HTMLTokenizer__static__new` | 36,880 | 36,880 |
+| `html__HTMLTokenizer_next_token` | 221,280 | 221,280 |
+| `html__runes_to_string` | 184,400 | 184,400 |
+| `html__HTMLTokenizer_consume_current_builder` | 184,400 | 184,400 |
+
+
+Profile calls,timings and instrumented hardware counters earn0 page credit.
+The matching normal page builds retain the359-body cache,4eef helper,1024×768
+document viewport and `native.scopes.navigation_to_first_document_paint[0]`.
+The fixed30 alternating pairs give fresh medians **16,597,304,573
+→ 16,600,902,722.5** instructions:point saving
+**-3,598,149.5 (0.02167912%)**,
+**14/30 wins**. Paired median saving is
+**-619,116**. The30,000paired bootstrap resamples use
+seed154 for both the actual RNG and emitted label,giving95% interval
+**[-9,987,167, 8,657,818]**. Repeatable page credit is **0**.
+Integration is **unaccepted** under the positive-point
+policy;no historical median is subtracted.
+
+All60 primaries remain:60real PNGs,0counter-only recoveries,
+0archived pre-primary startup retries. First preparation stays
+1installation/2geometry/1paint;later refreshes remain separate
+(0),as do all
+2external foreground transitions.
+Available captures are1024×768 and exact outside the original fixed skeleton
+bands. Unknown exits/missing PNGs remain explicit;no completed primary is
+filtered,discarded or rerun. The cohort never extends.
+
+Focused viewport is exact. Prior observed carry0 plus the fresh positive point
+gives **0** for the5M broad gate:**skipped below 5,000,000-instruction threshold**.
+No broad execution is claimed below the threshold;both focused loader receipts pin4eef.
+A predeclared capture guard authenticates any existing complete per-page PNG
+against its source,binary,viewport,font,library,logs and actual zero-exit receipt
+before reuse. Unfinished capture recovery preserves completed pages and jobs.
+
+Isolated artifact:`/Users/alex/code/vox2/Build/v/Vox-opt154.app`. Pinning,signing,verification,smoke
+and actual GC checks exit0;instruction text matches the measured image and the
+installed helper is frozen4eef. Collections use defaultmarker1/override2.
+Only canonical Info/resources are read;canonical executables/GUI,newer bundles
+and foreign work remain untouched. Accepted control is
+**153**,broad baseline
+**153**,observed carry
+**0**.
+
+Matched privateRAM compiler scratch and durable SSD C/profile/binary archives
+remain declared;normal C,regular browser binaries,cache,logs and receipts stay
+durable. Hashes are indexed by `Build/v/instruction-opt154-durable-archives.json`.
+One unstarted validation-note control label was corrected150to153;original
+bytes/static record remain in `instruction-opt154-scope-label-finding.json`.
+No codeflow,inputs,expectations or observations changed.
+
+Chrome parity remains unestablished;equivalent content/endpoint accounting is
+still required. Frozen checks add no credit or coverage for unrelated Root.
+
 ## Causes and changes
 
 - The V 0.5.2 compatibility compiler's `-prod` Boehm code repeatedly snapshots

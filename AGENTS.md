@@ -2374,6 +2374,14 @@ evidence](docs/translation-audit/NATIVE_MEDIA_WHEEL_RAW_HANDLER.md).
   Focused exact;broad passed;prior carry4130722.5;strict six-body/whole-program independent C audit.
   Accepted control 153;isolated153app/GC1+override2;canonical/GUI/foreign work preserved.
   Full profiles actual0;no call-count credit. Original scratch-path1/empty launcher/resume and reuse-prose errata retained;Chrome open.
+  Fixed rune input bounds round154 (`72883d4a`):onecompletefunction/oneoriginalGit hunk/oneHTMLpath;11cases/9426asserts eachGC reused.
+  Two new/nine exact prerequisite+ASCII cases;only duplicate headers consolidated. Common60/config.
+  Declared4096full public-tokenizer API batch -1.616283%/3wins/all6actual0;zero local pagecredit.
+  Fresh page 16,597,304,573→16,600,902,722.5;14/30wins;point -3,598,149.5.
+  PairedCI[-9,987,167,8,657,818];repeatable credit 0;all60 retained;same1/2/1 preparation.
+  Focused exact;broad skipped below 5,000,000-instruction threshold;prior carry0;strict one-body/whole-program independent C audit.
+  Accepted control 153;isolated154app/GC1+override2;canonical/GUI/foreign work preserved.
+  Full profiles actual0;no call-count credit. Actual/reported bootstrapseed154;capture guard preserves completed pages;Chrome open.
 - Outside instruction-count optimization, run broad regression suites once per
   ten completed fixes, not after every fix.
   Broad suites include full translation/package test batches, the full LibJS AST
