@@ -1135,6 +1135,8 @@ pub mut:
 	list_style_image_ ?css.StyleValue
 	image_observers_  []&ImageObserver
 	layout_index_     u32
+mut:
+	inherited_style_proof_ &css.LayoutInheritanceProof = unsafe { nil }
 }
 
 fn materialize_list_style_image(computed_values &css.ComputedProperties, document &dom.Document) ?css.StyleValue {
@@ -1375,7 +1377,12 @@ fn (mut n NodeWithStyle) propagate_style_to_anonymous_wrappers() {
 		child_styled := child.as_node_with_style() or { continue }
 		mut mutable_child := unsafe { &NodeWithStyle(child_styled) }
 		mut child_values := unsafe { &css.MutableComputedValues(mutable_child.computed_values_) }
-		child_values.inherit_from(n.computed_values_)
+		if !css.layout_inheritance_is_current(mutable_child.inherited_style_proof_,
+			child_values, n.computed_values_, n.document_) {
+			child_values.inherit_from(n.computed_values_)
+			mutable_child.inherited_style_proof_ = css.refresh_layout_inheritance_proof(
+				mutable_child.inherited_style_proof_, child_values, n.computed_values_, n.document_)
+		}
 		mutable_child.propagate_style_to_anonymous_wrappers()
 	}
 }

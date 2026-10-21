@@ -1787,6 +1787,7 @@ pub fn (mut values MutableComputedValues) inherit_from(other &ComputedValues) {
 	values.computed_values_line_height_ = other.computed_values_line_height_
 	values.cached_computed_font_list_ = other.cached_computed_font_list_
 	values.cached_computed_font_list_generation_ = other.cached_computed_font_list_generation_
+	values.cached_computed_font_list_owner_ = other.cached_computed_font_list_owner_
 	values.cached_first_available_computed_font_ = other.cached_first_available_computed_font_
 	values.ensure_computed_layout_cache().computed_values_caret_color_ = other.computed_layout_cache().computed_values_caret_color_
 	values.ensure_computed_layout_cache().computed_values_color_ = other.computed_layout_cache().computed_values_color_
