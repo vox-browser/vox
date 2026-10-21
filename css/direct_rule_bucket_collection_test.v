@@ -2,6 +2,9 @@ module css
 
 import dom
 
+// These fixtures inject synthetic author rules. Give each scope its own cache
+// instead of modifying the immutable UA-only template shared by empty scopes.
+
 fn cached_rule_fixture_rule(index usize, text string) &MatchingRule {
  return &MatchingRule{rule_index: index, selector: selector_from_text(text), cascade_origin: .author}
 }
@@ -22,8 +25,8 @@ fn test_direct_cached_rules_keep_bucket_order_empty_entries_and_attempt_metadata
  target.set_attribute_value('title', 'value')
  mut root_node := root.as_node()
  root_node.append_child(target.as_node())!
- scope := css_style_scope_for_document(document)
- scope.build_rule_cache_if_needed()
+ mut scope := css_style_scope_for_document(document)
+ scope.populate_new_rule_cache()
  mut cache := scope.rule_cache_for_cascade_origin(.author, none) or { panic('cache absent') }
  cache.rules_by_class['empty'] = []&MatchingRule{}
  cache.rules_by_class['card'] = [cached_rule_fixture_rule(1, '.card'), cached_rule_fixture_rule(9, '.card:hover')]
@@ -59,8 +62,8 @@ fn test_direct_cached_rules_preserve_duplicate_rule_identity_and_quirks_folding(
  mut target := document.create_element('div')!
  target.set_attribute_value('class', 'Mixed')
  target.set_attribute_value('id', 'TARGET')
- scope := css_style_scope_for_document(document)
- scope.build_rule_cache_if_needed()
+ mut scope := css_style_scope_for_document(document)
+ scope.populate_new_rule_cache()
  mut cache := scope.rule_cache_for_cascade_origin(.author, none) or { panic('cache absent') }
  cache.fold_id_and_class_name_case = true
  shared_rule := cached_rule_fixture_rule(3, '*')
@@ -84,10 +87,10 @@ fn test_direct_cached_rules_include_own_shadow_host_scope_with_its_identity() {
  mut root_node := root.as_node()
  root_node.append_child(host.as_node())!
  shadow := host.attach_shadow(dom.ShadowRootInit{mode: .open})!
- scope := css_style_scope_for_document(document)
- scope.build_rule_cache_if_needed()
- own_scope := css_style_scope_for_shadow_root(shadow)
- own_scope.build_rule_cache_if_needed()
+ mut scope := css_style_scope_for_document(document)
+ scope.populate_new_rule_cache()
+ mut own_scope := css_style_scope_for_shadow_root(shadow)
+ own_scope.populate_new_rule_cache()
  mut primary := scope.rule_cache_for_cascade_origin(.author, none) or { panic('primary cache absent') }
  mut own := own_scope.rule_cache_for_cascade_origin(.author, none) or { panic('own cache absent') }
  primary.rules_by_class['host'] = [cached_rule_fixture_rule(10, '.host')]
