@@ -63,6 +63,10 @@ fn append_dom_value_resource_urls(value &dom.StyleValue, fallback_base string,
 	if !text_may_contain_resource_url(value.css_text) { return }
 	base_url := value.base_url or { fallback_base }
 	if typed := typed_style_value_logic_from_dom(value) {
+		// path() stores geometry in a quoted string. It cannot reference a
+		// resource, and reparsing a long SVG path would manufacture a URL
+		// candidate containing every coordinate in the path.
+		if typed is BasicShapeStyleValue { return }
 		if typed is UnresolvedStyleValue {
 			append_component_resource_urls(typed.tokens, base_url, mut candidates)
 			return

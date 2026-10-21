@@ -1,5 +1,7 @@
 module css
 
+import platform
+
 $if gcboehm ? {
 	fn C.GC_gcollect()
 }
@@ -69,4 +71,20 @@ fn test_resource_candidates_tokenize_raw_component_and_dom_boundary_values() {
 			CSSStyleProperty{name: 'width', value: '17px'}]
 	}
 	assert boundary.resource_url_candidates('https://raw.test/').map(it.url) == ['boundary.png']
+}
+
+fn test_typed_svg_path_geometry_is_not_tokenized_as_a_resource_url() {
+	path := svg_presentation_path_value('M0 0 ' + 'l1 1 '.repeat(4096)) or {
+		panic('missing path fixture')
+	}
+	value := dom_style_value_from_value_logic(path)
+	assert value.css_text.starts_with('path(')
+	declaration := &CSSStyleProperties{
+		properties: [CSSStyleProperty{name:'d', style_value:value}]
+	}
+	before := platform.thread_arena_usage().used
+	for _ in 0 .. 8 {
+		assert declaration.resource_url_candidates('https://geometry.test/').len == 0
+	}
+	$if prealloc { assert platform.thread_arena_usage().used - before < 4096 }
 }
