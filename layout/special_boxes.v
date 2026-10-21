@@ -656,14 +656,11 @@ pub fn svg_background_natural_size(document &dom.Document) css.SizeWithAspectRat
 	return negotiate_svg_natural_metrics(root)
 }
 
-// SVG backgrounds are painted from an isolated document instead of through
-// the bitmap decoder. Keep their natural size available to background sizing,
-// including for data: URLs that stb_image cannot decode.
-fn background_svg_intrinsic_dimensions(document &dom.Document, source string, is_svg bool) (f64, f64) {
-	if !is_svg {
-		return 0, 0
-	}
-	intrinsic := image_intrinsic_size_for_source(document, source) or { return 0, 0 }
+// Use the same decoded SVG for pixels and dimensions. Refetching its source
+// here duplicates response bytes and can observe a newer resource revision.
+fn background_svg_intrinsic_dimensions(isolated ?&dom.Document) (f64, f64) {
+	document := isolated or { return 0, 0 }
+	intrinsic := svg_background_natural_size(document)
 	mut width := f64(0)
 	mut height := f64(0)
 	if natural_width := intrinsic.width {
@@ -742,8 +739,8 @@ fn xml_start_tag_attribute(tag string, requested_name string) ?string {
 
 fn svg_image_natural_size(source string) ?css.SizeWithAspectRatio {
 	start := source.index('<svg') or { return none }
-	end_relative := source[start..].index('>') or { return none }
-	start_tag := source[start..start + end_relative + 1]
+	end := source.index_after('>', start) or { return none }
+	start_tag := source[start..end + 1]
 	width := svg_absolute_length(xml_start_tag_attribute(start_tag, 'width') or { '' })
 	height := svg_absolute_length(xml_start_tag_attribute(start_tag, 'height') or { '' })
 	mut aspect_ratio := ?css.CSSPixelFraction(none)

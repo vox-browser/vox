@@ -68,7 +68,7 @@ fn refreshed_background_resource_layers(layers []BackgroundImageLayer, root &Nod
 		key := layer.color_scheme.str() + '\n' + layer.url
 		resource := resources[key] or {
 			isolated := svg_image_document_for_source_in_viewport(root, layer.url, layer.color_scheme)
-			width, height := background_svg_intrinsic_dimensions(root.document(), layer.url, isolated != none)
+			width, height := background_svg_intrinsic_dimensions(isolated)
 			value := CompletedBackgroundResource{
 				document: isolated
 				intrinsic_width: width
