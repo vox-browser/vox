@@ -124,14 +124,31 @@ def frozen_response(cache, url, resource_type):
 
 
 class PikabuReplayCDP(ReplayCDP):
+    def __init__(self, url, cache):
+        super().__init__(url, cache)
+        self.replay_rows = {}
+
     def pump(self):
         response = self.receive()
         identifier = response.get('id')
         if identifier is not None:
             if identifier in self.pending_replay:
                 self.pending_replay.remove(identifier)
+                row = self.replay_rows.pop(identifier)
                 if 'error' in response:
+                    error = response['error']
+                    # A paused request can disappear before Chrome handles
+                    # its asynchronous reply (for example after cancellation).
+                    # Record that rejection without retrying or allowing the
+                    # request onto the network. All other protocol errors fail.
+                    if (error.get('code') == -32602
+                            and error.get('message') == 'Invalid InterceptionId.'):
+                        row['requested_action'] = row['action']
+                        row['action'] = 'canceled-interception'
+                        row['replay_error'] = error
+                        return
                     raise RuntimeError(response['error'])
+                row['acknowledged'] = True
             else:
                 self.responses[identifier] = response
             return
@@ -158,6 +175,7 @@ class PikabuReplayCDP(ReplayCDP):
                 'responseCode': 200, 'responseHeaders': headers,
                 'body': base64.b64encode(body).decode()})
         self.pending_replay.add(command)
+        self.replay_rows[command] = row
         self.requests.append(row)
 
 

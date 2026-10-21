@@ -183,7 +183,8 @@ def measure(args, browser, output):
                     command=command, identity=identity, screen=screen,
                     seconds=time.monotonic() - started, memory_diagnostic=memory,
                     samples=counter.samples, foreground_checks=foreground.checks,
-                    foreground_controlled=not args.background)
+                    foreground_controlled=not args.background,
+                    requests=client.requests if client else None)
                 (output / 'failure.json').write_text(json.dumps(failure, indent=2) + '\n')
                 raise
             finally:

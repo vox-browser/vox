@@ -6,10 +6,70 @@ import subprocess
 import sys
 import tempfile
 import unittest
+from unittest.mock import Mock, patch
 
 from pikabu_browser_instructions import (
     frozen_response, content_ready, fingerprint_tree, native_content_state, native_font_gate, URL,
+    PikabuReplayCDP,
 )
+
+
+class PikabuReplayAcknowledgementTests(unittest.TestCase):
+    def client(self):
+        with patch('pikabu_browser_instructions.ReplayCDP.__init__'):
+            client = PikabuReplayCDP('ws://fixture', Path('/fixture'))
+        client.cache = Path('/fixture')
+        client.pending_replay = set()
+        client.requests, client.events, client.responses = [], [], {}
+        client.issue = Mock(return_value=7)
+        return client
+
+    def pause(self, client, cached):
+        client.receive = Mock(return_value=dict(method='Fetch.requestPaused', params=dict(
+            requestId='paused-1', resourceType='Image',
+            request=dict(url=URL + 'image.png', method='GET'))))
+        with patch('pikabu_browser_instructions.frozen_response', return_value=cached):
+            client.pump()
+
+    def test_canceled_replay_and_blocked_requests_remain_offline_and_are_audited(self):
+        for cached in [None, (b'pixels', [], Path('/fixture/image'))]:
+            with self.subTest(cached=cached is not None):
+                client = self.client()
+                self.pause(client, cached)
+                method = 'Fetch.fulfillRequest' if cached else 'Fetch.failRequest'
+                self.assertEqual(client.issue.call_args.args[0], method)
+                client.receive.return_value = dict(id=7, error=dict(
+                    code=-32602, message='Invalid InterceptionId.'))
+                client.pump()
+                self.assertFalse(client.pending_replay)
+                self.assertFalse(client.replay_rows)
+                self.assertEqual(client.requests[0]['action'], 'canceled-interception')
+                self.assertEqual(client.requests[0]['requested_action'],
+                                 'replayed' if cached else 'failed-missing-or-non-get')
+                self.assertNotIn('acknowledged', client.requests[0])
+                client.issue.assert_called_once()  # No retry or live-network continuation.
+
+    def test_successful_replay_acknowledgement_and_unrelated_response_routing(self):
+        client = self.client()
+        self.pause(client, (b'pixels', [], Path('/fixture/image')))
+        client.receive.return_value = dict(id=7, result={})
+        client.pump()
+        self.assertTrue(client.requests[0]['acknowledged'])
+        self.assertEqual(client.requests[0]['action'], 'replayed')
+        self.assertFalse(client.pending_replay)
+        client.receive.return_value = dict(id=8, result={'value': 'kept'})
+        client.pump()
+        self.assertEqual(client.responses[8]['result']['value'], 'kept')
+
+    def test_other_interception_errors_still_fail(self):
+        for error in [dict(code=-32602, message='Invalid response headers'),
+                      dict(code=-32000, message='Invalid InterceptionId.')]:
+            with self.subTest(error=error):
+                client = self.client()
+                self.pause(client, None)
+                client.receive.return_value = dict(id=7, error=error)
+                with self.assertRaises(RuntimeError):
+                    client.pump()
 
 
 class FrozenPikabuTests(unittest.TestCase):
