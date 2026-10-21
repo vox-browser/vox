@@ -51,6 +51,7 @@ struct C.hb_glyph_position_t {
 }
 
 struct HarfBuzzScaledFont {
+mut:
 	face       voidptr
 	scale      int
 	point_size f32
@@ -126,6 +127,7 @@ __global (
 	harfbuzz_emoji_blob         voidptr
 	harfbuzz_emoji_face         voidptr
 	harfbuzz_emoji_attempted    bool
+	harfbuzz_cache_generation   u64 = 1
 )
 
 fn bundled_font_path(file_name string) ?string {
@@ -369,7 +371,12 @@ fn resolve_font_path_for_family(family string, weight int) ?string {
 
 fn scaled_harfbuzz_font(face voidptr, point_size f32, resolution f32, variations []FontVariationAxis) ?voidptr {
 	scale := scale_for_harfbuzz(point_size, resolution)
-	for cached in harfbuzz_scaled_fonts {
+	mut available := -1
+	for index, cached in harfbuzz_scaled_fonts {
+		if cached.font == unsafe { nil } {
+			if available < 0 { available = index }
+			continue
+		}
 		if cached.face == face && cached.scale == scale && cached.point_size == point_size
 			&& cached.variations == variations {
 			return cached.font
@@ -388,13 +395,18 @@ fn scaled_harfbuzz_font(face voidptr, point_size f32, resolution f32, variations
 		// FontVariationAxis has hb_variation_t's {tag, value} layout.
 		C.hb_font_set_variations(font, variations.data, u32(variations.len))
 	}
-	harfbuzz_scaled_fonts << HarfBuzzScaledFont{
+	mut axes := if available >= 0 { unsafe { harfbuzz_scaled_fonts[available].variations } } else { []FontVariationAxis{} }
+	axes.clear()
+	axes << variations
+	entry := HarfBuzzScaledFont{
 		face: face
 		scale: scale
 		point_size: point_size
-		variations: variations.clone()
+		variations: axes
 		font: font
 	}
+	if available >= 0 { harfbuzz_scaled_fonts[available] = entry }
+	else { harfbuzz_scaled_fonts << entry }
 	return font
 }
 
@@ -413,13 +425,16 @@ fn scale_for_harfbuzz(point_size f32, resolution f32) int {
 }
 
 fn document_harfbuzz_face(font &Font) ?voidptr {
-	if font.harfbuzz_face_ != unsafe { nil } { return font.harfbuzz_face_ }
+	if font.harfbuzz_face_ != unsafe { nil }
+		&& font.harfbuzz_face_generation_ == harfbuzz_cache_generation { return font.harfbuzz_face_ }
 	path := font.font_path()?
 	face_index := font.face_index()
 	cache_key := '${path}|${face_index}'
 	if face := harfbuzz_document_faces[cache_key] {
-		font.remember_harfbuzz_face(face)
-		return face
+		if face != unsafe { nil } {
+			font.remember_harfbuzz_face(face)
+			return face
+		}
 	}
 	if harfbuzz_document_attempted[cache_key] {
 		return none
@@ -447,8 +462,10 @@ fn (font &Font) remember_harfbuzz_face(face voidptr) {
 	// settled path, just like decoded TrueType faces and pixel metrics do.
 	if font.resolved_path_ == '' { return }
 	mut mutable_font := unsafe { &Font(font) }
-	// The shared HarfBuzz cache owns faces for the process lifetime.
+	// Idle retirement advances the generation before another query can use a
+	// borrowed native face. Glyph runs keep independent glyph data.
 	mutable_font.harfbuzz_face_ = face
+	mutable_font.harfbuzz_face_generation_ = harfbuzz_cache_generation
 }
 
 // x.ttf's cmap reader currently handles only formats 0 and 4. Use HarfBuzz as
@@ -529,7 +546,7 @@ mut:
 	attempted     bool
 	function      voidptr
 	face_function voidptr
-	// HarfBuzz faces are cached for the process; remember which carry 'sbix'.
+	// Cleared whenever native faces retire; their addresses can be reused.
 	bitmap_faces map[u64]bool
 }
 

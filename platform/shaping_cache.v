@@ -278,6 +278,7 @@ pub fn release_unused_text_shaping() {
 			platform_shaping_cache_storage.reset()
 		}
 	}
+	release_unused_harfbuzz_fonts()
 }
 
 // Equivalent Font values select the same concrete face and may safely share
