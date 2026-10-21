@@ -14828,6 +14828,157 @@ repeatable page credit0. Canonical app,GUI and foreign work are preserved.
 Chrome parity remains unestablished;equivalent content/endpoint accounting
 is still required.
 
+## Classify and copy ASCII token runes in one pass
+
+Round153 applies complete prerequisite `72042b98` and new feature
+`8c18c440` to accepted150. The entire original prerequisite parent file
+matches frozen150 and its entire final file imports all18 original runtime Git
+hunks,including the paused-reference position fix. One new original Git hunk
+then changes the complete `runes_to_string()` function:copy candidate bytes
+while OR-reducing all unsigned rune bits. Publish one terminated owner only if
+every rune is ASCII;otherwise release the unpublished candidate and use the
+unchanged rune encoder. Empty output,controls/NULs and non-ASCII/invalid internal
+values retain their behavior. Both whole authored source files reconstruct;
+all19 runtime hunks/two stages/one HTML path are imported. No partial Root
+feature,arena dependency or compiler shim is used. CSS decoding/filtering and
+CSS tokenizer arenas remain unchanged.
+
+Three new cases plus six unchanged prerequisite/ASCII cases pass C-O2 bothGC:
+**9 cases and3,105 assertions per mode**. They cover byte/rune boundaries,
+all ASCII controls,high bits at the first/middle/last positions,valid and invalid
+internal scalars,explicit Unicode/NUL results,terminated owned outputs after
+source mutation/replacement/collection,buffer identity/allocation bounds and
+streamed names/attributes/comments/entities/positions. Three full original
+fixtures remain;only duplicate module/import headers are consolidated. Every
+helper/case body and expectation is exact. Identical whole-runtime checks are
+authenticated and reused without replay. Common12 cases pass60 assertions/config;
+unchanged150-final supplies before. Independent current Root is not covered.
+
+Before any153 performance build/sample,the fresh local diagnostic was declared
+as4096 complete public `HTMLTokenizer.new()` creations and `next_token()` EOF
+and none drains per sample. Sixteen fixed512-rune attribute inputs include
+14 ASCII variants and two with Unicode at opposite ends. The checksum reads
+every emitted tag/comment/attribute byte and token kind/codepoint;it cannot
+skip output materialization. Sixteen independent setup parses/assertions,eight
+full warmup batches,forced GC and final assertions remain outside the hardware
+counter. No document/layout is created,so the unchanged normal automatic4GiB
+hint is not triggered or forced in this local diagnostic.
+
+Three fixed alternating pairs give medians **1,202,030,980 →
+1,131,881,048 retired instructions (-5.83595042%)**,
+**3/3 wins**. All six actual exits0 and equal checksums remain. This
+feature-local public API result earns0 page credit. It is a distinct new153
+implementation/cohort;the completed152 observations remain unchanged. A
+functional-binary symbol query found no retained exported helper symbol after
+normal optimization/dead stripping;no zero call count or vectorization is
+assumed from that absence. The persisted normal before/final binaries both
+retain a local helper symbol. Read-only disassembly confirms the final ASCII
+copy/OR loop is scalar;no SIMD claim is made. Its exact binary/assembly hashes
+remain in `instruction-opt153-normal-machine-code-proof.json`.
+
+Strict normal C matches independent whole-app generation,retaining every
+function,type and global. Exactly six tokenizer bodies change across both
+complete stages:`runes_to_string`, `skip`, `dequeue`, `consume_current_builder`,
+`next_token_impl` and `emit_temporary_buffer_as_end_tag_fallback`.
+All other bodies,records,globals/resources remain exact after established
+compiler identity,byte-identical helper order and authenticated source assertion
+lines. All493 builtins,176 protected encoder/filter/arena functions,120 native
+inputs,37 quoted headers and exact native arguments authenticate. Actual normal
+build,signing and frozen4eef helper startup exit0.
+
+Both C-O1/Boehm/marker1/no-inline full-process profiles actually exit0 and stay
+enabled throughout main without filtering/reset. Each executes9 full batches,
+36,880 public tokenizer creations and221,280 `next_token()` calls,including the
+16 independent setup parses. Selected raw counts follow;counts,timings and
+instrumented hardware counters earn0 page credit.
+
+| Function | Before calls | Final calls |
+| --- | ---: | ---: |
+| `html__opt153_complete_public_tokenizer_batch` | 9 | 9 |
+| `html__HTMLTokenizer__static__new` | 36,880 | 36,880 |
+| `html__HTMLTokenizer_next_token` | 221,280 | 221,280 |
+| `html__runes_to_string` | 184,400 | 184,400 |
+| `html__HTMLTokenizer_consume_current_builder` | 184,400 | 184,400 |
+
+
+The fixed30 alternating page pairs keep the frozen359-body cache,4eef helper,
+1024×768 document viewport and endpoint
+`native.scopes.navigation_to_first_document_paint[0]`. Fresh matching medians
+are **16,644,748,217 → 16,618,105,061.5**
+instructions: observed saving **26,643,155.5**
+(-0.16006944%), **24/30 wins**. Paired median
+saving is **23,304,690**. The30,000 paired bootstrap resamples
+with seed153 give95% interval **[16,382,423.5, 32,691,527]**. Repeatable page credit
+is **26,643,155.5**. Integration is **accepted**
+under the existing positive-point policy;no historical median is subtracted.
+
+All60 primaries remain:60 real PNGs,0 counter-only recoveries,
+1 archived pre-primary startup retries. First preparation stays
+1installation/2geometry/1paint. Later refreshes remain separate
+(0);all5
+external foreground transitions remain. Available captures are1024×768 and exact
+outside the original fixed skeleton bands. Unknown exits/missing PNGs remain
+explicit. No completed primary is filtered,discarded or rerun;the cohort is
+never extended.
+
+Focused viewport is exact. Prior observed carry4,130,722.5 plus the fresh positive
+observed point gives **30,773,878** for the broad gate. Result:
+**passed**.
+Six actual zero-exit jobs cover87selected cases bothGC/174executions;19screenshots finish,16exact. Known differences remain inline-node13,text-decorations1341,canvas-text1994. All36actual loader receipts pin the frozen helper.
+
+Isolated artifact:`/Users/alex/code/vox2/Build/v/Vox-opt153.app`. Library pinning,signing,verification,
+smoke and GC checks actually exit0. Instruction text matches the measured image;
+installed helper is frozen4eef. Actual collections use default marker1/override2.
+Only canonical Info/resources are copied;canonical executables/GUI,newer bundles
+and foreign work are preserved. Accepted control is **153**,
+broad baseline **153**,observed carry
+**0**.
+
+Private RAM compiler scratch is matched across variants and declared before
+builds;source/C/profile/binary archives,normal C,regular persisted browser
+binaries,frozen cache,logs and receipts remain durable on SSD. An inherited
+scratch-directory literal stopped original preparation with actual1 before any
+scratch mutation/build;the initial launcher also exited1 with no jobs. Completed
+source clones/declaration were verified and preserved;only unfinished setup
+resumed on unique153 scratch. Original receipts remain in
+`instruction-opt153-scratch-path-finding.json`. Inherited reuse-scope prose
+named152;actual full runtime/fixture hashes authenticate153 and original receipts
+remain unchanged (`instruction-opt153-metadata-errata.json`). Durable hashes are
+indexed by `Build/v/instruction-opt153-durable-archives.json`.
+
+Read-only C discovery initially expected `builtin__free`;actual generated C
+calls `builtin___v_free`. Its original actual1 is retained;only the exact
+callee assertion was corrected before strict audit/native compilation. The
+resumed read-only discovery exits0,without program replay or comparison changes.
+
+A stale control147 check stopped the original page-preparation reader and
+dependent launcher/benchmark before any primary. Their actual1 receipts remain.
+Read-only setup recovery authenticates control150;the unchanged fixed cohort
+starts only after that recovery. No successful build,test or primary repeats.
+Unused final-audit scope labels were corrected from147 to153 before execution.
+Originals and hashes remain in `instruction-opt153-page-setup-finding.json`.
+
+The original successful summary reports a stale seed151 label while its actual
+RNG is153. A read-only correction changes only that metadata field;independent
+verification of the declared30,000 resamples reproduces the original interval
+exactly. All60 primaries and every statistic remain unchanged. Original report,
+script and hashes remain in `instruction-opt153-bootstrap-metadata-finding.json`.
+
+The first broad screenshot driver retains actual1 after two trapped launches
+for the selection-insert reference page,with no PNG. Six completed comparisons,
+all six broad jobs/174executions and all60 primaries are preserved. Byte-identical
+recovery drivers run only unfinished captures. Original validation,bundle and
+closure actual1 receipts remain in `instruction-opt153-visual-launch-finding.json`.
+The launch root cause remains unestablished.
+A second reference page also trapped twice before any PNG. Its original actual1
+receipts remain in `instruction-opt153-visual-launch-finding2.json`;eight completed
+comparisons and all broad/primary results stay untouched. A checked capture guard
+can reuse completed reference/input PNGs after source,binary,viewport,font,library
+and log-hash authentication,so subsequent recovery never repeats a completed page.
+
+Chrome parity remains unestablished;equivalent content/endpoint accounting is
+still required. Frozen checks add no credit or coverage for unrelated Root.
+
 ## Causes and changes
 
 - The V 0.5.2 compatibility compiler's `-prod` Boehm code repeatedly snapshots

@@ -2366,6 +2366,14 @@ evidence](docs/translation-audit/NATIVE_MEDIA_WHEEL_RAW_HANDLER.md).
   Local gate1/native launcher1/jobs0;no normal/profile/page/broad/bundle;accepted150/carry4130722.5 retained.
   Allocation bounds pass but no hardware saving;all observations kept. Strict independent C audit never starts.
   Missing marker prerequisite/draft label findings retained;matched RAM scratch/durable evidence;canonical/GUI/foreign work preserved;Chrome open.
+  Fused ASCII token runes round153 (`8c18c440`+72042b98):all19runtime Git hunks/twostages/oneHTMLpath;9cases/3105asserts eachGC reused.
+  Three new/six exact prerequisite+ASCII cases;only duplicate headers consolidated. Common60/config.
+  Declared4096full public-tokenizer API batch -5.835950%/3wins/all6actual0;zero local pagecredit.
+  Fresh page 16,644,748,217→16,618,105,061.5;24/30wins;point 26,643,155.5.
+  PairedCI[16,382,423.5,32,691,527];repeatable credit 26,643,155.5;all60 retained;same1/2/1 preparation.
+  Focused exact;broad passed;prior carry4130722.5;strict six-body/whole-program independent C audit.
+  Accepted control 153;isolated153app/GC1+override2;canonical/GUI/foreign work preserved.
+  Full profiles actual0;no call-count credit. Original scratch-path1/empty launcher/resume and reuse-prose errata retained;Chrome open.
 - Outside instruction-count optimization, run broad regression suites once per
   ten completed fixes, not after every fix.
   Broad suites include full translation/package test batches, the full LibJS AST
