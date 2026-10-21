@@ -94,8 +94,7 @@ pub fn computed_style_in_layout_coordinates(source &ComputedProperties,
 	computer := css_style_computer_for(document).font_computer()
 	fonts := original.computed_font_list(computer)
 	_ = original.first_available_computed_font(computer)
-	cache := original.computed_layout_cache()
-	previous := cache.device_layout_projection_
+	previous := original.device_layout_projection_
 	if previous != unsafe { nil }
 		&& previous.scale == scale && previous.provenance.matches(original) {
 		return previous.style
@@ -108,6 +107,7 @@ pub fn computed_style_in_layout_coordinates(source &ComputedProperties,
 		property_store_:                source.clone_raw_property_store()
 		computed_property_graph_token_: &ComputedPropertyGraphMutationToken{}
 		computed_layout_cache_:         unsafe { nil }
+		device_layout_projection_:      unsafe { nil }
 		layout_cache_owner_serial_:     0
 		computed_values_resolved_:      false
 		cached_length_metrics_:         unsafe { nil }
@@ -179,13 +179,11 @@ pub fn computed_style_in_layout_coordinates(source &ComputedProperties,
 			font_computer:                 source.cached_computed_font_list_owner_
 			font_generation:               source.cached_computed_font_list_generation_
 		}
-		owns_write := original.begin_computed_layout_cache_write()
-		original.computed_layout_cache_.device_layout_projection_ = &DeviceLayoutStyleProjection{
+		original.device_layout_projection_ = &DeviceLayoutStyleProjection{
 			scale:      scale
 			provenance: provenance
 			style:      target
 		}
-		original.finish_computed_layout_cache_write(owns_write)
 	}
 	return target
 }

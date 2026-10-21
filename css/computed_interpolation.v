@@ -1665,6 +1665,8 @@ pub mut:
 mut:
 	computed_property_graph_token_ &ComputedPropertyGraphMutationToken = unsafe { nil }
 	computed_layout_cache_ &ComputedLayoutCache = unsafe { nil }
+	// Density conversion is memoized independently of resolved layout values.
+	device_layout_projection_ &DeviceLayoutStyleProjection = unsafe { nil }
 	// Serial number pairing this style with the snapshots it may rewrite in
 	// place; see computed_layout_cache.v.
 	layout_cache_owner_serial_ u64
