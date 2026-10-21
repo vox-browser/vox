@@ -2407,6 +2407,11 @@ evidence](docs/translation-audit/NATIVE_MEDIA_WHEEL_RAW_HANDLER.md).
   PairedCI[8,777,041,12,397,119];repeatable credit 10,802,973.5;all60retained;same1/2/1preparation;seed158/30000bootstrap.
   Focused exact;broad passed;prior carry0;strict independent entire-program C/all4authoredhunks.
   Accepted control 158;isolated158app/GC1+override2;canonical/GUI/foreign preserved;fullprofiles actual0/no callcountcredit;Chrome open.
+  Lazy layout indexes round159 (`513b998e`):all5originalruntimehunks/twoLayoutpaths;5unchangedoriginalcases/14994asserts eachGC reused.
+  Common60/config;normal C-onlyfrontend0;declared canonical147scene/16fullpublicpipelines/192textchecks.
+  Threefixedlocalpairs +0.183824%/0wins/all6actual0;allobservations retained;zero pagecredit.
+  Localgate1/native-release1/no native-start/jobs0;no normal/profile/independentC/page/broad/bundle/GC159 pass.
+  Acceptedcontrol/broad/app158/carry0 preserved;original predicate1 and archiveprose erratum retained;canonical/GUI/foreign preserved;Chrome open.
 - Outside instruction-count optimization, run broad regression suites once per
   ten completed fixes, not after every fix.
   Broad suites include full translation/package test batches, the full LibJS AST

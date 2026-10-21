@@ -15390,6 +15390,56 @@ indexed by `Build/v/instruction-opt158-durable-archives.json`;matched privateRAM
 scratch remains declared. Chrome parity still needs equivalent content,start
 and paint endpoints. No additional credit or coverage applies to current Root.
 
+## Retain lazy layout indexes as a rejected local attempt
+
+Round159 applies complete `513b998e` to accepted158. Per-state subgrid and
+height-dependency indexes allocate their mutable maps only on first write.
+All five original runtime hunks across `layout/layout_state.v` and
+`layout/flex_formatting_context.v` reconstruct both original author files
+exactly. All other frozen runtime hashes stay unchanged;no context rebase,
+partial feature,storage projection,compiler shim or rejected154–157 work is
+imported. The existing complete feature remains committed onmaster.
+
+All five unchanged original cases pass **14,994 assertions in each GC mode**
+with native C-O2. They cover allocation-free absent reads,independent map
+materialization,cached false,subgrid axes and copied state ownership after GC,
+unindexed-node population,and real percentage-height dependency topology.
+Completed exact-runtime successes are reused without replay. Common12 cases
+pass60 assertions/configuration;the matching before result reuses158.
+Whole normal C-only generation exits0;this is not a native or strict C pass.
+
+Before any159 performance/counter build,the scene is declared as canonical147
+apart from function/probe labels:64 Unicode paragraphs,128 whitespace-only
+blocks,192 independent setup text checks and16 complete public parse/layout/
+record/paint-command/hit/finalize pipelines per observation. Setup,eight warmups,
+forcedGC and assertions stay outside the hardware counter. Normal policy is
+C-O2/Boehm/defaultmarker1/unchanged automatic4GiB,not forced or triggered locally,
+no-prod/no-global-prealloc. Three fixed alternating pairs give medians
+**32,490,659,115 → 32,550,384,585 retired instructions**,
+**0.18382351% more**, **0/3 wins**. All six actual exits0
+and checksum7,963,486,608 agree. No completed observation is discarded,filtered,
+rerun or added. Avoided map allocations earn no instruction credit by themselves.
+
+The local gate and native-release controller actually exit1. No native-start
+receipt exists;zero normal native,profile,independent C or page jobs start.
+No strict C audit,native binary,profile,page primary,screenshot,broad batch,
+bundle or GC pass is claimed for159. The declared fixed30 page pairs/seed159/
+30,000 paired bootstrap never start. All completed focused,local and frontend
+C/binary archives remain durable and hash-indexed in
+`Build/v/instruction-opt159-durable-archives.json`.
+
+The first preparation exits1 because its inherited predecessor predicate
+requires accepted158 to be unaccepted. This happens before snapshots or jobs;
+the corrected preparation actually exits0. Original source,result and terminal
+remain retained. One completed archive receipt also carries the old reuses153
+prose;its actual before source/C/binary metadata authenticate158. Hash-linked
+correction:`Build/v/instruction-opt159-archive-prose-correction.json`.
+No successful check or measured sample is replayed for either tooling correction.
+
+Accepted control,broad baseline and verified isolated app remain158;repeatable
+page credit and observed carry stay0. Canonical/GUI browsers,newer bundles and
+foreign work remain preserved. Chrome parity is still unestablished.
+
 ## Causes and changes
 
 - The V 0.5.2 compatibility compiler's `-prod` Boehm code repeatedly snapshots
