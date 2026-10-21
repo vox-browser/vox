@@ -64,7 +64,7 @@ fn absent_payload_populated_style() &ComputedProperties {
 	values.set_fill(SVGPaint.from_color(Color{17, 34, 51, 255}))
 	values.set_stroke(SVGPaint.from_url(URL.from_url('retained-paint.svg'), Color{68, 85, 102, 255}))
 	values.set_mask_image(ImageStyleValue.create_from_url_string('retained-mask.svg'))
-	shape := parse_css_value_logic(.clip_path, 'inset(1px 2px 3px 4px)') or { panic(err) }
+	shape := parse_css_value_logic(.clip_path, 'inset(1px 2px 3px 4px)') or { panic('expected clip-path value') }
 	if shape is BasicShapeStyleValue {
 		values.set_clip_path(ClipPathReference.from_basic_shape(shape))
 	} else { panic('expected basic shape') }
