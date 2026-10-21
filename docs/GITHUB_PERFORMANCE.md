@@ -15628,3 +15628,53 @@ result,final-audit}.json`; original observation:
 `Build/instructions/vox-hotspots153-diagnostic.run-1.{json,log,png}`.
 Diagnostic binary SHA256: `d4ad89b0cf2dd220d47915f7030be4f6b0ce27fe0e923a622433d0410330c0b3`.
 Durable generated-C archive SHA256: `f5c249e3008103e0c2f4c7b27aaf467098f5cc5961cf38df172f0e1587be6361`.
+
+
+## Frozen round 153 intrinsic-layout hardware attribution
+
+A separate diagnostic wraps 14 functions in the accepted round 153 normal C-O2
+Boehm program. Counters run on the navigation owner thread from navigation
+entry through the first native document-frame report, using process-wide retired
+instructions. The single completed primary, owned browser and observer all
+actually exit 0; the retained document PNG is 1024×768. It uses the same
+359-file frozen cache, helper library, placement library and automatic 4 GiB
+heap hint. All program C outside the wrappers and their reporting gates restores
+byte-for-byte to the frozen input. Current Root is excluded.
+
+These are inclusive scope totals with counter overhead. Nested and recursive
+calls overlap: flex alone exceeds the whole-page count. Do not sum the rows,
+interpret them as self costs, or use this instrumented run as a speed comparison.
+
+| Function | Calls | Inclusive retired instructions |
+| --- | ---: | ---: |
+| `layout__layout_inside_independent_formatting_context_with_mode` | 35,706 | 90,841,791,216 |
+| `layout__calculate_content_width_with_constraint` | 7,138 | 18,220,554,518 |
+| `layout__calculate_min_content_width` | 20,659 | 14,110,571,304 |
+| `layout__calculate_max_content_width` | 24,643 | 4,670,430,151 |
+| `layout__calculate_content_height_with_constraint` | 714 | 3,472,794,336 |
+| `layout__calculate_max_content_height` | 16,060 | 3,148,828,209 |
+| `layout__InlineLevelIterator_generate_all_items` | 32,244 | 2,760,019,393 |
+| `layout__flex_base_height` | 1,956 | 2,624,644,430 |
+| `layout__flex_intrinsic_main_size` | 10,442 | 1,715,462,460 |
+| `layout__calculate_min_content_height` | 9,480 | 1,093,051,297 |
+| `layout__flex_base_width` | 12,328 | 601,133,665 |
+| `layout__LineBuilder_break_line` | 20,358 | 415,421,559 |
+| `layout__resolve_flexible_lengths` | 9,149 | 301,172,756 |
+| `layout__flex_intrinsic_main_size_of_column_container` | 436 | 74,669,001 |
+
+Round156documentation `c5ebbf30` committed before its finish driver failed an
+inherited round155 bookkeeping assertion. The original driver remains actual1;
+`instruction-opt156-doc-finalize-finding.json` authenticates the read-only metadata
+recovery. No commit, check or observation was repeated.
+
+The evidence points further investigation toward repeated intrinsic width/layout probes; it does not
+establish a saving. Counter failures are 0. Page credit is 0, the accepted
+control and verification ledger remain round 153, and Chrome parity remains
+open. No completed round 156 observation was rerun; the diagnostic waited until
+all six156local observations completed and the actual nativegate rejected;no156page cohort ran. Canonical and GUI browsers remain preserved.
+
+Evidence: `Build/v/instruction-hotspots153i-{instrumentation-audit,build-result,
+result,final-audit}.json`; original observation:
+`Build/instructions/vox-hotspots153i-diagnostic.run-1.{json,log,png}`.
+Diagnostic binary SHA256: `0a0b0369362beafb34757046b9b7e354408fe90f7d9d501ec9c34b92edc0eb79`.
+Durable generated-C archive SHA256: `c6ac62add57ecc4473945fe7fa0baa9a430fb6a902e22761edf7a66a8620708d`.
