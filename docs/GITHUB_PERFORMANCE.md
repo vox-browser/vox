@@ -16607,3 +16607,41 @@ build-result,result,capacity-predicate-finding,final-audit}.json`; original
 observation `Build/instructions/vox-storemeta164-diagnostic.run-1.{json,log,png}`.
 Binary SHA256: `1cc302a2ff4feb8b17fd3e3096f7a0637b2293a5e3a33e07e7fe293ba30c770b`.
 Durable generated-C archive SHA256: `6c0d1565702d47ac51765d77cb7e84689614076571ee9427e7c389e78a2cc318`.
+
+
+## Frozen round 165 ancestor line-box copy diagnostic
+
+One separate diagnostic counts source line-box array shapes at the existing
+`populate_node_from()` clone site for temporary measurement owners. It reads
+the already obtained source value, adding no state lookup or allocation. The
+first navigation owner thread is sampled through the first native document
+paint report, with the same cache, helper, placement and automatic 4 GiB hint.
+Native build, signing, smoke, observer and browser all actually exit zero. The
+retained document PNG is 1024×768. The one insertion and navigation/report gates
+restore the entire accepted-165 C byte-for-byte. Current Root is excluded.
+
+| Source line-box array metric | Count |
+| --- | ---: |
+| `calls` | 212,982 |
+| `zero_capacity` | 209,282 |
+| `empty_with_capacity` | 162 |
+| `nonempty` | 3,538 |
+| `total_length` | 7,002 |
+| `total_capacity` | 10,744 |
+| `max_length` | 3 |
+| `max_capacity` | 4 |
+
+Of 212,982 copies, 209,282 have zero capacity, 162 are empty with reserved
+capacity, and 3,538 are populated. This supports investigating a zero-capacity
+clone guard while retaining clones for reserved and populated arrays. These
+are logical counts across copies, not peak memory or instruction self costs.
+Instrumentation errors and speed credit are zero. The one completed primary is
+retained without replay; this does not extend the completed 165 speed cohort.
+Accepted control and broad baseline remain 165, carry zero. Canonical and GUI
+browsers remain preserved; Chrome parity remains open.
+
+Evidence: `Build/v/instruction-linecopy165-{plan,instrumentation-audit,
+build-result,result,final-audit}.json`; observation
+`Build/instructions/vox-linecopy165-diagnostic.run-1.{json,log,png}`.
+Binary SHA256: `b6acc486915fb939ca4112150205bbcbf71c9a191f4223c8cd37c352d4c3ee4a`.
+Durable generated-C archive SHA256: `9d6a6049340c29af981578b5d7ec02fab62967e152d65ab9fdd5311701ab6848`.
