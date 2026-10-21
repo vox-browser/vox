@@ -1,5 +1,10 @@
 module platform
 
+$if macos {
+	#include <malloc/malloc.h>
+	fn C.malloc_zone_pressure_relief(zone voidptr, goal usize) usize
+}
+
 // Shaping is synchronous. Retained glyph runs contain glyph indices, positions
 // and their V font identity, with no borrowed hb_font/hb_face storage. Static
 // idle can retire these native lookup caches as well as the V glyph-run cache.
@@ -44,4 +49,9 @@ fn release_unused_harfbuzz_fonts() {
 	harfbuzz_emoji_attempted = false
 	harfbuzz_cache_generation++
 	skia_system_face_advances_lookup.bitmap_faces.clear()
+	$if macos {
+		// Freed native font tables otherwise remain in malloc's free-page cache.
+		// Zero requests all available unused pages; live allocations stay valid.
+		C.malloc_zone_pressure_relief(unsafe { nil }, 0)
+	}
 }
