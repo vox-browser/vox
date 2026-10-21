@@ -15033,15 +15033,7 @@ pub fn html_table_element_apply_presentational_hints(element &dom.HTMLTableEleme
 
 fn collect_svg_presentational_hints(mut properties []StyleProperty, element &dom.Element, properties_to_cascade ComputedInterpolationPropertyIDs) {
 	tag_name := element.local_name()
-	geometry_only := {
-		'cx': ['circle', 'ellipse']
-		'cy': ['circle', 'ellipse']
-		'd':  ['path']
-		'r':  ['circle']
-		'rx': ['ellipse', 'rect']
-		'ry': ['ellipse', 'rect']
-	}
-	sizing_only := ['foreignObject', 'image', 'rect', 'svg', 'symbol', 'use']
+	sizing_only := ['foreignObject', 'image', 'rect', 'svg', 'symbol', 'use']!
 	attributes := element.attribute_list() or { return }
 	for index := 0; index < attributes.length(); index++ {
 		attribute := attributes.item(index) or { continue }
@@ -15058,7 +15050,15 @@ fn collect_svg_presentational_hints(mut properties []StyleProperty, element &dom
 			property_name = 'font-width'
 		}
 		if attribute_name in ['cx', 'cy', 'd', 'r', 'rx', 'ry'] {
-			if tag_name !in geometry_only[attribute_name] {
+			// These fixed applicability sets need no per-element map or vectors,
+			// including during the writing-mode/direction-only cascade probe.
+			applies := match attribute_name {
+				'cx', 'cy' { tag_name in ['circle', 'ellipse'] }
+				'd' { tag_name == 'path' }
+				'r' { tag_name == 'circle' }
+				else { tag_name in ['ellipse', 'rect'] }
+			}
+			if !applies {
 				continue
 			}
 		} else if attribute_name == 'transform'
