@@ -2,6 +2,7 @@ module css
 
 
 import dom
+import platform
 
 // Translated scaffolding from:
 // - LibWeb/CSS/StyleScope.h/cpp
@@ -2317,6 +2318,11 @@ fn style_scope_add_cached_rules_to_run(style_computer &StyleComputer, abstract_e
 }
 
 pub fn style_computer_collect_matching_rules_in_scope(style_computer &StyleComputer, abstract_element dom.AbstractElement, cascade_origin CascadeOrigin, mut attempted_pseudo_class_matches PseudoClassBitmap, qualified_layer_name ?string, scope &StyleScope) []ScopedMatchingRule {
+	return collect_matching_rules_with_storage(style_computer, abstract_element, cascade_origin,
+		mut attempted_pseudo_class_matches, qualified_layer_name, scope, unsafe { nil })
+}
+
+fn collect_matching_rules_with_storage(style_computer &StyleComputer, abstract_element dom.AbstractElement, cascade_origin CascadeOrigin, mut attempted_pseudo_class_matches PseudoClassBitmap, qualified_layer_name ?string, scope &StyleScope, storage &platform.Arena) []ScopedMatchingRule {
 	diagnostic_scope_start := begin_diagnostic_instruction_scope()
 	defer { record_diagnostic_instruction_scope(3, diagnostic_scope_start) }
 
@@ -2482,7 +2488,7 @@ pub fn style_computer_collect_matching_rules_in_scope(style_computer &StyleCompu
 					}
 				}
 			}
-			matching_rules << ScopedMatchingRule{
+			append_scoped_matching_rule(mut matching_rules, ScopedMatchingRule{
 				rule: rule_to_run
 				shadow_root: style_scope_mut_shadow_root_option(rule_root)
 				resolved_scope_root: resolved_scope_root
@@ -2491,7 +2497,7 @@ pub fn style_computer_collect_matching_rules_in_scope(style_computer &StyleCompu
 				} else {
 					int(0x3fffffff)
 				}
-			}
+			}, storage)
 		}
 	}
 
@@ -2531,29 +2537,34 @@ pub fn sort_matching_rules(mut matching_rules []ScopedMatchingRule) {
 }
 
 pub fn style_computer_build_matching_rule_set_impl(style_computer &StyleComputer, abstract_element dom.AbstractElement, mut attempted_pseudo_class_matches PseudoClassBitmap, did_match_any_pseudo_element_rules &bool, mode ComputeStyleMode, scope &StyleScope) MatchingRuleSet {
+	return build_matching_rule_set_with_storage(style_computer, abstract_element,
+		mut attempted_pseudo_class_matches, did_match_any_pseudo_element_rules, mode, scope, unsafe { nil })
+}
+
+fn build_matching_rule_set_with_storage(style_computer &StyleComputer, abstract_element dom.AbstractElement, mut attempted_pseudo_class_matches PseudoClassBitmap, did_match_any_pseudo_element_rules &bool, mode ComputeStyleMode, scope &StyleScope, storage &platform.Arena) MatchingRuleSet {
 	// First, we collect all the CSS rules whose selectors match `element`:
 	mut matching_rule_set := MatchingRuleSet{}
-	matching_rule_set.user_agent_rules = style_computer_collect_matching_rules_in_scope(style_computer, abstract_element, .user_agent, mut attempted_pseudo_class_matches, none, scope)
+	matching_rule_set.user_agent_rules = collect_matching_rules_with_storage(style_computer, abstract_element, .user_agent, mut attempted_pseudo_class_matches, none, scope, storage)
 	sort_matching_rules(mut matching_rule_set.user_agent_rules)
-	matching_rule_set.user_rules = style_computer_collect_matching_rules_in_scope(style_computer, abstract_element, .user, mut attempted_pseudo_class_matches, none, scope)
+	matching_rule_set.user_rules = collect_matching_rules_with_storage(style_computer, abstract_element, .user, mut attempted_pseudo_class_matches, none, scope, storage)
 	sort_matching_rules(mut matching_rule_set.user_rules)
 
 	// @layer-ed author rules
 	for layer_name in scope.qualified_layer_names_in_order {
-		mut layer_rules := style_computer_collect_matching_rules_in_scope(style_computer, abstract_element, .author, mut attempted_pseudo_class_matches, layer_name, scope)
+		mut layer_rules := collect_matching_rules_with_storage(style_computer, abstract_element, .author, mut attempted_pseudo_class_matches, layer_name, scope, storage)
 		sort_matching_rules(mut layer_rules)
-		matching_rule_set.author_rules << LayerMatchingRules{
+		append_matching_layer(mut matching_rule_set.author_rules, LayerMatchingRules{
 			qualified_layer_name: layer_name
 			rules: layer_rules
-		}
+		}, storage)
 	}
 	// Un-@layer-ed author rules
-	mut unlayered_author_rules := style_computer_collect_matching_rules_in_scope(style_computer, abstract_element, .author, mut attempted_pseudo_class_matches, none, scope)
+	mut unlayered_author_rules := collect_matching_rules_with_storage(style_computer, abstract_element, .author, mut attempted_pseudo_class_matches, none, scope, storage)
 	sort_matching_rules(mut unlayered_author_rules)
-	matching_rule_set.author_rules << LayerMatchingRules{
+	append_matching_layer(mut matching_rule_set.author_rules, LayerMatchingRules{
 		qualified_layer_name: ''
 		rules: unlayered_author_rules
-	}
+	}, storage)
 
 	if mode == .create_pseudo_element_style_if_needed {
 		mut author_rules_has_any_rules := false

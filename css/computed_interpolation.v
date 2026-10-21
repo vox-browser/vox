@@ -10814,6 +10814,7 @@ pub mut:
 	ancestor_filter_                                     CountingBloomFilter = CountingBloomFilter.new()
 	has_result_cache_                                    &HasResultCache = &HasResultCache{}
 	matching_rule_candidates_                            &MatchingRuleCandidateScratch = unsafe { nil }
+	matching_rule_sets_ &MatchingRuleSetWorkspacePool = unsafe { nil }
 	cascade_scratch_ &CascadeScratchPool = unsafe { nil }
 	css_animation_storage_                               &CSSAnimationStorage = unsafe { nil }
 	css_transition_storage_                              &CSSTransitionStorage = unsafe { nil }
@@ -13896,7 +13897,11 @@ fn (s &StyleComputer) compute_style_impl_with_animated_custom_property_recompute
 	// 1. Perform the cascade. This produces the "specified style".
 	mut did_match_any_pseudo_element_rules := false
 	mut attempted_pseudo_class_matches := PseudoClassBitmap{}
-	matching_rule_set := s.build_matching_rule_set(abstract_element, mut attempted_pseudo_class_matches, &did_match_any_pseudo_element_rules, mode, scope)
+	mut matching_workspace := s.acquire_matching_rule_set_workspace()
+	defer { matching_workspace.finish() }
+	matching_rule_set := build_matching_rule_set_with_storage(s, abstract_element,
+		mut attempted_pseudo_class_matches, &did_match_any_pseudo_element_rules, mode, scope,
+		matching_workspace.arena)
 	next_matching_checkpoint, matching_elapsed := css_style_profile_checkpoint(profile_checkpoint)
 	profile_checkpoint = next_matching_checkpoint
 	css_style_profile_matching_ns += matching_elapsed
