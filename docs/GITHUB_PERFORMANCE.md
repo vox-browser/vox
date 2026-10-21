@@ -15865,6 +15865,123 @@ retained and linked by their findings. Rejected163 and its runtime restoration
 remain recorded. Chrome parity still requires equivalent content,start and
 paint endpoints. Independent Root receives no extra coverage or credit.
 
+## Grow used-value page directories in one batch
+
+Round 165 applies complete feature `25c82598` to accepted 164. The page-directory
+capacity helper grows its pointer array once, then explicitly initializes every
+new slot to null. It preserves existing pages, sparse lookup behavior, traversal
+order, entry addresses and arena ownership. A no-growth request returns early.
+`grow_len` does not initialize new storage; every new slot is filled before any
+lookup, allocation or traversal can observe it. There is no temporary array.
+
+The complete original Git hunk in one Layout path reconstructs the original
+author file without a context rebase, partial feature, storage projection or
+compiler shim. All other accepted-164 runtime hashes remain exact. Three new
+cases and two byte-exact existing storage cases pass **697 assertions** in each
+of before/Boehm, final/Boehm and final/no-GC C-O2, with three actual driver exits
+zero. They cover sparse boundaries, no-op requests, stable owned values, dirty
+unused capacity and independently released measurement owners. Only duplicate
+module/import headers are consolidated. The feature and new tests commit
+together as `25c82598`; successful checks are reused without replay. Common
+12 cases include one inactive diagnostic and pass 60 assertions/configuration;
+before safely reuses actual 164-final on the identical accepted runtime.
+
+A separate accepted-164 diagnostic, documented above, observed 600,148 directory
+slots across temporary-state lifetimes, including 535,883 holes and 50,414 buffer
+growths. Those logical totals guided this change and earn no speed credit.
+The new local workload is declared before performance builds: **2,048 complete
+fresh public state initializations**, each with one `ensure_capacity()` request
+and 33 public `get_mutable()` calls on a root and 32 styled real layout-tree
+boxes. Capacity requests cycle through 32, 512, 1,024 and 2,331 nodes, covering
+sparse reservations from the diagnostic; the smallest can grow further during
+actual gets. Every pipeline includes all six size constraints, owned geometry,
+recursive ancestor materialization and consumption of sizes, definiteness,
+containing ownership and box dimensions. This is not a private directory loop.
+
+Parsing, complete public document layout, 130 independent setup assertions,
+one expected state, eight complete warmups, forced GC and final checksum
+assertions stay outside the hardware counter. The setup retains the explicit
+zero root minimum from the corrected 164 fixture. Each observation completes
+67,584 public gets and 2,048 public capacity calls. Three fixed alternating pairs
+produce medians **890,651,391 → 884,153,096** retired
+instructions, **-0.72961150%**, **3/3 wins**. All six actual
+exits are zero and checksum 16,538,949,632 agrees. Local page credit is zero.
+Policy remains C-O2/Boehm/default marker 1, the same automatic 4 GiB heap hint,
+no `-prod` and no global `-prealloc`.
+
+Normal C-only generation actually exits zero and is reused without regeneration.
+Strict C permits exactly the one capacity-function change. The independently
+generated entire normal program authenticates every body, type and global;
+no target body is removed from that comparison. All remaining functions,
+records, globals and resources match control after established compiler/embed
+normalization and four byte-identical helper reorderings. All 493 builtins,
+176 protected encoding/filter/arena routines, 120 native inputs, 37 frozen
+headers and exact native arguments authenticate. Normal native compilation,
+signing, persistence and smoke actually exit zero, loading the frozen helper.
+
+Both full-process C-O1/Boehm/one-marker profiles use `-profile-no-inline`.
+Generated C proves main remains enabled without counter reset or filtering.
+Setup and warmups remain included. Counts from the retained complete reports:
+
+| Function | Before calls | Final calls |
+| --- | ---: | ---: |
+| `layout__opt165_complete_state_initialization` | 2,057 | 2,057 |
+| `layout__LayoutState_get_mutable` | 68,056 | 68,056 |
+| `layout__LayoutState__static__new` | 2,059 | 2,059 |
+| `layout__LayoutState_ensure_capacity` | 2,057 | 2,057 |
+| `layout__UsedValuesPagedStore_ensure_capacity` | 2,578 | 2,578 |
+| `builtin__array_grow_len` | unknown | 2,578 |
+| `builtin__array_push` | 236,303 | 110,364 |
+| `layout__resolve_definite_size` | 444,744 | 444,744 |
+
+
+Missing rows remain unknown, never zero. Profile counts, timings and
+instrumented instructions earn no page credit.
+
+The matching normal binaries use the same 359-body cache, frozen helper and
+placement library, 1024×768 document viewport and
+`native.scopes.navigation_to_first_document_paint[0]`. Fresh fixed 30 alternating
+pairs give medians **16,327,303,061 →
+16,290,403,203.5** instructions: observed saving
+**36,899,857.5 (-0.22600093%)**,
+**30/30 wins**. Paired median saving is
+**35,970,962**; 30,000 paired bootstrap resamples with actual
+and reported seed 165 give the 95% interval **[34,500,189.5, 40,003,652.5]**.
+Repeatable page credit is **36,899,857.5**. Integration is
+**accepted** under the existing positive-point
+policy. No historical median is subtracted.
+
+All 60 primaries remain: 60 actual PNGs, 0 counter-only recoveries
+and 0 archived pre-primary startup retries. First preparation is
+1 installation/2 geometry/1 paint; 0 later
+refreshes and 0 external foreground
+transitions remain separate. Available PNGs are 1024×768 and exact outside
+the original fixed skeleton bands. Recovered unknown exits and missing PNGs
+remain explicit. No completed primary is discarded, filtered, rerun or added.
+
+The focused viewport is exact. Prior observed carry zero plus the positive
+matching point gives **36,899,857.5** for the 5-million gate:
+**passed**.
+Six actual zero-exit jobs cover 87 selected cases in both GC modes/174 executions; 19 screenshots complete, 16 exact. Known differences remain inline-node 13, text-decorations 1,341 and canvas-text 1,994.
+Capture receipts bind actual exits, source, binary, viewport, helper, fonts,
+logs and PNG hashes. The focused preparation receipt initially inherited
+incorrect new/unchanged case labels; its original is retained, and the read-only
+correction records the actual three-new/two-unchanged five-case inventory.
+No successful check or observation is repeated for metadata correction.
+
+Isolated artifact **`/Users/alex/code/vox2/Build/v/Vox-opt165.app`** has actual pin/sign/verify/smoke
+and GC exits zero. Its instruction text equals the measured image; default
+marker 1 and override 2 both collect. Canonical resources are read; canonical
+executables, GUI browsers, newer bundles and foreign edits are preserved.
+Accepted control is **165**, broad baseline
+**165**, and observed carry
+**0**.
+Durable C/profile/focused/local/broad/binary archive hashes are recorded in
+`Build/v/instruction-opt165-durable-archives.json`. Evidence, bootstrap,
+capture, strict-source and actual-exit receipts use `instruction-opt165-*`.
+Chrome parity still requires equivalent content, start and paint endpoints.
+Independent Root receives no additional coverage or performance credit.
+
 ## Causes and changes
 
 - The V 0.5.2 compatibility compiler's `-prod` Boehm code repeatedly snapshots
