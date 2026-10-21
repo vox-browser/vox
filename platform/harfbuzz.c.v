@@ -413,10 +413,12 @@ fn scale_for_harfbuzz(point_size f32, resolution f32) int {
 }
 
 fn document_harfbuzz_face(font &Font) ?voidptr {
+	if font.harfbuzz_face_ != unsafe { nil } { return font.harfbuzz_face_ }
 	path := font.font_path()?
 	face_index := font.face_index()
 	cache_key := '${path}|${face_index}'
 	if face := harfbuzz_document_faces[cache_key] {
+		font.remember_harfbuzz_face(face)
 		return face
 	}
 	if harfbuzz_document_attempted[cache_key] {
@@ -436,7 +438,17 @@ fn document_harfbuzz_face(font &Font) ?voidptr {
 	}
 	harfbuzz_document_blobs[cache_key] = blob
 	harfbuzz_document_faces[cache_key] = face
+	font.remember_harfbuzz_face(face)
 	return face
+}
+
+fn (font &Font) remember_harfbuzz_face(face voidptr) {
+	// Missing explicit sources still use a temporary fallback. Cache only a
+	// settled path, just like decoded TrueType faces and pixel metrics do.
+	if font.resolved_path_ == '' { return }
+	mut mutable_font := unsafe { &Font(font) }
+	// The shared HarfBuzz cache owns faces for the process lifetime.
+	mutable_font.harfbuzz_face_ = face
 }
 
 // x.ttf's cmap reader currently handles only formats 0 and 4. Use HarfBuzz as

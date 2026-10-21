@@ -70,6 +70,7 @@ mut:
 	system_face_resolved_ bool
 	resolved_path_ string
 	decoded_face_ &ttf.TTF_File = unsafe { nil }
+	harfbuzz_face_ voidptr = unsafe { nil }
 	pixel_metrics_ FontPixelMetrics
 	has_pixel_metrics_ bool
 }
