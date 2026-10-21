@@ -299,60 +299,63 @@ fn calculate_max_content_width(mut state LayoutState, box &Box) CSSPixels {
 	}
 	styled := node.as_node_with_style() or { return CSSPixels.new(0) }
 	box_state := state.get(styled)
-	mut definite_height := ?CSSPixels(none)
-	if node.is_replaced_box() && !auto_size.has_height() && box_state.has_definite_height() {
-		definite_height = box_state.content_height()
-	}
-	minimum_width := resolve_replaced_max_content_constraint(node, box_state,
-		box.computed_values().size_value(.min_width), .width, .minimum)
-	minimum_height := resolve_replaced_max_content_constraint(node, box_state,
-		box.computed_values().size_value(.min_height), .height, .minimum)
-	constraints := ReplacedMaxContentSizeConstraints{
-		definite_size_in_ratio_determining_axis: definite_height
-		minimum_width: minimum_width
-		minimum_height: minimum_height
-	}
-	if max_content_width := max_content_size_for_replaced_element_without_natural_size(box,
-		auto_size, box_state, .width, constraints) {
-		if definite_height == none && box.has_preferred_aspect_ratio() {
-			if maximum_height := resolve_replaced_max_content_constraint(node, box_state,
-				box.computed_values().size_value(.max_height), .height,
-				.preferred_or_maximum) {
-				mut transferred_minimum := ?CSSPixels(none)
-				if definite_minimum_height := minimum_height {
-					mut transferred := intrinsic_content_width_from_aspect_ratio(box,
-						box_state, definite_minimum_height)
-					if preferred_width := resolve_replaced_max_content_constraint(node,
-						box_state, box.computed_values().size_value(.width), .width,
-						.preferred_or_maximum) {
-						transferred = css_pixels_min(transferred, preferred_width)
-					}
-					if maximum_width := resolve_replaced_max_content_constraint(node,
-						box_state, box.computed_values().size_value(.max_width), .width,
-						.preferred_or_maximum) {
-						transferred = css_pixels_min(transferred, maximum_width)
-					}
-					transferred_minimum = transferred
-				}
-
-				mut transferred_maximum := intrinsic_content_width_from_aspect_ratio(box,
-					box_state, maximum_height)
-				if preferred_width := resolve_replaced_max_content_constraint(node, box_state,
-					box.computed_values().size_value(.width), .width,
-					.preferred_or_maximum) {
-					transferred_maximum = css_pixels_max(transferred_maximum, preferred_width)
-				}
-				if definite_minimum_width := minimum_width {
-					transferred_maximum = css_pixels_max(transferred_maximum,
-						definite_minimum_width)
-				}
-				if transferred := transferred_minimum {
-					transferred_maximum = css_pixels_max(transferred_maximum, transferred)
-				}
-				return css_pixels_min(max_content_width, transferred_maximum)
-			}
+	// Only replaced boxes consume the natural-size fallback constraints.
+	if node.is_replaced_box() {
+		mut definite_height := ?CSSPixels(none)
+		if node.is_replaced_box() && !auto_size.has_height() && box_state.has_definite_height() {
+			definite_height = box_state.content_height()
 		}
-		return max_content_width
+		minimum_width := resolve_replaced_max_content_constraint(node, box_state,
+			box.computed_values().size_value(.min_width), .width, .minimum)
+		minimum_height := resolve_replaced_max_content_constraint(node, box_state,
+			box.computed_values().size_value(.min_height), .height, .minimum)
+		constraints := ReplacedMaxContentSizeConstraints{
+			definite_size_in_ratio_determining_axis: definite_height
+			minimum_width: minimum_width
+			minimum_height: minimum_height
+		}
+		if max_content_width := max_content_size_for_replaced_element_without_natural_size(box,
+			auto_size, box_state, .width, constraints) {
+			if definite_height == none && box.has_preferred_aspect_ratio() {
+				if maximum_height := resolve_replaced_max_content_constraint(node, box_state,
+					box.computed_values().size_value(.max_height), .height,
+					.preferred_or_maximum) {
+					mut transferred_minimum := ?CSSPixels(none)
+					if definite_minimum_height := minimum_height {
+						mut transferred := intrinsic_content_width_from_aspect_ratio(box,
+							box_state, definite_minimum_height)
+						if preferred_width := resolve_replaced_max_content_constraint(node,
+							box_state, box.computed_values().size_value(.width), .width,
+							.preferred_or_maximum) {
+							transferred = css_pixels_min(transferred, preferred_width)
+						}
+						if maximum_width := resolve_replaced_max_content_constraint(node,
+							box_state, box.computed_values().size_value(.max_width), .width,
+							.preferred_or_maximum) {
+							transferred = css_pixels_min(transferred, maximum_width)
+						}
+						transferred_minimum = transferred
+					}
+
+					mut transferred_maximum := intrinsic_content_width_from_aspect_ratio(box,
+						box_state, maximum_height)
+					if preferred_width := resolve_replaced_max_content_constraint(node, box_state,
+						box.computed_values().size_value(.width), .width,
+						.preferred_or_maximum) {
+						transferred_maximum = css_pixels_max(transferred_maximum, preferred_width)
+					}
+					if definite_minimum_width := minimum_width {
+						transferred_maximum = css_pixels_max(transferred_maximum,
+							definite_minimum_width)
+					}
+					if transferred := transferred_minimum {
+						transferred_maximum = css_pixels_max(transferred_maximum, transferred)
+					}
+					return css_pixels_min(max_content_width, transferred_maximum)
+				}
+			}
+			return max_content_width
+		}
 	}
 	if !node.has_children() {
 		return CSSPixels.new(0)
