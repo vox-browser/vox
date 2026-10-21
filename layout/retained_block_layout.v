@@ -9,6 +9,20 @@ struct RetainedBlockValues {
 	values     UsedValues
 }
 
+fn append_retained_block_snapshot(mut snapshots []RetainedBlockValues,
+	node &NodeWithStyle, values &UsedValues) {
+	snapshots << RetainedBlockValues{
+		node: node
+		containing: retained_block_containing_node(values)
+		values: *values
+	}
+	mut snapshot := unsafe { &snapshots[snapshots.len - 1].values }
+	snapshot.containing_block_used_values_ = none
+	snapshot.line_boxes = copy_retained_inline_lines(snapshot.line_boxes)
+	snapshot.line_boxes_are_shared_ = false
+	if rare := snapshot.rare_ { snapshot.rare_ = rare.clone() }
+}
+
 @[heap]
 struct RetainedBlockLayout {
 	inputs            []RetainedInlineInput
@@ -107,7 +121,8 @@ fn run_retaining_independent_formatting_context(mut state LayoutState, box &Node
 			&& retained_inline_inputs_are_current(cached.inputs) {
 			used.borrow_retained_line_boxes(cached.lines)
 			if end := cached.inline_end { used.set_inline_end_static_position_rect(end) }
-			for entry in cached.values {
+			for index in 0 .. cached.values.len {
+				entry := unsafe { &cached.values[index] }
 				mut containing_values := ?&UsedValues(none)
 				if containing := entry.containing {
 					containing_values = state.get(containing)
@@ -142,20 +157,11 @@ fn run_retaining_independent_formatting_context(mut state LayoutState, box &Node
 	result := layout_uncached_independent_formatting_context(mut state, box, mut used, mode, space)
 	mut retained := retain_geometry_allocations()
 	defer { retained.finish() }
-	mut snapshots := []RetainedBlockValues{cap: inputs.len}
+	mut snapshots := []RetainedBlockValues{cap: inputs.len - 1}
 	for input in inputs[1..] {
 		child := input.node.as_node_with_style() or { continue }
 		if values := state.try_get(child) {
-			mut snapshot := *values
-			snapshot.containing_block_used_values_ = none
-			snapshot.line_boxes = copy_retained_inline_lines(values.line_boxes)
-			snapshot.line_boxes_are_shared_ = false
-			if rare := snapshot.rare_ { snapshot.rare_ = rare.clone() }
-			snapshots << RetainedBlockValues{
-				node: child
-				containing: retained_block_containing_node(values)
-				values: snapshot
-			}
+			append_retained_block_snapshot(mut snapshots, child, values)
 		}
 	}
 	state.block_layouts_[key] = &RetainedBlockLayout{

@@ -18,6 +18,16 @@ struct RetainedInlineValues {
 	values UsedValues
 }
 
+fn append_retained_inline_snapshot(mut snapshots []RetainedInlineValues,
+	node &NodeWithStyle, values &UsedValues) {
+	// Write into the final vector slot. A by-value UsedValues local is boxed
+	// by current V even though it is immediately copied into this record.
+	snapshots << RetainedInlineValues{node: node, values: *values}
+	mut snapshot := unsafe { &snapshots[snapshots.len - 1].values }
+	snapshot.containing_block_used_values_ = none
+	if rare := snapshot.rare_ { snapshot.rare_ = rare.clone() }
+}
+
 @[heap]
 struct RetainedInlineLayout {
 	inputs            []RetainedInlineInput
@@ -109,11 +119,15 @@ fn retained_inline_inputs_are_current(inputs []RetainedInlineInput) bool {
 
 fn copy_retained_inline_lines(lines []LineBox) []LineBox {
 	mut result := []LineBox{cap: lines.len}
-	for line in lines {
-		mut copy := line
-		copy.fragments_ = line.fragments_.clone()
-		copy.static_position_markers_ = line.static_position_markers_.clone()
-		result << copy
+	for index in 0 .. lines.len {
+		line := unsafe { &lines[index] }
+		// Appending a local record makes V derive a second deep clone of its
+		// arrays. A literal preserves exactly these two explicit buffer copies.
+		result << LineBox{
+			...line
+			fragments_: line.fragments_.clone()
+			static_position_markers_: line.static_position_markers_.clone()
+		}
 	}
 	return result
 }
@@ -173,7 +187,8 @@ fn run_inline_formatting_context_internal(mut state LayoutState, containing_bloc
 			used.borrow_retained_line_boxes(cached.lines)
 			used.set_inline_end_static_position_rect(cached.inline_end)
 			containing_values := state.get(unsafe { &NodeWithStyle(containing_block) })
-			for entry in cached.values {
+			for index in 0 .. cached.values.len {
+				entry := unsafe { &cached.values[index] }
 				_ = state.restore_retained_values(entry.node, &entry.values, containing_values)
 			}
 			if mut bfc := context {
@@ -193,17 +208,11 @@ fn run_inline_formatting_context_internal(mut state LayoutState, containing_bloc
 	result := run_uncached_inline_formatting_context(mut state, containing_block, mut used, mode,
 		space, context)
 	if used.line_boxes.len == 0 || !used.line_boxes.any(it.fragments_.len > 0) { return result }
-	mut snapshots := []RetainedInlineValues{}
+	mut snapshots := []RetainedInlineValues{cap: inputs.len - 1}
 	for input in inputs[1..] {
 		styled := input.node.as_node_with_style() or { continue }
 		if values := state.try_get(styled) {
-			mut snapshot := *values
-			snapshot.containing_block_used_values_ = none
-			if rare := snapshot.rare_ { snapshot.rare_ = rare.clone() }
-			snapshots << RetainedInlineValues{
-				node:   styled
-				values: snapshot
-			}
+			append_retained_inline_snapshot(mut snapshots, styled, values)
 		}
 	}
 	state.inline_layouts_[key] = &RetainedInlineLayout{
