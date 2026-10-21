@@ -11,6 +11,9 @@ mut:
 	source       string
 	offset       int
 	instructions []PathInstruction
+	// Reuse an embedded scanner: a mutable local scanner is boxed by current V
+	// on every coordinate, retaining a separate allocation under -prealloc.
+	scanner_ Scanner
 }
 
 pub fn AttributeParser.from_string(source string) AttributeParser {
@@ -120,9 +123,9 @@ pub fn (mut parser AttributeParser) parse_sign() int {
 }
 
 pub fn (mut parser AttributeParser) parse_nonnegative_number() ?f64 {
-	mut scanner := Scanner{ source: parser.source, index: parser.offset }
-	value := scanner.nonnegative_number() or { return none }
-	parser.offset = scanner.index
+	parser.scanner_ = Scanner{ source: parser.source, index: parser.offset }
+	value := parser.scanner_.nonnegative_number() or { return none }
+	parser.offset = parser.scanner_.index
 	return value
 }
 
@@ -146,9 +149,9 @@ pub fn (mut parser AttributeParser) parse_integer() ?int {
 	if !parser.match_integer() {
 		return none
 	}
-	mut scanner := Scanner{ source: parser.source, index: parser.offset }
-	value := scanner.integer() or { return none }
-	parser.offset = scanner.index
+	parser.scanner_ = Scanner{ source: parser.source, index: parser.offset }
+	value := parser.scanner_.integer() or { return none }
+	parser.offset = parser.scanner_.index
 	return value
 }
 
