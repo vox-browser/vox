@@ -17,8 +17,9 @@ in its protocol. Explicit historic Boehm comparisons require `--allocator boehm`
 ### Corrected arena before/after: 50 MB remains unmet
 
 The latest V-source comparison, three alternating optimized pairs, measures
-**92.42 → 89.47 MB**, a **3.19% reduction**. The largest candidate settled
-observation is **89,605,560 bytes**. The **50,000,000-byte limit still fails**.
+**89.20 → 89.13 MB**, a **0.07% reduction**. This small change does not
+establish a substantial RAM saving. The largest candidate settled observation
+is **89,146,784 bytes**. The **50,000,000-byte limit still fails**.
 All six raw viewport images match, all frozen-input guards pass, and all six script audits
 report no page runtime, sources, source bytes or preloaded scripts.
 
@@ -38,6 +39,7 @@ report no page runtime, sources, source bytes or preloaded scripts.
 | Inline chunk and independent geometry workspaces, cache ownership | 95,765,968 bytes | 93,455,800 bytes | 2.41% |
 | Matching-rule list workspaces and exact paint fragment reservations | 93,406,672 bytes | 92,620,216 bytes | 0.84% |
 | Initial resolved-style sharing, counters, font handles and formatting tokens | 92,423,680 bytes | 89,474,440 bytes | 3.19% |
+| Native HarfBuzz cache retirement | 89,195,888 bytes | 89,130,376 bytes | 0.07% |
 
 Each row is its own three-pair cohort; these are aggregate build comparisons,
 not isolated savings attributed to individual commits. Evidence is in
@@ -48,7 +50,8 @@ not isolated savings attributed to individual commits. Evidence is in
 `arena-parser-workspaces-paired/`, `arena-cascade-workspaces-paired/` and
 `arena-url-snapshots-paired/`, `arena-cache-lifetimes-paired/` and
 `arena-idle-xml-paired/`, `arena-inline-chunks-paired/` and
-`arena-style-lists-paired/` and `arena-initial-snapshots-paired/`, including summaries, raw
+`arena-style-lists-paired/`, `arena-initial-snapshots-paired/` and
+`arena-native-font-idle-paired/`, including summaries, raw
 process samples, allocator checks, resource audits and captures. Matching
 `arena-{text,svg}-lifetimes-build-protocol.json` files pin the complete source
 inputs, current compiler and native libraries. The static-paint and SVG protocols are
@@ -180,7 +183,7 @@ Sampled launch peaks are 505.5–508.8 MB. All six viewport hashes and script au
 match the earlier accepted cohorts. The largest settled observation is
 92,702,184 bytes; the 50 MB budget remains unmet.
 
-The latest initial-snapshots cohort freezes `5eb253e3`. It adds initial native
+The initial-snapshots cohort freezes `5eb253e3`. It adds initial native
 resolved-style interning before allocating a permanent duplicate, with each
 style retaining its own raw-graph proof and copy-on-write behavior. Animated,
 scripted and untyped compatibility styles keep the existing path. Counter
@@ -202,6 +205,18 @@ Sampled launch peaks are 499.6–501.4 MB. All six raw viewport hashes retain
 `3010d840c8adaf0a5b71254499c27d9888d21b0cc92246c2ce989af60d8bb1fd`,
 with every frozen-input and no-script guard passing. The 50 MB gate still fails.
 
+The latest native-font-idle cohort freezes `b1396aaf`, adding native HarfBuzz
+font/face/blob retirement, generation-protected borrowed handles, cleared bitmap
+classification and reusable scaled-font slots. Thirteen focused cases pass in
+both allocator modes and with poisoned arenas, including retained glyph runs,
+late font availability and repeated idle/refill capacity. The later native
+allocator pressure-relief call and glyph-index initializer are excluded.
+The 65,512-byte median difference establishes no substantial page RAM saving.
+The signed app passes headless startup; generated C SHA-256 is
+`064ffcbbdb647c3459258a65ccb7158b2393d378345ed0ec9f08e0cb9e8d7d5a`.
+Sampled launch peaks are 509.4–515.7 MB. All six viewport hashes, no-script
+checks and frozen-input guards pass. The 50 MB budget remains unmet.
+
 The conditions below also apply to these cohorts: `-prealloc -gc none`, optimized
 C, the unchanged 40-file cache, 1024×768 CSS pixels at DPR 2, a visible background
 window, and simultaneous app/descendant physical footprint measured before PNG
@@ -211,12 +226,12 @@ Reproduce the latest V-source cohort with:
 
 ```sh
 python3 tools/benchmark_wikipedia_memory.py \
-  --before Build/wikipedia-50mb/arena-style-lists.app/Contents/MacOS/Vox \
-  --after Build/wikipedia-50mb/arena-initial-snapshots.app/Contents/MacOS/Vox \
+  --before Build/wikipedia-50mb/arena-initial-snapshots.app/Contents/MacOS/Vox \
+  --after Build/wikipedia-50mb/arena-native-font-idle.app/Contents/MacOS/Vox \
   --cache Build/wikipedia-100mb/cache \
   --network-deny Build/pikabu-instructions-network-deny.dylib \
   --activity background --repeat 3 --allocator prealloc \
-  --output Build/wikipedia-50mb/arena-initial-snapshots-recheck
+  --output Build/wikipedia-50mb/arena-native-font-idle-recheck
 ```
 
 The command exits nonzero while the 50 MB budget is exceeded.
