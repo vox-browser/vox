@@ -636,3 +636,24 @@ for each snapshot. The generated C now clones stack headers without a parser
 maps, and bound repeated empty snapshots. All three allocator/poison modes
 pass (`syntax-candidate-141-*-run.log`,
 `parser-params-141-generated-c.txt`).
+
+
+### Lossless CPU raster rows
+
+The native raster cache stores large flat RGBA backdrops and results as
+32-bit runs and literals when that uses at least one eighth fewer bytes.
+High-entropy and small rasters stay raw. Hits compare the actual backdrop
+and expand owned results directly into strided output rows without allocating
+a decoded temporary. Padding remains untouched. The byte budget charges
+compressed storage; admission still checks the uncompressed maximum.
+
+CPU checks include runs across row boundaries, mixed literals, unaligned rows,
+mutated inputs, raw fallbacks and three surfaces whose combined raw size
+exceeds the unchanged budget. Address/undefined-behavior sanitizer checks,
+3,040 GPU comparisons and ten poisoned SVG/image/turbulence checks pass
+(`native-148-final-compression-replay.log`, `replay-148-svg/results.json`).
+A matched O0 background diagnostic falls from 541.8 to 529.3 MiB in one trial
+(`native-138-normal-background`, `native-142-compression-background`). These
+trials do not establish a foreground RAM result. A separate cache census
+finds about 0.66 MiB of retained shape pixels and 0.89 MiB of shadow pixels
+after compression (`native-145-cache-census-background/1-vox/browser.log`).
