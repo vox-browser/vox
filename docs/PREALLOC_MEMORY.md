@@ -908,4 +908,36 @@ The optimized source-210 candidate also includes the committed formatting-token
 retirement, stable/idle HarfBuzz face handling and glyph-index-only font reader.
 The font reader is staged from the active V library by the production build;
 the compiler checkout remains unchanged. All seven font/prealloc-runtime staging
-tests pass. The foreground comparison and longer idle check are pending.
+tests pass. The source-210 foreground comparison completes at Vox **416.6,
+568.7, 461.1 MiB**, versus Brave **458.1, 458.0, 458.6 MiB** (`native-214`).
+It fails the unchanged all-trials criterion. The two-second settled intervals
+still include large GPU bursts, independently of the smaller V arena payload.
+
+### Retina photo admission and hidden backdrops
+
+An admission trace (`native-217`) finds the visible 700-by-700 planar photo
+repeatedly rejected: its 1252-by-884 Retina raster, backdrop and decoded source
+need about 10.3 MB before compression, above the 8 MiB entry cap. `75fecd1d`
+allows image entries up to 16 MiB within the unchanged 32 MiB image-cache total;
+shape, path and shadow limits remain unchanged. The new regression fails at
+the old cap and passes afterwards, including strided rows, changed source and
+backdrop bytes, the configured smaller budget, and the new upper bound.
+
+The size-only change does not establish a RAM win: Vox records **501.6, 461.2,
+470.8 MiB**, versus Brave **459.1, 462.5, 457.8 MiB** (`native-219`). A later
+key trace (`native-225`) finds equal geometry, opacity and photo bytes, but
+6,274 changed backdrop pixels inside a small rectangle fully covered by the
+opaque photo. Keeping distinct results for that hidden input wastes the cache.
+
+`c8a5f6de` ignores only the proven opaque interior of a planar image. The proof
+requires complete source samples, full opacity, a positive axis-aligned
+transform and no profile conversion. A two-device-pixel border and conservative
+rounded-clip margins still compare exactly. Batches, other image formats,
+rotation and partial opacity retain full backdrop comparisons. Raw and packed
+snapshots compare outside that rectangle directly, without decoding a temporary.
+
+Snapshot/cache checks pass normally and under address/undefined-behavior
+sanitizers. All **3,070** GPU comparisons equal the uncached renderer, including
+Retina photos, source/background mutations, fractional transforms, rounded
+clips and retained idle shadows (`native-226-raster-replay.log`). Full browser
+and foreground validation for this combined candidate are pending.
