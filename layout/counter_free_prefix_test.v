@@ -18,7 +18,8 @@ fn test_counter_free_prefix_clears_old_snapshots_and_preserves_the_first_creator
 	for element in plain {
 		mut target := dom.AbstractElement.new(element, none)
 		css.set_counters_set_for_abstract_element(mut target, stale)
-		resolve_layout_counters(mut builder, target, css.computed_properties_for_element(element)?)
+		properties := css.computed_properties_for_element(element)?
+		resolve_layout_counters(mut builder, target, properties)
 		assert css.counters_set_for_abstract_element(&target) == none
 	}
 	assert builder.counter_tree_order_index == plain.len
@@ -40,7 +41,8 @@ fn test_counter_free_prefix_clears_old_snapshots_and_preserves_the_first_creator
 	for id in ['branch', 'inherited', 'increment'] {
 		element := document.get_element_by_id(id)?
 		target := dom.AbstractElement.new(element, none)
-		resolve_layout_counters(mut builder, target, css.computed_properties_for_element(element)?)
+		properties := css.computed_properties_for_element(element)?
+		resolve_layout_counters(mut builder, target, properties)
 		values := css.counters_set_for_abstract_element(&target)?
 		assert values.last_counter_with_name('n')?.value? == if id == 'increment' { 9 } else { 7 }
 	}

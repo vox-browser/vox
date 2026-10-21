@@ -107,8 +107,10 @@ fn test_nonempty_retained_counter_passthrough_matches_full_resolution_and_keeps_
 	parent := document.get_element_by_id('parent')?
 	stable := document.get_element_by_id('stable')?
 	after := document.get_element_by_id('after')?
-	first := dom.AbstractElement.new(document.get_element_by_id('first')?, none)
-	last := dom.AbstractElement.new(document.get_element_by_id('last')?, none)
+	first_element := document.get_element_by_id('first')?
+	last_element := document.get_element_by_id('last')?
+	first := dom.AbstractElement.new(first_element, none)
+	last := dom.AbstractElement.new(last_element, none)
 	mut rejected := map[u64]bool{}
 	retained := reusable_clean_flow_subtree(stable, mut rejected)?
 	assert retained_flow_has_no_counter_operations(retained.elements)
