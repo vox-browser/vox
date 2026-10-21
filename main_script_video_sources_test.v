@@ -1,5 +1,7 @@
 module main
 
+import platform
+
 fn quoted_video_reference_original_scan(scripts []string) []string {
 	mut references := []string{}
 	mut seen := map[string]bool{}
@@ -72,4 +74,31 @@ fn test_script_video_reference_local_gate_preserves_file_sources_and_nonremote_d
 			assert javascript_video_reference_can_be_local(reference, base)
 		}
 	}
+}
+
+fn test_video_frame_time_uses_last_literal_match_without_joining_scripts() {
+	for scripts in [
+		[]string{}, [''], ['currentTime = 5'], ['currentTime = 0'],
+		['currentTime = 5; currentTime = 0'], ['currentTime = 0; currentTime = 5'],
+		['currentTime = 5', 'ignored', 'currentTime = 0'],
+		['currentTime = 0', 'ignored', 'currentTime = 5'],
+		['currentTime = 5', 'currentTime = ', '0'],
+		['currentTime = ', '5'],
+	] {
+		assert requested_video_frame_time_for_scripts(scripts) == requested_video_frame_time(scripts.join('\n'))
+	}
+}
+
+fn test_video_reference_candidates_do_not_copy_non_video_literals_or_borrow_returned_strings() {
+	mut source := 'const a="λ clip.MP4";const b="second.webm";'.clone()
+	references := quoted_video_references([source])
+	unsafe { C.memset(source.str, `x`, usize(source.len)) }
+	assert references == ['λ clip.MP4', 'second.webm']
+	scripts := ['const ignored="ordinary payload without a video extension";'.repeat(50_000)]
+	before := platform.thread_arena_usage().used
+	for _ in 0 .. 4 {
+		assert quoted_video_references(scripts).len == 0
+		assert requested_video_frame_time_for_scripts(scripts) == 0
+	}
+	$if prealloc { assert platform.thread_arena_usage().used - before < 16 * 1024 }
 }

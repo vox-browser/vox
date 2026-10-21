@@ -46,3 +46,53 @@ fn javascript_video_reference_can_be_local(reference string, current_url string)
 	}
 	return false
 }
+
+fn requested_video_frame_time(markup string) f64 {
+	last_five := markup.last_index('currentTime = 5') or { -1 }
+	last_zero := markup.last_index('currentTime = 0') or { -1 }
+	return if last_five > last_zero { 5.0 } else { 0.0 }
+}
+
+// Joined scripts have a newline between them, so these literal matches cannot
+// cross a script boundary. The last matching script determines the old result.
+fn requested_video_frame_time_for_scripts(scripts []string) f64 {
+	for index := scripts.len - 1; index >= 0; index-- {
+		source := scripts[index]
+		last_five := source.last_index('currentTime = 5') or { -1 }
+		last_zero := source.last_index('currentTime = 0') or { -1 }
+		if last_five >= 0 || last_zero >= 0 { return if last_five > last_zero { 5.0 } else { 0.0 } }
+	}
+	return 0.0
+}
+
+fn quoted_video_references(scripts []string) []string {
+	mut references := []string{}
+	mut seen := map[string]bool{}
+	for source in scripts {
+		mut position := 0
+		for position < source.len {
+			if source[position] != `'` && source[position] != `"` {
+				position++
+				continue
+			}
+			quote := source[position]
+			start := position + 1
+			position = start
+			for position < source.len && source[position] != quote {
+				position++
+			}
+			if position >= source.len {
+				break
+			}
+			value := unsafe { source.substr_unsafe(start, position) }
+			if quoted_video_reference_has_extension(value) && value !in seen {
+				owned := value.clone()
+				seen[owned] = true
+				references << owned
+			}
+			position++
+		}
+	}
+	return references
+}
+

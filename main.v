@@ -1432,11 +1432,6 @@ fn script_sources(document &dom.Document, base_url string, preloaded map[string]
 	return sources
 }
 
-fn requested_video_frame_time(markup string) f64 {
-	last_five := markup.last_index('currentTime = 5') or { -1 }
-	last_zero := markup.last_index('currentTime = 0') or { -1 }
-	return if last_five > last_zero { 5.0 } else { 0.0 }
-}
 
 fn decode_local_video_frame(resolved_url string, seconds f64) ?&dom.Bitmap_ {
 	path := if resolved_url.starts_with('file://') {
@@ -1741,39 +1736,10 @@ fn bitmap_javascript_state(bitmap &dom.Bitmap_) map[string]json2.Any {
 	}
 }
 
-fn quoted_video_references(scripts []string) []string {
-	mut references := []string{}
-	mut seen := map[string]bool{}
-	for source in scripts {
-		mut position := 0
-		for position < source.len {
-			if source[position] != `'` && source[position] != `"` {
-				position++
-				continue
-			}
-			quote := source[position]
-			start := position + 1
-			position = start
-			for position < source.len && source[position] != quote {
-				position++
-			}
-			if position >= source.len {
-				break
-			}
-			value := source[start..position]
-			if quoted_video_reference_has_extension(value) && value !in seen {
-				seen[value] = true
-				references << value
-			}
-			position++
-		}
-	}
-	return references
-}
 
 fn javascript_video_source_states(current_url string, scripts []string) map[string]json2.Any {
 	mut sources := map[string]json2.Any{}
-	seconds := requested_video_frame_time(scripts.join('\n'))
+	seconds := requested_video_frame_time_for_scripts(scripts)
 	for reference in quoted_video_references(scripts) {
 		// This legacy adapter decodes local files only. Relative and remote
 		// references on HTTP pages cannot produce a frame; avoid parsing large
