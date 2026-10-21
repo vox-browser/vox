@@ -42,7 +42,7 @@ pub:
 
 __global (
 	dom_all_navigables                          = []&Navigable{}
-	dom_url_record_cache                        = map[string]liburl.URL{}
+	dom_url_record_cache                        = map[string]&URLRecordSnapshot{}
 	dom_xpath_bridge                            &XPathBridge
 	dom_custom_element_definition_lookup        CustomElementDefinitionLookupCallback
 	dom_custom_element_registry_is_scoped       CustomElementRegistryIsScopedCallback
@@ -133,7 +133,7 @@ pub struct URL {
 pub mut:
 	value string
 mut:
-	record_ ?liburl.URL
+	record_ &URLRecordSnapshot = unsafe { nil }
 }
 
 pub type URLFinishParsingHook = fn (liburl.URL) liburl.URL
@@ -154,8 +154,8 @@ pub fn (u URL) to_string() string {
 }
 
 pub fn (u URL) serialize() string {
-	parsed := u.parsed() or { return u.value }
-	return parsed.serialize(false)
+	snapshot := u.parsed_snapshot() or { return u.value }
+	return snapshot.source.clone()
 }
 
 pub fn dom_url_parse(url string, base_url URL, encoding string) ?URL {
@@ -186,65 +186,51 @@ pub fn (mut u URL) set_fragment(fragment ?string) {
 }
 
 pub fn url_from_record(record liburl.URL) URL {
-	serialized := record.serialize(false)
-	return URL{ value: serialized, record_: record.copy() }
+	serialized := url_snapshot_source(record, none)
+	return URL{
+		value: serialized
+		record_: &URLRecordSnapshot{ source: serialized, record: record.copy() }
+	}
 }
 
 // Parsed DOM URLs own their actual value record. The serialized compatibility
 // constructor still uses the basic-parser cache; it never receives another
 // instance's Blob entry. Direct public value edits cannot reuse a stale record.
 pub fn (u URL) parsed() ?liburl.URL {
-	if record := u.record_ {
-		if record.serialize(false) == u.value { return record.copy() }
-	}
-	if cached := dom_url_record_cache[u.value] {
-		return cached.copy()
-	}
-	// Source URL's copy-on-write data keeps a mutable value copy independent.
-	// Parse the owned source in persistent storage too: copying the path array
-	// does not detach its strings or the host from a caller's temporary arena.
-	persistent := platform.enter_persistent()
-	owned := u.value.clone()
-	parsed := liburl.parse(owned) or {
-		platform.leave_persistent(persistent)
-		return none
-	}
-	dom_url_record_cache[owned] = parsed
-	platform.leave_persistent(persistent)
-	// Neither the first caller nor a cache lookup may share its path array.
-	return parsed.copy()
+	snapshot := u.parsed_snapshot() or { return none }
+	return snapshot.record.copy()
 }
 
 pub fn (u URL) has_an_opaque_path() bool {
-	parsed := u.parsed() or { return false }
-	return parsed.has_an_opaque_path
+	snapshot := u.parsed_snapshot() or { return false }
+	return snapshot.record.has_an_opaque_path
 }
 
 pub fn (u URL) cannot_have_a_username_or_password_or_port() bool {
-	parsed := u.parsed() or { return true }
-	return parsed.cannot_have_a_username_or_password_or_port()
+	snapshot := u.parsed_snapshot() or { return true }
+	return snapshot.record.cannot_have_a_username_or_password_or_port()
 }
 
 // URL's scheme, without the trailing ":".
 pub fn (u URL) scheme() string {
-	parsed := u.parsed() or { return '' }
-	return parsed.scheme
+	snapshot := u.parsed_snapshot() or { return '' }
+	return snapshot.record.scheme
 }
 
 pub fn (u URL) username() string {
-	parsed := u.parsed() or { return '' }
-	return parsed.username
+	snapshot := u.parsed_snapshot() or { return '' }
+	return snapshot.record.username
 }
 
 pub fn (u URL) password() string {
-	parsed := u.parsed() or { return '' }
-	return parsed.password
+	snapshot := u.parsed_snapshot() or { return '' }
+	return snapshot.record.password
 }
 
 // URL's host, serialized (host without the port). Empty string when there is no host.
 pub fn (u URL) serialized_host() string {
-	parsed := u.parsed() or { return '' }
-	host := parsed.host or { return '' }
+	snapshot := u.parsed_snapshot() or { return '' }
+	host := snapshot.record.host or { return '' }
 	return host.serialize()
 }
 
@@ -256,25 +242,25 @@ pub fn (u URL) host() ?string {
 
 // URL's port, or none when the URL has no explicit port.
 pub fn (u URL) port() ?u16 {
-	parsed := u.parsed() or { return none }
-	return parsed.port
+	snapshot := u.parsed_snapshot() or { return none }
+	return snapshot.record.port
 }
 
 // URL path serialized.
 pub fn (u URL) serialize_path() string {
-	parsed := u.parsed() or { return '' }
-	return parsed.serialize_path()
+	snapshot := u.parsed_snapshot() or { return '' }
+	return snapshot.record.serialize_path()
 }
 
 pub fn (u URL) basename() string {
-	parsed := u.parsed() or { return '' }
-	return parsed.basename()
+	snapshot := u.parsed_snapshot() or { return '' }
+	return snapshot.record.basename()
 }
 
 // URL's query, without the leading "?", or none when there is no query.
 pub fn (u URL) query() ?string {
-	parsed := u.parsed() or { return none }
-	return parsed.query
+	snapshot := u.parsed_snapshot() or { return none }
+	return snapshot.record.query
 }
 
 // --- WHATWG-URL component setters ---
@@ -326,8 +312,8 @@ pub fn (u URL) with_query(query ?string) URL {
 
 // https://url.spec.whatwg.org/#concept-url-origin
 pub fn (u URL) origin() Origin {
-	parsed := u.parsed() or { return origin_create_opaque() }
-	return origin_from_liburl(parsed.origin())
+	snapshot := u.parsed_snapshot() or { return origin_create_opaque() }
+	return origin_from_liburl(snapshot.record.origin())
 }
 
 // DOM-facing representation of LibURL::Origin. `value` remains public for the
