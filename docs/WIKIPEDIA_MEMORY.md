@@ -1,7 +1,7 @@
 # Wikipedia memory usage
 
 The [corrected arena measurements](WIKIPEDIA_NOJS_MEMORY.md#corrected-arena-beforeafter-50-mb-remains-unmet)
-now record **95.8 → 93.5 MB** with `-prealloc -gc none`; the 50 MB target remains
+now record **93.4 → 92.6 MB** with `-prealloc -gc none`; the 50 MB target remains
 unmet. The earlier results below used Boehm.
 
 The [2026-10-21 HTML/CSS-only measurement](WIKIPEDIA_NOJS_MEMORY.md) records
