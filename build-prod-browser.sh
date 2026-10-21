@@ -157,14 +157,16 @@ export V_MACOS_V3_NO_FALLBACK
 ui2_modules=$(python3 "$repo_dir/tools/prepare_ui2.py" "$v_compiler")
 http_modules=$(python3 "$repo_dir/tools/prepare_http_compat.py" "$v_compiler")
 prealloc_modules=""
+font_modules=""
 if [ "$gc_mode" = prealloc ]; then
     prealloc_modules=$(python3 "$repo_dir/tools/prepare_prealloc_runtime.py" "$v_compiler")
+    font_modules=$(python3 "$repo_dir/tools/prepare_font_runtime.py" "$v_compiler")
 fi
 # Anchor package names at the repository; see build-linux-browser.sh. Without
 # it, a checkout under `modules`, `.vmodules`, `vlib` or another v.mod compiles
 # `encoding` as `vox2.encoding` while imports still resolve to vlib's name.
 set -- -exclude "$zoneinfo_exclude" -enable-globals \
-    -d vox_ui2 -path "$repo_dir|$prealloc_modules|$http_modules|$ui2_modules|@vmodules|@vlib"
+    -d vox_ui2 -path "$repo_dir|$prealloc_modules|$font_modules|$http_modules|$ui2_modules|@vmodules|@vlib"
 if [ "${VOX_KEEP_C:-0}" = 1 ]; then
     set -- "$@" -keepc
 fi
@@ -190,7 +192,7 @@ fi
 if [ "$gc_mode" = prealloc ]; then
     # Thread-local bump arenas without a collector; V's free() is a no-op.
     # -prealloc leaves V's default collector selected, so deselect it too.
-    set -- "$@" -prealloc -gc none
+    set -- "$@" -prealloc -gc none -d vox_sparse_ttf
     extra_cflags="$extra_cflags -O2"
 elif [ "$gc_mode" != none ]; then
     set -- "$@" -gc "$gc_mode"

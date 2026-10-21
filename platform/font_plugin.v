@@ -538,9 +538,13 @@ fn font_face(font &Font) ?&ttf.TTF_File {
 		panose_array: []u8{len: 12, init: 0}
 		width_scale: 1.0
 	}
-	face.init()
-	// Outline/metrics operations use glyph indices. Their Unicode lookup is
-	// served above, so release x.ttf's duplicate dense BMP caches and segments.
+	$if vox_sparse_ttf ? {
+		face.init_for_glyph_indices()
+	} $else {
+		face.init()
+	}
+	// Outline/metrics operations use glyph indices and the sparse lookup above.
+	// The staged initializer never creates cmaps; discard them on the legacy path.
 	face.cmaps = face.cmaps[..0].clone()
 	platform_font_faces[cache_key] = face
 	if font.resolved_path_ != '' {
