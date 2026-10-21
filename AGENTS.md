@@ -51,6 +51,15 @@
 
 ## Build and run Vox
 
+- Serialize expensive builds, test binaries and benchmarks through
+  `python3 tools/run_memory_bounded.py --report Build/UNIQUE-job.json -- COMMAND...`.
+  Keep its default 12 GiB aggregate process-tree RSS budget; use `--limit-gib 3`
+  for focused runtime tests. The shared lock refuses overlapping guarded jobs.
+  Supply `-memory-limit 10G` to V compiler invocations and never use
+  `-no-memory-limit`. This sampled guard can overshoot between observations;
+  it is not a kernel allocation limit. Do not run broad suites concurrently or
+  format complete DOM/layout/paint owner graphs in test assertions.
+
 - Build the native macOS bundle from this repository with:
 
   ```sh

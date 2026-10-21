@@ -17,8 +17,8 @@ in its protocol. Explicit historic Boehm comparisons require `--allocator boehm`
 ### Corrected arena before/after: 50 MB remains unmet
 
 The latest V-source comparison, three alternating optimized pairs, measures
-**78.07 → 76.40 MB**, a **2.14% reduction**. The largest candidate settled
-observation is **76,694,944 bytes**. The **50,000,000-byte limit still fails**.
+**75.02 → 74.76 MB**, a **0.35% reduction**. The largest candidate settled
+observation is **74,810,760 bytes**. The **50,000,000-byte limit still fails**.
 All six raw viewport images match, all frozen-input guards pass, and all six script audits
 report no page runtime, sources, source bytes or preloaded scripts.
 
@@ -50,6 +50,8 @@ report no page runtime, sources, source bytes or preloaded scripts.
 | Lazy function maps, shared content keywords and child snapshots | 80,807,280 bytes | 80,332,168 bytes | 0.59% |
 | Read-only content contexts and actual arena idle page maintenance | 80,381,272 bytes | 77,989,208 bytes | 2.98% |
 | CoreText query, SVG bounds, URL and cosmetic JSON workspaces | 78,071,152 bytes | 76,400,008 bytes | 2.14% |
+| Counter handles, font features, selector publication and paint projection | 76,449,136 bytes | 75,285,872 bytes | 1.52% |
+| Declarative shadow parsing, paint storage and scalar SVG snapshots | 75,023,752 bytes | 74,761,584 bytes | 0.35% |
 
 Each row is its own three-pair cohort; these are aggregate build comparisons,
 not isolated savings attributed to individual commits. Evidence is in
@@ -66,7 +68,8 @@ not isolated savings attributed to individual commits. Evidence is in
 `arena-scratch-counter-keys-paired/`, `arena-static-layout-queries-paired/` and
 `arena-text-header-fixup2-paired/`, `arena-iterator-rendered-text-paired/` and
 `arena-idle-pages-paired/`, `arena-content-child-snapshots-paired/` and
-`arena-idle-wiring-paired/` and `arena-resource-queries-paired/`, including summaries, raw
+`arena-idle-wiring-paired/`, `arena-resource-queries-paired/`,
+`arena-selector-paint-paired/` and `arena-scalar-plan-paired/`, including summaries, raw
 process samples, allocator checks, resource audits and captures. Matching
 `arena-{text,svg}-lifetimes-build-protocol.json` files pin the complete source
 inputs, current compiler and native libraries. The static-paint and SVG protocols are
@@ -438,7 +441,7 @@ All six captures and audits pass with unchanged native providers. Sampled
 candidate launch peaks are 489.05–489.46 MB. Both 50 MB budgets still fail.
 The canonical app remains unchanged.
 
-The latest `arena-resource-queries` cohort freezes `ae40f3fb` plus two cosmetic
+The `arena-resource-queries` cohort freezes `ae40f3fb` plus two cosmetic
 JSON overlays authenticated against `3610256d`. CoreText output records retire
 after their final strings and variation coordinates are copied. SVG antialiasing
 queries project only geometry, avoiding unused clip/mask copies. Resource URL
@@ -466,6 +469,38 @@ headless startup pass with the same native providers. Candidate launch peaks
 are 487.30–487.84 MB. Both 50 MB budgets remain unmet. The later counter-handle
 change is excluded and the canonical app remains unchanged.
 
+The `arena-selector-paint` cohort freezes `e2ed6dda` plus two inline-fragment
+projection overlays authenticated against `5e6d2f71`. It includes the empty
+counter handle, trailing-whitespace query, font-feature workspace and selector
+publication changes. Projection now borrows committed inline fragments and
+constructs the final transport slots directly. Candidate settled medians are
+75,285,872, 75,007,392 and 75,449,736 bytes; the largest observation is
+75,449,736 bytes. Candidate launch peaks are 512.95–513.66 MB. Generated C
+SHA-256 is `b6a20a4efdcb09a0b1ca7e1defb69a57f466f199d1249a154eb0147c5fd98a44`.
+The signed executable is
+`6bec53cfa2314e2bc9b458f43e877b82b68fa0b3077ab19db401177cc457a50e`.
+
+The latest `arena-scalar-plan` cohort freezes `97da9d95` plus seven overlays
+authenticated against `5e6d2f71`. Its matching build protocol records every
+source and overlay hash. Declarative-shadow parsing, scalar SVG geometry
+snapshots and paint-plan workspace retirement are included. The later cosmetic
+filter survey change is excluded. Candidate settled medians are 74,761,584,
+74,630,512 and 74,810,760 bytes. Candidate launch peaks are 484.98–512.77 MB,
+so the 50 MB launch budget also fails. Generated C SHA-256 is
+`af4d62c0498b6de35701eb2c5c122b6209494cbf2f5caa01d8cd2aec1009e5f9`.
+The interrupted cohort was resumed after checking the preserved first pair,
+source, binary, cache, capture and script-audit pins; the recovery protocol and
+guard reports preserve both failed and completed recovery attempts.
+
+Both cohorts use the same pinned native providers. Each has six identical raw
+viewport PNGs, unchanged frozen inputs and six audits with no page runtime,
+sources, source bytes or preloaded scripts. The raw PNG SHA-256 is
+`3010d840c8adaf0a5b71254499c27d9888d21b0cc92246c2ce989af60d8bb1fd`.
+These are aggregate build comparisons, not isolated per-change savings. Signing
+and headless startup pass; the canonical app is preserved. Authentication of the
+overlays against completed commits is recorded in
+`paint-fragment-bounded-regressions/committed-source-authentication.json`.
+
 The conditions below also apply to these cohorts: `-prealloc -gc none`, optimized
 C, the unchanged 40-file cache, 1024×768 CSS pixels at DPR 2, a visible background
 window, and simultaneous app/descendant physical footprint measured before PNG
@@ -474,16 +509,52 @@ allocation. Diagnostic samplers and unoptimized pilot builds are excluded.
 Reproduce the latest V-source cohort with:
 
 ```sh
-python3 tools/benchmark_wikipedia_memory.py \
-  --before Build/wikipedia-50mb/arena-idle-wiring.app/Contents/MacOS/Vox \
-  --after Build/wikipedia-50mb/arena-resource-queries.app/Contents/MacOS/Vox \
+python3 tools/run_memory_bounded.py \
+  --report Build/wikipedia-50mb/arena-scalar-plan-recheck-guard.json -- \
+  python3 tools/benchmark_wikipedia_memory.py \
+  --before Build/wikipedia-50mb/arena-selector-paint.app/Contents/MacOS/Vox \
+  --after Build/wikipedia-50mb/arena-scalar-plan.app/Contents/MacOS/Vox \
   --cache Build/wikipedia-100mb/cache \
   --network-deny Build/pikabu-instructions-network-deny.dylib \
   --activity background --repeat 3 --allocator prealloc \
-  --output Build/wikipedia-50mb/arena-resource-queries-recheck
+  --output Build/wikipedia-50mb/arena-scalar-plan-recheck
 ```
 
 The command exits nonzero while the 50 MB budget is exceeded.
+
+### Development-session memory failure
+
+Recursive `str()` assertions on paint fragments traversed borrowed document,
+layout and stylesheet graphs. A reproduction generated 1,289,735,935 bytes of C
+and reached 14,526,316,544 bytes of sampled process-tree RSS in under one second
+before the guard killed it. This establishes a runaway test path; it does not
+establish the complete process breakdown of the reported 100 GB session.
+
+`e23b8dd0` replaces those assertions with payload-field comparisons and borrowed
+owner identities. Fourteen focused checks pass with prealloc, prealloc poisoning
+and Boehm. The corrected generated C is 67,282,725 bytes and the test executable
+is 33,987,712 bytes. The recorded runtime RSS samples are not precise peak
+measurements for these short tests. Evidence, source hashes, actual exit codes
+and failed attempts remain in `paint-fragment-bounded-regressions/` and
+`paint-fragment-projection-regressions2-recovery/`.
+
+`75df91f5` extends those comparisons to whole paint boxes and command payloads,
+while retaining previous scenes explicitly across relayout. Twenty-eight focused
+checks pass with prealloc, prealloc poisoning and Boehm. The expanded prealloc
+test generates 90,681,362 bytes of C and a 46,698,832-byte executable. Both
+guarded builds stay below 9.6 GB of sampled process-tree RSS. Source hashes,
+successful runs and failed attempts are retained in
+`paint-owner-assertion-regressions/`. One failed attempt exposed V passing an
+inline optional pointer by an extra reference; binding it before the call fixes
+that test without changing the browser implementation.
+
+Expensive jobs now run serially through `tools/run_memory_bounded.py`, with a
+12 GiB sampled aggregate process-tree RSS budget, a separate V compiler limit
+of `-memory-limit 10G`, and a 3 GiB budget for focused runtime tests. The guard
+refuses overlapping guarded jobs and only terminates its own process tree.
+Sampling can overshoot; it is not a kernel allocation limit. Neither these
+development-job budgets nor the Boehm compatibility tests describe the measured
+arena browser's RAM usage.
 
 ### Initial corrected arena cohort
 
