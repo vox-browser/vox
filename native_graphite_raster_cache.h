@@ -92,9 +92,17 @@ class VoxGraphiteRasterCache {
             || m[1] != 0 || m[3] != 0 || m[6] != 0 || m[7] != 0 || m[8] != 1
             || !(m[0] > 0) || !(m[4] > 0)) return {};
         for (int i = 0; i < 9; ++i) if (!std::isfinite(m[i])) return {};
+        // The coverage guard also needs a bounded float error. Huge local
+        // coordinates canceled by a translation can lose whole device pixels
+        // in GPU arithmetic even when the final double-precision bounds fit.
+        constexpr double coordinate_limit = 65536;
+        if (m[0] < 1.0f / 1024 || m[0] > 1024 || m[4] < 1.0f / 1024 || m[4] > 1024
+            || std::abs(m[2]) > coordinate_limit || std::abs(m[5]) > coordinate_limit) return {};
         for (int i = 0; i < 4; ++i)
-            if (!std::isfinite(image.source[i]) || !std::isfinite(image.destination[i])) return {};
-        for (float v : image.clip) if (!std::isfinite(v)) return {};
+            if (!std::isfinite(image.source[i]) || !std::isfinite(image.destination[i])
+                || std::abs(image.destination[i]) > coordinate_limit) return {};
+        for (float v : image.clip)
+            if (!std::isfinite(v) || std::abs(v) > coordinate_limit) return {};
         if (image.source[0] < 0 || image.source[1] < 0
             || !(image.source[2] > 0) || !(image.source[3] > 0)
             || double(image.source[0]) + image.source[2] > image.width
@@ -110,6 +118,8 @@ class VoxGraphiteRasterCache {
             double(image.clip[0]) + image.clip[2] - std::max(image.clip[6], image.clip[8]));
         double bottom = std::min(double(image.destination[1]) + image.destination[3],
             double(image.clip[1]) + image.clip[3] - std::max(image.clip[9], image.clip[11]));
+        if (std::abs(left * m[0]) > coordinate_limit || std::abs(right * m[0]) > coordinate_limit
+            || std::abs(top * m[4]) > coordinate_limit || std::abs(bottom * m[4]) > coordinate_limit) return {};
         auto bound = [](double value, int limit) { return size_t(std::clamp(value, 0.0, double(limit))); };
         VoxRasterSnapshot::Rect result {
             bound(std::ceil(left * m[0] + m[2] + 2), width),

@@ -481,11 +481,16 @@ int main()
         assert(!small.prepare(photo, width, height, pitch, true, surface.data()).pending);
         // Partial opacity and transforms without the coverage proof still
         // compare every backdrop pixel, including the image's center.
-        for (bool rotated : {false, true}) {
+        for (int kind : {0, 1, 2}) {
             VoxGraphiteRasterCache conservative;
             auto changed_photo = photo;
-            if (rotated) changed_photo.matrix[1] = .1f;
-            else changed_photo.opacity = .5f;
+            if (kind == 0) changed_photo.opacity = .5f;
+            else if (kind == 1) changed_photo.matrix[1] = .1f;
+            else {
+                // Float cancellation can hide large local-coordinate errors.
+                changed_photo.destination[0] = changed_photo.clip[0] = 1073741824;
+                changed_photo.matrix[2] = -1073741824;
+            }
             reset();
             auto request = conservative.prepare(changed_photo, width, height, pitch, true, surface.data());
             assert(request.pending);
