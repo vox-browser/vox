@@ -2205,6 +2205,14 @@ pub fn (c &ComputedProperties) size_value(property_id PropertyID) Size {
 
 pub fn (c &ComputedProperties) length(property_id PropertyID) Length {
 	value := c.property(property_id, .yes) or { return Length.make_px(0) }
+	// Read the existing retained length before constructing the optional
+	// percentage basis used only by the general conversion fallback.
+	if value.css_value_handle != unsafe { nil } {
+		typed := unsafe { &TypedStyleValueBox(value.css_value_handle) }
+		if typed.value is LengthStyleValue {
+			return typed.value.length()
+		}
+	}
 	return Length.from_style_value(value, none)
 }
 
