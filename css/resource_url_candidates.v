@@ -1,6 +1,7 @@
 module css
 
 import dom
+import platform
 
 // Resource discovery is conservative: quoted strings include image-set() URLs
 // as well as strings that may not ultimately be used as an image.
@@ -92,9 +93,15 @@ fn text_may_contain_resource_url(source string) bool {
 
 fn append_text_resource_urls(source string, base_url string, mut candidates []ResourceURLCandidate) {
 	if !text_may_contain_resource_url(source) { return }
-	for token in tokenize_css(source, 'utf-8') {
+	// Resource discovery keeps only URL strings. The tokenizer's vectors and
+	// decoded token values have no readers after this scan.
+	scratch := platform.begin_thread_scratch('resource URL tokens')
+	tokens := tokenize_css(source, 'utf-8')
+	scratch.leave()
+	defer { scratch.finish() }
+	for token in tokens {
 		if token.is(.url) || token.is(.string) {
-			candidates << ResourceURLCandidate{url: token.value, base_url: base_url}
+			candidates << ResourceURLCandidate{url: token.value.clone(), base_url: base_url}
 		}
 	}
 }

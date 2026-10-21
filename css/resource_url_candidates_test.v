@@ -21,7 +21,7 @@ fn test_resource_candidates_keep_declarations_deferred_and_walk_nested_escaped_t
 	candidates := declaration.resource_url_candidates('https://wrong-fallback.test/')
 	assert candidates.map(it.url) == ['icon.png', 'retina.png', 'unquoted.png', 'nested.png', 'escaped.png']
 	assert candidates.all(it.base_url == 'https://resource-candidates.test/assets/site.css')
-	assert (declaration.deferred_declarations_ or { panic('resource discovery materialized declarations') }) == retained
+	assert voidptr(declaration.deferred_declarations_ or { panic('resource discovery materialized declarations') }) == voidptr(retained)
 	assert declaration.properties.len == 0
 	assert declaration.custom_properties.len == 0
 }
@@ -87,4 +87,22 @@ fn test_typed_svg_path_geometry_is_not_tokenized_as_a_resource_url() {
 		assert declaration.resource_url_candidates('https://geometry.test/').len == 0
 	}
 	$if prealloc { assert platform.thread_arena_usage().used - before < 4096 }
+}
+
+fn test_resource_url_token_workspace_retires_non_resource_tokens_and_owns_results() {
+	source := r'image-set("esc\61 ped.png" 2x, url(other.png) 1x) ' +
+		'linear-gradient(red, blue) '.repeat(1024)
+	base := 'https://workspace.test/assets/'
+	before := platform.thread_arena_usage().used
+	for _ in 0 .. 4 {
+		mut candidates := []ResourceURLCandidate{}
+		append_text_resource_urls(source, base, mut candidates)
+		$if gcboehm ? { C.GC_gcollect() }
+		// The workspace has already been released (or poisoned) here.
+		assert candidates.len == 2
+		assert candidates[0].url == 'escaped.png'
+		assert candidates[1].url == 'other.png'
+		assert candidates.all(it.base_url == base)
+	}
+	$if prealloc { assert platform.thread_arena_usage().used - before < 32768 }
 }
