@@ -486,7 +486,7 @@ struct RasterRegion {
     int height() const { return bottom - top; }
 };
 
-int raster_dimension(int logical_dimension, float scale)
+int raster_dimension(double logical_dimension, float scale)
 {
     return std::max(1, static_cast<int>(std::ceil(
         static_cast<float>(logical_dimension) * scale)));
@@ -2417,6 +2417,45 @@ extern "C" int ladybird_v_skia_draw_outer_box_shadow(CGContextRef destination,
 
 static long chromium_raster_tile_for_row(long row);
 
+// Retain identical path/stroke operations for shared root tiles and isolated
+// SVG compositor layers. Both replay through Chromium's Dawn raster backend.
+static void record_chromium_svg_path_batch(SkCanvas* canvas,
+    VoxGraphitePath const* paths, int count, SkMatrix const& matrix, SkRect viewport)
+{
+    canvas->save();
+    canvas->setMatrix(matrix);
+    canvas->clipRect(viewport);
+    for (int index = 0; index < count; ++index) {
+        auto const& source = paths[index];
+        SkMatrix local;
+        local.set9(source.matrix);
+        auto geometry = path_from_serialized_segments(source.segments, source.segment_count);
+        geometry.setFillType(source.even_odd ? SkPathFillType::kEvenOdd : SkPathFillType::kWinding);
+        SkPaint paint;
+        paint.setAntiAlias(true);
+        paint.setColor(SkColorSetARGB(source.alpha, source.red, source.green, source.blue));
+        if (source.has_float_alpha) paint.setAlphaf(source.opacity);
+        canvas->save();
+        canvas->setMatrix(matrix);
+        canvas->concat(local);
+        if (source.stroke) {
+            paint.setStyle(SkPaint::kStroke_Style);
+            paint.setStrokeWidth(source.stroke_width);
+            paint.setStrokeCap(SkPaint::Cap(source.line_cap));
+            paint.setStrokeJoin(SkPaint::Join(source.line_join));
+            paint.setStrokeMiter(source.miter_limit);
+            if (source.non_scaling_stroke) {
+                geometry.transform(local);
+                SkMatrix inverse;
+                if (local.invert(&inverse)) canvas->concat(inverse);
+            }
+        }
+        canvas->drawPath(geometry, paint);
+        canvas->restore();
+    }
+    canvas->restore();
+}
+
 extern "C" int ladybird_v_skia_draw_svg_path_batch(CGContextRef destination,
     VoxGraphitePath const* paths, int count, float const* outer, float x, float y,
     float width, float height, float page_x, float page_y, float scroll_y,
@@ -2427,45 +2466,15 @@ extern "C" int ladybird_v_skia_draw_svg_path_batch(CGContextRef destination,
         || count <= 0 || count > 65536 || width <= 0 || height <= 0) return 0;
     auto matrix = SkMatrix::MakeAll(outer[0], outer[2], page_x + outer[4],
         outer[1], outer[3], page_y - scroll_y + outer[5], 0, 0, 1);
+    bool recordable = std::none_of(paths, paths + count,
+        [](auto const& path) { return path.gradient != 0; });
     if (auto* canvas = shared_recording_canvas(destination)) {
         auto bounds = matrix.mapRect(SkRect::MakeXYWH(x, y, width, height));
-        bool supported = std::none_of(paths, paths + count,
-            [](auto const& path) { return path.gradient != 0; });
-        if (!supported) shared_recording_block(bounds);
+        if (!recordable) shared_recording_block(bounds);
         else {
             shared_recording_svg(destination, bounds, page_y);
-            canvas->save();
-            canvas->setMatrix(matrix);
-            canvas->clipRect(SkRect::MakeXYWH(x, y, width, height));
-            for (int index = 0; index < count; ++index) {
-                auto const& source = paths[index];
-                SkMatrix local;
-                local.set9(source.matrix);
-                auto geometry = path_from_serialized_segments(source.segments, source.segment_count);
-                geometry.setFillType(source.even_odd ? SkPathFillType::kEvenOdd : SkPathFillType::kWinding);
-                SkPaint paint;
-                paint.setAntiAlias(true);
-                paint.setColor(SkColorSetARGB(source.alpha, source.red, source.green, source.blue));
-                if (source.has_float_alpha) paint.setAlphaf(source.opacity);
-                canvas->save();
-                canvas->setMatrix(matrix);
-                canvas->concat(local);
-                if (source.stroke) {
-                    paint.setStyle(SkPaint::kStroke_Style);
-                    paint.setStrokeWidth(source.stroke_width);
-                    paint.setStrokeCap(SkPaint::Cap(source.line_cap));
-                    paint.setStrokeJoin(SkPaint::Join(source.line_join));
-                    paint.setStrokeMiter(source.miter_limit);
-                    if (source.non_scaling_stroke) {
-                        geometry.transform(local);
-                        SkMatrix inverse;
-                        if (local.invert(&inverse)) canvas->concat(inverse);
-                    }
-                }
-                canvas->drawPath(geometry, paint);
-                canvas->restore();
-            }
-            canvas->restore();
+            record_chromium_svg_path_batch(canvas, paths, count, matrix,
+                SkRect::MakeXYWH(x, y, width, height));
         }
     }
     RasterRegion region;
@@ -2488,6 +2497,18 @@ extern "C" int ladybird_v_skia_draw_svg_path_batch(CGContextRef destination,
         parent.postTranslate(offset_x, offset_y);
         float parent_values[9];
         parent.get9(parent_values);
+        if (!s_raster_layer_is_root && !has_background && recordable && shared_picture_draw()) {
+            SkPictureRecorder recorder;
+            auto* canvas = recorder.beginRecording(SkRect::MakeWH(target_width, target_height));
+            record_chromium_svg_path_batch(canvas, paths, count, parent,
+                SkRect::MakeXYWH(x, y, width, height));
+            auto picture = recorder.finishRecordingAsPicture();
+            auto bytes = picture->serialize();
+            float identity[] {1, 0, 0, 0, 1, 0, 0, 0, 1};
+            if (bytes && shared_picture_draw()(reinterpret_cast<uint8_t*>(target.data()),
+                    target_width, target_height, target_width * 4,
+                    bytes->data(), bytes->size(), identity)) return true;
+        }
         return draw(reinterpret_cast<uint8_t*>(target.data()), target_width,
             target_height, target_width * 4, has_background, paths, count,
             parent_values, viewport) != 0;
@@ -2504,10 +2525,16 @@ extern "C" int ladybird_v_skia_draw_svg_path_batch(CGContextRef destination,
         [&](auto& target, long offset_x, long offset_y, bool) {
             return draw_in_raster(target, s_msaa_grid_width, s_msaa_grid_height, offset_x, offset_y);
         });
-    if (!drawn && layer_width > 0 && offset_x >= 0 && offset_x + raster_width <= layer_width
-        && first_row >= 0 && (s_raster_layer_is_root ? has_background
-            : s_raster_layer_width > 0 && s_raster_layer_height > 0
-                && first_row + raster_height <= layer_height)) {
+    // A CSS-pixel enclosing rectangle can extend one device pixel beyond a
+    // fractional layer origin. Rasterize at the layer's own dimensions and
+    // leave those enclosing pixels transparent instead of changing its surface.
+    int copy_left = std::max(0, -offset_x);
+    int copy_right = std::min(raster_width, layer_width - offset_x);
+    bool fits_layer = s_raster_layer_is_root
+        ? has_background && offset_x >= 0 && offset_x + raster_width <= layer_width && first_row >= 0
+        : s_raster_layer_width > 0 && s_raster_layer_height > 0
+            && copy_left < copy_right && first_row < layer_height && first_row + raster_height > 0;
+    if (!drawn && layer_width > 0 && fits_layer) {
         int tile_height = s_raster_layer_is_root ? s_msaa_tile_rows : layer_height;
         if (static_cast<size_t>(layer_width) * tile_height <= maximum_tile_pixels) {
             auto original = pixels;
@@ -2523,8 +2550,8 @@ extern "C" int ladybird_v_skia_draw_svg_path_batch(CGContextRef destination,
                 for (int row = 0; row < raster_height; ++row) {
                     long tile_row = first_row + row - origin;
                     if (tile_row < 0 || tile_row >= tile_height) continue;
-                    std::copy_n(original.begin() + static_cast<size_t>(row) * raster_width,
-                        raster_width, tile_pixels.begin() + tile_row * layer_width + offset_x);
+                    std::copy_n(original.begin() + static_cast<size_t>(row) * raster_width + copy_left,
+                        copy_right - copy_left, tile_pixels.begin() + tile_row * layer_width + offset_x + copy_left);
                 }
                 if (!draw_in_raster(tile_pixels, layer_width, tile_height, offset_x, first_row - origin)) {
                     drawn = false;
@@ -2535,8 +2562,8 @@ extern "C" int ladybird_v_skia_draw_svg_path_batch(CGContextRef destination,
                     if (s_raster_layer_is_root && chromium_raster_tile_for_row(document_row) != tile) continue;
                     long tile_row = document_row - origin;
                     if (tile_row < 0 || tile_row >= tile_height) continue;
-                    std::copy_n(tile_pixels.begin() + tile_row * layer_width + offset_x,
-                        raster_width, result.begin() + static_cast<size_t>(row) * raster_width);
+                    std::copy_n(tile_pixels.begin() + tile_row * layer_width + offset_x + copy_left,
+                        copy_right - copy_left, result.begin() + static_cast<size_t>(row) * raster_width + copy_left);
                 }
             }
             if (drawn) pixels = std::move(result);

@@ -308,3 +308,27 @@ existing leaf rendering path.
 Discarded drawing commands leave shared recording enabled; effect boundaries
 and visible clips retain their existing fallback. Capture at 1280 by 800,
 device scale 1, and require exact RGBA equality.
+
+`isolated-svg-strokes` checks the fixed SVG image from
+[AsgardPvP](https://asgardpvp.com/images/back-to-top.svg). Its original Brave
+155.1.97.59 reference uses a normal 1280×800 window at native scale 2, giving
+a 2560×1600 PNG. The fractional image origin requires a 100×135 device-pixel
+layer. Rounding its dimensions before applying the device scale, or drawing
+on the larger enclosing CSS-pixel rectangle, changes GPU stroke coverage.
+The isolated SVG uses the same Dawn replay as the shared root recording.
+This fixture requires exact RGBA equality.
+
+Preserve device pixels when capturing this fixture; `capture_screenshot.sh`
+normally downsamples Retina captures to logical pixels:
+
+```sh
+LADYBIRD_SCREENSHOT_SCALE=2 VOX_SCREENSHOT_NATIVE_LAYOUT=1 \
+  Build/v/Vox.app/Contents/MacOS/Vox --window-width 1280 --window-height 884 \
+  --screenshot Build/isolated-svg-window.png \
+  "$PWD/Tests/Browser/Brave/input/isolated-svg-strokes.html"
+sips --cropToHeightWidth 1600 2560 --cropOffset 120 0 \
+  Build/isolated-svg-window.png --out Build/isolated-svg.png
+python3 tools/check_pixel_equality.py \
+  Tests/Browser/Brave/expected/isolated-svg-strokes.png \
+  Build/isolated-svg.png Build/isolated-svg.diff.png
+```
