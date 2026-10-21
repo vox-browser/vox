@@ -2423,6 +2423,14 @@ evidence](docs/translation-audit/NATIVE_MEDIA_WHEEL_RAW_HANDLER.md).
   Predeclared canonical147document-layout scene/16fullpublicpipelines/192textchecks:local +0.110006%/1wins/all6actual0;allobservations retained.
   Localgate1/native-release1/no native-start/jobs0;no normal/profile/independentC/page/broad/bundle/GC161 pass;accepted158/broad158/app158/carry0 preserved.
   Missing fixture reader1/unsafe-keyword audit1/initialized-only C regex correction and precommit binding retained;no successfulcase replay;canonical/GUI/foreign preserved;Chrome open.
+  Cached stylesheet round162 (`1d746ab4`+`7e69ba40`):all78authoredruntimehunks/twoCSSpaths/alltooling stages;prior160/161 layout failures retained.
+  FiveVcases/47481asserts eachconfiguration/Python5actual0/common60 reused without replay;all869keywords/440properties authenticate.
+  Distinct predeclared20exactcachedCSSbodies/2464582bytes/publicparse+CSSOMserialize;onecorpus/eightwarmups:local -7.157624%/3wins/all6actual0;zero pagecredit.
+  Fresh first-ever composition page 16,361,219,627→16,342,765,348.5;30/30wins;point 18,454,278.5.
+  PairedCI[16,513,550.5,20,739,616];repeatable credit 18,454,278.5;all60retained;same1/2/1;seed162/30000bootstrap.
+  Focused exact;broad passed;prior carry0;strict two-body/entire-independent-C/full author reconstruction/native inputs.
+  Accepted control 162;isolated162app/GC1+override2;canonical/GUI/foreign preserved;profiles221public parses/no callcountcredit.
+  URL-less/deferred-link preparation failures and seed-label correction retained before primaries;missing deferred bodies explicit/no fallback;Chrome open.
 - Outside instruction-count optimization, run broad regression suites once per
   ten completed fixes, not after every fix.
   Broad suites include full translation/package test batches, the full LibJS AST

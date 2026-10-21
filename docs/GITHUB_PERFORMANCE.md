@@ -15555,6 +15555,128 @@ credit. Accepted control,broad baseline and verified isolated app remain158;
 repeatable page credit and observed carry stay0. Canonical/GUI browsers,newer
 bundles and foreign work stay preserved. Chrome parity remains unestablished.
 
+## Parse cached GitHub stylesheets with scalar CSS name dispatch
+
+Round162 tests the complete `1d746ab4` + `7e69ba40` composition against
+accepted158. All78 original runtime Git hunks across the two CSS paths and both
+complete tooling author stages authenticate. Length/initial-byte buckets assign
+an enum and a boolean, then produce one optional result after the full spelling
+matches. None remains distinct from enum value0. Both generators preserve every
+869 keyword/440 property mapping, sort a copy and handle empty tables. Public
+decoding, filtering and tokenizer arenas stay unchanged. Credit applies to the
+whole composition; unrelated Root work is excluded.
+
+All five original final V cases pass **47,481 assertions** in before/Boehm,
+final/Boehm and final/none C-O2. Three prerequisite cases remain exact; two new
+cases cover zero-valued entries and interior NUL/DEL mutations at every offset.
+The five Python checks have actual exit0 and exact frozen hashes. Common12
+cases include one inactive diagnostic and60 assertions/configuration. These
+completed successes are reused from161, without replay. The earlier160 Python
+terminal remains unknown; it is not promoted to a pass. Original precommit
+manifests and the actual feature binding remain unchanged.
+
+Rounds160 and161 remain rejected: their completed document-layout cohorts
+increased local medians3.835884% and0.110006%. Round162 declares a different
+public operation before its builds or samples: complete stylesheet parsing and
+CSSOM serialization of exact cached GitHub CSS. It neither reruns nor extends
+those cohorts. Existing full-process call profiles motivate workload selection
+only; their counts provide no instruction credit or first-frame scope claim.
+
+The frozen corpus contains20 distinct bodies, **2,464,582 bytes**, in first
+reference order from the cached repository HTML. The HTML has25 actual href
+stylesheet references and14 deferred data-href references; all20 distinct actual
+href URLs have bodies. Ten additional deferred theme URLs have no cached body
+and remain explicitly listed, with no live fallback or fabricated response.
+Every URL, cache key, size and original/copied body SHA is retained in
+`Build/v/instruction-opt162-css-corpus.json`. No CSS input is edited.
+
+Each operation calls public `parse_css_stylesheet` with default ParsingParams,
+no owning document and the actual stylesheet URL. It then visits every root
+rule through public CSSOM and consumes every byte of its full cssText,
+including nested serialization. The owning-document boundary is absent and
+import fetch integration is inert. Setup verifies source retention, nonempty
+rule lists and an independent known serialization. Eight warmup corpora,
+forced GC and assertions stay outside the hardware counter. One complete
+20-sheet corpus is measured in each observation. Three fixed alternating pairs
+produce medians **2,999,697,575 → 2,784,990,495** retired
+instructions, **-7.15762421%**, **3/3 wins**. All six actual
+exits are0, checksum10,259,308,475. This local result earns0 page credit.
+Normal C-O2/Boehm/marker1/automatic4GiB policy is unchanged; the hint is not
+forced locally, and neither prod nor global preallocation is enabled.
+
+Two preparation failures occur before any performance build or observation:
+a URL-less link, then an inventory assertion that had omitted deferred
+data-href URLs. Both original sources/actual exits remain. The same20 copied
+bodies are retained. An inherited161 seed metadata label is corrected before
+primaries; the actual summarizer AST already uses162. Original receipt and
+hash-linked correction remain. No successful check or observation is repeated.
+
+Successful161 normal C-only generation is reused exactly, with its original
+command, generation root, actual exit and SHA disclosed; it is not regenerated.
+A fresh independent complete normal generation authenticates every body,
+type and global. Strict C allows only the two lookup bodies to differ from158;
+all remaining functions, records, globals and resources match after established
+compiler/embed normalization and four byte-identical helper reorderings.
+All493 builtins,176 protected encoding/filter/arena functions,120 native inputs,
+37 frozen headers and exact native arguments authenticate. Native compilation,
+signing and smoke actually exit0 with the loaded frozen4eef helper.
+
+Both full-process C-O1/Boehm1/no-inline profiles actually exit0. Generated C
+proves main remains enabled, with no reset or filter. Each process calls the
+complete corpus10 times, complete sheet operation200 times and public stylesheet
+parser221 times, including setup. Missing optional rows stay unknown:
+
+| Function | Before calls | Final calls |
+| --- | ---: | ---: |
+| `css__opt162_complete_corpus` | 10 | 10 |
+| `css__opt162_complete_stylesheet` | 200 | 200 |
+| `css__parse_css_stylesheet` | 221 | 221 |
+| `css__CSSRule_css_text` | 173,071 | 173,071 |
+| `css__keyword_from_string` | 217,976 | 217,976 |
+| `css__property_id_from_canonical_name` | 5,072,230 | 5,072,230 |
+| `css__property_id_from_string` | 4,715,802 | 4,715,802 |
+| `css__to_ascii_lowercase` | 5,509,465 | 5,509,465 |
+
+
+Profile counts, timings and instrumented instructions earn0 page credit.
+Matching normal binaries use the same359-body cache, frozen4eef and placement
+helpers,1024×768 document viewport and
+`native.scopes.navigation_to_first_document_paint[0]`. These are the first page
+observations of this composition. Fresh fixed30 alternating pairs produce
+medians **16,361,219,627 → 16,342,765,348.5**
+instructions: point saving **18,454,278.5
+(-0.11279280%)**, **30/30 wins**.
+Paired median saving **18,398,180**;30,000 paired bootstrap
+resamples, actual/reported seed162, give95% interval **[16,513,550.5, 20,739,616]**.
+Repeatable credit **18,454,278.5**; integration **accepted**
+under the existing positive-point policy. No historical median is subtracted.
+
+All60 primaries remain: 60 actual PNGs, 0 counter-only recoveries,
+0 archived pre-primary retries. Preparation remains1install/2geometry/
+1paint for each first primary; 0 later refreshes
+and 1 external foreground transitions
+stay separate. Available PNGs are1024×768 and exact outside the predeclared
+skeleton bands. Any recovered unknown exit or missing PNG stays explicit. No
+completed primary is discarded, filtered, rerun or added beyond the cohort.
+
+Focused viewport exact. Prior observed carry0 plus this matching positive point
+is **18,454,278.5** for the5M gate: **passed**.
+Six actual zero-exit jobs cover87 selected cases bothGC/174executions;19screenshots finish,16exact. Known differences remain inline-node13,text-decorations1341,canvas-text1994.
+Capture receipts authenticate actual exits and source, binary, viewport, helper,
+fonts, log and PNG hashes.
+
+Isolated artifact **`/Users/alex/code/vox2/Build/v/Vox-opt162.app`** has actual pin/sign/verify/smoke
+and GC exits0. Its instruction text equals the measured image; defaultmarker1
+and override2 both collect. Canonical resources are read, and the canonical
+executable, GUI and newer independent bundles are preserved. Accepted control
+**162**, broad baseline **162**,
+observed carry **0**.
+Durable generated-C, profile, focused, local, broad and binary archives and hashes
+are indexed by `Build/v/instruction-opt162-durable-archives.json`.
+Chrome parity remains unestablished: content, start and paint endpoints must
+match before a speed comparison. Independent Root receives no extra coverage
+or performance credit.
+
 ## Causes and changes
 
 - The V 0.5.2 compatibility compiler's `-prod` Boehm code repeatedly snapshots
