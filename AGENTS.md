@@ -2480,6 +2480,15 @@ evidence](docs/translation-audit/NATIVE_MEDIA_WHEEL_RAW_HANDLER.md).
   Focused exact;broad passed;prior carry0;strict entire independent C/all493builtins/176protected/120nativeinputs/37headers.
   Acceptedcontrol 168;isolated168app/GC1+override2;canonical/GUI/foreign preserved;fullprofiles72completebatches/no profile credit.
   Complete feature retained;all original failed receipts remain. Chrome parity open.
+  Streaming HarfBuzz UTF16 round169 (`8c335690`):one complete original runtimehunk/onePlatformpath/no context rebase or projection.
+  Fourexactcases/66913asserts beforeBoehm/finalBoehm/finalnone;no test compatibility edits;common60/config.
+  Declared64batches/2048cold+2048cached shapes+2048width lookups:local -2.515261%/3wins/all6actual0;zero pagecredit.
+  Fullprofiles72completebatches;UTF16helper3836both;runes16983→13147;iteratorUNKNOWN→3836;originalreader1/read-onlycollector0/no replay.
+  Fresh page 16,420,541,361→16,418,928,163;15/30wins;point 1,613,198.
+  PairedCI[-4,211,700,10,825,107];repeatable credit 0;all60retained;same1/2/1;seed169/30000bootstrap.
+  Focused exact;broad skipped below 5,000,000-instruction threshold;prior carry0;strict entire independent C/all493builtins/176protected/120nativeinputs/37headers.
+  Acceptedcontrol 169;broadbaseline 168;carry 1,613,198;isolated169app/GC1+override2;canonical/GUI/foreign preserved.
+  Complete feature retained;all original failed receipts remain. Chrome parity open.
 - Outside instruction-count optimization, run broad regression suites once per
   ten completed fixes, not after every fix.
   Broad suites include full translation/package test batches, the full LibJS AST

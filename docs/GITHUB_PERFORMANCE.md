@@ -16351,6 +16351,119 @@ Durable C/profile/focused/local/broad/binary archive hashes are recorded in
 Chrome parity still requires equivalent content, start and submission endpoints.
 Independent Root earns no additional coverage or credit from this comparison.
 
+## Stream HarfBuzz UTF-16 input without an intermediate rune array
+
+Round 169 applies the complete `8c335690` feature to accepted 168. HarfBuzz's
+`utf16_code_units` streams the existing rune iterator into its required UTF-16
+destination instead of first materializing a rune array. BMP, supplementary,
+malformed and truncated inputs retain the builtin decoder's existing behavior.
+Public decoding, glyph ownership, CSS filtering and tokenizer arenas are unchanged.
+
+The single original runtime Git hunk in `platform/harfbuzz.c.v` reconstructs
+the complete author file and applies directly to frozen 168, without a context
+rebase or runtime projection. Independent Root changes are excluded. Feature
+and focused tests were committed together as `8c335690`, with actual commit
+exit zero. Four focused cases pass **66,913 assertions** in each of before/Boehm,
+final/Boehm and final/no-GC C-O2: 66,834 + 33 new assertions and 42 + 4 unchanged
+fork assertions. Explicit expected units and the unchanged materializing oracle
+cover valid scalars, controls, NUL, bidi text, malformed/truncated bytes, all 256
+single bytes, all 65,536 byte pairs, 1,024 seeded inputs and scalar boundaries.
+No test compatibility edits are needed. Common 12 cases, including one inactive
+diagnostic, pass 60 assertions/configuration; before reuses exact accepted-168
+evidence without replay.
+
+The local fixture was declared before any performance build or counter.
+Each observation contains 64 batches of 32 realistic strings: **2,048 cold
+shapes, 2,048 cached shapes and 2,048 public width lookups**. Four ASCII,
+Unicode and bidirectional prefixes cross eight ASCII/non-ASCII suffixes.
+Complete public calls consume trailing metadata, glyph IDs/codepoints/positions,
+advances, UTF-16 lengths, replay indices and widths. Inputs, 160 valid setup
+checks, uncached reference checksums, eight disjoint warmup batches, forced GC
+and final checksum assertion remain outside the counter. No private cache reset
+or runtime shim is used. All six observations actually exit zero, with checksum
+**827,227,709,321,120**. Three fixed alternating pairs give medians
+**558,192,559 → 544,152,561** retired instructions,
+**-2.51526069%**, **3/3 wins**. This opens the native gate;
+local savings earn zero page credit.
+
+Normal C-only generation exits zero and is reused without regeneration.
+Strict C permits only `platform__utf16_code_units` to change, with no added
+or removed functions. The entire independently generated normal program
+matches; all other functions, records, globals and resources remain unchanged
+after established compiler/embed normalization and four authenticated,
+byte-identical helper reorderings. All 493 builtins, 176 protected
+encoding/filter/arena routines, 120 native inputs, 37 headers and exact native
+arguments authenticate. Native compile, signing, persistence and frozen-library
+smoke actually exit zero. Native policy remains C-O2/Boehm/default marker 1,
+the same automatic 4 GiB hint, no `-prod` and no global `-prealloc`.
+
+Both full-process C-O1/Boehm/one-marker/no-inline profile programs exit zero.
+Generated C proves profiling stays enabled throughout main with no filtering
+or reset. Setup, uncached reference work and warmups remain included:
+
+| Function | Before calls | Final calls |
+| --- | ---: | ---: |
+| `platform__opt169_complete_public_shaping_lifetime` | 72 | 72 |
+| `platform__shape_text_with_spacing` | 4,640 | 4,640 |
+| `platform__shaped_text_width` | 2,336 | 2,336 |
+| `platform__shape_text_cached` | 6,976 | 6,976 |
+| `platform__shape_text_uncached` | 4,384 | 4,384 |
+| `platform__shape_text_with_harfbuzz` | 4,384 | 4,384 |
+| `platform__utf16_code_units` | 3,836 | 3,836 |
+| `builtin__string_runes` | 16,983 | 13,147 |
+| `builtin__string_runes_iterator` | unknown | 3,836 |
+
+
+The 3,836 fewer materializing `string_runes` calls equal the unchanged 3,836
+UTF-16 helper calls. Final iterator calls are 3,836; the absent control iterator
+row remains **unknown**, never an inferred zero. Generated helper bodies prove
+the actual call replacement. The original report reader exits 1 when subtracting
+that missing row; its receipt remains. A read-only collector authenticates the
+existing reports and succeeds without rerunning either native profile.
+Profile counts, timings and instrumented instructions earn zero page credit.
+
+Matching normal binaries use the fixed 359-body cache, frozen helper and
+placement library, 1024×768 document viewport and
+`native.scopes.navigation_to_first_document_paint[0]`. The fresh fixed 30
+alternating pairs give medians **16,420,541,361 →
+16,418,928,163** instructions: observed saving
+**1,613,198 (-0.00982427%)**,
+**15/30 wins**. Paired median saving is
+**660,106.5**. The 30,000 paired bootstrap resamples use
+actual and reported seed 169, giving 95% interval **[-4,211,700, 10,825,107]**.
+Repeatable page credit is **0**; integration is
+**accepted** under the existing positive-point
+policy. No historical median is subtracted.
+
+All 60 primaries remain: 60 actual PNGs, 0 counter-only recoveries
+and 0 archived pre-primary startup retries. First preparation is
+1 installation/2 geometry/1 paint. There are 0
+later refreshes and 1 external foreground
+transitions, recorded separately. Available PNGs are 1024×768 and exact outside
+the original fixed skeleton bands. Unknown exits and missing captures would
+remain explicit; no primary is discarded, filtered, rerun or added.
+
+The focused viewport is exact. Prior observed carry zero plus this matching
+point gives **1,613,198** for the 5-million gate: **skipped below 5,000,000-instruction threshold**.
+No broad execution is claimed below the threshold; the accepted-168 broad baseline remains.
+Capture receipts bind actual exits, source, binary, viewport, helper, fonts,
+logs and PNG hashes.
+
+Isolated **`/Users/alex/code/vox2/Build/v/Vox-opt169.app`** has actual pin/sign/verify/smoke and GC
+exits zero. Its instruction text equals the measured image; marker 1 and override
+2 both collect. Canonical executables, GUI browsers, newer bundles and foreign
+work are preserved. Accepted control is **169**;
+broad baseline is **168**, observed carry
+**1,613,198**.
+The complete feature remains committed in Root. Its frozen result does not cover independent Root changes.
+Durable C/profile/focused/local/broad/binary archive hashes are recorded in
+`Build/v/instruction-opt169-durable-archives.json`. The original whole-Root
+preparation guard failed before cloning, build or counter because independent
+committed HarfBuzz changes were present; the corrected full-hunk binding succeeds.
+The premature commit-readiness probe stopped before staging. All original failed
+receipts remain. Chrome parity requires equivalent content, start and submission
+endpoints. Independent Root earns no coverage or performance credit here.
+
 ## Causes and changes
 
 - The V 0.5.2 compatibility compiler's `-prod` Boehm code repeatedly snapshots
