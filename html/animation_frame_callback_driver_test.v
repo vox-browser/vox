@@ -1,5 +1,7 @@
 module html
 
+import platform
+
 struct FrameLog {
 mut:
 	times []f64
@@ -58,4 +60,47 @@ fn test_callback_scheduled_during_run_defers_to_next_frame() {
 	assert driver.has_callbacks() == true
 	driver.run(2.0)
 	assert log.times == [1.0, 2.0]
+}
+
+fn frame_storage_noop(_ f64) {}
+
+fn test_empty_and_repeated_animation_frames_reuse_callback_storage() {
+	mut driver := &AnimationFrameCallbackDriver{}
+	for _ in 0 .. 4 {
+		driver.add(frame_storage_noop)
+		driver.run(1)
+	}
+	before := platform.thread_arena_usage().used
+	for _ in 0 .. 1024 {
+		driver.run(2)
+		driver.add(frame_storage_noop)
+		driver.run(3)
+	}
+	$if prealloc {
+		retained := platform.thread_arena_usage().used - before
+		assert retained < 4096, '${retained} retained by repeated animation frames'
+	}
+	assert !driver.has_callbacks()
+	assert driver.executing_callbacks_.len == 0
+	assert !driver.running_
+}
+
+fn test_reentered_animation_frame_keeps_the_outer_batch_and_new_registrations() {
+	mut driver := &AnimationFrameCallbackDriver{}
+	mut log := &FrameLog{}
+	driver.add(fn [mut driver, mut log] (_ f64) {
+		log.times << 1
+		driver.add(fn [mut driver, mut log] (_ f64) {
+			log.times << 2
+			driver.add(fn [mut log] (_ f64) { log.times << 4 })
+		})
+		driver.run(2)
+	})
+	driver.add(fn [mut log] (_ f64) { log.times << 3 })
+	driver.run(1)
+	assert log.times == [f64(1), 2, 3]
+	assert driver.has_callbacks()
+	driver.run(3)
+	assert log.times == [f64(1), 2, 3, 4]
+	assert !driver.has_callbacks()
 }
