@@ -16637,6 +16637,109 @@ Frozen compiler argument arrays remain unchanged for exact provenance. Chrome pa
 start and paint submission endpoints and remains unknown. Independent Root
 receives no coverage or performance credit here.
 
+## Return indefinite automatic heights before parent lookup
+
+Round 172 applies the complete `58777c42` feature to accepted 171.
+`resolve_definite_size` returns an indefinite automatic height before reading
+containing-block flags or the parent. Automatic widths and concrete sizes
+retain their existing rules. The sole original Git hunk reconstructs the whole
+author file and applies exactly to frozen 171; no context rebase or runtime
+projection is used. Independent Root changes are excluded.
+
+Two new tests and six retained tests pass **6,321
+assertions** per configuration: before/Boehm, final/Boehm and final/no-GC C-O2.
+The automatic-height matrix covers attached and detached nodes, flow/float/flex/grid
+parents, child positioning, optional containing blocks and definite-axis flags.
+Automatic-width cases retain parent eligibility, edge subtraction and indefinite
+basis rules. The six unchanged constraint/metrics tests cover concrete lengths,
+percentages, calculations, box sizing and font metrics. Common 12 cases pass
+60 assertions/configuration; the accepted171 common control is reused without
+execution. Tests and implementation share one feature commit.
+
+The local fixture was declared before builds or counters. Every observation
+completes **2,048 fresh public LayoutState owners** of 65 nodes/**133,120 records**,
+through public subtree construction, mutable lookup and measurement release.
+Eight real CSS states cover definite and indefinite dimensions. Setup, 455 checks,
+reference, eight warmups, forced GC and final checksum assertion stay outside
+the hardware counter. All six fixed alternating observations exit zero with
+checksum **20,251,774,976**. Medians are
+**706,051,045 → 705,984,618** retired instructions,
+**-0.00940824%**, **2/3 wins**. No sample is discarded,
+replayed or added. The positive local gate permits normal native/profile/page
+work; local savings earn zero page credit.
+
+C-only frontend generation exits zero and its output is reused. Strict C allows
+only `layout__resolve_definite_size` to change. The entire independent normal
+program matches; no functions are added or removed. All other function bodies,
+records, globals and resources authenticate after established compiler/embed,
+source assertion-line and byte-identical helper-order normalization. Checks cover
+493 builtins, 176 protected routines, 120 native inputs, 37 quoted headers and
+exact native arguments. Native compilation, signing, persistence and frozen
+library smoke actually exit zero. Policy stays C-O2/Boehm/default marker 1,
+the same automatic 4 GiB hint, no `-prod` and no global `-prealloc`.
+
+Both full-process C-O1/Boehm/one-marker/no-inline profiles exit zero. Generated
+C proves profiling remains enabled throughout main without filtering or reset.
+Setup and reference/warmup work remain in the counts:
+
+| Function | Before calls | Final calls |
+| --- | ---: | ---: |
+| `layout__opt172_complete_public_state_initialization` | 2,057 | 2,057 |
+| `layout__LayoutState__static__new_for_subtree` | 2,058 | 2,058 |
+| `layout__LayoutState_get_mutable` | 134,064 | 134,064 |
+| `layout__LayoutState_release_measurement` | 2,058 | 2,058 |
+| `layout__UsedValues_set_node` | 133,838 | 133,838 |
+| `layout__resolve_definite_size` | 539,472 | 539,472 |
+| `layout__Node_parent` | 136,019 | 68,069 |
+
+
+Complete public owner invocations remain 2,057. Construction, lookup, release,
+initialization and resolver counts stay equal; parent lookups decrease. Missing
+rows stay unknown. Profile counts and timings earn zero page credit.
+
+The matching regular binaries use the fixed 359-body cache, frozen libraries,
+1024×768 document viewport and
+`native.scopes.navigation_to_first_document_paint[0]`. Thirty alternating pairs
+produce medians **16,301,859,881 → 16,293,567,482**
+instructions, observed saving **8,292,399
+(-0.05086781%)**, **14/30 wins**.
+The paired-median saving is **-1,996,523**; 30,000 paired
+bootstrap resamples/seed172 give 95% interval **[-5,324,551.5, 5,871,683.5]**.
+Repeatable page credit is **0**, requiring a strictly positive lower
+bound. Existing integration acceptance requires a positive point and nonnegative
+upper interval, and is **True**. No historical median subtraction is used.
+
+All 60 primaries are retained: **60 actual PNGs**, **0 explicitly
+recovered counter-only observations**, **0 startup retry receipts**.
+Every first-primary preparation is 1 installation/2 geometry/1 paint. Later
+refreshes (0) and external foreground transitions
+(1) remain separate. Available PNGs are
+1024×768 and exact outside the predeclared skeleton bands. Unknown exits and
+missing captures remain explicit; completed primaries are never rerun.
+
+The focused viewport is exact. Prior observed carry **0** plus this
+round's positive matching point gives **8,292,399** for the 5M gate:
+**passed**.
+Six actual zero-exit jobs cover 87 selected cases in both GC modes/174 executions. All 19 screenshots complete, 16 exact; known differences stay 13/1,341/1,994 pixels.
+Capture receipts bind actual exits, sources, binaries, viewport, libraries,
+fonts, logs and PNG hashes.
+
+Isolated **`/Users/alex/code/vox2/Build/v/Vox-opt172.app`** has actual signing/verification/smoke/GC
+successes. Its instruction text matches the measured image. Default marker 1
+and override 2 both collect. Canonical executables, GUI browsers, newer bundles
+and foreign work are preserved. Accepted control is **172**;
+broad baseline **172**; observed carry
+**0**.
+The complete feature remains committed in Root. Its frozen result does not cover independent Root changes.
+Durable C/profile/focused/local/broad/binary hashes are recorded in
+`Build/v/instruction-opt172-durable-archives.json`. Inherited control/seed labels
+were corrected to 171/172 before any build or observation, with originals
+retained in `instruction-opt172-pre-build-metadata-correction.json`.
+The required old compiler does not support current V's memory-limit flag;
+expensive jobs retain the external memory guard and frozen compiler arguments.
+Chrome parity remains unknown pending equivalent content, start and paint
+submission endpoints. Independent Root receives no coverage or performance credit.
+
 ## Causes and changes
 
 - The V 0.5.2 compatibility compiler's `-prod` Boehm code repeatedly snapshots
