@@ -995,7 +995,7 @@ fn build_layout_box_for_element_with_svg_resource_kind(document &dom.Document, e
 		if !computed.display().is_contents() {
 			content_replacement_source = computed.content_replacement_image(&abstract_element)
 		}
-		registered_counter_styles := css.registered_counter_styles_for_abstract_element(abstract_element)
+		registered_counter_styles := css.registered_counter_styles_for_content(computed, abstract_element)
 		content := computed.content(&abstract_element, builder_state.quote_nesting_level, registered_counter_styles).content_data
 		mut mutable_computed := unsafe { &css.MutableComputedValues(computed) }
 		mutable_computed.set_content(content)
@@ -2335,7 +2335,7 @@ fn build_generated_pseudo_element(document &dom.Document, element &dom.Element, 
 	}
 	computed_values_in_layout_coordinates(computed, document)
 	abstract_element := dom.AbstractElement.new(element, dom_pseudo)
-	registered_counter_styles := css.registered_counter_styles_for_abstract_element(abstract_element)
+	registered_counter_styles := css.registered_counter_styles_for_content(computed, abstract_element)
 	mut content_replacement_source := computed.content_replacement_image(&abstract_element)
 	initial_quote_nesting_level := builder_state.quote_nesting_level
 	initial_content_result := computed.content(&abstract_element, initial_quote_nesting_level, registered_counter_styles)
@@ -2436,7 +2436,7 @@ fn build_list_item_marker(document &dom.Document, element &dom.Element, list_ite
 	}
 	computed_values_in_layout_coordinates(marker_computed, document)
 	abstract_element := dom.AbstractElement.new(element, .marker)
-	registered_counter_styles := css.registered_counter_styles_for_abstract_element(abstract_element)
+	registered_counter_styles := css.registered_counter_styles_for_content(marker_computed, abstract_element)
 	initial_content := marker_computed.content(&abstract_element, 0, registered_counter_styles).content_data
 	if initial_content.type_ == .none_ {
 		return none

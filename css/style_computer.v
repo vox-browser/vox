@@ -973,10 +973,14 @@ pub fn compute_required_invalidation(old_style &ComputedProperties, new_style &C
 	// captured while building generated content. Compare it independently of that handle,
 	// matching ElementDependentInvalidationState upstream.
 	if old_content := unsafe { &ComputedValues(old_style) }.computed_content() {
-		registered_counter_styles := registered_counter_styles_for_abstract_element(*abstract_element)
-		new_content := new_style.content(abstract_element, 0, registered_counter_styles).content_data
-		if !counter_style_dependencies_equal(old_content.counter_style_dependencies, new_content.counter_style_dependencies) {
-			invalidation.ensure_at_least(.rebuild_layout_tree)
+		// Literal generated text has no counter definitions to recheck. A
+		// changed content property already carries its raw-property invalidation.
+		if old_content.counter_style_dependencies.len > 0 {
+			registered_counter_styles := registered_counter_styles_for_abstract_element(*abstract_element)
+			new_content := new_style.content(abstract_element, 0, registered_counter_styles).content_data
+			if !counter_style_dependencies_equal(old_content.counter_style_dependencies, new_content.counter_style_dependencies) {
+				invalidation.ensure_at_least(.rebuild_layout_tree)
+			}
 		}
 	}
 	if _ := old_layout_node {
