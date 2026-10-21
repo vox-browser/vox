@@ -2412,6 +2412,12 @@ evidence](docs/translation-audit/NATIVE_MEDIA_WHEEL_RAW_HANDLER.md).
   Threefixedlocalpairs +0.183824%/0wins/all6actual0;allobservations retained;zero pagecredit.
   Localgate1/native-release1/no native-start/jobs0;no normal/profile/independentC/page/broad/bundle/GC159 pass.
   Acceptedcontrol/broad/app158/carry0 preserved;original predicate1 and archiveprose erratum retained;canonical/GUI/foreign preserved;Chrome open.
+  Bucketed CSS lookup round160 (`1d746ab4`):all2runtimehunks/twoCSSpaths+sevenoriginaltoolinghunks/all6featurefiles.
+  ThreeexactVcases/5269asserts eachconfiguration;869keywords/440properties;common60/config;C-onlyfrontend0;fullmapping generatoraudit actual0.
+  Original3Pythonpasses reported/individualexitunknown;originalbadreceipt and audit-syntax1 retained;no successful case repeated.
+  Declared canonical147scene/16fullpublicpipelines/192textchecks:local +3.835884%/1wins/all6actual0;zero pagecredit.
+  Localgate1/native-release1/no native-start/jobs0;no normal/profile/independentC/page/broad/bundle/GC160 pass.
+  Readonly keyword C1→333optionaltemps is diagnostic only;acceptedcontrol/broad/app158/carry0 and canonical/GUI/foreign preserved;Chrome open.
 - Outside instruction-count optimization, run broad regression suites once per
   ten completed fixes, not after every fix.
   Broad suites include full translation/package test batches, the full LibJS AST

@@ -15440,6 +15440,63 @@ Accepted control,broad baseline and verified isolated app remain158;repeatable
 page credit and observed carry stay0. Canonical/GUI browsers,newer bundles and
 foreign work remain preserved. Chrome parity is still unestablished.
 
+## Retain bucketed CSS lookup as a rejected local attempt
+
+Round160 applies complete `1d746ab4` to accepted158. Keyword and canonical
+property lookup dispatch by string length and first byte before checking full
+spellings. All two original runtime hunks across the two CSS files and all
+seven tooling hunks across two generators plus their tests authenticate. Every
+original author file reconstructs exactly;all six feature files are retained.
+No partial feature,context rebase,storage projection,compiler shim or rejected
+159 work is imported. The existing feature remains committed onmaster.
+
+All three unchanged original V cases pass **5,269 assertions** in before/Boehm,
+final/Boehm and final/none C-O2. They cover all869 keywords and440 properties,
+case variants,near misses,aliases,empty/non-ASCII/NUL input. Completed exact
+successes are authenticated and reused without replay. Common12 cases pass60
+assertions/configuration. Whole normal C-only generation exits0;no native or
+strict independent C pass is implied.
+
+The three Python unit tests report all passes,but their wrapper did not retain
+the individual process terminal. Its actual exit is **unknown**,not observed0.
+The erroneous original zero receipt and correction remain retained. No
+successful case is rerun. A separate full-mapping generator audit actually
+exits0:both generators reproduce both entire OLD control tables and match all
+candidate869/440 rows,without duplicates or map/global storage. All seven
+tooling hunks and original author files authenticate. Its first syntax-only
+launch exits1;the original source/terminal remain,then the corrected audit
+actually exits0. No hardware credit comes from these static checks.
+
+Before any160 performance/counter build,the canonical147 scene is fixed apart
+from function/probe names:64 Unicode paragraphs,128 whitespace-only blocks,
+192 independent setup text checks and16 complete public parse/layout/record/
+paint-command/hit/finalize pipelines per observation. Setup,eight warmups,
+forcedGC and assertions stay outside the counter. Normal policy remains
+C-O2/Boehm/defaultmarker1/automatic4GiB,not forced or triggered locally,
+no-prod/no-global-prealloc. Three fixed alternating pairs give medians
+**31,294,827,994 → 32,495,261,272 retired instructions**,
+**3.83588393% more**, **1/3 wins**. All six actual exits0
+and checksum7,963,486,608 agree. No completed observation is discarded,
+filtered,extended or rerun. Fewer string comparisons alone earn no credit.
+
+The local gate and native-release controller actually exit1. No native-start
+receipt exists;zero normal native,profile,independent C or page jobs start.
+No strict C audit,native binary,profile,page primary,screenshot,broad batch,
+bundle or GC pass is claimed for160. The declared30 page pairs/seed160/30,000
+paired bootstrap never start. Durable focused/local/frontend C and binaries
+are hash-indexed by `Build/v/instruction-opt160-durable-archives.json`.
+
+Readonly generated C inspection finds the keyword function expands from2,615
+to5,774 lines and from one to333 optional-result temporaries. This is code-shape
+evidence,not a proved cause of the regression or instruction credit. Evidence:
+`Build/v/css-name-dispatch-generated-control-flow-finding.json`. A distinct
+follow-up may keep bucket comparisons as statements and wrap one final result;
+no performance outcome is inferred for that unmeasured change.
+
+Accepted control,broad baseline and verified isolated app remain158;page credit
+and observed carry stay0. Canonical/GUI browsers,newer bundles and foreign work
+are preserved. Chrome parity remains unestablished.
+
 ## Causes and changes
 
 - The V 0.5.2 compatibility compiler's `-prod` Boehm code repeatedly snapshots
