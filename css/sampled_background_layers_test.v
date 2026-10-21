@@ -31,7 +31,7 @@ fn test_sampled_background_layers_are_copied_for_paint() {
 	assert !storage.contains(owned.data)
 	assert !storage.contains(owned[0].image.str)
 	assert owned == sampled
-	assert owned[0].position_y.value_ is CalculatedStyleValue
+	assert owned[0].position_y.is_calculated()
 
 	plain := [BackgroundLayerData{}]
 	assert background_layers_outside_samples(document, plain).data == plain.data
