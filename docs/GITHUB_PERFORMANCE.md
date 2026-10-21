@@ -14192,6 +14192,139 @@ unfinished corrected native command resumes, before its sole observation.
 Canonical app, GUI and concurrent work are preserved. Chrome parity remains
 unestablished: prior Chrome measurements use different endpoints/content.
 
+## Index HTML entity prefixes with retained names
+
+Round145 imports complete committed feature `83acd036` onto accepted142:
+three original Git hunks across two complete authored HTML files. The matcher
+uses a sorted index of existing entity names instead of a second prefix hash
+table. The complete code-point map and longest-match/backtracking behavior
+remain; the generated data file changes only its explanatory comment. Both
+whole authored files reconstruct exactly, with no source projection or shim.
+Independent Root work is excluded.
+
+Both C-O2 GC modes pass the two exact original exhaustive cases with
+**1,301,172 assertions each**: every entity, prefix and possible ASCII
+continuation, complete matches, longest matches, reset and non-ASCII rejection.
+Common12 cases pass60 assertions per configuration; the unchanged before
+configuration reuses142-final. No completed focused case is repeated.
+
+The local endpoint was declared before any145 performance build or observation.
+It counts absolute hardware retired process instructions in a cold local test
+process through initialization, identical canonical142 markup construction and
+one complete public parse/layout/record/paint-command/hit/finalize pipeline.
+The64 Unicode paragraphs and128 indentation blocks are unchanged. There are
+no warmups or forced collection before this endpoint; independent192 text,
+geometry, paint and hit assertions follow it. This is a local test process,
+not the normal browser. Three fixed alternating pairs give medians
+**862,229,851 → 853,588,098 instructions
+(-1.00225630%)**, **3/3 wins**; all six exits0 and checksum
+497,717,913. Every sample remains. This earns **zero page credit**. Normal
+browser initialization precedes the fixed navigation counter; only the fresh
+page cohort can establish an effect on navigation/painting.
+
+Strict source and C audits pass. The entire compiled normal program matches
+an independent whole-app regeneration, retaining every function/type/global.
+Against control, only the declared matcher body, old/new index helpers, one
+global declaration and its exact corresponding initializer change. All other
+records, resources and function bodies remain exact after established compiler
+identities and four authenticated byte-identical helper reorderings. All493
+builtin and176 protected decoder/filter/arena functions,120 native inputs,
+37 frozen quoted includes and exact native arguments are authenticated.
+
+Actual native build, signing and frozen4eef helper smoke exit0. Full-process
+C-O1/Boehm/marker1/no-inline profiles stay enabled throughout main, without
+filtering/reset. Each has one complete pipeline plus the independent setup
+pipeline after the local hardware endpoint: two parse/layout/record calls.
+The diagnostic counts are:
+
+| Function | Before calls | Final calls |
+| --- | ---: | ---: |
+| `html__build_named_char_ref_prefixes` | 1 | not compiled |
+| `html__build_named_char_ref_names` | not compiled | 1 |
+| `html__named_char_ref_has_prefix` | not compiled | 0 |
+| `css__StyleComputer_compute_style` | 0 | 0 |
+| `css__StyleComputer_compute_style_impl` | 776 | 776 |
+| `css__Tokenizer_next_code_point` | 97,985 | 97,985 |
+
+Absent compiled functions are marked explicitly. Zero calls require actual
+counter initialization, entry increment and nonzero-only printer proof. The
+original summary exits1 because it predicted nonzero calls to the style
+wrapper; actual wrapper counters are0 while the implementation has776 calls
+in each run. Both original profile drivers exit0. A read-only correction
+preserves the failed hypothesis and original receipts under
+`instruction-opt145-profile-expectation-finding`, without repeating either run.
+Dependent readers had also stopped1 before any browser primary; their original
+failures remain under `instruction-opt145-preprimary-gate-finding`. Actual
+pipeline preparation then exits0 and starts the still-unstarted fixed cohort.
+Profile counts/timings are never substituted for hardware instructions.
+
+The predeclared30 alternating pairs use the same359-body cache, frozen4eef
+helper, child-only placement and1024×768 document viewport. Primary endpoint:
+`native.scopes.navigation_to_first_document_paint[0]`. Fresh matching medians:
+**16,470,624,891 → 16,505,507,967.5 retired
+instructions**; observed saving **-34,883,076.5**
+(0.21178964%), **5/30 wins**. Paired median
+saving **-43,826,524**;30,000 paired bootstrap resamples,
+seed145, give95% interval **[-56,336,914.5, -36,722,833]**. Repeatable page credit:
+**0**. The candidate is
+**an unaccepted attempt** under the established
+positive-point integration policy; no historical median is subtracted.
+
+All60 primaries remain: **60 actual PNGs**, **0 counter-only
+recoveries**, **0 archived pre-primary startup retries**. First
+preparation remains1 install/2 geometry/1 paint. Later refreshes remain separate
+(0); external foreground transitions retained:
+1. All available captures are1024×768
+and pixels outside the original skeleton bands are exact. Unknown recovered
+exits/missing captures remain explicit. No completed observation is extended,
+filtered, discarded or rerun.
+
+Focused viewport: **pixel-exact**. Prior observed carry0; matching positive
+observed saving for the broad gate: **0**. Broad result:
+**skipped below 5,000,000-instruction threshold**.
+The total stays below5M;no broad execution is claimed.
+The isolated app is `/Users/alex/code/vox2/Build/v/Vox-opt145.app`. Actual library pin/sign/verify,
+smoke and GC checks exit0; instruction text matches the measured binary and
+installed helper hash is frozen4eef. Collections occur at default marker1 and
+override2. Canonical Info/resources alone are read; its executable/compiler
+scratch and the user's GUI remain untouched. Accepted control:
+**142**; broad baseline:
+**142**; observed carry:
+**0**.
+Durable C/profile/binary hashes are indexed in
+`Build/v/instruction-opt145-durable-archives.json`. These frozen results do not
+cover independent Root runtime work.
+
+Two separate optimizations are committed with their original focused tests,
+without instruction/page credit yet. `6c498aec` resolves immutable letter/word
+spacing once per synchronous text-node context; three cases/1,869 assertions
+pass each GC mode on accepted142 plus both complete authored hunks. Tests
+compare fresh shaping across chunks/nodes, preserved tabs/breaks and later
+style changes. A concurrent commit had picked up the two source hunks; its
+history is preserved, with index-only isolation `c8035878` and a focused
+reintroduction/test commit. Working source remained byte-identical.
+`1f3ab03a` skips unused font/context preparation only for absolute zero text
+indent; all other resolution code remains. Three cases/3,753 assertions pass
+each GC mode on accepted142 plus the whole constructor, including units,
+percentages/calculations, writing modes, hanging/each-line and break behavior.
+The original fixture used physical width for a logical-axis expectation; its
+unfinished generation jobs retain actual driver1/zero cases. The corrected
+logical-size fixture runs only previously unexecuted cases. No current-Root
+compiler pass or normal-browser credit is inferred from these separate scopes.
+
+The supplementary current-V shape-index fixture remains a failed whole batch.
+Both jobs retain two completed cases/6,408 assertions and actual driver143;
+remaining cases have no pass credit. The Boehm job is explicitly stopped after
+more than19minutes in formatting/allocation/GC. The no-GC resource guard stops
+its owned runtime after observed5,805,824KiB RSS; the actual exit is retained.
+Source/sample inspection points to formatting complete decoded-font tables in
+the original fingerprint. No successful case is rerun and no compiler shim is
+introduced. The already passed normal-compiler frozen six-case scope remains
+separate. Original logs/C/partial results are retained.
+
+Chrome parity remains unestablished. Earlier Chrome counters use different
+endpoints/content. Equivalent content and endpoint accounting are still required.
+
 ## Causes and changes
 
 - The V 0.5.2 compatibility compiler's `-prod` Boehm code repeatedly snapshots

@@ -2313,6 +2313,15 @@ evidence](docs/translation-audit/NATIVE_MEDIA_WHEEL_RAW_HANDLER.md).
   Original namespace-reader and supplementary current-Root build failures retained;no shim or invented exits.
   Separate one-observation startup attribution actual0;full C restores byteexact;zero page credit.
   Canonical/GUI/foreign work preserved;Chrome parity remains open.
+  Entity prefix round145 (`83acd036`):all3authored Git hunks/two whole HTML files;2cases/1301172asserts eachGC.
+  Common60/config;cold local one complete public pipeline -1.002256%/3wins/all6actual0;outside-page startup included.
+  Fresh page 16,470,624,891→16,505,507,967.5;5/30wins;point -34,883,076.5.
+  PairedCI[-56,336,914.5,-36,722,833];repeatable credit 0;all60 retained;same1/2/1 preparation.
+  Focused viewport exact;broad skipped below 5,000,000-instruction threshold;prior carry0;strict independent entire-program C audit.
+  Accepted control 142;isolated145app/GC1+override2;canonical/GUI/foreign work preserved.
+  Original profile hypothesis/dependent preprimary reader failures retained;read-only recovery0/no profile replay.
+  Separate spacing6c498aec(3cases/1869eachGC) and zero-indent1f3ab03a(3cases/3753eachGC) committed;zero hardware credit yet.
+  Supplementary current-V shape fixture interrupted143after2cases eachGC;no whole-batch pass;Chrome remains open.
 - Outside instruction-count optimization, run broad regression suites once per
   ten completed fixes, not after every fix.
   Broad suites include full translation/package test batches, the full LibJS AST
