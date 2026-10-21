@@ -2,6 +2,7 @@ module browserjs
 
 import dom
 import html
+import platform
 
 @[heap]
 struct JSONInitializationTurn {
@@ -72,4 +73,19 @@ fn test_host_json_factory_and_data_installation_share_one_html_script_turn() {
 	assert seen.factory_called
 	assert seen.job_saw_initialized_state
 	assert event_loop.microtask_queue_empty()
+}
+
+fn test_host_json_initialization_copies_temporary_factory_and_json_input() {
+	$if !darwin && !linux { return }
+	mut runtime := Runtime.create()
+	defer { runtime.close() }
+	mut input := platform.begin_thread_scratch('host JSON input')
+	factory := '(function(data){globalThis.retained=data;globalThis.readRetained=function(){return retained.text}})'.clone()
+	json := r'{"text":"temporary 日本語😀","values":[1,2,3]}'.clone()
+	input.leave()
+	runtime.initialize_host_from_json(factory, json)!
+	input.finish()
+	gc_collect()
+	assert runtime.evaluate_host('readRetained()')! == 'temporary 日本語😀'
+	assert runtime.evaluate_host('retained.values.join(",")')! == '1,2,3'
 }

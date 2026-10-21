@@ -2869,13 +2869,20 @@ fn run_document_script_sources_with_image_fetch_hooks(document &dom.Document, cu
 	processmetrics.instruction_checkpoint('javascript_native_bindings')
 	initial_state := javascript_initial_state_with_policy(document, current_url, sources.map(it.code), .roots_and_ids)
 	processmetrics.instruction_checkpoint('javascript_initial_state')
+	// The engine copies the factory source and JSON into its own strings. Keep
+	// serialization builders alive through that call, then retire them before
+	// installing further native bindings or running author scripts.
+	mut bootstrap_work := platform.begin_thread_scratch('compact host serialization')
 	bootstrap := javascript_bootstrap()
 	initial_state_json := json2.encode(initial_state)
 	processmetrics.instruction_checkpoint('javascript_bootstrap_source')
+	bootstrap_work.leave()
+	defer { bootstrap_work.finish() }
 	mutable_runtime.initialize_host_from_json(bootstrap, initial_state_json) or {
 		messages << 'JavaScript: ${err.msg()}'
 		return none
 	}
+	bootstrap_work.finish()
 	processmetrics.instruction_checkpoint('javascript_bootstrap_evaluated')
 	install_compact_native_selector_bindings(mut mutable_runtime) or {
 		messages << 'JavaScript selector bindings: ${err.msg()}'
