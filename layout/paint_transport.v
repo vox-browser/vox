@@ -2865,6 +2865,9 @@ fn (b &BlockBox) collect_compatibility_stacking_context_paint_steps(mut steps []
 // so repaint and hit testing share the same tree instead of independently
 // walking, sorting, and indexing the compatibility transport.
 fn (b &BlockBox) compatibility_paint_plan() ([]PaintOrderEntry, []CompatibilityPaintStep) {
+	// Sorting buckets, growth buffers and the identity index are only builder
+	// state. The retained plans contain values and borrowed pointers to boxes.
+	scratch := platform.begin_thread_scratch('compatibility paint plan')
 	entries := b.paint_order_entries()
 	mut entry_indexes := map[u64]int{}
 	for index, entry in entries {
@@ -2875,19 +2878,26 @@ fn (b &BlockBox) compatibility_paint_plan() ([]PaintOrderEntry, []CompatibilityP
 	for mut step in steps {
 		step.entry_index = entry_indexes[u64(voidptr(step.box))] or { -1 }
 	}
-	return entries, steps
+	scratch.leave()
+	retained_entries := []PaintOrderEntry{len: entries.len, init: entries[index]}
+	retained_steps := []CompatibilityPaintStep{len: steps.len, init: steps[index]}
+	scratch.finish()
+	return retained_entries, retained_steps
 }
 
 // StackingContext::hit_test() follows the same phases in reverse but, unlike
 // paint(), opacity:0 remains hit-testable. Non-invertible contexts are omitted
 // from both plans.
 fn (b &BlockBox) compatibility_hit_test_steps(entry_count int) []CompatibilityPaintStep {
-	// The paint plan already counted the retained boxes, including transparent
-	// contexts. Reserve their phase slots once instead of growing and copying a
-	// document-sized hit-test vector through several collector allocations.
+	// Bound the temporary collector once, then retain only the emitted slots.
+	// The same workspace owns stacking-context membership and sorting buffers.
+	scratch := platform.begin_thread_scratch('compatibility hit test plan')
 	mut steps := []CompatibilityPaintStep{cap: entry_count * compatibility_paint_phase_count}
 	b.collect_compatibility_stacking_context_paint_steps(mut steps, true)
-	return steps
+	scratch.leave()
+	retained := []CompatibilityPaintStep{len: steps.len, init: steps[index]}
+	scratch.finish()
+	return retained
 }
 
 // Build commands once per retained box, then replay each box's cached phase in

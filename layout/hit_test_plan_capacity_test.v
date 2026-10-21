@@ -12,14 +12,14 @@ fn test_preallocated_hit_plan_preserves_every_phase_and_transparent_context() {
 	box.collect_compatibility_stacking_context_paint_steps(mut previous, true)
 	actual := box.compatibility_hit_test_steps(entries.len)
 	assert actual.len == previous.len
-	assert actual.cap == entries.len * compatibility_paint_phase_count
+	assert actual.cap == actual.len
 	for index, step in actual {
 		assert step.box == previous[index].box
 		assert step.phase == previous[index].phase
 	}
 }
 
-fn test_document_sized_hit_plan_uses_one_phase_allocation_without_excess_capacity() {
+fn test_document_sized_hit_plan_retains_only_emitted_phase_slots() {
 	mut document := html.parse_document('<!doctype html><main>' + '<div><span>comment</span><br>reply</div>'.repeat(300) + '</main>')
 	defer { document.finalize() }
 	result := run_document_layout(document, 400, 200) or { panic('missing layout') }
@@ -28,6 +28,6 @@ fn test_document_sized_hit_plan_uses_one_phase_allocation_without_excess_capacit
 	actual := box.compatibility_hit_test_steps(entries.len)
 	assert actual.len > 1000
 	assert actual.len <= entries.len * compatibility_paint_phase_count
-	assert actual.cap == entries.len * compatibility_paint_phase_count
+	assert actual.cap == actual.len
 	assert actual.len > actual.cap / 2
 }
