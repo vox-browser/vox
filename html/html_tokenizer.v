@@ -158,8 +158,8 @@ mut:
 
 pub fn HTMLTokenizer.new(input string) HTMLTokenizer {
 	mut t := HTMLTokenizer{
-		source: input
-		decoded_input: input.runes()
+		source:              input
+		decoded_input:       input.runes()
 		input_stream_closed: true
 	}
 	t.source_positions << Position{0, 0}
@@ -276,12 +276,17 @@ fn runes_to_string(runes []rune) string {
 		}
 	}
 	if all_ascii {
-		mut bytes := []u8{len: runes.len}
+		if runes.len == 0 { return '' }
+		// The output owns its terminated byte storage. Avoid building a byte
+		// vector and then copying that vector into another string allocation.
+		mut bytes := unsafe { malloc_noscan(runes.len + 1) }
 		for index, code_point in runes {
-			bytes[index] = u8(code_point)
+			unsafe { bytes[index] = u8(code_point) }
 		}
-		// bytestr() owns a terminated copy and preserves embedded NUL bytes.
-		return bytes.bytestr()
+		unsafe {
+			bytes[runes.len] = 0
+			return tos(bytes, runes.len)
+		}
 	}
 	mut b := strings.new_builder(runes.len)
 	for r in runes {
@@ -308,10 +313,10 @@ fn (t &HTMLTokenizer) peek_code_point(offset int, stop StopAtInsertionPoint) ?ru
 }
 
 fn (mut t HTMLTokenizer) skip(count int) {
-	if t.source_positions.len > 0 {
-		t.source_positions << t.source_positions[t.source_positions.len - 1]
-	}
 	for _ in 0 .. count {
+		if t.source_positions.len > 0 {
+			t.source_positions << t.source_positions[t.source_positions.len - 1]
+		}
 		t.prev_offset = t.current_offset
 		code_point := t.decoded_input[t.current_offset]
 		if t.source_positions.len > 0 {
@@ -396,6 +401,14 @@ fn (mut t HTMLTokenizer) dequeue() ?HTMLToken {
 	}
 	token := t.queued_tokens[0]
 	t.queued_tokens.delete(0)
+	// A paused token can still rewind an overconsumed character reference
+	// after more input arrives. Drop its position history only once a token
+	// has actually been emitted, rather than on each unsuccessful next_token.
+	if t.source_positions.len > 0 {
+		last_position := t.source_positions[t.source_positions.len - 1]
+		t.source_positions.clear()
+		t.source_positions << last_position
+	}
 	return token
 }
 
@@ -445,7 +458,9 @@ fn (t &HTMLTokenizer) consumed_as_part_of_an_attribute() bool {
 
 fn (mut t HTMLTokenizer) consume_current_builder() string {
 	s := runes_to_string(t.current_builder)
-	t.current_builder = []
+	// runes_to_string owns its output, so the tokenizer can immediately reuse
+	// its private rune storage for the next tag, attribute, or comment.
+	t.current_builder.clear()
 	return s
 }
 
@@ -706,12 +721,6 @@ pub fn (mut t HTMLTokenizer) next_token() ?HTMLToken {
 }
 
 fn (mut t HTMLTokenizer) next_token_impl(stop StopAtInsertionPoint) ?HTMLToken {
-	if t.source_positions.len > 0 {
-		last_position := t.source_positions[t.source_positions.len - 1]
-		t.source_positions.clear()
-		t.source_positions << last_position
-	}
-
 	start_of_function: for {
 		if t.queued_tokens.len > 0 {
 			return t.dequeue()
@@ -1696,7 +1705,8 @@ fn (mut t HTMLTokenizer) next_token_impl(stop StopAtInsertionPoint) ?HTMLToken {
 					return t.emit_current_token_followed_by_eof()
 				}
 				.character_reference {
-					t.temporary_buffer = [rune(`&`)]
+					t.temporary_buffer.clear()
+					t.temporary_buffer << rune(`&`)
 					if c := current {
 						if is_ascii_alphanumeric(c) {
 							t.matcher.reset()
@@ -1753,8 +1763,7 @@ fn (mut t HTMLTokenizer) next_token_impl(stop StopAtInsertionPoint) ?HTMLToken {
 					overconsumed := t.matcher.overconsumed_code_points()
 					if overconsumed > 0 {
 						t.restore_to(t.current_offset - overconsumed)
-						t.temporary_buffer =
-							t.temporary_buffer[..t.temporary_buffer.len - overconsumed].clone()
+						t.temporary_buffer.trim(t.temporary_buffer.len - overconsumed)
 					}
 
 					if mapped := t.matcher.code_points() {
@@ -1768,7 +1777,7 @@ fn (mut t HTMLTokenizer) next_token_impl(stop StopAtInsertionPoint) ?HTMLToken {
 								}
 							}
 						}
-						t.temporary_buffer = []
+						t.temporary_buffer.clear()
 						for cp in mapped {
 							t.temporary_buffer << rune(cp)
 						}
@@ -1914,7 +1923,8 @@ fn (mut t HTMLTokenizer) next_token_impl(stop StopAtInsertionPoint) ?HTMLToken {
 					if code == 0x0d || (is_unicode_control(code) && !is_ascii_space_u32(code)) {
 						code = convert_numeric_control_code(code)
 					}
-					t.temporary_buffer = [rune(code)]
+					t.temporary_buffer.clear()
+					t.temporary_buffer << rune(code)
 					t.flush_codepoints_consumed_as_a_character_reference()
 					t.state = t.return_state
 					continue start_of_function
@@ -1939,7 +1949,7 @@ fn (mut t HTMLTokenizer) next_token_impl(stop StopAtInsertionPoint) ?HTMLToken {
 				.rcdata_less_than_sign {
 					if c := current {
 						if c == `/` {
-							t.temporary_buffer = []
+							t.temporary_buffer.clear()
 							t.state = .rcdata_end_tag_open
 							continue
 						} else {
@@ -2009,7 +2019,7 @@ fn (mut t HTMLTokenizer) next_token_impl(stop StopAtInsertionPoint) ?HTMLToken {
 					}
 					t.enqueue(HTMLToken.make_character(`<`))
 					t.enqueue(HTMLToken.make_character(`/`))
-					t.current_builder = []
+					t.current_builder.clear()
 					for code_point in t.temporary_buffer {
 						t.enqueue(HTMLToken.make_character(code_point))
 					}
@@ -2033,7 +2043,7 @@ fn (mut t HTMLTokenizer) next_token_impl(stop StopAtInsertionPoint) ?HTMLToken {
 				.rawtext_less_than_sign {
 					if c := current {
 						if c == `/` {
-							t.temporary_buffer = []
+							t.temporary_buffer.clear()
 							t.state = .rawtext_end_tag_open
 							continue
 						} else {
@@ -2103,7 +2113,7 @@ fn (mut t HTMLTokenizer) next_token_impl(stop StopAtInsertionPoint) ?HTMLToken {
 					}
 					t.enqueue(HTMLToken.make_character(`<`))
 					t.enqueue(HTMLToken.make_character(`/`))
-					t.current_builder = []
+					t.current_builder.clear()
 					for code_point in t.temporary_buffer {
 						t.enqueue(HTMLToken.make_character(code_point))
 					}
@@ -2137,7 +2147,7 @@ fn (mut t HTMLTokenizer) next_token_impl(stop StopAtInsertionPoint) ?HTMLToken {
 				.script_data_less_than_sign {
 					if c := current {
 						if c == `/` {
-							t.temporary_buffer = []
+							t.temporary_buffer.clear()
 							t.state = .script_data_end_tag_open
 							continue
 						} else if c == `!` {
@@ -2301,11 +2311,11 @@ fn (mut t HTMLTokenizer) next_token_impl(stop StopAtInsertionPoint) ?HTMLToken {
 				.script_data_escaped_less_than_sign {
 					if c := current {
 						if c == `/` {
-							t.temporary_buffer = []
+							t.temporary_buffer.clear()
 							t.state = .script_data_escaped_end_tag_open
 							continue
 						} else if is_ascii_alpha(c) {
-							t.temporary_buffer = []
+							t.temporary_buffer.clear()
 							t.enqueue(HTMLToken.make_character(`<`))
 							t.state = .script_data_double_escape_start
 							reconsume = true
@@ -2461,7 +2471,7 @@ fn (mut t HTMLTokenizer) next_token_impl(stop StopAtInsertionPoint) ?HTMLToken {
 				.script_data_double_escaped_less_than_sign {
 					if c := current {
 						if c == `/` {
-							t.temporary_buffer = []
+							t.temporary_buffer.clear()
 							t.state = .script_data_double_escape_end
 							return t.emit_character(`/`)
 						} else {
@@ -2559,7 +2569,7 @@ fn (mut t HTMLTokenizer) next_token_impl(stop StopAtInsertionPoint) ?HTMLToken {
 fn (mut t HTMLTokenizer) emit_temporary_buffer_as_end_tag_fallback(fallback_state State) {
 	t.enqueue(HTMLToken.make_character(`<`))
 	t.enqueue(HTMLToken.make_character(`/`))
-	t.current_builder = []
+	t.current_builder.clear()
 	for code_point in t.temporary_buffer {
 		t.enqueue(HTMLToken.make_character(code_point))
 	}
