@@ -144,7 +144,9 @@ fn (mut app BrowserApp) poll_browser_image_requests() {
 	mut loader := app.image_request_loader or { return }
 	if voidptr(loader.document) != voidptr(app.document) { return }
 	mut completed := false
-	for {
+	// Selecting builds temporary channel lists even when no response is ready.
+	// Producers buffer completions; a later frame polls anything arriving now.
+	for loader.results.len > 0 {
 		select {
 			resource := <-loader.results {
 				loader.active_fetches--
