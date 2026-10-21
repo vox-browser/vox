@@ -384,6 +384,7 @@ mut:
 	native_address_bar                  bool
 	tabs                                &BrowserTabs = unsafe { nil }
 	browser_chrome                      BrowserChromeState
+	browser_text_cache_                 &BrowserChromeTextCache = unsafe { nil }
 	chrome_debug                        bool
 	viewport_width                      int
 	viewport_height                     int

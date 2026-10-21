@@ -71,16 +71,13 @@ fn (app &BrowserApp) chrome_footer() string {
 	if app.hovered_link != '' { return app.hovered_link }
 	if app.js_messages.len > 0 {
 		// Console stacks must stay on the single-line status surface.
-		return 'Console: ${app.js_messages.last().split_into_lines()[0]}'
+		return app.cached_browser_console_footer()
 	}
 	return app.source_label
 }
 
 fn (app &BrowserApp) browser_chrome_state(width int, height int) BrowserChromeState {
-	mut titles := []string{}
-	if app.tabs != unsafe { nil } {
-		for tab in app.tabs.pages { titles << tab.browser_tab_title() }
-	} else { titles << app.browser_tab_title() }
+	titles := app.cached_browser_tab_titles()
 	return BrowserChromeState{
 		tab_titles: titles
 		selected_tab: if app.tabs != unsafe { nil } { app.tabs.selected } else { 0 }

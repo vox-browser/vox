@@ -47,10 +47,10 @@ fn (app &BrowserApp) browser_tabs_busy() bool {
 
 fn (app &BrowserApp) browser_tab_title() string {
 	if app.document != unsafe { nil } {
-		title := document_title(app.document).replace('\n', ' ').replace('\r', ' ')
-		if title.trim_space() != '' { return title }
+		title := app.cached_browser_tab_document_title()
+		if title != '' { return title }
 	}
-	if app.address in ['', 'about:blank'] { return 'New Tab' }
+	if app.address == '' || app.address == 'about:blank' { return 'New Tab' }
 	return app.address
 }
 
