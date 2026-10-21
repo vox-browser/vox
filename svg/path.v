@@ -2,6 +2,7 @@ module svg
 
 import math
 import strings
+import platform
 
 pub enum PathInstructionType {
 	move
@@ -72,6 +73,18 @@ pub fn (path Path) serialize() string {
 	if path.instructions.len == 0 {
 		return ''
 	}
+	$if prealloc {
+		mut scratch := platform.begin_thread_scratch('SVG path serialization')
+		serialized := path.serialize_in_workspace()
+		scratch.leave()
+		owned := serialized.clone()
+		scratch.finish()
+		return owned
+	}
+	return path.serialize_in_workspace()
+}
+
+fn (path Path) serialize_in_workspace() string {
 	mut builder := strings.new_builder(path.instructions.len * 16)
 	for index, instruction in path.instructions {
 		if index > 0 {
