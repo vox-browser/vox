@@ -46,6 +46,12 @@ fn (mut app BrowserApp) retain_navigation_resource(resource_url string, resource
 fn parse_page_preload_document(loaded LoadedPage, scripting_enabled bool) &dom.Document {
 	document_url := dom.dom_url_parse(loaded.url, dom.url_about_blank(), 'UTF-8') or { dom.url_about_blank() }
 	mut document := dom.Document.create(document_url)
+	// Resource classification resolves computed styles. Use the same font
+	// policy as the eventual navigation document, including system-face metrics.
+	// Otherwise preflight decodes the deterministic test fonts into permanent
+	// font caches even though the native page will never use those faces.
+	document.set_font_size_keyword_policy(.chromium)
+	document.set_font_rendering_policy(.chromium)
 	document.enable_native_storage()
 	mut allocations := document.enter_native_storage()
 	defer { allocations.finish() }
@@ -193,20 +199,10 @@ fn (mut app BrowserApp) poll_page_preload() {
 		mut heap_scope := platform.begin_browser_activity_heap_scope_for_scripting(document.as_node().is_scripting_enabled())
 		defer { heap_scope.finish() }
 		base_url := document.base_url().serialize()
-		_ = install_external_styles(document, base_url, pending.resources)
-		document.set_viewport_rect(dom.Rect{
-			width:  if app.viewport_width > 0 { app.viewport_width } else { initial_width }
-			height: if app.viewport_height > 0 {
-				app.viewport_height
-			} else {
-				initial_height - app.chrome_height()
-			}
-		})
-		css.sync_document_style_elements(document)
-		foreground, _ := partition_nonrendered_image_preloads(document, base_url, pending.image_urls)
-		// URL discovery returns values while the document is alive; worker
-		// arguments own their strings before releasing its payload.
-		foreground_urls := foreground.map(it.clone())
+		foreground_urls := foreground_preload_urls_in_document_storage(document, base_url,
+			pending.resources, pending.image_urls,
+			if app.viewport_width > 0 { app.viewport_width } else { initial_width },
+			if app.viewport_height > 0 { app.viewport_height } else { initial_height - app.chrome_height() })
 		retire_native_preload_document(document)
 		pending.discovery_document = unsafe { nil }
 		pending.image_urls = []string{}
@@ -223,6 +219,23 @@ fn (mut app BrowserApp) poll_page_preload() {
 	app.navigation_preloaded_resources = pending.resources.clone()
 	defer { app.navigation_preloaded_resources = map[string]PreloadedResource{} }
 	app.commit_preloaded_page(pending.loaded, pending.add_history)
+}
+
+// Styling discovery is part of the detached document's lifetime too. Its
+// selectors, resolved styles and invalidation data must retire with that tree,
+// rather than accumulating in the shell's base arena before every navigation.
+fn foreground_preload_urls_in_document_storage(document &dom.Document, base_url string,
+	resources map[string]PreloadedResource, urls []string, width f64, height f64) []string {
+	mut allocations := document.enter_native_storage()
+	_ = install_external_styles(document, base_url, resources)
+	mut mutable_document := unsafe { &dom.Document(document) }
+	mutable_document.set_viewport_rect(dom.Rect{width:width, height:height})
+	css.sync_document_style_elements(document)
+	foreground, _ := partition_nonrendered_image_preloads(document, base_url, urls)
+	allocations.finish()
+	// The caller retires the document next; worker arguments belong to the
+	// shell and must be copied after leaving its payload scope.
+	return foreground.map(it.clone())
 }
 
 // DOM click activation and the compact script replay share the shell's loader.
