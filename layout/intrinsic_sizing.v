@@ -485,7 +485,8 @@ fn calculate_content_width_with_constraint(mut source_state LayoutState, box &Bo
 	box_styled := box_node.as_node_with_style() or { return CSSPixels.new(0) }
 	mut throwaway := source_state.new_measurement_for_subtree(box_styled)
 	defer { throwaway.release_measurement() }
-	populate_intrinsic_containing_block_chain(mut throwaway, mut source_state, box_node)
+	// The external walk seeds this root's complete containing-block chain
+	// before visiting descendants, including source entries created lazily.
 	populate_intrinsic_external_containing_blocks(mut throwaway, mut source_state, box_node, box_node)
 	mut box_state := throwaway.get_mutable(box_styled)
 	box_state.width_constraint = constraint
@@ -1112,7 +1113,7 @@ fn calculate_content_height_with_constraint(mut source_state LayoutState, box &B
 	styled := node.as_node_with_style() or { return CSSPixels.new(0) }
 	mut throwaway := source_state.new_measurement_for_subtree(styled)
 	defer { throwaway.release_measurement() }
-	populate_intrinsic_containing_block_chain(mut throwaway, mut source_state, node)
+	// Seed the root's ancestors and hoisted descendant blocks in one walk.
 	populate_intrinsic_external_containing_blocks(mut throwaway, mut source_state, node, node)
 	mut values := throwaway.get_mutable(styled)
 	values.height_constraint = constraint
