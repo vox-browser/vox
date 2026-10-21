@@ -14,8 +14,11 @@ fn build_owned_selector_invalidation(mut destination StyleInvalidationData, sele
 		make_invalidate_self_invalidation()
 	}
 	_ = build_invalidation_sets_for_selector_impl(mut temporary, selector, .no, root)
-	scratch.leave()
 	mut copy := InvalidationGraphCopy{}
+	for _, plan in temporary.invalidation_plans {
+		copy.prepare(plan)
+	}
+	scratch.leave()
 	for key, plan in temporary.invalidation_plans {
 		owned := copy.plan(plan)
 		if mut existing := destination.invalidation_plans[key] {
@@ -56,7 +59,23 @@ fn build_owned_selector_invalidation(mut destination StyleInvalidationData, sele
 
 struct InvalidationGraphCopy {
 mut:
-	plans map[voidptr]&InvalidationPlan
+	plans map[voidptr]&InvalidationCopyEntry
+}
+
+struct InvalidationCopyEntry {
+mut:
+	plan &InvalidationPlan = unsafe { nil }
+}
+
+// Reserve every memo entry while the construction workspace is entered.
+// Copying below only replaces existing values, so no memo allocation can
+// escape into the destination's longer lifetime. Register before descending
+// to preserve both shared subgraphs and cycles.
+fn (mut copy InvalidationGraphCopy) prepare(source &InvalidationPlan) {
+	if source == unsafe { nil } || voidptr(source) in copy.plans { return }
+	copy.plans[voidptr(source)] = &InvalidationCopyEntry{}
+	for rule in source.descendant_rules { copy.prepare(rule.payload) }
+	for rule in source.sibling_rules { copy.prepare(rule.payload) }
 }
 
 fn own_invalidation_property(property InvalidationProperty) InvalidationProperty {
@@ -81,22 +100,27 @@ fn own_invalidation_match_set(source &InvalidationSet) InvalidationSet {
 
 fn (mut copy InvalidationGraphCopy) plan(source &InvalidationPlan) &InvalidationPlan {
 	if source == unsafe { nil } { return unsafe { nil } }
-	if existing := copy.plans[voidptr(source)] { return existing }
+	mut entry := copy.plans[voidptr(source)] or { panic('unprepared invalidation graph') }
+	if entry.plan != unsafe { nil } { return entry.plan }
 	mut result := &InvalidationPlan{
 		invalidate_self:          source.invalidate_self
 		invalidate_whole_subtree: source.invalidate_whole_subtree
 		descendant_rules:         []DescendantInvalidationRule{cap: source.descendant_rules.len}
 		sibling_rules:            []SiblingInvalidationRule{cap: source.sibling_rules.len}
 	}
-	copy.plans[voidptr(source)] = result
-	for rule in source.descendant_rules {
+	// Updating the entry itself cannot resize the memo's V map on a load-factor
+	// boundary, unlike a map assignment even when its key already exists.
+	entry.plan = result
+	for index in 0 .. source.descendant_rules.len {
+		rule := unsafe { &source.descendant_rules[index] }
 		result.descendant_rules << DescendantInvalidationRule{
 			match_set: own_invalidation_match_set(&rule.match_set)
 			match_any: rule.match_any
 			payload:   copy.plan(rule.payload)
 		}
 	}
-	for rule in source.sibling_rules {
+	for index in 0 .. source.sibling_rules.len {
+		rule := unsafe { &source.sibling_rules[index] }
 		result.sibling_rules << SiblingInvalidationRule{
 			reach:     rule.reach
 			match_set: own_invalidation_match_set(&rule.match_set)
