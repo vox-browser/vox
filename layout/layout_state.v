@@ -1112,18 +1112,25 @@ fn (mut store UsedValuesPagedStore) ensure_capacity(count u32) {
 }
 
 fn (store &UsedValuesPagedStore) get(index u32) ?&UsedValues {
+	value := store.find(index)
+	if value == unsafe { nil } {
+		return none
+	}
+	return value
+}
+
+// Internal hits only need a nullable pointer. Materialize the optional at
+// the get() boundary for callers that expose absence as an optional value.
+fn (store &UsedValuesPagedStore) find(index u32) &UsedValues {
 	page_index := int(index >> layout_state_page_bits)
 	if page_index >= store.pages.len {
-		return none
+		return unsafe { nil }
 	}
 	page := store.pages[page_index]
 	if page == unsafe { nil } {
-		return none
+		return unsafe { nil }
 	}
 	entry := page.entries[int(index & layout_state_page_mask)]
-	if entry == unsafe { nil } {
-		return none
-	}
 	return unsafe { &UsedValues(entry) }
 }
 
@@ -1365,7 +1372,7 @@ fn (state &LayoutState) subgrid_axis_data(node &NodeWithStyle, columns bool) ?Gr
 // metrics, but sever its containing-block pointer exactly like LibWeb does.
 pub fn (mut state LayoutState) populate_node_from(mut source LayoutState, node &NodeWithStyle) &UsedValues {
 	index := node.layout_index()
-	if state.used_values_store.get(index) != none {
+	if state.used_values_store.find(index) != unsafe { nil } {
 		panic('VERIFY(!m_used_values_store.get(index))')
 	}
 	mut source_values := source.get(node)
@@ -1431,8 +1438,9 @@ pub fn (mut state LayoutState) populate_node_from(mut source LayoutState, node &
 
 fn (mut state LayoutState) ensure_used_values_for(node &NodeWithStyle) &UsedValues {
 	index := node.layout_index()
-	if used_values := state.used_values_store.get(index) {
-		return used_values
+	existing_values := state.used_values_store.find(index)
+	if existing_values != unsafe { nil } {
+		return existing_values
 	}
 	node_as_node := unsafe { &Node(node) }
 	if subtree_root := state.subtree_root {
