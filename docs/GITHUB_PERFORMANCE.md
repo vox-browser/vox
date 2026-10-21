@@ -14395,6 +14395,110 @@ comparison is inferred from this instrumented diagnostic.
 Canonical app, GUI and concurrent work are preserved. Chrome parity remains
 unestablished; equivalent content and endpoint accounting are still required.
 
+## Avoid unused font context for absolute zero text indent
+
+Round147 applies complete feature `1f3ab03a` to accepted142. Its one original
+Git hunk changes the complete line-builder constructor. Absolute zero
+`text-indent` uses its existing zero result without preparing a font-resolution
+context. Nonzero, font-relative, percentage and calculated values keep the
+existing resolution code and order. Filtering, decoders, shaping, spacing and
+independent Root changes are excluded.
+
+The exact three original cases pass C-O2 with the pinned compatibility compiler
+in both GC modes: **3,753 assertions each**. They cover all absolute zero units,
+signed zero, both directions, three writing modes, nonzero units, percentages,
+font-relative and calculated values, hanging/each-line flags and soft/forced
+breaks. Round147 authenticates the complete immutable runtime and exact fixture
+before reusing those completed results; it executes no successful case again.
+The original pre-runtime fixture used physical width for a logical-axis
+expectation. Actual driver1/zero-case receipts remain retained; the corrected
+logical-axis fixture supplied the successful results. Reused receipt prose
+says143, a template-label error: its authenticated complete runtime hashes are
+142 plus this feature, exactly matching147. No current-Root compiler pass is
+inferred. Common12 cases pass60 assertions per configuration, reusing unchanged
+142-final only for before.
+
+The canonical small local scene is unchanged:64 Unicode paragraphs,128
+indentation blocks,192 independent checks and16 complete public
+parse/layout/record/paint-command/hit/finalize pipelines per sample. Setup,
+eight warmups, forced GC and assertions are outside the counter. Three fixed
+alternating pairs give **32,045,474,926 →
+31,277,952,480 retired instructions (-2.39510398%)**,
+**3/3 wins**. All six actual exits are zero and checksum7,963,486,608
+matches. Every observation remains. Earlier functional-only feature builds
+are disclosed in the predeclared fixture receipt.
+
+Strict audits authenticate the complete authored file before/after, one source
+hunk,120 native inputs,37 frozen quoted includes and exact native arguments.
+The entire compiled normal program matches independent whole-app generation,
+retaining every function/type/global. Only the declared constructor body
+changes against control; all other bodies, records, globals and resources
+remain exact after established compiler identities and authenticated identical
+helper reorderings. All493 builtin and176 protected decoder/filter/arena
+functions remain unchanged. Normal native build, signing and the actual frozen
+4eef helper startup proof exit0.
+
+Full-process C-O1/Boehm/marker1/no-inline profiles stay enabled throughout main,
+without filtering/reset. Each runs25 complete pipelines and26 parse/layout/
+record calls. Actual diagnostic counts are:
+
+| Function | Before calls | Final calls |
+| --- | ---: | ---: |
+| `layout__LineBuilder__static__new_with_block_context` | 4,992 | 4,992 |
+| `css__LengthResolutionContext__static__for_document` | 15,106 | 10,114 |
+| `layout__layout_font_metrics_for_node` | 119,860 | 114,868 |
+| `layout__resolved_text_spacing_for_node` | 146,432 | 146,432 |
+| `css__Tokenizer_next_code_point` | 103,673 | 103,673 |
+
+All selected counters are present. The constructor count is unchanged, while
+context and font-metric preparation each fall by4,992 calls. Length/Size
+construction and tokenizer counts remain unchanged. Both profile drivers and
+the original evidence reader actually exit0. Call counts receive no hardware
+or page credit.
+
+The predeclared30 alternating browser pairs use the frozen359-body cache,
+4eef helper and1024×768 document viewport. The endpoint is
+`native.scopes.navigation_to_first_document_paint[0]`. Fresh matching medians
+are **16,458,024,756.5 → 16,430,923,346.5
+retired instructions**: observed saving **27,101,410**
+(-0.16466988%), **24/30 wins**. Paired median
+saving is **24,201,421**. The30,000 paired bootstrap
+resamples with seed147 give95% interval **[11,843,791.5, 34,654,931.5]**.
+Repeatable page credit is **27,101,410**. This is a fresh matching comparison;
+no historical median is subtracted.
+
+All60 primaries remain: 60 actual PNGs, 0 counter-only recoveries,
+0 archived pre-primary startup retries. First preparation stays
+1installation/2geometry/1paint. Later refreshes remain separate
+(0); all0
+external foreground transitions are retained. Available captures are1024×768;
+every pixel outside the original fixed skeleton bands is exact. The static
+page-tool receipt initially retained145 metadata while the executable already
+used147 and the correct binary; the original is archived under
+`instruction-opt147-page-tools-metadata-finding`. Metadata was corrected before
+any primary, without altering the cohort or algorithm.
+
+Focused viewport is pixel-exact. Prior observed carry is0; positive matching
+observed saving gives **27,101,410** for the broad gate. Broad result:
+**passed**.
+Six actual zero-exit jobs cover87selected cases bothGC/174executions. All19screenshots finish,16exact. Known differences remain inline-node13,text-decorations1341,canvas-text1994. All36actual loader receipts pin the frozen helper.
+
+The isolated artifact is `/Users/alex/code/vox2/Build/v/Vox-opt147.app`. Library pinning, signing,
+verification, smoke and GC checks actually exit0. Its instruction text matches
+the measured binary; its installed helper is the frozen4eef image. Actual GC
+collections use default marker1 and override2. Canonical resources/Info.plist
+are copied without concurrent executables or compiler temporaries. Canonical
+app, GUI and foreign work are preserved. Accepted control is
+**147**; broad baseline is
+**147** and observed carry
+**0**.
+Durable source/C/profile/binary hashes are indexed in
+`Build/v/instruction-opt147-durable-archives.json`. Frozen results provide no
+additional coverage or credit for unrelated current-source changes.
+
+Chrome parity remains unestablished: prior Chrome observations use different
+endpoints/content. Equivalent content and endpoint accounting are still needed.
+
 ## Causes and changes
 
 - The V 0.5.2 compatibility compiler's `-prod` Boehm code repeatedly snapshots

@@ -2328,6 +2328,14 @@ evidence](docs/translation-audit/NATIVE_MEDIA_WHEEL_RAW_HANDLER.md).
   Separate one-observation full-browser profile142 after145:actual native/observer/browser0;7176raw call-count rows.
   Original unused-parser-wrapper expectation1 retained;counter-authenticated read-only correction0/no observation replay.
   Profile counts/timings/instrumented instructions earn0 page credit;zero-indent1f3ab03a measurement pending;Chrome remains open.
+  Absolute zero-indent round147 (`1f3ab03a`):one authored Git hunk/whole constructor;3cases/3753asserts eachGC reused exactly.
+  Common60/config;unchanged canonical local16 pipelines -2.395104%/3wins/all6actual0.
+  Fresh page 16,458,024,756.5→16,430,923,346.5;24/30wins;point 27,101,410.
+  PairedCI[11,843,791.5,34,654,931.5];repeatable credit 27,101,410;all60 retained;same1/2/1 preparation.
+  Focused viewport exact;broad passed;prior carry0;strict independent entire-program C audit.
+  Accepted control 147;isolated147app/GC1+override2;canonical/GUI/foreign work preserved.
+  Profiles actual0:constructor4992each,context15106→10114,fontmetrics119860→114868;no profile credit.
+  Original logical-axis/template-metadata findings retained;Chrome parity remains open.
 - Outside instruction-count optimization, run broad regression suites once per
   ten completed fixes, not after every fix.
   Broad suites include full translation/package test batches, the full LibJS AST
