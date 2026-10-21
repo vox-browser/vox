@@ -64,3 +64,20 @@ fn test_arena_cache_cleanup_waits_for_rendering_and_document_readiness() {
 	app.release_unused_arena_caches_if_idle(3_000_000_000)
 	assert !app.memory_maintenance.pending_document_work
 }
+
+fn test_arena_idle_timer_outlives_the_document_that_first_registers_it() {
+	$if !prealloc { return }
+	mut document := dom.Document.create(dom.url_about_blank())
+	document.enable_native_storage()
+	mut app := &BrowserApp{document: document}
+	mut payload := document.enter_native_storage()
+	app.arm_arena_cache_cleanup()
+	payload.finish()
+	timer := app.memory_maintenance.cleanup_timer
+	assert !document.native_storage().arena.contains(voidptr(timer))
+	app.memory_maintenance.cleanup_timer.stop()
+	document.finalize()
+	document.release_native_storage()
+	assert timer.interval() == 500
+	assert !timer.is_active()
+}

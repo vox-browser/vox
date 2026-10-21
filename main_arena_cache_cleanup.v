@@ -6,6 +6,9 @@ import time
 fn (mut app BrowserApp) arm_arena_cache_cleanup() {
 	$if prealloc {
 		if app.memory_maintenance.cleanup_timer == unsafe { nil } {
+			// This app timer is reused across navigations, including when its
+			// first registration happens inside the old document's frame.
+			persistent := platform.enter_persistent()
 			owner := voidptr(&app)
 			app.memory_maintenance.cleanup_timer = platform.Timer.create_single_shot(500, fn [owner] () {
 				mut browser := unsafe { &BrowserApp(owner) }
@@ -14,6 +17,7 @@ fn (mut app BrowserApp) arm_arena_cache_cleanup() {
 					browser.arm_arena_cache_cleanup()
 				}
 			})
+			platform.leave_persistent(persistent)
 		}
 		app.memory_maintenance.cleanup_timer.restart_with_interval(500)
 	}
