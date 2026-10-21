@@ -973,9 +973,13 @@ fn (mut p HTMLParser) handle_text(mut token HTMLToken) {
 					}
 					mut document := unsafe { &dom.Document(p.document_) }
 					the_script := document.take_pending_parsing_blocking_script()
+					// Preparing the element restored the previous insertion point.
+					// Parser execution opens a fresh one for synchronous document.write().
+					p.tokenizer.update_insertion_point()
 					p.increment_script_nesting_level()
 					html_script_element_parser_execute_ready_script(the_script)
 					p.decrement_script_nesting_level()
+					p.tokenizer.undefine_insertion_point()
 				}
 			}
 		}

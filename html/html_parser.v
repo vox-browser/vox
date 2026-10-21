@@ -153,7 +153,7 @@ pub fn HTMLParser.create(document &dom.Document, input string) &HTMLParser {
 pub fn HTMLParser.create_with_scripting_mode(document &dom.Document, input string, scripting_mode dom.ParserScriptingMode) &HTMLParser {
 	$if prealloc {
 		owner := document.native_storage()
-		if owner != unsafe { nil } && scripting_mode == .disabled {
+		if owner != unsafe { nil } {
 			// Keep the original source with the document. Only tokenizer payloads
 			// go in the short-lived arena; the tree builder publishes owned DOM data.
 			source := input.clone()
@@ -591,6 +591,8 @@ fn (mut p HTMLParser) resume_after_parser_blocking_script() {
 	mut document := unsafe { &dom.Document(p.document_) }
 	p.tokenizer.update_insertion_point()
 	assert p.script_nesting_level == 0
+	// A resumed script can synchronously reenter parsing through document.write().
+	p.parser_pause_flag = false
 	p.increment_script_nesting_level()
 	if pending != none {
 		the_script := document.take_pending_parsing_blocking_script()

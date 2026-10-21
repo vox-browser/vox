@@ -1,7 +1,7 @@
 module html
 
-// Tokens borrow immutable payloads from the tokenizer. Native script-disabled
-// documents copy only the strings published into the DOM, then retire the
+// Tokens borrow immutable payloads from the tokenizer. Native closed-input
+// documents copy strings published into the DOM and script models, then retire the
 // tokenizer's input runes, token queue, builders, and source-position history.
 fn (p &HTMLParser) own_tokenizer_string(value string) string {
 	if p.tokenizer_storage != unsafe { nil } { return value.clone() }
