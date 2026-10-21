@@ -1045,3 +1045,28 @@ proper subsequent batch. All six focused driver cases pass with prealloc,
 poisoning and Boehm (`animation-frame-271-*`), including 1,024 empty/nonempty
 frame pairs retaining less than 4 KiB. These unit results do not establish the
 full-browser RAM target.
+
+`b98e59d7` releases the private document/navigable vectors after synchronous
+rendering updates. Allocation targets are restored before predicates, page
+notifications or rendering can call out; only the vectors are temporary.
+Public hook inputs remain durable. Rendering eligibility and idle-callback
+checks avoid building a list when they only need a boolean, and absent input
+or rendering hooks no longer materialize unused argument vectors.
+
+All **27** focused storage, rendering-order, document-order and event-loop
+cases pass with prealloc, poisoning and Boehm (`rendering-storage-272-*`, final
+`*-grants.log` runs). Two earlier fixture attempts failed to provide each
+frame's actual display grant; their failed logs remain. The final checks retain
+hook input and callback-created DOM nodes after the private scopes retire,
+and bound 256 private snapshot cycles below 8 KiB and 256 empty rendering-check
+cycles below 4 KiB.
+
+The combined optimized native-274 browser uses the canonical prealloc flags,
+including the sparse font reader. Startup passes normally and with poisoning.
+Its poisoned 60-second Pikabu audit preserves one installation, the 606-command
+first paint, 15 stories and 34 images (`native-277`). All four targeted
+inherited-SVG, retained-pattern and animation-frame selection comparisons are
+pixel-exact under poisoning (`replay-278-cache-and-event-loop`). The foreground
+Brave comparison remains pending. A separate GPU diagnostic (`native-276`)
+finds about 26 MiB of budgeted Graphite resources near 60 seconds, below the
+existing 64 MiB cap; that diagnostic does not justify lowering the cap.
