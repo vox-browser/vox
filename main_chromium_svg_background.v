@@ -18,8 +18,11 @@ fn svg_image_document_display_list(svg_document &dom.Document, width int, height
 			return list
 		}
 	}
-	persistent := platform.enter_persistent()
+	mut owner := document.native_storage()
+	persistent := platform.enter_persistent_if(owner == unsafe { nil })
 	defer { platform.leave_persistent(persistent) }
+	mut allocations := if owner != unsafe { nil } { owner.enter_nested() } else { platform.RetainedArenaScope{} }
+	defer { allocations.finish() }
 	layout.enable_native_paint_tree_storage(svg_document)
 	_ = layout.run_document_layout(svg_document, f64(width), f64(height)) or { return none }
 	return document.record_display_list()

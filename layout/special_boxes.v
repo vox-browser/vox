@@ -529,21 +529,35 @@ fn svg_image_document_for_source_in_viewport(node &Node, source string,
 }
 
 fn parse_svg_image_document(image_source SVGImageSource, color_scheme string, embedder &dom.Document) ?&dom.Document {
-	mut svg_document := dom.Document.create(image_source.url)
+	mut svg_document := create_svg_image_document(image_source.url, embedder)
+	mut owner := svg_document.native_storage()
+	mut allocations := if owner != unsafe { nil } { owner.enter_nested() } else { platform.RetainedArenaScope{} }
+	defer { allocations.finish() }
 	svg_document.set_content_type('image/svg+xml')
 	svg_document.set_document_type(.xml)
 	svg_document.set_is_svg_image_document(true)
 	svg_document.set_svg_image_color_scheme(color_scheme)
 	// An SVG image renders with its embedding document's compatibility policy.
 	svg_document.set_font_rendering_policy(embedder.font_rendering_policy())
-	html.parse_xml_document_source(svg_document, image_source.source) or { return none }
+	html.parse_xml_document_source(svg_document, image_source.source.clone()) or {
+		svg_document.finalize()
+		svg_document.release_native_storage()
+		return none
+	}
 	if image_source.url.scheme() in ['http', 'https'] {
-		root := svg_document.document_element() or { return none }
+		root := svg_document.document_element() or {
+			svg_document.finalize()
+			svg_document.release_native_storage()
+			return none
+		}
 		if root.local_name() != 'svg'
 			|| (root.namespace_uri() or { '' }) != 'http://www.w3.org/2000/svg' {
+			svg_document.finalize()
+			svg_document.release_native_storage()
 			return none
 		}
 	}
+	retain_svg_image_document_until_embedder_retires(svg_document, embedder)
 	return svg_document
 }
 

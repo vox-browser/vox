@@ -669,6 +669,9 @@ fn run_document_layout_with_renderer_mode(document &dom.Document, viewport_width
 	// size must preserve scrolling without turning a paint update into a resize.
 	viewport_changed := old_viewport.width != viewport_width || old_viewport.height != viewport_height
 	mutable_document.set_viewport_rect(dom.Rect{old_viewport.x, old_viewport.y, viewport_width, viewport_height})
+	// Navigable identity and its process-wide registry outlive document payload
+	// storage. Isolated SVGs can first reach this path inside their payload owner.
+	identity_storage := platform.enter_persistent()
 	if mutable_document.get_browsing_context() == none {
 		mutable_document.set_browsing_context(&dom.BrowsingContext{
 			active_document_: document
@@ -679,6 +682,7 @@ fn run_document_layout_with_renderer_mode(document &dom.Document, viewport_width
 			active_document_: document
 		})
 	}
+	platform.leave_persistent(identity_storage)
 	css.begin_selector_parse_cache()
 	defer {
 		css.end_selector_parse_cache()
