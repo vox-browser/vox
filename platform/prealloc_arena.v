@@ -62,6 +62,15 @@ mut:
 	finalized      i32
 }
 
+// V keeps detached, dead scope blocks in a per-thread recycle cache. Its
+// metadata stays warm while the payload pages can be returned at idle.
+struct PreallocRecycleCacheView {
+	count int
+	bytes isize
+	starts [8]voidptr
+	sizes [8]isize
+}
+
 // ArenaUsage describes a chain of arena blocks: bytes handed out by the bump
 // allocator and the capacity of the blocks behind them.
 pub struct ArenaUsage {
@@ -130,7 +139,8 @@ fn arena_state() &ArenaThreadState {
 fn verify_prealloc_layout() {
 	$if prealloc {
 		if sizeof(PreallocBlockView) != sizeof(VMemoryBlock)
-			|| sizeof(PreallocScopeView) != sizeof(VPreallocScope) {
+			|| sizeof(PreallocScopeView) != sizeof(VPreallocScope)
+			|| sizeof(PreallocRecycleCacheView) != sizeof(VPreallocBlockCache) {
 			panic('platform arena mirrors do not match V prealloc blocks')
 		}
 	}
@@ -380,6 +390,42 @@ pub fn (arena &Arena) usage() ArenaUsage {
 
 pub fn (arena &Arena) reset_count() u64 {
 	return arena.resets
+}
+
+// Idle maintenance may discard the warm pages of an empty reusable arena.
+// An entered arena or one with any live allocation keeps all of its payload.
+// Reset/release remains the boundary that invalidates pointers, not this call.
+pub fn (arena &Arena) trim_empty_pages() bool {
+	$if prealloc {
+		if arena.scope == unsafe { nil } || arena.entered || arena.usage().used != 0 {
+			return false
+		}
+		mut block := arena.scope.first
+		for block != unsafe { nil } && block.scope == voidptr(arena.scope) {
+			if block.mmap_allocated && C.vox_retire_empty_arena_pages(block.start,
+				usize(block.stop) - usize(block.start)) != 0 {
+				panic('could not trim empty arena pages')
+			}
+			block = block.next
+		}
+		return true
+	}
+	return false
+}
+
+fn trim_thread_arena_recycle_pages() {
+	$if prealloc {
+		verify_prealloc_layout()
+		block := unsafe { &PreallocBlockView(current_block()) }
+		if block == unsafe { nil } || block.recycle_cache == unsafe { nil } { return }
+		cache := unsafe { &PreallocRecycleCacheView(block.recycle_cache) }
+		assert cache.count >= 0 && cache.count <= 8
+		for index in 0 .. cache.count {
+			if C.vox_retire_empty_arena_pages(cache.starts[index], usize(cache.sizes[index])) != 0 {
+				panic('could not trim recycled arena pages')
+			}
+		}
+	}
 }
 
 // reset makes the arena's space reusable. Every pointer into it becomes

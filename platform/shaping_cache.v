@@ -276,6 +276,7 @@ pub fn release_unused_text_shaping() {
 	$if prealloc {
 		if !isnil(platform_shaping_cache_storage) {
 			platform_shaping_cache_storage.reset()
+			platform_shaping_cache_storage.trim_empty_pages()
 		}
 	}
 	release_unused_harfbuzz_fonts()

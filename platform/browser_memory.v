@@ -14,9 +14,9 @@ pub fn retain_thread_allocations() {
 	}
 }
 
-// Return unused heap pages after document work has become idle. Live DOM,
-// layout, JavaScript wrappers and retained paint data remain collector roots.
+// Return unused heap pages after document work has become idle.
 pub fn release_unused_browser_memory() {
+	$if prealloc { trim_thread_arena_recycle_pages() }
 	$if gcboehm ? {
 		C.GC_gcollect_and_unmap()
 		// Boehm's forced unmap still requires free blocks to be at least one
