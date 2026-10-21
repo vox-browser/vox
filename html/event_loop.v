@@ -370,6 +370,7 @@ mut:
 	documents_                            []&dom.Document
 	documents_sort_dirty_                 bool = true
 	related_environment_settings_objects_ []&EnvironmentSettingsObject
+	microtask_settings_snapshot_          []&EnvironmentSettingsObject
 	backup_incumbent_realm_stack_         []&ScriptingRealm
 	last_render_opportunity_time_         f64
 	last_idle_period_start_time_          f64
@@ -430,22 +431,26 @@ pub fn (mut event_loop EventLoop) detach_embedding_vm(vm &libjs.VM) {
 	event_loop.embedding_vms_ = event_loop.embedding_vms_.filter(voidptr(it) != voidptr(vm))
 }
 
-fn (event_loop &EventLoop) execution_vms() []&libjs.VM {
-	mut vms := event_loop.embedding_vms_.clone()
+// These VM operations cannot execute author code or alter the attached set.
+// Visit that set directly; only an additional primary VM needs a separate read.
+fn (event_loop &EventLoop) primary_vm_not_embedded() ?&libjs.VM {
 	if primary := event_loop.vm_ {
-		for attached in vms {
-			if voidptr(attached) == voidptr(primary) { return vms }
+		for attached in event_loop.embedding_vms_ {
+			if voidptr(attached) == voidptr(primary) { return none }
 		}
-		vms << primary
+		return primary
 	}
-	return vms
+	return none
 }
 
 // Host-backed script execution still owns a real translated VM embedding
 // context. Cleanup must wait for that outer context before running jobs.
 pub fn (event_loop &EventLoop) has_running_execution_context() bool {
-	for vm in event_loop.execution_vms() {
+	for vm in event_loop.embedding_vms_ {
 		if vm.has_running_execution_context() { return true }
+	}
+	if primary := event_loop.primary_vm_not_embedded() {
+		return primary.has_running_execution_context()
 	}
 	return false
 }
@@ -901,9 +906,13 @@ pub fn (mut event_loop EventLoop) perform_a_microtask_checkpoint() {
 	if event_loop.execution_paused || event_loop.performing_a_microtask_checkpoint {
 		return
 	}
-	for vm in event_loop.execution_vms() {
+	for vm in event_loop.embedding_vms_ {
 		assert vm.execution_context_stack().len == 0
 		assert !vm.has_running_execution_context()
+	}
+	if primary := event_loop.primary_vm_not_embedded() {
+		assert primary.execution_context_stack().len == 0
+		assert !primary.has_running_execution_context()
 	}
 	event_loop.performing_a_microtask_checkpoint = true
 	for event_loop.microtask_queue.len > 0 {
@@ -915,8 +924,15 @@ pub fn (mut event_loop EventLoop) perform_a_microtask_checkpoint() {
 	}
 	// Rejection notification can change the related settings set. The source
 	// algorithm roots a snapshot before invoking each global's notification.
-	environments := event_loop.related_environment_settings_objects_.clone()
-	for settings in environments {
+	// Checkpoint reentry is guarded for the entire notification phase, so this
+	// private snapshot can retain its capacity without exposing a mutable list.
+	persistent := platform.enter_persistent()
+	for settings in event_loop.related_environment_settings_objects_ {
+		event_loop.microtask_settings_snapshot_ << settings
+	}
+	platform.leave_persistent(persistent)
+	for index in 0 .. event_loop.microtask_settings_snapshot_.len {
+		settings := event_loop.microtask_settings_snapshot_[index]
 		if settings.universal_global_scope_ != unsafe { nil } {
 			mut scope := settings.universal_global_scope_
 			scope.notify_about_rejected_promises()
@@ -924,10 +940,18 @@ pub fn (mut event_loop EventLoop) perform_a_microtask_checkpoint() {
 	}
 	indexeddb.cleanup_indexed_database_transactions(voidptr(&event_loop))
 	// ClearKeptObjects is represented by the real VM's execution generation.
-	for vm_pointer in event_loop.execution_vms() {
+	for vm_pointer in event_loop.embedding_vms_ {
 		mut vm := unsafe { &libjs.VM(vm_pointer) }
 		vm.finish_execution_generation()
 	}
+	if mut primary := event_loop.primary_vm_not_embedded() {
+		primary.finish_execution_generation()
+	}
+	// clear() alone leaves scanned pointers in the retained backing allocation.
+	for index in 0 .. event_loop.microtask_settings_snapshot_.len {
+		event_loop.microtask_settings_snapshot_[index] = unsafe { nil }
+	}
+	event_loop.microtask_settings_snapshot_.clear()
 	event_loop.performing_a_microtask_checkpoint = false
 }
 
