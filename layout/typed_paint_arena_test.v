@@ -13,7 +13,7 @@ fn test_direct_paint_slots_match_uncached_projection_and_replace_empty_outputs()
 	_ = layout_document_typed_in_viewport(document, 400, 300)
 	result := document_layout_result(document)?
 	root := result.root.first_child()?
-	prepare_retained_block_paint_owners(result.state)
+	prepare_retained_block_paint_owners(result.state, document)
 	for entry in typed_paint_arena_plan(root, result.state) {
 		mut output := BlockBox{x:999, opacity:0.25, visible:false, children:[BlockBox{tag_name:'stale'}]}
 		fill_block_box_from_typed_layout_shallow(entry.node, result.state, [6]f64{}, mut output)

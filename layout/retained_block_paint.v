@@ -2,6 +2,7 @@ module layout
 
 import css
 import platform
+import dom
 
 struct RetainedBlockPaintLines {
 	lines  []TextLine
@@ -15,7 +16,8 @@ struct RetainedBlockPaintBox {
 
 // The independent-context snapshot proves local geometry for every descendant,
 // including atomic inline menus. Validate its styles once per paint-tree build.
-fn prepare_retained_block_paint_owners(state &LayoutState) {
+fn prepare_retained_block_paint_owners(state &LayoutState, document &dom.Document) {
+	if !keeps_paint_projection_templates(document) { return }
 	use_document := block_paint_caches_use_entered_document_storage(state)
 	mut retained := if use_document { platform.enter_retained_allocations() } else { platform.RetainedAllocationScope{} }
 	persistent := platform.enter_persistent_if(!use_document)
@@ -107,6 +109,10 @@ fn block_box_from_typed_layout_shallow(node &Node, state &LayoutState,
 
 fn fill_block_box_from_typed_layout_shallow(node &Node, state &LayoutState,
 	ancestor_transform [6]f64, mut output BlockBox) {
+	if !keeps_paint_projection_templates(node.document()) {
+		output = uncached_block_box_from_typed_layout_shallow(node, state, ancestor_transform)
+		return
+	}
 	key := u64(voidptr(node))
 	if mut owner := state.block_paint_owners_[key] {
 		// A parent's final placement can change its own margins after layout of

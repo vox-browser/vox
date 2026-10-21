@@ -97,6 +97,9 @@ fn rebase_retained_inline_lines(lines []TextLine, dx f64, dy f64) ?[]TextLine {
 
 fn text_lines_from_typed_layout(container &Node, used &UsedValues, state &LayoutState,
 	position css.CSSPixelPoint) []TextLine {
+	if !keeps_paint_projection_templates(container.document()) {
+		return uncached_text_lines_from_typed_layout(container, used, state, position)
+	}
 	if mut cached := state.inline_layouts_[u64(voidptr(container))] {
 		if retained_inline_paint_inputs_are_current(cached) {
 			if cached.paint_ready_ {

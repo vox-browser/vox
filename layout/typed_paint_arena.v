@@ -71,7 +71,7 @@ fn build_typed_paint_tree_projection(root &Node, state &LayoutState, ancestor_tr
 	defer {
 		platform.arena_phase_end('paint_tree', phase_mark)
 	}
-	prepare_retained_block_paint_owners(state)
+	prepare_retained_block_paint_owners(state, root.document())
 	plan := typed_paint_arena_plan_with_interest(root, state, interest)
 	mut boxes := []BlockBox{cap: plan.len}
 	// Capacity is exact and the allocator zeroes reserved storage. Each slot is
