@@ -6,9 +6,9 @@ import os
 pub type CooperativeWorkCallback = fn (voidptr)
 
 struct CooperativeWorkState {
+mut:
 	callback CooperativeWorkCallback
 	target   voidptr
-mut:
 	next_yield_ns           i64
 	started_ns              i64
 	delivering              bool
@@ -27,6 +27,7 @@ struct DeferredWorkTimer {
 }
 
 __global cooperative_work_state_ &CooperativeWorkState
+__global cooperative_work_spare_ &CooperativeWorkState
 
 pub struct CooperativeWorkScope {
 mut:
@@ -48,13 +49,23 @@ pub fn begin_cooperative_work(target voidptr, callback CooperativeWorkCallback) 
 		heap_adjustment_allowed = os.getenv('GC_INITIAL_HEAP_SIZE') == ''
 			&& os.getenv('GC_MAXIMUM_HEAP_SIZE') == '' && os.getenv('GC_FREE_SPACE_DIVISOR') == ''
 	}
-	state := &CooperativeWorkState{
-		target:                  target
-		callback:                callback
-		started_ns:              now
-		next_yield_ns:           now + 16_000_000
-		heap_adjustment_allowed: heap_adjustment_allowed
+	mut state := unsafe { &CooperativeWorkState(nil) }
+	$if prealloc {
+		state = cooperative_work_spare_
+		cooperative_work_spare_ = unsafe { nil }
 	}
+	if state == unsafe { nil } {
+		state = &CooperativeWorkState{target: target, callback: callback}
+	}
+	state.target = target
+	state.callback = callback
+	state.started_ns = now
+	state.next_yield_ns = now + 16_000_000
+	state.delivering = false
+	state.heap_adjustment_allowed = heap_adjustment_allowed
+	state.heap_policy_changed = false
+	state.previous_heap_divisor = 0
+	state.applied_heap_divisor = 0
 	cooperative_work_state_ = state
 	return CooperativeWorkScope{ state: state }
 }
@@ -169,5 +180,21 @@ pub fn (mut scope CooperativeWorkScope) finish() {
 			}
 		})
 		delivery.start()
+	}
+	$if prealloc {
+		// Deliveries own independent snapshots. Reuse only the finished work
+		// record and its input vectors; never keep its last document reachable.
+		mut completed := unsafe { &CooperativeWorkState(state) }
+		for index in 0 .. completed.deferred_timers.len {
+			completed.deferred_timers[index] = DeferredWorkTimer{timer: unsafe { nil }}
+		}
+		completed.deferred_timers.clear()
+		for index in 0 .. completed.deferred_native_calls.len {
+			completed.deferred_native_calls[index] = unsafe { nil }
+		}
+		completed.deferred_native_calls.clear()
+		completed.target = unsafe { nil }
+		completed.callback = unsafe { nil }
+		if cooperative_work_spare_ == unsafe { nil } { cooperative_work_spare_ = completed }
 	}
 }

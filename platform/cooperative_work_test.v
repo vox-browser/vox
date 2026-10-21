@@ -39,6 +39,24 @@ fn test_cooperative_work_throttles_yields_and_preserves_the_outer_scope() {
 	assert cooperative_work_state_ == unsafe { nil }
 }
 
+fn test_finished_prealloc_work_reuses_its_record_without_retaining_the_last_target() {
+	$if !prealloc { return }
+	state := &CooperativeWorkObservation{}
+	mut warm := begin_cooperative_work(state, cooperative_work_test_callback)
+	identity := voidptr(cooperative_work_state_)
+	warm.finish()
+	before := thread_arena_usage().used
+	for _ in 0 .. 1000 {
+		mut scope := begin_cooperative_work(state, cooperative_work_test_callback)
+		assert voidptr(cooperative_work_state_) == identity
+		assert voidptr(cooperative_work_state_.target) == voidptr(state)
+		scope.finish()
+		assert cooperative_work_spare_.target == unsafe { nil }
+		assert cooperative_work_spare_.callback == unsafe { nil }
+	}
+	assert thread_arena_usage().used - before < 4096
+}
+
 fn test_native_page_timer_is_deferred_and_coalesced_until_work_completes() {
 	if !native_timer_scheduling_available() { return }
 	state := &CooperativeWorkObservation{}
