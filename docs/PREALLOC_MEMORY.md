@@ -782,3 +782,41 @@ token. The new long-input regression first retained 33,588,945 bytes across
 actual property parsing. Three new cases and seven substitution/presence
 regressions pass with prealloc, poisoning and Boehm (`parser-span-178-*`).
 No full-page RAM saving is attributed to this microbenchmark.
+
+
+### Cold base profile and selector graph copies
+
+The source-178 optimized browser completes a valid foreground trial at
+**463.4 MiB** (`native-183-source-178-foreground/1-vox/result.json`), with
+one installation, 15 stories, 34 images and all 59 focus checks. This single
+trial does not replace the failed three-trial comparison or establish a
+full-page saving from the parser change. Both startup modes and all ten SVG
+checks also pass for source-178 (`replay-182-svg`).
+
+A separate full-load base-allocation sample (`native-181-base.sample`,
+`native-181-base-sites.txt`, `native-181-base-stacks.txt`) records about
+105.7 MiB of allocations. Its census finds 106,123,864 used bytes in the
+main-thread base arena, 304,042,959 in the main document, and 2,139,425 in
+the recyclable shaping cache. Unlike the earlier warm profile, this includes
+startup. The largest sites include shared stylesheet syntax, selector graph
+copies, cached response bodies and TTF cmap tables. These sampled bytes do
+not imply that every allocation at those sites is disposable.
+
+`b959eea1` builds selector-copy memo tables and entries inside the existing
+selector workspace, then fills preallocated entry slots while publishing the
+owned graph. Slot updates avoid V map growth during an existing-key assignment.
+The edge-copy loops borrow source records by index; taking a match-set address
+from a by-value loop record previously made current V box each edge. Generated
+source-184 C shows those `memdup` calls; source-185 removes them.
+
+The 256-node cyclic/shared graph regression retains 159,872 bytes before
+borrowing the edge records and 102,520 afterwards. Its initial allocation
+budget omitted managed-array headers and alignment; the corrected budget
+allows those for both edge vectors while excluding memo tables and boxed
+loop records. All four focused cases pass with prealloc, poisoning and Boehm
+in source-186, whose implementation matches source-185. The earlier failed
+assertions are retained without pass credit. Source-185 browser startup passes
+in both modes, all ten SVG checks remain pixel-exact (`replay-187-svg`), and
+a poisoned 60-second Pikabu run preserves its complete page audit
+(`native-188-source-185-poison-background`). An optimized comparison of this
+change remains pending.
