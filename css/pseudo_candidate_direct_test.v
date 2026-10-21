@@ -1,6 +1,7 @@
 module css
 
 import dom
+import platform
 
 fn pseudo_candidate_fixture_selector(text string) Selector {
 	list := parse_selector_with_parser(text, map[string]bool{}) or { panic(text) }
@@ -131,4 +132,18 @@ fn test_direct_pseudo_candidate_keeps_origin_layer_and_shadow_scope_queries() {
 	assert scope.has_candidate_rule_for_pseudo_element(abstract, .selection)
 	layered.rules_by_class['target'] = []&MatchingRule{}
 	assert !author.has_candidate_rule_for_pseudo_element(abstract, .selection)
+}
+
+fn test_scope_pseudo_candidate_queries_do_not_allocate_origin_lists() {
+	mut document := dom.Document.create(dom.url_about_blank())
+	defer { document.finalize() }
+	element := pseudo_candidate_fixture_element(document, 'http://www.w3.org/1999/xhtml')
+	scope := css_style_scope_for_document(document)
+	abstract := dom.AbstractElement.new(element, none)
+	assert !scope.has_candidate_rule_for_pseudo_element(abstract, .unknown_webkit)
+	before := platform.thread_arena_usage().used
+	for _ in 0 .. 1024 {
+		assert !scope.has_candidate_rule_for_pseudo_element(abstract, .unknown_webkit)
+	}
+	$if prealloc { assert platform.thread_arena_usage().used == before }
 }
