@@ -566,8 +566,6 @@ fn flex_abs_pixels(value CSSPixels) CSSPixels {
 
 fn resolve_flexible_lengths(mut state LayoutState, line FlexLine, container_main_size CSSPixels, item_edges []CSSPixels, gap CSSPixels, available_main_size ?CSSPixels, row_axis bool) []CSSPixels {
 	mut targets := line.bases.clone()
-	mut minimums := line.minimums.clone()
-	mut deferred_minimums := line.deferred_minimums.clone()
 	mut frozen := []bool{len: line.items.len}
 	mut hypothetical_sum := gap.scaled(f64(if line.items.len > 0 {
 		line.items.len - 1
@@ -578,6 +576,7 @@ fn resolve_flexible_lengths(mut state LayoutState, line FlexLine, container_main
 		hypothetical_sum = hypothetical_sum.plus(line.hypotheticals[index]).plus(item_edges[index])
 	}
 	use_grow_factor := hypothetical_sum.raw_value() < container_main_size.raw_value()
+	mut all_frozen := true
 	for index, item in line.items {
 		factor := if use_grow_factor {
 			f64(item.computed_values().flex_grow())
@@ -590,8 +589,16 @@ fn resolve_flexible_lengths(mut state LayoutState, line FlexLine, container_main
 				&& line.bases[index].raw_value() < line.hypotheticals[index].raw_value()) {
 			frozen[index] = true
 			targets[index] = line.hypotheticals[index]
+		} else {
+			all_frozen = false
 		}
 	}
+	// Frozen items already have their final hypothetical sizes.
+	if all_frozen {
+		return targets
+	}
+	mut minimums := line.minimums.clone()
+	mut deferred_minimums := line.deferred_minimums.clone()
 	calculate_free_space := fn [line, item_edges, gap, container_main_size] (targets []CSSPixels, frozen []bool) CSSPixels {
 		mut occupied := gap.scaled(f64(if line.items.len > 0 {
 			line.items.len - 1
