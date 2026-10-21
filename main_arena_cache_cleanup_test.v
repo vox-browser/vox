@@ -5,6 +5,35 @@ import gg
 import platform
 import time
 
+#include "@DIR/platform/arena_page_retirement_test.h"
+fn C.vox_arena_test_resident_bytes(start voidptr, bytes usize) usize
+
+fn test_arena_idle_callback_discards_reset_native_replay_pages() {
+	$if !prealloc { return }
+	mut document := dom.Document.create(dom.url_about_blank())
+	document.set_scripting_enabled_by_embedder(false)
+	document.update_readiness(.complete)
+	mut app := &BrowserApp{document:document, ctx:&gg.Context{native_rendering:true}}
+	defer { app.release_native_replay_scratch(); document.finalize() }
+	mut replay := app.begin_native_replay_scratch()
+	bytes := []u8{len:128 * 1024, init:59}
+	data := bytes.data
+	assert bytes[0] == 59 && bytes[bytes.len - 1] == 59
+	replay.finish()
+	capacity := app.native_replay_scratch.usage().capacity
+	app.memory_maintenance.document_changed(1_000_000_000)
+	app.frame_preparation_depth = 1
+	app.release_unused_arena_caches_if_idle(3_000_000_000)
+	assert app.memory_maintenance.pending_document_work
+	app.frame_preparation_depth = 0
+	app.release_unused_arena_caches_if_idle(3_000_000_000)
+	assert !app.memory_maintenance.pending_document_work
+	assert app.native_replay_scratch.usage().capacity == capacity
+	if !platform.arenas_poisoned() {
+		assert C.vox_arena_test_resident_bytes(data, 128 * 1024) == 0
+	}
+}
+
 fn test_arena_idle_cleanup_is_armed_by_a_finished_static_native_frame() {
 	$if !prealloc {
 		return

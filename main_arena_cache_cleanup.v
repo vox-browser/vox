@@ -2,6 +2,7 @@ module main
 
 import platform
 import time
+import layout
 
 fn (mut app BrowserApp) arm_arena_cache_cleanup() {
 	$if prealloc {
@@ -34,7 +35,12 @@ fn (mut app BrowserApp) release_unused_arena_caches_if_idle(now_ns i64) {
 		if app.memory_maintenance.cleanup_due(now_ns, 0) {
 			// Only caches with their own recyclable storage can release memory
 			// here. Dropping pointers into document arenas would just orphan it.
+			layout.trim_unused_layout_pages(app.paint_display_list)
+			if app.native_replay_scratch != unsafe { nil } {
+				app.native_replay_scratch.trim_empty_pages()
+			}
 			platform.release_unused_text_shaping()
+			platform.release_unused_browser_memory()
 		}
 	}
 }

@@ -10,9 +10,58 @@ import platform
 pub fn release_unused_display_list_caches(display_list &dom.DisplayList) {
 	mut visited := map[u64]bool{}
 	release_idle_display_list_caches(display_list, mut visited)
+	trim_empty_inline_item_pages()
+}
+
+fn trim_empty_inline_item_pages() {
 	$if prealloc {
 		if platform.arena_thread_is_current() && inline_item_buffer_pool_ != unsafe { nil } && inline_item_buffer_pool_.depth == 0 {
 			for arena in inline_item_buffer_pool_.arenas { arena.trim_empty_pages() }
+		}
+	}
+}
+
+// Arena maintenance must keep published caches: dropping their pointers would
+// orphan the allocations. Only already-reset scratch and unreferenced spares
+// have physical pages that can be discarded here.
+pub fn trim_unused_layout_pages(display_list &dom.DisplayList) {
+	$if prealloc {
+		if !platform.arena_thread_is_current() { return }
+		storage := platform.begin_thread_scratch('idle arena page scan')
+		mut visited := map[u64]bool{}
+		trim_layout_pages_in_list(display_list, mut visited)
+		storage.finish()
+		trim_empty_inline_item_pages()
+	}
+}
+
+fn trim_spare_paint_pages(result &DocumentLayoutResult) {
+	if result.scene_pool != unsafe { nil } {
+		for scene in result.scene_pool.free {
+			assert scene.references == 0
+			scene.arena.trim_empty_pages()
+		}
+	}
+	if result.paint_tree_pool != unsafe { nil } {
+		for tree in result.paint_tree_pool.free {
+			assert tree.references == 0
+			tree.arena.trim_empty_pages()
+		}
+	}
+}
+
+fn trim_layout_pages_in_list(display_list &dom.DisplayList, mut visited map[u64]bool) {
+	if display_list == unsafe { nil } || display_list.concrete_handle == unsafe { nil } { return }
+	identity := u64(display_list.concrete_handle)
+	if visited[identity] { return }
+	result := viewport_layout_result(display_list.concrete_handle)
+	if voidptr(result.display_list) != voidptr(display_list) { return }
+	visited[identity] = true
+	trim_spare_paint_pages(result)
+	css.trim_unused_computation_pages(result.root.document())
+	if viewport := result.root.as_viewport() {
+		for _, image in viewport.svg_image_documents_ {
+			if list := image.document.cached_display_list() { trim_layout_pages_in_list(list, mut visited) }
 		}
 	}
 }
