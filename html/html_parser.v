@@ -820,7 +820,14 @@ pub fn HTMLParser.the_end(document &dom.Document, parser ?&HTMLParser) {
 // roots by attaching that fragment to the template's parent and removing the
 // template element. Processing the fragment first also handles nested roots.
 fn materialize_declarative_shadow_roots(node &dom.Node) {
-	for child in node.children_as_vector() {
+	// Descendant processing can attach roots and invoke DOM hooks. Keep the
+	// pointer snapshot alive across that work, but allocate DOM changes in the
+	// caller's owner rather than the snapshot workspace.
+	children_scratch := platform.begin_thread_scratch('declarative shadow descendants')
+	children := node.children_as_vector()
+	children_scratch.leave()
+	defer { children_scratch.finish() }
+	for child in children {
 		if element := child.as_element() {
 			if element.local_name() == 'template' {
 				template := unsafe { &dom.HTMLTemplateElement(element) }
@@ -835,7 +842,11 @@ fn materialize_declarative_shadow_roots(node &dom.Node) {
 			materialize_declarative_shadow_roots(child)
 		}
 	}
-	for child in node.children_as_vector() {
+	templates_scratch := platform.begin_thread_scratch('declarative shadow templates')
+	templates := node.children_as_vector()
+	templates_scratch.leave()
+	defer { templates_scratch.finish() }
+	for child in templates {
 		template_element := child.as_element() or { continue }
 		if template_element.local_name() != 'template' {
 			continue
@@ -860,10 +871,14 @@ fn materialize_declarative_shadow_roots(node &dom.Node) {
 		template := unsafe { &dom.HTMLTemplateElement(template_element) }
 		mut content := template.content().as_node()
 		mut shadow_node := unsafe { &dom.Node(shadow_root) }
-		for content_child in content.children_as_vector() {
+		content_scratch := platform.begin_thread_scratch('declarative shadow content')
+		content_children := content.children_as_vector()
+		content_scratch.leave()
+		for content_child in content_children {
 			moved := content.remove_child(content_child) or { continue }
 			shadow_node.append_child(moved) or {}
 		}
+		content_scratch.finish()
 		mut host_node := host.as_node()
 		host_node.remove_child(template_element.as_node()) or {}
 	}
