@@ -1824,12 +1824,10 @@ fn (mut tokenizer Tokenizer) consume_a_token() Token {
 
 	start_byte_offset := tokenizer.current_byte_offset()
 
-	// Consume comments.
-	tokenizer.consume_comments()
-
-	// AD-HOC: Preserve comments as whitespace tokens, for serializing custom properties.
-	after_comments_byte_offset := tokenizer.current_byte_offset()
-	if after_comments_byte_offset != start_byte_offset {
+	// A comment always consumes its two opening code points. Keep comments as
+	// whitespace for custom-property serialization, and leave other tokens alone.
+	if tokenizer.peek_code_point(0) == `/` && tokenizer.peek_code_point(1) == `*` {
+		tokenizer.consume_comments()
 		return Token.create_whitespace(tokenizer.input_since(start_byte_offset))
 	}
 
