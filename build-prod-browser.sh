@@ -6,7 +6,7 @@ set -eu
 # Environment overrides:
 #   V_BIN                     V compiler executable
 #   UI2_SOURCE_DIR            UI2 checkout (defaults to ~/.vmodules/ui2)
-#   LADYBIRD_V_GC            boehm (default), boehm_full, prealloc, or none
+#   LADYBIRD_V_GC            prealloc (default), boehm, boehm_full, or none
 #   LADYBIRD_V_PROFILE       V profiling report path (unset for normal builds)
 #   LADYBIRD_V_PROFILE_FNS   comma-separated C function names to profile
 #   LADYBIRD_SOURCE_DIR       upstream Ladybird checkout used for Skia
@@ -43,10 +43,10 @@ if [ ! -x "$v_compiler" ]; then
     exit 1
 fi
 
-# Page parsing, intrinsic measurement, animation and input updates allocate
-# temporary V data. Reclaim that data in the interactive browser; the no-GC
-# mode remains available for explicit heap-ownership diagnostics.
-gc_mode=${LADYBIRD_V_GC:-boehm}
+# The browser owns temporary and retained allocations through scoped arenas.
+# Keep the default on that ownership path; collector modes are explicit
+# diagnostic overrides.
+gc_mode=${LADYBIRD_V_GC:-prealloc}
 case "$gc_mode" in
     boehm|boehm_full|prealloc|none) ;;
     *)
