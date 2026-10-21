@@ -462,11 +462,55 @@ results. Eight live SVG mutation reftests and both canonical turbulence images
 remain pixel-exact under poisoning in `replay-54-svg/results.json`.
 
 Native graphics still need substantial work. A standalone 64-by-64 draw accounts
-for roughly 300--327 MiB of additional physical footprint while its context is
-alive, with either Metal or Dawn; resident bytes alone hide most of that cost.
-Releasing the context returns it. Larger CPU raster-cache budgets and a smaller
+for roughly 300--327 MiB of additional physical footprint immediately after
+submission, with either Metal or Dawn; resident bytes alone hide most of that
+cost. Further probes show automatic retirement after GPU activity stops: a raw
+Metal clear falls from about 181 to 10.5 MiB after three seconds while its
+device, queue and texture remain alive (`metal-clear-79.log`). The tiny Skia draw
+similarly falls to about 11 MiB without explicit context destruction
+(`metal-allocation-78-footprint.txt`). Active workload and context lifetime both
+need checking. Larger CPU raster-cache budgets and a smaller
 Metal command-queue capacity did not establish a full-page RAM improvement and
 were reverted. Pikabu has running tag shimmers and loading animations, so a
 static-page microbenchmark cannot establish its idle behavior. Recent
 foreground attempts lost focus or were interrupted and do not replace the
 validated optimized endpoint above.
+
+### Anonymous inheritance and property-page publication
+
+Anonymous layout wrappers keep a proof of their last inherited source and
+destination. Immutable layout-cache identities, raw mutation epochs, property
+flags, fonts, viewport/root metrics and counter definitions must still match
+before propagation can skip another wide cache copy. Capturing the proof
+freezes the observed caches, including against a later animation reuse. Font
+inheritance also preserves the font-computer owner of its inherited list.
+Focused CSS tests pass with prealloc, poisoning and Boehm. The layout integration
+check propagates 1,024 times within eight KiB of document growth, then checks
+source and destination mutations plus complete document retirement.
+
+Native style batches also reuse exclusive property pages discarded when
+publication finds an identical canonical page. Independent raw-store clones
+clear the writable bits, so their shared pages cannot enter the free list.
+The bounded list belongs to one document, survives index-arena resets, and
+uses epochs to exclude styles retained from an earlier batch. Sample/scratch
+allocations keep their existing owner. The combined page-sharing, collection,
+index-retirement and recycling tests pass normally, under poisoning, and with
+Boehm.
+
+Script video discovery borrows candidate substrings while checking their
+extensions and copies only returned references. Frame-time discovery scans
+scripts in reverse order instead of joining their complete sources. A focused
+allocation check scans roughly 2.8 MiB of irrelevant literals four times within
+16 KiB of additional arena use; returned references remain independent of a
+later overwrite of the input. Prealloc and Boehm checks preserve the previous
+quote, extension, ordering, deduplication and last-literal-match behavior.
+
+Canvas culling now operates through ordinary opacity scopes while preserving
+filter/resource inputs. Complete offscreen effect and text-clip groups can be
+discarded when their final output bounds prove them invisible. The inheritance
+and culling build completes frozen Pikabu for 60 seconds normally and under
+poisoning (`native-76-checks-background`, `native-76-poison-background`); all ten
+SVG/image mutation and turbulence comparisons remain pixel-exact in
+`replay-76-svg/results.json`. These checks do not establish the RAM target. The
+optimized foreground attempt was interrupted by repeated new-tab actions and
+then faulted in a PageClient rendering callback; its endpoint is invalid.
