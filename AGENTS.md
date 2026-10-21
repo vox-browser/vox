@@ -2388,6 +2388,12 @@ evidence](docs/translation-audit/NATIVE_MEDIA_WHEEL_RAW_HANDLER.md).
   Canonical local16 complete public pipelines +2.081194%/1wins/all6actual0;allobservations retained.
   Localgate1/nativelauncher1/jobs0/pagerelease1;no normal/profile/page/broad/bundle;accepted153/broad153/carry0 retained.
   MatchedRAM/durableactualarchives;canonical/GUI/foreignpreserved;Chrome open.
+  All-frozen flex return round156 (`286e6940`):onewholefunction/all3originalGit hunks/oneLayoutpath.
+  Sixexactcases/16357asserts eachGC/actual0;3new+3unchangedsolvercases;completedchecks reused. Common60/config;C-onlyfrontend0.
+  Predeclared32panels/eightvariants/16completepublicpipelines/96setupgeometrychecks;5initiallyfrozen+3iterative variants.
+  Threefixedlocalpairs +0.071279%/1wins/all6actual0;allobservations retained.
+  Localgate1/nativelauncher1/jobs0/pagerelease1;no normal/profile/page/broad/bundle;accepted153/broad153/carry0 retained.
+  Originalreuse/frontendprose labels retainedwithhash-authenticatederrata. MatchedRAM/durableevidence;canonical/GUI/foreignpreserved;Chrome open.
 - Outside instruction-count optimization, run broad regression suites once per
   ten completed fixes, not after every fix.
   Broad suites include full translation/package test batches, the full LibJS AST

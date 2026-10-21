@@ -15129,6 +15129,55 @@ Accepted control and broad baseline remain153; observed carry and repeatable
 page credit remain0. Current Root, canonical app, GUI and foreign work are
 preserved. Chrome parity remains unestablished.
 
+## Retain the all-frozen flex return as a rejected local attempt
+
+Round156 applies `286e6940` to accepted153. One complete authored
+`resolve_flexible_lengths()` function includes all three original Git hunks.
+When the initial freezing pass covers every item, its owned targets already
+contain the final hypothetical sizes. The new return precedes two private
+scratch-array clones and the free-space closure. Iterative grow/shrink,
+minimum redistribution and deferred minimum calculations remain unchanged.
+All other frozen runtime hashes remain exact; no rejected154/155 feature,
+partial Root hunk, storage projection or shim is imported.
+
+Three new tests cover empty rows/columns, zero grow/shrink factors, initial
+min/max freezing, ownership and unchanged source/deferred arrays. Three exact
+original cases retain border-box minimums, redistribution and fractional
+factors. All **six cases/16,357 assertions** pass in before/Boehm, final/Boehm
+and final/no-GC C-O2, with actual V-driver exits0. Identical completed results
+are authenticated and reused; no passing case is repeated. Common12 cases
+pass60 assertions/config, reusing accepted153 before.
+
+Before any156 performance/counter build, the public diagnostic was declared:
+32 panels, eight variants/four repetitions and16 complete parse/layout/record/
+paint-command/hit/finalize pipelines per observation. Five variants freeze
+all items initially; three perform iteration. The setup checks96 explicit
+geometries, display-list text and hit-test presence. Setup, eight warmups,
+forced GC and assertions stay outside the hardware counter. The unchanged
+normal policy is C-O2/Boehm/defaultmarker1/automatic4GiB, never forced locally,
+no-prod/no-global-prealloc. Three fixed alternating pairs give medians
+**2,222,515,255 → 2,224,099,440 retired instructions**,
+**0.07127893% more**, **1/3 wins**. All six actual exits0 and
+checksum7,508,122,688 match. No observation is discarded, filtered, extended
+or rerun. Avoided allocations alone receive no instruction credit.
+
+The local gate, native launcher and page-release controller actually exit1,
+with no normal native/profile/page jobs. There is no normal native candidate,
+profile, strict independent C audit, page primary, screenshot, broad batch,
+bundle or GC pass for156. The fixed30-pair page plan/seed156/30,000 paired
+bootstrap never starts. C-only whole-app generation actually exits0, without
+strict C/native credit. Two inherited prose labels incorrectly name154 or the
+155 guard; separate read-only findings authenticate the actual156 whole-source,
+fixture, C and binary hashes and preserve every original receipt. Evidence:
+`Build/v/instruction-opt156-{contract-reuse-prose-finding,frontend-prose-finding}.json`.
+Durable focused/local/frontend archives and hashes:
+`Build/v/instruction-opt156-durable-archives.json`.
+
+Accepted control and broad baseline remain153, observed carry and repeatable
+page credit remain0. A separately declared intrinsic-layout hardware diagnostic
+uses frozen153 only and receives no feature/page credit. Canonical app, GUI and
+foreign work remain preserved. Chrome parity remains unestablished.
+
 ## Causes and changes
 
 - The V 0.5.2 compatibility compiler's `-prod` Boehm code repeatedly snapshots
