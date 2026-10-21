@@ -68,8 +68,12 @@ frame: each arena is reset only after its last reader has let go.
   retained snapshots and grid metadata allocate back into the entered document
   through `platform.enter_retained_allocations()`. Nested intrinsic probes
   retain their shorter lifetime. Inline, table and SVG construction currently
-  stay durable as complete operations; their internal temporaries remain a
-  later target. The scope closes before publishing the DOM geometry attachment.
+  stay durable as complete operations. A flex algorithm invoked from retained
+  inline construction opens its own workspace; its published used values, grid
+  metadata and child lines still belong to the document. Existing workspaces
+  and intrinsic probes keep their enclosing lifetime. Other temporaries inside
+  those durable operations remain a later target. The outer scope closes
+  before publishing the DOM geometry attachment.
 - **Font inputs and keys**. Family lists, bridge-value parsing, variation/feature
   maps and key formatting use reusable arenas. Nested font lookups have separate
   input slots. Cache misses materialize their cascade and map/key in the owning
@@ -711,3 +715,38 @@ scripted tokenizer retirement. It is the latest valid primary endpoint and
 still exceeds Brave. A later profiling attempt lost focus and acquired empty
 replacement documents; its small vmmap snapshot is invalid as a Pikabu RAM
 result (`native-164-foreground-vmmap/`).
+
+
+### Flex work nested in retained inline construction
+
+`ab01fde4` retires normal flex algorithm work when its caller is constructing
+retained inline lines. Previously that retained allocation redirect also owned
+flex item vectors, flexible-length work and their closures until document
+retirement. The flex result contains only scalar dimensions; published used
+values and nested line construction continue through their existing retained
+ownership paths. Existing transient geometry work and intrinsic probes do not
+open another scope.
+
+Three new cases plus five geometry/intrinsic regression cases pass with
+prealloc, arena poisoning and Boehm in the source-168 snapshot. They check
+reclamation of a 20 MiB nested workspace, document ownership after retirement,
+probe lifetime, row/column inline-flex painting with nested grids, and reflow.
+Both checked-browser startup modes pass. Eight live SVG mutation comparisons
+and both turbulence screenshots remain pixel-exact with poisoning
+(`replay-171-svg/results.json`). Sixty-second O0 full-page runs preserve one
+installation, 15 stories and 34 images with normal allocation and with poison
+(`native-172-source-168-poison-background` and
+`native-173-source-168-poison-background`). Despite its directory name, the
+172 run is normal: the measurement harness cleared its inherited poison flag.
+The 173 run applies the flag after environment cleanup. These background
+ownership checks receive no primary RAM comparison credit.
+
+Two later valid foreground trials of the same source-141 V executable show
+substantial run-to-run variation: the retained control is **494.9 MiB**
+(`native-170-source-141-control-foreground/1-vox/result.json`); a native Ganesh
+queue-retirement prototype is **497.3 MiB** (`native-169-ganesh-queue-foreground`).
+Both preserve one installation and all 59 focus checks. This pair establishes
+no benefit from that prototype, so it remains unshipped. Neither result
+includes the flex change, and neither establishes the Brave goal. The earlier
+657.6 MiB result remains retained; final comparison still requires three
+alternating trials, with every Vox endpoint below every Brave endpoint.
