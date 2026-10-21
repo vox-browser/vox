@@ -10912,29 +10912,6 @@ pub fn (mut s StyleComputer) reset_has_result_cache() {
 	s.has_result_cache_.attempted_pseudo_classes.clear()
 }
 
-// Visit ancestor hashes synchronously without a managed callback retaining the
-// owning StyleComputer after a style traversal has finished.
-fn (mut filter CountingBloomFilter) update_element_hashes(element &dom.Element, adding bool) {
-	filter.update_element_hash(selector_string_hash(to_ascii_lowercase(element.local_name())), adding)
-	quirks := element.document() != unsafe { nil } && element.document().in_quirks_mode()
-	if id := element.id() {
-		name := if quirks { to_ascii_lowercase(id) } else { id }
-		filter.update_element_hash(selector_string_hash(name), adding)
-	}
-	if class_attribute := element.get_attribute('class') {
-		for class_name in class_attribute.fields() {
-			name := if quirks { to_ascii_lowercase(class_name) } else { class_name }
-			filter.update_element_hash(selector_string_hash(name), adding)
-		}
-	}
-	if attributes := element.attribute_list() {
-		for index in 0 .. attributes.length() {
-			if attribute := attributes.item(index) {
-				filter.update_element_hash(selector_string_hash(to_ascii_lowercase(attribute.name())), adding)
-			}
-		}
-	}
-}
 
 fn (mut filter CountingBloomFilter) update_element_hash(hash u32, adding bool) {
 	if adding {
