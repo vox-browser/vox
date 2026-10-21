@@ -881,3 +881,31 @@ Only the exact CDP `-32602` / `Invalid InterceptionId.` response becomes a
 protocol errors still fail the trial; there is no network fallback or retry.
 Rejected trial records retain the request audit too. All 16 harness tests pass.
 The foreground/readiness requirements and comparison criterion are unchanged.
+
+### Initial layout snapshots on scripted pages
+
+`3fc6c119` extends initial native layout-snapshot interning to documents with
+scripting enabled. The temporary outer record is published before returning
+resolved values; font and counter discovery finishes before that pure write
+scope. Animated styles, untyped compatibility values, anonymous resolution and
+foreign allocation owners retain their ordinary paths. Later writes copy a
+shared record, preserving retained aliases and each style's raw-graph proof.
+
+All seven initial-snapshot cases now exercise scripting-enabled documents.
+Their ordinary resolver controls seed the existing immutable default record,
+which bypasses initial interning without allocating an extra cache. Together
+with six idle-sharing, six rare-data and nine anonymous-geometry cases, all
+28 pass with prealloc, poisoning and Boehm (`initial-snapshot-210-*`). Browser
+startup passes in both prealloc modes. Ten poisoned SVG comparisons remain
+exact (`replay-211-svg`), and all eleven default actual captures equal the
+stock native-frame control in decoded RGB pixels (`replay-213-default`). The
+four existing upstream reference differences and canvas allowance remain.
+A poisoned 60-second scripted Pikabu run preserves one installation, the
+606-command first paint, 15 stories and 34 images (`native-212`). Its 429.4 MiB
+background endpoint is a safety diagnostic, not a Brave comparison result.
+
+The optimized source-210 candidate also includes the committed formatting-token
+retirement, stable/idle HarfBuzz face handling and glyph-index-only font reader.
+The font reader is staged from the active V library by the production build;
+the compiler checkout remains unchanged. All seven font/prealloc-runtime staging
+tests pass. The foreground comparison and longer idle check are pending.
