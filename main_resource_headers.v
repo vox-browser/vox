@@ -2,8 +2,30 @@ module main
 
 import adblock
 import json2
+import platform
 
 fn decode_browser_cached_response_headers(encoded string) ![]adblock.ResponseHeader {
+	$if prealloc {
+		scratch := platform.begin_thread_scratch('cached response header decoding')
+		parsed := parse_browser_cached_response_headers(encoded) or {
+			code := err.code()
+			scratch.leave()
+			message := err.msg().clone()
+			scratch.finish()
+			return error_with_code(message, code)
+		}
+		scratch.leave()
+		mut headers := []adblock.ResponseHeader{cap:parsed.len}
+		for header in parsed {
+			headers << adblock.ResponseHeader{name:header.name.clone(), value:header.value.clone()}
+		}
+		scratch.finish()
+		return headers
+	}
+	return parse_browser_cached_response_headers(encoded)
+}
+
+fn parse_browser_cached_response_headers(encoded string) ![]adblock.ResponseHeader {
 	// json2's generic struct decoder lazily publishes a mutable static field
 	// array, which concurrent first cache reads can observe before it is
 	// populated. Decoding to Any has no struct metadata; read the two fields
