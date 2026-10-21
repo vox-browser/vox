@@ -6,6 +6,32 @@
 #include <cstdio>
 #include <thread>
 
+static int frame_probe_deallocations;
+@interface VoxNativeFrameProbe : NSObject
+@end
+@implementation VoxNativeFrameProbe
+- (void)dealloc { ++frame_probe_deallocations; [super dealloc]; }
+@end
+
+static void check_frame_pool_retirement()
+{
+    assert(!s_frame_autorelease_pool);
+    int before = frame_probe_deallocations;
+    ladybird_v_skia_set_chromium_painting(1);
+    [[[VoxNativeFrameProbe alloc] init] autorelease];
+    ladybird_v_skia_set_chromium_painting(1);
+    [[[VoxNativeFrameProbe alloc] init] autorelease];
+    assert(frame_probe_deallocations == before);
+    ladybird_v_skia_set_chromium_painting(0);
+    assert(!s_frame_autorelease_pool && frame_probe_deallocations == before + 2);
+    ladybird_v_skia_set_chromium_painting(0);
+    assert(frame_probe_deallocations == before + 2);
+    ladybird_v_skia_set_chromium_painting(1);
+    [[[VoxNativeFrameProbe alloc] init] autorelease];
+    ladybird_v_skia_set_chromium_painting(0);
+    assert(frame_probe_deallocations == before + 3);
+}
+
 template<typename Function> Function symbol(void* library, char const* name)
 {
     auto function = reinterpret_cast<Function>(dlsym(library, name));
@@ -89,6 +115,7 @@ static std::vector<uint8_t> graphite_case(void* library, int kind, int scale)
 
 static void check_live_ganesh_image_and_font(int scale)
 {
+    ladybird_v_skia_set_chromium_painting(1);
     auto* gpu = image_gpu_context();
     assert(gpu);
     auto info = SkImageInfo::MakeN32Premul(64 * scale, 48 * scale);
@@ -116,12 +143,14 @@ static void check_live_ganesh_image_and_font(int scale)
     assert(image->readPixels(gpu, info, after.data(), info.minRowBytes(), 0, 0));
     assert(before == after);
     // The live font/typeface and surface remain usable after global cache eviction.
+    ladybird_v_skia_set_chromium_painting(1);
     canvas->clear(SK_ColorWHITE);
     paint.setColor(SK_ColorBLUE);
     canvas->drawCircle(23 * scale, 24 * scale, 17 * scale, paint);
     paint.setColor(SK_ColorBLACK);
     canvas->drawSimpleText("Held", 4, SkTextEncoding::kUTF8, 6 * scale, 30 * scale, font, paint);
     assert(surface->readPixels(info, after.data(), info.minRowBytes(), 0, 0));
+    ladybird_v_skia_set_chromium_painting(0);
     assert(before == after);
 }
 
@@ -241,6 +270,7 @@ int main(int argc, char** argv)
     ladybird_v_skia_release_unused_graphics_memory();
     assert(!s_image_gpu_context && !s_image_gpu_context_attempted);
     dlclose(library);
+    check_frame_pool_retirement();
     puts("Native graphics cache lifetime checks passed.");
     return 0;
 }

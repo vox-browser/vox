@@ -92,6 +92,9 @@ sk_sp<SkFontMgr> s_font_manager;
 sk_sp<SkTypeface> s_typefaces[FontSlotCount];
 std::unordered_map<std::string, sk_sp<SkTypeface>> s_path_typefaces;
 bool s_chromium_painting = false;
+// AppKit can replay several native frames before draining its outer pool.
+// Completed frames need not retain autoreleased Metal/Skia bookkeeping.
+NSAutoreleasePool* s_frame_autorelease_pool = nil;
 // Installed faces selected through CoreText, keyed by the replay identifier
 // the browser passes in place of a file path.
 std::unordered_map<std::string, sk_sp<SkTypeface>> s_system_typefaces;
@@ -739,6 +742,8 @@ extern "C" int ladybird_v_skia_release_idle_graphics_memory()
 
 extern "C" void ladybird_v_skia_set_chromium_painting(int active)
 {
+    if (active && pthread_main_np() && !s_frame_autorelease_pool)
+        s_frame_autorelease_pool = [[NSAutoreleasePool alloc] init];
     if (!active) {
         finish_shared_recording();
         // Keep the Context/pipelines and reusable pixels, but retire Metal's
@@ -752,6 +757,11 @@ extern "C" void ladybird_v_skia_set_chromium_painting(int active)
         }
     }
     s_chromium_painting = active != 0;
+    if (!active && pthread_main_np() && s_frame_autorelease_pool) {
+        auto* pool = s_frame_autorelease_pool;
+        s_frame_autorelease_pool = nil;
+        [pool drain];
+    }
 }
 
 extern "C" int ladybird_v_skia_generate_svg_turbulence(
