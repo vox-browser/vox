@@ -2,6 +2,7 @@ module layout
 
 import dom
 import css
+import platform
 
 // The published vector owns every command needed to replay the current frame.
 // Between recordings, phase buckets and the returned vector are only reusable
@@ -9,6 +10,11 @@ import css
 pub fn release_unused_display_list_caches(display_list &dom.DisplayList) {
 	mut visited := map[u64]bool{}
 	release_idle_display_list_caches(display_list, mut visited)
+	$if prealloc {
+		if platform.arena_thread_is_current() && inline_item_buffer_pool_ != unsafe { nil } && inline_item_buffer_pool_.depth == 0 {
+			for arena in inline_item_buffer_pool_.arenas { arena.trim_empty_pages() }
+		}
+	}
 }
 
 fn release_idle_display_list_caches(display_list &dom.DisplayList, mut visited map[u64]bool) {
@@ -39,6 +45,7 @@ fn release_idle_display_list_caches(display_list &dom.DisplayList, mut visited m
 	mut styles := []&css.ComputedProperties{}
 	collect_idle_layout_styles(result.root, mut styles)
 	_ = css.share_idle_layout_snapshots(styles)
+	css.trim_unused_computation_pages(result.root.document())
 	// Image documents record their own phase buckets. Releasing only the
 	// embedding page leaves the complete scratch generation of each SVG alive.
 	if viewport := result.root.as_viewport() {
