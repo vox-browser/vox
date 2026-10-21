@@ -67,12 +67,11 @@ frame: each arena is reset only after its last reader has let go.
   flex and grid work runs in a temporary scope. Used-value pages, rare data,
   retained snapshots and grid metadata allocate back into the entered document
   through `platform.enter_retained_allocations()`. Nested intrinsic probes
-  retain their shorter lifetime. Inline, table and SVG construction currently
-  stay durable as complete operations. A flex algorithm invoked from retained
-  inline construction opens its own workspace; its published used values, grid
-  metadata and child lines still belong to the document. Existing workspaces
-  and intrinsic probes keep their enclosing lifetime. Other temporaries inside
-  those durable operations remain a later target. The outer scope closes
+  retain their shorter lifetime. Independent formatting contexts invoked from
+  retained inline construction open their own workspace; published used values,
+  grid metadata and detached child lines still belong to the document. Existing
+  workspaces and intrinsic probes keep their enclosing lifetime. Inline text
+  construction also retires its chunk workspace. The outer scope closes
   before publishing the DOM geometry attachment.
 - **Font inputs and keys**. Family lists, bridge-value parsing, variation/feature
   maps and key formatting use reusable arenas. Nested font lookups have separate
@@ -820,3 +819,65 @@ in both modes, all ten SVG checks remain pixel-exact (`replay-187-svg`), and
 a poisoned 60-second Pikabu run preserves its complete page audit
 (`native-188-source-185-poison-background`). An optimized comparison of this
 change remains pending.
+
+
+### Independent geometry, retained copies and completed native frames
+
+`ddedacf4` extends the nested flex workspace to independent formatting contexts
+called during retained inline construction. Shared line-buffer detachment must
+enter retained allocation storage before cloning; otherwise the detached lines
+could outlive that workspace. Ten focused cases pass with prealloc, poisoning
+and Boehm, including nested floats, grid, table, SVG, absolute positioning,
+reflow and an older retained scene. Source-189 startup, ten poisoned SVG checks
+and the complete poisoned 60-second Pikabu audit pass (`replay-193-svg`,
+`native-194-source-189-poison-background`). Its default screenshot suite preserves
+the six exact cases, the existing canvas allowance, and the four known upstream
+reference differences; those four images equal the saved source-132 control.
+
+`9736b882` removes two further compiler-generated copies. Appending a local
+`LineBox` after cloning its two vectors caused current V to derive a second
+deep clone. Borrowing the input by index and appending an explicit record
+creates exactly the intended fragment and marker copies. Retained inline/block
+snapshots now initialize `UsedValues` directly in their final vector slot,
+avoiding a boxed intermediate for this heap-marked type. Cache hits also borrow
+vector records by index, and snapshot vectors reserve their exact input bound.
+Generated source-200 C contains neither the redundant derived line clone nor
+the intermediate UsedValues boxing in these helpers.
+
+Three new allocation/ownership cases and nine retained-layout regressions pass
+in all three allocator modes (`retained-copy-206-*`). The new cases bound line
+and snapshot copies and retain grid/line/marker data after the source arena is
+poisoned and released. Two older fixtures now explicitly lease the display-list
+scene they read after a replacement; their assertions are unchanged. The nine
+corrected fixtures also pass against the old runtime in all three modes
+(`retained-copy-205-*`). This control is separate from the new implementation.
+
+`3649ed83` gives each native completed frame a main-thread autorelease pool.
+It drains only after shared recording and Graphite completion, and repeated
+begin/end calls remain idempotent. The native lifetime check observes three
+probe objects reclaimed across two frames, then redraws retained Ganesh fonts
+and images at both scales after drainage (`native-201-lifetime-run.log`). All
+11 default actual images equal the stock source-189 control pixel for pixel
+(`replay-202-default/stock-control-equality.json`); ten poisoned SVG comparisons
+and a poisoned full-page Pikabu audit also pass (`replay-203-svg`, `native-204`).
+The source-200 V candidate with the canonical native library likewise passes
+startup in both modes, all ten poisoned SVG comparisons and the complete
+poisoned page audit (`replay-208-svg`, `native-209-source-200-poison-background`).
+
+The stock source-189 alternating comparison records Vox **473.9, 459.0,
+469.0 MiB**, versus Brave **456.0, 457.8, 457.6 MiB** (`native-192`). Repeating
+with the same V executable and the frame-pool native library records Vox
+**430.7, 456.6, 429.6 MiB**, versus Brave **454.3, 456.9, 456.6 MiB**
+(`native-199`). Every pool endpoint is below every stock endpoint, but the
+all-trials Brave criterion still fails by 2.3 MiB. Source-200, including the
+retained-copy change and intervening committed work, records Vox **454.6,
+482.0, 443.3 MiB**, versus Brave **460.3, 456.6, 465.1 MiB** (`native-207`).
+Its median is lower than Brave's; its maximum is not. These results preserve
+all six valid trials and do not establish that the RAM goal has been met.
+
+`e5fd0da7` audits a replay request canceled before its interception response.
+Only the exact CDP `-32602` / `Invalid InterceptionId.` response becomes a
+`canceled-interception` row with its original requested action and error. Other
+protocol errors still fail the trial; there is no network fallback or retry.
+Rejected trial records retain the request audit too. All 16 harness tests pass.
+The foreground/readiness requirements and comparison criterion are unchanged.
