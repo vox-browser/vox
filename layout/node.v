@@ -2230,10 +2230,6 @@ fn (mut n TextNode) compute_text_for_rendering() {
 			text = character_data.data()
 		}
 	}
-	source_units := utf16_code_units_for_line_box(text)
-	source_length := source_units.len
-	n.rendered_source_length_ = n.source_range_length_ or { source_length }
-
 	mut language := ''
 	if dom_text := n.dom_node_ {
 		if parent_element := dom_text.parent_or_shadow_host_element() {
@@ -2246,9 +2242,15 @@ fn (mut n TextNode) compute_text_for_rendering() {
 	} else {
 		false
 	}
+	ascii_case := !password && language == '' && text.is_ascii()
+		&& transform in [.uppercase, .lowercase]
+	needs_source_units := password || transform == .math_auto
+		|| (!ascii_case && transform in [.uppercase, .lowercase, .capitalize])
+	source_units := if needs_source_units { utf16_code_units_for_line_box(text) } else { []u16{} }
+	source_length := if needs_source_units { source_units.len } else { utf16_length_for_line_box(text) }
+	n.rendered_source_length_ = n.source_range_length_ or { source_length }
 	mut edits := []platform.TextMappingEdit{}
-	if !password && language == '' && source_units.all(it <= 0x7f)
-		&& transform in [.uppercase, .lowercase] {
+	if ascii_case {
 		// text_transform.rs preserves the no-locale ASCII fast path.
 		text = if transform == .uppercase { text.to_upper() } else { text.to_lower() }
 	} else if !password && transform in [.uppercase, .lowercase, .capitalize] {
@@ -2337,14 +2339,18 @@ fn (mut n TextNode) compute_text_for_rendering() {
 	white_space_collapse := n.Node.computed_values().white_space_collapse()
 	convert_tabs := white_space_collapse in [.collapse, .preserve_breaks, .preserve_spaces]
 	convert_newlines := white_space_collapse in [.collapse, .preserve_spaces]
-	if convert_tabs || convert_newlines {
-		mut bytes := text.bytes()
-		for i, byte in bytes {
+	if (convert_tabs && text.contains('\t')) || (convert_newlines && text.contains('\n')) {
+		// Most text needs no whitespace replacement. When it does, the returned
+		// string owns one exact buffer instead of a byte vector plus a copy.
+		mut bytes := []u8{len:text.len + 1}
+		for i, byte in text {
 			if (convert_tabs && byte == `\t`) || (convert_newlines && byte == `\n`) {
 				bytes[i] = ` `
+			} else {
+				bytes[i] = byte
 			}
 		}
-		text = bytes.bytestr()
+		text = unsafe { (&u8(bytes.data)).vstring_with_len(text.len) }
 	}
 	n.text_for_rendering_ = text
 	n.rendered_utf16_length_ = utf16_length_for_line_box(text)
