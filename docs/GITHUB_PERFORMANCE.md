@@ -16464,6 +16464,63 @@ The premature commit-readiness probe stopped before staging. All original failed
 receipts remain. Chrome parity requires equivalent content, start and submission
 endpoints. Independent Root earns no coverage or performance credit here.
 
+## Retain duplicate chunk lookup removal as a rejected attempt
+
+Round 170 tests complete feature `a4f3c9fd` against accepted 169. The
+measurement slot and inline-end snapshot allocators retain their last chunk
+pointer within each call, removing a second array lookup. All three original
+Git hunks in `layout/layout_state.v` apply exactly to frozen 169; the complete
+author file reconstructs with no context rebase or runtime projection.
+Allocation, initialization, ownership and release behavior remain unchanged.
+
+Five focused cases pass **12,140 assertions** in each of before/Boehm,
+final/Boehm and final/no-GC C-O2. Three new cases check stable distinct records,
+populated source/destination ownership, snapshot chunk growth and release/reuse;
+two unchanged sparse-storage cases remain. Common 12 cases pass 60 assertions
+per configuration, including an inactive diagnostic. The common control reuses
+169 evidence without execution; generated C proves the typed-null correction
+cannot affect the two new common checks because both allocators are absent.
+The corrected contract harness consolidates imports without changing test bodies.
+
+The original local fixture was declared before performance builds. Each
+observation completes **2,048 fresh 65-node population/release lifetimes**,
+133,120 records, using four real style constraints and one nonempty source line.
+Geometry, ownership, detached containing blocks, outer sizes and line counts
+feed the checksum. Setup, 390 checks, eight warmups, forced GC and final
+assertions stay outside the hardware counter. The snapshot allocator is covered
+by contract tests, not this local workload. C-O2/Boehm/default marker 1 and the
+same automatic 4 GiB policy remain; no `-prod` or global `-prealloc` is used.
+
+The original untyped null pointers fail old-compiler typechecking; typed
+pointers repair this before counters. The first diagnostic process fails an
+outer-box setup expectation before `instruction_snapshot`, producing no counter.
+The two expectation arrays and derived checksum are corrected to round 167's
+successful fixture before the first observation. Inputs, styles, loop counts
+and counter boundaries remain unchanged. Original fixtures, builds, logs and
+failures remain. No completed test or counter is replayed. Earlier import-order,
+missing-directory and gate failures are retained. The frontend preflight's
+copied HarfBuzz scope text is a metadata error: its actual input is the complete
+three-hunk layout candidate, and only C generation/typechecking passes.
+
+All six fixed alternating observations actually exit zero with checksum
+**31,793,475,584**. Medians are **97,404,598 → 97,548,823**
+retired instructions, **+0.14806796%**, **0/3 wins**. No observation
+is discarded, extended or replaced. The local gate actually exits 1; no normal
+native, strict independent C, profile or page job starts. Prepared scripts
+provide no pass evidence. The planned 30 page pairs do not begin; there is no
+170 page saving, screenshot, broad, bundle or GC pass. Durable focused/local
+C and binary hashes are in `Build/v/instruction-opt170-durable-archives.json`.
+
+Feature and tests commit together as `a4f3c9fd`. Restoration
+**`8058e3f8`** reverses all three runtime hunks and restores the entire
+runtime author file byte-for-byte to its parent, retaining the tests and
+evidence. Successful before checks cover the restored frozen runtime without
+replay. Accepted control and isolated app remain **169**; broad baseline remains
+**168**, and observed carry remains **1,613,198**. Repeatable page credit is zero.
+Canonical and GUI browsers, newer bundles and foreign edits are preserved.
+Chrome parity remains unestablished: equivalent content, start and paint
+submission endpoints are still required.
+
 ## Causes and changes
 
 - The V 0.5.2 compatibility compiler's `-prod` Boehm code repeatedly snapshots
