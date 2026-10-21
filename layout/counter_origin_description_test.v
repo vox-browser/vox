@@ -14,12 +14,12 @@ fn test_counter_origin_labels_are_retained_only_when_an_operation_can_create_a_c
 		element := document.get_element_by_id(id)?
 		mut target := dom.AbstractElement.new(element, none)
 		style := css.computed_properties_for_element(element)?
-		description := counter_origin_description(&target, style)
+		description := counter_origin_description(target, style)
 		if id in ['plain', 'hidden'] { assert description == '' }
 		else { assert description == target.debug_description() }
 		full_origin := css.CounterOriginatingElement{
-			id: abstract_element_counter_id(&target)
-			parent_id: abstract_element_counter_id(&parent)
+			id: abstract_element_counter_id(target)
+			parent_id: abstract_element_counter_id(parent)
 			tree_order_index: 10
 			debug_description: target.debug_description()
 		}

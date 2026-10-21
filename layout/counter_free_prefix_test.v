@@ -25,15 +25,15 @@ fn test_counter_free_prefix_clears_old_snapshots_and_preserves_the_first_creator
 	assert builder.counter_tree_order_index == plain.len
 	assert builder.counter_sets.len == 0
 	last_plain := dom.AbstractElement.new(plain.last(), none)
-	assert builder.last_processed_key == abstract_element_counter_key(&last_plain)
+	assert builder.last_processed_key == abstract_element_counter_key(last_plain)
 	style := css.computed_properties_for_element(creator)?
 	resolve_layout_counters(mut builder, creator_target, style)
 	actual := css.counters_set_for_abstract_element(&creator_target)?
-	parent := abstract_element_counter_parent(&creator_target)?
+	parent := abstract_element_counter_parent(creator_target)?
 	mut reference_target := creator_target
 	expected := css.resolve_counters_for_layout(mut reference_target, style, css.CounterOriginatingElement{
-		id: abstract_element_counter_id(&creator_target)
-		parent_id: abstract_element_counter_id(&parent)
+		id: abstract_element_counter_id(creator_target)
+		parent_id: abstract_element_counter_id(parent)
 		tree_order_index: i64(plain.len + 1)
 		debug_description: creator_target.debug_description()
 	}, true, none, none, none)?

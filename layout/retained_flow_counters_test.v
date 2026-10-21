@@ -42,7 +42,7 @@ fn test_empty_retained_counter_passthrough_preserves_following_origins_and_avoid
 	assert fast.counter_tree_order_index == retained.elements.len
 	assert fast.counter_sets.len == 0
 	last_abstract := dom.AbstractElement.new(retained.elements.last(), none)
-	assert fast.last_processed_key == abstract_element_counter_key(&last_abstract)
+	assert fast.last_processed_key == abstract_element_counter_key(last_abstract)
 	properties := css.computed_properties_for_element(after)?
 	resolve_layout_counters(mut fast, dom.AbstractElement.new(after, none), properties)
 	after_abstract := dom.AbstractElement.new(after, none)
@@ -56,7 +56,9 @@ fn test_empty_retained_counter_passthrough_preserves_following_origins_and_avoid
 	assert full.last_processed_key == fast.last_processed_key
 	assert css.counters_set_for_abstract_element(&after_abstract)?.dump() == fast_result
 	$if gcboehm ? {
-		assert full_bytes > 0 && fast_bytes * 2 < full_bytes,
+		// Value-only target queries also make the full empty-prefix traversal
+		// allocation-free. Keep the original ratio guard when it allocates.
+		assert (fast_bytes == 0 && full_bytes == 0) || (full_bytes > 0 && fast_bytes * 2 < full_bytes),
 			'empty counter traversal allocated ${fast_bytes} bytes; full traversal allocated ${full_bytes}'
 	}
 	// An external counter consumer can install a set without changing style.

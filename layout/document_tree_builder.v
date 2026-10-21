@@ -62,7 +62,7 @@ fn insert_hoisted_pseudo_element_boxes(mut children []&Node, child &Node, mut bu
 	}
 }
 
-fn abstract_element_counter_key(abstract_element &dom.AbstractElement) i64 {
+fn abstract_element_counter_key(abstract_element dom.AbstractElement) i64 {
 	// Node IDs are nonnegative. Reserve a lane for every current pseudo type
 	// and a separate lane for the element itself, without formatting strings
 	// for each parent, previous sibling and counter-free element.
@@ -77,7 +77,7 @@ fn abstract_element_counter_key(abstract_element &dom.AbstractElement) i64 {
 	return node_id * 32 + pseudo_lane
 }
 
-fn abstract_element_counter_id(abstract_element &dom.AbstractElement) i64 {
+fn abstract_element_counter_id(abstract_element dom.AbstractElement) i64 {
 	return abstract_element.element().as_node().unique_id().value() * 16 + if pseudo := abstract_element.pseudo_element() {
 		i64(int(pseudo) + 1)
 	} else {
@@ -85,7 +85,7 @@ fn abstract_element_counter_id(abstract_element &dom.AbstractElement) i64 {
 	}
 }
 
-fn abstract_element_counter_parent(abstract_element &dom.AbstractElement) ?dom.AbstractElement {
+fn abstract_element_counter_parent(abstract_element dom.AbstractElement) ?dom.AbstractElement {
 	if abstract_element.pseudo_element() != none {
 		return dom.AbstractElement.new(abstract_element.element(), none)
 	}
@@ -97,7 +97,7 @@ fn abstract_element_counter_parent(abstract_element &dom.AbstractElement) ?dom.A
 // counters keep their existing creator, and a box with no counter operations
 // cannot publish this origin. Avoid formatting every ordinary DOM node merely
 // to discard its description during inheritance.
-fn counter_origin_description(abstract_element &dom.AbstractElement, computed &css.ComputedProperties) string {
+fn counter_origin_description(abstract_element dom.AbstractElement, computed &css.ComputedProperties) string {
 	values := unsafe { &css.ComputedValues(computed) }
 	if computed.display().is_none() || (!computed.display().is_list_item()
 		&& values.counter_reset().len == 0 && values.counter_increment().len == 0
@@ -118,13 +118,13 @@ fn resolve_layout_counters(mut builder_state TreeBuilderState, abstract_element 
 			mut target := abstract_element
 			css.set_counters_set_for_abstract_element(mut target, none)
 			builder_state.counter_tree_order_index++
-			builder_state.last_processed_key = abstract_element_counter_key(&abstract_element)
+			builder_state.last_processed_key = abstract_element_counter_key(abstract_element)
 			return
 		}
 	}
-	parent := abstract_element_counter_parent(&abstract_element)
+	parent := abstract_element_counter_parent(abstract_element)
 	parent_key := if parent_element := parent {
-		abstract_element_counter_key(&parent_element)
+		abstract_element_counter_key(parent_element)
 	} else {
 		i64(-1)
 	}
@@ -145,18 +145,18 @@ fn resolve_layout_counters(mut builder_state TreeBuilderState, abstract_element 
 	}
 	builder_state.counter_tree_order_index++
 	origin := css.CounterOriginatingElement{
-		id: abstract_element_counter_id(&abstract_element)
+		id: abstract_element_counter_id(abstract_element)
 		parent_id: if parent_element := parent {
-			abstract_element_counter_id(&parent_element)
+			abstract_element_counter_id(parent_element)
 		} else {
 			none
 		}
 		tree_order_index: builder_state.counter_tree_order_index
-		debug_description: counter_origin_description(&abstract_element, computed)
+		debug_description: counter_origin_description(abstract_element, computed)
 	}
 	mut mutable_abstract_element := abstract_element
 	resolved := css.resolve_counters_for_layout(mut mutable_abstract_element, computed, origin, parent != none, parent_counters, previous_sibling_counters, previous_element_counters)
-	key := abstract_element_counter_key(&abstract_element)
+	key := abstract_element_counter_key(abstract_element)
 	if counters := resolved {
 		builder_state.counter_sets[key] = counters
 	} else {
@@ -170,18 +170,18 @@ fn resolve_layout_counters(mut builder_state TreeBuilderState, abstract_element 
 
 fn resolve_marker_layout_counters(mut builder_state TreeBuilderState, abstract_element dom.AbstractElement, computed &css.ComputedProperties) {
 	host := dom.AbstractElement.new(abstract_element.element(), none)
-	host_key := abstract_element_counter_key(&host)
+	host_key := abstract_element_counter_key(host)
 	host_counters := builder_state.counter_sets[host_key]
 	builder_state.counter_tree_order_index++
 	origin := css.CounterOriginatingElement{
-		id: abstract_element_counter_id(&abstract_element)
-		parent_id: abstract_element_counter_id(&host)
+		id: abstract_element_counter_id(abstract_element)
+		parent_id: abstract_element_counter_id(host)
 		tree_order_index: builder_state.counter_tree_order_index
-		debug_description: counter_origin_description(&abstract_element, computed)
+		debug_description: counter_origin_description(abstract_element, computed)
 	}
 	mut mutable_abstract_element := abstract_element
 	resolved := css.resolve_counters_for_layout(mut mutable_abstract_element, computed, origin, true, host_counters, none, host_counters)
-	key := abstract_element_counter_key(&abstract_element)
+	key := abstract_element_counter_key(abstract_element)
 	if counters := resolved {
 		builder_state.counter_sets[key] = counters
 	} else {
