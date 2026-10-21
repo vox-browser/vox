@@ -15178,6 +15178,119 @@ page credit remain0. A separately declared intrinsic-layout hardware diagnostic
 uses frozen153 only and receives no feature/page credit. Canonical app, GUI and
 foreign work remain preserved. Chrome parity remains unestablished.
 
+## Retained flow composition: local improvement and unmatched page preparation
+
+Round157 compares accepted153 with14 complete existing features:
+`070f4adc`, `dfc0992d`, `8b573697`, `bd8120bb`, `48e678c3`, `aba38273`, `ea103158`, `c3e9df79`, `206c5aea`, `af7f2ecd`, `0b659953`, `2ed7fff5`, `23909048`, `4d1257fa`. Ordinary clean flow branches retain
+boxes, shaping caches and live DOM boundaries while formatting and geometry run
+in a fresh layout state. Required container-query updates remain effective.
+The whole prerequisites include live mirrors, pseudo publication, paint-style
+callbacks, background refresh and isolated/cached SVG resources.
+
+All98 original runtime hunks authenticate across17 changed paths and five new
+files;19 metadata hunks already exist in the control. Every original author
+file reconstructs exactly. Only accepted font-cache context and one callback
+insertion indentation are rebased;all authored delta is preserved. No runtime
+storage projection,partial feature,compiler shim,later flow arena cache or
+rejected154–156 optimization is imported. This measures the whole composition.
+
+Both C-O2 GC modes pass60 cases and55,265 assertions each:59 final original
+cases plus an independent stale-geometry guard. Four legacy image fixtures add
+only the already accepted104 readonly `.image()` accessor; removing that
+accessor restores the original bytes, including inputs and expected values.
+Completed successful checks are authenticated and reused without replay.
+Common12 cases pass60 assertions/configuration. Earlier mirror/pseudo
+prerequisite failures and raw image-field compile failures remain retained.
+
+Before performance builds the local scene was fixed to two size-query
+containers,14 responsive spans and16 stable branches containing128 Unicode
+paragraphs. Each observation executes16 complete public parse/layout/record/
+paint-command/hit/finalize pipelines. Setup verifies responsive visibility/text,
+stable260×20 geometry/text and exact display-list equivalence after a forced
+full rebuild. Setup,eight warmups and forcedGC stay outside the counter.
+Both first builds exit1 because `dump` is reserved by the old compiler;only
+that local variable is renamed before any successful build or sample.
+Original fixture,declaration,logs and actual failures remain retained.
+
+Three fixed alternating local pairs give medians **7,478,288,572 →
+6,866,754,458 retired instructions (-8.17746077%)**,
+**3/3 wins**,all six actual exits0 and checksum1,905,413,696. This local public
+pipeline result earns0 page credit. Automatic4GiB heap policy is unchanged and
+is not forced or triggered by this scene.
+
+Strict independent whole-program normal C matches the compiled candidate while
+retaining every function,type and global. All493 builtins,176 protected decoder/
+filter/arena functions,120 native inputs,37 frozen headers and exact native
+arguments authenticate. Public decoding,CSS filtering and tokenizer arenas
+remain unchanged. Established compiler/embed identities and four authenticated
+byte-identical helper reorderings are normalized. Changed record layouts can
+alter generated defaults;no claim that all control declarations are identical
+is made. Actual native compilation,signing and frozen4eef-loaded smoke exit0.
+
+Both full-process C-O1/Boehm/marker1/no-inline profiles actually exit0. Main
+remains enabled without filtering or resetting. Each runs25 complete public
+pipelines,26 parse/layout calls and27 recording calls. Missing optional rows
+remain unknown rather than assumed zero:
+
+| Function | Before calls | Final calls |
+| --- | ---: | ---: |
+| `layout__opt157_complete_public_document_layout` | 25 | 25 |
+| `html__parse_document` | 26 | 26 |
+| `layout__run_document_layout` | 26 | 26 |
+| `dom__Document_record_display_list` | 27 | 27 |
+| `layout__TreeBuilder_build` | unknown | unknown |
+| `layout__prepare_dom_layout_attachment` | 53 | 53 |
+| `layout__attach_layout_node_recursive` | 31,134 | 31,134 |
+| `layout__collect_retained_flow_elements` | unknown | 3,744 |
+| `layout__reusable_clean_flow_subtree` | unknown | 910 |
+
+
+Profile calls,timings and instrumented instructions earn0 page credit.
+Fresh normal page observations retain the359-body cache,same4eef helper and
+placement library,1024×768 document viewport and
+`native.scopes.navigation_to_first_document_paint[0]`. All30 fixed alternating
+pairs finish with60 actual zero exits and60 real PNGs. Raw medians are
+**16,552,343,590 → 16,396,547,288.5** instructions,
+raw point saving **155,796,301.5 (-0.94123410%)**,
+**29/30 wins**. Raw paired median saving is
+**150,886,401.5**;30,000 paired bootstrap resamples with actual
+and reported seed157 give95% interval **[143,345,378, 158,326,524.5]**.
+
+**This is not an accepted matching page saving.** Every control primary has
+1installation/2geometry/1paint;every candidate primary has
+1installation/3geometry/1paint. The strict preparation audit actually exits1,
+then validation and bundle gates actually exit1 before broad or bundle work.
+No count is loosened,no observation is discarded/rerun and the cohort never
+extends. Repeatable page credit,matching observed broad-gate saving and carry
+are all **0**, even though the raw interval is positive. The original summary's
+unconditional same-preparation sentence is corrected by the hash-linked
+`instruction-opt157-raw-comparison-scope-correction.json`;original data remains.
+
+All60 PNGs are1024×768 and exact outside the original fixed skeleton bands.
+There are 0 archived pre-primary startup retries and 0 later
+installation refreshes;these remain separate. A first readonly inventory path
+reader exits1 after using `with_suffix()` on `.run-1`;its source,receipt and
+terminal remain archived. Only that path construction is repaired;the resumed
+reader inventories existing files without any runtime or capture replay.
+The previously unstarted focused viewport finishes **pixel-exact** with both
+actual captures and pixel-diff exit0.
+
+Broad verification does not run:there is no eligible matching saving against
+the5M gate. No157 app,GC verification or bundle pass is claimed. Accepted
+control,broad baseline and verified artifact remain153;observed carry stays0.
+Canonical/GUI browsers,newer bundles and foreign work are preserved. The old
+successful isolated153 app is not overwritten.
+
+Durable normal/independent/focused/local/profile C and binaries are hash-indexed
+by `Build/v/instruction-opt157-durable-archives.json`;matched privateRAM scratch
+is retained. The successful native candidate SHA256 is
+`4d46706d9c81124cf91950541a449d26cc1f3cd0c0ba2c40914a2406fdabd453`. Raw cohort evidence is
+`instruction-opt157-comparison-evidence.json`,strict failure is
+`instruction-opt157-capture-audit.json`,and complete retained inventory is
+`instruction-opt157-capture-inventory.json` under `Build/v/`.
+Chrome parity still requires equivalent content,start and paint endpoints.
+Independent current Root receives no performance credit or coverage.
+
 ## Causes and changes
 
 - The V 0.5.2 compatibility compiler's `-prod` Boehm code repeatedly snapshots

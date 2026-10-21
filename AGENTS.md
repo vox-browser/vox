@@ -2394,6 +2394,13 @@ evidence](docs/translation-audit/NATIVE_MEDIA_WHEEL_RAW_HANDLER.md).
   Threefixedlocalpairs +0.071279%/1wins/all6actual0;allobservations retained.
   Localgate1/nativelauncher1/jobs0/pagerelease1;no normal/profile/page/broad/bundle;accepted153/broad153/carry0 retained.
   Originalreuse/frontendprose labels retainedwithhash-authenticatederrata. MatchedRAM/durableevidence;canonical/GUI/foreignpreserved;Chrome open.
+  Retained flow composition round157 (14wholefeatures/98originalruntimehunks/17paths/5newfiles;19metadatahunks already accepted).
+  All60focusedcases/55265asserts eachGC;59original+geometryguard;accepted104test-only image views;common60/config.
+  Declared16fullpublicpipelines/twoquerycontainers/128stableparagraphs:local -8.177461%/3wins/all6actual0;zero pagecredit.
+  All30pairs/60actual0/60PNGs retained;raw point 155,796,301.5/29wins/rawCI[143,345,378,158,326,524.5];seed157/30000bootstrap.
+  Strict preparation1:control1/2/1,candidate1/3/1;unaccepted/credit0/matchingobservedcarry0. No relaxed counts or reruns.
+  Focusedviewport exact;no broad/bundle/GC157 pass;acceptedcontrol/broad/app153 preserved.
+  Full profiles/strict entire-program C actual0;reservedvariable/parser and inventorypath failures retained;canonical/GUI/foreign preserved;Chrome open.
 - Outside instruction-count optimization, run broad regression suites once per
   ten completed fixes, not after every fix.
   Broad suites include full translation/package test batches, the full LibJS AST
