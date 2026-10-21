@@ -20,6 +20,67 @@ struct ComputedPropertyStore {
 mut:
 	pages    [computed_property_page_count]&ComputedPropertyPage
 	writable u32
+	recycling &ComputedPropertyPageRecycling = unsafe { nil }
+	recycling_epoch u64
+}
+
+// Only exclusive pages discarded by publication enter this free list. The
+// descriptor and its bounded vector survive batches. Epochs prevent a style
+// kept beyond its batch from acquiring pages during an unrelated later pass.
+@[heap]
+struct ComputedPropertyPageRecycling {
+mut:
+	owner &platform.RetainedArena = unsafe { nil }
+	epoch u64
+	active bool
+	pages []&ComputedPropertyPage
+}
+
+fn (pool &ComputedPropertyPageRecycling) can_reuse(epoch u64) bool {
+	return pool.active && pool.epoch == epoch
+		&& voidptr(pool.owner) == voidptr(platform.current_retained_arena())
+		&& platform.arena_entered() && !platform.transient_arena_entered()
+}
+
+fn (computer &StyleComputer) prepare_computed_property_page_recycling(style &ComputedProperties) {
+	$if prealloc {
+		if computer.computed_property_page_batch_depth_ == 0
+			|| computer.document_ == unsafe { nil } { return }
+		owner := computer.document_.native_storage()
+		if owner == unsafe { nil }
+			|| voidptr(owner) != voidptr(platform.current_retained_arena())
+			|| !platform.arena_entered() || platform.transient_arena_entered() { return }
+		mut mutable := unsafe { &StyleComputer(computer) }
+		if mutable.computed_property_page_recycling_ == unsafe { nil } {
+			persistent := platform.enter_persistent()
+			mut pool := &ComputedPropertyPageRecycling{owner: owner, pages: []&ComputedPropertyPage{cap: 64}}
+			mutable.computed_property_page_recycling_ = pool
+			mut storage := owner
+			storage.add_cleanup(fn [mut pool] () {
+				pool.active = false
+				pool.pages.clear()
+				pool.owner = unsafe { nil }
+			})
+			platform.leave_persistent(persistent)
+		}
+		mut pool := mutable.computed_property_page_recycling_
+		if !pool.active { pool.epoch++; pool.active = true }
+		mut store := unsafe { &ComputedPropertyStore(style.property_store_) }
+		store.recycling = pool
+		store.recycling_epoch = pool.epoch
+	}
+}
+
+fn (mut store ComputedPropertyStore) copy_writable_page(source &ComputedPropertyPage) &ComputedPropertyPage {
+	mut page := unsafe { &ComputedPropertyPage(nil) }
+	if store.recycling != unsafe { nil } && store.recycling.can_reuse(store.recycling_epoch)
+		&& store.recycling.pages.len > 0 {
+		page = store.recycling.pages.pop()
+	} else {
+		return copy_computed_property_page(source)
+	}
+	for index in 0 .. computed_property_page_size { page.values[index] = source.values[index] }
+	return page
 }
 
 @[heap]
@@ -88,7 +149,7 @@ fn (mut c ComputedProperties) set_raw_property_at_index(index int, value &dom.St
 	if voidptr(store.pages[page_index].values[slot]) == voidptr(value) { return }
 	bit := u32(1) << page_index
 	if store.writable & bit == 0 {
-		store.pages[page_index] = copy_computed_property_page(store.pages[page_index])
+		store.pages[page_index] = store.copy_writable_page(store.pages[page_index])
 		store.writable |= bit
 	}
 	store.pages[page_index].values[slot] = unsafe { value }
@@ -143,10 +204,24 @@ fn (computer &StyleComputer) publish_computed_property_pages(style &ComputedProp
 	}
 	mut pool := owner.computed_property_page_interner_
 	mut store := unsafe { &ComputedPropertyStore(style.property_store_) }
+	writable := store.writable
 	store.writable = 0
 	for index in 0 .. computed_property_page_count {
-		page := store.pages[index]
-		store.pages[index] = pool.intern(page, computed_property_page_hash(page))
+		mut page := store.pages[index]
+		canonical := pool.intern(page, computed_property_page_hash(page))
+		store.pages[index] = canonical
+		// A value-copy alias shares this store and observes the replacement.
+		// clone_raw_property_store() clears writable on the source, so a page
+		// referenced by any independent snapshot can never enter this list.
+		mut recycling := store.recycling
+		if recycling != unsafe { nil } && recycling.active
+			&& recycling.epoch == store.recycling_epoch
+			&& voidptr(recycling) == voidptr(owner.computed_property_page_recycling_)
+			&& writable & (u32(1) << index) != 0 && voidptr(page) != voidptr(canonical)
+			&& recycling.owner.arena.contains(voidptr(page)) && recycling.pages.len < 64 {
+			for slot in 0 .. computed_property_page_size { page.values[slot] = unsafe { nil } }
+			recycling.pages << page
+		}
 	}
 }
 
@@ -205,6 +280,9 @@ fn (computer &StyleComputer) end_computed_property_page_batch() {
 		// Drop the entire pool: map.clear retains stale values in the fallback.
 		// Published readonly pages remain owned by the installed styles.
 		owner.computed_property_page_interner_ = unsafe { nil }
+		if owner.computed_property_page_recycling_ != unsafe { nil } {
+			owner.computed_property_page_recycling_.active = false
+		}
 		if owner.computed_property_page_arena_ != unsafe { nil } {
 			mut arena := owner.computed_property_page_arena_
 			arena.reset()

@@ -147,7 +147,7 @@ fn test_paged_property_interner_rejects_hash_collisions_and_caps_entries() {
 
 fn test_paged_property_controlled_shared_styles_have_bounded_logical_payload() {
 	assert computed_property_page_count <= 32
-	assert C.vox_property_store_bytes() == 192
+	assert C.vox_property_store_bytes() == 208
 	assert C.vox_property_page_bytes() == 128
 	mut computer := StyleComputer.new(dom.Document.create(dom.url_about_blank()))
 	computer.begin_computed_property_page_batch()

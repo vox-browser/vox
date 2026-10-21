@@ -10766,6 +10766,7 @@ pub mut:
 	computed_property_page_interner_ &ComputedPropertyPageInterner = unsafe { nil }
 	computed_property_page_arena_ &platform.Arena = unsafe { nil }
 	computed_property_page_batch_depth_ int
+	computed_property_page_recycling_ &ComputedPropertyPageRecycling = unsafe { nil }
 	default_font_metrics                                 LengthFontMetrics = LengthFontMetrics.default()
 	root_element_font_metrics                            LengthFontMetrics = LengthFontMetrics.default()
 	root_element_font_metrics_depend_on_viewport_metrics bool
@@ -11619,6 +11620,7 @@ pub fn (s &StyleComputer) compute_properties(abstract_element dom.AbstractElemen
 	defer { record_diagnostic_instruction_scope(4, diagnostic_scope_start) }
 
 	mut properties := computed_properties_with_initial_values()
+	s.prepare_computed_property_page_recycling(properties)
 	properties.viewport_rect_ = s.viewport_rect_
 	properties.root_font_size_px_ = s.root_element_font_metrics.font_size.to_double()
 	properties.root_line_height_px_ = s.root_element_font_metrics.line_height.to_double()
