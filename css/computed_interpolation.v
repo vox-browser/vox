@@ -2582,6 +2582,7 @@ pub mut:
 
 pub fn (c &ComputedProperties) background_layers() []BackgroundLayerData {
 	image_property := c.property(.background_image, .yes) or { return []BackgroundLayerData{} }
+	if computed_coordinating_value_is_none(image_property) { return []BackgroundLayerData{} }
 	image_values := computed_interpolation_split_coordinating_list_value(image_property)
 	mut any_image := false
 	for image_value in image_values {
@@ -2680,6 +2681,14 @@ pub fn (c &ComputedProperties) background_layers() []BackgroundLayerData {
 pub fn (c &ComputedProperties) background_color_clip() BackgroundBox {
 	image_property := c.property(.background_image, .yes) or { return .border_box }
 	clip_property := c.property(.background_clip, .yes) or { return .border_box }
+	if image_count := typed_coordinating_value_count(image_property) {
+		if clip_count := typed_coordinating_value_count(clip_property) {
+			if image_count == 0 || clip_count == 0 { return .border_box }
+			if keyword := typed_coordinating_keyword_at(clip_property, (image_count - 1) % clip_count) {
+				return keyword_to_background_box_for_computed_properties(keyword, .border_box)
+			}
+		}
+	}
 	images := computed_interpolation_split_coordinating_list_value(image_property)
 	clips := computed_interpolation_split_coordinating_list_value(clip_property)
 	if images.len == 0 || clips.len == 0 {
