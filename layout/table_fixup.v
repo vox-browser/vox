@@ -6,6 +6,7 @@ module layout
 
 import css
 import dom
+import platform
 
 fn table_track_group(display css.Display) bool {
 	return display.is_table_row_group() || display.is_table_header_group()
@@ -336,13 +337,18 @@ fn finalize_table_internal_child_classification(mut node Node) {
 }
 
 fn fixup_table_tree(mut root Node, document &dom.Document) {
+	// Only the saved flags belong to this workspace. Fixup itself can create
+	// live anonymous boxes, so restore the caller's allocator before running it.
+	scratch := platform.begin_thread_scratch('table fixup flags')
 	mut flags := []TableFixupSkipFlag{}
 	mark_table_fixup_subtrees(mut root, mut flags)
+	scratch.leave()
 	defer {
 		for flag in flags {
 			mut node := unsafe { &Node(flag.node) }
 			node.table_fixup_skip_ = flag.previous
 		}
+		scratch.finish()
 	}
 	fixup_table_tree_full(mut root, document)
 }
