@@ -1279,17 +1279,45 @@ fn dom_ptr_push[T](p &[]T, item T) {
 
 // https://dom.spec.whatwg.org/#concept-descendant-text-content
 pub fn (n &Node) descendant_text_content() string {
-	mut builder := strings.new_builder(0)
-	builder_ptr := &builder
-	n.visit_subtree(fn [builder_ptr] (node &Node) TraversalDecision {
-		if node.is_text() {
-			if data := node.character_data() {
-				unsafe { builder_ptr.write_string(data.data_) }
-			}
+	return n.collect_text_content(true)
+}
+
+// These synchronous reads invoke no callbacks. Count first so the returned
+// string needs one exact allocation, with no builder growth or spare copy left
+// in the document's arena. Ordinary children exclude shadow/template contents.
+fn (n &Node) text_content_byte_length(recursive bool) int {
+	mut length := 0
+	for child in n.children {
+		if child.is_text() {
+			if data := child.character_data() { length += data.data_.len }
+		} else if recursive {
+			length += child.text_content_byte_length(true)
 		}
-		return .@continue
-	})
-	return builder.str()
+	}
+	return length
+}
+
+fn (n &Node) copy_text_content_bytes(buffer &u8, recursive bool) int {
+	mut written := 0
+	for child in n.children {
+		if child.is_text() {
+			if data := child.character_data() {
+				unsafe { vmemcpy(buffer + written, data.data_.str, data.data_.len) }
+				written += data.data_.len
+			}
+		} else if recursive {
+			written += child.copy_text_content_bytes(unsafe { buffer + written }, true)
+		}
+	}
+	return written
+}
+
+fn (n &Node) collect_text_content(recursive bool) string {
+	length := n.text_content_byte_length(recursive)
+	if length == 0 { return '' }
+	bytes := []u8{len:length + 1}
+	n.copy_text_content_bytes(unsafe { &u8(bytes.data) }, recursive)
+	return unsafe { (&u8(bytes.data)).vstring_with_len(length) }
 }
 
 // https://dom.spec.whatwg.org/#dom-node-textcontent
@@ -2089,15 +2117,7 @@ pub fn (n &Node) child_text_content() string {
 	if !n.is_parent_node() {
 		return ''
 	}
-	mut builder := strings.new_builder(0)
-	for child in n.children {
-		if child.is_text() {
-			if content := child.text_content() {
-				builder.write_string(content)
-			}
-		}
-	}
-	return builder.str()
+	return n.collect_text_content(false)
 }
 
 // https://dom.spec.whatwg.org/#concept-shadow-including-root
