@@ -677,3 +677,37 @@ still varies substantially across GPU frame phases; these diagnostic numbers
 do not establish a foreground comparison. Releasing all Context GPU resources
 after every completed frame has not established a RAM win and remains an
 unlanded experiment (`native-156-frame-resources-background`).
+
+
+### Scripted tokenizer retirement
+
+Closed-input native HTML parsers now retire their tokenizer storage for
+scripted documents too. DOM and script-model strings own their copies, and
+paused parsers retain input until they reach EOF. Ready parser-blocking scripts
+open a fresh insertion point; resumed scripts clear the pause flag before
+execution so `document.write()` can synchronously reenter parsing.
+
+Eight focused checks pass with prealloc, poisoning and Boehm, including ready
+and stylesheet-blocked scripts, synchronous inserted-node reads, source/type
+metadata after tokenizer retirement, streaming behavior, immutable payloads
+and release of document storage after pending progress callbacks drain
+(`scripted-tokenizer-163-*-run.log`). An earlier full-page prototype also
+completes the 60-second normal/poison Pikabu checks with one installation and
+the expected 15 stories/34 images (`native-147-*-background`); its RAM numbers
+vary and do not establish a win.
+
+The broader existing parser-end-state test faults in its script event-count
+map under prealloc even when run alone, with no new tokenizer fixtures
+executed (`scripted-tokenizer-161-end-only*-run.log`). Its end-state execution
+path is unchanged here; Boehm passes it. This check receives no prealloc pass
+credit.
+
+The next clean optimized foreground endpoint is **657.6 MiB**, with
+**947.3 KiB/s** latter-half growth, all 59 focus checks, one installation,
+15 stories and 34 images
+(`native-162-source-141-foreground/1-vox/result.json`). It adds compressed
+raster rows and stylesheet candidate ownership to source-133, but predates
+scripted tokenizer retirement. It is the latest valid primary endpoint and
+still exceeds Brave. A later profiling attempt lost focus and acquired empty
+replacement documents; its small vmmap snapshot is invalid as a Pikabu RAM
+result (`native-164-foreground-vmmap/`).
