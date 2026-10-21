@@ -1,6 +1,7 @@
 /Build/
 *.v3cc.*/
 /tools/layout_corpus
+
 # Compiled V test binaries dropped next to their _test.v source
 *_test
 
@@ -19,3 +20,6 @@
 /march-build.app/
 /uk.html
 /pikabu_compositor*_production_snapshot.sh
+
+# Temporary and local files to ignore
+**/__pycache__/
