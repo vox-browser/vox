@@ -17,8 +17,8 @@ in its protocol. Explicit historic Boehm comparisons require `--allocator boehm`
 ### Corrected arena before/after: 50 MB remains unmet
 
 The latest V-source comparison, three alternating optimized pairs, measures
-**82.92 → 82.04 MB**, a **1.07% reduction**. The largest candidate settled
-observation is **82,118,048 bytes**. The **50,000,000-byte limit still fails**.
+**82.20 → 81.58 MB**, a **0.76% reduction**. The largest candidate settled
+observation is **81,610,120 bytes**. The **50,000,000-byte limit still fails**.
 All six raw viewport images match, all frozen-input guards pass, and all six script audits
 report no page runtime, sources, source bytes or preloaded scripts.
 
@@ -45,6 +45,7 @@ report no page runtime, sources, source bytes or preloaded scripts.
 | ASCII names, reusable scratch descriptors and numeric counter keys | 85,411,208 bytes | 84,002,160 bytes | 1.65% |
 | Local SVG transforms, slimmer nodes and static layout queries | 84,002,208 bytes | 82,838,872 bytes | 1.38% |
 | Exact text buffers, cached-header decoding, table flags and CSS probes | 82,920,816 bytes | 82,036,128 bytes | 1.07% |
+| Iterator records, insertion snapshots, rendered text and counter targets | 82,199,920 bytes | 81,577,328 bytes | 0.76% |
 
 Each row is its own three-pair cohort; these are aggregate build comparisons,
 not isolated savings attributed to individual commits. Evidence is in
@@ -59,7 +60,8 @@ not isolated savings attributed to individual commits. Evidence is in
 `arena-native-font-idle-paired/`, `arena-glyph-index-fonts-paired/` and
 `arena-native-frame-pool-paired/`, `arena-match-text-geometry2-paired/` and
 `arena-scratch-counter-keys-paired/`, `arena-static-layout-queries-paired/` and
-`arena-text-header-fixup2-paired/`, including summaries, raw
+`arena-text-header-fixup2-paired/` and `arena-iterator-rendered-text-paired/`,
+including summaries, raw
 process samples, allocator checks, resource audits and captures. Matching
 `arena-{text,svg}-lifetimes-build-protocol.json` files pin the complete source
 inputs, current compiler and native libraries. The static-paint and SVG protocols are
@@ -321,7 +323,7 @@ Signing, startup, all six raw viewport hashes, script audits and input guards
 pass. Sampled launch peaks are 488.90–491.24 MB. The settled and peak 50 MB
 budgets both remain unmet. The canonical installed bundle remains untouched.
 
-The latest `arena-text-header-fixup2` cohort freezes `b98e59d7` plus five CSS
+The `arena-text-header-fixup2` cohort freezes `b98e59d7` plus five CSS
 probe/validation overlays authenticated against committed `43d09d1c`. It retires
 cached-header JSON work, allocates DOM text results once, retires table-fixup
 flags and substitution-validation argument records, and avoids constructing a
@@ -344,6 +346,32 @@ rendered-text and counter-target changes are excluded. The installed app is
 unchanged. A separate production-frontend flag experiment failed compilation
 and receives no memory credit or build-setting change.
 
+The latest `arena-iterator-rendered-text` cohort freezes `8d0712e3` plus seven
+counter-target overlays authenticated against committed `d3de6275`. Iterator
+records retire with their item buffers; insertion snapshots retire after their
+last post-connection step; ordinary rendered text avoids UTF-16 and duplicate
+whitespace buffers; counter target queries pass scalar records by value.
+Ten iterator cases, five insertion cases, seven rendered-text cases, 32 existing
+transform/grapheme/first-letter guards and seven counter cases pass per allocator
+mode plus poisoning. The insertion fixture needs a test-only C macro to enable
+its existing Boehm helper bodies with current V. The merged transform fixtures
+alias the html import to avoid a collision with existing local variable names.
+
+The counter fixture originally required its full traversal to allocate. Both
+paths now allocate zero in that empty workload, so the guard additionally
+accepts zero/zero while preserving the original ratio for nonzero results and
+all counter value/origin assertions. Original failures remain recorded.
+The older diagnostic-label case remains excluded for its prior baseline failure.
+
+Generated C SHA-256 is
+`d7a53a65a84841239f3e3a81885eb9bf90a53cb3f983ca0a9425afd4ede06b0c`;
+the signed executable is
+`8f019fac16c2c5f4be22f38bae9d1ed91e003ea4831feeba2d575b9d2b19fe6e`.
+Signing, startup, all six viewport hashes, script audits and input guards pass,
+with the same native providers. Sampled launch peaks are 487.95–489.23 MB.
+Both 50 MB budgets still fail. Later idle arena-page trimming is excluded,
+and the installed app is unchanged.
+
 The conditions below also apply to these cohorts: `-prealloc -gc none`, optimized
 C, the unchanged 40-file cache, 1024×768 CSS pixels at DPR 2, a visible background
 window, and simultaneous app/descendant physical footprint measured before PNG
@@ -353,12 +381,12 @@ Reproduce the latest V-source cohort with:
 
 ```sh
 python3 tools/benchmark_wikipedia_memory.py \
-  --before Build/wikipedia-50mb/arena-static-layout-queries.app/Contents/MacOS/Vox \
-  --after Build/wikipedia-50mb/arena-text-header-fixup2.app/Contents/MacOS/Vox \
+  --before Build/wikipedia-50mb/arena-text-header-fixup2.app/Contents/MacOS/Vox \
+  --after Build/wikipedia-50mb/arena-iterator-rendered-text.app/Contents/MacOS/Vox \
   --cache Build/wikipedia-100mb/cache \
   --network-deny Build/pikabu-instructions-network-deny.dylib \
   --activity background --repeat 3 --allocator prealloc \
-  --output Build/wikipedia-50mb/arena-text-header-fixup2-recheck
+  --output Build/wikipedia-50mb/arena-iterator-rendered-text-recheck
 ```
 
 The command exits nonzero while the 50 MB budget is exceeded.
