@@ -1703,6 +1703,10 @@ pub fn (mut n Node) invalidate_style(reason StyleInvalidationReason) {
 	if doc == unsafe { nil } {
 		return
 	}
+	// A full pass recomputes every observing scope, including :has() anchors.
+	// Do not first accumulate selective mutation histories which that pass
+	// immediately discards. Document invalidations still update their counters.
+	if !n.is_document() && doc.needs_full_style_update() { return }
 	style_scope := n.style_scope()
 	if reason == .node_remove || reason == .node_insert_before {
 		if parent := n.parent_or_shadow_host() {
@@ -2032,6 +2036,10 @@ pub fn (mut n Node) invalidate_style_with_properties(reason StyleInvalidationRea
 	}
 	doc := n.document()
 	if doc == unsafe { nil } {
+		return
+	}
+	if doc.needs_full_style_update() {
+		if options.invalidate_self { n.set_needs_style_update(true) }
 		return
 	}
 	style_scopes := n.observing_style_scopes()
