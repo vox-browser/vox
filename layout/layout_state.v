@@ -1055,9 +1055,8 @@ fn (mut arena MeasurementUsedValuesArena) allocate_populated(source &UsedValues)
 
 // Both callers immediately initialize the selected slot before publishing it.
 fn (mut arena MeasurementUsedValuesArena) allocate_slot() &UsedValues {
-	last_chunk := if arena.chunks.len > 0 { arena.chunks.last() } else { unsafe { &MeasurementUsedValuesChunk(nil) } }
-	mut chunk := if last_chunk == unsafe { nil }
-		|| last_chunk.used == measurement_arena_chunk_size {
+	mut chunk := if arena.chunks.len == 0
+		|| arena.chunks.last().used == measurement_arena_chunk_size {
 		// Keep unused slots zeroed and scanned, then construct each record on
 		// first use below. A normal struct literal eagerly constructs all sixteen
 		// records before copying them into the chunk, including their array and
@@ -1071,7 +1070,7 @@ fn (mut arena MeasurementUsedValuesArena) allocate_slot() &UsedValues {
 		arena.chunks << new_chunk
 		new_chunk
 	} else {
-		last_chunk
+		arena.chunks.last()
 	}
 	index := chunk.used
 	chunk.used++
@@ -1079,14 +1078,13 @@ fn (mut arena MeasurementUsedValuesArena) allocate_slot() &UsedValues {
 }
 
 fn (mut arena MeasurementUsedValuesArena) allocate_inline_end_snapshot(position StaticPositionRect) &StaticPositionRect {
-	last_chunk := if arena.inline_end_snapshots.len > 0 { arena.inline_end_snapshots.last() } else { unsafe { &InlineEndSnapshotChunk(nil) } }
-	mut chunk := if last_chunk == unsafe { nil }
-		|| last_chunk.used == inline_end_snapshot_chunk_size {
+	mut chunk := if arena.inline_end_snapshots.len == 0
+		|| arena.inline_end_snapshots.last().used == inline_end_snapshot_chunk_size {
 		new_chunk := unsafe { &InlineEndSnapshotChunk(vcalloc(isize(sizeof(InlineEndSnapshotChunk)))) }
 		arena.inline_end_snapshots << new_chunk
 		new_chunk
 	} else {
-		last_chunk
+		arena.inline_end_snapshots.last()
 	}
 	index := chunk.used
 	chunk.used++
