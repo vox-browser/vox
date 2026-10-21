@@ -184,8 +184,11 @@ def measure(args, browser, output):
 def native_readiness(log):
     installs = len(re.findall(r'Ladybird V timing: install_total ', log))
     commands = [int(n) for n in re.findall(r'first_paint_replay \((\d+) commands\)', log)]
-    if installs < 1 or not commands or commands[-1] < 100:
-        raise RuntimeError('Vox did not install and paint the frozen page')
+    # Every trial removes snapshot installs and visits exactly one frozen URL.
+    # Returning to Pikabu after an extra tab/navigation still contaminates the
+    # process-tree footprint, even if the final DOM and foreground checks pass.
+    if installs != 1 or len(commands) != 1 or commands[0] < 100:
+        raise RuntimeError('Vox did not install and paint the frozen page exactly once')
     return dict(completed_installs=installs, first_paint_command_counts=commands,
                 note='Initial completion/paint checks; endpoint DOM and window capture validated separately.')
 

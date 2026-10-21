@@ -21,10 +21,11 @@ class ComparisonTests(unittest.TestCase):
     def test_native_endpoint_rejects_blank_and_unpainted_windows(self):
         painted = 'Ladybird V timing: first_paint_replay (2000 commands) 10 ms\n'
         installed = 'Ladybird V timing: install_total 100 ms\n'
-        for log in ['', painted, installed, installed * 2]:
+        for log in ['', painted, installed, installed * 2,
+                    installed * 2 + painted, (installed + painted) * 2,
+                    installed + painted * 2]:
             with self.assertRaises(RuntimeError):
                 native_readiness(log)
-        self.assertEqual(native_readiness(installed * 2 + painted)['completed_installs'], 2)
         self.assertEqual(native_readiness(installed + painted)['completed_installs'], 1)
         with self.assertRaises(RuntimeError):
             native_readiness(installed + painted + installed + 'Ladybird V timing: first_paint_replay (0 commands) 1 ms\n')
