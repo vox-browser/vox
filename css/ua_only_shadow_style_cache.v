@@ -40,7 +40,7 @@ struct UserAgentOnlyShadowStyleCache {
 
 fn (entry &UserAgentOnlyShadowStyleCache) environment_matches(scope &StyleScope) bool {
 	node := scope.node or { return false }
-	if node.as_shadow_root() == none { return false }
+	if node.as_shadow_root() == none && !node.is_document() { return false }
 	document := node.document()
 	if voidptr(document) != voidptr(entry.document) || document.in_quirks_mode()
 		|| document.style_environment_version() != entry.environment_version {
@@ -104,15 +104,24 @@ fn effective_user_agent_rules(sheets []&CSSStyleSheet) []&CSSRule {
 	return result
 }
 
+fn (scope &StyleScope) has_only_user_agent_sheet_inputs() bool {
+	if scope.stylesheets_for_cascade_origin(.user).len != 0 { return false }
+	author := scope.stylesheets_for_cascade_origin(.author)
+	if author.len == 0 { return true }
+	// Document scopes always enumerate their dynamic view-transition sheet.
+	// Its empty initial state contributes no rules or document-owned pointers
+	// to the index. Inserting its first rule invalidates the owning scope.
+	node := scope.node or { return false }
+	return node.is_document() && author.len == 1 && author[0].rules.length() == 0
+		&& voidptr(author[0]) == voidptr(dynamic_view_transition_style_sheet_for_document(node.document()))
+}
+
 fn (mut scope StyleScope) shared_user_agent_only_shadow_style_cache() ?&StyleCache {
 	node := scope.node or { return none }
-	if node.as_shadow_root() == none { return none }
+	if node.as_shadow_root() == none && !node.is_document() { return none }
 	document := node.document()
 	if document.in_quirks_mode() { return none }
-	if scope.stylesheets_for_cascade_origin(.author).len != 0
-		|| scope.stylesheets_for_cascade_origin(.user).len != 0 {
-		return none
-	}
+	if !scope.has_only_user_agent_sheet_inputs() { return none }
 	sheets := scope.stylesheets_for_cascade_origin(.user_agent)
 	// Documents using Chromium's rendering policy add its form-control font
 	// sheet; without it here every UA shadow root built its own UA rule cache.
@@ -121,7 +130,9 @@ fn (mut scope StyleScope) shared_user_agent_only_shadow_style_cache() ?&StyleCac
 	expected := [user_agent_default_stylesheet, user_agent_mathml_stylesheet,
 		user_agent_svg_stylesheet]!
 	for index in 0 .. 3 { if voidptr(sheets[index]) != voidptr(expected[index]) { return none } }
-	if chromium && voidptr(sheets[3]) != voidptr(chromium_control_font_style_sheet()) { return none }
+	if chromium && voidptr(sheets[3]) != voidptr(chromium_control_font_style_sheet()) {
+		return none
+	}
 	rules := effective_user_agent_rules(sheets)
 	mut document_scope := css_style_scope_for_document(document)
 	previous := document_scope.user_agent_only_shadow_cache_
@@ -146,7 +157,9 @@ fn (mut scope StyleScope) shared_user_agent_only_shadow_style_cache() ?&StyleCac
 	color_scheme := document.preferred_color_scheme()
 	scripting_enabled := unsafe { &dom.Node(document) }.is_scripting_enabled()
 	device_scale := document.device_pixels_per_css_pixel()
-	cache := scope.populate_new_rule_cache()
+	cache := scope.user_agent_style_cache_template(sheet_inputs, rules) or {
+		scope.populate_new_rule_cache()
+	}
 	entry := &UserAgentOnlyShadowStyleCache{
 		document:            document
 		sheets:              sheet_inputs
