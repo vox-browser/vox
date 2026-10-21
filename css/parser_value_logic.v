@@ -15551,10 +15551,27 @@ fn dom_style_value_from_value_logic(value StyleValue) &dom.StyleValue {
 		css_text: if value is PendingSubstitutionStyleValue {
 			value.original_shorthand_value_ref().serialize(.normal)
 		} else {
-			value.serialize(.normal)
+			serialize_dom_style_value(value)
 		}
 		css_value_handle: voidptr(typed_value)
 	}
+}
+
+fn serialize_dom_style_value(value StyleValue) string {
+	$if prealloc {
+		if value is BasicShapeStyleValue {
+			shape := value.basic_shape()
+			if shape is BasicShapePath && shape.path_instructions.len >= 256 {
+				mut scratch := platform.begin_thread_scratch('SVG path style serialization')
+				serialized := value.serialize(.normal)
+				scratch.leave()
+				owned := serialized.clone()
+				scratch.finish()
+				return owned
+			}
+		}
+	}
+	return value.serialize(.normal)
 }
 
 // Recover the typed value retained by dom_style_value_from_value_logic(). DOM
