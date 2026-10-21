@@ -15,10 +15,11 @@ fn block_paint_test_compare(document &dom.Document, ids []string) {
 		actual := block_box_from_typed_layout_shallow(node, result.state, [6]f64{})
 		expected := uncached_block_box_from_typed_layout_shallow(node, result.state, [6]f64{})
 		assert actual.scrollable_overflow == expected.scrollable_overflow
-		assert actual.str() == expected.str()
+		assert retained_paint_payload_equal(actual, expected)
 		used := result.state.try_get(node.as_node_with_style() or { panic('missing style') }) or { panic('missing geometry') }
 		position := paint_cumulative_offset(node, result.state, used)
-		assert text_lines_from_typed_layout(node, used, result.state, position).str() == uncached_text_lines_from_typed_layout(node, used, result.state, position).str()
+		assert retained_paint_payload_equal(text_lines_from_typed_layout(node, used, result.state, position),
+			uncached_text_lines_from_typed_layout(node, used, result.state, position))
 	}
 }
 
@@ -27,6 +28,8 @@ fn test_retained_block_paint_rebases_atomic_menu_and_box_decorations_without_old
 	defer { document.finalize() }
 	_ = layout_document_typed_in_viewport(document, 400, 300)
 	old := document.record_display_list()?
+	retained_scene := retain_display_list_scene(old)
+	defer { release_display_list_scene(retained_scene) }
 	old_commands := display_list_commands(old).clone()
 	root := block_paint_test_node(document, 'stable')
 	cache := document_layout_result(document)?.state.block_layouts_[u64(voidptr(root))] or { panic('missing independent flow') }

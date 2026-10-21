@@ -16,7 +16,7 @@ fn ordinary_projection_test_compare(document &dom.Document, id string) {
 	assert actual.x == expected.x && actual.y == expected.y
 	assert actual.width == expected.width && actual.height == expected.height
 	assert actual.scrollable_overflow == expected.scrollable_overflow
-	assert actual.str() == expected.str()
+	assert retained_paint_payload_equal(actual, expected)
 }
 
 fn test_ordinary_projection_rebases_unchanged_boxes_without_retaining_paint_arena_arrays() {
@@ -24,6 +24,8 @@ fn test_ordinary_projection_rebases_unchanged_boxes_without_retaining_paint_aren
 	defer { document.finalize() }
 	_ = layout_document_typed_in_viewport(document, 400, 300)
 	old := document.record_display_list()?
+	retained_scene := retain_display_list_scene(old)
+	defer { release_display_list_scene(retained_scene) }
 	commands := display_list_commands(old).clone()
 	stable := ordinary_projection_test_node(document, 'stable')
 	snapshot := stable.ordinary_paint_box_

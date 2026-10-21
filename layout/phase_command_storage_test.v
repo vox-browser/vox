@@ -10,7 +10,7 @@ fn test_relayout_reuses_phase_buffers_without_changing_published_command_snapsho
 	initial := record_retained_display_list(mut document)?
 	initial_dump := initial.dump()
 	initial_commands := display_list_commands(initial)
-	initial_snapshot := initial_commands.map(it.str())
+	initial_snapshot := initial_commands.clone()
 	mut previous := document_layout_result(document)?
 	headers := previous.paint_phase_commands.data
 	buffers := previous.paint_phase_commands.map(it.data)
@@ -30,7 +30,7 @@ fn test_relayout_reuses_phase_buffers_without_changing_published_command_snapsho
 	assert reused >= 16
 	assert display_list_commands(updated).any(it.text == 'after')
 	assert initial.dump() == initial_dump
-	assert initial_commands.map(it.str()) == initial_snapshot
+	assert retained_paint_payload_equal(initial_commands, initial_snapshot)
 	gc_collect()
 	assert initial.dump() == initial_dump
 }
@@ -48,7 +48,7 @@ fn test_phase_storage_remaps_grown_and_shrunk_trees_and_matches_fresh_recording(
 		list := record_retained_display_list(mut document)?
 		recording_dump := list.dump()
 		commands := display_list_commands(list)
-		snapshot := commands.map(it.str())
+		snapshot := commands.clone()
 		mut result := document_layout_result(document)?
 		result.paint_phase_commands = [][]PaintCommand{}
 		result.paint_phase_cache_valid = false
@@ -56,7 +56,7 @@ fn test_phase_storage_remaps_grown_and_shrunk_trees_and_matches_fresh_recording(
 		result.needs_repaint = true
 		document.invalidate_display_list()
 		assert document.record_display_list()?.dump() == recording_dump
-		assert commands.map(it.str()) == snapshot
+		assert retained_paint_payload_equal(commands, snapshot)
 	}
 }
 

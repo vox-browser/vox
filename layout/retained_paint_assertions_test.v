@@ -32,3 +32,24 @@ fn test_retained_paint_comparison_checks_values_and_borrowed_owner_identity() {
 	assert !retained_paint_payload_equal(context, css.CalculationResolutionContext{})
 	assert !retained_paint_payload_equal(context, css.CalculationResolutionContext{ anchor_resolver: retained_paint_test_anchor_b })
 }
+
+fn test_retained_paint_comparison_checks_independent_box_and_command_payloads() {
+	mut owner := html.parse_document('<!doctype html><p>borrowed owner</p>')
+	defer { owner.finalize() }
+	left := BlockBox{ children: [BlockBox{width: 3}],
+		svg_solid_color_data: &PaintSVGSolidColorData{fill_serialized: 'red', has_fill: true} }
+	equal := BlockBox{ children: [BlockBox{width: 3}],
+		svg_solid_color_data: &PaintSVGSolidColorData{fill_serialized: 'red', has_fill: true} }
+	assert retained_paint_payload_equal(left, equal)
+	assert !retained_paint_payload_equal(left, BlockBox{ ...equal, children: [BlockBox{width: 4}] })
+	assert !retained_paint_payload_equal(left, BlockBox{ ...equal,
+		svg_solid_color_data: &PaintSVGSolidColorData{fill_serialized: 'blue', has_fill: true} })
+	assert !retained_paint_payload_equal(left, BlockBox{ ...equal, svg_solid_color_data: unsafe { nil } })
+	command := PaintCommand{ image_data: &PaintImageData{
+		image_url: 'icon.svg', background_svg_document: owner } }
+	same := PaintCommand{ image_data: &PaintImageData{
+		image_url: 'icon.svg', background_svg_document: owner } }
+	assert retained_paint_payload_equal(command, same)
+	assert !retained_paint_payload_equal(command, PaintCommand{ image_data: &PaintImageData{
+		image_url: 'other.svg', background_svg_document: owner } })
+}

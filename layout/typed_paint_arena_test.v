@@ -18,17 +18,17 @@ fn test_direct_paint_slots_match_uncached_projection_and_replace_empty_outputs()
 		mut output := BlockBox{x:999, opacity:0.25, visible:false, children:[BlockBox{tag_name:'stale'}]}
 		fill_block_box_from_typed_layout_shallow(entry.node, result.state, [6]f64{}, mut output)
 		expected := uncached_block_box_from_typed_layout_shallow(entry.node, result.state, [6]f64{})
-		assert output.str() == expected.str()
+		assert retained_paint_payload_equal(output, expected)
 	}
 	// Missing layout values and unstyled nodes must overwrite the complete
 	// destination too, rather than leave geometry from the previous record.
 	mut state := LayoutState.new()
 	mut empty := BlockBox{x:999, opacity:0.25, visible:false}
 	fill_block_box_from_typed_layout_shallow(root, state, [6]f64{}, mut empty)
-	assert empty.str() == (BlockBox{}).str()
+	assert retained_paint_payload_equal(empty, BlockBox{})
 	unstyled := &Node{document_:document}
 	fill_block_box_from_typed_layout_shallow(unstyled, state, [6]f64{}, mut empty)
-	assert empty.str() == (BlockBox{}).str()
+	assert retained_paint_payload_equal(empty, BlockBox{})
 }
 
 // The former per-parent allocator is an independent construction oracle.
@@ -57,22 +57,6 @@ fn paint_arena_reference_tree(node &Node, state &LayoutState, transform [6]f64) 
 	return root
 }
 
-fn paint_arena_tree_snapshot(root &BlockBox) []string {
-	mut snapshot := []string{}
-	mut pending := [root]
-	for pending.len > 0 {
-		node := pending.pop()
-		assert snapshot.len < 10000, 'cyclic paint tree'
-		mut shallow := *node
-		shallow.children = []BlockBox{}
-		snapshot << '${node.children.len}:${shallow}'
-		for index := node.children.len - 1; index >= 0; index-- {
-			pending << unsafe { &node.children[index] }
-		}
-	}
-	return snapshot
-}
-
 fn test_paint_arena_matches_separate_child_vectors_for_flow_special_and_generated_boxes() {
 	for markup in [
 		'<div style="transform:translate(3px,5px)">' + '<section><p>text <strong>bold</strong></p></section>'.repeat(64) + '</div>',
@@ -86,10 +70,10 @@ fn test_paint_arena_matches_separate_child_vectors_for_flow_special_and_generate
 		root := result.root.first_child()?
 		actual := build_typed_paint_tree_in_arena(root, result.state, [6]f64{})
 		expected := paint_arena_reference_tree(root, result.state, [6]f64{})
-		// Ownership and array headers differ by design. Compare all serialized
-		// box data and the independently generated paint stream instead.
-		assert paint_arena_tree_snapshot(&actual) == paint_arena_tree_snapshot(&expected)
-		assert actual.paint_commands().map(it.str()) == expected.paint_commands().map(it.str())
+		// Compare value snapshots and borrowed-owner identities without walking
+		// the owners' document graphs or depending on vector headers.
+		assert retained_paint_payload_equal(actual, expected)
+		assert retained_paint_payload_equal(actual.paint_commands(), expected.paint_commands())
 	}
 }
 
@@ -98,7 +82,10 @@ fn test_paint_arena_child_slices_survive_collection_and_grow_without_overwriting
 	defer { document.finalize() }
 	_ = layout_document_typed_in_viewport(document, 400, 300)
 	result := document_layout_result(document)?
-	mut tree := build_typed_paint_tree_in_arena(result.root.first_child()?, result.state, [6]f64{})
+	// Materialize the optional pointer before passing it by reference. Current
+	// V otherwise passes the address of the optional's pointer payload as a Node.
+	root := result.root.first_child()?
+	mut tree := build_typed_paint_tree_in_arena(root, result.state, [6]f64{})
 	mut body := &tree
 	for index, child in tree.children {
 		if child.tag_name == 'body' {
@@ -110,11 +97,11 @@ fn test_paint_arena_child_slices_survive_collection_and_grow_without_overwriting
 	assert body.children.len == 2
 	neighbor := body.children[1]
 	gc_collect()
-	assert body.children[1] == neighbor
+	assert retained_paint_payload_equal(body.children[1], neighbor)
 	mut first := &body.children[0]
 	first.children << BlockBox{tag_name: 'added'}
 	assert first.children.last().tag_name == 'added'
-	assert body.children[1] == neighbor
+	assert retained_paint_payload_equal(body.children[1], neighbor)
 	assert body.children[1].children[0].tag_name == 'p'
 }
 
@@ -123,6 +110,8 @@ fn test_new_paint_arenas_preserve_previous_geometry_and_recordings_after_mutatio
 	defer { document.finalize() }
 	previous := layout_document_typed_in_viewport(document, 400, 300)
 	old_list := document.record_display_list()?
+	retained_scene := retain_display_list_scene(old_list)
+	defer { release_display_list_scene(retained_scene) }
 	old_dump := old_list.dump()
 	old_body := previous.children.filter(it.tag_name == 'body')[0]
 	old_width := old_body.children[0].width
