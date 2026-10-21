@@ -4254,7 +4254,8 @@ fn uncached_text_lines_from_typed_layout(container &Node, used &UsedValues, stat
 		// leaves every old buffer in the page's arena; atomic inline boxes and
 		// truncated fragments need no transport slot.
 		mut fragment_count := 0
-		for fragment in line_box.fragments_ {
+		for fragment_index in 0 .. line_box.fragments_.len {
+			fragment := unsafe { &line_box.fragments_[fragment_index] }
 			if !fragment.is_fully_truncated()
 				&& (fragment.block_ellipsis_text_ != none || fragment.layout_node_.is_text_node()) {
 				fragment_count++
@@ -4273,7 +4274,8 @@ fn uncached_text_lines_from_typed_layout(container &Node, used &UsedValues, stat
 			next := used.line_boxes[line_index + 1].fragments_.first()
 			last_fragment_continues_next_line = voidptr(line_box.fragments_.last().layout_node_) == voidptr(next.layout_node_)
 		}
-		for fragment_index, fragment in line_box.fragments_ {
+		for fragment_index in 0 .. line_box.fragments_.len {
+			fragment := unsafe { &line_box.fragments_[fragment_index] }
 			if fragment.is_fully_truncated() {
 				continue
 			}
@@ -4401,7 +4403,11 @@ fn uncached_text_lines_from_typed_layout(container &Node, used &UsedValues, stat
 			} else {
 				text
 			}
-			transport_fragment := TextFragment{
+			// Preserve the committed run instead of splitting it into words and
+			// making paint_commands() concatenate it again.
+			// Transfer the freshly projected payload directly. Appending a named
+			// record deep-clones its strings and arrays in current V.
+			fragments << TextFragment{
 				x: absolute_x
 				y: absolute_y
 				paint_line_top: paint_line_top
@@ -4488,15 +4494,12 @@ fn uncached_text_lines_from_typed_layout(container &Node, used &UsedValues, stat
 				text_shadows: computed_text_shadows(computed)
 				selection_style: selection_style(fragment.layout_node_)
 			}
-			// PaintableFragment is constructed directly from the committed
-			// LineBoxFragment upstream. Preserve that run instead of splitting it
-			// into words and making paint_commands() concatenate it again.
-			fragments << transport_fragment
 		}
 		mut box_decorations := []TextFragment{}
 		if container.document().font_rendering_policy() == .chromium {
 			mut nested_owners := map[u64]bool{}
-			for fragment in line_box.fragments_ {
+			for fragment_index in 0 .. line_box.fragments_.len {
+				fragment := unsafe { &line_box.fragments_[fragment_index] }
 				for ancestor in nested_decorated_inline_ancestors(fragment.layout_node_, state) {
 					nested_owners[u64(voidptr(ancestor))] = true
 				}

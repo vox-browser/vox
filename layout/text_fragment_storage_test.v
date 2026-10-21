@@ -91,3 +91,26 @@ fn test_many_styled_runs_reserve_one_exact_transport_buffer() {
 	}
 	arena.release()
 }
+
+fn test_atomic_inline_projection_does_not_copy_committed_line_fragments() {
+	markup := '<!doctype html><p id="text" style="white-space:nowrap">'
+		+ '<span style="display:inline-block;width:1px;height:10px"></span>'.repeat(64)
+		+ '</p>'
+	mut document := html.parse_document(markup)
+	defer { document.finalize() }
+	_ = layout_document_typed_in_viewport(document, 1000, 200)
+	_ = storage_text_lines(document, 'text')
+	mut arena := platform.new_arena('atomic fragment projection')
+	entry := arena.enter()
+	lines := storage_text_lines(document, 'text')
+	arena.leave(entry)
+	assert lines.len == 1
+	assert lines[0].width == 64
+	assert lines[0].fragments.len == 0
+	$if prealloc {
+		// Only line metadata is needed. Copying each committed fragment into
+		// the arena just to query it consumes tens of kilobytes here.
+		assert arena.usage().used < 4096, '${arena.usage().used} bytes for an atomic-only line'
+	}
+	arena.release()
+}
