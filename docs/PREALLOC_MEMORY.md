@@ -395,10 +395,9 @@ so the helper was removed from the source and build. The prototype and measured
 logs remain under `Build/prealloc-document/`; it is not an enabled renderer.
 
 These ownership and allocation checks do not establish the browser RAM target.
-The latest clean optimized Pikabu endpoint is 1,051.8 MiB
-(`native-35-clean-memory/1-vox/result.json`), above the verified Brave endpoint.
-This includes the font-registration and parser repairs, but predates the parent
-block-chain repair below. A diagnostic run of an earlier binary
+The latest validated clean optimized Pikabu endpoint is 950.8 MiB
+(`native-38-optimized-verified/1-vox/result.json`), above the verified Brave
+endpoint. This includes the parent block-chain repair below. A diagnostic run of an earlier binary
 faulted in `native_replay_font_path`; that run supplied allocation samples,
 not a valid memory endpoint. Prealloc remains opt-in while the target is unmet.
 
@@ -428,3 +427,46 @@ existing accepted/rejected numeric syntax preserved. Animation sample retirement
 also transfers spare target vectors in a record: appending a nested array had
 copied the backing store which the pool intended to reuse. Repeated retirement
 checks preserve the original pointer and capacity in both modes.
+
+### Document caches, style indexes and native idle polling
+
+Retained inline/block paint templates, UTF-16 and grapheme vectors, cached text
+chunks and intrinsic shape vectors now use their native document's allocation
+owner. They previously escaped temporary layout/paint storage into the process
+base arena. SVG image documents can be visited inside another document's work:
+the redirect is used only when the cache's document matches the entered owner.
+Foreign and unowned caches retain independent persistent storage. Focused normal
+and poison checks verify both ownership directions, retained-scene reads after
+document retirement, and complete arena release after pending callbacks drain.
+
+The computed-property page interner now has a separate reusable index arena.
+Only map bookkeeping goes there; published pages and style values retain their
+original owners. The outer style batch retires the index and document teardown
+releases its storage. Nested-batch and published-page reads pass under prealloc,
+poison and Boehm, alongside the existing page sharing and collection checks.
+
+Native graphics maintenance originally checked one second after a frame, while
+the backends require two seconds without GPU work before releasing a context.
+The final check could therefore be too early with no later frame to schedule
+another one. Idle retirement now reports a still-live context explicitly and
+maintenance retries until retirement completes. It stops polling once all
+contexts are gone. Dispatcher checks cover coalescing, busy drawing and the
+absence of subsequent frames. Fourteen graphics lifetime comparisons and 3,040
+GPU pixel comparisons pass.
+
+The combined document-cache and interner build completes frozen Pikabu for 60
+seconds normally and with `VOX_ARENA_POISON=1` in non-screenshot windows
+(`native-54-checks-background` and `native-54-poison-background`). These are O0
+ownership checks without the foreground comparison gate, not production RAM
+results. Eight live SVG mutation reftests and both canonical turbulence images
+remain pixel-exact under poisoning in `replay-54-svg/results.json`.
+
+Native graphics still need substantial work. A standalone 64-by-64 draw accounts
+for roughly 300--327 MiB of additional physical footprint while its context is
+alive, with either Metal or Dawn; resident bytes alone hide most of that cost.
+Releasing the context returns it. Larger CPU raster-cache budgets and a smaller
+Metal command-queue capacity did not establish a full-page RAM improvement and
+were reverted. Pikabu has running tag shimmers and loading animations, so a
+static-page microbenchmark cannot establish its idle behavior. Recent
+foreground attempts lost focus or were interrupted and do not replace the
+validated optimized endpoint above.
