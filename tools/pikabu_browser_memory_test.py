@@ -1,10 +1,13 @@
 import unittest
+import json
 import struct
 import tempfile
+from contextlib import ExitStack
 from pathlib import Path
-from unittest.mock import patch
+from types import SimpleNamespace
+from unittest.mock import MagicMock, patch
 
-from pikabu_browser_memory import clean_environment, comparison, native_readiness, validate_native_document, runtime_identity, crop_native_document
+from pikabu_browser_memory import clean_environment, comparison, native_readiness, validate_native_document, runtime_identity, crop_native_document, measure
 
 
 class ComparisonTests(unittest.TestCase):
@@ -71,6 +74,39 @@ class ComparisonTests(unittest.TestCase):
                                  ['--cropToHeightWidth', '1592', '2048', '--cropOffset', '120', '0'])
                 with self.assertRaises(RuntimeError):
                     crop_native_document(source, target, dict(viewport_width=1024, viewport_height=600))
+
+    def test_rejected_trials_keep_samples_without_publishing_a_result(self):
+        for early_exit in [False, True]:
+            with self.subTest(early_exit=early_exit), tempfile.TemporaryDirectory() as directory, ExitStack() as stack:
+                root = Path(directory)
+                cache = root / 'cache'
+                cache.mkdir()
+                args = SimpleNamespace(vox=root / 'Vox', cache=cache,
+                    network_deny=root / 'guard.dylib', seconds=60 if early_exit else 0,
+                    background=False)
+                process = MagicMock(pid=123)
+                process.poll.return_value = 1
+                samples = [dict(seconds=1, physical_footprint_bytes=400)]
+                counter = MagicMock(samples=samples)
+                foreground = MagicMock(checks=[dict(seconds=1, foreground=False)])
+                foreground.verify_steady.side_effect = RuntimeError('lost focus')
+                replacements = dict(placement=dict(scale=1), digest='hash', runtime_identity={},
+                    PhysicalTree=counter, ForegroundControl=foreground, CounterSampler=MagicMock(),
+                    memory_result=dict(settled_physical_footprint_bytes=400))
+                for name, value in replacements.items():
+                    stack.enter_context(patch('pikabu_browser_memory.' + name, return_value=value))
+                stack.enter_context(patch('pikabu_browser_memory.subprocess.Popen', return_value=process))
+                stop = stack.enter_context(patch('pikabu_browser_memory.stop_process'))
+                output = root / 'trial'
+                with self.assertRaisesRegex(RuntimeError, 'exited before' if early_exit else 'lost focus'):
+                    measure(args, 'vox', output)
+                failure = json.loads((output / 'failure.json').read_text())
+                self.assertFalse(failure['accepted'])
+                self.assertEqual(failure['samples'], samples)
+                self.assertEqual(failure['memory_diagnostic'], None if early_exit else
+                                 dict(settled_physical_footprint_bytes=400))
+                self.assertFalse((output / 'result.json').exists())
+                stop.assert_called_once_with(process)
 
 
 if __name__ == '__main__':

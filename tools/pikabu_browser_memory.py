@@ -112,6 +112,7 @@ def measure(args, browser, output):
                                        stderr=subprocess.STDOUT, start_new_session=True)
             counter = PhysicalTree(process.pid, started)
             foreground = ForegroundControl(process.pid, not args.background, start_at=1)
+            memory = None
             try:
                 with CounterSampler(counter, .05):
                     if browser == 'brave':
@@ -175,6 +176,16 @@ def measure(args, browser, output):
                     # Capture/debugger observations follow the primary endpoint.
                     (output / 'result.json').write_text(json.dumps(result, indent=2) + '\n')
                     return result
+            except Exception as error:
+                # Preserve diagnostic evidence from interrupted trials while
+                # leaving result.json and the comparison gate unsuccessful.
+                failure = dict(accepted=False, error=str(error), browser=browser,
+                    command=command, identity=identity, screen=screen,
+                    seconds=time.monotonic() - started, memory_diagnostic=memory,
+                    samples=counter.samples, foreground_checks=foreground.checks,
+                    foreground_controlled=not args.background)
+                (output / 'failure.json').write_text(json.dumps(failure, indent=2) + '\n')
+                raise
             finally:
                 if client:
                     client.sock.close()
