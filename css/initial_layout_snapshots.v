@@ -4,7 +4,7 @@ import dom
 import math
 import platform
 
-// The first resolved cache is written into a short-lived record. Its nested
+// Pure resolved-cache updates are written into a short-lived record. Its nested
 // values still allocate in the document. Once complete, share an equal frozen
 // snapshot or allocate its sole permanent record. This avoids orphaning a
 // duplicate cache in a bump arena after an idle-time deduplication pass.
@@ -20,11 +20,12 @@ mut:
 	pool &InitialLayoutSnapshotPool = unsafe { nil }
 }
 
-fn begin_initial_layout_snapshot(style &ComputedProperties, document &dom.Document,
-	anonymous bool) InitialLayoutSnapshot {
+fn begin_initial_layout_snapshot(style &ComputedProperties, document &dom.Document) InitialLayoutSnapshot {
 	$if prealloc {
 		owner := document.native_storage()
-		if anonymous || style.computed_layout_cache_ != unsafe { nil }
+		previous := style.computed_layout_cache()
+		if previous.writable_owner_identity != 0
+			|| style.reuses_computed_layout_cache(u64(voidptr(style)))
 			|| owner == unsafe { nil }
 			|| voidptr(owner) != voidptr(platform.current_retained_arena())
 			|| style.has_animated_properties() || style.has_animated_custom_properties() {
@@ -48,13 +49,26 @@ fn begin_initial_layout_snapshot(style &ComputedProperties, document &dom.Docume
 		// setters can publish typed payloads which must remain document-owned.
 		mut temporary := unsafe { &ComputedLayoutCache(C.malloc(sizeof(ComputedLayoutCache))) }
 		if temporary == unsafe { nil } { panic('could not allocate initial layout snapshot') }
-		unsafe { vmemcpy(temporary, default_computed_layout_cache(), sizeof(ComputedLayoutCache)) }
+		// Preserve the previous non-inherited fields and copy rare data before
+		// its first mutation. Existing snapshots can still have retained readers.
+		unsafe { vmemcpy(temporary, previous, sizeof(ComputedLayoutCache)) }
+		temporary.rare_data_writable_ = false
 		temporary.writable_owner_identity = u64(voidptr(style))
 		temporary.owner_identity = u64(voidptr(style))
 		mut mutable_style := unsafe { &ComputedProperties(style) }
 		temporary.owner_serial = mutable_style.layout_cache_owner_serial()
 		mutable_style.computed_layout_cache_ = temporary
 		return InitialLayoutSnapshot{cache: temporary, pool: computer.initial_layout_snapshots_}
+	}
+	return InitialLayoutSnapshot{}
+}
+
+fn begin_inherited_layout_snapshot(style &ComputedProperties, source &ComputedProperties) InitialLayoutSnapshot {
+	$if prealloc {
+		document := source.computed_layout_cache().document_resolution_owner
+		if document != unsafe { nil } {
+			return begin_initial_layout_snapshot(style, document)
+		}
 	}
 	return InitialLayoutSnapshot{}
 }

@@ -460,7 +460,7 @@ fn resolve_computed_values_for_document_impl(style &ComputedProperties, document
 	// scope: loading a custom registry can parse CSS and yield to native work.
 	resolved_list_style := style.list_style_type(document)
 	// Font discovery is complete before the pure geometry/color write scope.
-	mut initial_snapshot := begin_initial_layout_snapshot(computed_style, document, anonymous_source != none)
+	mut initial_snapshot := begin_initial_layout_snapshot(computed_style, document)
 	owns_cache_write := computed_style.begin_computed_layout_cache_write()
 	defer {
 		// No callbacks run in the pure geometry/color write scope. Publish the
@@ -1775,8 +1775,16 @@ pub fn (mut values MutableComputedValues) set_display(value Display) {
 }
 
 pub fn (mut values MutableComputedValues) inherit_from(other &ComputedValues) {
+	// This copies already materialized inherited values without invoking font
+	// discovery or parsers. Intern the completed record in the source document
+	// while preserving all snapshots retained by older anonymous wrappers.
+	mut initial_snapshot := begin_inherited_layout_snapshot(unsafe { &ComputedProperties(values) },
+		unsafe { &ComputedProperties(other) })
 	owns_cache_write := values.begin_computed_layout_cache_write()
-	defer { values.finish_computed_layout_cache_write(owns_cache_write) }
+	defer {
+		values.finish_computed_layout_cache_write(owns_cache_write)
+		initial_snapshot.publish(mut values)
+	}
 	mut property_values := unsafe { &ComputedProperties(values) }
 	property_values.inherit_from_for_layout(unsafe { &ComputedProperties(other) })
 

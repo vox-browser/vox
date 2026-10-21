@@ -15,6 +15,14 @@ fn initial_snapshot_set(mut style ComputedProperties, property PropertyID, sourc
 	style.set_property(property, parse_css_value(ParsingParams{}, source, property) or { panic('invalid ${property}: ${source}') }, .no, .no)
 }
 
+fn initial_snapshot_resolve_ordinary(mut style ComputedProperties, document &dom.Document) {
+	// An enclosing writer owns the durable record and excludes the temporary
+	// publication scope, just as it does for nested production cache writes.
+	owns := style.begin_computed_layout_cache_write()
+	_ = resolve_computed_values_for_document(style, document)
+	style.finish_computed_layout_cache_write(owns)
+}
+
 fn test_initial_native_snapshots_share_equal_values_but_keep_each_raw_graph_proof() {
 	mut document := initial_snapshot_document()
 	mut scope := document.enter_native_storage()
@@ -76,10 +84,7 @@ fn test_initial_snapshot_values_match_the_existing_resolver_for_rare_and_ordinar
 			initial_snapshot_set(mut expected, property, text)
 			initial_snapshot_set(mut actual, property, text)
 		}
-		// Seed the existing read-only default to exercise the ordinary write
-		// path without allocating a record or changing the document's behavior.
-		expected.computed_layout_cache_ = default_computed_layout_cache()
-		_ = resolve_computed_values_for_document(expected, document)
+		initial_snapshot_resolve_ordinary(mut expected, document)
 		_ = resolve_computed_values_for_document(actual, document)
 		// Include every resolved field rather than selecting only the ones set
 		// by this fixture. Provenance and write ownership intentionally differ.
@@ -130,11 +135,102 @@ fn test_initial_geometry_interning_avoids_duplicate_permanent_records() {
 	actual := document.native_storage().arena.usage().used - before
 	for _ in 0 .. 64 {
 		mut style := computed_properties_with_initial_values()
-		style.computed_layout_cache_ = default_computed_layout_cache()
-		_ = resolve_computed_values_for_document(style, document)
+		initial_snapshot_resolve_ordinary(mut style, document)
 	}
 	reference := document.native_storage().arena.usage().used - before - actual
 	assert actual * 4 < reference * 3, '${actual} retained versus ${reference}'
+	scope.finish()
+	document.release_native_storage()
+}
+
+fn test_existing_native_snapshots_reuse_equal_resolutions_and_preserve_previous_values() {
+	mut document := initial_snapshot_document()
+	mut scope := document.enter_native_storage()
+	mut style := computed_properties_with_initial_values()
+	initial_snapshot_set(mut style, .width, '37px')
+	_ = resolve_computed_values_for_document(style, document)
+	first := style.computed_layout_cache()
+	initial_snapshot_set(mut style, .width, '53px')
+	_ = resolve_computed_values_for_document(style, document)
+	second := style.computed_layout_cache()
+	initial_snapshot_set(mut style, .width, '37px')
+	_ = resolve_computed_values_for_document(style, document)
+	$if prealloc {
+		assert voidptr(style.computed_layout_cache()) == voidptr(first)
+	}
+	assert first.computed_values_width_ == Size.make_length(Length.make_px(37))
+	assert second.computed_values_width_ == Size.make_length(Length.make_px(53))
+	assert style.geometry_provenance().matches(style)
+	// A rare record is excluded from interning, and its old payload stays frozen.
+	initial_snapshot_set(mut style, .transform, 'translateX(17px)')
+	_ = resolve_computed_values_for_document(style, document)
+	rare := style.computed_layout_cache()
+	old_transformations := unsafe { &ComputedValues(style) }.transformations()
+	initial_snapshot_set(mut style, .transform, 'translateX(29px)')
+	_ = resolve_computed_values_for_document(style, document)
+	assert voidptr(style.computed_layout_cache().rare_data_) != voidptr(rare.rare_data_)
+	assert rare.rare_data().computed_values_transformations_ == old_transformations
+	assert unsafe { &ComputedValues(style) }.transformations() != old_transformations
+	scope.finish()
+	document.release_native_storage()
+}
+
+fn test_anonymous_native_snapshots_share_and_inherit_without_changing_old_readers() {
+	mut document := initial_snapshot_document()
+	mut scope := document.enter_native_storage()
+	mut parent := computed_properties_with_initial_values()
+	initial_snapshot_set(mut parent, .color, 'red')
+	initial_snapshot_set(mut parent, .width, '311px')
+	_ = resolve_computed_values_for_document(parent, document)
+	mut first := unsafe { &MutableComputedValues(resolve_anonymous_block_values_for_document(parent, document)) }
+	second := resolve_anonymous_block_values_for_document(parent, document)
+	old := first.computed_layout_cache()
+	$if prealloc {
+		assert voidptr(old) == voidptr(second.computed_layout_cache())
+	}
+	initial_snapshot_set(mut parent, .color, 'blue')
+	initial_snapshot_set(mut parent, .font_size, '23px')
+	_ = resolve_computed_values_for_document(parent, document)
+	first.inherit_from(unsafe { &ComputedValues(parent) })
+	updated := first.computed_layout_cache()
+	first.inherit_from(unsafe { &ComputedValues(parent) })
+	$if prealloc {
+		assert voidptr(first.computed_layout_cache()) == voidptr(updated)
+	}
+	assert first.color() == Color{0, 0, 255, 255}
+	assert first.font_size() == CSSPixels.nearest_value_for(23)
+	assert first.computed_layout_cache().computed_values_width_ == old.computed_values_width_
+	assert first.computed_layout_cache().computed_values_display_ == old.computed_values_display_
+	assert old.computed_values_color_ == Color{255, 0, 0, 255}
+	assert second.color() == Color{255, 0, 0, 255}
+	assert second.font_size() != first.font_size()
+	scope.finish()
+	document.release_native_storage()
+}
+
+fn test_repeated_native_reresolution_does_not_retain_duplicate_cache_records() {
+	$if !prealloc { return }
+	mut document := initial_snapshot_document()
+	mut scope := document.enter_native_storage()
+	mut style := computed_properties_with_initial_values()
+	widths := [parse_css_value(ParsingParams{}, '37px', .width) or { panic('width') },
+		parse_css_value(ParsingParams{}, '53px', .width) or { panic('width') }]
+	for width in widths {
+		style.set_property(.width, width, .no, .no)
+		_ = resolve_computed_values_for_document(style, document)
+	}
+	before := document.native_storage().arena.usage().used
+	for index in 0 .. 64 {
+		style.set_property(.width, widths[index % 2], .no, .no)
+		_ = resolve_computed_values_for_document(style, document)
+	}
+	actual := document.native_storage().arena.usage().used - before
+	for index in 0 .. 64 {
+		style.set_property(.width, widths[index % 2], .no, .no)
+		initial_snapshot_resolve_ordinary(mut style, document)
+	}
+	reference := document.native_storage().arena.usage().used - before - actual
+	assert actual * 4 < reference, '${actual} retained versus ${reference}'
 	scope.finish()
 	document.release_native_storage()
 }
