@@ -16108,6 +16108,127 @@ linked by their findings. Chrome parity still requires equivalent content,
 start and submission endpoints. Independent Root earns no additional coverage
 or performance credit from this frozen comparison.
 
+## Initialize populated layout slots with their resolved geometry
+
+Round 167 applies the complete `22a0c833` feature to accepted 166. A populated
+layout slot is constructed with its 24 copied geometry fields in one full
+record initializer. Ordinary allocations still construct the default record.
+Both paths initialize every field before publishing a slot. Line, rare-data,
+snapshot, subgrid and containing-block copy behavior is retained.
+
+All five original runtime Git hunks in one Layout file reconstruct the full
+author file. Two authenticated unchanged context regions are rebound to the
+frozen control: Root's allocation-retention scope and shared-line branch remain
+in Root, while frozen 166 keeps its original context. Every added and removed
+author line is retained. No partial feature or storage projection is used.
+The feature and three new tests are committed together as `22a0c833`.
+
+Seven focused cases pass **3,782 assertions** in each of before/Boehm,
+final/Boehm and final/no-GC C-O2. This is composed evidence: six successful
+cases (3,730 assertions) are retained from original drivers that exit 1 at a
+seventh case's incorrect definiteness expectation. Only that unfinished case
+is corrected and run, passing 52 assertions with actual driver exit 0 in all
+three configurations. The stored flags remain true while public definiteness
+predicates are false under min/max-content constraints. The original failed
+drivers retain actual exit 1 and receive no whole-batch pass credit. A receipt
+parser failure and its read-only correction are retained. Common 12 cases,
+including one inactive diagnostic, pass 60 assertions/configuration; before
+reuses exact accepted-166 final evidence without replay.
+
+The local fixture was declared before performance compilation or counters.
+Each observation runs 2,048 complete public `new_for_subtree()` /
+`populate_node_from()` / `release_measurement()` lifetimes with 65 real styled
+nodes: 133,120 population calls and 2,048 releases. Four content-box,
+border-box, font-relative and percentage constraints exercise independently
+known geometry, and one source has a nonempty line. Source layout, 390 setup
+checks, one expected complete pipeline, eight warmups, forced GC and final
+checksum assertions remain outside the counter. Destination construction,
+geometry/definiteness/owner/node/box/line consumption and complete release stay
+inside it.
+
+The first launch exits 1 during setup before any counter: fresh public source
+initialization resolves content dimensions but leaves raw outer edges zero.
+Only two expected outer-dimension arrays are corrected before any observation;
+they equal the independent content dimensions. The original declaration,
+fixture, failed log, native binaries and C remain. Workload, counter boundaries,
+pair order and cohort size stay unchanged. All six ready observations exit 0
+with checksum **31,793,475,584**. Three fixed alternating pairs give medians
+**97,647,659 → 97,503,124** retired instructions,
+**-0.14801686%**, **3/3 wins**. This clears the declared
+negative local median gate and earns zero page credit. Native policy remains
+C-O2/Boehm/default marker 1/the same automatic 4 GiB hint/no `-prod`/no global
+`-prealloc`.
+
+Normal C-only generation exits zero and is reused without regeneration. Strict
+C permits exactly three changed allocator/population bodies and three new
+source-authenticated helpers with exact prototypes. The entire independent
+normal program matches, retaining all functions, types and globals. The rest
+matches accepted 166 after established compiler/embed normalization and four
+byte-identical helper reorderings. All 493 builtins, 176 protected
+encoding/filter/arena routines, 120 native inputs, 37 headers and exact native
+arguments authenticate. Native compile, signing, persistence and frozen-library
+smoke actually exit zero.
+
+Both full-process C-O1/Boehm/one-marker/no-inline profile programs exit zero.
+Generated C proves profiling stays enabled throughout main without filtering
+or resets. Setup and warmups remain included; missing raw rows are unknown:
+
+| Function | Before calls | Final calls |
+| --- | ---: | ---: |
+| `layout__opt167_complete_public_state_population` | 2,057 | 2,057 |
+| `layout__LayoutState__static__new_for_subtree` | 2,057 | 2,057 |
+| `layout__LayoutState_populate_node_from` | 133,705 | 133,705 |
+| `layout__LayoutState_release_measurement` | 2,057 | 2,057 |
+| `layout__MeasurementUsedValuesArena_allocate` | 133,841 | 136 |
+| `layout__MeasurementUsedValuesArena_allocate_populated` | unknown | 133,705 |
+| `layout__MeasurementUsedValuesArena_allocate_slot` | unknown | 133,841 |
+| `layout__UsedValuesPagedStore_allocate` | 133,841 | 136 |
+| `layout__UsedValuesPagedStore_allocate_with_source` | unknown | 133,841 |
+| `layout__resolve_definite_size` | 816 | 816 |
+
+
+Profile counts, timings and instrumented instructions earn no page credit.
+The raw reports and generated C are retained with their actual hashes.
+
+Matching normal binaries keep the fixed 359-body cache, frozen helper and
+placement library, 1024×768 document viewport and
+`native.scopes.navigation_to_first_document_paint[0]`. The fresh fixed 30
+alternating pairs give medians **16,438,532,484 →
+16,418,936,423** instructions: observed saving
+**19,596,061 (-0.11920809%)**,
+**21/30 wins**. Paired median saving is
+**15,266,482**; 30,000 paired bootstrap resamples with actual
+and reported seed 167 give the 95% interval **[3,151,617.5, 20,726,944]**.
+Repeatable page credit is **19,596,061**; integration is
+**accepted** under the existing positive-point
+policy. No historical median is subtracted.
+
+All 60 primaries remain: 60 actual PNGs, 0 counter-only recoveries
+and 0 archived pre-primary startup retries. First preparation is
+1 installation/2 geometry/1 paint; 0 later
+refreshes and 0 external foreground
+transitions stay separate. Available PNGs are 1024×768 and exact outside the
+original fixed skeleton bands. Recovered unknown exits and missing captures
+stay explicit. No completed primary is discarded, filtered, rerun or added.
+
+The focused viewport is exact. Prior carry zero plus the positive matching
+point gives **19,596,061** for the 5-million gate: **passed**.
+Six actual zero-exit jobs cover 87 selected cases in both GC modes/174 executions; all 19 screenshot comparisons complete, 16 exact. Known differences remain inline-node 13, text-decorations 1,341 and canvas-text 1,994.
+Capture receipts bind actual exits, source, binary, viewport, helper, fonts,
+logs and PNG hashes.
+
+Isolated artifact **`/Users/alex/code/vox2/Build/v/Vox-opt167.app`** has actual pin/sign/verify/smoke
+and GC exits zero. Its instruction text equals the measured image; marker 1
+and override 2 both collect. Canonical executables, GUI browsers, newer bundles
+and foreign work are preserved. Accepted control is **167**,
+broad baseline **167**, observed carry
+**0**.
+The complete feature remains committed in Root. Its frozen result does not cover independent Root changes.
+Durable C/profile/focused/local/broad/binary archive hashes are recorded in
+`Build/v/instruction-opt167-durable-archives.json`. All original failures remain.
+Chrome parity still requires equivalent content, start and submission endpoints.
+Independent Root earns no additional coverage or credit from this comparison.
+
 ## Causes and changes
 
 - The V 0.5.2 compatibility compiler's `-prod` Boehm code repeatedly snapshots
