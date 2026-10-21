@@ -16229,6 +16229,128 @@ Durable C/profile/focused/local/broad/binary archive hashes are recorded in
 Chrome parity still requires equivalent content, start and submission endpoints.
 Independent Root earns no additional coverage or credit from this comparison.
 
+## Count trailing shaping whitespace without UTF-16 buffers
+
+Round 168 applies the complete `0728bdb0` feature to accepted 167. Shaping
+counts trailing ASCII whitespace directly from UTF-8 bytes. Each accepted
+whitespace byte is one UTF-16 code unit, so the count remains unchanged without
+materializing an unrelated UTF-16 buffer for the entire string. Non-ASCII
+suffixes stop the scan. Public shaping, glyph ownership and UTF-16 conversion
+for actual glyph work retain their existing behavior.
+
+The one original runtime Git hunk in `platform/glyph_run.v` reconstructs the
+full author file with no context rebase or runtime storage projection. The
+feature and its new test were committed together as `0728bdb0`.
+Three focused cases pass **2,368 assertions** (2,322 + 42 + 4) in each of
+before/Boehm, final/Boehm and final/no-GC C-O2, all actual native exits zero.
+The frozen control lacks Root's newer Arena API. Test compatibility removes
+seven Arena/prealloc wrapper lines only; all 2,322 active authored assertions
+and the unchanged 46 fork assertions remain. The prealloc-only allocation
+assertion is not exercised and earns no coverage. The original typecheck exits
+1 before functional execution. A later receipt parser exits 1 despite all
+three native runs succeeding; a read-only collector authenticates those logs
+without replay. All failed receipts remain. Common 12 cases, including one
+inactive diagnostic, pass 60 assertions/configuration; before reuses exact
+accepted-167 evidence without replay.
+
+The original public shaping workload was declared before performance builds.
+The frozen control lacks a proposed idle-release API, so its first typecheck
+fails before native compilation. The runnable workload uses distinct inputs,
+with no private cache reset or runtime compatibility implementation. Each
+observation contains 64 batches of 32 realistic strings: **2,048 cold shapes,
+2,048 cached shapes and 2,048 public width lookups**. Four ASCII, Unicode and
+bidirectional prefixes cross eight ASCII/non-ASCII suffixes. Public calls
+consume trailing metadata, glyph IDs/codepoints/positions/advances/UTF-16
+lengths, replay indices and widths. Inputs, 160 setup checks, uncached reference
+checksums, eight disjoint warmup batches, forced GC and the final checksum
+assertion remain outside the hardware counter.
+
+Two runnable setup revisions exit 1 before any counter. Their assumptions
+that visual glyph cluster lengths sum to owner length, or to one for RTL,
+are invalid for repeated/shared cluster offsets. V3 retains 128 valid checks
+and replaces the 32 invalid sums with scalar-range checks. Inputs, public
+operations, consumed checksum, counter boundaries and fixed pair order do not
+change. Four native diagnostic builds precede this final setup correction;
+**zero completed counter observations** do. The explicit scope erratum
+withdraws the old sum claims and the misleading assertion that the final
+setup revision preceded all builds. The original fixtures, declarations,
+failed logs, C and binaries remain. No cluster-length-sum coverage is claimed.
+
+All six V3 observations exit zero with checksum **827,227,709,321,120**.
+Three fixed alternating pairs give medians **591,268,029 →
+559,399,203** retired instructions, **-5.38991192%**,
+**3/3 wins**. This passes the negative local median gate and earns zero
+page credit. Native policy remains C-O2/Boehm/default marker 1/the same
+automatic 4 GiB hint/no `-prod`/no global `-prealloc`.
+
+Normal C-only generation exits zero and is reused without regeneration.
+Strict C permits only `platform__trailing_whitespace_length` to change, with
+no added or removed functions. The entire independently generated normal
+program matches, retaining all functions, types and globals. The remainder
+matches accepted 167 after established compiler/embed normalization and four
+byte-identical helper reorderings. All 493 builtins, 176 protected
+encoding/filter/arena routines, 120 native inputs, 37 headers and exact native
+arguments authenticate. Native compile, signing, persistence and frozen-library
+smoke actually exit zero.
+
+Both full-process C-O1/Boehm/one-marker/no-inline profile programs exit zero.
+Generated C proves profiling stays enabled throughout main without filtering
+or resets. Setup, uncached reference work and warmups remain included:
+
+| Function | Before calls | Final calls |
+| --- | ---: | ---: |
+| `platform__opt168_complete_public_shaping_lifetime` | 72 | 72 |
+| `platform__shape_text_with_spacing` | 4,640 | 4,640 |
+| `platform__shaped_text_width` | 2,336 | 2,336 |
+| `platform__shape_text_cached` | 6,976 | 6,976 |
+| `platform__shape_text_uncached` | 4,384 | 4,384 |
+| `platform__trailing_whitespace_length` | 4,384 | 4,384 |
+| `platform__utf16_units_for_shaping` | 13,695 | 9,311 |
+
+
+The 4,384 removed UTF-16 conversion calls correspond to the unchanged 4,384
+trailing-whitespace calls. Missing raw rows remain unknown. Profile counts,
+timings and instrumented instructions earn no page credit.
+
+Matching normal binaries keep the fixed 359-body cache, frozen helper and
+placement library, 1024×768 document viewport and
+`native.scopes.navigation_to_first_document_paint[0]`. The fresh fixed 30
+alternating pairs give medians **16,446,679,250 →
+16,439,601,218.5** instructions: observed saving
+**7,078,031.5 (-0.04303623%)**,
+**20/30 wins**. Paired median saving is
+**5,584,860.5**; 30,000 paired bootstrap resamples with actual
+and reported seed 168 give the 95% interval **[-6,781.5, 15,158,692]**.
+Repeatable page credit is **0**; integration is
+**accepted** under the existing positive-point
+policy. No historical median is subtracted.
+
+All 60 primaries remain: 60 actual PNGs, 0 counter-only recoveries
+and 0 archived pre-primary startup retries. First preparation is
+1 installation/2 geometry/1 paint; 0 later
+refreshes and 1 external foreground
+transitions stay separate. Available PNGs are 1024×768 and exact outside the
+original fixed skeleton bands. Recovered unknown exits and missing captures
+stay explicit. No completed primary is discarded, filtered, rerun or added.
+
+The focused viewport is exact. Prior carry zero plus the positive matching
+point gives **7,078,031.5** for the 5-million gate: **passed**.
+Six actual zero-exit jobs cover 87 selected cases in both GC modes/174 executions; all 19 screenshot comparisons complete, 16 exact. Known differences remain inline-node 13, text-decorations 1,341 and canvas-text 1,994.
+Capture receipts bind actual exits, source, binary, viewport, helper, fonts,
+logs and PNG hashes.
+
+Isolated artifact **`/Users/alex/code/vox2/Build/v/Vox-opt168.app`** has actual pin/sign/verify/smoke
+and GC exits zero. Its instruction text equals the measured image; marker 1
+and override 2 both collect. Canonical executables, GUI browsers, newer bundles
+and foreign work are preserved. Accepted control is **168**,
+broad baseline **168**, observed carry
+**0**.
+The complete feature remains committed in Root. Its frozen result does not cover independent Root changes.
+Durable C/profile/focused/local/broad/binary archive hashes are recorded in
+`Build/v/instruction-opt168-durable-archives.json`. All original failures remain.
+Chrome parity still requires equivalent content, start and submission endpoints.
+Independent Root earns no additional coverage or credit from this comparison.
+
 ## Causes and changes
 
 - The V 0.5.2 compatibility compiler's `-prod` Boehm code repeatedly snapshots

@@ -2471,6 +2471,15 @@ evidence](docs/translation-audit/NATIVE_MEDIA_WHEEL_RAW_HANDLER.md).
   Focused exact;broad passed;prior carry0;strict entire independent C/all493builtins/176protected/120nativeinputs/37headers.
   Acceptedcontrol 167;isolated167app/GC1+override2;canonical/GUI/foreign preserved;fullprofiles2057completeoperations/no profile credit.
   Complete feature retained;all original failed receipts remain. Chrome parity open.
+  Trailing shaping whitespace round168 (`0728bdb0`):one complete original runtimehunk/onePlatformpath/no context rebase or storage projection.
+  Threeexactcases/2368asserts beforeBoehm/finalBoehm/finalnone;test-only seven Arena/prealloc wrapper lines removed;2322active authored+46fork assertions retained;prealloc assertion unexercised;common60/config.
+  Declared64batches/2048cold+2048cached shapes+2048width lookups:local -5.389912%/3wins/all6actual0;zero pagecredit.
+  Missing-API typechecks1/setup1+1/receipt-parser1 retained;final160setupchecks before firstcounter but after4builds;scope erratum withdraws invalid cluster sums;no successful replay.
+  Fresh page 16,446,679,250→16,439,601,218.5;20/30wins;point 7,078,031.5.
+  PairedCI[-6,781.5,15,158,692];repeatable credit 0;all60retained;same1/2/1;seed168/30000bootstrap.
+  Focused exact;broad passed;prior carry0;strict entire independent C/all493builtins/176protected/120nativeinputs/37headers.
+  Acceptedcontrol 168;isolated168app/GC1+override2;canonical/GUI/foreign preserved;fullprofiles72completebatches/no profile credit.
+  Complete feature retained;all original failed receipts remain. Chrome parity open.
 - Outside instruction-count optimization, run broad regression suites once per
   ten completed fixes, not after every fix.
   Broad suites include full translation/package test batches, the full LibJS AST
