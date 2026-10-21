@@ -17,8 +17,8 @@ in its protocol. Explicit historic Boehm comparisons require `--allocator boehm`
 ### Corrected arena before/after: 50 MB remains unmet
 
 The latest V-source comparison, three alternating optimized pairs, measures
-**118.79 → 109.38 MB**, a **7.92% reduction**. The largest candidate settled
-observation is **109,479,376 bytes**. The **50,000,000-byte limit still fails**.
+**105.92 → 103.71 MB**, a **2.09% reduction**. The largest candidate settled
+observation is **103,908,816 bytes**. The **50,000,000-byte limit still fails**.
 All six raw viewport images match, all frozen-input guards pass, and all six script audits
 report no page runtime, sources, source bytes or preloaded scripts.
 
@@ -30,20 +30,26 @@ report no page runtime, sources, source bytes or preloaded scripts.
 | SVG path parsing, formatting and paint projection workspaces | 127,223,248 bytes | 118,851,024 bytes | 6.58% |
 | Inline CSS lengths, parser payloads, decoding and idle lifetimes | 118,785,560 bytes | 109,381,096 bytes | 7.92% |
 | Updated native graphics providers with the same V executable | 109,381,096 bytes | 109,413,912 bytes | -0.03% |
+| Native tokenizer, inline geometry and selector workspaces | 109,282,792 bytes | 106,104,272 bytes | 2.91% |
+| Cascade contexts, pseudo traversal and SVG metadata | 105,924,048 bytes | 103,712,184 bytes | 2.09% |
 
 Each row is its own three-pair cohort; these are aggregate build comparisons,
 not isolated savings attributed to individual commits. Evidence is in
 `Build/wikipedia-50mb/arena-text-lifetimes-paired2/` and
 `Build/wikipedia-50mb/arena-svg-lifetimes-paired/`, followed by
 `arena-static-paint-paired/`, `arena-svg-workspace-paired/`,
-`arena-inline-length-paired/` and `arena-inline-native-queue-paired/`, including summaries, raw
+`arena-inline-length-paired/`, `arena-inline-native-queue-paired/`,
+`arena-parser-workspaces-paired/` and `arena-cascade-workspaces-paired/`, including summaries, raw
 process samples, allocator checks, resource audits and captures. Matching
 `arena-{text,svg}-lifetimes-build-protocol.json` files pin the complete source
 inputs, current compiler and native libraries. The static-paint and SVG protocols are
 `arena-static-paint-build-protocol.json` and `arena-svg-workspace-build-protocol.json`.
 The inline-length build protocol also pins its frozen V source, generated C,
 compiler and native libraries. Its sampled launch peaks are 533.6–547.5 MB, so
-this is a settled-memory reduction.
+this is a settled-memory reduction. The parser and cascade workspace cohorts
+likewise pin their complete frozen inputs in matching build protocols. Their
+sampled launch peaks are 539.5–544.7 MB and 536.2–546.4 MB respectively; these
+changes do not meet a 50 MB peak budget either.
 
 Replacing the native wrapper and Metal providers with the completed code from
 `57c321a4`, while preserving the V executable byte for byte, measured
@@ -66,13 +72,21 @@ The later cohorts also skip selective mutation histories during a pending full
 style pass, avoid duplicate native static-page paint templates, reuse SVG number
 scanners, parse raw SVG presentation paths directly, and retire numeric-formatting
 buffers and temporary Canvas contours after copying their final strings, packed
-segments and bounds. The latest V-source cohort additionally stores plain CSS
+segments and bounds. The inline-length V-source cohort additionally stores plain CSS
 lengths and percentages inline, reuses parser character buffers, transfers
 immutable token payloads, retires navigation-decoder work, discards unused
 physical arena pages after reset, and avoids idle microtask/channel/chrome
-allocations. Later tokenizer-arena retirement, inline geometry workspaces,
-pooled matching contexts and SVG applicability/resource-discovery changes are
-not included in that measured V executable.
+allocations. The two latest V-source cohorts also retire the native no-JS HTML
+tokenizer after parsing, retire inline geometry workspaces after publishing the
+final flat pieces, reuse cascade matching contexts and pseudo-rule iterators,
+avoid fixed selector-origin list allocations, and skip inapplicable SVG
+presentation attributes and typed path geometry during resource discovery.
+The final source-position preservation fix is included in the cascade cohort.
+Later URL parser/snapshot work and the scripted-tokenizer extension are excluded
+from its frozen executable and receive no RAM credit here. The cascade candidate
+uses the original pinned native providers, not the separate queue experiment.
+Its generated C SHA-256 is
+`c6ed937bd1e619ebb2645fdc55924b5e80a25de693839d813978a47615a725fe`.
 
 The conditions below also apply to these cohorts: `-prealloc -gc none`, optimized
 C, the unchanged 40-file cache, 1024×768 CSS pixels at DPR 2, a visible background
@@ -83,12 +97,12 @@ Reproduce the latest V-source cohort with:
 
 ```sh
 python3 tools/benchmark_wikipedia_memory.py \
-  --before Build/wikipedia-50mb/arena-svg-workspace.app/Contents/MacOS/Vox \
-  --after Build/wikipedia-50mb/arena-inline-length.app/Contents/MacOS/Vox \
+  --before Build/wikipedia-50mb/arena-parser-workspaces.app/Contents/MacOS/Vox \
+  --after Build/wikipedia-50mb/arena-cascade-workspaces.app/Contents/MacOS/Vox \
   --cache Build/wikipedia-100mb/cache \
   --network-deny Build/pikabu-instructions-network-deny.dylib \
   --activity background --repeat 3 --allocator prealloc \
-  --output Build/wikipedia-50mb/arena-inline-length-recheck
+  --output Build/wikipedia-50mb/arena-cascade-workspaces-recheck
 ```
 
 The command exits nonzero while the 50 MB budget is exceeded.
