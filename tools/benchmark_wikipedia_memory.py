@@ -16,6 +16,26 @@ import subprocess
 import wikipedia_browser_memory as observer
 
 
+def allocator_from_symbols(symbols):
+    names = {line.split()[-1].lstrip('_') for line in symbols.splitlines() if line.split()}
+    arena = 'prealloc_scope_begin' in names
+    collector = 'GC_malloc' in names
+    if arena and not collector:
+        return 'prealloc'
+    if collector and not arena:
+        return 'boehm'
+    raise ValueError('Cannot verify an exclusive arena or Boehm allocator from binary symbols')
+
+
+def verify_allocators(before, after, expected):
+    actual = {name: allocator_from_symbols(subprocess.check_output(
+        ['nm', '-g', str(binary)], text=True))
+        for name, binary in [('before', before), ('after', after)]}
+    if any(value != expected for value in actual.values()):
+        raise ValueError(f'Require {expected} in both binaries; found {actual}')
+    return actual
+
+
 def summarize(rows, limit_bytes):
     before = [row for row in rows if row['variant'] == 'before']
     after = [row for row in rows if row['variant'] == 'after']
@@ -57,12 +77,15 @@ def main():
     parser.add_argument('--repeat', type=int, default=3)
     parser.add_argument('--limit-mb', type=float, default=50,
         help='Maximum settled physical footprint in decimal MB (default: 50)')
+    parser.add_argument('--allocator', choices=['prealloc', 'boehm'], default='prealloc',
+        help='Required allocator in both binaries (default: prealloc, without Boehm)')
     parser.add_argument('--activity', choices=['foreground', 'background'], default='foreground')
     args = parser.parse_args()
     if args.repeat < 1 or args.limit_mb <= 0:
         parser.error('Require a positive repeat count and memory limit')
     for name in ('before', 'after', 'cache', 'network_deny', 'output'):
         setattr(args, name, getattr(args, name).resolve())
+    allocators = verify_allocators(args.before, args.after, args.allocator)
     args.settle, args.interval, args.timeout = 15, .005, 180
     args.foreground = args.activity == 'foreground'
     args.background = args.activity == 'background'
@@ -81,7 +104,7 @@ def main():
     screen = observer.placement()
     protocol = dict(url=observer.URL, viewport=[1024, 768], screen=screen,
         activity=args.activity, settle_seconds=args.settle, interval_seconds=args.interval,
-        repeat=args.repeat, author_javascript=False, machine=platform.platform(),
+        repeat=args.repeat, author_javascript=False, allocators=allocators, machine=platform.platform(),
         inherited_malloc_space_efficient=os.environ.get('MallocSpaceEfficient'),
         metric='Simultaneous sum of browser and descendant task physical footprints; decimal MB.',
         endpoint='Last second of 15s after readiness, before screenshot allocation.',
