@@ -78,3 +78,59 @@ exact, with zero differing pixels and zero maximum channel error:
 The full translation suite was not run. The focused source selection,
 commands, collector modes and diagnostic limitations are recorded in
 `Build/master-consolidation-20261020/validation.json`.
+
+## Follow-up audit, 2026-10-21
+
+The canonical checkout is the only remaining worktree, and there are no active
+stashes. Six of the seven local branch tips, including `master`, are in master's
+ancestry. The remaining branch, `codex/nojs-wikipedia-ram-v10`, has twelve
+divergent commits whose patches all have exact equivalents on master. All 25
+original integration commits are ancestors of master; all 309 recorded file
+decisions and 28 original recovery refs remain available.
+
+The twelve tags were also checked. Older Wikipedia font, text-width and
+scrollbar revisions and the Wasm compiled-record revisions map to their revised
+master implementations. The 23 commits reachable only through reflogs are
+accounted for: four exact patch equivalents and nineteen reviewed integrations,
+formatting changes or documentation corrections. This includes the autosquashed
+LibRegex invalid-patch panic regression. Recovering
+`.main_navigation_document.v.swp` produced an exact file blob already in master's
+history; the swap is preserved and contains no additional implementation.
+
+A deeper `git fsck --unreachable` check found 511 older commits outside both
+refs and reflogs, including 24 dropped stash heads and their index/untracked
+parents. Of the 459 non-stash records, 291 have exact master patch equivalents,
+12 have all resulting file blobs in master's history, and 108 have reviewed,
+revised integrations. The remainder comprises 29 early translation drafts,
+18 superseded documentation revisions and one historical static-frame replay
+alternative. The stash changes are integrated or superseded, apart from an
+unvalidated geometry-commit shortcut. These alternatives remain recovery material;
+the maintained native frame path and complete geometry traversal are retained.
+
+All 135 formerly unreachable commit tips are now preserved under
+`refs/archive/master-audit-20261021/<commit-prefix>`. A verified recovery pack
+also preserves all 4,200 originally unreachable objects, including 178 loose
+file versions outside those commit trees. These source, documentation and fixture
+versions remain recovery material; a loose blob alone is not validation for a
+fix. Nothing was pruned or reset.
+
+Three remaining checkout changes were validated and committed separately:
+
+- `66952e9d`: reuse viewport ink probes, with allocation and retained-scene tests.
+- `ff05607b`: keep table-border test values as explicit sum types for current V.
+- `22a0c833`: initialize populated layout slots directly, preserving independent
+  geometry, sparse slot identity and retained snapshot ownership.
+
+Ten layout cases and eight painting cases pass with current V in Boehm,
+`-prealloc -gc none`, and prealloc with `VOX_ARENA_POISON=1`: 54 passing case
+executions. Eight unchanged passing prealloc cases are carried from the initial
+selection; only its two corrected cases were repeated. Failed fixture/build
+attempts remain recorded. Broad suites and new RAM/instruction comparisons were
+not part of this consolidation audit.
+
+Detailed mappings, source hashes, exact compiler arguments, failed and passing
+logs, recovered files and the recovery pack/index are retained under
+`Build/master-audit-20261021/`. Its `audit.json`, `validation.json`,
+`unreachable-commit-coverage.json` and `dropped-stash-coverage.json` describe the
+decisions. Historical experiments must be reviewed against current source
+before reuse; their old complete trees must not replace master wholesale.
