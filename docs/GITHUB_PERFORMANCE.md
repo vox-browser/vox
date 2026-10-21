@@ -15497,6 +15497,64 @@ Accepted control,broad baseline and verified isolated app remain158;page credit
 and observed carry stay0. Canonical/GUI browsers,newer bundles and foreign work
 are preserved. Chrome parity remains unestablished.
 
+## Retain scalar CSS lookup results as a rejected document-layout attempt
+
+Round161 measures complete `1d746ab4` plus `7e69ba40` on accepted158. Name buckets
+assign a scalar enum and boolean,then wrap one successful optional result after
+matching the full spelling. Both generators share that form and deterministically
+sort a copy of input rows. All78 runtime Git hunks across two CSS paths and both
+complete tooling author stages authenticate;no partial feature,source/storage
+projection,compiler shim or rejected159 indexes are imported. New implementation,
+generator changes and focused tests commit together as `7e69ba40`.
+
+Three unchanged prerequisite V cases plus two new cases cover all869 keyword/
+440 property names,aliases,case variants,zero-valued entries and interior NUL/DEL
+mutation at every offset. All five cases pass **47,481 assertions** in
+before/Boehm,final/Boehm and final/none C-O2. All five Python checks actually exit0;
+they also cover caller-row preservation,input-order independence and empty tables.
+Entire generator/test hashes match the frozen candidate. Completed checks are
+reused without replay. Common12 cases pass60 assertions/configuration.
+
+Original precommit manifests remain unchanged and are hash-bound to the committed
+whole feature. A missing flat original-fixture copy makes the reuse reader exit1
+before any job;restoring exact committed bytes makes only that readonly reader
+exit0. The generator audit first rejects the valid CSS keyword unsafe with a
+naive forbidden-word check;original source/result/terminal remain,then a precise
+V-unsafe-block check actually exits0. It verifies both complete author stages
+and every control-to-final mapping. No successful test or counter is repeated.
+Readonly generated C confirms one actual optional declaration and one success
+conversion site. The commit receipt's initialized-only regex reports final0;
+a separate proof corrects that interpretation to one total declaration. Code
+shape and conversion-site counts receive0 instruction credit.
+
+Before performance builds,the canonical147 scene is fixed apart from labels:
+64 Unicode paragraphs,128 whitespace-only blocks,192 independent setup text checks
+and16 complete public parse/layout/record/paint-command/hit/finalize pipelines
+per observation. The original precommit declaration binds source hashes;actual
+commit binding is separate and changes no input. Setup,eight warmups,forcedGC
+and assertions stay outside the counter. Normal policy remains C-O2/Boehm/
+defaultmarker1/unchanged automatic4GiB,not forced or triggered locally,
+no-prod/no-global-prealloc. Three fixed alternating pairs give medians
+**31,255,988,704 → 31,290,372,318 retired instructions**,
+**0.11000648% more**, **1/3 wins**. All six actual exits0
+and checksum7,963,486,608 agree. Every completed observation remains;no extension,
+filtering,discarding or rerunning occurs.
+
+The local gate and native-release controller actually exit1. Zero normal native,
+profile,independent C or page jobs start. No strict C audit,native candidate,
+page primary,screenshot,broad batch,bundle or GC pass is claimed for161. The
+predeclared30 page pairs/seed161/30,000 paired bootstrap never start. Whole normal
+C-only generation actually exits0 without native/audit credit. Durable focused,
+local and frontend C/binary hashes are indexed by
+`Build/v/instruction-opt161-durable-archives.json`.
+
+This result applies to the declared document-layout workload. It does not measure
+the standalone public stylesheet-parser workload. Existing profiles are suitable
+for choosing a separate future experiment,not for changing this round's gate or
+credit. Accepted control,broad baseline and verified isolated app remain158;
+repeatable page credit and observed carry stay0. Canonical/GUI browsers,newer
+bundles and foreign work stay preserved. Chrome parity remains unestablished.
+
 ## Causes and changes
 
 - The V 0.5.2 compatibility compiler's `-prod` Boehm code repeatedly snapshots

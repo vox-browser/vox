@@ -2418,6 +2418,11 @@ evidence](docs/translation-audit/NATIVE_MEDIA_WHEEL_RAW_HANDLER.md).
   Declared canonical147scene/16fullpublicpipelines/192textchecks:local +3.835884%/1wins/all6actual0;zero pagecredit.
   Localgate1/native-release1/no native-start/jobs0;no normal/profile/independentC/page/broad/bundle/GC160 pass.
   Readonly keyword C1→333optionaltemps is diagnostic only;acceptedcontrol/broad/app158/carry0 and canonical/GUI/foreign preserved;Chrome open.
+  Scalar CSS lookup round161 (`1d746ab4`+`7e69ba40`):all78runtimeGit hunks/twoCSSpaths/allcomplete tooling author stages.
+  FiveVcases/47481asserts eachconfiguration/3unchanged+2new;Python5actual0/hash-identical reuse;869keywords/440properties;common60/config;C-onlyfrontend0.
+  Predeclared canonical147document-layout scene/16fullpublicpipelines/192textchecks:local +0.110006%/1wins/all6actual0;allobservations retained.
+  Localgate1/native-release1/no native-start/jobs0;no normal/profile/independentC/page/broad/bundle/GC161 pass;accepted158/broad158/app158/carry0 preserved.
+  Missing fixture reader1/unsafe-keyword audit1/initialized-only C regex correction and precommit binding retained;no successfulcase replay;canonical/GUI/foreign preserved;Chrome open.
 - Outside instruction-count optimization, run broad regression suites once per
   ten completed fixes, not after every fix.
   Broad suites include full translation/package test batches, the full LibJS AST
