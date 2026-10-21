@@ -56,9 +56,8 @@ fn append_chromium_svg_background_msaa_triggers(command layout.PaintCommand, ind
 		viewport_bounds := transformed_raster_bounds(replay.transform, f64(offset.x), f64(offset.y),
 			f64(replay.viewport_width), f64(replay.viewport_height))
 		for nested in layout.display_list_commands(list) {
-			transformed := layout.paint_command_for_nested_viewport(nested, replay.transform,
-				offset, command.opacity)
-			bounds := chromium_msaa_trigger_rect(transformed) or { continue }
+			bounds := chromium_nested_svg_msaa_trigger_rect(nested, replay.transform,
+				offset) or { continue }
 			top := math.max(bounds.y, viewport_bounds.y)
 			bottom := math.min(bounds.y + bounds.height, viewport_bounds.y + viewport_bounds.height)
 			left := math.max(bounds.x, viewport_bounds.x)
@@ -68,6 +67,17 @@ fn append_chromium_svg_background_msaa_triggers(command layout.PaintCommand, ind
 			}
 		}
 	}
+}
+
+// Trigger bounds read only path geometry and its cumulative transform. A full
+// nested replay would also copy clip/mask payloads which this query never reads.
+fn chromium_nested_svg_msaa_trigger_rect(command layout.PaintCommand, outer [6]f64,
+	origin painting.IntPoint) ?layout.LayoutRect {
+	ancestor := multiply_paint_transforms(outer,
+		[f64(1), 0, 0, 1, f64(origin.x), f64(origin.y)]!)
+	mut projected := command
+	projected.transform = multiply_paint_transforms(ancestor, command.transform)
+	return chromium_msaa_trigger_rect(projected)
 }
 
 // Only tiles which can appear in this frame need an SVG picture prepared.
