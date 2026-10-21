@@ -21,7 +21,7 @@ fn test_direct_inline_fragment_slots_preserve_all_metadata_and_replace_stale_val
 			paint_line_top: if value := top { ?f64(value - 3.25) } else { none }
 			paintable_fragment: painting.PaintableFragment{...source.paintable_fragment,offset:painting.Point{6.5,2.75}}
 		}
-		assert output.str() == expected.str()
+		assert retained_paint_payload_equal(output, expected)
 		assert source.x == 10.5 && source.y == 20.25
 		assert source.paintable_fragment.offset == painting.Point{4,6}
 		assert output.shadows.len == 0

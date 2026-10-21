@@ -12,7 +12,7 @@ fn retained_inline_paint_check(document &dom.Document, id string) {
 	position := paint_cumulative_offset(node, result.state, used)
 	actual := text_lines_from_typed_layout(node, used, result.state, position)
 	expected := uncached_text_lines_from_typed_layout(node, used, result.state, position)
-	assert actual.str() == expected.str()
+	assert retained_paint_payload_equal(actual, expected)
 }
 
 fn test_retained_inline_paint_rebases_text_and_inline_decorations_exactly() {
@@ -58,6 +58,9 @@ fn test_retained_inline_paint_preserves_old_transport_arrays_after_a_rebase() {
 	defer { document.finalize() }
 	_ = layout_document_typed_in_viewport(document, 400, 300)
 	old := document.record_display_list()?
+	// Holding a borrowed list does not retain its recyclable scene.
+	retained_scene := retain_display_list_scene(old)
+	defer { release_display_list_scene(retained_scene) }
 	old_dump := old.dump()
 	mut changed := document.get_element_by_id('changed')?
 	changed.set_inner_html('<p>move the paragraph</p>')!
