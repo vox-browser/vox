@@ -4815,6 +4815,9 @@ pub fn (c &ComputedProperties) animations(abstract_element &dom.AbstractElement)
 	animation_name_property := c.property(.animation_name, .yes) or {
 		return []ComputedAnimationProperties{}
 	}
+	if computed_animation_names_are_none(animation_name_property) {
+		return []ComputedAnimationProperties{}
+	}
 	animation_name_values := computed_interpolation_split_coordinating_list_value(animation_name_property)
 
 	// OPTIMIZATION: If all animation names are 'none', there are no animations to process
@@ -12216,6 +12219,12 @@ pub fn (s &StyleComputer) process_animation_definitions(computed_properties &Com
 	}
 	mut storage := s.css_animation_storage_
 	animation_definitions := computed_properties.animations(&abstract_element)
+	if animation_definitions.len == 0 {
+		if storage.entries.len != 0 {
+			storage.remove_animations_not_named(abstract_element, {})
+		}
+		return
+	}
 	mut defined_names := map[string]bool{}
 	for animation_properties in animation_definitions {
 		defined_names[animation_properties.name] = true
