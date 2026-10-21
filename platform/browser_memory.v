@@ -19,5 +19,9 @@ pub fn retain_thread_allocations() {
 pub fn release_unused_browser_memory() {
 	$if gcboehm ? {
 		C.GC_gcollect_and_unmap()
+		// Boehm's forced unmap still requires free blocks to be at least one
+		// collection old. The first pass retires this document's temporary
+		// allocations; the second can return their whole pages to the OS.
+		C.GC_gcollect_and_unmap()
 	}
 }
