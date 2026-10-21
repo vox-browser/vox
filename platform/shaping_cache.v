@@ -77,6 +77,7 @@ struct ShapingCache {
 mut:
 	fonts []FontShapeCache
 	tick  u64
+	storage &Arena = unsafe { nil }
 }
 
 fn (cache &ShapingCache) font_index(font_key string) int {
@@ -185,8 +186,10 @@ fn clone_cached_shape(shape CachedShape) CachedShape {
 fn (mut cache ShapingCache) store(font_key string, text string, params ShapeParams, shape CachedShape) {
 	// The cache outlives any arena entered by the caller; store() copies the
 	// shape and keys into it.
-	persistent := enter_persistent()
-	defer { leave_persistent(persistent) }
+	allocation_entry := if cache.storage != unsafe { nil } { cache.storage.enter() } else { enter_persistent() }
+	defer {
+		if cache.storage != unsafe { nil } { cache.storage.leave(allocation_entry) } else { leave_persistent(allocation_entry) }
+	}
 	mut font_index := cache.font_index(font_key)
 	if font_index < 0 {
 		if cache.fonts.len >= max_shape_cache_fonts {
@@ -245,6 +248,7 @@ struct ShapingFontKey {
 
 __global (
 	platform_shaping_cache        &ShapingCache
+	platform_shaping_cache_storage &Arena
 	last_shaping_font_key         &ShapingFontKey
 	recent_shaping_font_keys      [max_shaping_font_keys]&ShapingFontKey
 	recent_shaping_font_key_count int
@@ -254,7 +258,12 @@ __global (
 fn shared_shaping_cache() &ShapingCache {
 	if isnil(platform_shaping_cache) {
 		persistent := enter_persistent()
-		platform_shaping_cache = &ShapingCache{}
+		$if prealloc {
+			if isnil(platform_shaping_cache_storage) {
+				platform_shaping_cache_storage = new_arena('text shaping cache')
+			}
+		}
+		platform_shaping_cache = &ShapingCache{ storage: platform_shaping_cache_storage }
 		leave_persistent(persistent)
 	}
 	return platform_shaping_cache
@@ -264,6 +273,11 @@ fn shared_shaping_cache() &ShapingCache {
 // the lookup copies; a later measurement or shape request refills the cache.
 pub fn release_unused_text_shaping() {
 	platform_shaping_cache = unsafe { nil }
+	$if prealloc {
+		if !isnil(platform_shaping_cache_storage) {
+			platform_shaping_cache_storage.reset()
+		}
+	}
 }
 
 // Equivalent Font values select the same concrete face and may safely share
