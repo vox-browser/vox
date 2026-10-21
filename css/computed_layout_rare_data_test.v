@@ -8,7 +8,7 @@ $if gcboehm ? {
 
 fn rare_cache_set(mut style ComputedProperties, property PropertyID, text string) {
 	style.set_property(property, parse_css_value(ParsingParams{}, text, property) or {
-		panic('${property}: ${text}: ${err}')
+		panic('invalid ${property}: ${text}')
 	}, .no, .no)
 }
 
@@ -192,7 +192,7 @@ fn test_bulk_rare_writes_reuse_only_the_unpublished_snapshot() {
 fn rare_cache_with_owned_payload() &ComputedProperties {
 	mut style := computed_properties_with_initial_values()
 	mut values := unsafe { &MutableComputedValues(style) }
-	value := parse_css_value(ParsingParams{}, '97px', .width) or { panic(err) }
+	value := parse_css_value(ParsingParams{}, '97px', .width) or { panic('invalid test width') }
 	values.set_translate(TransformationData{ property_id: .translate, values: [value] })
 	values.set_mask(MaskReference.from_url(URL.from_url('owned-mask.svg')))
 	values.set_mask_image(ImageStyleValue.create_from_url_string('owned-image.svg'))
