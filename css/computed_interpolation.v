@@ -10008,10 +10008,18 @@ pub fn (s &StyleInvalidationData) plan_for_property(property InvalidationPropert
 }
 
 pub fn (mut s StyleInvalidationData) build_invalidation_sets_for_selector(selector Selector) {
+	$if prealloc {
+		build_owned_selector_invalidation(mut s, selector, false)
+		return
+	}
 	_ = build_invalidation_sets_for_selector_impl(mut s, selector, .no, make_invalidate_self_invalidation())
 }
 
 pub fn (mut s StyleInvalidationData) build_invalidation_sets_for_scope_boundary_selector(selector Selector) {
+	$if prealloc {
+		build_owned_selector_invalidation(mut s, selector, true)
+		return
+	}
 	_ = build_invalidation_sets_for_selector_impl(mut s, selector, .no, make_invalidate_whole_subtree_invalidation())
 }
 
