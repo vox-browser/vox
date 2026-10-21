@@ -571,3 +571,47 @@ Background, poison, sampler and context-retirement experiments do not replace
 that primary result. A raw Metal queue probe also finds essentially the same
 181 MiB active footprint at command-buffer limits 1, 4, 8 and 64
 (`metal-queue-119-count-*.log`); no queue-limit change is justified by that probe.
+
+
+### Completed Metal queues and native idle checks
+
+Graphite now keeps a stable queue adapter with its Context and compiled
+pipelines, but releases the real Metal command queue after the native frame
+completes synchronously. The next GPU frame creates another queue. Command
+buffers keep their own queue references; no GPU resource crosses the CPU-pixel
+readback bridge. Labels and residency-set membership survive replacement.
+An unused backend is not loaded by frame completion. Two-second idle context
+retirement still runs when only CPU raster-cache hits remain.
+
+A raw Metal ownership probe distinguishes the queue from textures: releasing
+only the queue drops an active clear from about 181 MiB to 8.9 MiB after 20 ms,
+then 6.7 MiB after 220 ms. Releasing only the texture leaves about 181 MiB
+until the driver retires idle work (`metal-partial-release-127-*.log`).
+Keeping one persistent Skia recorder increased full-page RAM and was rejected;
+the production renderer retains its per-call recorders.
+
+The optimized queue build completes the frozen Pikabu background diagnostic
+at **527.1 MiB**, with **307.3 KiB/s** latter-half growth, one installation,
+15 stories and 34 story images
+(`native-132-frame-queue-optimized-background/1-vox/result.json`). This
+background result remains above Brave's 454.6 MiB reference and does not
+replace the latest valid foreground result. The intervening optimized
+foreground attempt lost focus near the endpoint and was rejected
+(`native-117-optimized-foreground-run.log`).
+
+The final queue implementation passes the CPU ownership mock, eight GPU
+replays across queue replacement with a retained Context, the existing
+graphics lifetime checks, 3,040 exact GPU comparisons, normal and poisoned
+headless startup, and all ten SVG/image mutation and turbulence comparisons.
+The default screenshot suite has six exact passes, its existing canvas
+allowance pass, and the same four upstream-reference failures listed above.
+Those four are pixel-identical to the previous renderer with the same V binary
+(`replay-132-default/`, `replay-137-default-control/`).
+
+Microtask checkpoints reuse their settings snapshot and visit attached VMs
+directly. Native chrome preserves unchanged title and console-footer strings;
+empty native image response channels no longer allocate select descriptors
+on each poll. Their focused allocation and behavior checks pass with normal
+prealloc, poisoning and Boehm. The broader native tab test still fails its
+modified-link case at an unset option; an exact pre-change control fails at
+the same point (`tabs-129-control-prealloc-run.log`).
