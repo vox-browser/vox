@@ -266,28 +266,24 @@ fn is_unicode_surrogate(code_point u32) bool {
 }
 
 fn runes_to_string(runes []rune) string {
-	// ASCII code points already have their UTF-8 byte values. Preserve the
-	// existing encoder for every other rune, including invalid internal values.
-	mut all_ascii := true
-	for code_point in runes {
-		if u32(code_point) > 0x7f {
-			all_ascii = false
-			break
-		}
+	if runes.len == 0 { return '' }
+	// Copy the byte candidates and accumulate their high bits in one pass.
+	// Only ASCII publishes this storage; other values keep the original encoder.
+	mut bytes := unsafe { malloc_noscan(runes.len + 1) }
+	mut bits := u32(0)
+	for index, code_point in runes {
+		bits |= u32(code_point)
+		unsafe { bytes[index] = u8(code_point) }
 	}
-	if all_ascii {
-		if runes.len == 0 { return '' }
-		// The output owns its terminated byte storage. Avoid building a byte
-		// vector and then copying that vector into another string allocation.
-		mut bytes := unsafe { malloc_noscan(runes.len + 1) }
-		for index, code_point in runes {
-			unsafe { bytes[index] = u8(code_point) }
-		}
+	if bits <= 0x7f {
 		unsafe {
 			bytes[runes.len] = 0
 			return tos(bytes, runes.len)
 		}
 	}
+	// The candidate never escaped. Release it before encoding non-ASCII or
+	// invalid internal values through the same rune writer as before.
+	unsafe { free(bytes) }
 	mut b := strings.new_builder(runes.len)
 	for r in runes {
 		b.write_rune(r)
