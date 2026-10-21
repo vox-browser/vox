@@ -13550,6 +13550,9 @@ pub fn (s &StyleComputer) compute_logical_alias_mapping_context(abstract_element
 }
 
 fn custom_property_bridge_value(value &dom.StyleValue) &dom.CSSStyleValue_ {
+	// Cascade maps are temporary; values installed on an element are not.
+	mut retained := platform.enter_retained_allocations()
+	defer { retained.finish() }
 	typed := typed_style_value_logic_from_dom(value)
 	if resolved := typed {
 		if resolved.type_() == .guaranteed_invalid {
@@ -13645,15 +13648,28 @@ fn compare_custom_property_maps(left map[string]dom.CSSCustomProperty_,
 
 // StyleComputer.cpp:cascade_custom_properties. Important declarations are
 // collected while walking the matching rules and applied after normal ones.
+fn custom_cascade_rule_declaration(rule &CSSRule) ?&CSSStyleProperties {
+	// Deferred parsing and its CSSOM cache belong to the declaration owner.
+	mut retained := platform.enter_retained_allocations()
+	defer { retained.finish() }
+	return rule.style()
+}
+
+fn custom_cascade_inline_declaration(element dom.AbstractElement) ?&CSSStyleProperties {
+	mut retained := platform.enter_retained_allocations()
+	defer { retained.finish() }
+	return inline_style_for_abstract_element(element)
+}
+
 fn cascade_custom_properties(abstract_element dom.AbstractElement, rules []ScopedMatchingRule, mut values map[string]dom.CSSCustomProperty_) {
 	mut important_values := map[string]dom.CSSCustomProperty_{}
 	for scoped_rule in rules {
 		rule := scoped_rule.rule.rule or { continue }
-		declaration := rule.style() or { continue }
+		declaration := custom_cascade_rule_declaration(rule) or { continue }
 		cascade_custom_properties_from_declaration(declaration, mut values, mut important_values)
 	}
 	if abstract_element.pseudo_element() == none {
-		if inline_declaration := inline_style_for_abstract_element(abstract_element) {
+		if inline_declaration := custom_cascade_inline_declaration(abstract_element) {
 			cascade_custom_properties_from_declaration(inline_declaration, mut values, mut important_values)
 		}
 	}
@@ -13793,22 +13809,29 @@ fn install_custom_property_data_for_style(abstract_element dom.AbstractElement, 
 		mutable_element.set_custom_property_data(inherited)
 		return
 	}
+	// Resolve inheritance before entering temporary storage: inheritable() can
+	// publish a generation-checked cache on the parent's environment.
+	mut parent_data := ?&dom.CSSCustomPropertyData_(none)
+	if parent := abstract_element.element_to_inherit_style_from() {
+		parent_data = inheritable_custom_property_data(parent)
+	}
+	scratch := if platform.current_retained_arena() != unsafe { nil } {
+		platform.begin_thread_scratch('custom property cascade maps')
+	} else {
+		platform.ThreadScratchScope{}
+	}
+	defer { scratch.finish() }
 	mut had_animation_overlay := false
 	mut animated_values := map[string]dom.CSSCustomProperty_{}
 	if existing := abstract_element.custom_property_data() {
 		if existing.is_animation_overlay() {
 			had_animation_overlay = true
-			animated_values = existing.own_values.clone()
+			animated_values = existing.own_values
 		}
 	}
 	mut cascaded_all := map[string]dom.CSSCustomProperty_{}
 	for layer in matching_rule_set.author_rules {
 		cascade_custom_properties(abstract_element, layer.rules, mut cascaded_all)
-	}
-
-	mut parent_data := ?&dom.CSSCustomPropertyData_(none)
-	if parent := abstract_element.element_to_inherit_style_from() {
-		parent_data = inheritable_custom_property_data(parent)
 	}
 
 	// Build own_values with only declarations whose retained StyleValue differs
@@ -13825,6 +13848,10 @@ fn install_custom_property_data_for_style(abstract_element dom.AbstractElement, 
 		cascaded_own[name] = property
 	}
 
+	// create() copies the winning map, including keys, into the element owner.
+	// Intermediate cascade maps can retire after publication.
+	mut retained := platform.enter_retained_allocations()
+	defer { retained.finish() }
 	mut mutable_abstract_element := abstract_element
 	if cascaded_own.len == 0 {
 		if parent := parent_data {
