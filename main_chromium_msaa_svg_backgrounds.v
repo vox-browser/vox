@@ -36,7 +36,9 @@ fn append_chromium_svg_background_msaa_triggers(command layout.PaintCommand, ind
 	document.set_svg_image_color_scheme(css.preferred_color_scheme_to_string(image.background_svg_color_scheme))
 	outer := command.transform
 	converter := painting.new_device_pixel_converter(1.0) or { return }
-	for tile in painting.background_tiles_from_plan_limited(plan, clip, 4096) {
+	mut tiles := painting.background_tile_iterator(plan, clip, 4096)
+	for {
+		tile := tiles.next() or { break }
 		destination := converter.rounded_device_rect(tile)
 		replay := if !plan.repeat_x && !plan.repeat_y {
 			chromium_svg_background_replay(tile, outer)
