@@ -17,10 +17,8 @@ in its protocol. Explicit historic Boehm comparisons require `--allocator boehm`
 ### Corrected arena before/after: 50 MB remains unmet
 
 The latest V-source comparison, three alternating optimized pairs, measures
-**88.23 → 88.16 MB**, a **0.07% reduction**. This provider-only change does
-not establish a substantial RAM saving. The preceding glyph-index font cohort
-measures **89.03 → 87.84 MB**. The latest largest candidate settled observation
-is **88,556,984 bytes**. The **50,000,000-byte limit still fails**.
+**87.82 → 85.39 MB**, a **2.76% reduction**. The largest candidate settled
+observation is **85,444,000 bytes**. The **50,000,000-byte limit still fails**.
 All six raw viewport images match, all frozen-input guards pass, and all six script audits
 report no page runtime, sources, source bytes or preloaded scripts.
 
@@ -43,6 +41,7 @@ report no page runtime, sources, source bytes or preloaded scripts.
 | Native HarfBuzz cache retirement | 89,195,888 bytes | 89,130,376 bytes | 0.07% |
 | Glyph-index font initialization and native allocator relief | 89,032,072 bytes | 87,836,064 bytes | 1.34% |
 | Updated native wrappers with unchanged V code/data | 88,229,256 bytes | 88,163,744 bytes | 0.07% |
+| Retained geometry, scalar background queries, stylesheet and parser workspaces, geometry bounds | 87,819,656 bytes | 85,394,824 bytes | 2.76% |
 
 Each row is its own three-pair cohort; these are aggregate build comparisons,
 not isolated savings attributed to individual commits. Evidence is in
@@ -55,7 +54,7 @@ not isolated savings attributed to individual commits. Evidence is in
 `arena-idle-xml-paired/`, `arena-inline-chunks-paired/` and
 `arena-style-lists-paired/`, `arena-initial-snapshots-paired/` and
 `arena-native-font-idle-paired/`, `arena-glyph-index-fonts-paired/` and
-`arena-native-frame-pool-paired/`, including summaries, raw
+`arena-native-frame-pool-paired/` and `arena-match-text-geometry2-paired/`, including summaries, raw
 process samples, allocator checks, resource audits and captures. Matching
 `arena-{text,svg}-lifetimes-build-protocol.json` files pin the complete source
 inputs, current compiler and native libraries. The static-paint and SVG protocols are
@@ -237,7 +236,7 @@ Sampled launch peaks are 498.6–500.6 MB; the largest settled observation is
 87,901,576 bytes. Signing, startup, all viewport hashes and no-script/input
 guards pass. The 50 MB budget remains unmet.
 
-The latest native-frame-pool cohort uses the same V code and data with committed
+The native-frame-pool cohort uses the same V code and data with committed
 Skia/Metal wrappers from `3649ed83`, including per-frame autorelease draining.
 The original pinned Dawn provider remains. Native graphics lifetime and redraw
 checks pass against the actual new wrappers. Re-signing the bundle changes its
@@ -251,6 +250,32 @@ viewport hashes and every no-script/input guard pass. Later retained-geometry
 copies, scalar background queries and callback traversal changes are excluded.
 The 50 MB budget remains unmet.
 
+The latest `arena-match-text-geometry2` cohort holds those native libraries
+fixed and includes scalar background-list queries, committed retained-geometry
+copies, stylesheet insertion workspaces, borrowed callback vectors, parser text
+storage, and streaming SVG bounds accumulation. It freezes `6002e21c` plus ten
+explicit source overlays, subsequently authenticated against committed
+`a3487c6a`. The build protocol pins every file and generated C SHA-256
+`82226bb8ee21285d371984226ae64b14a3ed1f655d23065856613e3506b28b1b`.
+These are aggregate savings, not isolated credit for individual changes.
+
+The stylesheet, callback, parser and geometry selections respectively pass
+18, 3, 13 and 6 cases per allocator mode plus arena poisoning. The callback
+selection excludes one older test whose failures were reproduced on its
+unchanged baseline; its failed whole selections remain preserved. The first
+geometry attempt failed its allocation budget because V boxed a mutable
+accumulator. Returning scalar records fixes that failure without changing the
+assertion. The stopped first private build receives no measurement credit.
+
+All six captures retain raw viewport SHA-256
+`3010d840c8adaf0a5b71254499c27d9888d21b0cc92246c2ce989af60d8bb1fd`;
+signing, startup, input guards and script audits pass. Sampled launch peaks are
+490.97–492.64 MB, so this does not meet a 50 MB peak budget either. The signed
+executable SHA-256 is
+`703e2246faa536851db5aaea8ef78bf026be3a423b882c3d2a99787bbe4ec117`.
+Later ASCII name validation and reusable scratch descriptors are excluded.
+The canonical installed application remains untouched.
+
 The conditions below also apply to these cohorts: `-prealloc -gc none`, optimized
 C, the unchanged 40-file cache, 1024×768 CSS pixels at DPR 2, a visible background
 window, and simultaneous app/descendant physical footprint measured before PNG
@@ -260,12 +285,12 @@ Reproduce the latest V-source cohort with:
 
 ```sh
 python3 tools/benchmark_wikipedia_memory.py \
-  --before Build/wikipedia-50mb/arena-glyph-index-fonts.app/Contents/MacOS/Vox \
-  --after Build/wikipedia-50mb/arena-native-frame-pool.app/Contents/MacOS/Vox \
+  --before Build/wikipedia-50mb/arena-native-frame-pool.app/Contents/MacOS/Vox \
+  --after Build/wikipedia-50mb/arena-match-text-geometry2.app/Contents/MacOS/Vox \
   --cache Build/wikipedia-100mb/cache \
   --network-deny Build/pikabu-instructions-network-deny.dylib \
   --activity background --repeat 3 --allocator prealloc \
-  --output Build/wikipedia-50mb/arena-native-frame-pool-recheck
+  --output Build/wikipedia-50mb/arena-match-text-geometry2-recheck
 ```
 
 The command exits nonzero while the 50 MB budget is exceeded.
