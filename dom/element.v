@@ -5610,6 +5610,9 @@ pub fn (mut e Element) invalidate_lang_value() {
 
 fn schedule_has_invalidation_for_inherited_attribute_change(element &Element, pseudo_class_name string) {
 	node := element.as_node()
+	// Language/direction caches are still invalidated by the caller. A pending
+	// complete style pass already rematches every affected :has() subject.
+	if node.document().needs_full_style_update() { return }
 	// Resolve the same scope snapshot before invalidation, without retaining the
 	// changed node in a captured callback after this synchronous walk returns.
 	scopes := node.observing_style_scopes()

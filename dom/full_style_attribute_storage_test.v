@@ -13,6 +13,8 @@ fn test_full_style_attribute_invalidation_does_not_build_attribute_deltas() {
 		element.invalidate_style_after_attribute_change('class', old, new)
 		element.invalidate_style_after_attribute_change('id', old, new)
 		element.invalidate_style_after_attribute_change('data-removed', old, none)
+		schedule_has_invalidation_for_inherited_attribute_change(element, 'lang')
+		schedule_has_invalidation_for_inherited_attribute_change(element, 'dir')
 	}
 	after := platform.thread_arena_usage().used
 	assert element.as_node().needs_style_update()

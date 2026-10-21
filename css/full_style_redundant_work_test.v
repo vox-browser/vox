@@ -65,3 +65,32 @@ fn test_full_pass_pending_before_host_attribute_change_updates_shadow_style() {
 	document.update_style()
 	assert computed_value_for(target, .color) or { '' } == 'rgb(0, 0, 255)'
 }
+
+fn test_full_pass_covers_inherited_language_and_direction_has_changes() {
+	mut document := dom.Document.create(dom.url_about_blank())
+	defer { document.finalize() }
+	document.set_browsing_context(&dom.BrowsingContext{})
+	mut root := full_invalidation_element(document, document.as_node(), 'html')
+	section := full_invalidation_element(document, root.as_node(), 'section')
+	mut trigger := full_invalidation_element(document, section.as_node(), 'i')
+	target := full_invalidation_element(document, section.as_node(), 'span')
+	root.set_attribute_value('lang', 'en')
+	trigger.set_attribute_value('dir', 'ltr')
+	add_document_author_style_sheet(document, 'span{color:blue}section:has(i:lang(fr)) span{color:red}section:has(i:dir(rtl)) span{background-color:green}')
+	css_style_computer_for(document)
+	document.update_style()
+	assert computed_value_for(target, .color) or { '' } == 'rgb(0, 0, 255)'
+	mut scope := css_style_scope_for_document(document)
+	document.set_needs_full_style_update(true)
+	root.set_attribute_value('lang', 'fr')
+	trigger.set_attribute_value('dir', 'rtl')
+	assert scope.pending_has_invalidation_features.len == 0
+	document.update_style()
+	assert computed_value_for(target, .color) or { '' } == 'rgb(255, 0, 0)'
+	assert computed_value_for(target, .background_color) or { '' } == 'rgb(0, 128, 0)'
+	root.set_attribute_value('lang', 'en')
+	trigger.set_attribute_value('dir', 'ltr')
+	document.update_style()
+	assert computed_value_for(target, .color) or { '' } == 'rgb(0, 0, 255)'
+	assert computed_value_for(target, .background_color) or { '' } == 'rgba(0, 0, 0, 0)'
+}
