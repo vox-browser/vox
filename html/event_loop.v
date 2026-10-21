@@ -608,7 +608,7 @@ pub fn (mut event_loop EventLoop) process() {
 		event_loop.schedule()
 	}
 	if event_loop.type_ == .window && !event_loop.task_queue_.has_runnable_tasks()
-		&& !event_loop.idle_period_timer_active() {
+		&& !event_loop.idle_period_timer_active() && event_loop.has_active_idle_callbacks() {
 		windows := event_loop.same_loop_windows()
 		mut has_idle_callbacks := false
 		for window in windows {
@@ -676,10 +676,7 @@ pub fn (mut event_loop EventLoop) rendering_opportunity(frame_time f64, watchdog
 	if event_loop.rendering_task_queued_ || event_loop.task_queue_.has_rendering_tasks() {
 		return true
 	}
-	documents := event_loop.documents_in_this_event_loop_matching(fn (document &dom.Document) bool {
-		return document.is_fully_active() && document_has_a_rendering_opportunity(document)
-	})
-	if documents.len == 0 {
+	if !event_loop.has_document_with_rendering_opportunity() {
 		return false
 	}
 	event_loop.rendering_task_queued_ = true
@@ -693,10 +690,10 @@ pub fn (mut event_loop EventLoop) rendering_opportunity(frame_time f64, watchdog
 }
 
 pub fn (event_loop &EventLoop) process_input_events() {
-	documents := event_loop.documents_in_this_event_loop_matching(fn (document &dom.Document) bool {
-		return document.is_fully_active() && !document.is_decoded_svg()
-	})
 	if hook := event_loop.input_events_hook_ {
+		documents := event_loop.documents_in_this_event_loop_matching(fn (document &dom.Document) bool {
+			return document.is_fully_active() && !document.is_decoded_svg()
+		})
 		hook(documents)
 	}
 }
@@ -716,31 +713,17 @@ pub fn (mut event_loop EventLoop) update_the_rendering() {
 	assert !event_loop.running_rendering_task
 	event_loop.rendering_task_queued_ = false
 	event_loop.running_rendering_task = true
-	for model in all_navigable_models() {
-		if model.is_local_root() {
-			if page_ := model.page() {
-				page_.client_will_begin_rendering_update()
-			}
-		}
-	}
+	notify_pages_of_rendering_update(true)
 	defer {
-		for model in all_navigable_models() {
-			if model.is_local_root() {
-				if page_ := model.page() {
-					page_.client_did_finish_rendering_update()
-				}
-			}
-		}
+		notify_pages_of_rendering_update(false)
 	}
 	update_start_time := unsafe_shared_current_time_ms()
 	event_loop.rendering_scheduler_counters_.updates_run++
 	event_loop.process_input_events()
 	frame_timestamp := event_loop.last_render_opportunity_time_
-	documents := event_loop.documents_in_this_event_loop_matching(fn (document &dom.Document) bool {
-		return document.is_fully_active() && !document.is_render_blocked() && !document.hidden()
-			&& !document.rendering_suppression_for_view_transitions
-			&& document_has_a_rendering_opportunity(document)
-	})
+	snapshot := event_loop.rendering_document_snapshot()
+	defer { snapshot.scratch.finish() }
+	documents := snapshot.documents
 	for document in documents {
 		navigable := document.navigable() or { continue }
 		if !navigable.is_top_level_traversable() {
@@ -837,14 +820,18 @@ pub fn (mut event_loop EventLoop) update_the_rendering() {
 		mutable_document.run_the_update_intersection_observations_steps(frame_timestamp)
 		mutable_document.process_top_layer_removals()
 	}
-	mut documents_to_paint := []&dom.Document{cap: documents.len}
+	// Hooks may retain their input, so their public snapshot remains durable.
+	// Without a hook only the paint count is needed.
+	mut documents_to_paint := []&dom.Document{cap: if event_loop.rendering_hook_ != none { documents.len } else { 0 }}
+	mut paint_count := 0
 	for document in documents {
 		style_computer := css.css_style_computer_for(document)
 		mut font_computer := unsafe { &css.FontComputer(style_computer.font_computer()) }
 		if font_computer.should_defer_initial_paint() {
 			continue
 		}
-		documents_to_paint << document
+		paint_count++
+		if event_loop.rendering_hook_ != none { documents_to_paint << document }
 	}
 	if hook := event_loop.rendering_hook_ {
 		hook(documents_to_paint, frame_timestamp)
@@ -852,9 +839,66 @@ pub fn (mut event_loop EventLoop) update_the_rendering() {
 	// EventLoop.cpp: after rendering, update the source environment gate for
 	// the actual FontFaceSet used by this document's style/font computer.
 	event_loop.update_font_face_sets_pending_on_the_environment(documents)
-	event_loop.rendering_scheduler_counters_.paints += u64(documents_to_paint.len)
+	event_loop.rendering_scheduler_counters_.paints += u64(paint_count)
 	event_loop.rendering_scheduler_counters_.update_microseconds += u64((unsafe_shared_current_time_ms() - update_start_time) * 1000.0)
 	event_loop.running_rendering_task = false
+}
+
+fn notify_pages_of_rendering_update(begin bool) {
+	scratch := platform.begin_thread_scratch('rendering navigable snapshot')
+	models := all_navigable_models()
+	scratch.leave()
+	defer { scratch.finish() }
+	for model in models {
+		if model.is_local_root() {
+			if page_ := model.page() {
+				if begin { page_.client_will_begin_rendering_update() }
+				else { page_.client_did_finish_rendering_update() }
+			}
+		}
+	}
+}
+
+struct RenderingDocumentSnapshot {
+	scratch platform.ThreadScratchScope
+	documents []&dom.Document
+}
+
+fn (mut event_loop EventLoop) rendering_document_snapshot() RenderingDocumentSnapshot {
+	// Sorting can replace the durable document cache. Only its pointer-vector
+	// copy belongs to scratch storage; predicates and rendering can call out.
+	event_loop.ensure_documents_sorted()
+	scratch := platform.begin_thread_scratch('rendering document snapshot')
+	mut documents := event_loop.documents_.clone()
+	scratch.leave()
+	mut count := 0
+	for document in documents {
+		if document.is_decoded_svg() || !document.is_fully_active()
+			|| document.is_render_blocked() || document.hidden()
+			|| document.rendering_suppression_for_view_transitions
+			|| !document_has_a_rendering_opportunity(document) { continue }
+		documents[count] = document
+		count++
+	}
+	documents.trim(count)
+	return RenderingDocumentSnapshot{scratch: scratch, documents: documents}
+}
+
+fn (event_loop &EventLoop) has_document_with_rendering_opportunity() bool {
+	for document in event_loop.documents_ {
+		if !document.is_decoded_svg() && document.is_fully_active()
+			&& document_has_a_rendering_opportunity(document) { return true }
+	}
+	return false
+}
+
+fn (event_loop &EventLoop) has_active_idle_callbacks() bool {
+	for settings in event_loop.related_environment_settings_objects_ {
+		window := settings.window_ or { continue }
+		document := window.associated_document()
+		if document.is_fully_active() && !document.hidden() && window.has_idle_callbacks() { return true }
+	}
+	return false
 }
 
 pub fn (event_loop &EventLoop) update_font_face_sets_pending_on_the_environment(documents []&dom.Document) {
@@ -1080,9 +1124,11 @@ pub fn (event_loop &EventLoop) same_loop_windows() []&WindowModel {
 pub fn (event_loop &EventLoop) compute_deadline() f64 {
 	mut deadline := event_loop.last_idle_period_start_time_ + 50.0
 	mut has_pending_renders := false
-	for window in event_loop.same_loop_windows() {
-		if window.has_animation_frame_callbacks() {
+	for settings in event_loop.related_environment_settings_objects_ {
+		window := settings.window_ or { continue }
+		if window.associated_document().is_fully_active() && window.has_animation_frame_callbacks() {
 			has_pending_renders = true
+			break
 		}
 	}
 	if has_pending_renders {
