@@ -16,6 +16,57 @@ in its protocol. Explicit historic Boehm comparisons require `--allocator boehm`
 
 ### Corrected arena before/after: 50 MB remains unmet
 
+The latest three alternating optimized pairs measure **142.84 → 132.24 MB**,
+a **7.42% reduction**. The largest candidate settled observation is
+**132,416,928 bytes**. The **50,000,000-byte limit still fails**. All six raw
+viewport images match, all frozen-input guards pass, and all six script audits
+report no page runtime, sources, source bytes or preloaded scripts.
+
+| Arena comparison | Before median | After median | Reduction |
+| --- | ---: | ---: | ---: |
+| Text, parser and decoder lifetimes | 157,959,656 bytes | 142,624,256 bytes | 9.71% |
+| Fixed markers and embedded SVG ownership | 142,837,224 bytes | 132,236,728 bytes | 7.42% |
+
+Each row is its own three-pair cohort; these are aggregate build comparisons,
+not isolated savings attributed to individual commits. Evidence is in
+`Build/wikipedia-50mb/arena-text-lifetimes-paired2/` and
+`Build/wikipedia-50mb/arena-svg-lifetimes-paired/`, including summaries, raw
+process samples, allocator checks, resource audits and captures. Matching
+`arena-{text,svg}-lifetimes-build-protocol.json` files pin the complete source
+inputs, current compiler and native libraries. The SVG candidate's sampled
+launch peaks are 570.5–572.0 MB, so this is a settled-memory reduction.
+
+The changes retire stylesheet tokenizer/rule workspaces and raster-decoder
+intermediates, avoid UTF-16 buffers for whole text replacement, reuse parser
+scope boundary lists, keep preload work in its retiring document owner, resolve
+fixed marker styles without loading the full counter catalog, and independently
+own embedded SVG payloads and their recyclable paint trees. Retained SVG scenes
+keep their document bytes alive until the last reader releases them. Focused
+checks cover each completed change; later unmeasured changes receive no RAM
+credit here. These private signed measurement bundles preserve the canonical
+installed app.
+
+The conditions below also apply to these cohorts: `-prealloc -gc none`, optimized
+C, the unchanged 40-file cache, 1024×768 CSS pixels at DPR 2, a visible background
+window, and simultaneous app/descendant physical footprint measured before PNG
+allocation. Diagnostic samplers and unoptimized pilot builds are excluded.
+
+Reproduce the latest cohort with:
+
+```sh
+python3 tools/benchmark_wikipedia_memory.py \
+  --before Build/wikipedia-50mb/arena-text-lifetimes.app/Contents/MacOS/Vox \
+  --after Build/wikipedia-50mb/arena-svg-lifetimes.app/Contents/MacOS/Vox \
+  --cache Build/wikipedia-100mb/cache \
+  --network-deny Build/pikabu-instructions-network-deny.dylib \
+  --activity background --repeat 3 --allocator prealloc \
+  --output Build/wikipedia-50mb/arena-svg-recheck
+```
+
+The command exits nonzero while the 50 MB budget is exceeded.
+
+### Initial corrected arena cohort
+
 Three fresh alternating pairs measure **158.8 → 158.0 MB**, a **0.46% reduction**.
 The largest candidate settled observation is **158,172,672 bytes**. The
 **50,000,000-byte limit fails**. All six viewport images are byte-identical, the
