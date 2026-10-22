@@ -398,7 +398,10 @@ fn (mut parser SimpleXMLDocumentParser) parse_document() ! {
 		parser.position = 3
 	}
 	parser.skip_space()
-	if parser.starts_with('<?xml') {
+	// The declaration target is exactly `xml`; targets such as xml-stylesheet
+	// are processing instructions and must remain in the document tree.
+	if parser.starts_with('<?xml') && parser.position + 5 < parser.source.len
+		&& xml_is_space(parser.source[parser.position + 5]) {
 		end := parser.source.index_after('?>', parser.position + 5) or {
 			return error('unterminated XML declaration')
 		}

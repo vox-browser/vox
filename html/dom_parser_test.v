@@ -54,6 +54,24 @@ fn test_dom_parser_places_processing_instructions_at_their_parse_location() {
 	assert children[2].as_processing_instruction()?.target() == 'after'
 }
 
+fn test_dom_parser_preserves_processing_instruction_targets_starting_with_xml() {
+	parser := DOMParser.create(dom.Document.create(dom.url_about_blank()))
+	for target in ['xml-stylesheet', 'xml-model', 'xmlfoo'] {
+		for declaration in ['', '<?xml version="1.0"?>'] {
+			mut document := parser.parse_from_string(declaration + '<?' + target
+				+ ' href="sheet.css"?><root/>', .application_xml) or { panic(err) }
+			children := document.as_node().children_as_vector()
+			assert children.len == 2
+			instruction := children[0].as_processing_instruction() or { panic('missing instruction') }
+			assert instruction.target() == target
+			assert instruction.data() == 'href="sheet.css"'
+			root := children[1].as_element() or { panic('missing root') }
+			assert root.local_name() == 'root'
+			document.finalize()
+		}
+	}
+}
+
 fn test_dom_parser_returns_parsererror_for_malformed_xml() {
 	associated := dom.Document.create(dom.url_about_blank())
 	parser := DOMParser.create(associated)
