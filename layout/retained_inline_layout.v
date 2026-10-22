@@ -205,7 +205,7 @@ fn run_inline_formatting_context_internal(mut state LayoutState, containing_bloc
 		return run_uncached_inline_formatting_context(mut state, containing_block, mut used, mode,
 			space, context)
 	}
-	result := run_uncached_inline_formatting_context(mut state, containing_block, mut used, mode,
+	result := run_closed_inline_layout(mut state, containing_block, mut used, mode,
 		space, context)
 	if used.line_boxes.len == 0 || !used.line_boxes.any(it.fragments_.len > 0) { return result }
 	mut snapshots := []RetainedInlineValues{cap: inputs.len - 1}
