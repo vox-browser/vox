@@ -48,7 +48,9 @@ fn own_transient_rule_prelude(rule Rule) Rule {
 			return Rule(AtRule{ ...rule, name: rule.name.clone(), prelude: own_stylesheet_components(rule.prelude) })
 		}
 		QualifiedRule {
-			return Rule(QualifiedRule{ ...rule, prelude: own_stylesheet_components(rule.prelude) })
+			// Selector conversion serializes its input before constructing the
+			// retained selector graph. No component of this prelude escapes.
+			return rule
 		}
 	}
 }

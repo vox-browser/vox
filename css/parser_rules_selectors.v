@@ -1161,7 +1161,7 @@ fn (mut parser RuleSelectorParser) convert_to_rule(rule Rule, nested ParserNeste
 	owned := if parser.raw_rules_transient {
 		match rule {
 			AtRule { Rule(AtRule{...rule, prelude: rule.prelude.clone()}) }
-			QualifiedRule { Rule(QualifiedRule{...rule, prelude: rule.prelude.clone()}) }
+			QualifiedRule { Rule(rule) }
 		}
 	} else { rule }
 	return parser.convert_to_rule_impl(owned, nested, declaration_rule_kind)
@@ -3085,9 +3085,7 @@ fn (mut parser RuleSelectorParser) parse_layer_name(mut tokens ParserTokenStream
 fn (mut parser RuleSelectorParser) parse_a_selector_list(mut tokens ParserTokenStream, mode ParserSelectorType, parsing_mode SelectorParsingMode) ?SelectorList {
 	mut selectors := SelectorList{}
 	for {
-		selector_parts :=
-			parser.consume_a_list_of_component_values(mut tokens, TokenType.comma, .no)
-		selector_text := parser_selector_prelude_to_string(selector_parts).trim_space()
+		selector_text := parser.consume_selector_source(mut tokens)
 		if selector_text.len == 0 {
 			if parsing_mode == .forgiving {
 				selectors.selectors << selector_from_text('')
