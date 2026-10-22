@@ -3,6 +3,7 @@
 #include "native_test_window_darwin.h"
 #include <CoreImage/CoreImage.h>
 #include <CoreText/CoreText.h>
+#include <malloc/malloc.h>
 #include <math.h>
 #include <stdint.h>
 #include <stdlib.h>
@@ -2335,7 +2336,14 @@ void native_schedule_idle_graphics_cleanup(void) {
 			// A first check can precede the renderer's two-second idle
 			// threshold. Keep polling until the final live context retires,
 			// even if the document never paints another frame.
-			if (ladybird_v_skia_release_idle_graphics_memory())
+			int pending;
+			@autoreleasepool {
+				pending = ladybird_v_skia_release_idle_graphics_memory();
+			}
+			// GPU retirement can happen after the font cleanup's pressure
+			// relief. Return free malloc pages after its temporaries drain.
+			malloc_zone_pressure_relief(NULL, 0);
+			if (pending)
 				native_schedule_idle_graphics_cleanup();
 #endif
 		});
@@ -2344,15 +2352,18 @@ void native_schedule_idle_graphics_cleanup(void) {
 
 static void native_release_unused_graphics_memory(void) {
 	if (![NSThread isMainThread]) return;
+	@autoreleasepool {
 #ifdef LADYBIRD_V_HAS_SKIA_TEXT
-	ladybird_v_skia_release_unused_graphics_memory();
+		ladybird_v_skia_release_unused_graphics_memory();
 #endif
-	// A page without filters never creates this renderer. Preserve that lazy
-	// behavior while returning unused textures from existing filter contexts.
-	if (native_css_filter_ci_context != nil) {
-		[native_css_filter_ci_context reclaimResources];
-		[native_css_filter_ci_context clearCaches];
+		// A page without filters never creates this renderer. Preserve that lazy
+		// behavior while returning unused textures from existing filter contexts.
+		if (native_css_filter_ci_context != nil) {
+			[native_css_filter_ci_context reclaimResources];
+			[native_css_filter_ci_context clearCaches];
+		}
 	}
+	malloc_zone_pressure_relief(NULL, 0);
 }
 
 // Native allocations are independent of managed allocation debt. A static
