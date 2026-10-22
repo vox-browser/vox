@@ -352,6 +352,17 @@ fn resolve_unresolved_style_value_for_property_with_context(abstract_element dom
 		element.set_style_uses_var_css_function()
 	}
 
+	$if prealloc {
+		// A top-level property resolution publishes only its typed value. The
+		// argument grammar, intermediate tokens and function-local scopes all
+		// expire together. Keep an enclosing function's mutable scopes on the
+		// existing path instead of putting temporary tokens in its caches.
+		if guarded_contexts.contexts.len == 0 && guarded_contexts.function_local_scopes.len == 0 {
+			return resolve_property_in_substitution_workspace(abstract_element, property_id,
+				unresolved, mut guarded_contexts)
+		}
+	}
+
 	// To replace substitution functions in a property prop:
 
 	// 1. Substitute arbitrary substitution functions in prop's value, given << "property", prop's name >> as the
@@ -361,6 +372,10 @@ fn resolve_unresolved_style_value_for_property_with_context(abstract_element dom
 		first: string_from_property_id(property_id)
 	})
 
+	return parse_substituted_property_value(property_id, result, false)
+}
+
+fn parse_substituted_property_value(property_id PropertyID, result []ComponentValue, transient bool) &dom.StyleValue {
 	// 2. If result contains the guaranteed-invalid value, prop is invalid at computed-value time; return.
 	if contains_guaranteed_invalid_value(result) {
 		return dom_style_value_from_value_logic(StyleValue(GuaranteedInvalidStyleValue.create()))
@@ -372,8 +387,16 @@ fn resolve_unresolved_style_value_for_property_with_context(abstract_element dom
 	// Substitution has already materialized this immutable input. The parser
 	// only advances a separate cursor, so it need not copy the component slots.
 	mut parser := Parser.from_component_span(result)
-	parsed_value := parser.parse_css_value(property_id) or {
+	mut parsed_value := parser.parse_css_value(property_id) or {
 		return dom_style_value_from_value_logic(StyleValue(GuaranteedInvalidStyleValue.create()))
+	}
+	if transient {
+		if mut parsed_value is UnresolvedStyleValue {
+			parsed_value.tokens = own_stylesheet_components(parsed_value.tokens)
+			if original := parsed_value.original_source_text {
+				parsed_value.original_source_text = original.clone()
+			}
+		}
 	}
 
 	// 4. Otherwise, replace prop's value with the parsed result.

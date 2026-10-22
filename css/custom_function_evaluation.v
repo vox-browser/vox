@@ -1,6 +1,7 @@
 module css
 
 import dom
+import platform
 
 // A function-local custom property is resolved against the registrations and
 // declarations of the hypothetical element created while evaluating
@@ -52,7 +53,7 @@ fn function_local_invalid() FunctionLocalResolution {
 
 fn function_local_resolved(tokens []ComponentValue) FunctionLocalResolution {
 	return FunctionLocalResolution{
-		kind: .resolved
+		kind:   .resolved
 		tokens: tokens
 	}
 }
@@ -119,8 +120,8 @@ fn resolve_function_local_property(element ?dom.AbstractElement, name string, mu
 	if value := scope.values[name] {
 		if value.includes_substitution {
 			substituted := substitute_arbitrary_substitution_functions_with_optional_element(element, mut guarded_contexts, value.tokens, SubstitutionContext{
-				dependency_type: .property
-				first: name
+				dependency_type:   .property
+				first:             name
 				function_identity: scope.function_identity
 			})
 			if contains_guaranteed_invalid_value(substituted) {
@@ -194,6 +195,23 @@ fn resolve_custom_property_for_function_scope(element ?dom.AbstractElement, name
 
 fn resolve_custom_function_definition(element ?dom.AbstractElement, name string, guarded_contexts GuardedSubstitutionContexts) ?FunctionDefinitionAndScope {
 	el := element or { return none }
+	// A lookup may initialize a document/shadow style scope or its rule cache.
+	// Those records outlive a caller's property-substitution workspace.
+	mut allocations := el.document().enter_native_storage()
+	defer { allocations.finish() }
+	owner := el.document().native_storage()
+	use_document := owner != unsafe { nil }
+		&& voidptr(owner) == voidptr(platform.current_retained_arena())
+	persistent := platform.enter_persistent_if(!use_document && platform.transient_arena_entered())
+	mut retained := if use_document {
+		platform.enter_retained_allocations()
+	} else {
+		platform.RetainedAllocationScope{}
+	}
+	defer {
+		retained.finish()
+		platform.leave_persistent(persistent)
+	}
 	// Rust custom_properties.rs resolves nested names where the calling
 	// function was defined. Top-level names use the element's style scope.
 	for index := guarded_contexts.contexts.len - 1; index >= 0; index-- {
@@ -254,7 +272,7 @@ fn collect_custom_function_body(rule &CSSRule) (map[string]FunctionLocalValue, [
 				name := descriptor.descriptor_name_and_id.name()
 				tokens := parse_component_values_for_value_logic(descriptor.serialized_value)
 				collected_values[name] = FunctionLocalValue{
-					tokens: tokens
+					tokens:                tokens
 					includes_substitution: component_values_include_substitution(tokens)
 				}
 				if name !in collected_names {
@@ -272,8 +290,8 @@ fn evaluate_a_custom_function(element ?dom.AbstractElement, mut guarded_contexts
 	rule := definition.function
 	identity := u64(voidptr(rule))
 	mut function_context := SubstitutionContext{
-		dependency_type: .function
-		first: rule.function_name
+		dependency_type:   .function
+		first:             rule.function_name
 		function_identity: identity
 	}
 	guarded_contexts.guard(mut function_context)
@@ -294,7 +312,7 @@ fn evaluate_a_custom_function(element ?dom.AbstractElement, mut guarded_contexts
 		}
 	}
 	registrations['result'] = FunctionLocalRegistration{
-		syntax: rule.function_return_type
+		syntax:    rule.function_return_type
 		is_result: true
 	}
 
@@ -314,7 +332,7 @@ fn evaluate_a_custom_function(element ?dom.AbstractElement, mut guarded_contexts
 			}
 		} else if default_value := parameter.default_value {
 			argument_values[parameter.name] = FunctionLocalValue{
-				tokens: trim_component_value_whitespace(default_value)
+				tokens:                trim_component_value_whitespace(default_value)
 				includes_substitution: true
 			}
 		}
@@ -322,8 +340,8 @@ fn evaluate_a_custom_function(element ?dom.AbstractElement, mut guarded_contexts
 
 	mut argument_scope := &FunctionLocalScope{
 		function_identity: identity
-		values: argument_values
-		registrations: registrations.clone()
+		values:            argument_values
+		registrations:     registrations.clone()
 	}
 	guarded_contexts.function_local_scopes << argument_scope
 	mut argument_styles := map[string][]ComponentValue{}
@@ -360,8 +378,8 @@ fn evaluate_a_custom_function(element ?dom.AbstractElement, mut guarded_contexts
 
 	mut body_scope := &FunctionLocalScope{
 		function_identity: identity
-		values: body_values
-		registrations: registrations
+		values:            body_values
+		registrations:     registrations
 	}
 	guarded_contexts.function_local_scopes << body_scope
 	mut result := function_local_invalid()
