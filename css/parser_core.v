@@ -1398,8 +1398,10 @@ fn (mut tokenizer Tokenizer) consume_an_ident_sequence_with_escape_flag() (strin
 			continue
 		}
 
-		// the stream starts with a valid escape
-		if Tokenizer.is_valid_escape_sequence(tokenizer.start_of_input_stream_twin()) {
+		// Only a reverse solidus can start an escape. Other name terminators
+		// already have the cursor state needed by the reconsume below.
+		if is_reverse_solidus(input)
+			&& Tokenizer.is_valid_escape_sequence(tokenizer.start_of_input_stream_twin()) {
 			// Consume an escaped code point. Append the returned code point to result.
 			if result == unsafe { nil } {
 				result = &TokenizerNameBuilder{ text: strings.new_builder(16) }
