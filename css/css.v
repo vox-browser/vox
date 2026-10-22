@@ -534,8 +534,7 @@ pub enum PropertyID {
 }
 
 pub fn parse_css_value(context ParsingParams, text string, property PropertyID) ?&dom.StyleValue {
-	mut parser := Parser.with_context(context, text)
-	value := parser.parse_css_value(property) or { return none }
+	value := parse_css_value_in_workspace(context, property, text) or { return none }
 	return dom_style_value_from_value_logic(value)
 }
 

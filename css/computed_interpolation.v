@@ -15180,11 +15180,10 @@ fn parse_svg_presentation_attribute_value(document &dom.Document, property_id Pr
 			StyleValue(TransformationStyleValue.create(.transform, .matrix, parameters)),
 		], .space, .yes))
 	}
-	mut parser := Parser.with_context(ParsingParams{
+	return parse_css_value_in_workspace(ParsingParams{
 		document: document
 		mode: .svg_presentation_attribute
-	}, source)
-	return parser.parse_css_value(property_id)
+	}, property_id, source)
 }
 
 pub fn (s &StyleComputer) compute_custom_properties(mut computed_properties ComputedProperties, abstract_element dom.AbstractElement) {
