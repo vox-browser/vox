@@ -715,7 +715,9 @@ pub fn CSSStyleProperties.create_from_declarations(properties []StyleProperty, c
 	//     parent CSS rule: The context object.
 	//     owner node: Null.
 	mut declaration := CSSStyleProperties.create()
-	declaration.properties = css_style_properties_to_cssom_properties(convert_declarations_to_specified_order(properties))
+	for property in properties {
+		declaration.append_parsed_declaration(property)
+	}
 	for name, property in custom_properties {
 		declaration.custom_properties[name] = property
 	}
@@ -1213,7 +1215,10 @@ pub fn (mut properties CSSStyleProperties) empty_the_declarations() {
 pub fn (mut properties CSSStyleProperties) set_the_declarations(property_values []StyleProperty, custom_property_values map[string]StyleProperty) {
 	properties.ensure_declarations_parsed()
 	properties.clear_typed_properties_cache()
-	properties.properties = css_style_properties_to_cssom_properties(convert_declarations_to_specified_order(property_values))
+	properties.properties.clear()
+	for property in property_values {
+		properties.append_parsed_declaration(property)
+	}
 	properties.custom_properties.clear()
 	for name, property in custom_property_values {
 		properties.custom_properties[name] = property

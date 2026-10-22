@@ -2440,8 +2440,7 @@ fn (mut parser RuleSelectorParser) convert_child_rule_list(children []RuleOrList
 }
 
 fn (mut parser RuleSelectorParser) convert_to_style_declaration(declarations ParserRuleDeclarations) &CSSStyleProperties {
-	mut properties := []StyleProperty{}
-	mut custom_properties := map[string]StyleProperty{}
+	mut result := CSSStyleProperties.create()
 	params := parser.parsing_params()
 	for declaration in declarations {
 		if is_a_custom_property_name_string(declaration.name) {
@@ -2450,7 +2449,7 @@ fn (mut parser RuleSelectorParser) convert_to_style_declaration(declarations Par
 			} else {
 				parser_component_values_to_string(declaration.value).trim_space()
 			}
-			custom_properties[if parser.component_input_transient { declaration.name.clone() } else { declaration.name }] = StyleProperty{
+			result.custom_properties[if parser.component_input_transient { declaration.name.clone() } else { declaration.name }] = StyleProperty{
 				important: declaration.important
 				property_id: .color
 				value: parse_custom_property_components(if parser.component_input_transient { own_stylesheet_components(declaration.value) } else { declaration.value }, value_text)
@@ -2478,14 +2477,14 @@ fn (mut parser RuleSelectorParser) convert_to_style_declaration(declarations Par
 					if text := parsed.original_source_text { parsed.original_source_text = text.clone() }
 				}
 			}
-			properties << StyleProperty{
+			result.append_parsed_declaration(StyleProperty{
 				important: declaration.important
 				property_id: property_id
 				value: dom_style_value_from_value_logic(parsed)
-			}
+			})
 		}
 	}
-	return CSSStyleProperties.create_from_declarations(properties, custom_properties)
+	return result
 }
 
 // Parser::DescriptorList::append(). A shorthand descriptor is expanded into its
