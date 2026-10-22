@@ -12963,11 +12963,7 @@ fn computed_interpolation_font_metrics_for_size(font_size CSSPixels) LengthFontM
 	persistent := platform.enter_persistent()
 	defer { platform.leave_persistent(persistent) }
 	ratio := font_size.to_double() / 16.0
-	font := platform.Font{
-		family: 'sans-serif'
-		point_size: f32(font_size.to_double())
-	}
-	metrics := font.pixel_metrics()
+	metrics := platform.fallback_font_pixel_metrics(f32(font_size.to_double()))
 	result := LengthFontMetrics{
 		font_size: font_size
 		x_height: CSSPixels.nearest_value_for(f64(metrics.x_height))

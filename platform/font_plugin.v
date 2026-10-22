@@ -250,6 +250,13 @@ fn (font &Font) pixel_metrics_uncached() FontPixelMetrics {
 			descent: font.point_size * 0.2
 		}
 	}
+	zero_advance, _ := font.glyph_metrics(u32(`0`))
+	return font.decoded_face_pixel_metrics(face, zero_advance)
+}
+
+// Only scalar metrics escape this calculation. Callers that need no retained
+// font can supply a temporary decoded face and its unrounded zero advance.
+fn (font &Font) decoded_face_pixel_metrics(face &ttf.TTF_File, zero_advance f32) FontPixelMetrics {
 	units_per_em := f32(face.units_per_em)
 	mut ascent_units := face.ascent
 	mut descent_units := i16(-face.descent)
@@ -297,7 +304,6 @@ fn (font &Font) pixel_metrics_uncached() FontPixelMetrics {
 	// Ladybird builds is not sub-pixel positioned, so that advance arrives as a
 	// whole number of pixels. The checked-in Layout expectations encode it: at
 	// 16px SerenitySans `1ch` is 10px there, not the face's 9.59375px.
-	zero_advance, _ := font.glyph_metrics(u32(`0`))
 	// CoreText's generic-serif selection exposes a 3:1 typographic split while
 	// retaining Times New Roman glyph advances. File-backed layout-test fonts
 	// instead use their concrete OpenType metrics above.
@@ -530,6 +536,18 @@ fn font_face(font &Font) ?&ttf.TTF_File {
 	defer { leave_persistent(persistent) }
 	platform_font_face_attempted[cache_key] = true
 	mut bytes := read_outline_face_bytes(path, face_index)?
+	face := decode_outline_face(mut bytes)
+	platform_font_faces[cache_key] = face
+	if font.resolved_path_ != '' {
+		mut mutable_font := unsafe { &Font(font) }
+		mutable_font.decoded_face_ = face
+	}
+	return face
+}
+
+// Decode into the caller's allocation scope. Publishing the face, when needed,
+// remains the responsibility of font_face().
+fn decode_outline_face(mut bytes []u8) &ttf.TTF_File {
 	normalize_table_checksums(mut bytes)
 	// External construction with the current V compiler does not apply these
 	// vlib field defaults, but TTF_File.init() writes all 12 PANOSE bytes.
@@ -546,11 +564,6 @@ fn font_face(font &Font) ?&ttf.TTF_File {
 	// Outline/metrics operations use glyph indices and the sparse lookup above.
 	// The staged initializer never creates cmaps; discard them on the legacy path.
 	face.cmaps = face.cmaps[..0].clone()
-	platform_font_faces[cache_key] = face
-	if font.resolved_path_ != '' {
-		mut mutable_font := unsafe { &Font(font) }
-		mutable_font.decoded_face_ = face
-	}
 	return face
 }
 
