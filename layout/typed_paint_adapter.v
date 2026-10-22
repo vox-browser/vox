@@ -4244,7 +4244,8 @@ fn uncached_text_lines_from_typed_layout(container &Node, used &UsedValues, stat
 	mut lines := []TextLine{cap: used.line_boxes.len}
 	mut paint_parent_pieces := []InlineBoxPiece{}
 	mut paint_parent_pieces_ready := false
-	for line_index, line_box in used.line_boxes {
+	for line_index in 0 .. used.line_boxes.len {
+		line_box := unsafe { &used.line_boxes[line_index] }
 		// Reserve only text-bearing fragments. Growing these wide paint records
 		// leaves every old buffer in the page's arena; atomic inline boxes and
 		// truncated fragments need no transport slot.

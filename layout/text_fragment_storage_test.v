@@ -83,7 +83,9 @@ fn test_many_styled_runs_reserve_one_exact_transport_buffer() {
 	assert lines[0].fragments.len == 37
 	assert lines[0].fragments.cap == 37
 	assert lines[0].fragments.map(it.text).join('') == 'x'.repeat(37)
-	for index, fragment in lines[0].fragments { assert fragment.color.r == u8(index) }
+	for index, fragment in lines[0].fragments {
+		assert fragment.color.r == u8(index)
+	}
 	$if prealloc {
 		// The final wide fragment buffer dominates this projection. A geometric
 		// growth chain alone exceeds twice its size, before any paint metadata.
@@ -93,9 +95,9 @@ fn test_many_styled_runs_reserve_one_exact_transport_buffer() {
 }
 
 fn test_atomic_inline_projection_does_not_copy_committed_line_fragments() {
-	markup := '<!doctype html><p id="text" style="white-space:nowrap">'
-		+ '<span style="display:inline-block;width:1px;height:10px"></span>'.repeat(64)
-		+ '</p>'
+	markup := '<!doctype html><p id="text" style="white-space:nowrap">' +
+		'<span style="display:inline-block;width:1px;height:10px"></span>'.repeat(64) +
+		'</p>'
 	mut document := html.parse_document(markup)
 	defer { document.finalize() }
 	_ = layout_document_typed_in_viewport(document, 1000, 200)
@@ -111,6 +113,38 @@ fn test_atomic_inline_projection_does_not_copy_committed_line_fragments() {
 		// Only line metadata is needed. Copying each committed fragment into
 		// the arena just to query it consumes tens of kilobytes here.
 		assert arena.usage().used < 4096, '${arena.usage().used} bytes for an atomic-only line'
+	}
+	arena.release()
+}
+
+fn test_atomic_inline_projection_borrows_each_committed_line_box() {
+	markup := '<!doctype html><p id="text" style="width:1px;margin:0;line-height:1px">' +
+		'<span style="display:inline-block;width:1px;height:1px;vertical-align:top"></span>'.repeat(64) +
+		'</p>'
+	mut document := html.parse_document(markup)
+	defer { document.finalize() }
+	_ = layout_document_typed_in_viewport(document, 320, 200)
+	_ = storage_text_lines(document, 'text')
+	mut arena := platform.new_arena('borrowed line projection')
+	entry := arena.enter()
+	lines := storage_text_lines(document, 'text')
+	arena.leave(entry)
+	assert lines.len == 64
+	assert lines.cap == lines.len
+	for index, line in lines {
+		assert line.width == 1
+		assert line.fragments.len == 0
+		assert line.fragments.cap == 0
+		assert line.box_decorations.cap == 0
+		if index > 0 {
+			assert line.y > lines[index - 1].y
+		}
+	}
+	$if prealloc {
+		// The final transport buffer owns every output line. A per-line copy of
+		// committed geometry would add another full LineBox to this footprint.
+		limit := i64(lines.len * (sizeof(TextLine) + sizeof(LineBox) / 2))
+		assert arena.usage().used < limit, '${arena.usage().used} bytes for ${lines.len} atomic-only lines'
 	}
 	arena.release()
 }
