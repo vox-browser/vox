@@ -2794,6 +2794,12 @@ pub fn (c &ComputedProperties) display() Display {
 	// The Display property is always represented by DisplayStyleValue. Empty
 	// hand-built ComputedProperties used by low-level tests retain the initial fallback.
 	value := c.property(.display, .yes) or { return Display.from_short(.inline_) }
+	if value.css_value_handle != unsafe { nil } {
+		typed := unsafe { &TypedStyleValueBox(value.css_value_handle) }
+		if typed.value is DisplayStyleValue {
+			return typed.value.display()
+		}
+	}
 	typed := style_value_logic_from_dom(.display, value) or {
 		panic('Computed display value is not a typed StyleValue')
 	}
