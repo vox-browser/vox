@@ -54,11 +54,13 @@ pub fn mutation_type_from_string(type_ string) MutationType {
 
 // https://dom.spec.whatwg.org/#mutationrecord
 pub fn MutationRecord.create(type_ string, target &Node, added_nodes []&Node, removed_nodes []&Node, previous_sibling ?&Node, next_sibling ?&Node, attribute_name ?string, attribute_namespace ?string, old_value ?string) &MutationRecord {
+	// Records can outlive both the insertion snapshot and their delivery callback.
+	// Own membership while preserving the identity of the referenced nodes.
 	return &MutationRecord{
 		type_:               mutation_type_from_string(type_)
 		target:              target
-		added_nodes:         added_nodes
-		removed_nodes:       removed_nodes
+		added_nodes:         if added_nodes.len == 0 { []&Node{} } else { added_nodes.clone() }
+		removed_nodes:       if removed_nodes.len == 0 { []&Node{} } else { removed_nodes.clone() }
 		previous_sibling:    previous_sibling or { unsafe { nil } }
 		next_sibling:        next_sibling or { unsafe { nil } }
 		attribute_name:      attribute_name

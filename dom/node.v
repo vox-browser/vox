@@ -2441,12 +2441,17 @@ pub fn (mut n Node) insert_before(node &Node, child ?&Node, suppress_observers b
 		n.document().notify_editing_history_dom_mutation()
 	}
 	// 1. Let nodes be node's children, if node is a DocumentFragment node; otherwise << node >>.
+	scratch := platform.begin_thread_scratch('insertion snapshot')
 	mut nodes := []&Node{}
 	if node.is_document_fragment() {
 		nodes = node.children_as_vector()
 	} else {
 		nodes << node
 	}
+	// Only this private vector is temporary. Restore the caller's owner before
+	// adoption, observer records, and reentrant callbacks publish their data.
+	scratch.leave()
+	defer { scratch.finish() }
 	// 2. Let count be nodes's size.
 	count := nodes.len
 	// 3. If count is 0, then return.
