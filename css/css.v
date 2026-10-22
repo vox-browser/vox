@@ -1915,7 +1915,9 @@ pub fn (t Time) compare(other Time) int {
 // --- CSS pixel units ---
 pub struct CSSPixels {
 pub mut:
-	raw_value_ int
+	// PixelUnits.h stores the signed 26.6 value in 32 bits. Keep arithmetic
+	// widened explicitly even when V's native int is 64 bits.
+	raw_value_ i32
 }
 
 pub fn CSSPixels.new(value int) CSSPixels {
@@ -1930,7 +1932,7 @@ pub fn CSSPixels.new(value int) CSSPixels {
 
 pub fn CSSPixels.from_raw(value int) CSSPixels {
 	return CSSPixels{
-		raw_value_: value
+		raw_value_: i32(value)
 	}
 }
 
@@ -1980,7 +1982,7 @@ pub fn (p CSSPixels) to_double() f64 {
 }
 
 pub fn (p CSSPixels) raw_value() int {
-	return p.raw_value_
+	return int(p.raw_value_)
 }
 
 pub fn (p CSSPixels) plus(other CSSPixels) CSSPixels {

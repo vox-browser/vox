@@ -32,7 +32,7 @@ pub fn (p CSSPixels) to_float() f32 {
 }
 
 pub fn (p CSSPixels) to_int() int {
-	return p.raw_value_ / css_pixels_fixed_point_denominator
+	return int(p.raw_value_) / css_pixels_fixed_point_denominator
 }
 
 pub fn (p CSSPixels) compare(other CSSPixels) int {
@@ -99,11 +99,11 @@ pub fn (p CSSPixels) scaled(value f64) CSSPixels {
 }
 
 pub fn css_pixels_floor(value CSSPixels) CSSPixels {
-	return CSSPixels.from_raw(value.raw_value_ & ~css_pixels_radix_mask)
+	return CSSPixels.from_raw(int(value.raw_value_) & ~css_pixels_radix_mask)
 }
 
 pub fn css_pixels_ceil(value CSSPixels) CSSPixels {
-	floor_value := value.raw_value_ & ~css_pixels_radix_mask
+	floor_value := int(value.raw_value_) & ~css_pixels_radix_mask
 	if value.raw_value_ & css_pixels_radix_mask == 0 {
 		return CSSPixels.from_raw(floor_value)
 	}
