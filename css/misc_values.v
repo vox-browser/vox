@@ -5,13 +5,13 @@ import strings
 import dom
 
 // --- Display ---
-pub enum DisplayOutside {
+pub enum DisplayOutside as u8 {
 	block
 	inline_
 	run_in
 }
 
-pub enum DisplayInside {
+pub enum DisplayInside as u8 {
 	flow
 	flow_root
 	table
@@ -22,7 +22,7 @@ pub enum DisplayInside {
 	webkit_box
 }
 
-pub enum DisplayInternal {
+pub enum DisplayInternal as u8 {
 	table_row_group
 	table_header_group
 	table_footer_group
@@ -37,17 +37,17 @@ pub enum DisplayInternal {
 	ruby_text_container
 }
 
-pub enum DisplayBox {
+pub enum DisplayBox as u8 {
 	none_
 	contents
 }
 
-pub enum DisplayListItem {
+pub enum DisplayListItem as u8 {
 	no
 	yes
 }
 
-pub enum DisplayType {
+pub enum DisplayType as u8 {
 	outside_and_inside
 	internal
 	box
