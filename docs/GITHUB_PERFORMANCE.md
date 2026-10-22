@@ -16961,6 +16961,113 @@ expensive jobs retain the external memory guard and frozen compiler arguments.
 Chrome parity remains unknown pending equivalent content, start and paint
 submission endpoints. Independent Root receives no coverage or performance credit.
 
+## Skip empty CSS rule buckets before reading element metadata
+
+Round 175 applies the complete `1c6c7bda` feature to accepted 174.
+`style_scope_add_rules_to_run` returns when its rule slice is empty, before
+reading the element namespace and pseudo-element metadata. Nonempty slices
+retain their namespace, selector, shadow and scope matching behavior. The one
+original Git hunk reconstructs the complete author file and applies exactly
+to frozen 174 without context rebase or runtime projection. Independent Root
+work receives no coverage or performance credit.
+
+Two new tests and nine exact retained direct-bucket, pseudo-target,
+pseudo-element and quirks-selector cases pass **11 cases and
+1,678 assertions**
+per configuration: before/Boehm, final/Boehm and final/no-GC C-O2. They retain
+existing rule-owner identities through empty buckets, namespaces, pseudo-elements,
+shadow/scope parameters, GC and live rule-cache changes. Common 12 cases pass
+60 assertions per configuration; the accepted174 common control is reused.
+Implementation and focused tests share one commit; no test body needs a
+compatibility change.
+
+The local fixture was declared before performance builds or counters. Each
+observation completes 512 public `StyleComputer.build_matching_rule_set` passes,
+including UA/user/author collection, matching, sorting, allocation and counting.
+Eight named layers with twelve present and 24 absent classes yield ten author
+groups and 97 author rules. Setup, reference, eight warmups, forced GC and final
+ownership assertions are outside the counter. All six fixed alternating
+observations exit zero with checksum **49,664**.
+Medians are **140,635,211 → 140,552,833** retired
+instructions, **-0.05857566%**, **3/3 wins**. All samples are
+retained; none is replayed or added. Local savings earn zero page credit.
+
+C-only frontend generation exits zero and its output is reused. Strict whole
+generated C permits only `css__style_scope_add_rules_to_run` to change. The entire
+independent normal program matches, with no added or removed functions.
+All other bodies, records, globals and resources authenticate after established
+compiler/embed, source assertion-line and byte-identical helper-order
+normalization: 493 builtins, 176 protected routines, 120 native inputs, 37 quoted
+headers and exact native arguments. Native compilation, signing, persistence
+and frozen-library smoke actually exit zero. Policy remains C-O2/Boehm/default
+marker 1, the same automatic 4 GiB hint, no `-prod` and no global `-prealloc`.
+
+Both full-process C-O1/Boehm/one-marker/no-inline profiles exit zero. Generated
+C proves profiling stays enabled throughout main without filtering or reset.
+Setup and reference/warmup calls remain in these diagnostic counts:
+
+| Function | Before calls | Final calls |
+| --- | ---: | ---: |
+| `css__opt175_complete_public_matching` | 521 | 521 |
+| `css__StyleComputer_build_matching_rule_set` | 521 | 521 |
+| `css__style_computer_build_matching_rule_set_impl` | 521 | 521 |
+| `css__style_scope_add_rules_to_run` | 56,789 | 56,789 |
+| `css__style_scope_add_rule_to_run` | 63,562 | 63,562 |
+| `dom__Element_namespace_uri` | 75,580 | 70,370 |
+| `css__style_scope_pseudo_element_from_abstract_element` | 126,082 | 120,872 |
+
+
+Complete public fixture invocations remain 521. Matching-path counts are checked
+for equality when both rows exist. Namespace and pseudo-element helper deltas
+are reported only from actual rows; missing rows remain unknown, never zero.
+Profile call counts and timings earn zero page credit.
+
+A pipeline preparation attempt exited one before any primary observation:
+its stale total expected ten cases while the declared manifest and passing
+contracts contained eleven. Only that assertion was corrected. Original logs,
+terminal exits and dependent controller failures remain under
+`Build/v/opt175-pipeline-preparation-failed-attempt-1`; no completed runtime
+check or observation was replayed.
+
+The matching regular binaries use the fixed 359-body cache, frozen libraries,
+1024×768 document viewport and
+`native.scopes.navigation_to_first_document_paint[0]`. Thirty alternating pairs
+give medians **16,257,759,273.5 → 16,248,645,888**
+instructions, observed saving **9,113,385.5
+(-0.05605561%)**, **19/30 wins**.
+The paired-median saving is **5,725,240**; 30,000 paired
+bootstrap resamples with seed175 give 95% interval **[-243,605.5, 13,108,526.5]**.
+Repeatable page credit is **0**, requiring a positive lower bound.
+Existing integration acceptance requires a positive point and nonnegative upper
+interval and is **True**. Historical medians are not subtracted.
+
+All 60 primaries are retained: **60 actual PNGs**, **0 explicitly
+recovered counter-only observations**, **0 startup retry receipts**.
+Every first-primary preparation is 1 installation/2 geometry/1 paint. Later
+refreshes (0) and external foreground transitions
+(0) remain separate. Available PNGs
+are 1024×768 and exact outside the declared skeleton bands. Unknown exits and
+missing captures stay explicit; completed primaries are never rerun.
+
+The focused viewport is exact. Prior observed carry **0** plus the
+positive matching point gives **9,113,385.5** for the 5M gate:
+**passed**.
+Six actual zero-exit jobs cover 87 selected cases in both GC modes/174 executions. All 19 screenshots complete, 16 exact; known differences stay 13/1,341/1,994 pixels.
+Capture receipts bind actual exits, sources, binaries, viewport, libraries,
+fonts, logs and PNG hashes. Isolated **`/Users/alex/code/vox2/Build/v/Vox-opt175.app`** has actual
+signing/verification/smoke/GC successes; its instruction text matches the measured
+image. Default marker 1 and override 2 both collect. Canonical executables, GUI
+browsers, newer bundles and foreign work are preserved. Accepted control is
+**175**; broad baseline **175**;
+observed carry **0**.
+The complete feature remains committed in Root. Its frozen result does not cover independent Root changes.
+Durable C/profile/focused/local/broad/binary hashes are recorded in
+`Build/v/instruction-opt175-durable-archives.json`.
+The required old compiler does not support current V's memory-limit flag;
+expensive jobs retain the external memory guard and frozen compiler arguments.
+Chrome parity remains unknown pending equivalent content, start and paint
+submission endpoints.
+
 ## Causes and changes
 
 - The V 0.5.2 compatibility compiler's `-prod` Boehm code repeatedly snapshots
