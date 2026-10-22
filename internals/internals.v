@@ -646,7 +646,7 @@ pub fn collect_style_engine_rule_names(rules []&css.CSSRule, mut names map[u64]s
 		if nested := rule.css_rules() {
 			collect_style_engine_rule_names(nested.rules, mut names)
 		}
-		if imported := rule.loaded_style_sheet {
+		if imported := rule.loaded_style_sheet_for_bindings() {
 			collect_style_engine_rule_names(imported.css_rules().rules, mut names)
 		}
 	}

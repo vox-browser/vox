@@ -27,13 +27,13 @@ fn cache_function_rule(raw_context voidptr, rule &CSSRule) {
 	origin := context.origin
 	if rule.type_ != .function_rule { return }
 	mut mutable_rule := unsafe { &CSSRule(rule) }
-	mut definitions := cache.function_rules_by_name[rule.function_name] or { []CachedFunctionDefinition{} }
+	mut definitions := cache.function_rules_by_name[rule.kind_data().function_name] or { []CachedFunctionDefinition{} }
 	definitions << CachedFunctionDefinition{
 		function:             rule
 		qualified_layer_name: mutable_rule.qualified_layer_name()
 		cascade_origin:       origin
 	}
-	cache.function_rules_by_name[rule.function_name] = definitions
+	cache.function_rules_by_name[rule.kind_data().function_name] = definitions
 }
 
 fn (scope &StyleScope) cache_function_definitions(mut cache StyleCache, origin CascadeOrigin) {

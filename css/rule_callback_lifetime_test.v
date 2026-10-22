@@ -70,7 +70,7 @@ fn test_context_rule_traversal_keeps_import_media_container_and_postorder_semant
 	mut imported := parse_css_stylesheet_with_parser('', none)
 	imported.rules.set_rules([first])
 	mut import_rule := CSSRule.create(.import_rule)
-	import_rule.loaded_style_sheet = imported
+	import_rule.kind_data_ = &CSSRuleKindData{ loaded_style_sheet: imported }
 	inside := CSSRule.create(.nested_declarations)
 	media := CSSRule.create_grouping(.media, CSSRuleList.create([inside]))
 	hidden := CSSRule.create(.style)

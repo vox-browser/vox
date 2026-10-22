@@ -70,7 +70,7 @@ fn test_unscoped_nested_import_inherits_outer_import_scope() {
 	html_node.append_child(outside.as_node()) or { panic(err) }
 	parent_sheet, _ := attach_import_scope_test_sheet(document, '@import url(middle.css) scope(.outer); .target { color: blue }', '@import url(inner.css);')
 	outer_import := parent_sheet.rules.item(0) or { panic('missing outer import') }
-	mut middle_sheet := outer_import.loaded_style_sheet or { panic('missing middle sheet') }
+	mut middle_sheet := outer_import.loaded_style_sheet_for_bindings() or { panic('missing middle sheet') }
 	mut inner_import := middle_sheet.rules.item(0) or { panic('missing inner import') }
 	inner_sheet := parse_css_stylesheet_with_parser('.target { color: red }', none)
 	inner_import.set_style_sheet(inner_sheet)

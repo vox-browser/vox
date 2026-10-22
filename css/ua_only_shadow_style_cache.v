@@ -61,7 +61,7 @@ fn (entry &UserAgentOnlyShadowStyleCache) environment_matches(scope &StyleScope)
 	}
 	for input in entry.imports {
 		mut current := voidptr(0)
-		if loaded := input.rule.loaded_style_sheet { current = voidptr(loaded) }
+		if loaded := input.rule.kind_data().loaded_style_sheet { current = voidptr(loaded) }
 		if current != input.loaded_sheet { return false }
 	}
 	for input in entry.conditions {
@@ -81,9 +81,9 @@ fn collect_user_agent_sheet_inputs(sheet &CSSStyleSheet, mut sheets []UserAgentO
 	sheets << UserAgentOnlyShadowSheetInput{ sheet: sheet, revision: sheet.shared_style_cache_revision_, media_matches: sheet.base.media.matches() }
 	for rule in sheet.import_rules {
 		mut loaded_pointer := voidptr(0)
-		if loaded := rule.loaded_style_sheet { loaded_pointer = voidptr(loaded) }
+		if loaded := rule.kind_data().loaded_style_sheet { loaded_pointer = voidptr(loaded) }
 		imports << UserAgentOnlyShadowImportInput{ rule: rule, loaded_sheet: loaded_pointer }
-		if loaded := rule.loaded_style_sheet {
+		if loaded := rule.kind_data().loaded_style_sheet {
 			collect_user_agent_sheet_inputs(loaded, mut sheets, mut imports)
 		}
 	}

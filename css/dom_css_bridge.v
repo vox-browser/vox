@@ -564,7 +564,7 @@ fn load_local_imported_stylesheets(document &dom.Document, mut sheet CSSStyleShe
 				continue
 			}
 		}
-		css_text, resolved_url := read_local_stylesheet(import_rule.url, location) or { continue }
+		css_text, resolved_url := read_local_stylesheet(import_rule.kind_data().url, location) or { continue }
 		if active_urls[resolved_url] {
 			continue
 		}
@@ -905,7 +905,7 @@ fn find_style_sheet_with_url(url string, sheet &CSSStyleSheet) ?&CSSStyleSheet {
 		}
 	}
 	for import_rule in sheet.import_rules {
-		if loaded_style_sheet := import_rule.loaded_style_sheet {
+		if loaded_style_sheet := import_rule.kind_data().loaded_style_sheet {
 			if found := find_style_sheet_with_url(url, loaded_style_sheet) {
 				return found
 			}

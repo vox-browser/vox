@@ -444,7 +444,7 @@ pub fn (rule_list &CSSRuleList) for_each_effective_rule(order TraversalOrder, ca
 
 		match rule.type_ {
 			.import_rule {
-				if loaded_style_sheet := rule.loaded_style_sheet {
+				if loaded_style_sheet := rule.kind_data().loaded_style_sheet {
 					loaded_style_sheet.for_each_effective_rule(order, callback)
 				}
 			}
@@ -469,7 +469,7 @@ pub fn (rule_list &CSSRuleList) for_each_effective_rule_with_context(order Trave
 
 		match rule.type_ {
 			.import_rule {
-				if loaded_style_sheet := rule.loaded_style_sheet {
+				if loaded_style_sheet := rule.kind_data().loaded_style_sheet {
 					loaded_style_sheet.for_each_effective_rule_with_context(order, context, callback)
 				}
 			}
@@ -500,7 +500,7 @@ pub fn (mut rule_list CSSRuleList) evaluate_media_queries(document &dom.Document
 				}
 			}
 			.import_rule {
-				if mut loaded_style_sheet := rule.loaded_style_sheet {
+				if mut loaded_style_sheet := rule.kind_data().loaded_style_sheet {
 					if loaded_style_sheet.evaluate_media_queries(document) {
 						any_media_queries_changed_match_state = true
 					}
@@ -626,44 +626,13 @@ pub mut:
 	supports             ?&Supports
 	container_conditions []ContainerRuleCondition
 
-	url                string
-	document           ?&dom.Document
-	layer              ?string
-	layer_internal     ?string
-	loaded_style_sheet ?&CSSStyleSheet
-	loading_state      CSSStyleSheetLoadingState = .unloaded
-
-	namespace_uri string
-	prefix        string
-
 	selectors                    SelectorList
 	cached_absolutized_selectors ?SelectorList
-	scope_start_selectors        ?SelectorList
-	scope_end_selectors          ?SelectorList
-	cached_scope_start_selectors ?SelectorList
-	cached_scope_end_selectors   ?SelectorList
-	import_has_scope             bool
 	declaration                  ?&CSSStyleProperties
 	style_map_cache              ?&CSSOMStylePropertyMap
 
-	keyframe_key                      ?Percentage
-	layer_name_list                   []string
-	page_selectors                    PageSelectorList
-	page_descriptors                  ?&CSSPageDescriptors
-	margin_name                       string
-	property_rule_name                string
-	property_rule_syntax              string
-	property_rule_inherits            bool
-	property_rule_initial_value       ?string
-	property_rule_initial_style_value ?StyleValue
-	function_name                     string
-	function_parameters               []FunctionParameterInternal
-	function_return_type              SyntaxNode
-	function_descriptors              ?&CSSFunctionDescriptors
-
-	font_face_rule           ?&CSSFontFaceRule
-	font_feature_values_rule ?&CSSFontFeatureValuesRule
-	counter_style_rule       ?&CSSCounterStyleRule
+mut:
+	kind_data_ &CSSRuleKindData = unsafe { nil }
 }
 
 pub fn CSSRule.create(type_ CSSRuleType) &CSSRule {
@@ -702,22 +671,26 @@ pub fn CSSRule.create_container(conditions []ContainerRuleCondition, rules &CSSR
 
 pub fn CSSRule.create_scope(start_selectors ?SelectorList, end_selectors ?SelectorList, rules &CSSRuleList) &CSSRule {
 	mut rule := CSSRule.create_grouping(.scope, rules)
-	rule.scope_start_selectors = start_selectors
-	rule.scope_end_selectors = end_selectors
+	rule.kind_data_ = &CSSRuleKindData{
+		scope_start_selectors: start_selectors
+		scope_end_selectors: end_selectors
+	}
 	return rule
 }
 
 pub fn CSSRule.create_function(rules &CSSRuleList, name string, parameters []FunctionParameterInternal, return_type SyntaxNode) &CSSRule {
 	mut rule := CSSRule.create_grouping(.function_rule, rules)
-	rule.function_name = name
-	rule.function_parameters = parameters.clone()
-	rule.function_return_type = return_type
+	rule.kind_data_ = &CSSRuleKindData{
+		function_name: name
+		function_parameters: parameters.clone()
+		function_return_type: return_type
+	}
 	return rule
 }
 
 pub fn CSSRule.create_function_declarations(descriptors &CSSFunctionDescriptors) &CSSRule {
 	mut rule := CSSRule.create(.function_declarations)
-	rule.function_descriptors = descriptors
+	rule.kind_data_ = &CSSRuleKindData{ function_descriptors: descriptors }
 	mut mutable_descriptors := unsafe { &CSSFunctionDescriptors(descriptors) }
 	mutable_descriptors.base.set_parent_rule(rule)
 	return rule
@@ -725,33 +698,39 @@ pub fn CSSRule.create_function_declarations(descriptors &CSSFunctionDescriptors)
 
 pub fn CSSRule.create_import(url string, document ?&dom.Document, layer ?string, scope ?ImportScope, supports ?&Supports, media &MediaList) &CSSRule {
 	mut rule := CSSRule.create(.import_rule)
-	rule.url = url
-	rule.document = document
-	rule.layer = layer
+	mut internal_layer := ?string(none)
+	if layer_name := layer {
+		internal_layer = if layer_name.len == 0 { next_unique_anonymous_layer_name() } else { layer_name }
+	}
+	mut start_selectors := ?SelectorList(none)
+	mut end_selectors := ?SelectorList(none)
 	if import_scope := scope {
-		rule.import_has_scope = true
-		rule.scope_start_selectors = import_scope.start_selectors
-		rule.scope_end_selectors = import_scope.end_selectors
+		start_selectors = import_scope.start_selectors
+		end_selectors = import_scope.end_selectors
+	}
+	rule.kind_data_ = &CSSRuleKindData{
+		url: url
+		document: document
+		layer: layer
+		layer_internal: internal_layer
+		import_has_scope: scope != none
+		scope_start_selectors: start_selectors
+		scope_end_selectors: end_selectors
 	}
 	rule.supports = supports
 	rule.media = media
 	mut mutable_media := unsafe { &MediaList(media) }
 	mutable_media.set_associated_rule(rule)
-	if layer_name := layer {
-		if layer_name.len == 0 {
-			rule.layer_internal = next_unique_anonymous_layer_name()
-		} else {
-			rule.layer_internal = layer_name
-		}
-	}
 	return rule
 }
 
 pub fn CSSRule.create_namespace(prefix ?string, namespace_uri string) &CSSRule {
 	return &CSSRule{
 		type_: .namespace_rule
-		namespace_uri: namespace_uri
-		prefix: prefix or { '' }
+		kind_data_: &CSSRuleKindData{
+			namespace_uri: namespace_uri
+			prefix: prefix or { '' }
+		}
 	}
 }
 
@@ -809,10 +788,10 @@ pub fn (mut rule CSSRule) set_parent_style_sheet(parent_style_sheet ?&CSSStyleSh
 
 	rule.clear_caches()
 	rule.parent_style_sheet = parent_style_sheet
-	if mut font_face_rule := rule.font_face_rule {
+	if mut font_face_rule := rule.kind_data().font_face_rule {
 		font_face_rule.set_parent_style_sheet(parent_style_sheet)
 	}
-	if mut counter_style_rule := rule.counter_style_rule {
+	if mut counter_style_rule := rule.kind_data().counter_style_rule {
 		counter_style_rule.set_parent_style_sheet(parent_style_sheet)
 	}
 	if declaration := rule.declaration {
@@ -833,14 +812,14 @@ pub fn (mut rule CSSRule) set_parent_style_sheet(parent_style_sheet ?&CSSStyleSh
 		if mut parent := rule.parent_style_sheet {
 			parent.add_critical_subresource(rule)
 		}
-		if mut loaded := rule.loaded_style_sheet {
+		if mut loaded := rule.kind_data().loaded_style_sheet {
 			if parent := parent_style_sheet {
 				for owner in parent.owning_documents_or_shadow_roots {
 					loaded.add_owning_document_or_shadow_root(owner)
 				}
 			}
 		}
-		if rule.loading_state == .unloaded {
+		if rule.kind_data().loading_state == .unloaded {
 			if _ := parent_style_sheet {
 				rule.fetch()
 			}
@@ -879,13 +858,13 @@ pub fn (rule &CSSRule) dump(indent_levels int) string {
 			builder.write_string('${cssom_indent(indent_levels + 1)}Condition: ${rule.condition_text()}\n')
 		}
 		.import_rule {
-			builder.write_string('${cssom_indent(indent_levels + 1)}Document URL: ${rule.url}\n')
-			builder.write_string('${cssom_indent(indent_levels + 1)}Loading state: ${css_style_sheet_loading_state_name(rule.loading_state)}\n')
+			builder.write_string('${cssom_indent(indent_levels + 1)}Document URL: ${rule.kind_data().url}\n')
+			builder.write_string('${cssom_indent(indent_levels + 1)}Loading state: ${css_style_sheet_loading_state_name(rule.kind_data().loading_state)}\n')
 		}
 		.namespace_rule {
-			builder.write_string('${cssom_indent(indent_levels + 1)}Namespace: ${rule.namespace_uri}\n')
-			if rule.prefix.len != 0 {
-				builder.write_string('${cssom_indent(indent_levels + 1)}Prefix: ${rule.prefix}\n')
+			builder.write_string('${cssom_indent(indent_levels + 1)}Namespace: ${rule.kind_data().namespace_uri}\n')
+			if rule.kind_data().prefix.len != 0 {
+				builder.write_string('${cssom_indent(indent_levels + 1)}Prefix: ${rule.kind_data().prefix}\n')
 			}
 		}
 		.style {
@@ -912,9 +891,13 @@ pub fn (mut rule CSSRule) clear_caches() {
 	if rule.type_ == .style {
 		rule.cached_absolutized_selectors = none
 	}
-	if rule.type_ == .scope {
-		rule.cached_scope_start_selectors = none
-		rule.cached_scope_end_selectors = none
+	if rule.type_ == .scope && (rule.kind_data().cached_scope_start_selectors != none
+		|| rule.kind_data().cached_scope_end_selectors != none) {
+		rule.set_kind_data(CSSRuleKindData{
+			...rule.kind_data()
+			cached_scope_start_selectors: none
+			cached_scope_end_selectors: none
+		})
 	}
 	if child_rules := rule.rules {
 		mut mutable_child_rules := unsafe { &CSSRuleList(child_rules) }
@@ -946,7 +929,7 @@ pub fn (rule &CSSRule) parent_layer_internal_qualified_name_slow_case() string {
 				break
 			}
 			.layer_block {
-				if internal_name := parent.layer_internal {
+				if internal_name := parent.kind_data().layer_internal {
 					layer_names << internal_name
 				}
 			}
@@ -963,7 +946,7 @@ pub fn (rule &CSSRule) parent_layer_internal_qualified_name_slow_case() string {
 	if style_sheet := rule.parent_style_sheet {
 		if owner_rule := style_sheet.owner_rule {
 			if owner_rule.type_ == .import_rule {
-				if layer_name := owner_rule.layer_internal {
+				if layer_name := owner_rule.kind_data().layer_internal {
 					if owner_rule.matches() {
 						layer_names << layer_name
 						mut mutable_owner := unsafe { &CSSRule(owner_rule) }
@@ -1039,7 +1022,7 @@ pub fn (rule &CSSRule) serialized() string {
 			rule.serialized_function_rule()
 		}
 		.function_declarations {
-			if descriptors := rule.function_descriptors {
+			if descriptors := rule.kind_data().function_descriptors {
 				descriptors.base.serialized()
 			} else {
 				''
@@ -1060,12 +1043,12 @@ pub fn (rule &CSSRule) css_rules() ?&CSSRuleList {
 }
 
 pub fn (rule &CSSRule) scope_start() ?string {
-	selectors := rule.scope_start_selectors or { return none }
+	selectors := rule.kind_data().scope_start_selectors or { return none }
 	return serialize_a_group_of_selectors(selectors)
 }
 
 pub fn (rule &CSSRule) scope_end() ?string {
-	selectors := rule.scope_end_selectors or { return none }
+	selectors := rule.kind_data().scope_end_selectors or { return none }
 	return serialize_a_group_of_selectors(selectors)
 }
 
@@ -1099,22 +1082,25 @@ pub fn (rule &CSSRule) parent_scope_rule() ?&CSSRule {
 }
 
 pub fn (mut rule CSSRule) scope_start_selectors_for_matching() ?SelectorList {
-	persistent := platform.enter_persistent_if(rule.has_process_lifetime_sheet())
-	defer { platform.leave_persistent(persistent) }
-	selectors := rule.scope_start_selectors or { return none }
-	if cached := rule.cached_scope_start_selectors {
+	mut storage := rule.enter_kind_data_storage()
+	defer { storage.finish() }
+	selectors := rule.kind_data().scope_start_selectors or { return none }
+	if cached := rule.kind_data().cached_scope_start_selectors {
 		return cached
 	}
 	matching_selectors := absolutize_selectors_relative_to(selectors, rule.parent_rule)
-	rule.cached_scope_start_selectors = matching_selectors
+	rule.set_kind_data(CSSRuleKindData{
+		...rule.kind_data()
+		cached_scope_start_selectors: matching_selectors
+	})
 	return matching_selectors
 }
 
 pub fn (mut rule CSSRule) scope_end_selectors_for_matching() ?SelectorList {
-	persistent := platform.enter_persistent_if(rule.has_process_lifetime_sheet())
-	defer { platform.leave_persistent(persistent) }
-	selectors := rule.scope_end_selectors or { return none }
-	if cached := rule.cached_scope_end_selectors {
+	mut storage := rule.enter_kind_data_storage()
+	defer { storage.finish() }
+	selectors := rule.kind_data().scope_end_selectors or { return none }
+	if cached := rule.kind_data().cached_scope_end_selectors {
 		return cached
 	}
 	mut matching_selectors := SelectorList{}
@@ -1137,7 +1123,10 @@ pub fn (mut rule CSSRule) scope_end_selectors_for_matching() ?SelectorList {
 			matching_selectors.selectors << selector
 		}
 	}
-	rule.cached_scope_end_selectors = matching_selectors
+	rule.set_kind_data(CSSRuleKindData{
+		...rule.kind_data()
+		cached_scope_end_selectors: matching_selectors
+	})
 	return matching_selectors
 }
 
@@ -1338,10 +1327,10 @@ fn (rule &CSSRule) serialized_import_rule() string {
 	// 2. The result of performing serialize a URL on the rule's location.
 	//    "To serialize a URL means to create a string represented by "url(",
 	//    followed by the serialization of the URL as a string, followed by ")"."
-	builder.write_string(serialize_a_url(rule.url))
+	builder.write_string(serialize_a_url(rule.kind_data().url))
 
 	// AD-HOC: Serialize the rule's layer if it exists.
-	if layer := rule.layer {
+	if layer := rule.kind_data().layer {
 		if layer.len == 0 {
 			builder.write_string(' layer')
 		} else {
@@ -1350,19 +1339,19 @@ fn (rule &CSSRule) serialized_import_rule() string {
 	}
 
 	// AD-HOC: Serialize the rule's import scope if it exists.
-	if rule.import_has_scope {
+	if rule.kind_data().import_has_scope {
 		builder.write_string(' scope')
-		if rule.scope_start_selectors != none || rule.scope_end_selectors != none {
+		if rule.kind_data().scope_start_selectors != none || rule.kind_data().scope_end_selectors != none {
 			builder.write_u8(`(`)
 			if start := rule.scope_start() {
-				if rule.scope_end_selectors != none {
+				if rule.kind_data().scope_end_selectors != none {
 					builder.write_string('(${start})')
 				} else {
 					builder.write_string(start)
 				}
 			}
 			if end := rule.scope_end() {
-				if rule.scope_start_selectors != none {
+				if rule.kind_data().scope_start_selectors != none {
 					builder.write_u8(` `)
 				}
 				builder.write_string('to (${end})')
@@ -1409,7 +1398,7 @@ pub fn (mut rule CSSRule) fetch() {
 	rule.set_loading_state(.loading)
 
 	// Boundary: Fetch/style-resource integration is outside this V port. Keep the observable loading transition explicit.
-	if loaded_style_sheet := rule.loaded_style_sheet {
+	if loaded_style_sheet := rule.kind_data().loaded_style_sheet {
 		rule.set_loading_state(loaded_style_sheet.loading_state())
 		return
 	}
@@ -1417,7 +1406,13 @@ pub fn (mut rule CSSRule) fetch() {
 }
 
 pub fn (mut rule CSSRule) set_style_sheet(style_sheet &CSSStyleSheet) {
-	rule.loaded_style_sheet = style_sheet
+	if loaded := rule.kind_data().loaded_style_sheet {
+		if voidptr(loaded) != voidptr(style_sheet) {
+			rule.set_kind_data(CSSRuleKindData{ ...rule.kind_data(), loaded_style_sheet: style_sheet })
+		}
+	} else {
+		rule.set_kind_data(CSSRuleKindData{ ...rule.kind_data(), loaded_style_sheet: style_sheet })
+	}
 	mut mutable_style_sheet := unsafe { &CSSStyleSheet(style_sheet) }
 	mutable_style_sheet.set_owner_css_rule(rule)
 
@@ -1447,7 +1442,7 @@ pub fn (rule &CSSRule) import_media() ?&MediaList {
 pub fn (rule &CSSRule) layer_name() ?string {
 	// The layerName attribute must return the layer name declared in the at-rule itself, or an empty string if the
 	// layer is anonymous, or null if the at-rule does not declare a layer.
-	return rule.layer
+	return rule.kind_data().layer
 }
 
 // https://drafts.csswg.org/cssom/#dom-cssimportrule-supportstext
@@ -1467,30 +1462,30 @@ pub mut:
 }
 
 pub fn (rule &CSSRule) has_scope() bool {
-	return rule.type_ == .import_rule && rule.import_has_scope
+	return rule.type_ == .import_rule && rule.kind_data().import_has_scope
 }
 
 pub fn (rule &CSSRule) import_scope_start_selectors() ?SelectorList {
 	if !rule.has_scope() {
 		return none
 	}
-	return rule.scope_start_selectors
+	return rule.kind_data().scope_start_selectors
 }
 
 pub fn (rule &CSSRule) import_scope_end_selectors() ?SelectorList {
 	if !rule.has_scope() {
 		return none
 	}
-	return rule.scope_end_selectors
+	return rule.kind_data().scope_end_selectors
 }
 
 pub fn (mut rule CSSRule) internal_qualified_layer_name() ?string {
-	if rule.layer == none {
+	if rule.kind_data().layer == none {
 		return none
 	}
 
 	parent_name := rule.parent_layer_internal_qualified_name()
-	internal := rule.layer_internal or { return none }
+	internal := rule.kind_data().layer_internal or { return none }
 	if parent_name.len == 0 {
 		return internal
 	}
@@ -1516,14 +1511,14 @@ fn (rule &CSSRule) serialized_namespace_rule() string {
 	builder.write_string('@namespace ')
 
 	// followed by the serialization as an identifier of the prefix attribute (if any),
-	if rule.prefix.len != 0 {
-		builder.write_string(serialize_an_identifier(rule.prefix))
+	if rule.kind_data().prefix.len != 0 {
+		builder.write_string(serialize_an_identifier(rule.kind_data().prefix))
 		// followed by a single SPACE (U+0020) if there is a prefix,
 		builder.write_u8(` `)
 	}
 
 	//  followed by the serialization as URL of the namespaceURI attribute,
-	builder.write_string(serialize_a_url(rule.namespace_uri))
+	builder.write_string(serialize_a_url(rule.kind_data().namespace_uri))
 
 	// followed the character ";" (U+003B).
 	builder.write_u8(`;`)
@@ -2226,7 +2221,7 @@ pub fn (mut sheet CSSStyleSheet) add_owning_document_or_shadow_root(document_or_
 	}
 
 	for import_rule in sheet.import_rules {
-		if mut loaded_style_sheet := import_rule.loaded_style_sheet {
+		if mut loaded_style_sheet := import_rule.kind_data().loaded_style_sheet {
 			loaded_style_sheet.add_owning_document_or_shadow_root(document_or_shadow_root)
 		}
 	}
@@ -2249,7 +2244,7 @@ pub fn (mut sheet CSSStyleSheet) remove_owning_document_or_shadow_root(document_
 	}
 
 	for import_rule in sheet.import_rules {
-		if mut loaded_style_sheet := import_rule.loaded_style_sheet {
+		if mut loaded_style_sheet := import_rule.kind_data().loaded_style_sheet {
 			loaded_style_sheet.remove_owning_document_or_shadow_root(document_or_shadow_root)
 		}
 	}
@@ -2463,7 +2458,7 @@ pub fn (mut sheet CSSStyleSheet) evaluate_media_queries(document &dom.Document) 
 
 pub fn (sheet &CSSStyleSheet) default_namespace() ?string {
 	if namespace_rule := sheet.default_namespace_rule {
-		return namespace_rule.namespace_uri
+		return namespace_rule.kind_data().namespace_uri
 	}
 
 	return none
@@ -2481,7 +2476,7 @@ pub fn (sheet &CSSStyleSheet) declared_namespaces() map[string]bool {
 
 pub fn (sheet &CSSStyleSheet) namespace_uri(namespace_prefix string) ?string {
 	if namespace_rule := sheet.namespace_rules[namespace_prefix] {
-		return namespace_rule.namespace_uri
+		return namespace_rule.kind_data().namespace_uri
 	}
 	return none
 }
@@ -2512,11 +2507,11 @@ pub fn (mut sheet CSSStyleSheet) recalculate_rule_caches() {
 				sheet.import_rules << rule
 			}
 			.namespace_rule {
-				if rule.namespace_uri.len != 0 && rule.prefix.len == 0 {
+				if rule.kind_data().namespace_uri.len != 0 && rule.kind_data().prefix.len == 0 {
 					sheet.default_namespace_rule = rule
 				}
 
-				sheet.namespace_rules[rule.prefix] = rule
+				sheet.namespace_rules[rule.kind_data().prefix] = rule
 			}
 			else {
 				// Any other types mean that further @namespace rules are invalid, so we can stop here.
@@ -2558,7 +2553,7 @@ pub fn (sheet &CSSStyleSheet) loading_state() CSSStyleSheetLoadingState {
 	mut any_errors := false
 
 	for subresource in sheet.critical_subresources {
-		match subresource.loading_state {
+		match subresource.kind_data().loading_state {
 			.unloaded, .loading {
 				any_loading = true
 			}
@@ -2594,7 +2589,9 @@ pub fn (mut sheet CSSStyleSheet) check_if_loading_completed() {
 }
 
 pub fn (mut rule CSSRule) set_loading_state(loading_state CSSStyleSheetLoadingState) {
-	rule.loading_state = loading_state
+	if rule.kind_data().loading_state != loading_state {
+		rule.set_kind_data(CSSRuleKindData{ ...rule.kind_data(), loading_state: loading_state })
+	}
 	if loading_state == .loaded || loading_state == .error {
 		if mut parent := rule.parent_style_sheet {
 			parent.check_if_loading_completed()

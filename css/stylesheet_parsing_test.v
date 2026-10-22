@@ -323,7 +323,7 @@ fn test_page_rule_retains_descriptors_and_margin_rules() {
 	page := rules[0]
 	assert page.type_ == .page
 	assert page.page_selector_text() == 'chapter:left'
-	descriptors := page.page_descriptors or { panic('missing page descriptors') }
+	descriptors := page.page_style() or { panic('missing page descriptors') }
 	// Parser::DescriptorList::append() expands the `margin` shorthand descriptor,
 	// so only the longhands are recorded and the shorthand reads back as empty.
 	assert descriptors.margin() == ''

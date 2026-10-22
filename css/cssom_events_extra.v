@@ -239,14 +239,14 @@ pub fn (rule &CSSRule) href() string {
 	if rule.type_ != .import_rule {
 		return ''
 	}
-	return rule.url
+	return rule.kind_data().url
 }
 
 pub fn (rule &CSSRule) style_sheet_for_bindings() ?&CSSStyleSheet {
 	if rule.type_ != .import_rule {
 		return none
 	}
-	return rule.loaded_style_sheet
+	return rule.kind_data().loaded_style_sheet
 }
 
 pub fn (rule &CSSRule) loaded_style_sheet_for_bindings() ?&CSSStyleSheet {
@@ -264,25 +264,23 @@ pub fn (rule &CSSRule) namespace_rule_prefix() string {
 	if rule.type_ != .namespace_rule {
 		return ''
 	}
-	return rule.prefix
+	return rule.kind_data().prefix
 }
 
 pub fn (rule &CSSRule) namespace_rule_namespace_uri() string {
 	if rule.type_ != .namespace_rule {
 		return ''
 	}
-	return rule.namespace_uri
+	return rule.kind_data().namespace_uri
 }
 
 // --- CSSLayerBlockRule ---
 
 pub fn CSSRule.create_layer_block(name string, rules &CSSRuleList) &CSSRule {
 	mut rule := CSSRule.create_grouping(.layer_block, rules)
-	rule.layer = name
-	rule.layer_internal = if name.len == 0 {
-		next_unique_anonymous_layer_name()
-	} else {
-		name
+	rule.kind_data_ = &CSSRuleKindData{
+		layer: name
+		layer_internal: if name.len == 0 { next_unique_anonymous_layer_name() } else { name }
 	}
 	return rule
 }
@@ -291,14 +289,14 @@ pub fn (rule &CSSRule) layer_block_name() string {
 	if rule.type_ != .layer_block {
 		return ''
 	}
-	return rule.layer or { '' }
+	return rule.kind_data().layer or { '' }
 }
 
 pub fn (rule &CSSRule) layer_block_internal_name() string {
 	if rule.type_ != .layer_block {
 		return ''
 	}
-	return rule.layer_internal or { rule.layer_block_name() }
+	return rule.kind_data().layer_internal or { rule.layer_block_name() }
 }
 
 pub fn (mut rule CSSRule) layer_block_internal_qualified_name() string {
@@ -314,7 +312,7 @@ fn (rule &CSSRule) serialized_layer_block_rule() string {
 	// AD-HOC: No spec yet, so this is based on the @media serialization algorithm.
 	mut builder := strings.new_builder(128)
 	builder.write_string('@layer')
-	if name := rule.layer {
+	if name := rule.kind_data().layer {
 		if name.len != 0 {
 			builder.write_string(' ${name}')
 		}
@@ -342,8 +340,10 @@ fn (rule &CSSRule) serialized_layer_block_rule() string {
 
 pub fn CSSRule.create_layer_statement(name_list []string) &CSSRule {
 	mut rule := CSSRule.create(.layer_statement)
-	rule.layer_name_list = name_list.clone()
-	rule.layer = name_list.join(', ')
+	rule.kind_data_ = &CSSRuleKindData{
+		layer_name_list: name_list.clone()
+		layer: name_list.join(', ')
+	}
 	return rule
 }
 
@@ -351,10 +351,10 @@ pub fn (rule &CSSRule) layer_statement_name_list() []string {
 	if rule.type_ != .layer_statement {
 		return []string{}
 	}
-	if rule.layer_name_list.len != 0 {
-		return rule.layer_name_list.clone()
+	if rule.kind_data().layer_name_list.len != 0 {
+		return rule.kind_data().layer_name_list.clone()
 	}
-	if names := rule.layer {
+	if names := rule.kind_data().layer {
 		mut list := []string{}
 		for name in names.split(',') {
 			trimmed := name.trim_space()
@@ -389,7 +389,7 @@ fn (rule &CSSRule) serialized_layer_statement_rule() string {
 
 pub fn CSSRule.create_keyframe(key Percentage, declarations &CSSStyleProperties) &CSSRule {
 	mut rule := CSSRule.create(.keyframe)
-	rule.keyframe_key = key
+	rule.kind_data_ = &CSSRuleKindData{ keyframe_key: key }
 	rule.declaration = declarations
 	mut mutable_declarations := unsafe { &CSSStyleProperties(declarations) }
 	mutable_declarations.set_parent_rule(rule)
@@ -398,7 +398,7 @@ pub fn CSSRule.create_keyframe(key Percentage, declarations &CSSStyleProperties)
 
 pub fn CSSRule.create_keyframes(name string, rules &CSSRuleList) &CSSRule {
 	mut rule := CSSRule.create_grouping(.keyframes, rules)
-	rule.url = name
+	rule.kind_data_ = &CSSRuleKindData{ url: name }
 	return rule
 }
 
@@ -406,10 +406,10 @@ pub fn (rule &CSSRule) key_text() string {
 	if rule.type_ != .keyframe {
 		return ''
 	}
-	if key := rule.keyframe_key {
+	if key := rule.kind_data().keyframe_key {
 		return key.to_string()
 	}
-	return rule.url
+	return rule.kind_data().url
 }
 
 pub fn (mut rule CSSRule) set_key_text(key_text string) {
@@ -421,12 +421,16 @@ pub fn (rule &CSSRule) keyframes_name() string {
 	if rule.type_ != .keyframes {
 		return ''
 	}
-	return cssom_unquote_css_string_if_wrapped(rule.url)
+	return cssom_unquote_css_string_if_wrapped(rule.kind_data().url)
 }
 
 pub fn (mut rule CSSRule) set_keyframes_name(name string) {
 	if rule.type_ == .keyframes {
-		rule.url = name
+		if rule.kind_data().url != name {
+			mut storage := rule.enter_kind_data_storage()
+			defer { storage.finish() }
+			rule.set_kind_data(CSSRuleKindData{ ...rule.kind_data(), url: name.clone() })
+		}
 	}
 }
 
@@ -477,7 +481,7 @@ fn cssom_unquote_css_string_if_wrapped(value string) string {
 
 pub fn CSSRule.create_font_face_rule(font_face_rule &CSSFontFaceRule) &CSSRule {
 	mut rule := CSSRule.create(.font_face)
-	rule.font_face_rule = font_face_rule
+	rule.kind_data_ = &CSSRuleKindData{ font_face_rule: font_face_rule }
 	return rule
 }
 
@@ -485,11 +489,11 @@ pub fn (rule &CSSRule) font_face_rule_ref() ?&CSSFontFaceRule {
 	if rule.type_ != .font_face {
 		return none
 	}
-	return rule.font_face_rule
+	return rule.kind_data().font_face_rule
 }
 
 fn (rule &CSSRule) serialized_font_face_rule() string {
-	if font_face_rule := rule.font_face_rule {
+	if font_face_rule := rule.kind_data().font_face_rule {
 		return font_face_rule.serialized()
 	}
 	return '@font-face { }'
@@ -497,7 +501,7 @@ fn (rule &CSSRule) serialized_font_face_rule() string {
 
 pub fn CSSRule.create_font_feature_values_rule(font_feature_values_rule &CSSFontFeatureValuesRule) &CSSRule {
 	mut rule := CSSRule.create(.font_feature_values)
-	rule.font_feature_values_rule = font_feature_values_rule
+	rule.kind_data_ = &CSSRuleKindData{ font_feature_values_rule: font_feature_values_rule }
 	return rule
 }
 
@@ -505,11 +509,11 @@ pub fn (rule &CSSRule) font_feature_values_rule_ref() ?&CSSFontFeatureValuesRule
 	if rule.type_ != .font_feature_values {
 		return none
 	}
-	return rule.font_feature_values_rule
+	return rule.kind_data().font_feature_values_rule
 }
 
 fn (rule &CSSRule) serialized_font_feature_values_rule() string {
-	if font_feature_values_rule := rule.font_feature_values_rule {
+	if font_feature_values_rule := rule.kind_data().font_feature_values_rule {
 		return font_feature_values_rule.serialized()
 	}
 	return '@font-feature-values { }'
@@ -517,8 +521,10 @@ fn (rule &CSSRule) serialized_font_feature_values_rule() string {
 
 pub fn CSSRule.create_counter_style_rule(counter_style_rule &CSSCounterStyleRule) &CSSRule {
 	mut rule := CSSRule.create(.counter_style)
-	rule.counter_style_rule = counter_style_rule
-	rule.url = counter_style_rule.name()
+	rule.kind_data_ = &CSSRuleKindData{
+		counter_style_rule: counter_style_rule
+		url: counter_style_rule.name()
+	}
 	return rule
 }
 
@@ -526,22 +532,24 @@ pub fn (rule &CSSRule) counter_style_rule_value() ?&CSSCounterStyleRule {
 	if rule.type_ != .counter_style {
 		return none
 	}
-	return rule.counter_style_rule
+	return rule.kind_data().counter_style_rule
 }
 
 fn (rule &CSSRule) serialized_counter_style_rule() string {
-	if counter_style_rule := rule.counter_style_rule {
+	if counter_style_rule := rule.kind_data().counter_style_rule {
 		return counter_style_rule.serialized()
 	}
-	return '@counter-style ${serialize_an_identifier(rule.url)} { }'
+	return '@counter-style ${serialize_an_identifier(rule.kind_data().url)} { }'
 }
 
 // --- CSSPageRule ---
 
 pub fn CSSRule.create_page(selectors PageSelectorList, descriptors &CSSPageDescriptors, rules &CSSRuleList) &CSSRule {
 	mut rule := CSSRule.create_grouping(.page, rules)
-	rule.page_selectors = selectors.clone()
-	rule.page_descriptors = descriptors
+	rule.kind_data_ = &CSSRuleKindData{
+		page_selectors: selectors.clone()
+		page_descriptors: descriptors
+	}
 	mut mutable_descriptors := unsafe { &CSSPageDescriptors(descriptors) }
 	mutable_descriptors.base.set_parent_rule(rule)
 	return rule
@@ -551,7 +559,7 @@ pub fn (rule &CSSRule) page_style() ?&CSSPageDescriptors {
 	if rule.type_ != .page {
 		return none
 	}
-	return rule.page_descriptors
+	return rule.kind_data().page_descriptors
 }
 
 pub fn (rule &CSSRule) page_selector_text() string {
@@ -563,8 +571,8 @@ pub fn (rule &CSSRule) page_selector_text() string {
 	// https://www.w3.org/TR/cssom/#serialize-a-group-of-selectors
 	// To serialize a group of selectors serialize each selector in the group of selectors and
 	// then serialize a comma-separated list of these serializations.
-	mut selectors := []string{cap: rule.page_selectors.len}
-	for selector in rule.page_selectors {
+	mut selectors := []string{cap: rule.kind_data().page_selectors.len}
+	for selector in rule.kind_data().page_selectors {
 		serialized := selector.serialize()
 		if serialized.len != 0 {
 			selectors << serialized
@@ -578,6 +586,9 @@ pub fn (mut rule CSSRule) set_page_selector_text(text string) {
 		return
 	}
 
+	mut storage := rule.enter_kind_data_storage()
+	defer { storage.finish() }
+
 	// On setting the selectorText attribute these steps must be run:
 	// 1. Run the parse a list of CSS page selectors algorithm on the given value.
 	selectors := parse_page_selector_list(text) or { return }
@@ -585,7 +596,7 @@ pub fn (mut rule CSSRule) set_page_selector_text(text string) {
 	// 2. If the algorithm returns a non-null value replace the associated selector list with
 	// the returned value.
 	// 3. Otherwise, if the algorithm returns a null value, do nothing.
-	rule.page_selectors = selectors
+	rule.set_kind_data(CSSRuleKindData{ ...rule.kind_data(), page_selectors: selectors })
 }
 
 fn (rule &CSSRule) serialized_page_rule() string {
@@ -596,7 +607,7 @@ fn (rule &CSSRule) serialized_page_rule() string {
 		builder.write_string('${selector} ')
 	}
 	builder.write_string('{ ')
-	if descriptors := rule.page_descriptors {
+	if descriptors := rule.kind_data().page_descriptors {
 		if descriptors.base.length() > 0 {
 			builder.write_string(descriptors.base.serialized())
 			builder.write_u8(` `)
@@ -680,7 +691,7 @@ fn parse_a_page_selector_list_translated(mut tokens ParserTokenStream) ?PageSele
 
 pub fn CSSRule.create_margin(name string, style &CSSStyleProperties) &CSSRule {
 	mut rule := CSSRule.create(.margin)
-	rule.margin_name = name.to_lower()
+	rule.kind_data_ = &CSSRuleKindData{ margin_name: name.to_lower() }
 	rule.declaration = style
 	mut mutable_style := unsafe { &CSSStyleProperties(style) }
 	mutable_style.set_parent_rule(rule)
@@ -691,10 +702,10 @@ pub fn (rule &CSSRule) margin_rule_name() string {
 	if rule.type_ != .margin {
 		return ''
 	}
-	if rule.margin_name.len != 0 {
-		return rule.margin_name
+	if rule.kind_data().margin_name.len != 0 {
+		return rule.kind_data().margin_name
 	}
-	return rule.url
+	return rule.kind_data().url
 }
 
 fn (rule &CSSRule) serialized_margin_rule() string {
@@ -741,15 +752,15 @@ pub fn CSSRule.create_property_rule(name string, syntax string, inherits bool, i
 
 pub fn CSSRule.create_property_rule_with_parsed_initial_value(name string, syntax string, inherits bool, initial_value ?string, initial_style_value ?StyleValue) &CSSRule {
 	mut rule := CSSRule.create(.property)
-	rule.property_rule_name = name
-	rule.property_rule_syntax = syntax
-	rule.property_rule_inherits = inherits
-	rule.property_rule_initial_value = initial_value
-	rule.property_rule_initial_style_value = initial_style_value
-	rule.url = name
-	rule.namespace_uri = syntax
-	if value := initial_value {
-		rule.prefix = value
+	rule.kind_data_ = &CSSRuleKindData{
+		property_rule_name: name
+		property_rule_syntax: syntax
+		property_rule_inherits: inherits
+		property_rule_initial_value: initial_value
+		property_rule_initial_style_value: initial_style_value
+		url: name
+		namespace_uri: syntax
+		prefix: initial_value or { '' }
 	}
 	return rule
 }
@@ -758,35 +769,35 @@ pub fn (rule &CSSRule) property_rule_name() string {
 	if rule.type_ != .property {
 		return ''
 	}
-	if rule.property_rule_name.len != 0 {
-		return rule.property_rule_name
+	if rule.kind_data().property_rule_name.len != 0 {
+		return rule.kind_data().property_rule_name
 	}
-	return rule.url
+	return rule.kind_data().url
 }
 
 pub fn (rule &CSSRule) property_rule_syntax() string {
 	if rule.type_ != .property {
 		return ''
 	}
-	if rule.property_rule_syntax.len != 0 {
-		return rule.property_rule_syntax
+	if rule.kind_data().property_rule_syntax.len != 0 {
+		return rule.kind_data().property_rule_syntax
 	}
-	return rule.namespace_uri
+	return rule.kind_data().namespace_uri
 }
 
 pub fn (rule &CSSRule) property_rule_inherits() bool {
-	return rule.type_ == .property && rule.property_rule_inherits
+	return rule.type_ == .property && rule.kind_data().property_rule_inherits
 }
 
 pub fn (rule &CSSRule) property_rule_initial_value() ?string {
 	if rule.type_ != .property {
 		return none
 	}
-	if initial_value := rule.property_rule_initial_value {
+	if initial_value := rule.kind_data().property_rule_initial_value {
 		return initial_value
 	}
-	if rule.prefix.len != 0 {
-		return rule.prefix
+	if rule.kind_data().prefix.len != 0 {
+		return rule.kind_data().prefix
 	}
 	return none
 }
@@ -795,7 +806,7 @@ pub fn (rule &CSSRule) property_rule_initial_style_value() ?StyleValue {
 	if rule.type_ != .property {
 		return none
 	}
-	return rule.property_rule_initial_style_value
+	return rule.kind_data().property_rule_initial_style_value
 }
 
 pub fn (rule &CSSRule) property_rule_to_registration() CustomPropertyRegistration {

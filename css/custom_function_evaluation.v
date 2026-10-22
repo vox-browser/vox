@@ -264,7 +264,7 @@ fn collect_custom_function_body(rule &CSSRule) (map[string]FunctionLocalValue, [
 		if child.type_ != .function_declarations {
 			return
 		}
-		descriptors := child.function_descriptors or { return }
+		descriptors := child.kind_data().function_descriptors or { return }
 		unsafe {
 			mut collected_values := *values_ptr
 			mut collected_names := *names_ptr
@@ -291,7 +291,7 @@ fn evaluate_a_custom_function(element ?dom.AbstractElement, mut guarded_contexts
 	identity := u64(voidptr(rule))
 	mut function_context := SubstitutionContext{
 		dependency_type:   .function
-		first:             rule.function_name
+		first:             rule.kind_data().function_name
 		function_identity: identity
 	}
 	guarded_contexts.guard(mut function_context)
@@ -300,24 +300,24 @@ fn evaluate_a_custom_function(element ?dom.AbstractElement, mut guarded_contexts
 	}
 	guarded_contexts.remember_definition_scope(identity, definition.scope)
 
-	if arguments.len > rule.function_parameters.len {
+	if arguments.len > rule.kind_data().function_parameters.len {
 		guarded_contexts.unguard(function_context)
 		return arbitrary_substitution_guaranteed_invalid_value()
 	}
 
 	mut registrations := map[string]FunctionLocalRegistration{}
-	for parameter in rule.function_parameters {
+	for parameter in rule.kind_data().function_parameters {
 		registrations[parameter.name] = FunctionLocalRegistration{
 			syntax: parameter.type_
 		}
 	}
 	registrations['result'] = FunctionLocalRegistration{
-		syntax:    rule.function_return_type
+		syntax:    rule.kind_data().function_return_type
 		is_result: true
 	}
 
 	mut argument_values := map[string]FunctionLocalValue{}
-	for index, parameter in rule.function_parameters {
+	for index, parameter in rule.kind_data().function_parameters {
 		if index >= arguments.len && parameter.default_value == none {
 			guarded_contexts.unguard(function_context)
 			return arbitrary_substitution_guaranteed_invalid_value()
@@ -345,7 +345,7 @@ fn evaluate_a_custom_function(element ?dom.AbstractElement, mut guarded_contexts
 	}
 	guarded_contexts.function_local_scopes << argument_scope
 	mut argument_styles := map[string][]ComponentValue{}
-	for parameter in rule.function_parameters {
+	for parameter in rule.kind_data().function_parameters {
 		resolution := resolve_custom_property_for_function_scope(element, parameter.name, mut guarded_contexts)
 		if resolution.kind == .resolved {
 			argument_styles[parameter.name] = resolution.tokens
@@ -354,7 +354,7 @@ fn evaluate_a_custom_function(element ?dom.AbstractElement, mut guarded_contexts
 	guarded_contexts.function_local_scopes.pop()
 
 	mut body_values := map[string]FunctionLocalValue{}
-	for parameter in rule.function_parameters {
+	for parameter in rule.kind_data().function_parameters {
 		if tokens := argument_styles[parameter.name] {
 			body_values[parameter.name] = FunctionLocalValue{
 				tokens: tokens.clone()

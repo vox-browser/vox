@@ -383,7 +383,7 @@ pub fn (mut parser RuleSelectorParser) convert_rules(raw_rules []Rule) []&CSSRul
 				if !namespace_rules_valid {
 					continue
 				}
-				parser.declared_namespaces[rule.prefix] = true
+				parser.declared_namespaces[rule.kind_data().prefix] = true
 			}
 			else {
 				import_rules_valid = false

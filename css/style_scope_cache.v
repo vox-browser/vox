@@ -832,7 +832,7 @@ fn style_scope_resolve_keyframe_set_from_rule(rule &CSSRule) &KeyFrameSet {
 		if keyframe_rule.type_ != .keyframe {
 			continue
 		}
-		keyframe_key := keyframe_rule.keyframe_key or { continue }
+		keyframe_key := keyframe_rule.kind_data().keyframe_key or { continue }
 		key := int(keyframe_key.value() * animation_key_frame_key_scale_factor)
 		keyframe_style := keyframe_rule.style() or { continue }
 		mut resolved_keyframe := ResolvedKeyFrame{
@@ -1753,7 +1753,7 @@ fn style_scope_absolutized_selectors_for_rule(rule &CSSRule) SelectorList {
 }
 
 fn style_scope_layer_block_internal_qualified_name(rule &CSSRule) ?string {
-	internal_name := rule.layer_internal or { return none }
+	internal_name := rule.kind_data().layer_internal or { return none }
 	mut mutable_rule := unsafe { &CSSRule(rule) }
 	parent_name := mutable_rule.parent_layer_internal_qualified_name()
 	if parent_name.len == 0 {
@@ -1763,7 +1763,7 @@ fn style_scope_layer_block_internal_qualified_name(rule &CSSRule) ?string {
 }
 
 fn style_scope_layer_statement_internal_qualified_name_list(rule &CSSRule) []string {
-	layer := rule.layer or { return []string{} }
+	layer := rule.kind_data().layer or { return []string{} }
 	mut names := []string{}
 	mut mutable_rule := unsafe { &CSSRule(rule) }
 	parent_name := mutable_rule.parent_layer_internal_qualified_name()
