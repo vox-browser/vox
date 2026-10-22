@@ -957,6 +957,12 @@ pub fn end_selector_parse_cache() {
 }
 
 pub fn selector_from_text(text string) Selector {
+	return parse_owned_selector(text)
+}
+
+// Recursive parser calls stay in the outer construction workspace. Only the
+// public entry point publishes its completed graph into the caller's owner.
+fn selector_from_text_impl(text string) Selector {
 	return create_selector(text, parse_complex_selector(text))
 }
 
@@ -2693,7 +2699,7 @@ fn parse_pseudo_element_selector(name string, argument string, is_function bool)
 					return invalid_simple_selector('::${name}(${argument})')
 				}
 				selector.value_kind = .compound_selector
-				selector.compound_selector = selector_from_text(argument.trim_space())
+				selector.compound_selector = selector_from_text_impl(argument.trim_space())
 			}
 			.part {
 				idents := split_selector_whitespace(argument)
@@ -3010,7 +3016,7 @@ fn selector_list_from_text(text string, relative bool) SelectorList {
 		if trimmed.len == 0 {
 			continue
 		}
-		mut selector := selector_from_text(trimmed)
+		mut selector := selector_from_text_impl(trimmed)
 		if relative {
 			// Parser::parse_complex_selector(): parse_compound_selector() leaves the
 			// leading combinator as Descendant, and only SelectorType::Standalone
