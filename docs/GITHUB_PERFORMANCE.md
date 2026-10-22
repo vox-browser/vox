@@ -17068,6 +17068,117 @@ expensive jobs retain the external memory guard and frozen compiler arguments.
 Chrome parity remains unknown pending equivalent content, start and paint
 submission endpoints.
 
+## Read computed display from its retained typed value
+
+Round 176 applies the complete `80b644e5` feature to accepted 175.
+`ComputedProperties.display()` reads an already retained `DisplayStyleValue`
+directly, avoiding the general sum-type conversion for that value. Public
+property selection, animation/transition importance, text-only parsing,
+missing-property inline fallback and invalid-value panics remain unchanged.
+The one original Git hunk reconstructs the complete author file and applies
+exactly to frozen 175 without rebase or runtime projection. Independent Root
+work receives no coverage or performance credit.
+
+Three new and seven exact retained behavior cases cover all 62 display records,
+owner identity, replacement and GC, text-only values, animations and transitions.
+The selected **10 cases and 1,848
+assertions** pass in before/Boehm, final/Boehm and final/no-GC C-O2.
+This is composite coverage from two failed aggregate attempts per configuration:
+the first completed case (586 assertions) is retained from the original attempt;
+the remaining nine (1,262 assertions) are retained from the second. No completed
+case was replayed and no aggregate process success is claimed.
+
+The first attempt used an unconstructed `ComputedProperties{}`, whose frozen
+property array is unsized. Removing those two unsupported setup lines preserves
+the proper `.new()` missing-property fallback test. The second attempt also ran
+an unrelated six-byte storage assertion from independent compact-enum work;
+both frozen variants still have 24-byte records, so it failed identically.
+That unrelated case is excluded without weakening its body or adding runtime
+storage changes. All six failed drivers, source fixtures, generated C, binaries,
+logs and actual exits remain recorded. The control-label metadata erratum was
+corrected from 174 to 175 before any build. Common 12 cases pass 60 assertions
+per configuration; accepted175 common control is reused. Implementation and
+the three focused tests share one commit.
+
+The fixture was declared before performance builds or counters. Each observation
+completes 2,048 public display sweeps over 128 retained owners (262,144 reads),
+with 16 display forms and four repeating unanimated/normal-animation/important/
+transition states. The counter includes property lookup and all six scalar
+fields. Setup, independent expected selection, reference, eight warmups, forced
+GC and final assertions stay outside the counter. Independent enum arithmetic
+predicts checksum 12,779,520. All six fixed alternating observations exit zero
+with that checksum. Medians **67,351,387 → 63,144,285**
+retired instructions, **-6.24649645%**, **3/3 wins**. All six
+are retained; no extension, discard or replay. Local savings earn zero page credit.
+
+C-only frontend generation exits zero and its output is reused. Strict whole
+generated C permits only `css__ComputedProperties_display` to change. The entire
+independent normal program matches, with no added or removed functions. All
+other bodies, records, globals and resources authenticate after established
+compiler/embed, source assertion-line and byte-identical helper-order
+normalization: 493 builtins, 176 protected routines, 120 native inputs, 37 quoted
+headers and exact native arguments. Native compilation, signing, persistence
+and frozen-library smoke actually exit zero. Policy remains C-O2/Boehm/default
+marker1, the same automatic4GiB hint, no `-prod` and no global `-prealloc`.
+
+Both full-process C-O1/Boehm/one-marker/no-inline profiles exit zero. Generated
+C proves profiling stays enabled throughout main without filtering or reset.
+Setup, reference and warmup calls remain in these diagnostic counts:
+
+| Function | Before calls | Final calls |
+| --- | ---: | ---: |
+| `css__opt176_complete_public_display_sweep` | 2,057 | 2,057 |
+| `css__ComputedProperties_display` | 263,424 | 263,424 |
+| `css__ComputedProperties_property` | 263,424 | 263,424 |
+| `css__DisplayStyleValue_display` | 263,424 | 263,424 |
+| `css__opt176_display_record_checksum` | 263,424 | 263,424 |
+| `css__style_value_logic_from_dom` | 263,631 | 207 |
+
+
+Complete fixture sweeps remain 2,057. Public getter/property/record-consumption
+counts are checked for equality when both rows exist. General bridge deltas
+are reported from actual rows; missing rows remain unknown, never zero.
+Profile call counts and timings earn zero page credit.
+
+The matching regular binaries use the fixed 359-body cache, frozen libraries,
+1024×768 document viewport and
+`native.scopes.navigation_to_first_document_paint[0]`. Thirty alternating pairs
+give medians **16,493,353,553.5 → 16,488,503,184.5**
+instructions, observed saving **4,850,369
+(-0.02940802%)**, **17/30 wins**.
+The paired-median saving is **6,885,632**; 30,000 paired
+bootstrap resamples with seed176 give 95% interval **[-7,952,803.5, 20,088,852.5]**.
+Repeatable page credit is **0**, requiring a positive lower bound.
+Existing integration acceptance requires a positive point and nonnegative upper
+interval and is **True**. Historical medians are not subtracted.
+
+All 60 primaries are retained: **60 actual PNGs**, **0 explicitly
+recovered counter-only observations**, **0 startup retry receipts**.
+Every first-primary preparation is 1 installation/2 geometry/1 paint. Later
+refreshes (0) and external foreground transitions
+(0) remain separate. Available PNGs
+are 1024×768 and exact outside the declared skeleton bands. Unknown exits and
+missing captures stay explicit; completed primaries are never rerun.
+
+The focused viewport is exact. Prior observed carry **0** plus the
+positive matching point gives **4,850,369** for the 5M gate:
+**skipped below 5,000,000-instruction threshold**.
+Broad execution is deferred below the gate; the round175 broad baseline remains.
+Capture receipts bind actual exits, sources, binaries, viewport, libraries,
+fonts, logs and PNG hashes. Isolated **`/Users/alex/code/vox2/Build/v/Vox-opt176.app`** has actual
+signing/verification/smoke/GC successes; its instruction text matches the measured
+image. Default marker 1 and override 2 both collect. Canonical executables, GUI
+browsers, newer bundles and foreign work are preserved. Accepted control is
+**176**; broad baseline **175**;
+observed carry **4,850,369**.
+The complete feature remains committed in Root. Its frozen result does not cover independent Root changes.
+Durable C/profile/focused/local/broad/binary hashes are recorded in
+`Build/v/instruction-opt176-durable-archives.json`.
+The required old compiler does not support current V's memory-limit flag;
+expensive jobs retain the external memory guard and frozen compiler arguments.
+Chrome parity remains unknown pending equivalent content, start and paint
+submission endpoints.
+
 ## Causes and changes
 
 - The V 0.5.2 compatibility compiler's `-prod` Boehm code repeatedly snapshots

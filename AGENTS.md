@@ -2550,6 +2550,16 @@ evidence](docs/translation-audit/NATIVE_MEDIA_WHEEL_RAW_HANDLER.md).
   Focused exact;broad passed;prior carry0;entire independent C/493builtins/176protected/120native/37headers/exactargs.
   Accepted control175;broad baseline175;carry0;isolated175app/GC1+override2.
   Complete feature retained;all original failed receipts remain.canonical/GUI/foreign preserved;Chrome parity open.
+  Retained computed display round176 (`80b644e5`):one whole original runtime hunk/one CSS path/no rebase or projection.
+  Ten behavior cases/1,848assertions/config;composite retained successes from six failed drivers/no aggregate pass claimed.
+  Unsupported raw-constructor setup corrected;unrelated compact-storage test excluded without weakening its body;no completed case replay.
+  Common60/config;declared2048public sweeps/128owners/262144reads:local -6.246496%/3wins/all6actual0;zero pagecredit.
+  Fullprocess profiles2057sweeps;public getter/property/consumption equal when present;bridge deltas actual/missingUNKNOWN/no reset/filter.
+  Fresh page 16,493,353,553.5→16,488,503,184.5;17/30wins;point 4,850,369.
+  Paired CI[-7,952,803.5,20,088,852.5];repeatable credit 0;all60retained;seed176/30000bootstrap;first preparation1/2/1.
+  Focused exact;broad skipped below 5,000,000-instruction threshold;prior carry0;entire independent C/493builtins/176protected/120native/37headers/exactargs.
+  Accepted control176;broad baseline175;carry4,850,369;isolated176app/GC1+override2.
+  Complete feature retained;all original failed receipts remain.canonical/GUI/foreign preserved;Chrome parity open.
 - Outside instruction-count optimization, run broad regression suites once per
   ten completed fixes, not after every fix.
   Broad suites include full translation/package test batches, the full LibJS AST
