@@ -412,6 +412,10 @@ pub fn shaped_text_width(letter_spacing f32, word_spacing f32, text string, font
 		}
 		return width
 	}
+	// Only the scalar width escapes. store() owns the cache's independent
+	// snapshot; retire the temporary run and its native playback buffers.
+	scratch := begin_thread_scratch('width-only text shaping')
+	defer { scratch.finish() }
 	shaped := shape_text_uncached(0, letter_spacing, word_spacing, text, font, text_type)
 	cache.store(font_key, text, params, cached_shape_from(shaped))
 	return shaped.glyph_run.width()
