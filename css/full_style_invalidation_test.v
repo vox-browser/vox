@@ -26,7 +26,7 @@ fn test_full_style_update_drains_removed_attribute_plans_before_later_selective_
 	document.set_needs_full_style_update(true)
 	document.update_style()
 	assert computed_value_for(target, .color) or { '' } == 'rgb(0, 0, 255)'
-	assert parent.removed_attributes_for_style_invalidation.len == 0
+	assert parent.removed_attribute_names_for_style_invalidation().len == 0
 	assert !document.needs_full_style_update
 	parent.set_attribute_value('class', 'later')
 	document.update_style()
@@ -60,7 +60,7 @@ fn test_full_style_update_preserves_shadow_scope_and_following_sibling_invalidat
 	first.remove_attribute('class')
 	document.update_style()
 	assert computed_value_for(second, .color) or { '' } == 'rgb(255, 0, 0)'
-	assert first.removed_attributes_for_style_invalidation.len == 0
+	assert first.removed_attribute_names_for_style_invalidation().len == 0
 	assert computed_value_for(outside, .color) or { '' } == 'rgb(0, 0, 255)'
 }
 
@@ -85,7 +85,7 @@ fn test_full_style_update_covers_has_fanout_and_later_partial_mutations() {
 	trigger.remove_attribute('class')
 	document.update_style()
 	assert computed_value_for(target, .color) or { '' } == 'rgb(0, 0, 255)'
-	assert trigger.removed_attributes_for_style_invalidation.len == 0
+	assert trigger.removed_attribute_names_for_style_invalidation().len == 0
 	trigger.set_attribute_value('class', 'on')
 	document.update_style()
 	assert computed_value_for(target, .color) or { '' } == 'rgb(255, 0, 0)'

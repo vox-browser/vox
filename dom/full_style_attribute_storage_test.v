@@ -18,7 +18,7 @@ fn test_full_style_attribute_invalidation_does_not_build_attribute_deltas() {
 	}
 	after := platform.thread_arena_usage().used
 	assert element.as_node().needs_style_update()
-	assert element.removed_attributes_for_style_invalidation.len == 0
+	assert element.removed_attribute_names_for_style_invalidation().len == 0
 	$if prealloc { assert after == before }
 	document.finalize()
 }

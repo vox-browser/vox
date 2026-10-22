@@ -184,18 +184,18 @@ pub fn (mut observer MutationObserver) observe(target &Node, mut options Mutatio
 	}
 
 	// 7. For each registered of target's registered observer list, if registered's observer is this:
-	for registered_observer in target.registered_observer_list_ {
+	for registered_observer in target.registered_observers() {
 		if registered_observer.observer_ == &observer {
 			// 1. For each node of this's node list, remove all transient registered observers whose source is registered
 			// from node's registered observer list.
 			for node in observer.node_list_ {
 				mut mutable_node := unsafe { &Node(node) }
-				for i := mutable_node.registered_observer_list_.len - 1; i >= 0; i-- {
-					transient_observer := mutable_node.registered_observer_list_[i]
+				for i := mutable_node.registered_observers().len - 1; i >= 0; i-- {
+					transient_observer := mutable_node.registered_observers()[i]
 					if transient_observer.is_transient() {
 						if source := transient_observer.source() {
 							if source == registered_observer {
-								mutable_node.registered_observer_list_.delete(i)
+								mutable_node.remove_registered_observer_at(i)
 							}
 						}
 					}
@@ -219,9 +219,9 @@ pub fn (mut observer MutationObserver) disconnect() {
 	// 1. For each node of this's node list, remove any registered observer from node's registered observer list for which this is the observer.
 	for node in observer.node_list_ {
 		mut mutable_node := unsafe { &Node(node) }
-		for i := mutable_node.registered_observer_list_.len - 1; i >= 0; i-- {
-			if mutable_node.registered_observer_list_[i].observer_ == &observer {
-				mutable_node.registered_observer_list_.delete(i)
+		for i := mutable_node.registered_observers().len - 1; i >= 0; i-- {
+			if mutable_node.registered_observers()[i].observer_ == &observer {
+				mutable_node.remove_registered_observer_at(i)
 			}
 		}
 	}
@@ -653,7 +653,7 @@ pub fn (shadow_root &ShadowRoot) calculate_part_element_map() map[string][]Abstr
 		element := node.as_element() or { return .@continue }
 
 		// 1. For each name in el's part name list, append el to outerRoot's part element map[name].
-		for name in element.parts {
+		for name in element.part_names() {
 			unsafe {
 				mut current := *map_ptr
 				append_part_element(mut current, name, AbstractElement.new(element, none))
@@ -907,27 +907,45 @@ pub fn (mut slot HTMLSlotElement) assign(nodes []&Node) {
 }
 
 pub fn (node &Node) slottable_name() string {
-	return node.slottable_name_
+	if node.cold_data_ == unsafe { nil } { return '' }
+	return node.cold_data_.slottable_name
 }
 
 pub fn (mut node Node) set_slottable_name(name string) {
-	node.slottable_name_ = name
+	if node.slottable_name() == name { return }
+	mut state := node.copy_cold_data()
+	state.slottable_name = name
+	node.cold_data_ = state
 }
 
 pub fn (node &Node) assigned_slot_internal() ?&HTMLSlotElement {
-	return node.assigned_slot_
+	if node.cold_data_ == unsafe { nil } { return none }
+	return node.cold_data_.assigned_slot
 }
 
 pub fn (mut node Node) set_assigned_slot(assigned_slot ?&HTMLSlotElement) {
-	node.assigned_slot_ = assigned_slot
+	if assigned_slot == none && node.assigned_slot_internal() == none { return }
+	if slot := assigned_slot {
+		if old := node.assigned_slot_internal() { if voidptr(slot) == voidptr(old) { return } }
+	}
+	mut state := node.copy_cold_data()
+	state.assigned_slot = assigned_slot
+	node.cold_data_ = state
 }
 
 pub fn (node &Node) manual_slot_assignment() ?&HTMLSlotElement {
-	return node.manual_slot_assignment_
+	if node.cold_data_ == unsafe { nil } { return none }
+	return node.cold_data_.manual_slot_assignment
 }
 
 pub fn (mut node Node) set_manual_slot_assignment(manual_slot_assignment ?&HTMLSlotElement) {
-	node.manual_slot_assignment_ = manual_slot_assignment
+	if manual_slot_assignment == none && node.manual_slot_assignment() == none { return }
+	if slot := manual_slot_assignment {
+		if old := node.manual_slot_assignment() { if voidptr(slot) == voidptr(old) { return } }
+	}
+	mut state := node.copy_cold_data()
+	state.manual_slot_assignment = manual_slot_assignment
+	node.cold_data_ = state
 }
 
 // https://dom.spec.whatwg.org/#dom-slotable-assignedslot
@@ -1199,11 +1217,11 @@ pub fn (mut document Document) notify_mutation_observers() {
 				continue
 			}
 			mut mutable_node := unsafe { &Node(node) }
-			for i := mutable_node.registered_observer_list_.len - 1; i >= 0; i-- {
-				registered_observer := mutable_node.registered_observer_list_[i]
+			for i := mutable_node.registered_observers().len - 1; i >= 0; i-- {
+				registered_observer := mutable_node.registered_observers()[i]
 				if registered_observer.is_transient()
 					&& voidptr(registered_observer.observer()) == voidptr(mutation_observer) {
-					mutable_node.registered_observer_list_.delete(i)
+					mutable_node.remove_registered_observer_at(i)
 				}
 			}
 		}
@@ -2891,7 +2909,7 @@ pub fn create_element_internal(document &Document, local_name string, namespace_
 	assign_unique_node_id(element)
 	element.set_custom_element_registry(registry)
 	element.set_custom_element_state(state)
-	element.is_value = is_value
+	element.set_is_value(is_value)
 	return element
 }
 

@@ -293,7 +293,7 @@ pub fn (n &Node) is_lazy_loading() bool {
 }
 
 pub fn (n &Node) registered_observer_list() []&RegisteredObserver {
-	return n.registered_observer_list_
+	return n.registered_observers().clone()
 }
 
 // V callbacks replace the C++ template parameter while preserving the same

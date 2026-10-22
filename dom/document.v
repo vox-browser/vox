@@ -499,12 +499,9 @@ pub mut:
 	is_connected_                                      bool
 
 	unique_id_                UniqueNodeID
-	registered_observer_list_ []&RegisteredObserver
-	slottable_name_           string
-	assigned_slot_            ?&HTMLSlotElement
-	manual_slot_assignment_   ?&HTMLSlotElement
 mut:
 	hooks_ &NodeHooks = unsafe { nil }
+	cold_data_ &NodeColdData = unsafe { nil }
 }
 
 // Translation of the ParentNode mixin; its algorithms live in
@@ -9925,7 +9922,7 @@ pub fn (mut d Document) destroy() {
 			detached.parent_ = unsafe { nil }
 			detached.index_in_parent_ = -1
 			detached.child_nodes_ = unsafe { nil }
-			detached.registered_observer_list_ = []
+			detached.clear_registered_observers()
 		}
 	}
 	if teardown >= 3 {

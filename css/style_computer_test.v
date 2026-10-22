@@ -1367,7 +1367,7 @@ fn test_removed_attribute_still_matches_pending_descendant_invalidation() {
 	assert doc.element_needs_style_update(target)
 	doc.update_style()
 	assert computed_value_for(target, .color) or { '' } == 'rgb(0, 0, 255)'
-	assert parent.removed_attributes_for_style_invalidation.len == 0
+	assert parent.removed_attribute_names_for_style_invalidation().len == 0
 }
 
 fn test_same_parent_move_only_invalidates_moved_root_for_subject_structural_selector() {

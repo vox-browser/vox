@@ -868,16 +868,11 @@ pub enum EventTargetKind {
 pub struct EventTargetData {
 pub mut:
 	kind EventTargetKind
-	listener_list_changed_target voidptr
-	listener_list_changed_hook fn (voidptr) = unsafe { nil }
-
 	event_listener_list []&DOMEventListener
 
 mut:
-	// https://html.spec.whatwg.org/multipage/webappapis.html#event-handler-map
-	// Most EventTargets never publish a handler. Keep the ordinary V map
-	// managed separately and create it only after the first handler activates.
-	handler_storage_ &EventHandlerStorage = unsafe { nil }
+	// Optional hook state and the lazily activated live event-handler map.
+	cold_data_ &EventTargetColdData = unsafe { nil }
 }
 
 @[heap]
@@ -915,8 +910,8 @@ pub fn (mut et EventTarget) visit_edges(mut visitor CellVisitor) {
 	for listener in et.data.event_listener_list {
 		visitor.visit(listener)
 	}
-	if et.data.handler_storage_ != unsafe { nil } {
-		for _, handler in et.data.handler_storage_.handlers {
+	if storage := et.data.event_handler_storage() {
+		for _, handler in storage.handlers {
 			visitor.visit(handler)
 			if listener := handler.listener {
 				visitor.visit(listener)
@@ -1130,8 +1125,9 @@ pub fn (et &EventTarget) remove_an_event_listener(listener &DOMEventListener) {
 // EventTarget.cpp invokes this virtual hook after actual listener-list changes.
 // A typed callback preserves that dispatch for EventTarget subclasses outside DOM.
 pub fn (et &EventTarget) event_listener_list_changed() {
-	if et.data.listener_list_changed_hook != unsafe { nil } {
-		et.data.listener_list_changed_hook(et.data.listener_list_changed_target)
+	if et.data.cold_data_ != unsafe { nil } {
+		state := et.data.cold_data_
+		if state.changed_hook != unsafe { nil } { state.changed_hook(state.changed_target) }
 	}
 }
 

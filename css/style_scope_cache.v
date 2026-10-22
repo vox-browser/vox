@@ -2109,7 +2109,7 @@ fn style_scope_add_part_rules_for_available_scopes(style_computer &StyleComputer
 	if shadow_root == none {
 		return
 	}
-	if style_scope_pseudo_element_from_abstract_element(abstract_element) == none && abstract_element.element().parts.len == 0 {
+	if style_scope_pseudo_element_from_abstract_element(abstract_element) == none && !abstract_element.element().has_part_names() {
 		return
 	}
 	style_scope_add_part_rules_from_scope(style_computer, abstract_element, cascade_origin, qualified_layer_name, shadow_root, shadow_root, element_shadow_root, mut rules_to_run)

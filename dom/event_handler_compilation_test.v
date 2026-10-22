@@ -92,7 +92,7 @@ fn test_raw_handler_syntax_failure_nulls_value_but_retains_activation_and_retrie
 	assert voidptr(target.data.event_handler('click') or { panic('handler') }) == voidptr(handler)
 	assert voidptr(handler.listener or { panic('listener') }) == voidptr(listener)
 	assert target.get_current_value_of_event_handler('click') == none
-	assert probe.calls == 1 && target.data.event_listener_list.len == 1
+	assert probe.calls == 1 && target.event_listener_list().len == 1
 	probe.accept = true
 	target.element_event_handler_attribute_changed('onclick', 'return false;')
 	assert target.get_current_value_of_event_handler('click') != none

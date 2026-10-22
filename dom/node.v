@@ -835,13 +835,13 @@ pub fn (mut n Node) visit_edges(mut visitor CellVisitor) {
 	for child in n.children {
 		visitor.visit(child)
 	}
-	for observer in n.registered_observer_list_ {
+	for observer in n.registered_observers() {
 		visitor.visit(observer)
 	}
-	if assigned_slot := n.assigned_slot_ {
+	if assigned_slot := n.assigned_slot_internal() {
 		visitor.visit(assigned_slot)
 	}
-	if manual_slot_assignment := n.manual_slot_assignment_ {
+	if manual_slot_assignment := n.manual_slot_assignment() {
 		visitor.visit(manual_slot_assignment)
 	}
 }
@@ -2674,7 +2674,7 @@ pub fn (mut n Node) remove(suppress_observers bool) {
 	// For each inclusive ancestor of parent, copy subtree observers into transient observers on the removed node.
 	for ancestor := ?&Node(parent); ancestor != none;  {
 		inclusive_ancestor := ancestor or { break }
-		for registered in inclusive_ancestor.registered_observer_list_ {
+		for registered in inclusive_ancestor.registered_observers() {
 			if registered.options().subtree {
 				transient_observer := TransientRegisteredObserver.create(registered.observer(), registered.options(), registered)
 				n.add_registered_observer(unsafe { &RegisteredObserver(transient_observer) })
@@ -2910,7 +2910,7 @@ pub fn (n &Node) clone_single_node_with_registry(document &Document, fallback_re
 			registry = document.effective_global_custom_element_registry()
 		}
 		// 2. If node is an element, create an element with the same local name, namespace, prefix, is value, and registry.
-		mut element_copy := create_element_with_registry(document, element.local_name(), element.namespace_uri(), element.prefix(), element.is_value, false, registry)!
+		mut element_copy := create_element_with_registry(document, element.local_name(), element.namespace_uri(), element.prefix(), element.custom_element_is_value(), false, registry)!
 		if attrs := element.attributes_ {
 			for attr in attrs.attrs {
 				element_copy.append_attribute(&Attr_{
@@ -4350,7 +4350,7 @@ pub fn (mut n Node) queue_mutation_record(type_ MutationType, attribute_name ?st
 	mut current := ?&Node(target)
 	for current != none {
 		node := current or { break }
-		for registered_observer in node.registered_observer_list_ {
+		for registered_observer in node.registered_observers() {
 			// 1. Let options be registered's options.
 			options := registered_observer.options()
 
@@ -4812,7 +4812,10 @@ pub fn Node.first_valid_id(value string, document &Document) ?string {
 }
 
 pub fn (mut n Node) add_registered_observer(registered_observer &RegisteredObserver) {
-	n.registered_observer_list_ << registered_observer
+	mut state := n.copy_cold_data()
+	state.registered_observers = state.registered_observers.clone()
+	state.registered_observers << registered_observer
+	n.cold_data_ = state
 }
 
 pub fn (n &Node) has_inclusive_ancestor_with_display_none_ignoring_animations() bool {

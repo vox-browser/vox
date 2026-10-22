@@ -9,7 +9,7 @@ fn test_part_attribute_change_marks_element_for_style_update() {
 	node.set_needs_style_update_internal(false)
 
 	element.attribute_changed('part', none, 'label icon', none)
-	assert element.parts == ['label', 'icon']
+	assert element.part_names() == ['label', 'icon']
 	assert element.needs_style_update()
 }
 

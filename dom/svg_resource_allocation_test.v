@@ -15,15 +15,15 @@ fn test_svg_dependency_registration_outlives_the_paint_projection() {
 		resource.register_svg_paint_resource_referencing_element(first)
 		projection.leave(entry)
 		projection.reset()
-		assert resource.svg_paint_resource_referencing_elements_.len == 1
-		assert voidptr(resource.svg_paint_resource_referencing_elements_[0]) == voidptr(first)
+		assert resource.svg_paint_references().len == 1
+		assert voidptr(resource.svg_paint_references()[0]) == voidptr(first)
 		again := projection.enter()
 		resource.register_svg_paint_resource_referencing_element(first)
 		resource.register_svg_paint_resource_referencing_element(second)
 		projection.leave(again)
 		projection.release()
-		assert resource.svg_paint_resource_referencing_elements_.len == 2
-		assert voidptr(resource.svg_paint_resource_referencing_elements_[1]) == voidptr(second)
+		assert resource.svg_paint_references().len == 2
+		assert voidptr(resource.svg_paint_references()[1]) == voidptr(second)
 		allocations.finish()
 		document.finalize()
 		if native { document.release_native_storage() }

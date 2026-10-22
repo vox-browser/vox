@@ -14,7 +14,7 @@ mut:
 }
 
 fn assert_missing_handler_storage_stays_absent(mut target EventTarget) {
-	assert target.data.handler_storage_ == unsafe { nil }
+	assert target.data.event_handler_storage() == none
 	kind := target.data.kind
 	mut visitor := CellVisitor{}
 	before := gc_heap_usage().total_bytes
@@ -29,10 +29,11 @@ fn assert_missing_handler_storage_stays_absent(mut target EventTarget) {
 	}
 	after := gc_heap_usage().total_bytes
 	assert observed == 0 && visitor.visited == 0
-	assert target.data.handler_storage_ == unsafe { nil }
+	assert target.data.event_handler_storage() == none
 	assert target.data.kind == kind
-	$if gcboehm ? { assert after == before
-	 }
+	$if gcboehm ? {
+		assert after == before
+	}
 }
 
 fn test_handler_metadata_reads_removal_and_visiting_leave_ordinary_targets_unallocated() {
@@ -64,7 +65,7 @@ fn handler_storage_target_from_recording_scope() (&EventTarget, &HandlerStorageO
 
 fn test_handler_storage_retains_late_callbacks_identity_visitors_and_reinsertion() {
 	mut target, observation := handler_storage_target_from_recording_scope()
-	storage := target.data.handler_storage_
+	storage := target.data.event_handler_storage() or { panic('missing handler storage') }
 	handler := target.data.event_handler('load') or { panic('missing late handler') }
 	listener := handler.listener or { panic('missing activated listener') }
 	for _ in 0 .. 3 {
@@ -93,12 +94,12 @@ fn test_handler_storage_retains_late_callbacks_identity_visitors_and_reinsertion
 	assert observation.values == ['first', 'replacement']
 	target.set_event_handler_attribute('load', none)
 	assert target.data.event_handler_count() == 0 && target.data.event_handler('load') == none
-	assert target.data.handler_storage_ == storage
-	assert target.data.event_listener_list.len == 0
+	assert voidptr(target.data.event_handler_storage() or { panic('missing handler storage') }) == voidptr(storage)
+	assert target.event_listener_list().len == 0
 	assert handler.value.kind == .null_ && handler.listener == none
 	target.set_event_handler_attribute('load', replacement)
 	gc_collect()
-	assert target.data.handler_storage_ == storage
+	assert voidptr(target.data.event_handler_storage() or { panic('missing handler storage') }) == voidptr(storage)
 	assert voidptr(target.data.event_handler('load') or { panic('missing replacement slot') }) != voidptr(handler)
 	assert handler.value.kind == .null_
 }
@@ -122,8 +123,7 @@ fn test_handler_publication_stays_after_reentrant_activation_and_callback_change
 			return js_undefined()
 		}
 	}
-	target.data.listener_list_changed_target = voidptr(observation)
-	target.data.listener_list_changed_hook = fn (context voidptr) {
+	target.data.set_listener_list_changed_hook(voidptr(observation), fn (context voidptr) {
 		mut state := unsafe { &HandlerStorageObservation(context) }
 		state.hook_calls++
 		if state.hook_calls == 1 {
@@ -133,7 +133,7 @@ fn test_handler_publication_stays_after_reentrant_activation_and_callback_change
 			state.nested_was_published_first = state.target.data.has_event_handler('error')
 				&& !state.target.data.has_event_handler('load')
 		}
-	}
+	})
 	outer := &CallbackType{
 		handle_event: fn [observation] (_ &Event, _ ?&EventTarget) JSValue {
 			mut state := unsafe { &HandlerStorageObservation(observation) }
@@ -143,24 +143,25 @@ fn test_handler_publication_stays_after_reentrant_activation_and_callback_change
 			return js_undefined()
 		}
 	}
+
 	target.set_event_handler_attribute('load', outer)
 	assert observation.outer_was_unpublished && observation.nested_was_published_first
 	assert observation.hook_calls == 2
-	assert target.data.event_handler_count() == 2 && target.data.event_listener_list.len == 2
-	storage := target.data.handler_storage_
+	assert target.data.event_handler_count() == 2 && target.event_listener_list().len == 2
+	storage := target.data.event_handler_storage() or { panic('missing handler storage') }
 	handler := target.data.event_handler('load') or { panic('missing outer slot') }
 	listener := handler.listener or { panic('missing outer listener') }
 	gc_collect()
 	target.dispatch_event(Event.create('load', EventInit{}))
 	assert observation.values == ['outer']
 	assert target.data.event_handler_count() == 1 && !target.data.has_event_handler('error')
-	assert target.data.handler_storage_ == storage
+	assert voidptr(target.data.event_handler_storage() or { panic('missing handler storage') }) == voidptr(storage)
 	assert voidptr(target.data.event_handler('load') or { panic('lost replaced slot') }) == voidptr(handler)
 	assert voidptr(handler.listener or { panic('lost retained listener') }) == voidptr(listener)
 	target.dispatch_event(Event.create('load', EventInit{}))
 	assert observation.values == ['outer', 'replacement']
 	target.set_event_handler_attribute('load', none)
-	assert target.data.event_handler_count() == 0 && target.data.event_listener_list.len == 0
+	assert target.data.event_handler_count() == 0 && target.event_listener_list().len == 0
 	assert observation.hook_calls == 4
 }
 
@@ -178,8 +179,8 @@ fn test_raw_handler_storage_stays_absent_when_blocked_and_compiles_without_repla
 		}
 	})
 	target.element_event_handler_attribute_changed('onclick', 'blocked')
-	assert target.data.handler_storage_ == unsafe { nil }
-	assert target.data.event_listener_list.len == 0
+	assert target.data.event_handler_storage() == none
+	assert target.event_listener_list().len == 0
 	observation := &HandlerStorageObservation{}
 	callback := &CallbackType{
 		handle_event: fn [observation] (_ &Event, _ ?&EventTarget) JSValue {
@@ -199,7 +200,7 @@ fn test_raw_handler_storage_stays_absent_when_blocked_and_compiles_without_repla
 		}
 	})
 	target.element_event_handler_attribute_changed('onclick', 'allowed')
-	storage := target.data.handler_storage_
+	storage := target.data.event_handler_storage() or { panic('missing handler storage') }
 	handler := target.data.event_handler('click') or { panic('missing raw slot') }
 	listener := handler.listener or { panic('missing raw listener') }
 	assert handler.value.kind == .string
@@ -213,6 +214,6 @@ fn test_raw_handler_storage_stays_absent_when_blocked_and_compiles_without_repla
 	target.dispatch_event(Event.create('click', EventInit{}))
 	assert observation.values == ['compiled']
 	target.element_event_handler_attribute_changed('onclick', none)
-	assert target.data.handler_storage_ == storage && target.data.event_handler_count() == 0
-	assert target.data.event_listener_list.len == 0
+	assert voidptr(target.data.event_handler_storage() or { panic('missing handler storage') }) == voidptr(storage) && target.data.event_handler_count() == 0
+	assert target.event_listener_list().len == 0
 }

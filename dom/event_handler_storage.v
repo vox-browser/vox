@@ -9,29 +9,32 @@ mut:
 }
 
 pub fn (data &EventTargetData) event_handler(name string) ?&EventHandler_ {
-	if data.handler_storage_ == unsafe { nil } || name !in data.handler_storage_.handlers {
-		return none
-	}
-	return unsafe { data.handler_storage_.handlers[name] }
+	storage := data.event_handler_storage() or { return none }
+	if name !in storage.handlers { return none }
+	return unsafe { storage.handlers[name] }
 }
 
 pub fn (data &EventTargetData) has_event_handler(name string) bool {
-	return data.handler_storage_ != unsafe { nil } && name in data.handler_storage_.handlers
+	storage := data.event_handler_storage() or { return false }
+	return name in storage.handlers
 }
 
 pub fn (data &EventTargetData) event_handler_count() int {
-	if data.handler_storage_ == unsafe { nil } { return 0 }
-	return data.handler_storage_.handlers.len
+	storage := data.event_handler_storage() or { return 0 }
+	return storage.handlers.len
 }
 
 fn (mut data EventTargetData) store_event_handler(name string, handler &EventHandler_) {
-	if data.handler_storage_ == unsafe { nil } {
-		data.handler_storage_ = &EventHandlerStorage{}
+	mut storage := data.event_handler_storage() or {
+		mut state := data.copy_cold_data()
+		state.handler_storage = &EventHandlerStorage{}
+		data.cold_data_ = state
+		state.handler_storage
 	}
-	data.handler_storage_.handlers[name] = handler
+	storage.handlers[name] = handler
 }
 
 fn (mut data EventTargetData) remove_event_handler(name string) {
-	if data.handler_storage_ == unsafe { nil } { return }
-	data.handler_storage_.handlers.delete(name)
+	mut storage := data.event_handler_storage() or { return }
+	storage.handlers.delete(name)
 }

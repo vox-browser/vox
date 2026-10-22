@@ -820,7 +820,7 @@ pub fn html_element_removed_from(element &dom.HTMLElement, old_parent ?&dom.Node
 
 pub fn html_element_is_form_associated_custom_element(element &dom.HTMLElement) bool {
 	dom_element := dom_element_from_html_element(element)
-	definition := dom.look_up_custom_element_definition(dom_element.custom_element_registry(), dom_element.namespace_uri(), dom_element.local_name(), dom_element.is_value) or {
+	definition := dom.look_up_custom_element_definition(dom_element.custom_element_registry(), dom_element.namespace_uri(), dom_element.local_name(), dom_element.custom_element_is_value()) or {
 		return false
 	}
 	return definition.form_associated()
@@ -829,7 +829,7 @@ pub fn html_element_is_form_associated_custom_element(element &dom.HTMLElement) 
 // https://html.spec.whatwg.org/multipage/custom-elements.html#dom-attachinternals
 pub fn html_element_attach_internals(element &dom.HTMLElement) !&ElementInternals {
 	dom_element := dom_element_from_html_element(element)
-	if dom_element.is_value != none {
+	if dom_element.custom_element_is_value() != none {
 		return error('NotSupportedError: ElementInternals cannot be attached to a customized built-in element')
 	}
 	definition := dom.look_up_custom_element_definition(dom_element.custom_element_registry(), dom_element.namespace_uri(), dom_element.local_name(), none) or {

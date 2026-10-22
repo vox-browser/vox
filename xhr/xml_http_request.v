@@ -160,8 +160,7 @@ pub fn XMLHttpRequest.create(global_object &XMLHttpRequestGlobal) &XMLHttpReques
 		response_:     MockResponse{ body_is_null: true }
 	}
 	mut target := request.as_event_target()
-	target.data.listener_list_changed_target = voidptr(request)
-	target.data.listener_list_changed_hook = xhr_event_listener_list_changed
+	target.data.set_listener_list_changed_hook(voidptr(request), xhr_event_listener_list_changed)
 	mut mutable_request := unsafe { &XMLHttpRequest(request) }
 	mutable_request.event_timestamp = global_object.event_timestamp
 	mutable_request.upload_object.event_timestamp = global_object.event_timestamp

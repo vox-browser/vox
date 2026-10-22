@@ -1593,26 +1593,24 @@ pub struct Element {
 mut:
 	rare_data_ &ElementRareData = unsafe { nil }
 	interactive_data_ &ElementInteractiveData = unsafe { nil }
+	custom_data_ &ElementCustomData = unsafe { nil }
+	dependency_data_ &ElementDependencyData = unsafe { nil }
+	binding_data_ &ElementBindingData = unsafe { nil }
 pub mut:
 	qualified_name                  QualifiedName
-	html_uppercased_qualified_name_ ?string
 
 	attributes_          ?&NamedNodeMap
 	inline_style_        ?&CSSStyleProperties_
-	attribute_style_map_ ?&StylePropertyMap_
 	class_list_          ?&DOMTokenList
 	shadow_root_         ?&ShadowRoot
-	part_list_           ?&DOMTokenList
 
 	computed_properties_    ?&CSSComputedProperties_
 	layout_node_with_style_ ?&LayoutNodeWithStyle_
 	custom_property_data_   ?&CSSCustomPropertyData_
 	font_environment_changed_ bool
 
-	associated_shadow_host_pseudo_element_ ?int
 
 	classes []string
-	parts   []string
 	dir__   ?Dir
 	// HTMLElement's cached state survives until its attribute-change steps
 	// capture the previous selector state. Shared HTML storage lives in Element.
@@ -1621,17 +1619,8 @@ pub mut:
 	id_   ?string
 	name_ ?string
 
-	custom_element_reaction_queue []CustomElementReaction
 	custom_element_registry_      voidptr = unsafe { nil }
-	custom_element_definition_    ?&CustomElementDefinition
-	is_value                      ?string
-	custom_state_set_             ?&CustomStateSet
 
-	registered_intersection_observers         []voidptr
-	computed_style_map_cache_                 ?&StylePropertyMapReadOnly_
-	removed_attributes_for_style_invalidation []string
-	svg_resource_box_referencing_elements_    []&Element
-	svg_paint_resource_referencing_elements_  []&Element
 
 
 	has_css_defined_animations_flag bool
@@ -1695,11 +1684,14 @@ pub fn (mut e Element) set_associated_shadow_host_pseudo_element(pseudo_element 
 	mut mutable_host := unsafe { &Element(host) }
 	mut data := mutable_host.ensure_rare_style_data()
 	data.element_reference_pseudo_elements[pseudo_element] = &e
-	e.associated_shadow_host_pseudo_element_ = pseudo_element
+	mut state := e.copy_binding_data()
+	state.associated_pseudo_element = pseudo_element
+	e.binding_data_ = state
 }
 
 pub fn (e &Element) associated_shadow_host_pseudo_element() ?int {
-	return e.associated_shadow_host_pseudo_element_
+	if e.binding_data_ == unsafe { nil } { return none }
+	return e.binding_data_.associated_pseudo_element
 }
 
 pub fn (e &Element) element_reference_pseudo_element(pseudo_element int) ?&Element {
@@ -1757,19 +1749,19 @@ pub fn (mut e Element) visit_edges(mut visitor CellVisitor) {
 	if sr := e.shadow_root_ {
 		visitor.visit(sr)
 	}
-	if pl := e.part_list_ {
+	if pl := e.cached_part_list() {
 		visitor.visit(pl)
 	}
-	if ced := e.custom_element_definition_ {
+	if ced := e.custom_element_definition() {
 		visitor.visit(ced)
 	}
 	if cp := e.computed_properties_ {
 		visitor.visit(cp)
 	}
-	if csm := e.computed_style_map_cache_ {
+	if csm := e.cached_computed_style_map() {
 		visitor.visit(csm)
 	}
-	if asm_ := e.attribute_style_map_ {
+	if asm_ := e.cached_attribute_style_map() {
 		visitor.visit(asm_)
 	}
 	if e.rare_data_ != unsafe { nil } {
@@ -1826,7 +1818,7 @@ fn (e &Element) make_html_uppercased_qualified_name() string {
 }
 
 pub fn (e &Element) html_uppercased_qualified_name() string {
-	if cached := e.html_uppercased_qualified_name_ {
+	if cached := e.cached_uppercase_name() {
 		return cached
 	}
 	return e.make_html_uppercased_qualified_name()
@@ -2115,11 +2107,13 @@ pub fn (mut e Element) class_list() &DOMTokenList {
 
 // https://drafts.csswg.org/css-shadow-1/#dom-element-part
 pub fn (mut e Element) part_list() &DOMTokenList {
-	if pl := e.part_list_ {
+	if pl := e.cached_part_list() {
 		return pl
 	}
 	new_pl := DOMTokenList.create(&e, 'part')
-	e.part_list_ = new_pl
+	mut state := e.copy_binding_data()
+	state.part_list = new_pl
+	e.binding_data_ = state
 	return new_pl
 }
 
@@ -2166,8 +2160,8 @@ pub fn (mut e Element) attach_a_shadow_root_with_registry(mode ShadowRootMode, c
 	if !is_valid_shadow_host_name(e.local_name()) {
 		return error('NotSupportedError: Element local name is not a valid shadow host name')
 	}
-	if is_valid_custom_element_name(e.local_name()) || e.is_value != none {
-		if def := look_up_custom_element_definition(e.custom_element_registry(), e.namespace_uri(), e.local_name(), e.is_value) {
+	if is_valid_custom_element_name(e.local_name()) || e.custom_element_is_value() != none {
+		if def := look_up_custom_element_definition(e.custom_element_registry(), e.namespace_uri(), e.local_name(), e.custom_element_is_value()) {
 			if def.disable_shadow() {
 				return error('NotSupportedError: Custom element definition disables shadow roots')
 			}
@@ -2647,8 +2641,10 @@ pub fn (e &Element) el_inline_style() ?&CSSStyleProperties_ {
 
 pub fn (mut e Element) set_inline_style(style ?&CSSStyleProperties_) {
 	e.inline_style_ = style
-	if e.attribute_style_map_ != none {
-		e.attribute_style_map_ = none
+	if e.cached_attribute_style_map() != none {
+		mut state := e.copy_binding_data()
+		state.attribute_style_map = none
+		e.binding_data_ = state
 	}
 	mut node := unsafe { &Node(&e) }
 	node.set_needs_style_update(true)
@@ -2665,11 +2661,13 @@ pub fn (mut e Element) style_for_bindings() &CSSStyleProperties_ {
 }
 
 pub fn (mut e Element) el_attribute_style_map() &StylePropertyMap_ {
-	if m := e.attribute_style_map_ {
+	if m := e.cached_attribute_style_map() {
 		return m
 	}
 	new_map := create_style_property_map_for_bindings(e.style_for_bindings())
-	e.attribute_style_map_ = new_map
+	mut state := e.copy_binding_data()
+	state.attribute_style_map = new_map
+	e.binding_data_ = state
 	return new_map
 }
 
@@ -3115,7 +3113,7 @@ fn serialize_element_start_tag(mut builder strings.Builder, element &Element) st
 	tag_name := html_serialized_tag_name(element)
 	builder.write_string('<')
 	builder.write_string(tag_name)
-	if is_value := element.is_value {
+	if is_value := element.custom_element_is_value() {
 		if !element.has_attribute('is') {
 			builder.write_string(' is="')
 			builder.write_string(html_escape_attribute(is_value))
@@ -4423,15 +4421,21 @@ pub fn (e &Element) check_visibility(options ?CheckVisibilityOptions) bool {
 
 // --- Intersection observers ---
 pub fn (mut e Element) register_intersection_observer(observer voidptr) {
-	e.registered_intersection_observers << observer
+	mut state := e.copy_dependency_data()
+	state.intersection_observers = state.intersection_observers.clone()
+	state.intersection_observers << observer
+	e.dependency_data_ = state
 }
 
 pub fn (mut e Element) unregister_intersection_observer(observer voidptr) {
-	e.registered_intersection_observers = e.registered_intersection_observers.filter(it != observer)
+	if !e.has_registered_intersection_observer(observer) { return }
+	mut state := e.copy_dependency_data()
+	state.intersection_observers = state.intersection_observers.filter(it != observer)
+	e.dependency_data_ = state
 }
 
 pub fn (e &Element) has_registered_intersection_observer(observer voidptr) bool {
-	return observer in e.registered_intersection_observers
+	return observer in e.intersection_observers()
 }
 
 // --- Custom elements ---
@@ -4445,55 +4449,67 @@ fn (mut e Element) enqueue_an_element_on_the_appropriate_element_queue() {
 }
 
 // Mirrors the C++ Element::ensure_custom_element_reaction_queue() accessor.
-// In V the queue is always represented as an in-place slice (no lazy
-// allocation needed), so this simply returns it. V slices share their backing
-// array, so callers may iterate the result; mutation should still go through
-// the dedicated enqueue helpers.
+// The optional queue publishes a snapshot; mutation goes through the dedicated
+// enqueue helpers so Element value copies retain their own queue membership.
 pub fn (e &Element) ensure_custom_element_reaction_queue() []CustomElementReaction {
-	return e.custom_element_reaction_queue
+	if e.custom_data_ == unsafe { nil } { return []CustomElementReaction{} }
+	return e.custom_data_.reactions.clone()
 }
 
 // Bindings/MainThreadVM's invoke-custom-element-reactions algorithm consumes
 // the queue. Keep mutation at the DOM boundary instead of exposing the backing
 // slice to another module.
 pub fn (mut e Element) take_custom_element_reactions() []CustomElementReaction {
-	reactions := e.custom_element_reaction_queue.clone()
-	e.custom_element_reaction_queue.clear()
+	reactions := e.ensure_custom_element_reaction_queue()
+	if reactions.len == 0 { return reactions }
+	mut state := e.copy_custom_data()
+	state.reactions = []CustomElementReaction{}
+	e.custom_data_ = state
 	return reactions
 }
 
 // https://html.spec.whatwg.org/multipage/custom-elements.html#enqueue-a-custom-element-upgrade-reaction
 pub fn (mut e Element) enqueue_a_custom_element_upgrade_reaction(definition &CustomElementDefinition) {
-	e.custom_element_reaction_queue << CustomElementUpgradeReaction{
+	mut state := e.copy_custom_data()
+	state.reactions = state.reactions.clone()
+	state.reactions << CustomElementUpgradeReaction{
 		custom_element_definition: definition
 	}
+	e.custom_data_ = state
 	e.enqueue_an_element_on_the_appropriate_element_queue()
 }
 
 // https://html.spec.whatwg.org/multipage/custom-elements.html#enqueue-a-custom-element-callback-reaction
 pub fn (mut e Element) enqueue_a_custom_element_callback_reaction(callback_name string, arguments []string) {
 	_ = callback_name
-	e.custom_element_reaction_queue << CustomElementCallbackReaction{
-		arguments: arguments
+	mut state := e.copy_custom_data()
+	state.reactions = state.reactions.clone()
+	state.reactions << CustomElementCallbackReaction{
+		arguments: arguments.clone()
 	}
+	e.custom_data_ = state
 	e.enqueue_an_element_on_the_appropriate_element_queue()
 }
 
 pub fn (mut e Element) ensure_custom_state_set() &CustomStateSet {
-	if cs := e.custom_state_set_ {
+	if cs := e.custom_state_set() {
 		return cs
 	}
 	new_cs := CustomStateSet.create(&e)
-	e.custom_state_set_ = new_cs
+	mut state := e.copy_custom_data()
+	state.state_set = new_cs
+	e.custom_data_ = state
 	return new_cs
 }
 
 pub fn (e &Element) custom_state_set() ?&CustomStateSet {
-	return e.custom_state_set_
+	if e.custom_data_ == unsafe { nil } { return none }
+	return e.custom_data_.state_set
 }
 
 pub fn (e &Element) custom_element_definition() ?&CustomElementDefinition {
-	return e.custom_element_definition_
+	if e.custom_data_ == unsafe { nil } { return none }
+	return e.custom_data_.definition
 }
 
 // https://dom.spec.whatwg.org/#element-custom-element-registry
@@ -4506,11 +4522,14 @@ pub fn (mut e Element) set_custom_element_registry(registry voidptr) {
 }
 
 pub fn (mut e Element) set_custom_element_definition(definition ?&CustomElementDefinition) {
-	e.custom_element_definition_ = definition
+	if definition == none && e.custom_element_definition() == none { return }
+	mut state := e.copy_custom_data()
+	state.definition = definition
+	e.custom_data_ = state
 }
 
 pub fn (e &Element) is_form_associated_custom_element() bool {
-	definition := e.custom_element_definition_ or { return false }
+	definition := e.custom_element_definition() or { return false }
 	return e.custom_element_state_ == .custom && definition.form_associated()
 }
 
@@ -4590,7 +4609,7 @@ pub fn (mut e Element) upgrade_element(definition &CustomElementDefinition) ! {
 	if e.custom_element_state_ != .undefined_ && e.custom_element_state_ != .uncustomized {
 		return
 	}
-	e.custom_element_definition_ = definition
+	e.set_custom_element_definition(definition)
 	e.set_custom_element_state(.failed)
 
 	if attrs := e.attributes_ {
@@ -4615,7 +4634,7 @@ pub fn (mut e Element) upgrade_element(definition &CustomElementDefinition) ! {
 
 // https://html.spec.whatwg.org/multipage/custom-elements.html#concept-try-upgrade
 pub fn (mut e Element) try_to_upgrade() {
-	definition := look_up_custom_element_definition(e.custom_element_registry(), e.namespace_uri(), e.local_name(), e.is_value) or { return }
+	definition := look_up_custom_element_definition(e.custom_element_registry(), e.namespace_uri(), e.local_name(), e.custom_element_is_value()) or { return }
 	e.enqueue_a_custom_element_upgrade_reaction(definition)
 }
 
@@ -4639,8 +4658,8 @@ pub fn (mut e Element) set_custom_element_state(state CustomElementState) {
 // https://html.spec.whatwg.org/multipage/dom.html#html-element-constructors
 pub fn (mut e Element) setup_custom_element_from_constructor(definition &CustomElementDefinition, is_value_ ?string) {
 	e.set_custom_element_state(.custom)
-	e.custom_element_definition_ = definition
-	e.is_value = is_value_
+	e.set_custom_element_definition(definition)
+	e.set_is_value(is_value_)
 }
 
 pub fn (mut e Element) set_prefix(value ?string) {
@@ -5157,7 +5176,7 @@ pub fn (e &Element) includes_properties_from_invalidation_set(set StyleInvalidat
 			.tag_name { e.local_name() == property.name }
 			.attribute {
 				e.has_attribute(property.name)
-					|| property.name in e.removed_attributes_for_style_invalidation
+					|| property.name in e.removed_attribute_names()
 			}
 			.pseudo_class { e.matches_invalidation_pseudo_class(property.pseudo_class_name) }
 			.invalidate_self, .invalidate_whole_subtree { true }
@@ -5856,11 +5875,8 @@ pub fn (mut e Element) attribute_changed(local_name string, old_value ?string, v
 			e.invalidate_style_after_language_change()
 		}
 	} else if local_name == 'part' {
-		e.parts.clear()
-		if value_or_empty.len > 0 {
-			e.parts = value_or_empty.split(' ').filter(it.len > 0)
-		}
-		if mut pl := e.part_list_ {
+		e.set_element_parts(value_or_empty.split(' ').filter(it.len > 0))
+		if mut pl := e.cached_part_list() {
 			pl.associated_attribute_changed(value_or_empty)
 		}
 		e.set_needs_style_update(true)
@@ -5869,7 +5885,7 @@ pub fn (mut e Element) attribute_changed(local_name string, old_value ?string, v
 			shadow_node := unsafe { &Node(shadow_root) }
 			shadow_node.for_each_in_subtree(fn (node &Node) TraversalDecision {
 				if element := node.as_element() {
-					if element.parts.len > 0 {
+					if element.has_part_names() {
 						mut mutable_element := unsafe { &Element(element) }
 						mutable_element.set_needs_style_update(true)
 					}
@@ -6072,8 +6088,11 @@ fn (mut e Element) invalidate_style_after_attribute_change(attribute_name string
 			}
 		}
 	}
-	if new_value == none && attribute_name !in e.removed_attributes_for_style_invalidation {
-		e.removed_attributes_for_style_invalidation << attribute_name
+	if new_value == none && attribute_name !in e.removed_attribute_names() {
+		mut state := e.copy_dependency_data()
+		state.removed_attributes = state.removed_attributes.clone()
+		state.removed_attributes << attribute_name
+		e.dependency_data_ = state
 	}
 	changed_properties << InvalidationProperty{
 		type_: .attribute
@@ -6087,7 +6106,10 @@ fn (mut e Element) invalidate_style_after_attribute_change(attribute_name string
 }
 
 pub fn (mut e Element) clear_removed_attributes_for_style_invalidation() {
-	e.removed_attributes_for_style_invalidation.clear()
+	if e.removed_attribute_names().len == 0 { return }
+	mut state := e.copy_dependency_data()
+	state.removed_attributes = []string{}
+	e.dependency_data_ = state
 }
 
 fn (mut e Element) invalidate_hosted_shadow_tree_after_attribute_change(style_computer &StyleComputer) {
@@ -6234,11 +6256,13 @@ pub fn (e &Element) is_implicitly_potentially_render_blocking() bool {
 
 // https://drafts.css-houdini.org/css-typed-om-1/#dom-element-computedstylemap
 pub fn (mut e Element) computed_style_map() &StylePropertyMapReadOnly_ {
-	if csm := e.computed_style_map_cache_ {
+	if csm := e.cached_computed_style_map() {
 		return csm
 	}
 	new_csm := &StylePropertyMapReadOnly_{}
-	e.computed_style_map_cache_ = new_csm
+	mut state := e.copy_dependency_data()
+	state.computed_style_map = new_csm
+	e.dependency_data_ = state
 	return new_csm
 }
 
@@ -7055,24 +7079,31 @@ pub fn (mut d Document) refresh_svg_use_shadow_trees() {
 // referencing element's layout subtree. Keep the reverse edge so mutations of
 // the resource invalidate every independently built resource subtree.
 pub fn (mut e Element) register_svg_resource_box_referencing_element(referencing_element &Element) {
-	for existing in e.svg_resource_box_referencing_elements_ {
+	for existing in e.svg_box_references() {
 		if voidptr(existing) == voidptr(referencing_element) {
 			return
 		}
 	}
-	e.svg_resource_box_referencing_elements_ << referencing_element
+	mut state := e.copy_dependency_data()
+	state.svg_boxes = state.svg_boxes.clone()
+	state.svg_boxes << referencing_element
+	e.dependency_data_ = state
 }
 
 pub fn (mut e Element) mark_svg_resource_box_referencing_elements_for_layout_tree_update() {
-	for referencing_element in e.svg_resource_box_referencing_elements_ {
+	for referencing_element in e.svg_box_references() {
 		mut node := unsafe { &Node(referencing_element.as_node()) }
 		node.set_needs_layout_tree_update(true, .svg_resource_element_removed)
 	}
-	e.svg_resource_box_referencing_elements_.clear()
+	if e.svg_box_references().len > 0 {
+		mut state := e.copy_dependency_data()
+		state.svg_boxes = []&Element{}
+		e.dependency_data_ = state
+	}
 }
 
 pub fn (mut e Element) mark_svg_resource_box_referencing_elements_for_layout_update() {
-	for referencing_element in e.svg_resource_box_referencing_elements_ {
+	for referencing_element in e.svg_box_references() {
 		mut node := unsafe { &Node(referencing_element.as_node()) }
 		node.set_needs_layout_update(.svg_resource_element_attribute_change)
 	}
@@ -7090,16 +7121,19 @@ pub fn (mut e Element) register_svg_paint_resource_referencing_element(referenci
 		retained.finish()
 		platform.leave_persistent(persistent)
 	}
-	for existing in e.svg_paint_resource_referencing_elements_ {
+	for existing in e.svg_paint_references() {
 		if voidptr(existing) == voidptr(referencing_element) {
 			return
 		}
 	}
-	e.svg_paint_resource_referencing_elements_ << referencing_element
+	mut state := e.copy_dependency_data()
+	state.svg_paint = state.svg_paint.clone()
+	state.svg_paint << referencing_element
+	e.dependency_data_ = state
 }
 
 fn (mut e Element) mark_svg_paint_resource_referencing_elements_for_repaint() {
-	for referencing_element in e.svg_paint_resource_referencing_elements_ {
+	for referencing_element in e.svg_paint_references() {
 		mut node := unsafe { &Node(referencing_element.as_node()) }
 		node.set_needs_repaint(.paint_commands)
 	}

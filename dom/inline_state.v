@@ -13,7 +13,7 @@ pub fn (e &Element) is_dom_element() bool {
 }
 
 pub fn (e &Element) part_names() []string {
-	return e.parts.clone()
+	return e.element_parts().clone()
 }
 
 pub fn (e &Element) class_names() []string {
@@ -47,11 +47,15 @@ pub fn (e &Element) to_element() &Element {
 }
 
 pub fn (e &Element) custom_element_is_value() ?string {
-	return e.is_value
+	if e.custom_data_ == unsafe { nil } { return none }
+	return e.custom_data_.is_value
 }
 
 pub fn (mut e Element) set_is_value(value ?string) {
-	e.is_value = value
+	if value == none && e.custom_element_is_value() == none { return }
+	mut state := e.copy_custom_data()
+	state.is_value = value
+	e.custom_data_ = state
 }
 
 pub fn (e &Element) element_affected_by_has_pseudo_class_in_subject_position() bool {
