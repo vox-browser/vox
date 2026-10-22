@@ -596,9 +596,7 @@ fn parse_css_style_sheet_for_owner_node(document &dom.Document, css_text string,
 	defer {
 		platform.arena_phase_end('css_parse', phase_mark)
 	}
-	mut parser := RuleSelectorParser.create_for_stylesheet(ParsingParams{}, css_text)
-	parser.defer_style_declarations = css_text.len >= 16_384
-	mut sheet := parser.parse_as_css_stylesheet(location, none)
+	mut sheet := parse_css_stylesheet_in_workspace(ParsingParams{}, css_text, location, none, css_text.len >= 16_384)
 	sheet.base.type_string = 'text/css'
 	mut active_urls := map[string]bool{}
 	active_urls[location] = true

@@ -15,8 +15,7 @@ pub fn parse_css_stylesheet(context ParsingParams, css_text string, location ?st
 		style_sheet.set_source_text('')
 		return style_sheet
 	}
-	mut parser := RuleSelectorParser.create_for_stylesheet(context, css_text)
-	mut style_sheet := parser.parse_as_css_stylesheet(location, media_list)
+	mut style_sheet := parse_css_stylesheet_in_workspace(context, css_text, location, media_list, false)
 	style_sheet.set_source_text(css_text)
 	return style_sheet
 }

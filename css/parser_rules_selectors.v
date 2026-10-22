@@ -74,6 +74,7 @@ pub mut:
 	is_ua_style_sheet   IsUAStyleSheet
 mut:
 	raw_rules_transient bool
+	component_input_transient bool
 }
 
 pub fn RuleSelectorParser.create(params ParsingParams, input string, encoding string) RuleSelectorParser {
@@ -1151,6 +1152,9 @@ fn parser_consume_a_function(mut input RawTokenStream) Function {
 }
 
 fn (mut parser RuleSelectorParser) convert_to_rule(rule Rule, nested ParserNested, declaration_rule_kind NestedDeclarationRuleKind) ?&CSSRule {
+	if parser.component_input_transient {
+		return parser.convert_to_rule_impl(own_transient_rule_prelude(rule), nested, declaration_rule_kind)
+	}
 	// Query/selector parsers may retain spans of their prelude input. Only the
 	// raw rule vectors are temporary; their nested component payloads already
 	// belong to the immutable tokenizer input.
@@ -2446,10 +2450,10 @@ fn (mut parser RuleSelectorParser) convert_to_style_declaration(declarations Par
 			} else {
 				parser_component_values_to_string(declaration.value).trim_space()
 			}
-			custom_properties[declaration.name] = StyleProperty{
+			custom_properties[if parser.component_input_transient { declaration.name.clone() } else { declaration.name }] = StyleProperty{
 				important: declaration.important
 				property_id: .color
-				value: parse_custom_property_components(declaration.value, value_text)
+				value: parse_custom_property_components(if parser.component_input_transient { own_stylesheet_components(declaration.value) } else { declaration.value }, value_text)
 			}
 		} else {
 			property := PropertyNameAndID.from_name(declaration.name) or { continue }
@@ -2457,13 +2461,22 @@ fn (mut parser RuleSelectorParser) convert_to_style_declaration(declarations Par
 			// Syntax parsing already produced this immutable component tree.
 			// Serializing and tokenizing it again both allocates and can merge
 			// tokens separated by comments, changing the declaration's grammar.
+			// Only transient input is mutated; ordinary caller-owned trees remain read-only.
+			mut components := unsafe { declaration.value }
+			if parser.component_input_transient { own_value_component_text(mut components) }
 			mut value_parser := Parser{
-				component_values: declaration.value
+				component_values: components
 				context: params
 				value_context: parser.value_context.clone()
 			}
-			parsed := value_parser.parse_css_value(property_id) or {
+			mut parsed := value_parser.parse_css_value(property_id) or {
 				continue
+			}
+			if parser.component_input_transient {
+				if mut parsed is UnresolvedStyleValue {
+					parsed.tokens = own_stylesheet_components(parsed.tokens)
+					if text := parsed.original_source_text { parsed.original_source_text = text.clone() }
+				}
 			}
 			properties << StyleProperty{
 				important: declaration.important
@@ -4825,8 +4838,7 @@ pub fn parse_css_stylesheet_with_parser(css_text string, location ?string) &CSSS
 }
 
 pub fn parse_css_stylesheet_with_params(params ParsingParams, css_text string, location ?string) &CSSStyleSheet {
-	mut parser := RuleSelectorParser.create_for_stylesheet(params, css_text)
-	return parser.parse_as_css_stylesheet(location, none)
+	return parse_css_stylesheet_in_workspace(params, css_text, location, none, false)
 }
 
 pub fn parse_css_stylesheet_contents_with_params(params ParsingParams, css_text string) []&CSSRule {

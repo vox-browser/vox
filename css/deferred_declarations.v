@@ -5,12 +5,21 @@ import platform
 
 @[heap]
 struct DeferredStyleDeclaration {
-	declarations []Declaration
-	params ParsingParams
+	declarations        []Declaration
+	source_declarations []DeferredPropertySource
+	params              ParsingParams
 mut:
-	base_url string
-	resource_owner ?&CSSStyleSheet
+	base_url               string
+	resource_owner         ?&CSSStyleSheet
 	resource_owner_was_set bool
+}
+
+// Retiring tokenizer input cannot be retained by a lazy rule. Keep the exact
+// spelling, including comments that separate otherwise mergeable tokens.
+struct DeferredPropertySource {
+	name      string
+	text      string
+	important Important
 }
 
 fn (mut parser RuleSelectorParser) declaration_for_style_rule(declarations []Declaration) &CSSStyleProperties {
@@ -19,8 +28,17 @@ fn (mut parser RuleSelectorParser) declaration_for_style_rule(declarations []Dec
 	}
 	return &CSSStyleProperties{
 		deferred_declarations_: &DeferredStyleDeclaration{
-			declarations: parser.own_deferred_rule_declarations(declarations)
-			params: parser.parsing_params()
+			declarations:        if parser.component_input_transient {
+				[]Declaration{}
+			} else {
+				parser.own_deferred_rule_declarations(declarations)
+			}
+			source_declarations: if parser.component_input_transient {
+				deferred_property_sources(declarations)
+			} else {
+				[]DeferredPropertySource{}
+			}
+			params:              parser.parsing_params()
 		}
 	}
 }
@@ -34,14 +52,18 @@ fn (properties &CSSStyleProperties) ensure_declarations_parsed() {
 	mut target := unsafe { &CSSStyleProperties(properties) }
 	target.deferred_declarations_ = none
 	mut parser := RuleSelectorParser{
-		document: deferred.params.document
-		mode: deferred.params.mode
-		value_context: deferred.params.value_context
-		rule_context: deferred.params.rule_context
+		document:            deferred.params.document
+		mode:                deferred.params.mode
+		value_context:       deferred.params.value_context
+		rule_context:        deferred.params.rule_context
 		declared_namespaces: deferred.params.declared_namespaces
-		is_ua_style_sheet: deferred.params.is_ua_style_sheet
+		is_ua_style_sheet:   deferred.params.is_ua_style_sheet
 	}
-	mut parsed := parser.convert_to_style_declaration(deferred.declarations)
+	mut parsed := if deferred.source_declarations.len > 0 {
+		parser.convert_source_declarations(deferred.source_declarations)
+	} else {
+		parser.convert_to_style_declaration(deferred.declarations)
+	}
 	target.properties = parsed.properties
 	target.custom_properties = parsed.custom_properties.move()
 	target.typed_properties_cache_ = none
