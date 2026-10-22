@@ -450,44 +450,46 @@ fn svg_payload_legacy_append_text_decoration_style(mut commands []LegacySVGPathP
 }
 
 fn svg_payload_legacy_typed(box &BlockBox, opacity f64) LegacySVGPathPaintCommand {
+	data := box.svg_path()
 	return LegacySVGPathPaintCommand{
 		kind:                 'draw_svg_path'
 		x:                    box.x
 		y:                    box.y
 		width:                box.width
 		height:               box.height
-		color:                box.svg_fill_color
-		svg_solid_color_data: box.svg_solid_color_data
+		color:                box.svg_data.fill_color
+		svg_solid_color_data: data.svg_solid_color_data
 		force_dark_role:      .svg
 		force_dark_role_set:  true
-		svg_gradient_data:    if !isnil(box.svg_gradient_data)
-			&& (box.svg_gradient_data.fill_linear_gradient != none
-			|| box.svg_gradient_data.stroke_linear_gradient != none
-			|| box.svg_gradient_data.fill_radial_gradient != none
-			|| box.svg_gradient_data.stroke_radial_gradient != none) {
-			box.svg_gradient_data
+		svg_gradient_data:    if gradients := data.svg_gradient_data {
+			if gradients.fill_linear_gradient != none || gradients.stroke_linear_gradient != none
+				|| gradients.fill_radial_gradient != none || gradients.stroke_radial_gradient != none {
+				gradients
+			} else {
+				none
+			}
 		} else {
 			none
 		}
-		fill_pattern:         box.svg_fill_pattern
+		fill_pattern:         data.fill_pattern
 		opacity:              opacity
-		path:                 box.svg_path
-		path_data:            box.svg_path_data
-		path_transform:       box.svg_transform
-		points:               box.svg_points
-		fill_even_odd:        box.svg_fill_even_odd
-		stroke_color:         box.svg_stroke_color
-		stroke_pattern:       box.svg_stroke_pattern
-		stroke_width:         box.svg_stroke_width
-		stroke_dasharray:     box.svg_stroke_dasharray
-		stroke_dashoffset:    box.svg_stroke_dashoffset
-		non_scaling_stroke:   box.svg_non_scaling_stroke
-		stroke_first:         box.svg_stroke_first
-		stroke_linecap:       box.svg_stroke_linecap
-		stroke_linejoin:      box.svg_stroke_linejoin
-		stroke_miterlimit:    box.svg_stroke_miterlimit
-		fill_opacity:         box.svg_fill_opacity
-		stroke_opacity:       box.svg_stroke_opacity
+		path:                 data.path
+		path_data:            data.path_data
+		path_transform:       data.path_transform
+		points:               box.svg_data.points
+		fill_even_odd:        data.fill_even_odd
+		stroke_color:         box.svg_data.stroke_color
+		stroke_pattern:       data.stroke_pattern
+		stroke_width:         box.svg_data.stroke_width
+		stroke_dasharray:     data.stroke_dasharray
+		stroke_dashoffset:    data.stroke_dashoffset
+		non_scaling_stroke:   data.non_scaling_stroke
+		stroke_first:         data.stroke_first
+		stroke_linecap:       data.stroke_linecap
+		stroke_linejoin:      data.stroke_linejoin
+		stroke_miterlimit:    data.stroke_miterlimit
+		fill_opacity:         data.fill_opacity
+		stroke_opacity:       data.stroke_opacity
 	}
 }
 
@@ -689,9 +691,7 @@ pub fn (b &BlockBox) svg_payload_legacy_render_svg(width f64, height f64) string
 			if command.blur > 0 {
 				filter_id := 'inner-shadow-blur${defs.len}'
 				margin := command.blur * 2.0
-				defs << '<filter id="${filter_id}" filterUnits="userSpaceOnUse" x="${fmt_px(geometry.content_rect.x - margin)}" y="${fmt_px(geometry.content_rect.y - margin)}" width="${fmt_px(
-					geometry.content_rect.width + margin * 2.0)}" height="${fmt_px(
-					geometry.content_rect.height + margin * 2.0)}"><feGaussianBlur stdDeviation="${fmt_px(f64(int(command.blur) / 2))}"/></filter>'
+				defs << '<filter id="${filter_id}" filterUnits="userSpaceOnUse" x="${fmt_px(geometry.content_rect.x - margin)}" y="${fmt_px(geometry.content_rect.y - margin)}" width="${fmt_px(geometry.content_rect.width + margin * 2.0)}" height="${fmt_px(geometry.content_rect.height + margin * 2.0)}"><feGaussianBlur stdDeviation="${fmt_px(f64(int(command.blur) / 2))}"/></filter>'
 				filter = ' filter="url(#${filter_id})"'
 			}
 			outer_path := rounded_rect_svg_path(command.x, command.y, command.width,
@@ -750,11 +750,9 @@ pub fn (b &BlockBox) svg_payload_legacy_render_svg(width f64, height f64) string
 					half_stroke)}" width="${fmt_px(non_negative(command.width - command.stroke_width))}" height="${fmt_px(non_negative(command.height - command.stroke_width))}" rx="${fmt_px(command.radius)}" ry="${fmt_px(command.radius)}" fill="none" stroke="${command.color}" stroke-opacity="${fmt_px(command.opacity)}" stroke-width="${fmt_px(command.stroke_width)}"/>'
 			}
 		} else if command.kind == 'fill_ellipse' {
-			body << '<ellipse cx="${fmt_px(command.x + command.width / 2)}" cy="${fmt_px(
-				command.y + command.height / 2)}" rx="${fmt_px(command.width / 2)}" ry="${fmt_px(command.height / 2)}" fill="${command.color}" fill-opacity="${fmt_px(command.opacity)}"/>'
+			body << '<ellipse cx="${fmt_px(command.x + command.width / 2)}" cy="${fmt_px(command.y + command.height / 2)}" rx="${fmt_px(command.width / 2)}" ry="${fmt_px(command.height / 2)}" fill="${command.color}" fill-opacity="${fmt_px(command.opacity)}"/>'
 		} else if command.kind == 'stroke_ellipse' {
-			body << '<ellipse cx="${fmt_px(command.x + command.width / 2)}" cy="${fmt_px(
-				command.y + command.height / 2)}" rx="${fmt_px(command.width / 2)}" ry="${fmt_px(command.height / 2)}" fill="none" stroke="${command.color}" stroke-opacity="${fmt_px(command.opacity)}" stroke-width="${fmt_px(command.stroke_width)}"/>'
+			body << '<ellipse cx="${fmt_px(command.x + command.width / 2)}" cy="${fmt_px(command.y + command.height / 2)}" rx="${fmt_px(command.width / 2)}" ry="${fmt_px(command.height / 2)}" fill="none" stroke="${command.color}" stroke-opacity="${fmt_px(command.opacity)}" stroke-width="${fmt_px(command.stroke_width)}"/>'
 		} else if command.kind == 'fill_polygon' {
 			mut points := []string{}
 			for index := 0; index + 1 < command.points.len; index += 2 {
@@ -775,8 +773,7 @@ pub fn (b &BlockBox) svg_payload_legacy_render_svg(width f64, height f64) string
 				}
 			}
 
-			body << '<line x1="${fmt_px(command.x)}" y1="${fmt_px(command.y)}" x2="${fmt_px(
-				command.x + command.width)}" y2="${fmt_px(command.y + command.height)}" fill="none" stroke="${command.color}" stroke-opacity="${fmt_px(command.opacity)}" stroke-width="${fmt_px(command.stroke_width)}"${linecap}${dasharray}/>'
+			body << '<line x1="${fmt_px(command.x)}" y1="${fmt_px(command.y)}" x2="${fmt_px(command.x + command.width)}" y2="${fmt_px(command.y + command.height)}" fill="none" stroke="${command.color}" stroke-opacity="${fmt_px(command.opacity)}" stroke-width="${fmt_px(command.stroke_width)}"${linecap}${dasharray}/>'
 		} else if command.kind == 'fill_gradient' {
 			image_data := command.image()
 			if grad := command.gradient {
@@ -809,14 +806,11 @@ pub fn (b &BlockBox) svg_payload_legacy_render_svg(width f64, height f64) string
 				}
 				mut rounded_polygon_points := []string{}
 				for index := 0; index + 1 < command.points.len; index += 2 {
-					rounded_polygon_points << '${fmt_px(command.points[index])},${fmt_px(command.points[
-						index + 1])}'
+					rounded_polygon_points << '${fmt_px(command.points[index])},${fmt_px(command.points[index + 1])}'
 				}
 				clip_shape := if command.gradient_background_layer
 					&& !box_radii_are_zero(image_data.image_clip_radii) {
-					'<path d="${rounded_rect_svg_path(image_data.image_clip_x,
-						image_data.image_clip_y, image_data.image_clip_width,
-						image_data.image_clip_height, image_data.image_clip_radii)}"/>'
+					'<path d="${rounded_rect_svg_path(image_data.image_clip_x, image_data.image_clip_y, image_data.image_clip_width, image_data.image_clip_height, image_data.image_clip_radii)}"/>'
 				} else if command.gradient_background_layer {
 					'<rect x="${fmt_px(image_data.image_clip_x)}" y="${fmt_px(image_data.image_clip_y)}" width="${fmt_px(image_data.image_clip_width)}" height="${fmt_px(image_data.image_clip_height)}"/>'
 				} else if rounded_polygon_points.len > 0 {
@@ -883,9 +877,7 @@ pub fn (b &BlockBox) svg_payload_legacy_render_svg(width f64, height f64) string
 			image_data := command.image()
 			clip_id := 'imageclip${defs.len}'
 			clip_shape := if !box_radii_are_zero(image_data.image_clip_radii) {
-				'<path d="${rounded_rect_svg_path(image_data.image_clip_x, image_data.image_clip_y,
-					image_data.image_clip_width, image_data.image_clip_height,
-					image_data.image_clip_radii)}"/>'
+				'<path d="${rounded_rect_svg_path(image_data.image_clip_x, image_data.image_clip_y, image_data.image_clip_width, image_data.image_clip_height, image_data.image_clip_radii)}"/>'
 			} else {
 				'<rect x="${fmt_px(image_data.image_clip_x)}" y="${fmt_px(image_data.image_clip_y)}" width="${fmt_px(image_data.image_clip_width)}" height="${fmt_px(image_data.image_clip_height)}"/>'
 			}
@@ -1005,7 +997,7 @@ fn test_svg_payload_reduces_actual_command_width_and_keeps_nil_defaults() {
 			kind: kind
 		}
 		assert command.svg_data == unsafe { nil }
-		assert retained_paint_payload_equal(svg_payload_legacy(command), LegacySVGPathPaintCommand{kind: kind})
+		assert retained_paint_payload_equal(svg_payload_legacy(command), LegacySVGPathPaintCommand{ kind: kind })
 	}
 }
 
@@ -1013,28 +1005,32 @@ fn svg_payload_returned_command() PaintCommand {
 	path := build_triangle_wave_path(painting.IntPoint{3, 5}, painting.IntPoint{103, 5}, 6)
 	assert path.segments.len > 0
 	return BlockBox{
-		width:                  100
-		height:                 50
-		svg_path:               painting_path_svg(path)
-		svg_path_data:          compatibility_pack_clip_path_segments(path)
-		svg_points:             [
-			f64(3),
-			5,
-			103,
-			25,
-		]
-		svg_stroke_dasharray:   [f64(3), 4]
-		svg_stroke_dashoffset:  2
-		svg_stroke_color:       'blue'
-		svg_fill_color:         'red'
-		svg_stroke_width:       3
-		svg_non_scaling_stroke: true
-		svg_stroke_first:       true
-		svg_stroke_linecap:     1
-		svg_stroke_linejoin:    2
-		svg_stroke_miterlimit:  7
-		svg_fill_opacity:       0.4
-		svg_stroke_opacity:     0.6
+		width:    100
+		height:   50
+		svg_data: &BlockBoxSVGData{
+			points:       [
+				f64(3),
+				5,
+				103,
+				25,
+			]
+			stroke_color: 'blue'
+			fill_color:   'red'
+			stroke_width: 3
+			path:         &PaintSVGPathData{
+				path:               painting_path_svg(path)
+				path_data:          compatibility_pack_clip_path_segments(path)
+				stroke_dasharray:   [f64(3), 4]
+				stroke_dashoffset:  2
+				non_scaling_stroke: true
+				stroke_first:       true
+				stroke_linecap:     1
+				stroke_linejoin:    2
+				stroke_miterlimit:  7
+				fill_opacity:       0.4
+				stroke_opacity:     0.6
+			}
+		}
 	}.paint_commands().filter(it.kind == 'draw_svg_path')[0]
 }
 
@@ -1060,36 +1056,40 @@ fn test_svg_payload_typed_producer_matches_all_original_fields() {
 			}
 		}
 		box := BlockBox{
-			x:                      3
-			y:                      5
-			width:                  100
-			height:                 50
-			svg_path:               painting_path_svg(path)
-			svg_path_data:          compatibility_pack_clip_path_segments(path)
-			svg_points:             [
-				f64(3),
-				5,
-				103,
-				25,
-			]
-			svg_transform:          [f64(2), 0, 0, 3, 7, 11]!
-			svg_fill_color:         'red'
-			svg_stroke_color:       'blue'
-			svg_stroke_width:       3
-			svg_stroke_dasharray:   [
-				f64(3),
-				4,
-			]
-			svg_stroke_dashoffset:  2
-			svg_stroke_first:       true
-			svg_non_scaling_stroke: true
-			svg_fill_even_odd:      true
-			svg_stroke_linecap:     1
-			svg_stroke_linejoin:    2
-			svg_stroke_miterlimit:  7
-			svg_fill_opacity:       0.4
-			svg_stroke_opacity:     0.6
-			svg_gradient_data:      gradient_data
+			x:        3
+			y:        5
+			width:    100
+			height:   50
+			svg_data: &BlockBoxSVGData{
+				points:       [
+					f64(3),
+					5,
+					103,
+					25,
+				]
+				fill_color:   'red'
+				stroke_color: 'blue'
+				stroke_width: 3
+				path:         &PaintSVGPathData{
+					path:               painting_path_svg(path)
+					path_data:          compatibility_pack_clip_path_segments(path)
+					path_transform:     [f64(2), 0, 0, 3, 7, 11]!
+					stroke_dasharray:   [
+						f64(3),
+						4,
+					]
+					stroke_dashoffset:  2
+					stroke_first:       true
+					non_scaling_stroke: true
+					fill_even_odd:      true
+					stroke_linecap:     1
+					stroke_linejoin:    2
+					stroke_miterlimit:  7
+					fill_opacity:       0.4
+					stroke_opacity:     0.6
+					svg_gradient_data:  gradient_data
+				}
+			}
 		}
 		commands := box.paint_commands().filter(it.kind == 'draw_svg_path')
 		assert commands.len == 1

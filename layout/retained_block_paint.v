@@ -84,7 +84,7 @@ fn retained_paint_box_can_share(box &BlockBox) bool {
 		&& box.replaced_image_url == '' && box.replaced_image_paintable == none
 		&& box.canvas_paintable == none && box.video_paintable == none
 		&& box.nested_viewport_paintable == none && box.form_control_kind == ''
-		&& box.fieldset_paintable == none && !box.has_svg_path && !box.is_svg_image
+		&& box.fieldset_paintable == none && !box.has_svg_path() && !box.is_svg_image
 		&& box.marker_shape == '' && box.overlay == none && !box.has_scrollable_overflow
 		&& box.css_clip == none && box.clip_path == none && box.svg_clip == none && box.svg_mask == none
 		&& !box.filter.has_filters() && !box.backdrop_filter.has_filters()

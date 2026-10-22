@@ -4145,32 +4145,36 @@ fn uncached_block_box_from_typed_layout_shallow(node &Node, state &LayoutState, 
 		layout_handle: voidptr(node)
 		children: []
 		lines: lines
-		has_svg_path: has_svg_path
-		svg_path: svg_path
-		svg_path_data: svg_path_data
-		svg_path_bounding_box: svg_path_bounding_box
-		svg_transform: svg_transform
-		svg_points: svg_points
-		svg_fill_color: svg_fill_color
-		svg_solid_color_data: svg_solid_color_data
-		svg_gradient_data: retained_svg_gradient_data(svg_fill_linear_gradient,
-			svg_stroke_linear_gradient, svg_fill_radial_gradient, svg_stroke_radial_gradient) or {
-			unsafe { nil }
-		}
-		svg_fill_pattern: svg_fill_pattern
-		svg_fill_even_odd: svg_fill_even_odd
-		svg_stroke_color: svg_stroke_color
-		svg_stroke_pattern: svg_stroke_pattern
-		svg_stroke_width: svg_stroke_width
-		svg_stroke_dasharray: svg_stroke_dasharray
-		svg_stroke_dashoffset: svg_stroke_dashoffset
-		svg_non_scaling_stroke: svg_non_scaling_stroke
-		svg_stroke_first: svg_stroke_first
-		svg_stroke_linecap: svg_stroke_linecap
-		svg_stroke_linejoin: svg_stroke_linejoin
-		svg_stroke_miterlimit: svg_stroke_miterlimit
-		svg_fill_opacity: svg_fill_opacity
-		svg_stroke_opacity: svg_stroke_opacity
+		svg_data: if has_svg_path || svg_path.len > 0 {
+			&BlockBoxSVGData{
+				has_path: has_svg_path
+				path: &PaintSVGPathData{
+					path: svg_path
+					path_data: svg_path_data
+					path_transform: svg_transform
+					svg_solid_color_data: svg_solid_color_data
+					svg_gradient_data: retained_svg_gradient_data(svg_fill_linear_gradient,
+						svg_stroke_linear_gradient, svg_fill_radial_gradient, svg_stroke_radial_gradient)
+					fill_pattern: svg_fill_pattern
+					fill_even_odd: svg_fill_even_odd
+					stroke_pattern: svg_stroke_pattern
+					stroke_dasharray: svg_stroke_dasharray
+					stroke_dashoffset: svg_stroke_dashoffset
+					non_scaling_stroke: svg_non_scaling_stroke
+					stroke_first: svg_stroke_first
+					stroke_linecap: svg_stroke_linecap
+					stroke_linejoin: svg_stroke_linejoin
+					stroke_miterlimit: svg_stroke_miterlimit
+					fill_opacity: svg_fill_opacity
+					stroke_opacity: svg_stroke_opacity
+				}
+				bounding_box: svg_path_bounding_box
+				points: svg_points
+				fill_color: svg_fill_color
+				stroke_color: svg_stroke_color
+				stroke_width: svg_stroke_width
+			}
+		} else { unsafe { nil } }
 		marker_shape: marker_shape
 		overlay: retained_box_paint_payload(overlay)
 		has_scrollable_overflow: used.has_scrollable_overflow() && !node.is_viewport()

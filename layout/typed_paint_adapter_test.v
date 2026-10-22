@@ -2400,9 +2400,9 @@ fn test_svg_path_hit_testing_rejects_stroke_inflation_outside_transformed_path_b
 	target_box := root.find_box(i64(target.as_node().unique_id())) or {
 		panic('missing SVG path paint box')
 	}
-	assert target_box.has_svg_path
-	assert target_box.svg_path_bounding_box == painting.Rect{10, 10, 10, 10}
-	assert target_box.svg_transform == [f64(2), 0, 0, 2, 20, 10]!
+	assert target_box.has_svg_path()
+	assert target_box.svg_data.bounding_box == painting.Rect{10, 10, 10, 10}
+	assert target_box.svg_path().path_transform == [f64(2), 0, 0, 2, 20, 10]!
 
 	mut mutable_document := unsafe { &dom.Document(document) }
 	inside_bounds_hit := mutable_document.element_from_point(45, 35) or {
@@ -2423,7 +2423,7 @@ fn test_author_css_replaces_an_svg_transform_presentation_attribute_once() {
 	target_box := root.find_box(i64(target.as_node().unique_id())) or {
 		panic('missing SVG transform paint box')
 	}
-	assert target_box.svg_transform == [f64(1), 0, 0, 1, 7, 8]!
+	assert target_box.svg_path().path_transform == [f64(1), 0, 0, 1, 7, 8]!
 	assert target_box.own_paint_transform == [6]f64{}
 }
 
@@ -2442,7 +2442,7 @@ fn test_nested_svg_viewport_and_element_transforms_are_interleaved_at_paint_time
 	target_box := root.find_box(i64(element.as_node().unique_id())) or {
 		panic('missing SVG target paint box')
 	}
-	assert target_box.svg_transform == [f64(40), 0, 0, 40, 60, 0]!
+	assert target_box.svg_path().path_transform == [f64(40), 0, 0, 40, 60, 0]!
 }
 
 fn test_typed_paint_adapter_builds_deep_box_trees_without_stack_recursion() {

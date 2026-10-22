@@ -375,31 +375,9 @@ pub mut:
 	layout_handle voidptr = unsafe { nil }
 	children      []BlockBox
 	lines         []TextLine
-	// SVGPathPaintable transport. The path remains in SVG user coordinates;
-	// transform maps it into document CSS pixels. points is the flattened
-	// endpoint representation used by the native shell's immediate renderer.
-	has_svg_path               bool
-	svg_path                   string
-	svg_path_data              []f32
-	svg_path_bounding_box      painting.Rect
-	svg_transform              [6]f64
-	svg_points                 []f64
-	svg_fill_color             string
-	svg_solid_color_data       &PaintSVGSolidColorData = unsafe { nil }
-	svg_fill_pattern           ?&painting.SVGPatternPaintStyle
-	svg_fill_even_odd          bool
-	svg_stroke_color           string
-	svg_stroke_pattern         ?&painting.SVGPatternPaintStyle
-	svg_stroke_width           f64
-	svg_stroke_dasharray       []f64
-	svg_stroke_dashoffset      f64
-	svg_non_scaling_stroke     bool
-	svg_stroke_first           bool
-	svg_stroke_linecap         int
-	svg_stroke_linejoin        int
-	svg_stroke_miterlimit      f64 = 4.0
-	svg_fill_opacity           f64 = 1.0
-	svg_stroke_opacity         f64 = 1.0
+	// Immutable SVG state is absent on ordinary HTML boxes. Its path payload is
+	// shared directly with retained commands and earlier paint snapshots.
+	svg_data &BlockBoxSVGData = unsafe { nil }
 	// MarkerPaintable transport for the predefined counter styles which
 	// LibWeb intentionally renders as a geometric image instead of text.
 	marker_shape string
@@ -442,15 +420,12 @@ pub mut:
 	own_paint_transform [6]f64
 	// Full transform retained for 3D backface visibility. The affine field above
 	// remains the renderer's projection of the element's z=0 plane.
-	own_paint_transform_4x4      css.FloatMatrix4x4
+	own_paint_transform_4x4 css.FloatMatrix4x4
 	uses_own_paint_transform_4x4 bool
 	// Cumulative CSS 2D transform in document coordinates. An all-zero value is the compact identity
 	// representation used by boxes which do not establish a transformed paint subtree.
 	paint_transform [6]f64
 mut:
-	// Ordinary boxes retain no SVG-gradient payload. Painted paths share one
-	// immutable snapshot with commands and earlier recordings.
-	svg_gradient_data                              &PaintSVGGradientData = unsafe { nil }
 	own_scroll_frame_index                         int
 	sticky_scroll_frame_index                      int
 	accumulated_visual_context_index               int
@@ -526,10 +501,10 @@ fn (b &BlockBox) border_box_contains_hit_test_point(point painting.Point) bool {
 // the raw path. Its layout box includes stroke inflation, so the ordinary
 // PaintableBox containment check alone admits points which upstream rejects.
 fn (b &BlockBox) svg_path_bounding_box_contains_hit_test_point(point painting.Point) bool {
-	if !b.has_svg_path {
+	if !b.has_svg_path() {
 		return true
 	}
-	matrix := normalized_affine(b.svg_transform)
+	matrix := normalized_affine(b.svg_path().path_transform)
 	determinant := matrix[0] * matrix[3] - matrix[1] * matrix[2]
 	if determinant == 0 {
 		return false
@@ -540,7 +515,7 @@ fn (b &BlockBox) svg_path_bounding_box_contains_hit_test_point(point painting.Po
 		x: (matrix[3] * translated_x - matrix[2] * translated_y) / determinant
 		y: (-matrix[1] * translated_x + matrix[0] * translated_y) / determinant
 	}
-	return b.svg_path_bounding_box.contains(local_point)
+	return b.svg_data.bounding_box.contains(local_point)
 }
 
 fn (b &BlockBox) contains_hit_test_point(x f64, y f64) bool {
@@ -2574,47 +2549,21 @@ fn (b &BlockBox) record_paint_commands_for_entries(entries []PaintOrderEntry, se
 		append_translated_outline_commands(mut commands, box.outline_width, box.outline_offset, box.outline_color, box.outline_style, box.outline_is_auto, box_radii, border_left, border_top, border_width, border_height, opacity)
 		outline_end := commands.len
 		foreground_content_start := commands.len
-		if box.svg_path.len > 0 {
+		if box.svg_data != unsafe { nil } && box.svg_path().path.len > 0 {
 			commands << PaintCommand{
 				kind: 'draw_svg_path'
 				x: box.x
 				y: box.y
 				width: box.width
 				height: box.height
-				color: box.svg_fill_color
-				svg_data: &PaintSVGPathData{
-					svg_solid_color_data: box.svg_solid_color_data
-					svg_gradient_data: if !isnil(box.svg_gradient_data)
-						&& (box.svg_gradient_data.fill_linear_gradient != none
-							|| box.svg_gradient_data.stroke_linear_gradient != none
-							|| box.svg_gradient_data.fill_radial_gradient != none
-							|| box.svg_gradient_data.stroke_radial_gradient != none) {
-						box.svg_gradient_data
-					} else {
-						none
-					}
-					fill_pattern: box.svg_fill_pattern
-					path: box.svg_path
-					path_data: box.svg_path_data
-					path_transform: box.svg_transform
-					fill_even_odd: box.svg_fill_even_odd
-					stroke_pattern: box.svg_stroke_pattern
-					stroke_dasharray: box.svg_stroke_dasharray
-					stroke_dashoffset: box.svg_stroke_dashoffset
-					non_scaling_stroke: box.svg_non_scaling_stroke
-					stroke_first: box.svg_stroke_first
-					stroke_linecap: box.svg_stroke_linecap
-					stroke_linejoin: box.svg_stroke_linejoin
-					stroke_miterlimit: box.svg_stroke_miterlimit
-					fill_opacity: box.svg_fill_opacity
-					stroke_opacity: box.svg_stroke_opacity
-				}
+				color: box.svg_data.fill_color
+				svg_data: normalized_box_svg_path(box.svg_path())
 				force_dark_role: .svg
 				force_dark_role_set: true
 				opacity: opacity
-				points: box.svg_points
-				stroke_color: box.svg_stroke_color
-				stroke_width: box.svg_stroke_width
+				points: box.svg_data.points
+				stroke_color: box.svg_data.stroke_color
+				stroke_width: box.svg_data.stroke_width
 			}
 		}
 		if box.marker_shape.len > 0 {

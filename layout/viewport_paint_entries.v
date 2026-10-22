@@ -66,7 +66,7 @@ fn mark_viewport_invisible_entries(result &DocumentLayoutResult, mut selected []
 }
 
 fn viewport_entry_has_bounded_ink(box &BlockBox) bool {
-	return !box.has_svg_path && box.svg_mask == none && box.svg_clip == none
+	return !box.has_svg_path() && box.svg_mask == none && box.svg_clip == none
 		&& !box.filter.has_filters() && !box.backdrop_filter.has_filters()
 		&& box.shadow == none && box.shadows.len == 0
 		&& box.background_images.len == 0 && box.background_gradient == none

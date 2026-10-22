@@ -83,8 +83,9 @@ fn test_sampled_outer_svg_rotation_keeps_path_transport_and_matches_a_full_refre
 	placeholder := target.as_node().layout_node() or { panic('missing svg layout') }
 	initial_box := animation_paint_box_for_handle(&result.paint_tree, placeholder.layout_handle) or { panic('missing svg transport') }
 	children := initial_box.children.data
-	path_data := initial_box.children[0].svg_path_data.data
-	image_pattern := initial_box.children[0].svg_fill_pattern or { panic('missing image pattern') }
+	initial_matrix := initial_box.own_paint_transform_4x4
+	path_data := initial_box.children[0].svg_path().path_data.data
+	image_pattern := initial_box.children[0].svg_path().fill_pattern or { panic('missing image pattern') }
 	image_tile := image_pattern.tile_display_list or { panic('missing retained image tile') }
 	assert image_tile.operations.any(it.kind == .image)
 	paint_children := result.paint_tree.children.data
@@ -96,12 +97,13 @@ fn test_sampled_outer_svg_rotation_keeps_path_transport_and_matches_a_full_refre
 	current_box := animation_paint_box_for_handle(&result.paint_tree, placeholder.layout_handle) or { panic('missing retained svg transport') }
 	assert result.paint_tree.children.data == paint_children
 	assert current_box.children.data == children
-	assert current_box.children[0].svg_path_data.data == path_data
-	current_pattern := current_box.children[0].svg_fill_pattern or { panic('missing retained image pattern') }
+	assert current_box.children[0].svg_path().path_data.data == path_data
+	current_pattern := current_box.children[0].svg_path().fill_pattern or { panic('missing retained image pattern') }
 	current_tile := current_pattern.tile_display_list or { panic('missing retained image tile') }
 	assert voidptr(current_tile) == voidptr(image_tile)
 	assert current_tile.operations.data == image_tile.operations.data
 	assert current_box.own_paint_transform_4x4.m11 < -0.9
+	assert initial_matrix.m11 > 0.9
 	assert math.abs(target.get_bounding_client_rect().width - 40) < 0.00001
 	assert math.abs(target.get_bounding_client_rect().height - 20) < 0.00001
 	assert math.abs(target.get_bounding_client_rect().x - 70) < 0.00001
