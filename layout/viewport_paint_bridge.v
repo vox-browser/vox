@@ -1279,6 +1279,7 @@ fn layout_paintable_image_contents_changed(target voidptr, layout_handle voidptr
 	if source_url != box.replaced_image_url {
 		return false
 	}
+	box.replaced_image_bitmap = mutable_image_box.replaced_image_bitmap()
 	box.replaced_image_paintable = &painting.ImagePaintable{
 		...*paintable
 		intrinsic_size: mutable_image_box.natural_size()

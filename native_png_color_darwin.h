@@ -69,6 +69,12 @@ static int native_png_color_profile(const uint8_t *bytes, size_t length, VoxPngC
     return 1;
 }
 
+static int native_png_has_color_profile(const uint8_t *bytes, size_t length)
+{
+    VoxPngColorProfile profile;
+    return native_png_color_profile(bytes, length, &profile);
+}
+
 typedef struct {
     int width, height;
     VoxPngColorProfile profile;

@@ -1155,6 +1155,10 @@ pub mut:
 	// Raw browser-host video frames arrive in CSS top-to-bottom row order.
 	// Other native image bridges retain their historical Quartz row order.
 	native_rows_are_top_down bool
+	// The native URL decoder would produce these same pixels without applying
+	// additional format or color-profile handling. Retained image commands may
+	// then share the request's bitmap instead of decoding the resource again.
+	native_resource_replay_compatible bool
 }
 
 pub fn (bitmap &Bitmap_) clone() &Bitmap_ {
@@ -1166,6 +1170,7 @@ pub fn (bitmap &Bitmap_) clone() &Bitmap_ {
 		alpha_type: bitmap.alpha_type
 		data:       bitmap.data.clone()
 		native_rows_are_top_down: bitmap.native_rows_are_top_down
+		native_resource_replay_compatible: bitmap.native_resource_replay_compatible
 	}
 }
 
@@ -1211,6 +1216,7 @@ pub fn DecodedImageFrame_.create_with_alpha_type(bitmap &Bitmap_, alpha_type u8,
 		alpha_type: alpha_type
 		data:       bitmap.data.clone()
 		native_rows_are_top_down: bitmap.native_rows_are_top_down
+		native_resource_replay_compatible: bitmap.native_resource_replay_compatible
 	}
 	return DecodedImageFrame_.create_with_color_space(converted, color_space)
 }

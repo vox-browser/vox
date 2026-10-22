@@ -3757,13 +3757,7 @@ fn uncached_block_box_from_typed_layout_shallow(node &Node, state &LayoutState, 
 		}
 	}
 	if image_box := node.as_image_box() {
-		if image_element := element {
-			if image_element.is_html_element() && image_element.local_name() == 'object' {
-				object_element := unsafe { &dom.HTMLObjectElement(image_element) }
-				model := html.html_object_element_model_for_dom_element(object_element)
-				replaced_image_bitmap = model.image_data()
-			}
-		}
+		replaced_image_bitmap = image_box.replaced_image_bitmap()
 		if image_box.source() != '' {
 			source := image_box.source()
 			replaced_image_url = node.document().encoding_parse_and_serialize_url(source) or { source }

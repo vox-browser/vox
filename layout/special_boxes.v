@@ -916,6 +916,25 @@ pub fn (box &ImageBox) uses_content_replacement() bool {
 	return box.uses_content_replacement_
 }
 
+// Image providers own their decoded pixels. Sharing that owner in retained
+// commands also keeps an older frame alive after a paint-only image update.
+fn (box &ImageBox) replaced_image_bitmap() ?&dom.Bitmap_ {
+	if box.uses_content_replacement_ { return none }
+	node := box.dom_node() or { return none }
+	element := node.as_element() or { return none }
+	if !element.is_html_element() { return none }
+	if element.local_name() == 'object' {
+		model := html.html_object_element_model_for_dom_element(unsafe { &dom.HTMLObjectElement(element) })
+		return model.image_data()
+	}
+	if !node.is_html_image_element() { return none }
+	model := html.html_image_element_model_for_dom_element(unsafe { &dom.HTMLImageElement(element) })
+	frame := model.current_image_frame() or { return none }
+	bitmap := frame.bitmap()
+	if !bitmap.native_resource_replay_compatible { return none }
+	return bitmap
+}
+
 // ImagePaintable::reset_for_relayout() refreshes image availability whenever
 // the retained layout tree is laid out again.
 pub fn (mut box ImageBox) reset_for_relayout() {

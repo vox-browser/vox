@@ -62,6 +62,7 @@ fn C.native_webp_yuv_paint_supported() int
 fn C.native_webp_yuv_decoder_available() int
 fn C.native_decode_jpeg_rgba(bytes &u8, length usize, width &int, height &int, pitch &int) &u8
 fn C.native_tag_image_color_profile(pixels voidptr, width int, height int, bytes &u8, length usize, enabled int)
+fn C.native_png_has_color_profile(bytes &u8, length usize) int
 fn C.native_free_jpeg_pixels(pixels &u8)
 
 fn C.native_pointer_screen_position(x f64, y f64, screen_x &f64, screen_y &f64)
@@ -1529,11 +1530,29 @@ fn browser_fetch_image_resource_for_document(resource_url dom.URL, source_url st
 	return browser_decoded_image_data(resource_url, browser_image_resource_bytes_for_document(resource_url, source_url)!)
 }
 
+fn browser_raster_can_share_native_pixels(bytes []u8) bool {
+	$if macos {
+		// JPEG and WebP have separate native paint decoders. PNG profiles are
+		// policy dependent, so leave those images on the existing URL path too.
+		return bytes.len >= 8 && bytes[..8] == [u8(0x89), `P`, `N`, `G`, `\r`, `\n`, 0x1a, `\n`]
+			&& C.native_png_has_color_profile(bytes.data, usize(bytes.len)) == 0
+	}
+	return false
+}
+
 fn browser_decoded_image_data(resource_url dom.URL, bytes []u8) !html.DecodedImageData {
 	if browser_image_resource_is_svg(resource_url) {
 		return browser_decode_svg_image(resource_url, bytes)
 	}
-	bitmap := browser_decode_raster_image_bytes(bytes)!
+	mut bitmap := browser_decode_raster_image_bytes(bytes)!
+	bitmap.native_resource_replay_compatible = browser_raster_can_share_native_pixels(bytes)
+	$if macos {
+		if bitmap.native_resource_replay_compatible {
+			// An arena can reuse an address that previously held tagged pixels.
+			C.native_tag_image_color_profile(bitmap.data.data, bitmap.width, bitmap.height,
+				bytes.data, usize(bytes.len), 0)
+		}
+	}
 	decoded := html.BitmapDecodedImageData.create([html.BitmapDecodedImageFrame{frame: dom.DecodedImageFrame_.create(bitmap)}], 0, false)
 	// Legacy cache entries contain only encoded bytes, without final redirect
 	// origins or response headers. Keep those remote pixels opaque to readback.
@@ -5266,6 +5285,14 @@ fn (mut app BrowserApp) flush_rounded_rect_underlay(page_x f32, page_y f32, wind
 	}, page_x, page_y, window_height)
 }
 
+fn replaced_image_bitmap_for_renderer(command &layout.PaintCommand, native_rendering bool) ?&dom.Bitmap_ {
+	bitmap := command.replaced_image_bitmap or { return none }
+	// Request-pixel sharing is specific to the native CPU-image renderer. The
+	// portable path still needs gg's uploaded resource image.
+	if bitmap.native_resource_replay_compatible && !native_rendering { return none }
+	return bitmap
+}
+
 fn (mut app BrowserApp) draw_command(source_command layout.PaintCommand, page_x f32, page_y f32, window_height int) {
 	// Only the border that draws natively can take a deferred background.
 	if app.rounded_rect_underlay != none
@@ -6050,7 +6077,8 @@ fn (mut app BrowserApp) draw_command(source_command layout.PaintCommand, page_x 
 		'draw_replaced_image' {
 			image_data := command.image()
 			mut image := &gg.Image{}
-			if bitmap := command.replaced_image_bitmap {
+			replay_bitmap := replaced_image_bitmap_for_renderer(command, app.ctx.native_rendering)
+			if bitmap := replay_bitmap {
 				if bitmap.width <= 0 || bitmap.height <= 0 || bitmap.pitch != bitmap.width * 4
 					|| bitmap.data.len < bitmap.pitch * bitmap.height {
 					return
@@ -6076,7 +6104,7 @@ fn (mut app BrowserApp) draw_command(source_command layout.PaintCommand, page_x 
 			}
 			if paint_command_image_allows_force_dark(*command, f64(destination.width),
 				f64(destination.height), image) {
-				if bitmap := command.replaced_image_bitmap {
+				if bitmap := replay_bitmap {
 					image = app.force_dark_image_from_bitmap('bitmap:${u64(voidptr(bitmap))}', bitmap,
 						image)
 				} else {

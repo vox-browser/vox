@@ -5,10 +5,11 @@ import html
 
 fn image_contents_repaint_data(width int, height int) html.DecodedImageData {
 	bitmap := &dom.Bitmap_{
-		width:  width
-		height: height
-		pitch:  width * 4
-		data:   []u8{len: width * height * 4, init: 255}
+		width:                             width
+		height:                            height
+		pitch:                             width * 4
+		data:                              []u8{len: width * height * 4, init: 255}
+		native_resource_replay_compatible: true
 	}
 	return html.BitmapDecodedImageData.create([
 		html.BitmapDecodedImageFrame{
@@ -74,13 +75,67 @@ fn test_completed_image_with_a_definite_size_repaints_without_layout() {
 	commands := result.paint_tree.paint_commands().filter(it.kind == 'draw_replaced_image')
 	assert commands.len == 1
 	assert commands[0].image().image_url == 'https://thumbs.example/a.jpg'
+	frame := model.current_image_frame() or { panic('missing request frame') }
+	bitmap := commands[0].replaced_image_bitmap or { panic('missing shared bitmap') }
+	assert voidptr(bitmap) == voidptr(frame.bitmap())
+}
+
+fn test_paint_only_image_frames_replace_shared_pixels_without_changing_old_commands() {
+	document := image_contents_repaint_document('<!doctype html><img id="fixed" src="https://thumbs.example/frames.png" width="40" height="30">')
+	element := document.get_element_by_id('fixed') or { panic('missing image') }
+	mut model := html.html_image_element_model_for_dom_element(unsafe { &dom.HTMLImageElement(element) })
+	model.set_fetch_hook(fn (_ dom.URL) !html.DecodedImageData {
+		mut frames := []html.BitmapDecodedImageFrame{}
+		for index in 0 .. 3 {
+			fill_byte := u8(255 - index)
+			frames << html.BitmapDecodedImageFrame{
+				frame: dom.DecodedImageFrame_.create(&dom.Bitmap_{
+					width:                             8
+					height:                            6
+					pitch:                             32
+					data:                              []u8{len: 8 * 6 * 4, init: fill_byte}
+					native_resource_replay_compatible: index < 2
+				})
+			}
+		}
+		return html.BitmapDecodedImageData.create(frames, 0, true)
+	})
+	model.update_the_image_data(false, false)
+	layout_document_typed_in_viewport(document, 200, 100)
+	mut result := document_layout_result(document) or { panic('missing layout') }
+	image_node := image_contents_repaint_node(result.root, 'fixed') or { panic('missing image box') }
+	old_commands := result.paint_tree.paint_commands().filter(it.kind == 'draw_replaced_image')
+	assert old_commands.len == 1
+	old_bitmap := old_commands[0].replaced_image_bitmap or { panic('missing old pixels') }
+	assert old_bitmap.data[0] == 255
+	model.animate()
+	assert layout_paintable_image_contents_changed(voidptr(result), voidptr(image_node))
+	assert document.layout_is_up_to_date()
+	commands := result.paint_tree.paint_commands().filter(it.kind == 'draw_replaced_image')
+	assert commands.len == 1
+	new_bitmap := commands[0].replaced_image_bitmap or { panic('missing new pixels') }
+	assert voidptr(new_bitmap) != voidptr(old_bitmap)
+	assert new_bitmap.data[0] == 254 && old_bitmap.data[0] == 255
+	frame := model.current_image_frame() or { panic('missing current frame') }
+	assert voidptr(new_bitmap) == voidptr(frame.bitmap())
+	image_box := image_node.as_image_box() or { panic('missing image provider') }
+	generated := ImageBox.new_content_replacement(document, element, image_box.computed_values(), 'https://thumbs.example/css.png')
+	assert generated.replaced_image_bitmap() == none
+	model.animate()
+	assert layout_paintable_image_contents_changed(voidptr(result), voidptr(image_node))
+	fallback_commands := result.paint_tree.paint_commands().filter(it.kind == 'draw_replaced_image')
+	assert fallback_commands.len == 1
+	assert fallback_commands[0].replaced_image_bitmap == none
+	assert fallback_commands[0].image().image_url == 'https://thumbs.example/frames.png'
+	assert new_bitmap.data[0] == 254 && old_bitmap.data[0] == 255
 }
 
 // An image sized by its natural dimensions, or one with only a percentage
 // size, is laid out again when its contents arrive. So is a flex item, whose
 // automatic minimum size depends on its content.
 fn test_completed_image_sized_by_its_contents_needs_layout() {
-	for style in ['', 'width:40px', 'width:40px;height:50%', 'width:40px;height:30px;max-width:max-content',
+	for style in ['', 'width:40px', 'width:40px;height:50%',
+		'width:40px;height:30px;max-width:max-content',
 		'width:40px;height:30px;display:block}body{display:flex'] {
 		document := image_contents_repaint_document('<!doctype html><style>html,body{margin:0}img{${style}}</style><img id="natural" src="https://thumbs.example/b.jpg">')
 		layout_document_typed_in_viewport(document, 200, 100)
