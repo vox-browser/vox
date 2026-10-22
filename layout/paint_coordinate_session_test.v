@@ -2,6 +2,7 @@ module layout
 
 import css
 import dom
+import platform
 
 fn coordinate_session_test_chain(count int) ([]&NodeWithStyle, []&UsedValues, &LayoutState) {
 	document := dom.Document.create(dom.url_about_blank())
@@ -83,4 +84,33 @@ fn test_coordinate_projection_keeps_saturating_addition_order() {
  assert paint_cumulative_offset(unsafe { &Node(nodes.last()) },state,values.last()) == expected
  assert state.paint_coordinates_.entries[2].status != 2
  scope.finish()
+}
+
+fn test_coordinate_tables_expire_without_retaining_temporary_storage_or_caller_payloads() {
+	nodes, values, state := coordinate_session_test_chain(513)
+	mut arena := platform.new_arena('coordinate caller publication')
+	entry := arena.enter()
+	outer := begin_paint_coordinate_session(state)
+	outer_table := state.paint_coordinates_
+	position := paint_cumulative_offset(unsafe { &Node(nodes[31]) }, state, values[31])
+	// Allocation after begin belongs to the caller, not the table workspace.
+	payload := []u8{len: 4096, init: u8(71)}
+	inner := begin_paint_coordinate_session(state)
+	assert voidptr(state.paint_coordinates_) != voidptr(outer_table)
+	assert paint_cumulative_offset(unsafe { &Node(nodes[31]) }, state, values[31]) == position
+	inner.finish()
+	assert voidptr(state.paint_coordinates_) == voidptr(outer_table)
+	assert state.paint_coordinates_.entries[31].status == 2
+	outer.finish()
+	arena.leave(entry)
+	used := arena.usage().used
+	assert state.paint_coordinates_ == unsafe { nil }
+	assert position == css.CSSPixelPoint.from_values(40, -80)
+	assert payload.len == 4096
+	assert payload.all(it == 71)
+	$if prealloc {
+		// Either table alone is much larger than this caller-owned payload.
+		assert used < 8192, '${used} bytes retained after coordinate scopes'
+	}
+	arena.release()
 }

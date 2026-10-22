@@ -1,17 +1,18 @@
 module layout
 
 import css
+import platform
 
 struct PaintCoordinateValue {
-	position css.CSSPixelPoint
+	position   css.CSSPixelPoint
 	absolute_x u64
 	absolute_y u64
 }
 
 struct PaintCoordinateEntry {
 mut:
-	owner voidptr
-	value PaintCoordinateValue
+	owner  voidptr
+	value  PaintCoordinateValue
 	status u8
 }
 
@@ -22,8 +23,9 @@ mut:
 }
 
 struct PaintCoordinateScope {
-	state &LayoutState
+	state    &LayoutState
 	previous &PaintCoordinateSession = unsafe { nil }
+	scratch  platform.ThreadScratchScope
 }
 
 // A projection observes immutable, committed offsets. Use layout ordinals for
@@ -31,17 +33,23 @@ struct PaintCoordinateScope {
 // Nested projections have independent tables, and no table survives its scope.
 fn begin_paint_coordinate_session(state &LayoutState) PaintCoordinateScope {
 	previous := state.paint_coordinates_
+	scratch := platform.begin_thread_scratch('paint coordinate session')
 	mut mutable_state := unsafe { &LayoutState(state) }
 	capacity := state.used_values_store.pages.len * int(layout_state_page_size)
 	mutable_state.paint_coordinates_ = if capacity <= 262144 {
-		&PaintCoordinateSession{entries: []PaintCoordinateEntry{len: capacity}}
-	} else { unsafe { &PaintCoordinateSession(nil) } }
-	return PaintCoordinateScope{state: state, previous: previous}
+		&PaintCoordinateSession{ entries: []PaintCoordinateEntry{len: capacity} }
+	} else {
+		unsafe { &PaintCoordinateSession(nil) }
+	}
+	scratch.leave()
+	return PaintCoordinateScope{ state: state, previous: previous, scratch: scratch }
 }
 
 fn (scope PaintCoordinateScope) finish() {
 	mut state := unsafe { &LayoutState(scope.state) }
 	state.paint_coordinates_ = scope.previous
+	// Remove the borrowed table pointer before poisoning or freeing its bytes.
+	scope.scratch.finish()
 }
 
 fn cached_paint_coordinate(node &Node, state &LayoutState, used &UsedValues,
@@ -77,7 +85,7 @@ fn cached_paint_coordinate(node &Node, state &LayoutState, used &UsedValues,
 	// Saturating fixed-point addition is not associative. Only regroup chains
 	// whose absolute travel proves that no intermediate sum can saturate.
 	if absolute_x > u64(2_147_483_647) || absolute_y > u64(2_147_483_647) { return none }
-	value := PaintCoordinateValue{position: position, absolute_x: absolute_x, absolute_y: absolute_y}
+	value := PaintCoordinateValue{ position: position, absolute_x: absolute_x, absolute_y: absolute_y }
 	entry.value = value
 	entry.status = 2
 	completed = true

@@ -1,6 +1,8 @@
 module layout
 
 import html
+import dom
+import platform
 
 struct PaintArenaReferenceFrame {
 	node &Node
@@ -125,4 +127,41 @@ fn test_new_paint_arenas_preserve_previous_geometry_and_recordings_after_mutatio
 	assert old_list.dump() == old_dump
 	gc_collect()
 	assert old_list.dump() == old_dump
+}
+
+fn test_paint_projection_retains_only_final_slots_after_traversal_workspace_expires() {
+	mut document := dom.Document.create(dom.url_about_blank())
+	defer { document.finalize() }
+	mut root := &Node{ document_: document, anonymous_: true, is_box_: true }
+	for _ in 0 .. 64 {
+		mut branch := &Node{ document_: document, anonymous_: true, is_box_: true }
+		for _ in 0 .. 8 {
+			branch.append_child(&Node{ document_: document, anonymous_: true, is_box_: true })
+		}
+		root.append_child(branch)
+	}
+	state := LayoutState.new()
+	mut arena := platform.new_arena('paint traversal publication')
+	entry := arena.enter()
+	mut tree := build_typed_paint_tree_in_arena(root, state, [6]f64{})
+	arena.leave(entry)
+	used := arena.usage().used
+	assert tree.children.len == 64
+	for child in tree.children {
+		assert child.children.len == 8
+	}
+	// Every child slice must still point into the published box arena after
+	// the traversal has been freed (or poisoned), and growth must detach it.
+	mut first := &tree.children[0]
+	first.children << BlockBox{ tag_name: 'added' }
+	assert first.children.len == 9
+	assert tree.children[1].children.len == 8
+	assert tree.children.last().children.len == 8
+	$if prealloc {
+		// Exactly 577 final records are required. The old BFS growth chain and
+		// per-parent traversal vectors exceed the small publication allowance.
+		limit := i64((577 + 2) * sizeof(BlockBox) + 4096)
+		assert used < limit, '${used} bytes for 577 final paint slots'
+	}
+	arena.release()
 }

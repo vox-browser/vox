@@ -72,7 +72,12 @@ fn build_typed_paint_tree_projection(root &Node, state &LayoutState, ancestor_tr
 		platform.arena_phase_end('paint_tree', phase_mark)
 	}
 	prepare_retained_block_paint_owners(state, root.document())
+	// The traversal borrows committed nodes and computes only a temporary plan.
+	// Leave its workspace before publishing boxes and their retained payloads.
+	scratch := platform.begin_thread_scratch('typed paint traversal')
+	defer { scratch.finish() }
 	plan := typed_paint_arena_plan_with_interest(root, state, interest)
+	scratch.leave()
 	mut boxes := []BlockBox{cap: plan.len}
 	// Capacity is exact and the allocator zeroes reserved storage. Each slot is
 	// fully written before a later child reads its parent's transform; no
