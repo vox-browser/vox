@@ -32,18 +32,18 @@ pub:
 	family_name     string
 	metrics         SystemFontMetrics
 	face_index      int
-	weight     int
-	italic     bool
-	variations []FontVariationAxis
+	weight          int
+	italic          bool
+	variations      []FontVariationAxis
 }
 
 __global (
-	platform_system_font_faces    map[string]SystemFontFace
-	platform_system_font_misses   map[string]bool
-	platform_system_font_families map[string]bool
-	platform_system_fallbacks     map[string]&Font
+	platform_system_font_faces     map[string]SystemFontFace
+	platform_system_font_misses    map[string]bool
+	platform_system_font_families  map[string]bool
+	platform_system_fallbacks      map[string]&Font
 	platform_system_fallback_faces map[string]&Font
-	platform_system_fallback_miss map[string]bool
+	platform_system_fallback_miss  map[string]bool
 )
 
 // Documents with the Chromium font rendering policy select installed faces the
@@ -85,6 +85,8 @@ fn system_font_matching_family(family string) string {
 }
 
 fn system_font_matching_family_available(family string) bool {
+	work := begin_thread_scratch('System font family query')
+	defer { work.finish() }
 	name := system_font_matching_family(family)
 	if name.to_lower() == 'system-ui' {
 		return true
@@ -93,18 +95,20 @@ fn system_font_matching_family_available(family string) bool {
 	if cached := platform_system_font_families[key] {
 		return cached
 	}
-	// System font caches outlive any arena entered by the caller.
-	persistent := enter_persistent()
-	defer { leave_persistent(persistent) }
 	mut available := false
 	$if macos {
 		available = coretext_family_available(name)
 	}
+	// Only the cache entry survives the query's normalized names and keys.
+	persistent := enter_persistent()
+	defer { leave_persistent(persistent) }
 	platform_system_font_families[key] = available
 	return available
 }
 
 fn resolve_system_font_face(family string, weight int, italic bool, point_size f32) ?SystemFontFace {
+	work := begin_thread_scratch('System font face query')
+	defer { work.finish() }
 	name := system_font_matching_family(family)
 	key := '${name.to_lower()}|${weight}|${italic}|${point_size}'
 	if face := platform_system_font_faces[key] {
@@ -113,14 +117,17 @@ fn resolve_system_font_face(family string, weight int, italic bool, point_size f
 	if platform_system_font_misses[key] {
 		return none
 	}
-	persistent := enter_persistent()
-	defer { leave_persistent(persistent) }
 	$if macos {
 		if face := coretext_match_family(name, weight, italic, point_size) {
-			platform_system_font_faces[key] = face
-			return face
+			persistent := enter_persistent()
+			defer { leave_persistent(persistent) }
+			owned := own_system_font_face(face)
+			platform_system_font_faces[key] = owned
+			return owned
 		}
 	}
+	persistent := enter_persistent()
+	defer { leave_persistent(persistent) }
 	platform_system_font_misses[key] = true
 	return none
 }
@@ -186,6 +193,8 @@ pub fn system_fallback_font(code_point u32, language string, base &Font) ?&Font 
 	if !base.uses_system_font_matching() {
 		return none
 	}
+	work := begin_thread_scratch('System fallback font query')
+	defer { work.finish() }
 	key := '${code_point}|${language}|${base.family}|${base.weight}|${base.italic}|${base.point_size}'
 	if font := platform_system_fallbacks[key] {
 		return font
@@ -193,8 +202,6 @@ pub fn system_fallback_font(code_point u32, language string, base &Font) ?&Font 
 	if platform_system_fallback_miss[key] {
 		return none
 	}
-	persistent := enter_persistent()
-	defer { leave_persistent(persistent) }
 	mut result := ?&Font(none)
 	preferred_family := if family := cjk_fallback_family(code_point, language) {
 		?string(family)
@@ -203,10 +210,10 @@ pub fn system_fallback_font(code_point u32, language string, base &Font) ?&Font 
 	}
 	if family := preferred_family {
 		candidate := &Font{
-			family: family
-			point_size: base.point_size
-			weight: base.weight
-			italic: base.italic
+			family:                family
+			point_size:            base.point_size
+			weight:                base.weight
+			italic:                base.italic
 			font_rendering_policy: base.font_rendering_policy
 		}
 		if candidate.system_face() != none && candidate.contains_glyph(code_point) {
@@ -219,21 +226,25 @@ pub fn system_fallback_font(code_point u32, language string, base &Font) ?&Font 
 				system_font_matching_family(base.family), base.weight, base.italic, base.point_size)
 			{
 				result = &Font{
-					family: '${face.path}#${face.face_index}'
-					point_size: base.point_size
-					weight: base.weight
-					italic: base.italic
+					family:                '${face.path}#${face.face_index}'
+					point_size:            base.point_size
+					weight:                base.weight
+					italic:                base.italic
 					font_rendering_policy: base.font_rendering_policy
-					system_face_override: face
+					system_face_override:  face
 				}
 			}
 		}
 	}
 	if font := result {
 		canonical := canonical_system_fallback_font(font)
+		persistent := enter_persistent()
+		defer { leave_persistent(persistent) }
 		platform_system_fallbacks[key] = canonical
 		return canonical
 	}
+	persistent := enter_persistent()
+	defer { leave_persistent(persistent) }
 	platform_system_fallback_miss[key] = true
 	return none
 }
@@ -253,8 +264,37 @@ fn canonical_system_fallback_font(font &Font) &Font {
 	}
 	persistent := enter_persistent()
 	defer { leave_persistent(persistent) }
-	platform_system_fallback_faces[key] = font
-	return font
+	// A candidate's derived caches and native-query payloads can belong to the
+	// query workspace. Publish a fresh handle with only its owned face inputs.
+	override_face := if face := font.system_face_override {
+		?SystemFontFace(own_system_font_face(face))
+	} else {
+		none
+	}
+	owned := &Font{
+		family:                font.family.clone()
+		point_size:            font.point_size
+		weight:                font.weight
+		italic:                font.italic
+		font_rendering_policy: font.font_rendering_policy
+		system_face_override:  override_face
+	}
+	platform_system_fallback_faces[key] = owned
+	return owned
+}
+
+fn own_system_font_face(face SystemFontFace) SystemFontFace {
+	variations := face.variations
+	return SystemFontFace{
+		path:            face.path.clone()
+		postscript_name: face.postscript_name.clone()
+		family_name:     face.family_name.clone()
+		metrics:         face.metrics
+		face_index:      face.face_index
+		weight:          face.weight
+		italic:          face.italic
+		variations:      variations.clone()
+	}
 }
 
 // The concrete installed face for this handle under the Chromium font
