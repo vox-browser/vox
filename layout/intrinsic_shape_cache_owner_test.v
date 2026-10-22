@@ -5,7 +5,7 @@ import dom
 import platform
 
 fn intrinsic_cache_owner_fingerprint(run &platform.GlyphRun) string {
-	return '${run.font()} ${run.text_type()} ${run.face()} ${run.width()} ${run.space_width} ${run.glyphs()} ${run.glyph_indices()} ${run.glyph_positions()} ${run.bounding_box()}'
+	return '${u64(voidptr(run.font()))} ${run.text_type()} ${run.face()} ${run.width()} ${run.space_width} ${run.glyphs()} ${run.glyph_indices()} ${run.glyph_positions()} ${run.bounding_box()}'
 }
 
 fn intrinsic_cache_owner_container(texts []string) (&BlockContainer, &LayoutState, &UsedValues) {
