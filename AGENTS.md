@@ -2560,6 +2560,17 @@ evidence](docs/translation-audit/NATIVE_MEDIA_WHEEL_RAW_HANDLER.md).
   Focused exact;broad skipped below 5,000,000-instruction threshold;prior carry0;entire independent C/493builtins/176protected/120native/37headers/exactargs.
   Accepted control176;broad baseline175;carry4,850,369;isolated176app/GC1+override2.
   Complete feature retained;all original failed receipts remain.canonical/GUI/foreign preserved;Chrome parity open.
+  Retained numeric vertical-align round177 (`fec43073`):one whole original runtime hunk/one CSS path/no rebase or projection.
+  Six behavior cases/2,265assertions/config;all three drivers actual0.
+  CurrentV ignores-skip-running:eachGC embeds3cases/1692assertions under12GiB plus explicit3GiB run;four phases actual0/two supplemental repeats/zero performancecredit.
+  Common60/config reused176control;declared2048public sweeps/128owners/262144reads;16 installed but eight effective selected forms;calculations focused-only.
+  Local -7.787964%/3wins/all6actual0/checksum8764409708544;zero pagecredit.
+  Fullprocess profiles2057sweeps;getter/property/checksum263424 when present;bridge deltas actual/missingUNKNOWN/no reset/filter.
+  Fresh page 16,496,507,688→16,493,817,858;19/30wins;point 2,689,830.
+  Paired CI[-601,509.5,17,284,647.5];repeatable credit 0;all60retained;seed177/30000bootstrap;first preparation1/2/1.
+  Focused exact;broad passed;prior carry4850369;entire independent C/493builtins/176protected/120native/37headers/exactargs.
+  Accepted control177;broad baseline177;carry0;isolated177app/GC1+override2.
+  Complete feature retained;all actual evidence receipts remain.canonical/GUI/foreign preserved;Chrome parity open.
 - Outside instruction-count optimization, run broad regression suites once per
   ten completed fixes, not after every fix.
   Broad suites include full translation/package test batches, the full LibJS AST

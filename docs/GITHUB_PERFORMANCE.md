@@ -17179,6 +17179,124 @@ expensive jobs retain the external memory guard and frozen compiler arguments.
 Chrome parity remains unknown pending equivalent content, start and paint
 submission endpoints.
 
+## Read numeric vertical-align from its retained typed value
+
+Round 177 applies the complete `fec43073` feature to accepted 176.
+`ComputedProperties.vertical_align_length_percentage()` reads an already
+retained length, percentage or calculation through the existing constructors,
+avoiding the general sum-type bridge for these values. Public property selection,
+animation/transition importance and authoritative owner identity remain unchanged;
+missing values or alignment keywords still return `none`, and text-only values
+retain their parser fallback. The one original Git hunk
+reconstructs the complete author file and applies exactly to frozen 176 without
+rebase or runtime projection. Independent Root work receives no coverage or
+performance credit.
+
+Three new and three exact retained owner cases cover all 49 length units,
+percentages, calculations, owner precedence and identity, replacement/GC,
+text-only values, missing/keywords, animations and transitions. The selected
+**6 cases and 2,265
+assertions** pass with actual zero-exit drivers in before/Boehm, final/Boehm and
+final/no-GC C-O2. The unrelated compact Display storage test is excluded before
+testing because accepted 176 retains the old record representation. Common 12
+cases pass 60 assertions per configuration; accepted176 common control is reused.
+The three new tests also pass with the current compiler in Boehm and no-GC modes
+against current independent storage. Current V ignores `-skip-running` for this
+authored test invocation: each compiler job embeds a three-case/1,692-assertion
+execution under its 12 GiB guard, followed by the planned explicit execution of
+the same three cases/1,692 assertions under a 3 GiB guard. All four phases exit
+zero. The embedded executions were discovered after launch; the compiler jobs
+were retained, with no cancellation or rebuild. The separate erratum receipt
+preserves both logs per mode. These two supplemental repeated executions add no
+performance observations and earn zero performance credit; completed performance
+jobs are never replayed.
+Implementation and the three focused tests share one commit.
+
+The fixture was declared before performance builds or counters. Each observation
+completes 2,048 public getter sweeps over 128 retained owners (262,144 reads).
+It installs 16 forms: eight keywords, four lengths and four percentages, with
+four repeating unanimated/normal-animation/important/transition states. The fixed
+form/state correlation effectively selects only indices 0/2/4/6/8/10/12/14:
+four keywords, px/rem lengths and -25%/12.5% percentages. It does not measure all
+16 installed forms; all units and calculations are covered by focused contracts.
+Every optional result is consumed by a kind/unit/scalar checksum. Calculations
+are outside the local instruction loop. Setup, independent expected selection,
+reference, eight warmups, forced GC and final assertions stay outside the counter.
+Independent Python arithmetic predicts per-sweep checksum 4,279,496,928 and
+complete checksum 8,764,409,708,544. All six fixed alternating observations exit
+zero with that checksum. Medians **89,499,408 →
+82,529,226** retired instructions, **-7.78796436%**,
+**3/3 wins**. All six are retained; no extension, discard or replay. Local
+savings earn zero page credit.
+
+C-only frontend generation exits zero and its output is reused. Strict whole
+generated C permits only
+`css__ComputedProperties_vertical_align_length_percentage` to change. The entire
+independent normal program matches, with no added or removed functions. All
+other bodies, records, globals and resources authenticate after established
+compiler/embed, source assertion-line and byte-identical helper-order
+normalization: 493 builtins, 176 protected routines, 120 native inputs, 37 quoted
+headers and exact native arguments. Native compilation, signing, persistence
+and frozen-library smoke actually exit zero. Policy remains C-O2/Boehm/default
+marker1, the same automatic4GiB hint, no `-prod` and no global `-prealloc`.
+
+Both full-process C-O1/Boehm/one-marker/no-inline profiles exit zero. Generated
+C proves profiling stays enabled throughout main without filtering or reset.
+Setup, reference, warmup and final-check calls remain in these diagnostic counts:
+
+| Function | Before calls | Final calls |
+| --- | ---: | ---: |
+| `css__opt177_complete_vertical_align_sweep` | 2,057 | 2,057 |
+| `css__ComputedProperties_vertical_align_length_percentage` | 263,424 | 263,424 |
+| `css__ComputedProperties_property` | 263,424 | 263,424 |
+| `css__opt177_vertical_align_checksum` | 263,424 | 263,424 |
+| `css__style_value_logic_from_dom` | 263,631 | 207 |
+
+
+Complete fixture sweeps remain 2,057. Public getter/property/checksum counts are
+checked against 263,424 and each other when rows exist. General bridge deltas
+come from actual rows; missing rows remain unknown, never zero. Profile call
+counts and timings earn zero page credit.
+
+The matching regular binaries use the fixed 359-body cache, frozen libraries,
+1024×768 document viewport and
+`native.scopes.navigation_to_first_document_paint[0]`. Thirty alternating pairs
+give medians **16,496,507,688 → 16,493,817,858**
+instructions, observed saving **2,689,830
+(-0.01630545%)**, **19/30 wins**.
+The paired-median saving is **5,913,901.5**; 30,000 paired
+bootstrap resamples with seed177 give 95% interval **[-601,509.5, 17,284,647.5]**.
+Repeatable page credit is **0**, requiring a positive lower bound.
+Existing integration acceptance requires a positive point and nonnegative upper
+interval and is **True**. Historical medians are not subtracted.
+
+All 60 primaries are retained: **60 actual PNGs**, **0 explicitly
+recovered counter-only observations**, **0 startup retry receipts**.
+Every first-primary preparation is 1 installation/2 geometry/1 paint. Later
+refreshes (0) and external foreground transitions
+(0) remain separate. Available PNGs
+are 1024×768 and exact outside the declared skeleton bands. Unknown exits and
+missing captures stay explicit; completed primaries are never rerun.
+
+The focused viewport is exact. Prior observed carry **4,850,369** plus the
+positive matching point gives **7,540,199** for the 5M gate:
+**passed**.
+Six actual zero-exit jobs cover 87 selected cases in both GC modes/174 executions. All 19 screenshots complete, 16 exact; known differences stay 13/1,341/1,994 pixels.
+Capture receipts bind actual exits, sources, binaries, viewport, libraries,
+fonts, logs and PNG hashes. Isolated **`/Users/alex/code/vox2/Build/v/Vox-opt177.app`** has actual
+signing/verification/smoke/GC successes; its instruction text matches the measured
+image. Default marker 1 and override 2 both collect. Canonical executables, GUI
+browsers, newer bundles and foreign work are preserved. Accepted control is
+**177**; broad baseline **177**;
+observed carry **0**.
+The complete feature remains committed in Root. Its frozen result does not cover independent Root changes.
+Durable C/profile/focused/local/broad/binary hashes are recorded in
+`Build/v/instruction-opt177-durable-archives.json`.
+The required old compiler does not support current V's memory-limit flag;
+expensive jobs retain the external memory guard and frozen compiler arguments.
+Chrome parity remains unknown pending equivalent content, start and paint
+submission endpoints.
+
 ## Causes and changes
 
 - The V 0.5.2 compatibility compiler's `-prod` Boehm code repeatedly snapshots
