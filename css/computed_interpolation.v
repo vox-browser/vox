@@ -75,7 +75,7 @@ pub fn (c ComputedColor) alpha() u8 {
 	return c.alpha_
 }
 
-pub enum ColorSyntax {
+pub enum ColorSyntax as u8 {
 	legacy
 	modern
 }
@@ -99,20 +99,20 @@ pub fn GapValue.from_length_percentage(length_percentage LengthPercentage) GapVa
 	}
 }
 
-pub enum ColorInterpolation {
+pub enum ColorInterpolation as u8 {
 	auto_
 	srgb
 	srgb_linear
 	oklab
 }
 
-pub enum TextAnchor {
+pub enum TextAnchor as u8 {
 	start
 	middle
 	end_
 }
 
-pub enum BaselineMetric {
+pub enum BaselineMetric as u8 {
 	alphabetic
 	central
 	hanging
@@ -123,7 +123,7 @@ pub enum BaselineMetric {
 	text_bottom
 }
 
-pub enum TextAlign {
+pub enum TextAlign as u8 {
 	start
 	end_
 	left
@@ -137,14 +137,14 @@ pub enum TextAlign {
 	libweb_right
 }
 
-pub enum TextJustify {
+pub enum TextJustify as u8 {
 	auto_
 	none_
 	inter_word
 	inter_character
 }
 
-pub enum TextOverflow {
+pub enum TextOverflow as u8 {
 	clip
 	ellipsis
 }
@@ -165,31 +165,31 @@ pub mut:
 	size_y     LengthPercentageOrAuto = LengthPercentageOrAuto.make_auto()
 }
 
-pub enum BackgroundBox {
+pub enum BackgroundBox as u8 {
 	border_box
 	padding_box
 	content_box
 	text
 }
 
-pub enum BackgroundAttachment {
+pub enum BackgroundAttachment as u8 {
 	scroll
 	fixed
 	local
 }
 
-pub enum BackgroundSize {
+pub enum BackgroundSize as u8 {
 	length_percentage
 	contain
 	cover
 }
 
-pub enum CaptionSide {
+pub enum CaptionSide as u8 {
 	top
 	bottom
 }
 
-pub enum Float {
+pub enum Float as u8 {
 	none_
 	left
 	right
@@ -197,7 +197,7 @@ pub enum Float {
 	inline_end
 }
 
-pub enum Clear {
+pub enum Clear as u8 {
 	none_
 	left
 	right
@@ -206,12 +206,12 @@ pub enum Clear {
 	inline_end
 }
 
-pub enum ColumnSpan {
+pub enum ColumnSpan as u8 {
 	none_
 	all
 }
 
-pub enum BreakBetween {
+pub enum BreakBetween as u8 {
 	auto
 	avoid
 	avoid_page
@@ -226,7 +226,7 @@ pub enum BreakBetween {
 	region
 }
 
-pub enum BreakInside {
+pub enum BreakInside as u8 {
 	auto
 	avoid
 	avoid_page
@@ -234,18 +234,18 @@ pub enum BreakInside {
 	avoid_region
 }
 
-pub enum BoxDecorationBreak {
+pub enum BoxDecorationBreak as u8 {
 	slice
 	clone
 }
 
-pub enum ColumnFill {
+pub enum ColumnFill as u8 {
 	auto
 	balance
 	balance_all
 }
 
-pub enum BlockEllipsisType {
+pub enum BlockEllipsisType as u8 {
 	no_ellipsis
 	auto_
 	string
@@ -261,25 +261,25 @@ pub fn (value BlockEllipsis) text() string {
 	return value.text_
 }
 
-pub enum ContinueValue {
+pub enum ContinueValue as u8 {
 	auto_
 	discard
 	collapse
 	webkit_legacy
 }
 
-pub enum WebkitBoxOrient {
+pub enum WebkitBoxOrient as u8 {
 	horizontal
 	vertical
 }
 
-pub enum ContentDataType {
+pub enum ContentDataType as u8 {
 	normal
 	none_
 	list
 }
 
-pub enum ContentItemType {
+pub enum ContentItemType as u8 {
 	text
 	image
 }
@@ -333,7 +333,7 @@ pub fn TabSize.length(value Length) TabSize {
 	}
 }
 
-pub enum WhiteSpaceCollapse {
+pub enum WhiteSpaceCollapse as u8 {
 	collapse
 	discard
 	preserve
@@ -349,20 +349,20 @@ pub mut:
 	discard_inner  bool
 }
 
-pub enum WordBreak {
+pub enum WordBreak as u8 {
 	normal
 	break_all
 	keep_all
 	break_word
 }
 
-pub enum OverflowWrap {
+pub enum OverflowWrap as u8 {
 	normal
 	anywhere
 	break_word
 }
 
-pub enum LineStyle {
+pub enum LineStyle as u8 {
 	none_
 	hidden
 	dotted
@@ -498,7 +498,7 @@ pub fn (reference ClipPathReference) basic_shape() BasicShapeStyleValue {
 	panic('VERIFY_NOT_REACHED')
 }
 
-pub enum OutlineStyle {
+pub enum OutlineStyle as u8 {
 	auto_
 	none_
 	dotted
@@ -511,7 +511,7 @@ pub enum OutlineStyle {
 	outset
 }
 
-pub enum TextDecorationLine {
+pub enum TextDecorationLine as u8 {
 	none_
 	underline
 	overline
@@ -521,13 +521,13 @@ pub enum TextDecorationLine {
 	grammar_error
 }
 
-pub enum TextDecorationSkipInk {
+pub enum TextDecorationSkipInk as u8 {
 	auto
 	all
 	none_
 }
 
-pub enum TextDecorationStyle {
+pub enum TextDecorationStyle as u8 {
 	solid
 	double_
 	dotted
@@ -542,7 +542,7 @@ pub mut:
 	length_percentage LengthPercentage = LengthPercentage.from_length(Length.make_px(0))
 }
 
-pub enum TextTransform {
+pub enum TextTransform as u8 {
 	none_
 	capitalize
 	uppercase
@@ -559,19 +559,19 @@ pub mut:
 	hanging           bool
 }
 
-pub enum TextWrapMode {
+pub enum TextWrapMode as u8 {
 	wrap
 	nowrap
 }
 
-pub enum TextWrapStyle {
+pub enum TextWrapStyle as u8 {
 	auto_
 	balance
 	stable
 	pretty
 }
 
-pub enum ListStyleTypeKind {
+pub enum ListStyleTypeKind as u8 {
 	none_
 	counter_style
 	string
@@ -589,19 +589,19 @@ pub mut:
 	counter_style ?CounterStyle = none
 }
 
-pub enum ListStylePosition {
+pub enum ListStylePosition as u8 {
 	outside
 	inside
 }
 
-pub enum FlexDirection {
+pub enum FlexDirection as u8 {
 	row
 	row_reverse
 	column
 	column_reverse
 }
 
-pub enum FlexWrap {
+pub enum FlexWrap as u8 {
 	nowrap
 	wrap
 	wrap_reverse
@@ -613,7 +613,7 @@ pub mut:
 	size       Size = Size.make_auto()
 }
 
-pub enum AlignContent {
+pub enum AlignContent as u8 {
 	normal
 	start
 	flex_start
@@ -626,7 +626,7 @@ pub enum AlignContent {
 	space_evenly
 }
 
-pub enum AlignItems {
+pub enum AlignItems as u8 {
 	normal
 	start
 	flex_start
@@ -641,7 +641,7 @@ pub enum AlignItems {
 	unsafe_
 }
 
-pub enum AlignSelf {
+pub enum AlignSelf as u8 {
 	auto_
 	normal
 	start
@@ -657,20 +657,20 @@ pub enum AlignSelf {
 	unsafe_
 }
 
-pub enum Appearance {
+pub enum Appearance as u8 {
 	none_
 	auto_
 	textfield
 	menulist_button
 }
 
-pub enum Visibility {
+pub enum Visibility as u8 {
 	visible
 	hidden
 	collapse
 }
 
-pub enum ImageRendering {
+pub enum ImageRendering as u8 {
 	auto_
 	crisp_edges
 	high_quality
@@ -678,7 +678,7 @@ pub enum ImageRendering {
 	smooth
 }
 
-pub enum JustifyContent {
+pub enum JustifyContent as u8 {
 	normal
 	start
 	flex_start
@@ -693,7 +693,7 @@ pub enum JustifyContent {
 	right
 }
 
-pub enum JustifyItems {
+pub enum JustifyItems as u8 {
 	normal
 	start
 	flex_start
@@ -711,7 +711,7 @@ pub enum JustifyItems {
 	right
 }
 
-pub enum JustifySelf {
+pub enum JustifySelf as u8 {
 	auto_
 	normal
 	start
@@ -729,7 +729,7 @@ pub enum JustifySelf {
 	right
 }
 
-pub enum Overflow {
+pub enum Overflow as u8 {
 	visible
 	hidden
 	clip
@@ -747,18 +747,18 @@ pub mut:
 	inset           bool
 }
 
-pub enum BoxSizing {
+pub enum BoxSizing as u8 {
 	content_box
 	border_box
 }
 
-pub enum PointerEvents {
+pub enum PointerEvents as u8 {
 	auto_
 	all
 	none_
 }
 
-pub enum VerticalAlign {
+pub enum VerticalAlign as u8 {
 	baseline
 	sub
 	super_
@@ -775,17 +775,17 @@ pub mut:
 	dense bool
 }
 
-pub enum BorderCollapse {
+pub enum BorderCollapse as u8 {
 	separate
 	collapse
 }
 
-pub enum EmptyCells {
+pub enum EmptyCells as u8 {
 	show
 	hide
 }
 
-pub enum ObjectFit {
+pub enum ObjectFit as u8 {
 	fill
 	contain
 	cover
@@ -805,17 +805,17 @@ pub fn (position Position) resolved(context LengthResolutionContext, rect CSSPix
 	return CSSPixelPoint.new(rect.x.plus(x), rect.y.plus(y))
 }
 
-pub enum TableLayout {
+pub enum TableLayout as u8 {
 	auto_
 	fixed
 }
 
-pub enum Direction {
+pub enum Direction as u8 {
 	ltr
 	rtl
 }
 
-pub enum UnicodeBidi {
+pub enum UnicodeBidi as u8 {
 	normal
 	embed
 	isolate
@@ -824,7 +824,7 @@ pub enum UnicodeBidi {
 	plaintext
 }
 
-pub enum WritingMode {
+pub enum WritingMode as u8 {
 	horizontal_tb
 	vertical_rl
 	vertical_lr
@@ -832,7 +832,7 @@ pub enum WritingMode {
 	sideways_lr
 }
 
-pub enum UserSelect {
+pub enum UserSelect as u8 {
 	auto_
 	text
 	none_
@@ -840,7 +840,7 @@ pub enum UserSelect {
 	contain
 }
 
-pub enum Isolation {
+pub enum Isolation as u8 {
 	auto_
 	isolate
 }
@@ -898,7 +898,7 @@ pub fn (container_type ContainerType) is_empty() bool {
 		|| container_type.is_scroll_state_container)
 }
 
-pub enum MixBlendMode {
+pub enum MixBlendMode as u8 {
 	normal
 	multiply
 	screen
@@ -919,7 +919,7 @@ pub enum MixBlendMode {
 	plus_lighter
 }
 
-pub enum TransformBox {
+pub enum TransformBox as u8 {
 	view_box
 	border_box
 	fill_box
@@ -934,12 +934,12 @@ pub mut:
 	z Length = Length.make_px(0)
 }
 
-pub enum TransformStyle {
+pub enum TransformStyle as u8 {
 	flat
 	preserve_3d
 }
 
-pub enum BackfaceVisibility {
+pub enum BackfaceVisibility as u8 {
 	visible
 	hidden
 }
@@ -950,25 +950,25 @@ pub mut:
 	values      []&dom.StyleValue
 }
 
-pub enum MaskType {
+pub enum MaskType as u8 {
 	luminance
 	alpha
 }
 
-pub enum MaskComposite {
+pub enum MaskComposite as u8 {
 	add
 	subtract
 	intersect
 	exclude
 }
 
-pub enum MaskMode {
+pub enum MaskMode as u8 {
 	alpha
 	luminance
 	match_source
 }
 
-pub enum MaskOrigin {
+pub enum MaskOrigin as u8 {
 	content_box
 	padding_box
 	border_box
@@ -977,7 +977,7 @@ pub enum MaskOrigin {
 	view_box
 }
 
-pub enum MaskClip {
+pub enum MaskClip as u8 {
 	content_box
 	padding_box
 	border_box
@@ -987,21 +987,21 @@ pub enum MaskClip {
 	no_clip
 }
 
-pub enum BorderImageRepeat {
+pub enum BorderImageRepeat as u8 {
 	stretch
 	repeat
 	round
 	space
 }
 
-pub enum TimelineAxis {
+pub enum TimelineAxis as u8 {
 	block
 	inline_
 	x
 	y
 }
 
-pub enum PositionVisibility {
+pub enum PositionVisibility as u8 {
 	always
 	anchors_valid
 	anchors_visible
@@ -1015,41 +1015,41 @@ pub mut:
 	number               f64
 }
 
-pub enum StrokeLinecap {
+pub enum StrokeLinecap as u8 {
 	butt
 	round
 	square
 }
 
-pub enum StrokeLinejoin {
+pub enum StrokeLinejoin as u8 {
 	miter
 	round
 	bevel
 }
 
-pub enum FillRule {
+pub enum FillRule as u8 {
 	nonzero
 	evenodd
 }
 
-pub enum ClipRule {
+pub enum ClipRule as u8 {
 	nonzero
 	evenodd
 }
 
-pub enum ShapeRendering {
+pub enum ShapeRendering as u8 {
 	auto_
 	optimize_speed
 	crisp_edges
 	geometric_precision
 }
 
-pub enum VectorEffect {
+pub enum VectorEffect as u8 {
 	none_
 	non_scaling_stroke
 }
 
-pub enum PaintOrder {
+pub enum PaintOrder as u8 {
 	fill
 	stroke
 	markers
@@ -1093,17 +1093,17 @@ pub mut:
 	point_size f64
 }
 
-pub enum MathStyle {
+pub enum MathStyle as u8 {
 	normal
 	compact
 }
 
-pub enum MathShift {
+pub enum MathShift as u8 {
 	normal
 	compact
 }
 
-pub enum Positioning {
+pub enum Positioning as u8 {
 	static_
 	relative
 	absolute
@@ -1131,18 +1131,18 @@ pub mut:
 	track ComputedColor
 }
 
-pub enum ScrollbarWidth {
+pub enum ScrollbarWidth as u8 {
 	auto_
 	thin
 	none_
 }
 
-pub enum ScrollBehavior {
+pub enum ScrollBehavior as u8 {
 	auto_
 	smooth
 }
 
-pub enum ScrollSnapAlign {
+pub enum ScrollSnapAlign as u8 {
 	none_
 	start
 	end_
@@ -1155,12 +1155,12 @@ pub:
 	inline_alignment ScrollSnapAlign
 }
 
-pub enum ScrollSnapStop {
+pub enum ScrollSnapStop as u8 {
 	normal
 	always
 }
 
-pub enum ScrollSnapAxis {
+pub enum ScrollSnapAxis as u8 {
 	x
 	y
 	block
@@ -1168,7 +1168,7 @@ pub enum ScrollSnapAxis {
 	both
 }
 
-pub enum ScrollSnapStrictness {
+pub enum ScrollSnapStrictness as u8 {
 	none_
 	proximity
 	mandatory
@@ -1180,7 +1180,7 @@ pub:
 	strictness ScrollSnapStrictness
 }
 
-pub enum Resize {
+pub enum Resize as u8 {
 	none_
 	both
 	horizontal
@@ -1189,32 +1189,32 @@ pub enum Resize {
 	inline_
 }
 
-pub enum AnimationDirection {
+pub enum AnimationDirection as u8 {
 	normal
 	reverse
 	alternate
 	alternate_reverse
 }
 
-pub enum AnimationPlayState {
+pub enum AnimationPlayState as u8 {
 	running
 	paused
 }
 
-pub enum AnimationFillMode {
+pub enum AnimationFillMode as u8 {
 	none_
 	forwards
 	backwards
 	both
 }
 
-pub enum AnimationComposition {
+pub enum AnimationComposition as u8 {
 	replace
 	add
 	accumulate
 }
 
-pub enum AnimationTimelineKind {
+pub enum AnimationTimelineKind as u8 {
 	generic
 	document
 	scroll
@@ -1287,7 +1287,7 @@ pub fn (mut timeline AnimationTimeline) update_current_time(timestamp_ms f64) {
 	}
 }
 
-pub enum TransitionBehavior {
+pub enum TransitionBehavior as u8 {
 	normal
 	allow_discrete
 }
@@ -1607,17 +1607,17 @@ fn line_height_value_depends_on_computed_font_size(value StyleValue) bool {
 }
 
 // --- ComputedProperties ---
-pub enum ComputedPropertyInheritance {
+pub enum ComputedPropertyInheritance as u8 {
 	no
 	yes
 }
 
-pub enum AnimatedPropertyResultOfTransition {
+pub enum AnimatedPropertyResultOfTransition as u8 {
 	no
 	yes
 }
 
-pub enum WithAnimationsApplied {
+pub enum WithAnimationsApplied as u8 {
 	no
 	yes
 }
@@ -6266,12 +6266,12 @@ pub fn (mut c ComputedProperties) set_attempted_pseudo_class_matches(results Pse
 }
 
 // --- Interpolation ---
-pub enum AllowDiscrete {
+pub enum AllowDiscrete as u8 {
 	yes
 	no
 }
 
-pub enum AnimationType {
+pub enum AnimationType as u8 {
 	by_computed_value
 	none_
 	repeatable_list
@@ -6279,13 +6279,13 @@ pub enum AnimationType {
 	discrete
 }
 
-pub enum CompositeOperation {
+pub enum CompositeOperation as u8 {
 	replace
 	add
 	accumulate
 }
 
-pub enum InterpolableValueType {
+pub enum InterpolableValueType as u8 {
 	angle
 	length
 	percentage
@@ -9534,7 +9534,7 @@ pub fn required_invalidation_after_style_change_or(left RequiredInvalidationAfte
 }
 
 // --- InvalidationSet ---
-pub enum CSSPseudoClass {
+pub enum CSSPseudoClass as u8 {
 	enabled
 	disabled
 	defined
@@ -9673,7 +9673,7 @@ fn pseudo_class_from_name(name string) CSSPseudoClass {
 	}
 }
 
-pub enum InvalidationPropertyType {
+pub enum InvalidationPropertyType as u8 {
 	invalidate_self
 	invalidate_whole_subtree
 	class
@@ -9935,17 +9935,17 @@ pub fn (s &InvalidationSet) to_string() string {
 }
 
 // --- StyleInvalidationData ---
-pub enum ExcludePropertiesNestedInNotPseudoClass {
+pub enum ExcludePropertiesNestedInNotPseudoClass as u8 {
 	no
 	yes
 }
 
-pub enum InsideNthChildPseudoClass {
+pub enum InsideNthChildPseudoClass as u8 {
 	no
 	yes
 }
 
-pub enum SiblingInvalidationReach {
+pub enum SiblingInvalidationReach as u8 {
 	adjacent
 	subsequent
 }
@@ -10088,7 +10088,7 @@ fn add_invalidation_plan_for_property(mut style_invalidation_data StyleInvalidat
 	stored_invalidation.include_all_from(plan)
 }
 
-pub enum SelectorCombinator {
+pub enum SelectorCombinator as u8 {
 	none_
 	immediate_child
 	descendant
@@ -10097,7 +10097,7 @@ pub enum SelectorCombinator {
 	column
 }
 
-pub enum InvalidationSimpleSelectorType {
+pub enum InvalidationSimpleSelectorType as u8 {
 	universal
 	class
 	id
@@ -10710,7 +10710,7 @@ pub mut:
 	author_rules     []LayerMatchingRules
 }
 
-pub enum ComputeStyleMode {
+pub enum ComputeStyleMode as u8 {
 	normal
 	create_pseudo_element_style_if_needed
 }
@@ -11054,7 +11054,7 @@ pub fn StyleComputer.default_user_font_size() CSSPixels {
 	return CSSPixels.nearest_value_for(16)
 }
 
-pub enum AbsoluteSize {
+pub enum AbsoluteSize as u8 {
 	xx_small
 	x_small
 	small
@@ -11065,7 +11065,7 @@ pub enum AbsoluteSize {
 	xxx_large
 }
 
-pub enum RelativeSize {
+pub enum RelativeSize as u8 {
 	smaller
 	larger
 }
