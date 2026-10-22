@@ -97,16 +97,77 @@ fn test_static_background_keys_fragment_scheme_and_font_policy() {
 	two := two_image.resource?
 	assert voidptr(one) != voidptr(two)
 	assert one.source.url.serialize() == address + '#one'
+	assert two.source.url.serialize() == address + '#two'
+	assert one.owner.arena.contains(one.source.source.str)
+	assert voidptr(one.source.source.str) == voidptr(two.source.source.str)
 	result := document_layout_result(host)?
 	dark_image := svg_background_image_for_source_in_viewport(result.root, address + '#one', .dark)
 	dark := dark_image.resource?
 	assert voidptr(one) != voidptr(dark)
 	assert dark.color_scheme == 'dark'
+	assert voidptr(one.source.source.str) == voidptr(dark.source.source.str)
 	host.set_font_rendering_policy(.chromium)
 	other_image := static_background_test_image(host, address + '#one')
 	other_policy := other_image.resource?
 	assert voidptr(other_policy) != voidptr(one)
 	assert other_policy.font_policy == .chromium
+	assert voidptr(one.source.source.str) == voidptr(other_policy.source.source.str)
+	host.finalize()
+	host.release_native_storage()
+}
+
+fn test_static_background_shared_source_keeps_replacements_and_late_pictures_independent() {
+	$if !prealloc {
+		return
+	}
+	address := 'https://static-background.test/shared-source.svg'
+	alias := 'https://static-background.test/shared-source-alias.svg'
+	static_background_test_publish(address, static_background_test_source)
+	static_background_test_publish(alias, static_background_test_source)
+	mut host := static_background_test_host()
+	mut scratch := platform.new_arena('shared static background source scratch')
+	entry := scratch.enter()
+	one_image := static_background_test_image(host, address)
+	two_image := static_background_test_image(host, alias + '#sprite')
+	one := one_image.resource?
+	two := two_image.resource?
+	scratch.leave(entry)
+	scratch.release()
+	assert voidptr(one) != voidptr(two)
+	assert one.owner.arena.contains(one.source.source.str)
+	assert voidptr(one.source.source.str) == voidptr(two.source.source.str)
+	assert two.source.url.serialize() == alias + '#sprite'
+	assert one.scenes.len == 0 && two.scenes.len == 0
+	changed := static_background_test_source.replace('lime', 'blue')
+	static_background_test_publish(address, changed)
+	after_image := static_background_test_image(host, address)
+	after := after_image.resource?
+	assert voidptr(after) != voidptr(one)
+	assert voidptr(after.source.source.str) != voidptr(one.source.source.str)
+	assert after.source.source == changed
+	assert two.source.source == static_background_test_source
+	old_commands := static_svg_background_commands(two, 20, 10)?
+	new_commands := static_svg_background_commands(after, 20, 10)?
+	assert static_background_test_stop(old_commands) == painting.Color{0, 255, 0, 255}
+	assert static_background_test_stop(new_commands) == painting.Color{0, 0, 255, 255}
+	// Restoring earlier bytes can reuse another key's immutable source without
+	// reviving the replaced resource or its independently keyed picture cache.
+	static_background_test_publish(address, static_background_test_source)
+	restored_image := static_background_test_image(host, address)
+	restored := restored_image.resource?
+	assert voidptr(restored) != voidptr(one)
+	assert voidptr(restored) != voidptr(after)
+	assert voidptr(restored.source.source.str) == voidptr(two.source.source.str)
+	restored_commands := static_svg_background_commands(restored, 20, 10)?
+	assert static_background_test_stop(restored_commands) == painting.Color{0, 255, 0, 255}
+	assert static_background_test_stop(new_commands) == painting.Color{0, 0, 255, 255}
+	mut resource_loader := loader.ResourceLoader.the()
+	resource_loader.register_network_response(address, loader.NetworkResponse{ status_code: 404 })
+	failed := static_background_test_image(host, address)
+	has_failed_resource := failed.resource != none
+	has_failed_document := failed.document != none
+	assert !has_failed_resource && !has_failed_document
+	assert static_background_test_stop(old_commands) == painting.Color{0, 255, 0, 255}
 	host.finalize()
 	host.release_native_storage()
 }

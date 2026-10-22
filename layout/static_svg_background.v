@@ -37,6 +37,16 @@ pub fn enable_native_static_svg_backgrounds(document &dom.Document) {
 	}
 }
 
+// Resources keep independent URLs, policies and pictures, but identical source
+// bytes need only one copy in their shared host owner. Call while that owner is
+// entered; source probes may instead belong to a short-lived paint workspace.
+fn retained_static_svg_background_source(viewport &Viewport, source string) string {
+	for _, resource in viewport.static_svg_backgrounds_ {
+		if resource.source.source == source { return resource.source.source }
+	}
+	return source.clone()
+}
+
 fn svg_background_image_for_source_in_viewport(node &Node, source string,
 	color_scheme css.PreferredColorScheme) SVGBackgroundImage {
 	if !node.document().compact_native_svg_backgrounds
@@ -85,7 +95,7 @@ fn svg_background_image_for_source_in_viewport(node &Node, source string,
 		owner:        owner
 		font_policy:  node.document().font_rendering_policy()
 		source:       SVGImageSource{
-			source: image_source.source.clone()
+			source: retained_static_svg_background_source(viewport, image_source.source)
 			url:    dom.URL{ value: image_source.url.serialize().clone() }
 		}
 		color_scheme: scheme.clone()
