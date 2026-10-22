@@ -11,6 +11,7 @@ fn test_stylesheet_conversion_workspace_preserves_retained_rule_payloads() {
 	sources := [
 		'@namespace s url("http://www.w3.org/2000/svg"); s|svg[data-word="中"] { content: "hello\\20 world"; --x: f([a], var(--b, 2px)); width: var(--x); }',
 		'@media (width > 1px) { @supports (display: grid) { a:hover { color: red !important; } } } @scope (.root) to (.end) { .child { height: 3px; } }',
+		'@mEdIa (width > 1px) { @SuPpOrTs (display: grid) { @ScOpE ([data-word="中"]) to ([data-end="終"]) { .child { height: 3px; } } } }',
 		'@font-face { font-family: "Probe Font"; src: url("probe.woff2"); font-weight: 400; }',
 		'@property --size { syntax: "<length>"; inherits: true; initial-value: 2px; }',
 		'@counter-style probe { system: cyclic; symbols: "a" "中"; suffix: ". "; }',
@@ -79,5 +80,29 @@ fn test_stylesheet_conversion_retires_discarded_large_token_input() {
 			owner.finish()
 		}
 		document.release_native_storage()
+	}
+}
+
+fn test_stylesheet_conversion_retires_ignored_at_rule_preludes() {
+	$if prealloc {
+		mut document := dom.Document.create(dom.url_about_blank())
+		document.enable_native_storage()
+		defer { document.release_native_storage() }
+		mut small_growth := i64(0)
+		for count in [1, 1, 8192] {
+			source := '@ignored ' + 'discarded '.repeat(count) + '; a { color: red; }'
+			mut owner := document.enter_native_storage()
+			before := document.native_storage().arena.usage().used
+			sheet := parse_css_stylesheet_in_workspace(ParsingParams{}, source, none, none, false)
+			growth := document.native_storage().arena.usage().used - before
+			if count == 1 {
+				small_growth = growth
+			} else {
+				assert growth < small_growth + 32768, '${growth} retained versus ${small_growth}'
+			}
+			assert sheet.css_rules().length() == 1
+			assert sheet.css_rules().rules[0].style()?.get_property_value('color') == 'red'
+			owner.finish()
+		}
 	}
 }

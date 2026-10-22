@@ -39,11 +39,19 @@ fn parse_css_stylesheet_in_workspace(params ParsingParams, text string, location
 fn own_transient_rule_prelude(rule Rule) Rule {
 	match rule {
 		AtRule {
+			name := rule.name.to_lower()
 			// Descriptor converters may retain nested component values directly,
 			// including function defaults and font-feature declaration lists.
-			if rule.name.to_lower() in ['font-face', 'font-feature-values', 'counter-style', 'property',
-				'function', 'page', 'keyframes', '-webkit-keyframes'] {
+			if name in ['font-face', 'font-feature-values', 'counter-style', 'property', 'function',
+				'page', 'keyframes', '-webkit-keyframes'] {
 				return own_transient_rule_tree(rule)
+			}
+			// These grouping converters serialize the prelude or build selectors
+			// from independently owned source. Ignored rules retain no prelude.
+			if name in ['media', 'supports', 'scope']
+				|| (name !in ['container', 'import', 'layer', 'namespace']
+					&& !is_margin_rule_name(name)) {
+				return rule
 			}
 			return Rule(AtRule{ ...rule, name: rule.name.clone(), prelude: own_stylesheet_components(rule.prelude) })
 		}
