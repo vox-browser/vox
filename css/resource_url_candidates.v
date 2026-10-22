@@ -21,6 +21,9 @@ pub fn (properties &CSSStyleProperties) resource_url_candidates(fallback_base st
 		for declaration in deferred.declarations {
 			append_component_resource_urls(declaration.value, base_url, mut candidates)
 		}
+		for declaration in deferred.source_declarations {
+			append_text_resource_urls(declaration.text, base_url, mut candidates)
+		}
 		return candidates
 	}
 	for property in properties.properties {
