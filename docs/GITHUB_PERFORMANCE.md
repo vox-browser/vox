@@ -17658,3 +17658,37 @@ build-result,result,final-audit,controller-result}.json`; original observation
 `Build/instructions/vox-layout-style172-diagnostic.run-1.{json,log,png}`.
 Binary SHA256: `58054ed8b43c4a4e6f00b191506040b12a3741f409926dcb06223cd94a165699`.
 Durable generated-C archive SHA256: `ec75445e9efca700209e2a3d52f69348956f64164594b97d6ce1791b8ec5c671`.
+
+## Frozen round 172 display-value diagnostic
+
+A separately declared, single-observation diagnostic records both display values
+for the ten changes found by the preceding post-layout trace. It starts from the
+same accepted round 172 whole generated program; removing all instrumentation
+restores that entire program exactly. Native compilation, signing, startup,
+observation, browser exit and the final audit each actually exit zero. Its one
+completed primary and actual viewport capture are retained without replay.
+
+All ten changes occur in pass two. Five spans change from block flex to
+`display: none`; their invalidation uses the box-presence-change rebuild root.
+Five SVG icons change from block flow to inline flow-root; their invalidation
+uses the parent rebuild root. Their classes are `octicon-book`,
+`octicon-code-of-conduct`, `octicon-people`, and `octicon-law` twice, each with
+the `octicon` class. These names are decoded against the frozen source enums,
+including the display union discriminator; inactive union fields are not
+interpreted as additional values. Neither group changes containing-block
+establishment. These are real style changes, so the evidence does not justify
+skipping the repeated layout pass. It identifies work to preserve when evaluating
+a smaller rebuild or cheaper layout path.
+
+The diagnostic has three passes, two query evaluations, 24 recomputations,
+8,601 property comparisons, ten changed properties and 59 trace records, with no
+trace truncation. Instrumentation adds work and receives no performance credit;
+it does not extend any optimization cohort or establish Chrome parity. The
+canonical app, GUI browser and foreign work remain preserved.
+
+Evidence: `Build/v/instruction-layout-display-detail172-{plan,build-result,
+result,display-details,final-audit,completion-result}.json` and
+`Build/instructions/vox-layout-display-detail172-diagnostic.run-1.{json,log,png}`.
+Binary SHA256: `073094cde257dfd2af3c65c6749cf97f01ad9604c3156b1cbf900edae180be73`.
+Durable generated-C archive SHA256: `a0ba27159a19d30919d13386d671c43af43ff0ae447f4ebd4faaf08ccaac5c88`.
+Raw log SHA256: `507f9cc92c89c727e91e40d45f7502cf306ad8464efd217b9b5a86a4ff7d1b5a`.
