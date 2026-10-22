@@ -15,7 +15,7 @@ import painting
 import platform
 
 // MediaControlsDOM embeds the linked stylesheet as a shadow-root style element.
-const media_controls_stylesheet_source = $embed_file('media_controls.css').to_string()
+const media_controls_stylesheet_source = platform.embedded_text($embed_file('media_controls.css'))
 
 pub enum VideoRepresentation {
 	video_frame

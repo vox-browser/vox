@@ -7,7 +7,9 @@
 // snapshot used by the upstream checkout.
 module url
 
-const public_suffix_list_reversed = $embed_file('public_suffix_list_reversed.dat').to_string()
+import platform
+
+const public_suffix_list_reversed = platform.embedded_text($embed_file('public_suffix_list_reversed.dat'))
 
 // PublicSuffixData::is_public_suffix() receives the generated table's reversed
 // representation. Keep that representation at this private boundary so the

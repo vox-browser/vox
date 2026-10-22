@@ -3,10 +3,10 @@ module css
 import platform
 
 // The user-agent (default) stylesheet, embedded verbatim from Ladybird's CSS/Default.css.
-const user_agent_stylesheet_source = $embed_file('ua_default.css').to_string()
-const user_agent_quirks_mode_stylesheet_source = $embed_file('ua_quirks_mode.css').to_string()
-const user_agent_mathml_stylesheet_source = $embed_file('ua_mathml_default.css').to_string()
-const user_agent_svg_stylesheet_source = $embed_file('ua_svg_default.css').to_string()
+const user_agent_stylesheet_source = platform.embedded_text($embed_file('ua_default.css'))
+const user_agent_quirks_mode_stylesheet_source = platform.embedded_text($embed_file('ua_quirks_mode.css'))
+const user_agent_mathml_stylesheet_source = platform.embedded_text($embed_file('ua_mathml_default.css'))
+const user_agent_svg_stylesheet_source = platform.embedded_text($embed_file('ua_svg_default.css'))
 const user_agent_counter_styles_marker = '/* https://w3c.github.io/predefined-counter-styles/ */'
 const user_agent_cascade_stylesheet_source = user_agent_stylesheet_source.all_before(user_agent_counter_styles_marker)
 const user_agent_counter_stylesheet_source = user_agent_stylesheet_source.all_after(user_agent_counter_styles_marker)

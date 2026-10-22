@@ -5,8 +5,10 @@
 // Translation of the inline-PDF path in Libraries/LibWeb/DOM/DocumentLoading.cpp.
 module dom
 
+import platform
+
 // PDF.js 5.6.205 web/viewer.html, matching Ladybird's pinned vcpkg port.
-const bundled_pdf_viewer_source = $embed_file('resources/pdfjs/viewer.html').to_string()
+const bundled_pdf_viewer_source = platform.embedded_text($embed_file('resources/pdfjs/viewer.html'))
 
 // The JavaScript Fetch::Response handed to pdf.js upstream owns the response URL,
 // MIME type, and body. This dependency-cycle-safe host object preserves the same
