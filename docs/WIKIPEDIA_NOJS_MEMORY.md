@@ -17,8 +17,8 @@ in its protocol. Explicit historic Boehm comparisons require `--allocator boehm`
 ### Corrected arena before/after: 50 MB remains unmet
 
 The latest V-source comparison, three alternating optimized pairs, measures
-**68.54 → 66.91 MB**, a **2.37% reduction**. The largest candidate settled
-observation is **67,011,976 bytes**. The **50,000,000-byte limit still fails**.
+**66.60 → 59.79 MB**, a **10.23% reduction**. The largest candidate settled
+observation is **59,901,368 bytes**. The **50,000,000-byte limit still fails**.
 All six raw viewport images match, all frozen-input guards pass, and all six script audits
 report no page runtime, sources, source bytes or preloaded scripts.
 
@@ -57,6 +57,7 @@ report no page runtime, sources, source bytes or preloaded scripts.
 | CSS/DOM storage and stylesheet conversion workspaces | 73,598,320 bytes | 69,944,712 bytes | 4.96% |
 | Compact computed enums, serialization and property workspaces | 69,666,232 bytes | 68,617,656 bytes | 1.51% |
 | Selector/CSSOM inputs, layout counters and text shaping | 68,535,712 bytes | 66,913,696 bytes | 2.37% |
+| Static SVG pictures, XML/CSS ownership and PNG scratch retirement | 66,602,424 bytes | 59,786,656 bytes | 10.23% |
 
 Each row is its own three-pair cohort; these are aggregate build comparisons,
 not isolated savings attributed to individual commits. Evidence is in
@@ -77,7 +78,7 @@ not isolated savings attributed to individual commits. Evidence is in
 `arena-selector-paint-paired/`, `arena-scalar-plan-paired/`,
 `arena-custom-cascade-paired/`, `arena-paint-box-paired/` and
 `arena-stylesheet-workspace-paired/`, `arena-property-workspaces-paired/` and
-`arena-layout-shaping-paired/`, including summaries, raw
+`arena-layout-shaping-paired/` and `arena-static-svg-backgrounds-paired/`, including summaries, raw
 process samples, allocator checks, resource audits and captures. Matching
 `arena-{text,svg}-lifetimes-build-protocol.json` files pin the complete source
 inputs, current compiler and native libraries. The static-paint and SVG protocols are
@@ -124,6 +125,38 @@ and verified against their original build inputs; their hashes also remained
 unchanged afterward. The failed launch before that restoration is preserved
 separately and contributes no measurement. Static SVG picture storage is excluded
 from this executable and receives no memory credit here.
+
+The static-SVG-backgrounds cohort freezes committed source `80e35d99`. It
+includes host-owned pictures for eligible static SVG backgrounds, deferred CSS
+URL ownership, XML attribute storage and PNG decoder scratch retirement. Shape
+pictures own every command payload before the SVG child document is retired;
+dynamic or unsupported SVG content retains its document. Fresh resource probes
+preserve same-size replacements and failed-request retry behavior.
+
+`arena-static-svg-backgrounds-build-protocol.json` pins the full source,
+compiler, generated C and unchanged native providers. The executable SHA-256 is
+`2e13d94d9e777e69f7850b0cf0e50a192495338e7044eccc4cacd23244179f70`;
+generated C SHA-256 is
+`440836323bd34e9e1de130bd3701529b0e1f0653f8d727ee0b86c7fb9f70f4d6`.
+All six captures in this cohort have SHA-256
+`acbc323ec1e1ff1bfc665edd9064e290a34e9abbc08646b00092f5e17f4172f1`.
+The 40-file cache digest remains
+`24596e2376b3db09627d3c9e3bc6c1d60df656cc5f116640036848b19adc5f97`.
+Candidate launch peaks are 468.16–469.39 MB, so the launch budget also fails.
+The three candidate settled observations are 59,786,656, 59,639,224 and
+59,884,984 bytes; the largest individual settled sample is 59,901,368 bytes.
+
+The separate poisoned-arena Wikipedia run and eight SVG image replacement and
+paint-server mutation comparisons pass. Their receipts are
+`arena-static-svg-backgrounds-validation-result.json` and
+`arena-static-svg-backgrounds-svg-validation/result.json`; an independent
+pin/capture verification is recorded in
+`arena-static-svg-backgrounds-independent-verification.json`. All 92 focused
+checks pass with preallocation, poisoned arenas and Boehm; see
+`static-svg-background-v3-msaa-parity-all-focused-checks.json`. Diagnostics are
+excluded from RAM acceptance. Later shared SVG source bytes and compact DOM
+layout records are excluded from this executable and receive no memory credit
+in this cohort.
 
 Replacing the native wrapper and Metal providers with the completed code from
 `57c321a4`, while preserving the V executable byte for byte, measured
