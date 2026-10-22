@@ -3258,6 +3258,20 @@ fn parser_component_values_to_string(values []ComponentValue) string {
 }
 
 fn parser_component_values_original_text(values []ComponentValue) string {
+	$if prealloc {
+		// Nested blocks and functions assemble intermediate strings. Only the
+		// final source spelling belongs to the declaration's owner.
+		scratch := platform.begin_thread_scratch('CSS component source serialization')
+		text := assemble_component_values_original_text(values)
+		scratch.leave()
+		owned := text.clone()
+		scratch.finish()
+		return owned
+	}
+	return assemble_component_values_original_text(values)
+}
+
+fn assemble_component_values_original_text(values []ComponentValue) string {
 	mut builder := strings.new_builder(values.len * 8)
 	for value in values {
 		builder.write_string(value.original_source_text())
