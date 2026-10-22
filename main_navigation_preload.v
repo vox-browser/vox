@@ -57,8 +57,13 @@ fn parse_page_preload_document(loaded LoadedPage, scripting_enabled bool) &dom.D
 	defer { allocations.finish() }
 	document.set_scripting_enabled_by_embedder(scripting_enabled)
 	document.set_allow_declarative_shadow_roots(true)
+	// The tokenizer publishes its own source; the intermediate decoded response
+	// and encoding label do not need the discovery document's full lifetime.
+	workspace := platform.begin_thread_scratch('preload decoded input')
 	markup, encoding_name := loaded_browser_navigation_input(loaded)
-	if selected_encoding := encoding_name { document.set_encoding(selected_encoding) }
+	workspace.leave()
+	defer { workspace.finish() }
+	if selected_encoding := encoding_name { document.set_encoding(selected_encoding.clone()) }
 	// Match noscript parsing without creating a Window, executing import maps
 	// or preparing scripts in this resource-discovery document.
 	mut parser := html.HTMLParser.create_with_scripting_mode(document, markup,

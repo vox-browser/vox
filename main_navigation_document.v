@@ -96,10 +96,17 @@ fn loaded_browser_navigation_input(loaded LoadedPage) (string, ?string) {
 }
 
 fn parse_loaded_browser_navigation_document(loaded LoadedPage, document_url dom.URL, initiator_origin ?dom.Origin, previous ?&dom.Document, page ?&dom.Page, scripting_enabled bool) &dom.Document {
+	// The parser retains its own source in the document arena. Keep the decoded
+	// response alive only until that publication, while constructing reusable
+	// Document/Window identity in the caller's ordinary allocation owner.
+	workspace := platform.begin_thread_scratch('navigation decoded input')
 	markup, encoding_name := loaded_browser_navigation_input(loaded)
-	return parse_browser_navigation_document_input_with_source(markup, encoding_name, document_url,
+	workspace.leave()
+	document := parse_browser_navigation_document_input_with_source(markup, encoding_name, document_url,
 		initiator_origin, previous, page, loaded.monotonic_response_time_ns, scripting_enabled,
 		loaded.javascript_url_source)
+	workspace.finish()
+	return document
 }
 
 fn parse_browser_navigation_document_input(markup string, document_encoding ?string, document_url dom.URL, initiator_origin ?dom.Origin, previous ?&dom.Document, page ?&dom.Page, response_time_ns i64, scripting_enabled bool) &dom.Document {
@@ -134,7 +141,7 @@ fn parse_browser_navigation_document_input_with_source(markup string, document_e
 		document.set_opener_policy(source.opener_policy())
 	}
 	if encoding_name := document_encoding {
-		document.set_encoding(encoding_name)
+		document.set_encoding(encoding_name.clone())
 	}
 	document.set_scripting_enabled_by_embedder(scripting_enabled)
 	settings := unsafe { &html.EnvironmentSettingsObject(document.relevant_settings_object()) }
