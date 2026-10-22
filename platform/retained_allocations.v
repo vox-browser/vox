@@ -31,10 +31,18 @@ fn remember_current_arena_tail() {
 
 fn latest_arena_block(previous voidptr) voidptr {
 	$if prealloc {
+		mut block := unsafe { &PreallocBlockView(previous) }
+		if block != unsafe { nil } && !block.is_scope {
+			// A persistent allocation can grow a raw thread scope's base parent.
+			// Restore that tail on workers too, before consulting UI ownership.
+			for block.next != unsafe { nil } && !block.next.is_scope {
+				block = block.next
+			}
+			return block
+		}
 		state := unsafe { &arena_thread_state }
 		if !state.initialized || state.owner != u64(C.pthread_self()) { return previous }
 		arena := state.current_arena
-		block := unsafe { &PreallocBlockView(previous) }
 		if arena != unsafe { nil } && block != unsafe { nil }
 			&& block.scope == voidptr(arena.scope) {
 			return arena.tail

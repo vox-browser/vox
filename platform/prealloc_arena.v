@@ -65,10 +65,10 @@ mut:
 // V keeps detached, dead scope blocks in a per-thread recycle cache. Its
 // metadata stays warm while the payload pages can be returned at idle.
 struct PreallocRecycleCacheView {
-	count int
-	bytes isize
+	count  int
+	bytes  isize
 	starts [8]voidptr
-	sizes [8]isize
+	sizes  [8]isize
 }
 
 // ArenaUsage describes a chain of arena blocks: bytes handed out by the bump
@@ -194,9 +194,10 @@ fn chain_usage(start &PreallocBlockView, forward bool) ArenaUsage {
 // ArenaEntry restores the allocation target that was current before an
 // enter call.
 pub struct ArenaEntry {
-	previous voidptr
-	base     bool
-	depth    i32
+	previous     voidptr
+	base         bool
+	thread_scope bool
+	depth        i32
 }
 
 @[heap]
@@ -305,10 +306,12 @@ pub fn arena_entered() bool {
 // the same short-lived culling and paint-refresh scratch as base allocations.
 pub fn transient_arena_entered() bool {
 	$if prealloc {
+		block := unsafe { &PreallocBlockView(current_block()) }
+		if block == unsafe { nil } || !block.is_scope { return false }
+		// ThreadScratchScope also enters V scopes without changing Arena.depth.
+		if !arena_thread_is_current() { return true }
 		state := arena_state()
-		if state.depth <= 0 { return false }
 		if state.retained != unsafe { nil } {
-			block := unsafe { &PreallocBlockView(current_block()) }
 			if block.scope == voidptr(state.retained.arena.scope) { return false }
 		}
 		return true
@@ -320,6 +323,20 @@ pub fn transient_arena_entered() bool {
 // arena is entered: retained state such as caches must outlive the arena.
 pub fn enter_persistent() ArenaEntry {
 	$if prealloc {
+		// Raw thread scratch scopes retain their parent links, including on
+		// workers. Reach their own base without consulting UI arena ownership.
+		previous := current_block()
+		mut parent := unsafe { &PreallocBlockView(previous) }
+		for parent != unsafe { nil } && parent.is_scope {
+			parent = parent.previous
+		}
+		if parent != unsafe { nil } && voidptr(parent) != previous {
+			for parent.next != unsafe { nil } && !parent.next.is_scope {
+				parent = parent.next
+			}
+			set_current_block(parent)
+			return ArenaEntry{ previous: previous, thread_scope: true }
+		}
 		// Workers already allocate in their own base scope. They must not
 		// switch the origin thread's entered arena when filling shared caches.
 		if arena_thread_state.initialized
@@ -334,7 +351,6 @@ pub fn enter_persistent() ArenaEntry {
 				base: true
 			}
 		}
-		previous := current_block()
 		remember_current_arena_tail()
 		set_current_block(state.base_tail)
 		state.depth = -state.depth
@@ -349,6 +365,10 @@ pub fn enter_persistent() ArenaEntry {
 
 pub fn leave_persistent(entry ArenaEntry) {
 	$if prealloc {
+		if entry.thread_scope {
+			set_current_block(latest_arena_block(entry.previous))
+			return
+		}
 		if entry.base {
 			return
 		}
