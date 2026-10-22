@@ -17,8 +17,8 @@ in its protocol. Explicit historic Boehm comparisons require `--allocator boehm`
 ### Corrected arena before/after: 50 MB remains unmet
 
 The latest V-source comparison, three alternating optimized pairs, measures
-**69.67 → 68.62 MB**, a **1.51% reduction**. The largest candidate settled
-observation is **68,715,984 bytes**. The **50,000,000-byte limit still fails**.
+**68.54 → 66.91 MB**, a **2.37% reduction**. The largest candidate settled
+observation is **67,011,976 bytes**. The **50,000,000-byte limit still fails**.
 All six raw viewport images match, all frozen-input guards pass, and all six script audits
 report no page runtime, sources, source bytes or preloaded scripts.
 
@@ -56,6 +56,7 @@ report no page runtime, sources, source bytes or preloaded scripts.
 | Optional retained paint geometry storage | 74,515,872 bytes | 73,647,472 bytes | 1.17% |
 | CSS/DOM storage and stylesheet conversion workspaces | 73,598,320 bytes | 69,944,712 bytes | 4.96% |
 | Compact computed enums, serialization and property workspaces | 69,666,232 bytes | 68,617,656 bytes | 1.51% |
+| Selector/CSSOM inputs, layout counters and text shaping | 68,535,712 bytes | 66,913,696 bytes | 2.37% |
 
 Each row is its own three-pair cohort; these are aggregate build comparisons,
 not isolated savings attributed to individual commits. Evidence is in
@@ -75,7 +76,8 @@ not isolated savings attributed to individual commits. Evidence is in
 `arena-idle-wiring-paired/`, `arena-resource-queries-paired/`,
 `arena-selector-paint-paired/`, `arena-scalar-plan-paired/`,
 `arena-custom-cascade-paired/`, `arena-paint-box-paired/` and
-`arena-stylesheet-workspace-paired/` and `arena-property-workspaces-paired/`, including summaries, raw
+`arena-stylesheet-workspace-paired/`, `arena-property-workspaces-paired/` and
+`arena-layout-shaping-paired/`, including summaries, raw
 process samples, allocator checks, resource audits and captures. Matching
 `arena-{text,svg}-lifetimes-build-protocol.json` files pin the complete source
 inputs, current compiler and native libraries. The static-paint and SVG protocols are
@@ -108,6 +110,20 @@ cache hash match the preceding cohort. Its launch peaks are 477.69–480.38 MB;
 a separate poisoned-arena run passes. Selector-input, CSSOM builder, layout-counter
 history and cold-baseline shaping changes are excluded from this executable
 and receive no memory credit here.
+
+The layout-shaping cohort freezes committed source `ed1f218d`. It includes
+selector-input and CSSOM serialization workspaces, temporary grouping-rule
+preludes, independent inherited counter storage, retired layout-builder counter
+history, and cold-baseline and width-only text-shaping storage. Its matching
+`arena-layout-shaping-build-protocol.json` pins source, compiler, generated C and
+unchanged native inputs. All six viewport hashes, script audits and the frozen
+cache hash match the preceding cohort. Candidate launch peaks are
+475.32–476.81 MB; a separate poisoned-arena run passes. Before the paired run,
+the archived baseline's 11 runtime embedded assets were restored byte for byte
+and verified against their original build inputs; their hashes also remained
+unchanged afterward. The failed launch before that restoration is preserved
+separately and contributes no measurement. Static SVG picture storage is excluded
+from this executable and receives no memory credit here.
 
 Replacing the native wrapper and Metal providers with the completed code from
 `57c321a4`, while preserving the V executable byte for byte, measured
