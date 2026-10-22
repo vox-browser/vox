@@ -391,7 +391,13 @@ fn shape_text_cached(baseline_start_x f32, letter_spacing f32, word_spacing f32,
 	if baseline_start_x == 0 {
 		return shaped
 	}
-	return shaped_text_with_baseline(shape, baseline_start_x, font, text_type)
+	mut run := shaped.glyph_run
+	run.invalidate_replay_data()
+	for mut glyph in run.glyphs_ {
+		glyph.position.x += baseline_start_x
+	}
+	run.refresh_replay_data()
+	return shaped
 }
 
 // Width-only callers share the exact cache used by full glyph-run callers.
