@@ -2028,6 +2028,9 @@ fn style_scope_selector_targets_pseudo_element(selector Selector, pseudo_element
 }
 
 fn style_scope_add_rules_to_run(style_computer &StyleComputer, abstract_element dom.AbstractElement, rules []&MatchingRule, rule_root ?&dom.ShadowRoot, shadow_root ?&dom.ShadowRoot, element_shadow_root ?&dom.ShadowRoot, mut rules_to_run []ScopedMatchingRule) {
+	if rules.len == 0 {
+		return
+	}
 	element_namespace_uri := abstract_element.element().namespace_uri()
 	if queried_pseudo_element := style_scope_pseudo_element_from_abstract_element(abstract_element) {
 		for rule in rules {
