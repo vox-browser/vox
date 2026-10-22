@@ -67,7 +67,8 @@ fn test_ratio_only_svg_background_resizes_its_viewbox_without_changing_natural_m
 	defer { document.finalize() }
 	for scale in [f64(0.5),1,0.5] {
 		_ = run_document_layout(document, 562*scale, 316*scale) or { panic('missing SVG layout') }
-		commands := display_list_commands(document.record_display_list()?).filter(it.kind == 'draw_svg_path')
+		list := document.record_display_list()?
+		commands := display_list_commands(list).filter(it.kind == 'draw_svg_path')
 		assert commands.len == 1
 		assert commands[0].svg().path_transform == [scale,f64(0),0,scale,0,0]!
 		natural := svg_background_natural_size(document)
