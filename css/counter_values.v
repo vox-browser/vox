@@ -1789,7 +1789,9 @@ pub fn inherit_counters(element CounterElement) CounterElement {
 	mut element_counters := ?CountersSet(none)
 	if parent_counters := element_reference.parent_counters {
 		if !parent_counters.is_empty() {
-			element_counters = parent_counters
+			// Counter operations mutate the inherited values. A record copy only
+			// shares V's array backing storage, including with a retained parent.
+			element_counters = CountersSet{counters_: parent_counters.counters_.clone()}
 		}
 	}
 
