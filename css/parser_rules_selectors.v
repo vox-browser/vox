@@ -193,7 +193,7 @@ fn (stream ParserTokenStream) next_token() ComponentValue {
 	if stream.index < stream.values.len {
 		return stream.values[stream.index]
 	}
-	return ComponentValue.from_token(Tokenizer.create_eof_token())
+	return parser_stream_eof()
 }
 
 fn (stream ParserTokenStream) peek_token(offset int) ComponentValue {
@@ -201,7 +201,7 @@ fn (stream ParserTokenStream) peek_token(offset int) ComponentValue {
 	if index >= 0 && index < stream.values.len {
 		return stream.values[index]
 	}
-	return ComponentValue.from_token(Tokenizer.create_eof_token())
+	return parser_stream_eof()
 }
 
 fn (mut stream ParserTokenStream) consume_a_token() ComponentValue {
