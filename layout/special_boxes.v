@@ -529,7 +529,12 @@ fn svg_image_document_for_source_in_viewport(node &Node, source string,
 }
 
 fn parse_svg_image_document(image_source SVGImageSource, color_scheme string, embedder &dom.Document) ?&dom.Document {
-	mut svg_document := create_svg_image_document(image_source.url, embedder)
+	return parse_svg_image_document_with_owner(image_source, color_scheme, embedder.font_rendering_policy(), embedder.native_storage())
+}
+
+fn parse_svg_image_document_with_owner(image_source SVGImageSource, color_scheme string,
+	font_policy dom.FontRenderingPolicy, storage &platform.RetainedArena) ?&dom.Document {
+	mut svg_document := create_svg_image_document(image_source.url, storage)
 	mut owner := svg_document.native_storage()
 	mut allocations := if owner != unsafe { nil } { owner.enter_nested() } else { platform.RetainedArenaScope{} }
 	defer { allocations.finish() }
@@ -538,7 +543,7 @@ fn parse_svg_image_document(image_source SVGImageSource, color_scheme string, em
 	svg_document.set_is_svg_image_document(true)
 	svg_document.set_svg_image_color_scheme(color_scheme)
 	// An SVG image renders with its embedding document's compatibility policy.
-	svg_document.set_font_rendering_policy(embedder.font_rendering_policy())
+	svg_document.set_font_rendering_policy(font_policy)
 	html.parse_xml_document_source(svg_document, image_source.source.clone()) or {
 		svg_document.finalize()
 		svg_document.release_native_storage()
@@ -557,7 +562,7 @@ fn parse_svg_image_document(image_source SVGImageSource, color_scheme string, em
 			return none
 		}
 	}
-	retain_svg_image_document_until_embedder_retires(svg_document, embedder)
+	retain_svg_image_document_until_owner_retires(svg_document, storage)
 	return svg_document
 }
 
@@ -661,6 +666,10 @@ pub fn svg_background_natural_size(document &dom.Document) css.SizeWithAspectRat
 fn background_svg_intrinsic_dimensions(isolated ?&dom.Document) (f64, f64) {
 	document := isolated or { return 0, 0 }
 	intrinsic := svg_background_natural_size(document)
+	return background_svg_natural_dimensions(intrinsic)
+}
+
+fn background_svg_natural_dimensions(intrinsic css.SizeWithAspectRatio) (f64, f64) {
 	mut width := f64(0)
 	mut height := f64(0)
 	if natural_width := intrinsic.width {

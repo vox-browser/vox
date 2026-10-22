@@ -3294,6 +3294,7 @@ fn (mut app BrowserApp) relayout(window_width int, window_height int) {
 		html.flush_autofocus_candidates(app.document)
 	}
 	layout.enable_native_paint_tree_storage(app.document)
+	layout.enable_native_static_svg_backgrounds(app.document)
 	app.root_box = layout.layout_document_typed_in_viewport(app.document, f64(viewport_width), f64(viewport_height))
 	previous_storage := app.paint_tree_storage
 	app.paint_tree_storage = layout.retain_document_paint_tree(app.document)
@@ -3405,6 +3406,7 @@ fn (mut app BrowserApp) install_loaded_page(loaded LoadedPage, add_history bool)
 	}
 	// Scripts and subresource preflight can force layout before relayout().
 	layout.enable_native_paint_tree_storage(app.document)
+	layout.enable_native_static_svg_backgrounds(app.document)
 	// Navigation has deactivated the old document. Release its realm and
 	// rendering before the replacement stylesheet allocation wave, which can
 	// otherwise trigger collections while both complete render graphs live.
@@ -6248,7 +6250,7 @@ fn (mut app BrowserApp) draw_command(source_command layout.PaintCommand, page_x 
 		}
 		'draw_background_image' {
 			image_data := command.image()
-			if image_data.background_svg_document != none
+			if (image_data.background_svg_document != none || image_data.background_static_svg_resource != none)
 				&& !background_image_clip_intersects_viewport(command, f64(page_x), f64(page_y),
 					f64(app.ctx.width), f64(app.page_top()), f64(window_height - app.status_height()),
 					app.paint_effect_depth > 0) {
@@ -6258,8 +6260,7 @@ fn (mut app BrowserApp) draw_command(source_command layout.PaintCommand, page_x 
 			mut intrinsic_width := f32(image_data.image_intrinsic_width)
 			mut intrinsic_height := f32(image_data.image_intrinsic_height)
 			mut svg_natural_size := ?css.SizeWithAspectRatio(none)
-			if svg_document := image_data.background_svg_document {
-				natural := layout.svg_background_natural_size(svg_document)
+			if natural := svg_background_natural_metrics(&image_data) {
 				svg_natural_size = natural
 				// The legacy string path also needs a concrete default size, but
 				// the typed layer below must retain the optional natural metrics.
@@ -6283,6 +6284,7 @@ fn (mut app BrowserApp) draw_command(source_command layout.PaintCommand, page_x 
 			// against the transformed AABB changes cover/contain and repeat counts.
 			area := painting.Rect{command.x, command.y, command.width, command.height}
 			snap_bitmap := app.ctx.native_rendering && image_data.background_svg_document == none
+				&& image_data.background_static_svg_resource == none
 				&& app.document != unsafe { nil } && app.document.font_rendering_policy() == .chromium
 			original_clip := painting.Rect{image_data.image_clip_x, image_data.image_clip_y, image_data.image_clip_width, image_data.image_clip_height}
 			clip := if snap_bitmap { pixel_snapped_background_bitmap_rect(original_clip) } else { original_clip }
@@ -6372,7 +6374,8 @@ fn (mut app BrowserApp) draw_command(source_command layout.PaintCommand, page_x 
 					// repetition has no `space` gaps. Keeping that operation intact also
 					// preserves the decoded image's native top-to-bottom orientation.
 					// Chromium instead clips each tile in its GPU image operation.
-					if !gpu_bitmap_tiles && plan.can_use_repeated_bitmap() && image_data.background_svg_document == none {
+					if !gpu_bitmap_tiles && plan.can_use_repeated_bitmap() && image_data.background_svg_document == none
+						&& image_data.background_static_svg_resource == none {
 						converter := painting.new_device_pixel_converter(1.0) or { return }
 						destination := converter.rounded_device_rect(plan.first_tile)
 						device_clip := converter.rounded_device_rect(clip)
@@ -6408,11 +6411,7 @@ fn (mut app BrowserApp) draw_command(source_command layout.PaintCommand, page_x 
 			tile_clip_radii := [f32(r.top_left.x), f32(r.top_left.y), f32(r.top_right.x), f32(r.top_right.y), f32(r.bottom_right.x), f32(r.bottom_right.y), f32(r.bottom_left.x), f32(r.bottom_left.y)]!
 			for original_tile in tiles {
 				tile := if snap_bitmap { pixel_snapped_background_bitmap_rect(original_tile) } else { original_tile }
-				if svg_document := image_data.background_svg_document {
-					mut mutable_svg_document := unsafe { &dom.Document(svg_document) }
-					persistent := platform.enter_persistent()
-					mutable_svg_document.set_svg_image_color_scheme(css.preferred_color_scheme_to_string(image_data.background_svg_color_scheme))
-					platform.leave_persistent(persistent)
+				if image_data.background_svg_document != none || image_data.background_static_svg_resource != none {
 					converter := painting.new_device_pixel_converter(1.0) or { return }
 					rounded_destination := converter.rounded_device_rect(tile)
 					destination := painting.IntRect{
@@ -6446,10 +6445,10 @@ fn (mut app BrowserApp) draw_command(source_command layout.PaintCommand, page_x 
 							C.native_add_corner_rounded_clip(f32(clip_x), f32(clip_y), f32(replay.viewport_width), f32(replay.viewport_height), 0, 0, 0, 0, 0, 0, 0, 0, f32(m[0]), f32(m[1]), f32(m[2]), f32(m[3]), f32(m[4]), f32(m[5]), page_x, page_y, f32(scroll_y), f32(app.ctx.height))
 						}
 					}
-					nested_display_list := svg_image_document_display_list(svg_document,
+					nested_commands := svg_background_paint_commands(&image_data,
 						replay.viewport_width, replay.viewport_height)
-					if display_list := nested_display_list {
-						for nested_command in layout.display_list_commands(display_list) {
+					if commands := nested_commands {
+						for nested_command in commands {
 							transformed := layout.paint_command_for_nested_viewport(nested_command, replay.transform,
 								if chromium_svg { painting.IntPoint{} } else { painting.IntPoint{destination.x, destination.y} }, command.opacity)
 							app.draw_command(transformed, page_x, page_y, window_height)

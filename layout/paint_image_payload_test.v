@@ -92,6 +92,7 @@ pub mut:
 	// `draw_background_image` payload. Intrinsic dimensions are resolved by the image renderer.
 	image_url                   string
 	background_svg_document     ?&dom.Document           = none
+	background_static_svg_resource ?&StaticSVGBackgroundResource = none
 	background_svg_color_scheme css.PreferredColorScheme = .auto_
 	image_intrinsic_width       f64
 	image_intrinsic_height      f64
@@ -240,6 +241,7 @@ fn image_payload_legacy_background_layer_command(layer BackgroundImageLayer, ori
 		force_dark_role:             .background
 		force_dark_role_set:         true
 		background_svg_document:     layer.svg_document
+		background_static_svg_resource: layer.static_svg_resource
 		background_svg_color_scheme: layer.color_scheme
 		image_intrinsic_width:       layer.intrinsic_width
 		image_intrinsic_height:      layer.intrinsic_height
@@ -281,6 +283,7 @@ fn image_payload_assert_legacy(actual PaintCommand, expected LegacyImagePaintCom
 	assert actual.visual_context_index == expected.visual_context_index
 	assert image.image_url == expected.image_url
 	assert retained_paint_payload_equal(image.background_svg_document, expected.background_svg_document)
+	assert retained_paint_payload_equal(image.background_static_svg_resource, expected.background_static_svg_resource)
 	assert image.background_svg_color_scheme == expected.background_svg_color_scheme
 	assert image.image_intrinsic_width == expected.image_intrinsic_width
 	assert image.image_intrinsic_height == expected.image_intrinsic_height

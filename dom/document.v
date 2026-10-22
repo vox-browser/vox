@@ -5379,6 +5379,7 @@ pub mut:
 	paint_borrowed_by_host bool
 	// Native shell snapshots retain/release their contiguous paint-tree slots.
 	recycle_native_paint_trees bool
+	compact_native_svg_backgrounds bool
 	native_storage_ &platform.RetainedArena = unsafe { nil }
 	native_storage_borrowed_ bool
 

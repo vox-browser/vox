@@ -50,6 +50,7 @@ pub struct BackgroundImageLayer {
 pub:
 	url                string
 	svg_document       ?&dom.Document
+	static_svg_resource ?&StaticSVGBackgroundResource
 	intrinsic_width    f64
 	intrinsic_height   f64
 	gradient_source    ?css.StyleValue
@@ -909,6 +910,7 @@ pub struct PaintImageData {
 pub:
 	image_url                   string
 	background_svg_document     ?&dom.Document = none
+	background_static_svg_resource ?&StaticSVGBackgroundResource = none
 	background_svg_color_scheme css.PreferredColorScheme = .auto_
 	image_intrinsic_width       f64
 	image_intrinsic_height      f64
@@ -1439,6 +1441,7 @@ fn background_layer_command(layer BackgroundImageLayer, origin LayoutRect, clip 
 		image_data: &PaintImageData{
 			image_url: layer.url
 			background_svg_document: layer.svg_document
+			background_static_svg_resource: layer.static_svg_resource
 			background_svg_color_scheme: layer.color_scheme
 			image_intrinsic_width: layer.intrinsic_width
 			image_intrinsic_height: layer.intrinsic_height

@@ -4,6 +4,7 @@ import dom
 
 struct CompletedBackgroundResource {
 	document        ?&dom.Document
+	resource        ?&StaticSVGBackgroundResource
 	intrinsic_width f64
 	intrinsic_height f64
 }
@@ -67,10 +68,11 @@ fn refreshed_background_resource_layers(layers []BackgroundImageLayer, root &Nod
 		}
 		key := layer.color_scheme.str() + '\n' + layer.url
 		resource := resources[key] or {
-			isolated := svg_image_document_for_source_in_viewport(root, layer.url, layer.color_scheme)
-			width, height := background_svg_intrinsic_dimensions(isolated)
+			image := svg_background_image_for_source_in_viewport(root, layer.url, layer.color_scheme)
+			width, height := image.intrinsic_dimensions()
 			value := CompletedBackgroundResource{
-				document: isolated
+				document: image.document
+				resource: image.resource
 				intrinsic_width: width
 				intrinsic_height: height
 			}
@@ -80,6 +82,7 @@ fn refreshed_background_resource_layers(layers []BackgroundImageLayer, root &Nod
 		updated[index] = BackgroundImageLayer{
 			...layer
 			svg_document: resource.document
+			static_svg_resource: resource.resource
 			intrinsic_width: resource.intrinsic_width
 			intrinsic_height: resource.intrinsic_height
 		}

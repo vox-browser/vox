@@ -1581,12 +1581,13 @@ fn computed_background_image_layers(node &Node, element &dom.Element, computed &
 			continue
 		}
 		color_scheme := image_color_scheme(element.document(), computed)
-		svg_document := svg_image_document_for_source_in_viewport(node, resolved_url, color_scheme)
-		intrinsic_width, intrinsic_height := background_svg_intrinsic_dimensions(svg_document)
+		svg_image := svg_background_image_for_source_in_viewport(node, resolved_url, color_scheme)
+		intrinsic_width, intrinsic_height := svg_image.intrinsic_dimensions()
 		repeat_x, repeat_y := parsed_background_repeat(computed_coordinated_background_value(computed, .background_repeat, index, 'repeat'))
 		layers << BackgroundImageLayer{
 			url: resolved_url
-			svg_document: svg_document
+			svg_document: svg_image.document
+			static_svg_resource: svg_image.resource
 			intrinsic_width: intrinsic_width
 			intrinsic_height: intrinsic_height
 			gradient_source: gradient_source

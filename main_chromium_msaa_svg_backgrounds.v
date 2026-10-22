@@ -1,7 +1,5 @@
 module main
 
-import css
-import dom
 import layout
 import math
 import painting
@@ -16,24 +14,21 @@ fn chromium_svg_background_msaa_ranges(command layout.PaintCommand) [][]f64 {
 fn chromium_svg_background_msaa_rects(command layout.PaintCommand) []layout.LayoutRect {
 	mut triggers := []ChromiumMSAATrigger{}
 	append_chromium_svg_background_msaa_triggers(command, 0, mut triggers)
-	return triggers.map(layout.LayoutRect{x: it.left, y: it.top, width: it.right - it.left, height: it.bottom - it.top})
+	return triggers.map(layout.LayoutRect{ x: it.left, y: it.top, width: it.right - it.left, height: it.bottom - it.top })
 }
 
 fn append_chromium_svg_background_msaa_triggers(command layout.PaintCommand, index int,
 	mut triggers []ChromiumMSAATrigger) {
 	if command.image_data == unsafe { nil } || command.opacity <= 0 { return }
 	image := command.image_data
-	svg_document := image.background_svg_document or { return }
 	data := image.background_layer_data or { return }
-	natural := layout.svg_background_natural_size(svg_document)
+	natural := svg_background_natural_metrics(image) or { return }
 	layer := painting.resolve_background_layer_with_natural_size(data.layer, image.image_url, painting.Rect{command.x, command.y, command.width, command.height},
 		data.resolution_context, natural) or { return }
 	clip :=
 		painting.Rect{image.image_clip_x, image.image_clip_y, image.image_clip_width, image.image_clip_height}
 	plan :=
 		painting.background_tile_plan(layer, painting.Point{command.image_scroll_offset_x, command.image_scroll_offset_y}, clip)
-	mut document := unsafe { &dom.Document(svg_document) }
-	document.set_svg_image_color_scheme(css.preferred_color_scheme_to_string(image.background_svg_color_scheme))
 	outer := command.transform
 	converter := painting.new_device_pixel_converter(1.0) or { return }
 	mut tiles := painting.background_tile_iterator(plan, clip, 4096)
@@ -51,11 +46,11 @@ fn append_chromium_svg_background_msaa_triggers(command layout.PaintCommand, ind
 		} else {
 			painting.IntPoint{destination.x, destination.y}
 		}
-		list := svg_image_document_display_list(svg_document, replay.viewport_width,
+		commands := svg_background_paint_commands(image, replay.viewport_width,
 			replay.viewport_height) or { continue }
 		viewport_bounds := transformed_raster_bounds(replay.transform, f64(offset.x), f64(offset.y),
 			f64(replay.viewport_width), f64(replay.viewport_height))
-		for nested in layout.display_list_commands(list) {
+		for nested in commands {
 			bounds := chromium_nested_svg_msaa_trigger_rect(nested, replay.transform,
 				offset) or { continue }
 			top := math.max(bounds.y, viewport_bounds.y)
