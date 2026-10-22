@@ -2412,7 +2412,7 @@ pub fn (e &Element) client_width() int {
 	if !client_size_has_committed_box(layout) {
 		return 0
 	}
-	return int((layout.content_width_ + layout.padding_left_ + layout.padding_right_) / e.document().layout_coordinate_scale())
+	return int((layout.content_width_ + layout.box_model().padding_left + layout.box_model().padding_right) / e.document().layout_coordinate_scale())
 }
 
 // https://drafts.csswg.org/cssom-view/#dom-element-clientheight
@@ -2426,7 +2426,7 @@ pub fn (e &Element) client_height() int {
 	if !client_size_has_committed_box(layout) {
 		return 0
 	}
-	return int((layout.content_height_ + layout.padding_top_ + layout.padding_bottom_) / e.document().layout_coordinate_scale())
+	return int((layout.content_height_ + layout.box_model().padding_top + layout.box_model().padding_bottom) / e.document().layout_coordinate_scale())
 }
 
 // https://drafts.csswg.org/cssom-view/#dom-element-currentcsszoom
@@ -3918,7 +3918,7 @@ pub fn (mut e Element) scroll_width() int {
 	}
 	if layout := e.as_node().layout_node() {
 		if layout.has_geometry_ {
-			return int((layout.content_width_ + layout.padding_left_ + layout.padding_right_) / e.document().layout_coordinate_scale())
+			return int((layout.content_width_ + layout.box_model().padding_left + layout.box_model().padding_right) / e.document().layout_coordinate_scale())
 		}
 	}
 	return 0
@@ -3937,7 +3937,7 @@ pub fn (mut e Element) scroll_height() int {
 	}
 	if layout := e.as_node().layout_node() {
 		if layout.has_geometry_ {
-			return int((layout.content_height_ + layout.padding_top_ + layout.padding_bottom_) / e.document().layout_coordinate_scale())
+			return int((layout.content_height_ + layout.box_model().padding_top + layout.box_model().padding_bottom) / e.document().layout_coordinate_scale())
 		}
 	}
 	return 0

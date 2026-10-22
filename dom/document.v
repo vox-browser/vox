@@ -1403,35 +1403,12 @@ pub mut:
 	border_box_                                     Rect
 	content_width_                                  f64
 	content_height_                                 f64
-	margin_left_                                    f64
-	margin_right_                                   f64
-	margin_top_                                     f64
-	margin_bottom_                                  f64
-	border_left_                                    f64
-	border_right_                                   f64
-	border_top_                                     f64
-	border_bottom_                                  f64
-	padding_left_                                   f64
-	padding_right_                                  f64
-	padding_top_                                    f64
-	padding_bottom_                                 f64
-	inset_left_                                     f64
-	inset_right_                                    f64
-	inset_top_                                      f64
-	used_grid_data_                                &LayoutGridData = unsafe { nil }
-	inset_bottom_                                   f64
+	box_model_ &LayoutBoxModel = unsafe { nil }
+	used_grid_data_ &LayoutGridData = unsafe { nil }
 	// dom<->layout bridge: opaque handle to the real layout.Node this placeholder mirrors (dom can't
 	// name the layout type). The layout module attaches these via attach_layout_nodes. See layout/dom_layout_bridge.v.
 	layout_handle                    voidptr = unsafe { nil }
-	find_matching_text_callback      fn (voidptr, string, CaseSensitivity) []&Range = unsafe { nil }
-	apply_style_callback             LayoutApplyStyleCallback = unsafe { nil }
-	apply_animated_style_callback    LayoutApplyAnimatedStyleCallback = unsafe { nil }
-	apply_color_style_callback       LayoutApplyColorStyleCallback = unsafe { nil }
-	clear_image_observers_callback   fn (voidptr) = unsafe { nil }
-	set_needs_layout_update_callback LayoutSetNeedsLayoutUpdateCallback = unsafe { nil }
-	invalidate_text_for_rendering_callback LayoutInvalidateTextForRenderingCallback = unsafe { nil }
-	refresh_empty_text_fragment_callback fn (voidptr) bool = unsafe { nil }
-	view_transition_properties_callback fn (voidptr) map[string]string = unsafe { nil }
+	callbacks_ &LayoutNodeCallbacks = unsafe { nil }
 }
 
 // The DOM/layout boundary needs resolved tracks only for grid containers.
@@ -11495,8 +11472,8 @@ pub fn (d &Document) find_matching_text(query string, case_sensitivity CaseSensi
 	document.update_layout(.document_find_matching_text)
 	viewport := document.layout_node() or { return []&Range{} }
 	root := viewport.root_layout_node() or { return []&Range{} }
-	if root.find_matching_text_callback == unsafe { nil } { return []&Range{} }
-	return root.find_matching_text_callback(root.layout_handle, query, case_sensitivity)
+	if root.bridge_callbacks().find_matching_text_callback == unsafe { nil } { return []&Range{} }
+	return root.bridge_callbacks().find_matching_text_callback(root.layout_handle, query, case_sensitivity)
 }
 
 // --- HTML parsing ---

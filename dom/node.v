@@ -3067,8 +3067,8 @@ pub fn (mut n Node) recompute_editable_subtree_flags_and_repaint() {
 				layout_node.is_editing_host_ = is_editing_host
 				mutable_node.set_needs_layout_update(.editable_state_change)
 			}
-			if layout_node.refresh_empty_text_fragment_callback != unsafe { nil }
-				&& layout_node.refresh_empty_text_fragment_callback(layout_node.layout_handle) {
+			if layout_node.bridge_callbacks().refresh_empty_text_fragment_callback != unsafe { nil }
+				&& layout_node.bridge_callbacks().refresh_empty_text_fragment_callback(layout_node.layout_handle) {
 				mutable_node.set_needs_layout_update(.editable_state_change)
 			}
 		}
@@ -3196,8 +3196,8 @@ pub fn (mut n Node) set_layout_node(layout_node &LayoutNode) {
 
 pub fn (mut n Node) detach_layout_node() {
 	if n.layout_node_ != unsafe { nil } {
-		if n.layout_node_.clear_image_observers_callback != unsafe { nil } {
-			n.layout_node_.clear_image_observers_callback(n.layout_node_.layout_handle)
+		if n.layout_node_.bridge_callbacks().clear_image_observers_callback != unsafe { nil } {
+			n.layout_node_.bridge_callbacks().clear_image_observers_callback(n.layout_node_.layout_handle)
 		}
 	}
 	n.layout_node_ = unsafe { nil }
@@ -5414,8 +5414,8 @@ pub fn (mut si StyleInvalidator) enqueue_invalidation_plan(node &Node, reason St
 
 pub fn (mut ln LayoutNode) set_needs_layout_update(reason SetNeedsLayoutReason) {
 	_ = reason
-	if ln.layout_handle != unsafe { nil } && ln.set_needs_layout_update_callback != unsafe { nil } {
-		ln.set_needs_layout_update_callback(ln.layout_handle, true)
+	if ln.layout_handle != unsafe { nil } && ln.bridge_callbacks().set_needs_layout_update_callback != unsafe { nil } {
+		ln.bridge_callbacks().set_needs_layout_update_callback(ln.layout_handle, true)
 	}
 	if ln.needs_layout_update_ {
 		return
@@ -5436,8 +5436,8 @@ pub fn (mut ln LayoutNode) set_needs_layout_update(reason SetNeedsLayoutReason) 
 
 pub fn (mut ln LayoutNode) invalidate_text_for_rendering() {
 	if ln.layout_handle != unsafe { nil }
-		&& ln.invalidate_text_for_rendering_callback != unsafe { nil } {
-		ln.invalidate_text_for_rendering_callback(ln.layout_handle)
+		&& ln.bridge_callbacks().invalidate_text_for_rendering_callback != unsafe { nil } {
+		ln.bridge_callbacks().invalidate_text_for_rendering_callback(ln.layout_handle)
 	}
 }
 
@@ -5447,22 +5447,22 @@ pub fn (ln &LayoutNode) needs_layout_update() bool {
 
 pub fn (mut ln LayoutNode) reset_needs_layout_update() {
 	ln.needs_layout_update_ = false
-	if ln.layout_handle != unsafe { nil } && ln.set_needs_layout_update_callback != unsafe { nil } {
-		ln.set_needs_layout_update_callback(ln.layout_handle, false)
+	if ln.layout_handle != unsafe { nil } && ln.bridge_callbacks().set_needs_layout_update_callback != unsafe { nil } {
+		ln.bridge_callbacks().set_needs_layout_update_callback(ln.layout_handle, false)
 	}
 }
 
 pub fn (ln &LayoutNode) apply_style(css_computed_properties_handle voidptr) {
-	if ln.layout_handle == unsafe { nil } || ln.apply_style_callback == unsafe { nil } || css_computed_properties_handle == unsafe { nil } {
+	if ln.layout_handle == unsafe { nil } || ln.bridge_callbacks().apply_style_callback == unsafe { nil } || css_computed_properties_handle == unsafe { nil } {
 		return
 	}
-	ln.apply_style_callback(ln.layout_handle, css_computed_properties_handle)
+	ln.bridge_callbacks().apply_style_callback(ln.layout_handle, css_computed_properties_handle)
 }
 
 pub fn (ln &LayoutNode) apply_inherited_color_style(style voidptr) bool {
 	if ln.layout_handle != unsafe { nil } && style != unsafe { nil }
-		&& ln.apply_color_style_callback != unsafe { nil }
-		&& ln.apply_color_style_callback(ln.layout_handle, style) {
+		&& ln.bridge_callbacks().apply_color_style_callback != unsafe { nil }
+		&& ln.bridge_callbacks().apply_color_style_callback(ln.layout_handle, style) {
 		return true
 	}
 	ln.apply_style(style)
@@ -5475,14 +5475,14 @@ pub fn (ln &LayoutNode) apply_inherited_color_style(style voidptr) bool {
 // true only when the embedder retained its paint transport for the sample.
 pub fn (ln &LayoutNode) apply_animated_style(css_computed_properties_handle voidptr,
 	only_compositor_changes bool) bool {
-	if !only_compositor_changes || ln.apply_animated_style_callback == unsafe { nil } {
+	if !only_compositor_changes || ln.bridge_callbacks().apply_animated_style_callback == unsafe { nil } {
 		ln.apply_style(css_computed_properties_handle)
 		return false
 	}
 	if ln.layout_handle == unsafe { nil } || css_computed_properties_handle == unsafe { nil } {
 		return false
 	}
-	return ln.apply_animated_style_callback(ln.layout_handle, css_computed_properties_handle)
+	return ln.bridge_callbacks().apply_animated_style_callback(ln.layout_handle, css_computed_properties_handle)
 }
 
 pub fn (ln &LayoutNode) paintables() []&Paintable {

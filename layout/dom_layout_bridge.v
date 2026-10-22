@@ -3,6 +3,18 @@ module layout
 import dom
 import css
 
+__global dom_layout_callbacks = dom.LayoutNodeCallbacks{
+	find_matching_text_callback: find_matching_layout_text
+	apply_style_callback: apply_style_to_layout_node
+	apply_animated_style_callback: apply_animated_style_to_layout_node
+	apply_color_style_callback: apply_inherited_color_style_to_layout_node
+	clear_image_observers_callback: clear_layout_image_observers
+	set_needs_layout_update_callback: set_layout_node_needs_layout_update
+	invalidate_text_for_rendering_callback: invalidate_layout_text_for_rendering
+	refresh_empty_text_fragment_callback: refresh_layout_empty_text_fragment
+	view_transition_properties_callback: layout_view_transition_properties
+}
+
 // dom <-> layout bridge. The DOM keeps a per-node `dom.LayoutNode` placeholder (node.layout_node()); the
 // layout tree is the real thing (layout.Node) but dom can't name it (dom can't import layout). After
 // laying out, walk the layout tree and populate + attach a placeholder onto each DOM node, mirroring the
@@ -409,15 +421,7 @@ fn attach_layout_node_recursive(box &Node, parent_placeholder ?&dom.LayoutNode, 
 	placeholder.user_select_none_ = user_select == .none_
 	placeholder.white_space_collapse_is_not_collapse_ = box.computed_values().white_space_collapse() != .collapse
 	placeholder.layout_handle = voidptr(box)
-	placeholder.find_matching_text_callback = find_matching_layout_text
-	placeholder.apply_style_callback = apply_style_to_layout_node
-	placeholder.apply_animated_style_callback = apply_animated_style_to_layout_node
-	placeholder.apply_color_style_callback = apply_inherited_color_style_to_layout_node
-	placeholder.clear_image_observers_callback = clear_layout_image_observers
-	placeholder.set_needs_layout_update_callback = set_layout_node_needs_layout_update
-	placeholder.invalidate_text_for_rendering_callback = invalidate_layout_text_for_rendering
-	placeholder.refresh_empty_text_fragment_callback = refresh_layout_empty_text_fragment
-	placeholder.view_transition_properties_callback = layout_view_transition_properties
+	placeholder.callbacks_ = &dom_layout_callbacks
 	if retain_live_nodes {
 		mut mutable_box := unsafe { &Node(box) }
 		mutable_box.dom_layout_node_ = placeholder
@@ -769,22 +773,24 @@ fn invalidate_layout_text_for_rendering(layout_handle voidptr) {
 // resolved-value algorithm consumes exactly these used box-model values, just as
 // CSSStyleProperties.cpp reads them from Painting::PaintableBox::box_model().
 fn copy_used_box_model_to_dom_layout_node(mut placeholder dom.LayoutNode, used &UsedValues) {
-	placeholder.margin_left_ = used.margin_left.to_double()
-	placeholder.margin_right_ = used.margin_right.to_double()
-	placeholder.margin_top_ = used.margin_top.to_double()
-	placeholder.margin_bottom_ = used.margin_bottom.to_double()
-	placeholder.border_left_ = used.border_left.to_double()
-	placeholder.border_right_ = used.border_right.to_double()
-	placeholder.border_top_ = used.border_top.to_double()
-	placeholder.border_bottom_ = used.border_bottom.to_double()
-	placeholder.padding_left_ = used.padding_left.to_double()
-	placeholder.padding_right_ = used.padding_right.to_double()
-	placeholder.padding_top_ = used.padding_top.to_double()
-	placeholder.padding_bottom_ = used.padding_bottom.to_double()
-	placeholder.inset_left_ = used.inset_left.to_double()
-	placeholder.inset_right_ = used.inset_right.to_double()
-	placeholder.inset_top_ = used.inset_top.to_double()
-	placeholder.inset_bottom_ = used.inset_bottom.to_double()
+	placeholder.set_box_model(dom.LayoutBoxModel{
+		margin_left: used.margin_left.to_double()
+		margin_right: used.margin_right.to_double()
+		margin_top: used.margin_top.to_double()
+		margin_bottom: used.margin_bottom.to_double()
+		border_left: used.border_left.to_double()
+		border_right: used.border_right.to_double()
+		border_top: used.border_top.to_double()
+		border_bottom: used.border_bottom.to_double()
+		padding_left: used.padding_left.to_double()
+		padding_right: used.padding_right.to_double()
+		padding_top: used.padding_top.to_double()
+		padding_bottom: used.padding_bottom.to_double()
+		inset_left: used.inset_left.to_double()
+		inset_right: used.inset_right.to_double()
+		inset_top: used.inset_top.to_double()
+		inset_bottom: used.inset_bottom.to_double()
+	})
 	grid_template_columns := used.grid_template_columns()
 	mut used_columns := []f64{cap: grid_template_columns.len}
 	for size in grid_template_columns {

@@ -74,9 +74,9 @@ fn view_transition_refresh_elements(target voidptr, mut context viewtransition.T
 			record.is_document_element = voidptr(element) == voidptr(root)
 			record.width = layout_node.border_box_.width
 			record.height = layout_node.border_box_.height
-			if layout_node.view_transition_properties_callback != unsafe { nil } {
+			if layout_node.bridge_callbacks().view_transition_properties_callback != unsafe { nil } {
 				properties :=
-					layout_node.view_transition_properties_callback(layout_node.layout_handle)
+					layout_node.bridge_callbacks().view_transition_properties_callback(layout_node.layout_handle)
 				record.writing_mode = properties['writing-mode']
 				record.direction = properties['direction']
 				record.mix_blend_mode = properties['mix-blend-mode']

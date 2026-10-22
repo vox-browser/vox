@@ -38,8 +38,8 @@ fn bridge_geometry(element &dom.Element) map[string]json2.Any {
 		if offset_parent.local_name() != 'body' {
 			if parent_layout := offset_parent.as_node().layout_node() {
 				if parent_layout.has_geometry_ {
-					offset_left -= parent_layout.border_box_.x + parent_layout.border_left_
-					offset_top -= parent_layout.border_box_.y + parent_layout.border_top_
+					offset_left -= parent_layout.border_box_.x + parent_layout.box_model().border_left
+					offset_top -= parent_layout.border_box_.y + parent_layout.box_model().border_top
 				}
 			}
 		}

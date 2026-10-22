@@ -22,12 +22,13 @@ fn retained_color_style_probe(handle voidptr, _ voidptr) bool {
 fn test_inherited_color_style_callback_preserves_legacy_and_declined_application() {
 	mut probe := &ColorStyleCallbackProbe{}
 	mut node := &LayoutNode{
-		layout_handle:        voidptr(probe)
-		apply_style_callback: ordinary_color_style_probe
+		layout_handle: voidptr(probe)
+		callbacks_:    &LayoutNodeCallbacks{ apply_style_callback: ordinary_color_style_probe }
 	}
 	assert !node.apply_inherited_color_style(voidptr(probe))
 	assert probe.ordinary == 1
-	node.apply_color_style_callback = retained_color_style_probe
+	callbacks := *node.bridge_callbacks()
+	node.callbacks_ = &LayoutNodeCallbacks{ ...callbacks, apply_color_style_callback: retained_color_style_probe }
 	assert !node.apply_inherited_color_style(voidptr(probe))
 	assert probe.ordinary == 2 && probe.color == 1
 	probe.retain = true

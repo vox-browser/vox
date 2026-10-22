@@ -1681,73 +1681,73 @@ pub fn (properties &CSSStyleProperties) style_value_for_computed_property(layout
 		}
 		.margin_bottom {
 			if display_allows_used_value {
-				return cssom_style_value_for_px(layout_node.margin_bottom_ / owner.document().layout_coordinate_scale())
+				return cssom_style_value_for_px(layout_node.box_model().margin_bottom / owner.document().layout_coordinate_scale())
 			}
 			return cssom_style_value_for_length_percentage_or_auto(margin.bottom())
 		}
 		.margin_left {
 			if display_allows_used_value {
-				return cssom_style_value_for_px(layout_node.margin_left_ / owner.document().layout_coordinate_scale())
+				return cssom_style_value_for_px(layout_node.box_model().margin_left / owner.document().layout_coordinate_scale())
 			}
 			return cssom_style_value_for_length_percentage_or_auto(margin.left())
 		}
 		.margin_right {
 			if display_allows_used_value {
-				return cssom_style_value_for_px(layout_node.margin_right_ / owner.document().layout_coordinate_scale())
+				return cssom_style_value_for_px(layout_node.box_model().margin_right / owner.document().layout_coordinate_scale())
 			}
 			return cssom_style_value_for_length_percentage_or_auto(margin.right())
 		}
 		.margin_top {
 			if display_allows_used_value {
-				return cssom_style_value_for_px(layout_node.margin_top_ / owner.document().layout_coordinate_scale())
+				return cssom_style_value_for_px(layout_node.box_model().margin_top / owner.document().layout_coordinate_scale())
 			}
 			return cssom_style_value_for_length_percentage_or_auto(margin.top())
 		}
 		.padding_bottom {
 			if display_allows_used_value {
-				return cssom_style_value_for_px(layout_node.padding_bottom_ / owner.document().layout_coordinate_scale())
+				return cssom_style_value_for_px(layout_node.box_model().padding_bottom / owner.document().layout_coordinate_scale())
 			}
 			return cssom_style_value_for_length_percentage_or_auto(padding.bottom())
 		}
 		.padding_left {
 			if display_allows_used_value {
-				return cssom_style_value_for_px(layout_node.padding_left_ / owner.document().layout_coordinate_scale())
+				return cssom_style_value_for_px(layout_node.box_model().padding_left / owner.document().layout_coordinate_scale())
 			}
 			return cssom_style_value_for_length_percentage_or_auto(padding.left())
 		}
 		.padding_right {
 			if display_allows_used_value {
-				return cssom_style_value_for_px(layout_node.padding_right_ / owner.document().layout_coordinate_scale())
+				return cssom_style_value_for_px(layout_node.box_model().padding_right / owner.document().layout_coordinate_scale())
 			}
 			return cssom_style_value_for_length_percentage_or_auto(padding.right())
 		}
 		.padding_top {
 			if display_allows_used_value {
-				return cssom_style_value_for_px(layout_node.padding_top_ / owner.document().layout_coordinate_scale())
+				return cssom_style_value_for_px(layout_node.box_model().padding_top / owner.document().layout_coordinate_scale())
 			}
 			return cssom_style_value_for_length_percentage_or_auto(padding.top())
 		}
 		.bottom {
 			if cssom_should_use_resolved_inset(layout_node, inset.bottom(), inset.top()) {
-				return cssom_style_value_for_px(layout_node.inset_bottom_ / owner.document().layout_coordinate_scale())
+				return cssom_style_value_for_px(layout_node.box_model().inset_bottom / owner.document().layout_coordinate_scale())
 			}
 			return cssom_style_value_for_length_percentage_or_auto(inset.bottom())
 		}
 		.left {
 			if cssom_should_use_resolved_inset(layout_node, inset.left(), inset.right()) {
-				return cssom_style_value_for_px(layout_node.inset_left_ / owner.document().layout_coordinate_scale())
+				return cssom_style_value_for_px(layout_node.box_model().inset_left / owner.document().layout_coordinate_scale())
 			}
 			return cssom_style_value_for_length_percentage_or_auto(inset.left())
 		}
 		.right {
 			if cssom_should_use_resolved_inset(layout_node, inset.right(), inset.left()) {
-				return cssom_style_value_for_px(layout_node.inset_right_ / owner.document().layout_coordinate_scale())
+				return cssom_style_value_for_px(layout_node.box_model().inset_right / owner.document().layout_coordinate_scale())
 			}
 			return cssom_style_value_for_length_percentage_or_auto(inset.right())
 		}
 		.top {
 			if cssom_should_use_resolved_inset(layout_node, inset.top(), inset.bottom()) {
-				return cssom_style_value_for_px(layout_node.inset_top_ / owner.document().layout_coordinate_scale())
+				return cssom_style_value_for_px(layout_node.box_model().inset_top / owner.document().layout_coordinate_scale())
 			}
 			return cssom_style_value_for_length_percentage_or_auto(inset.top())
 		}

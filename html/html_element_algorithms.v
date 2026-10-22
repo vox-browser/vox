@@ -475,18 +475,18 @@ fn paintable_box_rect_of_kind(node &dom.LayoutNode, border_box dom.Rect, kind Pa
 	mut rect := border_box
 	if kind == .padding || kind == .content {
 		rect = dom.Rect{
-			x: rect.x + node.border_left_
-			y: rect.y + node.border_top_
-			width: math.max(0.0, rect.width - node.border_left_ - node.border_right_)
-			height: math.max(0.0, rect.height - node.border_top_ - node.border_bottom_)
+			x: rect.x + node.box_model().border_left
+			y: rect.y + node.box_model().border_top
+			width: math.max(0.0, rect.width - node.box_model().border_left - node.box_model().border_right)
+			height: math.max(0.0, rect.height - node.box_model().border_top - node.box_model().border_bottom)
 		}
 	}
 	if kind == .content {
 		rect = dom.Rect{
-			x: rect.x + node.padding_left_
-			y: rect.y + node.padding_top_
-			width: math.max(0.0, rect.width - node.padding_left_ - node.padding_right_)
-			height: math.max(0.0, rect.height - node.padding_top_ - node.padding_bottom_)
+			x: rect.x + node.box_model().padding_left
+			y: rect.y + node.box_model().padding_top
+			width: math.max(0.0, rect.width - node.box_model().padding_left - node.box_model().padding_right)
+			height: math.max(0.0, rect.height - node.box_model().padding_top - node.box_model().padding_bottom)
 		}
 	}
 	return rect
@@ -524,7 +524,7 @@ pub fn html_element_offset_top(element &dom.HTMLElement) int {
 		return int(top_border_edge / document.layout_coordinate_scale())
 	}
 	parent_padding_box := paintable_box_absolute_united_padding_box_rect(parent_layout) or {
-		dom.Rect{ y: parent_layout.border_box_.y + parent_layout.border_top_ }
+		dom.Rect{ y: parent_layout.border_box_.y + parent_layout.box_model().border_top }
 	}
 	return int((top_border_edge - parent_padding_box.y) / document.layout_coordinate_scale())
 }
@@ -550,7 +550,7 @@ pub fn html_element_offset_left(element &dom.HTMLElement) int {
 		return int(left_border_edge / document.layout_coordinate_scale())
 	}
 	parent_padding_box := paintable_box_absolute_united_padding_box_rect(parent_layout) or {
-		dom.Rect{ x: parent_layout.border_box_.x + parent_layout.border_left_ }
+		dom.Rect{ x: parent_layout.border_box_.x + parent_layout.box_model().border_left }
 	}
 	return int((left_border_edge - parent_padding_box.x) / document.layout_coordinate_scale())
 }

@@ -49,10 +49,10 @@ pub fn compute_intersection(target &Element, target_rect Rect, observer &Interse
 					layout_node := element.as_node().layout_node()
 					mut clip_rect := if layout := layout_node {
 						Rect{
-							x: border_rect.x + layout.border_left_
-							y: border_rect.y + layout.border_top_
-							width: border_rect.width - layout.border_left_ - layout.border_right_
-							height: border_rect.height - layout.border_top_ - layout.border_bottom_
+							x: border_rect.x + layout.box_model().border_left
+							y: border_rect.y + layout.box_model().border_top
+							width: border_rect.width - layout.box_model().border_left - layout.box_model().border_right
+							height: border_rect.height - layout.box_model().border_top - layout.box_model().border_bottom
 						}
 					} else {
 						border_rect
