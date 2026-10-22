@@ -17515,3 +17515,37 @@ build-result,result,final-audit}.json`; observation
 `Build/instructions/vox-linecopy165-diagnostic.run-1.{json,log,png}`.
 Binary SHA256: `b6acc486915fb939ca4112150205bbcbf71c9a191f4223c8cd37c352d4c3ee4a`.
 Durable generated-C archive SHA256: `9d6a6049340c29af981578b5d7ec02fab62967e152d65ab9fdd5311701ab6848`.
+
+
+## Frozen round 172 post-layout style diagnostic
+
+A separate trace follows the first navigation through its native document-paint
+report in accepted round 172. Nine wrappers record scalar style flags and
+property changes on the navigation owner thread. Removing the instrumentation
+restores the entire frozen C byte-for-byte; all 120 native inputs, 37 headers
+and native arguments remain authenticated. Native build, signing, smoke,
+observer and browser actually exit zero. The single completed primary and its
+1024×768 PNG are retained without retry or recovery. The memory guard completes
+with a 6,028,591,104-byte peak. Current Root is excluded.
+
+Two size-query containers cause a second style pass after the first layout.
+That pass recomputes 24 elements: nine spans remain unchanged, five other spans
+and their five SVG children each change `display`, and five paths remain
+unchanged. All ten display changes require relayout and tree rebuilding under
+the existing invalidation rules. A third pass updates inherited style on one
+path without another property change. The trace records 8,601 property checks,
+ten changes (all `display`), and 59 trace records without reaching its cap.
+It does not record the old and new display values.
+
+These real display changes rule out simply skipping the second layout. They
+motivate investigating whether unaffected layout work can be preserved; the
+trace establishes neither an implementation nor an instruction saving. Page
+credit is zero, accepted control and broad baseline remain 173, and observed
+carry remains zero. Canonical and GUI browsers are preserved. Chrome parity
+remains open.
+
+Evidence: `Build/v/instruction-layout-style172-{plan,instrumentation-audit,
+build-result,result,final-audit,controller-result}.json`; original observation
+`Build/instructions/vox-layout-style172-diagnostic.run-1.{json,log,png}`.
+Binary SHA256: `58054ed8b43c4a4e6f00b191506040b12a3741f409926dcb06223cd94a165699`.
+Durable generated-C archive SHA256: `ec75445e9efca700209e2a3d52f69348956f64164594b97d6ce1791b8ec5c671`.
