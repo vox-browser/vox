@@ -17799,3 +17799,39 @@ result,display-details,final-audit,completion-result}.json` and
 Binary SHA256: `073094cde257dfd2af3c65c6749cf97f01ad9604c3156b1cbf900edae180be73`.
 Durable generated-C archive SHA256: `a0ba27159a19d30919d13386d671c43af43ff0ae447f4ebd4faaf08ccaac5c88`.
 Raw log SHA256: `507f9cc92c89c727e91e40d45f7502cf306ad8464efd217b9b5a86a4ff7d1b5a`.
+
+## Frozen round 174 request-phase diagnostic
+
+A separately declared, single-observation trace identifies resource activity
+around Vox's first document-paint endpoint. Four generated-C wrappers record
+navigation boundaries, completed cache reads, and HTTP fetch starts and returns
+across threads. Removing the instrumentation restores the entire accepted round
+174 program byte-for-byte. All 120 native inputs, 37 headers, native arguments,
+the 359-file cache, and frozen runtime libraries remain authenticated. This
+diagnostic ran after round 175's cohort and final audit, under the shared memory
+guard. Native compilation, signing, smoke, observation, browser exit and final
+audit actually exit zero; its one completed primary and 1024×768 PNG are retained
+without retry, recovery or replay.
+
+All 32 cache reads recorded during the primary interval are hits. No HTTP fetch
+starts during that interval or crosses its endpoint. One HTTP fetch for
+`https://github.com/vlang/v` starts after the endpoint; its return is not observed
+before browser exit. The trace contains 35 records without truncation. Cache
+events describe completed reads, and phase boundaries are logged just after the
+unchanged counter snapshots, so the small instrumentation gap is explicit.
+These observations apply to this frozen diagnostic, not every possible load.
+
+The result locates Vox's live refresh outside this measured interval. It does
+not align Chrome's navigation start, rendered content, hydration or compositor
+paint with Vox's submitted-frame endpoint. Instrumented instruction counts earn
+zero performance credit, no optimization cohort is extended, and Chrome parity
+remains unknown. Accepted control and broad baseline remain round 175, observed
+carry remains zero, and the canonical app, GUI browser and foreign work remain
+preserved.
+
+Evidence: `Build/v/instruction-request-phase174-{plan,instrumentation-audit,
+build-result,result,final-audit,completion-result}.json` and
+`Build/instructions/vox-request-phase174-diagnostic.run-1.{json,log,png}`.
+Binary SHA256: `acdac910d54774e535e7b52c9b2887b96eaea826bf3b9fb03661bd5109959055`.
+Durable generated-C archive SHA256: `b4aa3bc5dc49517097ea0e87b6b1c164f00c029ef0a23c4418b20d1e2cda933b`.
+Raw log SHA256: `b82e15989add34a6edee34f9bf86896570e31d97271140d122ca46881b31b9f1`.
