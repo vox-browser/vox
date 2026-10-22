@@ -32,7 +32,6 @@ import referrerpolicy
 import requestserver
 import selection
 import sokol.sapp
-import stbi
 import sri
 import storageapi
 import strconv
@@ -4603,9 +4602,12 @@ fn (mut app BrowserApp) create_image_from_resource_bytes(image_url string, bytes
 			// Native replay consumes CPU rows. gg's byte loader also creates a
 			// Sokol texture whenever gfx is initialized, retaining a second copy
 			// of every PNG even though this renderer never draws that texture.
-			decoded := stbi.load_from_memory(bytes.data, bytes.len)!
-			mut image := gg.Image{width: decoded.width, height: decoded.height,
-				nr_channels: 6, ok: decoded.ok, data: decoded.data, ext: decoded.ext}
+			// Retain the final rows after retiring stb's decoder workspace, just
+			// as the document image decoder does.
+			bitmap := browser_decode_stb_raster_bytes(bytes)!
+			mut image := gg.Image{width: bitmap.width, height: bitmap.height,
+				nr_channels: native_bitmap_channel_marker(bitmap, false), ok: true,
+				data: bitmap.data.data}
 			chromium := app.document != unsafe { nil } && app.document.font_rendering_policy() == .chromium
 			C.native_tag_image_color_profile(image.data, image.width, image.height, bytes.data,
 				usize(bytes.len), int(chromium))

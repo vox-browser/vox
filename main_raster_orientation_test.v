@@ -2,6 +2,8 @@ module main
 
 import encoding.base64
 import gg
+import os
+import platform
 
 $if macos {
 	#include "@VMODROOT/tools/native_image_upload_test.h"
@@ -44,6 +46,26 @@ fn test_native_resource_image_cache_retains_asymmetric_rows_for_actual_image_pai
 	assert pixels[0..4] == [u8(255), 0, 0, 255]
 	assert pixels[8..12] == [u8(0), 0, 255, 255]
 	assert app.ctx.pipeline == unsafe { nil }
+}
+
+fn test_native_resource_image_cache_retires_decoder_temporaries_and_preserves_pixels() {
+	$if !macos { return }
+	bytes := os.read_bytes('Tests/Browser/Brave/expected/fallback-text-items.png')!
+	mut app := BrowserApp{ctx: gg.new_context(native_rendering: true)}
+	first := app.create_image_from_resource_bytes('https://image-order.test/large.png', bytes)!
+	before := platform.thread_arena_usage().used
+	second := app.create_image_from_resource_bytes('https://image-order.test/large-again.png', bytes)!
+	after := platform.thread_arena_usage().used
+	pixel_count := second.width * second.height * 4
+	$if prealloc { assert after - before < i64(pixel_count) + 4096 }
+	assert first.width == second.width && first.height == second.height
+	assert first.nr_channels == 6 && second.nr_channels == 6
+	first_pixels := unsafe { (&u8(first.data)).vbytes(pixel_count) }
+	second_pixels := unsafe { (&u8(second.data)).vbytes(pixel_count) }
+	pixels_match := first_pixels == second_pixels
+	assert pixels_match
+	assert first_pixels.any(it != 0)
+	assert app.ctx.get_cached_image_by_idx(first.id).data == first.data
 }
 
 fn test_native_byte_images_do_not_create_unused_sokol_textures() {
