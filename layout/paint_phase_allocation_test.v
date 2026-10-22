@@ -2,6 +2,8 @@ module layout
 
 import css
 import html
+import painting
+import platform
 
 fn test_phase_recorder_reuses_one_entry_buffer_and_retains_exact_buckets() {
 	mut recorder := new_paint_phase_command_recorder(100)
@@ -90,4 +92,72 @@ fn test_phase_refresh_keeps_valid_storage_and_earlier_replayed_commands() {
 	assert updated.map(it.color) == ['rgb(255 0 0)', 'rgb(0 0 255)']
 	assert initial.map(it.color) == ['rgb(255 0 0)', 'rgb(0 255 0)']
 	assert root.refresh_paint_phase_command_cache(entries, mut buckets, mut valid) == 0
+}
+
+fn test_recording_atomic_only_lines_borrows_headers_without_empty_outline_storage() {
+	box := BlockBox{ visible: true, skip_background_paint: true,
+		lines: []TextLine{len: 512, init: TextLine{ width: 1, height: 1 }} }
+	entries := [PaintOrderEntry{ box: &box, opacity: 1 }]
+	mut recorder := PaintPhaseCommandRecorder{ include_line_box_debug: false }
+	mut arena := platform.new_arena('borrowed recording lines')
+	entry := arena.enter()
+	commands := box.record_paint_commands_for_entries(entries, []bool{}, mut recorder)
+	arena.leave(entry)
+	used := arena.usage().used
+	assert commands.len == 0
+	$if prealloc {
+		// Atomic-only lines publish no commands. Copying each wide TextLine or
+		// reserving an empty outline vector for every line exceeds this bound.
+		assert used < 4096, '${used} bytes for 512 atomic-only lines'
+	}
+	arena.release()
+}
+
+fn test_sparse_inline_outlines_preserve_border_text_order_and_previous_commands() {
+	mut box := BlockBox{ visible: true, width: 100, height: 60 }
+	for index in 0 .. 3 {
+		box.lines << TextLine{
+			fragments: [TextFragment{
+				text:             ['first', 'middle', 'last'][index]
+				x:                0
+				y:                f64(index * 20)
+				width:            40
+				height:           16
+				color:            css.Color{ a: 255 }
+				inline_node_id:   index + 1
+				background_color: css.Color{ r: u8(50 + index), a: 255 }
+				outline_width:    if index == 1 { 1.0 } else { 0.0 }
+				outline_color:    css.Color{ b: 255, a: 255 }
+				outline_style:    painting.LineStyle.solid
+			}]
+		}
+	}
+	entries := [PaintOrderEntry{ box: &box, opacity: 1 }]
+	mut recorder := PaintPhaseCommandRecorder{ include_line_box_debug: false }
+	commands := box.record_paint_commands_for_entries(entries, []bool{}, mut recorder)
+	mut backgrounds := []int{}
+	mut texts := []int{}
+	mut outlines := []int{}
+	for index, command in commands {
+		if command.kind == 'draw_text' { texts << index }
+		if command.color == 'rgb(0 0 255)' { outlines << index }
+		if command.kind == 'fill_rect' && command.color.starts_with('rgb(5') {
+			backgrounds << index
+		}
+	}
+	assert backgrounds.len == 3
+	assert texts.len == 3
+	assert outlines.len > 0
+	assert backgrounds.last() < texts[0]
+	assert texts[0] < outlines[0]
+	assert outlines.last() < texts[1]
+	assert texts[1] < texts[2]
+	assert commands[texts[0]].text == 'first'
+	assert commands[texts[1]].text == 'middle'
+	assert commands[texts[2]].text == 'last'
+	box.lines[1].fragments = [TextFragment{ ...box.lines[1].fragments[0], text: 'changed', outline_width: 0 }]
+	updated := box.record_paint_commands_for_entries(entries, []bool{}, mut recorder)
+	assert updated.any(it.text == 'changed')
+	assert commands[texts[1]].text == 'middle'
+	assert commands[outlines[0]].color == 'rgb(0 0 255)'
 }

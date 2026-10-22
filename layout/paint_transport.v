@@ -2632,8 +2632,9 @@ fn (b &BlockBox) record_paint_commands_for_entries(entries []PaintOrderEntry, se
 			}
 			set_force_dark_role_for_range(mut commands, marker_start, commands.len, .list_symbol)
 		}
-		mut inline_outlines := [][]PaintCommand{cap: box.lines.len}
-		for line in box.lines {
+		mut inline_outlines := [][]PaintCommand{}
+		for line_index in 0 .. box.lines.len {
+			line := unsafe { &box.lines[line_index] }
 			fragment_commands := if line.box_decorations.len > 0 {
 				mut decorated := line.box_decorations.clone()
 				decorated << line.fragments
@@ -2642,13 +2643,19 @@ fn (b &BlockBox) record_paint_commands_for_entries(entries []PaintOrderEntry, se
 				inline_fragment_commands(line.fragments, opacity)
 			}
 			commands << fragment_commands.decorations
-			inline_outlines << fragment_commands.outlines
+			if fragment_commands.outlines.len > 0 {
+				if inline_outlines.len == 0 {
+					inline_outlines = [][]PaintCommand{len: box.lines.len}
+				}
+				inline_outlines[line_index] = fragment_commands.outlines
+			}
 		}
-		for line_index, line in box.lines {
+		for line_index in 0 .. box.lines.len {
+			line := unsafe { &box.lines[line_index] }
 			// Inline outlines and glyphs retain their per-line order after every
 			// line's border phase has completed. This keeps a following line's
 			// border from covering the previous line's outline at overlaps.
-			commands << inline_outlines[line_index]
+			if inline_outlines.len > 0 { commands << inline_outlines[line_index] }
 			append_text_fragment_commands_with_debug(mut commands, line.fragments, opacity,
 				recorder.include_line_box_debug)
 		}
