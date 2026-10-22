@@ -15,8 +15,7 @@ fn retained_flow_check_full_rebuild(mut document dom.Document) {
 }
 
 fn test_clean_comment_flow_branches_keep_boxes_text_and_dom_boundaries() {
-	mut document := html.parse_document(
-		'<!doctype html><style>.collapsed .body{display:none}</style>
+	mut document := html.parse_document('<!doctype html><style>.collapsed .body{display:none}</style>
 	<div id="changed" class="collapsed"><a id="toggle">expand</a><p class="body">revealed</p></div>
 	<section id="stable">' +
 		'<div><p>unchanged <strong>comment</strong></p></div>'.repeat(96) + '</section>')
@@ -32,7 +31,8 @@ fn test_clean_comment_flow_branches_keep_boxes_text_and_dom_boundaries() {
 		document.update_layout(.event_handler_handle_mouse_up)
 		assert retained_flow_handle(stable) == before
 		assert voidptr(stable.as_node().unsafe_layout_node()?) == voidptr(mirror)
-		commands := display_list_commands(document.record_display_list()?)
+		recording := document.record_display_list()?
+		commands := display_list_commands(recording)
 		assert commands.any(it.kind == 'draw_text' && it.text == 'revealed') == (class_name == '')
 		retained_flow_check_full_rebuild(mut document)
 		assert retained_flow_handle(stable) != before
@@ -51,7 +51,8 @@ fn test_retained_flow_tracks_inherited_paint_and_reparented_geometry() {
 	changed.set_inner_html('<p>new branch</p>')!
 	document.update_layout(.debugging)
 	assert retained_flow_handle(stable) == before
-	commands := display_list_commands(document.record_display_list()?)
+	recording := document.record_display_list()?
+	commands := display_list_commands(recording)
 	assert commands.any(it.kind == 'draw_text' && it.text == 'inherited'
 		&& it.color == 'rgb(255 0 0)')
 	mut right := document.get_element_by_id('right')?
@@ -73,7 +74,8 @@ fn test_retained_flow_replays_counter_order_before_generated_following_content()
 	changed.set_inner_html('<p class="count">new counter</p>')!
 	document.update_layout(.debugging)
 	assert retained_flow_handle(stable) == before
-	commands := display_list_commands(document.record_display_list()?)
+	recording := document.record_display_list()?
+	commands := display_list_commands(recording)
 	assert commands.any(it.kind == 'draw_text' && it.text == '3')
 	retained_flow_check_full_rebuild(mut document)
 }
@@ -85,8 +87,7 @@ fn test_retained_flow_keeps_special_subtrees_on_the_complete_builder_path() {
 		'<span class="generated">pseudo</span>',
 		'<input value="control">',
 	] {
-		mut document := html.parse_document(
-			'<!doctype html><style>.generated::before{content:"before"}</style><div id="changed"></div><div id="special">' +
+		mut document := html.parse_document('<!doctype html><style>.generated::before{content:"before"}</style><div id="changed"></div><div id="special">' +
 			content + '</div>')
 		_ = layout_document_typed_in_viewport(document, 400, 300)
 		special := document.get_element_by_id('special')?
@@ -119,7 +120,8 @@ fn test_clean_action_forms_retain_flow_boxes_and_rebuild_when_their_content_chan
 	action.set_inner_html('<span>updated action</span>')!
 	document.update_layout(.debugging)
 	assert retained_flow_handle(stable) != before
-	assert display_list_commands(document.record_display_list()?).any(it.text == 'updated action')
+	recording := document.record_display_list()?
+	assert display_list_commands(recording).any(it.text == 'updated action')
 	retained_flow_check_full_rebuild(mut document)
 }
 
@@ -176,7 +178,8 @@ fn test_unchanged_flow_validation_reuses_its_snapshot_and_rechecks_changed_style
 	document.update_layout(.debugging)
 	current := unsafe { &Node(retained_flow_handle(stable)) }
 	assert voidptr(current.flow_validation_cache_) != voidptr(cache)
-	assert display_list_commands(document.record_display_list()?).any(it.text == 'comment'
+	recording := document.record_display_list()?
+	assert display_list_commands(recording).any(it.text == 'comment'
 		&& it.color == 'rgb(255 0 0)')
 	retained_flow_check_full_rebuild(mut document)
 }
