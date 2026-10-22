@@ -15554,7 +15554,7 @@ fn dom_style_value_from_value_logic(value StyleValue) &dom.StyleValue {
 		// but the DOM-side opaque value must retain the original shorthand text
 		// so the longhand can resolve var()/env()/attr() during the cascade.
 		css_text: if value is PendingSubstitutionStyleValue {
-			value.original_shorthand_value_ref().serialize(.normal)
+			serialize_dom_style_value(value.original_shorthand_value_ref())
 		} else {
 			serialize_dom_style_value(value)
 		}
@@ -15564,17 +15564,14 @@ fn dom_style_value_from_value_logic(value StyleValue) &dom.StyleValue {
 
 fn serialize_dom_style_value(value StyleValue) string {
 	$if prealloc {
-		if value is BasicShapeStyleValue {
-			shape := value.basic_shape()
-			if shape is BasicShapePath && shape.path_instructions.len >= 256 {
-				mut scratch := platform.begin_thread_scratch('SVG path style serialization')
-				serialized := value.serialize(.normal)
-				scratch.leave()
-				owned := serialized.clone()
-				scratch.finish()
-				return owned
-			}
-		}
+		// Only the final text belongs to the opaque DOM value. Builders,
+		// escaped components and shorthand probes can retire immediately.
+		scratch := platform.begin_thread_scratch('CSS style serialization')
+		serialized := value.serialize(.normal)
+		scratch.leave()
+		owned := serialized.clone()
+		scratch.finish()
+		return owned
 	}
 	return value.serialize(.normal)
 }
