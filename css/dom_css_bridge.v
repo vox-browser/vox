@@ -32,7 +32,7 @@ fn computed_properties_to_dom(computed &ComputedProperties) &dom.CSSComputedProp
 			color_scheme_only = value.only()
 		}
 	}
-	return &dom.CSSComputedProperties_{
+	mut result := &dom.CSSComputedProperties_{
 		display_: dom.CSSDisplay_{
 			is_none_: display.is_none()
 			is_list_item_: display.is_list_item()
@@ -68,14 +68,17 @@ fn computed_properties_to_dom(computed &ComputedProperties) &dom.CSSComputedProp
 		font_weight_: computed.font_weight()
 		math_depth_: computed.math_depth()
 		math_style_: math_style_to_dom(computed.math_style())
-		view_transition_name_: computed.view_transition_name()
-		anchor_names_: computed.anchor_names()
-		color_schemes_: color_schemes
 		color_scheme_only_: color_scheme_only
 		has_casing_text_transform_: computed.text_transform() in [.uppercase, .lowercase, .capitalize]
 		attempted_pseudo_class_matches_: attempted_pseudo_class_matches_to_dom(computed)
 		css_handle: voidptr(computed)
 	}
+	result.set_rare_properties(dom.CSSComputedPropertiesRareData{
+		view_transition_name: computed.view_transition_name()
+		anchor_names: computed.anchor_names()
+		color_schemes: color_schemes
+	})
+	return result
 }
 
 fn attempted_pseudo_class_matches_to_dom(computed &ComputedProperties) u8 {

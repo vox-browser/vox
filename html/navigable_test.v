@@ -218,18 +218,17 @@ fn test_force_dark_settings_inherit_propagate_and_honor_document_opt_outs() {
 	assert parent_model.force_dark_applies_to_active_document()
 
 	mut root := parent_document.document_element() or { panic('missing root') }
-	root.set_computed_properties(none, &dom.CSSComputedProperties_{
-		color_schemes_: ['dark']
-	})
+	mut dark_properties := &dom.CSSComputedProperties_{}
+	dark_properties.set_rare_properties(dom.CSSComputedPropertiesRareData{ color_schemes: ['dark'] })
+	root.set_computed_properties(none, dark_properties)
 	mut root_node := root.as_node()
 	root_node.set_layout_node(&dom.LayoutNode{
 		dom_node_: root_node
 	})
 	assert parent_model.active_document_opts_out_of_force_dark()
-	root.set_computed_properties(none, &dom.CSSComputedProperties_{
-		color_schemes_: ['light']
-		color_scheme_only_: true
-	})
+	mut light_properties := &dom.CSSComputedProperties_{ color_scheme_only_: true }
+	light_properties.set_rare_properties(dom.CSSComputedPropertiesRareData{ color_schemes: ['light'] })
+	root.set_computed_properties(none, light_properties)
 	assert parent_model.active_document_opts_out_of_force_dark()
 
 	mut child_document := dom.Document.create(dom.URL{value: 'https://example.test/frame'})

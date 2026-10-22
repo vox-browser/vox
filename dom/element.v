@@ -510,16 +510,12 @@ pub mut:
 	opacity_                        f32 = 1.0
 	visibility_                     CSSVisibility_ = .visible
 	font_weight_                    f64 = 400
-	scrollbar_width_                string = 'auto'
 	scroll_behavior_                ScrollBehavior = .auto_
 	scroll_snap_strictness_none_ bool = true
 	client_border_top_width_        f64
 	client_border_left_width_       f64
 	math_depth_                     int
 	math_style_                     CSSMathStyle_ = .normal
-	view_transition_name_           ?string
-	anchor_names_                   []string
-	color_schemes_                  []string
 	color_scheme_only_              bool
 	has_casing_text_transform_      bool
 	attempted_pseudo_class_matches_ u8
@@ -527,6 +523,8 @@ pub mut:
 	// The CSS module (which owns the type) sets/reads it via unsafe cast; dom cannot name the type
 	// because it cannot import css. See css/dom_css_bridge.v.
 	css_handle voidptr = unsafe { nil }
+mut:
+	rare_properties_ &CSSComputedPropertiesRareData = unsafe { nil }
 }
 
 pub fn (c &CSSComputedProperties_) display() CSSDisplay_ {
@@ -580,15 +578,15 @@ pub fn (c &CSSComputedProperties_) math_style() CSSMathStyle_ {
 }
 
 pub fn (c &CSSComputedProperties_) view_transition_name() ?string {
-	return c.view_transition_name_
+	return c.rare_properties().view_transition_name
 }
 
 pub fn (c &CSSComputedProperties_) anchor_names() []string {
-	return c.anchor_names_.clone()
+	return c.rare_properties().anchor_names.clone()
 }
 
 pub fn (c &CSSComputedProperties_) color_schemes() []string {
-	return c.color_schemes_.clone()
+	return c.rare_properties().color_schemes.clone()
 }
 
 pub fn (c &CSSComputedProperties_) color_scheme_only() bool {

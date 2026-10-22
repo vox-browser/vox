@@ -12,7 +12,7 @@ pub fn propagate_scrollbar_width_to_viewport(root_element &Element, mut viewport
 	// Called while constructing the layout tree, after the root element's
 	// computed values have been installed.
 	properties := root_element.el_computed_properties() or { return }
-	viewport.scrollbar_width = properties.scrollbar_width_
+	viewport.scrollbar_width = properties.scrollbar_width()
 }
 
 // https://drafts.csswg.org/resize-observer-1/#calculate-depth-for-node
