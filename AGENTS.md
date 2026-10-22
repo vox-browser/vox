@@ -2531,6 +2531,16 @@ evidence](docs/translation-audit/NATIVE_MEDIA_WHEEL_RAW_HANDLER.md).
   Focused exact;broad passed;prior carry0;entire independent C/493builtins/176protected/120native/37headers/exactargs.
   Accepted control173;broad baseline173;carry0;isolated173app/GC1+override2.
   Complete feature retained;all original failed receipts remain. Test-helper compile failures retained;canonical/GUI/foreign preserved;Chrome parity open.
+  Identifier escape entry round174 (`e4d15429`):one whole original runtime hunk/one CSS path/no rebase or projection.
+  Ten exact cases/65,249assertions beforeBoehm/finalBoehm/finalnone;common60/config.
+  Declared512complete public passes/eight repeated CSS sources:local -1.175040%/2wins/all6actual0;zero pagecredit.
+  Fullprocess profiles521fixturecalls;tokenize/token-consumption/decoder equal;final escape-lookahead row unknown;no reset/filter.
+  Original expected-row audit/controller failures retained;both actual profiles0;re-extraction only/no replay/no numeric helper decrease claimed.
+  Fresh page 16,426,206,907→16,410,382,871;17/30wins;point 15,824,036.
+  Paired CI[-3,599,795.5,18,831,336.5];repeatable credit 0;all60retained;seed174/30000bootstrap;first preparation1/2/1.
+  Focused exact;broad passed;prior carry0;entire independent C/493builtins/176protected/120native/37headers/exactargs.
+  Accepted control174;broad baseline174;carry0;isolated174app/GC1+override2.
+  Complete feature retained;all original failed receipts remain.canonical/GUI/foreign preserved;Chrome parity open.
 - Outside instruction-count optimization, run broad regression suites once per
   ten completed fixes, not after every fix.
   Broad suites include full translation/package test batches, the full LibJS AST

@@ -16852,6 +16852,115 @@ expensive jobs retain the external memory guard and frozen compiler arguments.
 Chrome parity remains unknown pending equivalent content, start and paint
 submission endpoints. Independent Root receives no coverage or performance credit.
 
+## Check the escape prefix before identifier lookahead
+
+Round 174 applies the complete `e4d15429` feature to accepted 173.
+`consume_an_ident_sequence_with_escape_flag` checks for a reverse solidus
+before invoking the unchanged cursor-twin escape validation. Ordinary name
+terminators retain the cursor state needed by the existing reconsume path.
+The original Git hunk reconstructs the whole author file and applies exactly
+to frozen 173, without context rebase or runtime projection. Independent Root
+changes are excluded. Decoder, filtering, input arenas and other consumers stay
+unchanged.
+
+Two new tests and eight retained identifier/comment tests pass
+**65,249 assertions**
+per configuration: before/Boehm, final/Boehm and final/no-GC C-O2. Tests cover
+non-escape terminators, Unicode and byte cursors, source positions, escape and
+EOF spelling, newline escapes and malformed UTF-8. The retained scalar oracle
+keeps its original escape-entry logic. Common 12 cases pass 60 assertions per
+configuration; accepted173's common control is reused. Implementation and
+focused tests share one commit. Test bodies require no compatibility changes.
+
+The performance fixture was declared before builds or counters and stayed
+unchanged throughout validation. Each observation completes 512 public
+tokenization passes across eight CSS sources, each repeated eight times.
+The measured path includes decoding, filtering, arena and token ownership,
+complete tokenization and token-field checksums. Setup, reference, eight warmups,
+forced GC and the final checksum assertion stay outside the hardware counter.
+All six fixed alternating observations exit zero with checksum
+**557,952,000**. Medians are
+**766,464,819 → 757,458,547** retired instructions,
+**-1.17504049%**, **2/3 wins**. No sample is discarded,
+replayed or added. The local gate permits normal native/profile/page work;
+local savings earn zero page credit.
+
+C-only frontend generation exits zero and its output is reused. Strict C allows
+only `css__Tokenizer_consume_an_ident_sequence_with_escape_flag` to change. The entire independent normal
+program matches, with no added or removed functions. All other function bodies,
+records, globals and resources authenticate after established compiler/embed,
+source assertion-line and byte-identical helper-order normalization. Checks cover
+493 builtins, 176 protected routines, 120 native inputs, 37 quoted headers and
+exact native arguments. Native compilation, signing, persistence and frozen
+library smoke actually exit zero. Policy stays C-O2/Boehm/default marker 1,
+the same automatic 4 GiB hint, no `-prod` and no global `-prealloc`.
+
+Both full-process C-O1/Boehm/one-marker/no-inline profiles exit zero. Generated
+C proves profiling stays enabled throughout main without filtering or reset.
+Setup and reference/warmup work remain in these diagnostic counts:
+
+| Function | Before calls | Final calls |
+| --- | ---: | ---: |
+| `css__opt174_complete_public_tokenization` | 521 | 521 |
+| `css__Tokenizer__static__tokenize` | 4,221 | 4,221 |
+| `css__Tokenizer_consume_a_token` | 765,748 | 765,748 |
+| `css__Tokenizer_start_of_input_stream_twin` | 269,874 | unknown |
+| `css__decode_css_input` | 4,221 | 4,221 |
+| `css__Tokenizer_consume_an_ident_sequence_with_escape_flag` | 270,430 | 270,430 |
+
+
+Complete public fixture invocations remain 521; public tokenization, token
+consumption, identifier consumption and decoding counts stay equal. The before
+cursor-twin row reports 269,874 calls; the final row is absent and remains
+unknown. No numeric decrease is established. These are full-process reports; setup calls
+outside the fixture are retained and their individual origins remain unknown.
+Missing rows stay unknown. The original audit expected a final helper row and
+exited one after both actual profile runs exited zero. Its failed evidence and
+controller receipts are retained under `opt174-profile-audit-failed-attempt-1`.
+Re-extraction repairs that audit without replaying the profiles; the original
+page/completion controllers and dependent diagnostic gate failures stay recorded.
+Profile counts and timings earn zero page credit.
+
+The matching regular binaries use the fixed 359-body cache, frozen libraries,
+1024×768 document viewport and
+`native.scopes.navigation_to_first_document_paint[0]`. Thirty alternating pairs
+produce medians **16,426,206,907 → 16,410,382,871**
+instructions, observed saving **15,824,036
+(-0.09633408%)**, **17/30 wins**.
+The paired-median saving is **6,293,491.5**; 30,000 paired
+bootstrap resamples/seed174 give 95% interval **[-3,599,795.5, 18,831,336.5]**.
+Repeatable page credit is **0**, requiring a strictly positive lower
+bound. Existing integration acceptance requires a positive point and nonnegative
+upper interval, and is **True**. Historical medians are not subtracted.
+
+All 60 primaries are retained: **60 actual PNGs**, **0 explicitly
+recovered counter-only observations**, **0 startup retry receipts**.
+Every first-primary preparation is 1 installation/2 geometry/1 paint. Later
+refreshes (0) and external foreground transitions
+(1) remain separate. Available PNGs
+are 1024×768 and exact outside the predeclared skeleton bands. Unknown exits
+and missing captures remain explicit; completed primaries are never rerun.
+
+The focused viewport is exact. Prior observed carry **0** plus this
+round's positive matching point gives **15,824,036** for the 5M gate:
+**passed**.
+Six actual zero-exit jobs cover 87 selected cases in both GC modes/174 executions. All 19 screenshots complete, 16 exact; known differences stay 13/1,341/1,994 pixels.
+Capture receipts bind actual exits, sources, binaries, viewport, libraries,
+fonts, logs and PNG hashes.
+Isolated **`/Users/alex/code/vox2/Build/v/Vox-opt174.app`** has actual signing/verification/smoke/GC
+successes. Its instruction text matches the measured image. Default marker 1
+and override 2 both collect. Canonical executables, GUI browsers, newer bundles
+and foreign work are preserved. Accepted control is **174**;
+broad baseline **174**; observed carry
+**0**.
+The complete feature remains committed in Root. Its frozen result does not cover independent Root changes.
+Durable C/profile/focused/local/broad/binary hashes are recorded in
+`Build/v/instruction-opt174-durable-archives.json`.
+The required old compiler does not support current V's memory-limit flag;
+expensive jobs retain the external memory guard and frozen compiler arguments.
+Chrome parity remains unknown pending equivalent content, start and paint
+submission endpoints. Independent Root receives no coverage or performance credit.
+
 ## Causes and changes
 
 - The V 0.5.2 compatibility compiler's `-prod` Boehm code repeatedly snapshots
