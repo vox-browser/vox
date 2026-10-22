@@ -17,8 +17,8 @@ in its protocol. Explicit historic Boehm comparisons require `--allocator boehm`
 ### Corrected arena before/after: 50 MB remains unmet
 
 The latest V-source comparison, three alternating optimized pairs, measures
-**66.60 → 59.79 MB**, a **10.23% reduction**. The largest candidate settled
-observation is **59,901,368 bytes**. The **50,000,000-byte limit still fails**.
+**60.05 → 58.15 MB**, a **3.16% reduction**. The largest candidate settled
+observation is **58,689,000 bytes**. The **50,000,000-byte limit still fails**.
 All six raw viewport images match, all frozen-input guards pass, and all six script audits
 report no page runtime, sources, source bytes or preloaded scripts.
 
@@ -58,6 +58,7 @@ report no page runtime, sources, source bytes or preloaded scripts.
 | Compact computed enums, serialization and property workspaces | 69,666,232 bytes | 68,617,656 bytes | 1.51% |
 | Selector/CSSOM inputs, layout counters and text shaping | 68,535,712 bytes | 66,913,696 bytes | 2.37% |
 | Static SVG pictures, XML/CSS ownership and PNG scratch retirement | 66,602,424 bytes | 59,786,656 bytes | 10.23% |
+| Shared SVG sources, compact DOM/layout owners and CSS parser intermediates | 60,048,752 bytes | 58,148,256 bytes | 3.16% |
 
 Each row is its own three-pair cohort; these are aggregate build comparisons,
 not isolated savings attributed to individual commits. Evidence is in
@@ -78,7 +79,8 @@ not isolated savings attributed to individual commits. Evidence is in
 `arena-selector-paint-paired/`, `arena-scalar-plan-paired/`,
 `arena-custom-cascade-paired/`, `arena-paint-box-paired/` and
 `arena-stylesheet-workspace-paired/`, `arena-property-workspaces-paired/` and
-`arena-layout-shaping-paired/` and `arena-static-svg-backgrounds-paired/`, including summaries, raw
+`arena-layout-shaping-paired/`, `arena-static-svg-backgrounds-paired/` and
+`arena-combined-ownership-paired/`, including summaries, raw
 process samples, allocator checks, resource audits and captures. Matching
 `arena-{text,svg}-lifetimes-build-protocol.json` files pin the complete source
 inputs, current compiler and native libraries. The static-paint and SVG protocols are
@@ -157,6 +159,29 @@ checks pass with preallocation, poisoned arenas and Boehm; see
 excluded from RAM acceptance. Later shared SVG source bytes and compact DOM
 layout records are excluded from this executable and receive no memory credit
 in this cohort.
+
+The combined-ownership cohort freezes committed source `7865754b`. It includes
+shared immutable SVG source bytes, shared DOM layout callbacks, optional box
+models and rare DOM fields, and retired CSS component and selector inspection
+intermediates. Its aggregate saving is measured against the preceding static
+SVG executable; the fresh paired baseline differs slightly from that earlier
+cohort. All six viewport images retain the same `acbc323e…` hash above, the
+40-file cache digest is unchanged, and all no-script audits pass. Candidate
+launch peaks are 466.29–468.36 MB, so the launch budget also fails.
+
+`arena-combined-ownership-build-protocol.json` pins the complete source,
+compiler, generated C and native providers. Executable SHA-256 is
+`10d68f54a6fc3391ffc3961771dd41d1f86bd125f003e56a8df70d292a853e14`;
+generated C SHA-256 is
+`cc8f17ae86d01a8930e7da823c50a3e4a2c5e49e069b4ea8d9c4fd0e1ffb6717`.
+The summary SHA-256 is
+`4dd606714aaaf9b37a3db57641176c7fd094cf84f850de1d27aa441266178d39`.
+The separate poisoned-arena Wikipedia run, eight exact SVG comparisons, and
+207 focused checks in each of prealloc, poisoned prealloc and Boehm pass.
+See `arena-combined-ownership-validation-result.json`,
+`arena-combined-ownership-svg-validation/result.json` and
+`combined-ownership-prelaunch-verification.json`. Later typed CSS exports,
+inline layout and font workspaces, and image-pixel sharing are excluded.
 
 Replacing the native wrapper and Metal providers with the completed code from
 `57c321a4`, while preserving the V executable byte for byte, measured
