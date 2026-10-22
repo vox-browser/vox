@@ -1,2240 +1,2246 @@
 // Named character reference data for the HTML tokenizer.
-// Generated from Ladybird's Libraries/LibWeb/HTML/Parser/Entities.json (WHATWG named character
-// references). Maps each entity name (WITHOUT the leading '&') to its Unicode code point(s).
-// Ladybird compiles this into a DAFSA at build time; here we use a plain map plus a sorted name index
-// (see entities.v), which is behaviourally equivalent for tokenization.
+// Generated from Ladybird Libraries/LibWeb/HTML/Parser/Entities.json.
+// Names exclude the leading ampersand and are sorted bytewise for binary search.
 module html
 
-const named_char_ref_codepoints = {
-	'AElig':                            [u32(0xC6)]
-	'AElig;':                           [u32(0xC6)]
-	'AMP':                              [u32(0x26)]
-	'AMP;':                             [u32(0x26)]
-	'Aacute':                           [u32(0xC1)]
-	'Aacute;':                          [u32(0xC1)]
-	'Abreve;':                          [u32(0x102)]
-	'Acirc':                            [u32(0xC2)]
-	'Acirc;':                           [u32(0xC2)]
-	'Acy;':                             [u32(0x410)]
-	'Afr;':                             [u32(0x1D504)]
-	'Agrave':                           [u32(0xC0)]
-	'Agrave;':                          [u32(0xC0)]
-	'Alpha;':                           [u32(0x391)]
-	'Amacr;':                           [u32(0x100)]
-	'And;':                             [u32(0x2A53)]
-	'Aogon;':                           [u32(0x104)]
-	'Aopf;':                            [u32(0x1D538)]
-	'ApplyFunction;':                   [u32(0x2061)]
-	'Aring':                            [u32(0xC5)]
-	'Aring;':                           [u32(0xC5)]
-	'Ascr;':                            [u32(0x1D49C)]
-	'Assign;':                          [u32(0x2254)]
-	'Atilde':                           [u32(0xC3)]
-	'Atilde;':                          [u32(0xC3)]
-	'Auml':                             [u32(0xC4)]
-	'Auml;':                            [u32(0xC4)]
-	'Backslash;':                       [u32(0x2216)]
-	'Barv;':                            [u32(0x2AE7)]
-	'Barwed;':                          [u32(0x2306)]
-	'Bcy;':                             [u32(0x411)]
-	'Because;':                         [u32(0x2235)]
-	'Bernoullis;':                      [u32(0x212C)]
-	'Beta;':                            [u32(0x392)]
-	'Bfr;':                             [u32(0x1D505)]
-	'Bopf;':                            [u32(0x1D539)]
-	'Breve;':                           [u32(0x2D8)]
-	'Bscr;':                            [u32(0x212C)]
-	'Bumpeq;':                          [u32(0x224E)]
-	'CHcy;':                            [u32(0x427)]
-	'COPY':                             [u32(0xA9)]
-	'COPY;':                            [u32(0xA9)]
-	'Cacute;':                          [u32(0x106)]
-	'Cap;':                             [u32(0x22D2)]
-	'CapitalDifferentialD;':            [u32(0x2145)]
-	'Cayleys;':                         [u32(0x212D)]
-	'Ccaron;':                          [u32(0x10C)]
-	'Ccedil':                           [u32(0xC7)]
-	'Ccedil;':                          [u32(0xC7)]
-	'Ccirc;':                           [u32(0x108)]
-	'Cconint;':                         [u32(0x2230)]
-	'Cdot;':                            [u32(0x10A)]
-	'Cedilla;':                         [u32(0xB8)]
-	'CenterDot;':                       [u32(0xB7)]
-	'Cfr;':                             [u32(0x212D)]
-	'Chi;':                             [u32(0x3A7)]
-	'CircleDot;':                       [u32(0x2299)]
-	'CircleMinus;':                     [u32(0x2296)]
-	'CirclePlus;':                      [u32(0x2295)]
-	'CircleTimes;':                     [u32(0x2297)]
-	'ClockwiseContourIntegral;':        [u32(0x2232)]
-	'CloseCurlyDoubleQuote;':           [u32(0x201D)]
-	'CloseCurlyQuote;':                 [u32(0x2019)]
-	'Colon;':                           [u32(0x2237)]
-	'Colone;':                          [u32(0x2A74)]
-	'Congruent;':                       [u32(0x2261)]
-	'Conint;':                          [u32(0x222F)]
-	'ContourIntegral;':                 [u32(0x222E)]
-	'Copf;':                            [u32(0x2102)]
-	'Coproduct;':                       [u32(0x2210)]
-	'CounterClockwiseContourIntegral;': [u32(0x2233)]
-	'Cross;':                           [u32(0x2A2F)]
-	'Cscr;':                            [u32(0x1D49E)]
-	'Cup;':                             [u32(0x22D3)]
-	'CupCap;':                          [u32(0x224D)]
-	'DD;':                              [u32(0x2145)]
-	'DDotrahd;':                        [u32(0x2911)]
-	'DJcy;':                            [u32(0x402)]
-	'DScy;':                            [u32(0x405)]
-	'DZcy;':                            [u32(0x40F)]
-	'Dagger;':                          [u32(0x2021)]
-	'Darr;':                            [u32(0x21A1)]
-	'Dashv;':                           [u32(0x2AE4)]
-	'Dcaron;':                          [u32(0x10E)]
-	'Dcy;':                             [u32(0x414)]
-	'Del;':                             [u32(0x2207)]
-	'Delta;':                           [u32(0x394)]
-	'Dfr;':                             [u32(0x1D507)]
-	'DiacriticalAcute;':                [u32(0xB4)]
-	'DiacriticalDot;':                  [u32(0x2D9)]
-	'DiacriticalDoubleAcute;':          [u32(0x2DD)]
-	'DiacriticalGrave;':                [u32(0x60)]
-	'DiacriticalTilde;':                [u32(0x2DC)]
-	'Diamond;':                         [u32(0x22C4)]
-	'DifferentialD;':                   [u32(0x2146)]
-	'Dopf;':                            [u32(0x1D53B)]
-	'Dot;':                             [u32(0xA8)]
-	'DotDot;':                          [u32(0x20DC)]
-	'DotEqual;':                        [u32(0x2250)]
-	'DoubleContourIntegral;':           [u32(0x222F)]
-	'DoubleDot;':                       [u32(0xA8)]
-	'DoubleDownArrow;':                 [u32(0x21D3)]
-	'DoubleLeftArrow;':                 [u32(0x21D0)]
-	'DoubleLeftRightArrow;':            [u32(0x21D4)]
-	'DoubleLeftTee;':                   [u32(0x2AE4)]
-	'DoubleLongLeftArrow;':             [u32(0x27F8)]
-	'DoubleLongLeftRightArrow;':        [u32(0x27FA)]
-	'DoubleLongRightArrow;':            [u32(0x27F9)]
-	'DoubleRightArrow;':                [u32(0x21D2)]
-	'DoubleRightTee;':                  [u32(0x22A8)]
-	'DoubleUpArrow;':                   [u32(0x21D1)]
-	'DoubleUpDownArrow;':               [u32(0x21D5)]
-	'DoubleVerticalBar;':               [u32(0x2225)]
-	'DownArrow;':                       [u32(0x2193)]
-	'DownArrowBar;':                    [u32(0x2913)]
-	'DownArrowUpArrow;':                [u32(0x21F5)]
-	'DownBreve;':                       [u32(0x311)]
-	'DownLeftRightVector;':             [u32(0x2950)]
-	'DownLeftTeeVector;':               [u32(0x295E)]
-	'DownLeftVector;':                  [u32(0x21BD)]
-	'DownLeftVectorBar;':               [u32(0x2956)]
-	'DownRightTeeVector;':              [u32(0x295F)]
-	'DownRightVector;':                 [u32(0x21C1)]
-	'DownRightVectorBar;':              [u32(0x2957)]
-	'DownTee;':                         [u32(0x22A4)]
-	'DownTeeArrow;':                    [u32(0x21A7)]
-	'Downarrow;':                       [u32(0x21D3)]
-	'Dscr;':                            [u32(0x1D49F)]
-	'Dstrok;':                          [u32(0x110)]
-	'ENG;':                             [u32(0x14A)]
-	'ETH':                              [u32(0xD0)]
-	'ETH;':                             [u32(0xD0)]
-	'Eacute':                           [u32(0xC9)]
-	'Eacute;':                          [u32(0xC9)]
-	'Ecaron;':                          [u32(0x11A)]
-	'Ecirc':                            [u32(0xCA)]
-	'Ecirc;':                           [u32(0xCA)]
-	'Ecy;':                             [u32(0x42D)]
-	'Edot;':                            [u32(0x116)]
-	'Efr;':                             [u32(0x1D508)]
-	'Egrave':                           [u32(0xC8)]
-	'Egrave;':                          [u32(0xC8)]
-	'Element;':                         [u32(0x2208)]
-	'Emacr;':                           [u32(0x112)]
-	'EmptySmallSquare;':                [u32(0x25FB)]
-	'EmptyVerySmallSquare;':            [u32(0x25AB)]
-	'Eogon;':                           [u32(0x118)]
-	'Eopf;':                            [u32(0x1D53C)]
-	'Epsilon;':                         [u32(0x395)]
-	'Equal;':                           [u32(0x2A75)]
-	'EqualTilde;':                      [u32(0x2242)]
-	'Equilibrium;':                     [u32(0x21CC)]
-	'Escr;':                            [u32(0x2130)]
-	'Esim;':                            [u32(0x2A73)]
-	'Eta;':                             [u32(0x397)]
-	'Euml':                             [u32(0xCB)]
-	'Euml;':                            [u32(0xCB)]
-	'Exists;':                          [u32(0x2203)]
-	'ExponentialE;':                    [u32(0x2147)]
-	'Fcy;':                             [u32(0x424)]
-	'Ffr;':                             [u32(0x1D509)]
-	'FilledSmallSquare;':               [u32(0x25FC)]
-	'FilledVerySmallSquare;':           [u32(0x25AA)]
-	'Fopf;':                            [u32(0x1D53D)]
-	'ForAll;':                          [u32(0x2200)]
-	'Fouriertrf;':                      [u32(0x2131)]
-	'Fscr;':                            [u32(0x2131)]
-	'GJcy;':                            [u32(0x403)]
-	'GT':                               [u32(0x3E)]
-	'GT;':                              [u32(0x3E)]
-	'Gamma;':                           [u32(0x393)]
-	'Gammad;':                          [u32(0x3DC)]
-	'Gbreve;':                          [u32(0x11E)]
-	'Gcedil;':                          [u32(0x122)]
-	'Gcirc;':                           [u32(0x11C)]
-	'Gcy;':                             [u32(0x413)]
-	'Gdot;':                            [u32(0x120)]
-	'Gfr;':                             [u32(0x1D50A)]
-	'Gg;':                              [u32(0x22D9)]
-	'Gopf;':                            [u32(0x1D53E)]
-	'GreaterEqual;':                    [u32(0x2265)]
-	'GreaterEqualLess;':                [u32(0x22DB)]
-	'GreaterFullEqual;':                [u32(0x2267)]
-	'GreaterGreater;':                  [u32(0x2AA2)]
-	'GreaterLess;':                     [u32(0x2277)]
-	'GreaterSlantEqual;':               [u32(0x2A7E)]
-	'GreaterTilde;':                    [u32(0x2273)]
-	'Gscr;':                            [u32(0x1D4A2)]
-	'Gt;':                              [u32(0x226B)]
-	'HARDcy;':                          [u32(0x42A)]
-	'Hacek;':                           [u32(0x2C7)]
-	'Hat;':                             [u32(0x5E)]
-	'Hcirc;':                           [u32(0x124)]
-	'Hfr;':                             [u32(0x210C)]
-	'HilbertSpace;':                    [u32(0x210B)]
-	'Hopf;':                            [u32(0x210D)]
-	'HorizontalLine;':                  [u32(0x2500)]
-	'Hscr;':                            [u32(0x210B)]
-	'Hstrok;':                          [u32(0x126)]
-	'HumpDownHump;':                    [u32(0x224E)]
-	'HumpEqual;':                       [u32(0x224F)]
-	'IEcy;':                            [u32(0x415)]
-	'IJlig;':                           [u32(0x132)]
-	'IOcy;':                            [u32(0x401)]
-	'Iacute':                           [u32(0xCD)]
-	'Iacute;':                          [u32(0xCD)]
-	'Icirc':                            [u32(0xCE)]
-	'Icirc;':                           [u32(0xCE)]
-	'Icy;':                             [u32(0x418)]
-	'Idot;':                            [u32(0x130)]
-	'Ifr;':                             [u32(0x2111)]
-	'Igrave':                           [u32(0xCC)]
-	'Igrave;':                          [u32(0xCC)]
-	'Im;':                              [u32(0x2111)]
-	'Imacr;':                           [u32(0x12A)]
-	'ImaginaryI;':                      [u32(0x2148)]
-	'Implies;':                         [u32(0x21D2)]
-	'Int;':                             [u32(0x222C)]
-	'Integral;':                        [u32(0x222B)]
-	'Intersection;':                    [u32(0x22C2)]
-	'InvisibleComma;':                  [u32(0x2063)]
-	'InvisibleTimes;':                  [u32(0x2062)]
-	'Iogon;':                           [u32(0x12E)]
-	'Iopf;':                            [u32(0x1D540)]
-	'Iota;':                            [u32(0x399)]
-	'Iscr;':                            [u32(0x2110)]
-	'Itilde;':                          [u32(0x128)]
-	'Iukcy;':                           [u32(0x406)]
-	'Iuml':                             [u32(0xCF)]
-	'Iuml;':                            [u32(0xCF)]
-	'Jcirc;':                           [u32(0x134)]
-	'Jcy;':                             [u32(0x419)]
-	'Jfr;':                             [u32(0x1D50D)]
-	'Jopf;':                            [u32(0x1D541)]
-	'Jscr;':                            [u32(0x1D4A5)]
-	'Jsercy;':                          [u32(0x408)]
-	'Jukcy;':                           [u32(0x404)]
-	'KHcy;':                            [u32(0x425)]
-	'KJcy;':                            [u32(0x40C)]
-	'Kappa;':                           [u32(0x39A)]
-	'Kcedil;':                          [u32(0x136)]
-	'Kcy;':                             [u32(0x41A)]
-	'Kfr;':                             [u32(0x1D50E)]
-	'Kopf;':                            [u32(0x1D542)]
-	'Kscr;':                            [u32(0x1D4A6)]
-	'LJcy;':                            [u32(0x409)]
-	'LT':                               [u32(0x3C)]
-	'LT;':                              [u32(0x3C)]
-	'Lacute;':                          [u32(0x139)]
-	'Lambda;':                          [u32(0x39B)]
-	'Lang;':                            [u32(0x27EA)]
-	'Laplacetrf;':                      [u32(0x2112)]
-	'Larr;':                            [u32(0x219E)]
-	'Lcaron;':                          [u32(0x13D)]
-	'Lcedil;':                          [u32(0x13B)]
-	'Lcy;':                             [u32(0x41B)]
-	'LeftAngleBracket;':                [u32(0x27E8)]
-	'LeftArrow;':                       [u32(0x2190)]
-	'LeftArrowBar;':                    [u32(0x21E4)]
-	'LeftArrowRightArrow;':             [u32(0x21C6)]
-	'LeftCeiling;':                     [u32(0x2308)]
-	'LeftDoubleBracket;':               [u32(0x27E6)]
-	'LeftDownTeeVector;':               [u32(0x2961)]
-	'LeftDownVector;':                  [u32(0x21C3)]
-	'LeftDownVectorBar;':               [u32(0x2959)]
-	'LeftFloor;':                       [u32(0x230A)]
-	'LeftRightArrow;':                  [u32(0x2194)]
-	'LeftRightVector;':                 [u32(0x294E)]
-	'LeftTee;':                         [u32(0x22A3)]
-	'LeftTeeArrow;':                    [u32(0x21A4)]
-	'LeftTeeVector;':                   [u32(0x295A)]
-	'LeftTriangle;':                    [u32(0x22B2)]
-	'LeftTriangleBar;':                 [u32(0x29CF)]
-	'LeftTriangleEqual;':               [u32(0x22B4)]
-	'LeftUpDownVector;':                [u32(0x2951)]
-	'LeftUpTeeVector;':                 [u32(0x2960)]
-	'LeftUpVector;':                    [u32(0x21BF)]
-	'LeftUpVectorBar;':                 [u32(0x2958)]
-	'LeftVector;':                      [u32(0x21BC)]
-	'LeftVectorBar;':                   [u32(0x2952)]
-	'Leftarrow;':                       [u32(0x21D0)]
-	'Leftrightarrow;':                  [u32(0x21D4)]
-	'LessEqualGreater;':                [u32(0x22DA)]
-	'LessFullEqual;':                   [u32(0x2266)]
-	'LessGreater;':                     [u32(0x2276)]
-	'LessLess;':                        [u32(0x2AA1)]
-	'LessSlantEqual;':                  [u32(0x2A7D)]
-	'LessTilde;':                       [u32(0x2272)]
-	'Lfr;':                             [u32(0x1D50F)]
-	'Ll;':                              [u32(0x22D8)]
-	'Lleftarrow;':                      [u32(0x21DA)]
-	'Lmidot;':                          [u32(0x13F)]
-	'LongLeftArrow;':                   [u32(0x27F5)]
-	'LongLeftRightArrow;':              [u32(0x27F7)]
-	'LongRightArrow;':                  [u32(0x27F6)]
-	'Longleftarrow;':                   [u32(0x27F8)]
-	'Longleftrightarrow;':              [u32(0x27FA)]
-	'Longrightarrow;':                  [u32(0x27F9)]
-	'Lopf;':                            [u32(0x1D543)]
-	'LowerLeftArrow;':                  [u32(0x2199)]
-	'LowerRightArrow;':                 [u32(0x2198)]
-	'Lscr;':                            [u32(0x2112)]
-	'Lsh;':                             [u32(0x21B0)]
-	'Lstrok;':                          [u32(0x141)]
-	'Lt;':                              [u32(0x226A)]
-	'Map;':                             [u32(0x2905)]
-	'Mcy;':                             [u32(0x41C)]
-	'MediumSpace;':                     [u32(0x205F)]
-	'Mellintrf;':                       [u32(0x2133)]
-	'Mfr;':                             [u32(0x1D510)]
-	'MinusPlus;':                       [u32(0x2213)]
-	'Mopf;':                            [u32(0x1D544)]
-	'Mscr;':                            [u32(0x2133)]
-	'Mu;':                              [u32(0x39C)]
-	'NJcy;':                            [u32(0x40A)]
-	'Nacute;':                          [u32(0x143)]
-	'Ncaron;':                          [u32(0x147)]
-	'Ncedil;':                          [u32(0x145)]
-	'Ncy;':                             [u32(0x41D)]
-	'NegativeMediumSpace;':             [u32(0x200B)]
-	'NegativeThickSpace;':              [u32(0x200B)]
-	'NegativeThinSpace;':               [u32(0x200B)]
-	'NegativeVeryThinSpace;':           [u32(0x200B)]
-	'NestedGreaterGreater;':            [u32(0x226B)]
-	'NestedLessLess;':                  [u32(0x226A)]
-	'NewLine;':                         [u32(0xA)]
-	'Nfr;':                             [u32(0x1D511)]
-	'NoBreak;':                         [u32(0x2060)]
-	'NonBreakingSpace;':                [u32(0xA0)]
-	'Nopf;':                            [u32(0x2115)]
-	'Not;':                             [u32(0x2AEC)]
-	'NotCongruent;':                    [u32(0x2262)]
-	'NotCupCap;':                       [u32(0x226D)]
-	'NotDoubleVerticalBar;':            [u32(0x2226)]
-	'NotElement;':                      [u32(0x2209)]
-	'NotEqual;':                        [u32(0x2260)]
-	'NotEqualTilde;':                   [u32(0x2242), 0x338]
-	'NotExists;':                       [u32(0x2204)]
-	'NotGreater;':                      [u32(0x226F)]
-	'NotGreaterEqual;':                 [u32(0x2271)]
-	'NotGreaterFullEqual;':             [u32(0x2267), 0x338]
-	'NotGreaterGreater;':               [u32(0x226B), 0x338]
-	'NotGreaterLess;':                  [u32(0x2279)]
-	'NotGreaterSlantEqual;':            [u32(0x2A7E), 0x338]
-	'NotGreaterTilde;':                 [u32(0x2275)]
-	'NotHumpDownHump;':                 [u32(0x224E), 0x338]
-	'NotHumpEqual;':                    [u32(0x224F), 0x338]
-	'NotLeftTriangle;':                 [u32(0x22EA)]
-	'NotLeftTriangleBar;':              [u32(0x29CF), 0x338]
-	'NotLeftTriangleEqual;':            [u32(0x22EC)]
-	'NotLess;':                         [u32(0x226E)]
-	'NotLessEqual;':                    [u32(0x2270)]
-	'NotLessGreater;':                  [u32(0x2278)]
-	'NotLessLess;':                     [u32(0x226A), 0x338]
-	'NotLessSlantEqual;':               [u32(0x2A7D), 0x338]
-	'NotLessTilde;':                    [u32(0x2274)]
-	'NotNestedGreaterGreater;':         [u32(0x2AA2), 0x338]
-	'NotNestedLessLess;':               [u32(0x2AA1), 0x338]
-	'NotPrecedes;':                     [u32(0x2280)]
-	'NotPrecedesEqual;':                [u32(0x2AAF), 0x338]
-	'NotPrecedesSlantEqual;':           [u32(0x22E0)]
-	'NotReverseElement;':               [u32(0x220C)]
-	'NotRightTriangle;':                [u32(0x22EB)]
-	'NotRightTriangleBar;':             [u32(0x29D0), 0x338]
-	'NotRightTriangleEqual;':           [u32(0x22ED)]
-	'NotSquareSubset;':                 [u32(0x228F), 0x338]
-	'NotSquareSubsetEqual;':            [u32(0x22E2)]
-	'NotSquareSuperset;':               [u32(0x2290), 0x338]
-	'NotSquareSupersetEqual;':          [u32(0x22E3)]
-	'NotSubset;':                       [u32(0x2282), 0x20D2]
-	'NotSubsetEqual;':                  [u32(0x2288)]
-	'NotSucceeds;':                     [u32(0x2281)]
-	'NotSucceedsEqual;':                [u32(0x2AB0), 0x338]
-	'NotSucceedsSlantEqual;':           [u32(0x22E1)]
-	'NotSucceedsTilde;':                [u32(0x227F), 0x338]
-	'NotSuperset;':                     [u32(0x2283), 0x20D2]
-	'NotSupersetEqual;':                [u32(0x2289)]
-	'NotTilde;':                        [u32(0x2241)]
-	'NotTildeEqual;':                   [u32(0x2244)]
-	'NotTildeFullEqual;':               [u32(0x2247)]
-	'NotTildeTilde;':                   [u32(0x2249)]
-	'NotVerticalBar;':                  [u32(0x2224)]
-	'Nscr;':                            [u32(0x1D4A9)]
-	'Ntilde':                           [u32(0xD1)]
-	'Ntilde;':                          [u32(0xD1)]
-	'Nu;':                              [u32(0x39D)]
-	'OElig;':                           [u32(0x152)]
-	'Oacute':                           [u32(0xD3)]
-	'Oacute;':                          [u32(0xD3)]
-	'Ocirc':                            [u32(0xD4)]
-	'Ocirc;':                           [u32(0xD4)]
-	'Ocy;':                             [u32(0x41E)]
-	'Odblac;':                          [u32(0x150)]
-	'Ofr;':                             [u32(0x1D512)]
-	'Ograve':                           [u32(0xD2)]
-	'Ograve;':                          [u32(0xD2)]
-	'Omacr;':                           [u32(0x14C)]
-	'Omega;':                           [u32(0x3A9)]
-	'Omicron;':                         [u32(0x39F)]
-	'Oopf;':                            [u32(0x1D546)]
-	'OpenCurlyDoubleQuote;':            [u32(0x201C)]
-	'OpenCurlyQuote;':                  [u32(0x2018)]
-	'Or;':                              [u32(0x2A54)]
-	'Oscr;':                            [u32(0x1D4AA)]
-	'Oslash':                           [u32(0xD8)]
-	'Oslash;':                          [u32(0xD8)]
-	'Otilde':                           [u32(0xD5)]
-	'Otilde;':                          [u32(0xD5)]
-	'Otimes;':                          [u32(0x2A37)]
-	'Ouml':                             [u32(0xD6)]
-	'Ouml;':                            [u32(0xD6)]
-	'OverBar;':                         [u32(0x203E)]
-	'OverBrace;':                       [u32(0x23DE)]
-	'OverBracket;':                     [u32(0x23B4)]
-	'OverParenthesis;':                 [u32(0x23DC)]
-	'PartialD;':                        [u32(0x2202)]
-	'Pcy;':                             [u32(0x41F)]
-	'Pfr;':                             [u32(0x1D513)]
-	'Phi;':                             [u32(0x3A6)]
-	'Pi;':                              [u32(0x3A0)]
-	'PlusMinus;':                       [u32(0xB1)]
-	'Poincareplane;':                   [u32(0x210C)]
-	'Popf;':                            [u32(0x2119)]
-	'Pr;':                              [u32(0x2ABB)]
-	'Precedes;':                        [u32(0x227A)]
-	'PrecedesEqual;':                   [u32(0x2AAF)]
-	'PrecedesSlantEqual;':              [u32(0x227C)]
-	'PrecedesTilde;':                   [u32(0x227E)]
-	'Prime;':                           [u32(0x2033)]
-	'Product;':                         [u32(0x220F)]
-	'Proportion;':                      [u32(0x2237)]
-	'Proportional;':                    [u32(0x221D)]
-	'Pscr;':                            [u32(0x1D4AB)]
-	'Psi;':                             [u32(0x3A8)]
-	'QUOT':                             [u32(0x22)]
-	'QUOT;':                            [u32(0x22)]
-	'Qfr;':                             [u32(0x1D514)]
-	'Qopf;':                            [u32(0x211A)]
-	'Qscr;':                            [u32(0x1D4AC)]
-	'RBarr;':                           [u32(0x2910)]
-	'REG':                              [u32(0xAE)]
-	'REG;':                             [u32(0xAE)]
-	'Racute;':                          [u32(0x154)]
-	'Rang;':                            [u32(0x27EB)]
-	'Rarr;':                            [u32(0x21A0)]
-	'Rarrtl;':                          [u32(0x2916)]
-	'Rcaron;':                          [u32(0x158)]
-	'Rcedil;':                          [u32(0x156)]
-	'Rcy;':                             [u32(0x420)]
-	'Re;':                              [u32(0x211C)]
-	'ReverseElement;':                  [u32(0x220B)]
-	'ReverseEquilibrium;':              [u32(0x21CB)]
-	'ReverseUpEquilibrium;':            [u32(0x296F)]
-	'Rfr;':                             [u32(0x211C)]
-	'Rho;':                             [u32(0x3A1)]
-	'RightAngleBracket;':               [u32(0x27E9)]
-	'RightArrow;':                      [u32(0x2192)]
-	'RightArrowBar;':                   [u32(0x21E5)]
-	'RightArrowLeftArrow;':             [u32(0x21C4)]
-	'RightCeiling;':                    [u32(0x2309)]
-	'RightDoubleBracket;':              [u32(0x27E7)]
-	'RightDownTeeVector;':              [u32(0x295D)]
-	'RightDownVector;':                 [u32(0x21C2)]
-	'RightDownVectorBar;':              [u32(0x2955)]
-	'RightFloor;':                      [u32(0x230B)]
-	'RightTee;':                        [u32(0x22A2)]
-	'RightTeeArrow;':                   [u32(0x21A6)]
-	'RightTeeVector;':                  [u32(0x295B)]
-	'RightTriangle;':                   [u32(0x22B3)]
-	'RightTriangleBar;':                [u32(0x29D0)]
-	'RightTriangleEqual;':              [u32(0x22B5)]
-	'RightUpDownVector;':               [u32(0x294F)]
-	'RightUpTeeVector;':                [u32(0x295C)]
-	'RightUpVector;':                   [u32(0x21BE)]
-	'RightUpVectorBar;':                [u32(0x2954)]
-	'RightVector;':                     [u32(0x21C0)]
-	'RightVectorBar;':                  [u32(0x2953)]
-	'Rightarrow;':                      [u32(0x21D2)]
-	'Ropf;':                            [u32(0x211D)]
-	'RoundImplies;':                    [u32(0x2970)]
-	'Rrightarrow;':                     [u32(0x21DB)]
-	'Rscr;':                            [u32(0x211B)]
-	'Rsh;':                             [u32(0x21B1)]
-	'RuleDelayed;':                     [u32(0x29F4)]
-	'SHCHcy;':                          [u32(0x429)]
-	'SHcy;':                            [u32(0x428)]
-	'SOFTcy;':                          [u32(0x42C)]
-	'Sacute;':                          [u32(0x15A)]
-	'Sc;':                              [u32(0x2ABC)]
-	'Scaron;':                          [u32(0x160)]
-	'Scedil;':                          [u32(0x15E)]
-	'Scirc;':                           [u32(0x15C)]
-	'Scy;':                             [u32(0x421)]
-	'Sfr;':                             [u32(0x1D516)]
-	'ShortDownArrow;':                  [u32(0x2193)]
-	'ShortLeftArrow;':                  [u32(0x2190)]
-	'ShortRightArrow;':                 [u32(0x2192)]
-	'ShortUpArrow;':                    [u32(0x2191)]
-	'Sigma;':                           [u32(0x3A3)]
-	'SmallCircle;':                     [u32(0x2218)]
-	'Sopf;':                            [u32(0x1D54A)]
-	'Sqrt;':                            [u32(0x221A)]
-	'Square;':                          [u32(0x25A1)]
-	'SquareIntersection;':              [u32(0x2293)]
-	'SquareSubset;':                    [u32(0x228F)]
-	'SquareSubsetEqual;':               [u32(0x2291)]
-	'SquareSuperset;':                  [u32(0x2290)]
-	'SquareSupersetEqual;':             [u32(0x2292)]
-	'SquareUnion;':                     [u32(0x2294)]
-	'Sscr;':                            [u32(0x1D4AE)]
-	'Star;':                            [u32(0x22C6)]
-	'Sub;':                             [u32(0x22D0)]
-	'Subset;':                          [u32(0x22D0)]
-	'SubsetEqual;':                     [u32(0x2286)]
-	'Succeeds;':                        [u32(0x227B)]
-	'SucceedsEqual;':                   [u32(0x2AB0)]
-	'SucceedsSlantEqual;':              [u32(0x227D)]
-	'SucceedsTilde;':                   [u32(0x227F)]
-	'SuchThat;':                        [u32(0x220B)]
-	'Sum;':                             [u32(0x2211)]
-	'Sup;':                             [u32(0x22D1)]
-	'Superset;':                        [u32(0x2283)]
-	'SupersetEqual;':                   [u32(0x2287)]
-	'Supset;':                          [u32(0x22D1)]
-	'THORN':                            [u32(0xDE)]
-	'THORN;':                           [u32(0xDE)]
-	'TRADE;':                           [u32(0x2122)]
-	'TSHcy;':                           [u32(0x40B)]
-	'TScy;':                            [u32(0x426)]
-	'Tab;':                             [u32(0x9)]
-	'Tau;':                             [u32(0x3A4)]
-	'Tcaron;':                          [u32(0x164)]
-	'Tcedil;':                          [u32(0x162)]
-	'Tcy;':                             [u32(0x422)]
-	'Tfr;':                             [u32(0x1D517)]
-	'Therefore;':                       [u32(0x2234)]
-	'Theta;':                           [u32(0x398)]
-	'ThickSpace;':                      [u32(0x205F), 0x200A]
-	'ThinSpace;':                       [u32(0x2009)]
-	'Tilde;':                           [u32(0x223C)]
-	'TildeEqual;':                      [u32(0x2243)]
-	'TildeFullEqual;':                  [u32(0x2245)]
-	'TildeTilde;':                      [u32(0x2248)]
-	'Topf;':                            [u32(0x1D54B)]
-	'TripleDot;':                       [u32(0x20DB)]
-	'Tscr;':                            [u32(0x1D4AF)]
-	'Tstrok;':                          [u32(0x166)]
-	'Uacute':                           [u32(0xDA)]
-	'Uacute;':                          [u32(0xDA)]
-	'Uarr;':                            [u32(0x219F)]
-	'Uarrocir;':                        [u32(0x2949)]
-	'Ubrcy;':                           [u32(0x40E)]
-	'Ubreve;':                          [u32(0x16C)]
-	'Ucirc':                            [u32(0xDB)]
-	'Ucirc;':                           [u32(0xDB)]
-	'Ucy;':                             [u32(0x423)]
-	'Udblac;':                          [u32(0x170)]
-	'Ufr;':                             [u32(0x1D518)]
-	'Ugrave':                           [u32(0xD9)]
-	'Ugrave;':                          [u32(0xD9)]
-	'Umacr;':                           [u32(0x16A)]
-	'UnderBar;':                        [u32(0x5F)]
-	'UnderBrace;':                      [u32(0x23DF)]
-	'UnderBracket;':                    [u32(0x23B5)]
-	'UnderParenthesis;':                [u32(0x23DD)]
-	'Union;':                           [u32(0x22C3)]
-	'UnionPlus;':                       [u32(0x228E)]
-	'Uogon;':                           [u32(0x172)]
-	'Uopf;':                            [u32(0x1D54C)]
-	'UpArrow;':                         [u32(0x2191)]
-	'UpArrowBar;':                      [u32(0x2912)]
-	'UpArrowDownArrow;':                [u32(0x21C5)]
-	'UpDownArrow;':                     [u32(0x2195)]
-	'UpEquilibrium;':                   [u32(0x296E)]
-	'UpTee;':                           [u32(0x22A5)]
-	'UpTeeArrow;':                      [u32(0x21A5)]
-	'Uparrow;':                         [u32(0x21D1)]
-	'Updownarrow;':                     [u32(0x21D5)]
-	'UpperLeftArrow;':                  [u32(0x2196)]
-	'UpperRightArrow;':                 [u32(0x2197)]
-	'Upsi;':                            [u32(0x3D2)]
-	'Upsilon;':                         [u32(0x3A5)]
-	'Uring;':                           [u32(0x16E)]
-	'Uscr;':                            [u32(0x1D4B0)]
-	'Utilde;':                          [u32(0x168)]
-	'Uuml':                             [u32(0xDC)]
-	'Uuml;':                            [u32(0xDC)]
-	'VDash;':                           [u32(0x22AB)]
-	'Vbar;':                            [u32(0x2AEB)]
-	'Vcy;':                             [u32(0x412)]
-	'Vdash;':                           [u32(0x22A9)]
-	'Vdashl;':                          [u32(0x2AE6)]
-	'Vee;':                             [u32(0x22C1)]
-	'Verbar;':                          [u32(0x2016)]
-	'Vert;':                            [u32(0x2016)]
-	'VerticalBar;':                     [u32(0x2223)]
-	'VerticalLine;':                    [u32(0x7C)]
-	'VerticalSeparator;':               [u32(0x2758)]
-	'VerticalTilde;':                   [u32(0x2240)]
-	'VeryThinSpace;':                   [u32(0x200A)]
-	'Vfr;':                             [u32(0x1D519)]
-	'Vopf;':                            [u32(0x1D54D)]
-	'Vscr;':                            [u32(0x1D4B1)]
-	'Vvdash;':                          [u32(0x22AA)]
-	'Wcirc;':                           [u32(0x174)]
-	'Wedge;':                           [u32(0x22C0)]
-	'Wfr;':                             [u32(0x1D51A)]
-	'Wopf;':                            [u32(0x1D54E)]
-	'Wscr;':                            [u32(0x1D4B2)]
-	'Xfr;':                             [u32(0x1D51B)]
-	'Xi;':                              [u32(0x39E)]
-	'Xopf;':                            [u32(0x1D54F)]
-	'Xscr;':                            [u32(0x1D4B3)]
-	'YAcy;':                            [u32(0x42F)]
-	'YIcy;':                            [u32(0x407)]
-	'YUcy;':                            [u32(0x42E)]
-	'Yacute':                           [u32(0xDD)]
-	'Yacute;':                          [u32(0xDD)]
-	'Ycirc;':                           [u32(0x176)]
-	'Ycy;':                             [u32(0x42B)]
-	'Yfr;':                             [u32(0x1D51C)]
-	'Yopf;':                            [u32(0x1D550)]
-	'Yscr;':                            [u32(0x1D4B4)]
-	'Yuml;':                            [u32(0x178)]
-	'ZHcy;':                            [u32(0x416)]
-	'Zacute;':                          [u32(0x179)]
-	'Zcaron;':                          [u32(0x17D)]
-	'Zcy;':                             [u32(0x417)]
-	'Zdot;':                            [u32(0x17B)]
-	'ZeroWidthSpace;':                  [u32(0x200B)]
-	'Zeta;':                            [u32(0x396)]
-	'Zfr;':                             [u32(0x2128)]
-	'Zopf;':                            [u32(0x2124)]
-	'Zscr;':                            [u32(0x1D4B5)]
-	'aacute':                           [u32(0xE1)]
-	'aacute;':                          [u32(0xE1)]
-	'abreve;':                          [u32(0x103)]
-	'ac;':                              [u32(0x223E)]
-	'acE;':                             [u32(0x223E), 0x333]
-	'acd;':                             [u32(0x223F)]
-	'acirc':                            [u32(0xE2)]
-	'acirc;':                           [u32(0xE2)]
-	'acute':                            [u32(0xB4)]
-	'acute;':                           [u32(0xB4)]
-	'acy;':                             [u32(0x430)]
-	'aelig':                            [u32(0xE6)]
-	'aelig;':                           [u32(0xE6)]
-	'af;':                              [u32(0x2061)]
-	'afr;':                             [u32(0x1D51E)]
-	'agrave':                           [u32(0xE0)]
-	'agrave;':                          [u32(0xE0)]
-	'alefsym;':                         [u32(0x2135)]
-	'aleph;':                           [u32(0x2135)]
-	'alpha;':                           [u32(0x3B1)]
-	'amacr;':                           [u32(0x101)]
-	'amalg;':                           [u32(0x2A3F)]
-	'amp':                              [u32(0x26)]
-	'amp;':                             [u32(0x26)]
-	'and;':                             [u32(0x2227)]
-	'andand;':                          [u32(0x2A55)]
-	'andd;':                            [u32(0x2A5C)]
-	'andslope;':                        [u32(0x2A58)]
-	'andv;':                            [u32(0x2A5A)]
-	'ang;':                             [u32(0x2220)]
-	'ange;':                            [u32(0x29A4)]
-	'angle;':                           [u32(0x2220)]
-	'angmsd;':                          [u32(0x2221)]
-	'angmsdaa;':                        [u32(0x29A8)]
-	'angmsdab;':                        [u32(0x29A9)]
-	'angmsdac;':                        [u32(0x29AA)]
-	'angmsdad;':                        [u32(0x29AB)]
-	'angmsdae;':                        [u32(0x29AC)]
-	'angmsdaf;':                        [u32(0x29AD)]
-	'angmsdag;':                        [u32(0x29AE)]
-	'angmsdah;':                        [u32(0x29AF)]
-	'angrt;':                           [u32(0x221F)]
-	'angrtvb;':                         [u32(0x22BE)]
-	'angrtvbd;':                        [u32(0x299D)]
-	'angsph;':                          [u32(0x2222)]
-	'angst;':                           [u32(0xC5)]
-	'angzarr;':                         [u32(0x237C)]
-	'aogon;':                           [u32(0x105)]
-	'aopf;':                            [u32(0x1D552)]
-	'ap;':                              [u32(0x2248)]
-	'apE;':                             [u32(0x2A70)]
-	'apacir;':                          [u32(0x2A6F)]
-	'ape;':                             [u32(0x224A)]
-	'apid;':                            [u32(0x224B)]
-	'apos;':                            [u32(0x27)]
-	'approx;':                          [u32(0x2248)]
-	'approxeq;':                        [u32(0x224A)]
-	'aring':                            [u32(0xE5)]
-	'aring;':                           [u32(0xE5)]
-	'ascr;':                            [u32(0x1D4B6)]
-	'ast;':                             [u32(0x2A)]
-	'asymp;':                           [u32(0x2248)]
-	'asympeq;':                         [u32(0x224D)]
-	'atilde':                           [u32(0xE3)]
-	'atilde;':                          [u32(0xE3)]
-	'auml':                             [u32(0xE4)]
-	'auml;':                            [u32(0xE4)]
-	'awconint;':                        [u32(0x2233)]
-	'awint;':                           [u32(0x2A11)]
-	'bNot;':                            [u32(0x2AED)]
-	'backcong;':                        [u32(0x224C)]
-	'backepsilon;':                     [u32(0x3F6)]
-	'backprime;':                       [u32(0x2035)]
-	'backsim;':                         [u32(0x223D)]
-	'backsimeq;':                       [u32(0x22CD)]
-	'barvee;':                          [u32(0x22BD)]
-	'barwed;':                          [u32(0x2305)]
-	'barwedge;':                        [u32(0x2305)]
-	'bbrk;':                            [u32(0x23B5)]
-	'bbrktbrk;':                        [u32(0x23B6)]
-	'bcong;':                           [u32(0x224C)]
-	'bcy;':                             [u32(0x431)]
-	'bdquo;':                           [u32(0x201E)]
-	'becaus;':                          [u32(0x2235)]
-	'because;':                         [u32(0x2235)]
-	'bemptyv;':                         [u32(0x29B0)]
-	'bepsi;':                           [u32(0x3F6)]
-	'bernou;':                          [u32(0x212C)]
-	'beta;':                            [u32(0x3B2)]
-	'beth;':                            [u32(0x2136)]
-	'between;':                         [u32(0x226C)]
-	'bfr;':                             [u32(0x1D51F)]
-	'bigcap;':                          [u32(0x22C2)]
-	'bigcirc;':                         [u32(0x25EF)]
-	'bigcup;':                          [u32(0x22C3)]
-	'bigodot;':                         [u32(0x2A00)]
-	'bigoplus;':                        [u32(0x2A01)]
-	'bigotimes;':                       [u32(0x2A02)]
-	'bigsqcup;':                        [u32(0x2A06)]
-	'bigstar;':                         [u32(0x2605)]
-	'bigtriangledown;':                 [u32(0x25BD)]
-	'bigtriangleup;':                   [u32(0x25B3)]
-	'biguplus;':                        [u32(0x2A04)]
-	'bigvee;':                          [u32(0x22C1)]
-	'bigwedge;':                        [u32(0x22C0)]
-	'bkarow;':                          [u32(0x290D)]
-	'blacklozenge;':                    [u32(0x29EB)]
-	'blacksquare;':                     [u32(0x25AA)]
-	'blacktriangle;':                   [u32(0x25B4)]
-	'blacktriangledown;':               [u32(0x25BE)]
-	'blacktriangleleft;':               [u32(0x25C2)]
-	'blacktriangleright;':              [u32(0x25B8)]
-	'blank;':                           [u32(0x2423)]
-	'blk12;':                           [u32(0x2592)]
-	'blk14;':                           [u32(0x2591)]
-	'blk34;':                           [u32(0x2593)]
-	'block;':                           [u32(0x2588)]
-	'bne;':                             [u32(0x3D), 0x20E5]
-	'bnequiv;':                         [u32(0x2261), 0x20E5]
-	'bnot;':                            [u32(0x2310)]
-	'bopf;':                            [u32(0x1D553)]
-	'bot;':                             [u32(0x22A5)]
-	'bottom;':                          [u32(0x22A5)]
-	'bowtie;':                          [u32(0x22C8)]
-	'boxDL;':                           [u32(0x2557)]
-	'boxDR;':                           [u32(0x2554)]
-	'boxDl;':                           [u32(0x2556)]
-	'boxDr;':                           [u32(0x2553)]
-	'boxH;':                            [u32(0x2550)]
-	'boxHD;':                           [u32(0x2566)]
-	'boxHU;':                           [u32(0x2569)]
-	'boxHd;':                           [u32(0x2564)]
-	'boxHu;':                           [u32(0x2567)]
-	'boxUL;':                           [u32(0x255D)]
-	'boxUR;':                           [u32(0x255A)]
-	'boxUl;':                           [u32(0x255C)]
-	'boxUr;':                           [u32(0x2559)]
-	'boxV;':                            [u32(0x2551)]
-	'boxVH;':                           [u32(0x256C)]
-	'boxVL;':                           [u32(0x2563)]
-	'boxVR;':                           [u32(0x2560)]
-	'boxVh;':                           [u32(0x256B)]
-	'boxVl;':                           [u32(0x2562)]
-	'boxVr;':                           [u32(0x255F)]
-	'boxbox;':                          [u32(0x29C9)]
-	'boxdL;':                           [u32(0x2555)]
-	'boxdR;':                           [u32(0x2552)]
-	'boxdl;':                           [u32(0x2510)]
-	'boxdr;':                           [u32(0x250C)]
-	'boxh;':                            [u32(0x2500)]
-	'boxhD;':                           [u32(0x2565)]
-	'boxhU;':                           [u32(0x2568)]
-	'boxhd;':                           [u32(0x252C)]
-	'boxhu;':                           [u32(0x2534)]
-	'boxminus;':                        [u32(0x229F)]
-	'boxplus;':                         [u32(0x229E)]
-	'boxtimes;':                        [u32(0x22A0)]
-	'boxuL;':                           [u32(0x255B)]
-	'boxuR;':                           [u32(0x2558)]
-	'boxul;':                           [u32(0x2518)]
-	'boxur;':                           [u32(0x2514)]
-	'boxv;':                            [u32(0x2502)]
-	'boxvH;':                           [u32(0x256A)]
-	'boxvL;':                           [u32(0x2561)]
-	'boxvR;':                           [u32(0x255E)]
-	'boxvh;':                           [u32(0x253C)]
-	'boxvl;':                           [u32(0x2524)]
-	'boxvr;':                           [u32(0x251C)]
-	'bprime;':                          [u32(0x2035)]
-	'breve;':                           [u32(0x2D8)]
-	'brvbar':                           [u32(0xA6)]
-	'brvbar;':                          [u32(0xA6)]
-	'bscr;':                            [u32(0x1D4B7)]
-	'bsemi;':                           [u32(0x204F)]
-	'bsim;':                            [u32(0x223D)]
-	'bsime;':                           [u32(0x22CD)]
-	'bsol;':                            [u32(0x5C)]
-	'bsolb;':                           [u32(0x29C5)]
-	'bsolhsub;':                        [u32(0x27C8)]
-	'bull;':                            [u32(0x2022)]
-	'bullet;':                          [u32(0x2022)]
-	'bump;':                            [u32(0x224E)]
-	'bumpE;':                           [u32(0x2AAE)]
-	'bumpe;':                           [u32(0x224F)]
-	'bumpeq;':                          [u32(0x224F)]
-	'cacute;':                          [u32(0x107)]
-	'cap;':                             [u32(0x2229)]
-	'capand;':                          [u32(0x2A44)]
-	'capbrcup;':                        [u32(0x2A49)]
-	'capcap;':                          [u32(0x2A4B)]
-	'capcup;':                          [u32(0x2A47)]
-	'capdot;':                          [u32(0x2A40)]
-	'caps;':                            [u32(0x2229), 0xFE00]
-	'caret;':                           [u32(0x2041)]
-	'caron;':                           [u32(0x2C7)]
-	'ccaps;':                           [u32(0x2A4D)]
-	'ccaron;':                          [u32(0x10D)]
-	'ccedil':                           [u32(0xE7)]
-	'ccedil;':                          [u32(0xE7)]
-	'ccirc;':                           [u32(0x109)]
-	'ccups;':                           [u32(0x2A4C)]
-	'ccupssm;':                         [u32(0x2A50)]
-	'cdot;':                            [u32(0x10B)]
-	'cedil':                            [u32(0xB8)]
-	'cedil;':                           [u32(0xB8)]
-	'cemptyv;':                         [u32(0x29B2)]
-	'cent':                             [u32(0xA2)]
-	'cent;':                            [u32(0xA2)]
-	'centerdot;':                       [u32(0xB7)]
-	'cfr;':                             [u32(0x1D520)]
-	'chcy;':                            [u32(0x447)]
-	'check;':                           [u32(0x2713)]
-	'checkmark;':                       [u32(0x2713)]
-	'chi;':                             [u32(0x3C7)]
-	'cir;':                             [u32(0x25CB)]
-	'cirE;':                            [u32(0x29C3)]
-	'circ;':                            [u32(0x2C6)]
-	'circeq;':                          [u32(0x2257)]
-	'circlearrowleft;':                 [u32(0x21BA)]
-	'circlearrowright;':                [u32(0x21BB)]
-	'circledR;':                        [u32(0xAE)]
-	'circledS;':                        [u32(0x24C8)]
-	'circledast;':                      [u32(0x229B)]
-	'circledcirc;':                     [u32(0x229A)]
-	'circleddash;':                     [u32(0x229D)]
-	'cire;':                            [u32(0x2257)]
-	'cirfnint;':                        [u32(0x2A10)]
-	'cirmid;':                          [u32(0x2AEF)]
-	'cirscir;':                         [u32(0x29C2)]
-	'clubs;':                           [u32(0x2663)]
-	'clubsuit;':                        [u32(0x2663)]
-	'colon;':                           [u32(0x3A)]
-	'colone;':                          [u32(0x2254)]
-	'coloneq;':                         [u32(0x2254)]
-	'comma;':                           [u32(0x2C)]
-	'commat;':                          [u32(0x40)]
-	'comp;':                            [u32(0x2201)]
-	'compfn;':                          [u32(0x2218)]
-	'complement;':                      [u32(0x2201)]
-	'complexes;':                       [u32(0x2102)]
-	'cong;':                            [u32(0x2245)]
-	'congdot;':                         [u32(0x2A6D)]
-	'conint;':                          [u32(0x222E)]
-	'copf;':                            [u32(0x1D554)]
-	'coprod;':                          [u32(0x2210)]
-	'copy':                             [u32(0xA9)]
-	'copy;':                            [u32(0xA9)]
-	'copysr;':                          [u32(0x2117)]
-	'crarr;':                           [u32(0x21B5)]
-	'cross;':                           [u32(0x2717)]
-	'cscr;':                            [u32(0x1D4B8)]
-	'csub;':                            [u32(0x2ACF)]
-	'csube;':                           [u32(0x2AD1)]
-	'csup;':                            [u32(0x2AD0)]
-	'csupe;':                           [u32(0x2AD2)]
-	'ctdot;':                           [u32(0x22EF)]
-	'cudarrl;':                         [u32(0x2938)]
-	'cudarrr;':                         [u32(0x2935)]
-	'cuepr;':                           [u32(0x22DE)]
-	'cuesc;':                           [u32(0x22DF)]
-	'cularr;':                          [u32(0x21B6)]
-	'cularrp;':                         [u32(0x293D)]
-	'cup;':                             [u32(0x222A)]
-	'cupbrcap;':                        [u32(0x2A48)]
-	'cupcap;':                          [u32(0x2A46)]
-	'cupcup;':                          [u32(0x2A4A)]
-	'cupdot;':                          [u32(0x228D)]
-	'cupor;':                           [u32(0x2A45)]
-	'cups;':                            [u32(0x222A), 0xFE00]
-	'curarr;':                          [u32(0x21B7)]
-	'curarrm;':                         [u32(0x293C)]
-	'curlyeqprec;':                     [u32(0x22DE)]
-	'curlyeqsucc;':                     [u32(0x22DF)]
-	'curlyvee;':                        [u32(0x22CE)]
-	'curlywedge;':                      [u32(0x22CF)]
-	'curren':                           [u32(0xA4)]
-	'curren;':                          [u32(0xA4)]
-	'curvearrowleft;':                  [u32(0x21B6)]
-	'curvearrowright;':                 [u32(0x21B7)]
-	'cuvee;':                           [u32(0x22CE)]
-	'cuwed;':                           [u32(0x22CF)]
-	'cwconint;':                        [u32(0x2232)]
-	'cwint;':                           [u32(0x2231)]
-	'cylcty;':                          [u32(0x232D)]
-	'dArr;':                            [u32(0x21D3)]
-	'dHar;':                            [u32(0x2965)]
-	'dagger;':                          [u32(0x2020)]
-	'daleth;':                          [u32(0x2138)]
-	'darr;':                            [u32(0x2193)]
-	'dash;':                            [u32(0x2010)]
-	'dashv;':                           [u32(0x22A3)]
-	'dbkarow;':                         [u32(0x290F)]
-	'dblac;':                           [u32(0x2DD)]
-	'dcaron;':                          [u32(0x10F)]
-	'dcy;':                             [u32(0x434)]
-	'dd;':                              [u32(0x2146)]
-	'ddagger;':                         [u32(0x2021)]
-	'ddarr;':                           [u32(0x21CA)]
-	'ddotseq;':                         [u32(0x2A77)]
-	'deg':                              [u32(0xB0)]
-	'deg;':                             [u32(0xB0)]
-	'delta;':                           [u32(0x3B4)]
-	'demptyv;':                         [u32(0x29B1)]
-	'dfisht;':                          [u32(0x297F)]
-	'dfr;':                             [u32(0x1D521)]
-	'dharl;':                           [u32(0x21C3)]
-	'dharr;':                           [u32(0x21C2)]
-	'diam;':                            [u32(0x22C4)]
-	'diamond;':                         [u32(0x22C4)]
-	'diamondsuit;':                     [u32(0x2666)]
-	'diams;':                           [u32(0x2666)]
-	'die;':                             [u32(0xA8)]
-	'digamma;':                         [u32(0x3DD)]
-	'disin;':                           [u32(0x22F2)]
-	'div;':                             [u32(0xF7)]
-	'divide':                           [u32(0xF7)]
-	'divide;':                          [u32(0xF7)]
-	'divideontimes;':                   [u32(0x22C7)]
-	'divonx;':                          [u32(0x22C7)]
-	'djcy;':                            [u32(0x452)]
-	'dlcorn;':                          [u32(0x231E)]
-	'dlcrop;':                          [u32(0x230D)]
-	'dollar;':                          [u32(0x24)]
-	'dopf;':                            [u32(0x1D555)]
-	'dot;':                             [u32(0x2D9)]
-	'doteq;':                           [u32(0x2250)]
-	'doteqdot;':                        [u32(0x2251)]
-	'dotminus;':                        [u32(0x2238)]
-	'dotplus;':                         [u32(0x2214)]
-	'dotsquare;':                       [u32(0x22A1)]
-	'doublebarwedge;':                  [u32(0x2306)]
-	'downarrow;':                       [u32(0x2193)]
-	'downdownarrows;':                  [u32(0x21CA)]
-	'downharpoonleft;':                 [u32(0x21C3)]
-	'downharpoonright;':                [u32(0x21C2)]
-	'drbkarow;':                        [u32(0x2910)]
-	'drcorn;':                          [u32(0x231F)]
-	'drcrop;':                          [u32(0x230C)]
-	'dscr;':                            [u32(0x1D4B9)]
-	'dscy;':                            [u32(0x455)]
-	'dsol;':                            [u32(0x29F6)]
-	'dstrok;':                          [u32(0x111)]
-	'dtdot;':                           [u32(0x22F1)]
-	'dtri;':                            [u32(0x25BF)]
-	'dtrif;':                           [u32(0x25BE)]
-	'duarr;':                           [u32(0x21F5)]
-	'duhar;':                           [u32(0x296F)]
-	'dwangle;':                         [u32(0x29A6)]
-	'dzcy;':                            [u32(0x45F)]
-	'dzigrarr;':                        [u32(0x27FF)]
-	'eDDot;':                           [u32(0x2A77)]
-	'eDot;':                            [u32(0x2251)]
-	'eacute':                           [u32(0xE9)]
-	'eacute;':                          [u32(0xE9)]
-	'easter;':                          [u32(0x2A6E)]
-	'ecaron;':                          [u32(0x11B)]
-	'ecir;':                            [u32(0x2256)]
-	'ecirc':                            [u32(0xEA)]
-	'ecirc;':                           [u32(0xEA)]
-	'ecolon;':                          [u32(0x2255)]
-	'ecy;':                             [u32(0x44D)]
-	'edot;':                            [u32(0x117)]
-	'ee;':                              [u32(0x2147)]
-	'efDot;':                           [u32(0x2252)]
-	'efr;':                             [u32(0x1D522)]
-	'eg;':                              [u32(0x2A9A)]
-	'egrave':                           [u32(0xE8)]
-	'egrave;':                          [u32(0xE8)]
-	'egs;':                             [u32(0x2A96)]
-	'egsdot;':                          [u32(0x2A98)]
-	'el;':                              [u32(0x2A99)]
-	'elinters;':                        [u32(0x23E7)]
-	'ell;':                             [u32(0x2113)]
-	'els;':                             [u32(0x2A95)]
-	'elsdot;':                          [u32(0x2A97)]
-	'emacr;':                           [u32(0x113)]
-	'empty;':                           [u32(0x2205)]
-	'emptyset;':                        [u32(0x2205)]
-	'emptyv;':                          [u32(0x2205)]
-	'emsp13;':                          [u32(0x2004)]
-	'emsp14;':                          [u32(0x2005)]
-	'emsp;':                            [u32(0x2003)]
-	'eng;':                             [u32(0x14B)]
-	'ensp;':                            [u32(0x2002)]
-	'eogon;':                           [u32(0x119)]
-	'eopf;':                            [u32(0x1D556)]
-	'epar;':                            [u32(0x22D5)]
-	'eparsl;':                          [u32(0x29E3)]
-	'eplus;':                           [u32(0x2A71)]
-	'epsi;':                            [u32(0x3B5)]
-	'epsilon;':                         [u32(0x3B5)]
-	'epsiv;':                           [u32(0x3F5)]
-	'eqcirc;':                          [u32(0x2256)]
-	'eqcolon;':                         [u32(0x2255)]
-	'eqsim;':                           [u32(0x2242)]
-	'eqslantgtr;':                      [u32(0x2A96)]
-	'eqslantless;':                     [u32(0x2A95)]
-	'equals;':                          [u32(0x3D)]
-	'equest;':                          [u32(0x225F)]
-	'equiv;':                           [u32(0x2261)]
-	'equivDD;':                         [u32(0x2A78)]
-	'eqvparsl;':                        [u32(0x29E5)]
-	'erDot;':                           [u32(0x2253)]
-	'erarr;':                           [u32(0x2971)]
-	'escr;':                            [u32(0x212F)]
-	'esdot;':                           [u32(0x2250)]
-	'esim;':                            [u32(0x2242)]
-	'eta;':                             [u32(0x3B7)]
-	'eth':                              [u32(0xF0)]
-	'eth;':                             [u32(0xF0)]
-	'euml':                             [u32(0xEB)]
-	'euml;':                            [u32(0xEB)]
-	'euro;':                            [u32(0x20AC)]
-	'excl;':                            [u32(0x21)]
-	'exist;':                           [u32(0x2203)]
-	'expectation;':                     [u32(0x2130)]
-	'exponentiale;':                    [u32(0x2147)]
-	'fallingdotseq;':                   [u32(0x2252)]
-	'fcy;':                             [u32(0x444)]
-	'female;':                          [u32(0x2640)]
-	'ffilig;':                          [u32(0xFB03)]
-	'fflig;':                           [u32(0xFB00)]
-	'ffllig;':                          [u32(0xFB04)]
-	'ffr;':                             [u32(0x1D523)]
-	'filig;':                           [u32(0xFB01)]
-	'fjlig;':                           [u32(0x66), 0x6A]
-	'flat;':                            [u32(0x266D)]
-	'fllig;':                           [u32(0xFB02)]
-	'fltns;':                           [u32(0x25B1)]
-	'fnof;':                            [u32(0x192)]
-	'fopf;':                            [u32(0x1D557)]
-	'forall;':                          [u32(0x2200)]
-	'fork;':                            [u32(0x22D4)]
-	'forkv;':                           [u32(0x2AD9)]
-	'fpartint;':                        [u32(0x2A0D)]
-	'frac12':                           [u32(0xBD)]
-	'frac12;':                          [u32(0xBD)]
-	'frac13;':                          [u32(0x2153)]
-	'frac14':                           [u32(0xBC)]
-	'frac14;':                          [u32(0xBC)]
-	'frac15;':                          [u32(0x2155)]
-	'frac16;':                          [u32(0x2159)]
-	'frac18;':                          [u32(0x215B)]
-	'frac23;':                          [u32(0x2154)]
-	'frac25;':                          [u32(0x2156)]
-	'frac34':                           [u32(0xBE)]
-	'frac34;':                          [u32(0xBE)]
-	'frac35;':                          [u32(0x2157)]
-	'frac38;':                          [u32(0x215C)]
-	'frac45;':                          [u32(0x2158)]
-	'frac56;':                          [u32(0x215A)]
-	'frac58;':                          [u32(0x215D)]
-	'frac78;':                          [u32(0x215E)]
-	'frasl;':                           [u32(0x2044)]
-	'frown;':                           [u32(0x2322)]
-	'fscr;':                            [u32(0x1D4BB)]
-	'gE;':                              [u32(0x2267)]
-	'gEl;':                             [u32(0x2A8C)]
-	'gacute;':                          [u32(0x1F5)]
-	'gamma;':                           [u32(0x3B3)]
-	'gammad;':                          [u32(0x3DD)]
-	'gap;':                             [u32(0x2A86)]
-	'gbreve;':                          [u32(0x11F)]
-	'gcirc;':                           [u32(0x11D)]
-	'gcy;':                             [u32(0x433)]
-	'gdot;':                            [u32(0x121)]
-	'ge;':                              [u32(0x2265)]
-	'gel;':                             [u32(0x22DB)]
-	'geq;':                             [u32(0x2265)]
-	'geqq;':                            [u32(0x2267)]
-	'geqslant;':                        [u32(0x2A7E)]
-	'ges;':                             [u32(0x2A7E)]
-	'gescc;':                           [u32(0x2AA9)]
-	'gesdot;':                          [u32(0x2A80)]
-	'gesdoto;':                         [u32(0x2A82)]
-	'gesdotol;':                        [u32(0x2A84)]
-	'gesl;':                            [u32(0x22DB), 0xFE00]
-	'gesles;':                          [u32(0x2A94)]
-	'gfr;':                             [u32(0x1D524)]
-	'gg;':                              [u32(0x226B)]
-	'ggg;':                             [u32(0x22D9)]
-	'gimel;':                           [u32(0x2137)]
-	'gjcy;':                            [u32(0x453)]
-	'gl;':                              [u32(0x2277)]
-	'glE;':                             [u32(0x2A92)]
-	'gla;':                             [u32(0x2AA5)]
-	'glj;':                             [u32(0x2AA4)]
-	'gnE;':                             [u32(0x2269)]
-	'gnap;':                            [u32(0x2A8A)]
-	'gnapprox;':                        [u32(0x2A8A)]
-	'gne;':                             [u32(0x2A88)]
-	'gneq;':                            [u32(0x2A88)]
-	'gneqq;':                           [u32(0x2269)]
-	'gnsim;':                           [u32(0x22E7)]
-	'gopf;':                            [u32(0x1D558)]
-	'grave;':                           [u32(0x60)]
-	'gscr;':                            [u32(0x210A)]
-	'gsim;':                            [u32(0x2273)]
-	'gsime;':                           [u32(0x2A8E)]
-	'gsiml;':                           [u32(0x2A90)]
-	'gt':                               [u32(0x3E)]
-	'gt;':                              [u32(0x3E)]
-	'gtcc;':                            [u32(0x2AA7)]
-	'gtcir;':                           [u32(0x2A7A)]
-	'gtdot;':                           [u32(0x22D7)]
-	'gtlPar;':                          [u32(0x2995)]
-	'gtquest;':                         [u32(0x2A7C)]
-	'gtrapprox;':                       [u32(0x2A86)]
-	'gtrarr;':                          [u32(0x2978)]
-	'gtrdot;':                          [u32(0x22D7)]
-	'gtreqless;':                       [u32(0x22DB)]
-	'gtreqqless;':                      [u32(0x2A8C)]
-	'gtrless;':                         [u32(0x2277)]
-	'gtrsim;':                          [u32(0x2273)]
-	'gvertneqq;':                       [u32(0x2269), 0xFE00]
-	'gvnE;':                            [u32(0x2269), 0xFE00]
-	'hArr;':                            [u32(0x21D4)]
-	'hairsp;':                          [u32(0x200A)]
-	'half;':                            [u32(0xBD)]
-	'hamilt;':                          [u32(0x210B)]
-	'hardcy;':                          [u32(0x44A)]
-	'harr;':                            [u32(0x2194)]
-	'harrcir;':                         [u32(0x2948)]
-	'harrw;':                           [u32(0x21AD)]
-	'hbar;':                            [u32(0x210F)]
-	'hcirc;':                           [u32(0x125)]
-	'hearts;':                          [u32(0x2665)]
-	'heartsuit;':                       [u32(0x2665)]
-	'hellip;':                          [u32(0x2026)]
-	'hercon;':                          [u32(0x22B9)]
-	'hfr;':                             [u32(0x1D525)]
-	'hksearow;':                        [u32(0x2925)]
-	'hkswarow;':                        [u32(0x2926)]
-	'hoarr;':                           [u32(0x21FF)]
-	'homtht;':                          [u32(0x223B)]
-	'hookleftarrow;':                   [u32(0x21A9)]
-	'hookrightarrow;':                  [u32(0x21AA)]
-	'hopf;':                            [u32(0x1D559)]
-	'horbar;':                          [u32(0x2015)]
-	'hscr;':                            [u32(0x1D4BD)]
-	'hslash;':                          [u32(0x210F)]
-	'hstrok;':                          [u32(0x127)]
-	'hybull;':                          [u32(0x2043)]
-	'hyphen;':                          [u32(0x2010)]
-	'iacute':                           [u32(0xED)]
-	'iacute;':                          [u32(0xED)]
-	'ic;':                              [u32(0x2063)]
-	'icirc':                            [u32(0xEE)]
-	'icirc;':                           [u32(0xEE)]
-	'icy;':                             [u32(0x438)]
-	'iecy;':                            [u32(0x435)]
-	'iexcl':                            [u32(0xA1)]
-	'iexcl;':                           [u32(0xA1)]
-	'iff;':                             [u32(0x21D4)]
-	'ifr;':                             [u32(0x1D526)]
-	'igrave':                           [u32(0xEC)]
-	'igrave;':                          [u32(0xEC)]
-	'ii;':                              [u32(0x2148)]
-	'iiiint;':                          [u32(0x2A0C)]
-	'iiint;':                           [u32(0x222D)]
-	'iinfin;':                          [u32(0x29DC)]
-	'iiota;':                           [u32(0x2129)]
-	'ijlig;':                           [u32(0x133)]
-	'imacr;':                           [u32(0x12B)]
-	'image;':                           [u32(0x2111)]
-	'imagline;':                        [u32(0x2110)]
-	'imagpart;':                        [u32(0x2111)]
-	'imath;':                           [u32(0x131)]
-	'imof;':                            [u32(0x22B7)]
-	'imped;':                           [u32(0x1B5)]
-	'in;':                              [u32(0x2208)]
-	'incare;':                          [u32(0x2105)]
-	'infin;':                           [u32(0x221E)]
-	'infintie;':                        [u32(0x29DD)]
-	'inodot;':                          [u32(0x131)]
-	'int;':                             [u32(0x222B)]
-	'intcal;':                          [u32(0x22BA)]
-	'integers;':                        [u32(0x2124)]
-	'intercal;':                        [u32(0x22BA)]
-	'intlarhk;':                        [u32(0x2A17)]
-	'intprod;':                         [u32(0x2A3C)]
-	'iocy;':                            [u32(0x451)]
-	'iogon;':                           [u32(0x12F)]
-	'iopf;':                            [u32(0x1D55A)]
-	'iota;':                            [u32(0x3B9)]
-	'iprod;':                           [u32(0x2A3C)]
-	'iquest':                           [u32(0xBF)]
-	'iquest;':                          [u32(0xBF)]
-	'iscr;':                            [u32(0x1D4BE)]
-	'isin;':                            [u32(0x2208)]
-	'isinE;':                           [u32(0x22F9)]
-	'isindot;':                         [u32(0x22F5)]
-	'isins;':                           [u32(0x22F4)]
-	'isinsv;':                          [u32(0x22F3)]
-	'isinv;':                           [u32(0x2208)]
-	'it;':                              [u32(0x2062)]
-	'itilde;':                          [u32(0x129)]
-	'iukcy;':                           [u32(0x456)]
-	'iuml':                             [u32(0xEF)]
-	'iuml;':                            [u32(0xEF)]
-	'jcirc;':                           [u32(0x135)]
-	'jcy;':                             [u32(0x439)]
-	'jfr;':                             [u32(0x1D527)]
-	'jmath;':                           [u32(0x237)]
-	'jopf;':                            [u32(0x1D55B)]
-	'jscr;':                            [u32(0x1D4BF)]
-	'jsercy;':                          [u32(0x458)]
-	'jukcy;':                           [u32(0x454)]
-	'kappa;':                           [u32(0x3BA)]
-	'kappav;':                          [u32(0x3F0)]
-	'kcedil;':                          [u32(0x137)]
-	'kcy;':                             [u32(0x43A)]
-	'kfr;':                             [u32(0x1D528)]
-	'kgreen;':                          [u32(0x138)]
-	'khcy;':                            [u32(0x445)]
-	'kjcy;':                            [u32(0x45C)]
-	'kopf;':                            [u32(0x1D55C)]
-	'kscr;':                            [u32(0x1D4C0)]
-	'lAarr;':                           [u32(0x21DA)]
-	'lArr;':                            [u32(0x21D0)]
-	'lAtail;':                          [u32(0x291B)]
-	'lBarr;':                           [u32(0x290E)]
-	'lE;':                              [u32(0x2266)]
-	'lEg;':                             [u32(0x2A8B)]
-	'lHar;':                            [u32(0x2962)]
-	'lacute;':                          [u32(0x13A)]
-	'laemptyv;':                        [u32(0x29B4)]
-	'lagran;':                          [u32(0x2112)]
-	'lambda;':                          [u32(0x3BB)]
-	'lang;':                            [u32(0x27E8)]
-	'langd;':                           [u32(0x2991)]
-	'langle;':                          [u32(0x27E8)]
-	'lap;':                             [u32(0x2A85)]
-	'laquo':                            [u32(0xAB)]
-	'laquo;':                           [u32(0xAB)]
-	'larr;':                            [u32(0x2190)]
-	'larrb;':                           [u32(0x21E4)]
-	'larrbfs;':                         [u32(0x291F)]
-	'larrfs;':                          [u32(0x291D)]
-	'larrhk;':                          [u32(0x21A9)]
-	'larrlp;':                          [u32(0x21AB)]
-	'larrpl;':                          [u32(0x2939)]
-	'larrsim;':                         [u32(0x2973)]
-	'larrtl;':                          [u32(0x21A2)]
-	'lat;':                             [u32(0x2AAB)]
-	'latail;':                          [u32(0x2919)]
-	'late;':                            [u32(0x2AAD)]
-	'lates;':                           [u32(0x2AAD), 0xFE00]
-	'lbarr;':                           [u32(0x290C)]
-	'lbbrk;':                           [u32(0x2772)]
-	'lbrace;':                          [u32(0x7B)]
-	'lbrack;':                          [u32(0x5B)]
-	'lbrke;':                           [u32(0x298B)]
-	'lbrksld;':                         [u32(0x298F)]
-	'lbrkslu;':                         [u32(0x298D)]
-	'lcaron;':                          [u32(0x13E)]
-	'lcedil;':                          [u32(0x13C)]
-	'lceil;':                           [u32(0x2308)]
-	'lcub;':                            [u32(0x7B)]
-	'lcy;':                             [u32(0x43B)]
-	'ldca;':                            [u32(0x2936)]
-	'ldquo;':                           [u32(0x201C)]
-	'ldquor;':                          [u32(0x201E)]
-	'ldrdhar;':                         [u32(0x2967)]
-	'ldrushar;':                        [u32(0x294B)]
-	'ldsh;':                            [u32(0x21B2)]
-	'le;':                              [u32(0x2264)]
-	'leftarrow;':                       [u32(0x2190)]
-	'leftarrowtail;':                   [u32(0x21A2)]
-	'leftharpoondown;':                 [u32(0x21BD)]
-	'leftharpoonup;':                   [u32(0x21BC)]
-	'leftleftarrows;':                  [u32(0x21C7)]
-	'leftrightarrow;':                  [u32(0x2194)]
-	'leftrightarrows;':                 [u32(0x21C6)]
-	'leftrightharpoons;':               [u32(0x21CB)]
-	'leftrightsquigarrow;':             [u32(0x21AD)]
-	'leftthreetimes;':                  [u32(0x22CB)]
-	'leg;':                             [u32(0x22DA)]
-	'leq;':                             [u32(0x2264)]
-	'leqq;':                            [u32(0x2266)]
-	'leqslant;':                        [u32(0x2A7D)]
-	'les;':                             [u32(0x2A7D)]
-	'lescc;':                           [u32(0x2AA8)]
-	'lesdot;':                          [u32(0x2A7F)]
-	'lesdoto;':                         [u32(0x2A81)]
-	'lesdotor;':                        [u32(0x2A83)]
-	'lesg;':                            [u32(0x22DA), 0xFE00]
-	'lesges;':                          [u32(0x2A93)]
-	'lessapprox;':                      [u32(0x2A85)]
-	'lessdot;':                         [u32(0x22D6)]
-	'lesseqgtr;':                       [u32(0x22DA)]
-	'lesseqqgtr;':                      [u32(0x2A8B)]
-	'lessgtr;':                         [u32(0x2276)]
-	'lesssim;':                         [u32(0x2272)]
-	'lfisht;':                          [u32(0x297C)]
-	'lfloor;':                          [u32(0x230A)]
-	'lfr;':                             [u32(0x1D529)]
-	'lg;':                              [u32(0x2276)]
-	'lgE;':                             [u32(0x2A91)]
-	'lhard;':                           [u32(0x21BD)]
-	'lharu;':                           [u32(0x21BC)]
-	'lharul;':                          [u32(0x296A)]
-	'lhblk;':                           [u32(0x2584)]
-	'ljcy;':                            [u32(0x459)]
-	'll;':                              [u32(0x226A)]
-	'llarr;':                           [u32(0x21C7)]
-	'llcorner;':                        [u32(0x231E)]
-	'llhard;':                          [u32(0x296B)]
-	'lltri;':                           [u32(0x25FA)]
-	'lmidot;':                          [u32(0x140)]
-	'lmoust;':                          [u32(0x23B0)]
-	'lmoustache;':                      [u32(0x23B0)]
-	'lnE;':                             [u32(0x2268)]
-	'lnap;':                            [u32(0x2A89)]
-	'lnapprox;':                        [u32(0x2A89)]
-	'lne;':                             [u32(0x2A87)]
-	'lneq;':                            [u32(0x2A87)]
-	'lneqq;':                           [u32(0x2268)]
-	'lnsim;':                           [u32(0x22E6)]
-	'loang;':                           [u32(0x27EC)]
-	'loarr;':                           [u32(0x21FD)]
-	'lobrk;':                           [u32(0x27E6)]
-	'longleftarrow;':                   [u32(0x27F5)]
-	'longleftrightarrow;':              [u32(0x27F7)]
-	'longmapsto;':                      [u32(0x27FC)]
-	'longrightarrow;':                  [u32(0x27F6)]
-	'looparrowleft;':                   [u32(0x21AB)]
-	'looparrowright;':                  [u32(0x21AC)]
-	'lopar;':                           [u32(0x2985)]
-	'lopf;':                            [u32(0x1D55D)]
-	'loplus;':                          [u32(0x2A2D)]
-	'lotimes;':                         [u32(0x2A34)]
-	'lowast;':                          [u32(0x2217)]
-	'lowbar;':                          [u32(0x5F)]
-	'loz;':                             [u32(0x25CA)]
-	'lozenge;':                         [u32(0x25CA)]
-	'lozf;':                            [u32(0x29EB)]
-	'lpar;':                            [u32(0x28)]
-	'lparlt;':                          [u32(0x2993)]
-	'lrarr;':                           [u32(0x21C6)]
-	'lrcorner;':                        [u32(0x231F)]
-	'lrhar;':                           [u32(0x21CB)]
-	'lrhard;':                          [u32(0x296D)]
-	'lrm;':                             [u32(0x200E)]
-	'lrtri;':                           [u32(0x22BF)]
-	'lsaquo;':                          [u32(0x2039)]
-	'lscr;':                            [u32(0x1D4C1)]
-	'lsh;':                             [u32(0x21B0)]
-	'lsim;':                            [u32(0x2272)]
-	'lsime;':                           [u32(0x2A8D)]
-	'lsimg;':                           [u32(0x2A8F)]
-	'lsqb;':                            [u32(0x5B)]
-	'lsquo;':                           [u32(0x2018)]
-	'lsquor;':                          [u32(0x201A)]
-	'lstrok;':                          [u32(0x142)]
-	'lt':                               [u32(0x3C)]
-	'lt;':                              [u32(0x3C)]
-	'ltcc;':                            [u32(0x2AA6)]
-	'ltcir;':                           [u32(0x2A79)]
-	'ltdot;':                           [u32(0x22D6)]
-	'lthree;':                          [u32(0x22CB)]
-	'ltimes;':                          [u32(0x22C9)]
-	'ltlarr;':                          [u32(0x2976)]
-	'ltquest;':                         [u32(0x2A7B)]
-	'ltrPar;':                          [u32(0x2996)]
-	'ltri;':                            [u32(0x25C3)]
-	'ltrie;':                           [u32(0x22B4)]
-	'ltrif;':                           [u32(0x25C2)]
-	'lurdshar;':                        [u32(0x294A)]
-	'luruhar;':                         [u32(0x2966)]
-	'lvertneqq;':                       [u32(0x2268), 0xFE00]
-	'lvnE;':                            [u32(0x2268), 0xFE00]
-	'mDDot;':                           [u32(0x223A)]
-	'macr':                             [u32(0xAF)]
-	'macr;':                            [u32(0xAF)]
-	'male;':                            [u32(0x2642)]
-	'malt;':                            [u32(0x2720)]
-	'maltese;':                         [u32(0x2720)]
-	'map;':                             [u32(0x21A6)]
-	'mapsto;':                          [u32(0x21A6)]
-	'mapstodown;':                      [u32(0x21A7)]
-	'mapstoleft;':                      [u32(0x21A4)]
-	'mapstoup;':                        [u32(0x21A5)]
-	'marker;':                          [u32(0x25AE)]
-	'mcomma;':                          [u32(0x2A29)]
-	'mcy;':                             [u32(0x43C)]
-	'mdash;':                           [u32(0x2014)]
-	'measuredangle;':                   [u32(0x2221)]
-	'mfr;':                             [u32(0x1D52A)]
-	'mho;':                             [u32(0x2127)]
-	'micro':                            [u32(0xB5)]
-	'micro;':                           [u32(0xB5)]
-	'mid;':                             [u32(0x2223)]
-	'midast;':                          [u32(0x2A)]
-	'midcir;':                          [u32(0x2AF0)]
-	'middot':                           [u32(0xB7)]
-	'middot;':                          [u32(0xB7)]
-	'minus;':                           [u32(0x2212)]
-	'minusb;':                          [u32(0x229F)]
-	'minusd;':                          [u32(0x2238)]
-	'minusdu;':                         [u32(0x2A2A)]
-	'mlcp;':                            [u32(0x2ADB)]
-	'mldr;':                            [u32(0x2026)]
-	'mnplus;':                          [u32(0x2213)]
-	'models;':                          [u32(0x22A7)]
-	'mopf;':                            [u32(0x1D55E)]
-	'mp;':                              [u32(0x2213)]
-	'mscr;':                            [u32(0x1D4C2)]
-	'mstpos;':                          [u32(0x223E)]
-	'mu;':                              [u32(0x3BC)]
-	'multimap;':                        [u32(0x22B8)]
-	'mumap;':                           [u32(0x22B8)]
-	'nGg;':                             [u32(0x22D9), 0x338]
-	'nGt;':                             [u32(0x226B), 0x20D2]
-	'nGtv;':                            [u32(0x226B), 0x338]
-	'nLeftarrow;':                      [u32(0x21CD)]
-	'nLeftrightarrow;':                 [u32(0x21CE)]
-	'nLl;':                             [u32(0x22D8), 0x338]
-	'nLt;':                             [u32(0x226A), 0x20D2]
-	'nLtv;':                            [u32(0x226A), 0x338]
-	'nRightarrow;':                     [u32(0x21CF)]
-	'nVDash;':                          [u32(0x22AF)]
-	'nVdash;':                          [u32(0x22AE)]
-	'nabla;':                           [u32(0x2207)]
-	'nacute;':                          [u32(0x144)]
-	'nang;':                            [u32(0x2220), 0x20D2]
-	'nap;':                             [u32(0x2249)]
-	'napE;':                            [u32(0x2A70), 0x338]
-	'napid;':                           [u32(0x224B), 0x338]
-	'napos;':                           [u32(0x149)]
-	'napprox;':                         [u32(0x2249)]
-	'natur;':                           [u32(0x266E)]
-	'natural;':                         [u32(0x266E)]
-	'naturals;':                        [u32(0x2115)]
-	'nbsp':                             [u32(0xA0)]
-	'nbsp;':                            [u32(0xA0)]
-	'nbump;':                           [u32(0x224E), 0x338]
-	'nbumpe;':                          [u32(0x224F), 0x338]
-	'ncap;':                            [u32(0x2A43)]
-	'ncaron;':                          [u32(0x148)]
-	'ncedil;':                          [u32(0x146)]
-	'ncong;':                           [u32(0x2247)]
-	'ncongdot;':                        [u32(0x2A6D), 0x338]
-	'ncup;':                            [u32(0x2A42)]
-	'ncy;':                             [u32(0x43D)]
-	'ndash;':                           [u32(0x2013)]
-	'ne;':                              [u32(0x2260)]
-	'neArr;':                           [u32(0x21D7)]
-	'nearhk;':                          [u32(0x2924)]
-	'nearr;':                           [u32(0x2197)]
-	'nearrow;':                         [u32(0x2197)]
-	'nedot;':                           [u32(0x2250), 0x338]
-	'nequiv;':                          [u32(0x2262)]
-	'nesear;':                          [u32(0x2928)]
-	'nesim;':                           [u32(0x2242), 0x338]
-	'nexist;':                          [u32(0x2204)]
-	'nexists;':                         [u32(0x2204)]
-	'nfr;':                             [u32(0x1D52B)]
-	'ngE;':                             [u32(0x2267), 0x338]
-	'nge;':                             [u32(0x2271)]
-	'ngeq;':                            [u32(0x2271)]
-	'ngeqq;':                           [u32(0x2267), 0x338]
-	'ngeqslant;':                       [u32(0x2A7E), 0x338]
-	'nges;':                            [u32(0x2A7E), 0x338]
-	'ngsim;':                           [u32(0x2275)]
-	'ngt;':                             [u32(0x226F)]
-	'ngtr;':                            [u32(0x226F)]
-	'nhArr;':                           [u32(0x21CE)]
-	'nharr;':                           [u32(0x21AE)]
-	'nhpar;':                           [u32(0x2AF2)]
-	'ni;':                              [u32(0x220B)]
-	'nis;':                             [u32(0x22FC)]
-	'nisd;':                            [u32(0x22FA)]
-	'niv;':                             [u32(0x220B)]
-	'njcy;':                            [u32(0x45A)]
-	'nlArr;':                           [u32(0x21CD)]
-	'nlE;':                             [u32(0x2266), 0x338]
-	'nlarr;':                           [u32(0x219A)]
-	'nldr;':                            [u32(0x2025)]
-	'nle;':                             [u32(0x2270)]
-	'nleftarrow;':                      [u32(0x219A)]
-	'nleftrightarrow;':                 [u32(0x21AE)]
-	'nleq;':                            [u32(0x2270)]
-	'nleqq;':                           [u32(0x2266), 0x338]
-	'nleqslant;':                       [u32(0x2A7D), 0x338]
-	'nles;':                            [u32(0x2A7D), 0x338]
-	'nless;':                           [u32(0x226E)]
-	'nlsim;':                           [u32(0x2274)]
-	'nlt;':                             [u32(0x226E)]
-	'nltri;':                           [u32(0x22EA)]
-	'nltrie;':                          [u32(0x22EC)]
-	'nmid;':                            [u32(0x2224)]
-	'nopf;':                            [u32(0x1D55F)]
-	'not':                              [u32(0xAC)]
-	'not;':                             [u32(0xAC)]
-	'notin;':                           [u32(0x2209)]
-	'notinE;':                          [u32(0x22F9), 0x338]
-	'notindot;':                        [u32(0x22F5), 0x338]
-	'notinva;':                         [u32(0x2209)]
-	'notinvb;':                         [u32(0x22F7)]
-	'notinvc;':                         [u32(0x22F6)]
-	'notni;':                           [u32(0x220C)]
-	'notniva;':                         [u32(0x220C)]
-	'notnivb;':                         [u32(0x22FE)]
-	'notnivc;':                         [u32(0x22FD)]
-	'npar;':                            [u32(0x2226)]
-	'nparallel;':                       [u32(0x2226)]
-	'nparsl;':                          [u32(0x2AFD), 0x20E5]
-	'npart;':                           [u32(0x2202), 0x338]
-	'npolint;':                         [u32(0x2A14)]
-	'npr;':                             [u32(0x2280)]
-	'nprcue;':                          [u32(0x22E0)]
-	'npre;':                            [u32(0x2AAF), 0x338]
-	'nprec;':                           [u32(0x2280)]
-	'npreceq;':                         [u32(0x2AAF), 0x338]
-	'nrArr;':                           [u32(0x21CF)]
-	'nrarr;':                           [u32(0x219B)]
-	'nrarrc;':                          [u32(0x2933), 0x338]
-	'nrarrw;':                          [u32(0x219D), 0x338]
-	'nrightarrow;':                     [u32(0x219B)]
-	'nrtri;':                           [u32(0x22EB)]
-	'nrtrie;':                          [u32(0x22ED)]
-	'nsc;':                             [u32(0x2281)]
-	'nsccue;':                          [u32(0x22E1)]
-	'nsce;':                            [u32(0x2AB0), 0x338]
-	'nscr;':                            [u32(0x1D4C3)]
-	'nshortmid;':                       [u32(0x2224)]
-	'nshortparallel;':                  [u32(0x2226)]
-	'nsim;':                            [u32(0x2241)]
-	'nsime;':                           [u32(0x2244)]
-	'nsimeq;':                          [u32(0x2244)]
-	'nsmid;':                           [u32(0x2224)]
-	'nspar;':                           [u32(0x2226)]
-	'nsqsube;':                         [u32(0x22E2)]
-	'nsqsupe;':                         [u32(0x22E3)]
-	'nsub;':                            [u32(0x2284)]
-	'nsubE;':                           [u32(0x2AC5), 0x338]
-	'nsube;':                           [u32(0x2288)]
-	'nsubset;':                         [u32(0x2282), 0x20D2]
-	'nsubseteq;':                       [u32(0x2288)]
-	'nsubseteqq;':                      [u32(0x2AC5), 0x338]
-	'nsucc;':                           [u32(0x2281)]
-	'nsucceq;':                         [u32(0x2AB0), 0x338]
-	'nsup;':                            [u32(0x2285)]
-	'nsupE;':                           [u32(0x2AC6), 0x338]
-	'nsupe;':                           [u32(0x2289)]
-	'nsupset;':                         [u32(0x2283), 0x20D2]
-	'nsupseteq;':                       [u32(0x2289)]
-	'nsupseteqq;':                      [u32(0x2AC6), 0x338]
-	'ntgl;':                            [u32(0x2279)]
-	'ntilde':                           [u32(0xF1)]
-	'ntilde;':                          [u32(0xF1)]
-	'ntlg;':                            [u32(0x2278)]
-	'ntriangleleft;':                   [u32(0x22EA)]
-	'ntrianglelefteq;':                 [u32(0x22EC)]
-	'ntriangleright;':                  [u32(0x22EB)]
-	'ntrianglerighteq;':                [u32(0x22ED)]
-	'nu;':                              [u32(0x3BD)]
-	'num;':                             [u32(0x23)]
-	'numero;':                          [u32(0x2116)]
-	'numsp;':                           [u32(0x2007)]
-	'nvDash;':                          [u32(0x22AD)]
-	'nvHarr;':                          [u32(0x2904)]
-	'nvap;':                            [u32(0x224D), 0x20D2]
-	'nvdash;':                          [u32(0x22AC)]
-	'nvge;':                            [u32(0x2265), 0x20D2]
-	'nvgt;':                            [u32(0x3E), 0x20D2]
-	'nvinfin;':                         [u32(0x29DE)]
-	'nvlArr;':                          [u32(0x2902)]
-	'nvle;':                            [u32(0x2264), 0x20D2]
-	'nvlt;':                            [u32(0x3C), 0x20D2]
-	'nvltrie;':                         [u32(0x22B4), 0x20D2]
-	'nvrArr;':                          [u32(0x2903)]
-	'nvrtrie;':                         [u32(0x22B5), 0x20D2]
-	'nvsim;':                           [u32(0x223C), 0x20D2]
-	'nwArr;':                           [u32(0x21D6)]
-	'nwarhk;':                          [u32(0x2923)]
-	'nwarr;':                           [u32(0x2196)]
-	'nwarrow;':                         [u32(0x2196)]
-	'nwnear;':                          [u32(0x2927)]
-	'oS;':                              [u32(0x24C8)]
-	'oacute':                           [u32(0xF3)]
-	'oacute;':                          [u32(0xF3)]
-	'oast;':                            [u32(0x229B)]
-	'ocir;':                            [u32(0x229A)]
-	'ocirc':                            [u32(0xF4)]
-	'ocirc;':                           [u32(0xF4)]
-	'ocy;':                             [u32(0x43E)]
-	'odash;':                           [u32(0x229D)]
-	'odblac;':                          [u32(0x151)]
-	'odiv;':                            [u32(0x2A38)]
-	'odot;':                            [u32(0x2299)]
-	'odsold;':                          [u32(0x29BC)]
-	'oelig;':                           [u32(0x153)]
-	'ofcir;':                           [u32(0x29BF)]
-	'ofr;':                             [u32(0x1D52C)]
-	'ogon;':                            [u32(0x2DB)]
-	'ograve':                           [u32(0xF2)]
-	'ograve;':                          [u32(0xF2)]
-	'ogt;':                             [u32(0x29C1)]
-	'ohbar;':                           [u32(0x29B5)]
-	'ohm;':                             [u32(0x3A9)]
-	'oint;':                            [u32(0x222E)]
-	'olarr;':                           [u32(0x21BA)]
-	'olcir;':                           [u32(0x29BE)]
-	'olcross;':                         [u32(0x29BB)]
-	'oline;':                           [u32(0x203E)]
-	'olt;':                             [u32(0x29C0)]
-	'omacr;':                           [u32(0x14D)]
-	'omega;':                           [u32(0x3C9)]
-	'omicron;':                         [u32(0x3BF)]
-	'omid;':                            [u32(0x29B6)]
-	'ominus;':                          [u32(0x2296)]
-	'oopf;':                            [u32(0x1D560)]
-	'opar;':                            [u32(0x29B7)]
-	'operp;':                           [u32(0x29B9)]
-	'oplus;':                           [u32(0x2295)]
-	'or;':                              [u32(0x2228)]
-	'orarr;':                           [u32(0x21BB)]
-	'ord;':                             [u32(0x2A5D)]
-	'order;':                           [u32(0x2134)]
-	'orderof;':                         [u32(0x2134)]
-	'ordf':                             [u32(0xAA)]
-	'ordf;':                            [u32(0xAA)]
-	'ordm':                             [u32(0xBA)]
-	'ordm;':                            [u32(0xBA)]
-	'origof;':                          [u32(0x22B6)]
-	'oror;':                            [u32(0x2A56)]
-	'orslope;':                         [u32(0x2A57)]
-	'orv;':                             [u32(0x2A5B)]
-	'oscr;':                            [u32(0x2134)]
-	'oslash':                           [u32(0xF8)]
-	'oslash;':                          [u32(0xF8)]
-	'osol;':                            [u32(0x2298)]
-	'otilde':                           [u32(0xF5)]
-	'otilde;':                          [u32(0xF5)]
-	'otimes;':                          [u32(0x2297)]
-	'otimesas;':                        [u32(0x2A36)]
-	'ouml':                             [u32(0xF6)]
-	'ouml;':                            [u32(0xF6)]
-	'ovbar;':                           [u32(0x233D)]
-	'par;':                             [u32(0x2225)]
-	'para':                             [u32(0xB6)]
-	'para;':                            [u32(0xB6)]
-	'parallel;':                        [u32(0x2225)]
-	'parsim;':                          [u32(0x2AF3)]
-	'parsl;':                           [u32(0x2AFD)]
-	'part;':                            [u32(0x2202)]
-	'pcy;':                             [u32(0x43F)]
-	'percnt;':                          [u32(0x25)]
-	'period;':                          [u32(0x2E)]
-	'permil;':                          [u32(0x2030)]
-	'perp;':                            [u32(0x22A5)]
-	'pertenk;':                         [u32(0x2031)]
-	'pfr;':                             [u32(0x1D52D)]
-	'phi;':                             [u32(0x3C6)]
-	'phiv;':                            [u32(0x3D5)]
-	'phmmat;':                          [u32(0x2133)]
-	'phone;':                           [u32(0x260E)]
-	'pi;':                              [u32(0x3C0)]
-	'pitchfork;':                       [u32(0x22D4)]
-	'piv;':                             [u32(0x3D6)]
-	'planck;':                          [u32(0x210F)]
-	'planckh;':                         [u32(0x210E)]
-	'plankv;':                          [u32(0x210F)]
-	'plus;':                            [u32(0x2B)]
-	'plusacir;':                        [u32(0x2A23)]
-	'plusb;':                           [u32(0x229E)]
-	'pluscir;':                         [u32(0x2A22)]
-	'plusdo;':                          [u32(0x2214)]
-	'plusdu;':                          [u32(0x2A25)]
-	'pluse;':                           [u32(0x2A72)]
-	'plusmn':                           [u32(0xB1)]
-	'plusmn;':                          [u32(0xB1)]
-	'plussim;':                         [u32(0x2A26)]
-	'plustwo;':                         [u32(0x2A27)]
-	'pm;':                              [u32(0xB1)]
-	'pointint;':                        [u32(0x2A15)]
-	'popf;':                            [u32(0x1D561)]
-	'pound':                            [u32(0xA3)]
-	'pound;':                           [u32(0xA3)]
-	'pr;':                              [u32(0x227A)]
-	'prE;':                             [u32(0x2AB3)]
-	'prap;':                            [u32(0x2AB7)]
-	'prcue;':                           [u32(0x227C)]
-	'pre;':                             [u32(0x2AAF)]
-	'prec;':                            [u32(0x227A)]
-	'precapprox;':                      [u32(0x2AB7)]
-	'preccurlyeq;':                     [u32(0x227C)]
-	'preceq;':                          [u32(0x2AAF)]
-	'precnapprox;':                     [u32(0x2AB9)]
-	'precneqq;':                        [u32(0x2AB5)]
-	'precnsim;':                        [u32(0x22E8)]
-	'precsim;':                         [u32(0x227E)]
-	'prime;':                           [u32(0x2032)]
-	'primes;':                          [u32(0x2119)]
-	'prnE;':                            [u32(0x2AB5)]
-	'prnap;':                           [u32(0x2AB9)]
-	'prnsim;':                          [u32(0x22E8)]
-	'prod;':                            [u32(0x220F)]
-	'profalar;':                        [u32(0x232E)]
-	'profline;':                        [u32(0x2312)]
-	'profsurf;':                        [u32(0x2313)]
-	'prop;':                            [u32(0x221D)]
-	'propto;':                          [u32(0x221D)]
-	'prsim;':                           [u32(0x227E)]
-	'prurel;':                          [u32(0x22B0)]
-	'pscr;':                            [u32(0x1D4C5)]
-	'psi;':                             [u32(0x3C8)]
-	'puncsp;':                          [u32(0x2008)]
-	'qfr;':                             [u32(0x1D52E)]
-	'qint;':                            [u32(0x2A0C)]
-	'qopf;':                            [u32(0x1D562)]
-	'qprime;':                          [u32(0x2057)]
-	'qscr;':                            [u32(0x1D4C6)]
-	'quaternions;':                     [u32(0x210D)]
-	'quatint;':                         [u32(0x2A16)]
-	'quest;':                           [u32(0x3F)]
-	'questeq;':                         [u32(0x225F)]
-	'quot':                             [u32(0x22)]
-	'quot;':                            [u32(0x22)]
-	'rAarr;':                           [u32(0x21DB)]
-	'rArr;':                            [u32(0x21D2)]
-	'rAtail;':                          [u32(0x291C)]
-	'rBarr;':                           [u32(0x290F)]
-	'rHar;':                            [u32(0x2964)]
-	'race;':                            [u32(0x223D), 0x331]
-	'racute;':                          [u32(0x155)]
-	'radic;':                           [u32(0x221A)]
-	'raemptyv;':                        [u32(0x29B3)]
-	'rang;':                            [u32(0x27E9)]
-	'rangd;':                           [u32(0x2992)]
-	'range;':                           [u32(0x29A5)]
-	'rangle;':                          [u32(0x27E9)]
-	'raquo':                            [u32(0xBB)]
-	'raquo;':                           [u32(0xBB)]
-	'rarr;':                            [u32(0x2192)]
-	'rarrap;':                          [u32(0x2975)]
-	'rarrb;':                           [u32(0x21E5)]
-	'rarrbfs;':                         [u32(0x2920)]
-	'rarrc;':                           [u32(0x2933)]
-	'rarrfs;':                          [u32(0x291E)]
-	'rarrhk;':                          [u32(0x21AA)]
-	'rarrlp;':                          [u32(0x21AC)]
-	'rarrpl;':                          [u32(0x2945)]
-	'rarrsim;':                         [u32(0x2974)]
-	'rarrtl;':                          [u32(0x21A3)]
-	'rarrw;':                           [u32(0x219D)]
-	'ratail;':                          [u32(0x291A)]
-	'ratio;':                           [u32(0x2236)]
-	'rationals;':                       [u32(0x211A)]
-	'rbarr;':                           [u32(0x290D)]
-	'rbbrk;':                           [u32(0x2773)]
-	'rbrace;':                          [u32(0x7D)]
-	'rbrack;':                          [u32(0x5D)]
-	'rbrke;':                           [u32(0x298C)]
-	'rbrksld;':                         [u32(0x298E)]
-	'rbrkslu;':                         [u32(0x2990)]
-	'rcaron;':                          [u32(0x159)]
-	'rcedil;':                          [u32(0x157)]
-	'rceil;':                           [u32(0x2309)]
-	'rcub;':                            [u32(0x7D)]
-	'rcy;':                             [u32(0x440)]
-	'rdca;':                            [u32(0x2937)]
-	'rdldhar;':                         [u32(0x2969)]
-	'rdquo;':                           [u32(0x201D)]
-	'rdquor;':                          [u32(0x201D)]
-	'rdsh;':                            [u32(0x21B3)]
-	'real;':                            [u32(0x211C)]
-	'realine;':                         [u32(0x211B)]
-	'realpart;':                        [u32(0x211C)]
-	'reals;':                           [u32(0x211D)]
-	'rect;':                            [u32(0x25AD)]
-	'reg':                              [u32(0xAE)]
-	'reg;':                             [u32(0xAE)]
-	'rfisht;':                          [u32(0x297D)]
-	'rfloor;':                          [u32(0x230B)]
-	'rfr;':                             [u32(0x1D52F)]
-	'rhard;':                           [u32(0x21C1)]
-	'rharu;':                           [u32(0x21C0)]
-	'rharul;':                          [u32(0x296C)]
-	'rho;':                             [u32(0x3C1)]
-	'rhov;':                            [u32(0x3F1)]
-	'rightarrow;':                      [u32(0x2192)]
-	'rightarrowtail;':                  [u32(0x21A3)]
-	'rightharpoondown;':                [u32(0x21C1)]
-	'rightharpoonup;':                  [u32(0x21C0)]
-	'rightleftarrows;':                 [u32(0x21C4)]
-	'rightleftharpoons;':               [u32(0x21CC)]
-	'rightrightarrows;':                [u32(0x21C9)]
-	'rightsquigarrow;':                 [u32(0x219D)]
-	'rightthreetimes;':                 [u32(0x22CC)]
-	'ring;':                            [u32(0x2DA)]
-	'risingdotseq;':                    [u32(0x2253)]
-	'rlarr;':                           [u32(0x21C4)]
-	'rlhar;':                           [u32(0x21CC)]
-	'rlm;':                             [u32(0x200F)]
-	'rmoust;':                          [u32(0x23B1)]
-	'rmoustache;':                      [u32(0x23B1)]
-	'rnmid;':                           [u32(0x2AEE)]
-	'roang;':                           [u32(0x27ED)]
-	'roarr;':                           [u32(0x21FE)]
-	'robrk;':                           [u32(0x27E7)]
-	'ropar;':                           [u32(0x2986)]
-	'ropf;':                            [u32(0x1D563)]
-	'roplus;':                          [u32(0x2A2E)]
-	'rotimes;':                         [u32(0x2A35)]
-	'rpar;':                            [u32(0x29)]
-	'rpargt;':                          [u32(0x2994)]
-	'rppolint;':                        [u32(0x2A12)]
-	'rrarr;':                           [u32(0x21C9)]
-	'rsaquo;':                          [u32(0x203A)]
-	'rscr;':                            [u32(0x1D4C7)]
-	'rsh;':                             [u32(0x21B1)]
-	'rsqb;':                            [u32(0x5D)]
-	'rsquo;':                           [u32(0x2019)]
-	'rsquor;':                          [u32(0x2019)]
-	'rthree;':                          [u32(0x22CC)]
-	'rtimes;':                          [u32(0x22CA)]
-	'rtri;':                            [u32(0x25B9)]
-	'rtrie;':                           [u32(0x22B5)]
-	'rtrif;':                           [u32(0x25B8)]
-	'rtriltri;':                        [u32(0x29CE)]
-	'ruluhar;':                         [u32(0x2968)]
-	'rx;':                              [u32(0x211E)]
-	'sacute;':                          [u32(0x15B)]
-	'sbquo;':                           [u32(0x201A)]
-	'sc;':                              [u32(0x227B)]
-	'scE;':                             [u32(0x2AB4)]
-	'scap;':                            [u32(0x2AB8)]
-	'scaron;':                          [u32(0x161)]
-	'sccue;':                           [u32(0x227D)]
-	'sce;':                             [u32(0x2AB0)]
-	'scedil;':                          [u32(0x15F)]
-	'scirc;':                           [u32(0x15D)]
-	'scnE;':                            [u32(0x2AB6)]
-	'scnap;':                           [u32(0x2ABA)]
-	'scnsim;':                          [u32(0x22E9)]
-	'scpolint;':                        [u32(0x2A13)]
-	'scsim;':                           [u32(0x227F)]
-	'scy;':                             [u32(0x441)]
-	'sdot;':                            [u32(0x22C5)]
-	'sdotb;':                           [u32(0x22A1)]
-	'sdote;':                           [u32(0x2A66)]
-	'seArr;':                           [u32(0x21D8)]
-	'searhk;':                          [u32(0x2925)]
-	'searr;':                           [u32(0x2198)]
-	'searrow;':                         [u32(0x2198)]
-	'sect':                             [u32(0xA7)]
-	'sect;':                            [u32(0xA7)]
-	'semi;':                            [u32(0x3B)]
-	'seswar;':                          [u32(0x2929)]
-	'setminus;':                        [u32(0x2216)]
-	'setmn;':                           [u32(0x2216)]
-	'sext;':                            [u32(0x2736)]
-	'sfr;':                             [u32(0x1D530)]
-	'sfrown;':                          [u32(0x2322)]
-	'sharp;':                           [u32(0x266F)]
-	'shchcy;':                          [u32(0x449)]
-	'shcy;':                            [u32(0x448)]
-	'shortmid;':                        [u32(0x2223)]
-	'shortparallel;':                   [u32(0x2225)]
-	'shy':                              [u32(0xAD)]
-	'shy;':                             [u32(0xAD)]
-	'sigma;':                           [u32(0x3C3)]
-	'sigmaf;':                          [u32(0x3C2)]
-	'sigmav;':                          [u32(0x3C2)]
-	'sim;':                             [u32(0x223C)]
-	'simdot;':                          [u32(0x2A6A)]
-	'sime;':                            [u32(0x2243)]
-	'simeq;':                           [u32(0x2243)]
-	'simg;':                            [u32(0x2A9E)]
-	'simgE;':                           [u32(0x2AA0)]
-	'siml;':                            [u32(0x2A9D)]
-	'simlE;':                           [u32(0x2A9F)]
-	'simne;':                           [u32(0x2246)]
-	'simplus;':                         [u32(0x2A24)]
-	'simrarr;':                         [u32(0x2972)]
-	'slarr;':                           [u32(0x2190)]
-	'smallsetminus;':                   [u32(0x2216)]
-	'smashp;':                          [u32(0x2A33)]
-	'smeparsl;':                        [u32(0x29E4)]
-	'smid;':                            [u32(0x2223)]
-	'smile;':                           [u32(0x2323)]
-	'smt;':                             [u32(0x2AAA)]
-	'smte;':                            [u32(0x2AAC)]
-	'smtes;':                           [u32(0x2AAC), 0xFE00]
-	'softcy;':                          [u32(0x44C)]
-	'sol;':                             [u32(0x2F)]
-	'solb;':                            [u32(0x29C4)]
-	'solbar;':                          [u32(0x233F)]
-	'sopf;':                            [u32(0x1D564)]
-	'spades;':                          [u32(0x2660)]
-	'spadesuit;':                       [u32(0x2660)]
-	'spar;':                            [u32(0x2225)]
-	'sqcap;':                           [u32(0x2293)]
-	'sqcaps;':                          [u32(0x2293), 0xFE00]
-	'sqcup;':                           [u32(0x2294)]
-	'sqcups;':                          [u32(0x2294), 0xFE00]
-	'sqsub;':                           [u32(0x228F)]
-	'sqsube;':                          [u32(0x2291)]
-	'sqsubset;':                        [u32(0x228F)]
-	'sqsubseteq;':                      [u32(0x2291)]
-	'sqsup;':                           [u32(0x2290)]
-	'sqsupe;':                          [u32(0x2292)]
-	'sqsupset;':                        [u32(0x2290)]
-	'sqsupseteq;':                      [u32(0x2292)]
-	'squ;':                             [u32(0x25A1)]
-	'square;':                          [u32(0x25A1)]
-	'squarf;':                          [u32(0x25AA)]
-	'squf;':                            [u32(0x25AA)]
-	'srarr;':                           [u32(0x2192)]
-	'sscr;':                            [u32(0x1D4C8)]
-	'ssetmn;':                          [u32(0x2216)]
-	'ssmile;':                          [u32(0x2323)]
-	'sstarf;':                          [u32(0x22C6)]
-	'star;':                            [u32(0x2606)]
-	'starf;':                           [u32(0x2605)]
-	'straightepsilon;':                 [u32(0x3F5)]
-	'straightphi;':                     [u32(0x3D5)]
-	'strns;':                           [u32(0xAF)]
-	'sub;':                             [u32(0x2282)]
-	'subE;':                            [u32(0x2AC5)]
-	'subdot;':                          [u32(0x2ABD)]
-	'sube;':                            [u32(0x2286)]
-	'subedot;':                         [u32(0x2AC3)]
-	'submult;':                         [u32(0x2AC1)]
-	'subnE;':                           [u32(0x2ACB)]
-	'subne;':                           [u32(0x228A)]
-	'subplus;':                         [u32(0x2ABF)]
-	'subrarr;':                         [u32(0x2979)]
-	'subset;':                          [u32(0x2282)]
-	'subseteq;':                        [u32(0x2286)]
-	'subseteqq;':                       [u32(0x2AC5)]
-	'subsetneq;':                       [u32(0x228A)]
-	'subsetneqq;':                      [u32(0x2ACB)]
-	'subsim;':                          [u32(0x2AC7)]
-	'subsub;':                          [u32(0x2AD5)]
-	'subsup;':                          [u32(0x2AD3)]
-	'succ;':                            [u32(0x227B)]
-	'succapprox;':                      [u32(0x2AB8)]
-	'succcurlyeq;':                     [u32(0x227D)]
-	'succeq;':                          [u32(0x2AB0)]
-	'succnapprox;':                     [u32(0x2ABA)]
-	'succneqq;':                        [u32(0x2AB6)]
-	'succnsim;':                        [u32(0x22E9)]
-	'succsim;':                         [u32(0x227F)]
-	'sum;':                             [u32(0x2211)]
-	'sung;':                            [u32(0x266A)]
-	'sup1':                             [u32(0xB9)]
-	'sup1;':                            [u32(0xB9)]
-	'sup2':                             [u32(0xB2)]
-	'sup2;':                            [u32(0xB2)]
-	'sup3':                             [u32(0xB3)]
-	'sup3;':                            [u32(0xB3)]
-	'sup;':                             [u32(0x2283)]
-	'supE;':                            [u32(0x2AC6)]
-	'supdot;':                          [u32(0x2ABE)]
-	'supdsub;':                         [u32(0x2AD8)]
-	'supe;':                            [u32(0x2287)]
-	'supedot;':                         [u32(0x2AC4)]
-	'suphsol;':                         [u32(0x27C9)]
-	'suphsub;':                         [u32(0x2AD7)]
-	'suplarr;':                         [u32(0x297B)]
-	'supmult;':                         [u32(0x2AC2)]
-	'supnE;':                           [u32(0x2ACC)]
-	'supne;':                           [u32(0x228B)]
-	'supplus;':                         [u32(0x2AC0)]
-	'supset;':                          [u32(0x2283)]
-	'supseteq;':                        [u32(0x2287)]
-	'supseteqq;':                       [u32(0x2AC6)]
-	'supsetneq;':                       [u32(0x228B)]
-	'supsetneqq;':                      [u32(0x2ACC)]
-	'supsim;':                          [u32(0x2AC8)]
-	'supsub;':                          [u32(0x2AD4)]
-	'supsup;':                          [u32(0x2AD6)]
-	'swArr;':                           [u32(0x21D9)]
-	'swarhk;':                          [u32(0x2926)]
-	'swarr;':                           [u32(0x2199)]
-	'swarrow;':                         [u32(0x2199)]
-	'swnwar;':                          [u32(0x292A)]
-	'szlig':                            [u32(0xDF)]
-	'szlig;':                           [u32(0xDF)]
-	'target;':                          [u32(0x2316)]
-	'tau;':                             [u32(0x3C4)]
-	'tbrk;':                            [u32(0x23B4)]
-	'tcaron;':                          [u32(0x165)]
-	'tcedil;':                          [u32(0x163)]
-	'tcy;':                             [u32(0x442)]
-	'tdot;':                            [u32(0x20DB)]
-	'telrec;':                          [u32(0x2315)]
-	'tfr;':                             [u32(0x1D531)]
-	'there4;':                          [u32(0x2234)]
-	'therefore;':                       [u32(0x2234)]
-	'theta;':                           [u32(0x3B8)]
-	'thetasym;':                        [u32(0x3D1)]
-	'thetav;':                          [u32(0x3D1)]
-	'thickapprox;':                     [u32(0x2248)]
-	'thicksim;':                        [u32(0x223C)]
-	'thinsp;':                          [u32(0x2009)]
-	'thkap;':                           [u32(0x2248)]
-	'thksim;':                          [u32(0x223C)]
-	'thorn':                            [u32(0xFE)]
-	'thorn;':                           [u32(0xFE)]
-	'tilde;':                           [u32(0x2DC)]
-	'times':                            [u32(0xD7)]
-	'times;':                           [u32(0xD7)]
-	'timesb;':                          [u32(0x22A0)]
-	'timesbar;':                        [u32(0x2A31)]
-	'timesd;':                          [u32(0x2A30)]
-	'tint;':                            [u32(0x222D)]
-	'toea;':                            [u32(0x2928)]
-	'top;':                             [u32(0x22A4)]
-	'topbot;':                          [u32(0x2336)]
-	'topcir;':                          [u32(0x2AF1)]
-	'topf;':                            [u32(0x1D565)]
-	'topfork;':                         [u32(0x2ADA)]
-	'tosa;':                            [u32(0x2929)]
-	'tprime;':                          [u32(0x2034)]
-	'trade;':                           [u32(0x2122)]
-	'triangle;':                        [u32(0x25B5)]
-	'triangledown;':                    [u32(0x25BF)]
-	'triangleleft;':                    [u32(0x25C3)]
-	'trianglelefteq;':                  [u32(0x22B4)]
-	'triangleq;':                       [u32(0x225C)]
-	'triangleright;':                   [u32(0x25B9)]
-	'trianglerighteq;':                 [u32(0x22B5)]
-	'tridot;':                          [u32(0x25EC)]
-	'trie;':                            [u32(0x225C)]
-	'triminus;':                        [u32(0x2A3A)]
-	'triplus;':                         [u32(0x2A39)]
-	'trisb;':                           [u32(0x29CD)]
-	'tritime;':                         [u32(0x2A3B)]
-	'trpezium;':                        [u32(0x23E2)]
-	'tscr;':                            [u32(0x1D4C9)]
-	'tscy;':                            [u32(0x446)]
-	'tshcy;':                           [u32(0x45B)]
-	'tstrok;':                          [u32(0x167)]
-	'twixt;':                           [u32(0x226C)]
-	'twoheadleftarrow;':                [u32(0x219E)]
-	'twoheadrightarrow;':               [u32(0x21A0)]
-	'uArr;':                            [u32(0x21D1)]
-	'uHar;':                            [u32(0x2963)]
-	'uacute':                           [u32(0xFA)]
-	'uacute;':                          [u32(0xFA)]
-	'uarr;':                            [u32(0x2191)]
-	'ubrcy;':                           [u32(0x45E)]
-	'ubreve;':                          [u32(0x16D)]
-	'ucirc':                            [u32(0xFB)]
-	'ucirc;':                           [u32(0xFB)]
-	'ucy;':                             [u32(0x443)]
-	'udarr;':                           [u32(0x21C5)]
-	'udblac;':                          [u32(0x171)]
-	'udhar;':                           [u32(0x296E)]
-	'ufisht;':                          [u32(0x297E)]
-	'ufr;':                             [u32(0x1D532)]
-	'ugrave':                           [u32(0xF9)]
-	'ugrave;':                          [u32(0xF9)]
-	'uharl;':                           [u32(0x21BF)]
-	'uharr;':                           [u32(0x21BE)]
-	'uhblk;':                           [u32(0x2580)]
-	'ulcorn;':                          [u32(0x231C)]
-	'ulcorner;':                        [u32(0x231C)]
-	'ulcrop;':                          [u32(0x230F)]
-	'ultri;':                           [u32(0x25F8)]
-	'umacr;':                           [u32(0x16B)]
-	'uml':                              [u32(0xA8)]
-	'uml;':                             [u32(0xA8)]
-	'uogon;':                           [u32(0x173)]
-	'uopf;':                            [u32(0x1D566)]
-	'uparrow;':                         [u32(0x2191)]
-	'updownarrow;':                     [u32(0x2195)]
-	'upharpoonleft;':                   [u32(0x21BF)]
-	'upharpoonright;':                  [u32(0x21BE)]
-	'uplus;':                           [u32(0x228E)]
-	'upsi;':                            [u32(0x3C5)]
-	'upsih;':                           [u32(0x3D2)]
-	'upsilon;':                         [u32(0x3C5)]
-	'upuparrows;':                      [u32(0x21C8)]
-	'urcorn;':                          [u32(0x231D)]
-	'urcorner;':                        [u32(0x231D)]
-	'urcrop;':                          [u32(0x230E)]
-	'uring;':                           [u32(0x16F)]
-	'urtri;':                           [u32(0x25F9)]
-	'uscr;':                            [u32(0x1D4CA)]
-	'utdot;':                           [u32(0x22F0)]
-	'utilde;':                          [u32(0x169)]
-	'utri;':                            [u32(0x25B5)]
-	'utrif;':                           [u32(0x25B4)]
-	'uuarr;':                           [u32(0x21C8)]
-	'uuml':                             [u32(0xFC)]
-	'uuml;':                            [u32(0xFC)]
-	'uwangle;':                         [u32(0x29A7)]
-	'vArr;':                            [u32(0x21D5)]
-	'vBar;':                            [u32(0x2AE8)]
-	'vBarv;':                           [u32(0x2AE9)]
-	'vDash;':                           [u32(0x22A8)]
-	'vangrt;':                          [u32(0x299C)]
-	'varepsilon;':                      [u32(0x3F5)]
-	'varkappa;':                        [u32(0x3F0)]
-	'varnothing;':                      [u32(0x2205)]
-	'varphi;':                          [u32(0x3D5)]
-	'varpi;':                           [u32(0x3D6)]
-	'varpropto;':                       [u32(0x221D)]
-	'varr;':                            [u32(0x2195)]
-	'varrho;':                          [u32(0x3F1)]
-	'varsigma;':                        [u32(0x3C2)]
-	'varsubsetneq;':                    [u32(0x228A), 0xFE00]
-	'varsubsetneqq;':                   [u32(0x2ACB), 0xFE00]
-	'varsupsetneq;':                    [u32(0x228B), 0xFE00]
-	'varsupsetneqq;':                   [u32(0x2ACC), 0xFE00]
-	'vartheta;':                        [u32(0x3D1)]
-	'vartriangleleft;':                 [u32(0x22B2)]
-	'vartriangleright;':                [u32(0x22B3)]
-	'vcy;':                             [u32(0x432)]
-	'vdash;':                           [u32(0x22A2)]
-	'vee;':                             [u32(0x2228)]
-	'veebar;':                          [u32(0x22BB)]
-	'veeeq;':                           [u32(0x225A)]
-	'vellip;':                          [u32(0x22EE)]
-	'verbar;':                          [u32(0x7C)]
-	'vert;':                            [u32(0x7C)]
-	'vfr;':                             [u32(0x1D533)]
-	'vltri;':                           [u32(0x22B2)]
-	'vnsub;':                           [u32(0x2282), 0x20D2]
-	'vnsup;':                           [u32(0x2283), 0x20D2]
-	'vopf;':                            [u32(0x1D567)]
-	'vprop;':                           [u32(0x221D)]
-	'vrtri;':                           [u32(0x22B3)]
-	'vscr;':                            [u32(0x1D4CB)]
-	'vsubnE;':                          [u32(0x2ACB), 0xFE00]
-	'vsubne;':                          [u32(0x228A), 0xFE00]
-	'vsupnE;':                          [u32(0x2ACC), 0xFE00]
-	'vsupne;':                          [u32(0x228B), 0xFE00]
-	'vzigzag;':                         [u32(0x299A)]
-	'wcirc;':                           [u32(0x175)]
-	'wedbar;':                          [u32(0x2A5F)]
-	'wedge;':                           [u32(0x2227)]
-	'wedgeq;':                          [u32(0x2259)]
-	'weierp;':                          [u32(0x2118)]
-	'wfr;':                             [u32(0x1D534)]
-	'wopf;':                            [u32(0x1D568)]
-	'wp;':                              [u32(0x2118)]
-	'wr;':                              [u32(0x2240)]
-	'wreath;':                          [u32(0x2240)]
-	'wscr;':                            [u32(0x1D4CC)]
-	'xcap;':                            [u32(0x22C2)]
-	'xcirc;':                           [u32(0x25EF)]
-	'xcup;':                            [u32(0x22C3)]
-	'xdtri;':                           [u32(0x25BD)]
-	'xfr;':                             [u32(0x1D535)]
-	'xhArr;':                           [u32(0x27FA)]
-	'xharr;':                           [u32(0x27F7)]
-	'xi;':                              [u32(0x3BE)]
-	'xlArr;':                           [u32(0x27F8)]
-	'xlarr;':                           [u32(0x27F5)]
-	'xmap;':                            [u32(0x27FC)]
-	'xnis;':                            [u32(0x22FB)]
-	'xodot;':                           [u32(0x2A00)]
-	'xopf;':                            [u32(0x1D569)]
-	'xoplus;':                          [u32(0x2A01)]
-	'xotime;':                          [u32(0x2A02)]
-	'xrArr;':                           [u32(0x27F9)]
-	'xrarr;':                           [u32(0x27F6)]
-	'xscr;':                            [u32(0x1D4CD)]
-	'xsqcup;':                          [u32(0x2A06)]
-	'xuplus;':                          [u32(0x2A04)]
-	'xutri;':                           [u32(0x25B3)]
-	'xvee;':                            [u32(0x22C1)]
-	'xwedge;':                          [u32(0x22C0)]
-	'yacute':                           [u32(0xFD)]
-	'yacute;':                          [u32(0xFD)]
-	'yacy;':                            [u32(0x44F)]
-	'ycirc;':                           [u32(0x177)]
-	'ycy;':                             [u32(0x44B)]
-	'yen':                              [u32(0xA5)]
-	'yen;':                             [u32(0xA5)]
-	'yfr;':                             [u32(0x1D536)]
-	'yicy;':                            [u32(0x457)]
-	'yopf;':                            [u32(0x1D56A)]
-	'yscr;':                            [u32(0x1D4CE)]
-	'yucy;':                            [u32(0x44E)]
-	'yuml':                             [u32(0xFF)]
-	'yuml;':                            [u32(0xFF)]
-	'zacute;':                          [u32(0x17A)]
-	'zcaron;':                          [u32(0x17E)]
-	'zcy;':                             [u32(0x437)]
-	'zdot;':                            [u32(0x17C)]
-	'zeetrf;':                          [u32(0x2128)]
-	'zeta;':                            [u32(0x3B6)]
-	'zfr;':                             [u32(0x1D537)]
-	'zhcy;':                            [u32(0x436)]
-	'zigrarr;':                         [u32(0x21DD)]
-	'zopf;':                            [u32(0x1D56B)]
-	'zscr;':                            [u32(0x1D4CF)]
-	'zwj;':                             [u32(0x200D)]
-	'zwnj;':                            [u32(0x200C)]
+struct NamedCharacterReferenceData {
+	name   string
+	first  u32
+	second u32
 }
+
+// A zero second code point means this record contains one code point.
+// WHATWG entity code points never contain U+0000.
+const named_char_ref_data = [
+	NamedCharacterReferenceData{ name: 'AElig', first: u32(0xC6), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'AElig;', first: u32(0xC6), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'AMP', first: u32(0x26), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'AMP;', first: u32(0x26), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Aacute', first: u32(0xC1), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Aacute;', first: u32(0xC1), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Abreve;', first: u32(0x102), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Acirc', first: u32(0xC2), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Acirc;', first: u32(0xC2), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Acy;', first: u32(0x410), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Afr;', first: u32(0x1D504), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Agrave', first: u32(0xC0), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Agrave;', first: u32(0xC0), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Alpha;', first: u32(0x391), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Amacr;', first: u32(0x100), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'And;', first: u32(0x2A53), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Aogon;', first: u32(0x104), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Aopf;', first: u32(0x1D538), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'ApplyFunction;', first: u32(0x2061), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Aring', first: u32(0xC5), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Aring;', first: u32(0xC5), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Ascr;', first: u32(0x1D49C), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Assign;', first: u32(0x2254), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Atilde', first: u32(0xC3), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Atilde;', first: u32(0xC3), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Auml', first: u32(0xC4), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Auml;', first: u32(0xC4), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Backslash;', first: u32(0x2216), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Barv;', first: u32(0x2AE7), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Barwed;', first: u32(0x2306), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Bcy;', first: u32(0x411), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Because;', first: u32(0x2235), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Bernoullis;', first: u32(0x212C), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Beta;', first: u32(0x392), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Bfr;', first: u32(0x1D505), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Bopf;', first: u32(0x1D539), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Breve;', first: u32(0x2D8), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Bscr;', first: u32(0x212C), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Bumpeq;', first: u32(0x224E), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'CHcy;', first: u32(0x427), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'COPY', first: u32(0xA9), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'COPY;', first: u32(0xA9), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Cacute;', first: u32(0x106), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Cap;', first: u32(0x22D2), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'CapitalDifferentialD;', first: u32(0x2145), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Cayleys;', first: u32(0x212D), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Ccaron;', first: u32(0x10C), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Ccedil', first: u32(0xC7), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Ccedil;', first: u32(0xC7), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Ccirc;', first: u32(0x108), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Cconint;', first: u32(0x2230), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Cdot;', first: u32(0x10A), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Cedilla;', first: u32(0xB8), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'CenterDot;', first: u32(0xB7), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Cfr;', first: u32(0x212D), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Chi;', first: u32(0x3A7), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'CircleDot;', first: u32(0x2299), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'CircleMinus;', first: u32(0x2296), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'CirclePlus;', first: u32(0x2295), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'CircleTimes;', first: u32(0x2297), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'ClockwiseContourIntegral;', first: u32(0x2232), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'CloseCurlyDoubleQuote;', first: u32(0x201D), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'CloseCurlyQuote;', first: u32(0x2019), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Colon;', first: u32(0x2237), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Colone;', first: u32(0x2A74), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Congruent;', first: u32(0x2261), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Conint;', first: u32(0x222F), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'ContourIntegral;', first: u32(0x222E), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Copf;', first: u32(0x2102), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Coproduct;', first: u32(0x2210), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'CounterClockwiseContourIntegral;', first: u32(0x2233), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Cross;', first: u32(0x2A2F), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Cscr;', first: u32(0x1D49E), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Cup;', first: u32(0x22D3), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'CupCap;', first: u32(0x224D), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'DD;', first: u32(0x2145), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'DDotrahd;', first: u32(0x2911), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'DJcy;', first: u32(0x402), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'DScy;', first: u32(0x405), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'DZcy;', first: u32(0x40F), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Dagger;', first: u32(0x2021), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Darr;', first: u32(0x21A1), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Dashv;', first: u32(0x2AE4), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Dcaron;', first: u32(0x10E), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Dcy;', first: u32(0x414), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Del;', first: u32(0x2207), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Delta;', first: u32(0x394), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Dfr;', first: u32(0x1D507), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'DiacriticalAcute;', first: u32(0xB4), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'DiacriticalDot;', first: u32(0x2D9), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'DiacriticalDoubleAcute;', first: u32(0x2DD), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'DiacriticalGrave;', first: u32(0x60), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'DiacriticalTilde;', first: u32(0x2DC), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Diamond;', first: u32(0x22C4), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'DifferentialD;', first: u32(0x2146), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Dopf;', first: u32(0x1D53B), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Dot;', first: u32(0xA8), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'DotDot;', first: u32(0x20DC), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'DotEqual;', first: u32(0x2250), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'DoubleContourIntegral;', first: u32(0x222F), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'DoubleDot;', first: u32(0xA8), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'DoubleDownArrow;', first: u32(0x21D3), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'DoubleLeftArrow;', first: u32(0x21D0), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'DoubleLeftRightArrow;', first: u32(0x21D4), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'DoubleLeftTee;', first: u32(0x2AE4), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'DoubleLongLeftArrow;', first: u32(0x27F8), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'DoubleLongLeftRightArrow;', first: u32(0x27FA), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'DoubleLongRightArrow;', first: u32(0x27F9), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'DoubleRightArrow;', first: u32(0x21D2), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'DoubleRightTee;', first: u32(0x22A8), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'DoubleUpArrow;', first: u32(0x21D1), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'DoubleUpDownArrow;', first: u32(0x21D5), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'DoubleVerticalBar;', first: u32(0x2225), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'DownArrow;', first: u32(0x2193), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'DownArrowBar;', first: u32(0x2913), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'DownArrowUpArrow;', first: u32(0x21F5), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'DownBreve;', first: u32(0x311), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'DownLeftRightVector;', first: u32(0x2950), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'DownLeftTeeVector;', first: u32(0x295E), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'DownLeftVector;', first: u32(0x21BD), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'DownLeftVectorBar;', first: u32(0x2956), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'DownRightTeeVector;', first: u32(0x295F), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'DownRightVector;', first: u32(0x21C1), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'DownRightVectorBar;', first: u32(0x2957), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'DownTee;', first: u32(0x22A4), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'DownTeeArrow;', first: u32(0x21A7), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Downarrow;', first: u32(0x21D3), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Dscr;', first: u32(0x1D49F), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Dstrok;', first: u32(0x110), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'ENG;', first: u32(0x14A), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'ETH', first: u32(0xD0), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'ETH;', first: u32(0xD0), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Eacute', first: u32(0xC9), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Eacute;', first: u32(0xC9), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Ecaron;', first: u32(0x11A), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Ecirc', first: u32(0xCA), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Ecirc;', first: u32(0xCA), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Ecy;', first: u32(0x42D), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Edot;', first: u32(0x116), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Efr;', first: u32(0x1D508), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Egrave', first: u32(0xC8), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Egrave;', first: u32(0xC8), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Element;', first: u32(0x2208), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Emacr;', first: u32(0x112), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'EmptySmallSquare;', first: u32(0x25FB), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'EmptyVerySmallSquare;', first: u32(0x25AB), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Eogon;', first: u32(0x118), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Eopf;', first: u32(0x1D53C), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Epsilon;', first: u32(0x395), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Equal;', first: u32(0x2A75), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'EqualTilde;', first: u32(0x2242), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Equilibrium;', first: u32(0x21CC), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Escr;', first: u32(0x2130), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Esim;', first: u32(0x2A73), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Eta;', first: u32(0x397), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Euml', first: u32(0xCB), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Euml;', first: u32(0xCB), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Exists;', first: u32(0x2203), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'ExponentialE;', first: u32(0x2147), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Fcy;', first: u32(0x424), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Ffr;', first: u32(0x1D509), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'FilledSmallSquare;', first: u32(0x25FC), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'FilledVerySmallSquare;', first: u32(0x25AA), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Fopf;', first: u32(0x1D53D), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'ForAll;', first: u32(0x2200), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Fouriertrf;', first: u32(0x2131), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Fscr;', first: u32(0x2131), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'GJcy;', first: u32(0x403), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'GT', first: u32(0x3E), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'GT;', first: u32(0x3E), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Gamma;', first: u32(0x393), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Gammad;', first: u32(0x3DC), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Gbreve;', first: u32(0x11E), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Gcedil;', first: u32(0x122), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Gcirc;', first: u32(0x11C), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Gcy;', first: u32(0x413), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Gdot;', first: u32(0x120), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Gfr;', first: u32(0x1D50A), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Gg;', first: u32(0x22D9), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Gopf;', first: u32(0x1D53E), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'GreaterEqual;', first: u32(0x2265), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'GreaterEqualLess;', first: u32(0x22DB), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'GreaterFullEqual;', first: u32(0x2267), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'GreaterGreater;', first: u32(0x2AA2), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'GreaterLess;', first: u32(0x2277), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'GreaterSlantEqual;', first: u32(0x2A7E), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'GreaterTilde;', first: u32(0x2273), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Gscr;', first: u32(0x1D4A2), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Gt;', first: u32(0x226B), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'HARDcy;', first: u32(0x42A), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Hacek;', first: u32(0x2C7), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Hat;', first: u32(0x5E), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Hcirc;', first: u32(0x124), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Hfr;', first: u32(0x210C), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'HilbertSpace;', first: u32(0x210B), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Hopf;', first: u32(0x210D), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'HorizontalLine;', first: u32(0x2500), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Hscr;', first: u32(0x210B), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Hstrok;', first: u32(0x126), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'HumpDownHump;', first: u32(0x224E), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'HumpEqual;', first: u32(0x224F), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'IEcy;', first: u32(0x415), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'IJlig;', first: u32(0x132), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'IOcy;', first: u32(0x401), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Iacute', first: u32(0xCD), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Iacute;', first: u32(0xCD), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Icirc', first: u32(0xCE), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Icirc;', first: u32(0xCE), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Icy;', first: u32(0x418), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Idot;', first: u32(0x130), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Ifr;', first: u32(0x2111), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Igrave', first: u32(0xCC), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Igrave;', first: u32(0xCC), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Im;', first: u32(0x2111), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Imacr;', first: u32(0x12A), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'ImaginaryI;', first: u32(0x2148), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Implies;', first: u32(0x21D2), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Int;', first: u32(0x222C), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Integral;', first: u32(0x222B), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Intersection;', first: u32(0x22C2), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'InvisibleComma;', first: u32(0x2063), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'InvisibleTimes;', first: u32(0x2062), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Iogon;', first: u32(0x12E), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Iopf;', first: u32(0x1D540), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Iota;', first: u32(0x399), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Iscr;', first: u32(0x2110), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Itilde;', first: u32(0x128), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Iukcy;', first: u32(0x406), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Iuml', first: u32(0xCF), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Iuml;', first: u32(0xCF), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Jcirc;', first: u32(0x134), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Jcy;', first: u32(0x419), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Jfr;', first: u32(0x1D50D), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Jopf;', first: u32(0x1D541), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Jscr;', first: u32(0x1D4A5), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Jsercy;', first: u32(0x408), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Jukcy;', first: u32(0x404), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'KHcy;', first: u32(0x425), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'KJcy;', first: u32(0x40C), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Kappa;', first: u32(0x39A), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Kcedil;', first: u32(0x136), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Kcy;', first: u32(0x41A), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Kfr;', first: u32(0x1D50E), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Kopf;', first: u32(0x1D542), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Kscr;', first: u32(0x1D4A6), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'LJcy;', first: u32(0x409), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'LT', first: u32(0x3C), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'LT;', first: u32(0x3C), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Lacute;', first: u32(0x139), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Lambda;', first: u32(0x39B), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Lang;', first: u32(0x27EA), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Laplacetrf;', first: u32(0x2112), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Larr;', first: u32(0x219E), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Lcaron;', first: u32(0x13D), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Lcedil;', first: u32(0x13B), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Lcy;', first: u32(0x41B), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'LeftAngleBracket;', first: u32(0x27E8), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'LeftArrow;', first: u32(0x2190), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'LeftArrowBar;', first: u32(0x21E4), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'LeftArrowRightArrow;', first: u32(0x21C6), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'LeftCeiling;', first: u32(0x2308), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'LeftDoubleBracket;', first: u32(0x27E6), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'LeftDownTeeVector;', first: u32(0x2961), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'LeftDownVector;', first: u32(0x21C3), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'LeftDownVectorBar;', first: u32(0x2959), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'LeftFloor;', first: u32(0x230A), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'LeftRightArrow;', first: u32(0x2194), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'LeftRightVector;', first: u32(0x294E), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'LeftTee;', first: u32(0x22A3), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'LeftTeeArrow;', first: u32(0x21A4), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'LeftTeeVector;', first: u32(0x295A), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'LeftTriangle;', first: u32(0x22B2), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'LeftTriangleBar;', first: u32(0x29CF), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'LeftTriangleEqual;', first: u32(0x22B4), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'LeftUpDownVector;', first: u32(0x2951), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'LeftUpTeeVector;', first: u32(0x2960), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'LeftUpVector;', first: u32(0x21BF), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'LeftUpVectorBar;', first: u32(0x2958), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'LeftVector;', first: u32(0x21BC), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'LeftVectorBar;', first: u32(0x2952), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Leftarrow;', first: u32(0x21D0), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Leftrightarrow;', first: u32(0x21D4), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'LessEqualGreater;', first: u32(0x22DA), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'LessFullEqual;', first: u32(0x2266), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'LessGreater;', first: u32(0x2276), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'LessLess;', first: u32(0x2AA1), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'LessSlantEqual;', first: u32(0x2A7D), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'LessTilde;', first: u32(0x2272), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Lfr;', first: u32(0x1D50F), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Ll;', first: u32(0x22D8), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Lleftarrow;', first: u32(0x21DA), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Lmidot;', first: u32(0x13F), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'LongLeftArrow;', first: u32(0x27F5), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'LongLeftRightArrow;', first: u32(0x27F7), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'LongRightArrow;', first: u32(0x27F6), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Longleftarrow;', first: u32(0x27F8), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Longleftrightarrow;', first: u32(0x27FA), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Longrightarrow;', first: u32(0x27F9), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Lopf;', first: u32(0x1D543), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'LowerLeftArrow;', first: u32(0x2199), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'LowerRightArrow;', first: u32(0x2198), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Lscr;', first: u32(0x2112), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Lsh;', first: u32(0x21B0), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Lstrok;', first: u32(0x141), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Lt;', first: u32(0x226A), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Map;', first: u32(0x2905), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Mcy;', first: u32(0x41C), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'MediumSpace;', first: u32(0x205F), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Mellintrf;', first: u32(0x2133), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Mfr;', first: u32(0x1D510), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'MinusPlus;', first: u32(0x2213), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Mopf;', first: u32(0x1D544), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Mscr;', first: u32(0x2133), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Mu;', first: u32(0x39C), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'NJcy;', first: u32(0x40A), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Nacute;', first: u32(0x143), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Ncaron;', first: u32(0x147), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Ncedil;', first: u32(0x145), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Ncy;', first: u32(0x41D), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'NegativeMediumSpace;', first: u32(0x200B), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'NegativeThickSpace;', first: u32(0x200B), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'NegativeThinSpace;', first: u32(0x200B), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'NegativeVeryThinSpace;', first: u32(0x200B), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'NestedGreaterGreater;', first: u32(0x226B), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'NestedLessLess;', first: u32(0x226A), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'NewLine;', first: u32(0xA), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Nfr;', first: u32(0x1D511), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'NoBreak;', first: u32(0x2060), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'NonBreakingSpace;', first: u32(0xA0), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Nopf;', first: u32(0x2115), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Not;', first: u32(0x2AEC), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'NotCongruent;', first: u32(0x2262), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'NotCupCap;', first: u32(0x226D), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'NotDoubleVerticalBar;', first: u32(0x2226), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'NotElement;', first: u32(0x2209), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'NotEqual;', first: u32(0x2260), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'NotEqualTilde;', first: u32(0x2242), second: u32(0x338) },
+	NamedCharacterReferenceData{ name: 'NotExists;', first: u32(0x2204), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'NotGreater;', first: u32(0x226F), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'NotGreaterEqual;', first: u32(0x2271), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'NotGreaterFullEqual;', first: u32(0x2267), second: u32(0x338) },
+	NamedCharacterReferenceData{ name: 'NotGreaterGreater;', first: u32(0x226B), second: u32(0x338) },
+	NamedCharacterReferenceData{ name: 'NotGreaterLess;', first: u32(0x2279), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'NotGreaterSlantEqual;', first: u32(0x2A7E), second: u32(0x338) },
+	NamedCharacterReferenceData{ name: 'NotGreaterTilde;', first: u32(0x2275), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'NotHumpDownHump;', first: u32(0x224E), second: u32(0x338) },
+	NamedCharacterReferenceData{ name: 'NotHumpEqual;', first: u32(0x224F), second: u32(0x338) },
+	NamedCharacterReferenceData{ name: 'NotLeftTriangle;', first: u32(0x22EA), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'NotLeftTriangleBar;', first: u32(0x29CF), second: u32(0x338) },
+	NamedCharacterReferenceData{ name: 'NotLeftTriangleEqual;', first: u32(0x22EC), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'NotLess;', first: u32(0x226E), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'NotLessEqual;', first: u32(0x2270), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'NotLessGreater;', first: u32(0x2278), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'NotLessLess;', first: u32(0x226A), second: u32(0x338) },
+	NamedCharacterReferenceData{ name: 'NotLessSlantEqual;', first: u32(0x2A7D), second: u32(0x338) },
+	NamedCharacterReferenceData{ name: 'NotLessTilde;', first: u32(0x2274), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'NotNestedGreaterGreater;', first: u32(0x2AA2), second: u32(0x338) },
+	NamedCharacterReferenceData{ name: 'NotNestedLessLess;', first: u32(0x2AA1), second: u32(0x338) },
+	NamedCharacterReferenceData{ name: 'NotPrecedes;', first: u32(0x2280), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'NotPrecedesEqual;', first: u32(0x2AAF), second: u32(0x338) },
+	NamedCharacterReferenceData{ name: 'NotPrecedesSlantEqual;', first: u32(0x22E0), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'NotReverseElement;', first: u32(0x220C), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'NotRightTriangle;', first: u32(0x22EB), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'NotRightTriangleBar;', first: u32(0x29D0), second: u32(0x338) },
+	NamedCharacterReferenceData{ name: 'NotRightTriangleEqual;', first: u32(0x22ED), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'NotSquareSubset;', first: u32(0x228F), second: u32(0x338) },
+	NamedCharacterReferenceData{ name: 'NotSquareSubsetEqual;', first: u32(0x22E2), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'NotSquareSuperset;', first: u32(0x2290), second: u32(0x338) },
+	NamedCharacterReferenceData{ name: 'NotSquareSupersetEqual;', first: u32(0x22E3), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'NotSubset;', first: u32(0x2282), second: u32(0x20D2) },
+	NamedCharacterReferenceData{ name: 'NotSubsetEqual;', first: u32(0x2288), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'NotSucceeds;', first: u32(0x2281), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'NotSucceedsEqual;', first: u32(0x2AB0), second: u32(0x338) },
+	NamedCharacterReferenceData{ name: 'NotSucceedsSlantEqual;', first: u32(0x22E1), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'NotSucceedsTilde;', first: u32(0x227F), second: u32(0x338) },
+	NamedCharacterReferenceData{ name: 'NotSuperset;', first: u32(0x2283), second: u32(0x20D2) },
+	NamedCharacterReferenceData{ name: 'NotSupersetEqual;', first: u32(0x2289), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'NotTilde;', first: u32(0x2241), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'NotTildeEqual;', first: u32(0x2244), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'NotTildeFullEqual;', first: u32(0x2247), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'NotTildeTilde;', first: u32(0x2249), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'NotVerticalBar;', first: u32(0x2224), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Nscr;', first: u32(0x1D4A9), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Ntilde', first: u32(0xD1), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Ntilde;', first: u32(0xD1), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Nu;', first: u32(0x39D), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'OElig;', first: u32(0x152), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Oacute', first: u32(0xD3), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Oacute;', first: u32(0xD3), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Ocirc', first: u32(0xD4), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Ocirc;', first: u32(0xD4), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Ocy;', first: u32(0x41E), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Odblac;', first: u32(0x150), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Ofr;', first: u32(0x1D512), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Ograve', first: u32(0xD2), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Ograve;', first: u32(0xD2), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Omacr;', first: u32(0x14C), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Omega;', first: u32(0x3A9), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Omicron;', first: u32(0x39F), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Oopf;', first: u32(0x1D546), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'OpenCurlyDoubleQuote;', first: u32(0x201C), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'OpenCurlyQuote;', first: u32(0x2018), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Or;', first: u32(0x2A54), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Oscr;', first: u32(0x1D4AA), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Oslash', first: u32(0xD8), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Oslash;', first: u32(0xD8), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Otilde', first: u32(0xD5), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Otilde;', first: u32(0xD5), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Otimes;', first: u32(0x2A37), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Ouml', first: u32(0xD6), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Ouml;', first: u32(0xD6), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'OverBar;', first: u32(0x203E), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'OverBrace;', first: u32(0x23DE), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'OverBracket;', first: u32(0x23B4), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'OverParenthesis;', first: u32(0x23DC), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'PartialD;', first: u32(0x2202), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Pcy;', first: u32(0x41F), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Pfr;', first: u32(0x1D513), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Phi;', first: u32(0x3A6), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Pi;', first: u32(0x3A0), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'PlusMinus;', first: u32(0xB1), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Poincareplane;', first: u32(0x210C), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Popf;', first: u32(0x2119), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Pr;', first: u32(0x2ABB), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Precedes;', first: u32(0x227A), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'PrecedesEqual;', first: u32(0x2AAF), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'PrecedesSlantEqual;', first: u32(0x227C), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'PrecedesTilde;', first: u32(0x227E), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Prime;', first: u32(0x2033), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Product;', first: u32(0x220F), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Proportion;', first: u32(0x2237), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Proportional;', first: u32(0x221D), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Pscr;', first: u32(0x1D4AB), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Psi;', first: u32(0x3A8), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'QUOT', first: u32(0x22), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'QUOT;', first: u32(0x22), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Qfr;', first: u32(0x1D514), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Qopf;', first: u32(0x211A), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Qscr;', first: u32(0x1D4AC), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'RBarr;', first: u32(0x2910), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'REG', first: u32(0xAE), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'REG;', first: u32(0xAE), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Racute;', first: u32(0x154), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Rang;', first: u32(0x27EB), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Rarr;', first: u32(0x21A0), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Rarrtl;', first: u32(0x2916), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Rcaron;', first: u32(0x158), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Rcedil;', first: u32(0x156), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Rcy;', first: u32(0x420), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Re;', first: u32(0x211C), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'ReverseElement;', first: u32(0x220B), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'ReverseEquilibrium;', first: u32(0x21CB), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'ReverseUpEquilibrium;', first: u32(0x296F), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Rfr;', first: u32(0x211C), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Rho;', first: u32(0x3A1), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'RightAngleBracket;', first: u32(0x27E9), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'RightArrow;', first: u32(0x2192), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'RightArrowBar;', first: u32(0x21E5), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'RightArrowLeftArrow;', first: u32(0x21C4), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'RightCeiling;', first: u32(0x2309), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'RightDoubleBracket;', first: u32(0x27E7), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'RightDownTeeVector;', first: u32(0x295D), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'RightDownVector;', first: u32(0x21C2), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'RightDownVectorBar;', first: u32(0x2955), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'RightFloor;', first: u32(0x230B), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'RightTee;', first: u32(0x22A2), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'RightTeeArrow;', first: u32(0x21A6), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'RightTeeVector;', first: u32(0x295B), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'RightTriangle;', first: u32(0x22B3), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'RightTriangleBar;', first: u32(0x29D0), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'RightTriangleEqual;', first: u32(0x22B5), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'RightUpDownVector;', first: u32(0x294F), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'RightUpTeeVector;', first: u32(0x295C), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'RightUpVector;', first: u32(0x21BE), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'RightUpVectorBar;', first: u32(0x2954), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'RightVector;', first: u32(0x21C0), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'RightVectorBar;', first: u32(0x2953), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Rightarrow;', first: u32(0x21D2), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Ropf;', first: u32(0x211D), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'RoundImplies;', first: u32(0x2970), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Rrightarrow;', first: u32(0x21DB), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Rscr;', first: u32(0x211B), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Rsh;', first: u32(0x21B1), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'RuleDelayed;', first: u32(0x29F4), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'SHCHcy;', first: u32(0x429), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'SHcy;', first: u32(0x428), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'SOFTcy;', first: u32(0x42C), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Sacute;', first: u32(0x15A), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Sc;', first: u32(0x2ABC), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Scaron;', first: u32(0x160), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Scedil;', first: u32(0x15E), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Scirc;', first: u32(0x15C), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Scy;', first: u32(0x421), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Sfr;', first: u32(0x1D516), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'ShortDownArrow;', first: u32(0x2193), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'ShortLeftArrow;', first: u32(0x2190), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'ShortRightArrow;', first: u32(0x2192), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'ShortUpArrow;', first: u32(0x2191), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Sigma;', first: u32(0x3A3), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'SmallCircle;', first: u32(0x2218), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Sopf;', first: u32(0x1D54A), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Sqrt;', first: u32(0x221A), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Square;', first: u32(0x25A1), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'SquareIntersection;', first: u32(0x2293), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'SquareSubset;', first: u32(0x228F), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'SquareSubsetEqual;', first: u32(0x2291), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'SquareSuperset;', first: u32(0x2290), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'SquareSupersetEqual;', first: u32(0x2292), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'SquareUnion;', first: u32(0x2294), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Sscr;', first: u32(0x1D4AE), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Star;', first: u32(0x22C6), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Sub;', first: u32(0x22D0), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Subset;', first: u32(0x22D0), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'SubsetEqual;', first: u32(0x2286), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Succeeds;', first: u32(0x227B), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'SucceedsEqual;', first: u32(0x2AB0), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'SucceedsSlantEqual;', first: u32(0x227D), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'SucceedsTilde;', first: u32(0x227F), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'SuchThat;', first: u32(0x220B), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Sum;', first: u32(0x2211), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Sup;', first: u32(0x22D1), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Superset;', first: u32(0x2283), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'SupersetEqual;', first: u32(0x2287), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Supset;', first: u32(0x22D1), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'THORN', first: u32(0xDE), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'THORN;', first: u32(0xDE), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'TRADE;', first: u32(0x2122), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'TSHcy;', first: u32(0x40B), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'TScy;', first: u32(0x426), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Tab;', first: u32(0x9), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Tau;', first: u32(0x3A4), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Tcaron;', first: u32(0x164), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Tcedil;', first: u32(0x162), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Tcy;', first: u32(0x422), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Tfr;', first: u32(0x1D517), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Therefore;', first: u32(0x2234), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Theta;', first: u32(0x398), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'ThickSpace;', first: u32(0x205F), second: u32(0x200A) },
+	NamedCharacterReferenceData{ name: 'ThinSpace;', first: u32(0x2009), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Tilde;', first: u32(0x223C), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'TildeEqual;', first: u32(0x2243), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'TildeFullEqual;', first: u32(0x2245), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'TildeTilde;', first: u32(0x2248), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Topf;', first: u32(0x1D54B), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'TripleDot;', first: u32(0x20DB), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Tscr;', first: u32(0x1D4AF), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Tstrok;', first: u32(0x166), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Uacute', first: u32(0xDA), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Uacute;', first: u32(0xDA), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Uarr;', first: u32(0x219F), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Uarrocir;', first: u32(0x2949), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Ubrcy;', first: u32(0x40E), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Ubreve;', first: u32(0x16C), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Ucirc', first: u32(0xDB), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Ucirc;', first: u32(0xDB), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Ucy;', first: u32(0x423), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Udblac;', first: u32(0x170), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Ufr;', first: u32(0x1D518), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Ugrave', first: u32(0xD9), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Ugrave;', first: u32(0xD9), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Umacr;', first: u32(0x16A), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'UnderBar;', first: u32(0x5F), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'UnderBrace;', first: u32(0x23DF), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'UnderBracket;', first: u32(0x23B5), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'UnderParenthesis;', first: u32(0x23DD), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Union;', first: u32(0x22C3), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'UnionPlus;', first: u32(0x228E), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Uogon;', first: u32(0x172), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Uopf;', first: u32(0x1D54C), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'UpArrow;', first: u32(0x2191), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'UpArrowBar;', first: u32(0x2912), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'UpArrowDownArrow;', first: u32(0x21C5), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'UpDownArrow;', first: u32(0x2195), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'UpEquilibrium;', first: u32(0x296E), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'UpTee;', first: u32(0x22A5), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'UpTeeArrow;', first: u32(0x21A5), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Uparrow;', first: u32(0x21D1), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Updownarrow;', first: u32(0x21D5), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'UpperLeftArrow;', first: u32(0x2196), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'UpperRightArrow;', first: u32(0x2197), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Upsi;', first: u32(0x3D2), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Upsilon;', first: u32(0x3A5), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Uring;', first: u32(0x16E), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Uscr;', first: u32(0x1D4B0), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Utilde;', first: u32(0x168), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Uuml', first: u32(0xDC), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Uuml;', first: u32(0xDC), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'VDash;', first: u32(0x22AB), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Vbar;', first: u32(0x2AEB), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Vcy;', first: u32(0x412), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Vdash;', first: u32(0x22A9), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Vdashl;', first: u32(0x2AE6), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Vee;', first: u32(0x22C1), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Verbar;', first: u32(0x2016), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Vert;', first: u32(0x2016), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'VerticalBar;', first: u32(0x2223), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'VerticalLine;', first: u32(0x7C), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'VerticalSeparator;', first: u32(0x2758), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'VerticalTilde;', first: u32(0x2240), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'VeryThinSpace;', first: u32(0x200A), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Vfr;', first: u32(0x1D519), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Vopf;', first: u32(0x1D54D), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Vscr;', first: u32(0x1D4B1), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Vvdash;', first: u32(0x22AA), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Wcirc;', first: u32(0x174), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Wedge;', first: u32(0x22C0), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Wfr;', first: u32(0x1D51A), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Wopf;', first: u32(0x1D54E), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Wscr;', first: u32(0x1D4B2), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Xfr;', first: u32(0x1D51B), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Xi;', first: u32(0x39E), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Xopf;', first: u32(0x1D54F), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Xscr;', first: u32(0x1D4B3), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'YAcy;', first: u32(0x42F), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'YIcy;', first: u32(0x407), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'YUcy;', first: u32(0x42E), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Yacute', first: u32(0xDD), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Yacute;', first: u32(0xDD), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Ycirc;', first: u32(0x176), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Ycy;', first: u32(0x42B), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Yfr;', first: u32(0x1D51C), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Yopf;', first: u32(0x1D550), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Yscr;', first: u32(0x1D4B4), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Yuml;', first: u32(0x178), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'ZHcy;', first: u32(0x416), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Zacute;', first: u32(0x179), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Zcaron;', first: u32(0x17D), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Zcy;', first: u32(0x417), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Zdot;', first: u32(0x17B), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'ZeroWidthSpace;', first: u32(0x200B), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Zeta;', first: u32(0x396), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Zfr;', first: u32(0x2128), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Zopf;', first: u32(0x2124), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'Zscr;', first: u32(0x1D4B5), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'aacute', first: u32(0xE1), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'aacute;', first: u32(0xE1), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'abreve;', first: u32(0x103), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'ac;', first: u32(0x223E), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'acE;', first: u32(0x223E), second: u32(0x333) },
+	NamedCharacterReferenceData{ name: 'acd;', first: u32(0x223F), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'acirc', first: u32(0xE2), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'acirc;', first: u32(0xE2), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'acute', first: u32(0xB4), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'acute;', first: u32(0xB4), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'acy;', first: u32(0x430), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'aelig', first: u32(0xE6), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'aelig;', first: u32(0xE6), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'af;', first: u32(0x2061), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'afr;', first: u32(0x1D51E), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'agrave', first: u32(0xE0), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'agrave;', first: u32(0xE0), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'alefsym;', first: u32(0x2135), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'aleph;', first: u32(0x2135), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'alpha;', first: u32(0x3B1), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'amacr;', first: u32(0x101), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'amalg;', first: u32(0x2A3F), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'amp', first: u32(0x26), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'amp;', first: u32(0x26), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'and;', first: u32(0x2227), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'andand;', first: u32(0x2A55), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'andd;', first: u32(0x2A5C), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'andslope;', first: u32(0x2A58), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'andv;', first: u32(0x2A5A), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'ang;', first: u32(0x2220), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'ange;', first: u32(0x29A4), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'angle;', first: u32(0x2220), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'angmsd;', first: u32(0x2221), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'angmsdaa;', first: u32(0x29A8), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'angmsdab;', first: u32(0x29A9), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'angmsdac;', first: u32(0x29AA), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'angmsdad;', first: u32(0x29AB), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'angmsdae;', first: u32(0x29AC), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'angmsdaf;', first: u32(0x29AD), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'angmsdag;', first: u32(0x29AE), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'angmsdah;', first: u32(0x29AF), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'angrt;', first: u32(0x221F), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'angrtvb;', first: u32(0x22BE), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'angrtvbd;', first: u32(0x299D), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'angsph;', first: u32(0x2222), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'angst;', first: u32(0xC5), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'angzarr;', first: u32(0x237C), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'aogon;', first: u32(0x105), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'aopf;', first: u32(0x1D552), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'ap;', first: u32(0x2248), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'apE;', first: u32(0x2A70), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'apacir;', first: u32(0x2A6F), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'ape;', first: u32(0x224A), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'apid;', first: u32(0x224B), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'apos;', first: u32(0x27), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'approx;', first: u32(0x2248), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'approxeq;', first: u32(0x224A), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'aring', first: u32(0xE5), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'aring;', first: u32(0xE5), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'ascr;', first: u32(0x1D4B6), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'ast;', first: u32(0x2A), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'asymp;', first: u32(0x2248), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'asympeq;', first: u32(0x224D), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'atilde', first: u32(0xE3), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'atilde;', first: u32(0xE3), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'auml', first: u32(0xE4), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'auml;', first: u32(0xE4), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'awconint;', first: u32(0x2233), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'awint;', first: u32(0x2A11), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'bNot;', first: u32(0x2AED), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'backcong;', first: u32(0x224C), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'backepsilon;', first: u32(0x3F6), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'backprime;', first: u32(0x2035), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'backsim;', first: u32(0x223D), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'backsimeq;', first: u32(0x22CD), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'barvee;', first: u32(0x22BD), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'barwed;', first: u32(0x2305), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'barwedge;', first: u32(0x2305), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'bbrk;', first: u32(0x23B5), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'bbrktbrk;', first: u32(0x23B6), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'bcong;', first: u32(0x224C), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'bcy;', first: u32(0x431), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'bdquo;', first: u32(0x201E), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'becaus;', first: u32(0x2235), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'because;', first: u32(0x2235), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'bemptyv;', first: u32(0x29B0), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'bepsi;', first: u32(0x3F6), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'bernou;', first: u32(0x212C), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'beta;', first: u32(0x3B2), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'beth;', first: u32(0x2136), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'between;', first: u32(0x226C), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'bfr;', first: u32(0x1D51F), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'bigcap;', first: u32(0x22C2), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'bigcirc;', first: u32(0x25EF), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'bigcup;', first: u32(0x22C3), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'bigodot;', first: u32(0x2A00), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'bigoplus;', first: u32(0x2A01), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'bigotimes;', first: u32(0x2A02), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'bigsqcup;', first: u32(0x2A06), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'bigstar;', first: u32(0x2605), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'bigtriangledown;', first: u32(0x25BD), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'bigtriangleup;', first: u32(0x25B3), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'biguplus;', first: u32(0x2A04), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'bigvee;', first: u32(0x22C1), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'bigwedge;', first: u32(0x22C0), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'bkarow;', first: u32(0x290D), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'blacklozenge;', first: u32(0x29EB), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'blacksquare;', first: u32(0x25AA), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'blacktriangle;', first: u32(0x25B4), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'blacktriangledown;', first: u32(0x25BE), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'blacktriangleleft;', first: u32(0x25C2), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'blacktriangleright;', first: u32(0x25B8), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'blank;', first: u32(0x2423), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'blk12;', first: u32(0x2592), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'blk14;', first: u32(0x2591), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'blk34;', first: u32(0x2593), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'block;', first: u32(0x2588), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'bne;', first: u32(0x3D), second: u32(0x20E5) },
+	NamedCharacterReferenceData{ name: 'bnequiv;', first: u32(0x2261), second: u32(0x20E5) },
+	NamedCharacterReferenceData{ name: 'bnot;', first: u32(0x2310), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'bopf;', first: u32(0x1D553), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'bot;', first: u32(0x22A5), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'bottom;', first: u32(0x22A5), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'bowtie;', first: u32(0x22C8), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'boxDL;', first: u32(0x2557), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'boxDR;', first: u32(0x2554), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'boxDl;', first: u32(0x2556), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'boxDr;', first: u32(0x2553), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'boxH;', first: u32(0x2550), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'boxHD;', first: u32(0x2566), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'boxHU;', first: u32(0x2569), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'boxHd;', first: u32(0x2564), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'boxHu;', first: u32(0x2567), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'boxUL;', first: u32(0x255D), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'boxUR;', first: u32(0x255A), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'boxUl;', first: u32(0x255C), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'boxUr;', first: u32(0x2559), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'boxV;', first: u32(0x2551), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'boxVH;', first: u32(0x256C), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'boxVL;', first: u32(0x2563), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'boxVR;', first: u32(0x2560), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'boxVh;', first: u32(0x256B), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'boxVl;', first: u32(0x2562), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'boxVr;', first: u32(0x255F), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'boxbox;', first: u32(0x29C9), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'boxdL;', first: u32(0x2555), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'boxdR;', first: u32(0x2552), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'boxdl;', first: u32(0x2510), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'boxdr;', first: u32(0x250C), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'boxh;', first: u32(0x2500), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'boxhD;', first: u32(0x2565), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'boxhU;', first: u32(0x2568), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'boxhd;', first: u32(0x252C), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'boxhu;', first: u32(0x2534), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'boxminus;', first: u32(0x229F), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'boxplus;', first: u32(0x229E), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'boxtimes;', first: u32(0x22A0), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'boxuL;', first: u32(0x255B), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'boxuR;', first: u32(0x2558), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'boxul;', first: u32(0x2518), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'boxur;', first: u32(0x2514), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'boxv;', first: u32(0x2502), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'boxvH;', first: u32(0x256A), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'boxvL;', first: u32(0x2561), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'boxvR;', first: u32(0x255E), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'boxvh;', first: u32(0x253C), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'boxvl;', first: u32(0x2524), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'boxvr;', first: u32(0x251C), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'bprime;', first: u32(0x2035), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'breve;', first: u32(0x2D8), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'brvbar', first: u32(0xA6), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'brvbar;', first: u32(0xA6), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'bscr;', first: u32(0x1D4B7), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'bsemi;', first: u32(0x204F), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'bsim;', first: u32(0x223D), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'bsime;', first: u32(0x22CD), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'bsol;', first: u32(0x5C), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'bsolb;', first: u32(0x29C5), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'bsolhsub;', first: u32(0x27C8), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'bull;', first: u32(0x2022), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'bullet;', first: u32(0x2022), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'bump;', first: u32(0x224E), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'bumpE;', first: u32(0x2AAE), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'bumpe;', first: u32(0x224F), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'bumpeq;', first: u32(0x224F), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'cacute;', first: u32(0x107), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'cap;', first: u32(0x2229), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'capand;', first: u32(0x2A44), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'capbrcup;', first: u32(0x2A49), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'capcap;', first: u32(0x2A4B), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'capcup;', first: u32(0x2A47), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'capdot;', first: u32(0x2A40), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'caps;', first: u32(0x2229), second: u32(0xFE00) },
+	NamedCharacterReferenceData{ name: 'caret;', first: u32(0x2041), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'caron;', first: u32(0x2C7), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'ccaps;', first: u32(0x2A4D), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'ccaron;', first: u32(0x10D), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'ccedil', first: u32(0xE7), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'ccedil;', first: u32(0xE7), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'ccirc;', first: u32(0x109), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'ccups;', first: u32(0x2A4C), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'ccupssm;', first: u32(0x2A50), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'cdot;', first: u32(0x10B), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'cedil', first: u32(0xB8), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'cedil;', first: u32(0xB8), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'cemptyv;', first: u32(0x29B2), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'cent', first: u32(0xA2), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'cent;', first: u32(0xA2), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'centerdot;', first: u32(0xB7), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'cfr;', first: u32(0x1D520), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'chcy;', first: u32(0x447), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'check;', first: u32(0x2713), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'checkmark;', first: u32(0x2713), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'chi;', first: u32(0x3C7), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'cir;', first: u32(0x25CB), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'cirE;', first: u32(0x29C3), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'circ;', first: u32(0x2C6), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'circeq;', first: u32(0x2257), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'circlearrowleft;', first: u32(0x21BA), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'circlearrowright;', first: u32(0x21BB), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'circledR;', first: u32(0xAE), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'circledS;', first: u32(0x24C8), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'circledast;', first: u32(0x229B), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'circledcirc;', first: u32(0x229A), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'circleddash;', first: u32(0x229D), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'cire;', first: u32(0x2257), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'cirfnint;', first: u32(0x2A10), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'cirmid;', first: u32(0x2AEF), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'cirscir;', first: u32(0x29C2), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'clubs;', first: u32(0x2663), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'clubsuit;', first: u32(0x2663), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'colon;', first: u32(0x3A), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'colone;', first: u32(0x2254), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'coloneq;', first: u32(0x2254), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'comma;', first: u32(0x2C), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'commat;', first: u32(0x40), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'comp;', first: u32(0x2201), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'compfn;', first: u32(0x2218), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'complement;', first: u32(0x2201), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'complexes;', first: u32(0x2102), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'cong;', first: u32(0x2245), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'congdot;', first: u32(0x2A6D), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'conint;', first: u32(0x222E), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'copf;', first: u32(0x1D554), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'coprod;', first: u32(0x2210), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'copy', first: u32(0xA9), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'copy;', first: u32(0xA9), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'copysr;', first: u32(0x2117), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'crarr;', first: u32(0x21B5), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'cross;', first: u32(0x2717), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'cscr;', first: u32(0x1D4B8), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'csub;', first: u32(0x2ACF), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'csube;', first: u32(0x2AD1), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'csup;', first: u32(0x2AD0), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'csupe;', first: u32(0x2AD2), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'ctdot;', first: u32(0x22EF), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'cudarrl;', first: u32(0x2938), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'cudarrr;', first: u32(0x2935), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'cuepr;', first: u32(0x22DE), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'cuesc;', first: u32(0x22DF), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'cularr;', first: u32(0x21B6), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'cularrp;', first: u32(0x293D), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'cup;', first: u32(0x222A), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'cupbrcap;', first: u32(0x2A48), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'cupcap;', first: u32(0x2A46), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'cupcup;', first: u32(0x2A4A), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'cupdot;', first: u32(0x228D), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'cupor;', first: u32(0x2A45), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'cups;', first: u32(0x222A), second: u32(0xFE00) },
+	NamedCharacterReferenceData{ name: 'curarr;', first: u32(0x21B7), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'curarrm;', first: u32(0x293C), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'curlyeqprec;', first: u32(0x22DE), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'curlyeqsucc;', first: u32(0x22DF), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'curlyvee;', first: u32(0x22CE), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'curlywedge;', first: u32(0x22CF), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'curren', first: u32(0xA4), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'curren;', first: u32(0xA4), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'curvearrowleft;', first: u32(0x21B6), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'curvearrowright;', first: u32(0x21B7), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'cuvee;', first: u32(0x22CE), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'cuwed;', first: u32(0x22CF), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'cwconint;', first: u32(0x2232), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'cwint;', first: u32(0x2231), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'cylcty;', first: u32(0x232D), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'dArr;', first: u32(0x21D3), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'dHar;', first: u32(0x2965), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'dagger;', first: u32(0x2020), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'daleth;', first: u32(0x2138), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'darr;', first: u32(0x2193), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'dash;', first: u32(0x2010), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'dashv;', first: u32(0x22A3), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'dbkarow;', first: u32(0x290F), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'dblac;', first: u32(0x2DD), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'dcaron;', first: u32(0x10F), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'dcy;', first: u32(0x434), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'dd;', first: u32(0x2146), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'ddagger;', first: u32(0x2021), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'ddarr;', first: u32(0x21CA), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'ddotseq;', first: u32(0x2A77), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'deg', first: u32(0xB0), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'deg;', first: u32(0xB0), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'delta;', first: u32(0x3B4), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'demptyv;', first: u32(0x29B1), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'dfisht;', first: u32(0x297F), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'dfr;', first: u32(0x1D521), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'dharl;', first: u32(0x21C3), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'dharr;', first: u32(0x21C2), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'diam;', first: u32(0x22C4), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'diamond;', first: u32(0x22C4), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'diamondsuit;', first: u32(0x2666), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'diams;', first: u32(0x2666), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'die;', first: u32(0xA8), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'digamma;', first: u32(0x3DD), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'disin;', first: u32(0x22F2), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'div;', first: u32(0xF7), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'divide', first: u32(0xF7), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'divide;', first: u32(0xF7), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'divideontimes;', first: u32(0x22C7), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'divonx;', first: u32(0x22C7), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'djcy;', first: u32(0x452), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'dlcorn;', first: u32(0x231E), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'dlcrop;', first: u32(0x230D), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'dollar;', first: u32(0x24), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'dopf;', first: u32(0x1D555), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'dot;', first: u32(0x2D9), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'doteq;', first: u32(0x2250), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'doteqdot;', first: u32(0x2251), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'dotminus;', first: u32(0x2238), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'dotplus;', first: u32(0x2214), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'dotsquare;', first: u32(0x22A1), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'doublebarwedge;', first: u32(0x2306), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'downarrow;', first: u32(0x2193), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'downdownarrows;', first: u32(0x21CA), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'downharpoonleft;', first: u32(0x21C3), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'downharpoonright;', first: u32(0x21C2), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'drbkarow;', first: u32(0x2910), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'drcorn;', first: u32(0x231F), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'drcrop;', first: u32(0x230C), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'dscr;', first: u32(0x1D4B9), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'dscy;', first: u32(0x455), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'dsol;', first: u32(0x29F6), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'dstrok;', first: u32(0x111), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'dtdot;', first: u32(0x22F1), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'dtri;', first: u32(0x25BF), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'dtrif;', first: u32(0x25BE), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'duarr;', first: u32(0x21F5), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'duhar;', first: u32(0x296F), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'dwangle;', first: u32(0x29A6), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'dzcy;', first: u32(0x45F), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'dzigrarr;', first: u32(0x27FF), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'eDDot;', first: u32(0x2A77), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'eDot;', first: u32(0x2251), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'eacute', first: u32(0xE9), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'eacute;', first: u32(0xE9), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'easter;', first: u32(0x2A6E), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'ecaron;', first: u32(0x11B), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'ecir;', first: u32(0x2256), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'ecirc', first: u32(0xEA), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'ecirc;', first: u32(0xEA), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'ecolon;', first: u32(0x2255), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'ecy;', first: u32(0x44D), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'edot;', first: u32(0x117), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'ee;', first: u32(0x2147), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'efDot;', first: u32(0x2252), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'efr;', first: u32(0x1D522), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'eg;', first: u32(0x2A9A), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'egrave', first: u32(0xE8), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'egrave;', first: u32(0xE8), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'egs;', first: u32(0x2A96), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'egsdot;', first: u32(0x2A98), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'el;', first: u32(0x2A99), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'elinters;', first: u32(0x23E7), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'ell;', first: u32(0x2113), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'els;', first: u32(0x2A95), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'elsdot;', first: u32(0x2A97), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'emacr;', first: u32(0x113), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'empty;', first: u32(0x2205), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'emptyset;', first: u32(0x2205), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'emptyv;', first: u32(0x2205), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'emsp13;', first: u32(0x2004), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'emsp14;', first: u32(0x2005), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'emsp;', first: u32(0x2003), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'eng;', first: u32(0x14B), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'ensp;', first: u32(0x2002), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'eogon;', first: u32(0x119), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'eopf;', first: u32(0x1D556), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'epar;', first: u32(0x22D5), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'eparsl;', first: u32(0x29E3), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'eplus;', first: u32(0x2A71), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'epsi;', first: u32(0x3B5), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'epsilon;', first: u32(0x3B5), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'epsiv;', first: u32(0x3F5), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'eqcirc;', first: u32(0x2256), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'eqcolon;', first: u32(0x2255), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'eqsim;', first: u32(0x2242), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'eqslantgtr;', first: u32(0x2A96), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'eqslantless;', first: u32(0x2A95), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'equals;', first: u32(0x3D), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'equest;', first: u32(0x225F), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'equiv;', first: u32(0x2261), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'equivDD;', first: u32(0x2A78), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'eqvparsl;', first: u32(0x29E5), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'erDot;', first: u32(0x2253), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'erarr;', first: u32(0x2971), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'escr;', first: u32(0x212F), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'esdot;', first: u32(0x2250), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'esim;', first: u32(0x2242), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'eta;', first: u32(0x3B7), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'eth', first: u32(0xF0), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'eth;', first: u32(0xF0), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'euml', first: u32(0xEB), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'euml;', first: u32(0xEB), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'euro;', first: u32(0x20AC), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'excl;', first: u32(0x21), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'exist;', first: u32(0x2203), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'expectation;', first: u32(0x2130), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'exponentiale;', first: u32(0x2147), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'fallingdotseq;', first: u32(0x2252), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'fcy;', first: u32(0x444), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'female;', first: u32(0x2640), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'ffilig;', first: u32(0xFB03), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'fflig;', first: u32(0xFB00), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'ffllig;', first: u32(0xFB04), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'ffr;', first: u32(0x1D523), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'filig;', first: u32(0xFB01), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'fjlig;', first: u32(0x66), second: u32(0x6A) },
+	NamedCharacterReferenceData{ name: 'flat;', first: u32(0x266D), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'fllig;', first: u32(0xFB02), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'fltns;', first: u32(0x25B1), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'fnof;', first: u32(0x192), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'fopf;', first: u32(0x1D557), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'forall;', first: u32(0x2200), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'fork;', first: u32(0x22D4), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'forkv;', first: u32(0x2AD9), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'fpartint;', first: u32(0x2A0D), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'frac12', first: u32(0xBD), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'frac12;', first: u32(0xBD), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'frac13;', first: u32(0x2153), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'frac14', first: u32(0xBC), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'frac14;', first: u32(0xBC), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'frac15;', first: u32(0x2155), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'frac16;', first: u32(0x2159), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'frac18;', first: u32(0x215B), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'frac23;', first: u32(0x2154), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'frac25;', first: u32(0x2156), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'frac34', first: u32(0xBE), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'frac34;', first: u32(0xBE), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'frac35;', first: u32(0x2157), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'frac38;', first: u32(0x215C), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'frac45;', first: u32(0x2158), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'frac56;', first: u32(0x215A), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'frac58;', first: u32(0x215D), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'frac78;', first: u32(0x215E), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'frasl;', first: u32(0x2044), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'frown;', first: u32(0x2322), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'fscr;', first: u32(0x1D4BB), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'gE;', first: u32(0x2267), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'gEl;', first: u32(0x2A8C), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'gacute;', first: u32(0x1F5), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'gamma;', first: u32(0x3B3), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'gammad;', first: u32(0x3DD), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'gap;', first: u32(0x2A86), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'gbreve;', first: u32(0x11F), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'gcirc;', first: u32(0x11D), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'gcy;', first: u32(0x433), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'gdot;', first: u32(0x121), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'ge;', first: u32(0x2265), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'gel;', first: u32(0x22DB), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'geq;', first: u32(0x2265), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'geqq;', first: u32(0x2267), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'geqslant;', first: u32(0x2A7E), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'ges;', first: u32(0x2A7E), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'gescc;', first: u32(0x2AA9), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'gesdot;', first: u32(0x2A80), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'gesdoto;', first: u32(0x2A82), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'gesdotol;', first: u32(0x2A84), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'gesl;', first: u32(0x22DB), second: u32(0xFE00) },
+	NamedCharacterReferenceData{ name: 'gesles;', first: u32(0x2A94), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'gfr;', first: u32(0x1D524), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'gg;', first: u32(0x226B), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'ggg;', first: u32(0x22D9), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'gimel;', first: u32(0x2137), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'gjcy;', first: u32(0x453), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'gl;', first: u32(0x2277), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'glE;', first: u32(0x2A92), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'gla;', first: u32(0x2AA5), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'glj;', first: u32(0x2AA4), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'gnE;', first: u32(0x2269), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'gnap;', first: u32(0x2A8A), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'gnapprox;', first: u32(0x2A8A), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'gne;', first: u32(0x2A88), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'gneq;', first: u32(0x2A88), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'gneqq;', first: u32(0x2269), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'gnsim;', first: u32(0x22E7), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'gopf;', first: u32(0x1D558), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'grave;', first: u32(0x60), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'gscr;', first: u32(0x210A), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'gsim;', first: u32(0x2273), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'gsime;', first: u32(0x2A8E), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'gsiml;', first: u32(0x2A90), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'gt', first: u32(0x3E), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'gt;', first: u32(0x3E), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'gtcc;', first: u32(0x2AA7), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'gtcir;', first: u32(0x2A7A), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'gtdot;', first: u32(0x22D7), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'gtlPar;', first: u32(0x2995), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'gtquest;', first: u32(0x2A7C), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'gtrapprox;', first: u32(0x2A86), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'gtrarr;', first: u32(0x2978), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'gtrdot;', first: u32(0x22D7), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'gtreqless;', first: u32(0x22DB), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'gtreqqless;', first: u32(0x2A8C), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'gtrless;', first: u32(0x2277), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'gtrsim;', first: u32(0x2273), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'gvertneqq;', first: u32(0x2269), second: u32(0xFE00) },
+	NamedCharacterReferenceData{ name: 'gvnE;', first: u32(0x2269), second: u32(0xFE00) },
+	NamedCharacterReferenceData{ name: 'hArr;', first: u32(0x21D4), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'hairsp;', first: u32(0x200A), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'half;', first: u32(0xBD), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'hamilt;', first: u32(0x210B), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'hardcy;', first: u32(0x44A), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'harr;', first: u32(0x2194), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'harrcir;', first: u32(0x2948), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'harrw;', first: u32(0x21AD), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'hbar;', first: u32(0x210F), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'hcirc;', first: u32(0x125), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'hearts;', first: u32(0x2665), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'heartsuit;', first: u32(0x2665), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'hellip;', first: u32(0x2026), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'hercon;', first: u32(0x22B9), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'hfr;', first: u32(0x1D525), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'hksearow;', first: u32(0x2925), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'hkswarow;', first: u32(0x2926), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'hoarr;', first: u32(0x21FF), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'homtht;', first: u32(0x223B), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'hookleftarrow;', first: u32(0x21A9), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'hookrightarrow;', first: u32(0x21AA), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'hopf;', first: u32(0x1D559), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'horbar;', first: u32(0x2015), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'hscr;', first: u32(0x1D4BD), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'hslash;', first: u32(0x210F), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'hstrok;', first: u32(0x127), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'hybull;', first: u32(0x2043), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'hyphen;', first: u32(0x2010), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'iacute', first: u32(0xED), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'iacute;', first: u32(0xED), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'ic;', first: u32(0x2063), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'icirc', first: u32(0xEE), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'icirc;', first: u32(0xEE), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'icy;', first: u32(0x438), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'iecy;', first: u32(0x435), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'iexcl', first: u32(0xA1), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'iexcl;', first: u32(0xA1), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'iff;', first: u32(0x21D4), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'ifr;', first: u32(0x1D526), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'igrave', first: u32(0xEC), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'igrave;', first: u32(0xEC), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'ii;', first: u32(0x2148), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'iiiint;', first: u32(0x2A0C), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'iiint;', first: u32(0x222D), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'iinfin;', first: u32(0x29DC), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'iiota;', first: u32(0x2129), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'ijlig;', first: u32(0x133), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'imacr;', first: u32(0x12B), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'image;', first: u32(0x2111), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'imagline;', first: u32(0x2110), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'imagpart;', first: u32(0x2111), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'imath;', first: u32(0x131), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'imof;', first: u32(0x22B7), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'imped;', first: u32(0x1B5), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'in;', first: u32(0x2208), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'incare;', first: u32(0x2105), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'infin;', first: u32(0x221E), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'infintie;', first: u32(0x29DD), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'inodot;', first: u32(0x131), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'int;', first: u32(0x222B), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'intcal;', first: u32(0x22BA), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'integers;', first: u32(0x2124), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'intercal;', first: u32(0x22BA), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'intlarhk;', first: u32(0x2A17), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'intprod;', first: u32(0x2A3C), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'iocy;', first: u32(0x451), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'iogon;', first: u32(0x12F), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'iopf;', first: u32(0x1D55A), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'iota;', first: u32(0x3B9), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'iprod;', first: u32(0x2A3C), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'iquest', first: u32(0xBF), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'iquest;', first: u32(0xBF), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'iscr;', first: u32(0x1D4BE), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'isin;', first: u32(0x2208), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'isinE;', first: u32(0x22F9), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'isindot;', first: u32(0x22F5), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'isins;', first: u32(0x22F4), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'isinsv;', first: u32(0x22F3), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'isinv;', first: u32(0x2208), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'it;', first: u32(0x2062), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'itilde;', first: u32(0x129), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'iukcy;', first: u32(0x456), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'iuml', first: u32(0xEF), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'iuml;', first: u32(0xEF), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'jcirc;', first: u32(0x135), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'jcy;', first: u32(0x439), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'jfr;', first: u32(0x1D527), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'jmath;', first: u32(0x237), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'jopf;', first: u32(0x1D55B), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'jscr;', first: u32(0x1D4BF), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'jsercy;', first: u32(0x458), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'jukcy;', first: u32(0x454), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'kappa;', first: u32(0x3BA), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'kappav;', first: u32(0x3F0), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'kcedil;', first: u32(0x137), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'kcy;', first: u32(0x43A), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'kfr;', first: u32(0x1D528), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'kgreen;', first: u32(0x138), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'khcy;', first: u32(0x445), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'kjcy;', first: u32(0x45C), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'kopf;', first: u32(0x1D55C), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'kscr;', first: u32(0x1D4C0), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'lAarr;', first: u32(0x21DA), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'lArr;', first: u32(0x21D0), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'lAtail;', first: u32(0x291B), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'lBarr;', first: u32(0x290E), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'lE;', first: u32(0x2266), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'lEg;', first: u32(0x2A8B), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'lHar;', first: u32(0x2962), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'lacute;', first: u32(0x13A), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'laemptyv;', first: u32(0x29B4), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'lagran;', first: u32(0x2112), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'lambda;', first: u32(0x3BB), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'lang;', first: u32(0x27E8), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'langd;', first: u32(0x2991), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'langle;', first: u32(0x27E8), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'lap;', first: u32(0x2A85), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'laquo', first: u32(0xAB), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'laquo;', first: u32(0xAB), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'larr;', first: u32(0x2190), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'larrb;', first: u32(0x21E4), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'larrbfs;', first: u32(0x291F), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'larrfs;', first: u32(0x291D), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'larrhk;', first: u32(0x21A9), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'larrlp;', first: u32(0x21AB), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'larrpl;', first: u32(0x2939), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'larrsim;', first: u32(0x2973), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'larrtl;', first: u32(0x21A2), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'lat;', first: u32(0x2AAB), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'latail;', first: u32(0x2919), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'late;', first: u32(0x2AAD), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'lates;', first: u32(0x2AAD), second: u32(0xFE00) },
+	NamedCharacterReferenceData{ name: 'lbarr;', first: u32(0x290C), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'lbbrk;', first: u32(0x2772), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'lbrace;', first: u32(0x7B), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'lbrack;', first: u32(0x5B), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'lbrke;', first: u32(0x298B), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'lbrksld;', first: u32(0x298F), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'lbrkslu;', first: u32(0x298D), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'lcaron;', first: u32(0x13E), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'lcedil;', first: u32(0x13C), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'lceil;', first: u32(0x2308), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'lcub;', first: u32(0x7B), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'lcy;', first: u32(0x43B), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'ldca;', first: u32(0x2936), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'ldquo;', first: u32(0x201C), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'ldquor;', first: u32(0x201E), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'ldrdhar;', first: u32(0x2967), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'ldrushar;', first: u32(0x294B), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'ldsh;', first: u32(0x21B2), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'le;', first: u32(0x2264), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'leftarrow;', first: u32(0x2190), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'leftarrowtail;', first: u32(0x21A2), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'leftharpoondown;', first: u32(0x21BD), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'leftharpoonup;', first: u32(0x21BC), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'leftleftarrows;', first: u32(0x21C7), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'leftrightarrow;', first: u32(0x2194), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'leftrightarrows;', first: u32(0x21C6), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'leftrightharpoons;', first: u32(0x21CB), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'leftrightsquigarrow;', first: u32(0x21AD), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'leftthreetimes;', first: u32(0x22CB), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'leg;', first: u32(0x22DA), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'leq;', first: u32(0x2264), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'leqq;', first: u32(0x2266), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'leqslant;', first: u32(0x2A7D), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'les;', first: u32(0x2A7D), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'lescc;', first: u32(0x2AA8), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'lesdot;', first: u32(0x2A7F), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'lesdoto;', first: u32(0x2A81), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'lesdotor;', first: u32(0x2A83), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'lesg;', first: u32(0x22DA), second: u32(0xFE00) },
+	NamedCharacterReferenceData{ name: 'lesges;', first: u32(0x2A93), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'lessapprox;', first: u32(0x2A85), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'lessdot;', first: u32(0x22D6), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'lesseqgtr;', first: u32(0x22DA), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'lesseqqgtr;', first: u32(0x2A8B), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'lessgtr;', first: u32(0x2276), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'lesssim;', first: u32(0x2272), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'lfisht;', first: u32(0x297C), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'lfloor;', first: u32(0x230A), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'lfr;', first: u32(0x1D529), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'lg;', first: u32(0x2276), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'lgE;', first: u32(0x2A91), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'lhard;', first: u32(0x21BD), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'lharu;', first: u32(0x21BC), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'lharul;', first: u32(0x296A), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'lhblk;', first: u32(0x2584), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'ljcy;', first: u32(0x459), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'll;', first: u32(0x226A), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'llarr;', first: u32(0x21C7), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'llcorner;', first: u32(0x231E), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'llhard;', first: u32(0x296B), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'lltri;', first: u32(0x25FA), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'lmidot;', first: u32(0x140), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'lmoust;', first: u32(0x23B0), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'lmoustache;', first: u32(0x23B0), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'lnE;', first: u32(0x2268), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'lnap;', first: u32(0x2A89), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'lnapprox;', first: u32(0x2A89), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'lne;', first: u32(0x2A87), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'lneq;', first: u32(0x2A87), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'lneqq;', first: u32(0x2268), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'lnsim;', first: u32(0x22E6), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'loang;', first: u32(0x27EC), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'loarr;', first: u32(0x21FD), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'lobrk;', first: u32(0x27E6), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'longleftarrow;', first: u32(0x27F5), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'longleftrightarrow;', first: u32(0x27F7), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'longmapsto;', first: u32(0x27FC), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'longrightarrow;', first: u32(0x27F6), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'looparrowleft;', first: u32(0x21AB), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'looparrowright;', first: u32(0x21AC), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'lopar;', first: u32(0x2985), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'lopf;', first: u32(0x1D55D), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'loplus;', first: u32(0x2A2D), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'lotimes;', first: u32(0x2A34), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'lowast;', first: u32(0x2217), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'lowbar;', first: u32(0x5F), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'loz;', first: u32(0x25CA), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'lozenge;', first: u32(0x25CA), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'lozf;', first: u32(0x29EB), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'lpar;', first: u32(0x28), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'lparlt;', first: u32(0x2993), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'lrarr;', first: u32(0x21C6), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'lrcorner;', first: u32(0x231F), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'lrhar;', first: u32(0x21CB), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'lrhard;', first: u32(0x296D), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'lrm;', first: u32(0x200E), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'lrtri;', first: u32(0x22BF), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'lsaquo;', first: u32(0x2039), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'lscr;', first: u32(0x1D4C1), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'lsh;', first: u32(0x21B0), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'lsim;', first: u32(0x2272), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'lsime;', first: u32(0x2A8D), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'lsimg;', first: u32(0x2A8F), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'lsqb;', first: u32(0x5B), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'lsquo;', first: u32(0x2018), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'lsquor;', first: u32(0x201A), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'lstrok;', first: u32(0x142), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'lt', first: u32(0x3C), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'lt;', first: u32(0x3C), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'ltcc;', first: u32(0x2AA6), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'ltcir;', first: u32(0x2A79), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'ltdot;', first: u32(0x22D6), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'lthree;', first: u32(0x22CB), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'ltimes;', first: u32(0x22C9), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'ltlarr;', first: u32(0x2976), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'ltquest;', first: u32(0x2A7B), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'ltrPar;', first: u32(0x2996), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'ltri;', first: u32(0x25C3), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'ltrie;', first: u32(0x22B4), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'ltrif;', first: u32(0x25C2), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'lurdshar;', first: u32(0x294A), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'luruhar;', first: u32(0x2966), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'lvertneqq;', first: u32(0x2268), second: u32(0xFE00) },
+	NamedCharacterReferenceData{ name: 'lvnE;', first: u32(0x2268), second: u32(0xFE00) },
+	NamedCharacterReferenceData{ name: 'mDDot;', first: u32(0x223A), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'macr', first: u32(0xAF), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'macr;', first: u32(0xAF), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'male;', first: u32(0x2642), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'malt;', first: u32(0x2720), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'maltese;', first: u32(0x2720), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'map;', first: u32(0x21A6), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'mapsto;', first: u32(0x21A6), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'mapstodown;', first: u32(0x21A7), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'mapstoleft;', first: u32(0x21A4), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'mapstoup;', first: u32(0x21A5), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'marker;', first: u32(0x25AE), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'mcomma;', first: u32(0x2A29), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'mcy;', first: u32(0x43C), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'mdash;', first: u32(0x2014), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'measuredangle;', first: u32(0x2221), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'mfr;', first: u32(0x1D52A), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'mho;', first: u32(0x2127), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'micro', first: u32(0xB5), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'micro;', first: u32(0xB5), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'mid;', first: u32(0x2223), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'midast;', first: u32(0x2A), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'midcir;', first: u32(0x2AF0), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'middot', first: u32(0xB7), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'middot;', first: u32(0xB7), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'minus;', first: u32(0x2212), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'minusb;', first: u32(0x229F), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'minusd;', first: u32(0x2238), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'minusdu;', first: u32(0x2A2A), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'mlcp;', first: u32(0x2ADB), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'mldr;', first: u32(0x2026), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'mnplus;', first: u32(0x2213), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'models;', first: u32(0x22A7), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'mopf;', first: u32(0x1D55E), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'mp;', first: u32(0x2213), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'mscr;', first: u32(0x1D4C2), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'mstpos;', first: u32(0x223E), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'mu;', first: u32(0x3BC), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'multimap;', first: u32(0x22B8), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'mumap;', first: u32(0x22B8), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'nGg;', first: u32(0x22D9), second: u32(0x338) },
+	NamedCharacterReferenceData{ name: 'nGt;', first: u32(0x226B), second: u32(0x20D2) },
+	NamedCharacterReferenceData{ name: 'nGtv;', first: u32(0x226B), second: u32(0x338) },
+	NamedCharacterReferenceData{ name: 'nLeftarrow;', first: u32(0x21CD), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'nLeftrightarrow;', first: u32(0x21CE), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'nLl;', first: u32(0x22D8), second: u32(0x338) },
+	NamedCharacterReferenceData{ name: 'nLt;', first: u32(0x226A), second: u32(0x20D2) },
+	NamedCharacterReferenceData{ name: 'nLtv;', first: u32(0x226A), second: u32(0x338) },
+	NamedCharacterReferenceData{ name: 'nRightarrow;', first: u32(0x21CF), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'nVDash;', first: u32(0x22AF), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'nVdash;', first: u32(0x22AE), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'nabla;', first: u32(0x2207), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'nacute;', first: u32(0x144), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'nang;', first: u32(0x2220), second: u32(0x20D2) },
+	NamedCharacterReferenceData{ name: 'nap;', first: u32(0x2249), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'napE;', first: u32(0x2A70), second: u32(0x338) },
+	NamedCharacterReferenceData{ name: 'napid;', first: u32(0x224B), second: u32(0x338) },
+	NamedCharacterReferenceData{ name: 'napos;', first: u32(0x149), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'napprox;', first: u32(0x2249), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'natur;', first: u32(0x266E), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'natural;', first: u32(0x266E), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'naturals;', first: u32(0x2115), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'nbsp', first: u32(0xA0), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'nbsp;', first: u32(0xA0), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'nbump;', first: u32(0x224E), second: u32(0x338) },
+	NamedCharacterReferenceData{ name: 'nbumpe;', first: u32(0x224F), second: u32(0x338) },
+	NamedCharacterReferenceData{ name: 'ncap;', first: u32(0x2A43), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'ncaron;', first: u32(0x148), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'ncedil;', first: u32(0x146), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'ncong;', first: u32(0x2247), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'ncongdot;', first: u32(0x2A6D), second: u32(0x338) },
+	NamedCharacterReferenceData{ name: 'ncup;', first: u32(0x2A42), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'ncy;', first: u32(0x43D), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'ndash;', first: u32(0x2013), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'ne;', first: u32(0x2260), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'neArr;', first: u32(0x21D7), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'nearhk;', first: u32(0x2924), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'nearr;', first: u32(0x2197), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'nearrow;', first: u32(0x2197), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'nedot;', first: u32(0x2250), second: u32(0x338) },
+	NamedCharacterReferenceData{ name: 'nequiv;', first: u32(0x2262), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'nesear;', first: u32(0x2928), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'nesim;', first: u32(0x2242), second: u32(0x338) },
+	NamedCharacterReferenceData{ name: 'nexist;', first: u32(0x2204), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'nexists;', first: u32(0x2204), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'nfr;', first: u32(0x1D52B), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'ngE;', first: u32(0x2267), second: u32(0x338) },
+	NamedCharacterReferenceData{ name: 'nge;', first: u32(0x2271), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'ngeq;', first: u32(0x2271), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'ngeqq;', first: u32(0x2267), second: u32(0x338) },
+	NamedCharacterReferenceData{ name: 'ngeqslant;', first: u32(0x2A7E), second: u32(0x338) },
+	NamedCharacterReferenceData{ name: 'nges;', first: u32(0x2A7E), second: u32(0x338) },
+	NamedCharacterReferenceData{ name: 'ngsim;', first: u32(0x2275), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'ngt;', first: u32(0x226F), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'ngtr;', first: u32(0x226F), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'nhArr;', first: u32(0x21CE), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'nharr;', first: u32(0x21AE), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'nhpar;', first: u32(0x2AF2), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'ni;', first: u32(0x220B), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'nis;', first: u32(0x22FC), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'nisd;', first: u32(0x22FA), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'niv;', first: u32(0x220B), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'njcy;', first: u32(0x45A), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'nlArr;', first: u32(0x21CD), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'nlE;', first: u32(0x2266), second: u32(0x338) },
+	NamedCharacterReferenceData{ name: 'nlarr;', first: u32(0x219A), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'nldr;', first: u32(0x2025), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'nle;', first: u32(0x2270), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'nleftarrow;', first: u32(0x219A), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'nleftrightarrow;', first: u32(0x21AE), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'nleq;', first: u32(0x2270), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'nleqq;', first: u32(0x2266), second: u32(0x338) },
+	NamedCharacterReferenceData{ name: 'nleqslant;', first: u32(0x2A7D), second: u32(0x338) },
+	NamedCharacterReferenceData{ name: 'nles;', first: u32(0x2A7D), second: u32(0x338) },
+	NamedCharacterReferenceData{ name: 'nless;', first: u32(0x226E), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'nlsim;', first: u32(0x2274), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'nlt;', first: u32(0x226E), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'nltri;', first: u32(0x22EA), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'nltrie;', first: u32(0x22EC), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'nmid;', first: u32(0x2224), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'nopf;', first: u32(0x1D55F), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'not', first: u32(0xAC), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'not;', first: u32(0xAC), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'notin;', first: u32(0x2209), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'notinE;', first: u32(0x22F9), second: u32(0x338) },
+	NamedCharacterReferenceData{ name: 'notindot;', first: u32(0x22F5), second: u32(0x338) },
+	NamedCharacterReferenceData{ name: 'notinva;', first: u32(0x2209), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'notinvb;', first: u32(0x22F7), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'notinvc;', first: u32(0x22F6), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'notni;', first: u32(0x220C), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'notniva;', first: u32(0x220C), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'notnivb;', first: u32(0x22FE), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'notnivc;', first: u32(0x22FD), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'npar;', first: u32(0x2226), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'nparallel;', first: u32(0x2226), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'nparsl;', first: u32(0x2AFD), second: u32(0x20E5) },
+	NamedCharacterReferenceData{ name: 'npart;', first: u32(0x2202), second: u32(0x338) },
+	NamedCharacterReferenceData{ name: 'npolint;', first: u32(0x2A14), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'npr;', first: u32(0x2280), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'nprcue;', first: u32(0x22E0), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'npre;', first: u32(0x2AAF), second: u32(0x338) },
+	NamedCharacterReferenceData{ name: 'nprec;', first: u32(0x2280), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'npreceq;', first: u32(0x2AAF), second: u32(0x338) },
+	NamedCharacterReferenceData{ name: 'nrArr;', first: u32(0x21CF), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'nrarr;', first: u32(0x219B), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'nrarrc;', first: u32(0x2933), second: u32(0x338) },
+	NamedCharacterReferenceData{ name: 'nrarrw;', first: u32(0x219D), second: u32(0x338) },
+	NamedCharacterReferenceData{ name: 'nrightarrow;', first: u32(0x219B), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'nrtri;', first: u32(0x22EB), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'nrtrie;', first: u32(0x22ED), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'nsc;', first: u32(0x2281), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'nsccue;', first: u32(0x22E1), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'nsce;', first: u32(0x2AB0), second: u32(0x338) },
+	NamedCharacterReferenceData{ name: 'nscr;', first: u32(0x1D4C3), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'nshortmid;', first: u32(0x2224), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'nshortparallel;', first: u32(0x2226), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'nsim;', first: u32(0x2241), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'nsime;', first: u32(0x2244), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'nsimeq;', first: u32(0x2244), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'nsmid;', first: u32(0x2224), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'nspar;', first: u32(0x2226), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'nsqsube;', first: u32(0x22E2), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'nsqsupe;', first: u32(0x22E3), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'nsub;', first: u32(0x2284), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'nsubE;', first: u32(0x2AC5), second: u32(0x338) },
+	NamedCharacterReferenceData{ name: 'nsube;', first: u32(0x2288), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'nsubset;', first: u32(0x2282), second: u32(0x20D2) },
+	NamedCharacterReferenceData{ name: 'nsubseteq;', first: u32(0x2288), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'nsubseteqq;', first: u32(0x2AC5), second: u32(0x338) },
+	NamedCharacterReferenceData{ name: 'nsucc;', first: u32(0x2281), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'nsucceq;', first: u32(0x2AB0), second: u32(0x338) },
+	NamedCharacterReferenceData{ name: 'nsup;', first: u32(0x2285), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'nsupE;', first: u32(0x2AC6), second: u32(0x338) },
+	NamedCharacterReferenceData{ name: 'nsupe;', first: u32(0x2289), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'nsupset;', first: u32(0x2283), second: u32(0x20D2) },
+	NamedCharacterReferenceData{ name: 'nsupseteq;', first: u32(0x2289), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'nsupseteqq;', first: u32(0x2AC6), second: u32(0x338) },
+	NamedCharacterReferenceData{ name: 'ntgl;', first: u32(0x2279), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'ntilde', first: u32(0xF1), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'ntilde;', first: u32(0xF1), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'ntlg;', first: u32(0x2278), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'ntriangleleft;', first: u32(0x22EA), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'ntrianglelefteq;', first: u32(0x22EC), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'ntriangleright;', first: u32(0x22EB), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'ntrianglerighteq;', first: u32(0x22ED), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'nu;', first: u32(0x3BD), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'num;', first: u32(0x23), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'numero;', first: u32(0x2116), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'numsp;', first: u32(0x2007), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'nvDash;', first: u32(0x22AD), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'nvHarr;', first: u32(0x2904), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'nvap;', first: u32(0x224D), second: u32(0x20D2) },
+	NamedCharacterReferenceData{ name: 'nvdash;', first: u32(0x22AC), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'nvge;', first: u32(0x2265), second: u32(0x20D2) },
+	NamedCharacterReferenceData{ name: 'nvgt;', first: u32(0x3E), second: u32(0x20D2) },
+	NamedCharacterReferenceData{ name: 'nvinfin;', first: u32(0x29DE), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'nvlArr;', first: u32(0x2902), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'nvle;', first: u32(0x2264), second: u32(0x20D2) },
+	NamedCharacterReferenceData{ name: 'nvlt;', first: u32(0x3C), second: u32(0x20D2) },
+	NamedCharacterReferenceData{ name: 'nvltrie;', first: u32(0x22B4), second: u32(0x20D2) },
+	NamedCharacterReferenceData{ name: 'nvrArr;', first: u32(0x2903), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'nvrtrie;', first: u32(0x22B5), second: u32(0x20D2) },
+	NamedCharacterReferenceData{ name: 'nvsim;', first: u32(0x223C), second: u32(0x20D2) },
+	NamedCharacterReferenceData{ name: 'nwArr;', first: u32(0x21D6), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'nwarhk;', first: u32(0x2923), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'nwarr;', first: u32(0x2196), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'nwarrow;', first: u32(0x2196), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'nwnear;', first: u32(0x2927), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'oS;', first: u32(0x24C8), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'oacute', first: u32(0xF3), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'oacute;', first: u32(0xF3), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'oast;', first: u32(0x229B), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'ocir;', first: u32(0x229A), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'ocirc', first: u32(0xF4), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'ocirc;', first: u32(0xF4), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'ocy;', first: u32(0x43E), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'odash;', first: u32(0x229D), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'odblac;', first: u32(0x151), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'odiv;', first: u32(0x2A38), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'odot;', first: u32(0x2299), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'odsold;', first: u32(0x29BC), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'oelig;', first: u32(0x153), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'ofcir;', first: u32(0x29BF), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'ofr;', first: u32(0x1D52C), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'ogon;', first: u32(0x2DB), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'ograve', first: u32(0xF2), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'ograve;', first: u32(0xF2), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'ogt;', first: u32(0x29C1), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'ohbar;', first: u32(0x29B5), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'ohm;', first: u32(0x3A9), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'oint;', first: u32(0x222E), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'olarr;', first: u32(0x21BA), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'olcir;', first: u32(0x29BE), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'olcross;', first: u32(0x29BB), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'oline;', first: u32(0x203E), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'olt;', first: u32(0x29C0), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'omacr;', first: u32(0x14D), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'omega;', first: u32(0x3C9), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'omicron;', first: u32(0x3BF), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'omid;', first: u32(0x29B6), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'ominus;', first: u32(0x2296), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'oopf;', first: u32(0x1D560), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'opar;', first: u32(0x29B7), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'operp;', first: u32(0x29B9), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'oplus;', first: u32(0x2295), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'or;', first: u32(0x2228), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'orarr;', first: u32(0x21BB), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'ord;', first: u32(0x2A5D), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'order;', first: u32(0x2134), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'orderof;', first: u32(0x2134), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'ordf', first: u32(0xAA), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'ordf;', first: u32(0xAA), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'ordm', first: u32(0xBA), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'ordm;', first: u32(0xBA), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'origof;', first: u32(0x22B6), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'oror;', first: u32(0x2A56), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'orslope;', first: u32(0x2A57), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'orv;', first: u32(0x2A5B), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'oscr;', first: u32(0x2134), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'oslash', first: u32(0xF8), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'oslash;', first: u32(0xF8), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'osol;', first: u32(0x2298), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'otilde', first: u32(0xF5), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'otilde;', first: u32(0xF5), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'otimes;', first: u32(0x2297), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'otimesas;', first: u32(0x2A36), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'ouml', first: u32(0xF6), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'ouml;', first: u32(0xF6), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'ovbar;', first: u32(0x233D), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'par;', first: u32(0x2225), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'para', first: u32(0xB6), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'para;', first: u32(0xB6), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'parallel;', first: u32(0x2225), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'parsim;', first: u32(0x2AF3), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'parsl;', first: u32(0x2AFD), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'part;', first: u32(0x2202), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'pcy;', first: u32(0x43F), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'percnt;', first: u32(0x25), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'period;', first: u32(0x2E), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'permil;', first: u32(0x2030), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'perp;', first: u32(0x22A5), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'pertenk;', first: u32(0x2031), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'pfr;', first: u32(0x1D52D), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'phi;', first: u32(0x3C6), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'phiv;', first: u32(0x3D5), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'phmmat;', first: u32(0x2133), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'phone;', first: u32(0x260E), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'pi;', first: u32(0x3C0), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'pitchfork;', first: u32(0x22D4), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'piv;', first: u32(0x3D6), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'planck;', first: u32(0x210F), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'planckh;', first: u32(0x210E), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'plankv;', first: u32(0x210F), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'plus;', first: u32(0x2B), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'plusacir;', first: u32(0x2A23), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'plusb;', first: u32(0x229E), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'pluscir;', first: u32(0x2A22), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'plusdo;', first: u32(0x2214), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'plusdu;', first: u32(0x2A25), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'pluse;', first: u32(0x2A72), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'plusmn', first: u32(0xB1), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'plusmn;', first: u32(0xB1), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'plussim;', first: u32(0x2A26), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'plustwo;', first: u32(0x2A27), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'pm;', first: u32(0xB1), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'pointint;', first: u32(0x2A15), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'popf;', first: u32(0x1D561), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'pound', first: u32(0xA3), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'pound;', first: u32(0xA3), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'pr;', first: u32(0x227A), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'prE;', first: u32(0x2AB3), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'prap;', first: u32(0x2AB7), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'prcue;', first: u32(0x227C), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'pre;', first: u32(0x2AAF), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'prec;', first: u32(0x227A), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'precapprox;', first: u32(0x2AB7), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'preccurlyeq;', first: u32(0x227C), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'preceq;', first: u32(0x2AAF), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'precnapprox;', first: u32(0x2AB9), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'precneqq;', first: u32(0x2AB5), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'precnsim;', first: u32(0x22E8), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'precsim;', first: u32(0x227E), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'prime;', first: u32(0x2032), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'primes;', first: u32(0x2119), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'prnE;', first: u32(0x2AB5), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'prnap;', first: u32(0x2AB9), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'prnsim;', first: u32(0x22E8), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'prod;', first: u32(0x220F), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'profalar;', first: u32(0x232E), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'profline;', first: u32(0x2312), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'profsurf;', first: u32(0x2313), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'prop;', first: u32(0x221D), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'propto;', first: u32(0x221D), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'prsim;', first: u32(0x227E), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'prurel;', first: u32(0x22B0), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'pscr;', first: u32(0x1D4C5), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'psi;', first: u32(0x3C8), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'puncsp;', first: u32(0x2008), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'qfr;', first: u32(0x1D52E), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'qint;', first: u32(0x2A0C), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'qopf;', first: u32(0x1D562), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'qprime;', first: u32(0x2057), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'qscr;', first: u32(0x1D4C6), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'quaternions;', first: u32(0x210D), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'quatint;', first: u32(0x2A16), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'quest;', first: u32(0x3F), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'questeq;', first: u32(0x225F), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'quot', first: u32(0x22), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'quot;', first: u32(0x22), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'rAarr;', first: u32(0x21DB), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'rArr;', first: u32(0x21D2), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'rAtail;', first: u32(0x291C), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'rBarr;', first: u32(0x290F), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'rHar;', first: u32(0x2964), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'race;', first: u32(0x223D), second: u32(0x331) },
+	NamedCharacterReferenceData{ name: 'racute;', first: u32(0x155), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'radic;', first: u32(0x221A), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'raemptyv;', first: u32(0x29B3), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'rang;', first: u32(0x27E9), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'rangd;', first: u32(0x2992), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'range;', first: u32(0x29A5), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'rangle;', first: u32(0x27E9), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'raquo', first: u32(0xBB), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'raquo;', first: u32(0xBB), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'rarr;', first: u32(0x2192), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'rarrap;', first: u32(0x2975), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'rarrb;', first: u32(0x21E5), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'rarrbfs;', first: u32(0x2920), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'rarrc;', first: u32(0x2933), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'rarrfs;', first: u32(0x291E), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'rarrhk;', first: u32(0x21AA), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'rarrlp;', first: u32(0x21AC), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'rarrpl;', first: u32(0x2945), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'rarrsim;', first: u32(0x2974), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'rarrtl;', first: u32(0x21A3), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'rarrw;', first: u32(0x219D), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'ratail;', first: u32(0x291A), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'ratio;', first: u32(0x2236), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'rationals;', first: u32(0x211A), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'rbarr;', first: u32(0x290D), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'rbbrk;', first: u32(0x2773), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'rbrace;', first: u32(0x7D), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'rbrack;', first: u32(0x5D), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'rbrke;', first: u32(0x298C), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'rbrksld;', first: u32(0x298E), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'rbrkslu;', first: u32(0x2990), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'rcaron;', first: u32(0x159), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'rcedil;', first: u32(0x157), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'rceil;', first: u32(0x2309), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'rcub;', first: u32(0x7D), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'rcy;', first: u32(0x440), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'rdca;', first: u32(0x2937), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'rdldhar;', first: u32(0x2969), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'rdquo;', first: u32(0x201D), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'rdquor;', first: u32(0x201D), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'rdsh;', first: u32(0x21B3), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'real;', first: u32(0x211C), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'realine;', first: u32(0x211B), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'realpart;', first: u32(0x211C), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'reals;', first: u32(0x211D), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'rect;', first: u32(0x25AD), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'reg', first: u32(0xAE), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'reg;', first: u32(0xAE), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'rfisht;', first: u32(0x297D), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'rfloor;', first: u32(0x230B), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'rfr;', first: u32(0x1D52F), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'rhard;', first: u32(0x21C1), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'rharu;', first: u32(0x21C0), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'rharul;', first: u32(0x296C), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'rho;', first: u32(0x3C1), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'rhov;', first: u32(0x3F1), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'rightarrow;', first: u32(0x2192), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'rightarrowtail;', first: u32(0x21A3), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'rightharpoondown;', first: u32(0x21C1), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'rightharpoonup;', first: u32(0x21C0), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'rightleftarrows;', first: u32(0x21C4), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'rightleftharpoons;', first: u32(0x21CC), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'rightrightarrows;', first: u32(0x21C9), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'rightsquigarrow;', first: u32(0x219D), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'rightthreetimes;', first: u32(0x22CC), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'ring;', first: u32(0x2DA), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'risingdotseq;', first: u32(0x2253), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'rlarr;', first: u32(0x21C4), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'rlhar;', first: u32(0x21CC), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'rlm;', first: u32(0x200F), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'rmoust;', first: u32(0x23B1), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'rmoustache;', first: u32(0x23B1), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'rnmid;', first: u32(0x2AEE), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'roang;', first: u32(0x27ED), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'roarr;', first: u32(0x21FE), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'robrk;', first: u32(0x27E7), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'ropar;', first: u32(0x2986), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'ropf;', first: u32(0x1D563), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'roplus;', first: u32(0x2A2E), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'rotimes;', first: u32(0x2A35), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'rpar;', first: u32(0x29), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'rpargt;', first: u32(0x2994), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'rppolint;', first: u32(0x2A12), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'rrarr;', first: u32(0x21C9), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'rsaquo;', first: u32(0x203A), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'rscr;', first: u32(0x1D4C7), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'rsh;', first: u32(0x21B1), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'rsqb;', first: u32(0x5D), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'rsquo;', first: u32(0x2019), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'rsquor;', first: u32(0x2019), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'rthree;', first: u32(0x22CC), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'rtimes;', first: u32(0x22CA), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'rtri;', first: u32(0x25B9), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'rtrie;', first: u32(0x22B5), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'rtrif;', first: u32(0x25B8), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'rtriltri;', first: u32(0x29CE), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'ruluhar;', first: u32(0x2968), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'rx;', first: u32(0x211E), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'sacute;', first: u32(0x15B), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'sbquo;', first: u32(0x201A), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'sc;', first: u32(0x227B), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'scE;', first: u32(0x2AB4), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'scap;', first: u32(0x2AB8), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'scaron;', first: u32(0x161), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'sccue;', first: u32(0x227D), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'sce;', first: u32(0x2AB0), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'scedil;', first: u32(0x15F), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'scirc;', first: u32(0x15D), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'scnE;', first: u32(0x2AB6), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'scnap;', first: u32(0x2ABA), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'scnsim;', first: u32(0x22E9), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'scpolint;', first: u32(0x2A13), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'scsim;', first: u32(0x227F), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'scy;', first: u32(0x441), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'sdot;', first: u32(0x22C5), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'sdotb;', first: u32(0x22A1), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'sdote;', first: u32(0x2A66), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'seArr;', first: u32(0x21D8), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'searhk;', first: u32(0x2925), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'searr;', first: u32(0x2198), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'searrow;', first: u32(0x2198), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'sect', first: u32(0xA7), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'sect;', first: u32(0xA7), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'semi;', first: u32(0x3B), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'seswar;', first: u32(0x2929), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'setminus;', first: u32(0x2216), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'setmn;', first: u32(0x2216), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'sext;', first: u32(0x2736), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'sfr;', first: u32(0x1D530), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'sfrown;', first: u32(0x2322), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'sharp;', first: u32(0x266F), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'shchcy;', first: u32(0x449), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'shcy;', first: u32(0x448), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'shortmid;', first: u32(0x2223), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'shortparallel;', first: u32(0x2225), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'shy', first: u32(0xAD), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'shy;', first: u32(0xAD), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'sigma;', first: u32(0x3C3), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'sigmaf;', first: u32(0x3C2), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'sigmav;', first: u32(0x3C2), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'sim;', first: u32(0x223C), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'simdot;', first: u32(0x2A6A), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'sime;', first: u32(0x2243), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'simeq;', first: u32(0x2243), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'simg;', first: u32(0x2A9E), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'simgE;', first: u32(0x2AA0), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'siml;', first: u32(0x2A9D), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'simlE;', first: u32(0x2A9F), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'simne;', first: u32(0x2246), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'simplus;', first: u32(0x2A24), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'simrarr;', first: u32(0x2972), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'slarr;', first: u32(0x2190), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'smallsetminus;', first: u32(0x2216), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'smashp;', first: u32(0x2A33), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'smeparsl;', first: u32(0x29E4), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'smid;', first: u32(0x2223), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'smile;', first: u32(0x2323), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'smt;', first: u32(0x2AAA), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'smte;', first: u32(0x2AAC), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'smtes;', first: u32(0x2AAC), second: u32(0xFE00) },
+	NamedCharacterReferenceData{ name: 'softcy;', first: u32(0x44C), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'sol;', first: u32(0x2F), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'solb;', first: u32(0x29C4), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'solbar;', first: u32(0x233F), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'sopf;', first: u32(0x1D564), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'spades;', first: u32(0x2660), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'spadesuit;', first: u32(0x2660), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'spar;', first: u32(0x2225), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'sqcap;', first: u32(0x2293), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'sqcaps;', first: u32(0x2293), second: u32(0xFE00) },
+	NamedCharacterReferenceData{ name: 'sqcup;', first: u32(0x2294), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'sqcups;', first: u32(0x2294), second: u32(0xFE00) },
+	NamedCharacterReferenceData{ name: 'sqsub;', first: u32(0x228F), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'sqsube;', first: u32(0x2291), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'sqsubset;', first: u32(0x228F), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'sqsubseteq;', first: u32(0x2291), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'sqsup;', first: u32(0x2290), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'sqsupe;', first: u32(0x2292), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'sqsupset;', first: u32(0x2290), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'sqsupseteq;', first: u32(0x2292), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'squ;', first: u32(0x25A1), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'square;', first: u32(0x25A1), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'squarf;', first: u32(0x25AA), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'squf;', first: u32(0x25AA), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'srarr;', first: u32(0x2192), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'sscr;', first: u32(0x1D4C8), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'ssetmn;', first: u32(0x2216), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'ssmile;', first: u32(0x2323), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'sstarf;', first: u32(0x22C6), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'star;', first: u32(0x2606), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'starf;', first: u32(0x2605), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'straightepsilon;', first: u32(0x3F5), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'straightphi;', first: u32(0x3D5), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'strns;', first: u32(0xAF), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'sub;', first: u32(0x2282), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'subE;', first: u32(0x2AC5), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'subdot;', first: u32(0x2ABD), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'sube;', first: u32(0x2286), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'subedot;', first: u32(0x2AC3), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'submult;', first: u32(0x2AC1), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'subnE;', first: u32(0x2ACB), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'subne;', first: u32(0x228A), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'subplus;', first: u32(0x2ABF), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'subrarr;', first: u32(0x2979), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'subset;', first: u32(0x2282), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'subseteq;', first: u32(0x2286), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'subseteqq;', first: u32(0x2AC5), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'subsetneq;', first: u32(0x228A), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'subsetneqq;', first: u32(0x2ACB), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'subsim;', first: u32(0x2AC7), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'subsub;', first: u32(0x2AD5), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'subsup;', first: u32(0x2AD3), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'succ;', first: u32(0x227B), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'succapprox;', first: u32(0x2AB8), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'succcurlyeq;', first: u32(0x227D), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'succeq;', first: u32(0x2AB0), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'succnapprox;', first: u32(0x2ABA), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'succneqq;', first: u32(0x2AB6), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'succnsim;', first: u32(0x22E9), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'succsim;', first: u32(0x227F), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'sum;', first: u32(0x2211), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'sung;', first: u32(0x266A), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'sup1', first: u32(0xB9), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'sup1;', first: u32(0xB9), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'sup2', first: u32(0xB2), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'sup2;', first: u32(0xB2), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'sup3', first: u32(0xB3), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'sup3;', first: u32(0xB3), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'sup;', first: u32(0x2283), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'supE;', first: u32(0x2AC6), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'supdot;', first: u32(0x2ABE), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'supdsub;', first: u32(0x2AD8), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'supe;', first: u32(0x2287), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'supedot;', first: u32(0x2AC4), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'suphsol;', first: u32(0x27C9), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'suphsub;', first: u32(0x2AD7), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'suplarr;', first: u32(0x297B), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'supmult;', first: u32(0x2AC2), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'supnE;', first: u32(0x2ACC), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'supne;', first: u32(0x228B), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'supplus;', first: u32(0x2AC0), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'supset;', first: u32(0x2283), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'supseteq;', first: u32(0x2287), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'supseteqq;', first: u32(0x2AC6), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'supsetneq;', first: u32(0x228B), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'supsetneqq;', first: u32(0x2ACC), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'supsim;', first: u32(0x2AC8), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'supsub;', first: u32(0x2AD4), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'supsup;', first: u32(0x2AD6), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'swArr;', first: u32(0x21D9), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'swarhk;', first: u32(0x2926), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'swarr;', first: u32(0x2199), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'swarrow;', first: u32(0x2199), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'swnwar;', first: u32(0x292A), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'szlig', first: u32(0xDF), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'szlig;', first: u32(0xDF), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'target;', first: u32(0x2316), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'tau;', first: u32(0x3C4), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'tbrk;', first: u32(0x23B4), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'tcaron;', first: u32(0x165), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'tcedil;', first: u32(0x163), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'tcy;', first: u32(0x442), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'tdot;', first: u32(0x20DB), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'telrec;', first: u32(0x2315), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'tfr;', first: u32(0x1D531), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'there4;', first: u32(0x2234), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'therefore;', first: u32(0x2234), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'theta;', first: u32(0x3B8), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'thetasym;', first: u32(0x3D1), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'thetav;', first: u32(0x3D1), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'thickapprox;', first: u32(0x2248), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'thicksim;', first: u32(0x223C), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'thinsp;', first: u32(0x2009), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'thkap;', first: u32(0x2248), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'thksim;', first: u32(0x223C), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'thorn', first: u32(0xFE), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'thorn;', first: u32(0xFE), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'tilde;', first: u32(0x2DC), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'times', first: u32(0xD7), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'times;', first: u32(0xD7), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'timesb;', first: u32(0x22A0), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'timesbar;', first: u32(0x2A31), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'timesd;', first: u32(0x2A30), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'tint;', first: u32(0x222D), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'toea;', first: u32(0x2928), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'top;', first: u32(0x22A4), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'topbot;', first: u32(0x2336), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'topcir;', first: u32(0x2AF1), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'topf;', first: u32(0x1D565), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'topfork;', first: u32(0x2ADA), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'tosa;', first: u32(0x2929), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'tprime;', first: u32(0x2034), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'trade;', first: u32(0x2122), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'triangle;', first: u32(0x25B5), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'triangledown;', first: u32(0x25BF), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'triangleleft;', first: u32(0x25C3), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'trianglelefteq;', first: u32(0x22B4), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'triangleq;', first: u32(0x225C), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'triangleright;', first: u32(0x25B9), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'trianglerighteq;', first: u32(0x22B5), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'tridot;', first: u32(0x25EC), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'trie;', first: u32(0x225C), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'triminus;', first: u32(0x2A3A), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'triplus;', first: u32(0x2A39), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'trisb;', first: u32(0x29CD), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'tritime;', first: u32(0x2A3B), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'trpezium;', first: u32(0x23E2), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'tscr;', first: u32(0x1D4C9), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'tscy;', first: u32(0x446), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'tshcy;', first: u32(0x45B), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'tstrok;', first: u32(0x167), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'twixt;', first: u32(0x226C), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'twoheadleftarrow;', first: u32(0x219E), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'twoheadrightarrow;', first: u32(0x21A0), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'uArr;', first: u32(0x21D1), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'uHar;', first: u32(0x2963), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'uacute', first: u32(0xFA), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'uacute;', first: u32(0xFA), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'uarr;', first: u32(0x2191), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'ubrcy;', first: u32(0x45E), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'ubreve;', first: u32(0x16D), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'ucirc', first: u32(0xFB), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'ucirc;', first: u32(0xFB), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'ucy;', first: u32(0x443), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'udarr;', first: u32(0x21C5), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'udblac;', first: u32(0x171), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'udhar;', first: u32(0x296E), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'ufisht;', first: u32(0x297E), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'ufr;', first: u32(0x1D532), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'ugrave', first: u32(0xF9), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'ugrave;', first: u32(0xF9), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'uharl;', first: u32(0x21BF), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'uharr;', first: u32(0x21BE), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'uhblk;', first: u32(0x2580), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'ulcorn;', first: u32(0x231C), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'ulcorner;', first: u32(0x231C), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'ulcrop;', first: u32(0x230F), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'ultri;', first: u32(0x25F8), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'umacr;', first: u32(0x16B), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'uml', first: u32(0xA8), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'uml;', first: u32(0xA8), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'uogon;', first: u32(0x173), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'uopf;', first: u32(0x1D566), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'uparrow;', first: u32(0x2191), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'updownarrow;', first: u32(0x2195), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'upharpoonleft;', first: u32(0x21BF), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'upharpoonright;', first: u32(0x21BE), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'uplus;', first: u32(0x228E), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'upsi;', first: u32(0x3C5), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'upsih;', first: u32(0x3D2), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'upsilon;', first: u32(0x3C5), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'upuparrows;', first: u32(0x21C8), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'urcorn;', first: u32(0x231D), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'urcorner;', first: u32(0x231D), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'urcrop;', first: u32(0x230E), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'uring;', first: u32(0x16F), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'urtri;', first: u32(0x25F9), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'uscr;', first: u32(0x1D4CA), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'utdot;', first: u32(0x22F0), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'utilde;', first: u32(0x169), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'utri;', first: u32(0x25B5), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'utrif;', first: u32(0x25B4), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'uuarr;', first: u32(0x21C8), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'uuml', first: u32(0xFC), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'uuml;', first: u32(0xFC), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'uwangle;', first: u32(0x29A7), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'vArr;', first: u32(0x21D5), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'vBar;', first: u32(0x2AE8), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'vBarv;', first: u32(0x2AE9), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'vDash;', first: u32(0x22A8), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'vangrt;', first: u32(0x299C), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'varepsilon;', first: u32(0x3F5), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'varkappa;', first: u32(0x3F0), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'varnothing;', first: u32(0x2205), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'varphi;', first: u32(0x3D5), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'varpi;', first: u32(0x3D6), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'varpropto;', first: u32(0x221D), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'varr;', first: u32(0x2195), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'varrho;', first: u32(0x3F1), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'varsigma;', first: u32(0x3C2), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'varsubsetneq;', first: u32(0x228A), second: u32(0xFE00) },
+	NamedCharacterReferenceData{ name: 'varsubsetneqq;', first: u32(0x2ACB), second: u32(0xFE00) },
+	NamedCharacterReferenceData{ name: 'varsupsetneq;', first: u32(0x228B), second: u32(0xFE00) },
+	NamedCharacterReferenceData{ name: 'varsupsetneqq;', first: u32(0x2ACC), second: u32(0xFE00) },
+	NamedCharacterReferenceData{ name: 'vartheta;', first: u32(0x3D1), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'vartriangleleft;', first: u32(0x22B2), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'vartriangleright;', first: u32(0x22B3), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'vcy;', first: u32(0x432), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'vdash;', first: u32(0x22A2), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'vee;', first: u32(0x2228), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'veebar;', first: u32(0x22BB), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'veeeq;', first: u32(0x225A), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'vellip;', first: u32(0x22EE), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'verbar;', first: u32(0x7C), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'vert;', first: u32(0x7C), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'vfr;', first: u32(0x1D533), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'vltri;', first: u32(0x22B2), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'vnsub;', first: u32(0x2282), second: u32(0x20D2) },
+	NamedCharacterReferenceData{ name: 'vnsup;', first: u32(0x2283), second: u32(0x20D2) },
+	NamedCharacterReferenceData{ name: 'vopf;', first: u32(0x1D567), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'vprop;', first: u32(0x221D), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'vrtri;', first: u32(0x22B3), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'vscr;', first: u32(0x1D4CB), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'vsubnE;', first: u32(0x2ACB), second: u32(0xFE00) },
+	NamedCharacterReferenceData{ name: 'vsubne;', first: u32(0x228A), second: u32(0xFE00) },
+	NamedCharacterReferenceData{ name: 'vsupnE;', first: u32(0x2ACC), second: u32(0xFE00) },
+	NamedCharacterReferenceData{ name: 'vsupne;', first: u32(0x228B), second: u32(0xFE00) },
+	NamedCharacterReferenceData{ name: 'vzigzag;', first: u32(0x299A), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'wcirc;', first: u32(0x175), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'wedbar;', first: u32(0x2A5F), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'wedge;', first: u32(0x2227), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'wedgeq;', first: u32(0x2259), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'weierp;', first: u32(0x2118), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'wfr;', first: u32(0x1D534), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'wopf;', first: u32(0x1D568), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'wp;', first: u32(0x2118), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'wr;', first: u32(0x2240), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'wreath;', first: u32(0x2240), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'wscr;', first: u32(0x1D4CC), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'xcap;', first: u32(0x22C2), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'xcirc;', first: u32(0x25EF), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'xcup;', first: u32(0x22C3), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'xdtri;', first: u32(0x25BD), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'xfr;', first: u32(0x1D535), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'xhArr;', first: u32(0x27FA), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'xharr;', first: u32(0x27F7), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'xi;', first: u32(0x3BE), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'xlArr;', first: u32(0x27F8), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'xlarr;', first: u32(0x27F5), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'xmap;', first: u32(0x27FC), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'xnis;', first: u32(0x22FB), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'xodot;', first: u32(0x2A00), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'xopf;', first: u32(0x1D569), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'xoplus;', first: u32(0x2A01), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'xotime;', first: u32(0x2A02), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'xrArr;', first: u32(0x27F9), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'xrarr;', first: u32(0x27F6), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'xscr;', first: u32(0x1D4CD), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'xsqcup;', first: u32(0x2A06), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'xuplus;', first: u32(0x2A04), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'xutri;', first: u32(0x25B3), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'xvee;', first: u32(0x22C1), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'xwedge;', first: u32(0x22C0), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'yacute', first: u32(0xFD), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'yacute;', first: u32(0xFD), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'yacy;', first: u32(0x44F), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'ycirc;', first: u32(0x177), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'ycy;', first: u32(0x44B), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'yen', first: u32(0xA5), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'yen;', first: u32(0xA5), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'yfr;', first: u32(0x1D536), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'yicy;', first: u32(0x457), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'yopf;', first: u32(0x1D56A), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'yscr;', first: u32(0x1D4CE), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'yucy;', first: u32(0x44E), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'yuml', first: u32(0xFF), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'yuml;', first: u32(0xFF), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'zacute;', first: u32(0x17A), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'zcaron;', first: u32(0x17E), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'zcy;', first: u32(0x437), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'zdot;', first: u32(0x17C), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'zeetrf;', first: u32(0x2128), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'zeta;', first: u32(0x3B6), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'zfr;', first: u32(0x1D537), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'zhcy;', first: u32(0x436), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'zigrarr;', first: u32(0x21DD), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'zopf;', first: u32(0x1D56B), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'zscr;', first: u32(0x1D4CF), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'zwj;', first: u32(0x200D), second: u32(0x0) },
+	NamedCharacterReferenceData{ name: 'zwnj;', first: u32(0x200C), second: u32(0x0) },
+]!

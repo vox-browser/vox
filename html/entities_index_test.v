@@ -2,7 +2,8 @@ module html
 
 fn test_entity_name_index_preserves_every_prefix_and_complete_match() {
 	mut expected := map[string]bool{}
-	for name, points in named_char_ref_codepoints {
+	for points in named_char_ref_data {
+		name := points.name
 		mut matcher := NamedCharacterReferenceMatcher{}
 		for index, byte in name.bytes() {
 			prefix := name[..index + 1]
@@ -26,12 +27,14 @@ fn test_entity_name_index_preserves_every_prefix_and_complete_match() {
 
 fn test_entity_index_keeps_longest_match_and_rejects_non_ascii_without_consuming() {
 	mut matcher := NamedCharacterReferenceMatcher{}
-	for byte in 'noti'.bytes() { assert matcher.try_consume_ascii_char(byte) }
+	for byte in 'noti'.bytes() {
+		assert matcher.try_consume_ascii_char(byte)
+	}
 	assert !matcher.try_consume_code_point(`т`)
 	assert !matcher.try_consume_ascii_char(`t`)
 	assert matcher.last_match == 'not'
 	assert matcher.overconsumed_code_points() == 1
-	assert matcher.code_points()? == [u32(0xac)]
+	assert matcher.code_points()? == NamedCharacterReferenceData{ name: 'not', first: 0xac }
 	matcher.reset()
 	assert matcher.consumed == ''
 	assert matcher.code_points() == none

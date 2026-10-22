@@ -1785,8 +1785,9 @@ fn (mut t HTMLTokenizer) next_token_impl(stop StopAtInsertionPoint) ?HTMLToken {
 							}
 						}
 						t.temporary_buffer.clear()
-						for cp in mapped {
-							t.temporary_buffer << rune(cp)
+						t.temporary_buffer << rune(mapped.first)
+						if mapped.second != 0 {
+							t.temporary_buffer << rune(mapped.second)
 						}
 						t.flush_codepoints_consumed_as_a_character_reference()
 						t.state = t.return_state
