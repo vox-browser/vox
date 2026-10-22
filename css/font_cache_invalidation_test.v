@@ -26,7 +26,7 @@ fn test_pending_font_cascade_is_reused_for_unchanged_style() {
 	document := dom.Document.create(dom.url_about_blank())
 	element := document.create_element_ns(dom.namespace_html_uri, 'div')!
 	abstract_element := dom.AbstractElement.new(element, none)
-	invalidation := compute_required_invalidation(previous, next, computer, none, &abstract_element)
+	invalidation := compute_required_invalidation(previous, next, computer, none, abstract_element)
 	assert !invalidation.needs_relayout()
 	assert voidptr(next.computed_font_list(computer)) == voidptr(previous_list)
 	// The lower-level pending-cascade comparison keeps its upstream behavior.

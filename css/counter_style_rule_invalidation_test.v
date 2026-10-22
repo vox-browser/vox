@@ -81,12 +81,12 @@ fn test_content_tracks_effective_counter_styles_and_invalidates_when_they_change
 	mut old_values := unsafe { &MutableComputedValues(old_style) }
 	old_values.set_content(old_content)
 	computer := StyleComputer.new(document)
-	assert !compute_required_invalidation(old_style, new_style, computer.font_computer(), abstract_element.unsafe_layout_node(), &abstract_element).needs_layout_tree_rebuild()
+	assert !compute_required_invalidation(old_style, new_style, computer.font_computer(), abstract_element.unsafe_layout_node(), abstract_element).needs_layout_tree_rebuild()
 
 	holder := css_author_style_sheets_for(document)
 	mut sheet := holder.sheets[0]
 	sheet.insert_rule('@counter-style marker { system: cyclic; symbols: "PASS"; suffix: ""; }', u32(sheet.rules.rules.len))!
-	invalidation := compute_required_invalidation(old_style, new_style, computer.font_computer(), abstract_element.unsafe_layout_node(), &abstract_element)
+	invalidation := compute_required_invalidation(old_style, new_style, computer.font_computer(), abstract_element.unsafe_layout_node(), abstract_element)
 	assert invalidation.needs_layout_tree_rebuild()
 	assert invalidation.needs_relayout()
 	assert invalidation.needs_repaint()
@@ -107,12 +107,12 @@ fn test_list_style_type_invalidates_when_effective_counter_style_changes() {
 	mut old_values := unsafe { &MutableComputedValues(old_style) }
 	old_values.set_list_style_type(old_style.list_style_type_for_scope(css_style_scope_for(abstract_element)))
 	computer := StyleComputer.new(document)
-	assert !compute_required_invalidation(old_style, new_style, computer.font_computer(), abstract_element.unsafe_layout_node(), &abstract_element).needs_layout_tree_rebuild()
+	assert !compute_required_invalidation(old_style, new_style, computer.font_computer(), abstract_element.unsafe_layout_node(), abstract_element).needs_layout_tree_rebuild()
 
 	holder := css_author_style_sheets_for(document)
 	mut sheet := holder.sheets[0]
 	sheet.insert_rule('@counter-style marker { system: cyclic; symbols: "PASS"; suffix: ""; }', u32(sheet.rules.rules.len))!
-	assert compute_required_invalidation(old_style, new_style, computer.font_computer(), abstract_element.unsafe_layout_node(), &abstract_element).needs_layout_tree_rebuild()
+	assert compute_required_invalidation(old_style, new_style, computer.font_computer(), abstract_element.unsafe_layout_node(), abstract_element).needs_layout_tree_rebuild()
 }
 
 fn test_invalid_counter_style_descriptor_does_not_invalidate() {

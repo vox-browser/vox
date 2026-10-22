@@ -947,7 +947,7 @@ fn counter_style_options_equal(left ?CounterStyle, right ?CounterStyle) bool {
 	return left_style.equals(right_style)
 }
 
-pub fn compute_required_invalidation(old_style &ComputedProperties, new_style &ComputedProperties, font_computer &FontComputer, old_layout_node ?&dom.LayoutNodeWithStyle_, abstract_element &dom.AbstractElement) RequiredInvalidationAfterStyleChange {
+pub fn compute_required_invalidation(old_style &ComputedProperties, new_style &ComputedProperties, font_computer &FontComputer, old_layout_node ?&dom.LayoutNodeWithStyle_, abstract_element dom.AbstractElement) RequiredInvalidationAfterStyleChange {
  diagnostic_scope_start := begin_diagnostic_instruction_scope()
  defer { record_diagnostic_instruction_scope(11, diagnostic_scope_start) }
 
@@ -976,8 +976,8 @@ pub fn compute_required_invalidation(old_style &ComputedProperties, new_style &C
 		// Literal generated text has no counter definitions to recheck. A
 		// changed content property already carries its raw-property invalidation.
 		if old_content.counter_style_dependencies.len > 0 {
-			registered_counter_styles := registered_counter_styles_for_abstract_element(*abstract_element)
-			new_content := new_style.content(abstract_element, 0, registered_counter_styles).content_data
+			registered_counter_styles := registered_counter_styles_for_abstract_element(abstract_element)
+			new_content := new_style.content(&abstract_element, 0, registered_counter_styles).content_data
 			if !counter_style_dependencies_equal(old_content.counter_style_dependencies, new_content.counter_style_dependencies) {
 				invalidation.ensure_at_least(.rebuild_layout_tree)
 			}
@@ -986,7 +986,7 @@ pub fn compute_required_invalidation(old_style &ComputedProperties, new_style &C
 	if _ := old_layout_node {
 		old_list_style_type := unsafe { &ComputedValues(old_style) }.computed_list_style_type()
 		if old_list_style_type.kind == .counter_style {
-			new_list_style_type := new_style.list_style_type_for_scope(css_style_scope_for(*abstract_element))
+			new_list_style_type := new_style.list_style_type_for_scope(css_style_scope_for(abstract_element))
 			if new_list_style_type.kind == .counter_style
 				&& !counter_style_options_equal(old_list_style_type.counter_style, new_list_style_type.counter_style) {
 				invalidation.ensure_at_least(.rebuild_layout_tree)
@@ -1024,7 +1024,7 @@ fn (s &StyleComputer) recompute_style_with_invalidation(mut abstract_element dom
 	}
 	computed := s.compute_style_tracking_custom_property_changes(abstract_element, did_change_custom_properties)
 	mut invalidation := if previous := old_style {
-		compute_required_invalidation(previous, computed, s.font_computer(), abstract_element.unsafe_layout_node(), &abstract_element)
+		compute_required_invalidation(previous, computed, s.font_computer(), abstract_element.unsafe_layout_node(), abstract_element)
 	} else {
 		required_invalidation_after_style_change_full()
 	}
@@ -1051,7 +1051,7 @@ fn (s &StyleComputer) recompute_style_with_invalidation(mut abstract_element dom
 		if (pseudo_element == .backdrop && !process_backdrop)
 			|| (pseudo_element == .marker && !process_marker) { continue }
 		mutable_computer.push_ancestor(abstract_element.element())
-		mut pseudo_abstract := dom.AbstractElement.new(abstract_element.element(), pseudo_element)
+		pseudo_abstract := dom.AbstractElement.new(abstract_element.element(), pseudo_element)
 		mut old_pseudo_style := ?&ComputedProperties(none)
 		if old_dom_pseudo_style := pseudo_abstract.computed_properties() {
 			old_pseudo_style = computed_properties_from_dom(old_dom_pseudo_style)
@@ -1067,7 +1067,7 @@ fn (s &StyleComputer) recompute_style_with_invalidation(mut abstract_element dom
 		}
 		if pseudo_style := new_pseudo_style {
 			if previous := old_pseudo_style {
-				invalidation = required_invalidation_after_style_change_or(invalidation, compute_required_invalidation(previous, pseudo_style, s.font_computer(), pseudo_abstract.unsafe_layout_node(), &pseudo_abstract))
+				invalidation = required_invalidation_after_style_change_or(invalidation, compute_required_invalidation(previous, pseudo_style, s.font_computer(), pseudo_abstract.unsafe_layout_node(), pseudo_abstract))
 			} else {
 				invalidation = required_invalidation_after_style_change_full()
 			}

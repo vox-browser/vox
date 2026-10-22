@@ -26,13 +26,13 @@ fn test_literal_content_invalidation_does_not_materialize_counter_styles() {
 	scope := css_style_scope_for(abstract_element)
 	assert scope.needs_counter_style_cache_update
 	unchanged := compute_required_invalidation(old_style, new_style, computer.font_computer(),
-		abstract_element.unsafe_layout_node(), &abstract_element)
+		abstract_element.unsafe_layout_node(), abstract_element)
 	assert !unchanged.needs_layout_tree_rebuild()
 	assert scope.needs_counter_style_cache_update
 	// Introducing a counter still rebuilds through ordinary content invalidation.
 	changed_style := literal_content_invalidation_properties('counter(item, decimal)')
 	changed := compute_required_invalidation(old_style, changed_style, computer.font_computer(),
-		abstract_element.unsafe_layout_node(), &abstract_element)
+		abstract_element.unsafe_layout_node(), abstract_element)
 	assert changed.needs_layout_tree_rebuild()
 	assert scope.needs_counter_style_cache_update
 }

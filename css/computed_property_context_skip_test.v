@@ -97,13 +97,13 @@ fn test_context_skip_keeps_computed_font_and_viewport_dependencies_through_inher
 		if old_child := previous_child {
 			assert old_child.font_size().to_double() == 96
 			invalidation := compute_required_invalidation(old_child, child_style,
-				computer.font_computer(), none, &child_abstract)
+				computer.font_computer(), none, child_abstract)
 			assert invalidation.needs_relayout()
 		}
 		if old_grandchild := previous_grandchild {
 			assert old_grandchild.font_size().to_double() == 144
 			invalidation := compute_required_invalidation(old_grandchild, grandchild_style,
-				computer.font_computer(), none, &grandchild_abstract)
+				computer.font_computer(), none, grandchild_abstract)
 			assert invalidation.needs_relayout()
 		}
 		previous_child = child_style
@@ -139,7 +139,7 @@ fn test_context_skip_drops_old_viewport_dependency_after_fixed_value_replacement
 	assert fixed.length_percentage_to_px(.width, 0)? == 40
 	assert fixed.length_percentage_to_px(.height, 0)? == 30
 	assert compute_required_invalidation(relative, fixed, computer.font_computer(), none,
-		&child_abstract).needs_relayout()
+		child_abstract).needs_relayout()
 	document.set_viewport_rect(dom.Rect{ width: 400, height: 300 })
 	computer.set_viewport_rect(CSSPixelRect.new(0, 0, 400, 300))
 	resized := computation_skip_install(computer, mut child_abstract)
@@ -147,6 +147,6 @@ fn test_context_skip_drops_old_viewport_dependency_after_fixed_value_replacement
 	assert resized.length_percentage_to_px(.width, 0)? == 40
 	assert resized.length_percentage_to_px(.height, 0)? == 30
 	assert !compute_required_invalidation(fixed, resized, computer.font_computer(), none,
-		&child_abstract).needs_relayout()
+		child_abstract).needs_relayout()
 	assert relative.length_percentage_to_px(.width, 0)? == 80
 }

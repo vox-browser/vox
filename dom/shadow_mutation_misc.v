@@ -4368,7 +4368,9 @@ pub fn (abstract_element AbstractElement) computed_properties() ?&CSSComputedPro
 	return element.computed_properties_for_pseudo(pseudo)
 }
 
-pub fn (mut abstract_element AbstractElement) set_computed_properties(computed_properties ?&CSSComputedProperties_) {
+// The handle stays immutable: only the referenced element owns this state.
+// A value receiver also keeps temporary pseudo-element handles off the heap.
+pub fn (abstract_element AbstractElement) set_computed_properties(computed_properties ?&CSSComputedProperties_) {
 	pseudo := if p := abstract_element.pseudo_element_ { int(p) } else { none }
 	mut element := unsafe { &Element(abstract_element.element_) }
 	element.set_computed_properties(pseudo, computed_properties)
@@ -4380,7 +4382,7 @@ pub fn (abstract_element AbstractElement) custom_property_data() ?&CSSCustomProp
 	return element.custom_property_data(pseudo)
 }
 
-pub fn (mut abstract_element AbstractElement) set_custom_property_data(data ?&CSSCustomPropertyData_) {
+pub fn (abstract_element AbstractElement) set_custom_property_data(data ?&CSSCustomPropertyData_) {
 	pseudo := if p := abstract_element.pseudo_element_ { int(p) } else { none }
 	mut element := unsafe { &Element(abstract_element.element_) }
 	element.set_custom_property_data(pseudo, data)
