@@ -4021,6 +4021,15 @@ pub fn (c &ComputedProperties) vertical_align() VerticalAlign {
 
 pub fn (c &ComputedProperties) vertical_align_length_percentage() ?LengthPercentage {
 	value := c.property(.vertical_align, .yes) or { return none }
+	if value.css_value_handle != unsafe { nil } {
+		typed := unsafe { &TypedStyleValueBox(value.css_value_handle) }
+		return match typed.value {
+			LengthStyleValue { LengthPercentage.from_length(typed.value.length()) }
+			PercentageStyleValue { LengthPercentage.from_percentage(typed.value.percentage()) }
+			CalculatedStyleValue { LengthPercentage.from_calculated(typed.value) }
+			else { none }
+		}
+	}
 	parsed_value := style_value_logic_from_dom(.vertical_align, value) or { return none }
 	return match parsed_value {
 		LengthStyleValue, PercentageStyleValue, CalculatedStyleValue {
