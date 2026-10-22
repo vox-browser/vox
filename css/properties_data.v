@@ -386,8 +386,8 @@ fn parse_substituted_property_value(property_id PropertyID, result []ComponentVa
 	// FIXME: Parse according to @property syntax once we support that.
 	// Substitution has already materialized this immutable input. The parser
 	// only advances a separate cursor, so it need not copy the component slots.
-	mut parser := Parser.from_component_span(result)
-	mut parsed_value := parser.parse_css_value(property_id) or {
+	mut parsed_value := parse_property_components_with_export(ParsingParams{}, property_id,
+		result, false) or {
 		return dom_style_value_from_value_logic(StyleValue(GuaranteedInvalidStyleValue.create()))
 	}
 	if transient {

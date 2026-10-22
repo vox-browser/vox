@@ -2461,21 +2461,9 @@ fn (mut parser RuleSelectorParser) convert_to_style_declaration(declarations Par
 			// Serializing and tokenizing it again both allocates and can merge
 			// tokens separated by comments, changing the declaration's grammar.
 			// Only transient input is mutated; ordinary caller-owned trees remain read-only.
-			mut components := unsafe { declaration.value }
-			if parser.component_input_transient { own_value_component_text(mut components) }
-			mut value_parser := Parser{
-				component_values: components
-				context: params
-				value_context: parser.value_context.clone()
-			}
-			mut parsed := value_parser.parse_css_value(property_id) or {
+			parsed := parse_property_components_with_export(params, property_id, declaration.value,
+				parser.component_input_transient) or {
 				continue
-			}
-			if parser.component_input_transient {
-				if mut parsed is UnresolvedStyleValue {
-					parsed.tokens = own_stylesheet_components(parsed.tokens)
-					if text := parsed.original_source_text { parsed.original_source_text = text.clone() }
-				}
 			}
 			result.append_parsed_declaration(StyleProperty{
 				important: declaration.important
