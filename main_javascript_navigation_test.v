@@ -22,6 +22,10 @@ fn javascript_navigation_app(markup string) !&BrowserApp {
 }
 
 fn javascript_navigation_click(mut app BrowserApp, target &dom.Element) {
+	// This windowless fixture dispatches CSS-pixel coordinates independently
+	// of the native display's backing scale.
+	mut document := app.document
+	document.set_layout_coordinate_scale(1)
 	rect := target.get_bounding_client_rect()
 	x := rect.x + rect.width / 2
 	y := rect.y + rect.height / 2
@@ -47,7 +51,7 @@ fn test_comment_toggle_with_undefined_return_keeps_javascript_void_link_on_docum
 	app.poll_deferred_navigation_input()
 	assert document.get_element_by_id('thing')?.get_attribute_value('class') == 'noncollapsed'
 	assert link.as_node().text_content()? == '[-]'
-	assert app.document == document
+	assert voidptr(app.document) == voidptr(document)
 	assert app.address == 'https://old.reddit.com/r/test/comments/fixture/thread/'
 	assert app.navigation_generation == 0
 	assert app.pending_navigation == none
@@ -67,7 +71,7 @@ fn test_javascript_link_executes_percent_decoded_source_without_coercing_complet
 		true)
 	assert document.get_element_by_id('comment')?.as_node().text_content()? == 'expanded'
 	assert app.js_runtime.evaluate_host('coercions')! == '0'
-	assert app.document == document
+	assert voidptr(app.document) == voidptr(document)
 	assert app.navigation_generation == 0
 	assert app.history.len == 0
 }
@@ -82,7 +86,7 @@ fn test_javascript_link_respects_document_scripting_and_csp() {
 	}
 	app.navigate('javascript:comment.textContent="should not run"', true)
 	assert document.get_element_by_id('comment')?.as_node().text_content()? == 'unchanged'
-	assert app.document == document
+	assert voidptr(app.document) == voidptr(document)
 	assert app.navigation_generation == 0
 }
 
@@ -97,7 +101,7 @@ fn test_javascript_string_completion_replaces_markup_at_current_url_and_keeps_po
 		if app.js_runtime != unsafe { nil } { app.js_runtime.close() }
 		replacement.finalize()
 	}
-	assert replacement != original
+	assert voidptr(replacement) != voidptr(original)
 	assert replacement.get_element_by_id('replacement')?.as_node().text_content()? == 'Привет'
 	assert replacement.url == original.url
 	assert replacement.origin().is_same_origin(original.origin())
