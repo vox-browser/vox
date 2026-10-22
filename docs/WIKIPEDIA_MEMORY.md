@@ -1,10 +1,10 @@
 # Wikipedia memory usage
 
 The [corrected arena measurements](WIKIPEDIA_NOJS_MEMORY.md#corrected-arena-beforeafter-50-mb-remains-unmet)
-now record **88.2 → 88.2 MB** with `-prealloc -gc none`; the 50 MB target remains
-unmet. This provider-only comparison establishes no substantial saving; the
-preceding glyph-index-font cohort measures **89.0 → 87.8 MB** with the earlier
-native providers. The earlier results below used Boehm.
+now record **69.67 → 68.62 MB** with `-prealloc -gc none`; the 50 MB target
+remains unmet. Three alternating pairs have identical viewport captures, and
+the largest candidate settled observation is 68,715,984 bytes. The earlier
+results below used Boehm.
 
 The [2026-10-21 HTML/CSS-only measurement](WIKIPEDIA_NOJS_MEMORY.md) records
 **123.2 → 87.3 MB settled physical memory** for Wikipedia, with unchanged
