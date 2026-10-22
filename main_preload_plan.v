@@ -53,7 +53,7 @@ fn partition_nonrendered_image_preloads(document &dom.Document, base_url string,
 				}
 			}
 			if !(element.is_html_element() && element.local_name() == 'img') {
-				for attribute in ['src', 'href', 'xlink:href', 'poster', 'data'] {
+				for attribute in ['src', 'href', 'xlink:href', 'poster', 'data']! {
 					if reference := element.get_attribute(attribute) {
 						hidden_by_url[resolve_document_reference(reference, base_url)] = false
 					}

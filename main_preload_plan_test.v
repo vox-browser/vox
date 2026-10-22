@@ -42,6 +42,18 @@ fn test_nonrendered_preload_plan_keeps_other_roles_unknown_and_css_image_urls_fo
 	assert foreground.len == urls.len - 1
 }
 
+fn test_nonrendered_preload_plan_preserves_each_other_role_reference_attribute() {
+	mut document := preload_plan_test_document('<!doctype html><dialog><img src="source.png"><img src="href.png"><img src="xlink.png"><img src="poster.png"><img src="data.png"><img src="hidden.png"></dialog><input type="image" src="source.png"><svg><image href="href.png"/><image xlink:href="xlink.png"/></svg><video poster="poster.png"></video><object data="data.png"></object>')
+	defer { document.finalize() }
+	base := document.base_url().serialize()
+	urls := ['https://preload-plan.test/dir/source.png', 'https://preload-plan.test/dir/href.png',
+		'https://preload-plan.test/dir/xlink.png', 'https://preload-plan.test/dir/poster.png',
+		'https://preload-plan.test/dir/data.png', 'https://preload-plan.test/dir/hidden.png']
+	foreground, background := partition_nonrendered_image_preloads(document, base, urls)
+	assert foreground == urls[..5]
+	assert background == ['https://preload-plan.test/dir/hidden.png']
+}
+
 fn test_nonrendered_preload_plan_resolves_external_css_urls_and_replans_after_live_change() {
 	mut document := preload_plan_test_document('<!doctype html><style data-libweb-v-source-url="https://preload-plan.test/assets/site.css">.paint { background-image: image-set("../dir/shared.png" 1x) }</style><div class="paint"></div><dialog id="dialog"><img src="shared.png"><img src="hidden.png"></dialog>')
 	defer { document.finalize() }
