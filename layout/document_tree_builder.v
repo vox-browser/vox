@@ -19,6 +19,7 @@ enum SVGReferencedResourceKind {
 
 struct TreeBuilderState {
 mut:
+	workspace               &platform.Arena = unsafe { nil }
 	allow_subtree_reuse      bool
 	nonreusable_flow_roots   map[u64]bool
 	quote_nesting_level      u32
@@ -156,14 +157,7 @@ fn resolve_layout_counters(mut builder_state TreeBuilderState, abstract_element 
 	mut mutable_abstract_element := abstract_element
 	resolved := css.resolve_counters_for_layout(mut mutable_abstract_element, computed, origin, parent != none, parent_counters, previous_sibling_counters, previous_element_counters)
 	key := abstract_element_counter_key(abstract_element)
-	if counters := resolved {
-		builder_state.counter_sets[key] = counters
-	} else {
-		builder_state.counter_sets.delete(key)
-	}
-	if parent_key >= 0 {
-		builder_state.last_child_by_parent[parent_key] = key
-	}
+	builder_state.remember_counters(key, resolved, parent_key)
 	builder_state.last_processed_key = key
 }
 
@@ -181,11 +175,7 @@ fn resolve_marker_layout_counters(mut builder_state TreeBuilderState, abstract_e
 	mut mutable_abstract_element := abstract_element
 	resolved := css.resolve_counters_for_layout(mut mutable_abstract_element, computed, origin, true, host_counters, none, host_counters)
 	key := abstract_element_counter_key(abstract_element)
-	if counters := resolved {
-		builder_state.counter_sets[key] = counters
-	} else {
-		builder_state.counter_sets.delete(key)
-	}
+	builder_state.remember_counters(key, resolved, -1)
 }
 
 // Layout::TreeBuilder::build(): compute style, construct the typed layout-node
@@ -247,10 +237,9 @@ fn build_layout_tree_from_computed_styles(document &dom.Document, mut style_comp
 	// `is<DOM::Document>` allocates a Layout::Viewport with the document style.
 	document_style := style_computer.create_document_style()
 	mut viewport := unsafe { &Node(Viewport.new(document, document_style)) }
-	mut builder_state := TreeBuilderState{
-		counter_sets: map[i64]css.CountersSet{}
-		allow_subtree_reuse: !document.needs_full_layout_tree_update() && document_layout_result(document) != none
-	}
+	mut builder_state := new_tree_builder_state()
+	defer { builder_state.finish() }
+	builder_state.allow_subtree_reuse = !document.needs_full_layout_tree_update() && document_layout_result(document) != none
 	if root_element_box := build_layout_box_for_element(document, root_element, style_computer, mut builder_state) {
 		propagate_root_styles_to_viewport(root_element_box, mut viewport)
 		viewport.append_child(root_element_box)

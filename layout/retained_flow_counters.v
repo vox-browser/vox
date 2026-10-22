@@ -41,11 +41,7 @@ fn resolve_retained_flow_counters(retained RetainedFlowSubtree, mut builder Tree
 			builder.counter_tree_order_index += i64(retained.elements.len - 1)
 			last := dom.AbstractElement.new(retained.elements.last(), none)
 			builder.last_processed_key = abstract_element_counter_key(last)
-			if current := counters {
-				builder.counter_sets[builder.last_processed_key] = current
-			} else {
-				builder.counter_sets.delete(builder.last_processed_key)
-			}
+			builder.remember_counters(builder.last_processed_key, counters, -1)
 			return
 		}
 	}
