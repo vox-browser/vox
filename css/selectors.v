@@ -1068,9 +1068,12 @@ fn selector_pseudo_element_uncached(compound_selectors []CompoundSelector) ?Pseu
 	if compound_selectors.len == 0 {
 		return none
 	}
-	last := compound_selectors[compound_selectors.len - 1]
+	last := unsafe { &compound_selectors[compound_selectors.len - 1] }
 	mut pseudo_element := ?PseudoElementSelector(none)
-	for simple_selector in last.simple_selectors {
+	for index in 0 .. last.simple_selectors.len {
+		// Inspect the retained selector in place. A value loop makes the
+		// pointer-receiver call escape a temporary copy on current V.
+		simple_selector := unsafe { &last.simple_selectors[index] }
 		if simple_selector.type_ == .pseudo_element {
 			pseudo_element = simple_selector.pseudo_element()
 		}
