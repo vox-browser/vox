@@ -3478,30 +3478,38 @@ pub fn (mut n Node) adopted_from(old_document &Document) {
 		mut mutable_element := unsafe { &Element(element) }
 		mutable_element.adopted_from(old_document)
 	}
-	if hook := n.adopted_from_hook_ {
-		if hook.callback != unsafe { nil } {
-			hook.callback(hook.target, old_document)
+	if n.hooks_ != unsafe { nil } {
+		if hook := n.hooks_.adopted_from {
+			if hook.callback != unsafe { nil } {
+				hook.callback(hook.target, old_document)
+			}
 		}
 	}
 }
 
 pub fn (mut n Node) set_adopted_from_hook(hook ?NodeAdoptedFromHook) {
-	n.adopted_from_hook_ = hook
+	if hook == none && n.hooks_ == unsafe { nil } { return }
+	mut hooks := n.ensure_hooks()
+	hooks.adopted_from = hook
 }
 
 pub fn (mut n Node) set_lifecycle_hook(hook ?NodeLifecycleHook) {
-	n.lifecycle_hook_ = hook
+	if hook == none && n.hooks_ == unsafe { nil } { return }
+	mut hooks := n.ensure_hooks()
+	hooks.lifecycle = hook
 }
 
 fn (n &Node) run_removed_from_lifecycle_hook(is_subtree_root NodeIsSubtreeRoot, old_ancestor ?&Node, old_root &Node) {
-	hook := n.lifecycle_hook_ or { return }
+	if n.hooks_ == unsafe { nil } { return }
+	hook := n.hooks_.lifecycle or { return }
 	if hook.removed_from != unsafe { nil } {
 		hook.removed_from(hook.target, is_subtree_root, old_ancestor, old_root)
 	}
 }
 
 fn (n &Node) run_moved_from_lifecycle_hook(is_subtree_root NodeIsSubtreeRoot, old_ancestor ?&Node) {
-	hook := n.lifecycle_hook_ or { return }
+	if n.hooks_ == unsafe { nil } { return }
+	hook := n.hooks_.lifecycle or { return }
 	if hook.moved_from != unsafe { nil } {
 		hook.moved_from(hook.target, is_subtree_root, old_ancestor)
 	}

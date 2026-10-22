@@ -503,10 +503,8 @@ pub mut:
 	slottable_name_           string
 	assigned_slot_            ?&HTMLSlotElement
 	manual_slot_assignment_   ?&HTMLSlotElement
-	load_event_delay_hook_    ?NodeLoadEventDelayHook
-	active_window_proxy_hook_ ?NodeActiveWindowProxyHook
-	adopted_from_hook_        ?NodeAdoptedFromHook
-	lifecycle_hook_           ?NodeLifecycleHook
+mut:
+	hooks_ &NodeHooks = unsafe { nil }
 }
 
 // Translation of the ParentNode mixin; its algorithms live in
@@ -3726,11 +3724,14 @@ pub fn (n &Navigable) container() ?&Node {
 }
 
 pub fn (mut n Node) set_load_event_delay_hook(hook ?NodeLoadEventDelayHook) {
-	n.load_event_delay_hook_ = hook
+	if hook == none && n.hooks_ == unsafe { nil } { return }
+	mut hooks := n.ensure_hooks()
+	hooks.load_event_delay = hook
 }
 
 pub fn (n &Node) currently_delays_the_load_event() bool {
-	hook := n.load_event_delay_hook_ or { return false }
+	if n.hooks_ == unsafe { nil } { return false }
+	hook := n.hooks_.load_event_delay or { return false }
 	if hook.callback == unsafe { nil } {
 		return false
 	}
@@ -3738,11 +3739,14 @@ pub fn (n &Node) currently_delays_the_load_event() bool {
 }
 
 pub fn (mut n Node) set_active_window_proxy_hook(hook ?NodeActiveWindowProxyHook) {
-	n.active_window_proxy_hook_ = hook
+	if hook == none && n.hooks_ == unsafe { nil } { return }
+	mut hooks := n.ensure_hooks()
+	hooks.active_window_proxy = hook
 }
 
 pub fn (n &Node) active_window_proxy() ?&WindowProxy {
-	hook := n.active_window_proxy_hook_ or { return none }
+	if n.hooks_ == unsafe { nil } { return none }
+	hook := n.hooks_.active_window_proxy or { return none }
 	if hook.callback == unsafe { nil } {
 		return none
 	}
