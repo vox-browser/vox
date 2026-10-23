@@ -1,6 +1,7 @@
 module css
 
 import dom
+import platform
 
 // Selector-matching entry points that the DOM needs (querySelector / matches / closest).
 // These live in css because they need the selector parser and SelectorEngine. The callback bridge
@@ -77,8 +78,15 @@ fn dom_selector_scope_query(target voidptr, selector_text string, root &dom.Pare
 	first bool) ?[]&dom.Node {
 	mut state := unsafe { &DocumentSelectorQueryState(target) }
 	selectors := state.parse(selector_text) or { return none }
+	// Parsed selectors are document-owned. Only the independent matching walk
+	// and its temporary vectors belong to this synchronous workspace.
+	scratch := platform.begin_thread_scratch('independent DOM query')
+	defer { scratch.finish() }
 	compounds := independent_query_compounds(selectors) or { return none }
-	if !independent_query_may_match_document(root.as_node(), compounds) { return []&dom.Node{} }
+	if !independent_query_may_match_document(root.as_node(), compounds) {
+		scratch.leave()
+		return []&dom.Node{}
+	}
 	mut context := MatchContext{has_result_cache: unsafe { nil }}
 	mut nodes := []&dom.Node{}
 	if first {
@@ -90,7 +98,8 @@ fn dom_selector_scope_query(target voidptr, selector_text string, root &dom.Pare
 		independent_query_all_in(root.as_node(), compounds, mut context, mut elements)
 		for element in elements { nodes << element.as_node() }
 	}
-	return nodes
+	scratch.leave()
+	return nodes.clone()
 }
 
 pub fn install_document_selector_query_hook(document &dom.Document) {
@@ -174,24 +183,40 @@ fn query_selector_all_in(node &dom.Node, selectors SelectorList, mut results []&
 // Returns the first descendant element of `root` (in tree order) that matches the selector.
 pub fn query_selector(root &dom.Node, selector_text string) ?&dom.Element {
 	selectors := document_query_selector_list(root.document(), selector_text) or { return none }
+	scratch := platform.begin_thread_scratch('independent DOM query')
 	if compounds := independent_query_compounds(selectors) {
-		if !independent_query_may_match_document(root, compounds) { return none }
+		if !independent_query_may_match_document(root, compounds) {
+			scratch.finish()
+			return none
+		}
 		mut context := MatchContext{has_result_cache: unsafe { nil }}
-		return independent_query_first_in(root, compounds, mut context)
+		found := independent_query_first_in(root, compounds, mut context)
+		scratch.finish()
+		return found
 	}
+	scratch.finish()
 	return query_selector_first_in(root, selectors)
 }
 
 // https://dom.spec.whatwg.org/#dom-parentnode-queryselectorall
 pub fn query_selector_all(root &dom.Node, selector_text string) []&dom.Element {
-	mut results := []&dom.Element{}
-	selectors := document_query_selector_list(root.document(), selector_text) or { return results }
+	selectors := document_query_selector_list(root.document(), selector_text) or { return []&dom.Element{} }
+	scratch := platform.begin_thread_scratch('independent DOM query')
 	if compounds := independent_query_compounds(selectors) {
-		if !independent_query_may_match_document(root, compounds) { return results }
+		if !independent_query_may_match_document(root, compounds) {
+			scratch.finish()
+			return []&dom.Element{}
+		}
 		mut context := MatchContext{has_result_cache: unsafe { nil }}
+		mut results := []&dom.Element{}
 		independent_query_all_in(root, compounds, mut context, mut results)
-		return results
+		scratch.leave()
+		owned := results.clone()
+		scratch.finish()
+		return owned
 	}
+	scratch.finish()
+	mut results := []&dom.Element{}
 	query_selector_all_in(root, selectors, mut results)
 	return results
 }
