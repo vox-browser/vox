@@ -1,20 +1,18 @@
 module css
 
 import dom
+import platform
 
-fn test_length_metrics_cache_reuses_font_inputs_and_observes_live_changes() {
+fn test_length_metrics_observe_live_font_and_line_height_changes() {
 	mut style := ComputedProperties.new()
 	style.set_property(.font_size, &dom.StyleValue{css_text: '20px'}, .no, .no)
 	style.set_property(.line_height, &dom.StyleValue{css_text: '2'}, .no, .no)
 	first := style.length_resolution_context()
-	cache := style.cached_length_metrics_
 	assert first.font_metrics.font_size.to_double() == 20
 	assert first.font_metrics.line_height.to_double() == 40
 	assert style.length_resolution_context().font_metrics == first.font_metrics
-	assert voidptr(style.cached_length_metrics_) == voidptr(cache)
 	style.viewport_rect_ = CSSPixelRect.new(0, 0, 640, 480)
 	assert style.length_resolution_context().viewport_rect.width.to_double() == 640
-	assert voidptr(style.cached_length_metrics_) == voidptr(cache)
 	style.set_animated_property(.font_size, &dom.StyleValue{css_text: '30px'}, .no, .no)
 	assert style.length_resolution_context().font_metrics.font_size.to_double() == 30
 	assert style.length_resolution_context().font_metrics.line_height.to_double() == 60
@@ -27,6 +25,8 @@ fn test_length_metrics_cache_reuses_font_inputs_and_observes_live_changes() {
 	context := LengthResolutionContext.for_computed_properties(style)
 	assert context.root_font_metrics.font_size.to_double() == 12
 	assert context.root_font_metrics.line_height.to_double() == 18
+	assert first.font_metrics.font_size.to_double() == 20
+	assert first.font_metrics.line_height.to_double() == 40
 }
 
 fn test_length_metrics_reuse_does_not_share_container_query_lookup_state() {
@@ -44,15 +44,32 @@ fn test_length_metrics_reuse_does_not_share_container_query_lookup_state() {
 	assert !second_cache.width_was_computed
 }
 
-fn test_layout_length_accessors_retain_metrics_on_the_owning_style() {
+fn test_layout_length_accessors_use_the_owning_style_metrics() {
 	mut style := ComputedProperties.new()
 	style.set_property(.font_size, &dom.StyleValue{css_text: '20px'}, .no, .no)
 	style.set_property(.padding_left, &dom.StyleValue{css_text: '2em'}, .no, .no)
 	values := resolve_computed_values(style)
-	style.cached_length_metrics_ = unsafe { nil }
 	assert values.length_percentage_to_px(.padding_left, 100) or { -1 } == 40
-	cache := style.cached_length_metrics_
-	assert cache != unsafe { nil }
 	assert values.length_percentage_to_px(.padding_left, 200) or { -1 } == 40
-	assert voidptr(style.cached_length_metrics_) == voidptr(cache)
+}
+
+fn test_length_contexts_share_size_metrics_without_per_style_records() {
+	font_size := dom_style_value_from_value_logic(StyleValue(LengthStyleValue.create(Length.make_px(20))))
+	line_height := dom_style_value_from_value_logic(StyleValue(NumberStyleValue.create(2)))
+	mut styles := []&ComputedProperties{cap: 256}
+	for _ in 0 .. 256 {
+		mut style := ComputedProperties.new()
+		style.set_property(.font_size, font_size, .no, .no)
+		style.set_property(.line_height, line_height, .no, .no)
+		styles << style
+	}
+	// Warm the shared size cache before measuring all other style contexts.
+	first := styles[0].length_resolution_context()
+	before := platform.thread_arena_usage().used
+	for style in styles {
+		context := style.length_resolution_context()
+		assert context.font_metrics == first.font_metrics
+		assert context.root_font_metrics == first.root_font_metrics
+	}
+	$if prealloc { assert platform.thread_arena_usage().used - before < 4096 }
 }

@@ -61,7 +61,7 @@ fn test_computed_length_owner_keeps_missing_serialized_and_other_typed_fallbacks
 		assert style.length(.width) == Length.make_px(0)
 		assert style.length(.width) == Length.from_style_value(value, none)
 	}
-	calculated := parse_css_value(ParsingParams{}, 'calc(2px + 3px)', .width) or { panic(err) }
+	calculated := parse_css_value(ParsingParams{}, 'calc(2px + 3px)', .width) or { panic('expected a calculated width') }
 	style.set_property(.width, calculated, .no, .no)
 	assert style.length(.width) == Length.make_px(5)
 }

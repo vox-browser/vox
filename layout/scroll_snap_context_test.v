@@ -28,7 +28,6 @@ fn test_absolute_and_percentage_snap_edges_need_no_font_or_container_lookup() {
 	}
 	used.set_content_width(CSSPixels.new(200))
 	used.set_content_height(CSSPixels.new(100))
-	computed.cached_length_metrics_ = unsafe { nil }
 	padding := compatibility_scroll_snap_edges(computed, used, true)
 	margin := compatibility_scroll_snap_edges(computed, used, false)
 	assert padding == BoxEdges{
@@ -43,7 +42,6 @@ fn test_absolute_and_percentage_snap_edges_need_no_font_or_container_lookup() {
 		bottom: 9
 		left:   12
 	}
-	assert computed.cached_length_metrics_ == unsafe { nil }
 	used.set_content_width(CSSPixels.new(400))
 	used.set_content_height(CSSPixels.new(200))
 	resized := compatibility_scroll_snap_edges(computed, used, true)
@@ -53,7 +51,6 @@ fn test_absolute_and_percentage_snap_edges_need_no_font_or_container_lookup() {
 		bottom: 0
 		left:   220
 	}
-	assert computed.cached_length_metrics_ == unsafe { nil }
 }
 
 fn test_relative_and_calculated_snap_edges_keep_their_resolution_context() {
@@ -73,7 +70,6 @@ fn test_relative_and_calculated_snap_edges_keep_their_resolution_context() {
 	computed.set_property(.scroll_margin_left, &dom.StyleValue{
 		css_text: '7px'
 	}, .no, .no)
-	computed.cached_length_metrics_ = unsafe { nil }
 	edges := compatibility_scroll_snap_edges(computed, &UsedValues{}, false)
 	assert edges == BoxEdges{
 		top:    40
@@ -81,7 +77,6 @@ fn test_relative_and_calculated_snap_edges_keep_their_resolution_context() {
 		bottom: 23
 		left:   7
 	}
-	assert computed.cached_length_metrics_ != unsafe { nil }
 }
 
 fn snap_context_box_for_node(box &BlockBox, id i64) ?BlockBox {

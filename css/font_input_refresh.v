@@ -153,7 +153,6 @@ fn (s &StyleComputer) refresh_font_inputs(abstract_element dom.AbstractElement) 
 		computed.line_height()
 	}
 	computed.clear_computed_font_list_cache()
-	computed.cached_length_metrics_ = unsafe { nil }
 	new_font_list := computed.computed_font_list(s.font_computer())
 	computed.cached_first_available_computed_font_ = computed.first_available_computed_font(s.font_computer())
 	computed.computed_values_line_height_ = computed.line_height()

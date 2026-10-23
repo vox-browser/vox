@@ -1635,7 +1635,6 @@ pub mut:
 	cached_computed_font_list_generation_    u64
 	cached_computed_font_list_owner_         &FontComputer = unsafe { nil }
 	cached_first_available_computed_font_    &PlatformFont = unsafe { nil }
-	cached_length_metrics_                  &ComputedLengthMetrics = unsafe { nil }
 	line_height_                             ?CSSPixels
 	attempted_pseudo_class_matches_          PseudoClassBitmap
 	raw_cascaded_font_size_                  ?&dom.StyleValue

@@ -25,7 +25,6 @@ fn (mut style ComputedProperties) inherit_layout_coordinate_context(source &Comp
 	style.cached_computed_font_list_generation_ = source.cached_computed_font_list_generation_
 	style.cached_computed_font_list_owner_ = source.cached_computed_font_list_owner_
 	style.cached_first_available_computed_font_ = source.cached_first_available_computed_font_
-	style.cached_length_metrics_ = unsafe { nil }
 }
 
 fn device_layout_font(font PlatformFont, factor f64, pixel_size f64) PlatformFont {
@@ -110,7 +109,6 @@ pub fn computed_style_in_layout_coordinates(source &ComputedProperties,
 		device_layout_projection_:      unsafe { nil }
 		layout_cache_owner_serial_:     0
 		computed_values_resolved_:      false
-		cached_length_metrics_:         unsafe { nil }
 		font_input_refresh_safe_:       false
 		root_font_size_px_:             source.root_font_size_px_ * factor
 		root_line_height_px_:           source.root_line_height_px_ * factor
