@@ -2571,6 +2571,12 @@ evidence](docs/translation-audit/NATIVE_MEDIA_WHEEL_RAW_HANDLER.md).
   Focused exact;broad passed;prior carry4850369;entire independent C/493builtins/176protected/120native/37headers/exactargs.
   Accepted control177;broad baseline177;carry0;isolated177app/GC1+override2.
   Complete feature retained;all actual evidence receipts remain.canonical/GUI/foreign preserved;Chrome parity open.
+  Checked CSS candidate buckets round178 (`10c44ff9`):two whole original runtime hunks/one CSS path/no rebase or projection.
+  Twelve behavior cases/1778assertions beforeBoehm/finalBoehm/finalnone;common60/config;C-only frontend0.
+  Declared512public matching passes/eight layers/97rules:local141183263→156327329/+10.726531%/0wins/all6actual0;all retained.
+  Original preparation/enum-compile/script-launch/guard-wait failures retained;no successful case replay.
+  Actual localgate1/parent1;normal native/strictC/profile/page/broad/screens/bundle/GC178 unstarted;prepared scripts earn no pass.
+  Both runtime hunks restored exactly by7f30d942;tests/evidence retained;accepted177/broad177/app177/carry0 preserved;canonical/GUI/foreign preserved;Chrome open.
 - Outside instruction-count optimization, run broad regression suites once per
   ten completed fixes, not after every fix.
   Broad suites include full translation/package test batches, the full LibJS AST

@@ -17391,6 +17391,71 @@ expensive jobs retain the external memory guard and frozen compiler arguments.
 Chrome parity remains unknown pending equivalent content, start and paint
 submission endpoints.
 
+## Retain checked CSS candidate lookups as a rejected attempt
+
+Round 178 tests complete feature `10c44ff9` against accepted round 177.
+Both original runtime hunks in `css/style_scope_cache.v` replace the five
+class, ID, tag, pseudo-element and attribute bucket presence/get pairs with
+checked map lookups. The full author file reconstructs, with no context rebase
+or runtime projection. All other frozen runtime inputs remain unchanged.
+
+Twelve rule-cache behavior cases pass **1,778 assertions per configuration**
+in before/Boehm, final/Boehm and final/no-GC C-O2, with three actual zero-exit
+drivers. The new case covers misses without insertion, empty and replaced
+buckets, pseudo-elements, mutation, deletion, GC and retained rule identity.
+The eleven existing case bodies remain exact. Common browser checks pass
+60 assertions per configuration; the unchanged control reuses round 177's
+successful final check without execution. Original generic enum inference
+compile failures executed zero cases; the new test alone was corrected to
+spell `PseudoElement.before`. The initial preparation failures, misplaced
+script launch failure and reserved-empty guard-report wait failure are
+retained. No successful check is replayed.
+
+Before performance builds, the local workload declares 512 complete public
+`StyleComputer.build_matching_rule_set` calls over eight named layers and
+97 rules, with 12 present and 24 absent classes plus absent ID/title buckets.
+Setup, eight warmups, forced GC and assertions remain outside the counter.
+Both binaries use native C-O2, Boehm, default marker 1 and the same automatic
+4 GiB policy, without `-prod` or global `-prealloc`. The old compiler does not
+support the current memory-limit option; external 12 GiB build and 3 GiB
+focused-runtime guards remain in force.
+
+The three fixed alternating pairs retain all six actual zero exits and the
+same checksum **49,664**:
+
+| Pair | Before instructions | Candidate instructions |
+| --- | ---: | ---: |
+| 1 | 141,133,998 | 156,327,329 |
+| 2 | 141,512,513 | 156,290,644 |
+| 3 | 141,183,263 | 157,968,176 |
+
+Medians are **141,183,263 → 156,327,329** retired instructions,
+**+10.72653067%**, with **0/3 improved pairs**. No observation is
+discarded, repeated or replaced. The preliminary C-only frontend exits 0 and
+shows fewer map helper calls, but that does not establish an instruction
+improvement or a strict whole-C/native audit pass.
+
+The local gate and its parent controller actually exit 1. Normal native,
+profile, independent C audit and page work remain unstarted. The declared
+30 page pairs, 30,000 bootstrap resamples and seed 178 are not used; there are
+zero page primaries and no round 178 page saving, broad validation, screenshot,
+bundle or GC pass. Prepared downstream scripts earn no pass credit. Durable
+frontend, focused and local C/binary hashes are recorded in
+`Build/v/instruction-opt178-durable-archives.json`.
+
+Feature and focused test were committed together as `10c44ff9`.
+Restoration `7f30d942` reverses both complete runtime hunks and restores
+the author file byte-for-byte to the feature parent, retaining the new test
+and every measurement. The successful before checks cover this exact restored
+runtime; no completed case or primary is rerun.
+
+Accepted control, broad baseline and verified isolated app remain round 177.
+Observed carry and repeatable page credit remain zero. Canonical and GUI
+browsers, newer bundles and concurrent compositor/geometry edits are preserved.
+Chrome parity remains unestablished; the separate shared offline capture
+diagnostic below uses a different compiler, GC mode and endpoint from this
+normal-browser series.
+
 ## Causes and changes
 
 - The V 0.5.2 compatibility compiler's `-prod` Boehm code repeatedly snapshots
