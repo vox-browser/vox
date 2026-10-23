@@ -595,8 +595,7 @@ fn materialize_dom_paintables(box &Node, state &LayoutState, mut placeholder dom
 				*paintable_box = dom.PaintableBox{
 					layout_handle: voidptr(box)
 					dom_node_: box.dom_node() or { nil }
-					snapped_areas_x_: snapped_areas_x
-					snapped_areas_y_: snapped_areas_y
+					snap_areas_: dom.retained_paintable_snap_areas(snapped_areas_x, snapped_areas_y)
 				}
 			}
 			paintable_box.is_box = true

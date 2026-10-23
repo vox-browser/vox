@@ -14,8 +14,9 @@ fn test_callback_installation_borrows_stable_paintables_without_snapshot_allocat
 	for index, paintable in bindings {
 		assert voidptr(paintable) == voidptr(node.paintables_[index])
 		assert paintable.repaint_callback_target == voidptr(result)
-		assert paintable.set_needs_repaint_callback != unsafe { nil }
-		assert paintable.image_contents_changed_callback != unsafe { nil }
+		assert voidptr(paintable.callbacks) == voidptr(layout_paintable_callbacks)
+		assert paintable.callbacks.set_needs_repaint_callback != unsafe { nil }
+		assert paintable.callbacks.image_contents_changed_callback != unsafe { nil }
 	}
 	// The public snapshot contract continues to permit independent mutation.
 	mut snapshot := node.paintables()

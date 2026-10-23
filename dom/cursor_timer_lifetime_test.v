@@ -93,7 +93,7 @@ fn test_document_cursor_timer_preserves_focused_caret_paint_invalidation() {
 	mut text_node := text.as_node()
 	paintable := &Paintable{
 		repaint_callback_target: voidptr(state)
-		set_needs_repaint_callback: cursor_blink_test_repaint
+		callbacks: &PaintableCallbacks{ set_needs_repaint_callback: cursor_blink_test_repaint }
 	}
 	text_node.set_layout_node(&LayoutNode{paintables_: [paintable]})
 	text_node.set_paintable(paintable)

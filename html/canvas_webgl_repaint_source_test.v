@@ -29,7 +29,7 @@ fn test_source_webgl_canvas_update_keeps_retained_paint_commands_and_updates_act
 		mut witness := &SourceCanvasRepaintWitness{}
 		mut paintable := &dom.Paintable{
 			repaint_callback_target:    voidptr(witness)
-			set_needs_repaint_callback: source_canvas_repaint_callback
+			callbacks: &dom.PaintableCallbacks{ set_needs_repaint_callback: source_canvas_repaint_callback }
 		}
 		mut node := unsafe { &dom.Node(canvas) }
 		node.set_layout_node(&dom.LayoutNode{ paintables_: [paintable] })

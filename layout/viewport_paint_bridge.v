@@ -141,6 +141,15 @@ fn collect_paintable_boxes_with_auto_content_visibility_in_subtree(node &Node, m
 	}
 }
 
+__global layout_paintable_callbacks = &dom.PaintableCallbacks{
+	set_needs_repaint_callback: layout_paintable_set_needs_repaint
+	image_contents_changed_callback: layout_paintable_image_contents_changed
+	scroll_ancestor_to_offset_into_view_callback: layout_paintable_scroll_ancestor_to_offset_into_view
+	box_type_agnostic_position_callback: layout_paintable_box_type_agnostic_position
+	inverse_transform_point_callback: layout_paintable_inverse_transform_point
+	adjust_scroll_destination_callback: layout_paintable_adjust_scroll_destination
+}
+
 fn install_layout_paintable_repaint_callbacks(node &dom.LayoutNode, result &DocumentLayoutResult,
 	mut bindings []&dom.Paintable) {
 	// Only callback fields change here; the node's paintable vector stays
@@ -148,12 +157,7 @@ fn install_layout_paintable_repaint_callbacks(node &dom.LayoutNode, result &Docu
 	for paintable in node.paintables_ {
 		mut mutable_paintable := unsafe { &dom.Paintable(paintable) }
 		mutable_paintable.repaint_callback_target = voidptr(result)
-		mutable_paintable.set_needs_repaint_callback = layout_paintable_set_needs_repaint
-		mutable_paintable.image_contents_changed_callback = layout_paintable_image_contents_changed
-		mutable_paintable.scroll_ancestor_to_offset_into_view_callback = layout_paintable_scroll_ancestor_to_offset_into_view
-		mutable_paintable.box_type_agnostic_position_callback = layout_paintable_box_type_agnostic_position
-		mutable_paintable.inverse_transform_point_callback = layout_paintable_inverse_transform_point
-		mutable_paintable.adjust_scroll_destination_callback = layout_paintable_adjust_scroll_destination
+		mutable_paintable.callbacks = layout_paintable_callbacks
 		bindings << paintable
 	}
 	for child in node.children_ {
@@ -173,12 +177,7 @@ fn take_document_paintable_bindings(document &dom.Document) []&dom.Paintable {
 		if paintable != unsafe { nil } && paintable.repaint_callback_target == voidptr(previous) {
 			mut retired := unsafe { &dom.Paintable(paintable) }
 			retired.repaint_callback_target = unsafe { nil }
-			retired.set_needs_repaint_callback = unsafe { nil }
-			retired.image_contents_changed_callback = unsafe { nil }
-			retired.scroll_ancestor_to_offset_into_view_callback = unsafe { nil }
-			retired.box_type_agnostic_position_callback = unsafe { nil }
-			retired.inverse_transform_point_callback = unsafe { nil }
-			retired.adjust_scroll_destination_callback = unsafe { nil }
+			retired.callbacks = unsafe { nil }
 		}
 		bindings[index] = unsafe { nil }
 	}

@@ -90,7 +90,7 @@ fn test_hover_batch_freezes_all_offsets_before_an_earlier_listener_changes_geome
 		mut node := element.as_node()
 		paintable := &Paintable{
 			repaint_callback_target:          voidptr(geometry)
-			inverse_transform_point_callback: hover_geometry_inverse
+			callbacks: &PaintableCallbacks{ inverse_transform_point_callback: hover_geometry_inverse }
 		}
 		node.set_layout_node(&LayoutNode{ paintables_: [paintable] })
 		node.set_paintable(paintable)

@@ -88,8 +88,8 @@ fn test_element_programmatic_scroll_uses_committed_snap_areas() {
 	assert paintable.set_scroll_offset(dom.CSSPixelPoint_{ y_: 138 })
 	assert paintable.scroll_offset().y() == 100
 	second := document.get_element_by_id('second') or { panic('missing second area') }
-	assert paintable.snapped_areas_y_.len == 1
-	assert paintable.snapped_areas_y_[0].element_id == i64(second.as_node().unique_id())
+	assert paintable.snapped_areas().y.len == 1
+	assert paintable.snapped_areas().y[0].element_id == i64(second.as_node().unique_id())
 }
 
 fn test_element_scroll_snaps_after_initial_layout() {
@@ -99,8 +99,8 @@ fn test_element_scroll_snaps_after_initial_layout() {
 	paintable := scroller.paintable_box() or { panic('missing scroller paintable') }
 	assert paintable.scroll_offset().y() == 50
 	target := document.get_element_by_id('target') or { panic('missing snap target') }
-	assert paintable.snapped_areas_y_.len == 1
-	assert paintable.snapped_areas_y_[0].element_id == i64(target.as_node().unique_id())
+	assert paintable.snapped_areas().y.len == 1
+	assert paintable.snapped_areas().y[0].element_id == i64(target.as_node().unique_id())
 }
 
 fn test_directional_element_scroll_honors_always_stop() {
@@ -132,8 +132,8 @@ fn test_scroll_snap_reselects_remembered_area_after_relayout() {
 	updated := scroller.paintable_box() or { panic('missing updated scroller paintable') }
 	assert updated.scroll_offset().y() == 150
 	second := document.get_element_by_id('second') or { panic('missing second area') }
-	assert updated.snapped_areas_y_.len == 1
-	assert updated.snapped_areas_y_[0].element_id == i64(second.as_node().unique_id())
+	assert updated.snapped_areas().y.len == 1
+	assert updated.snapped_areas().y[0].element_id == i64(second.as_node().unique_id())
 }
 
 fn test_viewport_scroll_uses_document_element_snap_type() {

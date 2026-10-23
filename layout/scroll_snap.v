@@ -1053,7 +1053,7 @@ fn resnap_committed_paintables(node &dom.LayoutNode, boxes_by_layout map[u64]&Bl
 			continue
 		}
 		mut box_paintable := unsafe { &dom.PaintableBox(paintable) }
-		previous := snapped_areas_from_dom(box_paintable.snapped_areas_x_, box_paintable.snapped_areas_y_)
+		previous := snapped_areas_from_dom(box_paintable.snapped_areas().x, box_paintable.snapped_areas().y)
 		box := boxes_by_layout[u64(box_paintable.layout_handle)] or { continue }
 		if previous.is_empty() && !is_scroll_snap_container(box) {
 			continue
@@ -1083,7 +1083,7 @@ fn layout_tree_has_remembered_snap_areas(node &dom.LayoutNode) bool {
 	for paintable in node.paintables_ {
 		if !paintable.is_paintable_box() { continue }
 		box := unsafe { &dom.PaintableBox(paintable) }
-		if box.snapped_areas_x_.len > 0 || box.snapped_areas_y_.len > 0 { return true }
+		if box.snapped_areas().x.len > 0 || box.snapped_areas().y.len > 0 { return true }
 	}
 	for child in node.children_ {
 		if layout_tree_has_remembered_snap_areas(child) { return true }

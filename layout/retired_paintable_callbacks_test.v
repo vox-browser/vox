@@ -18,6 +18,8 @@ fn test_replaced_paintables_release_renderer_callbacks_while_live_wrappers_rebin
 	assert paintables.len > 0
 	assert paintables.all(it.repaint_callback_target == voidptr(previous))
 	old_list := document.record_display_list()?
+	old_scene := retain_display_list_scene(old_list)
+	defer { release_display_list_scene(old_scene) }
 	old_commands := display_list_commands(old_list).clone()
 	mut changed := document.get_element_by_id('changed')?
 	changed.set_inner_html('<p>Replacement comment with different text</p>')!
@@ -28,12 +30,7 @@ fn test_replaced_paintables_release_renderer_callbacks_while_live_wrappers_rebin
 	for paintable in paintables {
 		assert paintable.repaint_callback_target != voidptr(previous)
 		if paintable.repaint_callback_target == unsafe { nil } {
-			assert paintable.set_needs_repaint_callback == unsafe { nil }
-			assert paintable.image_contents_changed_callback == unsafe { nil }
-			assert paintable.scroll_ancestor_to_offset_into_view_callback == unsafe { nil }
-			assert paintable.box_type_agnostic_position_callback == unsafe { nil }
-			assert paintable.inverse_transform_point_callback == unsafe { nil }
-			assert paintable.adjust_scroll_destination_callback == unsafe { nil }
+			assert paintable.callbacks == unsafe { nil }
 		}
 	}
 	mut live := []&dom.Paintable{}
@@ -41,7 +38,8 @@ fn test_replaced_paintables_release_renderer_callbacks_while_live_wrappers_rebin
 	assert live.all(it.repaint_callback_target == voidptr(current))
 	gc_collect()
 	assert display_list_commands(old_list).clone() == old_commands
-	assert display_list_commands(document.record_display_list()?).any(it.text.contains('Replacement'))
+	current_list := document.record_display_list()?
+	assert display_list_commands(current_list).any(it.text.contains('Replacement'))
 }
 
 fn test_geometry_only_layout_keeps_current_paintables_bound_to_the_new_renderer() {

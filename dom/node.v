@@ -298,6 +298,17 @@ pub type PaintableAdjustScrollDestinationCallback = fn (voidptr, voidptr, CSSPix
 
 pub type PaintableInverseTransformPointCallback = fn (voidptr, voidptr, CSSPixelPoint_) CSSPixelPoint_
 
+// Shared immutable dispatch; each paintable retains its own target and handle.
+pub struct PaintableCallbacks {
+pub:
+	set_needs_repaint_callback                   PaintableSetNeedsRepaintCallback = unsafe { nil }
+	image_contents_changed_callback              PaintableImageContentsChangedCallback = unsafe { nil }
+	scroll_ancestor_to_offset_into_view_callback PaintableScrollAncestorToOffsetCallback = unsafe { nil }
+	box_type_agnostic_position_callback          PaintableBoxTypeAgnosticPositionCallback = unsafe { nil }
+	inverse_transform_point_callback            PaintableInverseTransformPointCallback = unsafe { nil }
+	adjust_scroll_destination_callback           PaintableAdjustScrollDestinationCallback = unsafe { nil }
+}
+
 @[heap]
 pub struct Paintable {
 pub mut:
@@ -306,12 +317,7 @@ pub mut:
 	selection_state                              SelectionState
 	layout_handle                                voidptr = unsafe { nil }
 	repaint_callback_target                      voidptr = unsafe { nil }
-	set_needs_repaint_callback                   PaintableSetNeedsRepaintCallback = unsafe { nil }
-	image_contents_changed_callback              PaintableImageContentsChangedCallback = unsafe { nil }
-	scroll_ancestor_to_offset_into_view_callback PaintableScrollAncestorToOffsetCallback = unsafe { nil }
-	box_type_agnostic_position_callback          PaintableBoxTypeAgnosticPositionCallback = unsafe { nil }
-	inverse_transform_point_callback            PaintableInverseTransformPointCallback = unsafe { nil }
-	adjust_scroll_destination_callback           PaintableAdjustScrollDestinationCallback = unsafe { nil }
+	callbacks                                    &PaintableCallbacks = unsafe { nil }
 }
 
 pub enum SelectionState {
@@ -328,9 +334,9 @@ pub fn (p &Paintable) is_paintable_box() bool {
 
 pub fn (mut p Paintable) set_needs_repaint(should_invalidate_display_list InvalidateDisplayList) {
 	p.needs_repaint = true
-	if p.repaint_callback_target != unsafe { nil }
-		&& p.set_needs_repaint_callback != unsafe { nil } {
-		p.set_needs_repaint_callback(p.repaint_callback_target, p.layout_handle, should_invalidate_display_list)
+	if p.repaint_callback_target != unsafe { nil } && p.callbacks != unsafe { nil }
+		&& p.callbacks.set_needs_repaint_callback != unsafe { nil } {
+		p.callbacks.set_needs_repaint_callback(p.repaint_callback_target, p.layout_handle, should_invalidate_display_list)
 	}
 }
 
@@ -338,11 +344,12 @@ pub fn (mut p Paintable) set_needs_repaint(should_invalidate_display_list Invali
 // set_needs_repaint(PaintCommands) for this paintable's image provider. Returns
 // false when its retained paint input cannot take the new contents.
 pub fn (mut p Paintable) image_provider_contents_changed() bool {
-	if p.repaint_callback_target == unsafe { nil } || p.image_contents_changed_callback == unsafe { nil } {
+	if p.repaint_callback_target == unsafe { nil } || p.callbacks == unsafe { nil }
+		|| p.callbacks.image_contents_changed_callback == unsafe { nil } {
 		return false
 	}
 	p.needs_repaint = true
-	return p.image_contents_changed_callback(p.repaint_callback_target, p.layout_handle)
+	return p.callbacks.image_contents_changed_callback(p.repaint_callback_target, p.layout_handle)
 }
 
 pub fn (mut p Paintable) set_selection_state(state SelectionState) {
@@ -357,23 +364,24 @@ pub fn (mut p Paintable) set_selection_state(state SelectionState) {
 }
 
 pub fn (p &Paintable) scroll_ancestor_to_offset_into_view(offset int) {
-	if p.repaint_callback_target != unsafe { nil }
-		&& p.scroll_ancestor_to_offset_into_view_callback != unsafe { nil } {
-		p.scroll_ancestor_to_offset_into_view_callback(p.repaint_callback_target, p.layout_handle, offset)
+	if p.repaint_callback_target != unsafe { nil } && p.callbacks != unsafe { nil }
+		&& p.callbacks.scroll_ancestor_to_offset_into_view_callback != unsafe { nil } {
+		p.callbacks.scroll_ancestor_to_offset_into_view_callback(p.repaint_callback_target, p.layout_handle, offset)
 	}
 }
 
 pub fn (p &Paintable) box_type_agnostic_position() CSSPixelPoint_ {
-	if p.repaint_callback_target != unsafe { nil }
-		&& p.box_type_agnostic_position_callback != unsafe { nil } {
-		return p.box_type_agnostic_position_callback(p.repaint_callback_target, p.layout_handle)
+	if p.repaint_callback_target != unsafe { nil } && p.callbacks != unsafe { nil }
+		&& p.callbacks.box_type_agnostic_position_callback != unsafe { nil } {
+		return p.callbacks.box_type_agnostic_position_callback(p.repaint_callback_target, p.layout_handle)
 	}
 	return CSSPixelPoint_{}
 }
 
 pub fn (p &Paintable) inverse_transform_point(point CSSPixelPoint_) CSSPixelPoint_ {
-	if p.repaint_callback_target != unsafe { nil } && p.inverse_transform_point_callback != unsafe { nil } {
-		return p.inverse_transform_point_callback(p.repaint_callback_target, p.layout_handle, point)
+	if p.repaint_callback_target != unsafe { nil } && p.callbacks != unsafe { nil }
+		&& p.callbacks.inverse_transform_point_callback != unsafe { nil } {
+		return p.callbacks.inverse_transform_point_callback(p.repaint_callback_target, p.layout_handle, point)
 	}
 	return point
 }
@@ -395,8 +403,7 @@ pub mut:
 	padding_box_width_        f64
 	padding_box_height_       f64
 	dom_node_                 &Node = unsafe { nil }
-	snapped_areas_x_          []ScrollSnapAreaReference_
-	snapped_areas_y_          []ScrollSnapAreaReference_
+	snap_areas_              &PaintableSnapAreas = unsafe { nil }
 }
 
 pub fn (p &PaintableBox) could_be_scrolled_by_wheel_event() bool {
@@ -490,9 +497,9 @@ pub fn (mut p PaintableBox) set_scroll_offset_with_snap_strategy(requested_offse
 pub fn (p &PaintableBox) select_scroll_snap_destination(requested_offset CSSPixelPoint_, strategy ScrollSnapSelectionStrategy_) ScrollSnapDestination_ {
 	if p.scrollable_overflow_rect_ == none { return ScrollSnapDestination_{position: p.scroll_offset()} }
 	offset := p.clamp_scroll_offset(requested_offset)
-	if p.repaint_callback_target != unsafe { nil }
-		&& p.adjust_scroll_destination_callback != unsafe { nil } {
-		destination := p.adjust_scroll_destination_callback(p.repaint_callback_target, p.layout_handle, offset,
+	if p.repaint_callback_target != unsafe { nil } && p.callbacks != unsafe { nil }
+		&& p.callbacks.adjust_scroll_destination_callback != unsafe { nil } {
+		destination := p.callbacks.adjust_scroll_destination_callback(p.repaint_callback_target, p.layout_handle, offset,
 			strategy)
 		return destination
 	}
@@ -500,15 +507,15 @@ pub fn (p &PaintableBox) select_scroll_snap_destination(requested_offset CSSPixe
 }
 
 pub fn (mut p PaintableBox) record_scroll_snap_destination(destination ScrollSnapDestination_) {
-	if destination.evaluated_x {
-		p.snapped_areas_x_ = destination.snapped_areas_x.clone()
-	}
-	if destination.evaluated_y {
-		p.snapped_areas_y_ = destination.snapped_areas_y.clone()
+	previous := p.snapped_areas()
+	x := if destination.evaluated_x { destination.snapped_areas_x.clone() } else { previous.x }
+	y := if destination.evaluated_y { destination.snapped_areas_y.clone() } else { previous.y }
+	if destination.evaluated_x || destination.evaluated_y {
+		p.snap_areas_ = retained_paintable_snap_areas(x, y)
 	}
 	if p.dom_node_ != unsafe { nil } {
 		if mut element := p.dom_node_.as_element() {
-			element.set_snapped_scroll_areas(p.snapped_areas_x_, p.snapped_areas_y_)
+			element.set_snapped_scroll_areas(x, y)
 		}
 	}
 }
