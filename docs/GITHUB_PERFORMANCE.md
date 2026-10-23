@@ -1,8 +1,102 @@
 # GitHub rendering investigation
 
-Measured on macOS on 2026-10-13 and 2026-10-14 with `https://github.com/vlang/v` and the
-repository's native browser. These are individual diagnostic runs, not an
-upstream parity benchmark.
+This investigation measures `https://github.com/vlang/v` on macOS. The latest
+shared offline capture diagnostic is below; the original October 13–14
+measurements and subsequent frozen first-frame optimization rounds follow.
+Chrome parity remains open.
+
+## Shared offline capture diagnostic, October 23
+
+The completed three-pair diagnostic uses the same sealed response bodies in
+both browsers, a 1024×768 document viewport at scale 1, author JavaScript
+enabled, and a 0.5-second capture settling delay. All six observations are
+retained in their predeclared order: Vox/Chrome, Chrome/Vox, Vox/Chrome. There
+are no retries, exclusions, or new observations during the subsequent evidence
+audit. All six browser kernel exit statuses are zero, all six document PNGs
+are present, and all mandatory content gates pass.
+
+**This Vox binary uses current V's `-new-compiler -prealloc -gc none` and native
+C-O2.** It is a separate diagnostic build, not the normal old-compiler,
+Boehm-enabled optimization cohort. It receives no feature or whole-page credit
+and does not change round 177's accepted control, broad baseline, or zero
+observed carry. Round 177's normal 30-pair first-frame medians remain
+16,496,507,688 → 16,493,817,858 instructions, with a paired interval including
+zero and repeatable credit zero. Those medians must not be compared directly
+with this different build and capture endpoint.
+
+The hardware counters cover each browser's exclusive resource coalition,
+including helpers and exited tasks. Stable membership checks exclude the
+observer's coalition and unrelated live processes. Native markers span
+`navigation_started` through `capture_document_encoded`, after PNG encoding
+and before file writing. Chrome 155.0.8059.79 is externally bracketed from the
+navigation request through the CDP PNG response; its interval includes the
+base64/IPC delivery tail. GPU execution and external services are excluded.
+
+| Pair | Vox coalition instructions | Chrome coalition lower bound | Chrome coalition upper bound |
+| --- | ---: | ---: | ---: |
+| 1 | 52,608,370,319 | 3,904,727,089 | 3,932,286,921 |
+| 2 | 47,021,417,552 | 4,010,635,266 | 4,028,730,818 |
+| 3 | 53,244,485,752 | 3,817,153,421 | 3,832,008,576 |
+| Median | 52,608,370,319 | 3,904,727,089 | 3,932,286,921 |
+
+The Chrome bounds describe sampled endpoint uncertainty, not confidence
+intervals. Vox's separate main-task median is 51,335,820,489 instructions.
+This workflow still uses different internal boundaries and window activity:
+the native screenshot window is inactive. Both post-capture DOM audits report
+visible, fully active documents, but full JavaScript and focus/visibility
+equivalence is unproven. These results establish substantial remaining work
+for this diagnostic, not a general browser speed ratio or Chrome parity.
+
+The semantic gate is derived independently from the sealed HTML: 32 repository
+rows, 64 exact filename/href pairs, the visible first filename and wide About
+text, all 13 image source URLs, and the two archived images decoded at 60×60
+and 500×500. Missing unarchived images may remain undecoded. Both browsers
+perform their mandatory selector/text/geometry audits after the PNG endpoint
+and after counter sampling stops. Chrome's readiness polling inside the
+interval only checks URL, document/viewport/scale/font state and those two
+known images. All captures contain the 1024×768 document viewport.
+
+The legacy body cache lacks original response metadata. The sealed fixture
+discloses synthetic status 200, inferred MIME types, permissive CORS and
+`no-store`; missing or non-GET requests fail closed, with no live fallback.
+Each native observation uses a validated private cache copy and the pinned
+network-denial library. Private app launches preserve the user's GUI browser.
+
+The first retained Vox trace reaches its first document paint at
+11,901,772,193 main-task instructions but continues substantial work before
+capture. Repeated paint checkpoint intervals include intervening work and
+cannot be treated as function self costs. A separate instrumented diagnostic
+points to repeated style computation and rule collection; its inclusive,
+overlapping scopes and changed animation sampling receive no savings credit.
+
+The durable driver is
+[`tools/measure_sealed_github_instructions.py`](../tools/measure_sealed_github_instructions.py)
+(tooling commit `0ff3b1aa`). It requires private Vox/Chrome apps, the sealed
+fixture, network guard, a fresh work directory, and a successful build receipt
+whose executable hash matches Vox. It pins that receipt, all app files,
+transitive native dependencies, helper tools, filter lists, and fixture before
+launch and after each sample. Marker threads default to one; other ambient
+collector controls are rejected. Setting marker policy does not enable GC in
+a GC-none binary. Its 19 focused Python checks use synthetic source data and
+launch no browsers. The retained dated driver and original plan are unchanged.
+
+Retained evidence under `Build/instructions/`:
+
+- `sealed-github-endpoint-20261023/{plan,summary}.json` and six per-observation
+  result/audit/PNG files; Chrome raw coalition snapshots are gzip archives.
+- `private-endpoint2-build-protocol.json` and
+  `private-endpoint2-commit-map.json`: all build/sign/verify/smoke stages succeed;
+  the map authenticates 7,053 frozen source files against `9c56cae1`, based on
+  `ce23ceb8`. The installed canonical bundle is preserved.
+- `sealed-github-retained-audit-20261023.json`: successful recomputation of
+  content gates, native deltas, Chrome bounds from raw snapshots, real exits,
+  PNG/audit hashes, and all 400 current runtime pins. No samples are replayed.
+- Plan SHA256 `dcdd8a7143beff8a7fc8b439e31cf7c017f2f74ef87f1337bf086affe4a31e28`;
+  fixture manifest SHA256 `adfd0966d900b9c80c934e2221d549a6da89eb240075483c33db693cf40517b5`;
+  summary SHA256 `b7996d732f5385e4282b8aacb8d1c504b8d9da2261c78ad6763eb42039d4c7f7`.
+- Vox executable SHA256 `ee448e88222f1ee69a9501abc01cce10c7b4fdcbac7261e1aeff2bcb41218700`;
+  generated C SHA256 `705c8e3a9522ab8aee5d6d2624fb6e7ff823a9a1353140744384a26e24a0db0b`;
+  build protocol SHA256 `23c5535b319ce353a436f8bde2c73cd079513640187bc59adb2fbc13c0d6d31b`.
 
 ## CPU instruction measurements
 
