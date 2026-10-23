@@ -6,6 +6,7 @@ fn idle_harfbuzz_font() &Font {
 }
 
 fn test_idle_native_font_retirement_preserves_retained_runs_and_refreshes_borrowed_faces() {
+	assert harfbuzz_cache_generation == u64(1)
 	font := idle_harfbuzz_font()
 	old := shape_text_cached(0, 0, 0, 'Retained glyphs 123', font, .ltr)
 	expected := old.glyph_run.glyphs().clone()

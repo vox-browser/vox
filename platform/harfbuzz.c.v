@@ -131,7 +131,7 @@ __global (
 	harfbuzz_emoji_blob         voidptr
 	harfbuzz_emoji_face         voidptr
 	harfbuzz_emoji_attempted    bool
-	harfbuzz_cache_generation   u64 = 1
+	harfbuzz_cache_generation   = u64(1)
 )
 
 fn bundled_font_path(file_name string) ?string {
